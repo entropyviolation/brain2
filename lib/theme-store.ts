@@ -2,6 +2,7 @@
  * lib/theme-store.ts — User-customizable theme colors
  *
  * Points card colors and habit-type icon colors, shared across Home dashboard.
+ * Storage: localStorage today; target MongoDB `themePrefs` collection (§3).
  */
 "use client"
 

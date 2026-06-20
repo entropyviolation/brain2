@@ -2,7 +2,8 @@
 
 Everything that is **not** React UI: the TypeScript data model, Zustand stores
 (persisted to localStorage today; see `docs/SPEC_MAPPING.md` §3 for the planned
-SQLite migration), and pure calculation/date/sync utilities.
+**MongoDB** migration — flexible documents, semantic/fuzzy/advanced search, and
+aggregation-based routing), and pure calculation/date/sync utilities.
 
 ## Zustand stores
 
@@ -29,7 +30,7 @@ SQLite migration), and pure calculation/date/sync utilities.
 | `item-utils.ts` | Task/list helpers: schedule-level predicates, `createListItem` / `createNextActionItem`, attribute seeding, `resolveCompletionPoints` (default 1 or list **Points** attribute), singular labels, push-forward. | §5, §6, §7 |
 | `habit-utils.ts` | Habit type normalization (`GOAL`/`TIME`/`COUNT` aliases), completion helpers. | §9 |
 | `attribute-utils.ts` | Legacy attribute type normalization and value coercion; run from `task-store` migrate on load. | §5 |
-| `plan-text.ts` | Read/write free-text plan areas (`dayPlan-*`, `weekPlan-*`, `monthPlan-*` localStorage keys). Used by Plan views and period reviews. | §7 |
+| `plan-text.ts` | Read/write free-text plan areas (`dayPlan-*`, `weekPlan-*`, `monthPlan-*` localStorage keys today). Target: MongoDB `plans` collection. Used by Plan views and period reviews. | §7 |
 | `folder-all-items.ts` | Per-folder **All Items** category (`__all-items__{folderId}`): ensure category exists, assign uncategorized items, folder drop helpers. | §6 |
 | `scheduled-lists-sync.ts` | Keeps Next Actions smart lists and scheduled folder lists in sync (`na-smart-daily`, week/month/year buckets). | §6, §7 |
 | `csv.ts` | Dependency-free CSV parser for Lists import (quoted fields, escaped quotes). | §6 |
@@ -45,7 +46,9 @@ than through a Zustand store:
 - **Plan text** — `plan-text.ts` keys (`dayPlan-*`, `weekPlan-*`, `monthPlan-*`).
 - **Legacy habits** — `habits-store` imports once from old `weekly-habits-*` keys.
 
-The spec targets moving all of this into SQLite records (see `docs/SPEC_MAPPING.md` §3).
+The target is moving all of this into **MongoDB** documents (see
+`docs/SPEC_MAPPING.md` §3) — e.g. a `plans` collection for plan text and unified
+`items` / domain collections with text and vector search indexes.
 
 ## Notes
 

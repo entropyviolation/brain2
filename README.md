@@ -28,8 +28,9 @@ the spec to the code, including what is implemented, partial, or deferred.
 - **Windows 95 skin** — global retro chrome via `app/win95.css` (`body.win95-app`);
   Lists panel adds its own Win98 file-manager layer (`components/Lists/filemanager98.css`).
 - **Zustand** stores with `persist` middleware for state, currently backed by
-  the browser's **localStorage** (the spec calls for migrating this to an
-  embedded **SQLite** database — see `docs/SPEC_MAPPING.md` §3).
+  the browser's **localStorage** (migrating to **MongoDB** for a flexible
+  document model, semantic/fuzzy/advanced search, and aggregation-based routing
+  — see `docs/SPEC_MAPPING.md` §3).
 - **Electron** desktop shell (`electron/`) that serves the static export via a
   custom `app://` protocol. The same build also runs as a plain web app.
 
@@ -37,18 +38,24 @@ the spec to the code, including what is implemented, partial, or deferred.
 
 ```
 Next.js (static export, all client-side)
-        │  data persisted via Zustand + localStorage
+        │  data persisted via Zustand + localStorage (today)
         │  (+ plan text keys, legacy habit import)
+        │  planned: MongoDB via Electron IPC (cogs database)
         ▼
 out/ (HTML/CSS/JS + public assets)
         │  loaded by
         ▼
 Electron main process (electron/main.js)  →  desktop window
+        │  planned: MongoDB connection + search indexes
+        ▼
+MongoDB (local mongod or Atlas) — flexible documents, text/vector search
 ```
 
-There is **no server and no API layer** — every feature runs in the renderer and
-reads/writes localStorage through the Zustand stores in `lib/` (plus a few direct
-localStorage helpers for plan text).
+There is **no server and no API layer today** — every feature runs in the
+renderer and reads/writes localStorage through the Zustand stores in `lib/` (plus
+a few direct localStorage helpers for plan text). The planned **MongoDB** layer
+(via Electron IPC) will become the durable source of truth; Zustand will remain
+the reactive UI cache.
 
 ### Application map
 
@@ -109,7 +116,10 @@ npm run electron:build           # package desktop installers into dist/
 
 ## Data layer (summary)
 
-Ten Zustand stores in `lib/` persist to localStorage. Key examples:
+Ten Zustand stores in `lib/` persist to **localStorage** today. The planned
+**MongoDB** `cogs` database (via Electron IPC) will become the durable source of
+truth — flexible documents, text/vector search indexes, and aggregation pipelines
+for advanced search and routing. Key store examples:
 
 | Store | Key | Used for |
 |-------|-----|----------|
@@ -119,8 +129,9 @@ Ten Zustand stores in `lib/` persist to localStorage. Key examples:
 | `reviews-store` | `cogs-reviews-store` | Period reviews |
 | `lists-ui-store` | `cogs-lists-ui` | Lists UI prefs, orb gallery |
 
-Plan free-text uses `plan-text.ts` helpers (`dayPlan-*`, `weekPlan-*`,
-`monthPlan-*` keys). Full file-by-file detail: [`lib/README.md`](lib/README.md).
+Plan free-text uses interim `plan-text.ts` helpers (`dayPlan-*`, `weekPlan-*`,
+`monthPlan-*` keys); target is MongoDB `plans` collection. Full file-by-file
+detail: [`lib/README.md`](lib/README.md).
 
 ## Status vs. the v2 spec (summary)
 
@@ -132,8 +143,9 @@ Items; Scheduler period funnel (Always→Year→Month→Week→Day); Home dashbo
 with plan text and reflection; **Modules** dashboard; points on task/habit/goal
 completion; Analytics charts.
 
-**Not yet matching the spec** (tracked in `docs/SPEC_MAPPING.md`): SQLite storage
-layer + JSON export/import + migrations (§3), unified Item data model with
-de-duplicated fields (§5), full Goals→Objectives modeling (§10), complete Reviews
-cadence set (§13), Regret accrual (§14), the eight real Analytics views (§15), and
-full carry-over logic (§7.7).
+**Not yet matching the spec** (tracked in `docs/SPEC_MAPPING.md`): MongoDB storage
+layer (flexible documents, text/vector search indexes) + JSON export/import +
+schema migrations (§3), unified Item data model with de-duplicated fields (§5),
+full Goals→Objectives modeling (§10), complete Reviews cadence set (§13), Regret
+accrual (§14), the eight real Analytics views (§15), and full carry-over logic
+(§7.7).

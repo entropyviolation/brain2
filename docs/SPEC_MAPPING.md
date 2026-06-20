@@ -11,7 +11,10 @@ Legend:
 
 > Direction chosen for this rebuild: **incremental evolution** of the existing
 > localStorage/Zustand + Electron app toward the spec (not a from-scratch
-> rewrite). This file is the running checklist for that work.
+> rewrite). **Storage target:** **MongoDB** (replacing the spec's original SQLite
+> recommendation) for a flexible document model, semantic/fuzzy/advanced search,
+> and aggregation-based routing as the dataset grows relational. This file is the
+> running checklist for that work.
 
 Screenshots and per-screen write-ups: [`docs/screenshots/`](screenshots/).
 
@@ -24,7 +27,8 @@ local-first/sync-ready, AI-ready-not-AI-dependent, everything reviewable.
 
 ## §2 System Architecture
 - **Shape chosen by this repo:** Option B (Electron) + localStorage via Zustand
-  `persist`, not yet the recommended embedded SQL DB. See `electron/`, `README.md`.
+  `persist`, migrating toward **MongoDB** (local instance or Atlas) accessed from
+  the Electron main process via IPC. See `electron/`, `README.md`.
 - Module list (§2.2) maps to top-level tabs in `app/page.tsx` and
   `components/<Module>/` folders:
   **Home** | **Lists** | **Scheduler** | **Modules** | **Analytics**, plus
@@ -40,9 +44,14 @@ local-first/sync-ready, AI-ready-not-AI-dependent, everything reviewable.
 - **Also persisted outside stores:** plan free-text (`lib/plan-text.ts` keys
   `dayPlan-*`, `weekPlan-*`, `monthPlan-*`); one-time import of legacy
   `weekly-habits-*` keys into `habits-store`.
-- **Gap:** spec mandates embedded **SQLite** (`cogs.db`), a numbered **migration
-  runner**, and one-click **JSON export/import** of all data. None exist yet.
-  This is the single largest architectural gap.
+- **Gap:** no **MongoDB** persistence layer yet (`cogs` database — collections for
+  items, plans, habits, reviews, etc.), a numbered **schema migration** runner,
+  or one-click **JSON export/import** of all data. None exist yet. This is the
+  single largest architectural gap. MongoDB was chosen over the spec's SQLite
+  recommendation for: schemaless/flexible documents (unified `Item` + custom
+  attributes), text indexes and Atlas Search for **fuzzy search**, vector indexes
+  for future **semantic search**, aggregation pipelines for **advanced search and
+  routing**, and native BSON/JSON interchange.
 - 🕓 Sync / multi-device / iOS PWA path is deferred by the spec.
 
 ## §4 Inbox / Capture
@@ -92,7 +101,8 @@ local-first/sync-ready, AI-ready-not-AI-dependent, everything reviewable.
 - §7.3 single source of truth — 🟡 scheduling fields shared via task-store;
   panels compute filtered lists independently (`lib/item-utils.ts` helpers).
 - Persisted plan text — 🟡 saved via `lib/plan-text.ts` to localStorage (immediate
-  save on edit in day/week/month views); spec wants DB-backed plan records.
+  save on edit in day/week/month views); target is MongoDB-backed plan documents
+  (`plans` collection keyed by period).
   Plan text + `planReflection` shown in Reviews — ✅.
 - §7.5 Events with linked checklist — 🟡 events exist (`CalendarEvent`,
   `event-store.ts`); generic linked-checklist not implemented.
@@ -179,7 +189,8 @@ Reference notes; no code.
 
 ## Highest-leverage next steps (incremental path)
 1. **§3** Storage abstraction + one-click JSON export/import over all stores,
-   then evaluate SQLite via the Electron main process.
+   then wire MongoDB via the Electron main process (local `mongod` or Atlas;
+   text/vector indexes for search roadmap).
 2. **§5** Add `tags`, generic `links`, and `parentCategoryId` (additive) before
    consolidating duplicate fields.
 3. **§14/§7.7** Regret accrual + automatic carry-over (small, high value).

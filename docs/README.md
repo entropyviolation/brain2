@@ -2,7 +2,7 @@
 
 | File / folder | Purpose |
 |---------------|---------|
-| `SPEC_MAPPING.md` | Section-by-section mapping of `Cognitive_Management_System_Spec.docx` (COGS v2) to the codebase: what is implemented (✅), partial (🟡), missing (⛔), or deferred (🕓), plus the prioritized incremental-build checklist. Start here when planning feature work. |
+| `SPEC_MAPPING.md` | Section-by-section mapping of `Cognitive_Management_System_Spec.docx` (COGS v2) to the codebase: what is implemented (✅), partial (🟡), missing (⛔), or deferred (🕓), plus the prioritized incremental-build checklist. **Storage target:** MongoDB (replacing the spec's SQLite recommendation) for flexible documents, semantic/fuzzy/advanced search, and aggregation-based routing. Start here when planning feature work. |
 | `screenshots/` | Full-page PNG captures of each major app view plus matching `.txt` write-ups (UI elements, source files, data state). Re-capture with `node scripts/capture-screenshots.mjs` while `npm run dev` is running. |
 
 ### Screenshot index

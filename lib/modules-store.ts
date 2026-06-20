@@ -7,6 +7,8 @@
  * list summary, or an analytics stat. Each module is `{ id, type, title,
  * config }`; the Modules panel renders them and lets the user add/remove/
  * reconfigure.
+ *
+ * Storage: localStorage today; target MongoDB `modules` collection (§3).
  */
 "use client"
 

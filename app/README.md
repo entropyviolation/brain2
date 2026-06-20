@@ -42,8 +42,10 @@ main view with `EnhancedTaskDetail` until the user navigates back.
 ## Spec
 
 Implements the application shell that hosts every module (§2.2, §8 Home Dashboard
-top bar). There are no API routes or server components — consistent with the
-local-first, client-only architecture.
+top bar). There are no API routes or server components — consistent with the local-first,
+client-only architecture today. A future **MongoDB** connection (via Electron IPC)
+will provide durable storage, text/vector search indexes, and aggregation-based
+routing without changing this shell layout.
 
 See also `components/README.md` for module-level UI documentation and `lib/README.md`
 for the stores the page's children read/write.

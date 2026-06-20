@@ -39,7 +39,10 @@ The global header (all tabs) also renders: **Review** (`Reviews/`), **Tracking**
 
 ## Data stores (see `lib/`)
 
-Components read/write Zustand stores, not local-only state (except plan text in localStorage):
+Components read/write Zustand stores today (localStorage-backed); the planned
+**MongoDB** layer will become the durable source of truth while Zustand remains
+the reactive UI cache (see `docs/SPEC_MAPPING.md` §3). Plan text still uses
+interim localStorage helpers via `plan-text.ts`:
 
 | Store | Used by |
 |-------|---------|

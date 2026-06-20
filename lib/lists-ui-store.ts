@@ -6,7 +6,8 @@
  * chosen display type per list, the active folder view, and the user's uploaded
  * "orb" icon library (background-removed data URLs). Persisted to localStorage
  * under `cogs-lists-ui`. None of this affects task/category/folder data, so the
- * rest of the app keeps working unchanged.
+ * rest of the app keeps working unchanged. Target: MongoDB `listsUiPrefs`
+ * collection (see docs/SPEC_MAPPING.md §3).
  */
 "use client"
 

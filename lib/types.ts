@@ -8,7 +8,8 @@
  * Spec: this is where the unified "Item" model (spec §5) will converge. The
  * current `Task` interface intentionally still carries v1's near-duplicate fields
  * (`category` vs `categories`, `entropy` vs `cognitiveLoad`, `context` vs future
- * tags) — see docs/SPEC_MAPPING.md §5 for the planned consolidation.
+ * tags) — see docs/SPEC_MAPPING.md §5 for the planned consolidation. Types map
+ * to MongoDB document shapes (flexible `attributes`, `links`, embedded subdocs).
  */
 export interface Task {
   id: string

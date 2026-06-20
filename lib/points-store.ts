@@ -9,7 +9,8 @@
  *
  * Spec: §14 (Points, Rewards & Regret). Missing vs. spec: objective
  * point sources, configurable multipliers, and regret accrual — see
- * docs/SPEC_MAPPING.md §14.
+ * docs/SPEC_MAPPING.md §14. Storage: localStorage today; target MongoDB
+ * `pointsLedger` collection (§3).
  */
 "use client"
 

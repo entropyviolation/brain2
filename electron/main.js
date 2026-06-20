@@ -8,8 +8,8 @@
  * handling), routes external links to the system browser, and manages the
  * app/window lifecycle.
  *
- * Spec: §2.1 "Option B — Electron". A future SQLite DB + IPC layer (spec §3)
- * would be initialized here.
+ * Spec: §2.1 "Option B — Electron". A future **MongoDB** connection + IPC layer
+ * (spec §3; local `mongod` or Atlas) would be initialized here.
  */
 const { app, BrowserWindow, shell, protocol, net } = require("electron")
 const path = require("path")

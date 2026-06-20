@@ -2,7 +2,8 @@
  * lib/plan-text.ts — Plan text localStorage helpers
  *
  * Reads/writes free-text plan areas from the Plan panel (day/week/month).
- * Used by plan views and period reviews.
+ * Used by plan views and period reviews. Interim storage only — target is
+ * MongoDB `plans` collection documents (see docs/SPEC_MAPPING.md §3/§7).
  */
 import type { ReviewPeriod } from "@/lib/types"
 

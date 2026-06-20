@@ -1,5 +1,7 @@
 /**
  * lib/goals-store.ts — Persisted goals with point rewards
+ *
+ * Storage: localStorage today; target MongoDB `goals` collection (§3).
  */
 "use client"
 

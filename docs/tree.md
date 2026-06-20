@@ -25,11 +25,11 @@ Plain-text tree: [`tree.txt`](tree.txt) · Spec checklist: [`SPEC_MAPPING.md`](S
 
 **What:** COGS — personal cognitive management (Inbox, Lists, Scheduler, Goals, Habits, Tracking, Modules, Reviews, Analytics).
 
-**Stack:** Next.js 15 static export, React 19, Zustand + localStorage, Electron, Win95 skin.
+**Stack:** Next.js 15 static export, React 19, Zustand + localStorage (→ MongoDB), Electron, Win95 skin.
 
 **Quick note:** Start here → `SPEC_MAPPING.md` → nearest folder README. Source files have `/**` headers too.
 
-**Could add:** SQLite storage, unified Item model (see [Spec gaps](#spec-gaps)).
+**Could add:** MongoDB storage (flexible documents, search indexes), unified Item model (see [Spec gaps](#spec-gaps)).
 
 ---
 
@@ -117,7 +117,7 @@ Five habit types × daily/weekly/monthly. Shared with Lists daily habits.
 
 Month/week/day calendar, drag-drop, events, plan text (localStorage).
 
-**Could add:** Auto carry-over (§7.7), SQLite plan records.
+**Could add:** Auto carry-over (§7.7), MongoDB plan documents.
 
 <a id="home-todo"></a>
 
@@ -222,7 +222,7 @@ Data model, 10 Zustand stores, pure helpers. Not React UI.
 
 `types.ts` · `calculations.ts` · `date-utils.ts` · `item-utils.ts` · `habit-utils.ts` · `attribute-utils.ts` · `plan-text.ts` · `folder-all-items.ts` · `scheduled-lists-sync.ts` · `csv.ts` · `remove-background.ts` · `orbs-manifest.ts` · `utils.ts`
 
-**Could add:** SQLite + migrations + JSON export/import (§3). Unified `Item` in `types.ts` (§5).
+**Could add:** MongoDB + schema migrations + JSON export/import (§3). Unified `Item` in `types.ts` (§5).
 
 → [`lib/README.md`](../lib/README.md)
 
@@ -239,7 +239,7 @@ Desktop shell — dev: `localhost:3000`; prod: `app://` → `out/`.
 | `main.js` | Main process, BrowserWindow, static file serving |
 | `preload.js` | `window.desktop` API |
 
-**Could add:** SQLite lifecycle + IPC (§3).
+**Could add:** MongoDB connection lifecycle + IPC (§3).
 
 → [`electron/README.md`](../electron/README.md)
 
@@ -333,7 +333,7 @@ Lists task select → `enhanced-task-detail.tsx` (full screen).
 
 | Area | Status | Next step |
 |------|--------|-----------|
-| Storage | 🟡 localStorage | SQLite + migrations + JSON export (§3) |
+| Storage | 🟡 localStorage | MongoDB + schema migrations + JSON export (§3) |
 | Item model | 🟡 split types | Unified `Item` in `types.ts` (§5) |
 | Goals | 🟡 manual | Objectives, auto progress (§10) |
 | Analytics | 🟡 5 tabs | 8 spec views + map/location ideas (§15) |

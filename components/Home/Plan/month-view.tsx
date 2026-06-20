@@ -5,8 +5,8 @@
  * date, the Planned Tasks sidebar, and the persisted "Month Plan" textarea.
  *
  * Spec: §7.4 (Month View). NOTE: Month Plan currently persists to localStorage
- * (`monthPlan-YYYY-MM`); spec §7.4 wants a DB-backed `MonthPlan` with debounced
- * auto-save — see docs/SPEC_MAPPING.md §7.
+ * (`monthPlan-YYYY-MM`); target is a MongoDB-backed `MonthPlan` document with
+ * debounced auto-save — see docs/SPEC_MAPPING.md §7.
  */
 "use client"
 

@@ -18,5 +18,8 @@ Driven by the root `package.json` (`main: "electron/main.js"`,
 electron-builder). Output installers go to `dist/` (git-ignored).
 
 ## Spec note
-The spec recommends an embedded **SQLite** database accessed from the main
-process (§3). When that lands, the DB lifecycle and IPC handlers will live here.
+This repo targets **MongoDB** (replacing the spec's original SQLite
+recommendation) accessed from the main process via IPC (§3). When that lands, the
+connection lifecycle, collection access, text/vector search indexes, and IPC
+handlers will live here. MongoDB supports the flexible document model, fuzzy and
+semantic search, and aggregation pipelines needed as the dataset grows relational.

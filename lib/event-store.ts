@@ -7,6 +7,7 @@
  *
  * Spec: §7.5 (Events). The spec's "event with a linked checklist" (via the
  * generic links field) is not modeled here yet — see docs/SPEC_MAPPING.md §7.
+ * Storage: localStorage today; target MongoDB `events` collection (§3).
  */
 "use client"
 

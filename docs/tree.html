@@ -185,8 +185,8 @@
         name: ".",
         tag: "repository root",
         summary: "COGS — Cognitive Offloading and Getting Stuff Done. Local-first cognitive management: Inbox, Lists, Scheduler, Goals, Habits, Tracking, Modules, Reviews, Analytics.",
-        note: "Next.js 15 static export + Electron shell. Zustand + localStorage. Win95 skin.",
-        couldAdd: "SQLite storage layer, unified Item model — see SPEC_MAPPING.md.",
+        note: "Next.js 15 static export + Electron shell. Zustand + localStorage (→ MongoDB). Win95 skin.",
+        couldAdd: "MongoDB storage layer (flexible documents, search indexes), unified Item model — see SPEC_MAPPING.md.",
         children: ["readme", "app", "components", "config", "docs", "electron", "hooks", "lib", "public", "scripts"]
       },
       readme: {
@@ -286,7 +286,7 @@
         parent: "components/Home/",
         summary: "Month / Week / Day calendar, drag-drop, events, plan text areas.",
         note: "Stores: task-store, event-store, plan-text.ts (localStorage). Carry-over via Reviews only.",
-        couldAdd: "Auto carry-over (§7.7), rich multi-day banners, SQLite plan records.",
+        couldAdd: "Auto carry-over (§7.7), rich multi-day banners, MongoDB plan documents.",
         files: [
           ["plan-panel.tsx", "Container + tabs + dialogs"],
           ["month-view.tsx", "Month grid + Month Plan textarea"],
@@ -377,8 +377,8 @@
         name: "lib/",
         tag: "data + helpers",
         summary: "TypeScript types, 10 Zustand stores (localStorage), pure utilities.",
-        note: "Plan text + legacy habits still outside stores. types.ts → unified Item target (§5).",
-        couldAdd: "SQLite stores, migration runner, JSON export/import (§3).",
+        note: "Plan text + legacy habits still outside stores. types.ts → unified Item target (§5). Target DB: MongoDB.",
+        couldAdd: "MongoDB stores, schema migration runner, JSON export/import (§3).",
         children: ["lib-stores", "lib-helpers"]
       },
       "lib-stores": {
@@ -421,7 +421,7 @@
         name: "electron/",
         tag: "desktop shell",
         summary: "Electron wrapper — dev: localhost:3000; prod: app:// static out/.",
-        couldAdd: "SQLite + IPC in main process (§3).",
+        couldAdd: "MongoDB + IPC in main process (§3).",
         files: [
           ["main.js", "Main process — app:// scheme, BrowserWindow"],
           ["preload.js", "window.desktop API (isElectron, platform, versions)"]
@@ -514,7 +514,7 @@
     };
 
     const GAPS = [
-      ["Storage", "🟡 localStorage", "SQLite + migrations + JSON export (§3)"],
+      ["Storage", "🟡 localStorage", "MongoDB + schema migrations + JSON export (§3)"],
       ["Item model", "🟡 split types", "Unified Item in types.ts (§5)"],
       ["Goals", "🟡 manual", "Objectives, auto progress (§10)"],
       ["Analytics", "🟡 5 tabs", "8 spec views + map ideas (§15)"],

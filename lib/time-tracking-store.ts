@@ -9,7 +9,8 @@
  * as the primary capture surface (it is what the header "Tracking" button and the
  * Home "Tracking" tab render).
  *
- * Persisted to localStorage under `cogs-timegrid-store`.
+ * Persisted to localStorage under `cogs-timegrid-store`. Target: MongoDB
+ * `timeIntervals` collection (see docs/SPEC_MAPPING.md §3).
  */
 "use client"
 

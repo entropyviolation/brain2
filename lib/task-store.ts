@@ -9,8 +9,9 @@
  * `calculatePriorityScore`.
  *
  * Spec: §4 (Inbox), §5 (Item model), §6 (Next Actions), §7 (Scheduler). Storage
- * is localStorage today; spec §3 calls for migrating this to SQLite with one-click
- * JSON export/import (see docs/SPEC_MAPPING.md §3).
+ * is localStorage today; spec §3 calls for migrating this to **MongoDB**
+ * (flexible document model, text/vector search, aggregation-based routing) with
+ * one-click JSON export/import (see docs/SPEC_MAPPING.md §3).
  */
 "use client"
 

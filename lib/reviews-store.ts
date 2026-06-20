@@ -8,6 +8,7 @@
  * unfinished tasks forward.
  *
  * Spec: end-of-period review ritual (carry-over §7.7, reflection/gratitude).
+ * Storage: localStorage today; target MongoDB `reviews` collection (§3).
  */
 "use client"
 

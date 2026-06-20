@@ -11,7 +11,8 @@
  *
  * Legacy `weekly-habits-*` data is imported once on first load.
  *
- * Spec: §9 (Habit Tracker).
+ * Spec: §9 (Habit Tracker). Storage: localStorage today; target MongoDB
+ * `habits` / `habitCompletions` collections (§3).
  */
 "use client"
 

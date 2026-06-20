@@ -8,7 +8,7 @@ The Home **Plan** sub-tab. Month / Week / Day calendar views with drag-and-drop 
 |------|---------------------|
 | Tasks (scheduled) | `lib/task-store.ts` |
 | Calendar events | `lib/event-store.ts` |
-| Day / week / month plan text | `lib/plan-text.ts` ? localStorage (`dayPlan-*`, `weekPlan-*`, `monthPlan-*`) |
+| Day / week / month plan text | `lib/plan-text.ts` → localStorage today (`dayPlan-*`, `weekPlan-*`, `monthPlan-*`); target MongoDB `plans` collection |
 
 Plan text is saved immediately on edit and shown in end-of-period **Reviews** (day/week/month) with a reflection field.
 
@@ -52,4 +52,4 @@ Plan text is saved immediately on edit and shown in end-of-period **Reviews** (d
 
 - Carry-over of incomplete tasks to the next period is handled in Reviews, not automatically in Plan.
 - Multi-day event banners are basic (all-day chips); rich banners are not built.
-- Plan text is localStorage-only (not a dedicated DB record type).
+- Plan text is localStorage-only today; target is MongoDB `plans` collection documents (§3).
