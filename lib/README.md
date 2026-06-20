@@ -34,6 +34,8 @@ aggregation-based routing), and pure calculation/date/sync utilities.
 | `folder-all-items.ts` | Per-folder **All Items** category (`__all-items__{folderId}`): ensure category exists, assign uncategorized items, folder drop helpers. | §6 |
 | `scheduled-lists-sync.ts` | Keeps Next Actions smart lists and scheduled folder lists in sync (`na-smart-daily`, week/month/year buckets). | §6, §7 |
 | `csv.ts` | Dependency-free CSV parser for Lists import (quoted fields, escaped quotes). | §6 |
+| `lists-grid-entries.ts` | `buildGridEntries()` — builds folder/list grid entries for Lists navigation (Map-keyed, no duplicate kind-id entries). Used by `enhanced-category-view.tsx`. | §6 |
+| `string-utils.ts` | `hashString`, `hashIconSlot` — deterministic hashing for orb selection and freeform icon slot placement. | — |
 | `remove-background.ts` | Client-side near-uniform background removal for uploaded orb images (corner sampling → transparent PNG). | — |
 | `orbs-manifest.ts` | Auto-generated manifest of PNG orb filenames under `public/orbs-removebackground/`. Do not edit by hand. | — |
 | `utils.ts` | shadcn `cn()` helper (clsx + tailwind-merge). | — |

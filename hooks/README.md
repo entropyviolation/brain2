@@ -3,6 +3,10 @@
 App-wide reusable hooks. These are the canonical copies the application imports
 (the `components/ui/` folder also contains shadcn-bundled duplicates).
 
+**Module-specific hooks** live next to their UI instead of here — e.g.
+`components/Lists/hooks/` (`useListsNavigation`, `useListsSearch`,
+`useListsDragDrop`, `useListsSelection`, `useListsTaskActions`).
+
 ## Files
 
 | File | Purpose |

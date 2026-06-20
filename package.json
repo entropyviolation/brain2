@@ -12,6 +12,7 @@
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "playwright test",
     "electron": "electron .",
     "electron:dev": "concurrently -k -n next,electron -c blue,green \"next dev\" \"wait-on tcp:3000 && electron .\"",
     "electron:build": "next build && electron-builder",
@@ -43,6 +44,7 @@
     "zustand": "latest"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",

@@ -19,7 +19,7 @@ The global header (all tabs) also renders: **Review** (`Reviews/`), **Tracking**
 | Folder | Module |
 |--------|--------|
 | `Home/` | Home dashboard and its Habits / Plan / ToDo / Goals / Tracking sub-views |
-| `Lists/` | Lists file manager (formerly "Next Actions") |
+| `Lists/` | Lists file manager (formerly "Next Actions") — orchestrator + `hooks/`, `views/`, `dialogs/`, `list-content/` subfolders |
 | `Scheduler/` | Period scheduling funnel |
 | `Modules/` | Composable dashboard modules |
 | `Analytics/` | Metrics and charts |
@@ -59,5 +59,6 @@ interim localStorage helpers via `plan-text.ts`:
 ## Notes
 
 - `task-detail-popup.tsx` and `enhanced-task-detail.tsx` are two detail views; consolidation is a future target.
+- Lists module hooks live in `components/Lists/hooks/` (not top-level `hooks/`).
 - Deleted/removed from tree: `NextActions/`, `Tracking/` (top-level), `theme-provider.tsx`, `daily-review.tsx`, many unused `ui/` primitives.
 - See each subfolder's `README.md` for file-level detail.

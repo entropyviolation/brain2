@@ -80,7 +80,9 @@ local-first/sync-ready, AI-ready-not-AI-dependent, everything reviewable.
 
 ## §6 Next Actions / Lists — ✅/🟡
 - Renamed **Lists** tab; Win98 file-manager UI — ✅
-  `components/Lists/enhanced-category-view.tsx` + `filemanager98.css`.
+  `components/Lists/enhanced-category-view.tsx` (orchestrator) + subfolders
+  (`hooks/`, `views/`, `list-content/`, `dialogs/`, `toolbar/`) + `filemanager98.css`.
+  Grid entry builder: `lib/lists-grid-entries.ts`; open-target reducer: `open-target.ts`.
 - Folders, drag-and-drop, smart Home lists (Daily/Weekly/Monthly To-Do + Habits),
   four folder views (Icons/List/Details/Cards), four list display modes — ✅.
 - Custom attributes per list (reorderable), CSV import, orb icons + gallery — ✅

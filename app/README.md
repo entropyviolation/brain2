@@ -31,7 +31,7 @@ page.
 | Tab | Panel | Folder |
 |-----|-------|--------|
 | Home | `HomeDashboard` | `components/Home/` |
-| Lists | `EnhancedCategoryView` | `components/Lists/` |
+| Lists | `EnhancedCategoryView` | `components/Lists/` (`enhanced-category-view.tsx` orchestrator) |
 | Scheduler | `EnhancedScheduler` | `components/Scheduler/` |
 | Modules | `ModulesPanel` | `components/Modules/` |
 | Analytics | `EnhancedAnalytics` | `components/Analytics/` |

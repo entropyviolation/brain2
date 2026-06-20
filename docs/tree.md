@@ -141,7 +141,13 @@ TimeGrid (15-min pens) + Day Log (plan vs actual).
 
 Win98 file manager — folders, lists, attributes, orb gallery, CSV import.
 
-**Stores:** `task-store`, `lists-ui-store`, `habits-store`, `folder-all-items`
+**Entry:** `enhanced-category-view.tsx` (orchestrator composing `hooks/`, `views/`, `list-content/`, `dialogs/`, `toolbar/`).
+
+**Helpers:** `lib/lists-grid-entries.ts`, `lib/string-utils.ts`, `lib/folder-all-items.ts`, `lib/scheduled-lists-sync.ts`
+
+**Stores:** `task-store`, `lists-ui-store`, `habits-store`
+
+**Tests:** `components/Lists/__tests__/`, `hooks/__tests__/`, `e2e/lists.spec.ts`
 
 **Could add:** Bulk attribute editing, richer attribute types.
 
