@@ -16,7 +16,7 @@ export interface CompletedTasksDialogProps {
 
 export function CompletedTasksDialog({ open, onClose, onTaskSelect }: CompletedTasksDialogProps) {
   const allTasks = useTaskStore((state) => state.tasks)
-  const categories = useTaskStore((state) => state.categories)
+  const categories = useTaskStore((state) => state.lists)
 
   const completedTasks = useMemo(
     () =>
@@ -68,9 +68,9 @@ export function CompletedTasksDialog({ open, onClose, onTaskSelect }: CompletedT
                             </div>
                           )}
                         </div>
-                        {task.categories && task.categories.length > 0 && (
+                        {task.lists && task.lists.length > 0 && (
                           <div className="flex gap-1 mt-2">
-                            {task.categories.slice(0, 3).map((categoryId) => {
+                            {task.lists.slice(0, 3).map((categoryId) => {
                               const category = categories.find((c) => c.id === categoryId)
                               return category ? (
                                 <Badge key={categoryId} variant="outline" className="text-xs">

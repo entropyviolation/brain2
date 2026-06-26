@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react"
 import { describe, expect, it, vi } from "vitest"
+import { TaskType } from "@/lib/types"
 import { TaskFormDialog } from "./daily-task-form-dialog"
 
 vi.mock("@/components/Home/Habits/daily-task-form", () => ({
@@ -31,7 +32,7 @@ describe("TaskFormDialog", () => {
         open
         onOpenChange={vi.fn()}
         onSubmit={vi.fn()}
-        initialTask={{ id: "h1", name: "Existing", type: "boolean", rewardValue: 10 }}
+        initialTask={{ id: "h1", name: "Existing", type: TaskType.BOOLEAN, rewardValue: 10 }}
       />,
     )
     expect(screen.getByText("Edit Habit")).toBeInTheDocument()

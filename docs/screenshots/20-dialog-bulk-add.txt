@@ -1,0 +1,17 @@
+================================================================================
+SCREENSHOT: 20-dialog-bulk-add.png
+VIEW: Header → Bulk Add
+AREA: Bulk Add dialog
+SOURCE FILES:
+  - components/enhanced-bulk-add.tsx
+================================================================================
+
+GLOBAL CHROME (all screens)
+  The COGS title and global action bar appear on every screen (app/page.tsx):
+    Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
+    Bulk Add | Quick Add
+  Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
+  Top-level tabs (7): Home | Lists | Scheduler | Operations | Modules | Graph | Analytics
+
+VIEW-SPECIFIC
+Multi-line capture; Category: headers route lines into lists.

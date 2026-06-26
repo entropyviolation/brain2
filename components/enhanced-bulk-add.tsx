@@ -23,14 +23,15 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { useTaskStore } from "@/lib/task-store"
 import { createListItem, withCategoryDefaults } from "@/lib/item-utils"
-import type { TaskCategory } from "@/lib/types"
+import { parseSmartCapture, type SmartSuggestion } from "@/lib/smart-parse"
+import type { Task, List } from "@/lib/types"
 
 export function EnhancedBulkAdd() {
   const [open, setOpen] = useState(false)
   const [tasksText, setTasksText] = useState("")
   const addTask = useTaskStore((state) => state.addTask)
-  const addCategory = useTaskStore((state) => state.addCategory)
-  const categories = useTaskStore((state) => state.categories)
+  const addList = useTaskStore((state) => state.addList)
+  const categories = useTaskStore((state) => state.lists)
 
   const parseTasksWithCategories = (text: string) => {
     const lines = text
@@ -53,6 +54,15 @@ export function EnhancedBulkAdd() {
     return result
   }
 
+  const applySuggestion = (task: Task, suggestion: SmartSuggestion): Task => ({
+    ...task,
+    ...(suggestion.scheduledDate ? { scheduledDate: suggestion.scheduledDate } : {}),
+    ...(suggestion.scheduledTime ? { scheduledTime: suggestion.scheduledTime } : {}),
+    ...(suggestion.estimatedDuration ? { estimatedDuration: suggestion.estimatedDuration } : {}),
+    ...(suggestion.urgency ? { urgency: suggestion.urgency } : {}),
+    ...(suggestion.importance ? { importance: suggestion.importance } : {}),
+  })
+
   const getRandomColor = () => {
     const colors = ["#3B82F6", "#EF4444", "#10B981", "#8B5CF6", "#F59E0B", "#06B6D4", "#EC4899", "#6366F1"]
     return colors[Math.floor(Math.random() * colors.length)]
@@ -68,19 +78,22 @@ export function EnhancedBulkAdd() {
       let category = categories.find((c) => c.name.toLowerCase() === categoryName.toLowerCase())
 
       if (!category) {
-        const newCategory: TaskCategory = {
+        const newCategory: List = {
           id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
           name: categoryName,
           color: getRandomColor(),
           description: `Auto-created category for ${categoryName}`,
           createdAt: new Date(),
         }
-        addCategory(newCategory)
+        addList(newCategory)
         category = newCategory
       }
 
-      taskDescriptions.forEach((description) => {
-        addTask(withCategoryDefaults(createListItem(description, [category!.id]), category))
+      taskDescriptions.forEach((line) => {
+        const { suggestion } = parseSmartCapture(line)
+        const description = suggestion.description || line
+        const baseTask = withCategoryDefaults(createListItem(description, [category!.id]), category)
+        addTask(applySuggestion(baseTask, suggestion))
       })
     })
 

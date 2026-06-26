@@ -1,6 +1,7 @@
 "use client"
 
 import type { FolderView } from "@/lib/lists-ui-store"
+import type { ListDisplayMode } from "@/lib/types"
 import type { OpenTarget } from "@/components/Lists/types"
 import { ViewModeControls } from "./ViewModeControls"
 
@@ -15,6 +16,7 @@ export interface ListsToolbarProps {
   currentDisplay: import("@/lib/lists-ui-store").ListDisplay
   location: string
   entryKeys: string[]
+  enabledDisplays?: ListDisplayMode[]
   onUp: () => void
   onNewList: () => void
   onNewFolder: () => void
@@ -40,6 +42,7 @@ export function ListsToolbar({
   currentDisplay,
   location,
   entryKeys,
+  enabledDisplays,
   onUp,
   onNewList,
   onNewFolder,
@@ -84,6 +87,7 @@ export function ListsToolbar({
         currentDisplay={currentDisplay}
         location={location}
         entryKeys={entryKeys}
+        enabledDisplays={enabledDisplays}
         onFolderViewChange={onFolderViewChange}
         onListDisplayChange={onListDisplayChange}
         onAutoOrganize={onAutoOrganize}

@@ -21,12 +21,16 @@ page.
 | Control | Component | Purpose |
 |---------|-----------|---------|
 | Review | `Reviews/reviews.tsx` | End-of-period review ritual (day/week/month/quarter/year) |
+| Settings | `Settings/SettingsDialog.tsx` | Full-app JSON backup/restore + Second Brain setup |
 | Tracking | `cognitive-state.tsx` | Opens TimeGrid dialog |
 | Inbox | `inbox.tsx` | Inbox dialog + clarification flow |
 | Bulk Add | `enhanced-bulk-add.tsx` | Multi-line capture |
 | Quick Add | `quick-add.tsx` | Single-field capture |
 
-**Top-level tabs** (5 columns, lazy-loaded):
+A global **Cmd/Ctrl-K** search palette (`Search/GlobalSearch.tsx`, wired via
+`useGlobalSearchHotkey`) is mounted at the page root and available on every tab.
+
+**Top-level tabs** (6 columns, lazy-loaded):
 
 | Tab | Panel | Folder |
 |-----|-------|--------|
@@ -34,10 +38,12 @@ page.
 | Lists | `EnhancedCategoryView` | `components/Lists/` (`enhanced-category-view.tsx` orchestrator) |
 | Scheduler | `EnhancedScheduler` | `components/Scheduler/` |
 | Modules | `ModulesPanel` | `components/Modules/` |
+| Graph | `KnowledgeGraph` | `components/Graph/` |
 | Analytics | `EnhancedAnalytics` | `components/Analytics/` |
 
-Task detail: selecting a task from Lists sets `selectedTaskId` and replaces the
-main view with `EnhancedTaskDetail` until the user navigates back.
+Task detail: selecting a task (from Lists, Modules, Inbox, or global Search) sets
+`selectedTaskId` and replaces the main view with `EnhancedTaskDetail` until the
+user navigates back. Last active tab is persisted via `lib/app-navigation.ts`.
 
 ## Spec
 

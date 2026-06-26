@@ -21,6 +21,10 @@ import { DayView } from "./day-view"
 import { EventDialog } from "./event-dialog"
 import { useEventStore } from "@/lib/event-store"
 import { SettingsDialog } from "./settings-dialog"
+import { APP_NAV_KEYS, readStoredTab, writeStoredTab } from "@/lib/app-navigation"
+
+const PLAN_TABS = ["month", "week", "day"] as const
+type PlanTab = (typeof PLAN_TABS)[number]
 
 export function PlanPanel({
   currentDate: controlledDate,
@@ -49,6 +53,11 @@ export function PlanPanel({
   })
 
   const [showSettingsDialog, setShowSettingsDialog] = useState(false)
+  const [planTab, setPlanTab] = useState<PlanTab>(() => readStoredTab(APP_NAV_KEYS.homePlanTab, PLAN_TABS, "month"))
+
+  useEffect(() => {
+    writeStoredTab(APP_NAV_KEYS.homePlanTab, planTab)
+  }, [planTab])
 
   useEffect(() => {
     setNewEvent((prev) => ({ ...prev, date: currentDate }))
@@ -129,7 +138,7 @@ export function PlanPanel({
           </div>
         </div>
 
-        <Tabs defaultValue="month" className="w-full">
+        <Tabs value={planTab} onValueChange={(v) => setPlanTab(v as PlanTab)} className="w-full">
           <TabsList className="grid w-full grid-cols-3 bg-gray-800/50 border border-gray-700 shadow-lg">
             <TabsTrigger
               value="month"

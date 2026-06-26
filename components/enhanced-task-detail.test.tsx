@@ -18,7 +18,7 @@ describe("EnhancedTaskDetail", () => {
     useTaskStore.getState().addTask({
       id: "task-detail-1",
       description: "Write release notes",
-      category: "list",
+      stage: "list",
       createdAt: new Date(),
       estimatedDuration: 45,
       cognitiveLoad: 2,
@@ -29,7 +29,7 @@ describe("EnhancedTaskDetail", () => {
       entropy: 0.4,
       rewardValue: 20,
       completed: false,
-      categories: [],
+      lists: [],
       allowPartialCompletion: false,
       minimumChunkSize: 15,
     })
@@ -56,5 +56,19 @@ describe("EnhancedTaskDetail", () => {
     await user.type(durationInput, "90")
     await user.click(screen.getByRole("button", { name: /Save Changes/i }))
     expect(useTaskStore.getState().tasks[0].estimatedDuration).toBe(90)
+  })
+
+  it("deletes the item from the more-actions menu", async () => {
+    const user = userEvent.setup()
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true)
+    render(<EnhancedTaskDetail taskId="task-detail-1" onBack={onBack} />)
+
+    await user.click(screen.getByRole("button", { name: "More actions" }))
+    await user.click(screen.getByRole("menuitem", { name: /Delete Item/i }))
+
+    expect(confirmSpy).toHaveBeenCalledWith('Delete "Write release notes"? This cannot be undone.')
+    expect(useTaskStore.getState().tasks).toHaveLength(0)
+    expect(onBack).toHaveBeenCalled()
+    confirmSpy.mockRestore()
   })
 })

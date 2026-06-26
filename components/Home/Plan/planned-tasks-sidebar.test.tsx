@@ -21,11 +21,11 @@ describe("PlannedTasksSidebar", () => {
       {
         id: "month-task",
         description: "Quarterly planning",
-        category: "work",
+        stage: "scheduled",
         createdAt: currentDate,
         completed: false,
         scheduledMonth: "2026-06",
-        categories: [],
+        lists: [],
         urgency: 3,
         importance: 3,
         estimatedDuration: 60,

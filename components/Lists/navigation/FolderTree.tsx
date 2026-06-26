@@ -1,18 +1,28 @@
 "use client"
 
-import type { CategoryFolder } from "@/lib/types"
+import type { Folder, List } from "@/lib/types"
 import { isScheduledFolderId } from "@/lib/scheduled-lists-sync"
+import { buildListTree, flattenListTree } from "@/lib/list-tree"
 
 export interface FolderTreeProps {
-  folders: CategoryFolder[]
+  folders: Folder[]
   location: string
   openTarget: unknown
   isHome: boolean
   isAll: boolean
   onNavTo: (loc: string) => void
   onDragOver: (e: React.DragEvent) => void
-  onDrop: (e: React.DragEvent, folder: CategoryFolder | null) => void
+  onDrop: (e: React.DragEvent, folder: Folder | null) => void
   onCreateFolder: () => void
+  /**
+   * Optional nested-category (sublist) tree (Feature 8). When provided, a
+   * "Lists" section renders the categories indented by their `parentListId`
+   * depth. Omit to keep the folders-only sidebar.
+   */
+  categories?: List[]
+  /** Currently open category id, used to highlight the active sublist. */
+  activeCategoryId?: string
+  onNavToCategory?: (categoryId: string) => void
 }
 
 export function FolderTree({
@@ -25,7 +35,14 @@ export function FolderTree({
   onDragOver,
   onDrop,
   onCreateFolder,
+  categories,
+  activeCategoryId,
+  onNavToCategory,
 }: FolderTreeProps) {
+  const categoryNodes =
+    categories && categories.length > 0 && onNavToCategory
+      ? flattenListTree(buildListTree(categories))
+      : []
   return (
     <div className="fm-sidebar">
       <div className="fm-search-group-label" style={{ padding: "4px 6px 2px" }}>
@@ -71,6 +88,29 @@ export function FolderTree({
           + New Folder
         </button>
       </div>
+
+      {categoryNodes.length > 0 && (
+        <>
+          <div className="fm-search-group-label" style={{ padding: "8px 6px 2px" }}>
+            Lists
+          </div>
+          {categoryNodes.map(({ list: category, depth }) => (
+            <div
+              key={category.id}
+              className={`fm-tree-item${activeCategoryId === category.id ? " active" : ""}`}
+              style={{ paddingLeft: 6 + depth * 14 }}
+              onClick={() => onNavToCategory?.(category.id)}
+              data-category-id={category.id}
+              data-depth={depth}
+            >
+              <span className="fm-tree-swatch" style={{ background: category.color || "#9CA3AF" }} />
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {category.name}
+              </span>
+            </div>
+          ))}
+        </>
+      )}
     </div>
   )
 }

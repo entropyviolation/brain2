@@ -12,6 +12,7 @@ import type { Metadata } from "next"
 import { Karla } from "next/font/google"
 import "./globals.css"
 import "./win95.css"
+import { CompletionPopupHost } from "@/components/Completion/CompletionPopupHost"
 
 const karla = Karla({
   subsets: ["latin"],
@@ -21,7 +22,7 @@ const karla = Karla({
 
 export const metadata: Metadata = {
   title: "COGS Task Management",
-  description: "Cognitive Offloading and Getting Stuff Done",
+  description: " ",
     generator: 'v0.dev'
 }
 
@@ -32,7 +33,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={karla.variable}>
-      <body className={`${karla.className} win95-app`}>{children}</body>
+      <body className={`${karla.className} win95-app`}>
+        {children}
+        <CompletionPopupHost />
+      </body>
     </html>
   )
 }

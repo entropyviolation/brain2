@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import type { TaskCategory, Task } from "@/lib/types"
+import type { List, Task } from "@/lib/types"
 import type { GridEntry, SmartId } from "@/components/Lists/types"
 import { FolderGlyph, iconFor, orbFor } from "@/components/Lists/lib/icon-utils"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -23,7 +23,7 @@ import { safeDateFormat } from "@/lib/date-utils"
 
 export interface FolderViewCardsProps {
   entries: GridEntry[]
-  categories: TaskCategory[]
+  categories: List[]
   selectMode: boolean
   selectedCategories: string[]
   addingTaskToTarget: string | null
@@ -31,7 +31,7 @@ export interface FolderViewCardsProps {
   getSmartTasks: (id: SmartId) => Task[]
   getTasksForCategory: (id: string) => Task[]
   getCategoryCompletionRate: (id: string) => number
-  itemLabelFor: (id?: string, category?: TaskCategory) => string
+  itemLabelFor: (id?: string, category?: List) => string
   handleDragOver: (e: React.DragEvent) => void
   handleDropOnEntry: (e: React.DragEvent, entry: GridEntry) => void
   handleCategoryDragStart: (e: React.DragEvent, id: string) => void
@@ -41,8 +41,8 @@ export interface FolderViewCardsProps {
   setSelectedCategories: React.Dispatch<React.SetStateAction<string[]>>
   setSelectedTaskId: (id: string) => void
   setAddingTaskToTarget: (id: string | null) => void
-  setEditingCategory: (category: TaskCategory) => void
-  deleteCategory: (id: string) => void
+  setEditingCategory: (category: List) => void
+  deleteList: (id: string) => void
   setNewTaskDescription: (value: string) => void
   handleAddTaskToCategory: (categoryId: string) => void
   handleCompleteTask: (taskId: string) => void
@@ -69,7 +69,7 @@ export function FolderViewCards({
   setSelectedTaskId,
   setAddingTaskToTarget,
   setEditingCategory,
-  deleteCategory,
+  deleteList,
   setNewTaskDescription,
   handleAddTaskToCategory,
   handleCompleteTask,
@@ -80,6 +80,22 @@ export function FolderViewCards({
         className="fm-cards-grid"
         style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", gap: 20, alignItems: "start" }}
       >
+        {entries
+          .filter((e) => e.kind === "objectives")
+          .map((entry) => (
+            <Card key={entry.id} className="cursor-pointer card-hover" onClick={() => openEntry(entry)}>
+              <CardHeader className="pb-3 flex flex-row items-center gap-3">
+                <img src={orbFor(entry.id)} alt="" className="w-8 h-8 object-contain" />
+                <div>
+                  <CardTitle className="text-lg">{entry.name}</CardTitle>
+                  <p className="text-sm text-muted-foreground">Life directions & priorities</p>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Badge variant="secondary">{entry.count} active</Badge>
+              </CardContent>
+            </Card>
+          ))}
         {entries
           .filter((e) => e.kind === "habits")
           .map((entry) => (
@@ -205,7 +221,7 @@ export function FolderViewCards({
                       >
                         <Settings className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => deleteCategory(category.id)}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => deleteList(category.id)}>
                         <Trash className="h-4 w-4" />
                       </Button>
                     </div>

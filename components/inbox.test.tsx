@@ -15,7 +15,7 @@ describe("Inbox", () => {
     useTaskStore.getState().addTask({
       id: "inbox-1",
       description: "Untitled idea",
-      category: "inbox",
+      stage: "inbox",
       createdAt: new Date(),
       estimatedDuration: 1,
       cognitiveLoad: 1,
@@ -26,7 +26,7 @@ describe("Inbox", () => {
       entropy: 0.5,
       rewardValue: 5,
       completed: false,
-      categories: [],
+      lists: [],
       allowPartialCompletion: false,
       minimumChunkSize: 15,
     })

@@ -1,6 +1,6 @@
 "use client"
 
-import type { TaskCategory } from "@/lib/types"
+import type { List } from "@/lib/types"
 import type { CsvImportState } from "@/components/Lists/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 
 export interface CsvImportDialogProps {
   csvImport: CsvImportState
-  categories: TaskCategory[]
+  categories: List[]
   onClose: () => void
   onImport: () => void
   onUpdate: (next: CsvImportState) => void

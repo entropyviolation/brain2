@@ -9,8 +9,10 @@
 
 import type React from "react"
 import { useState, useEffect, useRef, useMemo, useCallback } from "react"
-import { Clock, MapPin } from "lucide-react"
+import { Clock, MapPin, CalendarClock } from "lucide-react"
+import { format } from "date-fns"
 import { formatLocalDateKey, isToday, sameCalendarDay } from "@/lib/date-utils"
+import { getBannerEvents, getMustBeDoneBefore } from "@/lib/event-links"
 import type { CalendarEvent, Task, TimeLogEntry } from "@/lib/types"
 
 export const HOUR_HEIGHT = 70
@@ -83,6 +85,8 @@ interface GridItem {
   isGhost?: boolean
   location?: string
   sublabel?: string
+  /** Event-linked prerequisite deadline (HM1) — renders a "must be done before" badge. */
+  mustBeDoneBefore?: Date
 }
 
 export function AgendaGrid({
@@ -128,6 +132,10 @@ export function AgendaGrid({
 
   const timedEvents = dayEvents.filter((e) => !e.isAllDay)
 
+  // All-day + multi-day events covering this day, rendered as banner rows above
+  // the hour grid (HM1). Uses the event's full span via `endDate`.
+  const bannerEvents = useMemo(() => getBannerEvents(events, date), [events, date])
+
   const gridItems = useMemo((): GridItem[] => {
     const items: GridItem[] = []
 
@@ -155,6 +163,7 @@ export function AgendaGrid({
           startMinutes: timeToMinutes(task.scheduledTime),
           durationMinutes: task.estimatedDuration ?? 30,
           sublabel: `${task.estimatedDuration ?? 30}m`,
+          mustBeDoneBefore: getMustBeDoneBefore(task),
         })
       }
     } else {
@@ -270,6 +279,29 @@ export function AgendaGrid({
 
   return (
     <div className={`space-y-1 overflow-y-auto ${maxHeight} relative`}>
+      {bannerEvents.length > 0 && (
+        <div className="space-y-1 pb-1">
+          {bannerEvents.map((event) => {
+            const spansMultiDay = !!event.endDate
+            return (
+              <div
+                key={`banner-${event.id}`}
+                className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm text-white shadow-sm cursor-pointer"
+                style={{ backgroundColor: event.color || "#8cd4a5" }}
+                onClick={() => onEventClick?.(event)}
+              >
+                <CalendarClock className="h-3.5 w-3.5 shrink-0" />
+                <span className="font-semibold truncate">{event.title}</span>
+                <span className="ml-auto shrink-0 text-xs opacity-90">
+                  {spansMultiDay
+                    ? `${format(event.date, "MMM d")} – ${format(event.endDate as Date, "MMM d")}`
+                    : "All day"}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      )}
       {Array.from({ length: 24 }, (_, hour) => (
         <div
           key={hour}
@@ -357,6 +389,12 @@ export function AgendaGrid({
                     {item.label}
                   </div>
                   {item.sublabel && <div className="opacity-75 text-xs mt-0.5 truncate">{item.sublabel}</div>}
+                  {item.mustBeDoneBefore && (
+                    <div className="mt-1 inline-flex items-center gap-1 rounded bg-rose-100 px-1.5 py-0.5 text-[10px] font-medium text-rose-700">
+                      <CalendarClock className="h-3 w-3" />
+                      must be done before {format(item.mustBeDoneBefore, "MMM d, h:mm a")}
+                    </div>
+                  )}
                   {item.location && (
                     <div className="opacity-80 text-xs flex items-center gap-1 mt-0.5">
                       <MapPin className="h-3 w-3" />

@@ -16,6 +16,15 @@ import { persist, createJSONStorage } from "zustand/middleware"
 import type { CalendarEvent } from "./types"
 import { toLocalCalendarDate } from "./date-utils"
 
+// Date-typed fields on persisted CalendarEvent objects. The persist reviver
+// only resurrects Dates for these keys so it never converts unrelated strings
+// (e.g. `startTime`/`endTime`, which are "HH:mm" time-of-day strings).
+const DATE_KEYS = new Set(["date", "endDate"])
+
+// Matches ISO-8601 strings produced by `Date.prototype.toISOString()`
+// (e.g. "2026-06-23T08:33:00.000Z"), including timezone offset variants.
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/
+
 interface EventState {
   events: CalendarEvent[]
   addEvent: (event: CalendarEvent) => void
@@ -95,15 +104,29 @@ export const useEventStore = create<EventState>()(
     {
       name: "cogs-event-storage",
       storage: createJSONStorage(() => localStorage, {
+        // NOTE: `JSON.stringify` invokes `Date.prototype.toJSON()` (→ ISO string)
+        // BEFORE this replacer runs, so the `value instanceof Date` branch never
+        // fires — Dates are already plain ISO strings here. The real rehydration
+        // happens in the reviver below. We keep this branch only as defensive
+        // back-compat in case a raw (non-toJSON'd) Date ever reaches the replacer.
         replacer: (_key, value) => {
           if (value instanceof Date) {
             return { __type: "Date", value: value.toISOString() }
           }
           return value
         },
-        reviver: (_key, value) => {
+        // `JSON.parse`'s reviver visits every key. We restore Date instances for
+        // the known Date-typed fields whose values are ISO-8601 strings (what
+        // `toJSON` produced). Restricting to DATE_KEYS avoids clobbering genuine
+        // string fields like `startTime`/`endTime` ("14:30"). The tagged-envelope
+        // branch handles any legacy data that somehow persisted via the replacer
+        // above (prevents double-conversion).
+        reviver: (key, value) => {
           if (value && typeof value === "object" && (value as { __type?: string }).__type === "Date") {
             return new Date((value as { value: string }).value)
+          }
+          if (typeof value === "string" && DATE_KEYS.has(key) && ISO_DATE_RE.test(value)) {
+            return new Date(value)
           }
           return value
         },

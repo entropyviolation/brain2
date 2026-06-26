@@ -1,76 +1,20 @@
 ================================================================================
 SCREENSHOT: 05-lists.png
-VIEW: "Lists" top-level tab  ->  Home directory  ->  Icons folder view
+VIEW: Lists tab → Home folder → Icons view
+AREA: Lists → Home → Icons
 SOURCE FILES:
-  - app/page.tsx
-  - components/Lists/enhanced-category-view.tsx
-  - components/Lists/settings-dialog.tsx, attribute-editor.tsx
+  - components/Lists/enhanced-list-view.tsx
+  - components/Lists/views/FolderViewIcons.tsx
   - components/Lists/filemanager98.css
-  - lib/task-store.ts, lib/lists-ui-store.ts, lib/folder-all-items.ts
-  - lib/orbs-manifest.ts, lib/remove-background.ts
+  - lib/lists-ui-store.ts
 ================================================================================
 
-------------------------------------------------------------
-A. GLOBAL HEADER
-------------------------------------------------------------
-Review (5) / Tracking / Inbox (1) / Bulk Add / Quick Add.
-(Full behavior in 01-home-daily-habits.txt section A.)
+GLOBAL CHROME (all screens)
+  The COGS title and global action bar appear on every screen (app/page.tsx):
+    Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
+    Bulk Add | Quick Add
+  Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
+  Top-level tabs (7): Home | Lists | Scheduler | Operations | Modules | Graph | Analytics
 
-------------------------------------------------------------
-B. TOP-LEVEL TABS
-------------------------------------------------------------
-Home, "Lists" (active), Scheduler, Modules, Analytics.
-
-------------------------------------------------------------
-C. LISTS FILE MANAGER WINDOW (enhanced-category-view.tsx + filemanager98.css)
-------------------------------------------------------------
-Win95/98-style chrome titled "Lists — File Manager".
-
-Toolbar buttons:
-  Up | New List | New Folder | Import CSV | Completed | Settings | Select
-View toggles: Icons (active) | List | Details | Cards | Auto-organize
-Search: "Search folders, lists, items…"
-
-Address bar: "Address: Home"
-
-------------------------------------------------------------
-D. SIDEBAR (left rail)
-------------------------------------------------------------
-Quick Access:
-  Home (active) — user lists + smart lists
-  All — every list in the app
-
-Folders:
-  Next Actions — scheduling-oriented lists + smart daily/weekly/monthly buckets
-  Scheduled — time-bucket lists synced from scheduler
-  + New Folder
-
-Each folder can contain lists and an auto-managed **All Items** pool
-(__all-items__{folderId}) for uncategorized items.
-
-------------------------------------------------------------
-E. ICONS VIEW (velvet desktop)
-------------------------------------------------------------
-Tiled dark velvet background; lists shown as orb icons with labels beneath.
-Six smart/user lists visible:
-  Daily Habits, Weekly Habits, Monthly Habits,
-  Daily To-Do List, Weekly To-Do List, Monthly To-Do List
-Each orb has a colored status dot. Double-click / select opens the list.
-Orb gallery (1040+ PNGs from orbs-manifest) + user upload with bg removal.
-
-Status bar: "0 folder(s), 6 list(s)" | "2 folder(s), 5 list(s)" | Smart lists ✓
-
-------------------------------------------------------------
-F. KEY BEHAVIOURS (not all visible in static shot)
-------------------------------------------------------------
-- Four list display modes inside a list: Default, Checklist, Icons, Details
-- Custom attributes per list (reorderable in Settings); CSV import
-- Drag tasks between lists/categories; folder drop assigns to All Items
-- Completed dialog, list/folder settings with import/export tab
-- Edit mode in orb gallery to hide/delete orb icons
-
-------------------------------------------------------------
-NOTE ON DATA STATE IN THIS SCREENSHOT
-------------------------------------------------------------
-Home directory selected, Icons view. Smart habit and to-do lists seeded;
-Next Actions and Scheduled folders exist in sidebar but are not expanded.
+VIEW-SPECIFIC
+Win95-style file manager: sidebar (Home, All, Next Actions, Scheduled folders), toolbar, search, orb icons on velvet desktop. Double-click opens a list.

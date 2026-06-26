@@ -1,54 +1,20 @@
 ================================================================================
 SCREENSHOT: 03-home-todo.png
-VIEW: Home tab  ->  "To Do" sub-tab  ->  "Day" period
+VIEW: Home tab → To Do sub-tab → Day period
+AREA: Home → To Do → Day
 SOURCE FILES:
-  - app/page.tsx, components/Home/home-dashboard.tsx
   - components/Home/ToDo/todo-panel.tsx
-  - components/task-detail-popup.tsx
-  - lib/task-store.ts, lib/date-utils.ts
+  - components/Home/ToDo/TodoTable.tsx
+  - components/Home/ToDo/todo-utils.ts
+  - components/Focus/JustStartMode.tsx
 ================================================================================
 
-------------------------------------------------------------
-A. GLOBAL HEADER + HOME HEADER
-------------------------------------------------------------
-Same as 01-home-daily-habits.txt sections A–D.
-Home sub-tabs: Habits, Plan, "To Do" (active), Goals, Tracking.
+GLOBAL CHROME (all screens)
+  The COGS title and global action bar appear on every screen (app/page.tsx):
+    Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
+    Bulk Add | Quick Add
+  Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
+  Top-level tabs (7): Home | Lists | Scheduler | Operations | Modules | Graph | Analytics
 
-------------------------------------------------------------
-B. TO DO PANEL HEADER (todo-panel.tsx)
-------------------------------------------------------------
-1. Title "To Do" — "Tier-based task management with overdue tracking".
-2. "Show All Tasks" switch — OFF (default) shows only scheduled tasks for the
-   active period; ON includes unscheduled tasks too.
-3. "+ Add Task" button — Add New Task dialog (Description, Tier, Q/I, Scheduled
-   Date). New tasks persist via task-store.addTask() with correct day/week/month
-   scheduling fields.
-
-------------------------------------------------------------
-C. PERIOD TABS
-------------------------------------------------------------
-"Day" (active) | "Week" | "Month"
-  Day   — tasks scheduled for today; overdue in Days (pushed counter).
-  Week  — current Mon–Sun week; overdue in Weeks.
-  Month — current calendar month; overdue in Months.
-
-------------------------------------------------------------
-D. TASK TABLE (renderTodoTable)
-------------------------------------------------------------
-Card title: "Today's Tasks" (Calendar icon on Day tab).
-
-Columns:
-  Task       — description + "Scheduled: <date>" sub-line
-  Tier       — inline select (A+, A, A/B, B, C, D)
-  Days       — overdue/pushed count, color-coded (label becomes Weeks/Months on
-               other period tabs)
-  Q/I        — inline select (Q+, Q, I+, I) writes urgency/importance back
-  Actions    — CheckCircle2 (complete) + Eye (task detail popup)
-
-Sorted by tier then most overdue. Row click also opens detail popup.
-
-------------------------------------------------------------
-NOTE ON DATA STATE IN THIS SCREENSHOT
-------------------------------------------------------------
-Show All Tasks off; no tasks scheduled for today → empty state
-"No tasks scheduled for this day". Today's Progress shows 0 to-dos.
+VIEW-SPECIFIC
+Tier-grouped to-do table (A+…D) for the focused day. Priority weights panel, status filters, Just Start focus mode, Add Task dialog, and done section.

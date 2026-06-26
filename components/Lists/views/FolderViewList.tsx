@@ -45,7 +45,7 @@ export function FolderViewList({
             ) : (
               <img
                 className="fm-link-icon"
-                src={entry.kind === "smart" ? orbFor(entry.id) : iconFor(entry.id, entry.icon)}
+                src={entry.kind === "smart" || entry.kind === "habits" || entry.kind === "objectives" ? orbFor(entry.id) : iconFor(entry.id, entry.icon)}
                 alt=""
                 draggable={false}
               />

@@ -15,9 +15,12 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { format } from "date-fns"
+import { CheckCircle2, Circle, X } from "lucide-react"
 import type { CalendarEvent } from "@/lib/types"
 import { useEventStore } from "@/lib/event-store"
+import { useTaskStore } from "@/lib/task-store"
 import { parseLocalDate } from "@/lib/date-utils"
+import { attachToEvent, detachFromEvent, eventDeadline, getEventChecklist } from "@/lib/event-links"
 
 interface EventDialogProps {
   open: boolean
@@ -53,6 +56,31 @@ export function EventDialog({
   const deleteEvent = useEventStore((s) => s.deleteEvent)
   const updateEvent = useEventStore((s) => s.updateEvent)
   const addEvent = useEventStore((s) => s.addEvent)
+
+  const tasks = useTaskStore((s) => s.tasks)
+  const updateTask = useTaskStore((s) => s.updateTask)
+
+  // Prerequisite checklist (HM1): tasks linked to this event via `checklist-of`,
+  // each carrying a derived `mustBeDoneBefore` constraint. Only available once
+  // the event exists (it needs a stable id to link against).
+  const checklist = editingEvent ? getEventChecklist(tasks, editingEvent.id) : null
+  const checklistIds = new Set(checklist?.tasks.map((t) => t.id) ?? [])
+  const attachableTasks = tasks.filter((t) => !t.completed && !checklistIds.has(t.id))
+
+  const attachTask = (taskId: string) => {
+    if (!editingEvent || !taskId) return
+    const task = tasks.find((t) => t.id === taskId)
+    if (!task) return
+    const liveEvent = { ...editingEvent, ...newEvent } as CalendarEvent
+    updateTask(attachToEvent(task, liveEvent))
+  }
+
+  const detachTask = (taskId: string) => {
+    if (!editingEvent) return
+    const task = tasks.find((t) => t.id === taskId)
+    if (!task) return
+    updateTask(detachFromEvent(task, editingEvent.id))
+  }
 
   const handleAddEvent = () => {
     if (editingEvent) {
@@ -221,6 +249,73 @@ export function EventDialog({
               className="bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-[#8cd4a5] focus:ring-[#8cd4a5]/20 transition-all duration-300 resize-none"
             />
           </div>
+
+          {editingEvent && checklist && (
+            <div className="space-y-3 rounded-lg border border-gray-600 bg-gray-800/30 p-4">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-semibold text-gray-200">Prerequisite checklist</Label>
+                {checklist.total > 0 && (
+                  <span
+                    className={`text-xs font-medium ${checklist.allComplete ? "text-[#8cd4a5]" : "text-gray-400"}`}
+                  >
+                    {checklist.completed}/{checklist.total} done
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-gray-400">
+                Linked tasks must be done before {format(eventDeadline({ ...editingEvent, ...newEvent } as CalendarEvent), "MMM d, h:mm a")}.
+              </p>
+
+              {checklist.tasks.length > 0 ? (
+                <ul className="space-y-1">
+                  {checklist.tasks.map((task) => (
+                    <li
+                      key={task.id}
+                      className="flex items-center gap-2 rounded bg-gray-800/50 px-2 py-1.5 text-sm text-gray-200"
+                    >
+                      {task.completed ? (
+                        <CheckCircle2 className="h-4 w-4 shrink-0 text-[#8cd4a5]" />
+                      ) : (
+                        <Circle className="h-4 w-4 shrink-0 text-gray-500" />
+                      )}
+                      <span className={`flex-1 truncate ${task.completed ? "line-through text-gray-500" : ""}`}>
+                        {task.description}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => detachTask(task.id)}
+                        className="shrink-0 rounded p-0.5 text-gray-400 hover:bg-gray-700 hover:text-white transition-colors"
+                        aria-label={`Remove ${task.description} from checklist`}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-xs italic text-gray-500">No prerequisite tasks linked yet.</p>
+              )}
+
+              <select
+                value=""
+                onChange={(e) => {
+                  attachTask(e.target.value)
+                  e.target.value = ""
+                }}
+                disabled={attachableTasks.length === 0}
+                className="w-full rounded-md border border-gray-600 bg-gray-800/50 px-3 py-2 text-sm text-white focus:border-[#8cd4a5] focus:outline-none disabled:opacity-50"
+              >
+                <option value="" disabled>
+                  {attachableTasks.length === 0 ? "No tasks available to add" : "Add a prerequisite task…"}
+                </option>
+                {attachableTasks.map((task) => (
+                  <option key={task.id} value={task.id}>
+                    {task.description}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="flex gap-3 pt-6">
             <Button

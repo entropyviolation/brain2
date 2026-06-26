@@ -2,7 +2,7 @@
  * lib/scheduled-lists-sync.ts — Keep Next Actions smart & scheduled lists in sync
  */
 import { format, startOfWeek } from "date-fns"
-import type { Task, TaskCategory, CategoryFolder } from "@/lib/types"
+import type { Task, List, Folder } from "@/lib/types"
 import {
   getWeekString,
   taskScheduledOnDay,
@@ -18,26 +18,26 @@ export const NA_SMART_MONTHLY = "na-smart-monthly"
 export const NA_SCHEDULED_FOLDER = "na-scheduled"
 
 type Mutators = {
-  categories: TaskCategory[]
-  folders: CategoryFolder[]
-  addCategory: (c: TaskCategory) => void
-  updateCategory: (c: TaskCategory) => void
-  addFolder: (f: CategoryFolder) => void
-  updateFolder: (f: CategoryFolder) => void
+  lists: List[]
+  folders: Folder[]
+  addList: (c: List) => void
+  updateList: (c: List) => void
+  addFolder: (f: Folder) => void
+  updateFolder: (f: Folder) => void
 }
 
-export function findNextActionsFolder(folders: CategoryFolder[]): CategoryFolder | undefined {
+export function findNextActionsFolder(folders: Folder[]): Folder | undefined {
   return folders.find((f) => isNextActionsFolder(f.id, folders))
 }
 
-function ensureNextActionsFolder(mut: Mutators): CategoryFolder | undefined {
+function ensureNextActionsFolder(mut: Mutators): Folder | undefined {
   let na = findNextActionsFolder(mut.folders)
   if (na) return na
   na = {
     id: "folder-next-actions",
     name: "Next Actions",
     createdAt: new Date(),
-    categoryIds: [],
+    listIds: [],
     scheduleable: true,
     color: "#2563eb",
   }
@@ -45,7 +45,7 @@ function ensureNextActionsFolder(mut: Mutators): CategoryFolder | undefined {
   return na
 }
 
-/** Ensure smart to-do list categories live inside Next Actions with dated titles. */
+/** Ensure smart to-do list lists live inside Next Actions with dated titles. */
 export function syncNextActionsSmartLists(mut: Mutators): void {
   const na = ensureNextActionsFolder(mut)
   if (!na) return
@@ -64,9 +64,9 @@ export function syncNextActionsSmartLists(mut: Mutators): void {
   const categoryIdsToAdd: string[] = []
 
   for (const spec of specs) {
-    const existing = mut.categories.find((c) => c.id === spec.id)
+    const existing = mut.lists.find((c) => c.id === spec.id)
     if (!existing) {
-      mut.addCategory({
+      mut.addList({
         id: spec.id,
         name: spec.name,
         color: spec.color,
@@ -76,19 +76,19 @@ export function syncNextActionsSmartLists(mut: Mutators): void {
       })
       categoryIdsToAdd.push(spec.id)
     } else if (existing.name !== spec.name) {
-      mut.updateCategory({ ...existing, name: spec.name })
+      mut.updateList({ ...existing, name: spec.name })
     }
   }
 
   if (categoryIdsToAdd.length > 0) {
     const freshNa = findNextActionsFolder(mut.folders)
     if (freshNa) {
-      const merged = [...freshNa.categoryIds]
+      const merged = [...freshNa.listIds]
       for (const id of categoryIdsToAdd) {
         if (!merged.includes(id)) merged.push(id)
       }
-      if (merged.length !== freshNa.categoryIds.length) {
-        mut.updateFolder({ ...freshNa, categoryIds: merged })
+      if (merged.length !== freshNa.listIds.length) {
+        mut.updateFolder({ ...freshNa, listIds: merged })
       }
     }
   }
@@ -176,7 +176,7 @@ export function syncScheduledFolderHierarchy(tasks: Task[], mut: Mutators): void
       id: NA_SCHEDULED_FOLDER,
       name: "Scheduled",
       createdAt: new Date(),
-      categoryIds: [],
+      listIds: [],
       parentFolderId: na.id,
       color: "#64748b",
     }
@@ -195,7 +195,7 @@ export function syncScheduledFolderHierarchy(tasks: Task[], mut: Mutators): void
       id,
       name,
       createdAt: new Date(),
-      categoryIds: [],
+      listIds: [],
       parentFolderId: parentId,
       color: "#94a3b8",
     })

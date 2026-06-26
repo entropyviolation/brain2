@@ -1,0 +1,18 @@
+================================================================================
+SCREENSHOT: 07-analytics-reflection.png
+VIEW: Analytics tab → Reflection
+AREA: Analytics → Reflection
+SOURCE FILES:
+  - components/Analytics/enhanced-analytics.tsx
+  - components/Reviews/PostMortemDialog.tsx
+================================================================================
+
+GLOBAL CHROME (all screens)
+  The COGS title and global action bar appear on every screen (app/page.tsx):
+    Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
+    Bulk Add | Quick Add
+  Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
+  Top-level tabs (7): Home | Lists | Scheduler | Operations | Modules | Graph | Analytics
+
+VIEW-SPECIFIC
+Browse completion reflections and launch post-mortem on selected tasks.

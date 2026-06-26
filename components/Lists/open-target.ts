@@ -1,7 +1,10 @@
 import type { OpenTarget, OpenTargetAction } from "./types"
+import { OBJECTIVES_LIST_ID } from "./constants"
 
 export function openTargetKey(target: Exclude<OpenTarget, null>): string {
-  return target.type === "folder-all" ? target.folderId : target.id
+  if (target.type === "folder-all") return target.folderId
+  if (target.type === "objectives") return OBJECTIVES_LIST_ID
+  return target.id
 }
 
 export function openTargetReducer(_state: OpenTarget, action: OpenTargetAction): OpenTarget {
@@ -14,6 +17,8 @@ export function openTargetReducer(_state: OpenTarget, action: OpenTargetAction):
       return { type: "smart", id: action.id }
     case "OPEN_HABITS":
       return { type: "habits", id: action.id }
+    case "OPEN_OBJECTIVES":
+      return { type: "objectives" }
     case "OPEN_FOLDER_ALL":
       return { type: "folder-all", folderId: action.folderId }
     case "SET":
@@ -41,5 +46,6 @@ export function openTargetFromEntry(
   if (entry.kind === "habits") {
     return { type: "habits", id: entry.id as "habits" | "weekly-habits" | "monthly-habits" }
   }
+  if (entry.kind === "objectives") return { type: "objectives" }
   return { type: "smart", id: entry.id as "daily" | "weekly" | "monthly" }
 }

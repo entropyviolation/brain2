@@ -1,21 +1,22 @@
-import type { CategoryFolder, Task, TaskCategory } from "@/lib/types"
+import type { Folder, Task, List } from "@/lib/types"
 import { isFolderAllItemsCategoryId, folderListCategoryIds, getTasksForFolderAllView } from "@/lib/folder-all-items"
 import { isScheduledFolderId, getTasksForScheduledFolder } from "@/lib/scheduled-lists-sync"
-import { ROOT_ALL_FOLDER_ID, SMART_LISTS } from "@/components/Lists/constants"
+import { ROOT_ALL_FOLDER_ID, SMART_LISTS, OBJECTIVES_LIST_ID } from "@/components/Lists/constants"
 import type { GridEntry, SmartId } from "@/components/Lists/types"
 
 export interface BuildGridEntriesParams {
   isHome: boolean
   isAll: boolean
-  currentFolder: CategoryFolder | null
-  folders: CategoryFolder[]
-  categories: TaskCategory[]
+  currentFolder: Folder | null
+  folders: Folder[]
+  categories: List[]
   homePinned: string[]
   showSmartLists: boolean
   allTasks: Task[]
   getSmartTasks: (id: SmartId) => Task[]
   getTasksForCategory: (categoryId: string) => Task[]
-  countForFolder: (f: CategoryFolder) => number
+  countForFolder: (f: Folder) => number
+  objectiveCount?: number
 }
 
 function entryKey(entry: GridEntry): string {
@@ -36,7 +37,16 @@ export function buildGridEntries(params: BuildGridEntriesParams): GridEntry[] {
     getSmartTasks,
     getTasksForCategory,
     countForFolder,
+    objectiveCount = 0,
   } = params
+
+  const objectivesEntry = (): GridEntry => ({
+    kind: "objectives",
+    id: OBJECTIVES_LIST_ID,
+    name: "Objectives",
+    color: "#d97706",
+    count: objectiveCount,
+  })
 
   const byKey = new Map<string, GridEntry>()
 
@@ -45,6 +55,7 @@ export function buildGridEntries(params: BuildGridEntriesParams): GridEntry[] {
   }
 
   if (isHome) {
+    add(objectivesEntry())
     add({ kind: "habits", id: "habits", name: "Daily Habits", color: "#0ea5e9", count: 0 })
     add({ kind: "habits", id: "weekly-habits", name: "Weekly Habits", color: "#6366f1", count: 0 })
     add({ kind: "habits", id: "monthly-habits", name: "Monthly Habits", color: "#9333ea", count: 0 })
@@ -64,6 +75,7 @@ export function buildGridEntries(params: BuildGridEntriesParams): GridEntry[] {
         add({ kind: "list", id: c.id, name: c.name, color: c.color, icon: c.icon, count: getTasksForCategory(c.id).length }),
       )
   } else if (isAll) {
+    add(objectivesEntry())
     add({
       kind: "folder-all",
       id: "all-root",

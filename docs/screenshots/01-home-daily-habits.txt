@@ -1,112 +1,24 @@
 ================================================================================
 SCREENSHOT: 01-home-daily-habits.png
-VIEW: Home tab  ->  "Habits" sub-tab  ->  "Daily" frequency (default)
+VIEW: Home tab → Habits sub-tab → Daily frequency
+AREA: Home → Habits
 SOURCE FILES:
-  - app/page.tsx (global shell + top-level tabs)
-  - components/Reviews/reviews.tsx, cognitive-state.tsx, inbox.tsx,
-    enhanced-bulk-add.tsx, quick-add.tsx
-  - components/Home/home-dashboard.tsx (dashboard layout + sub-tabs)
-  - components/Home/points-stats.tsx, daily-progress-quickview.tsx
+  - app/page.tsx
+  - components/Home/home-dashboard.tsx
   - components/Home/Habits/habit-tracker.tsx
-  - components/Home/Habits/week-navigation.tsx, task-grid.tsx, period-habit-list.tsx
-  - lib/habits-store.ts, lib/calculations.ts
+  - components/Home/Habits/task-grid.tsx
+  - components/Home/points-stats.tsx
+  - components/Home/daily-progress-quickview.tsx
+  - components/Home/NeedsAttention.tsx
+  - lib/habits-store.ts
 ================================================================================
 
-------------------------------------------------------------
-A. GLOBAL HEADER (visible on every screen)
-------------------------------------------------------------
-Rendered by app/page.tsx. "COGS" title on the left; action controls on the right.
+GLOBAL CHROME (all screens)
+  The COGS title and global action bar appear on every screen (app/page.tsx):
+    Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
+    Bulk Add | Quick Add
+  Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
+  Top-level tabs (7): Home | Lists | Scheduler | Operations | Modules | Graph | Analytics
 
-1. "Review" button  [ClipboardCheck + badge]  (components/Reviews/reviews.tsx)
-   - Dropdown of day/week/month/quarter/year reviews.
-   - Badge shows how many just-ended periods have not been reviewed yet (5 here).
-   - Opens the Review dialog: carry-over unfinished tasks, gratitude, reflection
-     questions, saved plan text, and plan reflection field.
-
-2. "Tracking" button  [Brain icon]  (components/cognitive-state.tsx)
-   - Opens a dialog with the compact TimeGrid (scope pens + minute grid).
-   - Replaces the old slider-based cognitive-state form.
-
-3. "Inbox" button  [Inbox icon + count badge]  (components/inbox.tsx)
-   - Badge = unprocessed inbox tasks (category === "inbox", not completed). Here: 1.
-   - Opens the Inbox dialog with Clarify / Delete per task and "Clarify All".
-
-4. "Bulk Add" button  (components/enhanced-bulk-add.tsx)
-   - Multi-line capture; "Category:" headers create/assign categories.
-
-5. "Quick Add" button  [Plus, primary]  (components/quick-add.tsx)
-   - Single-field capture straight to the inbox.
-
-------------------------------------------------------------
-B. TOP-LEVEL TAB BAR (app/page.tsx)
-------------------------------------------------------------
-Five tabs: "Home" (active), "Lists", "Scheduler", "Modules", "Analytics".
-Switching tabs lazy-loads the panel and clears any selected task.
-
-------------------------------------------------------------
-C. HOME DASHBOARD HEADER ROW (components/Home/home-dashboard.tsx)
-------------------------------------------------------------
-1. Date card (left)
-   - Today's weekday + month/day (e.g. "Saturday, June 20, 2026") and year.
-   - Contains the Points Stats grid (section D).
-
-2. "Today's Progress" card (right)  (daily-progress-quickview.tsx)
-   - Replaces the old Quick Actions card.
-   - Two progress rows for the current calendar day:
-       * To Do — remaining count, % done, "N of M done today".
-       * Habits — remaining daily habits, % done, "N of M done today".
-   - Driven by task-store (today's scheduled todos) and habits-store (daily habits).
-
-------------------------------------------------------------
-D. POINTS STATS (components/Home/points-stats.tsx)
-------------------------------------------------------------
-Four metric cards from points-store + task-store:
-  All Time Points | Today's Points | This Week | This Month
-Each shows earned total, "+N possible" hint, and a progress bar when applicable.
-Theme colors come from theme-store.
-
-------------------------------------------------------------
-E. HOME SUB-TABS (home-dashboard.tsx)
-------------------------------------------------------------
-Five sub-tabs: "Habits" (active), "Plan", "To Do", "Goals", "Tracking".
-
-------------------------------------------------------------
-F. HABIT TRACKER (components/Home/Habits/habit-tracker.tsx)
-------------------------------------------------------------
-State lives in lib/habits-store.ts (key cogs-habits-store), shared with Lists
-Daily Habits view.
-
-1. Frequency tabs: "Daily (14)" | "Weekly (0)" | "Monthly (0)"
-   - Daily shows the week grid (this screenshot).
-   - Weekly / Monthly show PeriodHabitList cards instead.
-
-2. Week navigation pill (week-navigation.tsx) — Daily tab only
-   - "<" previous week, "Today", date range (e.g. "Jun 15 – Jun 21, 2026"), ">".
-
-3. "Hide completed today" toggle — filters rows already done for today.
-
-4. "Settings" button — habits import/export/reset dialog.
-
-5. Floating "+" button — opens Task Form dialog to add/edit a habit.
-
-------------------------------------------------------------
-G. HABIT TABLE / TASK GRID (task-grid.tsx)
-------------------------------------------------------------
-Spreadsheet table. Columns: Task | Mon..Sun (today highlighted) | Completion | Actions.
-
-Habit input types (five types):
-  BOOLEAN  — checkbox per day (Drink water, Stretch, …)
-  TIME     — minutes input / goal (Work 1h, Exercise 30m, Clean 15m)
-  COUNT    — numeric / goal (Write 3 pages, Read 10 pages)
-  INCREMENTAL — multi-metric with rising daily goals (Chess/puzzle, Meditation)
-  TEXT     — textarea per day (Do something artistic/creative)
-
-Per-row: weekly completion bar + %; Edit / Delete actions.
-Bottom row: "Daily Completion" — aggregate % per weekday column.
-Completing a habit awards points via points-store.
-
-------------------------------------------------------------
-NOTE ON DATA STATE IN THIS SCREENSHOT
-------------------------------------------------------------
-Seeded default habits (14 daily). All values empty/0, all completion bars at 0%,
-all point totals 0. Review badge shows 5 pending period reviews.
+VIEW-SPECIFIC
+Week navigation, frequency tabs (Daily/Weekly/Monthly), hide-completed toggle, Settings, and the spreadsheet habit grid (boolean/time/count/incremental/text types). Points stats and Today's Progress cards sit above the sub-tabs; Needs Attention surfaces stale or blocked items.

@@ -1,0 +1,19 @@
+================================================================================
+SCREENSHOT: 11-graph.png
+VIEW: Graph tab
+AREA: Knowledge Graph
+SOURCE FILES:
+  - components/Graph/KnowledgeGraph.tsx
+  - components/Graph/LinkGraph.tsx
+  - lib/graph-layout.ts
+================================================================================
+
+GLOBAL CHROME (all screens)
+  The COGS title and global action bar appear on every screen (app/page.tsx):
+    Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
+    Bulk Add | Quick Add
+  Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
+  Top-level tabs (7): Home | Lists | Scheduler | Operations | Modules | Graph | Analytics
+
+VIEW-SPECIFIC
+Force-directed graph of all items and typed links (stance-colored edges). Click nodes to open item detail popup.

@@ -14,25 +14,144 @@
 
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
-import type { PeriodReview, ReviewPeriod } from "@/lib/types"
+import type { PeriodReview, ReviewPeriod, BlockedReason } from "@/lib/types"
 import { getWeekString, parseWeekString } from "@/lib/date-utils"
+
+/**
+ * Operation post-mortem (Feature 2, #277). Worker B builds these from an
+ * Operation's phases/log/time and persists them through `addOperationReview`.
+ * Lives in this worker-owned store (not `lib/types.ts`, which is frozen).
+ */
+export interface OperationReview {
+  /** Stable id; defaults to `operation:${operationId}` (re-saving upserts). */
+  id: string
+  /** The operation item/task id this post-mortem belongs to. */
+  operationId: string
+  completedAt: Date
+  summary: string
+  /** Free-text "what worked" reflection. */
+  whatWorked?: string
+  /** Free-text "what failed / would do differently" reflection. */
+  whatFailed?: string
+  /** Lesson bullets distilled from the operation. */
+  lessons?: string[]
+  /** Named 1-N ratings (e.g. execution, planning, morale). */
+  ratings?: Record<string, number>
+  /** Total hours logged across the operation (rolled up by Worker B). */
+  hoursLogged?: number
+  /** Why phases/tasks were blocked, keyed by task id (HM3 reasons). */
+  blockedReasons?: Record<string, BlockedReason>
+  /** Follow-up items created from the post-mortem. */
+  spawnedItemIds?: string[]
+}
+
+/** Input accepted by `addOperationReview` — only `operationId` is required. */
+export type OperationReviewInput = Omit<OperationReview, "id" | "completedAt" | "summary"> & {
+  id?: string
+  completedAt?: Date
+  summary?: string
+}
 
 interface ReviewsState {
   reviews: PeriodReview[]
+  operationReviews: OperationReview[]
   saveReview: (review: PeriodReview) => void
   getReview: (period: ReviewPeriod, key: string) => PeriodReview | undefined
+  /**
+   * Create or update a period review, merging `patch` into any existing review
+   * for the bucket (stable id = `${period}:${key}`). Used by the morning ritual,
+   * blocked-reason capture, and spawned-item tracking so they don't clobber each
+   * other or the evening review.
+   */
+  upsertReview: (
+    period: ReviewPeriod,
+    key: string,
+    patch: Partial<Omit<PeriodReview, "id" | "period" | "periodKey">>,
+  ) => PeriodReview
+  /** Morning ritual (HM2): record/merge the `morning` slice on a day review. */
+  saveMorningReview: (dayKey: string, morning: NonNullable<PeriodReview["morning"]>) => PeriodReview
+  getMorningReview: (dayKey: string) => PeriodReview["morning"] | undefined
+  /** Structured "why blocked/skipped" capture (HM3) for a task in a review. */
+  setBlockedReason: (period: ReviewPeriod, key: string, taskId: string, reason: BlockedReason) => void
+  /** Record an item spawned (e.g. a follow-up) during a review. */
+  addSpawnedItem: (period: ReviewPeriod, key: string, itemId: string) => void
+  /**
+   * Operation post-mortem (Feature 2 #277) — **Worker B calls this.** Upserts an
+   * `OperationReview` (defaults id to `operation:${operationId}`) and returns the
+   * stored record. Idempotent for a given id.
+   */
+  addOperationReview: (review: OperationReviewInput) => OperationReview
+  getOperationReview: (operationId: string) => OperationReview | undefined
+}
+
+function emptyReview(period: ReviewPeriod, key: string): PeriodReview {
+  return {
+    id: `${period}:${key}`,
+    period,
+    periodKey: key,
+    completedAt: new Date(),
+    summary: "",
+    gratitude: [],
+    nextPlans: "",
+    reflections: {},
+    resolvedTaskIds: [],
+    pushedTaskIds: [],
+  }
 }
 
 export const useReviewsStore = create<ReviewsState>()(
   persist(
     (set, get) => ({
       reviews: [],
+      operationReviews: [],
       saveReview: (review) =>
         set((state) => {
           const others = state.reviews.filter((r) => r.id !== review.id)
           return { reviews: [...others, review] }
         }),
       getReview: (period, key) => get().reviews.find((r) => r.period === period && r.periodKey === key),
+
+      upsertReview: (period, key, patch) => {
+        const base = get().getReview(period, key) ?? emptyReview(period, key)
+        const review: PeriodReview = { ...base, ...patch }
+        get().saveReview(review)
+        return review
+      },
+
+      saveMorningReview: (dayKey, morning) => {
+        const base = get().getReview("day", dayKey) ?? emptyReview("day", dayKey)
+        return get().upsertReview("day", dayKey, { morning: { ...base.morning, ...morning } })
+      },
+
+      getMorningReview: (dayKey) => get().getReview("day", dayKey)?.morning,
+
+      setBlockedReason: (period, key, taskId, reason) => {
+        const base = get().getReview(period, key) ?? emptyReview(period, key)
+        get().upsertReview(period, key, { blockedReasons: { ...base.blockedReasons, [taskId]: reason } })
+      },
+
+      addSpawnedItem: (period, key, itemId) => {
+        const base = get().getReview(period, key) ?? emptyReview(period, key)
+        const next = [...new Set([...(base.spawnedItemIds ?? []), itemId])]
+        get().upsertReview(period, key, { spawnedItemIds: next })
+      },
+
+      addOperationReview: (review) => {
+        const id = review.id ?? `operation:${review.operationId}`
+        const stored: OperationReview = {
+          summary: "",
+          ...review,
+          id,
+          completedAt: review.completedAt ?? new Date(),
+        }
+        set((state) => ({
+          operationReviews: [...state.operationReviews.filter((r) => r.id !== id), stored],
+        }))
+        return stored
+      },
+
+      getOperationReview: (operationId) =>
+        get().operationReviews.find((r) => r.operationId === operationId),
     }),
     { name: "cogs-reviews-store", version: 1 },
   ),

@@ -115,3 +115,29 @@
     @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2;
   }
 }
+
+/* Spreadsheet grid (SheetGrid) — light cell borders that adapt to the theme. */
+.sheet-grid th,
+.sheet-grid td {
+  border-color: hsl(var(--border));
+}
+
+/* Print / export: a workspace prints only its active content, no chrome. */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body * {
+    visibility: hidden;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+  .print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+}

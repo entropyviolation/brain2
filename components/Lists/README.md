@@ -13,6 +13,11 @@ components/Lists/
 ├── constants.ts                   # SMART_LISTS, LIST_TEMPLATES, PRESET_ICON_POSITIONS
 ├── open-target.ts                 # openTargetReducer + openTargetKey helpers
 ├── lib/icon-utils.tsx             # orbFor, iconFor, FolderGlyph
+├── attributes/
+│   ├── helpers.ts                 # value coercion, effectiveDef, mergeListAttributes, formatAttributeValue
+│   ├── AttributeSchemaEditor.tsx  # Define a list's attribute schema
+│   ├── AttributeValueField.tsx    # Per-type single-value input
+│   └── AttributeValuesEditor.tsx  # Schema-driven + ad-hoc value editors
 ├── hooks/
 │   ├── useListsNavigation.ts      # Location, openTarget reducer, navTo, openEntry
 │   ├── useListsSearch.ts          # Search term + filtered folders/lists/tasks
@@ -33,7 +38,11 @@ components/Lists/
 │   ├── ListContentDefault.tsx     # Default list rows
 │   ├── ListContentChecklist.tsx   # Checklist with complete checkbox
 │   ├── ListContentIcons.tsx       # Per-item icon grid
-│   └── ListContentDetails.tsx     # Table/details mode with attributes
+│   ├── ListContentDetails.tsx     # Table/details mode with attributes
+│   ├── ListContentKanban.tsx      # Kanban board grouped by a status attribute
+│   ├── ListContentSpreadsheet.tsx # Spreadsheet grid (wraps components/spreadsheet/SheetGrid)
+│   ├── kanban-utils.ts            # Pure column derivation + value-write helpers (see kanban.README.md)
+│   └── types.ts                   # Shared list-content prop interfaces
 ├── dialogs/
 │   ├── NewListDialog.tsx          # Create list
 │   ├── NewFolderDialog.tsx        # Create folder
@@ -63,7 +72,11 @@ Related pure helpers in `lib/`:
 
 | File | Purpose |
 |------|---------|
-| `attribute-editor.tsx` | Schema editor (`AttributeSchemaEditor`) and value editor (`AttributeValuesEditor`) for flexible list attributes |
+| `attribute-editor.tsx` | Barrel re-exporting the attribute editor suite under `attributes/` (preserves the original import surface) |
+| `attributes/helpers.ts` | Value coercion (`asGoal`/`asArray`), `effectiveDef`, `slugId`, `mergeListAttributes`, `formatAttributeValue` |
+| `attributes/AttributeSchemaEditor.tsx` | Define a list's attribute schema (add/remove/reorder, per-type options) |
+| `attributes/AttributeValueField.tsx` | Per-type single-value input (string, boolean, color, datetime, list, item, selection, image, link, goal, number) |
+| `attributes/AttributeValuesEditor.tsx` | Schema-driven `AttributeValuesEditor` + ad-hoc `AdHocAttributesEditor` |
 | `settings-dialog.tsx` | Global Lists settings: reorder lists, import/export JSON (`NextActionsSettingsDialog`) |
 | `list-picker.tsx` | Folder-aware list selector (Inbox clarification, attribute fields) |
 | `daily-habits-list.tsx` | Daily / weekly / monthly habit views embedded in Lists (uses `lib/habits-store.ts`) |
@@ -82,7 +95,10 @@ Icons (velvet desktop), List, Details, Cards — persisted in `lib/lists-ui-stor
 
 ### List content displays (when a list is open)
 
-Default, Checklist, Icons, Details (table) — per-list setting in the UI store. Implemented in `list-content/ListContent*.tsx`, orchestrated by `ListContentPanel.tsx`.
+Default, Checklist, Icons, Details (table), **Kanban**, and **Spreadsheet** — per-list setting in the UI store. Implemented in `list-content/ListContent*.tsx`, orchestrated by `ListContentPanel.tsx`.
+
+- **Kanban**: board grouped by a chosen selection/status attribute; drag cards or use ◀ ▶ to move between columns (writes the attribute value back). Pure column logic in `kanban-utils.ts`; details in `list-content/kanban.README.md`.
+- **Spreadsheet**: editable Google-Sheets-style grid of items × attribute columns, reusing `components/spreadsheet/SheetGrid` (inline editing, A1 headers + row gutter, drag/shift-click range selection with a Sum/Avg/Min/Max/Count bar, per-cell `=A1` formulas + fill handle, row/column resize, column totals, add-row/column).
 
 ## Key features
 

@@ -1,55 +1,17 @@
 ================================================================================
 SCREENSHOT: 07-analytics.png
-VIEW: "Analytics" top-level tab  ->  "Habits" sub-tab
+VIEW: Analytics tab → Habits
+AREA: Analytics → Habits
 SOURCE FILES:
-  - app/page.tsx
   - components/Analytics/enhanced-analytics.tsx
-  - lib/task-store.ts, lib/points-store.ts, lib/habits-store.ts
-  - lib/reviews-store.ts, lib/time-tracking-store.ts, lib/calculations.ts
 ================================================================================
 
-------------------------------------------------------------
-A. GLOBAL HEADER + TOP-LEVEL TABS
-------------------------------------------------------------
-Review / Tracking / Inbox / Bulk Add / Quick Add.
-Tabs: Home, Lists, Scheduler, Modules, "Analytics" (active).
+GLOBAL CHROME (all screens)
+  The COGS title and global action bar appear on every screen (app/page.tsx):
+    Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
+    Bulk Add | Quick Add
+  Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
+  Top-level tabs (7): Home | Lists | Scheduler | Operations | Modules | Graph | Analytics
 
-------------------------------------------------------------
-B. ANALYTICS HEADER
-------------------------------------------------------------
-Title "Analytics & Insights".
-
-Four headline metric cards:
-  Total points (0) | Tasks completed (0) | Completion rate (0%) | Active habits (14)
-
-------------------------------------------------------------
-C. SUB-TABS
-------------------------------------------------------------
-"Habits" (active) | Points | Tracking | Reviews
-
-Each sub-tab renders real charts (recharts + custom heatmap), not placeholders.
-
-------------------------------------------------------------
-D. "HABITS" TAB CONTENT (captured view)
-------------------------------------------------------------
-1. "Daily habit completion heatmap"
-   - GitHub-style grid (~4 months of days).
-   - Color scale: light grey (none) → green tiers (more completion).
-   - All cells grey here — no completions logged yet.
-
-2. "Habit completion (last 30 days)"
-   - Horizontal bar chart: one bar per daily habit (14 habits listed).
-   - X-axis 0–100%. All bars at 0% in this shot.
-
-------------------------------------------------------------
-E. OTHER SUB-TABS (same component)
-------------------------------------------------------------
-Points   — cumulative + daily points line charts; top point-earning tasks
-Tracking — time distribution pie/bar from TimeGrid data (scope selector)
-Reviews  — browse saved period reviews from reviews-store
-
-------------------------------------------------------------
-NOTE ON DATA STATE IN THIS SCREENSHOT
-------------------------------------------------------------
-Default seeded data, nothing completed: 0 points, 0% completion rate, 14 active
-habits, empty heatmap and zero-width bars.
+VIEW-SPECIFIC
+GitHub-style habit completion heatmap and per-habit completion rates.

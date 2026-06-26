@@ -5,8 +5,8 @@ import type { Task } from "@/lib/types"
 
 describe("useListsSearch", () => {
   const items: Task[] = [
-    { id: "1", description: "Buy groceries", category: "list", completed: false, createdAt: new Date(), urgency: 1, importance: 1 },
-    { id: "2", description: "Write report", category: "list", completed: false, createdAt: new Date(), urgency: 1, importance: 1 },
+    { id: "1", description: "Buy groceries", stage: "list", completed: false, createdAt: new Date(), lists: [], urgency: 1, importance: 1 },
+    { id: "2", description: "Write report", stage: "list", completed: false, createdAt: new Date(), lists: [], urgency: 1, importance: 1 },
   ]
 
   it("returns all active items when search is empty", () => {

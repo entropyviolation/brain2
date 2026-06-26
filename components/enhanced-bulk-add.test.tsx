@@ -29,7 +29,7 @@ describe("EnhancedBulkAdd", () => {
     )
     await user.click(screen.getByRole("button", { name: /Add Tasks/i }))
 
-    const { categories, tasks } = useTaskStore.getState()
+    const { lists: categories, tasks } = useTaskStore.getState()
     expect(categories.map((c) => c.name).sort()).toEqual(["Errands", "Groceries"])
     expect(tasks.map((t) => t.description).sort()).toEqual(["Bread", "Milk", "Post office"])
   })

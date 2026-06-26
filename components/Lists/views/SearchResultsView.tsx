@@ -1,12 +1,12 @@
 "use client"
 
-import type { Task, TaskCategory, CategoryFolder } from "@/lib/types"
+import type { Task, List, Folder } from "@/lib/types"
 import { FolderGlyph, iconFor } from "@/components/Lists/lib/icon-utils"
 
 export interface SearchResultsViewProps {
   searchTerm: string
-  folders: CategoryFolder[]
-  lists: TaskCategory[]
+  folders: Folder[]
+  lists: List[]
   tasks: Task[]
   getTasksForCategory: (id: string) => Task[]
   onSelectFolder: (folderId: string) => void
@@ -53,7 +53,7 @@ export function SearchResultsView({
                 key={c.id}
                 className="fm-link-row"
                 onClick={() => {
-                  const parent = folders.find((f) => f.categoryIds.includes(c.id))
+                  const parent = folders.find((f) => f.listIds.includes(c.id))
                   onSelectList(c.id, parent ? parent.id : null)
                 }}
               >

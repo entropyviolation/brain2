@@ -11,10 +11,10 @@ describe("SettingsDialog (Plan)", () => {
       {
         id: "t1",
         description: "Example",
-        category: "work",
+        stage: "scheduled",
         createdAt: new Date(),
         completed: false,
-        categories: [],
+        lists: [],
         urgency: 3,
         importance: 3,
         estimatedDuration: 30,

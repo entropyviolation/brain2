@@ -1,0 +1,17 @@
+================================================================================
+SCREENSHOT: 08-home-tracking-daylog.png
+VIEW: Home tab → Tracking → Day Log
+AREA: Home → Tracking → Day Log
+SOURCE FILES:
+  - components/Home/Tracking/actual-day-view.tsx
+================================================================================
+
+GLOBAL CHROME (all screens)
+  The COGS title and global action bar appear on every screen (app/page.tsx):
+    Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
+    Bulk Add | Quick Add
+  Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
+  Top-level tabs (7): Home | Lists | Scheduler | Operations | Modules | Graph | Analytics
+
+VIEW-SPECIFIC
+Chronological day log derived from time-grid entries — readable narrative of the day's tracked blocks.

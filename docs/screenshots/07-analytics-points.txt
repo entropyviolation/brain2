@@ -1,0 +1,18 @@
+================================================================================
+SCREENSHOT: 07-analytics-points.png
+VIEW: Analytics tab → Points
+AREA: Analytics → Points
+SOURCE FILES:
+  - components/Analytics/enhanced-analytics.tsx
+  - lib/points-store.ts
+================================================================================
+
+GLOBAL CHROME (all screens)
+  The COGS title and global action bar appear on every screen (app/page.tsx):
+    Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
+    Bulk Add | Quick Add
+  Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
+  Top-level tabs (7): Home | Lists | Scheduler | Operations | Modules | Graph | Analytics
+
+VIEW-SPECIFIC
+Cumulative and daily points charts plus top point-earning tasks.

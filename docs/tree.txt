@@ -9,67 +9,281 @@
 │   └── win95.css
 ├── components
 │   ├── Analytics
+│   │   ├── CalibrationView.tsx
+│   │   ├── ContextSwitchHeatmap.tsx
+│   │   ├── CorrelationExplorer.tsx
+│   │   ├── MetricsTrends.tsx
+│   │   ├── PlanVsReality.tsx
 │   │   ├── README.md
+│   │   ├── RegretView.tsx
+│   │   ├── StreaksWidget.tsx
+│   │   ├── enhanced-analytics.test.tsx
 │   │   └── enhanced-analytics.tsx
+│   ├── Completion
+│   │   ├── CompletionDialog.tsx
+│   │   ├── CompletionPopupHost.tsx
+│   │   └── README.md
+│   ├── Editor
+│   │   ├── README.md
+│   │   ├── RichTextEditor.tsx
+│   │   ├── editor.css
+│   │   ├── markdown.test.ts
+│   │   └── markdown.ts
+│   ├── Focus
+│   │   ├── JustStartMode.tsx
+│   │   └── README.md
+│   ├── Graph
+│   │   ├── KnowledgeGraph.tsx
+│   │   ├── LinkGraph.tsx
+│   │   └── README.md
 │   ├── Home
 │   │   ├── Goals
+│   │   │   ├── DirectionReport.tsx
+│   │   │   ├── GoalsContainer.tsx
+│   │   │   ├── ObjectiveDetailDialog.tsx
+│   │   │   ├── ObjectivesPanel.tsx
 │   │   │   ├── README.md
+│   │   │   ├── goals-tracker.test.tsx
 │   │   │   └── goals-tracker.tsx
 │   │   ├── Habits
 │   │   │   ├── README.md
+│   │   │   ├── daily-task-form-dialog.test.tsx
 │   │   │   ├── daily-task-form-dialog.tsx
+│   │   │   ├── daily-task-form.test.tsx
 │   │   │   ├── daily-task-form.tsx
+│   │   │   ├── habit-tracker.test.tsx
 │   │   │   ├── habit-tracker.tsx
+│   │   │   ├── period-habit-list.test.tsx
 │   │   │   ├── period-habit-list.tsx
+│   │   │   ├── settings-dialog.test.tsx
 │   │   │   ├── settings-dialog.tsx
+│   │   │   ├── task-grid.test.tsx
 │   │   │   ├── task-grid.tsx
+│   │   │   ├── week-navigation.test.tsx
 │   │   │   └── week-navigation.tsx
+│   │   ├── NeedsAttention.notes.md
+│   │   ├── NeedsAttention.tsx
 │   │   ├── Plan
 │   │   │   ├── README.md
+│   │   │   ├── agenda-grid.test.tsx
 │   │   │   ├── agenda-grid.tsx
+│   │   │   ├── day-view.test.tsx
 │   │   │   ├── day-view.tsx
+│   │   │   ├── event-dialog.test.tsx
 │   │   │   ├── event-dialog.tsx
+│   │   │   ├── month-view.test.tsx
 │   │   │   ├── month-view.tsx
+│   │   │   ├── plan-panel.test.tsx
 │   │   │   ├── plan-panel.tsx
+│   │   │   ├── planned-tasks-sidebar.test.tsx
 │   │   │   ├── planned-tasks-sidebar.tsx
+│   │   │   ├── settings-dialog.test.tsx
 │   │   │   ├── settings-dialog.tsx
+│   │   │   ├── week-view.test.tsx
 │   │   │   └── week-view.tsx
 │   │   ├── README.md
 │   │   ├── ToDo
+│   │   │   ├── AddDoneDialog.tsx
+│   │   │   ├── AddTodoDialog.tsx
+│   │   │   ├── DoneTodoSection.tsx
 │   │   │   ├── README.md
-│   │   │   └── todo-panel.tsx
+│   │   │   ├── TodoPeriodNav.tsx
+│   │   │   ├── TodoTable.tsx
+│   │   │   ├── todo-panel.test.tsx
+│   │   │   ├── todo-panel.tsx
+│   │   │   ├── todo-utils.test.ts
+│   │   │   └── todo-utils.ts
 │   │   ├── Tracking
 │   │   │   ├── README.md
+│   │   │   ├── actual-day-view.test.tsx
 │   │   │   ├── actual-day-view.tsx
+│   │   │   ├── time-grid.test.tsx
 │   │   │   └── time-grid.tsx
+│   │   ├── daily-progress-quickview.test.tsx
 │   │   ├── daily-progress-quickview.tsx
 │   │   ├── home-dashboard.test.tsx
 │   │   ├── home-dashboard.tsx
+│   │   ├── home-review-banner.test.tsx
+│   │   ├── home-review-banner.tsx
+│   │   ├── points-stats.test.tsx
 │   │   └── points-stats.tsx
+│   ├── Icons
+│   │   ├── Icon.tsx
+│   │   ├── OrbPicker.tsx
+│   │   ├── README.md
+│   │   ├── icon-registry.ts
+│   │   └── index.ts
+│   ├── ItemDetail
+│   │   ├── AttributeCreator.tsx
+│   │   ├── BodyPanel.tsx
+│   │   ├── ItemAttributesSection.tsx
+│   │   ├── ItemDetail.test.tsx
+│   │   ├── ItemDetailPage.tsx
+│   │   ├── ItemDetailPopup.tsx
+│   │   ├── LinkPicker.tsx
+│   │   ├── README.md
+│   │   ├── RelatedItemsPanel.tsx
+│   │   ├── TagInput.tsx
+│   │   └── useItemDetailDraft.ts
+│   ├── ItemTypes
+│   │   ├── ItemTypeEditor.test.tsx
+│   │   ├── ItemTypeEditor.tsx
+│   │   ├── ItemTypeList.tsx
+│   │   └── README.md
 │   ├── Lists
 │   │   ├── README.md
+│   │   ├── __tests__
+│   │   │   ├── enhanced-list-view.integration.test.tsx
+│   │   │   └── open-target.test.ts
+│   │   ├── attribute-editor.test.tsx
 │   │   ├── attribute-editor.tsx
+│   │   ├── attributes
+│   │   │   ├── AttributeSchemaEditor.tsx
+│   │   │   ├── AttributeValueField.tsx
+│   │   │   ├── AttributeValuesEditor.tsx
+│   │   │   ├── CompletionTiersPanel.tsx
+│   │   │   └── helpers.ts
+│   │   ├── constants.ts
+│   │   ├── daily-habits-list.test.tsx
 │   │   ├── daily-habits-list.tsx
-│   │   ├── enhanced-category-view.tsx
+│   │   ├── dialogs
+│   │   │   ├── CompletedTasksDialog.tsx
+│   │   │   ├── CsvImportDialog.tsx
+│   │   │   ├── EditFolderDialog.tsx
+│   │   │   ├── EditListDialog.tsx
+│   │   │   ├── ListRulesEditor.tsx
+│   │   │   ├── NewFolderDialog.tsx
+│   │   │   ├── NewListDialog.tsx
+│   │   │   ├── OrbPickerDialog.tsx
+│   │   │   └── __tests__
+│   │   │       └── OrbPickerDialog.test.tsx
+│   │   ├── enhanced-list-view.test.tsx
+│   │   ├── enhanced-list-view.tsx
 │   │   ├── filemanager98.css
+│   │   ├── hooks
+│   │   │   ├── __tests__
+│   │   │   │   ├── useListsNavigation.test.ts
+│   │   │   │   ├── useListsSearch.test.ts
+│   │   │   │   └── useListsSelection.test.ts
+│   │   │   ├── useListsDragDrop.ts
+│   │   │   ├── useListsNavigation.ts
+│   │   │   ├── useListsSearch.ts
+│   │   │   ├── useListsSelection.ts
+│   │   │   └── useListsTaskActions.ts
+│   │   ├── lib
+│   │   │   └── icon-utils.tsx
+│   │   ├── list-content
+│   │   │   ├── ListContentChecklist.tsx
+│   │   │   ├── ListContentDefault.tsx
+│   │   │   ├── ListContentDetails.tsx
+│   │   │   ├── ListContentIcons.tsx
+│   │   │   ├── ListContentKanban.tsx
+│   │   │   ├── ListContentPanel.tsx
+│   │   │   ├── ListContentSpreadsheet.tsx
+│   │   │   ├── kanban-utils.test.ts
+│   │   │   ├── kanban-utils.ts
+│   │   │   ├── kanban.README.md
+│   │   │   └── types.ts
+│   │   ├── list-picker.test.tsx
 │   │   ├── list-picker.tsx
-│   │   └── settings-dialog.tsx
+│   │   ├── navigation
+│   │   │   ├── BreadcrumbNav.tsx
+│   │   │   ├── FolderTree.tsx
+│   │   │   └── __tests__
+│   │   │       └── FolderTree.test.tsx
+│   │   ├── open-target.ts
+│   │   ├── settings-dialog.test.tsx
+│   │   ├── settings-dialog.tsx
+│   │   ├── toolbar
+│   │   │   ├── ListsToolbar.tsx
+│   │   │   └── ViewModeControls.tsx
+│   │   ├── types.ts
+│   │   └── views
+│   │       ├── FolderViewCards.tsx
+│   │       ├── FolderViewDetails.tsx
+│   │       ├── FolderViewIcons.tsx
+│   │       ├── FolderViewList.tsx
+│   │       └── SearchResultsView.tsx
 │   ├── Modules
+│   │   ├── ModuleConfigDialog.tsx
 │   │   ├── README.md
-│   │   └── modules-panel.tsx
+│   │   ├── module-bodies.tsx
+│   │   ├── module-helpers.test.ts
+│   │   ├── module-helpers.ts
+│   │   ├── modules-panel.test.tsx
+│   │   ├── modules-panel.tsx
+│   │   └── workspace
+│   │       ├── ModuleBuilderDialog.tsx
+│   │       ├── ModuleListsPanel.tsx
+│   │       ├── ModulePopoutView.tsx
+│   │       ├── ModuleSettingsDialog.tsx
+│   │       ├── ModuleViewEditor.tsx
+│   │       ├── ModuleWorkspace.tsx
+│   │       ├── WorkflowBuilder.test.tsx
+│   │       ├── WorkflowBuilder.tsx
+│   │       ├── WorkflowStepEditor.tsx
+│   │       └── module-view-bodies.tsx
+│   ├── Operations
+│   │   ├── OperationHome.tsx
+│   │   ├── OperationLogFeed.tsx
+│   │   ├── OperationPostMortemDialog.tsx
+│   │   ├── OperationWorkspace.tsx
+│   │   ├── OperationsView.tsx
+│   │   ├── PhasesPanel.tsx
+│   │   ├── README.md
+│   │   ├── ResourcesPanel.tsx
+│   │   ├── ToDoNextRail.tsx
+│   │   ├── index.ts
+│   │   └── operation-actions.ts
 │   ├── README.md
 │   ├── Reviews
+│   │   ├── AffirmationsDialog.tsx
+│   │   ├── MorningReview.tsx
+│   │   ├── PostMortemDialog.tsx
 │   │   ├── README.md
+│   │   ├── reviews.test.tsx
 │   │   └── reviews.tsx
 │   ├── Scheduler
+│   │   ├── AlwaysTab.tsx
+│   │   ├── DayAgenda.tsx
+│   │   ├── DayTab.tsx
+│   │   ├── DependencyGraph.tsx
+│   │   ├── GanttView.tsx
+│   │   ├── PeriodCell.tsx
+│   │   ├── PeriodFunnelTab.tsx
 │   │   ├── README.md
-│   │   └── enhanced-scheduler.tsx
-│   ├── Untitled-1.py
+│   │   ├── SchedulerFilters.tsx
+│   │   ├── SchedulerTaskItem.tsx
+│   │   ├── enhanced-scheduler.test.tsx
+│   │   ├── enhanced-scheduler.tsx
+│   │   ├── project-network.ts
+│   │   ├── scheduler-utils.test.ts
+│   │   └── scheduler-utils.ts
+│   ├── Search
+│   │   ├── GlobalSearch.tsx
+│   │   ├── README.md
+│   │   └── useGlobalSearchHotkey.ts
+│   ├── Settings
+│   │   ├── BackupRestore.tsx
+│   │   ├── README.md
+│   │   └── SettingsDialog.tsx
+│   ├── Tracking
+│   │   └── MetricLogger.tsx
+│   ├── cognitive-state.test.tsx
 │   ├── cognitive-state.tsx
+│   ├── enhanced-bulk-add.test.tsx
 │   ├── enhanced-bulk-add.tsx
+│   ├── enhanced-task-detail.test.tsx
 │   ├── enhanced-task-detail.tsx
+│   ├── inbox.test.tsx
 │   ├── inbox.tsx
+│   ├── quick-add.test.tsx
 │   ├── quick-add.tsx
+│   ├── spreadsheet
+│   │   ├── README.md
+│   │   ├── SheetGrid.test.tsx
+│   │   └── SheetGrid.tsx
+│   ├── task-detail-popup.test.tsx
 │   ├── task-detail-popup.tsx
 │   └── ui
 │       ├── README.md
@@ -93,8 +307,13 @@
 │       └── tooltip.tsx
 ├── components.json
 ├── docs
+│   ├── BRAIN2_FEATURE_IDEAS.md
+│   ├── CANONICAL_FIELDS.md
 │   ├── README.md
 │   ├── SPEC_MAPPING.md
+│   ├── brain2_features_roadmap.md
+│   ├── brain2_features_roadmap_wave2.md
+│   ├── category-to-list-migration-roadmap.md
 │   ├── screenshots
 │   │   ├── 01-home-daily-habits.png
 │   │   ├── 01-home-daily-habits.txt
@@ -114,42 +333,187 @@
 │   │   ├── 08-home-tracking.txt
 │   │   ├── 09-modules.png
 │   │   └── 09-modules.txt
+│   ├── tree.md
 │   └── tree.txt
+├── e2e
+│   └── lists.spec.ts
 ├── electron
 │   ├── README.md
+│   ├── ipc
+│   │   ├── README.md
+│   │   └── channels.js
 │   ├── main.js
 │   └── preload.js
 ├── hooks
-│   └── README.md
+│   ├── README.md
+│   ├── useQuickCaptureHotkey.ts
+│   └── useVocalConfidence.ts
 ├── lib
 │   ├── README.md
+│   ├── affirmations.test.ts
+│   ├── affirmations.ts
+│   ├── app-navigation.test.ts
+│   ├── app-navigation.ts
 │   ├── attribute-utils.ts
+│   ├── belief-strength.test.ts
+│   ├── belief-strength.ts
+│   ├── book-match.test.ts
+│   ├── book-match.ts
+│   ├── book-types.test.ts
+│   ├── book-types.ts
 │   ├── calculations.ts
+│   ├── calibration.test.ts
+│   ├── calibration.ts
+│   ├── completion-events.ts
+│   ├── completion-status.test.ts
+│   ├── completion-status.ts
+│   ├── completion-tiers.test.ts
+│   ├── completion-tiers.ts
+│   ├── connectors.test.ts
+│   ├── connectors.ts
+│   ├── critical-path.test.ts
+│   ├── critical-path.ts
 │   ├── csv.ts
+│   ├── data
+│   │   ├── backup.test.ts
+│   │   ├── backup.ts
+│   │   ├── data-source.ts
+│   │   ├── mongo
+│   │   │   ├── README.md
+│   │   │   ├── collections.ts
+│   │   │   └── mongo-data-source.ts
+│   │   ├── schemas.test.ts
+│   │   ├── schemas.ts
+│   │   ├── sources
+│   │   │   ├── ipc-data-source.ts
+│   │   │   ├── local-data-source.test.ts
+│   │   │   └── local-data-source.ts
+│   │   ├── task-repository.test.ts
+│   │   └── task-repository.ts
 │   ├── date-utils.ts
+│   ├── decision-matrix.test.ts
+│   ├── decision-matrix.ts
+│   ├── event-links.test.ts
+│   ├── event-links.ts
+│   ├── event-store.dates.test.ts
 │   ├── event-store.ts
+│   ├── file-extract.test.ts
+│   ├── file-extract.ts
+│   ├── flight-types.test.ts
+│   ├── flight-types.ts
 │   ├── folder-all-items.ts
+│   ├── formula.test.ts
+│   ├── formula.ts
 │   ├── goals-store.ts
+│   ├── graph-layout.test.ts
+│   ├── graph-layout.ts
 │   ├── habit-utils.ts
 │   ├── habits-store.ts
+│   ├── item-type-store.ts
+│   ├── item-types.test.ts
+│   ├── item-types.ts
+│   ├── item-utils.test.ts
 │   ├── item-utils.ts
+│   ├── link-graph.test.ts
+│   ├── link-graph.ts
+│   ├── links.test.ts
+│   ├── links.ts
+│   ├── list-tree.test.ts
+│   ├── list-tree.ts
+│   ├── lists-grid-entries.ts
+│   ├── lists-icon-grid.ts
 │   ├── lists-ui-store.ts
+│   ├── metrics-store.test.ts
+│   ├── metrics-store.ts
+│   ├── metrics.test.ts
+│   ├── metrics.ts
+│   ├── migrations.test.ts
+│   ├── migrations.ts
+│   ├── module-definitions.test.ts
+│   ├── module-definitions.ts
+│   ├── module-plan-sync.ts
+│   ├── module-schedule-sync.test.ts
+│   ├── module-schedule-sync.ts
+│   ├── module-templates.test.ts
+│   ├── module-templates.ts
 │   ├── modules-store.ts
+│   ├── molecular.test.ts
+│   ├── molecular.ts
+│   ├── needs-attention.test.ts
+│   ├── needs-attention.ts
+│   ├── note-types.test.ts
+│   ├── note-types.ts
+│   ├── objectives.test.ts
+│   ├── objectives.ts
+│   ├── operation-types.ts
+│   ├── operations.test.ts
+│   ├── operations.ts
 │   ├── orbs-manifest.ts
+│   ├── pending-reviews.test.ts
+│   ├── pending-reviews.ts
 │   ├── plan-text.ts
+│   ├── plan-vs-reality.test.ts
+│   ├── plan-vs-reality.ts
 │   ├── points-store.ts
+│   ├── priority.test.ts
+│   ├── priority.ts
+│   ├── regret-store.test.ts
+│   ├── regret-store.ts
 │   ├── remove-background.ts
 │   ├── reviews-store.ts
 │   ├── scheduled-lists-sync.ts
+│   ├── scheduling.ts
+│   ├── search.test.ts
+│   ├── search.ts
+│   ├── second-brain-types.ts
+│   ├── second-brain.test.ts
+│   ├── services
+│   │   ├── completion-service.test.ts
+│   │   ├── completion-service.ts
+│   │   ├── item-mutation-service.test.ts
+│   │   ├── item-mutation-service.ts
+│   │   ├── review-service.test.ts
+│   │   ├── review-service.ts
+│   │   ├── scheduling-service.test.ts
+│   │   └── scheduling-service.ts
+│   ├── sheet-a1.test.ts
+│   ├── sheet-a1.ts
+│   ├── sheet-eval.test.ts
+│   ├── sheet-eval.ts
+│   ├── smart-parse.test.ts
+│   ├── smart-parse.ts
+│   ├── spreadsheet-contract.test.ts
+│   ├── spreadsheet-contract.ts
+│   ├── spreadsheet-keys.test.ts
+│   ├── spreadsheet-keys.ts
+│   ├── spreadsheet-utils.test.ts
+│   ├── spreadsheet-utils.ts
+│   ├── streaks.test.ts
+│   ├── streaks.ts
+│   ├── string-utils.test.ts
+│   ├── string-utils.ts
+│   ├── task-store.dates.test.ts
+│   ├── task-store.migration.test.ts
 │   ├── task-store.ts
 │   ├── theme-store.ts
 │   ├── time-tracking-store.ts
 │   ├── types.ts
-│   └── utils.ts
+│   ├── use-current-date.test.ts
+│   ├── use-current-date.ts
+│   ├── utils.ts
+│   ├── vocal-confidence.test.ts
+│   ├── vocal-confidence.ts
+│   ├── workflow-engine.test.ts
+│   ├── workflow-engine.ts
+│   ├── workflow-hooks.test.ts
+│   ├── workflow-hooks.ts
+│   ├── workflows-store.test.ts
+│   └── workflows-store.ts
 ├── next-env.d.ts
 ├── next.config.mjs
 ├── package-lock.json
 ├── package.json
+├── playwright.config.ts
 ├── pnpm-lock.yaml
 ├── postcss.config.mjs
 ├── public
@@ -172,18 +536,22 @@
 │   │   ├── defaultselected.svg
 │   │   ├── last.svg
 │   │   └── lastselected.svg
-│   ├── orbs-removebackground
-│   │   ├── 00122e5fb5c048f8ecdf43d83357c361.png
-│   │   ├── ......... {hundreds more orb photos}
-│   │   ├── ff9125178904b8fdf46ca3792f9f2dca.png
-│   │   └── orb.png
+│   ├── orbs-removebackground   [collapsed: hundreds of generated orb PNGs]
 │   └── velvetscrolltile.png
 ├── scripts
-│   └── capture-screenshots.mjs
+│   ├── background-remover.py
+│   ├── capture-screenshots.mjs
+│   └── update-tree.sh
 ├── tailwind.config.ts
+├── tests
+│   ├── integration
+│   │   ├── backup-restore.test.ts
+│   │   ├── completion-scheduling.test.ts
+│   │   ├── needs-attention.test.ts
+│   │   ├── review-carryover.test.ts
+│   │   └── tags-links.test.ts
+│   └── test-utils.tsx
 ├── tsconfig.json
 ├── tsconfig.tsbuildinfo
 ├── vitest.config.ts
 └── vitest.setup.ts
-
-

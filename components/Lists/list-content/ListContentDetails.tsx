@@ -1,9 +1,10 @@
 "use client"
 
-import { formatAttributeValue } from "@/components/Lists/attribute-editor"
+import { formatAttributeValue, listAttributeSchema } from "@/components/Lists/attribute-editor"
 import { safeDateFormat } from "@/lib/date-utils"
-import { categoryIsNextActions } from "@/lib/item-utils"
+import { listIsNextActions } from "@/lib/item-utils"
 import { isFolderAllItemsCategoryId, isTaskUncategorizedInFolder } from "@/lib/folder-all-items"
+import { useItemTypeStore } from "@/lib/item-type-store"
 import type { ListContentDetailsProps } from "./types"
 
 export type { ListContentDetailsProps } from "./types"
@@ -20,16 +21,18 @@ export function ListContentDetails({
   onTaskDragStart,
   onDragEnd,
 }: ListContentDetailsProps) {
+  const types = useItemTypeStore((s) => s.types)
   const tableCat = openCategory
-  const attrDefs = tableCat?.itemAttributes ?? []
+  // Composed schema: the list's item type attributes + its list-specific extras.
+  const attrDefs = tableCat ? listAttributeSchema(tableCat, types) : []
   const displayIds =
     tableCat?.displayedAttributes && tableCat.displayedAttributes.length > 0
       ? tableCat.displayedAttributes
       : attrDefs.map((d) => d.id)
   const cols = attrDefs.filter((d) => displayIds.includes(d.id))
   const showNextActionCols =
-    (tableCat && categoryIsNextActions(tableCat.id, folders)) ||
-    (openFolderAll && tasks.some((t) => categoryIsNextActions(t.categories?.[0] || "", folders)))
+    (tableCat && listIsNextActions(tableCat.id, folders)) ||
+    (openFolderAll && tasks.some((t) => listIsNextActions(t.lists?.[0] || "", folders)))
 
   return (
     <table className="fm-table">
@@ -72,7 +75,7 @@ export function ListContentDetails({
               <td className="text-xs">
                 {isTaskUncategorizedInFolder(task, currentFolder)
                   ? "Uncategorized"
-                  : (task.categories || [])
+                  : (task.lists || [])
                       .filter((cid) => !isFolderAllItemsCategoryId(cid))
                       .map((cid) => categories.find((c) => c.id === cid)?.name)
                       .filter(Boolean)

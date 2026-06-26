@@ -1,9 +1,16 @@
 /**
- * components/Scheduler/enhanced-scheduler.tsx — Scheduler period funnel
+ * components/Scheduler/enhanced-scheduler.tsx — Scheduler period funnel (orchestrator)
  *
  * The progressive-refinement scheduler: a "Scheduler Inbox" of to-schedule tasks
  * plus period buckets (Always → Year → Month → Week → Day). Dragging a task down
  * a level refines its scheduling fields on the task store.
+ *
+ * Composition:
+ *   - scheduler-utils.ts     pure period/filter/grid/overview logic
+ *   - SchedulerTaskItem.tsx  draggable task card
+ *   - PeriodCell.tsx         droppable bucket cell
+ *   - SchedulerFilters.tsx   "Always" filters & sort
+ *   - DayAgenda.tsx          24-hour day agenda
  *
  * Spec: §7.1–7.2 (period funnel). Auto-scheduling (§7.6) and carry-over (§7.7)
  * are deferred/not built — see docs/SPEC_MAPPING.md §7.
@@ -11,276 +18,112 @@
 "use client"
 
 import type React from "react"
-
-import { useState, useCallback, useMemo } from "react"
+import { useState, useCallback, useMemo, useEffect } from "react"
 import { useTaskStore } from "@/lib/task-store"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Label } from "@/components/ui/label"
-import {
-  Clock,
-  ChevronLeft,
-  ChevronRight,
-  AlertTriangle,
-  Star,
-  GripVertical,
-  CalendarClock,
-  X,
-  ArrowUpDown,
-  Home,
-} from "lucide-react"
+import { ChevronLeft, ChevronRight, Home, CalendarRange, GanttChartSquare, Workflow } from "lucide-react"
 import type { Task, SchedulePeriod } from "@/lib/types"
-import {
-  formatWeekRange,
-  getWeekString,
-  parseWeekString,
-  parseLocalDate,
-  taskScheduledOnDay,
-  taskScheduledInWeek,
-  taskScheduledInMonth,
-  taskScheduledInYear,
-} from "@/lib/date-utils"
-import { taskBelongsInOverviewBox } from "@/lib/item-utils"
 import { TaskDetailPopup } from "@/components/task-detail-popup"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Filter, ChevronDown } from "lucide-react"
+import { APP_NAV_KEYS, readStoredTab, writeStoredTab } from "@/lib/app-navigation"
+import {
+  scheduleTask as scheduleTaskSvc,
+  unscheduleTask as unscheduleTaskSvc,
+  scheduleTaskToTime,
+  clearScheduledTime,
+  setTaskScheduleable as setTaskScheduleableSvc,
+} from "@/lib/services/scheduling-service"
+import {
+  getScheduleableCategoryIds,
+  getAvailableTasks,
+  getTasksForPeriod,
+  getCategoryColor,
+  getCurrentYear,
+  getCurrentMonth,
+  getCurrentWeek,
+  getNavigationLabel,
+  navigateDate,
+  getMonths,
+  getWeeksInMonth,
+  getDaysInWeek,
+  buildOverviewBoxes,
+  assignTasksToOverviewBoxes,
+  type SchedulerSortBy,
+  type SchedulerSortOrder,
+} from "./scheduler-utils"
+import { SchedulerTaskItem } from "./SchedulerTaskItem"
+import { PeriodFunnelTab } from "./PeriodFunnelTab"
+import { AlwaysTab } from "./AlwaysTab"
+import { DayTab } from "./DayTab"
+import { GanttView } from "./GanttView"
+import { DependencyGraph } from "./DependencyGraph"
+
+const SCHEDULER_TABS = ["always", "year", "month", "week", "day"] as const
+
+type SchedulerView = "funnel" | "gantt" | "graph"
 
 export function EnhancedScheduler() {
   const allTasks = useTaskStore((state) => state.tasks)
-  const updateTask = useTaskStore((state) => state.updateTask)
-  const categories = useTaskStore((state) => state.categories)
+  const categories = useTaskStore((state) => state.lists)
 
-  const [activeTab, setActiveTab] = useState<SchedulePeriod>("always")
+  const [activeTab, setActiveTab] = useState<SchedulePeriod>(() =>
+    readStoredTab(APP_NAV_KEYS.schedulerTab, SCHEDULER_TABS, "always"),
+  )
+  const [schedulerView, setSchedulerView] = useState<SchedulerView>("funnel")
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set())
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
-
-  // Filtering and sorting
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
-  const [sortBy, setSortBy] = useState<"category" | "duration" | "importance" | "deadline" | "reward">("importance")
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
+  const [sortBy, setSortBy] = useState<SchedulerSortBy>("importance")
+  const [sortOrder, setSortOrder] = useState<SchedulerSortOrder>("desc")
 
-  // IDs of lists (categories) marked scheduleable. A list is scheduleable
-  // unless explicitly turned off, so older lists without the flag still appear.
-  const scheduleableCategoryIds = useMemo(
-    () => new Set(categories.filter((c) => c.scheduleable !== false).map((c) => c.id)),
-    [categories],
+  useEffect(() => {
+    writeStoredTab(APP_NAV_KEYS.schedulerTab, activeTab)
+  }, [activeTab])
+
+  const scheduleableCategoryIds = useMemo(() => getScheduleableCategoryIds(categories), [categories])
+
+  const availableTasks = useMemo(
+    () =>
+      getAvailableTasks(allTasks, {
+        activeTab,
+        selectedCategories,
+        sortBy,
+        sortOrder,
+        lists: categories,
+        scheduleableCategoryIds,
+      }),
+    [allTasks, activeTab, selectedCategories, sortBy, sortOrder, categories, scheduleableCategoryIds],
   )
 
-  // A task is shown in the Scheduler only if it belongs to one or more
-  // scheduleable lists.
-  const isTaskScheduleable = useCallback(
-    (task: Task) => task.categories?.some((catId) => scheduleableCategoryIds.has(catId)) ?? false,
-    [scheduleableCategoryIds],
-  )
-
-  // Get available tasks (no unmet dependencies, not completed, not scheduled)
-  const getAvailableTasks = useCallback(() => {
-    let tasks = allTasks.filter((task) => {
-      if (task.completed) return false
-
-      // Only surface items that belong to a scheduleable list
-      if (!isTaskScheduleable(task)) return false
-
-      // Check if all dependencies are completed
-      const hasUnmetDependencies = (task.dependencies ?? []).some((depId) => {
-        const depTask = allTasks.find((t) => t.id === depId)
-        return depTask && !depTask.completed
-      })
-
-      if (hasUnmetDependencies) return false
-
-      // For "always" tab, show unscheduled tasks
-      if (activeTab === "always") {
-        return !task.scheduledYear && !task.scheduledMonth && !task.scheduledWeek && !task.scheduledDate
-      }
-
-      return true
-    })
-
-    // Apply category filter
-    if (selectedCategories.length > 0) {
-      tasks = tasks.filter((task) => task.categories?.some((catId) => selectedCategories.includes(catId)))
-    }
-
-    // Apply sorting
-    tasks.sort((a, b) => {
-      let aValue: any, bValue: any
-
-      switch (sortBy) {
-        case "category":
-          aValue = a.categories?.[0] ? categories.find((c) => c.id === a.categories[0])?.name || "" : ""
-          bValue = b.categories?.[0] ? categories.find((c) => c.id === b.categories[0])?.name || "" : ""
-          break
-        case "duration":
-          aValue = a.estimatedDuration
-          bValue = b.estimatedDuration
-          break
-        case "importance":
-          aValue = a.importance
-          bValue = b.importance
-          break
-        case "deadline":
-          aValue = a.deadline ? new Date(a.deadline).getTime() : 0
-          bValue = b.deadline ? new Date(b.deadline).getTime() : 0
-          break
-        case "reward":
-          aValue = a.rewardValue
-          bValue = b.rewardValue
-          break
-        default:
-          aValue = a.importance
-          bValue = b.importance
-      }
-
-      if (sortOrder === "asc") {
-        return aValue > bValue ? 1 : -1
-      } else {
-        return aValue < bValue ? 1 : -1
-      }
-    })
-
-    return tasks
-  }, [allTasks, activeTab, selectedCategories, sortBy, sortOrder, categories, isTaskScheduleable])
-
-  // Get tasks for specific scheduling periods
-  const getTasksForPeriod = useCallback(
-    (period: SchedulePeriod, value?: string) => {
-      const availableTasks = allTasks.filter((task) => !task.completed)
-
-      switch (period) {
-        case "year":
-          return availableTasks.filter((task) => task.scheduledYear === value)
-        case "month":
-          return availableTasks.filter((task) => task.scheduledMonth === value)
-        case "week":
-          return availableTasks.filter((task) => {
-            // Handle both direct week assignments and month-to-week assignments
-            if (task.scheduledWeek === value) return true
-
-            // Check if task was assigned to a month that contains this week
-            if (task.scheduledMonth && value) {
-              const weekRange = parseWeekString(value)
-              if (weekRange) {
-                const monthStart = new Date(task.scheduledMonth + "-01")
-                const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0)
-                return weekRange.start >= monthStart && weekRange.start <= monthEnd
-              }
-            }
-            return false
-          })
-        case "day":
-          return availableTasks.filter((task) => taskScheduledOnDay(task, value || currentDate))
-        default:
-          return availableTasks.filter(
-            (task) => !task.scheduledYear && !task.scheduledMonth && !task.scheduledWeek && !task.scheduledDate,
-          )
-      }
-    },
+  const tasksFor = useCallback(
+    (period: SchedulePeriod, value?: string) => getTasksForPeriod(allTasks, period, value, currentDate),
     [allTasks, currentDate],
   )
 
-  // Tasks shown in the "Always" tab overview boxes (This Year / This Month /
-  // This Week / Today ...). Unlike getTasksForPeriod these boxes nest: a task
-  // placed on a specific day also appears in its week, month and year box, so
-  // the overview stays consistent with the To-Do/Plan day-week-month views.
-  const getTasksForOverviewBox = useCallback(
-    (period: SchedulePeriod, value: string) => {
-      const tasks = allTasks.filter((task) => !task.completed)
-      switch (period) {
-        case "year":
-          return tasks.filter((task) => taskScheduledInYear(task, value))
-        case "month":
-          return tasks.filter((task) => taskScheduledInMonth(task, value))
-        case "week":
-          return tasks.filter((task) => taskScheduledInWeek(task, value))
-        case "day":
-          return tasks.filter((task) => taskScheduledOnDay(task, value))
-        default:
-          return tasks.filter(
-            (task) => !task.scheduledYear && !task.scheduledMonth && !task.scheduledWeek && !task.scheduledDate,
-          )
-      }
-    },
-    [allTasks],
-  )
+  const scheduleTasksToPeriod = useCallback((taskIds: string[], period: SchedulePeriod, value: string) => {
+    taskIds.forEach((taskId) => scheduleTaskSvc(taskId, period, value))
+    setSelectedTasks(new Set())
+  }, [])
 
-  // Schedule tasks to a specific period
-  const scheduleTasksToPeriod = useCallback(
-    (taskIds: string[], period: SchedulePeriod, value: string) => {
-      taskIds.forEach((taskId) => {
-        const task = allTasks.find((t) => t.id === taskId)
-        if (task) {
-          const updates: Partial<Task> = {}
+  const unscheduleTask = useCallback((taskId: string) => {
+    unscheduleTaskSvc(taskId)
+  }, [])
 
-          // Clear other scheduling fields
-          updates.scheduledYear = undefined
-          updates.scheduledMonth = undefined
-          updates.scheduledWeek = undefined
-          updates.scheduledDate = undefined
+  const removeSelectedFromScheduler = useCallback(() => {
+    selectedTasks.forEach((taskId) => setTaskScheduleableSvc(taskId, false))
+    setSelectedTasks(new Set())
+  }, [selectedTasks])
 
-          // Set the appropriate field
-          switch (period) {
-            case "year":
-              updates.scheduledYear = value
-              break
-            case "month":
-              updates.scheduledMonth = value
-              break
-            case "week":
-              updates.scheduledWeek = value
-              break
-            case "day":
-              updates.scheduledDate = parseLocalDate(value) ?? new Date(value)
-              break
-          }
+  const toggleTaskSelection = useCallback((taskId: string) => {
+    setSelectedTasks((prev) => {
+      const next = new Set(prev)
+      if (next.has(taskId)) next.delete(taskId)
+      else next.add(taskId)
+      return next
+    })
+  }, [])
 
-          updateTask({ ...task, ...updates })
-        }
-      })
-
-      setSelectedTasks(new Set())
-    },
-    [allTasks, updateTask],
-  )
-
-  // Unschedule task
-  const unscheduleTask = useCallback(
-    (taskId: string) => {
-      const task = allTasks.find((t) => t.id === taskId)
-      if (task) {
-        updateTask({
-          ...task,
-          scheduledYear: undefined,
-          scheduledMonth: undefined,
-          scheduledWeek: undefined,
-          scheduledDate: undefined,
-          scheduledTime: undefined,
-        })
-      }
-    },
-    [allTasks, updateTask],
-  )
-
-  // Handle task selection
-  const toggleTaskSelection = useCallback(
-    (taskId: string) => {
-      const newSelected = new Set(selectedTasks)
-      if (newSelected.has(taskId)) {
-        newSelected.delete(taskId)
-      } else {
-        newSelected.add(taskId)
-      }
-      setSelectedTasks(newSelected)
-    },
-    [selectedTasks],
-  )
-
-  // Handle drag and drop
   const handleDragStart = useCallback((e: React.DragEvent, taskId: string) => {
     e.dataTransfer.setData("taskId", taskId)
   }, [])
@@ -289,268 +132,44 @@ export function EnhancedScheduler() {
     (e: React.DragEvent, period: SchedulePeriod, value: string) => {
       e.preventDefault()
       const taskId = e.dataTransfer.getData("taskId")
-      if (taskId) {
-        scheduleTasksToPeriod([taskId], period, value)
-      }
+      if (taskId) scheduleTasksToPeriod([taskId], period, value)
     },
     [scheduleTasksToPeriod],
   )
 
-  // Get category color
-  const getCategoryColor = useCallback(
-    (categoryIds: string[]) => {
-      if (!categoryIds || categoryIds.length === 0) return "#6B7280"
-      const category = categories.find((c) => categoryIds.includes(c.id))
-      return category?.color || "#6B7280"
+  const cellClick = useCallback(
+    (period: SchedulePeriod, value: string) => {
+      if (selectedTasks.size > 0) scheduleTasksToPeriod(Array.from(selectedTasks), period, value)
     },
-    [categories],
+    [selectedTasks, scheduleTasksToPeriod],
   )
 
-  // Navigation functions
-  const navigateToToday = useCallback(() => {
-    setCurrentDate(new Date())
-  }, [])
+  const overviewBoxes = useMemo(() => buildOverviewBoxes(currentDate), [currentDate])
+  const overviewAssignments = useMemo(
+    () => assignTasksToOverviewBoxes(allTasks, overviewBoxes),
+    [allTasks, overviewBoxes],
+  )
 
-  const navigatePrevious = useCallback(() => {
-    const newDate = new Date(currentDate)
-    switch (activeTab) {
-      case "year":
-        newDate.setFullYear(newDate.getFullYear() - 1)
-        break
-      case "month":
-        newDate.setMonth(newDate.getMonth() - 1)
-        break
-      case "week":
-        newDate.setDate(newDate.getDate() - 7)
-        break
-      case "day":
-        newDate.setDate(newDate.getDate() - 1)
-        break
-    }
-    setCurrentDate(newDate)
-  }, [currentDate, activeTab])
-
-  const navigateNext = useCallback(() => {
-    const newDate = new Date(currentDate)
-    switch (activeTab) {
-      case "year":
-        newDate.setFullYear(newDate.getFullYear() + 1)
-        break
-      case "month":
-        newDate.setMonth(newDate.getMonth() + 1)
-        break
-      case "week":
-        newDate.setDate(newDate.getDate() + 7)
-        break
-      case "day":
-        newDate.setDate(newDate.getDate() + 1)
-        break
-    }
-    setCurrentDate(newDate)
-  }, [currentDate, activeTab])
-
-  // Generate time periods
-  const getCurrentYear = () => currentDate.getFullYear().toString()
-  const getCurrentMonth = () => currentDate.toISOString().slice(0, 7)
-  const getCurrentWeek = () => getWeekString(currentDate)
-
-  const getNavigationLabel = () => {
-    switch (activeTab) {
-      case "year":
-        return currentDate.getFullYear().toString()
-      case "month":
-        return currentDate.toLocaleDateString("en-US", { month: "long", year: "numeric" })
-      case "week":
-        const weekRange = parseWeekString(getCurrentWeek())
-        if (weekRange) {
-          return formatWeekRange(weekRange.start)
-        }
-        return "Week"
-      case "day":
-        return currentDate.toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "2-digit" })
-      default:
-        return ""
-    }
-  }
-
-  const getMonths = () => {
-    const months = []
-    for (let i = 0; i < 12; i++) {
-      const date = new Date(currentDate.getFullYear(), i, 1)
-      months.push({
-        value: date.toISOString().slice(0, 7),
-        label: date.toLocaleDateString("en-US", { month: "long" }),
-      })
-    }
-    return months
-  }
-
-  const getWeeksInMonth = (monthValue: string) => {
-    const [year, month] = monthValue.split("-").map(Number)
-    const firstDay = new Date(year, month - 1, 1)
-    const lastDay = new Date(year, month, 0)
-    const weeks = []
-
-    const currentWeekStart = new Date(firstDay)
-    currentWeekStart.setDate(firstDay.getDate() - firstDay.getDay())
-
-    while (currentWeekStart <= lastDay) {
-      const weekEnd = new Date(currentWeekStart)
-      weekEnd.setDate(currentWeekStart.getDate() + 6)
-
-      const weekString = `${currentWeekStart.toISOString().slice(0, 10)}_${weekEnd.toISOString().slice(0, 10)}`
-      weeks.push({
-        value: weekString,
-        label: formatWeekRange(currentWeekStart),
-      })
-
-      currentWeekStart.setDate(currentWeekStart.getDate() + 7)
-    }
-
-    return weeks
-  }
-
-  const getDaysInWeek = (weekValue: string) => {
-    const weekRange = parseWeekString(weekValue)
-    if (!weekRange) return []
-
-    const days = []
-    const currentDay = new Date(weekRange.start)
-
-    for (let i = 0; i < 7; i++) {
-      days.push({
-        value: currentDay.toISOString().slice(0, 10),
-        label: currentDay.toLocaleDateString("en-US", { weekday: "short", day: "numeric" }),
-      })
-      currentDay.setDate(currentDay.getDate() + 1)
-    }
-
-    return days
-  }
-
-  // Current-period keys, used to highlight "the current cell" in the grids so
-  // the current week reads inside the Month view exactly like the current month
-  // reads inside the Year view.
   const todayKey = new Date().toISOString().slice(0, 10)
   const currentMonthKey = new Date().toISOString().slice(0, 7)
-  const currentWeekKey = getWeekString(new Date())
+  const currentWeekKey = getCurrentWeek(new Date())
 
-  // The "Always" overview boxes. A day-scheduled task is technically also in its
-  // week/month/year, but here each task is shown exactly once — in the most
-  // specific box it qualifies for (day → week → month → year).
-  const overviewBoxes = useMemo<{ label: string; period: SchedulePeriod; value: string }[]>(() => {
-    const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1).toISOString().slice(0, 7)
-    const nextWeek = new Date(currentDate)
-    nextWeek.setDate(currentDate.getDate() + 7)
-    const tomorrow = new Date(currentDate)
-    tomorrow.setDate(currentDate.getDate() + 1)
-    return [
-      { label: "This Year", period: "year" as SchedulePeriod, value: getCurrentYear() },
-      { label: "This Month", period: "month" as SchedulePeriod, value: getCurrentMonth() },
-      { label: "Next Month", period: "month" as SchedulePeriod, value: nextMonth },
-      { label: "This Week", period: "week" as SchedulePeriod, value: getCurrentWeek() },
-      { label: "Next Week", period: "week" as SchedulePeriod, value: getWeekString(nextWeek) },
-      { label: "Today", period: "day" as SchedulePeriod, value: currentDate.toISOString().slice(0, 10) },
-      { label: "Tomorrow", period: "day" as SchedulePeriod, value: tomorrow.toISOString().slice(0, 10) },
-    ]
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentDate])
-
-  const periodRank: Record<SchedulePeriod, number> = { always: 0, year: 1, month: 2, week: 3, day: 4 }
-
-  const boxMatchesTask = useCallback((task: Task, period: SchedulePeriod, value: string) => {
-    if (period === "always") return false
-    return taskBelongsInOverviewBox(task, period as "year" | "month" | "week" | "day", value)
-  }, [])
-
-  // Assign each task to a single box (the most specific match).
-  const overviewAssignments = useMemo(() => {
-    const map: Record<string, Task[]> = {}
-    overviewBoxes.forEach((b) => (map[b.label] = []))
-    allTasks
-      .filter((t) => !t.completed)
-      .forEach((task) => {
-        let best: { label: string; period: SchedulePeriod; value: string } | null = null
-        for (const b of overviewBoxes) {
-          if (boxMatchesTask(task, b.period, b.value)) {
-            if (!best || periodRank[b.period] > periodRank[best.period]) best = b
-          }
-        }
-        if (best) map[best.label].push(task)
-      })
-    return map
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allTasks, overviewBoxes, boxMatchesTask])
-
-  // Task component
-  const TaskItem = ({
-    task,
-    showCheckbox = false,
-    showUnschedule = false,
-    onClick,
-  }: {
-    task: Task
-    showCheckbox?: boolean
-    showUnschedule?: boolean
-    onClick?: () => void
-  }) => (
-    <div
-      className={`p-3 border rounded-lg transition-all duration-200 group relative task-item ${
-        selectedTasks.has(task.id)
-          ? "border-primary bg-primary/5 shadow-sm"
-          : "hover:bg-muted/50 hover:border-muted-foreground/20"
-      }`}
-      draggable
-      onDragStart={(e) => handleDragStart(e, task.id)}
-      style={{
-        borderLeftColor: getCategoryColor(task.categories || []),
-        borderLeftWidth: "4px",
-      }}
-    >
-      {showUnschedule && (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity focus-ring"
-          onClick={(e) => {
-            e.stopPropagation()
-            unscheduleTask(task.id)
-          }}
-        >
-          <X className="h-3 w-3" />
-        </Button>
-      )}
-
-      <div className="flex items-center gap-3">
-        {showCheckbox && (
-          <div onClick={(e) => e.stopPropagation()}>
-            <Checkbox
-              checked={selectedTasks.has(task.id)}
-              onCheckedChange={() => toggleTaskSelection(task.id)}
-              className="focus-ring"
-            />
-          </div>
-        )}
-        <GripVertical className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-        <div className="flex-1 min-w-0 cursor-pointer" onClick={onClick}>
-          <p className="text-sm font-medium truncate">{task.description}</p>
-          <div className="flex gap-2 mt-1 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              {task.estimatedDuration}m
-            </span>
-            <span className="flex items-center gap-1">
-              <AlertTriangle className="h-3 w-3" />
-              {task.urgency}
-            </span>
-            <span className="flex items-center gap-1">
-              <Star className="h-3 w-3" />
-              {task.importance}
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
+  const renderTaskItem = useCallback(
+    (task: Task, opts?: { showCheckbox?: boolean; showUnschedule?: boolean }) => (
+      <SchedulerTaskItem
+        key={task.id}
+        task={task}
+        color={getCategoryColor(categories, task.lists || [])}
+        selected={selectedTasks.has(task.id)}
+        showCheckbox={opts?.showCheckbox}
+        showUnschedule={opts?.showUnschedule}
+        onClick={() => setSelectedTaskId(task.id)}
+        onToggleSelect={toggleTaskSelection}
+        onUnschedule={unscheduleTask}
+        onDragStart={handleDragStart}
+      />
+    ),
+    [categories, selectedTasks, toggleTaskSelection, unscheduleTask, handleDragStart],
   )
 
   return (
@@ -558,17 +177,16 @@ export function EnhancedScheduler() {
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Enhanced Scheduler</h2>
 
-        {/* Navigation - only show for non-always tabs */}
-        {activeTab !== "always" && (
+        {schedulerView === "funnel" && activeTab !== "always" && (
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={navigatePrevious}>
+            <Button variant="outline" size="icon" onClick={() => setCurrentDate(navigateDate(currentDate, activeTab, -1))}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="font-medium min-w-[120px] text-center">{getNavigationLabel()}</span>
-            <Button variant="outline" size="icon" onClick={navigateNext}>
+            <span className="font-medium min-w-[120px] text-center">{getNavigationLabel(activeTab, currentDate)}</span>
+            <Button variant="outline" size="icon" onClick={() => setCurrentDate(navigateDate(currentDate, activeTab, 1))}>
               <ChevronRight className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="sm" onClick={navigateToToday}>
+            <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>
               <Home className="h-4 w-4 mr-1" />
               Today
             </Button>
@@ -576,6 +194,37 @@ export function EnhancedScheduler() {
         )}
       </div>
 
+      <div className="flex gap-1 rounded-md border border-border p-1 w-fit">
+        <Button
+          variant={schedulerView === "funnel" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setSchedulerView("funnel")}
+        >
+          <CalendarRange className="h-4 w-4 mr-1.5" />
+          Funnel
+        </Button>
+        <Button
+          variant={schedulerView === "gantt" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setSchedulerView("gantt")}
+        >
+          <GanttChartSquare className="h-4 w-4 mr-1.5" />
+          Gantt
+        </Button>
+        <Button
+          variant={schedulerView === "graph" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setSchedulerView("graph")}
+        >
+          <Workflow className="h-4 w-4 mr-1.5" />
+          Dependencies
+        </Button>
+      </div>
+
+      {schedulerView === "gantt" && <GanttView tasks={allTasks} onSelectTask={setSelectedTaskId} />}
+      {schedulerView === "graph" && <DependencyGraph tasks={allTasks} onSelectTask={setSelectedTaskId} />}
+
+      {schedulerView === "funnel" && (
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as SchedulePeriod)}>
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="always">Always</TabsTrigger>
@@ -586,465 +235,93 @@ export function EnhancedScheduler() {
         </TabsList>
 
         <TabsContent value="always" className="space-y-4">
-          <div className="grid grid-cols-4 gap-6">
-            <div className="col-span-1">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    Available Tasks
-                    {selectedTasks.size > 0 && <Badge variant="secondary">{selectedTasks.size} selected</Badge>}
-                  </CardTitle>
-
-                  {/* Filtering and Sorting Controls */}
-                  <div className="space-y-3">
-                    <Collapsible>
-                      <CollapsibleTrigger asChild>
-                        <Button variant="outline" className="w-full justify-between focus-ring">
-                          <span className="flex items-center gap-2">
-                            <Filter className="h-4 w-4" />
-                            Filters & Sort
-                          </span>
-                          <ChevronDown className="h-4 w-4" />
-                        </Button>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent className="space-y-4 pt-3">
-                        <div className="space-y-2">
-                          <Label className="text-xs font-medium">Filter by Lists</Label>
-                          <div className="space-y-1 max-h-32 overflow-y-auto custom-scrollbar">
-                            <div className="flex items-center space-x-2">
-                              <Checkbox
-                                id="all-categories"
-                                checked={selectedCategories.length === 0}
-                                onCheckedChange={(checked) => {
-                                  if (checked) {
-                                    setSelectedCategories([])
-                                  }
-                                }}
-                              />
-                              <Label htmlFor="all-categories" className="text-sm">
-                                All lists
-                              </Label>
-                            </div>
-                            {categories
-                              .filter((category) => scheduleableCategoryIds.has(category.id))
-                              .map((category) => (
-                              <div key={category.id} className="flex items-center space-x-2">
-                                <Checkbox
-                                  id={`category-${category.id}`}
-                                  checked={selectedCategories.includes(category.id)}
-                                  onCheckedChange={(checked) => {
-                                    if (checked) {
-                                      setSelectedCategories([...selectedCategories, category.id])
-                                    } else {
-                                      setSelectedCategories(selectedCategories.filter((id) => id !== category.id))
-                                    }
-                                  }}
-                                />
-                                <Label htmlFor={`category-${category.id}`} className="text-sm flex items-center gap-2">
-                                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: category.color }} />
-                                  {category.name}
-                                </Label>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="flex gap-2">
-                          <div className="flex-1">
-                            <Label className="text-xs font-medium">Sort by</Label>
-                            <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
-                              <SelectTrigger className="h-8 focus-ring">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="importance">Importance</SelectItem>
-                                <SelectItem value="duration">Duration</SelectItem>
-                                <SelectItem value="deadline">Deadline</SelectItem>
-                                <SelectItem value="reward">Reward</SelectItem>
-                                <SelectItem value="category">List</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div className="pt-4">
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-8 w-8 focus-ring"
-                              onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-                            >
-                              <ArrowUpDown className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </div>
-                      </CollapsibleContent>
-                    </Collapsible>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-2 max-h-96 overflow-y-auto">
-                  {getAvailableTasks().map((task) => (
-                    <TaskItem key={task.id} task={task} showCheckbox onClick={() => setSelectedTaskId(task.id)} />
-                  ))}
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="col-span-3">
-              <p className="text-xs text-muted-foreground mb-2">
-                Each task appears once, in its most specific period (day → week → month → year).
-              </p>
-              <div className="grid grid-cols-2 gap-4">
-                {overviewBoxes.map((box) => {
-                  const boxTasks = overviewAssignments[box.label] || []
-                  return (
-                    <Card
-                      key={box.label}
-                      className="cursor-pointer hover:bg-muted/50"
-                      onDragOver={(e) => e.preventDefault()}
-                      onDrop={(e) => handleDrop(e, box.period, box.value)}
-                      onClick={() => {
-                        if (selectedTasks.size > 0) {
-                          scheduleTasksToPeriod(Array.from(selectedTasks), box.period, box.value)
-                        }
-                      }}
-                    >
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm flex items-center justify-between">
-                          {box.label}
-                          <Badge variant="outline" className="text-xs font-normal">
-                            {boxTasks.length}
-                          </Badge>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-1">
-                        {boxTasks.slice(0, 3).map((task) => (
-                          <TaskItem key={task.id} task={task} showUnschedule onClick={() => setSelectedTaskId(task.id)} />
-                        ))}
-                        {boxTasks.length > 3 && (
-                          <div className="text-xs text-muted-foreground">+{boxTasks.length - 3} more</div>
-                        )}
-                        {boxTasks.length === 0 && <div className="text-xs text-muted-foreground italic">Empty</div>}
-                      </CardContent>
-                    </Card>
-                  )
-                })}
-              </div>
-            </div>
-          </div>
+          <AlwaysTab
+            availableTasks={availableTasks}
+            selectedCount={selectedTasks.size}
+            onRemoveSelectedFromScheduler={removeSelectedFromScheduler}
+            categories={categories}
+            scheduleableCategoryIds={scheduleableCategoryIds}
+            selectedCategories={selectedCategories}
+            setSelectedCategories={setSelectedCategories}
+            sortBy={sortBy}
+            setSortBy={setSortBy}
+            sortOrder={sortOrder}
+            setSortOrder={setSortOrder}
+            overviewBoxes={overviewBoxes}
+            overviewAssignments={overviewAssignments}
+            onDrop={handleDrop}
+            onCellClick={cellClick}
+            renderTaskItem={renderTaskItem}
+          />
         </TabsContent>
 
         <TabsContent value="year" className="space-y-4">
-          <div className="grid grid-cols-4 gap-6">
-            <div className="col-span-1">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Year {getCurrentYear()}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2 max-h-96 overflow-y-auto">
-                  {getTasksForPeriod("year", getCurrentYear()).map((task) => (
-                    <TaskItem
-                      key={task.id}
-                      task={task}
-                      showCheckbox
-                      showUnschedule
-                      onClick={() => setSelectedTaskId(task.id)}
-                    />
-                  ))}
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="col-span-3">
-              <div className="grid grid-cols-3 gap-4">
-                {getMonths().map((month) => (
-                  <Card
-                    key={month.value}
-                    className={`cursor-pointer hover:bg-muted/50 ${
-                      month.value === currentMonthKey ? "ring-2 ring-primary" : ""
-                    }`}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={(e) => handleDrop(e, "month", month.value)}
-                    onClick={() => {
-                      if (selectedTasks.size > 0) {
-                        scheduleTasksToPeriod(Array.from(selectedTasks), "month", month.value)
-                      }
-                    }}
-                  >
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm flex items-center justify-between">
-                        {month.label}
-                        {month.value === currentMonthKey && (
-                          <Badge variant="default" className="text-[10px] px-1.5 py-0">
-                            Current
-                          </Badge>
-                        )}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-1">
-                      {getTasksForPeriod("month", month.value)
-                        .slice(0, 2)
-                        .map((task) => (
-                          <TaskItem
-                            key={task.id}
-                            task={task}
-                            showUnschedule
-                            onClick={() => setSelectedTaskId(task.id)}
-                          />
-                        ))}
-                      {getTasksForPeriod("month", month.value).length > 2 && (
-                        <div className="text-xs text-muted-foreground">
-                          +{getTasksForPeriod("month", month.value).length - 2} more
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          </div>
+          <PeriodFunnelTab
+            sidebarTitle={`Year ${getCurrentYear(currentDate)}`}
+            sidebarTasks={tasksFor("year", getCurrentYear(currentDate))}
+            cells={getMonths(currentDate)}
+            gridColsClass="grid-cols-3"
+            cellPeriod="month"
+            cellMaxVisible={2}
+            currentKey={currentMonthKey}
+            currentBadgeLabel="Current"
+            tasksForCell={(value) => tasksFor("month", value)}
+            onDrop={handleDrop}
+            onCellClick={cellClick}
+            renderTaskItem={renderTaskItem}
+          />
         </TabsContent>
 
         <TabsContent value="month" className="space-y-4">
-          <div className="grid grid-cols-4 gap-6">
-            <div className="col-span-1">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Month Tasks</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2 max-h-96 overflow-y-auto">
-                  {getTasksForPeriod("month", getCurrentMonth()).map((task) => (
-                    <TaskItem
-                      key={task.id}
-                      task={task}
-                      showCheckbox
-                      showUnschedule
-                      onClick={() => setSelectedTaskId(task.id)}
-                    />
-                  ))}
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="col-span-3">
-              <div className="grid grid-cols-2 gap-4">
-                {getWeeksInMonth(getCurrentMonth()).map((week) => (
-                  <Card
-                    key={week.value}
-                    className={`cursor-pointer hover:bg-muted/50 ${
-                      week.value === currentWeekKey ? "ring-2 ring-primary" : ""
-                    }`}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={(e) => handleDrop(e, "week", week.value)}
-                    onClick={() => {
-                      if (selectedTasks.size > 0) {
-                        scheduleTasksToPeriod(Array.from(selectedTasks), "week", week.value)
-                      }
-                    }}
-                  >
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm flex items-center justify-between">
-                        Week {week.label}
-                        {week.value === currentWeekKey && (
-                          <Badge variant="default" className="text-[10px] px-1.5 py-0">
-                            This Week
-                          </Badge>
-                        )}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-1">
-                      {getTasksForPeriod("week", week.value)
-                        .slice(0, 2)
-                        .map((task) => (
-                          <TaskItem
-                            key={task.id}
-                            task={task}
-                            showUnschedule
-                            onClick={() => setSelectedTaskId(task.id)}
-                          />
-                        ))}
-                      {getTasksForPeriod("week", week.value).length > 2 && (
-                        <div className="text-xs text-muted-foreground">
-                          +{getTasksForPeriod("week", week.value).length - 2} more
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          </div>
+          <PeriodFunnelTab
+            sidebarTitle="Month Tasks"
+            sidebarTasks={tasksFor("month", getCurrentMonth(currentDate))}
+            cells={getWeeksInMonth(getCurrentMonth(currentDate))}
+            gridColsClass="grid-cols-2"
+            cellPeriod="week"
+            cellMaxVisible={2}
+            cellTitlePrefix="Week "
+            currentKey={currentWeekKey}
+            currentBadgeLabel="This Week"
+            tasksForCell={(value) => tasksFor("week", value)}
+            onDrop={handleDrop}
+            onCellClick={cellClick}
+            renderTaskItem={renderTaskItem}
+          />
         </TabsContent>
 
         <TabsContent value="week" className="space-y-4">
-          <div className="grid grid-cols-4 gap-6">
-            <div className="col-span-1">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Week Tasks</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2 max-h-96 overflow-y-auto">
-                  {getTasksForPeriod("week", getCurrentWeek()).map((task) => (
-                    <TaskItem
-                      key={task.id}
-                      task={task}
-                      showCheckbox
-                      showUnschedule
-                      onClick={() => setSelectedTaskId(task.id)}
-                    />
-                  ))}
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="col-span-3">
-              <div className="grid grid-cols-2 gap-4">
-                {getDaysInWeek(getCurrentWeek()).map((day) => (
-                  <Card
-                    key={day.value}
-                    className={`cursor-pointer hover:bg-muted/50 ${
-                      day.value === todayKey ? "ring-2 ring-primary" : ""
-                    }`}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={(e) => handleDrop(e, "day", day.value)}
-                    onClick={() => {
-                      if (selectedTasks.size > 0) {
-                        scheduleTasksToPeriod(Array.from(selectedTasks), "day", day.value)
-                      }
-                    }}
-                  >
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm flex items-center justify-between">
-                        {day.label}
-                        {day.value === todayKey && (
-                          <Badge variant="default" className="text-[10px] px-1.5 py-0">
-                            Today
-                          </Badge>
-                        )}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-1">
-                      {getTasksForPeriod("day", day.value)
-                        .slice(0, 3)
-                        .map((task) => (
-                          <TaskItem
-                            key={task.id}
-                            task={task}
-                            showUnschedule
-                            onClick={() => setSelectedTaskId(task.id)}
-                          />
-                        ))}
-                      {getTasksForPeriod("day", day.value).length > 3 && (
-                        <div className="text-xs text-muted-foreground">
-                          +{getTasksForPeriod("day", day.value).length - 3} more
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          </div>
+          <PeriodFunnelTab
+            sidebarTitle="Week Tasks"
+            sidebarTasks={tasksFor("week", getCurrentWeek(currentDate))}
+            cells={getDaysInWeek(getCurrentWeek(currentDate))}
+            gridColsClass="grid-cols-2"
+            cellPeriod="day"
+            cellMaxVisible={3}
+            currentKey={todayKey}
+            currentBadgeLabel="Today"
+            tasksForCell={(value) => tasksFor("day", value)}
+            onDrop={handleDrop}
+            onCellClick={cellClick}
+            renderTaskItem={renderTaskItem}
+          />
         </TabsContent>
 
         <TabsContent value="day" className="space-y-4">
-          <div className="grid grid-cols-4 gap-6">
-            <div className="col-span-1">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Today's Tasks</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2 max-h-96 overflow-y-auto">
-                  {getTasksForPeriod("day", currentDate.toISOString().slice(0, 10)).map((task) => (
-                    <TaskItem key={task.id} task={task} showUnschedule onClick={() => setSelectedTaskId(task.id)} />
-                  ))}
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="col-span-3">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CalendarClock className="h-5 w-5" />
-                    Daily Agenda - {currentDate.toLocaleDateString()}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-1">
-                    {Array.from({ length: 24 }, (_, i) => {
-                      const hour = i.toString().padStart(2, "0") + ":00"
-                      const scheduledTasks = allTasks.filter(
-                        (task) =>
-                          task.scheduledDate &&
-                          new Date(task.scheduledDate).toDateString() === currentDate.toDateString() &&
-                          task.scheduledTime === hour,
-                      )
-
-                      return (
-                        <div key={hour} className="flex border-b border-muted last:border-b-0">
-                          <div className="w-16 py-2 text-xs font-medium text-muted-foreground border-r border-muted">
-                            {hour}
-                          </div>
-                          <div
-                            className="flex-1 min-h-[40px] p-2 hover:bg-muted/50 transition-colors"
-                            onDragOver={(e) => e.preventDefault()}
-                            onDrop={(e) => {
-                              e.preventDefault()
-                              const taskId = e.dataTransfer.getData("taskId")
-                              if (taskId) {
-                                const task = allTasks.find((t) => t.id === taskId)
-                                if (task) {
-                                  updateTask({
-                                    ...task,
-                                    scheduledDate: currentDate,
-                                    scheduledTime: hour,
-                                    scheduledWeek: undefined,
-                                    scheduledMonth: undefined,
-                                    scheduledYear: undefined,
-                                  })
-                                }
-                              }
-                            }}
-                          >
-                            {scheduledTasks.map((task) => (
-                              <div
-                                key={task.id}
-                                className="bg-primary/10 border border-primary/20 rounded px-2 py-1 mb-1 text-xs cursor-pointer hover:bg-primary/20 transition-colors group relative"
-                                onClick={() => setSelectedTaskId(task.id)}
-                                draggable
-                                onDragStart={(e) => handleDragStart(e, task.id)}
-                              >
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="absolute top-0 right-0 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    updateTask({
-                                      ...task,
-                                      scheduledTime: undefined,
-                                    })
-                                  }}
-                                >
-                                  <X className="h-3 w-3" />
-                                </Button>
-                                <div className="font-medium truncate pr-4">{task.description}</div>
-                                <div className="text-muted-foreground">{task.estimatedDuration}m</div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+          <DayTab
+            currentDate={currentDate}
+            allTasks={allTasks}
+            dayTasks={tasksFor("day", currentDate.toISOString().slice(0, 10))}
+            onDropHour={(taskId, hour) => scheduleTaskToTime(taskId, currentDate, hour)}
+            onClearTime={clearScheduledTime}
+            onDragStart={handleDragStart}
+            onTaskClick={setSelectedTaskId}
+            renderTaskItem={renderTaskItem}
+          />
         </TabsContent>
       </Tabs>
+      )}
 
-      {/* Task Detail Popup */}
       <TaskDetailPopup taskId={selectedTaskId} open={!!selectedTaskId} onClose={() => setSelectedTaskId(null)} />
     </div>
   )

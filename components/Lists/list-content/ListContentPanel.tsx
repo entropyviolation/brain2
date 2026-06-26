@@ -6,6 +6,8 @@ import { ListContentDefault } from "./ListContentDefault"
 import { ListContentChecklist } from "./ListContentChecklist"
 import { ListContentIcons } from "./ListContentIcons"
 import { ListContentDetails } from "./ListContentDetails"
+import { ListContentSpreadsheet } from "./ListContentSpreadsheet"
+import { ListContentKanban } from "./ListContentKanban"
 import type { ListContentPanelProps } from "./types"
 
 export type { ListContentPanelProps } from "./types"
@@ -133,6 +135,26 @@ export function ListContentPanel({
     body = <ListContentChecklist {...taskHandlers} />
   } else if (currentDisplay === "icons") {
     body = <ListContentIcons {...taskHandlers} onIconPickerOpen={onIconPickerOpen} />
+  } else if (currentDisplay === "kanban") {
+    body = (
+      <ListContentKanban
+        {...taskHandlers}
+        openCategory={openCategory}
+        listKey={openTargetKeyValue}
+      />
+    )
+  } else if (currentDisplay === "spreadsheet") {
+    body = (
+      <ListContentSpreadsheet
+        {...taskHandlers}
+        openCategory={openCategory}
+        categories={categories}
+        folders={folders}
+        openFolderAll={openFolderAll}
+        currentFolder={currentFolder}
+        itemLabel={itemLabel}
+      />
+    )
   } else {
     body = (
       <ListContentDetails

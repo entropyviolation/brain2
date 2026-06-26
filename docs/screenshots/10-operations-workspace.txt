@@ -1,0 +1,21 @@
+================================================================================
+SCREENSHOT: 10-operations-workspace.png
+VIEW: Operations tab → Operation workspace
+AREA: Operations workspace
+SOURCE FILES:
+  - components/Operations/OperationWorkspace.tsx
+  - components/Operations/OperationHome.tsx
+  - components/Operations/PhasesPanel.tsx
+  - components/Operations/ResourcesPanel.tsx
+  - components/Operations/ToDoNextRail.tsx
+================================================================================
+
+GLOBAL CHROME (all screens)
+  The COGS title and global action bar appear on every screen (app/page.tsx):
+    Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
+    Bulk Add | Quick Add
+  Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
+  Top-level tabs (7): Home | Lists | Scheduler | Operations | Modules | Graph | Analytics
+
+VIEW-SPECIFIC
+Mini-app for one operation: Home / Phases / Resources / Log tabs plus persistent To-do-next rail, rename, stage badge, post-mortem.

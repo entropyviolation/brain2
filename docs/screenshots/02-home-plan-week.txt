@@ -1,0 +1,18 @@
+================================================================================
+SCREENSHOT: 02-home-plan-week.png
+VIEW: Home tab → Plan → Week View
+AREA: Home → Plan → Week
+SOURCE FILES:
+  - components/Home/Plan/week-view.tsx
+  - components/Home/Plan/planned-tasks-sidebar.tsx
+================================================================================
+
+GLOBAL CHROME (all screens)
+  The COGS title and global action bar appear on every screen (app/page.tsx):
+    Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
+    Bulk Add | Quick Add
+  Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
+  Top-level tabs (7): Home | Lists | Scheduler | Operations | Modules | Graph | Analytics
+
+VIEW-SPECIFIC
+Seven-day agenda columns with hour bands. Planned-tasks sidebar lists unscheduled items for drag-in scheduling.

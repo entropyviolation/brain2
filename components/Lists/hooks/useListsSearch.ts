@@ -1,15 +1,15 @@
 import { useMemo, useState } from "react"
-import type { Task, TaskCategory, CategoryFolder } from "@/lib/types"
+import type { Task, List, Folder } from "@/lib/types"
 
 export interface SearchResults {
-  folders: CategoryFolder[]
-  lists: TaskCategory[]
+  folders: Folder[]
+  lists: List[]
   tasks: Task[]
 }
 
 export function useListsSearch(
-  folders: CategoryFolder[],
-  categories: TaskCategory[],
+  folders: Folder[],
+  categories: List[],
   allTasks: Task[],
 ) {
   const [searchTerm, setSearchTerm] = useState("")

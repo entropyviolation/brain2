@@ -1,0 +1,18 @@
+================================================================================
+SCREENSHOT: 05-lists-content-kanban.png
+VIEW: Lists tab → Example List → Kanban display
+AREA: Lists → list → Kanban
+SOURCE FILES:
+  - components/Lists/list-content/ListContentKanban.tsx
+  - components/Lists/list-content/kanban-utils.ts
+================================================================================
+
+GLOBAL CHROME (all screens)
+  The COGS title and global action bar appear on every screen (app/page.tsx):
+    Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
+    Bulk Add | Quick Add
+  Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
+  Top-level tabs (7): Home | Lists | Scheduler | Operations | Modules | Graph | Analytics
+
+VIEW-SPECIFIC
+Kanban board grouped by a status/select attribute; drag cards between columns.

@@ -5,7 +5,8 @@
  * folder tree) from plain list items, building minimal vs full task records,
  * and filtering planned-task sidebars in Plan views.
  */
-import type { Task, TaskCategory, CategoryFolder, AttributeValue } from "@/lib/types"
+import type { Task, List, Folder, AttributeValue, ItemTypeDefinition, ItemTypeRule } from "@/lib/types"
+import { composeListDefaults, getItemType, gatherItemRules, applyRules, type ItemLike } from "@/lib/item-types"
 import {
   formatDateKey,
   getWeekString,
@@ -16,10 +17,12 @@ import {
   type SchedulableFields,
 } from "@/lib/date-utils"
 import { normalizeAttributeType } from "@/lib/attribute-utils"
+import type { AttributeDefinition } from "@/lib/types"
+import { computeFormulaValue } from "@/lib/formula"
 
 const NEXT_ACTIONS_RE = /next\s*actions?/i
 
-export function isNextActionsFolder(folderId: string, folders: CategoryFolder[]): boolean {
+export function isNextActionsFolder(folderId: string, folders: Folder[]): boolean {
   const folder = folders.find((f) => f.id === folderId)
   if (!folder) return false
   if (NEXT_ACTIONS_RE.test(folder.name)) return true
@@ -27,17 +30,30 @@ export function isNextActionsFolder(folderId: string, folders: CategoryFolder[])
   return false
 }
 
-export function folderForCategory(categoryId: string, folders: CategoryFolder[]): CategoryFolder | undefined {
-  return folders.find((f) => f.categoryIds.includes(categoryId))
+export function folderForCategory(categoryId: string, folders: Folder[]): Folder | undefined {
+  return folders.find((f) => f.listIds.includes(categoryId))
 }
 
-export function categoryIsNextActions(categoryId: string, folders: CategoryFolder[]): boolean {
+export function listIsNextActions(categoryId: string, folders: Folder[]): boolean {
   const folder = folderForCategory(categoryId, folders)
   return folder ? isNextActionsFolder(folder.id, folders) : false
 }
 
-export function taskIsNextAction(task: Task, folders: CategoryFolder[]): boolean {
-  return (task.categories ?? []).some((cid) => categoryIsNextActions(cid, folders))
+export function taskIsNextAction(task: Task, folders: Folder[]): boolean {
+  return (task.lists ?? []).some((cid) => listIsNextActions(cid, folders))
+}
+
+/**
+ * Whether an item is of the built-in "task" item type — which is what grants the
+ * task attributes/features (scheduling, dependencies, subtasks, analysis, time).
+ *
+ * Being in the Next Actions folder (or any list within it) *makes* an item a
+ * task: next-action membership implies the task item type. Otherwise we honor
+ * the item's explicit `type` (defaults to "task" for plain items).
+ */
+export function isTaskItem(task: Task, folders: Folder[]): boolean {
+  if (taskIsNextAction(task, folders)) return true
+  return (task.type ?? "task") === "task"
 }
 
 /** Which explicit schedule field is set (most specific stored assignment). */
@@ -114,23 +130,29 @@ export function isDayUnscheduledPlanned(task: Task, date: Date): boolean {
 }
 
 /** Minimal list item — no next-actions scheduling defaults. */
-export function createListItem(description: string, categoryIds: string[] = []): Task {
+export function createListItem(description: string, listIds: string[] = []): Task {
   return {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     description,
-    category: categoryIds.length ? "clarified" : "list",
+    stage: listIds.length ? "clarified" : "list",
+    // Unified Item base fields (spec §5)
+    type: "task",
+    title: description,
+    tags: [],
+    links: [],
     createdAt: new Date(),
     completed: false,
-    categories: categoryIds,
+    lists: listIds,
     subtasks: [],
+    rewardValue: 1,
   }
 }
 
 /** Next-actions item with scheduling / priority defaults. */
-export function createNextActionItem(description: string, categoryIds: string[] = []): Task {
+export function createNextActionItem(description: string, listIds: string[] = []): Task {
   return {
-    ...createListItem(description, categoryIds),
-    category: "clarified",
+    ...createListItem(description, listIds),
+    stage: "clarified",
     estimatedDuration: 30,
     cognitiveLoad: 2,
     urgency: 3,
@@ -147,69 +169,189 @@ export function createNextActionItem(description: string, categoryIds: string[] 
 /** Seed attributes from list defaults when adding to a category. */
 export function withCategoryDefaults(
   task: Task,
-  category: TaskCategory | undefined,
+  list: List | undefined,
 ): Task {
-  if (!category?.defaultAttributeValues) return task
+  if (!list?.defaultAttributeValues) return task
   return {
     ...task,
-    attributes: { ...category.defaultAttributeValues, ...(task.attributes || {}) },
+    attributes: { ...list.defaultAttributeValues, ...(task.attributes || {}) },
   }
+}
+
+/**
+ * Run the rules that apply to an item (its item type's rules plus the rules of
+ * every list it belongs to) for a given trigger, returning the item with rule
+ * actions applied. Validation errors are intentionally ignored here — the store
+ * persists state, it does not block edits. Pure (no store reads) so it stays
+ * testable; callers pass the current `categories` and `types`.
+ */
+export function applyItemRules(
+  task: Task,
+  lists: List[],
+  types: ItemTypeDefinition[],
+  trigger: ItemTypeRule["trigger"],
+): Task {
+  const memberLists = (task.lists ?? [])
+    .map((id) => lists.find((c) => c.id === id))
+    .filter((c): c is List => !!c)
+  const type = getItemType(types, task.type)
+  const rules = gatherItemRules(type, memberLists, types)
+  if (rules.length === 0) return task
+  // Task lacks the open index signature ItemLike uses for generic field access;
+  // the rule engine only reads/writes known fields, so this cast is safe.
+  return applyRules(task as unknown as ItemLike, rules, trigger).item as unknown as Task
+}
+
+/**
+ * Apply a list's *membership* to an item: adopt the list's item type (unless the
+ * item is already a non-task type) and seed the list's composed default values
+ * (item type defaults + list defaults) without overwriting values already set.
+ *
+ * Used when creating an item in a list or dragging an item into a new list, so
+ * e.g. dropping a book onto "Books to Buy" adds that list's `cost`/`purchased`
+ * defaults automatically.
+ */
+export function withListMembership(
+  task: Task,
+  list: List | undefined,
+  types: ItemTypeDefinition[] = [],
+): Task {
+  if (!list) return task
+  let next = task
+  if (list.itemTypeId && (!next.type || next.type === "task")) {
+    next = { ...next, type: list.itemTypeId }
+  }
+  const defaults = composeListDefaults(list, types)
+  if (Object.keys(defaults).length > 0) {
+    next = { ...next, attributes: { ...defaults, ...(next.attributes || {}) } }
+  }
+  return next
 }
 
 export function isTaskScheduleable(
   task: Task,
-  categories: TaskCategory[],
-  folders: CategoryFolder[],
+  lists: List[],
+  folders: Folder[],
 ): boolean {
   if (task.scheduleable === false) return false
   if (task.scheduleable === true) return true
-  const cats = (task.categories ?? [])
-    .map((id) => categories.find((c) => c.id === id))
-    .filter(Boolean) as TaskCategory[]
+  const cats = (task.lists ?? [])
+    .map((id) => lists.find((c) => c.id === id))
+    .filter(Boolean) as List[]
   if (cats.some((c) => c.scheduleable === false)) return false
   if (cats.some((c) => c.scheduleable !== false)) return true
   return taskIsNextAction(task, folders)
 }
 
-/** Points awarded when completing a next-actions task (default 1, or list "Points" attribute). */
+/**
+ * Beat-the-clock "standard time" multiplier (Brain2 #28 — Gantt task-and-bonus).
+ *
+ * Finishing a task under its estimated ("standard") time earns up to a ~20%
+ * point bonus, scaled by how far under you came in. Pure + deterministic:
+ *   - returns 1 (no bonus) when either duration is missing/invalid, or when the
+ *     actual time met/exceeded the estimate (default behavior is unchanged);
+ *   - otherwise 1 + 0.2 · fractionSaved, where fractionSaved = (est-act)/est
+ *     clamped to 0..1, so a task done in half the time → 1.10, instant → 1.20.
+ */
+export const MAX_BEAT_THE_CLOCK_BONUS = 0.2
+
+export function beatTheClockMultiplier(
+  estimatedDuration?: number,
+  actualDuration?: number,
+): number {
+  if (
+    estimatedDuration === undefined ||
+    actualDuration === undefined ||
+    !Number.isFinite(estimatedDuration) ||
+    !Number.isFinite(actualDuration) ||
+    estimatedDuration <= 0 ||
+    actualDuration < 0
+  ) {
+    return 1
+  }
+  if (actualDuration >= estimatedDuration) return 1
+  const fractionSaved = (estimatedDuration - actualDuration) / estimatedDuration
+  const clamped = Math.min(1, Math.max(0, fractionSaved))
+  return 1 + MAX_BEAT_THE_CLOCK_BONUS * clamped
+}
+
+/** Points awarded on completion: default 1, overridable via list "Points" attribute or rewardValue. */
 export function resolveCompletionPoints(
   task: Task,
-  categories: TaskCategory[],
-  folders: CategoryFolder[],
+  lists: List[],
+  folders: Folder[],
 ): number {
-  if (!taskIsNextAction(task, folders)) {
-    return task.rewardValue || 0
+  const isNextAction = taskIsNextAction(task, folders)
+  let base = 1
+  let resolvedFromPointsAttr = false
+
+  const taskCategories = (task.lists ?? [])
+    .map((id) => lists.find((c) => c.id === id))
+    .filter(Boolean) as List[]
+
+  // Union of every attribute definition the item inherits from its lists. Needed
+  // so a formula "Points" attribute can resolve its sibling references (the
+  // completion-tier thresholds / current value).
+  const allDefs = new Map<string, AttributeDefinition>()
+  for (const cat of taskCategories) {
+    for (const def of cat.itemAttributes ?? []) {
+      if (!allDefs.has(def.id)) allDefs.set(def.id, def)
+    }
   }
 
-  const taskCategories = (task.categories ?? [])
-    .map((id) => categories.find((c) => c.id === id))
-    .filter(Boolean) as TaskCategory[]
+  const isPointsAttr = (a: AttributeDefinition) => a.name.trim().toLowerCase() === "points"
 
-  for (const cat of taskCategories) {
-    const pointsDef = cat.itemAttributes?.find(
-      (a) => a.name.trim().toLowerCase() === "points" && normalizeAttributeType(a.type) === "number",
-    )
-    if (pointsDef) {
-      const raw = task.attributes?.[pointsDef.id]
+  for (const def of allDefs.values()) {
+    if (!isPointsAttr(def)) continue
+    const type = normalizeAttributeType(def.type)
+
+    if (type === "formula") {
+      // Evaluate the points formula against the item's stored attribute values
+      // (e.g. the completion-tier ladder). Blank/invalid → fall back to base 1.
+      const result = computeFormulaValue(def, task.attributes ?? {}, allDefs)
+      if (!result.error && result.value !== null && result.value >= 0) {
+        base = result.value
+        resolvedFromPointsAttr = true
+        break
+      }
+      continue
+    }
+
+    if (type === "number") {
+      const raw = task.attributes?.[def.id]
       if (raw !== undefined && raw !== null && raw !== "") {
         const n = typeof raw === "number" ? raw : Number(raw)
-        if (!Number.isNaN(n) && n >= 0) return n
+        if (!Number.isNaN(n) && n >= 0) {
+          base = n
+          resolvedFromPointsAttr = true
+          break
+        }
       }
     }
   }
 
-  return 1
+  // Non-next-action items may also set rewardValue directly (including 0).
+  if (!resolvedFromPointsAttr && !isNextAction && task.rewardValue !== undefined && task.rewardValue !== null) {
+    base = task.rewardValue
+  }
+
+  if (isNextAction) {
+    // Reward beating the standard time. No durations → multiplier 1 → base only.
+    const multiplier = beatTheClockMultiplier(task.estimatedDuration, task.actualDuration)
+    return Math.round(base * multiplier * 100) / 100
+  }
+  return base
 }
 
 /** Singular label for items in a list (e.g. task, book, habit). */
 export function getItemLabel(
-  category: TaskCategory | undefined,
-  folders: CategoryFolder[],
+  list: List | undefined,
+  folders: Folder[],
   categoryId?: string,
 ): string {
-  if (category?.itemLabel?.trim()) return category.itemLabel.trim()
-  if (categoryId && categoryIsNextActions(categoryId, folders)) return "task"
-  if (category && categoryIsNextActions(category.id, folders)) return "task"
+  if (list?.itemLabel?.trim()) return list.itemLabel.trim()
+  if (categoryId && listIsNextActions(categoryId, folders)) return "task"
+  if (list && listIsNextActions(list.id, folders)) return "task"
   return "item"
 }
 

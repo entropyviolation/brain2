@@ -1,0 +1,18 @@
+================================================================================
+SCREENSHOT: 07-analytics-reviews.png
+VIEW: Analytics tab → Reviews
+AREA: Analytics → Reviews
+SOURCE FILES:
+  - components/Analytics/enhanced-analytics.tsx
+  - lib/reviews-store.ts
+================================================================================
+
+GLOBAL CHROME (all screens)
+  The COGS title and global action bar appear on every screen (app/page.tsx):
+    Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
+    Bulk Add | Quick Add
+  Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
+  Top-level tabs (7): Home | Lists | Scheduler | Operations | Modules | Graph | Analytics
+
+VIEW-SPECIFIC
+Archive of saved end-of-period reviews with gratitude, plans, and carry-over stats.

@@ -13,12 +13,12 @@ describe("GoalsTracker", () => {
         {
           id: "goal-test",
           title: "Read 3 books",
-          description: "",
           type: "count",
           target: 3,
           current: 1,
-          period: "month",
-          category: "Learning",
+          unit: "books",
+          periodKind: "year",
+          objectiveIds: ["obj-read-a-lot"],
           points: 25,
           completed: false,
           createdAt: new Date("2026-06-01"),
@@ -27,11 +27,10 @@ describe("GoalsTracker", () => {
     })
   })
 
-  it("renders goals header and period tabs", () => {
+  it("renders the objectives & goals header and the goal", () => {
     render(<GoalsTracker />)
-    expect(screen.getByText("Goals & Targets")).toBeInTheDocument()
-    expect(screen.getByRole("tab", { name: "This Month" })).toBeInTheDocument()
-    expect(screen.getByText("Read 3 books")).toBeInTheDocument()
+    expect(screen.getByText("Objectives & Goals")).toBeInTheDocument()
+    expect(screen.getAllByText("Read 3 books").length).toBeGreaterThan(0)
   })
 
   it("increments goal progress when +1 is clicked", async () => {
@@ -39,6 +38,6 @@ describe("GoalsTracker", () => {
     render(<GoalsTracker />)
 
     await user.click(screen.getByRole("button", { name: "+1" }))
-    expect(screen.getByText("2 / 3 items")).toBeInTheDocument()
+    expect(screen.getByText("2 / 3 books")).toBeInTheDocument()
   })
 })

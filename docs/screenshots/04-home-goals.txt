@@ -1,51 +1,20 @@
 ================================================================================
 SCREENSHOT: 04-home-goals.png
-VIEW: Home tab  ->  "Goals" sub-tab  ->  "This Month" period
+VIEW: Home tab → Goals sub-tab
+AREA: Home → Goals
 SOURCE FILES:
-  - app/page.tsx, components/Home/home-dashboard.tsx
   - components/Home/Goals/goals-tracker.tsx
-  - lib/goals-store.ts, lib/points-store.ts
+  - components/Home/Goals/ObjectivesPanel.tsx
+  - components/Home/Goals/DirectionReport.tsx
+  - lib/goals-store.ts
 ================================================================================
 
-------------------------------------------------------------
-A. GLOBAL HEADER + HOME HEADER
-------------------------------------------------------------
-Same as 01-home-daily-habits.txt sections A–D.
-Home sub-tabs: Habits, Plan, To Do, "Goals" (active), Tracking.
+GLOBAL CHROME (all screens)
+  The COGS title and global action bar appear on every screen (app/page.tsx):
+    Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
+    Bulk Add | Quick Add
+  Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
+  Top-level tabs (7): Home | Lists | Scheduler | Operations | Modules | Graph | Analytics
 
-------------------------------------------------------------
-B. GOALS HEADER (goals-tracker.tsx)
-------------------------------------------------------------
-1. Title "Goals & Targets" — "Specific objectives with point rewards — saved
-   automatically."
-2. "+ Add Goal" button — dialog: Title, Type (Count / Yes-No / Numerical),
-   Target, Period (Week/Month/Year), Category (Learning/Health/Work/Personal),
-   optional point reward.
-
-Goals persist in lib/goals-store.ts (key cogs-goals-store). Completing a goal
-awards points via points-store.
-
-------------------------------------------------------------
-C. PERIOD TABS
-------------------------------------------------------------
-"This Week" | "This Month" (active) | "This Year"
-Each tab filters goals by their configured period.
-
-------------------------------------------------------------
-D. GOAL CARDS (renderGoalCard)
-------------------------------------------------------------
-Each card shows:
-  - Category icon + truncated title + point reward badge (e.g. "50 pts")
-  - Category badge (Learning=blue, Health=green, Work=purple)
-  - Progress bar: current / target
-  - Controls: -1 / numeric input / +1 for Count goals; "Mark Complete" for boolean
-
-In this screenshot (This Month):
-  - "Read 7 books this m…" — Learning, 50 pts, 0/7 items
-  - "Surf 10 sessions" — Health, 40 pts, 0/10 items
-(Weekly boolean goal "Finish Allieprime project" appears under This Week tab.)
-
-------------------------------------------------------------
-NOTE ON DATA STATE IN THIS SCREENSHOT
-------------------------------------------------------------
-Seeded goals from goals-store defaults; both monthly count goals at 0 progress.
+VIEW-SPECIFIC
+Objectives, key results, and direction report for the active month/quarter. Objective detail dialog for editing targets and linking items.

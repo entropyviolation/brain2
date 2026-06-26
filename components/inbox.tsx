@@ -19,11 +19,13 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Edit, Trash, ArrowRight, InboxIcon, Clock, Award, AlertTriangle, Star, Save, X, ChevronDown } from "lucide-react"
+import { Edit, Trash, ArrowRight, InboxIcon, Clock, Award, AlertTriangle, Star, Save, X, ChevronDown, CalendarDays, Timer, Tag, Flag } from "lucide-react"
+import { format } from "date-fns"
+import { safeToDate } from "@/lib/date-utils"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import type { Task, AttributeDefinition, AttributeValue } from "@/lib/types"
-import { categoryIsNextActions, withCategoryDefaults } from "@/lib/item-utils"
+import { listIsNextActions, withCategoryDefaults } from "@/lib/item-utils"
 import { ListPicker } from "@/components/Lists/list-picker"
 import { AdHocAttributesEditor, mergeListAttributes, AttributeValuesEditor } from "@/components/Lists/attribute-editor"
 
@@ -47,6 +49,43 @@ function formatTaskDateTime(value: Date | string | undefined): string {
   return d ? d.toLocaleString() : "—"
 }
 
+/**
+ * Chips for the fields smart-parse pulled out of a captured idea (date/time/
+ * duration/priority/list), so the parse is visible during clarification.
+ */
+function CaptureChips({ task }: { task: Task }) {
+  const categories = useTaskStore((state) => state.lists)
+  const chips: { key: string; icon: React.ReactNode; label: string }[] = []
+
+  const categoryName =
+    task.lists
+      ?.map((cid) => categories.find((c) => c.id === cid)?.name)
+      .find(Boolean) || task.tags?.[0]
+  if (categoryName) chips.push({ key: "cat", icon: <Tag className="h-3 w-3" />, label: categoryName })
+
+  const scheduled = safeToDate(task.scheduledDate)
+  if (scheduled) chips.push({ key: "date", icon: <CalendarDays className="h-3 w-3" />, label: format(scheduled, "EEE MMM d") })
+  if (task.scheduledTime) chips.push({ key: "time", icon: <Clock className="h-3 w-3" />, label: task.scheduledTime })
+  if (task.estimatedDuration && task.estimatedDuration > 1)
+    chips.push({ key: "dur", icon: <Timer className="h-3 w-3" />, label: `${task.estimatedDuration}m` })
+  if (task.urgency && task.urgency >= 4)
+    chips.push({ key: "urg", icon: <Flag className="h-3 w-3" />, label: `urgency ${task.urgency}` })
+  if (task.importance && task.importance >= 4)
+    chips.push({ key: "imp", icon: <Flag className="h-3 w-3" />, label: `importance ${task.importance}` })
+
+  if (chips.length === 0) return null
+  return (
+    <div className="flex flex-wrap gap-1.5 mt-2">
+      {chips.map((c) => (
+        <Badge key={c.key} variant="secondary" className="flex items-center gap-1 font-normal text-xs">
+          {c.icon}
+          {c.label}
+        </Badge>
+      ))}
+    </div>
+  )
+}
+
 // Clarification Dialog Component
 function TaskClarificationDialog({
   task,
@@ -59,14 +98,14 @@ function TaskClarificationDialog({
   onClose: () => void
   onSave: (updatedTask: Task) => void
 }) {
-  const categories = useTaskStore((state) => state.categories)
+  const categories = useTaskStore((state) => state.lists)
   const folders = useTaskStore((state) => state.folders)
   const [taskDescription, setTaskDescription] = useState(task.taskDescription || "")
   const [estimatedDuration, setEstimatedDuration] = useState(task.estimatedDuration?.toString() || "30")
-  const [rewardValue, setRewardValue] = useState(task.rewardValue?.toString() || "5")
+  const [rewardValue, setRewardValue] = useState(task.rewardValue?.toString() || "1")
   const [urgency, setUrgency] = useState(task.urgency?.toString() || "3")
   const [importance, setImportance] = useState(task.importance?.toString() || "3")
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(task.categories || [])
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(task.lists || [])
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [adhocDefs, setAdhocDefs] = useState<AttributeDefinition[]>([])
   const [attributeValues, setAttributeValues] = useState<Record<string, AttributeValue>>(task.attributes || {})
@@ -76,15 +115,15 @@ function TaskClarificationDialog({
     [categories, selectedCategories],
   )
 
-  const isNextActionTarget = selectedCategories.some((cid) => categoryIsNextActions(cid, folders))
+  const isNextActionTarget = selectedCategories.some((cid) => listIsNextActions(cid, folders))
 
   const handleSave = () => {
     let updatedTask: Task = {
       ...task,
       createdAt: asDate(task.createdAt) ?? new Date(),
       taskDescription,
-      categories: selectedCategories,
-      category: selectedCategories.length ? "clarified" : "list",
+      lists: selectedCategories,
+      stage: selectedCategories.length ? "clarified" : "list",
       attributes: { ...attributeValues },
     }
     selectedCategories.forEach((cid) => {
@@ -93,7 +132,7 @@ function TaskClarificationDialog({
     })
     if (isNextActionTarget) {
       updatedTask.estimatedDuration = Number.parseInt(estimatedDuration) || 30
-      updatedTask.rewardValue = Number.parseInt(rewardValue) || 5
+      updatedTask.rewardValue = Number.parseInt(rewardValue) || 1
       updatedTask.urgency = Number.parseInt(urgency) || 3
       updatedTask.importance = Number.parseInt(importance) || 3
       updatedTask.cognitiveLoad = task.cognitiveLoad || 2
@@ -121,6 +160,7 @@ function TaskClarificationDialog({
               <X className="h-4 w-4" />
             </Button>
           </div>
+          <CaptureChips task={task} />
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto space-y-6">
@@ -293,7 +333,7 @@ function TaskClarificationDialog({
                   </div>
                   <div className="flex justify-between">
                     <span>Current Status:</span>
-                    <span className="capitalize">{task.category}</span>
+                    <span className="capitalize">{task.stage}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Will become:</span>
@@ -328,7 +368,7 @@ export function Inbox({ onTaskSelect }: InboxProps) {
 
   // Filter tasks in the inbox
   const inboxTasks = useMemo(() => {
-    return allTasks.filter((task) => task.category === "inbox" && !task.completed)
+    return allTasks.filter((task) => task.stage === "inbox" && !task.completed)
   }, [allTasks])
 
   const handleClarifyTask = (task: Task) => {
@@ -344,7 +384,7 @@ export function Inbox({ onTaskSelect }: InboxProps) {
     inboxTasks.forEach((task) => {
       updateTask({
         ...task,
-        category: task.categories?.length ? "clarified" : "list",
+        stage: task.lists?.length ? "clarified" : "list",
       })
     })
     setOpen(false)
@@ -388,6 +428,7 @@ export function Inbox({ onTaskSelect }: InboxProps) {
                         <div className="flex-1">
                           <p className="font-medium">{task.description}</p>
                           <p className="text-sm text-muted-foreground mt-1">Added {formatTaskDateTime(task.createdAt)}</p>
+                          <CaptureChips task={task} />
                         </div>
                         <div className="flex gap-2">
                           <Button

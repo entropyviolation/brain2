@@ -1,0 +1,17 @@
+================================================================================
+SCREENSHOT: 05-lists-content-spreadsheet.png
+VIEW: Lists tab → Example List → Spreadsheet display
+AREA: Lists → list → Spreadsheet
+SOURCE FILES:
+  - components/Lists/list-content/ListContentSpreadsheet.tsx
+================================================================================
+
+GLOBAL CHROME (all screens)
+  The COGS title and global action bar appear on every screen (app/page.tsx):
+    Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
+    Bulk Add | Quick Add
+  Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
+  Top-level tabs (7): Home | Lists | Scheduler | Operations | Modules | Graph | Analytics
+
+VIEW-SPECIFIC
+Editable spreadsheet grid over list items and custom attributes; supports pop-out window (#popout/sheet/…).

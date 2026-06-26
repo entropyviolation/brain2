@@ -8,6 +8,12 @@ export interface BreadcrumbNavProps {
   isHome: boolean
   isAll: boolean
   currentFolderName?: string
+  /**
+   * Ancestor list names from root → parent for a nested category (Feature 8),
+   * excluding the open category itself. When present, they're inserted before
+   * `openName` so the breadcrumb reflects the sublist depth.
+   */
+  categoryAncestorNames?: string[]
 }
 
 export function getBreadcrumb({
@@ -18,11 +24,13 @@ export function getBreadcrumb({
   isHome,
   isAll,
   currentFolderName,
+  categoryAncestorNames,
 }: BreadcrumbNavProps): string {
   if (searchActive) return `Search: ${searchTerm}`
   if (openTarget) {
     const loc = isHome ? "Home" : isAll ? "All" : currentFolderName || "All"
-    return `${loc} \\ ${openName}`
+    const trail = (categoryAncestorNames ?? []).filter(Boolean)
+    return [loc, ...trail, openName].join(" \\ ")
   }
   if (isHome) return "Home"
   if (isAll) return "All"

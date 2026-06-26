@@ -1,59 +1,20 @@
 ================================================================================
 SCREENSHOT: 02-home-plan.png
-VIEW: Home tab  ->  "Plan" sub-tab  ->  "Month View"
+VIEW: Home tab → Plan sub-tab → Month View
+AREA: Home → Plan → Month
 SOURCE FILES:
-  - app/page.tsx, components/Home/home-dashboard.tsx
-  - components/Home/Plan/plan-panel.tsx, month-view.tsx
-  - components/Home/Plan/planned-tasks-sidebar.tsx, event-dialog.tsx
-  - lib/event-store.ts, lib/plan-text.ts
+  - components/Home/Plan/plan-panel.tsx
+  - components/Home/Plan/month-view.tsx
+  - components/Home/Plan/event-dialog.tsx
+  - lib/event-store.ts
 ================================================================================
 
-------------------------------------------------------------
-A. GLOBAL HEADER + HOME HEADER
-------------------------------------------------------------
-Same as 01-home-daily-habits.txt sections A–D: Review / Tracking / Inbox /
-Bulk Add / Quick Add; five top-level tabs; date card + Points Stats; Today's
-Progress quickview.
+GLOBAL CHROME (all screens)
+  The COGS title and global action bar appear on every screen (app/page.tsx):
+    Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
+    Bulk Add | Quick Add
+  Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
+  Top-level tabs (7): Home | Lists | Scheduler | Operations | Modules | Graph | Analytics
 
-Home sub-tabs: Habits, "Plan" (active), To Do, Goals, Tracking.
-
-------------------------------------------------------------
-B. PLAN PANEL (components/Home/Plan/plan-panel.tsx)
-------------------------------------------------------------
-Dark-gradient planning panel. Events from event-store (cogs-event-storage).
-
-1. Title "Plan" + subtitle "Schedule and organize your time with elegance".
-2. "Settings" button — Plan data management dialog.
-3. "+ Add Event" button — Event dialog (title, times, all-day, location, type).
-4. View tabs: "Month View" (active), "Week View", "Day View".
-
-------------------------------------------------------------
-C. PLANNED TASKS SIDEBAR (planned-tasks-sidebar.tsx)
-------------------------------------------------------------
-Left rail title varies by view — here "Planned This Month" with count badge (0).
-Lists tasks scheduled for the current period but not yet placed on the calendar.
-Empty state: "Nothing to plan here." Items are draggable onto calendar cells;
-clicking opens task-detail-popup.
-
-------------------------------------------------------------
-D. MONTH VIEW CALENDAR (month-view.tsx)
-------------------------------------------------------------
-1. Navigation: "<" | "June 2026" | ">" | "Today".
-2. 7-column grid (Sun–Sat), 6 rows. Today (Jun 20) highlighted with gradient +
-   pulsing icon. Adjacent-month days dimmed.
-3. Event chips on days (colored by event): Jun 20 "02:00 Product Strat…",
-   Jun 22 "01:00 Kayaking W…". Task chips appear sage-green with Clock icon.
-4. Drag-drop: tasks onto days set scheduledDate; events move by date.
-5. Click empty day → Add Event prefilled; click event/task → edit/detail.
-
-------------------------------------------------------------
-E. MONTH PLAN TEXT (plan-text.ts)
-------------------------------------------------------------
-"Month Plan – June 2026" card with free-text textarea.
-Saved immediately to localStorage key monthPlan-YYYY-MM via lib/plan-text.ts
-(note: "Auto-saved to local storage"). Plan text is shown in period Reviews.
-
-------------------------------------------------------------
-NOTE ON DATA STATE IN THIS SCREENSHOT
-------------------------------------------------------------
-Two seeded demo events, no tasks in the Planned sidebar, empty month plan textarea.
+VIEW-SPECIFIC
+Calendar month grid with scheduled tasks and calendar events. Toolbar: Add Event, Settings (import/export events). Click cells to create events; drag tasks from the planned-tasks sidebar.

@@ -284,10 +284,10 @@
 
 /* Velvet desktop background for the icon view */
 .fm98 .fm-desktop.velvet {
-  background-image: url("/velvetscrolltile.png");
-  background-repeat: repeat;
-  background-size: auto;
-  background-position: top left;
+  background-image: url("/newvelv.png");
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center center;
   background-color: #2a1322;
   overflow: auto;
   min-height: 100%;
@@ -314,6 +314,31 @@
 
 .fm98 .fm-icon-free:active {
   cursor: grabbing;
+}
+
+.fm98 .fm-icon-free.fm-icon-dragging {
+  z-index: 10;
+  opacity: 0.85;
+  cursor: grabbing;
+  pointer-events: none;
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.45));
+}
+
+/* Auto-organize: canvas smear behind DOM icon heads. */
+.fm98 .fm-trail-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.fm98 .fm-trail-head {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  will-change: transform;
+  z-index: 6;
 }
 
 .fm98 .fm-desktop.velvet .fm-icon-label {

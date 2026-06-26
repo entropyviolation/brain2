@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { useHabitsStore } from "@/lib/habits-store"
+import { TaskType } from "@/lib/types"
 import { WeeklyTaskTracker } from "./habit-tracker"
 
 vi.mock("@/components/Home/Habits/task-grid", () => ({
@@ -31,8 +32,8 @@ describe("WeeklyTaskTracker", () => {
   beforeEach(() => {
     resetAllStores()
     useHabitsStore.getState().setTasks([
-      { id: "d1", name: "Daily habit", type: "boolean", rewardValue: 10, frequency: "daily" },
-      { id: "w1", name: "Weekly habit", type: "boolean", rewardValue: 10, frequency: "weekly" },
+      { id: "d1", name: "Daily habit", type: TaskType.BOOLEAN, rewardValue: 10, frequency: "daily" },
+      { id: "w1", name: "Weekly habit", type: TaskType.BOOLEAN, rewardValue: 10, frequency: "weekly" },
     ])
   })
 

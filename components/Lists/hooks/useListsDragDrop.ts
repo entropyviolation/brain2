@@ -1,7 +1,8 @@
 import { useCallback, useState } from "react"
 import type React from "react"
-import type { Task, CategoryFolder } from "@/lib/types"
+import type { Task, List, Folder, ItemTypeDefinition } from "@/lib/types"
 import { getWeekString } from "@/lib/date-utils"
+import { withListMembership } from "@/lib/item-utils"
 import {
   assignTaskToFolderList,
   assignTaskToFolderUncategorized,
@@ -11,17 +12,21 @@ import { isScheduledFolderId } from "@/lib/scheduled-lists-sync"
 import type { GridEntry, SmartId } from "@/components/Lists/types"
 
 export interface UseListsDragDropOptions {
-  folders: CategoryFolder[]
+  folders: Folder[]
+  lists: List[]
+  types: ItemTypeDefinition[]
   updateTask: (task: Task) => void
-  addCategoryToFolder: (folderId: string, categoryId: string) => void
-  removeCategoryFromFolder: (folderId: string, categoryId: string) => void
+  addListToFolder: (folderId: string, categoryId: string) => void
+  removeListFromFolder: (folderId: string, categoryId: string) => void
 }
 
 export function useListsDragDrop({
   folders,
+  lists,
+  types,
   updateTask,
-  addCategoryToFolder,
-  removeCategoryFromFolder,
+  addListToFolder,
+  removeListFromFolder,
 }: UseListsDragDropOptions) {
   const [draggedTask, setDraggedTask] = useState<Task | null>(null)
   const [draggedCategoryId, setDraggedCategoryId] = useState<string | null>(null)
@@ -66,11 +71,11 @@ export function useListsDragDrop({
   const fileCategoryIntoFolder = useCallback(
     (categoryId: string, folderId: string | null) => {
       folders.forEach((f) => {
-        if (f.categoryIds.includes(categoryId)) removeCategoryFromFolder(f.id, categoryId)
+        if (f.listIds.includes(categoryId)) removeListFromFolder(f.id, categoryId)
       })
-      if (folderId) addCategoryToFolder(folderId, categoryId)
+      if (folderId) addListToFolder(folderId, categoryId)
     },
-    [folders, addCategoryToFolder, removeCategoryFromFolder],
+    [folders, addListToFolder, removeListFromFolder],
   )
 
   const applySmartScheduleToTask = useCallback(
@@ -90,13 +95,15 @@ export function useListsDragDrop({
       e.preventDefault()
       e.stopPropagation()
       if (draggedTask) {
-        if (entry.kind === "list" && !draggedTask.categories?.includes(entry.id)) {
-          const folder = folders.find((f) => f.categoryIds.includes(entry.id))
-          if (folder && !isFolderAllItemsCategoryId(entry.id)) {
-            updateTask(assignTaskToFolderList(draggedTask, folder, entry.id))
-          } else {
-            updateTask({ ...draggedTask, categories: [...(draggedTask.categories || []), entry.id] })
-          }
+        if (entry.kind === "list" && !draggedTask.lists?.includes(entry.id)) {
+          const folder = folders.find((f) => f.listIds.includes(entry.id))
+          const withList =
+            folder && !isFolderAllItemsCategoryId(entry.id)
+              ? assignTaskToFolderList(draggedTask, folder, entry.id)
+              : { ...draggedTask, lists: [...(draggedTask.lists || []), entry.id] }
+          // Adopt the target list's item type + seed its default attributes.
+          const targetCat = lists.find((c) => c.id === entry.id)
+          updateTask(withListMembership(withList, targetCat, types))
         } else if (entry.kind === "smart") {
           applySmartScheduleToTask(draggedTask, entry.id as SmartId)
         } else if (entry.kind === "folder" && !isScheduledFolderId(entry.id)) {
@@ -116,7 +123,7 @@ export function useListsDragDrop({
   )
 
   const handleIconCanvasDrop = useCallback(
-    (e: React.DragEvent, isAll: boolean, currentFolder: CategoryFolder | null) => {
+    (e: React.DragEvent, isAll: boolean, currentFolder: Folder | null) => {
       e.preventDefault()
       e.stopPropagation()
       if (draggedCategoryId && (isAll || currentFolder)) {
@@ -128,7 +135,7 @@ export function useListsDragDrop({
   )
 
   const handleFolderTreeDrop = useCallback(
-    (e: React.DragEvent, folder: CategoryFolder | null) => {
+    (e: React.DragEvent, folder: Folder | null) => {
       e.preventDefault()
       if (draggedTask && folder && !isScheduledFolderId(folder.id)) {
         updateTask(assignTaskToFolderUncategorized(draggedTask, folder))

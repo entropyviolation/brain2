@@ -12,7 +12,7 @@ describe("ListPicker", () => {
   beforeEach(() => {
     resetLocalStorage()
     useTaskStore.getState().clearAllData()
-    useTaskStore.getState().setCategories([
+    useTaskStore.getState().setLists([
       {
         id: "list-1",
         name: "Groceries",

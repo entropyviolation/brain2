@@ -1,12 +1,19 @@
 import { useCallback, useEffect, useMemo, useReducer, useState } from "react"
-import type { CategoryFolder, TaskCategory } from "@/lib/types"
+import type { Folder, List } from "@/lib/types"
+import { readListsNavigation, writeListsNavigation, COGS_NAVIGATE_TO_LIST_EVENT } from "@/lib/app-navigation"
 import { openTargetFromEntry, openTargetKey, openTargetReducer } from "@/components/Lists/open-target"
 import { ROOT_ALL_FOLDER_ID } from "@/components/Lists/constants"
 import type { GridEntry, OpenTarget } from "@/components/Lists/types"
 
-export function useListsNavigation(categories: TaskCategory[], folders: CategoryFolder[]) {
-  const [location, setLocation] = useState<string>("home")
-  const [openTarget, dispatchOpenTarget] = useReducer(openTargetReducer, null as OpenTarget)
+const ROOT_LOCATIONS = new Set(["home", "all"])
+
+export function useListsNavigation(categories: List[], folders: Folder[]) {
+  const [location, setLocation] = useState<string>(() => readListsNavigation().location)
+  const [openTarget, dispatchOpenTarget] = useReducer(
+    openTargetReducer,
+    null as OpenTarget,
+    () => readListsNavigation().openTarget,
+  )
   const [activeIconId, setActiveIconId] = useState<string | null>(null)
 
   const setOpenTarget = useCallback((target: OpenTarget) => {
@@ -46,6 +53,10 @@ export function useListsNavigation(categories: TaskCategory[], folders: Category
     dispatchOpenTarget({ type: "OPEN_HABITS", id })
   }, [])
 
+  const openObjectives = useCallback(() => {
+    dispatchOpenTarget({ type: "OPEN_OBJECTIVES" })
+  }, [])
+
   const openFolderAll = useCallback((folderId: string) => {
     dispatchOpenTarget({ type: "OPEN_FOLDER_ALL", folderId })
   }, [])
@@ -69,10 +80,40 @@ export function useListsNavigation(categories: TaskCategory[], folders: Category
   )
 
   useEffect(() => {
+    writeListsNavigation({ location, openTarget })
+  }, [location, openTarget])
+
+  // Sync when another surface (e.g. item detail) requests list navigation.
+  useEffect(() => {
+    const handler = () => {
+      const nav = readListsNavigation()
+      setLocation(nav.location)
+      dispatchOpenTarget({ type: "SET", target: nav.openTarget })
+    }
+    window.addEventListener(COGS_NAVIGATE_TO_LIST_EVENT, handler)
+    return () => window.removeEventListener(COGS_NAVIGATE_TO_LIST_EVENT, handler)
+  }, [])
+
+  useEffect(() => {
+    if (ROOT_LOCATIONS.has(location)) return
+    if (folders.length === 0) return
+    if (folders.some((f) => f.id === location)) return
+    setLocation("home")
+    dispatchOpenTarget({ type: "CLOSE" })
+  }, [folders, location])
+
+  useEffect(() => {
     if (openTarget?.type === "category" && !categories.find((c) => c.id === openTarget.id)) {
       dispatchOpenTarget({ type: "CLOSE" })
     }
-  }, [categories, openTarget])
+    if (
+      openTarget?.type === "folder-all" &&
+      openTarget.folderId !== ROOT_ALL_FOLDER_ID &&
+      !folders.some((f) => f.id === openTarget.folderId)
+    ) {
+      dispatchOpenTarget({ type: "CLOSE" })
+    }
+  }, [categories, folders, openTarget])
 
   return {
     location,
@@ -83,6 +124,7 @@ export function useListsNavigation(categories: TaskCategory[], folders: Category
     openList,
     openSmartList,
     openHabits,
+    openObjectives,
     openFolderAll,
     activeIconId,
     setActiveIconId,

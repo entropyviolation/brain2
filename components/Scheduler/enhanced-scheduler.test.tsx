@@ -6,7 +6,7 @@ import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { resetLocalStorage } from "@/tests/test-utils"
 import { useTaskStore } from "@/lib/task-store"
-import type { Task, TaskCategory } from "@/lib/types"
+import type { Task, List } from "@/lib/types"
 import { EnhancedScheduler } from "./enhanced-scheduler"
 
 vi.mock("@/components/task-detail-popup", () => ({
@@ -14,7 +14,7 @@ vi.mock("@/components/task-detail-popup", () => ({
 }))
 
 describe("EnhancedScheduler", () => {
-  const category: TaskCategory = {
+  const list: List = {
     id: "work",
     name: "Work",
     color: "#2563eb",
@@ -27,10 +27,10 @@ describe("EnhancedScheduler", () => {
   const unscheduledTask: Task = {
     id: "task-unscheduled",
     description: "Plan quarterly review",
-    category: "list",
+    stage: "list",
     createdAt: new Date("2026-06-01"),
     completed: false,
-    categories: ["work"],
+    lists: ["work"],
     estimatedDuration: 45,
     urgency: 3,
     importance: 5,
@@ -42,7 +42,7 @@ describe("EnhancedScheduler", () => {
     resetLocalStorage()
     useTaskStore.setState({
       tasks: [unscheduledTask],
-      categories: [category],
+      lists: [list],
       folders: [],
     })
   })
@@ -67,7 +67,7 @@ describe("EnhancedScheduler", () => {
 
     const taskRow = screen.getByText("Plan quarterly review").closest(".task-item")
     expect(taskRow).toBeTruthy()
-    const checkbox = within(taskRow!).getByRole("checkbox")
+    const checkbox = within(taskRow as HTMLElement).getByRole("checkbox")
     await user.click(checkbox)
 
     const thisYearCard = screen.getByText("This Year").closest("[class*='cursor-pointer']")

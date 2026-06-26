@@ -1,57 +1,19 @@
 ================================================================================
 SCREENSHOT: 06-scheduler.png
-VIEW: "Scheduler" top-level tab  ->  "Always" period
+VIEW: Scheduler tab → Funnel → Always period
+AREA: Scheduler → Always
 SOURCE FILES:
-  - app/page.tsx
   - components/Scheduler/enhanced-scheduler.tsx
-  - components/task-detail-popup.tsx
-  - lib/task-store.ts, lib/date-utils.ts, lib/item-utils.ts
+  - components/Scheduler/AlwaysTab.tsx
+  - components/Scheduler/SchedulerFilters.tsx
 ================================================================================
 
-------------------------------------------------------------
-A. GLOBAL HEADER + TOP-LEVEL TABS
-------------------------------------------------------------
-Review / Tracking / Inbox / Bulk Add / Quick Add.
-Tabs: Home, Lists, "Scheduler" (active), Modules, Analytics.
+GLOBAL CHROME (all screens)
+  The COGS title and global action bar appear on every screen (app/page.tsx):
+    Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
+    Bulk Add | Quick Add
+  Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
+  Top-level tabs (7): Home | Lists | Scheduler | Operations | Modules | Graph | Analytics
 
-------------------------------------------------------------
-B. SCHEDULER HEADER (enhanced-scheduler.tsx)
-------------------------------------------------------------
-Title "Enhanced Scheduler".
-Note: "Each task appears once, in its most specific period (day → week → month → year)."
-Date navigation ("<" | label | ">" | Today) appears on Year/Month/Week/Day tabs.
-
-------------------------------------------------------------
-C. PERIOD TABS
-------------------------------------------------------------
-"Always" (active) | Year | Month | Week | Day
-Progressive funnel: schedule at one level, then drill down to the next.
-
-------------------------------------------------------------
-D. "ALWAYS" TAB LAYOUT
-------------------------------------------------------------
-Left: "Available Tasks" card
-  - Filters & Sort collapsible (category checkboxes, sort by importance/duration/
-    deadline/reward/category, direction toggle)
-  - Task tiles: checkbox, drag handle, description, chips (duration, urgency,
-    importance). Colored left border = category color.
-  - Only shows unscheduled, incomplete, dependency-ready tasks.
-
-Right: 2×4 grid of scheduling buckets (all empty here):
-  This Year | This Month | Next Month | This Week
-  Next Week | Today | Tomorrow
-Drag or select+click to set scheduledYear/Month/Week/Date fields.
-
-------------------------------------------------------------
-E. OTHER PERIOD TABS (same component)
-------------------------------------------------------------
-Year  — tasks for selected year → 12 month drop targets
-Month — tasks for selected month → week drop targets
-Week  — tasks for selected week → 7 day drop targets
-Day   — today's tasks → 24-hour agenda (scheduledTime slots)
-
-------------------------------------------------------------
-NOTE ON DATA STATE IN THIS SCREENSHOT
-------------------------------------------------------------
-One seeded "Example task" (60m, urgency 4, importance 5) in Available Tasks;
-all seven Always buckets empty (count 0).
+VIEW-SPECIFIC
+Scheduler inbox of scheduleable tasks, category filters, sort controls, and overview boxes. Drag tasks into period buckets to refine scheduling.

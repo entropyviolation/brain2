@@ -1,0 +1,17 @@
+================================================================================
+SCREENSHOT: 05-lists-cards.png
+VIEW: Lists tab → Home → Cards folder view
+AREA: Lists → Home → Cards
+SOURCE FILES:
+  - components/Lists/views/FolderViewCards.tsx
+================================================================================
+
+GLOBAL CHROME (all screens)
+  The COGS title and global action bar appear on every screen (app/page.tsx):
+    Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
+    Bulk Add | Quick Add
+  Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
+  Top-level tabs (7): Home | Lists | Scheduler | Operations | Modules | Graph | Analytics
+
+VIEW-SPECIFIC
+Card grid layout for browsing lists and subfolders visually.

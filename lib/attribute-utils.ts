@@ -4,7 +4,7 @@
  * Maps legacy attribute types (text, url, select, …) to the expanded v2 schema
  * and coerces stored values to match. Run from task-store migrate on load.
  */
-import type { AttributeDefinition, AttributeType, AttributeValue, GoalValue, Task, TaskCategory } from "@/lib/types"
+import type { AttributeDefinition, AttributeType, AttributeValue, GoalValue, Task, List } from "@/lib/types"
 
 /** Legacy types still present in old persisted data. */
 export type LegacyAttributeType =
@@ -115,7 +115,7 @@ export function migrateAttributeValue(def: AttributeDefinition, value: Attribute
   }
 }
 
-export function migrateCategoryAttributes(category: TaskCategory): TaskCategory {
+export function migrateCategoryAttributes(category: List): List {
   if (!category.itemAttributes?.length) return category
   const itemAttributes = category.itemAttributes.map(migrateAttributeDefinition)
   let defaultAttributeValues = category.defaultAttributeValues
@@ -129,11 +129,11 @@ export function migrateCategoryAttributes(category: TaskCategory): TaskCategory 
   return { ...category, itemAttributes, defaultAttributeValues }
 }
 
-export function migrateTaskAttributes(task: Task, categories: TaskCategory[]): Task {
+export function migrateTaskAttributes(task: Task, lists: List[]): Task {
   if (!task.attributes || Object.keys(task.attributes).length === 0) return task
   const defs = new Map<string, AttributeDefinition>()
-  ;(task.categories ?? []).forEach((cid) => {
-    const cat = categories.find((c) => c.id === cid)
+  ;(task.lists ?? []).forEach((cid) => {
+    const cat = lists.find((c) => c.id === cid)
     cat?.itemAttributes?.forEach((d) => {
       if (!defs.has(d.id)) defs.set(d.id, migrateAttributeDefinition(d))
     })
@@ -148,12 +148,12 @@ export function migrateTaskAttributes(task: Task, categories: TaskCategory[]): T
 }
 
 export function migratePersistedAttributes(state: {
-  categories?: TaskCategory[]
+  lists?: List[]
   tasks?: Task[]
 }): typeof state {
-  const categories = (state.categories ?? []).map(migrateCategoryAttributes)
-  const tasks = (state.tasks ?? []).map((t) => migrateTaskAttributes(t, categories))
-  return { ...state, categories, tasks }
+  const lists = (state.lists ?? []).map(migrateCategoryAttributes)
+  const tasks = (state.tasks ?? []).map((t) => migrateTaskAttributes(t, lists))
+  return { ...state, lists, tasks }
 }
 
 export const ATTRIBUTE_TYPE_LABELS: Record<AttributeType, string> = {
@@ -167,9 +167,12 @@ export const ATTRIBUTE_TYPE_LABELS: Record<AttributeType, string> = {
   selection: "Selection",
   image: "Image",
   multiimage: "Image gallery",
+  file: "File",
+  multifile: "File list",
   item: "Item reference",
   link: "Link",
   goal: "Goal x / y",
+  formula: "Formula",
 }
 
 /** All types shown when defining a list schema (canonical only). */
@@ -187,4 +190,5 @@ export const SCHEMA_ATTRIBUTE_TYPES: AttributeType[] = [
   "item",
   "link",
   "goal",
+  "formula",
 ]

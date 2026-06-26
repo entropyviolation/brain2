@@ -11,9 +11,9 @@ import {
   formatAttributeValue,
   mergeListAttributes,
 } from "./attribute-editor"
-import type { AttributeDefinition, TaskCategory } from "@/lib/types"
+import type { AttributeDefinition, List } from "@/lib/types"
 
-const sampleCategories: TaskCategory[] = [
+const sampleCategories: List[] = [
   {
     id: "cat-a",
     name: "Reading",

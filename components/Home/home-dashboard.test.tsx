@@ -112,7 +112,7 @@ describe("HomeDashboard", () => {
     it("persists active tab to localStorage", async () => {
       const user = userEvent.setup()
       render(<HomeDashboard />)
-      await user.click(screen.getByRole("tab", { name: "Goals", exact: true }))
+      await user.click(screen.getByRole("tab", { name: "Goals" }))
       expect(localStorage.getItem("cogs-home-tab")).toBe("goals")
     })
 
@@ -134,7 +134,7 @@ describe("HomeDashboard", () => {
         { label: "Tracking", testId: "panel-time-grid" },
         { label: "Habits", testId: "panel-habits" },
       ]) {
-        await user.click(screen.getByRole("tab", { name: label, exact: true }))
+        await user.click(screen.getByRole("tab", { name: label }))
         expect(screen.getByTestId(testId)).toBeVisible()
       }
     })
@@ -144,7 +144,7 @@ describe("HomeDashboard", () => {
     it("persists nested tracking tab", async () => {
       const user = userEvent.setup()
       render(<HomeDashboard />)
-      await user.click(screen.getByRole("tab", { name: "Tracking", exact: true }))
+      await user.click(screen.getByRole("tab", { name: "Tracking" }))
       await user.click(screen.getByRole("tab", { name: "Day Log" }))
       expect(localStorage.getItem("cogs-home-tracking-tab")).toBe("daylog")
     })

@@ -28,7 +28,7 @@ interface SettingsDialogProps {
 }
 
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
-  const { tasks, categories, folders, setTasks, setCategories, setFolders, clearAllData } = useTaskStore()
+  const { tasks, lists: categories, folders, setTasks, setLists, setFolders, clearAllData } = useTaskStore()
   const { events, setEvents } = useEventStore()
   const [importData, setImportData] = useState("")
   const [importStatus, setImportStatus] = useState<"idle" | "success" | "error">("idle")
@@ -100,7 +100,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
       const {
         tasks: importedTasks,
-        categories: importedCategories,
+        lists: importedCategories,
         folders: importedFolders,
         events: importedEvents,
         plans: importedPlans,
@@ -113,7 +113,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
       // Import categories
       if (importedCategories && Array.isArray(importedCategories)) {
-        setCategories(importedCategories)
+        setLists(importedCategories)
       }
 
       // Import folders
@@ -185,7 +185,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
   const dataStats = {
     tasks: tasks.length,
-    categories: categories.length,
+    lists: categories.length,
     folders: folders.length,
     events: events.length,
     plans: Object.keys(getAllPlanData()).length,
@@ -245,7 +245,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                       <div className="text-sm text-gray-400">Tasks</div>
                     </div>
                     <div className="text-center p-4 bg-gradient-to-br from-gray-800/50 to-gray-700/50 rounded-lg border border-gray-600">
-                      <div className="text-2xl font-bold text-[#b89fbf]">{dataStats.categories}</div>
+                      <div className="text-2xl font-bold text-[#b89fbf]">{dataStats.lists}</div>
                       <div className="text-sm text-gray-400">Categories</div>
                     </div>
                     <div className="text-center p-4 bg-gradient-to-br from-gray-800/50 to-gray-700/50 rounded-lg border border-gray-600">
@@ -311,7 +311,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                     <ul className="text-sm text-gray-400 space-y-1">
                       <li>• {dataStats.tasks} tasks with all details and scheduling</li>
                       <li>
-                        • {dataStats.categories} categories and {dataStats.folders} folders
+                        • {dataStats.lists} categories and {dataStats.folders} folders
                       </li>
                       <li>• {dataStats.events} events with locations and descriptions</li>
                       <li>• {dataStats.plans} day/week/month plans</li>

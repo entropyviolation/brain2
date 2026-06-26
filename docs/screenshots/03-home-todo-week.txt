@@ -1,0 +1,18 @@
+================================================================================
+SCREENSHOT: 03-home-todo-week.png
+VIEW: Home tab → To Do → Week period
+AREA: Home → To Do → Week
+SOURCE FILES:
+  - components/Home/ToDo/todo-panel.tsx
+  - components/Home/ToDo/TodoPeriodNav.tsx
+================================================================================
+
+GLOBAL CHROME (all screens)
+  The COGS title and global action bar appear on every screen (app/page.tsx):
+    Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
+    Bulk Add | Quick Add
+  Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
+  Top-level tabs (7): Home | Lists | Scheduler | Operations | Modules | Graph | Analytics
+
+VIEW-SPECIFIC
+Week-scoped to-dos with period navigation. Same priority formula and completion flow as the day view.

@@ -1,6 +1,6 @@
 "use client"
 
-import type { CategoryFolder } from "@/lib/types"
+import type { Folder } from "@/lib/types"
 import { FolderGlyph } from "@/components/Lists/lib/icon-utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,8 +10,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Trash, CalendarClock, Settings, Star } from "lucide-react"
 
 export interface EditFolderDialogProps {
-  editingFolder: CategoryFolder | null
-  onEditingFolderChange: (folder: CategoryFolder | null) => void
+  editingFolder: Folder | null
+  onEditingFolderChange: (folder: Folder | null) => void
   homePinned: string[]
   toggleHomePin: (id: string) => void
   onOpenIconPicker: () => void

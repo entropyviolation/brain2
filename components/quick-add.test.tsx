@@ -29,6 +29,6 @@ describe("QuickAdd", () => {
     const tasks = useTaskStore.getState().tasks
     expect(tasks).toHaveLength(1)
     expect(tasks[0].description).toBe("Buy more coffee filters")
-    expect(tasks[0].category).toBe("inbox")
+    expect(tasks[0].stage).toBe("inbox")
   })
 })

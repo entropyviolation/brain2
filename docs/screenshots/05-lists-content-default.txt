@@ -1,0 +1,18 @@
+================================================================================
+SCREENSHOT: 05-lists-content-default.png
+VIEW: Lists tab → Example List → Default display
+AREA: Lists → list → Default
+SOURCE FILES:
+  - components/Lists/list-content/ListContentDefault.tsx
+  - components/Lists/list-content/ListContentPanel.tsx
+================================================================================
+
+GLOBAL CHROME (all screens)
+  The COGS title and global action bar appear on every screen (app/page.tsx):
+    Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
+    Bulk Add | Quick Add
+  Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
+  Top-level tabs (7): Home | Lists | Scheduler | Operations | Modules | Graph | Analytics
+
+VIEW-SPECIFIC
+Default list table: title, attributes, scheduling chips, complete/edit actions. Attribute schema from list settings.

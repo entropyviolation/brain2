@@ -15,7 +15,7 @@ describe("NextActionsSettingsDialog", () => {
     resetLocalStorage()
     onClose.mockClear()
     useTaskStore.getState().clearAllData()
-    useTaskStore.getState().setCategories([
+    useTaskStore.getState().setLists([
       {
         id: "alpha",
         name: "Alpha List",

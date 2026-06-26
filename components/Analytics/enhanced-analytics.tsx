@@ -13,7 +13,7 @@
  */
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect } from "react"
 import { useTaskStore } from "@/lib/task-store"
 import { usePointsStore } from "@/lib/points-store"
 import { useHabitsStore } from "@/lib/habits-store"
@@ -24,7 +24,10 @@ import { formatDateKey } from "@/lib/date-utils"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { TrendingUp, Star, CheckCircle2, Flame, ClipboardCheck } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
+import { TrendingUp, Star, CheckCircle2, Flame, ClipboardCheck, Sparkles } from "lucide-react"
 import {
   ResponsiveContainer,
   BarChart,
@@ -39,8 +42,38 @@ import {
   Tooltip,
   CartesianGrid,
 } from "recharts"
+import { APP_NAV_KEYS, readStoredTab, writeStoredTab } from "@/lib/app-navigation"
+import { PlanVsReality } from "@/components/Analytics/PlanVsReality"
+import { CalibrationView } from "@/components/Analytics/CalibrationView"
+import { StreaksWidget } from "@/components/Analytics/StreaksWidget"
+import { MetricsTrends } from "@/components/Analytics/MetricsTrends"
+import { CorrelationExplorer } from "@/components/Analytics/CorrelationExplorer"
+import { ContextSwitchHeatmap } from "@/components/Analytics/ContextSwitchHeatmap"
+import { RegretView } from "@/components/Analytics/RegretView"
+import { PostMortemDialog } from "@/components/Reviews/PostMortemDialog"
+import { ItemTypesPanel } from "@/components/ItemTypes/ItemTypesPanel"
+import type { Task } from "@/lib/types"
+
+const ANALYTICS_TABS = [
+  "habits",
+  "points",
+  "tracking",
+  "plan",
+  "calibration",
+  "streaks",
+  "reflection",
+  "reviews",
+  "metrics",
+  "correlation",
+  "context-switch",
+  "regret",
+  "item-types",
+] as const
+type AnalyticsTab = (typeof ANALYTICS_TABS)[number]
 
 const HEATMAP_WEEKS = 17 // ~4 months
+const UNKNOWN_TIME_LABEL = "Unknown"
+const UNKNOWN_TIME_COLOR = "#94a3b8"
 
 function addDays(d: Date, n: number) {
   const r = new Date(d)
@@ -66,7 +99,16 @@ export function EnhancedAnalytics() {
   const trackingData = useTimeTrackingStore((s) => s.data)
 
   const [trackScopeId, setTrackScopeId] = useState(scopes[0]?.id ?? "")
+  const [showUncategorizedTime, setShowUncategorizedTime] = useState(false)
   const [openReviewId, setOpenReviewId] = useState<string | null>(null)
+  const [reflectTask, setReflectTask] = useState<Task | null>(null)
+  const [analyticsTab, setAnalyticsTab] = useState<AnalyticsTab>(() =>
+    readStoredTab(APP_NAV_KEYS.analyticsTab, ANALYTICS_TABS, "habits"),
+  )
+
+  useEffect(() => {
+    writeStoredTab(APP_NAV_KEYS.analyticsTab, analyticsTab)
+  }, [analyticsTab])
 
   // ---- headline metrics ----
   const completedCount = allTasks.filter((t) => t.completed).length
@@ -98,6 +140,29 @@ export function EnhancedAnalytics() {
       .sort((a, b) => b.points - a.points)
       .slice(0, 8)
   }, [pointsHistory])
+
+  // ---- post-mortem (task reflection) data ----
+  const reflectedTasks = useMemo(() => allTasks.filter((t) => t.completionReview), [allTasks])
+  const reflectableTasks = useMemo(
+    () =>
+      allTasks
+        .filter((t) => t.completed && !t.completionReview)
+        .sort((a, b) => (b.createdAt as any) - (a.createdAt as any))
+        .slice(0, 20),
+    [allTasks],
+  )
+  const postMortemSummary = useMemo(() => {
+    if (reflectedTasks.length === 0) return null
+    const avg = (pick: (r: NonNullable<Task["completionReview"]>) => number) =>
+      reflectedTasks.reduce((s, t) => s + pick(t.completionReview!), 0) / reflectedTasks.length
+    return {
+      count: reflectedTasks.length,
+      satisfaction: avg((r) => r.satisfaction),
+      resistance: avg((r) => r.resistance),
+      focus: avg((r) => r.focus),
+      distraction: avg((r) => r.distraction),
+    }
+  }, [reflectedTasks])
 
   // ---- habit heatmap ----
   const heatmap = useMemo(() => {
@@ -142,6 +207,7 @@ export function EnhancedAnalytics() {
     const scope = scopes.find((s) => s.id === trackScopeId)
     if (!scope) return []
     const totals: Record<string, number> = {}
+    let unknownMinutes = 0
     const today = new Date()
     for (let i = 0; i < 30; i++) {
       const key = formatDateKey(addDays(today, -i))
@@ -149,12 +215,17 @@ export function EnhancedAnalytics() {
       if (!slots) continue
       slots.forEach((penId) => {
         if (penId) totals[penId] = (totals[penId] || 0) + SLOT_MINUTES
+        else unknownMinutes += SLOT_MINUTES
       })
     }
-    return scope.pens
+    const slices = scope.pens
       .filter((p) => totals[p.id])
       .map((p) => ({ name: p.name, value: totals[p.id], color: p.color }))
-  }, [scopes, trackScopeId, trackingData])
+    if (showUncategorizedTime && unknownMinutes > 0) {
+      slices.push({ name: UNKNOWN_TIME_LABEL, value: unknownMinutes, color: UNKNOWN_TIME_COLOR })
+    }
+    return slices
+  }, [scopes, trackScopeId, trackingData, showUncategorizedTime])
 
   const metric = (icon: React.ReactNode, label: string, value: string | number) => (
     <Card className="card-hover">
@@ -181,12 +252,21 @@ export function EnhancedAnalytics() {
         {metric(<Flame className="h-5 w-5" />, "Active habits", habitTasks.length)}
       </div>
 
-      <Tabs defaultValue="habits">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs value={analyticsTab} onValueChange={(v) => setAnalyticsTab(v as AnalyticsTab)}>
+        <TabsList className="flex flex-wrap h-auto w-full justify-start">
           <TabsTrigger value="habits">Habits</TabsTrigger>
           <TabsTrigger value="points">Points</TabsTrigger>
           <TabsTrigger value="tracking">Tracking</TabsTrigger>
+          <TabsTrigger value="plan">Plan vs Reality</TabsTrigger>
+          <TabsTrigger value="calibration">Calibration</TabsTrigger>
+          <TabsTrigger value="streaks">Streaks</TabsTrigger>
+          <TabsTrigger value="reflection">Reflection</TabsTrigger>
           <TabsTrigger value="reviews">Reviews</TabsTrigger>
+          <TabsTrigger value="metrics">Metrics</TabsTrigger>
+          <TabsTrigger value="correlation">Correlation</TabsTrigger>
+          <TabsTrigger value="context-switch">Context Switch</TabsTrigger>
+          <TabsTrigger value="regret">Regret</TabsTrigger>
+          <TabsTrigger value="item-types">Item Types</TabsTrigger>
         </TabsList>
 
         {/* HABITS */}
@@ -302,19 +382,31 @@ export function EnhancedAnalytics() {
         {/* TRACKING */}
         <TabsContent value="tracking" className="mt-6 space-y-6">
           <Card>
-            <CardHeader className="pb-3 flex flex-row items-center justify-between">
-              <CardTitle className="text-base">Time distribution (last 30 days)</CardTitle>
-              <select
-                className="border rounded h-8 px-2 text-sm bg-background"
-                value={trackScopeId}
-                onChange={(e) => setTrackScopeId(e.target.value)}
-              >
-                {scopes.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
+            <CardHeader className="pb-3 space-y-3">
+              <div className="flex flex-row items-center justify-between gap-2">
+                <CardTitle className="text-base">Time distribution (last 30 days)</CardTitle>
+                <select
+                  className="border rounded h-8 px-2 text-sm bg-background"
+                  value={trackScopeId}
+                  onChange={(e) => setTrackScopeId(e.target.value)}
+                >
+                  {scopes.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="show-uncategorized-time"
+                  checked={showUncategorizedTime}
+                  onCheckedChange={setShowUncategorizedTime}
+                />
+                <Label htmlFor="show-uncategorized-time" className="text-sm cursor-pointer">
+                  Show uncategorized time
+                </Label>
+              </div>
             </CardHeader>
             <CardContent>
               {trackingDist.length === 0 ? (
@@ -353,6 +445,96 @@ export function EnhancedAnalytics() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* PLAN VS REALITY */}
+        <TabsContent value="plan" className="mt-6">
+          <PlanVsReality />
+        </TabsContent>
+
+        {/* CALIBRATION */}
+        <TabsContent value="calibration" className="mt-6">
+          <CalibrationView />
+        </TabsContent>
+
+        {/* STREAKS */}
+        <TabsContent value="streaks" className="mt-6">
+          <StreaksWidget />
+        </TabsContent>
+
+        {/* REFLECTION (post-mortems) */}
+        <TabsContent value="reflection" className="mt-6 space-y-6">
+          {postMortemSummary && (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {metric(<Sparkles className="h-5 w-5" />, "Avg satisfaction", postMortemSummary.satisfaction.toFixed(1))}
+              {metric(<Sparkles className="h-5 w-5" />, "Avg resistance", postMortemSummary.resistance.toFixed(1))}
+              {metric(<Sparkles className="h-5 w-5" />, "Avg focus", postMortemSummary.focus.toFixed(1))}
+              {metric(<Sparkles className="h-5 w-5" />, "Avg distraction", postMortemSummary.distraction.toFixed(1))}
+            </div>
+          )}
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Reflect on completed tasks</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {reflectableTasks.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  {reflectedTasks.length > 0
+                    ? "All completed tasks have been reflected on. Nice work!"
+                    : "Complete tasks to capture a post-mortem reflection."}
+                </p>
+              ) : (
+                reflectableTasks.map((t) => (
+                  <div key={t.id} className="flex items-center justify-between gap-2 border rounded-md p-2">
+                    <span className="text-sm flex-1 truncate">{t.description}</span>
+                    <Button size="sm" variant="outline" className="h-7" onClick={() => setReflectTask(t)}>
+                      <Sparkles className="h-3.5 w-3.5 mr-1" />
+                      Reflect
+                    </Button>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+
+          {reflectedTasks.length > 0 && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Recent reflections ({reflectedTasks.length})</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {reflectedTasks
+                  .slice()
+                  .sort(
+                    (a, b) =>
+                      new Date(b.completionReview!.completedAt).getTime() -
+                      new Date(a.completionReview!.completedAt).getTime(),
+                  )
+                  .slice(0, 10)
+                  .map((t) => {
+                    const r = t.completionReview!
+                    return (
+                      <button
+                        key={t.id}
+                        onClick={() => setReflectTask(t)}
+                        className="w-full flex items-center justify-between gap-2 border rounded-md p-2 text-left hover:bg-muted/50"
+                      >
+                        <span className="text-sm flex-1 truncate">{t.description}</span>
+                        <span className="flex gap-1 text-xs text-muted-foreground shrink-0">
+                          <Badge variant="outline" className="font-normal">
+                            sat {r.satisfaction}
+                          </Badge>
+                          <Badge variant="outline" className="font-normal">
+                            focus {r.focus}
+                          </Badge>
+                        </span>
+                      </button>
+                    )
+                  })}
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         {/* REVIEWS */}
@@ -414,7 +596,42 @@ export function EnhancedAnalytics() {
               })
           )}
         </TabsContent>
+
+        {/* SELF-TRACKING METRICS (Worker C) */}
+        <TabsContent value="metrics" className="mt-6">
+          <MetricsTrends />
+        </TabsContent>
+
+        {/* METRIC CORRELATION (Worker C) */}
+        <TabsContent value="correlation" className="mt-6">
+          <CorrelationExplorer />
+        </TabsContent>
+
+        {/* CONTEXT-SWITCH HEATMAP (Worker C) */}
+        <TabsContent value="context-switch" className="mt-6">
+          <ContextSwitchHeatmap />
+        </TabsContent>
+
+        {/* REGRET LEDGER (Worker G) */}
+        <TabsContent value="regret" className="mt-6">
+          <RegretView />
+        </TabsContent>
+
+        {/* ITEM TYPES */}
+        <TabsContent value="item-types" className="mt-6">
+          <Card>
+            <CardContent className="pt-6">
+              <ItemTypesPanel compact />
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
+
+      <PostMortemDialog
+        task={reflectTask}
+        open={!!reflectTask}
+        onClose={() => setReflectTask(null)}
+      />
     </div>
   )
 }

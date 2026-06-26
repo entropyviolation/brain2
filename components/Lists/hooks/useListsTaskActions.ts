@@ -1,11 +1,11 @@
 import { useCallback } from "react"
-import type { Task, TaskCategory, CategoryFolder } from "@/lib/types"
+import type { Task, List, Folder, ItemTypeDefinition } from "@/lib/types"
 import { getWeekString } from "@/lib/date-utils"
 import {
   createListItem,
   createNextActionItem,
-  withCategoryDefaults,
-  categoryIsNextActions,
+  withListMembership,
+  listIsNextActions,
 } from "@/lib/item-utils"
 import {
   isNaSmartCategoryId,
@@ -19,24 +19,25 @@ import type { OpenTarget } from "@/components/Lists/types"
 
 export function useListsTaskActions(
   allTasks: Task[],
-  categories: TaskCategory[],
-  folders: CategoryFolder[],
+  lists: List[],
+  folders: Folder[],
   addTask: (task: Task) => void,
   updateTask: (task: Task) => void,
+  types: ItemTypeDefinition[] = [],
 ) {
   const buildBaseTask = useCallback(
     (description: string, categoryId?: string): Task => {
-      const nextAction = categoryId ? categoryIsNextActions(categoryId, folders) : false
+      const nextAction = categoryId ? listIsNextActions(categoryId, folders) : false
       const base = nextAction
         ? createNextActionItem(description, categoryId ? [categoryId] : [])
         : createListItem(description, categoryId ? [categoryId] : [])
       if (categoryId) {
-        const cat = categories.find((c) => c.id === categoryId)
-        return withCategoryDefaults(base, cat)
+        const cat = lists.find((c) => c.id === categoryId)
+        return withListMembership(base, cat, types)
       }
       return base
     },
-    [categories, folders],
+    [lists, folders, types],
   )
 
   const handleCompleteTask = useCallback(
@@ -51,15 +52,15 @@ export function useListsTaskActions(
     (
       newTaskDescription: string,
       openTarget: OpenTarget,
-      currentFolder: CategoryFolder | null,
+      currentFolder: Folder | null,
       onDone: () => void,
     ) => {
       if (!newTaskDescription.trim() || !openTarget) return
       const base = buildBaseTask(newTaskDescription, openTarget.type === "category" ? openTarget.id : undefined)
       if (openTarget.type === "category") {
-        base.categories = [openTarget.id]
+        base.lists = [openTarget.id]
       } else if (openTarget.type === "folder-all" && openTarget.folderId === ROOT_ALL_FOLDER_ID) {
-        base.category = "list"
+        base.stage = "list"
       } else if (openTarget.type === "folder-all" && currentFolder) {
         Object.assign(base, assignTaskToFolderUncategorized(base, currentFolder))
       } else if (openTarget.type === "smart") {
@@ -78,7 +79,7 @@ export function useListsTaskActions(
     (
       bulkAddText: string,
       openTarget: OpenTarget,
-      currentFolder: CategoryFolder | null,
+      currentFolder: Folder | null,
       onDone: () => void,
     ) => {
       if (!openTarget || !bulkAddText.trim()) return
@@ -95,14 +96,14 @@ export function useListsTaskActions(
             else if (p === "weekly") base.scheduledWeek = getWeekString(now)
             else base.scheduledMonth = now.toISOString().slice(0, 7)
           } else {
-            base.categories = [openTarget.id]
+            base.lists = [openTarget.id]
           }
         } else if (openTarget.type === "smart") {
           if (openTarget.id === "daily") base.scheduledDate = now
           else if (openTarget.id === "weekly") base.scheduledWeek = getWeekString(now)
           else base.scheduledMonth = now.toISOString().slice(0, 7)
         } else if (openTarget.type === "folder-all" && openTarget.folderId === ROOT_ALL_FOLDER_ID) {
-          base.category = "list"
+          base.stage = "list"
         } else if (openTarget.type === "folder-all" && currentFolder) {
           Object.assign(base, assignTaskToFolderUncategorized(base, currentFolder))
         }
@@ -117,7 +118,7 @@ export function useListsTaskActions(
     (categoryId: string, newTaskDescription: string, onDone: () => void) => {
       if (!newTaskDescription.trim()) return
       const base = buildBaseTask(newTaskDescription, categoryId)
-      base.categories = [categoryId]
+      base.lists = [categoryId]
       addTask(base)
       onDone()
     },

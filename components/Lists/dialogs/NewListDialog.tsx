@@ -1,6 +1,6 @@
 "use client"
 
-import type { CategoryFolder } from "@/lib/types"
+import type { Folder } from "@/lib/types"
 import { LIST_TEMPLATES } from "@/components/Lists/constants"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,7 +11,7 @@ import { CalendarClock } from "lucide-react"
 
 export interface NewListDialogProps {
   open: boolean
-  currentFolder: CategoryFolder | null
+  currentFolder: Folder | null
   isHome: boolean
   name: string
   description: string

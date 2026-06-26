@@ -20,14 +20,14 @@ import { GoalsTracker } from "@/components/Home/Goals/goals-tracker"
 import { PointsStats } from "@/components/Home/points-stats"
 import { DailyProgressQuickview } from "@/components/Home/daily-progress-quickview"
 import { HomeReviewBanner } from "@/components/Home/home-review-banner"
+import { NeedsAttention } from "@/components/Home/NeedsAttention"
+import { TaskDetailPopup } from "@/components/task-detail-popup"
 import { TimeGrid } from "@/components/Home/Tracking/time-grid"
 import { ActualDayView } from "@/components/Home/Tracking/actual-day-view"
 import { useCurrentDate } from "@/lib/use-current-date"
 import { format } from "date-fns"
 import type { ReviewPeriod } from "@/lib/types"
-
-const HOME_TAB_KEY = "cogs-home-tab"
-const HOME_TRACKING_TAB_KEY = "cogs-home-tracking-tab"
+import { APP_NAV_KEYS, readStoredTab, writeStoredTab } from "@/lib/app-navigation"
 
 type HomeTab = "habits" | "plan" | "todo" | "goals" | "tracking"
 type TrackingTab = "grid" | "daylog"
@@ -35,25 +35,20 @@ type TrackingTab = "grid" | "daylog"
 const HOME_TABS: HomeTab[] = ["habits", "plan", "todo", "goals", "tracking"]
 const TRACKING_TABS: TrackingTab[] = ["grid", "daylog"]
 
-function readStoredTab<T extends string>(key: string, allowed: T[], fallback: T): T {
-  if (typeof window === "undefined") return fallback
-  const stored = localStorage.getItem(key)
-  return stored && allowed.includes(stored as T) ? (stored as T) : fallback
-}
-
 export function HomeDashboard() {
   const { currentDate, setCurrentDate } = useCurrentDate()
-  const [activeTab, setActiveTab] = useState<HomeTab>(() => readStoredTab(HOME_TAB_KEY, HOME_TABS, "habits"))
+  const [activeTab, setActiveTab] = useState<HomeTab>(() => readStoredTab(APP_NAV_KEYS.homeTab, HOME_TABS, "habits"))
   const [trackingTab, setTrackingTab] = useState<TrackingTab>(() =>
-    readStoredTab(HOME_TRACKING_TAB_KEY, TRACKING_TABS, "grid"),
+    readStoredTab(APP_NAV_KEYS.homeTrackingTab, TRACKING_TABS, "grid"),
   )
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
 
   useEffect(() => {
-    localStorage.setItem(HOME_TAB_KEY, activeTab)
+    writeStoredTab(APP_NAV_KEYS.homeTab, activeTab)
   }, [activeTab])
 
   useEffect(() => {
-    localStorage.setItem(HOME_TRACKING_TAB_KEY, trackingTab)
+    writeStoredTab(APP_NAV_KEYS.homeTrackingTab, trackingTab)
   }, [trackingTab])
 
   const handleStartReview = useCallback((_period: ReviewPeriod, _periodKey: string) => {
@@ -84,6 +79,8 @@ export function HomeDashboard() {
 
         <DailyProgressQuickview currentDate={currentDate} />
       </div>
+
+      <NeedsAttention onOpenItem={setSelectedTaskId} />
 
       {/* Main dashboard tabs */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as HomeTab)} className="w-full">
@@ -146,6 +143,8 @@ export function HomeDashboard() {
           </Tabs>
         </TabsContent>
       </Tabs>
+
+      <TaskDetailPopup taskId={selectedTaskId} open={!!selectedTaskId} onClose={() => setSelectedTaskId(null)} />
     </div>
   )
 }

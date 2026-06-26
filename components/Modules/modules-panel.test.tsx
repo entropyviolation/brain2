@@ -33,10 +33,10 @@ describe("ModulesPanel", () => {
     render(<ModulesPanel />)
 
     expect(screen.getByRole("heading", { name: "Modules" })).toBeInTheDocument()
-    expect(screen.getByText("Composable views built from your lists, tasks, and stats.")).toBeInTheDocument()
+    expect(screen.getByText("Build mini-apps and widgets from your lists, items, and stats.")).toBeInTheDocument()
     expect(screen.getByText("Weekly Points")).toBeInTheDocument()
     expect(screen.getByText("Daily Writing Prompt")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /Add Module/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /Build module/i })).toBeInTheDocument()
   })
 
   it("removes a module when the remove button is clicked", async () => {

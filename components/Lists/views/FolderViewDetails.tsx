@@ -47,7 +47,7 @@ export function FolderViewDetails({
                 />
                 {entry.name}
               </td>
-              <td>{entry.kind === "folder" ? "Folder" : entry.kind === "smart" ? "Smart List" : "List"}</td>
+              <td>{entry.kind === "folder" ? "Folder" : entry.kind === "smart" ? "Smart List" : entry.kind === "objectives" ? "Objectives" : entry.kind === "habits" ? "Habits" : "List"}</td>
               <td>{entry.kind === "folder" ? `${entry.count} lists` : `${entry.count} active`}</td>
               <td>{entry.kind === "list" ? `${getCategoryCompletionRate(entry.id)}%` : "—"}</td>
             </tr>

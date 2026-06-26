@@ -15,7 +15,7 @@ describe("TaskDetailPopup", () => {
     resetLocalStorage()
     onClose.mockClear()
     useTaskStore.getState().clearAllData()
-    useTaskStore.getState().setCategories([
+    useTaskStore.getState().setLists([
       {
         id: "na-list",
         name: "Work Tasks",
@@ -31,14 +31,14 @@ describe("TaskDetailPopup", () => {
         id: "folder-na",
         name: "Next Actions",
         color: "#3B82F6",
-        categoryIds: ["na-list"],
+        listIds: ["na-list"],
         createdAt: new Date(),
       },
     ])
     useTaskStore.getState().addTask({
       id: "popup-task",
       description: "Plan sprint demo",
-      category: "list",
+      stage: "list",
       createdAt: new Date(),
       estimatedDuration: 30,
       cognitiveLoad: 2,
@@ -49,7 +49,7 @@ describe("TaskDetailPopup", () => {
       entropy: 0.3,
       rewardValue: 25,
       completed: false,
-      categories: ["na-list"],
+      lists: ["na-list"],
       allowPartialCompletion: false,
       minimumChunkSize: 15,
     })
@@ -76,5 +76,21 @@ describe("TaskDetailPopup", () => {
     fireEvent.change(nameInput, { target: { value: "Plan team demo" } })
     await user.click(screen.getByRole("button", { name: /Save Changes/i }))
     expect(useTaskStore.getState().tasks[0].description).toBe("Plan team demo")
+  })
+
+  it("opens the item type editor when a type badge is double-clicked", async () => {
+    const user = userEvent.setup()
+    render(<TaskDetailPopup taskId="popup-task" open onClose={onClose} />)
+    await user.dblClick(screen.getByTitle("Double-click to view or edit this type"))
+    expect(await screen.findByRole("dialog", { name: /Task \(built-in\)/i })).toBeInTheDocument()
+    expect(screen.getByText(/Items of this type/i)).toBeInTheDocument()
+  })
+
+  it("navigates to a list when its badge is double-clicked", async () => {
+    const user = userEvent.setup()
+    render(<TaskDetailPopup taskId="popup-task" open onClose={onClose} />)
+    await user.dblClick(screen.getByTitle("Double-click to open this list"))
+    expect(onClose).toHaveBeenCalled()
+    expect(localStorage.getItem("cogs-lists-navigation")).toContain("na-list")
   })
 })

@@ -1,7 +1,7 @@
 /**
  * components/NextActions/settings-dialog.tsx — Next Actions settings
  *
- * Category settings: reorder categories, manage folders, and import/export
+ * Category settings: reorder lists, manage folders, and import/export
  * category + task data as JSON.
  *
  * Spec: §6.4 (settings). JSON import/export should become a thin layer over the
@@ -19,7 +19,9 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { GripVertical, Settings, Save, Trash2, Download, Upload, FileText, Database } from "lucide-react"
-import type { TaskCategory, Task } from "@/lib/types"
+import type { List, Task } from "@/lib/types"
+import { BackupRestore } from "@/components/Settings/BackupRestore"
+import { downloadCategoryExport, parseCategoryExport, importCategory } from "@/lib/data/backup"
 import { Dialog as ChoiceDialog, DialogContent as ChoiceDialogContent, DialogHeader as ChoiceDialogHeader, DialogTitle as ChoiceDialogTitle, DialogDescription as ChoiceDialogDescription, DialogFooter as ChoiceDialogFooter } from "@/components/ui/dialog"
 
 interface NextActionsSettingsDialogProps {
@@ -30,7 +32,7 @@ interface NextActionsSettingsDialogProps {
 interface ExportData {
   version: "1.0"
   exportDate: string
-  categories: TaskCategory[]
+  lists: List[]
   tasks: Task[]
   metadata: {
     totalCategories: number
@@ -41,25 +43,26 @@ interface ExportData {
 }
 
 export function NextActionsSettingsDialog({ open, onClose }: NextActionsSettingsDialogProps) {
-  const categories = useTaskStore((state) => state.categories)
+  const lists = useTaskStore((state) => state.lists)
   const tasks = useTaskStore((state) => state.tasks)
-  const updateCategory = useTaskStore((state) => state.updateCategory)
-  const deleteCategory = useTaskStore((state) => state.deleteCategory)
-  const addCategory = useTaskStore((state) => state.addCategory)
+  const updateList = useTaskStore((state) => state.updateList)
+  const deleteList = useTaskStore((state) => state.deleteList)
+  const addList = useTaskStore((state) => state.addList)
   const addTask = useTaskStore((state) => state.addTask)
   const setTasks = useTaskStore((state) => state.setTasks)
-  const setCategories = useTaskStore((state) => state.setCategories)
+  const setLists = useTaskStore((state) => state.setLists)
   const clearAllData = useTaskStore((state) => state.clearAllData)
 
-  const [localCategories, setLocalCategories] = useState<TaskCategory[]>([])
+  const [localCategories, setLocalCategories] = useState<List[]>([])
   const [draggedCategory, setDraggedCategory] = useState<string | null>(null)
   const [importStatus, setImportStatus] = useState<string>("")
   const [pendingImport, setPendingImport] = useState<ExportData | null>(null)
   const [showImportChoice, setShowImportChoice] = useState(false)
+  const [exportCategoryId, setExportCategoryId] = useState<string>("")
 
   useEffect(() => {
-    setLocalCategories([...categories].sort((a, b) => (a.order || 0) - (b.order || 0)))
-  }, [categories])
+    setLocalCategories([...lists].sort((a, b) => (a.order || 0) - (b.order || 0)))
+  }, [lists])
 
   const handleDragStart = (e: React.DragEvent, categoryId: string) => {
     setDraggedCategory(categoryId)
@@ -90,14 +93,14 @@ export function NextActionsSettingsDialog({ open, onClose }: NextActionsSettings
 
   const handleDeleteCategory = (categoryId: string) => {
     if (confirm("Are you sure you want to delete this list? This action cannot be undone.")) {
-      deleteCategory(categoryId)
+      deleteList(categoryId)
       setLocalCategories(localCategories.filter((c) => c.id !== categoryId))
     }
   }
 
   const saveOrder = () => {
     localCategories.forEach((category, index) => {
-      updateCategory({ ...category, order: index })
+      updateList({ ...category, order: index })
     })
     onClose()
   }
@@ -109,10 +112,10 @@ export function NextActionsSettingsDialog({ open, onClose }: NextActionsSettings
     const exportData: ExportData = {
       version: "1.0",
       exportDate: new Date().toISOString(),
-      categories: categories,
+      lists: lists,
       tasks: tasks,
       metadata: {
-        totalCategories: categories.length,
+        totalCategories: lists.length,
         totalTasks: tasks.length,
         completedTasks: completedTasks.length,
         activeTasks: activeTasks.length,
@@ -131,8 +134,37 @@ export function NextActionsSettingsDialog({ open, onClose }: NextActionsSettings
     document.body.removeChild(link)
     URL.revokeObjectURL(url)
 
-    setImportStatus(`✅ Exported ${categories.length} lists and ${tasks.length} tasks successfully!`)
+    setImportStatus(`✅ Exported ${lists.length} lists and ${tasks.length} tasks successfully!`)
     setTimeout(() => setImportStatus(""), 3000)
+  }
+
+  // Per-category export: a single list + its sublists + member tasks (HM4).
+  const handleExportCategory = () => {
+    const id = exportCategoryId || lists[0]?.id
+    if (!id) return
+    const cat = lists.find((c) => c.id === id)
+    downloadCategoryExport(id)
+    setImportStatus(`✅ Exported list "${cat?.name ?? id}" (with sublists) as JSON.`)
+    setTimeout(() => setImportStatus(""), 3000)
+  }
+
+  // Per-category import: merges a category subtree export back into the store.
+  const handleImportCategory = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      try {
+        const data = parseCategoryExport(e.target?.result as string)
+        const result = importCategory(data, "merge")
+        setImportStatus(`✅ Imported ${result.lists} list(s) and ${result.tasks} task(s).`)
+      } catch (error) {
+        setImportStatus(`❌ Error importing list: ${error instanceof Error ? error.message : "Unknown error"}`)
+      }
+      setTimeout(() => setImportStatus(""), 5000)
+    }
+    reader.readAsText(file)
+    event.target.value = ""
   }
 
   const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -145,12 +177,12 @@ export function NextActionsSettingsDialog({ open, onClose }: NextActionsSettings
         const importedData = JSON.parse(e.target?.result as string) as ExportData
 
         // Validate the imported data structure
-        if (!importedData.categories || !importedData.tasks) {
-          throw new Error("Invalid file format: missing categories or tasks")
+        if (!importedData.lists || !importedData.tasks) {
+          throw new Error("Invalid file format: missing lists or tasks")
         }
 
         // Convert date strings back to Date objects
-        const processedCategories = importedData.categories.map((category) => ({
+        const processedCategories = importedData.lists.map((category) => ({
           ...category,
           createdAt: new Date(category.createdAt),
         }))
@@ -162,7 +194,7 @@ export function NextActionsSettingsDialog({ open, onClose }: NextActionsSettings
           deadline: task.deadline ? new Date(task.deadline) : undefined,
         }))
 
-        setPendingImport({ ...importedData, categories: processedCategories, tasks: processedTasks })
+        setPendingImport({ ...importedData, lists: processedCategories, tasks: processedTasks })
         setShowImportChoice(true)
       } catch (error) {
         console.error("Import error:", error)
@@ -180,27 +212,27 @@ export function NextActionsSettingsDialog({ open, onClose }: NextActionsSettings
   const handleImportChoice = (mode: "add" | "replace") => {
     if (!pendingImport) return
     if (mode === "replace") {
-      setCategories(pendingImport.categories)
+      setLists(pendingImport.lists)
       setTasks(pendingImport.tasks)
       setImportStatus(
-        `✅ Successfully imported ${pendingImport.categories.length} lists and ${pendingImport.tasks.length} tasks! (Replaced)`
+        `✅ Successfully imported ${pendingImport.lists.length} lists and ${pendingImport.tasks.length} tasks! (Replaced)`
       )
     } else {
-      // Merge: add only new categories/tasks by id
-      const existingCategoryIds = new Set(categories.map((c) => c.id))
+      // Merge: add only new lists/tasks by id
+      const existingCategoryIds = new Set(lists.map((c) => c.id))
       const existingTaskIds = new Set(tasks.map((t) => t.id))
       const mergedCategories = [
-        ...categories,
-        ...pendingImport.categories.filter((c) => !existingCategoryIds.has(c.id)),
+        ...lists,
+        ...pendingImport.lists.filter((c) => !existingCategoryIds.has(c.id)),
       ]
       const mergedTasks = [
         ...tasks,
         ...pendingImport.tasks.filter((t) => !existingTaskIds.has(t.id)),
       ]
-      setCategories(mergedCategories)
+      setLists(mergedCategories)
       setTasks(mergedTasks)
       setImportStatus(
-        `✅ Successfully imported ${pendingImport.categories.length} lists and ${pendingImport.tasks.length} tasks! (Added)`
+        `✅ Successfully imported ${pendingImport.lists.length} lists and ${pendingImport.tasks.length} tasks! (Added)`
       )
     }
     setShowImportChoice(false)
@@ -222,13 +254,13 @@ export function NextActionsSettingsDialog({ open, onClose }: NextActionsSettings
           <DialogDescription>Manage your lists and import/export your data.</DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="categories" className="flex-1 overflow-hidden">
+        <Tabs defaultValue="lists" className="flex-1 overflow-hidden">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="categories">Lists</TabsTrigger>
+            <TabsTrigger value="lists">Lists</TabsTrigger>
             <TabsTrigger value="data">Import/Export</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="categories" className="flex-1 overflow-hidden">
+          <TabsContent value="lists" className="flex-1 overflow-hidden">
             <div className="space-y-4 h-full">
               <div className="text-sm text-muted-foreground">
                 Drag and drop to reorder lists. Click the trash icon to delete a list.
@@ -279,7 +311,7 @@ export function NextActionsSettingsDialog({ open, onClose }: NextActionsSettings
               {/* Data Summary */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="text-center p-3 bg-muted/50 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-600">{categories.length}</div>
+                  <div className="text-2xl font-bold text-blue-600">{lists.length}</div>
                   <div className="text-xs text-muted-foreground">Lists</div>
                 </div>
                 <div className="text-center p-3 bg-muted/50 rounded-lg">
@@ -296,19 +328,62 @@ export function NextActionsSettingsDialog({ open, onClose }: NextActionsSettings
                 </div>
               </div>
 
-              {/* Export Section */}
+              {/* Full app backup/restore (all stores + plans) */}
+              <BackupRestore />
+
+              {/* Export Section (lists + tasks only) */}
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <Download className="h-4 w-4" />
-                  <h3 className="font-semibold">Export Data</h3>
+                  <h3 className="font-semibold">Export Lists &amp; Tasks</h3>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Download all your lists and tasks as a JSON file for backup or transfer.
+                  Download just your lists and tasks as a JSON file for backup or transfer.
                 </p>
                 <Button onClick={exportData} className="w-full" variant="outline">
                   <FileText className="h-4 w-4 mr-2" />
-                  Export All Data
+                  Export Lists &amp; Tasks
                 </Button>
+              </div>
+
+              {/* Per-category export / import (single list + its sublists) */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Download className="h-4 w-4" />
+                  <h3 className="font-semibold">Export / Import a Single List</h3>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Export one list together with its sublists and tasks, or import such a file (merged by ID).
+                </p>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <select
+                    className="flex-1 rounded-md border bg-background px-2 py-1 text-sm"
+                    value={exportCategoryId || lists[0]?.id || ""}
+                    onChange={(e) => setExportCategoryId(e.target.value)}
+                  >
+                    {lists.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                  <Button onClick={handleExportCategory} variant="outline" disabled={lists.length === 0}>
+                    <FileText className="h-4 w-4 mr-2" />
+                    Export List
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="import-category-file" className="sr-only">
+                    Choose a list export to import
+                  </Label>
+                  <Input
+                    id="import-category-file"
+                    type="file"
+                    accept=".json"
+                    onChange={handleImportCategory}
+                    className="cursor-pointer"
+                  />
+                </div>
               </div>
 
               {/* Import Section */}

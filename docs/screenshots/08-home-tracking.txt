@@ -1,45 +1,19 @@
 ================================================================================
 SCREENSHOT: 08-home-tracking.png
-VIEW: Home tab  ->  "Tracking" sub-tab  ->  "Time Grid"
+VIEW: Home tab → Tracking → Time Grid
+AREA: Home → Tracking → Time Grid
 SOURCE FILES:
-  - app/page.tsx, components/Home/home-dashboard.tsx
   - components/Home/Tracking/time-grid.tsx
-  - components/Home/Tracking/actual-day-view.tsx
+  - components/cognitive-state.tsx
   - lib/time-tracking-store.ts
-  - components/cognitive-state.tsx (same TimeGrid in header dialog)
 ================================================================================
 
-------------------------------------------------------------
-A. GLOBAL HEADER + HOME HEADER
-------------------------------------------------------------
-Same as 01-home-daily-habits.txt sections A–D.
-Home sub-tabs: Habits, Plan, To Do, Goals, "Tracking" (active).
+GLOBAL CHROME (all screens)
+  The COGS title and global action bar appear on every screen (app/page.tsx):
+    Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
+    Bulk Add | Quick Add
+  Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
+  Top-level tabs (7): Home | Lists | Scheduler | Operations | Modules | Graph | Analytics
 
-------------------------------------------------------------
-B. TRACKING SUB-TABS (home-dashboard.tsx)
-------------------------------------------------------------
-"Time Grid" (active) | "Day Log"
-  Time Grid  — minute-level painting interface (this screenshot)
-  Day Log    — ActualDayView: calendar events + logged intervals for the day
-
-------------------------------------------------------------
-C. TIME GRID (time-grid.tsx)
-------------------------------------------------------------
-Persisted in lib/time-tracking-store.ts (key cogs-timegrid-store).
-
-1. Date navigation: "<" | "Today" | "Sat, Jun 20" | ">" | "Clear day"
-2. Scope tabs: Activity (active) | Location | Mood | + (add scope) | delete
-3. Pen palette (Activity scope defaults):
-   Work (blue) | Rest (green) | Exercise (orange) | Social (pink) |
-   Chores (purple) | Sleep (dark) | Erase | Edit pens
-4. Manual range entry: From 09:00 AM → To 10:00 AM | "Fill range with selected pen"
-5. Grid: rows 12:00 AM – 11:00 PM, columns = pens for painting minutes.
-   Drag across cells or use range fill to log time.
-6. Footer: "Untracked: 24h" when nothing logged.
-
-Same component renders in compact mode inside the header Tracking dialog.
-
-------------------------------------------------------------
-NOTE ON DATA STATE IN THIS SCREENSHOT
-------------------------------------------------------------
-Today selected, Activity scope, no painted cells — full day untracked.
+VIEW-SPECIFIC
+Scope pens (Activity, Location, Mood, …) and 15-minute slot grid for logging how time was spent. Same grid opens from header Tracking dialog.

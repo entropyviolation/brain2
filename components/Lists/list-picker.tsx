@@ -12,8 +12,8 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
-import { ChevronLeft, Folder, List, Plus, Search } from "lucide-react"
-import type { TaskCategory } from "@/lib/types"
+import { ChevronLeft, Folder as FolderIcon, List as ListIcon, Plus, Search } from "lucide-react"
+import type { List } from "@/lib/types"
 
 interface ListPickerProps {
   selected: string[]
@@ -32,10 +32,10 @@ export function ListPicker({
   allowMultiToggle = false,
   compact = false,
 }: ListPickerProps) {
-  const categories = useTaskStore((s) => s.categories)
+  const categories = useTaskStore((s) => s.lists)
   const folders = useTaskStore((s) => s.folders)
-  const addCategory = useTaskStore((s) => s.addCategory)
-  const addCategoryToFolder = useTaskStore((s) => s.addCategoryToFolder)
+  const addList = useTaskStore((s) => s.addList)
+  const addListToFolder = useTaskStore((s) => s.addListToFolder)
 
   const [browseFolderId, setBrowseFolderId] = useState<string | null>(null)
   const [search, setSearch] = useState("")
@@ -56,12 +56,12 @@ export function ListPicker({
     if (!browseFolderId) return []
     const folder = folders.find((f) => f.id === browseFolderId)
     if (!folder) return []
-    return folder.categoryIds.map((id) => categories.find((c) => c.id === id)).filter(Boolean) as TaskCategory[]
+    return folder.listIds.map((id) => categories.find((c) => c.id === id)).filter(Boolean) as List[]
   }, [browseFolderId, folders, categories])
 
   const looseLists = useMemo(() => {
     const inAnyFolder = new Set<string>()
-    folders.forEach((f) => f.categoryIds.forEach((id) => inAnyFolder.add(id)))
+    folders.forEach((f) => f.listIds.forEach((id) => inAnyFolder.add(id)))
     return categories.filter((c) => !inAnyFolder.has(c.id))
   }, [categories, folders])
 
@@ -90,7 +90,7 @@ export function ListPicker({
     const name = newListName.trim()
     if (!name) return
     const id = Date.now().toString()
-    addCategory({
+    addList({
       id,
       name,
       color: "#3B82F6",
@@ -99,13 +99,13 @@ export function ListPicker({
       order: categories.length,
       scheduleable: true,
     })
-    if (browseFolderId) addCategoryToFolder(browseFolderId, id)
+    if (browseFolderId) addListToFolder(browseFolderId, id)
     onChange(effectiveMulti ? [...selected, id] : [id])
     setNewListName("")
     setCreating(false)
   }
 
-  const renderListRow = (cat: TaskCategory) => {
+  const renderListRow = (cat: List) => {
     const on = selected.includes(cat.id)
     return (
       <button
@@ -116,7 +116,7 @@ export function ListPicker({
       >
         {effectiveMulti && <Checkbox checked={on} className="pointer-events-none" />}
         <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: cat.color }} />
-        <List className="h-3.5 w-3.5 shrink-0 opacity-60" />
+        <ListIcon className="h-3.5 w-3.5 shrink-0 opacity-60" />
         <span className="truncate">{cat.name}</span>
       </button>
     )
@@ -164,7 +164,7 @@ export function ListPicker({
                 className="w-full flex items-center gap-2 px-2 py-1.5 text-left text-sm rounded hover:bg-muted/60"
                 onClick={() => setBrowseFolderId(f.id)}
               >
-                <Folder className="h-3.5 w-3.5 shrink-0" style={{ color: f.color }} />
+                <FolderIcon className="h-3.5 w-3.5 shrink-0" style={{ color: f.color }} />
                 <span className="truncate">{f.name}</span>
               </button>
             ))}
@@ -182,7 +182,7 @@ export function ListPicker({
                 className="w-full flex items-center gap-2 px-2 py-1.5 text-left text-sm rounded hover:bg-muted/60"
                 onClick={() => setBrowseFolderId(f.id)}
               >
-                <Folder className="h-3.5 w-3.5 shrink-0" style={{ color: f.color }} />
+                <FolderIcon className="h-3.5 w-3.5 shrink-0" style={{ color: f.color }} />
                 <span className="truncate">{f.name}</span>
               </button>
             ))}

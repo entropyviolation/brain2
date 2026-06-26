@@ -1,0 +1,18 @@
+================================================================================
+SCREENSHOT: 01-home-habits-weekly.png
+VIEW: Home tab → Habits → Weekly frequency
+AREA: Home → Habits → Weekly
+SOURCE FILES:
+  - components/Home/Habits/habit-tracker.tsx
+  - components/Home/Habits/period-habit-list.tsx
+================================================================================
+
+GLOBAL CHROME (all screens)
+  The COGS title and global action bar appear on every screen (app/page.tsx):
+    Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
+    Bulk Add | Quick Add
+  Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
+  Top-level tabs (7): Home | Lists | Scheduler | Operations | Modules | Graph | Analytics
+
+VIEW-SPECIFIC
+Weekly habits render as period cards (PeriodHabitList) instead of the day grid. Same store as Lists → Daily/Weekly/Monthly Habits smart lists.

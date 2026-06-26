@@ -13,8 +13,11 @@
 
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
+import { computeIconGridPositions } from "@/lib/lists-icon-grid"
+import type { ListDisplayMode } from "@/lib/types"
 
-export type ListDisplay = "default" | "checklist" | "table" | "icons"
+/** UI-only "active display" preference; canonical union lives in lib/types.ts. */
+export type ListDisplay = ListDisplayMode
 export type FolderView = "icons" | "list" | "details" | "cards"
 
 interface ListsUiState {
@@ -24,6 +27,8 @@ interface ListsUiState {
   showSmartLists: boolean
   // Per-list chosen display type for its contents.
   listDisplay: Record<string, ListDisplay>
+  // Per-list attribute id whose values form the Kanban board columns.
+  kanbanStatusAttrId: Record<string, string>
   // Last-used folder content view.
   folderView: FolderView
   // User-uploaded icon library (data URLs, backgrounds removed).
@@ -39,6 +44,7 @@ interface ListsUiState {
   isPinned: (id: string) => boolean
   setShowSmartLists: (v: boolean) => void
   setListDisplay: (id: string, d: ListDisplay) => void
+  setKanbanStatusAttrId: (id: string, attrId: string) => void
   setFolderView: (v: FolderView) => void
   addLibraryIcon: (dataUrl: string) => void
   removeLibraryIcon: (dataUrl: string) => void
@@ -56,6 +62,7 @@ export const useListsUiStore = create<ListsUiState>()(
       homePinned: [],
       showSmartLists: true,
       listDisplay: {},
+      kanbanStatusAttrId: {},
       folderView: "icons",
       iconLibrary: [],
       iconPositions: {},
@@ -71,6 +78,8 @@ export const useListsUiStore = create<ListsUiState>()(
       isPinned: (id) => get().homePinned.includes(id),
       setShowSmartLists: (v) => set({ showSmartLists: v }),
       setListDisplay: (id, d) => set((state) => ({ listDisplay: { ...state.listDisplay, [id]: d } })),
+      setKanbanStatusAttrId: (id, attrId) =>
+        set((state) => ({ kanbanStatusAttrId: { ...state.kanbanStatusAttrId, [id]: attrId } })),
       setFolderView: (v) => set({ folderView: v }),
       addLibraryIcon: (dataUrl) =>
         set((state) =>
@@ -86,17 +95,12 @@ export const useListsUiStore = create<ListsUiState>()(
         })),
       getIconPosition: (location, entryId) => get().iconPositions[`${location}:${entryId}`],
       autoOrganizeIcons: (location, entryKeys) => {
-        const COLS = 8
-        const ICON_W = 96
-        const ICON_H = 100
-        const positions: Record<string, { x: number; y: number }> = {}
-        entryKeys.forEach((key, i) => {
-          positions[`${location}:${key}`] = {
-            x: 16 + (i % COLS) * ICON_W,
-            y: 16 + Math.floor(i / COLS) * ICON_H,
-          }
-        })
-        set((state) => ({ iconPositions: { ...state.iconPositions, ...positions } }))
+        const positions = computeIconGridPositions(entryKeys)
+        const prefixed: Record<string, { x: number; y: number }> = {}
+        for (const [key, pos] of Object.entries(positions)) {
+          prefixed[`${location}:${key}`] = pos
+        }
+        set((state) => ({ iconPositions: { ...state.iconPositions, ...prefixed } }))
       },
       hideGalleryOrb: (path) =>
         set((state) =>

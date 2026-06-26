@@ -1,52 +1,19 @@
 ================================================================================
 SCREENSHOT: 09-modules.png
-VIEW: "Modules" top-level tab
+VIEW: Modules tab → dashboard
+AREA: Modules dashboard
 SOURCE FILES:
-  - app/page.tsx
   - components/Modules/modules-panel.tsx
-  - lib/modules-store.ts, lib/task-store.ts, lib/points-store.ts, lib/habits-store.ts
+  - components/Modules/module-bodies.tsx
+  - components/Modules/ModuleConfigDialog.tsx
 ================================================================================
 
-------------------------------------------------------------
-A. GLOBAL HEADER + TOP-LEVEL TABS
-------------------------------------------------------------
-Review / Tracking / Inbox / Bulk Add / Quick Add.
-Tabs: Home, Lists, Scheduler, "Modules" (active), Analytics.
+GLOBAL CHROME (all screens)
+  The COGS title and global action bar appear on every screen (app/page.tsx):
+    Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
+    Bulk Add | Quick Add
+  Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
+  Top-level tabs (7): Home | Lists | Scheduler | Operations | Modules | Graph | Analytics
 
-------------------------------------------------------------
-B. MODULES PANEL HEADER (modules-panel.tsx)
-------------------------------------------------------------
-Title "Modules" — "Composable views built from your lists, tasks, and stats."
-"+ Add Module" button — pick module type, title, and configuration.
-
-Modules persist in lib/modules-store.ts (key cogs-modules-store).
-Each card has Settings (gear) and Remove (X) in the header.
-
-------------------------------------------------------------
-C. MODULE TYPES SHOWN
-------------------------------------------------------------
-1. "Points this week"  [BarChart3 icon]  — analytics-stat module
-   - Headline number from points-store for the current week (0 here).
-
-2. "Writing Assignment Generator"  [PenLine icon]  — writing-prompt module
-   - Random creative prompt (e.g. "Write an open letter about the city at 3am,
-     in under 300 words.").
-   - "New prompt" button rerolls.
-
-3. "What should I do now?"  [Shuffle icon]  — random-task module
-   - Surfaces an open task ("Example task", 60m, importance 5).
-   - "Another" rerolls; "Mark done" completes via task-store.
-
-------------------------------------------------------------
-D. OTHER MODULE TYPES (available via Add Module)
-------------------------------------------------------------
-  list-explorer  — random item from a configured list (reading list, cleaning, …)
-  list-summary   — progress stats on a chosen list
-  analytics-stat — configurable headline metric (points, tasks, habits, …)
-
-Modules can filter list items by attribute rules configured in Settings.
-
-------------------------------------------------------------
-NOTE ON DATA STATE IN THIS SCREENSHOT
-------------------------------------------------------------
-Three seeded default modules; 0 points this week; example task from task-store.
+VIEW-SPECIFIC
+Workspaces (full mini-apps) and widgets (single dashboard cards). Build module opens template chooser.

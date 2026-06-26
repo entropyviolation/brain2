@@ -27,9 +27,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ClipboardCheck, CheckCircle2, ArrowRight, Plus, X } from "lucide-react"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { ClipboardCheck, CheckCircle2, ArrowRight, Plus, X, Sparkles } from "lucide-react"
 import { useTaskStore } from "@/lib/task-store"
-import type { Task, ReviewPeriod, PeriodReview } from "@/lib/types"
+import { useRegretStore } from "@/lib/regret-store"
+import type { Task, ReviewPeriod, PeriodReview, BlockedReason } from "@/lib/types"
+import { MorningReview } from "@/components/Reviews/MorningReview"
 import {
   taskScheduledOnDay,
   taskScheduledInWeek,
@@ -48,11 +57,23 @@ import {
 } from "@/lib/reviews-store"
 import { getPendingReviews } from "@/lib/pending-reviews"
 import { getStoredPlanText } from "@/lib/plan-text"
+import { PostMortemDialog } from "@/components/Reviews/PostMortemDialog"
+import { DayReviewTomorrowSection } from "@/components/Reviews/DayReviewTomorrowSection"
 
 const REFLECTIONS: { id: string; q: string }[] = [
   { id: "wentWell", q: "What went well?" },
   { id: "improve", q: "What could have gone better?" },
   { id: "learned", q: "What did you learn?" },
+]
+
+// Structured "why blocked/skipped" reasons (HM3, Worker G).
+const BLOCKED_REASONS: { id: BlockedReason; label: string }[] = [
+  { id: "no-energy", label: "No energy" },
+  { id: "missing-input", label: "Missing input" },
+  { id: "procrastination", label: "Procrastination" },
+  { id: "no-time", label: "No time" },
+  { id: "blocked-by-other", label: "Blocked by other" },
+  { id: "other", label: "Other" },
 ]
 
 function tasksScheduledInPeriod(tasks: Task[], period: ReviewPeriod, key: string): Task[] {
@@ -107,6 +128,11 @@ function ReviewDialog({
   const [planReflection, setPlanReflection] = useState(existing?.planReflection || "")
   const [resolved, setResolved] = useState<string[]>(existing?.resolvedTaskIds || [])
   const [pushed, setPushed] = useState<string[]>(existing?.pushedTaskIds || [])
+  const [blockedReasons, setBlockedReasons] = useState<Record<string, BlockedReason>>(
+    existing?.blockedReasons || {},
+  )
+  const [reflectTask, setReflectTask] = useState<Task | null>(null)
+  const accrueRegret = useRegretStore((s) => s.addRegret)
 
   const incomplete = useMemo(
     () => tasksScheduledInPeriod(tasks, period, periodKey),
@@ -151,6 +177,10 @@ function ReviewDialog({
     setPushed((p) => [...new Set([...p, task.id])])
   }
 
+  const setReason = (task: Task, reason: BlockedReason) => {
+    setBlockedReasons((prev) => ({ ...prev, [task.id]: reason }))
+  }
+
   const handleSave = () => {
     const review: PeriodReview = {
       id: `${period}:${periodKey}`,
@@ -164,8 +194,18 @@ function ReviewDialog({
       planReflection: planReflection.trim() || undefined,
       resolvedTaskIds: resolved,
       pushedTaskIds: pushed,
+      blockedReasons: Object.keys(blockedReasons).length ? blockedReasons : undefined,
+      ...(existing?.morning ? { morning: existing.morning } : {}),
     }
     saveReview(review)
+    // Tag each blocked/skipped item's accrued regret with its structured reason
+    // so the Regret view can break costs down by cause (HM3 → Feature 7).
+    for (const task of incomplete) {
+      const reason = blockedReasons[task.id]
+      if (reason && !resolved.includes(task.id)) {
+        accrueRegret(task.id, task.importance ?? 1, task.description, new Date(), reason)
+      }
+    }
     onClose()
   }
 
@@ -202,16 +242,52 @@ function ReviewDialog({
             ) : (
               <div className="space-y-2">
                 {incomplete.map((task) => (
-                  <div key={task.id} className="flex items-center justify-between gap-2 border rounded-md p-2">
-                    <span className="text-sm flex-1 truncate">{task.description}</span>
-                    <Button size="sm" variant="outline" className="h-7" onClick={() => markDone(task)}>
-                      <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
-                      Done
-                    </Button>
-                    <Button size="sm" variant="outline" className="h-7" onClick={() => pushToNext(task)}>
-                      <ArrowRight className="h-3.5 w-3.5 mr-1" />
-                      Push to {nextLabel}
-                    </Button>
+                  <div key={task.id} className="border rounded-md p-2 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm flex-1 truncate">{task.description}</span>
+                      {resolved.includes(task.id) ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7"
+                          onClick={() => setReflectTask({ ...task, completed: true })}
+                        >
+                          <Sparkles className="h-3.5 w-3.5 mr-1" />
+                          Reflect
+                        </Button>
+                      ) : (
+                        <>
+                          <Button size="sm" variant="outline" className="h-7" onClick={() => markDone(task)}>
+                            <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                            Done
+                          </Button>
+                          <Button size="sm" variant="outline" className="h-7" onClick={() => pushToNext(task)}>
+                            <ArrowRight className="h-3.5 w-3.5 mr-1" />
+                            Push to {nextLabel}
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                    {!resolved.includes(task.id) && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground shrink-0">Why blocked?</span>
+                        <Select
+                          value={blockedReasons[task.id] ?? ""}
+                          onValueChange={(v) => setReason(task, v as BlockedReason)}
+                        >
+                          <SelectTrigger className="h-7 text-xs">
+                            <SelectValue placeholder="Pick a reason (optional)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {BLOCKED_REASONS.map((r) => (
+                              <SelectItem key={r.id} value={r.id} className="text-xs">
+                                {r.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -286,16 +362,20 @@ function ReviewDialog({
             ))}
           </section>
 
-          {/* Next plans */}
-          <section className="space-y-2">
-            <Label className="font-semibold text-sm">Plans for the {nextLabel.replace("next ", "")} to come</Label>
-            <Textarea
-              value={nextPlans}
-              onChange={(e) => setNextPlans(e.target.value)}
-              rows={3}
-              placeholder="What matters most next?"
-            />
-          </section>
+          {/* Plan the next period */}
+          {period === "day" ? (
+            <DayReviewTomorrowSection reviewedDayKey={periodKey} />
+          ) : (
+            <section className="space-y-2">
+              <Label className="font-semibold text-sm">Plans for the {nextLabel.replace("next ", "")} to come</Label>
+              <Textarea
+                value={nextPlans}
+                onChange={(e) => setNextPlans(e.target.value)}
+                rows={3}
+                placeholder="What matters most next?"
+              />
+            </section>
+          )}
         </div>
 
         <div className="flex justify-end gap-2 pt-2 border-t">
@@ -305,6 +385,8 @@ function ReviewDialog({
           <Button onClick={handleSave}>Save Review</Button>
         </div>
       </DialogContent>
+
+      <PostMortemDialog task={reflectTask} open={!!reflectTask} onClose={() => setReflectTask(null)} />
     </Dialog>
   )
 }
@@ -320,6 +402,7 @@ export function Reviews() {
 
   return (
     <>
+      <MorningReview />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size="sm" className="relative" data-home-review-entry>
