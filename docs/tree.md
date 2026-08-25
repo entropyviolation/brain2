@@ -44,9 +44,9 @@ flows through the built-in `task` type today.
 ## app/
 
 Next.js App Router entry — one static client page, global CSS, retro shell. Trip
-maps / weather / places call public APIs from the browser (`lib/geocode.ts`,
+maps / weather / places call public APIs from the browser (`lib/city-search.ts`,
 `lib/weather-client.ts`, `lib/places-search.ts`); no App Router API routes are
-required for the static Electron export.
+required for the static Electron export. Repeat lookups share `lib/api-cache.ts`.
 
 | File          | Purpose                                                                       |
 | ------------- | ----------------------------------------------------------------------------- |
@@ -165,7 +165,7 @@ auto-save, Google Fonts, images, PDF ingest. Helpers: `lib/doc-html.ts`,
 Win98 file manager — folders, lists, items via `task-store`. Smart lists, custom
 attributes, orb gallery, CSV import, spreadsheet display.
 
-**Entry:** `enhanced-category-view.tsx` (orchestrator) composing subfolders:
+**Entry:** `enhanced-list-view.tsx` (orchestrator) composing subfolders:
 
 | Subfolder       | Contents                                                                 |
 | --------------- | ------------------------------------------------------------------------ |
@@ -247,8 +247,8 @@ attribute schemas + seed items + bound views + seeded workflows. `lib/module-pla
 pushes finalized dated module items into the Plan; `lib/module-schedule-sync.ts`
 turns them into scheduled events; `lib/book-match.ts` scores PDF→book matches;
 `lib/itinerary-assemble.ts` / `lib/trip-itinerary.ts` build printable day blocks;
-`lib/geocode.ts` (Open-Meteo) + `lib/places-search.ts` + `lib/trip-directions.ts`
-pin places and estimate distances on the map.
+`lib/city-search.ts` (Open-Meteo) + `lib/places-search.ts` + `lib/trip-directions.ts`
+pin places and estimate distances on the map (TTL-cached in `lib/api-cache.ts`).
 
 **Workflows:** authored rules live in `lib/workflows-store.ts` and run via the
 engine (`lib/workflow-engine.ts`) wired to task mutations by
@@ -384,7 +384,7 @@ Data model, Zustand stores (localStorage today → MongoDB), pure helpers. Not R
 | `folder-all-items.ts` | Per-folder All Items sync |
 | `scheduled-lists-sync.ts` | Smart lists ↔ scheduled folders |
 | `lists-grid-entries.ts` | `buildGridEntries()` for Lists navigation |
-| `string-utils.ts` | `hashString`, `hashIconSlot` for orb/icon placement |
+| `string-utils.ts` | `hashString`, `hashIconSlot` for orb/icon placement and connector mock seeds |
 | `spreadsheet-contract.ts` | Serializable `SheetViewConfig` (sort/filter/freeze/widths/row-heights) + column shapes shared by SheetGrid + module spreadsheet views |
 | `spreadsheet-utils.ts` | Numeric column detect, aggregation, optional-inclusion rollups for SheetGrid + summaries |
 | `spreadsheet-keys.ts` | Pure grid interaction model: cell navigation, range math, clipboard TSV, and selection stats (Sum/Avg/Min/Max/Count) |
@@ -397,9 +397,10 @@ Data model, Zustand stores (localStorage today → MongoDB), pure helpers. Not R
 | `itinerary-migrate.ts` | Upgrade older Itinerary workspaces to the v2 view set |
 | `trip-itinerary.ts` | Self-contained trip days on module config (not list-backed) |
 | `trip-activity-lists.ts` / `trip-directions.ts` | Activities buckets + map distance estimates |
-| `city-search.ts` / `places-search.ts` | City + place autocomplete for itinerary inputs |
+| `city-search.ts` / `places-search.ts` | City + place autocomplete for itinerary inputs (cached) |
 | `parse-event-text.ts` | Unstructured itinerary text → calendar event drafts (Plan Paste Events) |
-| `geocode.ts` | Open-Meteo client geocoding (trip map; static-export safe) |
+| `api-cache.ts` | In-memory TTL cache for geocode / places / weather / routes |
+| `geocode.ts` | `parseCoord` + Open-Meteo URL helper |
 | `weather-client.ts` | Open-Meteo weather + sunrise/sunset for itinerary days |
 | `flight-lookup.ts` / `parse-flight-text.ts` | Flight number lookup + airline-paste parser |
 | `filmrecs-types.ts` / `filmrecs-catalog.ts` / `filmrecs-score.ts` | Film DNA Lab catalog + offline scoring |
@@ -455,11 +456,6 @@ App-wide shared React hooks. Module-specific hooks live next to their UI (e.g.
 | ---- | ------- |
 | `useQuickCaptureHotkey.ts` | Quick-capture open/close state + in-app capture chord; bridges the Electron global accelerator |
 | `useVocalConfidence.ts` | Mic → `AnalyserNode` → `ConfidenceTracker` live `ConfidenceScore` for the Morning affirmations ritual |
-| `use-toast.ts` | Toast queue (`useToast()` + `toast()`) |
-| `use-mobile.tsx` | `useIsMobile()` viewport hook |
-
-> Note: `useQuickCaptureHotkey.ts` and `useVocalConfidence.ts` are committed here;
-> `use-toast.ts`/`use-mobile.tsx` are the canonical app copies (shadcn-style).
 
 → [`hooks/README.md`](../hooks/README.md)
 
@@ -488,11 +484,9 @@ Re-capture screenshots: `npm run capture-screenshots` (with `npm run dev` runnin
 
 | Path                     | Purpose                            |
 | ------------------------ | ---------------------------------- |
-| `fonts/`                 | W95FA, MS Sans Serif (`converted/`) |
-| `icons/`                 | folder, list, briefcase, parentfolder, minimize |
-| `linkconnectors/`        | Lists tree connector SVGs          |
+| `fonts/w95fa.woff`       | Pixel Win95 UI font (`app/win95.css`) |
 | `orbs-removebackground/` | 1000+ orb PNGs (manifest in `lib/orbs-manifest.ts`) |
-| `velvetscrolltile.png`   | Lists scroll texture               |
+| `newvelv.jpg`            | Lists icon-view velvet desktop background |
 
 ---
 

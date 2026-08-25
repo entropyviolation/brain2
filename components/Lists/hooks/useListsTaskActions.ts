@@ -14,15 +14,14 @@ import {
 import {
   assignTaskToFolderUncategorized,
 } from "@/lib/folder-all-items"
+import { toggleCompletion } from "@/lib/services/completion-service"
 import { ROOT_ALL_FOLDER_ID } from "@/components/Lists/constants"
 import type { OpenTarget } from "@/components/Lists/types"
 
 export function useListsTaskActions(
-  allTasks: Task[],
   lists: List[],
   folders: Folder[],
   addTask: (task: Task) => void,
-  updateTask: (task: Task) => void,
   types: ItemTypeDefinition[] = [],
 ) {
   const buildBaseTask = useCallback(
@@ -40,13 +39,9 @@ export function useListsTaskActions(
     [lists, folders, types],
   )
 
-  const handleCompleteTask = useCallback(
-    (taskId: string) => {
-      const task = allTasks.find((t) => t.id === taskId)
-      if (task) updateTask({ ...task, completed: !task.completed })
-    },
-    [allTasks, updateTask],
-  )
+  const handleCompleteTask = useCallback((taskId: string) => {
+    toggleCompletion(taskId)
+  }, [])
 
   const handleAddTaskToOpen = useCallback(
     (

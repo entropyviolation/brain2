@@ -33,12 +33,12 @@ tree -I "$IGNORE" --charset=UTF-8 --noreport -n . > "$OUT"
 # Re-insert a single collapsed placeholder for the excluded orb-photo folder so
 # readers know it exists without listing hundreds of hashed PNGs. Match on the
 # filename only (the box-drawing prefix is locale-dependent and unreliable in awk).
-if grep -q "velvetscrolltile.png" "$OUT"; then
+if grep -q "newvelv.jpg" "$OUT"; then
   tmp="docs/.tree.tmp"
   awk '
-    index($0, "velvetscrolltile.png") {
+    index($0, "newvelv.jpg") {
       prefix = $0
-      sub(/velvetscrolltile\.png.*/, "", prefix)         # leading tree glyphs/indent
+      sub(/newvelv\.jpg.*/, "", prefix)         # leading tree glyphs/indent
       sub(/└/, "├", prefix)                               # this is no longer the last child
       print prefix "orbs-removebackground   [collapsed: hundreds of generated orb PNGs]"
     }

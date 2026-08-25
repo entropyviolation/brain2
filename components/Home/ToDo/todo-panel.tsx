@@ -66,7 +66,9 @@ const PRIORITY_WEIGHT_FIELDS: { key: keyof PriorityWeights; label: string; hint:
 const TODO_TABS = ["day", "week", "month"] as const
 
 export function TodoPanel() {
-  const { tasks, updateTask, addTask } = useTaskStore()
+  const tasks = useTaskStore((s) => s.tasks)
+  const updateTask = useTaskStore((s) => s.updateTask)
+  const addTask = useTaskStore((s) => s.addTask)
   const categories = useTaskStore((s) => s.lists)
   const folders = useTaskStore((s) => s.folders)
   const priorityWeights = useTaskStore((s) => s.priorityWeights)

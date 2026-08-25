@@ -12,7 +12,7 @@ function renderEntryIcon(entry: GridEntry, px: number) {
   if ((entry.kind === "folder" || entry.kind === "folder-all") && !entry.icon)
     return <FolderGlyph size={px} color={entry.color} />
   const src = entry.kind === "smart" || entry.kind === "habits" || entry.kind === "objectives" ? orbFor(entry.id) : iconFor(entry.id, entry.icon)
-  return <img className="fm-icon-img" src={src} alt="" draggable={false} style={{ maxWidth: px, maxHeight: px }} />
+  return <img className="fm-icon-img" src={src} alt="" draggable={false} loading="lazy" decoding="async" style={{ maxWidth: px, maxHeight: px }} />
 }
 
 function iconPosKey(entry: GridEntry) {

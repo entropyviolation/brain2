@@ -2,8 +2,10 @@
  * lib/city-search.ts — City autocomplete via Open-Meteo geocoding
  *
  * Returns properly capitalized "City, Country" (or City, Region for US/CA/AU)
- * suggestions as the user types.
+ * suggestions as the user types. Results are TTL-cached (`lib/api-cache.ts`).
  */
+
+import { TTL, cached } from "@/lib/api-cache"
 
 export interface CitySuggestion {
   /** Display label, e.g. "Lima, Peru" or "San Diego, California" */
@@ -64,6 +66,10 @@ export function titleCaseCity(raw: string): string {
 export async function searchCities(query: string, limit = 6): Promise<CitySuggestion[]> {
   const q = query.trim()
   if (q.length < 2) return []
+  return cached(`cities:${q}:${limit}`, TTL.CITY, () => searchCitiesUncached(q, limit))
+}
+
+async function searchCitiesUncached(q: string, limit: number): Promise<CitySuggestion[]> {
   const nameOnly = q.includes(",") ? q.split(",")[0]!.trim() : q
   try {
     const url = new URL("https://geocoding-api.open-meteo.com/v1/search")

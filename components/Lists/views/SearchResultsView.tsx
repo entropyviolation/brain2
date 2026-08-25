@@ -57,7 +57,7 @@ export function SearchResultsView({
                   onSelectList(c.id, parent ? parent.id : null)
                 }}
               >
-                <img className="fm-link-icon" src={iconFor(c.id, c.icon)} alt="" />
+                <img className="fm-link-icon" src={iconFor(c.id, c.icon)} alt="" loading="lazy" decoding="async" />
                 <span className="fm-link-text">{c.name}</span>
                 <span className="fm-icon-badge">{getTasksForCategory(c.id).length}</span>
               </div>
@@ -69,7 +69,7 @@ export function SearchResultsView({
             <div className="fm-search-group-label">Items ({tasks.length})</div>
             {tasks.map((t) => (
               <div key={t.id} className="fm-link-row" onClick={() => onSelectTask(t.id)}>
-                <img className="fm-link-icon" src={iconFor(t.id, t.icon)} alt="" />
+                <img className="fm-link-icon" src={iconFor(t.id, t.icon)} alt="" loading="lazy" decoding="async" />
                 <span className="fm-link-text">{t.description}</span>
               </div>
             ))}

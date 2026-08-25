@@ -33,6 +33,7 @@ import {
   type SignificantPlaceKind,
 } from "@/lib/trip-activity-lists"
 import { parseCoord } from "@/lib/geocode"
+import { mapPool } from "@/lib/api-cache"
 import {
   fetchCityRegion,
   findCityAirport,
@@ -679,16 +680,17 @@ export function TripActivitiesView({
     const failed: string[] = []
     let added = 0
     try {
-      for (const row of rows) {
-        const geo = await resolvePlacePaste(row, city, cityCenter?.lat, cityCenter?.lng)
+      const geos = await mapPool(rows, 3, async (row) => ({
+        row,
+        geo: await resolvePlacePaste(row, city, cityCenter?.lat, cityCenter?.lng),
+      }))
+      for (const { row, geo } of geos) {
         if (!geo) {
           failed.push(row.name)
         } else {
           addFromSuggestion(geo, placeListsDraft)
           added += 1
         }
-        // Nominatim wants ~1 req/s; Photon is fine faster — keep a small gap.
-        await new Promise((r) => setTimeout(r, 450))
       }
       if (added) setBulk("")
       if (failed.length) {
@@ -715,7 +717,6 @@ export function TripActivitiesView({
         const line = row.address ? `${row.name} - ${row.address}` : row.name
         const ok = await addLiteralPlace(line, placeListsDraft)
         if (ok) added += 1
-        await new Promise((r) => setTimeout(r, 350))
       }
       if (added) setBulk("")
       if (!added) setErr("Nothing to add — use lines like Name - address.")
@@ -1956,7 +1957,7 @@ function PlaceRow({
           <button type="button" onClick={onSelect} className="mt-0.5 shrink-0" title="Focus on map">
             {thumb ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={thumb} alt="" className="trip-row-thumb" />
+              <img src={thumb} alt="" className="trip-row-thumb" loading="lazy" decoding="async" />
             ) : (
               <Icon className="h-3.5 w-3.5" style={{ color: pinColor }} />
             )}

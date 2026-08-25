@@ -3,8 +3,10 @@
  *
  * Uses Photon (Komoot/OSM) by default — works offline of API keys and with
  * static export. Optional Google Places when NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
- * is set.
+ * is set. Network reads go through `lib/api-cache.ts`.
  */
+
+import { TTL, cached } from "@/lib/api-cache"
 
 export interface PlaceSuggestion {
   id: string
@@ -64,7 +66,16 @@ async function searchPhoton(
 ): Promise<PlaceSuggestion[]> {
   const q = query.trim()
   if (q.length < 2) return []
-  const url = new URL("https://photon.komoot.io/api/")
+  const key = `photon:${q}:${opts.lat ?? ""}:${opts.lng ?? ""}:${opts.limit ?? 7}:${opts.lang ?? "en"}`
+  return cached(key, TTL.PLACE, () => searchPhotonUncached(q, opts))
+}
+
+async function searchPhotonUncached(
+  q: string,
+  opts: { lat?: number; lng?: number; limit?: number; lang?: string } = {},
+): Promise<PlaceSuggestion[]> {
+  try {
+    const url = new URL("https://photon.komoot.io/api/")
   url.searchParams.set("q", q)
   url.searchParams.set("limit", String(opts.limit ?? 7))
   url.searchParams.set("lang", opts.lang ?? "en")
@@ -111,6 +122,9 @@ async function searchPhoton(
     })
   }
   return out
+  } catch {
+    return []
+  }
 }
 
 /** Google Places Autocomplete (New) — only when API key is present. */
@@ -158,26 +172,28 @@ async function searchGooglePlaces(
       .filter(Boolean)
       .slice(0, opts.limit ?? 7)
 
-    const resolved: PlaceSuggestion[] = []
-    for (const p of preds) {
-      if (!p?.placeId) continue
-      const details = await fetchGooglePlaceDetails(p.placeId, key)
-      if (!details) continue
-      const name = p.structuredFormat?.mainText?.text || details.name
-      const secondary = p.structuredFormat?.secondaryText?.text || details.address
-      resolved.push({
-        id: `google-${p.placeId}`,
-        name,
-        label: secondary ? `${name} — ${secondary}` : name,
-        address: details.address || secondary || name,
-        lat: details.lat,
-        lng: details.lng,
-        source: "google",
-        photoUrls: details.photoUrls,
-        googlePlaceId: p.placeId,
-      })
-    }
-    return resolved
+    const resolved = await Promise.all(
+      preds.map(async (p) => {
+        if (!p?.placeId) return null
+        const details = await fetchGooglePlaceDetails(p.placeId, key, 4)
+        if (!details) return null
+        const name = p.structuredFormat?.mainText?.text || details.name
+        const secondary = p.structuredFormat?.secondaryText?.text || details.address
+        const suggestion: PlaceSuggestion = {
+          id: `google-${p.placeId}`,
+          name,
+          label: secondary ? `${name} — ${secondary}` : name,
+          address: details.address || secondary || name,
+          lat: details.lat,
+          lng: details.lng,
+          source: "google",
+          photoUrls: details.photoUrls,
+          googlePlaceId: p.placeId,
+        }
+        return suggestion
+      }),
+    )
+    return resolved.filter((hit): hit is PlaceSuggestion => hit != null)
   } catch {
     return []
   }
@@ -203,6 +219,7 @@ function photosFromGooglePlace(
 async function fetchGooglePlaceDetails(
   placeId: string,
   key: string,
+  photoLimit = 4,
 ): Promise<{
   name: string
   address: string
@@ -210,35 +227,37 @@ async function fetchGooglePlaceDetails(
   lng: number
   photoUrls?: string[]
 } | null> {
-  try {
-    const id = placeId.replace(/^places\//, "")
-    const res = await fetch(`https://places.googleapis.com/v1/places/${id}`, {
-      headers: {
-        "X-Goog-Api-Key": key,
-        "X-Goog-FieldMask": "displayName,formattedAddress,location,photos",
-      },
-    })
-    if (!res.ok) return null
-    const data = (await res.json()) as {
-      displayName?: { text?: string }
-      formattedAddress?: string
-      location?: { latitude?: number; longitude?: number }
-      photos?: { name?: string }[]
+  return cached(`gplace:${placeId}:${photoLimit}`, TTL.PLACE, async () => {
+    try {
+      const id = placeId.replace(/^places\//, "")
+      const res = await fetch(`https://places.googleapis.com/v1/places/${id}`, {
+        headers: {
+          "X-Goog-Api-Key": key,
+          "X-Goog-FieldMask": "displayName,formattedAddress,location,photos",
+        },
+      })
+      if (!res.ok) return null
+      const data = (await res.json()) as {
+        displayName?: { text?: string }
+        formattedAddress?: string
+        location?: { latitude?: number; longitude?: number }
+        photos?: { name?: string }[]
+      }
+      const lat = data.location?.latitude
+      const lng = data.location?.longitude
+      if (lat == null || lng == null) return null
+      const photoUrls = photosFromGooglePlace(data.photos, key, photoLimit)
+      return {
+        name: data.displayName?.text || "Place",
+        address: data.formattedAddress || "",
+        lat,
+        lng,
+        photoUrls: photoUrls.length ? photoUrls : undefined,
+      }
+    } catch {
+      return null
     }
-    const lat = data.location?.latitude
-    const lng = data.location?.longitude
-    if (lat == null || lng == null) return null
-    const photoUrls = photosFromGooglePlace(data.photos, key, 12)
-    return {
-      name: data.displayName?.text || "Place",
-      address: data.formattedAddress || "",
-      lat,
-      lng,
-      photoUrls: photoUrls.length ? photoUrls : undefined,
-    }
-  } catch {
-    return null
-  }
+  })
 }
 
 /** Text Search (New) — best for venue + city when geocoding paste lines. */
@@ -299,7 +318,7 @@ async function searchGoogleTextMany(
       if (lat == null || lng == null) continue
       const name = place.displayName?.text || "Place"
       const address = place.formattedAddress || ""
-      const photoUrls = photosFromGooglePlace(place.photos, key, 12)
+      const photoUrls = photosFromGooglePlace(place.photos, key, 4)
       const id = place.id ? place.id.replace(/^places\//, "") : `${lat},${lng}`
       out.push({
         id: `google-${id}`,
@@ -325,6 +344,14 @@ async function nominatimGeocode(
 ): Promise<PlaceSuggestion | null> {
   const q = query.trim()
   if (q.length < 3) return null
+  const key = `nominatim:${q}:${opts.lat ?? ""}:${opts.lng ?? ""}`
+  return cached(key, TTL.PLACE, () => nominatimGeocodeUncached(q, opts))
+}
+
+async function nominatimGeocodeUncached(
+  q: string,
+  opts: { lat?: number; lng?: number } = {},
+): Promise<PlaceSuggestion | null> {
   try {
     const url = new URL("https://nominatim.openstreetmap.org/search")
     url.searchParams.set("format", "json")
@@ -377,6 +404,18 @@ async function nominatimGeocode(
  * restaurant/activity name even when OSM only knows the street.
  */
 export async function resolvePlacePaste(
+  parsed: { name: string; address?: string; raw: string },
+  cityLabel: string,
+  cityLat?: number,
+  cityLng?: number,
+): Promise<PlaceSuggestion | null> {
+  const displayName = parsed.name.trim()
+  if (!displayName) return null
+  const cacheKey = `paste:${cityLabel}:${displayName}:${parsed.address ?? ""}:${cityLat ?? ""}:${cityLng ?? ""}`
+  return cached(cacheKey, TTL.PLACE, () => resolvePlacePasteUncached(parsed, cityLabel, cityLat, cityLng))
+}
+
+async function resolvePlacePasteUncached(
   parsed: { name: string; address?: string; raw: string },
   cityLabel: string,
   cityLat?: number,
@@ -483,7 +522,7 @@ export async function fetchPlacePhotos(opts: {
   const key = googleMapsKey()
   if (key) {
     if (opts.googlePlaceId) {
-      const details = await fetchGooglePlaceDetails(opts.googlePlaceId, key)
+      const details = await fetchGooglePlaceDetails(opts.googlePlaceId, key, 8)
       if (details?.photoUrls?.length) return details.photoUrls
     }
     const q = [opts.name, opts.address || opts.cityLabel].filter(Boolean).join(", ")
@@ -692,6 +731,10 @@ export interface CityMapRegion {
 export async function fetchCityRegion(cityLabel: string): Promise<CityMapRegion | null> {
   const cityName = cityLabel.trim()
   if (!cityName) return null
+  return cached(`region:${cityName}`, TTL.CITY, () => fetchCityRegionUncached(cityName))
+}
+
+async function fetchCityRegionUncached(cityName: string): Promise<CityMapRegion | null> {
   const hits = await searchPhoton(cityName, { limit: 5 })
   const cityHit =
     hits.find((h) => h.kind === "city" || h.kind === "town" || h.kind === "municipality") ||

@@ -38,7 +38,10 @@ export function PlanPanel({
   const currentDate = controlledDate ?? internalDate
   const setCurrentDate = setControlledDate ?? setInternalDate
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
-  const { events, addEvent, updateEvent, deleteEvent } = useEventStore()
+  const events = useEventStore((s) => s.events)
+  const addEvent = useEventStore((s) => s.addEvent)
+  const updateEvent = useEventStore((s) => s.updateEvent)
+  const deleteEvent = useEventStore((s) => s.deleteEvent)
   const [showEventDialog, setShowEventDialog] = useState(false)
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null)
   const [newEvent, setNewEvent] = useState({

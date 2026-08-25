@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button"
 import { GripVertical, Zap, Target } from "lucide-react"
 import { useTaskStore } from "@/lib/task-store"
 import { useHabitsStore } from "@/lib/habits-store"
-import { formatDateKey, getWeekString } from "@/lib/date-utils"
+import { formatLocalDateKey, getWeekString } from "@/lib/date-utils"
 import {
   isMonthOnlyPlanned,
   isWeekOnlyPlanned,
@@ -51,7 +51,7 @@ export function PlannedTasksSidebar({
 
   const monthKey = format(currentDate, "yyyy-MM")
   const weekKey = getWeekString(currentDate)
-  const dayKey = formatDateKey(currentDate)
+  const dayKey = formatLocalDateKey(currentDate)
 
   const plannedTasks = useMemo(() => {
     switch (mode) {

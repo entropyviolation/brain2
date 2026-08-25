@@ -108,6 +108,39 @@ export function getTasksForFolderAllView(
   })
 }
 
+/** Lists in a folder (excluding All Items) in folder order, resolved from `categories`. */
+export function listsInFolderForFilter(folder: Folder, categories: List[]): List[] {
+  const byId = new Map(categories.map((c) => [c.id, c]))
+  const out: List[] = []
+  for (const id of folderListCategoryIds(folder)) {
+    const list = byId.get(id)
+    if (list) out.push(list)
+  }
+  return out
+}
+
+/**
+ * Display-only filter for a folder's All Items default view.
+ * Hidden list ids are omitted from this view; membership is not changed.
+ * An item stays visible if it belongs to any non-hidden folder list, or if it
+ * is uncategorized in the folder (no folder list membership).
+ */
+export function filterTasksByHiddenFolderLists(
+  tasks: Task[],
+  folder: Folder,
+  hiddenListIds: string[],
+  categories?: List[],
+): Task[] {
+  if (!hiddenListIds.length) return tasks
+  const hidden = new Set(hiddenListIds)
+  const folderListIds = folderListCategoryIdsDeep(folder, categories)
+  return tasks.filter((t) => {
+    const inFolderLists = (t.lists ?? []).filter((id) => folderListIds.includes(id))
+    if (inFolderLists.length === 0) return true
+    return inFolderLists.some((id) => !hidden.has(id))
+  })
+}
+
 /** Place a task in the folder's All Items pool without assigning a specific list. */
 export function assignTaskToFolderUncategorized(task: Task, folder: Folder): Task {
   const allId = folderAllItemsCategoryId(folder.id)

@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { CalendarClock } from "lucide-react"
+import type { ListPlacementMode } from "@/lib/folder-selection"
 
 export interface NewFolderDialogProps {
   open: boolean
@@ -18,6 +19,9 @@ export interface NewFolderDialogProps {
   onColorChange: (v: string) => void
   onScheduleableChange: (v: boolean) => void
   onCreate: () => void
+  placementMode?: ListPlacementMode
+  originIsAll?: boolean
+  onPlacementModeChange?: (mode: ListPlacementMode) => void
 }
 
 export function NewFolderDialog({
@@ -31,6 +35,9 @@ export function NewFolderDialog({
   onColorChange,
   onScheduleableChange,
   onCreate,
+  placementMode = "keep",
+  originIsAll = false,
+  onPlacementModeChange,
 }: NewFolderDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -39,7 +46,11 @@ export function NewFolderDialog({
           <DialogTitle>Create New Folder</DialogTitle>
           <DialogDescription>
             {selectedCount > 0
-              ? "Name your folder and set its defaults. The selected lists will be added to it."
+              ? originIsAll
+                ? "Name your folder. Selected lists stay in All and will also appear in this folder."
+                : placementMode === "move"
+                  ? "Name your folder. Selected lists and folders will be moved into it."
+                  : "Name your folder. Selected lists will also stay in the current folder."
               : "Name your folder and set its defaults. Lists created inside it inherit these settings."}
           </DialogDescription>
         </DialogHeader>
@@ -62,6 +73,30 @@ export function NewFolderDialog({
             </div>
             <Switch id="folder-scheduleable" checked={scheduleable} onCheckedChange={onScheduleableChange} />
           </div>
+          {selectedCount > 0 && onPlacementModeChange && (
+            <div className="space-y-2 rounded-lg border p-3">
+              <Label>Selected lists</Label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  name="new-folder-placement"
+                  checked={placementMode === "keep"}
+                  onChange={() => onPlacementModeChange("keep")}
+                />
+                Keep in the current folder and add here
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  name="new-folder-placement"
+                  checked={placementMode === "move"}
+                  disabled={originIsAll}
+                  onChange={() => onPlacementModeChange("move")}
+                />
+                Move out of the current folder
+              </label>
+            </div>
+          )}
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cancel

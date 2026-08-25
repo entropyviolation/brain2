@@ -34,7 +34,7 @@ module live here:
 | `workspace/itinerary/DocPlanView.tsx` | Module **Plan** (`doc`): Docs `DocumentEditor` bound to a trip note (`config.docId`) |
 | `workspace/itinerary/ItineraryDocumentView.tsx` | Printable day-by-day itinerary (`itinerary-doc`); assembles via `lib/itinerary-assemble.ts` / `lib/trip-itinerary.ts` |
 | `workspace/itinerary/TripActivitiesView.tsx` | **Activities** host: Must do / Maybe buckets + map |
-| `workspace/itinerary/TripMapCanvas.tsx` | Leaflet map of stays + City Places; geocodes via Open-Meteo (`lib/geocode.ts`); distances via `lib/trip-directions.ts` |
+| `workspace/itinerary/TripMapCanvas.tsx` | Leaflet map of stays + City Places; geocodes via `lib/city-search.ts` / `lib/places-search.ts` (cached); distances via `lib/trip-directions.ts` |
 | `workspace/itinerary/TripChecklists.tsx` | Packing / Before Trip checklist chrome |
 | `workspace/itinerary/CitySuggestInput.tsx` | City autocomplete (Open-Meteo via `lib/city-search.ts`) |
 | `workspace/itinerary/PlaceSuggestInput.tsx` | Place autocomplete (Photon / optional Google via `lib/places-search.ts`) |
@@ -132,8 +132,7 @@ and stored in **`lib/module-definitions.ts`** (`cogs-module-definitions`).
   fresh copies of the definition's workflows in `lib/workflows-store` scoped to the
   new instance. Returns the new instance id.
 - `serializeModuleDefinition` / `parseModuleDefinition` — round-trippable JSON
-  (no functions). Portable export/import lives in `lib/data/backup.ts`
-  (`exportModuleDefinition` / `importModuleDefinition` / `downloadModuleDefinition`).
+  (no functions). Full-app JSON backup/restore lives in `lib/data/backup.ts`.
 
 ## Workflows (the "rules ACT" layer)
 

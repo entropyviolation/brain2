@@ -42,6 +42,9 @@ export interface ListContentPanelProps extends ListContentTaskHandlers {
   openIconKey: string
   folderAllUncategorizedOnly: Record<string, boolean>
   onFolderAllUncategorizedOnlyChange: (folderId: string, checked: boolean) => void
+  /** List ids hidden in this folder's All Items default display (empty = all shown). */
+  folderAllHiddenListIds: Record<string, string[]>
+  onFolderAllListHiddenChange: (folderId: string, listId: string, hidden: boolean) => void
   addingTaskToTarget: string | null
   openTargetKeyValue: string
   newTaskDescription: string

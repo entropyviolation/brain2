@@ -445,7 +445,7 @@ function GalleryView({ view, onOpenItem }: { view: ModuleView; onOpenItem?: (id:
             className="border rounded overflow-hidden text-left hover:ring-2 hover:ring-primary"
           >
             {src || t.icon ? (
-              <img src={src || t.icon} alt="" className="w-full h-28 object-cover" />
+              <img src={src || t.icon} alt="" className="w-full h-28 object-cover" loading="lazy" decoding="async" />
             ) : (
               <div className="w-full h-28 bg-muted flex items-center justify-center text-muted-foreground text-xs">
                 No image

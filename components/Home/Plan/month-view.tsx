@@ -55,8 +55,9 @@ export function MonthView({
   onEventClick,
   onCreateEvent,
 }: MonthViewProps) {
-  const { tasks, updateTask } = useTaskStore()
-  const { updateEvent } = useEventStore()
+  const tasks = useTaskStore((s) => s.tasks)
+  const updateTask = useTaskStore((s) => s.updateTask)
+  const updateEvent = useEventStore((s) => s.updateEvent)
   const [monthPlan, setMonthPlan] = useState("")
   const monthKey = format(currentDate, "yyyy-MM")
 

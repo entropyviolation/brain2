@@ -228,21 +228,6 @@ export function withListMembership(
   return next
 }
 
-export function isTaskScheduleable(
-  task: Task,
-  lists: List[],
-  folders: Folder[],
-): boolean {
-  if (task.scheduleable === false) return false
-  if (task.scheduleable === true) return true
-  const cats = (task.lists ?? [])
-    .map((id) => lists.find((c) => c.id === id))
-    .filter(Boolean) as List[]
-  if (cats.some((c) => c.scheduleable === false)) return false
-  if (cats.some((c) => c.scheduleable !== false)) return true
-  return taskIsNextAction(task, folders)
-}
-
 /**
  * Beat-the-clock "standard time" multiplier (Brain2 #28 — Gantt task-and-bonus).
  *

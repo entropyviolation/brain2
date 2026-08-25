@@ -60,7 +60,7 @@ future cleanup does not collapse them.
 | field | type | class | notes |
 |---|---|---|---|
 | `entropy` | `number?` (0–1) | canonical — **keep** | Display-only uncertainty/messiness signal. **NOT** a duplicate of `cognitiveLoad`. |
-| `cognitiveLoad` | `number?` (1–3) | canonical — **keep** | Feeds the priority formula (`calculatePriorityScore`, `lib/priority.ts`). Distinct purpose from `entropy`. |
+| `cognitiveLoad` | `number?` (1–3) | canonical — **keep** | Feeds the priority formula (`lib/priority.ts`). Distinct purpose from `entropy`. |
 | `category` | `"inbox" \| "clarified" \| "scheduled" \| "completed" \| "list"` | canonical — **keep** | Built-in **task lifecycle bucket** (single value). Intentionally NOT a generalized `status`. |
 | `categories` | `string[]` | canonical — **keep** | **List membership** — which lists the task belongs to; drives attribute inheritance + scheduling. Different axis from `category`. |
 
@@ -290,7 +290,7 @@ data is user-owned, persisted, and partly a roadmap surface.
 | `Task.taskDescription` (naming) | `lib/types.ts` L273 | Actively used, but the name collides conceptually with `description`/`title` and the `PointsEntry.taskDescription` / `data-source` field of the same name (unrelated). | **Do NOT remove** — in active use. Flag for a future *rename* (e.g. `body`/`detail`) to reduce confusion. Needs human confirmation. |
 | `WeeklyTask.categoryId` | `lib/types.ts` L458 | Commented `deprecated — kept for data compat`. | Keep until a habit-store migration drops it; confirm no persisted habit data relies on it. |
 | `TaskType.TIME` / `TaskType.COUNT` | `lib/types.ts` L436–437 | Commented `legacy — treated as GOAL`. | Keep (enum values may exist in persisted habit data); fold in a habit migration later. |
-| `priorityFormula` vs `priorityWeights` | `lib/task-store.ts` L47–54 | Two parallel weighting systems persisted on the store: `priorityFormula` (4 weights, used by `calculatePriorityScore`) and `priorityWeights` (`PriorityWeights`, the newer transparent formula in `lib/priority.ts`). | Possible duplication of intent. Needs human confirmation on which is canonical before consolidating. |
+| `priorityFormula` vs `priorityWeights` | `lib/task-store.ts` | Two parallel weighting systems persisted on the store: `priorityFormula` (4 weights, leftover from an older score helper) and `priorityWeights` (`PriorityWeights`, the transparent formula in `lib/priority.ts`). | Possible duplication of intent. Needs human confirmation on which is canonical before consolidating. |
 | `TodoItem` overlap with `Task` | `lib/types.ts` L371–394 | `TodoItem` re-declares `scheduledWeek/Month/Year`, `daysPushed/weeksPushed/monthsPushed`, `hiddenFromTodo`, `rewardValue`, `estimatedDuration` that also live on `Task`. | Likely a separate view-model, not the persisted item. Verify whether `TodoItem` is still constructed anywhere or is itself dead before touching. Mark **needs human confirmation**. |
 
 Not proposed for cleanup (explicitly keep): `entropy`, `cognitiveLoad`,

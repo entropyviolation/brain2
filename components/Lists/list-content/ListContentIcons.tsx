@@ -35,7 +35,7 @@ export function ListContentIcons({
             ✎
           </button>
           <div className="fm-icon-img-wrap">
-            <img className="fm-icon-img" src={iconFor(task.id, task.icon)} alt="" draggable={false} />
+            <img className="fm-icon-img" src={iconFor(task.id, task.icon)} alt="" draggable={false} loading="lazy" decoding="async" />
           </div>
           <span className="fm-icon-label">{task.description}</span>
         </div>

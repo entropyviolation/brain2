@@ -5,7 +5,8 @@
  * (weather labeled "Typically …"). Sunrise/sunset use the same endpoints.
  */
 
-import { resolveCityLabel } from "@/lib/city-search"
+import { TTL, cached } from "@/lib/api-cache"
+import { resolveCityLabel, searchCities } from "@/lib/city-search"
 
 /** Minimal day shape for climate city resolution (avoids circular imports). */
 export type ClimateDayInput = {
@@ -132,51 +133,11 @@ export function daylightMinutesPresent(
 export async function geocodeCity(city: string): Promise<{ lat: number; lng: number; name: string } | null> {
   const name = queryCityName(city)
   if (!name) return null
-  try {
-    const url = new URL("https://geocoding-api.open-meteo.com/v1/search")
-    url.searchParams.set("name", name)
-    url.searchParams.set("count", "5")
-    url.searchParams.set("language", "en")
-    const res = await fetch(url.toString())
-    if (!res.ok) return null
-    const data = (await res.json()) as {
-      results?: {
-        latitude: number
-        longitude: number
-        name: string
-        country?: string
-        admin1?: string
-        population?: number
-      }[]
-    }
-    let results = data.results || []
-    if (!results.length) return null
-    const hint = city.includes(",")
-      ? city
-          .slice(city.indexOf(",") + 1)
-          .trim()
-          .toLowerCase()
-      : ""
-    if (hint) {
-      results = [...results].sort((a, b) => {
-        const score = (r: (typeof results)[0]) => {
-          const c = (r.country || "").toLowerCase()
-          const a1 = (r.admin1 || "").toLowerCase()
-          if (c === hint || a1 === hint) return 0
-          if (c.startsWith(hint) || a1.startsWith(hint)) return 1
-          if (c.includes(hint) || a1.includes(hint)) return 2
-          return 3
-        }
-        return score(a) - score(b) || (b.population || 0) - (a.population || 0)
-      })
-    } else {
-      results = [...results].sort((a, b) => (b.population || 0) - (a.population || 0))
-    }
-    const hit = results[0]!
-    return { lat: hit.latitude, lng: hit.longitude, name: hit.name }
-  } catch {
-    return null
-  }
+  const query = city.includes(",") ? city.trim() : name
+  const hits = await searchCities(query, 5)
+  const hit = hits[0]
+  if (!hit) return null
+  return { lat: hit.lat, lng: hit.lng, name: hit.name }
 }
 
 type DailyWx = {
@@ -251,6 +212,10 @@ function shiftYear(date: string, years: number): string | null {
 /** Full day climate (weather + sun) for a city + date. */
 export async function fetchDayClimate(city: string, date: string): Promise<DayClimate | null> {
   if (!city.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return null
+  return cached(`weather:${city.trim()}:${date}`, TTL.WEATHER, () => fetchDayClimateUncached(city, date))
+}
+
+async function fetchDayClimateUncached(city: string, date: string): Promise<DayClimate | null> {
   const geo = await geocodeCity(city)
   if (!geo) return null
 

@@ -21,6 +21,7 @@
  * offline) and shows exactly how a real API would map onto attributes later.
  */
 import type { AttributeDefinition, AttributeValue } from "@/lib/types"
+import { hashString } from "@/lib/string-utils"
 
 /** Serializable input parameters passed to a connector's `fetch`. */
 export type ConnectorParams = Record<string, string | number | boolean | undefined>
@@ -100,13 +101,6 @@ const WEATHER_OUTPUTS: AttributeDefinition[] = [
 ]
 
 const WEATHER_CONDITIONS = ["Clear", "Partly cloudy", "Cloudy", "Rain", "Snow", "Fog"] as const
-
-/** Stable string → non-negative int hash (deterministic mock seeding). */
-function hashString(input: string): number {
-  let h = 0
-  for (let i = 0; i < input.length; i++) h = (h * 31 + input.charCodeAt(i)) >>> 0
-  return h
-}
 
 /**
  * A read-only weather connector stub. Returns deterministic, shape-correct mock

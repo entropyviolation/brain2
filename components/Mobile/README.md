@@ -7,9 +7,9 @@ Mobile entry for the **Home** tab only (Habits, Plan, To Do, Goals, Tracking —
 | Path | Role |
 |------|------|
 | `app/mobile/page.tsx` | Route `/mobile/` |
-| `MobileApp.tsx` | Login gate + header + sync bar + `HomeDashboard` |
+| `MobileApp.tsx` | Login gate + header + `LiveSyncHost` + `HomeDashboard` / Lists |
 | `MobileLogin.tsx` | Credentials: **admin** / **admin** |
-| `MobileSyncBar.tsx` | Pull/push against the local sync server |
+| `MobilePullCard.tsx` | One-tap manual pull from the shared hub |
 | `lib/mobile-auth.ts` | sessionStorage login (no app-data keys) |
 | `lib/mobile-sync.ts` | HTTP client for `scripts/mobile-sync-server.mjs` |
 

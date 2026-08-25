@@ -37,8 +37,9 @@ export function WeekView({
   onEventClick,
   onCreateEvent,
 }: WeekViewProps) {
-  const { tasks, updateTask } = useTaskStore()
-  const { updateEvent } = useEventStore()
+  const tasks = useTaskStore((s) => s.tasks)
+  const updateTask = useTaskStore((s) => s.updateTask)
+  const updateEvent = useEventStore((s) => s.updateEvent)
   const [weekPlan, setWeekPlan] = useState("")
 
   const weekStart = getWeekStartDate(currentDate)

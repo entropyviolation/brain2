@@ -2,6 +2,7 @@
 
 import { Textarea } from "@/components/ui/textarea"
 import { isScheduledFolderId } from "@/lib/scheduled-lists-sync"
+import { listsInFolderForFilter } from "@/lib/folder-all-items"
 import { ListContentDefault } from "./ListContentDefault"
 import { ListContentChecklist } from "./ListContentChecklist"
 import { ListContentIcons } from "./ListContentIcons"
@@ -9,8 +10,38 @@ import { ListContentDetails } from "./ListContentDetails"
 import { ListContentSpreadsheet } from "./ListContentSpreadsheet"
 import { ListContentKanban } from "./ListContentKanban"
 import type { ListContentPanelProps } from "./types"
+import type { Folder, List } from "@/lib/types"
 
 export type { ListContentPanelProps } from "./types"
+
+function FolderAllListFilter({
+  folder,
+  lists,
+  hiddenListIds,
+  onHiddenChange,
+}: {
+  folder: Folder
+  lists: List[]
+  hiddenListIds: string[]
+  onHiddenChange: (folderId: string, listId: string, hidden: boolean) => void
+}) {
+  if (lists.length === 0) return null
+  const hidden = new Set(hiddenListIds)
+  return (
+    <div className="fm-list-filter" role="group" aria-label="Filter lists">
+      {lists.map((list) => (
+        <label key={list.id} className="fm-list-filter-item">
+          <input
+            type="checkbox"
+            checked={!hidden.has(list.id)}
+            onChange={(e) => onHiddenChange(folder.id, list.id, !e.target.checked)}
+          />
+          {list.name}
+        </label>
+      ))}
+    </div>
+  )
+}
 
 export function ListContentPanel({
   tasks,
@@ -25,6 +56,8 @@ export function ListContentPanel({
   openIconKey,
   folderAllUncategorizedOnly,
   onFolderAllUncategorizedOnlyChange,
+  folderAllHiddenListIds,
+  onFolderAllListHiddenChange,
   addingTaskToTarget,
   openTargetKeyValue,
   newTaskDescription,
@@ -43,6 +76,15 @@ export function ListContentPanel({
   onDragEnd,
   onIconPickerOpen,
 }: ListContentPanelProps) {
+  const showFolderAllListFilter =
+    currentDisplay === "default" &&
+    openFolderAll &&
+    !!currentFolder &&
+    !isScheduledFolderId(currentFolder.id)
+  const folderFilterLists =
+    showFolderAllListFilter && currentFolder ? listsInFolderForFilter(currentFolder, categories) : []
+  const hiddenForFolder = currentFolder ? folderAllHiddenListIds[currentFolder.id] ?? [] : []
+
   const uncategorizedFilter =
     openFolderAll && currentFolder && !isScheduledFolderId(currentFolder.id) ? (
       <div className="fm-toolbar" style={{ marginBottom: 6, padding: "4px 8px" }}>
@@ -55,6 +97,16 @@ export function ListContentPanel({
           Show uncategorized only
         </label>
       </div>
+    ) : null
+
+  const listFilter =
+    showFolderAllListFilter && currentFolder ? (
+      <FolderAllListFilter
+        folder={currentFolder}
+        lists={folderFilterLists}
+        hiddenListIds={hiddenForFolder}
+        onHiddenChange={onFolderAllListHiddenChange}
+      />
     ) : null
 
   const quickAdd =
@@ -108,21 +160,24 @@ export function ListContentPanel({
     onDragEnd,
   }
 
+  const emptyMessage = folderAllUncategorizedOnly[currentFolder?.id || ""]
+    ? "No uncategorized items in this folder."
+    : hiddenForFolder.length > 0
+      ? "No items in the selected lists."
+      : openSmart
+        ? "Nothing scheduled for this period."
+        : `No active ${itemLabel.toLowerCase()}s in this list.`
+
   if (tasks.length === 0) {
     return (
       <div className="fm-sunken">
         {uncategorizedFilter}
         {quickAdd}
         {!addingTaskToTarget && bulkAddPanel}
+        {listFilter}
         <div className="fm-empty">
-          <img src={openIconKey} alt="" style={{ width: 56, height: 56, opacity: 0.6 }} />
-          <p>
-            {folderAllUncategorizedOnly[currentFolder?.id || ""]
-              ? "No uncategorized items in this folder."
-              : openSmart
-                ? "Nothing scheduled for this period."
-                : `No active ${itemLabel.toLowerCase()}s in this list.`}
-          </p>
+          <img src={openIconKey} alt="" style={{ width: 56, height: 56, opacity: 0.6 }} loading="lazy" decoding="async" />
+          <p>{emptyMessage}</p>
         </div>
       </div>
     )
@@ -173,6 +228,7 @@ export function ListContentPanel({
       {uncategorizedFilter}
       {quickAdd}
       {!addingTaskToTarget && bulkAddPanel}
+      {listFilter}
       {body}
     </div>
   )

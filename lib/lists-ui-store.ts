@@ -39,6 +39,11 @@ interface ListsUiState {
   hiddenGalleryOrbs: string[]
   /** Per-folder All Items view: show only uncategorized items. */
   folderAllUncategorizedOnly: Record<string, boolean>
+  /**
+   * Per-folder All Items default display: list ids whose items are hidden in
+   * that view only. Empty / missing means every list is selected (visible).
+   */
+  folderAllHiddenListIds: Record<string, string[]>
 
   toggleHomePin: (id: string) => void
   isPinned: (id: string) => boolean
@@ -54,6 +59,7 @@ interface ListsUiState {
   hideGalleryOrb: (path: string) => void
   restoreGalleryOrb: (path: string) => void
   setFolderAllUncategorizedOnly: (folderId: string, value: boolean) => void
+  setFolderAllListHidden: (folderId: string, listId: string, hidden: boolean) => void
 }
 
 export const useListsUiStore = create<ListsUiState>()(
@@ -68,6 +74,7 @@ export const useListsUiStore = create<ListsUiState>()(
       iconPositions: {},
       hiddenGalleryOrbs: [],
       folderAllUncategorizedOnly: {},
+      folderAllHiddenListIds: {},
 
       toggleHomePin: (id) =>
         set((state) => ({
@@ -114,10 +121,27 @@ export const useListsUiStore = create<ListsUiState>()(
         set((state) => ({
           folderAllUncategorizedOnly: { ...state.folderAllUncategorizedOnly, [folderId]: value },
         })),
+      setFolderAllListHidden: (folderId, listId, hidden) =>
+        set((state) => {
+          const current = state.folderAllHiddenListIds?.[folderId] ?? []
+          const isHidden = current.includes(listId)
+          if (hidden === isHidden) return state
+          const nextForFolder = hidden ? [...current, listId] : current.filter((id) => id !== listId)
+          return {
+            folderAllHiddenListIds: {
+              ...(state.folderAllHiddenListIds ?? {}),
+              [folderId]: nextForFolder,
+            },
+          }
+        }),
     }),
     {
       name: "cogs-lists-ui",
       version: 3,
+      merge: (persisted, current) => ({
+        ...current,
+        ...(persisted as Partial<ListsUiState>),
+      }),
     },
   ),
 )

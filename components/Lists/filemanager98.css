@@ -39,8 +39,7 @@
     inset 1px 1px var(--fm-button-shadow), inset -2px -2px var(--fm-button-face),
     inset 2px 2px var(--fm-window-frame);
 
-  font-family: "Pixelated MS Sans Serif", Tahoma, "MS Sans Serif", Geneva, Arial,
-    sans-serif;
+  font-family: var(--w95-font, Tahoma, "MS Sans Serif", Geneva, Arial, sans-serif);
   font-size: 12px;
   color: var(--fm-text);
   -webkit-font-smoothing: none;
@@ -212,6 +211,34 @@
   flex: 1;
 }
 
+.fm98 .fm-list-search {
+  margin: 8px 12px 0;
+}
+
+.fm98 .fm-list-search .fm-input {
+  width: 100%;
+}
+
+/* ===== Folder All Items list filter (default display) ===== */
+.fm98 .fm-list-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin: 8px 12px 4px;
+  padding: 6px 8px;
+  box-shadow: var(--fm-border-sunken-outer), var(--fm-border-sunken-inner);
+  background: var(--fm-surface);
+}
+
+.fm98 .fm-list-filter-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
 /* ===== Fields / inputs ===== */
 .fm98 .fm-input,
 .fm98 .fm-textarea,
@@ -284,7 +311,7 @@
 
 /* Velvet desktop background for the icon view */
 .fm98 .fm-desktop.velvet {
-  background-image: url("/newvelv.png");
+  background-image: url("/newvelv.jpg");
   background-repeat: no-repeat;
   background-size: cover;
   background-position: center center;
@@ -417,9 +444,12 @@
   overflow: auto;
 }
 
-/* Give cards a bit more breathing room so they aren't squished. */
+/* Give cards a bit more breathing room so they aren't squished.
+   content-visibility skips painting off-screen cards in All view. */
 .fm98 .fm-cards-grid > * {
   min-height: 190px;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 190px;
 }
 
 .fm98 .fm-cards-grid .fm-card-tasklist {
@@ -933,6 +963,5 @@
 
 /* ===== Dialog styling (applied to Radix dialog content via className) ===== */
 .fm98-dialog {
-  font-family: "Pixelated MS Sans Serif", Tahoma, "MS Sans Serif", Geneva, Arial,
-    sans-serif !important;
+  font-family: var(--w95-font, Tahoma, "MS Sans Serif", Geneva, Arial, sans-serif) !important;
 }

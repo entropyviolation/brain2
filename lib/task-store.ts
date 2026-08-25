@@ -5,8 +5,7 @@
  * category folders. Powers the Inbox, Next Actions board, Scheduler funnel, and
  * the Home dashboard's To-Do/Plan panels. Persisted to localStorage under
  * `cogs-task-storage` with Date-aware (de)serialization and a versioned
- * migration hook. Also exposes the configurable priority formula and
- * `calculatePriorityScore`.
+ * migration hook. Also exposes the configurable priority formula.
  *
  * Spec: §4 (Inbox), §5 (Item model), §6 (Next Actions), §7 (Scheduler). Storage
  * is localStorage today; spec §3 calls for migrating this to **MongoDB**
@@ -630,18 +629,3 @@ export function migrateCategoryToList(state: any): any {
   return next
 }
 
-// Create a selector hook to avoid the getSnapshot error
-export const useTaskSelector = <T,>(selector: (state: TaskState) => T): T => {
-  return selector(useTaskStore.getState())
-}
-
-// Helper function to calculate priority score
-export const calculatePriorityScore = (task: Task, formula = useTaskStore.getState().priorityFormula) => {
-  const duration = task.estimatedDuration ?? 30
-  const cognitive = task.cognitiveLoad ?? 2
-  const urgency = task.urgency ?? 3
-  const importance = task.importance ?? 3
-  const numerator = urgency * formula.urgencyWeight + importance * formula.importanceWeight
-  const denominator = duration * formula.effortWeight + cognitive * formula.cognitiveLoadWeight
-  return numerator / Math.max(denominator, 0.1)
-}

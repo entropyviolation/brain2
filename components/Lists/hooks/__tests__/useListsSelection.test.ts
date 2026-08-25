@@ -19,11 +19,34 @@ describe("useListsSelection", () => {
     expect(result.current.selectedCategories).toEqual([])
   })
 
-  it("toggles category selection", () => {
+  it("toggles folder selection", () => {
     const { result } = renderHook(() => useListsSelection())
-    act(() => result.current.toggleCategorySelection("list-1"))
-    expect(result.current.selectedCategories).toEqual(["list-1"])
-    act(() => result.current.toggleCategorySelection("list-1"))
+    act(() => result.current.toggleFolderSelection("folder-1"))
+    expect(result.current.selectedFolderIds).toEqual(["folder-1"])
+    act(() => result.current.toggleFolderSelection("folder-1"))
+    expect(result.current.selectedFolderIds).toEqual([])
+  })
+
+  it("clears list and folder selection when leaving select mode", () => {
+    const { result } = renderHook(() => useListsSelection())
+    act(() => {
+      result.current.toggleSelectMode()
+      result.current.toggleCategorySelection("list-1")
+      result.current.toggleFolderSelection("folder-1")
+    })
+    act(() => result.current.toggleSelectMode())
+    expect(result.current.selectMode).toBe(false)
     expect(result.current.selectedCategories).toEqual([])
+    expect(result.current.selectedFolderIds).toEqual([])
+  })
+
+  it("selects all provided lists and folders", () => {
+    const { result } = renderHook(() => useListsSelection())
+    act(() => result.current.selectAll(["list-1", "list-2"], ["folder-1"]))
+    expect(result.current.selectedCategories).toEqual(["list-1", "list-2"])
+    expect(result.current.selectedFolderIds).toEqual(["folder-1"])
+    act(() => result.current.clearSelection())
+    expect(result.current.selectedCategories).toEqual([])
+    expect(result.current.selectedFolderIds).toEqual([])
   })
 })

@@ -2,11 +2,19 @@
 ├── README.md
 ├── app
 │   ├── README.md
+│   ├── api
+│   │   ├── flight
+│   │   ├── geocode
+│   │   └── weather
 │   ├── globals.css
 │   ├── layout.tsx
 │   ├── loading.tsx
+│   ├── mobile
+│   │   ├── layout.tsx
+│   │   └── page.tsx
 │   ├── page.tsx
 │   └── win95.css
+├── capacitor.config.ts
 ├── components
 │   ├── Analytics
 │   │   ├── CalibrationView.tsx
@@ -23,6 +31,15 @@
 │   │   ├── CompletionDialog.tsx
 │   │   ├── CompletionPopupHost.tsx
 │   │   └── README.md
+│   ├── Docs
+│   │   ├── DocsPanel.tsx
+│   │   ├── DocumentEditor.tsx
+│   │   ├── LinkDialog.tsx
+│   │   ├── README.md
+│   │   ├── doc-actions.test.ts
+│   │   ├── doc-actions.ts
+│   │   ├── docs.css
+│   │   └── document-editor.css
 │   ├── Editor
 │   │   ├── README.md
 │   │   ├── RichTextEditor.tsx
@@ -69,6 +86,8 @@
 │   │   │   ├── event-dialog.tsx
 │   │   │   ├── month-view.test.tsx
 │   │   │   ├── month-view.tsx
+│   │   │   ├── paste-events-dialog.test.tsx
+│   │   │   ├── paste-events-dialog.tsx
 │   │   │   ├── plan-panel.test.tsx
 │   │   │   ├── plan-panel.tsx
 │   │   │   ├── planned-tasks-sidebar.test.tsx
@@ -120,11 +139,15 @@
 │   │   ├── README.md
 │   │   ├── RelatedItemsPanel.tsx
 │   │   ├── TagInput.tsx
+│   │   ├── item-attributes.test.tsx
 │   │   └── useItemDetailDraft.ts
 │   ├── ItemTypes
 │   │   ├── ItemTypeEditor.test.tsx
 │   │   ├── ItemTypeEditor.tsx
+│   │   ├── ItemTypeItemsPanel.tsx
 │   │   ├── ItemTypeList.tsx
+│   │   ├── ItemTypeSubtypesPanel.tsx
+│   │   ├── ItemTypesPanel.tsx
 │   │   └── README.md
 │   ├── Lists
 │   │   ├── README.md
@@ -187,6 +210,7 @@
 │   │   │   ├── FolderTree.tsx
 │   │   │   └── __tests__
 │   │   │       └── FolderTree.test.tsx
+│   │   ├── objectives-list.tsx
 │   │   ├── open-target.ts
 │   │   ├── settings-dialog.test.tsx
 │   │   ├── settings-dialog.tsx
@@ -195,11 +219,22 @@
 │   │   │   └── ViewModeControls.tsx
 │   │   ├── types.ts
 │   │   └── views
+│   │       ├── FolderViewCards.test.tsx
 │   │       ├── FolderViewCards.tsx
 │   │       ├── FolderViewDetails.tsx
 │   │       ├── FolderViewIcons.tsx
 │   │       ├── FolderViewList.tsx
 │   │       └── SearchResultsView.tsx
+│   ├── LiveSync
+│   │   ├── LiveSyncHost.tsx
+│   │   └── live-sync.css
+│   ├── Mobile
+│   │   ├── MobileApp.tsx
+│   │   ├── MobileLogin.tsx
+│   │   ├── MobilePullCard.tsx
+│   │   ├── README.md
+│   │   ├── install-touch-dnd.ts
+│   │   └── mobile.css
 │   ├── Modules
 │   │   ├── ModuleConfigDialog.tsx
 │   │   ├── README.md
@@ -218,8 +253,24 @@
 │   │       ├── WorkflowBuilder.test.tsx
 │   │       ├── WorkflowBuilder.tsx
 │   │       ├── WorkflowStepEditor.tsx
+│   │       ├── filmrecs
+│   │       │   ├── FilmDnaView.tsx
+│   │       │   ├── PosterCard.tsx
+│   │       │   └── film-dna.css
+│   │       ├── itinerary
+│   │       │   ├── CitySuggestInput.tsx
+│   │       │   ├── DocPlanView.tsx
+│   │       │   ├── ItineraryDocumentView.tsx
+│   │       │   ├── PlaceSuggestInput.tsx
+│   │       │   ├── TripActivitiesView.tsx
+│   │       │   ├── TripChecklists.tsx
+│   │       │   ├── TripMapCanvas.tsx
+│   │       │   ├── itinerary-document.css
+│   │       │   ├── trip-activities.css
+│   │       │   └── trip-checklists.css
 │   │       └── module-view-bodies.tsx
 │   ├── Operations
+│   │   ├── OperationFieldPlanPanels.tsx
 │   │   ├── OperationHome.tsx
 │   │   ├── OperationLogFeed.tsx
 │   │   ├── OperationPostMortemDialog.tsx
@@ -234,6 +285,8 @@
 │   ├── README.md
 │   ├── Reviews
 │   │   ├── AffirmationsDialog.tsx
+│   │   ├── DayReviewTomorrowSection.test.tsx
+│   │   ├── DayReviewTomorrowSection.tsx
 │   │   ├── MorningReview.tsx
 │   │   ├── PostMortemDialog.tsx
 │   │   ├── README.md
@@ -261,6 +314,7 @@
 │   │   └── useGlobalSearchHotkey.ts
 │   ├── Settings
 │   │   ├── BackupRestore.tsx
+│   │   ├── MobileSyncPanel.tsx
 │   │   ├── README.md
 │   │   └── SettingsDialog.tsx
 │   ├── Tracking
@@ -278,7 +332,10 @@
 │   ├── spreadsheet
 │   │   ├── README.md
 │   │   ├── SheetGrid.test.tsx
-│   │   └── SheetGrid.tsx
+│   │   ├── SheetGrid.tsx
+│   │   ├── SheetPopoutView.tsx
+│   │   ├── sheet-popout.test.ts
+│   │   └── sheet-popout.ts
 │   ├── task-detail-popup.test.tsx
 │   ├── task-detail-popup.tsx
 │   └── ui
@@ -302,7 +359,10 @@
 │       ├── textarea.tsx
 │       └── tooltip.tsx
 ├── components.json
+├── data
+│   └── mobile-sync.json
 ├── docs
+│   ├── BIGGGNAME.html
 │   ├── BRAIN2_FEATURE_IDEAS.md
 │   ├── CANONICAL_FIELDS.md
 │   ├── README.md
@@ -313,22 +373,107 @@
 │   ├── screenshots
 │   │   ├── 01-home-daily-habits.png
 │   │   ├── 01-home-daily-habits.txt
+│   │   ├── 01-home-habits-monthly.png
+│   │   ├── 01-home-habits-monthly.txt
+│   │   ├── 01-home-habits-weekly.png
+│   │   ├── 01-home-habits-weekly.txt
+│   │   ├── 02-home-plan-day.png
+│   │   ├── 02-home-plan-day.txt
+│   │   ├── 02-home-plan-week.png
+│   │   ├── 02-home-plan-week.txt
 │   │   ├── 02-home-plan.png
 │   │   ├── 02-home-plan.txt
+│   │   ├── 03-home-todo-month.png
+│   │   ├── 03-home-todo-month.txt
+│   │   ├── 03-home-todo-week.png
+│   │   ├── 03-home-todo-week.txt
 │   │   ├── 03-home-todo.png
 │   │   ├── 03-home-todo.txt
 │   │   ├── 04-home-goals.png
 │   │   ├── 04-home-goals.txt
+│   │   ├── 05-lists-cards.png
+│   │   ├── 05-lists-cards.txt
+│   │   ├── 05-lists-content-checklist.png
+│   │   ├── 05-lists-content-checklist.txt
+│   │   ├── 05-lists-content-default.png
+│   │   ├── 05-lists-content-default.txt
+│   │   ├── 05-lists-content-kanban.png
+│   │   ├── 05-lists-content-kanban.txt
+│   │   ├── 05-lists-content-spreadsheet.png
+│   │   ├── 05-lists-content-spreadsheet.txt
+│   │   ├── 05-lists-details.png
+│   │   ├── 05-lists-details.txt
+│   │   ├── 05-lists-list.png
+│   │   ├── 05-lists-list.txt
 │   │   ├── 05-lists.png
 │   │   ├── 05-lists.txt
+│   │   ├── 06-scheduler-day.png
+│   │   ├── 06-scheduler-day.txt
+│   │   ├── 06-scheduler-dependencies.png
+│   │   ├── 06-scheduler-dependencies.txt
+│   │   ├── 06-scheduler-gantt.png
+│   │   ├── 06-scheduler-gantt.txt
 │   │   ├── 06-scheduler.png
 │   │   ├── 06-scheduler.txt
+│   │   ├── 07-analytics-calibration.png
+│   │   ├── 07-analytics-calibration.txt
+│   │   ├── 07-analytics-context-switch.png
+│   │   ├── 07-analytics-context-switch.txt
+│   │   ├── 07-analytics-correlation.png
+│   │   ├── 07-analytics-correlation.txt
+│   │   ├── 07-analytics-item-types.png
+│   │   ├── 07-analytics-item-types.txt
+│   │   ├── 07-analytics-metrics.png
+│   │   ├── 07-analytics-metrics.txt
+│   │   ├── 07-analytics-plan-vs-reality.png
+│   │   ├── 07-analytics-plan-vs-reality.txt
+│   │   ├── 07-analytics-points.png
+│   │   ├── 07-analytics-points.txt
+│   │   ├── 07-analytics-reflection.png
+│   │   ├── 07-analytics-reflection.txt
+│   │   ├── 07-analytics-regret.png
+│   │   ├── 07-analytics-regret.txt
+│   │   ├── 07-analytics-reviews.png
+│   │   ├── 07-analytics-reviews.txt
+│   │   ├── 07-analytics-streaks.png
+│   │   ├── 07-analytics-streaks.txt
+│   │   ├── 07-analytics-tracking.png
+│   │   ├── 07-analytics-tracking.txt
 │   │   ├── 07-analytics.png
 │   │   ├── 07-analytics.txt
+│   │   ├── 08-home-tracking-daylog.png
+│   │   ├── 08-home-tracking-daylog.txt
 │   │   ├── 08-home-tracking.png
 │   │   ├── 08-home-tracking.txt
+│   │   ├── 09-modules-workspace.png
+│   │   ├── 09-modules-workspace.txt
 │   │   ├── 09-modules.png
-│   │   └── 09-modules.txt
+│   │   ├── 09-modules.txt
+│   │   ├── 10-operations-workspace.png
+│   │   ├── 10-operations-workspace.txt
+│   │   ├── 10-operations.png
+│   │   ├── 10-operations.txt
+│   │   ├── 20-dialog-bulk-add.png
+│   │   ├── 20-dialog-bulk-add.txt
+│   │   ├── 20-dialog-global-search.png
+│   │   ├── 20-dialog-global-search.txt
+│   │   ├── 20-dialog-inbox.png
+│   │   ├── 20-dialog-inbox.txt
+│   │   ├── 20-dialog-metrics.png
+│   │   ├── 20-dialog-metrics.txt
+│   │   ├── 20-dialog-morning-review.png
+│   │   ├── 20-dialog-morning-review.txt
+│   │   ├── 20-dialog-quick-add.png
+│   │   ├── 20-dialog-quick-add.txt
+│   │   ├── 20-dialog-reviews.png
+│   │   ├── 20-dialog-reviews.txt
+│   │   ├── 20-dialog-settings.png
+│   │   ├── 20-dialog-settings.txt
+│   │   ├── 20-dialog-time-tracking.png
+│   │   ├── 20-dialog-time-tracking.txt
+│   │   ├── 21-item-detail-popup.png
+│   │   ├── 21-item-detail-popup.txt
+│   │   └── README.md
 │   ├── tree.md
 │   └── tree.txt
 ├── e2e
@@ -344,10 +489,186 @@
 │   ├── README.md
 │   ├── useQuickCaptureHotkey.ts
 │   └── useVocalConfidence.ts
+├── ios
+│   ├── App
+│   │   ├── App
+│   │   │   ├── AppDelegate.swift
+│   │   │   ├── Assets.xcassets
+│   │   │   │   ├── AppIcon.appiconset
+│   │   │   │   │   ├── AppIcon-512@2x.png
+│   │   │   │   │   └── Contents.json
+│   │   │   │   ├── Contents.json
+│   │   │   │   └── Splash.imageset
+│   │   │   │       ├── Contents.json
+│   │   │   │       ├── splash-2732x2732-1.png
+│   │   │   │       ├── splash-2732x2732-2.png
+│   │   │   │       └── splash-2732x2732.png
+│   │   │   ├── Base.lproj
+│   │   │   │   ├── LaunchScreen.storyboard
+│   │   │   │   └── Main.storyboard
+│   │   │   ├── Info.plist
+│   │   │   ├── capacitor.config.json
+│   │   │   ├── config.xml
+│   │   │   └── public
+│   │   │       ├── 404
+│   │   │       │   └── index.html
+│   │   │       ├── 404.html
+│   │   │       ├── _next
+│   │   │       │   ├── 2zuzND31ePoTFRt42jFQF
+│   │   │       │   └── static
+│   │   │       │       ├── 2zuzND31ePoTFRt42jFQF
+│   │   │       │       │   ├── _buildManifest.js
+│   │   │       │       │   └── _ssgManifest.js
+│   │   │       │       ├── chunks
+│   │   │       │       │   ├── 114-eda61ee39f147903.js
+│   │   │       │       │   ├── 182-df6ca46b1faa3a5c.js
+│   │   │       │       │   ├── 193-663e4e1b6e659526.js
+│   │   │       │       │   ├── 2170a4aa.87d0cf811332f867.js
+│   │   │       │       │   ├── 278.038dd5a73520beb9.js
+│   │   │       │       │   ├── 333.8cb283ce46a0ecb4.js
+│   │   │       │       │   ├── 423.bfa01a0d6d86694c.js
+│   │   │       │       │   ├── 436.423bff32fd4fbec0.js
+│   │   │       │       │   ├── 446.c8b7d5486d0c28db.js
+│   │   │       │       │   ├── 448.4b00c96c8c6024bf.js
+│   │   │       │       │   ├── 456-7f376c049a6bc021.js
+│   │   │       │       │   ├── 464-fe7b211de694cdef.js
+│   │   │       │       │   ├── 4bd1b696-2d10322c5464ecc9.js
+│   │   │       │       │   ├── 503.448f0255e8e7457e.js
+│   │   │       │       │   ├── 676.94efacb9979eda94.js
+│   │   │       │       │   ├── 682.7e346228d66a8cfc.js
+│   │   │       │       │   ├── 684-9fa5dd4772e98f3d.js
+│   │   │       │       │   ├── 7.94d4e4da7c67fba1.js
+│   │   │       │       │   ├── 711.eb14d9c062a1d4ee.js
+│   │   │       │       │   ├── 768-38259bd733216501.js
+│   │   │       │       │   ├── 880-89f212c7a3c15a24.js
+│   │   │       │       │   ├── 917.45fdfa3733efcd89.js
+│   │   │       │       │   ├── 963-a475b14b8bad801f.js
+│   │   │       │       │   ├── 9b0008ae.b9e4b12d616f24f0.js
+│   │   │       │       │   ├── app
+│   │   │       │       │   │   ├── _not-found
+│   │   │       │       │   │   │   └── page-378a70c046bf97a3.js
+│   │   │       │       │   │   ├── layout-1a521bf57129713f.js
+│   │   │       │       │   │   ├── loading-d172c6b3b2ec3777.js
+│   │   │       │       │   │   ├── mobile
+│   │   │       │       │   │   │   ├── layout-21c1397ec1fe11ce.js
+│   │   │       │       │   │   │   └── page-7e364ca976ff087b.js
+│   │   │       │       │   │   └── page-4f537c00498efc4e.js
+│   │   │       │       │   ├── d0deef33.b0ae35a1941c0426.js
+│   │   │       │       │   ├── framework-52167c1502110d79.js
+│   │   │       │       │   ├── main-761cacfe773e4168.js
+│   │   │       │       │   ├── main-app-288c059202356caa.js
+│   │   │       │       │   ├── pages
+│   │   │       │       │   │   ├── _app-8e94039938385921.js
+│   │   │       │       │   │   └── _error-7b2d139042a6a5ab.js
+│   │   │       │       │   ├── polyfills-42372ed130431b0a.js
+│   │   │       │       │   └── webpack-a5dfda87fb6cae9c.js
+│   │   │       │       ├── css
+│   │   │       │       │   ├── 0977509f9514d5be.css
+│   │   │       │       │   ├── 099b597292d06f96.css
+│   │   │       │       │   ├── 117c4ed9fef6f920.css
+│   │   │       │       │   ├── 1b0146d31555549a.css
+│   │   │       │       │   ├── 40ca5726a4f2096f.css
+│   │   │       │       │   ├── 54b02029d3c46851.css
+│   │   │       │       │   └── d0d9d24cfa970fa2.css
+│   │   │       │       └── media
+│   │   │       │           ├── b7ae23d8a9c319da-s.p.woff2
+│   │   │       │           ├── ea05c3aa551e0ebc-s.woff2
+│   │   │       │           ├── layers-2x.9859cd12.png
+│   │   │       │           ├── layers.ef6db872.png
+│   │   │       │           └── marker-icon.d577052a.png
+│   │   │       ├── cordova.js
+│   │   │       ├── cordova_plugins.js
+│   │   │       ├── fonts
+│   │   │       │   ├── W95FA.otf
+│   │   │       │   ├── converted
+│   │   │       │   │   ├── ms_sans_serif.woff
+│   │   │       │   │   ├── ms_sans_serif.woff2
+│   │   │       │   │   ├── ms_sans_serif_bold.woff
+│   │   │       │   │   └── ms_sans_serif_bold.woff2
+│   │   │       │   └── w95fa.woff
+│   │   │       ├── icons
+│   │   │       │   ├── briefcase.ico
+│   │   │       │   ├── folder.ico
+│   │   │       │   ├── list.ico
+│   │   │       │   ├── minimize.svg
+│   │   │       │   └── parentfolder.ico
+│   │   │       ├── index.html
+│   │   │       ├── index.txt
+│   │   │       ├── linkconnectors
+│   │   │       │   ├── default.svg
+│   │   │       │   ├── defaultselected.svg
+│   │   │       │   ├── last.svg
+│   │   │       │   └── lastselected.svg
+│   │   │       ├── mobile
+│   │   │       │   ├── index.html
+│   │   │       │   └── index.txt
+│   │   │       ├── mobile-manifest.webmanifest
+│   │   │       ├── newvelv.png
+│   │   │       └── velvetscrolltile.png
+│   │   ├── App.xcodeproj
+│   │   │   ├── project.pbxproj
+│   │   │   └── project.xcworkspace
+│   │   │       └── xcshareddata
+│   │   │           └── swiftpm
+│   │   │               └── configuration
+│   │   ├── App.xcworkspace
+│   │   │   ├── contents.xcworkspacedata
+│   │   │   └── xcshareddata
+│   │   │       └── IDEWorkspaceChecks.plist
+│   │   ├── Podfile
+│   │   ├── Podfile.lock
+│   │   └── Pods
+│   │       ├── Headers
+│   │       ├── Local Podspecs
+│   │       │   ├── Capacitor.podspec.json
+│   │       │   └── CapacitorCordova.podspec.json
+│   │       ├── Manifest.lock
+│   │       ├── Pods.xcodeproj
+│   │       │   ├── project.pbxproj
+│   │       │   └── xcuserdata
+│   │       │       └── otherworld.xcuserdatad
+│   │       │           └── xcschemes
+│   │       │               ├── Capacitor.xcscheme
+│   │       │               ├── CapacitorCordova.xcscheme
+│   │       │               ├── Pods-App.xcscheme
+│   │       │               └── xcschememanagement.plist
+│   │       └── Target Support Files
+│   │           ├── Capacitor
+│   │           │   ├── Capacitor-Info.plist
+│   │           │   ├── Capacitor-dummy.m
+│   │           │   ├── Capacitor-prefix.pch
+│   │           │   ├── Capacitor.debug.xcconfig
+│   │           │   ├── Capacitor.modulemap
+│   │           │   └── Capacitor.release.xcconfig
+│   │           ├── CapacitorCordova
+│   │           │   ├── CapacitorCordova-Info.plist
+│   │           │   ├── CapacitorCordova-dummy.m
+│   │           │   ├── CapacitorCordova-prefix.pch
+│   │           │   ├── CapacitorCordova.debug.xcconfig
+│   │           │   ├── CapacitorCordova.modulemap
+│   │           │   └── CapacitorCordova.release.xcconfig
+│   │           └── Pods-App
+│   │               ├── Pods-App-Info.plist
+│   │               ├── Pods-App-acknowledgements.markdown
+│   │               ├── Pods-App-acknowledgements.plist
+│   │               ├── Pods-App-dummy.m
+│   │               ├── Pods-App-frameworks.sh
+│   │               ├── Pods-App-umbrella.h
+│   │               ├── Pods-App.debug.xcconfig
+│   │               ├── Pods-App.modulemap
+│   │               └── Pods-App.release.xcconfig
+│   └── capacitor-cordova-ios-plugins
+│       ├── CordovaPlugins.podspec
+│       ├── CordovaPluginsResources.podspec
+│       ├── CordovaPluginsStatic.podspec
+│       ├── resources
+│       └── sources
 ├── lib
 │   ├── README.md
 │   ├── affirmations.test.ts
 │   ├── affirmations.ts
+│   ├── api-cache.test.ts
+│   ├── api-cache.ts
 │   ├── app-navigation.test.ts
 │   ├── app-navigation.ts
 │   ├── attribute-utils.ts
@@ -360,6 +681,7 @@
 │   ├── calculations.ts
 │   ├── calibration.test.ts
 │   ├── calibration.ts
+│   ├── city-search.ts
 │   ├── completion-events.ts
 │   ├── completion-status.test.ts
 │   ├── completion-status.ts
@@ -369,6 +691,7 @@
 │   ├── connectors.ts
 │   ├── critical-path.test.ts
 │   ├── critical-path.ts
+│   ├── csv.test.ts
 │   ├── csv.ts
 │   ├── data
 │   │   ├── backup.test.ts
@@ -387,42 +710,72 @@
 │   │   ├── task-repository.test.ts
 │   │   └── task-repository.ts
 │   ├── date-utils.ts
+│   ├── daylight.test.ts
 │   ├── decision-matrix.test.ts
 │   ├── decision-matrix.ts
+│   ├── doc-html.test.ts
+│   ├── doc-html.ts
+│   ├── doc-links.test.ts
+│   ├── doc-links.ts
 │   ├── event-links.test.ts
 │   ├── event-links.ts
 │   ├── event-store.dates.test.ts
 │   ├── event-store.ts
 │   ├── file-extract.test.ts
 │   ├── file-extract.ts
+│   ├── filmrecs-catalog.ts
+│   ├── filmrecs-score.test.ts
+│   ├── filmrecs-score.ts
+│   ├── filmrecs-seed.json
+│   ├── filmrecs-types.ts
+│   ├── flight-lookup.ts
 │   ├── flight-types.test.ts
 │   ├── flight-types.ts
 │   ├── folder-all-items.ts
+│   ├── folder-tree.test.ts
+│   ├── folder-tree.ts
 │   ├── formula.test.ts
 │   ├── formula.ts
+│   ├── geocode.ts
 │   ├── goals-store.ts
+│   ├── google-fonts.test.ts
+│   ├── google-fonts.ts
 │   ├── graph-layout.test.ts
 │   ├── graph-layout.ts
 │   ├── habit-utils.ts
 │   ├── habits-store.ts
+│   ├── image-resize.test.ts
+│   ├── image-resize.ts
 │   ├── item-type-store.ts
 │   ├── item-types.test.ts
 │   ├── item-types.ts
 │   ├── item-utils.test.ts
 │   ├── item-utils.ts
+│   ├── itinerary-assemble.test.ts
+│   ├── itinerary-assemble.ts
+│   ├── itinerary-migrate.test.ts
+│   ├── itinerary-migrate.ts
+│   ├── letterboxd-parse.ts
 │   ├── links.test.ts
 │   ├── links.ts
 │   ├── list-tree.test.ts
 │   ├── list-tree.ts
 │   ├── lists-grid-entries.ts
 │   ├── lists-icon-grid.ts
+│   ├── lists-task-index.test.ts
+│   ├── lists-task-index.ts
 │   ├── lists-ui-store.ts
+│   ├── live-sync.ts
 │   ├── metrics-store.test.ts
 │   ├── metrics-store.ts
 │   ├── metrics.test.ts
 │   ├── metrics.ts
 │   ├── migrations.test.ts
 │   ├── migrations.ts
+│   ├── mobile-auth.test.ts
+│   ├── mobile-auth.ts
+│   ├── mobile-sync.test.ts
+│   ├── mobile-sync.ts
 │   ├── module-definitions.test.ts
 │   ├── module-definitions.ts
 │   ├── module-plan-sync.ts
@@ -439,12 +792,23 @@
 │   ├── note-types.ts
 │   ├── objectives.test.ts
 │   ├── objectives.ts
+│   ├── operation-itinerary.test.ts
+│   ├── operation-itinerary.ts
 │   ├── operation-types.ts
 │   ├── operations.test.ts
 │   ├── operations.ts
 │   ├── orbs-manifest.ts
+│   ├── parse-event-text.test.ts
+│   ├── parse-event-text.ts
+│   ├── parse-flight-text.test.ts
+│   ├── parse-flight-text.ts
+│   ├── parse-place-paste.test.ts
+│   ├── parse-place-paste.ts
+│   ├── pdf-to-html.ts
 │   ├── pending-reviews.test.ts
 │   ├── pending-reviews.ts
+│   ├── places-search.test.ts
+│   ├── places-search.ts
 │   ├── plan-text.ts
 │   ├── plan-vs-reality.test.ts
 │   ├── plan-vs-reality.ts
@@ -455,6 +819,7 @@
 │   ├── regret-store.ts
 │   ├── remove-background.ts
 │   ├── reviews-store.ts
+│   ├── scheduled-lists-sync.test.ts
 │   ├── scheduled-lists-sync.ts
 │   ├── scheduling.ts
 │   ├── search.test.ts
@@ -478,8 +843,11 @@
 │   ├── smart-parse.ts
 │   ├── spreadsheet-contract.test.ts
 │   ├── spreadsheet-contract.ts
+│   ├── spreadsheet-file.ts
 │   ├── spreadsheet-keys.test.ts
 │   ├── spreadsheet-keys.ts
+│   ├── spreadsheet-paste.test.ts
+│   ├── spreadsheet-paste.ts
 │   ├── spreadsheet-utils.test.ts
 │   ├── spreadsheet-utils.ts
 │   ├── streaks.test.ts
@@ -491,12 +859,22 @@
 │   ├── task-store.ts
 │   ├── theme-store.ts
 │   ├── time-tracking-store.ts
+│   ├── trip-activities-export.test.ts
+│   ├── trip-activities-export.ts
+│   ├── trip-activity-lists.test.ts
+│   ├── trip-activity-lists.ts
+│   ├── trip-directions.test.ts
+│   ├── trip-directions.ts
+│   ├── trip-itinerary.test.ts
+│   ├── trip-itinerary.ts
 │   ├── types.ts
 │   ├── use-current-date.test.ts
 │   ├── use-current-date.ts
 │   ├── utils.ts
 │   ├── vocal-confidence.test.ts
 │   ├── vocal-confidence.ts
+│   ├── weather-client.ts
+│   ├── weather-flight.test.ts
 │   ├── workflow-engine.test.ts
 │   ├── workflow-engine.ts
 │   ├── workflow-hooks.test.ts
@@ -512,29 +890,18 @@
 ├── postcss.config.mjs
 ├── public
 │   ├── fonts
-│   │   ├── W95FA.otf
-│   │   ├── converted
-│   │   │   ├── ms_sans_serif.woff
-│   │   │   ├── ms_sans_serif.woff2
-│   │   │   ├── ms_sans_serif_bold.woff
-│   │   │   └── ms_sans_serif_bold.woff2
 │   │   └── w95fa.woff
-│   ├── icons
-│   │   ├── briefcase.ico
-│   │   ├── folder.ico
-│   │   ├── list.ico
-│   │   ├── minimize.svg
-│   │   └── parentfolder.ico
-│   ├── linkconnectors
-│   │   ├── default.svg
-│   │   ├── defaultselected.svg
-│   │   ├── last.svg
-│   │   └── lastselected.svg
+│   ├── mobile-manifest.webmanifest
 │   ├── orbs-removebackground   [collapsed: hundreds of generated orb PNGs]
-│   └── velvetscrolltile.png
+│   └── newvelv.jpg
 ├── scripts
 │   ├── background-remover.py
 │   ├── capture-screenshots.mjs
+│   ├── cogs-dev-server.mjs
+│   ├── mobile-ios-ats.mjs
+│   ├── mobile-sync-server.mjs
+│   ├── screenshot-manifest.mjs
+│   ├── sync-api.mjs
 │   └── update-tree.sh
 ├── tailwind.config.ts
 ├── tests

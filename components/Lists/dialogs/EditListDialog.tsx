@@ -111,6 +111,8 @@ export function EditListDialog({
               src={iconFor(editingCategory.id, editingCategory.icon)}
               alt=""
               className="w-12 h-12 object-contain border rounded-md p-1"
+              loading="lazy"
+              decoding="async"
             />
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={onOpenIconPicker}>

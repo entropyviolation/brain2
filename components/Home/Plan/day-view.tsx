@@ -42,8 +42,9 @@ export function DayView({
   onEventClick,
   onCreateEvent,
 }: DayViewProps) {
-  const { tasks, updateTask } = useTaskStore()
-  const { updateEvent } = useEventStore()
+  const tasks = useTaskStore((s) => s.tasks)
+  const updateTask = useTaskStore((s) => s.updateTask)
+  const updateEvent = useEventStore((s) => s.updateEvent)
   const [dayPlan, setDayPlan] = useState("")
   const dayKey = formatLocalDateKey(currentDate)
 

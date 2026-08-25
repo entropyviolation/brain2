@@ -224,7 +224,7 @@ const ListCard = memo(function ListCard({
                 className="mr-1"
               />
             )}
-            <img src={iconFor(category.id, category.icon)} alt="" className="w-7 h-7 object-contain" />
+            <img src={iconFor(category.id, category.icon)} alt="" className="w-7 h-7 object-contain" loading="lazy" decoding="async" />
             <div>
               <CardTitle className="text-lg">{category.name}</CardTitle>
               {category.description && (
@@ -319,7 +319,7 @@ const SmartCard = memo(function SmartCard({
       <CardHeader className="pb-3">
         <div className="flex justify-between items-start">
           <div className="flex items-center gap-2">
-            <img src={orbFor(entry.id)} alt="" className="w-7 h-7 object-contain" />
+            <img src={orbFor(entry.id)} alt="" className="w-7 h-7 object-contain" loading="lazy" decoding="async" />
             <div>
               <CardTitle className="text-lg">{entry.name}</CardTitle>
               <p className="text-sm text-muted-foreground">{tasks.length} due</p>
@@ -382,7 +382,6 @@ export function FolderViewCards({
   itemLabelFor,
   handleDragOver,
   handleDropOnEntry,
-  handleCategoryDragStart: _handleCategoryDragStart,
   handleTaskDragStart,
   clearDrag,
   openEntry,
@@ -494,7 +493,7 @@ export function FolderViewCards({
   return (
     <div className="fm-sunken fm-cards">
       {isBusy && statusText && (
-        <div className="fm-cards-status" role="status" aria-live="polite">
+        <div className="fm-cards-status" role="status" aria-live="polite" data-testid="fm-cards-status">
           <span className="fm-cards-spinner" />
           {statusText}
         </div>
@@ -506,7 +505,7 @@ export function FolderViewCards({
         {grouped.objectives.map((entry) => (
           <Card key={entry.id} className="cursor-pointer card-hover" onClick={() => openEntry(entry)}>
             <CardHeader className="pb-3 flex flex-row items-center gap-3">
-              <img src={orbFor(entry.id)} alt="" className="w-8 h-8 object-contain" />
+              <img src={orbFor(entry.id)} alt="" className="w-8 h-8 object-contain" loading="lazy" decoding="async" />
               <div>
                 <CardTitle className="text-lg">{entry.name}</CardTitle>
                 <p className="text-sm text-muted-foreground">Life directions & priorities</p>
@@ -520,7 +519,7 @@ export function FolderViewCards({
         {grouped.habits.map((entry) => (
           <Card key={entry.id} className="cursor-pointer card-hover" onClick={() => openEntry(entry)}>
             <CardHeader className="pb-3 flex flex-row items-center gap-3">
-              <img src={orbFor(entry.id)} alt="" className="w-8 h-8 object-contain" />
+              <img src={orbFor(entry.id)} alt="" className="w-8 h-8 object-contain" loading="lazy" decoding="async" />
               <div>
                 <CardTitle className="text-lg">{entry.name}</CardTitle>
                 <p className="text-sm text-muted-foreground">Daily habit tracking</p>

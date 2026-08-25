@@ -17,7 +17,7 @@ interface PointsStatsProps {
 }
 
 export function PointsStats({ currentDate }: PointsStatsProps) {
-  const { tasks } = useTaskStore()
+  const tasks = useTaskStore((s) => s.tasks)
   const pointsHistory = usePointsStore((s) => s.pointsHistory)
   const weeklyData = useHabitsStore((s) => s.weeklyData)
   const colors = useThemeStore((s) => s.colors)
@@ -25,15 +25,13 @@ export function PointsStats({ currentDate }: PointsStatsProps) {
 
   useEffect(() => setMounted(true), [])
 
-  const {
-    getTotalPoints,
-    getDayPoints,
-    getWeekPoints,
-    getMonthPoints,
-    getPossibleDayPoints,
-    getPossibleWeekPoints,
-    getPossibleMonthPoints,
-  } = usePointsStore()
+  const getTotalPoints = usePointsStore((s) => s.getTotalPoints)
+  const getDayPoints = usePointsStore((s) => s.getDayPoints)
+  const getWeekPoints = usePointsStore((s) => s.getWeekPoints)
+  const getMonthPoints = usePointsStore((s) => s.getMonthPoints)
+  const getPossibleDayPoints = usePointsStore((s) => s.getPossibleDayPoints)
+  const getPossibleWeekPoints = usePointsStore((s) => s.getPossibleWeekPoints)
+  const getPossibleMonthPoints = usePointsStore((s) => s.getPossibleMonthPoints)
 
   const totalPoints = mounted ? getTotalPoints() : 0
   const dayPoints = mounted ? getDayPoints(currentDate) : 0

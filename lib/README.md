@@ -20,7 +20,7 @@ calculation/date/sync utilities.
 
 | File | localStorage key | Purpose | Spec |
 |------|------------------|---------|------|
-| `task-store.ts` | `cogs-task-storage` | Tasks, categories, folders — the Inbox / Lists / Scheduler source of truth. Date-aware serialization, versioned migrations, `calculatePriorityScore`. | §4, §5, §6, §7 |
+| `task-store.ts` | `cogs-task-storage` | Tasks, categories, folders — the Inbox / Lists / Scheduler source of truth. Date-aware serialization, versioned migrations. | §4, §5, §6, §7 |
 | `event-store.ts` | `cogs-event-storage` | Calendar `CalendarEvent`s. Seeded with demo events. | §7.5 |
 | `habits-store.ts` | `cogs-habits-store` | Habit definitions (`WeeklyTask`), per-day completion data (`WeeklyData`), habit categories. Shared by Home Habits and Lists Daily Habits. One-time import from legacy `weekly-habits-*` keys. | §9 |
 | `goals-store.ts` | `cogs-goals-store` | All-time **Objectives** (prioritizable per period with custom point multipliers; written period reviews) + quantifiable **Goals** that serve them. Seeds 26 default objectives + example goals (persist v3). Exports the multiplier helpers `objectiveMultiplierFor`/`taskObjectiveMultiplier` + `DEFAULT_OBJECTIVE_MULTIPLIER` (1.5×). | §10 |
@@ -124,11 +124,11 @@ Zod validates writes/imports at the boundary.
 | `itinerary-migrate.ts` | Best-effort upgrade of older Itinerary workspaces to the v2 view set (doc / itinerary-doc / trip-map). Unit-tested. | §8 |
 | `trip-itinerary.ts` | Self-contained trip days on `module.config.tripItinerary` (not list-backed): start/end auto-days, city/travel modes, timed plan/note/flight rows. Unit-tested. | §8 |
 | `trip-activity-lists.ts` | Activities map buckets + city-chip dedupe (a place can sit on several filter lists). Unit-tested. | §8 |
-| `trip-directions.ts` | Walking/driving/transit distance between map pins (OSRM + Google Maps URL; optional Directions API). Unit-tested. | §8 |
-| `city-search.ts` | Open-Meteo city autocomplete → capitalized "City, Country" (or City, Region) labels. | §8 |
-| `places-search.ts` | Place autocomplete + geocode (Photon by default; optional Google Places). Unit-tested. | §8 |
-| `geocode.ts` | Client geocoding via Open-Meteo (static-export safe; no API route). Unit-tested. | §8 |
-| `weather-client.ts` | Open-Meteo forecast + sunrise/sunset; majority-daylight city pick on travel days. Unit-tested (`daylight.test.ts`, `weather-flight.test.ts`). | §8 |
+| `trip-directions.ts` | Walking/driving/transit distance between map pins (OSRM + Google Maps URL; optional Directions API). Cached. Unit-tested. | §8 |
+| `city-search.ts` | Open-Meteo city autocomplete → capitalized "City, Country" (or City, Region) labels. Cached via `api-cache.ts`. | §8 |
+| `places-search.ts` | Place autocomplete + geocode (Photon by default; optional Google Places). Cached; Google details fetch in parallel. | §8 |
+| `geocode.ts` | `parseCoord` + Open-Meteo URL helper. City/place geocoding is `city-search` / `places-search`. | §8 |
+| `weather-client.ts` | Open-Meteo forecast + sunrise/sunset; geocodes via `searchCities`. Cached. Unit-tested (`daylight.test.ts`, `weather-flight.test.ts`). | §8 |
 | `flight-lookup.ts` | Flight number → schedule estimate (optional Aviationstack; else editable estimate from day cities). | §8 |
 | `parse-flight-text.ts` | Unstructured airline / boarding-pass paste → flight segments + layovers. Unit-tested. | §8 |
 | `parse-event-text.ts` | Unstructured itinerary / tour-schedule parser → draft calendar events for Plan **Paste Events**. Unit-tested. | §7.5 |
@@ -146,9 +146,10 @@ Zod validates writes/imports at the boundary.
 | `folder-all-items.ts` | Per-folder **All Items** category (`__all-items__{folderId}`): ensure category exists, assign uncategorized items, folder drop helpers. | §6 |
 | `scheduled-lists-sync.ts` | Keeps Next Actions smart lists and scheduled folder lists in sync (`na-smart-daily`, week/month/year buckets); nested period folders. | §6, §7 |
 | `csv.ts` | Dependency-free CSV/TSV parser for Lists spreadsheet import (quoted fields, delimiter detection). | §6 |
-| `lists-grid-entries.ts` | `buildGridEntries()` — builds folder/list grid entries for Lists navigation (Map-keyed, no duplicate kind-id entries). Used by `enhanced-category-view.tsx`. | §6 |
+| `lists-grid-entries.ts` | `buildGridEntries()` — builds folder/list grid entries for Lists navigation (Map-keyed, no duplicate kind-id entries). Used by `enhanced-list-view.tsx`. | §6 |
 | `lists-icon-grid.ts` | `computeIconGridPositions()` — deterministic x/y grid layout for the freeform Lists icon view, shared by the store and the auto-organize animation. | §6 |
-| `string-utils.ts` | `hashString`, `hashIconSlot` — deterministic hashing for orb selection and freeform icon slot placement. | — |
+| `string-utils.ts` | `hashString`, `hashIconSlot` — deterministic hashing for orb selection, icon slots, and connector mock seeds. | — |
+| `api-cache.ts` | In-memory TTL cache + in-flight coalescing + `mapPool` for external API reads (city/place/weather/route). Empty/null misses expire in 30s so a network blip does not stick. | — |
 | `remove-background.ts` | Client-side near-uniform background removal for uploaded orb images (corner sampling → transparent PNG). | — |
 | `orbs-manifest.ts` | Auto-generated manifest of PNG orb filenames under `public/orbs-removebackground/`. Do not edit by hand. | — |
 | `utils.ts` | shadcn `cn()` helper (clsx + tailwind-merge). | — |

@@ -108,7 +108,7 @@ local-first/sync-ready, AI-ready-not-AI-dependent, everything reviewable.
 
 ## §6 Next Actions / Lists — ✅/🟡
 - Renamed **Lists** tab; Win98 file-manager UI — ✅
-  `components/Lists/enhanced-category-view.tsx` (orchestrator) + subfolders
+  `components/Lists/enhanced-list-view.tsx` (orchestrator) + subfolders
   (`hooks/`, `views/`, `list-content/`, `dialogs/`, `toolbar/`) + `filemanager98.css`.
   Grid entry builder: `lib/lists-grid-entries.ts`; open-target reducer: `open-target.ts`.
 - Folders, drag-and-drop, smart Home lists (Daily/Weekly/Monthly To-Do + Habits),
@@ -118,7 +118,7 @@ local-first/sync-ready, AI-ready-not-AI-dependent, everything reviewable.
   `lib/lists-ui-store.ts`).
 - Per-folder **All Items** uncategorized pool — ✅ `lib/folder-all-items.ts`.
 - Category shape — ✅ `TaskCategory`; **nested categories / sublists** — ✅
-  `parentCategoryId` + `lib/category-tree.ts` (ancestor/descendant/move-cycle
+  `parentCategoryId` + `lib/list-tree.ts` (ancestor/descendant/move-cycle
   helpers), nesting rendered in `FolderTree.tsx`/`BreadcrumbNav.tsx`, per-category
   JSON export/import in `settings-dialog.tsx` (`lib/data/backup.ts`) (§6.2).
 - Completed view, settings, search — ✅.
@@ -193,7 +193,7 @@ local-first/sync-ready, AI-ready-not-AI-dependent, everything reviewable.
   another via `lib/book-match.ts`), **quiz**, **dashboard** (optional-inclusion
   rollup cards), plus Trip Itinerary **doc** (Docs editor), **itinerary-doc**
   (printable day blocks via `lib/itinerary-assemble.ts` / `lib/trip-itinerary.ts`),
-  **trip-map** (Leaflet + Open-Meteo `lib/geocode.ts`), and **film-dna** (Film DNA
+  **trip-map** (Leaflet + Open-Meteo `lib/city-search.ts` / Photon `lib/places-search.ts`, cached in `lib/api-cache.ts`), and **film-dna** (Film DNA
   Lab). Built/edited with `workspace/ModuleViewEditor.tsx`;
   the per-kind dispatch is `workspace/module-view-bodies.tsx`; itinerary-specific
   bodies live under `workspace/itinerary/`; Film DNA under `workspace/filmrecs/`;

@@ -154,7 +154,8 @@ MongoDB Atlas (cloud) — sync target behind SyncingDataSource/RemoteDataSource
 Most features run entirely in the renderer and read/write localStorage through
 the Zustand stores in `lib/` (plus a few direct localStorage helpers for plan
 text). Trip Itinerary maps and weather call Open-Meteo / Photon from the client
-(`lib/geocode.ts`, `lib/weather-client.ts`, `lib/places-search.ts`) so they work
+(`lib/city-search.ts`, `lib/weather-client.ts`, `lib/places-search.ts`, cached by
+`lib/api-cache.ts`) so they work
 with static `output: "export"` — there is no required API layer. The app is
 **offline-first**: the local store remains the working source of truth. A future
 opportunistic `SyncingDataSource` reconciles with **MongoDB Atlas** in the

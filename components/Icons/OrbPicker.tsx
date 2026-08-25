@@ -94,7 +94,7 @@ export function OrbPickerDialog({ open, current, onClose, onSelect }: OrbPickerD
                       }`}
                       onClick={() => onSelect(url)}
                     >
-                      <img src={url} alt="" className="max-w-full max-h-full object-contain" role="img" />
+                      <img src={url} alt="" className="max-w-full max-h-full object-contain" role="img" loading="lazy" decoding="async" />
                     </button>
                     <button
                       className="absolute -top-1 -right-1 bg-destructive text-white rounded-full w-4 h-4 text-[10px] hidden group-hover:flex items-center justify-center"
@@ -126,7 +126,7 @@ export function OrbPickerDialog({ open, current, onClose, onSelect }: OrbPickerD
                     }`}
                     onClick={() => (editMode ? hideGalleryOrb(url) : onSelect(url))}
                   >
-                    <img src={url} alt="" className="max-w-full max-h-full object-contain" role="img" />
+                    <img src={url} alt="" className="max-w-full max-h-full object-contain" role="img" loading="lazy" decoding="async" />
                   </button>
                   {editMode && (
                     <button

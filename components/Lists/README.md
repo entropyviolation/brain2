@@ -4,11 +4,11 @@ The **Lists** top-level tab. A Windows 95/98–styled file manager for folders, 
 
 ## Architecture
 
-`enhanced-category-view.tsx` is a thin **orchestrator** (~650 lines) that composes hooks, views, dialogs, and navigation. State logic and UI are split into focused, testable modules:
+`enhanced-list-view.tsx` is a thin **orchestrator** (~650 lines) that composes hooks, views, dialogs, and navigation. State logic and UI are split into focused, testable modules:
 
 ```
 components/Lists/
-├── enhanced-category-view.tsx     # Orchestrator — layout, store wiring, dialog mounting
+├── enhanced-list-view.tsx         # Orchestrator — layout, store wiring, dialog mounting
 ├── types.ts                       # OpenTarget, GridEntry, CsvImportState, …
 ├── constants.ts                   # SMART_LISTS, LIST_TEMPLATES, PRESET_ICON_POSITIONS
 ├── open-target.ts                 # openTargetReducer + openTargetKey helpers
@@ -143,8 +143,8 @@ Managed by `useListsNavigation`; auto-closes if the underlying category is delet
 | `navigation/__tests__/` | `FolderTree` |
 | `dialogs/__tests__/` | `OrbPickerDialog` |
 | `__tests__/open-target.test.ts` | Reducer transitions |
-| `__tests__/enhanced-category-view.integration.test.tsx` | Open list, search, quick-add, complete |
-| `enhanced-category-view.test.tsx` | Smoke tests (title bar, search, settings) |
+| `__tests__/enhanced-list-view.integration.test.tsx` | Open list, search, quick-add, complete |
+| `enhanced-list-view.test.tsx` | Smoke tests (title bar, search, settings) |
 | `e2e/lists.spec.ts` | Playwright critical paths (`npm run test:e2e`) |
 
 Also: `lib/string-utils.test.ts` for hash helpers used by icon layout and orb selection.

@@ -3,7 +3,8 @@
 The Next.js App Router root. The UI is client-side and exported statically
 (`output: "export"`), so these files mostly set up the shell and mount the single
 page. Trip maps / weather / places hit public APIs from the browser
-(`lib/geocode.ts`, `lib/weather-client.ts`, `lib/places-search.ts`) — no App
+(`lib/city-search.ts`, `lib/weather-client.ts`, `lib/places-search.ts`, cached in
+`lib/api-cache.ts`) — no App
 Router API routes are required for the static Electron build.
 
 ## Files
@@ -37,7 +38,7 @@ A global **Cmd/Ctrl-K** search palette (`Search/GlobalSearch.tsx`, wired via
 | Tab | Panel | Folder |
 |-----|-------|--------|
 | Home | `HomeDashboard` | `components/Home/` |
-| Lists | `EnhancedCategoryView` | `components/Lists/` (`enhanced-category-view.tsx` orchestrator) |
+| Lists | `EnhancedCategoryView` | `components/Lists/` (`enhanced-list-view.tsx` orchestrator) |
 | Docs | `DocsPanel` | `components/Docs/` |
 | Scheduler | `EnhancedScheduler` | `components/Scheduler/` |
 | Operations | `OperationsView` | `components/Operations/` |

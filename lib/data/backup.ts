@@ -25,8 +25,7 @@ import { useListsUiStore } from "@/lib/lists-ui-store"
 import { useThemeStore } from "@/lib/theme-store"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { useWorkflowsStore } from "@/lib/workflows-store"
-import type { ModuleDefinition } from "@/lib/types"
-import { parseModuleDefinition, useModuleDefinitionsStore } from "@/lib/module-definitions"
+import { useModuleDefinitionsStore } from "@/lib/module-definitions"
 
 /** A persisted store: its localStorage key and a rehydrate trigger. */
 interface StoreDescriptor {
@@ -311,77 +310,6 @@ export function downloadCategoryExport(categoryId: string, filename?: string): v
   URL.revokeObjectURL(url)
 }
 
-// ---------------------------------------------------------------------------
-// Per-module-definition export / import (Module platform, Workstream C)
-//
-// A focused, portable serializer for a single `ModuleDefinition` — the design-
-// time blueprint of a module (bound lists, views, workflows, plan-sync). Wrapped
-// in a small envelope so importers can sniff the kind. Round-trippable and free
-// of functions (the underlying type is fully serializable). See
-// `lib/module-definitions.ts` for the store + pure (de)serialize helpers.
-// ---------------------------------------------------------------------------
-
-export const MODULE_DEFINITION_EXPORT_VERSION = 1 as const
-
-export interface ModuleDefinitionExport {
-  app: "cogs"
-  kind: "module-definition"
-  version: number
-  exportedAt: string
-  definition: ModuleDefinition
-}
-
-/** Serialize a stored module definition (by id) to a portable JSON envelope. */
-export function exportModuleDefinition(definitionId: string): string | null {
-  const def = useModuleDefinitionsStore.getState().getDefinition(definitionId)
-  if (!def) return null
-  const payload: ModuleDefinitionExport = {
-    app: "cogs",
-    kind: "module-definition",
-    version: MODULE_DEFINITION_EXPORT_VERSION,
-    exportedAt: new Date().toISOString(),
-    definition: def,
-  }
-  return JSON.stringify(payload, null, 2)
-}
-
-/**
- * Import a module-definition JSON string into the definitions store. Accepts the
- * envelope from `exportModuleDefinition` or a bare definition (both handled by
- * `parseModuleDefinition`). When `regenerateId` is true (default) a fresh id is
- * minted so an import never clobbers an existing definition. Returns the stored
- * definition.
- */
-export function importModuleDefinition(
-  json: string,
-  { regenerateId = true }: { regenerateId?: boolean } = {},
-): ModuleDefinition {
-  const parsed = parseModuleDefinition(json)
-  const store = useModuleDefinitionsStore.getState()
-  if (regenerateId || store.getDefinition(parsed.id)) {
-    const id = store.addDefinition({ ...parsed, id: undefined })
-    return store.getDefinition(id)!
-  }
-  store.addModuleDefinition(parsed)
-  return parsed
-}
-
-/** Trigger a browser download of a single module definition as JSON. */
-export function downloadModuleDefinition(definitionId: string, filename?: string): void {
-  const json = exportModuleDefinition(definitionId)
-  if (json == null) return
-  const name = filename ?? `cogs-module-${definitionId}-${new Date().toISOString().split("T")[0]}.json`
-  const blob = new Blob([json], { type: "application/json" })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement("a")
-  link.href = url
-  link.download = name
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  URL.revokeObjectURL(url)
-}
-
 /** Trigger a browser download of the current backup as a JSON file. */
 export function downloadBackup(filename?: string): void {
   const name = filename ?? `cogs-backup-${new Date().toISOString().split("T")[0]}.json`
@@ -395,3 +323,4 @@ export function downloadBackup(filename?: string): void {
   document.body.removeChild(link)
   URL.revokeObjectURL(url)
 }
+

@@ -7,6 +7,8 @@
  * duration. Transit opens Google Maps (optional Directions API if keyed).
  */
 
+import { TTL, cached } from "@/lib/api-cache"
+
 export type TravelMode = "walking" | "transit" | "driving"
 
 export interface RouteEstimate {
@@ -114,6 +116,15 @@ async function googleDirections(
 }
 
 export async function estimateRoute(
+  from: { lat: number; lng: number },
+  to: { lat: number; lng: number },
+  mode: TravelMode,
+): Promise<RouteEstimate> {
+  const key = `route:${mode}:${from.lat.toFixed(5)},${from.lng.toFixed(5)}:${to.lat.toFixed(5)},${to.lng.toFixed(5)}`
+  return cached(key, TTL.ROUTE, () => estimateRouteUncached(from, to, mode))
+}
+
+async function estimateRouteUncached(
   from: { lat: number; lng: number },
   to: { lat: number; lng: number },
   mode: TravelMode,
