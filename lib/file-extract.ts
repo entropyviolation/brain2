@@ -1,7 +1,7 @@
 /**
  * lib/file-extract.ts — Best-effort text extraction for attached files
  *
- * Pulls searchable plain text out of a `FileValue` (data URL today) or a raw
+ * Pulls searchable plain text out of a `FileValue` (`idb:` blob ref or data URL) or a raw
  * `File` so it can be stored into `FileValue.extractedText` and indexed by
  * `lib/search.ts`. The function is intentionally environment-aware and
  * dependency-light so it never bloats the static web bundle:
@@ -92,9 +92,21 @@ function dataUrlToText(dataUrl: string): string {
   }
 }
 
+async function blobToDataUrlFallback(blob: Blob): Promise<string> {
+  const { blobToDataUrl } = await import("@/lib/attachments")
+  return blobToDataUrl(blob)
+}
+
 /** Read a File/FileValue as UTF-8 text (best effort). */
 async function readAsText(input: FileValue | File): Promise<string> {
-  if (isFileValue(input)) return dataUrlToText(input.uri)
+  if (isFileValue(input)) {
+    if (input.uri.startsWith("data:")) return dataUrlToText(input.uri)
+    const { getAttachment } = await import("@/lib/attachments")
+    const rec = await getAttachment(input.uri)
+    if (!rec) return ""
+    if (typeof rec.blob.text === "function") return rec.blob.text()
+    return dataUrlToText(await blobToDataUrlFallback(rec.blob))
+  }
   // Raw File: prefer the Blob.text() shortcut, fall back to FileReader.
   if (typeof input.text === "function") return input.text()
   return new Promise<string>((resolve) => {
@@ -107,7 +119,11 @@ async function readAsText(input: FileValue | File): Promise<string> {
 
 /** Resolve a File/FileValue to a `data:` URL for crossing the IPC boundary. */
 async function toDataUrl(input: FileValue | File): Promise<string> {
-  if (isFileValue(input)) return input.uri
+  if (isFileValue(input)) {
+    if (input.uri.startsWith("data:")) return input.uri
+    const { getAttachmentDataUrl } = await import("@/lib/attachments")
+    return getAttachmentDataUrl(input.uri)
+  }
   return new Promise<string>((resolve) => {
     const reader = new FileReader()
     reader.onload = () => resolve(String(reader.result ?? ""))

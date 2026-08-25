@@ -68,7 +68,6 @@ export function SheetPopoutView({ categoryId }: { categoryId: string }) {
           tasks={tasks}
           onOpenItem={setSelectedTaskId}
           newItemLabel={getItemLabel(category, folders, categoryId)}
-          enablePopout={false}
         />
       </div>
     </main>

@@ -14,14 +14,16 @@ import { useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Database, DownloadCloud, UploadCloud } from "lucide-react"
 import { downloadBackup, parseBackup, restoreBackup } from "@/lib/data/backup"
+import { formatLastSave, usePersistStatus } from "@/components/PersistStatusBanner"
 
 export function BackupRestore() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [status, setStatus] = useState<{ kind: "ok" | "error"; message: string } | null>(null)
+  const persist = usePersistStatus()
 
-  const handleExport = () => {
+  const handleExport = async () => {
     try {
-      downloadBackup()
+      await downloadBackup()
       setStatus({ kind: "ok", message: "✅ Full backup downloaded." })
     } catch (e) {
       setStatus({ kind: "error", message: `❌ Export failed: ${e instanceof Error ? e.message : "Unknown error"}` })
@@ -65,11 +67,12 @@ export function BackupRestore() {
         <h3 className="font-semibold">Full App Backup</h3>
       </div>
       <p className="text-sm text-muted-foreground">
-        Back up <strong>everything</strong> — tasks, lists, habits, goals, reviews, modules, time tracking, plans, and
-        settings — to a single file, or restore from one. Restoring replaces all current data.
+        Back up <strong>everything</strong> — tasks, lists, habits, goals, reviews, modules, time tracking, plans,
+        attachments, and settings — to a single file, or restore from one. Restoring replaces all current data.
       </p>
+      <p className="text-xs text-muted-foreground">Last successful save: {formatLastSave(persist.lastOkAt)}</p>
       <div className="flex flex-col gap-2 sm:flex-row">
-        <Button onClick={handleExport} variant="outline" className="flex-1">
+        <Button onClick={() => void handleExport()} variant="outline" className="flex-1">
           <DownloadCloud className="mr-2 h-4 w-4" />
           Export Full Backup
         </Button>

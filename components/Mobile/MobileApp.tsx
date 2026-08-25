@@ -12,9 +12,11 @@ import { HomeDashboard } from "@/components/Home/home-dashboard"
 import { Reviews } from "@/components/Reviews/reviews"
 import { Inbox } from "@/components/inbox"
 import { EnhancedBulkAdd } from "@/components/enhanced-bulk-add"
+import { NotesIngest } from "@/components/notes-ingest"
 import { TaskDetailPopup } from "@/components/task-detail-popup"
 import { MobileLogin } from "@/components/Mobile/MobileLogin"
 import { MobilePullCard } from "@/components/Mobile/MobilePullCard"
+import { PersistStatusBanner } from "@/components/PersistStatusBanner"
 import { installTouchDnD } from "@/components/Mobile/install-touch-dnd"
 import { clearMobileSession, readMobileSession } from "@/lib/mobile-auth"
 import { Button } from "@/components/ui/button"
@@ -53,6 +55,7 @@ export function MobileApp() {
           <div className="cogs-mobile-topbar-actions">
             <Inbox onTaskSelect={setSelectedTaskId} />
             <EnhancedBulkAdd />
+            <NotesIngest />
             <Reviews />
             <Button
               type="button"
@@ -79,13 +82,14 @@ export function MobileApp() {
       </header>
 
       <main className="cogs-mobile-body">
+        <PersistStatusBanner />
         <MobilePullCard />
         {tab === "home" ? (
           <HomeDashboard />
         ) : (
           <Suspense fallback={<div className="cogs-mobile-loading">Loading Lists…</div>}>
             <div className="cogs-mobile-lists">
-              <ListsPanel />
+              <ListsPanel onTaskSelect={setSelectedTaskId} />
             </div>
           </Suspense>
         )}

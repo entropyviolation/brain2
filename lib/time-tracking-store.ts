@@ -16,6 +16,7 @@
 
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
+import { createCogsJSONStorage } from "@/lib/persist-storage"
 
 export const SLOT_MINUTES = 15
 export const SLOTS_PER_DAY = (24 * 60) / SLOT_MINUTES // 96
@@ -339,7 +340,7 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
             b.endSlot === endSlot,
         ),
     }),
-    { name: "cogs-timegrid-store", version: 2 },
+    { name: "cogs-timegrid-store", version: 2, storage: createCogsJSONStorage() },
   ),
 )
 

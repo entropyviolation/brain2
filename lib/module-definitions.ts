@@ -19,6 +19,7 @@
 
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
+import { createCogsJSONStorage } from "@/lib/persist-storage"
 import type { ModuleDefinition, WorkflowDefinition } from "@/lib/types"
 import { useModulesStore, type ModuleInstance } from "@/lib/modules-store"
 import { useWorkflowsStore } from "@/lib/workflows-store"
@@ -113,7 +114,7 @@ export const useModuleDefinitionsStore = create<ModuleDefinitionsState>()(
 
       setDefinitions: (definitions) => set(() => ({ definitions })),
     }),
-    { name: "cogs-module-definitions", version: 1 },
+    { name: "cogs-module-definitions", version: 1, storage: createCogsJSONStorage() },
   ),
 )
 

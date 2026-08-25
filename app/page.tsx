@@ -2,7 +2,7 @@
  * app/page.tsx — Application root page
  *
  * The single page of the app. Renders the global header (title + Cognitive State,
- * Inbox, Bulk Add, Quick Add) and the top-level tab bar (Home, Lists, Docs,
+ * Inbox, Bulk Add, From Notes, Quick Add) and the top-level tab bar (Home, Lists, Docs,
  * Scheduler, Operations, Modules, Analytics), lazy-loading each module
  * panel for fast startup. When a task is selected it swaps to the full-screen
  * task detail view.
@@ -17,6 +17,7 @@ import { usePersistedTab } from "@/lib/use-persisted-tab"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { QuickAdd } from "@/components/quick-add"
 import { EnhancedBulkAdd } from "@/components/enhanced-bulk-add"
+import { NotesIngest } from "@/components/notes-ingest"
 import { CognitiveState } from "@/components/cognitive-state"
 import { Inbox } from "@/components/inbox"
 import { EnhancedTaskDetail } from "@/components/enhanced-task-detail"
@@ -27,6 +28,7 @@ import { useGlobalSearchHotkey } from "@/components/Search/useGlobalSearchHotkey
 import { useTaskStore } from "@/lib/task-store"
 import { useQuickCaptureHotkey } from "@/hooks/useQuickCaptureHotkey"
 import { MetricLoggerButton } from "@/components/Tracking/MetricLogger"
+import { PersistStatusBanner } from "@/components/PersistStatusBanner"
 import { SettingsDialog } from "@/components/Settings/SettingsDialog"
 import { parseModulePopoutModuleId } from "@/components/Modules/workspace/ModuleWorkspace"
 import { parseSheetPopoutCategoryId } from "@/components/spreadsheet/sheet-popout"
@@ -168,6 +170,7 @@ export default function Home() {
       <>
         <main className="min-h-screen bg-background">
           <div className="container mx-auto px-6 py-6 sm:px-8 lg:px-12">
+            <PersistStatusBanner />
             <EnhancedTaskDetail taskId={selectedTaskId} onBack={handleBackToList} />
           </div>
         </main>
@@ -185,6 +188,7 @@ export default function Home() {
     <>
     <main className="min-h-screen bg-background">
       <div className="container mx-auto px-6 py-6 sm:px-8 lg:px-12">
+        <PersistStatusBanner />
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold">COGS</h1>
           <div className="flex items-center gap-4">
@@ -194,6 +198,7 @@ export default function Home() {
             <Inbox onTaskSelect={handleTaskSelect} />
             <MetricLoggerButton />
             <EnhancedBulkAdd />
+            <NotesIngest />
             <QuickAdd open={capture.open} onOpenChange={capture.setOpen} />
           </div>
         </div>

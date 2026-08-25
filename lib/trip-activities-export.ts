@@ -86,7 +86,6 @@ export function placeToExportRow(place: Task): TripActivitiesPlaceExport {
     photoUrls: readPhotoUrls(place),
     done: Boolean(place.completed),
     createdAt: place.createdAt ? String(place.createdAt) : undefined,
-    updatedAt: place.updatedAt ? String(place.updatedAt) : undefined,
     attributes: { ...attrs },
   }
 }

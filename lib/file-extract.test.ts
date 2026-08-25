@@ -22,6 +22,17 @@ describe("extractText — text-like files (browser-safe)", () => {
     expect(await extractText(fv)).toBe("hello world")
   })
 
+  it("decodes text stored behind an idb: FileValue", async () => {
+    const { putAttachment, attachmentUri, clearAllAttachments } = await import("@/lib/attachments")
+    await clearAllAttachments()
+    await putAttachment("f-text", new Blob(["idb hello"], { type: "text/plain" }), {
+      name: "a.txt",
+      mime: "text/plain",
+    })
+    const fv = fileValue({ name: "a.txt", mime: "text/plain", uri: attachmentUri("f-text") })
+    expect(await extractText(fv)).toBe("idb hello")
+  })
+
   it("decodes JSON content", async () => {
     const fv = fileValue({ name: "data.json", mime: "application/json", uri: textDataUrl('{"a":1}') })
     expect(await extractText(fv)).toBe('{"a":1}')

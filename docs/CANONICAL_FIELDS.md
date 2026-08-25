@@ -189,7 +189,7 @@ includes `fileValueSchema` and `fileValueSchema[]`). `AttributeType` adds
 | `id` | `string` | canonical | yes | yes (`fileValueSchema`) | |
 | `name` | `string` | canonical | yes | yes | Display file name. |
 | `mime` | `string` | canonical | yes | yes | MIME type. |
-| `uri` | `string` | canonical | yes | yes | **Data URL today.** Same field reused for a future Electron file-store path / blobRef. |
+| `uri` | `string` | canonical | yes | yes | **`idb:<id>` blob ref** (IndexedDB) or a legacy data URL. Same field reused for a future Electron file-store path. |
 | `size` | `number?` | canonical | yes | yes | Bytes (optional). |
 | `extractedText` | `string?` | canonical | yes | yes | Optional searchable/indexed text. |
 

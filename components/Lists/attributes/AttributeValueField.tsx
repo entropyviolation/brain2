@@ -7,7 +7,7 @@
  */
 "use client"
 
-import { useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -198,6 +198,71 @@ async function enrichWithText(files: FileValue[]): Promise<FileValue[]> {
   }
 }
 
+function FileAttachmentChip({
+  file,
+  onRemove,
+}: {
+  file: FileValue
+  onRemove: () => void
+}) {
+  const [href, setHref] = useState(
+    file.uri.startsWith("data:") || file.uri.startsWith("blob:") || file.uri.startsWith("http") ? file.uri : "",
+  )
+
+  useEffect(() => {
+    if (file.uri.startsWith("data:") || file.uri.startsWith("blob:") || file.uri.startsWith("http")) {
+      setHref(file.uri)
+      return
+    }
+    let objectUrl = ""
+    let cancelled = false
+    void import("@/lib/attachments").then(({ getAttachmentObjectUrl }) =>
+      getAttachmentObjectUrl(file.uri).then((url) => {
+        if (cancelled) {
+          if (url.startsWith("blob:")) URL.revokeObjectURL(url)
+          return
+        }
+        objectUrl = url
+        setHref(url)
+      }),
+    )
+    return () => {
+      cancelled = true
+      if (objectUrl.startsWith("blob:")) URL.revokeObjectURL(objectUrl)
+    }
+  }, [file.uri])
+
+  return (
+    <div className="flex items-center gap-2 rounded-md border bg-muted/40 px-2 py-1 text-sm max-w-full">
+      <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+      <a
+        href={href || undefined}
+        download={file.name}
+        title={file.extractedText ? "Text extracted (searchable)" : file.name}
+        className="truncate max-w-[180px] hover:underline"
+      >
+        {file.name}
+      </a>
+      {formatBytes(file.size) && (
+        <span className="shrink-0 text-[10px] text-muted-foreground">{formatBytes(file.size)}</span>
+      )}
+      {file.extractedText && (
+        <span className="shrink-0 text-[10px] text-green-600" title="Searchable text extracted">
+          ✓ text
+        </span>
+      )}
+      <button
+        type="button"
+        className="shrink-0 text-muted-foreground hover:text-foreground"
+        onClick={onRemove}
+        aria-label={`Remove ${file.name}`}
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  )
+}
+
 function FileValueEditor({
   multiple,
   value,
@@ -208,6 +273,7 @@ function FileValueEditor({
   onChange: (v: AttributeValue) => void
 }) {
   const files: FileValue[] = multiple ? asFiles(value) : asFile(value) ? [asFile(value)!] : []
+  const [attachError, setAttachError] = useState<string | null>(null)
 
   const pick = () => {
     const input = document.createElement("input")
@@ -216,10 +282,17 @@ function FileValueEditor({
     input.onchange = async () => {
       const picked = Array.from(input.files || [])
       if (!picked.length) return
+      setAttachError(null)
       // Snapshot the existing files so the async extraction patch below stays
       // consistent with what was on screen when the picker opened.
       const base = multiple ? asFiles(value) : []
-      const added = await Promise.all(picked.map(fileToFileValue))
+      let added: FileValue[]
+      try {
+        added = await Promise.all(picked.map(fileToFileValue))
+      } catch (e) {
+        setAttachError(e instanceof Error ? e.message : "Could not store the file. Storage may be full.")
+        return
+      }
 
       // Show the chips immediately (extraction must never block the UI).
       if (multiple) onChange([...base, ...added])
@@ -236,6 +309,10 @@ function FileValueEditor({
   }
 
   const removeAt = (i: number) => {
+    const target = files[i]
+    if (target?.uri) {
+      void import("@/lib/attachments").then(({ deleteAttachment }) => deleteAttachment(target.uri))
+    }
     if (multiple) onChange(files.filter((_, idx) => idx !== i))
     else onChange(undefined)
   }
@@ -245,39 +322,11 @@ function FileValueEditor({
       {files.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {files.map((f, i) => (
-            <div
-              key={f.id || i}
-              className="flex items-center gap-2 rounded-md border bg-muted/40 px-2 py-1 text-sm max-w-full"
-            >
-              <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
-              <a
-                href={f.uri || undefined}
-                download={f.name}
-                title={f.extractedText ? "Text extracted (searchable)" : f.name}
-                className="truncate max-w-[180px] hover:underline"
-              >
-                {f.name}
-              </a>
-              {formatBytes(f.size) && (
-                <span className="shrink-0 text-[10px] text-muted-foreground">{formatBytes(f.size)}</span>
-              )}
-              {f.extractedText && (
-                <span className="shrink-0 text-[10px] text-green-600" title="Searchable text extracted">
-                  ✓ text
-                </span>
-              )}
-              <button
-                type="button"
-                className="shrink-0 text-muted-foreground hover:text-foreground"
-                onClick={() => removeAt(i)}
-                aria-label={`Remove ${f.name}`}
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            </div>
+            <FileAttachmentChip key={f.id || i} file={f} onRemove={() => removeAt(i)} />
           ))}
         </div>
       )}
+      {attachError && <p className="text-xs text-destructive">{attachError}</p>}
       <Button variant="outline" size="sm" onClick={pick}>
         <Plus className="h-3 w-3 mr-1" />
         {multiple ? "Add files" : files.length ? "Replace file" : "Choose file"}

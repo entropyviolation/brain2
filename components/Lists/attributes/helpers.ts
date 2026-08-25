@@ -44,20 +44,19 @@ export function asFiles(v: AttributeValue): FileValue[] {
   return []
 }
 
-/** Read a `File` into a serializable `FileValue` (data URL in `uri`). */
-export function fileToFileValue(file: File): Promise<FileValue> {
-  const base: Omit<FileValue, "uri"> = {
-    id: `file_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+/** Read a `File` into a serializable `FileValue` (bytes in IndexedDB, `idb:` uri). */
+export async function fileToFileValue(file: File): Promise<FileValue> {
+  const { putAttachment } = await import("@/lib/attachments")
+  const id = `file_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+  const mime = file.type || "application/octet-stream"
+  const uri = await putAttachment(id, file, { name: file.name || "file", mime })
+  return {
+    id,
     name: file.name || "file",
-    mime: file.type || "application/octet-stream",
+    mime,
     size: file.size,
+    uri,
   }
-  return new Promise((resolve) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve({ ...base, uri: String(reader.result ?? "") })
-    reader.onerror = () => resolve({ ...base, uri: "" })
-    reader.readAsDataURL(file)
-  })
 }
 
 export function effectiveDef(def: AttributeDefinition): AttributeDefinition {

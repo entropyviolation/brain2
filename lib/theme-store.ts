@@ -8,6 +8,7 @@
 
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
+import { createCogsJSONStorage } from "@/lib/persist-storage"
 
 export interface ThemeColors {
   pointsAllTime: string
@@ -45,6 +46,6 @@ export const useThemeStore = create<ThemeState>()(
         set((state) => ({ colors: { ...state.colors, [key]: value } })),
       resetColors: () => set({ colors: DEFAULT_THEME }),
     }),
-    { name: "cogs-theme-store", version: 1 },
+    { name: "cogs-theme-store", version: 1, storage: createCogsJSONStorage() },
   ),
 )

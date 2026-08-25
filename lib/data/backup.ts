@@ -23,9 +23,19 @@ import { useModulesStore } from "@/lib/modules-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { useListsUiStore } from "@/lib/lists-ui-store"
 import { useThemeStore } from "@/lib/theme-store"
+import { useUserSettingsStore } from "@/lib/user-settings-store"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { useWorkflowsStore } from "@/lib/workflows-store"
 import { useModuleDefinitionsStore } from "@/lib/module-definitions"
+import { useMetricsStore } from "@/lib/metrics-store"
+import { useRegretStore } from "@/lib/regret-store"
+import {
+  exportAllAttachments,
+  migrateTaskFileValues,
+  replaceAllAttachments,
+  type AttachmentExport,
+} from "@/lib/attachments"
+import { isQuotaExceededError, persistErrorMessage, recordPersistFailure } from "@/lib/persist-storage"
 
 /** A persisted store: its localStorage key and a rehydrate trigger. */
 interface StoreDescriptor {
@@ -45,9 +55,12 @@ export const BACKUP_STORES: StoreDescriptor[] = [
   { key: "cogs-timegrid-store", rehydrate: () => useTimeTrackingStore.persist.rehydrate() },
   { key: "cogs-lists-ui", rehydrate: () => useListsUiStore.persist.rehydrate() },
   { key: "cogs-theme-store", rehydrate: () => useThemeStore.persist.rehydrate() },
+  { key: "cogs-user-settings", rehydrate: () => useUserSettingsStore.persist.rehydrate() },
   { key: "cogs-item-types-store", rehydrate: () => useItemTypeStore.persist.rehydrate() },
   { key: "cogs-workflows-store", rehydrate: () => useWorkflowsStore.persist.rehydrate() },
   { key: "cogs-module-definitions", rehydrate: () => useModuleDefinitionsStore.persist.rehydrate() },
+  { key: "cogs-metrics-store", rehydrate: () => useMetricsStore.persist.rehydrate() },
+  { key: "regret-store", rehydrate: () => useRegretStore.persist.rehydrate() },
 ]
 
 /** localStorage key prefixes for free-text plans (lib/plan-text.ts). */
@@ -63,6 +76,17 @@ export const backupSchema = z.object({
   stores: z.record(z.string(), z.unknown()),
   /** Free-text plan entries keyed by localStorage key. */
   planText: z.record(z.string(), z.string()),
+  /** IndexedDB/memory attachment blobs keyed by FileValue id. Optional for older backups. */
+  attachments: z
+    .record(
+      z.string(),
+      z.object({
+        name: z.string(),
+        mime: z.string(),
+        dataUrl: z.string(),
+      }),
+    )
+    .optional(),
 })
 
 export type Backup = z.infer<typeof backupSchema>
@@ -109,6 +133,23 @@ export function createBackup(): Backup {
     exportedAt: new Date().toISOString(),
     stores,
     planText,
+    attachments: undefined,
+  }
+}
+
+/** Full backup including IndexedDB attachment bytes (for export / device sync). */
+export async function createFullBackup(): Promise<Backup> {
+  const backup = createBackup()
+  backup.attachments = await exportAllAttachments()
+  return backup
+}
+
+/** Stable identity of a backup for round-trip tests (store keys + attachment ids). */
+export function backupFingerprint(backup: Backup): { stores: string[]; attachments: string[]; planText: string[] } {
+  return {
+    stores: Object.keys(backup.stores).sort(),
+    attachments: Object.keys(backup.attachments ?? {}).sort(),
+    planText: Object.keys(backup.planText).sort(),
   }
 }
 
@@ -139,18 +180,42 @@ export async function restoreBackup(backup: Backup): Promise<{ stores: number; p
   let storeCount = 0
   for (const [key, payload] of Object.entries(backup.stores)) {
     if (!validKeys.has(key)) continue
-    localStorage.setItem(key, typeof payload === "string" ? payload : JSON.stringify(payload))
+    const serialized = typeof payload === "string" ? payload : JSON.stringify(payload)
+    try {
+      localStorage.setItem(key, serialized)
+    } catch (error) {
+      recordPersistFailure(error)
+      const reason = isQuotaExceededError(error)
+        ? persistErrorMessage(error)
+        : error instanceof Error
+          ? error.message
+          : "Unknown error"
+      throw new Error(`Restore failed while writing ${key}: ${reason}`)
+    }
     storeCount++
   }
 
   let planCount = 0
   for (const [key, value] of Object.entries(backup.planText)) {
     if (!isPlanTextKey(key)) continue
-    localStorage.setItem(key, value)
+    try {
+      localStorage.setItem(key, value)
+    } catch (error) {
+      recordPersistFailure(error)
+      throw new Error(`Restore failed while writing plan ${key}: ${persistErrorMessage(error)}`)
+    }
     planCount++
   }
 
   await Promise.all(BACKUP_STORES.map((s) => s.rehydrate()))
+
+  const attachments = backup.attachments
+  if (attachments && Object.keys(attachments).length > 0) {
+    await replaceAllAttachments(attachments as Record<string, AttachmentExport>)
+  } else {
+    const migrated = await migrateTaskFileValues(useTaskStore.getState().tasks)
+    if (migrated.migrated > 0) useTaskStore.setState({ tasks: migrated.tasks })
+  }
 
   return { stores: storeCount, planText: planCount }
 }
@@ -311,9 +376,9 @@ export function downloadCategoryExport(categoryId: string, filename?: string): v
 }
 
 /** Trigger a browser download of the current backup as a JSON file. */
-export function downloadBackup(filename?: string): void {
+export async function downloadBackup(filename?: string): Promise<void> {
   const name = filename ?? `cogs-backup-${new Date().toISOString().split("T")[0]}.json`
-  const blob = new Blob([serializeBackup()], { type: "application/json" })
+  const blob = new Blob([JSON.stringify(await createFullBackup(), null, 2)], { type: "application/json" })
   const url = URL.createObjectURL(blob)
   const link = document.createElement("a")
   link.href = url

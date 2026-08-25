@@ -18,6 +18,7 @@
 
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
+import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { type WeeklyTask, TaskType, type TaskCompletion, type WeeklyData, type Category, type HabitFrequency } from "@/lib/types"
 import { formatLocalDateKey, getWeekString } from "@/lib/date-utils"
 import { format } from "date-fns"
@@ -210,6 +211,7 @@ export const useHabitsStore = create<HabitsState>()(
     {
       name: "cogs-habits-store",
       version: 2,
+      storage: createCogsJSONStorage(),
       migrate: (persisted: unknown, version) => {
         const state = persisted as HabitsState
         if (version < 2 && state.tasks) {

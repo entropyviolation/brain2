@@ -14,6 +14,7 @@
 
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
+import { createCogsJSONStorage } from "@/lib/persist-storage"
 import type { SheetViewConfig } from "@/lib/spreadsheet-contract"
 import type { TripItineraryData } from "@/lib/trip-itinerary"
 
@@ -309,6 +310,7 @@ export const useModulesStore = create<ModulesState>()(
     }),
     {
       name: "cogs-modules-store",
+      storage: createCogsJSONStorage(),
       // v2: additive specialized view kinds (matcher/quiz/dashboard/timeline)
       // and optional view-config / scheduleSync fields. All new fields are
       // optional, so persisted v1 state is already valid — no-op migration.

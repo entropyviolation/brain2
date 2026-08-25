@@ -11,6 +11,7 @@
 
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
+import { createCogsJSONStorage } from "@/lib/persist-storage"
 import type { Goal, Objective, ObjectivePriority, PriorityPeriod } from "@/lib/types"
 import { usePointsStore } from "@/lib/points-store"
 import { periodKeyFor } from "@/lib/objectives"
@@ -264,6 +265,7 @@ export const useGoalsStore = create<GoalsState>()(
     {
       name: "cogs-goals-store",
       version: 3,
+      storage: createCogsJSONStorage(),
       // v1/v2 used a different Objective/Goal shape (period/target/category on
       // objectives, category/period on goals). Those were experimental; reset to
       // the redesigned defaults so the new model is coherent.

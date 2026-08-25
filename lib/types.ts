@@ -367,7 +367,7 @@ export type AttributeType =
   | "selection"
   | "image"
   | "multiimage"
-  | "file" // a single attached file (FileValue); uri holds a data URL today
+  | "file" // a single attached file (FileValue); uri is idb:<id> or a legacy data URL
   | "multifile" // multiple attached files (FileValue[])
   | "item"
   | "link"
@@ -412,16 +412,16 @@ export interface GoalValue {
 /**
  * An attached file value for `"file"` / `"multifile"` attributes.
  *
- * `uri` holds a data URL today (inline, localStorage-friendly). The field is
- * intentionally generic so a future Electron file-store can reuse it for an
- * on-disk path or blob reference without changing the shape — only how `uri`
- * is resolved. `extractedText` is optional indexed/searchable text.
+ * `uri` is a blob reference: `idb:<id>` for bytes in IndexedDB (`lib/attachments.ts`),
+ * or a legacy `data:` URL. The field is intentionally generic so an Electron
+ * file-store path can reuse it later — only how `uri` is resolved changes.
+ * `extractedText` is optional indexed/searchable text.
  */
 export interface FileValue {
   id: string
   name: string
   mime: string
-  /** Data URL today; future Electron file-store path / blobRef reuses this field. */
+  /** `idb:<id>` blob ref (or legacy data URL). Same field for a future file-store path. */
   uri: string
   size?: number
   extractedText?: string

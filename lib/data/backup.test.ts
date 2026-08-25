@@ -1,17 +1,23 @@
-import { describe, it, expect, beforeEach } from "vitest"
+import { describe, it, expect, beforeEach, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import {
   createBackup,
+  createFullBackup,
   serializeBackup,
   parseBackup,
   restoreBackup,
   backupSchema,
   BACKUP_VERSION,
+  BACKUP_STORES,
+  backupFingerprint,
   buildCategoryExport,
   exportCategory,
   parseCategoryExport,
   importCategory,
 } from "@/lib/data/backup"
+import { attachmentUri, getAttachment, putAttachment } from "@/lib/attachments"
+import { useMetricsStore } from "@/lib/metrics-store"
+import { useRegretStore } from "@/lib/regret-store"
 import { taskRepository } from "@/lib/data/task-repository"
 import { saveStoredPlanText, getStoredPlanText } from "@/lib/plan-text"
 import { useTaskStore } from "@/lib/task-store"
@@ -84,6 +90,55 @@ describe("backup/restore", () => {
     saveStoredPlanText("day", "2026-06-21", "stale entry")
     await restoreBackup(backup)
     expect(getStoredPlanText("day", "2026-06-21")).toBeNull()
+  })
+
+  it("includes metrics and regret stores in a full backup", () => {
+    expect(BACKUP_STORES.map((s) => s.key)).toEqual(
+      expect.arrayContaining(["cogs-metrics-store", "regret-store"]),
+    )
+    useMetricsStore.getState().addDatapoint({ values: { joy: 41 } })
+    useRegretStore.getState().addRegret("t1", 3, "slipped")
+    const backup = createBackup()
+    expect(backup.stores["cogs-metrics-store"]).toBeDefined()
+    expect(backup.stores["regret-store"]).toBeDefined()
+  })
+
+  it("round-trips attachment bytes through createFullBackup", async () => {
+    await putAttachment("file_rt", new Blob(["secret-bytes"], { type: "text/plain" }), {
+      name: "s.txt",
+      mime: "text/plain",
+    })
+    taskRepository.add(
+      task({
+        id: "with-file",
+        attributes: {
+          file: { id: "file_rt", name: "s.txt", mime: "text/plain", uri: attachmentUri("file_rt") },
+        },
+      }),
+    )
+    const backup = await createFullBackup()
+    expect(backup.attachments?.file_rt?.name).toBe("s.txt")
+    const before = backupFingerprint(backup)
+
+    resetAllStores()
+    await restoreBackup(backup)
+
+    const after = backupFingerprint(await createFullBackup())
+    expect(after.attachments).toEqual(before.attachments)
+    expect(await (await getAttachment(attachmentUri("file_rt")))?.blob.text()).toBe("secret-bytes")
+    expect(useTaskStore.getState().tasks.find((t) => t.id === "with-file")?.attributes?.file).toMatchObject({
+      id: "file_rt",
+      uri: attachmentUri("file_rt"),
+    })
+  })
+
+  it("surfaces quota errors on restore instead of failing silently", async () => {
+    const backup = parseBackup(serializeBackup())
+    const spy = vi.spyOn(localStorage, "setItem").mockImplementation(() => {
+      throw new DOMException("The quota has been exceeded.", "QuotaExceededError")
+    })
+    await expect(restoreBackup(backup)).rejects.toThrow(/Restore failed/)
+    spy.mockRestore()
   })
 })
 

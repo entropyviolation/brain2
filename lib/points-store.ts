@@ -16,6 +16,7 @@
 
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
+import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { formatDateKey } from "./date-utils"
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns"
 
@@ -128,6 +129,7 @@ export const usePointsStore = create<PointsStore>()(
     }),
     {
       name: "points-store",
+      storage: createCogsJSONStorage(),
     },
   ),
 )

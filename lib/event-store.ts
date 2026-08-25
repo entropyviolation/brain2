@@ -12,9 +12,10 @@
 "use client"
 
 import { create } from "zustand"
-import { persist, createJSONStorage } from "zustand/middleware"
+import { persist } from "zustand/middleware"
 import type { CalendarEvent } from "./types"
 import { toLocalCalendarDate } from "./date-utils"
+import { createCogsJSONStorage } from "@/lib/persist-storage"
 
 // Date-typed fields on persisted CalendarEvent objects. The persist reviver
 // only resurrects Dates for these keys so it never converts unrelated strings
@@ -103,7 +104,7 @@ export const useEventStore = create<EventState>()(
     }),
     {
       name: "cogs-event-storage",
-      storage: createJSONStorage(() => localStorage, {
+      storage: createCogsJSONStorage({
         // NOTE: `JSON.stringify` invokes `Date.prototype.toJSON()` (→ ISO string)
         // BEFORE this replacer runs, so the `value instanceof Date` branch never
         // fires — Dates are already plain ISO strings here. The real rehydration

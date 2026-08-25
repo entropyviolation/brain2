@@ -5,7 +5,7 @@
  * LAN host:3847 only for Capacitor/static shells that aren't on the Next port.
  */
 
-import { createBackup, parseBackup, restoreBackup, type Backup } from "@/lib/data/backup"
+import { createFullBackup, parseBackup, restoreBackup, type Backup } from "@/lib/data/backup"
 import { useTaskStore } from "@/lib/task-store"
 import { useEventStore } from "@/lib/event-store"
 
@@ -155,7 +155,7 @@ export async function pushMobileSyncBackup(
   baseUrl: string = readMobileSyncUrl(),
   username = "admin",
   password = "admin",
-  backup: Backup = createBackup(),
+  backup: Backup,
 ): Promise<{ ok: true; updatedAt: string }> {
   const response = await syncFetch(baseUrl, "/api/sync/push", {
     method: "POST",
@@ -185,5 +185,5 @@ export async function pushCurrentMobileSync(
   username = "admin",
   password = "admin",
 ): Promise<{ ok: true; updatedAt: string }> {
-  return pushMobileSyncBackup(baseUrl, username, password, createBackup())
+  return pushMobileSyncBackup(baseUrl, username, password, await createFullBackup())
 }

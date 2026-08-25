@@ -13,6 +13,7 @@
 
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
+import { createCogsJSONStorage } from "@/lib/persist-storage"
 import type { ItemTypeDefinition } from "@/lib/types"
 import { getBuiltinItemTypes, getItemType } from "@/lib/item-types"
 import { withSecondBrainTypes } from "@/lib/second-brain-types"
@@ -97,6 +98,7 @@ export const useItemTypeStore = create<ItemTypeState>()(
     {
       name: "cogs-item-types-store",
       version: 1,
+      storage: createCogsJSONStorage(),
       // Re-seed built-ins on hydrate so they survive even if persisted state
       // predates a new built-in type or had them stripped.
       onRehydrateStorage: () => (state) => {

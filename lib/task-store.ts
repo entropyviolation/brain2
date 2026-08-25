@@ -15,7 +15,7 @@
 "use client"
 
 import { create } from "zustand"
-import { persist, createJSONStorage } from "zustand/middleware"
+import { persist } from "zustand/middleware"
 import { sanitizeEnabledDisplays, type Task, type List, type Folder, type PriorityWeights } from "@/lib/types"
 import { DEFAULT_PRIORITY_WEIGHTS } from "@/lib/priority"
 import { migratePersistedAttributes } from "@/lib/attribute-utils"
@@ -26,6 +26,8 @@ import { resolveCompletionPoints, applyItemRules } from "@/lib/item-utils"
 import { emitTaskCompleted } from "@/lib/completion-events"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { normalizeTag } from "@/lib/links"
+import { createCogsJSONStorage } from "@/lib/persist-storage"
+import { migrateTaskFileValues } from "@/lib/attachments"
 import {
   moveList as moveListPure,
   getChildren as getChildListsPure,
@@ -438,7 +440,7 @@ export const useTaskStore = create<TaskState>()(
     }),
     {
       name: "cogs-task-storage", // unique name for localStorage key
-      storage: createJSONStorage(() => localStorage, {
+      storage: createCogsJSONStorage({
         // NOTE: `JSON.stringify` invokes `Date.prototype.toJSON()` (→ ISO string)
         // BEFORE this replacer runs, so the `value instanceof Date` branch never
         // fires — Dates are already plain ISO strings here. The real rehydration
@@ -561,6 +563,12 @@ export const useTaskStore = create<TaskState>()(
           persistedState = migrateStripKanbanListDisplays(persistedState)
         }
         return persistedState
+      },
+      onRehydrateStorage: () => (state) => {
+        if (!state?.tasks?.length) return
+        void migrateTaskFileValues(state.tasks).then(({ tasks, migrated }) => {
+          if (migrated > 0) useTaskStore.setState({ tasks })
+        })
       },
     },
   ),

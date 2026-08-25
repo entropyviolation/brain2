@@ -20,6 +20,7 @@
 
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
+import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { formatDateKey } from "./date-utils"
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns"
 import type { Task, BlockedReason } from "@/lib/types"
@@ -238,6 +239,6 @@ export const useRegretStore = create<RegretStore>()(
         return out
       },
     }),
-    { name: "regret-store" },
+    { name: "regret-store", storage: createCogsJSONStorage() },
   ),
 )

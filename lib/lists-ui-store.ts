@@ -13,6 +13,7 @@
 
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
+import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { computeIconGridPositions } from "@/lib/lists-icon-grid"
 import { isListDisplayMode, type ListDisplayMode } from "@/lib/types"
 
@@ -47,6 +48,8 @@ interface ListsUiState {
    * mode). Empty means every folder is selected (visible). View-only.
    */
   globalAllHiddenFolderIds: string[]
+  /** Global All Items view: show only uncategorized items. */
+  globalAllUncategorizedOnly: boolean
 
   toggleHomePin: (id: string) => void
   isPinned: (id: string) => boolean
@@ -63,6 +66,7 @@ interface ListsUiState {
   setFolderAllUncategorizedOnly: (folderId: string, value: boolean) => void
   setFolderAllListHidden: (folderId: string, listId: string, hidden: boolean) => void
   setGlobalAllFolderHidden: (folderId: string, hidden: boolean) => void
+  setGlobalAllUncategorizedOnly: (value: boolean) => void
 }
 
 export const useListsUiStore = create<ListsUiState>()(
@@ -78,6 +82,7 @@ export const useListsUiStore = create<ListsUiState>()(
       folderAllUncategorizedOnly: {},
       folderAllHiddenListIds: {},
       globalAllHiddenFolderIds: [],
+      globalAllUncategorizedOnly: false,
 
       toggleHomePin: (id) =>
         set((state) => ({
@@ -146,10 +151,12 @@ export const useListsUiStore = create<ListsUiState>()(
               : current.filter((id) => id !== folderId),
           }
         }),
+      setGlobalAllUncategorizedOnly: (value) => set({ globalAllUncategorizedOnly: value }),
     }),
     {
       name: "cogs-lists-ui",
       version: 4,
+      storage: createCogsJSONStorage(),
       migrate: (persistedState, version) => {
         const state = { ...((persistedState ?? {}) as Record<string, unknown>) }
         if (version < 4) {
@@ -160,7 +167,7 @@ export const useListsUiStore = create<ListsUiState>()(
           }
           state.listDisplay = listDisplay
         }
-        return state as ListsUiState
+        return state as unknown as ListsUiState
       },
       merge: (persisted, current) => ({
         ...current,

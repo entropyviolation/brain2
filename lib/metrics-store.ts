@@ -24,6 +24,7 @@
 
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
+import { createCogsJSONStorage } from "@/lib/persist-storage"
 import type { SeriesPoint } from "@/lib/metrics"
 
 /** The five core wellbeing metrics, all reported on a 0–100 scale. */
@@ -233,6 +234,7 @@ export const useMetricsStore = create<MetricsState>()(
     {
       name: "cogs-metrics-store",
       version: 2,
+      storage: createCogsJSONStorage(),
       // v1 stored arbitrary metric definitions + per-day entries; that model is
       // incompatible, so older persisted state is dropped on upgrade.
       migrate: (persisted, version) => {

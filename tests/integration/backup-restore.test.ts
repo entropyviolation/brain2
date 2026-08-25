@@ -9,7 +9,7 @@
  */
 import { describe, it, expect, beforeEach } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
-import { createBackup, serializeBackup, parseBackup, restoreBackup } from "@/lib/data/backup"
+import { createBackup, serializeBackup, parseBackup, restoreBackup, createFullBackup, backupFingerprint } from "@/lib/data/backup"
 import { taskRepository } from "@/lib/data/task-repository"
 import { completeTask } from "@/lib/services/completion-service"
 import { upsertPeriodReview, getPeriodReview } from "@/lib/services/review-service"
@@ -112,5 +112,16 @@ describe("integration: full backup & restore", () => {
     // brings createdAt back as a real Date with its timestamp value preserved.
     expect(a?.createdAt).toBeInstanceOf(Date)
     expect((a!.createdAt as Date).toISOString()).toBe(new Date("2026-06-01T00:00:00").toISOString())
+  })
+
+  it("verifies store and plan keys survive a full backup round-trip", async () => {
+    const backup = await createFullBackup()
+    const before = backupFingerprint(backup)
+    resetAllStores()
+    await restoreBackup(backup)
+    const after = backupFingerprint(await createFullBackup())
+    expect(after.stores).toEqual(before.stores)
+    expect(after.planText).toEqual(before.planText)
+    expect(after.attachments).toEqual(before.attachments)
   })
 })

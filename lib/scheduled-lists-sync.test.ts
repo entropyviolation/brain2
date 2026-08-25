@@ -51,11 +51,12 @@ describe("scheduled-lists-sync", () => {
       {
         id: "t1",
         description: "Task",
+        stage: "list",
         completed: false,
         scheduledDate: new Date("2026-07-08T12:00:00"),
         lists: [],
         createdAt: new Date(),
-      } as Task,
+      },
     ]
 
     syncScheduledFolderHierarchy(tasks, mut)

@@ -15,6 +15,7 @@
 
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
+import { createCogsJSONStorage } from "@/lib/persist-storage"
 import type { WorkflowDefinition } from "@/lib/types"
 
 /** Query for selecting workflows relevant to an item / list / type. */
@@ -111,6 +112,6 @@ export const useWorkflowsStore = create<WorkflowsState>()(
 
       setWorkflows: (workflows) => set(() => ({ workflows })),
     }),
-    { name: "cogs-workflows-store", version: 1 },
+    { name: "cogs-workflows-store", version: 1, storage: createCogsJSONStorage() },
   ),
 )

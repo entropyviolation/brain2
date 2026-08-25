@@ -289,12 +289,14 @@ export function assignedItemTypes(
 }
 
 /** All items whose primary type or list membership matches `typeId` (includes subtypes). */
-export function itemsOfType(
+export function itemsOfType<
+  T extends { id: string; type?: ItemType; lists?: string[]; description?: string; title?: string },
+>(
   typeId: string,
-  items: { id: string; type?: ItemType; lists?: string[]; description?: string; title?: string }[],
+  items: T[],
   lists: { id: string; itemTypeId?: ItemType }[],
   types: ItemTypeDefinition[] = [],
-): typeof items {
+): T[] {
   const matchingTypeIds = descendantTypeIds(typeId, types)
   const listIdsWithType = new Set(
     lists.filter((l) => l.itemTypeId && matchingTypeIds.has(l.itemTypeId as string)).map((l) => l.id),

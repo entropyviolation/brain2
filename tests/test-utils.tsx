@@ -12,20 +12,30 @@ import { useReviewsStore } from "@/lib/reviews-store"
 import { useTaskStore } from "@/lib/task-store"
 import { useThemeStore } from "@/lib/theme-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
+import { useUserSettingsStore } from "@/lib/user-settings-store"
+import { useMetricsStore } from "@/lib/metrics-store"
+import { useRegretStore } from "@/lib/regret-store"
+import { resetPersistStatus } from "@/lib/persist-storage"
+import { clearAllAttachments } from "@/lib/attachments"
 
 export function resetLocalStorage() {
   localStorage.clear()
+  resetPersistStatus()
 }
 
 export function resetAllStores() {
   resetLocalStorage()
+  void clearAllAttachments()
   useHabitsStore.getState().resetData()
   useTaskStore.getState().clearAllData()
   useEventStore.getState().setEvents([])
   usePointsStore.setState({ pointsHistory: [] })
+  useRegretStore.setState({ regretHistory: [] })
+  useMetricsStore.setState({ datapoints: [] })
   useGoalsStore.setState({ goals: [] })
   useReviewsStore.setState({ reviews: [] })
   useThemeStore.getState().resetColors()
+  useUserSettingsStore.getState().resetHomeLocation()
   useTimeTrackingStore.setState({
     data: {},
     blockDetails: [],
