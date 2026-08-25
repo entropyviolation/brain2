@@ -75,6 +75,9 @@ export function ListContentPanel({
   onTaskDragStart,
   onDragEnd,
   onIconPickerOpen,
+  selectMode,
+  selectedTaskIds,
+  onToggleTaskSelect,
 }: ListContentPanelProps) {
   const showFolderAllListFilter =
     currentDisplay === "default" &&
@@ -158,6 +161,9 @@ export function ListContentPanel({
     onCompleteTask,
     onTaskDragStart,
     onDragEnd,
+    selectMode,
+    selectedTaskIds,
+    onToggleTaskSelect,
   }
 
   const emptyMessage = folderAllUncategorizedOnly[currentFolder?.id || ""]

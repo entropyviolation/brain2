@@ -81,6 +81,11 @@ local-first/sync-ready, AI-ready-not-AI-dependent, everything reviewable.
 - **Multi-device sync is now planned, not deferred.** It is opportunistic and
   best-effort (never blocks offline use); a future **mobile** app (Expo / React
   Native) is an explicit target consumer.
+- **Phone ↔ desktop continuous live sync is parked.** The experimental
+  `LiveSyncHost` / `lib/live-sync.ts` engine is deprecated while the rest of
+  COGS is finished. A dedicated **semi-mobile live sync** component will land
+  after that. Manual hub push/pull (`lib/mobile-sync.ts`, Settings, `/mobile`
+  pull card) remains.
 
 ## §4 Inbox / Capture
 - §4.2 Quick Add — ✅ `components/quick-add.tsx`.

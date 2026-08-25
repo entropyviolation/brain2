@@ -1,12 +1,13 @@
 /**
- * components/Settings/MobileSyncPanel.tsx — Live sync status / advanced controls.
+ * components/Settings/MobileSyncPanel.tsx — Manual mobile hub controls.
  *
- * Continuous sync runs automatically via LiveSyncHost when using `npm run dev`.
- * This panel is only for pause/resume explanation and rare manual override.
+ * Continuous live sync is parked while the core app is finished. A dedicated
+ * semi-mobile live sync component will land after that. This panel only
+ * explains the pause and keeps rare manual hub push/pull.
  */
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Smartphone } from "lucide-react"
 import {
@@ -15,17 +16,11 @@ import {
   pushCurrentMobileSync,
   readMobileSyncUrl,
 } from "@/lib/mobile-sync"
-import { isLiveSyncEnabled, setLiveSyncEnabled } from "@/lib/live-sync"
 
 export function MobileSyncPanel() {
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState<string | null>(null)
-  const [enabled, setEnabled] = useState(true)
   const url = typeof window !== "undefined" ? readMobileSyncUrl() : ""
-
-  useEffect(() => {
-    setEnabled(isLiveSyncEnabled())
-  }, [])
 
   const handlePush = async () => {
     setBusy(true)
@@ -46,7 +41,7 @@ export function MobileSyncPanel() {
       setStatus(
         result.hasData
           ? `Hub OK — last snapshot ${result.exportedAt ?? result.updatedAt}`
-          : "Hub OK — empty (edit something on desktop; it will auto-upload).",
+          : "Hub OK — empty (force-push from this Mac if the phone needs data).",
       )
     } catch (err) {
       setStatus(`Status failed: ${err instanceof Error ? err.message : "Unknown error"}`)
@@ -82,25 +77,13 @@ export function MobileSyncPanel() {
         <h3 className="font-semibold">Phone ↔ Desktop Live Sync</h3>
       </div>
       <p className="text-sm text-muted-foreground">
-        Live sync runs both ways by default (phone ↔ desktop) for Home, Lists, Inbox, and other shared
-        stores. Edits upload within about a second; the other device picks them up within a few seconds.
-        Empty / tiny snapshots are rejected so a blank phone cannot wipe desktop. Use the same origin:{" "}
-        <code className="text-xs">http://localhost:3000</code> on Mac and{" "}
-        <code className="text-xs">http://&lt;mac-ip&gt;:3000/mobile/</code> on phone.
+        Continuous live sync is paused for now. We are getting the rest of COGS solid
+        first, then a dedicated <strong>semi-mobile live sync</strong> component will
+        land. Until then, phones can still use a one-tap manual pull on{" "}
+        <code className="text-xs">/mobile/</code>, and the buttons below are only for
+        rare hub overrides.
       </p>
       <p className="text-xs text-muted-foreground break-all">Hub: {url || "(loading…)"}</p>
-      <label className="flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          checked={enabled}
-          onChange={(e) => {
-            setLiveSyncEnabled(e.target.checked)
-            setEnabled(e.target.checked)
-            setStatus(e.target.checked ? "Live sync enabled — reload if status chip looks stuck." : "Live sync paused.")
-          }}
-        />
-        Enable continuous live sync
-      </label>
       <div className="flex flex-wrap gap-2">
         <Button type="button" variant="outline" size="sm" disabled={busy} onClick={handleStatus}>
           Check hub

@@ -411,6 +411,13 @@
   right: 2px;
 }
 
+.fm98 .fm-icon input[type="checkbox"] {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  z-index: 1;
+}
+
 .fm98 .fm-icon:hover .fm-icon-pin,
 .fm98 .fm-icon:hover .fm-icon-edit {
   display: flex;

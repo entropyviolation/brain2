@@ -350,4 +350,163 @@ describe("EnhancedCategoryView Integration", () => {
     })
     confirmSpy.mockRestore()
   })
+
+  it("selects items in a list display and adds them to another list", async () => {
+    useTaskStore.getState().setLists([
+      { id: "list-1", name: "Work Tasks", color: "#ff0000", description: "", createdAt: new Date(), order: 0 },
+      { id: "list-2", name: "Home Tasks", color: "#00ff00", description: "", createdAt: new Date(), order: 1 },
+    ])
+    useTaskStore.getState().setTasks([
+      {
+        id: "task-1",
+        description: "Complete project",
+        lists: ["list-1"],
+        stage: "list",
+        completed: false,
+        createdAt: new Date(),
+        urgency: 1,
+        importance: 1,
+      },
+      {
+        id: "task-2",
+        description: "Buy milk",
+        lists: ["list-1"],
+        stage: "list",
+        completed: false,
+        createdAt: new Date(),
+        urgency: 1,
+        importance: 1,
+      },
+    ])
+
+    render(<EnhancedCategoryView onTaskSelect={vi.fn()} />)
+    fireEvent.click(screen.getByText("All"))
+    fireEvent.click(screen.getByRole("button", { name: "List" }))
+    fireEvent.dblClick(screen.getByText(/Work Tasks/))
+    await waitFor(() => expect(screen.getByText("Complete project")).toBeInTheDocument())
+
+    fireEvent.click(screen.getByRole("button", { name: "Select" }))
+    await waitFor(() => expect(screen.getByRole("button", { name: "Cancel Select" })).toBeInTheDocument())
+    expect(screen.getByRole("radio", { name: "Keep in this list" })).toBeChecked()
+    expect(screen.getByRole("button", { name: "→ Home Tasks" })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: "Select All" }))
+    await waitFor(() => expect(screen.getByText("2 selected")).toBeInTheDocument())
+    fireEvent.click(screen.getByRole("button", { name: "Deselect All" }))
+    await waitFor(() => expect(screen.getByText("0 selected")).toBeInTheDocument())
+
+    fireEvent.click(screen.getByText("Complete project"))
+    await waitFor(() => expect(screen.getByText("1 selected")).toBeInTheDocument())
+    fireEvent.click(screen.getByRole("button", { name: "→ Home Tasks" }))
+
+    await waitFor(() => {
+      expect(useTaskStore.getState().tasks.find((t) => t.id === "task-1")?.lists).toEqual(
+        expect.arrayContaining(["list-1", "list-2"]),
+      )
+    })
+    expect(useTaskStore.getState().tasks.find((t) => t.id === "task-2")?.lists).toEqual(["list-1"])
+  })
+
+  it("moves selected items off the current list, select-all, and deletes", async () => {
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true)
+    useTaskStore.getState().setLists([
+      { id: "list-1", name: "Work Tasks", color: "#ff0000", description: "", createdAt: new Date(), order: 0 },
+      { id: "list-2", name: "Home Tasks", color: "#00ff00", description: "", createdAt: new Date(), order: 1 },
+    ])
+    useTaskStore.getState().setTasks([
+      {
+        id: "task-1",
+        description: "Complete project",
+        lists: ["list-1"],
+        stage: "list",
+        completed: false,
+        createdAt: new Date(),
+        urgency: 1,
+        importance: 1,
+      },
+      {
+        id: "task-2",
+        description: "Buy milk",
+        lists: ["list-1"],
+        stage: "list",
+        completed: false,
+        createdAt: new Date(),
+        urgency: 1,
+        importance: 1,
+      },
+    ])
+
+    render(<EnhancedCategoryView onTaskSelect={vi.fn()} />)
+    fireEvent.click(screen.getByText("All"))
+    fireEvent.click(screen.getByRole("button", { name: "List" }))
+    fireEvent.dblClick(screen.getByText(/Work Tasks/))
+    await waitFor(() => expect(screen.getByText("Complete project")).toBeInTheDocument())
+
+    fireEvent.click(screen.getByRole("button", { name: "Select" }))
+    fireEvent.click(screen.getByRole("radio", { name: "Move from this list" }))
+    fireEvent.click(screen.getByRole("button", { name: "Select All" }))
+    await waitFor(() => expect(screen.getByText("2 selected")).toBeInTheDocument())
+    expect(screen.getByRole("checkbox", { name: "Select Complete project" })).toBeChecked()
+    expect(screen.getByRole("checkbox", { name: "Select Buy milk" })).toBeChecked()
+
+    fireEvent.click(screen.getByRole("button", { name: "→ Home Tasks" }))
+    await waitFor(() => {
+      expect(useTaskStore.getState().tasks.find((t) => t.id === "task-1")?.lists).toEqual(["list-2"])
+      expect(useTaskStore.getState().tasks.find((t) => t.id === "task-2")?.lists).toEqual(["list-2"])
+    })
+
+    fireEvent.click(screen.getByRole("button", { name: "↑ Up" }))
+    await waitFor(() => expect(screen.getByText("Home Tasks")).toBeInTheDocument())
+    fireEvent.dblClick(screen.getByText("Home Tasks"))
+    await waitFor(() => expect(screen.getByText("Complete project")).toBeInTheDocument())
+    fireEvent.click(screen.getByRole("button", { name: "Select" }))
+    fireEvent.click(screen.getByRole("button", { name: "Select All" }))
+    fireEvent.click(screen.getByRole("button", { name: "Delete selected" }))
+    await waitFor(() => {
+      expect(useTaskStore.getState().tasks.find((t) => t.id === "task-1")).toBeUndefined()
+      expect(useTaskStore.getState().tasks.find((t) => t.id === "task-2")).toBeUndefined()
+    })
+    confirmSpy.mockRestore()
+  })
+
+  it("adds selected items to a new list from checklist display", async () => {
+    const user = userEvent.setup()
+    useTaskStore.getState().setLists([
+      { id: "list-1", name: "Work Tasks", color: "#ff0000", description: "", createdAt: new Date(), order: 0 },
+    ])
+    useTaskStore.getState().setTasks([
+      {
+        id: "task-1",
+        description: "Complete project",
+        lists: ["list-1"],
+        stage: "list",
+        completed: false,
+        createdAt: new Date(),
+        urgency: 1,
+        importance: 1,
+      },
+    ])
+
+    render(<EnhancedCategoryView onTaskSelect={vi.fn()} />)
+    fireEvent.click(screen.getByText("All"))
+    fireEvent.click(screen.getByRole("button", { name: "List" }))
+    fireEvent.dblClick(screen.getByText(/Work Tasks/))
+    await waitFor(() => expect(screen.getByText("Complete project")).toBeInTheDocument())
+    fireEvent.click(screen.getByRole("button", { name: "Checklist" }))
+
+    fireEvent.click(screen.getByRole("button", { name: "Select" }))
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select Complete project" }))
+    fireEvent.click(screen.getByRole("button", { name: "Add to New List" }))
+    const nameInput = await screen.findByLabelText("List Name")
+    await user.type(nameInput, "Filed")
+    fireEvent.click(screen.getByRole("button", { name: "Create List" }))
+
+    await waitFor(() => {
+      const created = useTaskStore.getState().lists.find((l) => l.name === "Filed")
+      expect(created).toBeTruthy()
+      expect(useTaskStore.getState().tasks.find((t) => t.id === "task-1")?.lists).toEqual(
+        expect.arrayContaining(["list-1", created!.id]),
+      )
+    })
+  })
 })

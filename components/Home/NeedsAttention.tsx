@@ -2,10 +2,11 @@
  * components/Home/NeedsAttention.tsx — "Needs Attention" queue card (Phase 6b)
  *
  * A Home-dashboard card that surfaces tasks that have slipped or are stuck:
- * overdue, unclarified (inbox), blocked (waiting on an incomplete dependency),
- * or stale (unscheduled and aging). It reads the live task list from
- * `taskRepository.getAll()`, runs the PURE `getNeedsAttention` selector, and
- * renders the flagged items grouped by reason with reason badges.
+ * overdue, unclarified (inbox), or blocked (waiting on an incomplete
+ * dependency). Stale (unscheduled and aging) is intentionally omitted from this
+ * box. It reads the live task list from `taskRepository.getAll()`, runs the
+ * PURE `getNeedsAttention` selector, and renders the flagged items grouped by
+ * reason with reason badges.
  *
  * Clicking an item calls `onOpenItem(id)` so the parent can route to the detail
  * view. The component itself performs no mutations — surfacing only.
@@ -20,7 +21,6 @@ import {
   AlertTriangle,
   Inbox,
   Ban,
-  Clock,
   CheckCircle2,
   ChevronRight,
   ChevronDown,
@@ -40,16 +40,17 @@ import {
 } from "@/lib/needs-attention"
 import { cn } from "@/lib/utils"
 
-const REASON_ORDER: NeedsAttentionReason[] = ["overdue", "blocked", "unclarified", "stale"]
+/** Reasons shown in the Home card. `stale` is kept on the selector but not here. */
+type BoxReason = Exclude<NeedsAttentionReason, "stale">
+const BOX_REASONS: BoxReason[] = ["overdue", "blocked", "unclarified"]
 
 const REASON_META: Record<
-  NeedsAttentionReason,
+  BoxReason,
   { icon: LucideIcon; badgeVariant: BadgeProps["variant"]; description: string }
 > = {
   overdue: { icon: AlertTriangle, badgeVariant: "destructive", description: "Past their deadline" },
   blocked: { icon: Ban, badgeVariant: "secondary", description: "Waiting on an unfinished dependency" },
   unclarified: { icon: Inbox, badgeVariant: "outline", description: "Still in the inbox" },
-  stale: { icon: Clock, badgeVariant: "outline", description: "Unscheduled and aging" },
 }
 
 export interface NeedsAttentionProps {
@@ -75,7 +76,11 @@ export function NeedsAttention({
 
   const entries = useMemo(() => {
     void tasks // dependency: recompute when the store's tasks change
-    return getNeedsAttention(taskRepository.getAll(), options)
+    const requested = options?.reasons ?? BOX_REASONS
+    return getNeedsAttention(taskRepository.getAll(), {
+      ...options,
+      reasons: requested.filter((reason) => reason !== "stale"),
+    })
   }, [tasks, options])
 
   const groups = useMemo(() => groupNeedsAttentionByReason(entries), [entries])
@@ -115,7 +120,7 @@ export function NeedsAttention({
             <p className="text-sm">Nothing needs attention right now.</p>
           </div>
         ) : (
-          REASON_ORDER.map((reason) => {
+          BOX_REASONS.map((reason) => {
             const group = groups[reason]
             if (group.length === 0) return null
             const meta = REASON_META[reason]
@@ -173,15 +178,17 @@ function NeedsAttentionRow({
         <span className="flex min-w-0 flex-1 flex-col gap-1">
           <span className="truncate text-sm font-medium">{title}</span>
           <span className="flex flex-wrap gap-1">
-            {reasons.map((reason) => (
-              <Badge
-                key={reason}
-                variant={REASON_META[reason].badgeVariant}
-                className="text-[10px]"
-              >
-                {NEEDS_ATTENTION_REASON_LABELS[reason]}
-              </Badge>
-            ))}
+            {reasons
+              .filter((reason): reason is BoxReason => reason !== "stale")
+              .map((reason) => (
+                <Badge
+                  key={reason}
+                  variant={REASON_META[reason].badgeVariant}
+                  className="text-[10px]"
+                >
+                  {NEEDS_ATTENTION_REASON_LABELS[reason]}
+                </Badge>
+              ))}
           </span>
         </span>
         <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />

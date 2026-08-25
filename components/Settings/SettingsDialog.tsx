@@ -4,6 +4,8 @@
  * A header-launched dialog that hosts cross-cutting app utilities that don't
  * belong to a single tab:
  *  - Full app backup / restore (JSON export/import — spec §3.2).
+ *  - Manual mobile hub push/pull (`MobileSyncPanel`). Continuous live sync is
+ *    parked until a dedicated semi-mobile live sync component lands.
  *  - "Set up Second Brain" — seeds the Source + Belief item types
  *    (Brain2 research→source→belief model).
  *

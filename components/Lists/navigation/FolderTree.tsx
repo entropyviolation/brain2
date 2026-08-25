@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import type { Folder, List } from "@/lib/types"
 import { isScheduledFolderId } from "@/lib/scheduled-lists-sync"
+import { MODULE_LISTS_FOLDER_ID } from "@/lib/module-lists"
 import {
   buildFolderTree,
   defaultExpandedFolderIds,
@@ -49,6 +50,10 @@ export function FolderTree({
   onNavToCategory,
 }: FolderTreeProps) {
   const tree = useMemo(() => buildFolderTree(folders), [folders])
+  const moduleListsFolder = useMemo(
+    () => folders.find((f) => f.id === MODULE_LISTS_FOLDER_ID) ?? null,
+    [folders],
+  )
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() =>
     defaultExpandedFolderIds(folders, location),
   )
@@ -112,6 +117,17 @@ export function FolderTree({
         <span>🗂</span>
         <span>All</span>
       </div>
+      {moduleListsFolder && (
+        <div
+          className={`fm-tree-item${location === moduleListsFolder.id && !openTarget ? " active" : ""}`}
+          onClick={() => navigateToFolder(moduleListsFolder.id)}
+          onDragOver={onDragOver}
+          onDrop={(e) => onDrop(e, moduleListsFolder)}
+        >
+          <span>📦</span>
+          <span>{moduleListsFolder.name}</span>
+        </div>
+      )}
 
       <div className="fm-search-group-label" style={{ padding: "8px 6px 2px" }}>
         Folders

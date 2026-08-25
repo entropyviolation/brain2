@@ -8,7 +8,7 @@ import { useModulesStore } from "./modules-store"
 import { useTaskStore } from "./task-store"
 
 function resetStores() {
-  useTaskStore.setState({ tasks: [], lists: [] } as never)
+  useTaskStore.getState().clearAllData()
   useModulesStore.setState({ modules: [] })
 }
 
@@ -47,6 +47,12 @@ describe("operation-itinerary", () => {
     const placesId = mod!.config.placesCategoryId!
     const places = useTaskStore.getState().tasks.filter((t) => t.lists?.includes(placesId))
     expect(places).toHaveLength(0)
+
+    const placesList = useTaskStore.getState().lists.find((l) => l.id === placesId)
+    expect(placesList?.createdByModuleId).toBe(mod!.id)
+    const child = useTaskStore.getState().folders.find((f) => f.id === `module-lists-${mod!.id}`)
+    expect(child?.listIds).toContain(placesId)
+    expect(useTaskStore.getState().folders.some((f) => f.id === "folder-module-lists")).toBe(true)
 
     // Idempotent
     const again = ensureOperationItineraryModule("op_1")

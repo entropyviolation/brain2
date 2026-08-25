@@ -584,6 +584,14 @@ export interface List {
   // Optional custom icon (orb path or uploaded data URL) for the Lists view.
   icon?: string
   /**
+   * Hide this list from the Lists tab's global All directory / All Items.
+   * Undefined inherits: lists under Module Lists (and unfiled module-created
+   * lists) are hidden. `false` shows the list in All even inside that tree.
+   */
+  hiddenFromGlobalAll?: boolean
+  /** Workspace module that created this list (auto-filed under Module Lists). */
+  createdByModuleId?: string
+  /**
    * Item *type* for items in this list (e.g. "book"). Items created here adopt
    * this type and inherit its attributes/defaults/rules; the list can then layer
    * its own list-specific attributes (`itemAttributes`) and overrides on top.
@@ -765,6 +773,13 @@ export interface Folder {
   scheduleable?: boolean
   // Optional custom icon (orb path or uploaded data URL) for the Lists view.
   icon?: string
+  /**
+   * Hide this folder from the Lists tab's global All directory. Undefined
+   * inherits: folders under Module Lists are hidden. `false` shows it in All.
+   */
+  hiddenFromGlobalAll?: boolean
+  /** Workspace module that owns this auto-created `{ModuleName} Lists` folder. */
+  createdByModuleId?: string
 }
 
 // ---- Period reviews (day / week / month / quarter / year) ----------------

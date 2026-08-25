@@ -3,6 +3,7 @@ import { isFolderAllItemsCategoryId, folderListCategoryIds, getTasksForFolderAll
 import { isScheduledFolderId, getTasksForScheduledFolder } from "@/lib/scheduled-lists-sync"
 import { getRootFolders, getFolderChildren } from "@/lib/folder-tree"
 import { ROOT_ALL_FOLDER_ID, SMART_LISTS, OBJECTIVES_LIST_ID } from "@/components/Lists/constants"
+import { isFolderHiddenFromGlobalAll, isListHiddenFromGlobalAll, filterTasksHiddenFromGlobalAll } from "@/lib/module-lists"
 import type { GridEntry, SmartId } from "@/components/Lists/types"
 
 export interface BuildGridEntriesParams {
@@ -82,13 +83,19 @@ export function buildGridEntries(params: BuildGridEntriesParams): GridEntry[] {
       id: "all-root",
       name: "All Items",
       color: "#64748b",
-      count: allTasks.filter((t) => !t.completed).length,
+      count: filterTasksHiddenFromGlobalAll(
+        allTasks.filter((t) => !t.completed),
+        categories,
+        folders,
+      ).length,
     })
-    getRootFolders(folders).forEach((f) =>
-      add({ kind: "folder", id: f.id, name: f.name, color: f.color, icon: f.icon, count: countForFolder(f) }),
-    )
+    getRootFolders(folders)
+      .filter((f) => !isFolderHiddenFromGlobalAll(f, folders))
+      .forEach((f) =>
+        add({ kind: "folder", id: f.id, name: f.name, color: f.color, icon: f.icon, count: countForFolder(f) }),
+      )
     categories
-      .filter((c) => !isFolderAllItemsCategoryId(c.id))
+      .filter((c) => !isFolderAllItemsCategoryId(c.id) && !isListHiddenFromGlobalAll(c, folders))
       .forEach((c) =>
         add({ kind: "list", id: c.id, name: c.name, color: c.color, icon: c.icon, count: getTasksForCategory(c.id).length }),
       )

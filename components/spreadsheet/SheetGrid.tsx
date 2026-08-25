@@ -105,6 +105,9 @@ interface SheetGridProps {
   viewConfig?: SheetViewConfig
   /** Notified whenever the user changes sort / filter / freeze / widths. */
   onViewConfigChange?: (config: SheetViewConfig) => void
+  selectMode?: boolean
+  selectedTaskIds?: string[]
+  onToggleTaskSelect?: (taskId: string) => void
 }
 
 export function SheetGrid({
@@ -117,6 +120,9 @@ export function SheetGrid({
   className,
   viewConfig,
   onViewConfigChange,
+  selectMode,
+  selectedTaskIds,
+  onToggleTaskSelect,
 }: SheetGridProps) {
   const lists = useTaskStore((s) => s.lists)
   const updateTask = useTaskStore((s) => s.updateTask)
@@ -581,17 +587,31 @@ export function SheetGrid({
           </thead>
           <tbody>
             {displayTasks.map((task, rowIdx) => {
+              const rowSelected = !!selectMode && !!selectedTaskIds?.includes(task.id)
               return (
-              <tr key={task.id} className="hover:bg-muted/40 group" style={{ height: rowHeightOf(task.id) }}>
+              <tr
+                key={task.id}
+                className={`hover:bg-muted/40 group${rowSelected ? " bg-muted/60" : ""}`}
+                style={{ height: rowHeightOf(task.id) }}
+              >
                 <td
                   className="border-b text-center bg-background group-hover:bg-muted/40 relative select-none"
                   style={{ position: "sticky", left: 0, zIndex: 1 }}
                 >
                   <div className="flex items-center justify-center gap-1">
+                    {selectMode && (
+                      <input
+                        type="checkbox"
+                        checked={rowSelected}
+                        aria-label={`Select ${task.description}`}
+                        onChange={() => onToggleTaskSelect?.(task.id)}
+                      />
+                    )}
                     <span className="text-[10px] text-muted-foreground tabular-nums">{rowIdx + 1}</span>
                     <input
                       type="checkbox"
                       checked={!!task.completed}
+                      aria-label={`Complete ${task.description}`}
                       onChange={() => updateTask({ ...task, completed: !task.completed })}
                     />
                   </div>

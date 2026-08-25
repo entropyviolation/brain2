@@ -2,25 +2,37 @@
 
 Mobile entry for the **Home** tab only (Habits, Plan, To Do, Goals, Tracking — including nested sub-tabs). Reuses `HomeDashboard` unchanged so desktop behavior and data stay intact.
 
+## Live sync — paused
+
+Continuous phone ↔ desktop **live sync is deprecated for now**. The existing
+engine (`lib/live-sync.ts`, `components/LiveSync/`) is parked so it cannot
+overwrite data while the rest of COGS is finished. After those surfaces are
+solid, a dedicated **semi-mobile live sync** component will land.
+
+Until then, phones use a **manual pull** (`MobilePullCard`) after the desktop
+seeds the hub.
+
 ## Entry points
 
 | Path | Role |
 |------|------|
 | `app/mobile/page.tsx` | Route `/mobile/` |
-| `MobileApp.tsx` | Login gate + header + `LiveSyncHost` + `HomeDashboard` / Lists |
+| `MobileApp.tsx` | Login gate + header + `HomeDashboard` / Lists |
 | `MobileLogin.tsx` | Credentials: **admin** / **admin** |
 | `MobilePullCard.tsx` | One-tap manual pull from the shared hub |
 | `lib/mobile-auth.ts` | sessionStorage login (no app-data keys) |
-| `lib/mobile-sync.ts` | HTTP client for `scripts/mobile-sync-server.mjs` |
+| `lib/mobile-sync.ts` | HTTP client for the hub (`/api/sync` on the dev server) |
 
-## Same data as desktop (continuous live sync)
+## Same data as desktop (manual, for now)
 
-`npm run dev` serves **Next + sync on one port**. Desktop and phone both auto push/pull every few seconds (live sync chip in the header).
+`npm run dev` serves **Next + the hub API on one port**. Desktop and phone do
+**not** auto push/pull. To copy desktop data onto a phone:
 
 1. On your Mac: stop old servers, then `npm run dev`
-2. Open desktop COGS in the browser at the printed local URL (keep that tab open — it seeds/uploads your data)
-3. Phone (same Wi‑Fi): open the printed `http://<mac-lan-ip>:<port>/mobile/` → login `admin` / `admin`
-4. Wait a couple seconds for the green **Live sync** chip — data should appear and stay in sync both ways
+2. Open desktop COGS in the browser at the printed local URL
+3. Settings → **Force push now** (seeds `data/mobile-sync.json`)
+4. Phone (same Wi‑Fi): open the printed `http://<mac-lan-ip>:<port>/mobile/` → login `admin` / `admin`
+5. Tap **Pull desktop data onto phone**
 
 Hub file: `data/mobile-sync.json` (gitignored). The server never deletes Electron/browser storage by itself.
 
@@ -45,6 +57,6 @@ If `pod install` complains about UTF-8, the npm scripts already export `LANG=en_
 1. `npm run dev`
 2. Note the `phone:` URL printed (includes `/mobile/`)
 3. Open it on iPhone → Share → **Add to Home Screen**
-4. Keep the Mac desktop tab open so live sync stays connected
+4. Use **Pull desktop data onto phone** after a desktop force-push
 
 Login: `admin` / `admin`.

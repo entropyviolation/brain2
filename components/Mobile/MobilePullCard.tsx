@@ -1,6 +1,7 @@
 /**
  * One-tap pull from the shared hub onto this phone.
- * Live sync is opt-in; this is the safe manual path after desktop seeds the hub.
+ * Continuous live sync is parked; this is the current manual path after desktop
+ * seeds the hub. A semi-mobile live sync component will replace this later.
  */
 "use client"
 

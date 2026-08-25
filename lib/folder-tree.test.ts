@@ -80,4 +80,12 @@ describe("folder-tree", () => {
     expect(compareFolders(b, a)).toBeLessThan(0)
     expect(getFolderChildren([a, b, c], "missing")).toEqual([])
   })
+
+  it("orders Module Lists after Next Actions and before user folders", () => {
+    const wanted = folder({ id: "f-wanted", name: "wanted" })
+    const next = folder({ id: "folder-next-actions", name: "next actions" })
+    const modules = folder({ id: "folder-module-lists", name: "Module Lists" })
+    expect(compareFolders(next, modules)).toBeLessThan(0)
+    expect(compareFolders(modules, wanted)).toBeLessThan(0)
+  })
 })

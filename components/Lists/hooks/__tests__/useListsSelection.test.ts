@@ -38,6 +38,28 @@ describe("useListsSelection", () => {
     expect(result.current.selectMode).toBe(false)
     expect(result.current.selectedCategories).toEqual([])
     expect(result.current.selectedFolderIds).toEqual([])
+    expect(result.current.selectedTaskIds).toEqual([])
+  })
+
+  it("toggles item selection and select-all tasks", () => {
+    const { result } = renderHook(() => useListsSelection())
+    act(() => result.current.toggleTaskSelection("task-1"))
+    expect(result.current.selectedTaskIds).toEqual(["task-1"])
+    act(() => result.current.selectAllTasks(["task-1", "task-2"]))
+    expect(result.current.selectedTaskIds).toEqual(["task-1", "task-2"])
+    act(() => result.current.clearTaskSelection())
+    expect(result.current.selectedTaskIds).toEqual([])
+  })
+
+  it("clears item selection when leaving select mode", () => {
+    const { result } = renderHook(() => useListsSelection())
+    act(() => {
+      result.current.toggleSelectMode()
+      result.current.toggleTaskSelection("task-1")
+    })
+    act(() => result.current.toggleSelectMode())
+    expect(result.current.selectMode).toBe(false)
+    expect(result.current.selectedTaskIds).toEqual([])
   })
 
   it("selects all provided lists and folders", () => {

@@ -20,8 +20,12 @@ export function ListContentDetails({
   onCompleteTask,
   onTaskDragStart,
   onDragEnd,
+  selectMode,
+  selectedTaskIds,
+  onToggleTaskSelect,
 }: ListContentDetailsProps) {
   const types = useItemTypeStore((s) => s.types)
+  const selected = new Set(selectedTaskIds)
   const tableCat = openCategory
   // Composed schema: the list's item type attributes + its list-specific extras.
   const attrDefs = tableCat ? listAttributeSchema(tableCat, types) : []
@@ -38,6 +42,7 @@ export function ListContentDetails({
     <table className="fm-table">
       <thead>
         <tr>
+          {selectMode && <th />}
           <th>✓</th>
           <th>Name</th>
           {openFolderAll && <th>Lists</th>}
@@ -56,7 +61,26 @@ export function ListContentDetails({
       </thead>
       <tbody>
         {tasks.map((task) => (
-          <tr key={task.id} draggable onDragStart={(e) => onTaskDragStart(e, task)} onDragEnd={onDragEnd}>
+          <tr
+            key={task.id}
+            className={selectMode && selected.has(task.id) ? "selected" : undefined}
+            draggable={!selectMode}
+            onDragStart={(e) => !selectMode && onTaskDragStart(e, task)}
+            onDragEnd={onDragEnd}
+            onClick={() => {
+              if (selectMode) onToggleTaskSelect?.(task.id)
+            }}
+          >
+            {selectMode && (
+              <td onClick={(e) => e.stopPropagation()}>
+                <input
+                  type="checkbox"
+                  checked={selected.has(task.id)}
+                  aria-label={`Select ${task.description}`}
+                  onChange={() => onToggleTaskSelect?.(task.id)}
+                />
+              </td>
+            )}
             <td>
               <button
                 className="fm-checkbox"
@@ -68,7 +92,14 @@ export function ListContentDetails({
                 {task.completed ? "✓" : ""}
               </button>
             </td>
-            <td onClick={() => onTaskSelect(task.id)} style={{ cursor: "pointer" }}>
+            <td
+              onClick={(e) => {
+                e.stopPropagation()
+                if (selectMode) onToggleTaskSelect?.(task.id)
+                else onTaskSelect(task.id)
+              }}
+              style={{ cursor: "pointer" }}
+            >
               {task.description}
             </td>
             {openFolderAll && currentFolder && (
@@ -92,8 +123,15 @@ export function ListContentDetails({
                 <td>{task.scheduledDate ? safeDateFormat(task.scheduledDate) : "—"}</td>
               </>
             )}
-            <td>
-              <button className="fm-btn fm-btn-sm" onClick={() => onTaskSelect(task.id)}>
+            <td onClick={(e) => e.stopPropagation()}>
+              <button
+                className="fm-btn fm-btn-sm"
+                disabled={!!selectMode}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  if (!selectMode) onTaskSelect(task.id)
+                }}
+              >
                 Open
               </button>
             </td>

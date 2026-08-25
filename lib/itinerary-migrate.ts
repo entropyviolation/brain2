@@ -9,6 +9,7 @@ import { useTaskStore } from "@/lib/task-store"
 import { NOTE_TYPE_ID, NOTE_ATTR } from "@/lib/note-types"
 import type { AttributeDefinition, List } from "@/lib/types"
 import { emptyTripItinerary } from "@/lib/trip-itinerary"
+import { addModuleCreatedLists, taskStoreModuleListsMutators } from "@/lib/module-lists"
 
 const ITINERARY_UI_VERSION = 3
 
@@ -32,11 +33,17 @@ function attr(
   return { id, name, type, ...extra }
 }
 
-function ensurePlacesList(existingId?: string): string {
+function ensurePlacesList(existingId?: string, module?: ModuleInstance): string {
   const store = useTaskStore.getState()
-  if (existingId && store.lists.some((l) => l.id === existingId)) return existingId
+  if (existingId && store.lists.some((l) => l.id === existingId)) {
+    if (module) addModuleCreatedLists(taskStoreModuleListsMutators(), module, store.lists.filter((l) => l.id === existingId))
+    return existingId
+  }
   const byName = store.lists.find((l) => l.name === "City Places")
-  if (byName) return byName.id
+  if (byName) {
+    if (module) addModuleCreatedLists(taskStoreModuleListsMutators(), module, [byName])
+    return byName.id
+  }
 
   const list: List = {
     id: genId("list-city-places"),
@@ -65,7 +72,8 @@ function ensurePlacesList(existingId?: string): string {
     displayedAttributes: ["city", "bucket", "placeKind", "address"],
     defaultAttributeValues: { bucket: "Must do", placeKind: "Place" },
   }
-  store.addList(list)
+  if (module) addModuleCreatedLists(taskStoreModuleListsMutators(), module, [list])
+  else store.addList(list)
   return list.id
 }
 
@@ -148,7 +156,7 @@ export function migrateItineraryModule(module: ModuleInstance): ModuleInstance |
   // Soft repair: Activities was deleted but module is otherwise current
   if (version >= ITINERARY_UI_VERSION && !hasActivities) {
     const ids = guessListIds(module)
-    const placesId = ensurePlacesList(ids.placesId)
+    const placesId = ensurePlacesList(ids.placesId, module)
     const packingIdx = oldViews.findIndex((v) => v.title === "Packing")
     const insertAt = packingIdx >= 0 ? packingIdx : Math.min(2, oldViews.length)
     const activitiesView: ModuleView = {
@@ -175,7 +183,7 @@ export function migrateItineraryModule(module: ModuleInstance): ModuleInstance |
   if (version >= ITINERARY_UI_VERSION) return null
 
   const ids = guessListIds(module)
-  const placesId = ensurePlacesList(ids.placesId)
+  const placesId = ensurePlacesList(ids.placesId, module)
   const planDocId = ensurePlanDoc(module)
 
   const preserved = oldViews.filter((v) => {

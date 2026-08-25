@@ -108,3 +108,78 @@ describe("ListContentPanel folder All list filter", () => {
     expect(screen.queryByRole("group", { name: "Filter lists" })).not.toBeInTheDocument()
   })
 })
+
+describe("ListContentPanel item select mode", () => {
+  it("toggles items in default display without opening them", () => {
+    const onToggleTaskSelect = vi.fn()
+    const onTaskSelect = vi.fn()
+    renderPanel({
+      selectMode: true,
+      selectedTaskIds: ["a"],
+      onToggleTaskSelect,
+      onTaskSelect,
+      openFolderAll: false,
+      openCategory: list("list-1", "list 1"),
+      currentFolder: folder1(),
+      currentDisplay: "default",
+      tasks: [task("a", "item a", "list-1"), task("b", "item b", "list-1")],
+    })
+    expect(screen.getByRole("checkbox", { name: "Select item a" })).toBeChecked()
+    expect(screen.getByRole("checkbox", { name: "Select item b" })).not.toBeChecked()
+    fireEvent.click(screen.getByText("item b"))
+    expect(onToggleTaskSelect).toHaveBeenCalledWith("b")
+    expect(onTaskSelect).not.toHaveBeenCalled()
+  })
+
+  it("keeps complete working in checklist select mode", () => {
+    const onToggleTaskSelect = vi.fn()
+    const onCompleteTask = vi.fn()
+    renderPanel({
+      selectMode: true,
+      selectedTaskIds: [],
+      onToggleTaskSelect,
+      onCompleteTask,
+      currentDisplay: "checklist",
+      openFolderAll: false,
+      openCategory: list("list-1", "list 1"),
+      tasks: [task("a", "item a", "list-1")],
+    })
+    fireEvent.click(screen.getByRole("button", { name: "Complete" }))
+    expect(onCompleteTask).toHaveBeenCalledWith("a")
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select item a" }))
+    expect(onToggleTaskSelect).toHaveBeenCalledWith("a")
+  })
+
+  it("shows select checkboxes in details display", () => {
+    const onToggleTaskSelect = vi.fn()
+    renderPanel({
+      selectMode: true,
+      selectedTaskIds: ["a"],
+      onToggleTaskSelect,
+      currentDisplay: "table",
+      openFolderAll: false,
+      openCategory: list("list-1", "list 1"),
+      tasks: [task("a", "item a", "list-1")],
+    })
+    expect(screen.getByRole("checkbox", { name: "Select item a" })).toBeChecked()
+    expect(screen.getByRole("button", { name: "Open" })).toBeDisabled()
+  })
+
+  it("selects icons without opening the item", () => {
+    const onToggleTaskSelect = vi.fn()
+    const onTaskSelect = vi.fn()
+    renderPanel({
+      selectMode: true,
+      selectedTaskIds: [],
+      onToggleTaskSelect,
+      onTaskSelect,
+      currentDisplay: "icons",
+      openFolderAll: false,
+      openCategory: list("list-1", "list 1"),
+      tasks: [task("a", "item a", "list-1")],
+    })
+    fireEvent.click(screen.getByText("item a"))
+    expect(onToggleTaskSelect).toHaveBeenCalledWith("a")
+    expect(onTaskSelect).not.toHaveBeenCalled()
+  })
+})

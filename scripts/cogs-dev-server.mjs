@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 /**
- * Unified COGS dev server: Next.js + live sync API on ONE port.
+ * Unified COGS dev server: Next.js + mobile hub API on ONE port.
  *
- * Phone and desktop both use the same origin (e.g. http://192.168.x.x:3000),
- * so continuous live sync just works — no separate :3847 URL.
+ * Continuous live sync is parked (see lib/live-sync.ts) until a dedicated
+ * semi-mobile live sync component lands. `/api/sync` remains for manual
+ * push/pull from Settings and `/mobile`.
  *
  *   npm run dev
  *   npm run mobile:dev
@@ -78,14 +79,13 @@ const server = createServer(async (req, res) => {
 server.listen(port, hostname, () => {
   const lans = lanAddresses()
   console.log("")
-  console.log(`[cogs-dev] Ready — Next + live sync on ONE port`)
+  console.log(`[cogs-dev] Ready — Next + hub API on ONE port`)
   console.log(`[cogs-dev] local:   http://127.0.0.1:${port}`)
   for (const ip of lans) {
     console.log(`[cogs-dev] phone:   http://${ip}:${port}/mobile/`)
     console.log(`[cogs-dev] desktop: http://${ip}:${port}/`)
   }
-  console.log(`[cogs-dev] sync:    ${`http://127.0.0.1:${port}`}/api/sync/*  (admin/admin)`)
+  console.log(`[cogs-dev] hub:     ${`http://127.0.0.1:${port}`}/api/sync/*  (admin/admin; live sync parked)`)
   console.log(`[cogs-dev] data:    ${syncDataPath()}`)
-  console.log(`[cogs-dev] Keep the desktop tab open. Phone updates automatically.`)
   console.log("")
 })

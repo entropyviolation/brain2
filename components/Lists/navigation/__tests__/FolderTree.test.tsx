@@ -49,7 +49,8 @@ describe("FolderTree", () => {
     expect(screen.getByText("Work")).toBeInTheDocument()
     expect(screen.getByText("Personal")).toBeInTheDocument()
     expect(screen.getByText("Next Actions")).toBeInTheDocument()
-    expect(screen.queryByText("Scheduled")).not.toBeInTheDocument()
+    // Next Actions auto-expands, so its child is visible; deeper years stay collapsed.
+    expect(screen.getByText("Scheduled")).toBeInTheDocument()
     expect(screen.queryByText("2026")).not.toBeInTheDocument()
   })
 
@@ -125,5 +126,25 @@ describe("FolderTree", () => {
     )
     fireEvent.click(screen.getByLabelText("Edit Work"))
     expect(onEditFolder).toHaveBeenCalledWith(expect.objectContaining({ id: "f1" }))
+  })
+
+  it("adds Module Lists to Quick Access when the folder exists", () => {
+    render(
+      <FolderTree
+        folders={[
+          ...mockFolders,
+          { id: "folder-module-lists", name: "Module Lists", createdAt: new Date(), listIds: [] },
+        ]}
+        location="home"
+        openTarget={null}
+        isHome
+        isAll={false}
+        onNavTo={vi.fn()}
+        onDragOver={vi.fn()}
+        onDrop={vi.fn()}
+        onCreateFolder={vi.fn()}
+      />,
+    )
+    expect(screen.getAllByText("Module Lists").length).toBeGreaterThanOrEqual(2)
   })
 })

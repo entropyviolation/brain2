@@ -1,6 +1,11 @@
 /**
  * lib/live-sync.ts — Continuous two-way sync between desktop and phone.
  *
+ * DEPRECATED for now. The engine is parked while the core app is finished;
+ * a dedicated semi-mobile live sync component will land after that.
+ * Flip `LIVE_SYNC_DEPRECATED` only when that component is ready.
+ * Manual hub push/pull (`lib/mobile-sync.ts`) is unchanged.
+ *
  * Local edits debounce-push; remote changes poll-pull (last-write-wins).
  * Safeguards refuse empty/tiny snapshots so a blank phone cannot wipe desktop.
  */
@@ -26,6 +31,9 @@ import {
 export const LIVE_SYNC_REMOTE_AT_KEY = "cogs-live-sync-remote-at"
 export const LIVE_SYNC_ENABLED_KEY = "cogs-live-sync-enabled"
 
+/** Parked until a dedicated semi-mobile live sync component ships. */
+export const LIVE_SYNC_DEPRECATED = true
+
 const POLL_MS = 2000
 const PUSH_DEBOUNCE_MS = 900
 const PLAN_PREFIXES = ["dayPlan-", "weekPlan-", "monthPlan-"]
@@ -49,8 +57,9 @@ function writeLastRemoteAt(value: string | null) {
   else localStorage.removeItem(LIVE_SYNC_REMOTE_AT_KEY)
 }
 
-/** On by default; set to "0" to pause. */
+/** Off while deprecated; previously on by default unless set to "0". */
 export function isLiveSyncEnabled(): boolean {
+  if (LIVE_SYNC_DEPRECATED) return false
   if (typeof window === "undefined") return false
   return localStorage.getItem(LIVE_SYNC_ENABLED_KEY) !== "0"
 }
@@ -107,7 +116,7 @@ function isSafeToPull(status: MobileSyncStatusResponse): boolean {
  * Start continuous two-way sync. Returns a dispose function.
  */
 export function startLiveSync(onStatus?: Listener): () => void {
-  if (typeof window === "undefined") return () => {}
+  if (typeof window === "undefined" || LIVE_SYNC_DEPRECATED) return () => {}
 
   let disposed = false
   let applyingRemote = false

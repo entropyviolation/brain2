@@ -1,16 +1,27 @@
 /**
  * components/LiveSync/LiveSyncHost.tsx — Always-on mutual sync status + engine.
+ *
+ * DEPRECATED for now: renders nothing and does not start the engine. Kept so
+ * a future semi-mobile live sync component can reuse this host. See
+ * `LIVE_SYNC_DEPRECATED` in `lib/live-sync.ts`.
  */
 "use client"
 
 import { useEffect, useState } from "react"
-import { isLiveSyncEnabled, setLiveSyncEnabled, startLiveSync, type LiveSyncStatus } from "@/lib/live-sync"
+import {
+  LIVE_SYNC_DEPRECATED,
+  isLiveSyncEnabled,
+  setLiveSyncEnabled,
+  startLiveSync,
+  type LiveSyncStatus,
+} from "@/lib/live-sync"
 
 export function LiveSyncHost({ compact = false }: { compact?: boolean }) {
   const [status, setStatus] = useState<LiveSyncStatus | null>(null)
-  const [enabled, setEnabled] = useState(true)
+  const [enabled, setEnabled] = useState(false)
 
   useEffect(() => {
+    if (LIVE_SYNC_DEPRECATED) return
     const on = isLiveSyncEnabled()
     setEnabled(on)
     if (!on) {
@@ -24,6 +35,8 @@ export function LiveSyncHost({ compact = false }: { compact?: boolean }) {
     }
     return startLiveSync(setStatus)
   }, [enabled])
+
+  if (LIVE_SYNC_DEPRECATED) return null
 
   const color =
     status?.state === "synced"

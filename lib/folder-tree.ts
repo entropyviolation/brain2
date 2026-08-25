@@ -49,6 +49,8 @@ export function compareFolders(a: Folder, b: Folder, allFolders?: Folder[]): num
     if (a.id === "folder-next-actions") return -1
     if (b.id === "folder-next-actions") return 1
   }
+  if (a.id === "folder-module-lists") return -1
+  if (b.id === "folder-module-lists") return 1
   return a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
 }
 

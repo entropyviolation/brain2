@@ -1,8 +1,9 @@
 /**
  * components/Mobile/MobileApp.tsx — Sideloadable Home + Lists shell for iOS.
  *
- * Continuous live sync keeps phone ↔ desktop data aligned automatically when
- * both use `npm run dev` (unified Next + sync on one port).
+ * Continuous live sync is parked while the core app is finished. Use
+ * `MobilePullCard` for a one-tap manual pull. A dedicated semi-mobile live
+ * sync component will land after those surfaces are solid.
  */
 "use client"
 
@@ -12,14 +13,12 @@ import { Reviews } from "@/components/Reviews/reviews"
 import { Inbox } from "@/components/inbox"
 import { EnhancedBulkAdd } from "@/components/enhanced-bulk-add"
 import { TaskDetailPopup } from "@/components/task-detail-popup"
-import { LiveSyncHost } from "@/components/LiveSync/LiveSyncHost"
 import { MobileLogin } from "@/components/Mobile/MobileLogin"
 import { MobilePullCard } from "@/components/Mobile/MobilePullCard"
 import { installTouchDnD } from "@/components/Mobile/install-touch-dnd"
 import { clearMobileSession, readMobileSession } from "@/lib/mobile-auth"
 import { Button } from "@/components/ui/button"
 import "@/components/Mobile/mobile.css"
-import "@/components/LiveSync/live-sync.css"
 
 const ListsPanel = lazy(() =>
   import("@/components/Lists/enhanced-list-view").then((mod) => ({ default: mod.EnhancedCategoryView })),
@@ -52,7 +51,6 @@ export function MobileApp() {
             <span>{tab === "home" ? "Home" : "Lists"}</span>
           </div>
           <div className="cogs-mobile-topbar-actions">
-            <LiveSyncHost compact />
             <Inbox onTaskSelect={setSelectedTaskId} />
             <EnhancedBulkAdd />
             <Reviews />

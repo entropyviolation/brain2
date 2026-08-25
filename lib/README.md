@@ -150,6 +150,8 @@ Zod validates writes/imports at the boundary.
 | `lists-icon-grid.ts` | `computeIconGridPositions()` — deterministic x/y grid layout for the freeform Lists icon view, shared by the store and the auto-organize animation. | §6 |
 | `string-utils.ts` | `hashString`, `hashIconSlot` — deterministic hashing for orb selection, icon slots, and connector mock seeds. | — |
 | `api-cache.ts` | In-memory TTL cache + in-flight coalescing + `mapPool` for external API reads (city/place/weather/route). Empty/null misses expire in 30s so a network blip does not stick. | — |
+| `live-sync.ts` | Continuous phone ↔ desktop live sync engine — **parked** (`LIVE_SYNC_DEPRECATED`) until a dedicated semi-mobile live sync component lands. | — |
+| `mobile-sync.ts` | HTTP client for the optional mobile hub (`/api/sync`). Manual push/pull still works; live sync does not auto-start. | — |
 | `remove-background.ts` | Client-side near-uniform background removal for uploaded orb images (corner sampling → transparent PNG). | — |
 | `orbs-manifest.ts` | Auto-generated manifest of PNG orb filenames under `public/orbs-removebackground/`. Do not edit by hand. | — |
 | `utils.ts` | shadcn `cn()` helper (clsx + tailwind-merge). | — |

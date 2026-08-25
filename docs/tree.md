@@ -299,7 +299,10 @@ helpers in `lib/affirmations.ts`).
 - `Settings/SettingsDialog.tsx` (header) — full app **backup/restore**
   (`Settings/BackupRestore.tsx` → `lib/data/backup.ts`) + **Set up Second Brain**
   (seeds Source/Belief item types via `item-type-store.seedSecondBrainTypes`) +
-  **Manage Item Types** (`components/ItemTypes/`).
+  **Manage Item Types** (`components/ItemTypes/`). **Phone ↔ desktop live sync
+  is parked** (`LiveSync/`, `lib/live-sync.ts`) while the rest of the app is
+  finished; a dedicated **semi-mobile live sync** component will follow. Settings
+  still exposes confirm-gated manual hub push/pull (`MobileSyncPanel`).
 - `ItemTypes/ItemTypeList.tsx` + `ItemTypeEditor.tsx` — create/edit/delete user
   **item types**: attribute schema (reuses `AttributeSchemaEditor`), capability
   flags, and declarative `ItemRule*` rules. Built-ins open read-only.
@@ -400,6 +403,8 @@ Data model, Zustand stores (localStorage today → MongoDB), pure helpers. Not R
 | `city-search.ts` / `places-search.ts` | City + place autocomplete for itinerary inputs (cached) |
 | `parse-event-text.ts` | Unstructured itinerary text → calendar event drafts (Plan Paste Events) |
 | `api-cache.ts` | In-memory TTL cache for geocode / places / weather / routes |
+| `live-sync.ts` | Continuous phone ↔ desktop live sync — **parked** until a semi-mobile component lands |
+| `mobile-sync.ts` | HTTP client for the optional mobile hub (manual push/pull only) |
 | `geocode.ts` | `parseCoord` + Open-Meteo URL helper |
 | `weather-client.ts` | Open-Meteo weather + sunrise/sunset for itinerary days |
 | `flight-lookup.ts` / `parse-flight-text.ts` | Flight number lookup + airline-paste parser |

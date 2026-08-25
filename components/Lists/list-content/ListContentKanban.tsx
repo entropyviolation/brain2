@@ -33,7 +33,15 @@ export interface ListContentKanbanProps extends ListContentTaskHandlers {
   listKey: string
 }
 
-export function ListContentKanban({ tasks, openCategory, listKey, onTaskSelect }: ListContentKanbanProps) {
+export function ListContentKanban({
+  tasks,
+  openCategory,
+  listKey,
+  onTaskSelect,
+  selectMode,
+  selectedTaskIds,
+  onToggleTaskSelect,
+}: ListContentKanbanProps) {
   const updateTask = useTaskStore((s) => s.updateTask)
   const kanbanStatusAttrId = useListsUiStore((s) => s.kanbanStatusAttrId)
   const setKanbanStatusAttrId = useListsUiStore((s) => s.setKanbanStatusAttrId)
@@ -49,6 +57,7 @@ export function ListContentKanban({ tasks, openCategory, listKey, onTaskSelect }
 
   const columns = useMemo(() => deriveKanbanColumns(tasks, def), [tasks, def])
   const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks])
+  const selected = new Set(selectedTaskIds)
 
   const moveTask = (taskId: string, columnKey: string) => {
     const task = taskById.get(taskId)
@@ -157,22 +166,36 @@ export function ListContentKanban({ tasks, openCategory, listKey, onTaskSelect }
                 return (
                   <div
                     key={id}
-                    className="fm-card"
-                    draggable
+                    className={`fm-card${selectMode && selected.has(id) ? " selected" : ""}`}
+                    draggable={!selectMode}
                     onDragStart={(e) => {
+                      if (selectMode) return
                       e.dataTransfer.setData(KANBAN_DND_TYPE, id)
                       e.dataTransfer.effectAllowed = "move"
+                    }}
+                    onClick={() => {
+                      if (selectMode) onToggleTaskSelect?.(id)
                     }}
                     style={{
                       border: "1px solid var(--fm-button-shadow, #808080)",
                       background: "var(--fm-window, #fff)",
                       padding: 4,
-                      cursor: "grab",
+                      cursor: selectMode ? "pointer" : "grab",
                       display: "flex",
                       flexDirection: "column",
                       gap: 3,
+                      outline: selectMode && selected.has(id) ? "2px solid var(--fm-dialog-blue, #000080)" : undefined,
                     }}
                   >
+                    {selectMode && (
+                      <input
+                        type="checkbox"
+                        checked={selected.has(id)}
+                        aria-label={`Select ${task.description}`}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={() => onToggleTaskSelect?.(id)}
+                      />
+                    )}
                     <button
                       className="fm-link-text"
                       style={{
@@ -184,10 +207,15 @@ export function ListContentKanban({ tasks, openCategory, listKey, onTaskSelect }
                         cursor: "pointer",
                         textDecoration: task.completed ? "line-through" : "none",
                       }}
-                      onClick={() => onTaskSelect(id)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        if (selectMode) onToggleTaskSelect?.(id)
+                        else onTaskSelect(id)
+                      }}
                     >
                       {task.description}
                     </button>
+                    {!selectMode && (
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 4 }}>
                       <button
                         className="fm-btn fm-btn-sm"
@@ -206,6 +234,7 @@ export function ListContentKanban({ tasks, openCategory, listKey, onTaskSelect }
                         ▶
                       </button>
                     </div>
+                    )}
                   </div>
                 )
               })}

@@ -32,7 +32,9 @@ The global header (all tabs) also renders: **Review** (`Reviews/`), **Settings**
 | `Editor/` | Rich-text/markdown body editor (`RichTextEditor`) + `markdown.ts` serialization, `editor.css` |
 | `Focus/` | `JustStartMode` — ADHD anti-paralysis overlay (one smallest step + 2-minute timer) |
 | `Search/` | `GlobalSearch` Cmd/Ctrl-K command palette + `useGlobalSearchHotkey` |
-| `Settings/` | `SettingsDialog` header entry — `BackupRestore` (full app JSON backup/restore) + Second Brain setup |
+| `Settings/` | `SettingsDialog` header entry — `BackupRestore` (full app JSON backup/restore) + Second Brain setup; live sync is parked (see `LiveSync/`) |
+| `LiveSync/` | Parked continuous live sync host — no-op until a semi-mobile live sync component lands |
+| `Mobile/` | Sideloadable Home + Lists shell (`/mobile`); manual hub pull only while live sync is paused |
 | `Reviews/` | End-of-period review ritual (header dropdown) + `MorningReview`, `PostMortemDialog` |
 | `Tracking/` | `MetricLogger` — quick self-tracking metric capture |
 | `Icons/` | Shared icon system — `Icon`, `OrbPicker`, `icon-registry`, barrel `index.ts` |

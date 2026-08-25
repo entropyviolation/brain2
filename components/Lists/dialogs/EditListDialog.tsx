@@ -4,6 +4,7 @@ import { useMemo, useState } from "react"
 import type { List, Folder, ItemTypeDefinition, ListDisplayMode } from "@/lib/types"
 import type { ListDisplay } from "@/lib/lists-ui-store"
 import { listIsNextActions } from "@/lib/item-utils"
+import { isListHiddenFromGlobalAll } from "@/lib/module-lists"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { iconFor } from "@/components/Lists/lib/icon-utils"
 import { AttributeSchemaEditor, AttributeValuesEditor, listAttributeSchema } from "@/components/Lists/attribute-editor"
@@ -15,7 +16,7 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Trash, CalendarClock, Settings, Star, Shapes, Pencil } from "lucide-react"
+import { Trash, CalendarClock, Settings, Star, Shapes, Pencil, Eye } from "lucide-react"
 
 export interface EditListDialogProps {
   editingCategory: List | null
@@ -361,6 +362,23 @@ export function EditListDialog({
             <Switch
               checked={homePinned.includes(editingCategory.id)}
               onCheckedChange={() => toggleHomePin(editingCategory.id)}
+            />
+          </div>
+          <div className="flex items-center justify-between rounded-lg border p-3">
+            <div className="space-y-0.5">
+              <Label className="flex items-center gap-2">
+                <Eye className="h-4 w-4" />
+                Show in All
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Include this list in the global All directory. Module-created lists are hidden by default.
+              </p>
+            </div>
+            <Switch
+              checked={!isListHiddenFromGlobalAll(editingCategory, folders)}
+              onCheckedChange={(checked) =>
+                onEditingCategoryChange({ ...editingCategory, hiddenFromGlobalAll: !checked })
+              }
             />
           </div>
         </div>

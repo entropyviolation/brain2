@@ -14,6 +14,10 @@
  * search (folders, lists, items), whether to include hidden items, and whether
  * to match titles only or any text value within a record.
  *
+ * Lists and folders hidden from the Lists tab's global All directory (Module
+ * Lists and autocreated module lists) remain searchable here — "hidden" in the
+ * advanced options only refers to completed / hidden-from-To-Do items.
+ *
  * No shadcn `command` primitive exists in `components/ui/`, so this is built on
  * the `dialog` + `input` primitives with a hand-rolled, accessible results list.
  */

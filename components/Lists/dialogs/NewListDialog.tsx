@@ -1,6 +1,7 @@
 "use client"
 
 import type { Folder } from "@/lib/types"
+import type { ItemPlacementMode } from "@/lib/item-selection"
 import { LIST_TEMPLATES } from "@/components/Lists/constants"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -25,6 +26,10 @@ export interface NewListDialogProps {
   onScheduleableChange: (v: boolean) => void
   onTemplateChange: (v: string) => void
   onCreate: () => void
+  selectedCount?: number
+  placementMode?: ItemPlacementMode
+  canMove?: boolean
+  onPlacementModeChange?: (mode: ItemPlacementMode) => void
 }
 
 export function NewListDialog({
@@ -43,6 +48,10 @@ export function NewListDialog({
   onScheduleableChange,
   onTemplateChange,
   onCreate,
+  selectedCount = 0,
+  placementMode = "keep",
+  canMove = true,
+  onPlacementModeChange,
 }: NewListDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -50,7 +59,13 @@ export function NewListDialog({
         <DialogHeader>
           <DialogTitle>Create New List</DialogTitle>
           <DialogDescription>
-            {currentFolder
+            {selectedCount > 0
+              ? canMove
+                ? placementMode === "move"
+                  ? "Name your list. Selected items will be moved into it."
+                  : "Name your list. Selected items will also stay in the current list."
+                : "Name your list. Selected items will be added to it without leaving their current lists."
+              : currentFolder
               ? `Create a new list inside "${currentFolder.name}". Settings are inherited from the folder by default.`
               : isHome
                 ? "Create a new list (it will be pinned to Home)."
@@ -103,6 +118,30 @@ export function NewListDialog({
             </div>
             <Switch id="category-scheduleable" checked={scheduleable} onCheckedChange={onScheduleableChange} />
           </div>
+          {selectedCount > 0 && onPlacementModeChange && (
+            <div className="space-y-2 rounded-lg border p-3">
+              <Label>Selected items</Label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  name="new-list-placement"
+                  checked={placementMode === "keep"}
+                  onChange={() => onPlacementModeChange("keep")}
+                />
+                Keep in the current list and add here
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  name="new-list-placement"
+                  checked={placementMode === "move"}
+                  disabled={!canMove}
+                  onChange={() => onPlacementModeChange("move")}
+                />
+                Move out of the current list
+              </label>
+            </div>
+          )}
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cancel

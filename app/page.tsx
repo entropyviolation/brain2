@@ -28,8 +28,6 @@ import { useTaskStore } from "@/lib/task-store"
 import { useQuickCaptureHotkey } from "@/hooks/useQuickCaptureHotkey"
 import { MetricLoggerButton } from "@/components/Tracking/MetricLogger"
 import { SettingsDialog } from "@/components/Settings/SettingsDialog"
-import { LiveSyncHost } from "@/components/LiveSync/LiveSyncHost"
-import "@/components/LiveSync/live-sync.css"
 import { parseModulePopoutModuleId } from "@/components/Modules/workspace/ModuleWorkspace"
 import { parseSheetPopoutCategoryId } from "@/components/spreadsheet/sheet-popout"
 import { initWorkflowEngine, createTaskRepositoryAdapter } from "@/lib/services/item-mutation-service"
@@ -190,7 +188,6 @@ export default function Home() {
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold">COGS</h1>
           <div className="flex items-center gap-4">
-            <LiveSyncHost />
             <Reviews />
             <SettingsDialog />
             <CognitiveState />

@@ -33,6 +33,12 @@ import {
 } from "@/lib/folder-all-items"
 import { buildGridEntries, ROOT_ALL_FOLDER_ID } from "@/lib/lists-grid-entries"
 import { destinationFoldersForSelection, originFolderIdToUnlink, wouldCreateFolderCycle, type ListPlacementMode } from "@/lib/folder-selection"
+import {
+  canMoveItemsFromOpenList,
+  destinationListsForSelection,
+  placeTaskInList,
+  type ItemPlacementMode,
+} from "@/lib/item-selection"
 import { applyListMerge, type ListMergePlan } from "@/lib/list-merge"
 import { selectableEntryIds } from "@/lib/lists-folder-search"
 import {
@@ -47,6 +53,12 @@ import { NextActionsSettingsDialog } from "@/components/Lists/settings-dialog"
 import { DailyHabitsList, WeeklyHabitsList, MonthlyHabitsList } from "@/components/Lists/daily-habits-list"
 import { ObjectivesList } from "@/components/Lists/objectives-list"
 import { useGoalsStore } from "@/lib/goals-store"
+import { useModulesStore } from "@/lib/modules-store"
+import {
+  filterTasksHiddenFromGlobalAll,
+  syncModuleListFolders,
+  taskStoreModuleListsMutators,
+} from "@/lib/module-lists"
 import { useListsNavigation } from "@/components/Lists/hooks/useListsNavigation"
 import { useListsSearch } from "@/components/Lists/hooks/useListsSearch"
 import { useListsDragDrop } from "@/components/Lists/hooks/useListsDragDrop"
@@ -56,6 +68,7 @@ import { FolderTree } from "@/components/Lists/navigation/FolderTree"
 import { getBreadcrumb } from "@/components/Lists/navigation/BreadcrumbNav"
 import { ListsToolbar } from "@/components/Lists/toolbar/ListsToolbar"
 import { SelectionToolbar } from "@/components/Lists/toolbar/SelectionToolbar"
+import { ItemSelectionToolbar } from "@/components/Lists/toolbar/ItemSelectionToolbar"
 import { FolderViewIcons } from "@/components/Lists/views/FolderViewIcons"
 import { FolderViewList } from "@/components/Lists/views/FolderViewList"
 import { FolderViewDetails } from "@/components/Lists/views/FolderViewDetails"
@@ -95,6 +108,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
   const addList = useTaskStore((s) => s.addList)
   const updateList = useTaskStore((s) => s.updateList)
   const deleteList = useTaskStore((s) => s.deleteList)
+  const deleteTask = useTaskStore((s) => s.deleteTask)
   const setLists = useTaskStore((s) => s.setLists)
   const setFolders = useTaskStore((s) => s.setFolders)
   const setTasks = useTaskStore((s) => s.setTasks)
@@ -104,6 +118,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
   const dedupeLists = useTaskStore((s) => s.dedupeLists)
   const itemTypes = useItemTypeStore((s) => s.types)
   const objectiveCount = useGoalsStore((s) => s.objectives.filter((o) => !o.archived).length)
+  const modules = useModulesStore((s) => s.modules)
 
   const homePinned = useListsUiStore((s) => s.homePinned)
   const toggleHomePin = useListsUiStore((s) => s.toggleHomePin)
@@ -156,8 +171,9 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
 
   const { location, openTarget, setOpenTarget, closeTarget, isHome, isAll, currentFolder, navTo, openEntry, activeIconId, setActiveIconId, setLocation } = nav
   const { searchTerm, setSearchTerm, searchActive, searchResults } = search
-  const { selectMode, selectedCategories, setSelectedCategories, selectedFolderIds, toggleSelectMode, toggleCategorySelection, toggleFolderSelection, selectAll, clearSelection } = selection
+  const { selectMode, selectedCategories, setSelectedCategories, selectedFolderIds, selectedTaskIds, toggleSelectMode, toggleCategorySelection, toggleFolderSelection, toggleTaskSelection, selectAll, selectAllTasks, clearSelection, clearTaskSelection } = selection
   const [placementMode, setPlacementMode] = useState<ListPlacementMode>("keep")
+  const [itemPlacementMode, setItemPlacementMode] = useState<ItemPlacementMode>("keep")
   const [mergeConfirmOpen, setMergeConfirmOpen] = useState(false)
   const [mergeOpen, setMergeOpen] = useState(false)
 
@@ -197,13 +213,14 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
         syncNextActionsSmartLists(mut)
         syncScheduledFolderHierarchy(allTasks, mut)
         syncFolderAllItemsCategories(mut)
+        syncModuleListFolders(taskStoreModuleListsMutators(), modules)
       })
     })
     return () => {
       cancelled = true
       cancelAnimationFrame(frame)
     }
-  }, [allTasks])
+  }, [allTasks, modules])
 
   const getSmartTasks = useCallback(
     (id: SmartId) => smartTasksFor(taskIndex, id),
@@ -292,7 +309,9 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
       }
       return getTasksForCategory(openTarget.id)
     }
-    if (openTarget.type === "folder-all" && openTarget.folderId === ROOT_ALL_FOLDER_ID) return allTasks.filter((t) => !t.completed)
+    if (openTarget.type === "folder-all" && openTarget.folderId === ROOT_ALL_FOLDER_ID) {
+      return filterTasksHiddenFromGlobalAll(allTasks.filter((t) => !t.completed), categories, folders)
+    }
     if (openTarget.type === "folder-all" && currentFolder) {
       if (isScheduledFolderId(currentFolder.id)) return getTasksForScheduledFolder(allTasks, currentFolder.id)
       let items = getTasksForFolderAllView(allTasks, currentFolder)
@@ -306,7 +325,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
     }
     if (openTarget.type === "smart") return getSmartTasks(openTarget.id)
     return []
-  }, [openTarget, allTasks, currentFolder, folderAllUncategorizedOnly, folderAllHiddenListIds, currentDisplay, getSmartTasks, getTasksForCategory])
+  }, [openTarget, allTasks, categories, folders, currentFolder, folderAllUncategorizedOnly, folderAllHiddenListIds, currentDisplay, getSmartTasks, getTasksForCategory])
 
   const breadcrumb = getBreadcrumb({ searchActive, searchTerm, openTarget, openName, isHome, isAll, currentFolderName: currentFolder?.name })
   const statusText = openTarget ? `${openTasks.length} item(s) in "${openName}"` : `${entries.filter((e) => e.kind === "folder").length} folder(s), ${entries.filter((e) => e.kind !== "folder").length} list(s)`
@@ -335,13 +354,34 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
     })
     if (currentFolder) addListToFolder(currentFolder.id, id)
     if (isHome) toggleHomePin(id)
+    if (selectedTaskIds.length > 0) {
+      const state = useTaskStore.getState()
+      const originListId = openTarget?.type === "category" ? openTarget.id : null
+      const canMove = canMoveItemsFromOpenList(originListId)
+      const mode: ItemPlacementMode = canMove ? itemPlacementMode : "keep"
+      selectedTaskIds.forEach((taskId) => {
+        const t = state.tasks.find((x) => x.id === taskId)
+        if (!t) return
+        updateTask(
+          placeTaskInList(t, id, {
+            mode,
+            originListId,
+            canMove,
+            lists: state.lists,
+            folders: state.folders,
+            types: itemTypes,
+          }),
+        )
+      })
+      selection.cancelSelectMode()
+    }
     setNewCategoryOpen(false)
     setNewCategoryName("")
     setNewCategoryDescription("")
     setNewCategoryColor("#3B82F6")
     setNewCategoryScheduleable(true)
     setNewCategoryTemplate("none")
-  }, [newCategoryName, newCategoryColor, newCategoryDescription, newCategoryScheduleable, newCategoryTemplate, addList, categories.length, currentFolder, addListToFolder, isHome, toggleHomePin])
+  }, [newCategoryName, newCategoryColor, newCategoryDescription, newCategoryScheduleable, newCategoryTemplate, addList, categories.length, currentFolder, addListToFolder, isHome, toggleHomePin, selectedTaskIds, openTarget, itemPlacementMode, updateTask, itemTypes, selection])
 
   const handleEditCategory = useCallback(() => {
     if (editingCategory) {
@@ -510,10 +550,59 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
     ],
   )
 
+  const originListId = openTarget?.type === "category" ? openTarget.id : null
+  const itemCanMove = canMoveItemsFromOpenList(originListId)
+  const effectiveItemPlacement: ItemPlacementMode = itemCanMove ? itemPlacementMode : "keep"
+  const itemSelectActive = !!(
+    selectMode &&
+    openTarget &&
+    openTarget.type !== "habits" &&
+    openTarget.type !== "objectives" &&
+    !searchActive
+  )
+  const openListKey = openTarget && openTarget.type !== "habits" && openTarget.type !== "objectives" ? openTargetKey(openTarget) : ""
+  useEffect(() => {
+    clearTaskSelection()
+  }, [openListKey, clearTaskSelection])
+
+  const placeItemsIntoList = useCallback(
+    (destListId: string) => {
+      const state = useTaskStore.getState()
+      selectedTaskIds.forEach((taskId) => {
+        const t = state.tasks.find((x) => x.id === taskId)
+        if (!t) return
+        updateTask(
+          placeTaskInList(t, destListId, {
+            mode: effectiveItemPlacement,
+            originListId,
+            canMove: itemCanMove,
+            lists: state.lists,
+            folders: state.folders,
+            types: itemTypes,
+          }),
+        )
+      })
+      selection.cancelSelectMode()
+    },
+    [selectedTaskIds, effectiveItemPlacement, originListId, itemCanMove, updateTask, itemTypes, selection],
+  )
+
   const handleSelectAllVisible = useCallback(() => {
     const ids = selectableEntryIds(entries)
     selectAll(ids.listIds, ids.folderIds)
   }, [entries, selectAll])
+
+  const handleSelectAllItems = useCallback(() => {
+    selectAllTasks(openTasks.map((t) => t.id))
+  }, [openTasks, selectAllTasks])
+
+  const handleDeleteSelectedItems = useCallback(() => {
+    const n = selectedTaskIds.length
+    if (n === 0) return
+    if (!confirm(`Delete ${n} item${n === 1 ? "" : "s"}? This cannot be undone.`)) return
+    selectedTaskIds.forEach((id) => deleteTask(id))
+    selection.cancelSelectMode()
+  }, [selectedTaskIds, deleteTask, selection])
 
   const handleDeleteSelected = useCallback(() => {
     const listCount = selectedCategories.length
@@ -639,6 +728,9 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
           onTaskDragStart={drag.handleTaskDragStart}
           onDragEnd={drag.clearDrag}
           onIconPickerOpen={(taskId) => setIconPickerFor({ kind: "task", id: taskId })}
+          selectMode={selectMode}
+          selectedTaskIds={selectedTaskIds}
+          onToggleTaskSelect={toggleTaskSelection}
         />
       )
     }
@@ -772,7 +864,21 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
             <div className="fm-status-field">{breadcrumb}</div>
           </div>
 
-          {selectMode && (
+          {itemSelectActive && (
+            <ItemSelectionToolbar
+              selectedCount={selectedTaskIds.length}
+              placementMode={effectiveItemPlacement}
+              canMove={itemCanMove}
+              destinationLists={destinationListsForSelection(categories, { currentListId: originListId })}
+              onSelectAll={handleSelectAllItems}
+              onDeselectAll={clearTaskSelection}
+              onPlacementModeChange={setItemPlacementMode}
+              onAddToNewList={openNewCategoryDialog}
+              onAddToList={placeItemsIntoList}
+              onDelete={handleDeleteSelectedItems}
+            />
+          )}
+          {selectMode && !itemSelectActive && (
             <SelectionToolbar
               selectedListCount={selectedCategories.length}
               selectedFolderCount={selectedFolderIds.length}
@@ -883,7 +989,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
         </div>
       </div>
 
-      <NewListDialog open={newCategoryOpen} currentFolder={currentFolder} isHome={isHome} name={newCategoryName} description={newCategoryDescription} color={newCategoryColor} scheduleable={newCategoryScheduleable} template={newCategoryTemplate} onOpenChange={setNewCategoryOpen} onNameChange={setNewCategoryName} onDescriptionChange={setNewCategoryDescription} onColorChange={setNewCategoryColor} onScheduleableChange={setNewCategoryScheduleable} onTemplateChange={setNewCategoryTemplate} onCreate={handleCreateCategory} />
+      <NewListDialog open={newCategoryOpen} currentFolder={currentFolder} isHome={isHome} name={newCategoryName} description={newCategoryDescription} color={newCategoryColor} scheduleable={newCategoryScheduleable} template={newCategoryTemplate} selectedCount={selectedTaskIds.length} placementMode={effectiveItemPlacement} canMove={itemCanMove} onPlacementModeChange={setItemPlacementMode} onOpenChange={setNewCategoryOpen} onNameChange={setNewCategoryName} onDescriptionChange={setNewCategoryDescription} onColorChange={setNewCategoryColor} onScheduleableChange={setNewCategoryScheduleable} onTemplateChange={setNewCategoryTemplate} onCreate={handleCreateCategory} />
       {csvImport && <CsvImportDialog csvImport={csvImport} categories={categories} onClose={() => setCsvImport(null)} onImport={performCsvImport} onUpdate={setCsvImport} />}
       <EditListDialog editingCategory={editingCategory} onEditingCategoryChange={setEditingCategory} folders={folders} homePinned={homePinned} listDisplay={listDisplay} setListDisplay={setListDisplay} toggleHomePin={toggleHomePin} onOpenIconPicker={() => editingCategory && setIconPickerFor({ kind: "category", id: editingCategory.id })} onSave={handleEditCategory} onDelete={() => { if (editingCategory && confirm(`Delete list "${editingCategory.name}"?`)) { deleteList(editingCategory.id); if (openTarget?.type === "category" && openTarget.id === editingCategory.id) closeTarget(); setEditingCategory(null) } }} />
       <EditFolderDialog editingFolder={editingFolder} onEditingFolderChange={setEditingFolder} homePinned={homePinned} toggleHomePin={toggleHomePin} onOpenIconPicker={() => editingFolder && setIconPickerFor({ kind: "folder", id: editingFolder.id })} onSave={() => { if (editingFolder) { updateFolder(editingFolder); setEditingFolder(null) } }} onDelete={() => { if (editingFolder && confirm("Delete this folder? The lists inside it will not be deleted.")) { deleteFolder(editingFolder.id); if (location === editingFolder.id) navTo("all"); setEditingFolder(null) } }} />

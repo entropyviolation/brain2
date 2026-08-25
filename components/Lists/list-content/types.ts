@@ -9,6 +9,9 @@ export interface ListContentTaskHandlers {
   onCompleteTask: (taskId: string) => void
   onTaskDragStart: (e: React.DragEvent, task: Task) => void
   onDragEnd: () => void
+  selectMode?: boolean
+  selectedTaskIds?: string[]
+  onToggleTaskSelect?: (taskId: string) => void
 }
 
 export interface ListContentDefaultProps extends ListContentTaskHandlers {

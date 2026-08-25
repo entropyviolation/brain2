@@ -17,6 +17,7 @@ import { createListItem, withCategoryDefaults } from "@/lib/item-utils"
 import { useTaskStore } from "@/lib/task-store"
 import { useModulesStore } from "@/lib/modules-store"
 import { useWorkflowsStore } from "@/lib/workflows-store"
+import { addModuleCreatedLists, taskStoreModuleListsMutators } from "@/lib/module-lists"
 import { FILMRECS_SHELVES } from "@/lib/filmrecs-types"
 import { seedFilmToTask, type SeedFilm } from "@/lib/filmrecs-catalog"
 import filmrecsSeed from "@/lib/filmrecs-seed.json"
@@ -737,7 +738,7 @@ export function buildModuleTemplate(id: ModuleTemplateId, seedNum = Date.now()):
 export function instantiateModuleTemplate(id: ModuleTemplateId): string {
   const built = buildModuleTemplate(id)
   const taskStore = useTaskStore.getState()
-  built.lists.forEach((c) => taskStore.addList(c))
+  addModuleCreatedLists(taskStoreModuleListsMutators(), built.module, built.lists)
   built.seedTasks.forEach((t) => taskStore.addTask(t))
   useModulesStore.getState().addModuleInstance(built.module)
   built.workflows?.forEach((w) => useWorkflowsStore.getState().addWorkflowDefinition(w))

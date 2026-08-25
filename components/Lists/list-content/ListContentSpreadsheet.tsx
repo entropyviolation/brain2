@@ -19,6 +19,9 @@ export function ListContentSpreadsheet({
   openCategory,
   itemLabel,
   onTaskSelect,
+  selectMode,
+  selectedTaskIds,
+  onToggleTaskSelect,
   viewConfig,
   onViewConfigChange,
 }: ListContentDetailsProps & {
@@ -33,10 +36,13 @@ export function ListContentSpreadsheet({
       tasks={tasks}
       onOpenItem={onTaskSelect}
       newItemLabel={itemLabel || "item"}
-      enableAddRow={!!openCategory}
+      enableAddRow={!!openCategory && !selectMode}
       className="p-1"
       viewConfig={viewConfig}
       onViewConfigChange={onViewConfigChange}
+      selectMode={selectMode}
+      selectedTaskIds={selectedTaskIds}
+      onToggleTaskSelect={onToggleTaskSelect}
     />
   )
 }

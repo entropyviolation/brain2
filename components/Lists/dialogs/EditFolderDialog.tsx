@@ -3,13 +3,15 @@
 import type { Folder } from "@/lib/types"
 import { isScheduledFolderId } from "@/lib/scheduled-lists-sync"
 import { isAutoScheduledPeriodFolder } from "@/lib/folder-tree"
+import { isFolderHiddenFromGlobalAll } from "@/lib/module-lists"
+import { useTaskStore } from "@/lib/task-store"
 import { FolderGlyph } from "@/components/Lists/lib/icon-utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Trash, CalendarClock, Settings, Star } from "lucide-react"
+import { Trash, CalendarClock, Settings, Star, Eye } from "lucide-react"
 
 export interface EditFolderDialogProps {
   editingFolder: Folder | null
@@ -30,10 +32,12 @@ export function EditFolderDialog({
   onSave,
   onDelete,
 }: EditFolderDialogProps) {
+  const folders = useTaskStore((s) => s.folders)
   if (!editingFolder) return null
 
   const isSystemScheduled = isScheduledFolderId(editingFolder.id)
   const isAutoPeriod = isAutoScheduledPeriodFolder(editingFolder.id)
+  const hiddenFromAll = isFolderHiddenFromGlobalAll(editingFolder, folders)
 
   return (
     <Dialog open={!!editingFolder} onOpenChange={() => onEditingFolderChange(null)}>
@@ -124,6 +128,23 @@ export function EditFolderDialog({
             <Switch
               checked={homePinned.includes(editingFolder.id)}
               onCheckedChange={() => toggleHomePin(editingFolder.id)}
+            />
+          </div>
+          <div className="flex items-center justify-between rounded-lg border p-3">
+            <div className="space-y-0.5">
+              <Label className="flex items-center gap-2">
+                <Eye className="h-4 w-4" />
+                Show in All
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Include this folder in the global All directory. Module Lists folders are hidden by default.
+              </p>
+            </div>
+            <Switch
+              checked={!hiddenFromAll}
+              onCheckedChange={(checked) =>
+                onEditingFolderChange({ ...editingFolder, hiddenFromGlobalAll: !checked })
+              }
             />
           </div>
           <div className="flex justify-between gap-2">

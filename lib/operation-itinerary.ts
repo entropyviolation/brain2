@@ -11,6 +11,7 @@ import { useModulesStore, type ModuleInstance, type ModuleView } from "@/lib/mod
 import { OPERATION_ATTR } from "@/lib/operation-types"
 import { useTaskStore } from "@/lib/task-store"
 import { emptyTripItinerary } from "@/lib/trip-itinerary"
+import { addModuleCreatedLists, taskStoreModuleListsMutators } from "@/lib/module-lists"
 
 function isoDate(d: Date): string {
   return d.toISOString().slice(0, 10)
@@ -94,16 +95,16 @@ export function ensureOperationItineraryModule(operationId: string): ModuleInsta
     ),
   }
 
-  built.lists.forEach((list) => {
-    // Only City Places is required for the map; keep packing/todo lists out of the way
-    if (placesId && list.id === placesId) {
-      taskStore.addList({
-        ...list,
+  const placesList = built.lists.find((list) => placesId && list.id === placesId)
+  if (placesList) {
+    addModuleCreatedLists(taskStoreModuleListsMutators(), module, [
+      {
+        ...placesList,
         name: `Places — ${op.description.trim() || "Operation"}`,
         description: "Places and stays plotted on the operation Activities map.",
-      })
-    }
-  })
+      },
+    ])
+  }
 
   if (planDoc) {
     taskStore.addTask({

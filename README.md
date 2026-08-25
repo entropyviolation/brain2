@@ -200,7 +200,10 @@ COGS is **offline-first and stays that way**. The full architectural plan lives 
   and pure logic (search, needs-attention, links, scheduling) — shared
   by web, desktop, and mobile.
 - **Future mobile app** (Expo / React Native) consuming `@cogs/core` + a local
-  cache + the same syncing remote data source.
+  cache + the same syncing remote data source. Experimental phone ↔ desktop
+  **continuous live sync is parked** for now (`lib/live-sync.ts`) so the rest of
+  the app can be finished first; a dedicated **semi-mobile live sync** component
+  will land after that.
 - **External connectors** (read-only providers, starting with **weather**) feed
   widgets: fetched when online, cached locally with a TTL, degrading gracefully
   offline. Deliberately **not** on the user-data sync path.
@@ -237,8 +240,10 @@ npm run test:e2e                 # Playwright (Lists flows; starts dev server)
 | `components/ItemDetail/` | Consolidated item/task detail (page + popup) | [`components/ItemDetail/README.md`](components/ItemDetail/README.md) |
 | `components/Editor/` | Rich-text/markdown body editor | [`components/Editor/README.md`](components/Editor/README.md) |
 | `components/Search/` | Global Cmd/Ctrl-K search palette | [`components/Search/README.md`](components/Search/README.md) |
-| `components/Settings/` | Backup/restore + Second Brain setup | [`components/Settings/README.md`](components/Settings/README.md) |
+| `components/Settings/` | Backup/restore + Second Brain setup (live sync parked) | [`components/Settings/README.md`](components/Settings/README.md) |
 | `components/Focus/` | Just-Start anti-paralysis mode | [`components/Focus/README.md`](components/Focus/README.md) |
+| `components/LiveSync/` | Parked continuous live sync (future semi-mobile component) | [`components/LiveSync/README.md`](components/LiveSync/README.md) |
+| `components/Mobile/` | Sideload Home + Lists shell; manual hub pull only | [`components/Mobile/README.md`](components/Mobile/README.md) |
 | `components/Icons/` | Shared icon system + orb picker | [`components/Icons/README.md`](components/Icons/README.md) |
 | `components/Tracking/` | Quick self-tracking metric logger | — |
 | `components/Reviews/` | End-of-period review ritual (header) + post-mortems | [`components/Reviews/README.md`](components/Reviews/README.md) |
