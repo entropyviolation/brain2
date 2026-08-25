@@ -39,9 +39,8 @@ components/Lists/
 │   ├── ListContentChecklist.tsx   # Checklist with complete checkbox
 │   ├── ListContentIcons.tsx       # Per-item icon grid
 │   ├── ListContentDetails.tsx     # Table/details mode with attributes
-│   ├── ListContentKanban.tsx      # Kanban board grouped by a status attribute
 │   ├── ListContentSpreadsheet.tsx # Spreadsheet grid (wraps components/spreadsheet/SheetGrid)
-│   ├── kanban-utils.ts            # Pure column derivation + value-write helpers (see kanban.README.md)
+│   ├── kanban-utils.ts            # Pure column helpers for the Modules Kanban view (see kanban.README.md)
 │   └── types.ts                   # Shared list-content prop interfaces
 ├── dialogs/
 │   ├── NewListDialog.tsx          # Create list
@@ -96,9 +95,8 @@ Icons (velvet desktop), List, Details, Cards — persisted in `lib/lists-ui-stor
 
 ### List content displays (when a list is open)
 
-Default, Checklist, Icons, Details (table), **Kanban**, and **Spreadsheet** — per-list setting in the UI store. Implemented in `list-content/ListContent*.tsx`, orchestrated by `ListContentPanel.tsx`.
+Default, Checklist, Icons, Details (table), and **Spreadsheet** — per-list setting in the UI store. Implemented in `list-content/ListContent*.tsx`, orchestrated by `ListContentPanel.tsx`.
 
-- **Kanban**: board grouped by a chosen selection/status attribute; drag cards or use ◀ ▶ to move between columns (writes the attribute value back). Pure column logic in `kanban-utils.ts`; details in `list-content/kanban.README.md`.
 - **Spreadsheet**: editable Google-Sheets-style grid of items × attribute columns, reusing `components/spreadsheet/SheetGrid` (inline editing, A1 headers + row gutter, drag/shift-click range selection with a Sum/Avg/Min/Max/Count bar, per-cell `=A1` formulas + fill handle, row/column resize, column totals, add-row/column).
 
 ## Key features

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { migrateCategoryToList } from "@/lib/task-store"
+import { migrateCategoryToList, migrateStripKanbanListDisplays } from "@/lib/task-store"
 
 /**
  * v9 category→list migration: a pre-v9 persisted payload keys lists/folders/tasks
@@ -69,5 +69,25 @@ describe("task-store v9 migrateCategoryToList", () => {
       folders: [{ id: "f1", name: "Books", listIds: ["reading"] }],
     }
     expect(migrateCategoryToList(v9)).toEqual(v9)
+  })
+})
+
+describe("task-store v10 migrateStripKanbanListDisplays", () => {
+  it("removes kanban from enabledDisplays and drops the field when nothing remains", () => {
+    const migrated = migrateStripKanbanListDisplays({
+      lists: [
+        { id: "a", enabledDisplays: ["default", "kanban", "spreadsheet"] },
+        { id: "b", enabledDisplays: ["kanban"] },
+        { id: "c", name: "plain" },
+      ],
+    })
+    expect(migrated.lists[0].enabledDisplays).toEqual(["default", "spreadsheet"])
+    expect(migrated.lists[1]).not.toHaveProperty("enabledDisplays")
+    expect(migrated.lists[2]).toEqual({ id: "c", name: "plain" })
+  })
+
+  it("is a no-op when lists are missing", () => {
+    expect(migrateStripKanbanListDisplays({ folders: [] })).toEqual({ folders: [] })
+    expect(migrateStripKanbanListDisplays(null)).toBeNull()
   })
 })

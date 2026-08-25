@@ -1,7 +1,7 @@
 "use client"
 
 import type { FolderView, ListDisplay } from "@/lib/lists-ui-store"
-import type { ListDisplayMode } from "@/lib/types"
+import { LIST_DISPLAY_MODES, type ListDisplayMode } from "@/lib/types"
 import type { OpenTarget } from "@/components/Lists/types"
 import { openTargetKey } from "@/components/Lists/open-target"
 
@@ -51,7 +51,7 @@ export function ViewModeControls({
 
   if (openTarget.type === "habits" || openTarget.type === "objectives") return null
 
-  const allModes: ListDisplay[] = ["default", "checklist", "icons", "table", "spreadsheet", "kanban"]
+  const allModes: ListDisplay[] = [...LIST_DISPLAY_MODES]
   // Only filter for real lists (which carry `enabledDisplays`); smart lists and
   // folder "All Items" views always offer every mode.
   const modes =
@@ -68,13 +68,7 @@ export function ViewModeControls({
           className={`fm-btn fm-btn-sm${currentDisplay === d ? " active" : ""}`}
           onClick={() => onListDisplayChange(openTargetKey(openTarget), d)}
         >
-          {d === "table"
-            ? "Details"
-            : d === "spreadsheet"
-              ? "Spreadsheet"
-              : d === "kanban"
-                ? "Kanban"
-                : d[0].toUpperCase() + d.slice(1)}
+          {d === "table" ? "Details" : d === "spreadsheet" ? "Spreadsheet" : d[0].toUpperCase() + d.slice(1)}
         </button>
       ))}
     </>

@@ -3,10 +3,16 @@
  */
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
+import { useState } from "react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetLocalStorage } from "@/tests/test-utils"
 import { useTaskStore } from "@/lib/task-store"
 import { ListPicker } from "./list-picker"
+
+function ControlledPicker(props: { excludeIds?: string[]; mode?: "single" | "multi" }) {
+  const [selected, setSelected] = useState<string[]>([])
+  return <ListPicker selected={selected} onChange={setSelected} mode={props.mode ?? "multi"} excludeIds={props.excludeIds} />
+}
 
 describe("ListPicker", () => {
   beforeEach(() => {
@@ -52,5 +58,22 @@ describe("ListPicker", () => {
     render(<ListPicker selected={[]} onChange={onChange} mode="single" />)
     await user.click(screen.getByText("Groceries"))
     expect(onChange).toHaveBeenCalledWith(["list-1"])
+  })
+
+  it("hides excluded lists from browse and search", async () => {
+    const user = userEvent.setup()
+    render(<ListPicker selected={[]} onChange={vi.fn()} excludeIds={["list-2"]} />)
+    expect(screen.getByText("Groceries")).toBeInTheDocument()
+    expect(screen.queryByText("Books")).not.toBeInTheDocument()
+    await user.type(screen.getByPlaceholderText("Search lists…"), "book")
+    expect(screen.getByText("No lists match.")).toBeInTheDocument()
+  })
+
+  it("multi-selects more than one list", async () => {
+    const user = userEvent.setup()
+    render(<ControlledPicker />)
+    await user.click(screen.getByText("Groceries"))
+    await user.click(screen.getByText("Books"))
+    expect(screen.getByText("Selected (2)")).toBeInTheDocument()
   })
 })

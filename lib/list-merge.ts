@@ -2,6 +2,7 @@
  * lib/list-merge.ts — Combine multiple lists into one surviving list
  */
 import type { AttributeDefinition, Folder, List, Task } from "@/lib/types"
+import { sanitizeEnabledDisplays } from "@/lib/types"
 import { isFolderAllItemsCategoryId } from "@/lib/folder-all-items"
 import { isScheduledFolderId } from "@/lib/scheduled-lists-sync"
 
@@ -61,7 +62,7 @@ export function buildMergedList(lists: List[], plan: ListMergePlan): List | null
   const displayedAttributes = plan.preserveAttributes
     ? [...new Set(sources.flatMap((l) => l.displayedAttributes ?? []))]
     : survivor.displayedAttributes
-  const enabledDisplays = [...new Set(sources.flatMap((l) => l.enabledDisplays ?? []))]
+  const enabledDisplays = sanitizeEnabledDisplays([...new Set(sources.flatMap((l) => l.enabledDisplays ?? []))])
   const detailPanels = [...new Set(sources.flatMap((l) => l.detailPanels ?? []))]
   const rules = plan.preserveRules ? sources.flatMap((l) => l.rules ?? []) : survivor.rules
   return {
@@ -76,7 +77,7 @@ export function buildMergedList(lists: List[], plan: ListMergePlan): List | null
     itemAttributes: itemAttributes?.length ? itemAttributes : survivor.itemAttributes,
     defaultAttributeValues,
     displayedAttributes: displayedAttributes?.length ? displayedAttributes : survivor.displayedAttributes,
-    enabledDisplays: enabledDisplays.length ? enabledDisplays : survivor.enabledDisplays,
+    enabledDisplays: enabledDisplays ?? sanitizeEnabledDisplays(survivor.enabledDisplays),
     detailPanels: detailPanels.length ? detailPanels : survivor.detailPanels,
     rules: rules?.length ? rules : survivor.rules,
   }

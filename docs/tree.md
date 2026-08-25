@@ -534,7 +534,7 @@ app/page.tsx
 │            (Quick Add is controlled by the global capture hotkey — useQuickCaptureHotkey)
 └── Tabs
     ├── Home ────── Habits | Plan | To Do | Goals (Objectives + Goals + Direction) | Tracking
-    ├── Lists ───── Win98 file manager (folders, lists, items, orbs, spreadsheet, kanban)
+    ├── Lists ───── Win98 file manager (folders, lists, items, orbs, spreadsheet)
     ├── Docs ────── WYSIWYG notes over `note` items (fonts, images, PDF ingest)
     ├── Scheduler ─ Always → Year → Month → Week → Day
     ├── Operations ─ directed enterprises (OperationsView → OperationWorkspace)

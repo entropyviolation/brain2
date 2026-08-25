@@ -2,41 +2,40 @@
 
 import { Textarea } from "@/components/ui/textarea"
 import { isScheduledFolderId } from "@/lib/scheduled-lists-sync"
-import { listsInFolderForFilter } from "@/lib/folder-all-items"
+import { foldersInGlobalAllForFilter, listsInFolderForFilter } from "@/lib/folder-all-items"
+import { isFolderHiddenFromGlobalAll } from "@/lib/module-lists"
 import { ListContentDefault } from "./ListContentDefault"
 import { ListContentChecklist } from "./ListContentChecklist"
 import { ListContentIcons } from "./ListContentIcons"
 import { ListContentDetails } from "./ListContentDetails"
 import { ListContentSpreadsheet } from "./ListContentSpreadsheet"
-import { ListContentKanban } from "./ListContentKanban"
 import type { ListContentPanelProps } from "./types"
-import type { Folder, List } from "@/lib/types"
 
 export type { ListContentPanelProps } from "./types"
 
-function FolderAllListFilter({
-  folder,
-  lists,
-  hiddenListIds,
+function AllViewCheckboxFilter({
+  items,
+  hiddenIds,
   onHiddenChange,
+  ariaLabel,
 }: {
-  folder: Folder
-  lists: List[]
-  hiddenListIds: string[]
-  onHiddenChange: (folderId: string, listId: string, hidden: boolean) => void
+  items: { id: string; name: string }[]
+  hiddenIds: string[]
+  onHiddenChange: (id: string, hidden: boolean) => void
+  ariaLabel: string
 }) {
-  if (lists.length === 0) return null
-  const hidden = new Set(hiddenListIds)
+  if (items.length === 0) return null
+  const hidden = new Set(hiddenIds)
   return (
-    <div className="fm-list-filter" role="group" aria-label="Filter lists">
-      {lists.map((list) => (
-        <label key={list.id} className="fm-list-filter-item">
+    <div className="fm-list-filter" role="group" aria-label={ariaLabel}>
+      {items.map((item) => (
+        <label key={item.id} className="fm-list-filter-item">
           <input
             type="checkbox"
-            checked={!hidden.has(list.id)}
-            onChange={(e) => onHiddenChange(folder.id, list.id, !e.target.checked)}
+            checked={!hidden.has(item.id)}
+            onChange={(e) => onHiddenChange(item.id, !e.target.checked)}
           />
-          {list.name}
+          {item.name}
         </label>
       ))}
     </div>
@@ -52,12 +51,15 @@ export function ListContentPanel({
   openFolderAll,
   openSmart,
   currentFolder,
+  isRootAll = false,
   itemLabel,
   openIconKey,
   folderAllUncategorizedOnly,
   onFolderAllUncategorizedOnlyChange,
   folderAllHiddenListIds,
   onFolderAllListHiddenChange,
+  globalAllHiddenFolderIds = [],
+  onGlobalAllFolderHiddenChange,
   addingTaskToTarget,
   openTargetKeyValue,
   newTaskDescription,
@@ -80,16 +82,22 @@ export function ListContentPanel({
   onToggleTaskSelect,
 }: ListContentPanelProps) {
   const showFolderAllListFilter =
-    currentDisplay === "default" &&
     openFolderAll &&
+    !isRootAll &&
     !!currentFolder &&
     !isScheduledFolderId(currentFolder.id)
   const folderFilterLists =
     showFolderAllListFilter && currentFolder ? listsInFolderForFilter(currentFolder, categories) : []
   const hiddenForFolder = currentFolder ? folderAllHiddenListIds[currentFolder.id] ?? [] : []
 
+  const showGlobalAllFolderFilter = openFolderAll && isRootAll
+  const globalFilterFolders = showGlobalAllFolderFilter
+    ? foldersInGlobalAllForFilter(folders).filter((f) => !isFolderHiddenFromGlobalAll(f, folders))
+    : []
+  const hiddenGlobalFolders = globalAllHiddenFolderIds
+
   const uncategorizedFilter =
-    openFolderAll && currentFolder && !isScheduledFolderId(currentFolder.id) ? (
+    openFolderAll && !isRootAll && currentFolder && !isScheduledFolderId(currentFolder.id) ? (
       <div className="fm-toolbar" style={{ marginBottom: 6, padding: "4px 8px" }}>
         <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, cursor: "pointer" }}>
           <input
@@ -104,11 +112,18 @@ export function ListContentPanel({
 
   const listFilter =
     showFolderAllListFilter && currentFolder ? (
-      <FolderAllListFilter
-        folder={currentFolder}
-        lists={folderFilterLists}
-        hiddenListIds={hiddenForFolder}
-        onHiddenChange={onFolderAllListHiddenChange}
+      <AllViewCheckboxFilter
+        items={folderFilterLists}
+        hiddenIds={hiddenForFolder}
+        onHiddenChange={(listId, hidden) => onFolderAllListHiddenChange(currentFolder.id, listId, hidden)}
+        ariaLabel="Filter lists"
+      />
+    ) : showGlobalAllFolderFilter ? (
+      <AllViewCheckboxFilter
+        items={globalFilterFolders}
+        hiddenIds={hiddenGlobalFolders}
+        onHiddenChange={(folderId, hidden) => onGlobalAllFolderHiddenChange?.(folderId, hidden)}
+        ariaLabel="Filter folders"
       />
     ) : null
 
@@ -170,9 +185,11 @@ export function ListContentPanel({
     ? "No uncategorized items in this folder."
     : hiddenForFolder.length > 0
       ? "No items in the selected lists."
-      : openSmart
-        ? "Nothing scheduled for this period."
-        : `No active ${itemLabel.toLowerCase()}s in this list.`
+      : hiddenGlobalFolders.length > 0 && isRootAll
+        ? "No items in the selected folders."
+        : openSmart
+          ? "Nothing scheduled for this period."
+          : `No active ${itemLabel.toLowerCase()}s in this list.`
 
   if (tasks.length === 0) {
     return (
@@ -196,14 +213,6 @@ export function ListContentPanel({
     body = <ListContentChecklist {...taskHandlers} />
   } else if (currentDisplay === "icons") {
     body = <ListContentIcons {...taskHandlers} onIconPickerOpen={onIconPickerOpen} />
-  } else if (currentDisplay === "kanban") {
-    body = (
-      <ListContentKanban
-        {...taskHandlers}
-        openCategory={openCategory}
-        listKey={openTargetKeyValue}
-      />
-    )
   } else if (currentDisplay === "spreadsheet") {
     body = (
       <ListContentSpreadsheet

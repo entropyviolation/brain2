@@ -23,6 +23,12 @@ export function destinationListsForSelection(
     .sort((a, b) => a.name.localeCompare(b.name))
 }
 
+/** List ids that the item-placement picker should hide (virtual + current). */
+export function excludedListIdsForSelection(lists: List[], currentListId?: string | null): string[] {
+  const allowed = new Set(destinationListsForSelection(lists, { currentListId }).map((l) => l.id))
+  return lists.filter((l) => !allowed.has(l.id)).map((l) => l.id)
+}
+
 /**
  * Origin list to unlink when placing items.
  * Smart lists, folder All Items, and views with no owning list cannot unlink.

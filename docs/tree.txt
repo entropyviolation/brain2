@@ -196,7 +196,6 @@
 │   │   │   ├── ListContentDefault.tsx
 │   │   │   ├── ListContentDetails.tsx
 │   │   │   ├── ListContentIcons.tsx
-│   │   │   ├── ListContentKanban.tsx
 │   │   │   ├── ListContentPanel.tsx
 │   │   │   ├── ListContentSpreadsheet.tsx
 │   │   │   ├── kanban-utils.test.ts
@@ -397,8 +396,6 @@
 │   │   ├── 05-lists-content-checklist.txt
 │   │   ├── 05-lists-content-default.png
 │   │   ├── 05-lists-content-default.txt
-│   │   ├── 05-lists-content-kanban.png
-│   │   ├── 05-lists-content-kanban.txt
 │   │   ├── 05-lists-content-spreadsheet.png
 │   │   ├── 05-lists-content-spreadsheet.txt
 │   │   ├── 05-lists-details.png

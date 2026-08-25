@@ -9,7 +9,7 @@
  * item (`statusValueToWrite`).
  *
  * Kept free of React/store imports so it can be unit-tested in isolation and
- * reused by both the Lists display mode and the Module workspace view.
+ * reused by the Module workspace Kanban view.
  */
 import type { AttributeDefinition, AttributeValue, Task } from "@/lib/types"
 

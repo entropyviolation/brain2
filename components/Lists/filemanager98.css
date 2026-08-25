@@ -211,6 +211,75 @@
   flex: 1;
 }
 
+.fm98 .fm-item-list-picker {
+  flex: 1 1 260px;
+  min-width: 220px;
+  max-width: 440px;
+}
+
+.fm98 .fm-list-picker {
+  box-shadow: var(--fm-border-field);
+  background: var(--fm-button-highlight);
+}
+
+.fm98 .fm-list-picker-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  background: var(--fm-surface);
+  box-shadow: var(--fm-border-raised-outer), var(--fm-border-raised-inner);
+}
+
+.fm98 .fm-list-picker-body {
+  max-height: 132px;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.fm98 .fm-list-picker-foot {
+  padding: 3px;
+  background: var(--fm-surface);
+  box-shadow: var(--fm-border-raised-outer), var(--fm-border-raised-inner);
+}
+
+.fm98 .fm-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 2px 4px;
+  font-size: 11px;
+  font-family: inherit;
+  color: #000;
+  cursor: pointer;
+}
+
+.fm98 .fm-picker-row:hover {
+  background: #e6e6e6;
+}
+
+.fm98 .fm-picker-row.selected {
+  background: var(--fm-dialog-blue);
+  color: #fff;
+}
+
+.fm98 .fm-picker-swatch {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+}
+
+.fm98 .fm-picker-section,
+.fm98 .fm-picker-empty {
+  font-size: 10px;
+  padding: 3px 6px;
+  color: var(--fm-button-shadow);
+}
+
 .fm98 .fm-list-search {
   margin: 8px 12px 0;
 }
@@ -219,7 +288,7 @@
   width: 100%;
 }
 
-/* ===== Folder All Items list filter (default display) ===== */
+/* ===== All Items list / folder filter (every display) ===== */
 .fm98 .fm-list-filter {
   display: flex;
   flex-wrap: wrap;

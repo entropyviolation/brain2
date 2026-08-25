@@ -7,6 +7,7 @@
 import type { Task, List, Folder } from "@/lib/types"
 import { isScheduledFolderId } from "@/lib/scheduled-lists-sync"
 import { getDescendantIds } from "@/lib/list-tree"
+import { getFolderDescendantIds, getRootFolders, isAutoScheduledPeriodFolder } from "@/lib/folder-tree"
 
 export const FOLDER_ALL_PREFIX = "__all-items__"
 
@@ -120,7 +121,7 @@ export function listsInFolderForFilter(folder: Folder, categories: List[]): List
 }
 
 /**
- * Display-only filter for a folder's All Items default view.
+ * Display-only filter for a folder's All Items view (every display mode).
  * Hidden list ids are omitted from this view; membership is not changed.
  * An item stays visible if it belongs to any non-hidden folder list, or if it
  * is uncategorized in the folder (no folder list membership).
@@ -138,6 +139,35 @@ export function filterTasksByHiddenFolderLists(
     const inFolderLists = (t.lists ?? []).filter((id) => folderListIds.includes(id))
     if (inFolderLists.length === 0) return true
     return inFolderLists.some((id) => !hidden.has(id))
+  })
+}
+
+/** Root folders shown as Global All Items filter checkboxes (excludes auto period folders). */
+export function foldersInGlobalAllForFilter(folders: Folder[]): Folder[] {
+  return getRootFolders(folders).filter((f) => !isAutoScheduledPeriodFolder(f.id))
+}
+
+/**
+ * Display-only filter for the global All Items view (every display mode).
+ * Hidden folder ids omit items that belong only to that folder tree.
+ * Membership is not changed. Items with no folder, or that also belong to a
+ * still-selected folder, stay visible.
+ */
+export function filterTasksByHiddenGlobalFolders(
+  tasks: Task[],
+  folders: Folder[],
+  hiddenFolderIds: string[],
+  categories?: List[],
+): Task[] {
+  if (!hiddenFolderIds.length) return tasks
+  const hidden = new Set(hiddenFolderIds)
+  for (const id of hiddenFolderIds) {
+    for (const descId of getFolderDescendantIds(folders, id)) hidden.add(descId)
+  }
+  return tasks.filter((t) => {
+    const inFolders = folders.filter((f) => taskInFolder(t, f, categories))
+    if (inFolders.length === 0) return true
+    return inFolders.some((f) => !hidden.has(f.id))
   })
 }
 

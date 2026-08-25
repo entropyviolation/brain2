@@ -5,6 +5,7 @@ import {
   defaultExpandedFolderIds,
   flattenFolderTree,
   getFolderChildren,
+  getFolderDescendants,
   getRootFolders,
   sortFolders,
 } from "@/lib/folder-tree"
@@ -41,6 +42,17 @@ describe("folder-tree", () => {
       folder({ id: "na-scheduled", name: "Scheduled", parentFolderId: "na" }),
     ]
     expect(getRootFolders(folders).map((f) => f.id)).toEqual(["na", "f1"])
+  })
+
+  it("collects nested folder descendants", () => {
+    const folders = [
+      folder({ id: "work", name: "Work" }),
+      folder({ id: "projects", name: "Projects", parentFolderId: "work" }),
+      folder({ id: "q1", name: "Q1", parentFolderId: "projects" }),
+      folder({ id: "home", name: "Home" }),
+    ]
+    expect(getFolderDescendants(folders, "work").map((f) => f.id)).toEqual(["projects", "q1"])
+    expect(getFolderDescendants(folders, "home")).toEqual([])
   })
 
   it("builds nested tree and respects expanded state", () => {

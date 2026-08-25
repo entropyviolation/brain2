@@ -41,13 +41,18 @@ export interface ListContentPanelProps extends ListContentTaskHandlers {
   openFolderAll: boolean
   openSmart: boolean
   currentFolder: Folder | null | undefined
+  /** Global All Items (All \ All Items), not a per-folder All list. */
+  isRootAll?: boolean
   itemLabel: string
   openIconKey: string
   folderAllUncategorizedOnly: Record<string, boolean>
   onFolderAllUncategorizedOnlyChange: (folderId: string, checked: boolean) => void
-  /** List ids hidden in this folder's All Items default display (empty = all shown). */
+  /** List ids hidden in this folder's All Items view (empty = all shown). */
   folderAllHiddenListIds: Record<string, string[]>
   onFolderAllListHiddenChange: (folderId: string, listId: string, hidden: boolean) => void
+  /** Folder ids hidden in the global All Items view (empty = all shown). */
+  globalAllHiddenFolderIds?: string[]
+  onGlobalAllFolderHiddenChange?: (folderId: string, hidden: boolean) => void
   addingTaskToTarget: string | null
   openTargetKeyValue: string
   newTaskDescription: string

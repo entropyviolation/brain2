@@ -30,12 +30,13 @@ import {
   getTasksForFolderAllView,
   isTaskUncategorizedInFolder,
   filterTasksByHiddenFolderLists,
+  filterTasksByHiddenGlobalFolders,
 } from "@/lib/folder-all-items"
 import { buildGridEntries, ROOT_ALL_FOLDER_ID } from "@/lib/lists-grid-entries"
 import { destinationFoldersForSelection, originFolderIdToUnlink, wouldCreateFolderCycle, type ListPlacementMode } from "@/lib/folder-selection"
 import {
   canMoveItemsFromOpenList,
-  destinationListsForSelection,
+  excludedListIdsForSelection,
   placeTaskInList,
   type ItemPlacementMode,
 } from "@/lib/item-selection"
@@ -88,7 +89,7 @@ import { LIST_TEMPLATES, SMART_LISTS, PRESET_ICON_POSITIONS } from "@/components
 import { iconFor, orbFor } from "@/components/Lists/lib/icon-utils"
 import { openTargetKey } from "@/components/Lists/open-target"
 import type { CsvImportState, IconPickerTarget, SmartId } from "@/components/Lists/types"
-import type { List, Folder, AttributeValue } from "@/lib/types"
+import { isListDisplayMode, sanitizeEnabledDisplays, type List, type Folder, type AttributeValue } from "@/lib/types"
 import { hashIconSlot } from "@/lib/string-utils"
 import "./filemanager98.css"
 
@@ -135,6 +136,8 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
   const setFolderAllUncategorizedOnly = useListsUiStore((s) => s.setFolderAllUncategorizedOnly)
   const folderAllHiddenListIds = useListsUiStore((s) => s.folderAllHiddenListIds)
   const setFolderAllListHidden = useListsUiStore((s) => s.setFolderAllListHidden)
+  const globalAllHiddenFolderIds = useListsUiStore((s) => s.globalAllHiddenFolderIds)
+  const setGlobalAllFolderHidden = useListsUiStore((s) => s.setGlobalAllFolderHidden)
 
   const nav = useListsNavigation(categories, folders)
   const search = useListsSearch(folders, categories, allTasks)
@@ -288,17 +291,17 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
   const openColor = openObjectives ? "#d97706" : openHabits ? "#0ea5e9" : isRootAll ? "#64748b" : openFolderAll ? currentFolder?.color : openCategory?.color || openSmart?.color
   const openIconKey = openCategory ? iconFor(openCategory.id, openCategory.icon) : isRootAll ? iconFor("lists-root", undefined) : openFolderAll && currentFolder ? iconFor(currentFolder.id, currentFolder.icon) : openSmart ? orbFor(openSmart.id) : openObjectives ? orbFor("objectives") : openHabits ? orbFor("daily-habits") : orbFor("lists-root")
 
-  const rawDisplay: ListDisplay =
-    openTarget && openTarget.type !== "habits" && openTarget.type !== "objectives"
-      ? listDisplay[openTargetKey(openTarget)] || (openSmart ? "checklist" : "default")
-      : "default"
+  const rawDisplay: ListDisplay = (() => {
+    if (!openTarget || openTarget.type === "habits" || openTarget.type === "objectives") return "default"
+    const saved = listDisplay[openTargetKey(openTarget)]
+    if (saved && isListDisplayMode(saved)) return saved
+    return openSmart ? "checklist" : "default"
+  })()
   // If the list no longer offers the saved active display, fall back to the
   // first display it does offer (Feature 1: per-list display offerings).
-  const offeredDisplays = openCategory?.enabledDisplays
+  const offeredDisplays = sanitizeEnabledDisplays(openCategory?.enabledDisplays)
   const currentDisplay: ListDisplay =
-    offeredDisplays && offeredDisplays.length > 0 && !offeredDisplays.includes(rawDisplay)
-      ? offeredDisplays[0]
-      : rawDisplay
+    offeredDisplays && !offeredDisplays.includes(rawDisplay) ? offeredDisplays[0] : rawDisplay
 
   const openTasks = useMemo(() => {
     if (!openTarget) return []
@@ -310,22 +313,22 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
       return getTasksForCategory(openTarget.id)
     }
     if (openTarget.type === "folder-all" && openTarget.folderId === ROOT_ALL_FOLDER_ID) {
-      return filterTasksHiddenFromGlobalAll(allTasks.filter((t) => !t.completed), categories, folders)
+      let items = filterTasksHiddenFromGlobalAll(allTasks.filter((t) => !t.completed), categories, folders)
+      const hiddenFolders = globalAllHiddenFolderIds ?? []
+      if (hiddenFolders.length) items = filterTasksByHiddenGlobalFolders(items, folders, hiddenFolders, categories)
+      return items
     }
     if (openTarget.type === "folder-all" && currentFolder) {
       if (isScheduledFolderId(currentFolder.id)) return getTasksForScheduledFolder(allTasks, currentFolder.id)
       let items = getTasksForFolderAllView(allTasks, currentFolder)
       if (folderAllUncategorizedOnly[currentFolder.id]) items = items.filter((t) => isTaskUncategorizedInFolder(t, currentFolder))
-      // Hide by list only in the default display so other views stay unfiltered.
-      if (currentDisplay === "default") {
-        const hidden = folderAllHiddenListIds?.[currentFolder.id]
-        if (hidden?.length) items = filterTasksByHiddenFolderLists(items, currentFolder, hidden)
-      }
+      const hidden = folderAllHiddenListIds?.[currentFolder.id]
+      if (hidden?.length) items = filterTasksByHiddenFolderLists(items, currentFolder, hidden)
       return items
     }
     if (openTarget.type === "smart") return getSmartTasks(openTarget.id)
     return []
-  }, [openTarget, allTasks, categories, folders, currentFolder, folderAllUncategorizedOnly, folderAllHiddenListIds, currentDisplay, getSmartTasks, getTasksForCategory])
+  }, [openTarget, allTasks, categories, folders, currentFolder, folderAllUncategorizedOnly, folderAllHiddenListIds, globalAllHiddenFolderIds, getSmartTasks, getTasksForCategory])
 
   const breadcrumb = getBreadcrumb({ searchActive, searchTerm, openTarget, openName, isHome, isAll, currentFolderName: currentFolder?.name })
   const statusText = openTarget ? `${openTasks.length} item(s) in "${openName}"` : `${entries.filter((e) => e.kind === "folder").length} folder(s), ${entries.filter((e) => e.kind !== "folder").length} list(s)`
@@ -431,7 +434,6 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
         order: categories.length,
         scheduleable: true,
         itemAttributes: attrDefs,
-        enabledDisplays: ["default", "checklist", "icons", "table", "spreadsheet", "kanban"],
       })
       if (currentFolder) addListToFolder(currentFolder.id, categoryId)
       if (isHome) toggleHomePin(categoryId)
@@ -565,22 +567,26 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
     clearTaskSelection()
   }, [openListKey, clearTaskSelection])
 
-  const placeItemsIntoList = useCallback(
-    (destListId: string) => {
+  const placeItemsIntoLists = useCallback(
+    (destListIds: string[]) => {
+      const unique = [...new Set(destListIds.filter(Boolean))]
+      if (unique.length === 0) return
       const state = useTaskStore.getState()
       selectedTaskIds.forEach((taskId) => {
         const t = state.tasks.find((x) => x.id === taskId)
         if (!t) return
-        updateTask(
-          placeTaskInList(t, destListId, {
+        let next = t
+        for (const destListId of unique) {
+          next = placeTaskInList(next, destListId, {
             mode: effectiveItemPlacement,
             originListId,
             canMove: itemCanMove,
             lists: state.lists,
             folders: state.folders,
             types: itemTypes,
-          }),
-        )
+          })
+        }
+        updateTask(next)
       })
       selection.cancelSelectMode()
     },
@@ -705,12 +711,15 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
           openFolderAll={!!openFolderAll}
           openSmart={!!openSmart}
           currentFolder={currentFolder}
+          isRootAll={isRootAll}
           itemLabel={openFolderAll && currentFolder && !isRootAll ? "Item" : itemLabelFor(openCategory?.id, openCategory)}
           openIconKey={openIconKey}
           folderAllUncategorizedOnly={folderAllUncategorizedOnly}
           onFolderAllUncategorizedOnlyChange={setFolderAllUncategorizedOnly}
           folderAllHiddenListIds={folderAllHiddenListIds ?? {}}
           onFolderAllListHiddenChange={setFolderAllListHidden}
+          globalAllHiddenFolderIds={globalAllHiddenFolderIds ?? []}
+          onGlobalAllFolderHiddenChange={setGlobalAllFolderHidden}
           addingTaskToTarget={addingTaskToTarget}
           openTargetKeyValue={openTargetKey(openTarget)}
           newTaskDescription={newTaskDescription}
@@ -837,7 +846,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
             currentDisplay={currentDisplay}
             location={location}
             entryKeys={entries.map((e) => `${e.kind}-${e.id}`)}
-            enabledDisplays={openCategory?.enabledDisplays}
+            enabledDisplays={offeredDisplays}
             onUp={() => { if (openTarget) closeTarget(); else navTo("all"); setActiveIconId(null) }}
             onNewList={openNewCategoryDialog}
             onNewFolder={() => setShowNewFolderDialog(true)}
@@ -869,12 +878,12 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
               selectedCount={selectedTaskIds.length}
               placementMode={effectiveItemPlacement}
               canMove={itemCanMove}
-              destinationLists={destinationListsForSelection(categories, { currentListId: originListId })}
+              excludeListIds={excludedListIdsForSelection(categories, originListId)}
               onSelectAll={handleSelectAllItems}
               onDeselectAll={clearTaskSelection}
               onPlacementModeChange={setItemPlacementMode}
               onAddToNewList={openNewCategoryDialog}
-              onAddToList={placeItemsIntoList}
+              onAddToLists={placeItemsIntoLists}
               onDelete={handleDeleteSelectedItems}
             />
           )}

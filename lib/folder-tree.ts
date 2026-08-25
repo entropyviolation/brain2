@@ -66,6 +66,26 @@ export function getFolderChildren(folders: Folder[], parentId: string): Folder[]
   return sortFolders(folders.filter((f) => f.parentFolderId === parentId))
 }
 
+/** Nested folders under `id` (not including `id` itself). */
+export function getFolderDescendants(folders: Folder[], id: string): Folder[] {
+  const out: Folder[] = []
+  const seen = new Set<string>([id])
+  const walk = (parentId: string) => {
+    for (const child of folders) {
+      if (child.parentFolderId !== parentId || seen.has(child.id)) continue
+      seen.add(child.id)
+      out.push(child)
+      walk(child.id)
+    }
+  }
+  walk(id)
+  return out
+}
+
+export function getFolderDescendantIds(folders: Folder[], id: string): string[] {
+  return getFolderDescendants(folders, id).map((f) => f.id)
+}
+
 export function getRootFolders(folders: Folder[]): Folder[] {
   const byId = indexById(folders)
   return sortFolders(folders.filter((f) => !f.parentFolderId || !byId.has(f.parentFolderId)))

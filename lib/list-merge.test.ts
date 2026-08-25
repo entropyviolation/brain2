@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import type { Folder, List, Task } from "@/lib/types"
-import { applyListMerge, defaultMergePlan, retargetTasksForMerge } from "@/lib/list-merge"
+import { applyListMerge, buildMergedList, defaultMergePlan, retargetTasksForMerge } from "@/lib/list-merge"
 
 const list = (id: string, name: string, extra: Partial<List> = {}): List => ({
   id,
@@ -68,5 +68,25 @@ describe("retargetTasksForMerge", () => {
     )!
     const next = retargetTasksForMerge([task("t", "x", ["a", "b"])], plan)
     expect(next[0].lists).toEqual(["a"])
+  })
+})
+
+describe("buildMergedList enabledDisplays", () => {
+  it("drops legacy kanban from the union of offered displays", () => {
+    const plan = defaultMergePlan(
+      [
+        list("a", "A", { enabledDisplays: ["default", "kanban" as never] }),
+        list("b", "B", { enabledDisplays: ["checklist"] }),
+      ],
+      [],
+    )!
+    const merged = buildMergedList(
+      [
+        list("a", "A", { enabledDisplays: ["default", "kanban" as never] }),
+        list("b", "B", { enabledDisplays: ["checklist"] }),
+      ],
+      plan,
+    )
+    expect(merged?.enabledDisplays).toEqual(["default", "checklist"])
   })
 })

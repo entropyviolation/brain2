@@ -14,7 +14,7 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { computeIconGridPositions } from "@/lib/lists-icon-grid"
-import type { ListDisplayMode } from "@/lib/types"
+import { isListDisplayMode, type ListDisplayMode } from "@/lib/types"
 
 /** UI-only "active display" preference; canonical union lives in lib/types.ts. */
 export type ListDisplay = ListDisplayMode
@@ -27,8 +27,6 @@ interface ListsUiState {
   showSmartLists: boolean
   // Per-list chosen display type for its contents.
   listDisplay: Record<string, ListDisplay>
-  // Per-list attribute id whose values form the Kanban board columns.
-  kanbanStatusAttrId: Record<string, string>
   // Last-used folder content view.
   folderView: FolderView
   // User-uploaded icon library (data URLs, backgrounds removed).
@@ -40,16 +38,20 @@ interface ListsUiState {
   /** Per-folder All Items view: show only uncategorized items. */
   folderAllUncategorizedOnly: Record<string, boolean>
   /**
-   * Per-folder All Items default display: list ids whose items are hidden in
-   * that view only. Empty / missing means every list is selected (visible).
+   * Per-folder All Items view: list ids whose items are hidden in that folder's
+   * All Items (every display mode). Empty / missing means every list is visible.
    */
   folderAllHiddenListIds: Record<string, string[]>
+  /**
+   * Global All Items view: folder ids whose items are hidden (every display
+   * mode). Empty means every folder is selected (visible). View-only.
+   */
+  globalAllHiddenFolderIds: string[]
 
   toggleHomePin: (id: string) => void
   isPinned: (id: string) => boolean
   setShowSmartLists: (v: boolean) => void
   setListDisplay: (id: string, d: ListDisplay) => void
-  setKanbanStatusAttrId: (id: string, attrId: string) => void
   setFolderView: (v: FolderView) => void
   addLibraryIcon: (dataUrl: string) => void
   removeLibraryIcon: (dataUrl: string) => void
@@ -60,6 +62,7 @@ interface ListsUiState {
   restoreGalleryOrb: (path: string) => void
   setFolderAllUncategorizedOnly: (folderId: string, value: boolean) => void
   setFolderAllListHidden: (folderId: string, listId: string, hidden: boolean) => void
+  setGlobalAllFolderHidden: (folderId: string, hidden: boolean) => void
 }
 
 export const useListsUiStore = create<ListsUiState>()(
@@ -68,13 +71,13 @@ export const useListsUiStore = create<ListsUiState>()(
       homePinned: [],
       showSmartLists: true,
       listDisplay: {},
-      kanbanStatusAttrId: {},
       folderView: "icons",
       iconLibrary: [],
       iconPositions: {},
       hiddenGalleryOrbs: [],
       folderAllUncategorizedOnly: {},
       folderAllHiddenListIds: {},
+      globalAllHiddenFolderIds: [],
 
       toggleHomePin: (id) =>
         set((state) => ({
@@ -85,8 +88,6 @@ export const useListsUiStore = create<ListsUiState>()(
       isPinned: (id) => get().homePinned.includes(id),
       setShowSmartLists: (v) => set({ showSmartLists: v }),
       setListDisplay: (id, d) => set((state) => ({ listDisplay: { ...state.listDisplay, [id]: d } })),
-      setKanbanStatusAttrId: (id, attrId) =>
-        set((state) => ({ kanbanStatusAttrId: { ...state.kanbanStatusAttrId, [id]: attrId } })),
       setFolderView: (v) => set({ folderView: v }),
       addLibraryIcon: (dataUrl) =>
         set((state) =>
@@ -134,10 +135,33 @@ export const useListsUiStore = create<ListsUiState>()(
             },
           }
         }),
+      setGlobalAllFolderHidden: (folderId, hidden) =>
+        set((state) => {
+          const current = state.globalAllHiddenFolderIds ?? []
+          const isHidden = current.includes(folderId)
+          if (hidden === isHidden) return state
+          return {
+            globalAllHiddenFolderIds: hidden
+              ? [...current, folderId]
+              : current.filter((id) => id !== folderId),
+          }
+        }),
     }),
     {
       name: "cogs-lists-ui",
-      version: 3,
+      version: 4,
+      migrate: (persistedState, version) => {
+        const state = { ...((persistedState ?? {}) as Record<string, unknown>) }
+        if (version < 4) {
+          delete state.kanbanStatusAttrId
+          const listDisplay = { ...((state.listDisplay as Record<string, unknown>) ?? {}) }
+          for (const [id, mode] of Object.entries(listDisplay)) {
+            if (!isListDisplayMode(mode)) delete listDisplay[id]
+          }
+          state.listDisplay = listDisplay
+        }
+        return state as ListsUiState
+      },
       merge: (persisted, current) => ({
         ...current,
         ...(persisted as Partial<ListsUiState>),

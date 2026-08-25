@@ -69,7 +69,6 @@ Also visible on Home shots: `NeedsAttention`, review banner, points stats, today
 | `05-lists-cards.png` | Home folder → Cards |
 | `05-lists-content-default.png` | Example List → Default display |
 | `05-lists-content-checklist.png` | Example List → Checklist |
-| `05-lists-content-kanban.png` | Example List → Kanban |
 | `05-lists-content-spreadsheet.png` | Example List → Spreadsheet |
 
 ### Scheduler (`components/Scheduler/`)
@@ -148,7 +147,7 @@ Not yet in the capture set — open the **Docs** tab manually (`components/Docs/
 | Home → Tracking (Grid/Day Log) | `08-home-tracking*.png` | ✅ |
 | Home → Needs Attention banner | Visible in Home shots | ✅ |
 | Lists folder views (Icons/List/Details/Cards) | `05-lists*.png` (first four) | ✅ |
-| Lists content displays (Default/Checklist/Kanban/Spreadsheet) | `05-lists-content-*.png` | ✅ |
+| Lists content displays (Default/Checklist/Spreadsheet) | `05-lists-content-*.png` | ✅ |
 | Lists: habits/objectives smart entries | Opened via Home + sidebar (same components) | ✅ |
 | Scheduler funnel (Always/Day) | `06-scheduler.png`, `06-scheduler-day.png` | ✅ |
 | Scheduler Gantt + Dependencies | `06-scheduler-gantt.png`, `06-scheduler-dependencies.png` | ✅ |

@@ -16,7 +16,7 @@
 
 import { create } from "zustand"
 import { persist, createJSONStorage } from "zustand/middleware"
-import type { Task, List, Folder, PriorityWeights } from "@/lib/types"
+import { sanitizeEnabledDisplays, type Task, type List, type Folder, type PriorityWeights } from "@/lib/types"
 import { DEFAULT_PRIORITY_WEIGHTS } from "@/lib/priority"
 import { migratePersistedAttributes } from "@/lib/attribute-utils"
 import { migrateTaskToItem, migrateTasksToItems, migrateModulePlatform } from "@/lib/migrations"
@@ -467,7 +467,7 @@ export const useTaskStore = create<TaskState>()(
         },
       }),
       // Add version to handle schema changes
-      version: 9,
+      version: 10,
       // Migrate function to handle old data
       migrate: (persistedState: any, version: number) => {
         if (version < 2) {
@@ -557,6 +557,9 @@ export const useTaskStore = create<TaskState>()(
           //   state.categories      → state.lists
           persistedState = migrateCategoryToList(persistedState)
         }
+        if (version < 10) {
+          persistedState = migrateStripKanbanListDisplays(persistedState)
+        }
         return persistedState
       },
     },
@@ -627,5 +630,27 @@ export function migrateCategoryToList(state: any): any {
   if (Array.isArray(state.folders)) next.folders = state.folders.map(renameFolder)
   if (Array.isArray(state.tasks)) next.tasks = state.tasks.map(renameTask)
   return next
+}
+
+/**
+ * v10 — Kanban is no longer a Lists-tab display mode (Modules workspace only).
+ * Strip `"kanban"` from persisted `List.enabledDisplays`.
+ */
+export function migrateStripKanbanListDisplays(state: any): any {
+  if (!state || typeof state !== "object") return state
+  const lists = state.lists
+  if (!Array.isArray(lists)) return state
+  return {
+    ...state,
+    lists: lists.map((list: any) => {
+      if (!list || typeof list !== "object" || !Array.isArray(list.enabledDisplays)) return list
+      const enabledDisplays = sanitizeEnabledDisplays(list.enabledDisplays)
+      if (!enabledDisplays) {
+        const { enabledDisplays: _dropped, ...rest } = list
+        return rest
+      }
+      return { ...list, enabledDisplays }
+    }),
+  }
 }
 

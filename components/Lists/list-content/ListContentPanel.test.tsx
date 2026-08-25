@@ -92,9 +92,10 @@ describe("ListContentPanel folder All list filter", () => {
     expect(props.onFolderAllListHiddenChange).toHaveBeenCalledWith("folder1", "list-1", true)
   })
 
-  it("does not show the list filter in non-default displays", () => {
+  it("shows the list filter in non-default displays", () => {
     renderPanel({ currentDisplay: "checklist" })
-    expect(screen.queryByRole("group", { name: "Filter lists" })).not.toBeInTheDocument()
+    expect(screen.getByRole("group", { name: "Filter lists" })).toBeInTheDocument()
+    expect(screen.getByRole("checkbox", { name: "list 1" })).toBeChecked()
     expect(screen.getByText("item a")).toBeInTheDocument()
   })
 
@@ -106,6 +107,50 @@ describe("ListContentPanel folder All list filter", () => {
       currentDisplay: "default",
     })
     expect(screen.queryByRole("group", { name: "Filter lists" })).not.toBeInTheDocument()
+  })
+})
+
+describe("ListContentPanel global All folder filter", () => {
+  const folder2 = (): Folder => ({
+    id: "folder2",
+    name: "folder2",
+    createdAt: new Date(),
+    listIds: ["__all-items__folder2", "list-3"],
+  })
+
+  it("renders a checkbox for every root folder, all selected by default", () => {
+    renderPanel({
+      isRootAll: true,
+      currentFolder: null,
+      folders: [folder1(), folder2()],
+      categories: [list("list-1", "list 1"), list("list-2", "list 2"), list("list-3", "list 3")],
+    })
+    expect(screen.getByRole("group", { name: "Filter folders" })).toBeInTheDocument()
+    expect(screen.getByRole("checkbox", { name: "folder1" })).toBeChecked()
+    expect(screen.getByRole("checkbox", { name: "folder2" })).toBeChecked()
+    expect(screen.queryByRole("group", { name: "Filter lists" })).not.toBeInTheDocument()
+  })
+
+  it("notifies when a folder is unselected", () => {
+    const onGlobalAllFolderHiddenChange = vi.fn()
+    renderPanel({
+      isRootAll: true,
+      currentFolder: null,
+      folders: [folder1(), folder2()],
+      onGlobalAllFolderHiddenChange,
+    })
+    fireEvent.click(screen.getByRole("checkbox", { name: "folder1" }))
+    expect(onGlobalAllFolderHiddenChange).toHaveBeenCalledWith("folder1", true)
+  })
+
+  it("shows the folder filter in non-default displays", () => {
+    renderPanel({
+      isRootAll: true,
+      currentFolder: null,
+      currentDisplay: "checklist",
+      folders: [folder1(), folder2()],
+    })
+    expect(screen.getByRole("group", { name: "Filter folders" })).toBeInTheDocument()
   })
 })
 

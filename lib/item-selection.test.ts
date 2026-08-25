@@ -4,6 +4,7 @@ import {
   addTaskToList,
   canMoveItemsFromOpenList,
   destinationListsForSelection,
+  excludedListIdsForSelection,
   originListIdToUnlink,
   placeTaskInList,
   removeTaskFromList,
@@ -47,6 +48,13 @@ describe("destinationListsForSelection", () => {
 
   it("returns every real list when there is no current list", () => {
     expect(destinationListsForSelection(lists).map((c) => c.id)).toEqual(["home", "work"])
+  })
+})
+
+describe("excludedListIdsForSelection", () => {
+  it("excludes the current list and All Items", () => {
+    const lists = [list("work", "Work"), list("home", "Home"), list("__all-items__folder1", "All Items")]
+    expect(excludedListIdsForSelection(lists, "work").sort()).toEqual(["__all-items__folder1", "work"])
   })
 })
 

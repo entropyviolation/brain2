@@ -190,9 +190,6 @@ async function captureLists(page) {
   await clickFmBtn(page, "Checklist", { display: true })
   await screenshot(page, "05-lists-content-checklist.png")
 
-  await clickFmBtn(page, "Kanban", { display: true })
-  await screenshot(page, "05-lists-content-kanban.png")
-
   await clickFmBtn(page, "Spreadsheet", { display: true })
   await screenshot(page, "05-lists-content-spreadsheet.png")
 

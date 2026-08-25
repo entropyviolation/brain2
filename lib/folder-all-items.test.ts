@@ -3,7 +3,9 @@ import type { Folder, List, Task } from "@/lib/types"
 import {
   filterTasksByHiddenFolderLists,
   folderAllItemsCategoryId,
+  foldersInGlobalAllForFilter,
   listsInFolderForFilter,
+  filterTasksByHiddenGlobalFolders,
 } from "@/lib/folder-all-items"
 
 const folder = (listIds: string[]): Folder => ({
@@ -76,6 +78,71 @@ describe("filterTasksByHiddenFolderLists", () => {
   it("does not mutate tasks or their list membership", () => {
     const originalLists = items.map((t) => [...t.lists])
     filterTasksByHiddenFolderLists(items, f, ["list-2"])
+    expect(items.map((t) => t.lists)).toEqual(originalLists)
+  })
+})
+
+describe("foldersInGlobalAllForFilter", () => {
+  it("returns root folders and skips nested and auto period folders", () => {
+    const folders: Folder[] = [
+      { id: "work", name: "Work", createdAt: new Date(), listIds: [] },
+      { id: "projects", name: "Projects", createdAt: new Date(), listIds: [], parentFolderId: "work" },
+      { id: "home", name: "Home", createdAt: new Date(), listIds: [] },
+      { id: "na-sched-y-2026", name: "2026", createdAt: new Date(), listIds: [] },
+    ]
+    expect(foldersInGlobalAllForFilter(folders).map((f) => f.id)).toEqual(["home", "work"])
+  })
+})
+
+describe("filterTasksByHiddenGlobalFolders", () => {
+  const work: Folder = { id: "work", name: "Work", createdAt: new Date(), listIds: ["__all-items__work", "work-list"] }
+  const projects: Folder = {
+    id: "projects",
+    name: "Projects",
+    createdAt: new Date(),
+    listIds: ["__all-items__projects", "proj-list"],
+    parentFolderId: "work",
+  }
+  const home: Folder = { id: "home", name: "Home", createdAt: new Date(), listIds: ["__all-items__home", "home-list"] }
+  const folders = [work, projects, home]
+  const items = [
+    task("w", "work item", ["work-list"]),
+    task("p", "project item", ["proj-list"]),
+    task("h", "home item", ["home-list"]),
+    task("loose", "loose item", ["other-list"]),
+    task("both", "in work and home", ["work-list", "home-list"]),
+  ]
+
+  it("shows every item when nothing is hidden", () => {
+    expect(filterTasksByHiddenGlobalFolders(items, folders, []).map((t) => t.id)).toEqual([
+      "w",
+      "p",
+      "h",
+      "loose",
+      "both",
+    ])
+  })
+
+  it("hides items that belong only to an unselected folder tree", () => {
+    expect(filterTasksByHiddenGlobalFolders(items, folders, ["work"]).map((t) => t.id)).toEqual([
+      "h",
+      "loose",
+      "both",
+    ])
+  })
+
+  it("keeps an item visible if it also belongs to a selected folder", () => {
+    expect(filterTasksByHiddenGlobalFolders(items, folders, ["home"]).map((t) => t.id)).toEqual([
+      "w",
+      "p",
+      "loose",
+      "both",
+    ])
+  })
+
+  it("does not mutate tasks or their list membership", () => {
+    const originalLists = items.map((t) => [...t.lists])
+    filterTasksByHiddenGlobalFolders(items, folders, ["work"])
     expect(items.map((t) => t.lists)).toEqual(originalLists)
   })
 })

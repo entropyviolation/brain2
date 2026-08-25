@@ -177,13 +177,6 @@ export const SHOTS = [
     description: `Checkbox-first checklist mode for quick completion workflows.`,
   },
   {
-    file: "05-lists-content-kanban.png",
-    area: "Lists → list → Kanban",
-    view: "Lists tab → Example List → Kanban display",
-    sources: ["components/Lists/list-content/ListContentKanban.tsx", "components/Lists/list-content/kanban-utils.ts"],
-    description: `Kanban board grouped by a status/select attribute; drag cards between columns.`,
-  },
-  {
     file: "05-lists-content-spreadsheet.png",
     area: "Lists → list → Spreadsheet",
     view: "Lists tab → Example List → Spreadsheet display",

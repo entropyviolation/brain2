@@ -637,8 +637,22 @@ export type ItemDetailPanel =
  * in. Canonical definition lives here so it can be referenced on the data model
  * (`List.enabledDisplays`); `lib/lists-ui-store.ts` re-exports it as
  * `ListDisplay` for its UI-only "active display" preference.
+ *
+ * Kanban is a Modules workspace view only — not a Lists-tab display mode.
  */
-export type ListDisplayMode = "default" | "checklist" | "table" | "icons" | "spreadsheet" | "kanban"
+export const LIST_DISPLAY_MODES = ["default", "checklist", "icons", "table", "spreadsheet"] as const
+export type ListDisplayMode = (typeof LIST_DISPLAY_MODES)[number]
+
+export function isListDisplayMode(value: unknown): value is ListDisplayMode {
+  return typeof value === "string" && (LIST_DISPLAY_MODES as readonly string[]).includes(value)
+}
+
+/** Drop unknown/removed modes (e.g. legacy `"kanban"`). Undefined = all modes. */
+export function sanitizeEnabledDisplays(displays: unknown): ListDisplayMode[] | undefined {
+  if (!Array.isArray(displays) || displays.length === 0) return undefined
+  const next = displays.filter(isListDisplayMode)
+  return next.length > 0 ? next : undefined
+}
 
 // ===========================================================================
 // Objectives & Goals (redesigned)

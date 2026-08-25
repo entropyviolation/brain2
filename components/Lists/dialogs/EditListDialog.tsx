@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import type { List, Folder, ItemTypeDefinition, ListDisplayMode } from "@/lib/types"
+import { LIST_DISPLAY_MODES, sanitizeEnabledDisplays, type List, type Folder, type ItemTypeDefinition, type ListDisplayMode } from "@/lib/types"
 import type { ListDisplay } from "@/lib/lists-ui-store"
 import { listIsNextActions } from "@/lib/item-utils"
 import { isListHiddenFromGlobalAll } from "@/lib/module-lists"
@@ -31,7 +31,7 @@ export interface EditListDialogProps {
   onDelete: () => void
 }
 
-const ALL_DISPLAYS: ListDisplayMode[] = ["default", "checklist", "icons", "table", "spreadsheet", "kanban"]
+const ALL_DISPLAYS: ListDisplayMode[] = [...LIST_DISPLAY_MODES]
 
 function displayLabel(d: ListDisplayMode): string {
   if (d === "table") return "Details"
@@ -70,7 +70,7 @@ export function EditListDialog({
 
   if (!editingCategory) return null
 
-  const enabledDisplays = editingCategory.enabledDisplays ?? ALL_DISPLAYS
+  const enabledDisplays = sanitizeEnabledDisplays(editingCategory.enabledDisplays) ?? ALL_DISPLAYS
 
   const toggleDisplay = (d: ListDisplayMode) => {
     const on = enabledDisplays.includes(d)
