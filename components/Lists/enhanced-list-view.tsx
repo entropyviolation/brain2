@@ -685,7 +685,15 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
         />
       )
     }
-    if (folderView === "details") return <FolderViewDetails {...folderViewCommon} getCategoryCompletionRate={getCategoryCompletionRate} />
+    if (folderView === "details") {
+      return (
+        <FolderViewDetails
+          {...folderViewCommon}
+          folders={folders}
+          getCategoryCompletionRate={getCategoryCompletionRate}
+        />
+      )
+    }
     return (
       <FolderViewCards
         {...folderViewCommon}

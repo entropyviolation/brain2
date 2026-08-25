@@ -18,14 +18,15 @@
 "use client"
 
 import type React from "react"
-import { useState, useCallback, useMemo, useEffect } from "react"
+import { useState, useCallback, useMemo } from "react"
 import { useTaskStore } from "@/lib/task-store"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ChevronLeft, ChevronRight, Home, CalendarRange, GanttChartSquare, Workflow } from "lucide-react"
 import type { Task, SchedulePeriod } from "@/lib/types"
 import { TaskDetailPopup } from "@/components/task-detail-popup"
-import { APP_NAV_KEYS, readStoredTab, writeStoredTab } from "@/lib/app-navigation"
+import { APP_NAV_KEYS } from "@/lib/app-navigation"
+import { usePersistedTab } from "@/lib/use-persisted-tab"
 import {
   scheduleTask as scheduleTaskSvc,
   unscheduleTask as unscheduleTaskSvc,
@@ -66,9 +67,7 @@ export function EnhancedScheduler() {
   const allTasks = useTaskStore((state) => state.tasks)
   const categories = useTaskStore((state) => state.lists)
 
-  const [activeTab, setActiveTab] = useState<SchedulePeriod>(() =>
-    readStoredTab(APP_NAV_KEYS.schedulerTab, SCHEDULER_TABS, "always"),
-  )
+  const [activeTab, setActiveTab] = usePersistedTab(APP_NAV_KEYS.schedulerTab, SCHEDULER_TABS, "always")
   const [schedulerView, setSchedulerView] = useState<SchedulerView>("funnel")
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set())
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -76,10 +75,6 @@ export function EnhancedScheduler() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [sortBy, setSortBy] = useState<SchedulerSortBy>("importance")
   const [sortOrder, setSortOrder] = useState<SchedulerSortOrder>("desc")
-
-  useEffect(() => {
-    writeStoredTab(APP_NAV_KEYS.schedulerTab, activeTab)
-  }, [activeTab])
 
   const scheduleableCategoryIds = useMemo(() => getScheduleableCategoryIds(categories), [categories])
 

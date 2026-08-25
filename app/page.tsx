@@ -12,7 +12,8 @@
 "use client"
 
 import { useState, useCallback, lazy, Suspense, useEffect } from "react"
-import { APP_NAV_KEYS, APP_TABS, readStoredTab, writeStoredTab, type AppTab } from "@/lib/app-navigation"
+import { APP_NAV_KEYS, APP_TABS, writeListsNavigation, COGS_NAVIGATE_TO_LIST_EVENT, type AppTab } from "@/lib/app-navigation"
+import { usePersistedTab } from "@/lib/use-persisted-tab"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { QuickAdd } from "@/components/quick-add"
 import { EnhancedBulkAdd } from "@/components/enhanced-bulk-add"
@@ -24,7 +25,6 @@ import { Reviews } from "@/components/Reviews/reviews"
 import { GlobalSearch, type SearchSelection } from "@/components/Search/GlobalSearch"
 import { useGlobalSearchHotkey } from "@/components/Search/useGlobalSearchHotkey"
 import { useTaskStore } from "@/lib/task-store"
-import { writeListsNavigation, COGS_NAVIGATE_TO_LIST_EVENT } from "@/lib/app-navigation"
 import { useQuickCaptureHotkey } from "@/hooks/useQuickCaptureHotkey"
 import { MetricLoggerButton } from "@/components/Tracking/MetricLogger"
 import { SettingsDialog } from "@/components/Settings/SettingsDialog"
@@ -66,7 +66,7 @@ const LoadingFallback = () => (
 )
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<AppTab>(() => readStoredTab(APP_NAV_KEYS.appTab, APP_TABS, "home"))
+  const [activeTab, setActiveTab] = usePersistedTab(APP_NAV_KEYS.appTab, APP_TABS, "home")
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const [searchSelectedId, setSearchSelectedId] = useState<string | null>(null)
   const { open: searchOpen, setOpen: setSearchOpen } = useGlobalSearchHotkey()
@@ -95,10 +95,6 @@ export default function Home() {
     window.addEventListener("hashchange", read)
     return () => window.removeEventListener("hashchange", read)
   }, [])
-
-  useEffect(() => {
-    writeStoredTab(APP_NAV_KEYS.appTab, activeTab)
-  }, [activeTab])
 
   // Item detail (and other surfaces) can request a jump to a specific list.
   useEffect(() => {

@@ -34,7 +34,8 @@ import { emitTaskCompleted } from "@/lib/completion-events"
 import type { TodoItem, Task, PriorityWeights, CompletionStatus } from "@/lib/types"
 import { TaskDetailPopup } from "@/components/task-detail-popup"
 import JustStartMode from "@/components/Focus/JustStartMode"
-import { APP_NAV_KEYS, readStoredTab, writeStoredTab } from "@/lib/app-navigation"
+import { APP_NAV_KEYS } from "@/lib/app-navigation"
+import { usePersistedTab } from "@/lib/use-persisted-tab"
 import { effectiveStatus, withStatus } from "@/lib/completion-status"
 import {
   buildTodoItems,
@@ -76,9 +77,7 @@ export function TodoPanel() {
   const [todoItems, setTodoItems] = useState<TodoItem[]>([])
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const [justStartTaskId, setJustStartTaskId] = useState<string | null>(null)
-  const [activeTodoTab, setActiveTodoTab] = useState<TodoPeriod>(() =>
-    readStoredTab(APP_NAV_KEYS.homeTodoTab, TODO_TABS, "day"),
-  )
+  const [activeTodoTab, setActiveTodoTab] = usePersistedTab(APP_NAV_KEYS.homeTodoTab, TODO_TABS, "day")
   const [focusedDate, setFocusedDate] = useState(() => new Date())
   const [showAllTasks, setShowAllTasks] = useState(false)
   const [statusFilter, setStatusFilter] = useState<TodoStatusFilter>("open")
@@ -90,10 +89,6 @@ export function TodoPanel() {
     week: false,
     month: false,
   })
-
-  useEffect(() => {
-    writeStoredTab(APP_NAV_KEYS.homeTodoTab, activeTodoTab)
-  }, [activeTodoTab])
 
   useEffect(() => {
     setTodoItems(buildTodoItems(tasks, showAllTasks, focusedDate))

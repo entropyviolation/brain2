@@ -13,7 +13,7 @@
  */
 "use client"
 
-import { useMemo, useState, useEffect } from "react"
+import { useMemo, useState } from "react"
 import { useTaskStore } from "@/lib/task-store"
 import { usePointsStore } from "@/lib/points-store"
 import { useHabitsStore } from "@/lib/habits-store"
@@ -42,7 +42,8 @@ import {
   Tooltip,
   CartesianGrid,
 } from "recharts"
-import { APP_NAV_KEYS, readStoredTab, writeStoredTab } from "@/lib/app-navigation"
+import { APP_NAV_KEYS } from "@/lib/app-navigation"
+import { usePersistedTab } from "@/lib/use-persisted-tab"
 import { PlanVsReality } from "@/components/Analytics/PlanVsReality"
 import { CalibrationView } from "@/components/Analytics/CalibrationView"
 import { StreaksWidget } from "@/components/Analytics/StreaksWidget"
@@ -102,13 +103,7 @@ export function EnhancedAnalytics() {
   const [showUncategorizedTime, setShowUncategorizedTime] = useState(false)
   const [openReviewId, setOpenReviewId] = useState<string | null>(null)
   const [reflectTask, setReflectTask] = useState<Task | null>(null)
-  const [analyticsTab, setAnalyticsTab] = useState<AnalyticsTab>(() =>
-    readStoredTab(APP_NAV_KEYS.analyticsTab, ANALYTICS_TABS, "habits"),
-  )
-
-  useEffect(() => {
-    writeStoredTab(APP_NAV_KEYS.analyticsTab, analyticsTab)
-  }, [analyticsTab])
+  const [analyticsTab, setAnalyticsTab] = usePersistedTab(APP_NAV_KEYS.analyticsTab, ANALYTICS_TABS, "habits")
 
   // ---- headline metrics ----
   const completedCount = allTasks.filter((t) => t.completed).length

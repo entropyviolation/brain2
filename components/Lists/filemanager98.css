@@ -829,6 +829,11 @@
   height: 18px;
 }
 
+.fm98 table.fm-table > tbody > tr > td.fm-within {
+  white-space: normal;
+  max-width: 240px;
+}
+
 /* ===== Checkbox (98 style) ===== */
 .fm98 .fm-checkbox {
   width: 13px;

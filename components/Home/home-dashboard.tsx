@@ -9,7 +9,7 @@
  */
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Calendar, Clock } from "lucide-react"
@@ -27,7 +27,8 @@ import { ActualDayView } from "@/components/Home/Tracking/actual-day-view"
 import { useCurrentDate } from "@/lib/use-current-date"
 import { format } from "date-fns"
 import type { ReviewPeriod } from "@/lib/types"
-import { APP_NAV_KEYS, readStoredTab, writeStoredTab } from "@/lib/app-navigation"
+import { APP_NAV_KEYS } from "@/lib/app-navigation"
+import { usePersistedTab } from "@/lib/use-persisted-tab"
 
 type HomeTab = "habits" | "plan" | "todo" | "goals" | "tracking"
 type TrackingTab = "grid" | "daylog"
@@ -37,19 +38,9 @@ const TRACKING_TABS: TrackingTab[] = ["grid", "daylog"]
 
 export function HomeDashboard() {
   const { currentDate, setCurrentDate } = useCurrentDate()
-  const [activeTab, setActiveTab] = useState<HomeTab>(() => readStoredTab(APP_NAV_KEYS.homeTab, HOME_TABS, "habits"))
-  const [trackingTab, setTrackingTab] = useState<TrackingTab>(() =>
-    readStoredTab(APP_NAV_KEYS.homeTrackingTab, TRACKING_TABS, "grid"),
-  )
+  const [activeTab, setActiveTab] = usePersistedTab(APP_NAV_KEYS.homeTab, HOME_TABS, "habits")
+  const [trackingTab, setTrackingTab] = usePersistedTab(APP_NAV_KEYS.homeTrackingTab, TRACKING_TABS, "grid")
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
-
-  useEffect(() => {
-    writeStoredTab(APP_NAV_KEYS.homeTab, activeTab)
-  }, [activeTab])
-
-  useEffect(() => {
-    writeStoredTab(APP_NAV_KEYS.homeTrackingTab, trackingTab)
-  }, [trackingTab])
 
   const handleStartReview = useCallback((_period: ReviewPeriod, _periodKey: string) => {
     // Header Reviews dropdown owns the full dialog; banner nudges the user there.

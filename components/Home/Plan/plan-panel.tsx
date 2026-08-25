@@ -22,7 +22,8 @@ import { EventDialog } from "./event-dialog"
 import { PasteEventsDialog } from "./paste-events-dialog"
 import { useEventStore } from "@/lib/event-store"
 import { SettingsDialog } from "./settings-dialog"
-import { APP_NAV_KEYS, readStoredTab, writeStoredTab } from "@/lib/app-navigation"
+import { APP_NAV_KEYS } from "@/lib/app-navigation"
+import { usePersistedTab } from "@/lib/use-persisted-tab"
 
 const PLAN_TABS = ["month", "week", "day"] as const
 type PlanTab = (typeof PLAN_TABS)[number]
@@ -58,11 +59,7 @@ export function PlanPanel({
 
   const [showSettingsDialog, setShowSettingsDialog] = useState(false)
   const [showPasteDialog, setShowPasteDialog] = useState(false)
-  const [planTab, setPlanTab] = useState<PlanTab>(() => readStoredTab(APP_NAV_KEYS.homePlanTab, PLAN_TABS, "month"))
-
-  useEffect(() => {
-    writeStoredTab(APP_NAV_KEYS.homePlanTab, planTab)
-  }, [planTab])
+  const [planTab, setPlanTab] = usePersistedTab(APP_NAV_KEYS.homePlanTab, PLAN_TABS, "month")
 
   useEffect(() => {
     setNewEvent((prev) => ({ ...prev, date: currentDate }))
