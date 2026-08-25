@@ -21,7 +21,7 @@ The dashboard uses `lib/use-current-date.ts` for a single **selected day** share
 | Folder | Sub-view |
 |--------|----------|
 | `Habits/` | Daily / weekly / monthly habit tracker |
-| `Plan/` | Month / Week / Day calendar + plan text |
+| `Plan/` | Month / Week / Day calendar + plan text + **Paste Events** |
 | `ToDo/` | Tier-based day/week/month to-do |
 | `Goals/` | All-time **Objectives** (prioritizable per period) + quantifiable **Goals** that serve them, plus a Direction report |
 | `Tracking/` | TimeGrid life tracker + actual day log |

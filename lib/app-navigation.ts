@@ -16,9 +16,19 @@ export const APP_NAV_KEYS = {
   schedulerTab: "cogs-scheduler-tab",
   analyticsTab: "cogs-analytics-tab",
   listsNav: "cogs-lists-navigation",
+  docsDocId: "cogs-docs-doc-id",
+  docsFolder: "cogs-docs-folder",
 } as const
 
-export const APP_TABS = ["home", "categories", "scheduler", "operations", "modules", "graph", "analytics"] as const
+export const APP_TABS = [
+  "home",
+  "categories",
+  "docs",
+  "scheduler",
+  "operations",
+  "modules",
+  "analytics",
+] as const
 export type AppTab = (typeof APP_TABS)[number]
 
 export interface ListsNavigationState {

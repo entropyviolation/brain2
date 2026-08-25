@@ -18,7 +18,6 @@ import { LinkPicker } from "@/components/ItemDetail/LinkPicker"
 import { RelatedItemsPanel } from "@/components/ItemDetail/RelatedItemsPanel"
 import { BodyPanel } from "@/components/ItemDetail/BodyPanel"
 import { ListPicker } from "@/components/Lists/list-picker"
-import { LinkGraph } from "@/components/Graph/LinkGraph"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -744,9 +743,6 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
                     onOpenItem={(id) => setOverrideId(id)}
                     onRemoveLink={removeLink}
                   />
-                  {/* Visual companion to the textual Related list; clicking a
-                      node reuses the same in-place navigation override. */}
-                  <LinkGraph focusId={task.id} onOpenItem={(id) => setOverrideId(id)} />
                 </CardContent>
               </Card>
 

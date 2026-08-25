@@ -48,6 +48,12 @@ import {
   deriveKanbanColumns,
   statusValueToWrite,
 } from "@/components/Lists/list-content/kanban-utils"
+import { DocPlanView } from "@/components/Modules/workspace/itinerary/DocPlanView"
+import { ItineraryDocumentView } from "@/components/Modules/workspace/itinerary/ItineraryDocumentView"
+import { PackingChecklistView, PreTripChecklistView } from "@/components/Modules/workspace/itinerary/TripChecklists"
+import { TripActivitiesView } from "@/components/Modules/workspace/itinerary/TripActivitiesView"
+import { FilmDnaView } from "@/components/Modules/workspace/filmrecs/FilmDnaView"
+import type { ModuleInstance } from "@/lib/modules-store"
 
 function getDef(cat: List | undefined, id?: string): AttributeDefinition | undefined {
   if (!cat || !id) return undefined
@@ -69,11 +75,25 @@ function useViewTasks(view: ModuleView): { tasks: Task[]; category?: List } {
   }, [allTasks, categories, categoryId, filterAttrId, filterValue])
 }
 
-export function ModuleViewBody({ view, onOpenItem }: { view: ModuleView; onOpenItem?: (id: string) => void }) {
+export function ModuleViewBody({
+  view,
+  onOpenItem,
+  module,
+}: {
+  view: ModuleView
+  onOpenItem?: (id: string) => void
+  module?: ModuleInstance
+}) {
   switch (view.kind) {
     case "spreadsheet":
       return <SpreadsheetView view={view} onOpenItem={onOpenItem} />
     case "checklist":
+      if (view.config.checklistStyle === "packing") {
+        return <PackingChecklistView view={view} onOpenItem={onOpenItem} />
+      }
+      if (view.config.checklistStyle === "pretrip") {
+        return <PreTripChecklistView view={view} onOpenItem={onOpenItem} />
+      }
       return <ChecklistView view={view} onOpenItem={onOpenItem} />
     case "agenda":
       return <AgendaView view={view} onOpenItem={onOpenItem} />
@@ -89,6 +109,14 @@ export function ModuleViewBody({ view, onOpenItem }: { view: ModuleView; onOpenI
       return <GalleryView view={view} onOpenItem={onOpenItem} />
     case "notes":
       return <NotesView notesKey={view.config.notesKey || `notes-${view.id}`} />
+    case "doc":
+      return <DocPlanView view={view} planDocId={module?.config?.planDocId} />
+    case "itinerary-doc":
+      return <ItineraryDocumentView view={view} module={module} onOpenItem={onOpenItem} />
+    case "trip-map":
+      return <TripActivitiesView view={view} module={module} onOpenItem={onOpenItem} />
+    case "film-dna":
+      return <FilmDnaView view={view} />
     case "decision-matrix":
       return <DecisionMatrixView view={view} onOpenItem={onOpenItem} />
     case "kanban":

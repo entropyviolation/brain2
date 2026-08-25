@@ -24,6 +24,11 @@ vi.mock("./settings-dialog", () => ({
   SettingsDialog: ({ open }: { open: boolean }) => (open ? <div data-testid="plan-settings">Plan Settings</div> : null),
 }))
 
+vi.mock("./paste-events-dialog", () => ({
+  PasteEventsDialog: ({ open }: { open: boolean }) =>
+    open ? <div data-testid="paste-events-dialog">Paste Events Dialog</div> : null,
+}))
+
 vi.mock("@/components/task-detail-popup", () => ({
   TaskDetailPopup: () => null,
 }))
@@ -45,5 +50,13 @@ describe("PlanPanel", () => {
 
     await user.click(screen.getByRole("button", { name: /Add Event/i }))
     expect(screen.getByTestId("event-dialog")).toBeInTheDocument()
+  })
+
+  it("opens paste events dialog when Paste Events is clicked", async () => {
+    const user = userEvent.setup()
+    render(<PlanPanel currentDate={new Date("2026-06-20T12:00:00")} />)
+
+    await user.click(screen.getByRole("button", { name: /Paste Events/i }))
+    expect(screen.getByTestId("paste-events-dialog")).toBeInTheDocument()
   })
 })

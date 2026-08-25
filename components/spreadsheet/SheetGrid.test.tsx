@@ -1,9 +1,10 @@
 /**
- * SheetGrid — editable grid: cell commit, formula read-only guard, sort, filter.
+ * SheetGrid — editable grid: cell commit, formula read-only guard, sort, filter,
+ * Sheets-style double-click edit, and TSV clipboard paste.
  */
 import { fireEvent, render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { beforeEach, describe, expect, it } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { useTaskStore } from "@/lib/task-store"
 import type { Task, List, AttributeValue } from "@/lib/types"
@@ -45,6 +46,20 @@ function seed(order: Array<[string, string, number]> = [["a", "Apple", 10], ["b"
 
 const rowOrder = () => screen.getAllByText(/^(Apple|Banana)$/).map((el) => el.textContent)
 
+/** Select a cell by visible text without entering edit mode. */
+function selectCellByText(text: string, shiftKey = false) {
+  const el = screen.getByText(text)
+  const td = el.closest("td")!
+  fireEvent.mouseDown(td, { shiftKey })
+}
+
+/** Double-click to enter Sheets-style edit mode. */
+async function editCellByText(user: ReturnType<typeof userEvent.setup>, text: string) {
+  const el = screen.getByText(text)
+  const td = el.closest("td")!
+  await user.dblClick(td)
+}
+
 describe("SheetGrid", () => {
   beforeEach(() => {
     resetAllStores()
@@ -55,7 +70,7 @@ describe("SheetGrid", () => {
     const tasks = seed()
     render(<SheetGrid categoryId="list1" tasks={tasks} enableAddRow={false} enableAddColumn={false} />)
 
-    await user.click(screen.getByRole("button", { name: "10 $" }))
+    await editCellByText(user, "10 $")
     // Cells are Google-Sheets-style text inputs (so "=" formulas are typeable);
     // the inline editor is auto-focused.
     const editor = document.activeElement as HTMLInputElement
@@ -66,7 +81,6 @@ describe("SheetGrid", () => {
   })
 
   it("renders formula cells as read-only and rejects writes via the formula bar", async () => {
-    const user = userEvent.setup()
     const tasks = seed()
     render(<SheetGrid categoryId="list1" tasks={tasks} enableAddRow={false} enableAddColumn={false} />)
 
@@ -74,7 +88,7 @@ describe("SheetGrid", () => {
     expect(screen.getByText("$20.00")).toBeInTheDocument()
 
     // Selecting the formula cell shows its expression in the (disabled) formula bar.
-    await user.click(screen.getByText("$20.00"))
+    selectCellByText("$20.00")
     const formulaBar = screen.getByLabelText("Formula bar") as HTMLInputElement
     expect(formulaBar).toBeDisabled()
     expect(formulaBar.value).toContain("cost*2")
@@ -155,9 +169,10 @@ describe("SheetGrid", () => {
     await user.type(screen.getByPlaceholderText("e.g. Cost"), "Notes")
     await user.click(screen.getByRole("button", { name: "Add column" }))
 
-    // The single new-column cell starts empty ("—"); click to edit and type
-    // into the auto-focused inline editor.
-    await user.click(screen.getByRole("button", { name: "—" }))
+    // Notes is the last data column on the Apple row (gutter, name, cost, total, notes).
+    const appleRow = screen.getByText("Apple").closest("tr")!
+    const notesTd = appleRow.querySelectorAll("td")[4]
+    await user.dblClick(notesTd)
     await user.keyboard("buy more{Enter}")
 
     expect(useTaskStore.getState().tasks.find((t) => t.id === "a")?.attributes?.notes).toBe("buy more")
@@ -181,7 +196,7 @@ describe("SheetGrid", () => {
     render(<SheetGrid categoryId="list1" tasks={tasks} enableAddRow={false} enableAddColumn={false} />)
 
     // Select Banana's cost cell (B2) without opening the inline editor.
-    fireEvent.mouseDown(screen.getByRole("button", { name: "30 $" }))
+    selectCellByText("30 $")
     const bar = screen.getByLabelText("Formula bar")
     await user.clear(bar)
     await user.type(bar, "=B1+5{Enter}")
@@ -195,8 +210,8 @@ describe("SheetGrid", () => {
     render(<SheetGrid categoryId="list1" tasks={tasks} enableAddRow={false} enableAddColumn={false} />)
 
     // Anchor on Apple's cost, shift-extend to Banana's cost (B1:B2 = 10 + 30).
-    fireEvent.mouseDown(screen.getByRole("button", { name: "10 $" }))
-    fireEvent.mouseDown(screen.getByRole("button", { name: "30 $" }), { shiftKey: true })
+    selectCellByText("10 $")
+    selectCellByText("30 $", true)
 
     expect(screen.getByText(/Sum: 40/)).toBeInTheDocument()
   })
@@ -232,7 +247,8 @@ describe("SheetGrid", () => {
     render(<SheetGrid categoryId="fill1" tasks={rows} enableAddRow={false} enableAddColumn={false} />)
 
     // Select the Y cell of row 1 (computes 20) and drag its fill handle to row 3.
-    fireEvent.mouseDown(screen.getByRole("button", { name: "20" }))
+    const r1Cells = screen.getByText("r1").closest("tr")!.querySelectorAll("td")
+    fireEvent.mouseDown(r1Cells[3])
     fireEvent.mouseDown(screen.getByLabelText("Fill handle"))
     // Y cell of row 3 (tds: 0 gutter, 1 name, 2 X, 3 Y) — keep the drag in column Y.
     const r3Cells = screen.getByText("r3").closest("tr")!.querySelectorAll("td")
@@ -242,5 +258,58 @@ describe("SheetGrid", () => {
     const after = useTaskStore.getState().tasks
     expect(after.find((t) => t.id === "r2")?.attributes?.y).toBe("=B2*2")
     expect(after.find((t) => t.id === "r3")?.attributes?.y).toBe("=B3*2")
+  })
+
+  it("pastes a TSV block across cells when not editing", () => {
+    const tasks = seed()
+    render(<SheetGrid categoryId="list1" tasks={tasks} enableAddRow={false} enableAddColumn={false} />)
+
+    selectCellByText("Apple")
+    fireEvent.paste(window, {
+      clipboardData: {
+        getData: (type: string) => (type === "text/plain" ? "Cherry\t50\nDate\t60" : ""),
+      },
+    })
+
+    const after = useTaskStore.getState().tasks
+    expect(after.find((t) => t.id === "a")?.description).toBe("Cherry")
+    expect(after.find((t) => t.id === "a")?.attributes?.cost).toBe(50)
+    expect(after.find((t) => t.id === "b")?.description).toBe("Date")
+    expect(after.find((t) => t.id === "b")?.attributes?.cost).toBe(60)
+  })
+
+  it("pastes literal text into one cell while double-click editing", async () => {
+    const user = userEvent.setup()
+    const tasks = seed([["a", "Apple", 10]])
+    render(<SheetGrid categoryId="list1" tasks={tasks} enableAddRow={false} enableAddColumn={false} />)
+
+    await editCellByText(user, "Apple")
+    const editor = document.activeElement as HTMLInputElement
+    expect(editor.tagName).toBe("INPUT")
+
+    // Tabs/newlines stay in the single cell (no grid split) — matches Sheets edit mode.
+    const literal = "line1\tcol2 and more tabs\there"
+    fireEvent.change(editor, { target: { value: literal } })
+    fireEvent.blur(editor)
+
+    const apple = useTaskStore.getState().tasks.find((t) => t.id === "a")
+    expect(apple?.description).toBe(literal)
+    expect(apple?.attributes?.cost).toBe(10)
+  })
+
+  it("copies the selection as TSV", () => {
+    const tasks = seed()
+    render(<SheetGrid categoryId="list1" tasks={tasks} enableAddRow={false} enableAddColumn={false} />)
+
+    selectCellByText("Apple")
+    selectCellByText("Banana", true)
+
+    const setData = vi.fn()
+    fireEvent.copy(window, {
+      clipboardData: { setData },
+    })
+
+    expect(setData).toHaveBeenCalledWith("text/plain", expect.stringContaining("Apple"))
+    expect(setData.mock.calls[0][1]).toMatch(/Apple.*\nBanana/)
   })
 })

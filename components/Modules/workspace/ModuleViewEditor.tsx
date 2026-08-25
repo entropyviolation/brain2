@@ -122,6 +122,18 @@ export function ModuleViewEditor({
         quizChoiceCount: kind === "quiz" ? Math.max(2, quizChoiceCount) : undefined,
         cards: kind === "dashboard" ? cards : undefined,
         notesKey: initial?.config.notesKey,
+        docId: kind === "doc" ? initial?.config.docId : undefined,
+        checklistStyle: kind === "checklist" ? initial?.config.checklistStyle : undefined,
+        daysCategoryId:
+          kind === "itinerary-doc" || kind === "trip-map"
+            ? initial?.config.daysCategoryId
+            : undefined,
+        flightsCategoryId: kind === "itinerary-doc" ? initial?.config.flightsCategoryId : undefined,
+        entriesCategoryId:
+          kind === "itinerary-doc" || kind === "trip-map"
+            ? initial?.config.entriesCategoryId
+            : undefined,
+        placesCategoryId: kind === "trip-map" ? categoryId || initial?.config.placesCategoryId : undefined,
       },
     }
     onSave(view)

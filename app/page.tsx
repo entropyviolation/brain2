@@ -2,9 +2,10 @@
  * app/page.tsx — Application root page
  *
  * The single page of the app. Renders the global header (title + Cognitive State,
- * Inbox, Bulk Add, Quick Add) and the top-level tab bar (Home, Next Actions,
- * Scheduler, Analytics), lazy-loading each module panel for fast startup. When a
- * task is selected it swaps to the full-screen task detail view.
+ * Inbox, Bulk Add, Quick Add) and the top-level tab bar (Home, Lists, Docs,
+ * Scheduler, Operations, Modules, Analytics), lazy-loading each module
+ * panel for fast startup. When a task is selected it swaps to the full-screen
+ * task detail view.
  *
  * Spec: §2.2 (module hosting) and §8.2 (dashboard top bar / global quick actions).
  */
@@ -27,6 +28,8 @@ import { writeListsNavigation, COGS_NAVIGATE_TO_LIST_EVENT } from "@/lib/app-nav
 import { useQuickCaptureHotkey } from "@/hooks/useQuickCaptureHotkey"
 import { MetricLoggerButton } from "@/components/Tracking/MetricLogger"
 import { SettingsDialog } from "@/components/Settings/SettingsDialog"
+import { LiveSyncHost } from "@/components/LiveSync/LiveSyncHost"
+import "@/components/LiveSync/live-sync.css"
 import { parseModulePopoutModuleId } from "@/components/Modules/workspace/ModuleWorkspace"
 import { parseSheetPopoutCategoryId } from "@/components/spreadsheet/sheet-popout"
 import { initWorkflowEngine, createTaskRepositoryAdapter } from "@/lib/services/item-mutation-service"
@@ -50,10 +53,10 @@ const ModulePopoutView = lazy(() =>
 const SheetPopoutView = lazy(() =>
   import("@/components/spreadsheet/SheetPopoutView").then((mod) => ({ default: mod.SheetPopoutView })),
 )
-const KnowledgeGraph = lazy(() => import("@/components/Graph/KnowledgeGraph"))
 const OperationsView = lazy(() =>
   import("@/components/Operations/OperationsView").then((mod) => ({ default: mod.OperationsView })),
 )
+const DocsPanel = lazy(() => import("@/components/Docs/DocsPanel").then((mod) => ({ default: mod.DocsPanel })))
 
 // Loading fallback
 const LoadingFallback = () => (
@@ -191,6 +194,7 @@ export default function Home() {
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold">COGS</h1>
           <div className="flex items-center gap-4">
+            <LiveSyncHost />
             <Reviews />
             <SettingsDialog />
             <CognitiveState />
@@ -205,10 +209,10 @@ export default function Home() {
           <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="home">Home</TabsTrigger>
             <TabsTrigger value="categories">Lists</TabsTrigger>
+            <TabsTrigger value="docs">Docs</TabsTrigger>
             <TabsTrigger value="scheduler">Scheduler</TabsTrigger>
             <TabsTrigger value="operations">Operations</TabsTrigger>
             <TabsTrigger value="modules">Modules</TabsTrigger>
-            <TabsTrigger value="graph">Graph</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
 
@@ -222,6 +226,12 @@ export default function Home() {
             {activeTab === "categories" && (
               <TabsContent value="categories">
                 <EnhancedCategoryView key={listsNavKey} onTaskSelect={handleTaskSelect} />
+              </TabsContent>
+            )}
+
+            {activeTab === "docs" && (
+              <TabsContent value="docs">
+                <DocsPanel />
               </TabsContent>
             )}
 
@@ -240,12 +250,6 @@ export default function Home() {
             {activeTab === "modules" && (
               <TabsContent value="modules">
                 <ModulesPanel onTaskSelect={handleTaskSelect} />
-              </TabsContent>
-            )}
-
-            {activeTab === "graph" && (
-              <TabsContent value="graph">
-                <KnowledgeGraph />
               </TabsContent>
             )}
 

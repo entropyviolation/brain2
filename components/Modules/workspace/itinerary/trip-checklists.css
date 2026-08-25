@@ -1,0 +1,208 @@
+/* Trip packing / before-trip checklists — light printable paper surface */
+
+.trip-checklist-paper {
+  --tc-ink: #1a1a1a;
+  --tc-muted: #4a453f;
+  --tc-line: #e4e0d8;
+  --tc-paper: #fffcf7;
+  --tc-wash: #f7f3eb;
+  --tc-accent: #2f5d8c;
+
+  background: var(--tc-paper);
+  color: var(--tc-ink);
+  border-radius: 0.5rem;
+  padding: 1.25rem 1.35rem 1.5rem;
+  max-width: 40rem;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
+  font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+}
+
+.trip-checklist-paper h3,
+.trip-checklist-paper h4 {
+  color: var(--tc-ink);
+}
+
+.trip-checklist-paper .tc-muted {
+  color: var(--tc-muted) !important;
+  opacity: 1 !important;
+}
+
+.trip-checklist-paper .tc-card {
+  background: #fff;
+  border: 1px solid var(--tc-line);
+  border-radius: 0.5rem;
+  padding: 0.9rem 1rem;
+}
+
+.trip-checklist-paper .tc-progress-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--tc-ink);
+}
+
+.trip-checklist-paper .tc-progress-meta {
+  font-size: 0.75rem;
+  color: var(--tc-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.trip-checklist-paper .tc-add-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.trip-checklist-paper .tc-add-row input,
+.trip-checklist-paper .tc-add-row select,
+.trip-checklist-paper .tc-bulk textarea {
+  background: #fff !important;
+  color: var(--tc-ink) !important;
+  border: 1px solid #cfc8bc !important;
+  border-radius: 0.375rem;
+}
+
+.trip-checklist-paper .tc-add-row input::placeholder,
+.trip-checklist-paper .tc-bulk textarea::placeholder {
+  color: #7a736a !important;
+  opacity: 1;
+}
+
+.trip-checklist-paper .tc-bulk {
+  background: var(--tc-wash);
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.75rem 0.9rem;
+  font-size: 0.875rem;
+}
+
+.trip-checklist-paper .tc-bulk summary {
+  cursor: pointer;
+  color: var(--tc-ink);
+  font-weight: 600;
+  list-style: none;
+}
+
+.trip-checklist-paper .tc-bulk summary::-webkit-details-marker {
+  display: none;
+}
+
+.trip-checklist-paper .tc-bulk summary::before {
+  content: "▸ ";
+  color: var(--tc-muted);
+}
+
+.trip-checklist-paper .tc-bulk[open] summary::before {
+  content: "▾ ";
+}
+
+.trip-checklist-paper .tc-list {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  overflow: visible;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.trip-checklist-paper .tc-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.15rem;
+  border-bottom: 1px solid var(--tc-line);
+  background: transparent;
+}
+
+.trip-checklist-paper .tc-list li:last-child {
+  border-bottom: none;
+}
+
+.trip-checklist-paper .tc-list button {
+  color: var(--tc-ink);
+  background: transparent;
+  border: none;
+  padding: 0;
+  text-align: left;
+  font-size: 0.9rem;
+  flex: 1;
+  cursor: pointer;
+}
+
+.trip-checklist-paper .tc-list button.is-done {
+  text-decoration: line-through;
+  color: var(--tc-muted);
+}
+
+.trip-checklist-paper .tc-section {
+  background: #fff;
+  border: 1px solid var(--tc-line);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.trip-checklist-paper .tc-section header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.55rem 0.85rem;
+  background: var(--tc-wash);
+  border-bottom: 1px solid var(--tc-line);
+  color: var(--tc-ink);
+}
+
+.trip-checklist-paper .tc-chip {
+  font-size: 0.72rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid #cfc8bc;
+  background: #fff;
+  color: var(--tc-ink);
+  cursor: pointer;
+}
+
+.trip-checklist-paper .tc-chip.is-on {
+  background: var(--tc-accent);
+  border-color: var(--tc-accent);
+  color: #fff;
+}
+
+.trip-checklist-paper .tc-badge {
+  font-size: 0.65rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--tc-wash);
+  border: 1px solid var(--tc-line);
+  color: var(--tc-muted);
+  font-weight: 600;
+}
+
+.trip-checklist-paper .tc-badge.is-high {
+  background: #fde8e8;
+  border-color: #e8b4b4;
+  color: #8b1a1a;
+}
+
+.trip-checklist-paper .tc-empty {
+  padding: 1.5rem 0.85rem;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--tc-muted);
+}
+
+.trip-checklist-paper details.tc-done summary {
+  cursor: pointer;
+  color: var(--tc-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+@media print {
+  .trip-checklist-paper {
+    box-shadow: none;
+    background: #fff;
+    max-width: none;
+    padding: 0;
+  }
+}

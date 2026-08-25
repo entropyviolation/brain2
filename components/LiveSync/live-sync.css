@@ -1,0 +1,36 @@
+.cogs-live-sync {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid #808080;
+  background: #e8e4dc;
+  font-size: 0.72rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.cogs-live-sync-compact {
+  padding: 0.15rem 0.4rem;
+}
+
+.cogs-live-sync-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.cogs-live-sync-toggle {
+  margin-left: 0.15rem;
+  border: 1px solid #808080;
+  background: #f3f0ea;
+  font-size: 0.68rem;
+  padding: 0.05rem 0.3rem;
+  cursor: pointer;
+}
+
+.cogs-mobile-app .cogs-live-sync {
+  flex: 1 1 auto;
+  min-width: 0;
+}

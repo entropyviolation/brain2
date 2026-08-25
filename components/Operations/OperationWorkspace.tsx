@@ -4,7 +4,8 @@
  * The full-screen workspace for a single Operation (directed enterprise). Reads
  * the operation task from the task store by id and lays out a header (back,
  * rename, stage badge, post-mortem) over a two-column body: the main tabs
- * (Home / Phases / Resources / Log) and a persistent "To do next" rail.
+ * (Home / Phases / Resources / Plan / Itinerary / Activities / Log) and a
+ * persistent "To do next" rail.
  *
  * Self-contained: it reads/writes only through the task store + the
  * `operation-actions` helpers, so the integration pass just needs to mount it
@@ -20,7 +21,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeft, Pencil, ClipboardCheck, Rocket } from "lucide-react"
 import { useTaskStore } from "@/lib/task-store"
 import { OPERATION_ATTR, type OperationStage } from "@/lib/operation-types"
-import type { Task } from "@/lib/types"
 import { renameOperation } from "./operation-actions"
 import { OperationHome } from "./OperationHome"
 import { PhasesPanel } from "./PhasesPanel"
@@ -28,6 +28,11 @@ import { ResourcesPanel } from "./ResourcesPanel"
 import { OperationLogFeed } from "./OperationLogFeed"
 import { ToDoNextRail } from "./ToDoNextRail"
 import { OperationPostMortemDialog } from "./OperationPostMortemDialog"
+import {
+  OperationActivitiesPanel,
+  OperationItineraryPanel,
+  OperationPlanDocPanel,
+} from "./OperationFieldPlanPanels"
 
 const STAGE_BADGE: Record<OperationStage, string> = {
   planning: "bg-slate-100 text-slate-700",
@@ -50,6 +55,7 @@ export function OperationWorkspace({
   const [renaming, setRenaming] = useState(false)
   const [titleDraft, setTitleDraft] = useState("")
   const [postMortemOpen, setPostMortemOpen] = useState(false)
+  const [tab, setTab] = useState("home")
 
   if (!operation) {
     return (
@@ -65,6 +71,7 @@ export function OperationWorkspace({
   }
 
   const stage = (operation.attributes?.[OPERATION_ATTR.stage] as OperationStage) ?? "planning"
+  const fieldPlanTab = tab === "plan" || tab === "itinerary" || tab === "activities"
 
   return (
     <div className="space-y-4">
@@ -109,12 +116,15 @@ export function OperationWorkspace({
         </Button>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_18rem]">
-        <Tabs defaultValue="home" className="min-w-0">
-          <TabsList>
+      <div className={fieldPlanTab ? "min-w-0" : "grid gap-4 lg:grid-cols-[1fr_18rem]"}>
+        <Tabs value={tab} onValueChange={setTab} className="min-w-0">
+          <TabsList className="flex h-auto flex-wrap gap-1">
             <TabsTrigger value="home">Home</TabsTrigger>
             <TabsTrigger value="phases">Phases</TabsTrigger>
             <TabsTrigger value="resources">Resources</TabsTrigger>
+            <TabsTrigger value="plan">Plan</TabsTrigger>
+            <TabsTrigger value="itinerary">Itinerary</TabsTrigger>
+            <TabsTrigger value="activities">Activities</TabsTrigger>
             <TabsTrigger value="log">Log</TabsTrigger>
           </TabsList>
           <TabsContent value="home" className="pt-2">
@@ -126,14 +136,25 @@ export function OperationWorkspace({
           <TabsContent value="resources" className="pt-2">
             <ResourcesPanel operation={operation} onOpenItem={onOpenItem} />
           </TabsContent>
+          <TabsContent value="plan" className="pt-2">
+            <OperationPlanDocPanel operation={operation} />
+          </TabsContent>
+          <TabsContent value="itinerary" className="pt-2">
+            <OperationItineraryPanel operation={operation} onOpenItem={onOpenItem} />
+          </TabsContent>
+          <TabsContent value="activities" className="pt-2">
+            <OperationActivitiesPanel operation={operation} onOpenItem={onOpenItem} />
+          </TabsContent>
           <TabsContent value="log" className="pt-2">
             <OperationLogFeed operation={operation} />
           </TabsContent>
         </Tabs>
 
-        <aside className="lg:border-l lg:pl-4">
-          <ToDoNextRail operation={operation} onOpenItem={onOpenItem} />
-        </aside>
+        {!fieldPlanTab && (
+          <aside className="lg:border-l lg:pl-4">
+            <ToDoNextRail operation={operation} onOpenItem={onOpenItem} />
+          </aside>
+        )}
       </div>
 
       <OperationPostMortemDialog

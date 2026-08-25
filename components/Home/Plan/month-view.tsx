@@ -20,6 +20,7 @@ import { ChevronLeft, ChevronRight, Clock, Edit3, Sparkles, MapPin, Calendar } f
 import { useTaskStore } from "@/lib/task-store"
 import { useEventStore } from "@/lib/event-store"
 import { formatLocalDateKey, sameCalendarDay, toLocalCalendarDate } from "@/lib/date-utils"
+import { eventCoversDay, isMultiDayEvent } from "@/lib/event-links"
 import { getStoredPlanText, saveStoredPlanText } from "@/lib/plan-text"
 import {
   format,
@@ -74,7 +75,11 @@ export function MonthView({
   }
 
   const getEventsForDate = (date: Date) => {
-    return events.filter((event) => sameCalendarDay(event.date, date))
+    return events.filter((event) =>
+      event.isAllDay || isMultiDayEvent(event)
+        ? eventCoversDay(event, date)
+        : sameCalendarDay(event.date, date),
+    )
   }
 
   const monthStart = startOfMonth(currentDate)
@@ -195,7 +200,13 @@ export function MonthView({
                             onEventClick(event)
                           }}
                         >
-                          <div className="font-medium">{event.isAllDay ? "All Day" : event.startTime}</div>
+                          <div className="font-medium">
+                            {event.isAllDay || isMultiDayEvent(event)
+                              ? isMultiDayEvent(event) && event.endDate
+                                ? `${format(event.date, "MMM d")}–${format(event.endDate, "MMM d")}`
+                                : "All Day"
+                              : event.startTime}
+                          </div>
                           <div className="opacity-90 truncate">{event.title}</div>
                           {event.location && (
                             <div className="opacity-80 text-xs flex items-center gap-1 mt-1">

@@ -77,7 +77,13 @@ export function TimeGrid({ compact = false }: { compact?: boolean }) {
       dragStartSlot.current = null
     }
     window.addEventListener("mouseup", up)
-    return () => window.removeEventListener("mouseup", up)
+    window.addEventListener("touchend", up)
+    window.addEventListener("touchcancel", up)
+    return () => {
+      window.removeEventListener("mouseup", up)
+      window.removeEventListener("touchend", up)
+      window.removeEventListener("touchcancel", up)
+    }
   }, [])
 
   const penById = useCallback(
@@ -331,7 +337,7 @@ export function TimeGrid({ compact = false }: { compact?: boolean }) {
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Drag to paint one slot at a time. Click a block with the same pen selected to add details; another pen or Erase changes only that slot.
+        Drag (or finger-drag) to paint one slot at a time. Tap a block with the same pen selected to add details; another pen or Erase changes only that slot.
       </p>
 
       <div className="overflow-auto border rounded bg-white" style={{ maxHeight: compact ? 360 : "none" }}>
@@ -360,7 +366,30 @@ export function TimeGrid({ compact = false }: { compact?: boolean }) {
                         }
                       }}
                       onMouseUp={() => handleSlotMouseUp(slot)}
-                      className="flex-1 border-r last:border-r-0 cursor-pointer"
+                      onTouchStart={(e) => {
+                        // Paint via touch without blocking page scroll unless a pen is selected.
+                        if (selectedPenId === null) return
+                        e.preventDefault()
+                        dragStartSlot.current = slot
+                        draggingRef.current = true
+                        paintSlot(slot)
+                      }}
+                      onTouchMove={(e) => {
+                        if (!draggingRef.current || selectedPenId === null) return
+                        e.preventDefault()
+                        const t = e.touches[0]
+                        if (!t) return
+                        const el = document.elementFromPoint(t.clientX, t.clientY) as HTMLElement | null
+                        const slotAttr = el?.dataset?.timeslot
+                        if (slotAttr == null) return
+                        const next = Number(slotAttr)
+                        if (!Number.isFinite(next)) return
+                        paintedRef.current = true
+                        paintSlot(next)
+                      }}
+                      onTouchEnd={() => handleSlotMouseUp(slot)}
+                      data-timeslot={slot}
+                      className="flex-1 border-r last:border-r-0 cursor-pointer touch-none"
                       style={{ background: cellPen?.color || "transparent" }}
                     />
                   )

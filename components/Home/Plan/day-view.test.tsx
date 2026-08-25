@@ -55,4 +55,34 @@ describe("DayView", () => {
     await user.type(screen.getByPlaceholderText(/Write your day plan/i), "Deep work AM")
     expect(localStorage.getItem(`dayPlan-${formatLocalDateKey(currentDate)}`)).toBe("Deep work AM")
   })
+
+  it("shows a multi-day event on a middle day of its span", () => {
+    const multiDay = {
+      id: "trip-1",
+      title: "WRITING TRIP",
+      startTime: "00:00",
+      endTime: "23:59",
+      date: new Date(2026, 5, 18),
+      endDate: new Date(2026, 5, 22),
+      type: "event" as const,
+      isScheduled: true,
+      isAllDay: true,
+      color: "#8cd4a5",
+    }
+
+    render(
+      <DayView
+        currentDate={currentDate}
+        setCurrentDate={vi.fn()}
+        events={[multiDay]}
+        setEvents={vi.fn()}
+        onTaskClick={vi.fn()}
+        onEventClick={vi.fn()}
+        onCreateEvent={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText("WRITING TRIP")).toBeInTheDocument()
+    expect(screen.getByText(/Jun 18 – Jun 22/)).toBeInTheDocument()
+  })
 })

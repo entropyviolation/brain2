@@ -1,6 +1,7 @@
 import type { Folder, Task, List } from "@/lib/types"
 import { isFolderAllItemsCategoryId, folderListCategoryIds, getTasksForFolderAllView } from "@/lib/folder-all-items"
 import { isScheduledFolderId, getTasksForScheduledFolder } from "@/lib/scheduled-lists-sync"
+import { getRootFolders, getFolderChildren } from "@/lib/folder-tree"
 import { ROOT_ALL_FOLDER_ID, SMART_LISTS, OBJECTIVES_LIST_ID } from "@/components/Lists/constants"
 import type { GridEntry, SmartId } from "@/components/Lists/types"
 
@@ -83,7 +84,7 @@ export function buildGridEntries(params: BuildGridEntriesParams): GridEntry[] {
       color: "#64748b",
       count: allTasks.filter((t) => !t.completed).length,
     })
-    folders.forEach((f) =>
+    getRootFolders(folders).forEach((f) =>
       add({ kind: "folder", id: f.id, name: f.name, color: f.color, icon: f.icon, count: countForFolder(f) }),
     )
     categories
@@ -92,11 +93,9 @@ export function buildGridEntries(params: BuildGridEntriesParams): GridEntry[] {
         add({ kind: "list", id: c.id, name: c.name, color: c.color, icon: c.icon, count: getTasksForCategory(c.id).length }),
       )
   } else if (currentFolder) {
-    folders
-      .filter((f) => f.parentFolderId === currentFolder.id)
-      .forEach((f) =>
-        add({ kind: "folder", id: f.id, name: f.name, color: f.color, icon: f.icon, count: countForFolder(f) }),
-      )
+    getFolderChildren(folders, currentFolder.id).forEach((f) =>
+      add({ kind: "folder", id: f.id, name: f.name, color: f.color, icon: f.icon, count: countForFolder(f) }),
+    )
     const folderListIds = folderListCategoryIds(currentFolder)
     const allCount = isScheduledFolderId(currentFolder.id)
       ? getTasksForScheduledFolder(allTasks, currentFolder.id).length

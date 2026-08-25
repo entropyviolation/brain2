@@ -5,6 +5,7 @@ import {
   applyInlineWrap,
   applyLinePrefix,
   applyInsert,
+  embedSrcForUrl,
 } from "./markdown"
 
 describe("escapeHtml", () => {
@@ -77,6 +78,41 @@ describe("renderMarkdown — inline + safety", () => {
     expect(renderMarkdown("<script>alert(1)</script>")).toBe(
       "<p>&lt;script&gt;alert(1)&lt;/script&gt;</p>",
     )
+  })
+
+  it("renders images for http(s) URLs only", () => {
+    expect(renderMarkdown("![cat](https://img.test/c.png)")).toContain(
+      '<img class="rte-image" src="https://img.test/c.png" alt="cat"',
+    )
+    expect(renderMarkdown("![x](javascript:alert(1))")).not.toContain("<img")
+  })
+
+  it("renders allow-listed font spans and strips unknown fonts", () => {
+    expect(renderMarkdown("{font:Roboto}Hi{/font}")).toContain('font-family:&quot;Roboto&quot;')
+    expect(renderMarkdown("{font:Roboto}Hi{/font}")).toContain(">Hi</span>")
+    expect(renderMarkdown("{font:EvilFont}Hi{/font}")).toBe("<p>Hi</p>")
+  })
+
+  it("renders embed link cards for generic https URLs", () => {
+    const html = renderMarkdown("@[Docs](https://example.com/page)")
+    expect(html).toContain('class="rte-link-card"')
+    expect(html).toContain("https://example.com/page")
+    expect(html).toContain("Docs")
+  })
+})
+
+describe("embedSrcForUrl", () => {
+  it("maps YouTube and Vimeo to privacy-friendly embed URLs", () => {
+    expect(embedSrcForUrl("https://www.youtube.com/watch?v=abc123")).toBe(
+      "https://www.youtube-nocookie.com/embed/abc123",
+    )
+    expect(embedSrcForUrl("https://youtu.be/xyz789")).toBe(
+      "https://www.youtube-nocookie.com/embed/xyz789",
+    )
+    expect(embedSrcForUrl("https://vimeo.com/123456")).toBe(
+      "https://player.vimeo.com/video/123456",
+    )
+    expect(embedSrcForUrl("https://example.com")).toBeNull()
   })
 })
 

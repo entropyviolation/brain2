@@ -36,6 +36,8 @@ export interface AgendaGridProps {
   onUpdateTimeLog?: (taskId: string, logId: string, updates: Partial<TimeLogEntry>) => void
   onCreateTimeLog?: (taskId: string, hour: number, minute: number) => void
   showCurrentTimeIndicator?: boolean
+  /** When false, skip all-day/multi-day banner rows (e.g. day view renders them separately). */
+  showAllDayBanners?: boolean
 }
 
 function parseTimeParts(time?: string): { hour: number; minute: number } {
@@ -103,6 +105,7 @@ export function AgendaGrid({
   onUpdateTimeLog,
   onCreateTimeLog,
   showCurrentTimeIndicator = true,
+  showAllDayBanners = true,
 }: AgendaGridProps) {
   const dragCreateHour = useRef<number | null>(null)
   const didDragCreate = useRef(false)
@@ -134,7 +137,10 @@ export function AgendaGrid({
 
   // All-day + multi-day events covering this day, rendered as banner rows above
   // the hour grid (HM1). Uses the event's full span via `endDate`.
-  const bannerEvents = useMemo(() => getBannerEvents(events, date), [events, date])
+  const bannerEvents = useMemo(
+    () => (showAllDayBanners ? getBannerEvents(events, date) : []),
+    [events, date, showAllDayBanners],
+  )
 
   const gridItems = useMemo((): GridItem[] => {
     const items: GridItem[] = []

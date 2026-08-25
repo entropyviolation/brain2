@@ -100,22 +100,20 @@ production build succeeds.
 
 ## 4. Integration pass (coordinator) — ✅
 
-- Top-level **Graph** tab in `app/page.tsx` + `lib/app-navigation.ts`
-  (`APP_TABS` → 6, grid-cols-6), lazy-mounts `<KnowledgeGraph />`.
+- Top-level **Graph** tab was added in Wave 1 (later removed from the product).
 - `components/Settings/SettingsDialog.tsx` (header **Settings** button) hosts
   `BackupRestore` (HM2) + "Set up Second Brain" (`seedSecondBrainTypes`).
 - HM1 GlobalSearch + Cmd/Ctrl-K: already wired in `app/page.tsx` (verified).
 - HM3 NeedsAttention: already mounted in `home-dashboard.tsx` (verified).
 - Verification: `npx tsc --noEmit` clean · `npm test` 489 passed / 85 files ·
   `npm run build` static export succeeds.
-- `docs/tree.txt` regenerated; `docs/tree.md` annotated (Graph/Settings/Focus,
+- `docs/tree.txt` regenerated; `docs/tree.md` annotated (Settings/Focus,
   decision-matrix, Brain2 analytics tabs, post-mortems).
 
 ---
 
 ## 5. Where to find each feature in the running app
 
-- **Graph tab** → knowledge graph of all items + typed links.
 - **Scheduler → Gantt / Dependencies** sub-views (critical path highlighted).
 - **Home → To Do** → Priority sort toggle + reweight panel + ⚡ Just Start.
 - **Item detail → Subtasks** → Molecular breakdown (split / context / atomic).

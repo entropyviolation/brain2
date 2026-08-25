@@ -2,8 +2,8 @@
  * components/Home/Plan/plan-panel.tsx — Plan panel container
  *
  * The calendar/plan side of the Scheduler embedded in the Home dashboard. Hosts
- * the Month/Week/Day view tabs, the Add Event and Settings actions, and wires the
- * event dialog and task detail popup to the active view.
+ * the Month/Week/Day view tabs, Add Event / Paste Events / Settings actions, and
+ * wires the event dialog and task detail popup to the active view.
  *
  * Spec: §7.4 (calendar views), §8.5 (Plan panel).
  */
@@ -13,12 +13,13 @@ import { useState, useEffect } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TaskDetailPopup } from "@/components/task-detail-popup"
 import { Button } from "@/components/ui/button"
-import { Plus, Database, Calendar, Clock, Grid3X3 } from "lucide-react"
+import { Plus, Database, Calendar, Clock, Grid3X3, ClipboardPaste } from "lucide-react"
 import type { CalendarEvent } from "@/lib/types"
 import { MonthView } from "./month-view"
 import { WeekView } from "./week-view"
 import { DayView } from "./day-view"
 import { EventDialog } from "./event-dialog"
+import { PasteEventsDialog } from "./paste-events-dialog"
 import { useEventStore } from "@/lib/event-store"
 import { SettingsDialog } from "./settings-dialog"
 import { APP_NAV_KEYS, readStoredTab, writeStoredTab } from "@/lib/app-navigation"
@@ -53,6 +54,7 @@ export function PlanPanel({
   })
 
   const [showSettingsDialog, setShowSettingsDialog] = useState(false)
+  const [showPasteDialog, setShowPasteDialog] = useState(false)
   const [planTab, setPlanTab] = useState<PlanTab>(() => readStoredTab(APP_NAV_KEYS.homePlanTab, PLAN_TABS, "month"))
 
   useEffect(() => {
@@ -127,6 +129,14 @@ export function PlanPanel({
             >
               <Database className="h-4 w-4 mr-2" />
               Settings
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowPasteDialog(true)}
+              className="bg-gray-800/50 border-gray-600 text-white hover:bg-gradient-to-r hover:from-[#5f756d] hover:to-[#8cd4a5] hover:text-black transition-all duration-300 transform hover:scale-105"
+            >
+              <ClipboardPaste className="h-4 w-4 mr-2" />
+              Paste Events
             </Button>
             <Button
               onClick={() => setShowEventDialog(true)}
@@ -220,6 +230,8 @@ export function PlanPanel({
         />
 
         <SettingsDialog open={showSettingsDialog} onOpenChange={setShowSettingsDialog} />
+
+        <PasteEventsDialog open={showPasteDialog} onOpenChange={setShowPasteDialog} />
 
         <TaskDetailPopup taskId={selectedTaskId} open={!!selectedTaskId} onClose={() => setSelectedTaskId(null)} />
       </div>

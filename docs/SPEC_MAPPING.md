@@ -43,8 +43,9 @@ local-first/sync-ready, AI-ready-not-AI-dependent, everything reviewable.
   `@cogs/core` package. See `electron/`, `README.md`.
 - Module list (§2.2) maps to top-level tabs in `app/page.tsx` and
   `components/<Module>/` folders:
-  **Home** | **Lists** | **Scheduler** | **Modules** | **Analytics**, plus
-  global header widgets (**Review**, **Tracking**, Inbox, Bulk Add, Quick Add).
+  **Home** | **Lists** | **Docs** | **Scheduler** | **Operations** | **Modules** |
+  **Analytics**, plus global header widgets (**Review**, **Tracking**,
+  Inbox, Bulk Add, Quick Add).
 
 ## §3 Data Storage & Sync — 🟡/⛔
 - **Current:** a dozen-plus Zustand stores → localStorage:
@@ -138,7 +139,9 @@ local-first/sync-ready, AI-ready-not-AI-dependent, everything reviewable.
 - §7.5 Events with linked checklist — ✅ `lib/event-links.ts` derives each linked
   task's `mustBeDoneBefore` from the event date; attach/detach a prerequisite
   checklist in `Home/Plan/event-dialog.tsx`; `agenda-grid.tsx` renders the
-  "must be done before <date>" badge + multi-day/all-day banner rows.
+  "must be done before <date>" badge + multi-day/all-day banner rows. **Paste
+  Events** — ✅ `paste-events-dialog.tsx` + `lib/parse-event-text.ts` turns
+  unstructured itinerary text into bulk-editable calendar events.
 - §7.6 Auto-scheduling — 🕓 deferred (constraint fields retained on `Task`).
 - §7.7 Carry-over logic — 🟡 partial: Review dialog offers push-forward per task;
   no automatic end-of-period carry-over batch.
@@ -187,20 +190,27 @@ local-first/sync-ready, AI-ready-not-AI-dependent, everything reviewable.
   **agenda**, **summary** (group-by + sum rollups), **randomizer** (pick-N +
   timer), **timer**, **checklist**, **gallery**, **stat**, **notes**,
   **decision-matrix**, **kanban**, **timeline**, **matcher** (link one list to
-  another via `lib/book-match.ts`), **quiz**, and **dashboard** (optional-inclusion
-  rollup cards). Built/edited with `workspace/ModuleViewEditor.tsx`; the per-kind
-  dispatch is `workspace/module-view-bodies.tsx`; rendered by
+  another via `lib/book-match.ts`), **quiz**, **dashboard** (optional-inclusion
+  rollup cards), plus Trip Itinerary **doc** (Docs editor), **itinerary-doc**
+  (printable day blocks via `lib/itinerary-assemble.ts` / `lib/trip-itinerary.ts`),
+  **trip-map** (Leaflet + Open-Meteo `lib/geocode.ts`), and **film-dna** (Film DNA
+  Lab). Built/edited with `workspace/ModuleViewEditor.tsx`;
+  the per-kind dispatch is `workspace/module-view-bodies.tsx`; itinerary-specific
+  bodies live under `workspace/itinerary/`; Film DNA under `workspace/filmrecs/`;
+  rendered by
   `workspace/ModuleWorkspace.tsx` and **drag-reorderable**.
 - **Templates** (`lib/module-templates.ts`) scaffold lists + attribute schemas +
-  seed data + views + seeded workflows in one click: **Itinerary Creator** (cost /
-  booked / theoretical-vs-finalized; cost rollup; print/export; on-Finalized
-  workflow → **Sync to Plan** (`lib/module-plan-sync.ts`) + schedule
-  (`lib/module-schedule-sync.ts`)), **Cleaning System** (randomizer + timer +
-  per-room progress + notes), **Budget Tracker** (optional-inclusion rollup
-  **dashboard**: liquid / net worth / expected spend / payments), and **Book
-  Tasting** (PDF→book **matcher** + **quiz** over `file` attributes with extracted
-  text). This realizes the "custom-module platform" ambition on the unified Item
-  model.
+  seed data + views + seeded workflows in one click: **Itinerary Creator** (Plan
+  doc + printable Itinerary + Activities map + City Places + packing/pretrip
+  checklists; print/export; on-Finalized workflow → **Sync to Plan**
+  (`lib/module-plan-sync.ts`) + schedule (`lib/module-schedule-sync.ts`); older
+  workspaces upgraded via `lib/itinerary-migrate.ts`), **Cleaning System**
+  (randomizer + timer + per-room progress + notes), **Budget Tracker**
+  (optional-inclusion rollup **dashboard**: liquid / net worth / expected spend /
+  payments), **Book Tasting** (PDF→book **matcher** + **quiz** over `file`
+  attributes with extracted text), and **Film DNA Lab** (`film-dna` shelves /
+  Watch ranking / Blend / Letterboxd import). This realizes the "custom-module
+  platform" ambition on the unified Item model.
 - **Build-from-scratch + definitions** — ✅ `ModuleBuilderDialog` offers build
   from scratch, saved **definitions**, or templates; `ModuleSettingsDialog` /
   `ModuleListsPanel` author a serializable `ModuleDefinition` stored in
@@ -292,10 +302,12 @@ so it stays connected to the code:
   category-driven model. Primitives (`tags`, `links`, `attributes`) exist; the
   graph-style modeling/visualization does not.
 - **Document-type items.** Notion / Google Docs–style rich-text editor as an item
-  `body`/type. ✅ `Item.body` + built-in `note` type (`lib/note-types.ts`),
-  dependency-light editor `components/Editor/RichTextEditor.tsx`, and the `"body"`
-  detail panel `components/ItemDetail/BodyPanel.tsx` (shown for `note` items and any
-  list whose `detailPanels` include `"body"`).
+  `body`/type. ✅ `Item.body` + built-in `note` type (`lib/note-types.ts` — Docs
+  folder/font/status attrs), dependency-light markdown editor
+  `components/Editor/RichTextEditor.tsx`, ItemDetail `"body"` panel
+  `components/ItemDetail/BodyPanel.tsx`, and top-level **Docs** tab
+  (`components/Docs/` — WYSIWYG HTML, Google Fonts, images, PDF ingest;
+  helpers in `lib/doc-html.ts` / `doc-links.ts` / `pdf-to-html.ts`).
 - **Spreadsheet-style grid displays.** Google Sheets–style editable grids over
   list/attribute data. ✅ `components/spreadsheet/SheetGrid.tsx` — inline cell
   editing, sticky header, frozen name column, numeric/currency column totals,

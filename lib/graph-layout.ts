@@ -2,16 +2,15 @@
  * lib/graph-layout.ts — Pure graph/timeline layout helpers
  *
  * Deterministic, dependency-free geometry used by the project-visualization
- * views (Gantt, dependency graph, knowledge graph). Everything here is pure:
- * given the same nodes/edges it always returns the same coordinates, so the
- * layouts are unit-testable and SSR-safe.
+ * views (Gantt, dependency graph). Everything here is pure: given the same
+ * nodes/edges it always returns the same coordinates, so the layouts are
+ * unit-testable and SSR-safe.
  *
  * Two families:
  *   - Layered (Sugiyama-lite): topological "rank" → x column, ordinal within a
  *     rank → y row. Powers Gantt row ordering and the dependency-graph columns.
  *   - Radial/circular + deterministic force-ish spread: places nodes around a
- *     circle (or a seeded grid) for the relation/knowledge graph where there is
- *     no inherent left→right precedence.
+ *     circle (or a seeded grid) when there is no inherent left→right precedence.
  */
 
 export interface LayoutEdge {

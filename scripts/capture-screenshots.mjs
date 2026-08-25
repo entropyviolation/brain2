@@ -261,12 +261,6 @@ async function captureModules(page) {
   await screenshot(page, "09-modules-workspace.png")
 }
 
-async function captureGraph(page) {
-  await clickTopTab(page, "Graph")
-  await wait(800)
-  await screenshot(page, "11-graph.png")
-}
-
 async function captureAnalytics(page) {
   await clickTopTab(page, "Analytics")
   await wait(600)
@@ -415,8 +409,6 @@ async function main() {
   await captureOperations(page)
   console.log("\nModules…")
   await captureModules(page)
-  console.log("\nGraph…")
-  await captureGraph(page)
   console.log("\nAnalytics…")
   await captureAnalytics(page)
   console.log("\nDialogs…")

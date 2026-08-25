@@ -48,7 +48,7 @@ components/Lists/
 │   ├── NewFolderDialog.tsx        # Create folder
 │   ├── EditListDialog.tsx         # List settings (attributes, display, pin)
 │   ├── EditFolderDialog.tsx       # Folder settings
-│   ├── CsvImportDialog.tsx        # CSV import wizard
+│   ├── CsvImportDialog.tsx        # Spreadsheet import wizard (CSV/TSV/Excel)
 │   ├── OrbPickerDialog.tsx        # Orb gallery + upload + search
 │   └── CompletedTasksDialog.tsx   # Completed tasks browser
 ├── toolbar/
@@ -64,9 +64,10 @@ Related pure helpers in `lib/`:
 | File | Purpose |
 |------|---------|
 | `lib/lists-grid-entries.ts` | `buildGridEntries()` — folder/list grid entries (Map-keyed, no duplicate entries) |
+| `lib/folder-tree.ts` | Nested folder sidebar tree (`buildFolderTree` / `flattenFolderTree`), editable-folder guards, scheduled-folder sort |
 | `lib/string-utils.ts` | `hashString`, `hashIconSlot` — stable orb/slot indexing |
 | `lib/folder-all-items.ts` | Per-folder **All Items** category sync |
-| `lib/scheduled-lists-sync.ts` | Next Actions smart lists + scheduled folder hierarchy |
+| `lib/scheduled-lists-sync.ts` | Next Actions smart lists + nested scheduled folder hierarchy |
 
 ## Top-level files (not in subfolders)
 
@@ -87,7 +88,7 @@ Related pure helpers in `lib/`:
 |----------|----------|
 | **Home** | Pinned folders/lists + smart to-do lists + habit shortcuts |
 | **All** | Every folder and list |
-| **Folder** | Subfolders, **All Items**, and lists in that folder |
+| **Folder** | Nested subfolders (sidebar tree via `FolderTree` + `lib/folder-tree.ts`), **All Items**, and lists in that folder |
 
 ### Folder views (when browsing, not inside a list)
 
@@ -105,6 +106,7 @@ Default, Checklist, Icons, Details (table), **Kanban**, and **Spreadsheet** — 
 - **Smart lists**: Daily / Weekly / Monthly To Do — live views over `task-store` scheduling (same data as Home To Do).
 - **All Items per folder**: Auto-managed category (`__all-items__{folderId}`). Shows union of all folder items; add here for uncategorized folder membership. Toggle **Show uncategorized only** to filter.
 - **Drag-and-drop**: Tasks onto lists; lists onto folders; tasks onto folder sidebar → uncategorized in that folder. Logic in `hooks/useListsDragDrop.ts`.
+- **Nested folders**: Sidebar renders a collapsible tree (`navigation/FolderTree.tsx`); rename/recolor/delete via `EditFolderDialog` for non-auto scheduled folders (`isEditableFolder`).
 - **Attributes**: Per-list schema (number, string, selection, goal, etc.); reorderable in list settings (`EditListDialog.tsx`).
 - **Next Actions points**: Completing a task in the Next Actions folder awards **1 point** by default, or the list's **Points** number attribute if defined.
 - **Orb gallery**: 1000+ orbs from `lib/orbs-manifest.ts`; edit mode to hide orbs; custom upload with background removal (`OrbPickerDialog.tsx`).

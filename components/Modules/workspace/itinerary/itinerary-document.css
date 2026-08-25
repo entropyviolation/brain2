@@ -1,0 +1,782 @@
+/* Printable itinerary — document look; edit chrome only on hover/focus */
+
+.itinerary-doc-root {
+  --itin-ink: #1a1a1a;
+  --itin-accent: #8b1a1a;
+  --itin-rule: #2a2a2a;
+  --itin-line: #e5e5e5;
+  --itin-muted: #5c5c5c;
+  --itin-paper: #ffffff;
+  --itin-wash: #f3f3f3;
+}
+
+.itinerary-doc-toolbar {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none;
+  padding: 0.25rem 0 !important;
+}
+
+/* Toolbar sits on the teal desktop — placeholders must stay light */
+.itinerary-doc-toolbar .itinerary-inline-input::placeholder,
+.itinerary-doc-toolbar .itinerary-autogrow::placeholder {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.itin-accent-color-input {
+  width: 2.25rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid var(--itin-line, #e5e5e5);
+  border-radius: 0.35rem;
+  background: transparent;
+  cursor: pointer;
+}
+
+.itin-accent-color-input::-webkit-color-swatch-wrapper {
+  padding: 2px;
+}
+
+.itin-accent-color-input::-webkit-color-swatch {
+  border: none;
+  border-radius: 0.2rem;
+}
+
+.itinerary-doc-paper {
+  background: var(--itin-paper);
+  color: var(--itin-ink);
+  border: none;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+  padding: 1.75rem 2rem 2.5rem;
+  max-width: 880px;
+  margin: 0 auto;
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+}
+
+.itinerary-day-block {
+  border-bottom: 2.5px solid var(--itin-rule);
+  margin-bottom: 0.35rem;
+  padding-bottom: 0.1rem;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.itinerary-day-block:last-child {
+  border-bottom-width: 2.5px;
+}
+
+.itinerary-day-main {
+  display: grid;
+  grid-template-columns: minmax(150px, 30%) 1fr;
+  gap: 0;
+  min-height: 4rem;
+}
+
+.itinerary-day-meta {
+  text-align: center;
+  padding: 0.85rem 0.75rem 0.75rem;
+  border-right: 1px solid #d4d4d4;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.15rem;
+  min-width: 0;
+  overflow: visible;
+}
+
+.itinerary-date {
+  font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  font-size: 0.92rem;
+  color: var(--itin-accent);
+}
+
+.itinerary-city {
+  font-weight: 600;
+  font-size: 0.95rem;
+  line-height: 1.25;
+}
+
+.itinerary-weather {
+  font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  font-size: 0.7rem;
+  color: var(--itin-muted);
+  line-height: 1.35;
+  margin-top: 0.15rem;
+}
+
+.itinerary-sun {
+  font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  font-size: 0.65rem;
+  color: var(--itin-ink);
+  opacity: 0.85;
+  margin-top: 0.2rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.35rem;
+  justify-content: center;
+  align-items: center;
+  line-height: 1.35;
+  white-space: normal;
+  overflow: visible;
+  padding: 0 0.15rem;
+}
+
+.itinerary-sun-sep {
+  opacity: 0.45;
+}
+
+.itinerary-day-schedule {
+  padding: 0.15rem 0 0.25rem;
+  font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+}
+
+/* ---- Ghost inputs: look like text until hover/focus ---- */
+
+.itinerary-ghost,
+.itinerary-inline-input,
+.itinerary-time-input,
+.itinerary-mode-select,
+.itinerary-autogrow {
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 3px;
+  outline: none;
+  color: inherit;
+  font: inherit;
+}
+
+.itinerary-inline-input,
+.itinerary-autogrow {
+  font-size: 0.88rem;
+  padding: 0.15rem 0.3rem;
+  width: 100%;
+  line-height: 1.4;
+}
+
+.itinerary-autogrow {
+  resize: none;
+  overflow: hidden;
+  min-height: 1.4rem;
+  field-sizing: content;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.itinerary-day-block:hover .itinerary-ghost:hover,
+.itinerary-day-block:hover .itinerary-inline-input:hover,
+.itinerary-day-block:hover .itinerary-time-input:hover,
+.itinerary-day-block:hover .itinerary-autogrow:hover,
+.itinerary-ghost:focus,
+.itinerary-inline-input:focus,
+.itinerary-time-input:focus,
+.itinerary-autogrow:focus,
+.itinerary-mode-select:focus {
+  border-color: #d4cdc2 !important;
+  background: rgba(255, 255, 255, 0.7) !important;
+}
+
+.itinerary-inline-input::placeholder,
+.itinerary-autogrow::placeholder {
+  color: #b0a89c;
+  font-style: italic;
+  font-weight: 400;
+}
+
+/* City column */
+
+.itinerary-city-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  align-items: stretch;
+  width: 100%;
+  padding: 0 0.15rem;
+}
+
+.itinerary-mode-select {
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-size: 0.62rem;
+  color: var(--itin-muted);
+  text-align: center;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  cursor: pointer;
+  padding: 0.05rem;
+  align-self: center;
+  max-width: 7rem;
+}
+
+.itinerary-day-block:hover .itinerary-mode-select,
+.itinerary-mode-select:focus {
+  opacity: 1;
+}
+
+.itinerary-city-input {
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.95rem;
+  font-family: Georgia, "Iowan Old Style", serif;
+}
+
+.itinerary-travel-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  align-items: center;
+}
+
+.itinerary-arrow {
+  font-size: 0.7rem;
+  color: var(--itin-muted);
+  line-height: 1;
+}
+
+.itinerary-wx-refresh {
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-size: 0.6rem;
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--itin-muted);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  margin-top: 0.1rem;
+}
+
+.itinerary-day-block:hover .itinerary-wx-refresh {
+  opacity: 0.85;
+}
+.itinerary-wx-refresh:hover {
+  text-decoration: underline;
+  opacity: 1 !important;
+}
+
+/* Schedule rows */
+
+.itinerary-schedule-row {
+  display: grid;
+  grid-template-columns: 1.25rem 7.25rem 1fr;
+  gap: 0.35rem 0.45rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.4rem 0.75rem 0.4rem 0.25rem;
+  border-bottom: 1px solid var(--itin-line);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  position: relative;
+  align-items: start;
+}
+
+.itinerary-flight-chunks.is-dragging {
+  opacity: 0.45;
+}
+
+.itinerary-flight-chunks.is-drag-over {
+  box-shadow: inset 0 2px 0 0 var(--itin-accent);
+}
+
+.itinerary-drag-handle {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 0.35rem;
+  cursor: grab;
+  color: var(--itin-muted);
+  opacity: 0;
+  border: none;
+  background: transparent;
+  font-size: 0.85rem;
+  line-height: 1;
+  user-select: none;
+}
+
+.itinerary-day-block:hover .itinerary-drag-handle,
+.itinerary-schedule-row:focus-within .itinerary-drag-handle {
+  opacity: 0.7;
+}
+
+.itinerary-drag-handle:hover {
+  opacity: 1 !important;
+  color: var(--itin-ink);
+}
+
+.itinerary-drag-handle:active {
+  cursor: grabbing;
+}
+
+.itinerary-schedule-row:last-of-type {
+  border-bottom: none;
+}
+
+.itinerary-schedule-row.is-editable {
+  cursor: default;
+}
+
+.itinerary-schedule-row.is-accent {
+  /* Drag handle + full-width note text (no time / "note" label column) */
+  grid-template-columns: 1.25rem 1fr;
+}
+
+.itinerary-schedule-row.is-accent .itinerary-note-body {
+  grid-column: 2 / -1;
+  padding-right: 1.1rem;
+}
+
+.itinerary-schedule-row.is-accent .itinerary-sched-title,
+.itinerary-schedule-row.is-accent .itinerary-autogrow {
+  color: var(--itin-accent);
+  font-style: italic;
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.itinerary-schedule-row.is-accent .itinerary-autogrow::placeholder {
+  color: var(--itin-accent);
+  opacity: 0.45;
+  font-style: italic;
+}
+
+.itinerary-time {
+  font-size: 0.78rem;
+  color: var(--itin-muted);
+  font-variant-numeric: tabular-nums;
+  padding-top: 0.2rem;
+  white-space: nowrap;
+}
+
+.itinerary-time-input {
+  font-size: 0.78rem;
+  padding: 0.1rem 0.2rem;
+  width: 100%;
+  min-width: 6.75rem;
+  max-width: 7.25rem;
+  color: var(--itin-muted);
+  font-variant-numeric: tabular-nums;
+  box-sizing: border-box;
+}
+
+.itinerary-sched-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  min-width: 0;
+  padding-right: 1.1rem;
+}
+
+.itinerary-sched-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.itinerary-sched-detail {
+  font-size: 0.74rem;
+  color: var(--itin-muted);
+}
+
+.itinerary-schedule-empty {
+  display: none; /* quieter — actions appear on hover instead */
+}
+
+.itinerary-day-banner {
+  padding: 0.35rem 0.5rem 0.45rem;
+  border-bottom: 1px dotted #d8d2c6;
+}
+
+.itinerary-day-banner .itinerary-autogrow {
+  font-style: italic;
+  color: var(--itin-accent);
+  font-size: 0.85rem;
+}
+
+.itinerary-row-remove {
+  position: absolute;
+  right: 0.2rem;
+  top: 0.3rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.95rem;
+  line-height: 1;
+  color: #bbb;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+  padding: 0.15rem 0.35rem;
+}
+
+.itinerary-schedule-row:hover .itinerary-row-remove,
+.itinerary-schedule-row:focus-within .itinerary-row-remove {
+  opacity: 1;
+}
+
+.itinerary-row-remove:hover {
+  color: var(--itin-accent);
+}
+
+/* Flight: always-editable fields (screen); print uses title/detail text */
+
+.itinerary-sched-title {
+  font-weight: 650;
+  font-size: 0.9rem;
+  line-height: 1.3;
+}
+
+.itinerary-sched-detail {
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-size: 0.72rem;
+  color: var(--itin-muted);
+  margin-top: 0.1rem;
+}
+
+.itinerary-schedule-row.is-layover .itinerary-sched-title,
+.itinerary-schedule-row.is-layover .itinerary-inline-input {
+  font-style: italic;
+  font-weight: 500;
+  color: var(--itin-muted);
+}
+
+.itinerary-flight-chunks {
+  display: flex;
+  flex-direction: column;
+}
+
+.itinerary-flight-chunks-edit {
+  margin: 0.15rem 0.5rem 0.35rem;
+  font-size: 0.75rem;
+}
+
+.itinerary-flight-detail {
+  font-size: 0.78rem !important;
+  color: var(--itin-muted);
+  width: 100%;
+}
+
+.itinerary-flight-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  align-items: center;
+  margin-top: 0.35rem;
+  padding-top: 0.25rem;
+}
+
+.itinerary-flight-fields .itinerary-inline-input {
+  min-width: 5.5rem;
+  flex: 1;
+  font-size: 0.75rem !important;
+}
+
+.itinerary-conf-input {
+  flex: 1;
+  min-width: 6.5rem;
+  font-size: 0.75rem !important;
+}
+
+.itinerary-flight-raw {
+  margin-top: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--itin-muted);
+}
+
+.itinerary-flight-raw summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--itin-ink);
+}
+
+.itinerary-flight-paste-panel {
+  margin: 0.5rem 0.5rem 0.75rem;
+  padding: 0.75rem;
+  background: var(--itin-wash);
+  border-radius: 0.5rem;
+  border: 1px solid #e4e0d8;
+}
+
+.itinerary-flight-paste-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 650;
+  margin-bottom: 0.35rem;
+  color: var(--itin-ink);
+}
+
+.itinerary-flight-paste {
+  width: 100%;
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid #cfc8bc;
+  border-radius: 0.375rem;
+  background: #fff;
+  color: var(--itin-ink);
+  resize: vertical;
+  min-height: 8rem;
+}
+
+.itinerary-flight-paste-actions {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  align-items: center;
+}
+
+.itinerary-flight-paste-actions .itin-action {
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-size: 0.7rem;
+  height: 1.65rem;
+  border: 1px solid #d8d2c6;
+  background: var(--itin-wash);
+  color: var(--itin-ink);
+  border-radius: 999px;
+  padding: 0 0.65rem;
+  cursor: pointer;
+}
+
+.itinerary-flight-paste-actions .itin-action-primary {
+  background: #2f5d8c;
+  border-color: #2f5d8c;
+  color: #fff;
+}
+
+/* City autocomplete */
+
+.city-suggest {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.city-suggest-list {
+  position: absolute;
+  z-index: 40;
+  left: 0;
+  right: 0;
+  top: calc(100% + 2px);
+  margin: 0;
+  padding: 0.25rem;
+  list-style: none;
+  background: #fff;
+  border: 1px solid #cfc8bc;
+  border-radius: 0.375rem;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  max-height: 12rem;
+  overflow: auto;
+}
+
+.city-suggest-list button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.8rem;
+  color: var(--itin-ink);
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+
+.city-suggest-list button.is-active,
+.city-suggest-list button:hover {
+  background: #efe9df;
+}
+
+/* Day actions — only when hovering the day */
+
+.itinerary-day-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.35rem 0.5rem 0.15rem;
+  align-items: center;
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: opacity 0.15s ease, max-height 0.2s ease, padding 0.15s ease;
+}
+
+.itinerary-day-block:hover .itinerary-day-actions,
+.itinerary-day-block:focus-within .itinerary-day-actions {
+  opacity: 1;
+  max-height: 4rem;
+  padding: 0.45rem 0.5rem 0.55rem;
+}
+
+.itinerary-day-actions .itin-action {
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-size: 0.7rem;
+  height: 1.65rem;
+  border: 1px solid #d8d2c6;
+  background: var(--itin-wash);
+  color: var(--itin-ink);
+  border-radius: 999px;
+  padding: 0 0.65rem;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.itinerary-day-actions .itin-action:hover {
+  background: #efe9df;
+  border-color: #c4bdb0;
+}
+
+.itinerary-day-actions .itin-action-primary {
+  background: #2f5d8c;
+  border-color: #2f5d8c;
+  color: #fff;
+}
+
+.itinerary-day-actions .itin-action-primary:hover {
+  background: #254a70;
+}
+
+.itinerary-day-actions .itin-action-ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--itin-muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.itinerary-flight-add {
+  display: flex;
+  gap: 0.2rem;
+  align-items: center;
+}
+
+.itinerary-flight-add input {
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-size: 0.72rem !important;
+  height: 1.65rem;
+  width: 4.5rem;
+  border: 1px solid #d8d2c6 !important;
+  background: #fff !important;
+  border-radius: 999px;
+  padding: 0 0.5rem;
+}
+
+.itinerary-flight-add input:first-child {
+  width: 3.1rem;
+  text-align: center;
+}
+
+/* Sleep row — clean document line */
+
+.itinerary-sleep-row {
+  display: grid;
+  grid-template-columns: 3.75rem 1fr;
+  gap: 0.4rem;
+  align-items: baseline;
+  border-top: 1px solid #cfc8bc;
+  padding: 0.4rem 0.5rem 0.5rem;
+  font-size: 0.88rem;
+}
+
+.itinerary-sleep-label {
+  font-weight: 700;
+  font-family: Georgia, "Iowan Old Style", serif;
+}
+
+.itinerary-sleep-content {
+  display: grid;
+  grid-template-columns: 1fr 1.35fr;
+  gap: 0.5rem;
+  width: 100%;
+  align-items: baseline;
+}
+
+.itinerary-sleep-content .itinerary-inline-input:first-child {
+  font-weight: 600;
+}
+
+.itinerary-sleep-content .itinerary-inline-input:last-child {
+  color: var(--itin-muted);
+  font-size: 0.82rem;
+  border-left: 1px solid #d8d2c6;
+  border-radius: 0;
+  padding-left: 0.75rem;
+}
+
+.print-only {
+  display: none;
+}
+
+@media print {
+  .itinerary-drag-handle,
+  .no-print,
+  .itinerary-doc-toolbar,
+  .itinerary-day-actions,
+  .itinerary-row-remove,
+  .itinerary-wx-refresh,
+  .itinerary-mode-select,
+  .itinerary-flight-fields,
+  .itinerary-flight-raw,
+  .itinerary-flight-paste-panel,
+  .city-suggest-list {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  .itinerary-doc-paper {
+    border: none;
+    box-shadow: none;
+    max-width: none;
+    padding: 0;
+    background: #fff;
+  }
+  .itinerary-ghost,
+  .itinerary-inline-input,
+  .itinerary-time-input,
+  .itinerary-autogrow {
+    border: none !important;
+    background: transparent !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  .itinerary-schedule-row {
+    grid-template-columns: 7.25rem 1fr !important;
+  }
+  .itinerary-day-actions {
+    opacity: 0 !important;
+    max-height: 0 !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .itinerary-schedule-row {
+    grid-template-columns: 1rem 6.5rem 1fr;
+  }
+  .itinerary-day-main {
+    grid-template-columns: 1fr;
+  }
+  .itinerary-day-meta {
+    border-right: none;
+    border-bottom: 1px solid #cfc8bc;
+  }
+  .itinerary-sleep-content {
+    grid-template-columns: 1fr;
+  }
+  .itinerary-sleep-content .itinerary-inline-input:last-child {
+    border-left: none;
+    padding-left: 0.3rem;
+  }
+  .itinerary-day-actions {
+    opacity: 1;
+    max-height: none;
+    overflow: visible;
+  }
+  .itinerary-mode-select,
+  .itinerary-wx-refresh {
+    opacity: 0.8;
+  }
+  .itinerary-flight-fields {
+    display: flex;
+  }
+}

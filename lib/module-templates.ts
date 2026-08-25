@@ -17,8 +17,11 @@ import { createListItem, withCategoryDefaults } from "@/lib/item-utils"
 import { useTaskStore } from "@/lib/task-store"
 import { useModulesStore } from "@/lib/modules-store"
 import { useWorkflowsStore } from "@/lib/workflows-store"
+import { FILMRECS_SHELVES } from "@/lib/filmrecs-types"
+import { seedFilmToTask, type SeedFilm } from "@/lib/filmrecs-catalog"
+import filmrecsSeed from "@/lib/filmrecs-seed.json"
 
-export type ModuleTemplateId = "itinerary" | "cleaning" | "budget" | "book-tasting" | "blank"
+export type ModuleTemplateId = "itinerary" | "cleaning" | "budget" | "book-tasting" | "filmrecs" | "blank"
 
 export interface ModuleTemplateMeta {
   id: ModuleTemplateId
@@ -31,7 +34,7 @@ export const MODULE_TEMPLATES: ModuleTemplateMeta[] = [
     id: "itinerary",
     name: "Itinerary Creator",
     description:
-      "Plan a trip as a spreadsheet + agenda: cost, booked/unbooked, theoretical vs finalized, plus to-do-before and packing checklists. Print-ready; finalized days sync to your Plan.",
+      "Write a trip plan in a doc, build a printable day-by-day itinerary (auto days, weather API, flight lookup), map activities by city, plus packing and before-trip checklists.",
   },
   {
     id: "cleaning",
@@ -50,6 +53,12 @@ export const MODULE_TEMPLATES: ModuleTemplateMeta[] = [
     name: "Book Tasting",
     description:
       "A reading list plus a PDF shelf: a matcher that links each PDF to its book (with confidence + unmatched flags) and a \"taste it\" quiz that shows a random snippet and asks you to guess the title.",
+  },
+  {
+    id: "filmrecs",
+    name: "Film DNA Lab",
+    description:
+      "Letterboxd taste map: vibe shelves, likes wall, Watch ranking (safe / balanced / explore), blend with a friend's CSV, and import watchlist/likes exports into a Films list.",
   },
   {
     id: "blank",
@@ -144,59 +153,31 @@ function slug(s: string): string {
 // ---- templates ----------------------------------------------------------------
 
 function buildItinerary(uid: Uid): BuiltModuleTemplate {
-  const STATUS = ["Theoretical", "Finalized"]
+  const PLACE_KINDS = ["Place", "Airport", "Landmark", "Stay", "Home", "Work", "Significant"]
+  const BUCKETS = ["Must do", "Maybe"]
 
-  const plan = makeCategory(uid, "Trip Plan", {
-    color: "#0ea5e9",
-    itemLabel: "day",
-    description: "One row per day: where you are and the theme of the day.",
+  const places = makeCategory(uid, "City Places", {
+    color: "#ec4899",
+    itemLabel: "place",
+    description: "Wishlist and landmarks plotted on the Activities map, grouped by city and list (Must do / Maybe).",
     attributes: [
-      attr("day", "Day", "datetime", { datetimeMode: "date" }),
-      attr("destination", "Destination", "string"),
-      attr("weather", "Weather", "string"),
+      attr("city", "City", "string"),
+      attr("bucket", "List", "selection", {
+        optionSource: "manual",
+        options: BUCKETS,
+        allowMultiple: true,
+      }),
+      attr("placeKind", "Kind", "selection", {
+        optionSource: "manual",
+        options: PLACE_KINDS,
+      }),
+      attr("address", "Address", "string"),
+      attr("lat", "Latitude", "number", { allowFloat: true }),
+      attr("lng", "Longitude", "number", { allowFloat: true }),
       attr("notes", "Notes", "string"),
     ],
-    displayedAttributes: ["day", "destination", "weather", "notes"],
-  })
-
-  const flights = makeCategory(uid, "Flights", {
-    color: "#6366f1",
-    itemLabel: "flight",
-    description: "Flight segments with layovers, booking refs, and cost.",
-    attributes: [
-      attr("flightNumber", "Flight Number", "string"),
-      attr("airline", "Airline", "string"),
-      attr("departureAirport", "From", "string"),
-      attr("arrivalAirport", "To", "string"),
-      attr("departureTime", "Departure", "datetime", { datetimeMode: "datetime" }),
-      attr("arrivalTime", "Arrival", "datetime", { datetimeMode: "datetime" }),
-      attr("layovers", "Layovers", "multistring"),
-      attr("bookingNumber", "Booking #", "string"),
-      attr("cost", "Cost", "number", { unit: "$", allowFloat: true }),
-      attr("booked", "Booked", "boolean", { booleanDisplay: "checkbox" }),
-      attr("status", "Status", "selection", { optionSource: "manual", options: STATUS }),
-    ],
-    displayedAttributes: ["flightNumber", "airline", "departureAirport", "arrivalAirport", "departureTime", "cost", "booked"],
-    defaultAttributeValues: { booked: false, status: "Theoretical" },
-  })
-
-  const activities = makeCategory(uid, "Activities & Stays", {
-    color: "#14b8a6",
-    itemLabel: "entry",
-    description: "Activities, food, transit, and sleeping arrangements — cost, booked, theoretical vs finalized.",
-    attributes: [
-      attr("akind", "Kind", "selection", { optionSource: "manual", options: ["Activity", "Stay", "Food", "Transit"] }),
-      attr("day", "Day", "datetime", { datetimeMode: "date" }),
-      attr("time", "Time", "datetime", { datetimeMode: "time" }),
-      attr("location", "Location", "string"),
-      attr("weather", "Weather", "string"),
-      attr("cost", "Cost", "number", { unit: "$", allowFloat: true }),
-      attr("booked", "Booked", "boolean", { booleanDisplay: "checkbox" }),
-      attr("status", "Status", "selection", { optionSource: "manual", options: STATUS }),
-      attr("notes", "Notes", "string"),
-    ],
-    displayedAttributes: ["akind", "day", "time", "location", "cost", "booked", "status"],
-    defaultAttributeValues: { status: "Theoretical", booked: false },
+    displayedAttributes: ["city", "bucket", "placeKind", "address"],
+    defaultAttributeValues: { bucket: "Must do", placeKind: "Place" },
   })
 
   const packing = makeCategory(uid, "Packing", {
@@ -215,47 +196,120 @@ function buildItinerary(uid: Uid): BuiltModuleTemplate {
     color: "#f59e0b",
     itemLabel: "task",
     description: "Everything to handle before you leave.",
+    attributes: [
+      attr("priority", "Priority", "selection", {
+        optionSource: "manual",
+        options: ["High", "Medium", "Low"],
+      }),
+    ],
+    displayedAttributes: ["priority"],
   })
 
+  const planDocId = uid("plan-doc")
+  const planDoc: Task = {
+    id: planDocId,
+    description: "Trip plan",
+    type: "note",
+    stage: "list",
+    createdAt: new Date(),
+    completed: false,
+    lists: [],
+    body: `<h1>Trip plan</h1>
+<p>Use this space like a Docs note — themes, rough outline, links, and anything that doesn't fit the day grid.</p>
+<h2>Goals</h2>
+<ul>
+<li>Settle in and walk Alfama</li>
+<li>Day trip to Sintra</li>
+<li>Train or fly to Porto</li>
+</ul>`,
+    attributes: {
+      docsFolder: "Trips",
+      docsFontFamily: "Merriweather",
+      status: "draft",
+    },
+    links: [],
+    tags: ["docs", "trip"],
+  }
+
+  const tripItinerary = {
+    startDate: "2026-07-10",
+    endDate: "2026-07-12",
+    days: [
+      {
+        date: "2026-07-10",
+        cityMode: "city" as const,
+        city: "Lisbon, Portugal",
+        dayNote: "Settle in, walk Alfama",
+        sleepName: "Hotel Alfama",
+        sleepAddress: "Rua de São Miguel 12, 1100-542 Lisboa, Portugal",
+        schedule: [
+          {
+            id: uid("sched-arrive"),
+            kind: "plan" as const,
+            time: "14:00",
+            text: "Belém Tower & pastéis",
+          },
+        ],
+      },
+      {
+        date: "2026-07-11",
+        cityMode: "travel" as const,
+        city: "",
+        fromCity: "Lisbon",
+        toCity: "Sintra",
+        schedule: [
+          {
+            id: uid("sched-sintra"),
+            kind: "plan" as const,
+            time: "09:30",
+            text: "Sintra palaces tour",
+          },
+        ],
+        sleepName: "Hotel Alfama",
+        sleepAddress: "Rua de São Miguel 12, Lisboa",
+      },
+      {
+        date: "2026-07-12",
+        cityMode: "city" as const,
+        city: "Porto",
+        schedule: [],
+        sleepName: "",
+        sleepAddress: "",
+      },
+    ],
+  }
+
   const seedTasks: Task[] = [
-    seed(plan, "Arrive in Lisbon", { day: "2026-07-10", destination: "Lisbon, Portugal", weather: "Clear, 27°C", notes: "Settle in, walk Alfama." }),
-    seed(plan, "Day trip to Sintra", { day: "2026-07-11", destination: "Sintra", weather: "Partly cloudy, 24°C" }),
-    seed(plan, "Fly to Porto", { day: "2026-07-12", destination: "Porto", weather: "Clear, 25°C" }),
-    seed(flights, "Outbound — JFK → LIS", {
-      flightNumber: "TP204",
-      airline: "TAP Air Portugal",
-      departureAirport: "JFK",
-      arrivalAirport: "LIS",
-      departureTime: "2026-07-09T21:30",
-      arrivalTime: "2026-07-10T09:15",
-      layovers: ["None"],
-      bookingNumber: "TP-7H2K9",
-      cost: 612,
-      booked: true,
-      status: "Finalized",
+    planDoc,
+    seed(places, "LIS Airport", {
+      city: "Lisbon",
+      bucket: "Must do",
+      placeKind: "Airport",
+      address: "Aeroporto Humberto Delgado, Lisboa",
+      lat: 38.7756,
+      lng: -9.1354,
     }),
-    seed(flights, "Return — OPO → JFK", {
-      flightNumber: "UA961",
-      airline: "United",
-      departureAirport: "OPO",
-      arrivalAirport: "JFK",
-      departureTime: "2026-07-18T11:05",
-      arrivalTime: "2026-07-18T19:40",
-      layovers: ["FRA 1h45m"],
-      bookingNumber: "UA-44PQX",
-      cost: 588,
-      booked: false,
-      status: "Theoretical",
+    seed(places, "Belém Tower", {
+      city: "Lisbon",
+      bucket: "Must do",
+      placeKind: "Landmark",
+      address: "Av. Brasília, 1400-038 Lisboa",
+      lat: 38.6916,
+      lng: -9.216,
     }),
-    seed(activities, "Hotel Alfama — 2 nights", { akind: "Stay", day: "2026-07-10", location: "Lisbon", cost: 320, booked: true, status: "Finalized" }),
-    seed(activities, "Belém Tower & pastéis", { akind: "Activity", day: "2026-07-10", time: "14:00", location: "Belém", cost: 18, status: "Finalized", weather: "Clear, 27°C" }),
-    seed(activities, "Sintra palaces tour", { akind: "Activity", day: "2026-07-11", time: "09:30", location: "Sintra", cost: 65, booked: false, status: "Theoretical" }),
-    seed(activities, "Dinner — Time Out Market", { akind: "Food", day: "2026-07-11", time: "20:00", location: "Lisbon", cost: 40, status: "Theoretical" }),
+    seed(places, "LX Factory", {
+      city: "Lisbon",
+      bucket: "Maybe",
+      placeKind: "Place",
+      address: "R. Rodrigues de Faria 103, 1300-501 Lisboa",
+      lat: 38.7034,
+      lng: -9.179,
+    }),
     seed(packing, "Passport", { packKind: "Documents" }),
     seed(packing, "Power adapter (EU)", { packKind: "Electronics" }),
     seed(packing, "Sunscreen", { packKind: "Toiletries" }),
-    seed(todo, "Hold mail", {}),
-    seed(todo, "Notify bank of travel", {}),
+    seed(todo, "Hold mail", { priority: "Medium" }),
+    seed(todo, "Notify bank of travel", { priority: "High" }),
   ]
 
   const moduleId = uid("module")
@@ -264,36 +318,28 @@ function buildItinerary(uid: Uid): BuiltModuleTemplate {
     type: "workspace",
     kind: "workspace",
     title: "Trip Itinerary",
-    description: "Plan, cost, and finalize a trip — finalized days flow onto your Plan and timeline.",
+    description: "Write a trip doc, build a day-by-day itinerary (weather + flights by number), map activities by city, and pack.",
     templateId: "itinerary",
-    config: {},
-    enablePrint: true,
-    planSync: { categoryId: activities.id, dateAttrId: "day", statusAttrId: "status", statusValue: "Finalized" },
-    scheduleSync: {
-      categoryId: activities.id,
-      dateAttrId: "day",
-      timeAttrId: "time",
-      statusAttrId: "status",
-      statusValue: "Finalized",
-      toEvents: true,
+    config: {
+      planDocId,
+      itineraryUiVersion: 3,
+      placesCategoryId: places.id,
+      tripItinerary,
     },
+    enablePrint: true,
     views: [
-      view("spreadsheet", "Plan", { categoryId: plan.id }, uid),
-      view("spreadsheet", "Flights", { categoryId: flights.id }, uid),
-      view("timeline", "Timeline", { categoryId: activities.id, dateAttrId: "day", timeAttrId: "time" }, uid),
-      view("summary", "Costs", { categoryId: activities.id, groupAttrId: "booked", valueAttrId: "cost" }, uid),
-      view("checklist", "Packing", { categoryId: packing.id }, uid),
-      view("checklist", "Before Trip", { categoryId: todo.id }, uid),
+      view("doc", "Plan", { docId: planDocId }, uid),
+      view("itinerary-doc", "Itinerary", {}, uid),
+      view("trip-map", "Activities", {
+        categoryId: places.id,
+        placesCategoryId: places.id,
+      }, uid),
+      view("checklist", "Packing", { categoryId: packing.id, checklistStyle: "packing" }, uid),
+      view("checklist", "Before Trip", { categoryId: todo.id, checklistStyle: "pretrip" }, uid),
     ],
   }
 
   const workflows: WorkflowDefinition[] = [
-    workflow(uid, moduleId, "On finalized → sync to Plan + schedule", {
-      scope: { listIds: [activities.id] },
-      trigger: { kind: "attribute", attrId: "status", event: "change" },
-      conditions: [{ field: "status", operator: "eq", value: "Finalized" }],
-      actions: [{ kind: "setSchedule", dateAttrId: "day", timeAttrId: "time" }, { kind: "syncPlan" }],
-    }),
     workflow(uid, moduleId, "Build pre-trip to-do list", {
       scope: { listIds: [todo.id] },
       trigger: { kind: "manual", buttonLabel: "Generate to-dos" },
@@ -304,7 +350,7 @@ function buildItinerary(uid: Uid): BuiltModuleTemplate {
     }),
   ]
 
-  return { lists: [plan, flights, activities, packing, todo], seedTasks, module, workflows }
+  return { lists: [places, packing, todo], seedTasks, module, workflows }
 }
 
 function buildCleaning(uid: Uid): BuiltModuleTemplate {
@@ -595,6 +641,58 @@ function buildBookTasting(uid: Uid): BuiltModuleTemplate {
   return { lists: [books, pdfs], seedTasks, module, workflows }
 }
 
+function buildFilmRecs(uid: Uid): BuiltModuleTemplate {
+  const shelfOptions = [...FILMRECS_SHELVES]
+  const films = makeCategory(uid, "Films", {
+    color: "#ff8000",
+    itemLabel: "film",
+    description: "Letterboxd watchlist + likes catalog for Film DNA Lab.",
+    icon: "clapperboard",
+    attributes: [
+      attr("year", "Year", "number"),
+      attr("shelf", "Shelf", "selection", { optionSource: "manual", options: shelfOptions }),
+      attr("source", "Source", "selection", {
+        optionSource: "manual",
+        options: ["watchlist", "likes", "both", "watched", "added"],
+      }),
+      attr("liked", "Liked", "boolean", { booleanDisplay: "checkbox" }),
+      attr("favorited", "Favorited", "boolean", { booleanDisplay: "checkbox" }),
+      attr("rating", "Rating", "number", { allowFloat: true }),
+      attr("genres", "Genres", "multistring"),
+      attr("poster", "Poster", "image"),
+      attr("letterboxdUrl", "Letterboxd", "string"),
+      attr("overview", "Overview", "string"),
+      attr("watchedDate", "Watched", "string"),
+    ],
+    displayedAttributes: ["year", "shelf", "source", "liked", "rating", "poster"],
+    defaultAttributeValues: { liked: false, favorited: false, source: "watchlist" },
+  })
+
+  const seedFilms = (filmrecsSeed.films as SeedFilm[]) || []
+  const seedTasks: Task[] = seedFilms.map((f) => seedFilmToTask(films, f))
+
+  const moduleId = uid("module")
+  const module: ModuleInstance = {
+    id: moduleId,
+    type: "workspace",
+    kind: "workspace",
+    title: "Film DNA Lab",
+    description: "Letterboxd taste map — DNA shelves, Watch ranking, Blend, and CSV import.",
+    templateId: "filmrecs",
+    icon: "clapperboard",
+    config: { filmsCategoryId: films.id },
+    views: [
+      view("film-dna", "Film DNA", { categoryId: films.id }, uid),
+      view("spreadsheet", "Films", { categoryId: films.id }, uid),
+      view("gallery", "Posters", { categoryId: films.id }, uid),
+      view("randomizer", "Pick something", { categoryId: films.id, pickCount: 1, framing: "Watch" }, uid),
+      view("summary", "By shelf", { categoryId: films.id, groupAttrId: "shelf" }, uid),
+    ],
+  }
+
+  return { lists: [films], seedTasks, module }
+}
+
 function buildBlank(uid: Uid): BuiltModuleTemplate {
   const list = makeCategory(uid, "New List", {
     color: "#64748b",
@@ -627,6 +725,8 @@ export function buildModuleTemplate(id: ModuleTemplateId, seedNum = Date.now()):
       return buildBudget(uid)
     case "book-tasting":
       return buildBookTasting(uid)
+    case "filmrecs":
+      return buildFilmRecs(uid)
     case "blank":
     default:
       return buildBlank(uid)

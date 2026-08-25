@@ -6,8 +6,9 @@
  *   1. `renderMarkdown(src)` — a minimal, *safe* markdown → HTML renderer used
  *      for the live preview. It escapes all HTML first, then re-introduces only a
  *      known-good set of tags (headings, emphasis, code, lists, blockquotes,
- *      links, rules, line breaks). No `eval`, no third-party deps, no raw HTML
- *      passthrough — so the output is safe to inject via `dangerouslySetInnerHTML`.
+ *      links, images, embeds, font spans, rules, line breaks). No `eval`, no
+ *      third-party deps, no raw HTML passthrough — so the output is safe to
+ *      inject via `dangerouslySetInnerHTML`.
  *   2. Selection-aware edit transforms (`applyInlineWrap`, `applyLinePrefix`,
  *      `applyInsert`) — pure functions the toolbar uses to toggle bold/italic/
  *      code spans and list/heading/quote prefixes around a textarea selection.
@@ -15,6 +16,7 @@
  * Everything here is pure + serializable (no React/DOM/store imports) so it can
  * be unit-tested directly (see `markdown.test.ts`).
  */
+import { isAllowedFont } from "@/lib/google-fonts"
 
 /** Escape the five HTML-significant characters so user text can't inject markup. */
 export function escapeHtml(input: string): string {
@@ -34,23 +36,124 @@ function isSafeHref(href: string): boolean {
   return !/^[a-z][a-z0-9+.-]*:/i.test(trimmed)
 }
 
+/** Only http(s) absolute URLs may become images / embeds. */
+function isSafeMediaUrl(href: string): boolean {
+  return /^https?:\/\//i.test(href.trim())
+}
+
+/**
+ * Map common video URLs to a privacy-friendly embed src, or null when the host
+ * is not an allow-listed provider (caller falls back to a link card).
+ */
+export function embedSrcForUrl(raw: string): string | null {
+  const href = raw.trim()
+  if (!isSafeMediaUrl(href)) return null
+  try {
+    const u = new URL(href)
+    const host = u.hostname.replace(/^www\./, "").toLowerCase()
+    if (host === "youtu.be") {
+      const id = u.pathname.replace(/^\//, "").split("/")[0]
+      return id ? `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}` : null
+    }
+    if (host === "youtube.com" || host === "m.youtube.com" || host === "youtube-nocookie.com") {
+      const id = u.searchParams.get("v") || u.pathname.match(/\/embed\/([^/?#]+)/)?.[1]
+      return id ? `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}` : null
+    }
+    if (host === "vimeo.com" || host === "player.vimeo.com") {
+      const id = u.pathname.split("/").filter(Boolean).pop()
+      return id && /^\d+$/.test(id) ? `https://player.vimeo.com/video/${id}` : null
+    }
+  } catch {
+    return null
+  }
+  return null
+}
+
+function hostnameOf(href: string): string {
+  try {
+    return new URL(href).hostname.replace(/^www\./, "")
+  } catch {
+    return href
+  }
+}
+
+/** Build a safe embed iframe or link-card HTML for an https URL. */
+export function renderEmbedHtml(href: string, title?: string): string {
+  const safe = href.trim()
+  if (!isSafeMediaUrl(safe)) {
+    return `<p class="rte-embed-invalid">${escapeHtml(title || safe)}</p>`
+  }
+  const label = escapeHtml(title?.trim() || hostnameOf(safe))
+  const embed = embedSrcForUrl(safe)
+  if (embed) {
+    return (
+      `<div class="rte-embed">` +
+      `<iframe src="${embed}" title="${label}" loading="lazy" ` +
+      `referrerpolicy="no-referrer" allowfullscreen ` +
+      `sandbox="allow-scripts allow-same-origin allow-presentation"></iframe>` +
+      `<a class="rte-embed-caption" href="${escapeHtml(safe)}" target="_blank" rel="noopener noreferrer">${label}</a>` +
+      `</div>`
+    )
+  }
+  return (
+    `<div class="rte-link-card">` +
+    `<a href="${escapeHtml(safe)}" target="_blank" rel="noopener noreferrer">` +
+    `<span class="rte-link-card-host">${escapeHtml(hostnameOf(safe))}</span>` +
+    `<span class="rte-link-card-title">${label}</span>` +
+    `<span class="rte-link-card-url">${escapeHtml(safe)}</span>` +
+    `</a></div>`
+  )
+}
+
 /**
  * Inline markdown on an already-HTML-escaped string. Handles (in order) inline
- * code, bold, italic, strikethrough, and links. Inline code spans are protected
- * from further substitution via placeholders.
+ * code, images, embeds, links, font spans, bold, italic, strikethrough.
+ * Inline code spans are protected from further substitution via placeholders.
  */
 function renderInline(escaped: string): string {
-  const codeSpans: string[] = []
-  let text = escaped.replace(/`([^`]+)`/g, (_m, code: string) => {
-    const token = `\u0000CODE${codeSpans.length}\u0000`
-    codeSpans.push(`<code>${code}</code>`)
+  const protectedSpans: string[] = []
+  const protect = (html: string) => {
+    const token = `\u0000P${protectedSpans.length}\u0000`
+    protectedSpans.push(html)
     return token
+  }
+
+  let text = escaped.replace(/`([^`]+)`/g, (_m, code: string) => protect(`<code>${code}</code>`))
+
+  // Images: ![alt](https://…) — http(s) only. `escaped` is already HTML-escaped,
+  // so alt/href are safe to drop into attributes without a second escape pass.
+  text = text.replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (_m, alt: string, href: string) => {
+    const rawHref = href.replace(/&amp;/g, "&")
+    if (!isSafeMediaUrl(rawHref)) return protect(alt || href)
+    return protect(
+      `<img class="rte-image" src="${href}" alt="${alt}" loading="lazy" referrerpolicy="no-referrer" />`,
+    )
+  })
+
+  // Embedded link cards / video embeds: @[title](https://…)
+  text = text.replace(/@\[([^\]]*)\]\(([^)\s]+)\)/g, (_m, title: string, href: string) => {
+    const rawHref = href.replace(/&amp;/g, "&")
+    const rawTitle = title
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+    return protect(renderEmbedHtml(rawHref, rawTitle))
   })
 
   // Links: [label](href) — label may contain other inline marks (applied later).
   text = text.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_m, label: string, href: string) => {
-    if (!isSafeHref(href)) return `${label} (${href})`
+    const rawHref = href.replace(/&amp;/g, "&")
+    if (!isSafeHref(rawHref)) return `${label} (${href})`
     return `<a href="${href}" target="_blank" rel="noopener noreferrer">${label}</a>`
+  })
+
+  // Font spans: {font:Roboto}text{/font} — allow-listed Google Fonts only.
+  text = text.replace(/\{font:([^}]+)\}([\s\S]*?)\{\/font\}/g, (_m, font: string, inner: string) => {
+    const name = font.trim()
+    if (!isAllowedFont(name)) return inner
+    return `<span class="rte-font" style="font-family:&quot;${name}&quot;,sans-serif">${inner}</span>`
   })
 
   text = text.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
@@ -59,8 +162,7 @@ function renderInline(escaped: string): string {
   text = text.replace(/(^|[^_])_([^_\s][^_]*?)_/g, "$1<em>$2</em>")
   text = text.replace(/~~([^~]+)~~/g, "<del>$1</del>")
 
-  // Restore protected code spans.
-  text = text.replace(/\u0000CODE(\d+)\u0000/g, (_m, i: string) => codeSpans[Number(i)] ?? "")
+  text = text.replace(/\u0000P(\d+)\u0000/g, (_m, i: string) => protectedSpans[Number(i)] ?? "")
   return text
 }
 

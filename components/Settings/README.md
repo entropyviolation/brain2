@@ -4,8 +4,9 @@ Cross-cutting settings UI that isn't tied to a single feature screen.
 
 | File | Purpose | Spec |
 |------|---------|------|
-| `SettingsDialog.tsx` | The app's **Settings** entry point — a header-launched dialog (`SettingsDialog`) that hosts cross-cutting utilities: full backup/restore (renders `<BackupRestore />`) and a one-click **"Set up Second Brain"** action that seeds the Source + Belief item types via `useItemTypeStore.seedSecondBrainTypes`. Wired into the global header in `app/page.tsx`. | §3.2 |
+| `SettingsDialog.tsx` | The app's **Settings** entry point — a header-launched dialog (`SettingsDialog`) that hosts cross-cutting utilities: full backup/restore (renders `<BackupRestore />`), **Mobile Sync** (`<MobileSyncPanel />`), and a one-click **"Set up Second Brain"** action that seeds the Source + Belief item types via `useItemTypeStore.seedSecondBrainTypes`. Wired into the global header in `app/page.tsx`. | §3.2 |
 | `BackupRestore.tsx` | Full-app backup/restore controls — exports every persisted store + free-text plans to one JSON file and restores from one (full replace, with confirm). Thin UI over `lib/data/backup.ts`. | §3.2 |
+| `MobileSyncPanel.tsx` | Push/pull bridge to `npm run mobile:sync` for the `/mobile` Home shell. Push never deletes desktop data; pull is confirm-gated. | mobile |
 
 ## Related
 

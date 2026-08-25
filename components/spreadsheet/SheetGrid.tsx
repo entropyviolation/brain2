@@ -23,6 +23,8 @@
  *   - a fill handle that copies the selection down/across, shifting relative
  *     references (`=B2` → `=B3` …) via `shiftFormula`
  *   - drag-to-resize rows; Delete/Backspace clears the selected range
+ *   - Google-Sheets clipboard: copy/paste TSV across the selection; double-click
+ *     (or F2) enters edit mode so paste goes into that one cell only
  * Plus the v1 basics: sticky header, inline cell editing, a currency-aware
  * numeric footer, add-row, and add-column.
  *
@@ -52,15 +54,19 @@ import { evaluateCellAt, formatCellResult, type RawCellAccessor } from "@/lib/sh
 import {
   isWithinRange,
   normalizeRange,
+  parseClipboardGrid,
   rangeArea,
+  rangeToTSV,
   selectionStats,
   type GridCell,
   type GridRange,
 } from "@/lib/spreadsheet-keys"
+import { expandPasteWrites } from "@/lib/spreadsheet-paste"
 import {
   NAME_COLUMN_ID,
   buildSheetColumns,
   canWriteCell,
+  coerceCellInput,
   cycleColumnSort,
   filterRows,
   sortDirFor,
@@ -198,6 +204,9 @@ export function SheetGrid({
   const active = sel?.focus ?? null
   const selectedColumn = active ? allColumns[active.col] ?? null : null
   const selectedTask = active ? displayTasks[active.row] ?? null : null
+  // Inline edit mode (Sheets: double-click / F2). While set, clipboard paste
+  // goes into the focused input as literal text instead of a TSV grid paste.
+  const [editingCell, setEditingCell] = useState<GridCell | null>(null)
 
   // Raw value accessor over the grid (column-formula cells resolve to numbers so
   // A1 references can read their computed value).
@@ -237,9 +246,22 @@ export function SheetGrid({
       additive && prev ? { anchor: prev.anchor, focus: { col, row } } : { anchor: { col, row }, focus: { col, row } },
     )
   }
+  const beginEdit = (col: number, row: number) => {
+    const column = allColumns[col]
+    if (!column || column.readOnly || column.isFormula) return
+    if (!column.isName && column.def && !INLINE_TYPES.has(normalizeAttributeType(column.def.type))) return
+    setEditingCell({ col, row })
+  }
   const onCellMouseDown = (col: number, row: number, e: React.MouseEvent) => {
+    // Selecting a different cell ends edit mode (blur commits via the editor).
+    if (!editingCell || editingCell.col !== col || editingCell.row !== row) {
+      setEditingCell(null)
+    }
     selectCell(col, row, e.shiftKey)
     draggingRef.current = true
+  }
+  const onCellDoubleClick = (col: number, row: number) => {
+    beginEdit(col, row)
   }
   const onCellEnter = (col: number, row: number) => {
     if (draggingRef.current) {
@@ -322,14 +344,99 @@ export function SheetGrid({
     window.addEventListener("mouseup", onUp)
   }
 
-  // Delete / Backspace clears the selected range (unless a field is focused).
+  // Delete / Backspace clears; F2 edits; Copy/Paste use TSV when not editing a cell.
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Delete" && e.key !== "Backspace") return
-      if (!selRange) return
+    const isFieldFocused = () => {
       const el = document.activeElement
       const tag = el?.tagName
-      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (el as HTMLElement)?.isContentEditable) return
+      return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || !!(el as HTMLElement)?.isContentEditable
+    }
+
+    const cellDisplayText = (cell: GridCell): string => {
+      const t = displayTasks[cell.row]
+      const column = allColumns[cell.col]
+      if (!t || !column) return ""
+      if (column.isName) return t.description ?? ""
+      if (column.isFormula && column.def) {
+        return formatFormulaValue(computeFormulaValue(column.def, t.attributes ?? {}, defsById), column.def)
+      }
+      const raw = t.attributes?.[column.id]
+      if (isCellFormula(raw)) {
+        return formatCellResult(evaluateCellAt(cell.col, cell.row, getRawCell))
+      }
+      if (column.def) return formatAttributeValue(column.def, raw)
+      return raw === undefined || raw === null ? "" : String(raw)
+    }
+
+    const applyPasteText = (text: string) => {
+      if (!selRange && !active) return
+      const start = selRange ? { row: selRange.top, col: selRange.left } : active!
+      const grid = parseClipboardGrid(text)
+      const writes = expandPasteWrites(grid, start, selRange)
+      if (writes.length === 0) return
+
+      const working = new Map<string, Task>()
+      const workCopy = (t: Task): Task => {
+        let w = working.get(t.id)
+        if (!w) {
+          w = { ...t, attributes: { ...(t.attributes || {}) } }
+          working.set(t.id, w)
+        }
+        return w
+      }
+
+      // Create rows past the end of the visible grid when the paste overflows.
+      const maxRow = Math.max(...writes.map((w) => w.row))
+      const created: Task[] = []
+      if (categoryId && maxRow >= displayTasks.length) {
+        for (let row = displayTasks.length; row <= maxRow; row++) {
+          const base = withListMembership(createListItem("", [categoryId]), category, types)
+          created.push(base)
+          addTask(base)
+        }
+      }
+      const rowTask = (row: number): Task | undefined => {
+        if (row < displayTasks.length) return displayTasks[row]
+        return created[row - displayTasks.length]
+      }
+
+      let maxWriteCol = start.col
+      let maxWriteRow = start.row
+      for (const { row, col, text: cellText } of writes) {
+        const column = allColumns[col]
+        if (!column || column.readOnly || column.isFormula) continue
+        const task = rowTask(row)
+        if (!task) continue
+        maxWriteCol = Math.max(maxWriteCol, col)
+        maxWriteRow = Math.max(maxWriteRow, row)
+        if (column.isName) {
+          const w = workCopy(task)
+          w.description = cellText
+          w.title = cellText
+        } else if (column.def) {
+          const w = workCopy(task)
+          const coerced = coerceCellInput(column.def, cellText)
+          if (coerced === undefined) delete w.attributes![column.def.id]
+          else w.attributes![column.def.id] = coerced
+        }
+      }
+      working.forEach((t) => updateTask(t))
+      setSel({
+        anchor: start,
+        focus: { col: maxWriteCol, row: maxWriteRow },
+      })
+      setEditingCell(null)
+    }
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "F2" && active && !isFieldFocused()) {
+        e.preventDefault()
+        beginEdit(active.col, active.row)
+        return
+      }
+      if (e.key !== "Delete" && e.key !== "Backspace") return
+      if (!selRange) return
+      if (isFieldFocused()) return
       e.preventDefault()
       const working = new Map<string, Task>()
       for (let row = selRange.top; row <= selRange.bottom; row++) {
@@ -348,9 +455,49 @@ export function SheetGrid({
       }
       working.forEach((t) => updateTask(t))
     }
+
+    const onCopy = (e: ClipboardEvent) => {
+      if (!selRange || isFieldFocused()) return
+      e.preventDefault()
+      const tsv = rangeToTSV(selRange, cellDisplayText)
+      e.clipboardData?.setData("text/plain", tsv)
+    }
+
+    const onPaste = (e: ClipboardEvent) => {
+      // While a cell editor (or formula bar / filter) is focused, leave paste alone
+      // so the whole clipboard lands in that one field — Sheets double-click behavior.
+      if (isFieldFocused() || editingCell) return
+      if (!selRange && !active) return
+      const text = e.clipboardData?.getData("text/plain")
+      if (text == null) return
+      e.preventDefault()
+      applyPasteText(text)
+    }
+
     window.addEventListener("keydown", onKey)
-    return () => window.removeEventListener("keydown", onKey)
-  }, [selRange, displayTasks, allColumns, updateTask])
+    window.addEventListener("copy", onCopy)
+    window.addEventListener("paste", onPaste)
+    return () => {
+      window.removeEventListener("keydown", onKey)
+      window.removeEventListener("copy", onCopy)
+      window.removeEventListener("paste", onPaste)
+    }
+    // beginEdit closes over allColumns; listing it would churn the listener.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    selRange,
+    active,
+    editingCell,
+    displayTasks,
+    allColumns,
+    updateTask,
+    addTask,
+    categoryId,
+    category,
+    types,
+    defsById,
+    getRawCell,
+  ])
 
   const numericAttrCols = attrColumns.filter((c) => c.def && isNumericAttribute(c.def))
 
@@ -455,8 +602,15 @@ export function SheetGrid({
                   style={{ position: "sticky", left: CHECKBOX_W, width: widthOf(NAME_COLUMN_ID), zIndex: 1 }}
                   onMouseDown={(e) => onCellMouseDown(0, rowIdx, e)}
                   onMouseOver={() => onCellEnter(0, rowIdx)}
+                  onDoubleClick={() => onCellDoubleClick(0, rowIdx)}
                 >
-                  <NameCell value={task.description} onCommit={(v) => setName(task, v)} onOpen={() => onOpenItem?.(task.id)} />
+                  <NameCell
+                    value={task.description}
+                    editing={!!editingCell && editingCell.col === 0 && editingCell.row === rowIdx}
+                    onCommit={(v) => setName(task, v)}
+                    onEndEdit={() => setEditingCell(null)}
+                    onOpen={() => onOpenItem?.(task.id)}
+                  />
                   {isActiveCorner(selRange, 0, rowIdx) && <FillHandle onStart={startFill} />}
                 </td>
                 {attrColumns.map((col, i) => {
@@ -482,6 +636,7 @@ export function SheetGrid({
                       }}
                       onMouseDown={(e) => onCellMouseDown(gridCol, rowIdx, e)}
                       onMouseOver={() => onCellEnter(gridCol, rowIdx)}
+                      onDoubleClick={() => onCellDoubleClick(gridCol, rowIdx)}
                     >
                       <SheetCell
                         def={def}
@@ -489,7 +644,9 @@ export function SheetGrid({
                         evaluated={evaluated}
                         attributes={task.attributes}
                         defsById={defsById}
+                        editing={!!editingCell && editingCell.col === gridCol && editingCell.row === rowIdx}
                         onCommit={(v) => setCell(task, def, v)}
+                        onEndEdit={() => setEditingCell(null)}
                         onOpen={() => onOpenItem?.(task.id)}
                       />
                       {isActiveCorner(selRange, gridCol, rowIdx) && <FillHandle onStart={startFill} />}
@@ -647,26 +804,9 @@ function cellClass(
 }
 
 /**
- * Coerce a raw string (from the formula bar or an inline editor) into the stored
- * value for an attribute. A leading "=" marks a Google-Sheets-style cell formula
- * and is stored verbatim (trimmed) regardless of the column type.
+ * Coerce is imported from `lib/spreadsheet-contract` (`coerceCellInput`) so paste,
+ * the formula bar, and inline editors share one rule.
  */
-function coerceCellInput(def: AttributeDefinition, raw: string): AttributeValue {
-  if (raw.trimStart().startsWith("=")) return raw.trim()
-  const trimmed = raw.trim()
-  if (trimmed === "") return undefined
-  const type = normalizeAttributeType(def.type)
-  if (type === "number") {
-    const allowFloat = def.allowFloat !== false
-    const n = allowFloat ? Number(trimmed) : parseInt(trimmed, 10)
-    return Number.isFinite(n) ? n : undefined
-  }
-  if (type === "boolean") {
-    const s = trimmed.toLowerCase()
-    return s === "true" || s === "yes" || s === "1"
-  }
-  return raw
-}
 
 /** Small drag handle on a row's bottom edge for resizing the row height. */
 function RowResizeHandle({ height, onResize }: { height: number; onResize: (height: number) => void }) {
@@ -862,9 +1002,24 @@ function ResizeHandle({ width, onResize }: { width: number; onResize: (width: nu
   )
 }
 
-function NameCell({ value, onCommit, onOpen }: { value: string; onCommit: (v: string) => void; onOpen: () => void }) {
-  const [editing, setEditing] = useState(false)
+function NameCell({
+  value,
+  editing,
+  onCommit,
+  onEndEdit,
+  onOpen,
+}: {
+  value: string
+  editing: boolean
+  onCommit: (v: string) => void
+  onEndEdit: () => void
+  onOpen: () => void
+}) {
   const [draft, setDraft] = useState(value)
+  useEffect(() => {
+    if (editing) setDraft(value)
+  }, [editing, value])
+
   if (editing) {
     return (
       <input
@@ -873,14 +1028,14 @@ function NameCell({ value, onCommit, onOpen }: { value: string; onCommit: (v: st
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={() => {
-          setEditing(false)
           if (draft !== value) onCommit(draft)
+          onEndEdit()
         }}
         onKeyDown={(e) => {
           if (e.key === "Enter") (e.target as HTMLInputElement).blur()
           if (e.key === "Escape") {
             setDraft(value)
-            setEditing(false)
+            onEndEdit()
           }
         }}
       />
@@ -888,16 +1043,17 @@ function NameCell({ value, onCommit, onOpen }: { value: string; onCommit: (v: st
   }
   return (
     <div className="flex items-center justify-between gap-1">
-      <span
-        className="truncate cursor-text flex-1"
-        onClick={() => {
-          setDraft(value)
-          setEditing(true)
-        }}
-      >
+      <span className="truncate cursor-cell flex-1 select-none">
         {value || <span className="text-muted-foreground">Untitled</span>}
       </span>
-      <button className="opacity-0 group-hover:opacity-100 text-xs text-primary hover:underline" onClick={onOpen}>
+      <button
+        className="opacity-0 group-hover:opacity-100 text-xs text-primary hover:underline"
+        onClick={(e) => {
+          e.stopPropagation()
+          onOpen()
+        }}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
         open
       </button>
     </div>
@@ -910,7 +1066,9 @@ function SheetCell({
   evaluated,
   attributes,
   defsById,
+  editing,
   onCommit,
+  onEndEdit,
   onOpen,
 }: {
   def: AttributeDefinition
@@ -919,11 +1077,12 @@ function SheetCell({
   evaluated?: FormulaResult
   attributes?: Record<string, AttributeValue>
   defsById?: DefLookup
+  editing: boolean
   onCommit: (v: AttributeValue) => void
+  onEndEdit: () => void
   onOpen: () => void
 }) {
   const type = normalizeAttributeType(def.type)
-  const [editing, setEditing] = useState(false)
 
   if (type === "formula") {
     // Read-only computed cell. useMemo recomputes whenever the row's attributes
@@ -943,13 +1102,12 @@ function SheetCell({
   // reveals the raw expression (text editor, so "=" is always typeable).
   if (evaluated && !editing) {
     return (
-      <button
-        className={`text-left w-full truncate min-h-[24px] hover:bg-muted/60 rounded px-1 ${evaluated.error ? "text-destructive" : ""}`}
-        onClick={() => setEditing(true)}
+      <span
+        className={`block text-left w-full truncate min-h-[24px] px-1 select-none ${evaluated.error ? "text-destructive" : ""}`}
         title={typeof value === "string" ? value : undefined}
       >
         {formatCellResult(evaluated) || <span className="text-muted-foreground">—</span>}
-      </button>
+      </span>
     )
   }
 
@@ -959,6 +1117,7 @@ function SheetCell({
         type="checkbox"
         checked={!!value}
         onChange={(e) => onCommit(e.target.checked)}
+        onMouseDown={(e) => e.stopPropagation()}
         className="ml-1"
       />
     )
@@ -967,7 +1126,15 @@ function SheetCell({
   if (!INLINE_TYPES.has(type)) {
     // Complex type — show formatted value; clicking opens the item to edit.
     return (
-      <button className="text-left w-full truncate hover:underline" onClick={onOpen} title="Open to edit">
+      <button
+        className="text-left w-full truncate hover:underline"
+        onClick={(e) => {
+          e.stopPropagation()
+          onOpen()
+        }}
+        onMouseDown={(e) => e.stopPropagation()}
+        title="Open to edit"
+      >
         {formatAttributeValue(def, value) || <span className="text-muted-foreground">—</span>}
       </button>
     )
@@ -980,20 +1147,17 @@ function SheetCell({
         value={value}
         onCommit={(v) => {
           onCommit(v)
-          setEditing(false)
+          onEndEdit()
         }}
-        onCancel={() => setEditing(false)}
+        onCancel={onEndEdit}
       />
     )
   }
 
   return (
-    <button
-      className="text-left w-full truncate min-h-[24px] hover:bg-muted/60 rounded px-1"
-      onClick={() => setEditing(true)}
-    >
+    <span className="block text-left w-full truncate min-h-[24px] px-1 select-none cursor-cell">
       {formatAttributeValue(def, value) || <span className="text-muted-foreground">—</span>}
-    </button>
+    </span>
   )
 }
 

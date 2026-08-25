@@ -1,20 +1,18 @@
 /**
  * components/Editor/RichTextEditor.tsx — Dependency-light markdown editor
  *
- * A small, self-contained rich-text editor for document-type items (Feature 4,
- * Worker D). It stores plain **markdown** (so the value is portable and diffable)
- * and offers a live HTML preview rendered by the safe in-house `renderMarkdown`
- * (no third-party markdown/editor deps). A Win95-skinned toolbar applies
- * selection-aware transforms (bold/italic/code/headings/lists/quote/link) via the
- * pure helpers in `./markdown`, and an Edit / Split / Preview switch controls the
- * layout. Styling lives in `./editor.css` (scoped under `.rte`).
+ * A self-contained rich-text editor for document-type items. Stores plain
+ * **markdown** (portable + diffable) with a live HTML preview via the safe
+ * in-house `renderMarkdown`. Win95-skinned toolbar applies selection-aware
+ * transforms (bold/italic/code/headings/lists/quote/link/image/embed/font)
+ * via `./markdown`. Styling lives in `./editor.css` (scoped under `.rte`).
  *
- * Controlled component: pass `value` (markdown) and `onChange`. It keeps no
- * persisted state of its own — the host (`BodyPanel`) owns reads/writes.
+ * Controlled: pass `value` (markdown) and `onChange`. Optional `documentFont`
+ * sets the default Google Font for the edit/preview panes.
  */
 "use client"
 
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   Bold,
   Italic,
@@ -24,9 +22,12 @@ import {
   ListOrdered,
   Quote,
   Link as LinkIcon,
+  Image as ImageIcon,
+  Film,
   Eye,
   Pencil,
   Columns2,
+  Type,
 } from "lucide-react"
 import {
   renderMarkdown,
@@ -35,6 +36,13 @@ import {
   applyInsert,
   type EditResult,
 } from "./markdown"
+import {
+  GOOGLE_FONTS,
+  ensureGoogleFontsLoaded,
+  extractFontMarkers,
+  fontFamilyCss,
+  isAllowedFont,
+} from "@/lib/google-fonts"
 import "./editor.css"
 
 type ViewMode = "edit" | "split" | "preview"
@@ -50,6 +58,14 @@ interface RichTextEditorProps {
   onBlur?: () => void
   /** Initial layout. Defaults to "edit". */
   defaultView?: ViewMode
+  /** Document-level Google Font (Docs tab). */
+  documentFont?: string
+  /** Called when the user picks a different document font. */
+  onDocumentFontChange?: (font: string) => void
+  /** Show the extended Docs toolbar (fonts / image / embed). Defaults to false. */
+  docsMode?: boolean
+  /** Extra class on the root `.rte` element. */
+  className?: string
 }
 
 const WORDS = /\S+/g
@@ -61,12 +77,30 @@ export function RichTextEditor({
   readOnly = false,
   onBlur,
   defaultView = "edit",
+  documentFont,
+  onDocumentFontChange,
+  docsMode = false,
+  className,
 }: RichTextEditorProps) {
   const [view, setView] = useState<ViewMode>(defaultView)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const html = useMemo(() => renderMarkdown(value), [value])
   const wordCount = useMemo(() => (value.match(WORDS) ?? []).length, [value])
+
+  // Preload document font + any inline {font:…} markers used in the body.
+  useEffect(() => {
+    const families = [
+      ...(isAllowedFont(documentFont) ? [documentFont] : []),
+      ...extractFontMarkers(value),
+    ]
+    ensureGoogleFontsLoaded(families)
+  }, [documentFont, value])
+
+  const paneStyle = useMemo(
+    () => ({ fontFamily: fontFamilyCss(documentFont) }),
+    [documentFont],
+  )
 
   /** Apply a pure transform to the current selection, then restore focus/caret. */
   const transform = useCallback(
@@ -76,7 +110,6 @@ export function RichTextEditor({
       const { value: text, selectionStart, selectionEnd } = el
       const result = fn(text, selectionStart, selectionEnd)
       onChange(result.text)
-      // Restore selection after React re-renders the controlled value.
       requestAnimationFrame(() => {
         el.focus()
         el.setSelectionRange(result.selectionStart, result.selectionEnd)
@@ -92,12 +125,29 @@ export function RichTextEditor({
       const label = t.slice(s, e) || "link text"
       return applyInsert(t, s, e, `[${label}](https://)`)
     })
+  const insertImage = () =>
+    transform((t, s, e) => {
+      const alt = t.slice(s, e) || "image"
+      return applyInsert(t, s, e, `![${alt}](https://)`)
+    })
+  const insertEmbed = () =>
+    transform((t, s, e) => {
+      const title = t.slice(s, e) || "Embedded link"
+      return applyInsert(t, s, e, `@[${title}](https://)`)
+    })
+  const wrapFont = (font: string) => {
+    if (!isAllowedFont(font)) return
+    transform((t, s, e) => {
+      const selected = t.slice(s, e) || "text"
+      return applyInsert(t, s, e, `{font:${font}}${selected}{/font}`)
+    })
+  }
 
   const showEdit = view === "edit" || view === "split"
   const showPreview = view === "preview" || view === "split"
 
   return (
-    <div className="rte" data-no95>
+    <div className={`rte${className ? ` ${className}` : ""}`} data-no95>
       <div className="rte-toolbar" role="toolbar" aria-label="Formatting">
         <button type="button" className="rte-tool rte-tool-strong" title="Bold (Ctrl+B)" onClick={wrap("**")} disabled={readOnly}>
           <Bold className="h-3.5 w-3.5" />
@@ -124,6 +174,54 @@ export function RichTextEditor({
         <button type="button" className="rte-tool" title="Link" onClick={insertLink} disabled={readOnly}>
           <LinkIcon className="h-3.5 w-3.5" />
         </button>
+
+        {docsMode && (
+          <>
+            <button type="button" className="rte-tool" title="Image" onClick={insertImage} disabled={readOnly}>
+              <ImageIcon className="h-3.5 w-3.5" />
+            </button>
+            <button type="button" className="rte-tool" title="Embed link / video" onClick={insertEmbed} disabled={readOnly}>
+              <Film className="h-3.5 w-3.5" />
+            </button>
+            <span className="rte-toolbar-sep" aria-hidden />
+            <label className="rte-font-picker" title="Document font (Google Fonts)">
+              <Type className="h-3.5 w-3.5" aria-hidden />
+              <select
+                className="rte-select"
+                value={isAllowedFont(documentFont) ? documentFont : "Arial"}
+                disabled={readOnly || !onDocumentFontChange}
+                onChange={(e) => onDocumentFontChange?.(e.target.value)}
+                aria-label="Document font"
+              >
+                {GOOGLE_FONTS.map((f) => (
+                  <option key={f} value={f} style={{ fontFamily: `"${f}", sans-serif` }}>
+                    {f}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="rte-font-picker" title="Wrap selection in a Google Font">
+              <select
+                className="rte-select"
+                defaultValue=""
+                disabled={readOnly}
+                onChange={(e) => {
+                  const font = e.target.value
+                  e.target.value = ""
+                  if (font) wrapFont(font)
+                }}
+                aria-label="Apply font to selection"
+              >
+                <option value="">Span font…</option>
+                {GOOGLE_FONTS.map((f) => (
+                  <option key={f} value={f}>
+                    {f}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </>
+        )}
 
         <span className="rte-toolbar-spacer" aria-hidden />
 
@@ -161,6 +259,7 @@ export function RichTextEditor({
           <textarea
             ref={textareaRef}
             className="rte-textarea"
+            style={paneStyle}
             value={value}
             placeholder={placeholder}
             readOnly={readOnly}
@@ -183,15 +282,17 @@ export function RichTextEditor({
         {view === "split" && <div className="rte-split-divider" aria-hidden />}
         {showPreview && (
           html ? (
-            <div className="rte-preview" dangerouslySetInnerHTML={{ __html: html }} />
+            <div className="rte-preview" style={paneStyle} dangerouslySetInnerHTML={{ __html: html }} />
           ) : (
-            <div className="rte-preview rte-preview-empty">Nothing to preview yet.</div>
+            <div className="rte-preview rte-preview-empty" style={paneStyle}>
+              Nothing to preview yet.
+            </div>
           )
         )}
       </div>
 
       <div className="rte-statusbar">
-        <span>Markdown</span>
+        <span>{docsMode ? "Brainclip Docs · Markdown" : "Markdown"}</span>
         <span>
           {wordCount} {wordCount === 1 ? "word" : "words"} · {value.length} chars
         </span>

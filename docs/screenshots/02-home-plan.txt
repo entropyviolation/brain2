@@ -6,7 +6,9 @@ SOURCE FILES:
   - components/Home/Plan/plan-panel.tsx
   - components/Home/Plan/month-view.tsx
   - components/Home/Plan/event-dialog.tsx
+  - components/Home/Plan/paste-events-dialog.tsx
   - lib/event-store.ts
+  - lib/parse-event-text.ts
 ================================================================================
 
 GLOBAL CHROME (all screens)
@@ -14,7 +16,7 @@ GLOBAL CHROME (all screens)
     Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
     Bulk Add | Quick Add
   Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
-  Top-level tabs (7): Home | Lists | Scheduler | Operations | Modules | Graph | Analytics
+  Top-level tabs (8): Home | Lists | Docs | Scheduler | Operations | Modules | Graph | Analytics
 
 VIEW-SPECIFIC
-Calendar month grid with scheduled tasks and calendar events. Toolbar: Add Event, Settings (import/export events). Click cells to create events; drag tasks from the planned-tasks sidebar.
+Calendar month grid with scheduled tasks and calendar events. Toolbar: Add Event, Paste Events (bulk from itinerary text), Settings (import/export events). Click cells to create events; drag tasks from the planned-tasks sidebar. Multi-day all-day events appear on every day in their span.

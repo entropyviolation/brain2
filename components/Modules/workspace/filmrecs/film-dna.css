@@ -1,0 +1,534 @@
+/**
+ * Film DNA Lab styles — Letterboxd-adjacent dark taste lab.
+ * Scoped under .film-dna so it doesn't leak into the rest of Modules.
+ */
+.film-dna {
+  --fd-bg: #0d1115;
+  --fd-panel: #151c23;
+  --fd-panel2: #1a232c;
+  --fd-line: #242f3a;
+  --fd-ink: #e9eff5;
+  --fd-dim: #8b99a7;
+  --fd-faint: #5b6875;
+  --fd-orange: #ff8000;
+  --fd-green: #00e054;
+  --fd-blue: #40bcf4;
+  --fd-serif: "Instrument Serif", "Iowan Old Style", "Palatino Linotype", Palatino, serif;
+  --fd-sans: "Archivo", "Avenir Next", "Segoe UI", sans-serif;
+  --fd-mono: "Space Mono", ui-monospace, monospace;
+  background: var(--fd-bg);
+  color: var(--fd-ink);
+  font-family: var(--fd-sans);
+  border-radius: 12px;
+  overflow: hidden;
+  min-height: 520px;
+  position: relative;
+}
+
+.film-dna::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
+  z-index: 0;
+}
+
+.film-dna-inner {
+  position: relative;
+  z-index: 1;
+  padding: 20px 20px 36px;
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.film-dna .fd-kicker {
+  font-family: var(--fd-mono);
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--fd-dim);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.film-dna .fd-kicker i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.film-dna h1.fd-title {
+  font-family: var(--fd-serif);
+  font-weight: 400;
+  font-size: clamp(36px, 6vw, 64px);
+  line-height: 0.95;
+  margin: 10px 0 8px;
+}
+
+.film-dna h1.fd-title em {
+  font-style: italic;
+  background: linear-gradient(100deg, var(--fd-orange), var(--fd-green) 50%, var(--fd-blue));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.film-dna .fd-sub {
+  color: var(--fd-dim);
+  font-size: 13.5px;
+  max-width: 560px;
+  line-height: 1.5;
+  margin-bottom: 18px;
+}
+
+.film-dna .fd-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 18px;
+}
+
+.film-dna .fd-tab {
+  font-family: var(--fd-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 9px 16px;
+  border: 1px solid var(--fd-line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--fd-dim);
+  cursor: pointer;
+}
+
+.film-dna .fd-tab:hover {
+  color: var(--fd-ink);
+  border-color: var(--fd-faint);
+}
+
+.film-dna .fd-tab.on {
+  color: #0d1115;
+  background: var(--fd-ink);
+  border-color: var(--fd-ink);
+}
+
+.film-dna .fd-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.film-dna .fd-stat {
+  background: var(--fd-panel);
+  border: 1px solid var(--fd-line);
+  border-radius: 12px;
+  padding: 14px;
+  position: relative;
+  overflow: hidden;
+}
+
+.film-dna .fd-stat::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--fd-orange), var(--fd-green), var(--fd-blue));
+  opacity: 0.7;
+}
+
+.film-dna .fd-stat .num {
+  font-family: var(--fd-serif);
+  font-size: 32px;
+  line-height: 1;
+}
+
+.film-dna .fd-stat .lbl {
+  font-family: var(--fd-mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fd-dim);
+  margin-top: 6px;
+}
+
+.film-dna .fd-card {
+  background: var(--fd-panel);
+  border: 1px solid var(--fd-line);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 10px;
+}
+
+.film-dna .fd-card h2 {
+  font-family: var(--fd-serif);
+  font-weight: 400;
+  font-size: 22px;
+  margin: 0 0 4px;
+}
+
+.film-dna .fd-hint {
+  color: var(--fd-faint);
+  font-size: 12px;
+  margin-bottom: 12px;
+  line-height: 1.45;
+}
+
+.film-dna .fd-decades {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 140px;
+  padding-top: 4px;
+}
+
+.film-dna .fd-dec {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.film-dna .fd-dec .bar {
+  width: 100%;
+  border-radius: 5px 5px 2px 2px;
+  min-height: 4px;
+}
+
+.film-dna .fd-dec .cnt,
+.film-dna .fd-dec .yr {
+  font-family: var(--fd-mono);
+  font-size: 9px;
+  color: var(--fd-faint);
+}
+
+.film-dna .fd-pgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 10px;
+}
+
+.film-dna .fd-pcard {
+  position: relative;
+  aspect-ratio: 2 / 3;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--fd-panel2);
+  border: 1px solid var(--fd-line);
+}
+
+.film-dna .fd-pcard .fb {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 10px;
+  gap: 4px;
+}
+
+.film-dna .fd-pcard .fb .mono {
+  font-family: var(--fd-mono);
+  font-size: 10px;
+  opacity: 0.85;
+}
+
+.film-dna .fd-pcard .fb .ft {
+  font-family: var(--fd-serif);
+  font-size: 14px;
+  line-height: 1.15;
+}
+
+.film-dna .fd-pcard img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.35s;
+}
+
+.film-dna .fd-pcard img.ready {
+  opacity: 1;
+}
+
+.film-dna .fd-pcard .ov {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.88), transparent 55%);
+  opacity: 0;
+  transition: opacity 0.2s;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 8px;
+  gap: 6px;
+}
+
+.film-dna .fd-pcard:hover .ov {
+  opacity: 1;
+}
+
+.film-dna .fd-pcard .ot {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.film-dna .fd-pcard .oy {
+  font-family: var(--fd-mono);
+  font-size: 9px;
+  color: var(--fd-dim);
+}
+
+.film-dna .fd-pcard .acts {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.film-dna .fd-pcard .btn {
+  font-family: var(--fd-mono);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  padding: 4px 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.45);
+  color: var(--fd-ink);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.film-dna .fd-pcard .btn.fav.on,
+.film-dna .fd-pcard .favStar {
+  color: var(--fd-orange);
+}
+
+.film-dna .fd-pcard .favStar,
+.film-dna .fd-pcard .rank,
+.film-dna .fd-pcard .badge {
+  position: absolute;
+  z-index: 2;
+  font-family: var(--fd-mono);
+  font-size: 11px;
+}
+
+.film-dna .fd-pcard .favStar {
+  top: 6px;
+  right: 6px;
+}
+
+.film-dna .fd-pcard .rank {
+  top: 6px;
+  left: 6px;
+  background: rgba(0, 0, 0, 0.55);
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+
+.film-dna .fd-pcard .badge {
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--fd-green);
+}
+
+.film-dna .fd-pcard .badge.shift {
+  right: 22px;
+}
+
+.film-dna .fd-shelf {
+  margin-bottom: 14px;
+}
+
+.film-dna .fd-shelf h3 {
+  font-family: var(--fd-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fd-dim);
+  margin: 0 0 8px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.film-dna .fd-modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.film-dna .fd-chip {
+  font-family: var(--fd-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--fd-line);
+  background: transparent;
+  color: var(--fd-dim);
+  cursor: pointer;
+}
+
+.film-dna .fd-chip.on {
+  background: var(--fd-ink);
+  color: #0d1115;
+  border-color: var(--fd-ink);
+}
+
+.film-dna .fd-drop {
+  border: 1.5px dashed var(--fd-line);
+  border-radius: 14px;
+  padding: 36px 20px;
+  text-align: center;
+  cursor: pointer;
+  background: var(--fd-panel);
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.film-dna .fd-drop.over {
+  border-color: var(--fd-blue);
+  background: var(--fd-panel2);
+}
+
+.film-dna .fd-drop h2 {
+  font-family: var(--fd-serif);
+  font-size: 26px;
+  font-weight: 400;
+  margin: 0 0 6px;
+}
+
+.film-dna .fd-empty {
+  color: var(--fd-faint);
+  font-size: 13px;
+  padding: 18px 4px;
+}
+
+.film-dna .fd-blend-ring {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.film-dna .fd-ring-wrap {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  flex-shrink: 0;
+}
+
+.film-dna .fd-ring-wrap svg {
+  transform: rotate(-90deg);
+}
+
+.film-dna .fd-ring-wrap .pct {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--fd-serif);
+  font-size: 36px;
+}
+
+.film-dna .fd-cmp {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.film-dna .fd-cmp .row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.film-dna .fd-cmp .yr {
+  font-family: var(--fd-mono);
+  font-size: 9px;
+  color: var(--fd-faint);
+  width: 28px;
+}
+
+.film-dna .fd-cmp .lane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.film-dna .fd-cmp .b {
+  height: 5px;
+  border-radius: 3px;
+  min-width: 2px;
+}
+
+.film-dna .fd-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.film-dna .fd-btn {
+  font-family: var(--fd-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--fd-line);
+  background: var(--fd-panel2);
+  color: var(--fd-ink);
+  cursor: pointer;
+}
+
+.film-dna .fd-btn.primary {
+  background: var(--fd-orange);
+  border-color: var(--fd-orange);
+  color: #0d1115;
+}
+
+.film-dna .fd-err {
+  color: #ff6b6b;
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+.film-dna .fd-scatter {
+  width: 100%;
+  height: 280px;
+  border-radius: 10px;
+  background: var(--fd-panel2);
+  border: 1px solid var(--fd-line);
+  cursor: crosshair;
+}
+
+.film-dna .fd-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+@media (max-width: 720px) {
+  .film-dna .fd-two-col {
+    grid-template-columns: 1fr;
+  }
+}

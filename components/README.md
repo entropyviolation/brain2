@@ -8,9 +8,10 @@ Every React component in COGS lives here. Top-level files are cross-cutting dial
 |-----|--------|---------|
 | Home | `Home/` | Dashboard: habits, plan, to-do, goals, tracking |
 | Lists | `Lists/` | Win98-style file manager for lists, folders, and items |
+| Docs | `Docs/` | WYSIWYG document workspace over `note` items (fonts, images, PDF ingest) |
 | Scheduler | `Scheduler/` | Progressive period funnel (Always → Year → Month → Week → Day) + dependency/gantt views |
-| Modules | `Modules/` | User-built mini-app **workspaces** (Itinerary / Cleaning / Budget templates + custom views) and dashboard widgets |
-| Graph | `Graph/` | Force-directed knowledge graph over all items and their typed `links` |
+| Operations | `Operations/` | Directed enterprises: phases, heatmap, to-do-next, post-mortem |
+| Modules | `Modules/` | User-built mini-app **workspaces** (Itinerary / Cleaning / Budget / Book Tasting / Film DNA templates + custom views) and dashboard widgets |
 | Analytics | `Analytics/` | Charts and summaries over tasks, habits, points, tracking, reviews, plus Brain2 views |
 
 The global header (all tabs) also renders: **Review** (`Reviews/`), **Settings** (`Settings/SettingsDialog.tsx` — backup/restore + Second Brain setup), **Tracking** (`cognitive-state.tsx` → TimeGrid), **Inbox**, **Bulk Add**, and **Quick Add**. A global **Cmd/Ctrl-K** search palette (`Search/`) and the global **completion popup** (`Completion/`, fires on every task completion) are mounted app-wide.
@@ -22,10 +23,11 @@ The global header (all tabs) also renders: **Review** (`Reviews/`), **Settings**
 | `Home/` | Home dashboard and its Habits / Plan / ToDo / Goals (Objectives + Goals) / Tracking sub-views |
 | `Completion/` | Global task-completion popup — fires on every completion to capture objective/goal contributions + multipliers |
 | `Lists/` | Lists file manager (formerly "Next Actions") — orchestrator + `hooks/`, `views/`, `dialogs/`, `list-content/`, `navigation/`, `toolbar/`, `attributes/`, `lib/` subfolders |
+| `Docs/` | Docs tab — `DocsPanel` + `DocumentEditor` over `note` items |
 | `Scheduler/` | Period scheduling funnel + `DependencyGraph` / `GanttView` (critical path) |
-| `Modules/` | Module platform — full-screen workspaces (`workspace/`) + dashboard widgets |
+| `Operations/` | Operation workspaces (phases, heatmap, log, to-do-next) |
+| `Modules/` | Module platform — full-screen workspaces (`workspace/`, incl. itinerary + filmrecs views) + dashboard widgets |
 | `Analytics/` | Metrics and charts, including Brain2 views (calibration, streaks, plan-vs-reality, regret, correlations, context-switch heatmap) |
-| `Graph/` | `KnowledgeGraph` (top-level tab) + reusable `LinkGraph` over typed item links |
 | `ItemDetail/` | Consolidated item/task detail — full-screen page (`ItemDetailPage`) + popup (`ItemDetailPopup`), shared `useItemDetailDraft`, tag/link/related-items panels |
 | `Editor/` | Rich-text/markdown body editor (`RichTextEditor`) + `markdown.ts` serialization, `editor.css` |
 | `Focus/` | `JustStartMode` — ADHD anti-paralysis overlay (one smallest step + 2-minute timer) |
@@ -70,7 +72,7 @@ still uses interim localStorage helpers via `plan-text.ts`:
 | `item-type-store` | Item type registry (built-in `task` + user-defined types; Second Brain setup) |
 | `lists-ui-store` | Lists UI prefs (folder view, icon positions, orb gallery) |
 
-A growing pure-logic layer in `lib/` (e.g. `search`, `links`, `link-graph`,
+A growing pure-logic layer in `lib/` (e.g. `search`, `links`,
 `graph-layout`, `calibration`, `streaks`, `plan-vs-reality`, `critical-path`,
 `priority`, `needs-attention`, `decision-matrix`) and a `lib/data/` data layer
 (`DataSource` sources + Mongo collections/schemas + JSON `backup`) and

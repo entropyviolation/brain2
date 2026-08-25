@@ -271,15 +271,6 @@ export const SHOTS = [
     description: `Full-screen workspace composed of bound views (spreadsheet, agenda, summary, …), workflow editor, settings, and pop-out window support.`,
   },
 
-  // ── Graph ─────────────────────────────────────────────────────────────────
-  {
-    file: "11-graph.png",
-    area: "Knowledge Graph",
-    view: "Graph tab",
-    sources: ["components/Graph/KnowledgeGraph.tsx", "components/Graph/LinkGraph.tsx", "lib/graph-layout.ts"],
-    description: `Force-directed graph of all items and typed links (stance-colored edges). Click nodes to open item detail popup.`,
-  },
-
   // ── Analytics ─────────────────────────────────────────────────────────────
   {
     file: "07-analytics.png",
@@ -462,7 +453,6 @@ export const COVERAGE_AREAS = [
   { area: "Scheduler", shots: ["06-scheduler.png", "06-scheduler-day.png", "06-scheduler-gantt.png", "06-scheduler-dependencies.png"] },
   { area: "Operations", shots: ["10-operations.png", "10-operations-workspace.png"] },
   { area: "Modules", shots: ["09-modules.png", "09-modules-workspace.png"] },
-  { area: "Knowledge Graph", shots: ["11-graph.png"] },
   { area: "Analytics (all tabs)", shots: ["07-analytics*.png"] },
   { area: "Item detail popup", shots: ["21-item-detail-popup.png"] },
 ]

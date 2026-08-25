@@ -5,7 +5,9 @@ AREA: Modules workspace
 SOURCE FILES:
   - components/Modules/workspace/ModuleWorkspace.tsx
   - components/Modules/workspace/ModuleViewEditor.tsx
+  - components/Modules/workspace/itinerary/
   - lib/module-templates.ts
+  - lib/itinerary-assemble.ts
 ================================================================================
 
 GLOBAL CHROME (all screens)
@@ -13,7 +15,9 @@ GLOBAL CHROME (all screens)
     Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
     Bulk Add | Quick Add
   Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
-  Top-level tabs (7): Home | Lists | Scheduler | Operations | Modules | Graph | Analytics
+  Top-level tabs (8): Home | Lists | Docs | Scheduler | Operations | Modules | Graph | Analytics
 
 VIEW-SPECIFIC
-Full-screen workspace composed of bound views (spreadsheet, agenda, summary, …), workflow editor, settings, and pop-out window support.
+Full-screen Itinerary Creator workspace: Plan (Docs editor), printable Itinerary,
+Flights/Entries spreadsheets, Activities map, packing/pretrip checklists, workflow
+editor, settings, print/export, and pop-out window support.

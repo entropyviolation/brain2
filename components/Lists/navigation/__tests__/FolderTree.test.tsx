@@ -5,10 +5,34 @@ import { FolderTree } from "../FolderTree"
 const mockFolders = [
   { id: "f1", name: "Work", color: "#ff0000", createdAt: new Date(), listIds: [] },
   { id: "f2", name: "Personal", color: "#0000ff", createdAt: new Date(), listIds: [] },
+  {
+    id: "na",
+    name: "Next Actions",
+    color: "#2563eb",
+    createdAt: new Date(),
+    listIds: [],
+    parentFolderId: undefined,
+  },
+  {
+    id: "na-scheduled",
+    name: "Scheduled",
+    color: "#64748b",
+    createdAt: new Date(),
+    listIds: [],
+    parentFolderId: "na",
+  },
+  {
+    id: "na-sched-y-2026",
+    name: "2026",
+    color: "#94a3b8",
+    createdAt: new Date(),
+    listIds: [],
+    parentFolderId: "na-scheduled",
+  },
 ]
 
 describe("FolderTree", () => {
-  it("renders all folders", () => {
+  it("renders root folders only when collapsed", () => {
     render(
       <FolderTree
         folders={mockFolders}
@@ -24,6 +48,27 @@ describe("FolderTree", () => {
     )
     expect(screen.getByText("Work")).toBeInTheDocument()
     expect(screen.getByText("Personal")).toBeInTheDocument()
+    expect(screen.getByText("Next Actions")).toBeInTheDocument()
+    expect(screen.queryByText("Scheduled")).not.toBeInTheDocument()
+    expect(screen.queryByText("2026")).not.toBeInTheDocument()
+  })
+
+  it("expands nested folders when toggled", () => {
+    render(
+      <FolderTree
+        folders={mockFolders}
+        location="home"
+        openTarget={null}
+        isHome
+        isAll={false}
+        onNavTo={vi.fn()}
+        onDragOver={vi.fn()}
+        onDrop={vi.fn()}
+        onCreateFolder={vi.fn()}
+      />,
+    )
+    fireEvent.click(screen.getByLabelText("Expand folder"))
+    expect(screen.getByText("Scheduled")).toBeInTheDocument()
   })
 
   it("highlights the selected folder", () => {
@@ -60,5 +105,25 @@ describe("FolderTree", () => {
     )
     fireEvent.click(screen.getByText("Personal"))
     expect(onNavTo).toHaveBeenCalledWith("f2")
+  })
+
+  it("calls onEditFolder from the settings button", () => {
+    const onEditFolder = vi.fn()
+    render(
+      <FolderTree
+        folders={mockFolders}
+        location="home"
+        openTarget={null}
+        isHome
+        isAll={false}
+        onNavTo={vi.fn()}
+        onDragOver={vi.fn()}
+        onDrop={vi.fn()}
+        onCreateFolder={vi.fn()}
+        onEditFolder={onEditFolder}
+      />,
+    )
+    fireEvent.click(screen.getByLabelText("Edit Work"))
+    expect(onEditFolder).toHaveBeenCalledWith(expect.objectContaining({ id: "f1" }))
   })
 })

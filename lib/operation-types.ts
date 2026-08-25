@@ -31,6 +31,8 @@ export const OPERATION_ATTR = {
   stage: "stage",
   targetDate: "targetDate",
   homeNotes: "homeNotes",
+  /** Linked itinerary workspace module (Activities map + day-by-day plan). */
+  itineraryModuleId: "itineraryModuleId",
 } as const
 
 /** Lifecycle stages an Operation moves through. */

@@ -11,14 +11,15 @@
  */
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ArrowLeft, Plus, Printer, CalendarCheck, Settings, X, Pencil, Zap, ExternalLink } from "lucide-react"
+import { ArrowLeft, Plus, Printer, CalendarCheck, Settings, Pencil, Zap, ExternalLink } from "lucide-react"
 import { useModulesStore, type ModuleInstance, type ModuleView } from "@/lib/modules-store"
 import type { ModuleDefinition } from "@/lib/types"
 import { syncModuleToPlan } from "@/lib/module-plan-sync"
+import { migrateItineraryModule } from "@/lib/itinerary-migrate"
 import { ModuleViewBody } from "./module-view-bodies"
 import { ModuleViewEditor } from "./ModuleViewEditor"
 import { ModuleSettingsDialog } from "./ModuleSettingsDialog"
@@ -100,6 +101,32 @@ export function ModuleWorkspace({
   const [workflowsOpen, setWorkflowsOpen] = useState(false)
   const [dragIndex, setDragIndex] = useState<number | null>(null)
 
+  // Best-effort upgrade / repair of Trip Itinerary workspaces (incl. missing Activities).
+  useEffect(() => {
+    const run = () => {
+      const current = useModulesStore.getState().modules.find((m) => m.id === module.id) ?? module
+      const next = migrateItineraryModule(current)
+      if (!next) return
+      updateModule(module.id, {
+        views: next.views,
+        config: next.config,
+        description: next.description,
+      })
+      const activities = next.views?.find((v) => v.kind === "trip-map" || v.title === "Activities")
+      if (activities && !(current.views ?? []).some((v) => v.kind === "trip-map" || v.title === "Activities")) {
+        setActiveId(activities.id)
+      } else if (next.views?.[0]?.id && !views.some((v) => v.id === activeId)) {
+        setActiveId(next.views[0].id)
+      }
+    }
+    if (useModulesStore.persist.hasHydrated()) {
+      run()
+      return
+    }
+    return useModulesStore.persist.onFinishHydration(run)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run when opening / version or views change
+  }, [module.id, module.templateId, module.config?.itineraryUiVersion, module.views?.length])
+
   const saveView = (view: ModuleView) => {
     const exists = views.some((v) => v.id === view.id)
     const next = exists ? views.map((v) => (v.id === view.id ? view : v)) : [...views, view]
@@ -107,12 +134,6 @@ export function ModuleWorkspace({
     setActiveId(view.id)
     setEditingView(null)
     setAddingView(false)
-  }
-
-  const removeView = (id: string) => {
-    const next = views.filter((v) => v.id !== id)
-    updateModule(module.id, { views: next })
-    if (activeId === id) setActiveId(next[0]?.id || "")
   }
 
   const reorderViews = (from: number, to: number) => {
@@ -254,22 +275,11 @@ export function ModuleWorkspace({
             <TabsContent key={v.id} value={v.id} className="space-y-2">
               <div className="flex items-center justify-between no-print">
                 <h3 className="text-lg font-semibold">{v.title}</h3>
-                <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingView(v)} title="Edit view">
-                    <Settings className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-destructive"
-                    onClick={() => removeView(v.id)}
-                    title="Remove view"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingView(v)} title="Edit view">
+                  <Settings className="h-4 w-4" />
+                </Button>
               </div>
-              <ModuleViewBody view={v} onOpenItem={onOpenItem} />
+              <ModuleViewBody view={v} onOpenItem={onOpenItem} module={module} />
             </TabsContent>
           ))}
         </Tabs>

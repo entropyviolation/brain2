@@ -32,10 +32,6 @@
 │   ├── Focus
 │   │   ├── JustStartMode.tsx
 │   │   └── README.md
-│   ├── Graph
-│   │   ├── KnowledgeGraph.tsx
-│   │   ├── LinkGraph.tsx
-│   │   └── README.md
 │   ├── Home
 │   │   ├── Goals
 │   │   │   ├── DirectionReport.tsx
@@ -414,8 +410,6 @@
 │   ├── item-types.ts
 │   ├── item-utils.test.ts
 │   ├── item-utils.ts
-│   ├── link-graph.test.ts
-│   ├── link-graph.ts
 │   ├── links.test.ts
 │   ├── links.ts
 │   ├── list-tree.test.ts

@@ -60,10 +60,68 @@ body.win95-app h4 {
 body.win95-app {
   background: var(--w95-desktop);
   letter-spacing: 0.2px;
+  /*
+   * Desktop is teal (`--w95-desktop`). shadcn's muted gray is tuned for light
+   * panels, so it is unreadable on the desktop. Use light muted text by default
+   * and restore the original gray only on light surfaces below.
+   */
+  --muted-foreground: 0 0% 100%;
 }
 
 body.win95-app main {
   background: var(--w95-desktop);
+}
+
+/* Light panels / chrome: keep readable gray secondary text */
+body.win95-app :is(
+  .bg-card,
+  .bg-popover,
+  .bg-muted,
+  .bg-secondary,
+  .bg-accent,
+  .bg-white,
+  .bg-background:not(main),
+  [role="dialog"],
+  [role="alertdialog"],
+  [role="menu"],
+  [role="listbox"],
+  [role="tooltip"],
+  [data-radix-popper-content-wrapper],
+  .itinerary-doc-paper,
+  .trip-checklist-paper,
+  .trip-city-chip,
+  .trip-city-chip-wrap,
+  .trip-fixed-legend,
+  .trip-only-btn,
+  .trip-photo-panel,
+  .trip-lists-pane,
+  .trip-measure-btn,
+  .trip-bucket-toggle,
+  .fm98,
+  .docs95,
+  .docs-editor
+) {
+  --muted-foreground: 215.4 16.3% 46.9%;
+}
+
+/* Form fields are light even when chrome sits on the desktop.
+ * Ghost itinerary fields stay transparent on paper/desktop and inherit muted
+ * from their parent surface instead. */
+body.win95-app
+  :is(
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+    textarea,
+    select,
+    [role="combobox"]
+  ):not(.itinerary-inline-input):not(.itinerary-autogrow):not(.itinerary-time-input):not(
+    .itinerary-mode-select
+  ):not(.itinerary-ghost) {
+  --muted-foreground: 215.4 16.3% 46.9%;
+}
+
+/* Tab strip is light gray; inactive labels should be ink, not desktop-white */
+body.win95-app [role="tablist"] {
+  --muted-foreground: 0 0% 10%;
 }
 
 /* App title */

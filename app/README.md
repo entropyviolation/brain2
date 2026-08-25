@@ -1,8 +1,10 @@
 # `app/` — Next.js App Router entry
 
-The Next.js App Router root. The whole UI is client-side and exported statically
+The Next.js App Router root. The UI is client-side and exported statically
 (`output: "export"`), so these files mostly set up the shell and mount the single
-page.
+page. Trip maps / weather / places hit public APIs from the browser
+(`lib/geocode.ts`, `lib/weather-client.ts`, `lib/places-search.ts`) — no App
+Router API routes are required for the static Electron build.
 
 ## Files
 
@@ -30,28 +32,30 @@ page.
 A global **Cmd/Ctrl-K** search palette (`Search/GlobalSearch.tsx`, wired via
 `useGlobalSearchHotkey`) is mounted at the page root and available on every tab.
 
-**Top-level tabs** (6 columns, lazy-loaded):
+**Top-level tabs** (8, lazy-loaded):
 
 | Tab | Panel | Folder |
 |-----|-------|--------|
 | Home | `HomeDashboard` | `components/Home/` |
 | Lists | `EnhancedCategoryView` | `components/Lists/` (`enhanced-category-view.tsx` orchestrator) |
+| Docs | `DocsPanel` | `components/Docs/` |
 | Scheduler | `EnhancedScheduler` | `components/Scheduler/` |
+| Operations | `OperationsView` | `components/Operations/` |
 | Modules | `ModulesPanel` | `components/Modules/` |
-| Graph | `KnowledgeGraph` | `components/Graph/` |
 | Analytics | `EnhancedAnalytics` | `components/Analytics/` |
 
 Task detail: selecting a task (from Lists, Modules, Inbox, or global Search) sets
 `selectedTaskId` and replaces the main view with `EnhancedTaskDetail` until the
-user navigates back. Last active tab is persisted via `lib/app-navigation.ts`.
+user navigates back. Last active tab (and Docs folder/doc selection) is persisted
+via `lib/app-navigation.ts`.
 
 ## Spec
 
 Implements the application shell that hosts every module (§2.2, §8 Home Dashboard
-top bar). There are no API routes or server components — consistent with the local-first,
-client-only architecture today. A future **MongoDB** connection (via Electron IPC)
-will provide durable storage, text/vector search indexes, and aggregation-based
-routing without changing this shell layout.
+top bar). Consistent with the local-first, client-only architecture (map/weather
+helpers call public APIs from the renderer). A future **MongoDB** connection
+(via Electron IPC) will provide durable storage, text/vector search indexes, and
+aggregation-based routing without changing this shell layout.
 
 See also `components/README.md` for module-level UI documentation and `lib/README.md`
 for the stores the page's children read/write.

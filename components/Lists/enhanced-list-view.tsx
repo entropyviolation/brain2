@@ -7,21 +7,15 @@
 "use client"
 
 import type React from "react"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTaskStore } from "@/lib/task-store"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { useListsUiStore, type ListDisplay } from "@/lib/lists-ui-store"
-import { parseCsv, inferColumnType } from "@/lib/csv"
-import {
-  getWeekString,
-  taskScheduledOnDay,
-  taskScheduledInWeek,
-  taskScheduledInMonth,
-} from "@/lib/date-utils"
+import { inferColumnType } from "@/lib/csv"
+import { parseSpreadsheetFile } from "@/lib/spreadsheet-file"
 import {
   capitalizeLabel,
   getItemLabel,
-  listIsNextActions,
 } from "@/lib/item-utils"
 import {
   syncNextActionsSmartLists,
@@ -37,6 +31,13 @@ import {
   isTaskUncategorizedInFolder,
 } from "@/lib/folder-all-items"
 import { buildGridEntries, ROOT_ALL_FOLDER_ID } from "@/lib/lists-grid-entries"
+import {
+  buildListsTaskIndex,
+  completionRateForList,
+  smartTasksFor,
+  tasksForList,
+  type ListsTaskIndex,
+} from "@/lib/lists-task-index"
 import { TaskDetailPopup } from "@/components/task-detail-popup"
 import { NextActionsSettingsDialog } from "@/components/Lists/settings-dialog"
 import { DailyHabitsList, WeeklyHabitsList, MonthlyHabitsList } from "@/components/Lists/daily-habits-list"
@@ -150,37 +151,53 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
     dedupeLists()
   }, [dedupeFolders, dedupeLists])
 
+  const taskIndexPrevRef = useRef<ListsTaskIndex | null>(null)
+  const taskIndex = useMemo(() => {
+    const next = buildListsTaskIndex(allTasks, taskIndexPrevRef.current)
+    taskIndexPrevRef.current = next
+    return next
+  }, [allTasks])
+
+  const categoryById = useMemo(() => {
+    const map = new Map<string, List>()
+    for (const category of categories) map.set(category.id, category)
+    return map
+  }, [categories])
+
   useEffect(() => {
-    const state = useTaskStore.getState()
-    const mut = {
-      lists: state.lists,
-      folders: state.folders,
-      addList: state.addList,
-      updateList: state.updateList,
-      addFolder: state.addFolder,
-      updateFolder: state.updateFolder,
+    let cancelled = false
+    const frame = requestAnimationFrame(() => {
+      if (cancelled) return
+      startTransition(() => {
+        const state = useTaskStore.getState()
+        const mut = {
+          lists: state.lists,
+          folders: state.folders,
+          addList: state.addList,
+          updateList: state.updateList,
+          addFolder: state.addFolder,
+          updateFolder: state.updateFolder,
+          deleteFolder: state.deleteFolder,
+        }
+        syncNextActionsSmartLists(mut)
+        syncScheduledFolderHierarchy(allTasks, mut)
+        syncFolderAllItemsCategories(mut)
+      })
+    })
+    return () => {
+      cancelled = true
+      cancelAnimationFrame(frame)
     }
-    syncNextActionsSmartLists(mut)
-    syncScheduledFolderHierarchy(allTasks, mut)
-    syncFolderAllItemsCategories(mut)
   }, [allTasks])
 
   const getSmartTasks = useCallback(
-    (id: SmartId) => {
-      const now = new Date()
-      return allTasks.filter((t) => {
-        if (t.completed) return false
-        if (id === "daily") return taskScheduledOnDay(t, now)
-        if (id === "weekly") return taskScheduledInWeek(t, getWeekString(now))
-        return taskScheduledInMonth(t, now.toISOString().slice(0, 7))
-      })
-    },
-    [allTasks],
+    (id: SmartId) => smartTasksFor(taskIndex, id),
+    [taskIndex],
   )
 
   const getTasksForCategory = useCallback(
-    (categoryId: string) => allTasks.filter((t) => t.lists?.includes(categoryId) && !t.completed),
-    [allTasks],
+    (categoryId: string) => tasksForList(taskIndex, categoryId),
+    [taskIndex],
   )
 
   const countForFolder = useCallback(
@@ -196,12 +213,8 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
   )
 
   const getCategoryCompletionRate = useCallback(
-    (categoryId: string) => {
-      const categoryTasks = allTasks.filter((t) => t.lists?.includes(categoryId))
-      if (categoryTasks.length === 0) return 0
-      return Math.round((categoryTasks.filter((t) => t.completed).length / categoryTasks.length) * 100)
-    },
-    [allTasks],
+    (categoryId: string) => completionRateForList(taskIndex, categoryId),
+    [taskIndex],
   )
 
   const itemLabelFor = useCallback(
@@ -320,17 +333,21 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
   const handleCsvFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => {
-      const { headers, rows } = parseCsv(String(reader.result || ""))
-      if (headers.length === 0) return
-      const lower = headers.map((h) => h.toLowerCase())
-      const nameCandidates = ["name", "title", "item", "task", "description", "book", "product"]
-      let nameCol = lower.findIndex((h) => nameCandidates.some((c) => h.includes(c)))
-      if (nameCol === -1) nameCol = 0
-      setCsvImport({ fileName: file.name, headers, rows, listName: file.name.replace(/\.csv$/i, ""), nameCol, targetCategoryId: "" })
-    }
-    reader.readAsText(file)
+    void (async () => {
+      try {
+        const { headers, rows } = await parseSpreadsheetFile(file)
+        if (headers.length === 0) return
+        const lower = headers.map((h) => h.toLowerCase())
+        const nameCandidates = ["name", "title", "item", "task", "description", "book", "product"]
+        let nameCol = lower.findIndex((h) => nameCandidates.some((c) => h.includes(c)))
+        if (nameCol === -1) nameCol = 0
+        const listName = file.name.replace(/\.(csv|tsv|txt|xlsx|xls)$/i, "")
+        setCsvImport({ fileName: file.name, headers, rows, listName, nameCol, targetCategoryId: "" })
+      } catch (err) {
+        console.error("Failed to parse spreadsheet", err)
+        window.alert("Could not read that spreadsheet. Try exporting as CSV or XLSX and upload again.")
+      }
+    })()
     if (csvRef.current) csvRef.current.value = ""
   }, [])
 
@@ -345,7 +362,17 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
     let categoryId = targetCategoryId
     if (!categoryId) {
       categoryId = Date.now().toString()
-      addList({ id: categoryId, name: listName || "Imported list", color: newCategoryColor, description: `Imported from ${csvImport.fileName}`, createdAt: new Date(), order: categories.length, scheduleable: true, itemAttributes: attrDefs })
+      addList({
+        id: categoryId,
+        name: listName || "Imported list",
+        color: newCategoryColor,
+        description: `Imported from ${csvImport.fileName}`,
+        createdAt: new Date(),
+        order: categories.length,
+        scheduleable: true,
+        itemAttributes: attrDefs,
+        enabledDisplays: ["default", "checklist", "icons", "table", "spreadsheet", "kanban"],
+      })
       if (currentFolder) addListToFolder(currentFolder.id, categoryId)
       if (isHome) toggleHomePin(categoryId)
     } else {
@@ -353,7 +380,16 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
       if (existing) {
         const merged = [...(existing.itemAttributes || [])]
         attrDefs.forEach((d) => { if (!merged.some((m) => m.id === d.id)) merged.push(d) })
-        updateList({ ...existing, itemAttributes: merged })
+        const displays = existing.enabledDisplays
+        updateList({
+          ...existing,
+          itemAttributes: merged,
+          // Ensure spreadsheet view is available after a sheet import.
+          enabledDisplays:
+            displays && displays.length > 0 && !displays.includes("spreadsheet")
+              ? [...displays, "spreadsheet"]
+              : displays,
+        })
       }
     }
     rows.forEach((row, idx) => {
@@ -372,8 +408,11 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
       base.attributes = attributes
       addTask(base)
     })
+    // Open the imported list in spreadsheet view so the grid matches the file.
+    setListDisplay(categoryId, "spreadsheet")
+    setOpenTarget({ type: "category", id: categoryId })
     setCsvImport(null)
-  }, [csvImport, addList, addTask, updateList, categories, newCategoryColor, currentFolder, addListToFolder, isHome, toggleHomePin, taskActions])
+  }, [csvImport, addList, addTask, updateList, categories, newCategoryColor, currentFolder, addListToFolder, isHome, toggleHomePin, taskActions, setListDisplay, setOpenTarget])
 
   const applyIcon = (icon: string | undefined) => {
     if (!iconPickerFor) return
@@ -411,6 +450,13 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
     if (iconPickerFor.kind === "folder") return folders.find((x) => x.id === iconPickerFor.id)?.icon
     return allTasks.find((x) => x.id === iconPickerFor.id)?.icon
   }, [iconPickerFor, categories, folders, allTasks])
+
+  const handleAddTaskToCategoryCard = useCallback(
+    (categoryId: string, description: string) => {
+      taskActions.handleAddTaskToCategory(categoryId, description, () => setAddingTaskToTarget(null))
+    },
+    [taskActions.handleAddTaskToCategory],
+  )
 
   const folderViewCommon = {
     entries,
@@ -514,11 +560,11 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
     return (
       <FolderViewCards
         {...folderViewCommon}
-        categories={categories}
+        categoryById={categoryById}
         selectMode={selectMode}
         selectedCategories={selectedCategories}
         addingTaskToTarget={addingTaskToTarget}
-        newTaskDescription={newTaskDescription}
+        scopeKey={location}
         getSmartTasks={getSmartTasks}
         getTasksForCategory={getTasksForCategory}
         getCategoryCompletionRate={getCategoryCompletionRate}
@@ -528,8 +574,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
         setAddingTaskToTarget={setAddingTaskToTarget}
         setEditingCategory={setEditingCategory}
         deleteList={deleteList}
-        setNewTaskDescription={setNewTaskDescription}
-        handleAddTaskToCategory={(id) => taskActions.handleAddTaskToCategory(id, newTaskDescription, () => { setNewTaskDescription(""); setAddingTaskToTarget(null) })}
+        handleAddTaskToCategory={handleAddTaskToCategoryCard}
         handleCompleteTask={taskActions.handleCompleteTask}
         handleTaskDragStart={drag.handleTaskDragStart}
       />
@@ -577,7 +622,13 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
             onListDisplayChange={setListDisplay}
             onAutoOrganize={handleAutoOrganize}
           />
-          <input ref={csvRef} type="file" accept=".csv,text/csv" hidden onChange={handleCsvFile} />
+          <input
+            ref={csvRef}
+            type="file"
+            accept=".csv,.tsv,.txt,.xlsx,.xls,text/csv,text/tab-separated-values,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+            hidden
+            onChange={handleCsvFile}
+          />
 
           <div className="fm-status-bar">
             <div className="fm-status-field shrink" style={{ minWidth: 60 }}>Address</div>
@@ -607,6 +658,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
               onDragOver={drag.handleDragOver}
               onDrop={drag.handleFolderTreeDrop}
               onCreateFolder={() => setShowNewFolderDialog(true)}
+              onEditFolder={setEditingFolder}
             />
 
             <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: "flex", flexDirection: "column" }}>
@@ -662,7 +714,9 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
             {!openCategory && !openFolderAll && !openSmart && currentFolder && (
               <div className="fm-sidebar" style={{ width: 150 }}>
                 <div style={{ padding: 6, display: "flex", flexDirection: "column", gap: 6 }}>
-                  <button className="fm-btn fm-btn-sm" onClick={() => setEditingFolder(currentFolder)}>Folder Settings</button>
+                  {!isScheduledFolderId(currentFolder.id) || currentFolder.id === "na-scheduled" ? (
+                    <button className="fm-btn fm-btn-sm" onClick={() => setEditingFolder(currentFolder)}>Folder Settings</button>
+                  ) : null}
                   <button className="fm-btn fm-btn-sm" onClick={() => setIconPickerFor({ kind: "folder", id: currentFolder.id })}>Change Icon</button>
                   <button className="fm-btn fm-btn-sm" onClick={openNewCategoryDialog}>New List Here</button>
                   <button className="fm-btn fm-btn-sm" onClick={() => toggleHomePin(currentFolder.id)}>{homePinned.includes(currentFolder.id) ? "Unpin Home" : "Pin to Home"}</button>

@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agents &amp; Search — Course Module</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Public+Sans:ital,wght@0,300;0,400;0,600;0,800;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#ffffff; --ink:#0a0a0a; --ink2:#565656; --ink3:#8b8b8b;
+  --rule:#dcdcdc; --rule2:#efefef; --wash:#f7f7f7;
+  --violet:#6b4df6; --violet-w:#efebff;
+  --sage:#4f8a6d; --sage-w:#e9f3ee;
+  --cyan:#0aa2c0; --cyan-w:#e2f6fa;
+  --amber:#c98a00; --amber-w:#fdf3dc;
+  --disp:'Instrument Serif',serif;
+  --body:'Public Sans',sans-serif;
+  --mono:'IBM Plex Mono',monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{--bg:#0c0c0d;--ink:#f2f2f0;--ink2:#a8a8a4;--ink3:#7a7a76;--rule:#2c2c2e;--rule2:#1c1c1e;--wash:#141416;
+    --violet-w:#1b1636;--sage-w:#11241b;--cyan-w:#0a2530;--amber-w:#2a2007;
+    --violet:#9b83ff;--sage:#7cc39d;--cyan:#3fc9e6;--amber:#e5ae3c;}
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16.5px;line-height:1.68;-webkit-font-smoothing:antialiased}
+
+/* ── top bar ─────────────────────────── */
+.topbar{position:sticky;top:0;z-index:50;background:var(--bg);border-bottom:1px solid var(--rule)}
+.topbar .row{max-width:1080px;margin:0 auto;padding:12px 26px;display:flex;align-items:center;gap:18px}
+.logo{font-family:var(--disp);font-size:22px;letter-spacing:-.01em;white-space:nowrap}
+.logo i{color:var(--violet);font-style:italic}
+.crumb{font-family:var(--mono);font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.counter{font-family:var(--mono);font-size:11.5px;color:var(--ink2);white-space:nowrap}
+.menubtn{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;background:none;border:1px solid var(--rule);color:var(--ink);padding:6px 11px;cursor:pointer;border-radius:2px}
+.menubtn:hover{border-color:var(--ink);background:var(--wash)}
+.progress{height:3px;background:var(--rule2)}
+.progress .fill{height:100%;width:0;background:var(--ink);transition:width .35s cubic-bezier(.4,0,.2,1)}
+
+/* ── drawer ─────────────────────────── */
+.drawer{position:fixed;inset:0 auto 0 0;width:330px;max-width:86vw;background:var(--bg);border-right:1px solid var(--rule);transform:translateX(-102%);transition:transform .3s cubic-bezier(.4,0,.2,1);z-index:60;overflow-y:auto;padding:24px 22px 60px}
+.drawer.open{transform:none}
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:opacity .3s;z-index:55}
+.scrim.on{opacity:1;pointer-events:auto}
+.drawer h5{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);margin:20px 0 7px}
+.drawer h5:first-of-type{margin-top:6px}
+.drawer button.toc{display:block;width:100%;text-align:left;background:none;border:none;border-left:2px solid var(--rule2);color:var(--ink2);font-family:var(--body);font-size:14px;padding:5px 0 5px 12px;cursor:pointer;line-height:1.35}
+.drawer button.toc:hover{color:var(--ink);border-left-color:var(--violet)}
+.drawer button.toc.done{color:var(--ink3)}
+.drawer button.toc.done::after{content:" ✓";color:var(--sage);font-size:12px}
+.drawer button.toc.cur{color:var(--ink);font-weight:600;border-left-color:var(--ink)}
+.drawer .close{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;background:none;border:none;color:var(--ink3);cursor:pointer;padding:0 0 10px}
+
+/* ── page canvas ─────────────────────── */
+main{max-width:1080px;margin:0 auto;padding:0 26px 40px}
+.page{display:none;animation:rise .34s cubic-bezier(.2,.7,.3,1)}
+.page.show{display:block}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+header.hero{padding:74px 0 46px}
+.kicker{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--violet);margin-bottom:16px}
+h1{font-family:var(--disp);font-weight:400;font-size:clamp(42px,6.2vw,76px);line-height:1.0;letter-spacing:-.02em}
+h1 em{font-style:italic;color:var(--violet)}
+.hero p.lede{font-size:18.5px;color:var(--ink2);margin-top:20px;max-width:60ch;font-weight:300}
+
+.unit-head{margin:42px 0 10px;display:flex;align-items:flex-start;gap:18px}
+.unit-head .num{font-family:var(--disp);font-size:78px;line-height:.8;color:var(--violet)}
+.unit-head h2{font-family:var(--disp);font-weight:400;font-size:40px;line-height:1.05;letter-spacing:-.015em}
+.unit-head .tag{font-family:var(--mono);font-size:10.5px;color:var(--ink3);display:block;letter-spacing:.09em;text-transform:uppercase;margin-top:9px;line-height:1.5}
+h3{font-family:var(--disp);font-weight:400;font-size:35px;line-height:1.1;letter-spacing:-.015em;margin:44px 0 18px}
+h3:first-child{margin-top:46px}
+h3 .sec{font-family:var(--mono);font-size:11px;color:var(--violet);letter-spacing:.1em;display:block;margin-bottom:8px}
+h4{font-family:var(--body);font-weight:800;font-size:15px;letter-spacing:.02em;margin:30px 0 8px;text-transform:uppercase}
+p{margin:0 0 15px;max-width:70ch}
+strong{font-weight:600}
+.term{color:var(--violet);font-weight:600}
+code{font-family:var(--mono);font-size:.85em;background:var(--wash);border:1px solid var(--rule2);padding:1px 5px;border-radius:3px}
+ul,ol{margin:0 0 17px 22px;max-width:68ch}
+li{margin-bottom:8px}
+a{color:var(--violet)}
+
+/* ── cards ─────────────────────────── */
+.concept,.example,.modern,.pit{margin:24px 0;padding:20px 24px;border:1px solid var(--rule);border-radius:3px;background:var(--bg)}
+.concept{border-left:3px solid var(--cyan);background:var(--cyan-w)}
+.example{border-left:3px solid var(--ink);background:var(--wash)}
+.modern{border-left:3px solid var(--sage);background:var(--sage-w);font-size:15.5px}
+.pit{border-left:3px solid var(--amber);background:var(--amber-w);font-size:15.5px}
+.concept .label,.example .label,.modern .label,.pit .label{font-family:var(--mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;font-weight:600;margin-bottom:9px}
+.concept .label{color:var(--cyan)} .example .label{color:var(--ink2)}
+.modern .label{color:var(--sage)} .pit .label{color:var(--amber)}
+.concept p:last-child,.example p:last-child,.modern p:last-child,.pit p:last-child,.summary li:last-child{margin-bottom:0}
+
+.summary{background:var(--ink);color:var(--bg);padding:26px 30px;margin:34px 0;border-radius:3px}
+.summary .label{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--violet);margin-bottom:13px}
+@media (prefers-color-scheme: dark){.summary{background:#f2f2f0;color:#0c0c0d}.summary .label{color:#6b4df6}}
+.summary ul{margin-left:19px}
+.summary li{margin-bottom:9px;max-width:none;opacity:.92}
+.summary strong{font-weight:700;opacity:1}
+
+table{border-collapse:collapse;width:100%;margin:22px 0;font-size:14px}
+th{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;text-align:left;padding:10px 12px;background:var(--ink);color:var(--bg);font-weight:600}
+@media (prefers-color-scheme: dark){th{background:#f2f2f0;color:#0c0c0d}}
+td{padding:10px 12px;border:1px solid var(--rule);vertical-align:top}
+tr:nth-child(even) td{background:var(--wash)}
+td.y{color:var(--sage);font-weight:600}td.n{color:var(--amber);font-weight:600}td.m{color:var(--cyan);font-weight:600}
+
+pre{font-family:var(--mono);font-size:12.5px;line-height:1.65;background:var(--ink);color:#f2f2f0;padding:20px 24px;overflow-x:auto;margin:22px 0;border-radius:3px}
+@media (prefers-color-scheme: dark){pre{background:#000;border:1px solid var(--rule)}}
+pre .k{color:#9b83ff}pre .c{color:#8b8b8b;font-style:italic}pre .f{color:#3fc9e6}
+
+figure.diagram{margin:26px 0;text-align:center}
+figure.diagram svg{max-width:100%;height:auto}
+figcaption{font-size:13px;color:var(--ink3);margin-top:10px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:22px 0}
+
+/* ── vocab stop ─────────────────────── */
+.vocab{border:1px solid var(--violet);border-radius:3px;margin:34px 0;overflow:hidden}
+.vocab .vhead{background:var(--violet-w);padding:13px 20px;font-family:var(--mono);font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--violet);font-weight:600;display:flex;justify-content:space-between;align-items:center}
+.vocab .vbody{padding:6px 20px 16px;display:flex;flex-wrap:wrap;gap:8px}
+.vocab .chip{font-family:var(--mono);font-size:12px;border:1px solid var(--rule);border-radius:20px;padding:5px 13px;cursor:pointer;background:var(--bg);transition:.15s}
+.vocab .chip:hover{border-color:var(--violet);color:var(--violet)}
+.vocab .chip.on{background:var(--violet);border-color:var(--violet);color:#fff}
+.vocab .def{padding:0 20px 18px;font-size:14.5px;color:var(--ink2);min-height:20px}
+.vocab .def b{color:var(--ink)}
+
+/* ── quiz ─────────────────────────── */
+details.quiz{border:1px solid var(--rule);border-radius:3px;margin:28px 0;background:var(--wash)}
+details.quiz summary{cursor:pointer;padding:14px 20px;font-weight:600;list-style:none;font-size:15px}
+details.quiz summary::-webkit-details-marker{display:none}
+details.quiz summary::before{content:"↳ ";color:var(--cyan);font-family:var(--mono)}
+details.quiz .a{padding:2px 20px 16px;border-top:1px solid var(--rule)}
+details.quiz .a p{padding-top:12px}
+
+.check{border:1px solid var(--rule);border-radius:3px;margin:34px 0;padding:22px 24px}
+.check .chead{font-family:var(--mono);font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--cyan);font-weight:600;margin-bottom:16px}
+.check .q{margin-bottom:22px}
+.check .q:last-child{margin-bottom:0}
+.check .qt{font-weight:600;margin-bottom:10px;max-width:70ch}
+.check .opt{display:block;width:100%;text-align:left;font-family:var(--body);font-size:15px;background:var(--bg);border:1px solid var(--rule);border-radius:3px;padding:9px 14px;margin-bottom:7px;cursor:pointer;color:var(--ink);transition:.15s}
+.check .opt:hover{border-color:var(--ink)}
+.check .opt.right{border-color:var(--sage);background:var(--sage-w);color:var(--sage);font-weight:600}
+.check .opt.wrong{border-color:var(--amber);background:var(--amber-w);color:var(--amber)}
+.check .fb{font-size:14px;color:var(--ink2);margin-top:6px;display:none}
+.check .fb.on{display:block}
+
+/* ── pager ─────────────────────────── */
+.pager{max-width:1080px;margin:0 auto;padding:26px 26px 70px;display:flex;align-items:center;gap:14px;border-top:1px solid var(--rule)}
+.pager button{font-family:var(--mono);font-size:12px;letter-spacing:.06em;padding:12px 22px;border:1px solid var(--ink);background:var(--bg);color:var(--ink);cursor:pointer;border-radius:2px;transition:.15s}
+.pager button:hover:not(:disabled){background:var(--ink);color:var(--bg)}
+.pager button:disabled{opacity:.28;cursor:default}
+.pager button.next{background:var(--ink);color:var(--bg)}
+.pager button.next:hover{background:var(--violet);border-color:var(--violet);color:#fff}
+.pager .mid{flex:1;text-align:center;font-family:var(--mono);font-size:11px;color:var(--ink3);letter-spacing:.06em}
+.dots{display:flex;gap:4px;justify-content:center;margin-top:6px;flex-wrap:wrap}
+.dots i{width:16px;height:3px;background:var(--rule);border-radius:2px;cursor:pointer}
+.dots i.on{background:var(--ink)}.dots i.past{background:var(--ink3)}
+.endcard{text-align:center;padding:40px 0}
+.endcard .big{font-family:var(--disp);font-size:46px;margin-bottom:10px}
+
+@media(max-width:820px){
+  main{padding:0 18px 30px}.pager{padding:22px 18px 60px}
+  .grid2{grid-template-columns:1fr}.unit-head{flex-direction:column;gap:6px}
+  .unit-head .num{font-size:52px}.unit-head h2{font-size:30px}h3{font-size:27px}
+  .topbar .row{padding:10px 16px;gap:10px}.crumb{display:none}
+}
+</style>
+</head>
+<body>
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer"><button class="close" id="closeDrawer">✕ Close</button><div id="toc"></div></aside>
+
+<div class="topbar">
+  <div class="row">
+    <button class="menubtn" id="openDrawer">☰ Contents</button>
+    <div class="logo">Agents <i>&amp;</i> Search</div>
+    <div class="crumb" id="crumb"></div>
+    <div class="counter" id="counter"></div>
+  </div>
+  <div class="progress"><div class="fill" id="fill"></div></div>
+</div>
+
+<main id="deck">
+<div id="source" style="display:none">
+<header class="hero">
+  <div class="kicker">Foundations of AI · Agents · Search</div>
+  <h1>From Perceiving to <em>Planning</em></h1>
+  <p class="lede">Everything in the classic "Intelligent Agents" and "Search" chapters — agent design, rationality, problem formulation, uninformed and heuristic search, local search, and acting under uncertainty — compressed into one fast module with worked examples, modern updates, and a summary checkpoint after every section.</p>
+</header>
+<!-- ===================== UNIT 1 ===================== -->
+<div class="unit-head"><div class="num">1</div><div><h2>Intelligent Agents</h2><span class="tag">What is an agent, and what makes one rational?</span></div></div>
+
+<h3 id="s11"><span class="sec">1.1</span>Agents and Environments</h3>
+<div class="concept"><div class="label">Core definition</div>
+<p>An <span class="term">agent</span> is anything that <strong>perceives</strong> its environment through <span class="term">sensors</span> and <strong>acts</strong> on it through <span class="term">actuators</span>. That's the whole abstraction — a loop of percept in, action out.</p></div>
+<p>Three quick instances make it concrete. A <strong>human</strong>: sensors are eyes and ears; actuators are hands, legs, and voice. A <strong>robot</strong>: cameras and lidar in; motor commands out. A <strong>software agent</strong>: keystrokes, files, network packets, and API responses in; screen output, file writes, and network requests out.</p>
+<p>A single snapshot of input is a <span class="term">percept</span>; the complete history of everything the agent has ever perceived is its <span class="term">percept sequence</span>. A key principle: an agent's choice of action can depend on its entire percept sequence, but <em>never</em> on things it hasn't perceived. If we specify the action for every possible percept sequence, we've fully characterized the agent's external behavior.</p>
+
+<figure class="diagram">
+<svg viewBox="0 0 640 220" xmlns="http://www.w3.org/2000/svg" font-family="'JetBrains Mono',monospace">
+<rect x="30" y="30" width="260" height="160" fill="#fff" stroke="#231f18" stroke-width="2"/>
+<text x="160" y="55" text-anchor="middle" font-size="14" font-weight="600" fill="#231f18">AGENT</text>
+<rect x="60" y="70" width="200" height="30" fill="#dde9e2" stroke="#2e5e4e"/>
+<text x="160" y="90" text-anchor="middle" font-size="12" fill="#2e5e4e">sensors</text>
+<text x="160" y="125" text-anchor="middle" font-size="18" fill="#b4451f">?</text>
+<rect x="60" y="140" width="200" height="30" fill="#f3ddd2" stroke="#b4451f"/>
+<text x="160" y="160" text-anchor="middle" font-size="12" fill="#b4451f">actuators</text>
+<rect x="430" y="30" width="180" height="160" fill="#efe7d7" stroke="#231f18" stroke-width="2"/>
+<text x="520" y="115" text-anchor="middle" font-size="14" font-weight="600" fill="#231f18">ENVIRONMENT</text>
+<path d="M430,85 C370,85 330,85 262,85" stroke="#2e5e4e" stroke-width="2" fill="none" marker-end="url(#a1)"/>
+<text x="346" y="75" text-anchor="middle" font-size="11" fill="#2e5e4e">percepts</text>
+<path d="M262,155 C330,155 370,155 428,155" stroke="#b4451f" stroke-width="2" fill="none" marker-end="url(#a2)"/>
+<text x="346" y="177" text-anchor="middle" font-size="11" fill="#b4451f">actions</text>
+<defs>
+<marker id="a1" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#2e5e4e"/></marker>
+<marker id="a2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#b4451f"/></marker>
+</defs>
+</svg>
+<figcaption>The agent–environment loop. The "?" is the whole subject of AI: what goes between sensing and acting.</figcaption>
+</figure>
+
+<h4>Agent function vs. agent program</h4>
+<p>The <span class="term">agent function</span> is the abstract mathematical mapping from percept sequences to actions — imagine an (often infinite) lookup table listing what the agent does after every possible history. The <span class="term">agent program</span> is the concrete implementation running on real hardware that <em>realizes</em> that function. One function can be implemented by many programs; keeping the two ideas separate is essential. The function is the <em>what</em>; the program is the <em>how</em>.</p>
+
+<div class="example"><div class="label">Worked example · The vacuum world</div>
+<p>The classic toy world: two squares, <strong>A</strong> and <strong>B</strong>. Each may contain dirt. The vacuum agent perceives its current location and whether that square is dirty; its actions are <code>Left</code>, <code>Right</code>, <code>Suck</code>, and <code>NoOp</code>.</p>
+<p>A simple agent function, written as a partial table:</p>
+<table><tr><th>Percept sequence (latest percept)</th><th>Action</th></tr>
+<tr><td>[A, Clean]</td><td>Right</td></tr>
+<tr><td>[A, Dirty]</td><td>Suck</td></tr>
+<tr><td>[B, Clean]</td><td>Left</td></tr>
+<tr><td>[B, Dirty]</td><td>Suck</td></tr>
+<tr><td>[A, Clean], [A, Clean]</td><td>Right</td></tr>
+<tr><td>[A, Clean], [A, Dirty]</td><td>Suck</td></tr></table>
+<p>In words: <em>if the current square is dirty, suck; otherwise move to the other square.</em> The table continues forever (one row per possible percept sequence), but the rule that generates it fits in one line — that's exactly the gap between agent function (table) and agent program (rule).</p></div>
+
+<div class="modern"><div class="label">2026 update</div>
+<p>The toy vacuum grew up. A modern robot vacuum builds a lidar/SLAM map of your home, tracks where it has cleaned, and estimates dirt via optical and acoustic sensors — it's a <em>model-based</em> agent (Section 1.5) operating in a partially observable, continuous environment. And today's LLM-based "agents" fit the same abstraction perfectly: percepts are user messages and tool results; actuators are text output and tool/API calls. The framework from the 1990s describes them without modification.</p></div>
+
+<div class="summary"><div class="label">Checkpoint · 1.1</div><ul>
+<li>An <strong>agent</strong> = sensors + actuators + something in between; it maps <strong>percept sequences → actions</strong>.</li>
+<li>The <strong>agent function</strong> is the abstract external description; the <strong>agent program</strong> is the running implementation.</li>
+<li>Agents can only condition behavior on what they've actually perceived.</li></ul></div>
+
+<h3 id="s12"><span class="sec">1.2</span>Good Behavior: Rationality</h3>
+<p>Which rows of the table are the <em>right</em> ones? We need a yardstick. A <span class="term">performance measure</span> evaluates the sequence of environment states the agent's behavior produces. Crucially, it scores <strong>environment states, not agent states</strong> — otherwise an agent could "succeed" by deluding itself that it did a great job.</p>
+<div class="pit"><div class="label">Design pitfall</div>
+<p>Design the measure for what you actually <em>want in the world</em>, not for how you think the agent should behave. Reward a vacuum for "amount of dirt sucked up" and a clever agent will suck dirt, dump it back out, and suck it again forever. Reward "clean floor per time step, minus energy and noise penalties" instead. (This is the ancestor of today's <em>reward hacking</em> and AI alignment problems: mis-specified objectives get optimized literally.)</p></div>
+
+<div class="concept"><div class="label">Definition of rationality</div>
+<p>For each possible percept sequence, a <span class="term">rational agent</span> selects the action expected to <strong>maximize its performance measure</strong>, given the evidence in the percept sequence and whatever built-in knowledge it has.</p></div>
+<p>Rationality thus depends on four things: (1) the performance measure, (2) the agent's prior knowledge of the environment, (3) the actions available, and (4) the percept sequence so far. Under a measure that awards one point per clean square per time step, with known geography and unknown dirt placement, the simple vacuum rule above is rational. Change the assumptions — say, add a penalty per movement — and it stops being rational (it oscillates pointlessly once everything's clean; a rational agent would learn to sit still).</p>
+
+<h4>Rational ≠ omniscient, and the case for learning</h4>
+<ul>
+<li><strong>Omniscience is not required.</strong> An omniscient agent knows actual outcomes; a rational agent maximizes <em>expected</em> outcome. Crossing an empty street and being hit by falling debris is bad luck, not irrationality. Rationality is judged on what could reasonably be expected.</li>
+<li><strong>Information gathering is rational.</strong> Looking both ways before crossing is an action whose value is that it improves future percepts. <span class="term">Exploration</span> — as when an agent probes an unknown environment — is the same idea at larger scale.</li>
+<li><strong>Learning is required</strong> whenever the environment isn't fully known in advance. Agents that never modify their behavior from experience are fragile: the dung beetle keeps performing its ball-plugging routine even when the ball is removed mid-task, and the sphex wasp will re-run its "check the burrow" subroutine indefinitely if its prey is moved — behavior that looks smart but can't adapt.</li>
+<li><strong>Autonomy</strong> means relying on one's own percepts and learning rather than solely on the designer's prior knowledge. A rational agent should become effectively independent of its initial programming as experience accumulates — reasonable initial knowledge plus the ability to learn.</li></ul>
+
+<div class="summary"><div class="label">Checkpoint · 1.2</div><ul>
+<li><strong>Rational</strong> = maximizes <em>expected</em> performance given percepts + prior knowledge. Not perfection, not omniscience.</li>
+<li>Performance measures should score <strong>world outcomes</strong>, and mis-specified measures get gamed.</li>
+<li>Gathering information, exploring, and learning are themselves rational actions; autonomy grows as learning replaces built-in assumptions.</li></ul></div>
+
+<h3 id="s13"><span class="sec">1.3</span>Specifying Task Environments: PEAS</h3>
+<p>Designing an agent starts with specifying the <span class="term">task environment</span> as fully as possible, using the <span class="term">PEAS</span> checklist: <strong>P</strong>erformance measure, <strong>E</strong>nvironment, <strong>A</strong>ctuators, <strong>S</strong>ensors.</p>
+<div class="example"><div class="label">Worked example · A self-driving taxi (updated)</div>
+<table><tr><th>Component</th><th>Specification</th></tr>
+<tr><td><strong>Performance</strong></td><td>Safety, legality, passenger comfort, trip time, fuel/energy, profit — note these <em>conflict</em>, so trade-offs must be built in</td></tr>
+<tr><td><strong>Environment</strong></td><td>Roads, other traffic, pedestrians, cyclists, weather, customers; varies enormously (city vs. highway, snow vs. sun, left- vs. right-hand driving)</td></tr>
+<tr><td><strong>Actuators</strong></td><td>Steering, accelerator, brake, signals, horn, rider-app messaging</td></tr>
+<tr><td><strong>Sensors</strong></td><td>Cameras, lidar, radar, GPS, IMU, speedometer, engine/battery telemetry, microphones</td></tr></table>
+<p>This was a futuristic example when written; Waymo now runs exactly this PEAS spec commercially in several US cities (including here in California). The lesson stands: the richer and more open-ended the environment, the harder the design problem.</p></div>
+<p>More PEAS sketches, compressed:</p>
+<table><tr><th>Agent</th><th>Performance</th><th>Environment</th><th>Actuators</th><th>Sensors</th></tr>
+<tr><td>Medical diagnosis system</td><td>Healthy patient, cost, avoiding lawsuits</td><td>Patient, hospital, staff</td><td>Questions, tests, diagnoses, referrals</td><td>Symptom &amp; test-result entry</td></tr>
+<tr><td>Part-picking robot</td><td>% parts in correct bins</td><td>Conveyor belt, bins</td><td>Arm and gripper</td><td>Camera, joint angles</td></tr>
+<tr><td>Interactive tutor</td><td>Student's test score</td><td>Students, testing agency</td><td>Displayed exercises, feedback</td><td>Typed answers</td></tr>
+<tr><td>LLM coding agent <em>(modern)</em></td><td>Tests pass, code quality, tokens/cost</td><td>Repository, toolchain, CI</td><td>File edits, shell commands, messages</td><td>File contents, command output, user replies</td></tr></table>
+<p>Note that "environment" needn't be physical: a <strong>software agent</strong> operating on the web or in a codebase can face an environment as complex as any physical one — many artificial actors, partial visibility, and real-time deadlines.</p>
+
+<div class="summary"><div class="label">Checkpoint · 1.3</div><ul>
+<li><strong>PEAS first, design second.</strong> You cannot pick an agent architecture until the task environment is pinned down.</li>
+<li>Real performance measures bundle <strong>conflicting objectives</strong>; the spec must acknowledge the trade-offs.</li></ul></div>
+
+<h3 id="s14"><span class="sec">1.4</span>Properties of Environments</h3>
+<p>Task environments vary along a handful of dimensions, and each dimension changes what kind of agent you need. This is the most-used taxonomy in the whole module:</p>
+<table><tr><th>Dimension</th><th>Meaning</th><th>Design consequence</th></tr>
+<tr><td><strong>Fully vs. partially observable</strong></td><td>Do sensors reveal the complete relevant state at each step? (Unobservable = no sensors at all.)</td><td>Partial observability forces the agent to keep <em>internal state</em> / belief about the world.</td></tr>
+<tr><td><strong>Single- vs. multi-agent</strong></td><td>Are other entities best modeled as agents whose performance depends on yours? <em>Competitive</em> (chess) vs. <em>cooperative</em> (avoiding collisions in traffic — which is also partly competitive, e.g., for parking spots).</td><td>Multi-agent settings make <em>randomized behavior</em> rational (unpredictability) and raise communication.</td></tr>
+<tr><td><strong>Deterministic vs. stochastic</strong></td><td>Is the next state fully determined by current state + action? (<em>Uncertain</em> = not fully observable or not deterministic; "stochastic" implies probabilities over outcomes; <em>nondeterministic</em> = possible outcomes listed without probabilities.)</td><td>Stochasticity means plans must handle contingencies; expected value replaces guaranteed value.</td></tr>
+<tr><td><strong>Episodic vs. sequential</strong></td><td>Is experience divided into independent episodes (spot a defective part; classify an image), or does each action affect the future (chess, driving)?</td><td>Sequential environments require lookahead; episodic ones don't.</td></tr>
+<tr><td><strong>Static vs. dynamic</strong></td><td>Does the world change while the agent deliberates? (<em>Semidynamic</em>: world static but the clock/score runs, as in timed chess.)</td><td>Dynamic environments punish slow thinking; not deciding <em>is</em> deciding.</td></tr>
+<tr><td><strong>Discrete vs. continuous</strong></td><td>Applies to states, time, percepts, actions. Chess is discrete; driving is continuous in all four.</td><td>Continuous domains need different algorithms (Section 3.2) or discretization.</td></tr>
+<tr><td><strong>Known vs. unknown</strong></td><td>Does the <em>designer/agent</em> know the rules — the outcomes (or outcome probabilities) of actions? Distinct from observability: solitaire is known but partially observable; a new video game can be fully observable but unknown.</td><td>Unknown environments require learning/exploration.</td></tr></table>
+<p>The <strong>hardest case</strong> is partially observable, multi-agent, stochastic, sequential, dynamic, continuous, and unknown — taxi driving hits every one except that a driver mostly knows the "physics" of the domain. Quick classification practice:</p>
+<table><tr><th>Task</th><th>Observable</th><th>Agents</th><th>Determinism</th><th>Episodic?</th><th>Static?</th><th>Discrete?</th></tr>
+<tr><td>Crossword puzzle</td><td class="y">Fully</td><td>Single</td><td class="y">Deterministic</td><td>Sequential</td><td class="y">Static</td><td class="y">Discrete</td></tr>
+<tr><td>Chess with a clock</td><td class="y">Fully</td><td>Multi</td><td class="y">Deterministic</td><td>Sequential</td><td class="m">Semi</td><td class="y">Discrete</td></tr>
+<tr><td>Poker</td><td class="n">Partially</td><td>Multi</td><td class="m">Stochastic</td><td>Sequential</td><td class="y">Static</td><td class="y">Discrete</td></tr>
+<tr><td>Taxi driving</td><td class="n">Partially</td><td>Multi</td><td class="m">Stochastic</td><td>Sequential</td><td class="n">Dynamic</td><td class="n">Continuous</td></tr>
+<tr><td>Medical diagnosis</td><td class="n">Partially</td><td>Single</td><td class="m">Stochastic</td><td>Sequential</td><td class="n">Dynamic</td><td class="n">Continuous</td></tr>
+<tr><td>Image classification</td><td class="y">Fully</td><td>Single</td><td class="y">Deterministic</td><td class="y">Episodic</td><td class="m">Semi</td><td class="y">Discrete</td></tr></table>
+<div class="pit"><div class="label">Nuance</div><p>Classification depends on framing. Chess "obeys" determinism, yet at fifty moves of lookahead no agent can compute exact consequences — so it's often <em>treated as</em> uncertain in practice. Likewise "fully observable" quietly means "fully observable <em>with respect to the performance measure</em>."</p></div>
+
+<details class="quiz"><summary>Self-check: classify "an LLM agent doing deep research on the live web."</summary><div class="a">
+<p><strong>Partially observable</strong> (it sees only fetched pages, never the whole web), <strong>multi-agent</strong> in a weak sense (other actors change content; some content is adversarial), <strong>stochastic</strong> (fetches fail, results vary), <strong>sequential</strong> (each search informs the next), <strong>dynamic</strong> (the web changes mid-task), <strong>discrete</strong> percepts/actions, and largely <strong>unknown</strong> (it must discover which sources are reliable). Hence: it needs internal state, contingency handling, and exploration.</p></div></details>
+
+<div class="summary"><div class="label">Checkpoint · 1.4</div><ul>
+<li>Seven dimensions: <strong>observable · agents · determinism · episodic/sequential · static/dynamic · discrete/continuous · known/unknown</strong>.</li>
+<li>Each "hard" setting forces a capability: partial observability → memory; stochasticity → contingencies; dynamism → speed; unknown → learning.</li></ul></div>
+
+<h3 id="s15"><span class="sec">1.5</span>The Structure of Agents: Five Architectures</h3>
+<p>The job of AI is to write the agent program. Everything runs on some <span class="term">architecture</span> (hardware + sensors + actuators): <em>agent = architecture + program</em>. A table-driven program is a non-starter — for chess the lookup table would need at least 10<sup>150</sup> entries — so the real question is how to produce rational behavior from <em>compact</em> programs. Four basic designs, plus learning, in increasing generality:</p>
+
+<h4>1 · Simple reflex agents</h4>
+<p>Act on the <strong>current percept only</strong>, via <span class="term">condition–action rules</span>: <code>if car-in-front-is-braking then initiate-braking</code>. Tiny and fast, but correct only when the right decision is always derivable from the current percept — i.e., only in fully observable settings. A reflex vacuum without a location sensor can't decide between Left and Right and may loop forever; <em>randomizing</em> its choice can rescue it (an escape hatch that matters again in multi-agent worlds), but a smarter deterministic agent usually does better.</p>
+<h4>2 · Model-based reflex agents</h4>
+<p>Handle partial observability by keeping <span class="term">internal state</span>, updated using a <span class="term">model</span> of (a) how the world evolves on its own and (b) what the agent's actions do. "Where's the car I overtook a moment ago?" — you can't see it, but your model says it's beside you. The internal state is the agent's <em>best guess</em>; certainty is impossible under partial observability, and that's fine.</p>
+<h4>3 · Goal-based agents</h4>
+<p>Knowing the current state isn't enough at a fork in the road — the right action depends on where you're <em>going</em>. Goal-based agents combine the world model with explicit <span class="term">goal</span> information and choose actions predicted to achieve the goal, possibly via long <strong>search</strong> and <strong>planning</strong> sequences (Units 2–3). The payoff over hard-wired reflexes is flexibility: change the goal (new destination) or the model (rain → brakes grip differently) and behavior updates automatically, instead of requiring dozens of rewritten rules.</p>
+<h4>4 · Utility-based agents</h4>
+<p>Goals are binary (achieved or not); real trade-offs need a <span class="term">utility function</span> — an internalization of the performance measure that scores <em>how desirable</em> each state is. Utility handles (a) conflicting goals (speed vs. safety) and (b) uncertainty: a rational agent maximizes <strong>expected utility</strong>, weighting each outcome's utility by its probability. This is the architecture that connects agent design to decision theory.</p>
+<h4>5 · Learning agents</h4>
+<p>Any of the above can be wrapped in a learning loop with four parts: the <span class="term">performance element</span> (the whole agent as described so far), a <span class="term">critic</span> that judges outcomes against a fixed performance standard, a <span class="term">learning element</span> that uses that feedback to improve every component (model, rules, utility estimates), and a <span class="term">problem generator</span> that proposes exploratory actions — deliberately suboptimal in the short run — to gather informative experience. A taxi that gets honked at (critic) learns not to cut across three lanes (learning element), and occasionally tries a new route (problem generator).</p>
+
+<div class="modern"><div class="label">2026 update</div>
+<p>These layers map cleanly onto modern systems. A thermostat is a simple reflex agent. A robot vacuum's SLAM map is model-based state. A chess engine is goal/utility-based search. Reinforcement-learning systems (AlphaGo, RLHF-trained models) are literally the learning-agent diagram: reward signal = critic, gradient updates = learning element, exploration policies = problem generator. Tool-using LLM agents are goal-based agents whose "model" and "rules" are learned implicitly in the network's weights.</p></div>
+
+<h4>How agents represent state: three levels</h4>
+<ul>
+<li><span class="term">Atomic</span>: each state is an indivisible black box with no internal structure — city "B" is just B. Search and game-playing (Unit 2), hidden Markov models, and MDPs work atomically.</li>
+<li><span class="term">Factored</span>: a state is a vector of variables/attributes (fuel level, GPS coordinates, oil light). Two states can share some attributes — enabling constraint satisfaction, propositional logic, planning, and Bayesian networks.</li>
+<li><span class="term">Structured</span>: states contain <em>objects and relations</em> ("a truck is backing into the dairy's driveway, blocked by a loose cow") — the territory of first-order logic, relational databases, and much of natural language understanding.</li></ul>
+<p>Expressiveness increases along the axis atomic → factored → structured: more expressive representations capture the same information more concisely, but reasoning and learning get harder. Real systems often mix levels.</p>
+
+<div class="summary"><div class="label">Checkpoint · 1.5 (end of Unit 1)</div><ul>
+<li>Agent-program ladder: <strong>reflex → model-based → goal-based → utility-based</strong>, each fixing a limitation of the last; <strong>learning</strong> wraps any of them.</li>
+<li>Partial observability ⇒ internal state; futures that matter ⇒ goals; trade-offs and uncertainty ⇒ expected utility.</li>
+<li>State representations: <strong>atomic / factored / structured</strong> — a trade of expressiveness against tractable reasoning.</li>
+<li>Unit 2 builds the machinery inside goal-based agents: <strong>search</strong>.</li></ul></div>
+<!-- ===================== UNIT 2 ===================== -->
+<div class="unit-head"><div class="num">2</div><div><h2>Solving Problems by Searching</h2><span class="tag">Deterministic, observable, static, known environments</span></div></div>
+
+<h3 id="s21"><span class="sec">2.1</span>Problem-Solving Agents</h3>
+<p>A <span class="term">problem-solving agent</span> is a goal-based agent that uses <strong>atomic</strong> state representations and finds a <em>sequence of actions</em> leading to a goal. Its life cycle: <strong>formulate</strong> a goal and a problem, <strong>search</strong> for a solution, then <strong>execute</strong> the plan — in the simplest case with its "eyes closed," ignoring percepts during execution (an <span class="term">open-loop</span> system), which is safe exactly when the environment is deterministic, fully observable, static, and known.</p>
+<div class="example"><div class="label">Running example · Touring Romania</div>
+<p>An agent is in Arad, Romania, with a nonrefundable flight out of Bucharest tomorrow. <strong>Goal formulation</strong>: be in Bucharest (goals filter the infinity of possible objectives down to something actionable). <strong>Problem formulation</strong>: decide the granularity — the right level here is <em>driving between cities</em>, not "rotate steering wheel 3° left." Without a map, the agent must act randomly; <em>with</em> a map (a known environment), it can simulate journeys internally and commit to the best one before moving. This "plan on a map" setup is precisely what your phone's navigation app does — over a graph with hundreds of millions of road segments instead of twenty cities.</p></div>
+
+<div class="concept"><div class="label">A well-defined problem has five components</div>
+<ol>
+<li><strong>Initial state</strong> — e.g., <code>In(Arad)</code>.</li>
+<li><strong>Actions</strong> — the actions applicable in each state: from Arad, <code>Go(Sibiu)</code>, <code>Go(Timisoara)</code>, <code>Go(Zerind)</code>.</li>
+<li><strong>Transition model</strong> — <code>Result(state, action)</code>: the state each action produces. Together, 1–3 implicitly define the <span class="term">state space</span>, a graph of states connected by actions; a path is a sequence of actions.</li>
+<li><strong>Goal test</strong> — is a given state a goal? Can be a set membership check ({In(Bucharest)}) or an abstract property (checkmate).</li>
+<li><strong>Path cost</strong> — a nonnegative number scoring each path, usually a sum of <span class="term">step costs</span> c(s, a, s′) — kilometers, time, or money.</li></ol>
+<p>A <span class="term">solution</span> is a path from initial state to a goal state; an <span class="term">optimal solution</span> has minimal path cost.</p></div>
+<p><span class="term">Abstraction</span> is what makes formulation work: we strip out the radio, the scenery, and the weather because they're irrelevant to reaching Bucharest. A good abstraction is <em>valid</em> (any abstract solution expands into a real one) and <em>useful</em> (the abstract steps are easier to carry out than the original problem). Without abstraction, agents drown in detail.</p>
+
+<div class="summary"><div class="label">Checkpoint · 2.1</div><ul>
+<li>Cycle: <strong>formulate → search → execute</strong>; open-loop execution needs a benign environment.</li>
+<li>A problem = <strong>initial state + actions + transition model + goal test + path cost</strong>; solution = path to a goal; optimal = cheapest such path.</li>
+<li>Choose the abstraction level deliberately — it defines the state space you'll search.</li></ul></div>
+
+<h3 id="s22"><span class="sec">2.2</span>Example Problems</h3>
+<p><strong>Toy problems</strong> (crisp, comparable across algorithms):</p>
+<ul>
+<li><strong>Vacuum world</strong>: 2 squares × agent location × dirt configuration = <strong>8 states</strong> (n·2<sup>n</sup> in general); actions Left/Right/Suck; goal: all clean.</li>
+<li><strong>8-puzzle</strong>: a 3×3 board with eight numbered tiles and a blank; actions = move the blank Left/Right/Up/Down; goal: a specified tile arrangement; step cost 1. It has 9!/2 = <strong>181,440 reachable states</strong> (exactly half of all arrangements are reachable — a parity argument splits the states into two disjoint sets). The 15-puzzle has ~1.3 trillion states; the 24-puzzle ~10<sup>25</sup>. Sliding-tile puzzles are the standard testbed for heuristics (Section 2.6). Note the formulation quietly <em>abstracts</em> away physical details like whether you shove two tiles at once.</li>
+<li><strong>8-queens</strong>: place 8 queens on a chessboard so none attacks another. Two formulation styles matter more than the puzzle itself: an <span class="term">incremental formulation</span> adds one queen per action (naively 1.8×10<sup>14</sup> sequences; restricting each queen to the leftmost empty column and non-attacked squares cuts this to 2,057 — formulation choices change search difficulty by <em>ten orders of magnitude</em>); a <span class="term">complete-state formulation</span> starts with all 8 queens on the board and moves them (the natural fit for local search, Unit 3).</li>
+<li><strong>Knuth's conjecture</strong>: starting from 4 and applying factorial, square root, and floor, you can reach any positive integer — e.g., floor(√√√√√((4!)!)) = 5. Its lesson: state spaces can be <strong>infinite</strong> even with trivial rules.</li></ul>
+<p><strong>Real-world problems</strong>:</p>
+<ul>
+<li><strong>Route finding</strong>: driving directions, airline travel planning (states = airport + time + fare context; costs mix money, time, seat quality, delay risk), network routing, military logistics. Modern mapping services solve continent-scale versions in milliseconds using heavily precomputed variants of the algorithms below.</li>
+<li><strong>Touring problems</strong> ("visit every city at least once"): the state must include the <em>set of cities visited</em>, not just the current city.</li>
+<li><strong>Traveling salesperson problem (TSP)</strong>: visit each city exactly once, minimizing tour length — NP-hard, yet enormous instances (chip fabrication, delivery-fleet routing, telescope scheduling) are handled well by the local-search methods of Unit 3.</li>
+<li><strong>VLSI layout</strong>: placing millions of components and routing wires on a chip — cell layout + channel routing as search/optimization. (Today, RL and learned methods assist chip floorplanning, but the problem formulation is unchanged.)</li>
+<li><strong>Robot navigation</strong>: route finding generalized to continuous spaces with potentially infinite action sets and extra dimensions for arm joints.</li>
+<li><strong>Automatic assembly sequencing / protein design</strong>: find an ordering (or amino-acid sequence) satisfying geometric or chemical constraints — checking a single step may itself require expensive geometric search.</li></ul>
+
+<div class="summary"><div class="label">Checkpoint · 2.2</div><ul>
+<li>Toy problems calibrate algorithms; real problems pay the bills. The same five-part formulation covers both.</li>
+<li><strong>How you formulate matters as much as how you search</strong> (8-queens: 10<sup>14</sup> → 2,057 states).</li></ul></div>
+
+<h3 id="s23"><span class="sec">2.3</span>Searching for Solutions: Trees, Graphs, and Bookkeeping</h3>
+<p>Search algorithms explore the state space by growing a <span class="term">search tree</span>: the root is the initial state; <span class="term">expanding</span> a node applies each legal action to <span class="term">generate</span> child nodes. The set of generated-but-unexpanded leaves is the <span class="term">frontier</span> (open list). Every search algorithm is a choice of <em>which frontier node to expand next</em> — the <span class="term">search strategy</span>.</p>
+<pre><span class="k">function</span> <span class="f">TREE-SEARCH</span>(problem) <span class="k">returns</span> a solution or failure
+  frontier ← {node(problem.INITIAL-STATE)}
+  <span class="k">loop</span>:
+    <span class="k">if</span> frontier is empty <span class="k">then return</span> failure
+    node ← <span class="f">POP</span>(frontier)            <span class="c">// strategy = which node comes out</span>
+    <span class="k">if</span> problem.GOAL-TEST(node.STATE) <span class="k">then return</span> SOLUTION(node)
+    frontier ← frontier ∪ EXPAND(node)
+
+<span class="k">function</span> <span class="f">GRAPH-SEARCH</span>(problem)     <span class="c">// same, plus:</span>
+  explored ← ∅
+  ... add node.STATE to explored when popped;
+  ... only add children whose state is not in frontier ∪ explored</pre>
+<p>Why the extra bookkeeping? <span class="term">Repeated states</span>. In Romania, Arad→Sibiu→Arad is a <span class="term">loopy path</span>; more generally any <span class="term">redundant path</span> (a worse way to reach a state you can reach better) wastes work. In a rectangular grid, each state has ~4 successors, so a depth-d tree has ~4<sup>d</sup> leaves — but only ~2d² <em>distinct</em> states lie within d steps. Tree search can turn a linear-sized problem into an exponential one. GRAPH-SEARCH's <span class="term">explored set</span> (closed list) eliminates all redundant paths at the price of memory, and maintains a clean invariant: the frontier <em>separates</em> the explored region from the unexplored region, so every path from start to an unexplored state must pass through the frontier.</p>
+<p><strong>Node bookkeeping.</strong> A node is not a state: a node is a path-bookkeeping object with four fields — <code>STATE</code>, <code>PARENT</code>, <code>ACTION</code> (the action that generated it), and <code>PATH-COST</code> g(n). Two nodes can hold the same state via different paths. The frontier is a <strong>queue</strong>: FIFO → breadth-first, LIFO (stack) → depth-first, priority queue → uniform-cost and friends.</p>
+<div class="concept"><div class="label">Judging a search algorithm</div>
+<ul><li><strong>Completeness</strong> — guaranteed to find a solution if one exists?</li>
+<li><strong>Optimality</strong> — guaranteed to find the <em>cheapest</em> solution?</li>
+<li><strong>Time complexity</strong> — nodes generated, in terms of <strong>b</strong> (branching factor), <strong>d</strong> (depth of shallowest goal), <strong>m</strong> (max depth of the space).</li>
+<li><strong>Space complexity</strong> — max nodes held in memory.</li></ul>
+<p>Total cost of problem-solving = search cost (time/memory) + path cost of the solution found.</p></div>
+
+<div class="summary"><div class="label">Checkpoint · 2.3</div><ul>
+<li>Search = grow a tree over the state space; the <strong>frontier ordering defines the algorithm</strong>.</li>
+<li><strong>Graph search</strong> adds an explored set to kill redundant paths — essential whenever the space has cycles or a grid structure.</li>
+<li>Evaluate on <strong>completeness, optimality, time, space</strong> using b, d, m.</li></ul></div>
+
+<h3 id="s24"><span class="sec">2.4</span>Uninformed (Blind) Search</h3>
+<p>Uninformed strategies use only the problem definition — no sense of which non-goal state is "more promising."</p>
+<h4>Breadth-first search (BFS)</h4>
+<p>FIFO frontier: expand the shallowest node first, sweeping the tree level by level. Apply the goal test at <em>generation</em> time (not expansion) to save a whole level of work. <strong>Complete</strong> (if b is finite) and <strong>optimal when all step costs are equal</strong> (it finds the shallowest goal, which is then the cheapest). Time and space are both <strong>O(b<sup>d</sup>)</strong> — and space is the killer: at b = 10, generating 1M nodes/sec at 1 KB/node, depth 12 takes 13 days and 1 <em>petabyte</em> of memory. Two morals: memory usually fails before time, and exponential blowup can't be out-waited — depth 16 would take 350 years even with unlimited RAM.</p>
+<h4>Uniform-cost search (UCS)</h4>
+<p>Priority queue ordered by path cost g(n): always expand the cheapest known path. Two twists versus BFS: the goal test happens at <em>expansion</em> (a goal first generated via a costly path might later be reachable cheaply), and a frontier node is replaced if a cheaper path to its state appears. In Romania, going Sibiu→Rimnicu(80)→Pitesti(177)→Bucharest(278) beats the tempting direct Sibiu→Fagaras(99)→Bucharest(310) — UCS discovers this automatically. <strong>Complete and optimal for any step costs ≥ ε &gt; 0</strong> (it expands nodes in order of optimal path cost). Complexity O(b<sup>1+⌊C*/ε⌋</sup>) where C* is the optimal cost — potentially worse than b<sup>d</sup> when many tiny steps exist, and UCS examines <em>all</em> paths cheaper than C* before committing. This is Dijkstra's algorithm wearing an AI hat.</p>
+<h4>Depth-first search (DFS)</h4>
+<p>LIFO frontier: dive down the deepest branch, backtrack on dead ends. Graph-search DFS is complete in finite spaces; tree-search DFS can loop forever, and both fail in infinite spaces. <strong>Not optimal.</strong> Time O(b<sup>m</sup>) — possibly far worse than b<sup>d</sup>. So why care? <strong>Space: O(bm)</strong>, linear! Once a subtree is fully explored it can be forgotten. At depth 16 where BFS needed exabytes, DFS needs ~156 KB. A <span class="term">backtracking</span> variant generating one successor at a time (and modifying/undoing state in place) needs only O(m) — vital in robotics and other memory-starved domains. DFS is the workhorse inside constraint satisfaction, SAT solving, and logic programming.</p>
+<h4>Depth-limited and iterative deepening</h4>
+<p><span class="term">Depth-limited search</span> caps DFS at depth ℓ (incomplete if ℓ &lt; d; still not optimal). Good limits sometimes come from domain knowledge — e.g., the <em>diameter</em> of the state space (any Romanian city reaches any other within 9 steps). <span class="term">Iterative deepening search (IDS)</span> runs depth-limited search with ℓ = 0, 1, 2, … until a goal appears. It looks wasteful — the top of the tree is regenerated repeatedly — but the bottom level dominates exponentially: nodes at the deepest level are generated once, the next level twice, and so on, giving N(IDS) = (d)b + (d−1)b² + … + (1)b<sup>d</sup>. At b = 10, d = 5: IDS generates 123,456 nodes vs. 111,111 for BFS — about <strong>11% overhead</strong>. IDS is complete, optimal for unit costs, time O(b<sup>d</sup>), space <strong>O(bd)</strong>.</p>
+<div class="concept"><div class="label">Rule of thumb</div><p><strong>IDS is the default uninformed method</strong> for large spaces with unknown solution depth — BFS-quality answers at DFS memory prices. (Cost-sensitive analog: <em>iterative lengthening</em> with increasing cost limits — clean idea, but it adds substantial overhead over UCS.) A hybrid also works: run BFS until memory is nearly full, then IDS from the frontier.</p></div>
+<h4>Bidirectional search</h4>
+<p>Search forward from the start and backward from the goal until the frontiers touch; the motivation is arithmetic — <strong>b<sup>d/2</sup> + b<sup>d/2</sup> ≪ b<sup>d</sup></strong> (at b=10, d=6: 22,200 nodes vs. 11.1M). Requires the goal-test to become a frontier-intersection check (do it on generation), keeping at least one frontier in memory (space O(b<sup>d/2</sup>) — its main weakness), and the ability to compute <em>predecessors</em>. It's awkward when the "goal" is an abstract property like checkmate, and with many explicit goal states you search backward from a dummy state adjacent to all of them.</p>
+
+<h4>Scoreboard</h4>
+<table><tr><th>Criterion</th><th>BFS</th><th>Uniform-cost</th><th>DFS</th><th>Depth-limited</th><th>Iter. deepening</th><th>Bidirectional</th></tr>
+<tr><td>Complete?</td><td class="y">Yes¹</td><td class="y">Yes¹²</td><td class="n">No</td><td class="n">No</td><td class="y">Yes¹</td><td class="y">Yes¹⁴</td></tr>
+<tr><td>Optimal?</td><td class="m">Yes³</td><td class="y">Yes</td><td class="n">No</td><td class="n">No</td><td class="m">Yes³</td><td class="m">Yes³⁴</td></tr>
+<tr><td>Time</td><td>O(b^d)</td><td>O(b^(1+⌊C*/ε⌋))</td><td>O(b^m)</td><td>O(b^ℓ)</td><td>O(b^d)</td><td>O(b^(d/2))</td></tr>
+<tr><td>Space</td><td>O(b^d)</td><td>O(b^(1+⌊C*/ε⌋))</td><td class="y">O(bm)</td><td class="y">O(bℓ)</td><td class="y">O(bd)</td><td>O(b^(d/2))</td></tr></table>
+<p style="font-size:13px;color:var(--ink2)">¹ if b finite · ² if step costs ≥ ε &gt; 0 · ³ if step costs are all equal · ⁴ if both directions use BFS</p>
+
+<div class="summary"><div class="label">Checkpoint · 2.4</div><ul>
+<li><strong>BFS</strong>: shallowest first; optimal for unit costs; exponential <em>memory</em> is the bottleneck.</li>
+<li><strong>UCS</strong> (= Dijkstra): cheapest-g first; optimal for any positive step costs.</li>
+<li><strong>DFS</strong>: linear memory, no guarantees; <strong>IDS</strong> = DFS memory + BFS guarantees, ~11% overhead — the default blind method.</li>
+<li><strong>Bidirectional</strong>: b^(d/2) time when predecessors and explicit goals are available.</li></ul></div>
+
+<h3 id="s25"><span class="sec">2.5</span>Informed Search: Greedy and A*</h3>
+<p><span class="term">Informed (heuristic) search</span> exploits problem-specific knowledge via an <span class="term">evaluation function</span> f(n) that ranks frontier nodes (a priority queue on f — the general pattern called <span class="term">best-first search</span>). The knowledge enters through a <span class="term">heuristic function</span>:</p>
+<div class="concept"><div class="label">Heuristic</div><p><strong>h(n)</strong> = estimated cost of the cheapest path <em>from n's state to a goal</em>. Depends on the state only; h(goal) = 0. For Romania: h<sub>SLD</sub> = straight-line distance to Bucharest — computable from coordinates, unavailable from the problem definition itself, and clearly correlated with true road distance.</p></div>
+<h4>Greedy best-first search</h4>
+<p>Set f(n) = h(n): always expand the node that <em>looks</em> closest to the goal. From Arad it darts Sibiu → Fagaras → Bucharest — a solution found with minimal expansion, but a <strong>suboptimal</strong> one (310 km vs. the optimal 278 via Rimnicu/Pitesti). Worse, greed can be badly misled: seeking Fagaras <em>from Iasi</em>, the heuristic points at Neamt, a dead end, and tree-search greedy oscillates Iasi↔Neamt forever. Greedy is incomplete (tree version), not optimal, worst-case O(b<sup>m</sup>) time/space — but often excellent in practice with a good heuristic.</p>
+<h4>A* search</h4>
+<div class="concept"><div class="label">The big idea</div><p><strong>f(n) = g(n) + h(n)</strong> — cost already paid to reach n, plus estimated cost still to go = estimated cost of the cheapest solution <em>through</em> n. Expand the node with lowest f. With the right conditions on h, A* is complete <em>and</em> optimal — arguably the most famous algorithm in AI, powering everything from game pathfinding to robot motion planning.</p></div>
+<p>Two conditions on h:</p>
+<ul>
+<li><span class="term">Admissible</span>: h(n) never overestimates the true remaining cost — it's optimistic. (Straight-line distance is admissible: no road is shorter than the crow flies.) Admissibility ⇒ tree-search A* is optimal.</li>
+<li><span class="term">Consistent</span> (monotone): h(n) ≤ c(n, a, n′) + h(n′) for every successor n′ — a triangle inequality. Consistency ⇒ admissibility, and ⇒ <em>graph-search</em> A* is optimal. Almost every natural admissible heuristic is also consistent.</li></ul>
+<p><strong>Why it works</strong> (proof sketch): with consistent h, f-values are nondecreasing along any path (f(n′) = g(n′)+h(n′) ≥ g(n)+h(n) = f(n)), and whenever A* expands a node it has already found the optimal path to that node's state. So A* expands nodes in nondecreasing f order; the first goal expanded must be optimal — every other frontier node has f at least as large, and f at a goal equals true cost. Picture <span class="term">contours</span> of equal f spreading through the state space like elevation lines: A* fans out through all nodes with f &lt; C* (the optimal cost), some nodes with f = C*, and <em>never any node with f &gt; C*</em> — those are pruned without inspection. This pruning-with-a-guarantee is the essence of A*, and A* is <span class="term">optimally efficient</span> among such algorithms: any algorithm that guarantees optimality using the same heuristic must expand every node with f &lt; C* too, or risk missing a cheaper solution.</p>
+<p>On the Romania problem, A* expands Rimnicu before Fagaras (f 413 vs 415), briefly reaches Bucharest via Fagaras at f = 450, but doesn't stop — it expands Pitesti (f 417) first and uncovers the 418 route. Greedy's mistake, fixed by accounting for g.</p>
+<div class="pit"><div class="label">The catch</div><p>A* keeps all generated nodes in memory, and for most problems the number of nodes inside the goal contour is still exponential: unless the heuristic's error grows no faster than the log of the true cost (|h − h*| ≤ O(log h*)), which almost never holds in practice, A* runs <strong>out of memory long before it runs out of time</strong>. Hence the memory-bounded family below. Also: computing a cleverer h costs time per node — a trade-off, not a free lunch.</p></div>
+<h4>Memory-bounded heuristic search</h4>
+<ul>
+<li><span class="term">IDA*</span> — iterative deepening with an <em>f-cost</em> cutoff instead of a depth cutoff; each iteration's new cutoff is the smallest f that exceeded the old one. Linear memory; practical for unit-step-cost problems like sliding-tile puzzles; struggles when f takes many distinct real values.</li>
+<li><span class="term">RBFS</span> (recursive best-first) — DFS-like recursion that remembers, for each abandoned subtree, the <em>best f seen there</em> (backed-up value), and jumps back when the current branch exceeds the best alternative. Linear space O(bd), optimal with admissible h, but can thrash — re-generating forgotten subtrees as its "mind changes" between branches.</li>
+<li><span class="term">SMA*</span> (simplified memory-bounded A*) — plain A* until memory fills, then <strong>drop the worst leaf</strong> (highest f), backing its value up into its parent so the subtree can be regenerated later only if everything else proves worse. Complete if any solution fits in memory; optimal if any <em>optimal</em> solution fits. On hard problems it can thrash between candidate paths — memory limits can make a problem intractable in <em>time</em> even when it's solvable in principle.</li></ul>
+
+<div class="summary"><div class="label">Checkpoint · 2.5</div><ul>
+<li><strong>Greedy</strong> (f = h): fast, fallible. <strong>A*</strong> (f = g + h): complete + optimal given <strong>admissible</strong> (tree) / <strong>consistent</strong> (graph) h.</li>
+<li>A* expands exactly the nodes with f &lt; C* (plus some at C*) — optimal efficiency, but exponential memory in general.</li>
+<li>Memory-bounded variants — <strong>IDA*, RBFS, SMA*</strong> — trade regeneration time for linear/bounded space.</li></ul></div>
+
+<h3 id="s26"><span class="sec">2.6</span>Heuristic Functions: Where h Comes From</h3>
+<p>The 8-puzzle (average optimal solution ≈ 22 steps, b ≈ 3, so ~3<sup>22</sup> ≈ 3.1×10<sup>10</sup> tree-search states) is the classic proving ground. Two standard admissible heuristics:</p>
+<ul>
+<li><strong>h₁ = number of misplaced tiles</strong> — every misplaced tile needs ≥ 1 move.</li>
+<li><strong>h₂ = sum of Manhattan distances</strong> of each tile from its goal position — every tile needs at least that many moves.</li></ul>
+<div class="example"><div class="label">Worked example · Measuring heuristic quality</div>
+<p>Define the <span class="term">effective branching factor</span> b*: if A* generates N nodes solving at depth d, b* is the branching factor a uniform tree would need for N+1 = 1 + b* + (b*)² + … + (b*)<sup>d</sup>. A heuristic is good if b* is near 1. Empirically over random 8-puzzles at solution depth 12: IDS generates ~364,404 nodes (b* ≈ 2.78); A*(h₁) ~227 (b* ≈ 1.42); A*(h₂) <strong>~73 nodes (b* ≈ 1.24)</strong>. At depth 24, IDS is hopeless (~54 billion nodes) while A*(h₂) needs ~1,641. Small heuristic improvements compound exponentially with depth.</p></div>
+<p><span class="term">Domination</span>: h₂(n) ≥ h₁(n) for all n, so h₂ <em>dominates</em> h₁ — and domination translates directly into fewer expansions (every node with f &lt; C* under the bigger h is also expanded under the smaller). Rule: <strong>among admissible heuristics, bigger is always better</strong> (modulo compute cost per node and consistency).</p>
+<h4>Three factories for admissible heuristics</h4>
+<ol>
+<li><p><strong>Relaxed problems.</strong> Drop restrictions from the action rules; the optimal cost of the <em>relaxed</em> problem is an admissible (and, satisfyingly, automatically consistent) heuristic for the original, because the relaxed state space is a supergraph of the real one — removing rules only adds edges. If a tile could hop anywhere → h₁. If a tile could move to any <em>adjacent</em> square regardless of occupancy → h₂. Given a formal problem description, relaxations can even be generated automatically (the ABSOLVER program derived new 8-puzzle heuristics and the first useful Rubik's-Cube heuristic this way). The relaxed problem must be easy to solve exactly, or the heuristic costs too much to compute. With several relaxations giving h₁…h<sub>m</sub>, take <strong>h = max(h₁,…,h<sub>m</sub>)</strong> — still admissible, dominates each component.</p></li>
+<li><p><strong>Pattern databases.</strong> Precompute and store the exact solution cost of every configuration of a <em>subproblem</em> — e.g., just tiles 1-2-3-4 (other tiles wildcarded) — by searching backward from the goal. At search time, look up the current pattern's cost: an admissible heuristic. Multiple databases (1-2-3-4, 5-6-7-8) can be maxed; <em>disjoint</em> pattern databases count only each subset's own tile moves so the values can be <strong>added</strong> while staying admissible — yielding ~1000× speedups on the 15-puzzle and making random 24-puzzles solvable in hours. This idea (plus huge compute) is how Rubik's Cube solvers proved "God's number" is 20.</p></li>
+<li><p><strong>Learning from experience.</strong> Solve many instances, then learn a model h(n) from state features (e.g., "number of misplaced tiles," "number of adjacent tile pairs also adjacent in the goal") via regression or a neural network. Learned heuristics often work well but usually forfeit admissibility/consistency guarantees. This thread runs straight to modern AI: AlphaGo-style systems are best-first search (MCTS) guided by a learned evaluation function — the same architecture, with the heuristic learned by a deep network.</p></li></ol>
+
+<div class="summary"><div class="label">Checkpoint · 2.6 (end of Unit 2)</div><ul>
+<li>Heuristic quality is measured by <strong>effective branching factor</strong>; dominating heuristics strictly reduce work; effects compound exponentially with depth.</li>
+<li>Get admissible heuristics from <strong>relaxed problems</strong> (take the max of several), <strong>pattern databases</strong> (add disjoint ones), or <strong>learning</strong>.</li>
+<li>Unit 2's world was deterministic, observable, static, known. Unit 3 removes those crutches one at a time.</li></ul></div>
+<!-- ===================== UNIT 3 ===================== -->
+<div class="unit-head"><div class="num">3</div><div><h2>Beyond Classical Search</h2><span class="tag">When you only need a state · when actions misbehave · when you can't see · when you must act while learning</span></div></div>
+
+<h3 id="s31"><span class="sec">3.1</span>Local Search and Optimization</h3>
+<p>Classical search returns a <em>path</em> — but for 8-queens, VLSI placement, factory scheduling, or TSP, only the final configuration matters. <span class="term">Local search</span> keeps just a <strong>current state</strong> (no frontier, no paths, no explored set) and moves to neighboring states, using O(1) memory and often finding good states in enormous or continuous spaces where systematic search drowns. The same machinery solves pure <span class="term">optimization problems</span>: find the state maximizing an <span class="term">objective function</span>. Picture the <span class="term">state-space landscape</span> — location = state, elevation = objective value — and the task is finding the <span class="term">global maximum</span> among distracting <span class="term">local maxima</span>, flat <span class="term">plateaus</span> (including <em>shoulders</em> that do eventually rise), and <span class="term">ridges</span> (sequences of local maxima that are easy to walk along but where every single step available goes downhill).</p>
+<h4>Hill climbing (steepest ascent)</h4>
+<pre><span class="k">function</span> <span class="f">HILL-CLIMBING</span>(problem) <span class="k">returns</span> a local-maximum state
+  current ← problem.INITIAL-STATE
+  <span class="k">loop</span>:
+    neighbor ← highest-valued successor of current
+    <span class="k">if</span> VALUE(neighbor) ≤ VALUE(current) <span class="k">then return</span> current
+    current ← neighbor</pre>
+<div class="example"><div class="label">Worked example · 8-queens by local search</div>
+<p>Complete-state formulation: one queen per column (8<sup>8</sup> ≈ 17M states); a move slides one queen within its column (8×7 = 56 neighbors per state); objective = <em>minimize</em> h = number of attacking pairs (h = 0 is a solution). Hill climbing greedily picks the move that most reduces h. Results from random starts: it <strong>solves only ~14%</strong> of instances (86% get stuck at local minima) — but it's blisteringly fast, averaging just ~4 steps to succeed and ~3 to get stuck, in a space of 17 million states. Fixes:</p>
+<ul>
+<li><strong>Sideways moves</strong> (allow equal-h moves, capped at, say, 100 consecutive) — lets the search drift across shoulders: success jumps to <strong>94%</strong>, at ~21 steps per success.</li>
+<li><strong>Random-restart hill climbing</strong> — if at first you don't succeed, restart from a new random state. With success probability p per attempt, expected restarts = 1/p; for 8-queens (p ≈ 0.14) that's ~7 cheap attempts. It even makes 3-million-queens solvable in under a minute. Random restarts make hill climbing <em>complete with probability approaching 1</em>.</li></ul></div>
+<p>Variants: <span class="term">stochastic hill climbing</span> picks randomly among uphill moves (slower, sometimes finds better optima); <span class="term">first-choice hill climbing</span> generates random successors until one beats the current state — the right move when states have thousands of neighbors. Success depends on landscape shape: NP-hard problems typically have exponentially many local optima, yet good solutions often appear after a few restarts.</p>
+<h4>Simulated annealing</h4>
+<p>Hill climbing never goes downhill, so it gets stuck; a pure random walk is complete but glacial. <span class="term">Simulated annealing</span> interpolates, borrowing from metallurgy (heat, then cool slowly to reach a low-energy crystal). At each step, pick a <em>random</em> move; accept it if it improves things, otherwise accept it with probability <strong>e<sup>ΔE/T</sup></strong> — worse moves are accepted less often the worse they are (ΔE) and less often as the <span class="term">temperature</span> T falls on a schedule. Shake hard early (escape local optima), gently later (settle into a good one). If T decreases slowly enough, the global optimum is reached with probability approaching 1. Heavily used since the 1980s for VLSI layout, factory scheduling, and airline scheduling — and still a staple in chip-design flows today.</p>
+<h4>Local beam search</h4>
+<p>Keep <strong>k states</strong>, generate all their successors, keep the best k overall. Not k independent hill-climbs: the k states share information — resources flow to the branches making progress ("come over here, the grass is greener"). Danger: the k states cluster onto one hill. <span class="term">Stochastic beam search</span> fixes this by sampling successors with probability proportional to their value — natural-selection-flavored.</p>
+<h4>Genetic algorithms</h4>
+<p>Stochastic beam search with <em>sexual</em> reproduction. Maintain a <span class="term">population</span> of states encoded as strings; score each with a <span class="term">fitness function</span>; select parents with probability proportional to fitness; produce children by <span class="term">crossover</span> (splice two parents at a random point) and mutate each with small probability. For 8-queens: a state is a string like <code>32752411</code> (queen row per column); fitness = number of <em>non</em>-attacking pairs (max 28); crossing <code>327|52411</code> with <code>247|48552</code> yields children mixing the two board halves. The hoped-for magic is that crossover combines independently-evolved useful <em>blocks</em> (<span class="term">schemas</span> — e.g., a good arrangement of the first three queens) into wholes — which works exactly when the encoding places related traits adjacently. Early population diversity makes GA behavior exploratory; convergence later resembles stochastic hill climbing. Honest appraisal, then and now: GAs are appealing and occasionally effective (circuit layout, job-shop scheduling), but it remains debated when/why they beat simpler restart-based methods; in modern practice, gradient methods and simulated annealing usually win where they apply, with evolutionary methods reserved for non-differentiable, structure-rich spaces.</p>
+
+<div class="summary"><div class="label">Checkpoint · 3.1</div><ul>
+<li>When only the <strong>final state</strong> matters, drop the paths: local search = current state + neighbors + objective, O(1) memory.</li>
+<li>Enemies: <strong>local optima, plateaus, ridges</strong>. Weapons: <strong>sideways moves, random restarts</strong> (14%→94% on 8-queens), <strong>simulated annealing</strong> (probabilistic downhill moves under a cooling schedule), <strong>beam search</strong> (k communicating states), <strong>genetic algorithms</strong> (crossover of building blocks).</li></ul></div>
+
+<h3 id="s32"><span class="sec">3.2</span>Local Search in Continuous Spaces</h3>
+<p>Real environments are continuous — infinitely many successors, so "try each neighbor" fails. Example: place 3 airports in Romania minimizing the sum of squared distances from each city to its nearest airport; the state is six real numbers (x₁,y₁,x₂,y₂,x₃,y₃), and the objective f is a smooth function of them. Options:</p>
+<ul>
+<li><strong>Discretize</strong>: move each coordinate by ±δ; run ordinary local search over the resulting grid (12 neighbors here).</li>
+<li><strong>Gradient ascent/descent</strong>: compute the <span class="term">gradient</span> ∇f (vector of partial derivatives) and step along it: <strong>x ← x + α∇f(x)</strong>. The step size α is a genuine nuisance — too small crawls, too large overshoots. <span class="term">Line search</span> extends the step until f stops improving. If f isn't available in closed form (e.g., the "objective" is a simulation), use <span class="term">empirical gradients</span> — probe nearby points. Note the airports objective is only <em>piecewise</em> smooth: the gradient changes form whenever a city switches to a different nearest airport, so updates apply "as long as the assignment doesn't change."</li>
+<li><strong>Newton–Raphson</strong>: use second-derivative information — x ← x − H<sub>f</sub><sup>−1</sup>(x)∇f(x), where H is the Hessian matrix of second partials — to jump toward where the gradient is zero. Fewer steps, but the Hessian has n² entries, so high dimensions demand approximations (quasi-Newton methods).</li></ul>
+<p>Everything from 3.1 still applies: continuous landscapes have local optima, ridges, and plateaus too, and random restarts plus annealing remain the standard antidotes. High dimensionality just makes the landscape lumpier. Two special cases have exact theory: <span class="term">constrained optimization</span> with linear constraints and objective is <span class="term">linear programming</span> (feasible region = convex polytope; poly-time solvable); more generally, <span class="term">convex optimization</span> problems are efficiently solvable even with thousands of variables.</p>
+<div class="modern"><div class="label">2026 update</div><p>This little section became the engine of the deep-learning era: training a neural network <em>is</em> gradient descent on a continuous landscape with millions-to-trillions of dimensions, with the gradient computed by backpropagation, step sizes managed by adaptive optimizers (momentum, Adam), and stochasticity (minibatches) playing the annealing role of escaping bad regions. The vocabulary of this section — local minima, plateaus, learning rates, line search — is daily working language in ML.</p></div>
+
+<div class="summary"><div class="label">Checkpoint · 3.2</div><ul>
+<li>Continuous spaces: <strong>discretize</strong>, follow the <strong>gradient</strong> (α = step size; line search helps), or use <strong>Newton–Raphson</strong> (Hessian) for faster convergence.</li>
+<li><strong>Linear/convex</strong> problems are solvable exactly and efficiently; general landscapes still need restarts and annealing.</li></ul></div>
+
+<h3 id="s33"><span class="sec">3.3</span>Nondeterministic Actions: Contingency Plans and AND–OR Search</h3>
+<p>When actions have uncertain outcomes, a fixed action <em>sequence</em> no longer suffices — percepts finally matter during execution, telling the agent which outcome actually happened. Solutions become <span class="term">contingency plans</span>: branching strategies with if–then–else structure.</p>
+<div class="example"><div class="label">Worked example · The erratic vacuum world</div>
+<p>Modify the vacuum: <code>Suck</code> on a dirty square cleans it and <em>sometimes</em> also cleans the adjacent square; <code>Suck</code> on a clean square sometimes <em>dumps dirt</em>. The transition model now returns a <strong>set</strong> of possible result states, e.g., from state 1 (both dirty, agent at A): Suck → {5, 7} (either just A cleaned, or both). A working solution must branch: <code>[Suck, if State = 5 then [Right, Suck] else []]</code>.</p></div>
+<p>Search trees for such problems are <span class="term">AND–OR trees</span>: at <strong>OR nodes</strong> the <em>agent</em> chooses one action (ordinary branching); at <strong>AND nodes</strong> <em>nature</em> chooses the outcome, and the plan must handle <strong>every</strong> possible resulting state. A solution is therefore a subtree that (1) has a goal at every leaf, (2) picks one action at each OR node, and (3) covers every branch at each AND node. The recursive algorithm alternates OR-search (try each action; succeed if any works) and AND-search (recurse into each outcome; succeed only if all work), returning failure on any path that revisits a state — which guarantees termination in finite spaces, and is safe because if a plan existed from the earlier occurrence, it works there instead.</p>
+<h4>Cyclic solutions: try, try again</h4>
+<p>Now make movement <em>slippery</em>: Left/Right sometimes fails to move the agent. No acyclic plan exists (you can never guarantee arrival), but a <span class="term">cyclic plan</span> does: <em>keep moving Right until you observe you're in B</em> — expressed with a label and loop, <code>[Suck, L1: Right, if State = 5 then L1 else Suck]</code>. Such a plan is a solution provided every outcome the environment can produce eventually occurs — i.e., failures are flaky, not adversarial. If the "slipping" might actually be a permanently broken wheel, retrying forever is wrong, and no finite plan can distinguish the two cases without better observations — a preview of why probabilistic reasoning and learning are eventually needed.</p>
+
+<div class="summary"><div class="label">Checkpoint · 3.3</div><ul>
+<li>Nondeterminism: Result(s, a) returns a <strong>set</strong> of states; solutions become <strong>contingency plans</strong>.</li>
+<li><strong>AND–OR search</strong>: agent picks at OR nodes; the plan must cover all branches at AND nodes; loop-checking guarantees termination.</li>
+<li>When failure can repeat, <strong>cyclic "retry" plans</strong> work — assuming failures are transient, not systematic.</li></ul></div>
+
+<h3 id="s34"><span class="sec">3.4</span>Partial Observability: Searching in Belief Space</h3>
+<div class="concept"><div class="label">The key idea</div><p>When the agent can't see the full state, it maintains a <span class="term">belief state</span> — the <em>set of physical states it might be in</em> given its history of actions and percepts. Then it searches <strong>in belief space</strong>, where states are belief states, and the belief space is fully observable to the agent (it always knows what it believes). Solutions are again action sequences (or contingency plans over percepts).</p></div>
+<h4>Sensorless (conformant) search</h4>
+<p>No sensors at all — yet problems can still be solvable, and sensorless plans are valuable because they avoid sensing costs entirely. In the deterministic vacuum world with unknown location and dirt, the initial belief state is all 8 physical states. Then: <code>Right</code> → the agent <em>must</em> be in B (belief shrinks to 4 states); <code>Suck</code> → B is clean (2 states); <code>Left, Suck</code> → belief = {7}: everything clean, location known. Actions <span class="term">coerce</span> the world into knowable states even though nothing was ever observed. (Real-world instance: orienting a machine part with a fixed sequence of tilts/barriers, no camera required.)</p>
+<p>Mechanically, the belief-space problem is built from the physical problem: belief states are subsets of physical states (2<sup>N</sup> candidates — the blowup to fight); an action maps a belief b to the union of Result(s, a) over s ∈ b (a <em>prediction</em> step; with nondeterminism, union over all outcomes too); the goal test requires <strong>all</strong> states in b to be goal states; incidentally, if an action sequence solves belief state b, it solves every subset of b — so a solver can prune any belief state that's a superset of an already-solved one. Main practical obstacle: belief states are huge objects. Remedies: compact <em>symbolic</em> descriptions instead of explicit sets, or <span class="term">incremental</span> algorithms that find one solution for the first physical state and check it against the rest, failing fast when a candidate breaks.</p>
+<h4>Searching with (partial) sensing</h4>
+<p>With observations, the belief-state transition has three stages: <span class="term">predict</span> (apply the action: b̂ = all possible results), <span class="term">possible percepts</span> (which observations could arrive in b̂), and <span class="term">update</span> (for each percept o, keep only the states in b̂ consistent with o). Percepts can only <em>refine</em> prediction — each updated belief is a subset of the prediction. Because different percepts lead to different updated beliefs, the problem is nondeterministic from the planner's perspective — so solve it with exactly the <strong>AND–OR search of 3.3</strong> over belief states; solutions are contingency plans branching on percepts (e.g., local-sensing vacuum: <code>[Suck, Right, if Bstate = {6} then Suck else []]</code>).</p>
+<p>The execution-time half of this — maintaining the belief state as actions and percepts stream in — is <span class="term">monitoring / filtering / state estimation</span>: b′ = Update(Predict(b, a), o), computed forever. It is <em>the</em> core function of any agent in a partially observable world (Kalman filters, robot localization, and particle filters are its probabilistic descendants).</p>
+<div class="example"><div class="label">Worked example · Robot localization</div>
+<p>A robot in a known maze with a 4-direction obstacle sensor, but no idea where it is, and movement that may skip randomly. Percept NSW (obstacles north/south/west) is consistent with exactly 4 maze cells — the belief state after one observation. It moves Right; the prediction step smears each candidate rightward; a second percept NS then collapses the belief to a <em>single</em> cell. Two sensing steps: localized. This exact predict–update loop (with probabilities attached) is how every robot vacuum and warehouse robot localizes today.</p></div>
+
+<div class="summary"><div class="label">Checkpoint · 3.4</div><ul>
+<li><strong>Belief state</strong> = set of possible physical states; search belief space, which is fully observable by construction.</li>
+<li><strong>Sensorless</strong> plans coerce the world into known configurations; goal test = all members are goals; subsets inherit solutions.</li>
+<li>With sensing: <strong>predict → possible percepts → update</strong>, solved by AND–OR search; the runtime version is <strong>filtering/state estimation</strong>.</li></ul></div>
+
+<h3 id="s35"><span class="sec">3.5</span>Online Search and Unknown Environments</h3>
+<p>All methods so far are <span class="term">offline</span>: compute a complete plan, then act. An <span class="term">online</span> agent interleaves: act, observe, decide the next action. Mandatory when the environment is <strong>unknown</strong> (the agent doesn't know what its actions do or what states exist — <em>exploration</em>: a robot in a new building, a newborn learning to move), and valuable in dynamic or stochastic domains where planning for every contingency is wasteful — better to handle surprises as they occur.</p>
+<p>Setup: the agent knows its available actions, its step costs, and the goal test, but discovers Result(s, a) only <em>by doing a in s</em>. Performance is measured by the <span class="term">competitive ratio</span>: (actual path cost traveled) ÷ (cost of the optimal path it would take if it knew the map). Hard truths:</p>
+<ul>
+<li>An adversary argument shows <strong>no bounded competitive ratio is achievable in general</strong> — the environment can always arrange the goal to be where you looked last, and with general-shaped obstacles can force arbitrarily long detours.</li>
+<li><span class="term">Dead ends</span> are worse: with <strong>irreversible</strong> actions, any algorithm can be led somewhere no goal is reachable — no algorithm avoids dead ends in all environments (whichever of two mirror-image traps your algorithm's first move commits to, the adversary presents that one). Practical online search assumes <span class="term">safely explorable</span> spaces: some goal remains reachable from every reachable state.</li></ul>
+<h4>Online DFS and why online A* isn't a thing</h4>
+<p>An online agent expands <em>only the node it physically occupies</em> — it can't teleport to a distant promising frontier node the way A* jumps around its priority queue. The natural fit is depth-first exploration: an <span class="term">online DFS agent</span> records a result table Result[s, a] as it acts, tries untried actions at each state, and physically <em>backtracks</em> (executes the reverse action) when a state is exhausted — which requires actions to be reversible. Worst case it traverses every edge twice; that's optimal for pure exploration, but its competitive ratio for goal-finding can be arbitrarily bad since it may wander far from a nearby goal. (For goal-finding depth, <em>iterative deepening</em> adapts and is optimally efficient in uniform trees.)</p>
+<h4>Random walks and LRTA*</h4>
+<p>A random walk (pick a random applicable action, favoring untried ones) will find a goal <em>eventually</em> in any finite safely-explorable space — but "eventually" can be exponentially long, as easily-constructed traps keep walking the agent backward. Better: add <strong>memory + hill climbing</strong>. <span class="term">LRTA*</span> (learning real-time A*) stores a current cost estimate H(s) for each visited state and, at each step:</p>
+<ol><li>moves to the neighbor minimizing (step cost + H(neighbor)) — greedy, hill-climbing style;</li>
+<li>before leaving s, <strong>updates H(s)</strong> to that minimum — so if s turned out to be in a local dip, its estimated cost rises, "flattening out" the local minimum so the agent won't be permanently trapped there;</li>
+<li>assumes unexplored actions lead directly to the goal at cost h — <span class="term">optimism under uncertainty</span>, which systematically drives exploration of unknown territory.</li></ol>
+<p>LRTA* is complete in finite, safely-explorable spaces (unlike plain hill climbing, whose "restart" trick isn't available when you can't teleport); it can take O(n²) steps over n states in the worst case, but usually far fewer. It is a member of the reinforcement-learning family — its H-updates are a deterministic ancestor of value-function learning, and "optimism under uncertainty" remains a central exploration principle in modern RL.</p>
+
+<div class="summary"><div class="label">Checkpoint · 3.5 (end of Unit 3)</div><ul>
+<li><strong>Online search</strong> interleaves planning and acting; required for unknown environments; scored by <strong>competitive ratio</strong> (unboundable in general).</li>
+<li><strong>Irreversible actions ⇒ dead-end risk</strong> no algorithm fully avoids; assume safely explorable spaces.</li>
+<li><strong>Online DFS</strong> explores with physical backtracking; <strong>LRTA*</strong> = hill climbing + learned cost table + optimism, complete where hill climbing isn't, and the bridge to reinforcement learning.</li></ul></div>
+
+<!-- ===================== UNIT 4 ===================== -->
+<div class="unit-head"><div class="num">4</div><div><h2>Lecture Companion: Search in Practice</h2><span class="tag">From the MIT 16.410 lecture — formulation drills, graph formalism, one generic algorithm, and robot motion planning</span></div></div>
+<p>The accompanying lecture reframes Unit 2's material from an engineering angle — search as the universal building block inside autonomous systems (planning, diagnosis, scheduling, path planning, localization, mapping) — and adds material the textbook chapters skip: precise graph vocabulary, a single queue-based algorithm that <em>becomes</em> DFS or BFS depending on one line, and the pipeline that turns continuous robot motion planning into graph search.</p>
+
+<h3 id="s41"><span class="sec">4.1</span>Formulation Drills</h3>
+<div class="example"><div class="label">Worked example · The crevasse-crossing puzzle</div>
+<p>The lecture's signature example is the classic river-crossing puzzle in lunar dress: an astronaut must ferry a <strong>goose, grain, and a fox</strong> across a crevasse in a rover that carries the astronaut plus <em>at most one item</em>. Left unsupervised, the goose eats the grain and the fox eats the goose. Formulation:</p>
+<ul>
+<li><strong>States</strong>: which side of the crevasse each of {astronaut, fox, goose, grain} is on — 2⁴ = 16 conceivable states, minus the forbidden ones (goose+grain alone; fox+goose alone).</li>
+<li><strong>Operators</strong>: Move(astronaut) alone, or Move(item, astronaut) — cross with one item.</li>
+<li><strong>Initial / goal</strong>: all four above → all four below.</li></ul>
+<p>Drawing the full state graph (the lecture does, over two slides) reveals the solution almost mechanically — the safe states form a narrow corridor. One solution: take the <strong>goose over</strong>, return empty, take the <strong>fox</strong> over, <strong>bring the goose back</strong>, take the <strong>grain</strong> over, return empty, take the <strong>goose</strong> over again. The "aha" — moving something <em>backward</em> — falls out of blind graph search with no cleverness at all. That's the point of the lecture's slogan contrasting <em>simple</em> with <em>trivial</em>: early AI's dream of universal problem-solving methods works because simple ≠ trivial; a dumb systematic search solves puzzles that stump people.</p></div>
+<h4>Two more formulation sketches</h4>
+<ul>
+<li><strong>8-puzzle, formalized</strong>: states = an integer location for each tile <em>and the blank</em> (the slide's teasing "AND …??" — you must track the empty square for the operators to be well-defined); operators = move the <em>blank</em> up/down/left/right. Same lesson as Unit 2.2: the operator set is smallest when you think of the blank as the thing that moves.</li>
+<li><strong>Route finding</strong> (the lecture's "home to MIT" map): states = intersections; operators = road segments; the exact formulation the drills ask you to produce for any new problem — <em>states? operators? initial and goal state?</em> is the reflex to build.</li></ul>
+<h4>Languages for states and operators: STRIPS</h4>
+<p>For tasks too rich to enumerate by hand — the lecture's example is the Apollo 13 crew assembling the improvised CO₂-scrubber rig — you need a <em>language</em> for describing states and operators. In the <span class="term">STRIPS</span> planning language, a state is a conjunction of logical facts (<code>(on-table a)</code>, <code>(clear b)</code>, <code>(empty arm)</code>); a goal is a <em>partial</em> state (any state satisfying <code>(connected a b) ∧ (connected b c)</code> counts); and each operator (e.g., <code>pickup hose</code>) has a <strong>precondition</strong> (facts that must hold to apply it) and an <strong>effect</strong> (facts added and deleted). This is the factored representation from Unit 1.5 put to work: instead of naming 10²⁰ states individually, a handful of predicates and operators <em>generates</em> the state space. (STRIPS descendants — PDDL — remain the standard interface of automated planners today.)</p>
+
+<div class="summary"><div class="label">Checkpoint · 4.1</div><ul>
+<li>The formulation reflex: <strong>states? operators? initial state? goal?</strong> — apply it to any new problem.</li>
+<li>Systematic search makes "insight" puzzles mechanical (goose goes back across!).</li>
+<li><strong>STRIPS</strong>: states as fact-sets, goals as partial states, operators as precondition + effect — a compact language that generates huge state spaces.</li></ul></div>
+
+<h3 id="s42"><span class="sec">4.2</span>Graph Vocabulary, Precisely</h3>
+<p>Unit 2 used graphs informally; the lecture pins the terms down. A graph is <strong>G = ⟨V, E⟩</strong>: a set of vertices and a set of edges. Mapping to search: <strong>state ↔ vertex, operator ↔ edge</strong>.</p>
+<div class="grid2">
+<div class="concept"><div class="label">Edge &amp; vertex terms</div>
+<ul><li><strong>Directed</strong> graph (one-way streets): each edge ⟨t, h⟩ has a <em>tail</em> and <em>head</em> vertex. <strong>Undirected</strong> (two-way): edges are unordered pairs; endpoints are <em>neighbors / adjacent</em>.</li>
+<li><strong>Degree</strong> of a vertex = number of incident edges; directed graphs split this into <strong>in-degree</strong> and <strong>out-degree</strong>.</li></ul></div>
+<div class="concept"><div class="label">Graph-level terms</div>
+<ul><li><strong>Connected</strong>: a path exists between every pair of vertices; <strong>strongly connected</strong> (directed): a <em>directed</em> path between every pair.</li>
+<li><strong>Complete</strong>: all vertices pairwise adjacent. A <strong>subgraph</strong> is a vertex subset plus the edges among them; a <strong>clique</strong> is a complete subgraph.</li></ul></div></div>
+<p>A <span class="term">path</span> is a vertex sequence ⟨v₁,…,vₙ⟩ where each successive pair is an edge; a <span class="term">cycle</span> is a subpath whose start = end; a <span class="term">simple path</span> has no cycles (no repeated vertices). A <span class="term">tree</span> is a graph with exactly one undirected path between any two vertices — equivalently, every vertex has in-degree 1 except the <strong>root</strong>. Family-tree vocabulary carries over: <strong>parent, child, siblings, ancestors, descendants, leaf, branch</strong>.</p>
+<div class="concept"><div class="label">The formal search problem</div>
+<p><strong>Input</strong>: S = ⟨g, S, G⟩ — a graph, a start vertex, a goal vertex. <strong>Output</strong>: a <em>simple path</em> from S to G. The search tree of a graph <em>denotes all its simple paths</em> from S — which is why tree enumeration is complete (every solution appears), systematic (nothing visited twice along one path), and sound (everything returned is a real path).</p></div>
+
+<div class="summary"><div class="label">Checkpoint · 4.2</div><ul>
+<li>State space = graph; solution = <strong>simple path</strong> from start to goal; search tree = the set of all simple paths, unrolled.</li>
+<li>Vocabulary that recurs everywhere later: directed/undirected, degree, connected/complete, subgraph/clique, tree/root/leaf.</li></ul></div>
+
+<h3 id="s43"><span class="sec">4.3</span>One Algorithm to Rule Them All</h3>
+<p>The lecture's cleanest contribution: DFS and BFS (and later, best-first and A*) are <em>the same algorithm</em> with one line changed. Maintain a queue <strong>Q of partial paths</strong> (each stored head-first, e.g. ⟨D, A, S⟩ = the path S→A→D whose <span class="term">head</span> is D):</p>
+<pre><span class="c">// Simple Search Algorithm — the template for everything</span>
+1. Q ← { ⟨S⟩ }                          <span class="c">// one partial path: just the start</span>
+2. <span class="k">if</span> Q empty: <span class="k">fail</span>. <span class="k">Else</span> pick partial path N from Q
+3. <span class="k">if</span> head(N) = G: <span class="k">return</span> N            <span class="c">// goal reached</span>
+4. <span class="k">else</span>: remove N from Q;
+        extend N one step to each child of head(N);
+        add the extensions to Q; goto 2
+
+<span class="c">// The strategy is entirely in step 4's "add":</span>
+DFS:  add extensions to the <span class="f">FRONT</span> of Q   <span class="c">// stack → dive deep</span>
+BFS:  add extensions to the <span class="f">BACK</span>  of Q   <span class="c">// FIFO  → sweep levels</span></pre>
+<p>Two refinements, with reasons:</p>
+<ul>
+<li><strong>Visited list (cycle handling).</strong> Without it, the same vertex heads many partial paths (the lecture's graph reaches C by three routes) and worst-case work explodes into the number of simple paths — exponential. Fix: keep a Visited set; don't enqueue an extension whose head was already visited, and add each head's children to Visited as you enqueue them. <em>Correctness</em>: any goal reachable from a vertex's second visit was reachable from its first. <em>Efficiency</em>: each vertex now heads at most one enqueued path. This is exactly Unit 2.3's explored set, derived from scratch.</li>
+<li><strong>Where to test the goal.</strong> The template tests when a path is <em>picked</em> (step 3), not when it's <em>generated</em>. Testing at generation would end sooner and is fine for DFS/BFS — but it's <strong>wrong for optimal searches</strong> like A* and uniform-cost, where a goal path that appears early may not be the cheapest (recall UCS's late goal test in Unit 2.4). The lecture keeps the pop-time test for uniformity with what comes next.</li></ul>
+<p>The lecture's taxonomy of what "comes next" — a preview map of the whole field:</p>
+<table><tr><th>Class</th><th>Algorithms</th><th>What guides the pick from Q</th></tr>
+<tr><td><strong>Blind (uninformed)</strong></td><td>Depth-first, breadth-first, iterative deepening</td><td>Nothing — systematic exploration until the goal appears</td></tr>
+<tr><td><strong>Heuristic (informed)</strong></td><td>Hill-climbing, best-first, beam</td><td>A heuristic "goodness" score of the head node</td></tr>
+<tr><td><strong>Optimal (informed)</strong></td><td>A*, branch &amp; bound</td><td>A path-length measure — find the <em>shortest</em> path</td></tr></table>
+
+<div class="summary"><div class="label">Checkpoint · 4.3</div><ul>
+<li>One template: <strong>pick a partial path from Q → goal-test its head → extend → re-add</strong>. Front-of-Q = DFS; back-of-Q = BFS; priority order = A* and friends.</li>
+<li><strong>Visited list</strong> = completeness + efficiency in cyclic graphs; goal-test at <em>pop</em>, not generation, to stay compatible with optimal search.</li>
+<li>Judge any instance on: time, space, <strong>soundness</strong> (returned answers are correct), <strong>completeness</strong> (finds one if one exists).</li></ul></div>
+
+<h3 id="s44"><span class="sec">4.4</span>DFS and BFS, Traced Step by Step</h3>
+<p>The lecture runs both on one small graph — S connects to A and B; A to C and D; B to D and G; D to C and G. Reproducing the queue evolution is the single best exercise for internalizing search. (Paths written head-first; <strong>new additions in bold</strong>.)</p>
+<div class="example"><div class="label">Trace 1 · Depth-first, with visited list — extensions to the FRONT</div>
+<table><tr><th>Step</th><th>Q (front → back)</th><th>Visited</th></tr>
+<tr><td>1</td><td><strong>(S)</strong></td><td>S</td></tr>
+<tr><td>2</td><td><strong>(A S) (B S)</strong></td><td>A, B, S</td></tr>
+<tr><td>3</td><td><strong>(C A S) (D A S)</strong> (B S)</td><td>C, D, B, A, S</td></tr>
+<tr><td>4</td><td>(D A S) (B S) — C has no unvisited children</td><td>C, D, B, A, S</td></tr>
+<tr><td>5</td><td><strong>(G D A S)</strong> (B S)</td><td>G, C, D, B, A, S</td></tr>
+<tr><td>6</td><td>pop (G D A S): head = G → <strong>return S→A→D→G</strong></td><td></td></tr></table>
+<p>Signature DFS behavior: the queue stays short (space O(bm)), and it commits deep down the A-branch before ever reconsidering B.</p></div>
+<div class="example"><div class="label">Trace 2 · Breadth-first, with visited list — extensions to the BACK</div>
+<table><tr><th>Step</th><th>Q (front → back)</th><th>Visited</th></tr>
+<tr><td>1</td><td><strong>(S)</strong></td><td>S</td></tr>
+<tr><td>2</td><td><strong>(A S) (B S)</strong></td><td>A, B, S</td></tr>
+<tr><td>3</td><td>(B S) <strong>(C A S) (D A S)</strong></td><td>C, D, B, A, S</td></tr>
+<tr><td>4</td><td>(C A S) (D A S) <strong>(G B S)</strong></td><td>G, C, D, B, A, S</td></tr>
+<tr><td>5</td><td>(D A S) (G B S)</td><td>—</td></tr>
+<tr><td>6</td><td>(G B S) → pop: head = G → <strong>return S→B→G</strong></td><td></td></tr></table>
+<p>Signature BFS behavior: it finds the <em>shallower</em> goal path (S→B→G, 2 edges) that DFS missed — the optimality-for-unit-costs guarantee in action. (Since BFS needs no late goal test, it could legally have stopped at step 4 when (G B S) was first <em>generated</em>.)</p></div>
+<p>The lecture's appendix reruns BFS <em>without</em> the visited list: by step 7 the queue holds duplicate paths to D, C, and G via both branches — harmless here, exponential on bigger graphs. Compare queue lengths across the two BFS traces and the case for cycle detection makes itself.</p>
+
+<div class="summary"><div class="label">Checkpoint · 4.4</div><ul>
+<li>Same graph, one changed line: DFS returns S→A→D→G; BFS returns the shorter S→B→G.</li>
+<li>Watching Q evolve <em>is</em> understanding the algorithm — redo the traces from memory as a drill.</li>
+<li>No visited list ⇒ duplicated partial paths ⇒ wasted (potentially exponential) work.</li></ul></div>
+
+<h3 id="s45"><span class="sec">4.5</span>From Continuous Robots to Graph Search: Motion Planning</h3>
+<p>How does a <em>physical</em> vehicle in continuous space use any of this? The lecture's three-step pipeline — still the backbone of robot motion planning:</p>
+<ol>
+<li><p><strong>Build the configuration space (C-space).</strong> A translating (non-rotating) vehicle with real shape is awkward to plan for; instead, <em>inflate every obstacle by the vehicle's shape</em> and shrink the vehicle to a point. Planning a point through the inflated obstacles is exactly equivalent to planning the real vehicle through the real obstacles — and vastly simpler. (With rotation or robot arms, the C-space gains dimensions — one per degree of freedom — but the idea is identical.)</p></li>
+<li><p><strong>Discretize into a roadmap.</strong> Convert the continuous C-space into a graph. The lecture surveys the classic options:</p>
+<ul>
+<li><span class="term">Visibility graph</span>: vertices = start, goal, and obstacle corners; edges = every pair of vertices that can "see" each other (straight line, no obstacle). Shortest paths hug obstacle corners — optimal in 2-D, but paths graze obstacles (uncomfortable for real robots) and the construction scales poorly.</li>
+<li><span class="term">Voronoi diagram</span>: edges equidistant from the nearest obstacles — maximally <em>safe</em> paths, at the cost of extra length.</li>
+<li><span class="term">Cell decomposition</span>: tile free space with cells — fixed-size grid (simple, resolution-limited), variable-size/quadtree (finer near obstacles), or exact decomposition (cells exactly fill free space) — and connect adjacent cells.</li></ul></li>
+<li><p><strong>Search the graph</strong> — with A* (Unit 2.5). Continuous problem in, discrete optimal path out.</p></li></ol>
+<p><strong>Scaling up: sampling.</strong> Explicit roadmaps die in high-dimensional C-spaces (a 7-joint arm lives in 7-D). <span class="term">Rapidly-exploring Random Trees (RRTs)</span> instead <em>grow</em> trees by sampling random points and extending the nearest tree branch toward each sample — often one tree from the start and one from the goal until they meet. RRTs (and cousins like PRM and RRT*) remain the workhorses of manipulation and autonomous-vehicle planning today.</p>
+<p><strong>Plans vs. policies.</strong> One more lecture idea, pointing forward: a path is fragile — drift off it and it says nothing. A <span class="term">policy</span> π maps <em>every</em> state to an action (equivalently, a shortest-path tree from all vertices to the destination), so execution errors are self-correcting: wherever you end up, the policy already knows the best next move. Policies are how search-based planning meets the online/error-prone reality of Unit 3.5 — and they're the central object of Markov decision processes and reinforcement learning.</p>
+
+<div class="summary"><div class="label">Checkpoint · 4.5 (end of Unit 4)</div><ul>
+<li>Motion-planning pipeline: <strong>C-space transform → roadmap (visibility / Voronoi / cells) → A*</strong>.</li>
+<li>High dimensions ⇒ <strong>sample</strong>, don't enumerate: RRTs.</li>
+<li>A <strong>policy</strong> (action for every state) beats a single path when execution is imperfect — the bridge to MDPs and RL.</li></ul></div>
+
+<!-- ===================== FINAL ===================== -->
+<div class="unit-head" id="final"><div class="num">Σ</div><div><h2>Final Synthesis</h2><span class="tag">The whole module on one page</span></div></div>
+<div class="summary"><div class="label">The complete argument, in order</div><ul>
+<li><strong>Agents</strong> map percept sequences to actions; <strong>rationality</strong> = maximizing expected performance given percepts and knowledge. Specify tasks with <strong>PEAS</strong> before designing anything.</li>
+<li><strong>Environment properties</strong> (observability, agents, determinism, episodicity, dynamism, continuity, knownness) dictate the required architecture: reflex → model-based → goal-based → utility-based, wrapped in learning.</li>
+<li>In friendly environments (deterministic, observable, static, known), goal-based agents can <strong>search</strong>: formulate a five-part problem, grow a tree over the state space, use graph search to kill redundant paths.</li>
+<li><strong>Uninformed</strong>: BFS (optimal, memory-hungry), UCS (optimal for any positive costs), DFS (linear memory, no guarantees), <strong>IDS as the blind default</strong>, bidirectional when applicable.</li>
+<li><strong>Informed</strong>: A* with admissible/consistent h is complete, optimal, and optimally efficient; memory limits push toward IDA*/RBFS/SMA*. Heuristics come from relaxations, pattern databases, and learning — better h means exponentially less search.</li>
+<li>When only the state matters: <strong>local search</strong> — hill climbing + restarts, simulated annealing, beam search, genetic algorithms; in continuous spaces, gradients and Newton steps (the mathematical bedrock of modern deep learning).</li>
+<li>Remove determinism: <strong>AND–OR search</strong> yields contingency (and cyclic) plans. Remove observability: search over <strong>belief states</strong> with predict–update; runtime version is state estimation. Remove the map itself: <strong>online search</strong> — online DFS, LRTA*, optimism under uncertainty — the doorway to reinforcement learning.</li>
+<li>In practice: everything is one queue-of-partial-paths template (front = DFS, back = BFS, priority = A*), cycle detection via a visited list is non-negotiable, STRIPS-style languages generate huge state spaces compactly, and continuous robot problems become graph search via <strong>C-space → roadmap → A*</strong> (or RRTs when dimensions explode) — with <strong>policies</strong> instead of paths when execution is error-prone.</li></ul></div>
+<details class="quiz"><summary>Exit ticket: five questions to test yourself (answers inside)</summary><div class="a">
+<p><strong>1. Why can a rational agent perform a poor-outcome action and still be rational?</strong> Rationality maximizes <em>expected</em> performance given available percepts — actual outcomes can be unlucky. Omniscience is not required.</p>
+<p><strong>2. Why is IDS preferred over BFS for large unknown-depth problems?</strong> Same completeness/optimality (unit costs) and O(b^d) time, but O(bd) memory instead of O(b^d); regeneration overhead is only ~b/(b−1), e.g., ~11% at b = 10.</p>
+<p><strong>3. State A*'s optimality condition and the reason.</strong> h admissible (tree search) or consistent (graph search); then f never decreases along paths and A* expands nodes in nondecreasing f order, so the first goal expanded is optimal.</p>
+<p><strong>4. Why do random restarts fix hill climbing offline but not online?</strong> Offline, a restart is free — jump to a new random state. Online, the agent physically occupies a state and can't teleport; LRTA* instead raises cost estimates of visited states to escape local minima in place.</p>
+<p><strong>5. Why is belief-space search "fully observable"?</strong> The agent always knows its own belief state exactly — uncertainty about the world becomes certainty about a set, so classical machinery applies to the (bigger) belief space.</p></div></details>
+<p style="margin-top:40px;font-size:13.5px;color:var(--ink2);border-top:1px solid var(--line);padding-top:16px">Original study module covering the standard "Intelligent Agents" and "Search" curriculum (as in Russell &amp; Norvig ch. 2–4, with a companion unit for the MIT 16.410 state-space-search lecture), rewritten and updated for 2026. Worked examples: vacuum worlds, Romania route-finding, 8-puzzle, 8-queens, robot localization.</p>
+</div>
+</main>
+<div class="pager">
+  <button id="prev">‹ Back</button>
+  <div class="mid"><span id="pagelabel"></span><div class="dots" id="dots"></div></div>
+  <button class="next" id="next">Next ›</button>
+</div>
+
+<script>
+/* ───────────── glossary (fallback definitions come from context) ───────────── */
+const GLOSS = {
+ "agent":"Anything that perceives its environment through sensors and acts on it through actuators.",
+ "percept":"The agent's perceptual input at a single instant.",
+ "percept sequence":"The complete history of everything the agent has ever perceived.",
+ "agent function":"The abstract mapping from percept sequences to actions — the agent's external description.",
+ "agent program":"The concrete implementation, running on real hardware, that realizes the agent function.",
+ "performance measure":"A criterion that scores the sequence of environment states produced by the agent's behavior.",
+ "rational agent":"One that, for each percept sequence, selects the action maximizing expected performance given its evidence and built-in knowledge.",
+ "task environment":"The PEAS package — performance measure, environment, actuators, sensors — that defines the problem.",
+ "condition–action rules":"If-percept-then-action rules used by simple reflex agents.",
+ "internal state":"Stored information about unobserved aspects of the world, maintained by model-based agents.",
+ "utility function":"A function scoring how desirable a state is, allowing trade-offs and expected-utility maximization.",
+ "state space":"The graph of all states reachable from the initial state via the available actions.",
+ "step costs":"The cost c(s,a,s′) of a single action; path cost is usually their sum.",
+ "search tree":"The tree of paths explored from the initial state; nodes are paths, not states.",
+ "frontier":"The set of generated-but-not-yet-expanded nodes; the ordering on it defines the search strategy.",
+ "explored set":"The record of already-expanded states that lets graph search discard redundant paths.",
+ "heuristic":"h(n): an estimate of the cheapest cost from n's state to a goal.",
+ "admissible":"A heuristic that never overestimates the true remaining cost — it is optimistic.",
+ "consistent":"h(n) ≤ c(n,a,n′) + h(n′) for every successor; implies admissibility and makes graph-search A* optimal.",
+ "contours":"Regions of equal f-value that A* sweeps through in nondecreasing order.",
+ "optimally efficient":"No other optimal algorithm using the same heuristic expands fewer nodes.",
+ "effective branching factor":"b*: the uniform branching factor that would generate the same node count at the same depth.",
+ "local search":"Search that keeps only a current state and moves to neighbors — no paths, O(1) memory.",
+ "objective function":"The quantity a local/optimization search is trying to maximize (or minimize).",
+ "simulated annealing":"Local search that accepts worsening moves with probability e^(ΔE/T), with T falling on a schedule.",
+ "belief state":"The set of physical states the agent might currently be in, given its action and percept history.",
+ "contingency plans":"Branching plans with if–then–else structure, needed when action outcomes are uncertain.",
+ "competitive ratio":"Cost actually traveled by an online agent ÷ cost of the optimal path it would take knowing the map.",
+ "policy":"A mapping from every state to an action, so execution errors are self-correcting.",
+ "simple path":"A path with no repeated vertices (no cycles).",
+ "head":"The most recently visited node of a partial path — the end being extended.",
+ "STRIPS":"A planning language: states are fact sets, goals are partial states, operators have preconditions and effects."
+};
+
+/* ───────────── quiz bank ───────────── */
+const QUIZ = {
+ s11:[{q:"An agent's choice of action may depend on…",o:["the true world state, whether perceived or not","its entire percept sequence, but nothing unperceived","only the single most recent percept"],a:1,f:"Behavior can condition on the whole history of percepts — but never on something the agent never perceived."},
+      {q:"The agent function and agent program differ how?",o:["The function is the abstract percept→action mapping; the program is its running implementation","They are two names for the same thing","The program is mathematical; the function is physical"],a:0,f:"Function = external mathematical description. Program = concrete code inside the architecture."}],
+ s12:[{q:"An agent crosses safely-looking street and is hit by falling debris. It was…",o:["irrational — a rational agent would have foreseen it","rational — rationality maximizes expected, not actual, outcome","neither; rationality doesn't apply"],a:1,f:"Rationality ≠ omniscience. Only expected performance given available evidence is required."},
+      {q:"Rewarding a vacuum for 'dirt collected' invites which failure?",o:["The agent stops early","The agent dumps dirt out to re-collect it","The agent runs out of memory"],a:1,f:"Measure world outcomes (clean floor), not agent activity — otherwise the objective gets gamed."}],
+ s13:[{q:"PEAS stands for…",o:["Percept, Environment, Action, State","Performance measure, Environment, Actuators, Sensors","Planning, Execution, Analysis, Search"],a:1,f:"Specify all four before choosing an architecture."},
+      {q:"A realistic taxi performance measure is characterized by…",o:["a single clear objective","multiple conflicting objectives requiring trade-offs","no measurable objective at all"],a:1,f:"Safety, speed, comfort, fuel and profit pull against each other — the spec must say how to trade."}],
+ s14:[{q:"Solitaire with face-down cards is…",o:["unknown and fully observable","known and partially observable","unknown and partially observable"],a:1,f:"You know the rules (known) but can't see the hidden cards (partially observable). The two axes are independent."},
+      {q:"Which property most directly forces an agent to keep internal state?",o:["Partial observability","Multi-agent","Discreteness"],a:0,f:"If sensors don't reveal the whole relevant state, the agent must remember/infer it."}],
+ s15:[{q:"A goal-based agent adds what over a model-based reflex agent?",o:["Sensors","Explicit goal information plus lookahead over consequences","Numeric desirability scores"],a:1,f:"Numeric desirability is the utility-based agent, one rung further up."},
+      {q:"The 'problem generator' in a learning agent exists to…",o:["produce deliberately exploratory, short-term-suboptimal actions","score outcomes against a standard","implement the world model"],a:0,f:"Scoring is the critic's job; exploration is the problem generator's."}],
+ s21:[{q:"Which is NOT one of the five components of a well-defined problem?",o:["Transition model","Heuristic function","Path cost"],a:1,f:"Heuristics are extra knowledge for informed search, not part of the problem definition."},
+      {q:"Open-loop execution (ignoring percepts while acting) is safe when the environment is…",o:["stochastic and dynamic","deterministic, observable, static and known","partially observable but static"],a:1,f:"Any uncertainty breaks the plan, requiring contingencies or re-planning."}],
+ s23:[{q:"The main reason to prefer GRAPH-SEARCH over TREE-SEARCH is…",o:["it uses less memory","it eliminates redundant/looping paths that can make a linear problem exponential","it guarantees optimality"],a:1,f:"It actually costs memory (the explored set) — the payoff is avoiding exponential repeated work."},
+      {q:"In complexity notation, d is…",o:["the depth of the shallowest goal","the maximum depth of the space","the branching factor"],a:0,f:"m is the max depth; b is the branching factor."}],
+ s24:[{q:"Which method gives BFS-quality answers at DFS memory cost?",o:["Uniform-cost search","Iterative deepening","Bidirectional search"],a:1,f:"IDS: complete, optimal for unit costs, O(b^d) time, O(bd) space, ~11% regeneration overhead at b=10."},
+      {q:"Uniform-cost search applies the goal test at expansion rather than generation because…",o:["it is faster","a goal first generated by an expensive path may be reachable more cheaply later","the frontier is a stack"],a:1,f:"Testing at generation would return a suboptimal goal path."}],
+ s25:[{q:"A* uses which evaluation function?",o:["f(n) = h(n)","f(n) = g(n)","f(n) = g(n) + h(n)"],a:2,f:"Greedy uses h alone; uniform-cost uses g alone; A* combines them."},
+      {q:"For A* with GRAPH-SEARCH to be optimal, the heuristic must be…",o:["admissible only","consistent","neither; A* is always optimal"],a:1,f:"Admissibility suffices for tree search; graph search needs consistency (which implies admissibility)."},
+      {q:"A*'s practical limitation is usually…",o:["time","memory — it stores every generated node","incompleteness"],a:1,f:"Hence IDA*, RBFS and SMA*."}],
+ s26:[{q:"If h₂(n) ≥ h₁(n) everywhere and both are admissible, then…",o:["h₂ dominates and expands no more nodes than h₁","h₁ is safer","they perform identically"],a:0,f:"Among admissible heuristics, bigger is better — subject to computation cost per node."},
+      {q:"Relaxing the 8-puzzle so a tile may move to any adjacent square regardless of occupancy yields…",o:["misplaced-tile count (h₁)","Manhattan distance (h₂)","a pattern database"],a:1,f:"Dropping only the 'must be blank' rule gives Manhattan distance; dropping both rules gives h₁."}],
+ s31:[{q:"Plain hill climbing solves random 8-queens instances about…",o:["14% of the time","50% of the time","94% of the time"],a:0,f:"94% comes after allowing sideways moves; random restarts push it effectively to 100%."},
+      {q:"Simulated annealing accepts a worsening move…",o:["never","with probability e^(ΔE/T), decreasing as T cools","always, to escape optima"],a:1,f:"Shake hard when hot, settle as it cools."}],
+ s32:[{q:"In gradient ascent x ← x + α∇f(x), α that is too large causes…",o:["overshooting the optimum","guaranteed convergence","a zero gradient"],a:0,f:"Too small crawls; line search adaptively extends the step."},
+      {q:"Newton–Raphson improves on gradient methods by using…",o:["random restarts","second derivatives (the Hessian)","a cooling schedule"],a:1,f:"Fewer steps, but the Hessian has n² entries — hence quasi-Newton approximations in high dimensions."}],
+ s33:[{q:"At an AND node in an AND–OR tree, the plan must…",o:["choose one branch","handle every branch, because nature chooses","stop searching"],a:1,f:"The agent chooses at OR nodes; nature chooses at AND nodes."},
+      {q:"A cyclic 'keep retrying' plan is a valid solution provided…",o:["the action never fails","every possible outcome eventually occurs (failures are transient)","the environment is fully observable"],a:1,f:"If the failure is systematic — a broken wheel — retrying forever never succeeds."}],
+ s34:[{q:"Belief-space search is described as fully observable because…",o:["the world is actually observable","the agent always knows exactly what it believes","sensors are perfect"],a:1,f:"Uncertainty about the world becomes certainty about a set of possibilities."},
+      {q:"The goal test on a belief state b succeeds when…",o:["some state in b is a goal","all states in b are goals","b is a singleton"],a:1,f:"Otherwise the agent couldn't be sure it had succeeded."},
+      {q:"The three-stage belief update is…",o:["predict → possible percepts → update","sense → plan → act","expand → test → prune"],a:0,f:"Its runtime form is monitoring / filtering / state estimation."}],
+ s35:[{q:"For online search in general environments, the competitive ratio is…",o:["always ≤ 2","unbounded — an adversary can force arbitrarily long detours","exactly b^d"],a:1,f:"Hence the standard assumption of safely explorable spaces."},
+      {q:"LRTA* escapes local minima by…",o:["random restarts","raising the stored cost estimate H(s) of the state it is leaving","teleporting to a frontier node"],a:1,f:"Physical agents can't restart or teleport — so it flattens the dip instead, plus optimism about unexplored actions."}],
+ s41:[{q:"In the crevasse puzzle, the non-obvious required move is…",o:["carrying two items at once","bringing the goose back across","leaving the fox with the goose"],a:1,f:"Blind systematic search finds this 'insight' with no cleverness at all."},
+      {q:"A STRIPS operator is defined by…",o:["a precondition and an effect","a heuristic and a cost","a start and a goal"],a:0,f:"States are fact conjunctions; goals are partial states."}],
+ s42:[{q:"A solution to the formal search problem ⟨g, S, G⟩ is…",o:["any walk from S to G","a simple path from S to G","the whole search tree"],a:1,f:"Simple = no repeated vertices, i.e. no cycles."},
+      {q:"A tree is a graph in which…",o:["every vertex has degree 2","exactly one undirected path exists between any pair of vertices","all vertices are adjacent"],a:1,f:"All-adjacent describes a complete graph."}],
+ s43:[{q:"In the generic algorithm, the ONLY difference between DFS and BFS is…",o:["the goal test","whether extensions go to the front or the back of Q","whether a visited list is used"],a:1,f:"Front = stack = DFS; back = FIFO = BFS. Priority order gives A*."},
+      {q:"The goal test is applied when a path is popped rather than generated because…",o:["it's faster","early testing breaks optimal searches like A* and uniform-cost","the visited list requires it"],a:1,f:"It's harmless for DFS/BFS, but wrong once path costs matter."}],
+ s44:[{q:"On the lecture graph, DFS returns S→A→D→G while BFS returns…",o:["S→A→C→G","S→B→G","S→A→D→C→G"],a:1,f:"BFS finds the shallowest goal path — optimality for unit step costs."},
+      {q:"Dropping the visited list from BFS on that graph causes…",o:["incorrect answers","duplicate partial paths to D, C and G and wasted work","immediate failure"],a:1,f:"Correct but wasteful — and the waste grows exponentially on larger graphs."}],
+ s45:[{q:"The configuration-space transform works by…",o:["shrinking obstacles and enlarging the robot","inflating obstacles by the robot's shape and shrinking the robot to a point","ignoring obstacles entirely"],a:1,f:"Planning a point through inflated obstacles is exactly equivalent to the original problem."},
+      {q:"Compared with a visibility graph, a Voronoi diagram gives paths that are…",o:["shortest but graze obstacles","maximally clear of obstacles but longer","identical"],a:1,f:"Voronoi edges stay equidistant from the nearest obstacles — safety over length."},
+      {q:"RRTs are used when…",o:["the space is 2-D and small","the configuration space is too high-dimensional to enumerate a roadmap","the robot cannot rotate"],a:1,f:"Sample and grow trees instead of building the graph explicitly."}]
+};
+
+/* ───────────── build pages ───────────── */
+const src=document.getElementById('source'), deck=document.getElementById('deck');
+const nodes=[...src.children];
+let pages=[], cur=null;
+const isBreak=n=>n.classList.contains('unit-head')||n.tagName==='H3'||n.tagName==='HEADER';
+nodes.forEach(n=>{
+  if(isBreak(n)||!cur){ cur={nodes:[],unit:null,title:'',id:''}; pages.push(cur); }
+  if(n.tagName==='HEADER'){cur.title='Start here';cur.unit='Welcome';cur.id='start';}
+  if(n.classList.contains('unit-head')){
+    const h=n.querySelector('h2'); const nm=n.querySelector('.num').textContent.trim(); cur.unit=(nm==='Σ'?'Wrap-up':'Unit '+nm);
+    cur.title=h?h.textContent:''; cur.id=n.id||'';
+  }
+  if(n.tagName==='H3'){
+    const sec=n.querySelector('.sec'); cur.title=n.textContent.replace(sec?sec.textContent:'','').trim();
+    cur.sec=sec?sec.textContent.trim():''; cur.id=n.id||'';
+  }
+  cur.nodes.push(n);
+});
+// inherit unit labels forward
+let lastUnit='Welcome';
+pages.forEach(p=>{ if(p.unit) lastUnit=p.unit; else p.unit=lastUnit; });
+
+/* ── page elements + vocab stops + quizzes ── */
+pages.forEach((p,i)=>{
+  const el=document.createElement('div'); el.className='page'; el.dataset.i=i;
+  p.nodes.forEach(n=>el.appendChild(n));
+
+  // vocab stop
+  const terms=[...new Set([...el.querySelectorAll('.term')].map(t=>t.textContent.trim().toLowerCase()))];
+  if(terms.length>=3){
+    const defs={};
+    el.querySelectorAll('.term').forEach(t=>{
+      const key=t.textContent.trim().toLowerCase();
+      if(defs[key])return;
+      if(GLOSS[key]){defs[key]=GLOSS[key];return;}
+      const host=t.closest('p,li'); if(!host)return;
+      const sentences=host.textContent.split(/(?<=[.;])\s+/);
+      defs[key]=(sentences.find(s=>s.toLowerCase().includes(key))||sentences[0]).trim();
+    });
+    const v=document.createElement('div'); v.className='vocab';
+    v.innerHTML='<div class="vhead"><span>Vocab stop</span><span>'+terms.length+' terms</span></div><div class="vbody">'+
+      terms.map(t=>'<button class="chip" data-k="'+t.replace(/"/g,'&quot;')+'">'+t+'</button>').join('')+
+      '</div><div class="def">Tap a term to recall its definition — try to say it before you click.</div>';
+    const defBox=v.querySelector('.def');
+    v.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{
+      v.querySelectorAll('.chip').forEach(x=>x.classList.remove('on')); c.classList.add('on');
+      defBox.innerHTML='<b>'+c.dataset.k+'</b> — '+defs[c.dataset.k];
+    });
+    el.appendChild(v);
+  }
+
+  // knowledge check
+  const bank=QUIZ[p.id];
+  if(bank){
+    const c=document.createElement('div'); c.className='check';
+    c.innerHTML='<div class="chead">Knowledge check</div>';
+    bank.forEach((item,qi)=>{
+      const q=document.createElement('div'); q.className='q';
+      q.innerHTML='<div class="qt">'+(qi+1)+'. '+item.q+'</div>';
+      item.o.forEach((opt,oi)=>{
+        const b=document.createElement('button'); b.className='opt'; b.textContent=opt;
+        b.onclick=()=>{
+          if(q.dataset.done)return; q.dataset.done=1;
+          [...q.querySelectorAll('.opt')].forEach((bb,bi)=>{ if(bi===item.a)bb.classList.add('right'); });
+          if(oi!==item.a)b.classList.add('wrong');
+          q.querySelector('.fb').classList.add('on');
+        };
+        q.appendChild(b);
+      });
+      const fb=document.createElement('div'); fb.className='fb'; fb.textContent=item.f; q.appendChild(fb);
+      c.appendChild(q);
+    });
+    el.appendChild(c);
+  }
+  deck.appendChild(el); p.el=el;
+});
+src.remove();
+
+/* ── completion card ── */
+const done=document.createElement('div'); done.className='page';
+done.innerHTML='<div class="endcard"><div class="big">Module complete.</div><p style="margin:0 auto;max-width:52ch;color:var(--ink2)">You\'ve covered agents and rationality, classical and heuristic search, local and continuous optimization, acting under nondeterminism and partial observability, online search, and the practical engineering of state-space search. Use the contents menu to revisit any section.</p></div>';
+deck.appendChild(done);
+pages.push({el:done,title:'Complete',unit:'Finish',id:'done'});
+
+/* ── navigation ── */
+const fill=document.getElementById('fill'), crumb=document.getElementById('crumb'),
+      counter=document.getElementById('counter'), tocBox=document.getElementById('toc'),
+      dots=document.getElementById('dots'), label=document.getElementById('pagelabel'),
+      prev=document.getElementById('prev'), next=document.getElementById('next');
+let idx=0; const seen=new Set();
+
+// TOC
+let curUnit=null;
+pages.forEach((p,i)=>{
+  if(p.unit!==curUnit){curUnit=p.unit;const h=document.createElement('h5');h.textContent=curUnit;tocBox.appendChild(h);}
+  const b=document.createElement('button'); b.className='toc'; b.textContent=(p.sec?p.sec+'  ':'')+p.title; b.onclick=()=>{go(i);closeD();};
+  tocBox.appendChild(b); p.tocBtn=b;
+  const d=document.createElement('i'); d.onclick=()=>go(i); dots.appendChild(d); p.dot=d;
+});
+
+function go(i){
+  idx=Math.max(0,Math.min(pages.length-1,i)); seen.add(idx);
+  pages.forEach((p,j)=>p.el.classList.toggle('show',j===idx));
+  fill.style.width=((idx)/(pages.length-1)*100)+'%';
+  crumb.textContent=pages[idx].unit+(pages[idx].sec?' · '+pages[idx].sec:'');
+  counter.textContent=(idx+1)+' / '+pages.length;
+  label.textContent=idx<pages.length-1?('Up next: '+pages[idx+1].title):'End of module';
+  pages.forEach((p,j)=>{p.tocBtn.classList.toggle('cur',j===idx);p.tocBtn.classList.toggle('done',seen.has(j)&&j!==idx);
+    p.dot.className=j===idx?'on':(seen.has(j)?'past':'');});
+  prev.disabled=idx===0; next.disabled=idx===pages.length-1;
+  window.scrollTo({top:0,behavior:'instant'});
+  try{history.replaceState(null,'','#'+(pages[idx].id||('p'+idx)));}catch(e){}
+}
+prev.onclick=()=>go(idx-1); next.onclick=()=>go(idx+1);
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='BUTTON'&&e.key===' ')return;
+  if(e.key==='ArrowRight')go(idx+1); if(e.key==='ArrowLeft')go(idx-1);
+});
+const drawer=document.getElementById('drawer'), scrim=document.getElementById('scrim');
+const openD=()=>{drawer.classList.add('open');scrim.classList.add('on');};
+const closeD=()=>{drawer.classList.remove('open');scrim.classList.remove('on');};
+document.getElementById('openDrawer').onclick=openD;
+document.getElementById('closeDrawer').onclick=closeD; scrim.onclick=closeD;
+
+const start=pages.findIndex(p=>p.id===location.hash.slice(1));
+go(start>0?start:0);
+</script>
+</body>
+</html>

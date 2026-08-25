@@ -1,11 +1,11 @@
 /**
- * lib/csv.ts — Minimal CSV parser
+ * lib/csv.ts — Minimal CSV / TSV spreadsheet parser
  *
- * Dependency-free CSV reader good enough for user spreadsheet exports: handles
- * quoted fields, escaped double-quotes (""), commas inside quotes, and CRLF/LF
- * line endings. Returns the header row plus the data rows. Used by the Lists
- * panel's "Import CSV" (create/update a list whose attributes match the column
- * headers).
+ * Dependency-free delimited-table reader for user spreadsheet exports: handles
+ * quoted fields, escaped double-quotes (""), delimiters inside quotes, and
+ * CRLF/LF line endings. Returns the header row plus the data rows. Used by the
+ * Lists panel's "Import spreadsheet" (create/update a list whose attributes
+ * match the column headers).
  */
 
 export interface ParsedCsv {
@@ -13,7 +13,50 @@ export interface ParsedCsv {
   rows: string[][]
 }
 
+/** Parse comma-separated values (default spreadsheet download format). */
 export function parseCsv(text: string): ParsedCsv {
+  return parseDelimited(text, ",")
+}
+
+/** Parse tab-separated values (TSV / Excel / Sheets clipboard dumps saved as files). */
+export function parseTsv(text: string): ParsedCsv {
+  return parseDelimited(text, "\t")
+}
+
+/**
+ * Parse a spreadsheet file by extension, falling back to delimiter detection
+ * when the name is ambiguous (e.g. `.txt`).
+ */
+export function parseSpreadsheetText(text: string, fileName = ""): ParsedCsv {
+  if (/\.tsv$/i.test(fileName)) return parseTsv(text)
+  if (/\.csv$/i.test(fileName)) return parseCsv(text)
+  return parseDelimited(text, detectDelimiter(text))
+}
+
+/** Prefer tab when the first data line has more tabs than commas. */
+export function detectDelimiter(text: string): "," | "\t" {
+  const first = text.replace(/^\uFEFF/, "").split(/\r?\n/).find((l) => l.trim() !== "") ?? ""
+  let tabs = 0
+  let commas = 0
+  let inQuotes = false
+  for (let i = 0; i < first.length; i++) {
+    const ch = first[i]
+    if (ch === '"') {
+      if (inQuotes && first[i + 1] === '"') {
+        i++
+      } else {
+        inQuotes = !inQuotes
+      }
+      continue
+    }
+    if (inQuotes) continue
+    if (ch === "\t") tabs++
+    else if (ch === ",") commas++
+  }
+  return tabs > commas ? "\t" : ","
+}
+
+export function parseDelimited(text: string, delimiter: string): ParsedCsv {
   const rows: string[][] = []
   let field = ""
   let row: string[] = []
@@ -38,7 +81,7 @@ export function parseCsv(text: string): ParsedCsv {
     } else {
       if (ch === '"') {
         inQuotes = true
-      } else if (ch === ",") {
+      } else if (ch === delimiter) {
         row.push(field)
         field = ""
       } else if (ch === "\n") {

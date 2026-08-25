@@ -25,11 +25,10 @@ variant-specific UX (popup completion flow vs. full-page editing/subtasks).
 The tag and relation logic lives entirely in `lib/links.ts` (pure, tested); the
 components above are presentational. Both detail variants mount a "Tags" section
 (`TagInput`) and a "Related" section (`LinkPicker` + `RelatedItemsPanel`) wired to
-the shared draft mutators, alongside a visual `LinkGraph`
-(`components/Graph/LinkGraph`) focused on the current item. "Open item"
-navigation is handled in-place: each variant keeps a local `overrideId` so
-clicking a related/backlinked row (or a graph node) swaps the detail view to that
-item without leaving the surface (reset when the host opens a new item).
+the shared draft mutators. "Open item" navigation is handled in-place: each
+variant keeps a local `overrideId` so clicking a related/backlinked row swaps the
+detail view to that item without leaving the surface (reset when the host opens a
+new item).
 
 ## Import paths
 

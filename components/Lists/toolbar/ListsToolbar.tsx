@@ -67,8 +67,8 @@ export function ListsToolbar({
       <button className="fm-btn fm-btn-sm" onClick={onNewFolder}>
         New Folder
       </button>
-      <button className="fm-btn fm-btn-sm" onClick={onImportCsv}>
-        Import CSV
+      <button className="fm-btn fm-btn-sm" onClick={onImportCsv} title="Import CSV, TSV, or Excel spreadsheet">
+        Import spreadsheet
       </button>
       <div className="fm-toolbar-sep" />
       <button className="fm-btn fm-btn-sm" onClick={onCompleted}>

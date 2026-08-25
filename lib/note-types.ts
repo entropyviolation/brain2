@@ -21,6 +21,10 @@ export const NOTE_TYPE_ID = "note"
 export const NOTE_ATTR = {
   summary: "summary",
   status: "status",
+  /** Docs-tab folder label (free-form; empty / missing = Unfiled). */
+  folder: "docsFolder",
+  /** Default Google Font family for the Docs editor/preview. */
+  fontFamily: "docsFontFamily",
 } as const
 
 const NOTE_ATTRIBUTES: AttributeDefinition[] = [
@@ -32,6 +36,8 @@ const NOTE_ATTRIBUTES: AttributeDefinition[] = [
     optionSource: "manual",
     options: ["draft", "evergreen", "archived"],
   },
+  { id: NOTE_ATTR.folder, name: "Docs folder", type: "string" },
+  { id: NOTE_ATTR.fontFamily, name: "Font family", type: "string" },
 ]
 
 /**

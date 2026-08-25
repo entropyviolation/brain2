@@ -1,0 +1,339 @@
+/**
+ * components/Docs/document-editor.css — WYSIWYG Docs surface (Win95 chrome)
+ *
+ * Scoped under `.docs-editor`. List markers are forced black so they stay
+ * visible against the white page (fixes invisible/white bullets & numbers).
+ */
+
+.docs-editor {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  height: 100%;
+  background: var(--w95-surface, #c0c0c0);
+  box-shadow: var(--w95-raised, inset -1px -1px #0a0a0a, inset 1px 1px #fff);
+}
+
+.docs-editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  background: var(--w95-surface, #c0c0c0);
+  box-shadow: inset 0 -1px var(--w95-shadow, #808080);
+}
+
+.docs-tool {
+  min-width: 24px;
+  height: 22px;
+  padding: 0 6px;
+  font: inherit;
+  font-size: 12px;
+  color: #000;
+  background: var(--w95-face, #dfdfdf);
+  box-shadow: var(--w95-raised, inset -1px -1px #0a0a0a, inset 1px 1px #fff);
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.docs-tool:active,
+.docs-tool[aria-pressed="true"] {
+  box-shadow: var(--w95-sunken, inset 1px 1px #0a0a0a, inset -1px -1px #fff);
+}
+
+.docs-tool:disabled {
+  color: var(--w95-shadow, #808080);
+  cursor: default;
+}
+
+.docs-tool-sep {
+  width: 1px;
+  align-self: stretch;
+  margin: 2px 3px;
+  background: var(--w95-shadow, #808080);
+  box-shadow: 1px 0 0 #fff;
+}
+
+.docs-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 22px;
+  padding: 0 3px 0 5px;
+  background: var(--w95-face, #dfdfdf);
+  box-shadow: var(--w95-raised, inset -1px -1px #0a0a0a, inset 1px 1px #fff);
+  color: #000;
+  font-size: 11px;
+}
+
+.docs-picker-label {
+  font-size: 10px;
+  color: #000;
+  white-space: nowrap;
+}
+
+.docs-select {
+  max-width: 120px;
+  height: 18px;
+  padding: 0 2px;
+  border: none;
+  outline: none;
+  font: inherit;
+  font-size: 11px;
+  color: #000;
+  background: #fff;
+  box-shadow: var(--w95-field, inset -1px -1px #fff, inset 1px 1px #808080);
+}
+
+.docs-select-sm {
+  max-width: 56px;
+}
+
+.docs-file-input {
+  display: none;
+}
+
+/* ===== Page surface (single Notion-like view) ===== */
+.docs-surface {
+  flex: 1;
+  min-height: 320px;
+  overflow-y: auto;
+  padding: 28px 36px 48px;
+  outline: none;
+  background: #ffffff;
+  color: #111111 !important;
+  line-height: 1.55;
+  box-shadow: var(--w95-field, inset -1px -1px #fff, inset 1px 1px #808080);
+  caret-color: #000;
+  -webkit-font-smoothing: antialiased;
+}
+
+.docs-surface * {
+  /* Keep inherited text dark inside the page (Win95 skin uses white titles elsewhere) */
+  text-shadow: none;
+}
+
+.docs-surface:empty::before,
+.docs-surface[data-placeholder]:not(:focus):has(> br:only-child)::before,
+.docs-surface[data-placeholder]:not(:focus):has(> p:only-child > br:only-child)::before {
+  content: attr(data-placeholder);
+  color: #888;
+  pointer-events: none;
+}
+
+.docs-surface h1,
+.docs-surface h2,
+.docs-surface h3,
+.docs-surface h4,
+.docs-surface h5,
+.docs-surface h6 {
+  /* Beat `body.win95-app h1 { color: #fff }` so headings stay readable on the white page */
+  color: #111111 !important;
+  margin: 0.85em 0 0.35em;
+  font-weight: bold;
+  line-height: 1.25;
+  text-shadow: none !important;
+}
+
+.docs-surface h1 { font-size: 1.85em; }
+.docs-surface h2 { font-size: 1.45em; }
+.docs-surface h3 { font-size: 1.2em; }
+
+.docs-surface p {
+  margin: 0 0 0.65em;
+  color: #111111;
+}
+
+.docs-surface blockquote {
+  margin: 0 0 0.65em;
+  padding: 4px 12px;
+  border-left: 3px solid #808080;
+  background: #f3f3f3;
+  color: #222;
+}
+
+/* Lists — force visible black markers (fixes white/invisible bullets & numbers) */
+.docs-surface ul,
+.docs-surface ol {
+  margin: 0 0 0.75em;
+  padding-left: 1.85em;
+  color: #111111;
+  list-style-position: outside;
+}
+
+.docs-surface ul {
+  list-style-type: disc !important;
+}
+
+.docs-surface ol {
+  list-style-type: decimal !important;
+}
+
+.docs-surface ul ul {
+  list-style-type: circle !important;
+}
+
+.docs-surface li {
+  color: #111111;
+  margin: 0.15em 0;
+  display: list-item;
+}
+
+.docs-surface li::marker {
+  color: #111111 !important;
+  font-weight: 700;
+  font-size: 1em;
+}
+
+.docs-surface a {
+  color: #000080;
+  text-decoration: underline;
+}
+
+.docs-surface img.docs-img,
+.docs-surface img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0.6em 0;
+  box-shadow: inset -1px -1px #fff, inset 1px 1px #808080;
+}
+
+.docs-surface hr {
+  border: none;
+  border-top: 1px solid #808080;
+  margin: 1em 0;
+}
+
+.docs-surface code {
+  font-family: "Cascadia Code", "Courier New", monospace;
+  background: #efefef;
+  padding: 0 3px;
+  color: #111;
+}
+
+.docs-editor-status {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 6px;
+  font-size: 11px;
+  color: #000;
+  background: var(--w95-surface, #c0c0c0);
+  box-shadow: var(--w95-field, inset -1px -1px #fff, inset 1px 1px #808080);
+}
+
+/* ===== Link dialog (Google Docs–style insert/edit) ===== */
+.docs-link-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.docs-link-dialog {
+  width: min(420px, calc(100vw - 24px));
+  background: var(--w95-surface, #c0c0c0);
+  box-shadow: var(--w95-raised, inset -1px -1px #0a0a0a, inset 1px 1px #fff),
+    2px 2px 0 #000;
+  padding: 3px;
+  color: #000;
+  font-family: var(--w95-font, Tahoma, "MS Sans Serif", sans-serif);
+  font-size: 12px;
+}
+
+.docs-link-title {
+  padding: 3px 6px;
+  margin-bottom: 4px;
+  color: #fff;
+  font-weight: bold;
+  background: linear-gradient(90deg, #000080, #1084d0);
+}
+
+.docs-link-body {
+  padding: 8px 10px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.docs-link-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.docs-link-field > span {
+  font-weight: bold;
+}
+
+.docs-link-input {
+  height: 24px;
+  padding: 2px 6px;
+  border: none;
+  outline: none;
+  font: inherit;
+  color: #000;
+  background: #fff;
+  box-shadow: var(--w95-field, inset -1px -1px #fff, inset 1px 1px #808080);
+}
+
+.docs-link-error {
+  margin: 0;
+  color: #800000;
+  font-size: 11px;
+}
+
+.docs-link-hint {
+  margin: 0;
+  font-size: 10px;
+  color: #444;
+  line-height: 1.35;
+}
+
+.docs-link-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px 10px;
+}
+
+.docs-link-actions-spacer {
+  flex: 1;
+}
+
+.docs-link-actions .docs-btn {
+  min-height: 22px;
+  padding: 2px 12px;
+  font: inherit;
+  font-size: 12px;
+  color: #000;
+  background: var(--w95-face, #dfdfdf);
+  box-shadow: var(--w95-raised, inset -1px -1px #0a0a0a, inset 1px 1px #fff);
+  border: none;
+  cursor: pointer;
+}
+
+.docs-link-actions .docs-btn:active {
+  box-shadow: var(--w95-sunken, inset 1px 1px #0a0a0a, inset -1px -1px #fff);
+}
+
+.docs-link-actions .docs-btn-primary {
+  font-weight: bold;
+}
+
+.docs-link-actions .docs-btn-danger {
+  color: #800000;
+}
+
+.docs-surface a {
+  cursor: pointer;
+}

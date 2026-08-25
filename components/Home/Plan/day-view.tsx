@@ -19,6 +19,7 @@ import { useEventStore } from "@/lib/event-store"
 import { format, addDays, subDays } from "date-fns"
 import type { CalendarEvent } from "@/lib/types"
 import { formatLocalDateKey, sameCalendarDay, toLocalCalendarDate } from "@/lib/date-utils"
+import { getBannerEvents } from "@/lib/event-links"
 import { getStoredPlanText, saveStoredPlanText } from "@/lib/plan-text"
 import { PlannedTasksSidebar } from "./planned-tasks-sidebar"
 import { AgendaGrid } from "./agenda-grid"
@@ -63,9 +64,9 @@ export function DayView({
     })
   }
 
-  const dayEvents = events.filter((event) => sameCalendarDay(event.date, currentDate))
   const dayTasks = getScheduledTasks(currentDate)
-  const allDayEvents = dayEvents.filter((event) => event.isAllDay)
+  // Include multi-day all-day events that span this day (not only the start date).
+  const allDayEvents = getBannerEvents(events, currentDate)
 
   const handleScheduleTask = (taskId: string, hour: number, minute: number) => {
     const task = tasks.find((t) => t.id === taskId)
@@ -173,7 +174,11 @@ export function DayView({
                         </div>
                       )}
                     </div>
-                    <div className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">All Day</div>
+                    <div className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">
+                      {event.endDate
+                        ? `${format(event.date, "MMM d")} – ${format(event.endDate, "MMM d")}`
+                        : "All Day"}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -201,6 +206,7 @@ export function DayView({
               onScheduleTask={handleScheduleTask}
               onRescheduleEvent={handleRescheduleEvent}
               showCurrentTimeIndicator
+              showAllDayBanners={false}
             />
           </CardContent>
         </Card>

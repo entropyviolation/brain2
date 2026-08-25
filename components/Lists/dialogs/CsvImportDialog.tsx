@@ -22,7 +22,8 @@ export function CsvImportDialog({ csvImport, categories, onClose, onImport, onUp
         <DialogHeader>
           <DialogTitle>Import “{csvImport.fileName}”</DialogTitle>
           <DialogDescription>
-            {csvImport.rows.length} rows · {csvImport.headers.length} columns. Each column becomes an item attribute.
+            {csvImport.rows.length} rows · {csvImport.headers.length} columns. Each column becomes an
+            item attribute; the list opens in spreadsheet view after import.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">

@@ -17,6 +17,11 @@ export { ResourcesPanel } from "./ResourcesPanel"
 export { OperationLogFeed } from "./OperationLogFeed"
 export { OperationPostMortemDialog } from "./OperationPostMortemDialog"
 export {
+  OperationItineraryPanel,
+  OperationActivitiesPanel,
+  OperationPlanDocPanel,
+} from "./OperationFieldPlanPanels"
+export {
   upgradeTaskToOperation,
   createOperation,
   addPhase,

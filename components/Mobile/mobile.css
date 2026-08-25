@@ -1,0 +1,536 @@
+/* Mobile shell — scoped under .cogs-mobile-app so desktop is untouched. */
+
+.cogs-mobile-app {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--background, #c0c0c0);
+  color: var(--foreground, #000);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cogs-mobile-chrome {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: #c0c0c0;
+}
+
+.cogs-mobile-topbar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.5rem 0.65rem;
+  padding-top: calc(0.5rem + env(safe-area-inset-top, 0px));
+  border-bottom: 1px solid #808080;
+  background: #c0c0c0;
+}
+
+.cogs-mobile-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+.cogs-mobile-brand h1 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.cogs-mobile-brand span {
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+
+.cogs-mobile-topbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.cogs-mobile-topbar-actions > * {
+  flex: 0 0 auto;
+}
+
+.cogs-mobile-main-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border-bottom: 2px solid #808080;
+  background: #d4d0c8;
+}
+
+.cogs-mobile-main-tabs button {
+  min-height: 2.75rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+  border: none;
+  background: transparent;
+  border-right: 1px solid #808080;
+}
+
+.cogs-mobile-main-tabs button:last-child {
+  border-right: none;
+}
+
+.cogs-mobile-main-tabs button.active {
+  background: #fff;
+  box-shadow: inset 0 -3px 0 #000080;
+}
+
+.cogs-mobile-body {
+  flex: 1;
+  padding: 0.55rem;
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.cogs-mobile-loading {
+  padding: 2rem;
+  text-align: center;
+  opacity: 0.7;
+}
+
+.cogs-mobile-lists {
+  min-height: 70dvh;
+}
+
+/* —— Login —— */
+.cogs-mobile-login {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  background:
+    radial-gradient(circle at 20% 10%, rgba(255, 255, 255, 0.55), transparent 45%),
+    linear-gradient(160deg, #9aa4b2 0%, #c0c0c0 45%, #8a9099 100%);
+}
+
+.cogs-mobile-login-card {
+  width: min(100%, 22rem);
+  padding: 1.25rem;
+  border: 2px solid #808080;
+  box-shadow: inset 1px 1px 0 #fff, 2px 2px 0 #404040;
+  background: #c0c0c0;
+}
+
+.cogs-mobile-login-card h1 {
+  margin: 0 0 0.25rem;
+  font-size: 1.5rem;
+}
+
+.cogs-mobile-login-card p {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  opacity: 0.8;
+}
+
+.cogs-mobile-login-card label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.cogs-mobile-login-card input {
+  width: 100%;
+  margin-bottom: 0.75rem;
+  padding: 0.55rem 0.65rem;
+  border: 2px solid #808080;
+  background: #fff;
+  font-size: 1rem;
+}
+
+.cogs-mobile-login-error {
+  color: #8b0000;
+  font-size: 0.85rem;
+  margin: 0 0 0.75rem;
+}
+
+/* —— Sync bar —— */
+.cogs-mobile-syncbar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 0.65rem;
+  padding: 0.55rem 0.65rem;
+  border: 2px solid #808080;
+  background: #d4d0c8;
+  font-size: 0.78rem;
+}
+
+.cogs-mobile-syncbar-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.cogs-mobile-syncbar-actions {
+  display: flex;
+}
+
+.cogs-mobile-syncbar-toggle {
+  margin-left: auto;
+  border: 1px solid #808080;
+  background: #eee;
+  padding: 0.15rem 0.45rem;
+  font-size: 0.72rem;
+}
+
+.cogs-mobile-syncbar input[type="url"] {
+  flex: 1 1 100%;
+  min-width: 0;
+  width: 100%;
+  padding: 0.45rem 0.5rem;
+  border: 2px solid #808080;
+  background: #fff;
+  font-size: 0.85rem;
+}
+
+.cogs-mobile-syncbar-status {
+  opacity: 0.9;
+  margin: 0;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+/* —— Touch DnD —— */
+.cogs-mobile-drag-ghost {
+  position: fixed;
+  z-index: 9999;
+  opacity: 0.88;
+  pointer-events: none;
+  transform: scale(1.03);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.cogs-mobile-app.cogs-mobile-dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.cogs-mobile-app [draggable="true"] {
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: none;
+}
+
+/* —— Home chrome denser on phone —— */
+.cogs-mobile-body .space-y-6 {
+  --tw-space-y-reverse: 0;
+}
+
+.cogs-mobile-body > .space-y-6 {
+  gap: 0.75rem;
+}
+
+.cogs-mobile-body .space-y-6 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 0.75rem;
+}
+
+.cogs-mobile-body .grid.w-full.grid-cols-5 {
+  display: flex !important;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  gap: 0.2rem;
+  padding-bottom: 0.15rem;
+}
+
+.cogs-mobile-body .grid.w-full.grid-cols-5 [role="tab"] {
+  flex: 1 0 auto;
+  min-width: 4.6rem;
+  min-height: 2.75rem;
+  font-size: 0.78rem;
+  padding-inline: 0.4rem;
+}
+
+.cogs-mobile-body [role="tab"] {
+  min-height: 2.6rem;
+}
+
+/* Compact date / points / progress stack */
+.cogs-mobile-body .flex.flex-col.lg\:flex-row {
+  flex-direction: column !important;
+  gap: 0.65rem !important;
+}
+
+.cogs-mobile-body .text-2xl {
+  font-size: 1.15rem !important;
+  line-height: 1.25 !important;
+}
+
+/* Habit week grid: sticky task col + horizontal scroll */
+.cogs-mobile-body table,
+.cogs-mobile-body .overflow-x-auto {
+  max-width: 100%;
+}
+
+.cogs-mobile-body .overflow-x-auto,
+.cogs-mobile-body .overflow-auto {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+
+.cogs-mobile-body th:first-child,
+.cogs-mobile-body td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: inherit;
+  background-color: #c0c0c0;
+}
+
+/* Plan panel mobile layout */
+.cogs-mobile-body .bg-gradient-to-br.from-gray-900 {
+  min-height: auto !important;
+}
+
+.cogs-mobile-body .bg-gradient-to-br.from-gray-900 > .space-y-6.p-6 {
+  padding: 0.65rem !important;
+  gap: 0.75rem;
+}
+
+.cogs-mobile-body .bg-gradient-to-br.from-gray-900 .flex.justify-between.items-center {
+  flex-direction: column;
+  align-items: stretch !important;
+  gap: 0.65rem;
+}
+
+.cogs-mobile-body .bg-gradient-to-br.from-gray-900 h2.text-4xl {
+  font-size: 1.5rem !important;
+}
+
+.cogs-mobile-body .bg-gradient-to-br.from-gray-900 .flex.gap-3 {
+  flex-wrap: wrap;
+  gap: 0.4rem !important;
+}
+
+.cogs-mobile-body .bg-gradient-to-br.from-gray-900 .flex.gap-3 > button {
+  flex: 1 1 auto;
+  min-height: 2.75rem;
+  font-size: 0.8rem;
+}
+
+.cogs-mobile-body .bg-gradient-to-br.from-gray-900 [role="tablist"].grid-cols-3 {
+  display: flex !important;
+  gap: 0.2rem;
+}
+
+.cogs-mobile-body .bg-gradient-to-br.from-gray-900 [role="tablist"] [role="tab"] {
+  flex: 1;
+  min-height: 2.75rem;
+  font-size: 0.72rem;
+  padding-inline: 0.25rem;
+}
+
+.cogs-mobile-body .bg-gradient-to-br.from-gray-900 [role="tablist"] [role="tab"] svg {
+  display: none;
+}
+
+/* Plan month/week: stack sidebar above calendar (was side-by-side) */
+.cogs-mobile-body .flex.gap-6.h-full.bg-gradient-to-br,
+.cogs-mobile-body .flex.gap-6.min-h-screen {
+  flex-direction: column !important;
+  gap: 0.75rem !important;
+  min-height: auto !important;
+  height: auto !important;
+}
+
+.cogs-mobile-body .flex.gap-6 .flex-1.space-y-6 {
+  min-width: 0;
+  width: 100%;
+}
+
+.cogs-mobile-body .bg-gradient-to-br.from-gray-900 .overflow-hidden {
+  overflow: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Month day headers/cells — compact + scrollable full week */
+.cogs-mobile-body .grid.grid-cols-7 {
+  display: grid !important;
+  grid-template-columns: repeat(7, minmax(2.75rem, 1fr)) !important;
+  min-width: 22rem;
+}
+
+.cogs-mobile-body .grid.grid-cols-7 > * {
+  min-width: 0;
+  font-size: 0.68rem !important;
+  padding: 0.35rem !important;
+}
+
+.cogs-mobile-body .min-h-\[140px\] {
+  min-height: 4.75rem !important;
+}
+
+.cogs-mobile-body .text-3xl {
+  font-size: 1.25rem !important;
+}
+
+/* Make calendar cards horizontally scrollable when needed */
+.cogs-mobile-body .bg-gradient-to-br.from-gray-800\/80,
+.cogs-mobile-body [class*="from-gray-800"] {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* —— Pull card —— */
+.cogs-mobile-pullcard {
+  margin-bottom: 0.65rem;
+  padding: 0.6rem 0.7rem;
+  border: 2px solid #808080;
+  background: #dce8f5;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.cogs-mobile-pullcard-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.78rem;
+}
+
+.cogs-mobile-pullcard-row .ok {
+  color: #0a5a28;
+}
+
+.cogs-mobile-pullcard-row .warn {
+  color: #8b0000;
+}
+
+/* —— Lists file manager: phone layout —— */
+.cogs-mobile-lists {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.cogs-mobile-lists .fm98 {
+  height: calc(100dvh - 11.5rem) !important;
+  min-height: 420px !important;
+  max-width: 100%;
+}
+
+.cogs-mobile-lists .fm-title-bar-controls {
+  display: none;
+}
+
+.cogs-mobile-lists .fm-toolbar {
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  row-gap: 0.3rem;
+}
+
+.cogs-mobile-lists .fm-btn,
+.cogs-mobile-lists .fm-btn.fm-btn-sm {
+  min-height: 2.4rem;
+  min-width: 2.4rem;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.78rem;
+}
+
+.cogs-mobile-lists .fm-input {
+  min-height: 2.4rem;
+  font-size: 1rem !important;
+}
+
+/* Stack: folders on top, content below; hide right action sidebar */
+.cogs-mobile-lists .fm-split {
+  flex-direction: column !important;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.cogs-mobile-lists .fm-split > .fm-sidebar:first-child {
+  width: 100% !important;
+  max-height: 9.5rem;
+  flex-shrink: 0;
+  border-bottom: 2px solid #808080;
+}
+
+.cogs-mobile-lists .fm-split > .fm-sidebar:not(:first-child) {
+  width: 100% !important;
+  max-height: none;
+  order: 3;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0.4rem !important;
+}
+
+.cogs-mobile-lists .fm-split > .fm-sidebar:not(:first-child) > div {
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  width: 100%;
+}
+
+.cogs-mobile-lists .fm-split > .fm-sidebar:not(:first-child) .fm-btn {
+  flex: 1 1 auto;
+}
+
+.cogs-mobile-lists .fm-split > div:nth-child(2) {
+  flex: 1 1 auto !important;
+  min-height: 14rem;
+  order: 2;
+}
+
+.cogs-mobile-lists .fm-tree-item {
+  min-height: 2.35rem;
+  font-size: 0.85rem !important;
+  padding: 0.35rem 0.5rem !important;
+}
+
+.cogs-mobile-lists .fm-icon {
+  min-width: 5.5rem;
+  min-height: 5.5rem;
+  padding: 0.4rem;
+}
+
+.cogs-mobile-lists .fm-icon-label {
+  font-size: 0.8rem !important;
+  line-height: 1.2;
+}
+
+.cogs-mobile-lists .fm-status-bar {
+  flex-wrap: wrap;
+  font-size: 0.7rem;
+}
+
+.cogs-mobile-lists .fm-status-field.shrink {
+  min-width: 0 !important;
+}
+
+.cogs-mobile-lists .fm-cards-grid {
+  grid-template-columns: 1fr !important;
+}
+
+/* Time grid taller touch rows */
+.cogs-mobile-body .overflow-auto.border.rounded.bg-white [style*="height: 22"] {
+  height: 28px !important;
+}
+
+/* Dialogs nearly full-screen on phone */
+.cogs-mobile-app [role="dialog"],
+.cogs-mobile-app [data-radix-dialog-content] {
+  max-width: calc(100vw - 1rem) !important;
+  max-height: calc(100dvh - 2rem) !important;
+  overflow-y: auto;
+}
+
+/* Hint for long-press drag */
+.cogs-mobile-app::after {
+  content: none;
+}
+
+@media (max-width: 420px) {
+  .cogs-mobile-body {
+    padding-inline: 0.4rem;
+  }
+}

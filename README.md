@@ -40,15 +40,16 @@ your own tools. Beyond single-card widgets, you can build full-screen
 **workspaces** — mini-apps assembled from your own lists and a layout of bound
 **views** (an editable spreadsheet, agenda, rollup summaries, a gamified
 randomizer, a focus timer, checklists, a gallery, notes, plus specialized
-**timeline**, **matcher**, **quiz**, **dashboard**, and **decision-matrix**
-kinds). You can author per-module **workflows** ("Zapier for your data": a
-trigger → conditions → actions that run on real item mutations) and **pop a
-workspace out** into its own window. One-click **templates** scaffold the lists,
-attribute schemas, seed data, views, and workflows for an **Itinerary Creator**,
-a **Cleaning System**, a **Budget Tracker**, and a **Book Tasting** shelf — all on
-the same `Item` / `ItemType` / attribute foundation, so the data also flows
-through Lists, Scheduler, and Analytics. Reusable module **definitions**
-(blueprints) can be saved, re-instantiated, and exported/imported.
+**timeline**, **matcher**, **quiz**, **dashboard**, **decision-matrix**, Trip
+Itinerary **doc** / **itinerary-doc** / **trip-map**, and **film-dna** kinds).
+You can author per-module **workflows** ("Zapier for your data": a trigger →
+conditions → actions that run on real item mutations) and **pop a workspace
+out** into its own window. One-click **templates** scaffold the lists, attribute
+schemas, seed data, views, and workflows for an **Itinerary Creator**, a
+**Cleaning System**, a **Budget Tracker**, a **Book Tasting** shelf, and a
+**Film DNA Lab** — all on the same `Item` / `ItemType` / attribute foundation,
+so the data also flows through Lists, Scheduler, and Analytics. Reusable module
+**definitions** (blueprints) can be saved, re-instantiated, and exported/imported.
 
 **Google Sheets–style grids (built):** list/attribute data can be edited in a
 spreadsheet display (`components/spreadsheet/SheetGrid.tsx`) — inline cells,
@@ -70,15 +71,15 @@ the Book Tasting matcher/quiz. Built-in **Book** and **Flight** item types and a
 read-only external-data **connector** seam (weather stub, `lib/connectors.ts`)
 also ship.
 
-**Second-brain & knowledge features (built):** a **global Cmd/Ctrl-K search**
-palette (`components/Search/`) over all items; a force-directed **Graph** tab
-(`components/Graph/KnowledgeGraph.tsx`) visualizing items and their typed
-**links**; a consolidated **item detail** surface (`components/ItemDetail/`) with
-tags, typed links, related items, and a rich-text/markdown body
-(`components/Editor/`); **Set up Second Brain** (Source/Belief item types) and
-full **JSON backup/restore** from the header **Settings** dialog
-(`components/Settings/`); and self-tracking via a quick **metric logger**
-(`components/Tracking/`).
+**Second-brain & knowledge features (built):** a top-level **Docs** tab
+(`components/Docs/`) — Notion/Google Docs–style WYSIWYG over `note` items (HTML
+body, folders, Google Fonts, images, PDF ingest); a **global Cmd/Ctrl-K search**
+palette (`components/Search/`) over all items; a consolidated **item detail**
+surface (`components/ItemDetail/`) with tags, typed links, related items, and a
+rich-text/markdown body (`components/Editor/`); **Set up Second Brain**
+(Source/Belief item types) and full **JSON backup/restore** from the header
+**Settings** dialog (`components/Settings/`); and self-tracking via a quick
+**metric logger** (`components/Tracking/`).
 
 **Planning & analytics depth (built):** the **Scheduler** adds dependency and
 **Gantt/critical-path** views; **Analytics** adds Brain2 views — **calibration**
@@ -89,9 +90,9 @@ paralysis with one smallest step + a short timer. These are backed by pure logic
 in `lib/` and a nascent data layer (`lib/data/` with Mongo collections/sources +
 JSON backup) and domain `lib/services/`.
 
-**Eventual expansion** (not yet built): deeper computed-attribute editing UX and
-Notion/Google-Docs–style document items on top of the rich-text body above
-(in-grid **formula** columns and cross-item rollups already exist).
+**Eventual expansion** (not yet built): deeper computed-attribute editing UX on
+top of the in-grid **formula** columns and cross-item rollups that already exist.
+Document items / Docs are built (see above).
 
 The sections below describe **what actually runs today** — the foundation those
 ambitions are being built on. Treat the vision above as direction, and the rest
@@ -150,13 +151,16 @@ Electron main process (electron/main.js)  →  desktop window (thin shell)
 MongoDB Atlas (cloud) — sync target behind SyncingDataSource/RemoteDataSource
 ```
 
-There is **no server and no API layer today** — every feature runs in the
-renderer and reads/writes localStorage through the Zustand stores in `lib/` (plus
-a few direct localStorage helpers for plan text). The app is **offline-first**: the
-local store remains the working source of truth. A future opportunistic
-`SyncingDataSource` reconciles with **MongoDB Atlas** in the background when online
-so multiple devices (including a future mobile app) converge — without ever
-blocking offline use. See [`docs/brain2_features_roadmap.md`](docs/brain2_features_roadmap.md).
+Most features run entirely in the renderer and read/write localStorage through
+the Zustand stores in `lib/` (plus a few direct localStorage helpers for plan
+text). Trip Itinerary maps and weather call Open-Meteo / Photon from the client
+(`lib/geocode.ts`, `lib/weather-client.ts`, `lib/places-search.ts`) so they work
+with static `output: "export"` — there is no required API layer. The app is
+**offline-first**: the local store remains the working source of truth. A future
+opportunistic `SyncingDataSource` reconciles with **MongoDB Atlas** in the
+background when online so multiple devices (including a future mobile app)
+converge — without ever blocking offline use. See
+[`docs/brain2_features_roadmap.md`](docs/brain2_features_roadmap.md).
 
 ### Application map
 
@@ -166,9 +170,10 @@ app/page.tsx
 └── Tabs
     ├── Home ────── Habits | Plan | To Do | Goals | Tracking
     ├── Lists ───── Win98 file manager (folders, lists, items, orb gallery, spreadsheet)
+    ├── Docs ────── WYSIWYG notes (folders, fonts, images, PDF ingest)
     ├── Scheduler ─ Always → Year → Month → Week → Day funnel (+ dependency / gantt)
+    ├── Operations ─ Directed enterprises (phases, heatmap, to-do-next)
     ├── Modules ─── User-built mini-apps (workspaces) + dashboard widgets
-    ├── Graph ───── Force-directed knowledge graph over items + typed links
     └── Analytics ─ Charts + Brain2 views (calibration, streaks, plan-vs-reality, regret)
 ```
 
@@ -191,7 +196,7 @@ COGS is **offline-first and stays that way**. The full architectural plan lives 
   never blocks offline use.
 - **Shared `@cogs/core` package.** A future monorepo extraction holding the data
   model (`lib/types.ts`), Zod schemas, the `DataSource` interface, domain services,
-  and pure logic (search, needs-attention, links, link-graph, scheduling) — shared
+  and pure logic (search, needs-attention, links, scheduling) — shared
   by web, desktop, and mobile.
 - **Future mobile app** (Expo / React Native) consuming `@cogs/core` + a local
   cache + the same syncing remote data source.
@@ -223,9 +228,10 @@ npm run test:e2e                 # Playwright (Lists flows; starts dev server)
 | `components/Home/` | Home dashboard (Habits, Plan, ToDo, Goals, Tracking) | [`components/Home/README.md`](components/Home/README.md) |
 | `components/Completion/` | Global task-completion popup (objective/goal contributions + multipliers) | [`components/Completion/README.md`](components/Completion/README.md) |
 | `components/Lists/` | Lists file manager — orchestrator, hooks, views, dialogs (`components/Lists/README.md`) | [`components/Lists/README.md`](components/Lists/README.md) |
+| `components/Docs/` | Top-level Docs tab — WYSIWYG notes over `note` items | [`components/Docs/README.md`](components/Docs/README.md) |
 | `components/Scheduler/` | Period scheduling funnel + dependency/gantt views | [`components/Scheduler/README.md`](components/Scheduler/README.md) |
+| `components/Operations/` | Directed enterprises (phases, heatmap, to-do-next) | [`components/Operations/README.md`](components/Operations/README.md) |
 | `components/Modules/` | Composable dashboard modules + workspaces | [`components/Modules/README.md`](components/Modules/README.md) |
-| `components/Graph/` | Knowledge/link graph over items + typed links | [`components/Graph/README.md`](components/Graph/README.md) |
 | `components/Analytics/` | Metrics, charts + Brain2 views | [`components/Analytics/README.md`](components/Analytics/README.md) |
 | `components/ItemDetail/` | Consolidated item/task detail (page + popup) | [`components/ItemDetail/README.md`](components/ItemDetail/README.md) |
 | `components/Editor/` | Rich-text/markdown body editor | [`components/Editor/README.md`](components/Editor/README.md) |
@@ -289,20 +295,22 @@ Items; Scheduler period funnel (Always→Year→Month→Week→Day); Home dashbo
 with plan text and reflection (plus morning review and per-task post-mortems);
 **Modules** platform (user-buildable full-screen **workspaces** with bound
 spreadsheet/agenda/summary/randomizer/timer/checklist/gallery/notes/decision-matrix/
-timeline/matcher/quiz/dashboard views, authored **workflows** that run on item
-mutations, **pop-out** windows, reusable **definitions**, plus templates for
-Itinerary / Cleaning / Budget / Book Tasting, and dashboard widgets);
-**spreadsheet** display (v3: range select, fill handle, per-cell `=A1` + formula columns, row/column resize) for lists; **file/PDF**
-attributes, built-in **Book**/**Flight** item types, and a **connector** seam;
-all-time **Objectives** (prioritizable per period with custom point multipliers)
-+ quantifiable **Goals** that serve them, with a global **completion popup** that
-captures objective/goal contributions on every task completion; points on
-task/habit/goal completion (with stacking objective multipliers); a
-force-directed **Graph** over items + typed links; **global Cmd/Ctrl-K search**;
-consolidated **ItemDetail** with tags/links/rich-text body; **Second Brain** item
-types + **JSON backup/restore** (header Settings); Scheduler dependency/gantt
-views; and Analytics charts plus Brain2 views (calibration, streaks,
-plan-vs-reality, regret).
+timeline/matcher/quiz/dashboard/doc/itinerary-doc/trip-map/film-dna views,
+authored **workflows** that run on item mutations, **pop-out** windows, reusable
+**definitions**, plus templates for Itinerary / Cleaning / Budget / Book Tasting
+/ Film DNA Lab, and dashboard widgets); **Docs** tab (WYSIWYG over `note`
+items); **Operations** tab; **spreadsheet** display (v3: range select, fill
+handle, per-cell `=A1` + formula columns, row/column resize) for lists;
+**file/PDF** attributes, built-in **Book**/**Flight** item types, and a
+**connector** seam; all-time **Objectives** (prioritizable per period with
+custom point multipliers) + quantifiable **Goals** that serve them, with a
+global **completion popup** that captures objective/goal contributions on every
+task completion; points on task/habit/goal completion (with stacking objective
+multipliers); a force-directed **Graph** over items + typed links; **global
+Cmd/Ctrl-K search**; consolidated **ItemDetail** with tags/links/rich-text body;
+**Second Brain** item types + **JSON backup/restore** (header Settings);
+Scheduler dependency/gantt views; Plan **Paste Events**; and Analytics charts
+plus Brain2 views (calibration, streaks, plan-vs-reality, regret).
 
 **Not yet matching the spec** (tracked in `docs/SPEC_MAPPING.md`): a durable
 **MongoDB** storage layer (flexible documents, text/vector search indexes) wired
@@ -317,7 +325,6 @@ vision" above): first-class **user-defined item types/subtypes** as a primary
 workflow (not just task behavior) and a denser web of **type ↔ category ↔ tag ↔
 attribute ↔ link** relationships. The **custom-module platform** (workspaces +
 workflows + templates), **spreadsheet-style grid displays with formula columns**,
-and **file/PDF attributes** are now built; still ahead is a fuller
-**document-type item** with a Notion / Google Docs–style editor. The unified
-`Item`/`ItemTypeDefinition`/`links`/`attributes` primitives in `lib/types.ts` are
-the foundation for all of these.
+**file/PDF attributes**, and **Docs** / document-type notes are now built. The
+unified `Item`/`ItemTypeDefinition`/`links`/`attributes` primitives in
+`lib/types.ts` are the foundation for all of these.

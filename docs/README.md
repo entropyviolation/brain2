@@ -28,7 +28,7 @@ See [`screenshots/README.md`](screenshots/README.md) for the full index (52 PNG 
 | `08-*` | Home → Tracking |
 | `09-*` | Modules |
 | `10-*` | Operations |
-| `11-*` | Knowledge Graph |
+| `12-*` | Docs *(planned — not captured yet)* |
 | `20-*` | Global header dialogs |
 | `21-*` | Item detail popup |
 

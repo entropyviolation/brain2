@@ -20,7 +20,7 @@ A clickable, annotated index of the repository. Pairs with the plain-text
 | [e2e/ · tests/](#tests) | [config](#config--lockfiles) | [App map](#app-map)    |
 | [Spec gaps](#spec-gaps-highest-impact) |           |                            |
 
-**Components sub-views:** [top-level](#top-level-files) · [Home](#home) · [Lists](#lists) · [Scheduler](#scheduler) · [Modules](#modules) · [Analytics](#analytics) · [Reviews](#reviews) · [spreadsheet](#spreadsheet) · [ui/](#ui)
+**Components sub-views:** [top-level](#top-level-files) · [Home](#home) · [Docs](#docs-top-level-tab) · [Lists](#lists) · [Scheduler](#scheduler) · [Modules](#modules) · [Analytics](#analytics) · [Reviews](#reviews) · [spreadsheet](#spreadsheet) · [ui/](#ui)
 
 ---
 
@@ -43,18 +43,20 @@ flows through the built-in `task` type today.
 
 ## app/
 
-Next.js App Router entry — one static client page, global CSS, retro shell. No API
-routes or server components.
+Next.js App Router entry — one static client page, global CSS, retro shell. Trip
+maps / weather / places call public APIs from the browser (`lib/geocode.ts`,
+`lib/weather-client.ts`, `lib/places-search.ts`); no App Router API routes are
+required for the static Electron export.
 
 | File          | Purpose                                                                       |
 | ------------- | ----------------------------------------------------------------------------- |
 | `layout.tsx`  | Root layout — Karla font, `globals.css`, `win95.css`, `body.win95-app`, metadata, global `CompletionPopupHost` |
-| `page.tsx`    | Global header + 5 lazy tabs; full-screen `EnhancedTaskDetail` when a task is selected |
+| `page.tsx`    | Global header + 8 lazy tabs; full-screen `EnhancedTaskDetail` when a task is selected |
 | `globals.css` | Tailwind base/components/utilities + theme CSS variables                       |
 | `win95.css`   | Global Win95 bevels, tabs, scrollbars, pixel font (`:where()` lets Lists `.fm98` win) |
 | `loading.tsx` | Route loading boundary (renders `null`; panels use Suspense)                   |
 
-**Header:** Review · Tracking · Inbox · Bulk Add · Quick Add.
+**Header:** Review · Settings · Tracking · Inbox · Bulk Add · Quick Add (+ Cmd/Ctrl-K search).
 
 → [`app/README.md`](../app/README.md)
 
@@ -121,7 +123,9 @@ Shared `habits-store` with Lists Daily Habits. 14 default daily habits.
 
 #### Home/Plan/
 Month/week/day calendar, drag-drop scheduling, events, plan free-text (localStorage
-via `plan-text.ts`). `agenda-grid.tsx` shared with Tracking Day Log.
+via `plan-text.ts`). **Paste Events** (`paste-events-dialog.tsx` +
+`lib/parse-event-text.ts`) bulk-creates from itinerary text. Multi-day all-day
+events span their date range. `agenda-grid.tsx` shared with Tracking Day Log.
 **Could add:** Auto carry-over (§7.7), MongoDB plan documents.
 
 #### Home/ToDo/
@@ -143,6 +147,16 @@ emitted by `task-store.updateTask`) so a popup appears on **every** task complet
 Captures objective/goal contributions, advances goals, and awards the stacking
 objective point multipliers (1.5× default; prioritized objectives use a custom
 multiplier). → [`components/Completion/README.md`](../components/Completion/README.md)
+
+---
+
+### Docs (top-level tab)
+
+WYSIWYG document workspace over `note` items (`components/Docs/`): folder sidebar,
+auto-save, Google Fonts, images, PDF ingest. Helpers: `lib/doc-html.ts`,
+`doc-links.ts`, `google-fonts.ts`, `image-resize.ts`, `pdf-to-html.ts`.
+
+→ [`components/Docs/README.md`](../components/Docs/README.md)
 
 ---
 
@@ -217,36 +231,36 @@ and **pop out** a module into its own window.
 | `workspace/ModuleWorkspace.tsx` | Full-screen mini-app — tabbed views, drag-reorder, Settings/Workflows/Pop-out, plan-sync |
 | `workspace/ModulePopoutView.tsx` | Standalone module render for the `#popout/module/<id>` window |
 | `workspace/ModuleSettingsDialog.tsx` / `ModuleListsPanel.tsx` | Edit a `ModuleDefinition` (name, bound lists, views, plan-sync) |
-| `workspace/ModuleViewEditor.tsx` | Compose one bound view (spreadsheet/checklist/agenda/summary/randomizer/timer/stat/gallery/notes/decision-matrix/kanban/timeline/matcher/quiz/dashboard) |
+| `workspace/ModuleViewEditor.tsx` | Compose one bound view (spreadsheet/checklist/agenda/…/doc/itinerary-doc/trip-map/film-dna) |
 | `workspace/module-view-bodies.tsx` | `ModuleViewBody` switch + per-kind render bodies |
+| `workspace/itinerary/*` | Trip Plan doc, printable itinerary, activities map, city/place suggest, checklists |
+| `workspace/filmrecs/*` | Film DNA Lab view + poster cards |
 | `workspace/WorkflowBuilder.tsx` / `WorkflowStepEditor.tsx` | Author per-module workflows (trigger → conditions → actions) |
 
 **Templates:** `lib/module-templates.ts` builds one-click mini-apps — **Itinerary**
-(spreadsheet + timeline + plan/schedule-sync workflow), **Cleaning** (gamified
-randomizer + timer), **Budget** (optional-inclusion rollup dashboard), and
-**Book Tasting** (PDF→book `matcher` + `quiz`) — each scaffolding lists +
+(Plan `doc` + printable `itinerary-doc` + Activities `trip-map` + City Places +
+plan/schedule-sync workflow; migrate via `lib/itinerary-migrate.ts`), **Cleaning**
+(gamified randomizer + timer), **Budget** (optional-inclusion rollup dashboard),
+**Book Tasting** (PDF→book `matcher` + `quiz`), and **Film DNA Lab** (`film-dna`
+shelves / Watch / Blend / Letterboxd import) — each scaffolding lists +
 attribute schemas + seed items + bound views + seeded workflows. `lib/module-plan-sync.ts`
 pushes finalized dated module items into the Plan; `lib/module-schedule-sync.ts`
-turns them into scheduled events; `lib/book-match.ts` scores PDF→book matches.
+turns them into scheduled events; `lib/book-match.ts` scores PDF→book matches;
+`lib/itinerary-assemble.ts` / `lib/trip-itinerary.ts` build printable day blocks;
+`lib/geocode.ts` (Open-Meteo) + `lib/places-search.ts` + `lib/trip-directions.ts`
+pin places and estimate distances on the map.
 
 **Workflows:** authored rules live in `lib/workflows-store.ts` and run via the
 engine (`lib/workflow-engine.ts`) wired to task mutations by
 `lib/services/item-mutation-service.ts` (`initWorkflowEngine` on client mount).
-Specialized view kinds added: **`matcher`**, **`quiz`**, **`dashboard`**,
-**`timeline`** (alongside **`decision-matrix`** / **`kanban`**).
+Specialized view kinds: **`matcher`**, **`quiz`**, **`dashboard`**,
+**`timeline`**, **`doc`**, **`itinerary-doc`**, **`trip-map`**, **`film-dna`**
+(alongside **`decision-matrix`** / **`kanban`**).
 
 **Stores:** `modules-store` (instances; persist v2), `module-definitions`
-(reusable blueprints), `workflows-store`. **Could add:** Map/location module.
+(reusable blueprints), `workflows-store`.
 
 → [`components/Modules/README.md`](../components/Modules/README.md)
-
----
-
-### Graph (top-level tab)
-
-`Graph/KnowledgeGraph.tsx` — force-directed/spatial visualization over all items
-and their typed `links` (relations labelled, edges optionally colored by stance).
-Reuses `lib/graph-layout.ts`. Mounted as the **Graph** top-level tab in `app/page.tsx`.
 
 ---
 
@@ -376,9 +390,24 @@ Data model, Zustand stores (localStorage today → MongoDB), pure helpers. Not R
 | `spreadsheet-keys.ts` | Pure grid interaction model: cell navigation, range math, clipboard TSV, and selection stats (Sum/Avg/Min/Max/Count) |
 | `sheet-a1.ts` | A1-notation math: column letters ↔ index, `parseA1`/`formatA1`, `isCellFormula`, `extractA1Refs`, and `shiftFormula` (relative-ref rewriting for fill-drag, `$`-absolute aware) |
 | `sheet-eval.ts` | Evaluates per-cell `=A1` formulas against a grid accessor (reuses `lib/formula`, resolves cross-cell refs recursively with cycle detection) |
-| `module-templates.ts` | Pre-built workspace mini-app templates (Itinerary/Cleaning/Budget/Book-Tasting/Blank) |
+| `module-templates.ts` | Pre-built workspace mini-app templates (Itinerary v2 doc/map/print / Cleaning / Budget / Book-Tasting / Film DNA Lab / Blank) |
 | `module-plan-sync.ts` | Push finalized module items into Plan text |
 | `module-schedule-sync.ts` | Turn finalized dated module items into scheduled events |
+| `itinerary-assemble.ts` | Pure day-block assembly for printable itineraries |
+| `itinerary-migrate.ts` | Upgrade older Itinerary workspaces to the v2 view set |
+| `trip-itinerary.ts` | Self-contained trip days on module config (not list-backed) |
+| `trip-activity-lists.ts` / `trip-directions.ts` | Activities buckets + map distance estimates |
+| `city-search.ts` / `places-search.ts` | City + place autocomplete for itinerary inputs |
+| `parse-event-text.ts` | Unstructured itinerary text → calendar event drafts (Plan Paste Events) |
+| `geocode.ts` | Open-Meteo client geocoding (trip map; static-export safe) |
+| `weather-client.ts` | Open-Meteo weather + sunrise/sunset for itinerary days |
+| `flight-lookup.ts` / `parse-flight-text.ts` | Flight number lookup + airline-paste parser |
+| `filmrecs-types.ts` / `filmrecs-catalog.ts` / `filmrecs-score.ts` | Film DNA Lab catalog + offline scoring |
+| `letterboxd-parse.ts` | Letterboxd export-folder / CSV merge |
+| `doc-html.ts` / `doc-links.ts` | Docs HTML sanitize + hyperlink helpers |
+| `google-fonts.ts` | Allow-listed Google Fonts for Docs |
+| `image-resize.ts` / `pdf-to-html.ts` | Docs image compress + PDF ingest |
+| `folder-tree.ts` | Nested folder sidebar tree helpers |
 | `module-definitions.ts` | `ModuleDefinition` store + pure (de)serialize / instantiate helpers |
 | `book-match.ts` | Score/`findBookMatch` PDF extracted-text → book candidate (matcher + quiz) |
 | `workflow-hooks.ts` | Dependency-free mutation seam (`registerItemMutationDispatcher`/`dispatchItemMutation`) called by task-store |
@@ -388,7 +417,7 @@ Data model, Zustand stores (localStorage today → MongoDB), pure helpers. Not R
 | `pending-reviews.ts` | Which end-of-period reviews are still due |
 | `affirmations.ts` | Morning affirmations ritual: find/seed Lists "Affirmations", read lines, `pickRandom` session subset |
 | `vocal-confidence.ts` | Pure vocal-confidence DSP + scoring (McLeod-Pitch-Method `detectPitch`, jitter/shimmer, uptalk/trailing-off, `ConfidenceTracker`) for the affirmations ritual |
-| `app-navigation.ts` | Persist last active tab/location to localStorage |
+| `app-navigation.ts` | Persist last active tab/location to localStorage (incl. Docs doc/folder) |
 | `use-current-date.ts` | Shared "today" hook with midnight rollover |
 | `csv.ts` | Lists CSV import parser |
 | `remove-background.ts` | Orb upload background removal |
@@ -507,10 +536,10 @@ app/page.tsx
 └── Tabs
     ├── Home ────── Habits | Plan | To Do | Goals (Objectives + Goals + Direction) | Tracking
     ├── Lists ───── Win98 file manager (folders, lists, items, orbs, spreadsheet, kanban)
+    ├── Docs ────── WYSIWYG notes over `note` items (fonts, images, PDF ingest)
     ├── Scheduler ─ Always → Year → Month → Week → Day
     ├── Operations ─ directed enterprises (OperationsView → OperationWorkspace)
-    ├── Modules ─── composable widgets + workspace mini-apps
-    ├── Graph ───── knowledge / link graph
+    ├── Modules ─── composable widgets + workspace mini-apps (Itinerary doc / map / print)
     └── Analytics ─ charts + Metrics, Correlation, Context Switch, Regret
 ```
 

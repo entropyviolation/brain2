@@ -8,6 +8,7 @@ describe("buildModuleTemplate", () => {
       "cleaning",
       "budget",
       "book-tasting",
+      "filmrecs",
       "blank",
     ])
   })
@@ -17,16 +18,14 @@ describe("buildModuleTemplate", () => {
     expect(built.module.kind).toBe("workspace")
     expect(built.module.templateId).toBe("itinerary")
     expect(built.module.enablePrint).toBe(true)
-    // plan-sync targets the trip-plan list + its date/status attributes.
-    expect(built.module.planSync?.dateAttrId).toBe("day")
-    expect(built.module.planSync?.statusValue).toBe("Finalized")
-    expect(built.lists.some((c) => c.id === built.module.planSync?.categoryId)).toBe(true)
+    expect(built.module.config.tripItinerary?.days?.length).toBeGreaterThan(0)
+    expect(built.module.config.itineraryUiVersion).toBe(3)
     // every view that needs a list points at a real category in this template.
     const catIds = new Set(built.lists.map((c) => c.id))
     for (const v of built.module.views ?? []) {
       if (v.config.categoryId) expect(catIds.has(v.config.categoryId)).toBe(true)
     }
-    // seed tasks reference real categories.
+    // seed tasks reference real categories (note docs have empty lists).
     for (const t of built.seedTasks) {
       t.lists.forEach((cid) => expect(catIds.has(cid)).toBe(true))
     }
@@ -61,23 +60,22 @@ describe("buildModuleTemplate", () => {
     expect((built.workflows ?? []).length).toBeGreaterThan(0)
   })
 
-  it("itinerary seeds flights with layovers/booking/cost and a timeline + schedule sync", () => {
+  it("itinerary ships self-contained days + doc + trip-map (no Costs/Flights tabs)", () => {
     const built = buildModuleTemplate("itinerary", 7)
     const kinds = (built.module.views ?? []).map((v) => v.kind)
-    expect(kinds).toContain("timeline")
-    // Flights list seeded with structured flight data.
-    const flightCat = built.lists.find((c) => c.name === "Flights")!
-    const flightItems = built.seedTasks.filter((t) => t.lists.includes(flightCat.id))
-    expect(flightItems.length).toBeGreaterThanOrEqual(2)
-    expect(flightItems.some((f) => Array.isArray(f.attributes?.layovers))).toBe(true)
-    expect(flightItems.some((f) => typeof f.attributes?.cost === "number")).toBe(true)
-    expect(flightItems.some((f) => f.attributes?.bookingNumber)).toBe(true)
-    // scheduleSync maps finalized dated activities onto the global timeline.
-    expect(built.module.scheduleSync?.dateAttrId).toBe("day")
-    expect(built.module.scheduleSync?.statusValue).toBe("Finalized")
-    expect(built.lists.some((c) => c.id === built.module.scheduleSync?.categoryId)).toBe(true)
-    // Finalized → sync workflow seeded.
-    expect((built.workflows ?? []).some((w) => w.actions.some((a) => a.kind === "syncPlan"))).toBe(true)
+    const titles = (built.module.views ?? []).map((v) => v.title)
+    expect(kinds).toContain("doc")
+    expect(kinds).toContain("itinerary-doc")
+    expect(kinds).toContain("trip-map")
+    expect(titles).not.toContain("Costs")
+    expect(titles).not.toContain("Flights")
+    expect(titles).not.toContain("Entries")
+    expect(built.module.config.planDocId).toBeTruthy()
+    expect(built.module.config.itineraryUiVersion).toBe(3)
+    expect(built.module.config.tripItinerary?.startDate).toBe("2026-07-10")
+    expect(built.module.config.tripItinerary?.days.some((d) => d.cityMode === "travel")).toBe(true)
+    expect(built.lists.some((c) => c.name === "City Places")).toBe(true)
+    expect(built.seedTasks.some((t) => t.id === built.module.config.planDocId)).toBe(true)
   })
 
   it("budget ships a dashboard whose cards reference real lists + numeric attributes", () => {
@@ -137,6 +135,23 @@ describe("buildModuleTemplate", () => {
     const wf = (built.workflows ?? [])[0]
     expect(wf.actions.some((a) => a.kind === "throw")).toBe(true)
     expect(wf.scope?.listIds).toContain(pdfs.id)
+  })
+
+  it("builds a filmrecs workspace with Film DNA view + seeded catalog", () => {
+    const built = buildModuleTemplate("filmrecs", 12)
+    expect(built.module.templateId).toBe("filmrecs")
+    expect(built.module.config.filmsCategoryId).toBeTruthy()
+    const kinds = (built.module.views ?? []).map((v) => v.kind)
+    expect(kinds).toContain("film-dna")
+    expect(kinds).toContain("spreadsheet")
+    expect(kinds).toContain("gallery")
+    const films = built.lists.find((c) => c.name === "Films")!
+    expect(films).toBeTruthy()
+    expect(films.itemAttributes?.some((a) => a.id === "poster" && a.type === "image")).toBe(true)
+    expect(built.seedTasks.length).toBeGreaterThan(50)
+    expect(built.seedTasks.every((t) => t.lists.includes(films.id))).toBe(true)
+    const liked = built.seedTasks.filter((t) => t.attributes?.liked === true)
+    expect(liked.length).toBeGreaterThan(20)
   })
 
   it("every view + workflow across all templates references real categories", () => {

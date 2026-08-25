@@ -17,6 +17,8 @@ const fs = require("fs")
 const { pathToFileURL } = require("url")
 
 const isDev = !app.isPackaged
+// Must stay on localhost (not 127.0.0.1) — localStorage is origin-scoped and all
+// persisted Zustand data lives under http://localhost:3000.
 const DEV_SERVER_URL = "http://localhost:3000"
 
 // Quick-capture global hotkey (Feature 10, Worker J). These MUST stay in sync

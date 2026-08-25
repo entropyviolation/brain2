@@ -13,6 +13,7 @@ import { ChevronLeft, ChevronRight, Clock, Edit3, Sparkles, MapPin } from "lucid
 import { useTaskStore } from "@/lib/task-store"
 import { useEventStore } from "@/lib/event-store"
 import { sameCalendarDay, toLocalCalendarDate, getWeekStartDate, getWeekDates, getWeekString } from "@/lib/date-utils"
+import { eventCoversDay } from "@/lib/event-links"
 import { getStoredPlanText, saveStoredPlanText } from "@/lib/plan-text"
 import { format, addWeeks, subWeeks, isToday } from "date-fns"
 import type { CalendarEvent } from "@/lib/types"
@@ -129,7 +130,7 @@ export function WeekView({
   }
 
   const getAllDayEventsForDate = (date: Date) => {
-    return events.filter((event) => event.isAllDay && sameCalendarDay(event.date, date))
+    return events.filter((event) => event.isAllDay && eventCoversDay(event, date))
   }
 
   const getTimedEventsForSlot = (date: Date, hour: number) => {

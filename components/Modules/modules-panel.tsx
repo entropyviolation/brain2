@@ -20,7 +20,7 @@
 import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Plus, LayoutGrid, Trash2, ExternalLink } from "lucide-react"
+import { Plus, LayoutGrid, ExternalLink } from "lucide-react"
 import { useModulesStore, type ModuleInstance } from "@/lib/modules-store"
 import { ModuleCard } from "./module-bodies"
 import { ModuleConfigDialog } from "./ModuleConfigDialog"
@@ -42,7 +42,7 @@ export function ModulesPanel({ onTaskSelect }: ModulesPanelProps) {
   const [building, setBuilding] = useState(false)
   const [openWorkspaceId, setOpenWorkspaceId] = useState<string | null>(null)
 
-  const workspaces = modules.filter((m) => m.kind === "workspace")
+  const workspaces = modules.filter((m) => m.kind === "workspace" && !m.config?.operationId)
   const widgets = modules.filter((m) => m.kind !== "workspace")
 
   const openWorkspace = openWorkspaceId ? modules.find((m) => m.id === openWorkspaceId) : null
@@ -102,18 +102,6 @@ export function ModulesPanel({ onTaskSelect }: ModulesPanelProps) {
                         title="Pop out into its own window"
                       >
                         <ExternalLink className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-destructive"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          removeModule(m.id)
-                        }}
-                        title="Remove module"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   </div>

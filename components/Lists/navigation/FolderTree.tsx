@@ -1,7 +1,14 @@
 "use client"
 
+import { useCallback, useEffect, useMemo, useState } from "react"
 import type { Folder, List } from "@/lib/types"
 import { isScheduledFolderId } from "@/lib/scheduled-lists-sync"
+import {
+  buildFolderTree,
+  defaultExpandedFolderIds,
+  flattenFolderTree,
+  isEditableFolder,
+} from "@/lib/folder-tree"
 import { buildListTree, flattenListTree } from "@/lib/list-tree"
 
 export interface FolderTreeProps {
@@ -14,6 +21,7 @@ export interface FolderTreeProps {
   onDragOver: (e: React.DragEvent) => void
   onDrop: (e: React.DragEvent, folder: Folder | null) => void
   onCreateFolder: () => void
+  onEditFolder?: (folder: Folder) => void
   /**
    * Optional nested-category (sublist) tree (Feature 8). When provided, a
    * "Lists" section renders the categories indented by their `parentListId`
@@ -35,14 +43,53 @@ export function FolderTree({
   onDragOver,
   onDrop,
   onCreateFolder,
+  onEditFolder,
   categories,
   activeCategoryId,
   onNavToCategory,
 }: FolderTreeProps) {
+  const tree = useMemo(() => buildFolderTree(folders), [folders])
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() =>
+    defaultExpandedFolderIds(folders, location),
+  )
+
+  useEffect(() => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev)
+      for (const id of defaultExpandedFolderIds(folders, location)) next.add(id)
+      return next
+    })
+  }, [folders, location])
+
+  const visibleNodes = useMemo(() => flattenFolderTree(tree, expandedIds), [tree, expandedIds])
+
+  const toggleExpanded = useCallback((folderId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setExpandedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(folderId)) next.delete(folderId)
+      else next.add(folderId)
+      return next
+    })
+  }, [])
+
+  const navigateToFolder = useCallback(
+    (folderId: string) => {
+      setExpandedIds((prev) => {
+        const next = new Set(prev)
+        next.add(folderId)
+        return next
+      })
+      onNavTo(folderId)
+    },
+    [onNavTo],
+  )
+
   const categoryNodes =
     categories && categories.length > 0 && onNavToCategory
       ? flattenListTree(buildListTree(categories))
       : []
+
   return (
     <div className="fm-sidebar">
       <div className="fm-search-group-label" style={{ padding: "4px 6px 2px" }}>
@@ -69,20 +116,52 @@ export function FolderTree({
       <div className="fm-search-group-label" style={{ padding: "8px 6px 2px" }}>
         Folders
       </div>
-      {folders.map((folder) => (
-        <div
-          key={folder.id}
-          className={`fm-tree-item${location === folder.id ? " active" : ""}`}
-          onClick={() => onNavTo(folder.id)}
-          onDragOver={onDragOver}
-          onDrop={(e) => onDrop(e, folder)}
-          data-folder-id={folder.id}
-          data-scheduled={isScheduledFolderId(folder.id) ? "true" : undefined}
-        >
-          <span className="fm-tree-swatch" style={{ background: folder.color || "#9CA3AF" }} />
-          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{folder.name}</span>
-        </div>
-      ))}
+      {visibleNodes.map(({ folder, depth, hasChildren }) => {
+        const expanded = expandedIds.has(folder.id)
+        return (
+          <div
+            key={folder.id}
+            className={`fm-tree-item fm-tree-folder${location === folder.id ? " active" : ""}`}
+            style={{ paddingLeft: 6 + depth * 12 }}
+            onClick={() => navigateToFolder(folder.id)}
+            onDragOver={onDragOver}
+            onDrop={(e) => onDrop(e, folder)}
+            data-folder-id={folder.id}
+            data-depth={depth}
+            data-scheduled={isScheduledFolderId(folder.id) ? "true" : undefined}
+          >
+            {hasChildren ? (
+              <button
+                type="button"
+                className="fm-tree-toggle"
+                aria-label={expanded ? "Collapse folder" : "Expand folder"}
+                aria-expanded={expanded}
+                onClick={(e) => toggleExpanded(folder.id, e)}
+              >
+                {expanded ? "▼" : "▶"}
+              </button>
+            ) : (
+              <span className="fm-tree-toggle-spacer" aria-hidden />
+            )}
+            <span className="fm-tree-swatch" style={{ background: folder.color || "#9CA3AF" }} />
+            <span className="fm-tree-label">{folder.name}</span>
+            {onEditFolder && isEditableFolder(folder.id) && (
+              <button
+                type="button"
+                className="fm-tree-edit"
+                title="Folder settings"
+                aria-label={`Edit ${folder.name}`}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onEditFolder(folder)
+                }}
+              >
+                ⚙
+              </button>
+            )}
+          </div>
+        )
+      })}
       <div style={{ padding: 6 }}>
         <button className="fm-btn fm-btn-sm" style={{ width: "100%" }} onClick={onCreateFolder}>
           + New Folder
@@ -104,9 +183,7 @@ export function FolderTree({
               data-depth={depth}
             >
               <span className="fm-tree-swatch" style={{ background: category.color || "#9CA3AF" }} />
-              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {category.name}
-              </span>
+              <span className="fm-tree-label">{category.name}</span>
             </div>
           ))}
         </>

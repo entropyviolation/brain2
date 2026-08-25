@@ -66,7 +66,7 @@ describe("tasksInList", () => {
 describe("MODULE_VIEW_KINDS", () => {
   it("registers the specialized Workstream E view kinds", () => {
     const kinds = MODULE_VIEW_KINDS.map((m) => m.kind)
-    for (const k of ["matcher", "quiz", "dashboard", "timeline"] as ModuleViewKind[]) {
+    for (const k of ["matcher", "quiz", "dashboard", "timeline", "doc", "itinerary-doc", "trip-map", "film-dna"] as ModuleViewKind[]) {
       expect(kinds).toContain(k)
     }
   })

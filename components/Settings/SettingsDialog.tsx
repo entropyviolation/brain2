@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dialog"
 import { Settings as SettingsIcon, BrainCircuit, CheckCircle2, Shapes } from "lucide-react"
 import { BackupRestore } from "@/components/Settings/BackupRestore"
+import { MobileSyncPanel } from "@/components/Settings/MobileSyncPanel"
 import { ItemTypeList } from "@/components/ItemTypes/ItemTypeList"
 import { useItemTypeStore } from "@/lib/item-type-store"
 
@@ -55,6 +56,8 @@ export function SettingsDialog() {
 
         <div className="space-y-6">
           <BackupRestore />
+
+          <MobileSyncPanel />
 
           <div className="space-y-3 rounded-lg border border-dashed p-4">
             <div className="flex items-center gap-2">

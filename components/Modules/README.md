@@ -31,6 +31,18 @@ module live here:
 | `workspace/WorkflowBuilder.tsx` | **Visual workflow manager** ("Zapier for personal ideas"): list / add / edit / enable / delete / run a module's authored workflows. Persists to `lib/workflows-store.ts` |
 | `workspace/WorkflowStepEditor.tsx` | Composes a single serializable `WorkflowDefinition`: trigger → conditions → drag-reorderable action steps. No DSL — the JSON shape is the source of truth |
 | `workspace/ModulePopoutView.tsx` | Renders one module workspace **standalone** (no app shell) for the pop-out window; mounted by `app/page.tsx` on the pop-out hash route |
+| `workspace/itinerary/DocPlanView.tsx` | Module **Plan** (`doc`): Docs `DocumentEditor` bound to a trip note (`config.docId`) |
+| `workspace/itinerary/ItineraryDocumentView.tsx` | Printable day-by-day itinerary (`itinerary-doc`); assembles via `lib/itinerary-assemble.ts` / `lib/trip-itinerary.ts` |
+| `workspace/itinerary/TripActivitiesView.tsx` | **Activities** host: Must do / Maybe buckets + map |
+| `workspace/itinerary/TripMapCanvas.tsx` | Leaflet map of stays + City Places; geocodes via Open-Meteo (`lib/geocode.ts`); distances via `lib/trip-directions.ts` |
+| `workspace/itinerary/TripChecklists.tsx` | Packing / Before Trip checklist chrome |
+| `workspace/itinerary/CitySuggestInput.tsx` | City autocomplete (Open-Meteo via `lib/city-search.ts`) |
+| `workspace/itinerary/PlaceSuggestInput.tsx` | Place autocomplete (Photon / optional Google via `lib/places-search.ts`) |
+| `workspace/itinerary/*.css` | Printable itinerary + activities map styles |
+| `workspace/filmrecs/FilmDnaView.tsx` | Film DNA Lab workspace view (DNA / Watch / Blend / Import) |
+| `workspace/filmrecs/PosterCard.tsx` | Poster card with iTunes lazy fallback |
+| `workspace/filmrecs/film-dna.css` | Letterboxd-adjacent Film DNA styles |
+| `lib/itinerary-migrate.ts` *(lib)* | Best-effort upgrade of older Itinerary workspaces to the v2 view set |
 
 ## Data
 
@@ -66,6 +78,10 @@ Templates and the grid live in `lib/module-templates.ts` and
 | `stat` | A single analytics headline number |
 | `gallery` | Image cards for items with an image attribute |
 | `notes` | Free text (persisted to localStorage) — e.g. "my cleaning systems" |
+| `doc` | Docs `DocumentEditor` bound to a note task (`config.docId`) — used by Trip Itinerary **Plan** |
+| `itinerary-doc` | Self-contained printable trip days (`module.config.tripItinerary`): start/end auto-days, city or A→B labels, Open-Meteo weather, timed plans/notes, flight lookup by number |
+| `trip-map` | City-split Leaflet map of stays + wishlist places; multi-list filters (a place can be on several lists); walking/driving/transit distance |
+| `film-dna` | Film DNA Lab: shelves + likes wall, offline Watch ranking (safe/balanced/explore), Letterboxd **export folder** import/blend (`lib/letterboxd-parse.ts` merges watchlist/watched/ratings/diary/`likes/films.csv`) |
 | `kanban` | Board grouped into columns by a selection/text attribute (`config.statusAttrId`); columns derived via `isKanbanGroupable`. Reuses the Lists kanban utilities (`components/Lists/list-content/kanban-utils.ts`) |
 | `decision-matrix` | Weighted multi-criteria ranking (MCDA): rows = options (items), columns = criteria (numeric attributes, each with a weight + direction). Computes a normalized weighted score per option, ranks highest-first, and highlights the winner. Scoring core is `lib/decision-matrix.ts` |
 | `timeline` | Day-by-day timeline of dated items (`config.dateAttrId`/`timeAttrId`) with time, cost, and booked/finalized badges — the confirmed-trip companion to `agenda`. Reflects `lib/module-schedule-sync.ts` |
@@ -94,10 +110,11 @@ and persists onto the view. Pure + unit-tested in `lib/decision-matrix.test.ts`.
 
 | Template | Lists created | Highlights |
 |----------|---------------|-----------|
-| **Itinerary Creator** | Trip Plan, Flights, Activities & Stays, Packing, To Do Before Trip | Spreadsheet + **timeline**; cost / booked / theoretical-vs-finalized; cost rollup; **Print/Export**; a seeded workflow that on **Finalized** runs **Sync to Plan** + schedules the event (`module-schedule-sync`) |
+| **Itinerary Creator** | City Places, Packing, To Do Before Trip + linked Docs note + self-contained `tripItinerary` days | **Plan** (`doc`), printable **Itinerary** (start/end dates, weather API, flight lookup — not list-backed), **Activities** map, Packing/Before Trip checklists; **Print/Export** |
 | **Cleaning System** | Rooms, Systems, Cleaning Tasks | Gamified randomizer + focus timer; per-room summary; room/system inventory spreadsheets; notes for your systems; "session complete → tag cleaned" workflow |
 | **Budget Tracker** | Accounts, Monthly Payments, Debts, Expected Spend | **Dashboard** of optional-inclusion rollups (liquid total, net worth = accounts − debts, expected spend, monthly payments); per-list spreadsheets; payments-by-status summary |
 | **Book Tasting** | Reading List, PDF Shelf | A **matcher** that links each PDF (`file` attribute, extracted text) to its book with confidence + unmatched flags, plus a **quiz** that shows a random snippet and asks you to guess the title; "PDF added with no match → throw" workflow |
+| **Film DNA Lab** | Films (watchlist + likes) | **Film DNA** view (`film-dna`): vibe shelves, likes wall, Watch scatter + ranking, Blend with a friend's CSV, Letterboxd import; plus Films spreadsheet, poster gallery, randomizer, shelf summary. Seeded from Filmrecs catalog; import your own exports to replace |
 | **Blank Workspace** | New List | Empty starting point — add your own lists and views |
 
 ## Building modules from scratch (definitions)

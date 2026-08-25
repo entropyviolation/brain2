@@ -5,7 +5,7 @@
  *   1. **From scratch** — author a brand-new `ModuleDefinition` (name, bound
  *      lists, views, plan-sync) in `ModuleSettingsDialog`, then instantiate it
  *      into a runnable workspace.
- *   2. **Workspace template** — Itinerary, Cleaning, Budget, or Blank — which
+ *   2. **Workspace template** — Itinerary, Cleaning, Budget, Book Tasting, Film DNA, or Blank — which
  *      scaffolds the supporting lists + views in one click.
  *   3. **Dashboard widget** — a classic single card.
  *
@@ -16,7 +16,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { LayoutGrid, Plane, Sparkles, Wallet, FilePlus2, BarChart3, Wrench, Rocket } from "lucide-react"
+import { LayoutGrid, Plane, Sparkles, Wallet, FilePlus2, BarChart3, Wrench, Rocket, Clapperboard } from "lucide-react"
 import { MODULE_TEMPLATES, instantiateModuleTemplate, type ModuleTemplateId } from "@/lib/module-templates"
 import type { ModuleDefinition } from "@/lib/types"
 import {
@@ -31,6 +31,8 @@ const TEMPLATE_ICONS: Partial<Record<ModuleTemplateId, React.ComponentType<{ cla
   itinerary: Plane,
   cleaning: Sparkles,
   budget: Wallet,
+  "book-tasting": FilePlus2,
+  filmrecs: Clapperboard,
   blank: FilePlus2,
 }
 

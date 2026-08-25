@@ -32,7 +32,7 @@ Rendered by `app/page.tsx`:
 | Bulk Add | `components/enhanced-bulk-add.tsx` | Multi-line capture |
 | Quick Add | `components/quick-add.tsx` | Smart single-line capture |
 
-**Top-level tabs (7):** Home · Lists · Scheduler · Operations · Modules · Graph · Analytics
+**Top-level tabs (8):** Home · Lists · Docs · Scheduler · Operations · Modules · Graph · Analytics
 
 **Shortcuts:** Cmd/Ctrl+K → global search · quick-capture hotkey → Quick Add
 
@@ -95,11 +95,9 @@ Also visible on Home shots: `NeedsAttention`, review banner, points stats, today
 | `09-modules.png` | Modules dashboard |
 | `09-modules-workspace.png` | Itinerary Creator workspace |
 
-### Graph
+### Docs
 
-| File | View |
-|------|------|
-| `11-graph.png` | Knowledge graph tab |
+Not yet in the capture set — open the **Docs** tab manually (`components/Docs/DocsPanel.tsx`). Add a `12-docs*.png` entry here after the next `npm run capture-screenshots` pass once the manifest includes it.
 
 ### Analytics (`components/Analytics/`)
 
@@ -140,7 +138,7 @@ Also visible on Home shots: `NeedsAttention`, review banner, points stats, today
 
 | App area | Screenshot(s) | Status |
 |----------|---------------|--------|
-| App shell + 7 top tabs | Visible in all full-page shots | ✅ |
+| App shell + 8 top tabs | Visible in all full-page shots | ✅ |
 | Global header actions | `20-dialog-*.png` | ✅ |
 | Global search (Cmd+K) | `20-dialog-global-search.png` | ✅ |
 | Home → Habits (Daily/Weekly/Monthly) | `01-home-*.png` | ✅ |
@@ -156,7 +154,7 @@ Also visible on Home shots: `NeedsAttention`, review banner, points stats, today
 | Scheduler Gantt + Dependencies | `06-scheduler-gantt.png`, `06-scheduler-dependencies.png` | ✅ |
 | Operations list + workspace | `10-operations*.png` | ✅ |
 | Modules dashboard + workspace | `09-modules*.png` | ✅ |
-| Knowledge Graph tab | `11-graph.png` | ✅ |
+| Docs tab | — | ⏳ not in capture set yet |
 | Analytics (all 13 tabs) | `07-analytics*.png` | ✅ |
 | Item detail popup | `21-item-detail-popup.png` | ✅ |
 | End-of-period reviews | `20-dialog-reviews.png` | ✅ |
@@ -172,6 +170,8 @@ Also visible on Home shots: `NeedsAttention`, review banner, points stats, today
 | List/folder dialogs (New List, Settings, CSV import, Completed, Orb picker) | Open from Lists toolbar — same chrome as `05-lists.png` |
 | Module builder chooser | Momentary step before `09-modules-workspace.png` |
 | Module/widget config dialogs | Open from Modules dashboard |
+| Docs tab (`DocsPanel`) | Top-level Docs — capture pending |
+| Plan Paste Events dialog | Open from Home → Plan → Paste Events |
 | Sheet pop-out (`#popout/sheet/…`) | Separate Electron/window route |
 | Module pop-out (`#popout/module/…`) | Separate Electron/window route |
 | Affirmations sub-dialog | Inside Morning review |

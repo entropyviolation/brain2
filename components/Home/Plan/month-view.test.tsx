@@ -51,4 +51,33 @@ describe("MonthView", () => {
     await user.type(textarea, "Focus on shipping")
     expect(localStorage.getItem("monthPlan-2026-06")).toBe("Focus on shipping")
   })
+
+  it("shows multi-day events on every day in the span", () => {
+    const multiDay = {
+      id: "trip-1",
+      title: "WRITING TRIP",
+      startTime: "00:00",
+      endTime: "23:59",
+      date: new Date(2026, 5, 11),
+      endDate: new Date(2026, 5, 14),
+      type: "event" as const,
+      isScheduled: true,
+      isAllDay: true,
+      color: "#8cd4a5",
+    }
+
+    render(
+      <MonthView
+        currentDate={new Date(2026, 5, 15)}
+        setCurrentDate={vi.fn()}
+        events={[multiDay]}
+        setEvents={vi.fn()}
+        onTaskClick={vi.fn()}
+        onEventClick={vi.fn()}
+        onCreateEvent={vi.fn()}
+      />,
+    )
+
+    expect(screen.getAllByText("WRITING TRIP")).toHaveLength(4)
+  })
 })

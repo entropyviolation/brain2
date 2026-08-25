@@ -15,6 +15,7 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import type { SheetViewConfig } from "@/lib/spreadsheet-contract"
+import type { TripItineraryData } from "@/lib/trip-itinerary"
 
 export type ModuleType =
   | "list-explorer"
@@ -53,6 +54,14 @@ export type ModuleViewKind =
   | "dashboard"
   /** Day-by-day dated view of confirmed items (flights & activities). */
   | "timeline"
+  /** Rich-text document bound to a Docs note (`docId`). */
+  | "doc"
+  /** Printable day-by-day trip itinerary document. */
+  | "itinerary-doc"
+  /** City-split map of places / activities for a trip. */
+  | "trip-map"
+  /** Film DNA Lab: Letterboxd taste map (DNA / Watch / Blend / Import). */
+  | "film-dna"
 
 /**
  * A weighted criterion for the `decision-matrix` view. Each criterion binds to a
@@ -141,6 +150,21 @@ export interface ModuleViewConfig {
   // ---- dashboard ----
   /** dashboard: headline cards, each an optional-inclusion rollup over a list. */
   cards?: DashboardCard[]
+  // ---- doc ----
+  /** doc: id of the `note` task whose body the DocumentEditor edits. */
+  docId?: string
+  // ---- checklist ----
+  /** checklist: packing (grouped by packKind) or pretrip (progress + bulk paste). */
+  checklistStyle?: "packing" | "pretrip" | "default"
+  // ---- itinerary-doc / trip-map ----
+  /** itinerary-doc / trip-map: Trip Plan (day spine) list id. */
+  daysCategoryId?: string
+  /** itinerary-doc: Flights list id. */
+  flightsCategoryId?: string
+  /** itinerary-doc / trip-map: Activities & Stays (entries) list id. */
+  entriesCategoryId?: string
+  /** trip-map: City Places wishlist list id (falls back to categoryId). */
+  placesCategoryId?: string
 }
 
 export interface ModuleView {
@@ -168,6 +192,35 @@ export interface ModuleConfig {
   framing?: string // optional verb/label, e.g. "Clean", "Read"
   pickCount?: number // list-explorer: how many random items to surface (default 1)
   rules?: AttrRule[] // for the rules module
+  /** itinerary: linked Docs note id for the Plan tab. */
+  planDocId?: string
+  /** itinerary: UI migration version (2 = doc plan + printable itinerary + activities map). */
+  itineraryUiVersion?: number
+  /** itinerary: Trip Plan (days) list id — used by migration / itinerary-doc. */
+  daysCategoryId?: string
+  /** itinerary: Flights list id. */
+  flightsCategoryId?: string
+  /** itinerary: Activities & Stays (entries) list id. */
+  entriesCategoryId?: string
+  /** itinerary: City Places list id for the Activities map. */
+  placesCategoryId?: string
+  /** filmrecs: Films list id for Film DNA Lab. */
+  filmsCategoryId?: string
+  /** Self-contained printable itinerary (days/schedule/flights) — not list-backed. */
+  tripItinerary?: TripItineraryData
+  /** Activities: custom filter list names (restaurants, favorites, …). */
+  activityListNames?: string[]
+  /** Activities: pin/legend colors keyed by list name. */
+  activityListColors?: Record<string, string>
+  /** Activities: city chips the user removed (normalized keys). */
+  removedActivityCities?: string[]
+  /** Activities: last selected city chip label. */
+  activitySelectedCity?: string
+  /**
+   * When set, this workspace is owned by an Operation and is shown under
+   * Operations (Itinerary / Activities tabs) rather than the Modules list.
+   */
+  operationId?: string
 }
 
 export interface ModuleInstance {
@@ -241,7 +294,18 @@ export const useModulesStore = create<ModulesState>()(
         set((state) => (state.modules.some((x) => x.id === m.id) ? state : { modules: [...state.modules, m] })),
       removeModule: (id) => set((state) => ({ modules: state.modules.filter((m) => m.id !== id) })),
       updateModule: (id, patch) =>
-        set((state) => ({ modules: state.modules.map((m) => (m.id === id ? { ...m, ...patch } : m)) })),
+        set((state) => ({
+          modules: state.modules.map((m) => {
+            if (m.id !== id) return m
+            // Deep-merge config so concurrent patches (itinerary days vs migrate)
+            // don't wipe each other by replacing the whole config object.
+            if (patch.config) {
+              const { config: configPatch, ...rest } = patch
+              return { ...m, ...rest, config: { ...m.config, ...configPatch } }
+            }
+            return { ...m, ...patch }
+          }),
+        })),
     }),
     {
       name: "cogs-modules-store",

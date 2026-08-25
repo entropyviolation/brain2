@@ -1,6 +1,8 @@
 "use client"
 
 import type { Folder } from "@/lib/types"
+import { isScheduledFolderId } from "@/lib/scheduled-lists-sync"
+import { isAutoScheduledPeriodFolder } from "@/lib/folder-tree"
 import { FolderGlyph } from "@/components/Lists/lib/icon-utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -30,6 +32,9 @@ export function EditFolderDialog({
 }: EditFolderDialogProps) {
   if (!editingFolder) return null
 
+  const isSystemScheduled = isScheduledFolderId(editingFolder.id)
+  const isAutoPeriod = isAutoScheduledPeriodFolder(editingFolder.id)
+
   return (
     <Dialog open={!!editingFolder} onOpenChange={() => onEditingFolderChange(null)}>
       <DialogContent className="fm98-dialog">
@@ -39,7 +44,11 @@ export function EditFolderDialog({
             Folder Settings
           </DialogTitle>
           <DialogDescription>
-            Update this folder. New lists created inside it inherit these settings by default.
+            {isAutoPeriod
+              ? "This folder is generated from task schedules and cannot be renamed or deleted."
+              : isSystemScheduled
+                ? "Scheduled folders are managed automatically from your task dates."
+                : "Update this folder. New lists created inside it inherit these settings by default."}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
@@ -69,6 +78,7 @@ export function EditFolderDialog({
             <Input
               id="edit-folder-name"
               value={editingFolder.name}
+              disabled={isAutoPeriod}
               onChange={(e) => onEditingFolderChange({ ...editingFolder, name: e.target.value })}
             />
           </div>
@@ -117,10 +127,14 @@ export function EditFolderDialog({
             />
           </div>
           <div className="flex justify-between gap-2">
-            <Button variant="destructive" onClick={onDelete}>
-              <Trash className="h-4 w-4 mr-2" />
-              Delete Folder
-            </Button>
+            {!isSystemScheduled ? (
+              <Button variant="destructive" onClick={onDelete}>
+                <Trash className="h-4 w-4 mr-2" />
+                Delete Folder
+              </Button>
+            ) : (
+              <span />
+            )}
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => onEditingFolderChange(null)}>
                 Cancel

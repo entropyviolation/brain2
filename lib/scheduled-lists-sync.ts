@@ -24,6 +24,7 @@ type Mutators = {
   updateList: (c: List) => void
   addFolder: (f: Folder) => void
   updateFolder: (f: Folder) => void
+  deleteFolder?: (id: string) => void
 }
 
 export function findNextActionsFolder(folders: Folder[]): Folder | undefined {
@@ -137,6 +138,28 @@ export function isScheduledFolderId(id: string): boolean {
   return id === NA_SCHEDULED_FOLDER || id.startsWith("na-sched-")
 }
 
+export function isAutoScheduledPeriodFolder(id: string): boolean {
+  return (
+    id.startsWith("na-sched-y-") ||
+    id.startsWith("na-sched-m-") ||
+    id.startsWith("na-sched-w-") ||
+    id.startsWith("na-sched-d-")
+  )
+}
+
+function parseMonthLabel(monthKey: string): string {
+  return format(new Date(`${monthKey}-01T12:00:00`), "MMMM yyyy")
+}
+
+function parseWeekLabel(weekKey: string): string {
+  const start = weekKey.split("_")[0]
+  return `week of ${format(new Date(`${start}T12:00:00`), "MMM d, yyyy")}`
+}
+
+function parseDayLabel(dayKey: string): string {
+  return format(new Date(`${dayKey}T12:00:00`), "EEE MMM d")
+}
+
 /** Tasks belonging to a scheduled period folder (year/month/week/day). */
 export function getTasksForScheduledFolder(tasks: Task[], folderId: string): Task[] {
   if (folderId === NA_SCHEDULED_FOLDER) {
@@ -186,11 +209,18 @@ export function syncScheduledFolderHierarchy(tasks: Task[], mut: Mutators): void
   }
 
   const { years, months, weeks, days } = scheduledPeriodKeys(tasks)
-  const knownIds = new Set(mut.folders.map((f) => f.id))
+  const neededIds = new Set<string>([NA_SCHEDULED_FOLDER])
 
   const ensureFolder = (id: string, name: string, parentId: string) => {
-    if (knownIds.has(id)) return
-    knownIds.add(id)
+    neededIds.add(id)
+    const existing = mut.folders.find((f) => f.id === id)
+    if (existing) {
+      const patch: Partial<Folder> = {}
+      if (existing.parentFolderId !== parentId) patch.parentFolderId = parentId
+      if (existing.name !== name) patch.name = name
+      if (Object.keys(patch).length > 0) mut.updateFolder({ ...existing, ...patch })
+      return
+    }
     mut.addFolder({
       id,
       name,
@@ -205,24 +235,32 @@ export function syncScheduledFolderHierarchy(tasks: Task[], mut: Mutators): void
   for (const m of months) {
     const y = m.slice(0, 4)
     ensureFolder(`na-sched-y-${y}`, y, NA_SCHEDULED_FOLDER)
-    ensureFolder(`na-sched-m-${m}`, format(new Date(`${m}-01`), "MMMM yyyy"), `na-sched-y-${y}`)
+    ensureFolder(`na-sched-m-${m}`, parseMonthLabel(m), `na-sched-y-${y}`)
   }
   for (const w of weeks) {
     const [start] = w.split("_")
     const y = start.slice(0, 4)
     const m = start.slice(0, 7)
     ensureFolder(`na-sched-y-${y}`, y, NA_SCHEDULED_FOLDER)
-    ensureFolder(`na-sched-m-${m}`, format(new Date(`${m}-01`), "MMMM yyyy"), `na-sched-y-${y}`)
-    ensureFolder(`na-sched-w-${w}`, `week of ${format(new Date(`${start}T12:00:00`), "MMM d")}`, `na-sched-m-${m}`)
+    ensureFolder(`na-sched-m-${m}`, parseMonthLabel(m), `na-sched-y-${y}`)
+    ensureFolder(`na-sched-w-${w}`, parseWeekLabel(w), `na-sched-m-${m}`)
   }
   for (const d of days) {
     const y = d.slice(0, 4)
     const m = d.slice(0, 7)
     const w = getWeekString(new Date(`${d}T12:00:00`))
     ensureFolder(`na-sched-y-${y}`, y, NA_SCHEDULED_FOLDER)
-    ensureFolder(`na-sched-m-${m}`, format(new Date(`${m}-01`), "MMMM yyyy"), `na-sched-y-${y}`)
-    ensureFolder(`na-sched-w-${w}`, `week of ${format(new Date(w.split("_")[0] + "T12:00:00"), "MMM d")}`, `na-sched-m-${m}`)
-    ensureFolder(`na-sched-d-${d}`, format(new Date(`${d}T12:00:00`), "EEE MMM d"), `na-sched-w-${w}`)
+    ensureFolder(`na-sched-m-${m}`, parseMonthLabel(m), `na-sched-y-${y}`)
+    ensureFolder(`na-sched-w-${w}`, parseWeekLabel(w), `na-sched-m-${m}`)
+    ensureFolder(`na-sched-d-${d}`, parseDayLabel(d), `na-sched-w-${w}`)
+  }
+
+  if (mut.deleteFolder) {
+    for (const folder of mut.folders) {
+      if (isAutoScheduledPeriodFolder(folder.id) && !neededIds.has(folder.id)) {
+        mut.deleteFolder(folder.id)
+      }
+    }
   }
 }
 
