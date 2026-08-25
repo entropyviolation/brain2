@@ -152,3 +152,5 @@ Run unit/integration tests: `npm test`. E2E requires dev server (started automat
 ## Related sync
 
 `lib/scheduled-lists-sync.ts` keeps Next Actions smart lists and scheduled-folder hierarchy in sync with tasks.
+
+Header **From Notes** can auto-create folder **iPhone Notes Ingest** and list **notes to ingest** (`lib/apple-notes.ts` `ensureIphoneNotesIngestDestination`) when a note is parked for later bulk-add. Parked items store the full note body.

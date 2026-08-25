@@ -96,6 +96,26 @@ describe("HomeDashboard", () => {
     })
   })
 
+  describe("Needs Attention", () => {
+    it("is collapsed by default", () => {
+      render(<HomeDashboard />)
+      expect(screen.getByRole("button", { name: /Needs Attention/ })).toHaveAttribute("aria-expanded", "false")
+    })
+
+    it("persists collapsed state across remount", async () => {
+      const user = userEvent.setup()
+      const { unmount } = render(<HomeDashboard />)
+      const toggle = screen.getByRole("button", { name: /Needs Attention/ })
+      await user.click(toggle)
+      expect(toggle).toHaveAttribute("aria-expanded", "true")
+      expect(localStorage.getItem("cogs-home-needs-attention")).toBe("expanded")
+      unmount()
+
+      render(<HomeDashboard />)
+      expect(screen.getByRole("button", { name: /Needs Attention/ })).toHaveAttribute("aria-expanded", "true")
+    })
+  })
+
   describe("main sub-tabs", () => {
     it("renders all five main tab triggers", () => {
       render(<HomeDashboard />)

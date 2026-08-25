@@ -1,7 +1,9 @@
 import { render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { useTaskStore } from "@/lib/task-store"
+import { buildTodoItems, filterAndSortTodos } from "@/components/Home/ToDo/todo-utils"
 import { PlannedTasksSidebar } from "./planned-tasks-sidebar"
 
 describe("PlannedTasksSidebar", () => {
@@ -41,5 +43,37 @@ describe("PlannedTasksSidebar", () => {
 
     render(<PlannedTasksSidebar mode="month" currentDate={currentDate} onTaskClick={vi.fn()} />)
     expect(screen.getByText("Quarterly planning")).toBeInTheDocument()
+  })
+
+  it("does not show a day add field on month/week rails", () => {
+    render(<PlannedTasksSidebar mode="month" currentDate={currentDate} onTaskClick={vi.fn()} />)
+    expect(screen.queryByLabelText("Add a to-do for this day")).not.toBeInTheDocument()
+  })
+
+  it("adds a day to-do that Home/To-Do lists for the same date", async () => {
+    const user = userEvent.setup()
+    render(<PlannedTasksSidebar mode="day" currentDate={currentDate} onTaskClick={vi.fn()} />)
+
+    const input = screen.getByLabelText("Add a to-do for this day")
+    await user.type(input, "text linda")
+    await user.click(screen.getByRole("button", { name: "Add to-do" }))
+
+    expect(screen.getByText("text linda")).toBeInTheDocument()
+    const created = useTaskStore.getState().tasks.find((t) => t.description === "text linda")
+    expect(created).toMatchObject({
+      scheduleable: true,
+      context: "@general",
+      estimatedDuration: 30,
+      stage: "clarified",
+    })
+    expect(created?.scheduledDate).toBeTruthy()
+
+    const dayItems = filterAndSortTodos(
+      buildTodoItems(useTaskStore.getState().tasks, false, currentDate),
+      "day",
+      false,
+      currentDate,
+    )
+    expect(dayItems.map((i) => i.description)).toContain("text linda")
   })
 })

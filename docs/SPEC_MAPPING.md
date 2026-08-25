@@ -45,7 +45,7 @@ local-first/sync-ready, AI-ready-not-AI-dependent, everything reviewable.
   `components/<Module>/` folders:
   **Home** | **Lists** | **Docs** | **Scheduler** | **Operations** | **Modules** |
   **Analytics**, plus global header widgets (**Review**, **Tracking**,
-  Inbox, Bulk Add, Quick Add).
+  Inbox, Bulk Add, From Notes, Quick Add).
 
 ## §3 Data Storage & Sync — 🟡/⛔
 - **Current:** a dozen-plus Zustand stores → localStorage:
@@ -91,6 +91,11 @@ local-first/sync-ready, AI-ready-not-AI-dependent, everything reviewable.
 - §4.2 Quick Add — ✅ `components/quick-add.tsx`.
 - §4.3 Bulk Add — ✅ `components/enhanced-bulk-add.tsx` (colon-category syntax,
   auto-creates categories, routes to inbox).
+- Apple Notes ingest — ✅ Mac Electron: `components/notes-ingest.tsx` +
+  `lib/apple-notes.ts` + `electron/apple-notes.js` / `apple-notes.jxa`. Date-range
+  listing, parse/skip with title+content preview, then bulk-add (`List:` syntax)
+  or park the **full note** on Lists → **iPhone Notes Ingest** → **notes to ingest**.
+  Already-ingested Apple Note ids are skipped.
 - §4.4 Clarification — 🟡 `components/inbox.tsx` (`TaskClarificationDialog`).
   Works, but still task-only (no type switching among task/note/event/log).
 - §4.5 Inbox vs. review queue — 🟡 Inbox exists; Review header surfaces pending

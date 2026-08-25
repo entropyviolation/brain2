@@ -94,6 +94,11 @@
     ],
     "mac": {
       "category": "public.app-category.productivity",
+      "entitlements": "electron/entitlements.mac.plist",
+      "entitlementsInherit": "electron/entitlements.mac.plist",
+      "extendInfo": {
+        "NSAppleEventsUsageDescription": "COGS reads Apple Notes, including iCloud notes from your iPhone, so you can ingest them into lists."
+      },
       "target": [
         "dmg",
         "zip"

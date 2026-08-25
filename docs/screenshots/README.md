@@ -30,6 +30,7 @@ Rendered by `app/page.tsx`:
 | Inbox | `components/inbox.tsx` | Unclarified captures |
 | Metrics | `components/Tracking/MetricLogger.tsx` | Wellbeing datapoint logger |
 | Bulk Add | `components/enhanced-bulk-add.tsx` | Multi-line capture |
+| From Notes | `components/notes-ingest.tsx` | Apple Notes ingest (Mac Electron; iCloud / iPhone + On My Mac) |
 | Quick Add | `components/quick-add.tsx` | Smart single-line capture |
 
 **Top-level tabs (8):** Home · Lists · Docs · Scheduler · Operations · Modules · Graph · Analytics
@@ -176,6 +177,7 @@ Not yet in the capture set — open the **Docs** tab manually (`components/Docs/
 | Affirmations sub-dialog | Inside Morning review |
 | Operation post-mortem dialog | Button in operation workspace header |
 | Item Types editor (full) | Settings → Manage Item Types (compact version in Analytics tab) |
+| From Notes dialog | Header **From Notes** — Mac desktop + Notes.app only; Playwright web capture would not list live notes |
 
 ---
 

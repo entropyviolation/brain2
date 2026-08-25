@@ -95,6 +95,16 @@ export function isTaskUncategorizedInFolder(
   return !listIds.some((id) => cats.includes(id))
 }
 
+/**
+ * Global All Items analog of folder uncategorized: not filed into any real list.
+ * Empty membership or only folder All Items pool ids count as uncategorized.
+ */
+export function isTaskUncategorizedGlobally(task: Task): boolean {
+  const cats = task.lists ?? []
+  if (cats.length === 0) return true
+  return cats.every((id) => isFolderAllItemsCategoryId(id))
+}
+
 export function getTasksForFolderAllView(
   tasks: Task[],
   folder: Folder,

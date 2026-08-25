@@ -1,9 +1,10 @@
 /**
  * components/Home/ToDo/todo-utils.ts — Pure To-Do helpers
  *
- * Tier/importance derivation, schedule labelling, and the task→TodoItem build +
- * filter/sort pipeline. Pure functions (a `now` is injectable) so they're unit-
- * testable independent of React. See spec §8.4.
+ * Tier/importance derivation, schedule labelling, `createScheduledTodoTask`
+ * (shared with Plan's day sidebar), and the task→TodoItem build + filter/sort
+ * pipeline. Pure functions (a `now` is injectable) so they're unit-testable
+ * independent of React. See spec §8.4.
  */
 import {
   format,
@@ -19,13 +20,41 @@ import {
   taskScheduledOnDay,
   taskScheduledInWeek,
   taskScheduledInMonth,
+  toLocalCalendarDate,
 } from "@/lib/date-utils"
 import type { PriorityWeights, Task, TaskCompletionReview, TodoItem } from "@/lib/types"
 import { computePriorityScore } from "@/lib/priority"
 import { effectiveStatus, isAvailable, isOpen } from "@/lib/completion-status"
 
 export type TodoPeriod = "day" | "week" | "month"
-export type TodoSortMode = "tier" | "priority"
+export type TodoSortMode = "tier" | "priority" | "name" | "created" | "added" | "pushed"
+export type TodoSortOrder = "asc" | "desc"
+
+export const TODO_SORT_OPTIONS: { value: TodoSortMode; label: string }[] = [
+  { value: "tier", label: "Tier" },
+  { value: "priority", label: "Priority" },
+  { value: "name", label: "Name" },
+  { value: "created", label: "Date created" },
+  { value: "added", label: "Date added" },
+  { value: "pushed", label: "Days pushed" },
+]
+
+/** Natural direction for each sort key — matches the previous Tier / Priority defaults. */
+export const DEFAULT_TODO_SORT_ORDER: Record<TodoSortMode, TodoSortOrder> = {
+  tier: "asc",
+  priority: "desc",
+  name: "asc",
+  created: "asc",
+  added: "asc",
+  pushed: "desc",
+}
+
+export function getTodoSortOptionLabel(mode: TodoSortMode, period: TodoPeriod): string {
+  if (mode !== "pushed") {
+    return TODO_SORT_OPTIONS.find((option) => option.value === mode)?.label ?? mode
+  }
+  return period === "day" ? "Days pushed" : period === "week" ? "Weeks pushed" : "Months pushed"
+}
 
 /**
  * Completion-status lens for the To-Do lists (Feature 9). "open" (active +
@@ -236,6 +265,39 @@ export function filterAndSortTodos(
     })
 }
 
+function toTimestamp(value: Date | string | null | undefined): number {
+  if (!value) return 0
+  const date = value instanceof Date ? value : new Date(value)
+  return Number.isNaN(date.getTime()) ? 0 : date.getTime()
+}
+
+/**
+ * When this item landed on the period list being viewed. Day uses the scheduled
+ * day; week/month fall back from a concrete date to the period key, then created.
+ */
+export function getTodoAddedAt(todo: TodoItem, period: TodoPeriod): number {
+  const scheduled = toTimestamp(todo.scheduledDate)
+  if (period === "day") return scheduled || toTimestamp(todo.createdDate)
+  if (period === "week") {
+    if (scheduled) return scheduled
+    const range = todo.scheduledWeek ? parseWeekString(todo.scheduledWeek) : null
+    if (range) return range.start.getTime()
+    return toTimestamp(todo.createdDate)
+  }
+  if (scheduled) return scheduled
+  if (todo.scheduledMonth) {
+    const parsed = new Date(`${todo.scheduledMonth}-01T00:00:00`)
+    if (!Number.isNaN(parsed.getTime())) return parsed.getTime()
+  }
+  return toTimestamp(todo.createdDate)
+}
+
+function compareSortValues(a: number | string, b: number | string, order: TodoSortOrder): number {
+  if (a < b) return order === "asc" ? -1 : 1
+  if (a > b) return order === "asc" ? 1 : -1
+  return 0
+}
+
 /**
  * Re-order a TodoItem list by the transparent priority formula (lib/priority.ts),
  * resolving each item back to its underlying Task for the signal values. Stable
@@ -245,20 +307,123 @@ export function sortTodosByPriority(
   todos: TodoItem[],
   tasks: Task[],
   weights: PriorityWeights,
+  order: TodoSortOrder = "desc",
 ): TodoItem[] {
   const byId = new Map(tasks.map((t) => [t.id, t]))
+  const dir = order === "asc" ? 1 : -1
   return todos
     .map((todo, index) => {
       const task = byId.get(todo.taskId ?? todo.id)
-      return { todo, index, score: task ? computePriorityScore(task, weights) : -Infinity }
+      return {
+        todo,
+        index,
+        score: task ? computePriorityScore(task, weights) : order === "asc" ? Infinity : -Infinity,
+      }
     })
-    .sort((a, b) => b.score - a.score || a.index - b.index)
+    .sort((a, b) => (a.score - b.score) * dir || a.index - b.index)
+    .map((x) => x.todo)
+}
+
+export function sortTodos(
+  todos: TodoItem[],
+  opts: {
+    mode: TodoSortMode
+    order: TodoSortOrder
+    period: TodoPeriod
+    tasks: Task[]
+    weights: PriorityWeights
+  },
+): TodoItem[] {
+  const { mode, order, period, tasks, weights } = opts
+  if (mode === "priority") {
+    return sortTodosByPriority(todos, tasks, weights, order)
+  }
+
+  const pushedKey = pushedKeyForPeriod(period)
+  return [...todos]
+    .map((todo, index) => ({ todo, index }))
+    .sort((a, b) => {
+      let primary = 0
+      switch (mode) {
+        case "name": {
+          const nameDiff = a.todo.description.localeCompare(b.todo.description, undefined, { sensitivity: "base" })
+          primary = order === "asc" ? nameDiff : -nameDiff
+          break
+        }
+        case "created":
+          primary = compareSortValues(toTimestamp(a.todo.createdDate), toTimestamp(b.todo.createdDate), order)
+          break
+        case "added":
+          primary = compareSortValues(getTodoAddedAt(a.todo, period), getTodoAddedAt(b.todo, period), order)
+          break
+        case "pushed":
+          primary = compareSortValues(a.todo[pushedKey], b.todo[pushedKey], order)
+          break
+        case "tier":
+        default: {
+          const tierDiff = TIER_ORDER[a.todo.tier] - TIER_ORDER[b.todo.tier]
+          primary = order === "asc" ? tierDiff : -tierDiff
+          if (primary === 0) {
+            // Same as filterAndSortTodos: more pushes first, independent of direction.
+            primary = b.todo[pushedKey] - a.todo[pushedKey]
+          }
+          break
+        }
+      }
+      return primary || a.index - b.index
+    })
     .map((x) => x.todo)
 }
 
 /** Local YYYY-MM month key (avoids UTC drift). */
 export function getMonthKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
+}
+
+/**
+ * Canonical Home/To-Do item. Plan's day sidebar and the To-Do "Add Task"
+ * dialog both call this so a new item is the same record in both views.
+ */
+export function createScheduledTodoTask(opts: {
+  description: string
+  period: TodoPeriod
+  date: Date
+  tier?: TodoItem["tier"]
+}): Task {
+  const refDate = toLocalCalendarDate(opts.date)
+  const { urgency, importance } = tierToUrgencyImportance(opts.tier ?? "A")
+  const task: Task = {
+    id: `todo-${Date.now()}`,
+    description: opts.description.trim(),
+    stage: "clarified",
+    createdAt: refDate,
+    completed: false,
+    lists: [],
+    // Surface To-Do-created tasks in the Scheduler too (and keep them there if
+    // later unscheduled). The Scheduler gate is list-based by default, so an
+    // explicit task-level flag is required for tasks created without a list.
+    scheduleable: true,
+    urgency,
+    importance,
+    estimatedDuration: 30,
+    cognitiveLoad: 2,
+    dependencies: [],
+    context: "@general",
+    entropy: 0.5,
+    rewardValue: 1,
+    allowPartialCompletion: false,
+    minimumChunkSize: 15,
+  }
+
+  if (opts.period === "day") {
+    task.scheduledDate = refDate
+  } else if (opts.period === "week") {
+    task.scheduledWeek = getWeekString(refDate)
+  } else {
+    task.scheduledMonth = getMonthKey(refDate)
+  }
+
+  return task
 }
 
 /** Best-effort completion timestamp for a done task. */

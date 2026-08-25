@@ -29,6 +29,7 @@ import {
   syncFolderAllItemsCategories,
   getTasksForFolderAllView,
   isTaskUncategorizedInFolder,
+  isTaskUncategorizedGlobally,
   filterTasksByHiddenFolderLists,
   filterTasksByHiddenGlobalFolders,
 } from "@/lib/folder-all-items"
@@ -41,6 +42,7 @@ import {
   type ItemPlacementMode,
 } from "@/lib/item-selection"
 import { applyListMerge, type ListMergePlan } from "@/lib/list-merge"
+import { applyItemMerge, itemMergeLabel, type ItemMergePlan } from "@/lib/item-merge"
 import { selectableEntryIds } from "@/lib/lists-folder-search"
 import {
   buildListsTaskIndex,
@@ -83,13 +85,15 @@ import { NewListDialog } from "@/components/Lists/dialogs/NewListDialog"
 import { NewFolderDialog } from "@/components/Lists/dialogs/NewFolderDialog"
 import { MergeListsConfirmDialog } from "@/components/Lists/dialogs/MergeListsConfirmDialog"
 import { MergeListsDialog } from "@/components/Lists/dialogs/MergeListsDialog"
+import { MergeItemsConfirmDialog } from "@/components/Lists/dialogs/MergeItemsConfirmDialog"
+import { MergeItemsDialog } from "@/components/Lists/dialogs/MergeItemsDialog"
 import { EditListDialog } from "@/components/Lists/dialogs/EditListDialog"
 import { EditFolderDialog } from "@/components/Lists/dialogs/EditFolderDialog"
 import { LIST_TEMPLATES, SMART_LISTS, PRESET_ICON_POSITIONS } from "@/components/Lists/constants"
 import { iconFor, orbFor } from "@/components/Lists/lib/icon-utils"
 import { openTargetKey } from "@/components/Lists/open-target"
 import type { CsvImportState, IconPickerTarget, SmartId } from "@/components/Lists/types"
-import { isListDisplayMode, sanitizeEnabledDisplays, type List, type Folder, type AttributeValue } from "@/lib/types"
+import { isListDisplayMode, sanitizeEnabledDisplays, type List, type Folder, type Task, type AttributeValue } from "@/lib/types"
 import { hashIconSlot } from "@/lib/string-utils"
 import "./filemanager98.css"
 
@@ -138,6 +142,8 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
   const setFolderAllListHidden = useListsUiStore((s) => s.setFolderAllListHidden)
   const globalAllHiddenFolderIds = useListsUiStore((s) => s.globalAllHiddenFolderIds)
   const setGlobalAllFolderHidden = useListsUiStore((s) => s.setGlobalAllFolderHidden)
+  const globalAllUncategorizedOnly = useListsUiStore((s) => s.globalAllUncategorizedOnly)
+  const setGlobalAllUncategorizedOnly = useListsUiStore((s) => s.setGlobalAllUncategorizedOnly)
 
   const nav = useListsNavigation(categories, folders)
   const search = useListsSearch(folders, categories, allTasks)
@@ -156,7 +162,6 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
   const [csvImport, setCsvImport] = useState<CsvImportState | null>(null)
   const [addingTaskToTarget, setAddingTaskToTarget] = useState<string | null>(null)
   const [newTaskDescription, setNewTaskDescription] = useState("")
-  const [bulkAddText, setBulkAddText] = useState("")
   const [showBulkAdd, setShowBulkAdd] = useState(false)
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const [showCategorySettings, setShowCategorySettings] = useState(false)
@@ -179,6 +184,8 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
   const [itemPlacementMode, setItemPlacementMode] = useState<ItemPlacementMode>("keep")
   const [mergeConfirmOpen, setMergeConfirmOpen] = useState(false)
   const [mergeOpen, setMergeOpen] = useState(false)
+  const [itemMergeConfirmOpen, setItemMergeConfirmOpen] = useState(false)
+  const [itemMergeOpen, setItemMergeOpen] = useState(false)
 
   useEffect(() => {
     dedupeFolders()
@@ -314,6 +321,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
     }
     if (openTarget.type === "folder-all" && openTarget.folderId === ROOT_ALL_FOLDER_ID) {
       let items = filterTasksHiddenFromGlobalAll(allTasks.filter((t) => !t.completed), categories, folders)
+      if (globalAllUncategorizedOnly) items = items.filter((t) => isTaskUncategorizedGlobally(t))
       const hiddenFolders = globalAllHiddenFolderIds ?? []
       if (hiddenFolders.length) items = filterTasksByHiddenGlobalFolders(items, folders, hiddenFolders, categories)
       return items
@@ -328,7 +336,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
     }
     if (openTarget.type === "smart") return getSmartTasks(openTarget.id)
     return []
-  }, [openTarget, allTasks, categories, folders, currentFolder, folderAllUncategorizedOnly, folderAllHiddenListIds, globalAllHiddenFolderIds, getSmartTasks, getTasksForCategory])
+  }, [openTarget, allTasks, categories, folders, currentFolder, folderAllUncategorizedOnly, folderAllHiddenListIds, globalAllHiddenFolderIds, globalAllUncategorizedOnly, getSmartTasks, getTasksForCategory])
 
   const breadcrumb = getBreadcrumb({ searchActive, searchTerm, openTarget, openName, isHome, isAll, currentFolderName: currentFolder?.name })
   const statusText = openTarget ? `${openTasks.length} item(s) in "${openName}"` : `${entries.filter((e) => e.kind === "folder").length} folder(s), ${entries.filter((e) => e.kind !== "folder").length} list(s)`
@@ -656,6 +664,11 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
     [selectedCategories, categories],
   )
 
+  const selectedMergeItems = useMemo(
+    () => selectedTaskIds.map((id) => allTasks.find((t) => t.id === id)).filter((t): t is Task => !!t),
+    [selectedTaskIds, allTasks],
+  )
+
   const handleApplyMerge = useCallback(
     (plan: ListMergePlan) => {
       const next = applyListMerge({ lists: categories, folders, tasks: allTasks }, plan)
@@ -666,6 +679,16 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
       selection.cancelSelectMode()
     },
     [categories, folders, allTasks, setLists, setFolders, setTasks, selection],
+  )
+
+  const handleApplyItemMerge = useCallback(
+    (plan: ItemMergePlan) => {
+      setTasks(applyItemMerge(allTasks, plan))
+      if (selectedTaskId && plan.discardedIds.includes(selectedTaskId)) setSelectedTaskId(null)
+      setItemMergeOpen(false)
+      selection.cancelSelectMode()
+    },
+    [allTasks, setTasks, selectedTaskId, selection],
   )
 
   const folderViewCommon = {
@@ -720,6 +743,8 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
           onFolderAllListHiddenChange={setFolderAllListHidden}
           globalAllHiddenFolderIds={globalAllHiddenFolderIds ?? []}
           onGlobalAllFolderHiddenChange={setGlobalAllFolderHidden}
+          globalAllUncategorizedOnly={!!globalAllUncategorizedOnly}
+          onGlobalAllUncategorizedOnlyChange={setGlobalAllUncategorizedOnly}
           addingTaskToTarget={addingTaskToTarget}
           openTargetKeyValue={openTargetKey(openTarget)}
           newTaskDescription={newTaskDescription}
@@ -727,11 +752,9 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
           onAddTask={() => taskActions.handleAddTaskToOpen(newTaskDescription, openTarget, currentFolder, () => { setNewTaskDescription(""); setAddingTaskToTarget(null) })}
           onCancelAddTask={() => setAddingTaskToTarget(null)}
           showBulkAdd={showBulkAdd}
-          bulkAddText={bulkAddText}
-          onBulkAddTextChange={setBulkAddText}
-          onBulkAdd={() => taskActions.handleBulkAddToOpen(bulkAddText, openTarget, currentFolder, () => { setBulkAddText(""); setShowBulkAdd(false) })}
+          onBulkAdd={(text) => taskActions.handleBulkAddToOpen(text, openTarget, currentFolder, () => { setShowBulkAdd(false) })}
           onShowBulkAdd={setShowBulkAdd}
-          onBulkAddCancel={() => { setShowBulkAdd(false); setBulkAddText("") }}
+          onBulkAddCancel={() => { setShowBulkAdd(false) }}
           onTaskSelect={setSelectedTaskId}
           onCompleteTask={taskActions.handleCompleteTask}
           onTaskDragStart={drag.handleTaskDragStart}
@@ -884,6 +907,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
               onPlacementModeChange={setItemPlacementMode}
               onAddToNewList={openNewCategoryDialog}
               onAddToLists={placeItemsIntoLists}
+              onMerge={() => setItemMergeConfirmOpen(true)}
               onDelete={handleDeleteSelectedItems}
             />
           )}
@@ -1005,6 +1029,8 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
       <NewFolderDialog open={showNewFolderDialog} name={newFolderName} color={newFolderColor} scheduleable={newFolderScheduleable} selectedCount={selectedCategories.length + selectedFolderIds.length} placementMode={effectivePlacement} originIsAll={isAll} onPlacementModeChange={setPlacementMode} onOpenChange={setShowNewFolderDialog} onNameChange={setNewFolderName} onColorChange={setNewFolderColor} onScheduleableChange={setNewFolderScheduleable} onCreate={() => { if (newFolderName.trim()) { const id = Date.now().toString() + Math.random().toString(36).substr(2, 5); addFolder({ id, name: newFolderName, createdAt: new Date(), listIds: selectedCategories, color: newFolderColor, scheduleable: newFolderScheduleable, parentFolderId: currentFolder?.id }); const unlink = originFolderIdToUnlink({ mode: effectivePlacement, originFolderId: currentFolder?.id, isAll }); if (unlink) selectedCategories.forEach((catId) => removeListFromFolder(unlink, catId)); if (effectivePlacement === "move") selectedFolderIds.forEach((fid) => { if (wouldCreateFolderCycle(folders, fid, id)) return; const child = folders.find((f) => f.id === fid); if (child) updateFolder({ ...child, parentFolderId: id }) }); setShowNewFolderDialog(false); setNewFolderName(""); setNewFolderColor("#3B82F6"); setNewFolderScheduleable(true); selection.cancelSelectMode() } }} />
       <MergeListsConfirmDialog open={mergeConfirmOpen} listNames={selectedMergeLists.map((l) => l.name)} onCancel={() => setMergeConfirmOpen(false)} onContinue={() => { setMergeConfirmOpen(false); setMergeOpen(true) }} />
       <MergeListsDialog open={mergeOpen} lists={selectedMergeLists} folders={folders} tasks={allTasks} onClose={() => setMergeOpen(false)} onMerge={handleApplyMerge} />
+      <MergeItemsConfirmDialog open={itemMergeConfirmOpen} itemNames={selectedMergeItems.map(itemMergeLabel)} onCancel={() => setItemMergeConfirmOpen(false)} onContinue={() => { setItemMergeConfirmOpen(false); setItemMergeOpen(true) }} />
+      <MergeItemsDialog open={itemMergeOpen} items={selectedMergeItems} lists={categories} onClose={() => setItemMergeOpen(false)} onMerge={handleApplyItemMerge} />
       <NextActionsSettingsDialog open={showCategorySettings} onClose={() => setShowCategorySettings(false)} />
       <CompletedTasksDialog open={showCompletedTasks} onClose={() => setShowCompletedTasks(false)} onTaskSelect={setSelectedTaskId} />
       <TaskDetailPopup taskId={selectedTaskId} open={!!selectedTaskId} onClose={() => setSelectedTaskId(null)} />

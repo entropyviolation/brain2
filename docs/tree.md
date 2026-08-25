@@ -56,7 +56,7 @@ required for the static Electron export. Repeat lookups share `lib/api-cache.ts`
 | `win95.css`   | Global Win95 bevels, tabs, scrollbars, pixel font (`:where()` lets Lists `.fm98` win) |
 | `loading.tsx` | Route loading boundary (renders `null`; panels use Suspense)                   |
 
-**Header:** Review · Settings · Tracking · Inbox · Bulk Add · Quick Add (+ Cmd/Ctrl-K search).
+**Header:** Review · Settings · Tracking · Inbox · Bulk Add · From Notes · Quick Add (+ Cmd/Ctrl-K search).
 
 → [`app/README.md`](../app/README.md)
 
@@ -73,6 +73,7 @@ Most components have a co-located `*.test.tsx`.
 | -------------------------- | --------------------------------------------- |
 | `quick-add.tsx`            | Single-field capture → inbox                  |
 | `enhanced-bulk-add.tsx`    | Multi-line capture; `Category:` syntax        |
+| `notes-ingest.tsx`         | From Notes — date range, parse/skip, bulk-add or park full text on **notes to ingest** |
 | `inbox.tsx`                | Inbox + clarification flow                    |
 | `cognitive-state.tsx`      | Header **Tracking** → TimeGrid dialog         |
 | `task-detail-popup.tsx`    | Barrel → `ItemDetail/ItemDetailPopup.tsx` (`TaskDetailPopup`) |
@@ -296,7 +297,8 @@ helpers in `lib/affirmations.ts`).
 
 ### Settings / Focus
 
-- `Settings/SettingsDialog.tsx` (header) — full app **backup/restore**
+- `Settings/SettingsDialog.tsx` (header) — **Home location** (Plan sunrise/sunset,
+  default San Diego) + full app **backup/restore**
   (`Settings/BackupRestore.tsx` → `lib/data/backup.ts`) + **Set up Second Brain**
   (seeds Source/Belief item types via `item-type-store.seedSecondBrainTypes`) +
   **Manage Item Types** (`components/ItemTypes/`). **Phone ↔ desktop live sync
@@ -364,6 +366,7 @@ Data model, Zustand stores (localStorage today → MongoDB), pure helpers. Not R
 | `item-type-store.ts`     | `cogs-item-types-store`   | Item type registry (built-in `task`/`book`/`flight` + user types) |
 | `lists-ui-store.ts`      | `cogs-lists-ui`           | Lists UI prefs, orb gallery |
 | `theme-store.ts`         | `cogs-theme-store`        | Theme colors               |
+| `user-settings-store.ts` | `cogs-user-settings`      | Home city (Plan sun times) |
 
 ### Pure helpers
 
@@ -379,6 +382,8 @@ Data model, Zustand stores (localStorage today → MongoDB), pure helpers. Not R
 | `book-types.ts` | Built-in **Book** item type (author/ISBN/status + `multifile` PDF attachments) + `withBookType` |
 | `flight-types.ts` | Built-in **Flight** item type (airline, airports, times, layovers, cost, booked) + `withFlightType` |
 | `file-extract.ts` | Best-effort `extractText(FileValue\|File)` — text inline, PDF via Electron `window.desktop.extractPdfText`, graceful browser fallback |
+| `apple-notes.ts` | Apple Notes ingest: preview/snippet/bodies fetch, bulk-add parse, park on **iPhone Notes Ingest** / **notes to ingest**, skip ingested ids |
+| `apple-notes-categorize.ts` | List-name matcher for notes (unused by the current park/bulk-add dialog) |
 | `connectors.ts` | Read-only external-data **connector** seam: `Connector`/registry + sample weather stub mapping API data onto attributes |
 | `migrations.ts` | Versioned Item-model migrations (backfill `type`/`title`/`tags`/`links`) |
 | `habit-utils.ts` | Habit type normalization, completion helpers |
@@ -442,9 +447,10 @@ Desktop shell — dev: `localhost:3000`; prod: `app://` → `out/`.
 
 | File         | Purpose                                          |
 | ------------ | ------------------------------------------------ |
-| `main.js`    | Main process, `app://` scheme, BrowserWindow, static serving, optional PDF→text IPC handler (lazy `pdf-parse`) |
-| `preload.js` | Context-isolated `window.desktop` API (incl. `extractPdfText`) |
-| `ipc/channels.js` | IPC channel-name constants (incl. `extractPdfText`) |
+| `main.js`    | Main process, `app://` scheme, BrowserWindow, static serving, optional PDF→text + Apple Notes IPC |
+| `preload.js` | Context-isolated `window.desktop` API (incl. `extractPdfText`, `fetchAppleNotes`) |
+| `apple-notes.js` / `apple-notes.jxa` | Notes.app reader (`preview` / `snippet` / `bodies`) for iCloud / iPhone + On My Mac |
+| `ipc/channels.js` | IPC channel-name constants (incl. `extractPdfText`, `fetchAppleNotes`) |
 
 **Could add:** MongoDB connection lifecycle + IPC (§3).
 
@@ -530,8 +536,9 @@ Co-located `*.test.ts(x)` files live next to most components and helpers.
 
 ```
 app/page.tsx
-├── Header: Review (+ Morning Review) | Metrics | Tracking | Inbox | Bulk Add | Quick Add
-│            (Quick Add is controlled by the global capture hotkey — useQuickCaptureHotkey)
+├── Header: Review (+ Morning Review) | Metrics | Tracking | Inbox | Bulk Add | From Notes | Quick Add
+│            (Quick Add is controlled by the global capture hotkey — useQuickCaptureHotkey.
+│             From Notes is Mac Electron → Notes.app; parks onto Lists **notes to ingest**.)
 └── Tabs
     ├── Home ────── Habits | Plan | To Do | Goals (Objectives + Goals + Direction) | Tracking
     ├── Lists ───── Win98 file manager (folders, lists, items, orbs, spreadsheet)

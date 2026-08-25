@@ -13,12 +13,16 @@ export const APP_NAV_KEYS = {
   homeTrackingTab: "cogs-home-tracking-tab",
   homePlanTab: "cogs-home-plan-tab",
   homeTodoTab: "cogs-home-todo-tab",
+  homeNeedsAttention: "cogs-home-needs-attention",
   schedulerTab: "cogs-scheduler-tab",
   analyticsTab: "cogs-analytics-tab",
   listsNav: "cogs-lists-navigation",
   docsDocId: "cogs-docs-doc-id",
   docsFolder: "cogs-docs-folder",
 } as const
+
+export const HOME_NEEDS_ATTENTION_STATES = ["expanded", "collapsed"] as const
+export type HomeNeedsAttentionState = (typeof HOME_NEEDS_ATTENTION_STATES)[number]
 
 export const APP_TABS = [
   "home",

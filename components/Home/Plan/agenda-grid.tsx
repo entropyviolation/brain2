@@ -3,7 +3,8 @@
  *
  * Used by Plan day view (scheduling) and Tracking day log (actual time).
  * Supports drag-drop scheduling, unscheduling, current-time indicator,
- * and 15-minute snap positioning.
+ * sunrise/sunset lines (from Settings home location), and 15-minute snap
+ * positioning.
  */
 "use client"
 
@@ -13,6 +14,8 @@ import { Clock, MapPin, CalendarClock } from "lucide-react"
 import { format } from "date-fns"
 import { formatLocalDateKey, isToday, sameCalendarDay } from "@/lib/date-utils"
 import { getBannerEvents, getMustBeDoneBefore } from "@/lib/event-links"
+import { fetchDayClimate, minutesFromHhmm } from "@/lib/weather-client"
+import { DEFAULT_HOME_CITY, useUserSettingsStore } from "@/lib/user-settings-store"
 import type { CalendarEvent, Task, TimeLogEntry } from "@/lib/types"
 
 export const HOUR_HEIGHT = 70
@@ -36,6 +39,8 @@ export interface AgendaGridProps {
   onUpdateTimeLog?: (taskId: string, logId: string, updates: Partial<TimeLogEntry>) => void
   onCreateTimeLog?: (taskId: string, hour: number, minute: number) => void
   showCurrentTimeIndicator?: boolean
+  /** Sunrise/sunset lines from Settings home location. Default true. */
+  showSunTimes?: boolean
   /** When false, skip all-day/multi-day banner rows (e.g. day view renders them separately). */
   showAllDayBanners?: boolean
 }
@@ -74,6 +79,57 @@ function getEventDurationMinutes(event: CalendarEvent): number {
   return eh * 60 + em - (sh * 60 + sm)
 }
 
+function markerTop(minutes: number): number {
+  return (minutes / 60) * (HOUR_HEIGHT + 4) + 2
+}
+
+type MarkerTone = "now" | "sunrise" | "sunset"
+
+const MARKER_TONE: Record<MarkerTone, { dot: string; line: string; text: string }> = {
+  now: { dot: "bg-red-500", line: "bg-red-500", text: "text-red-500" },
+  sunrise: { dot: "bg-amber-400", line: "bg-amber-400", text: "text-amber-700" },
+  sunset: { dot: "bg-orange-600", line: "bg-orange-500", text: "text-orange-800" },
+}
+
+function GridTimeMarker({
+  minutes,
+  label,
+  tone,
+  title,
+  zIndex,
+}: {
+  minutes: number
+  label: string
+  tone: MarkerTone
+  title?: string
+  zIndex: number
+}) {
+  const colors = MARKER_TONE[tone]
+  return (
+    <div
+      className="absolute left-20 right-0 pointer-events-none"
+      style={{ top: markerTop(minutes), zIndex }}
+      title={title}
+    >
+      <div className="relative flex items-center">
+        <div className={`w-2.5 h-2.5 rounded-full ${colors.dot} -ml-1 shrink-0 shadow-sm`} />
+        <div className={`flex-1 h-0.5 ${colors.line} shadow-sm`} />
+        <span className={`text-[10px] font-semibold ${colors.text} ml-1 bg-white/90 px-1 rounded whitespace-nowrap`}>
+          {label}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+interface SunTimes {
+  sunriseMinutes: number
+  sunsetMinutes: number
+  sunriseLabel: string
+  sunsetLabel: string
+  cityName: string
+}
+
 interface GridItem {
   kind: "task" | "event" | "log"
   id: string
@@ -105,6 +161,7 @@ export function AgendaGrid({
   onUpdateTimeLog,
   onCreateTimeLog,
   showCurrentTimeIndicator = true,
+  showSunTimes = true,
   showAllDayBanners = true,
 }: AgendaGridProps) {
   const dragCreateHour = useRef<number | null>(null)
@@ -114,6 +171,8 @@ export function AgendaGrid({
     const n = new Date()
     return n.getHours() * 60 + n.getMinutes()
   })
+  const homeCity = useUserSettingsStore((s) => s.homeCity)
+  const [sun, setSun] = useState<SunTimes | null>(null)
 
   const dayKey = formatLocalDateKey(date)
 
@@ -127,6 +186,33 @@ export function AgendaGrid({
     const id = setInterval(tick, 60_000)
     return () => clearInterval(id)
   }, [date, showCurrentTimeIndicator])
+
+  useEffect(() => {
+    if (!showSunTimes) {
+      setSun(null)
+      return
+    }
+    let cancelled = false
+    setSun(null)
+    const city = homeCity.trim() || DEFAULT_HOME_CITY
+    fetchDayClimate(city, formatLocalDateKey(date))
+      .then((clim) => {
+        if (cancelled || !clim?.sunrise || !clim?.sunset) return
+        setSun({
+          sunriseMinutes: minutesFromHhmm(clim.sunriseHhmm),
+          sunsetMinutes: minutesFromHhmm(clim.sunsetHhmm),
+          sunriseLabel: clim.sunrise,
+          sunsetLabel: clim.sunset,
+          cityName: clim.cityName || city,
+        })
+      })
+      .catch(() => {
+        if (!cancelled) setSun(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [date, homeCity, showSunTimes])
 
   const dayEvents = useMemo(
     () => events.filter((event) => sameCalendarDay(event.date, date)),
@@ -414,19 +500,26 @@ export function AgendaGrid({
         </div>
       ))}
 
+      {sun && (
+        <>
+          <GridTimeMarker
+            minutes={sun.sunriseMinutes}
+            label={`Sunrise ${sun.sunriseLabel}`}
+            tone="sunrise"
+            title={`Sunrise in ${sun.cityName}`}
+            zIndex={18}
+          />
+          <GridTimeMarker
+            minutes={sun.sunsetMinutes}
+            label={`Sunset ${sun.sunsetLabel}`}
+            tone="sunset"
+            title={`Sunset in ${sun.cityName}`}
+            zIndex={18}
+          />
+        </>
+      )}
       {showNowLine && (
-        <div
-          className="absolute left-20 right-0 pointer-events-none z-20"
-          style={{ top: (nowMinutes / 60) * (HOUR_HEIGHT + 4) + 2 }}
-        >
-          <div className="relative flex items-center">
-            <div className="w-2.5 h-2.5 rounded-full bg-red-500 -ml-1 shrink-0 shadow-sm" />
-            <div className="flex-1 h-0.5 bg-red-500 shadow-sm" />
-            <span className="text-[10px] font-semibold text-red-500 ml-1 bg-white/90 px-1 rounded">
-              {minutesToTime(nowMinutes)}
-            </span>
-          </div>
-        </div>
+        <GridTimeMarker minutes={nowMinutes} label={minutesToTime(nowMinutes)} tone="now" zIndex={20} />
       )}
     </div>
   )

@@ -1,7 +1,7 @@
 /**
  * NeedsAttention — Home card omits the stale reason.
  */
-import { render, screen } from "@testing-library/react"
+import { fireEvent, render, screen } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { taskRepository } from "@/lib/data/task-repository"
@@ -64,7 +64,7 @@ describe("NeedsAttention", () => {
       }),
     )
 
-    render(<NeedsAttention onOpenItem={() => {}} options={{ now: NOW }} />)
+    render(<NeedsAttention onOpenItem={() => {}} options={{ now: NOW }} defaultCollapsed={false} />)
 
     expect(screen.queryByText("Aging unscheduled task")).not.toBeInTheDocument()
     expect(screen.queryByText("Stale")).not.toBeInTheDocument()
@@ -72,5 +72,41 @@ describe("NeedsAttention", () => {
     expect(screen.getByText("Old inbox item")).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Unclarified" })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Overdue" })).toBeInTheDocument()
+  })
+
+  it("starts collapsed by default and hides the queue", () => {
+    taskRepository.add(task({ id: "overdue", description: "Late report", deadline: daysAgo(2) }))
+
+    render(<NeedsAttention onOpenItem={() => {}} options={{ now: NOW }} />)
+
+    expect(screen.getByRole("button", { name: /Needs Attention/ })).toHaveAttribute("aria-expanded", "false")
+    expect(screen.queryByText("Late report")).not.toBeInTheDocument()
+  })
+
+  it("persists collapsed and expanded state in localStorage", () => {
+    taskRepository.add(task({ id: "overdue", description: "Late report", deadline: daysAgo(2) }))
+
+    render(<NeedsAttention onOpenItem={() => {}} options={{ now: NOW }} />)
+    const toggle = screen.getByRole("button", { name: /Needs Attention/ })
+
+    fireEvent.click(toggle)
+    expect(toggle).toHaveAttribute("aria-expanded", "true")
+    expect(localStorage.getItem("cogs-home-needs-attention")).toBe("expanded")
+    expect(screen.getByText("Late report")).toBeInTheDocument()
+
+    fireEvent.click(toggle)
+    expect(toggle).toHaveAttribute("aria-expanded", "false")
+    expect(localStorage.getItem("cogs-home-needs-attention")).toBe("collapsed")
+    expect(screen.queryByText("Late report")).not.toBeInTheDocument()
+  })
+
+  it("restores the stored collapsed state after remount", () => {
+    taskRepository.add(task({ id: "overdue", description: "Late report", deadline: daysAgo(2) }))
+    localStorage.setItem("cogs-home-needs-attention", "collapsed")
+
+    render(<NeedsAttention onOpenItem={() => {}} options={{ now: NOW }} defaultCollapsed={false} />)
+
+    expect(screen.getByRole("button", { name: /Needs Attention/ })).toHaveAttribute("aria-expanded", "false")
+    expect(screen.queryByText("Late report")).not.toBeInTheDocument()
   })
 })

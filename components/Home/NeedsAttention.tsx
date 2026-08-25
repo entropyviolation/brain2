@@ -16,7 +16,7 @@
  */
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo } from "react"
 import {
   AlertTriangle,
   Inbox,
@@ -38,6 +38,12 @@ import {
   type NeedsAttentionOptions,
   type NeedsAttentionReason,
 } from "@/lib/needs-attention"
+import {
+  APP_NAV_KEYS,
+  HOME_NEEDS_ATTENTION_STATES,
+  type HomeNeedsAttentionState,
+} from "@/lib/app-navigation"
+import { usePersistedTab } from "@/lib/use-persisted-tab"
 import { cn } from "@/lib/utils"
 
 /** Reasons shown in the Home card. `stale` is kept on the selector but not here. */
@@ -58,7 +64,7 @@ export interface NeedsAttentionProps {
   onOpenItem: (id: string) => void
   /** Forwarded to the selector (e.g. `staleDays`, `reasons`). */
   options?: NeedsAttentionOptions
-  /** Whether the card starts collapsed. Defaults to `false`. */
+  /** Fallback when nothing is stored. Defaults to `true` (collapsed). */
   defaultCollapsed?: boolean
   className?: string
 }
@@ -66,13 +72,19 @@ export interface NeedsAttentionProps {
 export function NeedsAttention({
   onOpenItem,
   options,
-  defaultCollapsed = false,
+  defaultCollapsed = true,
   className,
 }: NeedsAttentionProps) {
   // Subscribe to the store so the card re-renders on task changes, but read
   // through the repository to stay on the canonical data-access seam.
   const tasks = useTaskStore((s) => s.tasks)
-  const [collapsed, setCollapsed] = useState(defaultCollapsed)
+  const fallback: HomeNeedsAttentionState = defaultCollapsed ? "collapsed" : "expanded"
+  const [panelState, setPanelState] = usePersistedTab(
+    APP_NAV_KEYS.homeNeedsAttention,
+    HOME_NEEDS_ATTENTION_STATES,
+    fallback,
+  )
+  const collapsed = panelState === "collapsed"
 
   const entries = useMemo(() => {
     void tasks // dependency: recompute when the store's tasks change
@@ -91,7 +103,9 @@ export function NeedsAttention({
       <CardHeader>
         <button
           type="button"
-          onClick={() => setCollapsed((c) => !c)}
+          onClick={() =>
+            setPanelState((s) => (s === "collapsed" ? "expanded" : "collapsed"))
+          }
           aria-expanded={!collapsed}
           className="flex w-full items-center gap-2 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md"
         >

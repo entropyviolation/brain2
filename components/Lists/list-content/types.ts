@@ -53,6 +53,8 @@ export interface ListContentPanelProps extends ListContentTaskHandlers {
   /** Folder ids hidden in the global All Items view (empty = all shown). */
   globalAllHiddenFolderIds?: string[]
   onGlobalAllFolderHiddenChange?: (folderId: string, hidden: boolean) => void
+  globalAllUncategorizedOnly?: boolean
+  onGlobalAllUncategorizedOnlyChange?: (checked: boolean) => void
   addingTaskToTarget: string | null
   openTargetKeyValue: string
   newTaskDescription: string
@@ -60,9 +62,7 @@ export interface ListContentPanelProps extends ListContentTaskHandlers {
   onAddTask: () => void
   onCancelAddTask: () => void
   showBulkAdd: boolean
-  bulkAddText: string
-  onBulkAddTextChange: (value: string) => void
-  onBulkAdd: () => void
+  onBulkAdd: (text: string) => void
   onShowBulkAdd: (show: boolean) => void
   onBulkAddCancel: () => void
   onIconPickerOpen: (taskId: string) => void

@@ -58,8 +58,6 @@ function renderPanel(overrides: Partial<ComponentProps<typeof ListContentPanel>>
     onAddTask: vi.fn(),
     onCancelAddTask: vi.fn(),
     showBulkAdd: false,
-    bulkAddText: "",
-    onBulkAddTextChange: vi.fn(),
     onBulkAdd: vi.fn(),
     onShowBulkAdd: vi.fn(),
     onBulkAddCancel: vi.fn(),
@@ -152,6 +150,20 @@ describe("ListContentPanel global All folder filter", () => {
     })
     expect(screen.getByRole("group", { name: "Filter folders" })).toBeInTheDocument()
   })
+
+  it("renders show uncategorized only and notifies when toggled", () => {
+    const onGlobalAllUncategorizedOnlyChange = vi.fn()
+    renderPanel({
+      isRootAll: true,
+      currentFolder: null,
+      folders: [folder1(), folder2()],
+      onGlobalAllUncategorizedOnlyChange,
+    })
+    const toggle = screen.getByRole("checkbox", { name: "Show uncategorized only" })
+    expect(toggle).not.toBeChecked()
+    fireEvent.click(toggle)
+    expect(onGlobalAllUncategorizedOnlyChange).toHaveBeenCalledWith(true)
+  })
 })
 
 describe("ListContentPanel item select mode", () => {
@@ -226,5 +238,24 @@ describe("ListContentPanel item select mode", () => {
     fireEvent.click(screen.getByText("item a"))
     expect(onToggleTaskSelect).toHaveBeenCalledWith("a")
     expect(onTaskSelect).not.toHaveBeenCalled()
+  })
+})
+
+describe("ListContentPanel bulk add", () => {
+  it("keeps typed text in the field and submits it on Add all", () => {
+    const onBulkAdd = vi.fn()
+    renderPanel({
+      showBulkAdd: true,
+      onBulkAdd,
+      openFolderAll: false,
+      openCategory: list("list-1", "list 1"),
+      currentDisplay: "default",
+      tasks: [task("a", "item a", "list-1")],
+    })
+    const textarea = screen.getByPlaceholderText(/Paste one item per line/i)
+    fireEvent.change(textarea, { target: { value: "alpha\nbeta" } })
+    expect(textarea).toHaveValue("alpha\nbeta")
+    fireEvent.click(screen.getByRole("button", { name: /Add all/i }))
+    expect(onBulkAdd).toHaveBeenCalledWith("alpha\nbeta")
   })
 })

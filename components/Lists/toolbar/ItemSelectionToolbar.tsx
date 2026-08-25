@@ -14,6 +14,7 @@ export interface ItemSelectionToolbarProps {
   onPlacementModeChange: (mode: ItemPlacementMode) => void
   onAddToNewList: () => void
   onAddToLists: (listIds: string[]) => void
+  onMerge: () => void
   onDelete: () => void
 }
 
@@ -27,6 +28,7 @@ export function ItemSelectionToolbar({
   onPlacementModeChange,
   onAddToNewList,
   onAddToLists,
+  onMerge,
   onDelete,
 }: ItemSelectionToolbarProps) {
   const [destIds, setDestIds] = useState<string[]>([])
@@ -76,6 +78,14 @@ export function ItemSelectionToolbar({
         <div className="fm-toolbar-sep" />
         <button className="fm-btn fm-btn-sm" onClick={onAddToNewList} disabled={selectedCount === 0}>
           Add to New List
+        </button>
+        <button
+          className="fm-btn fm-btn-sm"
+          onClick={onMerge}
+          disabled={selectedCount < 2}
+          title="Merge 2 or more items into one"
+        >
+          Merge items
         </button>
         <button className="fm-btn fm-btn-sm fm-btn-danger" onClick={onDelete} disabled={selectedCount === 0}>
           Delete selected

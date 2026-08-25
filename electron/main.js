@@ -40,6 +40,10 @@ const EXTRACT_PDF_TEXT_IPC_CHANNEL = "cogs:file:extractPdfText"
 // the renderer recognizes (`#popout/module/<id>`).
 const OPEN_MODULE_POPOUT_IPC_CHANNEL = "cogs:window:openModulePopout"
 
+// Apple Notes ingest. MUST match `fetchAppleNotes` in electron/ipc/channels.js +
+// `window.desktop.fetchAppleNotes` in electron/preload.js.
+const FETCH_APPLE_NOTES_IPC_CHANNEL = "cogs:notes:fetchAppleNotes"
+
 // Directory containing the static Next.js export (`next build` with
 // `output: "export"`). In production this is bundled alongside the app.
 const OUT_DIR = path.join(__dirname, "..", "out")
@@ -214,6 +218,15 @@ function registerWindowIpcHandlers() {
   ipcMain.on(OPEN_MODULE_POPOUT_IPC_CHANNEL, (_event, hash) => openPopoutWindow(hash))
 }
 
+/** Register the Apple Notes ingest IPC handler (macOS Notes.app via osascript). */
+function registerNotesIpcHandlers() {
+  ipcMain.handle(FETCH_APPLE_NOTES_IPC_CHANNEL, (_event, range) => {
+    // eslint-disable-next-line global-require
+    const { fetchAppleNotes } = require("./apple-notes")
+    return fetchAppleNotes(range)
+  })
+}
+
 /**
  * Register the OS-wide quick-capture accelerator: focus (or restore) the window
  * and tell the renderer to open the capture surface over the IPC channel the
@@ -246,6 +259,7 @@ app.whenReady().then(() => {
   registerQuickCaptureShortcut()
   registerFileIpcHandlers()
   registerWindowIpcHandlers()
+  registerNotesIpcHandlers()
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {

@@ -14,7 +14,7 @@ Every React component in COGS lives here. Top-level files are cross-cutting dial
 | Modules | `Modules/` | User-built mini-app **workspaces** (Itinerary / Cleaning / Budget / Book Tasting / Film DNA templates + custom views) and dashboard widgets |
 | Analytics | `Analytics/` | Charts and summaries over tasks, habits, points, tracking, reviews, plus Brain2 views |
 
-The global header (all tabs) also renders: **Review** (`Reviews/`), **Settings** (`Settings/SettingsDialog.tsx` — backup/restore + Second Brain setup), **Tracking** (`cognitive-state.tsx` → TimeGrid), **Inbox**, **Bulk Add**, and **Quick Add**. A global **Cmd/Ctrl-K** search palette (`Search/`) and the global **completion popup** (`Completion/`, fires on every task completion) are mounted app-wide.
+The global header (all tabs) also renders: **Review** (`Reviews/`), **Settings** (`Settings/SettingsDialog.tsx` — backup/restore + Second Brain setup), **Tracking** (`cognitive-state.tsx` → TimeGrid), **Inbox**, **Bulk Add**, **From Notes** (`notes-ingest.tsx` — Apple Notes ingest on the Mac desktop app), and **Quick Add**. A global **Cmd/Ctrl-K** search palette (`Search/`) and the global **completion popup** (`Completion/`, fires on every task completion) are mounted app-wide.
 
 ## Subfolders
 
@@ -47,10 +47,25 @@ The global header (all tabs) also renders: **Review** (`Reviews/`), **Settings**
 |------|---------|
 | `quick-add.tsx` | Single-field capture → new inbox task |
 | `enhanced-bulk-add.tsx` | Multi-line capture with optional `Category:` syntax |
+| `notes-ingest.tsx` | From Notes — date range, title+body preview, parse/skip; bulk-add (`ListName:` then items) or park full text on **notes to ingest** |
 | `inbox.tsx` | Inbox dialog + per-task clarification flow |
 | `cognitive-state.tsx` | Header **Tracking** button; opens `TimeGrid` in a dialog (name kept for wiring compatibility) |
 | `task-detail-popup.tsx` | Barrel → `ItemDetail/ItemDetailPopup.tsx` (`TaskDetailPopup`); compact modal detail used by Scheduler, Plan, ToDo, Lists |
 | `enhanced-task-detail.tsx` | Barrel → `ItemDetail/ItemDetailPage.tsx` (`EnhancedTaskDetail`); full-screen detail when a task is selected from Lists |
+
+## From Notes (Apple Notes ingest)
+
+Header **From Notes** (`notes-ingest.tsx`). **Mac desktop app only** — it talks to Notes.app over Electron IPC (`window.desktop.fetchAppleNotes`) so iCloud-synced iPhone notes and On My Mac notes can be listed. The first run may prompt macOS Automation permission for Notes.
+
+Flow:
+
+1. Pick a **date range** (dialog opens immediately; listing shows a spinner).
+2. **Parse / skip** each note. The card shows the **title plus a content preview** (snippet fetched per card, not the whole library).
+3. For each parsed note: freely edit **bulk-add** syntax (`ListName:` then items), or **Save for later ingestion**.
+4. Parked notes go in an auto-created Lists folder **iPhone Notes Ingest**, list **notes to ingest**, with the **full note body** (not title-only). Bulk-add writes real items onto the named lists.
+5. Apple Note ids that were already bulk-added or parked are **skipped** on later runs (`appleNoteId` on items + `cogs-apple-notes-ingested-ids`).
+
+Helpers: `lib/apple-notes.ts`. Native reader: `electron/apple-notes.js` + `electron/apple-notes.jxa` (modes `preview` / `snippet` / `bodies`).
 
 ## Data stores (see `lib/`)
 
@@ -63,7 +78,7 @@ still uses interim localStorage helpers via `plan-text.ts`:
 
 | Store | Used by |
 |-------|---------|
-| `task-store` | Lists, Scheduler, Plan, ToDo, Inbox, Modules |
+| `task-store` | Lists, Scheduler, Plan, ToDo, Inbox, Modules, From Notes ingest |
 | `habits-store` | Home Habits, Lists Daily Habits, Analytics |
 | `goals-store` | Home Goals |
 | `event-store` | Plan panel, Actual Day View |

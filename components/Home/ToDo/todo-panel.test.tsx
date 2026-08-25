@@ -49,6 +49,108 @@ describe("TodoPanel", () => {
     expect(screen.getByText("To Do")).toBeInTheDocument()
     expect(screen.getByText("Today's Tasks")).toBeInTheDocument()
     expect(screen.getByText("Finish slides")).toBeInTheDocument()
+    expect(screen.getByLabelText("Sort")).toBeInTheDocument()
+    expect(screen.getByLabelText("Sort ascending")).toBeInTheDocument()
+  })
+
+  it("defaults to tier order so higher tiers appear first", () => {
+    useTaskStore.getState().setTasks([
+      {
+        id: "low",
+        description: "Low tier task",
+        stage: "scheduled",
+        createdAt: today,
+        completed: false,
+        scheduledDate: today,
+        lists: [],
+        urgency: 1,
+        importance: 1,
+        estimatedDuration: 30,
+        cognitiveLoad: 2,
+        dependencies: [],
+        context: "@work",
+        entropy: 0.5,
+        rewardValue: 1,
+        allowPartialCompletion: false,
+        minimumChunkSize: 15,
+      },
+      {
+        id: "high",
+        description: "High tier task",
+        stage: "scheduled",
+        createdAt: today,
+        completed: false,
+        scheduledDate: today,
+        lists: [],
+        urgency: 5,
+        importance: 5,
+        estimatedDuration: 30,
+        cognitiveLoad: 2,
+        dependencies: [],
+        context: "@work",
+        entropy: 0.5,
+        rewardValue: 1,
+        allowPartialCompletion: false,
+        minimumChunkSize: 15,
+      },
+    ])
+    render(<TodoPanel />)
+    const high = screen.getByText("High tier task")
+    const low = screen.getByText("Low tier task")
+    expect(high.compareDocumentPosition(low) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it("can sort by name and toggle ascending or descending", () => {
+    useTaskStore.getState().setTasks([
+      {
+        id: "z",
+        description: "Zebra",
+        stage: "scheduled",
+        createdAt: today,
+        completed: false,
+        scheduledDate: today,
+        lists: [],
+        urgency: 3,
+        importance: 3,
+        estimatedDuration: 30,
+        cognitiveLoad: 2,
+        dependencies: [],
+        context: "@work",
+        entropy: 0.5,
+        rewardValue: 1,
+        allowPartialCompletion: false,
+        minimumChunkSize: 15,
+      },
+      {
+        id: "a",
+        description: "Apple",
+        stage: "scheduled",
+        createdAt: today,
+        completed: false,
+        scheduledDate: today,
+        lists: [],
+        urgency: 3,
+        importance: 3,
+        estimatedDuration: 30,
+        cognitiveLoad: 2,
+        dependencies: [],
+        context: "@work",
+        entropy: 0.5,
+        rewardValue: 1,
+        allowPartialCompletion: false,
+        minimumChunkSize: 15,
+      },
+    ])
+    render(<TodoPanel />)
+    fireEvent.click(screen.getByLabelText("Sort"))
+    fireEvent.click(screen.getByRole("option", { name: "Name" }))
+    const apple = screen.getByText("Apple")
+    const zebra = screen.getByText("Zebra")
+    expect(apple.compareDocumentPosition(zebra) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+
+    fireEvent.click(screen.getByLabelText("Sort ascending"))
+    expect(screen.getByLabelText("Sort descending")).toBeInTheDocument()
+    expect(zebra.compareDocumentPosition(apple) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
   it("marks a task complete when the complete action is clicked", () => {

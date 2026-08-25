@@ -56,6 +56,24 @@ describe("DayView", () => {
     expect(localStorage.getItem(`dayPlan-${formatLocalDateKey(currentDate)}`)).toBe("Deep work AM")
   })
 
+  it("renders an expandable day plan area", () => {
+    render(
+      <DayView
+        currentDate={currentDate}
+        setCurrentDate={vi.fn()}
+        events={[]}
+        setEvents={vi.fn()}
+        onTaskClick={vi.fn()}
+        onEventClick={vi.fn()}
+        onCreateEvent={vi.fn()}
+      />,
+    )
+    const textarea = screen.getByPlaceholderText(/Write your day plan/i)
+    expect(textarea.className).toMatch(/min-h-\[280px\]/)
+    expect(textarea.className).not.toMatch(/resize-none/)
+    expect(textarea).toHaveAttribute("rows", "12")
+  })
+
   it("shows a multi-day event on a middle day of its span", () => {
     const multiDay = {
       id: "trip-1",

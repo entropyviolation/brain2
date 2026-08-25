@@ -29,7 +29,7 @@ export function HomeReviewBanner({ currentDate, onStartReview }: HomeReviewBanne
   const { key } = pending[firstDue]
 
   return (
-    <Alert className="border-primary/30 bg-primary/5">
+    <Alert className="home-review-banner">
       <ClipboardCheck className="h-4 w-4" />
       <AlertTitle>Review due</AlertTitle>
       <AlertDescription className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -45,7 +45,7 @@ export function HomeReviewBanner({ currentDate, onStartReview }: HomeReviewBanne
           >
             Start review
           </Button>
-          <Button size="sm" variant="ghost" onClick={() => setDismissed(true)}>
+          <Button size="sm" variant="secondary" onClick={() => setDismissed(true)}>
             Dismiss
           </Button>
         </div>

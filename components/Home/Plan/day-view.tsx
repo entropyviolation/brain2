@@ -2,14 +2,15 @@
  * components/Home/Plan/day-view.tsx — Day calendar view
  *
  * Hour-by-hour day grid showing time-slotted tasks and events, the planned-tasks
- * side panel (items for this day not yet given a time), and the "Day Plan" text.
+ * side panel (items for this day not yet given a time), and the auto-growing
+ * "Day Plan" text so a full written plan can live here without an inner scrollbar.
  *
  * Spec: §7.4 (Day View).
  */
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useLayoutEffect, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -23,6 +24,8 @@ import { getBannerEvents } from "@/lib/event-links"
 import { getStoredPlanText, saveStoredPlanText } from "@/lib/plan-text"
 import { PlannedTasksSidebar } from "./planned-tasks-sidebar"
 import { AgendaGrid } from "./agenda-grid"
+
+const MIN_DAY_PLAN_HEIGHT = 280
 
 interface DayViewProps {
   currentDate: Date
@@ -46,11 +49,19 @@ export function DayView({
   const updateTask = useTaskStore((s) => s.updateTask)
   const updateEvent = useEventStore((s) => s.updateEvent)
   const [dayPlan, setDayPlan] = useState("")
+  const dayPlanRef = useRef<HTMLTextAreaElement>(null)
   const dayKey = formatLocalDateKey(currentDate)
 
   useEffect(() => {
     setDayPlan(getStoredPlanText("day", dayKey) ?? "")
   }, [dayKey])
+
+  useLayoutEffect(() => {
+    const el = dayPlanRef.current
+    if (!el) return
+    el.style.height = "auto"
+    el.style.height = `${Math.max(el.scrollHeight, MIN_DAY_PLAN_HEIGHT)}px`
+  }, [dayPlan])
 
   const handleDayPlanChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value
@@ -221,11 +232,12 @@ export function DayView({
           </CardHeader>
           <CardContent>
             <Textarea
+              ref={dayPlanRef}
               placeholder="Write your day plan, goals, and objectives..."
               value={dayPlan}
               onChange={handleDayPlanChange}
-              rows={6}
-              className="resize-none border-slate-200 focus:border-blue-300 focus:ring-blue-200 bg-white/50"
+              rows={12}
+              className="min-h-[280px] overflow-hidden resize-y [field-sizing:content] border-slate-200 focus:border-blue-300 focus:ring-blue-200 bg-white/50"
             />
             <p className="text-xs text-slate-500 mt-3 flex items-center gap-1">
               <Sparkles className="h-3 w-3" />

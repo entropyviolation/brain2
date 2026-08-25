@@ -10,7 +10,7 @@ build/filter logic is unit-testable.
 | File | Purpose |
 |------|---------|
 | `todo-panel.tsx` | **Orchestrator** (~340 lines): Day/Week/Month tabs, sort/status/show-all controls, state + store handlers, task detail popup |
-| `todo-utils.ts` | **Pure helpers**: `getTierFromTask`, `tierToUrgencyImportance`, `getScheduleLabel`, `buildTodoItems`, `filterAndSortTodos`, `filterTodosByStatus`, plus the `priority` sort path (`computePriorityScore` from `lib/priority.ts`) and `TodoSortMode` (`"tier"` \| `"priority"`). Unit-tested in `todo-utils.test.ts` |
+| `todo-utils.ts` | **Pure helpers**: `getTierFromTask`, `tierToUrgencyImportance`, `createScheduledTodoTask`, `getScheduleLabel`, `buildTodoItems`, `filterAndSortTodos`, `filterTodosByStatus`, plus the `priority` sort path (`computePriorityScore` from `lib/priority.ts`) and `TodoSortMode` (`"tier"` \| `"priority"`). Unit-tested in `todo-utils.test.ts` |
 | `TodoTable.tsx` | Per-period tier-sorted table with inline tier/status selects and row actions |
 | `AddTodoDialog.tsx` | "Add Task" form (description, tier) |
 
@@ -24,7 +24,7 @@ All tasks come from **`lib/task-store.ts`**. The panel derives display rows from
 | Week | `taskScheduledInWeek(task, getWeekString(today))` |
 | Month | `taskScheduledInMonth(task, YYYY-MM)` |
 
-**Add Task** creates a real task via `addTask()` scheduled to the active tab at the currently-focused date: day → `scheduledDate` (the focused day), week → `scheduledWeek`, month → `scheduledMonth`. Week/month tasks are assigned to that period's list only — no specific day is pinned. The chosen **tier** maps to `urgency`/`importance` via `tierToUrgencyImportance`.
+**Add Task** creates a real task via `createScheduledTodoTask()` + `addTask()`, scheduled to the active tab at the currently-focused date: day → `scheduledDate` (the focused day), week → `scheduledWeek`, month → `scheduledMonth`. Week/month tasks are assigned to that period's list only — no specific day is pinned. The chosen **tier** maps to `urgency`/`importance` via `tierToUrgencyImportance`. Plan's day sidebar uses the same factory, so items added there show up here unchanged.
 
 ## Tier system & sorting
 

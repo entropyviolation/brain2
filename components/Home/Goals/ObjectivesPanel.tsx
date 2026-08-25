@@ -4,7 +4,7 @@
  * Two stacked containers:
  *  1. **Prioritized** — objectives prioritized for the selected period
  *     (day/week/month/year), or every active priority in **All** mode.
- *  2. **All objectives** — a compact, collapsible list; a quick star prioritizes
+ *  2. **All objectives** — a collapsible card list; a quick star prioritizes
  *     an objective for the selected period (capped). Clicking a row opens detail.
  */
 "use client"
@@ -189,54 +189,68 @@ export function ObjectivesPanel() {
         </CardContent>
       </Card>
 
-      {/* All objectives — compact collapsible list */}
-      <Collapsible open={listOpen} onOpenChange={setListOpen}>
-        <CollapsibleTrigger asChild>
-          <button
-            type="button"
-            className="flex w-full items-center gap-2 rounded-md px-1 py-2 text-left text-sm font-semibold hover:bg-muted/60 transition-colors"
-          >
-            <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${listOpen ? "" : "-rotate-90"}`} />
-            <span>All objectives</span>
-            <span className="text-muted-foreground font-normal">({active.length})</span>
-          </button>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          <div className="border rounded-lg divide-y mt-1">
-            {active.map((o) => {
-              const isPrio = mode !== "all" && isObjectivePrioritized(o, mode)
-              return (
-                <div key={o.id} className="flex items-center gap-2 px-3 py-1.5 hover:bg-muted/40 text-sm">
-                  {mode !== "all" && (
+      {/* All objectives — collapsible list on a card so titles stay readable on the desktop */}
+      <Card>
+        <Collapsible open={listOpen} onOpenChange={setListOpen}>
+          <CollapsibleTrigger asChild>
+            <button
+              type="button"
+              data-no95
+              className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold hover:bg-muted/50 transition-colors"
+            >
+              <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${listOpen ? "" : "-rotate-90"}`} />
+              <span>All objectives</span>
+              <span className="text-muted-foreground font-normal">({active.length})</span>
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="border-t bg-white max-h-[min(32rem,65vh)] overflow-y-auto">
+              {active.map((o, i) => {
+                const isPrio = mode !== "all" && isObjectivePrioritized(o, mode)
+                const n = goalCount(o.id)
+                const rowTone = isPrio
+                  ? "bg-yellow-50 hover:bg-yellow-100"
+                  : i % 2 === 0
+                    ? "bg-muted/80 hover:bg-muted"
+                    : "bg-white hover:bg-muted/50"
+                return (
+                  <div
+                    key={o.id}
+                    className={`flex items-start gap-3 px-4 py-3 text-[15px] leading-snug ${rowTone}`}
+                  >
+                    {mode !== "all" && (
+                      <button
+                        type="button"
+                        data-no95
+                        onClick={() => quickToggle(o, mode)}
+                        title={`Prioritize for this ${mode}`}
+                        className="shrink-0 p-0.5 mt-0.5"
+                      >
+                        <Star className={`h-4 w-4 ${isPrio ? "fill-yellow-400 text-yellow-500" : "text-muted-foreground"}`} />
+                      </button>
+                    )}
                     <button
                       type="button"
-                      onClick={() => quickToggle(o, mode)}
-                      title={`Prioritize for this ${mode}`}
-                      className="shrink-0"
+                      data-no95
+                      onClick={() => setOpenId(o.id)}
+                      className="flex-1 min-w-0 text-left font-medium text-foreground hover:underline"
                     >
-                      <Star className={`h-4 w-4 ${isPrio ? "fill-yellow-400 text-yellow-500" : "text-muted-foreground"}`} />
+                      {o.title}
                     </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => setOpenId(o.id)}
-                    className="flex-1 min-w-0 text-left truncate hover:underline"
-                  >
-                    {o.title}
-                  </button>
-                  {priorityBadges(o)}
-                  <span className="text-[10px] text-muted-foreground shrink-0 w-12 text-right">
-                    {goalCount(o.id)} goals
-                  </span>
-                </div>
-              )
-            })}
-            {active.length === 0 && (
-              <div className="px-3 py-6 text-center text-sm text-muted-foreground">No objectives yet.</div>
-            )}
-          </div>
-        </CollapsibleContent>
-      </Collapsible>
+                    {priorityBadges(o)}
+                    <span className="text-xs text-muted-foreground shrink-0 whitespace-nowrap tabular-nums mt-0.5 bg-muted px-1.5 py-0.5">
+                      {n} {n === 1 ? "goal" : "goals"}
+                    </span>
+                  </div>
+                )
+              })}
+              {active.length === 0 && (
+                <div className="px-4 py-8 text-center text-sm text-muted-foreground">No objectives yet.</div>
+              )}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      </Card>
 
       {openId && <ObjectiveDetailDialog objectiveId={openId} onClose={() => setOpenId(null)} />}
     </div>

@@ -6,12 +6,18 @@ import {
   buildDoneTodoItems,
   filterAndSortTodos,
   sortTodosByPriority,
+  sortTodos,
+  getTodoAddedAt,
+  getTodoSortOptionLabel,
   getTaskCompletionDate,
   taskCompletedOnDay,
   getTodoOpenTitle,
   getTodoDoneTitle,
   defaultCompletionReview,
+  createScheduledTodoTask,
+  getMonthKey,
 } from "./todo-utils"
+import { getWeekString } from "@/lib/date-utils"
 import { DEFAULT_PRIORITY_WEIGHTS } from "@/lib/priority"
 import type { Task } from "@/lib/types"
 
@@ -96,6 +102,149 @@ describe("sortTodosByPriority", () => {
     const sorted = sortTodosByPriority(items, tasks, DEFAULT_PRIORITY_WEIGHTS)
     expect(sorted[0].taskId).toBe("high")
   })
+
+  it("can sort ascending so lower scores come first", () => {
+    const tasks = [
+      task({ id: "low", urgency: 1, importance: 1, cognitiveLoad: 3, entropy: 0, scheduledDate: now }),
+      task({ id: "high", urgency: 5, importance: 5, cognitiveLoad: 1, entropy: 0.5, scheduledDate: now }),
+    ]
+    const items = buildTodoItems(tasks, true, now)
+    const sorted = sortTodosByPriority(items, tasks, DEFAULT_PRIORITY_WEIGHTS, "asc")
+    expect(sorted[0].taskId).toBe("low")
+  })
+})
+
+describe("sortTodos", () => {
+  const weights = DEFAULT_PRIORITY_WEIGHTS
+
+  it("sorts by name ascending and descending, case-insensitively", () => {
+    const tasks = [
+      task({ id: "b", description: "Beta", scheduledDate: now }),
+      task({ id: "c", description: "gamma", scheduledDate: now }),
+      task({ id: "a", description: "Alpha", scheduledDate: now }),
+    ]
+    const items = buildTodoItems(tasks, true, now)
+    expect(sortTodos(items, { mode: "name", order: "asc", period: "day", tasks, weights }).map((i) => i.id)).toEqual([
+      "a",
+      "b",
+      "c",
+    ])
+    expect(sortTodos(items, { mode: "name", order: "desc", period: "day", tasks, weights }).map((i) => i.id)).toEqual([
+      "c",
+      "b",
+      "a",
+    ])
+  })
+
+  it("sorts by date created ascending and descending", () => {
+    const tasks = [
+      task({ id: "mid", createdAt: new Date("2026-06-10T12:00:00"), scheduledDate: now }),
+      task({ id: "new", createdAt: new Date("2026-06-18T12:00:00"), scheduledDate: now }),
+      task({ id: "old", createdAt: new Date("2026-06-01T12:00:00"), scheduledDate: now }),
+    ]
+    const items = buildTodoItems(tasks, true, now)
+    expect(sortTodos(items, { mode: "created", order: "asc", period: "day", tasks, weights }).map((i) => i.id)).toEqual([
+      "old",
+      "mid",
+      "new",
+    ])
+    expect(sortTodos(items, { mode: "created", order: "desc", period: "day", tasks, weights }).map((i) => i.id)).toEqual([
+      "new",
+      "mid",
+      "old",
+    ])
+  })
+
+  it("sorts by date added to the day list using scheduledDate, not createdAt", () => {
+    const tasks = [
+      task({
+        id: "created-early-added-late",
+        createdAt: new Date("2026-06-01T12:00:00"),
+        scheduledDate: new Date("2026-06-20T12:00:00"),
+      }),
+      task({
+        id: "created-late-added-early",
+        createdAt: new Date("2026-06-10T12:00:00"),
+        scheduledDate: new Date("2026-06-18T12:00:00"),
+      }),
+    ]
+    const items = buildTodoItems(tasks, true, now)
+    expect(sortTodos(items, { mode: "added", order: "asc", period: "day", tasks, weights }).map((i) => i.id)).toEqual([
+      "created-late-added-early",
+      "created-early-added-late",
+    ])
+    expect(sortTodos(items, { mode: "added", order: "desc", period: "day", tasks, weights }).map((i) => i.id)).toEqual([
+      "created-early-added-late",
+      "created-late-added-early",
+    ])
+  })
+
+  it("sorts by days pushed ascending and descending", () => {
+    const tasks = [
+      task({ id: "few", scheduledDate: now, daysPushed: 1 }),
+      task({ id: "none", scheduledDate: now, daysPushed: 0 }),
+      task({ id: "many", scheduledDate: now, daysPushed: 5 }),
+    ]
+    const items = buildTodoItems(tasks, true, now)
+    expect(sortTodos(items, { mode: "pushed", order: "asc", period: "day", tasks, weights }).map((i) => i.id)).toEqual([
+      "none",
+      "few",
+      "many",
+    ])
+    expect(sortTodos(items, { mode: "pushed", order: "desc", period: "day", tasks, weights }).map((i) => i.id)).toEqual([
+      "many",
+      "few",
+      "none",
+    ])
+  })
+
+  it("sorts week lists by weeks pushed", () => {
+    const tasks = [
+      task({ id: "few", scheduledDate: now, weeksPushed: 1 }),
+      task({ id: "many", scheduledDate: now, weeksPushed: 4 }),
+    ]
+    const items = buildTodoItems(tasks, true, now)
+    expect(sortTodos(items, { mode: "pushed", order: "desc", period: "week", tasks, weights }).map((i) => i.id)).toEqual([
+      "many",
+      "few",
+    ])
+  })
+
+  it("tier descending puts lower tiers first", () => {
+    const tasks = [
+      task({ id: "high", scheduledDate: now, urgency: 5, importance: 5 }),
+      task({ id: "low", scheduledDate: now, urgency: 1, importance: 1 }),
+    ]
+    const items = buildTodoItems(tasks, true, now)
+    expect(sortTodos(items, { mode: "tier", order: "asc", period: "day", tasks, weights }).map((i) => i.id)).toEqual([
+      "high",
+      "low",
+    ])
+    expect(sortTodos(items, { mode: "tier", order: "desc", period: "day", tasks, weights }).map((i) => i.id)).toEqual([
+      "low",
+      "high",
+    ])
+  })
+})
+
+describe("getTodoAddedAt", () => {
+  it("uses scheduledDate for the day list", () => {
+    const [item] = buildTodoItems(
+      [task({ id: "a", createdAt: new Date("2026-06-01"), scheduledDate: new Date("2026-06-20T12:00:00") })],
+      true,
+      now,
+    )
+    expect(getTodoAddedAt(item, "day")).toBe(new Date("2026-06-20T12:00:00").getTime())
+  })
+})
+
+describe("getTodoSortOptionLabel", () => {
+  it("names the push sort after the active period", () => {
+    expect(getTodoSortOptionLabel("pushed", "day")).toBe("Days pushed")
+    expect(getTodoSortOptionLabel("pushed", "week")).toBe("Weeks pushed")
+    expect(getTodoSortOptionLabel("pushed", "month")).toBe("Months pushed")
+    expect(getTodoSortOptionLabel("created", "day")).toBe("Date created")
+  })
 })
 
 describe("getTaskCompletionDate", () => {
@@ -154,5 +303,36 @@ describe("period titles", () => {
     const other = new Date("2026-06-15T12:00:00")
     expect(getTodoOpenTitle("day", other, now)).toBe("Jun 15's Tasks")
     expect(getTodoDoneTitle("day", other, now)).toBe("Done Jun 15")
+  })
+})
+
+describe("createScheduledTodoTask", () => {
+  it("creates a day-scheduled Home/To-Do record", () => {
+    const created = createScheduledTodoTask({ description: "  text linda  ", period: "day", date: now })
+    expect(created.description).toBe("text linda")
+    expect(created.stage).toBe("clarified")
+    expect(created.scheduleable).toBe(true)
+    expect(created.context).toBe("@general")
+    expect(created.estimatedDuration).toBe(30)
+    expect(created.urgency).toBe(4)
+    expect(created.importance).toBe(4)
+    expect(created.scheduledDate).toEqual(new Date(now.getFullYear(), now.getMonth(), now.getDate()))
+    expect(created.scheduledWeek).toBeUndefined()
+    expect(created.scheduledMonth).toBeUndefined()
+    expect(created.scheduledTime).toBeUndefined()
+
+    const items = buildTodoItems([created], false, now)
+    expect(filterAndSortTodos(items, "day", false, now).map((i) => i.description)).toEqual(["text linda"])
+  })
+
+  it("assigns week/month without pinning a day", () => {
+    const weekTask = createScheduledTodoTask({ description: "week item", period: "week", date: now, tier: "B" })
+    expect(weekTask.scheduledWeek).toBe(getWeekString(now))
+    expect(weekTask.scheduledDate).toBeUndefined()
+    expect(weekTask.urgency).toBe(2)
+
+    const monthTask = createScheduledTodoTask({ description: "month item", period: "month", date: now })
+    expect(monthTask.scheduledMonth).toBe(getMonthKey(now))
+    expect(monthTask.scheduledDate).toBeUndefined()
   })
 })

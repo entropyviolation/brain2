@@ -3,6 +3,7 @@
  *
  * A header-launched dialog that hosts cross-cutting app utilities that don't
  * belong to a single tab:
+ *  - Home location (city) for Plan day sunrise/sunset lines (default San Diego).
  *  - Full app backup / restore (JSON export/import — spec §3.2).
  *  - Manual mobile hub push/pull (`MobileSyncPanel`). Continuous live sync is
  *    parked until a dedicated semi-mobile live sync component lands.
@@ -25,6 +26,7 @@ import {
 } from "@/components/ui/dialog"
 import { Settings as SettingsIcon, BrainCircuit, CheckCircle2, Shapes } from "lucide-react"
 import { BackupRestore } from "@/components/Settings/BackupRestore"
+import { HomeLocationField } from "@/components/Settings/HomeLocationField"
 import { MobileSyncPanel } from "@/components/Settings/MobileSyncPanel"
 import { ItemTypeList } from "@/components/ItemTypes/ItemTypeList"
 import { useItemTypeStore } from "@/lib/item-type-store"
@@ -53,10 +55,12 @@ export function SettingsDialog() {
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Settings</DialogTitle>
-          <DialogDescription>Data backup and optional knowledge-base setup.</DialogDescription>
+          <DialogDescription>Home location, data backup, and optional knowledge-base setup.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
+          <HomeLocationField />
+
           <BackupRestore />
 
           <MobileSyncPanel />

@@ -1,7 +1,19 @@
-import { render, screen } from "@testing-library/react"
-import { describe, expect, it, vi } from "vitest"
+import { render, screen, waitFor } from "@testing-library/react"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import type { CalendarEvent, Task } from "@/lib/types"
+import { fetchDayClimate } from "@/lib/weather-client"
+import { DEFAULT_HOME_CITY, useUserSettingsStore } from "@/lib/user-settings-store"
 import { AgendaGrid } from "./agenda-grid"
+
+vi.mock("@/lib/weather-client", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/weather-client")>()
+  return {
+    ...actual,
+    fetchDayClimate: vi.fn(),
+  }
+})
+
+const fetchDayClimateMock = vi.mocked(fetchDayClimate)
 
 describe("AgendaGrid", () => {
   const date = new Date("2026-06-20T12:00:00")
@@ -40,6 +52,18 @@ describe("AgendaGrid", () => {
     },
   ]
 
+  beforeEach(() => {
+    useUserSettingsStore.getState().resetHomeLocation()
+    fetchDayClimateMock.mockResolvedValue({
+      weather: "Clear",
+      sunrise: "5:41 AM",
+      sunset: "7:59 PM",
+      sunriseHhmm: "05:41",
+      sunsetHhmm: "19:59",
+      cityName: "San Diego",
+    })
+  })
+
   it("renders hour rows for the day", () => {
     render(
       <AgendaGrid
@@ -66,5 +90,21 @@ describe("AgendaGrid", () => {
       />,
     )
     expect(screen.getByText("Write docs")).toBeInTheDocument()
+  })
+
+  it("draws sunrise and sunset for the home location", async () => {
+    render(
+      <AgendaGrid
+        date={date}
+        events={[]}
+        tasks={[]}
+        mode="plan"
+      />,
+    )
+    expect(await screen.findByText("Sunrise 5:41 AM")).toBeInTheDocument()
+    expect(screen.getByText("Sunset 7:59 PM")).toBeInTheDocument()
+    await waitFor(() => {
+      expect(fetchDayClimateMock).toHaveBeenCalledWith(DEFAULT_HOME_CITY, "2026-06-20")
+    })
   })
 })

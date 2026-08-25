@@ -99,7 +99,8 @@ body.win95-app :is(
   .trip-bucket-toggle,
   .fm98,
   .docs95,
-  .docs-editor
+  .docs-editor,
+  .home95
 ) {
   --muted-foreground: 215.4 16.3% 46.9%;
 }

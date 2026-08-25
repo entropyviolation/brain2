@@ -3,11 +3,26 @@
 import { formatAttributeValue, listAttributeSchema } from "@/components/Lists/attribute-editor"
 import { safeDateFormat } from "@/lib/date-utils"
 import { listIsNextActions } from "@/lib/item-utils"
-import { isFolderAllItemsCategoryId, isTaskUncategorizedInFolder } from "@/lib/folder-all-items"
+import { isFolderAllItemsCategoryId, isTaskUncategorizedGlobally, isTaskUncategorizedInFolder } from "@/lib/folder-all-items"
 import { useItemTypeStore } from "@/lib/item-type-store"
+import type { Folder, List, Task } from "@/lib/types"
 import type { ListContentDetailsProps } from "./types"
 
 export type { ListContentDetailsProps } from "./types"
+
+function listsColumnLabel(task: Task, categories: List[], currentFolder: Folder | null | undefined): string {
+  const uncategorized = currentFolder
+    ? isTaskUncategorizedInFolder(task, currentFolder)
+    : isTaskUncategorizedGlobally(task)
+  if (uncategorized) return "Uncategorized"
+  return (
+    (task.lists || [])
+      .filter((cid) => !isFolderAllItemsCategoryId(cid))
+      .map((cid) => categories.find((c) => c.id === cid)?.name)
+      .filter(Boolean)
+      .join(", ") || "—"
+  )
+}
 
 export function ListContentDetails({
   tasks,
@@ -102,16 +117,8 @@ export function ListContentDetails({
             >
               {task.description}
             </td>
-            {openFolderAll && currentFolder && (
-              <td className="text-xs">
-                {isTaskUncategorizedInFolder(task, currentFolder)
-                  ? "Uncategorized"
-                  : (task.lists || [])
-                      .filter((cid) => !isFolderAllItemsCategoryId(cid))
-                      .map((cid) => categories.find((c) => c.id === cid)?.name)
-                      .filter(Boolean)
-                      .join(", ") || "—"}
-              </td>
+            {openFolderAll && (
+              <td className="text-xs">{listsColumnLabel(task, categories, currentFolder)}</td>
             )}
             {cols.map((d) => (
               <td key={d.id}>{formatAttributeValue(d, task.attributes?.[d.id]) || "—"}</td>

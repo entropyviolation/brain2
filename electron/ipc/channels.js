@@ -46,6 +46,10 @@ const COGS_IPC_CHANNELS = {
   // Bridged to the renderer as `window.desktop.openModulePopout(hash)`; absent in
   // the web build (components fall back to `window.open`).
   openModulePopout: "cogs:window:openModulePopout",
+  // Read Apple Notes (iCloud / iPhone + On My Mac) for a date window via
+  // Notes.app. Bridged as `window.desktop.fetchAppleNotes({ sinceISO, untilISO, mode, ids })`.
+  // Modes: preview (titles/dates), snippet (short body), bodies (full text).
+  fetchAppleNotes: "cogs:notes:fetchAppleNotes",
 }
 
 /** All channel strings (handy for bulk `ipcMain.handle` registration). */

@@ -17,7 +17,7 @@ seeds the hub.
 | Path | Role |
 |------|------|
 | `app/mobile/page.tsx` | Route `/mobile/` |
-| `MobileApp.tsx` | Login gate + header + `HomeDashboard` / Lists |
+| `MobileApp.tsx` | Login gate + header (incl. **From Notes**) + `HomeDashboard` / Lists. Listing Apple Notes still needs Mac Notes.app. |
 | `MobileLogin.tsx` | Credentials: **admin** / **admin** |
 | `MobilePullCard.tsx` | One-tap manual pull from the shared hub |
 | `lib/mobile-auth.ts` | sessionStorage login (no app-data keys) |

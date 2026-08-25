@@ -4,7 +4,8 @@
  * Context-aware sidebar for Plan month/week/day views. Each mode shows only
  * tasks that belong in that period but haven't been placed on a finer schedule
  * yet (month-only, week-only, or day without a time slot). Day view also
- * surfaces incomplete daily habits with a filter toggle.
+ * surfaces incomplete daily habits with a filter toggle, plus a quick-add field
+ * that creates the same Home/To-Do records (`createScheduledTodoTask`).
  */
 "use client"
 
@@ -13,7 +14,8 @@ import { useMemo, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { GripVertical, Zap, Target } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { GripVertical, Zap, Target, Plus } from "lucide-react"
 import { useTaskStore } from "@/lib/task-store"
 import { useHabitsStore } from "@/lib/habits-store"
 import { formatLocalDateKey, getWeekString } from "@/lib/date-utils"
@@ -22,6 +24,7 @@ import {
   isWeekOnlyPlanned,
   isDayUnscheduledPlanned,
 } from "@/lib/item-utils"
+import { createScheduledTodoTask } from "@/components/Home/ToDo/todo-utils"
 import { format } from "date-fns"
 import type { WeeklyTask } from "@/lib/types"
 import { TaskType as TT } from "@/lib/types"
@@ -44,10 +47,12 @@ export function PlannedTasksSidebar({
   onUnscheduleEvent,
 }: PlannedTasksSidebarProps) {
   const tasks = useTaskStore((s) => s.tasks)
+  const addTask = useTaskStore((s) => s.addTask)
   const habitTasks = useHabitsStore((s) => s.tasks)
   const weeklyData = useHabitsStore((s) => s.weeklyData)
   const [showHabits, setShowHabits] = useState(true)
   const [showTodos, setShowTodos] = useState(true)
+  const [newTodoText, setNewTodoText] = useState("")
 
   const monthKey = format(currentDate, "yyyy-MM")
   const weekKey = getWeekString(currentDate)
@@ -105,6 +110,15 @@ export function PlannedTasksSidebar({
     else if (eventId && onUnscheduleEvent) onUnscheduleEvent(eventId)
   }
 
+  const handleAddTodo = (e: React.FormEvent) => {
+    e.preventDefault()
+    const description = newTodoText.trim()
+    if (!description) return
+    addTask(createScheduledTodoTask({ description, period: "day", date: currentDate }))
+    setNewTodoText("")
+    setShowTodos(true)
+  }
+
   const title =
     mode === "month" ? "Planned This Month" : mode === "week" ? "Planned This Week" : "Planned Today"
 
@@ -150,7 +164,7 @@ export function PlannedTasksSidebar({
           </div>
         )}
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex flex-col gap-3">
         <div className="space-y-3 max-h-[calc(100vh-420px)] overflow-y-auto pr-2">
           {visibleHabits.map((habit: WeeklyTask) => (
             <div
@@ -193,6 +207,26 @@ export function PlannedTasksSidebar({
             </div>
           )}
         </div>
+        {mode === "day" && (
+          <form onSubmit={handleAddTodo} className="flex gap-2 pt-2 border-t border-gray-700">
+            <Input
+              value={newTodoText}
+              onChange={(e) => setNewTodoText(e.target.value)}
+              placeholder="Add a to-do for this day…"
+              aria-label="Add a to-do for this day"
+              className="h-8 bg-gray-800/80 border-gray-600 text-gray-200 placeholder:text-gray-500"
+            />
+            <Button
+              type="submit"
+              size="icon"
+              className="h-8 w-8 shrink-0 bg-[#8cd4a5] text-black hover:bg-[#9fc2a5]"
+              disabled={!newTodoText.trim()}
+              aria-label="Add to-do"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </form>
+        )}
       </CardContent>
     </Card>
   )

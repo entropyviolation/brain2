@@ -33,6 +33,7 @@ calculation/date/sync utilities.
 | `metrics-store.ts` | `cogs-metrics-store` | Custom self-tracking metrics: `MetricDefinition`s (name, unit, `MetricKind`, target/bounds, color) + dated `MetricEntry` readings. Types are local (not in `types.ts`) so the feature stays self-contained. Backs Metrics analytics + `MetricLogger`. | §137/§138/§275 |
 | `regret-store.ts` | `regret-store` | Append-only `RegretEntry[]` ledger mirroring `points-store` for the *opposite* signal — the accruing cost of not doing important/overdue items. Pure accrual math (`regretCost`/`dailyRegretIncrement`/`projectedRegret`) is exported; daily accrual is idempotent per task per day. | §14 |
 | `theme-store.ts` | `cogs-theme-store` | User-customizable theme colors (points card, habit-type icons). | — |
+| `user-settings-store.ts` | `cogs-user-settings` | Cross-cutting prefs: home city for Plan sunrise/sunset (default San Diego). | — |
 
 ## Pure helpers (no store)
 
@@ -51,6 +52,8 @@ calculation/date/sync utilities.
 | `priority.ts` | Transparent, entropy-aware priority formula: weighted blend of urgency/importance/cognitive-load/entropy with `priorityBreakdown` so the UI can explain *why* a task ranks where it does. `DEFAULT_PRIORITY_WEIGHTS`. | §42/§46 |
 | `scheduling.ts` | Canonical schedule-field helpers (`scheduleFieldsForPeriod`, `clearedScheduleFields`) shared by the Scheduler UI and the scheduling service. | §7 |
 | `smart-parse.ts` | Pure, LLM-free smart-capture parser: turns free text ("call dentist tomorrow at 3pm for 30m !!") into a structured `SmartSuggestion` + highlight ranges (category, relative/absolute dates, times, priority markers, durations) using regex + `date-fns`. `now` injectable. | §10 |
+| `apple-notes.ts` | Apple Notes ingest: period ranges, HTML strip, preview/snippet/body fetch via `window.desktop.fetchAppleNotes`, bulk-add draft/parse, park-to-**notes to ingest** (`ensureIphoneNotesIngestDestination`), skip already-ingested ids. Electron-only reader. | — |
+| `apple-notes-categorize.ts` | List-name matcher for notes (folder / `Category:` / overlap). Not used by the current park/bulk-add dialog. | — |
 | `app-navigation.ts` | App-wide navigation persistence: localStorage keys + `readStoredTab`/`writeStoredTab` and Lists-navigation read/write so a refresh returns the user to their last tab/folder/period/view (incl. Docs `docsDocId` / `docsFolder`). | — |
 | `search.ts` | Pure, framework-free ranked global search: `searchItems(query, items, opts?)` → `SearchResult[]` (`{ item, score, matchedOn }`), case-insensitive multi-term AND over title/tag/attribute tiers, deterministic ordering, plus `displayTitle` and the `SearchResult`/`SearchField` types. Backs the Cmd/Ctrl-K palette. Unit-tested. | §6a |
 | `needs-attention.ts` | Pure, deterministic selector `getNeedsAttention(tasks, opts?)` + `groupNeedsAttentionByReason`, the `NeedsAttentionReason` type, and reason labels. Flags overdue/unclarified/blocked/stale tasks for the Home "Needs Attention" card. Unit-tested. | §6b |

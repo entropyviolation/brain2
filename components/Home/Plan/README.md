@@ -19,9 +19,9 @@ Plan text is saved immediately on edit and shown in end-of-period **Reviews** (d
 | `plan-panel.tsx` | Container: header, Add Event, Paste Events, Settings, Month/Week/Day tabs, wires dialogs |
 | `month-view.tsx` | Month grid; event/task chips; drag to reschedule; planned-tasks sidebar; Month Plan textarea |
 | `week-view.tsx` | Seven-day hourly grid; drag tasks/events to time slots; Week Plan textarea |
-| `day-view.tsx` | Single-day hour grid via `AgendaGrid`; all-day events; Day Plan textarea |
-| `agenda-grid.tsx` | Shared hour-by-hour grid (used by day view and Tracking day log) |
-| `planned-tasks-sidebar.tsx` | Tasks planned for the period but not yet time-slotted; drag onto calendar |
+| `day-view.tsx` | Single-day hour grid via `AgendaGrid`; all-day events; auto-growing Day Plan textarea |
+| `agenda-grid.tsx` | Shared hour-by-hour grid (used by day view and Tracking day log). Current-time line plus sunrise/sunset from Settings home location. |
+| `planned-tasks-sidebar.tsx` | Tasks planned for the period but not yet time-slotted; drag onto calendar. Day mode can add a Home/To-Do item for that day. |
 | `event-dialog.tsx` | Create/edit `CalendarEvent` (title, times, all-day, multi-day, location, description, color) |
 | `paste-events-dialog.tsx` | Paste unstructured itinerary text → preview → bulk-create editable events (`lib/parse-event-text.ts`) |
 | `settings-dialog.tsx` | Export/clear plan text and calendar data |
@@ -43,14 +43,18 @@ Plan text is saved immediately on edit and shown in end-of-period **Reviews** (d
 
 ### Day
 - Full day schedule with current-time indicator.
+- Sunrise / sunset lines for the **Settings → Home location** city (default San Diego).
 - All-day event banner.
-- Day Plan text at bottom.
+- Day Plan text at bottom: starts ~12 lines tall and grows with the writing (no inner scrollbar).
+- Left rail: untimed tasks for the day + quick-add that writes the same records as Home → To Do.
 
 ## Shared components
 
 `AgendaGrid` renders timed tasks and events in hourly rows. Used by:
 - `day-view.tsx` (editable plan mode)
 - `Tracking/actual-day-view.tsx` (read-only plan comparison)
+
+The red now-line is today-only. Amber sunrise and orange sunset lines load for whichever day is open, using Open-Meteo times for the saved home city.
 
 ## Gaps
 

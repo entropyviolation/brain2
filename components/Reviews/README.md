@@ -13,7 +13,7 @@ Global header **Review** dropdown (not a top-level tab). Guides the user through
 
 ## Entry point
 
-Rendered in `app/page.tsx` header alongside Tracking, Inbox, Bulk Add, and Quick Add.
+Rendered in `app/page.tsx` header alongside Tracking, Inbox, Bulk Add, From Notes, and Quick Add.
 
 - The **Morning** button opens the morning ritual for today.
 - The **Review** dropdown lists all five (evening/end-of-period) period types.

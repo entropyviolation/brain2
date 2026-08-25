@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { Textarea } from "@/components/ui/textarea"
 import { isScheduledFolderId } from "@/lib/scheduled-lists-sync"
 import { foldersInGlobalAllForFilter, listsInFolderForFilter } from "@/lib/folder-all-items"
@@ -42,6 +43,37 @@ function AllViewCheckboxFilter({
   )
 }
 
+/** Owns its text so typing does not re-render the list board / item grid. */
+function BulkAddPanel({
+  itemLabel,
+  onBulkAdd,
+  onCancel,
+}: {
+  itemLabel: string
+  onBulkAdd: (text: string) => void
+  onCancel: () => void
+}) {
+  const [text, setText] = useState("")
+  return (
+    <div className="fm-quickadd" style={{ marginTop: 8 }}>
+      <Textarea
+        placeholder={`Paste one ${itemLabel.toLowerCase()} per line…`}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        rows={5}
+      />
+      <div className="flex gap-2">
+        <button className="fm-btn fm-btn-sm" onClick={() => onBulkAdd(text)}>
+          Add all
+        </button>
+        <button className="fm-btn fm-btn-sm" onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export function ListContentPanel({
   tasks,
   currentDisplay,
@@ -60,6 +92,8 @@ export function ListContentPanel({
   onFolderAllListHiddenChange,
   globalAllHiddenFolderIds = [],
   onGlobalAllFolderHiddenChange,
+  globalAllUncategorizedOnly = false,
+  onGlobalAllUncategorizedOnlyChange,
   addingTaskToTarget,
   openTargetKeyValue,
   newTaskDescription,
@@ -67,8 +101,6 @@ export function ListContentPanel({
   onAddTask,
   onCancelAddTask,
   showBulkAdd,
-  bulkAddText,
-  onBulkAddTextChange,
   onBulkAdd,
   onShowBulkAdd,
   onBulkAddCancel,
@@ -96,19 +128,26 @@ export function ListContentPanel({
     : []
   const hiddenGlobalFolders = globalAllHiddenFolderIds
 
-  const uncategorizedFilter =
-    openFolderAll && !isRootAll && currentFolder && !isScheduledFolderId(currentFolder.id) ? (
-      <div className="fm-toolbar" style={{ marginBottom: 6, padding: "4px 8px" }}>
-        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, cursor: "pointer" }}>
-          <input
-            type="checkbox"
-            checked={!!folderAllUncategorizedOnly[currentFolder.id]}
-            onChange={(e) => onFolderAllUncategorizedOnlyChange(currentFolder.id, e.target.checked)}
-          />
-          Show uncategorized only
-        </label>
-      </div>
-    ) : null
+  const uncategorizedChecked = isRootAll
+    ? globalAllUncategorizedOnly
+    : !!(currentFolder && folderAllUncategorizedOnly[currentFolder.id])
+  const showUncategorizedFilter =
+    openFolderAll && (isRootAll || (!!currentFolder && !isScheduledFolderId(currentFolder.id)))
+  const uncategorizedFilter = showUncategorizedFilter ? (
+    <div className="fm-toolbar" style={{ marginBottom: 6, padding: "4px 8px" }}>
+      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, cursor: "pointer" }}>
+        <input
+          type="checkbox"
+          checked={uncategorizedChecked}
+          onChange={(e) => {
+            if (isRootAll) onGlobalAllUncategorizedOnlyChange?.(e.target.checked)
+            else if (currentFolder) onFolderAllUncategorizedOnlyChange(currentFolder.id, e.target.checked)
+          }}
+        />
+        Show uncategorized only
+      </label>
+    </div>
+  ) : null
 
   const listFilter =
     showFolderAllListFilter && currentFolder ? (
@@ -148,22 +187,7 @@ export function ListContentPanel({
     ) : null
 
   const bulkAddPanel = showBulkAdd ? (
-    <div className="fm-quickadd" style={{ marginTop: 8 }}>
-      <Textarea
-        placeholder={`Paste one ${itemLabel.toLowerCase()} per line…`}
-        value={bulkAddText}
-        onChange={(e) => onBulkAddTextChange(e.target.value)}
-        rows={5}
-      />
-      <div className="flex gap-2">
-        <button className="fm-btn fm-btn-sm" onClick={onBulkAdd}>
-          Add all
-        </button>
-        <button className="fm-btn fm-btn-sm" onClick={onBulkAddCancel}>
-          Cancel
-        </button>
-      </div>
-    </div>
+    <BulkAddPanel itemLabel={itemLabel} onBulkAdd={onBulkAdd} onCancel={onBulkAddCancel} />
   ) : (
     <button className="fm-btn fm-btn-sm" style={{ marginTop: 8 }} onClick={() => onShowBulkAdd(true)}>
       Bulk add {itemLabel.toLowerCase()}s
@@ -181,7 +205,9 @@ export function ListContentPanel({
     onToggleTaskSelect,
   }
 
-  const emptyMessage = folderAllUncategorizedOnly[currentFolder?.id || ""]
+  const emptyMessage = isRootAll && globalAllUncategorizedOnly
+    ? "No uncategorized items."
+    : folderAllUncategorizedOnly[currentFolder?.id || ""]
     ? "No uncategorized items in this folder."
     : hiddenForFolder.length > 0
       ? "No items in the selected lists."

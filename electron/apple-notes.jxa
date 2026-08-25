@@ -1,0 +1,190 @@
+/**
+ * electron/apple-notes.jxa — JXA reader for Apple Notes (iCloud + On My Mac)
+ *
+ * Run via:
+ *   osascript -l JavaScript apple-notes.jxa <sinceISO> <untilISO> [preview|snippet|bodies] [idsJSON]
+ *
+ * `preview` (default): metadata only — id, title, dates. No note bodies.
+ * `snippet`: truncated plaintext for given ids (preview on the swipe card).
+ * `bodies`: full plaintext for given ids (bulk-add / save for later).
+ */
+function stripHtml(input) {
+  if (!input) return ""
+  var s = String(input)
+  s = s.replace(/<br\s*\/?>/gi, "\n")
+  s = s.replace(/<\/(p|div|h[1-6]|li|tr|blockquote)>/gi, "\n")
+  s = s.replace(/<[^>]+>/g, "")
+  s = s.replace(/&nbsp;/gi, " ")
+  s = s.replace(/&amp;/gi, "&")
+  s = s.replace(/&lt;/gi, "<")
+  s = s.replace(/&gt;/gi, ">")
+  s = s.replace(/&quot;/gi, '"')
+  s = s.replace(/&#(\d+);/g, function (_, n) {
+    return String.fromCharCode(Number(n))
+  })
+  s = s.replace(/\n{3,}/g, "\n\n")
+  return s.trim()
+}
+
+function isTrashFolder(name) {
+  var n = String(name || "").toLowerCase()
+  return n === "recently deleted" || n.indexOf("recently deleted") !== -1
+}
+
+function iso(d) {
+  try {
+    return d instanceof Date ? d.toISOString() : new Date(d).toISOString()
+  } catch (e) {
+    return ""
+  }
+}
+
+function asArray(value) {
+  if (value == null) return []
+  if (Array.isArray(value)) return value
+  return [value]
+}
+
+function bulk(spec, getter) {
+  try {
+    return asArray(getter(spec))
+  } catch (e) {
+    return null
+  }
+}
+
+function readBodyOne(note) {
+  try {
+    if (note.passwordProtected()) return { body: "", passwordProtected: true }
+  } catch (e) {}
+  try {
+    var plain = note.plaintext()
+    if (plain != null && String(plain).length) {
+      return { body: String(plain), passwordProtected: false }
+    }
+  } catch (e) {}
+  try {
+    return { body: stripHtml(note.body()), passwordProtected: false }
+  } catch (e) {
+    return { body: "", passwordProtected: false }
+  }
+}
+
+function listPreview(Notes, since, until) {
+  var matches
+  try {
+    matches = Notes.notes.whose({ modificationDate: { ">=": since } })()
+  } catch (e) {
+    matches = []
+  }
+
+  var results = []
+  var MAX = 500
+  for (var i = 0; i < matches.length; i++) {
+    if (results.length >= MAX) break
+    var note = matches[i]
+    var modified
+    try {
+      modified = note.modificationDate()
+    } catch (e) {
+      continue
+    }
+    if (!(modified instanceof Date)) {
+      try { modified = new Date(modified) } catch (e2) { continue }
+    }
+    if (isNaN(modified.getTime()) || modified < since || modified > until) continue
+
+    var title = ""
+    var id = ""
+    try { title = String(note.name()) } catch (e) {}
+    try { id = String(note.id()) } catch (e) {}
+
+    results.push({
+      id: id,
+      title: title,
+      body: "",
+      folder: "",
+      account: "",
+      createdAt: "",
+      modifiedAt: iso(modified),
+      passwordProtected: false,
+    })
+  }
+  return results
+}
+
+function fetchBodies(Notes, ids, maxChars) {
+  var cap = typeof maxChars === "number" && maxChars > 0 ? maxChars : 20000
+  var results = []
+  for (var i = 0; i < ids.length; i++) {
+    var id = String(ids[i] || "")
+    if (!id) continue
+    var note = null
+    try {
+      note = Notes.notes.byId(id)
+    } catch (e) {
+      try {
+        var found = Notes.notes.whose({ id: id })()
+        note = found && found[0]
+      } catch (e2) {
+        note = null
+      }
+    }
+    if (!note) continue
+
+    var info = readBodyOne(note)
+    var folder = ""
+    var account = ""
+    var title = ""
+    var createdAt = ""
+    var modifiedAt = ""
+    try { title = String(note.name()) } catch (e) {}
+    try { folder = String(note.container().name()) } catch (e) {}
+    try { account = String(note.container().container().name()) } catch (e) {}
+    try { createdAt = iso(note.creationDate()) } catch (e) {}
+    try { modifiedAt = iso(note.modificationDate()) } catch (e) {}
+
+    results.push({
+      id: id,
+      title: title,
+      body: String(info.body || "").slice(0, cap),
+      folder: folder,
+      account: account,
+      createdAt: createdAt,
+      modifiedAt: modifiedAt,
+      passwordProtected: !!info.passwordProtected,
+    })
+  }
+  return results
+}
+
+function run(argv) {
+  var since = new Date(argv[0])
+  var until = new Date(argv[1])
+  if (isNaN(since.getTime())) throw new Error("invalid since date")
+  if (isNaN(until.getTime())) throw new Error("invalid until date")
+  var mode = String(argv[2] || "preview").toLowerCase()
+  var Notes = Application("Notes")
+
+  var results
+  if (mode === "bodies" || mode === "snippet") {
+    var ids = []
+    try {
+      ids = JSON.parse(argv[3] || "[]")
+    } catch (e) {
+      ids = []
+    }
+    if (!Array.isArray(ids)) ids = []
+    results = fetchBodies(Notes, ids.slice(0, 200), mode === "snippet" ? 800 : 20000)
+  } else {
+    results = listPreview(Notes, since, until)
+  }
+
+  results.sort(function (a, b) {
+    if (a.modifiedAt < b.modifiedAt) return 1
+    if (a.modifiedAt > b.modifiedAt) return -1
+    return 0
+  })
+
+  return JSON.stringify(results)
+}

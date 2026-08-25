@@ -23,6 +23,11 @@ const EXTRACT_PDF_TEXT_IPC_CHANNEL = "cogs:file:extractPdfText"
 // by components/Modules/workspace/ModuleWorkspace.tsx (`openModulePopout`).
 const OPEN_MODULE_POPOUT_IPC_CHANNEL = "cogs:window:openModulePopout"
 
+// Apple Notes ingest (iCloud / iPhone + On My Mac). MUST match
+// `FETCH_APPLE_NOTES_IPC_CHANNEL` in electron/main.js + `fetchAppleNotes` in
+// electron/ipc/channels.js. Consumed by lib/apple-notes.ts.
+const FETCH_APPLE_NOTES_IPC_CHANNEL = "cogs:notes:fetchAppleNotes"
+
 // Expose a minimal, read-only surface to the renderer. App data lives in
 // localStorage/Zustand today; MongoDB IPC channels will be added here when the
 // storage layer lands (see docs/SPEC_MAPPING.md §3).
@@ -41,6 +46,9 @@ contextBridge.exposeInMainWorld("desktop", {
   // "#popout/module/<id>"). Fire-and-forget; the web build lacks this method so
   // callers fall back to `window.open`.
   openModulePopout: (hash) => ipcRenderer.send(OPEN_MODULE_POPOUT_IPC_CHANNEL, hash),
+  // Read Apple Notes for a date window. Resolves to `{ ok, notes }` or
+  // `{ ok: false, error, code }`. Absent in the web build.
+  fetchAppleNotes: (range) => ipcRenderer.invoke(FETCH_APPLE_NOTES_IPC_CHANNEL, range),
 })
 
 // Bridge the main-process global quick-capture accelerator to the renderer hook

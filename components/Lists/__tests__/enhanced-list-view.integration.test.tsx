@@ -58,6 +58,7 @@ describe("EnhancedCategoryView Integration", () => {
       folderAllHiddenListIds: {},
       folderAllUncategorizedOnly: {},
       globalAllHiddenFolderIds: [],
+      globalAllUncategorizedOnly: false,
       folderView: "icons",
     })
   })
@@ -271,6 +272,69 @@ describe("EnhancedCategoryView Integration", () => {
     expect(screen.queryByText("item a")).not.toBeInTheDocument()
     expect(screen.getByRole("group", { name: "Filter folders" })).toBeInTheDocument()
     expect(useTaskStore.getState().tasks.find((t) => t.id === "a")?.lists).toEqual(["list-1"])
+  })
+
+  it("filters global All to uncategorized items only without changing membership", async () => {
+    const user = userEvent.setup()
+    useTaskStore.getState().setLists([
+      { id: "list-1", name: "list 1", color: "#ff0000", description: "", createdAt: new Date(), order: 0 },
+    ])
+    useTaskStore.getState().addFolder({
+      id: "folder1",
+      name: "folder1",
+      createdAt: new Date(),
+      listIds: ["list-1"],
+    })
+    useTaskStore.getState().setTasks([
+      {
+        id: "a",
+        description: "item a",
+        lists: ["list-1"],
+        stage: "list",
+        completed: false,
+        createdAt: new Date(),
+        urgency: 1,
+        importance: 1,
+      },
+      {
+        id: "u",
+        description: "uncategorized item",
+        lists: [],
+        stage: "list",
+        completed: false,
+        createdAt: new Date(),
+        urgency: 1,
+        importance: 1,
+      },
+    ])
+
+    render(<EnhancedCategoryView onTaskSelect={vi.fn()} />)
+    fireEvent.click(screen.getByText("All"))
+    fireEvent.click(screen.getByRole("button", { name: "List" }))
+    await waitFor(() => expect(screen.getByText("All Items")).toBeInTheDocument())
+    fireEvent.dblClick(screen.getByText("All Items"))
+
+    await waitFor(() => {
+      expect(screen.getByText("item a")).toBeInTheDocument()
+      expect(screen.getByText("uncategorized item")).toBeInTheDocument()
+    })
+    const toggle = screen.getByRole("checkbox", { name: "Show uncategorized only" })
+    expect(toggle).not.toBeChecked()
+
+    await user.click(toggle)
+    await waitFor(() => {
+      expect(screen.queryByText("item a")).not.toBeInTheDocument()
+    })
+    expect(screen.getByText("uncategorized item")).toBeInTheDocument()
+    expect(useTaskStore.getState().tasks.find((t) => t.id === "a")?.lists).toEqual(["list-1"])
+    expect(useTaskStore.getState().tasks.find((t) => t.id === "u")?.lists).toEqual([])
+
+    fireEvent.click(screen.getByRole("button", { name: "Checklist" }))
+    await waitFor(() => {
+      expect(screen.getByText("uncategorized item")).toBeInTheDocument()
+    })
+    expect(screen.queryByText("item a")).not.toBeInTheDocument()
+    expect(screen.getByRole("checkbox", { name: "Show uncategorized only" })).toBeChecked()
   })
 
   it("selects lists in folder list view and creates a nested folder from the selection", async () => {
@@ -638,6 +702,66 @@ describe("EnhancedCategoryView Integration", () => {
       expect(useTaskStore.getState().tasks.find((t) => t.id === "task-1")?.lists).toEqual(
         expect.arrayContaining(["list-1", "list-2", "list-3"]),
       )
+    })
+  })
+
+  it("merges two selected items through the merge popup", async () => {
+    useTaskStore.getState().setLists([
+      { id: "list-1", name: "Work Tasks", color: "#ff0000", description: "", createdAt: new Date(), order: 0 },
+      { id: "list-2", name: "Home Tasks", color: "#00ff00", description: "", createdAt: new Date(), order: 1 },
+    ])
+    useTaskStore.getState().setTasks([
+      {
+        id: "task-1",
+        description: "Complete project",
+        lists: ["list-1"],
+        tags: ["work"],
+        stage: "list",
+        completed: false,
+        createdAt: new Date(),
+        urgency: 1,
+        importance: 1,
+      },
+      {
+        id: "task-2",
+        description: "Buy milk",
+        lists: ["list-1", "list-2"],
+        tags: ["errand"],
+        stage: "list",
+        completed: false,
+        createdAt: new Date(),
+        urgency: 1,
+        importance: 1,
+      },
+    ])
+
+    render(<EnhancedCategoryView onTaskSelect={vi.fn()} />)
+    fireEvent.click(screen.getByText("All"))
+    fireEvent.click(screen.getByRole("button", { name: "List" }))
+    fireEvent.dblClick(screen.getByText(/Work Tasks/))
+    await waitFor(() => {
+      expect(screen.getByText("Complete project")).toBeInTheDocument()
+      expect(screen.getByText("Buy milk")).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByRole("button", { name: "Select" }))
+    expect(screen.getByRole("button", { name: "Merge items" })).toBeDisabled()
+    fireEvent.click(screen.getByText("Complete project"))
+    expect(screen.getByRole("button", { name: "Merge items" })).toBeDisabled()
+    fireEvent.click(screen.getByText("Buy milk"))
+    fireEvent.click(screen.getByRole("button", { name: "Merge items" }))
+    fireEvent.click(await screen.findByRole("button", { name: "Continue" }))
+    expect(screen.getByRole("checkbox", { name: "Keep all details" })).toBeChecked()
+    fireEvent.click(screen.getByRole("radio", { name: "Buy milk" }))
+    fireEvent.click(screen.getByRole("button", { name: "Merge" }))
+
+    await waitFor(() => {
+      const remaining = useTaskStore.getState().tasks
+      expect(remaining.find((t) => t.id === "task-2")).toBeUndefined()
+      const survivor = remaining.find((t) => t.id === "task-1")
+      expect(survivor?.description).toBe("Buy milk")
+      expect(survivor?.lists).toEqual(expect.arrayContaining(["list-1", "list-2"]))
+      expect(survivor?.tags).toEqual(expect.arrayContaining(["work", "errand"]))
     })
   })
 })

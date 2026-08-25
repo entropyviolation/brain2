@@ -29,6 +29,7 @@ import { format } from "date-fns"
 import type { ReviewPeriod } from "@/lib/types"
 import { APP_NAV_KEYS } from "@/lib/app-navigation"
 import { usePersistedTab } from "@/lib/use-persisted-tab"
+import "./home-chrome.css"
 
 type HomeTab = "habits" | "plan" | "todo" | "goals" | "tracking"
 type TrackingTab = "grid" | "daylog"
@@ -49,29 +50,30 @@ export function HomeDashboard() {
 
   return (
     <div className="space-y-6">
-      <HomeReviewBanner currentDate={currentDate} onStartReview={handleStartReview} />
+      <div className="home95">
+        <div className="home-window">
+          <div className="home-title-bar">
+            <Calendar className="home-title-icon" aria-hidden />
+            <h2>
+              <span>{format(currentDate, "EEEE, MMMM d")}</span>
+              <span className="home-title-year">{format(currentDate, "yyyy")}</span>
+            </h2>
+          </div>
+          <div className="home-window-body">
+            <HomeReviewBanner currentDate={currentDate} onStartReview={handleStartReview} />
 
-      {/* Header with date and points stats */}
-      <div className="flex flex-col lg:flex-row gap-6">
-        <Card className="flex-1 card-hover">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-2xl font-bold">{format(currentDate, "EEEE, MMMM d")}</CardTitle>
-                <p className="text-muted-foreground">{format(currentDate, "yyyy")}</p>
+            <div className="home-overview">
+              <div className="flex-1 min-w-0">
+                <PointsStats currentDate={currentDate} />
               </div>
-              <Calendar className="h-8 w-8 text-primary" />
+
+              <DailyProgressQuickview currentDate={currentDate} />
             </div>
-          </CardHeader>
-          <CardContent>
-            <PointsStats currentDate={currentDate} />
-          </CardContent>
-        </Card>
 
-        <DailyProgressQuickview currentDate={currentDate} />
+            <NeedsAttention onOpenItem={setSelectedTaskId} />
+          </div>
+        </div>
       </div>
-
-      <NeedsAttention onOpenItem={setSelectedTaskId} />
 
       {/* Main dashboard tabs */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as HomeTab)} className="w-full">

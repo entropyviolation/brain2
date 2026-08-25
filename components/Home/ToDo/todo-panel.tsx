@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
-import { Calendar, Clock, AlertTriangle, SlidersHorizontal, RotateCcw } from "lucide-react"
+import { Calendar, Clock, AlertTriangle, SlidersHorizontal, RotateCcw, ArrowUpDown } from "lucide-react"
 import { useTaskStore } from "@/lib/task-store"
 import { getWeekString, toLocalCalendarDate } from "@/lib/date-utils"
 import { completeTask } from "@/lib/services/completion-service"
@@ -42,14 +42,19 @@ import {
   buildDoneTodoItems,
   filterAndSortTodos,
   filterTodosByStatus,
-  sortTodosByPriority,
+  sortTodos,
   tierToUrgencyImportance,
   getTodoOpenTitle,
   getTodoDoneTitle,
   getMonthKey,
+  createScheduledTodoTask,
   TODO_STATUS_FILTERS,
+  TODO_SORT_OPTIONS,
+  DEFAULT_TODO_SORT_ORDER,
+  getTodoSortOptionLabel,
   type TodoPeriod,
   type TodoSortMode,
+  type TodoSortOrder,
   type TodoStatusFilter,
 } from "./todo-utils"
 import { TodoTable } from "./TodoTable"
@@ -82,6 +87,7 @@ export function TodoPanel() {
   const [showAllTasks, setShowAllTasks] = useState(false)
   const [statusFilter, setStatusFilter] = useState<TodoStatusFilter>("open")
   const [sortMode, setSortMode] = useState<TodoSortMode>("tier")
+  const [sortOrder, setSortOrder] = useState<TodoSortOrder>(DEFAULT_TODO_SORT_ORDER.tier)
   const [showFormula, setShowFormula] = useState(false)
   const [expandedPeriods, setExpandedPeriods] = useState<Record<string, boolean>>({})
   const [doneSectionsOpen, setDoneSectionsOpen] = useState<Record<TodoPeriod, boolean>>({
@@ -98,14 +104,20 @@ export function TodoPanel() {
     const order = (period: TodoPeriod) => {
       const base = filterAndSortTodos(todoItems, period, showAllTasks, focusedDate)
       const byStatus = filterTodosByStatus(base, tasks, statusFilter)
-      return sortMode === "priority" ? sortTodosByPriority(byStatus, tasks, priorityWeights) : byStatus
+      return sortTodos(byStatus, {
+        mode: sortMode,
+        order: sortOrder,
+        period,
+        tasks,
+        weights: priorityWeights,
+      })
     }
     return {
       day: order("day"),
       week: order("week"),
       month: order("month"),
     } satisfies Record<TodoPeriod, TodoItem[]>
-  }, [todoItems, showAllTasks, statusFilter, sortMode, tasks, priorityWeights, focusedDate])
+  }, [todoItems, showAllTasks, statusFilter, sortMode, sortOrder, tasks, priorityWeights, focusedDate])
 
   const doneByPeriod = useMemo(
     () => ({
@@ -127,36 +139,15 @@ export function TodoPanel() {
   }
 
   const handleAddTodo = (draft: NewTodoDraft) => {
-    // Schedule to the active period at the currently-focused date. For week/month
-    // this assigns the task to that week/month list without pinning a specific day.
-    const refDate = toLocalCalendarDate(focusedDate)
-    const { urgency, importance } = tierToUrgencyImportance(draft.tier)
-
-    const task: Task = {
-      id: `todo-${Date.now()}`,
-      description: draft.description.trim(),
-      stage: "clarified",
-      createdAt: refDate,
-      completed: false,
-      lists: [],
-      // Surface To-Do-created tasks in the Scheduler too (and keep them there if
-      // later unscheduled). The Scheduler gate is list-based by default, so an
-      // explicit task-level flag is required for tasks created without a list.
-      scheduleable: true,
-      urgency,
-      importance,
-      estimatedDuration: 30,
-      cognitiveLoad: 2,
-      dependencies: [],
-      context: "@general",
-      entropy: 0.5,
-      rewardValue: 1,
-      allowPartialCompletion: false,
-      minimumChunkSize: 15,
-    }
-
-    scheduleTaskForPeriod(task, activeTodoTab, refDate)
-    addTask(task)
+    // Same factory the Plan day sidebar uses — one task record, both views.
+    addTask(
+      createScheduledTodoTask({
+        description: draft.description,
+        tier: draft.tier,
+        period: activeTodoTab,
+        date: focusedDate,
+      }),
+    )
   }
 
   const handleAddDone = (description: string) => {
@@ -291,23 +282,39 @@ export function TodoPanel() {
 
         <div className="flex items-center space-x-4">
           <div className="flex items-center gap-2">
-            <Label className="text-sm font-medium leading-none">Sort</Label>
-            <div className="flex rounded-md border overflow-hidden">
-              <button
-                type="button"
-                onClick={() => setSortMode("tier")}
-                className={`px-3 py-1 text-sm ${sortMode === "tier" ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
-              >
-                Tier
-              </button>
-              <button
-                type="button"
-                onClick={() => setSortMode("priority")}
-                className={`px-3 py-1 text-sm border-l ${sortMode === "priority" ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
-              >
-                Priority
-              </button>
-            </div>
+            <Label htmlFor="todo-sort" className="text-sm font-medium leading-none">
+              Sort
+            </Label>
+            <Select
+              value={sortMode}
+              onValueChange={(value) => {
+                const mode = value as TodoSortMode
+                setSortMode(mode)
+                setSortOrder(DEFAULT_TODO_SORT_ORDER[mode])
+              }}
+            >
+              <SelectTrigger id="todo-sort" className="w-44 h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {TODO_SORT_OPTIONS.map(({ value }) => (
+                  <SelectItem key={value} value={value}>
+                    {getTodoSortOptionLabel(value, activeTodoTab)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-8 w-8"
+              title={sortOrder === "asc" ? "Ascending — click for descending" : "Descending — click for ascending"}
+              aria-label={sortOrder === "asc" ? "Sort ascending" : "Sort descending"}
+              onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+            >
+              <ArrowUpDown className="h-3 w-3" />
+            </Button>
             <Button
               variant="ghost"
               size="icon"

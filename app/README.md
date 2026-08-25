@@ -28,6 +28,7 @@ Router API routes are required for the static Electron build.
 | Tracking | `cognitive-state.tsx` | Opens TimeGrid dialog |
 | Inbox | `inbox.tsx` | Inbox dialog + clarification flow |
 | Bulk Add | `enhanced-bulk-add.tsx` | Multi-line capture |
+| From Notes | `notes-ingest.tsx` | Mac Electron: iCloud/iPhone + On My Mac notes → parse/skip → bulk add or park on **notes to ingest** |
 | Quick Add | `quick-add.tsx` | Single-field capture |
 
 A global **Cmd/Ctrl-K** search palette (`Search/GlobalSearch.tsx`, wired via

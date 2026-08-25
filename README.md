@@ -167,7 +167,7 @@ converge — without ever blocking offline use. See
 
 ```
 app/page.tsx
-├── Header: Review | Settings | Tracking | Inbox | Bulk Add | Quick Add   (+ global Cmd/Ctrl-K search)
+├── Header: Review | Settings | Tracking | Inbox | Bulk Add | From Notes | Quick Add   (+ global Cmd/Ctrl-K search)
 └── Tabs
     ├── Home ────── Habits | Plan | To Do | Goals | Tracking
     ├── Lists ───── Win98 file manager (folders, lists, items, orb gallery, spreadsheet)
@@ -293,7 +293,7 @@ detail: [`lib/README.md`](lib/README.md).
 
 ## Status vs. the v2 spec (summary)
 
-**Implemented in some form:** Inbox / Quick Add / Bulk Add; **Lists** board with
+**Implemented in some form:** Inbox / Quick Add / Bulk Add / **From Notes** (Mac Electron Apple Notes ingest); **Lists** board with
 Win98-style folders, custom attributes, orb icons, CSV import, and per-folder All
 Items; Scheduler period funnel (Always→Year→Month→Week→Day); Home dashboard
 (Habits / Plan / To Do / Goals / Tracking); five habit types with shared

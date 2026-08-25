@@ -6,6 +6,7 @@ import {
   foldersInGlobalAllForFilter,
   listsInFolderForFilter,
   filterTasksByHiddenGlobalFolders,
+  isTaskUncategorizedGlobally,
 } from "@/lib/folder-all-items"
 
 const folder = (listIds: string[]): Folder => ({
@@ -144,5 +145,25 @@ describe("filterTasksByHiddenGlobalFolders", () => {
     const originalLists = items.map((t) => [...t.lists])
     filterTasksByHiddenGlobalFolders(items, folders, ["work"])
     expect(items.map((t) => t.lists)).toEqual(originalLists)
+  })
+})
+
+describe("isTaskUncategorizedGlobally", () => {
+  it("treats empty lists as uncategorized", () => {
+    expect(isTaskUncategorizedGlobally(task("a", "loose", []))).toBe(true)
+  })
+
+  it("treats folder All Items pool membership as uncategorized", () => {
+    expect(isTaskUncategorizedGlobally(task("a", "pool", [folderAllItemsCategoryId("folder1")]))).toBe(true)
+  })
+
+  it("treats a real list as categorized", () => {
+    expect(isTaskUncategorizedGlobally(task("a", "filed", ["list-1"]))).toBe(false)
+  })
+
+  it("treats mixed All Items + real list as categorized", () => {
+    expect(
+      isTaskUncategorizedGlobally(task("a", "mixed", [folderAllItemsCategoryId("folder1"), "list-1"])),
+    ).toBe(false)
   })
 })
