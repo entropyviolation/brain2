@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from "@testing-library/react"
 import { describe, expect, it, vi } from "vitest"
-import { OrbPickerDialog } from "../OrbPickerDialog"
+import { OrbPickerDialog } from "@/components/Icons/OrbPicker"
 
 vi.mock("@/lib/remove-background", () => ({
   removeBackground: vi.fn(),

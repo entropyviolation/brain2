@@ -46,7 +46,7 @@ You can author per-module **workflows** ("Zapier for your data": a trigger →
 conditions → actions that run on real item mutations) and **pop a workspace
 out** into its own window. One-click **templates** scaffold the lists, attribute
 schemas, seed data, views, and workflows for an **Itinerary Creator**, a
-**Cleaning System**, a **House Cleaning App** (Tidy), a **Budget Tracker**, a **Book Tasting** shelf, and a
+**House Cleaning App** (Tidy), a **Budget Tracker**, a **Book Tasting** shelf, and a
 **Film DNA Lab** — all on the same `Item` / `ItemType` / attribute foundation,
 so the data also flows through Lists, Scheduler, and Analytics. Reusable module
 **definitions** (blueprints) can be saved, re-instantiated, and exported/imported.
@@ -67,9 +67,8 @@ expression engine and cross-item formulas (`LOOKUP`/`COUNTIF`/`ROLLUP`/`IF`) in
 **File & PDF attributes (built):** `file`/`multifile` attributes (`FileValue`)
 attach documents to items; PDFs are text-extracted (`lib/file-extract.ts`, via an
 Electron `pdf-parse` IPC handler with a graceful browser fallback) so they power
-the Book Tasting matcher/quiz. Built-in **Book** and **Flight** item types and a
-read-only external-data **connector** seam (weather stub, `lib/connectors.ts`)
-also ship.
+the Book Tasting matcher/quiz. Built-in **Book** and **Flight** item types also
+ship. Itinerary weather uses Open-Meteo (`lib/weather-client.ts`). Weather for itineraries comes from Open-Meteo (`lib/weather-client.ts`).
 
 **Second-brain & knowledge features (built):** a top-level **Docs** tab
 (`components/Docs/`) — Notion/Google Docs–style WYSIWYG over `note` items (HTML
@@ -130,8 +129,7 @@ customizable system above are deliberately in place.
 - **Zustand** stores with `persist` middleware for state, backed by the browser's
   **localStorage**. This local store stays the offline-first source of truth;
   **MongoDB Atlas** becomes a future *cloud sync target* (not a replacement) behind
-  an opportunistic `SyncingDataSource` — see [`docs/brain2_features_roadmap.md`](docs/brain2_features_roadmap.md)
-  and `docs/SPEC_MAPPING.md` §3.
+  an opportunistic `SyncingDataSource` — see `docs/SPEC_MAPPING.md` §3.
 - **Electron** desktop shell (`electron/`) that serves the static export via a
   custom `app://` protocol. The same build also runs as a plain web app.
 
@@ -161,7 +159,7 @@ with static `output: "export"` — there is no required API layer. The app is
 opportunistic `SyncingDataSource` reconciles with **MongoDB Atlas** in the
 background when online so multiple devices (including a future mobile app)
 converge — without ever blocking offline use. See
-[`docs/brain2_features_roadmap.md`](docs/brain2_features_roadmap.md).
+[`docs/SPEC_MAPPING.md`](docs/SPEC_MAPPING.md) §3.
 
 ### Application map
 
@@ -179,13 +177,11 @@ app/page.tsx
 ```
 
 Selecting a task from **Lists** (or Modules, Inbox, or global search) opens the
-full-screen detail view (`components/enhanced-task-detail.tsx`, a barrel over the
-consolidated `components/ItemDetail/`).
+full-screen detail view (`components/ItemDetail/ItemDetailPage.tsx`).
 
 ## Future direction
 
-COGS is **offline-first and stays that way**. The full architectural plan lives in
-[`docs/brain2_features_roadmap.md`](docs/brain2_features_roadmap.md); the highlights:
+COGS is **offline-first and stays that way**. Highlights:
 
 - **Offline-first, always.** Every client (web/desktop renderer and a future
   **mobile** app) keeps a **complete local store** that is the working source of
@@ -200,13 +196,11 @@ COGS is **offline-first and stays that way**. The full architectural plan lives 
   and pure logic (search, needs-attention, links, scheduling) — shared
   by web, desktop, and mobile.
 - **Future mobile app** (Expo / React Native) consuming `@cogs/core` + a local
-  cache + the same syncing remote data source. Experimental phone ↔ desktop
-  **continuous live sync is parked** for now (`lib/live-sync.ts`) so the rest of
-  the app can be finished first; a dedicated **semi-mobile live sync** component
-  will land after that.
-- **External connectors** (read-only providers, starting with **weather**) feed
-  widgets: fetched when online, cached locally with a TTL, degrading gracefully
-  offline. Deliberately **not** on the user-data sync path.
+  cache + the same syncing remote data source. Today, phones use a **manual
+  hub pull** (`lib/mobile-sync.ts`, Settings → Mobile Sync, `/mobile`).
+- **External data** (read-only, starting with **weather** via Open-Meteo) feeds
+  itinerary widgets: fetched when online, cached locally with a TTL, degrading
+  gracefully offline. Deliberately **not** on the user-data sync path.
 - **Electron main becomes a thin shell** (optionally a connector/cache host), not
   the source of truth. The existing IPC + Mongo scaffolding is repurposed as the
   **remote/sync** side rather than a desktop-local datastore.
@@ -240,10 +234,9 @@ npm run test:e2e                 # Playwright (Lists flows; starts dev server)
 | `components/ItemDetail/` | Consolidated item/task detail (page + popup) | [`components/ItemDetail/README.md`](components/ItemDetail/README.md) |
 | `components/Editor/` | Rich-text/markdown body editor | [`components/Editor/README.md`](components/Editor/README.md) |
 | `components/Search/` | Global Cmd/Ctrl-K search palette | [`components/Search/README.md`](components/Search/README.md) |
-| `components/Settings/` | Backup/restore + Second Brain setup (live sync parked) | [`components/Settings/README.md`](components/Settings/README.md) |
+| `components/Settings/` | Backup/restore, item types, Second Brain setup, manual mobile hub | [`components/Settings/README.md`](components/Settings/README.md) |
 | `components/Focus/` | Just-Start anti-paralysis mode | [`components/Focus/README.md`](components/Focus/README.md) |
-| `components/LiveSync/` | Parked continuous live sync (future semi-mobile component) | [`components/LiveSync/README.md`](components/LiveSync/README.md) |
-| `components/Mobile/` | Sideload Home + Lists shell; manual hub pull only | [`components/Mobile/README.md`](components/Mobile/README.md) |
+| `components/Mobile/` | Sideload Home + Lists shell; manual hub pull | [`components/Mobile/README.md`](components/Mobile/README.md) |
 | `components/Icons/` | Shared icon system + orb picker | [`components/Icons/README.md`](components/Icons/README.md) |
 | `components/Tracking/` | Quick self-tracking metric logger | — |
 | `components/Reviews/` | End-of-period review ritual (header) + post-mortems | [`components/Reviews/README.md`](components/Reviews/README.md) |
@@ -276,7 +269,7 @@ offline-first source of truth (including the newer `module-definitions`,
 `workflows-store`, and `item-type-store`). The future **MongoDB Atlas** `cogs` database is a
 *cloud sync target* (reached via a `RemoteDataSource`/`SyncingDataSource`, not the
 durable store) — flexible documents, text/vector search indexes, and aggregation
-pipelines for advanced search and routing. See [`docs/brain2_features_roadmap.md`](docs/brain2_features_roadmap.md).
+pipelines for advanced search and routing. See [`docs/SPEC_MAPPING.md`](docs/SPEC_MAPPING.md) §3.
 Key store examples:
 
 | Store | Key | Used for |
@@ -303,19 +296,19 @@ with plan text and reflection (plus morning review and per-task post-mortems);
 spreadsheet/agenda/summary/randomizer/timer/checklist/gallery/notes/decision-matrix/
 timeline/matcher/quiz/dashboard/doc/itinerary-doc/trip-map/film-dna/house-cleaning views,
 authored **workflows** that run on item mutations, **pop-out** windows, reusable
-**definitions**, plus templates for Itinerary / Cleaning / House Cleaning / Budget / Book Tasting
+**definitions**, plus templates for Itinerary / House Cleaning / Budget / Book Tasting
 / Film DNA Lab, and dashboard widgets); **Docs** tab (WYSIWYG over `note`
 items); **Operations** tab; **spreadsheet** display (v3: range select, fill
 handle, per-cell `=A1` + formula columns, row/column resize) for lists;
-**file/PDF** attributes, built-in **Book**/**Flight** item types, and a
-**connector** seam; all-time **Objectives** (prioritizable per period with
+**file/PDF** attributes and built-in **Book**/**Flight** item types; all-time
+**Objectives** (prioritizable per period with
 custom point multipliers) + quantifiable **Goals** that serve them, with a
 global **completion popup** that captures objective/goal contributions on every
 task completion; points on task/habit/goal completion (with stacking objective
-multipliers); a force-directed **Graph** over items + typed links; **global
+multipliers); Scheduler **dependency / Gantt** views; **global
 Cmd/Ctrl-K search**; consolidated **ItemDetail** with tags/links/rich-text body;
 **Second Brain** item types + **JSON backup/restore** (header Settings);
-Scheduler dependency/gantt views; Plan **Paste Events**; and Analytics charts
+Plan **Paste Events**; and Analytics charts
 plus Brain2 views (calibration, streaks, plan-vs-reality, regret).
 
 **Not yet matching the spec** (tracked in `docs/SPEC_MAPPING.md`): a durable

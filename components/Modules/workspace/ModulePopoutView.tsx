@@ -14,7 +14,7 @@ import { useModulesStore } from "@/lib/modules-store"
 import { ModuleWorkspace } from "./ModuleWorkspace"
 
 const EnhancedTaskDetail = lazy(() =>
-  import("@/components/enhanced-task-detail").then((mod) => ({ default: mod.EnhancedTaskDetail })),
+  import("@/components/ItemDetail/ItemDetailPage").then((mod) => ({ default: mod.EnhancedTaskDetail })),
 )
 
 export function ModulePopoutView({ moduleId }: { moduleId: string }) {

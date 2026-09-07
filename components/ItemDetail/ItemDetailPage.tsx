@@ -6,8 +6,8 @@
  * partial completion, repeat settings, and analysis. Shares load/draft state and
  * the category/dependency mutators with `ItemDetailPopup` via `useItemDetailDraft`.
  *
- * Imported app-wide as `EnhancedTaskDetail` via the `components/enhanced-task-detail`
- * barrel. Spec: §5.5 (Item detail view) — docs/SPEC_MAPPING.md §5.
+ * Import as `EnhancedTaskDetail` from `@/components/ItemDetail/ItemDetailPage`.
+ * Spec: §5.5 (Item detail view) — docs/SPEC_MAPPING.md §5.
  */
 "use client"
 

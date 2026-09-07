@@ -18,10 +18,9 @@ export interface PlanSyncResult {
 }
 
 /**
- * Common gating shape for "push dated items somewhere" syncs (Plan + Schedule).
- * A subset of `module.planSync` / `module.scheduleSync` — shared so both the
- * plan-text sync below and `lib/module-schedule-sync.ts` filter items the same
- * way (same source list, date attribute, and optional status gate).
+ * Common gating shape for "push dated items into the Plan".
+ * Matches `module.planSync` so plan-text sync can filter items by source list,
+ * date attribute, and optional status gate.
  */
 export interface DatedItemFilter {
   categoryId: string

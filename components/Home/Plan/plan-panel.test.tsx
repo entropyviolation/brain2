@@ -29,7 +29,7 @@ vi.mock("./paste-events-dialog", () => ({
     open ? <div data-testid="paste-events-dialog">Paste Events Dialog</div> : null,
 }))
 
-vi.mock("@/components/task-detail-popup", () => ({
+vi.mock("@/components/ItemDetail/ItemDetailPopup", () => ({
   TaskDetailPopup: () => null,
 }))
 

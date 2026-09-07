@@ -9,7 +9,7 @@ import { useTaskStore } from "@/lib/task-store"
 import type { Task, List } from "@/lib/types"
 import { EnhancedScheduler } from "./enhanced-scheduler"
 
-vi.mock("@/components/task-detail-popup", () => ({
+vi.mock("@/components/ItemDetail/ItemDetailPopup", () => ({
   TaskDetailPopup: () => null,
 }))
 

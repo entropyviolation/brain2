@@ -11,7 +11,7 @@
 
 import { useState, useEffect } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { TaskDetailPopup } from "@/components/task-detail-popup"
+import { TaskDetailPopup } from "@/components/ItemDetail/ItemDetailPopup"
 import { Button } from "@/components/ui/button"
 import { Plus, Database, Calendar, Clock, Grid3X3, ClipboardPaste } from "lucide-react"
 import type { CalendarEvent } from "@/lib/types"

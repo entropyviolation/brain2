@@ -6,7 +6,7 @@ import { useTaskStore } from "@/lib/task-store"
 import { useListsUiStore } from "@/lib/lists-ui-store"
 import { EnhancedCategoryView } from "../enhanced-list-view"
 
-vi.mock("@/components/task-detail-popup", () => ({
+vi.mock("@/components/ItemDetail/ItemDetailPopup", () => ({
   TaskDetailPopup: () => null,
 }))
 

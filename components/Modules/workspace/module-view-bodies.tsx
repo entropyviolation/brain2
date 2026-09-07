@@ -697,7 +697,7 @@ function KanbanView({ view, onOpenItem }: { view: ModuleView; onOpenItem?: (id: 
 /**
  * Day-by-day view of confirmed/dated items (flights, finalized activities).
  * Mirrors the agenda grouping but surfaces time, cost, and booked/finalized
- * badges so it reads like a trip timeline. Reflects `module-schedule-sync`.
+ * badges so it reads like a trip timeline.
  */
 function TimelineView({ view, onOpenItem }: { view: ModuleView; onOpenItem?: (id: string) => void }) {
   const { tasks, category } = useViewTasks(view)

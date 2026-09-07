@@ -16,10 +16,9 @@ Legend:
 > spec's original SQLite recommendation) becomes a *cloud sync target* behind an
 > opportunistic `SyncingDataSource` — for a flexible document model,
 > semantic/fuzzy/advanced search, and aggregation-based routing as the dataset
-> grows relational. This file is the running checklist for that work; the full
-> architectural plan (offline-first + opportunistic Atlas sync + external
-> connectors + shared `@cogs/core` + future mobile) lives in
-> [`ROADMAP.md`](ROADMAP.md).
+> grows relational. This file is the running checklist for that work and the
+> architectural plan (offline-first + opportunistic Atlas sync + shared
+> `@cogs/core` + future mobile).
 
 Screenshots and per-screen write-ups: [`docs/screenshots/`](screenshots/).
 
@@ -32,14 +31,14 @@ local-first/sync-ready, AI-ready-not-AI-dependent, everything reviewable.
 
 ## §2 System Architecture
 - **Shape chosen by this repo:** Option B (Electron) + localStorage via Zustand
-  `persist`, kept **offline-first**. Future direction (see [`ROADMAP.md`](ROADMAP.md)):
+  `persist`, kept **offline-first**. Future direction:
   each client (web/desktop renderer + a future **mobile** app) keeps a complete
   local store; a `SyncingDataSource` opportunistically reconciles with **MongoDB
   Atlas** (cloud) in the background. Electron main reverts to a **thin shell**
   (optionally a connector/cache host), not the data host; its IPC + Mongo
   scaffolding is repurposed as one transport on the remote/sync side. A separate
-  read-only **external connectors** layer (starting with weather) feeds widgets,
-  cached with a TTL and degrading offline. Shared logic lives in a future
+  read-only **external data** layer (Open-Meteo weather, Photon places) feeds
+  widgets, cached with a TTL and degrading offline. Shared logic lives in a future
   `@cogs/core` package. See `electron/`, `README.md`.
 - Module list (§2.2) maps to top-level tabs in `app/page.tsx` and
   `components/<Module>/` folders:
@@ -77,15 +76,12 @@ local-first/sync-ready, AI-ready-not-AI-dependent, everything reviewable.
   Atlas becomes a background **sync target** behind a future `SyncingDataSource`
   (per-field last-write-wins to start; upgradeable to RxDB / PowerSync / Atlas
   Device Sync). The `DataSource`/repository seam (below) is what makes this — and a
-  future mobile client — possible. Full plan: [`ROADMAP.md`](ROADMAP.md).
+  future mobile client — possible.
 - **Multi-device sync is now planned, not deferred.** It is opportunistic and
   best-effort (never blocks offline use); a future **mobile** app (Expo / React
   Native) is an explicit target consumer.
-- **Phone ↔ desktop continuous live sync is parked.** The experimental
-  `LiveSyncHost` / `lib/live-sync.ts` engine is deprecated while the rest of
-  COGS is finished. A dedicated **semi-mobile live sync** component will land
-  after that. Manual hub push/pull (`lib/mobile-sync.ts`, Settings, `/mobile`
-  pull card) remains.
+- **Phone data uses a manual hub.** Settings → Mobile Sync and `/mobile` pull
+  (`lib/mobile-sync.ts`) copy a snapshot. There is no always-on live-sync engine.
 
 ## §4 Inbox / Capture
 - §4.2 Quick Add — ✅ `components/quick-add.tsx`.
@@ -107,12 +103,13 @@ local-first/sync-ready, AI-ready-not-AI-dependent, everything reviewable.
   `cognitiveLoad`, `context` vs tags). Separate interfaces for habits
   (`WeeklyTask`), events (`CalendarEvent`), time-grid intervals, reviews
   (`PeriodReview`), modules (`ModuleInstance`).
-- **Gap vs §5.1–5.3:** no unified `Item` core (`id/type/title/body/status/
-  categories/tags/links/rewardValue`). No generic `links` field; no `tags`
-  distinct from `categories`; no `note`/`objective`/`review` item types.
+- **Gap vs §5.1–5.3:** a unified `Item` core exists (`id/type/title/tags/links/
+  attributes` in `lib/types.ts`); `Task` still carries overlapping fields
+  (`title` vs `description`, `stage` vs list membership). Built-in types include
+  `task`, `note`, `goal`, `habit`, `event` plus seeded Source/Belief/Book/Flight.
 - §5.4 Task fields — ✅ mostly present on `Task`.
-- §5.5 Detail view — 🟡 `components/task-detail-popup.tsx` +
-  `components/enhanced-task-detail.tsx` (consolidation pending).
+- §5.5 Detail view — ✅ consolidated `components/ItemDetail/` (`ItemDetailPage` +
+  `ItemDetailPopup`), with tags, typed links, related items, and a rich-text body.
 - §5.6 Recurrence — 🟡 `Task.repeatSettings` exists in types; habit bridge
   is conceptual.
 
@@ -134,7 +131,8 @@ local-first/sync-ready, AI-ready-not-AI-dependent, everything reviewable.
 - Completed view, settings, search — ✅.
 - Points on complete — ✅ `resolveCompletionPoints()` in `lib/item-utils.ts`
   (default 1, or numeric **Points** list attribute).
-- §6.5 "to schedule" as a **tag** (not category) — ⛔ tags don't exist yet.
+- §6.5 "to schedule" as a **tag** (not category) — 🟡 tags exist (`Item.tags`,
+  `lib/links.ts`); a dedicated "to schedule" tag workflow is not built.
 
 ## §7 Scheduler & Calendar — ✅/🟡
 - Period funnel Always→Year→Month→Week→Day — ✅
@@ -174,7 +172,8 @@ local-first/sync-ready, AI-ready-not-AI-dependent, everything reviewable.
 - §9.4 completion records keyed by ISO/local date — ✅ (`WeeklyData` keyed by
   date string). **Gap:** not a DB record; habits are `WeeklyTask`, not a unified
   `Habit` item.
-- §9.5 Streaks — ⛔ not computed/shown (Analytics heatmap shows daily % only).
+- §9.5 Streaks — ✅ `lib/streaks.ts` + Analytics **Streaks** tab
+  (`components/Analytics/StreaksWidget.tsx`).
 
 ## §10 Goals & Objectives — ✅
 - **Objectives** — ✅ all-time aspirational directions (`Objective` entity, 26 seeded)
@@ -214,9 +213,8 @@ local-first/sync-ready, AI-ready-not-AI-dependent, everything reviewable.
   seed data + views + seeded workflows in one click: **Itinerary Creator** (Plan
   doc + printable Itinerary + Activities map + City Places + packing/pretrip
   checklists; print/export; on-Finalized workflow → **Sync to Plan**
-  (`lib/module-plan-sync.ts`) + schedule (`lib/module-schedule-sync.ts`); older
-  workspaces upgraded via `lib/itinerary-migrate.ts`), **Cleaning System**
-  (randomizer + timer + per-room progress + notes), **Budget Tracker**
+  (`lib/module-plan-sync.ts`); older
+  workspaces upgraded via `lib/itinerary-migrate.ts`), **Budget Tracker**
   (optional-inclusion rollup **dashboard**: liquid / net worth / expected spend /
   payments), **Book Tasting** (PDF→book **matcher** + **quiz** over `file`
   attributes with extracted text), **Film DNA Lab** (`film-dna` shelves /
@@ -240,7 +238,7 @@ local-first/sync-ready, AI-ready-not-AI-dependent, everything reviewable.
 - **File / PDF attributes** — ✅ `file`/`multifile` (`FileValue`) attribute types
   (`components/Lists/attributes/**`) with PDF text extraction (`lib/file-extract.ts`
   + Electron `cogs:file:extractPdfText` / `pdf-parse`), plus built-in **Book** /
-  **Flight** item types and a read-only **connector** seam (`lib/connectors.ts`).
+  **Flight** item types. Itinerary weather uses `lib/weather-client.ts`.
 - **Module platform foundation (Phase 0)** — ✅ shared serializable contract in
   `lib/types.ts`: `ModuleDefinition`, `WorkflowDefinition`/`WorkflowTrigger`/
   `WorkflowAction`, and `FileValue` + `file`/`multifile` types; the dependency-free
@@ -305,9 +303,10 @@ should land first.
 The spec describes the foundation; the project's eventual ambition is larger. See
 the "The eventual vision" section in [`../README.md`](../README.md). Tracked here
 so it stays connected to the code:
-- **User-defined item types/subtypes as a primary workflow.** Seam exists
-  (`ItemTypeDefinition`, `Item.type` in `lib/types.ts`), but built-in **task**
-  behavior still dominates; type creation/management UI is not built.
+- **User-defined item types/subtypes as a primary workflow.** Seam + UI exist
+  (`ItemTypeDefinition`, Settings → **Manage Item Types**,
+  `components/ItemTypes/`). Built-in **task** behavior still dominates day-to-day
+  capture.
 - **Dense relational network.** Richer composition of
   type ↔ category ↔ tag ↔ attribute ↔ link than today's mostly
   category-driven model. Primitives (`tags`, `links`, `attributes`) exist; the
@@ -328,7 +327,7 @@ so it stays connected to the code:
   **Computed / formula attributes** — ✅ `lib/formula.ts` (safe expression
   evaluator: cell refs by attribute id, `+ - * / ( )`, `SUM/AVG/MIN/MAX`, no
   `eval`) drive the `"formula"` attribute type in grids + formula-aware rollups.
-  (Remaining: multi-column sort/freeze, range selection.)
+  Range selection, fill-drag, and per-cell `=A1` formulas also ship (`SheetGrid` v3).
 - **Self-tracking + analytics depth.** Track arbitrary user-defined metrics and
   analyze them (extends §12 Tracking and §15 Analytics).
 
@@ -338,13 +337,14 @@ Reference notes; no code.
 ---
 
 ## Highest-leverage next steps (incremental path)
-1. **§3** Storage abstraction + one-click JSON export/import over all stores,
-   then add opportunistic cloud sync to **MongoDB Atlas** via a `SyncingDataSource`
-   (the local store stays the offline source of truth; text/vector indexes for the
-   search roadmap). See [`ROADMAP.md`](ROADMAP.md).
-2. **§5** Add `tags`, generic `links`, and `parentCategoryId` (additive) before
-   consolidating duplicate fields.
-3. **§14/§7.7** Regret accrual + automatic carry-over (small, high value).
-4. **§15** Remaining Analytics views (plan-vs-reality, category performance, …).
-5. **§10/§13** Flesh out Objectives and full Reviews cadence (spawned items,
-   post-mortems, scheduled prompts).
+1. **§3** Wire opportunistic cloud sync to **MongoDB Atlas** via a
+   `SyncingDataSource` (JSON backup/restore already ships; the local store stays
+   the offline source of truth).
+2. **§5** Consolidate remaining duplicate `Task`/`Item` fields (see
+   [`CANONICAL_FIELDS.md`](CANONICAL_FIELDS.md)).
+3. **§7.7** Automatic end-of-period carry-over (Reviews already offer per-task
+   push-forward).
+4. **§15** Remaining spec Analytics views (category performance, cognitive-state
+   trends).
+5. **§13** Scheduled review prompts and generic (non-Operations) task
+   post-mortems.

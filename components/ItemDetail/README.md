@@ -32,10 +32,7 @@ new item).
 
 ## Import paths
 
-App code keeps importing from the original paths, which are now thin re-export
-barrels:
+Import the surfaces directly:
 
-- `@/components/task-detail-popup` → `ItemDetailPopup` (`TaskDetailPopup`)
-- `@/components/enhanced-task-detail` → `ItemDetailPage` (`EnhancedTaskDetail`)
-
-New code should import directly from `@/components/ItemDetail/*`.
+- `@/components/ItemDetail/ItemDetailPopup` → `TaskDetailPopup`
+- `@/components/ItemDetail/ItemDetailPage` → `EnhancedTaskDetail`

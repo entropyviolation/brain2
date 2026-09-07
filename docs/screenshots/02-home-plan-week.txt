@@ -12,7 +12,7 @@ GLOBAL CHROME (all screens)
     Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
     Bulk Add | Quick Add
   Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
-  Top-level tabs (8): Home | Lists | Docs | Scheduler | Operations | Modules | Graph | Analytics
+  Top-level tabs (7): Home | Lists | Docs | Scheduler | Operations | Modules | Analytics
 
 VIEW-SPECIFIC
 Seven-day agenda columns with hour bands. Planned-tasks sidebar lists unscheduled items for drag-in scheduling.

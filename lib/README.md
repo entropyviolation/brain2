@@ -2,7 +2,7 @@
 
 Everything that is **not** React UI: the TypeScript data model, Zustand stores
 (persisted to localStorage — the offline-first source of truth; see
-`docs/SPEC_MAPPING.md` §3 and [`docs/ROADMAP.md`](../docs/ROADMAP.md) for the
+`docs/SPEC_MAPPING.md` §3 for the
 planned opportunistic **MongoDB Atlas** sync target — flexible documents,
 semantic/fuzzy/advanced search, and aggregation-based routing), and pure
 calculation/date/sync utilities.
@@ -14,7 +14,7 @@ calculation/date/sync utilities.
 > **`@cogs/core`** package so web, desktop, and a future **mobile** (Expo / React
 > Native) app consume one source of truth. The `DataSource`/repository seam is the
 > **transport-agnostic boundary** that makes offline-first + opportunistic cloud
-> sync (and the mobile client) possible. Full plan: [`docs/ROADMAP.md`](../docs/ROADMAP.md).
+> sync (and the mobile client) possible. See [`docs/SPEC_MAPPING.md`](../docs/SPEC_MAPPING.md) §3.
 
 ## Zustand stores
 
@@ -47,13 +47,12 @@ calculation/date/sync utilities.
 | `migrations.ts` | Versioned data migrations for the unified Item model — backfills `type`/`title`/`tags`/`links` onto persisted tasks (does not touch `category`/`categories`). | §5 |
 | `completion-status.ts` | Keeps the legacy boolean `completed` and the richer `CompletionStatus` (active/partial/deferred/cancelled/done) in sync via the single invariant `done ⇔ completed`. Pure `withStatus`/`withCompleted` + status labels; callers persist through `updateTask`. | §6 |
 | `completion-events.ts` | Tiny pub/sub completion event bus (`onTaskCompleted`/`emitTaskCompleted`). `task-store.updateTask` emits on every false→true completion so the global completion popup (`components/Completion/`) appears each and every time a task is done. | §6 |
-| `category-tree.ts` | Pure nested-category (sublist) forest helpers over `TaskCategory.parentCategoryId`: ancestors/descendants, render-tree builder, and cycle/dangling-parent-safe `moveCategory`. | §6.2 |
+| `list-tree.ts` | Pure nested-list (sublist) forest helpers over `List.parentListId`: ancestors/descendants, render-tree builder, and cycle/dangling-parent-safe `moveList`. | §6.2 |
 | `molecular.ts` | Pure, immutable `Subtask[]` tree helpers for "molecular" task decomposition — recursively split a task into atomic (`isMolecular`) steps, each with a self-contained `context`. Backs the "Just Start" focus flow. | §1/§59/§128 |
 | `priority.ts` | Transparent, entropy-aware priority formula: weighted blend of urgency/importance/cognitive-load/entropy with `priorityBreakdown` so the UI can explain *why* a task ranks where it does. `DEFAULT_PRIORITY_WEIGHTS`. | §42/§46 |
 | `scheduling.ts` | Canonical schedule-field helpers (`scheduleFieldsForPeriod`, `clearedScheduleFields`) shared by the Scheduler UI and the scheduling service. | §7 |
 | `smart-parse.ts` | Pure, LLM-free smart-capture parser: turns free text ("call dentist tomorrow at 3pm for 30m !!") into a structured `SmartSuggestion` + highlight ranges (category, relative/absolute dates, times, priority markers, durations) using regex + `date-fns`. `now` injectable. | §10 |
 | `apple-notes.ts` | Apple Notes ingest: period ranges, HTML strip, preview/snippet/body fetch via `window.desktop.fetchAppleNotes`, bulk-add draft/parse, park-to-**notes to ingest** (`ensureIphoneNotesIngestDestination`), skip already-ingested ids. Electron-only reader. | — |
-| `apple-notes-categorize.ts` | List-name matcher for notes (folder / `Category:` / overlap). Not used by the current park/bulk-add dialog. | — |
 | `app-navigation.ts` | App-wide navigation persistence: localStorage keys + `readStoredTab`/`writeStoredTab` and Lists-navigation read/write so a refresh returns the user to their last tab/folder/period/view (incl. Docs `docsDocId` / `docsFolder`). | — |
 | `search.ts` | Pure, framework-free ranked global search: `searchItems(query, items, opts?)` → `SearchResult[]` (`{ item, score, matchedOn }`), case-insensitive multi-term AND over title/tag/attribute tiers, deterministic ordering, plus `displayTitle` and the `SearchResult`/`SearchField` types. Backs the Cmd/Ctrl-K palette. Unit-tested. | §6a |
 | `needs-attention.ts` | Pure, deterministic selector `getNeedsAttention(tasks, opts?)` + `groupNeedsAttentionByReason`, the `NeedsAttentionReason` type, and reason labels. Flags overdue/unclarified/blocked/stale tasks for the Home "Needs Attention" card. Unit-tested. | §6b |
@@ -121,7 +120,7 @@ Zod validates writes/imports at the boundary.
 | `data/mongo/mongo-data-source.ts` | **Groundwork (driver-agnostic).** Main-process `DataSource` skeleton for MongoDB; methods throw `"not implemented"` with `TODO(phase-11)` notes. Driver injected later via constructor; shapes/indexes in `./collections.ts`. | §3 |
 | `habit-utils.ts` | Habit type normalization (`GOAL`/`TIME`/`COUNT` aliases), completion helpers. | §9 |
 | `attribute-utils.ts` | Legacy attribute type normalization and value coercion; run from `task-store` migrate on load. | §5 |
-| `module-templates.ts` | Pre-built workspace **module templates** (Itinerary, Cleaning, House Cleaning/Tidy, Budget, Book Tasting, Film DNA Lab, Blank): `buildModuleTemplate` (pure — lists + attribute schemas + seed items + views) and `instantiateModuleTemplate` (commits to stores). Itinerary v2 seeds Plan (`doc`), Itinerary (`itinerary-doc`), Activities (`trip-map`), plus City Places; Film DNA Lab seeds the `film-dna` view + Films list; House Cleaning App seeds a self-contained `house-cleaning` (Tidy) view. Unit-tested. | §8 |
+| `module-templates.ts` | Pre-built workspace **module templates** (Itinerary, House Cleaning/Tidy, Budget, Book Tasting, Film DNA Lab, Blank): `buildModuleTemplate` (pure — lists + attribute schemas + seed items + views) and `instantiateModuleTemplate` (commits to stores). Itinerary v2 seeds Plan (`doc`), Itinerary (`itinerary-doc`), Activities (`trip-map`), plus City Places; Film DNA Lab seeds the `film-dna` view + Films list; House Cleaning App seeds a self-contained `house-cleaning` (Tidy) view. Unit-tested. | §8 |
 | `module-plan-sync.ts` | `syncModuleToPlan` — pushes a workspace's finalized, dated items into the day Plan text (`plan-text.ts`). | §7, §8 |
 | `itinerary-assemble.ts` | Pure day-block assembly for printable itineraries (Trip Plan + Flights + Entries → left meta / right schedule / sleep row). Unit-tested. | §8 |
 | `itinerary-migrate.ts` | Best-effort upgrade of older Itinerary workspaces to the v2 view set (doc / itinerary-doc / trip-map). Unit-tested. | §8 |
@@ -139,6 +138,7 @@ Zod validates writes/imports at the boundary.
 | `filmrecs-catalog.ts` | Films-list tasks ↔ `FilmRecord` + Letterboxd merge helpers; seed from `filmrecs-seed.json`. | §8 |
 | `filmrecs-score.ts` | Offline Film DNA scoring (decade vectors, Watch ranking, blend). Unit-tested. | §8 |
 | `letterboxd-parse.ts` | Letterboxd CSV / export-folder parser (watchlist/watched/ratings/diary/`likes/films.csv`). | §8 |
+| `house-cleaning.ts` | Tidy house-cleaning model (areas, stuck mode, plans) stored on `module.config.houseCleaning`. | §8 |
 | `doc-html.ts` | Docs WYSIWYG HTML sanitize, selection styles, markdown→HTML migration, word count. Unit-tested. | §184 |
 | `doc-links.ts` | URL detect / normalize / auto-linkify for Docs hyperlinks. Unit-tested. | §184 |
 | `google-fonts.ts` | Allow-listed Google Fonts catalog + stylesheet loader for Docs. Unit-tested. | §184 |
@@ -153,10 +153,10 @@ Zod validates writes/imports at the boundary.
 | `lists-icon-grid.ts` | `computeIconGridPositions()` — deterministic x/y grid layout for the freeform Lists icon view, shared by the store and the auto-organize animation. | §6 |
 | `string-utils.ts` | `hashString`, `hashIconSlot` — deterministic hashing for orb selection, icon slots, and connector mock seeds. | — |
 | `api-cache.ts` | In-memory TTL cache + in-flight coalescing + `mapPool` for external API reads (city/place/weather/route). Empty/null misses expire in 30s so a network blip does not stick. | — |
-| `live-sync.ts` | Continuous phone ↔ desktop live sync engine — **parked** (`LIVE_SYNC_DEPRECATED`) until a dedicated semi-mobile live sync component lands. | — |
-| `mobile-sync.ts` | HTTP client for the optional mobile hub (`/api/sync`). Manual push/pull still works; live sync does not auto-start. | — |
+| `mobile-sync.ts` | HTTP client for the optional mobile hub (`/api/sync`). Manual push/pull from Settings and `/mobile`. | — |
 | `remove-background.ts` | Client-side near-uniform background removal for uploaded orb images (corner sampling → transparent PNG). | — |
 | `orbs-manifest.ts` | Auto-generated manifest of PNG orb filenames under `public/orbs-removebackground/`. Do not edit by hand. | — |
+| `persist-storage.ts` | Guarded Zustand persist adapter; Electron hydrates from the Chrome/Electron shared persist hub (`/api/persist`). | — |
 | `utils.ts` | shadcn `cn()` helper (clsx + tailwind-merge). | — |
 
 ## Persistence outside stores

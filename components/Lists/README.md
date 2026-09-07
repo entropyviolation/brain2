@@ -48,7 +48,6 @@ components/Lists/
 │   ├── EditListDialog.tsx         # List settings (attributes, display, pin)
 │   ├── EditFolderDialog.tsx       # Folder settings
 │   ├── CsvImportDialog.tsx        # Spreadsheet import wizard (CSV/TSV/Excel)
-│   ├── OrbPickerDialog.tsx        # Orb gallery + upload + search
 │   └── CompletedTasksDialog.tsx   # Completed tasks browser
 ├── toolbar/
 │   ├── ListsToolbar.tsx           # Main toolbar (search, actions, view toggles)
@@ -107,7 +106,7 @@ Default, Checklist, Icons, Details (table), and **Spreadsheet** — per-list set
 - **Nested folders**: Sidebar renders a collapsible tree (`navigation/FolderTree.tsx`); rename/recolor/delete via `EditFolderDialog` for non-auto scheduled folders (`isEditableFolder`).
 - **Attributes**: Per-list schema (number, string, selection, goal, etc.); reorderable in list settings (`EditListDialog.tsx`).
 - **Next Actions points**: Completing a task in the Next Actions folder awards **1 point** by default, or the list's **Points** number attribute if defined.
-- **Orb gallery**: 1000+ orbs from `lib/orbs-manifest.ts`; edit mode to hide orbs; custom upload with background removal (`OrbPickerDialog.tsx`).
+- **Orb gallery**: 1000+ orbs from `lib/orbs-manifest.ts`; edit mode to hide orbs; custom upload with background removal (`components/Icons/OrbPicker.tsx`).
 - **Icon layout**: Freeform positions per location; auto-organize grid (`FolderViewIcons.tsx` + `lists-ui-store`).
 
 ## Open-target state machine

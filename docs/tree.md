@@ -51,7 +51,7 @@ required for the static Electron export. Repeat lookups share `lib/api-cache.ts`
 | File          | Purpose                                                                       |
 | ------------- | ----------------------------------------------------------------------------- |
 | `layout.tsx`  | Root layout — Karla font, `globals.css`, `win95.css`, `body.win95-app`, metadata, global `CompletionPopupHost` |
-| `page.tsx`    | Global header + 8 lazy tabs; full-screen `EnhancedTaskDetail` when a task is selected |
+| `page.tsx`    | Global header + 7 lazy tabs; full-screen `EnhancedTaskDetail` when a task is selected |
 | `globals.css` | Tailwind base/components/utilities + theme CSS variables                       |
 | `win95.css`   | Global Win95 bevels, tabs, scrollbars, pixel font (`:where()` lets Lists `.fm98` win) |
 | `loading.tsx` | Route loading boundary (renders `null`; panels use Suspense)                   |
@@ -76,8 +76,6 @@ Most components have a co-located `*.test.tsx`.
 | `notes-ingest.tsx`         | From Notes — date range, parse/skip, bulk-add or park full text on **notes to ingest** |
 | `inbox.tsx`                | Inbox + clarification flow                    |
 | `cognitive-state.tsx`      | Header **Tracking** → TimeGrid dialog         |
-| `task-detail-popup.tsx`    | Barrel → `ItemDetail/ItemDetailPopup.tsx` (`TaskDetailPopup`) |
-| `enhanced-task-detail.tsx` | Barrel → `ItemDetail/ItemDetailPage.tsx` (`EnhancedTaskDetail`) |
 
 The two detail views are consolidated under
 [`ItemDetail/`](../components/ItemDetail/README.md): both share load/draft state
@@ -241,14 +239,14 @@ and **pop out** a module into its own window.
 
 **Templates:** `lib/module-templates.ts` builds one-click mini-apps — **Itinerary**
 (Plan `doc` + printable `itinerary-doc` + Activities `trip-map` + City Places +
-plan/schedule-sync workflow; migrate via `lib/itinerary-migrate.ts`), **Cleaning**
-(gamified randomizer + timer), **Budget** (optional-inclusion rollup dashboard),
+plan-sync workflow; migrate via `lib/itinerary-migrate.ts`), **Budget**
+(optional-inclusion rollup dashboard),
 **Book Tasting** (PDF→book `matcher` + `quiz`), **Film DNA Lab** (`film-dna`
 shelves / Watch / Blend / Letterboxd import), and **House Cleaning App** (Tidy:
 self-contained `house-cleaning` view) — each scaffolding lists +
 attribute schemas + seed items + bound views + seeded workflows. `lib/module-plan-sync.ts`
-pushes finalized dated module items into the Plan; `lib/module-schedule-sync.ts`
-turns them into scheduled events; `lib/book-match.ts` scores PDF→book matches;
+pushes finalized dated module items into the Plan;
+`lib/book-match.ts` scores PDF→book matches;
 `lib/itinerary-assemble.ts` / `lib/trip-itinerary.ts` build printable day blocks;
 `lib/city-search.ts` (Open-Meteo) + `lib/places-search.ts` + `lib/trip-directions.ts`
 pin places and estimate distances on the map (TTL-cached in `lib/api-cache.ts`).
@@ -304,9 +302,7 @@ helpers in `lib/affirmations.ts`).
   default San Diego) + full app **backup/restore**
   (`Settings/BackupRestore.tsx` → `lib/data/backup.ts`) + **Set up Second Brain**
   (seeds Source/Belief item types via `item-type-store.seedSecondBrainTypes`) +
-  **Manage Item Types** (`components/ItemTypes/`). **Phone ↔ desktop live sync
-  is parked** (`LiveSync/`, `lib/live-sync.ts`) while the rest of the app is
-  finished; a dedicated **semi-mobile live sync** component will follow. Settings
+  **Manage Item Types** (`components/ItemTypes/`). Settings
   still exposes confirm-gated manual hub push/pull (`MobileSyncPanel`).
 - `ItemTypes/ItemTypeList.tsx` + `ItemTypeEditor.tsx` — create/edit/delete user
   **item types**: attribute schema (reuses `AttributeSchemaEditor`), capability
@@ -386,8 +382,6 @@ Data model, Zustand stores (localStorage today → MongoDB), pure helpers. Not R
 | `flight-types.ts` | Built-in **Flight** item type (airline, airports, times, layovers, cost, booked) + `withFlightType` |
 | `file-extract.ts` | Best-effort `extractText(FileValue\|File)` — text inline, PDF via Electron `window.desktop.extractPdfText`, graceful browser fallback |
 | `apple-notes.ts` | Apple Notes ingest: preview/snippet/bodies fetch, bulk-add parse, park on **iPhone Notes Ingest** / **notes to ingest**, skip ingested ids |
-| `apple-notes-categorize.ts` | List-name matcher for notes (unused by the current park/bulk-add dialog) |
-| `connectors.ts` | Read-only external-data **connector** seam: `Connector`/registry + sample weather stub mapping API data onto attributes |
 | `migrations.ts` | Versioned Item-model migrations (backfill `type`/`title`/`tags`/`links`) |
 | `habit-utils.ts` | Habit type normalization, completion helpers |
 | `attribute-utils.ts` | Legacy attribute normalization/coercion |
@@ -401,9 +395,8 @@ Data model, Zustand stores (localStorage today → MongoDB), pure helpers. Not R
 | `spreadsheet-keys.ts` | Pure grid interaction model: cell navigation, range math, clipboard TSV, and selection stats (Sum/Avg/Min/Max/Count) |
 | `sheet-a1.ts` | A1-notation math: column letters ↔ index, `parseA1`/`formatA1`, `isCellFormula`, `extractA1Refs`, and `shiftFormula` (relative-ref rewriting for fill-drag, `$`-absolute aware) |
 | `sheet-eval.ts` | Evaluates per-cell `=A1` formulas against a grid accessor (reuses `lib/formula`, resolves cross-cell refs recursively with cycle detection) |
-| `module-templates.ts` | Pre-built workspace mini-app templates (Itinerary v2 doc/map/print / Cleaning / House Cleaning / Budget / Book-Tasting / Film DNA Lab / Blank) |
+| `module-templates.ts` | Pre-built workspace mini-app templates (Itinerary v2 doc/map/print / House Cleaning / Budget / Book-Tasting / Film DNA Lab / Blank) |
 | `module-plan-sync.ts` | Push finalized module items into Plan text |
-| `module-schedule-sync.ts` | Turn finalized dated module items into scheduled events |
 | `itinerary-assemble.ts` | Pure day-block assembly for printable itineraries |
 | `itinerary-migrate.ts` | Upgrade older Itinerary workspaces to the v2 view set |
 | `trip-itinerary.ts` | Self-contained trip days on module config (not list-backed) |
@@ -411,7 +404,7 @@ Data model, Zustand stores (localStorage today → MongoDB), pure helpers. Not R
 | `city-search.ts` / `places-search.ts` | City + place autocomplete for itinerary inputs (cached) |
 | `parse-event-text.ts` | Unstructured itinerary text → calendar event drafts (Plan Paste Events) |
 | `api-cache.ts` | In-memory TTL cache for geocode / places / weather / routes |
-| `live-sync.ts` | Continuous phone ↔ desktop live sync — **parked** until a semi-mobile component lands |
+| `persist-storage.ts` | Guarded Zustand persist adapter; Electron hydrates from the Chrome/Electron shared persist hub |
 | `mobile-sync.ts` | HTTP client for the optional mobile hub (manual push/pull only) |
 | `geocode.ts` | `parseCoord` + Open-Meteo URL helper |
 | `weather-client.ts` | Open-Meteo weather + sunrise/sunset for itinerary days |
@@ -483,11 +476,9 @@ App-wide shared React hooks. Module-specific hooks live next to their UI (e.g.
 | `SPEC_MAPPING.md` | Spec → code checklist (✅ 🟡 ⛔ 🕓)     |
 | `CANONICAL_FIELDS.md` | Canonical `Item`/data-model field reference |
 | `BRAIN2_FEATURE_IDEAS.md` | 280 idea-bank buildouts (160 from `Brain2Ideas` + 120 Expansion II from Brain2/COGS/to-do-theory docs), mapped to the data model |
-| `brain2_features_roadmap.md` | Phased Brain2 build roadmap (wave 1) |
-| `brain2_features_roadmap_wave2.md` | Roadmap wave 2 |
 | `tree.txt`        | Plain `tree` command output           |
 | `tree.md`         | This file — annotated clickable index |
-| `screenshots/`    | 9 PNG + `.txt` write-ups per view     |
+| `screenshots/`    | PNG + `.txt` write-ups per view (see [`screenshots/README.md`](screenshots/README.md)) |
 
 Re-capture screenshots: `npm run capture-screenshots` (with `npm run dev` running).
 
@@ -511,7 +502,9 @@ Re-capture screenshots: `npm run capture-screenshots` (with `npm run dev` runnin
 | ------------------------- | ----------------------------- |
 | `update-tree.sh`          | Regenerate [`tree.txt`](tree.txt) (`npm run tree`) |
 | `capture-screenshots.mjs` | Automated docs screenshots    |
-| `background-remover.py`   | Orb background removal helper |
+| `cogs-dev-server.mjs`     | Next + `/api/sync` + `/api/persist` on one port |
+| `persist-api.mjs`         | Chrome/Electron shared persist hub |
+| `dump-chrome-localstorage.mjs` | Snapshot Chrome localhost localStorage into the hub |
 
 ---
 
@@ -532,7 +525,7 @@ Co-located `*.test.ts(x)` files live next to most components and helpers.
 
 `components.json` · `next.config.mjs` · `package.json` · `tailwind.config.ts` ·
 `tsconfig.json` · `postcss.config.mjs` · `vitest.config.ts` · `playwright.config.ts` ·
-`next-env.d.ts` · `package-lock.json` · `pnpm-lock.yaml`
+`next-env.d.ts` · `package-lock.json`
 
 ---
 
@@ -558,7 +551,7 @@ whose `detailPanels` include `"body"` show the rich-text **Body** panel.
 Completing any task (anywhere) opens the global **completion popup**
 (`components/Completion/`) to capture objective/goal contributions + multipliers.
 
-Lists task select → `enhanced-task-detail.tsx` (full screen).
+Lists task select → `components/ItemDetail/ItemDetailPage.tsx` (full screen).
 
 ---
 

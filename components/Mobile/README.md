@@ -2,15 +2,10 @@
 
 Mobile entry for the **Home** tab only (Habits, Plan, To Do, Goals, Tracking — including nested sub-tabs). Reuses `HomeDashboard` unchanged so desktop behavior and data stay intact.
 
-## Live sync — paused
+## Manual hub (no always-on sync)
 
-Continuous phone ↔ desktop **live sync is deprecated for now**. The existing
-engine (`lib/live-sync.ts`, `components/LiveSync/`) is parked so it cannot
-overwrite data while the rest of COGS is finished. After those surfaces are
-solid, a dedicated **semi-mobile live sync** component will land.
-
-Until then, phones use a **manual pull** (`MobilePullCard`) after the desktop
-seeds the hub.
+Phones copy desktop data with a **manual pull** (`MobilePullCard`) after the desktop
+seeds the hub (`lib/mobile-sync.ts`). There is no continuous live-sync engine.
 
 ## Entry points
 

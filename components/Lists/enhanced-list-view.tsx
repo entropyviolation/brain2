@@ -51,7 +51,7 @@ import {
   tasksForList,
   type ListsTaskIndex,
 } from "@/lib/lists-task-index"
-import { TaskDetailPopup } from "@/components/task-detail-popup"
+import { TaskDetailPopup } from "@/components/ItemDetail/ItemDetailPopup"
 import { NextActionsSettingsDialog } from "@/components/Lists/settings-dialog"
 import { DailyHabitsList, WeeklyHabitsList, MonthlyHabitsList } from "@/components/Lists/daily-habits-list"
 import { ObjectivesList } from "@/components/Lists/objectives-list"
@@ -79,7 +79,7 @@ import { FolderViewCards } from "@/components/Lists/views/FolderViewCards"
 import { SearchResultsView } from "@/components/Lists/views/SearchResultsView"
 import { ListContentPanel } from "@/components/Lists/list-content/ListContentPanel"
 import { CompletedTasksDialog } from "@/components/Lists/dialogs/CompletedTasksDialog"
-import { OrbPickerDialog } from "@/components/Lists/dialogs/OrbPickerDialog"
+import { OrbPickerDialog } from "@/components/Icons/OrbPicker"
 import { CsvImportDialog } from "@/components/Lists/dialogs/CsvImportDialog"
 import { NewListDialog } from "@/components/Lists/dialogs/NewListDialog"
 import { NewFolderDialog } from "@/components/Lists/dialogs/NewFolderDialog"

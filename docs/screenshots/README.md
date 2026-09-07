@@ -33,7 +33,7 @@ Rendered by `app/page.tsx`:
 | From Notes | `components/notes-ingest.tsx` | Apple Notes ingest (Mac Electron; iCloud / iPhone + On My Mac) |
 | Quick Add | `components/quick-add.tsx` | Smart single-line capture |
 
-**Top-level tabs (8):** Home · Lists · Docs · Scheduler · Operations · Modules · Graph · Analytics
+**Top-level tabs (7):** Home · Lists · Docs · Scheduler · Operations · Modules · Analytics
 
 **Shortcuts:** Cmd/Ctrl+K → global search · quick-capture hotkey → Quick Add
 

@@ -1,7 +1,7 @@
 /**
  * lib/module-templates.ts — Pre-built "mini-app" module templates
  *
- * Turns a one-click choice ("Itinerary Creator", "Cleaning", "Budget") into a
+ * Turns a one-click choice ("Itinerary Creator", "House Cleaning", "Budget") into a
  * full workspace module: the supporting **lists** (lists) with their
  * **attribute schemas + defaults** (spec §5), a few seed items, and a
  * **workspace `ModuleInstance`** wiring those lists into bound views (editable
@@ -23,7 +23,7 @@ import { seedFilmToTask, type SeedFilm } from "@/lib/filmrecs-catalog"
 import filmrecsSeed from "@/lib/filmrecs-seed.json"
 import { seedHouseCleaning } from "@/lib/house-cleaning"
 
-export type ModuleTemplateId = "itinerary" | "cleaning" | "house-cleaning" | "budget" | "book-tasting" | "filmrecs" | "blank"
+export type ModuleTemplateId = "itinerary" | "house-cleaning" | "budget" | "book-tasting" | "filmrecs" | "blank"
 
 export interface ModuleTemplateMeta {
   id: ModuleTemplateId
@@ -37,12 +37,6 @@ export const MODULE_TEMPLATES: ModuleTemplateMeta[] = [
     name: "Itinerary Creator",
     description:
       "Write a trip plan in a doc, build a printable day-by-day itinerary (auto days, weather API, flight lookup), map activities by city, plus packing and before-trip checklists.",
-  },
-  {
-    id: "cleaning",
-    name: "Cleaning System",
-    description:
-      "Room inventory, a gamified random-task picker (\"pick up 20 things\"), a focus timer, per-room progress, and a notes space for your cleaning systems.",
   },
   {
     id: "house-cleaning",
@@ -361,90 +355,6 @@ function buildItinerary(uid: Uid): BuiltModuleTemplate {
   return { lists: [places, packing, todo], seedTasks, module, workflows }
 }
 
-function buildCleaning(uid: Uid): BuiltModuleTemplate {
-  const rooms = makeCategory(uid, "Rooms", {
-    color: "#10b981",
-    itemLabel: "room",
-    description: "Inventory each room and its cleaning progress.",
-    attributes: [
-      attr("progress", "Progress", "goal", { labels: { current: "Done", target: "Total" } }),
-      attr("priority", "Priority", "selection", { optionSource: "manual", options: ["Low", "Medium", "High"] }),
-    ],
-    displayedAttributes: ["progress", "priority"],
-  })
-
-  const systems = makeCategory(uid, "Systems", {
-    color: "#0ea5e9",
-    itemLabel: "system",
-    description: "Recurring cycles (laundry, dishes, trash) and how often they run.",
-    attributes: [
-      attr("cycleType", "Cycle", "selection", { optionSource: "manual", options: ["Laundry", "Dishes", "Trash", "Sheets", "Floors"] }),
-      attr("progress", "Cycle progress", "goal", { labels: { current: "Done", target: "Loads" } }),
-      attr("frequency", "Frequency", "selection", { optionSource: "manual", options: ["Daily", "Every few days", "Weekly"] }),
-    ],
-    displayedAttributes: ["cycleType", "progress", "frequency"],
-  })
-
-  const tasks = makeCategory(uid, "Cleaning Tasks", {
-    color: "#06b6d4",
-    itemLabel: "task",
-    attributes: [
-      attr("room", "Room", "selection", { optionSource: "list", optionListId: rooms.id }),
-      attr("effort", "Effort", "selection", { optionSource: "manual", options: ["Quick", "Medium", "Deep"] }),
-    ],
-    displayedAttributes: ["room", "effort"],
-  })
-
-  const seedTasks: Task[] = [
-    seed(rooms, "Kitchen", { progress: { current: 2, target: 10 }, priority: "High" }),
-    seed(rooms, "Bedroom", { progress: { current: 1, target: 8 }, priority: "Medium" }),
-    seed(rooms, "Living Room", { progress: { current: 0, target: 6 }, priority: "Medium" }),
-    seed(rooms, "Bathroom", { progress: { current: 0, target: 5 }, priority: "High" }),
-    seed(systems, "Laundry", { cycleType: "Laundry", progress: { current: 1, target: 3 }, frequency: "Weekly" }),
-    seed(systems, "Dishes", { cycleType: "Dishes", progress: { current: 0, target: 2 }, frequency: "Daily" }),
-    seed(systems, "Take out trash", { cycleType: "Trash", progress: { current: 0, target: 1 }, frequency: "Every few days" }),
-    seed(tasks, "Wipe counters", { room: "Kitchen", effort: "Quick" }),
-    seed(tasks, "Do the dishes", { room: "Kitchen", effort: "Medium" }),
-    seed(tasks, "Clear the table", { room: "Kitchen", effort: "Quick" }),
-    seed(tasks, "Make the bed", { room: "Bedroom", effort: "Quick" }),
-    seed(tasks, "Put away laundry", { room: "Bedroom", effort: "Medium" }),
-    seed(tasks, "Fluff cushions", { room: "Living Room", effort: "Quick" }),
-    seed(tasks, "Dust shelves", { room: "Living Room", effort: "Medium" }),
-    seed(tasks, "Scrub sink", { room: "Bathroom", effort: "Medium" }),
-    seed(tasks, "Empty bins", { room: "Bathroom", effort: "Quick" }),
-  ]
-
-  const moduleId = uid("module")
-  const module: ModuleInstance = {
-    id: moduleId,
-    type: "workspace",
-    kind: "workspace",
-    title: "Cleaning",
-    description: "Gamified cleaning systems: pick a batch, beat the timer, watch room goals fill up.",
-    templateId: "cleaning",
-    config: {},
-    views: [
-      view("randomizer", "Pick up 20 things", { categoryId: tasks.id, framing: "Tidy", pickCount: 5, timerMinutes: 20 }, uid),
-      view("timer", "Focus timer", { timerMinutes: 25 }, uid),
-      view("checklist", "All tasks", { categoryId: tasks.id }, uid),
-      view("summary", "Per room", { categoryId: tasks.id, groupAttrId: "room" }, uid),
-      view("spreadsheet", "Rooms", { categoryId: rooms.id }, uid),
-      view("spreadsheet", "Systems", { categoryId: systems.id }, uid),
-      view("notes", "My cleaning systems", { notesKey: uid("notes") }, uid),
-    ],
-  }
-
-  const workflows: WorkflowDefinition[] = [
-    workflow(uid, moduleId, "Session complete → mark room progress", {
-      scope: { listIds: [tasks.id] },
-      trigger: { kind: "item", event: "complete" },
-      actions: [{ kind: "addTag", tag: "cleaned" }],
-    }),
-  ]
-
-  return { lists: [rooms, systems, tasks], seedTasks, module, workflows }
-}
-
 function buildHouseCleaning(uid: Uid): BuiltModuleTemplate {
   const moduleId = uid("module")
   const module: ModuleInstance = {
@@ -743,8 +653,6 @@ export function buildModuleTemplate(id: ModuleTemplateId, seedNum = Date.now()):
   switch (id) {
     case "itinerary":
       return buildItinerary(uid)
-    case "cleaning":
-      return buildCleaning(uid)
     case "house-cleaning":
       return buildHouseCleaning(uid)
     case "budget":

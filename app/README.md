@@ -34,7 +34,7 @@ Router API routes are required for the static Electron build.
 A global **Cmd/Ctrl-K** search palette (`Search/GlobalSearch.tsx`, wired via
 `useGlobalSearchHotkey`) is mounted at the page root and available on every tab.
 
-**Top-level tabs** (8, lazy-loaded):
+**Top-level tabs** (7, lazy-loaded):
 
 | Tab | Panel | Folder |
 |-----|-------|--------|

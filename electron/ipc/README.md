@@ -5,7 +5,7 @@ renderer over Electron IPC. It is **scaffolding only** — nothing here is impor
 by `electron/main.js` yet, so the running app is unaffected. Wiring it up is the
 drop-in follow-up described below.
 
-> **Direction (see [`../../docs/ROADMAP.md`](../../docs/ROADMAP.md)).** COGS is
+> **Direction (see [`../../docs/SPEC_MAPPING.md`](../../docs/SPEC_MAPPING.md) §3).** COGS is
 > **offline-first**: the renderer's local store is the source of truth, so Electron
 > main reverts to a **thin shell** (optionally a connector/cache host) — **not** the
 > data host. The earlier "Electron main as the data host" idea is dropped (it could

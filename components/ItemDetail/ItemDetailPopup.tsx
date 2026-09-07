@@ -6,8 +6,8 @@
  * sibling of the full-screen `ItemDetailPage.tsx`. Both share load/draft state
  * and the category/dependency mutators via `useItemDetailDraft`.
  *
- * Imported app-wide as `TaskDetailPopup` via the `components/task-detail-popup`
- * barrel. Spec: §5.5 (Item detail view) — docs/SPEC_MAPPING.md §5.
+ * Import as `TaskDetailPopup` from `@/components/ItemDetail/ItemDetailPopup`.
+ * Spec: §5.5 (Item detail view) — docs/SPEC_MAPPING.md §5.
  */
 "use client"
 

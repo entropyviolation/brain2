@@ -45,7 +45,7 @@ describe("ModulesPanel", () => {
     await user.click(screen.getByRole("button", { name: /Build module/i }))
     expect(screen.getByText("House Cleaning App")).toBeInTheDocument()
     expect(screen.getByText(/Tidy: areas with hierarchical chores/i)).toBeInTheDocument()
-    expect(screen.getByText("Cleaning System")).toBeInTheDocument()
+    expect(screen.queryByText("Cleaning System")).not.toBeInTheDocument()
   })
 
   it("removes a module when the remove button is clicked", async () => {

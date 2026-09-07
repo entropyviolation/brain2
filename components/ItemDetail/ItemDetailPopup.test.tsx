@@ -6,7 +6,7 @@ import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetLocalStorage } from "@/tests/test-utils"
 import { useTaskStore } from "@/lib/task-store"
-import { TaskDetailPopup } from "./task-detail-popup"
+import { TaskDetailPopup } from "@/components/ItemDetail/ItemDetailPopup"
 
 describe("TaskDetailPopup", () => {
   const onClose = vi.fn()

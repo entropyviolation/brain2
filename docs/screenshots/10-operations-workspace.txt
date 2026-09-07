@@ -15,7 +15,7 @@ GLOBAL CHROME (all screens)
     Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
     Bulk Add | Quick Add
   Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
-  Top-level tabs (8): Home | Lists | Docs | Scheduler | Operations | Modules | Graph | Analytics
+  Top-level tabs (7): Home | Lists | Docs | Scheduler | Operations | Modules | Analytics
 
 VIEW-SPECIFIC
 Mini-app for one operation: Home / Phases / Resources / Log tabs plus persistent To-do-next rail, rename, stage badge, post-mortem.

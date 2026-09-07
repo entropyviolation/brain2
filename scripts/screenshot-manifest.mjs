@@ -7,7 +7,7 @@ The COGS title and global action bar appear on every screen (app/page.tsx):
   Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
   Bulk Add | From Notes | Quick Add
 Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
-Top-level tabs (7): Home | Lists | Scheduler | Operations | Modules | Graph | Analytics
+Top-level tabs (7): Home | Lists | Docs | Scheduler | Operations | Modules | Analytics
 `.trim()
 
 /** @typedef {{ file: string, view: string, sources: string[], description: string, area: string }} ShotMeta */

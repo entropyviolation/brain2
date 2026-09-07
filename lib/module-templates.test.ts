@@ -5,7 +5,6 @@ describe("buildModuleTemplate", () => {
   it("exposes the expected templates", () => {
     expect(MODULE_TEMPLATES.map((t) => t.id)).toEqual([
       "itinerary",
-      "cleaning",
       "house-cleaning",
       "budget",
       "book-tasting",
@@ -48,17 +47,6 @@ describe("buildModuleTemplate", () => {
       if (v.config.groupAttrId) expect(attrIds.has(v.config.groupAttrId)).toBe(true)
       if (v.config.valueAttrId) expect(attrIds.has(v.config.valueAttrId)).toBe(true)
     }
-  })
-
-  it("cleaning workspace includes a randomizer, timer, notes, and a systems list", () => {
-    const built = buildModuleTemplate("cleaning", 4)
-    const kinds = (built.module.views ?? []).map((v) => v.kind)
-    expect(kinds).toContain("randomizer")
-    expect(kinds).toContain("timer")
-    expect(kinds).toContain("notes")
-    expect(built.lists.some((c) => c.name === "Systems")).toBe(true)
-    // Gamification workflow present.
-    expect((built.workflows ?? []).length).toBeGreaterThan(0)
   })
 
   it("builds a Tidy house-cleaning workspace with self-contained state", () => {

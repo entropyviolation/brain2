@@ -147,7 +147,7 @@ future cleanup does not collapse them.
 | `isSummary` | `boolean?` | **placeholder** | yes | no | Gantt rollup task. **No reads/writes found** outside `lib/types.ts`. Cleanup candidate. |
 | `parallelGroup` | `string?` | **placeholder** | yes | no | Concurrency grouping. **No reads/writes found.** Cleanup candidate. |
 | `riskFlag` | `boolean?` | **placeholder** | yes | no | "Tricky step" flag. **No reads/writes found.** Cleanup candidate. |
-| `definitionOfDone` | `string?` | **placeholder** | yes | no | Perfectionism guardrail. **No reads/writes found** (only mentioned in `docs/brain2_features_roadmap.md`). Cleanup candidate. |
+| `definitionOfDone` | `string?` | **placeholder** | yes | no | Perfectionism guardrail. **No reads/writes found**. Cleanup candidate. |
 
 ---
 
@@ -283,7 +283,7 @@ data is user-owned, persisted, and partly a roadmap surface.
 
 | field | location | evidence | recommendation |
 |---|---|---|---|
-| `Task.isSummary` | `lib/types.ts` L260 | Only occurrence is the declaration; no reads/writes in `components/**` or `lib/**`. | **Likely removable**, but it is a Brain2 Gantt placeholder (`docs/brain2_features_roadmap.md`). Confirm the Gantt feature is abandoned before removing; otherwise keep as documented placeholder. |
+| `Task.isSummary` | `lib/types.ts` L260 | Only occurrence is the declaration; no reads/writes in `components/**` or `lib/**`. | **Likely removable**, but it is a Brain2 Gantt placeholder. Confirm the Gantt feature is abandoned before removing; otherwise keep as documented placeholder. |
 | `Task.parallelGroup` | `lib/types.ts` L262 | Declaration only; no usages. | Same as `isSummary` — needs human confirmation (Gantt concurrency feature). |
 | `Task.riskFlag` | `lib/types.ts` L264 | Declaration only; no usages. | Same — Brain2 placeholder, needs confirmation. |
 | `Task.definitionOfDone` | `lib/types.ts` L268 | Declaration only; referenced solely in roadmap markdown. | Same — perfectionism-guardrail placeholder; keep until that feature is cut. |

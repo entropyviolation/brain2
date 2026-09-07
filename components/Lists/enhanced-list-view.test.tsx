@@ -8,7 +8,7 @@ import { resetLocalStorage } from "@/tests/test-utils"
 import { useTaskStore } from "@/lib/task-store"
 import { EnhancedCategoryView } from "./enhanced-list-view"
 
-vi.mock("@/components/task-detail-popup", () => ({
+vi.mock("@/components/ItemDetail/ItemDetailPopup", () => ({
   TaskDetailPopup: () => null,
 }))
 

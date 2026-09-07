@@ -5,7 +5,7 @@ Atlas** (spec §3, replacing the original SQLite suggestion). Nothing here impor
 Mongo driver yet — these are the document model (`collections.ts`), the
 `DataSource` skeleton (`mongo-data-source.ts`), and this index/transaction plan.
 
-> **Direction (see [`../../../docs/ROADMAP.md`](../../../docs/ROADMAP.md)).** COGS
+> **Direction (see [`../../../docs/SPEC_MAPPING.md`](../../../docs/SPEC_MAPPING.md) §3).** COGS
 > is **offline-first**: the local store on each client is the working source of
 > truth. Mongo is **not** a desktop-local datastore and does **not** replace
 > localStorage — it is the **remote** side of an opportunistic `SyncingDataSource`

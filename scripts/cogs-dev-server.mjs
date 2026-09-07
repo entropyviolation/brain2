@@ -2,9 +2,9 @@
 /**
  * Unified COGS dev server: Next.js + mobile hub API on ONE port.
  *
- * Continuous live sync is parked (see lib/live-sync.ts) until a dedicated
- * semi-mobile live sync component lands. `/api/sync` remains for manual
- * push/pull from Settings and `/mobile`.
+ * Continuous live sync is not used. `/api/sync` remains for manual
+ * push/pull from Settings and `/mobile`. `/api/persist` shares Zustand keys
+ * between Chrome and Electron in local dev.
  *
  *   npm run dev
  *   npm run mobile:dev

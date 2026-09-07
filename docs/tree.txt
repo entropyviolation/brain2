@@ -2,10 +2,6 @@
 ├── README.md
 ├── app
 │   ├── README.md
-│   ├── api
-│   │   ├── flight
-│   │   ├── geocode
-│   │   └── weather
 │   ├── globals.css
 │   ├── layout.tsx
 │   ├── loading.tsx
@@ -75,6 +71,7 @@
 │   │   │   ├── week-navigation.test.tsx
 │   │   │   └── week-navigation.tsx
 │   │   ├── NeedsAttention.notes.md
+│   │   ├── NeedsAttention.test.tsx
 │   │   ├── NeedsAttention.tsx
 │   │   ├── Plan
 │   │   │   ├── README.md
@@ -116,6 +113,7 @@
 │   │   │   └── time-grid.tsx
 │   │   ├── daily-progress-quickview.test.tsx
 │   │   ├── daily-progress-quickview.tsx
+│   │   ├── home-chrome.css
 │   │   ├── home-dashboard.test.tsx
 │   │   ├── home-dashboard.tsx
 │   │   ├── home-review-banner.test.tsx
@@ -133,7 +131,9 @@
 │   │   ├── BodyPanel.tsx
 │   │   ├── ItemAttributesSection.tsx
 │   │   ├── ItemDetail.test.tsx
+│   │   ├── ItemDetailPage.test.tsx
 │   │   ├── ItemDetailPage.tsx
+│   │   ├── ItemDetailPopup.test.tsx
 │   │   ├── ItemDetailPopup.tsx
 │   │   ├── LinkPicker.tsx
 │   │   ├── README.md
@@ -171,9 +171,14 @@
 │   │   │   ├── EditFolderDialog.tsx
 │   │   │   ├── EditListDialog.tsx
 │   │   │   ├── ListRulesEditor.tsx
+│   │   │   ├── MergeItemsConfirmDialog.tsx
+│   │   │   ├── MergeItemsDialog.test.tsx
+│   │   │   ├── MergeItemsDialog.tsx
+│   │   │   ├── MergeListsConfirmDialog.tsx
+│   │   │   ├── MergeListsDialog.test.tsx
+│   │   │   ├── MergeListsDialog.tsx
 │   │   │   ├── NewFolderDialog.tsx
 │   │   │   ├── NewListDialog.tsx
-│   │   │   ├── OrbPickerDialog.tsx
 │   │   │   └── __tests__
 │   │   │       └── OrbPickerDialog.test.tsx
 │   │   ├── enhanced-list-view.test.tsx
@@ -196,8 +201,10 @@
 │   │   │   ├── ListContentDefault.tsx
 │   │   │   ├── ListContentDetails.tsx
 │   │   │   ├── ListContentIcons.tsx
+│   │   │   ├── ListContentPanel.test.tsx
 │   │   │   ├── ListContentPanel.tsx
 │   │   │   ├── ListContentSpreadsheet.tsx
+│   │   │   ├── item-select.tsx
 │   │   │   ├── kanban-utils.test.ts
 │   │   │   ├── kanban-utils.ts
 │   │   │   ├── kanban.README.md
@@ -214,19 +221,20 @@
 │   │   ├── settings-dialog.test.tsx
 │   │   ├── settings-dialog.tsx
 │   │   ├── toolbar
+│   │   │   ├── ItemSelectionToolbar.tsx
 │   │   │   ├── ListsToolbar.tsx
+│   │   │   ├── SelectionToolbar.tsx
 │   │   │   └── ViewModeControls.tsx
 │   │   ├── types.ts
 │   │   └── views
 │   │       ├── FolderViewCards.test.tsx
 │   │       ├── FolderViewCards.tsx
+│   │       ├── FolderViewDetails.test.tsx
 │   │       ├── FolderViewDetails.tsx
 │   │       ├── FolderViewIcons.tsx
+│   │       ├── FolderViewList.test.tsx
 │   │       ├── FolderViewList.tsx
 │   │       └── SearchResultsView.tsx
-│   ├── LiveSync
-│   │   ├── LiveSyncHost.tsx
-│   │   └── live-sync.css
 │   ├── Mobile
 │   │   ├── MobileApp.tsx
 │   │   ├── MobileLogin.tsx
@@ -256,6 +264,10 @@
 │   │       │   ├── FilmDnaView.tsx
 │   │       │   ├── PosterCard.tsx
 │   │       │   └── film-dna.css
+│   │       ├── housecleaning
+│   │       │   ├── TidyView.test.tsx
+│   │       │   ├── TidyView.tsx
+│   │       │   └── tidy.css
 │   │       ├── itinerary
 │   │       │   ├── CitySuggestInput.tsx
 │   │       │   ├── DocPlanView.tsx
@@ -281,6 +293,8 @@
 │   │   ├── ToDoNextRail.tsx
 │   │   ├── index.ts
 │   │   └── operation-actions.ts
+│   ├── PersistStatusBanner.test.tsx
+│   ├── PersistStatusBanner.tsx
 │   ├── README.md
 │   ├── Reviews
 │   │   ├── AffirmationsDialog.tsx
@@ -313,6 +327,8 @@
 │   │   └── useGlobalSearchHotkey.ts
 │   ├── Settings
 │   │   ├── BackupRestore.tsx
+│   │   ├── HomeLocationField.test.tsx
+│   │   ├── HomeLocationField.tsx
 │   │   ├── MobileSyncPanel.tsx
 │   │   ├── README.md
 │   │   └── SettingsDialog.tsx
@@ -322,10 +338,10 @@
 │   ├── cognitive-state.tsx
 │   ├── enhanced-bulk-add.test.tsx
 │   ├── enhanced-bulk-add.tsx
-│   ├── enhanced-task-detail.test.tsx
-│   ├── enhanced-task-detail.tsx
 │   ├── inbox.test.tsx
 │   ├── inbox.tsx
+│   ├── notes-ingest.test.tsx
+│   ├── notes-ingest.tsx
 │   ├── quick-add.test.tsx
 │   ├── quick-add.tsx
 │   ├── spreadsheet
@@ -335,8 +351,6 @@
 │   │   ├── SheetPopoutView.tsx
 │   │   ├── sheet-popout.test.ts
 │   │   └── sheet-popout.ts
-│   ├── task-detail-popup.test.tsx
-│   ├── task-detail-popup.tsx
 │   └── ui
 │       ├── README.md
 │       ├── alert.tsx
@@ -359,16 +373,19 @@
 │       └── tooltip.tsx
 ├── components.json
 ├── data
-│   └── mobile-sync.json
+│   ├── chrome-idb-snapshot
+│   │   ├── 000004.log
+│   │   ├── 000005.ldb
+│   │   ├── CURRENT
+│   │   ├── LOG
+│   │   └── MANIFEST-000001
+│   ├── mobile-sync.json
+│   └── shared-persist.json
 ├── docs
-│   ├── BIGGGNAME.html
 │   ├── BRAIN2_FEATURE_IDEAS.md
 │   ├── CANONICAL_FIELDS.md
 │   ├── README.md
 │   ├── SPEC_MAPPING.md
-│   ├── brain2_features_roadmap.md
-│   ├── brain2_features_roadmap_wave2.md
-│   ├── category-to-list-migration-roadmap.md
 │   ├── screenshots
 │   │   ├── 01-home-daily-habits.png
 │   │   ├── 01-home-daily-habits.txt
@@ -477,6 +494,9 @@
 │   └── lists.spec.ts
 ├── electron
 │   ├── README.md
+│   ├── apple-notes.js
+│   ├── apple-notes.jxa
+│   ├── entitlements.mac.plist
 │   ├── ipc
 │   │   ├── README.md
 │   │   └── channels.js
@@ -668,6 +688,10 @@
 │   ├── api-cache.ts
 │   ├── app-navigation.test.ts
 │   ├── app-navigation.ts
+│   ├── apple-notes.test.ts
+│   ├── apple-notes.ts
+│   ├── attachments.test.ts
+│   ├── attachments.ts
 │   ├── attribute-utils.ts
 │   ├── belief-strength.test.ts
 │   ├── belief-strength.ts
@@ -684,8 +708,6 @@
 │   ├── completion-status.ts
 │   ├── completion-tiers.test.ts
 │   ├── completion-tiers.ts
-│   ├── connectors.test.ts
-│   ├── connectors.ts
 │   ├── critical-path.test.ts
 │   ├── critical-path.ts
 │   ├── csv.test.ts
@@ -728,7 +750,12 @@
 │   ├── flight-lookup.ts
 │   ├── flight-types.test.ts
 │   ├── flight-types.ts
+│   ├── folder-all-items.test.ts
 │   ├── folder-all-items.ts
+│   ├── folder-membership.test.ts
+│   ├── folder-membership.ts
+│   ├── folder-selection.test.ts
+│   ├── folder-selection.ts
 │   ├── folder-tree.test.ts
 │   ├── folder-tree.ts
 │   ├── formula.test.ts
@@ -741,8 +768,14 @@
 │   ├── graph-layout.ts
 │   ├── habit-utils.ts
 │   ├── habits-store.ts
+│   ├── house-cleaning.test.ts
+│   ├── house-cleaning.ts
 │   ├── image-resize.test.ts
 │   ├── image-resize.ts
+│   ├── item-merge.test.ts
+│   ├── item-merge.ts
+│   ├── item-selection.test.ts
+│   ├── item-selection.ts
 │   ├── item-type-store.ts
 │   ├── item-types.test.ts
 │   ├── item-types.ts
@@ -755,14 +788,17 @@
 │   ├── letterboxd-parse.ts
 │   ├── links.test.ts
 │   ├── links.ts
+│   ├── list-merge.test.ts
+│   ├── list-merge.ts
 │   ├── list-tree.test.ts
 │   ├── list-tree.ts
+│   ├── lists-folder-search.test.ts
+│   ├── lists-folder-search.ts
 │   ├── lists-grid-entries.ts
 │   ├── lists-icon-grid.ts
 │   ├── lists-task-index.test.ts
 │   ├── lists-task-index.ts
 │   ├── lists-ui-store.ts
-│   ├── live-sync.ts
 │   ├── metrics-store.test.ts
 │   ├── metrics-store.ts
 │   ├── metrics.test.ts
@@ -775,9 +811,9 @@
 │   ├── mobile-sync.ts
 │   ├── module-definitions.test.ts
 │   ├── module-definitions.ts
+│   ├── module-lists.test.ts
+│   ├── module-lists.ts
 │   ├── module-plan-sync.ts
-│   ├── module-schedule-sync.test.ts
-│   ├── module-schedule-sync.ts
 │   ├── module-templates.test.ts
 │   ├── module-templates.ts
 │   ├── modules-store.ts
@@ -804,6 +840,8 @@
 │   ├── pdf-to-html.ts
 │   ├── pending-reviews.test.ts
 │   ├── pending-reviews.ts
+│   ├── persist-storage.test.ts
+│   ├── persist-storage.ts
 │   ├── places-search.test.ts
 │   ├── places-search.ts
 │   ├── plan-text.ts
@@ -867,6 +905,10 @@
 │   ├── types.ts
 │   ├── use-current-date.test.ts
 │   ├── use-current-date.ts
+│   ├── use-persisted-tab.test.tsx
+│   ├── use-persisted-tab.ts
+│   ├── user-settings-store.test.ts
+│   ├── user-settings-store.ts
 │   ├── utils.ts
 │   ├── vocal-confidence.test.ts
 │   ├── vocal-confidence.ts
@@ -883,7 +925,6 @@
 ├── package-lock.json
 ├── package.json
 ├── playwright.config.ts
-├── pnpm-lock.yaml
 ├── postcss.config.mjs
 ├── public
 │   ├── fonts
@@ -892,11 +933,12 @@
 │   ├── orbs-removebackground   [collapsed: hundreds of generated orb PNGs]
 │   └── newvelv.jpg
 ├── scripts
-│   ├── background-remover.py
 │   ├── capture-screenshots.mjs
 │   ├── cogs-dev-server.mjs
+│   ├── dump-chrome-localstorage.mjs
 │   ├── mobile-ios-ats.mjs
 │   ├── mobile-sync-server.mjs
+│   ├── persist-api.mjs
 │   ├── screenshot-manifest.mjs
 │   ├── sync-api.mjs
 │   └── update-tree.sh

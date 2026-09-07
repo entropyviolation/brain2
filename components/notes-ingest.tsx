@@ -41,6 +41,7 @@ import {
   parseBulkAddText,
   persistIngestedNoteIds,
   summarizeBulkAdd,
+  nextListColor,
   type AppleNote,
   type NotesPeriodPreset,
 } from "@/lib/apple-notes"
@@ -52,7 +53,6 @@ import type { List } from "@/lib/types"
 type Step = "period" | "loading" | "swipe" | "process" | "empty" | "error"
 
 const SWIPE_THRESHOLD = 108
-const LIST_COLORS = ["#3B82F6", "#EF4444", "#10B981", "#8B5CF6", "#F59E0B", "#06B6D4", "#EC4899", "#6366F1"]
 
 function formatNoteDate(iso: string): string {
   if (!iso) return ""
@@ -73,10 +73,6 @@ function afterPaint(): Promise<void> {
       })
     })
   })
-}
-
-function nextListColor(index: number): string {
-  return LIST_COLORS[Math.abs(index) % LIST_COLORS.length]
 }
 
 export function NotesIngest() {

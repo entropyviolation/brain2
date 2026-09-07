@@ -256,9 +256,9 @@ export interface ModuleInstance {
     statusValue?: string
   }
   /**
-   * Push finalized/confirmed dated items onto the global timeline by writing
-   * `Task.scheduledDate`/`scheduledTime` and (optionally) a `CalendarEvent`.
-   * See `lib/module-schedule-sync.ts`.
+   * Optional list + date gate kept for older persisted workspaces. Plan sync
+   * (`lib/module-plan-sync.ts`) is the live path; this field is still read when
+   * collecting bound list ids.
    */
   scheduleSync?: {
     categoryId: string

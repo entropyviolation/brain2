@@ -287,7 +287,7 @@ export interface Task extends Item {
   notes?: string // Additional notes
   parentTaskId?: string // For subtasks
   subtasks?: Subtask[] // Array of subtask objects
-  // ---- Brain2 additions (see docs/brain2_features_roadmap.md §2) ----
+  // ---- Brain2 additions (see docs/BRAIN2_FEATURE_IDEAS.md) ----
   /** Gantt: a "summary"/rollup task that completes when its children do. */
   isSummary?: boolean
   /** Concurrency map: tasks sharing a group can run in parallel. */

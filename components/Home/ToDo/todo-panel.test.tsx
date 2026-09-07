@@ -6,7 +6,7 @@ import { useTaskStore } from "@/lib/task-store"
 import { getScheduleableCategoryIds, isTaskScheduleable } from "@/components/Scheduler/scheduler-utils"
 import { TodoPanel } from "./todo-panel"
 
-vi.mock("@/components/task-detail-popup", () => ({
+vi.mock("@/components/ItemDetail/ItemDetailPopup", () => ({
   TaskDetailPopup: () => null,
 }))
 

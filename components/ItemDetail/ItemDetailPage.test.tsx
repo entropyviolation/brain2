@@ -6,7 +6,7 @@ import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetLocalStorage } from "@/tests/test-utils"
 import { useTaskStore } from "@/lib/task-store"
-import { EnhancedTaskDetail } from "./enhanced-task-detail"
+import { EnhancedTaskDetail } from "@/components/ItemDetail/ItemDetailPage"
 
 describe("EnhancedTaskDetail", () => {
   const onBack = vi.fn()

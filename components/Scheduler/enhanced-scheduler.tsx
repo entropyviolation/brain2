@@ -24,7 +24,7 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ChevronLeft, ChevronRight, Home, CalendarRange, GanttChartSquare, Workflow } from "lucide-react"
 import type { Task, SchedulePeriod } from "@/lib/types"
-import { TaskDetailPopup } from "@/components/task-detail-popup"
+import { TaskDetailPopup } from "@/components/ItemDetail/ItemDetailPopup"
 import { APP_NAV_KEYS } from "@/lib/app-navigation"
 import { usePersistedTab } from "@/lib/use-persisted-tab"
 import {
