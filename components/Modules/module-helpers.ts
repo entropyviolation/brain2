@@ -31,6 +31,7 @@ import {
   Map,
   Plane,
   Clapperboard,
+  Home,
 } from "lucide-react"
 import type { ModuleType, ModuleViewKind, AttrRule, RuleOperator } from "@/lib/modules-store"
 import type { Task, AttributeValue } from "@/lib/types"
@@ -101,6 +102,7 @@ export const MODULE_VIEW_KINDS: ModuleViewKindMeta[] = [
   { kind: "itinerary-doc", label: "Itinerary (printable days)", needsList: false, icon: Plane },
   { kind: "trip-map", label: "Trip activities map", needsList: true, icon: Map },
   { kind: "film-dna", label: "Film DNA Lab", needsList: true, icon: Clapperboard },
+  { kind: "house-cleaning", label: "House cleaning (Tidy)", needsList: false, icon: Home },
   { kind: "doc", label: "Document (Docs editor)", needsList: false, icon: FileText },
   { kind: "summary", label: "Summary / rollup", needsList: true, icon: ListChecks },
   { kind: "dashboard", label: "Dashboard (rollup cards)", needsList: false, icon: Gauge },

@@ -236,14 +236,16 @@ and **pop out** a module into its own window.
 | `workspace/module-view-bodies.tsx` | `ModuleViewBody` switch + per-kind render bodies |
 | `workspace/itinerary/*` | Trip Plan doc, printable itinerary, activities map, city/place suggest, checklists |
 | `workspace/filmrecs/*` | Film DNA Lab view + poster cards |
+| `workspace/housecleaning/*` | Tidy house-cleaning mini-app (`house-cleaning` view + scoped CSS) |
 | `workspace/WorkflowBuilder.tsx` / `WorkflowStepEditor.tsx` | Author per-module workflows (trigger → conditions → actions) |
 
 **Templates:** `lib/module-templates.ts` builds one-click mini-apps — **Itinerary**
 (Plan `doc` + printable `itinerary-doc` + Activities `trip-map` + City Places +
 plan/schedule-sync workflow; migrate via `lib/itinerary-migrate.ts`), **Cleaning**
 (gamified randomizer + timer), **Budget** (optional-inclusion rollup dashboard),
-**Book Tasting** (PDF→book `matcher` + `quiz`), and **Film DNA Lab** (`film-dna`
-shelves / Watch / Blend / Letterboxd import) — each scaffolding lists +
+**Book Tasting** (PDF→book `matcher` + `quiz`), **Film DNA Lab** (`film-dna`
+shelves / Watch / Blend / Letterboxd import), and **House Cleaning App** (Tidy:
+self-contained `house-cleaning` view) — each scaffolding lists +
 attribute schemas + seed items + bound views + seeded workflows. `lib/module-plan-sync.ts`
 pushes finalized dated module items into the Plan; `lib/module-schedule-sync.ts`
 turns them into scheduled events; `lib/book-match.ts` scores PDF→book matches;
@@ -255,7 +257,8 @@ pin places and estimate distances on the map (TTL-cached in `lib/api-cache.ts`).
 engine (`lib/workflow-engine.ts`) wired to task mutations by
 `lib/services/item-mutation-service.ts` (`initWorkflowEngine` on client mount).
 Specialized view kinds: **`matcher`**, **`quiz`**, **`dashboard`**,
-**`timeline`**, **`doc`**, **`itinerary-doc`**, **`trip-map`**, **`film-dna`**
+**`timeline`**, **`doc`**, **`itinerary-doc`**, **`trip-map`**, **`film-dna`**,
+**`house-cleaning`**
 (alongside **`decision-matrix`** / **`kanban`**).
 
 **Stores:** `modules-store` (instances; persist v2), `module-definitions`
@@ -398,7 +401,7 @@ Data model, Zustand stores (localStorage today → MongoDB), pure helpers. Not R
 | `spreadsheet-keys.ts` | Pure grid interaction model: cell navigation, range math, clipboard TSV, and selection stats (Sum/Avg/Min/Max/Count) |
 | `sheet-a1.ts` | A1-notation math: column letters ↔ index, `parseA1`/`formatA1`, `isCellFormula`, `extractA1Refs`, and `shiftFormula` (relative-ref rewriting for fill-drag, `$`-absolute aware) |
 | `sheet-eval.ts` | Evaluates per-cell `=A1` formulas against a grid accessor (reuses `lib/formula`, resolves cross-cell refs recursively with cycle detection) |
-| `module-templates.ts` | Pre-built workspace mini-app templates (Itinerary v2 doc/map/print / Cleaning / Budget / Book-Tasting / Film DNA Lab / Blank) |
+| `module-templates.ts` | Pre-built workspace mini-app templates (Itinerary v2 doc/map/print / Cleaning / House Cleaning / Budget / Book-Tasting / Film DNA Lab / Blank) |
 | `module-plan-sync.ts` | Push finalized module items into Plan text |
 | `module-schedule-sync.ts` | Turn finalized dated module items into scheduled events |
 | `itinerary-assemble.ts` | Pure day-block assembly for printable itineraries |
@@ -414,6 +417,7 @@ Data model, Zustand stores (localStorage today → MongoDB), pure helpers. Not R
 | `weather-client.ts` | Open-Meteo weather + sunrise/sunset for itinerary days |
 | `flight-lookup.ts` / `parse-flight-text.ts` | Flight number lookup + airline-paste parser |
 | `filmrecs-types.ts` / `filmrecs-catalog.ts` / `filmrecs-score.ts` | Film DNA Lab catalog + offline scoring |
+| `house-cleaning.ts` | Tidy house-cleaning model (areas, stuck mode, plans) stored on `module.config.houseCleaning` |
 | `letterboxd-parse.ts` | Letterboxd export-folder / CSV merge |
 | `doc-html.ts` / `doc-links.ts` | Docs HTML sanitize + hyperlink helpers |
 | `google-fonts.ts` | Allow-listed Google Fonts for Docs |

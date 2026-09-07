@@ -6,6 +6,7 @@ describe("buildModuleTemplate", () => {
     expect(MODULE_TEMPLATES.map((t) => t.id)).toEqual([
       "itinerary",
       "cleaning",
+      "house-cleaning",
       "budget",
       "book-tasting",
       "filmrecs",
@@ -58,6 +59,20 @@ describe("buildModuleTemplate", () => {
     expect(built.lists.some((c) => c.name === "Systems")).toBe(true)
     // Gamification workflow present.
     expect((built.workflows ?? []).length).toBeGreaterThan(0)
+  })
+
+  it("builds a Tidy house-cleaning workspace with self-contained state", () => {
+    const built = buildModuleTemplate("house-cleaning", 5)
+    expect(built.module.templateId).toBe("house-cleaning")
+    expect(built.module.title).toBe("Tidy")
+    expect(built.lists).toEqual([])
+    const kinds = (built.module.views ?? []).map((v) => v.kind)
+    expect(kinds).toEqual(["house-cleaning"])
+    const tidy = built.module.config.houseCleaning
+    expect(tidy?.areas.length).toBe(6)
+    expect(tidy?.tasks.length).toBeGreaterThanOrEqual(10)
+    expect(tidy?.stuckTasks.some((t) => t.kind === "timed")).toBe(true)
+    expect(tidy?.stuckTasks.some((t) => t.title.includes("{n}"))).toBe(true)
   })
 
   it("itinerary ships self-contained days + doc + trip-map (no Costs/Flights tabs)", () => {

@@ -64,4 +64,13 @@ describe("persist-storage", () => {
     expect(loaded?.state).toEqual({ colors: { a: 1 } })
     expect(getPersistStatus().ok).toBe(true)
   })
+
+  it("does not call the persist hub during tests", () => {
+    const fetchSpy = vi.fn()
+    vi.stubGlobal("fetch", fetchSpy)
+    const storage = cogsStateStorage()
+    expect(storage.getItem("cogs-task-storage")).toBeNull()
+    storage.setItem("cogs-task-storage", '{"state":{}}')
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
 })

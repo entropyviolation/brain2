@@ -203,10 +203,11 @@ local-first/sync-ready, AI-ready-not-AI-dependent, everything reviewable.
   another via `lib/book-match.ts`), **quiz**, **dashboard** (optional-inclusion
   rollup cards), plus Trip Itinerary **doc** (Docs editor), **itinerary-doc**
   (printable day blocks via `lib/itinerary-assemble.ts` / `lib/trip-itinerary.ts`),
-  **trip-map** (Leaflet + Open-Meteo `lib/city-search.ts` / Photon `lib/places-search.ts`, cached in `lib/api-cache.ts`), and **film-dna** (Film DNA
-  Lab). Built/edited with `workspace/ModuleViewEditor.tsx`;
+  **trip-map** (Leaflet + Open-Meteo `lib/city-search.ts` / Photon `lib/places-search.ts`, cached in `lib/api-cache.ts`), **film-dna** (Film DNA
+  Lab), and **house-cleaning** (Tidy house-cleaning app). Built/edited with `workspace/ModuleViewEditor.tsx`;
   the per-kind dispatch is `workspace/module-view-bodies.tsx`; itinerary-specific
   bodies live under `workspace/itinerary/`; Film DNA under `workspace/filmrecs/`;
+  Tidy under `workspace/housecleaning/`;
   rendered by
   `workspace/ModuleWorkspace.tsx` and **drag-reorderable**.
 - **Templates** (`lib/module-templates.ts`) scaffold lists + attribute schemas +
@@ -218,9 +219,9 @@ local-first/sync-ready, AI-ready-not-AI-dependent, everything reviewable.
   (randomizer + timer + per-room progress + notes), **Budget Tracker**
   (optional-inclusion rollup **dashboard**: liquid / net worth / expected spend /
   payments), **Book Tasting** (PDF→book **matcher** + **quiz** over `file`
-  attributes with extracted text), and **Film DNA Lab** (`film-dna` shelves /
-  Watch ranking / Blend / Letterboxd import). This realizes the "custom-module
-  platform" ambition on the unified Item model.
+  attributes with extracted text), **Film DNA Lab** (`film-dna` shelves /
+  Watch ranking / Blend / Letterboxd import), and **House Cleaning App** (Tidy
+  `house-cleaning` view). This realizes the "custom-module platform" ambition on the unified Item model.
 - **Build-from-scratch + definitions** — ✅ `ModuleBuilderDialog` offers build
   from scratch, saved **definitions**, or templates; `ModuleSettingsDialog` /
   `ModuleListsPanel` author a serializable `ModuleDefinition` stored in

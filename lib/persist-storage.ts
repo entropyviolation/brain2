@@ -8,6 +8,12 @@
  * `localStorage` origin quota is typically 5–10MB. Attachments no longer live
  * in the JSON blob (`lib/attachments.ts`); this guard is the backstop for the
  * remaining JSON and for restore.
+ *
+ * On `localhost` in Electron, reads prefer the dev-server hub (`/api/persist`)
+ * so a reboot cannot leave the desktop shell stuck on an old Chromium profile
+ * while Chrome has the live vault. Chrome always reads and writes its own
+ * localStorage (never imported from the hub). Electron never writes the hub,
+ * so a stale desktop boot cannot clobber Chrome's snapshot.
  */
 import { createJSONStorage, type PersistStorage, type StateStorage } from "zustand/middleware"
 
@@ -113,11 +119,84 @@ function hasLocalStorage(): boolean {
   }
 }
 
+function inVitest(): boolean {
+  return typeof process !== "undefined" && !!process.env.VITEST
+}
+
+function isElectronRenderer(): boolean {
+  return typeof navigator !== "undefined" && /Electron/i.test(navigator.userAgent)
+}
+
+function hubEnabled(): boolean {
+  if (inVitest()) return false
+  if (typeof window === "undefined") return false
+  try {
+    const { protocol, hostname } = window.location
+    return protocol === "http:" && (hostname === "localhost" || hostname === "127.0.0.1")
+  } catch {
+    return false
+  }
+}
+
+type HubSnapshot = { items?: Record<string, string> } | null
+
+let hubPromise: Promise<HubSnapshot> | null = null
+
+function loadHub(): Promise<HubSnapshot> {
+  if (!hubEnabled()) return Promise.resolve(null)
+  if (!hubPromise) {
+    hubPromise = fetch("/api/persist")
+      .then((r) => (r.ok ? r.json() : null))
+      .catch(() => null)
+  }
+  return hubPromise
+}
+
+const hubPostTimers = new Map<string, ReturnType<typeof setTimeout>>()
+
+function postHub(name: string, value: string) {
+  // Chrome is the only hub writer. Electron hydrates from the hub (and from
+  // preload) but must never POST, or a stale desktop profile can overwrite
+  // the Chrome vault.
+  if (!hubEnabled() || isElectronRenderer()) return
+  const prev = hubPostTimers.get(name)
+  if (prev) clearTimeout(prev)
+  hubPostTimers.set(
+    name,
+    setTimeout(() => {
+      hubPostTimers.delete(name)
+      void fetch("/api/persist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, value, source: "chrome" }),
+      }).catch(() => {})
+    }, 250),
+  )
+}
+
 /** StateStorage that never throws out of setItem — quota becomes persist status. */
 export function cogsStateStorage(): StateStorage {
   return {
     getItem: (name) => {
       if (!hasLocalStorage()) return null
+      if (hubEnabled() && isElectronRenderer()) {
+        return loadHub().then((hub) => {
+          const fromHub = hub?.items?.[name]
+          if (typeof fromHub === "string") {
+            try {
+              localStorage.setItem(name, fromHub)
+            } catch {
+              /* copy is best-effort; still return hub value */
+            }
+            return fromHub
+          }
+          try {
+            return localStorage.getItem(name)
+          } catch {
+            return null
+          }
+        })
+      }
       try {
         return localStorage.getItem(name)
       } catch {
@@ -132,6 +211,7 @@ export function cogsStateStorage(): StateStorage {
       try {
         localStorage.setItem(name, value)
         recordPersistSuccess()
+        postHub(name, value)
       } catch (error) {
         recordPersistFailure(error)
       }

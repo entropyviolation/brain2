@@ -15,6 +15,7 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
+import type { HouseCleaningState } from "@/lib/house-cleaning"
 import type { SheetViewConfig } from "@/lib/spreadsheet-contract"
 import type { TripItineraryData } from "@/lib/trip-itinerary"
 
@@ -63,6 +64,8 @@ export type ModuleViewKind =
   | "trip-map"
   /** Film DNA Lab: Letterboxd taste map (DNA / Watch / Blend / Import). */
   | "film-dna"
+  /** Tidy house-cleaning app (areas, stuck mode, plans) — self-contained. */
+  | "house-cleaning"
 
 /**
  * A weighted criterion for the `decision-matrix` view. Each criterion binds to a
@@ -222,6 +225,8 @@ export interface ModuleConfig {
    * Operations (Itinerary / Activities tabs) rather than the Modules list.
    */
   operationId?: string
+  /** Tidy house-cleaning mini-app state (not list-backed). */
+  houseCleaning?: HouseCleaningState
 }
 
 export interface ModuleInstance {

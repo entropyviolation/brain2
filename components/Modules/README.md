@@ -42,6 +42,8 @@ module live here:
 | `workspace/filmrecs/FilmDnaView.tsx` | Film DNA Lab workspace view (DNA / Watch / Blend / Import) |
 | `workspace/filmrecs/PosterCard.tsx` | Poster card with iTunes lazy fallback |
 | `workspace/filmrecs/film-dna.css` | Letterboxd-adjacent Film DNA styles |
+| `workspace/housecleaning/TidyView.tsx` | **Tidy** house-cleaning mini-app (areas, stuck mode, plans) |
+| `workspace/housecleaning/tidy.css` | Scoped port of the Tidy stylesheet |
 | `lib/itinerary-migrate.ts` *(lib)* | Best-effort upgrade of older Itinerary workspaces to the v2 view set |
 
 ## Data
@@ -82,6 +84,7 @@ Templates and the grid live in `lib/module-templates.ts` and
 | `itinerary-doc` | Self-contained printable trip days (`module.config.tripItinerary`): start/end auto-days, city or A→B labels, Open-Meteo weather, timed plans/notes, flight lookup by number |
 | `trip-map` | City-split Leaflet map of stays + wishlist places; multi-list filters (a place can be on several lists); walking/driving/transit distance |
 | `film-dna` | Film DNA Lab: shelves + likes wall, offline Watch ranking (safe/balanced/explore), Letterboxd **export folder** import/blend (`lib/letterboxd-parse.ts` merges watchlist/watched/ratings/diary/`likes/films.csv`) |
+| `house-cleaning` | Tidy house-cleaning app (self-contained on `module.config.houseCleaning`): area cards, hierarchical chores with importance/estimates/actuals, per-task timer + focus bar, today’s goal, bulk paste, Needed list, Stuck mode, Bare-minimum / Good / Exceptional plans |
 | `kanban` | Board grouped into columns by a selection/text attribute (`config.statusAttrId`); columns derived via `isKanbanGroupable` (`components/Lists/list-content/kanban-utils.ts`) |
 | `decision-matrix` | Weighted multi-criteria ranking (MCDA): rows = options (items), columns = criteria (numeric attributes, each with a weight + direction). Computes a normalized weighted score per option, ranks highest-first, and highlights the winner. Scoring core is `lib/decision-matrix.ts` |
 | `timeline` | Day-by-day timeline of dated items (`config.dateAttrId`/`timeAttrId`) with time, cost, and booked/finalized badges — the confirmed-trip companion to `agenda`. Reflects `lib/module-schedule-sync.ts` |
@@ -115,6 +118,7 @@ and persists onto the view. Pure + unit-tested in `lib/decision-matrix.test.ts`.
 | **Budget Tracker** | Accounts, Monthly Payments, Debts, Expected Spend | **Dashboard** of optional-inclusion rollups (liquid total, net worth = accounts − debts, expected spend, monthly payments); per-list spreadsheets; payments-by-status summary |
 | **Book Tasting** | Reading List, PDF Shelf | A **matcher** that links each PDF (`file` attribute, extracted text) to its book with confidence + unmatched flags, plus a **quiz** that shows a random snippet and asks you to guess the title; "PDF added with no match → throw" workflow |
 | **Film DNA Lab** | Films (watchlist + likes) | **Film DNA** view (`film-dna`): vibe shelves, likes wall, Watch scatter + ranking, Blend with a friend's CSV, Letterboxd import; plus Films spreadsheet, poster gallery, randomizer, shelf summary. Seeded from Filmrecs catalog; import your own exports to replace |
+| **House Cleaning App** | *(none — self-contained)* | **Tidy** (`house-cleaning`): port of the house-cleaning tracker — areas, hierarchical tasks, importance + time, per-task timer, Needed, Stuck mode, and three-tier plans. State lives on `module.config.houseCleaning` |
 | **Blank Workspace** | New List | Empty starting point — add your own lists and views |
 
 ## Building modules from scratch (definitions)

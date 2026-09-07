@@ -28,6 +28,26 @@ const OPEN_MODULE_POPOUT_IPC_CHANNEL = "cogs:window:openModulePopout"
 // electron/ipc/channels.js. Consumed by lib/apple-notes.ts.
 const FETCH_APPLE_NOTES_IPC_CHANNEL = "cogs:notes:fetchAppleNotes"
 
+// Chrome localhost persist snapshot. MUST match electron/main.js.
+const GET_SHARED_PERSIST_IPC_CHANNEL = "cogs:persist:getShared"
+
+function hydrateLocalStorageFromChromeHub() {
+  try {
+    const snapshot = ipcRenderer.sendSync(GET_SHARED_PERSIST_IPC_CHANNEL)
+    const items = snapshot && snapshot.items
+    if (!items || typeof items !== "object") return
+    for (const [name, value] of Object.entries(items)) {
+      if (typeof name === "string" && typeof value === "string") {
+        localStorage.setItem(name, value)
+      }
+    }
+  } catch {
+    // Hub is optional; never throw out of preload.
+  }
+}
+
+hydrateLocalStorageFromChromeHub()
+
 // Expose a minimal, read-only surface to the renderer. App data lives in
 // localStorage/Zustand today; MongoDB IPC channels will be added here when the
 // storage layer lands (see docs/SPEC_MAPPING.md §3).

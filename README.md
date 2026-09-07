@@ -41,12 +41,12 @@ your own tools. Beyond single-card widgets, you can build full-screen
 **views** (an editable spreadsheet, agenda, rollup summaries, a gamified
 randomizer, a focus timer, checklists, a gallery, notes, plus specialized
 **timeline**, **matcher**, **quiz**, **dashboard**, **decision-matrix**, Trip
-Itinerary **doc** / **itinerary-doc** / **trip-map**, and **film-dna** kinds).
+Itinerary **doc** / **itinerary-doc** / **trip-map**, **film-dna**, and **house-cleaning** kinds).
 You can author per-module **workflows** ("Zapier for your data": a trigger →
 conditions → actions that run on real item mutations) and **pop a workspace
 out** into its own window. One-click **templates** scaffold the lists, attribute
 schemas, seed data, views, and workflows for an **Itinerary Creator**, a
-**Cleaning System**, a **Budget Tracker**, a **Book Tasting** shelf, and a
+**Cleaning System**, a **House Cleaning App** (Tidy), a **Budget Tracker**, a **Book Tasting** shelf, and a
 **Film DNA Lab** — all on the same `Item` / `ItemType` / attribute foundation,
 so the data also flows through Lists, Scheduler, and Analytics. Reusable module
 **definitions** (blueprints) can be saved, re-instantiated, and exported/imported.
@@ -301,9 +301,9 @@ Items; Scheduler period funnel (Always→Year→Month→Week→Day); Home dashbo
 with plan text and reflection (plus morning review and per-task post-mortems);
 **Modules** platform (user-buildable full-screen **workspaces** with bound
 spreadsheet/agenda/summary/randomizer/timer/checklist/gallery/notes/decision-matrix/
-timeline/matcher/quiz/dashboard/doc/itinerary-doc/trip-map/film-dna views,
+timeline/matcher/quiz/dashboard/doc/itinerary-doc/trip-map/film-dna/house-cleaning views,
 authored **workflows** that run on item mutations, **pop-out** windows, reusable
-**definitions**, plus templates for Itinerary / Cleaning / Budget / Book Tasting
+**definitions**, plus templates for Itinerary / Cleaning / House Cleaning / Budget / Book Tasting
 / Film DNA Lab, and dashboard widgets); **Docs** tab (WYSIWYG over `note`
 items); **Operations** tab; **spreadsheet** display (v3: range select, fill
 handle, per-cell `=A1` + formula columns, row/column resize) for lists;

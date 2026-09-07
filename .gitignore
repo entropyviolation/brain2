@@ -29,9 +29,12 @@ next-env.d.ts
 # electron build output
 /dist/
 
-# mobile sync snapshot (shared backup file — never commit user data)
+# mobile sync snapshot + Chrome/Electron shared persist hub (never commit user data)
 /data/mobile-sync.json
 /data/mobile-sync.json.*.tmp
+/data/shared-persist.json
+/data/shared-persist.json.*.tmp
+/data/chrome-idb-snapshot/
 
 # Capacitor Android (not scaffolded yet)
 /android/

@@ -15,6 +15,7 @@ import net from "node:net"
 import os from "node:os"
 import next from "next"
 import { handleSyncApi, syncDataPath } from "./sync-api.mjs"
+import { handlePersistApi, sharedPersistPath } from "./persist-api.mjs"
 
 const hostname = "0.0.0.0"
 const preferredPort = Number(process.env.PORT || 3000)
@@ -65,6 +66,7 @@ const server = createServer(async (req, res) => {
   try {
     const parsedUrl = parse(req.url || "/", true)
     const pathname = parsedUrl.pathname || "/"
+    if (await handlePersistApi(req, res, pathname)) return
     if (await handleSyncApi(req, res, pathname)) return
     await handle(req, res, parsedUrl)
   } catch (err) {
@@ -86,6 +88,7 @@ server.listen(port, hostname, () => {
     console.log(`[cogs-dev] desktop: http://${ip}:${port}/`)
   }
   console.log(`[cogs-dev] hub:     ${`http://127.0.0.1:${port}`}/api/sync/*  (admin/admin; live sync parked)`)
+  console.log(`[cogs-dev] persist: ${sharedPersistPath()}`)
   console.log(`[cogs-dev] data:    ${syncDataPath()}`)
   console.log("")
 })

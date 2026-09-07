@@ -21,8 +21,9 @@ import { addModuleCreatedLists, taskStoreModuleListsMutators } from "@/lib/modul
 import { FILMRECS_SHELVES } from "@/lib/filmrecs-types"
 import { seedFilmToTask, type SeedFilm } from "@/lib/filmrecs-catalog"
 import filmrecsSeed from "@/lib/filmrecs-seed.json"
+import { seedHouseCleaning } from "@/lib/house-cleaning"
 
-export type ModuleTemplateId = "itinerary" | "cleaning" | "budget" | "book-tasting" | "filmrecs" | "blank"
+export type ModuleTemplateId = "itinerary" | "cleaning" | "house-cleaning" | "budget" | "book-tasting" | "filmrecs" | "blank"
 
 export interface ModuleTemplateMeta {
   id: ModuleTemplateId
@@ -42,6 +43,12 @@ export const MODULE_TEMPLATES: ModuleTemplateMeta[] = [
     name: "Cleaning System",
     description:
       "Room inventory, a gamified random-task picker (\"pick up 20 things\"), a focus timer, per-room progress, and a notes space for your cleaning systems.",
+  },
+  {
+    id: "house-cleaning",
+    name: "House Cleaning App",
+    description:
+      "Tidy: areas with hierarchical chores, importance + estimates, a per-task timer, today’s goal, bulk paste, a Needed list, Stuck mode, and Bare-minimum / Good / Exceptional plans.",
   },
   {
     id: "budget",
@@ -438,6 +445,22 @@ function buildCleaning(uid: Uid): BuiltModuleTemplate {
   return { lists: [rooms, systems, tasks], seedTasks, module, workflows }
 }
 
+function buildHouseCleaning(uid: Uid): BuiltModuleTemplate {
+  const moduleId = uid("module")
+  const module: ModuleInstance = {
+    id: moduleId,
+    type: "workspace",
+    kind: "workspace",
+    title: "Tidy",
+    description: "House cleaning tracker — pick an area, or start with one small task.",
+    templateId: "house-cleaning",
+    icon: "home",
+    config: { houseCleaning: seedHouseCleaning() },
+    views: [view("house-cleaning", "Tidy", {}, uid)],
+  }
+  return { lists: [], seedTasks: [], module }
+}
+
 function buildBudget(uid: Uid): BuiltModuleTemplate {
   const accounts = makeCategory(uid, "Accounts", {
     color: "#22c55e",
@@ -722,6 +745,8 @@ export function buildModuleTemplate(id: ModuleTemplateId, seedNum = Date.now()):
       return buildItinerary(uid)
     case "cleaning":
       return buildCleaning(uid)
+    case "house-cleaning":
+      return buildHouseCleaning(uid)
     case "budget":
       return buildBudget(uid)
     case "book-tasting":

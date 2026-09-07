@@ -44,6 +44,9 @@ const OPEN_MODULE_POPOUT_IPC_CHANNEL = "cogs:window:openModulePopout"
 // `window.desktop.fetchAppleNotes` in electron/preload.js.
 const FETCH_APPLE_NOTES_IPC_CHANNEL = "cogs:notes:fetchAppleNotes"
 
+// Dev persist hub (Chrome localhost snapshot). MUST match preload.
+const GET_SHARED_PERSIST_IPC_CHANNEL = "cogs:persist:getShared"
+
 // Directory containing the static Next.js export (`next build` with
 // `output: "export"`). In production this is bundled alongside the app.
 const OUT_DIR = path.join(__dirname, "..", "out")
@@ -218,6 +221,47 @@ function registerWindowIpcHandlers() {
   ipcMain.on(OPEN_MODULE_POPOUT_IPC_CHANNEL, (_event, hash) => openPopoutWindow(hash))
 }
 
+/** Read the Chrome-seeded hub file. Never writes Chrome's profile. */
+function readSharedPersistSnapshot() {
+  const file = path.join(__dirname, "..", "data", "shared-persist.json")
+  try {
+    if (!fs.existsSync(file)) return { items: {} }
+    const parsed = JSON.parse(fs.readFileSync(file, "utf8"))
+    const items = parsed.items && typeof parsed.items === "object" ? parsed.items : {}
+    return {
+      items,
+      source: parsed.source ?? null,
+      updatedAt: parsed.updatedAt ?? null,
+    }
+  } catch {
+    return { items: {} }
+  }
+}
+
+function registerPersistIpcHandlers() {
+  ipcMain.on(GET_SHARED_PERSIST_IPC_CHANNEL, (event) => {
+    event.returnValue = readSharedPersistSnapshot()
+  })
+}
+
+/** Copy Chrome's localhost IndexedDB snapshot into Electron userData. Dev only. */
+function hydrateIndexedDBFromChromeSnapshot() {
+  if (!isDev) return
+  const src = path.join(__dirname, "..", "data", "chrome-idb-snapshot")
+  if (!fs.existsSync(src)) return
+  const destDir = path.join(app.getPath("userData"), "IndexedDB")
+  const dest = path.join(destDir, "http_localhost_3000.indexeddb.leveldb")
+  try {
+    fs.mkdirSync(destDir, { recursive: true })
+    fs.rmSync(dest, { recursive: true, force: true })
+    fs.cpSync(src, dest, { recursive: true })
+    const lock = path.join(dest, "LOCK")
+    if (fs.existsSync(lock)) fs.rmSync(lock)
+  } catch (err) {
+    console.warn("[cogs] IndexedDB hydrate skipped:", err && err.message)
+  }
+}
+
 /** Register the Apple Notes ingest IPC handler (macOS Notes.app via osascript). */
 function registerNotesIpcHandlers() {
   ipcMain.handle(FETCH_APPLE_NOTES_IPC_CHANNEL, (_event, range) => {
@@ -255,6 +299,8 @@ app.whenReady().then(() => {
     })
   }
 
+  registerPersistIpcHandlers()
+  hydrateIndexedDBFromChromeSnapshot()
   createWindow()
   registerQuickCaptureShortcut()
   registerFileIpcHandlers()

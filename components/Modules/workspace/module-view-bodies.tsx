@@ -53,6 +53,7 @@ import { ItineraryDocumentView } from "@/components/Modules/workspace/itinerary/
 import { PackingChecklistView, PreTripChecklistView } from "@/components/Modules/workspace/itinerary/TripChecklists"
 import { TripActivitiesView } from "@/components/Modules/workspace/itinerary/TripActivitiesView"
 import { FilmDnaView } from "@/components/Modules/workspace/filmrecs/FilmDnaView"
+import { TidyView } from "@/components/Modules/workspace/housecleaning/TidyView"
 import type { ModuleInstance } from "@/lib/modules-store"
 
 function getDef(cat: List | undefined, id?: string): AttributeDefinition | undefined {
@@ -117,6 +118,8 @@ export function ModuleViewBody({
       return <TripActivitiesView view={view} module={module} onOpenItem={onOpenItem} />
     case "film-dna":
       return <FilmDnaView view={view} />
+    case "house-cleaning":
+      return <TidyView module={module} />
     case "decision-matrix":
       return <DecisionMatrixView view={view} onOpenItem={onOpenItem} />
     case "kanban":
