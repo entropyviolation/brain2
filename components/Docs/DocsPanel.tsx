@@ -374,9 +374,9 @@ export function DocsPanel() {
         </div>
 
         <div className="docs-body">
-          <aside className="docs-sidebar" aria-label="Folders">
+          <aside className="docs-sidebar" aria-label="Folders and documents">
             <div className="docs-sidebar-head">Folders</div>
-            <ul className="docs-folder-list docs-folder-list-full">
+            <ul className="docs-folder-list">
               {folderChoices.map((f) => (
                 <li key={f.id}>
                   <button
@@ -396,6 +396,30 @@ export function DocsPanel() {
                 </li>
               ))}
             </ul>
+            <div className="docs-sidebar-head">Recent documents</div>
+            {visibleDocs.length === 0 ? (
+              <p className="docs-empty-side">No documents here. Click New to start.</p>
+            ) : (
+              <ul className="docs-doc-list">
+                {visibleDocs.map((d) => (
+                  <li key={d.id}>
+                    <button
+                      type="button"
+                      className="docs-doc-item"
+                      aria-selected={selectedId === d.id}
+                      onClick={() => {
+                        void flushBody()
+                        setSelectedId(d.id)
+                      }}
+                    >
+                      <FileText className="h-3.5 w-3.5" aria-hidden />
+                      <span className="truncate">{d.description || "Untitled"}</span>
+                      <span className="docs-doc-meta">{documentStatus(d)}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </aside>
 
           <section className="docs-main" aria-label={selected ? "Editor" : "Documents"}>

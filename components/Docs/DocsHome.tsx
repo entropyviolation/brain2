@@ -5,7 +5,7 @@
  */
 "use client"
 
-import { FileText, FileUp, Plus, Search } from "lucide-react"
+import { FileText, FileUp, Search, X } from "lucide-react"
 import { documentPreviewText, htmlToPlainText } from "@/lib/doc-html"
 import {
   documentFolder,
@@ -82,16 +82,29 @@ export function DocsHome({
       <div className="docs-home-recent">
         <div className="docs-home-recent-head">
           <h3>{folderLabel}</h3>
-          <label className="docs-home-search">
-            <Search className="h-3.5 w-3.5" aria-hidden />
+          <div className="docs-home-search">
+            <Search className="docs-home-search-icon" aria-hidden />
             <input
-              type="search"
+              type="text"
               value={query}
               onChange={(e) => onQueryChange(e.target.value)}
-              placeholder="Search"
+              placeholder="Search documents"
               aria-label={`Search ${folderLabel}`}
+              spellCheck={false}
+              autoComplete="off"
             />
-          </label>
+            {query ? (
+              <button
+                type="button"
+                className="docs-home-search-clear"
+                data-no95
+                onClick={() => onQueryChange("")}
+                aria-label="Clear search"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            ) : null}
+          </div>
         </div>
         {docs.length === 0 ? (
           <p className="docs-home-empty">
