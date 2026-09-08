@@ -81,8 +81,8 @@ import { ListContentPanel } from "@/components/Lists/list-content/ListContentPan
 import { CompletedTasksDialog } from "@/components/Lists/dialogs/CompletedTasksDialog"
 import { OrbPickerDialog } from "@/components/Icons/OrbPicker"
 import { CsvImportDialog } from "@/components/Lists/dialogs/CsvImportDialog"
-import { NewListDialog } from "@/components/Lists/dialogs/NewListDialog"
-import { NewFolderDialog } from "@/components/Lists/dialogs/NewFolderDialog"
+import { NewListDialog, type NewListFields } from "@/components/Lists/dialogs/NewListDialog"
+import { NewFolderDialog, type NewFolderFields } from "@/components/Lists/dialogs/NewFolderDialog"
 import { MergeListsConfirmDialog } from "@/components/Lists/dialogs/MergeListsConfirmDialog"
 import { MergeListsDialog } from "@/components/Lists/dialogs/MergeListsDialog"
 import { MergeItemsConfirmDialog } from "@/components/Lists/dialogs/MergeItemsConfirmDialog"
@@ -153,22 +153,13 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
 
   const [newCategoryOpen, setNewCategoryOpen] = useState(false)
   const [editingCategory, setEditingCategory] = useState<List | null>(null)
-  const [newCategoryName, setNewCategoryName] = useState("")
-  const [newCategoryDescription, setNewCategoryDescription] = useState("")
-  const [newCategoryColor, setNewCategoryColor] = useState("#3B82F6")
-  const [newCategoryScheduleable, setNewCategoryScheduleable] = useState(true)
-  const [newCategoryTemplate, setNewCategoryTemplate] = useState("none")
   const csvRef = useRef<HTMLInputElement>(null)
   const [csvImport, setCsvImport] = useState<CsvImportState | null>(null)
   const [addingTaskToTarget, setAddingTaskToTarget] = useState<string | null>(null)
-  const [newTaskDescription, setNewTaskDescription] = useState("")
   const [showBulkAdd, setShowBulkAdd] = useState(false)
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const [showCategorySettings, setShowCategorySettings] = useState(false)
   const [showCompletedTasks, setShowCompletedTasks] = useState(false)
-  const [newFolderName, setNewFolderName] = useState("")
-  const [newFolderColor, setNewFolderColor] = useState("#3B82F6")
-  const [newFolderScheduleable, setNewFolderScheduleable] = useState(true)
   const [showNewFolderDialog, setShowNewFolderDialog] = useState(false)
   const [editingFolder, setEditingFolder] = useState<Folder | null>(null)
   const [iconPickerFor, setIconPickerFor] = useState<IconPickerTarget>(null)
@@ -342,25 +333,21 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
   const statusText = openTarget ? `${openTasks.length} item(s) in "${openName}"` : `${entries.filter((e) => e.kind === "folder").length} folder(s), ${entries.filter((e) => e.kind !== "folder").length} list(s)`
 
   const openNewCategoryDialog = useCallback(() => {
-    setNewCategoryName("")
-    setNewCategoryDescription(currentFolder?.description || "")
-    setNewCategoryColor(currentFolder?.color || "#3B82F6")
-    setNewCategoryScheduleable(currentFolder ? currentFolder.scheduleable !== false : true)
     setNewCategoryOpen(true)
-  }, [currentFolder])
+  }, [])
 
-  const handleCreateCategory = useCallback(() => {
-    if (!newCategoryName.trim()) return
+  const handleCreateCategory = useCallback((fields: NewListFields) => {
+    if (!fields.name.trim()) return
     const id = Date.now().toString()
-    const template = LIST_TEMPLATES[newCategoryTemplate]
+    const template = LIST_TEMPLATES[fields.template]
     addList({
       id,
-      name: newCategoryName,
-      color: newCategoryColor,
-      description: newCategoryDescription,
+      name: fields.name,
+      color: fields.color,
+      description: fields.description,
       createdAt: new Date(),
       order: categories.length,
-      scheduleable: newCategoryScheduleable,
+      scheduleable: fields.scheduleable,
       itemAttributes: template?.attributes.length ? template.attributes.map((a) => ({ ...a })) : undefined,
     })
     if (currentFolder) addListToFolder(currentFolder.id, id)
@@ -387,19 +374,49 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
       selection.cancelSelectMode()
     }
     setNewCategoryOpen(false)
-    setNewCategoryName("")
-    setNewCategoryDescription("")
-    setNewCategoryColor("#3B82F6")
-    setNewCategoryScheduleable(true)
-    setNewCategoryTemplate("none")
-  }, [newCategoryName, newCategoryColor, newCategoryDescription, newCategoryScheduleable, newCategoryTemplate, addList, categories.length, currentFolder, addListToFolder, isHome, toggleHomePin, selectedTaskIds, openTarget, itemPlacementMode, updateTask, itemTypes, selection])
+  }, [addList, categories.length, currentFolder, addListToFolder, isHome, toggleHomePin, selectedTaskIds, openTarget, itemPlacementMode, updateTask, itemTypes, selection])
 
-  const handleEditCategory = useCallback(() => {
-    if (editingCategory) {
-      updateList(editingCategory)
-      setEditingCategory(null)
+  const handleCreateFolder = useCallback((fields: NewFolderFields) => {
+    if (!fields.name.trim()) return
+    const id = Date.now().toString() + Math.random().toString(36).substr(2, 5)
+    addFolder({
+      id,
+      name: fields.name,
+      createdAt: new Date(),
+      listIds: selectedCategories,
+      color: fields.color,
+      scheduleable: fields.scheduleable,
+      parentFolderId: currentFolder?.id,
+    })
+    const mode: ListPlacementMode = isAll ? "keep" : placementMode
+    const unlink = originFolderIdToUnlink({ mode, originFolderId: currentFolder?.id, isAll })
+    if (unlink) selectedCategories.forEach((catId) => removeListFromFolder(unlink, catId))
+    if (mode === "move") {
+      selectedFolderIds.forEach((fid) => {
+        if (wouldCreateFolderCycle(folders, fid, id)) return
+        const child = folders.find((f) => f.id === fid)
+        if (child) updateFolder({ ...child, parentFolderId: id })
+      })
     }
-  }, [editingCategory, updateList])
+    setShowNewFolderDialog(false)
+    selection.cancelSelectMode()
+  }, [
+    addFolder,
+    selectedCategories,
+    currentFolder,
+    placementMode,
+    isAll,
+    removeListFromFolder,
+    selectedFolderIds,
+    folders,
+    updateFolder,
+    selection,
+  ])
+
+  const handleEditCategory = useCallback((category: List) => {
+    updateList(category)
+    setEditingCategory(null)
+  }, [updateList])
 
   const handleCsvFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -436,7 +453,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
       addList({
         id: categoryId,
         name: listName || "Imported list",
-        color: newCategoryColor,
+        color: "#3B82F6",
         description: `Imported from ${csvImport.fileName}`,
         createdAt: new Date(),
         order: categories.length,
@@ -482,7 +499,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
     setListDisplay(categoryId, "spreadsheet")
     setOpenTarget({ type: "category", id: categoryId })
     setCsvImport(null)
-  }, [csvImport, addList, addTask, updateList, categories, newCategoryColor, currentFolder, addListToFolder, isHome, toggleHomePin, taskActions, setListDisplay, setOpenTarget])
+  }, [csvImport, addList, addTask, updateList, categories, currentFolder, addListToFolder, isHome, toggleHomePin, taskActions, setListDisplay, setOpenTarget])
 
   const applyIcon = (icon: string | undefined) => {
     if (!iconPickerFor) return
@@ -747,9 +764,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
           onGlobalAllUncategorizedOnlyChange={setGlobalAllUncategorizedOnly}
           addingTaskToTarget={addingTaskToTarget}
           openTargetKeyValue={openTargetKey(openTarget)}
-          newTaskDescription={newTaskDescription}
-          onNewTaskDescriptionChange={setNewTaskDescription}
-          onAddTask={() => taskActions.handleAddTaskToOpen(newTaskDescription, openTarget, currentFolder, () => { setNewTaskDescription(""); setAddingTaskToTarget(null) })}
+          onAddTask={(text) => taskActions.handleAddTaskToOpen(text, openTarget, currentFolder, () => { setAddingTaskToTarget(null) })}
           onCancelAddTask={() => setAddingTaskToTarget(null)}
           showBulkAdd={showBulkAdd}
           onBulkAdd={(text) => taskActions.handleBulkAddToOpen(text, openTarget, currentFolder, () => { setShowBulkAdd(false) })}
@@ -1022,11 +1037,11 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
         </div>
       </div>
 
-      <NewListDialog open={newCategoryOpen} currentFolder={currentFolder} isHome={isHome} name={newCategoryName} description={newCategoryDescription} color={newCategoryColor} scheduleable={newCategoryScheduleable} template={newCategoryTemplate} selectedCount={selectedTaskIds.length} placementMode={effectiveItemPlacement} canMove={itemCanMove} onPlacementModeChange={setItemPlacementMode} onOpenChange={setNewCategoryOpen} onNameChange={setNewCategoryName} onDescriptionChange={setNewCategoryDescription} onColorChange={setNewCategoryColor} onScheduleableChange={setNewCategoryScheduleable} onTemplateChange={setNewCategoryTemplate} onCreate={handleCreateCategory} />
+      <NewListDialog open={newCategoryOpen} currentFolder={currentFolder} isHome={isHome} selectedCount={selectedTaskIds.length} placementMode={effectiveItemPlacement} canMove={itemCanMove} onPlacementModeChange={setItemPlacementMode} onOpenChange={setNewCategoryOpen} onCreate={handleCreateCategory} />
       {csvImport && <CsvImportDialog csvImport={csvImport} categories={categories} onClose={() => setCsvImport(null)} onImport={performCsvImport} onUpdate={setCsvImport} />}
       <EditListDialog editingCategory={editingCategory} onEditingCategoryChange={setEditingCategory} folders={folders} homePinned={homePinned} listDisplay={listDisplay} setListDisplay={setListDisplay} toggleHomePin={toggleHomePin} onOpenIconPicker={() => editingCategory && setIconPickerFor({ kind: "category", id: editingCategory.id })} onSave={handleEditCategory} onDelete={() => { if (editingCategory && confirm(`Delete list "${editingCategory.name}"?`)) { deleteList(editingCategory.id); if (openTarget?.type === "category" && openTarget.id === editingCategory.id) closeTarget(); setEditingCategory(null) } }} />
-      <EditFolderDialog editingFolder={editingFolder} onEditingFolderChange={setEditingFolder} homePinned={homePinned} toggleHomePin={toggleHomePin} onOpenIconPicker={() => editingFolder && setIconPickerFor({ kind: "folder", id: editingFolder.id })} onSave={() => { if (editingFolder) { updateFolder(editingFolder); setEditingFolder(null) } }} onDelete={() => { if (editingFolder && confirm("Delete this folder? The lists inside it will not be deleted.")) { deleteFolder(editingFolder.id); if (location === editingFolder.id) navTo("all"); setEditingFolder(null) } }} />
-      <NewFolderDialog open={showNewFolderDialog} name={newFolderName} color={newFolderColor} scheduleable={newFolderScheduleable} selectedCount={selectedCategories.length + selectedFolderIds.length} placementMode={effectivePlacement} originIsAll={isAll} onPlacementModeChange={setPlacementMode} onOpenChange={setShowNewFolderDialog} onNameChange={setNewFolderName} onColorChange={setNewFolderColor} onScheduleableChange={setNewFolderScheduleable} onCreate={() => { if (newFolderName.trim()) { const id = Date.now().toString() + Math.random().toString(36).substr(2, 5); addFolder({ id, name: newFolderName, createdAt: new Date(), listIds: selectedCategories, color: newFolderColor, scheduleable: newFolderScheduleable, parentFolderId: currentFolder?.id }); const unlink = originFolderIdToUnlink({ mode: effectivePlacement, originFolderId: currentFolder?.id, isAll }); if (unlink) selectedCategories.forEach((catId) => removeListFromFolder(unlink, catId)); if (effectivePlacement === "move") selectedFolderIds.forEach((fid) => { if (wouldCreateFolderCycle(folders, fid, id)) return; const child = folders.find((f) => f.id === fid); if (child) updateFolder({ ...child, parentFolderId: id }) }); setShowNewFolderDialog(false); setNewFolderName(""); setNewFolderColor("#3B82F6"); setNewFolderScheduleable(true); selection.cancelSelectMode() } }} />
+      <EditFolderDialog editingFolder={editingFolder} onEditingFolderChange={setEditingFolder} homePinned={homePinned} toggleHomePin={toggleHomePin} onOpenIconPicker={() => editingFolder && setIconPickerFor({ kind: "folder", id: editingFolder.id })} onSave={(folder) => { updateFolder(folder); setEditingFolder(null) }} onDelete={() => { if (editingFolder && confirm("Delete this folder? The lists inside it will not be deleted.")) { deleteFolder(editingFolder.id); if (location === editingFolder.id) navTo("all"); setEditingFolder(null) } }} />
+      <NewFolderDialog open={showNewFolderDialog} selectedCount={selectedCategories.length + selectedFolderIds.length} placementMode={effectivePlacement} originIsAll={isAll} onPlacementModeChange={setPlacementMode} onOpenChange={setShowNewFolderDialog} onCreate={handleCreateFolder} />
       <MergeListsConfirmDialog open={mergeConfirmOpen} listNames={selectedMergeLists.map((l) => l.name)} onCancel={() => setMergeConfirmOpen(false)} onContinue={() => { setMergeConfirmOpen(false); setMergeOpen(true) }} />
       <MergeListsDialog open={mergeOpen} lists={selectedMergeLists} folders={folders} tasks={allTasks} onClose={() => setMergeOpen(false)} onMerge={handleApplyMerge} />
       <MergeItemsConfirmDialog open={itemMergeConfirmOpen} itemNames={selectedMergeItems.map(itemMergeLabel)} onCancel={() => setItemMergeConfirmOpen(false)} onContinue={() => { setItemMergeConfirmOpen(false); setItemMergeOpen(true) }} />

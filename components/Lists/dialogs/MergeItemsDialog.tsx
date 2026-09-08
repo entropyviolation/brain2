@@ -7,7 +7,7 @@ import { uniqueNonEmpty } from "@/lib/list-merge"
 import { defaultItemMergePlan, itemMergeLabel, type ItemMergePlan } from "@/lib/item-merge"
 import { isNaSmartCategoryId } from "@/lib/scheduled-lists-sync"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { IsolatedInput } from "@/components/ui/isolated-text-field"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
@@ -82,7 +82,10 @@ export function MergeItemsDialog({ open, items, lists, onClose, onMerge }: Merge
                 </label>
               ))
             ) : (
-              <Input value={plan.description} onChange={(e) => patch({ description: e.target.value })} />
+              <IsolatedInput
+                value={plan.description}
+                onCommit={(description) => patch({ description })}
+              />
             )}
           </div>
           {notes.length > 0 && (

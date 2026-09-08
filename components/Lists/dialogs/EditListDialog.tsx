@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { LIST_DISPLAY_MODES, sanitizeEnabledDisplays, type List, type Folder, type ItemTypeDefinition, type ListDisplayMode } from "@/lib/types"
 import type { ListDisplay } from "@/lib/lists-ui-store"
 import { listIsNextActions } from "@/lib/item-utils"
@@ -12,6 +12,7 @@ import { ListRulesEditor } from "@/components/Lists/dialogs/ListRulesEditor"
 import { ItemTypeEditor } from "@/components/ItemTypes/ItemTypeEditor"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { IsolatedInput } from "@/components/ui/isolated-text-field"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -27,7 +28,7 @@ export interface EditListDialogProps {
   setListDisplay: (id: string, d: ListDisplay) => void
   toggleHomePin: (id: string) => void
   onOpenIconPicker: () => void
-  onSave: () => void
+  onSave: (category: List) => void
   onDelete: () => void
 }
 
@@ -55,6 +56,16 @@ export function EditListDialog({
   const [typeEditorOpen, setTypeEditorOpen] = useState(false)
   // null = create new; a definition = edit that type.
   const [typeToEdit, setTypeToEdit] = useState<ItemTypeDefinition | null>(null)
+  const textRef = useRef({ name: "", description: "", itemLabel: "" })
+
+  useEffect(() => {
+    if (!editingCategory) return
+    textRef.current = {
+      name: editingCategory.name,
+      description: editingCategory.description || "",
+      itemLabel: editingCategory.itemLabel || "",
+    }
+  }, [editingCategory?.id])
 
   const selectedType = useMemo(
     () => (editingCategory?.itemTypeId ? types.find((t) => t.id === editingCategory.itemTypeId) ?? null : null),
@@ -132,18 +143,22 @@ export function EditListDialog({
           </div>
           <div className="space-y-2">
             <Label htmlFor="edit-category-name">List Name</Label>
-            <Input
+            <IsolatedInput
               id="edit-category-name"
               value={editingCategory.name}
-              onChange={(e) => onEditingCategoryChange({ ...editingCategory, name: e.target.value })}
+              onLiveChange={(name) => {
+                textRef.current.name = name
+              }}
             />
           </div>
           <div className="space-y-2">
             <Label htmlFor="edit-category-description">Description</Label>
-            <Input
+            <IsolatedInput
               id="edit-category-description"
               value={editingCategory.description || ""}
-              onChange={(e) => onEditingCategoryChange({ ...editingCategory, description: e.target.value })}
+              onLiveChange={(description) => {
+                textRef.current.description = description
+              }}
             />
           </div>
           <div className="space-y-2">
@@ -157,12 +172,12 @@ export function EditListDialog({
           </div>
           <div className="space-y-2">
             <Label htmlFor="edit-item-label">Item name (singular)</Label>
-            <Input
+            <IsolatedInput
               id="edit-item-label"
               value={editingCategory.itemLabel || ""}
-              onChange={(e) =>
-                onEditingCategoryChange({ ...editingCategory, itemLabel: e.target.value || undefined })
-              }
+              onLiveChange={(itemLabel) => {
+                textRef.current.itemLabel = itemLabel
+              }}
               placeholder={listIsNextActions(editingCategory.id, folders) ? "task" : "item"}
             />
             <p className="text-xs text-muted-foreground">
@@ -391,7 +406,18 @@ export function EditListDialog({
             <Button variant="outline" onClick={() => onEditingCategoryChange(null)}>
               Cancel
             </Button>
-            <Button onClick={onSave}>Save Changes</Button>
+            <Button
+              onClick={() =>
+                onSave({
+                  ...editingCategory,
+                  name: textRef.current.name,
+                  description: textRef.current.description,
+                  itemLabel: textRef.current.itemLabel || undefined,
+                })
+              }
+            >
+              Save Changes
+            </Button>
           </div>
         </div>
       </DialogContent>

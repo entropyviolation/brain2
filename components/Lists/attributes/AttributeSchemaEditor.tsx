@@ -7,7 +7,7 @@
  */
 "use client"
 
-import { Input } from "@/components/ui/input"
+import { IsolatedInput } from "@/components/ui/isolated-text-field"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -59,7 +59,7 @@ function TypeSpecificSchemaFields({
         <>
           <div className="w-20 space-y-1">
             <Label className="text-[10px]">Unit</Label>
-            <Input value={def.unit || ""} onChange={(e) => onPatch({ unit: e.target.value })} className="h-8" placeholder="$" />
+            <IsolatedInput value={def.unit || ""} onCommit={(unit) => onPatch({ unit })} className="h-8" placeholder="$" />
           </div>
           <label className="flex items-center gap-1 text-[10px] pb-1">
             <Checkbox checked={def.allowFloat !== false} onCheckedChange={(c) => onPatch({ allowFloat: !!c })} />
@@ -128,9 +128,9 @@ function TypeSpecificSchemaFields({
           ) : (
             <div className="flex-1 min-w-[140px] space-y-1">
               <Label className="text-[10px]">Options (comma-separated)</Label>
-              <Input
+              <IsolatedInput
                 value={(def.options || []).join(", ")}
-                onChange={(e) => onPatch({ options: e.target.value.split(",").map((s) => s.trim()).filter(Boolean) })}
+                onCommit={(raw) => onPatch({ options: raw.split(",").map((s) => s.trim()).filter(Boolean) })}
                 className="h-8"
               />
             </div>
@@ -162,19 +162,19 @@ function TypeSpecificSchemaFields({
         <div className="flex gap-2 min-w-[180px]">
           <div className="space-y-1">
             <Label className="text-[10px]">Current label</Label>
-            <Input
+            <IsolatedInput
               value={def.labels?.current || ""}
               placeholder="Actual"
-              onChange={(e) => onPatch({ labels: { ...def.labels, current: e.target.value } })}
+              onCommit={(current) => onPatch({ labels: { ...def.labels, current } })}
               className="h-8 w-24"
             />
           </div>
           <div className="space-y-1">
             <Label className="text-[10px]">Target label</Label>
-            <Input
+            <IsolatedInput
               value={def.labels?.target || ""}
               placeholder="Goal"
-              onChange={(e) => onPatch({ labels: { ...def.labels, target: e.target.value } })}
+              onCommit={(target) => onPatch({ labels: { ...def.labels, target } })}
               className="h-8 w-24"
             />
           </div>
@@ -186,9 +186,9 @@ function TypeSpecificSchemaFields({
         <>
           <div className="flex-1 min-w-[180px] space-y-1">
             <Label className="text-[10px]">Expression</Label>
-            <Input
+            <IsolatedInput
               value={def.formula || ""}
-              onChange={(e) => onPatch({ formula: e.target.value })}
+              onCommit={(formula) => onPatch({ formula })}
               className={`h-8 font-mono text-xs ${valid ? "" : "border-destructive"}`}
               placeholder="=price * qty"
             />
@@ -258,10 +258,10 @@ export function AttributeSchemaEditor({
             </div>
             <div className="flex-1 min-w-[120px] space-y-1">
               <Label className="text-[10px]">Name</Label>
-              <Input
+              <IsolatedInput
                 value={def.name}
-                onChange={(e) =>
-                  update(idx, { name: e.target.value, id: def.id.startsWith("attr_") ? slugId(e.target.value) : def.id })
+                onCommit={(name) =>
+                  update(idx, { name, id: def.id.startsWith("attr_") ? slugId(name) : def.id })
                 }
                 className="h-8"
               />

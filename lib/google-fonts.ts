@@ -9,6 +9,10 @@
 /** Popular Google Fonts available in the Docs font picker. */
 export const GOOGLE_FONTS = [
   "Arial",
+  "Times New Roman",
+  "Georgia",
+  "Courier New",
+  "Verdana",
   "Roboto",
   "Open Sans",
   "Lato",
@@ -104,6 +108,42 @@ export function ensureGoogleFontsLoaded(families: string[]): void {
   link.setAttribute("data-cogs-gfonts", href)
   document.head.appendChild(link)
   loadedHrefs.add(href)
+}
+
+/**
+ * Map a PDF / pdf.js font name onto the Docs allow-list, preserving bold/italic
+ * flags from the PostScript name (TimesNewRomanPS-BoldItalicMT, Helvetica-Oblique, …).
+ */
+export function mapPdfFontToAllowed(fontName: string): {
+  family: GoogleFontName
+  bold: boolean
+  italic: boolean
+} {
+  const compact = (fontName || "").toLowerCase()
+  const bold = /bold|black|heavy|semibold|demi/.test(compact)
+  const italic = /italic|oblique/.test(compact)
+
+  if (/courier|consolas|monaco|menlo|mono|code|typewriter/.test(compact)) {
+    return { family: "Courier New", bold, italic }
+  }
+  if (/times|georgia|garamond|palatino|cambria|constantia|libertinus|liberation serif|nimbus roman|serif/.test(compact) && !/sans/.test(compact)) {
+    if (/georgia/.test(compact)) return { family: "Georgia", bold, italic }
+    if (/garamond|ebgaramond/.test(compact)) return { family: "EB Garamond", bold, italic }
+    if (/playfair/.test(compact)) return { family: "Playfair Display", bold, italic }
+    return { family: "Times New Roman", bold, italic }
+  }
+  if (/script|cursive|handwriting|comic|zapfino|brush/.test(compact)) {
+    return { family: "Dancing Script", bold, italic }
+  }
+  if (/impact|anton|bebas|display|blackletter/.test(compact)) {
+    return { family: "Anton", bold, italic }
+  }
+  if (/verdana/.test(compact)) return { family: "Verdana", bold, italic }
+  if (/roboto/.test(compact)) return { family: "Roboto", bold, italic }
+  if (/arial|helvetica|calibri|carlito|liberation sans|nimbus sans|dejavu|noto sans/.test(compact)) {
+    return { family: "Arial", bold, italic }
+  }
+  return { family: "Arial", bold, italic }
 }
 
 /** Extract `{font:Name}` markers from markdown so the preview can preload them. */

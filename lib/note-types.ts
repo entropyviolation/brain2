@@ -25,6 +25,8 @@ export const NOTE_ATTR = {
   folder: "docsFolder",
   /** Default Google Font family for the Docs editor/preview. */
   fontFamily: "docsFontFamily",
+  /** ISO timestamp of the last Docs body/metadata save. */
+  updatedAt: "docsUpdatedAt",
 } as const
 
 const NOTE_ATTRIBUTES: AttributeDefinition[] = [
@@ -38,6 +40,7 @@ const NOTE_ATTRIBUTES: AttributeDefinition[] = [
   },
   { id: NOTE_ATTR.folder, name: "Docs folder", type: "string" },
   { id: NOTE_ATTR.fontFamily, name: "Font family", type: "string" },
+  { id: NOTE_ATTR.updatedAt, name: "Updated", type: "string" },
 ]
 
 /**

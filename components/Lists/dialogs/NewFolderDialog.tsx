@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -8,17 +9,17 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { CalendarClock } from "lucide-react"
 import type { ListPlacementMode } from "@/lib/folder-selection"
 
-export interface NewFolderDialogProps {
-  open: boolean
+export interface NewFolderFields {
   name: string
   color: string
   scheduleable: boolean
+}
+
+export interface NewFolderDialogProps {
+  open: boolean
   selectedCount: number
   onOpenChange: (open: boolean) => void
-  onNameChange: (v: string) => void
-  onColorChange: (v: string) => void
-  onScheduleableChange: (v: boolean) => void
-  onCreate: () => void
+  onCreate: (fields: NewFolderFields) => void
   placementMode?: ListPlacementMode
   originIsAll?: boolean
   onPlacementModeChange?: (mode: ListPlacementMode) => void
@@ -26,19 +27,24 @@ export interface NewFolderDialogProps {
 
 export function NewFolderDialog({
   open,
-  name,
-  color,
-  scheduleable,
   selectedCount,
   onOpenChange,
-  onNameChange,
-  onColorChange,
-  onScheduleableChange,
   onCreate,
   placementMode = "keep",
   originIsAll = false,
   onPlacementModeChange,
 }: NewFolderDialogProps) {
+  const [name, setName] = useState("")
+  const [color, setColor] = useState("#3B82F6")
+  const [scheduleable, setScheduleable] = useState(true)
+
+  useEffect(() => {
+    if (!open) return
+    setName("")
+    setColor("#3B82F6")
+    setScheduleable(true)
+  }, [open])
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="fm98-dialog">
@@ -57,11 +63,11 @@ export function NewFolderDialog({
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="folder-name">Folder Name</Label>
-            <Input id="folder-name" value={name} onChange={(e) => onNameChange(e.target.value)} placeholder="e.g., Work" />
+            <Input id="folder-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Work" />
           </div>
           <div className="space-y-2">
             <Label htmlFor="folder-color">Color</Label>
-            <Input id="folder-color" type="color" value={color} onChange={(e) => onColorChange(e.target.value)} />
+            <Input id="folder-color" type="color" value={color} onChange={(e) => setColor(e.target.value)} />
           </div>
           <div className="flex items-center justify-between rounded-lg border p-3">
             <div className="space-y-0.5">
@@ -71,7 +77,7 @@ export function NewFolderDialog({
               </Label>
               <p className="text-xs text-muted-foreground">Default for lists created inside this folder.</p>
             </div>
-            <Switch id="folder-scheduleable" checked={scheduleable} onCheckedChange={onScheduleableChange} />
+            <Switch id="folder-scheduleable" checked={scheduleable} onCheckedChange={setScheduleable} />
           </div>
           {selectedCount > 0 && onPlacementModeChange && (
             <div className="space-y-2 rounded-lg border p-3">
@@ -101,7 +107,7 @@ export function NewFolderDialog({
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button onClick={onCreate} disabled={!name.trim()}>
+            <Button onClick={() => onCreate({ name, color, scheduleable })} disabled={!name.trim()}>
               Create Folder
             </Button>
           </div>

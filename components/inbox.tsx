@@ -10,13 +10,12 @@
  */
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useRef } from "react"
 import { useTaskStore } from "@/lib/task-store"
+import { IsolatedInput, IsolatedTextarea } from "@/components/ui/isolated-text-field"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Edit, Trash, ArrowRight, InboxIcon, Clock, Award, AlertTriangle, Star, Save, X, ChevronDown, CalendarDays, Timer, Tag, Flag } from "lucide-react"
@@ -100,9 +99,9 @@ function TaskClarificationDialog({
 }) {
   const categories = useTaskStore((state) => state.lists)
   const folders = useTaskStore((state) => state.folders)
-  const [taskDescription, setTaskDescription] = useState(task.taskDescription || "")
-  const [estimatedDuration, setEstimatedDuration] = useState(task.estimatedDuration?.toString() || "30")
-  const [rewardValue, setRewardValue] = useState(task.rewardValue?.toString() || "1")
+  const descRef = useRef(task.taskDescription || "")
+  const durationRef = useRef(task.estimatedDuration?.toString() || "30")
+  const rewardRef = useRef(task.rewardValue?.toString() || "1")
   const [urgency, setUrgency] = useState(task.urgency?.toString() || "3")
   const [importance, setImportance] = useState(task.importance?.toString() || "3")
   const [selectedCategories, setSelectedCategories] = useState<string[]>(task.lists || [])
@@ -121,7 +120,7 @@ function TaskClarificationDialog({
     let updatedTask: Task = {
       ...task,
       createdAt: asDate(task.createdAt) ?? new Date(),
-      taskDescription,
+      taskDescription: descRef.current,
       lists: selectedCategories,
       stage: selectedCategories.length ? "clarified" : "list",
       attributes: { ...attributeValues },
@@ -131,8 +130,8 @@ function TaskClarificationDialog({
       updatedTask = withCategoryDefaults(updatedTask, cat)
     })
     if (isNextActionTarget) {
-      updatedTask.estimatedDuration = Number.parseInt(estimatedDuration) || 30
-      updatedTask.rewardValue = Number.parseInt(rewardValue) || 1
+      updatedTask.estimatedDuration = Number.parseInt(durationRef.current) || 30
+      updatedTask.rewardValue = Number.parseInt(rewardRef.current) || 1
       updatedTask.urgency = Number.parseInt(urgency) || 3
       updatedTask.importance = Number.parseInt(importance) || 3
       updatedTask.cognitiveLoad = task.cognitiveLoad || 2
@@ -171,10 +170,12 @@ function TaskClarificationDialog({
                   <Edit className="h-4 w-4" />
                   Detailed Description
                 </Label>
-                <Textarea
+                <IsolatedTextarea
                   id="task-description"
-                  value={taskDescription}
-                  onChange={(e) => setTaskDescription(e.target.value)}
+                  value={task.taskDescription || ""}
+                  onLiveChange={(v) => {
+                    descRef.current = v
+                  }}
                   placeholder="Provide more details about this task..."
                   rows={4}
                   className="resize-none"
@@ -189,11 +190,13 @@ function TaskClarificationDialog({
                     Estimated Duration
                   </Label>
                   <div className="relative">
-                    <Input
+                    <IsolatedInput
                       id="estimated-duration"
                       type="number"
-                      value={estimatedDuration}
-                      onChange={(e) => setEstimatedDuration(e.target.value)}
+                      value={task.estimatedDuration?.toString() || "30"}
+                      onLiveChange={(v) => {
+                        durationRef.current = v
+                      }}
                       className="pr-12"
                       min="1"
                     />
@@ -208,11 +211,13 @@ function TaskClarificationDialog({
                     <Award className="h-4 w-4" />
                     Reward Value
                   </Label>
-                  <Input
+                  <IsolatedInput
                     id="reward-value"
                     type="number"
-                    value={rewardValue}
-                    onChange={(e) => setRewardValue(e.target.value)}
+                    value={task.rewardValue?.toString() || "1"}
+                    onLiveChange={(v) => {
+                      rewardRef.current = v
+                    }}
                     min="1"
                   />
                 </div>

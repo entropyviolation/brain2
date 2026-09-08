@@ -78,7 +78,7 @@ describe("EnhancedCategoryView Integration", () => {
     render(<EnhancedCategoryView onTaskSelect={vi.fn()} />)
     const searchInput = screen.getByPlaceholderText("Search folders, lists, items…")
     await user.type(searchInput, "project")
-    expect(screen.getByText(/Search: project/i)).toBeInTheDocument()
+    expect(await screen.findByText(/Search: project/i)).toBeInTheDocument()
     expect(screen.getByText("Complete project")).toBeInTheDocument()
   })
 

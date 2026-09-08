@@ -53,8 +53,6 @@ function renderPanel(overrides: Partial<ComponentProps<typeof ListContentPanel>>
     onFolderAllListHiddenChange: vi.fn(),
     addingTaskToTarget: null,
     openTargetKeyValue: "folder1",
-    newTaskDescription: "",
-    onNewTaskDescriptionChange: vi.fn(),
     onAddTask: vi.fn(),
     onCancelAddTask: vi.fn(),
     showBulkAdd: false,
@@ -257,5 +255,26 @@ describe("ListContentPanel bulk add", () => {
     expect(textarea).toHaveValue("alpha\nbeta")
     fireEvent.click(screen.getByRole("button", { name: /Add all/i }))
     expect(onBulkAdd).toHaveBeenCalledWith("alpha\nbeta")
+  })
+})
+
+describe("ListContentPanel single add", () => {
+  it("keeps typed text in the field and submits it on Add Item", () => {
+    const onAddTask = vi.fn()
+    renderPanel({
+      addingTaskToTarget: "folder1",
+      openTargetKeyValue: "folder1",
+      onAddTask,
+      openFolderAll: false,
+      openCategory: list("list-1", "list 1"),
+      currentDisplay: "default",
+      tasks: [task("a", "item a", "list-1")],
+    })
+    const textarea = screen.getByPlaceholderText(/Enter item description/i)
+    fireEvent.change(textarea, { target: { value: "New grocery item" } })
+    expect(textarea).toHaveValue("New grocery item")
+    expect(onAddTask).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole("button", { name: /Add Item/i }))
+    expect(onAddTask).toHaveBeenCalledWith("New grocery item")
   })
 })

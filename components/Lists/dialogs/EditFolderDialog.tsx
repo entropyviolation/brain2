@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useRef } from "react"
 import type { Folder } from "@/lib/types"
 import { isScheduledFolderId } from "@/lib/scheduled-lists-sync"
 import { isAutoScheduledPeriodFolder } from "@/lib/folder-tree"
@@ -8,6 +9,7 @@ import { useTaskStore } from "@/lib/task-store"
 import { FolderGlyph } from "@/components/Lists/lib/icon-utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { IsolatedInput } from "@/components/ui/isolated-text-field"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -19,7 +21,7 @@ export interface EditFolderDialogProps {
   homePinned: string[]
   toggleHomePin: (id: string) => void
   onOpenIconPicker: () => void
-  onSave: () => void
+  onSave: (folder: Folder) => void
   onDelete: () => void
 }
 
@@ -33,6 +35,16 @@ export function EditFolderDialog({
   onDelete,
 }: EditFolderDialogProps) {
   const folders = useTaskStore((s) => s.folders)
+  const textRef = useRef({ name: "", description: "" })
+
+  useEffect(() => {
+    if (!editingFolder) return
+    textRef.current = {
+      name: editingFolder.name,
+      description: editingFolder.description || "",
+    }
+  }, [editingFolder?.id])
+
   if (!editingFolder) return null
 
   const isSystemScheduled = isScheduledFolderId(editingFolder.id)
@@ -79,19 +91,23 @@ export function EditFolderDialog({
           </div>
           <div className="space-y-2">
             <Label htmlFor="edit-folder-name">Folder Name</Label>
-            <Input
+            <IsolatedInput
               id="edit-folder-name"
               value={editingFolder.name}
               disabled={isAutoPeriod}
-              onChange={(e) => onEditingFolderChange({ ...editingFolder, name: e.target.value })}
+              onLiveChange={(name) => {
+                textRef.current.name = name
+              }}
             />
           </div>
           <div className="space-y-2">
             <Label htmlFor="edit-folder-description">Description</Label>
-            <Input
+            <IsolatedInput
               id="edit-folder-description"
               value={editingFolder.description || ""}
-              onChange={(e) => onEditingFolderChange({ ...editingFolder, description: e.target.value })}
+              onLiveChange={(description) => {
+                textRef.current.description = description
+              }}
             />
           </div>
           <div className="space-y-2">
@@ -160,7 +176,17 @@ export function EditFolderDialog({
               <Button variant="outline" onClick={() => onEditingFolderChange(null)}>
                 Cancel
               </Button>
-              <Button onClick={onSave}>Save Changes</Button>
+              <Button
+                onClick={() =>
+                  onSave({
+                    ...editingFolder,
+                    name: textRef.current.name,
+                    description: textRef.current.description,
+                  })
+                }
+              >
+                Save Changes
+              </Button>
             </div>
           </div>
         </div>

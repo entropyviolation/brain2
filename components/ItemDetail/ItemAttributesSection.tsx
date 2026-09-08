@@ -10,6 +10,7 @@
 
 import { useMemo } from "react"
 import { Input } from "@/components/ui/input"
+import { IsolatedInput } from "@/components/ui/isolated-text-field"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Trash2 } from "lucide-react"
@@ -120,9 +121,9 @@ export function ItemAttributesSection({
                 <span className="text-sm font-medium truncate" title={humanizeId(id)}>
                   {humanizeId(id)}
                 </span>
-                <Input
+                <IsolatedInput
                   value={typeof attributes[id] === "string" ? (attributes[id] as string) : String(attributes[id] ?? "")}
-                  onChange={(e) => setOrphan(id, e.target.value)}
+                  onCommit={(v) => setOrphan(id, v)}
                   className="h-8"
                 />
                 <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => removeOrphan(id)}>

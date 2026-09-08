@@ -44,6 +44,37 @@ function AllViewCheckboxFilter({
 }
 
 /** Owns its text so typing does not re-render the list board / item grid. */
+function QuickAddPanel({
+  itemLabel,
+  onAdd,
+  onCancel,
+}: {
+  itemLabel: string
+  onAdd: (description: string) => void
+  onCancel: () => void
+}) {
+  const [text, setText] = useState("")
+  return (
+    <div className="fm-quickadd">
+      <Textarea
+        placeholder={`Enter ${itemLabel.toLowerCase()} description...`}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        rows={2}
+      />
+      <div className="flex gap-2">
+        <button className="fm-btn fm-btn-sm" onClick={() => onAdd(text)}>
+          Add {itemLabel}
+        </button>
+        <button className="fm-btn fm-btn-sm" onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  )
+}
+
+/** Owns its text so typing does not re-render the list board / item grid. */
 function BulkAddPanel({
   itemLabel,
   onBulkAdd,
@@ -96,8 +127,6 @@ export function ListContentPanel({
   onGlobalAllUncategorizedOnlyChange,
   addingTaskToTarget,
   openTargetKeyValue,
-  newTaskDescription,
-  onNewTaskDescriptionChange,
   onAddTask,
   onCancelAddTask,
   showBulkAdd,
@@ -168,22 +197,7 @@ export function ListContentPanel({
 
   const quickAdd =
     addingTaskToTarget === openTargetKeyValue ? (
-      <div className="fm-quickadd">
-        <Textarea
-          placeholder={`Enter ${itemLabel.toLowerCase()} description...`}
-          value={newTaskDescription}
-          onChange={(e) => onNewTaskDescriptionChange(e.target.value)}
-          rows={2}
-        />
-        <div className="flex gap-2">
-          <button className="fm-btn fm-btn-sm" onClick={onAddTask}>
-            Add {itemLabel}
-          </button>
-          <button className="fm-btn fm-btn-sm" onClick={onCancelAddTask}>
-            Cancel
-          </button>
-        </div>
-      </div>
+      <QuickAddPanel itemLabel={itemLabel} onAdd={onAddTask} onCancel={onCancelAddTask} />
     ) : null
 
   const bulkAddPanel = showBulkAdd ? (

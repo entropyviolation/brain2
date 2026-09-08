@@ -11,7 +11,7 @@
  */
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef, type Dispatch, type SetStateAction } from "react"
 import { useTaskStore } from "@/lib/task-store"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { withListMembership } from "@/lib/item-utils"
@@ -25,7 +25,11 @@ import type { Task } from "@/lib/types"
 
 export interface ItemDetailDraft {
   task: Task | null
-  setTask: (task: Task) => void
+  setTask: Dispatch<SetStateAction<Task | null>>
+  /** Latest draft including isolated-field keystrokes that have not re-rendered yet. */
+  getDraft: () => Task | null
+  /** Write fields onto the draft ref without re-rendering the detail tree. */
+  touchDraft: (patch: Partial<Task>) => void
   originalTask: Task | null
   setOriginalTask: (task: Task | null) => void
   allTasks: Task[]
@@ -54,18 +58,37 @@ export function useItemDetailDraft(taskId: string | null): ItemDetailDraft {
   const deleteTask = useTaskStore((state) => state.deleteTask)
   const types = useItemTypeStore((state) => state.types)
 
-  const [task, setTask] = useState<Task | null>(null)
+  const [task, setTaskState] = useState<Task | null>(null)
   const [originalTask, setOriginalTask] = useState<Task | null>(null)
+  const taskRef = useRef<Task | null>(null)
+
+  const setTask = useCallback<Dispatch<SetStateAction<Task | null>>>((next) => {
+    setTaskState((prev) => {
+      const resolved = typeof next === "function" ? next(prev) : next
+      taskRef.current = resolved
+      return resolved
+    })
+  }, [])
+
+  const getDraft = useCallback(() => taskRef.current, [])
+
+  const touchDraft = useCallback((patch: Partial<Task>) => {
+    if (!taskRef.current) return
+    taskRef.current = { ...taskRef.current, ...patch }
+  }, [])
 
   useEffect(() => {
-    if (taskId) {
-      const foundTask = allTasks.find((t) => t.id === taskId)
-      if (foundTask) {
-        setTask(foundTask)
-        setOriginalTask(foundTask)
-      }
+    if (!taskId) {
+      setTask(null)
+      setOriginalTask(null)
+      return
     }
-  }, [taskId, allTasks])
+    const foundTask = useTaskStore.getState().tasks.find((t) => t.id === taskId)
+    if (foundTask) {
+      setTask(foundTask)
+      setOriginalTask(foundTask)
+    }
+  }, [taskId, setTask])
 
   const addToCategory = useCallback(
     (categoryId: string) => {
@@ -125,7 +148,9 @@ export function useItemDetailDraft(taskId: string | null): ItemDetailDraft {
 
   return {
     task,
-    setTask: setTask as (task: Task) => void,
+    setTask,
+    getDraft,
+    touchDraft,
     originalTask,
     setOriginalTask,
     allTasks,

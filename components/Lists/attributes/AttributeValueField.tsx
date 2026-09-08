@@ -9,10 +9,10 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { Input } from "@/components/ui/input"
+import { IsolatedInput, IsolatedTextarea } from "@/components/ui/isolated-text-field"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Switch } from "@/components/ui/switch"
-import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { FileText, Plus, X } from "lucide-react"
 import type { AttributeDefinition, AttributeValue, FileValue } from "@/lib/types"
@@ -89,7 +89,7 @@ function MultiStringEditor({ value, onChange }: { value: AttributeValue; onChang
     <div className="space-y-1">
       {arr.map((s, i) => (
         <div key={i} className="flex gap-1">
-          <Input value={s} onChange={(e) => setAt(i, e.target.value)} className="h-8" />
+          <IsolatedInput value={s} onCommit={(next) => setAt(i, next)} className="h-8" />
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeAt(i)}>
             <X className="h-3.5 w-3.5" />
           </Button>
@@ -390,7 +390,7 @@ export function AttributeValueField({
       return (
         <div className="flex items-center gap-2">
           <Input type="color" value={(value as string) || "#3b82f6"} onChange={(e) => onChange(e.target.value)} className="h-9 w-14 p-1" />
-          <Input value={(value as string) || ""} onChange={(e) => onChange(e.target.value)} className="h-9 flex-1" placeholder="#hex" />
+          <IsolatedInput value={(value as string) || ""} onCommit={(v) => onChange(v)} className="h-9 flex-1" placeholder="#hex" />
         </div>
       )
     case "datetime": {
@@ -446,10 +446,10 @@ export function AttributeValueField({
       return <FileValueEditor multiple value={value} onChange={onChange} />
     case "link":
       return (
-        <Input
+        <IsolatedInput
           type="url"
           value={value === undefined || value === null ? "" : String(value)}
-          onChange={(e) => onChange(e.target.value === "" ? undefined : e.target.value)}
+          onCommit={(raw) => onChange(raw === "" ? undefined : raw)}
           className="h-9"
           placeholder="https://…"
         />
@@ -457,19 +457,19 @@ export function AttributeValueField({
     case "goal":
       return (
         <div className="flex items-center gap-2">
-          <Input
+          <IsolatedInput
             type="number"
-            value={asGoal(value).current || ""}
+            value={String(asGoal(value).current || "")}
             placeholder={def.labels?.current || "Actual"}
-            onChange={(e) => onChange({ ...asGoal(value), current: Number(e.target.value) || 0 })}
+            onCommit={(raw) => onChange({ ...asGoal(value), current: Number(raw) || 0 })}
             className="h-9"
           />
           <span className="text-muted-foreground">/</span>
-          <Input
+          <IsolatedInput
             type="number"
-            value={asGoal(value).target || ""}
+            value={String(asGoal(value).target || "")}
             placeholder={def.labels?.target || "Goal"}
-            onChange={(e) => onChange({ ...asGoal(value), target: Number(e.target.value) || 0 })}
+            onCommit={(raw) => onChange({ ...asGoal(value), target: Number(raw) || 0 })}
             className="h-9"
           />
         </div>
@@ -477,12 +477,11 @@ export function AttributeValueField({
     case "number":
       return (
         <div className="flex items-center gap-1">
-          <Input
+          <IsolatedInput
             type="number"
             step={def.allowFloat === false ? 1 : "any"}
             value={value === undefined || value === null ? "" : String(value)}
-            onChange={(e) => {
-              const raw = e.target.value
+            onCommit={(raw) => {
               if (raw === "") onChange(undefined)
               else onChange(def.allowFloat === false ? parseInt(raw, 10) : Number(raw))
             }}
@@ -494,9 +493,9 @@ export function AttributeValueField({
     case "string":
     default:
       return (
-        <Textarea
+        <IsolatedTextarea
           value={value === undefined || value === null ? "" : String(value)}
-          onChange={(e) => onChange(e.target.value === "" ? undefined : e.target.value)}
+          onCommit={(raw) => onChange(raw === "" ? undefined : raw)}
           rows={2}
           className="min-h-[36px] resize-y"
         />

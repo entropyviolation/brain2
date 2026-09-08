@@ -66,6 +66,9 @@ const ALLOWED_ATTRS = new Set([
   "class",
   "colspan",
   "rowspan",
+  "width",
+  "height",
+  "draggable",
 ])
 
 /** True when `src` looks like already-authored HTML (vs markdown). */
@@ -167,15 +170,106 @@ export function sanitizeDocHtml(html: string): string {
 
 /** Plain-text word count from HTML. */
 export function htmlWordCount(html: string): number {
+  return (htmlToPlainText(html).match(/\S+/g) ?? []).length
+}
+
+/** Strip tags for previews / search. */
+export function htmlToPlainText(html: string): string {
   if (typeof DOMParser === "undefined") {
-    return (html.replace(/<[^>]+>/g, " ").match(/\S+/g) ?? []).length
+    return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()
   }
   const doc = new DOMParser().parseFromString(html, "text/html")
-  const text = doc.body.textContent ?? ""
-  return (text.match(/\S+/g) ?? []).length
+  return (doc.body.textContent ?? "").replace(/\s+/g, " ").trim()
+}
+
+/** First `max` characters of visible document text. */
+export function documentPreviewText(html: string, max = 180): string {
+  const text = htmlToPlainText(html)
+  if (text.length <= max) return text
+  return `${text.slice(0, max).trimEnd()}…`
 }
 
 export const DOC_FONT_SIZES = [10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48] as const
+
+/**
+ * Split text nodes at the range edges so every in-range text node is fully
+ * selected. Wrapping those nodes in spans is then valid even when the
+ * selection crosses block tags (h1 + p + h2) — a single outer span cannot
+ * legally wrap headings, which is why bulk font changes used to skip blocks.
+ */
+function splitRangeBoundaries(range: Range): void {
+  const start = range.startContainer
+  if (start.nodeType === Node.TEXT_NODE) {
+    const text = start as Text
+    if (range.startOffset > 0 && range.startOffset < text.length) {
+      const after = text.splitText(range.startOffset)
+      if (range.endContainer === text) {
+        range.setEnd(after, range.endOffset - range.startOffset)
+      }
+      range.setStart(after, 0)
+    }
+  }
+  const end = range.endContainer
+  if (end.nodeType === Node.TEXT_NODE) {
+    const text = end as Text
+    if (range.endOffset > 0 && range.endOffset < text.length) {
+      text.splitText(range.endOffset)
+    }
+  }
+}
+
+function textNodesInRange(range: Range): Text[] {
+  const ancestor = range.commonAncestorContainer
+  const root = ancestor.nodeType === Node.TEXT_NODE ? ancestor.parentNode : ancestor
+  if (!root) return []
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+  const out: Text[] = []
+  let node: Node | null
+  while ((node = walker.nextNode())) {
+    const text = node as Text
+    if (!text.data) continue
+    try {
+      if (range.intersectsNode(text)) out.push(text)
+    } catch {
+      /* detached */
+    }
+  }
+  return out
+}
+
+function wrapTextWithStyles(text: Text, styles: Partial<CSSStyleDeclaration>): HTMLElement {
+  const parent = text.parentElement
+  if (parent && parent.tagName === "SPAN" && parent.childNodes.length === 1) {
+    Object.assign(parent.style, styles)
+    return parent
+  }
+  const span = document.createElement("span")
+  Object.assign(span.style, styles)
+  parent?.insertBefore(span, text)
+  span.appendChild(text)
+  return span
+}
+
+function headingsIntersectingRange(range: Range): HTMLElement[] {
+  const ancestor = range.commonAncestorContainer
+  const rootEl =
+    ancestor.nodeType === Node.ELEMENT_NODE
+      ? (ancestor as HTMLElement)
+      : ancestor.parentElement
+  if (!rootEl) return []
+  const found: HTMLElement[] = []
+  const maybeRoot = rootEl.closest?.("h1,h2,h3,h4,h5,h6")
+  if (maybeRoot) found.push(maybeRoot as HTMLElement)
+  for (const heading of rootEl.querySelectorAll("h1,h2,h3,h4,h5,h6")) {
+    const el = heading as HTMLElement
+    try {
+      if (range.intersectsNode(el) && !found.includes(el)) found.push(el)
+    } catch {
+      /* detached */
+    }
+  }
+  return found
+}
 
 /** Apply inline CSS to the current selection (Google Docs–style highlight formatting). */
 export function applyInlineStyleToSelection(styles: Partial<CSSStyleDeclaration>): boolean {
@@ -184,7 +278,6 @@ export function applyInlineStyleToSelection(styles: Partial<CSSStyleDeclaration>
   const range = sel.getRangeAt(0)
 
   if (range.collapsed) {
-    // Insert a styled span so subsequent typing picks up the style.
     const span = document.createElement("span")
     Object.assign(span.style, styles)
     span.appendChild(document.createTextNode("\u200b"))
@@ -197,49 +290,29 @@ export function applyInlineStyleToSelection(styles: Partial<CSSStyleDeclaration>
     return true
   }
 
-  try {
-    const span = document.createElement("span")
-    Object.assign(span.style, styles)
-    const contents = range.extractContents()
-    span.appendChild(contents)
-    range.insertNode(span)
-    sel.removeAllRanges()
-    const after = document.createRange()
-    after.selectNodeContents(span)
-    sel.addRange(after)
-    return true
-  } catch {
-    // Partial-node selection: fall back to insertHTML.
-    const fragment = range.cloneContents()
-    const holder = document.createElement("div")
-    holder.appendChild(fragment)
-    const styleAttr = Object.entries(styles)
-      .filter(([, v]) => v != null && v !== "")
-      .map(([k, v]) => `${k.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`)}:${v}`)
-      .join(";")
-    const html = `<span style="${styleAttr}">${holder.innerHTML}</span>`
-    document.execCommand("insertHTML", false, html)
-    return true
-  }
+  splitRangeBoundaries(range)
+  const nodes = textNodesInRange(range)
+  if (nodes.length === 0) return false
+  const wrapped = nodes.map((text) => wrapTextWithStyles(text, styles))
+  const next = document.createRange()
+  next.setStartBefore(wrapped[0]!)
+  next.setEndAfter(wrapped[wrapped.length - 1]!)
+  sel.removeAllRanges()
+  sel.addRange(next)
+  return true
 }
 
-/** Apply font-family to the nearest heading block containing the caret/selection. */
+/** Apply font-family to every heading that intersects the selection. */
 export function applyFontToNearestHeading(font: string): boolean {
   if (!isAllowedFont(font)) return false
   const sel = window.getSelection()
   if (!sel || sel.rangeCount === 0) return false
-  let node: Node | null = sel.anchorNode
-  while (node && node !== document.body) {
-    if (node.nodeType === Node.ELEMENT_NODE) {
-      const el = node as HTMLElement
-      if (/^H[1-6]$/.test(el.tagName)) {
-        el.style.fontFamily = `"${font}", sans-serif`
-        return true
-      }
-    }
-    node = node.parentNode
+  const range = sel.getRangeAt(0)
+  const headings = headingsIntersectingRange(range)
+  if (headings.length > 0) {
+    for (const el of headings) el.style.fontFamily = `"${font}", sans-serif`
+    return true
   }
-  // No heading — promote selection to H2 with this font, or style inline.
   document.execCommand("formatBlock", false, "h2")
   return applyInlineStyleToSelection({ fontFamily: `"${font}", sans-serif` })
 }

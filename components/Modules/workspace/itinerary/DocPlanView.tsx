@@ -6,7 +6,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { DocumentEditor } from "@/components/Docs/DocumentEditor"
-import { documentFont, setDocumentBody, setDocumentFont } from "@/components/Docs/doc-actions"
+import { documentFont, loadDocumentBody, setDocumentBody, setDocumentFont } from "@/components/Docs/doc-actions"
 import { useTaskStore } from "@/lib/task-store"
 import type { ModuleView } from "@/lib/modules-store"
 import "@/components/Docs/document-editor.css"
@@ -22,8 +22,13 @@ export function DocPlanView({ view, planDocId }: { view: ModuleView; planDocId?:
 
   useEffect(() => {
     if (!doc) return
-    if (pending.current === null) setDraft(doc.body ?? "")
-  }, [doc?.id, doc?.body])
+    if (pending.current !== null) return
+    setDraft(doc.body ?? "")
+    const id = doc.id
+    void loadDocumentBody(id, doc.body ?? "").then((html) => {
+      if (pending.current === null) setDraft(html)
+    })
+  }, [doc?.id])
 
   const flush = useCallback(() => {
     if (timer.current) {
@@ -31,8 +36,9 @@ export function DocPlanView({ view, planDocId }: { view: ModuleView; planDocId?:
       timer.current = null
     }
     if (!docId || pending.current === null) return
-    setDocumentBody(docId, pending.current)
+    const body = pending.current
     pending.current = null
+    void setDocumentBody(docId, body)
   }, [docId])
 
   useEffect(() => () => flush(), [flush])

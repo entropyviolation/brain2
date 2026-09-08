@@ -7,7 +7,7 @@
  */
 "use client"
 
-import { Input } from "@/components/ui/input"
+import { IsolatedInput } from "@/components/ui/isolated-text-field"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -102,11 +102,10 @@ export function AdHocAttributesEditor({
       )}
       {definitions.map((def, idx) => (
         <div key={def.id} className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-start border rounded p-2">
-          <Input
+          <IsolatedInput
             value={def.name}
             placeholder="Name"
-            onChange={(e) => {
-              const name = e.target.value
+            onCommit={(name) => {
               onDefinitionsChange(definitions.map((d, i) => (i === idx ? { ...d, name } : d)))
             }}
             className="h-8"

@@ -5,7 +5,7 @@ import type { Folder, List, Task } from "@/lib/types"
 import { isScheduledFolderId } from "@/lib/scheduled-lists-sync"
 import { defaultMergePlan, uniqueNonEmpty, type ListMergePlan } from "@/lib/list-merge"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { IsolatedInput } from "@/components/ui/isolated-text-field"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
@@ -72,7 +72,7 @@ export function MergeListsDialog({ open, lists, folders, tasks, onClose, onMerge
                 </label>
               ))
             ) : (
-              <Input value={plan.name} onChange={(e) => patch({ name: e.target.value })} />
+              <IsolatedInput value={plan.name} onCommit={(name) => patch({ name })} />
             )}
           </div>
           {colors.length > 1 && (

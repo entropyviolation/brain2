@@ -57,7 +57,7 @@ describe("EnhancedCategoryView", () => {
     const user = userEvent.setup()
     render(<EnhancedCategoryView onTaskSelect={vi.fn()} />)
     await user.type(screen.getByPlaceholderText("Search folders, lists, items…"), "Demo")
-    expect(screen.getByText(/Search: Demo/)).toBeInTheDocument()
+    expect(await screen.findByText(/Search: Demo/)).toBeInTheDocument()
   })
 
   it("opens settings dialog from toolbar", async () => {

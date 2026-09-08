@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import type { Folder } from "@/lib/types"
 import type { ItemPlacementMode } from "@/lib/item-selection"
 import { LIST_TEMPLATES } from "@/components/Lists/constants"
@@ -10,22 +11,20 @@ import { Switch } from "@/components/ui/switch"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { CalendarClock } from "lucide-react"
 
-export interface NewListDialogProps {
-  open: boolean
-  currentFolder: Folder | null
-  isHome: boolean
+export interface NewListFields {
   name: string
   description: string
   color: string
   scheduleable: boolean
   template: string
+}
+
+export interface NewListDialogProps {
+  open: boolean
+  currentFolder: Folder | null
+  isHome: boolean
   onOpenChange: (open: boolean) => void
-  onNameChange: (v: string) => void
-  onDescriptionChange: (v: string) => void
-  onColorChange: (v: string) => void
-  onScheduleableChange: (v: boolean) => void
-  onTemplateChange: (v: string) => void
-  onCreate: () => void
+  onCreate: (fields: NewListFields) => void
   selectedCount?: number
   placementMode?: ItemPlacementMode
   canMove?: boolean
@@ -36,23 +35,28 @@ export function NewListDialog({
   open,
   currentFolder,
   isHome,
-  name,
-  description,
-  color,
-  scheduleable,
-  template,
   onOpenChange,
-  onNameChange,
-  onDescriptionChange,
-  onColorChange,
-  onScheduleableChange,
-  onTemplateChange,
   onCreate,
   selectedCount = 0,
   placementMode = "keep",
   canMove = true,
   onPlacementModeChange,
 }: NewListDialogProps) {
+  const [name, setName] = useState("")
+  const [description, setDescription] = useState("")
+  const [color, setColor] = useState("#3B82F6")
+  const [scheduleable, setScheduleable] = useState(true)
+  const [template, setTemplate] = useState("none")
+
+  useEffect(() => {
+    if (!open) return
+    setName("")
+    setDescription(currentFolder?.description || "")
+    setColor(currentFolder?.color || "#3B82F6")
+    setScheduleable(currentFolder ? currentFolder.scheduleable !== false : true)
+    setTemplate("none")
+  }, [open, currentFolder])
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="fm98-dialog">
@@ -75,20 +79,20 @@ export function NewListDialog({
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="category-name">List Name</Label>
-            <Input id="category-name" value={name} onChange={(e) => onNameChange(e.target.value)} placeholder="e.g., Work Projects" />
+            <Input id="category-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Work Projects" />
           </div>
           <div className="space-y-2">
             <Label htmlFor="category-description">Description (optional)</Label>
             <Input
               id="category-description"
               value={description}
-              onChange={(e) => onDescriptionChange(e.target.value)}
+              onChange={(e) => setDescription(e.target.value)}
               placeholder="Brief description of this list"
             />
           </div>
           <div className="space-y-2">
             <Label htmlFor="category-color">Color</Label>
-            <Input id="category-color" type="color" value={color} onChange={(e) => onColorChange(e.target.value)} />
+            <Input id="category-color" type="color" value={color} onChange={(e) => setColor(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="category-template">Item template</Label>
@@ -96,7 +100,7 @@ export function NewListDialog({
               id="category-template"
               className="w-full border rounded-md h-9 px-2 bg-background text-sm"
               value={template}
-              onChange={(e) => onTemplateChange(e.target.value)}
+              onChange={(e) => setTemplate(e.target.value)}
             >
               {Object.entries(LIST_TEMPLATES).map(([key, t]) => (
                 <option key={key} value={key}>
@@ -116,7 +120,7 @@ export function NewListDialog({
               </Label>
               <p className="text-xs text-muted-foreground">Show items in this list in the Scheduler.</p>
             </div>
-            <Switch id="category-scheduleable" checked={scheduleable} onCheckedChange={onScheduleableChange} />
+            <Switch id="category-scheduleable" checked={scheduleable} onCheckedChange={setScheduleable} />
           </div>
           {selectedCount > 0 && onPlacementModeChange && (
             <div className="space-y-2 rounded-lg border p-3">
@@ -146,7 +150,9 @@ export function NewListDialog({
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button onClick={onCreate}>Create List</Button>
+            <Button onClick={() => onCreate({ name, description, color, scheduleable, template })}>
+              Create List
+            </Button>
           </div>
         </div>
       </DialogContent>

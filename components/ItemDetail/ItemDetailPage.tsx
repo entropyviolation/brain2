@@ -11,13 +11,15 @@
  */
 "use client"
 
-import { useState, useCallback, useEffect } from "react"
+import { useState, useCallback, useEffect, useRef } from "react"
 import { useItemDetailDraft } from "@/components/ItemDetail/useItemDetailDraft"
 import { TagInput } from "@/components/ItemDetail/TagInput"
 import { LinkPicker } from "@/components/ItemDetail/LinkPicker"
 import { RelatedItemsPanel } from "@/components/ItemDetail/RelatedItemsPanel"
 import { BodyPanel } from "@/components/ItemDetail/BodyPanel"
 import { ListPicker } from "@/components/Lists/list-picker"
+import { IsolatedInput, IsolatedTextarea } from "@/components/ui/isolated-text-field"
+import { SubtaskComposer } from "@/components/ItemDetail/SubtaskComposer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -90,6 +92,8 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
   const {
     task,
     setTask,
+    getDraft,
+    touchDraft,
     allTasks,
     lists,
     updateTask,
@@ -112,10 +116,8 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
   const deleteItemType = useItemTypeStore((state) => state.deleteType)
 
   const [isEditing, setIsEditing] = useState(false)
-  const [newSubtaskDescription, setNewSubtaskDescription] = useState("")
   const [selectedDependency, setSelectedDependency] = useState("")
-  const [actualDurationInput, setActualDurationInput] = useState("")
-  const [splitText, setSplitText] = useState("")
+  const actualDurationRef = useRef("")
   const [editingItemType, setEditingItemType] = useState<ItemTypeDefinition | null>(null)
 
   // Create a new attribute from the detail view. Targeting a list persists the
@@ -142,11 +144,12 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
   )
 
   const handleSave = useCallback(() => {
-    if (task) {
-      updateTask(task)
+    const draft = getDraft()
+    if (draft) {
+      updateTask(draft)
       setIsEditing(false)
     }
-  }, [task, updateTask])
+  }, [getDraft, updateTask])
 
   const handleDelete = useCallback(() => {
     if (!task) return
@@ -157,15 +160,17 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
   }, [task, deleteTask, onBack])
 
   const handleComplete = useCallback(() => {
-    if (task) {
-      const actualDuration = actualDurationInput ? Number.parseInt(actualDurationInput) : undefined
+    const draft = getDraft()
+    if (draft) {
+      const raw = actualDurationRef.current
+      const actualDuration = raw ? Number.parseInt(raw) : undefined
       updateTask({
-        ...task,
+        ...draft,
         completed: true,
         actualDuration: actualDuration,
       })
     }
-  }, [task, actualDurationInput, updateTask])
+  }, [getDraft, updateTask])
 
   const handleSchedule = useCallback(
     (type: "date" | "week" | "month" | "year", value: string) => {
@@ -193,43 +198,39 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
     [task],
   )
 
-  const addSubtask = useCallback(() => {
-    if (task && newSubtaskDescription.trim()) {
-      const subtask: Task = {
-        id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
-        description: newSubtaskDescription,
-        stage: "clarified",
-        createdAt: new Date(),
-        estimatedDuration: 15,
-        cognitiveLoad: 1,
-        urgency: task.urgency,
-        importance: task.importance,
-        dependencies: [],
-        context: task.context,
-        entropy: 0.3,
-        rewardValue: 3,
-        completed: false,
-        lists: task.lists || [],
-        parentTaskId: task.id,
-        subtasks: [],
-        allowPartialCompletion: false,
-        minimumChunkSize: 15,
-      }
-
-      // Add the subtask to the store
-      addTask(subtask)
-
-      // Update the parent task to include this subtask
-      const updatedTask = {
-        ...task,
-        subtasks: [...(task.subtasks || []), { id: subtask.id, description: subtask.description, completed: false }],
-      }
-      setTask(updatedTask)
-      updateTask(updatedTask)
-
-      setNewSubtaskDescription("")
+  const addSubtask = useCallback((description: string) => {
+    const trimmed = description.trim()
+    if (!task || !trimmed) return
+    const subtask: Task = {
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+      description: trimmed,
+      stage: "clarified",
+      createdAt: new Date(),
+      estimatedDuration: 15,
+      cognitiveLoad: 1,
+      urgency: task.urgency,
+      importance: task.importance,
+      dependencies: [],
+      context: task.context,
+      entropy: 0.3,
+      rewardValue: 3,
+      completed: false,
+      lists: task.lists || [],
+      parentTaskId: task.id,
+      subtasks: [],
+      allowPartialCompletion: false,
+      minimumChunkSize: 15,
     }
-  }, [task, newSubtaskDescription, addTask, updateTask])
+
+    addTask(subtask)
+
+    const updatedTask = {
+      ...task,
+      subtasks: [...(task.subtasks || []), { id: subtask.id, description: subtask.description, completed: false }],
+    }
+    setTask(updatedTask)
+    updateTask(updatedTask)
+  }, [task, addTask, updateTask, setTask])
 
   const removeSubtask = useCallback(
     (subtaskId: string) => {
@@ -257,13 +258,12 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
     [task, setTask, updateTask],
   )
 
-  const splitIntoSteps = useCallback(() => {
+  const splitIntoSteps = useCallback((text: string) => {
     if (!task) return
-    const steps = parseSteps(splitText)
+    const steps = parseSteps(text)
     if (steps.length === 0) return
     persistSubtasks(addStepsAsSubtasks(task.subtasks, steps))
-    setSplitText("")
-  }, [task, splitText, persistSubtasks])
+  }, [task, persistSubtasks])
 
   const handleToggleStepComplete = useCallback(
     (id: string) => {
@@ -369,7 +369,21 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div>
-              <h1 className="text-2xl font-bold">{task.description}</h1>
+              <h1 className="text-2xl font-bold">
+                {isEditing ? (
+                  <IsolatedInput
+                    value={task.description}
+                    onLiveChange={(description) => touchDraft({ description, title: description })}
+                    onCommit={(description) =>
+                      setTask((prev) => (prev ? { ...prev, description, title: description } : prev))
+                    }
+                    className="text-2xl font-bold border-0 shadow-none px-0 h-auto focus-visible:ring-0 w-full max-w-xl"
+                    placeholder="Item name"
+                  />
+                ) : (
+                  task.description
+                )}
+              </h1>
               <div className="flex items-center gap-2 mt-1">
                 <Badge variant={task.completed ? "default" : "secondary"}>
                   {task.completed ? "Completed" : task.stage}
@@ -386,11 +400,16 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
           <div className="flex gap-2">
             {!task.completed && (
               <div className="flex items-center gap-2">
-                <Input
+                <IsolatedInput
                   type="number"
                   placeholder="Actual minutes"
-                  value={actualDurationInput}
-                  onChange={(e) => setActualDurationInput(e.target.value)}
+                  value=""
+                  onLiveChange={(v) => {
+                    actualDurationRef.current = v
+                  }}
+                  onCommit={(v) => {
+                    actualDurationRef.current = v
+                  }}
                   className="w-32"
                 />
                 <Button variant="outline" onClick={handleComplete}>
@@ -465,12 +484,15 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
                     <div className="space-y-2">
                       <Label htmlFor="estimated-duration">Estimated Duration (minutes)</Label>
                       {isEditing ? (
-                        <Input
+                        <IsolatedInput
                           id="estimated-duration"
                           type="number"
-                          value={task.estimatedDuration}
-                          onChange={(e) =>
-                            setTask({ ...task, estimatedDuration: Number.parseInt(e.target.value) || 0 })
+                          value={String(task.estimatedDuration ?? "")}
+                          onLiveChange={(v) => touchDraft({ estimatedDuration: Number.parseInt(v) || 0 })}
+                          onCommit={(v) =>
+                            setTask((prev) =>
+                              prev ? { ...prev, estimatedDuration: Number.parseInt(v) || 0 } : prev,
+                            )
                           }
                         />
                       ) : (
@@ -484,13 +506,18 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
                     <div className="space-y-2">
                       <Label htmlFor="reward-value">Reward Value (1-10)</Label>
                       {isEditing ? (
-                        <Input
+                        <IsolatedInput
                           id="reward-value"
                           type="number"
                           min="1"
                           max="10"
-                          value={task.rewardValue}
-                          onChange={(e) => setTask({ ...task, rewardValue: Number.parseInt(e.target.value) || 1 })}
+                          value={String(task.rewardValue ?? "")}
+                          onLiveChange={(v) => touchDraft({ rewardValue: Number.parseInt(v) || 1 })}
+                          onCommit={(v) =>
+                            setTask((prev) =>
+                              prev ? { ...prev, rewardValue: Number.parseInt(v) || 1 } : prev,
+                            )
+                          }
                         />
                       ) : (
                         <div className="flex items-center gap-2">
@@ -555,10 +582,11 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
                     <div className="space-y-2">
                       <Label htmlFor="context">Context</Label>
                       {isEditing ? (
-                        <Input
+                        <IsolatedInput
                           id="context"
-                          value={task.context}
-                          onChange={(e) => setTask({ ...task, context: e.target.value })}
+                          value={task.context || ""}
+                          onLiveChange={(context) => touchDraft({ context })}
+                          onCommit={(context) => setTask((prev) => (prev ? { ...prev, context } : prev))}
                         />
                       ) : (
                         <Badge variant="outline">{task.context}</Badge>
@@ -586,13 +614,18 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
                         <div className="space-y-2">
                           <Label htmlFor="chunk-size">Minimum chunk size (minutes)</Label>
                           {isEditing ? (
-                            <Input
+                            <IsolatedInput
                               id="chunk-size"
                               type="number"
                               min="5"
-                              value={task.minimumChunkSize}
-                              onChange={(e) =>
-                                setTask({ ...task, minimumChunkSize: Number.parseInt(e.target.value) || 15 })
+                              value={String(task.minimumChunkSize ?? "")}
+                              onLiveChange={(v) =>
+                                touchDraft({ minimumChunkSize: Number.parseInt(v) || 15 })
+                              }
+                              onCommit={(v) =>
+                                setTask((prev) =>
+                                  prev ? { ...prev, minimumChunkSize: Number.parseInt(v) || 15 } : prev,
+                                )
                               }
                             />
                           ) : (
@@ -723,7 +756,10 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
                     categories={lists}
                     itemAttributeDefinitions={task.itemAttributeDefinitions}
                     itemType={task.type}
-                    onChangeValues={(attributes) => setTask({ ...task, attributes })}
+                    onChangeValues={(attributes) => {
+                      touchDraft({ attributes })
+                      setTask((prev) => (prev ? { ...prev, attributes } : prev))
+                    }}
                     onChangeItemAttributeDefinitions={(itemAttributeDefinitions) =>
                       setTask({ ...task, itemAttributeDefinitions })
                     }
@@ -790,11 +826,14 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
 
                   <div className="space-y-2">
                     <Label htmlFor="scheduled-time">Scheduled Time</Label>
-                    <Input
+                    <IsolatedInput
                       id="scheduled-time"
                       type="time"
                       value={task.scheduledTime || ""}
-                      onChange={(e) => setTask({ ...task, scheduledTime: e.target.value })}
+                      onLiveChange={(scheduledTime) => touchDraft({ scheduledTime })}
+                      onCommit={(scheduledTime) =>
+                        setTask((prev) => (prev ? { ...prev, scheduledTime } : prev))
+                      }
                       disabled={!isEditing}
                     />
                   </div>
@@ -980,22 +1019,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
               {isEditing && (
                 <div className="space-y-2">
                   <Label>Add Subtask</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Enter subtask description..."
-                      value={newSubtaskDescription}
-                      onChange={(e) => setNewSubtaskDescription(e.target.value)}
-                      className="flex-1"
-                      onKeyPress={(e) => {
-                        if (e.key === "Enter") {
-                          addSubtask()
-                        }
-                      }}
-                    />
-                    <Button onClick={addSubtask} disabled={!newSubtaskDescription.trim()}>
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <SubtaskComposer onAdd={addSubtask} />
                 </div>
               )}
 
@@ -1048,17 +1072,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="split-steps">Split into steps (one per line)</Label>
-                <Textarea
-                  id="split-steps"
-                  rows={4}
-                  placeholder={"1. Open the file\n2. Find the section\n3. Write the first sentence"}
-                  value={splitText}
-                  onChange={(e) => setSplitText(e.target.value)}
-                />
-                <Button onClick={splitIntoSteps} disabled={!parseSteps(splitText).length}>
-                  <Split className="h-4 w-4 mr-2" />
-                  Add steps
-                </Button>
+                <SplitStepsComposer onSplit={splitIntoSteps} />
               </div>
 
               <div className="space-y-3">
@@ -1097,10 +1111,10 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
                             <Trash className="h-3 w-3" />
                           </Button>
                         </div>
-                        <Input
+                        <IsolatedInput
                           placeholder="Context — what you need to know to do this step on its own…"
                           value={step.context ?? ""}
-                          onChange={(e) => handleStepContextChange(step.id, e.target.value)}
+                          onCommit={(context) => handleStepContextChange(step.id, context)}
                           className="text-sm"
                         />
                       </div>
@@ -1123,10 +1137,11 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
               <div className="space-y-2">
                 <Label htmlFor="why">Why do you need to do this task?</Label>
                 {isEditing ? (
-                  <Textarea
+                  <IsolatedTextarea
                     id="why"
                     value={task.why || ""}
-                    onChange={(e) => setTask({ ...task, why: e.target.value })}
+                    onLiveChange={(why) => touchDraft({ why })}
+                    onCommit={(why) => setTask((prev) => (prev ? { ...prev, why } : prev))}
                     placeholder="Explain the purpose and motivation behind this task..."
                     rows={3}
                   />
@@ -1138,10 +1153,13 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
               <div className="space-y-2">
                 <Label htmlFor="consequences">What happens if you don't do it?</Label>
                 {isEditing ? (
-                  <Textarea
+                  <IsolatedTextarea
                     id="consequences"
                     value={task.consequences || ""}
-                    onChange={(e) => setTask({ ...task, consequences: e.target.value })}
+                    onLiveChange={(consequences) => touchDraft({ consequences })}
+                    onCommit={(consequences) =>
+                      setTask((prev) => (prev ? { ...prev, consequences } : prev))
+                    }
                     placeholder="Describe the potential consequences of not completing this task..."
                     rows={3}
                   />
@@ -1153,10 +1171,11 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
               <div className="space-y-2">
                 <Label htmlFor="notes">Additional Notes</Label>
                 {isEditing ? (
-                  <Textarea
+                  <IsolatedTextarea
                     id="notes"
                     value={task.notes || ""}
-                    onChange={(e) => setTask({ ...task, notes: e.target.value })}
+                    onLiveChange={(notes) => touchDraft({ notes })}
+                    onCommit={(notes) => setTask((prev) => (prev ? { ...prev, notes } : prev))}
                     placeholder="Any additional thoughts or context..."
                     rows={3}
                   />
@@ -1240,6 +1259,31 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
         setOverrideId(id)
       }}
     />
+    </>
+  )
+}
+
+function SplitStepsComposer({ onSplit }: { onSplit: (text: string) => void }) {
+  const [text, setText] = useState("")
+  return (
+    <>
+      <Textarea
+        id="split-steps"
+        rows={4}
+        placeholder={"1. Open the file\n2. Find the section\n3. Write the first sentence"}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+      />
+      <Button
+        onClick={() => {
+          onSplit(text)
+          setText("")
+        }}
+        disabled={!parseSteps(text).length}
+      >
+        <Split className="h-4 w-4 mr-2" />
+        Add steps
+      </Button>
     </>
   )
 }

@@ -57,9 +57,7 @@ export interface ListContentPanelProps extends ListContentTaskHandlers {
   onGlobalAllUncategorizedOnlyChange?: (checked: boolean) => void
   addingTaskToTarget: string | null
   openTargetKeyValue: string
-  newTaskDescription: string
-  onNewTaskDescriptionChange: (value: string) => void
-  onAddTask: () => void
+  onAddTask: (description: string) => void
   onCancelAddTask: () => void
   showBulkAdd: boolean
   onBulkAdd: (text: string) => void

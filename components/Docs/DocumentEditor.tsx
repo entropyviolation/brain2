@@ -8,7 +8,7 @@
  */
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react"
 import {
   Bold,
   Italic,
@@ -20,7 +20,6 @@ import {
   Heading3,
   Link as LinkIcon,
   Image as ImageIcon,
-  FileUp,
   Type,
   Quote,
   RemoveFormatting,
@@ -81,7 +80,7 @@ export function DocumentEditor({
 }: DocumentEditorProps) {
   const surfaceRef = useRef<HTMLDivElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
-  const pdfInputRef = useRef<HTMLInputElement>(null)
+  const wrapRef = useRef<HTMLDivElement>(null)
   const lastEmitted = useRef<string>("")
   const [selFont, setSelFont] = useState(documentFont && isAllowedFont(documentFont) ? documentFont : "Merriweather")
   const [selSize, setSelSize] = useState("16")
@@ -92,6 +91,7 @@ export function DocumentEditor({
   const [linkOpen, setLinkOpen] = useState(false)
   const [linkInitial, setLinkInitial] = useState<LinkDialogValues>({ text: "", url: "" })
   const [linkEditing, setLinkEditing] = useState(false)
+  const [selectedImg, setSelectedImg] = useState<HTMLImageElement | null>(null)
   const savedRange = useRef<Range | null>(null)
   const editingAnchor = useRef<HTMLAnchorElement | null>(null)
 
@@ -106,6 +106,7 @@ export function DocumentEditor({
     el.innerHTML = html
     lastEmitted.current = html
     setWordCount(htmlWordCount(html))
+    setSelectedImg(null)
   }, [docId]) // eslint-disable-line react-hooks/exhaustive-deps -- intentional: only remount on doc switch
 
   // When parent flushes a different body while not focused, sync.
@@ -395,7 +396,7 @@ export function DocumentEditor({
       document.execCommand(
         "insertHTML",
         false,
-        `<img class="docs-img" src="${dataUrl}" alt="${alt}" />`,
+        `<img class="docs-img" src="${dataUrl}" alt="${alt}" draggable="false" />`,
       )
       emit()
     } catch (err) {
@@ -436,7 +437,6 @@ export function DocumentEditor({
       window.alert("Could not read that PDF. It may be encrypted or image-only.")
     } finally {
       setBusy(null)
-      if (pdfInputRef.current) pdfInputRef.current.value = ""
     }
   }
 
@@ -662,15 +662,6 @@ export function DocumentEditor({
         <button
           type="button"
           className="docs-tool"
-          title="Upload PDF (ingest as editable text)"
-          disabled={readOnly || !!busy}
-          onClick={() => pdfInputRef.current?.click()}
-        >
-          <FileUp className="h-3.5 w-3.5" />
-        </button>
-        <button
-          type="button"
-          className="docs-tool"
           title="Clear formatting"
           disabled={readOnly}
           onClick={() => runCommand("removeFormat")}
@@ -690,18 +681,9 @@ export function DocumentEditor({
             e.target.value = ""
           }}
         />
-        <input
-          ref={pdfInputRef}
-          type="file"
-          accept="application/pdf,.pdf"
-          className="docs-file-input"
-          onChange={(e) => {
-            const f = e.target.files?.[0]
-            if (f) void ingestPdfFile(f)
-          }}
-        />
       </div>
 
+      <div className="docs-surface-wrap" ref={wrapRef}>
       <div
         ref={surfaceRef}
         className="docs-surface"
@@ -712,7 +694,10 @@ export function DocumentEditor({
         aria-multiline="true"
         aria-label="Document"
         data-placeholder={placeholder}
-        onInput={onSurfaceInput}
+        onInput={() => {
+          setSelectedImg((img) => (img && img.isConnected ? img : null))
+          onSurfaceInput()
+        }}
         onBlur={onSurfaceBlur}
         onPaste={onPaste}
         onDrop={onDrop}
@@ -720,6 +705,14 @@ export function DocumentEditor({
         onClick={(e) => {
           const root = surfaceRef.current
           if (!root) return
+          const img = (e.target as HTMLElement | null)?.closest?.("img")
+          if (img && root.contains(img)) {
+            e.preventDefault()
+            e.stopPropagation()
+            setSelectedImg(img as HTMLImageElement)
+            return
+          }
+          setSelectedImg(null)
           const anchor = closestAnchor(e.target as Node, root)
           if (!anchor) return
           e.preventDefault()
@@ -736,6 +729,7 @@ export function DocumentEditor({
           openLinkDialog({ anchor })
         }}
         onKeyDown={(e) => {
+          if (e.key === "Escape") setSelectedImg(null)
           if (e.key === " " || e.key === "Enter") {
             if (!e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) {
               if (tryAutoLinkBeforeCaret()) emit()
@@ -758,6 +752,15 @@ export function DocumentEditor({
           }
         }}
       />
+      {selectedImg && wrapRef.current && !readOnly && (
+        <ImageResizeOverlay
+          img={selectedImg}
+          container={wrapRef.current}
+          onChange={emit}
+          onDeselect={() => setSelectedImg(null)}
+        />
+      )}
+      </div>
 
       <LinkDialog
         open={linkOpen}
@@ -774,11 +777,85 @@ export function DocumentEditor({
       />
 
       <div className="docs-editor-status">
-        <span>{busy ?? "Plain paste · click link to open · right-click to edit"}</span>
+        <span>{busy ?? "Plain paste · click image to resize · click link to open"}</span>
         <span>
           {wordCount} {wordCount === 1 ? "word" : "words"}
         </span>
       </div>
+    </div>
+  )
+}
+
+function ImageResizeOverlay({
+  img,
+  container,
+  onChange,
+}: {
+  img: HTMLImageElement
+  container: HTMLElement
+  onChange: () => void
+  onDeselect: () => void
+}) {
+  const [box, setBox] = useState({ top: 0, left: 0, width: 0, height: 0 })
+
+  const measure = useCallback(() => {
+    const c = container.getBoundingClientRect()
+    const r = img.getBoundingClientRect()
+    setBox({
+      top: r.top - c.top,
+      left: r.left - c.left,
+      width: r.width,
+      height: r.height,
+    })
+  }, [img, container])
+
+  useEffect(() => {
+    measure()
+    img.classList.add("docs-img-selected")
+    const surface = container.querySelector(".docs-surface")
+    const onScroll = () => measure()
+    surface?.addEventListener("scroll", onScroll)
+    window.addEventListener("resize", onScroll)
+    return () => {
+      img.classList.remove("docs-img-selected")
+      surface?.removeEventListener("scroll", onScroll)
+      window.removeEventListener("resize", onScroll)
+    }
+  }, [img, container, measure])
+
+  const startDrag = (corner: "nw" | "ne" | "sw" | "se") => (e: ReactPointerEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const startX = e.clientX
+    const startW = img.getBoundingClientRect().width
+    const maxW = Math.max(80, container.clientWidth - 32)
+    const onMove = (ev: PointerEvent) => {
+      const dx = ev.clientX - startX
+      const sign = corner.includes("e") ? 1 : -1
+      const next = Math.round(Math.min(maxW, Math.max(48, startW + dx * sign)))
+      img.style.width = `${next}px`
+      img.style.height = "auto"
+      img.setAttribute("width", String(next))
+      measure()
+    }
+    const onUp = () => {
+      window.removeEventListener("pointermove", onMove)
+      window.removeEventListener("pointerup", onUp)
+      onChange()
+    }
+    window.addEventListener("pointermove", onMove)
+    window.addEventListener("pointerup", onUp)
+  }
+
+  return (
+    <div
+      className="docs-img-box"
+      style={{ top: box.top, left: box.left, width: box.width, height: box.height }}
+    >
+      <button type="button" className="docs-img-handle nw" aria-label="Resize from top left" onPointerDown={startDrag("nw")} />
+      <button type="button" className="docs-img-handle ne" aria-label="Resize from top right" onPointerDown={startDrag("ne")} />
+      <button type="button" className="docs-img-handle sw" aria-label="Resize from bottom left" onPointerDown={startDrag("sw")} />
+      <button type="button" className="docs-img-handle se" aria-label="Resize from bottom right" onPointerDown={startDrag("se")} />
     </div>
   )
 }

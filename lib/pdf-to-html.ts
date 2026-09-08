@@ -3,18 +3,21 @@
  *
  * Uses pdfjs-dist in the browser to extract positioned text, groups items into
  * lines/paragraphs, and emits semantic HTML (headings when font size is large,
- * lists when lines look like bullets/numbers). Formatting is best-effort —
- * scanned/image-only PDFs yield little text.
+ * lists when lines look like bullets/numbers). Each run keeps a mapped
+ * Google/system font plus bold/italic so uploaded PDFs keep a similar look.
  */
 import { escapeHtmlText, sanitizeDocHtml } from "@/lib/doc-html"
+import { fontFamilyCss, mapPdfFontToAllowed, type GoogleFontName } from "@/lib/google-fonts"
 
 export interface PdfIngestResult {
   html: string
   pageCount: number
   charCount: number
+  /** Most common body font mapped onto the Docs allow-list. */
+  dominantFont?: GoogleFontName
 }
 
-interface TextRun {
+export interface PdfTextRun {
   str: string
   x: number
   y: number
@@ -22,11 +25,11 @@ interface TextRun {
   fontName: string
 }
 
-function groupLines(items: TextRun[]): TextRun[][] {
+function groupLines(items: PdfTextRun[]): PdfTextRun[][] {
   if (items.length === 0) return []
   const sorted = [...items].sort((a, b) => b.y - a.y || a.x - b.x)
-  const lines: TextRun[][] = []
-  let current: TextRun[] = [sorted[0]]
+  const lines: PdfTextRun[][] = []
+  let current: PdfTextRun[] = [sorted[0]]
   let lastY = sorted[0].y
   let lastH = sorted[0].h || 12
 
@@ -46,7 +49,7 @@ function groupLines(items: TextRun[]): TextRun[][] {
   return lines
 }
 
-function lineText(line: TextRun[]): string {
+function lineText(line: PdfTextRun[]): string {
   return line
     .map((r) => r.str)
     .join("")
@@ -54,31 +57,50 @@ function lineText(line: TextRun[]): string {
     .trim()
 }
 
-function avgHeight(line: TextRun[]): number {
+function avgHeight(line: PdfTextRun[]): number {
   if (!line.length) return 12
   return line.reduce((s, r) => s + (r.h || 12), 0) / line.length
 }
 
-function lineToHtml(text: string, height: number, medianH: number): string {
-  const escaped = escapeHtmlText(text)
-  if (!escaped) return ""
+/** PDF user-space units are roughly points; convert to CSS pixels and clamp. */
+export function pdfHeightToPx(height: number): number {
+  const px = Math.round((Math.max(1, height) * 96) / 72)
+  return Math.min(48, Math.max(10, px))
+}
 
-  // Bullet / numbered list heuristics.
+function runInnerHtml(run: PdfTextRun): string {
+  const text = escapeHtmlText(run.str)
+  if (!text) return ""
+  const mapped = mapPdfFontToAllowed(run.fontName)
+  const size = pdfHeightToPx(run.h || 12)
+  const weight = mapped.bold ? "700" : "400"
+  const style = mapped.italic ? "italic" : "normal"
+  const family = fontFamilyCss(mapped.family)
+  return `<span style="font-family:${family};font-size:${size}px;font-weight:${weight};font-style:${style}">${text}</span>`
+}
+
+function styledLineInner(line: PdfTextRun[]): string {
+  return line.map(runInnerHtml).join("")
+}
+
+function lineToHtml(line: PdfTextRun[], medianH: number): string {
+  const text = lineText(line)
+  if (!text) return ""
+  const inner = styledLineInner(line)
+  const height = avgHeight(line)
+
   if (/^([•·▪►‣*-])\s+/.test(text)) {
-    const body = escapeHtmlText(text.replace(/^([•·▪►‣*-])\s+/, ""))
-    return `<li>${body}</li>`
+    return `<li>${inner}</li>`
   }
   if (/^\d+[.)]\s+/.test(text)) {
-    const body = escapeHtmlText(text.replace(/^\d+[.)]\s+/, ""))
-    return `<li data-ordered="1">${body}</li>`
+    return `<li data-ordered="1">${inner}</li>`
   }
 
-  // Heading by relative font size.
-  if (height >= medianH * 1.65) return `<h1>${escaped}</h1>`
-  if (height >= medianH * 1.35) return `<h2>${escaped}</h2>`
-  if (height >= medianH * 1.18) return `<h3>${escaped}</h3>`
+  if (height >= medianH * 1.65) return `<h1>${inner}</h1>`
+  if (height >= medianH * 1.35) return `<h2>${inner}</h2>`
+  if (height >= medianH * 1.18) return `<h3>${inner}</h3>`
 
-  return `<p>${escaped}</p>`
+  return `<p>${inner}</p>`
 }
 
 function flushList(buf: string[], ordered: boolean, out: string[]) {
@@ -88,7 +110,27 @@ function flushList(buf: string[], ordered: boolean, out: string[]) {
   buf.length = 0
 }
 
-function linesToHtml(lines: TextRun[][]): string {
+function dominantBodyFont(lines: PdfTextRun[][], medianH: number): GoogleFontName | undefined {
+  const counts = new Map<GoogleFontName, number>()
+  for (const line of lines) {
+    if (avgHeight(line) >= medianH * 1.18) continue
+    for (const run of line) {
+      const family = mapPdfFontToAllowed(run.fontName).family
+      counts.set(family, (counts.get(family) ?? 0) + (run.str?.length ?? 0))
+    }
+  }
+  let best: GoogleFontName | undefined
+  let bestN = 0
+  for (const [family, n] of counts) {
+    if (n > bestN) {
+      best = family
+      bestN = n
+    }
+  }
+  return best
+}
+
+function linesToHtml(lines: PdfTextRun[][]): { html: string; dominantFont?: GoogleFontName } {
   const heights = lines.map(avgHeight).filter((h) => h > 0)
   const medianH =
     heights.length === 0
@@ -106,7 +148,7 @@ function linesToHtml(lines: TextRun[][]): string {
       flushList(olBuf, true, out)
       continue
     }
-    const html = lineToHtml(text, avgHeight(line), medianH)
+    const html = lineToHtml(line, medianH)
     if (html.startsWith("<li data-ordered")) {
       flushList(ulBuf, false, out)
       olBuf.push(html.replace(' data-ordered="1"', ""))
@@ -121,7 +163,12 @@ function linesToHtml(lines: TextRun[][]): string {
   }
   flushList(ulBuf, false, out)
   flushList(olBuf, true, out)
-  return out.join("\n")
+  return { html: out.join("\n"), dominantFont: dominantBodyFont(lines, medianH) }
+}
+
+/** Testable: convert extracted PDF text runs into styled Docs HTML. */
+export function pdfRunsToHtml(runs: PdfTextRun[]): { html: string; dominantFont?: GoogleFontName } {
+  return linesToHtml(groupLines(runs))
 }
 
 /**
@@ -130,18 +177,18 @@ function linesToHtml(lines: TextRun[][]): string {
  */
 export async function pdfArrayBufferToHtml(data: ArrayBuffer): Promise<PdfIngestResult> {
   const pdfjs = await import("pdfjs-dist")
-  // Worker from CDN matching the installed package version (static export friendly).
   const version = (pdfjs as { version?: string }).version ?? "4.10.38"
   pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${version}/build/pdf.worker.min.mjs`
 
   const loadingTask = pdfjs.getDocument({ data: new Uint8Array(data) })
   const pdf = await loadingTask.promise
   const pageHtml: string[] = []
+  const fontVotes = new Map<GoogleFontName, number>()
 
   for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
     const page = await pdf.getPage(pageNum)
     const content = await page.getTextContent()
-    const runs: TextRun[] = []
+    const runs: PdfTextRun[] = []
     for (const item of content.items) {
       if (!("str" in item) || !item.str) continue
       const transform = item.transform as number[]
@@ -154,13 +201,15 @@ export async function pdfArrayBufferToHtml(data: ArrayBuffer): Promise<PdfIngest
         fontName: item.fontName || "",
       })
     }
-    const lines = groupLines(runs)
-    const html = linesToHtml(lines)
-    if (html.trim()) {
+    const converted = pdfRunsToHtml(runs)
+    if (converted.dominantFont) {
+      fontVotes.set(converted.dominantFont, (fontVotes.get(converted.dominantFont) ?? 0) + 1)
+    }
+    if (converted.html.trim()) {
       pageHtml.push(
         pageNum === 1
-          ? html
-          : `<hr /><p><em>Page ${pageNum}</em></p>\n${html}`,
+          ? converted.html
+          : `<hr /><p><em>Page ${pageNum}</em></p>\n${converted.html}`,
       )
     }
   }
@@ -170,5 +219,13 @@ export async function pdfArrayBufferToHtml(data: ArrayBuffer): Promise<PdfIngest
     "<p><em>(No extractable text — this PDF may be image-only.)</em></p>"
   const html = sanitizeDocHtml(joined)
   const charCount = html.replace(/<[^>]+>/g, "").length
-  return { html, pageCount: pdf.numPages, charCount }
+  let dominantFont: GoogleFontName | undefined
+  let best = 0
+  for (const [family, n] of fontVotes) {
+    if (n > best) {
+      dominantFont = family
+      best = n
+    }
+  }
+  return { html, pageCount: pdf.numPages, charCount, dominantFont }
 }

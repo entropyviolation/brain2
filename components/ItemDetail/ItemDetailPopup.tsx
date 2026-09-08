@@ -19,9 +19,10 @@ import { RelatedItemsPanel } from "@/components/ItemDetail/RelatedItemsPanel"
 import { BodyPanel } from "@/components/ItemDetail/BodyPanel"
 import { ListPicker } from "@/components/Lists/list-picker"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { IsolatedInput, IsolatedTextarea } from "@/components/ui/isolated-text-field"
+import { SubtaskComposer } from "@/components/ItemDetail/SubtaskComposer"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -86,7 +87,8 @@ export function TaskDetailPopup({ taskId, open, onClose }: TaskDetailPopupProps)
   const {
     task,
     setTask,
-    originalTask,
+    getDraft,
+    touchDraft,
     setOriginalTask,
     allTasks,
     lists,
@@ -108,7 +110,6 @@ export function TaskDetailPopup({ taskId, open, onClose }: TaskDetailPopupProps)
   const addItemType = useItemTypeStore((state) => state.addType)
   const deleteItemType = useItemTypeStore((state) => state.deleteType)
 
-  const [newSubtaskDescription, setNewSubtaskDescription] = useState("")
   const [selectedDependency, setSelectedDependency] = useState("none")
   const [editingItemType, setEditingItemType] = useState<ItemTypeDefinition | null>(null)
 
@@ -134,18 +135,13 @@ export function TaskDetailPopup({ taskId, open, onClose }: TaskDetailPopupProps)
     return Array.from(merged)
   }, [task, lists, isTask])
 
-  // Deep compare function for tasks (shallow for now, can be improved)
-  const isTaskChanged = useCallback(() => {
-    if (!task || !originalTask) return false
-    return JSON.stringify(task) !== JSON.stringify(originalTask)
-  }, [task, originalTask])
-
   const handleSave = useCallback(() => {
-    if (task) {
-      updateTask(task)
-      setOriginalTask(task)
+    const draft = getDraft()
+    if (draft) {
+      updateTask(draft)
+      setOriginalTask(draft)
     }
-  }, [task, updateTask])
+  }, [getDraft, updateTask, setOriginalTask])
 
   const handleDelete = useCallback(() => {
     if (!task) return
@@ -158,11 +154,12 @@ export function TaskDetailPopup({ taskId, open, onClose }: TaskDetailPopupProps)
   // Marking complete flips the flag and lets the global completion popup capture
   // the contribution (objective/goal) + optional review on every completion.
   const handleComplete = useCallback(() => {
-    if (task) {
-      updateTask({ ...task, completed: true })
+    const draft = getDraft()
+    if (draft) {
+      updateTask({ ...draft, completed: true })
       onClose()
     }
-  }, [task, updateTask, onClose])
+  }, [getDraft, updateTask, onClose])
 
   // Persist a richer completion status immediately, keeping the legacy
   // `completed` flag in sync (invariant: status "done" ⇔ completed true).
@@ -209,20 +206,14 @@ export function TaskDetailPopup({ taskId, open, onClose }: TaskDetailPopupProps)
     updateTask(updated)
   }, [task, updateTask])
 
-  const addSubtask = useCallback(() => {
-    if (task && newSubtaskDescription.trim()) {
-      const newSubtask = {
-        id: Date.now().toString(),
-        description: newSubtaskDescription.trim(),
-        completed: false,
-      }
-      setTask({
-        ...task,
-        subtasks: [...(task.subtasks || []), newSubtask],
-      })
-      setNewSubtaskDescription("")
-    }
-  }, [task, newSubtaskDescription])
+  const addSubtask = useCallback((description: string) => {
+    const trimmed = description.trim()
+    if (!task || !trimmed) return
+    setTask({
+      ...task,
+      subtasks: [...(task.subtasks || []), { id: Date.now().toString(), description: trimmed, completed: false }],
+    })
+  }, [task, setTask])
 
   const toggleSubtask = useCallback(
     (subtaskId: string) => {
@@ -332,9 +323,12 @@ export function TaskDetailPopup({ taskId, open, onClose }: TaskDetailPopupProps)
                   <Target className="h-6 w-6 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <Input
+                  <IsolatedInput
                     value={task.description}
-                    onChange={(e) => setTask({ ...task, description: e.target.value })}
+                    onLiveChange={(description) => touchDraft({ description, title: description })}
+                    onCommit={(description) =>
+                      setTask((prev) => (prev ? { ...prev, description, title: description } : prev))
+                    }
                     className="text-2xl font-bold border-0 shadow-none px-0 h-auto focus-visible:ring-0 w-full"
                     placeholder="Item name"
                   />
@@ -373,12 +367,10 @@ export function TaskDetailPopup({ taskId, open, onClose }: TaskDetailPopupProps)
                 Complete Task
               </Button>
             )}
-            {isTaskChanged() && (
-              <Button onClick={handleSave} className="focus-ring">
-                <Save className="h-4 w-4 mr-2" />
-                Save Changes
-              </Button>
-            )}
+            <Button onClick={handleSave} className="focus-ring">
+              <Save className="h-4 w-4 mr-2" />
+              Save Changes
+            </Button>
           </div>
 
           <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
@@ -437,10 +429,13 @@ export function TaskDetailPopup({ taskId, open, onClose }: TaskDetailPopupProps)
                           <FileText className="h-4 w-4" />
                           Detailed Description
                         </Label>
-                        <Textarea
+                        <IsolatedTextarea
                           id="task-description"
                           value={task.taskDescription || ""}
-                          onChange={(e) => setTask({ ...task, taskDescription: e.target.value })}
+                          onLiveChange={(taskDescription) => touchDraft({ taskDescription })}
+                          onCommit={(taskDescription) =>
+                            setTask((prev) => (prev ? { ...prev, taskDescription } : prev))
+                          }
                           placeholder="Detailed description of the task..."
                           rows={4}
                           className="focus-ring"
@@ -455,12 +450,15 @@ export function TaskDetailPopup({ taskId, open, onClose }: TaskDetailPopupProps)
                             Estimated Duration
                           </Label>
                           <div className="relative">
-                            <Input
+                            <IsolatedInput
                               id="estimated-duration"
                               type="number"
-                              value={task.estimatedDuration ?? ""}
-                              onChange={(e) =>
-                                setTask({ ...task, estimatedDuration: Number.parseInt(e.target.value) || 0 })
+                              value={String(task.estimatedDuration ?? "")}
+                              onLiveChange={(v) => touchDraft({ estimatedDuration: Number.parseInt(v) || 0 })}
+                              onCommit={(v) =>
+                                setTask((prev) =>
+                                  prev ? { ...prev, estimatedDuration: Number.parseInt(v) || 0 } : prev,
+                                )
                               }
                               className="focus-ring pr-12"
                             />
@@ -475,11 +473,16 @@ export function TaskDetailPopup({ taskId, open, onClose }: TaskDetailPopupProps)
                             <Award className="h-4 w-4" />
                             Reward Value
                           </Label>
-                          <Input
+                          <IsolatedInput
                             id="reward-value"
                             type="number"
-                            value={task.rewardValue ?? ""}
-                            onChange={(e) => setTask({ ...task, rewardValue: Number.parseInt(e.target.value) || 0 })}
+                            value={String(task.rewardValue ?? "")}
+                            onLiveChange={(v) => touchDraft({ rewardValue: Number.parseInt(v) || 0 })}
+                            onCommit={(v) =>
+                              setTask((prev) =>
+                                prev ? { ...prev, rewardValue: Number.parseInt(v) || 0 } : prev,
+                              )
+                            }
                             className="focus-ring"
                           />
                         </div>
@@ -777,7 +780,10 @@ export function TaskDetailPopup({ taskId, open, onClose }: TaskDetailPopupProps)
                           categories={lists}
                           itemAttributeDefinitions={task.itemAttributeDefinitions}
                           itemType={task.type}
-                          onChangeValues={(attributes) => setTask({ ...task, attributes })}
+                          onChangeValues={(attributes) => {
+                            touchDraft({ attributes })
+                            setTask((prev) => (prev ? { ...prev, attributes } : prev))
+                          }}
                           onChangeItemAttributeDefinitions={(itemAttributeDefinitions) =>
                             setTask({ ...task, itemAttributeDefinitions })
                           }
@@ -890,11 +896,14 @@ export function TaskDetailPopup({ taskId, open, onClose }: TaskDetailPopupProps)
                               <Label htmlFor="scheduled-time" className="text-sm font-medium">
                                 Scheduled Time
                               </Label>
-                              <Input
+                              <IsolatedInput
                                 id="scheduled-time"
                                 type="time"
                                 value={task.scheduledTime || ""}
-                                onChange={(e) => setTask({ ...task, scheduledTime: e.target.value })}
+                                onLiveChange={(scheduledTime) => touchDraft({ scheduledTime })}
+                                onCommit={(scheduledTime) =>
+                                  setTask((prev) => (prev ? { ...prev, scheduledTime } : prev))
+                                }
                                 className="focus-ring"
                               />
                             </div>
@@ -973,20 +982,32 @@ export function TaskDetailPopup({ taskId, open, onClose }: TaskDetailPopupProps)
                               <Label htmlFor="scheduled-year" className="text-sm font-medium">
                                 Scheduled Year
                               </Label>
-                              <Input
+                              <IsolatedInput
                                 id="scheduled-year"
                                 type="number"
                                 min="2024"
                                 max="2030"
                                 value={task.scheduledYear || ""}
-                                onChange={(e) =>
-                                  setTask({
-                                    ...task,
-                                    scheduledYear: e.target.value,
+                                onLiveChange={(scheduledYear) =>
+                                  touchDraft({
+                                    scheduledYear,
                                     scheduledMonth: undefined,
                                     scheduledWeek: undefined,
                                     scheduledDate: undefined,
                                   })
+                                }
+                                onCommit={(scheduledYear) =>
+                                  setTask((prev) =>
+                                    prev
+                                      ? {
+                                          ...prev,
+                                          scheduledYear,
+                                          scheduledMonth: undefined,
+                                          scheduledWeek: undefined,
+                                          scheduledDate: undefined,
+                                        }
+                                      : prev,
+                                  )
                                 }
                                 className="focus-ring"
                               />
@@ -1082,17 +1103,23 @@ export function TaskDetailPopup({ taskId, open, onClose }: TaskDetailPopupProps)
                         <Label htmlFor="day-constraints" className="text-sm font-medium">
                           Day constraints
                         </Label>
-                        <Textarea
+                        <IsolatedTextarea
                           id="day-constraints"
                           value={task.schedulingConstraints?.dayConstraints || ""}
-                          onChange={(e) =>
-                            setTask({
-                              ...task,
-                              schedulingConstraints: {
-                                ...task.schedulingConstraints,
-                                dayConstraints: e.target.value,
-                              },
+                          onLiveChange={(dayConstraints) =>
+                            touchDraft({
+                              schedulingConstraints: { ...task.schedulingConstraints, dayConstraints },
                             })
+                          }
+                          onCommit={(dayConstraints) =>
+                            setTask((prev) =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    schedulingConstraints: { ...prev.schedulingConstraints, dayConstraints },
+                                  }
+                                : prev,
+                            )
                           }
                           placeholder="e.g., Only on weekdays, Not on Mondays, etc."
                           rows={2}
@@ -1189,22 +1216,7 @@ export function TaskDetailPopup({ taskId, open, onClose }: TaskDetailPopupProps)
                         Break down this task into smaller, manageable subtasks.
                       </p>
 
-                      <div className="flex gap-2">
-                        <Input
-                          value={newSubtaskDescription}
-                          onChange={(e) => setNewSubtaskDescription(e.target.value)}
-                          placeholder="Enter subtask description..."
-                          className="flex-1 focus-ring"
-                          onKeyPress={(e) => {
-                            if (e.key === "Enter") {
-                              addSubtask()
-                            }
-                          }}
-                        />
-                        <Button onClick={addSubtask} disabled={!newSubtaskDescription.trim()} className="focus-ring">
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <SubtaskComposer onAdd={addSubtask} />
 
                       <div className="space-y-2">
                         {!task.subtasks || task.subtasks.length === 0 ? (
@@ -1274,10 +1286,11 @@ export function TaskDetailPopup({ taskId, open, onClose }: TaskDetailPopupProps)
                           <Label htmlFor="why" className="text-sm font-semibold">
                             Why do you need to do this task?
                           </Label>
-                          <Textarea
+                          <IsolatedTextarea
                             id="why"
                             value={task.why || ""}
-                            onChange={(e) => setTask({ ...task, why: e.target.value })}
+                            onLiveChange={(why) => touchDraft({ why })}
+                            onCommit={(why) => setTask((prev) => (prev ? { ...prev, why } : prev))}
                             placeholder="Explain the purpose and motivation behind this task..."
                             rows={3}
                             className="focus-ring"
@@ -1288,10 +1301,11 @@ export function TaskDetailPopup({ taskId, open, onClose }: TaskDetailPopupProps)
                           <Label htmlFor="consequences" className="text-sm font-semibold">
                             What happens if you don't do it?
                           </Label>
-                          <Textarea
+                          <IsolatedTextarea
                             id="consequences"
                             value={task.consequences || ""}
-                            onChange={(e) => setTask({ ...task, consequences: e.target.value })}
+                            onLiveChange={(consequences) => touchDraft({ consequences })}
+                            onCommit={(consequences) => setTask((prev) => (prev ? { ...prev, consequences } : prev))}
                             placeholder="Describe the potential consequences of not completing this task..."
                             rows={3}
                             className="focus-ring"
@@ -1302,10 +1316,11 @@ export function TaskDetailPopup({ taskId, open, onClose }: TaskDetailPopupProps)
                           <Label htmlFor="notes" className="text-sm font-semibold">
                             Additional Notes
                           </Label>
-                          <Textarea
+                          <IsolatedTextarea
                             id="notes"
                             value={task.notes || ""}
-                            onChange={(e) => setTask({ ...task, notes: e.target.value })}
+                            onLiveChange={(notes) => touchDraft({ notes })}
+                            onCommit={(notes) => setTask((prev) => (prev ? { ...prev, notes } : prev))}
                             placeholder="Any additional thoughts or context..."
                             rows={3}
                             className="focus-ring"
@@ -1326,11 +1341,16 @@ export function TaskDetailPopup({ taskId, open, onClose }: TaskDetailPopupProps)
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label>Estimated (plan)</Label>
-                        <Input
+                        <IsolatedInput
                           type="number"
-                          value={task.estimatedDuration ?? ""}
-                          onChange={(e) =>
-                            setTask({ ...task, estimatedDuration: Number.parseInt(e.target.value) || undefined })
+                          value={String(task.estimatedDuration ?? "")}
+                          onLiveChange={(v) =>
+                            touchDraft({ estimatedDuration: Number.parseInt(v) || undefined })
+                          }
+                          onCommit={(v) =>
+                            setTask((prev) =>
+                              prev ? { ...prev, estimatedDuration: Number.parseInt(v) || undefined } : prev,
+                            )
                           }
                           placeholder="minutes"
                         />

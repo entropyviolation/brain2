@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useRef, useState } from "react"
 import type { FolderView } from "@/lib/lists-ui-store"
 import type { ListDisplayMode } from "@/lib/types"
 import type { OpenTarget } from "@/components/Lists/types"
@@ -93,18 +94,49 @@ export function ListsToolbar({
         onAutoOrganize={onAutoOrganize}
       />
       <div className="fm-toolbar-spacer" />
-      <input
-        className="fm-input"
-        style={{ width: 180 }}
-        placeholder="Search folders, lists, items…"
-        value={searchTerm}
-        onChange={(e) => onSearchChange(e.target.value)}
-      />
+      <ToolbarSearch value={searchTerm} onChange={onSearchChange} />
       {searchActive && (
         <button className="fm-btn fm-btn-sm" onClick={onClearSearch}>
           Clear
         </button>
       )}
     </div>
+  )
+}
+
+/** Owns typed text so the Lists board does not re-render on every keystroke. */
+function ToolbarSearch({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  const [text, setText] = useState(value)
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    setText(value)
+    if (timer.current) clearTimeout(timer.current)
+  }, [value])
+
+  useEffect(() => {
+    return () => {
+      if (timer.current) clearTimeout(timer.current)
+    }
+  }, [])
+
+  return (
+    <input
+      className="fm-input"
+      style={{ width: 180 }}
+      placeholder="Search folders, lists, items…"
+      value={text}
+      onChange={(e) => {
+        const next = e.target.value
+        setText(next)
+        if (timer.current) clearTimeout(timer.current)
+        timer.current = setTimeout(() => onChange(next), 150)
+      }}
+      onKeyDown={(e) => {
+        if (e.key !== "Enter") return
+        if (timer.current) clearTimeout(timer.current)
+        onChange(text)
+      }}
+    />
   )
 }

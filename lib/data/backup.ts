@@ -35,6 +35,8 @@ import {
   replaceAllAttachments,
   type AttachmentExport,
 } from "@/lib/attachments"
+import { listPersistedDocs, replaceAllPersistedDocs } from "@/lib/doc-persist"
+import { hydrateDocumentsFromIdb } from "@/lib/doc-hydrate"
 import { isQuotaExceededError, persistErrorMessage, recordPersistFailure } from "@/lib/persist-storage"
 
 /** A persisted store: its localStorage key and a rehydrate trigger. */
@@ -84,6 +86,21 @@ export const backupSchema = z.object({
         name: z.string(),
         mime: z.string(),
         dataUrl: z.string(),
+      }),
+    )
+    .optional(),
+  /** IndexedDB Docs HTML bodies. Optional for older backups. */
+  docs: z
+    .array(
+      z.object({
+        id: z.string(),
+        title: z.string(),
+        folder: z.string(),
+        fontFamily: z.string(),
+        status: z.string(),
+        body: z.string(),
+        createdAt: z.string(),
+        updatedAt: z.string(),
       }),
     )
     .optional(),
@@ -141,6 +158,7 @@ export function createBackup(): Backup {
 export async function createFullBackup(): Promise<Backup> {
   const backup = createBackup()
   backup.attachments = await exportAllAttachments()
+  backup.docs = await listPersistedDocs()
   return backup
 }
 
@@ -215,6 +233,11 @@ export async function restoreBackup(backup: Backup): Promise<{ stores: number; p
   } else {
     const migrated = await migrateTaskFileValues(useTaskStore.getState().tasks)
     if (migrated.migrated > 0) useTaskStore.setState({ tasks: migrated.tasks })
+  }
+
+  if (backup.docs && backup.docs.length > 0) {
+    await replaceAllPersistedDocs(backup.docs)
+    await hydrateDocumentsFromIdb()
   }
 
   return { stores: storeCount, planText: planCount }
