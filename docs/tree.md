@@ -71,8 +71,9 @@ Most components have a co-located `*.test.tsx`.
 
 | File                       | Purpose                                       |
 | -------------------------- | --------------------------------------------- |
-| `quick-add.tsx`            | Single-field capture → inbox                  |
-| `enhanced-bulk-add.tsx`    | Multi-line capture; `Category:` syntax        |
+| `quick-add.tsx`            | Single-line capture: colon paths, live chips, optional Inbox |
+| `enhanced-bulk-add.tsx`    | Multi-line capture; `list:` / `folder: list:` headers; optional Inbox |
+| `capture-shorthand.tsx`    | Shared Inbox checkbox + shorthand help        |
 | `notes-ingest.tsx`         | From Notes — date range, parse/skip, bulk-add or park full text on **notes to ingest** |
 | `inbox.tsx`                | Inbox + clarification flow                    |
 | `cognitive-state.tsx`      | Header **Tracking** → TimeGrid dialog         |
@@ -382,6 +383,8 @@ Data model, Zustand stores (localStorage today → MongoDB), pure helpers. Not R
 | `flight-types.ts` | Built-in **Flight** item type (airline, airports, times, layovers, cost, booked) + `withFlightType` |
 | `file-extract.ts` | Best-effort `extractText(FileValue\|File)` — text inline, PDF via Electron `window.desktop.extractPdfText`, graceful browser fallback |
 | `apple-notes.ts` | Apple Notes ingest: preview/snippet/bodies fetch, bulk-add parse, park on **iPhone Notes Ingest** / **notes to ingest**, skip ingested ids |
+| `smart-parse.ts` | Smart-capture parser: colon paths, dates/times/priority/duration, `parsePathHeader` |
+| `capture-target.ts` | Create/resolve folder+list from a capture path; build Inbox vs filed tasks |
 | `migrations.ts` | Versioned Item-model migrations (backfill `type`/`title`/`tags`/`links`) |
 | `habit-utils.ts` | Habit type normalization, completion helpers |
 | `attribute-utils.ts` | Legacy attribute normalization/coercion |

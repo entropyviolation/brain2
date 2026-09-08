@@ -15,6 +15,8 @@ import {
   assignTaskToFolderUncategorized,
 } from "@/lib/folder-all-items"
 import { toggleCompletion } from "@/lib/services/completion-service"
+import { parseListBulkAddText } from "@/lib/smart-parse"
+import { addTag } from "@/lib/links"
 import { ROOT_ALL_FOLDER_ID } from "@/components/Lists/constants"
 import type { OpenTarget } from "@/components/Lists/types"
 
@@ -78,31 +80,36 @@ export function useListsTaskActions(
       onDone: () => void,
     ) => {
       if (!openTarget || !bulkAddText.trim()) return
-      const lines = bulkAddText.split("\n").map((l) => l.trim()).filter(Boolean)
+      const rows = parseListBulkAddText(bulkAddText)
+      if (rows.length === 0) return
       const now = new Date()
-      for (const line of lines) {
+      for (const row of rows) {
         let categoryId: string | undefined
         if (openTarget.type === "category" && !isNaSmartCategoryId(openTarget.id)) categoryId = openTarget.id
-        const base = buildBaseTask(line, categoryId)
+        const base = buildBaseTask(row.description, categoryId)
+        const tagged: Task = {
+          ...base,
+          tags: row.tags.reduce((acc, tag) => addTag(acc, tag), [...(base.tags ?? [])]),
+        }
         if (openTarget.type === "category") {
           if (isNaSmartCategoryId(openTarget.id)) {
             const p = naSmartIdToPeriod(openTarget.id)
-            if (p === "daily") base.scheduledDate = now
-            else if (p === "weekly") base.scheduledWeek = getWeekString(now)
-            else base.scheduledMonth = now.toISOString().slice(0, 7)
+            if (p === "daily") tagged.scheduledDate = now
+            else if (p === "weekly") tagged.scheduledWeek = getWeekString(now)
+            else tagged.scheduledMonth = now.toISOString().slice(0, 7)
           } else {
-            base.lists = [openTarget.id]
+            tagged.lists = [openTarget.id]
           }
         } else if (openTarget.type === "smart") {
-          if (openTarget.id === "daily") base.scheduledDate = now
-          else if (openTarget.id === "weekly") base.scheduledWeek = getWeekString(now)
-          else base.scheduledMonth = now.toISOString().slice(0, 7)
+          if (openTarget.id === "daily") tagged.scheduledDate = now
+          else if (openTarget.id === "weekly") tagged.scheduledWeek = getWeekString(now)
+          else tagged.scheduledMonth = now.toISOString().slice(0, 7)
         } else if (openTarget.type === "folder-all" && openTarget.folderId === ROOT_ALL_FOLDER_ID) {
-          base.stage = "list"
+          tagged.stage = "list"
         } else if (openTarget.type === "folder-all" && currentFolder) {
-          Object.assign(base, assignTaskToFolderUncategorized(base, currentFolder))
+          Object.assign(tagged, assignTaskToFolderUncategorized(tagged, currentFolder))
         }
-        addTask(base)
+        addTask(tagged)
       }
       onDone()
     },

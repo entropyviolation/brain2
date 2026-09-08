@@ -16,7 +16,7 @@
     "tree": "bash scripts/update-tree.sh",
     "capture-screenshots": "node scripts/capture-screenshots.mjs",
     "electron": "electron .",
-    "electron:dev": "bash -c 'ulimit -n 10240 2>/dev/null; unset ELECTRON_RUN_AS_NODE; export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8; exec concurrently -k -n next,electron -c blue,green \"npm run dev\" \"wait-on tcp:3000 && electron .\"'",
+    "electron:dev": "bash -c 'ulimit -n 10240 2>/dev/null; unset ELECTRON_RUN_AS_NODE; export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 COGS_STRICT_PORT=1; exec concurrently -k -n next,electron -c blue,green \"npm run dev\" \"wait-on -t 60000 http-get://localhost:3000 && electron .\"'",
     "persist:from-chrome": "node scripts/dump-chrome-localstorage.mjs",
     "electron:build": "next build && electron-builder",
     "electron:build:dir": "next build && electron-builder --dir",

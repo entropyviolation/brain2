@@ -116,6 +116,14 @@ function createWindow() {
     },
   })
 
+  win.webContents.on("did-fail-load", (_event, errorCode, errorDescription, validatedURL) => {
+    console.error(`[cogs] failed to load ${validatedURL}: ${errorDescription} (${errorCode})`)
+    if (isDev) {
+      console.error(`[cogs] expected the Next dev server at ${DEV_SERVER_URL}.`)
+      console.error("[cogs] If another node process is stuck on port 3000, kill it and rerun npm run electron:dev.")
+    }
+  })
+
   if (isDev) {
     win.loadURL(DEV_SERVER_URL)
     win.webContents.openDevTools({ mode: "detach" })
@@ -251,9 +259,9 @@ function hydrateIndexedDBFromChromeSnapshot() {
   if (!fs.existsSync(src)) return
   const destDir = path.join(app.getPath("userData"), "IndexedDB")
   const dest = path.join(destDir, "http_localhost_3000.indexeddb.leveldb")
+  if (fs.existsSync(dest)) return
   try {
     fs.mkdirSync(destDir, { recursive: true })
-    fs.rmSync(dest, { recursive: true, force: true })
     fs.cpSync(src, dest, { recursive: true })
     const lock = path.join(dest, "LOCK")
     if (fs.existsSync(lock)) fs.rmSync(lock)

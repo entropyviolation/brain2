@@ -19,6 +19,7 @@ import { handlePersistApi, sharedPersistPath } from "./persist-api.mjs"
 
 const hostname = "0.0.0.0"
 const preferredPort = Number(process.env.PORT || 3000)
+const strictPort = process.env.COGS_STRICT_PORT === "1"
 
 function lanAddresses() {
   try {
@@ -55,7 +56,25 @@ async function pickPort(start, maxTries = 15) {
   throw new Error(`No free port from ${start}–${start + maxTries - 1}. Kill old node/next processes and retry.`)
 }
 
-const port = await pickPort(preferredPort)
+let port
+if (strictPort) {
+  if (!(await canListen(preferredPort))) {
+    console.error("")
+    console.error(`[cogs-dev] port ${preferredPort} is already in use.`)
+    console.error(`[cogs-dev] Electron always loads http://localhost:${preferredPort}, so a leftover`)
+    console.error(`[cogs-dev] Next/node process on that port will make the desktop window hang.`)
+    console.error(`[cogs-dev] Find it:  lsof -nP -iTCP:${preferredPort} -sTCP:LISTEN`)
+    console.error(`[cogs-dev] Kill it:  kill $(lsof -t -nP -iTCP:${preferredPort} -sTCP:LISTEN)`)
+    console.error("")
+    process.exit(1)
+  }
+  port = preferredPort
+} else {
+  port = await pickPort(preferredPort)
+  if (port !== preferredPort) {
+    console.warn(`[cogs-dev] ${preferredPort} busy — using ${port}. Electron still loads http://localhost:${preferredPort} and will not see this server.`)
+  }
+}
 const dev = process.env.NODE_ENV !== "production"
 const app = next({ dev, hostname, port })
 const handle = app.getRequestHandler()

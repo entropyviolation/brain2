@@ -4,6 +4,9 @@ VIEW: Header → Bulk Add
 AREA: Bulk Add dialog
 SOURCE FILES:
   - components/enhanced-bulk-add.tsx
+  - lib/smart-parse.ts
+  - lib/capture-target.ts
+  - components/capture-shorthand.tsx
 ================================================================================
 
 GLOBAL CHROME (all screens)
@@ -14,4 +17,6 @@ GLOBAL CHROME (all screens)
   Top-level tabs (7): Home | Lists | Docs | Scheduler | Operations | Modules | Analytics
 
 VIEW-SPECIFIC
-Multi-line capture; Category: headers route lines into lists.
+Multi-line capture. A line ending in `:` is a header (`list:` or
+`folder: list:`) for the following items. Inline `folder: list: item` works on
+one line. Optional Send to Inbox (off by default). Shorthand help in-dialog.

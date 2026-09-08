@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest"
-import { parseSmartCapture, parsePathHeader, type SmartParseResult } from "./smart-parse"
+import {
+  parseSmartCapture,
+  parsePathHeader,
+  parseListBulkAddText,
+  parseListBulkTagHeader,
+  type SmartParseResult,
+} from "./smart-parse"
 
 // Fixed reference: Wednesday, June 24 2026, 10:00 local time.
 const NOW = new Date(2026, 5, 24, 10, 0, 0)
@@ -250,5 +256,82 @@ describe("parsePathHeader", () => {
       folderPath: ["Next Actions"],
       listName: "Eventually",
     })
+  })
+})
+
+describe("parseListBulkAddText", () => {
+  it("treats plain lines as untagged items", () => {
+    expect(parseListBulkAddText("fox statue\ncorn dog")).toEqual([
+      { description: "fox statue", tags: [] },
+      { description: "corn dog", tags: [] },
+    ])
+  })
+
+  it("does not require a tag: prefix", () => {
+    expect(parseListBulkTagHeader("Already have:")).toBe("Already have")
+    expect(parseListBulkTagHeader("tag: planned:")).toBe("planned")
+    expect(parseListBulkTagHeader("tags: Already have:")).toBe("Already have")
+    expect(parseListBulkAddText("tag: planned:\nholder for spoons")[0]).toEqual({
+      description: "holder for spoons",
+      tags: ["planned"],
+    })
+  })
+
+  it("tags items under section headers and ignores blank lines", () => {
+    const text = `Already have:
+fox statue 
+shiny framed dog 
+corn dog 
+dinner 
+robot
+dog postcard
+3 spoons 
+2 mobiles 
+
+planned: 
+holder for spoons`
+    expect(parseListBulkAddText(text)).toEqual([
+      { description: "fox statue", tags: ["Already have"] },
+      { description: "shiny framed dog", tags: ["Already have"] },
+      { description: "corn dog", tags: ["Already have"] },
+      { description: "dinner", tags: ["Already have"] },
+      { description: "robot", tags: ["Already have"] },
+      { description: "dog postcard", tags: ["Already have"] },
+      { description: "3 spoons", tags: ["Already have"] },
+      { description: "2 mobiles", tags: ["Already have"] },
+      { description: "holder for spoons", tags: ["planned"] },
+    ])
+  })
+
+  it("leaves items before the first header untagged", () => {
+    expect(parseListBulkAddText("loose item\nplanned:\nholder")).toEqual([
+      { description: "loose item", tags: [] },
+      { description: "holder", tags: ["planned"] },
+    ])
+  })
+
+  it("does not create items from colon header lines", () => {
+    const items = parseListBulkAddText("Already have:\nfox statue\nplanned:\nholder for spoons")
+    expect(items.map((i) => i.description)).toEqual(["fox statue", "holder for spoons"])
+    expect(items.every((i) => !i.description.includes(":"))).toBe(true)
+  })
+
+  it("treats a fullwidth colon and paste junk as a header, not an item", () => {
+    expect(parseListBulkTagHeader("\u200bAlready have\uFF1A")).toBe("Already have")
+    expect(parseListBulkAddText("\u200bAlready have:\nfox statue")).toEqual([
+      { description: "fox statue", tags: ["Already have"] },
+    ])
+  })
+
+  it("tags a same-line Name: item without keeping the colon in the title", () => {
+    expect(parseListBulkAddText("planned: holder for spoons")).toEqual([
+      { description: "holder for spoons", tags: ["planned"] },
+    ])
+  })
+
+  it("does not treat URLs as tag headers", () => {
+    expect(parseListBulkAddText("https://example.com/fox")).toEqual([
+      { description: "https://example.com/fox", tags: [] },
+    ])
   })
 })

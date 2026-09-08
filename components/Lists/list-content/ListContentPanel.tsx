@@ -88,11 +88,15 @@ function BulkAddPanel({
   return (
     <div className="fm-quickadd" style={{ marginTop: 8 }}>
       <Textarea
-        placeholder={`Paste one ${itemLabel.toLowerCase()} per line…`}
+        placeholder={`Paste one ${itemLabel.toLowerCase()} per line. Optional tag headers end with ':' — Already have:\nfox statue\n\nplanned:\nholder`}
         value={text}
         onChange={(e) => setText(e.target.value)}
         rows={5}
       />
+      <p className="text-xs text-muted-foreground" style={{ marginTop: 4 }}>
+        A line ending in <code>:</code> tags the items below it (existing tag if the name
+        already exists). Plain lines stay untagged. Blank lines are ignored.
+      </p>
       <div className="flex gap-2">
         <button className="fm-btn fm-btn-sm" onClick={() => onBulkAdd(text)}>
           Add all

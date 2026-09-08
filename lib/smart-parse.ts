@@ -113,6 +113,104 @@ export function parsePathHeader(line: string): CapturePathHeader | null {
   return { folderPath: segments.slice(0, -1), listName: segments[segments.length - 1] }
 }
 
+export interface ListBulkAddItem {
+  description: string
+  /** Tag names as written; callers normalize / match existing tags. */
+  tags: string[]
+}
+
+function isTagKeyword(name: string): boolean {
+  const n = name.trim().toLowerCase()
+  return n === "tag" || n === "tags"
+}
+
+/** Strip paste artifacts (Docs/Notes): ZW chars, NBSP, bullets, wrapping quotes. */
+function normalizeListBulkLine(raw: string): string {
+  let line = String(raw ?? "")
+    .replace(/[\u200B-\u200D\u2060\uFEFF]/g, "")
+    .replace(/\u00a0/g, " ")
+    .trim()
+  line = line.replace(/^[-*\u2022\u00b7+\u2013\u2014]\s+/, "").replace(/^\d+[.)]\s+/, "").trim()
+  line = line.replace(/^["'“”‘’]+|["'“”‘’]+$/g, "").trim()
+  line = line.replace(/\*\*/g, "").trim()
+  return line
+}
+
+function splitOnColon(line: string): { left: string; right: string } | null {
+  const m = line.match(/^([^:：﹕∶︓]+)[:：﹕∶︓]\s*(.*)$/)
+  if (!m) return null
+  const left = m[1].trim()
+  const right = m[2].trim()
+  if (!left) return null
+  // URLs like https://… are items, not tag paths.
+  if (/^[a-z][a-z0-9+.-]*$/i.test(left) && right.startsWith("//")) return null
+  return { left, right }
+}
+
+function tagNameFromLeft(left: string): string {
+  const parts = left.split(/[:：]/).map((s) => s.trim()).filter(Boolean)
+  if (parts.length === 0) return left
+  if (isTagKeyword(parts[0])) {
+    const rest = parts.slice(1)
+    return rest.length ? rest.join(": ") : ""
+  }
+  return parts.join(": ")
+}
+
+/** Drop a leading `tag:` / `tags:` so `tag: planned:` is just `planned:`. */
+function unwrapTagKeywordPrefix(line: string): string {
+  const split = splitOnColon(line)
+  if (!split || !isTagKeyword(split.left) || !split.right) return line
+  return split.right
+}
+
+/**
+ * A list-view bulk-add line that ends with `:` / `：` names the tag for
+ * following items (`Already have:`). An optional `tag:` / `tags:` prefix is
+ * allowed (`tag: planned:`) but not required.
+ */
+export function parseListBulkTagHeader(line: string): string | null {
+  const normalized = unwrapTagKeywordPrefix(normalizeListBulkLine(line))
+  const split = splitOnColon(normalized)
+  if (!split || split.right) return null
+  const tagName = tagNameFromLeft(split.left)
+  return tagName || null
+}
+
+/** Parse list-view bulk add: one item per line, optional tag-section headers. */
+export function parseListBulkAddText(text: string): ListBulkAddItem[] {
+  const items: ListBulkAddItem[] = []
+  let currentTags: string[] = []
+
+  for (const raw of String(text || "").split(/\r\n|\r|\n|\u2028|\u2029/)) {
+    const line = unwrapTagKeywordPrefix(normalizeListBulkLine(raw))
+    if (!line) continue
+
+    const split = splitOnColon(line)
+    if (split && !split.right) {
+      const tagName = tagNameFromLeft(split.left)
+      if (tagName) {
+        currentTags = [tagName]
+        continue
+      }
+    }
+
+    let description = line
+    let tags = currentTags.length ? [...currentTags] : []
+    if (split?.right) {
+      const inlineTag = tagNameFromLeft(split.left)
+      if (inlineTag) {
+        description = split.right
+        tags = [inlineTag]
+      }
+    }
+
+    items.push({ description, tags })
+  }
+
+  return items
+}
+
 /** Consume `folder: folder: list:` prefixes at the start of a capture line. */
 function consumeLeadingPath(input: string): { start: number; end: number; name: string }[] {
   const segments: { start: number; end: number; name: string }[] = []

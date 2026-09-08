@@ -286,7 +286,8 @@ detail: [`lib/README.md`](lib/README.md).
 
 ## Status vs. the v2 spec (summary)
 
-**Implemented in some form:** Inbox / Quick Add / Bulk Add / **From Notes** (Mac Electron Apple Notes ingest); **Lists** board with
+**Implemented in some form:** Inbox / Quick Add / Bulk Add (colon paths `list: item` /
+`folder: list: item`, optional skip clarification) / **From Notes** (Mac Electron Apple Notes ingest); **Lists** board with
 Win98-style folders, custom attributes, orb icons, CSV import, and per-folder All
 Items; Scheduler period funnel (Always→Year→Month→Week→Day); Home dashboard
 (Habits / Plan / To Do / Goals / Tracking); five habit types with shared

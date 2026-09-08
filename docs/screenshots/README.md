@@ -29,9 +29,9 @@ Rendered by `app/page.tsx`:
 | Tracking | `components/cognitive-state.tsx` | Compact Time Grid dialog |
 | Inbox | `components/inbox.tsx` | Unclarified captures |
 | Metrics | `components/Tracking/MetricLogger.tsx` | Wellbeing datapoint logger |
-| Bulk Add | `components/enhanced-bulk-add.tsx` | Multi-line capture |
+| Bulk Add | `components/enhanced-bulk-add.tsx` | Multi-line capture; `list:` / `folder: list:` headers; optional Inbox |
 | From Notes | `components/notes-ingest.tsx` | Apple Notes ingest (Mac Electron; iCloud / iPhone + On My Mac) |
-| Quick Add | `components/quick-add.tsx` | Smart single-line capture |
+| Quick Add | `components/quick-add.tsx` | Colon paths, live chips, optional skip Inbox |
 
 **Top-level tabs (7):** Home · Lists · Docs · Scheduler · Operations · Modules · Analytics
 

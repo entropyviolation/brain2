@@ -5,6 +5,8 @@ AREA: Quick Add dialog
 SOURCE FILES:
   - components/quick-add.tsx
   - lib/smart-parse.ts
+  - lib/capture-target.ts
+  - components/capture-shorthand.tsx
 ================================================================================
 
 GLOBAL CHROME (all screens)
@@ -15,4 +17,9 @@ GLOBAL CHROME (all screens)
   Top-level tabs (7): Home | Lists | Docs | Scheduler | Operations | Modules | Analytics
 
 VIEW-SPECIFIC
-Single-line smart capture with live parse chips (date, time, list, priority).
+Single-line capture. Colon paths: `list: item`, `folder: list: item`, or nested
+`folder: folder: list: item` (space after each colon). Live chips above the field
+show folder/list (and new vs existing) plus date/time/duration/priority.
+Checkbox: Send to Inbox for clarification (default on); uncheck to file on the
+target list or All Items. Expand "Shorthand & where items go" for dates, times,
+duration, !, cat:Name.

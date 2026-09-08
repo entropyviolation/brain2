@@ -84,9 +84,15 @@ local-first/sync-ready, AI-ready-not-AI-dependent, everything reviewable.
   (`lib/mobile-sync.ts`) copy a snapshot. There is no always-on live-sync engine.
 
 ## §4 Inbox / Capture
-- §4.2 Quick Add — ✅ `components/quick-add.tsx`.
-- §4.3 Bulk Add — ✅ `components/enhanced-bulk-add.tsx` (colon-category syntax,
-  auto-creates categories, routes to inbox).
+- §4.2 Quick Add — ✅ `components/quick-add.tsx` + `lib/smart-parse.ts` +
+  `lib/capture-target.ts`. Colon paths (`list: item`, `folder: list: item`,
+  nested `folder: folder: list: item`), live destination chips, optional
+  **Send to Inbox for clarification** (on by default; uncheck to file on the
+  target list or All Items). Shorthand help in-dialog
+  (`components/capture-shorthand.tsx`).
+- §4.3 Bulk Add — ✅ `components/enhanced-bulk-add.tsx`. Header lines ending in
+  `:` (`list:` or `folder: list:`), same path + smart-parse on item lines,
+  auto-creates folders/lists. Inbox checkbox off by default (files onto lists).
 - Apple Notes ingest — ✅ Mac Electron: `components/notes-ingest.tsx` +
   `lib/apple-notes.ts` + `electron/apple-notes.js` / `apple-notes.jxa`. Date-range
   listing, parse/skip with title+content preview, then bulk-add (`List:` syntax)

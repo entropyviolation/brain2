@@ -45,8 +45,9 @@ The global header (all tabs) also renders: **Review** (`Reviews/`), **Settings**
 
 | File | Purpose |
 |------|---------|
-| `quick-add.tsx` | Single-field capture → new inbox task |
-| `enhanced-bulk-add.tsx` | Multi-line capture with optional `Category:` syntax |
+| `quick-add.tsx` | Single-line capture: colon paths (`list: item`, `folder: list: item`), live chips, optional Inbox vs file-to-list |
+| `enhanced-bulk-add.tsx` | Multi-line capture; header lines `list:` / `folder: list:`; same path + inbox checkbox |
+| `capture-shorthand.tsx` | Shared Inbox checkbox + in-dialog shorthand help for Quick Add and Bulk Add |
 | `notes-ingest.tsx` | From Notes — date range, title+body preview, parse/skip; bulk-add (`ListName:` then items) or park full text on **notes to ingest** |
 | `inbox.tsx` | Inbox dialog + per-task clarification flow |
 | `cognitive-state.tsx` | Header **Tracking** button; opens `TimeGrid` in a dialog (name kept for wiring compatibility) |
