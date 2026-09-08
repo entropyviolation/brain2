@@ -11,7 +11,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { ArrowLeft, FileText, FileUp, Folder, Plus, Trash2, Download } from "lucide-react"
 import { useTaskStore } from "@/lib/task-store"
 import { APP_NAV_KEYS, writeStoredTab } from "@/lib/app-navigation"
-import { getPersistStatus, subscribePersistStatus } from "@/lib/persist-storage"
 import { exportDocumentAsPdf } from "@/lib/doc-export"
 import { listPersistedDocs } from "@/lib/doc-persist"
 import { DocumentEditor } from "@/components/Docs/DocumentEditor"
@@ -58,6 +57,7 @@ export function DocsPanel() {
   const [query, setQuery] = useState("")
   const [homeBodies, setHomeBodies] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState<string | null>(null)
+  const [hydrated, setHydrated] = useState(false)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pendingBody = useRef<string | null>(null)
   const selectedIdRef = useRef<string | null>(selectedId)
@@ -83,12 +83,13 @@ export function DocsPanel() {
     [visibleDocs, query, homeBodies],
   )
 
-  // Drop a stale selection; do not auto-open the first document (homepage).
+  // Drop a stale selection after IDB hydrate; do not auto-open the first document.
   useEffect(() => {
+    if (!hydrated) return
     if (!selectedId) return
     if (docs.some((d) => d.id === selectedId)) return
     setSelectedId(null)
-  }, [docs, selectedId])
+  }, [docs, selectedId, hydrated])
 
   useEffect(() => {
     if (selectedId) localStorage.setItem(APP_NAV_KEYS.docsDocId, selectedId)
@@ -100,7 +101,7 @@ export function DocsPanel() {
   }, [folderFilter])
 
   useEffect(() => {
-    void hydrateDocumentsFromIdb()
+    void hydrateDocumentsFromIdb().finally(() => setHydrated(true))
   }, [])
 
   useEffect(() => {
@@ -195,13 +196,6 @@ export function DocsPanel() {
       document.removeEventListener("visibilitychange", onVis)
     }
   }, [flushBody])
-
-  useEffect(() => {
-    return subscribePersistStatus(() => {
-      const status = getPersistStatus()
-      if (!status.ok && pendingBody.current !== null) setSaveState("error")
-    })
-  }, [])
 
   const handleBodyChange = useCallback(
     (html: string) => {

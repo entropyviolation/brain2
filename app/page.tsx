@@ -82,6 +82,7 @@ export default function Home() {
   // on real item mutations. Idempotent + client-only (safe for static export).
   useEffect(() => {
     initWorkflowEngine({ adapter: createTaskRepositoryAdapter() })
+    void import("@/lib/doc-hydrate").then((mod) => mod.hydrateDocumentsFromIdb())
   }, [])
 
   // Detect the pop-out route (`#popout/module/<id>`) and keep it in sync with

@@ -11,17 +11,17 @@ import { useTaskStore } from "@/lib/task-store"
 import { NOTE_TYPE_ID, NOTE_ATTR } from "@/lib/note-types"
 import type { Task } from "@/lib/types"
 import { isAllowedFont } from "@/lib/google-fonts"
+import { escapeHtmlText } from "@/lib/doc-html"
 import {
   deletePersistedDoc,
   getPersistedDoc,
-  listPersistedDocs,
   persistedDocToTask,
   previewDocBody,
   putPersistedDoc,
   taskToPersistedDoc,
 } from "@/lib/doc-persist"
-import { hydrateDocumentsFromIdb } from "@/lib/doc-hydrate"
 import { pdfArrayBufferToHtml } from "@/lib/pdf-to-html"
+import { hydrateDocumentsFromIdb } from "@/lib/doc-hydrate"
 
 function genId(prefix = "doc"): string {
   try {
@@ -85,7 +85,7 @@ export async function createDocumentFromPdf(file: File, folder = ""): Promise<Ta
   const buf = await file.arrayBuffer()
   const result = await pdfArrayBufferToHtml(buf)
   const title = file.name.replace(/\.pdf$/i, "").trim() || "Untitled document"
-  const header = `<p><strong>From PDF: ${file.name.replace(/</g, "")}</strong></p>`
+  const header = `<p><strong>From PDF: ${escapeHtmlText(file.name)}</strong></p>`
   const body = `${header}${result.html}`
   const doc = createDocument(title, folder, body)
   if (result.dominantFont) setDocumentFont(doc.id, result.dominantFont)
@@ -177,52 +177,7 @@ export async function loadDocumentBody(docId: string, fallback = ""): Promise<st
   return fallback
 }
 
-/**
- * Merge IndexedDB docs into the task store (restore notes lost when
- * localStorage persist failed) and copy legacy task-store notes into IDB.
- */
-export async function hydrateDocumentsFromIdb(): Promise<void> {
-  const store = useTaskStore.getState()
-  const records = await listPersistedDocs()
-  const byId = new Map(records.map((r) => [r.id, r]))
-
-  for (const rec of records) {
-    const existing = store.tasks.find((t) => t.id === rec.id)
-    const asTask = persistedDocToTask(rec)
-    if (!existing) {
-      store.addTask(asTask)
-    } else {
-      const next = {
-        ...existing,
-        description: rec.title || existing.description,
-        body: previewDocBody(rec.body),
-        type: NOTE_TYPE_ID,
-        attributes: {
-          ...(existing.attributes ?? {}),
-          [NOTE_ATTR.folder]: rec.folder,
-          [NOTE_ATTR.fontFamily]: rec.fontFamily,
-          [NOTE_ATTR.status]: rec.status,
-          [NOTE_ATTR.updatedAt]: rec.updatedAt,
-        },
-      }
-      if (
-        existing.description !== next.description ||
-        existing.body !== next.body ||
-        documentFolder(existing) !== rec.folder ||
-        documentFont(existing) !== rec.fontFamily ||
-        documentStatus(existing) !== rec.status
-      ) {
-        store.updateTask(next)
-      }
-    }
-  }
-
-  for (const task of store.tasks) {
-    if (task.type !== NOTE_TYPE_ID) continue
-    if (byId.has(task.id)) continue
-    await writePersisted(task, task.body ?? BLANK_BODY)
-  }
-}
+export { hydrateDocumentsFromIdb }
 
 /** Folder label stored on a note, or empty string for Unfiled. */
 export function documentFolder(doc: Task): string {

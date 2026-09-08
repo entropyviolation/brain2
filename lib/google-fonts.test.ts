@@ -10,6 +10,7 @@ import {
 describe("google-fonts", () => {
   it("allow-lists curated families only", () => {
     expect(isAllowedFont("Roboto")).toBe(true)
+    expect(isAllowedFont("Times New Roman")).toBe(true)
     expect(isAllowedFont("Not A Real Font")).toBe(false)
     expect(GOOGLE_FONTS.length).toBeGreaterThan(20)
   })
@@ -24,6 +25,7 @@ describe("google-fonts", () => {
 
   it("returns null when only system fonts are requested", () => {
     expect(googleFontsStylesheetUrl(["Arial"])).toBeNull()
+    expect(googleFontsStylesheetUrl(["Times New Roman", "Courier New"])).toBeNull()
   })
 
   it("extracts font markers from markdown", () => {

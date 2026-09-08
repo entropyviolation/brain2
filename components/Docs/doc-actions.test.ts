@@ -9,25 +9,28 @@ import {
   deleteDocument,
   documentFolder,
   documentFont,
+  hydrateDocumentsFromIdb,
   listDocumentFolders,
   listDocuments,
+  loadDocumentBody,
   renameDocument,
+  setDocumentBody,
   setDocumentFolder,
   setDocumentFont,
 } from "./doc-actions"
+import { clearAllPersistedDocs } from "@/lib/doc-persist"
 
 describe("doc-actions", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     useTaskStore.setState({ tasks: [] })
+    await clearAllPersistedDocs()
   })
 
-  it("creates a note-typed document with starter body and defaults", () => {
+  it("creates a blank note-typed document with folder and font defaults", () => {
     const doc = createDocument("Q3 plan", "Plans")
     expect(doc.type).toBe(NOTE_TYPE_ID)
     expect(doc.description).toBe("Q3 plan")
-    expect(doc.body).toContain("Welcome to Brainclip Docs")
-    expect(doc.body).toContain("<h1>")
-    expect(doc.body).toContain("<ul>")
+    expect(doc.body).toContain("<p>")
     expect(documentFolder(doc)).toBe("Plans")
     expect(documentFont(doc)).toBe("Merriweather")
     expect(useTaskStore.getState().tasks).toHaveLength(1)
@@ -54,5 +57,20 @@ describe("doc-actions", () => {
     const doc = createDocument("X")
     setDocumentFont(doc.id, "Totally Fake")
     expect(documentFont(useTaskStore.getState().tasks[0]!)).toBe("Merriweather")
+  })
+
+  it("writes the full body to IndexedDB so it survives a wiped task store", async () => {
+    const doc = createDocument("Keep me", "", "<p>secret body</p>")
+    await setDocumentBody(doc.id, "<p>edited forever</p>")
+    expect(await loadDocumentBody(doc.id)).toContain("edited forever")
+
+    useTaskStore.setState({ tasks: [] })
+    expect(listDocuments(useTaskStore.getState().tasks)).toHaveLength(0)
+
+    await hydrateDocumentsFromIdb()
+    const restored = listDocuments(useTaskStore.getState().tasks)
+    expect(restored).toHaveLength(1)
+    expect(restored[0]?.description).toBe("Keep me")
+    expect(await loadDocumentBody(restored[0]!.id)).toContain("edited forever")
   })
 })

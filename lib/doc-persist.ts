@@ -32,6 +32,7 @@ export interface PersistedDoc {
 }
 
 const memory = new Map<string, PersistedDoc>()
+const writeChains = new Map<string, Promise<void>>()
 
 function idbAvailable(): boolean {
   try {
@@ -86,15 +87,29 @@ export function taskToPersistedDoc(task: Task, bodyOverride?: string): Persisted
 export async function putPersistedDoc(doc: PersistedDoc): Promise<void> {
   const record: PersistedDoc = { ...doc, updatedAt: doc.updatedAt || new Date().toISOString() }
   memory.set(record.id, record)
+  const prev = writeChains.get(record.id) ?? Promise.resolve()
+  const next = prev.then(
+    () => persistRecord(record),
+    () => persistRecord(record),
+  )
+  writeChains.set(record.id, next)
+  await next
+}
+
+async function persistRecord(record: PersistedDoc): Promise<void> {
+  // Always keep the latest in-memory snapshot; skip IDB if a newer write already landed.
+  const latest = memory.get(record.id)
+  if (latest && latest.updatedAt > record.updatedAt) return
   if (!idbAvailable()) return
   const db = await openDb()
   try {
+    const toWrite = memory.get(record.id) ?? record
     await new Promise<void>((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, "readwrite")
       tx.oncomplete = () => resolve()
       tx.onerror = () => reject(tx.error ?? new Error("Failed to store document"))
       tx.onabort = () => reject(tx.error ?? new Error("Document store aborted"))
-      tx.objectStore(STORE_NAME).put(record)
+      tx.objectStore(STORE_NAME).put(toWrite)
     })
   } finally {
     db.close()

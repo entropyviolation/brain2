@@ -179,6 +179,9 @@ export function htmlToPlainText(html: string): string {
     return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()
   }
   const doc = new DOMParser().parseFromString(html, "text/html")
+  for (const el of doc.body.querySelectorAll("p,h1,h2,h3,h4,h5,h6,li,div,br,tr")) {
+    el.append(" ")
+  }
   return (doc.body.textContent ?? "").replace(/\s+/g, " ").trim()
 }
 
