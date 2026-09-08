@@ -6,7 +6,9 @@
  * plus a set of highlight ranges the UI can paint over the raw input.
  *
  * It recognizes, using regex + `date-fns` date math only:
- *   - a leading `Category:` hint (or inline `cat:`/`category:`)
+ *   - a leading path of `list: item`, `folder: list: item`, or
+ *     `folder: folder: list: item` (colons; last prefix is the list)
+ *   - inline `cat:` / `category:` list hints
  *   - relative + absolute dates (today/tomorrow, weekdays, "in N days",
  *     "next week/month/year", ISO/`M/D[/Y]`, and month-name dates)
  *   - times (`at 3`, `3:30pm`, `15:00`, `noon`, `midnight`)
@@ -19,7 +21,7 @@
  */
 import { addDays, addMonths, addYears, startOfDay } from "date-fns"
 
-export type SmartTokenType = "category" | "date" | "time" | "priority" | "duration"
+export type SmartTokenType = "folder" | "category" | "date" | "time" | "priority" | "duration"
 
 /** A recognized span in the original input, for inline highlighting. */
 export interface SmartHighlight {
@@ -36,7 +38,9 @@ export interface SmartHighlight {
 export interface SmartSuggestion {
   /** The input with all recognized tokens stripped + whitespace collapsed. */
   description: string
-  /** Category-name hint (not an id) — callers resolve/create the category. */
+  /** Folder names from a leading path (all prefixes except the last). */
+  folderPath?: string[]
+  /** List-name hint (not an id) — callers resolve/create the list. */
   category?: string
   /** Local-midnight date for the recognized day, if any. */
   scheduledDate?: Date
@@ -66,11 +70,65 @@ interface Candidate {
   end: number
   type: SmartTokenType
   category?: string
+  folderName?: string
   date?: Date
   time?: string
   urgency?: number
   importance?: number
   duration?: number
+}
+
+/** A folder or list name: letters/spaces, no digits (so `3:30` is not a path). */
+const PATH_NAME = "([A-Za-z][A-Za-z &/_-]*?)"
+
+/**
+ * Leading `Name: ` prefixes (space after the colon, same as `list: item`).
+ * `cat:Health` (no space) stays an inline hint, not a path.
+ */
+const LEADING_PATH_RE = new RegExp(`^(\\s*)${PATH_NAME}\\s*:\\s+(?=\\S)`)
+
+function isInlineCatKeyword(name: string): boolean {
+  const n = name.trim().toLowerCase()
+  return n === "cat" || n === "category"
+}
+
+export interface CapturePathHeader {
+  folderPath: string[]
+  listName: string
+}
+
+/**
+ * Parse a bulk-add header line that ends with `:`, e.g. `Groceries:` or
+ * `Next Actions: Eventually:`.
+ */
+export function parsePathHeader(line: string): CapturePathHeader | null {
+  const trimmed = line.trim()
+  if (!trimmed.endsWith(":")) return null
+  const inner = trimmed.slice(0, -1).trim()
+  if (!inner) return null
+  const segments = inner.split(":").map((s) => s.trim()).filter(Boolean)
+  if (segments.length === 0) return null
+  if (segments.some((s) => !/^[A-Za-z]/.test(s))) return null
+  if (segments.length === 1) return { folderPath: [], listName: segments[0] }
+  return { folderPath: segments.slice(0, -1), listName: segments[segments.length - 1] }
+}
+
+/** Consume `folder: folder: list:` prefixes at the start of a capture line. */
+function consumeLeadingPath(input: string): { start: number; end: number; name: string }[] {
+  const segments: { start: number; end: number; name: string }[] = []
+  let pos = 0
+  while (pos < input.length) {
+    const slice = input.slice(pos)
+    const m = LEADING_PATH_RE.exec(slice)
+    if (!m) break
+    const name = m[2].trim()
+    if (!name || isInlineCatKeyword(name)) break
+    const absStart = pos + (m[1]?.length ?? 0)
+    const absEnd = pos + m[0].length
+    segments.push({ start: absStart, end: absEnd, name })
+    pos = absEnd
+  }
+  return segments
 }
 
 const WEEKDAY_INDEX: Record<string, number> = {
@@ -110,14 +168,25 @@ export function parseSmartCapture(input: string, options: SmartParseOptions = {}
   const today0 = startOfDay(now)
   const candidates: Candidate[] = []
 
-  // --- Category: leading "Name: ..." prefix (letters/spaces only, no digits) ---
-  const leadingCat = /^\s*([A-Za-z][A-Za-z &/_-]*?)\s*:\s+(?=\S)/.exec(input)
-  if (leadingCat) {
+  // --- Path: `list: item` or `folder: … : list: item` ---
+  const pathSegs = consumeLeadingPath(input)
+  if (pathSegs.length === 1) {
     candidates.push({
-      start: leadingCat.index,
-      end: leadingCat.index + leadingCat[0].length,
+      start: pathSegs[0].start,
+      end: pathSegs[0].end,
       type: "category",
-      category: leadingCat[1].trim(),
+      category: pathSegs[0].name,
+    })
+  } else if (pathSegs.length >= 2) {
+    for (const seg of pathSegs.slice(0, -1)) {
+      candidates.push({ start: seg.start, end: seg.end, type: "folder", folderName: seg.name })
+    }
+    const listSeg = pathSegs[pathSegs.length - 1]
+    candidates.push({
+      start: listSeg.start,
+      end: listSeg.end,
+      type: "category",
+      category: listSeg.name,
     })
   }
   // Inline "cat:Foo" / "category:Foo"
@@ -305,7 +374,9 @@ export function parseSmartCapture(input: string, options: SmartParseOptions = {}
 
   // --- Fold selected candidates into a suggestion (first-wins per field) ---
   const suggestion: SmartSuggestion = { description: "" }
+  const folders: string[] = []
   for (const c of selected) {
+    if (c.type === "folder" && c.folderName) folders.push(c.folderName)
     if (c.category && suggestion.category === undefined) suggestion.category = c.category
     if (c.date && suggestion.scheduledDate === undefined) suggestion.scheduledDate = c.date
     if (c.time && suggestion.scheduledTime === undefined) suggestion.scheduledTime = c.time
@@ -313,6 +384,7 @@ export function parseSmartCapture(input: string, options: SmartParseOptions = {}
     if (c.urgency) suggestion.urgency = Math.max(suggestion.urgency ?? 0, c.urgency)
     if (c.importance) suggestion.importance = Math.max(suggestion.importance ?? 0, c.importance)
   }
+  if (folders.length) suggestion.folderPath = folders
 
   // --- Build cleaned description by excising selected ranges ---
   let kept = ""

@@ -40,6 +40,24 @@ describe("task-store date rehydration", () => {
     expect((restored!.scheduledDate as Date).toISOString()).toBe("2026-06-15T00:00:00.000Z")
   })
 
+  it("rehydrates completedDate and keeps completed true", async () => {
+    useTaskStore.getState().setTasks([
+      task({
+        id: "done",
+        completed: true,
+        status: "done",
+        completedDate: new Date("2026-06-20T18:30:00.000Z"),
+      }),
+    ])
+
+    await useTaskStore.persist.rehydrate()
+
+    const restored = useTaskStore.getState().tasks.find((t) => t.id === "done")
+    expect(restored?.completed).toBe(true)
+    expect(restored!.completedDate).toBeInstanceOf(Date)
+    expect((restored!.completedDate as Date).toISOString()).toBe("2026-06-20T18:30:00.000Z")
+  })
+
   it("leaves non-date string fields (e.g. scheduledTime) as strings", async () => {
     useTaskStore.getState().setTasks([
       task({ id: "b", scheduledTime: "14:30", scheduledWeek: "2026-W25" }),

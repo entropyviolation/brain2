@@ -50,6 +50,15 @@ describe("taskSchema", () => {
     const parsed = taskSchema.parse({ ...validTask, legacyField: 42 }) as Record<string, unknown>
     expect(parsed.legacyField).toBe(42)
   })
+
+  it("accepts molecular subtasks with extra fields", () => {
+    expect(
+      taskSchema.safeParse({
+        ...validTask,
+        subtasks: [{ id: "st1", description: "Tiny step", completed: false, isMolecular: true, context: "at desk" }],
+      }).success,
+    ).toBe(true)
+  })
 })
 
 describe("taskCategorySchema / categoryFolderSchema", () => {

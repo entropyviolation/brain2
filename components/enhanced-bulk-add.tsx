@@ -1,9 +1,9 @@
 /**
  * components/enhanced-bulk-add.tsx — Bulk Add capture
  *
- * Multi-line capture using the v1 line-based syntax: a line ending in ":" starts
- * a new category block; following lines become items in that category; unknown
- * categories are auto-created. Items go directly into their lists (not Inbox).
+ * Multi-line capture: a line ending in ":" is a folder/list header; following
+ * lines become items. Inline `folder: list: item` paths work on a single line.
+ * Unknown folders/lists are auto-created. Optionally send items to Inbox.
  */
 "use client"
 
@@ -22,84 +22,93 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { useTaskStore } from "@/lib/task-store"
-import { createListItem, withCategoryDefaults } from "@/lib/item-utils"
-import { parseSmartCapture, type SmartSuggestion } from "@/lib/smart-parse"
-import type { Task, List } from "@/lib/types"
+import { parsePathHeader, parseSmartCapture } from "@/lib/smart-parse"
+import { buildCapturedTask, ensureCaptureTarget } from "@/lib/capture-target"
+import { CaptureShorthandHelp, SendToInboxField } from "@/components/capture-shorthand"
+
+type Bucket = { folderPath: string[]; listName: string; lines: string[] }
+
+function parseBulkBuckets(text: string): Bucket[] {
+  const lines = text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+
+  const buckets: Bucket[] = []
+  let current: Bucket = { folderPath: [], listName: "General", lines: [] }
+
+  const flush = () => {
+    if (current.lines.length === 0) return
+    buckets.push(current)
+  }
+
+  for (const line of lines) {
+    const header = parsePathHeader(line)
+    if (header) {
+      flush()
+      current = { folderPath: header.folderPath, listName: header.listName, lines: [] }
+    } else {
+      current.lines.push(line)
+    }
+  }
+  flush()
+  return buckets
+}
+
+function storeMutators() {
+  const s = useTaskStore.getState()
+  return {
+    lists: s.lists,
+    folders: s.folders,
+    addList: s.addList,
+    addFolder: s.addFolder,
+    addListToFolder: s.addListToFolder,
+    updateList: s.updateList,
+    updateFolder: s.updateFolder,
+  }
+}
 
 export function EnhancedBulkAdd() {
   const [open, setOpen] = useState(false)
   const [tasksText, setTasksText] = useState("")
+  const [sendToInbox, setSendToInbox] = useState(false)
   const addTask = useTaskStore((state) => state.addTask)
-  const addList = useTaskStore((state) => state.addList)
-  const categories = useTaskStore((state) => state.lists)
-
-  const parseTasksWithCategories = (text: string) => {
-    const lines = text
-      .split("\n")
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0)
-
-    const result: { [categoryName: string]: string[] } = {}
-    let currentCategory = "General"
-
-    for (const line of lines) {
-      if (line.endsWith(":")) {
-        currentCategory = line.slice(0, -1).trim()
-        if (!result[currentCategory]) result[currentCategory] = []
-      } else {
-        if (!result[currentCategory]) result[currentCategory] = []
-        result[currentCategory].push(line)
-      }
-    }
-    return result
-  }
-
-  const applySuggestion = (task: Task, suggestion: SmartSuggestion): Task => ({
-    ...task,
-    ...(suggestion.scheduledDate ? { scheduledDate: suggestion.scheduledDate } : {}),
-    ...(suggestion.scheduledTime ? { scheduledTime: suggestion.scheduledTime } : {}),
-    ...(suggestion.estimatedDuration ? { estimatedDuration: suggestion.estimatedDuration } : {}),
-    ...(suggestion.urgency ? { urgency: suggestion.urgency } : {}),
-    ...(suggestion.importance ? { importance: suggestion.importance } : {}),
-  })
-
-  const getRandomColor = () => {
-    const colors = ["#3B82F6", "#EF4444", "#10B981", "#8B5CF6", "#F59E0B", "#06B6D4", "#EC4899", "#6366F1"]
-    return colors[Math.floor(Math.random() * colors.length)]
-  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!tasksText.trim()) return
 
-    const parsedTasks = parseTasksWithCategories(tasksText)
+    const buckets = parseBulkBuckets(tasksText)
 
-    Object.entries(parsedTasks).forEach(([categoryName, taskDescriptions]) => {
-      let category = categories.find((c) => c.name.toLowerCase() === categoryName.toLowerCase())
-
-      if (!category) {
-        const newCategory: List = {
-          id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
-          name: categoryName,
-          color: getRandomColor(),
-          description: `Auto-created category for ${categoryName}`,
-          createdAt: new Date(),
-        }
-        addList(newCategory)
-        category = newCategory
-      }
-
-      taskDescriptions.forEach((line) => {
+    for (const bucket of buckets) {
+      for (const line of bucket.lines) {
         const { suggestion } = parseSmartCapture(line)
-        const description = suggestion.description || line
-        const baseTask = withCategoryDefaults(createListItem(description, [category!.id]), category)
-        addTask(applySuggestion(baseTask, suggestion))
-      })
-    })
+        const folderPath = suggestion.folderPath?.length
+          ? suggestion.folderPath
+          : bucket.folderPath
+        const listName = suggestion.category || bucket.listName
+        const merged = { ...suggestion, folderPath: folderPath.length ? folderPath : undefined, category: listName }
+        const target = ensureCaptureTarget(merged, storeMutators)
+        addTask(
+          buildCapturedTask({
+            suggestion: { ...suggestion, description: suggestion.description || line },
+            fallbackText: line,
+            sendToInbox,
+            target,
+            folders: useTaskStore.getState().folders,
+          }),
+        )
+      }
+    }
 
     setTasksText("")
     setOpen(false)
   }
+
+  const itemCount = tasksText
+    .split("\n")
+    .filter((line) => line.trim() && !parsePathHeader(line.trim()))
+    .length
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -113,7 +122,9 @@ export function EnhancedBulkAdd() {
         <DialogHeader>
           <DialogTitle>Bulk Add Tasks with Lists</DialogTitle>
           <DialogDescription>
-            Add multiple tasks at once. Use list names followed by &apos;:&apos; to organize tasks.
+            One item per line. Header lines end with &apos;:&apos; —{" "}
+            <span className="text-foreground">list:</span> or{" "}
+            <span className="text-foreground">folder: list:</span>.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 flex-1 overflow-hidden flex flex-col">
@@ -121,20 +132,21 @@ export function EnhancedBulkAdd() {
             <Label htmlFor="tasks">Tasks and Lists</Label>
             <Textarea
               id="tasks"
-              placeholder={"Writing:\nDraft chapter 1\nEdit outline\n\nGroceries:\nMilk\nBread"}
+              placeholder={"Writing:\nDraft chapter 1\nEdit outline\n\nNext Actions: Eventually:\nGo through old pages"}
               value={tasksText}
               onChange={(e) => setTasksText(e.target.value)}
               className="flex-1 resize-none font-mono text-sm"
               autoFocus
             />
           </div>
-          <div className="text-xs text-muted-foreground space-y-1">
-            <p>Lines ending with &apos;:&apos; create lists. Items go directly into those lists.</p>
-          </div>
+          <SendToInboxField
+            id="bulk-add-inbox"
+            checked={sendToInbox}
+            onCheckedChange={setSendToInbox}
+          />
+          <CaptureShorthandHelp variant="bulk" />
           <div className="flex justify-between items-center">
-            <div className="text-sm text-muted-foreground">
-              {tasksText.split("\n").filter((line) => line.trim() && !line.trim().endsWith(":")).length} tasks ready
-            </div>
+            <div className="text-sm text-muted-foreground">{itemCount} tasks ready</div>
             <Button type="submit" disabled={!tasksText.trim()}>
               Add Tasks
             </Button>

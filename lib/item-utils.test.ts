@@ -4,6 +4,7 @@ import {
   resolveCompletionPoints,
   withListMembership,
   applyItemRules,
+  isDayUnscheduledPlanned,
   MAX_BEAT_THE_CLOCK_BONUS,
 } from "./item-utils"
 import type { Folder, ItemTypeDefinition, Task, List } from "@/lib/types"
@@ -183,5 +184,26 @@ describe("resolveCompletionPoints — completion-tier formula points", () => {
 
   it("awards zero when nothing was done (below the bare minimum)", () => {
     expect(resolveCompletionPoints(tierTask(0), tierCategories, folders)).toBe(0)
+  })
+})
+
+describe("isDayUnscheduledPlanned", () => {
+  it("matches local calendar days, not UTC date keys", () => {
+    const evening = new Date(2026, 8, 7, 22, 0, 0)
+    const midnight = new Date(2026, 8, 7, 0, 0, 0)
+    expect(
+      isDayUnscheduledPlanned(
+        {
+          id: "todo-1",
+          description: "Day to-do",
+          stage: "clarified",
+          createdAt: midnight,
+          completed: false,
+          lists: [],
+          scheduledDate: midnight,
+        },
+        evening,
+      ),
+    ).toBe(true)
   })
 })

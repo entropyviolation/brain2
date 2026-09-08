@@ -22,9 +22,11 @@ import {
   taskScheduledInMonth,
   toLocalCalendarDate,
 } from "@/lib/date-utils"
-import type { PriorityWeights, Task, TaskCompletionReview, TodoItem } from "@/lib/types"
+import type { PriorityWeights, Task, TaskCompletionReview, Folder, TodoItem } from "@/lib/types"
 import { computePriorityScore } from "@/lib/priority"
 import { effectiveStatus, isAvailable, isOpen } from "@/lib/completion-status"
+import { isTaskItem } from "@/lib/item-utils"
+import { formatLocalMonthKey } from "@/lib/date-utils"
 
 export type TodoPeriod = "day" | "week" | "month"
 export type TodoSortMode = "tier" | "priority" | "name" | "created" | "added" | "pushed"
@@ -377,7 +379,7 @@ export function sortTodos(
 
 /** Local YYYY-MM month key (avoids UTC drift). */
 export function getMonthKey(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
+  return formatLocalMonthKey(date)
 }
 
 /**
@@ -522,14 +524,16 @@ function taskToTodoItem(task: Task, now: Date): TodoItem {
   }
 }
 
-/** Completed tasks for a period, sorted by completion time (most recent first). */
+/** Completed task-type items for a period, sorted by completion time (most recent first). */
 export function buildDoneTodoItems(
   tasks: Task[],
   period: TodoPeriod,
   refDate: Date = new Date(),
+  folders: Folder[] = [],
 ): TodoItem[] {
   const filtered = tasks.filter((task) => {
-    if (!task.completed || task.hiddenFromTodo) return false
+    if (!task.completed) return false
+    if (!isTaskItem(task, folders)) return false
     switch (period) {
       case "day":
         return taskCompletedOnDay(task, refDate)

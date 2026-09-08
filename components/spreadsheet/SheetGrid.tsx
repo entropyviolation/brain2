@@ -46,6 +46,7 @@ import { normalizeAttributeType } from "@/lib/attribute-utils"
 import { mergeListAttributes, formatAttributeValue } from "@/components/Lists/attribute-editor"
 import { composeListAttributes } from "@/lib/item-types"
 import { createListItem, withListMembership } from "@/lib/item-utils"
+import { withCompleted } from "@/lib/completion-status"
 import { effectiveDef, slugId } from "@/components/Lists/attributes/helpers"
 import { computeFormulaValue, formatFormulaValue, isFormulaDef, type DefLookup, type FormulaResult } from "@/lib/formula"
 import { formatNumber, isNumericAttribute } from "@/lib/spreadsheet-utils"
@@ -612,7 +613,7 @@ export function SheetGrid({
                       type="checkbox"
                       checked={!!task.completed}
                       aria-label={`Complete ${task.description}`}
-                      onChange={() => updateTask({ ...task, completed: !task.completed })}
+                      onChange={() => updateTask(withCompleted(task, !task.completed))}
                     />
                   </div>
                   <RowResizeHandle height={rowHeightOf(task.id)} onResize={(h) => onResizeRow(task.id, h)} />

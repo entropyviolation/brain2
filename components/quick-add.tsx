@@ -2,9 +2,9 @@
  * components/quick-add.tsx — Quick Add capture (smart-parse, Feature 10)
  *
  * Captures a single free-text idea and runs it through `lib/smart-parse` to pull
- * out a date/time, a `Category:` hint, priority and duration — shown live as
- * chips while you type. Captures still land in the Inbox for clarification, but
- * the parsed scheduling fields ride along so the Inbox can surface them.
+ * out a folder/list path, date/time, priority and duration — shown live as chips
+ * while you type. Optionally lands in the Inbox for clarification, or files
+ * straight onto the target list (All Items if none).
  *
  * The dialog is optionally controlled (so the quick-capture hotkey in
  * `app/page.tsx` can open it); uncontrolled with its own trigger otherwise.
@@ -14,7 +14,7 @@
 import type React from "react"
 
 import { useMemo, useState } from "react"
-import { Plus, CalendarDays, Clock, Tag, Flag, Timer } from "lucide-react"
+import { Plus, CalendarDays, Clock, Tag, Flag, Timer, Folder } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -30,6 +30,12 @@ import { Badge } from "@/components/ui/badge"
 import { format } from "date-fns"
 import { useTaskStore } from "@/lib/task-store"
 import { parseSmartCapture, type SmartSuggestion } from "@/lib/smart-parse"
+import {
+  buildCapturedTask,
+  ensureCaptureTarget,
+  previewCapturePath,
+} from "@/lib/capture-target"
+import { CaptureShorthandHelp, SendToInboxField } from "@/components/capture-shorthand"
 
 interface QuickAddProps {
   /** Controlled open state (e.g. driven by the quick-capture hotkey). */
@@ -39,8 +45,27 @@ interface QuickAddProps {
 
 /** Render the parsed fields of a suggestion as inline chips. */
 export function SuggestionChips({ suggestion }: { suggestion: SmartSuggestion }) {
+  const lists = useTaskStore((state) => state.lists)
+  const folders = useTaskStore((state) => state.folders)
+  const preview = previewCapturePath(suggestion.folderPath, suggestion.category, folders, lists)
+
   const chips: { key: string; icon: React.ReactNode; label: string }[] = []
-  if (suggestion.category) chips.push({ key: "cat", icon: <Tag className="h-3 w-3" />, label: suggestion.category })
+  preview.folders.forEach((f, i) => {
+    chips.push({
+      key: `folder-${i}`,
+      icon: <Folder className="h-3 w-3" />,
+      label: `${f.name}${f.exists ? "" : " (new folder)"}`,
+    })
+  })
+  if (preview.list) {
+    chips.push({
+      key: "list",
+      icon: <Tag className="h-3 w-3" />,
+      label: `${preview.list.name}${preview.list.exists ? "" : " (new list)"}`,
+    })
+  } else if (suggestion.category) {
+    chips.push({ key: "cat", icon: <Tag className="h-3 w-3" />, label: suggestion.category })
+  }
   if (suggestion.scheduledDate)
     chips.push({ key: "date", icon: <CalendarDays className="h-3 w-3" />, label: format(suggestion.scheduledDate, "EEE MMM d") })
   if (suggestion.scheduledTime)
@@ -71,8 +96,8 @@ export function QuickAdd({ open: openProp, onOpenChange }: QuickAddProps = {}) {
   const setOpen = onOpenChange ?? setOpenState
 
   const [ideaText, setIdeaText] = useState("")
+  const [sendToInbox, setSendToInbox] = useState(true)
   const addTask = useTaskStore((state) => state.addTask)
-  const categories = useTaskStore((state) => state.lists)
 
   const parsed = useMemo(() => parseSmartCapture(ideaText), [ideaText])
 
@@ -81,39 +106,27 @@ export function QuickAdd({ open: openProp, onOpenChange }: QuickAddProps = {}) {
     if (!ideaText.trim()) return
 
     const { suggestion } = parsed
-    const description = suggestion.description || ideaText.trim()
-
-    // Resolve a category hint to an existing list (pre-selects it during clarify);
-    // otherwise keep the raw hint as a tag so it isn't lost.
-    const matchedCategory = suggestion.category
-      ? categories.find((c) => c.name.toLowerCase() === suggestion.category!.toLowerCase())
-      : undefined
-
-    addTask({
-      id: Date.now().toString(),
-      description,
-      title: description,
-      stage: "inbox",
-      type: "task",
-      tags: !matchedCategory && suggestion.category ? [suggestion.category] : [],
-      links: [],
-      createdAt: new Date(),
-      estimatedDuration: suggestion.estimatedDuration ?? 1,
-      cognitiveLoad: 1,
-      urgency: suggestion.urgency ?? 3,
-      importance: suggestion.importance ?? 3,
-      dependencies: [],
-      context: "@inbox",
-      entropy: 0.5,
-      rewardValue: 1,
-      completed: false,
-      lists: matchedCategory ? [matchedCategory.id] : [],
-      allowPartialCompletion: false,
-      minimumChunkSize: 15,
-      scheduledDate: suggestion.scheduledDate,
-      scheduledTime: suggestion.scheduledTime,
-      subtasks: [],
+    const target = ensureCaptureTarget(suggestion, () => {
+      const s = useTaskStore.getState()
+      return {
+        lists: s.lists,
+        folders: s.folders,
+        addList: s.addList,
+        addFolder: s.addFolder,
+        addListToFolder: s.addListToFolder,
+        updateList: s.updateList,
+        updateFolder: s.updateFolder,
+      }
     })
+    addTask(
+      buildCapturedTask({
+        suggestion,
+        fallbackText: ideaText,
+        sendToInbox,
+        target,
+        folders: useTaskStore.getState().folders,
+      }),
+    )
     setIdeaText("")
     setOpen(false)
   }
@@ -126,27 +139,34 @@ export function QuickAdd({ open: openProp, onOpenChange }: QuickAddProps = {}) {
           <span>Quick Add</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add Idea</DialogTitle>
           <DialogDescription>
-            Quickly capture an idea. Try &ldquo;Work: call dentist tomorrow at 3pm for 30m&rdquo;.
+            Capture one item. Use colons for folder and list:{" "}
+            <span className="text-foreground">folder: list: the item</span>.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="idea">Idea</Label>
+            {ideaText.trim() && <SuggestionChips suggestion={parsed.suggestion} />}
             <Input
               id="idea"
-              placeholder="What's on your mind?"
+              placeholder="next actions: eventually: write the memoir"
               value={ideaText}
               onChange={(e) => setIdeaText(e.target.value)}
               autoFocus
             />
-            {ideaText.trim() && <SuggestionChips suggestion={parsed.suggestion} />}
           </div>
+          <SendToInboxField
+            id="quick-add-inbox"
+            checked={sendToInbox}
+            onCheckedChange={setSendToInbox}
+          />
+          <CaptureShorthandHelp variant="quick" />
           <div className="flex justify-end">
-            <Button type="submit">Add to Inbox</Button>
+            <Button type="submit">{sendToInbox ? "Add to Inbox" : "Add item"}</Button>
           </div>
         </form>
       </DialogContent>

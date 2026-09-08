@@ -42,6 +42,8 @@ const DATE_KEYS = new Set([
   "createdAt",
   "deadline",
   "scheduledDate",
+  "completedDate",
+  "completedAt",
   "mustBeDoneAfter",
   "mustBeDoneBefore",
 ])
@@ -134,6 +136,37 @@ const initialTasks: Task[] = [
     minimumChunkSize: 15,
   },
 ]
+
+const taskPersistStorage = createCogsJSONStorage({
+  // NOTE: `JSON.stringify` invokes `Date.prototype.toJSON()` (→ ISO string)
+  // BEFORE this replacer runs, so the `value instanceof Date` branch never
+  // fires — Dates are already plain ISO strings here. The real rehydration
+  // happens in the reviver below. We keep this branch only as defensive
+  // back-compat in case a raw (non-toJSON'd) Date ever reaches the replacer.
+  replacer: (_key, value) => {
+    if (value instanceof Date) {
+      return { __type: "Date", value: value.toISOString() }
+    }
+    return value
+  },
+  // `JSON.parse`'s reviver visits every key. We restore Date instances for
+  // the known Date-typed fields whose values are ISO-8601 strings (what
+  // `toJSON` produced). Restricting to DATE_KEYS avoids clobbering genuine
+  // string fields like `scheduledTime` ("14:30") or `timeLogs[].date`
+  // ("2026-06-20"). Nested `completedAt` (completion reviews) is revived too.
+  reviver: (key, value) => {
+    if (value && typeof value === "object" && (value as { __type?: string }).__type === "Date") {
+      return new Date((value as { value: string }).value)
+    }
+    if (typeof value === "string" && DATE_KEYS.has(key) && ISO_DATE_RE.test(value)) {
+      return new Date(value)
+    }
+    return value
+  },
+})
+
+/** False until persist finishes reading disk so mount-time list sync cannot persist seed tasks over the vault. Tests persist immediately. */
+let taskPersistHydrated = typeof process !== "undefined" && !!process.env.VITEST
 
 // Create the store with persistence
 export const useTaskStore = create<TaskState>()(
@@ -440,34 +473,14 @@ export const useTaskStore = create<TaskState>()(
     }),
     {
       name: "cogs-task-storage", // unique name for localStorage key
-      storage: createCogsJSONStorage({
-        // NOTE: `JSON.stringify` invokes `Date.prototype.toJSON()` (→ ISO string)
-        // BEFORE this replacer runs, so the `value instanceof Date` branch never
-        // fires — Dates are already plain ISO strings here. The real rehydration
-        // happens in the reviver below. We keep this branch only as defensive
-        // back-compat in case a raw (non-toJSON'd) Date ever reaches the replacer.
-        replacer: (_key, value) => {
-          if (value instanceof Date) {
-            return { __type: "Date", value: value.toISOString() }
-          }
-          return value
+      storage: {
+        getItem: (name) => taskPersistStorage.getItem(name),
+        setItem: (name, value) => {
+          if (!taskPersistHydrated) return
+          return taskPersistStorage.setItem(name, value)
         },
-        // `JSON.parse`'s reviver visits every key. We restore Date instances for
-        // the known Date-typed fields whose values are ISO-8601 strings (what
-        // `toJSON` produced). Restricting to DATE_KEYS avoids clobbering genuine
-        // string fields like `scheduledTime` ("14:30") or `timeLogs[].date`
-        // ("2026-06-20"). The tagged-envelope branch handles any legacy data that
-        // somehow persisted via the replacer above (prevents double-conversion).
-        reviver: (key, value) => {
-          if (value && typeof value === "object" && (value as { __type?: string }).__type === "Date") {
-            return new Date((value as { value: string }).value)
-          }
-          if (typeof value === "string" && DATE_KEYS.has(key) && ISO_DATE_RE.test(value)) {
-            return new Date(value)
-          }
-          return value
-        },
-      }),
+        removeItem: (name) => taskPersistStorage.removeItem(name),
+      },
       // Add version to handle schema changes
       version: 10,
       // Migrate function to handle old data
@@ -565,6 +578,7 @@ export const useTaskStore = create<TaskState>()(
         return persistedState
       },
       onRehydrateStorage: () => (state) => {
+        taskPersistHydrated = true
         if (!state?.tasks?.length) return
         void migrateTaskFileValues(state.tasks).then(({ tasks, migrated }) => {
           if (migrated > 0) useTaskStore.setState({ tasks })

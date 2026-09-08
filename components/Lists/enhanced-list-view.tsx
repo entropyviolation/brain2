@@ -183,6 +183,12 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
     dedupeLists()
   }, [dedupeFolders, dedupeLists])
 
+  const [taskStoreHydrated, setTaskStoreHydrated] = useState(() => useTaskStore.persist.hasHydrated())
+  useEffect(() => {
+    if (taskStoreHydrated) return
+    return useTaskStore.persist.onFinishHydration(() => setTaskStoreHydrated(true))
+  }, [taskStoreHydrated])
+
   const taskIndexPrevRef = useRef<ListsTaskIndex | null>(null)
   const taskIndex = useMemo(() => {
     const next = buildListsTaskIndex(allTasks, taskIndexPrevRef.current)
@@ -197,6 +203,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
   }, [categories])
 
   useEffect(() => {
+    if (!taskStoreHydrated) return
     let cancelled = false
     const frame = requestAnimationFrame(() => {
       if (cancelled) return
@@ -221,7 +228,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
       cancelled = true
       cancelAnimationFrame(frame)
     }
-  }, [allTasks, modules])
+  }, [taskStoreHydrated, allTasks, modules])
 
   const getSmartTasks = useCallback(
     (id: SmartId) => smartTasksFor(taskIndex, id),

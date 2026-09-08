@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { parseSmartCapture, type SmartParseResult } from "./smart-parse"
+import { parseSmartCapture, parsePathHeader, type SmartParseResult } from "./smart-parse"
 
 // Fixed reference: Wednesday, June 24 2026, 10:00 local time.
 const NOW = new Date(2026, 5, 24, 10, 0, 0)
@@ -46,6 +46,25 @@ describe("parseSmartCapture — categories", () => {
     const { suggestion } = parse("Home Improvement: fix the sink")
     expect(suggestion.category).toBe("Home Improvement")
     expect(suggestion.description).toBe("fix the sink")
+  })
+
+  it("parses folder: list: item paths", () => {
+    const { suggestion, highlights } = parse(
+      "next actions: eventually: go through and edit old three pages into a memoir or essay narrative; mine essays",
+    )
+    expect(suggestion.folderPath).toEqual(["next actions"])
+    expect(suggestion.category).toBe("eventually")
+    expect(suggestion.description).toBe(
+      "go through and edit old three pages into a memoir or essay narrative; mine essays",
+    )
+    expect(highlights.map((h) => h.type)).toEqual(["folder", "category"])
+  })
+
+  it("parses nested folder: folder: list: item", () => {
+    const { suggestion } = parse("life: writing: memoir: draft chapter two")
+    expect(suggestion.folderPath).toEqual(["life", "writing"])
+    expect(suggestion.category).toBe("memoir")
+    expect(suggestion.description).toBe("draft chapter two")
   })
 
   it("supports inline cat:/category: hints", () => {
@@ -218,5 +237,18 @@ describe("parseSmartCapture — combined + highlights", () => {
   it("keeps an explicit time over a later 'at' anchor (first-wins)", () => {
     const { suggestion } = parse("call 9am then review at 15")
     expect(suggestion.scheduledTime).toBe("09:00")
+  })
+})
+
+describe("parsePathHeader", () => {
+  it("parses a list-only header", () => {
+    expect(parsePathHeader("Groceries:")).toEqual({ folderPath: [], listName: "Groceries" })
+  })
+
+  it("parses a folder + list header", () => {
+    expect(parsePathHeader("Next Actions: Eventually:")).toEqual({
+      folderPath: ["Next Actions"],
+      listName: "Eventually",
+    })
   })
 })

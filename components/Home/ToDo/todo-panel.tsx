@@ -121,11 +121,11 @@ export function TodoPanel() {
 
   const doneByPeriod = useMemo(
     () => ({
-      day: buildDoneTodoItems(tasks, "day", focusedDate),
-      week: buildDoneTodoItems(tasks, "week", focusedDate),
-      month: buildDoneTodoItems(tasks, "month", focusedDate),
+      day: buildDoneTodoItems(tasks, "day", focusedDate, folders),
+      week: buildDoneTodoItems(tasks, "week", focusedDate, folders),
+      month: buildDoneTodoItems(tasks, "month", focusedDate, folders),
     }),
-    [tasks, focusedDate],
+    [tasks, focusedDate, folders],
   )
 
   const scheduleTaskForPeriod = (task: Task, period: TodoPeriod, refDate: Date) => {

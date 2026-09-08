@@ -37,7 +37,9 @@ function hydrateLocalStorageFromChromeHub() {
     const items = snapshot && snapshot.items
     if (!items || typeof items !== "object") return
     for (const [name, value] of Object.entries(items)) {
-      if (typeof name === "string" && typeof value === "string") {
+      // Seed missing keys only. Overwriting on every boot replaced this
+      // profile's live vault with a stale Chrome snapshot (lost completions).
+      if (typeof name === "string" && typeof value === "string" && localStorage.getItem(name) == null) {
         localStorage.setItem(name, value)
       }
     }

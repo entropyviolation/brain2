@@ -49,11 +49,13 @@ export const itemLinkSchema = z.object({
   targetId: z.string(),
 })
 
-export const subtaskSchema = z.object({
-  id: z.string(),
-  description: z.string(),
-  completed: z.boolean(),
-})
+export const subtaskSchema = z
+  .object({
+    id: z.string(),
+    description: z.string(),
+    completed: z.boolean().optional().default(false),
+  })
+  .passthrough()
 
 export const taskCategorySchema = z
   .object({
@@ -115,6 +117,7 @@ export const taskSchema = z
     scheduledWeek: z.string().optional(),
     scheduledMonth: z.string().optional(),
     scheduledYear: z.string().optional(),
+    completedDate: dateLike.optional(),
     subtasks: z.array(subtaskSchema).optional(),
   })
   .passthrough()

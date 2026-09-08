@@ -11,6 +11,7 @@
  */
 import type { Task, TaskCompletionReview } from "@/lib/types"
 import { taskRepository, type TaskRepository } from "@/lib/data/task-repository"
+import { withCompleted } from "@/lib/completion-status"
 
 export interface CompleteOptions {
   /** Minutes actually spent; stored on the task when provided. */
@@ -37,13 +38,14 @@ export function completeTask(
   if (task.isRepeated && repeat?.type === "count") {
     const total = repeat.totalCount ?? 1
     const nextCount = (repeat.completedCount ?? 0) + 1
+    const done = nextCount >= total
     updated = {
-      ...updated,
+      ...withCompleted(updated, done),
       repeatSettings: { ...repeat, completedCount: nextCount },
-      completed: nextCount >= total,
+      ...(done ? { stage: "completed" as const } : {}),
     }
   } else {
-    updated.completed = true
+    updated = { ...withCompleted(updated, true), stage: "completed" }
   }
 
   return repo.update(updated)
@@ -53,7 +55,7 @@ export function completeTask(
 export function uncompleteTask(id: string, repo: TaskRepository = taskRepository): Task | undefined {
   const task = repo.getById(id)
   if (!task || !task.completed) return task
-  return repo.update({ ...task, completed: false })
+  return repo.update(withCompleted({ ...task, completed: false }, false))
 }
 
 /** Toggle a task's completion state. */

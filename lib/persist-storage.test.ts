@@ -7,6 +7,7 @@ import {
   isQuotaExceededError,
   persistErrorMessage,
   resetPersistStatus,
+  pickPersistItem,
 } from "@/lib/persist-storage"
 
 function quotaError(): DOMException {
@@ -72,5 +73,11 @@ describe("persist-storage", () => {
     expect(storage.getItem("cogs-task-storage")).toBeNull()
     storage.setItem("cogs-task-storage", '{"state":{}}')
     expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  it("prefers this profile's local snapshot over a hub value", () => {
+    expect(pickPersistItem('{"state":{"tasks":[]}}', '{"state":{"stale":true}}')).toBe('{"state":{"tasks":[]}}')
+    expect(pickPersistItem(null, '{"state":{"fromHub":true}}')).toBe('{"state":{"fromHub":true}}')
+    expect(pickPersistItem(null, undefined)).toBeNull()
   })
 })

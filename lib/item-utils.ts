@@ -8,12 +8,11 @@
 import type { Task, List, Folder, AttributeValue, ItemTypeDefinition, ItemTypeRule } from "@/lib/types"
 import { composeListDefaults, getItemType, gatherItemRules, applyRules, type ItemLike } from "@/lib/item-types"
 import {
-  formatDateKey,
   getWeekString,
   parseLocalDate,
   parseWeekString,
   taskScheduledOnDay,
-  safeToDate,
+  sameCalendarDay,
   type SchedulableFields,
 } from "@/lib/date-utils"
 import { normalizeAttributeType } from "@/lib/attribute-utils"
@@ -100,9 +99,13 @@ export function isMonthOnlyPlanned(task: Task, monthKey: string): boolean {
   if (task.completed) return false
   if (taskHasFinerScheduleThanMonth(task)) return false
   if (task.scheduledMonth === monthKey) return true
-  const deadline = safeToDate(task.deadline)
-  if (deadline && !task.scheduledMonth && deadline.toISOString().slice(0, 7) === monthKey) return true
+  const deadline = parseLocalDate(task.deadline)
+  if (deadline && !task.scheduledMonth && formatLocalMonth(deadline) === monthKey) return true
   return false
+}
+
+function formatLocalMonth(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
 }
 
 /** Week sidebar: scheduled for this week only (not assigned to a specific day/time). */
@@ -110,7 +113,7 @@ export function isWeekOnlyPlanned(task: Task, weekKey: string): boolean {
   if (task.completed) return false
   if (task.scheduledDate) return false
   if (task.scheduledWeek === weekKey) return true
-  const deadline = safeToDate(task.deadline)
+  const deadline = parseLocalDate(task.deadline)
   if (deadline && !task.scheduledWeek && !task.scheduledDate && getWeekString(deadline) === weekKey) return true
   return false
 }
@@ -119,13 +122,8 @@ export function isWeekOnlyPlanned(task: Task, weekKey: string): boolean {
 export function isDayUnscheduledPlanned(task: Task, date: Date): boolean {
   if (task.completed) return false
   if (taskHasDaySchedule(task)) return false
-  const dayKey = formatDateKey(date)
-  if (task.scheduledDate) {
-    const d = safeToDate(task.scheduledDate)
-    if (d && formatDateKey(d) === dayKey) return true
-  }
-  const deadline = safeToDate(task.deadline)
-  if (deadline && formatDateKey(deadline) === dayKey) return true
+  if (task.scheduledDate && sameCalendarDay(task.scheduledDate, date)) return true
+  if (!task.scheduledDate && task.deadline && sameCalendarDay(task.deadline, date)) return true
   return false
 }
 

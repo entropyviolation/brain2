@@ -122,6 +122,11 @@ export function formatLocalDateKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
 }
 
+/** Local calendar month key (YYYY-MM). */
+export function formatLocalMonthKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
+}
+
 /** True when two values fall on the same local calendar day. */
 export function sameCalendarDay(a: Date | string | null | undefined, b: Date): boolean {
   const da = parseLocalDate(a)
@@ -226,11 +231,11 @@ export function parseLocalDate(value: Date | string | null | undefined): Date | 
 }
 
 export function taskScheduledOnDay(task: SchedulableFields, value: Date | string): boolean {
-  const taskDate = safeToDate(task.scheduledDate ?? undefined)
   const compare = parseLocalDate(value)
-  if (taskDate && compare && taskDate.toDateString() === compare.toDateString()) return true
-  const deadline = safeToDate((task as { deadline?: Date | string }).deadline)
-  return !!deadline && !!compare && deadline.toDateString() === compare.toDateString()
+  if (!compare) return false
+  if (task.scheduledDate && sameCalendarDay(task.scheduledDate, compare)) return true
+  const deadline = (task as { deadline?: Date | string }).deadline
+  return !!deadline && sameCalendarDay(deadline, compare)
 }
 
 export function taskScheduledInWeek(task: SchedulableFields, weekValue: string): boolean {
@@ -249,13 +254,13 @@ export function taskScheduledInWeek(task: SchedulableFields, weekValue: string):
 
 export function taskScheduledInMonth(task: SchedulableFields, monthValue: string): boolean {
   if (task.scheduledMonth && task.scheduledMonth === monthValue) return true
-  const taskDate = safeToDate(task.scheduledDate ?? undefined)
-  if (taskDate && taskDate.toISOString().slice(0, 7) === monthValue) return true
-  const deadline = safeToDate((task as { deadline?: Date | string }).deadline)
-  if (deadline && deadline.toISOString().slice(0, 7) === monthValue) return true
+  const taskDate = parseLocalDate(task.scheduledDate ?? undefined)
+  if (taskDate && formatLocalMonthKey(taskDate) === monthValue) return true
+  const deadline = parseLocalDate((task as { deadline?: Date | string }).deadline)
+  if (deadline && formatLocalMonthKey(deadline) === monthValue) return true
   if (task.scheduledWeek) {
     const range = parseWeekString(task.scheduledWeek)
-    if (range && range.start.toISOString().slice(0, 7) === monthValue) return true
+    if (range && formatLocalMonthKey(range.start) === monthValue) return true
   }
   return false
 }

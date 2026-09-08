@@ -279,6 +279,36 @@ describe("buildDoneTodoItems", () => {
     expect(items.map((i) => i.id)).toEqual(["done-today"])
   })
 
+  it("includes every task-type completion that day, even unscheduled or hidden from To-Do", () => {
+    const folders = [{ id: "naf", name: "Next Actions", createdAt: now, listIds: ["na"] }]
+    const items = buildDoneTodoItems(
+      [
+        task({
+          id: "na",
+          lists: ["na"],
+          completed: true,
+          completedDate: new Date("2026-06-20T09:00:00"),
+        }),
+        task({
+          id: "hidden",
+          hiddenFromTodo: true,
+          completed: true,
+          completedDate: new Date("2026-06-20T11:00:00"),
+        }),
+        task({
+          id: "note",
+          type: "note",
+          completed: true,
+          completedDate: new Date("2026-06-20T12:00:00"),
+        }),
+      ],
+      "day",
+      now,
+      folders,
+    )
+    expect(items.map((i) => i.id).sort()).toEqual(["hidden", "na"])
+  })
+
   it("buckets by completion date, not schedule", () => {
     expect(
       taskCompletedOnDay(

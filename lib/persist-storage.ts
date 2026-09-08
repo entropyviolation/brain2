@@ -12,8 +12,9 @@
  * On `localhost` in Electron, reads prefer the dev-server hub (`/api/persist`)
  * so a reboot cannot leave the desktop shell stuck on an old Chromium profile
  * while Chrome has the live vault. Chrome always reads and writes its own
- * localStorage (never imported from the hub). Electron never writes the hub,
- * so a stale desktop boot cannot clobber Chrome's snapshot.
+ * localStorage (never imported from the hub). Electron seeds *missing* keys
+ * from the hub on first boot, then keeps this profile's own snapshot so a refresh
+ * cannot clobber completions, deletes, or new day to-dos.
  */
 import { createJSONStorage, type PersistStorage, type StateStorage } from "zustand/middleware"
 
@@ -152,6 +153,17 @@ function loadHub(): Promise<HubSnapshot> {
   return hubPromise
 }
 
+/**
+ * Electron may seed empty keys from the Chrome hub, but once this profile has
+ * its own snapshot it must win. Re-applying the hub on every boot/getItem was
+ * wiping completions, deletes, and new day to-dos on refresh.
+ */
+export function pickPersistItem(local: string | null, hubValue: unknown): string | null {
+  if (typeof local === "string") return local
+  if (typeof hubValue === "string") return hubValue
+  return null
+}
+
 const hubPostTimers = new Map<string, ReturnType<typeof setTimeout>>()
 
 function postHub(name: string, value: string) {
@@ -179,29 +191,27 @@ export function cogsStateStorage(): StateStorage {
   return {
     getItem: (name) => {
       if (!hasLocalStorage()) return null
+      let local: string | null = null
+      try {
+        local = localStorage.getItem(name)
+      } catch {
+        local = null
+      }
+      if (local != null) return local
       if (hubEnabled() && isElectronRenderer()) {
         return loadHub().then((hub) => {
-          const fromHub = hub?.items?.[name]
-          if (typeof fromHub === "string") {
+          const chosen = pickPersistItem(null, hub?.items?.[name])
+          if (typeof chosen === "string") {
             try {
-              localStorage.setItem(name, fromHub)
+              localStorage.setItem(name, chosen)
             } catch {
               /* copy is best-effort; still return hub value */
             }
-            return fromHub
           }
-          try {
-            return localStorage.getItem(name)
-          } catch {
-            return null
-          }
+          return chosen
         })
       }
-      try {
-        return localStorage.getItem(name)
-      } catch {
-        return null
-      }
+      return local
     },
     setItem: (name, value) => {
       if (!hasLocalStorage()) {
