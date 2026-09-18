@@ -1,5 +1,8 @@
 /**
  * components/Lists/daily-habits-list.tsx — Daily habits in Lists panel
+ *
+ * Same `habits-store` as Home Habits. Climb rows log a number vs the derived
+ * daily/weekly target (`lib/incremental-habits.ts`).
  */
 "use client"
 
@@ -8,6 +11,13 @@ import { useHabitsStore } from "@/lib/habits-store"
 import { TaskType, type WeeklyTask, type TaskCompletion } from "@/lib/types"
 import { formatLocalDateKey, getWeekString, getWeekStartDate } from "@/lib/date-utils"
 import { isHabitGoalMet, isGoalType } from "@/lib/habit-utils"
+import {
+  completionValueFromInput,
+  incrementalCompletionPayload,
+  incrementalDataForTask,
+  incrementalGoalOn,
+  incrementalLoggedValue,
+} from "@/lib/incremental-habits"
 import { filterHabitsByFrequency } from "@/components/Home/Habits/period-habit-list"
 import { TaskFormDialog } from "@/components/Home/Habits/daily-task-form-dialog"
 import { SettingsDialog } from "@/components/Home/Habits/settings-dialog"
@@ -46,7 +56,7 @@ export function DailyHabitsList() {
     setShowForm(false)
   }
 
-  const doneCount = dailyTasks.filter((t) => isHabitGoalMet(t, dayData[t.id])).length
+  const doneCount = dailyTasks.filter((t) => isHabitGoalMet(t, dayData[t.id], { date: today, weeklyData })).length
 
   return (
     <div className="fm-sunken" style={{ padding: 0 }}>
@@ -82,7 +92,7 @@ export function DailyHabitsList() {
 
         {dailyTasks.map((task) => {
           const c = dayData[task.id] || {}
-          const done = isHabitGoalMet(task, c)
+          const done = isHabitGoalMet(task, c, { date: today, weeklyData })
           return (
             <div key={task.id} className="fm-link-row" style={{ alignItems: "center", justifyContent: "space-between" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 0 }}>
@@ -117,6 +127,21 @@ export function DailyHabitsList() {
                     />
                     <span style={{ fontSize: 10 }}>
                       /{task.goal} {task.unit}
+                    </span>
+                  </>
+                )}
+                {task.type === TaskType.INCREMENTAL && (
+                  <>
+                    <input
+                      className="fm-input"
+                      style={{ width: 64 }}
+                      type="number"
+                      value={incrementalLoggedValue(c) ?? ""}
+                      placeholder="0"
+                      onChange={(e) => setCompletion(task, incrementalCompletionPayload(completionValueFromInput(e.target.value)))}
+                    />
+                    <span style={{ fontSize: 10 }}>
+                      /{incrementalGoalOn(task, weeklyData, today)} {incrementalDataForTask(task)?.unit || task.unit}
                     </span>
                   </>
                 )}

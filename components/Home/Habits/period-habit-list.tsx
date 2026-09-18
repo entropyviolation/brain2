@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Edit, Trash2, Target } from "lucide-react"
 import { TaskType, type WeeklyTask, type TaskCompletion, type WeeklyData } from "@/lib/types"
 import { isHabitGoalMet } from "@/lib/habit-utils"
+import { incrementalDataForTask, incrementalGoalOn, incrementalLoggedValue } from "@/lib/incremental-habits"
 import { useThemeStore } from "@/lib/theme-store"
 import type { HabitFrequency } from "@/lib/types"
 
@@ -79,8 +80,28 @@ export function PeriodHabitList({
             onChange={(e) => onUpdate(task.id, { text: e.target.value })}
           />
         )
-      default:
-        return null
+      case TaskType.INCREMENTAL: {
+        const climb = incrementalDataForTask(task)
+        const asOf = new Date()
+        const goal = incrementalGoalOn(task, {}, asOf)
+        const value = incrementalLoggedValue(c)
+        return (
+          <div className="flex items-center gap-2">
+            <Input
+              type="number"
+              className="w-20 h-8"
+              value={value?.toString() ?? ""}
+              placeholder="0"
+              onChange={(e) =>
+                onUpdate(task.id, { value: e.target.value === "" ? undefined : Number.parseFloat(e.target.value) })
+              }
+            />
+            <span className="text-sm text-muted-foreground">
+              / {goal} {climb?.unit || task.unit}
+            </span>
+          </div>
+        )
+      }
     }
   }
 

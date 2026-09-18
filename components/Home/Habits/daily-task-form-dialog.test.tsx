@@ -23,6 +23,7 @@ describe("TaskFormDialog", () => {
       />,
     )
     expect(screen.getByText("Add New Habit")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Close" })).toBeInTheDocument()
     expect(screen.getByTestId("task-form")).toBeInTheDocument()
   })
 

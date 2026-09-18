@@ -2,16 +2,23 @@
  * lib/calculations.ts — Habit completion math (pure)
  *
  * Pure functions that compute habit-tracker percentages for all five habit types
- * (boolean/time/count/text/incremental):
- *  - `calculateTaskPercentage`: a habit's completion % across the week.
+ * (boolean/goal/text/climb; TIME/COUNT treated as GOAL):
+ *  - `calculateTaskPercentage`: a habit's completion % across the week
+ *    (climb uses `incrementalWeekPercentage`; denominator is always 7).
+ *  - `calculateElapsedTaskPercentage`: same row formulas paced to elapsed days.
  *  - `calculateDayPercentage` / `calculateDayPercentageAV`: a day's overall %
  *    (the AV variant averages over all habits, not just those with data).
+ *    Climb uses `incrementalDayPercentage`.
+ *  - `calculateWeekToDateGrade`: mean of elapsed days' AV % (Mon → as-of date),
+ *    optional daily curve via `tolerance` (`curveDayPercentage`; 0% stays 0).
+ *  - `calculateWeekToDateOutputGrade`: mean of elapsed-paced row % per habit
+ *    (Perfect Output), same curve, separate tolerance.
  *
  * Spec: §9 (Habit Tracker). Uses ISO-date-keyed `WeeklyData` (spec §9.4).
  */
 import { type WeeklyTask as Task, TaskType, type WeeklyData } from "./types"
-import { formatDateKey, formatLocalDateKey } from "./date-utils"
-import { isGoalType } from "./habit-utils"
+import { formatLocalDateKey, parseLocalDate } from "./date-utils"
+import { incrementalDayPercentage, incrementalWeekPercentage } from "./incremental-habits"
 
 export const calculateTaskPercentage = (
   taskId: string,
@@ -63,37 +70,48 @@ export const calculateTaskPercentage = (
       return Math.min(100, percentage)
     }
 
-    case TaskType.INCREMENTAL: {
-      if (!task.incrementalData) return 0
+    case TaskType.INCREMENTAL:
+      return incrementalWeekPercentage(task, weeklyData, weekDates)
 
-      const keys = Object.keys(task.incrementalData.currentValues)
-      if (keys.length === 0) return 0
+    default:
+      return 0
+  }
+}
 
-      let totalPercentage = 0
+/** Same formulas as `calculateTaskPercentage`, but paced to elapsed days (not a full 7). */
+export function calculateElapsedTaskPercentage(
+  task: Task,
+  weeklyData: WeeklyData,
+  elapsedDates: Date[],
+): number {
+  if (elapsedDates.length === 0) return 0
+  const n = elapsedDates.length
+  const dateKeys = elapsedDates.map((date) => formatLocalDateKey(date))
 
-      keys.forEach((key) => {
-        let daysCompleted = 0
-
-        dateKeys.forEach((dateKey, dayIndex) => {
-          const completion = weeklyData[dateKey]?.[taskId]
-          if (!completion?.incrementalValues?.[key]) return
-
-          const value = completion.incrementalValues[key]
-          const baseValue = task.incrementalData?.currentValues[key] || 0
-          const increment = task.incrementalData?.weeklyIncrement[key] || 0
-          const targetGoal = baseValue + increment * dayIndex
-
-          if (value >= targetGoal) {
-            daysCompleted++
-          }
-        })
-
-        totalPercentage += (daysCompleted / 7) * 100
+  switch (task.type) {
+    case TaskType.BOOLEAN:
+    case TaskType.TEXT: {
+      let daysCompleted = 0
+      dateKeys.forEach((dateKey) => {
+        const completion = weeklyData[dateKey]?.[task.id]
+        if (task.type === TaskType.BOOLEAN && completion?.completed) daysCompleted++
+        else if (task.type === TaskType.TEXT && completion?.text) daysCompleted++
       })
-
-      return totalPercentage / keys.length
+      return (daysCompleted / n) * 100
     }
-
+    case TaskType.GOAL:
+    case TaskType.TIME:
+    case TaskType.COUNT: {
+      if (!task.goal) return 0
+      let totalCompleted = 0
+      dateKeys.forEach((dateKey) => {
+        const completion = weeklyData[dateKey]?.[task.id]
+        if (completion?.value !== undefined) totalCompleted += completion.value
+      })
+      return Math.min(100, (totalCompleted / (task.goal * n)) * 100)
+    }
+    case TaskType.INCREMENTAL:
+      return incrementalWeekPercentage(task, weeklyData, elapsedDates)
     default:
       return 0
   }
@@ -144,33 +162,15 @@ export const calculateDayPercentage = (
         }
         break
 
-      case TaskType.INCREMENTAL:
-        if (task.incrementalData && completion.incrementalValues) {
-          const keys = Object.keys(task.incrementalData.currentValues)
-          let keyPercentages = 0
-          let keysWithData = 0
-
-          keys.forEach((key) => {
-            const value = completion.incrementalValues?.[key]
-            if (value !== undefined) {
-              const baseValue = task.incrementalData?.currentValues[key] || 0
-              const increment = task.incrementalData?.weeklyIncrement[key] || 0
-              const targetGoal = baseValue + increment * dayIndex
-
-              if (targetGoal > 0) {
-                const keyPercentage = value >= targetGoal ? 100 : (value / targetGoal) * 100
-                keyPercentages += keyPercentage
-                keysWithData++
-              }
-            }
-          })
-
-          if (keysWithData > 0) {
-            taskPercentage = keyPercentages / keysWithData
-            tasksWithData++
-          }
+      case TaskType.INCREMENTAL: {
+        const date = parseLocalDate(dateKey) ?? new Date()
+        const pct = incrementalDayPercentage(task, completion, weeklyData, date)
+        if (pct !== null) {
+          taskPercentage = pct
+          tasksWithData++
         }
         break
+      }
     }
 
     totalTaskPercentage += taskPercentage
@@ -227,33 +227,15 @@ export const calculateDayPercentageAV = (
         }
         break
 
-      case TaskType.INCREMENTAL:
-        if (task.incrementalData && completion.incrementalValues) {
-          const keys = Object.keys(task.incrementalData.currentValues)
-          let keyPercentages = 0
-          let keysWithData = 0
-
-          keys.forEach((key) => {
-            const value = completion.incrementalValues?.[key]
-            if (value !== undefined) {
-              const baseValue = task.incrementalData?.currentValues[key] || 0
-              const increment = task.incrementalData?.weeklyIncrement[key] || 0
-              const targetGoal = baseValue + increment * dayIndex
-
-              if (targetGoal > 0) {
-                const keyPercentage = value >= targetGoal ? 100 : (value / targetGoal) * 100
-                keyPercentages += keyPercentage
-                keysWithData++
-              }
-            }
-          })
-
-          if (keysWithData > 0) {
-            taskPercentage = keyPercentages / keysWithData
-            tasksWithData++
-          }
+      case TaskType.INCREMENTAL: {
+        const date = parseLocalDate(dateKey) ?? new Date()
+        const pct = incrementalDayPercentage(task, completion, weeklyData, date)
+        if (pct !== null) {
+          taskPercentage = pct
+          tasksWithData++
         }
         break
+      }
     }
 
     totalTaskPercentage += taskPercentage
@@ -261,4 +243,130 @@ export const calculateDayPercentageAV = (
 
   const finalPercentage = tasksWithData > 0 ? totalTaskPercentage / numTasks : 0
   return finalPercentage
+}
+
+/** Days of `weekDates` that have started as of `asOf` (inclusive, local dates). */
+export function weekToDateDays(weekDates: Date[], asOf: Date): Date[] {
+  const asOfKey = formatLocalDateKey(asOf)
+  return weekDates.filter((date) => formatLocalDateKey(date) <= asOfKey)
+}
+
+/**
+ * Running week grade: mean of each elapsed day's overall habit %.
+ * Optional `tolerance`: raw day % that counts as 100 after a daily curve
+ * (`curved = raw + (100 − tolerance)`). Default 100 = no curve.
+ */
+export const DEFAULT_GRADE_TOLERANCE = 100
+
+export function clampGradeTolerance(tolerance: number): number {
+  if (!Number.isFinite(tolerance)) return DEFAULT_GRADE_TOLERANCE
+  return Math.min(100, Math.max(1, Math.round(tolerance)))
+}
+
+/** Day score after the curve: 80% tolerance → +20, so 70 raw → 90. Zero stays zero. */
+export function curveDayPercentage(raw: number, tolerance: number): number {
+  if (!Number.isFinite(raw) || raw <= 0) return 0
+  return raw + (100 - clampGradeTolerance(tolerance))
+}
+
+export interface WeekGradeDay {
+  date: Date
+  dateKey: string
+  raw: number
+  curved: number
+}
+
+export interface WeekGradeResult {
+  grade: number
+  rawGrade: number
+  daysIncluded: number
+  days: WeekGradeDay[]
+  tolerance: number
+  curveBonus: number
+}
+
+export function calculateWeekToDateGrade(
+  tasks: Task[],
+  weeklyData: WeeklyData,
+  weekDates: Date[],
+  asOf: Date,
+  tolerance: number = DEFAULT_GRADE_TOLERANCE,
+): WeekGradeResult {
+  const t = clampGradeTolerance(tolerance)
+  const curveBonus = 100 - t
+  const included = weekToDateDays(weekDates, asOf)
+  if (included.length === 0) {
+    return { grade: 0, rawGrade: 0, daysIncluded: 0, days: [], tolerance: t, curveBonus }
+  }
+
+  const days: WeekGradeDay[] = included.map((date) => {
+    const index = weekDates.findIndex((d) => formatLocalDateKey(d) === formatLocalDateKey(date))
+    const dateKey = formatLocalDateKey(date)
+    const raw = calculateDayPercentageAV(dateKey, tasks, weeklyData, index)
+    return { date, dateKey, raw, curved: curveDayPercentage(raw, t) }
+  })
+
+  const n = days.length
+  const rawSum = days.reduce((acc, d) => acc + d.raw, 0)
+  const curvedSum = days.reduce((acc, d) => acc + d.curved, 0)
+  return {
+    grade: curvedSum / n,
+    rawGrade: rawSum / n,
+    daysIncluded: n,
+    days,
+    tolerance: t,
+    curveBonus,
+  }
+}
+
+export interface OutputGradeHabit {
+  taskId: string
+  name: string
+  raw: number
+  curved: number
+}
+
+export interface OutputGradeResult {
+  grade: number
+  rawGrade: number
+  daysIncluded: number
+  habits: OutputGradeHabit[]
+  tolerance: number
+  curveBonus: number
+}
+
+/**
+ * Perfect Output: mean of each daily habit's week-to-date row % (paced to
+ * elapsed days). Same daily curve as Week grade, with its own tolerance.
+ */
+export function calculateWeekToDateOutputGrade(
+  tasks: Task[],
+  weeklyData: WeeklyData,
+  weekDates: Date[],
+  asOf: Date,
+  tolerance: number = DEFAULT_GRADE_TOLERANCE,
+): OutputGradeResult {
+  const t = clampGradeTolerance(tolerance)
+  const curveBonus = 100 - t
+  const elapsed = weekToDateDays(weekDates, asOf)
+  if (elapsed.length === 0 || tasks.length === 0) {
+    return { grade: 0, rawGrade: 0, daysIncluded: elapsed.length, habits: [], tolerance: t, curveBonus }
+  }
+
+  const habits: OutputGradeHabit[] = tasks.map((task) => {
+    const raw = calculateElapsedTaskPercentage(task, weeklyData, elapsed)
+    return { taskId: task.id, name: task.name, raw, curved: curveDayPercentage(raw, t) }
+  })
+
+  const n = habits.length
+  const rawSum = habits.reduce((acc, h) => acc + h.raw, 0)
+  const curvedSum = habits.reduce((acc, h) => acc + h.curved, 0)
+  return {
+    grade: curvedSum / n,
+    rawGrade: rawSum / n,
+    daysIncluded: elapsed.length,
+    habits,
+    tolerance: t,
+    curveBonus,
+  }
 }

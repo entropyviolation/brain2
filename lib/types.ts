@@ -41,8 +41,26 @@
 import type { ModuleView, ModuleInstance } from "@/lib/modules-store"
 
 /** Built-in item types. User-defined types are arbitrary ids (kept open). */
-export type BuiltinItemType = "task" | "habit" | "event" | "goal" | "note"
+export type BuiltinItemType = "task" | "item" | "action" | "habit" | "event" | "goal" | "note"
 export type ItemType = BuiltinItemType | (string & {})
+
+/**
+ * How a seeded type is treated by the registry.
+ * - `system` — re-seeded from code on load; capabilities/panels locked (Task, Note, Operation, Item).
+ * - `catalog` — seeded once if missing; user edits persist (Book, Furniture, …).
+ * User-created types omit `kind`.
+ */
+export type ItemTypeKind = "system" | "catalog"
+
+/** How the item-detail surface lays out type-owned fields (hero cover, featured attrs). */
+export interface ItemDetailLayout {
+  /** Attribute id of an `image` shown as a large cover/photo. */
+  heroImageAttrId?: string
+  /** Attribute ids rendered as prominent editors above the rest of the schema. */
+  featuredAttributeIds?: string[]
+  /** Optional titled groups of attributes on the details panel. */
+  sections?: { title?: string; attributeIds: string[] }[]
+}
 
 /**
  * Stance a (typically source→belief) link expresses, on a five-level spectrum
@@ -107,6 +125,12 @@ export type ItemRuleOperator =
   | "contains"
   | "exists"
   | "empty"
+  /** True when the field's value differs from the previous snapshot (update trigger). */
+  | "changed"
+  /** True when a numeric field increased vs the previous snapshot. */
+  | "increased"
+  /** True when a numeric field decreased vs the previous snapshot. */
+  | "decreased"
 
 /**
  * A condition over an item's attribute (by id) or a built-in field name.
@@ -130,6 +154,16 @@ export type ItemRuleAction =
   | { kind: "setAttribute"; field: string; value: AttributeValue }
   | { kind: "addTag"; tag: string }
   | { kind: "addToNextActions" }
+  /**
+   * Log a completed activity into Done (Home / To-Do day view). Title templates
+   * may use `{title}`, `{delta}`, `{value}`, and `{attrId}` placeholders.
+   */
+  | { kind: "logAction"; titleTemplate: string; awardPoints?: boolean }
+  /**
+   * Add to a daily habit's progress. `amount: "delta"` uses the numeric increase
+   * of the `when` field; a number is an absolute increment.
+   */
+  | { kind: "incrementHabit"; habitId: string; amount: "delta" | number }
 
 /** A declarative rule: optionally gated by `when`, runs an `action` on `trigger`. */
 export interface ItemTypeRule {
@@ -164,6 +198,8 @@ export interface ItemTypeDefinition {
   color?: string
   /** Built-in types ship with the app and cannot be deleted. */
   builtin?: boolean
+  /** System types are re-seeded and locked; catalog types are seeded then user-editable. */
+  kind?: ItemTypeKind
   /** When set, this type inherits attributes, defaults, capabilities, and rules from the parent. */
   parentTypeId?: ItemType
   /** Attribute schema for items of this type (composes with category attrs). */
@@ -174,6 +210,8 @@ export interface ItemTypeDefinition {
   displayedAttributes?: string[]
   /** Tabs shown in the item-detail view for items of this type. */
   detailPanels?: ItemDetailPanel[]
+  /** Cover image, featured fields, and attribute sections for the details panel. */
+  detailLayout?: ItemDetailLayout
   /** Behavioral capability flags this type enables. */
   capabilities?: ItemTypeCapabilities
   /** Declarative validation/automation rules. */
@@ -182,7 +220,7 @@ export interface ItemTypeDefinition {
 
 export interface Item {
   id: string
-  /** Type discriminator. Defaults to "task" during migration. */
+  /** Type discriminator. Defaults to "task" for migrated records; new list items use "item". */
   type?: ItemType
   /** Canonical display label. Mirrors `Task.description` during transition. */
   title?: string
@@ -284,6 +322,11 @@ export interface Task extends Item {
   monthsPushed?: number
   /** Hide from To-Do lists without marking complete. */
   hiddenFromTodo?: boolean
+  /**
+   * True when this record is a generated implied-action (e.g. "read 12 pages of Dune").
+   * Counts toward Done / points / goals without being a user-authored Task.
+   */
+  loggedAction?: boolean
   notes?: string // Additional notes
   parentTaskId?: string // For subtasks
   subtasks?: Subtask[] // Array of subtask objects
@@ -519,6 +562,36 @@ export interface Category {
   color: string
 }
 
+/**
+ * Climb (incremental) habit config.
+ *
+ * `cadence: "weekly"` — like a goal habit whose target rises on Monday only if
+ * the previous week had ≥4 days at/above that week's target.
+ * `cadence: "daily"` — log a running score; each day's target is last logged
+ * score + `increment`. A lower log still updates the next day's base.
+ *
+ * Legacy multi-key `currentValues` / `weeklyIncrement` maps are still accepted
+ * and migrated in `lib/incremental-habits.ts`.
+ */
+export type IncrementalCadence = "daily" | "weekly"
+
+export interface IncrementalHabitData {
+  cadence: IncrementalCadence
+  startValue: number
+  increment: number
+  unit?: string
+  /** Local YYYY-MM-DD; week-0 Monday is derived from this (weekly cadence). */
+  startedOn?: string
+}
+
+/** Pre-cadence multi-metric map still found in persisted stores. */
+export interface IncrementalHabitLegacy {
+  currentValues?: Record<string, number>
+  weeklyIncrement?: Record<string, number>
+}
+
+export type IncrementalHabitPersisted = IncrementalHabitData | IncrementalHabitLegacy
+
 export interface WeeklyTask {
   id: string
   name: string
@@ -528,10 +601,7 @@ export interface WeeklyTask {
   categoryId?: string // deprecated — kept for data compat
   rewardValue?: number
   frequency?: HabitFrequency // default daily
-  incrementalData?: {
-    currentValues: Record<string, number>
-    weeklyIncrement: Record<string, number>
-  }
+  incrementalData?: IncrementalHabitPersisted
 }
 
 export interface TaskCompletion {
@@ -619,8 +689,10 @@ export interface List {
   rules?: ItemTypeRule[]
   /** Singular label for items in this list (e.g. book, habit). Next Actions defaults to "task". */
   itemLabel?: string
-  /** Tabs shown in item detail view for items in this list. */
+  /** Tabs shown in item detail view for items in this list (unioned with the type's panels). */
   detailPanels?: ItemDetailPanel[]
+  /** Panels to hide even if the item type (or another list) would show them. */
+  hiddenDetailPanels?: ItemDetailPanel[]
 }
 
 export type ItemDetailPanel =

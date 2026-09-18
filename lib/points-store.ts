@@ -3,7 +3,8 @@
  *
  * Zustand store for the gamification layer: an append-only `PointsEntry[]` ledger
  * (date, taskId, points, description) persisted to localStorage under
- * `points-store`. Provides total/day/week/month sums of earned points and
+ * `points-store`. Habit day scores use `upsertPoints` (replace by taskId+date)
+ * so partial completion can be revised. Dates are local `YYYY-MM-DD`.
  * "possible points" projections from not-yet-completed scheduled tasks (used by
  * the Home dashboard's Points Stats).
  *
@@ -17,7 +18,7 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
-import { formatDateKey } from "./date-utils"
+import { formatLocalDateKey, parseLocalDate } from "./date-utils"
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns"
 
 interface PointsEntry {
@@ -30,6 +31,7 @@ interface PointsEntry {
 interface PointsStore {
   pointsHistory: PointsEntry[]
   addPoints: (taskId: string, points: number, taskDescription: string, date?: Date) => void
+  upsertPoints: (taskId: string, points: number, taskDescription: string, date?: Date) => void
   getTotalPoints: () => number
   getDayPoints: (date: Date) => number
   getWeekPoints: (date: Date) => number
@@ -46,7 +48,7 @@ export const usePointsStore = create<PointsStore>()(
 
       addPoints: (taskId: string, points: number, taskDescription: string, date = new Date()) => {
         const entry: PointsEntry = {
-          date: formatDateKey(date),
+          date: formatLocalDateKey(date),
           taskId,
           points,
           taskDescription,
@@ -57,12 +59,26 @@ export const usePointsStore = create<PointsStore>()(
         }))
       },
 
+      upsertPoints: (taskId: string, points: number, taskDescription: string, date = new Date()) => {
+        const dateKey = formatLocalDateKey(date)
+        set((state) => {
+          const rest = state.pointsHistory.filter((e) => !(e.taskId === taskId && e.date === dateKey))
+          if (!Number.isFinite(points) || points === 0) return { pointsHistory: rest }
+          return {
+            pointsHistory: [
+              ...rest,
+              { date: dateKey, taskId, points, taskDescription },
+            ],
+          }
+        })
+      },
+
       getTotalPoints: () => {
         return get().pointsHistory.reduce((total, entry) => total + entry.points, 0)
       },
 
       getDayPoints: (date: Date) => {
-        const dateKey = formatDateKey(date)
+        const dateKey = formatLocalDateKey(date)
         return get()
           .pointsHistory.filter((entry) => entry.date === dateKey)
           .reduce((total, entry) => total + entry.points, 0)
@@ -74,7 +90,8 @@ export const usePointsStore = create<PointsStore>()(
 
         return get()
           .pointsHistory.filter((entry) => {
-            const entryDate = new Date(entry.date)
+            const entryDate = parseLocalDate(entry.date)
+            if (!entryDate) return false
             return entryDate >= weekStart && entryDate <= weekEnd
           })
           .reduce((total, entry) => total + entry.points, 0)
@@ -86,17 +103,18 @@ export const usePointsStore = create<PointsStore>()(
 
         return get()
           .pointsHistory.filter((entry) => {
-            const entryDate = new Date(entry.date)
+            const entryDate = parseLocalDate(entry.date)
+            if (!entryDate) return false
             return entryDate >= monthStart && entryDate <= monthEnd
           })
           .reduce((total, entry) => total + entry.points, 0)
       },
 
       getPossibleDayPoints: (date: Date, tasks: any[]) => {
-        const dateKey = formatDateKey(date)
+        const dateKey = formatLocalDateKey(date)
         return tasks
           .filter(
-            (task) => !task.completed && task.scheduledDate && formatDateKey(new Date(task.scheduledDate)) === dateKey,
+            (task) => !task.completed && task.scheduledDate && formatLocalDateKey(new Date(task.scheduledDate)) === dateKey,
           )
           .reduce((total, task) => total + (task.rewardValue || 0), 0)
       },

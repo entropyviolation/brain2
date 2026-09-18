@@ -25,6 +25,9 @@ describe("TaskGrid", () => {
     )
     expect(screen.getByText("Drink water")).toBeInTheDocument()
     expect(screen.getByText("Daily Completion")).toBeInTheDocument()
+    expect(screen.getByText("Sun")).toBeInTheDocument()
+    expect(screen.queryByText("Sun 6/21")).not.toBeInTheDocument()
+    expect(screen.getByRole("columnheader", { name: "%" })).toBeInTheDocument()
   })
 
   it("calls onUpdateTaskCompletion when a boolean habit is toggled", async () => {

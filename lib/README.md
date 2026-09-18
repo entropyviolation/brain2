@@ -22,13 +22,13 @@ calculation/date/sync utilities.
 |------|------------------|---------|------|
 | `task-store.ts` | `cogs-task-storage` | Tasks, categories, folders — the Inbox / Lists / Scheduler source of truth. Date-aware serialization, versioned migrations. | §4, §5, §6, §7 |
 | `event-store.ts` | `cogs-event-storage` | Calendar `CalendarEvent`s. Seeded with demo events. | §7.5 |
-| `habits-store.ts` | `cogs-habits-store` | Habit definitions (`WeeklyTask`), per-day completion data (`WeeklyData`), habit categories. Shared by Home Habits and Lists Daily Habits. One-time import from legacy `weekly-habits-*` keys. | §9 |
+| `habits-store.ts` | `cogs-habits-store` | Habit definitions (`WeeklyTask`), per-day completion data (`WeeklyData`), habit categories, **gradeTolerance** / **outputGradeTolerance**. Persist **v5**. Daily completions upsert 50×ratio points + raw-day and grade bonuses (`lib/habit-points.ts`). Climb migrate v3. Done log. | §9 |
 | `goals-store.ts` | `cogs-goals-store` | All-time **Objectives** (prioritizable per period with custom point multipliers; written period reviews) + quantifiable **Goals** that serve them. Seeds 26 default objectives + example goals (persist v3). Exports the multiplier helpers `objectiveMultiplierFor`/`taskObjectiveMultiplier` + `DEFAULT_OBJECTIVE_MULTIPLIER` (1.5×). | §10 |
-| `points-store.ts` | `points-store` | Points ledger (`PointsEntry[]`), day/week/month totals, possible-points projections. | §14 |
+| `points-store.ts` | `points-store` | Points ledger (`PointsEntry[]`), `addPoints` / `upsertPoints`, day/week/month totals, possible-points projections. Local `YYYY-MM-DD` keys. | §14 |
 | `time-tracking-store.ts` | `cogs-timegrid-store` | TimeGrid scopes, pens, and logged intervals (Activity / Location / Mood). | §12 |
 | `reviews-store.ts` | `cogs-reviews-store` | Period reviews (day/week/month/quarter/year) plus helpers for period keys, previous/next period, and carry-over prompts. | §13 |
 | `modules-store.ts` | `cogs-modules-store` | User-composed Modules: dashboard **widgets** (`{ id, type, title, config }`) and full-screen **workspaces** (`kind: "workspace"` + bound `views[]`, `planSync`, `enablePrint`). | §8 |
-| `item-type-store.ts` | `cogs-item-types-store` | Registry of **item types** (`ItemTypeDefinition`): built-in `task` plus user-defined types (Book, Friend, …). Built-ins re-seeded on load and undeletable. | §5 |
+| `item-type-store.ts` | `cogs-item-types-store` | Registry of **item types**. System types (Task, Item, Note, Operation) are always re-seeded from code. Catalog types (Book, Furniture, Resource, Shopping, Flight) are seeded once; user edits persist (`mergeTypeRegistry`). | §5 |
 | `lists-ui-store.ts` | `cogs-lists-ui` | Lists UI prefs: folder view mode, icon positions, orb gallery (hidden orbs, edit mode), auto-organize grid, uncategorized filter on All Items. | §6 |
 | `metrics-store.ts` | `cogs-metrics-store` | Custom self-tracking metrics: `MetricDefinition`s (name, unit, `MetricKind`, target/bounds, color) + dated `MetricEntry` readings. Types are local (not in `types.ts`) so the feature stays self-contained. Backs Metrics analytics + `MetricLogger`. | §137/§138/§275 |
 | `regret-store.ts` | `regret-store` | Append-only `RegretEntry[]` ledger mirroring `points-store` for the *opposite* signal — the accruing cost of not doing important/overdue items. Pure accrual math (`regretCost`/`dailyRegretIncrement`/`projectedRegret`) is exported; daily accrual is idempotent per task per day. | §14 |
@@ -40,10 +40,19 @@ calculation/date/sync utilities.
 | File | Purpose | Spec |
 |------|---------|------|
 | `types.ts` | Shared interfaces/enums: `Task`, `TodoItem`, `CalendarEvent`, `TaskCategory`, `CategoryFolder`, habits (`WeeklyTask`/`TaskType`/`WeeklyData`), scheduling, reviews, modules, attributes. Convergence target for the unified Item model (§5). | §5 |
-| `calculations.ts` | Habit completion math: `calculateTaskPercentage`, `calculateDayPercentage`, `calculateDayPercentageAV` for all five habit types. | §9 |
+| `calculations.ts` | Habit completion math: day/week %, `calculateWeekToDateGrade` / `calculateWeekToDateOutputGrade` (0% is never curved up). Climb uses `incremental-habits.ts`. | §9 |
+| `habit-points.ts` | Daily habit points: 50 × day completion ratio; +50 if raw day score is above 80%; per-day grade bonus 100 (either 75%+) / 300 (both). | §9, §14 |
+| `incremental-habits.ts` | Daily vs weekly climb: 4-day weekly bump; daily last-log + increment (drops count); persist-v3 split. | §9 |
+| `habit-done-log.ts` | When a habit first meets its goal, add a `loggedAction` Done row (`habit-done-{id}-{date}`); remove it if unmarked. | §9 |
+| `habit-week-streaks.ts` | Consecutive weeks where a daily habit was done on ≥4 days (on-grid chips). | §9 |
 | `date-utils.ts` | App-wide date helpers: `formatDateKey`, `formatLocalDateKey`, week/month/year keys, `getWeekStartDate`, `getWeekString`/`parseWeekString`, range formatting, `isToday`, safe date guards. | §7, §9 |
-| `item-utils.ts` | Task/list helpers: schedule-level predicates, `createListItem` / `createNextActionItem`, attribute seeding, `resolveCompletionPoints` (default 1 or list **Points** attribute), singular labels, push-forward. | §5, §6, §7 |
-| `item-types.ts` | Item-type helpers: built-in `task` definition, `getItemType`, `resolveAttributes`/`resolveDefaultValues` (compose type + category schemas), and serializable rule evaluation (`evaluateCondition`, `applyRulesFor`, `validateItem`). | §5 |
+| `item-utils.ts` | Task/list helpers: `isTaskItem` (Next Actions **or** explicit `type === "task"`; missing type is not a task), `createListItem` (default type `"item"`), `createNextActionItem` (`type: "task"`), `countsInDone`, attribute seeding, `resolveCompletionPoints`. | §5, §6, §7 |
+| `item-types.ts` | Item-type helpers: system `item` + `task`, `getItemType` (falls back to `item`), `resolveDetailView`, `mergeTypeRegistry`, schema composition, rule evaluation (`increased`/`decreased`/`changed`, `logAction`/`incrementHabit` effects). | §5 |
+| `implied-actions.ts` | Execute type/list implied-action effects after an item update: log a completed Done-day action (`loggedAction`) and increment a habit. Title templates `{title}` `{delta}` `{attrId}`. | §5, §9 |
+| `item-type-recipes.ts` | Optional starter schemas + implied-action hint copy for the type editor (Book, Furniture, Resource, Shopping, Progress → Done). | §5 |
+| `catalog-types.ts` | Catalog seeds: Furniture, Resource, Shopping item. | §5 |
+| `book-types.ts` | Catalog **Book** (cover, pages read, implied-action rules for Done + the default pages/day habit). | §5 |
+| `flight-types.ts` | Catalog **Flight** (airline, airports, times, layovers, booked flag). | §5 |
 | `migrations.ts` | Versioned data migrations for the unified Item model — backfills `type`/`title`/`tags`/`links` onto persisted tasks (does not touch `category`/`categories`). | §5 |
 | `completion-status.ts` | Keeps the legacy boolean `completed` and the richer `CompletionStatus` (active/partial/deferred/cancelled/done) in sync via the single invariant `done ⇔ completed`. Pure `withStatus`/`withCompleted` + status labels; callers persist through `updateTask`. | §6 |
 | `completion-events.ts` | Tiny pub/sub completion event bus (`onTaskCompleted`/`emitTaskCompleted`). `task-store.updateTask` emits on every false→true completion so the global completion popup (`components/Completion/`) appears each and every time a task is done. | §6 |
@@ -74,6 +83,21 @@ relations). No store/React imports.
 | `note-types.ts` | Declares the `note` (rich-text document) `ItemTypeDefinition` + `withNoteType` seed helper. Notes aren't actionable but participate in tags/links/lists; Docs tab uses HTML `Item.body` plus `docsFolder` / `docsFontFamily` / status attributes; ItemDetail `"body"` panel still supports markdown notes. | §184/§84 |
 | `belief-strength.ts` | Pure derived **belief strength** (0–1, 0.5 = balanced) combining each evidence link's `stance` with its source's `trust`, weighted by total evidence mass. Backs the belief calibration view. Unit-tested. | §10 |
 | `event-links.ts` | Pure event-prerequisite checklist helpers: link a `CalendarEvent` to its `checklist-of` tasks and derive each task's `schedulingConstraints.mustBeDoneBefore` from the event's start. Unit-tested. | §7.5 |
+
+### Operations helpers
+
+An **Operation** is a `Task` with `type: "operation"` — a flexible container of
+work (trip, paid job, computer-work push, house project). Two attributes decide
+what an individual operation is: `categories` (free-form, many per operation) and
+`panels` (which prebuilt panels its workspace shows). See
+[`components/Operations/README.md`](../components/Operations/README.md).
+
+| File | Purpose | Spec |
+|------|---------|------|
+| `operation-types.ts` | The `operation` `ItemTypeDefinition` (mission, stage, **categories**, target date, home notes) plus the configuration model: the `OPERATION_PANELS` registry (home/tasks/phases/timeline/locations/plan/resources/log + the queue rail), `OPERATION_PRESETS` (Standard/Blank/Trip/Project/Paid job), panel normalizers with the `activities`→`locations` / `itinerary`→`timeline` renames, and category normalizers. `withOperationType()` seeds the registry. Unit-tested (`operation-model.test.ts`). | §5 |
+| `operations.ts` | Pure operation helpers: hours rollup over `timeLogs`, relation resolution in both link directions (`has-phase`/`has-part`/`has-resource`), phase completion + overall progress, work/neglect heatmap, `selectToDoNext` ranking, and the home board's `selectOperations`/`collectOperationCategories`/`groupOperationsByCategory`/`filterOperationsByCategory`/`sortOperations`. Unit-tested. | §5 |
+| `operation-lists.ts` | Operations ↔ Lists bridge: one real `List` per operation (`op-list-{id}`) filed in an **Operations** folder, backing the workspace's Tasks panel so operation work is ordinary items (item types, attributes, search, All Items). Lazily created, renamed with the operation. | §5, §6 |
+| `operation-itinerary.ts` | Backing workspace module for the optional **Timeline** / **Locations** / **Plan** panels (day grid, places map, plan doc). Created only the first time one of those panels is opened. Unit-tested. | §8 |
 
 ### Planning, objectives & analytics helpers (Brain2)
 
@@ -113,13 +137,16 @@ Zod validates writes/imports at the boundary.
 | `services/completion-service.ts` | `completeTask`/`uncompleteTask`/`toggleCompletion` — completion semantics incl. repeated-"count" tasks and actual-duration capture (points still awarded in the store). | §6 |
 | `services/scheduling-service.ts` | `scheduleTask`/`scheduleTaskToTime`/`clearScheduledTime`/`unscheduleTask`/`pushTask` — scheduling workflows delegating to `scheduling.ts` + `item-utils.ts`. | §7 |
 | `services/review-service.ts` | `savePeriodReview`/`getPeriodReview`/`upsertPeriodReview` — period-review persistence over `useReviewsStore` (stable id `${period}:${key}`). | §6 |
+| `workflow-hooks.ts` | Dependency-free mutation seam: `dispatchItemMutation`, `addItemMutationListener`. `task-store` fires create/update/complete. | §5 / §8 |
+| `workflow-engine.ts` | Module workflow evaluation (`dispatchWorkflows`) with a re-entrancy cap. | §8 |
+| `services/item-mutation-service.ts` | `initWorkflowEngine` on client mount: wires workflows **and** implied-action effects (`logAction` / `incrementHabit` via `implied-actions.ts`). Idempotent; skips `loggedAction` re-entry. | §5 / §8 |
 | `data/backup.ts` | Full app backup/restore: snapshots every persisted store + free-text plans into one JSON file (`createBackup`/`downloadBackup`) and restores them (`restoreBackup`, rehydrates live stores). | §3.2 |
 | `data/data-source.ts` | Phase 10/11 **groundwork** (not yet wired): the transport-agnostic, Promise-returning `DataSource` interface covering every persisted entity (tasks/categories/folders/reviews/points/plans) plus `transaction()` and `DataSourceError`. The seam for the future out-of-process backend. | §3 |
 | `data/sources/local-data-source.ts` | **Groundwork.** `DataSource` impl backed by today's sync stores + `taskRepository` (each method wraps the sync result in a resolved Promise). Additive default/offline impl; `transaction()` runs inline (non-atomic). | §3 |
 | `data/sources/ipc-data-source.ts` | **Groundwork.** Renderer-side `DataSource` skeleton that validates inputs (Zod) then forwards each op to the Electron main process over a typed `window.cogs` bridge; inert until channels are wired (throws `"not wired"`). See `electron/ipc/README.md`. | §3 |
 | `data/mongo/collections.ts` | **Groundwork (driver-agnostic).** Planned MongoDB collection names, document shapes (app `id` → `_id`), and index plan as plain TS types/constants — no `mongodb` import. See `data/mongo/README.md`. | §3 |
 | `data/mongo/mongo-data-source.ts` | **Groundwork (driver-agnostic).** Main-process `DataSource` skeleton for MongoDB; methods throw `"not implemented"` with `TODO(phase-11)` notes. Driver injected later via constructor; shapes/indexes in `./collections.ts`. | §3 |
-| `habit-utils.ts` | Habit type normalization (`GOAL`/`TIME`/`COUNT` aliases), completion helpers. | §9 |
+| `habit-utils.ts` | Habit type normalization (`GOAL`/`TIME`/`COUNT` aliases), `isHabitGoalMet` (optional date + `weeklyData` so climb targets resolve). | §9 |
 | `attribute-utils.ts` | Legacy attribute type normalization and value coercion; run from `task-store` migrate on load. | §5 |
 | `module-templates.ts` | Pre-built workspace **module templates** (Itinerary, House Cleaning/Tidy, Budget, Book Tasting, Film DNA Lab, Blank): `buildModuleTemplate` (pure — lists + attribute schemas + seed items + views) and `instantiateModuleTemplate` (commits to stores). Itinerary v2 seeds Plan (`doc`), Itinerary (`itinerary-doc`), Activities (`trip-map`), plus City Places; Film DNA Lab seeds the `film-dna` view + Films list; House Cleaning App seeds a self-contained `house-cleaning` (Tidy) view. Unit-tested. | §8 |
 | `module-plan-sync.ts` | `syncModuleToPlan` — pushes a workspace's finalized, dated items into the day Plan text (`plan-text.ts`). | §7, §8 |

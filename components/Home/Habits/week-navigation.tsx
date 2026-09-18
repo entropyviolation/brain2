@@ -28,33 +28,33 @@ export function WeekNavigation({
   onCurrentWeek,
 }: WeekNavigationProps) {
   return (
-    <div className="flex items-center gap-3 bg-white dark:bg-gray-900 p-3 rounded-full shadow-sm border border-gray-100 dark:border-gray-800">
+    <div className="flex items-center gap-1 bg-white dark:bg-gray-900 p-1 rounded-full shadow-sm border border-gray-100 dark:border-gray-800">
       <Button
         variant="ghost"
         size="icon"
         onClick={onPreviousWeek}
-        className="h-9 w-9 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+        className="h-7 w-7 rounded-full"
       >
-        <ChevronLeft className="h-5 w-5" />
+        <ChevronLeft className="h-4 w-4" />
         <span className="sr-only">Previous Week</span>
       </Button>
 
       <Button
         variant="outline"
         onClick={onCurrentWeek}
-        className="h-9 px-4 text-xs rounded-full border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800"
+        className="h-7 px-2.5 text-xs rounded-full"
       >
-        <Calendar className="h-3.5 w-3.5 mr-2" />
+        <Calendar className="h-3 w-3 mr-1" />
         Today
       </Button>
 
-      <span className="px-3 font-medium text-sm">{formatDateRange(currentWeekStart, weekEndDate)}</span>
+      <span className="px-2 font-medium text-xs whitespace-nowrap">{formatDateRange(currentWeekStart, weekEndDate)}</span>
 
       <Button
         variant="ghost"
         size="icon"
         onClick={onNextWeek}
-        className="h-9 w-9 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+        className="h-7 w-7 rounded-full"
       >
         <ChevronRight className="h-5 w-5" />
         <span className="sr-only">Next Week</span>

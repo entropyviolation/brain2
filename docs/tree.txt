@@ -9,6 +9,8 @@
 │   │   ├── layout.tsx
 │   │   └── page.tsx
 │   ├── page.tsx
+│   ├── popout
+│   │   └── page.tsx
 │   └── win95.css
 ├── capacitor.config.ts
 ├── components
@@ -24,10 +26,12 @@
 │   │   ├── enhanced-analytics.test.tsx
 │   │   └── enhanced-analytics.tsx
 │   ├── Completion
+│   │   ├── CompletionDialog.test.tsx
 │   │   ├── CompletionDialog.tsx
 │   │   ├── CompletionPopupHost.tsx
 │   │   └── README.md
 │   ├── Docs
+│   │   ├── DocsHome.tsx
 │   │   ├── DocsPanel.tsx
 │   │   ├── DocumentEditor.tsx
 │   │   ├── LinkDialog.tsx
@@ -60,8 +64,12 @@
 │   │   │   ├── daily-task-form-dialog.tsx
 │   │   │   ├── daily-task-form.test.tsx
 │   │   │   ├── daily-task-form.tsx
+│   │   │   ├── grade-breakdown-dialog.tsx
+│   │   │   ├── habit-form-dialog.css
+│   │   │   ├── habit-grid.css
 │   │   │   ├── habit-tracker.test.tsx
 │   │   │   ├── habit-tracker.tsx
+│   │   │   ├── output-grade-breakdown-dialog.tsx
 │   │   │   ├── period-habit-list.test.tsx
 │   │   │   ├── period-habit-list.tsx
 │   │   │   ├── settings-dialog.test.tsx
@@ -138,6 +146,7 @@
 │   │   ├── LinkPicker.tsx
 │   │   ├── README.md
 │   │   ├── RelatedItemsPanel.tsx
+│   │   ├── SubtaskComposer.tsx
 │   │   ├── TagInput.tsx
 │   │   ├── item-attributes.test.tsx
 │   │   └── useItemDetailDraft.ts
@@ -188,7 +197,8 @@
 │   │   │   ├── __tests__
 │   │   │   │   ├── useListsNavigation.test.ts
 │   │   │   │   ├── useListsSearch.test.ts
-│   │   │   │   └── useListsSelection.test.ts
+│   │   │   │   ├── useListsSelection.test.ts
+│   │   │   │   └── useListsTaskActions.test.ts
 │   │   │   ├── useListsDragDrop.ts
 │   │   │   ├── useListsNavigation.ts
 │   │   │   ├── useListsSearch.ts
@@ -197,6 +207,7 @@
 │   │   ├── lib
 │   │   │   └── icon-utils.tsx
 │   │   ├── list-content
+│   │   │   ├── AllViewCheckboxFilter.tsx
 │   │   │   ├── ListContentChecklist.tsx
 │   │   │   ├── ListContentDefault.tsx
 │   │   │   ├── ListContentDetails.tsx
@@ -279,20 +290,27 @@
 │   │       │   ├── itinerary-document.css
 │   │       │   ├── trip-activities.css
 │   │       │   └── trip-checklists.css
+│   │       ├── module-popout.test.ts
+│   │       ├── module-popout.ts
 │   │       └── module-view-bodies.tsx
 │   ├── Operations
 │   │   ├── OperationFieldPlanPanels.tsx
 │   │   ├── OperationHome.tsx
 │   │   ├── OperationLogFeed.tsx
 │   │   ├── OperationPostMortemDialog.tsx
+│   │   ├── OperationSettingsDialog.tsx
+│   │   ├── OperationTasksPanel.tsx
+│   │   ├── OperationWorkspace.test.tsx
 │   │   ├── OperationWorkspace.tsx
+│   │   ├── OperationsView.test.tsx
 │   │   ├── OperationsView.tsx
 │   │   ├── PhasesPanel.tsx
 │   │   ├── README.md
 │   │   ├── ResourcesPanel.tsx
 │   │   ├── ToDoNextRail.tsx
 │   │   ├── index.ts
-│   │   └── operation-actions.ts
+│   │   ├── operation-actions.ts
+│   │   └── operations-chrome.css
 │   ├── PersistStatusBanner.test.tsx
 │   ├── PersistStatusBanner.tsx
 │   ├── README.md
@@ -334,6 +352,7 @@
 │   │   └── SettingsDialog.tsx
 │   ├── Tracking
 │   │   └── MetricLogger.tsx
+│   ├── capture-shorthand.tsx
 │   ├── cognitive-state.test.tsx
 │   ├── cognitive-state.tsx
 │   ├── enhanced-bulk-add.test.tsx
@@ -362,6 +381,8 @@
 │       ├── dialog.tsx
 │       ├── dropdown-menu.tsx
 │       ├── input.tsx
+│       ├── isolated-text-field.test.tsx
+│       ├── isolated-text-field.tsx
 │       ├── label.tsx
 │       ├── progress.tsx
 │       ├── select.tsx
@@ -384,6 +405,7 @@
 ├── docs
 │   ├── BRAIN2_FEATURE_IDEAS.md
 │   ├── CANONICAL_FIELDS.md
+│   ├── DESIGN_STYLE.md
 │   ├── README.md
 │   ├── SPEC_MAPPING.md
 │   ├── screenshots
@@ -491,6 +513,7 @@
 │   ├── tree.md
 │   └── tree.txt
 ├── e2e
+│   ├── item-types-detail.spec.ts
 │   └── lists.spec.ts
 ├── electron
 │   ├── README.md
@@ -699,9 +722,14 @@
 │   ├── book-match.ts
 │   ├── book-types.test.ts
 │   ├── book-types.ts
+│   ├── calculations.test.ts
 │   ├── calculations.ts
 │   ├── calibration.test.ts
 │   ├── calibration.ts
+│   ├── capture-target.test.ts
+│   ├── capture-target.ts
+│   ├── catalog-types.test.ts
+│   ├── catalog-types.ts
 │   ├── city-search.ts
 │   ├── completion-events.ts
 │   ├── completion-status.test.ts
@@ -732,10 +760,15 @@
 │   ├── daylight.test.ts
 │   ├── decision-matrix.test.ts
 │   ├── decision-matrix.ts
+│   ├── doc-export.test.ts
+│   ├── doc-export.ts
 │   ├── doc-html.test.ts
 │   ├── doc-html.ts
+│   ├── doc-hydrate.ts
 │   ├── doc-links.test.ts
 │   ├── doc-links.ts
+│   ├── doc-persist.test.ts
+│   ├── doc-persist.ts
 │   ├── event-links.test.ts
 │   ├── event-links.ts
 │   ├── event-store.dates.test.ts
@@ -766,16 +799,28 @@
 │   ├── google-fonts.ts
 │   ├── graph-layout.test.ts
 │   ├── graph-layout.ts
+│   ├── habit-done-log.test.ts
+│   ├── habit-done-log.ts
+│   ├── habit-points-store.test.ts
+│   ├── habit-points.test.ts
+│   ├── habit-points.ts
 │   ├── habit-utils.ts
+│   ├── habit-week-streaks.test.ts
+│   ├── habit-week-streaks.ts
 │   ├── habits-store.ts
 │   ├── house-cleaning.test.ts
 │   ├── house-cleaning.ts
 │   ├── image-resize.test.ts
 │   ├── image-resize.ts
+│   ├── implied-actions.test.ts
+│   ├── implied-actions.ts
+│   ├── incremental-habits.test.ts
+│   ├── incremental-habits.ts
 │   ├── item-merge.test.ts
 │   ├── item-merge.ts
 │   ├── item-selection.test.ts
 │   ├── item-selection.ts
+│   ├── item-type-recipes.ts
 │   ├── item-type-store.ts
 │   ├── item-types.test.ts
 │   ├── item-types.ts
@@ -827,6 +872,8 @@
 │   ├── objectives.ts
 │   ├── operation-itinerary.test.ts
 │   ├── operation-itinerary.ts
+│   ├── operation-lists.ts
+│   ├── operation-model.test.ts
 │   ├── operation-types.ts
 │   ├── operations.test.ts
 │   ├── operations.ts
@@ -837,6 +884,7 @@
 │   ├── parse-flight-text.ts
 │   ├── parse-place-paste.test.ts
 │   ├── parse-place-paste.ts
+│   ├── pdf-to-html.test.ts
 │   ├── pdf-to-html.ts
 │   ├── pending-reviews.test.ts
 │   ├── pending-reviews.ts

@@ -67,8 +67,9 @@ expression engine and cross-item formulas (`LOOKUP`/`COUNTIF`/`ROLLUP`/`IF`) in
 **File & PDF attributes (built):** `file`/`multifile` attributes (`FileValue`)
 attach documents to items; PDFs are text-extracted (`lib/file-extract.ts`, via an
 Electron `pdf-parse` IPC handler with a graceful browser fallback) so they power
-the Book Tasting matcher/quiz. Built-in **Book** and **Flight** item types also
-ship. Itinerary weather uses Open-Meteo (`lib/weather-client.ts`). Weather for itineraries comes from Open-Meteo (`lib/weather-client.ts`).
+the Book Tasting matcher/quiz. Catalog **Book** (cover, pages read, implied-action
+rules) and **Flight** item types also ship, plus Furniture / Resource / Shopping
+starters. Itinerary weather uses Open-Meteo (`lib/weather-client.ts`).
 
 **Second-brain & knowledge features (built):** a top-level **Docs** tab
 (`components/Docs/`) — Notion/Google Docs–style WYSIWYG over `note` items (HTML
@@ -107,14 +108,16 @@ the spec to the code, including what is implemented, partial, or deferred.
 The groundwork for the bigger vision is already visible in the data model: a
 unified **`Item`** type with user-definable **types** (`ItemTypeDefinition`),
 free-form **tags**, typed **links** between items, and flexible per-item/per-list
-**attributes** (`lib/types.ts`). Today most behavior still flows through the
-built-in **task** type, but the seams for the densely networked, fully
-customizable system above are deliberately in place.
+**attributes** (`lib/types.ts`). New list items default to generic **`item`**;
+**Task** remains the hardcoded work surface. Catalog types (Book, Furniture,
+Resource, Shopping, Flight) own their detail views, and implied actions on
+types/lists can log Done activity and increment habits.
 
 > **Documentation convention:** nearly every source file begins with a `/** ... */`
 > header explaining its purpose and the spec section(s) it implements, and every
 > major folder has a `README.md`. Start with this file, then `docs/SPEC_MAPPING.md`,
-> then the folder README nearest the code you're reading.
+> then the folder README nearest the code you're reading. For look and feel,
+> [`docs/DESIGN_STYLE.md`](docs/DESIGN_STYLE.md) — Lists is the gold standard.
 
 ---
 
@@ -126,6 +129,8 @@ customizable system above are deliberately in place.
   `components/ui/`), **lucide-react** icons, **recharts** for Analytics.
 - **Windows 95 skin** — global retro chrome via `app/win95.css` (`body.win95-app`);
   Lists panel adds its own Win98 file-manager layer (`components/Lists/filemanager98.css`).
+  That pairing (honest beveled furniture + photographed orbs on velvet) is the
+  UI gold standard — see [`docs/DESIGN_STYLE.md`](docs/DESIGN_STYLE.md).
 - **Zustand** stores with `persist` middleware for state, backed by the browser's
   **localStorage**. This local store stays the offline-first source of truth;
   **MongoDB Atlas** becomes a future *cloud sync target* (not a replacement) behind
@@ -171,7 +176,7 @@ app/page.tsx
     ├── Lists ───── Win98 file manager (folders, lists, items, orb gallery, spreadsheet)
     ├── Docs ────── WYSIWYG notes (folders, fonts, images, PDF ingest)
     ├── Scheduler ─ Always → Year → Month → Week → Day funnel (+ dependency / gantt)
-    ├── Operations ─ Directed enterprises (phases, heatmap, to-do-next)
+    ├── Operations ─ Flexible containers of work, filed by category (Win95 command center)
     ├── Modules ─── User-built mini-apps (workspaces) + dashboard widgets
     └── Analytics ─ Charts + Brain2 views (calibration, streaks, plan-vs-reality, regret)
 ```
@@ -228,10 +233,11 @@ npm run test:e2e                 # Playwright (Lists flows; starts dev server)
 | `components/Lists/` | Lists file manager — orchestrator, hooks, views, dialogs (`components/Lists/README.md`) | [`components/Lists/README.md`](components/Lists/README.md) |
 | `components/Docs/` | Top-level Docs tab — WYSIWYG notes over `note` items | [`components/Docs/README.md`](components/Docs/README.md) |
 | `components/Scheduler/` | Period scheduling funnel + dependency/gantt views | [`components/Scheduler/README.md`](components/Scheduler/README.md) |
-| `components/Operations/` | Directed enterprises (phases, heatmap, to-do-next) | [`components/Operations/README.md`](components/Operations/README.md) |
+| `components/Operations/` | Operations — flexible containers of work: category groups on the home board, per-operation panel settings, Lists-backed Tasks panel (Win95 command-center chrome) | [`components/Operations/README.md`](components/Operations/README.md) |
 | `components/Modules/` | Composable dashboard modules + workspaces | [`components/Modules/README.md`](components/Modules/README.md) |
 | `components/Analytics/` | Metrics, charts + Brain2 views | [`components/Analytics/README.md`](components/Analytics/README.md) |
-| `components/ItemDetail/` | Consolidated item/task detail (page + popup) | [`components/ItemDetail/README.md`](components/ItemDetail/README.md) |
+| `components/ItemDetail/` | Consolidated item/task detail (page + popup; type-owned tabs) | [`components/ItemDetail/README.md`](components/ItemDetail/README.md) |
+| `components/ItemTypes/` | Manage item types (Settings + Analytics) | [`components/ItemTypes/README.md`](components/ItemTypes/README.md) |
 | `components/Editor/` | Rich-text/markdown body editor | [`components/Editor/README.md`](components/Editor/README.md) |
 | `components/Search/` | Global Cmd/Ctrl-K search palette | [`components/Search/README.md`](components/Search/README.md) |
 | `components/Settings/` | Backup/restore, item types, Second Brain setup, manual mobile hub | [`components/Settings/README.md`](components/Settings/README.md) |
@@ -244,9 +250,9 @@ npm run test:e2e                 # Playwright (Lists flows; starts dev server)
 | `components/ui/` | shadcn/ui primitives (Button, Dialog, Tabs, …) | [`components/ui/README.md`](components/ui/README.md) |
 | `lib/` | Data model types, Zustand stores, pure helpers | [`lib/README.md`](lib/README.md) |
 | `lib/data/` | Nascent data layer: `DataSource` sources, Mongo collections/schemas, JSON backup | [`lib/data/mongo/README.md`](lib/data/mongo/README.md) |
-| `lib/services/` | Domain services (completion, review, scheduling) | — |
+| `lib/services/` | Domain services (completion, review, scheduling, item-mutation / implied actions) | — |
 | `electron/` | Desktop shell: main process + preload | [`electron/README.md`](electron/README.md) |
-| `docs/` | Spec→code mapping and screen write-ups | [`docs/README.md`](docs/README.md) |
+| `docs/` | Spec→code mapping, design style, and screen write-ups | [`docs/README.md`](docs/README.md) |
 | `docs/screenshots/` | PNG captures + per-screen `.txt` write-ups (52 views) | [`docs/screenshots/README.md`](docs/screenshots/README.md) |
 | `public/` | Static assets: orb PNGs (`orbs-removebackground/`), fonts, icons, link connectors | — |
 | `hooks/` | Shared React hooks (`use-toast`, `useIsMobile`); module hooks live in subfolders (e.g. `components/Lists/hooks/`) | [`hooks/README.md`](hooks/README.md) |
@@ -290,8 +296,10 @@ detail: [`lib/README.md`](lib/README.md).
 `folder: list: item`, optional skip clarification) / **From Notes** (Mac Electron Apple Notes ingest); **Lists** board with
 Win98-style folders, custom attributes, orb icons, CSV import, and per-folder All
 Items; Scheduler period funnel (Always→Year→Month→Week→Day); Home dashboard
-(Habits / Plan / To Do / Goals / Tracking); five habit types with shared
-`habits-store`; TimeGrid tracking (header + Home Tracking tab); period **Reviews**
+(Habits / Plan / To Do / Goals / Tracking); five habit types (boolean, goal, text,
+climb with **weekly +** / **daily +** cadences) with shared `habits-store`, **Week grade**
+and **Perfect output**, daily points (50 × completion, +50 raw day >80%, +100/+300
+grade bonuses); TimeGrid tracking (header + Home Tracking tab); period **Reviews**
 with plan text and reflection (plus morning review and per-task post-mortems);
 **Modules** platform (user-buildable full-screen **workspaces** with bound
 spreadsheet/agenda/summary/randomizer/timer/checklist/gallery/notes/decision-matrix/
@@ -299,9 +307,14 @@ timeline/matcher/quiz/dashboard/doc/itinerary-doc/trip-map/film-dna/house-cleani
 authored **workflows** that run on item mutations, **pop-out** windows, reusable
 **definitions**, plus templates for Itinerary / House Cleaning / Budget / Book Tasting
 / Film DNA Lab, and dashboard widgets); **Docs** tab (WYSIWYG over `note`
-items); **Operations** tab; **spreadsheet** display (v3: range select, fill
+items); **Operations** tab (flexible containers of work: many free-form
+**categories** per operation grouped on the home board, per-operation **panel
+settings** chosen from prebuilt panels — Tasks / Phases / Timeline / Locations /
+Plan / Resources / Log / Queue rail — presets, and a Tasks panel that is a real
+Lists panel over a per-operation list); **spreadsheet** display (v3: range select, fill
 handle, per-cell `=A1` + formula columns, row/column resize) for lists;
-**file/PDF** attributes and built-in **Book**/**Flight** item types; all-time
+**file/PDF** attributes and catalog **Book** / **Flight** / Furniture / Resource /
+Shopping item types; all-time
 **Objectives** (prioritizable per period with
 custom point multipliers) + quantifiable **Goals** that serve them, with a
 global **completion popup** that captures objective/goal contributions on every
@@ -321,10 +334,10 @@ complete Reviews cadence set (§13), the full set of spec Analytics views (§15)
 fully automatic carry-over logic (§7.7).
 
 **Toward the long-term vision** (beyond the current spec — see "The eventual
-vision" above): first-class **user-defined item types/subtypes** as a primary
-workflow (not just task behavior) and a denser web of **type ↔ category ↔ tag ↔
-attribute ↔ link** relationships. The **custom-module platform** (workspaces +
-workflows + templates), **spreadsheet-style grid displays with formula columns**,
-**file/PDF attributes**, and **Docs** / document-type notes are now built. The
-unified `Item`/`ItemTypeDefinition`/`links`/`attributes` primitives in
-`lib/types.ts` are the foundation for all of these.
+vision" above): denser **type ↔ category ↔ tag ↔ attribute ↔ link** modeling
+and visualization. User-defined item types already own detail views (generic
+`item` default; Task is the special work surface; catalog types persist edits;
+implied actions wire attribute deltas into Done / points / habits). The
+**custom-module platform**, **spreadsheet-style grids**, **file/PDF attributes**,
+and **Docs** are built. The unified `Item`/`ItemTypeDefinition`/`links`/`attributes`
+primitives in `lib/types.ts` remain the foundation.

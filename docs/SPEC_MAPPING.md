@@ -57,7 +57,8 @@ local-first/sync-ready, AI-ready-not-AI-dependent, everything reviewable.
   `lists-ui-store` (`cogs-lists-ui`), `theme-store` (`cogs-theme-store`).
 - **Also persisted outside stores:** plan free-text (`lib/plan-text.ts` keys
   `dayPlan-*`, `weekPlan-*`, `monthPlan-*`); one-time import of legacy
-  `weekly-habits-*` keys into `habits-store`.
+  `weekly-habits-*` keys into `habits-store` (persist v3 also migrates climb
+  config onto `IncrementalHabitData` and logs onto `TaskCompletion.value`).
 - **Done:** one-click **JSON export/import** of all data — `lib/data/backup.ts`
   (`createBackup`/`restoreBackup` over every persisted store, incl. the new
   workflows + module-definitions stores; per-category and per-module-definition
@@ -112,12 +113,25 @@ local-first/sync-ready, AI-ready-not-AI-dependent, everything reviewable.
 - **Gap vs §5.1–5.3:** a unified `Item` core exists (`id/type/title/tags/links/
   attributes` in `lib/types.ts`); `Task` still carries overlapping fields
   (`title` vs `description`, `stage` vs list membership). Built-in types include
-  `task`, `note`, `goal`, `habit`, `event` plus seeded Source/Belief/Book/Flight.
+  `task`, `item`, `note`, `goal`, `habit`, `event` plus catalog Book / Furniture /
+  Resource / Shopping / Flight and seeded Source/Belief.
 - §5.4 Task fields — ✅ mostly present on `Task`.
 - §5.5 Detail view — ✅ consolidated `components/ItemDetail/` (`ItemDetailPage` +
-  `ItemDetailPopup`), with tags, typed links, related items, and a rich-text body.
-- §5.6 Recurrence — 🟡 `Task.repeatSettings` exists in types; habit bridge
-  is conceptual.
+  `ItemDetailPopup`). Tabs and chrome follow `resolveDetailView` (item type +
+  list `detailPanels` / `hiddenDetailPanels` + capabilities). Book shows a cover
+  and featured page fields; non-task types do not inherit Scheduling by default.
+- §5.6 Recurrence — 🟡 `Task.repeatSettings` exists in types. Habit bridge:
+  implied-action `incrementHabit` can add a numeric delta to a daily habit
+  (e.g. Book pages read → “Read at least 10 pages per day”).
+- **Operations as a configured item** — ✅ an Operation is a `Task` with
+  `type: "operation"` whose shape lives in two attributes rather than in code:
+  `categories` (free-form, many per operation — grouped/filtered on the
+  Operations home board) and `panels` (which prebuilt panels the workspace
+  shows, from `OPERATION_PANELS`, with `OPERATION_PRESETS` for a fast start).
+  Same composition idea as `ItemTypeDefinition.detailPanels` /
+  `List.detailPanels`, applied per *item*. Panel ids migrate
+  `activities`→`locations` and `itinerary`→`timeline`. See
+  `lib/operation-types.ts`, `components/Operations/README.md`.
 
 ## §6 Next Actions / Lists — ✅/🟡
 - Renamed **Lists** tab; Win98 file-manager UI — ✅
@@ -130,11 +144,18 @@ local-first/sync-ready, AI-ready-not-AI-dependent, everything reviewable.
   (`attribute-editor.tsx`, `lib/csv.ts`, `lib/orbs-manifest.ts`,
   `lib/lists-ui-store.ts`).
 - Per-folder **All Items** uncategorized pool — ✅ `lib/folder-all-items.ts`.
+- **Lists panel reused outside the Lists tab** — ✅ an Operation's **Tasks** panel
+  mounts `list-content/ListContentPanel` over a real per-operation list
+  (`lib/operation-lists.ts`, filed in an **Operations** folder), so operation work
+  is ordinary items and appears in Lists / All Items / search.
 - Category shape — ✅ `TaskCategory`; **nested categories / sublists** — ✅
   `parentCategoryId` + `lib/list-tree.ts` (ancestor/descendant/move-cycle
   helpers), nesting rendered in `FolderTree.tsx`/`BreadcrumbNav.tsx`, per-category
   JSON export/import in `settings-dialog.tsx` (`lib/data/backup.ts`) (§6.2).
 - Completed view, settings, search — ✅.
+- New list rows default to generic `item` (or `list.itemTypeId`); Next Actions
+  still creates Tasks. List settings overlay extra/hidden detail panels and
+  implied-action rules (`logAction` / `incrementHabit`).
 - Points on complete — ✅ `resolveCompletionPoints()` in `lib/item-utils.ts`
   (default 1, or numeric **Points** list attribute).
 - §6.5 "to schedule" as a **tag** (not category) — 🟡 tags exist (`Item.tags`,
@@ -172,14 +193,30 @@ local-first/sync-ready, AI-ready-not-AI-dependent, everything reviewable.
 
 ## §9 Habit Tracker — ✅/🟡
 - Five habit types, week/day grid, daily/weekly/monthly frequency tabs,
-  per-day/per-week % — ✅ `components/Home/Habits/*`, `lib/calculations.ts`.
-- Shared store — ✅ `lib/habits-store.ts` (Home + Lists Daily Habits read/write
-  the same data).
+  per-day/per-week % — ✅ `components/Home/Habits/*`, `lib/calculations.ts`,
+  `lib/incremental-habits.ts`. Climb (`INCREMENTAL`) has two cadences: **weekly +**
+  (goal-like target; rises Monday only after ≥4 hits last week) and **daily +**
+  (log a running score; next day’s target = last log + increment, including drops).
+  Completions persist as `TaskCompletion.value`. Meeting a habit goal also writes
+  a `loggedAction` Done row (`lib/habit-done-log.ts`) for that day/week/month.
+  Daily tab **Week grade** is the mean of elapsed days' overall % after an
+  optional daily curve (`gradeTolerance`: raw % that counts as 100; **0% stays 0**).
+  Click the grade for a raw-vs-curved breakdown (scrollable; notes 50-pt habits,
+  +50 when raw day >80%, and 75% bonuses). **Perfect output** is a second, independent
+  grade: mean of each habit's elapsed-paced row % (`outputGradeTolerance`, same
+  curve formula, zeros not lifted). Grid week % still uses /7. Daily rows show 4+ day **week streaks**
+  without changing climb bump rules. Gradient progress bars remain on per-habit
+  week % and the daily-completion row. Daily habits upsert **50 × completion
+  ratio** plus **+50** if that day's raw score is above 80%, and **+100 / +300**
+  grade bonuses (`lib/habit-points.ts`).
+- Shared store — ✅ `lib/habits-store.ts` persist **v5** (`gradeTolerance` +
+  `outputGradeTolerance`; Home +
+  Lists Daily Habits read/write the same data; v3 split legacy multi-metric climbs).
 - §9.4 completion records keyed by ISO/local date — ✅ (`WeeklyData` keyed by
   date string). **Gap:** not a DB record; habits are `WeeklyTask`, not a unified
   `Habit` item.
 - §9.5 Streaks — ✅ `lib/streaks.ts` + Analytics **Streaks** tab
-  (`components/Analytics/StreaksWidget.tsx`).
+  (`components/Analytics/StreaksWidget.tsx`); climb days use the derived target.
 
 ## §10 Goals & Objectives — ✅
 - **Objectives** — ✅ all-time aspirational directions (`Objective` entity, 26 seeded)
@@ -238,13 +275,14 @@ local-first/sync-ready, AI-ready-not-AI-dependent, everything reviewable.
   (`initWorkflowEngine` installed once on client mount in `app/page.tsx`, idempotent
   + SSR/static-export safe). Triggers (create/update/complete, attribute change,
   manual, schedule), conditions, and ordered actions.
-- **Pop-out windows** — ✅ a workspace opens standalone at `#popout/module/<id>`
-  (`ModulePopoutView`); Electron uses a real `BrowserWindow` via
-  `cogs:window:openModulePopout`, the browser falls back to `window.open`.
+- **Pop-out windows** — ✅ a workspace opens standalone at `/popout/?module=<id>`
+  (`ModulePopoutView`, no app header/tabs); Electron uses a real `BrowserWindow` via
+  `cogs:window:openModulePopout`, the browser falls back to `window.open`. Legacy
+  `#popout/module/<id>` hashes still parse.
 - **File / PDF attributes** — ✅ `file`/`multifile` (`FileValue`) attribute types
   (`components/Lists/attributes/**`) with PDF text extraction (`lib/file-extract.ts`
-  + Electron `cogs:file:extractPdfText` / `pdf-parse`), plus built-in **Book** /
-  **Flight** item types. Itinerary weather uses `lib/weather-client.ts`.
+  + Electron `cogs:file:extractPdfText` / `pdf-parse`), plus catalog **Book** /
+  **Flight** / Furniture / Resource / Shopping item types. Itinerary weather uses `lib/weather-client.ts`.
 - **Module platform foundation (Phase 0)** — ✅ shared serializable contract in
   `lib/types.ts`: `ModuleDefinition`, `WorkflowDefinition`/`WorkflowTrigger`/
   `WorkflowAction`, and `FileValue` + `file`/`multifile` types; the dependency-free
@@ -274,7 +312,10 @@ local-first/sync-ready, AI-ready-not-AI-dependent, everything reviewable.
 
 ## §14 Points, Rewards & Regret — 🟡
 - Points ledger — ✅ `lib/points-store.ts` (task/habit/goal completions,
-  day/week/month totals + possible).
+  `upsertPoints` for revisable daily-habit scores, day/week/month totals + possible).
+  Daily habits: 50 × that day’s completion ratio; +50 if that day’s raw column
+  score is above 80%; +100 if either Week grade or Perfect output is 75%+ that
+  day, +300 if both (`lib/habit-points.ts`).
 - List completion points — ✅ `resolveCompletionPoints()` (default 1 or **Points**
   attribute).
 - Objective point sources + configurable multipliers — ✅ contributing to an
@@ -311,8 +352,10 @@ the "The eventual vision" section in [`../README.md`](../README.md). Tracked her
 so it stays connected to the code:
 - **User-defined item types/subtypes as a primary workflow.** Seam + UI exist
   (`ItemTypeDefinition`, Settings → **Manage Item Types**,
-  `components/ItemTypes/`). Built-in **task** behavior still dominates day-to-day
-  capture.
+  `components/ItemTypes/`). New list items default to generic `item`, not Task.
+  Catalog types are user-editable; Task remains the hardcoded work surface.
+  Implied actions (`logAction`, `incrementHabit`) wire attribute deltas into
+  Done / points / habits.
 - **Dense relational network.** Richer composition of
   type ↔ category ↔ tag ↔ attribute ↔ link than today's mostly
   category-driven model. Primitives (`tags`, `links`, `attributes`) exist; the

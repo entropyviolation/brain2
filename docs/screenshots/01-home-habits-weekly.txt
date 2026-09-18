@@ -15,4 +15,4 @@ GLOBAL CHROME (all screens)
   Top-level tabs (7): Home | Lists | Docs | Scheduler | Operations | Modules | Analytics
 
 VIEW-SPECIFIC
-Weekly habits render as period cards (PeriodHabitList) instead of the day grid. Same store as Lists → Daily/Weekly/Monthly Habits smart lists.
+Weekly-frequency habits render as period cards (`PeriodHabitList`) instead of the day grid. Climb cells still show `logged / derived target` (same cadences as Daily). Frequency (this tab) is not climb cadence. Same `habits-store` as Lists → Daily/Weekly/Monthly Habits.

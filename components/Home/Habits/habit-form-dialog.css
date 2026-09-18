@@ -1,0 +1,319 @@
+/**
+ * components/Home/Habits/habit-form-dialog.css — Win95 chrome for Add/Edit Habit
+ *
+ * Portaled dialogs sit outside `.home95` / `.fm98`, so this file is self-contained.
+ */
+
+.habit95-dialog {
+  --h95-surface: #c0c0c0;
+  --h95-face: #dfdfdf;
+  --h95-highlight: #ffffff;
+  --h95-shadow: #808080;
+  --h95-frame: #0a0a0a;
+  --h95-blue: #000080;
+  --h95-blue-light: #1084d0;
+  --h95-ink: #000000;
+  --h95-field: #ffffff;
+  --h95-raised: inset -1px -1px var(--h95-frame), inset 1px 1px var(--h95-highlight),
+    inset -2px -2px var(--h95-shadow), inset 2px 2px var(--h95-face);
+  --h95-sunken: inset -1px -1px var(--h95-highlight), inset 1px 1px var(--h95-frame),
+    inset -2px -2px var(--h95-face), inset 2px 2px var(--h95-shadow);
+  --h95-field-bevel: inset -1px -1px var(--h95-highlight), inset 1px 1px var(--h95-shadow),
+    inset -2px -2px var(--h95-face), inset 2px 2px var(--h95-frame);
+  --h95-font: var(--w95-font, Tahoma, "MS Sans Serif", Geneva, Verdana, sans-serif);
+
+  display: flex !important;
+  flex-direction: column;
+  padding: 3px !important;
+  gap: 0 !important;
+  max-width: 30rem !important;
+  max-height: min(90vh, 720px) !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: var(--h95-surface) !important;
+  color: var(--h95-ink);
+  box-shadow: var(--h95-raised), 4px 4px 0 rgba(0, 0, 0, 0.35) !important;
+  font-family: var(--h95-font);
+  font-size: 12px;
+  letter-spacing: 0.2px;
+  -webkit-font-smoothing: none;
+  overflow: hidden;
+}
+
+/* Hide the shadcn/Radix overlay close; the title-bar × is the real control. */
+.habit95-dialog > button.absolute {
+  display: none !important;
+}
+
+.habit95-title-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  min-height: 22px;
+  padding: 2px 3px 2px 6px;
+  color: #fff;
+  background: linear-gradient(90deg, var(--h95-blue), var(--h95-blue-light));
+  user-select: none;
+}
+
+.habit95-title-bar h2,
+.habit95-title-bar .habit95-title-text {
+  flex: 1;
+  margin: 0;
+  font-size: 13px;
+  font-weight: bold;
+  letter-spacing: 0.4px;
+  color: #fff !important;
+  text-shadow: 1px 1px 0 #000;
+  line-height: 1.2;
+}
+
+.habit95-title-btn {
+  box-sizing: border-box;
+  width: 16px;
+  height: 14px;
+  padding: 0;
+  border: none;
+  line-height: 1;
+  font-size: 12px;
+  font-weight: bold;
+  color: #000;
+  background: var(--h95-surface);
+  box-shadow: var(--h95-raised);
+  cursor: pointer;
+}
+
+.habit95-title-btn:active {
+  box-shadow: var(--h95-sunken);
+}
+
+.habit95-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  padding: 10px 12px 8px;
+  overflow: hidden;
+}
+
+.habit95-form {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  gap: 0;
+}
+
+.habit95-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+  padding-bottom: 4px;
+}
+
+.habit95-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.habit95-field > label,
+.habit95-legend {
+  font-size: 11px;
+  font-weight: bold;
+  color: var(--h95-ink);
+}
+
+.habit95-hint {
+  margin: 0;
+  font-size: 10px;
+  color: #404040;
+}
+
+.habit95-form input[type="text"],
+.habit95-form input[type="number"],
+.habit95-form select,
+.habit95-form .habit95-input {
+  height: 24px;
+  padding: 2px 6px;
+  border: none;
+  border-radius: 0;
+  background: var(--h95-field);
+  color: var(--h95-ink);
+  box-shadow: var(--h95-field-bevel);
+  font-family: inherit;
+  font-size: 12px;
+}
+
+.habit95-form input:focus,
+.habit95-form select:focus,
+.habit95-form .habit95-input:focus {
+  outline: 1px dotted #000;
+  outline-offset: -3px;
+}
+
+.habit95-group {
+  margin: 0;
+  padding: 10px 8px 8px;
+  border: none;
+  background: var(--h95-surface);
+  box-shadow: var(--h95-sunken);
+}
+
+.habit95-group > legend {
+  float: left;
+  width: 100%;
+  margin: 0 0 6px;
+  padding: 0;
+  font-size: 11px;
+  font-weight: bold;
+  color: var(--h95-blue);
+}
+
+.habit95-group > legend + * {
+  clear: both;
+}
+
+.habit95-freq {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.habit95-types {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.habit95-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-height: 40px;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 0;
+  text-align: left;
+  color: var(--h95-ink);
+  background: var(--h95-surface);
+  box-shadow: var(--h95-raised);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.habit95-choice:hover {
+  background: var(--h95-face);
+}
+
+.habit95-freq .habit95-choice {
+  min-height: 28px;
+  padding: 4px 6px;
+  align-items: center;
+}
+
+.habit95-choice[aria-checked="true"] {
+  background: #e8eef8;
+  box-shadow: var(--h95-sunken);
+}
+
+.habit95-choice-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.habit95-choice-desc {
+  font-size: 10px;
+  color: #404040;
+  line-height: 1.25;
+}
+
+.habit95-goal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.habit95-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  box-shadow: inset 0 -1px var(--h95-shadow), inset 0 -2px var(--h95-highlight);
+}
+
+.habit95-metric-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.habit95-add-row {
+  display: flex;
+  gap: 6px;
+}
+
+.habit95-add-row input {
+  flex: 1;
+}
+
+.habit95-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  padding-top: 10px;
+  box-shadow: inset 0 1px var(--h95-shadow), inset 0 2px var(--h95-highlight);
+}
+
+.habit95-btn {
+  box-sizing: border-box;
+  min-width: 88px;
+  min-height: 26px;
+  padding: 3px 14px;
+  border: none;
+  border-radius: 0;
+  color: #000 !important;
+  background: var(--h95-surface) !important;
+  box-shadow: var(--h95-raised);
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.habit95-btn:hover:not(:disabled) {
+  background: var(--h95-face) !important;
+}
+
+.habit95-btn:focus-visible {
+  outline: 1px dotted #000;
+  outline-offset: -5px;
+}
+
+.habit95-btn:not(:disabled):active {
+  box-shadow: var(--h95-sunken);
+}
+
+.habit95-btn:disabled {
+  color: #808080 !important;
+  text-shadow: 1px 1px 0 #fff;
+  cursor: default;
+}
+
+.habit95-btn-default {
+  box-shadow: inset -1px -1px var(--h95-frame), inset 1px 1px var(--h95-frame),
+    inset -2px -2px var(--h95-shadow), inset 2px 2px var(--h95-highlight),
+    inset -3px -3px var(--h95-frame), inset 3px 3px var(--h95-face);
+  font-weight: bold;
+}

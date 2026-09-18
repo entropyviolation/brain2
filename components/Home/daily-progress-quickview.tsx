@@ -2,7 +2,8 @@
  * components/Home/daily-progress-quickview.tsx — Today's progress summary
  *
  * Replaces the old Quick Actions card with a snapshot of daily to-do and habit
- * completion for the current day.
+ * completion for the current day. Climb habits use `isHabitGoalMet` with
+ * `{ date, weeklyData }` so the derived target is applied.
  */
 "use client"
 
@@ -12,32 +13,9 @@ import { Progress } from "@/components/ui/progress"
 import { CheckCircle2, ListTodo, Repeat } from "lucide-react"
 import { useTaskStore } from "@/lib/task-store"
 import { useHabitsStore } from "@/lib/habits-store"
+import { isHabitGoalMet } from "@/lib/habit-utils"
 import { filterHabitsByFrequency } from "@/components/Home/Habits/period-habit-list"
 import { formatLocalDateKey, taskScheduledOnDay } from "@/lib/date-utils"
-import { TaskType } from "@/lib/types"
-
-function habitDoneToday(
-  taskId: string,
-  type: TaskType,
-  completion: { completed?: boolean; text?: string; value?: number; incrementalValues?: Record<string, number> } | undefined,
-  goal?: number,
-): boolean {
-  if (!completion) return false
-  switch (type) {
-    case TaskType.BOOLEAN:
-      return !!completion.completed
-    case TaskType.TEXT:
-      return !!completion.text?.trim()
-    case TaskType.GOAL:
-    case TaskType.TIME:
-    case TaskType.COUNT:
-      return goal ? (completion.value ?? 0) >= goal : (completion.value ?? 0) > 0
-    case TaskType.INCREMENTAL:
-      return !!completion.incrementalValues && Object.values(completion.incrementalValues).some((v) => v > 0)
-    default:
-      return false
-  }
-}
 
 export function DailyProgressQuickview({ currentDate }: { currentDate: Date }) {
   const tasks = useTaskStore((s) => s.tasks)
@@ -62,13 +40,13 @@ export function DailyProgressQuickview({ currentDate }: { currentDate: Date }) {
     const dayData = weeklyData[dayKey] ?? {}
     let completed = 0
     dailyHabits.forEach((habit) => {
-      if (habitDoneToday(habit.id, habit.type, dayData[habit.id], habit.goal)) completed++
+      if (isHabitGoalMet(habit, dayData[habit.id], { date: currentDate, weeklyData })) completed++
     })
     const total = dailyHabits.length
     const remaining = total - completed
     const percent = total > 0 ? Math.round((completed / total) * 100) : 0
     return { total, completed, remaining, percent }
-  }, [habitTasks, weeklyData, dayKey])
+    }, [habitTasks, weeklyData, dayKey, currentDate])
 
   return (
     <Card className="lg:w-80 card-hover">

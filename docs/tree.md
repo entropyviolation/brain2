@@ -5,7 +5,8 @@ A clickable, annotated index of the repository. Pairs with the plain-text
 [`SPEC_MAPPING.md`](SPEC_MAPPING.md).
 
 > Where to start: root [`README.md`](../README.md) → [`SPEC_MAPPING.md`](SPEC_MAPPING.md)
-> → the nearest folder `README.md`. Nearly every source file also opens with a
+> → the nearest folder `README.md`. Look and feel: [`DESIGN_STYLE.md`](DESIGN_STYLE.md)
+> (Lists is the gold standard). Nearly every source file also opens with a
 > `/** ... */` header describing its purpose and spec section.
 
 ---
@@ -20,7 +21,7 @@ A clickable, annotated index of the repository. Pairs with the plain-text
 | [e2e/ · tests/](#tests) | [config](#config--lockfiles) | [App map](#app-map)    |
 | [Spec gaps](#spec-gaps-highest-impact) |           |                            |
 
-**Components sub-views:** [top-level](#top-level-files) · [Home](#home) · [Docs](#docs-top-level-tab) · [Lists](#lists) · [Scheduler](#scheduler) · [Modules](#modules) · [Analytics](#analytics) · [Reviews](#reviews) · [spreadsheet](#spreadsheet) · [ui/](#ui)
+**Components sub-views:** [top-level](#top-level-files) · [Home](#home) · [Docs](#docs-top-level-tab) · [Lists](#lists) · [Scheduler](#scheduler) · [Modules](#modules) · [Analytics](#analytics) · [Reviews](#reviews) · [Settings / Item Types](#settings--focus) · [spreadsheet](#spreadsheet) · [ui/](#ui)
 
 ---
 
@@ -34,8 +35,9 @@ Reviews, Analytics.
 recharts, Zustand + `persist` → localStorage (→ MongoDB), Electron, Win95/Win98 skin.
 
 **Vision seam:** unified `Item` + user-definable `ItemTypeDefinition`, free-form
-`tags`, typed `links`, flexible attributes (`lib/types.ts`) — most behavior still
-flows through the built-in `task` type today.
+`tags`, typed `links`, flexible attributes (`lib/types.ts`). New list items
+default to generic `item`; Task is the hardcoded work surface. Catalog types
+(Book, Furniture, …) own their detail views.
 
 → [`README.md`](../README.md)
 
@@ -51,7 +53,7 @@ required for the static Electron export. Repeat lookups share `lib/api-cache.ts`
 | File          | Purpose                                                                       |
 | ------------- | ----------------------------------------------------------------------------- |
 | `layout.tsx`  | Root layout — Karla font, `globals.css`, `win95.css`, `body.win95-app`, metadata, global `CompletionPopupHost` |
-| `page.tsx`    | Global header + 7 lazy tabs; full-screen `EnhancedTaskDetail` when a task is selected |
+| `page.tsx`    | Global header + 7 lazy tabs; `initWorkflowEngine` on mount (workflows + implied actions); full-screen `EnhancedTaskDetail` when an item is selected |
 | `globals.css` | Tailwind base/components/utilities + theme CSS variables                       |
 | `win95.css`   | Global Win95 bevels, tabs, scrollbars, pixel font (`:where()` lets Lists `.fm98` win) |
 | `loading.tsx` | Route loading boundary (renders `null`; panels use Suspense)                   |
@@ -80,10 +82,9 @@ Most components have a co-located `*.test.tsx`.
 
 The two detail views are consolidated under
 [`ItemDetail/`](../components/ItemDetail/README.md): both share load/draft state
-and the category/dependency/tag/link mutators via `useItemDetailDraft`; the old
-paths remain as re-export barrels (spec §5.5). Tags & typed links surface through
-`TagInput.tsx`, `LinkPicker.tsx`, and `RelatedItemsPanel.tsx` (presentational;
-pure logic in `lib/links.ts`).
+and the category/dependency/tag/link mutators via `useItemDetailDraft`. Tabs and
+chrome come from `resolveDetailView` (item type + list overlays + capabilities);
+Task chrome is not the default for generic list items.
 
 → [`components/README.md`](../components/README.md)
 
@@ -97,7 +98,7 @@ Default tab — date, points, today's progress, review banner + **Habits · Plan
 | --------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------ |
 | Root                        | `home-dashboard.tsx`, `points-stats.tsx`, `daily-progress-quickview.tsx`, `home-review-banner.tsx` | points, task, reviews     |
 | [Goals/](#homegoals)        | `goals-tracker.tsx`                                                                            | `goals-store`                  |
-| [Habits/](#homehabits)      | `habit-tracker.tsx`, `task-grid.tsx`, `period-habit-list.tsx`, `week-navigation.tsx`, `daily-task-form*.tsx`, `settings-dialog.tsx` | `habits-store` |
+| [Habits/](#homehabits)      | `habit-tracker.tsx`, `task-grid.tsx`, `habit-grid.css`, `grade-breakdown-dialog.tsx`, `output-grade-breakdown-dialog.tsx`, `period-habit-list.tsx`, `week-navigation.tsx`, `daily-task-form*.tsx`, `habit-form-dialog.css`, `settings-dialog.tsx` | `habits-store` |
 | [Plan/](#homeplan)          | `plan-panel.tsx`, `month/week/day-view.tsx`, `agenda-grid.tsx`, `planned-tasks-sidebar.tsx`, `event-dialog.tsx`, `settings-dialog.tsx` | task, event, plan-text |
 | [ToDo/](#hometodo)          | `todo-panel.tsx`, `TodoTable.tsx`, `AddTodoDialog.tsx`, `todo-utils.ts`                        | `task-store`                   |
 | [Tracking/](#hometracking)  | `time-grid.tsx`, `actual-day-view.tsx`                                                         | time-tracking, task, event     |
@@ -117,9 +118,13 @@ seeded on first load. Multiplier/priority math in `lib/goals-store.ts` +
 **Could add:** auto-linked progress, penalty amounts on missed objectives (§10).
 
 #### Home/Habits/
-Five habit types (boolean, goal/time, count, text, incremental) × daily/weekly/monthly.
-Shared `habits-store` with Lists Daily Habits. 14 default daily habits.
-**Could add:** Streak display, habit trend charts (§9.5).
+Five habit types (boolean, goal, text, climb; TIME/COUNT alias GOAL) × daily/weekly/monthly **frequency**.
+Climb **cadence** is independent: **weekly +** (fixed week goal; Monday bump after ≥4 hits) or **daily +** (last log + increment; a drop still lowers tomorrow’s target). Rules in `lib/incremental-habits.ts`; logs on `TaskCompletion.value`.
+Shared `habits-store` persist **v5** with Lists Daily Habits. 15 default daily habits (chess match + puzzle as Daily +; meditate Weekly +; Book implied actions target **Read at least 10 pages per day**, `task-9`).
+Add/edit uses a Win95 window (`habit-form-dialog.css`) with Climb cadence tiles and a readable **Add Habit** button.
+Daily grid is compact (`habit-grid.css`: 7 days + week % + gradient bars + 4+ week-streak chips). Clickable **Week grade** (elapsed day columns; 0% not curved) and **Perfect output** (elapsed row %) each open a scrollable raw/curved breakdown with their own **tolerance**. Completing a daily habit logs a Done row and 50×completion points, +50 when raw day score is above 80%, and 75% grade bonuses (`lib/habit-points.ts`).
+Streaks live on Analytics → Streaks (`lib/streaks.ts` + derived climb targets), not on the Habits grid.
+**Could add:** streak chips on the Habits grid, habit trend charts.
 
 #### Home/Plan/
 Month/week/day calendar, drag-drop scheduling, events, plan free-text (localStorage
@@ -131,6 +136,7 @@ events span their date range. `agenda-grid.tsx` shared with Tracking Day Log.
 #### Home/ToDo/
 Day/week/month execution lists — tier sort (A+…D), overdue, push forward.
 Orchestrator (`todo-panel.tsx`) + pure `todo-utils.ts` + `TodoTable`/`AddTodoDialog`.
+**Done** includes Tasks and implied-action logs (`countsInDone`).
 
 #### Home/Tracking/
 TimeGrid (`time-grid.tsx`, 15-min paint pens, 96 slots/day, Activity/Location/Mood
@@ -144,7 +150,7 @@ scopes) + Day Log (`actual-day-view.tsx`, plan vs. actual `timeLogs`).
 `Completion/CompletionPopupHost.tsx` + `CompletionDialog.tsx` — mounted once in
 `app/layout.tsx`. Subscribes to the completion event bus (`lib/completion-events.ts`,
 emitted by `task-store.updateTask`) so a popup appears on **every** task completion.
-Captures objective/goal contributions, advances goals, and awards the stacking
+Captures objective/goal contributions (searchable lists), advances goals, and awards the stacking
 objective point multipliers (1.5× default; prioritized objectives use a custom
 multiplier). → [`components/Completion/README.md`](../components/Completion/README.md)
 
@@ -162,8 +168,11 @@ auto-save, Google Fonts, images, PDF ingest. Helpers: `lib/doc-html.ts`,
 
 ### Lists
 
-Win98 file manager — folders, lists, items via `task-store`. Smart lists, custom
-attributes, orb gallery, CSV import, spreadsheet display.
+Win98 file manager — folders, lists, items via `task-store`. New rows default to
+generic `item` (or `list.itemTypeId`). Smart lists, custom attributes, orb gallery,
+CSV import, spreadsheet display. List settings overlay extra/hidden detail panels
+and implied-action rules. **UI gold standard** (velvet + orbs + Explorer chrome):
+[`DESIGN_STYLE.md`](DESIGN_STYLE.md).
 
 **Entry:** `enhanced-list-view.tsx` (orchestrator) composing subfolders:
 
@@ -172,8 +181,8 @@ attributes, orb gallery, CSV import, spreadsheet display.
 | `hooks/`        | `useListsNavigation`, `useListsSearch`, `useListsDragDrop`, `useListsSelection`, `useListsTaskActions` |
 | `navigation/`   | `FolderTree.tsx`, `BreadcrumbNav.tsx`                                     |
 | `views/`        | `FolderViewIcons/List/Details/Cards.tsx`, `SearchResultsView.tsx`        |
-| `list-content/` | `ListContentPanel/Default/Checklist/Icons/Details/Spreadsheet.tsx`       |
-| `dialogs/`      | `New/Edit List & Folder`, `CsvImportDialog`, `OrbPickerDialog`, `CompletedTasksDialog` |
+| `list-content/` | `ListContentPanel/Default/Checklist/Icons/Details/Spreadsheet.tsx`, `AllViewCheckboxFilter.tsx` |
+| `dialogs/`      | `New/Edit List & Folder`, `ListRulesEditor`, `CsvImportDialog`, `OrbPickerDialog`, `CompletedTasksDialog` |
 | `attributes/`   | `AttributeSchemaEditor`, `AttributeValueField`, `AttributeValuesEditor`, `helpers.ts` |
 | `toolbar/`      | `ListsToolbar.tsx`, `ViewModeControls.tsx`                                |
 | `lib/`          | `icon-utils.tsx` (orb/icon/folder glyphs)                                 |
@@ -185,7 +194,7 @@ attributes, orb gallery, CSV import, spreadsheet display.
 
 **Stores:** `task-store`, `lists-ui-store`, `habits-store`
 
-**Tests:** `__tests__/`, `hooks/__tests__/`, `navigation/__tests__/`, `dialogs/__tests__/`, `e2e/lists.spec.ts`
+**Tests:** `__tests__/`, `hooks/__tests__/`, `navigation/__tests__/`, `dialogs/__tests__/`, `e2e/lists.spec.ts`, `e2e/item-types-detail.spec.ts`
 
 **Could add:** Bulk attribute editing, richer attribute types, nested categories (`parentCategoryId`, §6.2).
 
@@ -215,6 +224,23 @@ Tasks appear only if in a **scheduleable** list (`TaskCategory.scheduleable !== 
 
 ---
 
+### Operations
+
+Flexible containers of work (trip, paid job, computer work, house project…) —
+nothing is assumed to be trip-shaped. Win95 **command-center** chrome
+(`operations-chrome.css`): a landing board that groups operations under their
+free-form **categories** (an op can hold several), with a category checkbox
+filter and sort, then `OperationWorkspace`, whose tab strip is built from the
+**panels that operation has switched on** in its **Settings** dialog — Home
+(locked), Tasks, Phases, Timeline, Locations, Plan, Resources, Log, plus the
+Queue rail. Presets (Standard / Blank / Trip / Project / Paid job) shape a new
+operation in one click. The Tasks panel embeds the Lists content panel over a
+real per-operation list (`lib/operation-lists.ts`).
+
+→ [`components/Operations/README.md`](../components/Operations/README.md)
+
+---
+
 ### Modules
 
 Composable widget dashboard + a full user-buildable **workspace** "mini-app"
@@ -229,7 +255,8 @@ and **pop out** a module into its own window.
 | `ModuleConfigDialog.tsx`   | Add/configure widget form                                     |
 | `workspace/ModuleBuilderDialog.tsx` | New-module chooser: build from scratch, saved definitions, or one-click templates |
 | `workspace/ModuleWorkspace.tsx` | Full-screen mini-app — tabbed views, drag-reorder, Settings/Workflows/Pop-out, plan-sync |
-| `workspace/ModulePopoutView.tsx` | Standalone module render for the `#popout/module/<id>` window |
+| `workspace/ModulePopoutView.tsx` | Standalone module render for `/popout/?module=<id>` |
+| `workspace/module-popout.ts` | `/popout/?module=<id>` routing + `openModulePopout` |
 | `workspace/ModuleSettingsDialog.tsx` / `ModuleListsPanel.tsx` | Edit a `ModuleDefinition` (name, bound lists, views, plan-sync) |
 | `workspace/ModuleViewEditor.tsx` | Compose one bound view (spreadsheet/checklist/agenda/…/doc/itinerary-doc/trip-map/film-dna) |
 | `workspace/module-view-bodies.tsx` | `ModuleViewBody` switch + per-kind render bodies |
@@ -255,6 +282,8 @@ pin places and estimate distances on the map (TTL-cached in `lib/api-cache.ts`).
 **Workflows:** authored rules live in `lib/workflows-store.ts` and run via the
 engine (`lib/workflow-engine.ts`) wired to task mutations by
 `lib/services/item-mutation-service.ts` (`initWorkflowEngine` on client mount).
+The same service also runs type/list **implied actions** (`logAction` /
+`incrementHabit`).
 Specialized view kinds: **`matcher`**, **`quiz`**, **`dashboard`**,
 **`timeline`**, **`doc`**, **`itinerary-doc`**, **`trip-map`**, **`film-dna`**,
 **`house-cleaning`**
@@ -269,10 +298,9 @@ Specialized view kinds: **`matcher`**, **`quiz`**, **`dashboard`**,
 
 ### Analytics
 
-Tabs: Overview, Habits heatmap, Points, Tracking pie, Reviews, plus Brain2 views —
-**Plan vs Reality** (`lib/plan-vs-reality.ts`), **Calibration** (estimate-vs-actual,
-`lib/calibration.ts`), **Streaks** (`lib/streaks.ts`), and **Reflection** (post-mortem
-summary).
+Tabs: Overview, Habits heatmap (climb % via incremental-habits), Points, Tracking pie, Streaks (derived climb targets), Reviews, Brain2 views
+(**Plan vs Reality**, **Calibration**, **Streaks**, **Reflection**), plus
+**Item Types** (`ItemTypeList` — same manager as Settings).
 
 → [`components/Analytics/README.md`](../components/Analytics/README.md)
 
@@ -306,8 +334,9 @@ helpers in `lib/affirmations.ts`).
   **Manage Item Types** (`components/ItemTypes/`). Settings
   still exposes confirm-gated manual hub push/pull (`MobileSyncPanel`).
 - `ItemTypes/ItemTypeList.tsx` + `ItemTypeEditor.tsx` — create/edit/delete user
-  **item types**: attribute schema (reuses `AttributeSchemaEditor`), capability
-  flags, and declarative `ItemRule*` rules. Built-ins open read-only.
+  **item types**: attribute schema, capabilities (gate detail tabs), detail
+  panels/layout, implied-action rules, recipe/hint cards. System types locked;
+  catalog types (Book, Furniture, …) editable.
 - `Focus/JustStartMode.tsx` — ADHD anti-paralysis overlay: one smallest molecular
   step + 2-minute timer; launched from the To-Do panel.
 - `Search/GlobalSearch.tsx` — Cmd/Ctrl-K command palette over `lib/search.ts`.
@@ -355,7 +384,7 @@ Data model, Zustand stores (localStorage today → MongoDB), pure helpers. Not R
 | ------------------------ | ------------------------- | -------------------------- |
 | `task-store.ts`          | `cogs-task-storage`       | Tasks, categories, folders |
 | `event-store.ts`         | `cogs-event-storage`      | Calendar events            |
-| `habits-store.ts`        | `cogs-habits-store`       | Habits + completions       |
+| `habits-store.ts`        | `cogs-habits-store` (v5)  | Habits + completions; climb migrate; gradeTolerance; outputGradeTolerance |
 | `goals-store.ts`         | `cogs-goals-store`        | Objectives (prioritized + multipliers) + Goals |
 | `points-store.ts`        | `points-store`            | Points ledger              |
 | `time-tracking-store.ts` | `cogs-timegrid-store`     | TimeGrid scopes/pens/intervals |
@@ -363,7 +392,7 @@ Data model, Zustand stores (localStorage today → MongoDB), pure helpers. Not R
 | `modules-store.ts`       | `cogs-modules-store`      | Module widgets + workspace views (persist v2) |
 | `module-definitions.ts`  | `cogs-module-definitions` | Reusable module blueprints (`ModuleDefinition`) |
 | `workflows-store.ts`     | `cogs-workflows-store`    | Authored per-module workflows (rules) |
-| `item-type-store.ts`     | `cogs-item-types-store`   | Item type registry (built-in `task`/`book`/`flight` + user types) |
+| `item-type-store.ts`     | `cogs-item-types-store`   | Item type registry (system Task/Item/Note/Operation re-seeded; catalog Book/Furniture/Resource/Shopping/Flight persist) |
 | `lists-ui-store.ts`      | `cogs-lists-ui`           | Lists UI prefs, orb gallery |
 | `theme-store.ts`         | `cogs-theme-store`        | Theme colors               |
 | `user-settings-store.ts` | `cogs-user-settings`      | Home city (Plan sun times) |
@@ -373,20 +402,27 @@ Data model, Zustand stores (localStorage today → MongoDB), pure helpers. Not R
 | File | Purpose |
 | ---- | ------- |
 | `types.ts` | Shared interfaces — `Task`, `Item`, `ItemTypeDefinition`, events, habits, reviews, attributes |
-| `calculations.ts` | Habit completion math (5 types) |
+| `calculations.ts` | Habit completion math (5 types; climb via incremental-habits; week-to-date + output grades; 0% not curved) |
+| `incremental-habits.ts` | Daily vs weekly climb: last-log daily targets (drops count); 4-day weekly bump; persist v3 |
+| `habit-points.ts` | Daily habit 50×ratio points; +50 raw day >80%; 75% grade bonuses (100 either / 300 both) |
+| `habit-done-log.ts` | Mirror habit completions into To-Do Done |
+| `habit-week-streaks.ts` | 4+ day week streaks for daily habit chips |
 | `date-utils.ts` | Date keys, week strings, `isToday`, safe date guards |
-| `item-utils.ts` | Schedule predicates, `createListItem`, `resolveCompletionPoints`, push-forward |
+| `item-utils.ts` | Schedule predicates, `createListItem` (type `item`), `isTaskItem`, `countsInDone`, `resolveCompletionPoints` |
+| `item-types.ts` | Type registry helpers, `resolveDetailView`, `mergeTypeRegistry`, rule evaluation + implied-action effects |
+| `implied-actions.ts` | Log Done actions + increment habits from type/list rules |
+| `item-type-recipes.ts` | Starter schemas + implied-action hints for the type editor |
+| `catalog-types.ts` | Furniture / Resource / Shopping catalog seeds |
+| `book-types.ts` | Catalog **Book** (cover, pages read, implied-action rules) + `withBookType` |
 | `objectives.ts` | Objectives/Goals helpers — period keys, prioritization + caps, goal progress, direction-in-life coverage |
 | `completion-events.ts` | Completion event bus (`onTaskCompleted`/`emitTaskCompleted`) powering the global completion popup |
-| `item-types.ts` | Item-type helpers, schema composition, serializable rule evaluation; registers built-in `book`/`flight` types |
-| `book-types.ts` | Built-in **Book** item type (author/ISBN/status + `multifile` PDF attachments) + `withBookType` |
-| `flight-types.ts` | Built-in **Flight** item type (airline, airports, times, layovers, cost, booked) + `withFlightType` |
+| `flight-types.ts` | Catalog **Flight** item type (airline, airports, times, layovers, cost, booked) + `withFlightType` |
 | `file-extract.ts` | Best-effort `extractText(FileValue\|File)` — text inline, PDF via Electron `window.desktop.extractPdfText`, graceful browser fallback |
 | `apple-notes.ts` | Apple Notes ingest: preview/snippet/bodies fetch, bulk-add parse, park on **iPhone Notes Ingest** / **notes to ingest**, skip ingested ids |
 | `smart-parse.ts` | Smart-capture parser: colon paths, dates/times/priority/duration, `parsePathHeader` |
 | `capture-target.ts` | Create/resolve folder+list from a capture path; build Inbox vs filed tasks |
 | `migrations.ts` | Versioned Item-model migrations (backfill `type`/`title`/`tags`/`links`) |
-| `habit-utils.ts` | Habit type normalization, completion helpers |
+| `habit-utils.ts` | Habit type aliases; `isHabitGoalMet` with date/`weeklyData` for climb |
 | `attribute-utils.ts` | Legacy attribute normalization/coercion |
 | `plan-text.ts` | `dayPlan/weekPlan/monthPlan` localStorage |
 | `folder-all-items.ts` | Per-folder All Items sync |
@@ -423,7 +459,7 @@ Data model, Zustand stores (localStorage today → MongoDB), pure helpers. Not R
 | `book-match.ts` | Score/`findBookMatch` PDF extracted-text → book candidate (matcher + quiz) |
 | `workflow-hooks.ts` | Dependency-free mutation seam (`registerItemMutationDispatcher`/`dispatchItemMutation`) called by task-store |
 | `workflow-engine.ts` | `dispatchWorkflows` — trigger/condition/action evaluation with re-entrancy cap |
-| `services/item-mutation-service.ts` | Wires the hook seam to the engine: `initWorkflowEngine`, `runWorkflowManually`, `createTaskRepositoryAdapter` |
+| `services/item-mutation-service.ts` | `initWorkflowEngine`: workflows + implied-action listener (`logAction` / `incrementHabit`) |
 | `data/task-repository.ts` · `data/data-source.ts` | Repository + pluggable data source (local/IPC/mongo) behind the workflow adapter |
 | `pending-reviews.ts` | Which end-of-period reviews are still due |
 | `affirmations.ts` | Morning affirmations ritual: find/seed Lists "Affirmations", read lines, `pickRandom` session subset |
@@ -477,6 +513,7 @@ App-wide shared React hooks. Module-specific hooks live next to their UI (e.g.
 | File              | Purpose                               |
 | ----------------- | ------------------------------------- |
 | `SPEC_MAPPING.md` | Spec → code checklist (✅ 🟡 ⛔ 🕓)     |
+| `DESIGN_STYLE.md` | UI gold standard — Lists chrome + velvet/orbs (curiosity cabinet) |
 | `CANONICAL_FIELDS.md` | Canonical `Item`/data-model field reference |
 | `BRAIN2_FEATURE_IDEAS.md` | 280 idea-bank buildouts (160 from `Brain2Ideas` + 120 Expansion II from Brain2/COGS/to-do-theory docs), mapped to the data model |
 | `tree.txt`        | Plain `tree` command output           |
@@ -516,6 +553,7 @@ Re-capture screenshots: `npm run capture-screenshots` (with `npm run dev` runnin
 | Path | Purpose |
 | ---- | ------- |
 | `e2e/lists.spec.ts` | Playwright critical Lists flows (`npm run test:e2e`) |
+| `e2e/item-types-detail.spec.ts` | Item types own detail: Book editor, furniture (no Schedule), pages-read → Done |
 | `tests/test-utils.tsx` | Shared Vitest render helpers |
 | `vitest.config.ts` / `vitest.setup.ts` | Unit/integration test config |
 | `playwright.config.ts` | E2E config (starts dev server) |
@@ -535,7 +573,8 @@ Co-located `*.test.ts(x)` files live next to most components and helpers.
 ## App map
 
 ```
-app/page.tsx
+app/page.tsx                         ← full app shell
+app/popout/page.tsx                  ← Pop out: only the module (`?module=`) or sheet (`?sheet=`)
 ├── Header: Review (+ Morning Review) | Metrics | Tracking | Inbox | Bulk Add | From Notes | Quick Add
 │            (Quick Add is controlled by the global capture hotkey — useQuickCaptureHotkey.
 │             From Notes is Mac Electron → Notes.app; parks onto Lists **notes to ingest**.)
@@ -544,9 +583,9 @@ app/page.tsx
     ├── Lists ───── Win98 file manager (folders, lists, items, orbs, spreadsheet)
     ├── Docs ────── WYSIWYG notes over `note` items (fonts, images, PDF ingest)
     ├── Scheduler ─ Always → Year → Month → Week → Day
-    ├── Operations ─ directed enterprises (OperationsView → OperationWorkspace)
+    ├── Operations ─ flexible containers of work, grouped by category (Win95 command center)
     ├── Modules ─── composable widgets + workspace mini-apps (Itinerary doc / map / print)
-    └── Analytics ─ charts + Metrics, Correlation, Context Switch, Regret
+    └── Analytics ─ charts + Metrics, Correlation, Context Switch, Regret, Item Types
 ```
 
 Item detail ("⋯" menu) → **Upgrade to Operation**. `note`-type items + lists

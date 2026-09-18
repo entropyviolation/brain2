@@ -37,7 +37,7 @@ store migration (`migrateTasksToItems`, version 7) backfills `type`/`title`/
 | field | type | class | persisted? | Zod? | notes |
 |---|---|---|---|---|---|
 | `id` | `string` | canonical | yes | yes (`taskSchema`) | Primary key. MongoDB plan: `id → _id` (`lib/data/mongo/collections.ts`). |
-| `type` | `ItemType` | canonical | yes | yes (optional) | Discriminator; defaults to `"task"` in migration. Built-ins: task/habit/event/goal/note. |
+| `type` | `ItemType` | canonical | yes | yes (optional) | Discriminator. Migration still defaults to `"task"`; **new list items** use `"item"`. Next Actions / To-Do create `"task"`. |
 | `title` | `string?` | canonical | yes | yes (optional) | Canonical display label. **Mirrors `Task.description`** during transition — see drift note. |
 | `createdAt` | `Date` | canonical | yes (Date-revived) | yes | In `DATE_KEYS`; rehydrated to `Date`. |
 | `tags` | `string[]?` | canonical | yes | yes (optional) | Free-form, normalized via `normalizeTag` (`lib/links.ts`). Backfilled to `[]`. |
@@ -70,6 +70,7 @@ future cleanup does not collapse them.
 |---|---|---|---|---|---|
 | `description` | `string` | canonical | yes | yes | Primary task text. `title` mirrors this. |
 | `completed` | `boolean` | canonical | yes | yes | Completion gate; triggers points award in `updateTask`. |
+| `loggedAction` | `boolean?` | canonical | yes | no | Implied-action Done log (`type: "action"`); included in Done-today even when not a Task. |
 | `icon` | `string?` | canonical | yes | no (passthrough) | Orb path or data URL for Lists "File Manager". |
 | `notes` | `string?` | canonical | yes | no | Free text; indexed by `lib/search.ts`. |
 | `taskDescription` | `string?` | canonical | yes | no | "Detailed description" distinct from `description`; edited in ItemDetail, read by search/LinkPicker. Naming is confusing but in active use. |
@@ -207,7 +208,10 @@ includes `fileValueSchema` and `fileValueSchema[]`). `AttributeType` adds
 | `defaultAttributeValues` | `Record<string, AttributeValue>?` | canonical | yes | no | Seeded onto new items (`withCategoryDefaults`). |
 | `displayedAttributes` | `string[]?` | canonical | yes | no | |
 | `itemLabel` | `string?` | canonical | yes | no | Singular item label. |
-| `detailPanels` | `ItemDetailPanel[]?` | canonical | yes | no | |
+| `itemTypeId` | `string?` | canonical | yes | no | Default type for new rows (`withListMembership`). |
+| `detailPanels` | `ItemDetailPanel[]?` | canonical | yes | no | Extra tabs unioned onto the type's panels. |
+| `hiddenDetailPanels` | `ItemDetailPanel[]?` | canonical | yes | no | Hide tabs even if the type would show them. |
+| `rules` | `ItemTypeRule[]?` | canonical | yes | no | List-scoped rules including implied actions. |
 
 ## `CategoryFolder` (`lib/types.ts`)
 
@@ -235,12 +239,14 @@ defaulted `true` in v4 migration; `categoryIds` deduped in v6.
 ## `ItemTypeDefinition` (`lib/types.ts`) — the type-extensibility seam
 
 Declared in full (`id`, `name`, `pluralName`, `itemLabel`, `description`, `icon`,
-`color`, `builtin`, `attributes`, `defaultAttributeValues`, `displayedAttributes`,
-`detailPanels`, `capabilities`, `rules`) with companion types `ItemTypeCapabilities`,
-`ItemTypeRule`, `ItemRuleCondition`, `ItemRuleAction`. **No Zod schema** and the
-type-creation/management UI is not built yet (`docs/SPEC_MAPPING.md` long-term
-vision). This is a forward-looking seam, not legacy — keep, but it is currently
-unvalidated and lightly used.
+`color`, `builtin`, `kind` (`system` \| `catalog`), `attributes`,
+`defaultAttributeValues`, `displayedAttributes`, `detailPanels`, `detailLayout`
+(hero image + featured attributes), `capabilities`, `rules`) with companion types
+`ItemTypeCapabilities`, `ItemTypeRule`, `ItemRuleCondition`, `ItemRuleAction`
+(including `logAction` / `incrementHabit`). Operators include `increased` /
+`decreased` / `changed` (compare previous snapshot on update). **No Zod schema.**
+The type-creation UI lives in `components/ItemTypes/`. Catalog types persist user
+edits; system types are re-seeded from code.
 
 ## Module platform contract (`lib/types.ts`) — Phase 0 seam (additive, forward-looking)
 
@@ -268,11 +274,32 @@ exact names:
   (ItemRuleCondition[]); actions; enabled? }`.
 
 **Mutation seam:** `lib/workflow-hooks.ts` exports `ItemMutationEvent`,
-`registerItemMutationDispatcher`, and `dispatchItemMutation`. `lib/task-store.ts`
-fires `create` / `update` / `complete` events (best-effort `changedAttrs` on
-update) from `addTask` / `updateTask`. Default dispatcher is `null` → no behavior
-change today; a throwing dispatcher never breaks the originating mutation. No Zod
-schema for the module/workflow types yet (forward-looking, unvalidated).
+`registerItemMutationDispatcher`, `addItemMutationListener`, and
+`dispatchItemMutation`. `lib/task-store.ts` fires `create` / `update` /
+`complete` events (best-effort `changedAttrs` on update) from `addTask` /
+`updateTask`. `initWorkflowEngine` (`lib/services/item-mutation-service.ts`) on
+client mount wires module workflows **and** implied-action effects
+(`logAction` / `incrementHabit`). A throwing dispatcher never breaks the
+originating mutation. No Zod schema for the module/workflow types yet.
+
+---
+
+## Habits store (`WeeklyTask` / `TaskCompletion`) (`lib/types.ts` ~L546–620)
+
+Persisted in `cogs-habits-store` (Zustand persist **v5**), not `cogs-task-storage`. Completions are keyed by local `YYYY-MM-DD` on `WeeklyData`.
+
+| field | type | class | notes |
+|---|---|---|---|
+| `WeeklyTask.type` | `TaskType` | canonical | BOOLEAN, GOAL, TEXT, INCREMENTAL (climb). TIME/COUNT normalize to GOAL. |
+| `WeeklyTask.frequency` | `"daily" \| "weekly" \| "monthly"` | canonical | Which Habits tab the habit appears on. Independent of climb cadence. |
+| `WeeklyTask.goal` / `unit` | number / string | canonical | Fixed target for GOAL habits. `unit` also used on climb. |
+| `WeeklyTask.incrementalData` | `IncrementalHabitPersisted` | canonical (`IncrementalHabitData`) | `cadence`, `startValue`, `increment`, `unit?`, `startedOn?`. Source of truth after v3. |
+| `IncrementalHabitLegacy.currentValues` / `weeklyIncrement` | `Record<string, number>` | legacy | Pre-cadence multi-metric maps. Migrated in persist v3 via `lib/incremental-habits.ts`. |
+| `TaskCompletion.value` | `number?` | canonical | Numeric log for GOAL **and** climb (same cell shape: value vs target). |
+| `TaskCompletion.incrementalValues` | `Record<string, number>?` | legacy | Old per-metric logs. Still **read** as fallback; new writes omit it. |
+| `TaskCompletion.completed` / `text` / `goal` | mixed | canonical | Boolean / text / snapshot of goal. |
+| `HabitsState.gradeTolerance` | `number` (1–100) | canonical | Raw day % that counts as 100 on the Week grade curve. Default 100 (no curve). |
+| `HabitsState.outputGradeTolerance` | `number` (1–100) | canonical | Raw elapsed row % that counts as 100 on the Perfect output curve. Default 100. Independent of `gradeTolerance`. |
 
 ---
 
@@ -288,8 +315,9 @@ data is user-owned, persisted, and partly a roadmap surface.
 | `Task.riskFlag` | `lib/types.ts` L264 | Declaration only; no usages. | Same — Brain2 placeholder, needs confirmation. |
 | `Task.definitionOfDone` | `lib/types.ts` L268 | Declaration only; referenced solely in roadmap markdown. | Same — perfectionism-guardrail placeholder; keep until that feature is cut. |
 | `Task.taskDescription` (naming) | `lib/types.ts` L273 | Actively used, but the name collides conceptually with `description`/`title` and the `PointsEntry.taskDescription` / `data-source` field of the same name (unrelated). | **Do NOT remove** — in active use. Flag for a future *rename* (e.g. `body`/`detail`) to reduce confusion. Needs human confirmation. |
-| `WeeklyTask.categoryId` | `lib/types.ts` L458 | Commented `deprecated — kept for data compat`. | Keep until a habit-store migration drops it; confirm no persisted habit data relies on it. |
-| `TaskType.TIME` / `TaskType.COUNT` | `lib/types.ts` L436–437 | Commented `legacy — treated as GOAL`. | Keep (enum values may exist in persisted habit data); fold in a habit migration later. |
+| `WeeklyTask.categoryId` | `lib/types.ts` L601 | Commented `deprecated — kept for data compat`. | Keep until a habit-store migration drops it; confirm no persisted habit data relies on it. |
+| `IncrementalHabitLegacy.currentValues` / `weeklyIncrement` | `lib/types.ts` L588–591 | Pre-cadence multi-metric maps. Migrated in habits-store persist v3 via `lib/incremental-habits.ts`. | Keep optional until all local stores have run v3. |
+| `TaskCompletion.incrementalValues` | `lib/types.ts` L612 | Legacy per-key climb logs. New completions write `value` only (`incrementalCompletionPayload`). | Keep as read fallback until v3 has run everywhere; then consider drop. |
 | `priorityFormula` vs `priorityWeights` | `lib/task-store.ts` | Two parallel weighting systems persisted on the store: `priorityFormula` (4 weights, leftover from an older score helper) and `priorityWeights` (`PriorityWeights`, the transparent formula in `lib/priority.ts`). | Possible duplication of intent. Needs human confirmation on which is canonical before consolidating. |
 | `TodoItem` overlap with `Task` | `lib/types.ts` L371–394 | `TodoItem` re-declares `scheduledWeek/Month/Year`, `daysPushed/weeksPushed/monthsPushed`, `hiddenFromTodo`, `rewardValue`, `estimatedDuration` that also live on `Task`. | Likely a separate view-model, not the persisted item. Verify whether `TodoItem` is still constructed anywhere or is itself dead before touching. Mark **needs human confirmation**. |
 

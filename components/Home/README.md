@@ -9,7 +9,7 @@ The Home tab is the default screen each session. It combines a header row (date,
 | `home-dashboard.tsx` | Container: date card, `PointsStats`, `DailyProgressQuickview`, review banner, `NeedsAttention` card, the five sub-tabs, and a shared `TaskDetailPopup` |
 | `home-review-banner.tsx` | Surfaces due end-of-period reviews (§8.7); links to header Review dropdown |
 | `points-stats.tsx` | All Time / Today / This Week / This Month points cards with progress bars (`lib/points-store` + `lib/task-store`) |
-| `daily-progress-quickview.tsx` | Header card showing today's to-do and daily-habit completion (% done, items left) |
+| `daily-progress-quickview.tsx` | Header card showing today's to-do and daily-habit completion (% done, items left). Climb habits count as done when `isHabitGoalMet` sees a log at/above that day's derived target. |
 | `NeedsAttention.tsx` | Read-only triage card: surfaces tasks that have slipped or are stuck (overdue / blocked / unclarified / stale), grouped by reason with badges. Reads `taskRepository.getAll()`, runs the pure `getNeedsAttention` selector from `lib/needs-attention.ts`, and routes row clicks to the dashboard's `TaskDetailPopup` via `onOpenItem`. Collapsible; performs no mutations. See `NeedsAttention.notes.md`. |
 
 ## Shared date
@@ -20,9 +20,9 @@ The dashboard uses `lib/use-current-date.ts` for a single **selected day** share
 
 | Folder | Sub-view |
 |--------|----------|
-| `Habits/` | Daily / weekly / monthly habit tracker |
+| `Habits/` | Compact daily week grid + **Week grade** (day columns) and **Perfect output** (elapsed rows) + 4+ week-streak chips |
 | `Plan/` | Month / Week / Day calendar + plan text + **Paste Events** |
-| `ToDo/` | Tier-based day/week/month to-do |
+| `ToDo/` | Tier-based day/week/month to-do; **Done** includes implied-action logs |
 | `Goals/` | All-time **Objectives** (prioritizable per period) + quantifiable **Goals** that serve them, plus a Direction report |
 | `Tracking/` | TimeGrid life tracker + actual day log |
 

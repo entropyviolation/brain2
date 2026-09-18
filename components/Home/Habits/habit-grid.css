@@ -1,0 +1,212 @@
+/* Compact Daily habit spreadsheet — fit name + 7 days + week % without horizontal scroll. */
+
+.habit-grid-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.habit-grid {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 11px;
+  line-height: 1.15;
+}
+
+.habit-grid th,
+.habit-grid td {
+  padding: 2px 3px;
+  vertical-align: middle;
+  border-bottom: 1px solid hsl(var(--border) / 0.6);
+}
+
+.habit-grid thead th {
+  height: auto;
+  padding: 4px 3px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.habit-grid .col-name {
+  width: 15%;
+  text-align: left;
+  overflow: hidden;
+}
+
+.habit-grid .col-day {
+  width: 10.5%;
+  text-align: center;
+}
+
+.habit-grid .col-pct {
+  width: 7.5%;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.habit-pct {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.habit-grid .col-act {
+  width: 4.5%;
+  text-align: center;
+}
+
+.habit-grid .habit-name {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.habit-grid .habit-name > span:not(.habit-week-streak) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.habit-week-streak {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: hsl(var(--muted-foreground));
+}
+
+.habit-week-streak-hit {
+  color: #15803d;
+}
+
+.habit-week-streak-run {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  color: #ea580c;
+}
+
+.habit-cell-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.habit-cell-num input {
+  flex: 1 1 0;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  height: 22px;
+  padding: 0 2px;
+  font-size: 11px;
+  text-align: center;
+  border-radius: 4px;
+}
+
+.habit-cell-num input::-webkit-outer-spin-button,
+.habit-cell-num input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.habit-cell-num input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.habit-cell-num .habit-goal {
+  flex: 0 0 auto;
+  font-size: 10px;
+  color: hsl(var(--muted-foreground));
+  white-space: nowrap;
+}
+
+.habit-grid .habit-day-today {
+  background: linear-gradient(180deg, rgba(140, 212, 165, 0.18), rgba(159, 194, 165, 0.08));
+  box-shadow: inset 2px 0 0 #8cd4a5;
+}
+
+.habit-grid thead .habit-day-today {
+  background: linear-gradient(135deg, #8cd4a5, #9fc2a5);
+  color: #fff;
+  box-shadow: none;
+}
+
+.habit-grid thead .habit-day-today .habit-day-sub {
+  color: #fff;
+  font-weight: 700;
+}
+
+.habit-day-sub {
+  display: block;
+  font-size: 10px;
+  font-weight: 400;
+  color: hsl(var(--muted-foreground));
+}
+
+.habit-grades {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.habit-week-grade {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 4px 10px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 999px;
+  background: hsl(var(--background));
+  font-size: 12px;
+  cursor: pointer;
+  appearance: none;
+  font-family: inherit;
+  color: inherit;
+  text-align: left;
+}
+
+.habit-week-grade:hover {
+  border-color: hsl(var(--foreground) / 0.35);
+}
+
+.habit-week-grade strong {
+  font-variant-numeric: tabular-nums;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.habit-week-grade .habit-week-grade-bar {
+  width: 72px;
+  height: 6px;
+  border-radius: 999px;
+  background: hsl(var(--muted));
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.habit-week-grade .habit-week-grade-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.habit-tracker-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}

@@ -15,4 +15,4 @@ GLOBAL CHROME (all screens)
   Top-level tabs (7): Home | Lists | Docs | Scheduler | Operations | Modules | Analytics
 
 VIEW-SPECIFIC
-Monthly habit cards for longer-cycle routines. Completion feeds Analytics → Habits heatmap and points.
+Monthly-frequency habit cards for longer-cycle routines. Climb rows use the same `value / target` cell as Daily/Weekly. Completions feed Analytics → Habits heatmap, Streaks (derived climb targets), and points.
