@@ -10,7 +10,7 @@ import os from "node:os"
 import path from "node:path"
 import { execSync } from "node:child_process"
 import { ClassicLevel } from "classic-level"
-import { writeSharedPersist, sharedPersistPath } from "./persist-api.mjs"
+import { sharedPersistPath, mergeSharedPersistItems, readSharedPersist, shouldRejectVaultShrink, vaultRecordCount } from "./persist-api.mjs"
 
 const ORIGIN_PREFIX = "_http://localhost:3000\u0000\u0001"
 const CHROME_LS = path.join(
@@ -107,7 +107,15 @@ try {
 } catch {
   throw new Error("Chrome dump cogs-task-storage is not valid JSON — refusing to overwrite the hub")
 }
-const stored = writeSharedPersist({ items, source: "chrome-localhost" })
+const current = readSharedPersist()
+if (shouldRejectVaultShrink("cogs-task-storage", items["cogs-task-storage"], current.items["cogs-task-storage"])) {
+  const incoming = vaultRecordCount("cogs-task-storage", items["cogs-task-storage"])
+  const existing = vaultRecordCount("cogs-task-storage", current.items["cogs-task-storage"])
+  throw new Error(
+    `Chrome dump would shrink cogs-task-storage ${existing} → ${incoming} — refusing to overwrite the hub`,
+  )
+}
+const stored = mergeSharedPersistItems(items, "chrome-localhost")
 const inbox = inboxCount(items["cogs-task-storage"] || "")
 console.log(`[dump-chrome] wrote ${Object.keys(items).length} keys → ${sharedPersistPath()}`)
 console.log(`[dump-chrome] source=${stored.source} updatedAt=${stored.updatedAt}`)

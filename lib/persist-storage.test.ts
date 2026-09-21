@@ -80,4 +80,23 @@ describe("persist-storage", () => {
     expect(pickPersistItem(null, '{"state":{"fromHub":true}}')).toBe('{"state":{"fromHub":true}}')
     expect(pickPersistItem(null, undefined)).toBeNull()
   })
+
+  it("replaces a seed-sized local lists snapshot with a richer hub vault", () => {
+    const seed = JSON.stringify({ state: { tasks: Array.from({ length: 15 }, (_, i) => ({ id: String(i) })) } })
+    const vault = JSON.stringify({ state: { tasks: Array.from({ length: 2455 }, (_, i) => ({ id: String(i) })) } })
+    expect(pickPersistItem(seed, vault, "cogs-task-storage")).toBe(vault)
+    expect(pickPersistItem(vault, seed, "cogs-task-storage")).toBe(vault)
+  })
+
+  it("does not rewrite localStorage or the hub when the payload is unchanged", () => {
+    const fetchSpy = vi.fn()
+    vi.stubGlobal("fetch", fetchSpy)
+    const storage = cogsStateStorage()
+    const payload = '{"state":{"entries":[1,2,3]}}'
+    localStorage.setItem("cogs-timegrid-store", payload)
+    const setSpy = vi.spyOn(Storage.prototype, "setItem")
+    storage.setItem("cogs-timegrid-store", payload)
+    expect(setSpy).not.toHaveBeenCalled()
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
 })

@@ -15,8 +15,17 @@
  * localStorage (never imported from the hub). Electron seeds *missing* keys
  * from the hub on first boot, then keeps this profile's own snapshot so a refresh
  * cannot clobber completions, deletes, or new day to-dos.
+ *
+ * Electron `userData` is pinned to Application Support/`cogs` (`electron/user-data-path.js`).
+ * Do not let package.json `name` or `productName` choose a new empty profile.
+ *
+ * Identical `setItem` payloads are no-ops (no localStorage write, no hub POST)
+ * so a 3-second ingest poll cannot thrash the hub file. The hub itself also
+ * refuses Tracking/Sleep/Lists/Habits snapshots that shrink to less than half
+ * the stored records (`scripts/persist-api.mjs`).
  */
 import { createJSONStorage, type PersistStorage, type StateStorage } from "zustand/middleware"
+import { pickPersistItem as pickVaultItem } from "@/lib/vault-guard.js"
 
 type JsonStorageOptions = {
   reviver?: (key: string, value: unknown) => unknown
@@ -154,14 +163,11 @@ function loadHub(): Promise<HubSnapshot> {
 }
 
 /**
- * Electron may seed empty keys from the Chrome hub, but once this profile has
- * its own snapshot it must win. Re-applying the hub on every boot/getItem was
- * wiping completions, deletes, and new day to-dos on refresh.
+ * Electron may seed empty keys from the hub, but once this profile has its own
+ * snapshot it must win — unless that snapshot is a seed wipe vs the hub.
  */
-export function pickPersistItem(local: string | null, hubValue: unknown): string | null {
-  if (typeof local === "string") return local
-  if (typeof hubValue === "string") return hubValue
-  return null
+export function pickPersistItem(local: string | null, hubValue: unknown, name?: string): string | null {
+  return pickVaultItem(local, hubValue, name)
 }
 
 const hubPostTimers = new Map<string, ReturnType<typeof setTimeout>>()
@@ -197,11 +203,11 @@ export function cogsStateStorage(): StateStorage {
       } catch {
         local = null
       }
-      if (local != null) return local
+      if (local != null && !(hubEnabled() && isElectronRenderer())) return local
       if (hubEnabled() && isElectronRenderer()) {
         return loadHub().then((hub) => {
-          const chosen = pickPersistItem(null, hub?.items?.[name])
-          if (typeof chosen === "string") {
+          const chosen = pickPersistItem(local, hub?.items?.[name], name)
+          if (typeof chosen === "string" && chosen !== local) {
             try {
               localStorage.setItem(name, chosen)
             } catch {
@@ -219,6 +225,15 @@ export function cogsStateStorage(): StateStorage {
         return
       }
       try {
+        let previous: string | null = null
+        try {
+          previous = localStorage.getItem(name)
+        } catch {
+          previous = null
+        }
+        if (previous === value) {
+          return
+        }
         localStorage.setItem(name, value)
         recordPersistSuccess()
         postHub(name, value)

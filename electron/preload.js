@@ -8,6 +8,7 @@
  * will go through IPC handlers exposed here (see docs/SPEC_MAPPING.md §3).
  */
 const { contextBridge, ipcRenderer } = require("electron")
+const { pickPersistItem } = require("../lib/vault-guard.js")
 
 // Quick-capture IPC channel (Feature 10). MUST match `QUICK_CAPTURE_IPC_CHANNEL`
 // in `hooks/useQuickCaptureHotkey.ts` + `electron/main.js`.
@@ -37,10 +38,11 @@ function hydrateLocalStorageFromChromeHub() {
     const items = snapshot && snapshot.items
     if (!items || typeof items !== "object") return
     for (const [name, value] of Object.entries(items)) {
-      // Seed missing keys only. Overwriting on every boot replaced this
-      // profile's live vault with a stale Chrome snapshot (lost completions).
-      if (typeof name === "string" && typeof value === "string" && localStorage.getItem(name) == null) {
-        localStorage.setItem(name, value)
+      if (typeof name !== "string" || typeof value !== "string") continue
+      const local = localStorage.getItem(name)
+      const chosen = pickPersistItem(local, value, name)
+      if (typeof chosen === "string" && chosen !== local) {
+        localStorage.setItem(name, chosen)
       }
     }
   } catch {

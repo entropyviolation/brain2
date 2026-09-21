@@ -2,14 +2,26 @@
  * Dev-only shared persist hub so Chrome (localhost:3000) and Electron
  * (same URL, different Chromium profile) share Zustand localStorage keys.
  *
- * Chrome remains the seed of truth: scripts/dump-chrome-localstorage.mjs
- * writes this file from Chrome's profile. Electron hydrates from it.
+ * The live vault is Electron Application Support/`cogs`. Chrome dumps must
+ * merge through shrink guards so a 15-item seed cannot replace 2455 lists
+ * items. `lib/vault-guard.js` is the shared counter.
+ *
+ * Tracking (`cogs-timegrid-store`), Sleep (`cogs-sleep-store`), Lists
+ * (`cogs-task-storage`), and Habits (`cogs-habits-store`) refuse a POST
+ * that would shrink the vault to less than half its records. Identical
+ * values are not rewritten, so a poll tick cannot bump the file mtime.
  */
 import fs from "node:fs"
 import path from "node:path"
+import { createRequire } from "node:module"
 import { fileURLToPath } from "node:url"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const require = createRequire(import.meta.url)
+const { vaultRecordCount, shouldRejectVaultShrink } = require("../lib/vault-guard.js")
+
+export { vaultRecordCount, shouldRejectVaultShrink }
+
 const ROOT = path.resolve(__dirname, "..")
 const DATA_DIR = path.join(ROOT, "data")
 const DATA_FILE = path.join(DATA_DIR, "shared-persist.json")
@@ -52,8 +64,31 @@ export function writeSharedPersist(next) {
   return payload
 }
 
+export function mergeSharedPersistItems(incoming, source) {
+  const current = readSharedPersist()
+  const items = { ...current.items }
+  let skipped = 0
+  for (const [name, value] of Object.entries(incoming || {})) {
+    if (typeof name !== "string" || typeof value !== "string") continue
+    if (items[name] === value) continue
+    if (shouldRejectVaultShrink(name, value, items[name])) {
+      skipped++
+      continue
+    }
+    items[name] = value
+  }
+  const stored = writeSharedPersist({ items, source: source ?? current.source ?? "hub" })
+  return { ...stored, skipped }
+}
+
 export function upsertSharedPersistItem(name, value, source) {
   const current = readSharedPersist()
+  if (current.items[name] === value) {
+    return current
+  }
+  if (shouldRejectVaultShrink(name, value, current.items[name])) {
+    return { ...current, skipped: "shrink" }
+  }
   const items = { ...current.items, [name]: value }
   return writeSharedPersist({ items, source: source ?? current.source ?? "hub" })
 }
@@ -116,8 +151,13 @@ export async function handlePersistApi(req, res, pathname) {
         sendJson(res, 400, { ok: false, error: "Expected { items }" })
         return true
       }
-      const stored = writeSharedPersist({ items: body.items, source: body.source ?? "put" })
-      sendJson(res, 200, { ok: true, updatedAt: stored.updatedAt, keyCount: Object.keys(stored.items).length })
+      const stored = mergeSharedPersistItems(body.items, body.source ?? "put")
+      sendJson(res, 200, {
+        ok: true,
+        updatedAt: stored.updatedAt,
+        keyCount: Object.keys(stored.items).length,
+        skipped: stored.skipped,
+      })
     } catch (err) {
       sendJson(res, 400, { ok: false, error: err instanceof Error ? err.message : "Invalid JSON" })
     }
@@ -139,7 +179,11 @@ export async function handlePersistApi(req, res, pathname) {
         return true
       }
       const stored = upsertSharedPersistItem(body.name, body.value, body.source)
-      sendJson(res, 200, { ok: true, updatedAt: stored.updatedAt })
+      sendJson(res, 200, {
+        ok: true,
+        skipped: stored.skipped ?? false,
+        updatedAt: stored.updatedAt,
+      })
     } catch (err) {
       sendJson(res, 400, { ok: false, error: err instanceof Error ? err.message : "Invalid JSON" })
     }

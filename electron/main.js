@@ -15,8 +15,16 @@ const { app, BrowserWindow, shell, protocol, net, globalShortcut, ipcMain } = re
 const path = require("path")
 const fs = require("fs")
 const { pathToFileURL } = require("url")
+const { resolveElectronUserData } = require("./user-data-path")
 
 const isDev = !app.isPackaged
+
+// Pin userData before ready. package.json `name` / productName may be brain2;
+// the live vault still lives in Application Support/cogs. A rename that follows
+// the product name would boot an empty profile (seed lists, missing habits).
+// The git folder name (`cogs copy` → `brain2`) does not move this path.
+app.setPath("userData", resolveElectronUserData(app.getPath("appData")))
+console.log("[brain2] vault", app.getPath("userData"))
 // Must stay on localhost (not 127.0.0.1) — localStorage is origin-scoped and all
 // persisted Zustand data lives under http://localhost:3000.
 const DEV_SERVER_URL = "http://localhost:3000"
