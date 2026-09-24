@@ -1,10 +1,12 @@
 import { describe, it, expect } from "vitest"
 import {
+  clarifyNeedsAttentionItem,
   getNeedsAttention,
   groupNeedsAttentionByReason,
+  splitNeedsAttentionItem,
   type NeedsAttentionReason,
 } from "@/lib/needs-attention"
-import type { Task } from "@/lib/types"
+import type { Goal, Task } from "@/lib/types"
 
 const NOW = new Date("2026-06-23T12:00:00.000Z")
 
@@ -50,6 +52,12 @@ describe("getNeedsAttention — reasons", () => {
     expect(reasonsFor(entries, "inbox")).toEqual(["unclarified"])
   })
 
+  it("does not flag monkey brain dumps as unclarified", () => {
+    const task = makeTask({ id: "mb", stage: "inbox", monkeyBrain: true })
+    const entries = getNeedsAttention([task], { now: NOW })
+    expect(reasonsFor(entries, "mb")).toEqual([])
+  })
+
   it("flags blocked: a dependency is not completed", () => {
     const dep = makeTask({ id: "dep", completed: false })
     const task = makeTask({ id: "blocked", dependencies: ["dep"] })
@@ -62,6 +70,13 @@ describe("getNeedsAttention — reasons", () => {
     const task = makeTask({ id: "unblocked", dependencies: ["dep"] })
     const entries = getNeedsAttention([dep, task], { now: NOW })
     expect(reasonsFor(entries, "unblocked")).toEqual([])
+  })
+
+  it("does not flag blocked when a dependency is a missed opportunity", () => {
+    const dep = makeTask({ id: "dep", status: "missed", completed: false })
+    const task = makeTask({ id: "unblocked-late", dependencies: ["dep"] })
+    const entries = getNeedsAttention([dep, task], { now: NOW })
+    expect(reasonsFor(entries, "unblocked-late")).toEqual([])
   })
 
   it("flags blocked when a dependency id cannot be resolved", () => {
@@ -96,6 +111,20 @@ describe("getNeedsAttention — exclusions", () => {
     const task = makeTask({
       id: "done",
       completed: true,
+      stage: "inbox",
+      deadline: daysAgo(5),
+      createdAt: daysAgo(60),
+      scheduledDate: undefined,
+    })
+    const entries = getNeedsAttention([task], { now: NOW })
+    expect(entries).toHaveLength(0)
+  })
+
+  it("excludes missed-opportunity tasks even when they would otherwise flag", () => {
+    const task = makeTask({
+      id: "late",
+      status: "missed",
+      completed: false,
       stage: "inbox",
       deadline: daysAgo(5),
       createdAt: daysAgo(60),
@@ -165,5 +194,178 @@ describe("groupNeedsAttentionByReason", () => {
     expect(groups.unclarified.map((e) => e.item.id)).toEqual(["multi"])
     expect(groups.blocked).toEqual([])
     expect(groups.stale).toEqual([])
+    expect(groups.neglected).toEqual([])
+    expect(groups.zombie).toEqual([])
+  })
+})
+
+function makeGoal(overrides: Partial<Goal> & { id: string }): Goal {
+  return {
+    title: overrides.title ?? overrides.id,
+    type: "count",
+    target: 5,
+    current: 0,
+    periodKind: "year",
+    objectiveIds: ["obj-1"],
+    points: 1,
+    completed: false,
+    createdAt: daysAgo(30),
+    ...overrides,
+  }
+}
+
+describe("getNeedsAttention — neglected", () => {
+  it("flags an operation with no recent logged work on its tree", () => {
+    const op = makeTask({
+      id: "op-cold",
+      type: "operation",
+      createdAt: daysAgo(30),
+      scheduledDate: undefined,
+    })
+    const entries = getNeedsAttention([op], { now: NOW })
+    expect(reasonsFor(entries, "op-cold")).toEqual(["stale", "neglected"])
+  })
+
+  it("does not flag an operation with a recent time log", () => {
+    const op = makeTask({
+      id: "op-hot",
+      type: "operation",
+      createdAt: daysAgo(30),
+      scheduledDate: undefined,
+      timeLogs: [{ id: "l1", date: "2026-06-20", durationMinutes: 40 }],
+    })
+    const entries = getNeedsAttention([op], { now: NOW })
+    expect(reasonsFor(entries, "op-hot")).not.toContain("neglected")
+  })
+
+  it("does not flag a brand-new operation with no logs yet", () => {
+    const op = makeTask({
+      id: "op-new",
+      type: "operation",
+      createdAt: daysAgo(2),
+      scheduledDate: undefined,
+    })
+    expect(reasonsFor(getNeedsAttention([op], { now: NOW }), "op-new")).not.toContain("neglected")
+  })
+
+  it("does not flag a done or abandoned operation", () => {
+    const done = makeTask({
+      id: "op-done",
+      type: "operation",
+      createdAt: daysAgo(40),
+      scheduledDate: undefined,
+      attributes: { stage: "done" },
+    })
+    const abandoned = makeTask({
+      id: "op-abandoned",
+      type: "operation",
+      createdAt: daysAgo(40),
+      scheduledDate: undefined,
+      attributes: { stage: "abandoned" },
+    })
+    const entries = getNeedsAttention([done, abandoned], { now: NOW })
+    expect(reasonsFor(entries, "op-done")).not.toContain("neglected")
+    expect(reasonsFor(entries, "op-abandoned")).not.toContain("neglected")
+  })
+
+  it("flags a list item with no recent linked completed work", () => {
+    const item = makeTask({
+      id: "list-cold",
+      type: "item",
+      stage: "list",
+      createdAt: daysAgo(40),
+      scheduledDate: undefined,
+    })
+    const entries = getNeedsAttention([item], { now: NOW })
+    expect(reasonsFor(entries, "list-cold")).toContain("neglected")
+  })
+
+  it("does not flag a list item that a completed action recently served", () => {
+    const item = makeTask({
+      id: "list-warm",
+      type: "item",
+      stage: "list",
+      createdAt: daysAgo(40),
+      scheduledDate: undefined,
+    })
+    const work = makeTask({
+      id: "work",
+      completed: true,
+      completedDate: daysAgo(2),
+      links: [{ id: "lnk", relation: "action-of", targetId: "list-warm" }],
+    })
+    expect(reasonsFor(getNeedsAttention([item, work], { now: NOW }), "list-warm")).not.toContain("neglected")
+  })
+
+  it("flags a neglected goal via opts.goals using goalsNeedingAttention", () => {
+    const goal = makeGoal({ id: "goal-cold", title: "Read 20 books" })
+    const entries = getNeedsAttention([], { now: NOW, goals: [goal] })
+    expect(reasonsFor(entries, "goal-cold")).toEqual(["neglected"])
+    expect(entries[0]?.item.title).toBe("Read 20 books")
+  })
+
+  it("does not flag a goal with a recent contributing completion", () => {
+    const goal = makeGoal({ id: "goal-hot", title: "Write" })
+    const work = makeTask({
+      id: "served",
+      completed: true,
+      completedDate: daysAgo(1),
+      contributesToGoalIds: ["goal-hot"],
+    })
+    expect(getNeedsAttention([work], { now: NOW, goals: [goal] }).map((e) => e.item.id)).not.toContain(
+      "goal-hot",
+    )
+  })
+})
+
+describe("getNeedsAttention — zombie", () => {
+  it("flags a task pushed many days", () => {
+    const task = makeTask({ id: "pushed", daysPushed: 7 })
+    expect(reasonsFor(getNeedsAttention([task], { now: NOW }), "pushed")).toEqual(["zombie"])
+  })
+
+  it("flags a task pushed many weeks", () => {
+    const task = makeTask({ id: "weekly", weeksPushed: 3 })
+    expect(reasonsFor(getNeedsAttention([task], { now: NOW }), "weekly")).toEqual(["zombie"])
+  })
+
+  it("flags high entropy that has lived past the resident threshold", () => {
+    const task = makeTask({ id: "murky", entropy: 0.8, createdAt: daysAgo(22) })
+    expect(reasonsFor(getNeedsAttention([task], { now: NOW }), "murky")).toEqual(["zombie"])
+  })
+
+  it("does not flag high entropy on a young task", () => {
+    const task = makeTask({ id: "fresh-murky", entropy: 0.9, createdAt: daysAgo(3) })
+    expect(getNeedsAttention([task], { now: NOW })).toHaveLength(0)
+  })
+
+  it("does not treat operations or list items as zombies", () => {
+    const op = makeTask({ id: "op", type: "operation", daysPushed: 12, createdAt: daysAgo(2) })
+    const item = makeTask({
+      id: "item",
+      type: "item",
+      stage: "list",
+      daysPushed: 12,
+      createdAt: daysAgo(2),
+    })
+    const entries = getNeedsAttention([op, item], { now: NOW })
+    expect(reasonsFor(entries, "op")).not.toContain("zombie")
+    expect(reasonsFor(entries, "item")).not.toContain("zombie")
+  })
+})
+
+describe("queue actions", () => {
+  it("clarify leaves the inbox the way Inbox does", () => {
+    const inbox = makeTask({ id: "in", stage: "inbox", lists: ["next"] })
+    expect(clarifyNeedsAttentionItem(inbox).stage).toBe("clarified")
+    const bare = makeTask({ id: "bare", stage: "inbox", lists: [] })
+    expect(clarifyNeedsAttentionItem(bare).stage).toBe("list")
+  })
+
+  it("split appends parsed lines as subtasks", () => {
+    const task = makeTask({ id: "z", daysPushed: 8, subtasks: [] })
+    const next = splitNeedsAttentionItem(task, "1. Draft\n- Edit\n")
+    expect(next?.subtasks?.map((s) => s.description)).toEqual(["Draft", "Edit"])
+    expect(splitNeedsAttentionItem(task, "   \n")).toBeNull()
   })
 })

@@ -84,4 +84,12 @@ describe("DailyProgressQuickview", () => {
     expect(screen.getByText("1 left · 50%")).toBeInTheDocument()
     expect(screen.getByText("0 left · 100%")).toBeInTheDocument()
   })
+
+  it("puts the meters in the CRT and summarizes the day in the footer", () => {
+    render(<DailyProgressQuickview currentDate={currentDate} instrument />)
+    expect(screen.getByText("Today's Progress")).toBeInTheDocument()
+    expect(screen.getByText("To do 1/2 · habits 1/1")).toBeInTheDocument()
+    expect(document.querySelector(".home-crt.is-stack")).toBeTruthy()
+    expect(document.querySelector(".hab-progress-title")).toBeNull()
+  })
 })

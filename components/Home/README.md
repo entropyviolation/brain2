@@ -1,38 +1,63 @@
 # `components/Home/` — Home Dashboard
 
-The Home tab is the default screen each session. It combines a header row (date, points, today's progress, review banner), a **Needs Attention** queue card, and five sub-tabs: **Habits**, **Plan**, **To Do**, **Goals**, and **Tracking**.
+The Home tab is the default screen each session. The global **BRAIN2** pinned mill title bar lives in `components/AppHeader.tsx` (wired from `app/page.tsx`), not in this folder — Friend / Review / System / optional **now** well (between System and Capture; idle → hidden; live Working sessions show name, elapsed, Stop, Pause↔Resume) / Capture. First-wave Names stamps (`data-ui-name` + `data-ui-docs`) sit on `HomeOverview`, `NeedsAttention`, the Home tabs bay, and the Tracking window here; Habits / Plan / To Do / Goals / Tracking interiors stamp their own desks. Click the **photograph** for that friend’s details. The **chat button** asks for a Stardew-style bubble (habit / today's To Do / Next Action / affection / whim). Click the **bubble** for the mission sheet (the task opens item detail on top; Accept until the end of the day; Decline asks for smaller tasks, then a first step, then a reason). Esc / × / outside dismisses the bubble without declining. Gallery **Details** is the same page. Pack friends start unnamed so you can name them. Worn friend persists until Monday. Returning friends may say hi again. Gallery delete is confirmed and stays gone. Plan + future: [`docs/FRIEND_COMPANION.md`](../../docs/FRIEND_COMPANION.md). Text fields (Gallery names included) use navy focus, never WebKit orange. Home combines a header strip (date + hidable overview squares), a **Needs Attention** queue card, and five sub-tabs: **Habits**, **Plan**, **To Do**, **Goals**, and **Tracking**. The overview strip is the same on every sub-tab — not a Habits-only instrument.
+
+**Habits is the favorite Home surface** — most developed, closest-to-perfect. Plan / To Do / Goals / Tracking interiors look at its Habits Tab Control Panel, analog furniture, Willpower gems (**chrome + black-mirror** oval), CRT phosphor, and designrefs skeuomorph ([`docs/DESIGN_STYLE.md` — Look at Habits](../../docs/DESIGN_STYLE.md#look-at-habits--how-to-extend)). Do not clone `.hab95` onto those rooms; steal the language. Repeat milled chrome around a black-mirror well for other precious objects.
 
 ## Files
 
 | File | Purpose |
 |------|---------|
-| `home-dashboard.tsx` | Container: date card, `PointsStats`, `DailyProgressQuickview`, review banner, `NeedsAttention` card, the five sub-tabs, and a shared `TaskDetailPopup` |
-| `home-review-banner.tsx` | Surfaces due end-of-period reviews (§8.7); links to header Review dropdown |
-| `points-stats.tsx` | All Time / Today / This Week / This Month points cards with progress bars (`lib/points-store` + `lib/task-store`) |
-| `daily-progress-quickview.tsx` | Header card showing today's to-do and daily-habit completion (% done, items left). Climb habits count as done when `isHabitGoalMet` sees a log at/above that day's derived target. |
-| `NeedsAttention.tsx` | Read-only triage card: surfaces tasks that have slipped or are stuck (overdue / blocked / unclarified / stale), grouped by reason with badges. Reads `taskRepository.getAll()`, runs the pure `getNeedsAttention` selector from `lib/needs-attention.ts`, and routes row clicks to the dashboard's `TaskDetailPopup` via `onOpenItem`. Collapsible; performs no mutations. See `NeedsAttention.notes.md`. |
+| `home-dashboard.tsx` | Container: date card (Widgets key on the right of the date bar), shared `HomeOverview` strip, `NeedsAttention` card, the five sub-tabs, and a shared `TaskDetailPopup`. When **Habits** is active the header + tracker sit in one `.hab95` metal console; Plan / To Do / Goals / Tracking unwrap that console. The overview squares stay mounted above every panel (one persist blob). Needs Attention is a milled fascia (category keys hide a queue; Clarify / Split / Delete are metal keys). Depth and spacing follow [`docs/DESIGN_STYLE.md`](../../docs/DESIGN_STYLE.md#depth--spacing) (nested bevels, tight pack). Last-action undo (Cmd/Ctrl-Z) is mounted on the app shell, and Home → Tracking also arms `Tracking/tracking-undo.ts` in the capture phase so a focused timegrid still reverses the last stroke. Tracking is a milled fascia window (`tracking-chrome.css`, `data-ui-name="Tracking"`) holding Time Grid / Activity Log / Day Log (CRT title + equal-fill `.hab-view-changer` keys with power lamps in `.trk-fascia`). Stack: fascia, then `.trk-now-module` (**Working on this now** + **Working on right now**), then `TrkChromeStack` (pen tray + tools, view modes with **Log activity** on `.trk-grid-rail` for Time Grid / Day Log — Activity Log keeps **Log activity** on `.trk-period`, then TIME/DIV + plot in `.trk-desktop`), then the **metal** day-notes well (`#trk-day-notes.trk-notes`) at the bottom of the chrome stack. Collapsed notes show only the Day notes legend + Expand; Expand opens a tall composer and tall history (`notesWellExpanded`; List / Bulk / Latest also `.hab-view-changer`). |
+| `home-chrome.css` | Milled fascia for the Home date plate, overview squares, and the Habits/Plan/To Do/Goals/Tracking sub-tab bay (`data-ui-name="Home tabs"`: same brushed bay + equal CRT keys as App tabs; air above the bay, panels flush below). Shared CRT `--hab-crt-green: #7dffc4` + `--hab-crt-glow`. The weekday sits in a CRT; the calendar date is a nameplate; Widgets is a raised key. Habits Daily additionally uses `Habits/habit-chrome.css` (`.hab95`) and does not flatten that plate. |
+| `home-overview.tsx` | Shared instrument row (`data-ui-name="Home overview"`, `#layout`). Every tile is caption + CRT + footer, equal height (`--home-tile-h`), flexing up to 200px so the row fills. Each tile is a milled header-style well: a metal nameplate with a power lamp sits on the rim, the CRT is inset, and the footer is a padded silver label. Click a tile for the silver handheld (dark wells, nixie digits, chunky keys; settings only when the widget has any). × asks **Are you sure?** before hide. Default tiles: Review due, **Points** (all time / today / week / month), **Latest award**, Today's Progress, **screen pet**, **Days Until**. Addable: Affirmation, Weather, Next, Day lamp, **Solar remainder**, **Tracking now**, **Night well**, **Harvest leftover**, **Inbox mill**. Hide / add / reorder persist in `lib/home-widgets-store.ts` (v6). The **Widgets** key sits in the corner of the date plate (`home-widgets-menu.tsx`), not a tile. Gradient CSS vars are Habits `percentLedTint`, `gradeTubeColor`, `outputGradeTubeColor` (read-only). |
+| `home-widget-dialog.tsx` | Shared click-open silver handheld (`home-widget-instrument`): caption, power lamp, corner ×, one scroll. `WidgetWell` / `WidgetWells` are the dark readouts. **Are you sure?** hide confirm stays a short ask (`TileHide`). |
+| `home-days-until.tsx` | Days Until countdown. Date + label persist in `lib/home-days-until-store.ts`. The label keeps spaces. |
+| `home-award-tile.tsx` | Latest award (default on). CRT is the newest positive ledger amount. Footer is why: completed task, high-completion bonus, habit grades higher than yesterday, or weekly habit grades higher than last week. Click lists recent awards. Amounts for those bonuses are Habits → Settings. |
+| `home-glance-tiles.tsx` | Optional Night well, Harvest leftover, and Inbox mill. |
+| `home-solar-tile.tsx` | Solar remainder (default off). Until sunrise → sunrise → to sunset → sunset → after sunset → midnight. Pin from weather / Settings city / San Diego. |
+| `home-tracking-tile.tsx` | Tracking now (default off). Current or last-known Activity / Location / Mood / Company. **Update** paints from now through end of day. |
+| `home-widgets-menu.tsx` | **Widgets** key on the date title bar. Popover adds, hides (with Are you sure?), and reorders overview tiles. |
+| `home-screen-pet.tsx` | Pixel CRT pet (default on). Caption is a clock. Pose follows today's habit completion (asleep under 20%, idle, pleased at 100%; no habits stays idle). Not today's friend — no photo, mission, or gallery. Reduced motion holds one frame. |
+| `home-next-tile.tsx` | Next Plan event on the selected day, else the next open To Do (default off). Click opens the hit; the dialog jumps to that Home tab. |
+| `home-day-lamp.tsx` | One CRT word for the day — Quiet / Dim / Warm / Bright / Full — tinted with the three progress hues (default off). Click explains the word. |
+| `home-day-stats.ts` | Shared today to-do and daily-habit counts for Progress, the pet, and the Day lamp. |
+| `weather-instrument.tsx` | Home weather tile + detail dialog. Tile: city caption, CRT degree + glyph, one footer glance. Click opens city search, beach picker, rain plate, week strip, NOAA tides. Open-Meteo geocoding; last pin `cogs-home-weather`. Detail chrome is phosphor / metal / Win95 navy — no orange. |
+| `home-review-banner.tsx` | Review-due square (§8.7). Count in the CRT, period in the footer, **Start review** / **Dismiss** as raised keys. Session dismiss does not alter the persist catalog. |
+| `points-stats.tsx` | All Time / Today / This Week / This Month math + `useHomePoints`. Overview `PointsBoard` is one tile with four CRT lines. `PointsStats` cards and the instrument quad still show the four wells. |
+| `daily-progress-quickview.tsx` | Today's to-do and daily-habit completion. Climb habits count as done when `isHabitGoalMet` sees a log at/above that day's derived target. `instrument` puts the meters in the CRT and one footer line (`To do a/b · habits c/d`). |
+| `NeedsAttention.tsx` | Daily-door triage (`data-ui-name="Needs Attention"`): milled bay, category keys you can hide (persisted `cogs-needs-attention-hidden`), overdue / blocked / unclarified / neglected / zombie. Stale stays on the selector and is omitted here. Row keys: **Clarify** (inbox only — leave the inbox), **Split** (steps), **Delete**. Reads `taskRepository.getAll()` + goals-store, runs `getNeedsAttention`, routes title clicks to `TaskDetailPopup`. See `NeedsAttention.notes.md`. |
 
 ## Shared date
 
-The dashboard uses `lib/use-current-date.ts` for a single **selected day** shared by the header, points, progress, Plan panel, Day Log, and daily habit grid. The date advances at local midnight; main and Tracking sub-tabs persist in `localStorage`.
+The dashboard uses `lib/use-current-date.ts` for a single **selected day** shared by the header, points, progress, Plan panel, Time Grid, Activity Log, Day Log, and day notes. Navigating to another day survives refresh and leaving Home. Midnight only advances the cursor when it was still on today. Main and Tracking sub-tabs persist in `localStorage`. Habits Daily / Weekly / Monthly + the week/month offset persist too.
+
+**Undo.** Cmd/Ctrl-Z (Cmd/Ctrl-Shift-Z to redo) reverses the last Home or Tracking write: a painted or erased block, a week range fill, a sleep log change, a habit cell, completing a to-do, or a Day Log time entry. The stack lives in `lib/action-history.ts` and is wired from `app/page.tsx`. While Tracking is the active Home tab, `Tracking/tracking-undo.ts` listens in the capture phase so Cmd/Ctrl-Z still pops that stack when the timegrid is focused (the header Tracking dialog arms the same hook while it is open). Typing in a field still uses the browser's undo.
 
 ## Subfolders
 
 | Folder | Sub-view |
 |--------|----------|
-| `Habits/` | Compact daily week grid + **Week grade** (day columns) and **Perfect output** (elapsed rows) + 4+ week-streak chips |
-| `Plan/` | Month / Week / Day calendar + plan text + **Paste Events** |
-| `ToDo/` | Tier-based day/week/month to-do; **Done** includes implied-action logs |
-| `Goals/` | All-time **Objectives** (prioritizable per period) + quantifiable **Goals** that serve them, plus a Direction report |
-| `Tracking/` | TimeGrid life tracker + actual day log |
+| `Habits/` | Compact daily week grid, **Day View** (today + week % only; larger bold titles; wide daily-completion fill+ticks), or jewelry heatmap in a milled fascia console (`.hab95`: CRT **Habits** title, Daily/Weekly/Monthly bay with power lamps, period nameplate, metal Settings / New habit); weekly 7-week / monthly 7-month grids; Habits Tab Control Panel (milled gauges, Daily streak, **Sort Habits** metal plate above **Exemption wand**, grouped Heatmap View / Day View / **Hide Completed Today** (persisted; also hides exempt rows) / Loading Bar / **Small LEDs** rockers, New habit, **Willpower gems** pinned to the control panel foot with collected habit gems); noble-gas **finger-tube** grade meters (rounded dome; per-grade discharge hue); recessed Yes/No panel lamps (15px circular well or fill-cell rectangular consult window); completion % is a milled channel by default (compact 10-pip on week/row; wide fill on Day View daily footer; smaller numeric LED optional); far-left 18px set-stone gem/edit (inverts while contributing a Willpower gem this week; title wraps; streak/× under the name; delete in habit settings). File packing: `Habits/README.md`. |
+| `Plan/` | Milled fascia Month / Week / Day calendar (CRT title, Month/Week/Day bay, period nameplate, metal keys) + opalescent event chips + per-event color + plan text + **Paste Events** + **Add Plan**; packed Explorer rail on every period (**To Do / Habits / Next actions**, habit gems + Lists orbs, drag handles, 10-pip capacity, search/sort, period to-do add; double-click opens item detail); Day agenda drag-to-plan (todos, undone daily habits, next actions) writes `brain2-planned-actions` with notes — not events, not habit completion; click-drag empty minutes or **Add Plan** = planned action; Day schedule fills the split column beside a long rail (hour rows 152px); bounded Edit Event window (title-bar × + Cancel / Create) + unsaved-changes guard; compact month squares; optional Plan-only Dark latch (button **Dark** / **light mode**); optional **Gem and trinket** / **no gem no trinket** month mode (past days); Day grid lands on now / wake |
+| `ToDo/` | Milled fascia (CRT **To Do**, period nameplate, Day/Week/Month keys, Show / Sort / Pace bays) over a packed list well. The title jewel (dove) is also painted at photograph size on the desktop under the window. **Done** includes implied-action and habit logs, each with the clock window and duration it took — autogenerated values marked **est.** and correctable in place; **usually ~N** from similar observed sessions; **Missed opportunities** is the too-late twin of Done |
+| `Goals/` | Milled fascia for **Objectives** (prioritize per period) + quantifiable **Goals** + Direction CRT / pewter tape. The title jewel (cat in the bed) is also painted at photograph size on the desktop under the window |
+| `Tracking/` | Minute-resolution life tracker in a milled fascia window (CRT title + Time Grid / Activity Log / Day Log bay): Show/Sort/**Expand↔Conceal**/**New pen** on the palette rail (beads default to one row; creator hidden until New pen), two-column pen + tools row (`.trk-pen-tray` Draw-only or a spacer + far-right `.trk-tools-rail` with milled jewel throws in `.trk-tools-tray` and compact `.trk-tool-detail` jewel + how-to under Draw / Erase / Scissors; Hide / View / Tags live in a top Look well next to SHOW AS / SORT), then `.trk-grid-rail` (`.trk-mode-bar` Activity / Location / Mood / Company / Screen Time / iPhone Screen Time / iPhone Calls / iPhone Texts / … plus **Log activity**) immediately above TIME/DIV + the Time Grid, photographed pen tray (View settings picker; default Cat traces, not velvet) with steel plates for selected/detail copy **and the Tags library** (`.trk-tags-well`: raised keys + color beads, not pastel islands), selected-pen Settings latch vs **View** settings (Day fill starts/ends = Time Grid Fill fallback when the day is empty; Week fill clocks unchanged; hidden pens, tray plate; body scrolls), **1m/5m/10m/15m/30m** cell size on the grid chrome (active key navy + phosphor), **Fill** longest empty gap (`fill-range-control.tsx`), **Infinite scroll**, white/gray plot (notes/log/gaps not cream), **horizontal now + sunrise/sunset** in day view (Plan agenda / Day Log clock; discrete events stay vertical ticks; do not remove), click a block including Sleep → editor **immediately**, optional Date on Log activity, **right now** on a focused clock, Day Log **Day \| Week** agenda (default Day; week board in `daylog-week.tsx`, not Time Grid week; continuous slabs in day mode). Occupancy ribbon. |
+
+**Habits ⇄ Tracking ⇄ Operations.** Tagged time is the join. Tags live on *time*, not on pens: a pen's tags are the shorthand for "always", and a single block may carry extras of its own — four hours of "San Diego Zoo" in the Location scope tagged *Exercise* without every zoo visit assuming the same. A Goal or Yes-No habit (daily, weekly, or monthly) can link tags so any minute carrying them, from any pen in any scope, counts toward its goal automatically — per day, or summed across the week or month. An Operation can carry the same tags: **Working on this now** (operation workspace, Tracking `.trk-now-module` under the view switcher, or header Tracking dialog) paints those minutes onto the grid, so the habit auto-fill and To Do Done rows come along for free. The bridge is `lib/habit-tracking-sync.ts` plus `lib/operation-work-session.ts`. Home → Tracking also has **Working on right now** in that same module: search a pen color (or Create a new name in a view), start at this second, and the timer paints a block of that color (`lib/pen-color-session.ts`). See `Tracking/README.md` and `Habits/README.md`.
+
+**Scopes attach to each other.** The same hours are *Ian's House* in Location and *Social* in Activity; the block editor's **Also happening** section fills the second one in from the first, with the guest list ticked off inline, as a one-off or as a standing rule on the pen. Attachments only fill minutes the other scope left blank (`lib/entry-links.ts`).
 
 ## Layout
 
 ```
 ┌─────────────────────────────────────────────────┐
-│ Review banner (when due)                        │
+│ WEDNESDAY                          Widgets    │
+│ September 23  2026                              │
 ├─────────────────────────────────────────────────┤
-│ Date + PointsStats          │ Today's Progress  │
+│ [Review] [Points] [Latest] [Progress] [Pet] [Days Until] │
+│ (equal height, flex up to 200px; wrap only when │
+│  the window is narrow — same row on every tab)  │
 ├─────────────────────────────────────────────────┤
 │ Habits │ Plan │ To Do │ Goals │ Tracking       │
 ├─────────────────────────────────────────────────┤
@@ -40,16 +65,39 @@ The dashboard uses `lib/use-current-date.ts` for a single **selected day** share
 └─────────────────────────────────────────────────┘
 ```
 
+### Overview widgets
+
+| Id | Default | Notes |
+|----|---------|-------|
+| `review` | on | Renders only while a period review is due and not session-dismissed |
+| `points` | on | One tile: all time, today, week, month. Click opens the four captions. |
+| `award` | on | Latest award: newest positive points in the CRT, the reason in the footer. Click lists recent awards. |
+| `progress` | on | Today's Progress: meters in the CRT, one footer line. Click lists the two counts. |
+| `pet` | on | Pixel screen pet + clock. Click explains the pose. Not today's friend |
+| `daysuntil` | on | CRT count and "Days Until {label}". Click sets the date and label (`cogs-home-days-until`). |
+| `affirmation` | off | Daily line in the CRT, from the Affirmations list (else the built-in set). Click shows the full line. |
+| `weather` | off | City caption, CRT temp + sun/cloud/rain, footer glance. Click opens the instrument (city, beach, rain, week, tides). Empty/error keeps the tile (`No reading.`) |
+| `next` | off | Next Plan event today, else next open To Do. Click opens the hit; the dialog jumps to that tab |
+| `daylamp` | off | Quiet / Dim / Warm / Bright / Full from today's habit and to-do percents. Click explains the word. |
+| `solar` | off | Live sun remainder at the weather pin (else Settings city / San Diego). Until sunrise → sunrise → to sunset → sunset → after sunset → midnight. |
+| `tracking` | off | Current (covering block, Working on now, Telegram `currently`) or last-known Activity / Location / Mood / Company. **Update** paints from now through end of day. |
+| `night` | off | Last night: hours in the CRT, asleep / woke (and sunset) in the footer. |
+| `harvest` | off | Points still available on the selected day. Footer is `N left of M`. |
+| `inbox` | off | Revisit-Inbox count (Monkey brain excluded). Footer is the newest title. Click opens the header Inbox. |
+
+Order + hidden ids persist under `cogs-home-widgets` (version 2 tucks `next` and `daylamp`; version 3 folds `alltime` / `today` / `week` / `month` into `points`; version 4 tucks `solar` and `tracking`; version 5 tucks `night`, `harvest`, and `inbox`; version 6 places `award` after `points` and leaves it showing). Widget city / beach persist under `cogs-home-weather` (does not write Settings `homeCity`). Days Until persists under `cogs-home-days-until`. The **Widgets** key in the corner of the date plate adds, hides (**Are you sure?**), and reorders. Tiles share one height and grow together up to 200px. The date plate is the clock's date (weekday CRT + calendar nameplate), not the selected day. Language: [`docs/DESIGN_STYLE.md`](../../docs/DESIGN_STYLE.md#milled-fascia). Progress fill bars use the same three Habits hues as Percent LED + Week grade tube + Perfect output tube. Potential further squares: [`docs/FUTURE_WIDGET_IDEAS.md`](../../docs/FUTURE_WIDGET_IDEAS.md).
+
 ## Stores
 
 | Sub-view | Primary store(s) |
 |----------|------------------|
-| Habits | `lib/habits-store.ts` |
-| Plan | `lib/task-store.ts`, `lib/event-store.ts`, plan text via `lib/plan-text.ts` (localStorage) |
-| To Do | `lib/task-store.ts` |
+| Overview strip | `lib/home-widgets-store.ts` (visibility + order; one blob for every Home tab); weather pin `lib/home-weather-store.ts` (`cogs-home-weather`); countdown `lib/home-days-until-store.ts` (`cogs-home-days-until`) |
+| Habits | `lib/habits-store.ts` (+ `lib/time-tracking-store.ts` for auto-fill tags) |
+| Plan | `lib/task-store.ts`, `lib/event-store.ts`, `lib/planned-action-store.ts` (`brain2-planned-actions`), append log via `lib/plan-text.ts` (`dayPlan-*` / `weekPlan-*` / `monthPlan-*`, hub-synced; draft survives refresh) |
+| To Do | `lib/task-store.ts`, `components/Home/ToDo/todo-prefs.ts` (`cogs-todo-prefs`) |
 | Goals | `lib/goals-store.ts` |
-| Tracking | `lib/time-tracking-store.ts`, `lib/task-store.ts`, `lib/event-store.ts` |
+| Tracking | `lib/time-tracking-store.ts` (incl. per-day `dayNotes` append-log mirror with hub overlay so they survive reload, `untrackedNotes`, hidden pens, infinite scroll flags), `lib/sleep-store.ts`, `lib/task-store.ts`, `lib/event-store.ts`, `lib/work-session-store.ts`, `lib/pen-color-session-store.ts` |
 
-The header **Needs Attention** card reads from `lib/task-store.ts` (via `lib/data/task-repository.ts`) and derives its rows with the pure selector in `lib/needs-attention.ts` (+ `lib/needs-attention.test.ts`).
+The header **Needs Attention** card reads from `lib/task-store.ts` (via `lib/data/task-repository.ts`) and `lib/goals-store.ts`, and derives its rows with the pure selector in `lib/needs-attention.ts` (+ `lib/needs-attention.test.ts`). `neglected` reuses `goalsNeedingAttention` and operation tree logs; `zombie` uses `daysPushed` / `weeksPushed` / entropy. The visible reason will become a dated count (GS-3: "pushed 9 times since Jul 3"); the id `zombie` may stay. Queue actions (kill / split / clarify) write through the repository when the user clicks them. Plan's rail will show the latest review handoff (GS-6). Both are Wave 13 in [`docs/ScienceandSanityBrain2.md`](../../docs/ScienceandSanityBrain2.md).
 
 See each subfolder's `README.md` for file-level detail.

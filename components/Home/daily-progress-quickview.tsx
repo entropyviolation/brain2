@@ -3,50 +3,89 @@
  *
  * Replaces the old Quick Actions card with a snapshot of daily to-do and habit
  * completion for the current day. Climb habits use `isHabitGoalMet` with
- * `{ date, weeklyData }` so the derived target is applied.
+ * `{ date, weeklyData }` so the derived target is applied. On the overview
+ * (`instrument`), the bars sit in the CRT and one footer line sums the day.
  */
 "use client"
 
-import { useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { CheckCircle2, ListTodo, Repeat } from "lucide-react"
-import { useTaskStore } from "@/lib/task-store"
-import { useHabitsStore } from "@/lib/habits-store"
-import { isHabitGoalMet } from "@/lib/habit-utils"
-import { filterHabitsByFrequency } from "@/components/Home/Habits/period-habit-list"
-import { formatLocalDateKey, taskScheduledOnDay } from "@/lib/date-utils"
+import { useHomeDayStats } from "@/components/Home/home-day-stats"
 
-export function DailyProgressQuickview({ currentDate }: { currentDate: Date }) {
-  const tasks = useTaskStore((s) => s.tasks)
-  const habitTasks = useHabitsStore((s) => s.tasks)
-  const weeklyData = useHabitsStore((s) => s.weeklyData)
+export function DailyProgressQuickview({
+  currentDate,
+  instrument = false,
+}: {
+  currentDate: Date
+  instrument?: boolean
+}) {
+  const { todo: todoStats, habit: habitStats } = useHomeDayStats(currentDate)
+  const footer = `To do ${todoStats.completed}/${todoStats.total} · habits ${habitStats.completed}/${habitStats.total}`
 
-  const dayKey = formatLocalDateKey(currentDate)
+  const meters = (
+    <>
+      <div className={instrument ? "hab-meter" : "space-y-2"}>
+        <div className={instrument ? "hab-meter-row" : "flex items-center justify-between text-sm"}>
+          <span className={instrument ? "hab-meter-name" : "flex items-center gap-1.5 font-medium"}>
+            {!instrument && <ListTodo className="h-4 w-4 text-blue-600" />}
+            To Do
+          </span>
+          <span className={instrument ? "hab-meter-stat" : "text-muted-foreground"}>
+            {todoStats.remaining} left · {todoStats.percent}%
+          </span>
+        </div>
+        <Progress
+          value={todoStats.percent}
+          className={instrument ? "hab-well-fill" : undefined}
+          indicatorClassName={instrument ? undefined : "bg-blue-500"}
+        />
+        {!instrument && (
+          <p className="text-xs text-muted-foreground">
+            {todoStats.completed} of {todoStats.total} done today
+          </p>
+        )}
+      </div>
 
-  const todoStats = useMemo(() => {
-    const todayTodos = tasks.filter(
-      (t) => !t.hiddenFromTodo && taskScheduledOnDay(t, currentDate),
+      <div className={instrument ? "hab-meter" : "space-y-2"}>
+        <div className={instrument ? "hab-meter-row" : "flex items-center justify-between text-sm"}>
+          <span className={instrument ? "hab-meter-name" : "flex items-center gap-1.5 font-medium"}>
+            {!instrument && <Repeat className="h-4 w-4 text-emerald-600" />}
+            Habits
+          </span>
+          <span className={instrument ? "hab-meter-stat" : "text-muted-foreground"}>
+            {habitStats.remaining} left · {habitStats.percent}%
+          </span>
+        </div>
+        <Progress
+          value={habitStats.percent}
+          className={instrument ? "hab-well-fill" : undefined}
+          indicatorClassName={instrument ? undefined : "bg-emerald-500"}
+        />
+        {!instrument && (
+          <p className="text-xs text-muted-foreground">
+            {habitStats.completed} of {habitStats.total} done today
+          </p>
+        )}
+      </div>
+    </>
+  )
+
+  if (instrument) {
+    return (
+      <div className="hab-progress-module">
+        <div className="hab-score-caption">
+          <span>Today&apos;s Progress</span>
+        </div>
+        <div className="home-crt is-stack">
+          <div className="hab-progress-meters">{meters}</div>
+        </div>
+        <div className="home-tile-foot">
+          <p className="hab-score-sub">{footer}</p>
+        </div>
+      </div>
     )
-    const completed = todayTodos.filter((t) => t.completed).length
-    const total = todayTodos.length
-    const remaining = total - completed
-    const percent = total > 0 ? Math.round((completed / total) * 100) : 0
-    return { total, completed, remaining, percent }
-  }, [tasks, currentDate])
-
-  const habitStats = useMemo(() => {
-    const dailyHabits = filterHabitsByFrequency(habitTasks, "daily")
-    const dayData = weeklyData[dayKey] ?? {}
-    let completed = 0
-    dailyHabits.forEach((habit) => {
-      if (isHabitGoalMet(habit, dayData[habit.id], { date: currentDate, weeklyData })) completed++
-    })
-    const total = dailyHabits.length
-    const remaining = total - completed
-    const percent = total > 0 ? Math.round((completed / total) * 100) : 0
-    return { total, completed, remaining, percent }
-    }, [habitTasks, weeklyData, dayKey, currentDate])
+  }
 
   return (
     <Card className="lg:w-80 card-hover">
@@ -56,39 +95,7 @@ export function DailyProgressQuickview({ currentDate }: { currentDate: Date }) {
           Today&apos;s Progress
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-5">
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="flex items-center gap-1.5 font-medium">
-              <ListTodo className="h-4 w-4 text-blue-600" />
-              To Do
-            </span>
-            <span className="text-muted-foreground">
-              {todoStats.remaining} left · {todoStats.percent}%
-            </span>
-          </div>
-          <Progress value={todoStats.percent} indicatorClassName="bg-blue-500" />
-          <p className="text-xs text-muted-foreground">
-            {todoStats.completed} of {todoStats.total} done today
-          </p>
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="flex items-center gap-1.5 font-medium">
-              <Repeat className="h-4 w-4 text-emerald-600" />
-              Habits
-            </span>
-            <span className="text-muted-foreground">
-              {habitStats.remaining} left · {habitStats.percent}%
-            </span>
-          </div>
-          <Progress value={habitStats.percent} indicatorClassName="bg-emerald-500" />
-          <p className="text-xs text-muted-foreground">
-            {habitStats.completed} of {habitStats.total} done today
-          </p>
-        </div>
-      </CardContent>
+      <CardContent className="space-y-5">{meters}</CardContent>
     </Card>
   )
 }

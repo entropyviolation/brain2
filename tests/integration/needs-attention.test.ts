@@ -95,6 +95,24 @@ describe("integration: needs-attention over the store", () => {
     expect(grouped.unclarified.map((e) => e.item.id)).toEqual(["messy"])
     expect(grouped.stale.map((e) => e.item.id)).toEqual(["messy"])
     expect(grouped.blocked).toHaveLength(0)
+    expect(grouped.neglected).toHaveLength(0)
+    expect(grouped.zombie).toHaveLength(0)
+  })
+
+  it("surfaces neglected operations and zombie tasks from the store snapshot", () => {
+    taskRepository.add(
+      task({
+        id: "op-cold",
+        type: "operation",
+        createdAt: new Date("2026-05-01T00:00:00"),
+        scheduledDate: undefined,
+      }),
+    )
+    taskRepository.add(task({ id: "zombie", daysPushed: 9 }))
+
+    const entries = getNeedsAttention(taskRepository.getAll(), { now: NOW })
+    expect(reasonsFor(entries, "op-cold")).toContain("neglected")
+    expect(reasonsFor(entries, "zombie")).toEqual(["zombie"])
   })
 
   it("clears the blocked reason once the dependency is completed", () => {

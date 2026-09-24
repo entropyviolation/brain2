@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { resetLocalStorage } from "@/tests/test-utils"
 import { HomeDashboard } from "./home-dashboard"
 import { msUntilLocalMidnight } from "@/lib/use-current-date"
+import { APP_NAV_KEYS, writeStoredDate } from "@/lib/app-navigation"
 
 vi.mock("@/components/Home/Habits/habit-tracker", () => ({
   WeeklyTaskTracker: ({ currentDate }: { currentDate?: Date }) => (
@@ -39,24 +40,16 @@ vi.mock("@/components/Home/Tracking/actual-day-view", () => ({
   ),
 }))
 
-const pointsStatsSpy = vi.fn(({ currentDate }: { currentDate: Date }) => (
-  <div data-testid="points-stats">Points for {format(currentDate, "yyyy-MM-dd")}</div>
-))
-
-vi.mock("@/components/Home/points-stats", () => ({
-  PointsStats: (props: { currentDate: Date }) => pointsStatsSpy(props),
+vi.mock("@/components/Home/Tracking/working-now-strip", () => ({
+  WorkingNowStrip: () => <div data-testid="working-now-strip">Working on this now</div>,
 }))
 
-const quickviewSpy = vi.fn(({ currentDate }: { currentDate: Date }) => (
-  <div data-testid="daily-progress">Progress for {format(currentDate, "yyyy-MM-dd")}</div>
+const overviewSpy = vi.fn(({ currentDate }: { currentDate: Date }) => (
+  <div data-testid="home-overview">Overview {format(currentDate, "yyyy-MM-dd")}</div>
 ))
 
-vi.mock("@/components/Home/daily-progress-quickview", () => ({
-  DailyProgressQuickview: (props: { currentDate: Date }) => quickviewSpy(props),
-}))
-
-vi.mock("@/components/Home/home-review-banner", () => ({
-  HomeReviewBanner: () => <div data-testid="review-banner">Review banner</div>,
+vi.mock("@/components/Home/home-overview", () => ({
+  HomeOverview: (props: { currentDate: Date }) => overviewSpy(props),
 }))
 
 describe("HomeDashboard", () => {
@@ -64,8 +57,7 @@ describe("HomeDashboard", () => {
 
   beforeEach(() => {
     resetLocalStorage()
-    pointsStatsSpy.mockClear()
-    quickviewSpy.mockClear()
+    overviewSpy.mockClear()
   })
 
   describe("layout and header", () => {
@@ -80,19 +72,38 @@ describe("HomeDashboard", () => {
 
     it("renders the date card with weekday, month/day, and year", () => {
       render(<HomeDashboard />)
-      expect(screen.getByText(format(fixedNow, "EEEE, MMMM d"))).toBeInTheDocument()
+      expect(screen.getByText(format(fixedNow, "EEEE"))).toBeInTheDocument()
+      expect(screen.getByText(format(fixedNow, "MMMM d"))).toBeInTheDocument()
       expect(screen.getByText(format(fixedNow, "yyyy"))).toBeInTheDocument()
     })
 
-    it("passes the same currentDate to PointsStats and DailyProgressQuickview", () => {
+    it("keeps the weekday plate on the clock when another day is selected", () => {
+      writeStoredDate(APP_NAV_KEYS.homeDate, new Date(2026, 0, 2))
       render(<HomeDashboard />)
-      expect(pointsStatsSpy).toHaveBeenCalledWith(expect.objectContaining({ currentDate: fixedNow }))
-      expect(quickviewSpy).toHaveBeenCalledWith(expect.objectContaining({ currentDate: fixedNow }))
+      expect(screen.getByText("Saturday")).toBeInTheDocument()
+      expect(screen.getByText("June 20")).toBeInTheDocument()
+      expect(screen.queryByText("Friday")).not.toBeInTheDocument()
+      const passed = overviewSpy.mock.calls.at(-1)?.[0].currentDate as Date
+      expect(format(passed, "yyyy-MM-dd")).toBe("2026-01-02")
     })
 
-    it("shows review banner slot", () => {
+    it("passes the selected day to the shared overview strip", () => {
       render(<HomeDashboard />)
-      expect(screen.getByTestId("review-banner")).toBeInTheDocument()
+      expect(overviewSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ currentDate: fixedNow }),
+      )
+      expect(screen.getByTestId("home-overview")).toBeInTheDocument()
+    })
+
+    it("wraps Habits in the metal console", () => {
+      const { container } = render(<HomeDashboard />)
+      expect(container.querySelector(".hab95")).toBeTruthy()
+      expect(container.querySelector(".hab-na")).toBeTruthy()
+    })
+
+    it("shows the overview strip slot", () => {
+      render(<HomeDashboard />)
+      expect(screen.getByTestId("home-overview")).toBeInTheDocument()
     })
   })
 
@@ -119,7 +130,7 @@ describe("HomeDashboard", () => {
   describe("main sub-tabs", () => {
     it("renders all five main tab triggers", () => {
       render(<HomeDashboard />)
-      const tabs = within(screen.getByRole("tablist")).getAllByRole("tab")
+      const tabs = within(screen.getByRole("tablist", { name: "Home view" })).getAllByRole("tab")
       expect(tabs.map((t) => t.textContent)).toEqual(["Habits", "Plan", "To Do", "Goals", "Tracking"])
     })
 
@@ -158,6 +169,27 @@ describe("HomeDashboard", () => {
         expect(screen.getByTestId(testId)).toBeVisible()
       }
     })
+
+    it("unwraps the Habits metal console on Plan but keeps the overview strip", async () => {
+      const user = userEvent.setup()
+      const { container } = render(<HomeDashboard />)
+      expect(container.querySelector(".hab95")).toBeTruthy()
+      expect(screen.getByTestId("home-overview")).toBeInTheDocument()
+      await user.click(screen.getByRole("tab", { name: "Plan" }))
+      expect(container.querySelector(".hab95")).toBeNull()
+      expect(container.querySelector(".hab-na")).toBeNull()
+      expect(screen.getByTestId("home-overview")).toBeInTheDocument()
+    })
+
+    it("keeps one overview strip on every Home sub-tab", async () => {
+      const user = userEvent.setup()
+      render(<HomeDashboard />)
+      for (const label of ["Plan", "To Do", "Goals", "Tracking", "Habits"]) {
+        await user.click(screen.getByRole("tab", { name: label }))
+        expect(screen.getByTestId("home-overview")).toBeInTheDocument()
+      }
+      expect(overviewSpy.mock.calls.length).toBeGreaterThanOrEqual(5)
+    })
   })
 
   describe("Tracking nested sub-tabs", () => {
@@ -176,6 +208,133 @@ describe("HomeDashboard", () => {
       expect(screen.getByRole("tab", { name: "Day Log" })).toHaveAttribute("data-state", "active")
       expect(screen.getByTestId("panel-day-log")).toBeVisible()
     })
+
+    it("uses the same view-changer chrome as Habits Daily / Weekly / Monthly", async () => {
+      const user = userEvent.setup()
+      render(<HomeDashboard />)
+      await user.click(screen.getByRole("tab", { name: "Tracking" }))
+      const changer = document.querySelector(".trk95 .hab-view-changer")
+      expect(changer).toBeTruthy()
+      expect(within(changer as HTMLElement).getByRole("tablist", { name: "Tracking view" })).toBeInTheDocument()
+      expect(within(changer as HTMLElement).getByRole("tab", { name: "Time Grid" })).toBeInTheDocument()
+      expect(within(changer as HTMLElement).getByRole("tab", { name: "Activity Log" })).toBeInTheDocument()
+      expect(within(changer as HTMLElement).getByRole("tab", { name: "Day Log" })).toBeInTheDocument()
+    })
+
+    it("stacks view modes under the pen tray and above the time grid", async () => {
+      const user = userEvent.setup()
+      render(<HomeDashboard />)
+      await user.click(screen.getByRole("tab", { name: "Tracking" }))
+      const stack = document.querySelector(".trk-chrome-stack")
+      const tray = stack?.querySelector(".trk-pen-tools-row")
+      const mode = stack?.querySelector(".trk-mode-bar")
+      const desktop = stack?.querySelector(".trk-desktop")
+      expect(tray).toBeTruthy()
+      expect(mode).toBeTruthy()
+      expect(desktop).toBeTruthy()
+      expect(tray!.compareDocumentPosition(mode!) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+        Node.DOCUMENT_POSITION_FOLLOWING,
+      )
+      expect(mode!.compareDocumentPosition(desktop!) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+        Node.DOCUMENT_POSITION_FOLLOWING,
+      )
+      expect(mode!.closest(".trk-pen-tray")).toBeNull()
+      const rail = stack?.querySelector(".trk-grid-rail")
+      const log = rail && within(rail as HTMLElement).getByRole("button", { name: /Log activity/ })
+      expect(log).toBeTruthy()
+      expect(log!.closest(".trk-toolbar-row")).toBeNull()
+      expect(log!.closest(".trk-mode-bar")).toBeNull()
+      expect(tray!.compareDocumentPosition(log!) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+        Node.DOCUMENT_POSITION_FOLLOWING,
+      )
+      expect(log!.compareDocumentPosition(desktop!) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+        Node.DOCUMENT_POSITION_FOLLOWING,
+      )
+      expect(screen.getByRole("toolbar", { name: "Tracking view modes" })).toBeInTheDocument()
+      expect(screen.getByTestId("panel-time-grid")).toBeVisible()
+      expect(screen.getAllByRole("button", { name: "Log activity" })).toHaveLength(1)
+    })
+
+    it("keeps a single Log activity on Activity Log inside .trk-period, not the grid rail", async () => {
+      const user = userEvent.setup()
+      render(<HomeDashboard />)
+      await user.click(screen.getByRole("tab", { name: "Tracking" }))
+      await user.click(screen.getByRole("tab", { name: "Activity Log" }))
+      expect(screen.getAllByRole("button", { name: "Log activity" })).toHaveLength(1)
+      const stack = document.querySelector(".trk-chrome-stack")
+      const rail = stack?.querySelector(".trk-grid-rail")
+      expect(rail).toBeNull()
+      expect(screen.getByRole("button", { name: "Log activity" }).closest(".trk-period")).toBeTruthy()
+    })
+
+    it("keeps Log activity on the grid rail for Day Log", async () => {
+      const user = userEvent.setup()
+      render(<HomeDashboard />)
+      await user.click(screen.getByRole("tab", { name: "Tracking" }))
+      await user.click(screen.getByRole("tab", { name: "Day Log" }))
+      const stack = document.querySelector(".trk-chrome-stack")
+      const rail = stack?.querySelector(".trk-grid-rail")
+      expect(rail).toBeTruthy()
+      expect(within(rail as HTMLElement).getAllByRole("button", { name: "Log activity" })).toHaveLength(1)
+    })
+
+    it("keeps day notes under every tracking view (legend always; textbox after Expand)", async () => {
+      const user = userEvent.setup()
+      render(<HomeDashboard />)
+      await user.click(screen.getByRole("tab", { name: "Tracking" }))
+      expect(screen.getByText("Day notes")).toBeInTheDocument()
+      expect(screen.queryByRole("textbox", { name: /Notes for / })).not.toBeInTheDocument()
+      const notes = document.querySelector("#trk-day-notes") as HTMLElement
+      await user.click(within(notes).getByRole("button", { name: "Expand" }))
+      expect(screen.getByRole("textbox", { name: /Notes for / })).toBeVisible()
+      await user.click(screen.getByRole("tab", { name: "Activity Log" }))
+      expect(screen.getByText("Day notes")).toBeInTheDocument()
+      expect(screen.getByRole("textbox", { name: /Notes for / })).toBeVisible()
+      await user.click(screen.getByRole("tab", { name: "Day Log" }))
+      expect(screen.getByText("Day notes")).toBeInTheDocument()
+      expect(screen.getByRole("textbox", { name: /Notes for / })).toBeVisible()
+    })
+
+    it("places the working-now module under the view changer and before the chrome stack", async () => {
+      const user = userEvent.setup()
+      render(<HomeDashboard />)
+      await user.click(screen.getByRole("tab", { name: "Tracking" }))
+      const stack = document.querySelector(".trk-chrome-stack")
+      const now = document.querySelector(".trk95 .trk-now-module")
+      const notes = stack?.querySelector(".trk-notes")
+      const desktop = stack?.querySelector(".trk-desktop")
+      const changer = document.querySelector(".trk95 .hab-view-changer")
+      expect(now).toBeTruthy()
+      expect(notes).toBeTruthy()
+      expect(desktop).toBeTruthy()
+      expect(changer).toBeTruthy()
+      expect(stack).toBeTruthy()
+      expect(screen.getByTestId("working-now-strip")).toBeVisible()
+      expect(stack!.contains(now)).toBe(false)
+      expect(changer!.compareDocumentPosition(now!) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+        Node.DOCUMENT_POSITION_FOLLOWING,
+      )
+      expect(now!.compareDocumentPosition(stack!) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+        Node.DOCUMENT_POSITION_FOLLOWING,
+      )
+      expect(now!.compareDocumentPosition(desktop!) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+        Node.DOCUMENT_POSITION_FOLLOWING,
+      )
+      expect(desktop!.compareDocumentPosition(notes!) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+        Node.DOCUMENT_POSITION_FOLLOWING,
+      )
+      expect(now!.nextElementSibling).toBe(stack)
+    })
+
+    it("does not render the Sleep this day / Fell asleep / Woke up form", async () => {
+      const user = userEvent.setup()
+      render(<HomeDashboard />)
+      await user.click(screen.getByRole("tab", { name: "Tracking" }))
+      expect(screen.queryByText("Sleep this day")).not.toBeInTheDocument()
+      expect(screen.queryByLabelText("Fell asleep")).not.toBeInTheDocument()
+      expect(screen.queryByLabelText("Woke up")).not.toBeInTheDocument()
+      expect(screen.queryByRole("region", { name: "Sleep log" })).not.toBeInTheDocument()
+    })
   })
 
   describe("date rollover", () => {
@@ -193,13 +352,15 @@ describe("HomeDashboard", () => {
       const afterMidnight = new Date(2026, 5, 21, 0, 0, 1)
 
       render(<HomeDashboard />)
-      expect(screen.getByText(format(beforeMidnight, "EEEE, MMMM d"))).toBeInTheDocument()
+      expect(screen.getByText(format(beforeMidnight, "EEEE"))).toBeInTheDocument()
+      expect(screen.getByText(format(beforeMidnight, "MMMM d"))).toBeInTheDocument()
 
       await act(async () => {
         vi.advanceTimersByTime(msUntilLocalMidnight(beforeMidnight) + 1)
       })
 
-      expect(screen.getByText(format(afterMidnight, "EEEE, MMMM d"))).toBeInTheDocument()
+      expect(screen.getByText(format(afterMidnight, "EEEE"))).toBeInTheDocument()
+      expect(screen.getByText(format(afterMidnight, "MMMM d"))).toBeInTheDocument()
     })
   })
 })

@@ -36,6 +36,7 @@ describe("NeedsAttention", () => {
 
   afterEach(() => {
     vi.useRealTimers()
+    vi.restoreAllMocks()
   })
 
   it("does not show stale-only items or a Stale tag", () => {
@@ -72,6 +73,99 @@ describe("NeedsAttention", () => {
     expect(screen.getByText("Old inbox item")).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Unclarified" })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Overdue" })).toBeInTheDocument()
+  })
+
+  it("shows neglected goals and zombie tasks with queue actions", () => {
+    taskRepository.add(
+      task({
+        id: "zombie",
+        description: "Rescheduled forever",
+        daysPushed: 8,
+      }),
+    )
+
+    render(
+      <NeedsAttention
+        onOpenItem={() => {}}
+        options={{
+          now: NOW,
+          goals: [
+            {
+              id: "goal-cold",
+              title: "Read 20 books",
+              type: "count",
+              target: 20,
+              current: 0,
+              periodKind: "year",
+              objectiveIds: ["obj"],
+              points: 1,
+              completed: false,
+              createdAt: daysAgo(40),
+            },
+          ],
+        }}
+        defaultCollapsed={false}
+      />,
+    )
+
+    expect(screen.getByRole("heading", { name: "Neglected" })).toBeInTheDocument()
+    expect(screen.getByText("Read 20 books")).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Zombie" })).toBeInTheDocument()
+    expect(screen.getByText("Rescheduled forever")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Delete" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Split" })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Clarify" })).not.toBeInTheDocument()
+  })
+
+  it("kills a queued item after confirm", () => {
+    taskRepository.add(task({ id: "zombie", description: "Rescheduled forever", daysPushed: 8 }))
+    vi.spyOn(window, "confirm").mockReturnValue(true)
+
+    render(<NeedsAttention onOpenItem={() => {}} options={{ now: NOW }} defaultCollapsed={false} />)
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }))
+
+    expect(taskRepository.getById("zombie")).toBeUndefined()
+    expect(screen.queryByText("Rescheduled forever")).not.toBeInTheDocument()
+  })
+
+  it("splits a queued item from a prompt into subtasks", () => {
+    taskRepository.add(task({ id: "zombie", description: "Rescheduled forever", daysPushed: 8, subtasks: [] }))
+    vi.spyOn(window, "prompt").mockReturnValue("Draft\nEdit")
+
+    render(<NeedsAttention onOpenItem={() => {}} options={{ now: NOW }} defaultCollapsed={false} />)
+    fireEvent.click(screen.getByRole("button", { name: "Split" }))
+
+    expect(taskRepository.getById("zombie")?.subtasks?.map((s) => s.description)).toEqual(["Draft", "Edit"])
+  })
+
+  it("clarifies an inbox item from the queue", () => {
+    taskRepository.add(task({ id: "inbox", description: "Vague idea", stage: "inbox" }))
+
+    render(<NeedsAttention onOpenItem={() => {}} options={{ now: NOW }} defaultCollapsed={false} />)
+    fireEvent.click(screen.getByRole("button", { name: "Clarify" }))
+
+    expect(taskRepository.getById("inbox")?.stage).toBe("list")
+  })
+
+  it("hides a category and remembers it", () => {
+    taskRepository.add(
+      task({
+        id: "inbox",
+        description: "Vague idea",
+        stage: "inbox",
+      }),
+    )
+    taskRepository.add(task({ id: "overdue", description: "Late report", deadline: daysAgo(2) }))
+
+    render(<NeedsAttention onOpenItem={() => {}} options={{ now: NOW }} defaultCollapsed={false} />)
+    fireEvent.click(screen.getByRole("button", { name: /Hide Unclarified/ }))
+
+    expect(screen.queryByText("Vague idea")).not.toBeInTheDocument()
+    expect(screen.getByText("Late report")).toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem("cogs-needs-attention-hidden") ?? "[]")).toEqual(["unclarified"])
+
+    fireEvent.click(screen.getByRole("button", { name: /Show Unclarified/ }))
+    expect(screen.getByText("Vague idea")).toBeInTheDocument()
   })
 
   it("starts collapsed by default and hides the queue", () => {

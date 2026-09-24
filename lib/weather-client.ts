@@ -3,6 +3,8 @@
  *
  * Forecast covers ~16 days; farther dates fall back to prior-year archive
  * (weather labeled "Typically …"). Sunrise/sunset use the same endpoints.
+ * Home overview uses `fetchHomeDayWeather` (current + hourly + 7-day daily, 30 min cache)
+ * and `fetchHomeAirQuality` (US AQI, same TTL).
  */
 
 import { TTL, cached } from "@/lib/api-cache"
@@ -62,6 +64,79 @@ export type DayClimate = {
   sunsetHhmm: string
   cityName: string
   typical?: boolean
+}
+
+/** One Open-Meteo hour for the Home weather instrument. */
+export type HomeHourlyPoint = {
+  time: string
+  hour: number
+  tempF: number
+  weatherCode: number
+  precipChance?: number
+  windMph?: number
+  humidity?: number
+  uvIndex?: number
+  visibilityMi?: number
+  gustMph?: number
+  apparentF?: number
+}
+
+/** One day in the Home weather week strip. */
+export type HomeWeekDay = {
+  date: string
+  weatherCode: number
+  condition: string
+  highF: number
+  lowF: number
+  precipChance?: number
+}
+
+/**
+ * Home overview weather: current + day envelope + hourly evolution.
+ * Daily itinerary climate stays on `DayClimate` / `fetchDayClimate`.
+ */
+export type HomeDayWeather = {
+  cityName: string
+  date: string
+  lat?: number
+  lng?: number
+  condition: string
+  weatherCode: number
+  tempF: number
+  highF: number
+  lowF: number
+  precipChance?: number
+  windMph?: number
+  gustMph?: number
+  humidity?: number
+  uvIndex?: number
+  visibilityMi?: number
+  apparentF?: number
+  sunrise: string
+  sunset: string
+  sunriseHhmm: string
+  sunsetHhmm: string
+  hourly: HomeHourlyPoint[]
+  week: HomeWeekDay[]
+  typical?: boolean
+}
+
+/** Optional pin from the Home weather widget (skips a second geocode). */
+export type WeatherCoords = {
+  lat: number
+  lng: number
+  name?: string
+}
+
+export type HomeAirQuality = {
+  usAqi: number
+  pm25?: number
+  label: string
+}
+
+export function wmoCondition(code: number | undefined): string {
+  if (code == null) return "Weather"
+  return WMO[code] || "Weather"
 }
 
 function weatherLabel(code: number | undefined, min?: number, max?: number, typical = false): string {
@@ -258,6 +333,358 @@ async function fetchDayClimateUncached(city: string, date: string): Promise<DayC
   } catch {
     return null
   }
+}
+
+type OpenMeteoHomePayload = {
+  error?: boolean
+  current?: {
+    time?: string
+    temperature_2m?: number
+    weather_code?: number
+    weathercode?: number
+    wind_speed_10m?: number
+    windspeed_10m?: number
+    relative_humidity_2m?: number
+    apparent_temperature?: number
+    wind_gusts_10m?: number
+  }
+  current_weather?: {
+    time?: string
+    temperature?: number
+    weathercode?: number
+    weather_code?: number
+    windspeed?: number
+  }
+  hourly?: {
+    time?: string[]
+    temperature_2m?: number[]
+    weather_code?: number[]
+    weathercode?: number[]
+    precipitation_probability?: number[]
+    wind_speed_10m?: number[]
+    windspeed_10m?: number[]
+    relative_humidity_2m?: number[]
+    uv_index?: number[]
+    visibility?: number[]
+    wind_gusts_10m?: number[]
+    apparent_temperature?: number[]
+  }
+  daily?: DailyWx & {
+    precipitation_probability_max?: number[]
+    wind_speed_10m_max?: number[]
+    windspeed_10m_max?: number[]
+    uv_index_max?: number[]
+    wind_gusts_10m_max?: number[]
+  }
+}
+
+function finiteNum(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined
+}
+
+function hourFromIso(iso: string | undefined): number | null {
+  if (!iso) return null
+  const m = iso.match(/T(\d{2})/)
+  return m ? Number(m[1]) : null
+}
+
+function metersToMiles(meters: number | undefined): number | undefined {
+  if (meters == null || !Number.isFinite(meters)) return undefined
+  return Math.round((meters / 1609.344) * 10) / 10
+}
+
+function shiftDateKeyLocal(date: string, days: number): string {
+  const m = date.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (!m) return date
+  const dt = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]) + days))
+  const y = dt.getUTCFullYear()
+  const mo = String(dt.getUTCMonth() + 1).padStart(2, "0")
+  const d = String(dt.getUTCDate()).padStart(2, "0")
+  return `${y}-${mo}-${d}`
+}
+
+export function aqiLabel(usAqi: number): string {
+  if (usAqi <= 50) return "Good"
+  if (usAqi <= 100) return "Moderate"
+  if (usAqi <= 150) return "Unhealthy for sensitive groups"
+  if (usAqi <= 200) return "Unhealthy"
+  if (usAqi <= 300) return "Very unhealthy"
+  return "Hazardous"
+}
+
+export function parseHomeAirQuality(data: {
+  current?: { us_aqi?: number; pm2_5?: number }
+} | null | undefined): HomeAirQuality | null {
+  const aqi = finiteNum(data?.current?.us_aqi)
+  if (aqi == null) return null
+  const rounded = Math.round(aqi)
+  return {
+    usAqi: rounded,
+    pm25: finiteNum(data?.current?.pm2_5) != null ? Math.round(data!.current!.pm2_5!) : undefined,
+    label: aqiLabel(rounded),
+  }
+}
+
+/** Seven daily envelopes from one Open-Meteo payload. */
+export function parseHomeWeekDays(data: OpenMeteoHomePayload | null | undefined): HomeWeekDay[] {
+  const daily = data?.daily
+  const times = daily?.time
+  if (!times?.length) return []
+  const week: HomeWeekDay[] = []
+  for (let i = 0; i < times.length; i++) {
+    const date = times[i]
+    if (!date) continue
+    const highF = finiteNum(daily?.temperature_2m_max?.[i])
+    const lowF = finiteNum(daily?.temperature_2m_min?.[i])
+    if (highF == null || lowF == null) continue
+    const weatherCode = daily?.weathercode?.[i] ?? daily?.weather_code?.[i] ?? 2
+    const precipChance = finiteNum(daily?.precipitation_probability_max?.[i])
+    week.push({
+      date,
+      weatherCode,
+      condition: wmoCondition(weatherCode),
+      highF: Math.round(highF),
+      lowF: Math.round(lowF),
+      precipChance: precipChance != null ? Math.round(precipChance) : undefined,
+    })
+  }
+  return week
+}
+
+/** Parse one Open-Meteo forecast/archive JSON into the Home weather shape. */
+export function parseHomeDayWeather(
+  data: OpenMeteoHomePayload | null | undefined,
+  date: string,
+  cityName: string,
+  typical = false,
+): HomeDayWeather | null {
+  if (!data || data.error) return null
+  const hourlyIn = data.hourly
+  const hourly: HomeHourlyPoint[] = []
+  const times = hourlyIn?.time
+  if (times?.length) {
+    for (let i = 0; i < times.length; i++) {
+      const time = times[i]
+      if (!time || !time.startsWith(date)) continue
+      const tempF = finiteNum(hourlyIn.temperature_2m?.[i])
+      const hour = hourFromIso(time)
+      if (tempF == null || hour == null) continue
+      const weatherCode = hourlyIn.weather_code?.[i] ?? hourlyIn.weathercode?.[i] ?? 2
+      const precipChance = finiteNum(hourlyIn.precipitation_probability?.[i])
+      const windMph = finiteNum(hourlyIn.wind_speed_10m?.[i] ?? hourlyIn.windspeed_10m?.[i])
+      hourly.push({
+        time,
+        hour,
+        tempF,
+        weatherCode,
+        precipChance,
+        windMph,
+        humidity: finiteNum(hourlyIn.relative_humidity_2m?.[i]),
+        uvIndex: finiteNum(hourlyIn.uv_index?.[i]),
+        visibilityMi: metersToMiles(finiteNum(hourlyIn.visibility?.[i])),
+        gustMph: finiteNum(hourlyIn.wind_gusts_10m?.[i]),
+        apparentF: finiteNum(hourlyIn.apparent_temperature?.[i]),
+      })
+    }
+  }
+
+  const daily = data.daily
+  const dIdx = daily?.time?.indexOf(date) ?? -1
+  const dailyCode =
+    dIdx >= 0 ? (daily?.weathercode?.[dIdx] ?? daily?.weather_code?.[dIdx]) : undefined
+  const highF = dIdx >= 0 ? finiteNum(daily?.temperature_2m_max?.[dIdx]) : undefined
+  const lowF = dIdx >= 0 ? finiteNum(daily?.temperature_2m_min?.[dIdx]) : undefined
+  const dailyPrecip = dIdx >= 0 ? finiteNum(daily?.precipitation_probability_max?.[dIdx]) : undefined
+  const dailyWind =
+    dIdx >= 0 ? finiteNum(daily?.wind_speed_10m_max?.[dIdx] ?? daily?.windspeed_10m_max?.[dIdx]) : undefined
+  const sunUp = dIdx >= 0 ? formatSunClock(daily?.sunrise?.[dIdx]) : null
+  const sunDown = dIdx >= 0 ? formatSunClock(daily?.sunset?.[dIdx]) : null
+
+  const current = data.current
+  const legacy = data.current_weather
+  const currentTime = current?.time ?? legacy?.time
+  const currentOnDay = currentTime ? currentTime.startsWith(date) : false
+  const currentTemp = currentOnDay
+    ? (finiteNum(current?.temperature_2m) ?? finiteNum(legacy?.temperature))
+    : undefined
+  const currentCode = currentOnDay
+    ? (current?.weather_code ?? current?.weathercode ?? legacy?.weathercode ?? legacy?.weather_code)
+    : undefined
+  const currentWind = currentOnDay
+    ? (finiteNum(current?.wind_speed_10m) ?? finiteNum(current?.windspeed_10m) ?? finiteNum(legacy?.windspeed))
+    : undefined
+
+  const noon = hourly.find((h) => h.hour === 12) ?? hourly[Math.floor(hourly.length / 2)]
+  const temps = hourly.map((h) => h.tempF)
+  const tempF = currentTemp ?? noon?.tempF ?? highF
+  const weatherCode = currentCode ?? noon?.weatherCode ?? dailyCode ?? 2
+  const resolvedHigh = highF ?? (temps.length ? Math.max(...temps) : tempF)
+  const resolvedLow = lowF ?? (temps.length ? Math.min(...temps) : tempF)
+  if (tempF == null || resolvedHigh == null || resolvedLow == null) return null
+
+  const hourNow = currentOnDay ? hourFromIso(currentTime) : null
+  const hourMatch =
+    hourNow != null ? hourly.find((h) => h.hour === hourNow) : undefined
+  const precipChance = hourMatch?.precipChance ?? dailyPrecip
+  const windMph = currentWind ?? hourMatch?.windMph ?? dailyWind
+  const humidity =
+    (currentOnDay ? finiteNum(current?.relative_humidity_2m) : undefined) ?? hourMatch?.humidity
+  const uvIndex =
+    hourMatch?.uvIndex ??
+    (dIdx >= 0 ? finiteNum(daily?.uv_index_max?.[dIdx]) : undefined)
+  const visibilityMi = hourMatch?.visibilityMi
+  const gustMph =
+    (currentOnDay ? finiteNum(current?.wind_gusts_10m) : undefined) ??
+    hourMatch?.gustMph ??
+    (dIdx >= 0 ? finiteNum(daily?.wind_gusts_10m_max?.[dIdx]) : undefined)
+  const apparentF =
+    (currentOnDay ? finiteNum(current?.apparent_temperature) : undefined) ?? hourMatch?.apparentF
+  const week = parseHomeWeekDays(data)
+
+  return {
+    cityName,
+    date,
+    condition: wmoCondition(weatherCode),
+    weatherCode,
+    tempF: Math.round(tempF),
+    highF: Math.round(resolvedHigh),
+    lowF: Math.round(resolvedLow),
+    precipChance: precipChance != null ? Math.round(precipChance) : undefined,
+    windMph: windMph != null ? Math.round(windMph) : undefined,
+    gustMph: gustMph != null ? Math.round(gustMph) : undefined,
+    humidity: humidity != null ? Math.round(humidity) : undefined,
+    uvIndex: uvIndex != null ? Math.round(uvIndex) : undefined,
+    visibilityMi,
+    apparentF: apparentF != null ? Math.round(apparentF) : undefined,
+    sunrise: sunUp?.display || "",
+    sunset: sunDown?.display || "",
+    sunriseHhmm: sunUp?.hhmm || "06:00",
+    sunsetHhmm: sunDown?.hhmm || "18:00",
+    hourly,
+    week,
+    typical,
+  }
+}
+
+const HOME_HOURLY =
+  "temperature_2m,weather_code,weathercode,precipitation_probability,wind_speed_10m,windspeed_10m,relative_humidity_2m,uv_index,visibility,wind_gusts_10m,apparent_temperature"
+const HOME_DAILY =
+  "weathercode,weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset,wind_speed_10m_max,windspeed_10m_max,uv_index_max,wind_gusts_10m_max"
+const HOME_CURRENT = "temperature_2m,weather_code,wind_speed_10m,relative_humidity_2m,apparent_temperature,wind_gusts_10m"
+
+async function fetchHomeClimatePayload(
+  base: string,
+  lat: number,
+  lng: number,
+  date: string,
+  cityName: string,
+  typical = false,
+  includeCurrent = false,
+): Promise<HomeDayWeather | null> {
+  const url = new URL(base)
+  url.searchParams.set("latitude", String(lat))
+  url.searchParams.set("longitude", String(lng))
+  url.searchParams.set("hourly", HOME_HOURLY)
+  url.searchParams.set("daily", HOME_DAILY)
+  if (includeCurrent) url.searchParams.set("current", HOME_CURRENT)
+  url.searchParams.set("temperature_unit", "fahrenheit")
+  url.searchParams.set("wind_speed_unit", "mph")
+  url.searchParams.set("timezone", "auto")
+  url.searchParams.set("start_date", date)
+  url.searchParams.set("end_date", shiftDateKeyLocal(date, 6))
+  const res = await fetch(url.toString())
+  if (!res.ok) return null
+  const data = (await res.json()) as OpenMeteoHomePayload
+  const parsed = parseHomeDayWeather(data, date, cityName, typical)
+  return parsed ? { ...parsed, lat, lng } : null
+}
+
+function weatherCacheKey(city: string, date: string, coords?: WeatherCoords | null): string {
+  if (coords && Number.isFinite(coords.lat) && Number.isFinite(coords.lng)) {
+    return `home-wx:${coords.lat.toFixed(3)},${coords.lng.toFixed(3)}:${date}`
+  }
+  return `home-wx:${city.trim()}:${date}`
+}
+
+/** Current + hourly Open-Meteo for the widget city (cached 30 min). Settings home city is only the fallback. */
+export async function fetchHomeDayWeather(
+  city: string,
+  date: string,
+  coords?: WeatherCoords | null,
+): Promise<HomeDayWeather | null> {
+  if (!city.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return null
+  return cached(weatherCacheKey(city, date, coords), TTL.WEATHER, () =>
+    fetchHomeDayWeatherUncached(city, date, coords),
+  )
+}
+
+async function fetchHomeDayWeatherUncached(
+  city: string,
+  date: string,
+  coords?: WeatherCoords | null,
+): Promise<HomeDayWeather | null> {
+  const geo =
+    coords && Number.isFinite(coords.lat) && Number.isFinite(coords.lng)
+      ? { lat: coords.lat, lng: coords.lng, name: coords.name?.trim() || queryCityName(city) || city.trim() }
+      : await geocodeCity(city)
+  if (!geo) return null
+  try {
+    const forecast = await fetchHomeClimatePayload(
+      "https://api.open-meteo.com/v1/forecast",
+      geo.lat,
+      geo.lng,
+      date,
+      geo.name,
+      false,
+      true,
+    )
+    if (forecast) return forecast
+
+    const archive = await fetchHomeClimatePayload(
+      "https://archive-api.open-meteo.com/v1/archive",
+      geo.lat,
+      geo.lng,
+      date,
+      geo.name,
+    )
+    if (archive) return archive
+
+    for (const yearsBack of [1, 2, 3]) {
+      const past = shiftYear(date, yearsBack)
+      if (!past) continue
+      const typical = await fetchHomeClimatePayload(
+        "https://archive-api.open-meteo.com/v1/archive",
+        geo.lat,
+        geo.lng,
+        past,
+        geo.name,
+        true,
+      )
+      if (typical) return { ...typical, date }
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+/** US AQI from Open-Meteo air-quality (no key, CORS open). */
+export async function fetchHomeAirQuality(lat: number, lng: number): Promise<HomeAirQuality | null> {
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
+  return cached(`home-aqi:${lat.toFixed(3)},${lng.toFixed(3)}`, TTL.WEATHER, async () => {
+    try {
+      const url = new URL("https://air-quality-api.open-meteo.com/v1/air-quality")
+      url.searchParams.set("latitude", String(lat))
+      url.searchParams.set("longitude", String(lng))
+      url.searchParams.set("current", "us_aqi,pm2_5")
+      url.searchParams.set("timezone", "auto")
+      const res = await fetch(url.toString())
+      if (!res.ok) return null
+      return parseHomeAirQuality(await res.json())
+    } catch {
+      return null
+    }
+  })
 }
 
 /** @deprecated prefer fetchDayClimate — kept for existing callers/tests */
