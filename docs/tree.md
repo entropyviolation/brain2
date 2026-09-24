@@ -466,7 +466,7 @@ one-sentence instruction per view.
 | `SpectrumView.tsx` | Autocorr + periodogram + sleep CV |
 | `ItemTypesLibrary.tsx` / `ListsAreasView.tsx` / `AttributesView.tsx` / `LibraryCuts.tsx` | Library (types, lists sized by count + HHI, tags, stages, weight) |
 | `analytics-range.ts` + store / `chart-frame.tsx` / `open-in-lists.ts` | Shared window, honesty frames, Lists jump |
-| `analytics-chrome.css` | Studio interior (title/status stay Lists) |
+| `analytics-chrome.css` | Milled range/index chrome + studio interior (title/status stay Lists) |
 
 | Group | Views |
 |-------|-------|

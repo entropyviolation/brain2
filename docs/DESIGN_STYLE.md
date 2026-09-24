@@ -114,7 +114,11 @@ Habits Tab Control Panel, `.hab-grade-sheet`),
 `components/header-popup-chrome.css` (pin-bar capture / review / metrics dialogs `.hpp95`),
 `components/ItemDetail/item-detail-chrome.css` (Item detail page + popup),
 `components/Lists/filemanager98.css` (Lists Explorer frame — milled toolbars /
-view keys / CRT title; velvet + orbs stay cabinet).
+view keys / CRT title; velvet + orbs stay cabinet),
+`components/Docs/docs.css` (Docs outer chrome — milled caption / menubar keys /
+status counts; white paper untouched),
+`components/Scheduler/scheduler-chrome.css` (CRT title, Funnel/Gantt/Dependencies
++ Always→Day equal keys with power lamps, Address nameplate — funnel contents untouched).
 
 | Piece | What it is |
 |-------|------------|
@@ -165,7 +169,10 @@ second flat gray bevel for a job the fascia already owns.
 | Header pin-bar popups | `components/header-popup-chrome.css` (`.hpp95` — Quick Add, Bulk Add, Ingest, From Notes, Phone Notes, Metrics, Reviews / Morning / Affirmations / Post-mortem; Tracking compact dialog shell only) |
 | Item detail | `components/ItemDetail/item-detail-chrome.css` (`.id95` / `.id95-dialog`) |
 | Lists Explorer frame | `components/Lists/filemanager98.css` (`.fm98` — velvet/orbs untouched) |
+| Docs outer chrome | `components/Docs/docs.css` (`.docs95` — CRT caption, metal menubar keys, CRT status counts; white paper / editor untouched) |
 | Week grade / Perfect output sheets | `components/Home/Habits/habit-chrome.css` (`.hab-grade-sheet`) |
+| Analytics chrome | `components/Analytics/analytics-chrome.css` (range + left index keys only; studio canvases stay light-instrument) |
+| Scheduler | `components/Scheduler/scheduler-chrome.css` (`.sch95` — CRT title, view/period keys, Address nameplate; funnel/Gantt/graph contents untouched) |
 
 ### In progress (other agents — do not restyle here)
 
@@ -182,29 +189,17 @@ CRT / key language.
 One sentence each on what is still ugly. Ship in this order unless a room
 must wait on Habits.
 
-1. **Scheduler** — `components/Scheduler/scheduler-chrome.css`,
-   `enhanced-scheduler.tsx`: flat `#c0c0c0` Explorer window with sunken folder
-   tabs and raised gray toolbar buttons — no brushed bay, CRT title, or metal
-   period keys (Plan already left this look).
-2. **Docs** — `components/Docs/docs.css`, `document-editor.css`,
-   `DocsPanel.tsx`: literal Win95 MDI (navy caption, gray raised menubar,
-   white sidebar field) with no milled nameplate or CRT hero on the shell.
-3. **Modules catalog / workspace chrome** — `components/Modules/modules-chrome.css`,
+1. **Modules catalog / workspace chrome** — `components/Modules/modules-chrome.css`,
    `modules-panel.tsx`, `workspace/ModuleWorkspace.tsx`: raised flat gray desk
    head and legend chips; phosphor token is `#3dff8a` instead of `#7dffc4`
    (feral module interiors stay feral — chrome only).
-4. **Analytics chrome** — `components/Analytics/analytics-chrome.css`,
-   `enhanced-analytics.tsx`: face-gray studio with flat range chips and
-   transparent nav buttons (no milled keys / power lamps); trace phosphor is
-   `#3dff8a` not `#7dffc4` (keep the light-instrument studio law; fascia the
-   range / group / view bars only).
-5. **Completion popup** — `components/Completion/CompletionDialog.tsx`,
+2. **Completion popup** — `components/Completion/CompletionDialog.tsx`,
    `CompletionPopupHost.tsx`: Lucide + `rounded-full` objective chips and
    muted card wells inside a soft dialog — not metal keys or CRT readouts.
-6. **Search palette** — `components/Search/GlobalSearch.tsx`: modern command
+3. **Search palette** — `components/Search/GlobalSearch.tsx`: modern command
    palette (`rounded-md` rows, `bg-accent` hover, primary/10 kind pills) with
    no Win95 caption or milled result well.
-7. **Bare `components/ui/dialog.tsx` sheets** outside the pin bar — house
+4. **Bare `components/ui/dialog.tsx` sheets** outside the pin bar — house
    defaults in `app/win95.css` may still read flatter than `.hpp95` /
    `.set95` / `.inbox-dialog` when a module opens an unskinned dialog.
 
@@ -380,8 +375,9 @@ the built-in orbs (`lib/remove-background.ts`).
    Implementation: `components/Home/ToDo/CompletionTimeLine.tsx`,
    `lib/estimated-values.ts`.
 9. **Analytics studio exception.** Keep the `.fm98` **title bar** and **status
-   bar** so Analytics still lives in Brain2 next to Lists. **Nav, range, and
-   every canvas are a light instrument studio** (`analytics-chrome.css`):
+   bar** so Analytics still lives in Brain2 next to Lists. **Range and left-index
+   chrome** use the [milled fascia](#milled-fascia); **every canvas** stays a light
+   instrument studio (`analytics-chrome.css`):
    **Karla only** (the app typeface — no second display serif), tabular numbers
    on readouts, **ink `#000000` on Win95 face gray** (`#c0c0c0` paper / raised
    wells, `#a8a8a8` recesses) so the studio matches the rest of the app chrome
@@ -659,9 +655,10 @@ compact quadrant + one-row header). Tokens live on `app/win95.css`.
 
 **Chrome is on the right track; contents may still be plainer**
 
-Home (except Habits Daily **and** the shared Home TOP strip), Scheduler, Docs, Modules, Analytics, dialogs (except **Inbox**, **Settings**, and pin-bar **`.hpp95`** popups): they inherit
+Home (except Habits Daily **and** the shared Home TOP strip), Modules, dialogs (except **Inbox**, **Settings**, and pin-bar **`.hpp95`** popups): they inherit
 bevels and gray furniture. **Operations** is on the milled fascia (see gold-standard
-table). The TOP strip (date + Review + points + Today's
+table). **Scheduler** frame (`.sch95`) is milled fascia — funnel/Gantt/graph contents untouched. **Docs** outer chrome (`.docs95`) is a milled-fascia whisper on caption /
+menubar keys / status counts only — white paper untouched. The TOP strip (date + Review + points + Today's
 Progress) is **in progress** toward one analog instrument on all five Home
 tabs — see [Depth & spacing](#depth--spacing). When adding icons, empty states, or “hero”
 visuals, **borrow Lists’ objects**, don’t invent a second illustration
@@ -682,7 +679,8 @@ replace photographed contents with a “clean” icon font.
 **Analytics** is the one tab whose *interior* is a light instrument studio (not
 dark CRT, not cream-paper SaaS). Face gray `#c0c0c0` to match Win95 chrome.
 One typeface (Karla); phosphor only on
-traces. The window **title bar** and **status bar** stay Lists furniture so it still
+traces. Range and left-index chrome use the [milled fascia](#milled-fascia);
+the window **title bar** and **status bar** stay Lists furniture so it still
 sits next to Lists. Lucide is still not identity for the cabinet. See rule 9.
 Always add tooltips and clear instructions (rule 10).
 
@@ -698,6 +696,7 @@ rule 10. Do not destyle the wash to “match” gray furniture.
 | Global Win95 furniture | `app/win95.css` (`body.win95-app`); `--chrome-face` + `--fascia-*` / `--hab-crt-*`; unskinned dialogs/menus/buttons/nested tabs inherit the milled fascia; real specificity so Tailwind HMR cannot unskin it; module CSS imported after it in `layout.tsx` |
 | Chrome gunmetal (quiet) | `lib/chrome-patina.ts` + `app/chrome-patina.css` — one `--chrome-*` family on `:root`; Settings set-point + minutes-scale drift |
 | Lists Explorer skin | `components/Lists/filemanager98.css` (`.fm98` milled fascia: toolbars, view keys, CRT title/status, inspector, dialog metal; velvet + orbs unchanged) |
+| Docs outer chrome | `components/Docs/docs.css` (`.docs95` milled caption / menubar keys / CRT status counts; white paper / `document-editor.css` untouched) |
 | Plan calendar skin | `components/Home/Plan/plan-chrome.css` (`.plan95` milled fascia); chips in `plan-chip.tsx` |
 | Tracking instrument | Milled fascia for Home → Tracking: CRT title, equal-fill Time Grid / Activity Log / Day Log keys with power lamps, period nameplate, metal period keys, milled now bay, metal-framed pen tray, plot bezel (white paper untouched). Files: `tracking-chrome.css`, `pen-tray-bg.css`, fascia markup in `home-dashboard.tsx` Tracking pane. Language: [Milled fascia](#milled-fascia). |
 | Home dashboard TOP strip | Date plate (weekday in a CRT, calendar date on a nameplate, Widgets as a raised key) + milled overview tiles + Home sub-tab bay (`data-ui-name="Home tabs"`: five equal milled keys, active CRT + power lamp, air above the bay). Shared by **all** Home tabs. Files: `home-dashboard.tsx`, `home-chrome.css`, `home-overview.tsx`, `points-stats.tsx`, `daily-progress-quickview.tsx`, `home-review-banner.tsx`, `home-days-until.tsx`. CRT values use `--hab-crt-green` (`#7dffc4`) + `--hab-crt-glow`. Language: [Milled fascia](#milled-fascia). |
@@ -706,6 +705,7 @@ rule 10. Do not destyle the wash to “match” gray furniture.
 | Inbox dialog | Milled fascia for header Inbox + clarify/delete sheets sharing `.inbox-dialog`: engraved title nameplate, equal partition keys with power lamps, CRT counts, raised metal action keys. Files: `inbox.css`, `inbox.tsx`. Language: [Milled fascia](#milled-fascia). |
 | Header pin-bar popups | Milled fascia for Quick Add, Bulk Add, Ingest, From Notes, Phone Notes, Metrics, Reviews / Morning / Affirmations / Post-mortem, and the Tracking compact dialog frame (shell only): CRT caption + power lamp, brushed bay, metal keys, recessed fields. Files: `header-popup-chrome.css` (`.hpp95`), wired from `quick-add.tsx`, `enhanced-bulk-add.tsx`, `ingest-log-dialog.tsx`, `notes-ingest.tsx`, `iphone-notes-store.tsx`, `Tracking/MetricLogger.tsx`, `cognitive-state.tsx`, `Reviews/*`. Language: [Milled fascia](#milled-fascia). |
 | Item detail | Milled fascia for full-screen + popup item detail: CRT title, metal keys, equal-fill detail tabs (active = CRT + power lamp). Files: `components/ItemDetail/item-detail-chrome.css`, `ItemDetailPage.tsx`, `ItemDetailPopup.tsx`. Language: [Milled fascia](#milled-fascia). |
+| Analytics chrome | Milled fascia for range + left index only (equal metal keys, CRT active + power lamp, engraved nameplates); studio canvases stay light-instrument (Karla, face gray, trace phosphor `#3dff8a`). Files: `analytics-chrome.css`, `enhanced-analytics.tsx`, `AnalyticsNav.tsx`. Language: [Milled fascia](#milled-fascia). |
 | Habits Daily console | `components/Home/Habits/habit-chrome.css` (`.hab95`); gems in `habit-gems.tsx` + `lib/gems-manifest.ts`; grid in `habit-grid.css`; analog rockers in `cockpit-switch.tsx`; **Sort Habits** in `habit-sort-control.tsx`; grade tubes in `noble-gas-tube.tsx`; Habits Tab Control Panel in `habits-control-panel.tsx` (Willpower gems — photoreal chrome + black-mirror oval, satellites, invert, plate-click stir that is not a gem-grab, crystal solid + PNG occlusion, Settings-only crystal, Physics popup lab with mapped twin + CRT wells + live sliders; `willpower-gems.tsx`, `lib/willpower-stones.ts` + `lib/willpower-physics.ts`); recessed panel lamps in `habit-led-lamp.tsx` (**Small LEDs** default ON = 15px, OFF = fill-cell); recessed 10-module % strip in `percent-led-bar.tsx` (default); numeric % LED in `percent-led.tsx` (Loading Bar off) |
 | Gem photographs | `gems/` source, `public/gems-removebackground/` (tight-cropped), `scripts/process-gems.py` + `scripts/crop-gems.py` |
 | Velvet desktop | `public/newvelv.jpg`, `.fm-desktop.velvet` |
