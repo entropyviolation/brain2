@@ -1,45 +1,96 @@
 /**
  * components/Operations/OperationWorkspace.tsx — Operation mini-app
  *
- * The full-screen workspace for a single Operation (directed enterprise). Reads
- * the operation task from the task store by id and lays out a header (back,
- * rename, stage badge, post-mortem) over a two-column body: the main tabs
- * (Home / Phases / Resources / Plan / Itinerary / Activities / Log) and a
- * persistent "To do next" rail.
+ * The full-screen workspace for a single Operation. Its tab strip is **not
+ * fixed**: it is built from the panels this operation has switched on
+ * (`resolveOperationPanels`), so a computer-work op can be Home + Tasks + Log
+ * while a trip adds Timeline, Locations, and a Plan doc. The **Settings** dialog
+ * on the menubar is where that choice (plus categories, mission, stage, target
+ * date) is made.
  *
  * Self-contained: it reads/writes only through the task store + the
- * `operation-actions` helpers, so the integration pass just needs to mount it
- * with an `operationId` (and optional `onBack` / `onOpenItem`).
+ * `operation-actions` helpers, so mounting it needs just an `operationId` (and
+ * optional `onBack` / `onOpenItem`).
  */
 "use client"
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ArrowLeft, Pencil, ClipboardCheck, Rocket } from "lucide-react"
+import { Rocket } from "lucide-react"
 import { useTaskStore } from "@/lib/task-store"
-import { OPERATION_ATTR, type OperationStage } from "@/lib/operation-types"
+import {
+  OPERATION_ATTR,
+  getOperationCategories,
+  getOperationPanel,
+  isWideOperationPanel,
+  resolveOperationPanels,
+  canonicalOperationPanelId,
+  type OperationPanelId,
+  type OperationStage,
+} from "@/lib/operation-types"
+import { APP_NAV_KEYS, opsPanelScrollSlot, readStoredRecord, writeStoredRecordField } from "@/lib/app-navigation"
+import { usePersistedScroll } from "@/lib/use-persisted-scroll"
 import { renameOperation } from "./operation-actions"
 import { OperationHome } from "./OperationHome"
+import { OperationTasksPanel } from "./OperationTasksPanel"
 import { PhasesPanel } from "./PhasesPanel"
+import { PartsPanel } from "./PartsPanel"
 import { ResourcesPanel } from "./ResourcesPanel"
 import { OperationLogFeed } from "./OperationLogFeed"
 import { ToDoNextRail } from "./ToDoNextRail"
 import { OperationPostMortemDialog } from "./OperationPostMortemDialog"
+import { OperationSettingsDialog } from "./OperationSettingsDialog"
+import { WorkingNowControl } from "./WorkingNowControl"
 import {
-  OperationActivitiesPanel,
-  OperationItineraryPanel,
+  OperationLocationsPanel,
   OperationPlanDocPanel,
+  OperationTimelinePanel,
 } from "./OperationFieldPlanPanels"
+import type { Task } from "@/lib/types"
+import "./operations-chrome.css"
 
-const STAGE_BADGE: Record<OperationStage, string> = {
-  planning: "bg-slate-100 text-slate-700",
-  active: "bg-teal-100 text-teal-800",
-  paused: "bg-amber-100 text-amber-800",
-  done: "bg-emerald-100 text-emerald-800",
-  abandoned: "bg-rose-100 text-rose-800",
+/** Body for one enabled tab panel. */
+function PanelBody({
+  panelId,
+  operation,
+  onOpenItem,
+}: {
+  panelId: OperationPanelId
+  operation: Task
+  onOpenItem?: (id: string) => void
+}) {
+  switch (panelId) {
+    case "home":
+      return <OperationHome operation={operation} />
+    case "tasks":
+      return <OperationTasksPanel operation={operation} onOpenItem={onOpenItem} />
+    case "phases":
+      return <PhasesPanel operation={operation} onOpenItem={onOpenItem} />
+    case "parts":
+      return <PartsPanel operation={operation} />
+    case "timeline":
+      return <OperationTimelinePanel operation={operation} onOpenItem={onOpenItem} />
+    case "locations":
+      return <OperationLocationsPanel operation={operation} onOpenItem={onOpenItem} />
+    case "plan":
+      return <OperationPlanDocPanel operation={operation} />
+    case "resources":
+      return <ResourcesPanel operation={operation} onOpenItem={onOpenItem} />
+    case "log":
+      return <OperationLogFeed operation={operation} />
+    default:
+      return null
+  }
+}
+
+function OpsScrollPane({ slot, children }: { slot: string; children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null)
+  usePersistedScroll(slot, ref)
+  return (
+    <div ref={ref} className="h-full min-h-0 overflow-auto">
+      {children}
+    </div>
+  )
 }
 
 export function OperationWorkspace({
@@ -55,107 +106,182 @@ export function OperationWorkspace({
   const [renaming, setRenaming] = useState(false)
   const [titleDraft, setTitleDraft] = useState("")
   const [postMortemOpen, setPostMortemOpen] = useState(false)
-  const [tab, setTab] = useState("home")
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [tab, setTab] = useState<OperationPanelId>(() => {
+    const stored = readStoredRecord(APP_NAV_KEYS.opsPanel)[operationId]
+    return canonicalOperationPanelId(stored) ?? "home"
+  })
+
+  const panels = useMemo(() => resolveOperationPanels(operation), [operation])
+  const tabPanels = useMemo(
+    () => panels.filter((id) => getOperationPanel(id)?.surface === "tab"),
+    [panels],
+  )
+  const showRail = panels.includes("queue")
+
+  // Switching a panel off in Settings must not leave the workspace on a dead tab.
+  useEffect(() => {
+    if (tabPanels.length > 0 && !tabPanels.includes(tab)) setTab(tabPanels[0])
+  }, [tabPanels, tab])
+
+  useEffect(() => {
+    writeStoredRecordField(APP_NAV_KEYS.opsPanel, operationId, tab)
+  }, [operationId, tab])
 
   if (!operation) {
     return (
-      <div className="space-y-3">
-        {onBack && (
-          <Button variant="ghost" size="sm" onClick={onBack}>
-            <ArrowLeft className="mr-2 h-4 w-4" /> Back
-          </Button>
-        )}
-        <p className="text-sm text-muted-foreground">Operation not found.</p>
+      <div
+        className="ops95"
+        data-ui-name="Operations"
+        data-ui-help="Command center for project operations — board, panels, and working-now clock."
+        data-ui-docs="components/Operations/README.md"
+      >
+        <div className="ops-window">
+          <div className="ops-fascia">
+            <div className="ops-mark">
+              <span className="ops-power-lamp" aria-hidden />
+              <Rocket className="ops-title-icon" aria-hidden />
+              <h2>Operations</h2>
+            </div>
+            {onBack && (
+              <button type="button" className="ops-title-btn" onClick={onBack} aria-label="Back">
+                ×
+              </button>
+            )}
+          </div>
+          <div className="ops-body">
+            <div className="ops-empty">
+              <p>Operation not found.</p>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
 
   const stage = (operation.attributes?.[OPERATION_ATTR.stage] as OperationStage) ?? "planning"
-  const fieldPlanTab = tab === "plan" || tab === "itinerary" || tab === "activities"
+  const categories = getOperationCategories(operation)
+  const wideTab = isWideOperationPanel(tab)
+
+  const commitRename = () => {
+    renameOperation(operation.id, titleDraft)
+    setRenaming(false)
+  }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2">
-          {onBack && (
-            <Button variant="ghost" size="icon" onClick={onBack} title="Back">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          )}
-          <Rocket className="h-5 w-5 text-teal-600 shrink-0" />
-          {renaming ? (
-            <Input
-              autoFocus
-              value={titleDraft}
-              onChange={(e) => setTitleDraft(e.target.value)}
-              onBlur={() => {
-                renameOperation(operation.id, titleDraft)
-                setRenaming(false)
-              }}
-              onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-              className="h-9 max-w-xs text-lg font-bold"
-            />
-          ) : (
-            <button
-              type="button"
-              className="group flex items-center gap-2 truncate text-2xl font-bold"
-              onClick={() => {
-                setTitleDraft(operation.description)
-                setRenaming(true)
-              }}
-            >
-              <span className="truncate">{operation.description}</span>
-              <Pencil className="h-4 w-4 opacity-0 group-hover:opacity-60" />
+    <div
+      className="ops95"
+      data-ui-name="Operations"
+      data-ui-help="Command center for project operations — board, panels, and working-now clock."
+      data-ui-docs="components/Operations/README.md"
+    >
+      <div className="ops-window">
+        <div className="ops-fascia">
+          <div className="ops-fascia-row">
+            {onBack && (
+              <button type="button" className="ops-title-btn" onClick={onBack} title="Back to board" aria-label="Back">
+                ←
+              </button>
+            )}
+            <div className="ops-mark">
+              <span className="ops-power-lamp is-on" aria-hidden />
+              <Rocket className="ops-title-icon" aria-hidden />
+              {renaming ? (
+                <input
+                  autoFocus
+                  className="ops-input ops-title-rename"
+                  value={titleDraft}
+                  onChange={(e) => setTitleDraft(e.target.value)}
+                  onBlur={commitRename}
+                  onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+                  aria-label="Operation name"
+                />
+              ) : (
+                <h2>
+                  <button
+                    type="button"
+                    className="ops-title-name"
+                    data-no95
+                    onClick={() => {
+                      setTitleDraft(operation.description)
+                      setRenaming(true)
+                    }}
+                    title="Rename"
+                  >
+                    {operation.description}
+                  </button>
+                </h2>
+              )}
+            </div>
+            <span className={`ops-stage ops-stage-${stage}`}>{stage}</span>
+          </div>
+
+          <div className="ops-menubar">
+            {onBack && (
+              <button type="button" className="ops-btn" onClick={onBack}>
+                Board
+              </button>
+            )}
+            <button type="button" className="ops-btn" onClick={() => setSettingsOpen(true)}>
+              Settings
             </button>
-          )}
-          <Badge className={`shrink-0 border-0 ${STAGE_BADGE[stage]}`}>{stage}</Badge>
+            <button type="button" className="ops-btn" onClick={() => setPostMortemOpen(true)}>
+              After-action report
+            </button>
+            {categories.length > 0 && (
+              <span className="ops-chip-row ops-menubar-chips">
+                {categories.map((name) => (
+                  <span key={name} className="ops-chip ops-chip-static">
+                    {name}
+                  </span>
+                ))}
+              </span>
+            )}
+            <WorkingNowControl operationId={operation.id} operationName={operation.description} />
+          </div>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setPostMortemOpen(true)}>
-          <ClipboardCheck className="mr-2 h-4 w-4" />
-          Post-mortem
-        </Button>
+
+        <div className={`ops-body ops-split${wideTab || !showRail ? " ops-split-wide" : ""}`}>
+          <Tabs
+            value={tab}
+            onValueChange={(next) => setTab(next as OperationPanelId)}
+            className="ops-main min-w-0 flex min-h-0 flex-col"
+          >
+            <TabsList className="ops-view-keys flex h-auto w-full flex-wrap justify-start rounded-none">
+              {tabPanels.map((id) => (
+                <TabsTrigger key={id} value={id}>
+                  {getOperationPanel(id)?.label ?? id}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            {tabPanels.map((id) => (
+              <TabsContent key={id} value={id} className="ops-tab-pane mt-2 min-h-0 flex-1 overflow-hidden">
+                <OpsScrollPane slot={opsPanelScrollSlot(operation.id, id)}>
+                  <PanelBody panelId={id} operation={operation} onOpenItem={onOpenItem} />
+                </OpsScrollPane>
+              </TabsContent>
+            ))}
+          </Tabs>
+
+          {showRail && !wideTab && (
+            <aside className="ops-rail">
+              <ToDoNextRail operation={operation} onOpenItem={onOpenItem} />
+            </aside>
+          )}
+        </div>
+
+        <div className="ops-status">
+          <span className="ops-status-led" aria-hidden />
+          {tabPanels.length} panel{tabPanels.length === 1 ? "" : "s"} on · Settings picks which
+        </div>
       </div>
 
-      <div className={fieldPlanTab ? "min-w-0" : "grid gap-4 lg:grid-cols-[1fr_18rem]"}>
-        <Tabs value={tab} onValueChange={setTab} className="min-w-0">
-          <TabsList className="flex h-auto flex-wrap gap-1">
-            <TabsTrigger value="home">Home</TabsTrigger>
-            <TabsTrigger value="phases">Phases</TabsTrigger>
-            <TabsTrigger value="resources">Resources</TabsTrigger>
-            <TabsTrigger value="plan">Plan</TabsTrigger>
-            <TabsTrigger value="itinerary">Itinerary</TabsTrigger>
-            <TabsTrigger value="activities">Activities</TabsTrigger>
-            <TabsTrigger value="log">Log</TabsTrigger>
-          </TabsList>
-          <TabsContent value="home" className="pt-2">
-            <OperationHome operation={operation} />
-          </TabsContent>
-          <TabsContent value="phases" className="pt-2">
-            <PhasesPanel operation={operation} onOpenItem={onOpenItem} />
-          </TabsContent>
-          <TabsContent value="resources" className="pt-2">
-            <ResourcesPanel operation={operation} onOpenItem={onOpenItem} />
-          </TabsContent>
-          <TabsContent value="plan" className="pt-2">
-            <OperationPlanDocPanel operation={operation} />
-          </TabsContent>
-          <TabsContent value="itinerary" className="pt-2">
-            <OperationItineraryPanel operation={operation} onOpenItem={onOpenItem} />
-          </TabsContent>
-          <TabsContent value="activities" className="pt-2">
-            <OperationActivitiesPanel operation={operation} onOpenItem={onOpenItem} />
-          </TabsContent>
-          <TabsContent value="log" className="pt-2">
-            <OperationLogFeed operation={operation} />
-          </TabsContent>
-        </Tabs>
-
-        {!fieldPlanTab && (
-          <aside className="lg:border-l lg:pl-4">
-            <ToDoNextRail operation={operation} onOpenItem={onOpenItem} />
-          </aside>
-        )}
-      </div>
+      <OperationSettingsDialog
+        operation={operation}
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        onDeleted={onBack}
+      />
 
       <OperationPostMortemDialog
         operation={operation}

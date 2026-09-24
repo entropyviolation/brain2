@@ -10,14 +10,11 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useReviewsStore } from "@/lib/reviews-store"
 import type { Task } from "@/lib/types"
 import { saveOperationPostMortem } from "./operation-actions"
+import "./operations-chrome.css"
 
 const RATINGS: Array<{ key: string; label: string }> = [
   { key: "execution", label: "Execution" },
@@ -64,18 +61,19 @@ export function OperationPostMortemDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Operation post-mortem</DialogTitle>
-          <DialogDescription className="truncate">{operation.description}</DialogDescription>
+      <DialogContent className="ops95-dialog sm:max-w-lg">
+        <DialogHeader className="ops-title-bar flex-row items-center space-y-0 text-left">
+          <DialogTitle className="ops-title-text">After-action report</DialogTitle>
+          <button type="button" className="ops-title-btn" aria-label="Close" onClick={onClose}>
+            ×
+          </button>
         </DialogHeader>
 
-        <div className="space-y-4 py-1">
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium" htmlFor="opm-summary">
-              Summary
-            </Label>
-            <Textarea
+        <div className="ops-dialog-body">
+          <p className="ops-hint">{operation.description}</p>
+          <div>
+            <label htmlFor="opm-summary">Summary</label>
+            <textarea
               id="opm-summary"
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
@@ -85,25 +83,19 @@ export function OperationPostMortemDialog({
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium" htmlFor="opm-worked">
-                What worked
-              </Label>
-              <Textarea id="opm-worked" value={whatWorked} onChange={(e) => setWhatWorked(e.target.value)} rows={3} />
+            <div>
+              <label htmlFor="opm-worked">What worked</label>
+              <textarea id="opm-worked" value={whatWorked} onChange={(e) => setWhatWorked(e.target.value)} rows={3} />
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium" htmlFor="opm-failed">
-                What to do differently
-              </Label>
-              <Textarea id="opm-failed" value={whatFailed} onChange={(e) => setWhatFailed(e.target.value)} rows={3} />
+            <div>
+              <label htmlFor="opm-failed">What to do differently</label>
+              <textarea id="opm-failed" value={whatFailed} onChange={(e) => setWhatFailed(e.target.value)} rows={3} />
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium" htmlFor="opm-lessons">
-              Lessons (one per line)
-            </Label>
-            <Textarea
+          <div>
+            <label htmlFor="opm-lessons">Lessons (one per line)</label>
+            <textarea
               id="opm-lessons"
               value={lessons}
               onChange={(e) => setLessons(e.target.value)}
@@ -114,35 +106,31 @@ export function OperationPostMortemDialog({
 
           <div className="grid grid-cols-3 gap-3">
             {RATINGS.map((r) => (
-              <div key={r.key} className="space-y-1.5">
-                <Label className="text-xs font-medium" htmlFor={`opm-${r.key}`}>
-                  {r.label}
-                </Label>
-                <Input
+              <div key={r.key}>
+                <label htmlFor={`opm-${r.key}`}>{r.label}</label>
+                <input
                   id={`opm-${r.key}`}
                   type="number"
                   min={1}
                   max={10}
                   value={ratings[r.key] ?? ""}
-                  onChange={(e) =>
-                    setRatings((prev) => ({ ...prev, [r.key]: Number(e.target.value) }))
-                  }
+                  onChange={(e) => setRatings((prev) => ({ ...prev, [r.key]: Number(e.target.value) }))}
                   placeholder="1-10"
                 />
               </div>
             ))}
           </div>
 
-          {notice && (
-            <p className="rounded border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">{notice}</p>
-          )}
+          {notice && <p className="ops-hint">{notice}</p>}
         </div>
 
-        <div className="flex justify-end gap-2 border-t pt-2">
-          <Button variant="outline" onClick={onClose}>
+        <div className="ops-actions">
+          <button type="button" className="ops-btn" onClick={onClose}>
             Cancel
-          </Button>
-          <Button onClick={handleSave}>Save post-mortem</Button>
+          </button>
+          <button type="button" className="ops-btn ops-btn-default" onClick={handleSave}>
+            File report
+          </button>
         </div>
       </DialogContent>
     </Dialog>

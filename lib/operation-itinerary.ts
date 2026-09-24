@@ -1,10 +1,11 @@
 /**
- * lib/operation-itinerary.ts — Per-operation itinerary + activities workspace
+ * lib/operation-itinerary.ts — Backing workspace for the Timeline/Locations panels
  *
- * Each Operation can own a backing itinerary module (same stack as Modules →
- * Trip Itinerary): day-by-day itinerary doc + City Places map. Lazily created
- * on first open of the Itinerary or Activities tab, linked via
- * `OPERATION_ATTR.itineraryModuleId`.
+ * An operation that switches on the **Timeline** or **Locations** panel gets a
+ * backing module (same stack as Modules → Trip Itinerary): a day-by-day grid, a
+ * places map, and a plan doc. Created lazily the first time one of those panels
+ * is opened — operations that never enable them never pay for it — and linked
+ * via `OPERATION_ATTR.itineraryModuleId`.
  */
 import { buildModuleTemplate } from "@/lib/module-templates"
 import { useModulesStore, type ModuleInstance, type ModuleView } from "@/lib/modules-store"
@@ -24,16 +25,16 @@ function defaultRange(): { start: string; end: string } {
   return { start: isoDate(start), end: isoDate(end) }
 }
 
-/** Find itinerary / activities views on an operation-linked module. */
+/** Find the timeline / locations / plan views on an operation-linked module. */
 export function operationItineraryViews(module: ModuleInstance): {
-  itineraryView?: ModuleView
-  activitiesView?: ModuleView
+  timelineView?: ModuleView
+  locationsView?: ModuleView
   planView?: ModuleView
 } {
   const views = module.views ?? []
   return {
-    itineraryView: views.find((v) => v.kind === "itinerary-doc"),
-    activitiesView: views.find((v) => v.kind === "trip-map"),
+    timelineView: views.find((v) => v.kind === "itinerary-doc"),
+    locationsView: views.find((v) => v.kind === "trip-map"),
     planView: views.find((v) => v.kind === "doc"),
   }
 }

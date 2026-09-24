@@ -17,8 +17,14 @@ import {
   buildHeatmap,
   neglectedDays,
   selectToDoNext,
+  isArchivedOperation,
+  selectOperations,
+  collectOperationCategories,
+  groupOperationsByCategory,
+  filterOperationsByCategory,
+  sortOperations,
 } from "@/lib/operations"
-import { OPERATION_TYPE_ID } from "@/lib/operation-types"
+import { OPERATION_ATTR, OPERATION_TYPE_ID } from "@/lib/operation-types"
 import type { Task, TimeLogEntry } from "@/lib/types"
 
 const NOW = new Date("2026-06-23T12:00:00.000Z")
@@ -301,5 +307,113 @@ describe("to do next selector", () => {
     ]
     const next = selectToDoNext(tasks, { now: NOW, respectDependencies: false })
     expect(next.map((t) => t.id)).toContain("blocked")
+  })
+})
+
+describe("operation categories on the home board", () => {
+  function makeOp(id: string, description: string, categories?: string[], extra: Partial<Task> = {}): Task {
+    return makeTask({
+      id,
+      description,
+      type: OPERATION_TYPE_ID,
+      attributes: {
+        [OPERATION_ATTR.stage]: "active",
+        ...(categories ? { [OPERATION_ATTR.categories]: categories } : {}),
+      },
+      ...extra,
+    })
+  }
+
+  const foxtide = makeOp("foxtide", "Foxtide rebuild", ["paid", "foxtide job"])
+  const iceland = makeOp("iceland", "Iceland", ["trip"])
+  const inbox = makeOp("inbox", "Inbox zero")
+  const plain = makeTask({ id: "plain", description: "Not an operation" })
+  const all = [foxtide, iceland, inbox, plain]
+
+  it("selects only operation-typed tasks", () => {
+    expect(selectOperations(all).map((t) => t.id)).toEqual(["foxtide", "iceland", "inbox"])
+  })
+
+  it("collects every category in use, de-duplicated and alphabetical", () => {
+    expect(collectOperationCategories(selectOperations(all))).toEqual([
+      "foxtide job",
+      "paid",
+      "trip",
+    ])
+  })
+
+  it("lists a multi-category operation under each of its categories", () => {
+    const groups = groupOperationsByCategory(selectOperations(all))
+    expect(groups.map((g) => g.name)).toEqual(["foxtide job", "paid", "trip", "Uncategorized"])
+    expect(groups[0].operations.map((o) => o.id)).toEqual(["foxtide"])
+    expect(groups[1].operations.map((o) => o.id)).toEqual(["foxtide"])
+    expect(groups[3].operations.map((o) => o.id)).toEqual(["inbox"])
+    expect(groups[3].uncategorized).toBe(true)
+  })
+
+  it("honors the category filter and can drop the uncategorized bucket", () => {
+    const groups = groupOperationsByCategory(selectOperations(all), {
+      visibleCategoryKeys: ["trip"],
+      hideUncategorized: true,
+    })
+    expect(groups.map((g) => g.name)).toEqual(["trip"])
+    expect(groups[0].operations.map((o) => o.id)).toEqual(["iceland"])
+  })
+
+  it("filters flat (ungrouped) lists with the same rules", () => {
+    expect(
+      filterOperationsByCategory(selectOperations(all), { visibleCategoryKeys: ["paid"] }).map((o) => o.id),
+    ).toEqual(["foxtide", "inbox"])
+    expect(
+      filterOperationsByCategory(selectOperations(all), {
+        visibleCategoryKeys: ["paid"],
+        hideUncategorized: true,
+      }).map((o) => o.id),
+    ).toEqual(["foxtide"])
+  })
+
+  it("sorts by name, stage, target date, and recency", () => {
+    const planning = makeOp("z-planning", "Zeta", ["x"], {
+      attributes: { [OPERATION_ATTR.stage]: "planning" },
+    })
+    const done = makeOp("a-done", "Alpha", ["x"], {
+      attributes: { [OPERATION_ATTR.stage]: "done" },
+    })
+    expect(sortOperations([planning, done], "name").map((o) => o.id)).toEqual(["a-done", "z-planning"])
+    expect(sortOperations([done, planning], "stage").map((o) => o.id)).toEqual(["z-planning", "a-done"])
+
+    const soon = makeOp("soon", "Soon", ["x"], {
+      attributes: { [OPERATION_ATTR.targetDate]: "2026-07-01" },
+    })
+    const later = makeOp("later", "Later", ["x"], {
+      attributes: { [OPERATION_ATTR.targetDate]: "2026-12-01" },
+    })
+    const undated = makeOp("undated", "Undated", ["x"])
+    expect(sortOperations([undated, later, soon], "target").map((o) => o.id)).toEqual([
+      "soon",
+      "later",
+      "undated",
+    ])
+
+    const old = makeOp("old", "Old", ["x"], { createdAt: daysAgo(10) })
+    const fresh = makeOp("fresh", "Fresh", ["x"], { createdAt: NOW })
+    expect(sortOperations([old, fresh], "recent").map((o) => o.id)).toEqual(["fresh", "old"])
+  })
+})
+
+describe("archived operations", () => {
+  it("hides done, paused, abandoned, and completed; keeps planning and active", () => {
+    const stage = (name: string, completed = false) =>
+      makeTask({
+        type: OPERATION_TYPE_ID,
+        completed,
+        attributes: { [OPERATION_ATTR.stage]: name },
+      })
+    expect(isArchivedOperation(stage("planning"))).toBe(false)
+    expect(isArchivedOperation(stage("active"))).toBe(false)
+    expect(isArchivedOperation(stage("paused"))).toBe(true)
+    expect(isArchivedOperation(stage("done"))).toBe(true)
+    expect(isArchivedOperation(stage("abandoned"))).toBe(true)
+    expect(isArchivedOperation(stage("active", true))).toBe(true)
   })
 })

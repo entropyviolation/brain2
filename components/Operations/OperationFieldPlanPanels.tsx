@@ -1,6 +1,14 @@
 /**
- * Operation itinerary + activities panels — mount the Trip Itinerary views
- * against a per-operation backing module (created on first visit).
+ * components/Operations/OperationFieldPlanPanels.tsx — Timeline / Locations / Plan
+ *
+ * The three optional "field plan" panels an operation can switch on. They mount
+ * the shared itinerary stack against a per-operation backing module, created on
+ * the first visit (`lib/operation-itinerary.ts`) — so an operation that never
+ * enables them never grows a module:
+ *
+ *   - **Timeline** — day-by-day grid (travel days, shoot days, sprint days).
+ *   - **Locations** — map + place lists for anywhere the operation touches ground.
+ *   - **Plan** — long-form plan document.
  */
 "use client"
 
@@ -37,7 +45,7 @@ function useOperationFieldModule(operation: Task): ModuleInstance | null {
 
 function LoadingFieldPlan() {
   return (
-    <p className="text-sm text-muted-foreground py-8 text-center">Setting up field plan…</p>
+    <p className="ops-hint py-8 text-center">Setting up field plan…</p>
   )
 }
 
@@ -45,7 +53,7 @@ function stubView(kind: ModuleView["kind"], title: string, config: ModuleView["c
   return { id: `op-${kind}`, title, kind, config }
 }
 
-export function OperationItineraryPanel({
+export function OperationTimelinePanel({
   operation,
   onOpenItem,
 }: {
@@ -55,17 +63,20 @@ export function OperationItineraryPanel({
   const module = useOperationFieldModule(operation)
   if (!module) return <LoadingFieldPlan />
 
-  const { itineraryView } = operationItineraryViews(module)
-  const view = itineraryView ?? stubView("itinerary-doc", "Itinerary")
+  const { timelineView } = operationItineraryViews(module)
+  const view = timelineView ?? stubView("itinerary-doc", "Timeline")
 
   return (
-    <div className="operation-field-plan min-h-[28rem]">
-      <ItineraryDocumentView view={view} module={module} onOpenItem={onOpenItem} />
+    <div className="ops-deck">
+      <div className="ops-deck-head">Timeline</div>
+      <div className="ops-field-plan">
+        <ItineraryDocumentView view={view} module={module} onOpenItem={onOpenItem} />
+      </div>
     </div>
   )
 }
 
-export function OperationActivitiesPanel({
+export function OperationLocationsPanel({
   operation,
   onOpenItem,
 }: {
@@ -76,17 +87,20 @@ export function OperationActivitiesPanel({
   if (!module) return <LoadingFieldPlan />
 
   const placesId = module.config.placesCategoryId
-  const { activitiesView } = operationItineraryViews(module)
+  const { locationsView } = operationItineraryViews(module)
   const view =
-    activitiesView ??
-    stubView("trip-map", "Activities", {
+    locationsView ??
+    stubView("trip-map", "Locations", {
       categoryId: placesId,
       placesCategoryId: placesId,
     })
 
   return (
-    <div className="operation-field-plan min-h-[28rem]">
-      <TripActivitiesView view={view} module={module} onOpenItem={onOpenItem} />
+    <div className="ops-deck">
+      <div className="ops-deck-head">Locations</div>
+      <div className="ops-field-plan">
+        <TripActivitiesView view={view} module={module} onOpenItem={onOpenItem} />
+      </div>
     </div>
   )
 }
@@ -99,8 +113,11 @@ export function OperationPlanDocPanel({ operation }: { operation: Task }) {
   const view = planView ?? stubView("doc", "Plan", { docId: module.config.planDocId })
 
   return (
-    <div className="operation-field-plan min-h-[28rem]">
-      <DocPlanView view={view} planDocId={module.config.planDocId} />
+    <div className="ops-deck">
+      <div className="ops-deck-head">Plan</div>
+      <div className="ops-field-plan">
+        <DocPlanView view={view} planDocId={module.config.planDocId} />
+      </div>
     </div>
   )
 }

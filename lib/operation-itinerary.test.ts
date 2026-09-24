@@ -36,8 +36,8 @@ describe("operation-itinerary", () => {
     expect(mod!.config.placesCategoryId).toBeTruthy()
 
     const views = operationItineraryViews(mod!)
-    expect(views.itineraryView?.kind).toBe("itinerary-doc")
-    expect(views.activitiesView?.kind).toBe("trip-map")
+    expect(views.timelineView?.kind).toBe("itinerary-doc")
+    expect(views.locationsView?.kind).toBe("trip-map")
     expect(views.planView?.kind).toBe("doc")
 
     const updated = useTaskStore.getState().tasks.find((t) => t.id === "op_1")

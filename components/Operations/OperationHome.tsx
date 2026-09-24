@@ -9,10 +9,6 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { Textarea } from "@/components/ui/textarea"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useTaskStore } from "@/lib/task-store"
 import {
   buildHeatmap,
@@ -32,21 +28,21 @@ import type { Task } from "@/lib/types"
 import { setHomeNotes, setMission, setStage } from "./operation-actions"
 
 const HEAT_COLORS: Record<number, string> = {
-  0: "#e5e7eb",
-  1: "#99f6e4",
-  2: "#5eead4",
-  3: "#14b8a6",
-  4: "#0f766e",
+  0: "#132418",
+  1: "#1f5c2c",
+  2: "#2f9a3a",
+  3: "#5ee05e",
+  4: "#d4ff8a",
 }
 
 function HeatGrid({ cells }: { cells: HeatCell[] }) {
   return (
-    <div className="flex flex-wrap gap-1">
+    <div className="ops-heat">
       {cells.map((cell) => (
         <div
           key={cell.date}
           title={`${cell.date}: ${cell.minutes} min`}
-          className="h-3.5 w-3.5 rounded-[2px] border border-black/10"
+          className="ops-heat-cell"
           style={{ backgroundColor: HEAT_COLORS[cell.level] }}
         />
       ))}
@@ -84,86 +80,81 @@ export function OperationHome({ operation }: { operation: Task }) {
   }, [operation, allTasks])
 
   return (
-    <div className="space-y-5">
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label className="text-sm font-medium" htmlFor="op-mission">
+    <div className="ops-panel">
+      <div className="ops-brief">
+        <div className="ops-field">
+          <label className="ops-label" htmlFor="op-mission">
             Mission
-          </Label>
-          <Input
+          </label>
+          <input
             id="op-mission"
+            className="ops-input"
             value={missionDraft}
             onChange={(e) => setMissionDraft(e.target.value)}
             onBlur={() => setMission(operation.id, missionDraft)}
             placeholder="What is this operation trying to achieve?"
           />
         </div>
-        <div className="space-y-1.5">
-          <Label className="text-sm font-medium" htmlFor="op-stage">
+        <div className="ops-field">
+          <label className="ops-label" htmlFor="op-stage">
             Stage
-          </Label>
-          <Select value={stage} onValueChange={(v) => setStage(operation.id, v as OperationStage)}>
-            <SelectTrigger id="op-stage">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {OPERATION_STAGES.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {s.charAt(0).toUpperCase() + s.slice(1)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          </label>
+          <select
+            id="op-stage"
+            className="ops-input"
+            value={stage}
+            onChange={(e) => setStage(operation.id, e.target.value as OperationStage)}
+          >
+            {OPERATION_STAGES.map((s) => (
+              <option key={s} value={s}>
+                {s.charAt(0).toUpperCase() + s.slice(1)}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">Progress</span>
-          <span className="text-xs text-muted-foreground tabular-nums">
+      <fieldset className="ops-group">
+        <legend>Progress</legend>
+        <div className="flex items-center justify-between text-[11px]">
+          <span>
             {progress.done}/{progress.total} phases · {Math.round(progress.fraction * 100)}%
           </span>
         </div>
-        <div className="h-2 w-full overflow-hidden rounded bg-muted">
-          <div
-            className="h-full bg-teal-600 transition-all"
-            style={{ width: `${Math.round(progress.fraction * 100)}%` }}
-          />
+        <div className="ops-progress" role="progressbar" aria-valuenow={Math.round(progress.fraction * 100)}>
+          <span style={{ width: `${Math.round(progress.fraction * 100)}%` }} />
         </div>
-      </div>
+      </fieldset>
 
-      <div className="space-y-1.5">
-        <Label className="text-sm font-medium" htmlFor="op-notes">
-          Notes
-        </Label>
-        <Textarea
+      <div className="ops-pad">
+        <label className="ops-label" htmlFor="op-notes">
+          NOTES
+        </label>
+        <textarea
           id="op-notes"
+          className="ops-notes"
           value={notesDraft}
           onChange={(e) => setNotesDraft(e.target.value)}
           onBlur={() => setHomeNotes(operation.id, notesDraft)}
-          rows={6}
-          placeholder="Scratch pad: plans, decisions, links, anything about this operation…"
+          rows={8}
+          placeholder="Plans, decisions, links…"
         />
       </div>
 
-      <div className="space-y-2 rounded-lg border p-3">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">Work / neglect (last 35 days)</span>
-          <span className="text-xs text-muted-foreground tabular-nums">
+      <div className="ops-scope">
+        <div className="ops-scope-head">
+          <span>Last 35 days</span>
+          <span>
             {hours}h logged · {neglected} neglected day{neglected === 1 ? "" : "s"}
           </span>
         </div>
         <HeatGrid cells={cells} />
-        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-          <span>less</span>
+        <div className="ops-heat-legend">
+          <span>cold</span>
           {[0, 1, 2, 3, 4].map((lvl) => (
-            <span
-              key={lvl}
-              className="h-3 w-3 rounded-[2px] border border-black/10"
-              style={{ backgroundColor: HEAT_COLORS[lvl] }}
-            />
+            <span key={lvl} className="ops-heat-cell" style={{ backgroundColor: HEAT_COLORS[lvl] }} />
           ))}
-          <span>more</span>
+          <span>hot</span>
         </div>
       </div>
     </div>

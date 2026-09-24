@@ -11,12 +11,24 @@
  *     operation (incomplete, dependency-satisfied), ranked.
  *   - Relation resolution that reads an operation's phases/parts/resources from
  *     the typed links (`has-phase`/`phase-of`, etc.) in *both* directions.
+ *   - **Category grouping / sorting** for the Operations home board: an
+ *     operation can belong to many categories, so it appears in every group it
+ *     is filed under (uncategorized operations get their own bucket).
  *
  * No store or React imports — everything takes plain `Task` arrays so it unit
  * tests cleanly. The components read the stores and hand data in here.
  */
 import type { Task, TimeLogEntry } from "@/lib/types"
-import { OPERATION_TYPE_ID } from "@/lib/operation-types"
+import { isClearedFromWork } from "@/lib/completion-status"
+import {
+  OPERATION_ATTR,
+  OPERATION_STAGES,
+  OPERATION_TYPE_ID,
+  UNCATEGORIZED_OPERATION_CATEGORY,
+  getOperationCategories,
+  operationCategoryKey,
+  type OperationStage,
+} from "@/lib/operation-types"
 
 /**
  * Relation ids the Operations feature uses (added to `lib/links.ts` upfront).
@@ -301,7 +313,7 @@ export function selectToDoNext(tasks: Task[], options: ToDoNextOptions = {}): Ta
 
   const completedIds = new Set(tasks.filter((t) => t.completed).map((t) => t.id))
   const eligible = tasks.filter((t) => {
-    if (t.completed || t.hiddenFromTodo) return false
+    if (t.completed || t.hiddenFromTodo || isClearedFromWork(t)) return false
     if (!respectDeps) return true
     const deps = t.dependencies ?? []
     // Only block on dependencies we can see in this tree; unknown ids don't gate.
@@ -329,6 +341,166 @@ function scoreTask(task: Task, now: Date): number {
     score += Math.min(20, Math.max(0, ageDays))
   }
   return score
+}
+
+// --- Categories: collect / group / sort ------------------------------------
+
+/** Only the operation-typed tasks in a task array. */
+export function selectOperations(allTasks: Task[]): Task[] {
+  return allTasks.filter((t) => isOperation(t))
+}
+
+/**
+ * Stages the home board treats as archived: completed (`done`) or inactive
+ * (`paused`, `abandoned`). A completed flag counts too, whatever the stage says.
+ * Planning and active stay on the board until Show archived is on.
+ */
+const ARCHIVED_OPERATION_STAGES = new Set<OperationStage>(["paused", "done", "abandoned"])
+
+export function isArchivedOperation(operation: Pick<Task, "completed" | "attributes">): boolean {
+  if (operation.completed) return true
+  const stage = operation.attributes?.[OPERATION_ATTR.stage]
+  return typeof stage === "string" && ARCHIVED_OPERATION_STAGES.has(stage as OperationStage)
+}
+
+/**
+ * Every category name used across the given operations, de-duplicated
+ * case-insensitively (first-seen casing kept) and sorted alphabetically. This is
+ * the source for the home page's category filter and the settings suggestions —
+ * there is no fixed category registry, a category exists because an operation
+ * uses it.
+ */
+export function collectOperationCategories(operations: Task[]): string[] {
+  const byKey = new Map<string, string>()
+  for (const op of operations) {
+    for (const name of getOperationCategories(op)) {
+      const key = operationCategoryKey(name)
+      if (!byKey.has(key)) byKey.set(key, name)
+    }
+  }
+  return [...byKey.values()].sort((a, b) => a.localeCompare(b))
+}
+
+/** How the Operations home board orders operations inside a group. */
+export type OperationSortMode = "name" | "stage" | "recent" | "target"
+
+export interface OperationCategoryGroup {
+  /** Display name; `UNCATEGORIZED_OPERATION_CATEGORY` for the fallback bucket. */
+  name: string
+  /** Normalized key, or `""` for the uncategorized bucket. */
+  key: string
+  /** True for the synthetic "no categories" bucket. */
+  uncategorized: boolean
+  operations: Task[]
+}
+
+const STAGE_RANK = new Map<string, number>(OPERATION_STAGES.map((stage, i) => [stage, i]))
+
+function stageOf(op: Task): OperationStage {
+  const raw = op.attributes?.[OPERATION_ATTR.stage]
+  return typeof raw === "string" && STAGE_RANK.has(raw) ? (raw as OperationStage) : "planning"
+}
+
+function targetTime(op: Task): number {
+  const raw = op.attributes?.[OPERATION_ATTR.targetDate]
+  const date = typeof raw === "string" || raw instanceof Date ? toDate(raw as string | Date) : null
+  return date ? date.getTime() : Number.POSITIVE_INFINITY
+}
+
+/** Order operations by the home board's chosen sort (stable, non-mutating). */
+export function sortOperations(operations: Task[], mode: OperationSortMode = "name"): Task[] {
+  const byName = (a: Task, b: Task) => a.description.localeCompare(b.description)
+  const out = [...operations]
+  if (mode === "stage") {
+    out.sort((a, b) => (STAGE_RANK.get(stageOf(a)) ?? 0) - (STAGE_RANK.get(stageOf(b)) ?? 0) || byName(a, b))
+  } else if (mode === "recent") {
+    out.sort((a, b) => {
+      const at = toDate(a.createdAt)?.getTime() ?? 0
+      const bt = toDate(b.createdAt)?.getTime() ?? 0
+      return bt - at || byName(a, b)
+    })
+  } else if (mode === "target") {
+    out.sort((a, b) => targetTime(a) - targetTime(b) || byName(a, b))
+  } else {
+    out.sort(byName)
+  }
+  return out
+}
+
+export interface GroupOperationsOptions {
+  sort?: OperationSortMode
+  /**
+   * Category keys to keep. Omit for "no filter"; an **empty array** means every
+   * category is deselected (so only the uncategorized bucket can survive).
+   */
+  visibleCategoryKeys?: string[]
+  /** Drop the uncategorized bucket. */
+  hideUncategorized?: boolean
+}
+
+/**
+ * Group operations by category for the home board. An operation filed under
+ * "paid" *and* "foxtide job" appears in both groups. Groups are alphabetical,
+ * with the uncategorized bucket last.
+ */
+export function groupOperationsByCategory(
+  operations: Task[],
+  options: GroupOperationsOptions = {},
+): OperationCategoryGroup[] {
+  const sort = options.sort ?? "name"
+  const filterCategories = options.visibleCategoryKeys !== undefined
+  const visible = new Set((options.visibleCategoryKeys ?? []).map(operationCategoryKey))
+
+  const groups = new Map<string, OperationCategoryGroup>()
+  const uncategorized: Task[] = []
+
+  for (const op of operations) {
+    const categories = getOperationCategories(op)
+    if (categories.length === 0) {
+      uncategorized.push(op)
+      continue
+    }
+    for (const name of categories) {
+      const key = operationCategoryKey(name)
+      if (filterCategories && !visible.has(key)) continue
+      const group =
+        groups.get(key) ?? { name, key, uncategorized: false, operations: [] as Task[] }
+      group.operations.push(op)
+      groups.set(key, group)
+    }
+  }
+
+  const out = [...groups.values()].sort((a, b) => a.name.localeCompare(b.name))
+  if (!options.hideUncategorized && uncategorized.length > 0) {
+    out.push({
+      name: UNCATEGORIZED_OPERATION_CATEGORY,
+      key: "",
+      uncategorized: true,
+      operations: uncategorized,
+    })
+  }
+  for (const group of out) group.operations = sortOperations(group.operations, sort)
+  return out
+}
+
+/**
+ * Flat (ungrouped) home-board list honoring the same category filter: an
+ * operation is kept when it has a visible category, or when it is uncategorized
+ * and the uncategorized bucket is shown.
+ */
+export function filterOperationsByCategory(
+  operations: Task[],
+  options: GroupOperationsOptions = {},
+): Task[] {
+  const filterCategories = options.visibleCategoryKeys !== undefined
+  const visible = new Set((options.visibleCategoryKeys ?? []).map(operationCategoryKey))
+  const kept = operations.filter((op) => {
+    const categories = getOperationCategories(op)
+    if (categories.length === 0) return !options.hideUncategorized
+    if (!filterCategories) return true
+    return categories.some((name) => visible.has(operationCategoryKey(name)))
+  })
+  return sortOperations(kept, options.sort ?? "name")
 }
 
 // --- Date utils (local, dependency-free) -----------------------------------
