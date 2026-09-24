@@ -9,6 +9,10 @@
  * removes it from that list's view only — it does not destroy the attribute.
  * Header **Attribute settings** uses `attributeSettingsForColumn` to open the
  * existing schema editor when the column has a real attribute id.
+ *
+ * Default visible extras (when `columnIds` is unset) stay **lean**: list schema
+ * / `displayedAttributes` only — same idea as Details. Held-only attributes and
+ * built-ins stay in the picker for opt-in. Wide All Items grids stay calm.
  */
 import type {
   AttributeDefinition,
@@ -348,40 +352,37 @@ export function filterCatalog(
 }
 
 /**
- * Default visible extra columns (name is always shown separately): list schema
- * in declaration order, then extra attributes held on items, then built-ins
- * that have a real value and opted into `defaultWhenHeld`.
+ * Default visible extras when `columnIds` is unset: list schema attributes in
+ * `displayedAttributes` order (or declaration order). Does **not** pull every
+ * held attribute or every held built-in — those stay opt-in via the column
+ * picker / Add column. Empty schema (e.g. All Items) → Name-only until the
+ * user adds columns.
  */
 export function defaultColumnIds(candidates: SheetColumnCandidate[], list?: List, types: ItemTypeDefinition[] = []): string[] {
   const ids: string[] = []
   const seen = new Set<string>()
+  const known = new Set(candidates.map((c) => c.id))
   const push = (id: string) => {
-    if (seen.has(id) || id === NAME_COLUMN_ID) return
+    if (!id || seen.has(id) || id === NAME_COLUMN_ID) return
     seen.add(id)
     ids.push(id)
   }
 
   if (list) {
-    for (const def of composeListAttributes(list, types)) push(def.id)
-  }
-
-  const byId = new Map(candidates.map((c) => [c.id, c]))
-  for (const c of candidates) {
-    if (!c.onThisList) continue
-    if (c.source === "attribute") push(c.id)
-  }
-
-  for (const spec of BUILTIN_FIELD_SPECS) {
-    if (!spec.defaultWhenHeld) continue
-    const id = builtinColumnId(spec.key)
-    const c = byId.get(id)
-    if (c?.onThisList) push(id)
+    const schema = composeListAttributes(list, types)
+    const schemaIds = new Set(schema.map((d) => d.id))
+    const displayed = list.displayedAttributes
+    const ordered =
+      displayed && displayed.length > 0
+        ? displayed.filter((id) => schemaIds.has(id) || known.has(id))
+        : schema.map((d) => d.id)
+    for (const id of ordered) push(id)
   }
 
   return ids
 }
 
-/** Resolve persisted column ids, falling back to the on-this-list default. */
+/** Resolve persisted column ids, falling back to the lean schema default. */
 export function resolveColumnIds(
   config: SheetViewConfig | undefined,
   candidates: SheetColumnCandidate[],

@@ -123,7 +123,7 @@ describe("buildSpreadsheetCatalog", () => {
     expect(completed.type).toBe("boolean")
   })
 
-  it("defaults visible columns to on-this-list attrs + held builtins, not vault", () => {
+  it("defaults visible columns to list schema only — held attrs and builtins stay opt-in", () => {
     const catalog = buildSpreadsheetCatalog({
       list: books,
       lists: [books, vault],
@@ -135,13 +135,41 @@ describe("buildSpreadsheetCatalog", () => {
       ],
     })
     const defaults = defaultColumnIds(catalog, books, [])
-    expect(defaults).toContain("author")
-    expect(defaults).toContain("pages")
-    expect(defaults).toContain("rating")
-    expect(defaults).toContain(builtinColumnId("importance"))
-    expect(defaults).toContain(builtinColumnId("tags"))
+    expect(defaults).toEqual(["author", "pages"])
+    expect(defaults).not.toContain("rating")
     expect(defaults).not.toContain("year")
-    expect(defaults).not.toContain(builtinColumnId("completed"))
+    expect(defaults).not.toContain(builtinColumnId("importance"))
+    expect(defaults).not.toContain(builtinColumnId("tags"))
+  })
+
+  it("defaults to no extras when the list has an empty schema (All Items calm path)", () => {
+    const allItems = list({ id: "__all-items__root", name: "All Items" })
+    const many = [
+      item({
+        id: "1",
+        description: "A",
+        lists: ["books"],
+        attributes: { author: "H", rating: 5 },
+        importance: 4,
+        tags: ["sf"],
+      }),
+      item({
+        id: "2",
+        description: "B",
+        lists: ["films"],
+        attributes: { year: 1995 },
+        urgency: 3,
+      }),
+    ]
+    const catalog = buildSpreadsheetCatalog({
+      list: allItems,
+      lists: [allItems, books, vault],
+      types: [],
+      listItems: many,
+      vaultItems: many,
+    })
+    expect(defaultColumnIds(catalog, allItems, [])).toEqual([])
+    expect(resolveColumnIds(undefined, catalog, allItems, [])).toEqual([])
   })
 })
 
