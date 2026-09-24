@@ -300,8 +300,15 @@ export function DocsPanel() {
     <div className="docs95" data-ui-name="Docs" data-ui-docs="components/Docs/README.md">
       <div className="docs-window">
         <div className="docs-title-bar">
-          <FileText className="docs-title-icon" aria-hidden />
-          <h2>Brainclip Docs — Document Editor</h2>
+          <div className="docs-title-bar-text">
+            <FileText className="docs-title-icon" aria-hidden />
+            <h2>Brainclip Docs — Document Editor</h2>
+          </div>
+          <div className="docs-title-bar-controls" aria-hidden="true">
+            <span className="docs-title-btn">_</span>
+            <span className="docs-title-btn">□</span>
+            <span className="docs-title-btn">×</span>
+          </div>
         </div>
 
         <div className="docs-menubar" role="menubar">
@@ -493,11 +500,18 @@ export function DocsPanel() {
         </div>
 
         <div className="docs-statusbar">
-          <span>
-            {docs.length} document{docs.length === 1 ? "" : "s"}
-            {folders.length ? ` · ${folders.length} folder${folders.length === 1 ? "" : "s"}` : ""}
+          <span className="docs-status-field">
+            <span className="docs-crt-count">{docs.length}</span>
+            document{docs.length === 1 ? "" : "s"}
+            {folders.length ? (
+              <>
+                <span aria-hidden="true">·</span>
+                <span className="docs-crt-count">{folders.length}</span>
+                folder{folders.length === 1 ? "" : "s"}
+              </>
+            ) : null}
           </span>
-          <span>Auto-save · Click image to resize · Export PDF</span>
+          <span className="docs-status-hint">Auto-save · Click image to resize · Export PDF</span>
         </div>
       </div>
     </div>

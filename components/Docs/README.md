@@ -1,7 +1,9 @@
 # `components/Docs/` — Docs tab
 
 Top-level **Docs** workspace in **Brain2**: Windows 95 chrome around a single-pane WYSIWYG
-editor (Notion / Google Docs style). Documents are ordinary `note` items in
+editor (Notion / Google Docs style). Outer window caption, menubar keys, and status
+counts are a whisper of the house [milled fascia](../../docs/DESIGN_STYLE.md#milled-fascia);
+the white document surface and editor paper stay as they are. Documents are ordinary `note` items in
 `task-store` (`lib/note-types.ts`) with rich **HTML** in `Item.body`, optional
 folder / font / status attributes, and auto-save.
 
@@ -24,7 +26,7 @@ not block save or replace the sentence on its own.
 | `LinkDialog.tsx` | Ctrl/Cmd+K hyperlink dialog (optional display text + URL) |
 | `doc-actions.ts` | Create / rename / folder / font / body / status / delete helpers over `note` tasks |
 | `doc-actions.test.ts` | Unit tests for doc-actions |
-| `docs.css` | Outer Win95 window chrome for the Docs panel |
+| `docs.css` | Outer window chrome: milled caption bay, metal menubar keys, CRT status counts (paper untouched) |
 | `document-editor.css` | Page surface, list markers, toolbar, embedded link/video cards |
 
 ## Related helpers (`lib/`)
