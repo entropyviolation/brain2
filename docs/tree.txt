@@ -820,18 +820,18 @@
 │   ├── message-ingest.json
 │   ├── mobile-sync.json
 │   ├── recovery-backups
-│   │   ├── auto-brain2-habits-store-2026-09-24-04.json
-│   │   ├── auto-brain2-task-storage-2026-09-24-04.json
 │   │   ├── auto-brain2-task-storage-2026-09-24-05.json
-│   │   ├── auto-brain2-timegrid-store-2026-09-24-04.json
+│   │   ├── auto-brain2-task-storage-2026-09-24-06.json
 │   │   ├── auto-cogs-baby-animals-store-2026-09-24-04.json
 │   │   ├── auto-cogs-habits-store-2026-09-24-04.json
 │   │   ├── auto-cogs-habits-store-2026-09-24-05.json
+│   │   ├── auto-cogs-habits-store-2026-09-24-06.json
 │   │   ├── auto-cogs-task-storage-2026-09-24-05.json
-│   │   ├── auto-cogs-timegrid-store-2026-09-24-04.json
+│   │   ├── auto-cogs-task-storage-2026-09-24-06.json
 │   │   ├── auto-cogs-timegrid-store-2026-09-24-05.json
-│   │   ├── auto-points-store-2026-09-24-04.json
+│   │   ├── auto-cogs-timegrid-store-2026-09-24-06.json
 │   │   ├── auto-points-store-2026-09-24-05.json
+│   │   ├── auto-points-store-2026-09-24-06.json
 │   │   ├── brain2-empty-ls-2026-09-21T07-45-39-912Z.json
 │   │   ├── chrome-ls-2026-09-20T03-12-52-878Z.json
 │   │   ├── cogs-backup-2026-09-21-user.json
@@ -1729,8 +1729,11 @@
 │   ├── remove-background.test.ts
 │   ├── remove-background.ts
 │   ├── reviews-store.ts
+│   ├── schedule-credit.test.ts
+│   ├── schedule-credit.ts
 │   ├── scheduled-lists-sync.test.ts
 │   ├── scheduled-lists-sync.ts
+│   ├── scheduling.test.ts
 │   ├── scheduling.ts
 │   ├── screentime
 │   │   ├── README.md
@@ -1798,6 +1801,7 @@
 │   ├── task-store.dates.test.ts
 │   ├── task-store.item-record.test.ts
 │   ├── task-store.list-links.test.ts
+│   ├── task-store.merge-tombstones.test.ts
 │   ├── task-store.migration.test.ts
 │   ├── task-store.titles.test.ts
 │   ├── task-store.ts

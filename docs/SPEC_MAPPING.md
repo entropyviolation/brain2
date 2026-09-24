@@ -1044,6 +1044,8 @@ that mass of personal data. See "What this is trying to be" in
   add-row, add-column (pick on-this-list / vault attrs or create + assign-to-all),
   arrows/Tab/Enter/type-to-replace/Escape, header hide/insert without destroying
   attributes. Columns come from `lib/spreadsheet-catalog.ts` (built-ins + custom).
+  Default visible extras are lean (list schema / `displayedAttributes` only;
+  empty schema → Name-only) so All Items stays responsive; extras stay opt-in.
   Per-list layout on `List.sheetConfig`. Lists **Spreadsheet** display and Module
   **spreadsheet** view. See `components/Lists/SPREADSHEET.md`. Rollups
   (group-by + sum) power Module **summary** views via `lib/spreadsheet-utils.ts`.

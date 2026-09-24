@@ -68,7 +68,8 @@ running. A closed laptop cannot answer `groc` at the store. Two paths stay live:
    tasks and Plan append-log entries by id (`lib/vault-guard.js`), so a desktop
    push that never saw the phone-hub write cannot drop a Telegram capture;
    shrink guards still refuse a 15-item seed wipe of a rich vault.
-   Hard-deleted Inbox ids stamp `removedTaskIds` so that union cannot resurrect them.
+   Hard-deleted Inbox ids (and item-merge discards) stamp `removedTaskIds` so
+   that union cannot resurrect them; discarded lists stamp `removedListIds`.
 
 Telegram still keeps unclaimed updates about **24 hours**, so texts sent while
 nothing is polling land the next time a poller runs. Older than that are dropped.

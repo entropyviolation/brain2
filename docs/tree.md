@@ -702,7 +702,7 @@ localStorage keys are **`brain2-*`**. Historical **`cogs-*`** keys are a lossles
 | `details-columns.ts` | Details table column ids (`List.detailsColumns`; not spreadsheet) |
 | `lists-grid-entries.ts` | `buildGridEntries()` for Lists navigation |
 | `string-utils.ts` | `hashString`, `hashIconSlot` for orb/icon placement and connector mock seeds |
-| `spreadsheet-catalog.ts` | Attribute → column catalog (on-this-list / vault / built-ins); per-list `columnIds`; hide is view-only; `attributeSettingsForColumn` |
+| `spreadsheet-catalog.ts` | Attribute → column catalog (on-this-list / vault / built-ins); lean schema defaults for `columnIds`; hide is view-only; `attributeSettingsForColumn` |
 | `spreadsheet-contract.ts` | Serializable `SheetViewConfig` (sort/filter/freeze/widths/row-heights/`columnIds`); blanks always last; `persistSheetViewConfig` / `columnWidthsByList` |
 | `spreadsheet-utils.ts` | Numeric column detect, aggregation, optional-inclusion rollups for SheetGrid + summaries |
 | `spreadsheet-keys.ts` | Pure grid interaction model: cell navigation, range math, clipboard TSV, and selection stats (Sum/Avg/Min/Max/Count) |
