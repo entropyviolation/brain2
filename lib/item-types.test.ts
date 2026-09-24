@@ -14,6 +14,8 @@ import {
   evaluateCondition,
   applyRulesFor,
   validateItem,
+  resolveDetailView,
+  mergeTypeRegistry,
   type TypedAttributeSource,
 } from "@/lib/item-types"
 import type { ItemLike } from "@/lib/item-types"
@@ -29,10 +31,10 @@ describe("getBuiltinItemTypes / getItemType", () => {
     expect(task?.capabilities?.points).toBe(true)
   })
 
-  it("falls back to the task type for unknown ids", () => {
+  it("falls back to the generic item type for unknown ids", () => {
     const types = getBuiltinItemTypes()
-    expect(getItemType(types, "does-not-exist").id).toBe("task")
-    expect(getItemType(types, undefined).id).toBe("task")
+    expect(getItemType(types, "does-not-exist").id).toBe("item")
+    expect(getItemType(types, undefined).id).toBe("item")
   })
 })
 
@@ -133,10 +135,11 @@ describe("resolveItemSchema (union across all an item's lists + its type)", () =
 })
 
 describe("assignedItemTypes (own type + list-pinned types)", () => {
+  const itemType: ItemTypeDefinition = { id: "item", name: "Item" }
   const taskType: ItemTypeDefinition = { id: "task", name: "Task" }
   const goalType: ItemTypeDefinition = { id: "goal", name: "Goal" }
   const bookType: ItemTypeDefinition = { id: "book", name: "Book" }
-  const types = [taskType, goalType, bookType]
+  const types = [itemType, taskType, goalType, bookType]
   const goalsList = { id: "goals", itemTypeId: "goal" as const }
   const readingList = { id: "reading", itemTypeId: "book" as const }
   const plainList = { id: "plain" }
@@ -155,9 +158,9 @@ describe("assignedItemTypes (own type + list-pinned types)", () => {
     expect(result.map((t) => t.id)).toEqual(["goal"])
   })
 
-  it("defaults a missing type to the built-in task type", () => {
+  it("defaults a missing type to the generic item type", () => {
     const result = assignedItemTypes({ lists: [] }, [], types)
-    expect(result.map((t) => t.id)).toEqual(["task"])
+    expect(result.map((t) => t.id)).toEqual(["item"])
   })
 
   it("ignores untyped lists and unregistered type ids", () => {
@@ -302,3 +305,121 @@ describe("applyRulesFor / validateItem", () => {
     expect(applyRulesFor(low, conditional, "update").item.tags).toBeUndefined()
   })
 })
+
+describe("resolveDetailView", () => {
+  const types = getBuiltinItemTypes()
+  const book = types.find((t) => t.id === "book")!
+  const furniture = types.find((t) => t.id === "furniture")!
+  const task = types.find((t) => t.id === "task")!
+
+  it("keeps a book to details only (no scheduling)", () => {
+    const view = resolveDetailView({ type: "book", lists: ["reading"] }, [{ id: "reading", itemTypeId: "book" }], types)
+    expect(view.panels).toEqual(["details"])
+    expect(view.layout?.heroImageAttrId).toBe("cover")
+    expect(view.capabilities.scheduleable).toBeFalsy()
+  })
+
+  it("does not show scheduling for furniture / wishlist items", () => {
+    const view = resolveDetailView(
+      { type: "furniture", lists: ["wishlist"] },
+      [{ id: "wishlist", itemTypeId: "furniture" }],
+      types,
+    )
+    expect(view.panels).toEqual(["details"])
+    expect(view.panels).not.toContain("scheduling")
+  })
+
+  it("gives tasks the full panel set", () => {
+    const view = resolveDetailView({ type: "task", lists: ["na"] }, [{ id: "na" }], types, { isTask: true })
+    expect(view.panels).toEqual(expect.arrayContaining(["details", "scheduling", "subtasks", "analysis"]))
+  })
+
+  it("lets a list hide scheduling even if the type would show it", () => {
+    const flight = types.find((t) => t.id === "flight")!
+    expect(flight.detailPanels).toContain("scheduling")
+    const view = resolveDetailView(
+      { type: "flight", lists: ["trips"] },
+      [{ id: "trips", itemTypeId: "flight", hiddenDetailPanels: ["scheduling"] }],
+      types,
+    )
+    expect(view.panels).not.toContain("scheduling")
+  })
+
+  it("ships book, furniture, resource, shopping catalog types", () => {
+    expect(book.kind).toBe("catalog")
+    expect(furniture.kind).toBe("catalog")
+    expect(task.kind).toBe("system")
+    expect(types.some((t) => t.id === "item")).toBe(true)
+    expect(types.some((t) => t.id === "shopping")).toBe(true)
+    expect(types.some((t) => t.id === "resource")).toBe(true)
+  })
+})
+
+describe("mergeTypeRegistry", () => {
+  it("does not overwrite a customized catalog Book", () => {
+    const customized: ItemTypeDefinition = {
+      id: "book",
+      name: "My Books",
+      kind: "catalog",
+      builtin: true,
+      attributes: [{ id: "cover", name: "Cover", type: "image" }],
+    }
+    const merged = mergeTypeRegistry([customized])
+    const book = merged.find((t) => t.id === "book")
+    expect(book?.name).toBe("My Books")
+    expect(book?.attributes).toHaveLength(1)
+  })
+
+  it("always re-seeds system Task from code", () => {
+    const customized: ItemTypeDefinition = {
+      id: "task",
+      name: "Hacked Task",
+      kind: "system",
+      builtin: true,
+      capabilities: {},
+    }
+    const merged = mergeTypeRegistry([customized])
+    const task = merged.find((t) => t.id === "task")
+    expect(task?.name).toBe("Task")
+    expect(task?.capabilities?.scheduleable).toBe(true)
+  })
+})
+
+describe("delta operators and implied-action effects", () => {
+  it("treats increased as a before/after numeric compare", () => {
+    const prev: ItemLike = { attributes: { pagesRead: 10 } }
+    const next: ItemLike = { attributes: { pagesRead: 22 } }
+    expect(evaluateCondition(next, { field: "pagesRead", operator: "increased" }, prev)).toBe(true)
+    expect(evaluateCondition(prev, { field: "pagesRead", operator: "increased" }, next)).toBe(false)
+  })
+
+  it("collects logAction and incrementHabit effects on update", () => {
+    const rules: ItemTypeRule[] = [
+      {
+        id: "log",
+        name: "log",
+        trigger: "update",
+        when: { field: "pagesRead", operator: "increased" },
+        action: { kind: "logAction", titleTemplate: "read {delta} pages of {title}", awardPoints: true },
+      },
+      {
+        id: "habit",
+        name: "habit",
+        trigger: "update",
+        when: { field: "pagesRead", operator: "increased" },
+        action: { kind: "incrementHabit", habitId: "task-9", amount: "delta" },
+      },
+    ]
+    const result = applyRules(
+      { title: "Dune", attributes: { pagesRead: 22 } },
+      rules,
+      "update",
+      { title: "Dune", attributes: { pagesRead: 10 } },
+    )
+    expect(result.effects).toEqual([
+      expect.objectContaining({ kind: "logAction", delta: 12, titleTemplate: "read {delta} pages of {title}" }),
+      expect.objectContaining({ kind: "incrementHabit", habitId: "task-9", amount: 12 }),
+    ])
+  })
+})
+

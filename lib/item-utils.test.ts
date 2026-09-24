@@ -6,6 +6,13 @@ import {
   applyItemRules,
   isDayUnscheduledPlanned,
   MAX_BEAT_THE_CLOCK_BONUS,
+  isTaskItem,
+  countsInDone,
+  createListItem,
+  createNextActionItem,
+  itemTitle,
+  itemTitleOrUntitled,
+  syncTitleFromDescription,
 } from "./item-utils"
 import type { Folder, ItemTypeDefinition, Task, List } from "@/lib/types"
 import {
@@ -14,6 +21,96 @@ import {
   TIER_ATTR_IDS,
   TIER_POINTS,
 } from "./completion-tiers"
+
+describe("itemTitle", () => {
+  it("prefers the canonical title", () => {
+    expect(itemTitle({ title: "Buy milk", description: "Buy milk" })).toBe("Buy milk")
+  })
+
+  it("falls back to the legacy description mirror", () => {
+    expect(itemTitle({ description: "Buy milk" })).toBe("Buy milk")
+  })
+
+  it("lets title win when the two have drifted apart", () => {
+    // The whole point of the seam: before it, some call sites read
+    // `description || title` and others `title || description`, so a renamed
+    // item showed its old name in half the app.
+    expect(itemTitle({ title: "Buy oat milk", description: "Buy milk" })).toBe("Buy oat milk")
+  })
+
+  it("treats a blank or whitespace-only title as absent", () => {
+    expect(itemTitle({ title: "   ", description: "Buy milk" })).toBe("Buy milk")
+    expect(itemTitle({ title: "", description: "Buy milk" })).toBe("Buy milk")
+  })
+
+  it("trims, and returns empty for a nameless or missing record", () => {
+    expect(itemTitle({ title: "  Buy milk  " })).toBe("Buy milk")
+    expect(itemTitle({})).toBe("")
+    expect(itemTitle(undefined)).toBe("")
+    expect(itemTitle(null)).toBe("")
+  })
+})
+
+describe("itemTitleOrUntitled", () => {
+  it("labels a nameless record", () => {
+    expect(itemTitleOrUntitled({})).toBe("Untitled")
+    expect(itemTitleOrUntitled({ title: "   " })).toBe("Untitled")
+  })
+
+  it("accepts a caller-specific fallback", () => {
+    expect(itemTitleOrUntitled({}, "operation")).toBe("operation")
+  })
+
+  it("passes a real name straight through", () => {
+    expect(itemTitleOrUntitled({ description: "Buy milk" })).toBe("Buy milk")
+  })
+})
+
+describe("syncTitleFromDescription", () => {
+  it("fills in a title for a creator that only wrote a description", () => {
+    expect(syncTitleFromDescription({ description: "Buy milk" })).toEqual({
+      title: "Buy milk",
+      description: "Buy milk",
+    })
+  })
+
+  it("follows a rename made through the mirror", () => {
+    // renameDocument writes description alone; readers prefer title.
+    const previous = { title: "Draft", description: "Draft" }
+    expect(syncTitleFromDescription({ ...previous, description: "Final" }, previous)).toEqual({
+      title: "Final",
+      description: "Final",
+    })
+  })
+
+  it("keeps an existing title when there is no previous record to compare", () => {
+    const next = { title: "Draft", description: "Final" }
+    expect(syncTitleFromDescription(next)).toBe(next)
+  })
+
+  it("leaves a parked note's name alone when its body changes", () => {
+    // Title and description were never in lockstep here, so description is
+    // body text, not a name.
+    const previous = { title: "Weekend", description: "Weekend\nMilk" }
+    const next = { title: "Weekend", description: "Weekend\nMilk\nEggs" }
+    expect(syncTitleFromDescription(next, previous)).toBe(next)
+  })
+
+  it("lets an explicit title win when both fields change", () => {
+    const previous = { title: "Draft", description: "Draft" }
+    const next = { title: "Final", description: "Something else" }
+    expect(syncTitleFromDescription(next, previous)).toBe(next)
+  })
+
+  it("never writes description", () => {
+    const next = { title: "Kept", description: "" }
+    expect(syncTitleFromDescription(next)).toBe(next)
+    expect(syncTitleFromDescription({ title: "", description: "" })).toEqual({
+      title: "",
+      description: "",
+    })
+  })
+})
 
 describe("beatTheClockMultiplier", () => {
   it("returns 1 when durations are missing", () => {
@@ -207,3 +304,36 @@ describe("isDayUnscheduledPlanned", () => {
     ).toBe(true)
   })
 })
+
+describe("isTaskItem / createListItem / countsInDone", () => {
+  it("does not treat a generic list item as a task", () => {
+    const item = createListItem("big area rug", ["wishlist"])
+    expect(item.type).toBe("item")
+    expect(isTaskItem(item, folders)).toBe(false)
+  })
+
+  it("creates next-action items as tasks", () => {
+    const task = createNextActionItem("Write intro", ["na"])
+    expect(task.type).toBe("task")
+    expect(isTaskItem(task, folders)).toBe(true)
+  })
+
+  it("counts logged actions in Done even when they are not tasks", () => {
+    const logged: Task = {
+      ...createListItem("read 12 pages of Dune"),
+      type: "action",
+      loggedAction: true,
+      completed: true,
+      completedDate: new Date(),
+    }
+    expect(countsInDone(logged, folders)).toBe(true)
+    expect(countsInDone({ ...createListItem("rug"), completed: true }, folders)).toBe(false)
+  })
+
+  it("missing type is a task only when the row lives in Next Actions", () => {
+    expect(isTaskItem({ ...createListItem("rug"), type: undefined }, folders)).toBe(false)
+    expect(isTaskItem({ ...createListItem("Write intro", ["na"]), type: undefined }, folders)).toBe(true)
+    expect(countsInDone({ ...createListItem("rug"), type: undefined, completed: true }, folders)).toBe(false)
+  })
+})
+

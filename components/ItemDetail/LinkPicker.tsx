@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Link2 } from "lucide-react"
 import { RELATIONS } from "@/lib/links"
 import { taskRepository } from "@/lib/data/task-repository"
+import { itemTitle } from "@/lib/item-utils"
 
 interface LinkPickerProps {
   sourceId: string
@@ -38,13 +39,13 @@ export function LinkPicker({ sourceId, onAdd }: LinkPickerProps) {
       .filter((t) => t.id !== sourceId)
       .filter(
         (t) =>
-          t.description?.toLowerCase().includes(query) ||
+          itemTitle(t).toLowerCase().includes(query) ||
           t.taskDescription?.toLowerCase().includes(query),
       )
       .slice(0, 8)
   }, [query, sourceId])
 
-  const selectedTitle = targetId ? taskRepository.getById(targetId)?.description : undefined
+  const selectedTitle = targetId ? itemTitle(taskRepository.getById(targetId)) : undefined
 
   const confirm = () => {
     if (!targetId) return
@@ -97,7 +98,7 @@ export function LinkPicker({ sourceId, onAdd }: LinkPickerProps) {
                 }}
               >
                 <Link2 className="h-3 w-3 text-muted-foreground shrink-0" />
-                <span className="truncate">{t.description}</span>
+                <span className="truncate">{itemTitle(t)}</span>
               </button>
             ))}
           </div>

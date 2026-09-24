@@ -9,6 +9,7 @@ import {
   addLink,
   removeLink,
   removeLinkByTarget,
+  recordLinks,
   normalizeTag,
   addTag,
   removeTag,
@@ -87,6 +88,12 @@ describe("link helpers", () => {
     const next = removeLinkByTarget(links, "blocks", "t2")
     expect(next).toHaveLength(1)
     expect(next[0].relation).toBe("supports")
+  })
+
+  it("recordLinks reads Item.links on an item record", () => {
+    expect(recordLinks(undefined)).toEqual([])
+    const links = addLink([], "blocks", "t2")
+    expect(recordLinks({ links })).toBe(links)
   })
 })
 

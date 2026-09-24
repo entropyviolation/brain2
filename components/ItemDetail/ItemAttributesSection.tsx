@@ -14,9 +14,11 @@ import { IsolatedInput } from "@/components/ui/isolated-text-field"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Trash2 } from "lucide-react"
-import type { AttributeDefinition, AttributeValue, ItemType, List } from "@/lib/types"
+import type { AttributeDefinition, AttributeValue, ItemDetailLayout, ItemType, List } from "@/lib/types"
 import { AttributeValuesEditor, mergeItemAttributes } from "@/components/Lists/attribute-editor"
+import { AttributeValueField } from "@/components/Lists/attributes/AttributeValueField"
 import { useItemTypeStore } from "@/lib/item-type-store"
+import { useAttachmentSrc } from "@/hooks/use-attachment-src"
 import { AttributeCreator } from "@/components/ItemDetail/AttributeCreator"
 
 function humanizeId(id: string): string {
@@ -35,6 +37,8 @@ export interface ItemAttributesSectionProps {
   itemAttributeDefinitions?: AttributeDefinition[]
   /** The item's type, so type-level attributes are shown alongside list ones. */
   itemType?: ItemType
+  /** Type-owned layout: hero cover + featured attributes. */
+  layout?: ItemDetailLayout
   onChangeValues: (values: Record<string, AttributeValue>) => void
   onChangeItemAttributeDefinitions?: (defs: AttributeDefinition[]) => void
   onCreateAttribute: (def: AttributeDefinition, value: AttributeValue, listId: string | null) => void
@@ -46,6 +50,7 @@ export function ItemAttributesSection({
   categories,
   itemAttributeDefinitions = [],
   itemType,
+  layout,
   onChangeValues,
   onChangeItemAttributeDefinitions,
   onCreateAttribute,
@@ -69,6 +74,20 @@ export function ItemAttributesSection({
     [schemaDefs, itemOnlyDefs, attributes],
   )
 
+  const featuredIds = layout?.featuredAttributeIds ?? []
+  const heroId = layout?.heroImageAttrId
+  const featuredDefs = schemaDefs.filter((d) => featuredIds.includes(d.id) && d.id !== heroId)
+  const restDefs = schemaDefs.filter((d) => d.id !== heroId && !featuredIds.includes(d.id))
+  const heroDef = heroId ? schemaDefs.find((d) => d.id === heroId) : undefined
+  const heroValue = heroId ? attributes?.[heroId] : undefined
+  const heroUri =
+    typeof heroValue === "string"
+      ? heroValue
+      : Array.isArray(heroValue)
+        ? String(heroValue[0] ?? "")
+        : ""
+  const heroUrl = useAttachmentSrc(heroUri)
+
   const setOrphan = (id: string, v: string) => onChangeValues({ ...attributes, [id]: v })
   const removeOrphan = (id: string) => {
     const next = { ...attributes }
@@ -85,7 +104,35 @@ export function ItemAttributesSection({
 
   return (
     <div className="space-y-3">
-      <AttributeValuesEditor definitions={schemaDefs} values={attributes || {}} onChange={onChangeValues} />
+      {heroDef && (
+        <div className="space-y-2">
+          {heroUrl ? (
+            <img
+              src={heroUrl}
+              alt={heroDef.name}
+              className="w-full max-h-72 rounded-md object-cover border bg-muted"
+            />
+          ) : (
+            <div className="flex h-40 items-center justify-center rounded-md border bg-muted/40 text-sm text-muted-foreground">
+              No {heroDef.name.toLowerCase()} yet
+            </div>
+          )}
+          <AttributeValueField
+            def={heroDef}
+            value={attributes?.[heroDef.id]}
+            onChange={(v) => onChangeValues({ ...attributes, [heroDef.id]: v })}
+          />
+        </div>
+      )}
+
+      {featuredDefs.length > 0 && (
+        <div className="space-y-2 rounded-md border p-3">
+          <Label className="text-xs text-muted-foreground">Featured</Label>
+          <AttributeValuesEditor definitions={featuredDefs} values={attributes || {}} onChange={onChangeValues} />
+        </div>
+      )}
+
+      <AttributeValuesEditor definitions={restDefs} values={attributes || {}} onChange={onChangeValues} />
 
       {itemOnlyDefs.length > 0 && (
         <div className="space-y-2">

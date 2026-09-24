@@ -5,7 +5,7 @@
  * folder tree) from plain list items, building minimal vs full task records,
  * and filtering planned-task sidebars in Plan views.
  */
-import type { Task, List, Folder, AttributeValue, ItemTypeDefinition, ItemTypeRule } from "@/lib/types"
+import type { Task, ItemRecord, List, Folder, AttributeValue, ItemTypeDefinition, ItemTypeRule } from "@/lib/types"
 import { composeListDefaults, getItemType, gatherItemRules, applyRules, type ItemLike } from "@/lib/item-types"
 import {
   getWeekString,
@@ -18,6 +18,77 @@ import {
 import { normalizeAttributeType } from "@/lib/attribute-utils"
 import type { AttributeDefinition } from "@/lib/types"
 import { computeFormulaValue } from "@/lib/formula"
+import { isClearedFromWork } from "@/lib/completion-status"
+
+/**
+ * Anything that carries a name. Deliberately structural rather than `Item` so
+ * the accessors below work on `Task`, `Item`, `ItemLike`, workflow snapshots,
+ * and plain records read back out of a backup file.
+ */
+export interface TitledRecord {
+  title?: string
+  description?: string
+}
+
+/**
+ * **The one answer to "what is this called."**
+ *
+ * `Item.title` is the field of record; `Task.description` is the v1 name kept
+ * as a mirror while persisted vaults and backups still carry it
+ * (`docs/CANONICAL_FIELDS.md`). Read through here rather than reaching for
+ * either field, so that when `description` finally retires, nothing has to be
+ * re-audited — and so the two spellings cannot disagree about which one wins.
+ *
+ * Returns `""` when the record has no name at all; callers that need to *show*
+ * something want {@link itemTitleOrUntitled}.
+ */
+export function itemTitle(item: TitledRecord | null | undefined): string {
+  if (!item) return ""
+  const title = typeof item.title === "string" ? item.title.trim() : ""
+  if (title) return title
+  return typeof item.description === "string" ? item.description.trim() : ""
+}
+
+/** {@link itemTitle}, with a label for records that never got a name. */
+export function itemTitleOrUntitled(
+  item: TitledRecord | null | undefined,
+  fallback = "Untitled",
+): string {
+  return itemTitle(item) || fallback
+}
+
+/**
+ * The write-side twin of {@link itemTitle}: keep `title` filled in and current
+ * without ever touching `description`.
+ *
+ * Two things are true at once. Readers now prefer `title`, and several callers
+ * still rename an item by writing `description` alone (`renameDocument` is the
+ * plainest). Left as-is, a rename would show the old name. But `description` is
+ * not always a mirror — a parked Apple Note keeps its whole body there — so
+ * blindly following it would turn a note's name into its body.
+ *
+ * The test that separates those two cases is whether the pair *was* in lockstep
+ * before the write. If it was, `description` was the name and the edit is a
+ * rename. If it was not, this record is using the two fields for two different
+ * things and neither is ours to rewrite.
+ */
+export function syncTitleFromDescription<T extends TitledRecord>(
+  next: T,
+  previous?: TitledRecord | null,
+): T {
+  const description = typeof next.description === "string" ? next.description.trim() : ""
+  if (!description) return next
+
+  const title = typeof next.title === "string" ? next.title.trim() : ""
+  if (!title) return { ...next, title: description }
+  if (!previous) return next
+
+  const wasTitle = typeof previous.title === "string" ? previous.title.trim() : ""
+  const wasDescription = typeof previous.description === "string" ? previous.description.trim() : ""
+  const renamedThroughTheMirror =
+    wasTitle === wasDescription && title === wasTitle && description !== wasDescription
+  return renamedThroughTheMirror ? { ...next, title: description } : next
+}
 
 const NEXT_ACTIONS_RE = /next\s*actions?/i
 
@@ -38,21 +109,32 @@ export function listIsNextActions(categoryId: string, folders: Folder[]): boolea
   return folder ? isNextActionsFolder(folder.id, folders) : false
 }
 
-export function taskIsNextAction(task: Task, folders: Folder[]): boolean {
-  return (task.lists ?? []).some((cid) => listIsNextActions(cid, folders))
+export function taskIsNextAction(item: ItemRecord, folders: Folder[]): boolean {
+  return (item.lists ?? []).some((cid) => listIsNextActions(cid, folders))
 }
 
 /**
  * Whether an item is of the built-in "task" item type — which is what grants the
- * task attributes/features (scheduling, dependencies, subtasks, analysis, time).
+ * hardcoded Task surface (scheduling, dependencies, subtasks, analysis, time).
  *
  * Being in the Next Actions folder (or any list within it) *makes* an item a
- * task: next-action membership implies the task item type. Otherwise we honor
- * the item's explicit `type` (defaults to "task" for plain items).
+ * task. Otherwise we honor the item's explicit `type` — missing/unknown types
+ * are generic items, not tasks.
  */
-export function isTaskItem(task: Task, folders: Folder[]): boolean {
-  if (taskIsNextAction(task, folders)) return true
-  return (task.type ?? "task") === "task"
+export function isTaskItem(item: ItemRecord, folders: Folder[]): boolean {
+  if (taskIsNextAction(item, folders)) return true
+  return item.type === "task"
+}
+
+/** Generated implied-action rows that belong in Done even if they aren't Tasks. */
+export function isLoggedAction(item: Pick<ItemRecord, "type" | "loggedAction">): boolean {
+  return item.loggedAction === true || item.type === "action"
+}
+
+/** Completions that should appear in Home / To-Do Done for the period. */
+export function countsInDone(item: ItemRecord, folders: Folder[]): boolean {
+  if (!item.completed) return false
+  return isTaskItem(item, folders) || isLoggedAction(item)
 }
 
 /** Which explicit schedule field is set (most specific stored assignment). */
@@ -96,7 +178,7 @@ export function taskHasDaySchedule(task: Task): boolean {
 
 /** Month sidebar: scheduled for this month only (not also assigned to a week/day). */
 export function isMonthOnlyPlanned(task: Task, monthKey: string): boolean {
-  if (task.completed) return false
+  if (isClearedFromWork(task)) return false
   if (taskHasFinerScheduleThanMonth(task)) return false
   if (task.scheduledMonth === monthKey) return true
   const deadline = parseLocalDate(task.deadline)
@@ -110,7 +192,7 @@ function formatLocalMonth(date: Date): string {
 
 /** Week sidebar: scheduled for this week only (not assigned to a specific day/time). */
 export function isWeekOnlyPlanned(task: Task, weekKey: string): boolean {
-  if (task.completed) return false
+  if (isClearedFromWork(task)) return false
   if (task.scheduledDate) return false
   if (task.scheduledWeek === weekKey) return true
   const deadline = parseLocalDate(task.deadline)
@@ -120,21 +202,21 @@ export function isWeekOnlyPlanned(task: Task, weekKey: string): boolean {
 
 /** Day sidebar: on today's to-do but not placed on the time grid yet. */
 export function isDayUnscheduledPlanned(task: Task, date: Date): boolean {
-  if (task.completed) return false
+  if (isClearedFromWork(task)) return false
   if (taskHasDaySchedule(task)) return false
   if (task.scheduledDate && sameCalendarDay(task.scheduledDate, date)) return true
   if (!task.scheduledDate && task.deadline && sameCalendarDay(task.deadline, date)) return true
   return false
 }
 
-/** Minimal list item — no next-actions scheduling defaults. */
-export function createListItem(description: string, listIds: string[] = []): Task {
+/** Minimal list item — no next-actions scheduling defaults. One Item record (`type: "item"`). */
+export function createListItem(description: string, listIds: string[] = []): ItemRecord {
   return {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     description,
     stage: listIds.length ? "clarified" : "list",
     // Unified Item base fields (spec §5)
-    type: "task",
+    type: "item",
     title: description,
     tags: [],
     links: [],
@@ -146,10 +228,11 @@ export function createListItem(description: string, listIds: string[] = []): Tas
   }
 }
 
-/** Next-actions item with scheduling / priority defaults. */
-export function createNextActionItem(description: string, listIds: string[] = []): Task {
+/** Next-actions item with scheduling / priority defaults. Task-the-kind (`type: "task"`). */
+export function createNextActionItem(description: string, listIds: string[] = []): ItemRecord {
   return {
     ...createListItem(description, listIds),
+    type: "task",
     stage: "clarified",
     estimatedDuration: 30,
     cognitiveLoad: 2,
@@ -166,13 +249,13 @@ export function createNextActionItem(description: string, listIds: string[] = []
 
 /** Seed attributes from list defaults when adding to a category. */
 export function withCategoryDefaults(
-  task: Task,
+  item: ItemRecord,
   list: List | undefined,
-): Task {
-  if (!list?.defaultAttributeValues) return task
+): ItemRecord {
+  if (!list?.defaultAttributeValues) return item
   return {
-    ...task,
-    attributes: { ...list.defaultAttributeValues, ...(task.attributes || {}) },
+    ...item,
+    attributes: { ...list.defaultAttributeValues, ...(item.attributes || {}) },
   }
 }
 
@@ -184,20 +267,24 @@ export function withCategoryDefaults(
  * testable; callers pass the current `categories` and `types`.
  */
 export function applyItemRules(
-  task: Task,
+  item: ItemRecord,
   lists: List[],
   types: ItemTypeDefinition[],
   trigger: ItemTypeRule["trigger"],
-): Task {
-  const memberLists = (task.lists ?? [])
+  previous?: ItemRecord,
+): ItemRecord {
+  const memberLists = (item.lists ?? [])
     .map((id) => lists.find((c) => c.id === id))
     .filter((c): c is List => !!c)
-  const type = getItemType(types, task.type)
+  const type = getItemType(types, item.type)
   const rules = gatherItemRules(type, memberLists, types)
-  if (rules.length === 0) return task
-  // Task lacks the open index signature ItemLike uses for generic field access;
-  // the rule engine only reads/writes known fields, so this cast is safe.
-  return applyRules(task as unknown as ItemLike, rules, trigger).item as unknown as Task
+  if (rules.length === 0) return item
+  return applyRules(
+    item as unknown as ItemLike,
+    rules,
+    trigger,
+    previous as unknown as ItemLike | undefined,
+  ).item as unknown as ItemRecord
 }
 
 /**
@@ -210,13 +297,13 @@ export function applyItemRules(
  * defaults automatically.
  */
 export function withListMembership(
-  task: Task,
+  item: ItemRecord,
   list: List | undefined,
   types: ItemTypeDefinition[] = [],
-): Task {
-  if (!list) return task
-  let next = task
-  if (list.itemTypeId && (!next.type || next.type === "task")) {
+): ItemRecord {
+  if (!list) return item
+  let next = item
+  if (list.itemTypeId && (!next.type || next.type === "task" || next.type === "item")) {
     next = { ...next, type: list.itemTypeId }
   }
   const defaults = composeListDefaults(list, types)

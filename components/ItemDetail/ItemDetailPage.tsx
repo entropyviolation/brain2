@@ -11,7 +11,7 @@
  */
 "use client"
 
-import { useState, useCallback, useEffect, useRef } from "react"
+import { useState, useCallback, useEffect, useRef, useMemo } from "react"
 import { useItemDetailDraft } from "@/components/ItemDetail/useItemDetailDraft"
 import { TagInput } from "@/components/ItemDetail/TagInput"
 import { LinkPicker } from "@/components/ItemDetail/LinkPicker"
@@ -57,16 +57,30 @@ import {
   Split,
   MoreHorizontal,
   Rocket,
+  History,
+  TimerOff,
 } from "lucide-react"
+import { ItemActivityPanel } from "@/components/ItemDetail/ItemActivityPanel"
+import { CycleConfirmDialog } from "@/components/ItemDetail/CycleConfirmDialog"
+import { recordItemWrite } from "@/lib/item-activity"
 import { upgradeTaskToOperation, OPERATION_TYPE_ID } from "@/components/Operations"
 import { ItemAttributesSection } from "@/components/ItemDetail/ItemAttributesSection"
 import { useItemTypeStore } from "@/lib/item-type-store"
-import { assignedItemTypes, BUILTIN_TASK_TYPE_ID } from "@/lib/item-types"
+import {
+  assignedItemTypes,
+  BUILTIN_ITEM_TYPE_ID,
+  BUILTIN_TASK_TYPE_ID,
+  resolveDetailView,
+  type DetailViewResolution,
+} from "@/lib/item-types"
+import { isTaskItem } from "@/lib/item-utils"
+import { isClearedFromWork } from "@/lib/completion-status"
+import { markMissedOpportunity } from "@/lib/services/completion-service"
 import { useTaskStore } from "@/lib/task-store"
 import type { AttributeDefinition, AttributeValue, ItemTypeDefinition, Subtask, Task } from "@/lib/types"
 import { safeDateFormat, safeISODateString } from "@/lib/date-utils"
 import { ItemTypeEditor } from "@/components/ItemTypes/ItemTypeEditor"
-import { requestNavigateToList } from "@/lib/app-navigation"
+import { APP_NAV_KEYS, readStoredRecord, requestNavigateToList, writeStoredRecordField } from "@/lib/app-navigation"
 import {
   addStepsAsSubtasks,
   parseSteps,
@@ -75,6 +89,7 @@ import {
   toggleSubtaskComplete,
   removeSubtask as removeMolecularStep,
 } from "@/lib/molecular"
+import "./item-detail-chrome.css"
 
 interface EnhancedTaskDetailProps {
   taskId: string
@@ -94,6 +109,8 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
     setTask,
     getDraft,
     touchDraft,
+    originalTask,
+    setOriginalTask,
     allTasks,
     lists,
     updateTask,
@@ -102,6 +119,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
     removeFromCategory,
     setLists,
     removeDependency,
+    addDependency,
     addTag,
     removeTag,
     addLink,
@@ -117,8 +135,38 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
 
   const [isEditing, setIsEditing] = useState(false)
   const [selectedDependency, setSelectedDependency] = useState("")
+  const [cycleLabel, setCycleLabel] = useState<string | null>(null)
   const actualDurationRef = useRef("")
   const [editingItemType, setEditingItemType] = useState<ItemTypeDefinition | null>(null)
+  const isTask = task ? isTaskItem(task, folders) : false
+  const detailView = useMemo<DetailViewResolution>(
+    () =>
+      task
+        ? resolveDetailView(task, lists, itemTypes, { isTask })
+        : { panels: ["details"], capabilities: {}, layout: undefined },
+    [task, lists, itemTypes, isTask],
+  )
+  const visiblePanels = detailView.panels
+  const caps = detailView.capabilities
+  const detailTabs = useMemo(() => {
+    const tabs = ["details", ...visiblePanels.filter((panel) => panel !== "details"), "history"]
+    return tabs
+  }, [visiblePanels])
+  const [detailTab, setDetailTab] = useState(() => {
+    const stored = readStoredRecord(APP_NAV_KEYS.itemDetailTab)[effectiveId]
+    return stored || "details"
+  })
+
+  useEffect(() => {
+    const stored = readStoredRecord(APP_NAV_KEYS.itemDetailTab)[effectiveId]
+    setDetailTab(stored || "details")
+  }, [effectiveId])
+
+  useEffect(() => {
+    writeStoredRecordField(APP_NAV_KEYS.itemDetailTab, effectiveId, detailTab)
+  }, [effectiveId, detailTab])
+
+  const activeDetailTab = detailTabs.includes(detailTab) ? detailTab : "details"
 
   // Create a new attribute from the detail view. Targeting a list persists the
   // definition onto that list's schema immediately; the value lands on the draft
@@ -146,10 +194,12 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
   const handleSave = useCallback(() => {
     const draft = getDraft()
     if (draft) {
+      recordItemWrite(originalTask, draft, { tasks: allTasks, lists })
       updateTask(draft)
+      setOriginalTask(draft)
       setIsEditing(false)
     }
-  }, [getDraft, updateTask])
+  }, [getDraft, updateTask, originalTask, setOriginalTask, allTasks, lists])
 
   const handleDelete = useCallback(() => {
     if (!task) return
@@ -164,13 +214,20 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
     if (draft) {
       const raw = actualDurationRef.current
       const actualDuration = raw ? Number.parseInt(raw) : undefined
-      updateTask({
+      const next = {
         ...draft,
         completed: true,
         actualDuration: actualDuration,
-      })
+      }
+      recordItemWrite(originalTask ?? draft, next, { tasks: allTasks, lists })
+      updateTask(next)
     }
-  }, [getDraft, updateTask])
+  }, [getDraft, updateTask, originalTask, allTasks, lists])
+
+  const handleMissed = useCallback(() => {
+    if (!task) return
+    markMissedOpportunity(task.id)
+  }, [task])
 
   const handleSchedule = useCallback(
     (type: "date" | "week" | "month" | "year", value: string) => {
@@ -293,15 +350,14 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
     [task, persistSubtasks],
   )
 
-  const addDependency = useCallback(() => {
-    if (task && selectedDependency && !(task.dependencies ?? []).includes(selectedDependency)) {
-      setTask({
-        ...task,
-        dependencies: [...(task.dependencies ?? []), selectedDependency],
-      })
-      setSelectedDependency("")
+  const handleAddDependency = useCallback(() => {
+    const result = addDependency(selectedDependency)
+    if (!result.ok) {
+      setCycleLabel(result.cycleLabel)
+      return
     }
-  }, [task, selectedDependency])
+    if (selectedDependency) setSelectedDependency("")
+  }, [addDependency, selectedDependency])
 
   // Get available tasks for dependencies (excluding current task and its subtasks)
   const availableDependencies = allTasks.filter(
@@ -315,11 +371,11 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
   // Every item type assigned to this item: its own type plus any type pinned by
   // a list it belongs to (e.g. a task that also lives in a "Goals" list).
   const itemTypes_assigned = assignedItemTypes(
-    { type: task?.type, lists: task?.lists ?? [] },
+    { type: task?.type ?? (isTask ? BUILTIN_TASK_TYPE_ID : BUILTIN_ITEM_TYPE_ID), lists: task?.lists ?? [] },
     lists,
     itemTypes,
   )
-  const primaryTypeId = task?.type ?? BUILTIN_TASK_TYPE_ID
+  const primaryTypeId = task?.type ?? (isTask ? BUILTIN_TASK_TYPE_ID : BUILTIN_ITEM_TYPE_ID)
 
   const handleNavigateToList = useCallback(
     (listId: string) => {
@@ -344,62 +400,44 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
   if (!task) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Task not found</p>
+        <p className="text-muted-foreground">Item not found</p>
       </div>
     )
   }
 
-  // The "body" document panel (Worker D) shows for note-type items and any list
-  // whose detailPanels include "body".
-  const showBody =
-    task.type === "note" ||
-    (task.lists ?? []).some((cid) =>
-      lists.find((c) => c.id === cid)?.detailPanels?.includes("body"),
-    )
-  const tabCount = 5 + (showBody ? 1 : 0)
+  const tabCount = visiblePanels.length + 1
 
   return (
     <>
-    <div className="space-y-6">
-      {/* Fixed header with task title */}
-      <div className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 border-b pb-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="outline" size="icon" onClick={onBack}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold">
-                {isEditing ? (
-                  <IsolatedInput
-                    value={task.description}
-                    onLiveChange={(description) => touchDraft({ description, title: description })}
-                    onCommit={(description) =>
-                      setTask((prev) => (prev ? { ...prev, description, title: description } : prev))
-                    }
-                    className="text-2xl font-bold border-0 shadow-none px-0 h-auto focus-visible:ring-0 w-full max-w-xl"
-                    placeholder="Item name"
-                  />
-                ) : (
-                  task.description
-                )}
-              </h1>
-              <div className="flex items-center gap-2 mt-1">
-                <Badge variant={task.completed ? "default" : "secondary"}>
-                  {task.completed ? "Completed" : task.stage}
-                </Badge>
-                {task.actualDuration && (
-                  <Badge variant="outline">
-                    <Timer className="h-3 w-3 mr-1" />
-                    Took {task.actualDuration}m
-                  </Badge>
-                )}
-              </div>
-            </div>
+    <div className="id95" data-ui-name="Item detail" data-ui-docs="components/ItemDetail/README.md">
+      <div className="id-window">
+      <div className="id-fascia">
+        <div className="id-fascia-row">
+          <Button variant="outline" size="icon" className="id-btn id-btn-icon" onClick={onBack}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div className="id-mark">
+            <span className="id-power-lamp is-on" aria-hidden />
+            <h1 className="id-title">
+              {isEditing ? (
+                <IsolatedInput
+                  value={task.description}
+                  onLiveChange={(description) => touchDraft({ description, title: description })}
+                  onCommit={(description) =>
+                    setTask((prev) => (prev ? { ...prev, description, title: description } : prev))
+                  }
+                  className="id-title-input"
+                  placeholder="Item name"
+                />
+              ) : (
+                task.description
+              )}
+            </h1>
           </div>
-          <div className="flex gap-2">
-            {!task.completed && (
-              <div className="flex items-center gap-2">
+          <div className="id-key-row">
+            {!isClearedFromWork(task) && caps.completable && (
+              <>
+                {caps.duration && (
                 <IsolatedInput
                   type="number"
                   placeholder="Actual minutes"
@@ -410,30 +448,35 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
                   onCommit={(v) => {
                     actualDurationRef.current = v
                   }}
-                  className="w-32"
+                  className="id-duration"
                 />
-                <Button variant="outline" onClick={handleComplete}>
-                  <CheckCircle className="h-4 w-4 mr-2" />
+                )}
+                <Button variant="outline" className="id-btn" onClick={handleComplete}>
+                  <CheckCircle className="h-4 w-4" />
                   Complete
                 </Button>
-              </div>
+                <Button variant="outline" className="id-btn" onClick={handleMissed} title="Too late — file as a missed opportunity">
+                  <TimerOff className="h-4 w-4" />
+                  Missed opportunity
+                </Button>
+              </>
             )}
             {isEditing ? (
               <>
-                <Button variant="outline" onClick={() => setIsEditing(false)}>
+                <Button variant="outline" className="id-btn" onClick={() => setIsEditing(false)}>
                   Cancel
                 </Button>
-                <Button onClick={handleSave}>
-                  <Save className="h-4 w-4 mr-2" />
+                <Button className="id-btn" onClick={handleSave}>
+                  <Save className="h-4 w-4" />
                   Save Changes
                 </Button>
               </>
             ) : (
-              <Button onClick={() => setIsEditing(true)}>Edit Task</Button>
+              <Button className="id-btn" onClick={() => setIsEditing(true)}>Edit</Button>
             )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" aria-label="More actions">
+                <Button variant="outline" size="icon" className="id-btn id-btn-icon" aria-label="More actions">
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -457,24 +500,40 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
             </DropdownMenu>
           </div>
         </div>
+        <div className="id-fascia-row id-meta">
+          <Badge variant={task.completed ? "default" : "secondary"} className="id-chip">
+            {task.completed ? "Completed" : task.stage}
+          </Badge>
+          {task.actualDuration && (
+            <Badge variant="outline" className="id-chip">
+              <Timer className="h-3 w-3" />
+              Took {task.actualDuration}m
+            </Badge>
+          )}
+        </div>
       </div>
 
-      <Tabs defaultValue="details" className="w-full">
+      <Tabs value={activeDetailTab} onValueChange={setDetailTab} className="id-body w-full">
         <TabsList
-          className="grid w-full"
+          className="id-view-keys"
           style={{ gridTemplateColumns: `repeat(${tabCount}, minmax(0, 1fr))` }}
         >
           <TabsTrigger value="details">Details</TabsTrigger>
-          <TabsTrigger value="scheduling">Scheduling</TabsTrigger>
-          <TabsTrigger value="dependencies">Dependencies</TabsTrigger>
-          <TabsTrigger value="subtasks">Subtasks</TabsTrigger>
-          <TabsTrigger value="analysis">Analysis</TabsTrigger>
-          {showBody && <TabsTrigger value="body">Body</TabsTrigger>}
+          {visiblePanels.includes("scheduling") && <TabsTrigger value="scheduling">Scheduling</TabsTrigger>}
+          {visiblePanels.includes("dependencies") && <TabsTrigger value="dependencies">Dependencies</TabsTrigger>}
+          {visiblePanels.includes("subtasks") && <TabsTrigger value="subtasks">Subtasks</TabsTrigger>}
+          {visiblePanels.includes("analysis") && <TabsTrigger value="analysis">Analysis</TabsTrigger>}
+          {visiblePanels.includes("body") && <TabsTrigger value="body">Body</TabsTrigger>}
+          <TabsTrigger value="history">
+            <History className="h-4 w-4" />
+            History
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="details" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
+              {isTask && (
               <Card>
                 <CardHeader>
                   <CardTitle>Task Information</CardTitle>
@@ -637,6 +696,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
                   </div>
                 </CardContent>
               </Card>
+              )}
             </div>
 
             <div className="space-y-6">
@@ -756,6 +816,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
                     categories={lists}
                     itemAttributeDefinitions={task.itemAttributeDefinitions}
                     itemType={task.type}
+                    layout={detailView.layout}
                     onChangeValues={(attributes) => {
                       touchDraft({ attributes })
                       setTask((prev) => (prev ? { ...prev, attributes } : prev))
@@ -997,7 +1058,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
                           ))}
                       </SelectContent>
                     </Select>
-                    <Button onClick={addDependency} disabled={!selectedDependency}>
+                    <Button onClick={handleAddDependency} disabled={!selectedDependency}>
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
@@ -1215,7 +1276,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
           </Card>
         </TabsContent>
 
-        {showBody && (
+        {visiblePanels.includes("body") && (
           <TabsContent value="body" className="space-y-6">
             <Card>
               <CardHeader>
@@ -1227,8 +1288,19 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
             </Card>
           </TabsContent>
         )}
+
+        <TabsContent value="history" className="space-y-6">
+          <ItemActivityPanel itemId={task.id} />
+        </TabsContent>
       </Tabs>
+      </div>
     </div>
+
+    <CycleConfirmDialog
+      open={!!cycleLabel}
+      cycleLabel={cycleLabel ?? ""}
+      onDismiss={() => setCycleLabel(null)}
+    />
 
     <ItemTypeEditor
       open={!!editingItemType}

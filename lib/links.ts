@@ -2,14 +2,18 @@
  * lib/links.ts — Typed relations & tags (pure helpers)
  *
  * The relation catalog and pure helpers behind generic item-to-item links and
- * tags (spec §5 — second-brain navigation). Links are stored on `Item.links`
- * as `{ id, relation, targetId }`; relations are typed and have inverses so a
- * link from A→B implies a discoverable backlink B→A. Tags are normalized free
- * text on `Item.tags`.
+ * tags (spec §5 — second-brain navigation). The graph is `Item.links` on each
+ * item record (`ItemRecord`): `{ id, relation, targetId, stance?, weight? }`.
+ * Relations are typed and have inverses so a link from A→B implies a
+ * discoverable backlink B→A. Tags are normalized free text on `Item.tags`.
+ *
+ * Not this catalog: `Task.dependencies` (string[]) and `parentTaskId` are
+ * task-kind schedule edges used by Scheduler / critical-path. They stay arrays
+ * until those readers move onto `blocks` / `blocked-by` / `part-of` links.
  *
  * Everything here is pure and unit-tested; the store/repository build on these.
  */
-import type { ItemLink, LinkStance } from "@/lib/types"
+import type { ItemLink, ItemRecord, LinkStance } from "@/lib/types"
 
 /** A relation type item links can express. */
 export interface RelationDef {
@@ -88,6 +92,11 @@ function makeLinkId(): string {
 /** Build a new link record. */
 export function makeLink(relation: string, targetId: string): ItemLink {
   return { id: makeLinkId(), relation, targetId }
+}
+
+/** Graph edges on an item record (`Item.links`). Empty when unset. */
+export function recordLinks(item: Pick<ItemRecord, "links"> | null | undefined): ItemLink[] {
+  return item?.links ?? []
 }
 
 /** True if `links` already contains a (relation, targetId) pair. */

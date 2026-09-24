@@ -3,7 +3,10 @@
  *
  * The logic both detail variants (popup + page) share: subscribe to the task
  * store, load the selected task into local draft state, and the
- * category/dependency mutators that are byte-identical across both. Variant-
+ * category/dependency mutators that are byte-identical across both.
+ * `addDependency` refuses a graph loop (`findCyclePath`) and returns the cycle
+ * label for a Win95 confirm — it does not write `Task.dependencies` on refuse.
+ * Variant-
  * specific behavior (scheduling UX, completion flow, subtasks) stays in each
  * component. This is the de-duplication seam for the consolidated ItemDetail.
  *
@@ -22,6 +25,12 @@ import {
   removeLink as removeLinkFromList,
 } from "@/lib/links"
 import type { Task } from "@/lib/types"
+import { findCyclePath } from "@/lib/critical-path"
+import { itemTitle } from "@/lib/item-utils"
+
+export type AddDependencyResult =
+  | { ok: true }
+  | { ok: false; cycleIds: string[]; cycleLabel: string }
 
 export interface ItemDetailDraft {
   task: Task | null
@@ -42,6 +51,7 @@ export interface ItemDetailDraft {
   removeFromCategory: (categoryId: string) => void
   setLists: (listIds: string[]) => void
   removeDependency: (dependencyId: string) => void
+  addDependency: (dependencyId: string) => AddDependencyResult
   addTag: (tag: string) => void
   removeTag: (tag: string) => void
   addLink: (relation: string, targetId: string) => void
@@ -130,6 +140,30 @@ export function useItemDetailDraft(taskId: string | null): ItemDetailDraft {
     )
   }, [])
 
+  const addDependency = useCallback(
+    (dependencyId: string): AddDependencyResult => {
+      const current = taskRef.current
+      if (!current || !dependencyId || dependencyId === "none") return { ok: true }
+      if ((current.dependencies ?? []).includes(dependencyId)) return { ok: true }
+      const graph = allTasks.some((t) => t.id === current.id)
+        ? allTasks.map((t) => (t.id === current.id ? current : t))
+        : [...allTasks, current]
+      const cycleIds = findCyclePath(graph, current.id, dependencyId)
+      if (cycleIds.length) {
+        const cycleLabel = cycleIds
+          .map((id) => itemTitle(graph.find((t) => t.id === id)) || id)
+          .join(" → ")
+        return { ok: false, cycleIds, cycleLabel }
+      }
+      setTask({
+        ...current,
+        dependencies: [...(current.dependencies ?? []), dependencyId],
+      })
+      return { ok: true }
+    },
+    [allTasks, setTask],
+  )
+
   const addTag = useCallback((tag: string) => {
     setTask((prev) => (prev ? { ...prev, tags: addTagToList(prev.tags, tag) } : prev))
   }, [])
@@ -163,6 +197,7 @@ export function useItemDetailDraft(taskId: string | null): ItemDetailDraft {
     removeFromCategory,
     setLists,
     removeDependency,
+    addDependency,
     addTag,
     removeTag,
     addLink,

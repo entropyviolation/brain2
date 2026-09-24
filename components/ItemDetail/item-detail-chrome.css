@@ -1,0 +1,611 @@
+/**
+ * components/ItemDetail/item-detail-chrome.css — milled fascia for Item detail
+ *
+ * Brushed silver bays, engraved nameplates, CRT title readout, raised metal
+ * keys, equal-fill detail tabs (active = CRT + round power lamp). Looks only —
+ * same fields / save / complete / delete / tab meaning / persistence.
+ * docs/DESIGN_STYLE.md#milled-fascia. Do not flatten velvet/orb contents.
+ */
+
+/* ---- Tokens ------------------------------------------------------------ */
+
+.id95,
+.id95-dialog {
+  --id-surface: var(--chrome-face, #c0c0c0);
+  --id-face: var(--chrome-mid, #dfdfdf);
+  --id-highlight: var(--chrome-hi, #ffffff);
+  --id-shadow: var(--chrome-lo, #808080);
+  --id-frame: var(--chrome-frame, #0a0a0a);
+  --id-blue: #000080;
+  --id-ink: #111111;
+  --id-nameplate: #2a2c2e;
+  --id-crt: var(--hab-crt-green, #7dffc4);
+  --id-crt-glow: var(--hab-crt-glow, 0 0 3px #7dffc4);
+  --id-raised: inset -1px -1px var(--id-frame), inset 1px 1px var(--id-highlight),
+    inset -2px -2px var(--id-shadow), inset 2px 2px var(--id-face);
+  --id-sunken: inset -1px -1px var(--id-highlight), inset 1px 1px var(--id-frame),
+    inset -2px -2px var(--id-face), inset 2px 2px var(--id-shadow);
+  --id-field: inset -1px -1px var(--id-highlight), inset 1px 1px var(--id-shadow),
+    inset -2px -2px var(--id-face), inset 2px 2px var(--id-frame);
+  --id-mill:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
+    linear-gradient(165deg, #d4d8dc 0%, var(--id-surface) 48%, #969a9e 100%);
+  --id-bay-ring:
+    0 0 0 1px #5c6064,
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -1px 0 rgba(40, 42, 46, 0.4),
+    inset 0 0 0 2px #b0b4b8;
+  --id-key-face:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
+    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--id-surface) 70%, #9a9ea2 100%);
+  --id-key-ring:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 0 -1px 0 rgba(55, 58, 62, 0.45),
+    0 0 0 1px #4a4e52,
+    0 1px 0 #6a6e72;
+  --id-crt-glass:
+    radial-gradient(ellipse at 18% 0%, rgba(125, 255, 196, 0.16), transparent 48%),
+    #070c0a;
+  --id-crt-ring:
+    0 0 0 1px #3a3e42,
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 10px 14px rgba(0, 0, 0, 0.4);
+
+  font-family: var(--w95-font, Tahoma, "MS Sans Serif", Geneva, sans-serif);
+  font-size: 12px;
+  color: var(--id-ink);
+  -webkit-font-smoothing: none;
+  --muted-foreground: 0 0% 25%;
+  accent-color: var(--id-blue);
+}
+
+.id95 {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  gap: 0;
+}
+
+.id95 .id-window {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  gap: 8px;
+  padding: 3px;
+  background: var(--id-surface);
+  box-shadow: var(--id-raised);
+}
+
+/* ---- Fascia / CRT title / power lamp ----------------------------------- */
+
+.id95 .id-fascia,
+.id95-dialog .id-fascia {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 10px;
+  border-radius: 3px;
+  background: var(--id-mill);
+  box-shadow: var(--id-bay-ring);
+}
+
+.id95 .id-fascia-row,
+.id95-dialog .id-fascia-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.id95 .id-mark,
+.id95-dialog .id-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  min-width: 0;
+  flex: 1 1 12rem;
+  padding: 6px 14px 6px 8px;
+  border-radius: 2px;
+  background: var(--id-crt-glass);
+  box-shadow: var(--id-crt-ring);
+}
+
+.id95 .id-power-lamp,
+.id95-dialog .id-power-lamp {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 30%, #6a6e72, #2a2c2e 55%, #0a0a0a);
+  box-shadow:
+    0 0 0 1px #1a1c1e,
+    inset 0 1px 1px rgba(255, 255, 255, 0.25),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.5);
+}
+
+.id95 .id-power-lamp.is-on,
+.id95-dialog .id-power-lamp.is-on {
+  background:
+    radial-gradient(circle at 35% 30%, #e8fff4, var(--id-crt) 42%, #0a3a28 78%);
+  box-shadow:
+    0 0 0 1px #1a3a2a,
+    0 0 6px rgba(125, 255, 196, 0.65),
+    inset 0 1px 1px rgba(255, 255, 255, 0.45);
+}
+
+.id95 .id-title,
+.id95-dialog .id-title {
+  flex: 1;
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--id-crt) !important;
+  text-shadow: var(--id-crt-glow);
+}
+
+.id95 .id-title-input,
+.id95-dialog .id-title-input {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--id-crt) !important;
+  font: inherit;
+  font-size: inherit;
+  font-weight: 700;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  text-shadow: inherit;
+  text-align: left;
+}
+
+.id95 .id-title-input:focus,
+.id95-dialog .id-title-input:focus,
+.id95 .id-title-input:focus-visible,
+.id95-dialog .id-title-input:focus-visible {
+  outline: 1px dotted var(--id-crt);
+  outline-offset: 2px;
+  box-shadow: none !important;
+  ring: none;
+}
+
+.id95 .id-meta,
+.id95-dialog .id-meta {
+  gap: 6px;
+  padding-left: 2px;
+}
+
+.id95 .id-chip,
+.id95-dialog .id-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 22px;
+  padding: 2px 8px;
+  border-radius: 2px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--id-nameplate);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  background: linear-gradient(180deg, #eef0f2, #c8cccf);
+  box-shadow:
+    0 0 0 1px #6a6e72,
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+/* ---- Raised metal keys ------------------------------------------------- */
+
+.id95 .id-key-row,
+.id95-dialog .id-key-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.id95 .id-btn,
+.id95-dialog .id-btn,
+.id95 button.id-btn,
+.id95-dialog button.id-btn {
+  box-sizing: border-box;
+  min-height: 28px;
+  height: auto;
+  padding: 4px 12px 5px;
+  border: none !important;
+  border-radius: 2px !important;
+  color: #1c1e20 !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  background: var(--id-key-face) !important;
+  box-shadow: var(--id-key-ring) !important;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.id95 .id-btn:hover:not(:disabled),
+.id95-dialog .id-btn:hover:not(:disabled) {
+  filter: brightness(1.04);
+}
+
+.id95 .id-btn:not(:disabled):active,
+.id95-dialog .id-btn:not(:disabled):active,
+.id95 .id-btn[aria-expanded="true"],
+.id95-dialog .id-btn[aria-expanded="true"] {
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.35),
+    0 0 0 1px #3a3e42 !important;
+}
+
+.id95 .id-btn:disabled,
+.id95-dialog .id-btn:disabled {
+  color: #808080 !important;
+  cursor: default;
+  filter: none;
+}
+
+.id95 .id-btn-icon,
+.id95-dialog .id-btn-icon {
+  min-width: 28px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+}
+
+.id95 .id-btn-danger,
+.id95-dialog .id-btn-danger {
+  color: #800000 !important;
+}
+
+.id95 .id-duration,
+.id95-dialog .id-duration {
+  width: 7.5rem;
+  min-height: 28px;
+  height: 28px;
+  padding: 2px 6px;
+  border: none;
+  border-radius: 0;
+  background: #fff;
+  box-shadow: var(--id-field);
+  font: inherit;
+  font-size: 12px;
+}
+
+/* ---- View keys (equal-fill bay; active = CRT + lamp) ------------------- */
+
+body.win95-app .id95 .id-view-keys[role="tablist"],
+.id95 .id-view-keys[role="tablist"],
+.id95-dialog .id-view-keys[role="tablist"] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 4px;
+  width: 100%;
+  height: auto;
+  margin: 0 0 8px;
+  padding: 4px;
+  border-radius: 3px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
+    #b4b8bc;
+  box-shadow:
+    0 0 0 1px #5c6064,
+    inset 0 2px 3px rgba(0, 0, 0, 0.18);
+}
+
+body.win95-app .id95 .id-view-keys [role="tab"],
+.id95 .id-view-keys [role="tab"],
+.id95-dialog .id-view-keys [role="tab"] {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 4.5rem;
+  min-height: 28px;
+  height: auto;
+  padding: 5px 12px 6px 22px;
+  border-radius: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #1c1e20 !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 28%),
+    linear-gradient(165deg, #eceef0, #c0c4c8) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1px #4a4e52;
+}
+
+.id95 .id-view-keys [role="tab"]::before,
+.id95-dialog .id-view-keys [role="tab"]::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 30%, #6a6e72, #2a2c2e 55%, #0a0a0a);
+  box-shadow:
+    0 0 0 1px #1a1c1e,
+    inset 0 1px 1px rgba(255, 255, 255, 0.25);
+}
+
+body.win95-app .id95 .id-view-keys [role="tab"][data-state="active"],
+.id95 .id-view-keys [role="tab"][data-state="active"],
+.id95-dialog .id-view-keys [role="tab"][data-state="active"] {
+  color: var(--id-crt) !important;
+  font-weight: 700;
+  text-shadow: var(--id-crt-glow);
+  background: var(--id-crt-glass) !important;
+  box-shadow: var(--id-crt-ring);
+}
+
+.id95 .id-view-keys [role="tab"][data-state="active"]::before,
+.id95-dialog .id-view-keys [role="tab"][data-state="active"]::before {
+  background:
+    radial-gradient(circle at 35% 30%, #e8fff4, var(--id-crt) 42%, #0a3a28 78%);
+  box-shadow:
+    0 0 0 1px #1a3a2a,
+    0 0 5px rgba(125, 255, 196, 0.6),
+    inset 0 1px 1px rgba(255, 255, 255, 0.4);
+}
+
+.id95 .id-view-keys [role="tab"] svg,
+.id95-dialog .id-view-keys [role="tab"] svg {
+  width: 12px;
+  height: 12px;
+  opacity: 0.75;
+}
+
+.id95 .id-view-keys [role="tab"][data-state="active"] svg,
+.id95-dialog .id-view-keys [role="tab"][data-state="active"] svg {
+  color: var(--id-crt);
+  opacity: 1;
+  filter: drop-shadow(0 0 2px var(--id-crt));
+}
+
+.id95 .id-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  padding: 0 4px 4px;
+}
+
+/* ---- Content bays (Cards / section panels) — keep fields intact -------- */
+
+.id95 .bg-card,
+.id95-dialog .bg-card {
+  border: 0 !important;
+  border-radius: 3px !important;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0 1px, transparent 1px 2px),
+    #c8ccd0 !important;
+  box-shadow:
+    0 0 0 1px #5c6064,
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    inset 0 2px 3px rgba(0, 0, 0, 0.1) !important;
+  color: var(--id-ink);
+}
+
+.id95 .bg-card .text-2xl,
+.id95-dialog .bg-card .text-2xl {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--id-nameplate) !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.id95 .bg-card .p-6,
+.id95-dialog .bg-card .p-6 {
+  padding: 10px 12px !important;
+}
+
+.id95 .bg-card .p-6.pt-0,
+.id95-dialog .bg-card .p-6.pt-0 {
+  padding-top: 0 !important;
+}
+
+/* Soft SaaS panels inside popup → milled wells */
+.id95-dialog .bg-muted\/30,
+.id95-dialog [class*="bg-muted"] {
+  border-radius: 3px;
+  border-color: transparent !important;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0 1px, transparent 1px 2px),
+    #c8ccd0 !important;
+  box-shadow:
+    0 0 0 1px #5c6064,
+    inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+.id95 label,
+.id95-dialog label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--id-nameplate);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+/* Sunken white fields — do not restyle photographed hero / orb media */
+.id95 input:not([type="checkbox"]):not([type="radio"]):not(.id-title-input),
+.id95 textarea,
+.id95-dialog input:not([type="checkbox"]):not([type="radio"]):not(.id-title-input),
+.id95-dialog textarea {
+  border-radius: 0;
+}
+
+.id95 img,
+.id95-dialog img,
+.id95 [data-orb],
+.id95-dialog [data-orb],
+.id95 .velvet,
+.id95-dialog .velvet {
+  /* Leave photographed / velvet contents alone */
+  filter: none;
+}
+
+/* ---- History well + cycle path (kept) ---------------------------------- */
+
+.item-activity {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.item-activity-caption {
+  margin: 0;
+  font-family: var(--w95-font, Tahoma, "MS Sans Serif", Geneva, Arial, sans-serif);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--id-nameplate, #2a2c2e);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.item-activity-hint {
+  margin: 0;
+  font-family: var(--w95-font, Tahoma, "MS Sans Serif", Geneva, Arial, sans-serif);
+  font-size: 11px;
+  color: #000080;
+}
+
+.item-activity-well {
+  background: #fff;
+  color: #000;
+  min-height: 7rem;
+  max-height: 18rem;
+  overflow: auto;
+  border-radius: 2px;
+  box-shadow: var(
+    --id-field,
+    var(
+      --fm-border-field,
+      inset -1px -1px var(--chrome-hi, #fff),
+      inset 1px 1px var(--chrome-lo, #808080),
+      inset -2px -2px var(--chrome-face, #c0c0c0),
+      inset 2px 2px var(--chrome-mid, #000)
+    )
+  );
+  font-family: var(--w95-font, Tahoma, "MS Sans Serif", Geneva, Arial, sans-serif);
+  font-size: 12px;
+}
+
+.item-activity-empty {
+  margin: 0;
+  padding: 10px 8px;
+  color: #808080;
+}
+
+.item-activity-row {
+  display: grid;
+  grid-template-columns: 7.5rem 1fr;
+  gap: 8px;
+  padding: 5px 8px;
+  border-bottom: 1px dotted #808080;
+}
+
+.item-activity-when {
+  color: #000080;
+  white-space: nowrap;
+}
+
+.item-activity-summary {
+  margin: 0;
+  font-weight: 700;
+}
+
+.item-activity-changes {
+  margin: 4px 0 0;
+  padding-left: 1.1rem;
+  color: #000;
+}
+
+.item-cycle-path {
+  margin: 0;
+  padding: 6px 8px;
+  background: #fff;
+  color: #000;
+  font-family: var(--w95-font, Tahoma, "MS Sans Serif", Geneva, Arial, sans-serif);
+  font-size: 12px;
+  box-shadow: var(
+    --fm-border-field,
+    inset -1px -1px var(--chrome-hi, #fff),
+    inset 1px 1px var(--chrome-lo, #808080)
+  );
+  word-break: break-word;
+}
+
+/* ---- Portaled popup dialog --------------------------------------------- */
+
+.id95-dialog {
+  display: flex !important;
+  flex-direction: column;
+  padding: 3px !important;
+  gap: 0 !important;
+  max-width: min(90vw, 64rem) !important;
+  max-height: min(90vh, 820px) !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: var(--id-surface) !important;
+  color: var(--id-ink);
+  box-shadow: var(--id-raised), 4px 4px 0 rgba(0, 0, 0, 0.35) !important;
+  overflow: hidden !important;
+}
+
+.id95-dialog .id-dialog-scroll {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 8px 10px 10px;
+}
+
+.id95-dialog > button.absolute {
+  top: 6px !important;
+  right: 6px !important;
+  width: 22px;
+  height: 22px;
+  border-radius: 2px !important;
+  border: none !important;
+  background: var(--id-key-face) !important;
+  box-shadow: var(--id-key-ring) !important;
+  color: #1c1e20 !important;
+  opacity: 1 !important;
+}

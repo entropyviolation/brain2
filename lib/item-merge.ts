@@ -5,6 +5,7 @@ import type { ItemLink, List, Subtask, Task } from "@/lib/types"
 import { isFolderAllItemsCategoryId } from "@/lib/folder-all-items"
 import { uniqueNonEmpty, unionById } from "@/lib/list-merge"
 import { isNaSmartCategoryId } from "@/lib/scheduled-lists-sync"
+import { itemTitleOrUntitled } from "@/lib/item-utils"
 
 export interface ItemMergePlan {
   survivorId: string
@@ -21,8 +22,7 @@ export interface ItemMergePlan {
 }
 
 export function itemMergeLabel(item: Task): string {
-  const text = (item.description || item.title || "").trim()
-  return text || "Untitled"
+  return itemTitleOrUntitled(item)
 }
 
 export function defaultMergeListIds(items: Task[], lists: List[]): string[] {

@@ -15,8 +15,11 @@
 import type {
   AttributeDefinition,
   AttributeValue,
+  ItemDetailLayout,
+  ItemDetailPanel,
   ItemRuleCondition,
   ItemType,
+  ItemTypeCapabilities,
   ItemTypeDefinition,
   ItemTypeRule,
 } from "@/lib/types"
@@ -24,8 +27,29 @@ import { withOperationType } from "@/lib/operation-types"
 import { withNoteType } from "@/lib/note-types"
 import { withBookType } from "@/lib/book-types"
 import { withFlightType } from "@/lib/flight-types"
+import { withCatalogTypes } from "@/lib/catalog-types"
 
 export const BUILTIN_TASK_TYPE_ID = "task"
+export const BUILTIN_ITEM_TYPE_ID = "item"
+export const LOGGED_ACTION_TYPE_ID = "action"
+
+/** System type ids: always re-seeded from code; capabilities/panels locked. */
+export const SYSTEM_TYPE_IDS = [
+  BUILTIN_TASK_TYPE_ID,
+  BUILTIN_ITEM_TYPE_ID,
+  "note",
+  "operation",
+] as const
+
+export const DETAIL_PANEL_ORDER: ItemDetailPanel[] = [
+  "details",
+  "scheduling",
+  "dependencies",
+  "subtasks",
+  "analysis",
+  "time",
+  "body",
+]
 
 /** Loose shape for rule/attribute evaluation — works for Task and any Item. */
 export type ItemLike = {
@@ -40,21 +64,35 @@ export interface AttributeSource {
 
 /** The built-in types shipped with the app. */
 export function getBuiltinItemTypes(): ItemTypeDefinition[] {
-  // Task ships first; the Operation (Worker B), Note, Book, and Flight built-in
-  // types are merged in via their own idempotent helpers so each module owns
-  // its definition. Merges are no-ops once the type is present.
-  return withFlightType(withBookType(withNoteType(withOperationType(getBaseBuiltinItemTypes()))))
+  // Item + Task ship first; Operation, Note, Book, Flight, and catalog starters
+  // merge in via idempotent helpers so each module owns its definition.
+  return withCatalogTypes(
+    withFlightType(withBookType(withNoteType(withOperationType(getBaseBuiltinItemTypes())))),
+  )
 }
 
-/** The always-present core built-in type(s). */
+/** The always-present core system types. */
 function getBaseBuiltinItemTypes(): ItemTypeDefinition[] {
   return [
+    {
+      id: BUILTIN_ITEM_TYPE_ID,
+      name: "Item",
+      pluralName: "Items",
+      itemLabel: "item",
+      builtin: true,
+      kind: "system",
+      description: "A generic record. Details only — not a task unless you opt into capabilities.",
+      attributes: [],
+      detailPanels: ["details"],
+      capabilities: {},
+    },
     {
       id: BUILTIN_TASK_TYPE_ID,
       name: "Task",
       pluralName: "Tasks",
       itemLabel: "task",
       builtin: true,
+      kind: "system",
       description: "An actionable item with optional scheduling, points, and subtasks.",
       capabilities: {
         scheduleable: true,
@@ -65,8 +103,7 @@ function getBaseBuiltinItemTypes(): ItemTypeDefinition[] {
         subtasks: true,
         completable: true,
       },
-      // Task's core fields are first-class on the `Task` interface, so the type
-      // adds no extra attributes by default. User types layer their own here.
+      detailPanels: ["details", "scheduling", "dependencies", "subtasks", "analysis", "time"],
       attributes: [],
       rules: [
         {
@@ -80,13 +117,52 @@ function getBaseBuiltinItemTypes(): ItemTypeDefinition[] {
   ]
 }
 
-/** Resolve a type definition by id, falling back to the built-in task type. */
+export function isSystemItemType(type: Pick<ItemTypeDefinition, "id" | "kind">): boolean {
+  if (type.kind === "system") return true
+  return (SYSTEM_TYPE_IDS as readonly string[]).includes(type.id as string)
+}
+
+export function isCatalogItemType(type: Pick<ItemTypeDefinition, "kind">): boolean {
+  return type.kind === "catalog"
+}
+
+/**
+ * Merge persisted types with seeds: system ids always come from code; catalog
+ * ids keep the stored definition if present and only insert the seed when missing.
+ */
+export function mergeTypeRegistry(stored: ItemTypeDefinition[]): ItemTypeDefinition[] {
+  const seeds = getBuiltinItemTypes()
+  const storedById = new Map(stored.map((t) => [t.id as string, t]))
+  const result: ItemTypeDefinition[] = []
+  const seen = new Set<string>()
+
+  for (const seed of seeds) {
+    const id = seed.id as string
+    seen.add(id)
+    if (isSystemItemType(seed)) {
+      result.push(seed)
+      continue
+    }
+    result.push(storedById.get(id) ?? seed)
+  }
+  for (const t of stored) {
+    const id = t.id as string
+    if (!seen.has(id)) {
+      result.push(t)
+      seen.add(id)
+    }
+  }
+  return result
+}
+
+/** Resolve a type definition by id, falling back to the generic item type. */
 export function getItemType(
   types: ItemTypeDefinition[],
   id: string | undefined,
 ): ItemTypeDefinition {
   return (
     types.find((t) => t.id === id) ??
+    types.find((t) => t.id === BUILTIN_ITEM_TYPE_ID) ??
     types.find((t) => t.id === BUILTIN_TASK_TYPE_ID) ??
     getBuiltinItemTypes()[0]
   )
@@ -130,6 +206,125 @@ export function collectTypeDefaults(
     Object.assign(defaults, t.defaultAttributeValues ?? {})
   }
   return defaults
+}
+
+/** Effective capabilities for a type, child flags overriding parent. */
+export function collectTypeCapabilities(
+  typeId: ItemType | undefined,
+  types: ItemTypeDefinition[],
+): ItemTypeCapabilities {
+  const caps: ItemTypeCapabilities = {}
+  for (const t of typeAncestorChain(typeId, types)) {
+    Object.assign(caps, t.capabilities ?? {})
+  }
+  return caps
+}
+
+/** Effective detail layout: child overrides parent fields. */
+export function collectTypeLayout(
+  typeId: ItemType | undefined,
+  types: ItemTypeDefinition[],
+): ItemDetailLayout | undefined {
+  let layout: ItemDetailLayout | undefined
+  for (const t of typeAncestorChain(typeId, types)) {
+    if (t.detailLayout) layout = { ...layout, ...t.detailLayout }
+  }
+  return layout
+}
+
+function inferPanelsFromCapabilities(caps: ItemTypeCapabilities, isTask: boolean): ItemDetailPanel[] {
+  if (isTask) {
+    return ["details", "scheduling", "dependencies", "subtasks", "analysis", "time"]
+  }
+  const panels: ItemDetailPanel[] = ["details"]
+  if (caps.scheduleable || caps.deadline) panels.push("scheduling")
+  if (caps.subtasks) panels.push("subtasks")
+  if (caps.duration) panels.push("time")
+  return panels
+}
+
+export interface DetailListSource {
+  id: string
+  itemTypeId?: ItemType
+  detailPanels?: ItemDetailPanel[]
+  hiddenDetailPanels?: ItemDetailPanel[]
+}
+
+export interface DetailViewResolution {
+  panels: ItemDetailPanel[]
+  capabilities: ItemTypeCapabilities
+  layout?: ItemDetailLayout
+}
+
+/**
+ * Resolve which detail tabs, capabilities, and layout an item should show.
+ * Type panels (or capability inference) first, lists may add panels, then
+ * hiddenDetailPanels and capabilities filter the result. Next-action / Task
+ * items inherit Task capabilities so the hardcoded Task surface still works.
+ */
+export function resolveDetailView(
+  item: { type?: ItemType; lists?: string[] },
+  lists: DetailListSource[],
+  types: ItemTypeDefinition[],
+  opts?: { isTask?: boolean },
+): DetailViewResolution {
+  const isTask = opts?.isTask ?? false
+  const ownType = exactType(types, item.type)
+  const fallbackId = isTask ? BUILTIN_TASK_TYPE_ID : BUILTIN_ITEM_TYPE_ID
+  const typeDef = ownType ?? exactType(types, fallbackId)
+
+  let capabilities = collectTypeCapabilities(typeDef?.id ?? item.type, types)
+  if (isTask) {
+    capabilities = { ...collectTypeCapabilities(BUILTIN_TASK_TYPE_ID, types), ...capabilities }
+  }
+
+  const typePanels =
+    typeDef?.detailPanels && typeDef.detailPanels.length > 0
+      ? [...typeDef.detailPanels]
+      : inferPanelsFromCapabilities(capabilities, isTask)
+
+  const memberLists = (item.lists ?? [])
+    .map((id) => lists.find((l) => l.id === id))
+    .filter((l): l is DetailListSource => !!l)
+  const listAdded = memberLists.flatMap((l) => l.detailPanels ?? [])
+  const hidden = new Set(memberLists.flatMap((l) => l.hiddenDetailPanels ?? []))
+
+  const merged = new Set<ItemDetailPanel>([...typePanels, ...listAdded])
+  if (item.type === "note") merged.add("body")
+
+  const typeListed = new Set(typeDef?.detailPanels ?? [])
+  const listListed = new Set(listAdded)
+
+  const panels = DETAIL_PANEL_ORDER.filter((panel) => {
+    if (!merged.has(panel)) return false
+    if (hidden.has(panel)) return false
+    if (panel === "details" || panel === "body") return true
+    if (panel === "scheduling" && !capabilities.scheduleable && !capabilities.deadline && !isTask) {
+      return false
+    }
+    if (panel === "subtasks" && !capabilities.subtasks && !isTask) return false
+    if (panel === "time" && !capabilities.duration && !isTask) return false
+    if (panel === "analysis" && !isTask && !typeListed.has("analysis") && !listListed.has("analysis")) {
+      return false
+    }
+    if (
+      panel === "dependencies" &&
+      !isTask &&
+      !typeListed.has("dependencies") &&
+      !listListed.has("dependencies")
+    ) {
+      return false
+    }
+    return true
+  })
+
+  if (!panels.includes("details")) panels.unshift("details")
+
+  return {
+    panels: panels.length ? panels : ["details"],
+    capabilities,
+    layout: collectTypeLayout(typeDef?.id ?? item.type, types),
+  }
 }
 
 /** All direct and nested subtypes of `parentId`. */
@@ -263,14 +458,14 @@ export function resolveItemSchema(
  * that also lives in a "Goals" list reads as both Task and Goal). This returns
  * the resolved `ItemTypeDefinition`s — the item's own type first, then each
  * distinct list-pinned type — deduplicated by id. The own type falls back to the
- * built-in task type; unknown/unregistered ids are skipped.
+ * generic item type; unknown/unregistered ids are skipped.
  */
 export function assignedItemTypes(
   item: { type?: ItemType; lists?: string[] },
   lists: { id: string; itemTypeId?: ItemType }[],
   types: ItemTypeDefinition[],
 ): ItemTypeDefinition[] {
-  const orderedIds: ItemType[] = [item.type ?? BUILTIN_TASK_TYPE_ID]
+  const orderedIds: ItemType[] = [item.type ?? BUILTIN_ITEM_TYPE_ID]
   for (const cid of item.lists ?? []) {
     const pinned = lists.find((c) => c.id === cid)?.itemTypeId
     if (pinned) orderedIds.push(pinned)
@@ -340,8 +535,28 @@ function isEmpty(value: unknown): boolean {
   return false
 }
 
+function asNumber(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isFinite(value)) return value
+  if (typeof value === "string" && value.trim() !== "") {
+    const n = Number(value)
+    return Number.isFinite(n) ? n : undefined
+  }
+  return undefined
+}
+
+function numericDelta(previous: ItemLike | undefined, current: ItemLike, field: string): number {
+  const prev = previous ? asNumber(getFieldValue(previous, field)) : undefined
+  const curr = asNumber(getFieldValue(current, field))
+  if (curr === undefined) return 0
+  return curr - (prev ?? 0)
+}
+
 /** Evaluate a serializable rule condition against an item. */
-export function evaluateCondition(item: ItemLike, condition: ItemRuleCondition): boolean {
+export function evaluateCondition(
+  item: ItemLike,
+  condition: ItemRuleCondition,
+  previous?: ItemLike,
+): boolean {
   const actual = getFieldValue(item, condition.field)
   const expected = condition.value
   switch (condition.operator) {
@@ -365,10 +580,38 @@ export function evaluateCondition(item: ItemLike, condition: ItemRuleCondition):
       if (Array.isArray(actual)) return actual.includes(expected as never)
       if (typeof actual === "string") return actual.includes(String(expected))
       return false
+    case "changed": {
+      if (!previous) return false
+      return getFieldValue(previous, condition.field) !== actual
+    }
+    case "increased": {
+      if (!previous) return false
+      const prev = asNumber(getFieldValue(previous, condition.field))
+      const curr = asNumber(actual)
+      if (curr === undefined) return false
+      return curr > (prev ?? 0)
+    }
+    case "decreased": {
+      if (!previous) return false
+      const prev = asNumber(getFieldValue(previous, condition.field))
+      const curr = asNumber(actual)
+      if (curr === undefined || prev === undefined) return false
+      return curr < prev
+    }
     default:
       return false
   }
 }
+
+export type ImpliedRuleEffect =
+  | {
+      kind: "logAction"
+      titleTemplate: string
+      awardPoints?: boolean
+      field?: string
+      delta: number
+    }
+  | { kind: "incrementHabit"; habitId: string; amount: number }
 
 export interface RuleApplication<T extends ItemLike> {
   /** Item with automation actions (setDefault/setAttribute/addTag) applied. */
@@ -377,26 +620,31 @@ export interface RuleApplication<T extends ItemLike> {
   errors: string[]
   /** True if any matched rule requested adding the item to Next Actions. */
   addToNextActions: boolean
+  /** Side effects that must run after the item is persisted (log Done, habits). */
+  effects: ImpliedRuleEffect[]
 }
 
 /**
  * Apply an explicit list of rules matching `trigger`. Automation actions
  * (setDefault/setAttribute/addTag) mutate a copy of the item; `require`/`block`
  * actions surface as validation errors. Disabled rules are skipped.
+ * Pass `previous` on update so `increased` / `decreased` / `changed` work.
  */
 export function applyRules<T extends ItemLike>(
   item: T,
   rules: ItemTypeRule[] | undefined,
   trigger: ItemTypeRule["trigger"],
+  previous?: ItemLike,
 ): RuleApplication<T> {
   const next: ItemLike = { ...item, attributes: { ...(item.attributes ?? {}) } }
   const errors: string[] = []
   let addToNextActions = false
+  const effects: ImpliedRuleEffect[] = []
 
   for (const rule of rules ?? []) {
     if (rule.enabled === false) continue
     if (rule.trigger !== trigger) continue
-    if (rule.when && !evaluateCondition(next, rule.when)) continue
+    if (rule.when && !evaluateCondition(next, rule.when, previous)) continue
 
     const action = rule.action
     switch (action.kind) {
@@ -425,10 +673,31 @@ export function applyRules<T extends ItemLike>(
       case "addToNextActions":
         addToNextActions = true
         break
+      case "logAction": {
+        const field = rule.when?.field
+        const delta = field ? numericDelta(previous, next, field) : 0
+        effects.push({
+          kind: "logAction",
+          titleTemplate: action.titleTemplate,
+          awardPoints: action.awardPoints,
+          field,
+          delta,
+        })
+        break
+      }
+      case "incrementHabit": {
+        const field = rule.when?.field
+        const amount =
+          action.amount === "delta" ? (field ? numericDelta(previous, next, field) : 0) : action.amount
+        if (amount !== 0) {
+          effects.push({ kind: "incrementHabit", habitId: action.habitId, amount })
+        }
+        break
+      }
     }
   }
 
-  return { item: next as T, errors, addToNextActions }
+  return { item: next as T, errors, addToNextActions, effects }
 }
 
 /**
@@ -439,8 +708,9 @@ export function applyRulesFor<T extends ItemLike>(
   item: T,
   type: ItemTypeDefinition | undefined,
   trigger: ItemTypeRule["trigger"],
+  previous?: ItemLike,
 ): RuleApplication<T> {
-  return applyRules(item, type?.rules, trigger)
+  return applyRules(item, type?.rules, trigger, previous)
 }
 
 function setField(item: ItemLike, field: string, value: AttributeValue) {

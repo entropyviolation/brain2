@@ -4,7 +4,7 @@
 import type { Folder, ItemTypeDefinition, List, Task } from "@/lib/types"
 import { assignTaskToFolderList, isFolderAllItemsCategoryId } from "@/lib/folder-all-items"
 import { withListMembership } from "@/lib/item-utils"
-import { isNaSmartCategoryId } from "@/lib/scheduled-lists-sync"
+import { isNaPeriodSmartCategoryId } from "@/lib/scheduled-lists-sync"
 
 export type ItemPlacementMode = "keep" | "move"
 
@@ -16,7 +16,7 @@ export function destinationListsForSelection(
   return lists
     .filter((list) => {
       if (isFolderAllItemsCategoryId(list.id)) return false
-      if (isNaSmartCategoryId(list.id)) return false
+      if (isNaPeriodSmartCategoryId(list.id)) return false
       if (opts.currentListId && list.id === opts.currentListId) return false
       return true
     })
@@ -46,7 +46,7 @@ export function originListIdToUnlink(opts: {
 export function canMoveItemsFromOpenList(listId?: string | null): boolean {
   if (!listId) return false
   if (isFolderAllItemsCategoryId(listId)) return false
-  if (isNaSmartCategoryId(listId)) return false
+  if (isNaPeriodSmartCategoryId(listId)) return false
   return true
 }
 
@@ -61,6 +61,11 @@ export function removeTaskFromList(task: Task, listId: string): Task {
   const lists = (task.lists ?? []).filter((id) => id !== listId)
   if (lists.length === (task.lists ?? []).length) return task
   return { ...task, lists }
+}
+
+/** Strip `listId` from every item. Does not delete items; other lists stay. */
+export function clearItemsFromList(tasks: Task[], listId: string): Task[] {
+  return tasks.map((task) => removeTaskFromList(task, listId))
 }
 
 export function placeTaskInList(

@@ -25,7 +25,7 @@ describe("ItemTypeList + ItemTypeEditor", () => {
     // Book + Flight are registered as built-ins app-wide.
     expect(screen.getByText("Book")).toBeInTheDocument()
     expect(screen.getByText("Flight")).toBeInTheDocument()
-    expect(screen.getAllByText("Built-in").length).toBeGreaterThan(0)
+    expect(screen.getAllByText("System").length).toBeGreaterThan(0)
 
     const deleteTask = screen.getByRole("button", { name: "Delete Task" })
     expect(deleteTask).toBeDisabled()
@@ -67,5 +67,36 @@ describe("ItemTypeList + ItemTypeEditor", () => {
     await user.click(screen.getByRole("button", { name: "Delete Friend" }))
 
     expect(useItemTypeStore.getState().types.find((t) => t.id === "friend")).toBeUndefined()
+  })
+
+  it("opens a catalog Book with layout, panels, and implied-action when", async () => {
+    const user = userEvent.setup()
+    render(<ItemTypeList />)
+
+    await user.click(screen.getByRole("button", { name: /A reading-list entry/i }))
+
+    const dialog = await screen.findByRole("dialog", { name: /Edit Book/i })
+    expect(within(dialog).getByText("Detail panels")).toBeInTheDocument()
+    expect(within(dialog).getByText("Hero image attribute")).toBeInTheDocument()
+    expect(within(dialog).getAllByText("increased").length).toBeGreaterThan(0)
+    expect(within(dialog).getByDisplayValue(/read \{delta\} pages of \{title\}/i)).toBeInTheDocument()
+  })
+
+  it("applies a Furniture starter recipe onto a new user type", async () => {
+    const user = userEvent.setup()
+    render(<ItemTypeList />)
+
+    await user.click(screen.getByRole("button", { name: /New type/i }))
+
+    const dialog = await screen.findByRole("dialog")
+    await user.click(within(dialog).getByRole("button", { name: /Starter recipes/i }))
+    expect(within(dialog).getByText(/wishlist rug/i)).toBeInTheDocument()
+
+    const furnitureCard = within(dialog).getByText("Furniture").closest("div")
+    expect(furnitureCard).toBeTruthy()
+    await user.click(within(furnitureCard as HTMLElement).getByRole("button", { name: /Use starter/i }))
+
+    expect(within(dialog).getByDisplayValue("My furniture")).toBeInTheDocument()
+    expect(within(dialog).getByText("Detail panels")).toBeInTheDocument()
   })
 })

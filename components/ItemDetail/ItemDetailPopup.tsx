@@ -18,7 +18,7 @@ import { LinkPicker } from "@/components/ItemDetail/LinkPicker"
 import { RelatedItemsPanel } from "@/components/ItemDetail/RelatedItemsPanel"
 import { BodyPanel } from "@/components/ItemDetail/BodyPanel"
 import { ListPicker } from "@/components/Lists/list-picker"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { IsolatedInput, IsolatedTextarea } from "@/components/ui/isolated-text-field"
 import { SubtaskComposer } from "@/components/ItemDetail/SubtaskComposer"
 import { Button } from "@/components/ui/button"
@@ -49,7 +49,12 @@ import {
   FileText,
   Settings,
   ArrowRight,
+  History,
+  TimerOff,
 } from "lucide-react"
+import { ItemActivityPanel } from "@/components/ItemDetail/ItemActivityPanel"
+import { CycleConfirmDialog } from "@/components/ItemDetail/CycleConfirmDialog"
+import { recordItemWrite } from "@/lib/item-activity"
 import type { Task, TaskCompletionReview, ItemDetailPanel, TimeLogEntry, CompletionStatus } from "@/lib/types"
 import { safeDateFormat, safeISODateString, getWeekString } from "@/lib/date-utils"
 import {
@@ -58,24 +63,33 @@ import {
   COMPLETION_STATUS_DESCRIPTIONS,
   effectiveStatus,
   withStatus,
+  isClearedFromWork,
 } from "@/lib/completion-status"
 import { ItemAttributesSection } from "@/components/ItemDetail/ItemAttributesSection"
 import { isTaskItem } from "@/lib/item-utils"
-import { assignedItemTypes, BUILTIN_TASK_TYPE_ID } from "@/lib/item-types"
+import { markMissedOpportunity } from "@/lib/services/completion-service"
+import { assignedItemTypes, BUILTIN_ITEM_TYPE_ID, BUILTIN_TASK_TYPE_ID, resolveDetailView } from "@/lib/item-types"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { useTaskStore } from "@/lib/task-store"
 import type { AttributeDefinition, AttributeValue, ItemTypeDefinition } from "@/lib/types"
 import { Switch } from "@/components/ui/switch"
 import { ItemTypeEditor } from "@/components/ItemTypes/ItemTypeEditor"
-import { requestNavigateToList } from "@/lib/app-navigation"
+import { APP_NAV_KEYS, readStoredRecord, requestNavigateToList, writeStoredRecordField } from "@/lib/app-navigation"
+import { snapshotsEqual } from "@/lib/unsaved-changes"
+import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
+import "./item-detail-chrome.css"
 
 interface TaskDetailPopupProps {
   taskId: string | null
   open: boolean
   onClose: () => void
+  /** Stack above another dialog that is already open (friend mission sheet). */
+  stackAbove?: boolean
+  /** Mount inside that dialog so the page’s focus lock does not hide this one. */
+  container?: HTMLElement | null
 }
 
-export function TaskDetailPopup({ taskId, open, onClose }: TaskDetailPopupProps) {
+export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, container = null }: TaskDetailPopupProps) {
   const [overrideId, setOverrideId] = useState<string | null>(null)
   const effectiveId = overrideId ?? taskId
 
@@ -89,6 +103,7 @@ export function TaskDetailPopup({ taskId, open, onClose }: TaskDetailPopupProps)
     setTask,
     getDraft,
     touchDraft,
+    originalTask,
     setOriginalTask,
     allTasks,
     lists,
@@ -98,6 +113,7 @@ export function TaskDetailPopup({ taskId, open, onClose }: TaskDetailPopupProps)
     removeFromCategory,
     setLists,
     removeDependency,
+    addDependency,
     addTag,
     removeTag,
     addLink,
@@ -111,37 +127,48 @@ export function TaskDetailPopup({ taskId, open, onClose }: TaskDetailPopupProps)
   const deleteItemType = useItemTypeStore((state) => state.deleteType)
 
   const [selectedDependency, setSelectedDependency] = useState("none")
+  const [cycleLabel, setCycleLabel] = useState<string | null>(null)
   const [editingItemType, setEditingItemType] = useState<ItemTypeDefinition | null>(null)
 
   // A "task" item type (anything in Next Actions, plus items explicitly typed
   // "task") gets the full set of task features/panels.
   const isTask = task ? isTaskItem(task, folders) : false
-  const visiblePanels = useMemo((): ItemDetailPanel[] => {
-    if (!task) return ["details"]
-    const defaults: ItemDetailPanel[] = isTask
-      ? ["details", "scheduling", "dependencies", "subtasks", "analysis", "time"]
-      : ["details", "time"]
-    const fromLists = (task.lists ?? []).flatMap((cid) => {
-      const c = lists.find((x) => x.id === cid)
-      return c?.detailPanels?.length ? c.detailPanels : []
-    })
-    // The "body" document panel (Worker D) is added for note-type items.
-    const fromType: ItemDetailPanel[] = task.type === "note" ? ["body"] : []
-    const added = [...fromLists, ...fromType]
-    if (added.length === 0) return defaults
-    // List/type-configured panels only ADD to the defaults — next-action items
-    // always keep their full task panel set regardless of any custom config.
-    const merged = new Set<ItemDetailPanel>([...defaults, ...added, "time"])
-    return Array.from(merged)
-  }, [task, lists, isTask])
+  const detailView = useMemo(
+    () =>
+      task
+        ? resolveDetailView(task, lists, itemTypes, { isTask })
+        : { panels: ["details"] as ItemDetailPanel[], capabilities: {}, layout: undefined },
+    [task, lists, itemTypes, isTask],
+  )
+  const visiblePanels = detailView.panels
+  const caps = detailView.capabilities
+  const popupTabs = useMemo(() => [...visiblePanels, "history"], [visiblePanels])
+  const [detailTab, setDetailTab] = useState(() => {
+    const stored = effectiveId ? readStoredRecord(APP_NAV_KEYS.itemDetailTab)[effectiveId] : null
+    return stored || "details"
+  })
+
+  useEffect(() => {
+    if (!effectiveId) return
+    const stored = readStoredRecord(APP_NAV_KEYS.itemDetailTab)[effectiveId]
+    setDetailTab(stored || "details")
+  }, [effectiveId])
+
+  useEffect(() => {
+    if (!effectiveId) return
+    writeStoredRecordField(APP_NAV_KEYS.itemDetailTab, effectiveId, detailTab)
+  }, [effectiveId, detailTab])
+
+  const activeDetailTab = popupTabs.includes(detailTab) ? detailTab : "details"
 
   const handleSave = useCallback(() => {
     const draft = getDraft()
     if (draft) {
+      recordItemWrite(originalTask, draft, { tasks: allTasks, lists })
       updateTask(draft)
       setOriginalTask(draft)
     }
-  }, [getDraft, updateTask, setOriginalTask])
+  }, [getDraft, updateTask, setOriginalTask, originalTask, allTasks, lists])
 
   const handleDelete = useCallback(() => {
     if (!task) return
@@ -156,10 +183,18 @@ export function TaskDetailPopup({ taskId, open, onClose }: TaskDetailPopupProps)
   const handleComplete = useCallback(() => {
     const draft = getDraft()
     if (draft) {
-      updateTask({ ...draft, completed: true })
+      const next = { ...draft, completed: true }
+      recordItemWrite(originalTask ?? draft, next, { tasks: allTasks, lists })
+      updateTask(next)
       onClose()
     }
-  }, [getDraft, updateTask, onClose])
+  }, [getDraft, updateTask, onClose, originalTask, allTasks, lists])
+
+  const handleMissed = useCallback(() => {
+    if (!task) return
+    markMissedOpportunity(task.id)
+    onClose()
+  }, [task, onClose])
 
   // Persist a richer completion status immediately, keeping the legacy
   // `completed` flag in sync (invariant: status "done" ⇔ completed true).
@@ -167,11 +202,12 @@ export function TaskDetailPopup({ taskId, open, onClose }: TaskDetailPopupProps)
     (status: CompletionStatus) => {
       if (!task) return
       const updated = withStatus(task, status)
+      recordItemWrite(originalTask ?? task, updated, { tasks: allTasks, lists })
       setTask(updated)
       updateTask(updated)
       setOriginalTask(updated)
     },
-    [task, setTask, updateTask, setOriginalTask],
+    [task, setTask, updateTask, setOriginalTask, originalTask, allTasks, lists],
   )
 
   const handleScheduleToWeek = useCallback(
@@ -282,20 +318,27 @@ export function TaskDetailPopup({ taskId, open, onClose }: TaskDetailPopupProps)
     [itemTypes, updateItemType, addItemType],
   )
 
-  const addDependency = useCallback(() => {
-    if (
-      task &&
-      selectedDependency &&
-      selectedDependency !== "none" &&
-      !((task.dependencies ?? []).includes(selectedDependency))
-    ) {
-      setTask({
-        ...task,
-        dependencies: [...(task.dependencies ?? []), selectedDependency],
-      })
-      setSelectedDependency("none")
+  const handleAddDependency = useCallback(() => {
+    const result = addDependency(selectedDependency)
+    if (!result.ok) {
+      setCycleLabel(result.cycleLabel)
+      return
     }
-  }, [task, selectedDependency])
+    if (selectedDependency && selectedDependency !== "none") setSelectedDependency("none")
+  }, [addDependency, selectedDependency])
+
+  const isDirty = Boolean(task && originalTask && !snapshotsEqual(getDraft(), originalTask))
+  const guard = useUnsavedGuard({
+    open,
+    onOpenChange: (next) => {
+      if (!next) onClose()
+    },
+    isDirty,
+    onSave: handleSave,
+    onDiscard: () => {
+      if (originalTask) setTask(originalTask)
+    },
+  })
 
   if (!task) {
     return null
@@ -306,76 +349,92 @@ export function TaskDetailPopup({ taskId, open, onClose }: TaskDetailPopupProps)
   // Every item type assigned to this item: its own type plus any type pinned by
   // a list it belongs to (e.g. a task that also lives in a "Goals" list).
   const assignedTypes = assignedItemTypes(
-    { type: task.type, lists: task.lists ?? [] },
+    { type: task.type ?? (isTask ? BUILTIN_TASK_TYPE_ID : BUILTIN_ITEM_TYPE_ID), lists: task.lists ?? [] },
     lists,
     itemTypes,
   )
-  const primaryTypeId = task.type ?? BUILTIN_TASK_TYPE_ID
+  const primaryTypeId = task.type ?? (isTask ? BUILTIN_TASK_TYPE_ID : BUILTIN_ITEM_TYPE_ID)
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-5xl max-h-[90vh] overflow-hidden !flex flex-col gradient-bg">
-          <DialogHeader className="pb-4 shrink-0">
-            <div className="flex items-center justify-between gap-3 pr-8">
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <div className="p-2 rounded-lg bg-primary/10 shrink-0">
-                  <Target className="h-6 w-6 text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <IsolatedInput
-                    value={task.description}
-                    onLiveChange={(description) => touchDraft({ description, title: description })}
-                    onCommit={(description) =>
-                      setTask((prev) => (prev ? { ...prev, description, title: description } : prev))
-                    }
-                    className="text-2xl font-bold border-0 shadow-none px-0 h-auto focus-visible:ring-0 w-full"
-                    placeholder="Item name"
-                  />
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge variant={task.completed ? "default" : "secondary"} className="font-medium">
-                      {task.completed ? "Completed" : task.stage}
-                    </Badge>
-                    {task.actualDuration && (
-                      <Badge variant="outline" className="font-medium">
-                        <Timer className="h-3 w-3 mr-1" />
-                        Took {task.actualDuration}m
-                      </Badge>
-                    )}
-                  </div>
-                </div>
+      <Dialog open={open} onOpenChange={guard.handleOpenChange}>
+        <DialogContent
+          className={`id95-dialog id95 sm:max-w-5xl max-h-[90vh] overflow-hidden !flex flex-col${stackAbove ? " z-[80]" : ""}`}
+          overlayClassName={stackAbove ? "z-[80]" : undefined}
+          container={container}
+          data-ui-name="Item detail"
+          data-ui-docs="components/ItemDetail/README.md"
+          {...unsavedDismissProps(guard.requestClose)}
+        >
+          <DialogTitle className="sr-only">Item detail</DialogTitle>
+          <div className="id-fascia">
+            <div className="id-fascia-row">
+              <div className="id-mark">
+                <span className="id-power-lamp is-on" aria-hidden />
+                <IsolatedInput
+                  value={task.description}
+                  onLiveChange={(description) => touchDraft({ description, title: description })}
+                  onCommit={(description) =>
+                    setTask((prev) => (prev ? { ...prev, description, title: description } : prev))
+                  }
+                  className="id-title-input id-title"
+                  placeholder="Item name"
+                />
               </div>
             </div>
-          </DialogHeader>
-
-          <div className="flex justify-end gap-3 mb-6 shrink-0">
-            <Button
-              variant="outline"
-              onClick={handleDelete}
-              className="focus-ring text-destructive border-destructive/30 hover:bg-destructive/10 mr-auto"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete
-            </Button>
-            {!task.completed && (
-              <Button
-                variant="outline"
-                onClick={handleComplete}
-                className="focus-ring bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
-              >
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Complete Task
-              </Button>
-            )}
-            <Button onClick={handleSave} className="focus-ring">
-              <Save className="h-4 w-4 mr-2" />
-              Save Changes
-            </Button>
+            <div className="id-fascia-row id-meta">
+              <Badge variant={task.completed ? "default" : "secondary"} className="id-chip">
+                {task.completed ? "Completed" : task.stage}
+              </Badge>
+              {task.actualDuration && (
+                <Badge variant="outline" className="id-chip">
+                  <Timer className="h-3 w-3" />
+                  Took {task.actualDuration}m
+                </Badge>
+              )}
+            </div>
+            <div className="id-fascia-row">
+              <div className="id-key-row" style={{ marginLeft: 0 }}>
+                <Button
+                  variant="outline"
+                  onClick={handleDelete}
+                  className="id-btn id-btn-danger"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete
+                </Button>
+                {!isClearedFromWork(task) && caps.completable && (
+                  <>
+                  <Button
+                    variant="outline"
+                    onClick={handleComplete}
+                    className="id-btn"
+                  >
+                    <CheckCircle className="h-4 w-4" />
+                    Complete
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleMissed}
+                    className="id-btn"
+                    title="Too late — file as a missed opportunity"
+                  >
+                    <TimerOff className="h-4 w-4" />
+                    Missed opportunity
+                  </Button>
+                  </>
+                )}
+                <Button onClick={handleSave} className="id-btn">
+                  <Save className="h-4 w-4" />
+                  Save Changes
+                </Button>
+              </div>
+            </div>
           </div>
 
-          <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-            <Tabs defaultValue="details" className="flex-1 min-h-0 flex flex-col">
-              <TabsList className={`grid w-full mb-6`} style={{ gridTemplateColumns: `repeat(${visiblePanels.length}, minmax(0, 1fr))` }}>
+          <div className="id-dialog-scroll">
+            <Tabs value={activeDetailTab} onValueChange={setDetailTab} className="flex-1 min-h-0 flex flex-col">
+              <TabsList className="id-view-keys" style={{ gridTemplateColumns: `repeat(${visiblePanels.length + 1}, minmax(0, 1fr))` }}>
                 {visiblePanels.includes("details") && (
                 <TabsTrigger value="details" className="flex items-center gap-2">
                   <FileText className="h-4 w-4" />
@@ -418,6 +477,10 @@ export function TaskDetailPopup({ taskId, open, onClose }: TaskDetailPopupProps)
                   Body
                 </TabsTrigger>
                 )}
+                <TabsTrigger value="history" className="flex items-center gap-2">
+                  <History className="h-4 w-4" />
+                  History
+                </TabsTrigger>
               </TabsList>
 
               <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
@@ -436,13 +499,13 @@ export function TaskDetailPopup({ taskId, open, onClose }: TaskDetailPopupProps)
                           onCommit={(taskDescription) =>
                             setTask((prev) => (prev ? { ...prev, taskDescription } : prev))
                           }
-                          placeholder="Detailed description of the task..."
+                          placeholder="Detailed description…"
                           rows={4}
                           className="focus-ring"
                         />
                       </div>
 
-                      {isTask && (
+                      {(caps.duration || isTask) && (
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-3">
                           <Label htmlFor="estimated-duration" className="text-sm font-semibold flex items-center gap-2">
@@ -533,6 +596,8 @@ export function TaskDetailPopup({ taskId, open, onClose }: TaskDetailPopupProps)
                       </div>
                       )}
 
+                      {caps.scheduleable && (
+                      <>
                       <div className="flex items-center justify-between rounded-lg border p-3">
                         <div>
                           <Label className="text-sm font-semibold">Show in Scheduler</Label>
@@ -675,6 +740,8 @@ export function TaskDetailPopup({ taskId, open, onClose }: TaskDetailPopupProps)
                           )}
                         </div>
                       </div>
+                      </>
+                      )}
                     </div>
 
                     <div className="space-y-6">
@@ -780,6 +847,7 @@ export function TaskDetailPopup({ taskId, open, onClose }: TaskDetailPopupProps)
                           categories={lists}
                           itemAttributeDefinitions={task.itemAttributeDefinitions}
                           itemType={task.type}
+                          layout={detailView.layout}
                           onChangeValues={(attributes) => {
                             touchDraft({ attributes })
                             setTask((prev) => (prev ? { ...prev, attributes } : prev))
@@ -793,8 +861,9 @@ export function TaskDetailPopup({ taskId, open, onClose }: TaskDetailPopupProps)
 
                       <Separator />
 
+                      {caps.completable && (
                       <div className="space-y-3 text-sm">
-                        <h3 className="font-semibold">Task Information</h3>
+                        <h3 className="font-semibold">Status</h3>
                         <div className="space-y-2">
                           <Label htmlFor="completion-status" className="text-sm font-medium">
                             Completion status
@@ -842,6 +911,7 @@ export function TaskDetailPopup({ taskId, open, onClose }: TaskDetailPopupProps)
                           )}
                         </div>
                       </div>
+                      )}
                     </div>
                   </div>
                 </TabsContent>
@@ -1158,7 +1228,7 @@ export function TaskDetailPopup({ taskId, open, onClose }: TaskDetailPopupProps)
                           </SelectContent>
                         </Select>
                         <Button
-                          onClick={addDependency}
+                          onClick={handleAddDependency}
                           disabled={selectedDependency === "none"}
                           className="focus-ring"
                         >
@@ -1385,11 +1455,22 @@ export function TaskDetailPopup({ taskId, open, onClose }: TaskDetailPopupProps)
                   </div>
                 </TabsContent>
                 )}
+
+                <TabsContent value="history" className="space-y-6 mt-0">
+                  <ItemActivityPanel itemId={task.id} />
+                </TabsContent>
               </div>
             </Tabs>
           </div>
         </DialogContent>
       </Dialog>
+      <UnsavedChangesDialog {...guard.prompt} />
+
+      <CycleConfirmDialog
+        open={!!cycleLabel}
+        cycleLabel={cycleLabel ?? ""}
+        onDismiss={() => setCycleLabel(null)}
+      />
 
       <ItemTypeEditor
         open={!!editingItemType}

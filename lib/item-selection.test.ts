@@ -3,6 +3,7 @@ import type { Folder, List, Task } from "@/lib/types"
 import {
   addTaskToList,
   canMoveItemsFromOpenList,
+  clearItemsFromList,
   destinationListsForSelection,
   excludedListIdsForSelection,
   originListIdToUnlink,
@@ -125,5 +126,18 @@ describe("addTaskToList / removeTaskFromList", () => {
   it("removes only the given list", () => {
     const item = task({ id: "t1", description: "Task", lists: ["work", "home"] })
     expect(removeTaskFromList(item, "work").lists).toEqual(["home"])
+  })
+})
+
+describe("clearItemsFromList", () => {
+  it("empties membership on one list and leaves items (and other lists) intact", () => {
+    const work = task({ id: "a", description: "A", lists: ["work"] })
+    const both = task({ id: "b", description: "B", lists: ["work", "home"] })
+    const other = task({ id: "c", description: "C", lists: ["home"] })
+    const next = clearItemsFromList([work, both, other], "work")
+    expect(next.map((t) => t.id)).toEqual(["a", "b", "c"])
+    expect(next[0].lists).toEqual([])
+    expect(next[1].lists).toEqual(["home"])
+    expect(next[2].lists).toEqual(["home"])
   })
 })

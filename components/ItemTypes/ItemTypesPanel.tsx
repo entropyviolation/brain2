@@ -100,7 +100,7 @@ export function ItemTypesPanel({ compact = false }: { compact?: boolean }) {
                 <span className="truncate font-medium">{type.name}</span>
                 {type.builtin && (
                   <Badge variant="secondary" className="text-[10px]">
-                    Built-in
+                    {type.kind === "catalog" ? "Catalog" : "System"}
                   </Badge>
                 )}
                 {type.parentTypeId && (
@@ -148,7 +148,8 @@ export function ItemTypesPanel({ compact = false }: { compact?: boolean }) {
 
       {!compact && (
         <p className="text-sm text-muted-foreground">
-          Click a type to view or edit it. User-defined types can be deleted; built-in system types cannot.
+          Click a type to view or edit it. Catalog types (Book, Furniture, …) are editable.
+          System types (Task, Item, Note, Operation) are locked.
         </p>
       )}
 

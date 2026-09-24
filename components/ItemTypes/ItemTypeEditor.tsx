@@ -2,10 +2,10 @@
  * components/ItemTypes/ItemTypeEditor.tsx — Create / edit a user item type
  *
  * A dialog form over a single `ItemTypeDefinition`: name + labels, description,
- * color, the attribute schema (reusing `AttributeSchemaEditor`), behavioral
- * capability flags, and declarative type-level rules (the existing `ItemRule*`
- * shapes). Built-in types open read-only; user types are fully editable and
- * saved through the item-type store by the parent (`ItemTypeList`).
+ * color, the attribute schema, capabilities (which gate detail panels), detail
+ * layout (cover / featured fields), and rules including implied actions.
+ * System types (Task, Note, Operation, Item) are read-only; catalog types
+ * (Book, Furniture, …) are editable and persist.
  */
 "use client"
 
@@ -32,8 +32,11 @@ import {
 import { Plus, Trash2 } from "lucide-react"
 import type {
   AttributeDefinition,
+  ItemDetailLayout,
+  ItemDetailPanel,
   ItemRuleAction,
   ItemRuleCondition,
+  ItemRuleOperator,
   ItemRuleTrigger,
   ItemTypeCapabilities,
   ItemTypeDefinition,
@@ -42,7 +45,9 @@ import { AttributeSchemaEditor } from "@/components/Lists/attributes/AttributeSc
 import { slugId } from "@/components/Lists/attributes/helpers"
 import { ItemTypeItemsPanel } from "./ItemTypeItemsPanel"
 import { ItemTypeSubtypesPanel } from "./ItemTypeSubtypesPanel"
-import { typeAncestorChain } from "@/lib/item-types"
+import { DETAIL_PANEL_ORDER, isSystemItemType, typeAncestorChain } from "@/lib/item-types"
+import { ITEM_TYPE_RECIPES } from "@/lib/item-type-recipes"
+import { useHabitsStore } from "@/lib/habits-store"
 
 const CAPABILITY_FIELDS: { key: keyof ItemTypeCapabilities; label: string }[] = [
   { key: "completable", label: "Completable" },
@@ -57,6 +62,21 @@ const CAPABILITY_FIELDS: { key: keyof ItemTypeCapabilities; label: string }[] = 
 
 const RULE_TRIGGERS: ItemRuleTrigger[] = ["create", "update", "complete", "schedule", "validate"]
 
+const RULE_OPERATORS: { value: ItemRuleOperator; label: string }[] = [
+  { value: "eq", label: "is" },
+  { value: "neq", label: "is not" },
+  { value: "gt", label: ">" },
+  { value: "gte", label: "≥" },
+  { value: "lt", label: "<" },
+  { value: "lte", label: "≤" },
+  { value: "contains", label: "contains" },
+  { value: "exists", label: "is set" },
+  { value: "empty", label: "is empty" },
+  { value: "changed", label: "changed" },
+  { value: "increased", label: "increased" },
+  { value: "decreased", label: "decreased" },
+]
+
 type RuleActionKind = ItemRuleAction["kind"]
 const RULE_ACTION_KINDS: { kind: RuleActionKind; label: string }[] = [
   { kind: "require", label: "Require field" },
@@ -65,6 +85,8 @@ const RULE_ACTION_KINDS: { kind: RuleActionKind; label: string }[] = [
   { kind: "setAttribute", label: "Set attribute value" },
   { kind: "addTag", label: "Add tag" },
   { kind: "addToNextActions", label: "Add to Next Actions" },
+  { kind: "logAction", label: "Log Done action" },
+  { kind: "incrementHabit", label: "Increment habit" },
 ]
 
 interface EditableRule {
@@ -91,6 +113,10 @@ function blankAction(kind: RuleActionKind): ItemRuleAction {
       return { kind: "addTag", tag: "" }
     case "addToNextActions":
       return { kind: "addToNextActions" }
+    case "logAction":
+      return { kind: "logAction", titleTemplate: "read {delta} pages of {title}", awardPoints: true }
+    case "incrementHabit":
+      return { kind: "incrementHabit", habitId: "", amount: "delta" }
   }
 }
 
@@ -98,12 +124,14 @@ function RuleRow({
   rule,
   fieldOptions,
   readOnly,
+  habitOptions,
   onChange,
   onRemove,
 }: {
   rule: EditableRule
   fieldOptions: string[]
   readOnly: boolean
+  habitOptions: { id: string; name: string }[]
   onChange: (next: EditableRule) => void
   onRemove: () => void
 }) {
@@ -224,6 +252,120 @@ function RuleRow({
         {action.kind === "addToNextActions" && (
           <span className="text-xs text-muted-foreground">No options.</span>
         )}
+        {action.kind === "logAction" && (
+          <>
+            <Input
+              value={action.titleTemplate}
+              disabled={readOnly}
+              placeholder="read {delta} pages of {title}"
+              onChange={(e) => patchAction({ titleTemplate: e.target.value })}
+              className="h-8 flex-1 min-w-[160px]"
+            />
+            <label className="flex items-center gap-1 text-xs">
+              <Checkbox
+                checked={action.awardPoints !== false}
+                disabled={readOnly}
+                onCheckedChange={(c) => patchAction({ awardPoints: !!c })}
+              />
+              Points
+            </label>
+          </>
+        )}
+        {action.kind === "incrementHabit" && (
+          <>
+            <Select
+              value={action.habitId || "__none"}
+              onValueChange={(v) => patchAction({ habitId: v === "__none" ? "" : v })}
+              disabled={readOnly}
+            >
+              <SelectTrigger className="h-8 w-52">
+                <SelectValue placeholder="Habit…" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none">—</SelectItem>
+                {habitOptions.map((h) => (
+                  <SelectItem key={h.id} value={h.id}>
+                    {h.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={action.amount === "delta" ? "delta" : "fixed"}
+              onValueChange={(v) => patchAction({ amount: v === "delta" ? "delta" : 1 })}
+              disabled={readOnly}
+            >
+              <SelectTrigger className="h-8 w-28">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="delta">use delta</SelectItem>
+                <SelectItem value="fixed">fixed</SelectItem>
+              </SelectContent>
+            </Select>
+            {action.amount !== "delta" && (
+              <Input
+                type="number"
+                value={String(action.amount)}
+                disabled={readOnly}
+                onChange={(e) => patchAction({ amount: Number(e.target.value) || 0 })}
+                className="h-8 w-20"
+              />
+            )}
+          </>
+        )}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs text-muted-foreground">when</span>
+        {fieldSelect(rule.when?.field ?? "", (field) =>
+          onChange({
+            ...rule,
+            when: field ? { field, operator: rule.when?.operator ?? "eq", value: rule.when?.value } : undefined,
+          }),
+        )}
+        <Select
+          value={rule.when?.operator ?? "__none"}
+          onValueChange={(v) => {
+            if (v === "__none") {
+              onChange({ ...rule, when: undefined })
+              return
+            }
+            onChange({
+              ...rule,
+              when: { field: rule.when?.field ?? "", operator: v as ItemRuleOperator, value: rule.when?.value },
+            })
+          }}
+          disabled={readOnly}
+        >
+          <SelectTrigger className="h-8 w-32">
+            <SelectValue placeholder="always" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__none">always</SelectItem>
+            {RULE_OPERATORS.map((o) => (
+              <SelectItem key={o.value} value={o.value}>
+                {o.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {rule.when &&
+          rule.when.operator !== "exists" &&
+          rule.when.operator !== "empty" &&
+          rule.when.operator !== "changed" &&
+          rule.when.operator !== "increased" &&
+          rule.when.operator !== "decreased" && (
+            <Input
+              value={rule.when.value === undefined || rule.when.value === null ? "" : String(rule.when.value)}
+              disabled={readOnly}
+              placeholder="value"
+              onChange={(e) =>
+                onChange({ ...rule, when: { ...rule.when!, value: e.target.value } })
+              }
+              className="h-8 w-28"
+            />
+          )}
       </div>
     </div>
   )
@@ -258,7 +400,8 @@ export function ItemTypeEditor({
 }) {
   const [creatingSubtype, setCreatingSubtype] = useState(false)
   const isNew = !type || creatingSubtype
-  const editingReadOnly = !!type?.builtin && !creatingSubtype
+  const systemLocked = !!type && isSystemItemType(type) && !creatingSubtype
+  const editingReadOnly = systemLocked
 
   const [name, setName] = useState("")
   const [pluralName, setPluralName] = useState("")
@@ -269,6 +412,11 @@ export function ItemTypeEditor({
   const [capabilities, setCapabilities] = useState<ItemTypeCapabilities>({})
   const [rules, setRules] = useState<EditableRule[]>([])
   const [parentTypeId, setParentTypeId] = useState<string | undefined>(undefined)
+  const [detailPanels, setDetailPanels] = useState<ItemDetailPanel[]>(["details"])
+  const [detailLayout, setDetailLayout] = useState<ItemDetailLayout>({})
+  const [hintsOpen, setHintsOpen] = useState(false)
+  const habits = useHabitsStore((s) => s.tasks)
+  const habitOptions = useMemo(() => habits.map((h) => ({ id: h.id, name: h.name })), [habits])
 
   const parentType = useMemo(() => {
     if (!parentTypeId) return undefined
@@ -305,6 +453,8 @@ export function ItemTypeEditor({
         })),
       )
       setParentTypeId(type.id as string)
+      setDetailPanels(type.detailPanels ? [...type.detailPanels] : ["details"])
+      setDetailLayout({ ...(type.detailLayout ?? {}) })
       return
     }
     setName(type?.name ?? "")
@@ -325,6 +475,8 @@ export function ItemTypeEditor({
       })),
     )
     setParentTypeId(type?.parentTypeId as string | undefined)
+    setDetailPanels(type?.detailPanels ? [...type.detailPanels] : ["details"])
+    setDetailLayout({ ...(type?.detailLayout ?? {}) })
   }, [open, type, creatingSubtype])
 
   const fieldOptions = useMemo(() => attributes.map((a) => a.id).filter(Boolean), [attributes])
@@ -344,10 +496,33 @@ export function ItemTypeEditor({
       {
         id: `rule_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         name: "New rule",
-        trigger: "validate",
-        action: blankAction("require"),
+        trigger: "update",
+        action: blankAction("logAction"),
       },
     ])
+
+  const applyRecipe = (recipe: (typeof ITEM_TYPE_RECIPES)[number]) => {
+    const def = recipe.build()
+    setName(def.name)
+    setPluralName(def.pluralName ?? "")
+    setItemLabel(def.itemLabel ?? "")
+    setDescription(def.description ?? "")
+    setColor(def.color ?? "#6366f1")
+    setAttributes(def.attributes ? def.attributes.map((a) => ({ ...a })) : [])
+    setCapabilities({ ...(def.capabilities ?? {}) })
+    setDetailPanels(def.detailPanels ? [...def.detailPanels] : ["details"])
+    setDetailLayout({ ...(def.detailLayout ?? {}) })
+    setRules(
+      (def.rules ?? []).map((r) => ({
+        id: r.id,
+        name: r.name,
+        trigger: r.trigger,
+        action: r.action,
+        enabled: r.enabled,
+        when: r.when,
+      })),
+    )
+  }
 
   const handleSave = () => {
     if (editingReadOnly || nameError) return
@@ -364,8 +539,13 @@ export function ItemTypeEditor({
       attributes,
       defaultAttributeValues: creatingSubtype ? undefined : type?.defaultAttributeValues,
       displayedAttributes: creatingSubtype ? undefined : type?.displayedAttributes,
-      detailPanels: creatingSubtype ? undefined : type?.detailPanels,
+      detailPanels: detailPanels.length ? detailPanels : ["details"],
+      detailLayout:
+        detailLayout.heroImageAttrId || (detailLayout.featuredAttributeIds?.length ?? 0) > 0
+          ? detailLayout
+          : undefined,
       capabilities,
+      kind: creatingSubtype ? undefined : type?.kind,
       rules: rules.map((r) => ({
         id: r.id,
         name: r.name,
@@ -385,7 +565,7 @@ export function ItemTypeEditor({
     : isNew
       ? "New item type"
       : editingReadOnly
-        ? `${type?.name} (built-in)`
+        ? `${type?.name} (system)`
         : `Edit ${type?.name}`
 
   return (
@@ -403,10 +583,10 @@ export function ItemTypeEditor({
             {creatingSubtype
               ? `Inherits from ${type?.name}. Add fields and rules specific to this subtype.`
               : editingReadOnly
-                ? "Built-in types ship with the app and can't be edited."
+                ? "System types (Task, Note, Operation, Item) are hardcoded and can't be edited here."
                 : isNew
-                  ? "Define attributes, behaviors, and rules for items of this type."
-                  : "View or edit this type's schema, behaviors, and items."}
+                  ? "Define attributes, capabilities, detail layout, and implied-action rules."
+                  : "View or edit this type's schema, detail view, behaviors, and items."}
           </DialogDescription>
         </DialogHeader>
 
@@ -497,6 +677,34 @@ export function ItemTypeEditor({
               />
             </div>
 
+            {isNew && !creatingSubtype && (
+              <section className="space-y-2 rounded-md border p-3">
+                <button
+                  type="button"
+                  className="text-sm font-semibold"
+                  onClick={() => setHintsOpen((v) => !v)}
+                >
+                  Starter recipes & implied-action hints {hintsOpen ? "▾" : "▸"}
+                </button>
+                {hintsOpen && (
+                  <div className="space-y-3">
+                    {ITEM_TYPE_RECIPES.map((recipe) => (
+                      <div key={recipe.id} className="space-y-1 rounded border p-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-medium">{recipe.name}</span>
+                          <Button type="button" variant="outline" size="sm" onClick={() => applyRecipe(recipe)}>
+                            Use starter
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{recipe.summary}</p>
+                        <p className="text-[11px] text-muted-foreground">{recipe.hint}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            )}
+
             <section className="space-y-2">
               <h4 className="text-sm font-semibold">Attributes</h4>
               {editingReadOnly ? (
@@ -512,6 +720,10 @@ export function ItemTypeEditor({
 
             <section className="space-y-2">
               <h4 className="text-sm font-semibold">Capabilities</h4>
+              <p className="text-xs text-muted-foreground">
+                These gate the item-detail tabs. Uncheck Scheduleable to hide Scheduling. Task is the hardcoded
+                work surface — other types opt into slices of it here.
+              </p>
               <div className="grid grid-cols-2 gap-2">
                 {CAPABILITY_FIELDS.map(({ key, label }) => (
                   <label key={key} className="flex items-center gap-1.5 text-sm">
@@ -527,6 +739,85 @@ export function ItemTypeEditor({
             </section>
 
             <section className="space-y-2">
+              <h4 className="text-sm font-semibold">Detail panels</h4>
+              <p className="text-xs text-muted-foreground">
+                Tabs shown when this item is opened. Lists can add more or hide some.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {DETAIL_PANEL_ORDER.map((panel) => {
+                  const on = detailPanels.includes(panel)
+                  return (
+                    <label key={panel} className="flex items-center gap-1 text-sm border rounded px-2 py-1">
+                      <input
+                        type="checkbox"
+                        checked={on}
+                        disabled={editingReadOnly}
+                        onChange={() => {
+                          const next = on ? detailPanels.filter((p) => p !== panel) : [...detailPanels, panel]
+                          setDetailPanels(next.length ? next : ["details"])
+                        }}
+                      />
+                      {panel}
+                    </label>
+                  )
+                })}
+              </div>
+            </section>
+
+            <section className="space-y-2">
+              <h4 className="text-sm font-semibold">Detail layout</h4>
+              <div className="space-y-1">
+                <Label className="text-xs">Hero image attribute</Label>
+                <Select
+                  value={detailLayout.heroImageAttrId || "__none"}
+                  onValueChange={(v) =>
+                    setDetailLayout((l) => ({ ...l, heroImageAttrId: v === "__none" ? undefined : v }))
+                  }
+                  disabled={editingReadOnly}
+                >
+                  <SelectTrigger className="h-8">
+                    <SelectValue placeholder="None" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none">None</SelectItem>
+                    {attributes
+                      .filter((a) => a.type === "image" || a.type === "multiimage")
+                      .map((a) => (
+                        <SelectItem key={a.id} value={a.id}>
+                          {a.name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {attributes.length > 0 && (
+                <div className="space-y-1">
+                  <Label className="text-xs">Featured attributes</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {attributes.map((a) => {
+                      const on = (detailLayout.featuredAttributeIds ?? []).includes(a.id)
+                      return (
+                        <label key={a.id} className="flex items-center gap-1 text-sm border rounded px-2 py-1">
+                          <input
+                            type="checkbox"
+                            checked={on}
+                            disabled={editingReadOnly}
+                            onChange={() => {
+                              const current = detailLayout.featuredAttributeIds ?? []
+                              const next = on ? current.filter((id) => id !== a.id) : [...current, a.id]
+                              setDetailLayout((l) => ({ ...l, featuredAttributeIds: next }))
+                            }}
+                          />
+                          {a.name}
+                        </label>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </section>
+
+            <section className="space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <h4 className="text-sm font-semibold">Rules</h4>
                 {!editingReadOnly && (
@@ -538,7 +829,8 @@ export function ItemTypeEditor({
               </div>
               {rules.length === 0 && (
                 <p className="text-xs text-muted-foreground">
-                  No rules. Add validation or automation that runs on item lifecycle events.
+                  No rules. Example: on Update, when pagesRead increased, Log Done action
+                  “read {"{delta}"} pages of {"{title}"}” and Increment a pages/day habit.
                 </p>
               )}
               <div className="space-y-2">
@@ -548,6 +840,7 @@ export function ItemTypeEditor({
                     rule={rule}
                     fieldOptions={fieldOptions}
                     readOnly={editingReadOnly}
+                    habitOptions={habitOptions}
                     onChange={(next) => setRules((rs) => rs.map((r, i) => (i === idx ? next : r)))}
                     onRemove={() => setRules((rs) => rs.filter((_, i) => i !== idx))}
                   />

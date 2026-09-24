@@ -5,27 +5,22 @@
  * "Friend", …). This is the second-brain extensibility seam: a type is a named
  * category of items with attributes, rules, and behaviors (`ItemTypeDefinition`).
  *
- * Built-in types are always present (re-seeded on load) and cannot be deleted;
- * user types are persisted. Storage: localStorage today; target MongoDB
- * `itemTypes` collection (docs/SPEC_MAPPING.md §3).
+ * Catalog types (Book, Furniture, …) are seeded once; user edits persist.
+ * System types (Task, Item, Note, Operation) are always re-seeded from code
+ * and cannot be deleted. Persist v2 migrates older snapshots through
+ * `mergeTypeRegistry` (Zustand requires `migrate` when `version` changes).
  */
 "use client"
 
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
+import { persistKey } from "@/lib/storage-keys"
 import type { ItemTypeDefinition } from "@/lib/types"
-import { getBuiltinItemTypes, getItemType } from "@/lib/item-types"
+import { getBuiltinItemTypes, getItemType, mergeTypeRegistry } from "@/lib/item-types"
 import { withSecondBrainTypes } from "@/lib/second-brain-types"
 import { withBookType } from "@/lib/book-types"
 import { withFlightType } from "@/lib/flight-types"
-
-/** Merge built-ins with user types; built-ins win on id and come first. */
-function withBuiltins(userTypes: ItemTypeDefinition[]): ItemTypeDefinition[] {
-  const builtins = getBuiltinItemTypes()
-  const builtinIds = new Set(builtins.map((t) => t.id))
-  return [...builtins, ...userTypes.filter((t) => !builtinIds.has(t.id))]
-}
 
 interface ItemTypeState {
   /** All types (built-in + user). Always includes the built-ins. */
@@ -42,6 +37,16 @@ interface ItemTypeState {
   seedBookType: () => void
   /** Ensure the built-in Flight type is registered (idempotent; additive). */
   seedFlightType: () => void
+}
+
+/** Persist bump: system types always re-seed; catalog + user types keep stored edits. */
+export const ITEM_TYPE_STORE_PERSIST_VERSION = 2
+
+/** v0/v1 snapshots had no migrate; without this Zustand drops the blob. */
+export function migrateItemTypeState(persisted: unknown, _version: number): Pick<ItemTypeState, "types"> {
+  const prev = persisted && typeof persisted === "object" ? (persisted as { types?: unknown }) : {}
+  const types = Array.isArray(prev.types) ? (prev.types as ItemTypeDefinition[]) : []
+  return { types: mergeTypeRegistry(types) }
 }
 
 export const useItemTypeStore = create<ItemTypeState>()(
@@ -69,7 +74,7 @@ export const useItemTypeStore = create<ItemTypeState>()(
 
       getType: (id) => getItemType(get().types, id),
 
-      setTypes: (types) => set({ types: withBuiltins(types) }),
+      setTypes: (types) => set({ types: mergeTypeRegistry(types) }),
       resetTypes: () => set({ types: getBuiltinItemTypes() }),
 
       // Seed the second-brain Source + Belief types if not already present.
@@ -80,9 +85,7 @@ export const useItemTypeStore = create<ItemTypeState>()(
           return next === state.types ? state : { types: next }
         }),
 
-      // Book/Flight ship as built-ins (re-seeded by `withBuiltins`), so these
-      // are normally no-ops; exposed as a stable, idempotent API for downstream
-      // features that want to guarantee the type's presence explicitly.
+      // Catalog Book/Flight: insert the seed only if missing (edits persist).
       seedBookType: () =>
         set((state) => {
           const next = withBookType(state.types)
@@ -96,13 +99,13 @@ export const useItemTypeStore = create<ItemTypeState>()(
         }),
     }),
     {
-      name: "cogs-item-types-store",
-      version: 1,
+      name: persistKey("item-types-store"),
+      version: ITEM_TYPE_STORE_PERSIST_VERSION,
       storage: createCogsJSONStorage(),
-      // Re-seed built-ins on hydrate so they survive even if persisted state
-      // predates a new built-in type or had them stripped.
+      migrate: migrateItemTypeState,
+      // System types always come from code; catalog types keep persisted edits.
       onRehydrateStorage: () => (state) => {
-        if (state) state.types = withBuiltins(state.types ?? [])
+        if (state) state.types = mergeTypeRegistry(state.types ?? [])
       },
     },
   ),
