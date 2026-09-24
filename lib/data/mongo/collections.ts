@@ -8,7 +8,7 @@
  * installed); these are plain TypeScript types + constants so the model can be
  * reviewed and reused before any driver lands.
  *
- * Mapping principle: COGS entities are already document-shaped (flexible
+ * Mapping principle: Brain2 entities are already document-shaped (flexible
  * `attributes`, embedded `links`/`subtasks`, optional fields). The Mongo
  * document is the domain object with the app's string `id` promoted to `_id`,
  * so we avoid a second identifier and keep round-trips lossless.
@@ -21,7 +21,7 @@ import type {
 } from "@/lib/types"
 import type { PlanTextPeriod, PointsLedgerEntry } from "@/lib/data/data-source"
 
-/** Collection names (single COGS database; one collection per entity family). */
+/** Collection names (single Brain2 database; one collection per entity family). */
 export const COLLECTIONS = {
   tasks: "tasks",
   categories: "categories",
@@ -65,15 +65,20 @@ export type ReviewDoc = WithStringId<PeriodReview>
 export type PointsDoc = PointsLedgerEntry & { _id?: string }
 
 /**
- * `plans` — free-text day/week/month plans, unified from the discrete
+ * `plans` — day/week/month plan-entry logs, unified from the discrete
  * localStorage keys (`dayPlan-*` etc., see `lib/plan-text.ts`). `_id` is the
- * composite `${period}:${periodKey}` so a plan is upserted in place.
+ * composite `${period}:${periodKey}` so a period's log is upserted in place.
+ * Locally each key holds `{ v: 1, entries: [{ id, createdAt, text }] }`;
+ * `text` here is the formatted dump for the DataSource seam.
  */
 export interface PlanDoc {
   _id: string
   period: PlanTextPeriod
   periodKey: string
+  /** Formatted dump of the log (stamps + bodies). */
   text: string
+  /** Immutable writing-time entries. Optional until Phase 11 stores the log natively. */
+  entries?: { id: string; createdAt: string | null; text: string }[]
   updatedAt: Date
 }
 
@@ -98,7 +103,7 @@ export interface IndexSpec {
 }
 
 /**
- * Indexes to create per collection. Covers the hot query paths in COGS today:
+ * Indexes to create per collection. Covers the hot query paths in Brain2 today:
  * tag lookup (`tasksByTag`), link traversal (`getLinkedItems`/`getBacklinks`),
  * scheduler queries (by scheduledDate/week/month), and lifecycle filters.
  */

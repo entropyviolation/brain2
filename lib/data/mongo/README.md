@@ -1,11 +1,12 @@
 # `lib/data/mongo/` — MongoDB Atlas cloud sync target (Phase 11 groundwork)
 
-Driver-agnostic scaffolding for COGS's future **cloud sync target**: **MongoDB
-Atlas** (spec §3, replacing the original SQLite suggestion). Nothing here imports a
+Driver-agnostic scaffolding for Brain2's future **cloud sync target**: **MongoDB
+Atlas** (spec §3, replacing the original SQLite suggestion). Planned database
+name: **`brain2`**. Nothing here imports a
 Mongo driver yet — these are the document model (`collections.ts`), the
 `DataSource` skeleton (`mongo-data-source.ts`), and this index/transaction plan.
 
-> **Direction (see [`../../../docs/SPEC_MAPPING.md`](../../../docs/SPEC_MAPPING.md) §3).** COGS
+> **Direction (see [`../../../docs/SPEC_MAPPING.md`](../../../docs/SPEC_MAPPING.md) §3).** Brain2
 > is **offline-first**: the local store on each client is the working source of
 > truth. Mongo is **not** a desktop-local datastore and does **not** replace
 > localStorage — it is the **remote** side of an opportunistic `SyncingDataSource`
@@ -27,7 +28,7 @@ Mongo driver yet — these are the document model (`collections.ts`), the
 ## Collections & document mapping
 
 One collection per entity family (`tasks`, `categories`, `folders`, `reviews`,
-`points`, `plans`). COGS entities are already document-shaped (flexible
+`points`, `plans`). Brain2 entities are already document-shaped (flexible
 `attributes`, embedded `links`/`subtasks`), so the Mongo document is essentially
 the domain object with the app's existing **string `id` promoted to `_id`**. We
 do **not** use `ObjectId`: ids already appear in `links.targetId`,
@@ -36,7 +37,9 @@ cross-reference valid with no translation table.
 
 - `plans` unifies the discrete localStorage plan keys (`dayPlan-*`, `weekPlan-*`,
   `monthPlan-*` from `lib/plan-text.ts`) into one collection, `_id =
-  `${period}:${periodKey}`` (upsert in place).
+  `${period}:${periodKey}`` (upsert in place). Each key is a JSON log of
+  stamped entries; `PlanDoc.text` is the formatted dump and `entries` is the
+  native log for Phase 11.
 - `points` stays one document per ledger entry to preserve the append-only audit
   trail.
 
@@ -85,7 +88,8 @@ it (also flagged in `mongo-data-source.ts`):
 2. **Import** by reshaping each backup section into its collection:
    task store → `tasks`/`categories`/`folders`; reviews store → `reviews`;
    points store → `points`; `planText[*]` → `plans` (parse the `dayPlan-`/
-   `weekPlan-`/`monthPlan-` key into `{ period, periodKey }`). Validate each doc
+   `weekPlan-`/`monthPlan-` key into `{ period, periodKey }`, keep the JSON
+   entry log). Validate each doc
    with the Zod schemas; promote `id → _id`.
 3. **Create indexes** from `INDEXES` after the bulk load.
 4. **localStorage stays the offline-first source of truth**: `LocalDataSource`

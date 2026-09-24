@@ -2,7 +2,7 @@
  * lib/data/data-source.ts — Transport-agnostic persistence seam (Phase 10/11)
  *
  * GROUNDWORK / SCAFFOLDING ONLY. This file defines the future *async* data
- * surface that COGS persistence will converge on. It is intentionally NOT wired
+ * surface that Brain2 persistence will converge on. It is intentionally NOT wired
  * into any live code path yet — today's code still talks to the synchronous
  * Zustand stores and `lib/data/task-repository.ts` directly.
  *
@@ -46,10 +46,12 @@ export interface PointsLedgerEntry {
 }
 
 /**
- * Free-text plan entry (day/week/month). Today persisted as discrete
+ * Free-text plan log (day/week/month). Today persisted as discrete
  * localStorage keys (`dayPlan-*`, `weekPlan-*`, `monthPlan-*`, see
- * `lib/plan-text.ts`); Phase 11 unifies these into a single `plans` collection.
- * Only `day`/`week`/`month` carry plan text.
+ * `lib/plan-text.ts`) holding a versioned JSON array of stamped entries.
+ * Phase 11 unifies these into a single `plans` collection.
+ * Only `day`/`week`/`month` carry plan text. `text` on this seam is the
+ * formatted dump; writers append one new entry.
  */
 export type PlanTextPeriod = Extract<ReviewPeriod, "day" | "week" | "month">
 

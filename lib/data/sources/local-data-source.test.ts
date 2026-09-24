@@ -84,7 +84,7 @@ describe("LocalDataSource", () => {
     expect((await ds.getReview("day", "2026-01-01"))?.summary).toBe("ok")
 
     await ds.savePlanText({ period: "day", periodKey: "2026-01-01", text: "plan!" })
-    expect(await ds.getPlanText("day", "2026-01-01")).toBe("plan!")
+    expect(await ds.getPlanText("day", "2026-01-01")).toContain("plan!")
   })
 
   it("appends points ledger entries", async () => {

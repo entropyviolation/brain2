@@ -18,8 +18,16 @@ import {
   type PersistStatus,
 } from "@/lib/persist-storage"
 
+/** SSR + first client paint: never show the banner (matches empty server HTML). */
+const SSR_PERSIST_STATUS: PersistStatus = {
+  ok: true,
+  lastOkAt: null,
+  error: null,
+  quotaExceeded: false,
+}
+
 export function usePersistStatus(): PersistStatus {
-  return useSyncExternalStore(subscribePersistStatus, getPersistStatus, getPersistStatus)
+  return useSyncExternalStore(subscribePersistStatus, getPersistStatus, () => SSR_PERSIST_STATUS)
 }
 
 export function formatLastSave(iso: string | null): string {

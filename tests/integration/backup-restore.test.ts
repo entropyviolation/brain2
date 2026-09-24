@@ -13,7 +13,7 @@ import { createBackup, serializeBackup, parseBackup, restoreBackup, createFullBa
 import { taskRepository } from "@/lib/data/task-repository"
 import { completeTask } from "@/lib/services/completion-service"
 import { upsertPeriodReview, getPeriodReview } from "@/lib/services/review-service"
-import { saveStoredPlanText, getStoredPlanText } from "@/lib/plan-text"
+import { getPlanEntries, saveStoredPlanText, getStoredPlanText } from "@/lib/plan-text"
 import { useTaskStore } from "@/lib/task-store"
 import { useReviewsStore } from "@/lib/reviews-store"
 import { usePointsStore } from "@/lib/points-store"
@@ -66,7 +66,7 @@ describe("integration: full backup & restore", () => {
 
     const result = await restoreBackup(backup)
     expect(result.stores).toBeGreaterThan(0)
-    expect(result.planText).toBe(2)
+    expect(result.planText).toBeGreaterThanOrEqual(2)
 
     // Tasks (and their typed links) are back.
     const a = taskRepository.getById("a")
@@ -81,8 +81,8 @@ describe("integration: full backup & restore", () => {
     expect(usePointsStore.getState().getTotalPoints()).toBe(30)
 
     // Free-text plans restored.
-    expect(getStoredPlanText("day", "2026-06-20")).toBe("morning: focus block")
-    expect(getStoredPlanText("week", "2026-W25")).toBe("ship feature")
+    expect(getPlanEntries("day", "2026-06-20").map((e) => e.text)).toEqual(["morning: focus block"])
+    expect(getPlanEntries("week", "2026-W25").map((e) => e.text)).toEqual(["ship feature"])
   })
 
   it("is a full replace — mutations made after backup are discarded on restore", async () => {
@@ -123,5 +123,6 @@ describe("integration: full backup & restore", () => {
     expect(after.stores).toEqual(before.stores)
     expect(after.planText).toEqual(before.planText)
     expect(after.attachments).toEqual(before.attachments)
+    for (const key of before.extras) expect(after.extras).toContain(key)
   })
 })

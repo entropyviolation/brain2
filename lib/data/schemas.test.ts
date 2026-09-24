@@ -4,6 +4,8 @@ import {
   taskCategorySchema,
   categoryFolderSchema,
   taskStoreSnapshotSchema,
+  itemLinkSchema,
+  subtaskSchema,
   parseOrThrow,
   ValidationError,
 } from "@/lib/data/schemas"
@@ -79,6 +81,32 @@ describe("taskStoreSnapshotSchema", () => {
   it("validates a whole snapshot", () => {
     const snap = { tasks: [validTask], lists: [], folders: [] }
     expect(taskStoreSnapshotSchema.safeParse(snap).success).toBe(true)
+  })
+})
+
+describe("itemLinkSchema", () => {
+  // `itemLinkSchema` is strict, so an unlisted field is *dropped*, not merely
+  // unvalidated. These two carry the belief graph and used to vanish on restore.
+  it("keeps stance and weight through a round-trip", () => {
+    const link = { id: "l1", relation: "supports", targetId: "t2", stance: "weak-refute", weight: 0.4 }
+    expect(itemLinkSchema.parse(link)).toEqual(link)
+  })
+
+  it("still accepts a link that has neither", () => {
+    const link = { id: "l1", relation: "blocks", targetId: "t2" }
+    expect(itemLinkSchema.parse(link)).toEqual(link)
+  })
+
+  it("rejects a stance outside the five-level spectrum", () => {
+    const link = { id: "l1", relation: "supports", targetId: "t2", stance: "kind-of" }
+    expect(itemLinkSchema.safeParse(link).success).toBe(false)
+  })
+})
+
+describe("subtaskSchema", () => {
+  it("keeps the molecular-step fields", () => {
+    const sub = { id: "s1", description: "Open the file", completed: false, isMolecular: true, context: "on the desk" }
+    expect(subtaskSchema.parse(sub)).toEqual(sub)
   })
 })
 
