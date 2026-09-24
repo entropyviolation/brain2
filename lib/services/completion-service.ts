@@ -11,7 +11,8 @@
  */
 import type { Task, TaskCompletionReview } from "@/lib/types"
 import { taskRepository, type TaskRepository } from "@/lib/data/task-repository"
-import { withCompleted } from "@/lib/completion-status"
+import { isClearedFromWork, isMissed, withCompleted, withStatus } from "@/lib/completion-status"
+import { rememberWorld } from "@/lib/action-history"
 
 export interface CompleteOptions {
   /** Minutes actually spent; stored on the task when provided. */
@@ -30,6 +31,7 @@ export function completeTask(
 ): Task | undefined {
   const task = repo.getById(id)
   if (!task || task.completed) return task
+  rememberWorld("complete task")
 
   let updated: Task = { ...task }
   if (options.actualDuration !== undefined) updated.actualDuration = options.actualDuration
@@ -51,10 +53,31 @@ export function completeTask(
   return repo.update(updated)
 }
 
+/**
+ * Mark a task a missed opportunity (too late). Clears it from To Do / Next
+ * Actions the same way complete does, but it lands on Missed Opportunities
+ * instead of Completed. No points, no completion popup.
+ */
+export function markMissedOpportunity(id: string, repo: TaskRepository = taskRepository): Task | undefined {
+  const task = repo.getById(id)
+  if (!task || isClearedFromWork(task)) return task
+  rememberWorld("miss opportunity")
+  return repo.update(withStatus({ ...task }, "missed"))
+}
+
+/** Reopen a missed-opportunity task back to active work. */
+export function unmarkMissedOpportunity(id: string, repo: TaskRepository = taskRepository): Task | undefined {
+  const task = repo.getById(id)
+  if (!task || !isMissed(task)) return task
+  rememberWorld("unmiss opportunity")
+  return repo.update(withStatus({ ...task }, "active"))
+}
+
 /** Reopen a completed task (clears the completed flag). */
 export function uncompleteTask(id: string, repo: TaskRepository = taskRepository): Task | undefined {
   const task = repo.getById(id)
   if (!task || !task.completed) return task
+  rememberWorld("uncomplete task")
   return repo.update(withCompleted({ ...task, completed: false }, false))
 }
 

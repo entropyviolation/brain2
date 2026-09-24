@@ -14,8 +14,10 @@ import {
   isPartial,
   isDeferred,
   isCancelled,
+  isMissed,
   isOpen,
   isResolved,
+  isClearedFromWork,
   isBlocked,
   isAvailable,
   STATUS_TRANSITIONS,
@@ -35,9 +37,9 @@ const task = (overrides: Partial<Task> = {}): Task => ({
 })
 
 describe("constants", () => {
-  it("exposes all five statuses with labels and colours", () => {
+  it("exposes all six statuses with labels and colours", () => {
     expect([...COMPLETION_STATUSES].sort()).toEqual(
-      ["active", "cancelled", "deferred", "done", "partial"].sort(),
+      ["active", "cancelled", "deferred", "done", "missed", "partial"].sort(),
     )
     for (const s of COMPLETION_STATUSES) {
       expect(COMPLETION_STATUS_LABELS[s]).toBeTruthy()
@@ -76,7 +78,7 @@ describe("effectiveStatus", () => {
 describe("invariant: status === done ⇔ completed === true", () => {
   it("withStatus keeps completed in sync", () => {
     expect(withStatus(task(), "done")).toMatchObject({ status: "done", completed: true })
-    for (const s of ["active", "partial", "deferred", "cancelled"] as CompletionStatus[]) {
+    for (const s of ["active", "partial", "deferred", "cancelled", "missed"] as CompletionStatus[]) {
       const t = withStatus(task({ completed: true }), s)
       expect(t.status).toBe(s)
       expect(t.completed).toBe(false)
@@ -145,7 +147,14 @@ describe("isConsistent / normalizeTask", () => {
 
 describe("classification predicates", () => {
   it("classify each status exactly once", () => {
-    const preds = { active: isActive, partial: isPartial, deferred: isDeferred, cancelled: isCancelled, done: isDone }
+    const preds = {
+      active: isActive,
+      partial: isPartial,
+      deferred: isDeferred,
+      cancelled: isCancelled,
+      missed: isMissed,
+      done: isDone,
+    }
     for (const s of COMPLETION_STATUSES) {
       for (const [name, pred] of Object.entries(preds)) {
         expect(pred(task({ status: s }))).toBe(name === s)
@@ -158,15 +167,34 @@ describe("classification predicates", () => {
     expect(isOpen(task({ status: "partial" }))).toBe(true)
     expect(isOpen(task({ status: "deferred" }))).toBe(false)
     expect(isOpen(task({ status: "cancelled" }))).toBe(false)
+    expect(isOpen(task({ status: "missed" }))).toBe(false)
     expect(isOpen(task({ status: "done" }))).toBe(false)
   })
 
-  it("isResolved covers done and cancelled only", () => {
+  it("isResolved covers done, cancelled, and missed", () => {
     expect(isResolved(task({ status: "done" }))).toBe(true)
     expect(isResolved(task({ status: "cancelled" }))).toBe(true)
+    expect(isResolved(task({ status: "missed" }))).toBe(true)
     expect(isResolved(task({ status: "active" }))).toBe(false)
     expect(isResolved(task({ status: "partial" }))).toBe(false)
     expect(isResolved(task({ status: "deferred" }))).toBe(false)
+  })
+
+  it("isClearedFromWork is done or missed, not cancelled", () => {
+    expect(isClearedFromWork(task({ status: "done", completed: true }))).toBe(true)
+    expect(isClearedFromWork(task({ completed: true }))).toBe(true)
+    expect(isClearedFromWork(task({ status: "missed" }))).toBe(true)
+    expect(isClearedFromWork(task({ status: "cancelled" }))).toBe(false)
+    expect(isClearedFromWork(task({ status: "active" }))).toBe(false)
+  })
+
+  it("withStatus missed stamps missedAt and keeps completed false", () => {
+    const at = new Date("2026-09-21T12:00:00")
+    const t = withStatus(task(), "missed", at)
+    expect(t).toMatchObject({ status: "missed", completed: false, missedAt: at })
+    const reopened = withStatus(t, "active")
+    expect(reopened.missedAt).toBeUndefined()
+    expect(reopened.completed).toBe(false)
   })
 
   it("works on legacy tasks via the completed flag", () => {
@@ -235,9 +263,12 @@ describe("transitions", () => {
   it("resolved statuses can only reopen to active", () => {
     expect(allowedTransitions("done")).toEqual(["active"])
     expect(allowedTransitions("cancelled")).toEqual(["active"])
+    expect(allowedTransitions("missed")).toEqual(["active", "done"])
     expect(canTransition("done", "partial")).toBe(false)
     expect(canTransition("cancelled", "deferred")).toBe(false)
     expect(canTransition("done", "active")).toBe(true)
+    expect(canTransition("missed", "active")).toBe(true)
+    expect(canTransition("active", "missed")).toBe(true)
   })
 
   it("self-transition is rejected", () => {

@@ -13,6 +13,11 @@ export interface TaskCompletedEvent {
   /** Base points awarded by the store for this completion (before objective multipliers). */
   basePoints: number
   at: Date
+  /**
+   * Checklist (and other confirm-first) completions: the task is still open.
+   * Save / Skip apply the completion; Undo / overlay cancel leave it incomplete.
+   */
+  pending?: boolean
 }
 
 type Listener = (event: TaskCompletedEvent) => void
@@ -34,4 +39,9 @@ export function emitTaskCompleted(event: TaskCompletedEvent): void {
       // A misbehaving listener must not break the completion path.
     }
   }
+}
+
+/** Open the reflection dialog before flipping `completed`. */
+export function requestTaskCompletion(taskId: string, basePoints = 0): void {
+  emitTaskCompleted({ taskId, basePoints, at: new Date(), pending: true })
 }

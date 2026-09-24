@@ -3,7 +3,7 @@
  *
  * A task carries a coarse boolean `completed` (the legacy lifecycle flag) and an
  * optional richer `CompletionStatus` (active / partial / deferred / cancelled /
- * done). These two MUST agree on the single hard invariant:
+ * missed / done). These two MUST agree on the single hard invariant:
  *
  *   status === "done"  ⇔  completed === true
  *
@@ -24,6 +24,7 @@ export const COMPLETION_STATUSES: readonly CompletionStatus[] = [
   "partial",
   "deferred",
   "cancelled",
+  "missed",
   "done",
 ] as const
 
@@ -33,6 +34,7 @@ export const COMPLETION_STATUS_LABELS: Record<CompletionStatus, string> = {
   partial: "Partial",
   deferred: "Deferred",
   cancelled: "Cancelled",
+  missed: "Missed opportunity",
   done: "Done",
 }
 
@@ -42,6 +44,7 @@ export const COMPLETION_STATUS_DESCRIPTIONS: Record<CompletionStatus, string> = 
   partial: "Started — some progress made, not finished",
   deferred: "Postponed for now; revisit later",
   cancelled: "Abandoned — will not be done",
+  missed: "Too late — the window closed without doing it",
   done: "Completed",
 }
 
@@ -54,6 +57,8 @@ export function getStatusColor(status: CompletionStatus): string {
       return "bg-blue-100 text-blue-800 border-blue-200"
     case "deferred":
       return "bg-amber-100 text-amber-800 border-amber-200"
+    case "missed":
+      return "bg-orange-100 text-orange-900 border-orange-200"
     case "cancelled":
       return "bg-gray-100 text-gray-500 border-gray-200 line-through"
     case "active":
@@ -65,7 +70,9 @@ export function getStatusColor(status: CompletionStatus): string {
 // Statuses that represent open work the user can still act on.
 const OPEN_STATUSES: ReadonlySet<CompletionStatus> = new Set<CompletionStatus>(["active", "partial"])
 // Statuses that close the task out (no further work expected).
-const RESOLVED_STATUSES: ReadonlySet<CompletionStatus> = new Set<CompletionStatus>(["done", "cancelled"])
+const RESOLVED_STATUSES: ReadonlySet<CompletionStatus> = new Set<CompletionStatus>(["done", "cancelled", "missed"])
+// Done or too-late: leave To Do / Next Actions and land on an archive list.
+const CLEARED_FROM_WORK_STATUSES: ReadonlySet<CompletionStatus> = new Set<CompletionStatus>(["done", "missed"])
 
 /** Is `value` one of the known completion statuses? */
 export function isCompletionStatus(value: unknown): value is CompletionStatus {
@@ -92,8 +99,19 @@ export function isConsistent(task: Pick<Task, "status" | "completed">): boolean 
  * Return a copy of `task` with `status` set and `completed` brought into sync so
  * the invariant always holds. This is the canonical way to change a status.
  */
-export function withStatus<T extends Pick<Task, "status" | "completed">>(task: T, status: CompletionStatus): T {
-  return { ...task, status, completed: status === "done" }
+export function withStatus<T extends Pick<Task, "status" | "completed" | "missedAt">>(
+  task: T,
+  status: CompletionStatus,
+  now: Date = new Date(),
+): T {
+  const next: T = { ...task, status, completed: status === "done" }
+  if (status === "missed") {
+    return { ...next, missedAt: task.missedAt ?? now }
+  }
+  if ("missedAt" in next || task.missedAt) {
+    return { ...next, missedAt: undefined }
+  }
+  return next
 }
 
 /**
@@ -101,11 +119,15 @@ export function withStatus<T extends Pick<Task, "status" | "completed">>(task: T
  * kept in sync. Completing forces "done"; un-completing reverts a "done" task to
  * "active" but preserves any other open/closed status already set.
  */
-export function withCompleted<T extends Pick<Task, "status" | "completed">>(task: T, completed: boolean): T {
-  if (completed) return { ...task, completed: true, status: "done" }
+export function withCompleted<T extends Pick<Task, "status" | "completed" | "missedAt">>(
+  task: T,
+  completed: boolean,
+): T {
+  if (completed) return withStatus(task, "done")
   const current = task.status
-  const next: CompletionStatus = isCompletionStatus(current) && current !== "done" ? current : "active"
-  return { ...task, completed: false, status: next }
+  const next: CompletionStatus =
+    isCompletionStatus(current) && current !== "done" && current !== "missed" ? current : "active"
+  return withStatus(task, next)
 }
 
 /**
@@ -139,14 +161,27 @@ export function isCancelled(task: Pick<Task, "status" | "completed">): boolean {
   return effectiveStatus(task) === "cancelled"
 }
 
+export function isMissed(task: Pick<Task, "status" | "completed">): boolean {
+  return effectiveStatus(task) === "missed"
+}
+
 /** Open = still actionable work (active or partial). */
 export function isOpen(task: Pick<Task, "status" | "completed">): boolean {
   return OPEN_STATUSES.has(effectiveStatus(task))
 }
 
-/** Resolved = closed out (done or cancelled). */
+/** Resolved = closed out (done, cancelled, or missed). */
 export function isResolved(task: Pick<Task, "status" | "completed">): boolean {
   return RESOLVED_STATUSES.has(effectiveStatus(task))
+}
+
+/**
+ * Left the active work queues (To Do, Next Actions smart lists, Scheduler).
+ * Done goes to Completed; missed goes to Missed Opportunities.
+ */
+export function isClearedFromWork(task: Pick<Task, "status" | "completed">): boolean {
+  if (task.completed) return true
+  return CLEARED_FROM_WORK_STATUSES.has(effectiveStatus(task))
 }
 
 // ---- Availability (dependency-aware) --------------------------------------
@@ -184,10 +219,11 @@ export function isAvailable(task: Task, tasks: Iterable<Task> | Map<string, Task
 
 /** Allowed next statuses from each status (excludes the no-op self-transition). */
 export const STATUS_TRANSITIONS: Record<CompletionStatus, readonly CompletionStatus[]> = {
-  active: ["partial", "deferred", "cancelled", "done"],
-  partial: ["active", "deferred", "cancelled", "done"],
-  deferred: ["active", "partial", "cancelled", "done"],
+  active: ["partial", "deferred", "cancelled", "missed", "done"],
+  partial: ["active", "deferred", "cancelled", "missed", "done"],
+  deferred: ["active", "partial", "cancelled", "missed", "done"],
   cancelled: ["active"],
+  missed: ["active", "done"],
   done: ["active"],
 }
 

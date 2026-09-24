@@ -17,6 +17,7 @@
 import type { Task, WorkflowDefinition } from "@/lib/types"
 import {
   registerItemMutationDispatcher,
+  addItemMutationListener,
   type ItemMutationEvent,
 } from "@/lib/workflow-hooks"
 import {
@@ -25,7 +26,10 @@ import {
   type WorkflowEvent,
   type WorkflowRunResult,
 } from "@/lib/workflow-engine"
-import type { ItemLike } from "@/lib/item-types"
+import { applyRules, gatherItemRules, getItemType, type ItemLike } from "@/lib/item-types"
+import { executeImpliedEffects } from "@/lib/implied-actions"
+import { isLoggedAction } from "@/lib/item-utils"
+import { useItemTypeStore } from "@/lib/item-type-store"
 import { taskRepository, type TaskRepository } from "@/lib/data/task-repository"
 import { useWorkflowsStore } from "@/lib/workflows-store"
 
@@ -45,6 +49,35 @@ export interface InitWorkflowEngineOptions {
 const REENTRANCY_CAP = 8
 let installed = false
 let dispatchDepth = 0
+let impliedUnsub: (() => void) | null = null
+let impliedDepth = 0
+
+function handleImpliedActions(event: ItemMutationEvent): void {
+  if (event.trigger !== "update" && event.trigger !== "complete") return
+  const after = event.after
+  if (!after || isLoggedAction(after)) return
+  if (impliedDepth >= REENTRANCY_CAP) return
+  impliedDepth += 1
+  try {
+    const types = useItemTypeStore.getState().types
+    const lists = taskRepository.getLists()
+    const memberLists = (after.lists ?? [])
+      .map((id) => lists.find((l) => l.id === id))
+      .filter((l): l is NonNullable<typeof l> => !!l)
+    const type = getItemType(types, after.type)
+    const rules = gatherItemRules(type, memberLists, types)
+    if (rules.length === 0) return
+    const result = applyRules(
+      after as unknown as ItemLike,
+      rules,
+      event.trigger,
+      event.before as unknown as ItemLike | undefined,
+    )
+    if (result.effects.length > 0) executeImpliedEffects(result.effects, after)
+  } finally {
+    impliedDepth -= 1
+  }
+}
 
 /** Build the store-backed side-effect adapter over the task repository. */
 export function createTaskRepositoryAdapter(repo: TaskRepository = taskRepository): WorkflowActionAdapter {
@@ -165,13 +198,18 @@ export function initWorkflowEngine(opts: InitWorkflowEngineOptions = {}): void {
       dispatchDepth -= 1
     }
   })
+
+  if (!impliedUnsub) impliedUnsub = addItemMutationListener(handleImpliedActions)
 }
 
 /** Unregister the dispatcher and reset state (idempotent; used by tests). */
 export function teardownWorkflowEngine(): void {
   registerItemMutationDispatcher(null)
+  impliedUnsub?.()
+  impliedUnsub = null
   installed = false
   dispatchDepth = 0
+  impliedDepth = 0
 }
 
 /** True when the engine dispatcher is currently registered. */

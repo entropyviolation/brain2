@@ -14,7 +14,13 @@ import { CompletionDialog } from "./CompletionDialog"
 export function CompletionPopupHost() {
   const [queue, setQueue] = useState<TaskCompletedEvent[]>([])
 
-  useEffect(() => onTaskCompleted((event) => setQueue((q) => [...q, event])), [])
+  useEffect(
+    () =>
+      onTaskCompleted((event) =>
+        setQueue((q) => (q.some((e) => e.taskId === event.taskId) ? q : [...q, event])),
+      ),
+    [],
+  )
 
   const current = queue[0]
   if (!current) return null
@@ -24,6 +30,7 @@ export function CompletionPopupHost() {
       key={`${current.taskId}-${current.at.getTime()}`}
       taskId={current.taskId}
       basePoints={current.basePoints}
+      pending={!!current.pending}
       onClose={() => setQueue((q) => q.slice(1))}
     />
   )

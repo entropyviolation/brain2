@@ -8,6 +8,9 @@ import {
 import { taskRepository } from "@/lib/data/task-repository"
 import { useTaskStore } from "@/lib/task-store"
 import { useWorkflowsStore } from "@/lib/workflows-store"
+import { useItemTypeStore } from "@/lib/item-type-store"
+import { useHabitsStore, getDefaultHabits } from "@/lib/habits-store"
+import { formatLocalDateKey } from "@/lib/date-utils"
 import type { Task, WorkflowDefinition } from "@/lib/types"
 
 const task = (overrides: Partial<Task> = {}): Task => ({
@@ -134,5 +137,48 @@ describe("item-mutation-service — engine wiring", () => {
     const res = runWorkflowManually("manual-tag", "m1")
     expect(res.ranWorkflows).toContain("manual-tag")
     expect(taskRepository.getById("m1")?.tags).toContain("manual")
+  })
+})
+
+describe("item-mutation-service — implied actions", () => {
+  beforeEach(() => {
+    reset()
+    useItemTypeStore.getState().resetTypes()
+    useHabitsStore.getState().resetData()
+    useHabitsStore.setState({ tasks: getDefaultHabits(), weeklyData: {} })
+  })
+  afterEach(teardownWorkflowEngine)
+
+  it("pagesRead delta logs a Done action, increments the reading habit, and does not re-enter", () => {
+    initWorkflowEngine()
+    taskRepository.add(
+      task({
+        id: "dune",
+        description: "Dune",
+        title: "Dune",
+        type: "book",
+        stage: "list",
+        attributes: { pagesRead: 10 },
+      }),
+    )
+
+    taskRepository.update({
+      ...taskRepository.getById("dune")!,
+      attributes: { pagesRead: 22 },
+    })
+
+    const logged = useTaskStore.getState().tasks.filter((t) => t.loggedAction)
+    expect(logged).toHaveLength(2)
+    expect(logged.some((t) => t.description === "read 12 pages of Dune")).toBe(true)
+    expect(logged.some((t) => t.id.startsWith("habit-done-task-9-"))).toBe(true)
+    expect(logged.find((t) => t.description === "read 12 pages of Dune")?.type).toBe("action")
+
+    const dateKey = formatLocalDateKey(new Date())
+    expect(useHabitsStore.getState().weeklyData[dateKey]?.["task-9"]?.value).toBe(12)
+
+    // Updating the book log itself must not spawn another log.
+    const bookLog = logged.find((t) => t.description === "read 12 pages of Dune")!
+    taskRepository.update({ ...bookLog, description: "read 12 pages of Dune (edited)" })
+    expect(useTaskStore.getState().tasks.filter((t) => t.loggedAction)).toHaveLength(2)
   })
 })

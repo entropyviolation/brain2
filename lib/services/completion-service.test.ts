@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeEach } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { taskRepository } from "@/lib/data/task-repository"
-import { completeTask, uncompleteTask, toggleCompletion, saveCompletionReview } from "@/lib/services/completion-service"
+import { completeTask, uncompleteTask, toggleCompletion, saveCompletionReview, markMissedOpportunity, unmarkMissedOpportunity } from "@/lib/services/completion-service"
 import type { Task } from "@/lib/types"
+import { NA_SMART_COMPLETED, NA_SMART_MISSED } from "@/lib/scheduled-lists-sync"
+import { useTaskStore } from "@/lib/task-store"
 
 const task = (overrides: Partial<Task>): Task => ({
   id: "t1",
@@ -59,6 +61,48 @@ describe("completion-service", () => {
 
   it("returns undefined for a missing task", () => {
     expect(completeTask("nope")).toBeUndefined()
+  })
+
+  it("marks a task as a missed opportunity without completing it", () => {
+    taskRepository.add(task({ id: "a" }))
+    const updated = markMissedOpportunity("a")
+    expect(updated?.completed).toBe(false)
+    expect(updated?.status).toBe("missed")
+    expect(updated?.missedAt).toBeInstanceOf(Date)
+    expect(taskRepository.getById("a")?.status).toBe("missed")
+  })
+
+  it("does not miss an already completed task", () => {
+    taskRepository.add(task({ id: "a", completed: true, status: "done" }))
+    expect(markMissedOpportunity("a")?.completed).toBe(true)
+    expect(taskRepository.getById("a")?.status).toBe("done")
+  })
+
+  it("reopens a missed opportunity", () => {
+    taskRepository.add(task({ id: "a", status: "missed", missedAt: new Date() }))
+    unmarkMissedOpportunity("a")
+    const updated = taskRepository.getById("a")
+    expect(updated?.status).toBe("active")
+    expect(updated?.completed).toBe(false)
+    expect(updated?.missedAt).toBeUndefined()
+  })
+
+  it("files completed and missed tasks onto the Next Actions auto-lists", () => {
+    useTaskStore.getState().setFolders([
+      { id: "folder-next-actions", name: "Next Actions", createdAt: new Date(), listIds: [NA_SMART_COMPLETED, NA_SMART_MISSED] },
+    ])
+    useTaskStore.getState().setLists([
+      { id: NA_SMART_COMPLETED, name: "Completed", color: "#059669", createdAt: new Date(), autoArchive: "completed" },
+      { id: NA_SMART_MISSED, name: "Missed Opportunities", color: "#b45309", createdAt: new Date(), autoArchive: "missed" },
+    ])
+    taskRepository.add(task({ id: "done-me" }))
+    completeTask("done-me")
+    expect(taskRepository.getById("done-me")?.lists).toContain(NA_SMART_COMPLETED)
+    taskRepository.add(task({ id: "late-me" }))
+    markMissedOpportunity("late-me")
+    expect(taskRepository.getById("late-me")?.lists).toContain(NA_SMART_MISSED)
+    uncompleteTask("done-me")
+    expect(taskRepository.getById("done-me")?.lists).not.toContain(NA_SMART_COMPLETED)
   })
 
   it("saves a post-mortem review onto the task", () => {
