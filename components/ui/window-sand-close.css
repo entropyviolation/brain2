@@ -1,0 +1,34 @@
+/*
+ * Opt-in sand close. `.window-sand-host` kills the Radix zoom/fade so the
+ * intact window cannot flash back after the sand has replaced it.
+ * `.window-sand-source` hides the live window while the canvas plays.
+ */
+
+.window-sand-host[data-state="closed"] {
+  animation: none !important;
+  transition: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+.window-sand-source {
+  pointer-events: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  animation: none !important;
+  transition: none !important;
+  box-shadow: none !important;
+}
+
+.window-sand-canvas {
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .window-sand-canvas {
+    display: none !important;
+  }
+}

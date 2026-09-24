@@ -1,0 +1,168 @@
+/**
+ * app/chrome-patina.css — Module skins read the one `:root` gunmetal
+ *
+ * Face tokens live in `app/win95.css`. This file remaps every window alias
+ * (`--h-surface`, `--hab-metal`, `--fm-surface`, `--mod-surface`, …) onto `--chrome-*` with
+ * `body.win95-app` specificity so Fast Refresh cannot let a local hex win
+ * (Habits `--hab-metal: #c5c3bc` used to go brown). Do not animate these.
+ */
+
+/* Module skins keep local names; they all read the same root mix. */
+body.win95-app :is(
+  .home95,
+  .plan95,
+  .plan95-dialog,
+  .agenda95,
+  .trk95,
+  .sch95,
+  .ops95,
+  .ops95-dialog,
+  .ops-now-bar,
+  .docs95,
+  .fm98,
+  .an95,
+  .mod95,
+  .mod95-ws
+) {
+  --h-surface: var(--chrome-face);
+  --h-face: var(--chrome-mid);
+  --h-highlight: var(--chrome-hi);
+  --h-shadow: var(--chrome-lo);
+  --h-frame: var(--chrome-frame);
+  --p-surface: var(--chrome-face);
+  --p-face: var(--chrome-mid);
+  --p-highlight: var(--chrome-hi);
+  --p-shadow: var(--chrome-lo);
+  --p-frame: var(--chrome-frame);
+  --t-surface: var(--chrome-face);
+  --t-face: var(--chrome-mid);
+  --t-highlight: var(--chrome-hi);
+  --t-shadow: var(--chrome-lo);
+  --t-frame: var(--chrome-frame);
+  --s-surface: var(--chrome-face);
+  --s-face: var(--chrome-mid);
+  --s-highlight: var(--chrome-hi);
+  --s-shadow: var(--chrome-lo);
+  --s-frame: var(--chrome-frame);
+  --o-surface: var(--chrome-face);
+  --o-face: var(--chrome-mid);
+  --o-highlight: var(--chrome-hi);
+  --o-shadow: var(--chrome-lo);
+  --o-frame: var(--chrome-frame);
+  --d-surface: var(--chrome-face);
+  --d-face: var(--chrome-mid);
+  --d-highlight: var(--chrome-hi);
+  --d-shadow: var(--chrome-lo);
+  --d-frame: var(--chrome-frame);
+  --fm-surface: var(--chrome-face);
+  --fm-button-highlight: var(--chrome-hi);
+  --fm-button-face: var(--chrome-mid);
+  --fm-button-shadow: var(--chrome-lo);
+  --fm-window-frame: var(--chrome-frame);
+  --fm-dialog-gray: var(--chrome-lo);
+  --mod-surface: var(--chrome-face);
+  --mod-face: var(--chrome-mid);
+  --mod-hi: var(--chrome-hi);
+  --mod-lo: var(--chrome-lo);
+  --mod-frame: var(--chrome-frame);
+}
+
+/* Habits console metal rides the same t without editing Habits files. */
+body.win95-app .hab95 {
+  --hab-metal: var(--chrome-face);
+  --hab-metal-hi: var(--chrome-hi);
+  --hab-metal-mid: var(--chrome-brush);
+  --hab-metal-lo: var(--chrome-lo);
+  --hab-raised: inset -1px -1px var(--chrome-frame), inset 1px 1px var(--chrome-hi),
+    inset -2px -2px var(--chrome-lo), inset 2px 2px var(--chrome-mid);
+  --hab-sunken: inset -1px -1px var(--chrome-hi), inset 1px 1px var(--chrome-frame),
+    inset -2px -2px var(--chrome-mid), inset 2px 2px var(--chrome-lo);
+  --hab-field: inset -1px -1px var(--chrome-hi), inset 1px 1px var(--chrome-lo),
+    inset -2px -2px var(--chrome-mid), inset 2px 2px var(--chrome-frame);
+}
+
+body.win95-app .habit95-dialog {
+  --h95-surface: var(--chrome-face);
+  --h95-face: var(--chrome-mid);
+  --h95-highlight: var(--chrome-hi);
+  --h95-shadow: var(--chrome-lo);
+  --h95-frame: var(--chrome-frame);
+}
+
+body.win95-app :is(.habit-good-days, .habit-week-nav, .habit-gem-btn, .habit-chrome-btn, .habit-priority-math) {
+  background: var(--chrome-face);
+}
+
+body.win95-app .habit-good-days:hover,
+body.win95-app .habit-chrome-btn.is-on {
+  background: var(--chrome-mid);
+}
+
+body.win95-app .fm98 .fm-sunken::-webkit-scrollbar-track,
+body.win95-app .fm98 .fm-sidebar::-webkit-scrollbar-track,
+body.win95-app .fm98 .fm-scroll::-webkit-scrollbar-track {
+  background-color: var(--chrome-face);
+  background-image: linear-gradient(
+      45deg,
+      var(--chrome-hi) 25%,
+      transparent 25%,
+      transparent 75%,
+      var(--chrome-hi) 75%
+    ),
+    linear-gradient(
+      45deg,
+      var(--chrome-hi) 25%,
+      var(--chrome-face) 25%,
+      var(--chrome-face) 75%,
+      var(--chrome-hi) 75%
+    );
+}
+
+/* Settings dual-thumb: ghost = live metal, input thumb = persisted set-point. */
+.chrome-face-swatch {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  box-shadow: var(--w95-raised);
+  background: var(--chrome-face);
+}
+
+.chrome-face-slider {
+  position: relative;
+  height: 22px;
+}
+
+.chrome-face-slider-classic {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 50%;
+  width: 1px;
+  background: #000;
+  opacity: 0.35;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.chrome-face-slider-ghost {
+  position: absolute;
+  top: 2px;
+  width: 7px;
+  height: 18px;
+  border: 1px solid #000;
+  background: transparent;
+  box-shadow: inset 1px 1px #fff;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.chrome-face-slider input[type="range"] {
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  margin: 0;
+  background: transparent;
+  accent-color: var(--chrome-lo);
+}

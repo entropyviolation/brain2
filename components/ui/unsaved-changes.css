@@ -1,0 +1,104 @@
+/**
+ * components/ui/unsaved-changes.css — Win95 confirm for unsaved edits
+ *
+ * House law: dirty close prompts; clean close does not. Portaled, so this
+ * file is self-contained (not a module skin).
+ */
+
+.w95-confirm {
+  --w95c-surface: var(--chrome-face, #c0c0c0);
+  --w95c-face: var(--chrome-mid, #dfdfdf);
+  --w95c-highlight: var(--chrome-hi, #ffffff);
+  --w95c-shadow: var(--chrome-lo, #808080);
+  --w95c-frame: var(--chrome-frame, #0a0a0a);
+  --w95c-blue: #000080;
+  --w95c-raised: inset -1px -1px var(--w95c-frame), inset 1px 1px var(--w95c-highlight),
+    inset -2px -2px var(--w95c-shadow), inset 2px 2px var(--w95c-face);
+  --w95c-sunken: inset -1px -1px var(--w95c-highlight), inset 1px 1px var(--w95c-frame),
+    inset -2px -2px var(--w95c-face), inset 2px 2px var(--w95c-shadow);
+
+  z-index: 60;
+  display: flex !important;
+  flex-direction: column;
+  width: min(24.5rem, calc(100vw - 2.5rem)) !important;
+  max-width: 24.5rem !important;
+  padding: 3px !important;
+  gap: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: var(--w95c-surface) !important;
+  color: #000;
+  box-shadow: var(--w95c-raised), 4px 4px 0 rgba(0, 0, 0, 0.4) !important;
+  font-family: var(--w95-font, Tahoma, "MS Sans Serif", Geneva, sans-serif);
+  font-size: 12px;
+}
+
+.w95-confirm > button.absolute {
+  display: none !important;
+}
+
+.w95-confirm-caption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  min-height: 22px;
+  padding: 2px 3px 2px 6px;
+  margin: 0;
+  color: #fff;
+  background: linear-gradient(90deg, var(--w95c-blue), #1084d0);
+  user-select: none;
+}
+
+.w95-confirm-caption h2 {
+  flex: 1;
+  margin: 0;
+  font-size: 13px;
+  font-weight: bold;
+  letter-spacing: 0.4px;
+  color: #fff !important;
+  text-shadow: 1px 1px 0 #000;
+  line-height: 1.2;
+}
+
+.w95-confirm-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 12px 12px;
+}
+
+.w95-confirm-body p {
+  margin: 0;
+  line-height: 1.45;
+  color: #000;
+}
+
+.w95-confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.w95-confirm-actions button {
+  min-height: 26px;
+  min-width: 5.5rem;
+  padding: 4px 12px;
+  border: 0;
+  background: var(--w95c-surface);
+  color: #000;
+  font: inherit;
+  font-size: 12px;
+  box-shadow: var(--w95c-raised);
+  cursor: pointer;
+}
+
+.w95-confirm-actions button[data-default="true"] {
+  font-weight: bold;
+  box-shadow: inset 0 0 0 1px #000, var(--w95c-raised);
+}
+
+.w95-confirm-actions button:active {
+  box-shadow: var(--w95c-sunken);
+}

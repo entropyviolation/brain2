@@ -4,6 +4,11 @@
 
 @layer base {
   :root {
+    /*
+     * House CRT phosphor + milled fascia (`--fascia-*`, `--hab-crt-*`,
+     * `--chrome-*`) live on `:root` in `app/win95.css` so unskinned surfaces
+     * inherit the mill. Keep shadcn HSL tokens here; do not duplicate fascia.
+     */
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
@@ -22,7 +27,7 @@
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    --ring: 240 100% 25%; /* Win95 navy #000080 — never orange focus rings */
     --radius: 0.75rem;
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
@@ -50,7 +55,7 @@
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 94.1%;
+    --ring: 240 100% 25%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;

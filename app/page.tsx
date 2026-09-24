@@ -1,35 +1,32 @@
 /**
  * app/page.tsx — Application root page
  *
- * The single page of the app. Renders the global header (title + Cognitive State,
- * Inbox, Bulk Add, From Notes, Quick Add) and the top-level tab bar (Home, Lists, Docs,
- * Scheduler, Operations, Modules, Analytics), lazy-loading each module
- * panel for fast startup. When a task is selected it swaps to the full-screen
- * task detail view.
+ * The single page of the app. Renders the pinned full-width mill title bar
+ * (`AppHeader`: BRAIN2 caption + today's-friend jewel + grouped press keys)
+ * and the top-level tab bar (`data-ui-name="App tabs"`: Home, Lists, Docs,
+ * Scheduler, Operations, Modules, Analytics), lazy-loading each module panel.
+ * Item detail fills the desk *below* the pin bar — the header stays mounted.
+ * Global hotkeys: Cmd/Ctrl-K search, Cmd/Ctrl-Shift-K quick capture,
+ * Cmd/Ctrl-Z undo last Home/Tracking action.
  *
  * Spec: §2.2 (module hosting) and §8.2 (dashboard top bar / global quick actions).
  */
 "use client"
 
 import { useState, useCallback, lazy, Suspense, useEffect } from "react"
-import { APP_NAV_KEYS, APP_TABS, writeListsNavigation, COGS_NAVIGATE_TO_LIST_EVENT, type AppTab } from "@/lib/app-navigation"
+import { APP_NAV_KEYS, APP_TABS, writeListsNavigation, COGS_NAVIGATE_TO_LIST_EVENT, readStoredId, writeStoredId, type AppTab } from "@/lib/app-navigation"
 import { usePersistedTab } from "@/lib/use-persisted-tab"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { QuickAdd } from "@/components/quick-add"
-import { EnhancedBulkAdd } from "@/components/enhanced-bulk-add"
-import { NotesIngest } from "@/components/notes-ingest"
-import { CognitiveState } from "@/components/cognitive-state"
-import { Inbox } from "@/components/inbox"
+import { useMessageIngest } from "@/hooks/useMessageIngest"
 import { EnhancedTaskDetail } from "@/components/ItemDetail/ItemDetailPage"
 import { TaskDetailPopup } from "@/components/ItemDetail/ItemDetailPopup"
-import { Reviews } from "@/components/Reviews/reviews"
+import { AppHeader } from "@/components/AppHeader"
 import { GlobalSearch, type SearchSelection } from "@/components/Search/GlobalSearch"
 import { useGlobalSearchHotkey } from "@/components/Search/useGlobalSearchHotkey"
 import { useTaskStore } from "@/lib/task-store"
 import { useQuickCaptureHotkey } from "@/hooks/useQuickCaptureHotkey"
-import { MetricLoggerButton } from "@/components/Tracking/MetricLogger"
+import { useUndoHotkey } from "@/hooks/useUndoHotkey"
 import { PersistStatusBanner } from "@/components/PersistStatusBanner"
-import { SettingsDialog } from "@/components/Settings/SettingsDialog"
 import { parseModulePopoutModuleId } from "@/components/Modules/workspace/ModuleWorkspace"
 import { parseSheetPopoutCategoryId } from "@/components/spreadsheet/sheet-popout"
 import { initWorkflowEngine, createTaskRepositoryAdapter } from "@/lib/services/item-mutation-service"
@@ -67,16 +64,23 @@ const LoadingFallback = () => (
 
 export default function Home() {
   const [activeTab, setActiveTab] = usePersistedTab(APP_NAV_KEYS.appTab, APP_TABS, "home")
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(() => readStoredId(APP_NAV_KEYS.appItemId))
   const [searchSelectedId, setSearchSelectedId] = useState<string | null>(null)
   const { open: searchOpen, setOpen: setSearchOpen } = useGlobalSearchHotkey()
   const capture = useQuickCaptureHotkey()
+  useUndoHotkey()
+  useMessageIngest()
   const [popoutModuleId, setPopoutModuleId] = useState<string | null>(null)
   const [popoutSheetCategoryId, setPopoutSheetCategoryId] = useState<string | null>(null)
   // Bumped to force the Lists view to remount and re-read navigation when the
   // user jumps to a folder/list from global search while it's already open.
   const [listsNavKey, setListsNavKey] = useState(0)
   const folders = useTaskStore((s) => s.folders)
+  const tasks = useTaskStore((s) => s.tasks)
+
+  useEffect(() => {
+    writeStoredId(APP_NAV_KEYS.appItemId, selectedTaskId)
+  }, [selectedTaskId])
 
   // Install the workflow engine once on client mount so authored workflows run
   // on real item mutations. Idempotent + client-only (safe for static export).
@@ -85,8 +89,17 @@ export default function Home() {
     void import("@/lib/doc-hydrate").then((mod) => mod.hydrateDocumentsFromIdb())
   }, [])
 
-  // Detect the pop-out route (`#popout/module/<id>`) and keep it in sync with
-  // hash navigation, so a popped-out window renders just the module workspace.
+  useEffect(() => {
+    if (!selectedTaskId) return
+    if (!useTaskStore.persist.hasHydrated()) return
+    if (tasks.some((t) => t.id === selectedTaskId)) return
+    setSelectedTaskId(null)
+  }, [selectedTaskId, tasks])
+
+  // Detect a leftover hash pop-out on the *root* page (`#popout/module/<id>`).
+  // New pop-outs use `/popout/?module=` (see `app/popout/page.tsx`); this is a
+  // fallback so an old bookmark still skips the app shell when the hash survives.
+
   useEffect(() => {
     const read = () => {
       setPopoutModuleId(parseModulePopoutModuleId(window.location.hash))
@@ -147,7 +160,7 @@ export default function Home() {
     [folders]
   )
 
-  // Pop-out window: render only the standalone module workspace (no app shell).
+  // Pop-out window (legacy hash on `/`): render only the standalone module.
   if (popoutModuleId) {
     return (
       <Suspense fallback={<LoadingFallback />}>
@@ -165,47 +178,26 @@ export default function Home() {
     )
   }
 
-  // If a task is selected, show the task detail view
-  if (selectedTaskId) {
-    return (
-      <>
-        <main className="min-h-screen bg-background">
-          <div className="container mx-auto px-6 py-6 sm:px-8 lg:px-12">
-            <PersistStatusBanner />
-            <EnhancedTaskDetail taskId={selectedTaskId} onBack={handleBackToList} />
-          </div>
-        </main>
-        <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} onSelect={handleSearchSelect} />
-        <TaskDetailPopup
-          taskId={searchSelectedId ?? ""}
-          open={!!searchSelectedId}
-          onClose={() => setSearchSelectedId(null)}
-        />
-      </>
-    )
-  }
-
   return (
     <>
     <main className="min-h-screen bg-background">
+      <AppHeader
+        onTaskSelect={handleTaskSelect}
+        captureOpen={capture.open}
+        onCaptureOpenChange={capture.setOpen}
+      />
       <div className="container mx-auto px-6 py-6 sm:px-8 lg:px-12">
         <PersistStatusBanner />
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold">COGS</h1>
-          <div className="flex items-center gap-4">
-            <Reviews />
-            <SettingsDialog />
-            <CognitiveState />
-            <Inbox onTaskSelect={handleTaskSelect} />
-            <MetricLoggerButton />
-            <EnhancedBulkAdd />
-            <NotesIngest />
-            <QuickAdd open={capture.open} onOpenChange={capture.setOpen} />
-          </div>
-        </div>
-
+        {selectedTaskId ? (
+          <EnhancedTaskDetail taskId={selectedTaskId} onBack={handleBackToList} />
+        ) : (
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList
+            className="flex w-full"
+            data-ui-name="App tabs"
+            data-ui-docs="components/README.md"
+            data-ui-docs-anchor="top-level-tabs-from-apppagetsx"
+          >
             <TabsTrigger value="home">Home</TabsTrigger>
             <TabsTrigger value="categories">Lists</TabsTrigger>
             <TabsTrigger value="docs">Docs</TabsTrigger>
@@ -260,6 +252,7 @@ export default function Home() {
 
           </Suspense>
         </Tabs>
+        )}
       </div>
     </main>
     <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} onSelect={handleSearchSelect} />

@@ -1,0 +1,168 @@
+/**
+ * app/pcb-backdrop.css — Photoreal PCB desktop behind the Win95 shell
+ *
+ * Replaces nothing — teal is the default estate; photographed plates are
+ * opt-in in Settings. `data-pcb-mode` / `data-pcb-ink` are stamped on `<html>`
+ * by `pcb-backdrop.tsx`. Windows, glass, and widgets stay on top — this file
+ * only paints the field behind them.
+ *
+ * Specificity beats `body.win95-app` / `main.bg-background` so Fast Refresh
+ * cannot restore a white main.
+ */
+
+html {
+  --pcb-desk: #008080;
+  background-color: var(--pcb-desk);
+}
+
+html[data-pcb-mode] {
+  --w95-desktop: var(--pcb-desk);
+}
+
+html[data-pcb-mode] body.win95-app,
+html[data-pcb-mode] body.win95-app main {
+  background-color: var(--pcb-desk);
+  background-image:
+    var(--pcb-veil),
+    var(--pcb-grain),
+    var(--pcb-plate);
+  background-repeat: no-repeat, repeat, var(--pcb-repeat, no-repeat);
+  background-size: auto, 180px 180px, var(--pcb-size, cover);
+  background-position: center, 0 0, var(--pcb-pos, center);
+  background-attachment: fixed;
+}
+
+html[data-pcb-mode="teal"] {
+  --pcb-desk: #008080;
+  --pcb-plate: none;
+  --pcb-veil: none;
+  --pcb-grain: none;
+}
+
+html[data-pcb-mode="teal"] body.win95-app,
+html[data-pcb-mode="teal"] body.win95-app main {
+  background-image: none;
+}
+
+html[data-pcb-mode="ceramic"] {
+  --pcb-desk: #e6e1d8;
+  --pcb-plate: url("/pcb/ceramic.jpg");
+  --pcb-size: min(68vmin, 720px);
+  --pcb-repeat: no-repeat;
+  --pcb-pos: center 42%;
+  --pcb-veil: radial-gradient(ellipse at 50% 42%, rgba(255, 252, 246, 0.08) 18%, rgba(214, 206, 192, 0.22) 62%, rgba(48, 42, 34, 0.22) 100%);
+  --pcb-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.55 0 0 0 0 0.52 0 0 0 0 0.48 0 0 0 0.14 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+html[data-pcb-mode="mint"] {
+  --pcb-desk: #c5ddd4;
+  --pcb-plate: url("/pcb/mint.jpg");
+  --pcb-size: cover;
+  --pcb-repeat: no-repeat;
+  --pcb-pos: center;
+  --pcb-veil: linear-gradient(180deg, rgba(232, 246, 240, 0.28) 0%, rgba(197, 221, 212, 0.18) 42%, rgba(28, 48, 42, 0.2) 100%);
+  --pcb-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.45 0 0 0 0 0.55 0 0 0 0 0.5 0 0 0 0.12 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+html[data-pcb-mode="ice"] {
+  --pcb-desk: #7ea8c4;
+  --pcb-plate: url("/pcb/ice.jpg");
+  --pcb-size: cover;
+  --pcb-repeat: no-repeat;
+  --pcb-pos: center;
+  --pcb-veil: radial-gradient(ellipse at 50% 35%, rgba(210, 232, 246, 0.2) 0%, rgba(90, 130, 160, 0.18) 55%, rgba(18, 36, 54, 0.32) 100%);
+  --pcb-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.4 0 0 0 0 0.5 0 0 0 0 0.6 0 0 0 0.13 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+html[data-pcb-mode="xray"] {
+  --pcb-desk: #050806;
+  --pcb-plate: url("/pcb/xray.jpg");
+  --pcb-size: max(72vmax, 900px);
+  --pcb-repeat: repeat;
+  --pcb-pos: center;
+  --pcb-veil: radial-gradient(ellipse at 50% 30%, rgba(20, 40, 18, 0.12) 0%, rgba(0, 0, 0, 0.28) 70%, rgba(0, 0, 0, 0.5) 100%);
+  --pcb-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.05 0 0 0 0 0.12 0 0 0 0 0.04 0 0 0 0.16 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+html[data-pcb-mode="fr4"] {
+  --pcb-desk: #0c2a18;
+  --pcb-plate: url("/pcb/fr4.jpg");
+  --pcb-size: max(70vmax, 880px);
+  --pcb-repeat: repeat;
+  --pcb-pos: center;
+  --pcb-veil: radial-gradient(ellipse at 50% 38%, rgba(18, 64, 36, 0.08) 0%, rgba(6, 22, 12, 0.28) 64%, rgba(0, 0, 0, 0.46) 100%);
+  --pcb-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.04 0 0 0 0 0.14 0 0 0 0 0.06 0 0 0 0.15 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Dark plates keep the old white gutter voice. Light plates need ink. */
+html[data-pcb-ink="dark"] body.win95-app {
+  --muted-foreground: 30 8% 16%;
+}
+
+html[data-pcb-ink="dark"] body.win95-app h1,
+html[data-pcb-ink="dark"] .brain2-mark,
+html[data-pcb-ink="dark"] .baby-nest-name {
+  color: #161410;
+  text-shadow: 0 1px 0 rgba(255, 252, 246, 0.7);
+}
+
+html[data-pcb-ink="dark"] .baby-nest-hit:focus-visible {
+  outline-color: #161410;
+}
+
+html[data-pcb-ink="light"] body.win95-app {
+  --muted-foreground: 0 0% 100%;
+}
+
+/* Settings plate picker */
+.pcb-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+  gap: 8px;
+}
+
+.pcb-mode-chip {
+  position: relative;
+  display: flex;
+  min-height: 4.75rem;
+  align-items: flex-end;
+  overflow: hidden;
+  padding: 6px 7px;
+  border: 0;
+  background-color: var(--pcb-desk, #888);
+  background-image: var(--pcb-chip-plate);
+  background-size: cover;
+  background-position: center;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.pcb-mode-chip[data-ink="light"] {
+  color: #f4f7f2;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+.pcb-mode-chip[data-ink="dark"] {
+  color: #161410;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.pcb-mode-chip[data-plain="true"] {
+  background-image: none;
+}
+
+.pcb-mode-chip[aria-pressed="true"] {
+  outline: 2px solid var(--chrome-frame, #0a0a0a);
+  outline-offset: 1px;
+}
+
+.pcb-mode-chip-label {
+  position: relative;
+  z-index: 1;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+

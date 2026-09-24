@@ -1,0 +1,518 @@
+/**
+ * components/header-popup-chrome.css — milled fascia for pin-bar dialogs
+ *
+ * Shared shell for Quick Add, Bulk Add, Ingest, From Notes, Phone Notes,
+ * Metrics, Reviews / Morning, Affirmations, Post-mortem, and the Tracking
+ * compact dialog frame. Kin of settings-chrome / inbox / item-detail.
+ * Phosphor #7dffc4. No LED #7e14ff / grade #508b51 / output #25366a.
+ * Looks only — same verbs, fields, and accessible names.
+ * docs/DESIGN_STYLE.md#milled-fascia
+ */
+
+.hpp95,
+.hpp95-dialog {
+  --hpp-surface: var(--chrome-face, #c0c0c0);
+  --hpp-face: var(--chrome-mid, #dfdfdf);
+  --hpp-highlight: var(--chrome-hi, #ffffff);
+  --hpp-shadow: var(--chrome-lo, #808080);
+  --hpp-frame: var(--chrome-frame, #0a0a0a);
+  --hpp-ink: #111111;
+  --hpp-nameplate: #2a2c2e;
+  --hpp-crt: var(--hab-crt-green, #7dffc4);
+  --hpp-crt-glow: var(--hab-crt-glow, 0 0 3px #7dffc4);
+  --hpp-scope: #070c0a;
+  --hpp-raised: inset -1px -1px var(--hpp-frame), inset 1px 1px var(--hpp-highlight),
+    inset -2px -2px var(--hpp-shadow), inset 2px 2px var(--hpp-face);
+  --hpp-sunken: inset -1px -1px var(--hpp-highlight), inset 1px 1px var(--hpp-frame),
+    inset -2px -2px var(--hpp-face), inset 2px 2px var(--hpp-shadow);
+  --hpp-field: inset -1px -1px var(--hpp-highlight), inset 1px 1px var(--hpp-shadow),
+    inset -2px -2px var(--hpp-face), inset 2px 2px var(--hpp-frame);
+  --hpp-mill:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
+    linear-gradient(165deg, #d4d8dc 0%, var(--hpp-surface) 48%, #969a9e 100%);
+  --hpp-bay-ring:
+    0 0 0 1px #5c6064,
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -1px 0 rgba(40, 42, 46, 0.4),
+    inset 0 0 0 2px #b0b4b8;
+  --hpp-key-face:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
+    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--hpp-surface) 70%, #9a9ea2 100%);
+  --hpp-key-ring:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 0 -1px 0 rgba(55, 58, 62, 0.45),
+    0 0 0 1px #4a4e52,
+    0 1px 0 #6a6e72;
+  --hpp-crt-glass:
+    radial-gradient(ellipse at 18% 0%, rgba(125, 255, 196, 0.16), transparent 48%),
+    #070c0a;
+  --hpp-crt-ring:
+    0 0 0 1px #3a3e42,
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 10px 14px rgba(0, 0, 0, 0.4);
+
+  color: var(--hpp-ink);
+  font-family: var(--w95-font, Tahoma, "MS Sans Serif", Geneva, sans-serif);
+  font-size: 12px;
+  -webkit-font-smoothing: none;
+  --muted-foreground: 0 0% 25%;
+  accent-color: #000080;
+}
+
+.hpp95-dialog {
+  display: flex !important;
+  flex-direction: column;
+  gap: 10px !important;
+  padding: 10px 10px 12px !important;
+  border: none !important;
+  border-radius: 3px !important;
+  background-color: var(--hpp-surface) !important;
+  background-image:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.1) 0, transparent 22%, transparent 78%, rgba(255, 255, 255, 0.06) 100%),
+    repeating-linear-gradient(90deg, transparent 0 2px, rgba(255, 255, 255, 0.05) 2px 3px),
+    var(--hpp-mill) !important;
+  box-shadow:
+    0 0 0 1px #5c6064,
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    inset 0 2px 3px rgba(0, 0, 0, 0.12),
+    0 8px 0 rgba(74, 78, 82, 0.55) !important;
+}
+
+/* Close key — raised metal */
+.hpp95-dialog > button.absolute,
+body.win95-app .hpp95-dialog > button.absolute {
+  top: 8px;
+  right: 8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 2px;
+  opacity: 1;
+  color: var(--hpp-nameplate);
+  background: var(--hpp-key-face);
+  box-shadow: var(--hpp-key-ring);
+}
+
+.hpp95-dialog > button.absolute:hover,
+body.win95-app .hpp95-dialog > button.absolute:hover {
+  opacity: 1;
+  filter: brightness(1.04);
+}
+
+.hpp95-dialog > button.absolute:active,
+body.win95-app .hpp95-dialog > button.absolute:active {
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.35),
+    0 0 0 1px #3a3e42;
+}
+
+.hpp95-dialog > button.absolute svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* ---- CRT caption --------------------------------------------------------- */
+
+.hpp95 .hpp-caption,
+.hpp95-dialog .hpp-caption {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 10px 12px 10px;
+  padding-right: 2.5rem;
+  border: none;
+  border-radius: 3px;
+  background: var(--hpp-mill);
+  box-shadow: var(--hpp-bay-ring);
+  text-align: left;
+}
+
+.hpp95 .hpp-caption-mark,
+.hpp95-dialog .hpp-caption-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  min-width: 0;
+  padding: 4px 14px 4px 8px;
+  border-radius: 2px;
+  background: var(--hpp-crt-glass);
+  box-shadow: var(--hpp-crt-ring);
+}
+
+.hpp95 .hpp-power-lamp,
+.hpp95-dialog .hpp-power-lamp {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 30%, #e8fff4, var(--hpp-crt) 42%, #0a3a28 78%);
+  box-shadow:
+    0 0 0 1px #1a3a2a,
+    0 0 6px rgba(125, 255, 196, 0.65),
+    inset 0 1px 1px rgba(255, 255, 255, 0.45);
+}
+
+.hpp95 .hpp-caption [data-slot="dialog-title"],
+.hpp95 .hpp-caption h2,
+.hpp95-dialog .hpp-caption [data-slot="dialog-title"],
+.hpp95-dialog .hpp-caption h2,
+.hpp95 .hpp-caption [data-radix-dialog-title],
+.hpp95-dialog .hpp-caption [data-radix-dialog-title] {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--hpp-crt) !important;
+  text-shadow: var(--hpp-crt-glow);
+}
+
+.hpp95 .hpp-caption [data-slot="dialog-title"] svg,
+.hpp95 .hpp-caption h2 svg,
+.hpp95-dialog .hpp-caption [data-slot="dialog-title"] svg,
+.hpp95-dialog .hpp-caption h2 svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--hpp-crt);
+  filter: drop-shadow(0 0 2px rgba(125, 255, 196, 0.55));
+}
+
+.hpp95 .hpp-caption [data-slot="dialog-description"],
+.hpp95 .hpp-caption-lead,
+.hpp95-dialog .hpp-caption [data-slot="dialog-description"],
+.hpp95-dialog .hpp-caption-lead,
+.hpp95 .hpp-caption [data-radix-dialog-description],
+.hpp95-dialog .hpp-caption [data-radix-dialog-description] {
+  margin: 0;
+  padding: 6px 9px;
+  border-radius: 2px;
+  font-size: 11px !important;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--hpp-nameplate);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0 1px, transparent 1px 2px),
+    #c8ccd0;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    0 0 0 1px #8a8e92;
+}
+
+/* ---- Body well (omit with .hpp95-shell-only) ------------------------------ */
+
+.hpp95 .hpp-body,
+.hpp95-dialog .hpp-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  flex: 1;
+  padding: 10px 12px 12px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0 1px, transparent 1px 3px),
+    var(--hpp-surface);
+  box-shadow: var(--hpp-sunken);
+  border-radius: 2px;
+}
+
+.hpp95 .hpp-body > .space-y-4,
+.hpp95 .hpp-body > .space-y-6,
+.hpp95-dialog .hpp-body > .space-y-4,
+.hpp95-dialog .hpp-body > .space-y-6 {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hpp95 .hpp-body > .space-y-4 > :not([hidden]) ~ :not([hidden]),
+.hpp95 .hpp-body > .space-y-6 > :not([hidden]) ~ :not([hidden]),
+.hpp95-dialog .hpp-body > .space-y-4 > :not([hidden]) ~ :not([hidden]),
+.hpp95-dialog .hpp-body > .space-y-6 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 0;
+}
+
+.hpp95 .hpp-body [data-slot="card-title"],
+.hpp95 .hpp-body [class*="CardTitle"],
+.hpp95-dialog .hpp-body [data-slot="card-title"] {
+  margin: 0;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--hpp-nameplate) !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+/* Engraved nameplates */
+.hpp95 .hpp-body h3,
+.hpp95 .hpp-body h3.font-semibold,
+.hpp95 .hpp-body .font-semibold.text-sm,
+.hpp95-dialog .hpp-body h3,
+.hpp95-dialog .hpp-body h3.font-semibold,
+.hpp95-dialog .hpp-body .font-semibold.text-sm {
+  margin: 0;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--hpp-nameplate) !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.hpp95 .hpp-body label,
+.hpp95-dialog .hpp-body label,
+.hpp95 .hpp-body [data-slot="label"],
+.hpp95-dialog .hpp-body [data-slot="label"] {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--hpp-nameplate);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+.hpp95 .hpp-body .text-sm.text-muted-foreground,
+.hpp95 .hpp-body .text-xs.text-muted-foreground,
+.hpp95 .hpp-body p[class*="text-muted"],
+.hpp95-dialog .hpp-body .text-sm.text-muted-foreground,
+.hpp95-dialog .hpp-body .text-xs.text-muted-foreground,
+.hpp95-dialog .hpp-body p[class*="text-muted"] {
+  color: #3a3c3e !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+/* Section / card wells → brushed bays */
+.hpp95 .hpp-body .rounded-lg.border,
+.hpp95 .hpp-body .rounded-md.border,
+.hpp95 .hpp-body [data-slot="card"],
+.hpp95-dialog .hpp-body .rounded-lg.border,
+.hpp95-dialog .hpp-body .rounded-md.border,
+.hpp95-dialog .hpp-body [data-slot="card"] {
+  margin: 0;
+  padding: 10px 12px 12px;
+  border: none !important;
+  border-radius: 3px;
+  background: var(--hpp-mill);
+  box-shadow: var(--hpp-bay-ring);
+}
+
+.hpp95 .hpp-body .border.rounded-md,
+.hpp95 .hpp-body li.rounded.border,
+.hpp95-dialog .hpp-body .border.rounded-md,
+.hpp95-dialog .hpp-body li.rounded.border {
+  border: none !important;
+  border-radius: 2px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
+    var(--hpp-surface);
+  box-shadow:
+    0 0 0 1px #6a6e72,
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 2px 3px rgba(0, 0, 0, 0.08);
+}
+
+.hpp95 .hpp-body .border-t,
+.hpp95-dialog .hpp-body .border-t {
+  border-color: #8a8e92 !important;
+}
+
+/* Raised metal keys */
+.hpp95 .hpp-body button:not(.absolute):not([role="checkbox"]):not([role="switch"]),
+.hpp95-dialog .hpp-body button:not(.absolute):not([role="checkbox"]):not([role="switch"]) {
+  border: none !important;
+  border-radius: 2px !important;
+  color: #1c1e20 !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  background: var(--hpp-key-face) !important;
+  box-shadow: var(--hpp-key-ring) !important;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.hpp95 .hpp-body button:not(.absolute):hover:not(:disabled),
+.hpp95-dialog .hpp-body button:not(.absolute):hover:not(:disabled) {
+  filter: brightness(1.04);
+}
+
+.hpp95 .hpp-body button:not(.absolute):active:not(:disabled),
+.hpp95-dialog .hpp-body button:not(.absolute):active:not(:disabled) {
+  box-shadow: var(--hpp-sunken) !important;
+  text-shadow: none;
+}
+
+.hpp95 .hpp-body button:disabled,
+.hpp95-dialog .hpp-body button:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+
+/* Primary / submit → CRT key */
+.hpp95 .hpp-body button[type="submit"],
+.hpp95 .hpp-body button.hpp-key-go,
+.hpp95-dialog .hpp-body button[type="submit"],
+.hpp95-dialog .hpp-body button.hpp-key-go,
+.hpp95 .hpp-body button.bg-primary,
+.hpp95-dialog .hpp-body button.bg-primary {
+  color: var(--hpp-crt) !important;
+  text-shadow: var(--hpp-crt-glow);
+  background: var(--hpp-crt-glass) !important;
+  box-shadow: var(--hpp-crt-ring) !important;
+  filter: none;
+}
+
+.hpp95 .hpp-body button[type="submit"]:hover:not(:disabled),
+.hpp95 .hpp-body button.hpp-key-go:hover:not(:disabled),
+.hpp95-dialog .hpp-body button[type="submit"]:hover:not(:disabled),
+.hpp95-dialog .hpp-body button.hpp-key-go:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.hpp95 .hpp-body button[type="submit"]:active:not(:disabled),
+.hpp95 .hpp-body button.hpp-key-go:active:not(:disabled),
+.hpp95-dialog .hpp-body button[type="submit"]:active:not(:disabled),
+.hpp95-dialog .hpp-body button.hpp-key-go:active:not(:disabled) {
+  box-shadow:
+    inset 0 2px 6px rgba(0, 0, 0, 0.55),
+    0 0 0 1px #3a3e42 !important;
+}
+
+/* Recessed fields */
+.hpp95 .hpp-body input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="color"]),
+.hpp95 .hpp-body textarea,
+.hpp95 .hpp-body select,
+.hpp95-dialog .hpp-body input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="color"]),
+.hpp95-dialog .hpp-body textarea,
+.hpp95-dialog .hpp-body select {
+  border: none !important;
+  border-radius: 2px;
+  background: #fff !important;
+  box-shadow: var(--hpp-field);
+  color: var(--hpp-ink);
+}
+
+.hpp95 .hpp-body input:focus,
+.hpp95 .hpp-body textarea:focus,
+.hpp95 .hpp-body select:focus,
+.hpp95-dialog .hpp-body input:focus,
+.hpp95-dialog .hpp-body textarea:focus,
+.hpp95-dialog .hpp-body select:focus {
+  outline: 1px dotted #000080;
+  outline-offset: 1px;
+  box-shadow: var(--hpp-field), 0 0 0 2px #000080;
+}
+
+.hpp95 .hpp-body code,
+.hpp95-dialog .hpp-body code {
+  padding: 1px 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.45);
+  box-shadow: inset 0 0 0 1px rgba(90, 94, 98, 0.35);
+  color: var(--hpp-ink);
+  font-size: 0.95em;
+}
+
+/* Suggestion / metric chips → silver tablets */
+.hpp95 .hpp-body [data-slot="badge"],
+.hpp95 .hpp-body .badge,
+.hpp95-dialog .hpp-body [data-slot="badge"] {
+  border: none !important;
+  border-radius: 2px;
+  color: var(--hpp-nameplate) !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0 1px, transparent 1px 2px),
+    #c8ccd0 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 0 0 1px #7a7e82;
+}
+
+/* Affirmations mic well — CRT instead of purple soft circle */
+.hpp95 .hpp-body .hpp-mic-well,
+.hpp95-dialog .hpp-body .hpp-mic-well {
+  background: var(--hpp-crt-glass) !important;
+  box-shadow: var(--hpp-crt-ring) !important;
+  border-radius: 50%;
+}
+
+.hpp95 .hpp-body .hpp-mic-well svg,
+.hpp95-dialog .hpp-body .hpp-mic-well svg {
+  color: var(--hpp-crt) !important;
+  filter: drop-shadow(0 0 2px rgba(125, 255, 196, 0.45));
+}
+
+/* Affirmations progress pips */
+.hpp95 .hpp-body .hpp-aff-dot,
+.hpp95-dialog .hpp-body .hpp-aff-dot {
+  background: #8a8e92;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.35);
+}
+
+.hpp95 .hpp-body .hpp-aff-dot-done,
+.hpp95 .hpp-body .hpp-aff-dot-now,
+.hpp95-dialog .hpp-body .hpp-aff-dot-done,
+.hpp95-dialog .hpp-body .hpp-aff-dot-now {
+  background: var(--hpp-crt);
+  box-shadow: 0 0 4px rgba(125, 255, 196, 0.55);
+}
+
+/* Warning / amber note → recessed mill chip (still readable) */
+.hpp95 .hpp-body .bg-amber-50,
+.hpp95-dialog .hpp-body .bg-amber-50 {
+  border: none !important;
+  border-radius: 2px;
+  color: #3a3c3e !important;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
+    #d4d0c8 !important;
+  box-shadow: var(--hpp-sunken);
+}
+
+/* Footer action row sitting outside scroll (sibling of .hpp-body) */
+.hpp95-dialog > .hpp-actions,
+.hpp95 .hpp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 8px 4px 2px;
+}
+
+.hpp95-dialog > .hpp-actions button,
+.hpp95 .hpp-actions button {
+  border: none !important;
+  border-radius: 2px !important;
+  color: #1c1e20 !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  background: var(--hpp-key-face) !important;
+  box-shadow: var(--hpp-key-ring) !important;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.hpp95-dialog > .hpp-actions button.hpp-key-go,
+.hpp95 .hpp-actions button.hpp-key-go,
+.hpp95-dialog > .hpp-actions button[type="submit"],
+.hpp95 .hpp-actions button[type="submit"] {
+  color: var(--hpp-crt) !important;
+  text-shadow: var(--hpp-crt-glow);
+  background: var(--hpp-crt-glass) !important;
+  box-shadow: var(--hpp-crt-ring) !important;
+}
