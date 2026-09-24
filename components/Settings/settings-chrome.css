@@ -1,0 +1,415 @@
+/**
+ * components/Settings/settings-chrome.css — milled fascia for Settings dialogs
+ *
+ * Brushed silver bays, engraved uppercase nameplates, raised metal keys.
+ * CRT black glass only for the dialog title and hero counts (pairing code).
+ * Phosphor #7dffc4. Does not repaint LED #7e14ff / grade #508b51 / output #25366a.
+ * Looks only — same controls, fields, and click actions. docs/DESIGN_STYLE.md#milled-fascia.
+ */
+
+.set95,
+.set95-dialog {
+  --s-surface: var(--chrome-face, #c0c0c0);
+  --s-face: var(--chrome-mid, #dfdfdf);
+  --s-highlight: var(--chrome-hi, #ffffff);
+  --s-shadow: var(--chrome-lo, #808080);
+  --s-frame: var(--chrome-frame, #0a0a0a);
+  --s-ink: #111111;
+  --s-nameplate: #2a2c2e;
+  --s-crt: var(--hab-crt-green, #7dffc4);
+  --s-crt-glow: var(--hab-crt-glow, 0 0 3px #7dffc4);
+  --s-scope: #070c0a;
+  --s-raised: inset -1px -1px var(--s-frame), inset 1px 1px var(--s-highlight),
+    inset -2px -2px var(--s-shadow), inset 2px 2px var(--s-face);
+  --s-sunken: inset -1px -1px var(--s-highlight), inset 1px 1px var(--s-frame),
+    inset -2px -2px var(--s-face), inset 2px 2px var(--s-shadow);
+  --s-field: inset -1px -1px var(--s-highlight), inset 1px 1px var(--s-shadow),
+    inset -2px -2px var(--s-face), inset 2px 2px var(--s-frame);
+  --s-mill:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
+    linear-gradient(165deg, #d4d8dc 0%, var(--s-surface) 48%, #969a9e 100%);
+  --s-bay-ring:
+    0 0 0 1px #5c6064,
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -1px 0 rgba(40, 42, 46, 0.4),
+    inset 0 0 0 2px #b0b4b8;
+  --s-key-face:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
+    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--s-surface) 70%, #9a9ea2 100%);
+  --s-key-ring:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 0 -1px 0 rgba(55, 58, 62, 0.45),
+    0 0 0 1px #4a4e52,
+    0 1px 0 #6a6e72;
+  --s-crt-glass:
+    radial-gradient(ellipse at 18% 0%, rgba(125, 255, 196, 0.16), transparent 48%),
+    #070c0a;
+  --s-crt-ring:
+    0 0 0 1px #3a3e42,
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 10px 14px rgba(0, 0, 0, 0.4);
+
+  color: var(--s-ink);
+  font-family: var(--w95-font, Tahoma, "MS Sans Serif", Geneva, sans-serif);
+  font-size: 12px;
+  -webkit-font-smoothing: none;
+  --muted-foreground: 0 0% 25%;
+  accent-color: #000080;
+}
+
+.set95-dialog {
+  display: flex !important;
+  flex-direction: column;
+  gap: 0 !important;
+  padding: 3px !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: var(--s-surface) !important;
+  box-shadow: var(--s-raised), 4px 4px 0 rgba(0, 0, 0, 0.28) !important;
+}
+
+/* Beat shadcn white card + close pip on the milled face. */
+.set95-dialog > button.absolute,
+body.win95-app .set95-dialog > button.absolute {
+  top: 8px;
+  right: 8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 2px;
+  opacity: 1;
+  color: var(--s-nameplate);
+  background: var(--s-key-face);
+  box-shadow: var(--s-key-ring);
+}
+
+.set95-dialog > button.absolute:hover,
+body.win95-app .set95-dialog > button.absolute:hover {
+  opacity: 1;
+  background: var(--s-highlight);
+}
+
+.set95-dialog > button.absolute:active,
+body.win95-app .set95-dialog > button.absolute:active {
+  box-shadow: var(--s-sunken);
+}
+
+.set95-dialog > button.absolute svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* ---- Caption: CRT hero for Settings title -------------------------------- */
+
+.set95 .set-caption,
+.set95-dialog .set-caption {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 10px 12px 10px;
+  padding-right: 2.5rem;
+  border: none;
+  border-radius: 3px;
+  background: var(--s-mill);
+  box-shadow: var(--s-bay-ring);
+  text-align: left;
+}
+
+.set95 .set-caption-mark,
+.set95-dialog .set-caption-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  min-width: 0;
+  padding: 4px 14px 4px 8px;
+  border-radius: 2px;
+  background: var(--s-crt-glass);
+  box-shadow: var(--s-crt-ring);
+}
+
+.set95 .set-power-lamp,
+.set95-dialog .set-power-lamp {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 30%, #e8fff4, var(--s-crt) 42%, #0a3a28 78%);
+  box-shadow:
+    0 0 0 1px #1a3a2a,
+    0 0 6px rgba(125, 255, 196, 0.65),
+    inset 0 1px 1px rgba(255, 255, 255, 0.45);
+}
+
+.set95 .set-caption [data-slot="dialog-title"],
+.set95 .set-caption h2,
+.set95-dialog .set-caption [data-slot="dialog-title"],
+.set95-dialog .set-caption h2 {
+  flex: 1;
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--s-crt) !important;
+  text-shadow: var(--s-crt-glow);
+}
+
+.set95 .set-caption [data-slot="dialog-description"],
+.set95 .set-caption-lead,
+.set95-dialog .set-caption [data-slot="dialog-description"],
+.set95-dialog .set-caption-lead {
+  margin: 0;
+  padding: 6px 9px;
+  border-radius: 2px;
+  font-size: 11px !important;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--s-nameplate);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0 1px, transparent 1px 2px),
+    #c8ccd0;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    0 0 0 1px #8a8e92;
+}
+
+/* ---- Body scroll well ---------------------------------------------------- */
+
+.set95 .set-body,
+.set95-dialog .set-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  flex: 1;
+  padding: 10px 12px 12px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0 1px, transparent 1px 3px),
+    var(--s-surface);
+  box-shadow: var(--s-sunken);
+}
+
+.set95 .set-body > .space-y-6,
+.set95-dialog .set-body > .space-y-6 {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.set95 .set-body > .space-y-6 > :not([hidden]) ~ :not([hidden]),
+.set95-dialog .set-body > .space-y-6 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 0;
+}
+
+/* ---- Section bays (dashed cards → brushed mill) -------------------------- */
+
+.set95 .rounded-lg.border,
+.set95-dialog .rounded-lg.border {
+  margin: 0;
+  padding: 10px 12px 12px;
+  border: none !important;
+  border-radius: 3px;
+  background: var(--s-mill);
+  box-shadow: var(--s-bay-ring);
+}
+
+.set95 .rounded-lg.border.border-dashed,
+.set95-dialog .rounded-lg.border.border-dashed {
+  border-style: none !important;
+}
+
+.set95 .border.border-dashed:not(.rounded-lg),
+.set95-dialog .border.border-dashed:not(.rounded-lg) {
+  border: none !important;
+  border-radius: 2px;
+  padding: 8px 10px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
+    var(--s-surface);
+  box-shadow:
+    0 0 0 1px #6a6e72,
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 2px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* ---- Engraved nameplates ------------------------------------------------- */
+
+.set95 h3.font-semibold,
+.set95-dialog h3.font-semibold {
+  margin: 0;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--s-nameplate) !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.set95 h3.font-semibold + svg,
+.set95 .flex.items-center.gap-2 > svg,
+.set95-dialog .flex.items-center.gap-2 > svg {
+  width: 14px;
+  height: 14px;
+  color: var(--s-nameplate);
+  flex-shrink: 0;
+}
+
+.set95 .text-sm.text-muted-foreground,
+.set95-dialog .text-sm.text-muted-foreground,
+.set95 .text-xs.text-muted-foreground,
+.set95-dialog .text-xs.text-muted-foreground {
+  color: #3a3c3e !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.set95 label,
+.set95-dialog label,
+.set95 [data-slot="label"],
+.set95-dialog [data-slot="label"] {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--s-nameplate);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+/* ---- Raised metal keys --------------------------------------------------- */
+
+.set95 button:not(.absolute):not([role="checkbox"]):not([role="switch"]),
+.set95-dialog button:not(.absolute):not([role="checkbox"]):not([role="switch"]) {
+  border: none !important;
+  border-radius: 2px !important;
+  color: #1c1e20 !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  background: var(--s-key-face) !important;
+  box-shadow: var(--s-key-ring) !important;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.set95 button:not(.absolute):hover,
+.set95-dialog button:not(.absolute):hover {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.85) 0, rgba(255, 255, 255, 0.2) 14%, transparent 30%),
+    linear-gradient(165deg, #f2f4f6 0%, #dcdfe2 36%, var(--s-surface) 70%, #a0a4a8 100%) !important;
+}
+
+.set95 button:not(.absolute):active,
+.set95-dialog button:not(.absolute):active,
+.set95 button[aria-pressed="true"],
+.set95-dialog button[aria-pressed="true"] {
+  box-shadow: var(--s-sunken) !important;
+  text-shadow: none;
+}
+
+.set95 button:disabled,
+.set95-dialog button:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+
+.set95 button svg,
+.set95-dialog button svg {
+  color: inherit;
+}
+
+.set95 button .text-green-500,
+.set95-dialog button .text-green-500 {
+  color: #22c55e !important;
+}
+
+/* ---- Fields -------------------------------------------------------------- */
+
+.set95 input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="color"]),
+.set95 textarea,
+.set95 select,
+.set95-dialog input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="color"]),
+.set95-dialog textarea,
+.set95-dialog select {
+  border: none !important;
+  border-radius: 2px;
+  background: #fff !important;
+  box-shadow: var(--s-field);
+  color: var(--s-ink);
+}
+
+.set95 input:not([type="range"]):focus,
+.set95 textarea:focus,
+.set95 select:focus,
+.set95-dialog input:not([type="range"]):focus,
+.set95-dialog textarea:focus,
+.set95-dialog select:focus {
+  outline: 1px dotted #000080;
+  outline-offset: 1px;
+  box-shadow: var(--s-field), 0 0 0 2px #000080;
+}
+
+/* Keep Window gray range / ghost tick readable on mill. */
+.set95 .chrome-face-slider,
+.set95-dialog .chrome-face-slider {
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0 1px, transparent 1px 2px),
+    #b8bcbf;
+  box-shadow: var(--s-sunken);
+}
+
+/* ---- CRT hero count (pairing code) --------------------------------------- */
+
+.set95 .set-crt,
+.set95-dialog .set-crt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 8px 14px;
+  border-radius: 2px;
+  font-family: ui-monospace, "Cascadia Code", "Courier New", monospace;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  font-variant-numeric: tabular-nums;
+  color: var(--s-crt) !important;
+  text-shadow: var(--s-crt-glow);
+  background: var(--s-crt-glass);
+  box-shadow: var(--s-crt-ring);
+}
+
+.set95 code,
+.set95-dialog code {
+  padding: 1px 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.45);
+  box-shadow: inset 0 0 0 1px rgba(90, 94, 98, 0.35);
+  color: var(--s-ink);
+  font-size: 0.95em;
+}
+
+.set95 details summary,
+.set95-dialog details summary {
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 10px;
+  color: var(--s-nameplate);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+.set95 pre,
+.set95-dialog pre {
+  padding: 8px 10px;
+  border-radius: 2px;
+  background: #fff;
+  box-shadow: var(--s-field);
+  color: var(--s-ink);
+}

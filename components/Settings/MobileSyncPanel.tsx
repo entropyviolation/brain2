@@ -77,7 +77,7 @@ export function MobileSyncPanel() {
         <h3 className="font-semibold">Phone ↔ Desktop Live Sync</h3>
       </div>
       <p className="text-sm text-muted-foreground">
-        Continuous live sync is paused for now. We are getting the rest of COGS solid
+        Continuous live sync is paused for now. We are getting the rest of Brain2 solid
         first, then a dedicated <strong>semi-mobile live sync</strong> component will
         land. Until then, phones can still use a one-tap manual pull on{" "}
         <code className="text-xs">/mobile/</code>, and the buttons below are only for

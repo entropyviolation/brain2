@@ -1,0 +1,74 @@
+/**
+ * components/UiNames/ui-names.css — Overlay paint for `data-ui-mode`
+ *
+ * Names outlines `[data-ui-name]` and floats a cabinet nameplate. Do not restyle
+ * module interiors from here. Later `[data-ui-mode="inspect"]` can share this
+ * file without a second host stylesheet.
+ */
+
+/*
+ * !important beats Radix RovingFocus (`style={{ outline: "none" }}` on
+ * [role="tablist"]) so App tabs and other named tab strips still outline.
+ */
+html[data-ui-mode="names"] [data-ui-name] {
+  outline: 1px dashed color-mix(in srgb, var(--w95-blue, #000080) 50%, var(--chrome-hi, #ffffff)) !important;
+  outline-offset: 2px;
+}
+
+html[data-ui-mode="names"] [data-ui-name] [data-ui-name] {
+  outline: 1px dotted color-mix(in srgb, var(--w95-blue, #000080) 32%, var(--chrome-lo, #808080)) !important;
+  outline-offset: 1px;
+}
+
+html[data-ui-mode="names"] [data-ui-name][data-ui-current] {
+  outline: 2px solid var(--w95-blue, #000080) !important;
+  outline-offset: 2px;
+}
+
+/*
+ * Float above Radix Dialog (z-50), SheetFullscreen (z-45), Just Start (z-[100]),
+ * and From Notes DialogContent (z-[200]). pointer-events: none so focus traps
+ * and overlay clicks stay on the dialog.
+ */
+.ui-names-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 310;
+  pointer-events: none;
+}
+
+.ui-name-outline {
+  position: fixed;
+  box-sizing: border-box;
+  border: 2px solid var(--w95-blue, #000080);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--chrome-hi, #ffffff) 55%, transparent);
+}
+
+.ui-nameplate {
+  position: fixed;
+  max-width: 16rem;
+  background: var(--chrome-face, #c0c0c0);
+  color: #000;
+  font-family: var(--font-karla), Karla, sans-serif;
+  font-size: 12px;
+  line-height: 1.25;
+  box-shadow:
+    inset -1px -1px var(--chrome-frame, #0a0a0a),
+    inset 1px 1px var(--chrome-hi, #ffffff),
+    inset -2px -2px var(--chrome-lo, #808080),
+    inset 2px 2px var(--chrome-mid, #dfdfdf),
+    2px 2px 0 var(--chrome-frame, #0a0a0a);
+}
+
+.ui-nameplate-name {
+  background: var(--w95-blue, #000080);
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 3px 8px 4px;
+}
+
+.ui-nameplate-help {
+  padding: 4px 8px 5px;
+  color: #202020;
+}
