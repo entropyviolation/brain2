@@ -259,14 +259,40 @@ export function mountGradSearch(root, data, hooks = {}) {
     return parts.join(" ");
   }
 
-  // Short label for a card pill — prefers the deadline, falls back to rolling/intake.
-  function deadlinePill(p) {
+  // Deadline string when the record actually has one. Intake is the fallback
+  // only when there is no deadline and applications are not marked rolling.
+  function deadlineText(p) {
     const d = p.dates;
     if (!d) return "";
-    if (d.appDeadline) return `<span class="tag tag-deadline" title="Application deadline">⏰ ${esc(d.appDeadline)}</span>`;
-    if (d.rolling) return `<span class="tag tag-deadline" title="Rolling applications">⏰ Rolling</span>`;
-    if (d.intake) return `<span class="tag tag-deadline" title="Intake / start">⏰ ${esc(d.intake)}</span>`;
+    if (d.appDeadline) return d.appDeadline;
+    if (d.rolling) return "Rolling";
     return "";
+  }
+
+  // Application-process note (eligibility, portal, who may apply). Empty when absent.
+  function applyText(p) {
+    const note = p.dates && p.dates.note;
+    return note ? String(note).trim() : "";
+  }
+
+  function cardFactsHTML(p) {
+    const when = deadlineText(p);
+    const apply = applyText(p);
+    if (!when && !apply) return "";
+    return `<div class="card-facts">
+      ${when ? `<div class="card-deadline" title="Application deadline"><span class="card-fact-k">Deadline</span><span>${esc(when)}</span></div>` : ""}
+      ${apply ? `<p class="card-apply" title="Application process"><span class="card-fact-k">Apply</span> ${esc(apply)}</p>` : ""}
+    </div>`;
+  }
+
+  function deadlineCalloutHTML(p) {
+    const when = deadlineText(p);
+    const apply = applyText(p);
+    if (!when && !apply) return "";
+    return `<div class="d-callouts">
+      ${when ? `<div class="deadline-callout"><div class="k">Deadline</div><div class="v">${esc(when)}</div></div>` : ""}
+      ${apply ? `<div class="apply-callout"><div class="k">Application</div><div class="v">${esc(apply)}</div></div>` : ""}
+    </div>`;
   }
 
   // Full "Dates & deadlines" drawer section. Returns "" when there's nothing to show.
@@ -285,16 +311,15 @@ export function mountGradSearch(root, data, hooks = {}) {
       breaksHTML = `<div class="d-breaks"><div class="k">Breaks / vacations</div><ul>${
         d.breaks.map((b) => `<li>${esc(b)}</li>`).join("")}</ul></div>`;
     }
-    const note = d.note ? `<p class="dates-note">${esc(d.note)}</p>` : "";
     const verified = d.verified
       ? `<p class="dates-verified">Verified ${esc(d.verified)}${
           d.source ? ` · <a href="${esc(d.source)}" target="_blank" rel="noopener">source ↗</a>` : ""}</p>`
       : (d.source ? `<p class="dates-verified"><a href="${esc(d.source)}" target="_blank" rel="noopener">source ↗</a></p>` : "");
-    if (!rows.length && !breaksHTML && !note) return "";
+    if (!rows.length && !breaksHTML) return "";
     return `<div class="d-section">
       <h4>Dates &amp; deadlines</h4>
       <div class="d-facts">${rows.join("")}</div>
-      ${breaksHTML}${note}${verified}
+      ${breaksHTML}${verified}
     </div>`;
   }
 
@@ -501,7 +526,7 @@ export function mountGradSearch(root, data, hooks = {}) {
       ${dismissedView
         ? `<button class="card-restore" data-restore="${p.id}" title="Restore">↩ Restore</button>`
         : `<div class="card-actions">
-            <button class="card-fav ${fav ? "active" : ""}" data-fav="${p.id}" title="${fav ? "Remove favorite" : "Add to favorites"}" aria-label="Favorite">${fav ? "★" : "☆"}</button>
+            <button class="card-fav ${fav ? "active" : ""}" data-fav="${p.id}" title="${fav ? "Remove from saved" : "Save this program"}" aria-label="${fav ? "Saved" : "Save program"}">${fav ? "★ Saved" : "☆ Save"}</button>
             <button class="card-dismiss" data-dismiss="${p.id}" title="Hide this program" aria-label="Hide this program">✕</button>
           </div>`}
       <div class="card-top">
@@ -517,10 +542,10 @@ export function mountGradSearch(root, data, hooks = {}) {
         <span class="tag">${esc(p.degreeLevel)}</span>
         ${p.duration ? `<span class="tag">${esc(p.duration)}</span>` : ""}
         <span class="tag">${esc(p.fundingType)}</span>
-        ${deadlinePill(p)}
         ${edited ? '<span class="tag tag-edited">✎ edited</span>' : ""}
         ${note ? '<span class="tag tag-note" title="You have notes on this program">📝 note</span>' : ""}
       </div>
+      ${cardFactsHTML(p)}
       <div class="card-foot">
         <span class="loc" title="${esc(p.city)}${p.country ? ", " + esc(p.country) : ""}">
           <svg viewBox="0 0 24 24"><path d="M12 21s-7-5.5-7-11a7 7 0 1114 0c0 5.5-7 11-7 11z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="10" r="2.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
@@ -552,7 +577,7 @@ export function mountGradSearch(root, data, hooks = {}) {
       <tbody>
         ${list.map((p) => `<tr data-id="${p.id}">
           <td class="t-score" style="color:${scoreColor(activeScore(p))}">${fmtScore(activeScore(p))}${isCustomized(p) ? ' <span style="color:var(--accent)">✎</span>' : ""}</td>
-          <td>${esc(p.program)}${hasNote(p) ? ' <span title="Has notes">📝</span>' : ""}</td>
+          <td>${esc(p.program)}${hasNote(p) ? ' <span title="Has notes">📝</span>' : ""}${deadlineText(p) ? `<div class="t-deadline">Deadline ${esc(deadlineText(p))}</div>` : ""}${applyText(p) ? `<div class="t-apply">${esc(applyText(p))}</div>` : ""}</td>
           <td>${esc(p.institution)}</td>
           <td>${esc(p.city)}${p.country && p.city !== p.country ? ", " + esc(p.country) : ""}</td>
           <td>${esc(p.degreeLevel)}</td>
@@ -561,7 +586,7 @@ export function mountGradSearch(root, data, hooks = {}) {
           <td>${esc(p.fundingType)}</td>
           <td class="t-actions">${state.viewDismissed
             ? `<button class="compare-check" data-restore="${p.id}">↩ Restore</button>`
-            : `<button class="compare-check t-fav ${state.favorites.has(keyOf(p)) ? "fav-on" : ""}" data-fav="${p.id}" title="Favorite">${state.favorites.has(keyOf(p)) ? "★" : "☆"}</button>
+            : `<button class="compare-check t-fav ${state.favorites.has(keyOf(p)) ? "fav-on" : ""}" data-fav="${p.id}" title="${state.favorites.has(keyOf(p)) ? "Saved" : "Save program"}">${state.favorites.has(keyOf(p)) ? "★ Saved" : "☆ Save"}</button>
                <button class="compare-check ${state.compare.has(p.id) ? "checked" : ""}" data-compare="${p.id}">${state.compare.has(p.id) ? "✓" : "+"}</button>
                <button class="compare-check t-dismiss" data-dismiss="${p.id}" title="Hide">✕</button>`}</td>
         </tr>`).join("")}
@@ -578,10 +603,12 @@ export function mountGradSearch(root, data, hooks = {}) {
 
     // toolbar favorites control
     const fToggle = $("#favToggle");
-    if (nFav > 0 && !state.viewDismissed) {
+    if (!state.viewDismissed) {
       fToggle.hidden = false;
-      fToggle.textContent = state.viewFavorites ? "★ Showing favorites" : `☆ ${nFav} favorite${nFav > 1 ? "s" : ""}`;
-      fToggle.classList.toggle("fav-active", state.viewFavorites);
+      fToggle.textContent = state.viewFavorites
+        ? "★ Showing saved"
+        : (nFav ? `★ ${nFav} saved` : "☆ Saved");
+      fToggle.classList.toggle("fav-active", state.viewFavorites || nFav > 0);
       fToggle.classList.toggle("ghost", !state.viewFavorites);
     } else {
       fToggle.hidden = true;
@@ -723,6 +750,7 @@ export function mountGradSearch(root, data, hooks = {}) {
         <div class="d-inst">${esc(p.institution)}</div>
       </div>
       <div class="drawer-body">
+        ${deadlineCalloutHTML(p)}
         <div class="d-section">
           <h4>Key facts</h4>
           <div class="d-facts">
@@ -760,7 +788,7 @@ export function mountGradSearch(root, data, hooks = {}) {
           <div class="funding-note">${esc(p.funding || "Not specified — verify on the official page.")}</div>
         </div>
         <div class="drawer-actions">
-          <button class="btn drawer-fav ${state.favorites.has(keyOf(p)) ? "fav-active" : ""}" id="drawerFav">${state.favorites.has(keyOf(p)) ? "★ Favorited" : "☆ Favorite"}</button>
+          <button class="btn drawer-fav ${state.favorites.has(keyOf(p)) ? "fav-active" : ""}" id="drawerFav">${state.favorites.has(keyOf(p)) ? "★ Saved" : "☆ Save"}</button>
           <button class="btn ${state.compare.has(p.id) ? "primary" : ""}" id="drawerCompare">${state.compare.has(p.id) ? "✓ In compare" : "+ Compare"}</button>
           ${p.link ? `<a class="btn primary" href="${esc(p.link)}" target="_blank" rel="noopener">Official ↗</a>` : ""}
         </div>

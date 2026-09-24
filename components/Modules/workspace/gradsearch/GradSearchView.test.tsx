@@ -60,6 +60,10 @@ const sample = {
       fieldCategory: "Philosophy of Science",
       tier: 1,
       link: "https://example.edu/hps",
+      dates: {
+        appDeadline: "15 Jan 2027",
+        note: "Apply in the university portal. International deadline is earlier.",
+      },
       components: { field: 100, location: 100, funding: 90, duration: 40, accred: 95 },
       baseAdjust: 0,
     },
@@ -135,6 +139,8 @@ describe("GradSearch explorer", () => {
     const cards = () => shadow.querySelectorAll(".card")
     expect(cards().length).toBe(3)
     expect(shadow.querySelector("#stats")?.textContent).toContain("3")
+    expect(shadow.querySelector(".card-fav")?.textContent).toContain("Save")
+    expect((shadow.querySelector("#favToggle") as HTMLButtonElement).hidden).toBe(false)
 
     const search = shadow.querySelector("#search") as HTMLInputElement
     search.value = "teamLab"
@@ -150,7 +156,7 @@ describe("GradSearch explorer", () => {
     expect(shadow.querySelector("#verifyBtn")).toBeTruthy()
 
     ;(shadow.querySelector("#drawerFav") as HTMLButtonElement).click()
-    expect(shadow.querySelector("#drawerFav")?.textContent).toContain("Favorited")
+    expect(shadow.querySelector("#drawerFav")?.textContent).toContain("Saved")
     expect(JSON.parse(localStorage.getItem("gs-favorites") || "[]").length).toBe(1)
 
     ;(shadow.querySelector("#closeDrawer") as HTMLButtonElement).click()
@@ -175,7 +181,13 @@ describe("GradSearch explorer", () => {
     chip.click()
     expect(shadow.querySelectorAll(".card").length).toBe(1)
     expect(shadow.querySelector(".card h3")?.textContent).toContain("HPS Research")
+    expect(shadow.querySelector(".card-deadline")?.textContent).toContain("15 Jan 2027")
+    expect(shadow.querySelector(".card-apply")?.textContent).toContain("university portal")
     expect(chip.classList.contains("active")).toBe(true)
+
+    ;(shadow.querySelector(".card") as HTMLElement).click()
+    expect(shadow.querySelector(".deadline-callout")?.textContent).toContain("15 Jan 2027")
+    expect(shadow.querySelector(".apply-callout")?.textContent).toContain("university portal")
 
     const research = shadow.querySelector('.mode-btn[data-mode="research"]') as HTMLButtonElement
     research.click()

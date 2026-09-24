@@ -34,9 +34,28 @@ export function GradSearchView() {
     const stop = mountGradSearch(root, catalog, {
       onReload: () => setEpoch((n) => n + 1),
     })
+
+    const fit = () => {
+      const available = Math.round(window.innerHeight - host.getBoundingClientRect().top - 10)
+      const pane = available >= 360
+      root.classList.toggle("gs-flow", !pane)
+      if (pane) {
+        host.style.height = `${available}px`
+        host.style.setProperty("--gs-pane-h", `${available}px`)
+      } else {
+        host.style.height = ""
+        host.style.setProperty("--gs-pane-h", "70vh")
+      }
+    }
+    fit()
+    const onResize = () => fit()
+    window.addEventListener("resize", onResize)
+
     return () => {
+      window.removeEventListener("resize", onResize)
       stop?.()
       shadow.innerHTML = ""
+      host.style.height = ""
     }
   }, [epoch])
 

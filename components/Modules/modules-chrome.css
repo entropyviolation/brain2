@@ -580,6 +580,14 @@
   display: none;
 }
 
+/* Explorer scrolls in its own pane so its header cannot stick to the window
+   and slide under the BRAIN2 title bar. */
+.gradsearch-host {
+  display: block;
+  overflow: hidden;
+  isolation: isolate;
+}
+
 .mod95-ws .mod-row {
   display: flex;
   align-items: center;
