@@ -6,8 +6,10 @@
  * Funnel / Gantt / Dependencies are view modes on the toolbar; Always→Day are
  * period folder tabs — different chrome.
  *
- * Spec: §7.1–7.2 (period funnel). Auto-scheduling (§7.6) and carry-over (§7.7)
- * are deferred.
+ * Spec: §7.1–7.2 (period funnel). Auto-scheduling (§7.6) is deferred.
+ * Day dates: Today / Tomorrow store the local calendar date. An unfinished
+ * past period rolls up one level (`useDayScheduleRollover`); prior placements
+ * stay on `schedulePlacements` for gray past cells.
  */
 "use client"
 
@@ -18,6 +20,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { Task, SchedulePeriod } from "@/lib/types"
 import { TaskDetailPopup } from "@/components/ItemDetail/ItemDetailPopup"
 import { APP_NAV_KEYS, SCHEDULER_VIEWS, type SchedulerViewMode, readStoredDate, writeStoredDate, readStoredTab, writeStoredTab } from "@/lib/app-navigation"
+import { formatLocalDateKey, formatLocalMonthKey } from "@/lib/date-utils"
+import { subscribeDayClock } from "@/lib/day-clock"
+import {
+  findEventuallyList,
+  leaveEventuallyList,
+  placeTasksOnEventually,
+  removeUnscheduledFromEventually,
+} from "@/lib/eventually-list"
 import { usePersistedTab } from "@/lib/use-persisted-tab"
 import { orbFor } from "@/components/Icons"
 import {
@@ -27,6 +37,10 @@ import {
   clearScheduledTime,
   setTaskScheduleable as setTaskScheduleableSvc,
 } from "@/lib/services/scheduling-service"
+import { completeTask } from "@/lib/services/completion-service"
+import { runWithoutCompletionPopup } from "@/lib/completion-events"
+import { creditSchedulePlacement, earnsSchedulePoint } from "@/lib/schedule-credit"
+import { itemTitle } from "@/lib/item-utils"
 import {
   getScheduleableCategoryIds,
   getAvailableTasks,
@@ -42,6 +56,8 @@ import {
   getDaysInWeek,
   buildOverviewBoxes,
   assignTasksToOverviewBoxes,
+  taskIdsForDragSchedule,
+  isPastFunnelPeriod,
   type SchedulerSortBy,
   type SchedulerSortOrder,
 } from "./scheduler-utils"
@@ -73,6 +89,8 @@ const VIEW_CAPTION: Record<SchedulerView, string> = {
 export function EnhancedScheduler() {
   const allTasks = useTaskStore((state) => state.tasks)
   const categories = useTaskStore((state) => state.lists)
+  const folders = useTaskStore((state) => state.folders)
+  const [wallClock, setWallClock] = useState(() => new Date())
 
   const [activeTab, setActiveTab] = usePersistedTab(APP_NAV_KEYS.schedulerTab, SCHEDULER_TABS, "always")
   const [schedulerView, setSchedulerView] = useState<SchedulerView>(() =>
@@ -85,6 +103,8 @@ export function EnhancedScheduler() {
   const [sortBy, setSortBy] = useState<SchedulerSortBy>("importance")
   const [sortOrder, setSortOrder] = useState<SchedulerSortOrder>("desc")
 
+  useEffect(() => subscribeDayClock(() => setWallClock(new Date())), [])
+
   useEffect(() => {
     writeStoredTab(APP_NAV_KEYS.schedulerView, schedulerView)
   }, [schedulerView])
@@ -94,6 +114,7 @@ export function EnhancedScheduler() {
   }, [currentDate])
 
   const scheduleableCategoryIds = useMemo(() => getScheduleableCategoryIds(categories), [categories])
+  const eventuallyListId = useMemo(() => findEventuallyList(categories, folders)?.id, [categories, folders])
 
   const availableTasks = useMemo(
     () =>
@@ -104,28 +125,65 @@ export function EnhancedScheduler() {
         sortOrder,
         lists: categories,
         scheduleableCategoryIds,
+        eventuallyListId,
       }),
-    [allTasks, activeTab, selectedCategories, sortBy, sortOrder, categories, scheduleableCategoryIds],
+    [allTasks, activeTab, selectedCategories, sortBy, sortOrder, categories, scheduleableCategoryIds, eventuallyListId],
   )
 
   const tasksFor = useCallback(
-    (period: SchedulePeriod, value?: string) => getTasksForPeriod(allTasks, period, value, currentDate),
-    [allTasks, currentDate],
+    (period: SchedulePeriod, value?: string) =>
+      getTasksForPeriod(allTasks, period, value, currentDate, wallClock),
+    [allTasks, currentDate, wallClock],
   )
 
   const scheduleTasksToPeriod = useCallback((taskIds: string[], period: SchedulePeriod, value: string) => {
-    taskIds.forEach((taskId) => scheduleTaskSvc(taskId, period, value))
+    const snapshot = useTaskStore.getState().tasks
+    taskIds.forEach((taskId) => {
+      const before = snapshot.find((row) => row.id === taskId)
+      if (!before) return
+      const earns = earnsSchedulePoint(before, period, value)
+      scheduleTaskSvc(taskId, period, value)
+      leaveEventuallyList(taskId)
+      if (earns) creditSchedulePlacement(taskId, itemTitle(before))
+    })
+    setSelectedTasks(new Set())
+  }, [])
+
+  const placeOnEventually = useCallback((taskIds: string[]) => {
+    placeTasksOnEventually(taskIds)
     setSelectedTasks(new Set())
   }, [])
 
   const unscheduleTask = useCallback((taskId: string) => {
-    unscheduleTaskSvc(taskId)
+    const task = useTaskStore.getState().tasks.find((row) => row.id === taskId)
+    const hasPeriod = !!(task?.scheduledDate || task?.scheduledWeek || task?.scheduledMonth || task?.scheduledYear)
+    if (hasPeriod) unscheduleTaskSvc(taskId)
+    else removeUnscheduledFromEventually(taskId)
   }, [])
 
   const removeSelectedFromScheduler = useCallback(() => {
     selectedTasks.forEach((taskId) => setTaskScheduleableSvc(taskId, false))
     setSelectedTasks(new Set())
   }, [selectedTasks])
+
+  const deleteSelected = useCallback(() => {
+    const n = selectedTasks.size
+    if (n === 0) return
+    if (!confirm(`Delete ${n} task${n === 1 ? "" : "s"}?`)) return
+    const deleteTask = useTaskStore.getState().deleteTask
+    selectedTasks.forEach((taskId) => deleteTask(taskId))
+    setSelectedTasks(new Set())
+  }, [selectedTasks])
+
+  const markCompleteSelected = useCallback(() => {
+    if (selectedTasks.size === 0) return
+    runWithoutCompletionPopup(() => {
+      selectedTasks.forEach((taskId) => completeTask(taskId))
+    })
+    setSelectedTasks(new Set())
+  }, [selectedTasks])
+
+  const clearSelection = useCallback(() => setSelectedTasks(new Set()), [])
 
   const toggleTaskSelection = useCallback((taskId: string) => {
     setSelectedTasks((prev) => {
@@ -144,9 +202,18 @@ export function EnhancedScheduler() {
     (e: React.DragEvent, period: SchedulePeriod, value: string) => {
       e.preventDefault()
       const taskId = e.dataTransfer.getData("taskId")
-      if (taskId) scheduleTasksToPeriod([taskId], period, value)
+      if (taskId) scheduleTasksToPeriod(taskIdsForDragSchedule(taskId, selectedTasks), period, value)
     },
-    [scheduleTasksToPeriod],
+    [scheduleTasksToPeriod, selectedTasks],
+  )
+
+  const handleDropEventually = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault()
+      const taskId = e.dataTransfer.getData("taskId")
+      if (taskId) placeOnEventually(taskIdsForDragSchedule(taskId, selectedTasks))
+    },
+    [placeOnEventually, selectedTasks],
   )
 
   const cellClick = useCallback(
@@ -156,15 +223,15 @@ export function EnhancedScheduler() {
     [selectedTasks, scheduleTasksToPeriod],
   )
 
-  const overviewBoxes = useMemo(() => buildOverviewBoxes(currentDate), [currentDate])
+  const overviewBoxes = useMemo(() => buildOverviewBoxes(wallClock), [wallClock])
   const overviewAssignments = useMemo(
-    () => assignTasksToOverviewBoxes(allTasks, overviewBoxes),
-    [allTasks, overviewBoxes],
+    () => assignTasksToOverviewBoxes(allTasks, overviewBoxes, eventuallyListId),
+    [allTasks, overviewBoxes, eventuallyListId],
   )
 
-  const todayKey = new Date().toISOString().slice(0, 10)
-  const currentMonthKey = new Date().toISOString().slice(0, 7)
-  const currentWeekKey = getCurrentWeek(new Date())
+  const todayKey = formatLocalDateKey(wallClock)
+  const currentMonthKey = formatLocalMonthKey(wallClock)
+  const currentWeekKey = getCurrentWeek(wallClock)
   const scheduledCount = allTasks.filter(
     (t) => !t.completed && (t.scheduledYear || t.scheduledMonth || t.scheduledWeek || t.scheduledDate),
   ).length
@@ -291,7 +358,10 @@ export function EnhancedScheduler() {
                 <AlwaysTab
                   availableTasks={availableTasks}
                   selectedCount={selectedTasks.size}
+                  onDeselectAll={clearSelection}
                   onRemoveSelectedFromScheduler={removeSelectedFromScheduler}
+                  onDeleteSelected={deleteSelected}
+                  onMarkCompleteSelected={markCompleteSelected}
                   categories={categories}
                   scheduleableCategoryIds={scheduleableCategoryIds}
                   selectedCategories={selectedCategories}
@@ -303,7 +373,11 @@ export function EnhancedScheduler() {
                   overviewBoxes={overviewBoxes}
                   overviewAssignments={overviewAssignments}
                   onDrop={handleDrop}
+                  onDropEventually={handleDropEventually}
                   onCellClick={cellClick}
+                  onEventuallyClick={() => {
+                    if (selectedTasks.size > 0) placeOnEventually(Array.from(selectedTasks))
+                  }}
                   renderTaskItem={renderTaskItem}
                 />
               </TabsContent>
@@ -312,12 +386,17 @@ export function EnhancedScheduler() {
                 <PeriodFunnelTab
                   sidebarTitle={`Year ${getCurrentYear(currentDate)}`}
                   sidebarTasks={tasksFor("year", getCurrentYear(currentDate))}
+                  selectedCount={selectedTasks.size}
+                  onDeselectAll={clearSelection}
+                  onDeleteSelected={deleteSelected}
+                  onMarkCompleteSelected={markCompleteSelected}
                   cells={getMonths(currentDate)}
                   gridColsClass="cols-3"
                   cellPeriod="month"
                   cellMaxVisible={2}
                   currentKey={currentMonthKey}
                   currentBadgeLabel="Current"
+                  isPastCell={(value) => isPastFunnelPeriod("month", value, wallClock)}
                   tasksForCell={(value) => tasksFor("month", value)}
                   onDrop={handleDrop}
                   onCellClick={cellClick}
@@ -329,6 +408,10 @@ export function EnhancedScheduler() {
                 <PeriodFunnelTab
                   sidebarTitle="Month Tasks"
                   sidebarTasks={tasksFor("month", getCurrentMonth(currentDate))}
+                  selectedCount={selectedTasks.size}
+                  onDeselectAll={clearSelection}
+                  onDeleteSelected={deleteSelected}
+                  onMarkCompleteSelected={markCompleteSelected}
                   cells={getWeeksInMonth(getCurrentMonth(currentDate))}
                   gridColsClass="cols-2"
                   cellPeriod="week"
@@ -336,6 +419,7 @@ export function EnhancedScheduler() {
                   cellTitlePrefix="Week "
                   currentKey={currentWeekKey}
                   currentBadgeLabel="This Week"
+                  isPastCell={(value) => isPastFunnelPeriod("week", value, wallClock)}
                   tasksForCell={(value) => tasksFor("week", value)}
                   onDrop={handleDrop}
                   onCellClick={cellClick}
@@ -347,12 +431,17 @@ export function EnhancedScheduler() {
                 <PeriodFunnelTab
                   sidebarTitle="Week Tasks"
                   sidebarTasks={tasksFor("week", getCurrentWeek(currentDate))}
+                  selectedCount={selectedTasks.size}
+                  onDeselectAll={clearSelection}
+                  onDeleteSelected={deleteSelected}
+                  onMarkCompleteSelected={markCompleteSelected}
                   cells={getDaysInWeek(getCurrentWeek(currentDate))}
                   gridColsClass="cols-2"
                   cellPeriod="day"
                   cellMaxVisible={3}
                   currentKey={todayKey}
                   currentBadgeLabel="Today"
+                  isPastCell={(value) => isPastFunnelPeriod("day", value, wallClock)}
                   tasksForCell={(value) => tasksFor("day", value)}
                   onDrop={handleDrop}
                   onCellClick={cellClick}
@@ -364,7 +453,7 @@ export function EnhancedScheduler() {
                 <DayTab
                   currentDate={currentDate}
                   allTasks={allTasks}
-                  dayTasks={tasksFor("day", currentDate.toISOString().slice(0, 10))}
+                  dayTasks={tasksFor("day", formatLocalDateKey(currentDate))}
                   onDropHour={(taskId, hour) => scheduleTaskToTime(taskId, currentDate, hour)}
                   onClearTime={clearScheduledTime}
                   onDragStart={handleDragStart}

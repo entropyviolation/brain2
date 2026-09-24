@@ -3,20 +3,29 @@
  *
  * Period-funnel logic with no React: which tasks are available/scheduleable,
  * per-period task queries, the schedule/unschedule field updates, calendar grid
- * builders (months/weeks/days), navigation, and "Always" overview-box
- * assignment. Pure so they're unit-testable. See spec §7.1–7.2.
+ * builders (months/weeks/days), navigation, "Always" overview-box assignment,
+ * and which ids a drag drop should schedule (`taskIdsForDragSchedule`).
+ * Pure so they're unit-testable. See spec §7.1–7.2.
  */
 import {
+  formatLocalDateKey,
+  formatLocalMonthKey,
   formatWeekRange,
   getWeekString,
   parseWeekString,
   taskScheduledOnDay,
 } from "@/lib/date-utils"
 import { isAvailableNow } from "@/lib/available-tasks"
+import { isOnEventuallyList } from "@/lib/eventually-list"
 import { isClearedFromWork } from "@/lib/completion-status"
 import { taskBelongsInOverviewBox } from "@/lib/item-utils"
-import { scheduleFieldsForPeriod, clearedScheduleFields } from "@/lib/scheduling"
-import type { Task, SchedulePeriod, List } from "@/lib/types"
+import {
+  scheduleFieldsForPeriod,
+  clearedScheduleFields,
+  isPastFunnelPeriod,
+  taskHasSchedulePlacement,
+} from "@/lib/scheduling"
+import type { Task, SchedulePeriod, SchedulePlacementPeriod, List } from "@/lib/types"
 
 export type SchedulerSortBy = "category" | "duration" | "importance" | "deadline" | "reward"
 export type SchedulerSortOrder = "asc" | "desc"
@@ -25,6 +34,10 @@ export interface OverviewBox {
   label: string
   period: SchedulePeriod
   value: string
+  /** Eventually / Later holds tasks on the eventually list and sets no period. */
+  kind?: "period" | "eventually"
+  /** Secondary line, such as the real calendar date behind Today / Tomorrow. */
+  detail?: string
 }
 
 /**
@@ -37,10 +50,31 @@ export function getScheduleableCategoryIds(lists: List[]): Set<string> {
 
 export function isTaskScheduleable(task: Task, scheduleableCategoryIds: Set<string>): boolean {
   // A task-level override always wins over its lists' scheduleable flags, so
-  // toggling "Show in Scheduler" off in the item detail view removes it here.
+  // toggling Schedulable off in the item detail view removes it here.
   if (task.scheduleable === false) return false
   if (task.scheduleable === true) return true
+  return taskInheritsScheduleableFromLists(task, scheduleableCategoryIds)
+}
+
+/** True when at least one of the item's lists is scheduleable (the inherit-on case). */
+export function taskInheritsScheduleableFromLists(
+  task: Pick<Task, "lists">,
+  scheduleableCategoryIds: Set<string>,
+): boolean {
   return task.lists?.some((catId) => scheduleableCategoryIds.has(catId)) ?? false
+}
+
+/**
+ * Next raw `task.scheduleable` after the Schedulable switch flips.
+ * Off → force hidden. On → inherit (`undefined`) when a list already includes
+ * the item; force `true` only when every list is unschedulable (or there are none).
+ */
+export function nextTaskScheduleableFlag(opts: {
+  turnOn: boolean
+  inheritsOnFromLists: boolean
+}): boolean | undefined {
+  if (!opts.turnOn) return false
+  return opts.inheritsOnFromLists ? undefined : true
 }
 
 export interface AvailableTasksOptions {
@@ -50,11 +84,13 @@ export interface AvailableTasksOptions {
   sortOrder: SchedulerSortOrder
   lists: List[]
   scheduleableCategoryIds: Set<string>
+  /** Tasks on this list sit in Eventually / Later, not the unscheduled inbox. */
+  eventuallyListId?: string
 }
 
 /** Available = not completed, no unmet deps, in a scheduleable list; filtered + sorted. */
 export function getAvailableTasks(allTasks: Task[], opts: AvailableTasksOptions): Task[] {
-  const { activeTab, selectedCategories, sortBy, sortOrder, lists, scheduleableCategoryIds } = opts
+  const { activeTab, selectedCategories, sortBy, sortOrder, lists, scheduleableCategoryIds, eventuallyListId } = opts
 
   let tasks = allTasks.filter((task) => {
     if (isClearedFromWork(task)) return false
@@ -63,7 +99,9 @@ export function getAvailableTasks(allTasks: Task[], opts: AvailableTasksOptions)
     if (!isAvailableNow(task, allTasks)) return false
 
     if (activeTab === "always") {
-      return !task.scheduledYear && !task.scheduledMonth && !task.scheduledWeek && !task.scheduledDate
+      if (task.scheduledYear || task.scheduledMonth || task.scheduledWeek || task.scheduledDate) return false
+      if (isOnEventuallyList(task, eventuallyListId)) return false
+      return true
     }
     return true
   })
@@ -96,21 +134,19 @@ export function getAvailableTasks(allTasks: Task[], opts: AvailableTasksOptions)
   })
 }
 
-/** Tasks assigned to exactly a period bucket (non-nesting, used in the grids). */
-export function getTasksForPeriod(
-  allTasks: Task[],
+function liveTasksForPeriod(
+  tasks: Task[],
   period: SchedulePeriod,
   value: string | undefined,
   currentDate: Date,
 ): Task[] {
-  const availableTasks = allTasks.filter((task) => !isClearedFromWork(task))
   switch (period) {
     case "year":
-      return availableTasks.filter((task) => task.scheduledYear === value)
+      return tasks.filter((task) => task.scheduledYear === value)
     case "month":
-      return availableTasks.filter((task) => task.scheduledMonth === value)
+      return tasks.filter((task) => task.scheduledMonth === value)
     case "week":
-      return availableTasks.filter((task) => {
+      return tasks.filter((task) => {
         if (task.scheduledWeek === value) return true
         if (task.scheduledMonth && value) {
           const weekRange = parseWeekString(value)
@@ -123,12 +159,83 @@ export function getTasksForPeriod(
         return false
       })
     case "day":
-      return availableTasks.filter((task) => taskScheduledOnDay(task, value || currentDate))
+      return tasks.filter((task) => taskScheduledOnDay(task, value || currentDate))
     default:
-      return availableTasks.filter(
+      return tasks.filter(
         (task) => !task.scheduledYear && !task.scheduledMonth && !task.scheduledWeek && !task.scheduledDate,
       )
   }
+}
+
+/**
+ * Tasks assigned to a period bucket. Current and future cells show live open
+ * work only. Past cells also surface historical placements (`schedulePlacements`)
+ * and completed/missed rows that still carry that period field.
+ */
+export function getTasksForPeriod(
+  allTasks: Task[],
+  period: SchedulePeriod,
+  value: string | undefined,
+  currentDate: Date,
+  now: Date = new Date(),
+): Task[] {
+  const placementPeriod = period === "always" ? null : (period as SchedulePlacementPeriod)
+  const past =
+    placementPeriod != null && value != null && isPastFunnelPeriod(placementPeriod, value, now)
+
+  if (!past) {
+    return liveTasksForPeriod(
+      allTasks.filter((task) => !isClearedFromWork(task)),
+      period,
+      value,
+      currentDate,
+    )
+  }
+
+  const liveOpen = liveTasksForPeriod(
+    allTasks.filter((task) => !isClearedFromWork(task)),
+    period,
+    value,
+    currentDate,
+  )
+  const liveCleared = liveTasksForPeriod(
+    allTasks.filter((task) => isClearedFromWork(task)),
+    period,
+    value,
+    currentDate,
+  )
+  const fromHistory =
+    value != null && placementPeriod
+      ? allTasks.filter((task) => taskHasSchedulePlacement(task, placementPeriod, value))
+      : []
+
+  const seen = new Set<string>()
+  const out: Task[] = []
+  for (const task of [...liveOpen, ...liveCleared, ...fromHistory]) {
+    if (seen.has(task.id)) continue
+    seen.add(task.id)
+    out.push(task)
+  }
+  return out
+}
+
+/** Re-export for funnel grid past styling. */
+export { isPastFunnelPeriod }
+
+/**
+ * Which task ids a funnel drop should schedule.
+ *
+ * If the selection is non-empty and includes the dragged task, schedule every
+ * selected id. Otherwise schedule only the dragged task (empty selection, or
+ * dragging a task outside the current selection).
+ */
+export function taskIdsForDragSchedule(
+  draggedTaskId: string,
+  selectedTaskIds: ReadonlySet<string> | Iterable<string>,
+): string[] {
+  const selected = selectedTaskIds instanceof Set ? selectedTaskIds : new Set(selectedTaskIds)
+  if (selected.size > 0 && selected.has(draggedTaskId)) return Array.from(selected)
+  return [draggedTaskId]
 }
 
 /** Partial-Task updates that schedule a task to a period (clears the others). */
@@ -144,8 +251,12 @@ export function getCategoryColor(lists: List[], listIds: string[] | undefined): 
 }
 
 export const getCurrentYear = (currentDate: Date) => currentDate.getFullYear().toString()
-export const getCurrentMonth = (currentDate: Date) => currentDate.toISOString().slice(0, 7)
+export const getCurrentMonth = (currentDate: Date) => formatLocalMonthKey(currentDate)
 export const getCurrentWeek = (currentDate: Date) => getWeekString(currentDate)
+
+function formatBucketDate(date: Date): string {
+  return date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })
+}
 
 export function getNavigationLabel(activeTab: SchedulePeriod, currentDate: Date): string {
   switch (activeTab) {
@@ -189,7 +300,7 @@ export function getMonths(currentDate: Date): { value: string; label: string }[]
   for (let i = 0; i < 12; i++) {
     const date = new Date(currentDate.getFullYear(), i, 1)
     months.push({
-      value: date.toISOString().slice(0, 7),
+      value: formatLocalMonthKey(date),
       label: date.toLocaleDateString("en-US", { month: "long" }),
     })
   }
@@ -208,7 +319,7 @@ export function getWeeksInMonth(monthValue: string): { value: string; label: str
   while (currentWeekStart <= lastDay) {
     const weekEnd = new Date(currentWeekStart)
     weekEnd.setDate(currentWeekStart.getDate() + 6)
-    const weekString = `${currentWeekStart.toISOString().slice(0, 10)}_${weekEnd.toISOString().slice(0, 10)}`
+    const weekString = `${formatLocalDateKey(currentWeekStart)}_${formatLocalDateKey(weekEnd)}`
     weeks.push({ value: weekString, label: formatWeekRange(currentWeekStart) })
     currentWeekStart.setDate(currentWeekStart.getDate() + 7)
   }
@@ -222,7 +333,7 @@ export function getDaysInWeek(weekValue: string): { value: string; label: string
   const currentDay = new Date(weekRange.start)
   for (let i = 0; i < 7; i++) {
     days.push({
-      value: currentDay.toISOString().slice(0, 10),
+      value: formatLocalDateKey(currentDay),
       label: currentDay.toLocaleDateString("en-US", { weekday: "short", day: "numeric" }),
     })
     currentDay.setDate(currentDay.getDate() + 1)
@@ -233,19 +344,21 @@ export function getDaysInWeek(weekValue: string): { value: string; label: string
 const PERIOD_RANK: Record<SchedulePeriod, number> = { always: 0, year: 1, month: 2, week: 3, day: 4 }
 
 export function buildOverviewBoxes(currentDate: Date): OverviewBox[] {
-  const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1).toISOString().slice(0, 7)
+  const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1)
   const nextWeek = new Date(currentDate)
   nextWeek.setDate(currentDate.getDate() + 7)
-  const tomorrow = new Date(currentDate)
-  tomorrow.setDate(currentDate.getDate() + 1)
+  const tomorrow = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 1)
+  const todayValue = formatLocalDateKey(currentDate)
+  const tomorrowValue = formatLocalDateKey(tomorrow)
   return [
     { label: "This Year", period: "year", value: getCurrentYear(currentDate) },
     { label: "This Month", period: "month", value: getCurrentMonth(currentDate) },
-    { label: "Next Month", period: "month", value: nextMonth },
+    { label: "Next Month", period: "month", value: formatLocalMonthKey(nextMonth) },
     { label: "This Week", period: "week", value: getCurrentWeek(currentDate) },
     { label: "Next Week", period: "week", value: getWeekString(nextWeek) },
-    { label: "Today", period: "day", value: currentDate.toISOString().slice(0, 10) },
-    { label: "Tomorrow", period: "day", value: tomorrow.toISOString().slice(0, 10) },
+    { label: "Today", period: "day", value: todayValue, detail: formatBucketDate(currentDate) },
+    { label: "Tomorrow", period: "day", value: tomorrowValue, detail: formatBucketDate(tomorrow) },
+    { label: "Eventually / Later", period: "always", value: "eventually", kind: "eventually" },
   ]
 }
 
@@ -255,14 +368,26 @@ function boxMatchesTask(task: Task, period: SchedulePeriod, value: string): bool
 }
 
 /** Assign each task to a single overview box (its most specific match). */
-export function assignTasksToOverviewBoxes(allTasks: Task[], overviewBoxes: OverviewBox[]): Record<string, Task[]> {
+export function assignTasksToOverviewBoxes(
+  allTasks: Task[],
+  overviewBoxes: OverviewBox[],
+  eventuallyListId?: string,
+): Record<string, Task[]> {
   const map: Record<string, Task[]> = {}
   overviewBoxes.forEach((b) => (map[b.label] = []))
   allTasks
     .filter((t) => !isClearedFromWork(t))
     .forEach((task) => {
+      const held = isOnEventuallyList(task, eventuallyListId)
+      const unscheduled = !task.scheduledYear && !task.scheduledMonth && !task.scheduledWeek && !task.scheduledDate
+      if (held && unscheduled) {
+        const bucket = overviewBoxes.find((b) => b.kind === "eventually")
+        if (bucket) map[bucket.label].push(task)
+        return
+      }
       let best: OverviewBox | null = null
       for (const b of overviewBoxes) {
+        if (b.kind === "eventually") continue
         if (boxMatchesTask(task, b.period, b.value)) {
           if (!best || PERIOD_RANK[b.period] > PERIOD_RANK[best.period]) best = b
         }

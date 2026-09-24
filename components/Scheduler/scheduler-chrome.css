@@ -270,6 +270,15 @@
   filter: none;
 }
 
+/* Quiet destructive — distinct from Remove, not a scream. */
+.sch95 .sch-btn-delete {
+  color: #5a3030;
+}
+
+.sch95 .sch-btn-delete:hover:not(:disabled) {
+  color: #7a2020;
+}
+
 .sch95 .sch-btn-icon {
   min-width: 28px;
   padding: 2px 8px;
@@ -549,6 +558,12 @@ body.win95-app .sch95 .sch-period-tabs [role="tab"][data-state="active"]::before
   box-shadow: inset 0 -1px var(--s-shadow);
 }
 
+.sch95 .sch-selection-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 .sch95 .sch-pane-body {
   flex: 1;
   min-height: 10rem;
@@ -585,6 +600,19 @@ body.win95-app .sch95 .sch-period-tabs [role="tab"][data-state="active"]::before
   grid-template-columns: 1fr 1fr;
 }
 
+.sch95 .sch-always-board {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 2px 2px 6px;
+}
+
+.sch95 .sch-always-cards {
+  gap: 8px;
+  overflow: visible;
+  align-content: start;
+}
+
 .sch95 .sch-bucket-grid.cols-3 {
   grid-template-columns: 1fr 1fr 1fr;
 }
@@ -602,6 +630,26 @@ body.win95-app .sch95 .sch-period-tabs [role="tab"][data-state="active"]::before
   font-weight: bold;
 }
 
+.sch95 .sch-bucket.is-past {
+  color: #6a6a6a;
+  background: #d8d8d8;
+}
+
+.sch95 .sch-bucket.is-past .sch-bucket-sub,
+.sch95 .sch-bucket.is-past .sch-bucket-count,
+.sch95 .sch-bucket.is-past .sch-hint {
+  color: #5a5a5a;
+}
+
+.sch95 .sch-bucket.is-past .sch-bucket-body {
+  background: #cecece;
+  color: #555;
+}
+
+.sch95 .sch-bucket.is-past .sch-task {
+  color: #555;
+}
+
 .sch95 .sch-bucket-line {
   display: flex;
   align-items: center;
@@ -617,6 +665,52 @@ body.win95-app .sch95 .sch-period-tabs [role="tab"][data-state="active"]::before
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.sch95 .sch-bucket-card {
+  min-height: 6.75rem;
+  background: #fff;
+  box-shadow: var(--s-raised);
+}
+
+.sch95 .sch-bucket-card .sch-bucket-line {
+  align-items: flex-start;
+  min-height: 36px;
+  padding: 8px 8px 2px;
+}
+
+.sch95 .sch-bucket-card .sch-bucket-title {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  white-space: normal;
+  font-size: 12px;
+}
+
+.sch95 .sch-bucket-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sch95 .sch-bucket-sub {
+  font-size: 10px;
+  font-weight: normal;
+  color: #404040;
+}
+
+.sch95 .sch-bucket-card .sch-bucket-count {
+  min-width: 1.25rem;
+  border-radius: 999px;
+  text-align: center;
+}
+
+.sch95 .sch-bucket-empty {
+  margin: 0;
+  padding: 2px 10px 8px;
+  font-size: 12px;
+  font-style: italic;
+  color: #666;
 }
 
 .sch95 .sch-bucket-count,

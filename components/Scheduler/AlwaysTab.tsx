@@ -1,8 +1,10 @@
 /**
- * components/Scheduler/AlwaysTab.tsx — Always period (inbox + reserved buckets)
+ * components/Scheduler/AlwaysTab.tsx — Always period (inbox + drop cards)
  *
- * Filterable available-task list on the left; This Year … Tomorrow stay as
- * reserved one-line furniture on the right. Drag into a row still schedules.
+ * Filterable available-task list on the left. The right side is two columns
+ * of drop cards (This Year … Tomorrow, plus Eventually / Later). Today and
+ * Tomorrow show the real calendar date. Drag or click still schedules.
+ * Selection tools: Deselect all, Remove from Scheduler, Delete, Mark complete.
  */
 "use client"
 
@@ -15,7 +17,10 @@ import type { OverviewBox, SchedulerSortBy, SchedulerSortOrder } from "./schedul
 export function AlwaysTab({
   availableTasks,
   selectedCount,
+  onDeselectAll,
   onRemoveSelectedFromScheduler,
+  onDeleteSelected,
+  onMarkCompleteSelected,
   categories,
   scheduleableCategoryIds,
   selectedCategories,
@@ -27,12 +32,17 @@ export function AlwaysTab({
   overviewBoxes,
   overviewAssignments,
   onDrop,
+  onDropEventually,
   onCellClick,
+  onEventuallyClick,
   renderTaskItem,
 }: {
   availableTasks: Task[]
   selectedCount: number
+  onDeselectAll: () => void
   onRemoveSelectedFromScheduler: () => void
+  onDeleteSelected: () => void
+  onMarkCompleteSelected: () => void
   categories: List[]
   scheduleableCategoryIds: Set<string>
   selectedCategories: string[]
@@ -44,7 +54,9 @@ export function AlwaysTab({
   overviewBoxes: OverviewBox[]
   overviewAssignments: Record<string, Task[]>
   onDrop: (e: React.DragEvent, period: SchedulePeriod, value: string) => void
+  onDropEventually: (e: React.DragEvent) => void
   onCellClick: (period: SchedulePeriod, value: string) => void
+  onEventuallyClick: () => void
   renderTaskItem: (task: Task, opts?: { showCheckbox?: boolean; showUnschedule?: boolean }) => React.ReactNode
 }) {
   return (
@@ -56,9 +68,20 @@ export function AlwaysTab({
         </div>
         <div className="sch-pane-tools">
           {selectedCount > 0 && (
-            <button type="button" className="sch-btn" onClick={onRemoveSelectedFromScheduler}>
-              Remove from Scheduler
-            </button>
+            <div className="sch-selection-actions">
+              <button type="button" className="sch-btn" onClick={onDeselectAll}>
+                Deselect all
+              </button>
+              <button type="button" className="sch-btn" onClick={onRemoveSelectedFromScheduler}>
+                Remove from Scheduler
+              </button>
+              <button type="button" className="sch-btn sch-btn-delete" onClick={onDeleteSelected}>
+                Delete
+              </button>
+              <button type="button" className="sch-btn" onClick={onMarkCompleteSelected}>
+                Mark complete
+              </button>
+            </div>
           )}
           <SchedulerFilters
             categories={categories}
@@ -80,25 +103,36 @@ export function AlwaysTab({
         </div>
       </aside>
 
-      <div className="sch-pane">
-        <div className="sch-pane-head">Period buckets</div>
-        <div className="sch-pane-body">
-          <p className="sch-hint">
-            Each task appears once, in its most specific period (day → week → month → year).
-          </p>
-          <div className="sch-bucket-list">
-            {overviewBoxes.map((box) => (
+      <div className="sch-always-board">
+        <p className="sch-hint">
+          Drag onto a card. Today and Tomorrow use the real date. An unfinished Today returns here the next day
+          unless you push it forward. Eventually / Later files it on the eventually list, with no period.
+        </p>
+        <div className="sch-bucket-grid cols-2 sch-always-cards">
+          {overviewBoxes.map((box) => {
+            const eventually = box.kind === "eventually"
+            return (
               <PeriodCell
                 key={box.label}
+                variant="card"
                 title={box.label}
+                detail={box.detail}
+                hint={
+                  eventually
+                    ? "Adds the task to the Next Actions list “eventually”. No year, month, week, or day is set."
+                    : box.period === "day"
+                      ? `Schedules this task for ${box.detail ?? box.value}.`
+                      : `Schedules this task for ${box.label}.`
+                }
                 tasks={overviewAssignments[box.label] || []}
                 maxVisible={3}
-                onDrop={(e) => onDrop(e, box.period, box.value)}
-                onClick={() => onCellClick(box.period, box.value)}
+                emptyText="Empty"
+                onDrop={(e) => (eventually ? onDropEventually(e) : onDrop(e, box.period, box.value))}
+                onClick={() => (eventually ? onEventuallyClick() : onCellClick(box.period, box.value))}
                 renderTaskItem={(task) => renderTaskItem(task, { showUnschedule: true })}
               />
-            ))}
-          </div>
+            )
+          })}
         </div>
       </div>
     </div>
