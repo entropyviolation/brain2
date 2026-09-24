@@ -22,8 +22,8 @@ Only the primitives actively imported by the app are kept. As of the current cod
 | `window-sand-sim.ts` | Powder grid. Solid grains release on a ragged front from the × (2.4s to the far corner, 3.6s total) and fall one step per 60Hz frame. A late frame catches up (capped) so the pour still reaches the basin. Unreleased grains stay solid and block the pour. |
 | `window-sand-capture.ts` | Synchronous clone of the live window, decoded through an SVG `foreignObject` data URL into `ImageData`. Grains still solid when it arrives are recolored. A blob URL is not used — it taints the canvas and the sand would stay flat navy and gray. |
 | `window-sand-close.css` | `.window-sand-source` hides the live window while the canvas plays. `.window-sand-host[data-state=closed]` is opacity 0, visibility hidden, animation none. |
-| `unsaved-changes-guard.tsx` | House dirty-close confirm: Save changes / Cancel / Exit without saving. Pair with `lib/unsaved-changes.ts`. |
-| `unsaved-changes.css` | `.w95-confirm` navy-caption confirm (~24.5rem) |
+| `unsaved-changes-guard.tsx` | House dirty-close confirm: Save changes / Cancel / Exit without saving. Milled fascia look via `unsaved-changes.css`. Pair with `lib/unsaved-changes.ts`. |
+| `unsaved-changes.css` | `.w95-confirm` milled fascia confirm (~24.5rem): CRT title, brushed bay, metal keys |
 | `dropdown-menu.tsx` | Menus (Reviews header, etc.) |
 | `input.tsx` | Text and number inputs |
 | `label.tsx` | Form labels |

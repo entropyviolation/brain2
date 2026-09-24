@@ -382,13 +382,15 @@ body.win95-app [data-ui-name="App tabs"] [role="tab"][data-state="active"]::befo
 /*
  * Unskinned dialogs → brushed bay with a desk foot. Portaled custom skins keep
  * their own face (excluded here; also win via later module CSS). No !important.
+ * Exclusions: .set95 / .inbox-dialog / .id95 / .hab-grade-sheet / .ops95-dialog /
+ * .hpp95 / .fm98-dialog / .w95-confirm.
  */
 body.win95-app
   :is([role="dialog"], [role="alertdialog"]):not(.set95):not(.set95-dialog):not(.inbox-dialog):not(
     .id95
   ):not(.id95-dialog):not(.hab-grade-sheet):not(.ops95-dialog):not(.hpp95):not(.hpp95-dialog):not(
     .fm98-dialog
-  ) {
+  ):not(.w95-confirm) {
   border-radius: 3px;
   background-color: var(--chrome-face);
   background-image: var(--fascia-dialog-face);
@@ -410,7 +412,7 @@ body.win95-app
     .id95
   ):not(.id95-dialog):not(.hab-grade-sheet):not(.ops95-dialog):not(.hpp95):not(.hpp95-dialog):not(
     .fm98-dialog
-  )
+  ):not(.w95-confirm)
   h2.font-semibold.tracking-tight {
   display: inline-block;
   width: fit-content;
@@ -435,7 +437,7 @@ body.win95-app
     .id95
   ):not(.id95-dialog):not(.hab-grade-sheet):not(.ops95-dialog):not(.hpp95):not(.hpp95-dialog):not(
     .fm98-dialog
-  )
+  ):not(.w95-confirm)
   > button.absolute {
   border-radius: 2px;
   opacity: 1;
@@ -448,7 +450,7 @@ body.win95-app
     .id95
   ):not(.id95-dialog):not(.hab-grade-sheet):not(.ops95-dialog):not(.hpp95):not(.hpp95-dialog):not(
     .fm98-dialog
-  )
+  ):not(.w95-confirm)
   > button.absolute:hover {
   opacity: 1;
   filter: brightness(1.04);
@@ -458,7 +460,7 @@ body.win95-app
     .id95
   ):not(.id95-dialog):not(.hab-grade-sheet):not(.ops95-dialog):not(.hpp95):not(.hpp95-dialog):not(
     .fm98-dialog
-  )
+  ):not(.w95-confirm)
   > button.absolute:active {
   box-shadow: var(--fascia-key-pressed);
 }

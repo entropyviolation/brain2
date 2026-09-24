@@ -4,6 +4,8 @@
  * If a popup has unsaved edits, cancel / close / × / overlay must prompt:
  * Save changes, Cancel (stay), Exit without saving. Clean editors close
  * immediately. Pair with `lib/unsaved-changes.ts` snapshot compare.
+ * Look: milled fascia (`.w95-confirm` in unsaved-changes.css) — CRT title,
+ * brushed bay, metal keys. docs/DESIGN_STYLE.md#milled-fascia
  */
 "use client"
 
@@ -134,19 +136,19 @@ export function UnsavedChangesDialog({ open, onSave, onStay, onDiscard, canSave 
           <DialogDescription>
             You have unsaved changes. Are you sure you want to close this window?
           </DialogDescription>
-          <div className="w95-confirm-actions">
-            {canSave ? (
-              <button type="button" data-default="true" onClick={onSave}>
-                Save changes
-              </button>
-            ) : null}
-            <button type="button" onClick={onStay}>
-              Cancel
+        </div>
+        <div className="w95-confirm-actions">
+          {canSave ? (
+            <button type="button" data-default="true" onClick={onSave}>
+              Save changes
             </button>
-            <button type="button" onClick={onDiscard}>
-              Exit without saving
-            </button>
-          </div>
+          ) : null}
+          <button type="button" onClick={onStay}>
+            Cancel
+          </button>
+          <button type="button" onClick={onDiscard}>
+            Exit without saving
+          </button>
         </div>
       </DialogContent>
     </Dialog>
