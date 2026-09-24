@@ -2,7 +2,7 @@
 
 The **Scheduler** top-level tab in **Brain2**. Progressive refinement: bucket tasks into Always → Year → Month → Week → Day before assigning specific dates/times.
 
-The surface is a **Win95 window** in the same furniture family as Lists / Tracking / Operations (`.sch95` in `scheduler-chrome.css`): navy title bar, toolbar, Address, folder tabs, status. Funnel / Gantt / Dependencies are **view modes** on the toolbar. Always → Day are **period** folder tabs — different chrome, not a second pill row.
+The surface is a **milled fascia** window (`.sch95` in `scheduler-chrome.css`, kin to Plan): CRT title (`#070c0a` glass, phosphor `#7dffc4`), Funnel / Gantt / Dependencies as equal view keys (active = CRT + round power lamp), Always → Day as equal period keys in one bay, engraved Address / View / Period nameplates, raised metal toolbar keys. Funnel buckets, Gantt, and Dependencies documents keep their content chrome and meaning colors — looks only on the frame.
 
 ## Files
 
@@ -11,8 +11,8 @@ the period/filter logic is independently testable.
 
 | File | Purpose |
 |------|---------|
-| `enhanced-scheduler.tsx` | **Orchestrator**: window chrome, store wiring, task-item renderer; toolbar **Funnel / Gantt / Dependencies** (`schedulerView`) and period folder tabs. View mode + calendar cursor persist across refresh / tab switch. |
-| `scheduler-chrome.css` | Win95 window, toolbar, Address, folder tabs, reserved buckets, orb task rows — scoped under `.sch95`. Also imported from `app/layout.tsx` so Fast Refresh cannot drop it. |
+| `enhanced-scheduler.tsx` | **Orchestrator**: window chrome, store wiring, task-item renderer; toolbar **Funnel / Gantt / Dependencies** (`schedulerView`) and period keys. View mode + calendar cursor persist across refresh / tab switch. |
+| `scheduler-chrome.css` | Milled fascia: CRT title, view/period key bays, Address nameplate, metal keys — scoped under `.sch95`. Funnel / Gantt / graph contents untouched. Also imported from `app/layout.tsx` so Fast Refresh cannot drop it. |
 | `scheduler-utils.ts` | **Pure logic**: available/scheduleable filtering + sort, per-period queries, schedule/unschedule field updates, calendar grid builders, navigation, overview-box assignment. Unmet-dep check is `lib/available-tasks.ts`. Unit-tested in `scheduler-utils.test.ts` |
 | `project-network.ts` | **Pure glue**: `buildProjectNetwork()` selects "project" tasks (any in a dependency relation, or scheduleable with a duration), derives precedence edges, and runs the CPM solver (`lib/critical-path`); `toLayoutEdges()` adapts edges for `lib/graph-layout`. Shared by the Gantt + Graph views |
 | `GanttView.tsx` | **Gantt document** (plain SVG): one row per task (orb + label), bars positioned by CPM earliest-start and sized by duration, dependency arrows, slack tracks, critical path. Click a row to open the task. Not editable |
@@ -27,11 +27,11 @@ the period/filter logic is independently testable.
 
 ### Scheduler views
 
-A **toolbar** (not a tab row) switches the main area between three views:
+A **toolbar** (not a second instrument) switches the main area between three views:
 
 | View | Component | Shows |
 |------|-----------|-------|
-| **Funnel** (default) | period folder tabs | Always / Year / Month / Week / Day buckets |
+| **Funnel** (default) | period keys | Always / Year / Month / Week / Day buckets |
 | **Gantt** | `GanttView` | Timeline document with bars + critical path |
 | **Dependencies** | `DependencyGraph` | Task precedence network + critical path |
 
@@ -60,10 +60,10 @@ The **Always** overview shows tasks at their stored schedule level only (`taskBe
 
 ## UI structure
 
-1. **Title bar** — human caption (`Scheduler — Funnel` / Gantt / Dependencies) plus a title orb.
-2. **Toolbar** — view modes Funnel / Gantt / Dependencies (pressed = sunken). Period chevrons live here when the funnel is not on Always.
-3. **Address** — `Funnel \ Always` (or Year/Month/Week/Day + the current period label).
-4. **Period folder tabs** — Always, Year, Month, Week, Day. Only on Funnel. Not a second view-mode row.
+1. **CRT title** — human caption (`Scheduler — Funnel` / Gantt / Dependencies) plus a title orb on black glass.
+2. **Toolbar** — equal **Funnel / Gantt / Dependencies** keys (active = CRT + power lamp). Period metal chevrons + nameplate date when the funnel is not on Always.
+3. **Address** — engraved nameplate + path well (`Funnel \ Always`, or Year/Month/Week/Day + the current period label).
+4. **Period keys** — Always, Year, Month, Week, Day in one equal-fill bay. Only on Funnel. Not a second view-mode row.
 5. **Available Tasks** — inbox of unscheduled / current-period work; drag into buckets.
 6. **Reserved buckets** — one-line furniture when empty; expand to orb rows when they hold work. Not seven `0 · Empty` cards.
 7. **Status** — available / scheduled counts.

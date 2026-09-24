@@ -200,8 +200,10 @@ export function EnhancedScheduler() {
     <div className="sch95">
       <div className="sch-window">
         <div className="sch-title-bar">
-          <img src={orbFor("scheduler")} alt="" className="sch-title-orb" width={16} height={16} />
-          <h2>{VIEW_CAPTION[schedulerView]}</h2>
+          <div className="sch-mark">
+            <img src={orbFor("scheduler")} alt="" className="sch-title-orb" width={22} height={22} />
+            <h2>{VIEW_CAPTION[schedulerView]}</h2>
+          </div>
           <div className="sch-title-bar-controls" aria-hidden>
             <span className="sch-title-btn">_</span>
             <span className="sch-title-btn">□</span>
@@ -210,30 +212,32 @@ export function EnhancedScheduler() {
 
         <div className="sch-toolbar" role="toolbar" aria-label="Scheduler view">
           <span className="sch-label">View</span>
-          <button
-            type="button"
-            className="sch-btn"
-            aria-pressed={schedulerView === "funnel"}
-            onClick={() => setSchedulerView("funnel")}
-          >
-            Funnel
-          </button>
-          <button
-            type="button"
-            className="sch-btn"
-            aria-pressed={schedulerView === "gantt"}
-            onClick={() => setSchedulerView("gantt")}
-          >
-            Gantt
-          </button>
-          <button
-            type="button"
-            className="sch-btn"
-            aria-pressed={schedulerView === "graph"}
-            onClick={() => setSchedulerView("graph")}
-          >
-            Dependencies
-          </button>
+          <div className="sch-view-keys" role="group" aria-label="View mode">
+            <button
+              type="button"
+              className="sch-btn"
+              aria-pressed={schedulerView === "funnel"}
+              onClick={() => setSchedulerView("funnel")}
+            >
+              Funnel
+            </button>
+            <button
+              type="button"
+              className="sch-btn"
+              aria-pressed={schedulerView === "gantt"}
+              onClick={() => setSchedulerView("gantt")}
+            >
+              Gantt
+            </button>
+            <button
+              type="button"
+              className="sch-btn"
+              aria-pressed={schedulerView === "graph"}
+              onClick={() => setSchedulerView("graph")}
+            >
+              Dependencies
+            </button>
+          </div>
 
           {schedulerView === "funnel" && activeTab !== "always" && (
             <div className="sch-period-nav">

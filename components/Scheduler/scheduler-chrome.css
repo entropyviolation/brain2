@@ -1,8 +1,11 @@
 /**
- * components/Scheduler/scheduler-chrome.css — Win95 frame for Scheduler
+ * components/Scheduler/scheduler-chrome.css — milled fascia for Scheduler
  *
- * Same furniture family as Lists / Tracking / Operations. View modes live on
- * the toolbar; Always→Day are folder tabs. Scoped under `.sch95`.
+ * Title, Funnel/Gantt/Dependencies keys, Always→Day period keys, Address
+ * nameplate, and toolbar metal keys share the house milled fascia
+ * (docs/DESIGN_STYLE.md#milled-fascia). Kin: Plan `plan-chrome.css`.
+ * Funnel buckets, Gantt/graph documents, and meaning colors stay untouched.
+ * Scoped under `.sch95`.
  */
 
 .sch95 {
@@ -13,7 +16,10 @@
   --s-frame: var(--chrome-frame, #0a0a0a);
   --s-blue: #000080;
   --s-blue-light: #1084d0;
-  --s-ink: #000000;
+  --s-ink: #111111;
+  --s-nameplate: #2a2c2e;
+  --s-crt: var(--hab-crt-green, #7dffc4);
+  --s-crt-glow: var(--hab-crt-glow, 0 0 3px #7dffc4);
   --s-raised: inset -1px -1px var(--s-frame), inset 1px 1px var(--s-highlight),
     inset -2px -2px var(--s-shadow), inset 2px 2px var(--s-face);
   --s-sunken: inset -1px -1px var(--s-highlight), inset 1px 1px var(--s-frame),
@@ -27,6 +33,7 @@
   -webkit-font-smoothing: none;
   height: min(78vh, 820px);
   min-height: 520px;
+  accent-color: var(--s-blue);
 }
 
 .sch95 .sch-window {
@@ -35,196 +42,413 @@
   flex-direction: column;
   min-height: 0;
   padding: 3px;
+  gap: 6px;
   background: var(--s-surface);
   box-shadow: var(--s-raised);
 }
 
+/* ===== Title bay + CRT caption ===== */
 .sch95 .sch-title-bar {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex-shrink: 0;
-  min-height: 22px;
-  padding: 2px 4px;
-  color: #fff;
-  background: linear-gradient(90deg, var(--s-blue), var(--s-blue-light));
+  padding: 6px 8px;
+  border-radius: 3px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
+    linear-gradient(165deg, #d4d8dc 0%, var(--s-surface) 48%, #969a9e 100%);
+  box-shadow:
+    0 0 0 1px #5c6064,
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -1px 0 rgba(40, 42, 46, 0.4),
+    inset 0 0 0 2px #b0b4b8;
   user-select: none;
 }
 
-.sch95 .sch-title-bar h2 {
+.sch95 .sch-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   flex: 1;
+  min-width: 0;
+  min-height: 36px;
+  padding: 4px 12px 4px 8px;
+  border-radius: 2px;
+  background:
+    radial-gradient(ellipse at 18% 0%, rgba(125, 255, 196, 0.14), transparent 46%),
+    #070c0a;
+  box-shadow:
+    0 0 0 1px #3a3e42,
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 10px 14px rgba(0, 0, 0, 0.4);
+}
+
+.sch95 .sch-mark h2 {
   margin: 0;
   min-width: 0;
-  font-size: 13px;
-  font-weight: bold;
-  letter-spacing: 0.3px;
-  color: #fff !important;
-  text-shadow: 1px 1px 0 #000;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: var(--s-crt) !important;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-shadow: var(--s-crt-glow);
 }
 
 .sch95 .sch-title-orb {
-  width: 16px;
-  height: 16px;
+  width: 22px;
+  height: 22px;
   flex-shrink: 0;
   object-fit: contain;
+  filter: drop-shadow(0 0 2px var(--s-crt));
 }
 
 .sch95 .sch-title-bar-controls {
   display: flex;
-  gap: 2px;
+  gap: 4px;
+  flex-shrink: 0;
   margin-left: auto;
 }
 
 .sch95 .sch-title-btn {
-  width: 16px;
-  height: 14px;
+  box-sizing: border-box;
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
   padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 9px;
-  font-weight: bold;
+  font-size: 11px;
+  font-weight: 700;
   line-height: 1;
-  background: var(--s-surface);
   border: 0;
-  color: #000;
-  box-shadow: var(--s-raised);
+  border-radius: 2px;
+  color: #1c1e20;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
+    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--s-surface) 70%, #9a9ea2 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 0 -1px 0 rgba(55, 58, 62, 0.45),
+    0 0 0 1px #4a4e52,
+    0 1px 0 #6a6e72;
   cursor: default;
 }
 
+/* ===== Toolbar bay + raised metal keys ===== */
 .sch95 .sch-toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 3px;
+  gap: 8px;
   flex-shrink: 0;
-  padding: 3px 4px;
-  background: var(--s-surface);
-  box-shadow: inset 0 -1px var(--s-shadow), inset 0 1px var(--s-highlight);
+  padding: 8px 10px;
+  border-radius: 3px;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.06), transparent 28%),
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
+    #c4c8cc;
+  box-shadow:
+    0 0 0 1px #6a6e72,
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    inset 0 2px 3px rgba(0, 0, 0, 0.12);
 }
 
 .sch95 .sch-toolbar-split {
   width: 2px;
   align-self: stretch;
+  min-height: 20px;
   margin: 2px 4px;
-  box-shadow: inset 1px 0 var(--s-shadow), inset -1px 0 var(--s-highlight);
+  border-left: 1px solid rgba(60, 64, 68, 0.45);
+  border-right: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow: none;
+  flex-shrink: 0;
 }
 
 .sch95 .sch-label {
-  margin: 0 4px 0 2px;
-  font-size: 11px;
-  font-weight: bold;
-  letter-spacing: 0.3px;
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  padding: 4px 9px;
+  border-radius: 2px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--s-nameplate);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.45) 0, transparent 40%),
+    #c8ccd0;
+  box-shadow:
+    0 0 0 1px #5c6064,
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 -1px 0 rgba(40, 42, 46, 0.28);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .sch95 .sch-period-nav {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 6px;
   margin-left: auto;
 }
 
 .sch95 .sch-period-nav-label {
   min-width: 7.5rem;
+  min-height: 28px;
+  padding: 5px 12px 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
+  border-radius: 2px;
   font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--s-nameplate);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  background-image:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0 1px, transparent 1px 2px),
+    linear-gradient(180deg, #eef0f2 0%, var(--s-surface) 48%, #a4a8ac 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1px #6a6e72;
 }
 
 .sch95 .sch-btn {
   box-sizing: border-box;
-  min-height: 22px;
-  padding: 2px 10px;
-  border: none;
-  border-radius: 0;
-  color: #000 !important;
-  background: var(--s-surface) !important;
-  box-shadow: var(--s-raised);
-  font-family: inherit;
-  font-size: 11px;
-  cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 6px;
+  min-height: 28px;
+  padding: 4px 12px 5px;
+  border: none;
+  border-radius: 2px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #1c1e20;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
+    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--s-surface) 70%, #9a9ea2 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 0 -1px 0 rgba(55, 58, 62, 0.45),
+    0 0 0 1px #4a4e52,
+    0 1px 0 #6a6e72;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
 .sch95 .sch-btn:hover:not(:disabled) {
-  background: var(--s-face) !important;
+  filter: brightness(1.04);
 }
 
-.sch95 .sch-btn:not(:disabled):active,
-.sch95 .sch-btn[aria-pressed="true"] {
-  box-shadow: var(--s-sunken);
+.sch95 .sch-btn:not(:disabled):active {
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.35),
+    0 0 0 1px #3a3e42;
+  filter: none;
 }
 
 .sch95 .sch-btn:disabled {
-  color: #808080 !important;
+  color: #808080;
   text-shadow: 1px 1px 0 #fff;
   cursor: default;
+  filter: none;
 }
 
 .sch95 .sch-btn-icon {
-  min-width: 22px;
-  padding: 0 4px;
+  min-width: 28px;
+  padding: 2px 8px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* Sibling view keys share one bay; active = CRT + round power lamp */
+.sch95 .sch-view-keys {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 4px;
+  flex: 1 1 12rem;
+  min-width: 12rem;
+  max-width: 26rem;
+  padding: 4px;
+  border-radius: 3px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
+    #b4b8bc;
+  box-shadow:
+    0 0 0 1px #5c6064,
+    inset 0 2px 3px rgba(0, 0, 0, 0.18);
+}
+
+.sch95 .sch-view-keys .sch-btn {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 28px;
+  padding: 4px 10px 5px;
+  gap: 6px;
+  letter-spacing: 0.12em;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 28%),
+    linear-gradient(165deg, #eceef0, #c0c4c8);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1px #4a4e52;
+}
+
+.sch95 .sch-view-keys .sch-btn[aria-pressed="true"] {
+  color: var(--s-crt);
+  text-shadow: var(--s-crt-glow);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.2), transparent 55%),
+    #070c0a;
+  box-shadow:
+    0 0 0 1px #3a3e42,
+    inset 0 8px 10px rgba(0, 0, 0, 0.4);
+  filter: none;
+}
+
+.sch95 .sch-view-keys .sch-btn[aria-pressed="true"]::before {
+  content: "";
+  display: block;
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f4fff8 0 16%, #7dffc4 42%, #0b4a32 100%);
+  box-shadow:
+    0 0 0 1px #141816,
+    0 0 0 2px #9aa09c,
+    inset 0 1px 1px rgba(255, 255, 255, 0.55),
+    0 0 4px #7dffc4;
 }
 
 .sch95 .sch-address {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex-shrink: 0;
-  padding: 3px 6px;
-  background: var(--s-surface);
+  padding: 6px 10px;
+  border-radius: 3px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
+    linear-gradient(180deg, #d8dce0, var(--s-surface) 48%, #b0b4b8);
+  box-shadow:
+    0 0 0 1px #6a6e72,
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    inset 0 2px 3px rgba(0, 0, 0, 0.08);
 }
 
 .sch95 .sch-address-field {
   flex: 1;
   min-width: 0;
-  padding: 3px 6px;
+  padding: 5px 10px;
+  border-radius: 2px;
   background: #fff;
   box-shadow: var(--s-field);
   font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #111;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+/* Period keys: equal-fill bay; active = CRT + power lamp (not folder tabs) */
+body.win95-app .sch95 .sch-period-tabs[role="tablist"],
 .sch95 .sch-period-tabs {
   display: flex !important;
-  justify-content: flex-start;
-  align-items: flex-end;
-  gap: 0;
+  align-items: stretch;
+  justify-content: stretch;
+  gap: 4px;
   width: 100%;
   flex-shrink: 0;
-  padding: 4px 8px 0 6px;
-  background: var(--s-surface);
-  box-shadow: none !important;
+  margin: 0;
+  padding: 4px;
+  border-radius: 3px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
+    #b4b8bc;
+  box-shadow:
+    0 0 0 1px #5c6064,
+    inset 0 2px 3px rgba(0, 0, 0, 0.18) !important;
 }
 
+body.win95-app .sch95 .sch-period-tabs [role="tab"],
 .sch95 .sch-period-tabs [role="tab"] {
-  min-height: 20px;
-  padding: 3px 12px 4px;
-  margin: 0 1px 0 0;
-  background: var(--s-surface);
-  color: #000;
-  border-radius: 0;
-  box-shadow: inset 1px 1px var(--s-highlight), inset -1px 0 var(--s-frame),
-    inset 0 -1px var(--s-shadow);
   position: relative;
-  top: 1px;
+  top: 0;
+  display: inline-flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 28px;
+  margin: 0;
+  padding: 4px 10px 5px;
+  border-radius: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #1c1e20;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 28%),
+    linear-gradient(165deg, #eceef0, #c0c4c8);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1px #4a4e52;
+  z-index: auto;
 }
 
+body.win95-app .sch95 .sch-period-tabs [role="tab"][data-state="active"],
 .sch95 .sch-period-tabs [role="tab"][data-state="active"] {
+  top: 0;
   padding-bottom: 5px;
-  font-weight: bold;
-  background: var(--s-face);
-  top: 2px;
-  box-shadow: inset 1px 1px var(--s-highlight), inset -1px 0 var(--s-frame),
-    inset -2px 0 var(--s-shadow);
+  color: var(--s-crt);
+  font-weight: 700;
+  text-shadow: var(--s-crt-glow);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.2), transparent 55%),
+    #070c0a;
+  box-shadow:
+    0 0 0 1px #3a3e42,
+    inset 0 8px 10px rgba(0, 0, 0, 0.4);
   z-index: 1;
+}
+
+body.win95-app .sch95 .sch-period-tabs [role="tab"][data-state="active"]::before,
+.sch95 .sch-period-tabs [role="tab"][data-state="active"]::before {
+  content: "";
+  display: block;
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f4fff8 0 16%, #7dffc4 42%, #0b4a32 100%);
+  box-shadow:
+    0 0 0 1px #141816,
+    0 0 0 2px #9aa09c,
+    inset 0 1px 1px rgba(255, 255, 255, 0.55),
+    0 0 4px #7dffc4;
 }
 
 .sch95 .sch-body {
@@ -234,6 +458,7 @@
   flex-direction: column;
   padding: 6px;
   overflow: hidden;
+  border-radius: 2px;
   background: var(--s-face);
   box-shadow: var(--s-sunken);
 }
@@ -243,6 +468,7 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
+  gap: 6px;
 }
 
 .sch95 .sch-body > [role="tabpanel"] {
@@ -261,12 +487,20 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 10px;
   flex-shrink: 0;
-  min-height: 20px;
-  padding: 2px 6px;
+  min-height: 24px;
+  padding: 4px 10px;
+  border-radius: 2px;
   font-size: 11px;
-  background: var(--s-surface);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--s-nameplate);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
+    var(--s-surface);
   box-shadow: var(--s-sunken);
 }
 
