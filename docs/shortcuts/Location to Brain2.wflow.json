@@ -1,0 +1,155 @@
+{
+  "WFWorkflowClientVersion": "1300.0.0",
+  "WFWorkflowClientRelease": "3.0",
+  "WFWorkflowMinimumClientVersion": 900,
+  "WFWorkflowMinimumClientVersionString": "900",
+  "WFWorkflowName": "Location to Brain2",
+  "WFWorkflowIcon": {
+    "WFWorkflowIconStartColor": 4282601983,
+    "WFWorkflowIconGlyphNumber": 59511
+  },
+  "WFWorkflowImportQuestions": [
+    {
+      "ActionIndex": 7,
+      "Category": "Parameter",
+      "ParameterKey": "WFSendMessageActionRecipients",
+      "Text": "Pick the Brain2 bot chat in Telegram (@brain2_phone_bot). Pair it in Brain2 Settings first, then open that chat once."
+    }
+  ],
+  "WFWorkflowInputContentItemClasses": [],
+  "WFWorkflowOutputContentItemClasses": [],
+  "WFWorkflowTypes": [
+    "NCWidget",
+    "WatchKit",
+    "MenuBar",
+    "QuickActions"
+  ],
+  "WFWorkflowHasOutputFallback": false,
+  "WFWorkflowHasShortcutInputVariables": false,
+  "WFWorkflowActions": [
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.comment",
+      "WFWorkflowActionParameters": {
+        "UUID": "BB111111-1111-4111-A111-111111111111",
+        "WFCommentActionText": "Sends gps: Name\\nlat,lon to @brain2_phone_bot.\nPair Brain2 first. On import, pick the bot chat in Telegram.\nAttach duplicates to Automation → Arrive and Leave.\niOS will not poll every minute."
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.getcurrentlocation",
+      "WFWorkflowActionParameters": {
+        "UUID": "BB222222-2222-4222-A222-222222222222"
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.properties.locations",
+      "WFWorkflowActionParameters": {
+        "UUID": "BB333333-3333-4333-A333-333333333333",
+        "WFContentItemPropertyName": "Name",
+        "WFInput": {
+          "Value": {
+            "OutputName": "Current Location",
+            "OutputUUID": "BB222222-2222-4222-A222-222222222222",
+            "Type": "ActionOutput"
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.properties.locations",
+      "WFWorkflowActionParameters": {
+        "UUID": "BB444444-4444-4444-A444-444444444444",
+        "WFContentItemPropertyName": "Latitude",
+        "WFInput": {
+          "Value": {
+            "OutputName": "Current Location",
+            "OutputUUID": "BB222222-2222-4222-A222-222222222222",
+            "Type": "ActionOutput"
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.properties.locations",
+      "WFWorkflowActionParameters": {
+        "UUID": "BB555555-5555-4555-A555-555555555555",
+        "WFContentItemPropertyName": "Longitude",
+        "WFInput": {
+          "Value": {
+            "OutputName": "Current Location",
+            "OutputUUID": "BB222222-2222-4222-A222-222222222222",
+            "Type": "ActionOutput"
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.gettext",
+      "WFWorkflowActionParameters": {
+        "UUID": "BB666666-6666-4666-A666-666666666666",
+        "WFTextActionText": {
+          "Value": {
+            "string": "gps: ￼\n￼,￼",
+            "attachmentsByRange": {
+              "{5, 1}": {
+                "Type": "ActionOutput",
+                "OutputUUID": "BB333333-3333-4333-A333-333333333333",
+                "OutputName": "Name"
+              },
+              "{7, 1}": {
+                "Type": "ActionOutput",
+                "OutputUUID": "BB444444-4444-4444-A444-444444444444",
+                "OutputName": "Latitude"
+              },
+              "{9, 1}": {
+                "Type": "ActionOutput",
+                "OutputUUID": "BB555555-5555-4555-A555-555555555555",
+                "OutputName": "Longitude"
+              }
+            }
+          },
+          "WFSerializationType": "WFTextTokenString"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.setvariable",
+      "WFWorkflowActionParameters": {
+        "UUID": "BB6A6A6A-6A6A-46A6-A6A6-6666666666A6",
+        "WFVariableName": "Outgoing",
+        "WFInput": {
+          "Value": {
+            "OutputName": "Text",
+            "OutputUUID": "BB666666-6666-4666-A666-666666666666",
+            "Type": "ActionOutput"
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.sendmessage",
+      "WFWorkflowActionParameters": {
+        "UUID": "BB777777-7777-4777-A777-777777777777",
+        "IntentAppIdentifier": "ph.telegra.Telegraph",
+        "WFSendMessageContent": {
+          "Value": {
+            "Type": "Variable",
+            "VariableName": "Outgoing"
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.notification",
+      "WFWorkflowActionParameters": {
+        "UUID": "BB888888-8888-4888-A888-888888888888",
+        "WFNotificationActionBody": "Sent location to Brain2.",
+        "WFNotificationActionTitle": "Brain2"
+      }
+    }
+  ]
+}

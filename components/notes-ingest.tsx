@@ -4,6 +4,8 @@
  * Date range → swipe Parse/Skip (title + content preview) → for each parsed note,
  * freely edit bulk-add syntax or park the full note on "notes to ingest" in the
  * auto-created iPhone Notes Ingest folder. Already-ingested Apple Note ids are skipped.
+ * Closing the dialog keeps the session (listing continues); From Notes reopens it.
+ * Dialog shell is milled fascia (`.hpp95` / `header-popup-chrome.css`).
  */
 "use client"
 
@@ -41,14 +43,14 @@ import {
   parseBulkAddText,
   persistIngestedNoteIds,
   summarizeBulkAdd,
-  nextListColor,
   type AppleNote,
   type NotesPeriodPreset,
 } from "@/lib/apple-notes"
+import { ensureCaptureTarget } from "@/lib/capture-target"
+import { taskStoreMutators } from "@/lib/ingest/apply-capture"
 import { createListItem, withCategoryDefaults } from "@/lib/item-utils"
 import { parseSmartCapture } from "@/lib/smart-parse"
 import { formatLocalDateKey } from "@/lib/date-utils"
-import type { List } from "@/lib/types"
 
 type Step = "period" | "loading" | "swipe" | "process" | "empty" | "error"
 
@@ -93,15 +95,16 @@ export function NotesIngest() {
   const [snippetLoading, setSnippetLoading] = useState(false)
   const fullIds = useRef(new Set<string>())
   const snippetRequested = useRef(new Set<string>())
+  const sessionGen = useRef(0)
 
   const addTask = useTaskStore((s) => s.addTask)
-  const addList = useTaskStore((s) => s.addList)
   const notesRef = useRef(notes)
   notesRef.current = notes
 
   const range = useCallback(() => notesPeriodRange(preset, new Date(), customFrom, customTo), [preset, customFrom, customTo])
 
   const reset = useCallback(() => {
+    sessionGen.current += 1
     setStep("period")
     setNotes([])
     setDecisions([])
@@ -119,11 +122,10 @@ export function NotesIngest() {
 
   const handleOpenChange = (next: boolean) => {
     setOpen(next)
-    if (!next) reset()
+    if (!next && step === "empty") reset()
   }
 
   const openDialog = () => {
-    reset()
     setOpen(true)
   }
 
@@ -146,28 +148,33 @@ export function NotesIngest() {
       })
       if (wanted.length === 0) return
       const { since, until } = range()
+      const gen = sessionGen.current
       const result = await fetchAppleNotes({
         sinceISO: since.toISOString(),
         untilISO: until.toISOString(),
         mode,
         ids: wanted,
       })
+      if (gen !== sessionGen.current) return
       if (result.ok) mergeFetched(result.notes, mode === "bodies")
     },
     [range, mergeFetched],
   )
 
   const loadPreviews = async () => {
+    const gen = ++sessionGen.current
     setBusy(true)
     setStep("loading")
     setError("")
     await afterPaint()
+    if (gen !== sessionGen.current) return
     const { since, until } = range()
     const result = await fetchAppleNotes({
       sinceISO: since.toISOString(),
       untilISO: until.toISOString(),
       mode: "preview",
     })
+    if (gen !== sessionGen.current) return
     setBusy(false)
     if (!result.ok) {
       setError(result.error)
@@ -289,25 +296,16 @@ export function NotesIngest() {
     if (!processNote || !draftText.trim()) return
     const blocks = parseBulkAddText(draftText)
     if (blocks.length === 0) return
-    const state = useTaskStore.getState()
-    const nameToList = new Map(state.lists.map((l) => [l.name.toLowerCase(), l]))
-    let colorIndex = nameToList.size
     let created = 0
 
     for (const block of blocks) {
-      let list = nameToList.get(block.listName.toLowerCase())
-      if (!list) {
-        const createdList: List = {
-          id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-          name: block.listName,
-          color: nextListColor(colorIndex++),
-          description: `Auto-created from Apple Notes bulk add`,
-          createdAt: new Date(),
-        }
-        addList(createdList)
-        nameToList.set(createdList.name.toLowerCase(), createdList)
-        list = createdList
-      }
+      // Same door as Quick/Bulk Add: creates the folder chain, then the list.
+      const target = ensureCaptureTarget(
+        { folderPath: block.folderPath.length ? block.folderPath : undefined, category: block.listName },
+        taskStoreMutators,
+      )
+      const list = target.list
+      if (!list) continue
       for (const line of block.items) {
         const { suggestion } = parseSmartCapture(line)
         const description = suggestion.description || line
@@ -343,29 +341,48 @@ export function NotesIngest() {
 
   const bulkSummary = useMemo(() => summarizeBulkAdd(draftText), [draftText])
   const notesAvailable = canFetchAppleNotes()
-  const busyLabel = step === "loading" ? "Listing…" : step === "process" && busy ? "Loading…" : "Working…"
   const processLatest = processNote ? notes.find((n) => n.id === processNote.id) ?? processNote : undefined
+  const triggerBusy = step === "loading" || (busy && !open)
+  const triggerLabel =
+    step === "loading" || (busy && step === "period")
+      ? "Listing…"
+      : !open && (step === "swipe" || step === "process" || step === "error")
+        ? "Resume Notes"
+        : "From Notes"
 
   return (
     <>
-      <Button type="button" size="sm" variant="outline" className="gap-1" onClick={openDialog} disabled={open || busy} aria-busy={busy}>
-        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Smartphone className="h-4 w-4" />}
-        <span>{busy && (step === "loading" || step === "period") ? busyLabel : "From Notes"}</span>
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        className="gap-1"
+        onClick={openDialog}
+        disabled={open}
+        aria-busy={triggerBusy}
+        title={step === "loading" ? "Listing continues in the background — click to return" : undefined}
+      >
+        {triggerBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Smartphone className="h-4 w-4" />}
+        <span>{triggerLabel}</span>
       </Button>
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-hidden flex flex-col z-[200]">
-          <DialogHeader>
-            <DialogTitle>Ingest from iPhone Notes</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="hpp95 hpp95-dialog sm:max-w-xl max-h-[90vh] overflow-hidden flex flex-col z-[200]" data-ui-name="From Notes" data-ui-docs="components/README.md">
+          <DialogHeader className="hpp-caption">
+            <div className="hpp-caption-mark">
+              <span className="hpp-power-lamp" aria-hidden />
+              <DialogTitle>Ingest from iPhone Notes</DialogTitle>
+            </div>
+            <DialogDescription className="hpp-caption-lead">
               Preview title and contents, mark notes to parse, then bulk-add or save to “{NOTES_TO_INGEST_LIST_NAME}”.
             </DialogDescription>
           </DialogHeader>
 
+          <div className="hpp-body flex-1 min-h-0 overflow-hidden flex flex-col">
           {step === "period" && (
             <div className="space-y-4">
               {!notesAvailable && (
                 <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
-                  Reading live Apple Notes needs the Mac desktop app (Notes.app, with iCloud). You can still set a period; listing will explain if Notes isn&apos;t reachable.
+                  Live Apple Notes are read on this Mac through Notes.app (iCloud / iPhone). Open Brain2 at http://localhost:3000 or the desktop window — not a phone browser. You can still set a period; listing will explain if Notes isn&apos;t reachable.
                 </p>
               )}
               <div className="space-y-2">
@@ -424,8 +441,14 @@ export function NotesIngest() {
               <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
               <p className="text-sm font-medium">Listing Apple Notes…</p>
               <p className="text-xs text-muted-foreground">
-                Titles first, then a content preview on each card. macOS may ask to let COGS control Notes.
+                Titles first, then a content preview on each card. macOS may ask to let Brain2 control Notes.
               </p>
+              <p className="text-xs text-muted-foreground">
+                Close anytime — listing keeps going. <span className="font-medium">From Notes</span> brings you back.
+              </p>
+              <Button type="button" variant="outline" size="sm" onClick={() => setOpen(false)}>
+                Continue in background
+              </Button>
             </div>
           )}
 
@@ -477,11 +500,17 @@ export function NotesIngest() {
                   className="min-h-[140px] font-mono text-sm flex-1"
                   value={draftText}
                   onChange={(e) => setDraftText(e.target.value)}
-                  placeholder={"Groceries:\nMilk\nEggs\n\nErrands:\nPost office"}
+                  placeholder={"Groceries:\nMilk\nEggs\n\nTrip ideas: Packing:\nPassport"}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Lines ending with “:” are list names. {bulkSummary.items} item{bulkSummary.items === 1 ? "" : "s"} in{" "}
-                  {bulkSummary.lists} list{bulkSummary.lists === 1 ? "" : "s"}.
+                  Lines ending with “:” are list names; add another colon to name a new folder —{" "}
+                  <code className="text-foreground">Trip ideas: Packing:</code>. {bulkSummary.items} item
+                  {bulkSummary.items === 1 ? "" : "s"} in {bulkSummary.lists} list
+                  {bulkSummary.lists === 1 ? "" : "s"}
+                  {bulkSummary.folders > 0
+                    ? `, ${bulkSummary.folders} folder${bulkSummary.folders === 1 ? "" : "s"}`
+                    : ""}
+                  .
                 </p>
               </div>
               <div className="flex flex-wrap justify-between gap-2 pt-1">
@@ -522,10 +551,18 @@ export function NotesIngest() {
                 <Button variant="outline" onClick={reset}>
                   New period
                 </Button>
-                <Button onClick={() => handleOpenChange(false)}>Done</Button>
+                <Button
+                  onClick={() => {
+                    reset()
+                    setOpen(false)
+                  }}
+                >
+                  Done
+                </Button>
               </div>
             </div>
           )}
+          </div>
         </DialogContent>
       </Dialog>
     </>

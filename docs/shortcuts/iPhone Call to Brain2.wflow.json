@@ -1,0 +1,117 @@
+{
+  "WFWorkflowClientVersion": "1300.0.0",
+  "WFWorkflowClientRelease": "3.0",
+  "WFWorkflowMinimumClientVersion": 900,
+  "WFWorkflowMinimumClientVersionString": "900",
+  "WFWorkflowName": "iPhone Call to Brain2",
+  "WFWorkflowIcon": {
+    "WFWorkflowIconStartColor": 4292093695,
+    "WFWorkflowIconGlyphNumber": 59511
+  },
+  "WFWorkflowImportQuestions": [
+    {
+      "ActionIndex": 5,
+      "Category": "Parameter",
+      "ParameterKey": "WFSendMessageActionRecipients",
+      "Text": "Pick the Brain2 bot chat in Telegram (@brain2_phone_bot). Pair it in Brain2 Settings first, then open that chat once."
+    }
+  ],
+  "WFWorkflowInputContentItemClasses": [],
+  "WFWorkflowOutputContentItemClasses": [],
+  "WFWorkflowTypes": [
+    "NCWidget",
+    "WatchKit",
+    "MenuBar",
+    "QuickActions"
+  ],
+  "WFWorkflowHasOutputFallback": false,
+  "WFWorkflowHasShortcutInputVariables": false,
+  "WFWorkflowActions": [
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.comment",
+      "WFWorkflowActionParameters": {
+        "UUID": "F1111111-1111-4111-A111-111111111111",
+        "WFCommentActionText": "Sends call: Name 12m to @brain2_phone_bot after you hang up.\nPair Brain2 first. On import, pick the bot chat in Telegram.\nApple does not pass caller ID into most Personal Automations. Type the name yourself."
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.ask",
+      "WFWorkflowActionParameters": {
+        "UUID": "F2222222-2222-4222-A222-222222222222",
+        "WFAskActionPrompt": "Who did you call?",
+        "WFInputType": "Text",
+        "CustomOutputName": "Who"
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.ask",
+      "WFWorkflowActionParameters": {
+        "UUID": "F3333333-3333-4333-A333-333333333333",
+        "WFAskActionPrompt": "How long? (12m or 3:02-3:17; leave blank for a 1-minute ping)",
+        "WFInputType": "Text",
+        "CustomOutputName": "Duration"
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.gettext",
+      "WFWorkflowActionParameters": {
+        "UUID": "F4444444-4444-4444-A444-444444444444",
+        "WFTextActionText": {
+          "Value": {
+            "string": "call: ￼ ￼",
+            "attachmentsByRange": {
+              "{6, 1}": {
+                "Type": "ActionOutput",
+                "OutputUUID": "F2222222-2222-4222-A222-222222222222",
+                "OutputName": "Who"
+              },
+              "{8, 1}": {
+                "Type": "ActionOutput",
+                "OutputUUID": "F3333333-3333-4333-A333-333333333333",
+                "OutputName": "Duration"
+              }
+            }
+          },
+          "WFSerializationType": "WFTextTokenString"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.setvariable",
+      "WFWorkflowActionParameters": {
+        "UUID": "F4A4A4A4-4A4A-44A4-A4A4-4444444444A4",
+        "WFVariableName": "Outgoing",
+        "WFInput": {
+          "Value": {
+            "OutputName": "Text",
+            "OutputUUID": "F4444444-4444-4444-A444-444444444444",
+            "Type": "ActionOutput"
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.sendmessage",
+      "WFWorkflowActionParameters": {
+        "UUID": "F5555555-5555-4555-A555-555555555555",
+        "IntentAppIdentifier": "ph.telegra.Telegraph",
+        "WFSendMessageContent": {
+          "Value": {
+            "Type": "Variable",
+            "VariableName": "Outgoing"
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.notification",
+      "WFWorkflowActionParameters": {
+        "UUID": "F6666666-6666-4666-A666-666666666666",
+        "WFNotificationActionBody": "Sent call ping to Brain2.",
+        "WFNotificationActionTitle": "Brain2"
+      }
+    }
+  ]
+}

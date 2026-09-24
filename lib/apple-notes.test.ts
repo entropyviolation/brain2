@@ -1,11 +1,19 @@
-import { describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import {
   FALLBACK_LIST_NAME,
   IPHONE_NOTES_INGEST_FOLDER_NAME,
+  IPHONE_NOTES_STORE_FOLDER_NAME,
+  IPHONE_NOTES_STORE_LIST_ID,
+  IPHONE_NOTES_STORE_LIST_NAME,
   NOTES_TO_INGEST_LIST_NAME,
+  canFetchAppleNotes,
   ensureIphoneNotesIngestDestination,
+  ensureIphoneNotesStoreDestination,
+  parkedIphoneStoreItems,
+  fetchAppleNotes,
   filterNewNotes,
   ingestedAppleNoteIds,
+  isLocalNotesHubOrigin,
   mergeNoteBodies,
   noteDisplayTitle,
   noteToBulkAddDraft,
@@ -16,6 +24,7 @@ import {
   parseBulkAddText,
   persistIngestedNoteIds,
   stripNoteHtml,
+  summarizeBulkAdd,
   type AppleNote,
 } from "@/lib/apple-notes"
 import type { Folder, List } from "@/lib/types"
@@ -141,11 +150,26 @@ describe("noteToBulkAddDraft / parseBulkAddText", () => {
   it("turns a reminder note into List:\\nitem draft", () => {
     const draft = noteToBulkAddDraft(note({ title: "Weekend", body: "Weekend\nMilk\nEggs" }))
     expect(draft).toBe("Weekend:\nMilk\nEggs")
-    expect(parseBulkAddText(draft)).toEqual([{ listName: "Weekend", items: ["Milk", "Eggs"] }])
+    expect(parseBulkAddText(draft)).toEqual([{ folderPath: [], listName: "Weekend", items: ["Milk", "Eggs"] }])
   })
 
   it("keeps existing Category: syntax", () => {
     expect(noteToBulkAddDraft(note({ title: "x", body: "Groceries:\nMilk\nBread" }))).toBe("Groceries:\nMilk\nBread")
+  })
+
+  it("reads an extra colon as a new folder name", () => {
+    expect(parseBulkAddText("Trip ideas: Packing:\nPassport\nChargers")).toEqual([
+      { folderPath: ["Trip ideas"], listName: "Packing", items: ["Passport", "Chargers"] },
+    ])
+  })
+
+  it("keeps two blocks apart and counts folders once", () => {
+    const draft = "Trip ideas: Packing:\nPassport\n\nGroceries:\nMilk"
+    expect(parseBulkAddText(draft)).toEqual([
+      { folderPath: ["Trip ideas"], listName: "Packing", items: ["Passport"] },
+      { folderPath: [], listName: "Groceries", items: ["Milk"] },
+    ])
+    expect(summarizeBulkAdd(draft)).toEqual({ lists: 2, items: 2, folders: 1 })
   })
 })
 
@@ -177,5 +201,84 @@ describe("ensureIphoneNotesIngestDestination", () => {
     expect(dest.folder.name).toBe(IPHONE_NOTES_INGEST_FOLDER_NAME)
     expect(dest.list.name).toBe(NOTES_TO_INGEST_LIST_NAME)
     expect(folders[0].listIds).toContain(dest.list.id)
+  })
+})
+
+describe("ensureIphoneNotesStoreDestination", () => {
+  it("creates the iPhone Notes Store folder and Parked list", () => {
+    const folders: Folder[] = []
+    const lists: List[] = []
+    const dest = ensureIphoneNotesStoreDestination({
+      lists,
+      folders,
+      addList: (l) => lists.push(l),
+      addFolder: (f) => folders.push(f),
+      addListToFolder: (folderId, listId) => {
+        const f = folders.find((x) => x.id === folderId)
+        if (f && !f.listIds.includes(listId)) f.listIds.push(listId)
+      },
+    })
+    expect(dest.folder.name).toBe(IPHONE_NOTES_STORE_FOLDER_NAME)
+    expect(dest.list.name).toBe(IPHONE_NOTES_STORE_LIST_NAME)
+    expect(folders[0].listIds).toContain(dest.list.id)
+    expect(dest.folder.id).not.toBe("folder-iphone-notes-ingest")
+  })
+})
+
+describe("parkedIphoneStoreItems", () => {
+  it("returns open items on the Parked list oldest first", () => {
+    const items = parkedIphoneStoreItems([
+      { id: "b", completed: false, lists: [IPHONE_NOTES_STORE_LIST_ID], createdAt: new Date("2026-09-21T12:00:00Z") },
+      { id: "a", completed: false, lists: [IPHONE_NOTES_STORE_LIST_ID], createdAt: new Date("2026-09-21T11:00:00Z") },
+      { id: "done", completed: true, lists: [IPHONE_NOTES_STORE_LIST_ID], createdAt: new Date("2026-09-21T10:00:00Z") },
+      { id: "other", completed: false, lists: ["g"], createdAt: new Date("2026-09-21T09:00:00Z") },
+    ])
+    expect(items.map((t) => t.id)).toEqual(["a", "b"])
+  })
+})
+
+describe("fetchAppleNotes transports", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    delete (window as unknown as { desktop?: unknown }).desktop
+  })
+
+  it("treats localhost as a Notes hub origin and LAN as not", () => {
+    expect(isLocalNotesHubOrigin({ hostname: "localhost" })).toBe(true)
+    expect(isLocalNotesHubOrigin({ hostname: "127.0.0.1" })).toBe(true)
+    expect(isLocalNotesHubOrigin({ hostname: "10.0.0.4" })).toBe(false)
+    expect(canFetchAppleNotes({})).toBe(isLocalNotesHubOrigin())
+  })
+
+  it("lists notes through the localhost hub when Electron is absent", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        json: async () => ({
+          ok: true,
+          notes: [{ id: "n1", title: "Milk", body: "<b>2%</b>", folder: "Notes", modifiedAt: "2026-08-01T00:00:00.000Z" }],
+        }),
+      }),
+    )
+    const result = await fetchAppleNotes(
+      { sinceISO: "2026-08-01T00:00:00.000Z", untilISO: "2026-08-02T00:00:00.000Z", mode: "preview" },
+      {},
+    )
+    expect(result.ok).toBe(true)
+    if (result.ok) expect(result.notes[0].body).toBe("2%")
+  })
+
+  it("prefers the Electron bridge when it is present", async () => {
+    const fetchBridge = vi.fn().mockResolvedValue({
+      ok: true,
+      notes: [{ id: "e1", title: "From IPC", body: "x", folder: "Notes" }],
+    })
+    const result = await fetchAppleNotes(
+      { sinceISO: "a", untilISO: "b" },
+      { fetchAppleNotes: fetchBridge },
+    )
+    expect(fetchBridge).toHaveBeenCalledOnce()
+    expect(result.ok).toBe(true)
+    if (result.ok) expect(result.notes[0].id).toBe("e1")
   })
 })

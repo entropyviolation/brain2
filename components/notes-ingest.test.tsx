@@ -53,6 +53,7 @@ describe("NotesIngest", () => {
 
   afterEach(() => {
     delete (window as unknown as { desktop?: unknown }).desktop
+    vi.unstubAllGlobals()
   })
 
   it("renders the From Notes trigger", () => {
@@ -141,5 +142,67 @@ describe("NotesIngest", () => {
     await user.click(screen.getByRole("button", { name: /Preview notes/i }))
     expect(await screen.findByText(/macOS blocked access to Notes/)).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /Retry/i })).toBeInTheDocument()
+  })
+
+  it("keeps listing after the dialog is closed and resumes on reopen", async () => {
+    let releasePreview: (value?: unknown) => void
+    const previewGate = new Promise((resolve) => {
+      releasePreview = resolve
+    })
+    ;(window as unknown as { desktop: { fetchAppleNotes: ReturnType<typeof vi.fn> } }).desktop.fetchAppleNotes =
+      vi.fn().mockImplementation(async (query: { mode?: string; ids?: string[] }) => {
+        if (query?.mode === "snippet" || query?.mode === "bodies") {
+          const ids = new Set(query.ids ?? [])
+          return { ok: true, notes: sampleNotes.filter((n) => ids.has(n.id)) }
+        }
+        await previewGate
+        return { ok: true, notes: sampleNotes.map((n) => ({ ...n, body: "" })) }
+      })
+
+    const user = userEvent.setup()
+    render(<NotesIngest />)
+    await user.click(screen.getByRole("button", { name: /From Notes/i }))
+    await user.click(screen.getByRole("button", { name: /Preview notes/i }))
+    expect(await screen.findByText(/Listing Apple Notes/)).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: /Continue in background/i }))
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+    const trigger = screen.getByRole("button", { name: /Listing/i })
+    expect(trigger).toBeEnabled()
+
+    releasePreview!()
+    await user.click(trigger)
+    expect(await screen.findByRole("dialog")).toBeInTheDocument()
+    expect(await screen.findByText("Weekend")).toBeInTheDocument()
+  })
+
+  it("returns to the same swipe card after the dialog is closed", async () => {
+    const user = userEvent.setup()
+    render(<NotesIngest />)
+    await user.click(screen.getByRole("button", { name: /From Notes/i }))
+    await user.click(screen.getByRole("button", { name: /Preview notes/i }))
+    await screen.findByText("Weekend")
+    await user.click(screen.getByRole("button", { name: /^Close$/i }))
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: /Resume Notes/i }))
+    expect(await screen.findByText("Weekend")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /^Parse$/i })).toBeInTheDocument()
+  })
+
+  it("lists notes through the localhost hub when Electron is absent", async () => {
+    delete (window as unknown as { desktop?: unknown }).desktop
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        json: async () => ({ ok: true, notes: sampleNotes.map((n) => ({ ...n, body: "" })) }),
+      }),
+    )
+    const user = userEvent.setup()
+    render(<NotesIngest />)
+    await user.click(screen.getByRole("button", { name: /From Notes/i }))
+    await user.click(screen.getByRole("button", { name: /Preview notes/i }))
+    expect(await screen.findByText("Weekend")).toBeInTheDocument()
+    vi.unstubAllGlobals()
   })
 })

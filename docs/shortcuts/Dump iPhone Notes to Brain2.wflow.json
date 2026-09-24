@@ -1,0 +1,642 @@
+{
+  "WFWorkflowClientVersion": "4018.0.4",
+  "WFWorkflowMinimumClientVersion": 900,
+  "WFWorkflowMinimumClientVersionString": "900",
+  "WFWorkflowName": "Dump iPhone Notes to Brain2",
+  "WFWorkflowIcon": {
+    "WFWorkflowIconStartColor": 946986751,
+    "WFWorkflowIconGlyphNumber": 59511
+  },
+  "WFWorkflowImportQuestions": [
+    {
+      "ActionIndex": 27,
+      "Category": "Parameter",
+      "ParameterKey": "WFSendMessageActionRecipients",
+      "Text": "Pick the Brain2 bot chat in Telegram (@brain2_phone_bot). Pair it in Brain2 Settings first, then open that chat once."
+    }
+  ],
+  "WFWorkflowInputContentItemClasses": [
+    "WFNoteContentItem",
+    "WFStringContentItem"
+  ],
+  "WFWorkflowOutputContentItemClasses": [],
+  "WFWorkflowTypes": [
+    "ActionExtension",
+    "NCWidget",
+    "WatchKit",
+    "MenuBar",
+    "QuickActions"
+  ],
+  "WFWorkflowHasOutputFallback": false,
+  "WFWorkflowHasShortcutInputVariables": true,
+  "WFWorkflowActions": [
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.comment",
+      "WFWorkflowActionParameters": {
+        "UUID": "A1111111-1111-4111-A111-111111111111",
+        "WFCommentActionText": "Sends On My iPhone Notes to @brain2_phone_bot as iphone-notes: dumps.\nPair Brain2 first. On import, pick the bot chat in Telegram.\nPick a note = choose from recent notes (run from Shortcuts).\nShortcut Input = share a note into this Shortcut from Notes."
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.choosefrommenu",
+      "WFWorkflowActionParameters": {
+        "UUID": "A4444444-4444-4444-A444-444444444444",
+        "WFControlFlowMode": 0,
+        "GroupingIdentifier": "A4444444-4444-4444-A444-444444444444",
+        "WFMenuPrompt": "Which notes?",
+        "WFMenuItems": [
+          "Last 24 hours",
+          "Last 7 days",
+          "Last 30 days",
+          "Choose folder",
+          "Pick a note",
+          "Shortcut Input"
+        ]
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.choosefrommenu",
+      "WFWorkflowActionParameters": {
+        "UUID": "A4444444-4444-4444-A444-444444444401",
+        "WFControlFlowMode": 1,
+        "GroupingIdentifier": "A4444444-4444-4444-A444-444444444444",
+        "WFMenuItemTitle": "Last 24 hours"
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.filter.notes",
+      "WFWorkflowActionParameters": {
+        "UUID": "A7777777-7777-4777-A777-777777777777",
+        "AppIntentDescriptor": {
+          "TeamIdentifier": "0000000000",
+          "BundleIdentifier": "com.apple.mobilenotes",
+          "Name": "Notes",
+          "AppIntentIdentifier": "NoteEntity",
+          "ActionRequiresAppInstallation": true
+        },
+        "CustomOutputName": "Note",
+        "WFContentItemFilter": {
+          "WFSerializationType": "WFContentPredicateTableTemplate",
+          "Value": {
+            "WFActionParameterFilterPrefix": 1,
+            "WFContentPredicateBoundedDate": false,
+            "WFActionParameterFilterTemplates": [
+              {
+                "Operator": 1001,
+                "Property": "Last Modified Date",
+                "Removable": false,
+                "Values": {
+                  "Number": 1,
+                  "Unit": 16384
+                }
+              }
+            ]
+          }
+        },
+        "WFContentItemLimitEnabled": true,
+        "WFContentItemLimitNumber": 25,
+        "WFContentItemSortOrder": "Latest First",
+        "WFContentItemSortProperty": "Last Modified Date"
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.setvariable",
+      "WFWorkflowActionParameters": {
+        "UUID": "B7777777-7777-4777-B777-777777777701",
+        "WFVariableName": "Notes",
+        "WFInput": {
+          "Value": {
+            "OutputName": "Note",
+            "OutputUUID": "A7777777-7777-4777-A777-777777777777",
+            "Type": "ActionOutput"
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.choosefrommenu",
+      "WFWorkflowActionParameters": {
+        "UUID": "A4444444-4444-4444-A444-444444444402",
+        "WFControlFlowMode": 1,
+        "GroupingIdentifier": "A4444444-4444-4444-A444-444444444444",
+        "WFMenuItemTitle": "Last 7 days"
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.filter.notes",
+      "WFWorkflowActionParameters": {
+        "UUID": "B1111111-1111-4111-B111-111111111111",
+        "AppIntentDescriptor": {
+          "TeamIdentifier": "0000000000",
+          "BundleIdentifier": "com.apple.mobilenotes",
+          "Name": "Notes",
+          "AppIntentIdentifier": "NoteEntity",
+          "ActionRequiresAppInstallation": true
+        },
+        "CustomOutputName": "Note",
+        "WFContentItemFilter": {
+          "WFSerializationType": "WFContentPredicateTableTemplate",
+          "Value": {
+            "WFActionParameterFilterPrefix": 1,
+            "WFContentPredicateBoundedDate": false,
+            "WFActionParameterFilterTemplates": [
+              {
+                "Operator": 1001,
+                "Property": "Last Modified Date",
+                "Removable": false,
+                "Values": {
+                  "Number": 7,
+                  "Unit": 16384
+                }
+              }
+            ]
+          }
+        },
+        "WFContentItemLimitEnabled": true,
+        "WFContentItemLimitNumber": 25,
+        "WFContentItemSortOrder": "Latest First",
+        "WFContentItemSortProperty": "Last Modified Date"
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.setvariable",
+      "WFWorkflowActionParameters": {
+        "UUID": "B7777777-7777-4777-B777-777777777702",
+        "WFVariableName": "Notes",
+        "WFInput": {
+          "Value": {
+            "OutputName": "Note",
+            "OutputUUID": "B1111111-1111-4111-B111-111111111111",
+            "Type": "ActionOutput"
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.choosefrommenu",
+      "WFWorkflowActionParameters": {
+        "UUID": "A4444444-4444-4444-A444-444444444403",
+        "WFControlFlowMode": 1,
+        "GroupingIdentifier": "A4444444-4444-4444-A444-444444444444",
+        "WFMenuItemTitle": "Last 30 days"
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.filter.notes",
+      "WFWorkflowActionParameters": {
+        "UUID": "B4444444-4444-4444-B444-444444444444",
+        "AppIntentDescriptor": {
+          "TeamIdentifier": "0000000000",
+          "BundleIdentifier": "com.apple.mobilenotes",
+          "Name": "Notes",
+          "AppIntentIdentifier": "NoteEntity",
+          "ActionRequiresAppInstallation": true
+        },
+        "CustomOutputName": "Note",
+        "WFContentItemFilter": {
+          "WFSerializationType": "WFContentPredicateTableTemplate",
+          "Value": {
+            "WFActionParameterFilterPrefix": 1,
+            "WFContentPredicateBoundedDate": false,
+            "WFActionParameterFilterTemplates": [
+              {
+                "Operator": 1001,
+                "Property": "Last Modified Date",
+                "Removable": false,
+                "Values": {
+                  "Number": 30,
+                  "Unit": 16384
+                }
+              }
+            ]
+          }
+        },
+        "WFContentItemLimitEnabled": true,
+        "WFContentItemLimitNumber": 25,
+        "WFContentItemSortOrder": "Latest First",
+        "WFContentItemSortProperty": "Last Modified Date"
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.setvariable",
+      "WFWorkflowActionParameters": {
+        "UUID": "B7777777-7777-4777-B777-777777777703",
+        "WFVariableName": "Notes",
+        "WFInput": {
+          "Value": {
+            "OutputName": "Note",
+            "OutputUUID": "B4444444-4444-4444-B444-444444444444",
+            "Type": "ActionOutput"
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.choosefrommenu",
+      "WFWorkflowActionParameters": {
+        "UUID": "A4444444-4444-4444-A444-444444444404",
+        "WFControlFlowMode": 1,
+        "GroupingIdentifier": "A4444444-4444-4444-A444-444444444444",
+        "WFMenuItemTitle": "Choose folder"
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.filter.notes",
+      "WFWorkflowActionParameters": {
+        "UUID": "B5555555-5555-4555-B555-555555555555",
+        "AppIntentDescriptor": {
+          "TeamIdentifier": "0000000000",
+          "BundleIdentifier": "com.apple.mobilenotes",
+          "Name": "Notes",
+          "AppIntentIdentifier": "NoteEntity",
+          "ActionRequiresAppInstallation": true
+        },
+        "CustomOutputName": "Note",
+        "WFContentItemFilter": {
+          "WFSerializationType": "WFContentPredicateTableTemplate",
+          "Value": {
+            "WFActionParameterFilterPrefix": 1,
+            "WFContentPredicateBoundedDate": false,
+            "WFActionParameterFilterTemplates": [
+              {
+                "Operator": 4,
+                "Property": "Folder",
+                "Removable": false,
+                "Values": {
+                  "String": {
+                    "Value": {
+                      "Type": "Ask"
+                    },
+                    "WFSerializationType": "WFTextTokenAttachment"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "WFContentItemLimitEnabled": true,
+        "WFContentItemLimitNumber": 25,
+        "WFContentItemSortOrder": "Latest First",
+        "WFContentItemSortProperty": "Last Modified Date"
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.setvariable",
+      "WFWorkflowActionParameters": {
+        "UUID": "B7777777-7777-4777-B777-777777777704",
+        "WFVariableName": "Notes",
+        "WFInput": {
+          "Value": {
+            "OutputName": "Note",
+            "OutputUUID": "B5555555-5555-4555-B555-555555555555",
+            "Type": "ActionOutput"
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.choosefrommenu",
+      "WFWorkflowActionParameters": {
+        "UUID": "A4444444-4444-4444-A444-444444444405",
+        "WFControlFlowMode": 1,
+        "GroupingIdentifier": "A4444444-4444-4444-A444-444444444444",
+        "WFMenuItemTitle": "Pick a note"
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.filter.notes",
+      "WFWorkflowActionParameters": {
+        "UUID": "B6666666-6666-4666-B666-666666666666",
+        "AppIntentDescriptor": {
+          "TeamIdentifier": "0000000000",
+          "BundleIdentifier": "com.apple.mobilenotes",
+          "Name": "Notes",
+          "AppIntentIdentifier": "NoteEntity",
+          "ActionRequiresAppInstallation": true
+        },
+        "CustomOutputName": "Note",
+        "WFContentItemFilter": {
+          "WFSerializationType": "WFContentPredicateTableTemplate",
+          "Value": {
+            "WFActionParameterFilterPrefix": 1,
+            "WFContentPredicateBoundedDate": false,
+            "WFActionParameterFilterTemplates": [
+              {
+                "Operator": 1001,
+                "Property": "Last Modified Date",
+                "Removable": false,
+                "Values": {
+                  "Number": 30,
+                  "Unit": 16384
+                }
+              }
+            ]
+          }
+        },
+        "WFContentItemLimitEnabled": true,
+        "WFContentItemLimitNumber": 25,
+        "WFContentItemSortOrder": "Latest First",
+        "WFContentItemSortProperty": "Last Modified Date"
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.choosefromlist",
+      "WFWorkflowActionParameters": {
+        "UUID": "B6666666-6666-4666-B666-666666666701",
+        "WFInput": {
+          "Value": {
+            "OutputName": "Note",
+            "OutputUUID": "B6666666-6666-4666-B666-666666666666",
+            "Type": "ActionOutput"
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+        },
+        "CustomOutputName": "Chosen Item"
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.setvariable",
+      "WFWorkflowActionParameters": {
+        "UUID": "B7777777-7777-4777-B777-777777777705",
+        "WFVariableName": "Notes",
+        "WFInput": {
+          "Value": {
+            "OutputName": "Chosen Item",
+            "OutputUUID": "B6666666-6666-4666-B666-666666666701",
+            "Type": "ActionOutput"
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.choosefrommenu",
+      "WFWorkflowActionParameters": {
+        "UUID": "A4444444-4444-4444-A444-444444444406",
+        "WFControlFlowMode": 1,
+        "GroupingIdentifier": "A4444444-4444-4444-A444-444444444444",
+        "WFMenuItemTitle": "Shortcut Input"
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.setvariable",
+      "WFWorkflowActionParameters": {
+        "UUID": "B7777777-7777-4777-B777-777777777706",
+        "WFVariableName": "Notes",
+        "WFInput": {
+          "Value": {
+            "Type": "ExtensionInput",
+            "VariableName": "Shortcut Input"
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.choosefrommenu",
+      "WFWorkflowActionParameters": {
+        "UUID": "A4444444-4444-4444-A444-444444444407",
+        "WFControlFlowMode": 2,
+        "GroupingIdentifier": "A4444444-4444-4444-A444-444444444444"
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.getvariable",
+      "WFWorkflowActionParameters": {
+        "UUID": "B9999999-9999-4999-B999-999999999999",
+        "WFVariable": {
+          "Value": {
+            "Type": "Variable",
+            "VariableName": "Notes"
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.count",
+      "WFWorkflowActionParameters": {
+        "UUID": "C0A0A0A0-0A0A-40A0-A0A0-A0A0A0A0A0A0",
+        "WFCountType": "Items",
+        "WFInput": {
+          "Value": {
+            "OutputName": "Notes",
+            "OutputUUID": "B9999999-9999-4999-B999-999999999999",
+            "Type": "ActionOutput"
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.conditional",
+      "WFWorkflowActionParameters": {
+        "UUID": "C0B0B0B0-0B0B-40B0-B0B0-B0B0B0B0B0B0",
+        "GroupingIdentifier": "C0B0B0B0-0B0B-40B0-B0B0-B0B0B0B0B0B0",
+        "WFControlFlowMode": 0,
+        "WFCondition": 2,
+        "WFNumberValue": 0,
+        "WFInput": {
+          "Value": {
+            "OutputName": "Count",
+            "OutputUUID": "C0A0A0A0-0A0A-40A0-A0A0-A0A0A0A0A0A0",
+            "Type": "ActionOutput"
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.repeat.each",
+      "WFWorkflowActionParameters": {
+        "UUID": "C1111111-1111-4111-C111-111111111111",
+        "WFControlFlowMode": 0,
+        "GroupingIdentifier": "C1111111-1111-4111-C111-111111111111",
+        "WFInput": {
+          "Value": {
+            "OutputName": "Notes",
+            "OutputUUID": "B9999999-9999-4999-B999-999999999999",
+            "Type": "ActionOutput"
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.gettext",
+      "WFWorkflowActionParameters": {
+        "UUID": "C9999999-9999-4999-C999-999999999999",
+        "WFTextActionText": {
+          "Value": {
+            "string": "iphone-notes:\nid: ￼|￼|￼\ntitle: ￼\nfolder: ￼\naccount: On My iPhone\nmodified: ￼\n---\n￼",
+            "attachmentsByRange": {
+              "{18, 1}": {
+                "Type": "Variable",
+                "VariableName": "Repeat Item",
+                "Aggrandizements": [
+                  {
+                    "Type": "WFPropertyVariableAggrandizement",
+                    "PropertyName": "Name"
+                  }
+                ]
+              },
+              "{20, 1}": {
+                "Type": "Variable",
+                "VariableName": "Repeat Item",
+                "Aggrandizements": [
+                  {
+                    "Type": "WFPropertyVariableAggrandizement",
+                    "PropertyName": "Folder"
+                  }
+                ]
+              },
+              "{22, 1}": {
+                "Type": "Variable",
+                "VariableName": "Repeat Item",
+                "Aggrandizements": [
+                  {
+                    "Type": "WFPropertyVariableAggrandizement",
+                    "PropertyName": "Last Modified Date"
+                  }
+                ]
+              },
+              "{31, 1}": {
+                "Type": "Variable",
+                "VariableName": "Repeat Item",
+                "Aggrandizements": [
+                  {
+                    "Type": "WFPropertyVariableAggrandizement",
+                    "PropertyName": "Name"
+                  }
+                ]
+              },
+              "{41, 1}": {
+                "Type": "Variable",
+                "VariableName": "Repeat Item",
+                "Aggrandizements": [
+                  {
+                    "Type": "WFPropertyVariableAggrandizement",
+                    "PropertyName": "Folder"
+                  }
+                ]
+              },
+              "{75, 1}": {
+                "Type": "Variable",
+                "VariableName": "Repeat Item",
+                "Aggrandizements": [
+                  {
+                    "Type": "WFPropertyVariableAggrandizement",
+                    "PropertyName": "Last Modified Date"
+                  }
+                ]
+              },
+              "{81, 1}": {
+                "Type": "Variable",
+                "VariableName": "Repeat Item",
+                "Aggrandizements": [
+                  {
+                    "Type": "WFPropertyVariableAggrandizement",
+                    "PropertyName": "Body"
+                  }
+                ]
+              }
+            }
+          },
+          "WFSerializationType": "WFTextTokenString"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.setvariable",
+      "WFWorkflowActionParameters": {
+        "UUID": "C8888888-8888-4888-C888-888888888801",
+        "WFVariableName": "Outgoing",
+        "WFInput": {
+          "Value": {
+            "OutputName": "Text",
+            "OutputUUID": "C9999999-9999-4999-C999-999999999999",
+            "Type": "ActionOutput"
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.sendmessage",
+      "WFWorkflowActionParameters": {
+        "UUID": "D3333333-3333-4333-D333-333333333333",
+        "IntentAppIdentifier": "ph.telegra.Telegraph",
+        "WFSendMessageContent": {
+          "Value": {
+            "Type": "Variable",
+            "VariableName": "Outgoing"
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.delay",
+      "WFWorkflowActionParameters": {
+        "UUID": "D4444444-4444-4444-D444-444444444444",
+        "WFDelayTime": 1
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.repeat.each",
+      "WFWorkflowActionParameters": {
+        "UUID": "C1111111-1111-4111-C111-111111111102",
+        "WFControlFlowMode": 2,
+        "GroupingIdentifier": "C1111111-1111-4111-C111-111111111111"
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.notification",
+      "WFWorkflowActionParameters": {
+        "UUID": "D7777777-7777-4777-D777-777777777701",
+        "WFNotificationActionTitle": "Brain2",
+        "WFNotificationActionBody": {
+          "Value": {
+            "string": "Sent ￼ note(s) to Brain2. Open Phone Notes on the laptop.",
+            "attachmentsByRange": {
+              "{5, 1}": {
+                "Type": "ActionOutput",
+                "OutputUUID": "C0A0A0A0-0A0A-40A0-A0A0-A0A0A0A0A0A0",
+                "OutputName": "Count"
+              }
+            }
+          },
+          "WFSerializationType": "WFTextTokenString"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.conditional",
+      "WFWorkflowActionParameters": {
+        "UUID": "C0B0B0B0-0B0B-40B0-B0B0-B0B0B0B0B0B1",
+        "GroupingIdentifier": "C0B0B0B0-0B0B-40B0-B0B0-B0B0B0B0B0B0",
+        "WFControlFlowMode": 1
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.notification",
+      "WFWorkflowActionParameters": {
+        "UUID": "D7777777-7777-4777-D777-777777777702",
+        "WFNotificationActionTitle": "Brain2",
+        "WFNotificationActionBody": "No notes matched. Try another range, Pick a note, or share a note in."
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.conditional",
+      "WFWorkflowActionParameters": {
+        "UUID": "C0B0B0B0-0B0B-40B0-B0B0-B0B0B0B0B0B2",
+        "GroupingIdentifier": "C0B0B0B0-0B0B-40B0-B0B0-B0B0B0B0B0B0",
+        "WFControlFlowMode": 2
+      }
+    }
+  ]
+}

@@ -1,0 +1,120 @@
+{
+  "WFWorkflowClientVersion": "1300.0.0",
+  "WFWorkflowClientRelease": "3.0",
+  "WFWorkflowMinimumClientVersion": 900,
+  "WFWorkflowMinimumClientVersionString": "900",
+  "WFWorkflowName": "Screen Time to Brain2",
+  "WFWorkflowIcon": {
+    "WFWorkflowIconStartColor": 4271458815,
+    "WFWorkflowIconGlyphNumber": 59511
+  },
+  "WFWorkflowImportQuestions": [
+    {
+      "ActionIndex": 5,
+      "Category": "Parameter",
+      "ParameterKey": "WFSendMessageActionRecipients",
+      "Text": "Pick the Brain2 bot chat in Telegram (@brain2_phone_bot). Pair it in Brain2 Settings first, then open that chat once."
+    }
+  ],
+  "WFWorkflowInputContentItemClasses": [
+    "WFStringContentItem"
+  ],
+  "WFWorkflowOutputContentItemClasses": [],
+  "WFWorkflowTypes": [
+    "ActionExtension",
+    "NCWidget",
+    "WatchKit",
+    "MenuBar",
+    "QuickActions"
+  ],
+  "WFWorkflowHasOutputFallback": false,
+  "WFWorkflowHasShortcutInputVariables": true,
+  "WFWorkflowActions": [
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.comment",
+      "WFWorkflowActionParameters": {
+        "UUID": "E1111111-1111-4111-A111-111111111111",
+        "WFCommentActionText": "Sends screen: AppName to @brain2_phone_bot.\nPair Brain2 first. On import, pick the bot chat in Telegram.\nRun it and type an app name, or attach this Shortcut (or a duplicate) to Automation → App Is Opened.\nShortcuts cannot read a variable opened-app name in a downloadable file. For a silent per-app ping, duplicate this Shortcut and replace Ask with a Text of that app's name."
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.ask",
+      "WFWorkflowActionParameters": {
+        "UUID": "E4444444-4444-4444-A444-444444444444",
+        "WFAskActionPrompt": "Which app? (e.g. Instagram)",
+        "WFInputType": "Text",
+        "CustomOutputName": "App Name"
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.setvariable",
+      "WFWorkflowActionParameters": {
+        "UUID": "E5555555-5555-4555-A555-555555555555",
+        "WFVariableName": "App",
+        "WFInput": {
+          "Value": {
+            "OutputName": "App Name",
+            "OutputUUID": "E4444444-4444-4444-A444-444444444444",
+            "Type": "ActionOutput"
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.gettext",
+      "WFWorkflowActionParameters": {
+        "UUID": "E6666666-6666-4666-A666-666666666666",
+        "WFTextActionText": {
+          "Value": {
+            "string": "screen: ￼",
+            "attachmentsByRange": {
+              "{8, 1}": {
+                "Type": "Variable",
+                "VariableName": "App"
+              }
+            }
+          },
+          "WFSerializationType": "WFTextTokenString"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.setvariable",
+      "WFWorkflowActionParameters": {
+        "UUID": "E6A6A6A6-6A6A-46A6-A6A6-6666666666A6",
+        "WFVariableName": "Outgoing",
+        "WFInput": {
+          "Value": {
+            "OutputName": "Text",
+            "OutputUUID": "E6666666-6666-4666-A666-666666666666",
+            "Type": "ActionOutput"
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.sendmessage",
+      "WFWorkflowActionParameters": {
+        "UUID": "E7777777-7777-4777-A777-777777777777",
+        "IntentAppIdentifier": "ph.telegra.Telegraph",
+        "WFSendMessageContent": {
+          "Value": {
+            "Type": "Variable",
+            "VariableName": "Outgoing"
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.notification",
+      "WFWorkflowActionParameters": {
+        "UUID": "E8888888-8888-4888-A888-888888888888",
+        "WFNotificationActionBody": "Sent screen ping to Brain2.",
+        "WFNotificationActionTitle": "Brain2"
+      }
+    }
+  ]
+}

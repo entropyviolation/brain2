@@ -1,0 +1,135 @@
+{
+  "WFWorkflowClientVersion": "1300.0.0",
+  "WFWorkflowClientRelease": "3.0",
+  "WFWorkflowMinimumClientVersion": 900,
+  "WFWorkflowMinimumClientVersionString": "900",
+  "WFWorkflowName": "iPhone Text to Brain2",
+  "WFWorkflowIcon": {
+    "WFWorkflowIconStartColor": 1440408063,
+    "WFWorkflowIconGlyphNumber": 59511
+  },
+  "WFWorkflowImportQuestions": [
+    {
+      "ActionIndex": 6,
+      "Category": "Parameter",
+      "ParameterKey": "WFSendMessageActionRecipients",
+      "Text": "Pick the Brain2 bot chat in Telegram (@brain2_phone_bot). Pair it in Brain2 Settings first, then open that chat once."
+    }
+  ],
+  "WFWorkflowInputContentItemClasses": [
+    "WFStringContentItem",
+    "WFTextContentItem"
+  ],
+  "WFWorkflowOutputContentItemClasses": [],
+  "WFWorkflowTypes": [
+    "ActionExtension",
+    "NCWidget",
+    "WatchKit",
+    "MenuBar",
+    "QuickActions"
+  ],
+  "WFWorkflowHasOutputFallback": false,
+  "WFWorkflowHasShortcutInputVariables": true,
+  "WFWorkflowActions": [
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.comment",
+      "WFWorkflowActionParameters": {
+        "UUID": "AA111111-1111-4111-A111-111111111111",
+        "WFCommentActionText": "Sends text: Name body to @brain2_phone_bot.\nPair Brain2 first. On import, pick the bot chat in Telegram.\nShare a message from Messages into this Shortcut, or run it and type the body.\nShortcuts cannot read the thread's person. Type the name when asked."
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.ask",
+      "WFWorkflowActionParameters": {
+        "UUID": "AA444444-4444-4444-A444-444444444444",
+        "WFAskActionPrompt": "What did you text?",
+        "WFInputType": "Text",
+        "CustomOutputName": "Body Text"
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.setvariable",
+      "WFWorkflowActionParameters": {
+        "UUID": "AA555555-5555-4555-A555-555555555555",
+        "WFVariableName": "Body",
+        "WFInput": {
+          "Value": {
+            "OutputName": "Body Text",
+            "OutputUUID": "AA444444-4444-4444-A444-444444444444",
+            "Type": "ActionOutput"
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.ask",
+      "WFWorkflowActionParameters": {
+        "UUID": "AA666666-6666-4666-A666-666666666666",
+        "WFAskActionPrompt": "Who did you text?",
+        "WFInputType": "Text",
+        "CustomOutputName": "Who"
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.gettext",
+      "WFWorkflowActionParameters": {
+        "UUID": "AA777777-7777-4777-A777-777777777777",
+        "WFTextActionText": {
+          "Value": {
+            "string": "text: ￼ ￼",
+            "attachmentsByRange": {
+              "{6, 1}": {
+                "Type": "ActionOutput",
+                "OutputUUID": "AA666666-6666-4666-A666-666666666666",
+                "OutputName": "Who"
+              },
+              "{8, 1}": {
+                "Type": "Variable",
+                "VariableName": "Body"
+              }
+            }
+          },
+          "WFSerializationType": "WFTextTokenString"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.setvariable",
+      "WFWorkflowActionParameters": {
+        "UUID": "AA7A7A7A-7A7A-47A7-A7A7-7777777777A7",
+        "WFVariableName": "Outgoing",
+        "WFInput": {
+          "Value": {
+            "OutputName": "Text",
+            "OutputUUID": "AA777777-7777-4777-A777-777777777777",
+            "Type": "ActionOutput"
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.sendmessage",
+      "WFWorkflowActionParameters": {
+        "UUID": "AA888888-8888-4888-A888-888888888888",
+        "IntentAppIdentifier": "ph.telegra.Telegraph",
+        "WFSendMessageContent": {
+          "Value": {
+            "Type": "Variable",
+            "VariableName": "Outgoing"
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.notification",
+      "WFWorkflowActionParameters": {
+        "UUID": "AA999999-9999-4999-A999-999999999999",
+        "WFNotificationActionBody": "Sent text ping to Brain2.",
+        "WFNotificationActionTitle": "Brain2"
+      }
+    }
+  ]
+}
