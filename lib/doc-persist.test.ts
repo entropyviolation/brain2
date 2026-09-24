@@ -6,6 +6,7 @@ import {
   clearAllPersistedDocs,
   getPersistedDoc,
   listPersistedDocs,
+  mergePersistedDocLists,
   previewDocBody,
   putPersistedDoc,
   replaceAllPersistedDocs,
@@ -39,6 +40,25 @@ describe("doc-persist", () => {
     const preview = previewDocBody(html)
     expect(preview).not.toContain("data:image")
     expect(preview).toContain("data-doc-img")
+  })
+
+  it("keeps a newer in-memory body when IndexedDB still has the shorter copy", () => {
+    const full = {
+      id: "doc_full",
+      title: "Plan",
+      folder: "",
+      fontFamily: "Merriweather",
+      status: "draft",
+      body: "FULL TEXT THAT MUST SURVIVE",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-02-01T00:00:00.000Z",
+    }
+    const short = { ...full, body: "short", updatedAt: "2026-01-01T00:00:00.000Z" }
+    const listed = mergePersistedDocLists([full], [short])
+    expect(listed.find((doc) => doc.id === "doc_full")?.body).toBe("FULL TEXT THAT MUST SURVIVE")
+    expect(mergePersistedDocLists([short], [full]).find((doc) => doc.id === "doc_full")?.body).toBe(
+      "FULL TEXT THAT MUST SURVIVE",
+    )
   })
 
   it("replaceAll swaps the full set", async () => {

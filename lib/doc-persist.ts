@@ -6,14 +6,24 @@
  * "Saved" after an in-memory task-store write even when persist failed, so
  * they vanished on refresh.
  *
- * IndexedDB is the canonical copy of each Docs note. The task store keeps a
- * lightweight preview for lists/search. A memory map covers tests/SSR.
+ * IndexedDB is the canonical copy of each Docs note. Live uses `cogs-docs`.
+ * Demo uses `brain2-demo-docs` so fiction never shares the Live IDB.
+ * The task store keeps a lightweight preview for lists/search. A memory map
+ * covers tests/SSR. Listing for backup keeps the newer of memory and IndexedDB
+ * (a tie keeps the longer body) so a truncated preview cannot replace the note.
  */
 import { NOTE_ATTR, NOTE_TYPE_ID } from "@/lib/note-types"
 import { isAllowedFont } from "@/lib/google-fonts"
 import type { Task } from "@/lib/types"
+import { itemTitleOrUntitled } from "@/lib/item-utils"
+import { isDemoProfile } from "@/lib/storage-keys"
 
-const DB_NAME = "cogs-docs"
+const LIVE_DB_NAME = "cogs-docs"
+const DEMO_DB_NAME = "brain2-demo-docs"
+
+function docsDbName(): string {
+  return isDemoProfile() ? DEMO_DB_NAME : LIVE_DB_NAME
+}
 const DB_VERSION = 1
 const STORE_NAME = "documents"
 
@@ -44,7 +54,7 @@ function idbAvailable(): boolean {
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION)
+    const req = indexedDB.open(docsDbName(), DB_VERSION)
     req.onupgradeneeded = () => {
       const db = req.result
       if (!db.objectStoreNames.contains(STORE_NAME)) {
@@ -74,7 +84,7 @@ export function taskToPersistedDoc(task: Task, bodyOverride?: string): Persisted
   const status = task.attributes?.[NOTE_ATTR.status]
   return {
     id: task.id,
-    title: task.description || "Untitled document",
+    title: itemTitleOrUntitled(task, "Untitled document"),
     folder: typeof folder === "string" ? folder.trim() : "",
     fontFamily: typeof font === "string" && isAllowedFont(font) ? font : "Merriweather",
     status: typeof status === "string" ? status : "draft",
@@ -153,8 +163,26 @@ export async function deletePersistedDoc(id: string): Promise<void> {
   }
 }
 
+/** Newer edit wins. A tie keeps the longer body so a truncated preview cannot replace the note. */
+function preferPersistedDoc(a: PersistedDoc, b: PersistedDoc): PersistedDoc {
+  if (a.updatedAt !== b.updatedAt) return a.updatedAt > b.updatedAt ? a : b
+  return a.body.length >= b.body.length ? a : b
+}
+
+/** Memory and IndexedDB can disagree. The backup export uses this so the file keeps the note. */
+export function mergePersistedDocLists(memoryDocs: PersistedDoc[], diskDocs: PersistedDoc[]): PersistedDoc[] {
+  const chosen = new Map<string, PersistedDoc>()
+  for (const rec of memoryDocs) chosen.set(rec.id, rec)
+  for (const rec of diskDocs) {
+    const current = chosen.get(rec.id)
+    chosen.set(rec.id, current ? preferPersistedDoc(current, rec) : rec)
+  }
+  return [...chosen.values()]
+}
+
 export async function listPersistedDocs(): Promise<PersistedDoc[]> {
   if (!idbAvailable()) return [...memory.values()]
+  const remembered = [...memory.values()]
   const db = await openDb()
   try {
     const fromDb = await new Promise<PersistedDoc[]>((resolve, reject) => {
@@ -163,12 +191,10 @@ export async function listPersistedDocs(): Promise<PersistedDoc[]> {
       req.onsuccess = () => resolve((req.result as PersistedDoc[]) ?? [])
       req.onerror = () => reject(req.error ?? new Error("Failed to list documents"))
     })
-    for (const rec of fromDb) memory.set(rec.id, rec)
-    const seen = new Set(fromDb.map((r) => r.id))
-    for (const rec of memory.values()) {
-      if (!seen.has(rec.id)) fromDb.push(rec)
-    }
-    return fromDb
+    const chosen = mergePersistedDocLists(remembered, fromDb)
+    memory.clear()
+    for (const rec of chosen) memory.set(rec.id, rec)
+    return chosen
   } finally {
     db.close()
   }

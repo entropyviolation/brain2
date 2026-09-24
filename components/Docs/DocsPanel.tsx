@@ -10,11 +10,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { ArrowLeft, FileText, FileUp, Folder, Plus, Trash2, Download } from "lucide-react"
 import { useTaskStore } from "@/lib/task-store"
-import { APP_NAV_KEYS, writeStoredTab } from "@/lib/app-navigation"
+import { APP_NAV_KEYS, writeStoredTab, writeStoredId, readStoredId, DOCS_SIDEBAR_SCROLL_SLOT } from "@/lib/app-navigation"
+import { usePersistedScroll } from "@/lib/use-persisted-scroll"
 import { exportDocumentAsPdf } from "@/lib/doc-export"
 import { listPersistedDocs } from "@/lib/doc-persist"
 import { DocumentEditor } from "@/components/Docs/DocumentEditor"
 import { DocsHome, docMatchesQuery } from "@/components/Docs/DocsHome"
+import { itemTitle, itemTitleOrUntitled } from "@/lib/item-utils"
 import {
   createDocument,
   createDocumentFromPdf,
@@ -42,14 +44,8 @@ export function DocsPanel() {
   const docs = useMemo(() => listDocuments(tasks), [tasks])
   const folders = useMemo(() => listDocumentFolders(docs), [docs])
 
-  const [folderFilter, setFolderFilter] = useState<string>(() => {
-    if (typeof window === "undefined") return ALL_FOLDER
-    return localStorage.getItem(APP_NAV_KEYS.docsFolder) || ALL_FOLDER
-  })
-  const [selectedId, setSelectedId] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null
-    return localStorage.getItem(APP_NAV_KEYS.docsDocId)
-  })
+  const [folderFilter, setFolderFilter] = useState<string>(() => readStoredId(APP_NAV_KEYS.docsFolder) || ALL_FOLDER)
+  const [selectedId, setSelectedId] = useState<string | null>(() => readStoredId(APP_NAV_KEYS.docsDocId))
   const [draft, setDraft] = useState("")
   const [titleDraft, setTitleDraft] = useState("")
   const [folderDraft, setFolderDraft] = useState("")
@@ -62,8 +58,10 @@ export function DocsPanel() {
   const pendingBody = useRef<string | null>(null)
   const selectedIdRef = useRef<string | null>(selectedId)
   const pdfInputRef = useRef<HTMLInputElement>(null)
+  const sidebarListRef = useRef<HTMLUListElement>(null)
 
   selectedIdRef.current = selectedId
+  usePersistedScroll(DOCS_SIDEBAR_SCROLL_SLOT, sidebarListRef)
 
   const selected = useMemo(
     () => docs.find((d) => d.id === selectedId) ?? null,
@@ -92,8 +90,7 @@ export function DocsPanel() {
   }, [docs, selectedId, hydrated])
 
   useEffect(() => {
-    if (selectedId) localStorage.setItem(APP_NAV_KEYS.docsDocId, selectedId)
-    else localStorage.removeItem(APP_NAV_KEYS.docsDocId)
+    writeStoredId(APP_NAV_KEYS.docsDocId, selectedId)
   }, [selectedId])
 
   useEffect(() => {
@@ -128,7 +125,7 @@ export function DocsPanel() {
       return
     }
     pendingBody.current = null
-    setTitleDraft(selected.description)
+    setTitleDraft(itemTitle(selected))
     setFolderDraft(documentFolder(selected))
     setSaveState("saved")
     setDraft(selected.body ?? "")
@@ -249,7 +246,7 @@ export function DocsPanel() {
   const handleRenameBlur = () => {
     if (!selectedId) return
     const next = titleDraft.trim()
-    if (next && next !== selected?.description) renameDocument(selectedId, next)
+    if (next && next !== itemTitle(selected)) renameDocument(selectedId, next)
   }
 
   const handleFolderBlur = () => {
@@ -265,7 +262,7 @@ export function DocsPanel() {
       await flushBody()
       const html = pendingBody.current ?? draft
       exportDocumentAsPdf({
-        title: titleDraft.trim() || selected.description || "Untitled document",
+        title: titleDraft.trim() || itemTitleOrUntitled(selected, "Untitled document"),
         html,
         font: documentFont(selected),
       })
@@ -290,7 +287,7 @@ export function DocsPanel() {
 
   useEffect(() => {
     if (typeof window === "undefined") return
-    const stored = localStorage.getItem(APP_NAV_KEYS.docsFolder)
+    const stored = readStoredId(APP_NAV_KEYS.docsFolder)
     if (!stored) return
     if (stored === ALL_FOLDER || stored === UNFILED || folders.includes(stored)) {
       setFolderFilter(stored)
@@ -300,7 +297,7 @@ export function DocsPanel() {
   const saveLabel = busy ?? (saveState === "saving" ? "Saving…" : saveState === "error" ? "Save failed" : "Saved")
 
   return (
-    <div className="docs95">
+    <div className="docs95" data-ui-name="Docs" data-ui-docs="components/Docs/README.md">
       <div className="docs-window">
         <div className="docs-title-bar">
           <FileText className="docs-title-icon" aria-hidden />
@@ -400,7 +397,7 @@ export function DocsPanel() {
             {visibleDocs.length === 0 ? (
               <p className="docs-empty-side">No documents here. Click New to start.</p>
             ) : (
-              <ul className="docs-doc-list">
+              <ul className="docs-doc-list" ref={sidebarListRef}>
                 {visibleDocs.map((d) => (
                   <li key={d.id}>
                     <button
@@ -413,7 +410,7 @@ export function DocsPanel() {
                       }}
                     >
                       <FileText className="h-3.5 w-3.5" aria-hidden />
-                      <span className="truncate">{d.description || "Untitled"}</span>
+                      <span className="truncate">{itemTitleOrUntitled(d)}</span>
                       <span className="docs-doc-meta">{documentStatus(d)}</span>
                     </button>
                   </li>
@@ -426,6 +423,7 @@ export function DocsPanel() {
             {!selected ? (
               <DocsHome
                 folderLabel={folderLabel}
+                folderId={folderFilter}
                 docs={searchedDocs}
                 bodies={homeBodies}
                 query={query}

@@ -1,7 +1,7 @@
 /**
  * lib/note-types.ts — Document / rich-note item type (Brain2 feature #184/#84)
  *
- * Defines the built-in-style `note` `ItemTypeDefinition` that turns COGS into a
+ * Defines the built-in-style `note` `ItemTypeDefinition` that turns Brain2 into a
  * lightweight second brain: a `note` is a free-form document whose primary
  * content is its rich-text/markdown `Item.body`, surfaced through the `"body"`
  * detail panel (`components/ItemDetail/BodyPanel.tsx`). Notes aren't actionable —
@@ -57,6 +57,7 @@ export function getNoteTypeDefinition(): ItemTypeDefinition {
     description:
       "A free-form document whose content lives in its rich-text/markdown body. The backbone of the second brain: link notes to tasks, goals, and each other.",
     builtin: true,
+    kind: "system",
     color: "#0a7c7c",
     attributes: NOTE_ATTRIBUTES,
     defaultAttributeValues: {

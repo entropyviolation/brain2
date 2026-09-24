@@ -6,11 +6,11 @@
  */
 
 .docs95 {
-  --d-surface: #c0c0c0;
-  --d-face: #dfdfdf;
-  --d-highlight: #ffffff;
-  --d-shadow: #808080;
-  --d-frame: #0a0a0a;
+  --d-surface: var(--chrome-face, #c0c0c0);
+  --d-face: var(--chrome-mid, #dfdfdf);
+  --d-highlight: var(--chrome-hi, #ffffff);
+  --d-shadow: var(--chrome-lo, #808080);
+  --d-frame: var(--chrome-frame, #0a0a0a);
   --d-blue: #000080;
   --d-blue-light: #1084d0;
   --d-raised: inset -1px -1px var(--d-frame), inset 1px 1px var(--d-highlight),

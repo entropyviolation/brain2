@@ -5,14 +5,18 @@
  */
 "use client"
 
+import { useRef } from "react"
 import { FileText, FileUp, Search, X } from "lucide-react"
 import { documentPreviewText, htmlToPlainText } from "@/lib/doc-html"
+import { docsHomeScrollSlot } from "@/lib/app-navigation"
+import { usePersistedScroll } from "@/lib/use-persisted-scroll"
 import {
   documentFolder,
   documentStatus,
   documentUpdatedAt,
 } from "./doc-actions"
 import type { Task } from "@/lib/types"
+import { itemTitle } from "@/lib/item-utils"
 
 function formatOpened(doc: Task): string {
   const date = documentUpdatedAt(doc) ?? (doc.createdAt instanceof Date ? doc.createdAt : new Date(doc.createdAt))
@@ -28,7 +32,7 @@ function formatOpened(doc: Task): string {
 export function docMatchesQuery(doc: Task, query: string, fullBody?: string): boolean {
   const q = query.trim().toLowerCase()
   if (!q) return true
-  const title = (doc.description || "").toLowerCase()
+  const title = itemTitle(doc).toLowerCase()
   if (title.includes(q)) return true
   const folder = documentFolder(doc).toLowerCase()
   if (folder.includes(q)) return true
@@ -38,6 +42,7 @@ export function docMatchesQuery(doc: Task, query: string, fullBody?: string): bo
 
 interface DocsHomeProps {
   folderLabel: string
+  folderId: string
   docs: Task[]
   bodies: Record<string, string>
   query: string
@@ -49,6 +54,7 @@ interface DocsHomeProps {
 
 export function DocsHome({
   folderLabel,
+  folderId,
   docs,
   bodies,
   query,
@@ -57,8 +63,11 @@ export function DocsHome({
   onCreate,
   onUpload,
 }: DocsHomeProps) {
+  const homeRef = useRef<HTMLDivElement>(null)
+  usePersistedScroll(docsHomeScrollSlot(folderId), homeRef)
+
   return (
-    <div className="docs-home">
+    <div className="docs-home" ref={homeRef}>
       <div className="docs-home-start">
         <div className="docs-home-start-head">
           <h3>Start a new document</h3>

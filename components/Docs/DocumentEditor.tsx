@@ -52,6 +52,8 @@ import {
 } from "@/lib/doc-links"
 import { LinkDialog, type LinkDialogValues } from "@/components/Docs/LinkDialog"
 import { resizeImageForDoc } from "@/lib/image-resize"
+import { docsScrollSlot, readScrollOffset, writeScrollOffset } from "@/lib/app-navigation"
+import { canPersistScroller } from "@/lib/use-persisted-scroll"
 import "./document-editor.css"
 
 interface DocumentEditorProps {
@@ -94,16 +96,55 @@ export function DocumentEditor({
   const [selectedImg, setSelectedImg] = useState<HTMLImageElement | null>(null)
   const savedRange = useRef<Range | null>(null)
   const editingAnchor = useRef<HTMLAnchorElement | null>(null)
+  const restoringScroll = useRef(false)
+  const pendingScroll = useRef(0)
+  const userScrolled = useRef(false)
+
+  const applySurfaceHtml = (el: HTMLDivElement, html: string, mode: "restore" | "keep") => {
+    const keep = mode === "restore" ? pendingScroll.current : Math.max(el.scrollTop, pendingScroll.current)
+    pendingScroll.current = keep
+    restoringScroll.current = true
+    el.innerHTML = html
+    el.scrollTop = keep
+    requestAnimationFrame(() => {
+      const node = surfaceRef.current
+      if (!node) return
+      node.scrollTop = keep
+      requestAnimationFrame(() => {
+        if (!surfaceRef.current) return
+        surfaceRef.current.scrollTop = keep
+        restoringScroll.current = false
+      })
+    })
+  }
+
+  const restorePendingScroll = () => {
+    const el = surfaceRef.current
+    if (!el || userScrolled.current) return
+    restoringScroll.current = true
+    el.scrollTop = pendingScroll.current
+    requestAnimationFrame(() => {
+      restoringScroll.current = false
+    })
+  }
 
   // Load document into the surface when docId / external value changes.
   useEffect(() => {
     const el = surfaceRef.current
     if (!el) return
+    userScrolled.current = false
+    pendingScroll.current = docId ? readScrollOffset(docsScrollSlot(docId)) : 0
     const html = bodyToEditorHtml(value)
-    if (html === lastEmitted.current && el.innerHTML === html) return
+    if (html === lastEmitted.current && el.innerHTML === html) {
+      restorePendingScroll()
+      return
+    }
     // Don't clobber while the user is typing the same doc unless value is external.
-    if (document.activeElement === el && lastEmitted.current && value === lastEmitted.current) return
-    el.innerHTML = html
+    if (document.activeElement === el && lastEmitted.current && value === lastEmitted.current) {
+      restorePendingScroll()
+      return
+    }
+    applySurfaceHtml(el, html, "restore")
     lastEmitted.current = html
     setWordCount(htmlWordCount(html))
     setSelectedImg(null)
@@ -116,11 +157,67 @@ export function DocumentEditor({
     if (document.activeElement === el) return
     const html = bodyToEditorHtml(value)
     if (html !== el.innerHTML) {
-      el.innerHTML = html
+      applySurfaceHtml(el, html, "keep")
       lastEmitted.current = html
       setWordCount(htmlWordCount(html))
+    } else {
+      restorePendingScroll()
     }
   }, [value])
+
+  useEffect(() => {
+    const el = surfaceRef.current
+    if (!el || !docId) return
+    const slot = docsScrollSlot(docId)
+    let zeroTimer: ReturnType<typeof setTimeout> | null = null
+    const persist = () => {
+      if (!canPersistScroller(el) || (el.scrollTop === 0 && pendingScroll.current > 0)) {
+        if (pendingScroll.current > 0) writeScrollOffset(slot, pendingScroll.current)
+        return
+      }
+      writeScrollOffset(slot, el.scrollTop)
+    }
+    const onScroll = () => {
+      if (!canPersistScroller(el)) return
+      const top = el.scrollTop
+      if (restoringScroll.current && Math.abs(top - pendingScroll.current) < 2) return
+      if (top === 0 && pendingScroll.current > 0) {
+        if (zeroTimer) window.clearTimeout(zeroTimer)
+        zeroTimer = window.setTimeout(() => {
+          zeroTimer = null
+          const node = surfaceRef.current
+          if (!node || !canPersistScroller(node) || node.scrollTop !== 0) return
+          userScrolled.current = true
+          pendingScroll.current = 0
+          writeScrollOffset(slot, 0)
+        }, 80)
+        return
+      }
+      userScrolled.current = true
+      pendingScroll.current = top
+      writeScrollOffset(slot, top)
+    }
+    el.addEventListener("scroll", onScroll, { passive: true })
+    window.addEventListener("pagehide", persist)
+    document.addEventListener("visibilitychange", persist)
+    const imgs = el.querySelectorAll("img")
+    const onImg = () => restorePendingScroll()
+    imgs.forEach((img) => {
+      if (!img.complete) img.addEventListener("load", onImg)
+    })
+    const later = window.setTimeout(() => restorePendingScroll(), 50)
+    const settled = window.setTimeout(() => restorePendingScroll(), 220)
+    return () => {
+      if (zeroTimer) window.clearTimeout(zeroTimer)
+      persist()
+      window.clearTimeout(later)
+      window.clearTimeout(settled)
+      el.removeEventListener("scroll", onScroll)
+      window.removeEventListener("pagehide", persist)
+      document.removeEventListener("visibilitychange", persist)
+      imgs.forEach((img) => img.removeEventListener("load", onImg))
+    }
+  }, [docId, value])
 
   useEffect(() => {
     const fonts = [
