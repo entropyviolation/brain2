@@ -3,12 +3,12 @@
  *
  * Two partitions: Inbox (revisit) and Monkey brain (compulsive dump).
  * Lists the open partition newest first. The header trigger counts the revisit pile.
- * Multi-select applies list (Apply, or Apply and clarify) / deadline / merge, marks clarified, moves partitions,
- * or opens the selection in Bulk edit.
- * Walk steps only the current checkbox selection (Select all / Deselect all).
- * Delete selection asks first. Clarifying or discarding awards 1 point;
- * emptying the revisit Inbox awards 50. Walk can rename and discard. Recent lists pin
- * at the top of the picker.
+ * At rest the foot is Walk plus Select all / Select N / Select unsorted / a Dated-or-Bare slice.
+ * A check reveals Apply list, Due, File, Monkey brain, Bulk edit, and Delete. Merge needs two.
+ * Walk with nothing checked starts at the caret; with checks it walks the selection.
+ * Delete, including one row’s trash, asks first. Clarifying or filing awards 1 point;
+ * emptying the revisit Inbox awards 50. The foot counts this sitting.
+ * Recent lists are the first keys on the clarify sheet.
  *
  * Chrome: milled fascia on `.inbox-dialog` (`inbox.css`) — brushed bay, engraved
  * nameplates, raised metal keys, CRT counts, power lamp on the active partition.
@@ -21,7 +21,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTaskStore } from "@/lib/task-store"
 import { IsolatedInput, IsolatedTextarea } from "@/components/ui/isolated-text-field"
-import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
@@ -29,7 +28,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Edit,
   Trash,
-  ArrowRight,
   InboxIcon,
   Clock,
   Award,
@@ -100,16 +98,6 @@ function asDate(value: Date | string | undefined): Date | null {
   if (!value) return null
   const d = value instanceof Date ? value : new Date(value)
   return Number.isNaN(d.getTime()) ? null : d
-}
-
-function formatTaskDate(value: Date | string | undefined): string {
-  const d = asDate(value)
-  return d ? d.toLocaleDateString() : "—"
-}
-
-function formatTaskDateTime(value: Date | string | undefined): string {
-  const d = asDate(value)
-  return d ? d.toLocaleString() : "—"
 }
 
 function inboxClock(value: Date | string | undefined): string {
@@ -234,6 +222,25 @@ function TaskClarificationDialog({
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [adhocDefs, setAdhocDefs] = useState<AttributeDefinition[]>([])
   const [attributeValues, setAttributeValues] = useState<Record<string, AttributeValue>>(task.attributes || {})
+  const [boundTaskId, setBoundTaskId] = useState(task.id)
+  const savingRef = useRef(false)
+
+  // Keep the dialog mounted across a walk. Remounting it replayed the open
+  // animation and rebuilt the list picker on every step.
+  if (task.id !== boundTaskId) {
+    setBoundTaskId(task.id)
+    savingRef.current = false
+    titleRef.current = itemTitle(task)
+    descRef.current = task.taskDescription || ""
+    durationRef.current = task.estimatedDuration?.toString() || "30"
+    rewardRef.current = task.rewardValue?.toString() || "1"
+    setUrgency(task.urgency?.toString() || "3")
+    setImportance(task.importance?.toString() || "3")
+    setSelectedCategories(task.lists || [])
+    setShowAdvanced(false)
+    setAdhocDefs([])
+    setAttributeValues(task.attributes || {})
+  }
 
   const listAttributeDefs = useMemo(
     () => mergeListAttributes(categories, selectedCategories),
@@ -243,6 +250,8 @@ function TaskClarificationDialog({
   const isNextActionTarget = selectedCategories.some((cid) => listIsNextActions(cid, folders))
 
   const handleSave = () => {
+    if (savingRef.current) return
+    savingRef.current = true
     const named = renameInboxIdea(task, titleRef.current)
     let updatedTask: Task = {
       ...task,
@@ -275,6 +284,7 @@ function TaskClarificationDialog({
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => {
+      if (e.repeat) return
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
         e.preventDefault()
         handleSave()
@@ -329,6 +339,7 @@ function TaskClarificationDialog({
                   Name
                 </Label>
                 <IsolatedInput
+                  key={task.id}
                   id="inbox-idea-name"
                   value={itemTitle(task)}
                   onLiveChange={(v) => {
@@ -366,6 +377,7 @@ function TaskClarificationDialog({
                   })}
                 </div>
                 <ListPicker
+                  key={task.id}
                   selected={selectedCategories}
                   onChange={setSelectedCategories}
                   allowMultiToggle
@@ -378,6 +390,7 @@ function TaskClarificationDialog({
                   Notes
                 </Label>
                 <IsolatedTextarea
+                  key={task.id}
                   id="task-description"
                   value={task.taskDescription || ""}
                   onLiveChange={(v) => {
@@ -398,6 +411,7 @@ function TaskClarificationDialog({
                   </Label>
                   <div className="relative">
                     <IsolatedInput
+                      key={`${task.id}-duration`}
                       id="estimated-duration"
                       type="number"
                       value={task.estimatedDuration?.toString() || "30"}
@@ -419,6 +433,7 @@ function TaskClarificationDialog({
                     Reward Value
                   </Label>
                   <IsolatedInput
+                    key={`${task.id}-reward`}
                     id="reward-value"
                     type="number"
                     value={task.rewardValue?.toString() || "1"}
@@ -587,7 +602,10 @@ export function Inbox({ onTaskSelect: _onTaskSelect }: InboxProps) {
   )
 
   useEffect(() => {
-    setSelectedIds((ids) => ids.filter((id) => inboxIdList.includes(id)))
+    setSelectedIds((ids) => {
+      const next = ids.filter((id) => inboxIdList.includes(id))
+      return next.length === ids.length ? ids : next
+    })
     if (focusId && !inboxIdList.includes(focusId)) {
       setFocusId(inboxIdList[0] ?? null)
     } else if (open && !focusId && inboxIdList[0]) {
@@ -602,6 +620,13 @@ export function Inbox({ onTaskSelect: _onTaskSelect }: InboxProps) {
   const mergeItems = useMemo(
     () => selectedIds.map((id) => allTasks.find((task) => task.id === id)).filter((task): task is Task => !!task),
     [selectedIds, allTasks],
+  )
+  const deletePreview = useMemo(
+    () =>
+      pendingDeleteIds
+        .map((id) => allTasks.find((task) => task.id === id))
+        .filter((task): task is Task => !!task),
+    [pendingDeleteIds, allTasks],
   )
 
   const resetSession = () => {
@@ -753,7 +778,7 @@ export function Inbox({ onTaskSelect: _onTaskSelect }: InboxProps) {
       .filter((task): task is Task => !!task)
     const openBefore = openRevisitInboxIds(allTasks).size
     rememberWorld("inbox delete selection")
-    setTasks(deleteInboxItems(allTasks, ids))
+    setTasks(deleteInboxItems(allTasks, ids), { tombstoneIds: ids })
     const openAfter = openRevisitInboxIds(useTaskStore.getState().tasks).size
     creditInboxBatchHandling(
       doomed.map((task) => ({ taskId: task.id, title: itemTitle(task) })),
@@ -813,7 +838,7 @@ export function Inbox({ onTaskSelect: _onTaskSelect }: InboxProps) {
 
   const applyMerge = (plan: ItemMergePlan) => {
     rememberWorld("inbox merge")
-    setTasks(applyItemMerge(allTasks, plan))
+    setTasks(applyItemMerge(allTasks, plan), { tombstoneIds: plan.discardedIds })
     setSelectedIds((ids) => ids.filter((id) => id === plan.survivorId || !plan.discardedIds.includes(id)))
     setFocusId(plan.survivorId)
     setUndoLabel("inbox merge")
@@ -865,9 +890,9 @@ export function Inbox({ onTaskSelect: _onTaskSelect }: InboxProps) {
   }
 
   useEffect(() => {
-    if (!open || !focusId) return
-    rowRefs.current.get(focusId)?.scrollIntoView({ block: "nearest" })
-  }, [focusId, open, inboxIdList])
+    if (!open || !focusId || nestedOpen) return
+    rowRefs.current.get(focusId)?.scrollIntoView?.({ block: "nearest" })
+  }, [focusId, open, inboxIdList, nestedOpen])
 
   useEffect(() => {
     if (!open || nestedOpen) return
@@ -990,7 +1015,7 @@ export function Inbox({ onTaskSelect: _onTaskSelect }: InboxProps) {
             )}
           </Button>
         </DialogTrigger>
-        <DialogContent className="inbox-dialog fm98-dialog sm:max-w-2xl max-h-[80vh] overflow-hidden flex flex-col" data-ui-name="Inbox" data-ui-docs="components/README.md">
+        <DialogContent className="inbox-dialog fm98-dialog sm:max-w-4xl max-h-[80vh] overflow-hidden flex flex-col" data-ui-name="Inbox" data-ui-docs="components/README.md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <InboxIcon className="h-5 w-5" />
@@ -999,7 +1024,7 @@ export function Inbox({ onTaskSelect: _onTaskSelect }: InboxProps) {
             <DialogDescription>
               {partition === "monkey"
                 ? "A dump for compulsive, repetitive thoughts. Less weight than Inbox — promote one when you actually mean to revisit it."
-                : "The pile you mean to revisit. j/k move · x select · a all · u none · ↵/c clarify · y file · w walk · l list · d deadline · m merge · b monkey · e bulk edit · # delete"}
+                : "The pile you mean to revisit."}
             </DialogDescription>
           </DialogHeader>
 
@@ -1013,7 +1038,7 @@ export function Inbox({ onTaskSelect: _onTaskSelect }: InboxProps) {
             >
               <span className="inbox-power-lamp" aria-hidden="true" />
               <span className="inbox-partition-label">Inbox</span>
-              <i className="inbox-crt-count">{revisitTasks.length}</i>
+              <i className="inbox-crt-count" data-heavy={revisitTasks.length >= 10 ? "true" : undefined}>{revisitTasks.length}</i>
             </button>
             <button
               type="button"
@@ -1024,9 +1049,12 @@ export function Inbox({ onTaskSelect: _onTaskSelect }: InboxProps) {
             >
               <span className="inbox-power-lamp" aria-hidden="true" />
               <span className="inbox-partition-label">Monkey brain</span>
-              <i className="inbox-crt-count">{monkeyTasks.length}</i>
+              <i className="inbox-crt-count" data-heavy={monkeyTasks.length >= 10 ? "true" : undefined}>{monkeyTasks.length}</i>
             </button>
           </div>
+          <p className="inbox-chord-manual">
+            j/k move · x select · shift-click range · a all · n select N · s unsorted · / slice · ↵ clarify · y file · w walk · l list · d due · m merge · b monkey · i inbox · e edit · # delete
+          </p>
 
           {undoLabel && (
             <div className="inbox-undo">
@@ -1052,10 +1080,16 @@ export function Inbox({ onTaskSelect: _onTaskSelect }: InboxProps) {
           )}
 
           <div className="inbox-list-well flex-1 overflow-y-auto">
-            {inboxTasks.length === 0 ? (
+            {walking ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>Walking this pile.</p>
+              </div>
+            ) : inboxTasks.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <InboxIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                {partition === "monkey" ? (
+                {pileTasks.length > 0 ? (
+                  <p>Nothing in this slice.</p>
+                ) : partition === "monkey" ? (
                   <>
                     <p>Monkey brain is quiet.</p>
                     <p className="text-sm">Flag a capture with -mb or -monkey, or send a selection here from Inbox.</p>
@@ -1068,167 +1102,176 @@ export function Inbox({ onTaskSelect: _onTaskSelect }: InboxProps) {
                 )}
               </div>
             ) : (
-              <div className="space-y-3">
-                {inboxTasks.map((task) => {
-                  const selected = selectedIds.includes(task.id)
-                  const focused = focusId === task.id
-                  return (
-                    <Card
-                      key={task.id}
-                      data-inbox-row={task.id}
-                      data-focused={focused ? "true" : undefined}
-                      data-selected={selected ? "true" : undefined}
-                      className="inbox-row overflow-hidden"
-                      onClick={() => setFocusId(task.id)}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between gap-4">
-                          <label className="flex items-start gap-3 flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
-                            <input
-                              type="checkbox"
-                              className="mt-1"
-                              checked={selected}
-                              aria-label={`Select ${itemTitle(task)}`}
-                              onChange={() => {
-                                setFocusId(task.id)
-                                setSelectedIds((ids) => toggleSelectedId(ids, task.id))
-                              }}
-                            />
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium">{itemTitle(task)}</p>
-                              <p className="text-sm text-muted-foreground mt-1">Added {formatTaskDateTime(task.createdAt)}</p>
-                              <CaptureChips task={task} />
-                            </div>
-                          </label>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleClarifyTask(task)
-                              }}
-                              title="Clarify this idea"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleDeleteIdea(task)
-                              }}
-                              title="Delete this idea"
-                            >
-                              <Trash className="h-4 w-4" />
-                            </Button>
-                          </div>
+              <div className="inbox-rows">
+                {dayGroups.map((group) => (
+                  <div key={group.key}>
+                    <div className="inbox-day-plate">{group.plate}</div>
+                    {group.tasks.map((task) => {
+                      const selected = selectedIds.includes(task.id)
+                      const focused = focusId === task.id
+                      const { line, aside } = inboxTitleLines(itemTitle(task))
+                      const age = inboxAgeMark(task.createdAt)
+                      return (
+                        <div
+                          key={task.id}
+                          ref={(node) => {
+                            if (node) rowRefs.current.set(task.id, node)
+                            else rowRefs.current.delete(task.id)
+                          }}
+                          data-inbox-row={task.id}
+                          data-focused={focused ? "true" : undefined}
+                          data-selected={selected ? "true" : undefined}
+                          className="inbox-row"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selected}
+                            aria-label={`Select ${itemTitle(task)}`}
+                            onClick={(event) => {
+                              if (!event.shiftKey) return
+                              event.preventDefault()
+                              clickRow(task.id, true)
+                            }}
+                            onChange={() => {
+                              selectAnchor.current = task.id
+                              setFocusId(task.id)
+                              setSelectedIds((ids) => toggleSelectedId(ids, task.id))
+                            }}
+                          />
+                          <button
+                            type="button"
+                            className="inbox-row-title"
+                            onClick={(event) => clickRow(task.id, event.shiftKey)}
+                          >
+                            <span>{line || "Untitled"}</span>
+                            {aside ? <span className="inbox-row-aside">{aside}</span> : null}
+                            <CaptureChips task={task} />
+                          </button>
+                          <span className="inbox-row-when">
+                            {inboxClock(task.createdAt)}
+                            {age ? <i className="inbox-age">{age}</i> : null}
+                          </span>
+                          {focused ? (
+                            <span className="inbox-row-tools">
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => handleClarifyTask(task)}
+                                title="Clarify this idea"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => handleDeleteIdea(task)}
+                                title="Delete this idea"
+                              >
+                                <Trash className="h-4 w-4" />
+                              </Button>
+                            </span>
+                          ) : (
+                            <span className="inbox-row-tools" />
+                          )}
                         </div>
-                      </CardContent>
-                    </Card>
-                  )
-                })}
+                      )
+                    })}
+                  </div>
+                ))}
               </div>
             )}
           </div>
 
-          {inboxTasks.length > 0 && (
+          {pileTasks.length > 0 && (
             <div className="inbox-foot">
               <p className="inbox-foot-meta">
-                <i className="inbox-crt-count">{inboxTasks.length}</i>
                 <span>
-                  idea{inboxTasks.length !== 1 ? "s" : ""}
+                  {sitting.handled > 0
+                    ? `${sitting.handled} this sitting · ${sitting.points} pts`
+                    : "This sitting"}
+                  {partition === "inbox" ? " · 50 when this pile hits 0" : ""}
                   {selectedIds.length > 0 ? ` · ${selectedIds.length} selected` : ""}
                 </span>
               </p>
               <div className="inbox-foot-actions">
+                {!allSelected && inboxIdList.length > 0 && (
+                  <Button variant="outline" onClick={() => setSelectedIds(inboxIdList)} title="Select every visible idea (A)">
+                    <i className="inbox-keycap">A</i>Select all
+                  </Button>
+                )}
                 <Button
                   variant="outline"
-                  disabled={allSelected}
-                  onClick={() => setSelectedIds(inboxIdList)}
-                  title="Select every idea (A)"
+                  onClick={() => {
+                    setSelectCount("")
+                    setBatchMode("select-n")
+                  }}
+                  title="Pick a number of ideas at random (N)"
                 >
-                  Select all
+                  <i className="inbox-keycap">N</i>Select N
                 </Button>
-                <Button
-                  variant="outline"
-                  disabled={selectedIds.length === 0}
-                  onClick={() => setSelectedIds([])}
-                  title="Clear the selection (U)"
-                >
-                  Deselect all
+                {bareCount > 0 && (
+                  <Button variant="outline" onClick={selectUnsorted} title="Select ideas that are only a name (S)">
+                    <i className="inbox-keycap">S</i>Select unsorted
+                  </Button>
+                )}
+                {selectedIds.length > 0 && (
+                  <Button variant="outline" onClick={() => setSelectedIds([])} title="Clear the selection (U)">
+                    <i className="inbox-keycap">U</i>Deselect
+                  </Button>
+                )}
+                <Button variant="outline" onClick={cycleSlice} title="Cycle All, Dated, Bare (/)">
+                  <i className="inbox-keycap">/</i>
+                  {slice === "dated" ? "Dated" : slice === "bare" ? "Bare" : "All"}
                 </Button>
-                <Button
-                  variant="outline"
-                  disabled={batchTargets.length === 0}
-                  onClick={() => setBatchMode("list")}
-                >
-                  Apply list
-                </Button>
-                <Button
-                  variant="outline"
-                  disabled={batchTargets.length === 0}
-                  onClick={() => setBatchMode("deadline")}
-                >
-                  Deadline
-                </Button>
-                <Button
-                  variant="outline"
-                  disabled={selectedIds.length < 2}
-                  onClick={() => setBatchMode("merge-confirm")}
-                >
-                  Merge
-                </Button>
-                <Button
-                  variant="outline"
-                  disabled={selectedIds.length === 0}
-                  onClick={applyClarifySelection}
-                  title="File the selection onto its lists, or All Items (Y)"
-                >
-                  Mark clarified
-                </Button>
-                <Button
-                  variant="outline"
-                  disabled={selectedIds.length === 0}
-                  onClick={() => movePartition(partition !== "monkey")}
-                  title={
-                    partition === "monkey"
-                      ? "Send the selection to Inbox (I)"
-                      : "Send the selection to Monkey brain (B)"
-                  }
-                >
-                  {partition === "monkey" ? "To inbox" : "Monkey brain"}
-                </Button>
-                <Button
-                  variant="outline"
-                  disabled={selectedIds.length === 0}
-                  onClick={openBulkEdit}
-                  title="Edit the selection as bulk-add text (E)"
-                >
-                  Bulk edit
-                </Button>
-                <Button
-                  variant="outline"
-                  disabled={selectedIds.length === 0}
-                  onClick={() => setBatchMode("delete-confirm")}
-                  title="Delete the selected ideas (#)"
-                >
-                  Delete selection
-                </Button>
-                <Button
-                  onClick={() => startWalk(focusId)}
-                  className="gap-2"
-                  disabled={selectedIds.length === 0}
-                  title={
-                    selectedIds.length === 0
-                      ? "Select ideas first (A selects all)"
-                      : "Walk selected ideas (W)"
-                  }
-                >
-                  <ArrowRight className="h-4 w-4" />
-                  Walk selected
-                </Button>
+                {selectedIds.length > 0 && (
+                  <>
+                    <Button variant="outline" onClick={() => setBatchMode("list")} title="Apply a list (L)">
+                      <i className="inbox-keycap">L</i>Apply list
+                    </Button>
+                    <Button variant="outline" onClick={() => setBatchMode("deadline")} title="Set a due day (D)">
+                      <i className="inbox-keycap">D</i>Due
+                    </Button>
+                    <Button variant="outline" onClick={applyClarifySelection} title="File the selection onto its lists, or All Items (Y)">
+                      <i className="inbox-keycap">Y</i>File
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => movePartition(partition !== "monkey")}
+                      title={partition === "monkey" ? "Send the selection to Inbox (I)" : "Send the selection to Monkey brain (B)"}
+                    >
+                      <i className="inbox-keycap">{partition === "monkey" ? "I" : "B"}</i>
+                      {partition === "monkey" ? "To inbox" : "Monkey brain"}
+                    </Button>
+                    <Button variant="outline" onClick={openBulkEdit} title="Edit the selection as bulk-add text (E)">
+                      <i className="inbox-keycap">E</i>Bulk edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setPendingDeleteIds(selectedIds)
+                        setBatchMode("delete-confirm")
+                      }}
+                      title="Delete the selected ideas (#)"
+                    >
+                      <i className="inbox-keycap">#</i>Delete
+                    </Button>
+                  </>
+                )}
+                {selectedIds.length >= 2 && (
+                  <Button variant="outline" onClick={() => setBatchMode("merge-confirm")} title="Merge the selection (M)">
+                    <i className="inbox-keycap">M</i>Merge
+                  </Button>
+                )}
+                {inboxIdList.length > 0 && (
+                  <Button
+                    onClick={() => startWalk(focusId)}
+                    className="gap-2"
+                    title={selectedIds.length > 0 ? "Walk the checked ideas (W)" : "Walk from the caret (W)"}
+                  >
+                    <i className="inbox-keycap">W</i>
+                    {selectedIds.length > 0 ? "Walk selected" : "Walk"}
+                  </Button>
+                )}
               </div>
             </div>
           )}
@@ -1237,7 +1280,6 @@ export function Inbox({ onTaskSelect: _onTaskSelect }: InboxProps) {
 
       {clarificationTask && (
         <TaskClarificationDialog
-          key={clarificationTask.id}
           task={clarificationTask}
           open
           walking={walking}
@@ -1293,26 +1335,83 @@ export function Inbox({ onTaskSelect: _onTaskSelect }: InboxProps) {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={batchMode === "delete-confirm"} onOpenChange={(next) => { if (!next) setBatchMode(null) }}>
+      <Dialog
+        open={batchMode === "select-n"}
+        onOpenChange={(next) => {
+          if (!next) setBatchMode(null)
+        }}
+      >
+        <DialogContent className="inbox-dialog fm98-dialog sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Select N</DialogTitle>
+            <DialogDescription>
+              How many ideas? {pileTasks.length} or fewer picks that many at random. More selects the whole pile.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            className="space-y-3"
+            onSubmit={(event) => {
+              event.preventDefault()
+              applySelectN()
+            }}
+          >
+            <input
+              className="fm98-input w-full"
+              inputMode="numeric"
+              aria-label="How many ideas"
+              value={selectCount}
+              autoFocus
+              onChange={(event) => setSelectCount(event.target.value)}
+            />
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setBatchMode(null)}>Cancel</Button>
+              <Button type="submit">Select</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={batchMode === "delete-confirm"}
+        onOpenChange={(next) => {
+          if (!next) {
+            setBatchMode(null)
+            setPendingDeleteIds([])
+          }
+        }}
+      >
         <DialogContent className="inbox-dialog fm98-dialog sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Are you sure?</DialogTitle>
             <DialogDescription>
-              Delete {selectedIds.length} selected idea{selectedIds.length === 1 ? "" : "s"} from{" "}
+              Delete {deletePreview.length} idea{deletePreview.length === 1 ? "" : "s"} from{" "}
               {partition === "monkey" ? "Monkey brain" : "the Inbox"}?
               This cannot be undone from this dialog. Each idea still earns 1 point
-              {partition === "inbox" && selectedIds.length === revisitTasks.length ? ", and clearing the Inbox earns 50 more" : ""}.
+              {partition === "inbox" &&
+              revisitTasks.length > 0 &&
+              revisitTasks.every((task) => pendingDeleteIds.includes(task.id))
+                ? ", and clearing the Inbox earns 50 more"
+                : ""}
+              .
             </DialogDescription>
           </DialogHeader>
           <div className="max-h-40 overflow-y-auto border px-2 py-1 text-sm">
-            {mergeItems.map((task) => (
+            {deletePreview.map((task) => (
               <p key={task.id}>{itemTitle(task) || "Untitled"}</p>
             ))}
           </div>
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setBatchMode(null)}>Cancel</Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setBatchMode(null)
+                setPendingDeleteIds([])
+              }}
+            >
+              Cancel
+            </Button>
             <Button onClick={applyDeleteSelection} className="bg-[#000080] hover:bg-[#000060]">
-              Yes, delete {selectedIds.length}
+              Yes, delete {deletePreview.length}
             </Button>
           </div>
         </DialogContent>
@@ -1346,7 +1445,9 @@ export function Inbox({ onTaskSelect: _onTaskSelect }: InboxProps) {
           const removed = bulkSource.ids
             .map((id) => useTaskStore.getState().tasks.find((task) => task.id === id))
             .filter((task): task is Task => !!task)
-          setTasks(deleteInboxItems(useTaskStore.getState().tasks, bulkSource.ids))
+          setTasks(deleteInboxItems(useTaskStore.getState().tasks, bulkSource.ids), {
+            tombstoneIds: bulkSource.ids,
+          })
           if (!sendToInbox) {
             const openAfter = openRevisitInboxIds(useTaskStore.getState().tasks).size
             creditInboxBatchHandling(
