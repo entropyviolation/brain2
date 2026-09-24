@@ -5,14 +5,15 @@ AREA: Home → Habits → Monthly
 SOURCE FILES:
   - components/Home/Habits/habit-tracker.tsx
   - components/Home/Habits/period-habit-list.tsx
+  - components/Home/Habits/habits-control-panel.tsx
+  - components/Home/Habits/willpower-gems.tsx
 ================================================================================
 
 GLOBAL CHROME (all screens)
-  The COGS title and global action bar appear on every screen (app/page.tsx):
-    Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
-    Bulk Add | Quick Add
-  Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
-  Top-level tabs (7): Home | Lists | Docs | Scheduler | Operations | Modules | Analytics
+  Pinned full-width mill title bar (`AppHeader`, sticky top, z-40): navy BRAIN2 caption with Tek POWER lamp + today's-friend jewel (64px chrome + black-mirror well; click for a Stardew Next Action bubble; Esc / × / outside to close) and Friend / Review / System / Capture as Win95 groupboxes of milled press keys. Names stays Names and latches (sunken, aria-pressed); tooltip Stop naming while on. Phosphor counts on Review and Inbox. Quick Add is the default framed key, docked at the right of Capture. Same doors as before — grouped furniture, not a menu bar.
+  Tabs: milled fascia (brushed bay, raised silver keys, active key a CRT with a round power lamp) — Home · Lists · Docs · Scheduler · Operations · Modules · Analytics.
+  Shortcuts: Cmd/Ctrl+K search · capture hotkey → Quick Add.
 
 VIEW-SPECIFIC
-Monthly-frequency habit cards for longer-cycle routines. Climb rows use the same `value / target` cell as Daily/Weekly. Completions feed Analytics → Habits heatmap, Streaks (derived climb targets), and points.
+Home window: milled date plate (weekday CRT, calendar nameplate, Widgets key); shared overview squares (Review due, All Time / Today / Week / Month, Today's Progress; Widgets) in one equal-height CRT row. Needs Attention (Overdue / Blocked / Unclarified — click opens detail). Sub-tabs: Habits · Plan · To Do · Goals · Tracking.
+Habits: month navigation in the console header (This month + 7-month window); Daily / Weekly / Monthly inset keys above the sheet; Habits Tab Control Panel with Span grade + Perfect output tubes, Sort plate, Hide Completed This Month, Loading Bar, Small LEDs, New habit, Willpower gems. Compact grid: monthly habits × 7 months + row % + monthly-completion footer (same chrome as Weekly, gem Edit/Delete). Fresh seed includes Pay recurring bills, Finish 1 book this month, Chore hours (Tracking Cleaning tag), and This month's theme (text). Completions feed Analytics heatmap/points. Goal / Yes-No can Auto-fill from Tracking (month sum).

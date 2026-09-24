@@ -4,16 +4,36 @@ VIEW: Home tab → Tracking → Time Grid
 AREA: Home → Tracking → Time Grid
 SOURCE FILES:
   - components/Home/Tracking/time-grid.tsx
+  - components/Home/Tracking/cell-size-keys.tsx
+  - components/Home/Tracking/week-grid.tsx
+  - components/Home/Tracking/infinite-strip.tsx
+  - components/Home/Tracking/pen-palette.tsx
+  - components/Home/Tracking/pen-swatches.tsx
+  - components/Home/Tracking/tracking-chrome.css
+  - components/Home/Tracking/tracking-view-settings-dialog.tsx
+  - components/Home/Tracking/log-activity-dialog.tsx
+  - lib/pen-sort.ts
+  - components/Home/Tracking/entry-dialog.tsx
+  - components/Home/Tracking/variant-chips.tsx
+  - components/Home/Tracking/pen-settings-dialog.tsx
+  - components/Home/Tracking/tracking-tags-panel.tsx
+  - components/Home/Tracking/working-now-strip.tsx
+  - components/Home/Tracking/pen-color-now-strip.tsx
+  - lib/pen-color-session.ts
+  - components/Home/Tracking/tracking-day-notes.tsx
   - components/cognitive-state.tsx
+  - lib/time-entries.ts
   - lib/time-tracking-store.ts
+  - lib/tracking-summary.ts
+  - lib/tracked-time.ts
+  - lib/sleep-sync.ts
 ================================================================================
 
 GLOBAL CHROME (all screens)
-  The COGS title and global action bar appear on every screen (app/page.tsx):
-    Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
-    Bulk Add | Quick Add
-  Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
-  Top-level tabs (7): Home | Lists | Docs | Scheduler | Operations | Modules | Analytics
+  Pinned full-width mill title bar (`AppHeader`, sticky top, z-40): navy BRAIN2 caption with Tek POWER lamp + today's-friend jewel (64px chrome + black-mirror well; click for a Stardew Next Action bubble; Esc / × / outside to close) and Friend / Review / System / Capture as Win95 groupboxes of milled press keys. Names stays Names and latches (sunken, aria-pressed); tooltip Stop naming while on. Phosphor counts on Review and Inbox. Quick Add is the default framed key, docked at the right of Capture. Same doors as before — grouped furniture, not a menu bar.
+  Tabs: milled fascia (brushed bay, raised silver keys, active key a CRT with a round power lamp) — Home · Lists · Docs · Scheduler · Operations · Modules · Analytics.
+  Shortcuts: Cmd/Ctrl+K search · capture hotkey → Quick Add.
 
 VIEW-SPECIFIC
-Scope pens (Activity, Location, Mood, …) and 15-minute slot grid for logging how time was spent. Same grid opens from header Tracking dialog.
+Home window: milled date plate (weekday CRT, calendar nameplate, Widgets key); Review due banner (Start review / Dismiss); All Time / Today / Week / Month points; Today's Progress (To Do + Habits remaining/done); Needs Attention (Overdue / Blocked / Unclarified — click opens detail). Sub-tabs: Habits · Plan · To Do · Goals · Tracking.
+Tracking in a Win95 window (navy title + orb). Toolbar tabs: Time Grid · Activity Log · Day Log. Working now (if ops), then **Working on right now** (search a pen color; timer from this second). No Sleep this day form — sleep is painted on the grid. Logged nights still paint onto the grid when the tab mounts. Pen palette (panel, not a nested window): views on one toolbar row (Activity / Location / Mood / Company / **Screen Time** / **iPhone Screen Time** / **iPhone Calls** / **iPhone Texts** / … — Activity is the painted one on launch; Screen Time is ActivityWatch meaning, not a steal of the active view); Show as + **Sort Recent / A–Z / Tree** + Erase / Scissors / Hide / View / Tags + **Log activity** on the next. Selected pen is a large swatch + name + **Settings** for that pen (View settings is a separate dialog: infinite day/week, hidden pens). **1m / 5m / 10m / 15m / 30m** cell size on the grid chrome; the live step is navy inset with a phosphor cap. Velvet well of pen beads (recently painted first; optional image on the bead); search; New pen (beveled color swatch). Detail variants. Status: N pens · sorted recent. Time Grid in the white field (dark ink, gray hour labels): day / week; optional infinite scroll (time L→R, days stacked); occupancy; if this view is empty a banner offers **Show Activity (Nh)**; drag to paint (assumed hatched; pen image tiles as a mosaic); scissors splits at the minute; click a block including Sleep → Entry dialog (display name, primary + secondary pens; sleep says Fell asleep / Woke up). Day notes under the grid. Pen settings: searchable Counts as, color chain, default action format, optional image.

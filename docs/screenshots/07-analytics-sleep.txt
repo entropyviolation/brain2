@@ -1,0 +1,24 @@
+================================================================================
+SCREENSHOT: 07-analytics-sleep.png
+VIEW: Analytics tab → Sleep
+AREA: Analytics → Sleep
+SOURCE FILES:
+  - components/Analytics/enhanced-analytics.tsx
+  - components/Analytics/SleepAnalytics.tsx
+  - lib/sleep-log.ts
+  - lib/sleep-inference.ts
+  - lib/sleep-store.ts
+================================================================================
+
+GLOBAL CHROME (all screens)
+  Pinned full-width mill title bar (`AppHeader`, sticky top, z-40): navy BRAIN2 caption with Tek POWER lamp + today's-friend jewel (chrome + black-mirror well; click for a Stardew Next Action bubble; Esc / × / outside to close) and Friend / Review / System / optional now well (between System and Capture; idle → hidden; live Working sessions show name, elapsed, Stop, Pause↔Resume) / Capture as Win95 groupboxes of milled press keys. Names stays Names and latches (sunken); tooltip Stop naming while on. Phosphor counts on Review and Inbox. Quick Add is the default framed key. Same doors as before — grouped furniture, not a menu bar.
+  Tabs: Home · Lists · Docs · Scheduler · Operations · Modules · Analytics.
+  Shortcuts: Cmd/Ctrl+K search · capture hotkey → Quick Add.
+
+VIEW-SPECIFIC
+Analytics window: navy **title bar** and **status bar** stay Lists furniture. Interior is a light paper studio (not dark mode), range chips (7 / 14 / 30 / 90 days) labeled once (“last 30 days”), left studio index Behavior / Time / Accuracy / Meta / Library with views of the selected group (`role="tab"`). ~27 views including Observatory, Circadian, Screen Time, Places, Mood field, Velocity, Cycle, Goals, Operations, Lists & areas, Attributes, Item Types, Cross-section, Overcommit. Empty charts keep the frame and one sentence; interpretive views show n and watermark a thin sample. Status: last N days · date window · current view.
+Shared Analytics range (not a second 7d/30d/90d picker), then coverage — nights tracked, nights blank, how many were read off the Tracking grid rather than typed, and the % of ends marked estimated. Copy: same nights as Home → Tracking (no live night jump). Blank nights are excluded from every average rather than counted as zero. The tab reads the sleep log and Sleep-tagged blocks on the grid alike (lib/sleep-inference.ts), per end, so a stated time always wins and a painted one fills a gap.
+Four studio readouts: Average night (with median — the honest one when a single all-nighter skews the mean — and how many nights it rests on) · Usually asleep by (with spread, the standard deviation of bedtime) · Usually up at (with spread) · Debt against the target, plus how many nights hit it.
+How far the ends swing: the earliest and latest bedtime and the earliest and latest wake time, each with its date, and the gap between them. Bedtimes are signed offsets from their own morning, so 10 PM sorts before 1 AM without a wrap-around case.
+Night by night: one bar per night on a fixed 6 PM → noon axis, so irregular bedtimes are visible as ragged left edges rather than hidden by per-row scaling. Amber means under target; a trailing ~ means at least one end was estimated and **est.** means the night was reconstructed from painted time. Duration is printed at the right.
+What changed: compares the two halves of the range — change in sleep length, in bedtime, and in wake time, plus which end of the night moves around more and the shortest/longest nights. Needs at least two nights in each half or it says so instead of reading one bad night as a trend.

@@ -5,15 +5,17 @@ AREA: Item detail popup
 SOURCE FILES:
   - components/ItemDetail/ItemDetailPopup.tsx
   - components/ItemDetail/useItemDetailDraft.ts
+  - components/ItemDetail/ItemActivityPanel.tsx
+  - components/ItemDetail/CycleConfirmDialog.tsx
   - components/ItemDetail/ItemAttributesSection.tsx
+  - lib/item-activity.ts
+  - lib/critical-path.ts
 ================================================================================
 
 GLOBAL CHROME (all screens)
-  The COGS title and global action bar appear on every screen (app/page.tsx):
-    Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
-    Bulk Add | Quick Add
-  Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
-  Top-level tabs (7): Home | Lists | Docs | Scheduler | Operations | Modules | Analytics
+  Pinned full-width mill title bar (`AppHeader`, sticky top, z-40): navy BRAIN2 caption with Tek POWER lamp + today's-friend jewel (chrome + black-mirror well; click for a Stardew to-do bubble) and Friend / Review / System / optional now well (between System and Capture; idle → hidden; live Working sessions show name, elapsed, Stop, Pause↔Resume) / Capture as Win95 groupboxes of milled press keys. Names stays Names and latches (sunken); tooltip Stop naming while on. Phosphor counts on Review and Inbox. Quick Add is the default framed key. Same doors as before — grouped furniture, not a menu bar.
+  Tabs: Home · Lists · Docs · Scheduler · Operations · Modules · Analytics.
+  Shortcuts: Cmd/Ctrl+K search · capture hotkey → Quick Add.
 
 VIEW-SPECIFIC
-Compact modal editor: details, scheduling, dependencies, subtasks, links/tags, body, attributes, link graph, completion.
+Item detail. Title. Delete / Complete / **Missed opportunity** / Save Changes. Tabs: Details / Scheduling / Dependencies / Subtasks / Analysis / Time / Body / History. Details: description, duration, reward, urgency/importance, Show in Scheduler, repeat, Type, Lists (+ New list), Tags, Related, Attributes, Completion status (Active/Partial/Deferred/Cancelled/Missed opportunity/Done). Scheduling: dates, deadline, constraints. Deps (adding a loop opens “This would loop” and does not write), subtasks, why/if-not notes, estimated vs actual logs, body. History: sunken well of what changed, when (append-only; empty until first save). Complete files on Completed; Missed opportunity (too late) files on Missed Opportunities instead, with no points and no completion popup.

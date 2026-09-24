@@ -7,11 +7,9 @@ SOURCE FILES:
 ================================================================================
 
 GLOBAL CHROME (all screens)
-  The COGS title and global action bar appear on every screen (app/page.tsx):
-    Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
-    Bulk Add | Quick Add
-  Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
-  Top-level tabs (7): Home | Lists | Docs | Scheduler | Operations | Modules | Analytics
+  Pinned full-width mill title bar (`AppHeader`, sticky top, z-40): navy BRAIN2 caption with Tek POWER lamp + today's-friend jewel (chrome + black-mirror well; click for a Stardew to-do bubble) and Friend / Review / System / optional now well (between System and Capture; idle → hidden; live Working sessions show name, elapsed, Stop, Pause↔Resume) / Capture as Win95 groupboxes of milled press keys. Names stays Names and latches (sunken); tooltip Stop naming while on. Phosphor counts on Review and Inbox. Quick Add is the default framed key. Same doors as before — grouped furniture, not a menu bar.
+  Tabs: Home · Lists · Docs · Scheduler · Operations · Modules · Analytics.
+  Shortcuts: Cmd/Ctrl+K search · capture hotkey → Quick Add.
 
 VIEW-SPECIFIC
-Editable spreadsheet grid over list items and custom attributes; supports pop-out window (#popout/sheet/…).
+Same open-list chrome. Inner caption = Spreadsheet. Spreadsheet: formula bar, Filter…, frozen Name column (width-capped so it cannot cover later headers), attribute + built-in columns (per-list `sheetConfig`), header menu (sort / hide / insert), Add column pinned to the grid viewport (on-this-list first, then vault, or create + assign-to-all), Add Item… + Add row. Cell edit (click to select, double-click / Enter / type-to-replace; Escape cancels). Fill handle / Open to edit. Pop-out window supported. Inspector facts + actions; Delete lives in List Settings only. Column pickers also live in List Settings → View mode settings → Spreadsheet view mode settings.

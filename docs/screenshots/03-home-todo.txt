@@ -6,15 +6,16 @@ SOURCE FILES:
   - components/Home/ToDo/todo-panel.tsx
   - components/Home/ToDo/TodoTable.tsx
   - components/Home/ToDo/todo-utils.ts
+  - components/Home/ToDo/DoneTodoSection.tsx
+  - components/Home/ToDo/CompletionTimeLine.tsx
   - components/Focus/JustStartMode.tsx
 ================================================================================
 
 GLOBAL CHROME (all screens)
-  The COGS title and global action bar appear on every screen (app/page.tsx):
-    Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
-    Bulk Add | Quick Add
-  Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
-  Top-level tabs (7): Home | Lists | Docs | Scheduler | Operations | Modules | Analytics
+  Pinned full-width mill title bar (`AppHeader`, sticky top, z-40): navy BRAIN2 caption with Tek POWER lamp + today's-friend jewel (64px chrome + black-mirror well; click for a Stardew Next Action bubble; Esc / × / outside to close) and Friend / Review / System / Capture as Win95 groupboxes of milled press keys. Names stays Names and latches (sunken, aria-pressed); tooltip Stop naming while on. Phosphor counts on Review and Inbox. Quick Add is the default framed key, docked at the right of Capture. Same doors as before — grouped furniture, not a menu bar.
+  Tabs: milled fascia (brushed bay, raised silver keys, active key a CRT with a round power lamp) — Home · Lists · Docs · Scheduler · Operations · Modules · Analytics.
+  Shortcuts: Cmd/Ctrl+K search · capture hotkey → Quick Add.
 
 VIEW-SPECIFIC
-Tier-grouped to-do table (A+…D) for the focused day. Priority weights panel, status filters, Just Start focus mode, Add Task dialog, and done section.
+Home window: milled date plate (weekday CRT, calendar nameplate, Widgets key); Review due banner (Start review / Dismiss); All Time / Today / Week / Month points; Today's Progress (To Do + Habits remaining/done); Needs Attention (Overdue / Blocked / Unclarified — click opens detail). Sub-tabs: Habits · Plan · To Do · Goals · Tracking.
+To Do: Sort (Tier / Priority / Name / Date created / Date added / Days pushed) + asc/desc + formula (Urgency / Importance / Quick win / Entropy, Reset); Status (Open / Active / Partial / Deferred / Cancelled / All); Show All Tasks; Add Task (description + tier). Tabs Day / Week / Month. Today's Tasks: date nav; cols Task / Status / Tier (A+…D) / Days (pushed) / Actions (complete, Just Start, push, details, hide). Show N more. Done Today (n, N est.) + Log done. Done rows: clock window · duration · ~est. (Looks right / Finished / Took). Just Start overlay: timer, Done with this step.

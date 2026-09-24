@@ -7,18 +7,23 @@ SOURCE FILES:
   - components/Home/home-dashboard.tsx
   - components/Home/Habits/habit-tracker.tsx
   - components/Home/Habits/task-grid.tsx
+  - components/Home/Habits/habit-chrome.css
+  - components/Home/Habits/cockpit-switch.tsx
+  - components/Home/Habits/habits-control-panel.tsx
+  - components/Home/Habits/willpower-gems.tsx
+  - components/Home/Habits/good-days-dialog.tsx
   - components/Home/points-stats.tsx
   - components/Home/daily-progress-quickview.tsx
   - components/Home/NeedsAttention.tsx
   - lib/habits-store.ts
+  - lib/habit-tracking.ts
 ================================================================================
 
 GLOBAL CHROME (all screens)
-  The COGS title and global action bar appear on every screen (app/page.tsx):
-    Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
-    Bulk Add | Quick Add
-  Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
-  Top-level tabs (7): Home | Lists | Docs | Scheduler | Operations | Modules | Analytics
+  Pinned full-width mill title bar (`AppHeader`, sticky top, z-40): navy BRAIN2 caption with Tek POWER lamp + today's-friend jewel (64px chrome + black-mirror well; click for a Stardew Next Action bubble; Esc / × / outside to close) and Friend / Review / System / Capture as Win95 groupboxes of milled press keys. Names stays Names and latches (sunken, aria-pressed); tooltip Stop naming while on. Phosphor counts on Review and Inbox. Quick Add is the default framed key, docked at the right of Capture. Same doors as before — grouped furniture, not a menu bar.
+  Tabs: milled fascia (brushed bay, raised silver keys, active key a CRT with a round power lamp) — Home · Lists · Docs · Scheduler · Operations · Modules · Analytics.
+  Shortcuts: Cmd/Ctrl+K search · capture hotkey → Quick Add.
 
 VIEW-SPECIFIC
-Week navigation, clickable **Week grade** (curved mean of elapsed daily %; 0% stays 0; scrollable raw/curved day breakdown + tolerance + 50/100/300 point notes and +50 when raw day >80%) and **Perfect output** (curved mean of elapsed row %; scrollable per-habit breakdown + separate tolerance), frequency tabs (Daily/Weekly/Monthly), hide-completed toggle, Settings, and a compact spreadsheet (all 7 days + per-habit week % with gradient progress bars). Habit names can show `4+` / `🔥 Nw` week-streak chips. Column headers are weekday + numeric date (`Mon` / `9/14`). Climb (incremental) rows look like goal cells (`value / target`). Daily climbs use last log + increment (a drop still lowers tomorrow’s target); weekly climbs keep a fixed weekly target. Completing a daily habit awards 50 points × that day’s completion (partial counts) and can add +50 (raw day >80%) / +100 / +300 grade bonuses; it also appears in To-Do **Done**. The floating Add control opens a Win95 **Add New Habit** window with Climb cadence tiles (Weekly + / Daily +). Points stats and Today's Progress cards sit above the sub-tabs; Needs Attention surfaces stale or blocked items.
+Home window: milled date plate (weekday CRT, calendar nameplate, Widgets key); shared overview squares (Review due, All Time / Today / Week / Month, Today's Progress; Widgets adds Affirmation / Weather) in one equal-height row. Wells stay narrow and share one metal/CRT face (no extra-dark All Time); CRT values are centered in `--hab-crt-green`; Weather uses a sun/cloud/rain glyph; Widgets catalog is an overlay. Fill bars use Habits Percent LED + grade-tube colors. Same strip on Plan / To Do / Goals / Tracking. Needs Attention (Overdue / Blocked / Unclarified — click opens detail). Sub-tabs: Habits · Plan · To Do · Goals · Tracking.
+Habits Daily sits in a contained gunmetal console (`.hab95`) — teal desktop gutters by default (photograph plates stay opt-in). Header is one textured row: Habits | week nav | Settings. Daily / Weekly / Monthly inset keys sit above the sheet (no green glow). Today is a sunken state, not a larger control. Right Habits Tab Control Panel: Week grade + Perfect output tubes; Good day streak + Good days in the last month; Sort Habits plate; Heatmap View / Day View / Hide Completed Today / Loading Bar / Small LEDs rockers; New habit; Willpower gems photoreal chrome + black-mirror oval button (press to stir — a short whirl; grab a gem to throw it, which must not also click-stir the plate; crystal is a solid — gems do not clip through; gems visible past the rim; plate centered in the well; compact column; Physics opens a popup lab with a mapped twin plate, CRT equation/graph wells, and live sliders). Current-day column is a single solid mint fill. Heatmap View is a light metal month-of-cells mosaic (same well as the checklist). Grid: gem/edit | wrapping Task name | Mon–Sun cells (day columns grow with leftover width) | %. Yes/No cells are recessed square-plate panel lamps (on-color is Percent LED tint, dim/warm, not blast-white). Goal/climb cells share one number slot plus `/goal` suffix. Clock glyph + blue border = Tracking auto-fill. Daily Completion % row uses a quiet 10-pip milled channel + % text (Loading Bar; numeric LED optional). New habit = Add Habit (frequency, type, Target, Time estimate, Auto-fill from Tracking).

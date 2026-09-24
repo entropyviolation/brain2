@@ -1,0 +1,21 @@
+================================================================================
+SCREENSHOT: 08-home-tracking-block.png
+VIEW: Home tab → Tracking → Activity Log → click a block
+AREA: Home → Tracking → block editor
+SOURCE FILES:
+  - components/Home/Tracking/entry-dialog.tsx
+  - components/Home/Tracking/pen-swatches.tsx
+  - components/Home/Tracking/companion-section.tsx
+  - components/Home/Tracking/variant-chips.tsx
+  - lib/entry-links.ts
+  - lib/time-entries.ts
+================================================================================
+
+GLOBAL CHROME (all screens)
+  Pinned full-width mill title bar (`AppHeader`, sticky top, z-40): navy BRAIN2 caption with Tek POWER lamp + today's-friend jewel (64px chrome + black-mirror well; click for a Stardew Next Action bubble; Esc / × / outside to close) and Friend / Review / System / Capture as Win95 groupboxes of milled press keys. Names stays Names and latches (sunken, aria-pressed); tooltip Stop naming while on. Phosphor counts on Review and Inbox. Quick Add is the default framed key, docked at the right of Capture. Same doors as before — grouped furniture, not a menu bar.
+  Tabs: milled fascia (brushed bay, raised silver keys, active key a CRT with a round power lamp) — Home · Lists · Docs · Scheduler · Operations · Modules · Analytics.
+  Shortcuts: Cmd/Ctrl+K search · capture hotkey → Quick Add.
+
+VIEW-SPECIFIC
+Home window: milled date plate (weekday CRT, calendar nameplate, Widgets key); Review due banner (Start review / Dismiss); All Time / Today / Week / Month points; Today's Progress (To Do + Habits remaining/done); Needs Attention (Overdue / Blocked / Unclarified — click opens detail). Sub-tabs: Habits · Plan · To Do · Goals · Tracking.
+Entry dialog — one block, opened from the grid or an Activity Log row. Header: display name · clock span, duration + scope. Start / End (Sleep: **Fell asleep** / **Woke up**; discrete events: a single **When**); **Split at** a chosen minute; **Assumed / reconstructed** (default certain). Display name (defaults to the pen). Searchable pen picker with New pen (name + beveled color swatch, or Create from a search miss); secondary pens; Detail (variant chips); Also counts as (block tags). Also happening. Split (scissors seam so halves do not merge back), Delete, Save. Sleep invites dream notes.

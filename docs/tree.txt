@@ -1,30 +1,164 @@
 .
+├── Norbert_Wiener_Cybernetics.pdf
 ├── README.md
+├── animalsrcs
+│   ├── 013193a64ab98731bcbdfe04a1666b70.jpg
+│   ├── 03e506ee8f4fde10b2512fd4f07ac9b3.jpg
+│   ├── 068c476f-4f09-79e9-8000-f7829a8728d7._AC_SX500_SY400_QL75_V1_.avif
+│   ├── 089144.jpeg
+│   ├── 0a1eb49ede620a6215b1a879517dcb31.jpg
+│   ├── 0b955aefb7c30f278ae78673d1b0a671.jpg
+│   ├── 13d34b77f3c6f309809a2f8fea6b0880.jpg
+│   ├── 1a8642419e059a8cc298a456d490be6c.jpg
+│   ├── 243e33a19fffd0047bebc720950d3f93.jpg
+│   ├── 293c93995adb9c26e75b31d1f414237f.jpg
+│   ├── 2b087e411439df22e18befc3e6b46569.jpg
+│   ├── 39c60722053f220ef9ca9a07c073dc16.jpg
+│   ├── 3c1cd72a9580c18485d86f6bfc1007a8.jpg
+│   ├── 3cbc68231141e610507f071e61b2a12d.jpg
+│   ├── 3dc010439441ab126e6a538384b5865d.jpg
+│   ├── 3fb7fdf4e9a8e9b1122b5d71007ea143.jpg
+│   ├── 403fc1181b7b56d5ebe2b6f2dac50979.jpg
+│   ├── 41877AlEglL._AC_SY300_SX300_QL70_FMwebp_.webp
+│   ├── 4ba0ae07c1a2ed1d9c475a0fb06af43f.jpg
+│   ├── 4e865ae1b494c5753528a9412c98e4f7.jpg
+│   ├── 4fbbd4ba26904b73acb748759f99ec38.jpg
+│   ├── 5089a34a052eab48763e37e37c5e1cab.jpg
+│   ├── 54fadafc2ff2e955e85aee33793ea442.jpg
+│   ├── 57''+Animals+Cardboard+Standup.webp
+│   ├── 5ca38d429d97d4b3baeda772941fc239.jpg
+│   ├── 61bqpChg8LL._SL1360_.jpg
+│   ├── 6385597fef3d1339a073587cae479168.jpg
+│   ├── 643a91eeafe359775f941a6c19dba90d.jpg
+│   ├── 697b01394b6dee38fce27bdf6e5bedd5.jpg
+│   ├── 6a567faf2ecb04e87c3e5a7c2eb18490.jpg
+│   ├── 6dd3e4495469e9718b0815e615077df9.jpg
+│   ├── 6fd6db4a5c087c75edf101389a5c11d4.jpg
+│   ├── 7118be3456f89a9337c2e02321628294.jpg
+│   ├── 7d9e71132c467e76ae04853037d144a1.jpg
+│   ├── 7e0ec4faefd0afb46d619913d761d434.jpg
+│   ├── 7ef5b1e6e5f899b4afff82de2cf896dd.jpg
+│   ├── 8059a0957236b2e80cd7426ac4b05876.jpg
+│   ├── 90bd3ffb29e93cadaadf5b9ebde78781.jpg
+│   ├── 9421f12021291de04448603db797098a.jpg
+│   ├── 975d19af4fc61f78b9f51449208fa9d0.jpg
+│   ├── 9795e57f7331aa75bc7946649aae5c7b.jpg
+│   ├── 9a539993ee034f1716c441fa7f74c094.jpg
+│   ├── 9c3ce5429221e28d7829ac39042ae73f.jpg
+│   ├── a07677440a6c269a8920a09821827dbe.jpg
+│   ├── ac36cf6fe896d44274decdc32c8658b1.jpg
+│   ├── ac889411d39c18ff786080a55c807ec7.jpg
+│   ├── ae886d9c6cd21dd3aecf473e06b1630f.jpg
+│   ├── ba05b7d4ca0eb28acdba3da192d1cb9b.jpg
+│   ├── be20c6c46d8e318797df5c28fc911741.jpg
+│   ├── c4399e709fd087b26b29b349fd6c0b13.jpg
+│   ├── c62da43ff08cc3696297e5cfb655bb8c.jpg
+│   ├── c85ba6df780fe43c345197712a601532.jpg
+│   ├── c9fd750a0616a082f2414fa7af420521.jpg
+│   ├── cc0e1574a89d8486b57be976a9359f6a.jpg
+│   ├── cdcf1874b9c440ed83cf92fd45886b68.jpg
+│   ├── d070e57231bd5d04f79e4a652c7336da.jpg
+│   ├── d1c5c7b620aea90068e3d4189112b64c.jpg
+│   ├── d5416dfd601ead516375d2b3038e0f08.jpg
+│   ├── d7281902e435b3e8f749ec199d57bb0d.jpg
+│   ├── d9940191179355a1d1b5c023d5490c86.jpg
+│   ├── dc1274db770aaa00f0bd61f8e509b2e0.jpg
+│   ├── def14c042d635913681b6fb317aa161a.jpg
+│   ├── e3172b73df654cffef3af2cc5ad4db38.jpg
+│   ├── e37b339436a421d02d847091dd4a88dd.jpg
+│   ├── ec34bcecb5974f7d4b26a4c5c0b88fef.jpg
+│   ├── f2d556e2454f1dd72702cf9e00a835ad.jpg
+│   ├── f516b73c94bedc5c19c4de0eb104f61c.jpg
+│   ├── f643953f217f85dceb8749f190fb6e3e.jpg
+│   ├── f71b01a7ec9570b29acc2e4a2b849219.jpg
+│   ├── f7ff2a8ec5aa3a3432dc5be5460f76ce.jpg
+│   └── fe13a88bf74fb472d86703738a1cdf94.jpg
 ├── app
 │   ├── README.md
+│   ├── chrome-patina.css
+│   ├── chrome-patina.tsx
 │   ├── globals.css
 │   ├── layout.tsx
 │   ├── loading.tsx
 │   ├── mobile
 │   │   ├── layout.tsx
 │   │   └── page.tsx
+│   ├── page.test.tsx
 │   ├── page.tsx
+│   ├── pcb-backdrop.css
+│   ├── pcb-backdrop.tsx
 │   ├── popout
 │   │   └── page.tsx
 │   └── win95.css
 ├── capacitor.config.ts
 ├── components
 │   ├── Analytics
+│   │   ├── AnalyticsNav.tsx
+│   │   ├── AttributesView.tsx
+│   │   ├── CalibrationView.test.tsx
 │   │   ├── CalibrationView.tsx
+│   │   ├── CircadianView.tsx
 │   │   ├── ContextSwitchHeatmap.tsx
 │   │   ├── CorrelationExplorer.tsx
+│   │   ├── CrossSection.tsx
+│   │   ├── CycleView.tsx
+│   │   ├── DiversityView.tsx
+│   │   ├── GoalsAnalytics.tsx
+│   │   ├── HabitsView.tsx
+│   │   ├── ItemTypesLibrary.test.tsx
+│   │   ├── ItemTypesLibrary.tsx
+│   │   ├── LibraryCuts.tsx
+│   │   ├── ListsAreasView.tsx
 │   │   ├── MetricsTrends.tsx
+│   │   ├── MoodFieldView.tsx
+│   │   ├── Observatory.tsx
+│   │   ├── OperationsAnalytics.tsx
+│   │   ├── OvercommitmentView.test.tsx
+│   │   ├── OvercommitmentView.tsx
+│   │   ├── PlacesView.tsx
 │   │   ├── PlanVsReality.tsx
+│   │   ├── PointsView.tsx
 │   │   ├── README.md
+│   │   ├── ReflectionView.tsx
 │   │   ├── RegretView.tsx
+│   │   ├── ReviewsView.tsx
+│   │   ├── ScreenTimeView.test.tsx
+│   │   ├── ScreenTimeView.tsx
+│   │   ├── SleepAnalytics.test.tsx
+│   │   ├── SleepAnalytics.tsx
+│   │   ├── SpectrumView.tsx
 │   │   ├── StreaksWidget.tsx
+│   │   ├── TextPipelineView.tsx
+│   │   ├── TodoPulseView.tsx
+│   │   ├── TrackingAnalytics.tsx
+│   │   ├── TransitionsView.tsx
+│   │   ├── VelocityView.tsx
+│   │   ├── analytics-chrome.css
+│   │   ├── analytics-range-store.ts
+│   │   ├── analytics-range.test.ts
+│   │   ├── analytics-range.ts
+│   │   ├── analytics-tabs.test.ts
+│   │   ├── analytics-tabs.ts
+│   │   ├── chart-frame.tsx
+│   │   ├── cross-section.test.ts
+│   │   ├── cross-section.ts
 │   │   ├── enhanced-analytics.test.tsx
-│   │   └── enhanced-analytics.tsx
+│   │   ├── enhanced-analytics.tsx
+│   │   ├── hour-day.test.ts
+│   │   ├── hour-day.ts
+│   │   ├── observatory-findings.ts
+│   │   ├── observatory.test.ts
+│   │   ├── open-in-lists.test.ts
+│   │   ├── open-in-lists.ts
+│   │   ├── signal-stats.test.ts
+│   │   ├── signal-stats.ts
+│   │   ├── studio-kit.tsx
+│   │   ├── studio-plot-stats.test.ts
+│   │   ├── studio-plot-stats.ts
+│   │   ├── studio-plots.tsx
+│   │   └── studio-views.test.tsx
+│   ├── AppHeader.test.tsx
+│   ├── AppHeader.tsx
 │   ├── Completion
 │   │   ├── CompletionDialog.test.tsx
 │   │   ├── CompletionDialog.tsx
@@ -56,28 +190,65 @@
 │   │   │   ├── ObjectiveDetailDialog.tsx
 │   │   │   ├── ObjectivesPanel.tsx
 │   │   │   ├── README.md
+│   │   │   ├── goals-chrome.css
 │   │   │   ├── goals-tracker.test.tsx
 │   │   │   └── goals-tracker.tsx
 │   │   ├── Habits
 │   │   │   ├── README.md
+│   │   │   ├── cockpit-switch.css
+│   │   │   ├── cockpit-switch.test.tsx
+│   │   │   ├── cockpit-switch.tsx
 │   │   │   ├── daily-task-form-dialog.test.tsx
 │   │   │   ├── daily-task-form-dialog.tsx
 │   │   │   ├── daily-task-form.test.tsx
 │   │   │   ├── daily-task-form.tsx
+│   │   │   ├── exemption-wand-button.tsx
+│   │   │   ├── gem-picker.test.tsx
+│   │   │   ├── gem-picker.tsx
+│   │   │   ├── good-days-dialog.test.tsx
+│   │   │   ├── good-days-dialog.tsx
 │   │   │   ├── grade-breakdown-dialog.tsx
+│   │   │   ├── grade-tube-color.test.tsx
+│   │   │   ├── habit-chrome.css
 │   │   │   ├── habit-form-dialog.css
+│   │   │   ├── habit-gems.test.tsx
+│   │   │   ├── habit-gems.tsx
 │   │   │   ├── habit-grid.css
+│   │   │   ├── habit-heatmap.test.tsx
+│   │   │   ├── habit-heatmap.tsx
+│   │   │   ├── habit-led-lamp.css
+│   │   │   ├── habit-led-lamp.test.tsx
+│   │   │   ├── habit-led-lamp.tsx
+│   │   │   ├── habit-percent-readout.tsx
+│   │   │   ├── habit-row-name.tsx
+│   │   │   ├── habit-sort-control.test.tsx
+│   │   │   ├── habit-sort-control.tsx
 │   │   │   ├── habit-tracker.test.tsx
 │   │   │   ├── habit-tracker.tsx
+│   │   │   ├── habit-value-field.tsx
+│   │   │   ├── habits-control-panel.test.tsx
+│   │   │   ├── habits-control-panel.tsx
+│   │   │   ├── noble-gas-tube.css
+│   │   │   ├── noble-gas-tube.test.tsx
+│   │   │   ├── noble-gas-tube.tsx
 │   │   │   ├── output-grade-breakdown-dialog.tsx
+│   │   │   ├── percent-led-bar.css
+│   │   │   ├── percent-led-bar.test.tsx
+│   │   │   ├── percent-led-bar.tsx
+│   │   │   ├── percent-led.css
+│   │   │   ├── percent-led.test.tsx
+│   │   │   ├── percent-led.tsx
 │   │   │   ├── period-habit-list.test.tsx
 │   │   │   ├── period-habit-list.tsx
+│   │   │   ├── priority-math.tsx
 │   │   │   ├── settings-dialog.test.tsx
 │   │   │   ├── settings-dialog.tsx
 │   │   │   ├── task-grid.test.tsx
 │   │   │   ├── task-grid.tsx
 │   │   │   ├── week-navigation.test.tsx
-│   │   │   └── week-navigation.tsx
+│   │   │   ├── week-navigation.tsx
+│   │   │   ├── willpower-gems.test.tsx
+│   │   │   └── willpower-gems.tsx
 │   │   ├── NeedsAttention.notes.md
 │   │   ├── NeedsAttention.test.tsx
 │   │   ├── NeedsAttention.tsx
@@ -85,6 +256,7 @@
 │   │   │   ├── README.md
 │   │   │   ├── agenda-grid.test.tsx
 │   │   │   ├── agenda-grid.tsx
+│   │   │   ├── day-agenda-plan.test.tsx
 │   │   │   ├── day-view.test.tsx
 │   │   │   ├── day-view.tsx
 │   │   │   ├── event-dialog.test.tsx
@@ -93,41 +265,161 @@
 │   │   │   ├── month-view.tsx
 │   │   │   ├── paste-events-dialog.test.tsx
 │   │   │   ├── paste-events-dialog.tsx
+│   │   │   ├── plan-capacity.test.ts
+│   │   │   ├── plan-capacity.ts
+│   │   │   ├── plan-chip.test.ts
+│   │   │   ├── plan-chip.tsx
+│   │   │   ├── plan-chrome.css
+│   │   │   ├── plan-gem-day-body.test.tsx
+│   │   │   ├── plan-gem-day-body.tsx
+│   │   │   ├── plan-gem-day.test.ts
+│   │   │   ├── plan-gem-day.ts
+│   │   │   ├── plan-gem-mode-toggle.test.tsx
+│   │   │   ├── plan-gem-mode-toggle.tsx
+│   │   │   ├── plan-gem-mode.css
+│   │   │   ├── plan-gem-mode.test.ts
+│   │   │   ├── plan-gem-mode.ts
 │   │   │   ├── plan-panel.test.tsx
 │   │   │   ├── plan-panel.tsx
+│   │   │   ├── plan-text-log.test.tsx
+│   │   │   ├── plan-text-log.tsx
+│   │   │   ├── plan-theme.test.ts
+│   │   │   ├── plan-theme.ts
+│   │   │   ├── planned-action-dialog.test.tsx
+│   │   │   ├── planned-action-dialog.tsx
 │   │   │   ├── planned-tasks-sidebar.test.tsx
 │   │   │   ├── planned-tasks-sidebar.tsx
 │   │   │   ├── settings-dialog.test.tsx
 │   │   │   ├── settings-dialog.tsx
+│   │   │   ├── use-plan-rail-drag.ts
 │   │   │   ├── week-view.test.tsx
 │   │   │   └── week-view.tsx
 │   │   ├── README.md
 │   │   ├── ToDo
 │   │   │   ├── AddDoneDialog.tsx
 │   │   │   ├── AddTodoDialog.tsx
+│   │   │   ├── CompletionTimeLine.test.tsx
+│   │   │   ├── CompletionTimeLine.tsx
 │   │   │   ├── DoneTodoSection.tsx
+│   │   │   ├── MissedTodoSection.tsx
 │   │   │   ├── README.md
 │   │   │   ├── TodoPeriodNav.tsx
 │   │   │   ├── TodoTable.tsx
+│   │   │   ├── todo-chrome.css
+│   │   │   ├── todo-filters.tsx
 │   │   │   ├── todo-panel.test.tsx
 │   │   │   ├── todo-panel.tsx
+│   │   │   ├── todo-prefs.test.ts
+│   │   │   ├── todo-prefs.ts
 │   │   │   ├── todo-utils.test.ts
 │   │   │   └── todo-utils.ts
 │   │   ├── Tracking
 │   │   │   ├── README.md
 │   │   │   ├── actual-day-view.test.tsx
 │   │   │   ├── actual-day-view.tsx
+│   │   │   ├── block-pen-section.test.tsx
+│   │   │   ├── block-pen-section.tsx
+│   │   │   ├── cell-size-keys.test.tsx
+│   │   │   ├── cell-size-keys.tsx
+│   │   │   ├── companion-section.test.tsx
+│   │   │   ├── companion-section.tsx
+│   │   │   ├── confirm-planned-dialog.test.tsx
+│   │   │   ├── confirm-planned-dialog.tsx
+│   │   │   ├── daylog-week.css
+│   │   │   ├── daylog-week.test.tsx
+│   │   │   ├── daylog-week.tsx
+│   │   │   ├── depth-control.tsx
+│   │   │   ├── empty-blocks.test.ts
+│   │   │   ├── empty-blocks.ts
+│   │   │   ├── entry-dialog.test.tsx
+│   │   │   ├── entry-dialog.tsx
+│   │   │   ├── fill-range-control.test.tsx
+│   │   │   ├── fill-range-control.tsx
+│   │   │   ├── infinite-strip.test.tsx
+│   │   │   ├── infinite-strip.tsx
+│   │   │   ├── infinite-window.test.ts
+│   │   │   ├── infinite-window.ts
+│   │   │   ├── log-activity-dialog.tsx
+│   │   │   ├── now-time-button.test.tsx
+│   │   │   ├── now-time-button.tsx
+│   │   │   ├── other-scope-hint.test.tsx
+│   │   │   ├── other-scope-hint.tsx
+│   │   │   ├── pen-action-format-editor.tsx
+│   │   │   ├── pen-chain-visual.test.tsx
+│   │   │   ├── pen-chain-visual.tsx
+│   │   │   ├── pen-color-now-strip.test.tsx
+│   │   │   ├── pen-color-now-strip.tsx
+│   │   │   ├── pen-mode-bar.test.tsx
+│   │   │   ├── pen-mode-bar.tsx
+│   │   │   ├── pen-palette.test.tsx
+│   │   │   ├── pen-palette.tsx
+│   │   │   ├── pen-parent-picker.test.tsx
+│   │   │   ├── pen-parent-picker.tsx
+│   │   │   ├── pen-settings-dialog.test.tsx
+│   │   │   ├── pen-settings-dialog.tsx
+│   │   │   ├── pen-swatches.tsx
+│   │   │   ├── pen-tray-bg.css
+│   │   │   ├── pen-tray-bg.test.ts
+│   │   │   ├── pen-tray-bg.ts
+│   │   │   ├── screentime-empty-hint.test.tsx
+│   │   │   ├── screentime-empty-hint.tsx
+│   │   │   ├── secondary-pens-field.tsx
 │   │   │   ├── time-grid.test.tsx
-│   │   │   └── time-grid.tsx
+│   │   │   ├── time-grid.tsx
+│   │   │   ├── tool-detail.tsx
+│   │   │   ├── tracking-activity-log.test.tsx
+│   │   │   ├── tracking-activity-log.tsx
+│   │   │   ├── tracking-chrome.css
+│   │   │   ├── tracking-day-notes.test.tsx
+│   │   │   ├── tracking-day-notes.tsx
+│   │   │   ├── tracking-period-nav.tsx
+│   │   │   ├── tracking-tags-panel.test.tsx
+│   │   │   ├── tracking-tags-panel.tsx
+│   │   │   ├── tracking-tags-well.css
+│   │   │   ├── tracking-tool-mode.test.ts
+│   │   │   ├── tracking-tool-mode.ts
+│   │   │   ├── tracking-tools-tray.test.tsx
+│   │   │   ├── tracking-tools-tray.tsx
+│   │   │   ├── tracking-undo.test.tsx
+│   │   │   ├── tracking-undo.ts
+│   │   │   ├── tracking-view-prefs.test.ts
+│   │   │   ├── tracking-view-prefs.ts
+│   │   │   ├── tracking-view-settings-dialog.test.tsx
+│   │   │   ├── tracking-view-settings-dialog.tsx
+│   │   │   ├── trk-instrument.test.tsx
+│   │   │   ├── trk-instrument.tsx
+│   │   │   ├── trk-time-markers.test.tsx
+│   │   │   ├── trk-time-markers.tsx
+│   │   │   ├── variant-chips.tsx
+│   │   │   ├── waking-scroll.test.ts
+│   │   │   ├── waking-scroll.ts
+│   │   │   ├── week-grid.test.tsx
+│   │   │   ├── week-grid.tsx
+│   │   │   ├── working-now-strip.test.tsx
+│   │   │   └── working-now-strip.tsx
 │   │   ├── daily-progress-quickview.test.tsx
 │   │   ├── daily-progress-quickview.tsx
+│   │   ├── home-award-tile.tsx
 │   │   ├── home-chrome.css
 │   │   ├── home-dashboard.test.tsx
 │   │   ├── home-dashboard.tsx
+│   │   ├── home-day-lamp.tsx
+│   │   ├── home-day-stats.ts
+│   │   ├── home-days-until.tsx
+│   │   ├── home-glance-tiles.tsx
+│   │   ├── home-next-tile.tsx
+│   │   ├── home-overview.test.tsx
+│   │   ├── home-overview.tsx
 │   │   ├── home-review-banner.test.tsx
 │   │   ├── home-review-banner.tsx
+│   │   ├── home-screen-pet.tsx
+│   │   ├── home-solar-tile.tsx
+│   │   ├── home-tracking-tile.tsx
+│   │   ├── home-widget-dialog.tsx
+│   │   ├── home-widgets-menu.tsx
 │   │   ├── points-stats.test.tsx
-│   │   └── points-stats.tsx
+│   │   ├── points-stats.tsx
+│   │   └── weather-instrument.tsx
 │   ├── Icons
 │   │   ├── Icon.tsx
 │   │   ├── OrbPicker.tsx
@@ -137,6 +429,9 @@
 │   ├── ItemDetail
 │   │   ├── AttributeCreator.tsx
 │   │   ├── BodyPanel.tsx
+│   │   ├── CycleConfirmDialog.test.tsx
+│   │   ├── CycleConfirmDialog.tsx
+│   │   ├── ItemActivityPanel.tsx
 │   │   ├── ItemAttributesSection.tsx
 │   │   ├── ItemDetail.test.tsx
 │   │   ├── ItemDetailPage.test.tsx
@@ -149,6 +444,8 @@
 │   │   ├── SubtaskComposer.tsx
 │   │   ├── TagInput.tsx
 │   │   ├── item-attributes.test.tsx
+│   │   ├── item-detail-chrome.css
+│   │   ├── useItemDetailDraft.test.tsx
 │   │   └── useItemDetailDraft.ts
 │   ├── ItemTypes
 │   │   ├── ItemTypeEditor.test.tsx
@@ -159,7 +456,15 @@
 │   │   ├── ItemTypesPanel.tsx
 │   │   └── README.md
 │   ├── Lists
+│   │   ├── CHECKLIST.md
+│   │   ├── DEFAULT_VIEW.md
+│   │   ├── DETAILS.md
+│   │   ├── FOLDER_ALL_ITEMS.md
+│   │   ├── LIST_FOLDERS.md
+│   │   ├── LIST_LINKS.md
+│   │   ├── MODULE_LISTS.md
 │   │   ├── README.md
+│   │   ├── SPREADSHEET.md
 │   │   ├── __tests__
 │   │   │   ├── enhanced-list-view.integration.test.tsx
 │   │   │   └── open-target.test.ts
@@ -167,6 +472,7 @@
 │   │   ├── attribute-editor.tsx
 │   │   ├── attributes
 │   │   │   ├── AttributeSchemaEditor.tsx
+│   │   │   ├── AttributeSettingsDialog.tsx
 │   │   │   ├── AttributeValueField.tsx
 │   │   │   ├── AttributeValuesEditor.tsx
 │   │   │   ├── CompletionTiersPanel.tsx
@@ -175,10 +481,20 @@
 │   │   ├── daily-habits-list.test.tsx
 │   │   ├── daily-habits-list.tsx
 │   │   ├── dialogs
-│   │   │   ├── CompletedTasksDialog.tsx
+│   │   │   ├── ChecklistViewSettings.test.tsx
+│   │   │   ├── ChecklistViewSettings.tsx
+│   │   │   ├── ConnectedListsEditor.test.tsx
+│   │   │   ├── ConnectedListsEditor.tsx
 │   │   │   ├── CsvImportDialog.tsx
+│   │   │   ├── DefaultViewSettings.test.tsx
+│   │   │   ├── DefaultViewSettings.tsx
+│   │   │   ├── DetailsViewSettings.test.tsx
+│   │   │   ├── DetailsViewSettings.tsx
 │   │   │   ├── EditFolderDialog.tsx
+│   │   │   ├── EditListDialog.test.tsx
 │   │   │   ├── EditListDialog.tsx
+│   │   │   ├── InFoldersEditor.test.tsx
+│   │   │   ├── InFoldersEditor.tsx
 │   │   │   ├── ListRulesEditor.tsx
 │   │   │   ├── MergeItemsConfirmDialog.tsx
 │   │   │   ├── MergeItemsDialog.test.tsx
@@ -188,6 +504,8 @@
 │   │   │   ├── MergeListsDialog.tsx
 │   │   │   ├── NewFolderDialog.tsx
 │   │   │   ├── NewListDialog.tsx
+│   │   │   ├── SpreadsheetViewSettings.test.tsx
+│   │   │   ├── SpreadsheetViewSettings.tsx
 │   │   │   └── __tests__
 │   │   │       └── OrbPickerDialog.test.tsx
 │   │   ├── enhanced-list-view.test.tsx
@@ -205,21 +523,37 @@
 │   │   │   ├── useListsSelection.ts
 │   │   │   └── useListsTaskActions.ts
 │   │   ├── lib
-│   │   │   └── icon-utils.tsx
+│   │   │   ├── icon-utils.tsx
+│   │   │   ├── lists-location-choice.test.ts
+│   │   │   ├── lists-location-choice.ts
+│   │   │   ├── velvet-icon-grid.test.ts
+│   │   │   └── velvet-icon-grid.ts
 │   │   ├── list-content
+│   │   │   ├── AllViewCheckboxFilter.test.tsx
 │   │   │   ├── AllViewCheckboxFilter.tsx
+│   │   │   ├── ListContentChecklist.test.tsx
 │   │   │   ├── ListContentChecklist.tsx
+│   │   │   ├── ListContentDefault.test.tsx
 │   │   │   ├── ListContentDefault.tsx
+│   │   │   ├── ListContentDetails.test.tsx
 │   │   │   ├── ListContentDetails.tsx
 │   │   │   ├── ListContentIcons.tsx
 │   │   │   ├── ListContentPanel.test.tsx
 │   │   │   ├── ListContentPanel.tsx
+│   │   │   ├── ListContentSpreadsheet.test.tsx
 │   │   │   ├── ListContentSpreadsheet.tsx
+│   │   │   ├── ListMissedButton.tsx
+│   │   │   ├── SheetFullscreen.test.tsx
+│   │   │   ├── SheetFullscreen.tsx
 │   │   │   ├── item-select.tsx
 │   │   │   ├── kanban-utils.test.ts
 │   │   │   ├── kanban-utils.ts
 │   │   │   ├── kanban.README.md
+│   │   │   ├── sheet-fullscreen.css
+│   │   │   ├── sheet-fullscreen.test.ts
+│   │   │   ├── sheet-fullscreen.ts
 │   │   │   └── types.ts
+│   │   ├── list-picker.css
 │   │   ├── list-picker.test.tsx
 │   │   ├── list-picker.tsx
 │   │   ├── navigation
@@ -233,8 +567,11 @@
 │   │   ├── settings-dialog.tsx
 │   │   ├── toolbar
 │   │   │   ├── ItemSelectionToolbar.tsx
+│   │   │   ├── ListsToolbar.test.tsx
 │   │   │   ├── ListsToolbar.tsx
 │   │   │   ├── SelectionToolbar.tsx
+│   │   │   ├── ToolbarSearch.test.tsx
+│   │   │   ├── ToolbarSearch.tsx
 │   │   │   └── ViewModeControls.tsx
 │   │   ├── types.ts
 │   │   └── views
@@ -242,10 +579,12 @@
 │   │       ├── FolderViewCards.tsx
 │   │       ├── FolderViewDetails.test.tsx
 │   │       ├── FolderViewDetails.tsx
+│   │       ├── FolderViewIcons.test.tsx
 │   │       ├── FolderViewIcons.tsx
 │   │       ├── FolderViewList.test.tsx
 │   │       ├── FolderViewList.tsx
-│   │       └── SearchResultsView.tsx
+│   │       ├── SearchResultsView.tsx
+│   │       └── folder-view-icons-trail.css
 │   ├── Mobile
 │   │   ├── MobileApp.tsx
 │   │   ├── MobileLogin.tsx
@@ -259,6 +598,7 @@
 │   │   ├── module-bodies.tsx
 │   │   ├── module-helpers.test.ts
 │   │   ├── module-helpers.ts
+│   │   ├── modules-chrome.css
 │   │   ├── modules-panel.test.tsx
 │   │   ├── modules-panel.tsx
 │   │   └── workspace
@@ -275,6 +615,13 @@
 │   │       │   ├── FilmDnaView.tsx
 │   │       │   ├── PosterCard.tsx
 │   │       │   └── film-dna.css
+│   │       ├── gradsearch
+│   │       │   ├── GradSearchView.test.tsx
+│   │       │   ├── GradSearchView.tsx
+│   │       │   ├── data.json
+│   │       │   ├── engine.ts
+│   │       │   ├── shell.ts
+│   │       │   └── styles.ts
 │   │       ├── housecleaning
 │   │       │   ├── TidyView.test.tsx
 │   │       │   ├── TidyView.tsx
@@ -292,6 +639,7 @@
 │   │       │   └── trip-checklists.css
 │   │       ├── module-popout.test.ts
 │   │       ├── module-popout.ts
+│   │       ├── module-view-bodies.timer.test.tsx
 │   │       └── module-view-bodies.tsx
 │   ├── Operations
 │   │   ├── OperationFieldPlanPanels.tsx
@@ -304,10 +652,13 @@
 │   │   ├── OperationWorkspace.tsx
 │   │   ├── OperationsView.test.tsx
 │   │   ├── OperationsView.tsx
+│   │   ├── PartsPanel.test.tsx
+│   │   ├── PartsPanel.tsx
 │   │   ├── PhasesPanel.tsx
 │   │   ├── README.md
 │   │   ├── ResourcesPanel.tsx
 │   │   ├── ToDoNextRail.tsx
+│   │   ├── WorkingNowControl.tsx
 │   │   ├── index.ts
 │   │   ├── operation-actions.ts
 │   │   └── operations-chrome.css
@@ -316,8 +667,10 @@
 │   ├── README.md
 │   ├── Reviews
 │   │   ├── AffirmationsDialog.tsx
+│   │   ├── AssumedTimesSection.tsx
 │   │   ├── DayReviewTomorrowSection.test.tsx
 │   │   ├── DayReviewTomorrowSection.tsx
+│   │   ├── MorningReview.test.tsx
 │   │   ├── MorningReview.tsx
 │   │   ├── PostMortemDialog.tsx
 │   │   ├── README.md
@@ -337,6 +690,7 @@
 │   │   ├── enhanced-scheduler.test.tsx
 │   │   ├── enhanced-scheduler.tsx
 │   │   ├── project-network.ts
+│   │   ├── scheduler-chrome.css
 │   │   ├── scheduler-utils.test.ts
 │   │   └── scheduler-utils.ts
 │   ├── Search
@@ -344,54 +698,115 @@
 │   │   ├── README.md
 │   │   └── useGlobalSearchHotkey.ts
 │   ├── Settings
+│   │   ├── BabyAnimalFriendField.tsx
 │   │   ├── BackupRestore.tsx
+│   │   ├── ChromeFaceField.test.tsx
+│   │   ├── ChromeFaceField.tsx
+│   │   ├── DataProfileField.tsx
+│   │   ├── DayAnchorField.tsx
 │   │   ├── HomeLocationField.test.tsx
 │   │   ├── HomeLocationField.tsx
+│   │   ├── MessageIngestPanel.test.tsx
+│   │   ├── MessageIngestPanel.tsx
 │   │   ├── MobileSyncPanel.tsx
+│   │   ├── PcbBackdropField.test.tsx
+│   │   ├── PcbBackdropField.tsx
 │   │   ├── README.md
-│   │   └── SettingsDialog.tsx
+│   │   ├── ScreenTimePanel.test.tsx
+│   │   ├── ScreenTimePanel.tsx
+│   │   ├── SettingsDialog.tsx
+│   │   └── settings-chrome.css
 │   ├── Tracking
 │   │   └── MetricLogger.tsx
+│   ├── UiNames
+│   │   ├── README.md
+│   │   ├── UiNamesHost.test.tsx
+│   │   ├── UiNamesHost.tsx
+│   │   ├── ui-names-stamps.test.ts
+│   │   └── ui-names.css
+│   ├── append-log.tsx
+│   ├── baby-animal-gallery.test.tsx
+│   ├── baby-animal-gallery.tsx
+│   ├── baby-animal-nest.css
+│   ├── baby-animal-nest.test.tsx
+│   ├── baby-animal-nest.tsx
 │   ├── capture-shorthand.tsx
 │   ├── cognitive-state.test.tsx
 │   ├── cognitive-state.tsx
 │   ├── enhanced-bulk-add.test.tsx
 │   ├── enhanced-bulk-add.tsx
+│   ├── friend-details
+│   │   ├── FriendDetailsEqualizer.tsx
+│   │   ├── FriendDetailsJournal.tsx
+│   │   ├── FriendDetailsKeepsakes.tsx
+│   │   ├── FriendDetailsPanel.tsx
+│   │   ├── FriendDetailsPortrait.tsx
+│   │   ├── FriendDetailsReadouts.tsx
+│   │   ├── FriendDetailsVoice.tsx
+│   │   ├── FriendMissionDetail.tsx
+│   │   ├── FriendSpeechBubble.tsx
+│   │   ├── README.md
+│   │   ├── friend-details.css
+│   │   ├── friend-details.test.tsx
+│   │   └── useFriendDraft.ts
+│   ├── friend-details.tsx
+│   ├── friend-mission-sheet.tsx
+│   ├── header-now-box.test.tsx
+│   ├── header-now-box.tsx
+│   ├── header-popup-chrome.css
+│   ├── inbox.css
 │   ├── inbox.test.tsx
 │   ├── inbox.tsx
+│   ├── ingest-log-dialog.tsx
+│   ├── iphone-notes-store.test.tsx
+│   ├── iphone-notes-store.tsx
 │   ├── notes-ingest.test.tsx
 │   ├── notes-ingest.tsx
 │   ├── quick-add.test.tsx
 │   ├── quick-add.tsx
+│   ├── shell-chrome.css
 │   ├── spreadsheet
+│   │   ├── AddColumnDialog.tsx
 │   │   ├── README.md
 │   │   ├── SheetGrid.test.tsx
 │   │   ├── SheetGrid.tsx
 │   │   ├── SheetPopoutView.tsx
+│   │   ├── sheet-chrome.css
 │   │   ├── sheet-popout.test.ts
 │   │   └── sheet-popout.ts
-│   └── ui
-│       ├── README.md
-│       ├── alert.tsx
-│       ├── badge.tsx
-│       ├── button.tsx
-│       ├── card.tsx
-│       ├── checkbox.tsx
-│       ├── collapsible.tsx
-│       ├── dialog.tsx
-│       ├── dropdown-menu.tsx
-│       ├── input.tsx
-│       ├── isolated-text-field.test.tsx
-│       ├── isolated-text-field.tsx
-│       ├── label.tsx
-│       ├── progress.tsx
-│       ├── select.tsx
-│       ├── separator.tsx
-│       ├── switch.tsx
-│       ├── table.tsx
-│       ├── tabs.tsx
-│       ├── textarea.tsx
-│       └── tooltip.tsx
+│   ├── ui
+│   │   ├── README.md
+│   │   ├── alert.tsx
+│   │   ├── badge.tsx
+│   │   ├── button.tsx
+│   │   ├── card.tsx
+│   │   ├── checkbox.tsx
+│   │   ├── collapsible.tsx
+│   │   ├── color-swatch.test.tsx
+│   │   ├── color-swatch.tsx
+│   │   ├── dialog.tsx
+│   │   ├── dropdown-menu.tsx
+│   │   ├── input.tsx
+│   │   ├── isolated-text-field.test.tsx
+│   │   ├── isolated-text-field.tsx
+│   │   ├── label.tsx
+│   │   ├── progress.tsx
+│   │   ├── select.tsx
+│   │   ├── separator.tsx
+│   │   ├── switch.tsx
+│   │   ├── table.tsx
+│   │   ├── tabs.tsx
+│   │   ├── textarea.tsx
+│   │   ├── tooltip.tsx
+│   │   ├── unsaved-changes-guard.test.tsx
+│   │   ├── unsaved-changes-guard.tsx
+│   │   ├── unsaved-changes.css
+│   │   ├── window-sand-capture.ts
+│   │   ├── window-sand-close.css
+│   │   ├── window-sand-close.tsx
+│   │   ├── window-sand-sim.test.ts
+│   │   └── window-sand-sim.ts
+│   └── use-attachment-src.ts
 ├── components.json
 ├── data
 │   ├── chrome-idb-snapshot
@@ -400,14 +815,116 @@
 │   │   ├── CURRENT
 │   │   ├── LOG
 │   │   └── MANIFEST-000001
+│   ├── message-ingest.json
 │   ├── mobile-sync.json
+│   ├── recovery-backups
+│   │   ├── auto-brain2-habits-store-2026-09-24-04.json
+│   │   ├── auto-brain2-task-storage-2026-09-24-04.json
+│   │   ├── auto-brain2-timegrid-store-2026-09-24-03.json
+│   │   ├── auto-brain2-timegrid-store-2026-09-24-04.json
+│   │   ├── auto-cogs-baby-animals-store-2026-09-24-03.json
+│   │   ├── auto-cogs-baby-animals-store-2026-09-24-04.json
+│   │   ├── auto-cogs-habits-store-2026-09-24-04.json
+│   │   ├── auto-cogs-task-storage-2026-09-24-04.json
+│   │   ├── auto-cogs-timegrid-store-2026-09-24-03.json
+│   │   ├── auto-cogs-timegrid-store-2026-09-24-04.json
+│   │   ├── auto-points-store-2026-09-24-03.json
+│   │   ├── auto-points-store-2026-09-24-04.json
+│   │   ├── brain2-empty-ls-2026-09-21T07-45-39-912Z.json
+│   │   ├── chrome-ls-2026-09-20T03-12-52-878Z.json
+│   │   ├── cogs-backup-2026-09-21-user.json
+│   │   ├── cogs-ls-2026-09-21T07-45-39-912Z.json
+│   │   ├── cogs-ls-2026-09-21T07-52-32-633Z.json
+│   │   ├── electron-cogs-live.json
+│   │   ├── electron-live-2026-09-22T01-22-02.json
+│   │   ├── electron-ls-2026-09-20T03-13-59-642Z.json
+│   │   ├── electron-ls-2026-09-20T03-37-00-631Z.json
+│   │   ├── hub-before-live-sync-2026-09-22T01-18-01.json
+│   │   ├── hub-before-live-sync-2026-09-22T01-20-38.json
+│   │   ├── shared-persist-20260919-201252.json
+│   │   └── tracking-union-2026-09-22T01-21-45.json
 │   └── shared-persist.json
+├── designrefs
+│   ├── 046603488d7d312c0c17e2db38fb3a5a.jpg
+│   ├── 07e703d6f9fda08564ed32ba1eea8295.jpg
+│   ├── 117ebb9171f51c2bd7a913a12489fea9.jpg
+│   ├── 204a5f9b8f15aa8c411d21a93592743c.jpg
+│   ├── 233182978b0c64031a84ff84ec18e12e.jpg
+│   ├── 28003c286757ff410d03de24bc24c898.jpg
+│   ├── 2902904327ee778cd54eb65ae0c231ec.jpg
+│   ├── 2a0002d93dfba067de848caec9951b23.jpg
+│   ├── 2dc0e2cd6390065e28da01f96665db4a.jpg
+│   ├── 308a1c67d85e5e4f0e903e2dce6b8baf.jpg
+│   ├── 3691d9640986678a27262b1989b89c29.jpg
+│   ├── 36bc1715c629f42e163d54abe8741ac6.jpg
+│   ├── 39846df63bc1eb54a7b7e2fbcd6566a1.jpg
+│   ├── 3b6e176372e1f27b844344b888d43a86.jpg
+│   ├── 42ed97f9c02c9f0168d26cc793346aae.jpg
+│   ├── 4fac4805754805418d608371a0f3eaaa.jpg
+│   ├── 5934b2e94f44ba6bdf53382877091c3c.jpg
+│   ├── 5d58e7b46cf9bd493eb09f761340fb17.jpg
+│   ├── 5f3b8feaa2e9037ae0323d6635e28bb5.jpg
+│   ├── 60d7202cb958e11734ce0567eb382868.jpg
+│   ├── 61ildG1qWDL.jpg
+│   ├── 6586d2eaaa241117d4612337591d5563.jpg
+│   ├── 68ba1f33b0fc2672abbe5538ca345720.jpg
+│   ├── 6cabaec24a39680944ab58f2989afd7e.jpg
+│   ├── 720308329cd9d64adac759fc16ddf7cc.jpg
+│   ├── 7735cf78c857fd9187692b8d21999ad0.jpg
+│   ├── 79d20e2c416a102496722d3a742d2ae6.jpg
+│   ├── 9d225800a3f631bc7559c83d11f1aaa2.jpg
+│   ├── Screenshot 2026-09-21 at 2.49.46 PM.png
+│   ├── Screenshot-2024-07-03-201409.webp
+│   ├── a043e8a27ff07b747e9ba679dfeb1df9.jpg
+│   ├── a272dce1d120178b12922f925b46523f.jpg
+│   ├── a37a2f36fce73d8a106cf0ca8865be31.jpg
+│   ├── a898e04c534aeed3017938c701efdb2f.jpg
+│   ├── b26bfd50f829f8dfaa1266da07c16d93.jpg
+│   ├── b35614e58aefaebb40839e94ac6c1257.jpg
+│   ├── b73bd61f207c365dfa144ab70d969425.jpg
+│   ├── babyanimals
+│   │   ├── Analyzing-Bowling-Ball-Path.webp
+│   │   ├── babyfox.jpg
+│   │   ├── babylamb.webp
+│   │   ├── images.png
+│   │   └── physics_bowling_19.png
+│   ├── c000168519a7bcab944ab3c95b9229bc.jpg
+│   ├── c02f24b5335e5961501f7ad75d736eee.jpg
+│   ├── cfd93985b7a2a76aa69823561c8525d1.jpg
+│   ├── d09ee9b9432fa21ba8db4f1400a533e9.jpg
+│   ├── d206bbff071d39c4b5a5dead89542a0b.jpg
+│   ├── designref1.jpg
+│   ├── download.png
+│   ├── e1356c71dd528d820ba3bd40774fc2c9.jpg
+│   ├── e624b3aca52ff4d3f8cfe5fe476d3a7e.jpg
+│   ├── eb64e7e2716a968c513504e27d963fa2.jpg
+│   ├── f54430419ed206fa1bea7b27a4ff6a9e.jpg
+│   ├── ffa2396fc4af38ae8e97e646029c2e2e.jpg
+│   └── w3caho3pypz61.jpg
 ├── docs
+│   ├── ARCHITECTURE_MODULARITY.md
+│   ├── BIM_COMMANDS.md
 │   ├── BRAIN2_FEATURE_IDEAS.md
 │   ├── CANONICAL_FIELDS.md
+│   ├── COUNTS_AS.md
+│   ├── DESIGN_REFS.md
 │   ├── DESIGN_STYLE.md
+│   ├── FRIEND_COMPANION.md
+│   ├── FUTURE_WIDGET_IDEAS.md
+│   ├── JungBrain2.md
+│   ├── MAP_LOOP_MEANING.md
+│   ├── MESSAGE_INGEST.md
+│   ├── MODULE_PLATFORM.md
+│   ├── PEN_ACTION_FORMATS.md
+│   ├── PLAN_OF_ACTION.md
 │   ├── README.md
 │   ├── SPEC_MAPPING.md
+│   ├── ScienceandSanityBrain2.md
+│   ├── UI_CRITIQUE.md
+│   ├── UI_NEXT.md
+│   ├── brain2taoism.md
+│   ├── cyberneticsbrain2.md
+│   ├── jungideas.md
 │   ├── screenshots
 │   │   ├── 01-home-daily-habits.png
 │   │   ├── 01-home-daily-habits.txt
@@ -451,16 +968,38 @@
 │   │   ├── 06-scheduler-gantt.txt
 │   │   ├── 06-scheduler.png
 │   │   ├── 06-scheduler.txt
+│   │   ├── 07-analytics-attributes.png
+│   │   ├── 07-analytics-attributes.txt
 │   │   ├── 07-analytics-calibration.png
 │   │   ├── 07-analytics-calibration.txt
+│   │   ├── 07-analytics-circadian.png
+│   │   ├── 07-analytics-circadian.txt
 │   │   ├── 07-analytics-context-switch.png
 │   │   ├── 07-analytics-context-switch.txt
 │   │   ├── 07-analytics-correlation.png
 │   │   ├── 07-analytics-correlation.txt
+│   │   ├── 07-analytics-cross-section.png
+│   │   ├── 07-analytics-cross-section.txt
+│   │   ├── 07-analytics-cycle.png
+│   │   ├── 07-analytics-cycle.txt
+│   │   ├── 07-analytics-goals.png
+│   │   ├── 07-analytics-goals.txt
 │   │   ├── 07-analytics-item-types.png
 │   │   ├── 07-analytics-item-types.txt
+│   │   ├── 07-analytics-lists-areas.png
+│   │   ├── 07-analytics-lists-areas.txt
 │   │   ├── 07-analytics-metrics.png
 │   │   ├── 07-analytics-metrics.txt
+│   │   ├── 07-analytics-mood-field.png
+│   │   ├── 07-analytics-mood-field.txt
+│   │   ├── 07-analytics-observatory.png
+│   │   ├── 07-analytics-observatory.txt
+│   │   ├── 07-analytics-operations.png
+│   │   ├── 07-analytics-operations.txt
+│   │   ├── 07-analytics-overcommit.png
+│   │   ├── 07-analytics-overcommit.txt
+│   │   ├── 07-analytics-places.png
+│   │   ├── 07-analytics-places.txt
 │   │   ├── 07-analytics-plan-vs-reality.png
 │   │   ├── 07-analytics-plan-vs-reality.txt
 │   │   ├── 07-analytics-points.png
@@ -471,14 +1010,29 @@
 │   │   ├── 07-analytics-regret.txt
 │   │   ├── 07-analytics-reviews.png
 │   │   ├── 07-analytics-reviews.txt
+│   │   ├── 07-analytics-screentime.txt
+│   │   ├── 07-analytics-sleep.png
+│   │   ├── 07-analytics-sleep.txt
 │   │   ├── 07-analytics-streaks.png
 │   │   ├── 07-analytics-streaks.txt
+│   │   ├── 07-analytics-tracking-breakdown.png
+│   │   ├── 07-analytics-tracking-breakdown.txt
+│   │   ├── 07-analytics-tracking-tag.png
+│   │   ├── 07-analytics-tracking-tag.txt
 │   │   ├── 07-analytics-tracking.png
 │   │   ├── 07-analytics-tracking.txt
+│   │   ├── 07-analytics-velocity.png
+│   │   ├── 07-analytics-velocity.txt
 │   │   ├── 07-analytics.png
 │   │   ├── 07-analytics.txt
+│   │   ├── 08-home-tracking-activity.png
+│   │   ├── 08-home-tracking-activity.txt
+│   │   ├── 08-home-tracking-block.png
+│   │   ├── 08-home-tracking-block.txt
 │   │   ├── 08-home-tracking-daylog.png
 │   │   ├── 08-home-tracking-daylog.txt
+│   │   ├── 08-home-tracking-week.png
+│   │   ├── 08-home-tracking-week.txt
 │   │   ├── 08-home-tracking.png
 │   │   ├── 08-home-tracking.txt
 │   │   ├── 09-modules-workspace.png
@@ -509,7 +1063,22 @@
 │   │   ├── 20-dialog-time-tracking.txt
 │   │   ├── 21-item-detail-popup.png
 │   │   ├── 21-item-detail-popup.txt
-│   │   └── README.md
+│   │   ├── README.md
+│   │   └── habits-noble-gas-rail.png
+│   ├── sdfh
+│   ├── shortcuts
+│   │   ├── Dump iPhone Notes to Brain2.wflow.json
+│   │   ├── Location to Brain2.shortcut
+│   │   ├── Location to Brain2.wflow.json
+│   │   ├── Screen Time to Brain2.wflow.json
+│   │   ├── dump-iphone-notes-to-brain2.md
+│   │   ├── iPhone Call to Brain2.shortcut
+│   │   ├── iPhone Call to Brain2.wflow.json
+│   │   ├── iPhone Text to Brain2.shortcut
+│   │   ├── iPhone Text to Brain2.wflow.json
+│   │   ├── iphone-calls-and-texts-to-brain2.md
+│   │   ├── iphone-location-to-brain2.md
+│   │   └── screen-time-to-brain2.md
 │   ├── tree.md
 │   └── tree.txt
 ├── e2e
@@ -517,6 +1086,7 @@
 │   └── lists.spec.ts
 ├── electron
 │   ├── README.md
+│   ├── activitywatch.js
 │   ├── apple-notes.js
 │   ├── apple-notes.jxa
 │   ├── entitlements.mac.plist
@@ -524,10 +1094,29 @@
 │   │   ├── README.md
 │   │   └── channels.js
 │   ├── main.js
-│   └── preload.js
+│   ├── preload.js
+│   ├── telegram-file.js
+│   ├── telegram-ingest.js
+│   ├── user-data-path.js
+│   └── user-data-path.test.ts
+├── gems
+│   ├── gem.jpg
+│   ├── gem3.jpg
+│   ├── gem5.jpg
+│   ├── gem6.jpg
+│   ├── gem7.jpg
+│   ├── gem8.jpg
+│   ├── gems1.jpg
+│   └── gems2.jpg
 ├── hooks
 │   ├── README.md
+│   ├── use-attachment-src.ts
+│   ├── use-screentime-sync.test.ts
+│   ├── use-screentime-sync.ts
+│   ├── useMessageIngest.ts
 │   ├── useQuickCaptureHotkey.ts
+│   ├── useUndoHotkey.test.tsx
+│   ├── useUndoHotkey.ts
 │   └── useVocalConfidence.ts
 ├── ios
 │   ├── App
@@ -705,17 +1294,41 @@
 │       └── sources
 ├── lib
 │   ├── README.md
+│   ├── action-history.test.ts
+│   ├── action-history.ts
 │   ├── affirmations.test.ts
 │   ├── affirmations.ts
 │   ├── api-cache.test.ts
 │   ├── api-cache.ts
+│   ├── app-brand.ts
 │   ├── app-navigation.test.ts
 │   ├── app-navigation.ts
+│   ├── appearance-rev.test.ts
+│   ├── appearance-rev.ts
+│   ├── append-log.test.ts
+│   ├── append-log.ts
 │   ├── apple-notes.test.ts
 │   ├── apple-notes.ts
+│   ├── archive-lists.test.ts
+│   ├── archive-lists.ts
 │   ├── attachments.test.ts
 │   ├── attachments.ts
 │   ├── attribute-utils.ts
+│   ├── available-tasks.test.ts
+│   ├── available-tasks.ts
+│   ├── baby-animal-friend.test.ts
+│   ├── baby-animal-friend.ts
+│   ├── baby-animal-greeting.test.ts
+│   ├── baby-animal-greeting.ts
+│   ├── baby-animal-nudge.test.ts
+│   ├── baby-animal-nudge.ts
+│   ├── baby-animal-personality.test.ts
+│   ├── baby-animal-personality.ts
+│   ├── baby-animal-photos.ts
+│   ├── baby-animals-store.test.ts
+│   ├── baby-animals-store.ts
+│   ├── baby-animals.test.ts
+│   ├── baby-animals.ts
 │   ├── belief-strength.test.ts
 │   ├── belief-strength.ts
 │   ├── book-match.test.ts
@@ -730,12 +1343,18 @@
 │   ├── capture-target.ts
 │   ├── catalog-types.test.ts
 │   ├── catalog-types.ts
+│   ├── checklist-checkbox-vars.test.ts
+│   ├── checklist-checkbox-vars.ts
+│   ├── chrome-patina.test.ts
+│   ├── chrome-patina.ts
 │   ├── city-search.ts
 │   ├── completion-events.ts
 │   ├── completion-status.test.ts
 │   ├── completion-status.ts
 │   ├── completion-tiers.test.ts
 │   ├── completion-tiers.ts
+│   ├── completion-window.test.ts
+│   ├── completion-window.ts
 │   ├── critical-path.test.ts
 │   ├── critical-path.ts
 │   ├── csv.test.ts
@@ -756,10 +1375,20 @@
 │   │   │   └── local-data-source.ts
 │   │   ├── task-repository.test.ts
 │   │   └── task-repository.ts
+│   ├── data-profile.ts
+│   ├── date-utils-local-day.test.ts
 │   ├── date-utils.ts
+│   ├── day-notes-persist.test.ts
+│   ├── day-notes-persist.ts
 │   ├── daylight.test.ts
 │   ├── decision-matrix.test.ts
 │   ├── decision-matrix.ts
+│   ├── default-view-prefs.test.ts
+│   ├── default-view-prefs.ts
+│   ├── demo-vault.test.ts
+│   ├── demo-vault.ts
+│   ├── details-columns.test.ts
+│   ├── details-columns.ts
 │   ├── doc-export.test.ts
 │   ├── doc-export.ts
 │   ├── doc-html.test.ts
@@ -769,6 +1398,10 @@
 │   ├── doc-links.ts
 │   ├── doc-persist.test.ts
 │   ├── doc-persist.ts
+│   ├── entry-links.test.ts
+│   ├── entry-links.ts
+│   ├── estimated-values.test.ts
+│   ├── estimated-values.ts
 │   ├── event-links.test.ts
 │   ├── event-links.ts
 │   ├── event-store.dates.test.ts
@@ -783,6 +1416,8 @@
 │   ├── flight-lookup.ts
 │   ├── flight-types.test.ts
 │   ├── flight-types.ts
+│   ├── focus-timer-log.test.ts
+│   ├── focus-timer-log.ts
 │   ├── folder-all-items.test.ts
 │   ├── folder-all-items.ts
 │   ├── folder-membership.test.ts
@@ -793,34 +1428,182 @@
 │   ├── folder-tree.ts
 │   ├── formula.test.ts
 │   ├── formula.ts
+│   ├── friend-copy.ts
+│   ├── friend-gallery.test.ts
+│   ├── friend-gallery.ts
+│   ├── friend-mission-steps.ts
+│   ├── friend-mission.test.ts
+│   ├── friend-mission.ts
+│   ├── friend-pack-manifest.ts
+│   ├── friend-pack.test.ts
+│   ├── friend-pack.ts
+│   ├── friend-personality-fits.ts
+│   ├── friend-photo-vault.test.ts
+│   ├── friend-photo-vault.ts
+│   ├── friend-reward.test.ts
+│   ├── friend-reward.ts
+│   ├── friend-stats.test.ts
+│   ├── friend-stats.ts
+│   ├── friend-suggestion.test.ts
+│   ├── friend-suggestion.ts
+│   ├── friend-whims.ts
+│   ├── gems-manifest.ts
 │   ├── geocode.ts
 │   ├── goals-store.ts
 │   ├── google-fonts.test.ts
 │   ├── google-fonts.ts
 │   ├── graph-layout.test.ts
 │   ├── graph-layout.ts
+│   ├── habit-accomplishment.test.ts
+│   ├── habit-accomplishment.ts
+│   ├── habit-connection-sync.ts
+│   ├── habit-connections.test.ts
+│   ├── habit-connections.ts
 │   ├── habit-done-log.test.ts
 │   ├── habit-done-log.ts
+│   ├── habit-exemption.test.ts
+│   ├── habit-exemption.ts
+│   ├── habit-gems.test.ts
+│   ├── habit-gems.ts
+│   ├── habit-led.test.ts
+│   ├── habit-led.ts
 │   ├── habit-points-store.test.ts
 │   ├── habit-points.test.ts
 │   ├── habit-points.ts
+│   ├── habit-priority.test.ts
+│   ├── habit-priority.ts
+│   ├── habit-sort.test.ts
+│   ├── habit-sort.ts
+│   ├── habit-time-estimate.test.ts
+│   ├── habit-time-estimate.ts
+│   ├── habit-tracking-sync.test.ts
+│   ├── habit-tracking-sync.ts
+│   ├── habit-tracking.test.ts
+│   ├── habit-tracking.ts
+│   ├── habit-tube.test.ts
+│   ├── habit-tube.ts
 │   ├── habit-utils.ts
 │   ├── habit-week-streaks.test.ts
 │   ├── habit-week-streaks.ts
+│   ├── habits-control-panel.test.ts
+│   ├── habits-control-panel.ts
+│   ├── habits-seed.test.ts
+│   ├── habits-store.gems.test.ts
+│   ├── habits-store.migrate.test.ts
 │   ├── habits-store.ts
+│   ├── home-days-until-store.ts
+│   ├── home-glances.test.ts
+│   ├── home-glances.ts
+│   ├── home-weather-store.test.ts
+│   ├── home-weather-store.ts
+│   ├── home-weather.test.ts
+│   ├── home-weather.ts
+│   ├── home-widgets-store.ts
+│   ├── home-widgets.test.ts
+│   ├── home-widgets.ts
 │   ├── house-cleaning.test.ts
 │   ├── house-cleaning.ts
 │   ├── image-resize.test.ts
 │   ├── image-resize.ts
 │   ├── implied-actions.test.ts
 │   ├── implied-actions.ts
+│   ├── inbox-batch.test.ts
+│   ├── inbox-batch.ts
+│   ├── inbox-credit.test.ts
+│   ├── inbox-credit.ts
+│   ├── inbox-recent-lists.test.ts
+│   ├── inbox-recent-lists.ts
 │   ├── incremental-habits.test.ts
 │   ├── incremental-habits.ts
+│   ├── ingest
+│   │   ├── README.md
+│   │   ├── apply-activity-span.ts
+│   │   ├── apply-bulk.ts
+│   │   ├── apply-capture.ts
+│   │   ├── apply-discrete-event.ts
+│   │   ├── apply-glossary.test.ts
+│   │   ├── apply-glossary.ts
+│   │   ├── apply-gps.test.ts
+│   │   ├── apply-gps.ts
+│   │   ├── apply-grocery.ts
+│   │   ├── apply-habit-trigger.ts
+│   │   ├── apply-habit.ts
+│   │   ├── apply-inventory.ts
+│   │   ├── apply-iphone-notes.test.ts
+│   │   ├── apply-iphone-notes.ts
+│   │   ├── apply-media.test.ts
+│   │   ├── apply-media.ts
+│   │   ├── apply-morning-gm.ts
+│   │   ├── apply-morning-gm.walk.test.ts
+│   │   ├── apply-needed.ts
+│   │   ├── apply-note.ts
+│   │   ├── apply-phone-life.test.ts
+│   │   ├── apply-phone-life.ts
+│   │   ├── apply-phone-screen.test.ts
+│   │   ├── apply-phone-screen.ts
+│   │   ├── apply-pin.ts
+│   │   ├── apply-plan-text.test.ts
+│   │   ├── apply-plan-text.ts
+│   │   ├── apply-read.ts
+│   │   ├── apply-receipt.ts
+│   │   ├── apply-ritual.test.ts
+│   │   ├── apply-ritual.ts
+│   │   ├── apply-scan-doc.ts
+│   │   ├── apply-todos.test.ts
+│   │   ├── apply-todos.ts
+│   │   ├── apply-tracking.ts
+│   │   ├── bim.ts
+│   │   ├── bytes.ts
+│   │   ├── chunk-text.test.ts
+│   │   ├── chunk-text.ts
+│   │   ├── command-catalog.test.ts
+│   │   ├── command-catalog.ts
+│   │   ├── command-glossary.ts
+│   │   ├── dedupe.ts
+│   │   ├── deliver-reply.ts
+│   │   ├── executor.test.ts
+│   │   ├── executor.ts
+│   │   ├── expand.test.ts
+│   │   ├── expand.ts
+│   │   ├── help.ts
+│   │   ├── index.ts
+│   │   ├── ingest-store.test.ts
+│   │   ├── ingest-store.ts
+│   │   ├── jpeg-pdf.test.ts
+│   │   ├── jpeg-pdf.ts
+│   │   ├── media-album.ts
+│   │   ├── name-resolve.test.ts
+│   │   ├── name-resolve.ts
+│   │   ├── ocr.ts
+│   │   ├── pairing.test.ts
+│   │   ├── pairing.ts
+│   │   ├── parse-bulk.test.ts
+│   │   ├── parse-bulk.ts
+│   │   ├── parse-message.test.ts
+│   │   ├── parse-message.ts
+│   │   ├── receipt-parse.test.ts
+│   │   ├── receipt-parse.ts
+│   │   ├── ritual-skip.ts
+│   │   ├── scan-page.ts
+│   │   ├── shortcut-remap.ts
+│   │   ├── switch-scope.ts
+│   │   ├── telegram-bridge.ts
+│   │   ├── text-triggers.test.ts
+│   │   ├── text-triggers.ts
+│   │   ├── times.test.ts
+│   │   ├── times.ts
+│   │   ├── types.ts
+│   │   ├── vault-push.ts
+│   │   └── write-bim-commands-doc.test.ts
+│   ├── item-activity.test.ts
+│   ├── item-activity.ts
 │   ├── item-merge.test.ts
 │   ├── item-merge.ts
 │   ├── item-selection.test.ts
 │   ├── item-selection.ts
+│   ├── item-title-reads.test.ts
 │   ├── item-type-recipes.ts
+│   ├── item-type-store.test.ts
 │   ├── item-type-store.ts
 │   ├── item-types.test.ts
 │   ├── item-types.ts
@@ -833,6 +1616,8 @@
 │   ├── letterboxd-parse.ts
 │   ├── links.test.ts
 │   ├── links.ts
+│   ├── list-links.test.ts
+│   ├── list-links.ts
 │   ├── list-merge.test.ts
 │   ├── list-merge.ts
 │   ├── list-tree.test.ts
@@ -856,6 +1641,11 @@
 │   ├── mobile-sync.ts
 │   ├── module-definitions.test.ts
 │   ├── module-definitions.ts
+│   ├── module-list-import-shared.ts
+│   ├── module-list-import-tidy.ts
+│   ├── module-list-import-trip.ts
+│   ├── module-list-import.test.ts
+│   ├── module-list-import.ts
 │   ├── module-lists.test.ts
 │   ├── module-lists.ts
 │   ├── module-plan-sync.ts
@@ -864,6 +1654,8 @@
 │   ├── modules-store.ts
 │   ├── molecular.test.ts
 │   ├── molecular.ts
+│   ├── morning-todo-walk.test.ts
+│   ├── morning-todo-walk.ts
 │   ├── needs-attention.test.ts
 │   ├── needs-attention.ts
 │   ├── note-types.test.ts
@@ -874,37 +1666,76 @@
 │   ├── operation-itinerary.ts
 │   ├── operation-lists.ts
 │   ├── operation-model.test.ts
+│   ├── operation-parts.test.ts
+│   ├── operation-parts.ts
 │   ├── operation-types.ts
+│   ├── operation-work-session.test.ts
+│   ├── operation-work-session.ts
 │   ├── operations.test.ts
 │   ├── operations.ts
 │   ├── orbs-manifest.ts
+│   ├── overcommitment.test.ts
+│   ├── overcommitment.ts
 │   ├── parse-event-text.test.ts
 │   ├── parse-event-text.ts
 │   ├── parse-flight-text.test.ts
 │   ├── parse-flight-text.ts
 │   ├── parse-place-paste.test.ts
 │   ├── parse-place-paste.ts
+│   ├── pcb-backdrop.test.ts
+│   ├── pcb-backdrop.ts
 │   ├── pdf-to-html.test.ts
 │   ├── pdf-to-html.ts
+│   ├── pen-action-format.test.ts
+│   ├── pen-action-format.ts
+│   ├── pen-action-sync.test.ts
+│   ├── pen-action-sync.ts
+│   ├── pen-color-session-store.ts
+│   ├── pen-color-session.test.ts
+│   ├── pen-color-session.ts
+│   ├── pen-sort.test.ts
+│   ├── pen-sort.ts
+│   ├── pen-tree.test.ts
+│   ├── pen-tree.ts
 │   ├── pending-reviews.test.ts
 │   ├── pending-reviews.ts
 │   ├── persist-storage.test.ts
 │   ├── persist-storage.ts
 │   ├── places-search.test.ts
 │   ├── places-search.ts
+│   ├── plan-drag.test.ts
+│   ├── plan-drag.ts
+│   ├── plan-rail-next-actions.test.ts
+│   ├── plan-rail-next-actions.ts
+│   ├── plan-text.test.ts
 │   ├── plan-text.ts
 │   ├── plan-vs-reality.test.ts
 │   ├── plan-vs-reality.ts
+│   ├── planned-action-store.test.ts
+│   ├── planned-action-store.ts
+│   ├── planned-actions.test.ts
+│   ├── planned-actions.ts
 │   ├── points-store.ts
 │   ├── priority.test.ts
 │   ├── priority.ts
 │   ├── regret-store.test.ts
 │   ├── regret-store.ts
+│   ├── remove-background.test.ts
 │   ├── remove-background.ts
 │   ├── reviews-store.ts
 │   ├── scheduled-lists-sync.test.ts
 │   ├── scheduled-lists-sync.ts
 │   ├── scheduling.ts
+│   ├── screentime
+│   │   ├── README.md
+│   │   ├── app-categories.test.ts
+│   │   ├── app-categories.ts
+│   │   ├── map-events.test.ts
+│   │   ├── map-events.ts
+│   │   ├── prefs.test.ts
+│   │   ├── prefs.ts
+│   │   ├── sync.test.ts
+│   │   └── sync.ts
 │   ├── search.test.ts
 │   ├── search.ts
 │   ├── second-brain-types.ts
@@ -912,6 +1743,8 @@
 │   ├── services
 │   │   ├── completion-service.test.ts
 │   │   ├── completion-service.ts
+│   │   ├── completion-time-service.test.ts
+│   │   ├── completion-time-service.ts
 │   │   ├── item-mutation-service.test.ts
 │   │   ├── item-mutation-service.ts
 │   │   ├── review-service.test.ts
@@ -922,8 +1755,21 @@
 │   ├── sheet-a1.ts
 │   ├── sheet-eval.test.ts
 │   ├── sheet-eval.ts
+│   ├── sleep-inference.test.ts
+│   ├── sleep-inference.ts
+│   ├── sleep-log.test.ts
+│   ├── sleep-log.ts
+│   ├── sleep-store.ts
+│   ├── sleep-sun.test.ts
+│   ├── sleep-sun.ts
+│   ├── sleep-sync.test.ts
+│   ├── sleep-sync.ts
 │   ├── smart-parse.test.ts
 │   ├── smart-parse.ts
+│   ├── solar-remainder.test.ts
+│   ├── solar-remainder.ts
+│   ├── spreadsheet-catalog.test.ts
+│   ├── spreadsheet-catalog.ts
 │   ├── spreadsheet-contract.test.ts
 │   ├── spreadsheet-contract.ts
 │   ├── spreadsheet-file.ts
@@ -933,15 +1779,36 @@
 │   ├── spreadsheet-paste.ts
 │   ├── spreadsheet-utils.test.ts
 │   ├── spreadsheet-utils.ts
+│   ├── storage-keys.test.ts
+│   ├── storage-keys.ts
 │   ├── streaks.test.ts
 │   ├── streaks.ts
 │   ├── string-utils.test.ts
 │   ├── string-utils.ts
+│   ├── sun-times-store.test.ts
+│   ├── sun-times-store.ts
+│   ├── sun-times.test.ts
+│   ├── sun-times.ts
 │   ├── task-store.dates.test.ts
+│   ├── task-store.item-record.test.ts
+│   ├── task-store.list-links.test.ts
 │   ├── task-store.migration.test.ts
+│   ├── task-store.titles.test.ts
 │   ├── task-store.ts
+│   ├── theme-store.test.ts
 │   ├── theme-store.ts
+│   ├── tide-client.test.ts
+│   ├── tide-client.ts
+│   ├── time-entries.test.ts
+│   ├── time-entries.ts
+│   ├── time-tracking-store.test.ts
 │   ├── time-tracking-store.ts
+│   ├── tracked-time.test.ts
+│   ├── tracked-time.ts
+│   ├── tracking-presence.test.ts
+│   ├── tracking-presence.ts
+│   ├── tracking-summary.test.ts
+│   ├── tracking-summary.ts
 │   ├── trip-activities-export.test.ts
 │   ├── trip-activities-export.ts
 │   ├── trip-activity-lists.test.ts
@@ -951,23 +1818,43 @@
 │   ├── trip-itinerary.test.ts
 │   ├── trip-itinerary.ts
 │   ├── types.ts
+│   ├── ui-names-store.test.ts
+│   ├── ui-names-store.ts
+│   ├── unsaved-changes.test.ts
+│   ├── unsaved-changes.ts
 │   ├── use-current-date.test.ts
 │   ├── use-current-date.ts
+│   ├── use-persist-hydrated.test.ts
+│   ├── use-persist-hydrated.ts
+│   ├── use-persisted-scroll.test.tsx
+│   ├── use-persisted-scroll.ts
 │   ├── use-persisted-tab.test.tsx
 │   ├── use-persisted-tab.ts
 │   ├── user-settings-store.test.ts
 │   ├── user-settings-store.ts
 │   ├── utils.ts
+│   ├── vault-coverage.test.ts
+│   ├── vault-guard.js
+│   ├── vault-guard.test.ts
 │   ├── vocal-confidence.test.ts
 │   ├── vocal-confidence.ts
 │   ├── weather-client.ts
 │   ├── weather-flight.test.ts
+│   ├── weather-home.test.ts
+│   ├── willpower-physics.test.ts
+│   ├── willpower-physics.ts
+│   ├── willpower-stones.test.ts
+│   ├── willpower-stones.ts
+│   ├── work-session-store.ts
 │   ├── workflow-engine.test.ts
 │   ├── workflow-engine.ts
 │   ├── workflow-hooks.test.ts
 │   ├── workflow-hooks.ts
 │   ├── workflows-store.test.ts
 │   └── workflows-store.ts
+├── litrefs
+│   ├── Jung - Synchronicity.pdf
+│   └── modern-man-in-search-of-a-soul-stages-of-life-1.pdf
 ├── next-env.d.ts
 ├── next.config.mjs
 ├── package-lock.json
@@ -975,21 +1862,276 @@
 ├── playwright.config.ts
 ├── postcss.config.mjs
 ├── public
+│   ├── baby-animals
+│   │   ├── axolotl.svg
+│   │   ├── bunny.svg
+│   │   ├── capybara.svg
+│   │   ├── chick.svg
+│   │   ├── crow.svg
+│   │   ├── cub.svg
+│   │   ├── duckling.svg
+│   │   ├── fawn.svg
+│   │   ├── foal.svg
+│   │   ├── fox.svg
+│   │   ├── goat.svg
+│   │   ├── gosling.svg
+│   │   ├── hedgehog.svg
+│   │   ├── kitten.svg
+│   │   ├── lamb.svg
+│   │   ├── mouse.svg
+│   │   ├── otter.svg
+│   │   ├── owl.svg
+│   │   ├── penguin.svg
+│   │   ├── piglet.svg
+│   │   ├── puppy.svg
+│   │   ├── raccoon.svg
+│   │   ├── seal.svg
+│   │   └── wolf.svg
 │   ├── fonts
 │   │   └── w95fa.woff
+│   ├── friend-details
+│   │   └── frames
+│   │       ├── arch.svg
+│   │       ├── cameo.svg
+│   │       ├── heart.svg
+│   │       ├── medallion.svg
+│   │       └── tribal.svg
+│   ├── friend-pack
+│   │   ├── 00f0350b637407a8.png
+│   │   ├── 0251aef69ddfe5fd.png
+│   │   ├── 04e0cee95012cd68.png
+│   │   ├── 18f4f3933a2e70b9.png
+│   │   ├── 22634a60cb794994.png
+│   │   ├── 2a1afe9b2b531961.png
+│   │   ├── 2e70846ee8102dc8.png
+│   │   ├── 3295c0c2ff784b17.png
+│   │   ├── 396bdc5a583a4509.png
+│   │   ├── 3a2beba955071c43.png
+│   │   ├── 522ccd775409ef88.png
+│   │   ├── 5457bfca3d3e584b.png
+│   │   ├── 616b04722e0fff23.png
+│   │   ├── 61785a94e7230677.png
+│   │   ├── 63b436ed0733ea83.png
+│   │   ├── 6614312aff5163ef.png
+│   │   ├── 6825a395adf4f0c8.png
+│   │   ├── 731d9f4bc6fbaafb.png
+│   │   ├── 77844948994257a8.png
+│   │   ├── 799d3cc167ba07bd.png
+│   │   ├── 799d803e01e656be.png
+│   │   ├── 8020bdae5d07675f.png
+│   │   ├── 81992e898f2af728.png
+│   │   ├── 83cf0395e8f90013.png
+│   │   ├── 85af0d4243c996dd.png
+│   │   ├── 8792d5218a3c2c4c.png
+│   │   ├── 8c848d062320e1dd.png
+│   │   ├── 91966fe58debd95f.png
+│   │   ├── 9284ac7092d98d70.png
+│   │   ├── 935827889981d212.png
+│   │   ├── 9a155914dd8058f3.png
+│   │   ├── 9c9e3dca679ca272.png
+│   │   ├── 9f9e2a315395724d.png
+│   │   ├── a50d68abd7bc959a.png
+│   │   ├── a68b2cbf0a1866ff.png
+│   │   ├── ab8b0cf5396d6067.png
+│   │   ├── acc3215c23dc6481.png
+│   │   ├── ad295600c287e288.png
+│   │   ├── b1c401aede60d665.png
+│   │   ├── b2210336ca9e05b0.png
+│   │   ├── b27399f2e7e2d779.png
+│   │   ├── b3d9da761aec3bf7.png
+│   │   ├── b58a65319d8fb530.png
+│   │   ├── b6972c64b30a763d.png
+│   │   ├── b6da83587416cb7e.png
+│   │   ├── b879705926c959bc.png
+│   │   ├── bbc17d9078a45045.png
+│   │   ├── bd21bf3722771701.png
+│   │   ├── bf261b1f975f1293.png
+│   │   ├── bfe75a2c7cfea702.png
+│   │   ├── c37fe5ec5055de87.png
+│   │   ├── c6de0451b3116eaf.png
+│   │   ├── c7d1d6c7f55bae9d.png
+│   │   ├── c86df29ec20bbaba.png
+│   │   ├── c9295eca844df9c0.png
+│   │   ├── cc1108b5a8346128.png
+│   │   ├── d0d56e3fc0ecc896.png
+│   │   ├── d2c7a5c40c9d1673.png
+│   │   ├── d3d75f0c1a55377f.png
+│   │   ├── d783a6c977c9b665.png
+│   │   ├── d9cb0919a3bb3874.png
+│   │   ├── de979e2eaaa4ee25.png
+│   │   ├── deb729b589b0c5b9.png
+│   │   ├── e7c94c8424cae0d8.png
+│   │   ├── ed2443b71c2eefd2.png
+│   │   ├── f0aaaf92658f2ceb.png
+│   │   ├── f4dd96f6fccbc9b3.png
+│   │   ├── f84881b166a1019e.png
+│   │   ├── f91323f339396297.png
+│   │   ├── fcbb1c4aa8dc5747.png
+│   │   └── fe17663cbb2ad835.png
+│   ├── gems-removebackground
+│   │   ├── 0073f9caf9df33a0b24268e75bb4fa08.png
+│   │   ├── 060f3262fe39ff5f50889aa3d4a4a8f4.png
+│   │   ├── 0a86dbc1946d359b3aa1b1860fa5d27b.png
+│   │   ├── 107e7775782a6d9ce53f38b426d92eb0.png
+│   │   ├── 130ffa07906f77eda2d6e4d21dfe7f26.png
+│   │   ├── 1314d6f6f644fb849924b29c39a90209.png
+│   │   ├── 2726f155586c9e39977f85e45880ed86.png
+│   │   ├── 27ca01a3d9c95e76ff08ece64093a515.png
+│   │   ├── 30ccf3249cf7b669cb48b5cf31ac087e.png
+│   │   ├── 322bd5925b82ffdf36b8f1927d246e89.png
+│   │   ├── 34bdcae7725f27e839754ffa89947f6c.png
+│   │   ├── 35919fbc5c61e7660c5251f6cf1dae74.png
+│   │   ├── 360df623c847f725bc8c74907aa827c1.png
+│   │   ├── 38b68c6003060795b8bb0d85eccfa145.png
+│   │   ├── 3c97271fa14c98ef2729e69bbc089f61.png
+│   │   ├── 3cd5a9a9f3db905be583c898d5d49cc1.png
+│   │   ├── 401a8b8ba5a843d11350a4233021d179.png
+│   │   ├── 413d1f1859d56a9e1190fa3adde12d9a.png
+│   │   ├── 463dc7718b03efd682da6c841b734c52.png
+│   │   ├── 534add23c192e8532634d6d5be95d801.png
+│   │   ├── 569b204accfb78ac55e6091c26193c3c.png
+│   │   ├── 64a25483c113397efa5b1115a66853b9.png
+│   │   ├── 66aca3c7ce847b3a6941dd72f0d3bb06.png
+│   │   ├── 6935ffa538838e0fbd1443d23d1eee23.png
+│   │   ├── 6aa0f049f2e7b1e380697a3f947a087c.png
+│   │   ├── 6c4908fde2417286ff934c770a202e65.png
+│   │   ├── 6e23bf4f4d0af5e1aa06fd5aa02cb55c.png
+│   │   ├── 6ee171e96769d5d42abff2e02b07a200.png
+│   │   ├── 70ca28840c8219989f2b88e6b62c4982.png
+│   │   ├── 784847bd563ac65fb1166dd4cc10236a.png
+│   │   ├── 7a77bc04914d23940b21da844ba65341.png
+│   │   ├── 7e7870a8ac95b070b12a52f78d56c729.png
+│   │   ├── 8362d1b86adb3e35e4b7ed20f38b3588.png
+│   │   ├── 84f654c94e0b8569baf0e50cfa9322cc.png
+│   │   ├── 8d9e91ffa6ccf18b23cc11bc485c206f.png
+│   │   ├── 8fe1487a8fad8a60ac232337e15c2d80.png
+│   │   ├── 918c7d85f733c37a4fe8104e0c268aa2.png
+│   │   ├── 94217d32aa81ebc50753074f52ca8188.png
+│   │   ├── 94a62ef177d598937f202fdfb1bf9b86.png
+│   │   ├── 967002b2bc5565a3f38c4a7ddbe320fc.png
+│   │   ├── 96c1b8d377d5c17a755dbef64f8b112a.png
+│   │   ├── 9b758efd79db7dcf5cf3355dbd48645f.png
+│   │   ├── 9d3b5c539b811783bf8cf1ef04295478.png
+│   │   ├── 9e660fe71322b61fb76df57e9d515743.png
+│   │   ├── a455a9e7cb82bcc0293a50b3f2ef6732.png
+│   │   ├── a5a6ba54e265070f127a7de0249223e3.png
+│   │   ├── a6b67a33724ba572df72620b7738cfc0.png
+│   │   ├── aa230b59ddfac1501e0e6ff71e2702b9.png
+│   │   ├── ab5a14bb69bd39513f712060dab95de5.png
+│   │   ├── aed3803b8ea58ee6c971f5cfac8d8ec7.png
+│   │   ├── b368342423f156d9f6cd4a6cdcdd71f3.png
+│   │   ├── b910b7536ef129329d3631f32400ed15.png
+│   │   ├── bb04184af8621c855c6d7e384e4f92cb.png
+│   │   ├── bde8fae729b859a877a70a5e8ebd8f4d.png
+│   │   ├── c350b797c04f274078d2e552c221261e.png
+│   │   ├── c4319c4d1cec5db65b39a42394533b3c.png
+│   │   ├── c60c50d434b097e463066674db747c95.png
+│   │   ├── c7306b08d0a347e8a35da66e7c22c84a.png
+│   │   ├── d4842442bf5ddf2893f13b7dbb3e5603.png
+│   │   ├── d4cb7a6b3bdf2927e1899863051385eb.png
+│   │   ├── d54a4b244f4ce9a1684d07043d467a46.png
+│   │   ├── d7fec8012ff08f0901df8f4c28f718a0.png
+│   │   ├── dc8bca5e6ad1bdd26d38e6765ff09ad2.png
+│   │   ├── ddd76790200718d74218983d25fb3a7c.png
+│   │   ├── de43d7cef61e6992d08ad412d972f44d.png
+│   │   ├── ded2467d5e09c08588a07b150755fcd4.png
+│   │   ├── e5652eeb145d9ac98f92776a27a68ef8.png
+│   │   ├── e5a8f64938db1a44868e610c01c13a5c.png
+│   │   ├── e7a4b25a506e2ab9c20179cbc56da911.png
+│   │   ├── e7a81cbe705d3c1c2c498cad5f85a685.png
+│   │   ├── ee13c79e8a4433768e156c8d7cdc3554.png
+│   │   ├── ef7eeda944c48581cc9544f1996da53a.png
+│   │   ├── f0789e6feab8b7e0fc434aa81f1a074d.png
+│   │   ├── f3b33d4103d40c39582d4cd250525ee9.png
+│   │   ├── f5a207c1592808fc95752d142740e60f.png
+│   │   ├── f647d8823b9126dab749ced04e012545.png
+│   │   ├── f67f6992b0905ac515cdc493e63287a0.png
+│   │   ├── f9a49185f44e6d763afe210e6449280e.png
+│   │   ├── gem.png
+│   │   ├── gem3.png
+│   │   ├── gem5.png
+│   │   ├── gem6.png
+│   │   ├── gem7.png
+│   │   ├── gem8.png
+│   │   ├── gems1-01.png
+│   │   ├── gems1-02.png
+│   │   ├── gems1-03.png
+│   │   ├── gems1-04.png
+│   │   ├── gems1-05.png
+│   │   ├── gems1-06.png
+│   │   ├── gems1-07.png
+│   │   ├── gems1-08.png
+│   │   ├── gems1-09.png
+│   │   ├── gems1-10.png
+│   │   ├── gems1-11.png
+│   │   ├── gems1-12.png
+│   │   ├── gems1-13.png
+│   │   ├── gems1-14.png
+│   │   ├── gems1-15.png
+│   │   ├── gems1-16.png
+│   │   ├── gems1-17.png
+│   │   ├── gems1-18.png
+│   │   ├── gems1-19.png
+│   │   ├── gems1-20.png
+│   │   ├── gems1-21.png
+│   │   ├── gems1.png
+│   │   ├── gems2-01.png
+│   │   ├── gems2-02.png
+│   │   ├── gems2-03.png
+│   │   ├── gems2-04.png
+│   │   ├── gems2-05.png
+│   │   ├── gems2-06.png
+│   │   ├── gems2-07.png
+│   │   └── gems2.png
 │   ├── mobile-manifest.webmanifest
 │   ├── orbs-removebackground   [collapsed: hundreds of generated orb PNGs]
-│   └── newvelv.jpg
+│   ├── newvelv.jpg
+│   ├── pcb
+│   │   ├── README.md
+│   │   ├── ceramic.jpg
+│   │   ├── fr4.jpg
+│   │   ├── ice.jpg
+│   │   ├── mint.jpg
+│   │   └── xray.jpg
+│   └── pen-tray
+│       ├── README.md
+│       ├── bloom.jpg
+│       ├── cat.jpg
+│       ├── fr4.jpg
+│       ├── jewel.jpg
+│       ├── pewter.jpg
+│       └── xray.jpg
 ├── scripts
+│   ├── build-iphone-notes-shortcut.mjs
+│   ├── build-iphone-notes-shortcut.test.ts
+│   ├── build-iphone-phone-shortcuts.mjs
+│   ├── build-iphone-phone-shortcuts.test.ts
 │   ├── capture-screenshots.mjs
 │   ├── cogs-dev-server.mjs
+│   ├── crop-gems.py
+│   ├── dev-port.mjs
+│   ├── dev-port.test.ts
 │   ├── dump-chrome-localstorage.mjs
+│   ├── ingest-api.mjs
 │   ├── mobile-ios-ats.mjs
 │   ├── mobile-sync-server.mjs
+│   ├── notes-api.mjs
+│   ├── notes-api.test.ts
 │   ├── persist-api.mjs
+│   ├── persist-api.test.ts
+│   ├── phone-hub-polyfill.mjs
+│   ├── phone-hub.mjs
+│   ├── phone-hub.ts
+│   ├── process-friend-pack.py
+│   ├── process-gems.py
 │   ├── screenshot-manifest.mjs
+│   ├── screentime-api.mjs
+│   ├── screentime-api.test.ts
 │   ├── sync-api.mjs
-│   └── update-tree.sh
+│   ├── telegram-file.mjs
+│   ├── telegram-ingest.mjs
+│   ├── update-tree.sh
+│   └── write-baby-animal-svgs.mjs
 ├── tailwind.config.ts
 ├── tests
 │   ├── integration

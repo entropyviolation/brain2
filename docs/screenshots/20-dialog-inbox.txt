@@ -7,11 +7,9 @@ SOURCE FILES:
 ================================================================================
 
 GLOBAL CHROME (all screens)
-  The COGS title and global action bar appear on every screen (app/page.tsx):
-    Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
-    Bulk Add | Quick Add
-  Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
-  Top-level tabs (7): Home | Lists | Docs | Scheduler | Operations | Modules | Analytics
+  Pinned full-width mill title bar (`AppHeader`, sticky top, z-40): navy BRAIN2 caption with Tek POWER lamp + today's-friend jewel (chrome + black-mirror well; click for a Stardew to-do bubble) and Friend / Review / System / optional now well (between System and Capture; idle → hidden; live Working sessions show name, elapsed, Stop, Pause↔Resume) / Capture as Win95 groupboxes of milled press keys. Names stays Names and latches (sunken); tooltip Stop naming while on. Phosphor counts on Review and Inbox. Quick Add is the default framed key. Same doors as before — grouped furniture, not a menu bar.
+  Tabs: Home · Lists · Docs · Scheduler · Operations · Modules · Analytics.
+  Shortcuts: Cmd/Ctrl+K search · capture hotkey → Quick Add.
 
 VIEW-SPECIFIC
-Unclarified captures with Clarify / Delete, smart-parse chips, and Clarify All.
+Two tabs: Inbox (navy, the pile to revisit) and Monkey brain (olive when selected — compulsive dumps). The header count is the revisit pile. Captures in the open tab list newest first. Per capture: checkbox, title, added time, smart-parse chips, Clarify, Delete. Selected / focused rows use a navy `#000080` outline (never orange). Toolbar: Select all / Deselect all, Apply list (popup: **Apply** leaves them in the pile, **Apply and clarify** files them onto the chosen lists and clears them), Deadline, Merge, Mark clarified (lists already on the idea, or All Items), Monkey brain / To inbox, Bulk edit (selection as bulk-add text), Delete selection (Are you sure? warning + named list), Walk selected. Walk dialog: editable name, Discard idea, Skip / Save & next / End walk, recent lists. +1 point per clarify or discard; +50 each time the revisit Inbox reaches 0. Chords: j/k move · x select · a all · u none · ↵/c clarify · y file · w walk · l list · d deadline · m merge · b monkey · i to inbox · e bulk edit · # delete. Quick Add and Telegram: `-mb` or `-monkey`.

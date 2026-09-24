@@ -4,15 +4,17 @@ VIEW: Header → Settings
 AREA: Settings dialog
 SOURCE FILES:
   - components/Settings/SettingsDialog.tsx
+  - components/Settings/HomeLocationField.tsx
+  - components/Settings/DayAnchorField.tsx
   - components/Settings/BackupRestore.tsx
+  - components/Settings/MessageIngestPanel.tsx
+  - components/Settings/ScreenTimePanel.tsx
 ================================================================================
 
 GLOBAL CHROME (all screens)
-  The COGS title and global action bar appear on every screen (app/page.tsx):
-    Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
-    Bulk Add | Quick Add
-  Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
-  Top-level tabs (7): Home | Lists | Docs | Scheduler | Operations | Modules | Analytics
+  Pinned full-width mill title bar (`AppHeader`, sticky top, z-40): navy BRAIN2 caption with Tek POWER lamp + today's-friend jewel (chrome + black-mirror well; click for a Stardew to-do bubble) and Friend / Review / System / optional now well (between System and Capture; idle → hidden; live Working sessions show name, elapsed, Stop, Pause↔Resume) / Capture as Win95 groupboxes of milled press keys. Names stays Names and latches (sunken); tooltip Stop naming while on. Phosphor counts on Review and Inbox. Quick Add is the default framed key. Same doors as before — grouped furniture, not a menu bar.
+  Tabs: Home · Lists · Docs · Scheduler · Operations · Modules · Analytics.
+  Shortcuts: Cmd/Ctrl+K search · capture hotkey → Quick Add.
 
 VIEW-SPECIFIC
-JSON backup/restore, Second Brain type seeding, and link to Item Types manager.
+Settings. Home location (City). Default time of day: what is assumed when work is ticked off after the day has ended and there is no tracked time to read a real finish from. Once a few nights are logged this reports that the sleep log is answering it instead — your usual bedtime, less half an hour — and the Assumed finish time field below it is the fallback for days with no sleep data at all. Full App Backup: Export Full Backup / Restore From Backup. Phone↔Desktop Live Sync: Check hub / Force pull now. Message ingest: enable, Telegram token (desktop), pairing (6-digit code, or Texted but not paired → Pair for a sender the log already refused), always-on hub URL + Sync vault, shortcuts, **iPhone Notes / Screen Time / Call / Text Shortcuts** (AirDrop the signed `.shortcut` files), cheat-sheet, simulate a message (`g` / `got milk` / `n …`) and simulate a scan (receipt photo / journal / PDF). **Screen Time**: ActivityWatch URL, connection lamp, lookback, Sync now. Last-success sentence is honest when 0 blocks (AW reachable but no windows yet — cannot import Apple Screen Time / pre-install history — vs events dropped by AFK / min duration). Item Types → Manage Item Types. Second Brain seed. PNG may need scroll.

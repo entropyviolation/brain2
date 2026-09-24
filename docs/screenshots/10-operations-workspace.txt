@@ -5,17 +5,17 @@ AREA: Operations workspace
 SOURCE FILES:
   - components/Operations/OperationWorkspace.tsx
   - components/Operations/OperationHome.tsx
+  - components/Operations/OperationSettingsDialog.tsx
   - components/Operations/PhasesPanel.tsx
+  - components/Operations/PartsPanel.tsx
   - components/Operations/ResourcesPanel.tsx
   - components/Operations/ToDoNextRail.tsx
 ================================================================================
 
 GLOBAL CHROME (all screens)
-  The COGS title and global action bar appear on every screen (app/page.tsx):
-    Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
-    Bulk Add | Quick Add
-  Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
-  Top-level tabs (7): Home | Lists | Docs | Scheduler | Operations | Modules | Analytics
+  Pinned full-width mill title bar (`AppHeader`, sticky top, z-40): navy BRAIN2 caption with Tek POWER lamp + today's-friend jewel (chrome + black-mirror well; click for a Stardew to-do bubble) and Friend / Review / System / optional now well (between System and Capture; idle → hidden; live Working sessions show name, elapsed, Stop, Pause↔Resume) / Capture as Win95 groupboxes of milled press keys. Names stays Names and latches (sunken); tooltip Stop naming while on. Phosphor counts on Review and Inbox. Quick Add is the default framed key. Same doors as before — grouped furniture, not a menu bar.
+  Tabs: Home · Lists · Docs · Scheduler · Operations · Modules · Analytics.
+  Shortcuts: Cmd/Ctrl+K search · capture hotkey → Quick Add.
 
 VIEW-SPECIFIC
-Mini-app for one operation: Home / Phases / Resources / Log tabs plus persistent To-do-next rail, rename, stage badge, post-mortem.
+Back / Board; click title to rename; stage badge. Menubar: Settings (panels, categories, tracking tags, presets, Delete operation with Are you sure), After-action report, category chips, Working now. Tabs from Settings: Home / To do / Phases / Parts / Timeline / Locations / Plan / Resources / Log. Parts: kinds, part pages, ideas, glance metrics. Home: Mission, Stage, Notes, Work/neglect heatmap. To do next rail (Mark done, open). Status: N panels on.

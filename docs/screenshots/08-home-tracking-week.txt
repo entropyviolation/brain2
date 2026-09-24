@@ -1,0 +1,24 @@
+================================================================================
+SCREENSHOT: 08-home-tracking-week.png
+VIEW: Home tab → Tracking → Time Grid → week
+AREA: Home → Tracking → Time Grid → week
+SOURCE FILES:
+  - components/Home/Tracking/week-grid.tsx
+  - components/Home/Tracking/pen-palette.tsx
+  - components/Home/Tracking/pen-swatches.tsx
+  - components/Home/Tracking/tracking-chrome.css
+  - lib/pen-sort.ts
+  - components/Home/Tracking/time-grid.tsx
+  - components/Home/Tracking/tracking-day-notes.tsx
+  - lib/time-entries.ts
+  - lib/tracking-summary.ts
+================================================================================
+
+GLOBAL CHROME (all screens)
+  Pinned full-width mill title bar (`AppHeader`, sticky top, z-40): navy BRAIN2 caption with Tek POWER lamp + today's-friend jewel (64px chrome + black-mirror well; click for a Stardew Next Action bubble; Esc / × / outside to close) and Friend / Review / System / Capture as Win95 groupboxes of milled press keys. Names stays Names and latches (sunken, aria-pressed); tooltip Stop naming while on. Phosphor counts on Review and Inbox. Quick Add is the default framed key, docked at the right of Capture. Same doors as before — grouped furniture, not a menu bar.
+  Tabs: milled fascia (brushed bay, raised silver keys, active key a CRT with a round power lamp) — Home · Lists · Docs · Scheduler · Operations · Modules · Analytics.
+  Shortcuts: Cmd/Ctrl+K search · capture hotkey → Quick Add.
+
+VIEW-SPECIFIC
+Home window: milled date plate (weekday CRT, calendar nameplate, Widgets key); Review due banner (Start review / Dismiss); All Time / Today / Week / Month points; Today's Progress (To Do + Habits remaining/done); Needs Attention (Overdue / Blocked / Unclarified — click opens detail). Sub-tabs: Habits · Plan · To Do · Goals · Tracking.
+Time Grid with the span switch on week. Tracking Win95 window; palette Sort Recent / A–Z / Tree; Erase / Scissors / Hide / View; velvet pen well. Seven columns, Monday first, each heading a clickable date (weekday + day) that drops back into the day view on that date, with the day's occupancy under it (overlapping blocks count once). Optional infinite week (View settings) stacks week bands with time running left to right. Header: week nav (‹ · This week · ›), the date range, tracked total · % of the week · N of 7 days logged — occupancy of the week, so coverage cannot exceed 100%. Tools: cell size 15m / 30m / 60m; From / To; an On row of seven day toggles plus Mon–Fri and All 7; Fill N days with {pen}. Drag down a column to paint that day; scissors splits at the minute; click a painted cell for the Entry dialog. Pen images tile as a mosaic. Below: per-day chips with a × to clear one day in this scope, then per-pen minutes and % and By tag (all scopes) totals. Day notes under the week.

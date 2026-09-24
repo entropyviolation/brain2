@@ -1,0 +1,22 @@
+================================================================================
+SCREENSHOT: 08-home-tracking-activity.png
+VIEW: Home tab → Tracking → Activity Log
+AREA: Home → Tracking → Activity Log
+SOURCE FILES:
+  - components/Home/Tracking/tracking-activity-log.tsx
+  - components/Home/Tracking/log-activity-dialog.tsx
+  - components/Home/Tracking/pen-swatches.tsx
+  - components/Home/Tracking/tracking-day-notes.tsx
+  - components/Home/Tracking/entry-dialog.tsx
+  - lib/time-entries.ts
+  - lib/tracking-summary.ts
+================================================================================
+
+GLOBAL CHROME (all screens)
+  Pinned full-width mill title bar (`AppHeader`, sticky top, z-40): navy BRAIN2 caption with Tek POWER lamp + today's-friend jewel (64px chrome + black-mirror well; click for a Stardew Next Action bubble; Esc / × / outside to close) and Friend / Review / System / Capture as Win95 groupboxes of milled press keys. Names stays Names and latches (sunken, aria-pressed); tooltip Stop naming while on. Phosphor counts on Review and Inbox. Quick Add is the default framed key, docked at the right of Capture. Same doors as before — grouped furniture, not a menu bar.
+  Tabs: milled fascia (brushed bay, raised silver keys, active key a CRT with a round power lamp) — Home · Lists · Docs · Scheduler · Operations · Modules · Analytics.
+  Shortcuts: Cmd/Ctrl+K search · capture hotkey → Quick Add.
+
+VIEW-SPECIFIC
+Home window: milled date plate (weekday CRT, calendar nameplate, Widgets key); Review due banner (Start review / Dismiss); All Time / Today / Week / Month points; Today's Progress (To Do + Habits remaining/done); Needs Attention (Overdue / Blocked / Unclarified — click opens detail). Sub-tabs: Habits · Plan · To Do · Goals · Tracking.
+Tracking → Activity Log inside the Tracking window. Palette Sort Recent / A–Z / Tree; velvet pen well; **Log activity** on the shared palette. Day nav + block count · occupancy; one row per block (display name, assumed badge when reconstructed, secondary pens as +name, discrete events as a single clock) and untracked gaps with a **+** in line with the pencil (opens Log activity for that window) plus an optional personal note. **Log activity** types optional name, start / end (or one time for a discrete event), pen, notes; a discrete event can start or end a state block. Mark as assumed. **Done this day** lists To Do items finished on this calendar day (hints, not auto-painted; pen action-format rows appear here too). Footer per-pen and By tag totals. Day notes under the list.

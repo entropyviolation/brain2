@@ -1,18 +1,20 @@
 ================================================================================
 SCREENSHOT: 02-home-plan-day.png
-VIEW: Home tab → Plan → Day View
+VIEW: Home tab → Plan → Day view
 AREA: Home → Plan → Day
 SOURCE FILES:
   - components/Home/Plan/day-view.tsx
   - components/Home/Plan/agenda-grid.tsx
+  - components/Home/Plan/plan-text-log.tsx
+  - components/Home/Plan/planned-tasks-sidebar.tsx
+  - components/Home/Plan/plan-chrome.css
 ================================================================================
 
 GLOBAL CHROME (all screens)
-  The COGS title and global action bar appear on every screen (app/page.tsx):
-    Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
-    Bulk Add | Quick Add
-  Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
-  Top-level tabs (7): Home | Lists | Docs | Scheduler | Operations | Modules | Analytics
+  Pinned full-width mill title bar (`AppHeader`, sticky top, z-40): navy BRAIN2 caption with Tek POWER lamp + today's-friend jewel (64px chrome + black-mirror well; click for a Stardew Next Action bubble; Esc / × / outside to close) and Friend / Review / System / Capture as Win95 groupboxes of milled press keys. Names stays Names and latches (sunken, aria-pressed); tooltip Stop naming while on. Phosphor counts on Review and Inbox. Quick Add is the default framed key, docked at the right of Capture. Same doors as before — grouped furniture, not a menu bar.
+  Tabs: milled fascia (brushed bay, raised silver keys, active key a CRT with a round power lamp) — Home · Lists · Docs · Scheduler · Operations · Modules · Analytics.
+  Shortcuts: Cmd/Ctrl+K search · capture hotkey → Quick Add.
 
 VIEW-SPECIFIC
-Single-day timeline with events and scheduled tasks. Supports click-to-create and inline task open (detail popup).
+Home window: milled date plate (weekday CRT, calendar nameplate, Widgets key); shared overview squares (Review due, All Time / Today / Week / Month, Today's Progress; Widgets) in one equal-height CRT row. Needs Attention (Overdue / Blocked / Unclarified — click opens detail). Sub-tabs: Habits · Plan · To Do · Goals · Tracking.
+Plan Day: Win95 window (Plan — Calendar). Settings / Paste Events / Add Event / Add Plan (bounded Win95 dialogs; dirty close prompts). Add Plan writes a planned action — a dashed linen chip, not an event — on the selected day. Toolbar Month / Week / Day + Dark latch. Sidebar Planned Today: packed nested wells, 10-pip capacity, search/sort, To Do / Habits / Next actions filters, habit gems on incomplete daily habits, Add a to-do; drop here to unschedule. Period toolbar: roomy chevrons, centered date, padded Today. Fieldset legends are navy labels (not links). All-day banners (opal chip + crystal-ball mark) + a tall agenda with 152px hour rows that lands on now (today, red now-line) or waking hour (other days); FR4 hairlines; opalescent events; sunrise/sunset. Drag sidebar rows onto hours to plan them (native drag plus a pointer fallback, so a host that strips DataTransfer still drops); the new placement opens the planned-action dialog for duration and notes. Click event → detail. Day Plan log: Submit plan stamps writing time; List / Bulk / Latest; copy-only history, newest first (composer capped so the agenda stays the large surface). Status bar: view · date · event count.

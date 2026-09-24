@@ -1,18 +1,19 @@
 ================================================================================
 SCREENSHOT: 02-home-plan-week.png
-VIEW: Home tab → Plan → Week View
+VIEW: Home tab → Plan → Week view
 AREA: Home → Plan → Week
 SOURCE FILES:
   - components/Home/Plan/week-view.tsx
   - components/Home/Plan/planned-tasks-sidebar.tsx
+  - components/Home/Plan/plan-text-log.tsx
+  - components/Home/Plan/plan-chrome.css
 ================================================================================
 
 GLOBAL CHROME (all screens)
-  The COGS title and global action bar appear on every screen (app/page.tsx):
-    Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
-    Bulk Add | Quick Add
-  Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
-  Top-level tabs (7): Home | Lists | Docs | Scheduler | Operations | Modules | Analytics
+  Pinned full-width mill title bar (`AppHeader`, sticky top, z-40): navy BRAIN2 caption with Tek POWER lamp + today's-friend jewel (64px chrome + black-mirror well; click for a Stardew Next Action bubble; Esc / × / outside to close) and Friend / Review / System / Capture as Win95 groupboxes of milled press keys. Names stays Names and latches (sunken, aria-pressed); tooltip Stop naming while on. Phosphor counts on Review and Inbox. Quick Add is the default framed key, docked at the right of Capture. Same doors as before — grouped furniture, not a menu bar.
+  Tabs: milled fascia (brushed bay, raised silver keys, active key a CRT with a round power lamp) — Home · Lists · Docs · Scheduler · Operations · Modules · Analytics.
+  Shortcuts: Cmd/Ctrl+K search · capture hotkey → Quick Add.
 
 VIEW-SPECIFIC
-Seven-day agenda columns with hour bands. Planned-tasks sidebar lists unscheduled items for drag-in scheduling.
+Home window: milled date plate (weekday CRT, calendar nameplate, Widgets key); shared overview squares (Review due, All Time / Today / Week / Month, Today's Progress; Widgets) in one equal-height CRT row. Needs Attention (Overdue / Blocked / Unclarified — click opens detail). Sub-tabs: Habits · Plan · To Do · Goals · Tracking.
+Plan Week: Win95 window (Plan — Calendar). Settings / Paste Events / Add Event / Add Plan (bounded Win95 dialogs; dirty close prompts). Toolbar Month / Week / Day + Dark latch. Sidebar Planned This Week: packed list well + 10-pip capacity, search/sort, To Do / Habits filters, incomplete weekly habit gems, add a week to-do (same records as Home → To Do); drag onto hours / drop here to unschedule / click → detail. Nested metal wells. Period toolbar + padded Today. Time × Mon–Sun slots with FR4 hairlines; today’s column can wash mint; timed events are one spanning opal block (not reprinted each hour). Planned actions ride the same grid as dashed linen chips; click one to edit it. Click slot/event to create/edit. Week Plan log (Submit plan stamps writing time; List / Bulk / Latest). Status bar: view · date · event count.

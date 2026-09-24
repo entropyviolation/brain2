@@ -5,14 +5,15 @@ AREA: Home → Habits → Weekly
 SOURCE FILES:
   - components/Home/Habits/habit-tracker.tsx
   - components/Home/Habits/period-habit-list.tsx
+  - components/Home/Habits/habits-control-panel.tsx
+  - components/Home/Habits/willpower-gems.tsx
 ================================================================================
 
 GLOBAL CHROME (all screens)
-  The COGS title and global action bar appear on every screen (app/page.tsx):
-    Review (+ pending badge) | Morning | Settings | Tracking | Inbox | Metrics |
-    Bulk Add | Quick Add
-  Global shortcuts: Cmd/Ctrl+K → search palette; quick-capture hotkey → Quick Add.
-  Top-level tabs (7): Home | Lists | Docs | Scheduler | Operations | Modules | Analytics
+  Pinned full-width mill title bar (`AppHeader`, sticky top, z-40): navy BRAIN2 caption with Tek POWER lamp + today's-friend jewel (64px chrome + black-mirror well; click for a Stardew Next Action bubble; Esc / × / outside to close) and Friend / Review / System / Capture as Win95 groupboxes of milled press keys. Names stays Names and latches (sunken, aria-pressed); tooltip Stop naming while on. Phosphor counts on Review and Inbox. Quick Add is the default framed key, docked at the right of Capture. Same doors as before — grouped furniture, not a menu bar.
+  Tabs: milled fascia (brushed bay, raised silver keys, active key a CRT with a round power lamp) — Home · Lists · Docs · Scheduler · Operations · Modules · Analytics.
+  Shortcuts: Cmd/Ctrl+K search · capture hotkey → Quick Add.
 
 VIEW-SPECIFIC
-Weekly-frequency habits render as period cards (`PeriodHabitList`) instead of the day grid. Climb cells still show `logged / derived target` (same cadences as Daily). Frequency (this tab) is not climb cadence. Same `habits-store` as Lists → Daily/Weekly/Monthly Habits.
+Home window: milled date plate (weekday CRT, calendar nameplate, Widgets key); shared overview squares (Review due, All Time / Today / Week / Month, Today's Progress; Widgets) in one equal-height CRT row. Needs Attention (Overdue / Blocked / Unclarified — click opens detail). Sub-tabs: Habits · Plan · To Do · Goals · Tracking.
+Habits: week navigation in the console header (Today + 7-week window); Daily / Weekly / Monthly inset keys above the sheet; Habits Tab Control Panel with Span grade + Perfect output tubes, Sort plate, Hide Completed This Week, Loading Bar, Small LEDs, New habit, Willpower gems. Compact grid: weekly habits × 7 weeks + row % + weekly-completion footer (same chrome as Daily, gem Edit/Delete). Fresh seed includes Weekly review, Deep work hours (Tracking Work tag), Get one workout in (Exercise auto-fill), and One lesson from this week (text). Type-matched cells (checkbox / count / text / climb), Tracking clock marks when auto-filled. Same store as Lists → Weekly Habits.
