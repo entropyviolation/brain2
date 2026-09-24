@@ -1,10 +1,12 @@
 /**
  * components/Analytics/analytics-chrome.css — Analytics window
  *
- * Title bar + status bar stay Lists furniture. Interior is a light instrument
- * studio (not dark CRT, not SaaS): Karla only, dark ink on Win95 face gray
- * (`#c0c0c0` / 3D wells — not cream paper), nested wells, phosphor reserved
- * for traces. Empty / thin frames stay honest.
+ * Title bar + status bar stay Lists furniture. Chrome (range bay, left index)
+ * is house milled fascia — brushed bays, engraved nameplates, equal metal keys,
+ * active key = CRT `#070c0a` + round power lamp, phosphor label `#7dffc4` only.
+ * Studio canvases stay a light instrument interior (Karla, ink on face-gray
+ * wells, phosphor traces `#3dff8a` — not a dark CRT theme). Empty / thin frames
+ * stay honest. docs/DESIGN_STYLE.md#milled-fascia
  */
 
 .fm98.an95 {
@@ -22,58 +24,178 @@
   --an-lo: #808080;
   --an-phosphor: #3dff8a;
   --an-scope: #1a2a1e;
+  --an-nameplate: var(--fascia-nameplate, #2a2c2e);
+  --an-crt: var(--hab-crt-green, #7dffc4);
+  --an-crt-glow: var(--hab-crt-glow, 0 0 3px #7dffc4);
+  --an-crt-glass:
+    radial-gradient(ellipse at 18% 0%, rgba(125, 255, 196, 0.16), transparent 48%),
+    #070c0a;
+  --an-crt-ring:
+    0 0 0 1px #3a3e42,
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 10px 14px rgba(0, 0, 0, 0.4);
+  --an-key-face:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 28%),
+    linear-gradient(165deg, #eceef0, #c0c4c8);
+  --an-key-ring:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1px #4a4e52;
+  --an-bay:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
+    #b4b8bc;
+  --an-bay-ring:
+    0 0 0 1px #5c6064,
+    inset 0 2px 3px rgba(0, 0, 0, 0.18);
   height: min(86vh, 980px);
   min-height: 560px;
   color: var(--an-ink);
+}
+
+/* ---- Milled chrome: range bay + left index (studio canvases untouched) ---- */
+
+.fm98.an95 .an-nameplate {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border-radius: 2px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--an-nameplate);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.45) 0, transparent 40%),
+    #c8ccd0;
+  box-shadow:
+    0 0 0 1px #5c6064,
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 -1px 0 rgba(40, 42, 46, 0.28);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .fm98.an95 .fm-toolbar.an-range-bar {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 4px;
-  padding: 5px 8px;
-  background: var(--an-panel);
+  gap: 8px;
+  padding: 8px 10px;
+  margin: 3px 3px 0;
+  border-radius: 3px;
+  border-bottom: none;
   color: var(--an-ink);
-  box-shadow: inset 0 -1px 0 var(--an-lo);
-  border-bottom: 1px solid var(--an-lo);
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.06), transparent 28%),
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
+    #c4c8cc;
+  box-shadow:
+    0 0 0 1px #6a6e72,
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    inset 0 2px 3px rgba(0, 0, 0, 0.12);
+}
+
+.fm98.an95 .an-range-keys {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 4px;
+  flex: 1 1 14rem;
+  min-width: 12rem;
+  max-width: 32rem;
+  padding: 4px;
+  border-radius: 3px;
+  background: var(--an-bay);
+  box-shadow: var(--an-bay-ring);
 }
 
 .fm98.an95 .an-range-chip {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font: inherit;
   font-size: 11px;
-  letter-spacing: 0;
-  padding: 3px 10px;
-  background: var(--an-panel);
-  color: var(--an-ink);
-  border: 1px solid var(--an-lo);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 4px 10px 5px 22px;
+  background: var(--an-key-face);
+  color: #1c1e20;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  border: none;
   cursor: pointer;
-  border-radius: 0;
-  box-shadow: inset 1px 1px 0 var(--an-hi), inset -1px -1px 0 var(--an-lo);
+  border-radius: 2px;
+  box-shadow: var(--an-key-ring);
+}
+
+.fm98.an95 .an-range-chip::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 30%, #6a6e72, #2a2c2e 55%, #0a0a0a);
+  box-shadow:
+    0 0 0 1px #1a1c1e,
+    inset 0 1px 1px rgba(255, 255, 255, 0.25);
 }
 
 .fm98.an95 .an-range-chip[aria-pressed="true"] {
-  background: var(--an-recess);
-  color: var(--an-ink);
-  border-color: var(--an-lo);
-  box-shadow: inset 1px 1px 2px var(--an-lo);
+  background: var(--an-crt-glass);
+  color: var(--an-crt);
+  text-shadow: var(--an-crt-glow);
+  box-shadow: var(--an-crt-ring);
   font-weight: 700;
+}
+
+.fm98.an95 .an-range-chip[aria-pressed="true"]::before {
+  background:
+    radial-gradient(circle at 35% 30%, #e8fff4, var(--an-crt) 42%, #0a3a28 78%);
+  box-shadow:
+    0 0 0 1px #1a3a2a,
+    0 0 5px rgba(125, 255, 196, 0.6),
+    inset 0 1px 1px rgba(255, 255, 255, 0.4);
 }
 
 .fm98.an95 .an-range-label {
   font-size: 11px;
-  padding: 0 8px;
-  color: var(--an-ink);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 4px 9px;
+  border-radius: 2px;
+  color: var(--an-nameplate);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
   font-variant-numeric: tabular-nums;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.45) 0, transparent 40%),
+    #c8ccd0;
+  box-shadow:
+    0 0 0 1px #5c6064,
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 -1px 0 rgba(40, 42, 46, 0.28);
 }
 
 .fm98.an95 .an-range-custom {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 4px;
-  background: var(--an-recess);
-  box-shadow: inset 1px 1px 2px var(--an-lo);
+  padding: 4px;
+  border-radius: 3px;
+  background: var(--an-bay);
+  box-shadow: var(--an-bay-ring);
+}
+
+.fm98.an95 .an-range-custom .an-range-chip {
+  flex: 0 0 auto;
+  min-width: 5.5rem;
 }
 
 .fm98.an95 .an-range-custom input[type="date"] {
@@ -82,9 +204,12 @@
   font-variant-numeric: tabular-nums;
   background: var(--an-panel);
   color: var(--an-ink);
-  border: 1px solid var(--an-lo);
-  padding: 2px 4px;
-  box-shadow: inset 1px 1px 1px var(--an-lo);
+  border: none;
+  border-radius: 2px;
+  padding: 4px 6px;
+  box-shadow:
+    inset 1px 1px 2px rgba(0, 0, 0, 0.28),
+    0 0 0 1px #5c6064;
 }
 
 .fm98.an95 .an-studio {
@@ -97,71 +222,105 @@
 
 .fm98.an95 .an-nav {
   flex-shrink: 0;
-  width: 158px;
+  width: 168px;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--an-line);
-  background: var(--an-recess);
+  gap: 6px;
   margin: 0;
+  padding: 8px 6px 10px;
+  border-right: none;
+  border-radius: 0 0 0 2px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
+    linear-gradient(165deg, #d0d4d8 0%, #b8bcbf 48%, #9a9ea2 100%);
+  box-shadow:
+    inset -1px 0 0 #5c6064,
+    inset 1px 0 0 rgba(255, 255, 255, 0.45);
 }
 
-.fm98.an95 .an-group-bar {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  padding: 8px 6px 6px;
-  background: transparent;
-  box-shadow: none;
+.fm98.an95 .an-nav > .an-nameplate {
+  align-self: flex-start;
+  margin: 0 2px;
 }
 
-.fm98.an95 .an-group-btn {
-  font: inherit;
-  font-size: 12px;
-  letter-spacing: 0.02em;
-  padding: 7px 10px;
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  color: var(--an-muted);
-  cursor: pointer;
-  text-align: left;
-}
-
-.fm98.an95 .an-group-btn[aria-selected="true"] {
-  background: var(--an-panel);
-  color: var(--an-ink);
-  font-weight: 700;
-  box-shadow: inset 2px 0 0 var(--an-accent);
-}
-
+.fm98.an95 .an-group-bar,
 .fm98.an95 .an-view-bar {
   display: flex;
   flex-direction: column;
-  gap: 0;
-  padding: 6px 6px 10px;
-  background: transparent;
-  border-top: 1px solid var(--an-line);
+  gap: 4px;
+  padding: 4px;
+  border-radius: 3px;
+  background: var(--an-bay);
+  box-shadow: var(--an-bay-ring);
+  border-top: none;
+}
+
+.fm98.an95 .an-view-bar {
+  flex: 1;
+  min-height: 0;
   overflow: auto;
 }
 
+.fm98.an95 .an-group-btn,
 .fm98.an95 .an-view-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 28px;
   font: inherit;
-  font-size: 12px;
-  padding: 5px 10px;
-  background: transparent;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 5px 10px 6px 22px;
+  background: var(--an-key-face);
   border: none;
-  color: var(--an-muted);
+  border-radius: 2px;
+  box-shadow: var(--an-key-ring);
+  color: #1c1e20;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
   cursor: pointer;
   text-align: left;
-  position: static;
   top: auto;
 }
 
+.fm98.an95 .an-group-btn::before,
+.fm98.an95 .an-view-btn::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 30%, #6a6e72, #2a2c2e 55%, #0a0a0a);
+  box-shadow:
+    0 0 0 1px #1a1c1e,
+    inset 0 1px 1px rgba(255, 255, 255, 0.25);
+}
+
+.fm98.an95 .an-group-btn[aria-selected="true"],
 .fm98.an95 .an-view-btn[aria-selected="true"] {
-  background: var(--an-panel);
-  color: var(--an-ink);
-  font-weight: 600;
+  background: var(--an-crt-glass);
+  color: var(--an-crt);
+  text-shadow: var(--an-crt-glow);
+  box-shadow: var(--an-crt-ring);
+  font-weight: 700;
   border: none;
+}
+
+.fm98.an95 .an-group-btn[aria-selected="true"]::before,
+.fm98.an95 .an-view-btn[aria-selected="true"]::before {
+  background:
+    radial-gradient(circle at 35% 30%, #e8fff4, var(--an-crt) 42%, #0a3a28 78%);
+  box-shadow:
+    0 0 0 1px #1a3a2a,
+    0 0 5px rgba(125, 255, 196, 0.6),
+    inset 0 1px 1px rgba(255, 255, 255, 0.4);
 }
 
 .fm98.an95 .an-content {
@@ -1088,14 +1247,22 @@
 
   .fm98.an95 .an-nav {
     width: 100%;
-    border-right: none;
-    border-bottom: 1px solid var(--an-line);
+    box-shadow:
+      inset 0 -1px 0 #5c6064,
+      inset 0 1px 0 rgba(255, 255, 255, 0.45);
   }
 
   .fm98.an95 .an-group-bar,
   .fm98.an95 .an-view-bar {
     flex-direction: row;
     flex-wrap: wrap;
+  }
+
+  .fm98.an95 .an-group-btn,
+  .fm98.an95 .an-view-btn {
+    flex: 1 1 0;
+    min-width: 5rem;
+    justify-content: center;
   }
 }
 

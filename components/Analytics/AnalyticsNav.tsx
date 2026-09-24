@@ -1,8 +1,9 @@
 /**
  * components/Analytics/AnalyticsNav.tsx — Studio index
  *
- * Groups on a rail; views of the selected group beneath. Same role="tab"
- * contract as before so tests and screenshot capture still click group then view.
+ * Groups on a rail; views of the selected group beneath. Milled equal keys in
+ * brushed bays (active = CRT + power lamp). Same role="tab" contract as before
+ * so tests and screenshot capture still click group then view.
  */
 "use client"
 
@@ -65,6 +66,7 @@ export function AnalyticsNav({
       data-ui-docs="components/Analytics/README.md"
       data-ui-docs-anchor="studio-views"
     >
+      <span className="an-nameplate">Groups</span>
       <nav className="an-group-bar" aria-label="Analytics groups" role="tablist">
         {ANALYTICS_TAB_GROUPS.map((g) => (
           <button
@@ -80,6 +82,7 @@ export function AnalyticsNav({
           </button>
         ))}
       </nav>
+      <span className="an-nameplate">Views</span>
       <nav className="an-view-bar" aria-label="Analytics views" role="tablist">
         {views.map((view) => (
           <button

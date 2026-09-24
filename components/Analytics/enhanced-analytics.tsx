@@ -1,9 +1,9 @@
 /**
  * components/Analytics/enhanced-analytics.tsx — Analytics screen
  *
- * Title bar + status stay Lists furniture. The interior is a light instrument
- * studio: shared range (presets or custom from–to), studio index, canvases.
- * Spec: §15. Face gray `#c0c0c0`, not cream paper.
+ * Title bar + status stay Lists furniture. Range + left index are milled fascia;
+ * canvases stay a light instrument studio: shared range (presets or custom
+ * from–to), studio index, charts. Spec: §15. Face gray `#c0c0c0`, not cream paper.
  */
 "use client"
 
@@ -82,27 +82,30 @@ export function EnhancedAnalytics() {
         </div>
 
         <div className="fm-toolbar an-range-bar">
-          {range.presets.map((d) => (
+          <span className="an-nameplate">Range</span>
+          <div className="an-range-keys" role="group" aria-label="Analytics range presets">
+            {range.presets.map((d) => (
+              <button
+                key={d}
+                type="button"
+                className="an-range-chip"
+                aria-pressed={range.mode === "preset" && range.days === d}
+                title={`Rolling last ${d} days. One shared window for every Analytics view.`}
+                onClick={() => range.setDays(d)}
+              >
+                {d} days
+              </button>
+            ))}
             <button
-              key={d}
               type="button"
               className="an-range-chip"
-              aria-pressed={range.mode === "preset" && range.days === d}
-              title={`Rolling last ${d} days. One shared window for every Analytics view.`}
-              onClick={() => range.setDays(d)}
+              aria-pressed={range.mode === "custom"}
+              title="Inclusive local from–to dates, or this week / this month. The label is the actual dates."
+              onClick={() => range.setCustomRange(range.fromKey ?? "", range.toKey ?? "")}
             >
-              {d} days
+              Custom
             </button>
-          ))}
-          <button
-            type="button"
-            className="an-range-chip"
-            aria-pressed={range.mode === "custom"}
-            title="Inclusive local from–to dates, or this week / this month. The label is the actual dates."
-            onClick={() => range.setCustomRange(range.fromKey ?? "", range.toKey ?? "")}
-          >
-            Custom
-          </button>
+          </div>
           {range.mode === "custom" && (
             <span className="an-range-custom">
               <label title="Inclusive start (local calendar day)">

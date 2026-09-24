@@ -15,11 +15,12 @@ mosaic, hour×day, ribbon, **phosphor traces**). Non-trivial math lives in pure
 and `signal-stats.ts` here. No LLM. No new stores.
 
 **Product law (this tab only):** keep the `.fm98` **title bar** and **status bar**
-so Analytics still lives in Brain2 next to Lists. Everything inside — range chips,
-left **studio index**, canvases — is a **light instrument studio** (Win95 face
-`#c0c0c0`, ink `#000000`, Karla only, nested wells). Phosphor is for traces, not
-a dark CRT theme. Do not restyle Lists, Habits, Plan, Tracking, or Scheduler to
-match.
+so Analytics still lives in Brain2 next to Lists. Range + left index chrome use the
+house [milled fascia](../../docs/DESIGN_STYLE.md#milled-fascia) (equal metal keys,
+CRT active + power lamp, engraved nameplates); canvases stay a **light instrument
+studio** (Win95 face `#c0c0c0`, ink `#000000`, Karla only, nested wells — phosphor
+for traces, not a dark CRT theme). Do not restyle Lists, Habits, Plan, Tracking,
+or Scheduler to match.
 
 **Always create as many tooltips and provide as many clear instructions as
 possible if applicable and needed.** Each view has `ANALYTICS_TAB_HELP` under the
@@ -57,7 +58,7 @@ meaningful on its own.
 | `analytics-range-store.ts` | Remembered rolling or custom window (`cogs-analytics-range` / `brain2-analytics-range`). |
 | `chart-frame.tsx` | Empty / thin furniture + **Open in Lists** (`an-open-lists`). |
 | `open-in-lists.ts` | Chart → Lists jump. |
-| `analytics-chrome.css` | Light instrument interior (nav, nested **gray** wells, pie, treemap, density, mosaic, hour×day, phosphor scope, horizon/violin/alluvial). Title/status stay Lists. |
+| `analytics-chrome.css` | Milled range/index chrome + light instrument interior (nested **gray** wells, pie, treemap, density, mosaic, hour×day, phosphor scope, horizon/violin/alluvial). Title/status stay Lists. |
 | `studio-kit.tsx` | FindingBlock, StudioReadout, StudioHelp, StudioCheck, CanvasTitle, SlicePie, SliceTreemap, SliceMosaic, SplitBar, HourDayHeatmap, DensityCalendar, StudioBars, PhosphorTrace. |
 | `studio-plots.tsx` / `studio-plot-stats.ts` | Horizon, ridgeline, violin+histogram, alluvial, beeswarm, slopegraph, UpSet, hour×pen small multiples, Cleveland cycle, sparkline. |
 | `hour-day.ts` | Hour × day occupancy. Instants off the heat; missing hours stay 0. Hour×pen small multiples + weekday cycle. |
