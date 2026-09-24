@@ -236,11 +236,42 @@ export function writeListsNavigation(state: ListsNavigationState): void {
   writeAliasedLocal(APP_NAV_KEYS.listsNav, JSON.stringify(state))
 }
 
-/** Dispatched after `requestNavigateToList` writes navigation state. */
+/** Dispatched after Lists navigation is written so a mounted Lists view can sync in place (no remount). */
 export const COGS_NAVIGATE_TO_LIST_EVENT = "cogs-navigate-to-list"
 
 export interface NavigateToListDetail {
   listId: string
+}
+
+function detailListIdFor(state: ListsNavigationState): string {
+  if (!state.openTarget) return state.location
+  switch (state.openTarget.type) {
+    case "category":
+    case "smart":
+    case "habits":
+      return state.openTarget.id
+    case "folder-all":
+      return state.openTarget.folderId
+    case "objectives":
+      return "objectives"
+    default:
+      return state.location
+  }
+}
+
+/**
+ * Persist Lists location/openTarget and notify listeners.
+ * Prefer this over `writeListsNavigation` alone when the Lists view may already be mounted —
+ * `useListsNavigation` applies the new target in place instead of needing a remount key.
+ */
+export function applyListsNavigation(state: ListsNavigationState): void {
+  writeListsNavigation(state)
+  if (typeof window === "undefined") return
+  window.dispatchEvent(
+    new CustomEvent<NavigateToListDetail>(COGS_NAVIGATE_TO_LIST_EVENT, {
+      detail: { listId: detailListIdFor(state) },
+    }),
+  )
 }
 
 /** Jump the Lists module to a specific list (persists + notifies listeners). */
@@ -249,15 +280,8 @@ export function requestNavigateToList(
   folders: { id: string; listIds: string[] }[],
 ): void {
   const parent = folders.find((f) => f.listIds.includes(listId))
-  writeListsNavigation({
+  applyListsNavigation({
     location: parent?.id ?? "home",
     openTarget: { type: "category", id: listId },
   })
-  if (typeof window !== "undefined") {
-    window.dispatchEvent(
-      new CustomEvent<NavigateToListDetail>(COGS_NAVIGATE_TO_LIST_EVENT, {
-        detail: { listId },
-      }),
-    )
-  }
 }

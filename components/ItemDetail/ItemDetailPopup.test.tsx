@@ -74,6 +74,19 @@ describe("TaskDetailPopup", () => {
     expect(screen.getByRole("button", { name: /Complete/i })).toBeInTheDocument()
   })
 
+  it("shows Schedulable on the Scheduling tab with inherit-on for scheduleable lists", async () => {
+    const user = userEvent.setup()
+    render(<TaskDetailPopup taskId="popup-task" open onClose={onClose} />)
+    await user.click(screen.getByRole("tab", { name: /Scheduling/i }))
+    expect(screen.getByText("Schedulable")).toBeInTheDocument()
+    const toggle = screen.getByRole("switch")
+    expect(toggle).toBeChecked()
+    await user.click(toggle)
+    expect(toggle).not.toBeChecked()
+    await user.click(screen.getByRole("button", { name: /Save Changes/i }))
+    expect(useTaskStore.getState().tasks.find((t) => t.id === "popup-task")?.scheduleable).toBe(false)
+  })
+
   it("shows Save Changes after editing description and persists to store", async () => {
     const user = userEvent.setup({ delay: null })
     render(<TaskDetailPopup taskId="popup-task" open onClose={onClose} />)
@@ -142,6 +155,7 @@ describe("TaskDetailPopup", () => {
     expect(screen.queryByRole("tab", { name: /Analysis/i })).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: /^Complete$/i })).not.toBeInTheDocument()
     expect(screen.getByText(/No photo yet/i)).toBeInTheDocument()
+    expect(screen.queryByText("Schedulable")).not.toBeInTheDocument()
     expect(screen.queryByText("Show in Scheduler")).not.toBeInTheDocument()
     expect(screen.queryByText("Repeated Task Settings")).not.toBeInTheDocument()
   })

@@ -5,16 +5,17 @@
  * (`AppHeader`: BRAIN2 caption + today's-friend jewel + grouped press keys)
  * and the top-level tab bar (`data-ui-name="App tabs"`: Home, Lists, Docs,
  * Scheduler, Operations, Modules, Analytics), lazy-loading each module panel.
- * Item detail fills the desk *below* the pin bar — the header stays mounted.
- * Global hotkeys: Cmd/Ctrl-K search, Cmd/Ctrl-Shift-K quick capture,
- * Cmd/Ctrl-Z undo last Home/Tracking action.
+ * Item detail fills the desk *below* the pin bar — the header stays mounted,
+ * and the tab desk stays mounted (hidden) so Lists can jump back in place
+ * without rebuilding its task index. Global hotkeys: Cmd/Ctrl-K search,
+ * Cmd/Ctrl-Shift-K quick capture, Cmd/Ctrl-Z undo last Home/Tracking action.
  *
  * Spec: §2.2 (module hosting) and §8.2 (dashboard top bar / global quick actions).
  */
 "use client"
 
 import { useState, useCallback, lazy, Suspense, useEffect } from "react"
-import { APP_NAV_KEYS, APP_TABS, writeListsNavigation, COGS_NAVIGATE_TO_LIST_EVENT, readStoredId, writeStoredId, type AppTab } from "@/lib/app-navigation"
+import { APP_NAV_KEYS, APP_TABS, applyListsNavigation, COGS_NAVIGATE_TO_LIST_EVENT, readStoredId, writeStoredId, type AppTab } from "@/lib/app-navigation"
 import { usePersistedTab } from "@/lib/use-persisted-tab"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useMessageIngest } from "@/hooks/useMessageIngest"
@@ -26,6 +27,7 @@ import { useGlobalSearchHotkey } from "@/components/Search/useGlobalSearchHotkey
 import { useTaskStore } from "@/lib/task-store"
 import { useQuickCaptureHotkey } from "@/hooks/useQuickCaptureHotkey"
 import { useUndoHotkey } from "@/hooks/useUndoHotkey"
+import { useDayScheduleRollover } from "@/hooks/use-day-rollover"
 import { PersistStatusBanner } from "@/components/PersistStatusBanner"
 import { parseModulePopoutModuleId } from "@/components/Modules/workspace/ModuleWorkspace"
 import { parseSheetPopoutCategoryId } from "@/components/spreadsheet/sheet-popout"
@@ -70,11 +72,9 @@ export default function Home() {
   const capture = useQuickCaptureHotkey()
   useUndoHotkey()
   useMessageIngest()
+  useDayScheduleRollover()
   const [popoutModuleId, setPopoutModuleId] = useState<string | null>(null)
   const [popoutSheetCategoryId, setPopoutSheetCategoryId] = useState<string | null>(null)
-  // Bumped to force the Lists view to remount and re-read navigation when the
-  // user jumps to a folder/list from global search while it's already open.
-  const [listsNavKey, setListsNavKey] = useState(0)
   const folders = useTaskStore((s) => s.folders)
   const tasks = useTaskStore((s) => s.tasks)
 
@@ -111,10 +111,11 @@ export default function Home() {
   }, [])
 
   // Item detail (and other surfaces) can request a jump to a specific list.
+  // Lists navigation is already written + applied in place by the event source;
+  // the shell only switches tab and clears overlays — never remount Lists.
   useEffect(() => {
     const handler = () => {
       setActiveTab("categories")
-      setListsNavKey((k) => k + 1)
       setSelectedTaskId(null)
       setSearchSelectedId(null)
     }
@@ -138,7 +139,7 @@ export default function Home() {
   // Global search (Cmd-K) routes the chosen result to the right destination:
   // items open in the compact detail popup overlaying the current screen (the
   // same way clicking an item in a list does); folders/lists jump to the Lists
-  // view focused on that folder/list.
+  // view focused on that folder/list (in-place nav — no Lists remount).
   const handleSearchSelect = useCallback(
     (selection: SearchSelection) => {
       if (selection.kind === "item") {
@@ -146,16 +147,15 @@ export default function Home() {
         return
       }
       if (selection.kind === "folder") {
-        writeListsNavigation({ location: selection.id, openTarget: null })
+        applyListsNavigation({ location: selection.id, openTarget: null })
       } else {
         const parent = folders.find((f) => f.listIds.includes(selection.id))
-        writeListsNavigation({
+        applyListsNavigation({
           location: parent?.id ?? "home",
           openTarget: { type: "category", id: selection.id },
         })
       }
       setActiveTab("categories")
-      setListsNavKey((k) => k + 1)
     },
     [folders]
   )
@@ -188,71 +188,79 @@ export default function Home() {
       />
       <div className="container mx-auto px-6 py-6 sm:px-8 lg:px-12">
         <PersistStatusBanner />
+        {/* Keep the desk mounted under full-page item detail so Lists (and its
+            task index) stay warm — jumping to a list from a chip must not rebuild
+            the vault from a cold remount. */}
         {selectedTaskId ? (
           <EnhancedTaskDetail taskId={selectedTaskId} onBack={handleBackToList} />
-        ) : (
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList
-            className="flex w-full"
-            data-ui-name="App tabs"
-            data-ui-docs="components/README.md"
-            data-ui-docs-anchor="top-level-tabs-from-apppagetsx"
-          >
-            <TabsTrigger value="home">Home</TabsTrigger>
-            <TabsTrigger value="categories">Lists</TabsTrigger>
-            <TabsTrigger value="docs">Docs</TabsTrigger>
-            <TabsTrigger value="scheduler">Scheduler</TabsTrigger>
-            <TabsTrigger value="operations">Operations</TabsTrigger>
-            <TabsTrigger value="modules">Modules</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          </TabsList>
+        ) : null}
+        <div
+          className={selectedTaskId ? "hidden" : undefined}
+          aria-hidden={selectedTaskId ? true : undefined}
+          data-testid="app-desk"
+        >
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+            <TabsList
+              className="flex w-full"
+              data-ui-name="App tabs"
+              data-ui-docs="components/README.md"
+              data-ui-docs-anchor="top-level-tabs-from-apppagetsx"
+            >
+              <TabsTrigger value="home">Home</TabsTrigger>
+              <TabsTrigger value="categories">Lists</TabsTrigger>
+              <TabsTrigger value="docs">Docs</TabsTrigger>
+              <TabsTrigger value="scheduler">Scheduler</TabsTrigger>
+              <TabsTrigger value="operations">Operations</TabsTrigger>
+              <TabsTrigger value="modules">Modules</TabsTrigger>
+              <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            </TabsList>
 
-          <Suspense fallback={<LoadingFallback />}>
-            {activeTab === "home" && (
-              <TabsContent value="home">
-                <HomeDashboard />
-              </TabsContent>
-            )}
+            <Suspense fallback={<LoadingFallback />}>
+              {activeTab === "home" && (
+                <TabsContent value="home">
+                  <HomeDashboard />
+                </TabsContent>
+              )}
 
-            {activeTab === "categories" && (
-              <TabsContent value="categories">
-                <EnhancedCategoryView key={listsNavKey} onTaskSelect={handleTaskSelect} />
-              </TabsContent>
-            )}
+              {activeTab === "categories" && (
+                <TabsContent value="categories">
+                  <EnhancedCategoryView onTaskSelect={handleTaskSelect} />
+                </TabsContent>
+              )}
 
-            {activeTab === "docs" && (
-              <TabsContent value="docs">
-                <DocsPanel />
-              </TabsContent>
-            )}
+              {activeTab === "docs" && (
+                <TabsContent value="docs">
+                  <DocsPanel />
+                </TabsContent>
+              )}
 
-            {activeTab === "scheduler" && (
-              <TabsContent value="scheduler">
-                <EnhancedScheduler />
-              </TabsContent>
-            )}
+              {activeTab === "scheduler" && (
+                <TabsContent value="scheduler">
+                  <EnhancedScheduler />
+                </TabsContent>
+              )}
 
-            {activeTab === "operations" && (
-              <TabsContent value="operations">
-                <OperationsView onTaskSelect={handleTaskSelect} />
-              </TabsContent>
-            )}
+              {activeTab === "operations" && (
+                <TabsContent value="operations">
+                  <OperationsView onTaskSelect={handleTaskSelect} />
+                </TabsContent>
+              )}
 
-            {activeTab === "modules" && (
-              <TabsContent value="modules">
-                <ModulesPanel onTaskSelect={handleTaskSelect} />
-              </TabsContent>
-            )}
+              {activeTab === "modules" && (
+                <TabsContent value="modules">
+                  <ModulesPanel onTaskSelect={handleTaskSelect} />
+                </TabsContent>
+              )}
 
-            {activeTab === "analytics" && (
-              <TabsContent value="analytics">
-                <EnhancedAnalytics />
-              </TabsContent>
-            )}
+              {activeTab === "analytics" && (
+                <TabsContent value="analytics">
+                  <EnhancedAnalytics />
+                </TabsContent>
+              )}
 
-          </Suspense>
-        </Tabs>
-        )}
+            </Suspense>
+          </Tabs>
+        </div>
       </div>
     </main>
     <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} onSelect={handleSearchSelect} />

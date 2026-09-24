@@ -26,6 +26,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
+import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -76,6 +77,12 @@ import {
 import { isTaskItem } from "@/lib/item-utils"
 import { isClearedFromWork } from "@/lib/completion-status"
 import { markMissedOpportunity } from "@/lib/services/completion-service"
+import {
+  getScheduleableCategoryIds,
+  isTaskScheduleable,
+  nextTaskScheduleableFlag,
+  taskInheritsScheduleableFromLists,
+} from "@/components/Scheduler/scheduler-utils"
 import { useTaskStore } from "@/lib/task-store"
 import type { AttributeDefinition, AttributeValue, ItemTypeDefinition, Subtask, Task } from "@/lib/types"
 import { safeDateFormat, safeISODateString } from "@/lib/date-utils"
@@ -148,6 +155,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
   )
   const visiblePanels = detailView.panels
   const caps = detailView.capabilities
+  const scheduleableCategoryIds = useMemo(() => getScheduleableCategoryIds(lists), [lists])
   const detailTabs = useMemo(() => {
     const tabs = ["details", ...visiblePanels.filter((panel) => panel !== "details"), "history"]
     return tabs
@@ -871,6 +879,27 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
+              <div className="flex items-center justify-between rounded-lg border p-3">
+                <div>
+                  <Label className="text-sm font-semibold">Schedulable</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Lists still decide the default; this switch is only this item.
+                  </p>
+                </div>
+                <Switch
+                  checked={isTaskScheduleable(task, scheduleableCategoryIds)}
+                  onCheckedChange={(checked) =>
+                    setTask({
+                      ...task,
+                      scheduleable: nextTaskScheduleableFlag({
+                        turnOn: !!checked,
+                        inheritsOnFromLists: taskInheritsScheduleableFromLists(task, scheduleableCategoryIds),
+                      }),
+                    })
+                  }
+                  disabled={!isEditing}
+                />
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <h3 className="font-medium">Specific Date & Time</h3>

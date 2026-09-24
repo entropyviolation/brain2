@@ -3,20 +3,16 @@
  *
  * From a chart, open the underlying items in Lists. A single shared list
  * opens that list; mixed membership opens All Items. Habits jump to the
- * Habits smart list. The shell already listens for `cogs-navigate-to-list`.
+ * Habits smart list. `applyListsNavigation` notifies a mounted Lists view
+ * in place (no remount).
  */
-import {
-  COGS_NAVIGATE_TO_LIST_EVENT,
-  requestNavigateToList,
-  writeListsNavigation,
-} from "@/lib/app-navigation"
+import { applyListsNavigation, requestNavigateToList } from "@/lib/app-navigation"
 import { ROOT_ALL_FOLDER_ID } from "@/components/Lists/constants"
 import { useTaskStore } from "@/lib/task-store"
 
 export function openItemsInLists(opts: { taskIds?: string[]; habits?: boolean }): void {
   if (opts.habits) {
-    writeListsNavigation({ location: "home", openTarget: { type: "habits", id: "habits" } })
-    dispatchListJump("habits")
+    applyListsNavigation({ location: "home", openTarget: { type: "habits", id: "habits" } })
     return
   }
 
@@ -46,14 +42,8 @@ export function openItemsInLists(opts: { taskIds?: string[]; habits?: boolean })
     return
   }
 
-  writeListsNavigation({
+  applyListsNavigation({
     location: "all",
     openTarget: { type: "folder-all", folderId: ROOT_ALL_FOLDER_ID },
   })
-  dispatchListJump(ROOT_ALL_FOLDER_ID)
-}
-
-function dispatchListJump(listId: string): void {
-  if (typeof window === "undefined") return
-  window.dispatchEvent(new CustomEvent(COGS_NAVIGATE_TO_LIST_EVENT, { detail: { listId } }))
 }

@@ -27,9 +27,12 @@ an item as a Task (full hardcoded Task surface). A generic `item` or catalog
 type such as Book / Furniture shows Details (and a cover / featured fields when
 `detailLayout` is set) without Scheduling unless you opt in.
 
-Complete / duration / status / “Show in Scheduler” chrome is gated on
+Complete / duration / status chrome is gated on
 `capabilities.completable`, `capabilities.duration`, and
-`capabilities.scheduleable`. Completable items offer **Complete** and **Missed
+`capabilities.scheduleable`. The Scheduling tab offers a **Schedulable** switch
+(checked = currently appears in the Scheduler via `isTaskScheduleable`): off
+forces `scheduleable: false`; on inherits (`undefined`) when a list already
+allows the item, else forces `true`. Completable items offer **Complete** and **Missed
 opportunity** (too late) side by side; missed files the row on the automatic
 Missed Opportunities list instead of Completed.
 
@@ -43,8 +46,8 @@ Missed Opportunities list instead of Completed.
 | `item-detail-chrome.css` | Milled fascia for page + popup (`.id95` / `.id95-dialog`): brushed bays, CRT title, metal keys, equal-fill tab bay with power lamps, History well + cycle path. |
 | `CycleConfirmDialog.tsx` | Win95 `fm98-dialog`: “This would loop”, the cycle path, OK only (dependency already refused). |
 | `CycleConfirmDialog.test.tsx` | Dialog copy; no add-anyway. |
-| `ItemDetailPopup.tsx` | Compact modal/popover detail view used inline by Scheduler, Plan, To-Do, and the friend mission sheet. `data-ui-name="Item detail"` on `DialogContent`. Tabs are `resolveDetailView` output (type + lists + capabilities). Includes the in-popup completion flow when the type is completable. Exports `TaskDetailPopup`. `stackAbove` paints it over another open dialog (the mission sheet stays underneath). Last tab per item is restored. Dirty close (draft vs stored task) uses the house unsaved-changes guard. |
-| `ItemDetailPage.tsx` | Full-screen detail/editor opened from the app shell (`data-ui-name="Item detail"` on the page root). Names still runs via the layout host. Task-only chrome (duration, urgency, molecular breakdown) is gated; other types get an adapted details view. Exports `EnhancedTaskDetail`. Open item + last tab persist across refresh. |
+| `ItemDetailPopup.tsx` | Compact modal/popover detail view used inline by Scheduler, Plan, To-Do, and the friend mission sheet. `data-ui-name="Item detail"` on `DialogContent`. Tabs are `resolveDetailView` output (type + lists + capabilities). Includes the in-popup completion flow when the type is completable. Exports `TaskDetailPopup`. `stackAbove` paints it over another open dialog (the mission sheet stays underneath). Last tab per item is restored. Dirty close (draft vs stored task) uses the house unsaved-changes guard. Double-click a list badge calls `requestNavigateToList` (same in-place Lists jump as the full-page detail). |
+| `ItemDetailPage.tsx` | Full-screen detail/editor opened from the app shell (`data-ui-name="Item detail"` on the page root). Names still runs via the layout host. Task-only chrome (duration, urgency, molecular breakdown) is gated; other types get an adapted details view. Exports `EnhancedTaskDetail`. Open item + last tab persist across refresh. Double-click a list badge calls `requestNavigateToList` — the shell keeps Lists mounted under a hidden desk so the jump is in-place, not a cold remount. |
 | `ItemAttributesSection.tsx` | Shared attributes surface. When the type has `detailLayout`, renders a large hero image and featured fields above the rest of the schema, then list-defined attributes, item-only leftovers, and `AttributeCreator`. |
 | `item-attributes.test.tsx` | Hero/featured layout + attribute creator for catalog-style types. |
 | `BodyPanel.tsx` | The `"body"` detail panel for document-type items: mounts the `RichTextEditor` (`components/Editor`) over an item's `Item.body` markdown and persists edits through `useTaskStore.updateTask`, debounced (default 500ms) with a flush on blur/unmount. Props: `taskId`, `readOnly?`, `debounceMs?`. |

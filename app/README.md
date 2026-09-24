@@ -18,7 +18,7 @@ routes are required for the static Electron build.
 | `chrome-patina.tsx` | Client applicator: writes `--chrome-face` (and bevel kin) on load, on set-point change, and once a minute. |
 | `pcb-backdrop.css` | Desktop field behind the shell. Default `teal` is solid `#008080`. Other `html[data-pcb-mode]` values paint photographed plates from `/pcb/` plus a soft veil/grain. Light plates (`ceramic` / `mint` / `ice`) switch gutter ink dark; dark plates (`xray` / `fr4`) keep white title type. Settings chip grid. |
 | `pcb-backdrop.tsx` | Client applicator: does not stamp seed teal from the unhydrated store (boot script already painted the pin). After persist hydration, follows `theme-store.pcbMode` (a saved plate wins over a stale pin). |
-| `page.tsx` | The single application page. Renders the pinned full-width mill title bar (`AppHeader`: navy **BRAIN2** caption + today's-friend jewel + Friend / Review / System / optional **now** / Capture groupboxes) *outside* the desk container so the fascia is edge-to-edge, then the top-level tab bar (`data-ui-name="App tabs"`), lazy-loading each module panel. On mount, calls `initWorkflowEngine` so module workflows and implied-action rules (`logAction` / `incrementHabit`) run on item mutations. When an item is selected, `EnhancedTaskDetail` fills the desk **below** the pin bar (header stays mounted; tabs from the item type, not Task defaults). Legacy `#popout/…` hashes still skip the shell if they land here. |
+| `page.tsx` | The single application page. Renders the pinned full-width mill title bar (`AppHeader`: navy **BRAIN2** caption + today's-friend jewel + Friend / Review / System / optional **now** / Capture groupboxes) *outside* the desk container so the fascia is edge-to-edge, then the top-level tab bar (`data-ui-name="App tabs"`), lazy-loading each module panel. On mount, calls `initWorkflowEngine` so module workflows and implied-action rules (`logAction` / `incrementHabit`) run on item mutations, and `useDayScheduleRollover` so unfinished past period schedules roll up one funnel level (keeping `schedulePlacements`). When an item is selected, `EnhancedTaskDetail` fills the desk **below** the pin bar (header stays mounted; tabs from the item type, not Task defaults). Legacy `#popout/…` hashes still skip the shell if they land here. |
 | `page.test.tsx` | Pin bar stays mounted when item detail is open. |
 | `popout/page.tsx` | **Standalone pop-out window.** No global header or app tabs. `?module=<id>` renders `ModulePopoutView`; `?sheet=<id>` renders `SheetPopoutView`. This is what **Pop out** opens. |
 | `globals.css` | Tailwind base/components/utilities + CSS variables for theme colors/radii and custom utility classes. Imported first by `layout.tsx`. House CRT / milled fascia tokens live on `:root` in `win95.css` (not duplicated here). |
@@ -59,7 +59,7 @@ values. Channels stay equal (never brown, never `#c5c3bc`).
 | Tracking | `cognitive-state.tsx` | Opens TimeGrid dialog + Operations **Working on this now** strip |
 | Names | `AppHeader.tsx` → `lib/ui-names-store.ts` | Persisted System-group latch. Caption stays **Names**; sunken + `aria-pressed` while on (tooltip **Stop naming**). First `data-ui-mode`. Help / Inspect would sit beside it later and load living READMEs via `data-ui-docs`. |
 | now | `header-now-box.tsx` | Optional groupbox between System and Capture. Absent when idle; one or two rows for live Operations **Working on this now** and/or pen-color **Working on right now** (name, tabular elapsed, Stop, Pause↔Resume). Same session stores as the Tracking strips. |
-| Inbox | `inbox.tsx` | Two piles: **Inbox** (revisit) and **Monkey brain** (dump; `-mb` / `-monkey`). Walk **selected** ideas (rename, discard, recent lists). +1 point per handle, +50 when the revisit Inbox hits 0. Select all / Deselect all. Multi-select batch: list (Apply stays in Inbox; Apply and clarify files them out), deadline, merge, mark clarified, move piles, bulk edit, delete with Are you sure?. Navy selection outline. Count well is the revisit pile. |
+| Inbox | `inbox.tsx` | Two piles: **Inbox** (revisit) and **Monkey brain** (dump; `-mb` / `-monkey`). Partition titles stay ink; lamp and CRT count still change. Hairline rows, caret bar vs checked well. Walk from the caret, or **Walk selected** after a check; the walk sheet stays mounted and the pile behind it waits. Select all / **Select N** / **Select unsorted** / Dated-or-Bare slice. After a check: Apply list (Apply stays; Apply and clarify files them out), due, **File**, move piles, bulk edit, delete (Are you sure?, including one row). Merge at two. +1 per handle, +50 when the revisit pile hits 0; the foot counts the sitting. |
 | Ingest | `ingest-log-dialog.tsx` | Log of phone-message ingest (Telegram / simulate) |
 | Metrics | `Tracking/MetricLogger.tsx` | Wellbeing datapoints |
 | Bulk Add | `enhanced-bulk-add.tsx` | Multi-line capture; `list:` / `folder: list:` headers; optional Inbox |
@@ -89,8 +89,14 @@ Cmd/Ctrl-Shift-Z (Ctrl+Y on Windows). Text fields keep the browser's own undo.
 | Analytics | `EnhancedAnalytics` | `components/Analytics/` |
 
 Task detail: selecting a task (from Lists, Modules, Inbox, or global Search) sets
-`selectedTaskId` and replaces the **desk** (tabs) with `EnhancedTaskDetail` until the
-user navigates back — the pin bar stays. Last place in the app persists via `lib/app-navigation.ts`:
+`selectedTaskId` and shows `EnhancedTaskDetail` over the desk — the pin bar stays,
+and the tab desk stays mounted but hidden so Lists does not cold-remount when you
+jump back (e.g. double-click a list chip on the item). List jumps use
+`applyListsNavigation` / `requestNavigateToList` (`lib/app-navigation.ts`), which
+persist location/openTarget and fire `cogs-navigate-to-list`; a mounted
+`useListsNavigation` applies the target in place. The shell only switches to the
+Lists tab and clears the open item — it does not remount `EnhancedCategoryView`.
+Last place in the app persists via `lib/app-navigation.ts`:
 top-level tab, open item + its detail tab, Docs folder/doc **and scroll**,
 Operations workspace + panel, Modules workspace + view, Scheduler view/date,
 Home date / Habits period / Goals filters, Analytics view + group memory + canvas scroll.

@@ -68,6 +68,12 @@ import {
 import { ItemAttributesSection } from "@/components/ItemDetail/ItemAttributesSection"
 import { isTaskItem } from "@/lib/item-utils"
 import { markMissedOpportunity } from "@/lib/services/completion-service"
+import {
+  getScheduleableCategoryIds,
+  isTaskScheduleable,
+  nextTaskScheduleableFlag,
+  taskInheritsScheduleableFromLists,
+} from "@/components/Scheduler/scheduler-utils"
 import { assignedItemTypes, BUILTIN_ITEM_TYPE_ID, BUILTIN_TASK_TYPE_ID, resolveDetailView } from "@/lib/item-types"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { useTaskStore } from "@/lib/task-store"
@@ -142,6 +148,7 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
   )
   const visiblePanels = detailView.panels
   const caps = detailView.capabilities
+  const scheduleableCategoryIds = useMemo(() => getScheduleableCategoryIds(lists), [lists])
   const popupTabs = useMemo(() => [...visiblePanels, "history"], [visiblePanels])
   const [detailTab, setDetailTab] = useState(() => {
     const stored = effectiveId ? readStoredRecord(APP_NAV_KEYS.itemDetailTab)[effectiveId] : null
@@ -598,17 +605,6 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
 
                       {caps.scheduleable && (
                       <>
-                      <div className="flex items-center justify-between rounded-lg border p-3">
-                        <div>
-                          <Label className="text-sm font-semibold">Show in Scheduler</Label>
-                          <p className="text-xs text-muted-foreground">Include this item in the Scheduler panel.</p>
-                        </div>
-                        <Switch
-                          checked={task.scheduleable !== false}
-                          onCheckedChange={(checked) => setTask({ ...task, scheduleable: checked })}
-                        />
-                      </div>
-
                       {/* Repeated Task Settings */}
                       <div className="space-y-4 p-4 bg-muted/30 rounded-lg border">
                         <h3 className="font-semibold flex items-center gap-2">
@@ -918,6 +914,29 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
 
                 <TabsContent value="scheduling" className="space-y-6 mt-0">
                   <div className="space-y-8">
+                    <div className="flex items-center justify-between rounded-lg border p-3">
+                      <div>
+                        <Label className="text-sm font-semibold">Schedulable</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Lists still decide the default; this switch is only this item.
+                        </p>
+                      </div>
+                      <Switch
+                        checked={isTaskScheduleable(task, scheduleableCategoryIds)}
+                        onCheckedChange={(checked) =>
+                          setTask({
+                            ...task,
+                            scheduleable: nextTaskScheduleableFlag({
+                              turnOn: !!checked,
+                              inheritsOnFromLists: taskInheritsScheduleableFromLists(
+                                task,
+                                scheduleableCategoryIds,
+                              ),
+                            }),
+                          })
+                        }
+                      />
+                    </div>
                     {task.scheduledDate && !task.scheduledWeek && (
                       <div className="flex items-center justify-between gap-3 p-4 rounded-lg border bg-blue-50/60 border-blue-200">
                         <div>

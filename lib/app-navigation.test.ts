@@ -9,6 +9,7 @@ import {
   readStoredId,
   readStoredRecord,
   readStoredTab,
+  applyListsNavigation,
   requestNavigateToList,
   writeListsNavigation,
   writeScrollOffset,
@@ -49,6 +50,22 @@ describe("app-navigation", () => {
   it("falls back when lists navigation JSON is invalid", () => {
     localStorage.setItem(APP_NAV_KEYS.listsNav, "{not json")
     expect(readListsNavigation()).toEqual({ location: "home", openTarget: null })
+  })
+
+  it("applyListsNavigation writes navigation and dispatches an event", () => {
+    const handler = vi.fn()
+    window.addEventListener("cogs-navigate-to-list", handler)
+    applyListsNavigation({
+      location: "folder-1",
+      openTarget: { type: "category", id: "list-1" },
+    })
+    expect(readListsNavigation()).toEqual({
+      location: "folder-1",
+      openTarget: { type: "category", id: "list-1" },
+    })
+    expect(handler).toHaveBeenCalledTimes(1)
+    expect(handler.mock.calls[0][0].detail).toEqual({ listId: "list-1" })
+    window.removeEventListener("cogs-navigate-to-list", handler)
   })
 
   it("requestNavigateToList writes navigation and dispatches an event", () => {
