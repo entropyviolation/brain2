@@ -15,6 +15,7 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
+import { persistKey } from "@/lib/storage-keys"
 import type { PeriodReview, ReviewPeriod, BlockedReason } from "@/lib/types"
 import { getWeekString, parseWeekString } from "@/lib/date-utils"
 
@@ -154,7 +155,7 @@ export const useReviewsStore = create<ReviewsState>()(
       getOperationReview: (operationId) =>
         get().operationReviews.find((r) => r.operationId === operationId),
     }),
-    { name: "cogs-reviews-store", version: 1, storage: createCogsJSONStorage() },
+    { name: persistKey("reviews-store"), version: 1, storage: createCogsJSONStorage() },
   ),
 )
 

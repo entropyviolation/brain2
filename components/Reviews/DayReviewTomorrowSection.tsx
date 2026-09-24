@@ -1,17 +1,17 @@
 /**
  * components/Reviews/DayReviewTomorrowSection.tsx — Plan tomorrow during day review
  *
- * Shown at the end of the day review ritual: tomorrow's written plan (editable,
- * persisted via lib/plan-text.ts) and tomorrow's to-do list with search-to-schedule
+ * Shown at the end of the day review ritual: tomorrow's plan log (same submit-
+ * stamped entries as Plan → Day) and tomorrow's to-do list with search-to-schedule
  * and create-new affordances.
  */
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
+import { PlanTextLog } from "@/components/Home/Plan/plan-text-log"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus, Search, X } from "lucide-react"
@@ -19,7 +19,6 @@ import { useTaskStore } from "@/lib/task-store"
 import type { Task, TodoItem } from "@/lib/types"
 import { taskScheduledOnDay, toLocalCalendarDate } from "@/lib/date-utils"
 import { searchItems } from "@/lib/search"
-import { getStoredPlanText, saveStoredPlanText } from "@/lib/plan-text"
 import { dateFromPeriodKey, localDayKey, nextPeriodDate, periodLabel } from "@/lib/reviews-store"
 import {
   buildTodoItems,
@@ -27,6 +26,7 @@ import {
   getTierColor,
   tierToUrgencyImportance,
 } from "@/components/Home/ToDo/todo-utils"
+import { itemTitle } from "@/lib/item-utils"
 
 export function DayReviewTomorrowSection({ reviewedDayKey }: { reviewedDayKey: string }) {
   const tasks = useTaskStore((s) => s.tasks)
@@ -39,16 +39,11 @@ export function DayReviewTomorrowSection({ reviewedDayKey }: { reviewedDayKey: s
   )
   const tomorrowKey = localDayKey(tomorrowDate)
 
-  const [planText, setPlanText] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
   const [searchFocused, setSearchFocused] = useState(false)
   const [newDescription, setNewDescription] = useState("")
   const [newTier, setNewTier] = useState<TodoItem["tier"]>("A")
   const [showNewForm, setShowNewForm] = useState(false)
-
-  useEffect(() => {
-    setPlanText(getStoredPlanText("day", tomorrowKey) ?? "")
-  }, [tomorrowKey])
 
   const tomorrowTodos = useMemo(() => {
     const items = buildTodoItems(tasks, false, tomorrowDate)
@@ -64,11 +59,6 @@ export function DayReviewTomorrowSection({ reviewedDayKey }: { reviewedDayKey: s
       .map((r) => r.item as Task)
       .filter((t) => !t.completed && !tomorrowTaskIds.has(t.id))
   }, [searchQuery, tasks, tomorrowTaskIds])
-
-  const handlePlanChange = (value: string) => {
-    setPlanText(value)
-    saveStoredPlanText("day", tomorrowKey, value)
-  }
 
   const scheduleForTomorrow = (task: Task) => {
     updateTask({
@@ -132,12 +122,12 @@ export function DayReviewTomorrowSection({ reviewedDayKey }: { reviewedDayKey: s
         <p className="text-xs text-muted-foreground mt-0.5">{periodLabel("day", tomorrowKey)}</p>
       </div>
 
-      <Textarea
-        value={planText}
-        onChange={(e) => handlePlanChange(e.target.value)}
-        rows={4}
+      <PlanTextLog
+        period="day"
+        periodKey={tomorrowKey}
         placeholder="What matters most tomorrow?"
-        data-testid="tomorrow-plan-text"
+        size="compact"
+        composerTestId="tomorrow-plan-text"
       />
 
       <div className="space-y-2">
@@ -156,12 +146,12 @@ export function DayReviewTomorrowSection({ reviewedDayKey }: { reviewedDayKey: s
                 <Badge variant="outline" className={`shrink-0 text-xs ${getTierColor(todo.tier)}`}>
                   {todo.tier}
                 </Badge>
-                <span className="truncate flex-1">{todo.description}</span>
+                <span className="truncate flex-1">{itemTitle(todo)}</span>
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7 shrink-0"
-                  aria-label={`Remove ${todo.description} from tomorrow`}
+                  aria-label={`Remove ${itemTitle(todo)} from tomorrow`}
                   onClick={() => unscheduleFromTomorrow(todo.taskId ?? todo.id)}
                 >
                   <X className="h-3.5 w-3.5" />
@@ -210,7 +200,7 @@ export function DayReviewTomorrowSection({ reviewedDayKey }: { reviewedDayKey: s
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => scheduleForTomorrow(task)}
                 >
-                  {task.description}
+                  {itemTitle(task)}
                   {!taskScheduledOnDay(task, tomorrowDate) && task.scheduledDate && (
                     <span className="text-xs text-muted-foreground ml-2">(reschedule)</span>
                   )}

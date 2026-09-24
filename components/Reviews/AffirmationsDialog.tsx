@@ -10,6 +10,7 @@
  *
  * Voice scoring is a transparent client-side heuristic (lib/vocal-confidence.ts)
  * with no API keys; it degrades gracefully when the mic is unavailable.
+ * Dialog shell is milled fascia (`.hpp95` / `header-popup-chrome.css`).
  */
 "use client"
 
@@ -187,24 +188,28 @@ export function AffirmationsDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
-      <DialogContent className="sm:max-w-md overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-purple-500" />
-            Affirmations
-          </DialogTitle>
-          <DialogDescription>
+      <DialogContent className="hpp95 hpp95-dialog sm:max-w-md overflow-hidden flex flex-col">
+        <DialogHeader className="hpp-caption">
+          <div className="hpp-caption-mark">
+            <span className="hpp-power-lamp" aria-hidden />
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5" />
+              Affirmations
+            </DialogTitle>
+          </div>
+          <DialogDescription className="hpp-caption-lead">
             {phase === "intro" && "Speak five affirmations aloud — with conviction."}
             {phase === "active" && `Affirmation ${index + 1} of ${session.length}`}
             {phase === "done" && "Ritual complete"}
           </DialogDescription>
         </DialogHeader>
 
+        <div className="hpp-body">
         {/* Intro */}
         {phase === "intro" && (
           <div className="flex flex-col items-center text-center gap-5 py-6">
-            <div className="h-24 w-24 rounded-full bg-purple-500/10 flex items-center justify-center ring-1 ring-purple-500/30">
-              <Mic className="h-10 w-10 text-purple-500" />
+            <div className="hpp-mic-well h-24 w-24 flex items-center justify-center">
+              <Mic className="h-10 w-10" />
             </div>
             <p className="text-sm text-muted-foreground max-w-xs">
               We&apos;ll pull {AFFIRMATIONS_PER_SESSION} affirmations from your{" "}
@@ -212,7 +217,7 @@ export function AffirmationsDialog({
               you say each one. You can move to the next only once it&apos;s said with full
               confidence.
             </p>
-            <Button size="lg" className="gap-2" onClick={handleStart}>
+            <Button size="lg" className="gap-2 hpp-key-go" onClick={handleStart}>
               <Mic className="h-4 w-4" />
               Start affirmations
             </Button>
@@ -230,20 +235,20 @@ export function AffirmationsDialog({
                   key={i}
                   className={`h-1.5 rounded-full transition-all ${
                     i < index
-                      ? "w-4 bg-purple-500"
+                      ? "w-4 hpp-aff-dot hpp-aff-dot-done"
                       : i === index
-                        ? "w-6 bg-purple-500"
-                        : "w-4 bg-muted"
+                        ? "w-6 hpp-aff-dot hpp-aff-dot-now"
+                        : "w-4 hpp-aff-dot"
                   }`}
                 />
               ))}
             </div>
 
             {/* Affirmation text */}
-            <div className="relative rounded-xl border bg-muted/30 p-6 text-center">
+            <div className="relative rounded-md border p-6 text-center">
               <p className="text-lg font-medium leading-snug">{currentText}</p>
               {unlocked && (
-                <div className="absolute -top-2 -right-2 h-7 w-7 rounded-full bg-green-500 text-white flex items-center justify-center shadow">
+                <div className="hpp-mic-well absolute -top-2 -right-2 h-7 w-7 flex items-center justify-center">
                   <Check className="h-4 w-4" />
                 </div>
               )}
@@ -313,7 +318,7 @@ export function AffirmationsDialog({
                 <Button variant="outline" onClick={handleClose}>
                   Stop
                 </Button>
-                <Button onClick={handleNext} disabled={!unlocked} className="gap-1.5">
+                <Button onClick={handleNext} disabled={!unlocked} className="gap-1.5 hpp-key-go">
                   {index >= session.length - 1 ? "Finish" : "Next"}
                   <ArrowRight className="h-4 w-4" />
                 </Button>
@@ -325,16 +330,17 @@ export function AffirmationsDialog({
         {/* Done */}
         {phase === "done" && (
           <div className="flex flex-col items-center text-center gap-4 py-8">
-            <div className="h-20 w-20 rounded-full bg-green-500/10 flex items-center justify-center ring-1 ring-green-500/30">
-              <CheckCircle2 className="h-10 w-10 text-green-500" />
+            <div className="hpp-mic-well h-20 w-20 flex items-center justify-center">
+              <CheckCircle2 className="h-10 w-10" />
             </div>
             <div className="space-y-1">
               <p className="text-lg font-semibold">All {session.length} affirmed.</p>
               <p className="text-sm text-muted-foreground">You said every one with conviction. Go own the day.</p>
             </div>
-            <Button onClick={handleClose}>Done</Button>
+            <Button className="hpp-key-go" onClick={handleClose}>Done</Button>
           </div>
         )}
+        </div>
       </DialogContent>
     </Dialog>
   )

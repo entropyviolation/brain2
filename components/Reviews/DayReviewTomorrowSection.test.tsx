@@ -38,18 +38,20 @@ describe("DayReviewTomorrowSection", () => {
     useTaskStore.setState({ tasks: [] })
   })
 
-  it("shows tomorrow's plan text and allows editing", async () => {
+  it("shows tomorrow's plan log and lets you submit a new entry", async () => {
     const user = userEvent.setup()
     saveStoredPlanText("day", "2026-06-26", "Morning deep work")
 
     render(<DayReviewTomorrowSection reviewedDayKey="2026-06-25" />)
 
+    expect(screen.getByText("Morning deep work")).toBeInTheDocument()
     const plan = screen.getByTestId("tomorrow-plan-text")
-    expect(plan).toHaveValue("Morning deep work")
+    expect(plan).toHaveValue("")
 
-    await user.clear(plan)
     await user.type(plan, "Ship feature")
-    expect(plan).toHaveValue("Ship feature")
+    await user.click(screen.getByRole("button", { name: /Submit plan/i }))
+    expect(screen.getByText("Ship feature")).toBeInTheDocument()
+    expect(plan).toHaveValue("")
   })
 
   it("lists tasks scheduled for tomorrow and supports search-to-add", async () => {

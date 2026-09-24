@@ -14,7 +14,9 @@ describe("Reviews", () => {
 
   it("renders the Review trigger button", () => {
     render(<Reviews />)
-    expect(screen.getByRole("button", { name: /Review/i })).toBeInTheDocument()
+    const trigger = screen.getByRole("button", { name: /Review/i })
+    expect(trigger).toBeInTheDocument()
+    expect(trigger).toHaveAttribute("title", expect.stringMatching(/end-of-period review/))
   })
 
   it("opens the review menu with period options", async () => {

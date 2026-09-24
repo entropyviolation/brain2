@@ -7,6 +7,7 @@
  * optional actual-duration correction, and free-text notes, then persists a
  * `TaskCompletionReview` onto the task via `saveCompletionReview` (a task-store
  * action CALL — this feature never touches the hot completeTask path).
+ * Dialog shell is milled fascia (`.hpp95` / `header-popup-chrome.css`).
  */
 "use client"
 
@@ -109,16 +110,19 @@ export function PostMortemDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5" />
-            Reflect on this task
-          </DialogTitle>
-          <DialogDescription className="truncate">{task?.description}</DialogDescription>
+      <DialogContent className="hpp95 hpp95-dialog sm:max-w-md">
+        <DialogHeader className="hpp-caption">
+          <div className="hpp-caption-mark">
+            <span className="hpp-power-lamp" aria-hidden />
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5" />
+              Reflect on this task
+            </DialogTitle>
+          </div>
+          <DialogDescription className="hpp-caption-lead truncate">{task?.description}</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-1">
+        <div className="hpp-body space-y-4 py-1">
           {SCALES.map((def) => (
             <Scale key={def.key} def={def} value={values[def.key]} onChange={setters[def.key]} />
           ))}
@@ -151,11 +155,11 @@ export function PostMortemDialog({
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 pt-2 border-t">
+        <div className="hpp-actions">
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={!task}>
+          <Button className="hpp-key-go" onClick={handleSave} disabled={!task}>
             Save reflection
           </Button>
         </div>

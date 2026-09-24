@@ -8,8 +8,10 @@
  * it works out of the box; the user can then edit the list like any other.
  */
 import type { Task, List } from "@/lib/types"
+import { itemTitle } from "@/lib/item-utils"
 
-export const AFFIRMATIONS_LIST_NAME = "Affirmations"
+/** Autocreated Lists list; match is case-insensitive so older "Affirmations" still counts. */
+export const AFFIRMATIONS_LIST_NAME = "affirmations"
 
 /** Number of affirmations spoken in one morning session. */
 export const AFFIRMATIONS_PER_SESSION = 5
@@ -35,7 +37,7 @@ export function findAffirmationsCategory(
 
 /** Display text for an affirmation item (prefers the unified `title`). */
 export function affirmationText(task: Task): string {
-  return (task.title || task.description || "").trim()
+  return itemTitle(task)
 }
 
 /** Active (non-completed) affirmation lines belonging to a list. */

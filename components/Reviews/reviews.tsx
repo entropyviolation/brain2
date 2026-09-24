@@ -3,12 +3,16 @@
  *
  * `Reviews` is a header entry point: a dropdown listing day/week/month/quarter/
  * year reviews, badged when a just-ended period hasn't been reviewed yet.
- * Choosing one opens `ReviewDialog`, which walks the user through:
+ * The trigger tooltip names what the badge counts. Choosing one opens
+ * `ReviewDialog`, which walks the user through:
  *   - carry-over: tasks that were scheduled in the period but not completed,
  *     each of which can be marked done or pushed to the next period;
+ *   - assumed times: completions the app timed on the user's behalf (habit rates,
+ *     tracked minutes, "finished just now"), confirmed or corrected here;
  *   - a summary of what passed, gratitude statements, reflection questions, and
  *     plans for the period to come.
  * Saved reviews persist in `reviews-store`.
+ * Dialog shells are milled fascia (`.hpp95` / `header-popup-chrome.css`).
  */
 "use client"
 
@@ -59,6 +63,8 @@ import { getPendingReviews } from "@/lib/pending-reviews"
 import { getStoredPlanText } from "@/lib/plan-text"
 import { PostMortemDialog } from "@/components/Reviews/PostMortemDialog"
 import { DayReviewTomorrowSection } from "@/components/Reviews/DayReviewTomorrowSection"
+import { AssumedTimesSection } from "@/components/Reviews/AssumedTimesSection"
+import { itemTitle } from "@/lib/item-utils"
 
 const REFLECTIONS: { id: string; q: string }[] = [
   { id: "wentWell", q: "What went well?" },
@@ -203,7 +209,7 @@ function ReviewDialog({
     for (const task of incomplete) {
       const reason = blockedReasons[task.id]
       if (reason && !resolved.includes(task.id)) {
-        accrueRegret(task.id, task.importance ?? 1, task.description, new Date(), reason)
+        accrueRegret(task.id, task.importance ?? 1, itemTitle(task), new Date(), reason)
       }
     }
     onClose()
@@ -222,16 +228,19 @@ function ReviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl max-h-[88vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 capitalize">
-            <ClipboardCheck className="h-5 w-5" />
-            {period} Review
-          </DialogTitle>
-          <DialogDescription>{periodLabel(period, periodKey)}</DialogDescription>
+      <DialogContent className="hpp95 hpp95-dialog sm:max-w-2xl max-h-[88vh] overflow-hidden flex flex-col" data-ui-name="Period review" data-ui-docs="components/Reviews/README.md">
+        <DialogHeader className="hpp-caption">
+          <div className="hpp-caption-mark">
+            <span className="hpp-power-lamp" aria-hidden />
+            <DialogTitle className="flex items-center gap-2 capitalize">
+              <ClipboardCheck className="h-5 w-5" />
+              {period} Review
+            </DialogTitle>
+          </div>
+          <DialogDescription className="hpp-caption-lead">{periodLabel(period, periodKey)}</DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto space-y-6 pr-1">
+        <div className="hpp-body flex-1 overflow-y-auto space-y-6 pr-1">
           {/* Carry-over */}
           <section className="space-y-2">
             <h3 className="font-semibold text-sm">
@@ -244,7 +253,7 @@ function ReviewDialog({
                 {incomplete.map((task) => (
                   <div key={task.id} className="border rounded-md p-2 space-y-2">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm flex-1 truncate">{task.description}</span>
+                      <span className="text-sm flex-1 truncate">{itemTitle(task)}</span>
                       {resolved.includes(task.id) ? (
                         <Button
                           size="sm"
@@ -298,6 +307,9 @@ function ReviewDialog({
               </p>
             )}
           </section>
+
+          {/* Assumed times — audit what the app filled in on the user's behalf */}
+          <AssumedTimesSection period={period} periodKey={periodKey} />
 
           {/* Summary */}
           <section className="space-y-2">
@@ -378,11 +390,11 @@ function ReviewDialog({
           )}
         </div>
 
-        <div className="flex justify-end gap-2 pt-2 border-t">
+        <div className="hpp-actions">
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleSave}>Save Review</Button>
+          <Button className="hpp-key-go" onClick={handleSave}>Save Review</Button>
         </div>
       </DialogContent>
 
@@ -399,17 +411,27 @@ export function Reviews() {
   const pending = useMemo(() => getPendingReviews(reviews), [reviews])
 
   const pendingCount = REVIEW_PERIODS.filter((p) => pending[p].needed).length
+  const reviewTitle =
+    pendingCount > 0
+      ? `${pendingCount} end-of-period review${pendingCount === 1 ? "" : "s"} due`
+      : "End-of-period reviews"
 
   return (
     <>
       <MorningReview />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className="relative" data-home-review-entry>
+          <Button
+            variant="outline"
+            size="sm"
+            className="relative"
+            data-home-review-entry
+            title={reviewTitle}
+          >
             <ClipboardCheck className="h-4 w-4 mr-2" />
             Review
             {pendingCount > 0 && (
-              <Badge className="ml-2 h-5 min-w-5 px-1 justify-center" variant="default">
+              <Badge className="b2-shell-count" variant="default">
                 {pendingCount}
               </Badge>
             )}
