@@ -13,8 +13,10 @@ covers **header chrome**, **blank sort**, and **persisted column widths**.
 ## Columns and Add column
 
 Visible extra columns are `sheetConfig.columnIds` (name is always first).
-Unset = on-this-list default from `lib/spreadsheet-catalog.ts` (held attributes
-+ default built-ins). List Settings → View mode settings → Spreadsheet view
+Unset = lean schema default from `lib/spreadsheet-catalog.ts` (list
+`itemAttributes` / `displayedAttributes` only — **not** every held attribute or
+built-in). Empty schema (folder / Home **All Items**) → Name-only until the user
+adds columns. List Settings → View mode settings → Spreadsheet view
 mode settings (`SpreadsheetViewSettings`) is the picker: on-this-list first,
 searchable, vault attrs and built-ins available. Unchecking hides the column
 on this list only — it does not destroy the attribute. Folder **All Items**

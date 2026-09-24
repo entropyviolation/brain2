@@ -31,7 +31,9 @@ All read/write/sort/filter semantics live in **`lib/spreadsheet-contract.ts`**
 
 - `SheetColumn` — a column derived from an `AttributeDefinition`, a built-in Task field (`builtin`), or the synthetic name column (`NAME_COLUMN_ID`).
 - `SheetViewConfig` — serializable view state: `{ sort?, filterText?, frozenColCount?, columnWidths?, rowHeights?, columnIds? }`.
-  `columnIds` is the per-list extra-column layout (`undefined` = on-this-list default). Persist on `List.sheetConfig` or a module view config.
+  `columnIds` is the per-list extra-column layout (`undefined` = lean schema
+  default: list `itemAttributes` / `displayedAttributes` only; empty schema →
+  Name-only). Persist on `List.sheetConfig` or a module view config.
 
 - Helpers: `buildSheetColumns`, `readCellValue`, `cellSortValue`, `isBlankSortValue`, `cellText`,
   `sortRows` (blanks last on A→Z and Z→A), `filterRows`, `cycleColumnSort`, `sortDirFor`,
