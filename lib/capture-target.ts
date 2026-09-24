@@ -218,10 +218,12 @@ export function buildCapturedTask(opts: {
     task = { ...task, tags: [...(task.tags ?? []), opts.suggestion.category] }
   }
 
-  if (opts.sendToInbox) {
+  const monkey = opts.suggestion.monkeyBrain === true
+  if (opts.sendToInbox || monkey) {
     task = {
       ...task,
       stage: "inbox",
+      ...(monkey ? { monkeyBrain: true } : {}),
       estimatedDuration: task.estimatedDuration ?? 1,
       cognitiveLoad: task.cognitiveLoad ?? 1,
       urgency: task.urgency ?? 3,

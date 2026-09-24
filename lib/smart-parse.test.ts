@@ -24,6 +24,21 @@ function expectDate(d: Date | undefined, year: number, monthIndex: number, day: 
   expect(d!.getMinutes()).toBe(0)
 }
 
+describe("parseSmartCapture — monkey brain flag", () => {
+  it("strips -mb and -monkey and marks the suggestion", () => {
+    expect(parse("call dentist -mb").suggestion).toMatchObject({
+      description: "call dentist",
+      monkeyBrain: true,
+    })
+    expect(parse("-monkey buy milk").suggestion).toMatchObject({
+      description: "buy milk",
+      monkeyBrain: true,
+    })
+    expect(parse("call dentist").suggestion.monkeyBrain).toBeUndefined()
+    expect(parse("email -monday").suggestion.monkeyBrain).toBeUndefined()
+  })
+})
+
 describe("parseSmartCapture — plain text", () => {
   it("returns the input untouched when nothing is recognized", () => {
     const { suggestion, highlights } = parse("buy milk")

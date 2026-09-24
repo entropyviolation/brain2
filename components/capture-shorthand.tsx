@@ -68,7 +68,10 @@ export function CaptureShorthandHelp({ variant }: { variant: "quick" | "bulk" })
             <p>
               A line that <em>ends</em> with <code className="text-foreground">:</code> is a header
               for the following lines: <code className="text-foreground">Groceries:</code> or{" "}
-              <code className="text-foreground">Next Actions: Eventually:</code>.
+              <code className="text-foreground">Next Actions: Eventually:</code>.{" "}
+              <code className="text-foreground">before 9/12:</code> is a due day for the lines
+              under it. <code className="text-foreground">before elijah gets home:</code> is a
+              list name.
             </p>
           </>
         )}
@@ -96,6 +99,11 @@ export function CaptureShorthandHelp({ variant }: { variant: "quick" | "bulk" })
           <li>
             List hint: <code className="text-foreground">cat:Health</code> or{" "}
             <code className="text-foreground">category:Research</code>
+          </li>
+          <li>
+            Monkey brain: <code className="text-foreground">-mb</code> or{" "}
+            <code className="text-foreground">-monkey</code> — dump it in Monkey brain
+            instead of the Inbox you mean to revisit
           </li>
         </ul>
       </div>

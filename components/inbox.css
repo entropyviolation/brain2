@@ -1,0 +1,506 @@
+/**
+ * components/inbox.css — milled fascia for the Inbox dialog
+ *
+ * Brushed silver bay, engraved nameplates, raised metal keys, CRT count wells,
+ * round power lamp on the active partition. Phosphor stays --hab-crt-green
+ * (#7dffc4). No LED #7e14ff / grade #508b51 / output #25366a.
+ * docs/DESIGN_STYLE.md#milled-fascia
+ */
+
+.inbox-dialog,
+body.win95-app .inbox-dialog {
+  --inbox-surface: var(--chrome-face, #c0c0c0);
+  --inbox-face: var(--chrome-mid, #dfdfdf);
+  --inbox-highlight: var(--chrome-hi, #ffffff);
+  --inbox-shadow: var(--chrome-lo, #808080);
+  --inbox-frame: var(--chrome-frame, #0a0a0a);
+  --inbox-blue: #000080;
+  --inbox-ink: #111111;
+  --inbox-nameplate: #2a2c2e;
+  --inbox-crt: var(--hab-crt-green, #7dffc4);
+  --inbox-crt-glow: var(--hab-crt-glow, 0 0 3px #7dffc4);
+  --inbox-scope: #070c0a;
+  --inbox-raised:
+    inset -1px -1px var(--inbox-frame), inset 1px 1px var(--inbox-highlight),
+    inset -2px -2px var(--inbox-shadow), inset 2px 2px var(--inbox-face);
+  --inbox-sunken:
+    inset -1px -1px var(--inbox-highlight), inset 1px 1px var(--inbox-frame),
+    inset -2px -2px var(--inbox-face), inset 2px 2px var(--inbox-shadow);
+  --inbox-field:
+    inset -1px -1px var(--inbox-highlight), inset 1px 1px var(--inbox-shadow),
+    inset -2px -2px var(--inbox-face), inset 2px 2px var(--inbox-frame);
+  --inbox-mill:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
+    linear-gradient(165deg, #d4d8dc 0%, var(--inbox-surface) 48%, #969a9e 100%);
+  --inbox-bay-ring:
+    0 0 0 1px #5c6064,
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -1px 0 rgba(40, 42, 46, 0.4),
+    inset 0 0 0 2px #b0b4b8;
+  --inbox-key-face:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
+    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--inbox-surface) 70%, #9a9ea2 100%);
+  --inbox-key-ring:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 0 -1px 0 rgba(55, 58, 62, 0.45),
+    0 0 0 1px #4a4e52,
+    0 1px 0 #6a6e72;
+  --inbox-crt-glass:
+    radial-gradient(ellipse at 18% 0%, rgba(125, 255, 196, 0.16), transparent 48%),
+    #070c0a;
+  --inbox-crt-ring:
+    0 0 0 1px #3a3e42,
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 10px 14px rgba(0, 0, 0, 0.4);
+
+  accent-color: var(--inbox-blue);
+  gap: 10px !important;
+  padding: 10px 10px 12px !important;
+  border: 0 !important;
+  border-radius: 3px !important;
+  color: var(--inbox-ink);
+  background-color: var(--inbox-surface) !important;
+  background-image:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.1) 0, transparent 22%, transparent 78%, rgba(255, 255, 255, 0.06) 100%),
+    repeating-linear-gradient(90deg, transparent 0 2px, rgba(255, 255, 255, 0.05) 2px 3px),
+    var(--inbox-mill) !important;
+  box-shadow:
+    0 0 0 1px #5c6064,
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    inset 0 2px 3px rgba(0, 0, 0, 0.12),
+    0 8px 0 rgba(74, 78, 82, 0.55) !important;
+  font-family: var(--w95-font, Tahoma, "MS Sans Serif", Geneva, sans-serif);
+  font-size: 12px;
+  -webkit-font-smoothing: none;
+}
+
+/* Close key on the milled face */
+.inbox-dialog > button.absolute,
+body.win95-app .inbox-dialog > button.absolute {
+  top: 8px;
+  right: 8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 2px;
+  opacity: 1;
+  color: var(--inbox-nameplate);
+  background: var(--inbox-key-face);
+  box-shadow: var(--inbox-key-ring);
+}
+
+.inbox-dialog > button.absolute:hover,
+body.win95-app .inbox-dialog > button.absolute:hover {
+  opacity: 1;
+  filter: brightness(1.04);
+}
+
+.inbox-dialog > button.absolute:active,
+body.win95-app .inbox-dialog > button.absolute:active {
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.35),
+    0 0 0 1px #3a3e42;
+}
+
+.inbox-dialog > button.absolute svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* ---- Caption / nameplate ----------------------------------------------- */
+
+.inbox-dialog [data-radix-dialog-title],
+.inbox-dialog h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  min-height: 28px;
+  padding: 6px 12px 7px;
+  padding-right: 28px;
+  border-radius: 2px;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  line-height: 1.2;
+  color: var(--inbox-nameplate) !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0 1px, transparent 1px 2px),
+    linear-gradient(180deg, #eef0f2 0%, var(--inbox-surface) 48%, #a4a8ac 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1px #6a6e72;
+}
+
+.inbox-dialog [data-radix-dialog-title] svg,
+.inbox-dialog h2 svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--inbox-nameplate);
+  opacity: 0.85;
+}
+
+.inbox-dialog [data-radix-dialog-description],
+.inbox-dialog p[class*="text-muted"],
+.inbox-dialog .text-muted-foreground {
+  margin: 0;
+  color: #404040 !important;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+/* ---- Partition bay (equal keys + power lamp) --------------------------- */
+
+.inbox-partitions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin: 0;
+  padding: 4px;
+  border: 0;
+  border-radius: 3px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
+    #b4b8bc;
+  box-shadow:
+    0 0 0 1px #5c6064,
+    inset 0 2px 3px rgba(0, 0, 0, 0.18);
+}
+
+.inbox-partition {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 6px 10px 7px;
+  border: 0;
+  border-radius: 2px;
+  color: #1c1e20;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  background: var(--inbox-key-face);
+  box-shadow: var(--inbox-key-ring);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.inbox-partition:hover {
+  filter: brightness(1.03);
+}
+
+.inbox-partition:active {
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.35),
+    0 0 0 1px #3a3e42;
+}
+
+.inbox-power-lamp {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 30%, #6a6e72, #2a2c2e 55%, #0a0a0a);
+  box-shadow:
+    0 0 0 1px #1a1c1e,
+    inset 0 1px 1px rgba(255, 255, 255, 0.25),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.5);
+}
+
+.inbox-partition[aria-selected="true"] .inbox-power-lamp {
+  background:
+    radial-gradient(circle at 35% 30%, #e8fff4, var(--inbox-crt) 42%, #0a3a28 78%);
+  box-shadow:
+    0 0 0 1px #1a3a2a,
+    0 0 6px rgba(125, 255, 196, 0.65),
+    inset 0 1px 1px rgba(255, 255, 255, 0.45);
+}
+
+.inbox-partition-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+}
+
+.inbox-partition i,
+.inbox-crt-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.75rem;
+  min-height: 1.5rem;
+  padding: 2px 8px;
+  border-radius: 2px;
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #d8fff0;
+  text-shadow: var(--inbox-crt-glow);
+  background: var(--inbox-crt-glass);
+  box-shadow: var(--inbox-crt-ring);
+}
+
+.inbox-partition[aria-selected="true"] {
+  color: var(--inbox-crt);
+  text-shadow: var(--inbox-crt-glow);
+  background: var(--inbox-crt-glass);
+  box-shadow: var(--inbox-crt-ring);
+  filter: none;
+}
+
+.inbox-partition[aria-selected="true"] .inbox-partition-label {
+  color: var(--inbox-crt);
+}
+
+.inbox-partition[aria-selected="true"] i,
+.inbox-partition[aria-selected="true"] .inbox-crt-count {
+  color: var(--inbox-crt);
+  background: rgba(125, 255, 196, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(125, 255, 196, 0.35);
+}
+
+/* Monkey active uses the same CRT + lamp language (not olive fill). */
+.inbox-partition-monkey[aria-selected="true"] {
+  color: var(--inbox-crt);
+  background: var(--inbox-crt-glass);
+  box-shadow: var(--inbox-crt-ring);
+}
+
+.inbox-mb-count {
+  background: #3a4a28;
+  color: #f3f0e4;
+}
+
+/* ---- Idea rows (sunken wells) ------------------------------------------ */
+
+.inbox-row {
+  outline: 2px solid transparent;
+  outline-offset: 1px;
+  border: 0 !important;
+  border-radius: 2px !important;
+  background: #d8dcdf !important;
+  box-shadow: var(--inbox-sunken) !important;
+}
+
+.inbox-row[data-focused="true"],
+.inbox-row[data-selected="true"] {
+  outline-color: var(--inbox-blue);
+}
+
+.inbox-row[data-selected="true"] {
+  background: #dce4f0 !important;
+}
+
+.inbox-row input[type="checkbox"] {
+  accent-color: var(--inbox-blue);
+}
+
+.inbox-row input[type="checkbox"]:focus,
+.inbox-row input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--inbox-blue) !important;
+  outline-offset: 1px;
+}
+
+.inbox-dialog .inbox-row .font-medium {
+  color: var(--inbox-ink);
+  font-weight: 700;
+}
+
+/* ---- Raised metal action keys ------------------------------------------ */
+
+.inbox-dialog button:not(.inbox-partition):not(.absolute):not([role="checkbox"]),
+.inbox-dialog [data-slot="button"] {
+  border: 0 !important;
+  border-radius: 2px !important;
+  min-height: 28px;
+  padding: 4px 12px 5px !important;
+  color: #1c1e20 !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  background: var(--inbox-key-face) !important;
+  box-shadow: var(--inbox-key-ring) !important;
+  font-family: inherit;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.inbox-dialog button:not(.inbox-partition):not(.absolute):hover:not(:disabled) {
+  filter: brightness(1.04);
+}
+
+.inbox-dialog button:not(.inbox-partition):not(.absolute):active:not(:disabled) {
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.35),
+    0 0 0 1px #3a3e42 !important;
+}
+
+.inbox-dialog button:not(.inbox-partition):not(.absolute):disabled {
+  color: #808080 !important;
+  text-shadow: none;
+  cursor: default;
+  filter: none;
+  opacity: 0.7;
+}
+
+.inbox-dialog button[title="Clarify this idea"],
+.inbox-dialog button[title="Delete this idea"] {
+  min-width: 28px;
+  width: 28px;
+  height: 28px;
+  padding: 0 !important;
+}
+
+.inbox-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 0;
+  box-shadow: inset 0 1px rgba(80, 84, 88, 0.35);
+}
+
+.inbox-foot-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 11px;
+  color: #404040;
+}
+
+.inbox-foot-meta .inbox-crt-count {
+  color: var(--inbox-crt);
+}
+
+.inbox-foot-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.inbox-undo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 9px;
+  border: 0;
+  border-radius: 2px;
+  font-size: 11px;
+  color: var(--inbox-nameplate);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0 1px, transparent 1px 2px),
+    #c8ccd0;
+  box-shadow: var(--inbox-bay-ring);
+}
+
+.inbox-list-well {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 6px;
+  border-radius: 2px;
+  background: #b8bcbf;
+  box-shadow: var(--inbox-sunken);
+}
+
+.inbox-list-well .space-y-3 {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.inbox-list-well .space-y-3 > * {
+  margin: 0 !important;
+}
+
+/* ---- Walk / clarify chrome --------------------------------------------- */
+
+.inbox-walk-progress {
+  height: 8px;
+  margin-top: 8px;
+  background: #808080;
+  box-shadow: inset 1px 1px 0 #000, inset -1px -1px 0 #fff;
+}
+
+.inbox-walk-progress > i {
+  display: block;
+  height: 100%;
+  background: var(--inbox-blue);
+}
+
+.inbox-walk-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.inbox-walk-step {
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--inbox-nameplate);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.inbox-walk-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.inbox-walk-name {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.inbox-walk-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 0;
+  box-shadow: inset 0 1px rgba(80, 84, 88, 0.35);
+}
+
+.inbox-walk-foot-end {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.inbox-dialog label,
+.inbox-dialog [class*="Label"] {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--inbox-nameplate);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.inbox-dialog input:not([type="checkbox"]):not([type="radio"]),
+.inbox-dialog textarea,
+.inbox-dialog select {
+  border: 0 !important;
+  border-radius: 2px;
+  box-shadow: var(--inbox-field) !important;
+  background: #fff !important;
+}

@@ -8,6 +8,8 @@
  *
  * The dialog is optionally controlled (so the quick-capture hotkey in
  * `app/page.tsx` can open it); uncontrolled with its own trigger otherwise.
+ * Header trigger uses `.b2-shell-go` so it reads as the default (bold, framed) press key.
+ * Dialog shell is milled fascia (`.hpp95` / `header-popup-chrome.css`).
  */
 "use client"
 
@@ -76,6 +78,8 @@ export function SuggestionChips({ suggestion }: { suggestion: SmartSuggestion })
     chips.push({ key: "urg", icon: <Flag className="h-3 w-3" />, label: `urgency ${suggestion.urgency}` })
   if (suggestion.importance)
     chips.push({ key: "imp", icon: <Flag className="h-3 w-3" />, label: `importance ${suggestion.importance}` })
+  if (suggestion.monkeyBrain)
+    chips.push({ key: "monkey", icon: <Flag className="h-3 w-3" />, label: "Monkey brain" })
 
   if (chips.length === 0) return null
   return (
@@ -134,41 +138,48 @@ export function QuickAdd({ open: openProp, onOpenChange }: QuickAddProps = {}) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="gap-1">
+        <Button size="sm" className="b2-shell-go gap-1">
           <Plus className="h-4 w-4" />
           <span>Quick Add</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Add Idea</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="hpp95 hpp95-dialog sm:max-w-lg max-h-[90vh] overflow-hidden flex flex-col" data-ui-name="Quick Add" data-ui-docs="components/README.md">
+        <DialogHeader className="hpp-caption">
+          <div className="hpp-caption-mark">
+            <span className="hpp-power-lamp" aria-hidden />
+            <DialogTitle>Add Idea</DialogTitle>
+          </div>
+          <DialogDescription className="hpp-caption-lead">
             Capture one item. Use colons for folder and list:{" "}
             <span className="text-foreground">folder: list: the item</span>.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="idea">Idea</Label>
-            {ideaText.trim() && <SuggestionChips suggestion={parsed.suggestion} />}
-            <Input
-              id="idea"
-              placeholder="next actions: eventually: write the memoir"
-              value={ideaText}
-              onChange={(e) => setIdeaText(e.target.value)}
-              autoFocus
+        <div className="hpp-body">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="idea">Idea</Label>
+              {ideaText.trim() && <SuggestionChips suggestion={parsed.suggestion} />}
+              <Input
+                id="idea"
+                placeholder="next actions: eventually: write the memoir"
+                value={ideaText}
+                onChange={(e) => setIdeaText(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <SendToInboxField
+              id="quick-add-inbox"
+              checked={sendToInbox}
+              onCheckedChange={setSendToInbox}
             />
-          </div>
-          <SendToInboxField
-            id="quick-add-inbox"
-            checked={sendToInbox}
-            onCheckedChange={setSendToInbox}
-          />
-          <CaptureShorthandHelp variant="quick" />
-          <div className="flex justify-end">
-            <Button type="submit">{sendToInbox ? "Add to Inbox" : "Add item"}</Button>
-          </div>
-        </form>
+            <CaptureShorthandHelp variant="quick" />
+            <div className="flex justify-end">
+              <Button type="submit">
+                {parsed.suggestion.monkeyBrain ? "Add to Monkey brain" : sendToInbox ? "Add to Inbox" : "Add item"}
+              </Button>
+            </div>
+          </form>
+        </div>
       </DialogContent>
     </Dialog>
   )

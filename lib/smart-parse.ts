@@ -14,6 +14,8 @@
  *   - times (`at 3`, `3:30pm`, `15:00`, `noon`, `midnight`)
  *   - priority markers (`!`/`!!`/`!!!`, `urgent`, `asap`, `important`)
  *   - durations (`for 30m`, `2h`, `1.5 hours`)
+ *   - a Monkey brain flag (`-mb` or `-monkey`) that files the capture in the
+ *     dump partition of Inbox instead of the revisit pile
  *
  * Nothing here mutates state or talks to a store — callers map the returned
  * `SmartSuggestion` onto a `Task`. `now` is injectable so tests stay
@@ -21,7 +23,7 @@
  */
 import { addDays, addMonths, addYears, startOfDay } from "date-fns"
 
-export type SmartTokenType = "folder" | "category" | "date" | "time" | "priority" | "duration"
+export type SmartTokenType = "folder" | "category" | "date" | "time" | "priority" | "duration" | "flag"
 
 /** A recognized span in the original input, for inline highlighting. */
 export interface SmartHighlight {
@@ -52,6 +54,8 @@ export interface SmartSuggestion {
   importance?: number
   /** Estimated duration in minutes, if recognized. */
   estimatedDuration?: number
+  /** `-mb` / `-monkey` — dump into Monkey brain rather than the revisit Inbox. */
+  monkeyBrain?: boolean
 }
 
 export interface SmartParseResult {
@@ -450,6 +454,13 @@ export function parseSmartCapture(input: string, options: SmartParseOptions = {}
     candidates.push(cand)
   }
 
+  // --- Monkey brain flag: -mb / -monkey (token, not a prefix of another word) ---
+  for (const m of input.matchAll(/(^|[\s])(-mb|-monkey)(?=$|[\s.,;:!?])/gi)) {
+    const lead = m[1].length
+    const start = m.index! + lead
+    candidates.push({ start, end: start + m[2].length, type: "flag" })
+  }
+
   // --- Duration: "for 30m", "2h", "1.5 hours" ---
   for (const m of input.matchAll(/\b(?:for\s+)?(\d+(?:\.\d+)?)\s*(mins?|minutes?|m|hrs?|hours?|h)\b/gi)) {
     const value = Number(m[1])
@@ -481,6 +492,7 @@ export function parseSmartCapture(input: string, options: SmartParseOptions = {}
     if (c.duration && suggestion.estimatedDuration === undefined) suggestion.estimatedDuration = c.duration
     if (c.urgency) suggestion.urgency = Math.max(suggestion.urgency ?? 0, c.urgency)
     if (c.importance) suggestion.importance = Math.max(suggestion.importance ?? 0, c.importance)
+    if (c.type === "flag") suggestion.monkeyBrain = true
   }
   if (folders.length) suggestion.folderPath = folders
 
