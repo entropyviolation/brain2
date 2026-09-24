@@ -19,10 +19,9 @@ const { resolveElectronUserData } = require("./user-data-path")
 
 const isDev = !app.isPackaged
 
-// Pin userData before ready. package.json `name` / productName may be brain2;
-// the live vault still lives in Application Support/cogs. A rename that follows
-// the product name would boot an empty profile (seed lists, missing habits).
-// The git folder name (`cogs copy` → `brain2`) does not move this path.
+// Pin userData before ready. package.json `name` is now brain2; the live vault
+// still lives in Application Support/cogs. A rename that follows the product
+// name would boot an empty profile (seed lists, missing habits).
 app.setPath("userData", resolveElectronUserData(app.getPath("appData")))
 console.log("[brain2] vault", app.getPath("userData"))
 // Must stay on localhost (not 127.0.0.1) — localStorage is origin-scoped and all
@@ -44,13 +43,18 @@ const EXTRACT_PDF_TEXT_IPC_CHANNEL = "cogs:file:extractPdfText"
 
 // Module pop-out channel (Workstream C). MUST match `openModulePopout` in
 // electron/ipc/channels.js + `window.desktop.openModulePopout` bridged in
-// electron/preload.js. Opens a module in its own BrowserWindow at a hash route
-// the renderer recognizes (`#popout/module/<id>`).
+// electron/preload.js. Opens a module (or sheet) in its own BrowserWindow at
+// `/popout/?module=<id>` or `/popout/?sheet=<id>` (legacy `#popout/…` hashes
+// are still accepted and rewritten).
 const OPEN_MODULE_POPOUT_IPC_CHANNEL = "cogs:window:openModulePopout"
 
 // Apple Notes ingest. MUST match `fetchAppleNotes` in electron/ipc/channels.js +
 // `window.desktop.fetchAppleNotes` in electron/preload.js.
 const FETCH_APPLE_NOTES_IPC_CHANNEL = "cogs:notes:fetchAppleNotes"
+
+// ActivityWatch screen time. MUST match `fetchScreenTime` in electron/ipc/channels.js +
+// `window.desktop.fetchScreenTime` in electron/preload.js.
+const FETCH_SCREENTIME_IPC_CHANNEL = "cogs:screentime:fetchScreenTime"
 
 // Dev persist hub (Chrome localhost snapshot). MUST match preload.
 const GET_SHARED_PERSIST_IPC_CHANNEL = "cogs:persist:getShared"
@@ -114,7 +118,7 @@ function createWindow() {
     height: 900,
     minWidth: 900,
     minHeight: 600,
-    title: "COGS",
+    title: "BRAIN2",
     backgroundColor: "#ffffff",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
@@ -195,19 +199,68 @@ function registerFileIpcHandlers() {
 }
 
 /**
- * Open a module in its own BrowserWindow at the given pop-out hash. Reuses the
- * same dev/prod URL scheme as the main window. The hash is sanitized to the
- * expected `#popout/...` shape so it can only deep-link within the app.
+ * Resolve a renderer pop-out target to a full load URL. Accepts the dedicated
+ * `/popout/?module=` / `/popout/?sheet=` path (preferred) or the legacy
+ * `#popout/module|sheet/<id>` hash. Anything else is rejected so the window
+ * cannot be pointed at an arbitrary URL.
  */
-function openPopoutWindow(hash) {
-  const safeHash = typeof hash === "string" && hash.startsWith("#popout/") ? hash : ""
+function resolvePopoutLoadURL(target) {
+  if (typeof target !== "string" || !target) return null
+
+  let pathAndQuery = null
+
+  if (target.startsWith("#popout/module/")) {
+    const id = target.slice("#popout/module/".length)
+    if (!id) return null
+    pathAndQuery = `/popout/?module=${id}`
+  } else if (target.startsWith("#popout/sheet/")) {
+    const id = target.slice("#popout/sheet/".length)
+    if (!id) return null
+    pathAndQuery = `/popout/?sheet=${id}`
+  } else if (target.startsWith("/popout")) {
+    try {
+      const parsed = new URL(target, "https://cogs.local")
+      if (parsed.pathname !== "/popout" && parsed.pathname !== "/popout/") return null
+      const moduleId = parsed.searchParams.get("module")
+      const sheetId = parsed.searchParams.get("sheet")
+      if (moduleId && !sheetId) {
+        pathAndQuery = `/popout/?module=${encodeURIComponent(moduleId)}`
+      } else if (sheetId && !moduleId) {
+        pathAndQuery = `/popout/?sheet=${encodeURIComponent(sheetId)}`
+      } else {
+        return null
+      }
+    } catch {
+      return null
+    }
+  }
+
+  if (!pathAndQuery) return null
+  return isDev ? `${DEV_SERVER_URL}${pathAndQuery}` : `app://local${pathAndQuery}`
+}
+
+const popoutWindows = new Map()
+
+/**
+ * Open a module or spreadsheet in its own BrowserWindow at `/popout/…`.
+ * Reuses an existing window for the same target instead of stacking duplicates.
+ */
+function openPopoutWindow(target) {
+  const url = resolvePopoutLoadURL(target)
+  if (!url) return
+
+  const existing = popoutWindows.get(url)
+  if (existing && !existing.isDestroyed()) {
+    existing.focus()
+    return
+  }
 
   const win = new BrowserWindow({
     width: 1200,
     height: 820,
     minWidth: 700,
     minHeight: 500,
-    title: "COGS",
+    title: "BRAIN2",
     backgroundColor: "#ffffff",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
@@ -217,15 +270,16 @@ function openPopoutWindow(hash) {
     },
   })
 
-  if (isDev) {
-    win.loadURL(`${DEV_SERVER_URL}/${safeHash}`)
-  } else {
-    win.loadURL(`app://local/${safeHash}`)
-  }
+  popoutWindows.set(url, win)
+  win.on("closed", () => {
+    if (popoutWindows.get(url) === win) popoutWindows.delete(url)
+  })
 
-  win.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith("http://") || url.startsWith("https://")) {
-      shell.openExternal(url)
+  win.loadURL(url)
+
+  win.webContents.setWindowOpenHandler(({ url: opened }) => {
+    if (opened.startsWith("http://") || opened.startsWith("https://")) {
+      shell.openExternal(opened)
       return { action: "deny" }
     }
     return { action: "allow" }
@@ -287,6 +341,21 @@ function registerNotesIpcHandlers() {
   })
 }
 
+/** Register the ActivityWatch screen-time IPC handler (loopback aw-server only). */
+function registerScreenTimeIpcHandlers() {
+  ipcMain.handle(FETCH_SCREENTIME_IPC_CHANNEL, (_event, req) => {
+    // eslint-disable-next-line global-require
+    const { fetchScreenTime } = require("./activitywatch")
+    return fetchScreenTime(req)
+  })
+}
+
+function registerTelegramIpcHandlers() {
+  // eslint-disable-next-line global-require
+  const { registerTelegramIpc } = require("./telegram-ingest")
+  registerTelegramIpc(() => mainWindow)
+}
+
 /**
  * Register the OS-wide quick-capture accelerator: focus (or restore) the window
  * and tell the renderer to open the capture surface over the IPC channel the
@@ -321,7 +390,15 @@ app.whenReady().then(() => {
   registerQuickCaptureShortcut()
   registerFileIpcHandlers()
   registerWindowIpcHandlers()
-  registerNotesIpcHandlers()
+  // One broken registration must not leave the rest of the app unwired — the
+  // renderer would only see "No handler registered" with no cause.
+  for (const register of [registerNotesIpcHandlers, registerScreenTimeIpcHandlers, registerTelegramIpcHandlers]) {
+    try {
+      register()
+    } catch (err) {
+      console.error(`[cogs] ${register.name} failed:`, err)
+    }
+  }
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {

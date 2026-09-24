@@ -12,7 +12,10 @@ import { execSync } from "node:child_process"
 import { ClassicLevel } from "classic-level"
 import { sharedPersistPath, mergeSharedPersistItems, readSharedPersist, shouldRejectVaultShrink, vaultRecordCount } from "./persist-api.mjs"
 
-const ORIGIN_PREFIX = "_http://localhost:3000\u0000\u0001"
+const ORIGIN_PREFIXES = [
+  "_http://localhost:3000\u0000\u0001",
+  "_http://127.0.0.1:3000\u0000\u0001",
+]
 const CHROME_LS = path.join(
   os.homedir(),
   "Library/Application Support/Google/Chrome/Default/Local Storage/leveldb",
@@ -25,8 +28,10 @@ const IDB_SNAPSHOT = path.join(path.dirname(sharedPersistPath()), "chrome-idb-sn
 
 function storageKeyFromDbKey(keyBuf) {
   const key = keyBuf.toString("utf8")
-  if (!key.startsWith(ORIGIN_PREFIX)) return null
-  return key.slice(ORIGIN_PREFIX.length) || null
+  for (const prefix of ORIGIN_PREFIXES) {
+    if (key.startsWith(prefix)) return key.slice(prefix.length) || null
+  }
+  return null
 }
 
 function decodeValue(buf) {
@@ -99,26 +104,28 @@ function snapshotChromeIndexedDB() {
 }
 
 const items = await dumpChromeLocalStorage()
-if (!items["cogs-task-storage"]) {
-  throw new Error("Chrome dump missing cogs-task-storage — refusing to write an empty hub")
+const taskVault = items["brain2-task-storage"] || items["cogs-task-storage"]
+if (!taskVault) {
+  throw new Error("Chrome dump missing brain2-task-storage / cogs-task-storage — refusing to write an empty hub")
 }
 try {
-  JSON.parse(items["cogs-task-storage"])
+  JSON.parse(taskVault)
 } catch {
-  throw new Error("Chrome dump cogs-task-storage is not valid JSON — refusing to overwrite the hub")
+  throw new Error("Chrome dump lists vault is not valid JSON — refusing to overwrite the hub")
 }
 const current = readSharedPersist()
-if (shouldRejectVaultShrink("cogs-task-storage", items["cogs-task-storage"], current.items["cogs-task-storage"])) {
-  const incoming = vaultRecordCount("cogs-task-storage", items["cogs-task-storage"])
-  const existing = vaultRecordCount("cogs-task-storage", current.items["cogs-task-storage"])
+const existingTask = current.items["brain2-task-storage"] || current.items["cogs-task-storage"]
+if (shouldRejectVaultShrink("brain2-task-storage", taskVault, existingTask)) {
+  const incoming = vaultRecordCount("brain2-task-storage", taskVault)
+  const existing = vaultRecordCount("brain2-task-storage", existingTask)
   throw new Error(
-    `Chrome dump would shrink cogs-task-storage ${existing} → ${incoming} — refusing to overwrite the hub`,
+    `Chrome dump would shrink task-storage ${existing} → ${incoming} — refusing to overwrite the hub`,
   )
 }
 const stored = mergeSharedPersistItems(items, "chrome-localhost")
-const inbox = inboxCount(items["cogs-task-storage"] || "")
+const inbox = inboxCount(taskVault)
 console.log(`[dump-chrome] wrote ${Object.keys(items).length} keys → ${sharedPersistPath()}`)
 console.log(`[dump-chrome] source=${stored.source} updatedAt=${stored.updatedAt}`)
-console.log(`[dump-chrome] cogs-task-storage inbox(active)=${inbox}`)
+console.log(`[dump-chrome] lists inbox(active)=${inbox}`)
 console.log(`[dump-chrome] keys: ${Object.keys(items).sort().join(", ")}`)
 snapshotChromeIndexedDB()

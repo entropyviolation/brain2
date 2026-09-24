@@ -7,8 +7,9 @@
  * `cogs`. Pin the historical folder so a brand rename cannot orphan lists,
  * habits, tracking, or notes.
  *
- * The git/checkout folder name is independent. Renaming `cogs copy` → `brain2`
- * does not move this vault. Never point userData at the repo directory.
+ * The git/checkout folder name is independent. The checkout is `brain2`
+ * (it was `cogs copy`). That rename does not move this vault. Never point
+ * userData at the repo directory.
  */
 const path = require("path")
 

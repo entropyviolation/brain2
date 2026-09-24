@@ -43,13 +43,27 @@ const COGS_IPC_CHANNELS = {
   // build (lib/file-extract.ts degrades gracefully when not present).
   extractPdfText: "cogs:file:extractPdfText",
   // Open a module in its own BrowserWindow (Module platform, Workstream C).
-  // Bridged to the renderer as `window.desktop.openModulePopout(hash)`; absent in
-  // the web build (components fall back to `window.open`).
+  // Bridged to the renderer as `window.desktop.openModulePopout(path)`; absent in
+  // the web build (components fall back to `window.open`). Path is
+  // `/popout/?module=` or `/popout/?sheet=` (legacy `#popout/…` still accepted).
   openModulePopout: "cogs:window:openModulePopout",
   // Read Apple Notes (iCloud / iPhone + On My Mac) for a date window via
   // Notes.app. Bridged as `window.desktop.fetchAppleNotes({ sinceISO, untilISO, mode, ids })`.
   // Modes: preview (titles/dates), snippet (short body), bodies (full text).
   fetchAppleNotes: "cogs:notes:fetchAppleNotes",
+  // Query a running ActivityWatch install on loopback. Bridged as
+  // `window.desktop.fetchScreenTime({ url, startISO, endISO, mode, includeWeb })`.
+  fetchScreenTime: "cogs:screentime:fetchScreenTime",
+  telegramSetToken: "cogs:telegram:setToken",
+  telegramClearToken: "cogs:telegram:clearToken",
+  telegramHasToken: "cogs:telegram:hasToken",
+  telegramStart: "cogs:telegram:start",
+  telegramStop: "cogs:telegram:stop",
+  telegramStatus: "cogs:telegram:status",
+  telegramSend: "cogs:telegram:send",
+  telegramPin: "cogs:telegram:pin",
+  telegramMessage: "cogs:telegram:message",
+  telegramPollStatus: "cogs:telegram:pollStatus",
 }
 
 /** All channel strings (handy for bulk `ipcMain.handle` registration). */

@@ -45,8 +45,8 @@ function backupStats(backup) {
   if (!backup?.stores || typeof backup.stores !== "object") {
     return { taskCount: 0, eventCount: 0, listCount: 0, storeCount: 0 }
   }
-  const taskStore = backup.stores["cogs-task-storage"]
-  const eventStore = backup.stores["cogs-event-storage"]
+  const taskStore = backup.stores["brain2-task-storage"] || backup.stores["cogs-task-storage"]
+  const eventStore = backup.stores["brain2-event-storage"] || backup.stores["cogs-event-storage"]
   const taskState = taskStore?.state || taskStore
   const eventState = eventStore?.state || eventStore
   return {

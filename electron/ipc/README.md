@@ -3,9 +3,10 @@
 This folder holds the **channel contract** for exposing a `DataSource` to the
 renderer over Electron IPC. It is **scaffolding only** — nothing here is imported
 by `electron/main.js` yet, so the running app is unaffected. Wiring it up is the
-drop-in follow-up described below.
+drop-in follow-up described below. Channel string prefixes stay `cogs:` (historical);
+the product name is **BRAIN2**.
 
-> **Direction (see [`../../docs/SPEC_MAPPING.md`](../../docs/SPEC_MAPPING.md) §3).** COGS is
+> **Direction (see [`../../docs/SPEC_MAPPING.md`](../../docs/SPEC_MAPPING.md) §3).** Brain2 is
 > **offline-first**: the renderer's local store is the source of truth, so Electron
 > main reverts to a **thin shell** (optionally a connector/cache host) — **not** the
 > data host. The earlier "Electron main as the data host" idea is dropped (it could

@@ -33,7 +33,7 @@ function classifyError(err, stderr) {
     return {
       code: "permission",
       error:
-        "macOS blocked access to Notes. System Settings → Privacy & Security → Automation → enable Notes for COGS, then retry.",
+        "macOS blocked access to Notes. System Settings → Privacy & Security → Automation → enable Notes for Brain2, then retry.",
     }
   }
   if (text.includes("(-2700)") || text.includes("application isn't running") || text.includes("can’t get application")) {
