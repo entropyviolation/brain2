@@ -819,22 +819,39 @@ function serializeStorePayload(payload: unknown): string {
 }
 
 /**
- * A task that is in the snapshot is not deleted. Merge used to keep the live
- * `removedTaskIds` tombstone and then rehydrate threw the restored row away.
+ * A task/list that is in the snapshot is not deleted. Merge used to keep the
+ * live tombstones and then rehydrate threw the restored rows away.
  */
 function dropTombstonesForPresentTasks(serialized: string): string {
   try {
     const blob = JSON.parse(serialized) as {
-      state?: { tasks?: { id?: string }[]; removedTaskIds?: string[] }
+      state?: {
+        tasks?: { id?: string }[]
+        lists?: { id?: string }[]
+        removedTaskIds?: string[]
+        removedListIds?: string[]
+      }
     }
-    const tasks = blob.state?.tasks
-    const removed = blob.state?.removedTaskIds
-    if (!Array.isArray(tasks) || !Array.isArray(removed)) return serialized
-    const ids = new Set(tasks.map((task) => task?.id).filter((id): id is string => typeof id === "string"))
-    const next = removed.filter((id) => !ids.has(id))
-    if (next.length === removed.length) return serialized
-    blob.state!.removedTaskIds = next
-    return JSON.stringify(blob)
+    const state = blob.state
+    if (!state) return serialized
+    let changed = false
+    if (Array.isArray(state.tasks) && Array.isArray(state.removedTaskIds)) {
+      const ids = new Set(state.tasks.map((task) => task?.id).filter((id): id is string => typeof id === "string"))
+      const next = state.removedTaskIds.filter((id) => !ids.has(id))
+      if (next.length !== state.removedTaskIds.length) {
+        state.removedTaskIds = next
+        changed = true
+      }
+    }
+    if (Array.isArray(state.lists) && Array.isArray(state.removedListIds)) {
+      const ids = new Set(state.lists.map((list) => list?.id).filter((id): id is string => typeof id === "string"))
+      const next = state.removedListIds.filter((id) => !ids.has(id))
+      if (next.length !== state.removedListIds.length) {
+        state.removedListIds = next
+        changed = true
+      }
+    }
+    return changed ? JSON.stringify(blob) : serialized
   } catch {
     return serialized
   }
@@ -846,15 +863,25 @@ function dropTombstonesForPresentTasks(serialized: string): string {
  */
 function forgetLiveTaskTombstones(serialized: string): void {
   try {
-    const blob = JSON.parse(serialized) as { state?: { tasks?: { id?: string }[] } }
+    const blob = JSON.parse(serialized) as {
+      state?: { tasks?: { id?: string }[]; lists?: { id?: string }[] }
+    }
     const tasks = blob.state?.tasks
-    if (!Array.isArray(tasks)) return
-    const ids = new Set(tasks.map((task) => task?.id).filter((id): id is string => typeof id === "string"))
-    const live = useTaskStore.getState()
-    if (!Array.isArray(live.removedTaskIds)) return
-    const next = live.removedTaskIds.filter((id) => !ids.has(id))
-    if (next.length === live.removedTaskIds.length) return
-    live.removedTaskIds = next
+    const lists = blob.state?.lists
+    const live = useTaskStore.getState() as {
+      removedTaskIds?: string[]
+      removedListIds?: string[]
+    }
+    if (Array.isArray(tasks) && Array.isArray(live.removedTaskIds)) {
+      const ids = new Set(tasks.map((task) => task?.id).filter((id): id is string => typeof id === "string"))
+      const next = live.removedTaskIds.filter((id) => !ids.has(id))
+      if (next.length !== live.removedTaskIds.length) live.removedTaskIds = next
+    }
+    if (Array.isArray(lists) && Array.isArray(live.removedListIds)) {
+      const ids = new Set(lists.map((list) => list?.id).filter((id): id is string => typeof id === "string"))
+      const next = live.removedListIds.filter((id) => !ids.has(id))
+      if (next.length !== live.removedListIds.length) live.removedListIds = next
+    }
   } catch {
     /* the written blob still has the rows; rehydrate will read it */
   }

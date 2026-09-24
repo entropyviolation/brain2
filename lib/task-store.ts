@@ -11,8 +11,9 @@
  * Ontology: rows are Items. The persisted field is still named `tasks` (v1);
  * `addItem` / `updateItem` / `deleteItem` / `getItems` alias `addTask` /
  * `updateTask` / `deleteTask` / `tasks`. The JSON array name stays `tasks`.
- * Hard deletes stamp `removedTaskIds` so a hub merge that unions by id cannot
- * resurrect a row the user already removed.
+ * Hard deletes (and item/list merge discards) stamp `removedTaskIds` /
+ * `removedListIds` so a hub merge that unions by id cannot resurrect a row
+ * the user already removed.
  *
  * Connected lists (`List.linkedTargetListIds`) auto-join membership through
  * `addTask` / `updateTask` / `addListLink`; see `lib/list-links.ts`.
@@ -43,7 +44,7 @@ import {
   itemTitleOrUntitled,
   syncTitleFromDescription,
 } from "@/lib/item-utils"
-import { emitTaskCompleted } from "@/lib/completion-events"
+import { emitTaskCompleted, shouldEmitCompletionPopup } from "@/lib/completion-events"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { normalizeTag } from "@/lib/links"
 import { createCogsJSONStorage, registerPersistRehydrator } from "@/lib/persist-storage"
@@ -104,8 +105,15 @@ interface TaskState {
    * Tombstones for hard-deleted item ids. Hub / phone-hub merges union rows by
    * id so a Telegram Inbox capture cannot vanish under a stale desktop push;
    * without this list, that union would also resurrect a deliberate delete.
+   * Item merge stamps discarded ids here the same way `deleteTask` does.
    */
   removedTaskIds: string[]
+  /**
+   * Tombstones for hard-deleted / merge-discarded list ids. Same union-by-id
+   * rule as `removedTaskIds` — without this, discarded lists come back on hub
+   * follow after a list merge.
+   */
+  removedListIds: string[]
   priorityFormula: {
     urgencyWeight: number
     importanceWeight: number
@@ -149,8 +157,16 @@ interface TaskState {
   addListLink: (sourceListId: string, targetListId: string) => void
   /** Stop future auto-adds. Does not mass-delete items already on both lists. */
   removeListLink: (sourceListId: string, targetListId: string) => void
-  setTasks: (tasks: Task[]) => void
-  setLists: (lists: List[]) => void
+  /**
+   * Replace the tasks array. Pass `tombstoneIds` when rows were intentionally
+   * removed (item merge, inbox batch delete) so vault union cannot resurrect them.
+   */
+  setTasks: (tasks: Task[], opts?: { tombstoneIds?: readonly string[] }) => void
+  /**
+   * Replace the lists array. Pass `tombstoneIds` when lists were intentionally
+   * removed (list merge) so vault union cannot resurrect them.
+   */
+  setLists: (lists: List[], opts?: { tombstoneIds?: readonly string[] }) => void
   clearAllData: () => void
   addFolder: (folder: Folder) => void
   dedupeFolders: () => void
@@ -232,6 +248,26 @@ const taskPersistStorage = createCogsJSONStorage({
   },
 })
 
+/** Cap how many tombstone ids we keep so the persist blob stays bounded. */
+const TOMBSTONE_CAP = 4000
+
+/** Append unique ids onto a tombstone list (deleteTask / merge discards). */
+export function appendTombstoneIds(
+  prev: string[] | undefined,
+  ids: readonly string[],
+  cap = TOMBSTONE_CAP,
+): string[] {
+  if (ids.length === 0) return prev ?? []
+  const next = [...(prev ?? [])]
+  const seen = new Set(next)
+  for (const id of ids) {
+    if (!id || seen.has(id)) continue
+    seen.add(id)
+    next.push(id)
+  }
+  return next.slice(-cap)
+}
+
 /** Persist blob version. v12 backfills missing `type` only (honest Item vs Task). */
 export const TASK_STORE_PERSIST_VERSION = 12
 
@@ -246,6 +282,7 @@ export const useTaskStore = create<TaskState>()(
       lists: initialLists,
       folders: [],
       removedTaskIds: [],
+      removedListIds: [],
       priorityFormula: {
         urgencyWeight: 1,
         importanceWeight: 1,
@@ -402,21 +439,19 @@ export const useTaskStore = create<TaskState>()(
             after,
             changedAttrs: diffChangedAttrs(before, after),
           })
-          // Notify the global completion popup on every completion transition.
-          if (didComplete) {
+          // Notify the global completion popup on every completion transition,
+          // unless a batch path asked for quiet complete (no modal stack).
+          if (didComplete && shouldEmitCompletionPopup()) {
             emitTaskCompleted({ taskId: after.id, basePoints, at: new Date() })
           }
         }
       },
 
       deleteTask: (id) =>
-        set((state) => {
-          const prev = state.removedTaskIds ?? []
-          return {
-            tasks: state.tasks.filter((task) => task.id !== id),
-            removedTaskIds: prev.includes(id) ? prev : [...prev, id].slice(-4000),
-          }
-        }),
+        set((state) => ({
+          tasks: state.tasks.filter((task) => task.id !== id),
+          removedTaskIds: appendTombstoneIds(state.removedTaskIds, [id]),
+        })),
 
       addItem: (item) => get().addTask(item),
       updateItem: (item) => get().updateTask(item),
@@ -472,7 +507,10 @@ export const useTaskStore = create<TaskState>()(
               ),
             id,
           )
-          return { lists }
+          return {
+            lists,
+            removedListIds: appendTombstoneIds(state.removedListIds, [id]),
+          }
         }),
 
       addListLink: (sourceListId, targetListId) =>
@@ -499,9 +537,26 @@ export const useTaskStore = create<TaskState>()(
       getDescendantLists: (id) => getDescendantListsPure(get().lists, id),
       getListAncestors: (id) => getListAncestorsPure(get().lists, id),
 
-      setTasks: (tasks) => set(() => ({ tasks })),
-      setLists: (lists) => set(() => ({ lists })),
-      clearAllData: () => set(() => ({ tasks: [], lists: [], folders: [], removedTaskIds: [] })),
+      setTasks: (tasks, opts) =>
+        set((state) => {
+          const tombstoneIds = opts?.tombstoneIds
+          if (!tombstoneIds?.length) return { tasks }
+          return {
+            tasks,
+            removedTaskIds: appendTombstoneIds(state.removedTaskIds, tombstoneIds),
+          }
+        }),
+      setLists: (lists, opts) =>
+        set((state) => {
+          const tombstoneIds = opts?.tombstoneIds
+          if (!tombstoneIds?.length) return { lists }
+          return {
+            lists,
+            removedListIds: appendTombstoneIds(state.removedListIds, tombstoneIds),
+          }
+        }),
+      clearAllData: () =>
+        set(() => ({ tasks: [], lists: [], folders: [], removedTaskIds: [], removedListIds: [] })),
       addFolder: (folder) =>
         set((state) => {
           if (state.folders.some((f) => f.id === folder.id)) return state
@@ -605,7 +660,12 @@ export const useTaskStore = create<TaskState>()(
         removeItem: (name) => taskPersistStorage.removeItem(name),
       },
       merge: (persisted, current) => {
-        const disk = (persisted ?? {}) as { tasks?: Task[]; removedTaskIds?: string[] }
+        const disk = (persisted ?? {}) as {
+          tasks?: Task[]
+          lists?: List[]
+          removedTaskIds?: string[]
+          removedListIds?: string[]
+        }
         const live = current.tasks ?? []
         const diskTasks = Array.isArray(disk.tasks) ? disk.tasks : []
         const removed = new Set([...(disk.removedTaskIds ?? []), ...(current.removedTaskIds ?? [])])
@@ -614,11 +674,18 @@ export const useTaskStore = create<TaskState>()(
           if (!task?.id || byId.has(task.id) || SEED_TASK_IDS.has(task.id) || removed.has(task.id)) continue
           byId.set(task.id, task)
         }
+        const removedLists = new Set([...(disk.removedListIds ?? []), ...(current.removedListIds ?? [])])
+        const diskLists = Array.isArray(disk.lists) ? disk.lists : current.lists
+        const lists = (Array.isArray(diskLists) ? diskLists : []).filter(
+          (list) => list?.id && !removedLists.has(list.id),
+        )
         return {
           ...current,
           ...disk,
           tasks: [...byId.values()],
-          removedTaskIds: [...removed].slice(-4000),
+          lists,
+          removedTaskIds: [...removed].slice(-TOMBSTONE_CAP),
+          removedListIds: [...removedLists].slice(-TOMBSTONE_CAP),
         }
       },
       // Add version to handle schema changes
@@ -728,6 +795,9 @@ export const useTaskStore = create<TaskState>()(
         }
         if (!Array.isArray(persistedState.removedTaskIds)) {
           persistedState.removedTaskIds = []
+        }
+        if (!Array.isArray(persistedState.removedListIds)) {
+          persistedState.removedListIds = []
         }
         return persistedState
       },
