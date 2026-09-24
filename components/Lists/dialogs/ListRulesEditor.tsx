@@ -17,12 +17,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Trash2 } from "lucide-react"
 import type {
   AttributeDefinition,
-  AttributeValue,
+  ItemRuleAction,
   ItemRuleOperator,
   ItemRuleTrigger,
   ItemTypeRule,
 } from "@/lib/types"
 import { AttributeValueField } from "@/components/Lists/attributes/AttributeValueField"
+import { useHabitsStore } from "@/lib/habits-store"
 
 const OPERATORS: { value: ItemRuleOperator; label: string }[] = [
   { value: "eq", label: "is" },
@@ -34,6 +35,9 @@ const OPERATORS: { value: ItemRuleOperator; label: string }[] = [
   { value: "contains", label: "contains" },
   { value: "exists", label: "is set" },
   { value: "empty", label: "is empty" },
+  { value: "changed", label: "changed" },
+  { value: "increased", label: "increased" },
+  { value: "decreased", label: "decreased" },
 ]
 
 const TRIGGERS: { value: ItemRuleTrigger; label: string }[] = [
@@ -42,7 +46,8 @@ const TRIGGERS: { value: ItemRuleTrigger; label: string }[] = [
   { value: "complete", label: "is completed" },
 ]
 
-const NEEDS_VALUE = (op: ItemRuleOperator) => op !== "exists" && op !== "empty"
+const NEEDS_VALUE = (op: ItemRuleOperator) =>
+  op !== "exists" && op !== "empty" && op !== "changed" && op !== "increased" && op !== "decreased"
 
 const TITLE_DEF: AttributeDefinition = { id: "title", name: "Title", type: "string" }
 
@@ -92,15 +97,22 @@ function RuleRow({
   onRemove: () => void
 }) {
   const when = rule.when ?? { field: "", operator: "eq" as ItemRuleOperator }
-  // Only "setAttribute" is offered here; the action shape is narrowed below.
-  const action = rule.action.kind === "setAttribute" ? rule.action : { kind: "setAttribute" as const, field: "", value: "" as AttributeValue }
+  const action = rule.action
   const whenDef = defFor(when.field, defs)
-  const actionDef = defFor(action.field, defs)
+  const setAction = action.kind === "setAttribute" ? action : null
+  const actionDef = defFor(setAction?.field, defs)
+  const habits = useHabitsStore((s) => s.tasks)
 
   const patchWhen = (patch: Partial<NonNullable<ItemTypeRule["when"]>>) =>
     onChange({ ...rule, when: { ...when, ...patch } })
-  const patchAction = (patch: Partial<typeof action>) =>
-    onChange({ ...rule, action: { ...action, ...patch } })
+  const setKind = (kind: ItemRuleAction["kind"]) => {
+    if (kind === "setAttribute") onChange({ ...rule, action: { kind: "setAttribute", field: "", value: "" } })
+    else if (kind === "logAction")
+      onChange({ ...rule, action: { kind: "logAction", titleTemplate: "{delta} of {title}", awardPoints: true } })
+    else if (kind === "incrementHabit")
+      onChange({ ...rule, action: { kind: "incrementHabit", habitId: "", amount: "delta" } })
+    else if (kind === "addTag") onChange({ ...rule, action: { kind: "addTag", tag: "" } })
+  }
 
   return (
     <div className="space-y-2 rounded-md border p-2">
@@ -156,12 +168,72 @@ function RuleRow({
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs font-medium text-muted-foreground">then set</span>
-        <FieldSelect value={action.field} defs={defs} placeholder="field…" onChange={(field) => patchAction({ field })} />
-        <span className="text-xs text-muted-foreground">to</span>
-        <div className="min-w-[120px] flex-1">
-          <AttributeValueField def={actionDef} value={action.value} onChange={(v) => patchAction({ value: v })} />
-        </div>
+        <span className="text-xs font-medium text-muted-foreground">then</span>
+        <Select value={action.kind} onValueChange={(v) => setKind(v as ItemRuleAction["kind"])}>
+          <SelectTrigger className="h-8 w-40">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="setAttribute">set attribute</SelectItem>
+            <SelectItem value="logAction">log Done action</SelectItem>
+            <SelectItem value="incrementHabit">increment habit</SelectItem>
+            <SelectItem value="addTag">add tag</SelectItem>
+          </SelectContent>
+        </Select>
+        {action.kind === "setAttribute" && (
+          <>
+            <FieldSelect
+              value={action.field}
+              defs={defs}
+              placeholder="field…"
+              onChange={(field) => onChange({ ...rule, action: { ...action, field } })}
+            />
+            <span className="text-xs text-muted-foreground">to</span>
+            <div className="min-w-[120px] flex-1">
+              <AttributeValueField
+                def={actionDef}
+                value={action.value}
+                onChange={(v) => onChange({ ...rule, action: { ...action, value: v } })}
+              />
+            </div>
+          </>
+        )}
+        {action.kind === "logAction" && (
+          <Input
+            value={action.titleTemplate}
+            placeholder="read {delta} pages of {title}"
+            onChange={(e) => onChange({ ...rule, action: { ...action, titleTemplate: e.target.value } })}
+            className="h-8 flex-1 min-w-[140px]"
+          />
+        )}
+        {action.kind === "incrementHabit" && (
+          <Select
+            value={action.habitId || "__none"}
+            onValueChange={(v) =>
+              onChange({ ...rule, action: { ...action, habitId: v === "__none" ? "" : v } })
+            }
+          >
+            <SelectTrigger className="h-8 w-52">
+              <SelectValue placeholder="Habit…" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none">—</SelectItem>
+              {habits.map((h) => (
+                <SelectItem key={h.id} value={h.id}>
+                  {h.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        {action.kind === "addTag" && (
+          <Input
+            value={action.tag}
+            placeholder="tag"
+            onChange={(e) => onChange({ ...rule, action: { ...action, tag: e.target.value } })}
+            className="h-8 w-32"
+          />
+        )}
       </div>
     </div>
   )
@@ -192,7 +264,8 @@ export function ListRulesEditor({
     <div className="space-y-2">
       {rules.length === 0 && (
         <p className="text-xs text-muted-foreground">
-          No rules. Add automation like “when purchased is true, set owned to true”.
+          No rules. Add automation like “when pages read increased, log a Done action”. You can also set
+          attributes, increment a habit, or add a tag.
         </p>
       )}
       {rules.map((rule, idx) => (

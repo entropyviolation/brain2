@@ -3,7 +3,8 @@
  *
  * Lets a user define a list's attribute schema: add/remove/reorder attribute
  * definitions, set name/type, and edit per-type schema options (units, options,
- * datetime mode, reference scope, goal labels, …).
+ * datetime mode, reference scope, goal labels, …). `single` hides add/remove/
+ * reorder for the spreadsheet column **Attribute settings** popup.
  */
 "use client"
 
@@ -220,9 +221,12 @@ function TypeSpecificSchemaFields({
 export function AttributeSchemaEditor({
   value,
   onChange,
+  single = false,
 }: {
   value: AttributeDefinition[]
   onChange: (defs: AttributeDefinition[]) => void
+  /** One definition only — hide add / remove / reorder (column-header settings). */
+  single?: boolean
 }) {
   const update = (idx: number, patch: Partial<AttributeDefinition>) => {
     onChange(value.map((d, i) => (i === idx ? { ...d, ...patch } : d)))
@@ -248,6 +252,7 @@ export function AttributeSchemaEditor({
         const def = effectiveDef(rawDef)
         return (
           <div key={def.id} className="flex flex-wrap items-end gap-2 border rounded-md p-2">
+            {!single && (
             <div className="flex flex-col gap-0.5 shrink-0">
               <Button variant="ghost" size="icon" className="h-6 w-6" disabled={idx === 0} onClick={() => move(idx, -1)} title="Move up">
                 <ChevronUp className="h-3.5 w-3.5" />
@@ -256,6 +261,7 @@ export function AttributeSchemaEditor({
                 <ChevronDown className="h-3.5 w-3.5" />
               </Button>
             </div>
+            )}
             <div className="flex-1 min-w-[120px] space-y-1">
               <Label className="text-[10px]">Name</Label>
               <IsolatedInput
@@ -282,12 +288,15 @@ export function AttributeSchemaEditor({
               </Select>
             </div>
             <TypeSpecificSchemaFields def={def} onPatch={(patch) => update(idx, patch)} />
+            {!single && (
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => remove(idx)}>
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
+            )}
           </div>
         )
       })}
+      {!single && (
       <div className="flex flex-wrap items-center gap-2">
         <Button variant="outline" size="sm" onClick={add}>
           <Plus className="h-4 w-4 mr-1" />
@@ -308,7 +317,8 @@ export function AttributeSchemaEditor({
           {tiersPresent ? "Completion tiers added" : "Add completion tiers"}
         </Button>
       </div>
-      {tiersPresent && (
+      )}
+      {tiersPresent && !single && (
         <p className="text-[11px] text-muted-foreground">
           Tiered rewards added. Set <span className="font-medium">Bare minimum</span>,{" "}
           <span className="font-medium">Goal</span>, and <span className="font-medium">Exceptional</span> thresholds; the{" "}

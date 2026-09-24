@@ -1,20 +1,23 @@
 /**
  * components/Lists/list-picker.tsx — Folder-aware list selector
  *
- * Used in Inbox clarification, item detail, and list select-mode placement.
- * Supports nested folder navigation, search, optional multi-select, and creating
- * a new list inline.
+ * Used in Inbox clarification, item detail, Connected lists, and list
+ * select-mode placement. Nested folder navigation, search, optional
+ * multi-select, selected chips, optional Recent `suggestedIds`, and
+ * creating a new list inline.
  */
 "use client"
 
 import { useMemo, useState, useCallback } from "react"
 import { useTaskStore } from "@/lib/task-store"
+import { FolderGlyph } from "@/components/Lists/lib/icon-utils"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
-import { ChevronLeft, Folder as FolderIcon, List as ListIcon, Plus, Search } from "lucide-react"
+import { ChevronLeft, Plus, Search, X } from "lucide-react"
 import type { List } from "@/lib/types"
+import "./list-picker.css"
 
 export interface ListPickerProps {
   selected: string[]
@@ -30,6 +33,48 @@ export interface ListPickerProps {
   showCreate?: boolean
   /** `fm` skins the picker for the Lists file-manager chrome. */
   variant?: "default" | "fm"
+  /** Selected lists as chips with remove, above search (item “in lists” pattern). */
+  showSelectedChips?: boolean
+  /** Pin these list ids at the top as a Recent strip (Inbox walk). */
+  suggestedIds?: string[]
+}
+
+function SelectedChips({
+  selected,
+  lists,
+  onRemove,
+}: {
+  selected: string[]
+  lists: List[]
+  onRemove: (id: string) => void
+}) {
+  if (selected.length === 0) return null
+  return (
+    <div className="list-picker-chips" aria-label="Selected lists">
+      {selected.map((id) => {
+        const cat = lists.find((c) => c.id === id)
+        if (!cat) return null
+        return (
+          <span
+            key={id}
+            className="list-picker-chip"
+            style={{ outline: `2px solid ${cat.color}` }}
+          >
+            <FolderGlyph size={14} color={cat.color} />
+            <span className="truncate">{cat.name}</span>
+            <button
+              type="button"
+              className="list-picker-chip-remove"
+              aria-label={`Remove ${cat.name}`}
+              onClick={() => onRemove(id)}
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </span>
+        )
+      })}
+    </div>
+  )
 }
 
 export function ListPicker({
@@ -41,6 +86,8 @@ export function ListPicker({
   excludeIds,
   showCreate = true,
   variant = "default",
+  showSelectedChips = false,
+  suggestedIds,
 }: ListPickerProps) {
   const categories = useTaskStore((s) => s.lists)
   const folders = useTaskStore((s) => s.folders)
@@ -63,6 +110,14 @@ export function ListPicker({
 
   const inFolder = browseFolderId ? folders.find((f) => f.id === browseFolderId) : null
 
+  const suggestedLists = useMemo(() => {
+    if (!suggestedIds?.length) return [] as List[]
+    return suggestedIds
+      .map((id) => visibleLists.find((c) => c.id === id))
+      .filter((c): c is List => !!c)
+  }, [suggestedIds, visibleLists])
+  const suggestedIdSet = useMemo(() => new Set(suggestedLists.map((c) => c.id)), [suggestedLists])
+
   const childFolders = useMemo(
     () => folders.filter((f) => (browseFolderId ? f.parentFolderId === browseFolderId : !f.parentFolderId)),
     [folders, browseFolderId],
@@ -72,14 +127,16 @@ export function ListPicker({
     if (!browseFolderId) return []
     const folder = folders.find((f) => f.id === browseFolderId)
     if (!folder) return []
-    return folder.listIds.map((id) => visibleLists.find((c) => c.id === id)).filter(Boolean) as List[]
-  }, [browseFolderId, folders, visibleLists])
+    return folder.listIds
+      .map((id) => visibleLists.find((c) => c.id === id))
+      .filter((c): c is List => !!c && !suggestedIdSet.has(c.id))
+  }, [browseFolderId, folders, visibleLists, suggestedIdSet])
 
   const looseLists = useMemo(() => {
     const inAnyFolder = new Set<string>()
     folders.forEach((f) => f.listIds.forEach((id) => inAnyFolder.add(id)))
-    return visibleLists.filter((c) => !inAnyFolder.has(c.id))
-  }, [visibleLists, folders])
+    return visibleLists.filter((c) => !inAnyFolder.has(c.id) && !suggestedIdSet.has(c.id))
+  }, [visibleLists, folders, suggestedIdSet])
 
   const q = search.trim().toLowerCase()
   const searchActive = q.length > 0
@@ -102,6 +159,15 @@ export function ListPicker({
     [effectiveMulti, onChange, selected],
   )
 
+  const beginCreate = () => {
+    const typed = search.trim()
+    const exact = typed
+      ? visibleLists.some((list) => list.name.trim().toLowerCase() === typed.toLowerCase())
+      : false
+    setNewListName(typed && !exact ? typed : "")
+    setCreating(true)
+  }
+
   const handleCreateList = () => {
     const name = newListName.trim()
     if (!name) return
@@ -121,6 +187,11 @@ export function ListPicker({
     setCreating(false)
   }
 
+  const pickFirstSearchHit = () => {
+    const first = searchResults[0]
+    if (first) toggle(first.id)
+  }
+
   const renderListRow = (cat: List) => {
     const on = selected.includes(cat.id)
     if (fm) {
@@ -134,7 +205,7 @@ export function ListPicker({
           {effectiveMulti && (
             <input type="checkbox" checked={on} readOnly aria-label={`Add to ${cat.name}`} tabIndex={-1} />
           )}
-          <span className="fm-picker-swatch" style={{ background: cat.color }} />
+          <FolderGlyph size={14} color={cat.color} />
           <span className="truncate">{cat.name}</span>
         </button>
       )
@@ -143,12 +214,11 @@ export function ListPicker({
       <button
         key={cat.id}
         type="button"
-        className={`w-full flex items-center gap-2 px-2 py-1.5 text-left text-sm rounded hover:bg-muted/60${on ? " bg-muted" : ""}`}
+        className={`list-picker-row w-full px-2 py-1.5 text-sm rounded hover:bg-muted/60${on ? " bg-muted" : ""}`}
         onClick={() => toggle(cat.id)}
       >
         {effectiveMulti && <Checkbox checked={on} className="pointer-events-none" />}
-        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: cat.color }} />
-        <ListIcon className="h-3.5 w-3.5 shrink-0 opacity-60" />
+        <FolderGlyph size={18} color={cat.color} />
         <span className="truncate">{cat.name}</span>
       </button>
     )
@@ -157,20 +227,28 @@ export function ListPicker({
   const renderFolderRow = (f: (typeof folders)[number]) =>
     fm ? (
       <button key={f.id} type="button" className="fm-picker-row" onClick={() => setBrowseFolderId(f.id)}>
-        <span className="fm-picker-swatch" style={{ background: f.color || "#808080" }} />
+        <FolderGlyph size={14} color={f.color || "#808080"} />
         <span className="truncate">{f.name}</span>
       </button>
     ) : (
       <button
         key={f.id}
         type="button"
-        className="w-full flex items-center gap-2 px-2 py-1.5 text-left text-sm rounded hover:bg-muted/60"
+        className="list-picker-row w-full px-2 py-1.5 text-left text-sm rounded hover:bg-muted/60"
         onClick={() => setBrowseFolderId(f.id)}
       >
-        <FolderIcon className="h-3.5 w-3.5 shrink-0" style={{ color: f.color }} />
+        <FolderGlyph size={18} color={f.color || "#808080"} />
         <span className="truncate">{f.name}</span>
       </button>
     )
+
+  const recentStrip =
+    !searchActive && suggestedLists.length > 0 ? (
+      <div className={fm ? undefined : "list-picker-recent"} aria-label="Recent lists">
+        <p className={fm ? "fm-picker-section" : "text-xs font-medium px-2 py-1 text-muted-foreground"}>Recent</p>
+        {suggestedLists.map(renderListRow)}
+      </div>
+    ) : null
 
   const body = searchActive ? (
     searchResults.length === 0 ? (
@@ -180,6 +258,7 @@ export function ListPicker({
     )
   ) : browseFolderId && inFolder ? (
     <>
+      {recentStrip}
       <p className={fm ? "fm-picker-section" : "text-xs font-medium px-2 py-1 text-muted-foreground"}>{inFolder.name}</p>
       {childFolders.map(renderFolderRow)}
       {listsInFolder.map(renderListRow)}
@@ -189,14 +268,20 @@ export function ListPicker({
     </>
   ) : (
     <>
+      {recentStrip}
       {childFolders.map(renderFolderRow)}
       {looseLists.map(renderListRow)}
     </>
   )
 
+  const chips = showSelectedChips ? (
+    <SelectedChips selected={selected} lists={categories} onRemove={toggle} />
+  ) : null
+
   if (fm) {
     return (
       <div className="fm-list-picker">
+        {chips}
         <div className="fm-list-picker-head">
           {browseFolderId && !searchActive && (
             <button type="button" className="fm-btn fm-btn-sm" aria-label="Back" onClick={() => setBrowseFolderId(null)}>
@@ -207,12 +292,18 @@ export function ListPicker({
             className="fm-input"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && searchActive) {
+                e.preventDefault()
+                pickFirstSearchHit()
+              }
+            }}
             placeholder="Search lists…"
             aria-label="Search lists"
             style={{ flex: 1, minWidth: 0, width: "100%" }}
           />
         </div>
-        <div className="fm-list-picker-body">{body}</div>
+        <div className="fm-list-picker-body list-picker-body">{body}</div>
         {showCreate && (
           <div className="fm-list-picker-foot">
             {creating ? (
@@ -222,6 +313,8 @@ export function ListPicker({
                   value={newListName}
                   onChange={(e) => setNewListName(e.target.value)}
                   placeholder="New list name"
+                  aria-label="New list name"
+                  autoFocus
                   onKeyDown={(e) => e.key === "Enter" && handleCreateList()}
                   style={{ flex: 1, minWidth: 0 }}
                 />
@@ -233,7 +326,7 @@ export function ListPicker({
                 </button>
               </div>
             ) : (
-              <button type="button" className="fm-btn fm-btn-sm" onClick={() => setCreating(true)}>
+              <button type="button" className="fm-btn fm-btn-sm" onClick={beginCreate}>
                 New list
               </button>
             )}
@@ -248,18 +341,26 @@ export function ListPicker({
 
   return (
     <div className={`border rounded-md ${compact ? "text-sm" : ""}`}>
+      {chips}
       <div className="flex items-center gap-2 p-2 border-b bg-muted/30">
         {browseFolderId && !searchActive && (
           <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => setBrowseFolderId(null)}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
         )}
-        <div className="relative flex-1">
+        <div className="relative flex-1 min-w-0">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && searchActive) {
+                e.preventDefault()
+                pickFirstSearchHit()
+              }
+            }}
             placeholder="Search lists…"
+            aria-label="Search lists"
             className="h-8 pl-8"
           />
         </div>
@@ -271,7 +372,7 @@ export function ListPicker({
         )}
       </div>
 
-      <div className={`overflow-y-auto p-1 ${compact ? "max-h-40" : "max-h-56"}`}>{body}</div>
+      <div className={`list-picker-body p-1 ${compact ? "max-h-40" : "max-h-64"}`}>{body}</div>
 
       {showCreate && (
         <div className="p-2 border-t">
@@ -281,7 +382,9 @@ export function ListPicker({
                 value={newListName}
                 onChange={(e) => setNewListName(e.target.value)}
                 placeholder="New list name"
+                aria-label="New list name"
                 className="h-8"
+                autoFocus
                 onKeyDown={(e) => e.key === "Enter" && handleCreateList()}
               />
               <Button size="sm" className="h-8" onClick={handleCreateList}>
@@ -292,7 +395,7 @@ export function ListPicker({
               </Button>
             </div>
           ) : (
-            <Button variant="outline" size="sm" className="w-full h-8" onClick={() => setCreating(true)}>
+            <Button variant="outline" size="sm" className="w-full h-8" onClick={beginCreate}>
               <Plus className="h-3.5 w-3.5 mr-1" />
               New list
             </Button>

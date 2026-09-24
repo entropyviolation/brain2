@@ -12,8 +12,9 @@
  *     columns so formulas behave the same everywhere.
  *
  * `SheetViewConfig` is the persisted, serializable view state (sort / filter /
- * frozen columns / widths). Module views can store it on their view config
- * later — the type is exported here as the single source of truth.
+ * frozen columns / widths). Lists store it on `List.sheetConfig` (the persist
+ * key for per-list column widths is `sheetConfig.columnWidths`). Blank cells
+ * sort last, Google-Sheets style, on both A→Z and Z→A.
  */
 import type { AttributeDefinition, AttributeType, AttributeValue, GoalValue, Task } from "@/lib/types"
 import { normalizeAttributeType } from "@/lib/attribute-utils"
@@ -45,6 +46,94 @@ export interface SheetViewConfig {
   columnWidths?: Record<string, number>
   /** Per-row pixel heights, keyed by row id (the item/task id). */
   rowHeights?: Record<string, number>
+  /**
+   * Ordered extra column ids for this sheet (attribute ids and `__field_*__`
+   * built-ins). The name column is always shown first and is not listed here.
+   * Undefined = default to attributes found on this list.
+   */
+  columnIds?: string[]
+}
+
+/**
+ * Google Sheets blank placement: empty cells always sort to the **end**, both
+ * A→Z / smallest-first and Z→A / largest-first. They never land in the middle.
+ */
+export const BLANK_CELLS_SORT = "end" as const
+
+/** Floor for drag-resized columns. Never-resized columns keep the grid defaults. */
+export const MIN_SHEET_COL_WIDTH = 60
+
+/** Display placeholders (`—` / `-`) and other empty values sort as blanks. */
+const PLACEHOLDER_BLANK = /^(?:—|–|-|−)$/
+
+/**
+ * True when a cell should sort as empty: missing, null, whitespace, placeholder
+ * dashes (`—`), empty arrays, non-finite numbers, invalid dates.
+ * `0` and `false` are values, not blanks.
+ */
+export function isBlankSortValue(value: unknown): boolean {
+  if (value === undefined || value === null) return true
+  if (typeof value === "number") return !Number.isFinite(value)
+  if (typeof value === "boolean") return false
+  if (typeof value === "string") {
+    const trimmed = value.trim()
+    return trimmed === "" || PLACEHOLDER_BLANK.test(trimmed)
+  }
+  if (value instanceof Date) return Number.isNaN(value.getTime())
+  if (Array.isArray(value)) return value.length === 0
+  if (typeof value === "object") {
+    const g = value as GoalValue
+    if ("current" in (value as object) || "target" in (value as object)) {
+      return g.current == null && g.target == null
+    }
+  }
+  return false
+}
+
+/**
+ * Merge a live grid config onto the stored `List.sheetConfig` so a resize
+ * cannot drop sibling-owned `columnIds`, and an add-column cannot drop widths.
+ */
+export function persistSheetViewConfig(
+  stored: SheetViewConfig | undefined,
+  next: SheetViewConfig,
+): SheetViewConfig {
+  const columnIds = next.columnIds ?? stored?.columnIds
+  const merged: SheetViewConfig = {
+    ...stored,
+    ...next,
+    columnWidths: { ...stored?.columnWidths, ...next.columnWidths },
+    rowHeights: { ...stored?.rowHeights, ...next.rowHeights },
+  }
+  if (columnIds) merged.columnIds = columnIds
+  return merged
+}
+
+/** Record one drag-resized width; never-resized columns stay omitted (defaults). */
+export function applyColumnWidth(
+  config: SheetViewConfig,
+  columnId: string,
+  width: number,
+  minWidth = MIN_SHEET_COL_WIDTH,
+): SheetViewConfig {
+  return persistSheetViewConfig(config, {
+    columnWidths: {
+      ...config.columnWidths,
+      [columnId]: Math.max(minWidth, Math.round(width)),
+    },
+  })
+}
+
+/** `listId → columnId → width` from persisted `sheetConfig.columnWidths`. */
+export function columnWidthsByList(
+  lists: Array<{ id: string; sheetConfig?: SheetViewConfig }>,
+): Record<string, Record<string, number>> {
+  const out: Record<string, Record<string, number>> = {}
+  for (const list of lists) {
+    const widths = list.sheetConfig?.columnWidths
+    if (widths && Object.keys(widths).length > 0) out[list.id] = { ...widths }
+  }
+  return out
 }
 
 /**
@@ -63,6 +152,8 @@ export interface SheetColumn {
   isFormula: boolean
   /** True when this column must not be written to (formula columns). */
   readOnly: boolean
+  /** Built-in Task field key when this is not an attribute column. */
+  builtin?: string
 }
 
 /** The built-in name/title column descriptor. */
@@ -147,24 +238,41 @@ export function readCellValue(task: Task, column: SheetColumn, defsById?: DefLoo
   return task.attributes?.[column.id]
 }
 
-/**
- * Comparable scalar for sorting. Numbers for numeric/formula/boolean/goal
- * columns; lowercased strings otherwise. `null` means "empty" (sorted last).
- */
-export function cellSortValue(task: Task, column: SheetColumn, defsById?: DefLookup): number | string | null {
+function rawColumnValue(task: Task, column: SheetColumn, defsById?: DefLookup): unknown {
   if (column.isFormula && column.def) {
     return computeFormulaValue(column.def, task.attributes ?? {}, defsById ?? new Map()).value
   }
-  const value = column.isName ? task.description : task.attributes?.[column.id]
-  if (value === undefined || value === null || value === "") return null
-  if (typeof value === "number") return Number.isFinite(value) ? value : null
+  if (column.isName) return task.description
+  if (column.builtin) return task[column.builtin as keyof Task]
+  return task.attributes?.[column.id]
+}
+
+/**
+ * Comparable scalar for sorting. Numbers for numeric/formula/boolean/goal/date
+ * columns; lowercased strings otherwise (enums / Priority labels). `null` means
+ * blank — `sortRows` always places those at the end (`BLANK_CELLS_SORT`).
+ */
+export function cellSortValue(task: Task, column: SheetColumn, defsById?: DefLookup): number | string | null {
+  const value = rawColumnValue(task, column, defsById)
+  if (isBlankSortValue(value)) return null
+  if (typeof value === "number") return value
   if (typeof value === "boolean") return value ? 1 : 0
-  if (Array.isArray(value)) return value.length ? value.map(arrayItemText).join(", ").toLowerCase() : null
+  if (value instanceof Date) return value.getTime()
+  if (Array.isArray(value)) return value.map(arrayItemText).join(", ").toLowerCase()
   if (typeof value === "object") {
     const g = value as GoalValue
     return typeof g.current === "number" ? g.current : null
   }
-  return String(value).toLowerCase()
+  const text = String(value).trim()
+  if (column.type === "datetime") {
+    const ts = Date.parse(text)
+    if (!Number.isNaN(ts)) return ts
+  }
+  if (column.type === "number") {
+    const n = Number(text)
+    if (Number.isFinite(n)) return n
+  }
+  return text.toLowerCase()
 }
 
 /** Plain-text rendering of a cell for the free-text filter (store-free). */
@@ -192,7 +300,7 @@ function arrayItemText(item: unknown): string {
 }
 
 function compareScalar(a: number | string | null, b: number | string | null): number {
-  // Empty cells always sort to the end, regardless of direction.
+  // Blanks always compare after values; direction is applied only to non-blanks.
   if (a === null && b === null) return 0
   if (a === null) return 1
   if (b === null) return -1
@@ -201,8 +309,10 @@ function compareScalar(a: number | string | null, b: number | string | null): nu
 }
 
 /**
- * Stable multi-column sort. Returns a new array; empty cells sink to the bottom
- * for every direction. With no sort entries the input order is preserved.
+ * Stable multi-column sort. Returns a new array. Blank cells (empty / null /
+ * `—`) always sort last — Google Sheets: last on A→Z and last on Z→A — so they
+ * never sit in the middle of filled rows. With no sort entries the input order
+ * is preserved.
  */
 export function sortRows(
   tasks: Task[],
@@ -219,7 +329,6 @@ export function sortRows(
       if (!col) continue
       const av = cellSortValue(x.task, col, defsById)
       const bv = cellSortValue(y.task, col, defsById)
-      // Keep empties last irrespective of direction.
       if (av === null || bv === null) {
         const emptyCmp = compareScalar(av, bv)
         if (emptyCmp !== 0) return emptyCmp
@@ -306,6 +415,25 @@ export function coerceCellInput(def: AttributeDefinition, raw: string): Attribut
   if (type === "boolean") {
     const s = trimmed.toLowerCase()
     return s === "true" || s === "yes" || s === "1"
+  }
+  if (type === "datetime") {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed
+    if (/^\d{4}-\d{2}-\d{2}T/.test(trimmed)) return trimmed
+    const parsed = Date.parse(trimmed)
+    if (!Number.isNaN(parsed)) {
+      const d = new Date(parsed)
+      if (def.datetimeMode === "time") return trimmed
+      const yyyy = d.getFullYear()
+      const mm = String(d.getMonth() + 1).padStart(2, "0")
+      const dd = String(d.getDate()).padStart(2, "0")
+      if (def.datetimeMode === "datetime") {
+        const hh = String(d.getHours()).padStart(2, "0")
+        const mi = String(d.getMinutes()).padStart(2, "0")
+        return `${yyyy}-${mm}-${dd}T${hh}:${mi}`
+      }
+      return `${yyyy}-${mm}-${dd}`
+    }
+    return trimmed
   }
   return raw
 }

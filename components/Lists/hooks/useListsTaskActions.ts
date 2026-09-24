@@ -8,15 +8,18 @@ import {
   listIsNextActions,
 } from "@/lib/item-utils"
 import {
-  isNaSmartCategoryId,
+  isNaPeriodSmartCategoryId,
   naSmartIdToPeriod,
 } from "@/lib/scheduled-lists-sync"
 import {
   assignTaskToFolderUncategorized,
 } from "@/lib/folder-all-items"
-import { toggleCompletion } from "@/lib/services/completion-service"
+import { uncompleteTask, markMissedOpportunity } from "@/lib/services/completion-service"
+import { requestTaskCompletion } from "@/lib/completion-events"
 import { parseListBulkAddText } from "@/lib/smart-parse"
 import { addTag } from "@/lib/links"
+import { resolveCompletionPoints } from "@/lib/item-utils"
+import { taskRepository } from "@/lib/data/task-repository"
 import { ROOT_ALL_FOLDER_ID } from "@/components/Lists/constants"
 import type { OpenTarget } from "@/components/Lists/types"
 
@@ -42,7 +45,17 @@ export function useListsTaskActions(
   )
 
   const handleCompleteTask = useCallback((taskId: string) => {
-    toggleCompletion(taskId)
+    const task = taskRepository.getById(taskId)
+    if (!task) return
+    if (task.completed) {
+      uncompleteTask(taskId)
+      return
+    }
+    requestTaskCompletion(taskId, resolveCompletionPoints(task, lists, folders))
+  }, [lists, folders])
+
+  const handleMissedOpportunity = useCallback((taskId: string) => {
+    markMissedOpportunity(taskId)
   }, [])
 
   const handleAddTaskToOpen = useCallback(
@@ -85,14 +98,14 @@ export function useListsTaskActions(
       const now = new Date()
       for (const row of rows) {
         let categoryId: string | undefined
-        if (openTarget.type === "category" && !isNaSmartCategoryId(openTarget.id)) categoryId = openTarget.id
+        if (openTarget.type === "category" && !isNaPeriodSmartCategoryId(openTarget.id)) categoryId = openTarget.id
         const base = buildBaseTask(row.description, categoryId)
         const tagged: Task = {
           ...base,
           tags: row.tags.reduce((acc, tag) => addTag(acc, tag), [...(base.tags ?? [])]),
         }
         if (openTarget.type === "category") {
-          if (isNaSmartCategoryId(openTarget.id)) {
+          if (isNaPeriodSmartCategoryId(openTarget.id)) {
             const p = naSmartIdToPeriod(openTarget.id)
             if (p === "daily") tagged.scheduledDate = now
             else if (p === "weekly") tagged.scheduledWeek = getWeekString(now)
@@ -130,6 +143,7 @@ export function useListsTaskActions(
   return {
     buildBaseTask,
     handleCompleteTask,
+    handleMissedOpportunity,
     handleAddTaskToOpen,
     handleBulkAddToOpen,
     handleAddTaskToCategory,

@@ -4,6 +4,7 @@ import { isScheduledFolderId, getTasksForScheduledFolder } from "@/lib/scheduled
 import { getRootFolders, getFolderChildren } from "@/lib/folder-tree"
 import { ROOT_ALL_FOLDER_ID, SMART_LISTS, OBJECTIVES_LIST_ID } from "@/components/Lists/constants"
 import { isFolderHiddenFromGlobalAll, isListHiddenFromGlobalAll, filterTasksHiddenFromGlobalAll } from "@/lib/module-lists"
+import { isClearedFromWork } from "@/lib/completion-status"
 import type { GridEntry, SmartId } from "@/components/Lists/types"
 
 export interface BuildGridEntriesParams {
@@ -84,7 +85,7 @@ export function buildGridEntries(params: BuildGridEntriesParams): GridEntry[] {
       name: "All Items",
       color: "#64748b",
       count: filterTasksHiddenFromGlobalAll(
-        allTasks.filter((t) => !t.completed),
+        allTasks.filter((t) => !isClearedFromWork(t)),
         categories,
         folders,
       ).length,

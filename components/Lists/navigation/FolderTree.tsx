@@ -34,6 +34,14 @@ export interface FolderTreeProps {
   onNavToCategory?: (categoryId: string) => void
 }
 
+function QaGlyph({ glyph }: { glyph: string }) {
+  return (
+    <span className="fm-qa-glyph" aria-hidden>
+      {glyph}
+    </span>
+  )
+}
+
 export function FolderTree({
   folders,
   location,
@@ -96,89 +104,100 @@ export function FolderTree({
       : []
 
   return (
-    <div className="fm-sidebar">
-      <div className="fm-search-group-label" style={{ padding: "4px 6px 2px" }}>
+    <nav className="fm-sidebar" aria-label="Lists folders">
+      <div className="fm-sidebar-heading" id="fm-qa-heading">
         Quick Access
       </div>
-      <div
-        className={`fm-tree-item${isHome && !openTarget ? " active" : ""}`}
-        onClick={() => onNavTo("home")}
-        onDragOver={onDragOver}
-      >
-        <span>🏠</span>
-        <span>Home</span>
-      </div>
-      <div
-        className={`fm-tree-item${isAll && !openTarget ? " active" : ""}`}
-        onClick={() => onNavTo("all")}
-        onDragOver={onDragOver}
-        onDrop={(e) => onDrop(e, null)}
-      >
-        <span>🗂</span>
-        <span>All</span>
-      </div>
-      {moduleListsFolder && (
+      <div className="fm-qa-list" role="list" aria-labelledby="fm-qa-heading">
         <div
-          className={`fm-tree-item${location === moduleListsFolder.id && !openTarget ? " active" : ""}`}
-          onClick={() => navigateToFolder(moduleListsFolder.id)}
+          role="listitem"
+          className={`fm-tree-item fm-qa-item${isHome && !openTarget ? " active" : ""}`}
+          onClick={() => onNavTo("home")}
           onDragOver={onDragOver}
-          onDrop={(e) => onDrop(e, moduleListsFolder)}
         >
-          <span>📦</span>
-          <span>{moduleListsFolder.name}</span>
+          <QaGlyph glyph="🏠" />
+          <span className="fm-tree-label">Home</span>
         </div>
-      )}
+        <div
+          role="listitem"
+          className={`fm-tree-item fm-qa-item${isAll && !openTarget ? " active" : ""}`}
+          onClick={() => onNavTo("all")}
+          onDragOver={onDragOver}
+          onDrop={(e) => onDrop(e, null)}
+        >
+          <QaGlyph glyph="🗂" />
+          <span className="fm-tree-label">All</span>
+        </div>
+        {moduleListsFolder && (
+          <div
+            role="listitem"
+            className={`fm-tree-item fm-qa-item${location === moduleListsFolder.id && !openTarget ? " active" : ""}`}
+            onClick={() => navigateToFolder(moduleListsFolder.id)}
+            onDragOver={onDragOver}
+            onDrop={(e) => onDrop(e, moduleListsFolder)}
+          >
+            <QaGlyph glyph="📦" />
+            <span className="fm-tree-label">{moduleListsFolder.name}</span>
+          </div>
+        )}
+      </div>
 
-      <div className="fm-search-group-label" style={{ padding: "8px 6px 2px" }}>
+      <div className="fm-sidebar-heading" id="fm-folders-heading">
         Folders
       </div>
-      {visibleNodes.map(({ folder, depth, hasChildren }) => {
-        const expanded = expandedIds.has(folder.id)
-        return (
-          <div
-            key={folder.id}
-            className={`fm-tree-item fm-tree-folder${location === folder.id ? " active" : ""}`}
-            style={{ paddingLeft: 6 + depth * 12 }}
-            onClick={() => navigateToFolder(folder.id)}
-            onDragOver={onDragOver}
-            onDrop={(e) => onDrop(e, folder)}
-            data-folder-id={folder.id}
-            data-depth={depth}
-            data-scheduled={isScheduledFolderId(folder.id) ? "true" : undefined}
-          >
-            {hasChildren ? (
-              <button
-                type="button"
-                className="fm-tree-toggle"
-                aria-label={expanded ? "Collapse folder" : "Expand folder"}
-                aria-expanded={expanded}
-                onClick={(e) => toggleExpanded(folder.id, e)}
-              >
-                {expanded ? "▼" : "▶"}
-              </button>
-            ) : (
-              <span className="fm-tree-toggle-spacer" aria-hidden />
-            )}
-            <span className="fm-tree-swatch" style={{ background: folder.color || "#9CA3AF" }} />
-            <span className="fm-tree-label">{folder.name}</span>
-            {onEditFolder && isEditableFolder(folder.id) && (
-              <button
-                type="button"
-                className="fm-tree-edit"
-                title="Folder settings"
-                aria-label={`Edit ${folder.name}`}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onEditFolder(folder)
-                }}
-              >
-                ⚙
-              </button>
-            )}
-          </div>
-        )
-      })}
-      <div style={{ padding: 6 }}>
+      <div className="fm-folder-list" role="tree" aria-labelledby="fm-folders-heading">
+        {visibleNodes.map(({ folder, depth, hasChildren }) => {
+          const expanded = expandedIds.has(folder.id)
+          const selected = location === folder.id
+          return (
+            <div
+              key={folder.id}
+              role="treeitem"
+              aria-expanded={hasChildren ? expanded : undefined}
+              aria-selected={selected}
+              className={`fm-tree-item fm-tree-folder${selected ? " active" : ""}`}
+              style={{ paddingLeft: 8 + depth * 14 }}
+              onClick={() => navigateToFolder(folder.id)}
+              onDragOver={onDragOver}
+              onDrop={(e) => onDrop(e, folder)}
+              data-folder-id={folder.id}
+              data-depth={depth}
+              data-scheduled={isScheduledFolderId(folder.id) ? "true" : undefined}
+            >
+              {hasChildren ? (
+                <button
+                  type="button"
+                  className="fm-tree-toggle"
+                  aria-label={expanded ? "Collapse folder" : "Expand folder"}
+                  aria-expanded={expanded}
+                  onClick={(e) => toggleExpanded(folder.id, e)}
+                >
+                  {expanded ? "▼" : "▶"}
+                </button>
+              ) : (
+                <span className="fm-tree-toggle-spacer" aria-hidden />
+              )}
+              <span className="fm-tree-swatch" style={{ background: folder.color || "#9CA3AF" }} />
+              <span className="fm-tree-label">{folder.name}</span>
+              {onEditFolder && isEditableFolder(folder.id) && (
+                <button
+                  type="button"
+                  className="fm-tree-edit"
+                  title="Folder settings"
+                  aria-label={`Edit ${folder.name}`}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onEditFolder(folder)
+                  }}
+                >
+                  ⚙
+                </button>
+              )}
+            </div>
+          )
+        })}
+      </div>
+      <div className="fm-sidebar-new">
         <button className="fm-btn fm-btn-sm" style={{ width: "100%" }} onClick={onCreateFolder}>
           + New Folder
         </button>
@@ -186,14 +205,12 @@ export function FolderTree({
 
       {categoryNodes.length > 0 && (
         <>
-          <div className="fm-search-group-label" style={{ padding: "8px 6px 2px" }}>
-            Lists
-          </div>
+          <div className="fm-sidebar-heading">Lists</div>
           {categoryNodes.map(({ list: category, depth }) => (
             <div
               key={category.id}
               className={`fm-tree-item${activeCategoryId === category.id ? " active" : ""}`}
-              style={{ paddingLeft: 6 + depth * 14 }}
+              style={{ paddingLeft: 8 + depth * 14 }}
               onClick={() => onNavToCategory?.(category.id)}
               data-category-id={category.id}
               data-depth={depth}
@@ -204,6 +221,6 @@ export function FolderTree({
           ))}
         </>
       )}
-    </div>
+    </nav>
   )
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useDeferredValue, useMemo, useState } from "react"
 import type React from "react"
 import type { GridEntry } from "@/components/Lists/types"
 import { FolderGlyph, iconFor, orbFor } from "@/components/Lists/lib/icon-utils"
@@ -41,7 +41,8 @@ export function FolderViewList({
   inFolder = false,
 }: FolderViewListProps) {
   const [listSearch, setListSearch] = useState("")
-  const visibleEntries = useMemo(() => pinMatchingListsToTop(entries, listSearch), [entries, listSearch])
+  const deferredSearch = useDeferredValue(listSearch)
+  const visibleEntries = useMemo(() => pinMatchingListsToTop(entries, deferredSearch), [entries, deferredSearch])
   const selectedLists = new Set(selectedCategories)
   const selectedFolders = new Set(selectedFolderIds)
 

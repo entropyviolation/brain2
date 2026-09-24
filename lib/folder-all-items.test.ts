@@ -3,10 +3,15 @@ import type { Folder, List, Task } from "@/lib/types"
 import {
   filterTasksByHiddenFolderLists,
   folderAllItemsCategoryId,
+  folderAllItemsList,
+  buildFolderAllItemsList,
+  buildGlobalAllItemsList,
   foldersInGlobalAllForFilter,
   listsInFolderForFilter,
   filterTasksByHiddenGlobalFolders,
   isTaskUncategorizedGlobally,
+  GLOBAL_ALL_ITEMS_LIST_ID,
+  syncGlobalAllItemsList,
 } from "@/lib/folder-all-items"
 
 const folder = (listIds: string[]): Folder => ({
@@ -34,6 +39,47 @@ const task = (id: string, description: string, lists: string[]): Task => ({
   createdAt: new Date(),
   urgency: 1,
   importance: 1,
+})
+
+describe("folderAllItemsList / buildFolderAllItemsList", () => {
+  it("builds the backing All Items record and finds it by folder id", () => {
+    const f = folder([])
+    const built = buildFolderAllItemsList(f)
+    expect(built.id).toBe("__all-items__folder1")
+    expect(built.name).toBe("All Items")
+    expect(folderAllItemsList([built], "folder1")?.id).toBe(built.id)
+    expect(folderAllItemsList([], "folder1")).toBeUndefined()
+  })
+})
+
+describe("global All backing list", () => {
+  it("uses a stable id that is an All Items category, not a folder child", () => {
+    const built = buildGlobalAllItemsList()
+    expect(built.id).toBe("__all-items__root")
+    expect(built.id).toBe(GLOBAL_ALL_ITEMS_LIST_ID)
+    expect(built.name).toBe("All Items")
+  })
+
+  it("creates the record once and never files it on a folder", () => {
+    const lists: List[] = []
+    const added: List[] = []
+    syncGlobalAllItemsList({
+      lists,
+      addList: (c) => {
+        added.push(c)
+        lists.push(c)
+      },
+    })
+    syncGlobalAllItemsList({
+      lists,
+      addList: (c) => {
+        added.push(c)
+        lists.push(c)
+      },
+    })
+    expect(added).toHaveLength(1)
+    expect(lists.map((l) => l.id)).toEqual([GLOBAL_ALL_ITEMS_LIST_ID])
+  })
 })
 
 describe("listsInFolderForFilter", () => {
@@ -80,6 +126,14 @@ describe("filterTasksByHiddenFolderLists", () => {
     const originalLists = items.map((t) => [...t.lists])
     filterTasksByHiddenFolderLists(items, f, ["list-2"])
     expect(items.map((t) => t.lists)).toEqual(originalLists)
+  })
+
+  it("hides uncategorized items when asked", () => {
+    expect(filterTasksByHiddenFolderLists(items, f, [], undefined, true).map((t) => t.id)).toEqual(["a", "b", "c"])
+  })
+
+  it("hides uncategorized items together with an unselected list", () => {
+    expect(filterTasksByHiddenFolderLists(items, f, ["list-1"], undefined, true).map((t) => t.id)).toEqual(["b", "c"])
   })
 })
 
@@ -145,6 +199,17 @@ describe("filterTasksByHiddenGlobalFolders", () => {
     const originalLists = items.map((t) => [...t.lists])
     filterTasksByHiddenGlobalFolders(items, folders, ["work"])
     expect(items.map((t) => t.lists)).toEqual(originalLists)
+  })
+
+  it("hides globally uncategorized items when asked", () => {
+    const withLoose = [...items, task("pool", "folder pool", ["__all-items__home"])]
+    expect(filterTasksByHiddenGlobalFolders(withLoose, folders, [], undefined, true).map((t) => t.id)).toEqual([
+      "w",
+      "p",
+      "h",
+      "loose",
+      "both",
+    ])
   })
 })
 

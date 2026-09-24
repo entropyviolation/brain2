@@ -1,16 +1,16 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
 import type { FolderView } from "@/lib/lists-ui-store"
 import type { ListDisplayMode } from "@/lib/types"
 import type { OpenTarget } from "@/components/Lists/types"
+import { ToolbarSearch } from "./ToolbarSearch"
 import { ViewModeControls } from "./ViewModeControls"
 
 export interface ListsToolbarProps {
   openTarget: OpenTarget
   isHome: boolean
   isAll: boolean
-  searchTerm: string
+  searchResetKey: number
   searchActive: boolean
   selectMode: boolean
   folderView: FolderView
@@ -22,7 +22,6 @@ export interface ListsToolbarProps {
   onNewList: () => void
   onNewFolder: () => void
   onImportCsv: () => void
-  onCompleted: () => void
   onSettings: () => void
   onToggleSelect: () => void
   onSearchChange: (value: string) => void
@@ -36,7 +35,7 @@ export function ListsToolbar({
   openTarget,
   isHome,
   isAll,
-  searchTerm,
+  searchResetKey,
   searchActive,
   selectMode,
   folderView,
@@ -48,7 +47,6 @@ export function ListsToolbar({
   onNewList,
   onNewFolder,
   onImportCsv,
-  onCompleted,
   onSettings,
   onToggleSelect,
   onSearchChange,
@@ -62,6 +60,7 @@ export function ListsToolbar({
       <button className="fm-btn fm-btn-sm" disabled={!openTarget && (isHome || isAll)} onClick={onUp}>
         ↑ Up
       </button>
+      <div className="fm-toolbar-sep" role="separator" aria-label="New" />
       <button className="fm-btn fm-btn-sm" onClick={onNewList}>
         New List
       </button>
@@ -71,17 +70,14 @@ export function ListsToolbar({
       <button className="fm-btn fm-btn-sm" onClick={onImportCsv} title="Import CSV, TSV, or Excel spreadsheet">
         Import spreadsheet
       </button>
-      <div className="fm-toolbar-sep" />
-      <button className="fm-btn fm-btn-sm" onClick={onCompleted}>
-        Completed
-      </button>
+      <div className="fm-toolbar-sep" role="separator" />
       <button className="fm-btn fm-btn-sm" onClick={onSettings}>
         Settings
       </button>
       <button className={`fm-btn fm-btn-sm${selectMode ? " active" : ""}`} onClick={onToggleSelect}>
         {selectMode ? "Cancel Select" : "Select"}
       </button>
-      <div className="fm-toolbar-sep" />
+      <div className="fm-toolbar-sep" role="separator" aria-label="View" />
       <ViewModeControls
         openTarget={openTarget}
         folderView={folderView}
@@ -94,49 +90,12 @@ export function ListsToolbar({
         onAutoOrganize={onAutoOrganize}
       />
       <div className="fm-toolbar-spacer" />
-      <ToolbarSearch value={searchTerm} onChange={onSearchChange} />
+      <ToolbarSearch resetKey={searchResetKey} onChange={onSearchChange} />
       {searchActive && (
         <button className="fm-btn fm-btn-sm" onClick={onClearSearch}>
           Clear
         </button>
       )}
     </div>
-  )
-}
-
-/** Owns typed text so the Lists board does not re-render on every keystroke. */
-function ToolbarSearch({ value, onChange }: { value: string; onChange: (value: string) => void }) {
-  const [text, setText] = useState(value)
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  useEffect(() => {
-    setText(value)
-    if (timer.current) clearTimeout(timer.current)
-  }, [value])
-
-  useEffect(() => {
-    return () => {
-      if (timer.current) clearTimeout(timer.current)
-    }
-  }, [])
-
-  return (
-    <input
-      className="fm-input"
-      style={{ width: 180 }}
-      placeholder="Search folders, lists, items…"
-      value={text}
-      onChange={(e) => {
-        const next = e.target.value
-        setText(next)
-        if (timer.current) clearTimeout(timer.current)
-        timer.current = setTimeout(() => onChange(next), 150)
-      }}
-      onKeyDown={(e) => {
-        if (e.key !== "Enter") return
-        if (timer.current) clearTimeout(timer.current)
-        onChange(text)
-      }}
-    />
   )
 }

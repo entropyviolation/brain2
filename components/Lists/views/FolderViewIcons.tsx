@@ -3,10 +3,19 @@
 import type React from "react"
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import type { GridEntry, IconPickerTarget } from "@/components/Lists/types"
-import { PRESET_ICON_POSITIONS } from "@/components/Lists/constants"
 import { FolderGlyph, iconFor, orbFor } from "@/components/Lists/lib/icon-utils"
-import { hashIconSlot } from "@/lib/string-utils"
-import { computeIconGridPositions } from "@/lib/lists-icon-grid"
+import {
+  freezeVelvetPositions,
+  inferIconLayoutMode,
+  layoutVelvetIconGrid,
+  positionsForLocation,
+  resolveVelvetIconPositions,
+  velvetGridColumns,
+  VELVET_GRID_FALLBACK_WIDTH,
+  VELVET_ICON_CELL,
+  type IconLayoutMode,
+} from "@/components/Lists/lib/velvet-icon-grid"
+import "./folder-view-icons-trail.css"
 
 function renderEntryIcon(entry: GridEntry, px: number) {
   if ((entry.kind === "folder" || entry.kind === "folder-all") && !entry.icon)
@@ -22,19 +31,20 @@ function iconPosKey(entry: GridEntry) {
 type Pos = { x: number; y: number }
 type PosMap = Record<string, Pos>
 
-// --- Motion-trail tuning -----------------------------------------------------
-const NUM_GHOSTS = 22
-/** Spatial step between smear samples — sub-icon overlap for fusion. */
-const TRAIL_SPACING_PX = 1
-/** Max smear length behind head (px). */
-const MAX_TRAIL_DIST_PX = 22
-/** Peak per-stamp opacity — canvas alpha blends accumulate into smear. */
-const GHOST_PEAK_OPACITY = 0.055
+// --- Motion-trail tuning (cursor-angel / snowflake circuitry) ----------------
+/** Discrete stamps behind each moving icon — not a full-window field. */
+const NUM_STAMPS = 7
+/** Spatial step between stamps along the path (px). */
+const TRAIL_SPACING_PX = 16
+/** Max trail length behind head (px). */
+const MAX_TRAIL_DIST_PX = 112
+/** Peak stamp opacity before age + trail fade. */
+const STAMP_PEAK_OPACITY = 0.72
 const MOVE_MS = 2100
-const TAIL_MS = 120
+/** Extra fade after icons land — stamps dissolve, then canvas clears. */
+const TAIL_MS = 480
 /** Stagger each icon's launch (ms). */
 const STAGGER_MS = 38
-const ICON_DRAW = 56
 
 const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v)
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t
@@ -43,52 +53,33 @@ function posAtProgress(from: Pos, to: Pos, p: number): Pos {
   return { x: lerp(from.x, to.x, p), y: lerp(from.y, to.y, p) }
 }
 
+/** True when the OS asks to skip decorative motion. Exported for tests. */
+export function prefersOrganizeTrailReduced(): boolean {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches
+}
 
 interface IconTrailState {
   delayMs: number
 }
 
-function rasterIconSrc(entry: GridEntry): string {
-  if (entry.kind === "smart" || entry.kind === "habits" || entry.kind === "objectives") return orbFor(entry.id)
-  return iconFor(entry.id, entry.icon)
-}
-
-async function loadIconImages(entryList: GridEntry[]): Promise<Map<string, HTMLImageElement>> {
-  const map = new Map<string, HTMLImageElement>()
-  await Promise.all(
-    entryList.map(async (entry) => {
-      const key = iconPosKey(entry)
-      const img = new Image()
-      img.src = rasterIconSrc(entry)
-      try {
-        await img.decode()
-      } catch {
-        /* ignore broken image */
-      }
-      map.set(key, img)
-    }),
-  )
-  return map
-}
-
-/** Steep smear falloff — tail vanishes almost immediately. */
-function ghostOpacity(ageT: number, trailAlpha: number): number {
-  return GHOST_PEAK_OPACITY * Math.pow(1 - clamp01(ageT), 6) * trailAlpha
+function stampOpacity(ageT: number, trailAlpha: number): number {
+  return STAMP_PEAK_OPACITY * Math.pow(1 - clamp01(ageT), 2.2) * trailAlpha
 }
 
 /**
  * Walk backward along the eased spatial path from `headP`, placing samples
  * every TRAIL_SPACING_PX. Works at any velocity — no frame-history gaps.
  */
-function buildSpatialSmear(
+function buildSpatialTrail(
   from: Pos,
   to: Pos,
   headP: number,
   count: number,
-): { pos: Pos; ageT: number }[] {
+): { pos: Pos; ageT: number; index: number }[] {
   if (headP <= 0.0001) return []
   const head = posAtProgress(from, to, headP)
-  const out: { pos: Pos; ageT: number }[] = []
+  const out: { pos: Pos; ageT: number; index: number }[] = []
 
   for (let g = 0; g < count; g++) {
     const targetDist = (g + 1) * TRAIL_SPACING_PX
@@ -107,9 +98,101 @@ function buildSpatialSmear(
     const pos = posAtProgress(from, to, hi)
     const actualDist = Math.hypot(head.x - pos.x, head.y - pos.y)
     if (actualDist < 0.4) break
-    out.push({ pos, ageT: actualDist / MAX_TRAIL_DIST_PX })
+    out.push({ pos, ageT: actualDist / MAX_TRAIL_DIST_PX, index: g })
   }
   return out
+}
+
+/**
+ * Classic Win95 arrow cursor (black outline, white fill) — cursor-angel register.
+ * Hotspot at tip; drawn in device pixels so it stays crisp.
+ */
+function drawPixelCursor(ctx: CanvasRenderingContext2D, x: number, y: number, alpha: number) {
+  const tipX = Math.round(x + 28)
+  const tipY = Math.round(y + 28)
+  ctx.save()
+  ctx.globalAlpha = alpha
+  ctx.translate(tipX, tipY)
+  // Outline
+  ctx.beginPath()
+  ctx.moveTo(0, 0)
+  ctx.lineTo(0, 15)
+  ctx.lineTo(4, 12)
+  ctx.lineTo(7, 18)
+  ctx.lineTo(9, 17)
+  ctx.lineTo(6, 11)
+  ctx.lineTo(11, 11)
+  ctx.closePath()
+  ctx.fillStyle = "#000"
+  ctx.fill()
+  // Fill inset
+  ctx.beginPath()
+  ctx.moveTo(1, 2)
+  ctx.lineTo(1, 13)
+  ctx.lineTo(4, 11)
+  ctx.lineTo(7, 16)
+  ctx.lineTo(8, 15.5)
+  ctx.lineTo(5, 10)
+  ctx.lineTo(10, 10)
+  ctx.closePath()
+  ctx.fillStyle = "#fff"
+  ctx.fill()
+  ctx.restore()
+}
+
+/**
+ * Six-point snowflake pad — snowflake-circuitry register (sparse nodes, not a storm).
+ */
+function drawSnowflakeStamp(ctx: CanvasRenderingContext2D, x: number, y: number, alpha: number) {
+  const cx = Math.round(x + 30)
+  const cy = Math.round(y + 30)
+  const r = 7
+  ctx.save()
+  ctx.globalAlpha = alpha
+  ctx.strokeStyle = "rgba(210, 235, 255, 0.95)"
+  ctx.fillStyle = "rgba(180, 220, 255, 0.55)"
+  ctx.lineWidth = 1
+  ctx.lineCap = "square"
+  // Hub pad
+  ctx.beginPath()
+  ctx.arc(cx, cy, 1.6, 0, Math.PI * 2)
+  ctx.fill()
+  for (let i = 0; i < 6; i++) {
+    const a = (i * Math.PI) / 3
+    const x2 = cx + Math.cos(a) * r
+    const y2 = cy + Math.sin(a) * r
+    ctx.beginPath()
+    ctx.moveTo(cx, cy)
+    ctx.lineTo(x2, y2)
+    ctx.stroke()
+    // Tiny pad at tip
+    ctx.beginPath()
+    ctx.arc(x2, y2, 1.1, 0, Math.PI * 2)
+    ctx.fill()
+    // Mid spur
+    const mx = cx + Math.cos(a) * (r * 0.55)
+    const my = cy + Math.sin(a) * (r * 0.55)
+    const perp = a + Math.PI / 2
+    ctx.beginPath()
+    ctx.moveTo(mx - Math.cos(perp) * 2.2, my - Math.sin(perp) * 2.2)
+    ctx.lineTo(mx + Math.cos(perp) * 2.2, my + Math.sin(perp) * 2.2)
+    ctx.stroke()
+  }
+  ctx.restore()
+}
+
+function drawTrailStamp(
+  ctx: CanvasRenderingContext2D,
+  pos: Pos,
+  ageT: number,
+  trailAlpha: number,
+  stampIndex: number,
+) {
+  const op = stampOpacity(ageT, trailAlpha)
+  if (op < 0.02) return
+  // Alternate cursor-angel / snowflake circuitry along the path.
+  if (stampIndex % 2 === 0) drawPixelCursor(ctx, pos.x, pos.y, op)
+  else drawSnowflakeStamp(ctx, pos.x, pos.y, op)
 }
 
 /**
@@ -136,10 +219,14 @@ export interface FolderViewIconsProps {
   dropTargetId: string | null
   homePinned: string[]
   iconPositions: Record<string, { x: number; y: number }>
+  /** Persisted auto vs freeform for this location. Missing infers from coords. */
+  iconLayoutMode?: IconLayoutMode
   organizeEpoch?: number
   organizeFromSnapshot?: PosMap | null
   onOrganizeAnimationEnd?: () => void
   setIconPosition: (location: string, key: string, x: number, y: number) => void
+  /** Persist a full snapshot and set auto/freeform without a layout-mode fight. */
+  commitIconLayout?: (location: string, positions: PosMap, mode: IconLayoutMode) => void
   setActiveIconId: (id: string) => void
   setSelectedCategories: React.Dispatch<React.SetStateAction<string[]>>
   setDropTargetId: React.Dispatch<React.SetStateAction<string | null>>
@@ -148,6 +235,7 @@ export interface FolderViewIconsProps {
   toggleHomePin: (id: string) => void
   setIconPickerFor: (target: IconPickerTarget) => void
   openNewCategoryDialog: () => void
+  onCanvasWidth?: (width: number) => void
 }
 
 interface ActiveDrag {
@@ -180,10 +268,12 @@ export function FolderViewIcons({
   dropTargetId,
   homePinned,
   iconPositions,
+  iconLayoutMode,
   organizeEpoch = 0,
   organizeFromSnapshot = null,
   onOrganizeAnimationEnd,
   setIconPosition,
+  commitIconLayout,
   setActiveIconId,
   setSelectedCategories,
   setDropTargetId,
@@ -192,16 +282,45 @@ export function FolderViewIcons({
   toggleHomePin,
   setIconPickerFor,
   openNewCategoryDialog,
+  onCanvasWidth,
 }: FolderViewIconsProps) {
-  // Resolved position for every entry at the current location.
-  const positions = useMemo<PosMap>(() => {
-    const map: PosMap = {}
-    for (const entry of entries) {
-      const key = iconPosKey(entry)
-      map[key] = iconPositions[`${location}:${key}`] ?? PRESET_ICON_POSITIONS[key] ?? hashIconSlot(key)
+  const canvasRef = useRef<HTMLDivElement>(null)
+  const [canvasWidth, setCanvasWidth] = useState(VELVET_GRID_FALLBACK_WIDTH)
+
+  useLayoutEffect(() => {
+    const el = canvasRef.current
+    if (!el) return
+    const apply = () => {
+      // clientWidth excludes the scrollbar — that's the packing width.
+      const w = Math.round(el.clientWidth)
+      const next = w >= 80 ? w : VELVET_GRID_FALLBACK_WIDTH
+      setCanvasWidth(next)
+      onCanvasWidth?.(next)
     }
-    return map
-  }, [entries, iconPositions, location])
+    apply()
+    if (typeof ResizeObserver === "undefined") return
+    const ro = new ResizeObserver(apply)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [onCanvasWidth])
+
+  const entryKeys = useMemo(() => entries.map((e) => iconPosKey(e)), [entries])
+  const savedHere = useMemo(
+    () => positionsForLocation(iconPositions, location, entryKeys),
+    [iconPositions, location, entryKeys],
+  )
+  const layoutMode = inferIconLayoutMode(entryKeys, savedHere, iconLayoutMode)
+
+  // Live freeze while a drag is in flight — siblings never go back through auto-pack.
+  const [dragFreeze, setDragFreeze] = useState<PosMap | null>(null)
+  const dragFreezeRef = useRef<PosMap | null>(null)
+  dragFreezeRef.current = dragFreeze
+
+  const packingWidth = canvasWidth
+  const positions = useMemo<PosMap>(() => {
+    if (dragFreeze) return dragFreeze
+    return resolveVelvetIconPositions(entryKeys, packingWidth, savedHere, layoutMode)
+  }, [entryKeys, savedHere, packingWidth, layoutMode, dragFreeze])
 
   // Previous render's positions — the "from" of an auto-organize sweep.
   const prevPositionsRef = useRef<PosMap>(positions)
@@ -275,12 +394,23 @@ export function FolderViewIcons({
           if (Math.hypot(dx, dy) <= 4) return
           movedRef.current = true
           setDragKey(drag.key)
+          // Freeze EVERY icon at its current visual slot, then move only this one.
+          // Auto-pack / CSS-grid must not reflow siblings for the rest of the drag.
+          const originMap = { ...positions }
+          const first = { x: Math.max(0, drag.origX + dx), y: Math.max(0, drag.origY + dy) }
+          const frozen = freezeVelvetPositions(originMap, drag.key, first)
+          dragFreezeRef.current = frozen
+          setDragFreeze(frozen)
+          commitIconLayout?.(location, frozen, "freeform")
         }
         const next = { x: Math.max(0, drag.origX + dx), y: Math.max(0, drag.origY + dy) }
         setDragPos(next)
 
         if (drag.kind === "list") {
-          const under = document.elementFromPoint(ev.clientX, ev.clientY)?.closest<HTMLElement>("[data-icon-entry]")
+          const under =
+            typeof document.elementFromPoint === "function"
+              ? document.elementFromPoint(ev.clientX, ev.clientY)?.closest<HTMLElement>("[data-icon-entry]")
+              : null
           const targetKind = under?.dataset.kind
           const targetId = under?.dataset.id ?? null
           if (under && (targetKind === "folder" || targetKind === "folder-all") && targetId !== drag.id) {
@@ -315,6 +445,8 @@ export function FolderViewIcons({
         dropTargetRef.current = null
         setDragKey(null)
         setDragPos(null)
+        setDragFreeze(null)
+        dragFreezeRef.current = null
         setDropTargetId(null)
         window.removeEventListener("mousemove", onMove)
         window.removeEventListener("mouseup", onUp)
@@ -323,20 +455,22 @@ export function FolderViewIcons({
       window.addEventListener("mousemove", onMove)
       window.addEventListener("mouseup", onUp)
     },
-    [entries, location, onFileCategoryOnEntry, positions, selectMode, setDropTargetId, setIconPosition],
+    [commitIconLayout, entries, location, onFileCategoryOnEntry, positions, selectMode, setDropTargetId, setIconPosition],
   )
 
-  // --- Auto-organize: canvas smear + DOM heads ------------------------------
+  // --- Auto-organize: cursor/snowflake canvas trace + DOM heads -------------
   const [organize, setOrganize] = useState<OrganizeAnim | null>(null)
   const trailNodesRef = useRef<Record<string, TrailNode>>({})
   const trailStateRef = useRef<Record<string, IconTrailState>>({})
-  const smearCanvasRef = useRef<HTMLCanvasElement>(null)
+  const trailCanvasRef = useRef<HTMLCanvasElement>(null)
+  const onOrganizeEndRef = useRef(onOrganizeAnimationEnd)
+  onOrganizeEndRef.current = onOrganizeAnimationEnd
 
   useEffect(() => {
     if (!organizeEpoch) return
     const from = organizeFromSnapshot ?? { ...prevPositionsRef.current }
-    const entryKeys = entries.map((e) => iconPosKey(e))
-    const to = computeIconGridPositions(entryKeys)
+    const keys = entries.map((e) => iconPosKey(e))
+    const to = layoutVelvetIconGrid(keys, canvasWidth)
     const moving = entries
       .map((entry, index) => ({ entry, index }))
       .filter(({ entry }) => {
@@ -345,7 +479,11 @@ export function FolderViewIcons({
         const b = to[key]
         return a && b && (Math.abs(a.x - b.x) >= 1 || Math.abs(a.y - b.y) >= 1)
       })
-    if (moving.length === 0) return
+    // Final grid already committed by the parent — reduced motion skips the trace only.
+    if (moving.length === 0 || prefersOrganizeTrailReduced()) {
+      onOrganizeEndRef.current?.()
+      return
+    }
     trailNodesRef.current = {}
     trailStateRef.current = {}
     setOrganize({ entries: moving, from, to })
@@ -357,7 +495,7 @@ export function FolderViewIcons({
     let raf = 0
     let cancelled = false
     const start = performance.now()
-    const canvas = smearCanvasRef.current
+    const canvas = trailCanvasRef.current
     const grid = canvas?.parentElement
     if (!canvas || !grid) return
 
@@ -369,6 +507,8 @@ export function FolderViewIcons({
     canvas.style.height = `${rect.height}px`
     const ctx = canvas.getContext("2d")
     if (!ctx) return
+    // Crisp pixel cursors — no image smoothing on stamps.
+    ctx.imageSmoothingEnabled = false
 
     for (const { entry, index } of organize.entries) {
       const key = iconPosKey(entry)
@@ -384,13 +524,13 @@ export function FolderViewIcons({
       const t = now - start
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       ctx.clearRect(0, 0, rect.width, rect.height)
+      ctx.imageSmoothingEnabled = false
 
       for (const { entry } of organize.entries) {
         const key = iconPosKey(entry)
         const node = trailNodesRef.current[key]
         const state = trailStateRef.current[key]
-        const img = iconImages.get(key)
-        if (!node || !state || !img) continue
+        if (!node || !state) continue
 
         const from = organize.from[key]
         const to = organize.to[key]
@@ -402,17 +542,10 @@ export function FolderViewIcons({
         const p = organizeProgress(moveT)
         const head = posAtProgress(from, to, p)
 
-        const smear = buildSpatialSmear(from, to, p, NUM_GHOSTS)
-        for (let i = smear.length - 1; i >= 0; i--) {
-          const { pos, ageT } = smear[i]
-          const op = ghostOpacity(ageT, trailAlpha)
-          if (op < 0.002) continue
-          ctx.save()
-          ctx.globalAlpha = op
-          ctx.filter = `blur(${0.35 + ageT * 2}px)`
-          ctx.translate(pos.x + 4, pos.y + 4)
-          ctx.drawImage(img, 0, 0, ICON_DRAW, ICON_DRAW)
-          ctx.restore()
+        const trail = buildSpatialTrail(from, to, p, NUM_STAMPS)
+        for (let i = trail.length - 1; i >= 0; i--) {
+          const { pos, ageT, index } = trail[i]
+          drawTrailStamp(ctx, pos, ageT, trailAlpha, index)
         }
 
         if (node.head) {
@@ -425,16 +558,11 @@ export function FolderViewIcons({
       } else {
         ctx.clearRect(0, 0, rect.width, rect.height)
         setOrganize(null)
-        onOrganizeAnimationEnd?.()
+        onOrganizeEndRef.current?.()
       }
     }
 
-    let iconImages = new Map<string, HTMLImageElement>()
-    void loadIconImages(organize.entries.map((e) => e.entry)).then((imgs) => {
-      if (cancelled) return
-      iconImages = imgs
-      raf = requestAnimationFrame(frame)
-    })
+    raf = requestAnimationFrame(frame)
 
     return () => {
       cancelled = true
@@ -459,14 +587,25 @@ export function FolderViewIcons({
     return positions[key] ?? { x: 16, y: 16 }
   }
 
+  const rows = Math.max(1, Math.ceil(entries.length / velvetGridColumns(canvasWidth)))
+  const gridMinHeight = Math.max(480, rows * VELVET_ICON_CELL.h + VELVET_ICON_CELL.pad * 2)
+  const paintMode: IconLayoutMode = dragFreeze || dragKey ? "freeform" : layoutMode
+
   return (
-    <div key={`icons-${location}`} className="fm-sunken fm-desktop velvet fm-icon-canvas">
+    <div
+      ref={canvasRef}
+      key={`icons-${location}`}
+      className="fm-sunken fm-desktop velvet fm-icon-canvas"
+      data-icon-pack={paintMode}
+    >
       <div
         className="fm-icon-grid fm-icon-grid-free"
-        style={{ position: "relative", minHeight: Math.max(480, Math.ceil(entries.length / 8) * 100 + 32), width: "100%" }}
+        style={{ position: "relative", minHeight: gridMinHeight, width: "100%" }}
       >
-        {/* Canvas smear layer — alpha-blended draws fuse into motion streak. */}
-        {organize && <canvas ref={smearCanvasRef} className="fm-trail-canvas" aria-hidden />}
+        {/* Ephemeral cursor / snowflake stamps along the sweep — not layout. */}
+        {organize && (
+          <canvas ref={trailCanvasRef} className="fm-organize-trace" aria-hidden data-organize-trace />
+        )}
 
         {organize &&
           organize.entries.map(({ entry }) => {
@@ -480,7 +619,7 @@ export function FolderViewIcons({
                   ref={(el) => {
                     node.head = el
                   }}
-                  className="fm-trail-head"
+                  className="fm-organize-trace-head"
                   style={{ transform: `translate3d(${from.x}px, ${from.y}px, 0)` }}
                 >
                   <div className="fm-icon-img-wrap">{renderEntryIcon(entry, 60)}</div>

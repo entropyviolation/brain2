@@ -1,16 +1,22 @@
 import { describe, it, expect } from "vitest"
 import {
   NAME_COLUMN_ID,
+  BLANK_CELLS_SORT,
+  MIN_SHEET_COL_WIDTH,
+  applyColumnWidth,
   buildSheetColumns,
   canWriteCell,
   cellSortValue,
   cellText,
   coerceCellInput,
   columnFromDef,
+  columnWidthsByList,
   cycleColumnSort,
   filterRows,
+  isBlankSortValue,
   isWritableColumn,
   nameColumn,
+  persistSheetViewConfig,
   readCellValue,
   sortDirFor,
   sortRows,
@@ -126,6 +132,84 @@ describe("sortRows", () => {
     expect(sorted.map((r) => r.id)).toEqual(["a", "d", "b", "c"])
   })
 
+  it("keeps placeholder dashes and whitespace with the blanks at the end", () => {
+    const dashRows = [
+      task("v", "Valued", { price: 5 }),
+      task("em", "Em dash", { price: "—" }),
+      task("sp", "Spaces", { price: "  " }),
+      task("hy", "Hyphen", { price: "-" }),
+      task("z", "Zero", { price: 0 }),
+      task("mid", "Nullish", {}),
+    ]
+    expect(BLANK_CELLS_SORT).toBe("end")
+    const asc = sortRows(dashRows, [{ columnId: "price", dir: "asc" }], cols)
+    expect(asc.map((r) => r.id)).toEqual(["z", "v", "em", "sp", "hy", "mid"])
+    const desc = sortRows(dashRows, [{ columnId: "price", dir: "desc" }], cols)
+    expect(desc.map((r) => r.id)).toEqual(["v", "z", "em", "sp", "hy", "mid"])
+  })
+
+  it("sorts text with blanks last, not in the middle", () => {
+    const textDef = [def({ id: "note", name: "Note", type: "string" })]
+    const textCols = buildSheetColumns(textDef)
+    const textRows = [
+      task("b", "B", { note: "banana" }),
+      task("empty", "Empty", { note: "" }),
+      task("a", "A", { note: "apple" }),
+      task("dash", "Dash", { note: "—" }),
+      task("c", "C", { note: "cherry" }),
+    ]
+    const sorted = sortRows(textRows, [{ columnId: "note", dir: "asc" }], textCols)
+    expect(sorted.map((r) => r.id)).toEqual(["a", "b", "c", "empty", "dash"])
+  })
+
+  it("sorts enum / Priority labels as text with Unclassified kept and true blanks last", () => {
+    const priDef = [def({ id: "tidyImportance", name: "Priority", type: "selection" })]
+    const priCols = buildSheetColumns(priDef)
+    const priRows = [
+      task("p", "P", { tidyImportance: "Preferred" }),
+      task("u", "U", { tidyImportance: "Unclassified" }),
+      task("blank", "Blank", {}),
+      task("c", "C", { tidyImportance: "Crucial" }),
+      task("dash", "Dash", { tidyImportance: "—" }),
+    ]
+    const sorted = sortRows(priRows, [{ columnId: "tidyImportance", dir: "asc" }], priCols)
+    expect(sorted.map((r) => r.id)).toEqual(["c", "p", "u", "blank", "dash"])
+  })
+
+  it("sorts dates chronologically with missing dates last", () => {
+    const dateDef = [def({ id: "due", name: "Due", type: "datetime" })]
+    const dateCols = buildSheetColumns(dateDef)
+    const dateRows = [
+      task("late", "Late", { due: "2026-09-21" }),
+      task("none", "None", {}),
+      task("early", "Early", { due: "2026-01-02" }),
+      task("dash", "Dash", { due: "—" }),
+    ]
+    const sorted = sortRows(dateRows, [{ columnId: "due", dir: "asc" }], dateCols)
+    expect(sorted.map((r) => r.id)).toEqual(["early", "late", "none", "dash"])
+  })
+
+  it("sorts builtin number fields (Est min) with empties last", () => {
+    const estCol: SheetColumn = {
+      id: "__field_estimatedDuration__",
+      name: "Est",
+      type: "number",
+      isName: false,
+      isFormula: false,
+      readOnly: false,
+      builtin: "estimatedDuration",
+    }
+    const estRows = [
+      task("b", "B"),
+      task("a", "A"),
+      task("c", "C"),
+    ]
+    estRows[0].estimatedDuration = 20
+    estRows[2].estimatedDuration = 10
+    const sorted = sortRows(estRows, [{ columnId: estCol.id, dir: "asc" }], [nameColumn(), estCol])
+    expect(sorted.map((r) => r.id)).toEqual(["c", "b", "a"])
+  })
+
   it("sorts the name column case-insensitively", () => {
     const sorted = sortRows(rows, [{ columnId: NAME_COLUMN_ID, dir: "asc" }], cols)
     expect(sorted.map((r) => r.id)).toEqual(["b", "a", "c", "d"])
@@ -183,6 +267,48 @@ describe("cellSortValue", () => {
     const boolCol = columnFromDef(def({ id: "b", type: "boolean" }))
     expect(cellSortValue(task("x", "X", { b: true }), boolCol)).toBe(1)
     expect(cellSortValue(task("y", "Y", {}), boolCol)).toBeNull()
+  })
+
+  it("treats em dash placeholders as blank", () => {
+    const note = columnFromDef(def({ id: "note", type: "string" }))
+    expect(isBlankSortValue("—")).toBe(true)
+    expect(isBlankSortValue("  ")).toBe(true)
+    expect(isBlankSortValue(0)).toBe(false)
+    expect(isBlankSortValue(false)).toBe(false)
+    expect(cellSortValue(task("z", "Z", { note: "—" }), note)).toBeNull()
+  })
+})
+
+describe("persistSheetViewConfig / column widths", () => {
+  it("records listId → columnId → width and keeps untouched columns on defaults", () => {
+    expect(MIN_SHEET_COL_WIDTH).toBe(60)
+    const living = persistSheetViewConfig(
+      { columnIds: ["tidyImportance", "estMin"] },
+      applyColumnWidth({}, "estMin", 240),
+    )
+    const books = persistSheetViewConfig(undefined, applyColumnWidth({}, NAME_COLUMN_ID, 320))
+    const byList = columnWidthsByList([
+      { id: "living-room", sheetConfig: living },
+      { id: "books", sheetConfig: books },
+      { id: "empty", sheetConfig: {} },
+    ])
+    expect(byList).toEqual({
+      "living-room": { estMin: 240 },
+      books: { [NAME_COLUMN_ID]: 320 },
+    })
+    expect(living.columnIds).toEqual(["tidyImportance", "estMin"])
+  })
+
+  it("merges a resize onto stored widths without dropping sibling columnIds", () => {
+    const stored = { columnIds: ["year"], columnWidths: { year: 100 } }
+    const next = applyColumnWidth({}, "pages", 180)
+    const merged = persistSheetViewConfig(stored, next)
+    expect(merged.columnIds).toEqual(["year"])
+    expect(merged.columnWidths).toEqual({ year: 100, pages: 180 })
+  })
+
+  it("floors drag widths at MIN_SHEET_COL_WIDTH", () => {
+    expect(applyColumnWidth({}, "estMin", 12).columnWidths?.estMin).toBe(MIN_SHEET_COL_WIDTH)
   })
 })
 
@@ -250,6 +376,11 @@ describe("coerceCellInput", () => {
 
   it("passes string values through untrimmed", () => {
     expect(coerceCellInput(def({ type: "string" }), "  hi there ")).toBe("  hi there ")
+  })
+
+  it("parses ISO dates into YYYY-MM-DD", () => {
+    const date = def({ type: "datetime", datetimeMode: "date" })
+    expect(coerceCellInput(date, "2026-09-21")).toBe("2026-09-21")
   })
 })
 

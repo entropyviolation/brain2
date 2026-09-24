@@ -33,6 +33,16 @@ describe("lists-task-index", () => {
     expect(index.activeCount).toBe(2)
   })
 
+  it("drops missed opportunities from active list membership", () => {
+    const tasks = [
+      task({ id: "open", description: "Open", lists: ["work"] }),
+      task({ id: "late", description: "Late", lists: ["work"], status: "missed" }),
+    ]
+    const index = buildListsTaskIndex(tasks)
+    expect(tasksForList(index, "work").map((t) => t.id)).toEqual(["open"])
+    expect(index.activeCount).toBe(1)
+  })
+
   it("reuses previous list arrays when membership did not change", () => {
     const keep = task({ id: "keep", description: "Keep", lists: ["stable"] })
     const gone = task({ id: "gone", description: "Gone", lists: ["other"] })

@@ -2,6 +2,7 @@
 
 import type { Task, List, Folder } from "@/lib/types"
 import { FolderGlyph, iconFor } from "@/components/Lists/lib/icon-utils"
+import { itemTitle } from "@/lib/item-utils"
 
 export interface SearchResultsViewProps {
   searchTerm: string
@@ -70,7 +71,7 @@ export function SearchResultsView({
             {tasks.map((t) => (
               <div key={t.id} className="fm-link-row" onClick={() => onSelectTask(t.id)}>
                 <img className="fm-link-icon" src={iconFor(t.id, t.icon)} alt="" loading="lazy" decoding="async" />
-                <span className="fm-link-text">{t.description}</span>
+                <span className="fm-link-text">{itemTitle(t)}</span>
               </div>
             ))}
           </>

@@ -8,8 +8,15 @@ import type { Task, List, Folder } from "@/lib/types"
 import { isScheduledFolderId } from "@/lib/scheduled-lists-sync"
 import { getDescendantIds } from "@/lib/list-tree"
 import { getFolderDescendantIds, getRootFolders, isAutoScheduledPeriodFolder } from "@/lib/folder-tree"
+import { isClearedFromWork } from "@/lib/completion-status"
 
 export const FOLDER_ALL_PREFIX = "__all-items__"
+
+/** Stable suffix for Home / global All (Quick Access All), not a real folder id. */
+export const GLOBAL_ALL_ITEMS_KEY = "root"
+
+/** Backing list for Home / global All view prefs. Not filed in any folder. */
+export const GLOBAL_ALL_ITEMS_LIST_ID = `${FOLDER_ALL_PREFIX}${GLOBAL_ALL_ITEMS_KEY}`
 
 export function folderAllItemsCategoryId(folderId: string): string {
   return `${FOLDER_ALL_PREFIX}${folderId}`
@@ -17,6 +24,35 @@ export function folderAllItemsCategoryId(folderId: string): string {
 
 export function isFolderAllItemsCategoryId(id: string): boolean {
   return id.startsWith(FOLDER_ALL_PREFIX)
+}
+
+/** Backing All Items list for a folder, if sync has created it. */
+export function folderAllItemsList(lists: List[], folderId: string): List | undefined {
+  return lists.find((c) => c.id === folderAllItemsCategoryId(folderId))
+}
+
+/** Shape of the auto-managed All Items record. View prefs persist here. */
+export function buildFolderAllItemsList(folder: Folder): List {
+  return {
+    id: folderAllItemsCategoryId(folder.id),
+    name: "All Items",
+    color: folder.color || "#64748b",
+    description: "All items in this folder",
+    createdAt: new Date(),
+    scheduleable: folder.scheduleable !== false,
+  }
+}
+
+/** View-prefs record for Quick Access All. Never a child list; never owns the universe. */
+export function buildGlobalAllItemsList(): List {
+  return {
+    id: GLOBAL_ALL_ITEMS_LIST_ID,
+    name: "All Items",
+    color: "#64748b",
+    description: "All items",
+    createdAt: new Date(),
+    scheduleable: false,
+  }
 }
 
 type FolderMutators = {
@@ -34,14 +70,7 @@ export function syncFolderAllItemsCategories(mut: FolderMutators): void {
     const allId = folderAllItemsCategoryId(folder.id)
     const existing = mut.lists.find((c) => c.id === allId)
     if (!existing) {
-      mut.addList({
-        id: allId,
-        name: "All Items",
-        color: folder.color || "#64748b",
-        description: "All items in this folder",
-        createdAt: new Date(),
-        scheduleable: folder.scheduleable !== false,
-      })
+      mut.addList(buildFolderAllItemsList(folder))
     }
     if (!folder.listIds.includes(allId)) {
       mut.updateFolder({
@@ -50,6 +79,12 @@ export function syncFolderAllItemsCategories(mut: FolderMutators): void {
       })
     }
   }
+}
+
+/** Ensure Home / global All has a prefs record. Do not file it on any folder. */
+export function syncGlobalAllItemsList(mut: Pick<FolderMutators, "lists" | "addList">): void {
+  if (mut.lists.some((c) => c.id === GLOBAL_ALL_ITEMS_LIST_ID)) return
+  mut.addList(buildGlobalAllItemsList())
 }
 
 export function folderListCategoryIds(folder: Folder): string[] {
@@ -113,7 +148,7 @@ export function getTasksForFolderAllView(
   const allId = folderAllItemsCategoryId(folder.id)
   const listIds = folderListCategoryIdsDeep(folder, categories)
   return tasks.filter((t) => {
-    if (t.completed) return false
+    if (isClearedFromWork(t)) return false
     const cats = t.lists ?? []
     return cats.includes(allId) || listIds.some((id) => cats.includes(id))
   })
@@ -134,20 +169,22 @@ export function listsInFolderForFilter(folder: Folder, categories: List[]): List
  * Display-only filter for a folder's All Items view (every display mode).
  * Hidden list ids are omitted from this view; membership is not changed.
  * An item stays visible if it belongs to any non-hidden folder list, or if it
- * is uncategorized in the folder (no folder list membership).
+ * is uncategorized in the folder (no folder list membership) and uncategorized
+ * items are not hidden.
  */
 export function filterTasksByHiddenFolderLists(
   tasks: Task[],
   folder: Folder,
   hiddenListIds: string[],
   categories?: List[],
+  hideUncategorized = false,
 ): Task[] {
-  if (!hiddenListIds.length) return tasks
+  if (!hiddenListIds.length && !hideUncategorized) return tasks
   const hidden = new Set(hiddenListIds)
   const folderListIds = folderListCategoryIdsDeep(folder, categories)
   return tasks.filter((t) => {
     const inFolderLists = (t.lists ?? []).filter((id) => folderListIds.includes(id))
-    if (inFolderLists.length === 0) return true
+    if (inFolderLists.length === 0) return !hideUncategorized
     return inFolderLists.some((id) => !hidden.has(id))
   })
 }
@@ -168,13 +205,15 @@ export function filterTasksByHiddenGlobalFolders(
   folders: Folder[],
   hiddenFolderIds: string[],
   categories?: List[],
+  hideUncategorized = false,
 ): Task[] {
-  if (!hiddenFolderIds.length) return tasks
+  if (!hiddenFolderIds.length && !hideUncategorized) return tasks
   const hidden = new Set(hiddenFolderIds)
   for (const id of hiddenFolderIds) {
     for (const descId of getFolderDescendantIds(folders, id)) hidden.add(descId)
   }
   return tasks.filter((t) => {
+    if (hideUncategorized && isTaskUncategorizedGlobally(t)) return false
     const inFolders = folders.filter((f) => taskInFolder(t, f, categories))
     if (inFolders.length === 0) return true
     return inFolders.some((f) => !hidden.has(f.id))

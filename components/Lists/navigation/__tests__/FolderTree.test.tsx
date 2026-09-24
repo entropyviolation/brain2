@@ -128,6 +128,25 @@ describe("FolderTree", () => {
     expect(onEditFolder).toHaveBeenCalledWith(expect.objectContaining({ id: "f1" }))
   })
 
+  it("renders Quick Access and Folders section headings", () => {
+    render(
+      <FolderTree
+        folders={mockFolders}
+        location="home"
+        openTarget={null}
+        isHome
+        isAll={false}
+        onNavTo={vi.fn()}
+        onDragOver={vi.fn()}
+        onDrop={vi.fn()}
+        onCreateFolder={vi.fn()}
+      />,
+    )
+    expect(screen.getByText("Quick Access")).toBeInTheDocument()
+    expect(screen.getByText("Folders")).toBeInTheDocument()
+    expect(screen.getByRole("navigation", { name: "Lists folders" })).toBeInTheDocument()
+  })
+
   it("adds Module Lists to Quick Access when the folder exists", () => {
     render(
       <FolderTree

@@ -50,11 +50,12 @@ function renderPanel(overrides: Partial<ComponentProps<typeof ListContentPanel>>
     folderAllUncategorizedOnly: {},
     onFolderAllUncategorizedOnlyChange: vi.fn(),
     folderAllHiddenListIds: {},
-    onFolderAllListHiddenChange: vi.fn(),
+    folderAllHideUncategorized: {},
     addingTaskToTarget: null,
     openTargetKeyValue: "folder1",
     onAddTask: vi.fn(),
     onCancelAddTask: vi.fn(),
+    onShowAddTask: vi.fn(),
     showBulkAdd: false,
     onBulkAdd: vi.fn(),
     onShowBulkAdd: vi.fn(),
@@ -70,29 +71,12 @@ function renderPanel(overrides: Partial<ComponentProps<typeof ListContentPanel>>
 }
 
 describe("ListContentPanel folder All list filter", () => {
-  it("renders a checkbox for every list in the folder under bulk add, all selected by default", () => {
+  it("keeps bulk add in the content panel and does not render the list checkbox filter there", () => {
     renderPanel()
     expect(screen.getByRole("button", { name: /Bulk add items/i })).toBeInTheDocument()
-    const list1 = screen.getByRole("checkbox", { name: "list 1" })
-    const list2 = screen.getByRole("checkbox", { name: "list 2" })
-    expect(list1).toBeChecked()
-    expect(list2).toBeChecked()
-    const filter = screen.getByRole("group", { name: "Filter lists" })
-    const bulk = screen.getByRole("button", { name: /Bulk add items/i })
-    expect(bulk.compareDocumentPosition(filter) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-  })
-
-  it("notifies when a list is unselected", () => {
-    const { props } = renderPanel()
-    fireEvent.click(screen.getByRole("checkbox", { name: "list 1" }))
-    expect(props.onFolderAllListHiddenChange).toHaveBeenCalledWith("folder1", "list-1", true)
-  })
-
-  it("shows the list filter in non-default displays", () => {
-    renderPanel({ currentDisplay: "checklist" })
-    expect(screen.getByRole("group", { name: "Filter lists" })).toBeInTheDocument()
-    expect(screen.getByRole("checkbox", { name: "list 1" })).toBeChecked()
-    expect(screen.getByText("item a")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Add Item" })).toBeInTheDocument()
+    expect(screen.getByRole("checkbox", { name: "Show uncategorized only" })).toBeInTheDocument()
+    expect(screen.queryByRole("group", { name: "Filter lists" })).not.toBeInTheDocument()
   })
 
   it("does not show the list filter for a regular list", () => {
@@ -114,39 +98,17 @@ describe("ListContentPanel global All folder filter", () => {
     listIds: ["__all-items__folder2", "list-3"],
   })
 
-  it("renders a checkbox for every root folder, all selected by default", () => {
+  it("does not render folder inclusion checkboxes in the item pane", () => {
     renderPanel({
       isRootAll: true,
       currentFolder: null,
       folders: [folder1(), folder2()],
       categories: [list("list-1", "list 1"), list("list-2", "list 2"), list("list-3", "list 3")],
     })
-    expect(screen.getByRole("group", { name: "Filter folders" })).toBeInTheDocument()
-    expect(screen.getByRole("checkbox", { name: "folder1" })).toBeChecked()
-    expect(screen.getByRole("checkbox", { name: "folder2" })).toBeChecked()
+    expect(screen.queryByRole("group", { name: "Filter folders" })).not.toBeInTheDocument()
     expect(screen.queryByRole("group", { name: "Filter lists" })).not.toBeInTheDocument()
-  })
-
-  it("notifies when a folder is unselected", () => {
-    const onGlobalAllFolderHiddenChange = vi.fn()
-    renderPanel({
-      isRootAll: true,
-      currentFolder: null,
-      folders: [folder1(), folder2()],
-      onGlobalAllFolderHiddenChange,
-    })
-    fireEvent.click(screen.getByRole("checkbox", { name: "folder1" }))
-    expect(onGlobalAllFolderHiddenChange).toHaveBeenCalledWith("folder1", true)
-  })
-
-  it("shows the folder filter in non-default displays", () => {
-    renderPanel({
-      isRootAll: true,
-      currentFolder: null,
-      currentDisplay: "checklist",
-      folders: [folder1(), folder2()],
-    })
-    expect(screen.getByRole("group", { name: "Filter folders" })).toBeInTheDocument()
+    expect(screen.getByRole("checkbox", { name: "Show uncategorized only" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /Bulk add items/i })).toBeInTheDocument()
   })
 
   it("renders show uncategorized only and notifies when toggled", () => {
@@ -186,6 +148,70 @@ describe("ListContentPanel item select mode", () => {
     expect(onTaskSelect).not.toHaveBeenCalled()
   })
 
+  it("renders reading rows in Default display instead of orbs or a blue hyperlink", () => {
+    renderPanel({
+      openFolderAll: false,
+      openCategory: list("list-1", "list 1"),
+      currentFolder: folder1(),
+      currentDisplay: "default",
+      tasks: [task("a", "item a", "list-1")],
+    })
+    expect(screen.getByTestId("list-default-read")).toBeInTheDocument()
+    expect(document.querySelector(".fm-read-name")?.textContent).toBe("item a")
+    expect(document.querySelector(".fm-read-pip")).toBeTruthy()
+    expect(document.querySelector(".fm-icon-img")).toBeNull()
+    expect(document.querySelector(".fm-link-text")).toBeNull()
+    expect(screen.queryByRole("button", { name: "Complete" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument()
+  })
+
+  it("never shows item checkboxes in default display unless select mode is on", () => {
+    const open = task("a", "item a", "list-1")
+    const done = task("b", "item b", "list-1")
+    done.completed = true
+    const parentish = task("c", "item c", "list-1")
+    parentish.status = "done"
+    parentish.completed = true
+    renderPanel({
+      openFolderAll: false,
+      openCategory: list("list-1", "list 1"),
+      currentFolder: folder1(),
+      currentDisplay: "default",
+      tasks: [open, done, parentish],
+    })
+    expect(screen.getByTestId("list-default-read")).toBeInTheDocument()
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Complete" })).not.toBeInTheDocument()
+    expect(document.querySelectorAll(".fm-checkbox")).toHaveLength(0)
+    expect(document.querySelectorAll(".fm-read-pip")).toHaveLength(3)
+  })
+
+  it("shows select-mode checkboxes on default rows and still has no complete ticks", () => {
+    renderPanel({
+      selectMode: true,
+      selectedTaskIds: ["a"],
+      openFolderAll: false,
+      openCategory: list("list-1", "list 1"),
+      currentFolder: folder1(),
+      currentDisplay: "default",
+      tasks: [task("a", "item a", "list-1"), task("b", "item b", "list-1")],
+    })
+    expect(screen.getByRole("checkbox", { name: "Select item a" })).toBeChecked()
+    expect(screen.getByRole("checkbox", { name: "Select item b" })).not.toBeChecked()
+    expect(screen.queryByRole("button", { name: "Complete" })).not.toBeInTheDocument()
+  })
+
+  it("keeps complete checkboxes in checklist view", () => {
+    renderPanel({
+      currentDisplay: "checklist",
+      openFolderAll: false,
+      openCategory: list("list-1", "list 1"),
+      tasks: [task("a", "item a", "list-1")],
+    })
+    expect(screen.getByRole("button", { name: "Completed" })).toBeInTheDocument()
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument()
+  })
+
   it("keeps complete working in checklist select mode", () => {
     const onToggleTaskSelect = vi.fn()
     const onCompleteTask = vi.fn()
@@ -199,7 +225,7 @@ describe("ListContentPanel item select mode", () => {
       openCategory: list("list-1", "list 1"),
       tasks: [task("a", "item a", "list-1")],
     })
-    fireEvent.click(screen.getByRole("button", { name: "Complete" }))
+    fireEvent.click(screen.getByRole("button", { name: "Completed" }))
     expect(onCompleteTask).toHaveBeenCalledWith("a")
     fireEvent.click(screen.getByRole("checkbox", { name: "Select item a" }))
     expect(onToggleTaskSelect).toHaveBeenCalledWith("a")
@@ -259,6 +285,22 @@ describe("ListContentPanel bulk add", () => {
 })
 
 describe("ListContentPanel single add", () => {
+  it("shows Add Item beside Bulk add items and starts add without moving bulk add", () => {
+    const onShowAddTask = vi.fn()
+    renderPanel({
+      onShowAddTask,
+      openFolderAll: false,
+      openCategory: list("list-1", "list 1"),
+      currentDisplay: "default",
+      tasks: [task("a", "item a", "list-1")],
+    })
+    const bulk = screen.getByRole("button", { name: /Bulk add items/i })
+    const add = screen.getByRole("button", { name: /^Add Item$/i })
+    expect(bulk.compareDocumentPosition(add) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    fireEvent.click(add)
+    expect(onShowAddTask).toHaveBeenCalled()
+  })
+
   it("keeps typed text in the field and submits it on Add Item", () => {
     const onAddTask = vi.fn()
     renderPanel({
@@ -270,11 +312,28 @@ describe("ListContentPanel single add", () => {
       currentDisplay: "default",
       tasks: [task("a", "item a", "list-1")],
     })
-    const textarea = screen.getByPlaceholderText(/Enter item description/i)
-    fireEvent.change(textarea, { target: { value: "New grocery item" } })
-    expect(textarea).toHaveValue("New grocery item")
+    const field = screen.getByPlaceholderText(/Enter item description/i)
+    fireEvent.change(field, { target: { value: "New grocery item" } })
+    expect(field).toHaveValue("New grocery item")
     expect(onAddTask).not.toHaveBeenCalled()
-    fireEvent.click(screen.getByRole("button", { name: /Add Item/i }))
+    fireEvent.click(screen.getByRole("button", { name: "Add Item" }))
     expect(onAddTask).toHaveBeenCalledWith("New grocery item")
+  })
+
+  it("submits a single item on Enter without pressing the button", () => {
+    const onAddTask = vi.fn()
+    renderPanel({
+      addingTaskToTarget: "folder1",
+      openTargetKeyValue: "folder1",
+      onAddTask,
+      openFolderAll: false,
+      openCategory: list("list-1", "list 1"),
+      currentDisplay: "default",
+      tasks: [task("a", "item a", "list-1")],
+    })
+    const field = screen.getByPlaceholderText(/Enter item description/i)
+    fireEvent.change(field, { target: { value: "From enter key" } })
+    fireEvent.keyDown(field, { key: "Enter" })
+    expect(onAddTask).toHaveBeenCalledWith("From enter key")
   })
 })

@@ -1,12 +1,20 @@
 "use client"
 
+import { useMemo } from "react"
 import { formatAttributeValue, listAttributeSchema } from "@/components/Lists/attribute-editor"
-import { safeDateFormat } from "@/lib/date-utils"
-import { listIsNextActions } from "@/lib/item-utils"
+import { itemTitle, listIsNextActions } from "@/lib/item-utils"
 import { isFolderAllItemsCategoryId, isTaskUncategorizedGlobally, isTaskUncategorizedInFolder } from "@/lib/folder-all-items"
 import { useItemTypeStore } from "@/lib/item-type-store"
-import type { Folder, List, Task } from "@/lib/types"
+import { useTaskStore } from "@/lib/task-store"
+import {
+  buildSpreadsheetCatalog,
+  readBuiltinField,
+  type SheetColumnCandidate,
+} from "@/lib/spreadsheet-catalog"
+import { resolveDetailsColumnIds } from "@/lib/details-columns"
+import type { AttributeDefinition, Folder, List, Task } from "@/lib/types"
 import type { ListContentDetailsProps } from "./types"
+import { ListMissedButton } from "./ListMissedButton"
 
 export type { ListContentDetailsProps } from "./types"
 
@@ -24,6 +32,59 @@ function listsColumnLabel(task: Task, categories: List[], currentFolder: Folder 
   )
 }
 
+function cellText(
+  candidate: SheetColumnCandidate,
+  task: Task,
+  listNameById: Map<string, string>,
+): string {
+  if (candidate.source === "builtin" && candidate.builtin) {
+    const raw = readBuiltinField(task, candidate.builtin, listNameById)
+    if (candidate.def) return formatAttributeValue(candidate.def, raw) || "—"
+    if (Array.isArray(raw)) return raw.join(", ") || "—"
+    if (raw == null || raw === "") return "—"
+    return String(raw)
+  }
+  if (candidate.def) return formatAttributeValue(candidate.def, task.attributes?.[candidate.id]) || "—"
+  return "—"
+}
+
+interface DetailCol {
+  key: string
+  name: string
+  render: (task: Task) => string
+}
+
+function buildDetailCols(
+  columnIds: string[],
+  catalogById: Map<string, SheetColumnCandidate>,
+  attrDefs: AttributeDefinition[],
+  listNameById: Map<string, string>,
+  skipListsBuiltin: boolean,
+): DetailCol[] {
+  const cols: DetailCol[] = []
+  for (const id of columnIds) {
+    const candidate = catalogById.get(id)
+    if (candidate) {
+      if (skipListsBuiltin && candidate.builtin === "lists") continue
+      cols.push({
+        key: candidate.id,
+        name: candidate.name,
+        render: (task) => cellText(candidate, task, listNameById),
+      })
+      continue
+    }
+    const def = attrDefs.find((d) => d.id === id)
+    if (def) {
+      cols.push({
+        key: def.id,
+        name: def.name,
+        render: (task) => formatAttributeValue(def, task.attributes?.[def.id]) || "—",
+      })
+    }
+  }
+  return cols
+}
+
 export function ListContentDetails({
   tasks,
   openCategory,
@@ -33,6 +94,7 @@ export function ListContentDetails({
   currentFolder,
   onTaskSelect,
   onCompleteTask,
+  onMissedOpportunity,
   onTaskDragStart,
   onDragEnd,
   selectMode,
@@ -40,18 +102,44 @@ export function ListContentDetails({
   onToggleTaskSelect,
 }: ListContentDetailsProps) {
   const types = useItemTypeStore((s) => s.types)
+  const vaultItems = useTaskStore((s) => s.tasks)
   const selected = new Set(selectedTaskIds)
   const tableCat = openCategory
-  // Composed schema: the list's item type attributes + its list-specific extras.
-  const attrDefs = tableCat ? listAttributeSchema(tableCat, types) : []
-  const displayIds =
-    tableCat?.displayedAttributes && tableCat.displayedAttributes.length > 0
-      ? tableCat.displayedAttributes
-      : attrDefs.map((d) => d.id)
-  const cols = attrDefs.filter((d) => displayIds.includes(d.id))
-  const showNextActionCols =
+  const nextActions =
     (tableCat && listIsNextActions(tableCat.id, folders)) ||
     (openFolderAll && tasks.some((t) => listIsNextActions(t.lists?.[0] || "", folders)))
+
+  const catalog = useMemo(
+    () =>
+      buildSpreadsheetCatalog({
+        list: tableCat ?? undefined,
+        lists: categories,
+        types,
+        listItems: tasks,
+        vaultItems,
+      }),
+    [tableCat, categories, types, tasks, vaultItems],
+  )
+
+  const columnIds = resolveDetailsColumnIds(
+    tableCat?.detailsColumns,
+    catalog,
+    tableCat ?? undefined,
+    types,
+    { nextActions: !!nextActions },
+  )
+  const attrDefs = tableCat ? listAttributeSchema(tableCat, types) : []
+  const listNameById = useMemo(
+    () => new Map(categories.map((c) => [c.id, c.name])),
+    [categories],
+  )
+  const cols = buildDetailCols(
+    columnIds,
+    new Map(catalog.map((c) => [c.id, c])),
+    attrDefs,
+    listNameById,
+    openFolderAll,
+  )
 
   return (
     <table className="fm-table">
@@ -61,16 +149,9 @@ export function ListContentDetails({
           <th>✓</th>
           <th>Name</th>
           {openFolderAll && <th>Lists</th>}
-          {cols.map((d) => (
-            <th key={d.id}>{d.name}</th>
+          {cols.map((c) => (
+            <th key={c.key}>{c.name}</th>
           ))}
-          {showNextActionCols && (
-            <>
-              <th>Urgency</th>
-              <th>Importance</th>
-              <th>Scheduled</th>
-            </>
-          )}
           <th>Actions</th>
         </tr>
       </thead>
@@ -91,7 +172,7 @@ export function ListContentDetails({
                 <input
                   type="checkbox"
                   checked={selected.has(task.id)}
-                  aria-label={`Select ${task.description}`}
+                  aria-label={`Select ${itemTitle(task)}`}
                   onChange={() => onToggleTaskSelect?.(task.id)}
                 />
               </td>
@@ -103,9 +184,11 @@ export function ListContentDetails({
                   e.stopPropagation()
                   onCompleteTask(task.id)
                 }}
+                aria-label="Complete"
               >
                 {task.completed ? "✓" : ""}
               </button>
+              <ListMissedButton task={task} onMissed={onMissedOpportunity} />
             </td>
             <td
               onClick={(e) => {
@@ -115,21 +198,14 @@ export function ListContentDetails({
               }}
               style={{ cursor: "pointer" }}
             >
-              {task.description}
+              {itemTitle(task)}
             </td>
             {openFolderAll && (
               <td className="text-xs">{listsColumnLabel(task, categories, currentFolder)}</td>
             )}
-            {cols.map((d) => (
-              <td key={d.id}>{formatAttributeValue(d, task.attributes?.[d.id]) || "—"}</td>
+            {cols.map((c) => (
+              <td key={c.key}>{c.render(task)}</td>
             ))}
-            {showNextActionCols && (
-              <>
-                <td>{task.urgency ?? "—"}</td>
-                <td>{task.importance ?? "—"}</td>
-                <td>{task.scheduledDate ? safeDateFormat(task.scheduledDate) : "—"}</td>
-              </>
-            )}
             <td onClick={(e) => e.stopPropagation()}>
               <button
                 className="fm-btn fm-btn-sm"

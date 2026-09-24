@@ -1,6 +1,7 @@
 "use client"
 
 import { iconFor } from "@/components/Lists/lib/icon-utils"
+import { itemTitle } from "@/lib/item-utils"
 import { ItemSelectCheckbox, activateListItem } from "./item-select"
 import type { ListContentIconsProps } from "./types"
 
@@ -27,12 +28,12 @@ export function ListContentIcons({
           onDragStart={(e) => !selectMode && onTaskDragStart(e, task)}
           onDragEnd={onDragEnd}
           onClick={() => activateListItem(selectMode, task.id, onToggleTaskSelect, onTaskSelect)}
-          title={task.description}
+          title={itemTitle(task)}
         >
           <ItemSelectCheckbox
             selectMode={selectMode}
             selected={selected.has(task.id)}
-            label={task.description}
+            label={itemTitle(task)}
             onToggle={() => onToggleTaskSelect?.(task.id)}
           />
           {!selectMode && (
@@ -50,7 +51,7 @@ export function ListContentIcons({
           <div className="fm-icon-img-wrap">
             <img className="fm-icon-img" src={iconFor(task.id, task.icon)} alt="" draggable={false} loading="lazy" decoding="async" />
           </div>
-          <span className="fm-icon-label">{task.description}</span>
+          <span className="fm-icon-label">{itemTitle(task)}</span>
         </div>
       ))}
     </div>

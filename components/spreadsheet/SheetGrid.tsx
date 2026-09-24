@@ -1,13 +1,14 @@
 /**
  * components/spreadsheet/SheetGrid.tsx — Google-Sheets-style editable grid
  *
- * A reusable, inline-editable grid over COGS items (`Task[]`) where columns are
+ * A reusable, inline-editable grid over Brain2 items (`Task[]`) where columns are
  * the effective attribute schema (spec §5). Used by:
  *   - the Lists "Spreadsheet" display (`ListContentSpreadsheet`)
  *   - Module workspace "spreadsheet" views (`ModuleWorkspace`)
  *
  * v2 features (all driven by `lib/spreadsheet-contract`):
  *   - click-to-sort headers (asc → desc → none; shift-click for multi-sort)
+ *   - header ⋮: Sort, Attribute settings (existing schema editor), hide / insert / move
  *   - a free-text filter row across all columns
  *   - drag-to-resize columns
  *   - config-driven frozen leading columns (`frozenColCount`, name counts as 1)
@@ -38,8 +39,8 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { ArrowDown, ArrowUp, Plus } from "lucide-react"
-import type { AttributeDefinition, AttributeValue, ItemTypeDefinition, Task, List } from "@/lib/types"
+import { ArrowDown, ArrowUp, MoreVertical, Plus } from "lucide-react"
+import type { AttributeDefinition, AttributeValue, Task, List } from "@/lib/types"
 import { useTaskStore } from "@/lib/task-store"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { normalizeAttributeType } from "@/lib/attribute-utils"
@@ -47,39 +48,69 @@ import { mergeListAttributes, formatAttributeValue } from "@/components/Lists/at
 import { composeListAttributes } from "@/lib/item-types"
 import { createListItem, withListMembership } from "@/lib/item-utils"
 import { withCompleted } from "@/lib/completion-status"
-import { effectiveDef, slugId } from "@/components/Lists/attributes/helpers"
+import { effectiveDef } from "@/components/Lists/attributes/helpers"
 import { computeFormulaValue, formatFormulaValue, isFormulaDef, type DefLookup, type FormulaResult } from "@/lib/formula"
 import { formatNumber, isNumericAttribute } from "@/lib/spreadsheet-utils"
 import { columnToLetters, isCellFormula, shiftFormula } from "@/lib/sheet-a1"
 import { evaluateCellAt, formatCellResult, type RawCellAccessor } from "@/lib/sheet-eval"
 import {
+  NAV_KEYS,
+  enterTarget,
   isWithinRange,
+  moveActive,
   normalizeRange,
   parseClipboardGrid,
   rangeArea,
   rangeToTSV,
   selectionStats,
+  tabTarget,
   type GridCell,
   type GridRange,
 } from "@/lib/spreadsheet-keys"
 import { expandPasteWrites } from "@/lib/spreadsheet-paste"
 import {
   NAME_COLUMN_ID,
-  buildSheetColumns,
+  MIN_SHEET_COL_WIDTH,
+  applyColumnWidth,
+  persistSheetViewConfig,
   canWriteCell,
   coerceCellInput,
   cycleColumnSort,
   filterRows,
+  nameColumn,
   sortDirFor,
   sortRows,
   type SheetColumn,
   type SheetViewConfig,
 } from "@/lib/spreadsheet-contract"
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import {
+  assignAttributeToList,
+  attributeSettingsForColumn,
+  buildSpreadsheetCatalog,
+  columnsFromIds,
+  hideColumnId,
+  insertColumnId,
+  isTypeToReplaceKey,
+  moveColumnId,
+  patchAttributeOnList,
+  readBuiltinField,
+  resolveColumnIds,
+  writeBuiltinField,
+  type BuiltinFieldKey,
+  type SheetColumnCandidate,
+} from "@/lib/spreadsheet-catalog"
+import { AttributeSettingsDialog } from "@/components/Lists/attributes/AttributeSettingsDialog"
+import { AddColumnDialog } from "./AddColumnDialog"
+import "./sheet-chrome.css"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 /** Types that get a true inline editor in a cell. Others open the item. */
 const INLINE_TYPES = new Set(["string", "number", "boolean", "selection", "datetime", "color", "link"])
@@ -87,7 +118,6 @@ const INLINE_TYPES = new Set(["string", "number", "boolean", "selection", "datet
 const CHECKBOX_W = 60
 const DEFAULT_NAME_W = 200
 const DEFAULT_COL_W = 160
-const MIN_COL_W = 60
 const DEFAULT_ROW_H = 28
 const MIN_ROW_H = 22
 
@@ -133,10 +163,52 @@ export function SheetGrid({
 
   const category = lists.find((c) => c.id === categoryId)
   const nameLabel = capitalize(newItemLabel)
+  const vaultItems = useTaskStore((s) => s.tasks)
+  const listNameById = useMemo(() => new Map(lists.map((l) => [l.id, l.name])), [lists])
 
-  const attrColumns = useColumns(category, lists, tasks, nameLabel, types)
+  // ---- View state (sort / filter / freeze / widths / columns) ---------------
+  const [config, setConfig] = useState<SheetViewConfig>(viewConfig ?? {})
+  useEffect(() => {
+    // Rehydrate when switching lists. Do not reset live widths on task refresh
+    // or on the echo of our own persist write.
+    setConfig(viewConfig ?? {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categoryId])
+  const incomingColumnIds = viewConfig?.columnIds
+  useEffect(() => {
+    if (!incomingColumnIds) return
+    setConfig((prev) => {
+      const same =
+        prev.columnIds &&
+        prev.columnIds.length === incomingColumnIds.length &&
+        prev.columnIds.every((id, i) => id === incomingColumnIds[i])
+      return same ? prev : { ...prev, columnIds: incomingColumnIds }
+    })
+  }, [incomingColumnIds])
+
+  const patchConfig = (patch: Partial<SheetViewConfig>) => {
+    setConfig((prev) => {
+      const next = persistSheetViewConfig(prev, patch)
+      onViewConfigChange?.(next)
+      return next
+    })
+  }
+
+  const catalog = useMemo(
+    () =>
+      buildSpreadsheetCatalog({
+        list: category,
+        lists,
+        types,
+        listItems: tasks,
+        vaultItems,
+      }),
+    [category, lists, types, tasks, vaultItems],
+  )
+  const extraIds = resolveColumnIds(config, catalog, category, types)
+  const attrColumns = useMemo(() => columnsFromIds(catalog, extraIds), [catalog, extraIds])
   const allColumns = useMemo<SheetColumn[]>(
-    () => buildSheetColumns(columnDefs(attrColumns), undefined, { includeName: true, nameLabel }),
+    () => [nameColumn(nameLabel), ...attrColumns],
     [attrColumns, nameLabel],
   )
 
@@ -151,24 +223,11 @@ export function SheetGrid({
     attrColumns.forEach((c) => {
       if (c.def) map.set(c.id, effectiveDef(c.def))
     })
-    return map
-  }, [category, lists, tasks, attrColumns, types])
-
-  // ---- View state (sort / filter / freeze / widths) -------------------------
-  const [config, setConfig] = useState<SheetViewConfig>(viewConfig ?? {})
-  useEffect(() => {
-    if (viewConfig) setConfig(viewConfig)
-    // Intentionally only resync when the caller hands us a new config object.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewConfig])
-
-  const patchConfig = (patch: Partial<SheetViewConfig>) => {
-    setConfig((prev) => {
-      const next = { ...prev, ...patch }
-      onViewConfigChange?.(next)
-      return next
+    catalog.forEach((c) => {
+      if (c.def) map.set(c.id, effectiveDef(c.def))
     })
-  }
+    return map
+  }, [category, lists, tasks, attrColumns, types, catalog])
 
   const sort = config.sort
   const filterText = config.filterText ?? ""
@@ -195,7 +254,7 @@ export function SheetGrid({
     patchConfig({ sort: cycleColumnSort(sort, columnId, additive) })
   }
   const onResizeColumn = (columnId: string, width: number) => {
-    patchConfig({ columnWidths: { ...widths, [columnId]: Math.max(MIN_COL_W, Math.round(width)) } })
+    patchConfig(applyColumnWidth({}, columnId, width, MIN_SHEET_COL_WIDTH))
   }
 
   const rowHeights = config.rowHeights ?? {}
@@ -211,9 +270,42 @@ export function SheetGrid({
   const active = sel?.focus ?? null
   const selectedColumn = active ? allColumns[active.col] ?? null : null
   const selectedTask = active ? displayTasks[active.row] ?? null : null
-  // Inline edit mode (Sheets: double-click / F2). While set, clipboard paste
-  // goes into the focused input as literal text instead of a TSV grid paste.
-  const [editingCell, setEditingCell] = useState<GridCell | null>(null)
+  // Inline edit mode (Sheets: double-click / F2 / type-to-replace). `seed` replaces
+  // the cell contents when the user starts typing a printable character.
+  const [editingCell, setEditingCell] = useState<(GridCell & { seed?: string }) | null>(null)
+
+  const applyWrite = useCallback(
+    (task: Task, column: SheetColumn, value: AttributeValue): Task => {
+      if (!canWriteCell(column) || column.isFormula) return task
+      if (column.isName) {
+        const text = value == null ? "" : String(value)
+        return { ...task, description: text, title: text }
+      }
+      if (column.builtin) {
+        return writeBuiltinField(task, column.builtin as BuiltinFieldKey, value, { lists })
+      }
+      if (column.def) {
+        const next = { ...task, attributes: { ...(task.attributes || {}) } }
+        if (value === undefined) delete next.attributes![column.def.id]
+        else next.attributes![column.def.id] = value
+        return next
+      }
+      return task
+    },
+    [lists],
+  )
+
+  const cellRawValue = useCallback(
+    (task: Task, column: SheetColumn): AttributeValue => {
+      if (column.isName) return task.description
+      if (column.builtin) return readBuiltinField(task, column.builtin as BuiltinFieldKey, listNameById)
+      if (column.isFormula && column.def) {
+        return computeFormulaValue(column.def, task.attributes ?? {}, defsById).value
+      }
+      return task.attributes?.[column.id]
+    },
+    [listNameById, defsById],
+  )
 
   // Raw value accessor over the grid (column-formula cells resolve to numbers so
   // A1 references can read their computed value).
@@ -227,9 +319,10 @@ export function SheetGrid({
       if (c.def && isFormulaDef(c.def)) {
         return computeFormulaValue(c.def, t.attributes ?? {}, defsById).value ?? undefined
       }
+      if (c.builtin) return readBuiltinField(t, c.builtin as BuiltinFieldKey, listNameById)
       return t.attributes?.[c.id]
     },
-    [displayTasks, allColumns, defsById],
+    [displayTasks, allColumns, defsById, listNameById],
   )
   const numericAt = (col: number, row: number): number | null => evaluateCellAt(col, row, getRawCell).value
 
@@ -253,11 +346,19 @@ export function SheetGrid({
       additive && prev ? { anchor: prev.anchor, focus: { col, row } } : { anchor: { col, row }, focus: { col, row } },
     )
   }
-  const beginEdit = (col: number, row: number) => {
+  const beginEdit = (col: number, row: number, seed?: string) => {
     const column = allColumns[col]
     if (!column || column.readOnly || column.isFormula) return
     if (!column.isName && column.def && !INLINE_TYPES.has(normalizeAttributeType(column.def.type))) return
-    setEditingCell({ col, row })
+    setEditingCell({ col, row, seed })
+  }
+  const navigateFromEdit = (key: "Enter" | "Tab", shift: boolean) => {
+    if (!active) return
+    const next =
+      key === "Tab"
+        ? tabTarget(active, shift, displayTasks.length, allColumns.length)
+        : enterTarget(active, shift, displayTasks.length, allColumns.length)
+    setSel({ anchor: next, focus: next })
   }
   const onCellMouseDown = (col: number, row: number, e: React.MouseEvent) => {
     // Selecting a different cell ends edit mode (blur commits via the editor).
@@ -281,14 +382,65 @@ export function SheetGrid({
 
   const [newDesc, setNewDesc] = useState("")
   const [addColOpen, setAddColOpen] = useState(false)
+  const [insertAt, setInsertAt] = useState<number | undefined>(undefined)
+  const [settingsDef, setSettingsDef] = useState<AttributeDefinition | null>(null)
 
   const setCell = (task: Task, def: AttributeDefinition, value: AttributeValue) => {
-    // Guard: never persist a write to a computed/formula column.
     if (isFormulaDef(def)) return
-    updateTask({ ...task, attributes: { ...(task.attributes || {}), [def.id]: value } })
+    const column = allColumns.find((c) => c.id === def.id)
+    if (column) updateTask(applyWrite(task, column, value))
+    else updateTask({ ...task, attributes: { ...(task.attributes || {}), [def.id]: value } })
   }
   const setName = (task: Task, name: string) => {
-    updateTask({ ...task, description: name, title: name })
+    updateTask(applyWrite(task, nameColumn(nameLabel), name))
+  }
+  const hideColumn = (columnId: string) => {
+    if (columnId === NAME_COLUMN_ID) return
+    const ids = hideColumnId(extraIds, columnId)
+    if (category) {
+      const current = useTaskStore.getState().lists.find((l) => l.id === category.id) ?? category
+      updateList({
+        ...current,
+        sheetConfig: persistSheetViewConfig(current.sheetConfig, { columnIds: ids }),
+      })
+    }
+    patchConfig({ columnIds: ids })
+  }
+  const openAttributeSettings = (column: SheetColumn) => {
+    const target = attributeSettingsForColumn(column)
+    if (target.kind === "attribute") setSettingsDef(target.def)
+  }
+  const applyAttributeSettings = (next: AttributeDefinition) => {
+    if (!category) return
+    const current = useTaskStore.getState().lists.find((l) => l.id === category.id) ?? category
+    updateList(patchAttributeOnList(current, next))
+    setSettingsDef(next)
+  }
+  const openAddColumn = (at?: number) => {
+    setInsertAt(at)
+    setAddColOpen(true)
+  }
+  const applyAddedColumn = (
+    id: string,
+    def: AttributeDefinition | undefined,
+    opts: { assignToAll: boolean; isBuiltin: boolean; created: boolean },
+  ) => {
+    if (!category) return
+    let nextList: List = { ...category }
+    if (opts.assignToAll && def && !opts.isBuiltin) {
+      nextList = assignAttributeToList(nextList, def)
+    }
+    const ids = insertColumnId(extraIds, id, insertAt)
+    nextList = { ...nextList, sheetConfig: { ...config, columnIds: ids } }
+    if ((opts.created || opts.assignToAll) && def && !opts.isBuiltin) {
+      const displayed = nextList.displayedAttributes
+      if (displayed && displayed.length > 0 && !displayed.includes(id)) {
+        nextList = { ...nextList, displayedAttributes: [...displayed, id] }
+      }
+    }
+    updateList(nextList)
+    patchConfig({ columnIds: ids })
+    setAddColOpen(false)
   }
   const addRow = () => {
     const desc = newDesc.trim()
@@ -325,8 +477,7 @@ export function SheetGrid({
         const srcRaw = getRawCell(srcCol, srcRow)
         const value = isCellFormula(srcRaw) ? shiftFormula(srcRaw, col - srcCol, row - srcRow) : srcRaw
         const w = workCopy(target)
-        if (value === undefined) delete w.attributes![column.def.id]
-        else w.attributes![column.def.id] = value
+        working.set(target.id, applyWrite(w, column, value as AttributeValue))
       }
     }
     working.forEach((t) => updateTask(t))
@@ -367,11 +518,12 @@ export function SheetGrid({
       if (column.isFormula && column.def) {
         return formatFormulaValue(computeFormulaValue(column.def, t.attributes ?? {}, defsById), column.def)
       }
-      const raw = t.attributes?.[column.id]
+      const raw = cellRawValue(t, column)
       if (isCellFormula(raw)) {
         return formatCellResult(evaluateCellAt(cell.col, cell.row, getRawCell))
       }
       if (column.def) return formatAttributeValue(column.def, raw)
+      if (Array.isArray(raw)) return raw.map(String).join(", ")
       return raw === undefined || raw === null ? "" : String(raw)
     }
 
@@ -418,13 +570,11 @@ export function SheetGrid({
         maxWriteRow = Math.max(maxWriteRow, row)
         if (column.isName) {
           const w = workCopy(task)
-          w.description = cellText
-          w.title = cellText
-        } else if (column.def) {
+          working.set(task.id, applyWrite(w, column, cellText))
+        } else if (column.def || column.builtin) {
           const w = workCopy(task)
-          const coerced = coerceCellInput(column.def, cellText)
-          if (coerced === undefined) delete w.attributes![column.def.id]
-          else w.attributes![column.def.id] = coerced
+          const coerced = column.def ? coerceCellInput(column.def, cellText) : cellText
+          working.set(task.id, applyWrite(w, column, coerced))
         }
       }
       working.forEach((t) => updateTask(t))
@@ -436,31 +586,68 @@ export function SheetGrid({
     }
 
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "F2" && active && !isFieldFocused()) {
+      const field = isFieldFocused()
+      if (editingCell && field) return
+      if (field && !editingCell) return
+      if (!active) return
+
+      if (e.key === "F2") {
         e.preventDefault()
         beginEdit(active.col, active.row)
         return
       }
-      if (e.key !== "Delete" && e.key !== "Backspace") return
-      if (!selRange) return
-      if (isFieldFocused()) return
-      e.preventDefault()
-      const working = new Map<string, Task>()
-      for (let row = selRange.top; row <= selRange.bottom; row++) {
-        const t = displayTasks[row]
-        if (!t) continue
-        for (let col = selRange.left; col <= selRange.right; col++) {
-          const column = allColumns[col]
-          if (!column || column.isName || column.readOnly || !column.def) continue
-          let w = working.get(t.id)
-          if (!w) {
-            w = { ...t, attributes: { ...(t.attributes || {}) } }
+      if (e.key === "Enter") {
+        e.preventDefault()
+        beginEdit(active.col, active.row)
+        return
+      }
+      if (e.key === "Escape") {
+        e.preventDefault()
+        setEditingCell(null)
+        return
+      }
+      if (e.key === "Tab") {
+        e.preventDefault()
+        const next = tabTarget(active, e.shiftKey, displayTasks.length, allColumns.length)
+        setSel({ anchor: next, focus: next })
+        return
+      }
+      if (NAV_KEYS.has(e.key)) {
+        e.preventDefault()
+        const next = moveActive(
+          active,
+          e.key,
+          displayTasks.length,
+          allColumns.length,
+          e.ctrlKey || e.metaKey,
+        )
+        setSel((prev) =>
+          e.shiftKey && prev ? { anchor: prev.anchor, focus: next } : { anchor: next, focus: next },
+        )
+        return
+      }
+      if (e.key === "Delete" || e.key === "Backspace") {
+        if (!selRange) return
+        e.preventDefault()
+        const working = new Map<string, Task>()
+        for (let row = selRange.top; row <= selRange.bottom; row++) {
+          const t = displayTasks[row]
+          if (!t) continue
+          for (let col = selRange.left; col <= selRange.right; col++) {
+            const column = allColumns[col]
+            if (!column || column.readOnly) continue
+            let w = working.get(t.id) ?? t
+            w = applyWrite(w, column, undefined)
             working.set(t.id, w)
           }
-          delete w.attributes![column.def.id]
         }
+        working.forEach((t) => updateTask(t))
+        return
       }
-      working.forEach((t) => updateTask(t))
+      if (isTypeToReplaceKey(e)) {
+        e.preventDefault()
+        beginEdit(active.col, active.row, e.key)
+      }
     }
 
     const onCopy = (e: ClipboardEvent) => {
@@ -504,6 +691,8 @@ export function SheetGrid({
     types,
     defsById,
     getRawCell,
+    applyWrite,
+    cellRawValue,
   ])
 
   const numericAttrCols = attrColumns.filter((c) => c.def && isNumericAttribute(c.def))
@@ -533,17 +722,19 @@ export function SheetGrid({
           if (!selectedTask || !selectedColumn) return
           if (selectedColumn.isName) {
             setName(selectedTask, value)
-          } else if (selectedColumn.def && canWriteCell(selectedColumn)) {
-            setCell(selectedTask, selectedColumn.def, coerceCellInput(selectedColumn.def, value))
+          } else if (canWriteCell(selectedColumn)) {
+            const coerced = selectedColumn.def ? coerceCellInput(selectedColumn.def, value) : value
+            updateTask(applyWrite(selectedTask, selectedColumn, coerced))
           }
         }}
       />
 
-      <div className="overflow-auto border rounded-md max-h-[70vh] bg-background">
-        <table className="sheet-grid w-full border-collapse text-sm">
-          <thead className="sticky top-0 z-10">
-            <tr className="bg-muted">
-              <Th className="text-center" style={{ width: CHECKBOX_W, minWidth: CHECKBOX_W, position: "sticky", left: 0, zIndex: 22 }}>
+      <div className="sheet-grid-host">
+        <div className="overflow-auto border rounded-md max-h-[70vh] bg-background">
+        <table className="sheet-grid border-collapse text-sm">
+          <thead className="sticky top-0 z-20">
+            <tr>
+              <Th className="sheet-th-gutter" style={{ width: CHECKBOX_W, minWidth: CHECKBOX_W, maxWidth: CHECKBOX_W, position: "sticky", left: 0, zIndex: 22 }}>
                 #
               </Th>
               <SortableTh
@@ -551,10 +742,14 @@ export function SheetGrid({
                 letter={columnToLetters(0)}
                 width={widthOf(NAME_COLUMN_ID)}
                 dir={sortDirFor(sort, NAME_COLUMN_ID)}
+                active={selectedColumn?.id === NAME_COLUMN_ID}
                 frozen
                 left={CHECKBOX_W}
                 onSort={(additive) => onSortColumn(NAME_COLUMN_ID, additive)}
                 onResize={(w) => onResizeColumn(NAME_COLUMN_ID, w)}
+                onInsertLeft={enableAddColumn ? () => openAddColumn(0) : undefined}
+                onInsertRight={enableAddColumn ? () => openAddColumn(0) : undefined}
+                attributeSettings={attributeSettingsForColumn(nameColumn(nameLabel))}
               />
               {attrColumns.map((col, i) => {
                 const frozen = isAttrFrozen(i)
@@ -566,23 +761,27 @@ export function SheetGrid({
                     unit={col.unit}
                     width={widthOf(col.id)}
                     dir={sortDirFor(sort, col.id)}
+                    active={selectedColumn?.id === col.id}
                     frozen={frozen}
                     left={frozen ? frozenLeftFor(i) : undefined}
                     onSort={(additive) => onSortColumn(col.id, additive)}
                     onResize={(w) => onResizeColumn(col.id, w)}
+                    onHide={() => hideColumn(col.id)}
+                    onInsertLeft={enableAddColumn ? () => openAddColumn(i) : undefined}
+                    onInsertRight={enableAddColumn ? () => openAddColumn(i + 1) : undefined}
+                    onMoveLeft={i > 0 ? () => patchConfig({ columnIds: moveColumnId(extraIds, col.id, i - 1) }) : undefined}
+                    onMoveRight={
+                      i < attrColumns.length - 1
+                        ? () => patchConfig({ columnIds: moveColumnId(extraIds, col.id, i + 1) })
+                        : undefined
+                    }
+                    attributeSettings={attributeSettingsForColumn(col)}
+                    onAttributeSettings={() => openAttributeSettings(col)}
                   />
                 )
               })}
               {enableAddColumn && categoryId && (
-                <th className="border-b border-l px-1 text-center w-9">
-                  <button
-                    className="text-muted-foreground hover:text-foreground"
-                    title="Add column"
-                    onClick={() => setAddColOpen(true)}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </button>
-                </th>
+                <th className="sheet-th sheet-th-add-spacer" aria-hidden />
               )}
             </tr>
           </thead>
@@ -620,7 +819,7 @@ export function SheetGrid({
                 </td>
                 <td
                   className={cellClass(selRange, active, fillPreview, 0, rowIdx, "border-b border-r px-2 py-0.5 bg-background group-hover:bg-muted/40 relative")}
-                  style={{ position: "sticky", left: CHECKBOX_W, width: widthOf(NAME_COLUMN_ID), zIndex: 1 }}
+                  style={{ position: "sticky", left: CHECKBOX_W, width: widthOf(NAME_COLUMN_ID), minWidth: widthOf(NAME_COLUMN_ID), maxWidth: widthOf(NAME_COLUMN_ID), zIndex: 1 }}
                   onMouseDown={(e) => onCellMouseDown(0, rowIdx, e)}
                   onMouseOver={() => onCellEnter(0, rowIdx)}
                   onDoubleClick={() => onCellDoubleClick(0, rowIdx)}
@@ -628,18 +827,22 @@ export function SheetGrid({
                   <NameCell
                     value={task.description}
                     editing={!!editingCell && editingCell.col === 0 && editingCell.row === rowIdx}
+                    seed={editingCell?.col === 0 && editingCell.row === rowIdx ? editingCell.seed : undefined}
                     onCommit={(v) => setName(task, v)}
                     onEndEdit={() => setEditingCell(null)}
+                    onNavigate={navigateFromEdit}
                     onOpen={() => onOpenItem?.(task.id)}
                   />
                   {isActiveCorner(selRange, 0, rowIdx) && <FillHandle onStart={startFill} />}
                 </td>
                 {attrColumns.map((col, i) => {
                   const frozen = isAttrFrozen(i)
-                  const def = col.def!
+                  const def = col.def
                   const gridCol = i + 1
-                  const rawVal = task.attributes?.[col.id]
-                  const evaluated = !isFormulaDef(def) && isCellFormula(rawVal) ? evaluateCellAt(gridCol, rowIdx, getRawCell) : undefined
+                  const rawVal = cellRawValue(task, col)
+                  const evaluated =
+                    def && !isFormulaDef(def) && isCellFormula(rawVal) ? evaluateCellAt(gridCol, rowIdx, getRawCell) : undefined
+                  const numeric = def ? isNumericAttribute(def) : col.type === "number"
                   return (
                     <td
                       key={col.id}
@@ -649,27 +852,35 @@ export function SheetGrid({
                         fillPreview,
                         gridCol,
                         rowIdx,
-                        `border-b border-l px-1 py-0.5 align-top relative ${frozen ? "bg-background group-hover:bg-muted/40" : ""}`,
+                        `border-b border-l px-1 py-0.5 align-top relative ${frozen ? "bg-background group-hover:bg-muted/40" : ""}${numeric ? " text-right tabular-nums" : ""}`,
                       )}
                       style={{
                         width: widthOf(col.id),
+                        minWidth: widthOf(col.id),
+                        maxWidth: widthOf(col.id),
                         ...(frozen ? { position: "sticky", left: frozenLeftFor(i), zIndex: 1 } : {}),
                       }}
                       onMouseDown={(e) => onCellMouseDown(gridCol, rowIdx, e)}
                       onMouseOver={() => onCellEnter(gridCol, rowIdx)}
                       onDoubleClick={() => onCellDoubleClick(gridCol, rowIdx)}
                     >
-                      <SheetCell
-                        def={def}
-                        value={rawVal}
-                        evaluated={evaluated}
-                        attributes={task.attributes}
-                        defsById={defsById}
-                        editing={!!editingCell && editingCell.col === gridCol && editingCell.row === rowIdx}
-                        onCommit={(v) => setCell(task, def, v)}
-                        onEndEdit={() => setEditingCell(null)}
-                        onOpen={() => onOpenItem?.(task.id)}
-                      />
+                      {def ? (
+                        <SheetCell
+                          def={def}
+                          value={rawVal}
+                          evaluated={evaluated}
+                          attributes={task.attributes}
+                          defsById={defsById}
+                          editing={!!editingCell && editingCell.col === gridCol && editingCell.row === rowIdx}
+                          seed={editingCell?.col === gridCol && editingCell.row === rowIdx ? editingCell.seed : undefined}
+                          onCommit={(v) => updateTask(applyWrite(task, col, v))}
+                          onEndEdit={() => setEditingCell(null)}
+                          onNavigate={navigateFromEdit}
+                          onOpen={() => onOpenItem?.(task.id)}
+                        />
+                      ) : (
+                        <span className="block truncate px-1 text-muted-foreground">—</span>
+                      )}
                       {isActiveCorner(selRange, gridCol, rowIdx) && <FillHandle onStart={startFill} />}
                     </td>
                   )
@@ -714,6 +925,18 @@ export function SheetGrid({
             </tfoot>
           )}
         </table>
+        </div>
+        {enableAddColumn && categoryId && (
+          <button
+            type="button"
+            className="sheet-add-column"
+            title="Add column"
+            aria-label="Add a column"
+            onClick={() => openAddColumn()}
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
       {selStats && (
@@ -747,52 +970,32 @@ export function SheetGrid({
         </div>
       )}
 
+      <AttributeSettingsDialog
+        def={settingsDef}
+        onClose={() => setSettingsDef(null)}
+        onChange={applyAttributeSettings}
+      />
+
       {addColOpen && category && (
         <AddColumnDialog
           category={category}
+          candidates={catalog}
+          visibleIds={extraIds}
           onClose={() => setAddColOpen(false)}
-          onAdd={(def) => {
-            const displayed = category.displayedAttributes
-            const next: List = {
-              ...category,
-              itemAttributes: [...(category.itemAttributes || []), def],
-              // When a list curates which attributes are shown, the new column
-              // would otherwise be hidden — append its id so it appears at the
-              // end. An empty/undefined `displayedAttributes` already shows all.
-              ...(displayed && displayed.length > 0
-                ? { displayedAttributes: [...displayed, def.id] }
-                : {}),
-            }
-            updateList(next)
-            setAddColOpen(false)
+          onPickExisting={(candidate, assignToAll) => {
+            applyAddedColumn(candidate.id, candidate.def, {
+              assignToAll,
+              isBuiltin: candidate.source === "builtin",
+              created: false,
+            })
+          }}
+          onCreate={(def) => {
+            applyAddedColumn(def.id, def, { assignToAll: true, isBuiltin: false, created: true })
           }}
         />
       )}
     </div>
   )
-}
-
-/** Build the displayed attribute columns (excluding the name column). */
-function useColumns(
-  category: List | undefined,
-  lists: List[],
-  tasks: Task[],
-  nameLabel: string,
-  types: ItemTypeDefinition[],
-): SheetColumn[] {
-  return useMemo(() => {
-    if (category) {
-      const defs = composeListAttributes(category, types)
-      return buildSheetColumns(defs, category.displayedAttributes, { includeName: false, nameLabel })
-    }
-    const catIds = Array.from(new Set(tasks.flatMap((t) => t.lists ?? [])))
-    const merged = mergeListAttributes(lists, catIds, types)
-    return buildSheetColumns(merged, undefined, { includeName: false, nameLabel })
-  }, [category, lists, tasks, nameLabel, types])
-}
-
-function columnDefs(cols: SheetColumn[]): AttributeDefinition[] {
-  return cols.map((c) => c.def).filter((d): d is AttributeDefinition => !!d)
 }
 
 function round6(n: number): number {
@@ -886,6 +1089,11 @@ function SheetToolbar({
     if (!selectedTask || !selectedColumn) return ""
     if (selectedColumn.isName) return selectedTask.description ?? ""
     if (selectedColumn.isFormula) return selectedColumn.def?.formula ?? ""
+    if (selectedColumn.builtin) {
+      const v = readBuiltinField(selectedTask, selectedColumn.builtin as BuiltinFieldKey)
+      if (v === undefined || v === null) return ""
+      return Array.isArray(v) ? v.join(", ") : String(v)
+    }
     const v = selectedTask.attributes?.[selectedColumn.id]
     return v === undefined || v === null ? "" : String(v)
   }, [selectedTask, selectedColumn])
@@ -936,10 +1144,7 @@ function SheetToolbar({
 
 function Th({ children, className = "", style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
   return (
-    <th
-      className={`border-b px-2 py-1.5 text-left font-semibold text-xs uppercase tracking-wide bg-muted ${className}`}
-      style={style}
-    >
+    <th className={`sheet-th ${className}`.trim()} style={style}>
       {children}
     </th>
   )
@@ -951,46 +1156,116 @@ function SortableTh({
   unit,
   width,
   dir,
+  active,
   frozen,
   left,
   onSort,
   onResize,
+  onHide,
+  onInsertLeft,
+  onInsertRight,
+  onMoveLeft,
+  onMoveRight,
+  attributeSettings,
+  onAttributeSettings,
 }: {
   label: string
   letter?: string
   unit?: string
   width: number
   dir?: "asc" | "desc"
+  active?: boolean
   frozen?: boolean
   left?: number
   onSort: (additive: boolean) => void
   onResize: (width: number) => void
+  onHide?: () => void
+  onInsertLeft?: () => void
+  onInsertRight?: () => void
+  onMoveLeft?: () => void
+  onMoveRight?: () => void
+  attributeSettings?: ReturnType<typeof attributeSettingsForColumn>
+  onAttributeSettings?: () => void
 }) {
   const style: React.CSSProperties = {
     width,
     minWidth: width,
+    maxWidth: width,
     position: frozen ? "sticky" : "relative",
     left: frozen ? left : undefined,
     zIndex: frozen ? 21 : undefined,
   }
+  const settingsUnavailable = attributeSettings?.kind === "unavailable" ? attributeSettings.reason : undefined
+  const canOpenSettings = attributeSettings?.kind === "attribute" && !!onAttributeSettings
+  const hasMenu =
+    !!onHide ||
+    !!onInsertLeft ||
+    !!onInsertRight ||
+    !!onMoveLeft ||
+    !!onMoveRight ||
+    !!attributeSettings
+  const ariaSort = dir === "asc" ? "ascending" : dir === "desc" ? "descending" : "none"
   return (
     <th
-      className="border-b border-l px-2 py-1 text-left font-semibold text-xs uppercase tracking-wide bg-muted select-none"
+      scope="col"
+      aria-sort={ariaSort}
+      className={`sheet-th${active ? " sheet-th-active" : ""}`}
       style={style}
     >
-      {letter ? <div className="text-center text-[10px] font-normal text-muted-foreground leading-none mb-0.5">{letter}</div> : null}
-      <div className="flex items-center justify-between gap-1">
+      {letter ? <div className="sheet-th-letter">{letter}</div> : null}
+      <div className="sheet-th-main">
+        <div className="sheet-th-slot sheet-th-slot-start">
+          {hasMenu && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="p-0.5 text-muted-foreground hover:text-foreground"
+                  aria-label={`${label} column menu`}
+                  onMouseDown={(e) => e.stopPropagation()}
+                >
+                  <MoreVertical className="h-3 w-3" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="text-xs">
+                <DropdownMenuItem onClick={() => onSort(false)}>Sort</DropdownMenuItem>
+                {attributeSettings && (
+                  <DropdownMenuItem
+                    disabled={!canOpenSettings}
+                    title={settingsUnavailable}
+                    onClick={canOpenSettings ? onAttributeSettings : undefined}
+                  >
+                    Attribute settings
+                  </DropdownMenuItem>
+                )}
+                {onInsertLeft && <DropdownMenuItem onClick={onInsertLeft}>Insert left</DropdownMenuItem>}
+                {onInsertRight && <DropdownMenuItem onClick={onInsertRight}>Insert right</DropdownMenuItem>}
+                {onMoveLeft && <DropdownMenuItem onClick={onMoveLeft}>Move left</DropdownMenuItem>}
+                {onMoveRight && <DropdownMenuItem onClick={onMoveRight}>Move right</DropdownMenuItem>}
+                {onHide && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={onHide}>Hide column</DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
         <button
           type="button"
-          className="flex items-center gap-1 hover:text-primary min-w-0"
+          className="sheet-th-sort"
           onClick={(e) => onSort(e.shiftKey)}
           title="Sort (shift-click to add)"
+          aria-label={`Sort ${label}`}
         >
-          <span className="truncate">{label}</span>
-          {unit ? <span className="text-muted-foreground font-normal normal-case">({unit})</span> : null}
-          {dir === "asc" && <ArrowUp className="h-3 w-3 shrink-0" />}
-          {dir === "desc" && <ArrowDown className="h-3 w-3 shrink-0" />}
+          <span className="sheet-th-label">{label}</span>
+          {unit ? <span className="sheet-th-unit">({unit})</span> : null}
         </button>
+        <div className="sheet-th-slot sheet-th-slot-end" aria-hidden={!dir}>
+          {dir === "asc" && <ArrowUp className="sheet-th-caret" />}
+          {dir === "desc" && <ArrowDown className="sheet-th-caret" />}
+        </div>
       </div>
       <ResizeHandle width={width} onResize={onResize} />
     </th>
@@ -1018,7 +1293,7 @@ function ResizeHandle({ width, onResize }: { width: number; onResize: (width: nu
       aria-label="Resize column"
       onPointerDown={onPointerDown}
       onClick={(e) => e.stopPropagation()}
-      className="absolute top-0 right-0 h-full w-1.5 cursor-col-resize hover:bg-primary/40"
+      className="sheet-col-resize"
     />
   )
 }
@@ -1026,20 +1301,28 @@ function ResizeHandle({ width, onResize }: { width: number; onResize: (width: nu
 function NameCell({
   value,
   editing,
+  seed,
   onCommit,
   onEndEdit,
+  onNavigate,
   onOpen,
 }: {
   value: string
   editing: boolean
+  seed?: string
   onCommit: (v: string) => void
   onEndEdit: () => void
+  onNavigate?: (key: "Enter" | "Tab", shift: boolean) => void
   onOpen: () => void
 }) {
   const [draft, setDraft] = useState(value)
+  const cancelled = useRef(false)
   useEffect(() => {
-    if (editing) setDraft(value)
-  }, [editing, value])
+    if (editing) {
+      cancelled.current = false
+      setDraft(seed ?? value)
+    }
+  }, [editing, value, seed])
 
   if (editing) {
     return (
@@ -1049,12 +1332,19 @@ function NameCell({
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={() => {
-          if (draft !== value) onCommit(draft)
+          if (!cancelled.current && draft !== value) onCommit(draft)
           onEndEdit()
         }}
         onKeyDown={(e) => {
-          if (e.key === "Enter") (e.target as HTMLInputElement).blur()
+          if (e.key === "Enter" || e.key === "Tab") {
+            e.preventDefault()
+            const key = e.key === "Tab" ? "Tab" : "Enter"
+            const shift = e.shiftKey
+            ;(e.target as HTMLInputElement).blur()
+            onNavigate?.(key, shift)
+          }
           if (e.key === "Escape") {
+            cancelled.current = true
             setDraft(value)
             onEndEdit()
           }
@@ -1064,7 +1354,7 @@ function NameCell({
   }
   return (
     <div className="flex items-center justify-between gap-1">
-      <span className="truncate cursor-cell flex-1 select-none">
+      <span className="truncate cursor-cell flex-1 select-none" title={value || undefined}>
         {value || <span className="text-muted-foreground">Untitled</span>}
       </span>
       <button
@@ -1088,8 +1378,10 @@ function SheetCell({
   attributes,
   defsById,
   editing,
+  seed,
   onCommit,
   onEndEdit,
+  onNavigate,
   onOpen,
 }: {
   def: AttributeDefinition
@@ -1099,8 +1391,10 @@ function SheetCell({
   attributes?: Record<string, AttributeValue>
   defsById?: DefLookup
   editing: boolean
+  seed?: string
   onCommit: (v: AttributeValue) => void
   onEndEdit: () => void
+  onNavigate?: (key: "Enter" | "Tab", shift: boolean) => void
   onOpen: () => void
 }) {
   const type = normalizeAttributeType(def.type)
@@ -1166,18 +1460,24 @@ function SheetCell({
       <InlineEditor
         def={def}
         value={value}
+        seed={seed}
         onCommit={(v) => {
           onCommit(v)
           onEndEdit()
         }}
         onCancel={onEndEdit}
+        onNavigate={onNavigate}
       />
     )
   }
 
+  const shown = formatAttributeValue(def, value)
   return (
-    <span className="block text-left w-full truncate min-h-[24px] px-1 select-none cursor-cell">
-      {formatAttributeValue(def, value) || <span className="text-muted-foreground">—</span>}
+    <span
+      className="block text-left w-full truncate min-h-[24px] px-1 select-none cursor-cell"
+      title={shown || undefined}
+    >
+      {shown || <span className="text-muted-foreground">—</span>}
     </span>
   )
 }
@@ -1185,18 +1485,30 @@ function SheetCell({
 function InlineEditor({
   def,
   value,
+  seed,
   onCommit,
   onCancel,
+  onNavigate,
 }: {
   def: AttributeDefinition
   value: AttributeValue
+  seed?: string
   onCommit: (v: AttributeValue) => void
   onCancel: () => void
+  onNavigate?: (key: "Enter" | "Tab", shift: boolean) => void
 }) {
   const type = normalizeAttributeType(def.type)
-  const [draft, setDraft] = useState<AttributeValue>(value)
+  const [draft, setDraft] = useState<AttributeValue>(seed ?? value)
+  const cancelled = useRef(false)
 
-  const commit = () => onCommit(draft)
+  const commit = () => {
+    if (!cancelled.current) onCommit(draft)
+  }
+  const finishKey = (e: React.KeyboardEvent, key: "Enter" | "Tab") => {
+    e.preventDefault()
+    ;(e.target as HTMLInputElement).blur()
+    onNavigate?.(key, e.shiftKey)
+  }
 
   if (type === "selection" && !def.allowMultiple) {
     const options = def.options || []
@@ -1242,8 +1554,11 @@ function InlineEditor({
         onChange={(e) => setDraft(e.target.value === "" ? undefined : e.target.value)}
         onBlur={commit}
         onKeyDown={(e) => {
-          if (e.key === "Enter") (e.target as HTMLInputElement).blur()
-          if (e.key === "Escape") onCancel()
+          if (e.key === "Enter" || e.key === "Tab") finishKey(e, e.key === "Tab" ? "Tab" : "Enter")
+          if (e.key === "Escape") {
+            cancelled.current = true
+            onCancel()
+          }
         }}
       />
     )
@@ -1260,145 +1575,21 @@ function InlineEditor({
       className="w-full bg-background border border-primary rounded h-7 px-1 text-xs outline-none"
       value={draft === undefined || draft === null ? "" : String(draft)}
       onChange={(e) => setDraft(e.target.value)}
-      onBlur={() => onCommit(coerceCellInput(def, String(draft ?? "")))}
+      onBlur={() => {
+        if (!cancelled.current) onCommit(coerceCellInput(def, String(draft ?? "")))
+      }}
       onKeyDown={(e) => {
-        if (e.key === "Enter") (e.target as HTMLInputElement).blur()
-        if (e.key === "Escape") onCancel()
+        if (e.key === "Enter" || e.key === "Tab") finishKey(e, e.key === "Tab" ? "Tab" : "Enter")
+        if (e.key === "Escape") {
+          cancelled.current = true
+          onCancel()
+        }
       }}
     />
-  )
-}
-
-const COLUMN_TYPES: { value: AttributeDefinition["type"]; label: string }[] = [
-  { value: "string", label: "Text" },
-  { value: "number", label: "Number" },
-  { value: "boolean", label: "Yes/No" },
-  { value: "selection", label: "Selection" },
-  { value: "datetime", label: "Date / time" },
-  { value: "color", label: "Color" },
-  { value: "link", label: "Link" },
-  { value: "goal", label: "Goal x / y" },
-  { value: "multistring", label: "Text list" },
-  { value: "image", label: "Image" },
-  { value: "formula", label: "Formula" },
-]
-
-function AddColumnDialog({
-  category,
-  onClose,
-  onAdd,
-}: {
-  category: List
-  onClose: () => void
-  onAdd: (def: AttributeDefinition) => void
-}) {
-  const [name, setName] = useState("")
-  const [type, setType] = useState<AttributeDefinition["type"]>("string")
-  const [unit, setUnit] = useState("")
-  const [options, setOptions] = useState("")
-  const [formula, setFormula] = useState("")
-  const [formatAs, setFormatAs] = useState<"number" | "currency" | "percent">("number")
-
-  const save = () => {
-    const trimmed = name.trim()
-    if (!trimmed) return
-    const existing = new Set((category.itemAttributes || []).map((a) => a.id))
-    let id = slugId(trimmed)
-    while (existing.has(id)) id = `${id}_${Math.random().toString(36).slice(2, 4)}`
-    const def: AttributeDefinition = { id, name: trimmed, type }
-    if (unit.trim()) def.unit = unit.trim()
-    if (type === "selection") {
-      def.optionSource = "manual"
-      def.options = options.split(",").map((o) => o.trim()).filter(Boolean)
-    }
-    if (type === "formula") {
-      def.formula = formula.trim()
-      def.formatAs = formatAs
-    }
-    onAdd(def)
-  }
-
-  return (
-    <Dialog open onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-sm">
-        <DialogHeader>
-          <DialogTitle>Add column</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-3">
-          <div className="space-y-1">
-            <Label>Name</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Cost" autoFocus />
-          </div>
-          <div className="space-y-1">
-            <Label>Type</Label>
-            <Select value={type} onValueChange={(v) => setType(v as AttributeDefinition["type"])}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {COLUMN_TYPES.map((t) => (
-                  <SelectItem key={t.value} value={t.value}>
-                    {t.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          {type === "number" && (
-            <div className="space-y-1">
-              <Label>Unit (optional)</Label>
-              <Input value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="$, min, kg…" />
-            </div>
-          )}
-          {type === "selection" && (
-            <div className="space-y-1">
-              <Label>Options (comma-separated)</Label>
-              <Input value={options} onChange={(e) => setOptions(e.target.value)} placeholder="Low, Medium, High" />
-            </div>
-          )}
-          {type === "formula" && (
-            <>
-              <div className="space-y-1">
-                <Label>Expression</Label>
-                <Input
-                  value={formula}
-                  onChange={(e) => setFormula(e.target.value)}
-                  placeholder="=price * qty"
-                  className="font-mono text-sm"
-                />
-                <p className="text-[11px] text-muted-foreground">
-                  Reference other columns by id. Functions: SUM, AVG, MIN, MAX.
-                </p>
-              </div>
-              <div className="space-y-1">
-                <Label>Format</Label>
-                <Select value={formatAs} onValueChange={(v) => setFormatAs(v as "number" | "currency" | "percent")}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="number">Number</SelectItem>
-                    <SelectItem value="currency">Currency</SelectItem>
-                    <SelectItem value="percent">Percent</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </>
-          )}
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button onClick={save} disabled={!name.trim()}>
-            Add column
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   )
 }
 
 function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
+

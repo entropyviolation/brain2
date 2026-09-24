@@ -2,9 +2,7 @@
 
 import { useState } from "react"
 import { Textarea } from "@/components/ui/textarea"
-import { isScheduledFolderId } from "@/lib/scheduled-lists-sync"
-import { foldersInGlobalAllForFilter, listsInFolderForFilter } from "@/lib/folder-all-items"
-import { isFolderHiddenFromGlobalAll } from "@/lib/module-lists"
+import { isScheduledFolderId, isNaArchiveCategoryId, NA_SMART_MISSED } from "@/lib/scheduled-lists-sync"
 import { ListContentDefault } from "./ListContentDefault"
 import { ListContentChecklist } from "./ListContentChecklist"
 import { ListContentIcons } from "./ListContentIcons"
@@ -13,35 +11,6 @@ import { ListContentSpreadsheet } from "./ListContentSpreadsheet"
 import type { ListContentPanelProps } from "./types"
 
 export type { ListContentPanelProps } from "./types"
-
-function AllViewCheckboxFilter({
-  items,
-  hiddenIds,
-  onHiddenChange,
-  ariaLabel,
-}: {
-  items: { id: string; name: string }[]
-  hiddenIds: string[]
-  onHiddenChange: (id: string, hidden: boolean) => void
-  ariaLabel: string
-}) {
-  if (items.length === 0) return null
-  const hidden = new Set(hiddenIds)
-  return (
-    <div className="fm-list-filter" role="group" aria-label={ariaLabel}>
-      {items.map((item) => (
-        <label key={item.id} className="fm-list-filter-item">
-          <input
-            type="checkbox"
-            checked={!hidden.has(item.id)}
-            onChange={(e) => onHiddenChange(item.id, !e.target.checked)}
-          />
-          {item.name}
-        </label>
-      ))}
-    </div>
-  )
-}
 
 /** Owns its text so typing does not re-render the list board / item grid. */
 function QuickAddPanel({
@@ -54,16 +23,26 @@ function QuickAddPanel({
   onCancel: () => void
 }) {
   const [text, setText] = useState("")
+  const submit = () => onAdd(text)
   return (
     <div className="fm-quickadd">
-      <Textarea
+      <input
+        className="fm-input"
+        style={{ width: "100%" }}
         placeholder={`Enter ${itemLabel.toLowerCase()} description...`}
+        aria-label={`New ${itemLabel.toLowerCase()} description`}
         value={text}
         onChange={(e) => setText(e.target.value)}
-        rows={2}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault()
+            submit()
+          }
+        }}
+        autoFocus
       />
       <div className="flex gap-2">
-        <button className="fm-btn fm-btn-sm" onClick={() => onAdd(text)}>
+        <button className="fm-btn fm-btn-sm" onClick={submit}>
           Add {itemLabel}
         </button>
         <button className="fm-btn fm-btn-sm" onClick={onCancel}>
@@ -124,54 +103,45 @@ export function ListContentPanel({
   folderAllUncategorizedOnly,
   onFolderAllUncategorizedOnlyChange,
   folderAllHiddenListIds,
-  onFolderAllListHiddenChange,
+  folderAllHideUncategorized = {},
   globalAllHiddenFolderIds = [],
-  onGlobalAllFolderHiddenChange,
   globalAllUncategorizedOnly = false,
   onGlobalAllUncategorizedOnlyChange,
+  globalAllHideUncategorized = false,
   addingTaskToTarget,
   openTargetKeyValue,
   onAddTask,
   onCancelAddTask,
+  onShowAddTask,
   showBulkAdd,
   onBulkAdd,
   onShowBulkAdd,
   onBulkAddCancel,
   onTaskSelect,
   onCompleteTask,
+  onMissedOpportunity,
   onTaskDragStart,
   onDragEnd,
   onIconPickerOpen,
   selectMode,
   selectedTaskIds,
   onToggleTaskSelect,
+  allowAdd = true,
 }: ListContentPanelProps) {
-  const showFolderAllListFilter =
-    openFolderAll &&
-    !isRootAll &&
-    !!currentFolder &&
-    !isScheduledFolderId(currentFolder.id)
-  const folderFilterLists =
-    showFolderAllListFilter && currentFolder ? listsInFolderForFilter(currentFolder, categories) : []
   const hiddenForFolder = currentFolder ? folderAllHiddenListIds[currentFolder.id] ?? [] : []
-
-  const showGlobalAllFolderFilter = openFolderAll && isRootAll
-  const globalFilterFolders = showGlobalAllFolderFilter
-    ? foldersInGlobalAllForFilter(folders).filter((f) => !isFolderHiddenFromGlobalAll(f, folders))
-    : []
   const hiddenGlobalFolders = globalAllHiddenFolderIds
 
-  const uncategorizedChecked = isRootAll
+  const uncategorizedOnlyChecked = isRootAll
     ? globalAllUncategorizedOnly
     : !!(currentFolder && folderAllUncategorizedOnly[currentFolder.id])
-  const showUncategorizedFilter =
+  const showUncategorizedOnlyFilter =
     openFolderAll && (isRootAll || (!!currentFolder && !isScheduledFolderId(currentFolder.id)))
-  const uncategorizedFilter = showUncategorizedFilter ? (
+  const uncategorizedOnlyFilter = showUncategorizedOnlyFilter ? (
     <div className="fm-toolbar" style={{ marginBottom: 6, padding: "4px 8px" }}>
       <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, cursor: "pointer" }}>
         <input
           type="checkbox"
-          checked={uncategorizedChecked}
+          checked={uncategorizedOnlyChecked}
           onChange={(e) => {
             if (isRootAll) onGlobalAllUncategorizedOnlyChange?.(e.target.checked)
             else if (currentFolder) onFolderAllUncategorizedOnlyChange(currentFolder.id, e.target.checked)
@@ -182,40 +152,32 @@ export function ListContentPanel({
     </div>
   ) : null
 
-  const listFilter =
-    showFolderAllListFilter && currentFolder ? (
-      <AllViewCheckboxFilter
-        items={folderFilterLists}
-        hiddenIds={hiddenForFolder}
-        onHiddenChange={(listId, hidden) => onFolderAllListHiddenChange(currentFolder.id, listId, hidden)}
-        ariaLabel="Filter lists"
-      />
-    ) : showGlobalAllFolderFilter ? (
-      <AllViewCheckboxFilter
-        items={globalFilterFolders}
-        hiddenIds={hiddenGlobalFolders}
-        onHiddenChange={(folderId, hidden) => onGlobalAllFolderHiddenChange?.(folderId, hidden)}
-        ariaLabel="Filter folders"
-      />
-    ) : null
-
   const quickAdd =
-    addingTaskToTarget === openTargetKeyValue ? (
+    allowAdd && addingTaskToTarget === openTargetKeyValue ? (
       <QuickAddPanel itemLabel={itemLabel} onAdd={onAddTask} onCancel={onCancelAddTask} />
     ) : null
 
-  const bulkAddPanel = showBulkAdd ? (
+  const bulkAddPanel = allowAdd && showBulkAdd ? (
     <BulkAddPanel itemLabel={itemLabel} onBulkAdd={onBulkAdd} onCancel={onBulkAddCancel} />
-  ) : (
-    <button className="fm-btn fm-btn-sm" style={{ marginTop: 8 }} onClick={() => onShowBulkAdd(true)}>
-      Bulk add {itemLabel.toLowerCase()}s
-    </button>
-  )
+  ) : null
+
+  const addButtons =
+    allowAdd && !addingTaskToTarget && !showBulkAdd ? (
+      <div className="fm-list-add-row">
+        <button className="fm-btn fm-btn-sm" onClick={() => onShowBulkAdd(true)}>
+          Bulk add {itemLabel.toLowerCase()}s
+        </button>
+        <button className="fm-btn fm-btn-sm" onClick={onShowAddTask}>
+          Add {itemLabel}
+        </button>
+      </div>
+    ) : null
 
   const taskHandlers = {
     tasks,
     onTaskSelect,
     onCompleteTask,
+    onMissedOpportunity,
     onTaskDragStart,
     onDragEnd,
     selectMode,
@@ -223,14 +185,22 @@ export function ListContentPanel({
     onToggleTaskSelect,
   }
 
-  const emptyMessage = isRootAll && globalAllUncategorizedOnly
-    ? "No uncategorized items."
-    : folderAllUncategorizedOnly[currentFolder?.id || ""]
-    ? "No uncategorized items in this folder."
-    : hiddenForFolder.length > 0
+  const hideUncategorized = isRootAll
+    ? globalAllHideUncategorized
+    : !!(currentFolder && folderAllHideUncategorized[currentFolder.id])
+  const archiveId = openCategory?.id
+  const emptyMessage = uncategorizedOnlyChecked
+    ? isRootAll
+      ? "No uncategorized items."
+      : "No uncategorized items in this folder."
+    : hiddenForFolder.length > 0 || (!isRootAll && hideUncategorized)
       ? "No items in the selected lists."
-      : hiddenGlobalFolders.length > 0 && isRootAll
+      : isRootAll && (hiddenGlobalFolders.length > 0 || hideUncategorized)
         ? "No items in the selected folders."
+        : archiveId && isNaArchiveCategoryId(archiveId, categories)
+          ? openCategory?.autoArchive === "missed" || archiveId === NA_SMART_MISSED
+            ? "No missed opportunities yet."
+            : "No completed tasks yet."
         : openSmart
           ? "Nothing scheduled for this period."
           : `No active ${itemLabel.toLowerCase()}s in this list.`
@@ -238,10 +208,10 @@ export function ListContentPanel({
   if (tasks.length === 0) {
     return (
       <div className="fm-sunken">
-        {uncategorizedFilter}
+        {uncategorizedOnlyFilter}
         {quickAdd}
+        {addButtons}
         {!addingTaskToTarget && bulkAddPanel}
-        {listFilter}
         <div className="fm-empty">
           <img src={openIconKey} alt="" style={{ width: 56, height: 56, opacity: 0.6 }} loading="lazy" decoding="async" />
           <p>{emptyMessage}</p>
@@ -252,9 +222,15 @@ export function ListContentPanel({
 
   let body = null
   if (currentDisplay === "default") {
-    body = <ListContentDefault {...taskHandlers} openCategory={openCategory} categories={categories} />
+    body = (
+      <ListContentDefault
+        {...taskHandlers}
+        openCategory={openCategory}
+        categories={categories}
+      />
+    )
   } else if (currentDisplay === "checklist") {
-    body = <ListContentChecklist {...taskHandlers} />
+    body = <ListContentChecklist {...taskHandlers} checkboxVars={openCategory?.checklistCheckboxVars} />
   } else if (currentDisplay === "icons") {
     body = <ListContentIcons {...taskHandlers} onIconPickerOpen={onIconPickerOpen} />
   } else if (currentDisplay === "spreadsheet") {
@@ -284,10 +260,10 @@ export function ListContentPanel({
 
   return (
     <div className="fm-sunken">
-      {uncategorizedFilter}
+      {uncategorizedOnlyFilter}
       {quickAdd}
+      {addButtons}
       {!addingTaskToTarget && bulkAddPanel}
-      {listFilter}
       {body}
     </div>
   )

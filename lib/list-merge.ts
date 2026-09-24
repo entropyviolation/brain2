@@ -62,8 +62,13 @@ export function buildMergedList(lists: List[], plan: ListMergePlan): List | null
   const displayedAttributes = plan.preserveAttributes
     ? [...new Set(sources.flatMap((l) => l.displayedAttributes ?? []))]
     : survivor.displayedAttributes
+  const hadDetailsColumns = sources.some((l) => l.detailsColumns !== undefined)
+  const detailsColumns = plan.preserveAttributes && hadDetailsColumns
+    ? [...new Set(sources.flatMap((l) => l.detailsColumns ?? []))]
+    : survivor.detailsColumns
   const enabledDisplays = sanitizeEnabledDisplays([...new Set(sources.flatMap((l) => l.enabledDisplays ?? []))])
   const detailPanels = [...new Set(sources.flatMap((l) => l.detailPanels ?? []))]
+  const hiddenDetailPanels = [...new Set(sources.flatMap((l) => l.hiddenDetailPanels ?? []))]
   const rules = plan.preserveRules ? sources.flatMap((l) => l.rules ?? []) : survivor.rules
   return {
     ...survivor,
@@ -77,8 +82,10 @@ export function buildMergedList(lists: List[], plan: ListMergePlan): List | null
     itemAttributes: itemAttributes?.length ? itemAttributes : survivor.itemAttributes,
     defaultAttributeValues,
     displayedAttributes: displayedAttributes?.length ? displayedAttributes : survivor.displayedAttributes,
+    detailsColumns: detailsColumns !== undefined ? detailsColumns : survivor.detailsColumns,
     enabledDisplays: enabledDisplays ?? sanitizeEnabledDisplays(survivor.enabledDisplays),
     detailPanels: detailPanels.length ? detailPanels : survivor.detailPanels,
+    hiddenDetailPanels: hiddenDetailPanels.length ? hiddenDetailPanels : survivor.hiddenDetailPanels,
     rules: rules?.length ? rules : survivor.rules,
   }
 }

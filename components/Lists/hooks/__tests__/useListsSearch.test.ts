@@ -32,4 +32,13 @@ describe("useListsSearch", () => {
     act(() => result.current.setSearchTerm("packing"))
     expect(result.current.searchResults.lists.map((c) => c.id)).toEqual(["pack"])
   })
+
+  it("bumps searchResetKey on clearSearch", () => {
+    const { result } = renderHook(() => useListsSearch([], [], items))
+    act(() => result.current.setSearchTerm("x"))
+    const key = result.current.searchResetKey
+    act(() => result.current.clearSearch())
+    expect(result.current.searchTerm).toBe("")
+    expect(result.current.searchResetKey).toBe(key + 1)
+  })
 })

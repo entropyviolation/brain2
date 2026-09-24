@@ -30,20 +30,26 @@ export function ViewModeControls({
   if (!openTarget) {
     return (
       <>
-        <span style={{ fontSize: 11 }}>View:</span>
-        {(["icons", "list", "details", "cards"] as FolderView[]).map((v) => (
-          <button
-            key={v}
-            className={`fm-btn fm-btn-sm${folderView === v ? " active" : ""}`}
-            onClick={() => onFolderViewChange(v)}
-          >
-            {v === "cards" ? "Cards" : v[0].toUpperCase() + v.slice(1)}
-          </button>
-        ))}
+        <span className="fm-nameplate">View</span>
+        <div className="fm-view-keys" role="group" aria-label="Folder view">
+          {(["icons", "list", "details", "cards"] as FolderView[]).map((v) => (
+            <button
+              key={v}
+              type="button"
+              className={`fm-btn fm-btn-sm${folderView === v ? " active" : ""}`}
+              onClick={() => onFolderViewChange(v)}
+            >
+              {v === "cards" ? "Cards" : v[0].toUpperCase() + v.slice(1)}
+            </button>
+          ))}
+        </div>
         {folderView === "icons" && (
-          <button className="fm-btn fm-btn-sm" title="Reset icon positions to a tidy grid" onClick={onAutoOrganize}>
-            Auto-organize
-          </button>
+          <>
+            <div className="fm-toolbar-sep" role="separator" aria-label="Organize" />
+            <button className="fm-btn fm-btn-sm" title="Reset icon positions to a tidy grid" onClick={onAutoOrganize}>
+              Auto-organize
+            </button>
+          </>
         )}
       </>
     )
@@ -61,16 +67,19 @@ export function ViewModeControls({
 
   return (
     <>
-      <span style={{ fontSize: 11 }}>Display:</span>
-      {modes.map((d) => (
-        <button
-          key={d}
-          className={`fm-btn fm-btn-sm${currentDisplay === d ? " active" : ""}`}
-          onClick={() => onListDisplayChange(openTargetKey(openTarget), d)}
-        >
-          {d === "table" ? "Details" : d === "spreadsheet" ? "Spreadsheet" : d[0].toUpperCase() + d.slice(1)}
-        </button>
-      ))}
+      <span className="fm-nameplate">Display</span>
+      <div className="fm-view-keys" role="group" aria-label="List display">
+        {modes.map((d) => (
+          <button
+            key={d}
+            type="button"
+            className={`fm-btn fm-btn-sm${currentDisplay === d ? " active" : ""}`}
+            onClick={() => onListDisplayChange(openTargetKey(openTarget), d)}
+          >
+            {d === "table" ? "Details" : d === "spreadsheet" ? "Spreadsheet" : d[0].toUpperCase() + d.slice(1)}
+          </button>
+        ))}
+      </div>
     </>
   )
 }

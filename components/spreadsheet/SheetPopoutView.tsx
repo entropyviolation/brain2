@@ -2,10 +2,11 @@
  * components/spreadsheet/SheetPopoutView.tsx — Standalone spreadsheet window
  *
  * Renders a single list/category's `SheetGrid` on its own — no global header or
- * app tabs — for the "Open in new window" feature. `app/page.tsx` mounts this
- * when the URL hash matches the pop-out convention (`#popout/sheet/<categoryId>`).
- * In Electron this is a real `BrowserWindow`; in the browser it's a
- * `window.open(...)` tab. The grid is bound to the same list + store as the
+ * app tabs — for the "Open in new window" feature. `app/popout/page.tsx` mounts
+ * this at `/popout/?sheet=<categoryId>`. In Electron this is a real
+ * `BrowserWindow`; in the browser it's a `window.open(...)` popup. The grid is
+ * bound to the same list + store as the
+
  * in-app view, so edits persist everywhere through `task-store`. Item clicks open
  * an inline detail view within the same window.
  */
@@ -13,6 +14,7 @@
 
 import { lazy, Suspense, useEffect, useMemo, useState } from "react"
 import { useTaskStore } from "@/lib/task-store"
+import { persistSheetViewConfig, type SheetViewConfig } from "@/lib/spreadsheet-contract"
 import { getItemLabel } from "@/lib/item-utils"
 import { SheetGrid } from "./SheetGrid"
 
@@ -68,6 +70,15 @@ export function SheetPopoutView({ categoryId }: { categoryId: string }) {
           tasks={tasks}
           onOpenItem={setSelectedTaskId}
           newItemLabel={getItemLabel(category, folders, categoryId)}
+          viewConfig={category.sheetConfig}
+          onViewConfigChange={(config: SheetViewConfig) => {
+            const current = useTaskStore.getState().lists.find((l) => l.id === categoryId)
+            if (!current) return
+            useTaskStore.getState().updateList({
+              ...current,
+              sheetConfig: persistSheetViewConfig(current.sheetConfig, config),
+            })
+          }}
         />
       </div>
     </main>

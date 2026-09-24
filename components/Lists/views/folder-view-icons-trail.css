@@ -1,0 +1,27 @@
+/**
+ * Auto-organize motion trace — pixel cursors / snowflake pads along the sweep.
+ * Layout positions come from JS; this file only paints the ephemeral trail layer.
+ */
+
+.fm-organize-trace {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.fm-organize-trace-head {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  will-change: transform;
+  z-index: 6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fm-organize-trace,
+  .fm-organize-trace-head {
+    display: none;
+  }
+}

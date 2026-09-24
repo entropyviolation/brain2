@@ -19,8 +19,11 @@ import type { AttributeDefinition, AttributeValue, FileValue } from "@/lib/types
 import { normalizeAttributeType } from "@/lib/attribute-utils"
 import { computeFormulaValue, formatFormulaValue } from "@/lib/formula"
 import { useTaskStore } from "@/lib/task-store"
+import { putAttachment } from "@/lib/attachments"
+import { useAttachmentSrcList } from "@/hooks/use-attachment-src"
 import { ListPicker } from "@/components/Lists/list-picker"
 import { asArray, asFile, asFiles, asGoal, fileToFileValue } from "./helpers"
+import { itemTitle } from "@/lib/item-utils"
 
 function SelectionValueEditor({
   def,
@@ -35,7 +38,7 @@ function SelectionValueEditor({
 
   const options = useMemo(() => {
     if (def.optionSource === "list" && def.optionListId) {
-      return tasks.filter((t) => t.lists?.includes(def.optionListId!)).map((t) => t.description)
+      return tasks.filter((t) => t.lists?.includes(def.optionListId!)).map((t) => itemTitle(t))
     }
     return def.options || []
   }, [def, tasks])
@@ -120,31 +123,27 @@ function ImageValueEditor({
     input.onchange = () => {
       const files = Array.from(input.files || [])
       if (!files.length) return
+      // Bytes go to the attachments IDB; the cell keeps `idb:<id>`. A data URL
+      // here put whole pictures in the Lists JSON and filled the origin.
       Promise.all(
-        files.map(
-          (f) =>
-            new Promise<string>((resolve) => {
-              const r = new FileReader()
-              r.onload = () => resolve(String(r.result))
-              r.readAsDataURL(f)
-            }),
-        ),
-      ).then((urls) => {
-        if (multiple) onChange([...asArray(value), ...urls])
-        else onChange(urls[0])
+        files.map(async (f) => putAttachment(`img_${crypto.randomUUID()}`, f, { name: f.name, mime: f.type })),
+      ).then((uris) => {
+        if (multiple) onChange([...asArray(value), ...uris])
+        else onChange(uris[0])
       })
     }
     input.click()
   }
 
   const urls = multiple ? asArray(value) : value ? [String(value)] : []
+  const srcs = useAttachmentSrcList(urls.map(String))
 
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap gap-2">
         {urls.map((url, i) => (
           <div key={i} className="relative border rounded overflow-hidden">
-            <img src={url} alt="" className="h-16 w-16 object-cover" />
+            <img src={srcs[i] || ""} alt="" className="h-16 w-16 object-cover" />
             <button
               type="button"
               className="absolute top-0 right-0 bg-black/50 text-white text-xs px-1"
@@ -425,7 +424,7 @@ export function AttributeValueField({
             <SelectItem value="none">—</SelectItem>
             {scoped.slice(0, 200).map((t) => (
               <SelectItem key={t.id} value={t.id}>
-                {t.description}
+                {itemTitle(t)}
               </SelectItem>
             ))}
           </SelectContent>

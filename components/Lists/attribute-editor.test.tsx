@@ -69,6 +69,18 @@ describe("AttributeSchemaEditor", () => {
       expect.objectContaining({ name: "New attribute", type: "string" }),
     ])
   })
+
+  it("single mode hides add/remove chrome for the column-header popup", () => {
+    render(
+      <AttributeSchemaEditor
+        value={[{ id: "actualSec", name: "Actual", type: "number", unit: "s" }]}
+        onChange={vi.fn()}
+        single
+      />,
+    )
+    expect(screen.getByDisplayValue("Actual")).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /Add attribute/i })).not.toBeInTheDocument()
+  })
 })
 
 describe("AttributeValuesEditor", () => {

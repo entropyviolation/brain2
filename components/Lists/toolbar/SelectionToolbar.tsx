@@ -36,7 +36,7 @@ export function SelectionToolbar({
   const canMerge = selectedListCount >= 2
   return (
     <div className="fm-toolbar" style={{ marginTop: 3 }}>
-      <span style={{ fontSize: 11 }}>{selectedCount} selected</span>
+      <span className="fm-crt-count">{selectedCount} selected</span>
       <button className="fm-btn fm-btn-sm" onClick={onSelectAll}>
         Select All
       </button>

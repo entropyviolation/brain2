@@ -4,8 +4,11 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { LIST_DISPLAY_MODES, sanitizeEnabledDisplays, type List, type Folder, type ItemTypeDefinition, type ListDisplayMode } from "@/lib/types"
 import type { ListDisplay } from "@/lib/lists-ui-store"
 import { listIsNextActions } from "@/lib/item-utils"
+import { removeTaskFromList } from "@/lib/item-selection"
+import { isFolderAllItemsCategoryId, GLOBAL_ALL_ITEMS_LIST_ID } from "@/lib/folder-all-items"
 import { isListHiddenFromGlobalAll } from "@/lib/module-lists"
 import { useItemTypeStore } from "@/lib/item-type-store"
+import { useTaskStore } from "@/lib/task-store"
 import { iconFor } from "@/components/Lists/lib/icon-utils"
 import { AttributeSchemaEditor, AttributeValuesEditor, listAttributeSchema } from "@/components/Lists/attribute-editor"
 import { ListRulesEditor } from "@/components/Lists/dialogs/ListRulesEditor"
@@ -18,6 +21,11 @@ import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Trash, CalendarClock, Settings, Star, Shapes, Pencil, Eye } from "lucide-react"
+import { ConnectedListsEditor } from "@/components/Lists/dialogs/ConnectedListsEditor"
+import { InFoldersEditor } from "@/components/Lists/dialogs/InFoldersEditor"
+import { ChecklistViewSettings } from "@/components/Lists/dialogs/ChecklistViewSettings"
+import { snapshotsEqual } from "@/lib/unsaved-changes"
+import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
 
 export interface EditListDialogProps {
   editingCategory: List | null
@@ -56,6 +64,7 @@ export function EditListDialog({
   const [typeEditorOpen, setTypeEditorOpen] = useState(false)
   // null = create new; a definition = edit that type.
   const [typeToEdit, setTypeToEdit] = useState<ItemTypeDefinition | null>(null)
+  const [clearConfirmOpen, setClearConfirmOpen] = useState(false)
   const textRef = useRef({ name: "", description: "", itemLabel: "" })
 
   useEffect(() => {
@@ -79,8 +88,43 @@ export function EditListDialog({
     [editingCategory, types],
   )
 
+  const baselineRef = useRef<List | null>(null)
+  if (editingCategory && baselineRef.current?.id !== editingCategory.id) {
+    baselineRef.current = structuredClone(editingCategory)
+  }
+  if (!editingCategory) baselineRef.current = null
+  const isDirty = Boolean(
+    editingCategory &&
+      baselineRef.current &&
+      !snapshotsEqual(
+        {
+          ...editingCategory,
+          name: textRef.current.name || editingCategory.name,
+          description: textRef.current.description || editingCategory.description,
+        },
+        baselineRef.current,
+      ),
+  )
+  const guard = useUnsavedGuard({
+    open: !!editingCategory,
+    onOpenChange: (next) => {
+      if (!next && !clearConfirmOpen) onEditingCategoryChange(null)
+    },
+    isDirty,
+    onSave: () => {
+      if (!editingCategory) return false
+      onSave({
+        ...editingCategory,
+        name: textRef.current.name,
+        description: textRef.current.description,
+        itemLabel: textRef.current.itemLabel || undefined,
+      })
+    },
+  })
+
   if (!editingCategory) return null
 
+  const isFolderAll = isFolderAllItemsCategoryId(editingCategory.id)
   const enabledDisplays = sanitizeEnabledDisplays(editingCategory.enabledDisplays) ?? ALL_DISPLAYS
 
   const toggleDisplay = (d: ListDisplayMode) => {
@@ -108,16 +152,25 @@ export function EditListDialog({
       : composedDefs.map((d) => d.id)
 
   return (
-    <Dialog open={!!editingCategory} onOpenChange={() => onEditingCategoryChange(null)}>
-      <DialogContent className="fm98-dialog sm:max-w-lg max-h-[85vh] overflow-hidden flex flex-col">
+    <>
+    <Dialog open={!!editingCategory} onOpenChange={guard.handleOpenChange}>
+      <DialogContent className="fm98-dialog w-[calc(100vw-1.5rem)] max-w-[37.5rem] sm:max-w-[37.5rem] max-h-[85vh] overflow-hidden flex flex-col" data-ui-name="List settings" data-ui-docs="components/Lists/README.md" {...unsavedDismissProps(guard.requestClose)}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Settings className="h-5 w-5" />
             List Settings
           </DialogTitle>
-          <DialogDescription>Update the settings for this list.</DialogDescription>
+          <DialogDescription>
+            {isFolderAll
+              ? editingCategory.id === GLOBAL_ALL_ITEMS_LIST_ID
+                ? "View settings for Home All. They persist on the All Items record and do not own every item."
+                : "View settings for this folder’s All Items aggregate. They persist on the All Items record and do not turn it into a separate child list."
+              : "Update the settings for this list."}
+          </DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+          {!isFolderAll && (
+          <>
           <div className="flex items-center gap-3">
             <img
               src={iconFor(editingCategory.id, editingCategory.icon)}
@@ -185,6 +238,10 @@ export function EditListDialog({
             </p>
           </div>
 
+          <InFoldersEditor listId={editingCategory.id} />
+
+          <ConnectedListsEditor listId={editingCategory.id} />
+
           {/* Item type — items in this list adopt this type's attributes + defaults. */}
           <div className="space-y-2">
             <Label className="flex items-center gap-2">
@@ -244,6 +301,8 @@ export function EditListDialog({
               </p>
             )}
           </div>
+          </>
+          )}
 
           {/* Display offerings — which view modes are selectable for this list. */}
           <div className="space-y-2">
@@ -264,21 +323,64 @@ export function EditListDialog({
             </div>
           </div>
 
+          <ChecklistViewSettings
+            list={editingCategory}
+            onChange={onEditingCategoryChange}
+          />
+
+          {!isFolderAll && (
+          <>
           <div className="space-y-2">
-            <Label>Item detail panels</Label>
+            <Label>Add item-detail panels</Label>
+            <p className="text-xs text-muted-foreground">
+              Extra tabs on top of the item type. Leave empty to use the type's own panels.
+            </p>
             <div className="flex flex-wrap gap-2">
-              {(["details", "scheduling", "dependencies", "subtasks", "analysis", "time"] as const).map((panel) => {
-                const panels =
-                  editingCategory.detailPanels || ["details", "scheduling", "dependencies", "subtasks", "analysis"]
-                const on = panels.includes(panel)
+              {(["details", "scheduling", "dependencies", "subtasks", "analysis", "time", "body"] as const).map(
+                (panel) => {
+                  const panels = editingCategory.detailPanels || []
+                  const on = panels.includes(panel)
+                  return (
+                    <label key={panel} className="flex items-center gap-1 text-sm border rounded px-2 py-1">
+                      <input
+                        type="checkbox"
+                        checked={on}
+                        onChange={() => {
+                          const next = on ? panels.filter((p) => p !== panel) : [...panels, panel]
+                          onEditingCategoryChange({
+                            ...editingCategory,
+                            detailPanels: next.length ? next : undefined,
+                          })
+                        }}
+                      />
+                      {panel}
+                    </label>
+                  )
+                },
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Hide item-detail panels</Label>
+            <p className="text-xs text-muted-foreground">
+              Hide tabs even if the item type would show them (e.g. hide Scheduling on a wishlist).
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {(["scheduling", "dependencies", "subtasks", "analysis", "time", "body"] as const).map((panel) => {
+                const hidden = editingCategory.hiddenDetailPanels || []
+                const on = hidden.includes(panel)
                 return (
                   <label key={panel} className="flex items-center gap-1 text-sm border rounded px-2 py-1">
                     <input
                       type="checkbox"
                       checked={on}
                       onChange={() => {
-                        const next = on ? panels.filter((p) => p !== panel) : [...panels, panel]
-                        onEditingCategoryChange({ ...editingCategory, detailPanels: next })
+                        const next = on ? hidden.filter((p) => p !== panel) : [...hidden, panel]
+                        onEditingCategoryChange({
+                          ...editingCategory,
+                          hiddenDetailPanels: next.length ? next : undefined,
+                        })
                       }}
                     />
                     {panel}
@@ -314,7 +416,9 @@ export function EditListDialog({
               <div className="space-y-2">
                 <Label>Shown attributes</Label>
                 <p className="text-xs text-muted-foreground">
-                  Which attributes appear in this list's views (uncheck to hide without deleting).
+                  Which attributes are offered in this list&apos;s views (uncheck to hide
+                  without deleting). Details table columns are chosen separately under
+                  View mode settings.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {composedDefs.map((def) => {
@@ -396,29 +500,42 @@ export function EditListDialog({
               }
             />
           </div>
-        </div>
-        <div className="flex justify-between gap-2 pt-3 border-t shrink-0">
-          <Button variant="destructive" onClick={onDelete}>
-            <Trash className="h-4 w-4 mr-2" />
-            Delete
-          </Button>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => onEditingCategoryChange(null)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={() =>
-                onSave({
-                  ...editingCategory,
-                  name: textRef.current.name,
-                  description: textRef.current.description,
-                  itemLabel: textRef.current.itemLabel || undefined,
-                })
-              }
-            >
-              Save Changes
-            </Button>
+
+          <div className="fm-list-danger space-y-2 rounded-none border p-3" data-testid="list-danger-actions">
+            <Label>Dangerous actions</Label>
+            <p className="text-xs text-muted-foreground">
+              Clear removes items from this list only. They stay in the universe and on any other lists. Delete
+              removes the list itself.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" variant="outline" onClick={() => setClearConfirmOpen(true)}>
+                Clear list
+              </Button>
+              <Button type="button" variant="destructive" onClick={onDelete}>
+                <Trash className="h-4 w-4 mr-2" />
+                Delete
+              </Button>
+            </div>
           </div>
+          </>
+          )}
+        </div>
+        <div className="flex justify-end gap-2 pt-3 border-t shrink-0">
+          <Button variant="outline" onClick={guard.requestClose}>
+            Cancel
+          </Button>
+          <Button
+            onClick={() =>
+              onSave({
+                ...editingCategory,
+                name: textRef.current.name,
+                description: textRef.current.description,
+                itemLabel: textRef.current.itemLabel || undefined,
+              })
+            }
+          >
+            Save Changes
+          </Button>
         </div>
       </DialogContent>
 
@@ -430,6 +547,57 @@ export function EditListDialog({
         allTypes={types}
         onSave={handleSaveType}
       />
+
+      <ClearListConfirmDialog
+        open={clearConfirmOpen}
+        listName={editingCategory.name}
+        onCancel={() => setClearConfirmOpen(false)}
+        onConfirm={() => {
+          const listId = editingCategory.id
+          const { tasks, updateTask } = useTaskStore.getState()
+          for (const task of tasks) {
+            const next = removeTaskFromList(task, listId)
+            if (next !== task) updateTask(next)
+          }
+          setClearConfirmOpen(false)
+        }}
+      />
+    </Dialog>
+    <UnsavedChangesDialog {...guard.prompt} />
+    </>
+  )
+}
+
+function ClearListConfirmDialog({
+  open,
+  listName,
+  onCancel,
+  onConfirm,
+}: {
+  open: boolean
+  listName: string
+  onCancel: () => void
+  onConfirm: () => void
+}) {
+  return (
+    <Dialog open={open} onOpenChange={(next) => { if (!next) onCancel() }}>
+      <DialogContent className="fm98-dialog sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Are you sure?</DialogTitle>
+          <DialogDescription>
+            Every item will be removed from “{listName}”. They will not be deleted — they stay in the universe and on
+            any other lists they belong to. This list will be empty.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button type="button" variant="destructive" onClick={onConfirm}>
+            Clear list
+          </Button>
+        </div>
+      </DialogContent>
     </Dialog>
   )
 }

@@ -1,0 +1,178 @@
+/**
+ * components/spreadsheet/sheet-chrome.css — Header + grid chrome for SheetGrid
+ *
+ * Crafted-sheet headers: roomy padding, centered titles, reserved caret slot,
+ * hairline borders, and an active-column highlight related to the cell ring.
+ */
+
+.sheet-grid {
+  --sheet-hairline: hsl(var(--border));
+  --sheet-header-bg: color-mix(in srgb, hsl(var(--muted)) 72%, hsl(var(--background)));
+  --sheet-header-active: color-mix(in srgb, hsl(var(--primary)) 14%, hsl(var(--background)));
+  --sheet-th-pad-x: 14px;
+  --sheet-th-pad-y: 7px;
+  --sheet-th-slot: 18px;
+  table-layout: fixed;
+  width: max-content;
+}
+
+.sheet-grid-host {
+  position: relative;
+}
+
+.sheet-add-column {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 40;
+  height: 42px;
+  width: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid var(--sheet-hairline, hsl(var(--border)));
+  border-bottom: 1px solid var(--sheet-hairline, hsl(var(--border)));
+  background: var(--sheet-header-bg, hsl(var(--muted)));
+  color: hsl(var(--muted-foreground));
+  cursor: pointer;
+}
+
+.sheet-add-column:hover {
+  color: hsl(var(--foreground));
+}
+
+.sheet-grid thead th.sheet-th-add-spacer {
+  width: 36px;
+  min-width: 36px;
+  max-width: 36px;
+  padding: 0;
+}
+
+.sheet-grid thead th.sheet-th,
+.sheet-grid thead th.sheet-th-gutter {
+  height: 42px;
+  padding: var(--sheet-th-pad-y) var(--sheet-th-pad-x);
+  text-align: center;
+  vertical-align: middle;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  color: hsl(var(--foreground));
+  background: var(--sheet-header-bg);
+  border: 0;
+  border-right: 1px solid var(--sheet-hairline);
+  border-bottom: 1px solid var(--sheet-hairline);
+  box-shadow: none;
+  box-sizing: border-box;
+  user-select: none;
+}
+
+.sheet-grid thead th.sheet-th-gutter {
+  padding-left: 8px;
+  padding-right: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  color: hsl(var(--muted-foreground));
+}
+
+.sheet-grid thead th.sheet-th-active {
+  background: var(--sheet-header-active);
+  box-shadow: inset 0 -2px 0 hsl(var(--primary));
+  color: hsl(var(--foreground));
+}
+
+.sheet-th-letter {
+  text-align: center;
+  font-size: 10px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  color: hsl(var(--muted-foreground));
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.sheet-th-main {
+  display: grid;
+  grid-template-columns: var(--sheet-th-slot) minmax(0, 1fr) var(--sheet-th-slot);
+  align-items: center;
+  min-height: 18px;
+  gap: 2px;
+}
+
+.sheet-th-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--sheet-th-slot);
+  height: 16px;
+}
+
+.sheet-th-slot-start {
+  opacity: 0;
+}
+
+.sheet-grid thead th.sheet-th:hover .sheet-th-slot-start,
+.sheet-grid thead th.sheet-th:focus-within .sheet-th-slot-start {
+  opacity: 1;
+}
+
+.sheet-th-sort {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  width: 100%;
+  margin: 0;
+  padding: 2px 4px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+}
+
+.sheet-th-sort:hover {
+  color: hsl(var(--primary));
+}
+
+.sheet-th-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.sheet-th-unit {
+  flex-shrink: 0;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+}
+
+.sheet-th-caret {
+  width: 12px;
+  height: 12px;
+  color: hsl(var(--primary));
+}
+
+.sheet-grid thead th.sheet-th .sheet-col-resize {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+}
+
+.sheet-grid thead th.sheet-th .sheet-col-resize:hover {
+  background: hsl(var(--primary) / 0.35);
+}

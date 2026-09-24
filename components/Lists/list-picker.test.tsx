@@ -76,4 +76,61 @@ describe("ListPicker", () => {
     await user.click(screen.getByText("Books"))
     expect(screen.getByText("Selected (2)")).toBeInTheDocument()
   })
+
+  it("renders each list as a full-width row, not inline chips", () => {
+    render(<ListPicker selected={[]} onChange={vi.fn()} />)
+    const groceries = screen.getByRole("button", { name: "Groceries" })
+    const books = screen.getByRole("button", { name: "Books" })
+    expect(groceries).toHaveClass("list-picker-row")
+    expect(books).toHaveClass("list-picker-row")
+    expect(groceries).not.toBe(books)
+  })
+
+  it("shows selected chips with remove when showSelectedChips is on", async () => {
+    const user = userEvent.setup()
+    function Chipped() {
+      const [selected, setSelected] = useState<string[]>([])
+      return (
+        <ListPicker selected={selected} onChange={setSelected} mode="single" showSelectedChips />
+      )
+    }
+    render(<Chipped />)
+    await user.click(screen.getByRole("button", { name: "Groceries" }))
+    expect(screen.getByLabelText("Selected lists")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Remove Groceries" })).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: "Remove Groceries" }))
+    expect(screen.queryByLabelText("Selected lists")).not.toBeInTheDocument()
+  })
+
+  it("pins suggested lists under a Recent label", () => {
+    render(<ListPicker selected={[]} onChange={vi.fn()} suggestedIds={["list-2"]} />)
+    expect(screen.getByLabelText("Recent lists")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Books" })).toBeInTheDocument()
+  })
+
+  it("seeds New list with a search that matches no list name", async () => {
+    const user = userEvent.setup()
+    render(<ListPicker selected={[]} onChange={vi.fn()} />)
+    await user.type(screen.getByRole("textbox", { name: "Search lists" }), "Sourdough")
+    await user.click(screen.getByRole("button", { name: /New list/i }))
+    expect(screen.getByRole("textbox", { name: "New list name" })).toHaveValue("Sourdough")
+  })
+
+  it("leaves the new list name blank when the search is an existing list", async () => {
+    const user = userEvent.setup()
+    render(<ListPicker selected={[]} onChange={vi.fn()} />)
+    await user.type(screen.getByRole("textbox", { name: "Search lists" }), "Groceries")
+    await user.click(screen.getByRole("button", { name: /New list/i }))
+    expect(screen.getByRole("textbox", { name: "New list name" })).toHaveValue("")
+  })
+
+  it("selects the first search hit on Enter", async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(<ListPicker selected={[]} onChange={onChange} mode="single" />)
+    const search = screen.getByRole("textbox", { name: "Search lists" })
+    await user.type(search, "groc")
+    await user.keyboard("{Enter}")
+    expect(onChange).toHaveBeenCalledWith(["list-1"])
+  })
 })

@@ -14,6 +14,7 @@ import {
   taskScheduledInWeek,
 } from "@/lib/date-utils"
 import type { SmartId } from "@/components/Lists/types"
+import { isClearedFromWork } from "@/lib/completion-status"
 
 export const EMPTY_TASKS: Task[] = []
 
@@ -59,14 +60,14 @@ export function buildListsTaskIndex(
         } else {
           totalsByList.set(id, { total: 1, completed: task.completed ? 1 : 0 })
         }
-        if (!task.completed) {
+        if (!isClearedFromWork(task)) {
           const bucket = activeByList.get(id)
           if (bucket) bucket.push(task)
           else activeByList.set(id, [task])
         }
       }
     }
-    if (task.completed) continue
+    if (isClearedFromWork(task)) continue
     activeCount += 1
     if (taskScheduledOnDay(task, now)) daily.push(task)
     if (taskScheduledInWeek(task, week)) weekly.push(task)

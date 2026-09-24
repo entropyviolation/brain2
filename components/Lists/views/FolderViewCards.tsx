@@ -13,6 +13,7 @@ import {
   Trash,
   Calendar,
   Check,
+  TimerOff,
   Settings,
   Plus,
   GripVertical,
@@ -21,6 +22,7 @@ import {
   Eye,
 } from "lucide-react"
 import { safeDateFormat } from "@/lib/date-utils"
+import { itemTitle } from "@/lib/item-utils"
 const TASK_PREVIEW_LIMIT = 8
 const INITIAL_CARD_BATCH = 12
 const CARD_BATCH_STEP = 10
@@ -49,6 +51,7 @@ export interface FolderViewCardsProps {
   deleteList: (id: string) => void
   handleAddTaskToCategory: (categoryId: string, description: string) => void
   handleCompleteTask: (taskId: string) => void
+  handleMissedOpportunity?: (taskId: string) => void
 }
 
 function CardAddTaskForm({
@@ -87,12 +90,14 @@ const TaskRow = memo(function TaskRow({
   task,
   onSelect,
   onComplete,
+  onMissed,
   onDragStart,
   onDragEnd,
 }: {
   task: Task
   onSelect: (id: string) => void
   onComplete: (id: string) => void
+  onMissed?: (id: string) => void
   onDragStart: (e: React.DragEvent, task: Task) => void
   onDragEnd: () => void
 }) {
@@ -108,7 +113,7 @@ const TaskRow = memo(function TaskRow({
         <GripVertical className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <p className="text-sm font-medium truncate">{task.description}</p>
+            <p className="text-sm font-medium truncate">{itemTitle(task)}</p>
           </div>
           <div className="flex gap-3 mt-1">
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -144,6 +149,7 @@ const TaskRow = memo(function TaskRow({
           variant="ghost"
           size="icon"
           className="h-7 w-7 text-green-600 hover:text-green-700 focus-ring"
+          title="Mark complete"
           onClick={(e) => {
             e.stopPropagation()
             onComplete(task.id)
@@ -151,6 +157,20 @@ const TaskRow = memo(function TaskRow({
         >
           <Check className="h-3 w-3" />
         </Button>
+        {onMissed && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-orange-700 hover:text-orange-800 focus-ring"
+            title="Missed opportunity — too late"
+            onClick={(e) => {
+              e.stopPropagation()
+              onMissed(task.id)
+            }}
+          >
+            <TimerOff className="h-3 w-3" />
+          </Button>
+        )}
       </div>
     </div>
   )
@@ -174,6 +194,7 @@ const ListCard = memo(function ListCard({
   onDeleteList,
   handleAddTaskToCategory,
   handleCompleteTask,
+  handleMissedOpportunity,
   handleTaskDragStart,
   clearDrag,
   openEntry,
@@ -195,6 +216,7 @@ const ListCard = memo(function ListCard({
   onDeleteList: (id: string) => void
   handleAddTaskToCategory: (categoryId: string, description: string) => void
   handleCompleteTask: (taskId: string) => void
+  handleMissedOpportunity?: (taskId: string) => void
   handleTaskDragStart: (e: React.DragEvent, task: Task) => void
   clearDrag: () => void
   openEntry: (entry: GridEntry) => void
@@ -284,6 +306,7 @@ const ListCard = memo(function ListCard({
                   task={task}
                   onSelect={setSelectedTaskId}
                   onComplete={handleCompleteTask}
+                  onMissed={handleMissedOpportunity}
                   onDragStart={handleTaskDragStart}
                   onDragEnd={clearDrag}
                 />
@@ -341,7 +364,7 @@ const SmartCard = memo(function SmartCard({
                 className="flex items-center justify-between p-2 border rounded-lg hover:bg-muted/50 cursor-pointer"
                 onClick={() => setSelectedTaskId(task.id)}
               >
-                <p className="text-sm font-medium truncate">{task.description}</p>
+                <p className="text-sm font-medium truncate">{itemTitle(task)}</p>
                 {task.estimatedDuration != null && (
                   <span className="text-xs text-muted-foreground">{task.estimatedDuration}m</span>
                 )}
@@ -392,6 +415,7 @@ export function FolderViewCards({
   deleteList,
   handleAddTaskToCategory,
   handleCompleteTask,
+  handleMissedOpportunity,
 }: FolderViewCardsProps) {
   const [pendingDeleteIds, setPendingDeleteIds] = useState<Set<string>>(() => new Set())
   const listCountOnInit = entries.filter((e) => e.kind === "list").length
@@ -576,6 +600,7 @@ export function FolderViewCards({
               onDeleteList={onDeleteList}
               handleAddTaskToCategory={handleAddTaskToCategory}
               handleCompleteTask={handleCompleteTask}
+              handleMissedOpportunity={handleMissedOpportunity}
               handleTaskDragStart={handleTaskDragStart}
               clearDrag={clearDrag}
               openEntry={openEntry}

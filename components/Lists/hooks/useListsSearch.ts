@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import type { Task, List, Folder } from "@/lib/types"
+import { itemTitle } from "@/lib/item-utils"
 
 export interface SearchResults {
   folders: Folder[]
@@ -13,8 +14,14 @@ export function useListsSearch(
   allTasks: Task[],
 ) {
   const [searchTerm, setSearchTerm] = useState("")
+  const [searchResetKey, setSearchResetKey] = useState(0)
   const q = searchTerm.trim().toLowerCase()
   const searchActive = q.length > 0
+
+  const clearSearch = useCallback(() => {
+    setSearchTerm("")
+    setSearchResetKey((k) => k + 1)
+  }, [])
 
   const searchResults = useMemo<SearchResults>(() => {
     if (!searchActive) return { folders: [], lists: [], tasks: [] }
@@ -24,7 +31,7 @@ export function useListsSearch(
     const l = categories.filter(
       (x) => x.name.toLowerCase().includes(q) || (x.description || "").toLowerCase().includes(q),
     )
-    const t = allTasks.filter((x) => !x.completed && x.description.toLowerCase().includes(q)).slice(0, 50)
+    const t = allTasks.filter((x) => !x.completed && itemTitle(x).toLowerCase().includes(q)).slice(0, 50)
     return { folders: f, lists: l, tasks: t }
   }, [searchActive, q, folders, categories, allTasks])
 
@@ -33,6 +40,8 @@ export function useListsSearch(
   return {
     searchTerm,
     setSearchTerm,
+    searchResetKey,
+    clearSearch,
     searchActive,
     searchResults,
     filteredItems,

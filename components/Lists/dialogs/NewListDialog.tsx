@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import type { Folder } from "@/lib/types"
 import type { ItemPlacementMode } from "@/lib/item-selection"
 import { LIST_TEMPLATES } from "@/components/Lists/constants"
@@ -29,6 +29,8 @@ export interface NewListDialogProps {
   placementMode?: ItemPlacementMode
   canMove?: boolean
   onPlacementModeChange?: (mode: ItemPlacementMode) => void
+  /** Search text to offer as the name when no list already has that exact name. */
+  initialName?: string
 }
 
 export function NewListDialog({
@@ -41,6 +43,7 @@ export function NewListDialog({
   placementMode = "keep",
   canMove = true,
   onPlacementModeChange,
+  initialName = "",
 }: NewListDialogProps) {
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
@@ -48,18 +51,24 @@ export function NewListDialog({
   const [scheduleable, setScheduleable] = useState(true)
   const [template, setTemplate] = useState("none")
 
+  const wasOpen = useRef(false)
   useEffect(() => {
-    if (!open) return
-    setName("")
+    if (!open) {
+      wasOpen.current = false
+      return
+    }
+    if (wasOpen.current) return
+    wasOpen.current = true
+    setName(initialName.trim())
     setDescription(currentFolder?.description || "")
     setColor(currentFolder?.color || "#3B82F6")
     setScheduleable(currentFolder ? currentFolder.scheduleable !== false : true)
     setTemplate("none")
-  }, [open, currentFolder])
+  }, [open, currentFolder, initialName])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="fm98-dialog">
+      <DialogContent className="fm98-dialog" data-ui-name="New list" data-ui-docs="components/Lists/README.md">
         <DialogHeader>
           <DialogTitle>Create New List</DialogTitle>
           <DialogDescription>

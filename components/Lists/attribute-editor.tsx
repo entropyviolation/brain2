@@ -8,6 +8,7 @@
  *
  * - `./attributes/helpers`               value coercion, formatting, merging
  * - `./attributes/AttributeSchemaEditor` define a list's attribute schema
+ * - `./attributes/AttributeSettingsDialog` one-attribute popup (spreadsheet header)
  * - `./attributes/AttributeValueField`   per-type single-value input
  * - `./attributes/AttributeValuesEditor` schema-driven + ad-hoc value editors
  */
@@ -20,5 +21,6 @@ export {
   formatAttributeValue,
 } from "./attributes/helpers"
 export { AttributeSchemaEditor } from "./attributes/AttributeSchemaEditor"
+export { AttributeSettingsDialog } from "./attributes/AttributeSettingsDialog"
 export { AttributeValueField } from "./attributes/AttributeValueField"
 export { AttributeValuesEditor, AdHocAttributesEditor } from "./attributes/AttributeValuesEditor"

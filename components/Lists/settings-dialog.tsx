@@ -23,6 +23,8 @@ import type { List, Task } from "@/lib/types"
 import { BackupRestore } from "@/components/Settings/BackupRestore"
 import { downloadCategoryExport, parseCategoryExport, importCategory } from "@/lib/data/backup"
 import { Dialog as ChoiceDialog, DialogContent as ChoiceDialogContent, DialogHeader as ChoiceDialogHeader, DialogTitle as ChoiceDialogTitle, DialogDescription as ChoiceDialogDescription, DialogFooter as ChoiceDialogFooter } from "@/components/ui/dialog"
+import { snapshotsEqual } from "@/lib/unsaved-changes"
+import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
 
 interface NextActionsSettingsDialogProps {
   open: boolean
@@ -243,9 +245,26 @@ export function NextActionsSettingsDialog({ open, onClose }: NextActionsSettings
   const completedTasks = tasks.filter((task) => task.completed)
   const activeTasks = tasks.filter((task) => !task.completed)
 
+  const listsOrder = [...lists].sort((a, b) => (a.order || 0) - (b.order || 0)).map((c) => c.id)
+  const localOrder = localCategories.map((c) => c.id)
+  const isDirty = !snapshotsEqual(listsOrder, localOrder) || Boolean(pendingImport)
+  const guard = useUnsavedGuard({
+    open,
+    onOpenChange: (next) => {
+      if (!next) onClose()
+    },
+    isDirty,
+    onSave: saveOrder,
+    onDiscard: () => {
+      setLocalCategories([...lists].sort((a, b) => (a.order || 0) - (b.order || 0)))
+      setPendingImport(null)
+    },
+  })
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+    <>
+    <Dialog open={open} onOpenChange={guard.handleOpenChange}>
+      <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-hidden flex flex-col" data-ui-name="Lists settings" data-ui-docs="components/Lists/README.md" {...unsavedDismissProps(guard.requestClose)}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Settings className="h-5 w-5" />
@@ -295,7 +314,7 @@ export function NextActionsSettingsDialog({ open, onClose }: NextActionsSettings
                 ))}
               </div>
               <div className="flex justify-end gap-3 pt-4 border-t">
-                <Button variant="outline" onClick={onClose} className="focus-ring">
+                <Button variant="outline" onClick={guard.requestClose} className="focus-ring">
                   Cancel
                 </Button>
                 <Button onClick={saveOrder} className="focus-ring">
@@ -481,5 +500,7 @@ export function NextActionsSettingsDialog({ open, onClose }: NextActionsSettings
         </Tabs>
       </DialogContent>
     </Dialog>
+    <UnsavedChangesDialog {...guard.prompt} />
+    </>
   )
 }

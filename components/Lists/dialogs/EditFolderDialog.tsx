@@ -53,7 +53,7 @@ export function EditFolderDialog({
 
   return (
     <Dialog open={!!editingFolder} onOpenChange={() => onEditingFolderChange(null)}>
-      <DialogContent className="fm98-dialog">
+      <DialogContent className="fm98-dialog" data-ui-name="Folder settings" data-ui-docs="components/Lists/README.md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Settings className="h-5 w-5" />

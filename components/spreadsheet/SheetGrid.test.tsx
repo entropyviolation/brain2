@@ -107,7 +107,7 @@ describe("SheetGrid", () => {
     render(<SheetGrid categoryId="list1" tasks={tasks} enableAddRow={false} enableAddColumn={false} />)
     expect(rowOrder()).toEqual(["Apple", "Banana"])
 
-    const costHeader = screen.getByRole("button", { name: /Cost/ })
+    const costHeader = screen.getByRole("button", { name: /Sort Cost/ })
 
     await user.click(costHeader) // asc → already ascending by cost
     expect(rowOrder()).toEqual(["Apple", "Banana"])
@@ -157,7 +157,7 @@ describe("SheetGrid", () => {
     expect(list.displayedAttributes).toEqual(["cost", "total", "notes"])
 
     // The new header renders in the grid.
-    expect(screen.getByRole("button", { name: /Notes/ })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /Sort Notes/ })).toBeInTheDocument()
   })
 
   it("writes a value into the new column onto the item in that row", async () => {
@@ -311,5 +311,200 @@ describe("SheetGrid", () => {
 
     expect(setData).toHaveBeenCalledWith("text/plain", expect.stringContaining("Apple"))
     expect(setData.mock.calls[0][1]).toMatch(/Apple.*\nBanana/)
+  })
+
+  it("shows attributes held on items even when they are not in displayedAttributes", () => {
+    const apple: Task = { ...makeTask("a", "Apple", 10), attributes: { cost: 10, rating: 5 } }
+    useTaskStore.getState().setLists([CATEGORY])
+    useTaskStore.getState().setTasks([apple])
+    render(<SheetGrid categoryId="list1" tasks={[apple]} enableAddRow={false} enableAddColumn={false} />)
+    expect(screen.getByRole("button", { name: /Sort Rating/ })).toBeInTheDocument()
+  })
+
+  it("respects per-list columnIds from viewConfig", () => {
+    const tasks = seed()
+    render(
+      <SheetGrid
+        categoryId="list1"
+        tasks={tasks}
+        enableAddRow={false}
+        enableAddColumn={false}
+        viewConfig={{ columnIds: ["total"] }}
+      />,
+    )
+    expect(screen.queryByRole("button", { name: /Sort Cost/ })).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /Sort Total/ })).toBeInTheDocument()
+  })
+
+  it("add column suggests attributes already associated with this list", async () => {
+    const user = userEvent.setup()
+    const tasks = seed()
+    render(
+      <SheetGrid
+        categoryId="list1"
+        tasks={tasks}
+        enableAddRow={false}
+        enableAddColumn
+        viewConfig={{ columnIds: ["cost"] }}
+      />,
+    )
+    await user.click(screen.getByTitle("Add column"))
+    expect(screen.getByText("On this list")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /Total/ })).toBeInTheDocument()
+  })
+
+  it("creating a new attribute assigns it so every row can hold a value", async () => {
+    const user = userEvent.setup()
+    const tasks = seed()
+    render(<SheetGrid categoryId="list1" tasks={tasks} enableAddRow={false} enableAddColumn />)
+    await user.click(screen.getByTitle("Add column"))
+    expect(screen.getByRole("checkbox", { name: "Assign to every item on this list" })).toBeChecked()
+    await user.type(screen.getByPlaceholderText("e.g. Cost"), "Mood")
+    await user.click(screen.getByRole("button", { name: "Add column" }))
+    const list = useTaskStore.getState().lists.find((l) => l.id === "list1")!
+    expect(list.itemAttributes?.some((a) => a.id === "mood")).toBe(true)
+    expect(list.sheetConfig?.columnIds).toContain("mood")
+  })
+
+  it("hiding a column removes it from this view and does not delete the attribute", async () => {
+    const user = userEvent.setup()
+    const tasks = seed()
+    const onViewConfigChange = vi.fn()
+    render(
+      <SheetGrid
+        categoryId="list1"
+        tasks={tasks}
+        enableAddRow={false}
+        enableAddColumn={false}
+        onViewConfigChange={onViewConfigChange}
+      />,
+    )
+    await user.click(screen.getByLabelText("Cost column menu"))
+    await user.click(screen.getByText("Hide column"))
+    expect(screen.queryByRole("button", { name: /Sort Cost/ })).not.toBeInTheDocument()
+    const list = useTaskStore.getState().lists.find((l) => l.id === "list1")!
+    expect(list.itemAttributes?.some((a) => a.id === "cost")).toBe(true)
+    expect(list.sheetConfig?.columnIds).not.toContain("cost")
+    expect(list.sheetConfig?.columnIds).toContain("total")
+    const last = onViewConfigChange.mock.calls.at(-1)?.[0] as { columnIds?: string[] }
+    expect(last.columnIds).not.toContain("cost")
+  })
+
+  it("Attribute settings opens the schema editor for that column's attribute id", async () => {
+    const user = userEvent.setup()
+    const tasks = seed()
+    render(<SheetGrid categoryId="list1" tasks={tasks} enableAddRow={false} enableAddColumn={false} />)
+    await user.click(screen.getByLabelText("Cost column menu"))
+    await user.click(screen.getByRole("menuitem", { name: "Attribute settings" }))
+    expect(screen.getByRole("dialog", { name: "Attribute settings" })).toBeInTheDocument()
+    expect(screen.getByDisplayValue("Cost")).toBeInTheDocument()
+    expect(useTaskStore.getState().lists.find((l) => l.id === "list1")?.itemAttributes?.some((a) => a.id === "cost")).toBe(
+      true,
+    )
+  })
+
+  it("disables Attribute settings on the built-in Item name column", async () => {
+    const user = userEvent.setup()
+    const tasks = seed()
+    render(<SheetGrid categoryId="list1" tasks={tasks} enableAddRow={false} enableAddColumn={false} />)
+    await user.click(screen.getByLabelText("Item column menu"))
+    const item = screen.getByRole("menuitem", { name: "Attribute settings" })
+    expect(item).toHaveAttribute("aria-disabled", "true")
+    expect(item).toHaveAttribute(
+      "title",
+      "Item name is always the first column — it is not a custom attribute.",
+    )
+    expect(screen.queryByRole("dialog", { name: "Attribute settings" })).not.toBeInTheDocument()
+  })
+
+  it("moves with arrows, edits on Enter, and cancels with Escape", () => {
+    const tasks = seed([["a", "Apple", 10]])
+    render(<SheetGrid categoryId="list1" tasks={tasks} enableAddRow={false} enableAddColumn={false} />)
+    selectCellByText("Apple")
+    fireEvent.keyDown(window, { key: "ArrowRight" })
+    fireEvent.keyDown(window, { key: "Enter" })
+    const editor = document.activeElement as HTMLInputElement
+    expect(editor.tagName).toBe("INPUT")
+    fireEvent.change(editor, { target: { value: "99" } })
+    fireEvent.keyDown(editor, { key: "Escape" })
+    expect(useTaskStore.getState().tasks.find((t) => t.id === "a")?.attributes?.cost).toBe(10)
+  })
+
+  it("centers header labels with padding classes and a reserved sort slot", () => {
+    const tasks = seed()
+    const { container } = render(
+      <SheetGrid categoryId="list1" tasks={tasks} enableAddRow={false} enableAddColumn={false} />,
+    )
+    const costHeader = screen.getByRole("columnheader", { name: /Cost/ })
+    expect(costHeader).toHaveClass("sheet-th")
+    expect(costHeader.querySelector(".sheet-th-sort")).toBeTruthy()
+    expect(costHeader.querySelector(".sheet-th-label")?.textContent).toBe("Cost")
+    expect(costHeader.querySelector(".sheet-th-slot-end")).toBeTruthy()
+    const sortBtn = screen.getByRole("button", { name: /Sort Cost/ })
+    expect(sortBtn).toHaveClass("sheet-th-sort")
+    expect(container.querySelector(".sheet-th-letter")).toBeTruthy()
+  })
+
+  it("highlights the header of the selected column", () => {
+    const tasks = seed()
+    render(<SheetGrid categoryId="list1" tasks={tasks} enableAddRow={false} enableAddColumn={false} />)
+    selectCellByText("10 $")
+    const costHeader = screen.getByRole("columnheader", { name: /Cost/ })
+    expect(costHeader).toHaveClass("sheet-th-active")
+  })
+
+  it("sorts empty and em-dash cells to the end of the column", async () => {
+    const user = userEvent.setup()
+    const apple = makeTask("a", "Apple", 10)
+    const blank: Task = { ...makeTask("c", "Blank", 0), attributes: {} }
+    const dash: Task = { ...makeTask("d", "Dash", 0), attributes: { cost: "—" as unknown as number } }
+    const banana = makeTask("b", "Banana", 30)
+    useTaskStore.getState().setLists([CATEGORY])
+    useTaskStore.getState().setTasks([apple, blank, banana, dash])
+    render(
+      <SheetGrid
+        categoryId="list1"
+        tasks={[apple, blank, banana, dash]}
+        enableAddRow={false}
+        enableAddColumn={false}
+      />,
+    )
+    await user.click(screen.getByRole("button", { name: /Sort Cost/ }))
+    const names = () =>
+      screen.getAllByText(/^(Apple|Banana|Blank|Dash)$/).map((el) => el.textContent)
+    expect(names()).toEqual(["Apple", "Banana", "Blank", "Dash"])
+    await user.click(screen.getByRole("button", { name: /Sort Cost/ }))
+    expect(names()).toEqual(["Banana", "Apple", "Blank", "Dash"])
+  })
+
+  it("reports resized column widths immediately and leaves never-resized columns unset", () => {
+    const tasks = seed()
+    const onViewConfigChange = vi.fn()
+    render(
+      <SheetGrid
+        categoryId="list1"
+        tasks={tasks}
+        enableAddRow={false}
+        enableAddColumn={false}
+        onViewConfigChange={onViewConfigChange}
+      />,
+    )
+    const handles = screen.getAllByLabelText("Resize column")
+    fireEvent.pointerDown(handles[1], { clientX: 100 })
+    fireEvent.pointerMove(window, { clientX: 180 })
+    fireEvent.pointerUp(window)
+    expect(onViewConfigChange).toHaveBeenCalled()
+    const last = onViewConfigChange.mock.calls.at(-1)?.[0] as { columnWidths?: Record<string, number> }
+    expect(last.columnWidths?.cost).toBe(240)
+    expect(last.columnWidths?.[Object.keys(last.columnWidths ?? {}).find((k) => k !== "cost") ?? ""]).toBeUndefined()
+    expect(Object.keys(last.columnWidths ?? {})).toEqual(["cost"])
+  })
+
+  it("caps the frozen name column so it cannot stretch over later headers", () => {
+    const tasks = seed()
+    render(<SheetGrid categoryId="list1" tasks={tasks} enableAddRow={false} enableAddColumn />)
+    const nameHeader = screen.getByRole("columnheader", { name: /Item/ })
+    expect(nameHeader.style.maxWidth).toBe(nameHeader.style.width)
+    expect(nameHeader.style.width).not.toBe("")
   })
 })

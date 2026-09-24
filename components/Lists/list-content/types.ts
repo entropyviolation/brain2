@@ -1,12 +1,13 @@
 import type React from "react"
 import type { ListDisplay } from "@/lib/lists-ui-store"
-import type { Task, List, Folder } from "@/lib/types"
+import type { Task, List, Folder, ChecklistCheckboxVar } from "@/lib/types"
 
 /** Shared drag/select/complete handlers for all list-content display modes. */
 export interface ListContentTaskHandlers {
   tasks: Task[]
   onTaskSelect: (taskId: string) => void
   onCompleteTask: (taskId: string) => void
+  onMissedOpportunity?: (taskId: string) => void
   onTaskDragStart: (e: React.DragEvent, task: Task) => void
   onDragEnd: () => void
   selectMode?: boolean
@@ -19,7 +20,10 @@ export interface ListContentDefaultProps extends ListContentTaskHandlers {
   categories: List[]
 }
 
-export interface ListContentChecklistProps extends ListContentTaskHandlers {}
+export interface ListContentChecklistProps extends ListContentTaskHandlers {
+  /** Extra checklist ticks; undefined = Completed only. */
+  checkboxVars?: ChecklistCheckboxVar[]
+}
 
 export interface ListContentIconsProps extends ListContentTaskHandlers {
   onIconPickerOpen: (taskId: string) => void
@@ -49,19 +53,22 @@ export interface ListContentPanelProps extends ListContentTaskHandlers {
   onFolderAllUncategorizedOnlyChange: (folderId: string, checked: boolean) => void
   /** List ids hidden in this folder's All Items view (empty = all shown). */
   folderAllHiddenListIds: Record<string, string[]>
-  onFolderAllListHiddenChange: (folderId: string, listId: string, hidden: boolean) => void
-  /** Folder ids hidden in the global All Items view (empty = all shown). */
+  folderAllHideUncategorized?: Record<string, boolean>
+  /** Folder ids hidden in the global All Items view (empty = all shown). Checkboxes live in the inspector. */
   globalAllHiddenFolderIds?: string[]
-  onGlobalAllFolderHiddenChange?: (folderId: string, hidden: boolean) => void
   globalAllUncategorizedOnly?: boolean
   onGlobalAllUncategorizedOnlyChange?: (checked: boolean) => void
+  globalAllHideUncategorized?: boolean
   addingTaskToTarget: string | null
   openTargetKeyValue: string
   onAddTask: (description: string) => void
   onCancelAddTask: () => void
+  onShowAddTask: () => void
   showBulkAdd: boolean
   onBulkAdd: (text: string) => void
   onShowBulkAdd: (show: boolean) => void
   onBulkAddCancel: () => void
   onIconPickerOpen: (taskId: string) => void
+  /** Hide Add / Bulk add on period To Do smart lists. Archive lists are real lists. */
+  allowAdd?: boolean
 }

@@ -1,0 +1,54 @@
+/* Shared list picker — full-width rows everywhere, not wrapping name-chips.
+ * `variant="fm"` also uses these so the picker stays readable outside `.fm98`. */
+
+.list-picker-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 8px 4px;
+}
+
+.list-picker-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 2px 6px 2px 4px;
+  font-size: 12px;
+  line-height: 1.2;
+  background: var(--w95-surface, #c0c0c0);
+  box-shadow: var(--w95-raised);
+}
+
+.list-picker-chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none !important;
+  cursor: pointer;
+}
+
+.list-picker-row,
+.fm-picker-row {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.list-picker-body {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.list-picker-recent {
+  margin-bottom: 4px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--chrome-lo, #808080);
+}

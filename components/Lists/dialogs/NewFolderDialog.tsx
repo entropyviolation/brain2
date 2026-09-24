@@ -47,7 +47,7 @@ export function NewFolderDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="fm98-dialog">
+      <DialogContent className="fm98-dialog" data-ui-name="New folder" data-ui-docs="components/Lists/README.md">
         <DialogHeader>
           <DialogTitle>Create New Folder</DialogTitle>
           <DialogDescription>
