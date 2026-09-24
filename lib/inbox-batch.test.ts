@@ -19,6 +19,11 @@ import {
   sortInboxNewestFirst,
   toggleSelectedId,
   walkQueueIds,
+  isBareInboxCapture,
+  isDatedInboxCapture,
+  pickRandomInboxIds,
+  rangeSelectIds,
+  inboxTitleLines,
 } from "./inbox-batch"
 
 const task = (id: string, extra: Partial<Task> = {}): Task => ({
@@ -178,5 +183,31 @@ describe("clarifyInboxItems / monkey brain partition", () => {
     const back = setInboxMonkeyBrain(dumped, ["a"], false)
     expect(inInboxPartition(back[0], "inbox")).toBe(true)
     expect(back[0].monkeyBrain).toBeUndefined()
+  })
+})
+
+describe("bare captures, random select, title lines", () => {
+  it("treats a default inbox capture as bare and a listed or dated one as not", () => {
+    expect(isBareInboxCapture(task("a", { urgency: 3, importance: 3, estimatedDuration: 1 }))).toBe(true)
+    expect(isBareInboxCapture(task("b", { lists: ["work"] }))).toBe(false)
+    expect(isBareInboxCapture(task("c", { tags: ["later"] }))).toBe(false)
+    expect(isBareInboxCapture(task("d", { attributes: { note: "x" } }))).toBe(false)
+    expect(isDatedInboxCapture(task("e", { deadline: new Date() }))).toBe(true)
+    expect(isBareInboxCapture(task("e", { deadline: new Date() }))).toBe(false)
+  })
+
+  it("picks a random count, or the whole pile when the number is larger", () => {
+    const ids = ["a", "b", "c", "d"]
+    expect(pickRandomInboxIds(ids, 2, () => 0)).toHaveLength(2)
+    expect(pickRandomInboxIds(ids, 9)).toEqual(ids)
+    expect(pickRandomInboxIds(ids, 0)).toEqual([])
+  })
+
+  it("selects the inclusive range and lifts a trailing parenthetical", () => {
+    expect(rangeSelectIds(["a", "b", "c", "d"], "b", "d")).toEqual(["b", "c", "d"])
+    expect(inboxTitleLines("Plan something else (Give yourself intense assignments)")).toEqual({
+      line: "Plan something else",
+      aside: "Give yourself intense assignments",
+    })
   })
 })

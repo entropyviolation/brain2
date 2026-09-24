@@ -64,20 +64,26 @@ import {
   firstWalkId,
   inboxAllSelected,
   inboxBatchTargets,
+  inboxTitleLines,
   INBOX_CHORDS,
   inInboxPartition,
+  isBareInboxCapture,
+  isDatedInboxCapture,
   isInboxEditableTarget,
   nextWalkId,
   openInboxIds,
   openRevisitInboxIds,
+  pickRandomInboxIds,
+  rangeSelectIds,
   renameInboxIdea,
+  rotateInboxQueue,
   setInboxMonkeyBrain,
   sortInboxNewestFirst,
   toggleSelectedId,
   walkQueueIds,
   type InboxPartition,
 } from "@/lib/inbox-batch"
-import { creditInboxBatchHandling, creditInboxHandling } from "@/lib/inbox-credit"
+import { creditInboxBatchHandling, creditInboxHandling, INBOX_CLEAR_BONUS, INBOX_HANDLE_POINTS, shouldAwardInboxClear } from "@/lib/inbox-credit"
 import {
   readInboxRecentListIds,
   recentListIdsFromItems,
@@ -104,6 +110,54 @@ function formatTaskDate(value: Date | string | undefined): string {
 function formatTaskDateTime(value: Date | string | undefined): string {
   const d = asDate(value)
   return d ? d.toLocaleString() : "—"
+}
+
+function inboxClock(value: Date | string | undefined): string {
+  const d = asDate(value)
+  return d ? format(d, "h:mm a") : ""
+}
+
+function inboxAgeMark(value: Date | string | undefined, now = new Date()): string | null {
+  const d = asDate(value)
+  if (!d) return null
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const day = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  if (day >= start) return null
+  const days = Math.max(1, Math.round((start.getTime() - day.getTime()) / 86_400_000))
+  return `${days}d`
+}
+
+function inboxDayGroups(tasks: Task[], now = new Date()): { key: string; plate: string; tasks: Task[] }[] {
+  const today = formatLocalDateKey(now)
+  const groups: { key: string; plate: string; tasks: Task[] }[] = []
+  for (const task of tasks) {
+    const d = asDate(task.createdAt)
+    const key = d ? formatLocalDateKey(d) : "undated"
+    const last = groups[groups.length - 1]
+    if (!last || last.key !== key) groups.push({ key, plate: "", tasks: [task] })
+    else last.tasks.push(task)
+  }
+  for (const group of groups) {
+    const minutes = group.tasks
+      .map((task) => asDate(task.createdAt))
+      .filter((d): d is Date => !!d)
+      .map((d) => d.getHours() * 60 + d.getMinutes())
+    const clock = (m: number) => format(new Date(2000, 0, 1, Math.floor(m / 60), m % 60), "h:mm a")
+    const span =
+      minutes.length === 0
+        ? ""
+        : Math.min(...minutes) === Math.max(...minutes)
+          ? clock(Math.min(...minutes))
+          : `${clock(Math.min(...minutes))}–${clock(Math.max(...minutes))}`
+    const day =
+      group.key === today
+        ? "Today"
+        : group.key === "undated"
+          ? "Undated"
+          : format(parseLocalDate(group.key) ?? now, "EEE MMM d")
+    group.plate = span ? `${day} · ${span}` : day
+  }
+  return groups
 }
 
 /**
@@ -284,6 +338,40 @@ function TaskClarificationDialog({
                   aria-label="Idea name"
                 />
               </div>
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Lists</Label>
+                <div className="flex flex-wrap gap-2">
+                  {selectedCategories.map((categoryId) => {
+                    const category = categories.find((c) => c.id === categoryId)
+                    if (!category) return null
+
+                    return (
+                      <Badge
+                        key={categoryId}
+                        variant="secondary"
+                        className="flex items-center gap-2 px-3 py-1"
+                        style={{ backgroundColor: `${category.color}20`, borderColor: category.color }}
+                      >
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: category.color }} />
+                        {category.name}
+                        <button
+                          type="button"
+                          onClick={() => removeFromCategory(categoryId)}
+                          className="ml-1 hover:text-destructive transition-colors"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    )
+                  })}
+                </div>
+                <ListPicker
+                  selected={selectedCategories}
+                  onChange={setSelectedCategories}
+                  allowMultiToggle
+                  suggestedIds={suggestedListIds}
+                />
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="task-description" className="text-sm font-medium flex items-center gap-2">
                   <Edit className="h-4 w-4" />
@@ -387,41 +475,6 @@ function TaskClarificationDialog({
             </div>
 
             <div className="space-y-4">
-              <div className="space-y-3">
-                <Label className="text-sm font-medium">Lists</Label>
-                <div className="flex flex-wrap gap-2">
-                  {selectedCategories.map((categoryId) => {
-                    const category = categories.find((c) => c.id === categoryId)
-                    if (!category) return null
-
-                    return (
-                      <Badge
-                        key={categoryId}
-                        variant="secondary"
-                        className="flex items-center gap-2 px-3 py-1"
-                        style={{ backgroundColor: `${category.color}20`, borderColor: category.color }}
-                      >
-                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: category.color }} />
-                        {category.name}
-                        <button
-                          onClick={() => removeFromCategory(categoryId)}
-                          className="ml-1 hover:text-destructive transition-colors"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    )
-                  })}
-                </div>
-
-                <ListPicker
-                  selected={selectedCategories}
-                  onChange={setSelectedCategories}
-                  allowMultiToggle
-                  suggestedIds={suggestedListIds}
-                />
-              </div>
-
               <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
                 <CollapsibleTrigger asChild>
                   <Button variant="outline" size="sm" className="w-full justify-between">
@@ -449,25 +502,6 @@ function TaskClarificationDialog({
                 </CollapsibleContent>
               </Collapsible>
 
-              {!walking && (
-              <div className="space-y-3 p-4 bg-muted/30 rounded-lg border">
-                <h3 className="font-medium text-sm">Task Information</h3>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <div className="flex justify-between">
-                    <span>Created:</span>
-                    <span>{formatTaskDate(task.createdAt)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Current Status:</span>
-                    <span className="capitalize">{task.stage}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Will become:</span>
-                    <span className="font-medium text-foreground">Clarified</span>
-                  </div>
-                </div>
-              </div>
-              )}
             </div>
           </div>
         </div>
@@ -509,13 +543,19 @@ export function Inbox({ onTaskSelect: _onTaskSelect }: InboxProps) {
   const [focusId, setFocusId] = useState<string | null>(null)
   const [walkQueue, setWalkQueue] = useState<string[]>([])
   const [batchMode, setBatchMode] = useState<
-    "list" | "deadline" | "merge-confirm" | "merge-plan" | "delete-confirm" | null
+    "list" | "deadline" | "merge-confirm" | "merge-plan" | "delete-confirm" | "select-n" | null
   >(null)
   const [batchListIds, setBatchListIds] = useState<string[]>([])
   const [batchDeadline, setBatchDeadline] = useState(formatLocalDateKey(new Date()))
   const [undoLabel, setUndoLabel] = useState<string | null>(null)
   const [partition, setPartition] = useState<InboxPartition>("inbox")
   const [bulkSource, setBulkSource] = useState<{ ids: string[]; text: string; monkey: boolean } | null>(null)
+  const [slice, setSlice] = useState<"all" | "bare" | "dated">("all")
+  const [selectCount, setSelectCount] = useState("")
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([])
+  const [sitting, setSitting] = useState({ handled: 0, points: 0 })
+  const selectAnchor = useRef<string | null>(null)
+  const rowRefs = useRef<Map<string, HTMLDivElement>>(new Map())
 
   const revisitTasks = useMemo(
     () => sortInboxNewestFirst(allTasks.filter((task) => inInboxPartition(task, "inbox"))),
@@ -525,7 +565,14 @@ export function Inbox({ onTaskSelect: _onTaskSelect }: InboxProps) {
     () => sortInboxNewestFirst(allTasks.filter((task) => inInboxPartition(task, "monkey"))),
     [allTasks],
   )
-  const inboxTasks = partition === "monkey" ? monkeyTasks : revisitTasks
+  const pileTasks = partition === "monkey" ? monkeyTasks : revisitTasks
+  const inboxTasks = useMemo(() => {
+    if (slice === "bare") return pileTasks.filter(isBareInboxCapture)
+    if (slice === "dated") return pileTasks.filter(isDatedInboxCapture)
+    return pileTasks
+  }, [pileTasks, slice])
+  const bareCount = useMemo(() => pileTasks.filter(isBareInboxCapture).length, [pileTasks])
+  const dayGroups = useMemo(() => inboxDayGroups(inboxTasks), [inboxTasks])
 
   const inboxIdList = useMemo(() => inboxTasks.map((task) => task.id), [inboxTasks])
   const suggestedListIds = useMemo(
@@ -564,15 +611,27 @@ export function Inbox({ onTaskSelect: _onTaskSelect }: InboxProps) {
     setClarificationTask(null)
     setBatchMode(null)
     setUndoLabel(null)
+    setSlice("all")
+    setPendingDeleteIds([])
+    setSitting({ handled: 0, points: 0 })
+    selectAnchor.current = null
+  }
+
+  const noteSitting = (count: number, openBefore: number, openAfter: number) => {
+    if (count <= 0) return
+    const points = count * INBOX_HANDLE_POINTS + (shouldAwardInboxClear(openBefore, openAfter) ? INBOX_CLEAR_BONUS : 0)
+    setSitting((prev) => ({ handled: prev.handled + count, points: prev.points + points }))
   }
 
   const creditHandled = (task: Task, openBefore: number) => {
+    const openAfter = openRevisitInboxIds(useTaskStore.getState().tasks).size
     creditInboxHandling({
       taskId: task.id,
       title: itemTitle(task),
       openBefore,
-      openAfter: openRevisitInboxIds(useTaskStore.getState().tasks).size,
+      openAfter,
     })
+    noteSitting(1, openBefore, openAfter)
   }
 
   const handleClarifyTask = (task: Task) => {
@@ -581,6 +640,11 @@ export function Inbox({ onTaskSelect: _onTaskSelect }: InboxProps) {
   }
 
   const handleDeleteIdea = (task: Task) => {
+    setPendingDeleteIds([task.id])
+    setBatchMode("delete-confirm")
+  }
+
+  const deleteIdeaNow = (task: Task) => {
     const openBefore = openRevisitInboxIds(useTaskStore.getState().tasks).size
     deleteTask(task.id)
     creditHandled(task, openBefore)
@@ -623,13 +687,17 @@ export function Inbox({ onTaskSelect: _onTaskSelect }: InboxProps) {
   const handleDiscard = () => {
     if (!clarificationTask) return
     const id = clarificationTask.id
-    handleDeleteIdea(clarificationTask)
+    deleteIdeaNow(clarificationTask)
     if (walking) advanceWalk(id)
     else setClarificationTask(null)
   }
 
   const startWalk = (fromId?: string | null) => {
-    const queue = walkQueueIds(inboxIdList, selectedIds, fromId ?? focusId)
+    const start = fromId ?? focusId
+    const queue =
+      selectedIds.length > 0
+        ? walkQueueIds(inboxIdList, selectedIds, start)
+        : rotateInboxQueue(inboxIdList, start)
     const openIds = openInboxIds(inboxTasks)
     const first = firstWalkId(queue, openIds)
     if (!first) return
@@ -667,6 +735,7 @@ export function Inbox({ onTaskSelect: _onTaskSelect }: InboxProps) {
       openBefore,
       openRevisitInboxIds(useTaskStore.getState().tasks).size,
     )
+    noteSitting(filed.length, openBefore, openRevisitInboxIds(useTaskStore.getState().tasks).size)
     setSelectedIds((ids) => ids.filter((id) => !batchTargets.includes(id)))
   }
 
@@ -677,20 +746,23 @@ export function Inbox({ onTaskSelect: _onTaskSelect }: InboxProps) {
   }
 
   const applyDeleteSelection = () => {
-    if (selectedIds.length === 0) return
-    const doomed = selectedIds
+    const ids = pendingDeleteIds.length > 0 ? pendingDeleteIds : selectedIds
+    if (ids.length === 0) return
+    const doomed = ids
       .map((id) => allTasks.find((task) => task.id === id))
       .filter((task): task is Task => !!task)
     const openBefore = openRevisitInboxIds(allTasks).size
     rememberWorld("inbox delete selection")
-    setTasks(deleteInboxItems(allTasks, selectedIds))
+    setTasks(deleteInboxItems(allTasks, ids))
     const openAfter = openRevisitInboxIds(useTaskStore.getState().tasks).size
     creditInboxBatchHandling(
       doomed.map((task) => ({ taskId: task.id, title: itemTitle(task) })),
       openBefore,
       openAfter,
     )
-    setSelectedIds([])
+    noteSitting(doomed.length, openBefore, openAfter)
+    setSelectedIds((prev) => prev.filter((id) => !ids.includes(id)))
+    setPendingDeleteIds([])
     setUndoLabel("inbox delete selection")
     setBatchMode(null)
   }
@@ -707,6 +779,7 @@ export function Inbox({ onTaskSelect: _onTaskSelect }: InboxProps) {
       openBefore,
       openRevisitInboxIds(useTaskStore.getState().tasks).size,
     )
+    noteSitting(filed.length, openBefore, openRevisitInboxIds(useTaskStore.getState().tasks).size)
     setSelectedIds([])
   }
 
@@ -754,6 +827,48 @@ export function Inbox({ onTaskSelect: _onTaskSelect }: InboxProps) {
     setFocusId(next)
   }
 
+  const clickRow = (id: string, shift: boolean) => {
+    setFocusId(id)
+    if (shift) {
+      setSelectedIds(rangeSelectIds(inboxIdList, selectAnchor.current ?? focusId, id))
+      return
+    }
+    selectAnchor.current = id
+    setSelectedIds((ids) => toggleSelectedId(ids, id))
+  }
+
+  const applySelectN = () => {
+    const n = Number.parseInt(selectCount, 10)
+    setBatchMode(null)
+    setSelectCount("")
+    if (!Number.isFinite(n) || n <= 0) return
+    const ids = pickRandomInboxIds(
+      pileTasks.map((task) => task.id),
+      n,
+    )
+    setSlice("all")
+    setSelectedIds(ids)
+    selectAnchor.current = ids[0] ?? null
+    if (ids[0]) setFocusId(ids[0])
+  }
+
+  const selectUnsorted = () => {
+    const ids = pileTasks.filter(isBareInboxCapture).map((task) => task.id)
+    setSlice("all")
+    setSelectedIds(ids)
+    selectAnchor.current = ids[0] ?? null
+    if (ids[0]) setFocusId(ids[0])
+  }
+
+  const cycleSlice = () => {
+    setSlice((current) => (current === "all" ? "dated" : current === "dated" ? "bare" : "all"))
+  }
+
+  useEffect(() => {
+    if (!open || !focusId) return
+    rowRefs.current.get(focusId)?.scrollIntoView({ block: "nearest" })
+  }, [focusId, open, inboxIdList])
+
   useEffect(() => {
     if (!open || nestedOpen) return
     const onKey = (e: KeyboardEvent) => {
@@ -776,6 +891,18 @@ export function Inbox({ onTaskSelect: _onTaskSelect }: InboxProps) {
       } else if (go(INBOX_CHORDS.deselectAll)) {
         e.preventDefault()
         setSelectedIds([])
+      } else if (go(INBOX_CHORDS.selectN)) {
+        e.preventDefault()
+        if (pileTasks.length > 0) {
+          setSelectCount("")
+          setBatchMode("select-n")
+        }
+      } else if (go(INBOX_CHORDS.selectUnsorted)) {
+        e.preventDefault()
+        selectUnsorted()
+      } else if (go(INBOX_CHORDS.slice)) {
+        e.preventDefault()
+        cycleSlice()
       } else if (go(INBOX_CHORDS.clarify)) {
         if (e.target instanceof HTMLButtonElement && key === "Enter") return
         e.preventDefault()
@@ -795,7 +922,10 @@ export function Inbox({ onTaskSelect: _onTaskSelect }: InboxProps) {
         if (selectedIds.length >= 2) setBatchMode("merge-confirm")
       } else if (go(INBOX_CHORDS.deleteSelection)) {
         e.preventDefault()
-        if (selectedIds.length > 0) setBatchMode("delete-confirm")
+        if (selectedIds.length > 0) {
+          setPendingDeleteIds(selectedIds)
+          setBatchMode("delete-confirm")
+        }
       } else if (go(INBOX_CHORDS.markClarified)) {
         e.preventDefault()
         if (selectedIds.length > 0) applyClarifySelection()
@@ -814,7 +944,7 @@ export function Inbox({ onTaskSelect: _onTaskSelect }: InboxProps) {
     return () => window.removeEventListener("keydown", onKey)
     // Intentional: chords read latest closure each time the list/focus changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, nestedOpen, inboxTasks, inboxIdList, focusId, selectedIds, batchTargets, partition])
+  }, [open, nestedOpen, inboxTasks, inboxIdList, focusId, selectedIds, batchTargets, partition, pileTasks])
 
   const handleUndo = useCallback(() => {
     undoLastAction()
@@ -1218,11 +1348,13 @@ export function Inbox({ onTaskSelect: _onTaskSelect }: InboxProps) {
             .filter((task): task is Task => !!task)
           setTasks(deleteInboxItems(useTaskStore.getState().tasks, bulkSource.ids))
           if (!sendToInbox) {
+            const openAfter = openRevisitInboxIds(useTaskStore.getState().tasks).size
             creditInboxBatchHandling(
               removed.map((task) => ({ taskId: task.id, title: itemTitle(task) })),
               openBefore,
-              openRevisitInboxIds(useTaskStore.getState().tasks).size,
+              openAfter,
             )
+            noteSitting(removed.length, openBefore, openAfter)
           }
           setSelectedIds([])
           setUndoLabel("inbox bulk edit")

@@ -48,6 +48,9 @@ export const INBOX_CHORDS = {
   toMonkey: ["b"],
   toInbox: ["i"],
   bulkEdit: ["e"],
+  selectN: ["n"],
+  selectUnsorted: ["s"],
+  slice: ["/"],
 } as const
 
 /** Inbox is the pile to revisit. Monkey brain is the compulsive dump. */
@@ -195,4 +198,63 @@ export function applyDeadlineToInboxItems(tasks: Task[], itemIds: string[], dead
 export function inboxBatchTargets(selectedIds: string[], focusId: string | null): string[] {
   if (selectedIds.length > 0) return selectedIds
   return focusId ? [focusId] : []
+}
+
+/**
+ * A capture that is still only a name: no lists, tags, attributes, notes,
+ * links, schedule, or priority/duration beyond the Inbox defaults.
+ */
+export function isBareInboxCapture(task: Task): boolean {
+  if ((task.lists ?? []).some((id) => id)) return false
+  if ((task.tags ?? []).some((tag) => String(tag).trim())) return false
+  if (task.attributes && Object.keys(task.attributes).length > 0) return false
+  if ((task.itemAttributeDefinitions ?? []).length > 0) return false
+  if (task.deadline || task.scheduledDate || task.scheduledTime || task.scheduledWeek || task.scheduledMonth) return false
+  if (task.taskDescription?.trim() || task.body?.trim()) return false
+  if ((task.links ?? []).length > 0 || (task.subtasks ?? []).length > 0) return false
+  if (task.urgency != null && task.urgency !== 3) return false
+  if (task.importance != null && task.importance !== 3) return false
+  if (task.estimatedDuration != null && task.estimatedDuration > 1) return false
+  return true
+}
+
+/** Has a day, clock, or deadline — the Dated slice. */
+export function isDatedInboxCapture(task: Task): boolean {
+  return Boolean(task.deadline || task.scheduledDate || task.scheduledTime || task.scheduledWeek || task.scheduledMonth)
+}
+
+/** Inclusive range between two ids in list order. Unknown ids yield just the target. */
+export function rangeSelectIds(orderedIds: string[], anchorId: string | null, targetId: string): string[] {
+  const b = orderedIds.indexOf(targetId)
+  const a = anchorId ? orderedIds.indexOf(anchorId) : -1
+  if (a < 0 || b < 0) return [targetId]
+  const lo = Math.min(a, b)
+  const hi = Math.max(a, b)
+  return orderedIds.slice(lo, hi + 1)
+}
+
+/**
+ * `count` random ids. A count at or above the pile selects every id.
+ * A non-positive count selects none. `random` is injectable for tests.
+ */
+export function pickRandomInboxIds(ids: string[], count: number, random: () => number = Math.random): string[] {
+  const n = Math.floor(count)
+  if (!Number.isFinite(n) || n <= 0) return []
+  if (n >= ids.length) return [...ids]
+  const pool = [...ids]
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1))
+    const swap = pool[i]
+    pool[i] = pool[j]!
+    pool[j] = swap!
+  }
+  return pool.slice(0, n)
+}
+
+/** Title, with a trailing parenthetical lifted onto a quieter second line. */
+export function inboxTitleLines(raw: string): { line: string; aside?: string } {
+  const title = raw.trim()
+  const match = title.match(/^(.*\S)\s+\(([^)]+)\)\s*$/)
+  if (!match) return { line: title }
+  return { line: match[1], aside: match[2] }
 }
