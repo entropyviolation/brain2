@@ -1,7 +1,7 @@
 {
-  "name": "COGS Home",
-  "short_name": "COGS",
-  "description": "COGS Home tab on mobile — Habits, Plan, To Do, Goals, Tracking",
+  "name": "BRAIN2 Home",
+  "short_name": "BRAIN2",
+  "description": "BRAIN2 Home tab on mobile — Habits, Plan, To Do, Goals, Tracking",
   "start_url": "/mobile/",
   "scope": "/mobile/",
   "display": "standalone",

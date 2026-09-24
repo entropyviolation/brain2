@@ -36,10 +36,21 @@ next-env.d.ts
 /data/mobile-sync.json.*.tmp
 /data/shared-persist.json
 /data/shared-persist.json.*.tmp
-/data/chrome-idb-snapshot/
+/data/message-ingest.json
+/data/message-ingest.json.*.tmp
+/data/telegram-offset.json
+/data/phone-hub-status.json
 
 # Capacitor Android (not scaffolded yet)
 /android/
 
 # python venv
 venv/
+
+# Shortcut compiler intermediates (keep the signed .shortcut + .wflow.json)
+docs/shortcuts/*.unsigned.shortcut
+docs/shortcuts/*.plist
+
+# local user-data snapshots (never commit)
+/data/recovery-backups/
+/data/chrome-idb-snapshot/

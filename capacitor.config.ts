@@ -10,7 +10,7 @@ import type { CapacitorConfig } from "@capacitor/cli"
  */
 const config: CapacitorConfig = {
   appId: "com.cogs.mobile",
-  appName: "COGS Home",
+  appName: "BRAIN2",
   webDir: "out",
   server: {
     // Open the mobile Home shell (not the full desktop tab bar).
