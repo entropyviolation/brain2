@@ -7,6 +7,8 @@ import {
   computeCriticalPath,
   isCriticalEdge,
   criticalEdgeKeys,
+  findCyclePath,
+  wouldCreateCycle,
   type CpmTask,
 } from "@/lib/critical-path"
 
@@ -164,5 +166,45 @@ describe("computeCriticalPath — edge cases", () => {
     expect(result.nodes.A.isOnCriticalPath).toBe(true)
     expect(result.nodes.B.slack).toBe(3)
     expect(result.nodes.B.isOnCriticalPath).toBe(false)
+  })
+})
+
+describe("wouldCreateCycle / findCyclePath", () => {
+  it("refuses a self-dependency", () => {
+    const tasks: CpmTask[] = [{ id: "A", estimatedDuration: 1 }]
+    expect(wouldCreateCycle(tasks, "A", "A")).toBe(true)
+    expect(findCyclePath(tasks, "A", "A")).toEqual(["A", "A"])
+  })
+
+  it("refuses the reverse of an existing edge", () => {
+    const tasks: CpmTask[] = [
+      { id: "A", estimatedDuration: 1, dependencies: ["B"] },
+      { id: "B", estimatedDuration: 1 },
+    ]
+    expect(wouldCreateCycle(tasks, "B", "A")).toBe(true)
+    expect(findCyclePath(tasks, "B", "A")).toEqual(["B", "A", "B"])
+    expect(wouldCreateCycle(tasks, "A", "B")).toBe(false)
+  })
+
+  it("refuses a longer loop without using the CPM solver flag", () => {
+    const tasks: CpmTask[] = [
+      { id: "A", estimatedDuration: 1 },
+      { id: "B", estimatedDuration: 1, dependencies: ["A"] },
+      { id: "C", estimatedDuration: 1, dependencies: ["B"] },
+    ]
+    expect(findCyclePath(tasks, "A", "C")).toEqual(["A", "C", "B", "A"])
+    expect(wouldCreateCycle(tasks, "A", "C")).toBe(true)
+    expect(wouldCreateCycle(tasks, "C", "A")).toBe(false)
+  })
+
+  it("does not treat an unrelated existing cycle as blocking this edge", () => {
+    const tasks: CpmTask[] = [
+      { id: "A", estimatedDuration: 1, dependencies: ["B"] },
+      { id: "B", estimatedDuration: 1, dependencies: ["A"] },
+      { id: "C", estimatedDuration: 1 },
+      { id: "D", estimatedDuration: 1 },
+    ]
+    expect(computeCriticalPath(tasks).hasCycle).toBe(true)
+    expect(wouldCreateCycle(tasks, "D", "C")).toBe(false)
   })
 })

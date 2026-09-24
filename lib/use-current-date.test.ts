@@ -36,4 +36,20 @@ describe("useCurrentDate", () => {
 
     expect(result.current.currentDate.getDate()).toBe(21)
   })
+
+  it("keeps a historical calendar day through local midnight", async () => {
+    const { renderHook, act } = await import("@testing-library/react")
+    const { APP_NAV_KEYS, writeStoredDate } = await import("./app-navigation")
+    writeStoredDate(APP_NAV_KEYS.homeDate, new Date(2026, 5, 10))
+    const { useCurrentDate } = await import("./use-current-date")
+
+    const { result } = renderHook(() => useCurrentDate())
+    expect(result.current.currentDate.getDate()).toBe(10)
+
+    await act(async () => {
+      vi.advanceTimersByTime(msUntilLocalMidnight(new Date("2026-06-20T23:59:00")) + 1)
+    })
+
+    expect(result.current.currentDate.getDate()).toBe(10)
+  })
 })

@@ -1,7 +1,7 @@
 /**
  * lib/second-brain-types.ts — Source & Belief item types (Brain2 feature #10)
  *
- * Defines two user-facing `ItemTypeDefinition`s that turn COGS into a small
+ * Defines two user-facing `ItemTypeDefinition`s that turn Brain2 into a small
  * research → source → belief knowledge graph (Brain2 #55/#66/#67/#68):
  *
  *   - **Source** — a piece of captured evidence (a full document, a snippet, or

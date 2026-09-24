@@ -58,6 +58,34 @@ describe("task-store date rehydration", () => {
     expect((restored!.completedDate as Date).toISOString()).toBe("2026-06-20T18:30:00.000Z")
   })
 
+  it("rehydrates the nested date on a completed chunk", async () => {
+    useTaskStore.getState().setTasks([
+      task({
+        id: "chunked",
+        completedChunks: [{ date: new Date("2026-06-18T09:00:00.000Z"), duration: 25 }],
+      }),
+    ])
+
+    await useTaskStore.persist.rehydrate()
+
+    const chunk = useTaskStore.getState().tasks.find((t) => t.id === "chunked")!.completedChunks![0]
+    expect(chunk.date).toBeInstanceOf(Date)
+    expect((chunk.date as Date).toISOString()).toBe("2026-06-18T09:00:00.000Z")
+  })
+
+  it("leaves a timeLogs day key a string even though it shares the `date` key name", async () => {
+    // This is why reviving "date" is safe: the reviver's ISO guard requires a
+    // time component, and a day key has none.
+    useTaskStore.getState().setTasks([
+      task({ id: "logged", timeLogs: [{ id: "tl1", date: "2026-06-20", durationMinutes: 45 }] }),
+    ])
+
+    await useTaskStore.persist.rehydrate()
+
+    const log = useTaskStore.getState().tasks.find((t) => t.id === "logged")!.timeLogs![0]
+    expect(log.date).toBe("2026-06-20")
+  })
+
   it("leaves non-date string fields (e.g. scheduledTime) as strings", async () => {
     useTaskStore.getState().setTasks([
       task({ id: "b", scheduledTime: "14:30", scheduledWeek: "2026-W25" }),

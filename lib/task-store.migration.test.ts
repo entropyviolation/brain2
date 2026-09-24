@@ -1,5 +1,13 @@
 import { describe, it, expect } from "vitest"
 import { migrateCategoryToList, migrateStripKanbanListDisplays } from "@/lib/task-store"
+import {
+  migrateTasksToItems,
+  migrateModulePlatform,
+  migrateTitleAsFieldOfRecord,
+  migrateHonestItemTypes,
+} from "@/lib/migrations"
+import { countsInDone, isTaskItem } from "@/lib/item-utils"
+import type { Folder } from "@/lib/types"
 
 /**
  * v9 category→list migration: a pre-v9 persisted payload keys lists/folders/tasks
@@ -89,5 +97,79 @@ describe("task-store v10 migrateStripKanbanListDisplays", () => {
   it("is a no-op when lists are missing", () => {
     expect(migrateStripKanbanListDisplays({ folders: [] })).toEqual({ folders: [] })
     expect(migrateStripKanbanListDisplays(null)).toBeNull()
+  })
+})
+
+/**
+ * Pre-v7 vault shape: no `type`, legacy category/categories keys, a mix of
+ * inbox / furniture / operation / Next Actions rows. Round-trip through the
+ * same named steps the persist hook runs (v7→v12) without deleting description.
+ */
+function legacyVaultBlob() {
+  return {
+    tasks: [
+      { id: "inbox-1", description: "Call dentist", category: "inbox", categories: [] },
+      { id: "rug-1", description: "big area rug", category: "list", categories: ["furniture"] },
+      {
+        id: "op-1",
+        description: "Kitchen remodel",
+        type: "operation",
+        category: "list",
+        categories: ["ops"],
+      },
+      { id: "na-1", description: "Write intro", category: "clarified", categories: ["na-today"] },
+    ],
+    categories: [
+      { id: "furniture", name: "Furniture", color: "#fff" },
+      { id: "ops", name: "Operations", color: "#000" },
+      { id: "na-today", name: "Today", color: "#0f0" },
+    ],
+    folders: [
+      { id: "folder-next-actions", name: "Next Actions", categoryIds: ["na-today"] },
+      { id: "folder-home", name: "Home", categoryIds: ["furniture"] },
+    ],
+  }
+}
+
+function migrateLegacyVault(blob: ReturnType<typeof legacyVaultBlob>) {
+  let state: any = blob
+  state = migrateTasksToItems(state)
+  state = migrateModulePlatform(state)
+  state = migrateCategoryToList(state)
+  state = migrateStripKanbanListDisplays(state)
+  state = migrateTitleAsFieldOfRecord(state)
+  state = migrateHonestItemTypes(state)
+  return state
+}
+
+describe("persist v7–v12 round-trip of a real-looking vault", () => {
+  it("infers type without dropping description or rewriting explicit types", () => {
+    const result = migrateLegacyVault(legacyVaultBlob())
+    const byId = Object.fromEntries(result.tasks.map((t: { id: string }) => [t.id, t]))
+
+    expect(byId["inbox-1"].type).toBe("task")
+    expect(byId["inbox-1"].description).toBe("Call dentist")
+    expect(byId["inbox-1"].stage).toBe("inbox")
+
+    expect(byId["rug-1"].type).toBe("item")
+    expect(byId["rug-1"].description).toBe("big area rug")
+    expect(byId["rug-1"].lists).toEqual(["furniture"])
+
+    expect(byId["op-1"].type).toBe("operation")
+    expect(byId["op-1"].description).toBe("Kitchen remodel")
+
+    expect(byId["na-1"].type).toBe("task")
+    expect(byId["na-1"].description).toBe("Write intro")
+  })
+
+  it("keeps To-Do Done on tasks and logged-actions, not on furniture", () => {
+    const result = migrateLegacyVault(legacyVaultBlob())
+    const folders = result.folders as Folder[]
+    const rug = result.tasks.find((t: { id: string }) => t.id === "rug-1")
+    const na = result.tasks.find((t: { id: string }) => t.id === "na-1")
+    expect(isTaskItem(rug, folders)).toBe(false)
+    expect(isTaskItem(na, folders)).toBe(true)
+    expect(countsInDone({ ...rug, completed: true }, folders)).toBe(false)
+    expect(countsInDone({ ...na, completed: true }, folders)).toBe(true)
   })
 })

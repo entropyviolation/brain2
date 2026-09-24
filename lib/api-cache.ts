@@ -1,7 +1,7 @@
 /**
  * lib/api-cache.ts — In-memory TTL cache for external API reads
  *
- * City/place/weather/route lookups share this so repeat searches don't hit the
+ * City/place/weather/tide/route lookups share this so repeat searches don't hit the
  * network. In-flight requests with the same key are coalesced. Keeps itinerary
  * typing/paste feedback under the ~400ms Doherty threshold on cache hits.
  */
@@ -11,6 +11,7 @@ export const TTL = {
   PLACE: 10 * 60 * 1000,
   ROUTE: 30 * 60 * 1000,
   WEATHER: 30 * 60 * 1000,
+  TIDE: 15 * 60 * 1000,
 } as const
 
 type Entry<T> = { value: T; expiresAt: number }

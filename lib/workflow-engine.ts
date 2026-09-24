@@ -321,6 +321,12 @@ function runWorkflow(
           if (sub.blocked) result.blocked = true
           break
         }
+        // Implied-action effects share the rule-action union but belong to a
+        // different pipeline: `applyRules` collects them and
+        // `implied-actions.ts` runs them after the item mutation lands.
+        case "logAction":
+        case "incrementHabit":
+          break
         default: {
           // Exhaustiveness guard: unknown action kinds are ignored safely.
           const _never: never = action

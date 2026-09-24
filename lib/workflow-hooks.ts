@@ -27,10 +27,19 @@ export interface ItemMutationEvent {
 type Dispatcher = (e: ItemMutationEvent) => void
 
 let dispatcher: Dispatcher | null = null
+const listeners = new Set<Dispatcher>()
 
 /** Register (or clear, with `null`) the active item-mutation dispatcher. */
 export function registerItemMutationDispatcher(d: Dispatcher | null): void {
   dispatcher = d
+}
+
+/** Additional listeners (implied actions, tests). Returns an unsubscribe. */
+export function addItemMutationListener(d: Dispatcher): () => void {
+  listeners.add(d)
+  return () => {
+    listeners.delete(d)
+  }
 }
 
 /**
@@ -44,6 +53,15 @@ export function dispatchItemMutation(e: ItemMutationEvent): void {
   } catch (err) {
     if (process.env.NODE_ENV !== "production") {
       console.error("[workflow-hooks] dispatcher threw", err)
+    }
+  }
+  for (const listener of listeners) {
+    try {
+      listener(e)
+    } catch (err) {
+      if (process.env.NODE_ENV !== "production") {
+        console.error("[workflow-hooks] listener threw", err)
+      }
     }
   }
 }

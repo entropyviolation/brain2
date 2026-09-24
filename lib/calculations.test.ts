@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { TaskType, type WeeklyTask } from "@/lib/types"
-import { calculateDayPercentageAV, calculateWeekToDateGrade, calculateWeekToDateOutputGrade, weekToDateDays } from "./calculations"
+import { calculateDayPercentageAV, calculateTaskPercentage, calculateWeekToDateGrade, calculateWeekToDateOutputGrade, calculatePeriodColumnPercentage, calculatePeriodGrade, calculatePeriodOutputGrade, calculatePeriodTaskPercentage, gradeAsOfForVisibleWindow, weekToDateDays } from "./calculations"
+import { getWeekString } from "./date-utils"
 
 const monday = new Date(2026, 8, 14)
 const weekDates = Array.from({ length: 7 }, (_, i) => new Date(2026, 8, 14 + i))
@@ -25,6 +26,28 @@ describe("weekToDateDays", () => {
 
   it("includes nothing when asOf is before the week", () => {
     expect(weekToDateDays(weekDates, new Date(2026, 8, 13))).toHaveLength(0)
+  })
+})
+
+describe("gradeAsOfForVisibleWindow", () => {
+  const weekStart = weekDates[0]
+  const weekEnd = weekDates[6]
+  const today = new Date(2026, 8, 17)
+
+  it("keeps the Home date when it falls inside the window", () => {
+    expect(gradeAsOfForVisibleWindow(weekStart, weekEnd, new Date(2026, 8, 15), today)).toEqual(
+      new Date(2026, 8, 15),
+    )
+  })
+
+  it("falls back to today when Home date is outside the current week", () => {
+    expect(gradeAsOfForVisibleWindow(weekStart, weekEnd, new Date(2026, 7, 5), today)).toEqual(today)
+  })
+
+  it("uses the window end for a past week", () => {
+    const pastStart = new Date(2026, 8, 7)
+    const pastEnd = new Date(2026, 8, 13)
+    expect(gradeAsOfForVisibleWindow(pastStart, pastEnd, new Date(2026, 7, 5), today)).toEqual(pastEnd)
   })
 })
 
@@ -154,5 +177,118 @@ describe("calculateWeekToDateOutputGrade", () => {
     expect(output.rawGrade).toBe(75)
     expect(output.grade).toBe(95)
     expect(output.curveBonus).toBe(20)
+  })
+})
+
+describe("weekly/monthly period scores", () => {
+  const weekA = new Date(2026, 8, 7)
+  const weekB = new Date(2026, 8, 14)
+  const periods = [
+    { key: getWeekString(weekA), date: weekA },
+    { key: getWeekString(weekB), date: weekB },
+  ]
+  const weekly: WeeklyTask[] = [
+    { id: "w1", name: "Review", type: TaskType.BOOLEAN, frequency: "weekly" },
+    { id: "w2", name: "Deep clean", type: TaskType.GOAL, goal: 60, frequency: "weekly" },
+  ]
+
+  it("scores a boolean row as hits / window length", () => {
+    const data = {
+      [periods[0].key]: { w1: { completed: true } },
+    }
+    expect(calculatePeriodTaskPercentage("w1", weekly, data, periods)).toBe(50)
+  })
+
+  it("caps a goal row at 100% of goal × window length", () => {
+    const data = {
+      [periods[0].key]: { w2: { value: 60 } },
+      [periods[1].key]: { w2: { value: 30 } },
+    }
+    expect(calculatePeriodTaskPercentage("w2", weekly, data, periods)).toBe(75)
+  })
+
+  it("averages a period column across all habits", () => {
+    const data = {
+      [periods[1].key]: { w1: { completed: true }, w2: { value: 30 } },
+    }
+    expect(calculatePeriodColumnPercentage(periods[1], weekly, data)).toBe(75)
+  })
+
+  it("builds a span grade from elapsed week columns", () => {
+    const data = {
+      [periods[0].key]: { w1: { completed: true }, w2: { value: 60 } },
+      [periods[1].key]: { w1: { completed: true } },
+    }
+    const grade = calculatePeriodGrade(weekly, data, periods, weekB)
+    expect(grade.daysIncluded).toBe(2)
+    expect(grade.days[0].raw).toBe(100)
+    expect(grade.days[1].raw).toBe(50)
+    expect(grade.grade).toBe(75)
+  })
+
+  it("builds output from elapsed habit rows", () => {
+    const data = {
+      [periods[0].key]: { w1: { completed: true }, w2: { value: 60 } },
+      [periods[1].key]: { w1: { completed: true } },
+    }
+    const output = calculatePeriodOutputGrade(weekly, data, periods, weekB)
+    expect(output.habits.map((h) => h.raw)).toEqual([100, 50])
+    expect(output.grade).toBe(75)
+  })
+})
+
+describe("exemption wand denominators", () => {
+  const waiveA = (task: WeeklyTask, key: string) => task.id === "a" && key === "2026-09-14"
+
+  it("drops a waived day from the weekly row, without counting it done", () => {
+    const weeklyData = {
+      "2026-09-15": { a: { completed: true } },
+      "2026-09-16": { a: { completed: true } },
+      "2026-09-17": { a: { completed: true } },
+      "2026-09-18": { a: { completed: true } },
+      "2026-09-19": { a: { completed: true } },
+      "2026-09-20": { a: { completed: true } },
+    }
+    expect(calculateTaskPercentage("a", tasks, weeklyData, weekDates)).toBeCloseTo((6 / 7) * 100)
+    expect(calculateTaskPercentage("a", tasks, weeklyData, weekDates, waiveA)).toBe(100)
+  })
+
+  it("drops a waived habit from that day's column", () => {
+    const weeklyData = {
+      "2026-09-14": { b: { completed: true } },
+    }
+    expect(calculateDayPercentageAV("2026-09-14", tasks, weeklyData, 0)).toBe(50)
+    expect(calculateDayPercentageAV("2026-09-14", tasks, weeklyData, 0, waiveA)).toBe(100)
+  })
+
+  it("leaves a fully waived day out of the week grade", () => {
+    const weeklyData = {
+      "2026-09-15": { a: { completed: true }, b: { completed: true } },
+    }
+    const waiveMonday = (_task: WeeklyTask, key: string) => key === "2026-09-14"
+    const grade = calculateWeekToDateGrade(
+      tasks,
+      weeklyData,
+      weekDates,
+      new Date(2026, 8, 15),
+      100,
+      waiveMonday,
+    )
+    expect(grade.days[0].vacant).toBe(true)
+    expect(grade.grade).toBe(100)
+  })
+
+  it("drops a waived week from a weekly habit row", () => {
+    const weekA = new Date(2026, 8, 7)
+    const weekB = new Date(2026, 8, 14)
+    const periods = [
+      { key: getWeekString(weekA), date: weekA },
+      { key: getWeekString(weekB), date: weekB },
+    ]
+    const weekly: WeeklyTask[] = [{ id: "w1", name: "Review", type: TaskType.BOOLEAN, frequency: "weekly" }]
+    const data = { [periods[1].key]: { w1: { completed: true } } }
+    const waiveFirst = (_task: WeeklyTask, key: string) => key === periods[0].key
+    expect(calculatePeriodTaskPercentage("w1", weekly, data, periods)).toBe(50)
+    expect(calculatePeriodTaskPercentage("w1", weekly, data, periods, waiveFirst)).toBe(100)
   })
 })

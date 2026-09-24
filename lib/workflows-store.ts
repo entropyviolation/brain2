@@ -4,7 +4,7 @@
  * The source of truth for user-authored `WorkflowDefinition`s that the workflow
  * engine (`lib/workflow-engine.ts`) runs on item mutations / manual invocation.
  * Mirrors the Zustand + `persist` pattern of `lib/modules-store.ts`; persisted
- * to localStorage under `cogs-workflows-store` (target: MongoDB `workflows`).
+ * to localStorage under `brain2-workflows-store` (target: MongoDB `workflows`).
  *
  * The store is intentionally a plain CRUD + query surface: it holds the
  * definitions and answers "which workflows apply to this list / type?" so the
@@ -16,6 +16,7 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
+import { persistKey } from "@/lib/storage-keys"
 import type { WorkflowDefinition } from "@/lib/types"
 
 /** Query for selecting workflows relevant to an item / list / type. */
@@ -112,6 +113,6 @@ export const useWorkflowsStore = create<WorkflowsState>()(
 
       setWorkflows: (workflows) => set(() => ({ workflows })),
     }),
-    { name: "cogs-workflows-store", version: 1, storage: createCogsJSONStorage() },
+    { name: persistKey("workflows-store"), version: 1, storage: createCogsJSONStorage() },
   ),
 )

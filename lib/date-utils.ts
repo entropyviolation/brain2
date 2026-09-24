@@ -3,9 +3,10 @@
  *
  * Pure date utilities used throughout the app: safe parsing/formatting
  * (`safe*`), YYYY-MM-DD keys (`formatDateKey`), week math
- * (`getWeekStartDate`/`getWeekDates`), scheduler week-range strings
+ * (`getWeekStartDate`/`getWeekDates`/`getPrecedingWeekStarts`), month windows
+ * (`getPrecedingMonthStarts`/`getMonthDates`), scheduler week-range strings
  * (`getWeekString`/`parseWeekString`/`formatWeekRange`), display formatters,
- * `getDayOfWeek`, and `isToday`.
+ * `getDayOfWeek`, `isToday`, `startOfLocalToday`, and `isPastLocalCalendarDay`.
  *
  * Spec: supports §7 (Scheduler week ranges) and §9 (habit grid dates).
  */
@@ -109,6 +110,47 @@ export function getWeekDates(startDate: Date): Date[] {
   return dates
 }
 
+/** Monday of each of the `count` weeks ending at `weekStart` (oldest first). */
+export function getPrecedingWeekStarts(weekStart: Date, count = 7): Date[] {
+  const start = getWeekStartDate(weekStart)
+  return Array.from({ length: count }, (_, i) => {
+    const d = new Date(start)
+    d.setDate(start.getDate() - 7 * (count - 1 - i))
+    d.setHours(0, 0, 0, 0)
+    return d
+  })
+}
+
+/** First of each of the `count` months ending at `date`'s month (oldest first). */
+export function getPrecedingMonthStarts(date: Date, count = 7): Date[] {
+  const y = date.getFullYear()
+  const m = date.getMonth()
+  return Array.from({ length: count }, (_, i) => new Date(y, m - (count - 1 - i), 1))
+}
+
+/** Every local calendar date in the month containing `date`. */
+export function getMonthDates(date: Date): Date[] {
+  const y = date.getFullYear()
+  const m = date.getMonth()
+  const n = new Date(y, m + 1, 0).getDate()
+  return Array.from({ length: n }, (_, i) => new Date(y, m, i + 1))
+}
+
+export function addCalendarDays(date: Date, days: number): Date {
+  const d = new Date(date)
+  d.setDate(d.getDate() + days)
+  d.setHours(0, 0, 0, 0)
+  return d
+}
+
+export function isSameLocalWeek(a: Date, b: Date): boolean {
+  return getWeekString(a) === getWeekString(b)
+}
+
+export function isSameLocalMonth(a: Date, b: Date): boolean {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth()
+}
+
 /**
  * Formats a date as YYYY-MM-DD for use as a key in the data structure
  */
@@ -138,6 +180,19 @@ export function sameCalendarDay(a: Date | string | null | undefined, b: Date): b
 export function toLocalCalendarDate(date: Date | string): Date {
   const d = parseLocalDate(date) ?? (date instanceof Date ? date : new Date(date))
   return new Date(d.getFullYear(), d.getMonth(), d.getDate())
+}
+
+/** Local midnight of the current calendar day (`now`, default wall clock). */
+export function startOfLocalToday(now: Date = new Date()): Date {
+  return toLocalCalendarDate(now)
+}
+
+/**
+ * True when `day` is strictly before local today. Independent of any selected
+ * or viewed date. Today is never past.
+ */
+export function isPastLocalCalendarDay(day: Date | string, now: Date = new Date()): boolean {
+  return toLocalCalendarDate(day).getTime() < startOfLocalToday(now).getTime()
 }
 
 /**

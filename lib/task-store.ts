@@ -1,11 +1,21 @@
 /**
  * lib/task-store.ts — Tasks, lists & folders store
  *
- * The central Zustand store and source of truth for tasks, their lists, and
- * category folders. Powers the Inbox, Next Actions board, Scheduler funnel, and
+ * The central Zustand store and source of truth for item records, their lists,
+ * and folders. Powers the Inbox, Next Actions board, Scheduler funnel, and
  * the Home dashboard's To-Do/Plan panels. Persisted to localStorage under
- * `cogs-task-storage` with Date-aware (de)serialization and a versioned
- * migration hook. Also exposes the configurable priority formula.
+ * `brain2-task-storage` (legacy `cogs-task-storage` is copied, never deleted)
+ * with Date-aware (de)serialization and a versioned migration hook. Also
+ * exposes the configurable priority formula.
+ *
+ * Ontology: rows are Items. The persisted field is still named `tasks` (v1);
+ * `addItem` / `updateItem` / `deleteItem` / `getItems` alias `addTask` /
+ * `updateTask` / `deleteTask` / `tasks`. The JSON array name stays `tasks`.
+ * Hard deletes stamp `removedTaskIds` so a hub merge that unions by id cannot
+ * resurrect a row the user already removed.
+ *
+ * Connected lists (`List.linkedTargetListIds`) auto-join membership through
+ * `addTask` / `updateTask` / `addListLink`; see `lib/list-links.ts`.
  *
  * Spec: §4 (Inbox), §5 (Item model), §6 (Next Actions), §7 (Scheduler). Storage
  * is localStorage today; spec §3 calls for migrating this to **MongoDB**
@@ -16,36 +26,65 @@
 
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
-import { sanitizeEnabledDisplays, type Task, type List, type Folder, type PriorityWeights } from "@/lib/types"
+import { sanitizeEnabledDisplays, type Task, type ItemRecord, type List, type Folder, type PriorityWeights } from "@/lib/types"
 import { DEFAULT_PRIORITY_WEIGHTS } from "@/lib/priority"
 import { migratePersistedAttributes } from "@/lib/attribute-utils"
-import { migrateTaskToItem, migrateTasksToItems, migrateModulePlatform } from "@/lib/migrations"
+import {
+  migrateTasksToItems,
+  migrateModulePlatform,
+  migrateTitleAsFieldOfRecord,
+  migrateHonestItemTypes,
+} from "@/lib/migrations"
 import { dispatchItemMutation } from "@/lib/workflow-hooks"
 import { usePointsStore } from "@/lib/points-store"
-import { resolveCompletionPoints, applyItemRules } from "@/lib/item-utils"
+import {
+  resolveCompletionPoints,
+  applyItemRules,
+  itemTitleOrUntitled,
+  syncTitleFromDescription,
+} from "@/lib/item-utils"
 import { emitTaskCompleted } from "@/lib/completion-events"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { normalizeTag } from "@/lib/links"
-import { createCogsJSONStorage } from "@/lib/persist-storage"
-import { migrateTaskFileValues } from "@/lib/attachments"
+import { createCogsJSONStorage, registerPersistRehydrator } from "@/lib/persist-storage"
+import { persistKey } from "@/lib/storage-keys"
+import { migrateTaskFileValues, migrateTaskImageAttributes } from "@/lib/attachments"
 import {
   moveList as moveListPure,
   getChildren as getChildListsPure,
   getDescendants as getDescendantListsPure,
   getAncestors as getListAncestorsPure,
 } from "@/lib/list-tree"
+import {
+  addListLinkToLists,
+  applyListLinksToTask,
+  applyListLinksToTasks,
+  preserveLinkedTargetIds,
+  removeListLinkFromLists,
+  stripListLinksForDeletedList,
+} from "@/lib/list-links"
+import { withArchiveListMembership } from "@/lib/archive-lists"
 
 // Date-typed fields on persisted Task / List objects. The persist reviver
 // only resurrects Dates for these keys so it never converts unrelated strings
 // (e.g. `scheduledTime`, `scheduledWeek`, `timeLogs[].date`).
+// `estimates[].generatedAt` / `confirmedAt` are deliberately named apart from
+// these keys: they stay ISO strings so the provenance array survives a round
+// trip through JSON without needing Date handling everywhere it is read.
 const DATE_KEYS = new Set([
   "createdAt",
   "deadline",
   "scheduledDate",
   "completedDate",
+  "missedAt",
+  "startedAt",
   "completedAt",
   "mustBeDoneAfter",
   "mustBeDoneBefore",
+  // `completedChunks[].date` is a real timestamp typed as `Date`. Safe to
+  // revive despite `timeLogs[].date` sharing the key name: ISO_DATE_RE demands
+  // a time component, which a "2026-06-20" day key does not have.
+  "date",
 ])
 
 // Matches ISO-8601 strings produced by `Date.prototype.toISOString()`
@@ -53,9 +92,20 @@ const DATE_KEYS = new Set([
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/
 
 interface TaskState {
+  /**
+   * Persisted Item records (historical field name `tasks`). JSON blob key stays
+   * `tasks`; persist name is `brain2-task-storage` (`cogs-task-storage` alias). Do not rename the array
+   * until a versioned migration rewrites vaults.
+   */
   tasks: Task[]
   lists: List[]
   folders: Folder[]
+  /**
+   * Tombstones for hard-deleted item ids. Hub / phone-hub merges union rows by
+   * id so a Telegram Inbox capture cannot vanish under a stale desktop push;
+   * without this list, that union would also resurrect a deliberate delete.
+   */
+  removedTaskIds: string[]
   priorityFormula: {
     urgencyWeight: number
     importanceWeight: number
@@ -67,6 +117,14 @@ interface TaskState {
   addTask: (task: Task) => void
   updateTask: (task: Task) => void
   deleteTask: (id: string) => void
+  /** Same write as `addTask` — prefer when the caller means an item record. */
+  addItem: (item: ItemRecord) => void
+  /** Same write as `updateTask`. */
+  updateItem: (item: ItemRecord) => void
+  /** Same write as `deleteTask`. */
+  deleteItem: (id: string) => void
+  /** Snapshot of persisted item records (same array as `tasks`). */
+  getItems: () => ItemRecord[]
   updatePriorityFormula: (formula: TaskState["priorityFormula"]) => void
   updatePriorityWeights: (weights: PriorityWeights) => void
   addList: (category: List) => void
@@ -84,6 +142,13 @@ interface TaskState {
   getDescendantLists: (id: string) => List[]
   /** Ancestor lists of `id`, nearest parent → root. */
   getListAncestors: (id: string) => List[]
+  /**
+   * Connect source→target so source items auto-join the target (membership,
+   * not nesting). Syncs existing items; honors exclusions. See LIST_LINKS.md.
+   */
+  addListLink: (sourceListId: string, targetListId: string) => void
+  /** Stop future auto-adds. Does not mass-delete items already on both lists. */
+  removeListLink: (sourceListId: string, targetListId: string) => void
   setTasks: (tasks: Task[]) => void
   setLists: (lists: List[]) => void
   clearAllData: () => void
@@ -96,9 +161,9 @@ interface TaskState {
   removeListFromFolder: (folderId: string, categoryId: string) => void
   setFolders: (folders: Folder[]) => void
   // Tag / link queries (computed over `tasks`; see lib/links.ts).
-  getByTag: (tag: string) => Task[]
-  getLinkedItems: (id: string, relation?: string) => Task[]
-  getBacklinks: (id: string, relation?: string) => Task[]
+  getByTag: (tag: string) => ItemRecord[]
+  getLinkedItems: (id: string, relation?: string) => ItemRecord[]
+  getBacklinks: (id: string, relation?: string) => ItemRecord[]
 }
 
 // Initial lists with order
@@ -115,6 +180,8 @@ const initialLists: List[] = [
 ]
 
 // Initial tasks data with updated structure
+const SEED_TASK_IDS = new Set(["1"])
+
 const initialTasks: Task[] = [
   {
     id: "1",
@@ -165,6 +232,9 @@ const taskPersistStorage = createCogsJSONStorage({
   },
 })
 
+/** Persist blob version. v12 backfills missing `type` only (honest Item vs Task). */
+export const TASK_STORE_PERSIST_VERSION = 12
+
 /** False until persist finishes reading disk so mount-time list sync cannot persist seed tasks over the vault. Tests persist immediately. */
 let taskPersistHydrated = typeof process !== "undefined" && !!process.env.VITEST
 
@@ -175,6 +245,7 @@ export const useTaskStore = create<TaskState>()(
       tasks: initialTasks,
       lists: initialLists,
       folders: [],
+      removedTaskIds: [],
       priorityFormula: {
         urgencyWeight: 1,
         importanceWeight: 1,
@@ -211,16 +282,26 @@ export const useTaskStore = create<TaskState>()(
                     : new Date(task.completedDate)
                   : new Date()
                 : undefined,
+              startedAt: task.startedAt
+                ? task.startedAt instanceof Date
+                  ? task.startedAt
+                  : new Date(task.startedAt)
+                : undefined,
             }
             // Apply item-type + list rules (e.g. "when purchased, set owned").
             const ruled = applyItemRules(
-              taskWithDates,
+              syncTitleFromDescription(taskWithDates),
               state.lists,
               useItemTypeStore.getState().types,
               "create",
             )
-            added = ruled
-            return { tasks: [...state.tasks, ruled] }
+            const linked = applyListLinksToTask(ruled, undefined, state.lists)
+            const archived = withArchiveListMembership(linked, linked, state.lists, state.folders)
+            added = archived
+            return {
+              tasks: [...state.tasks, archived],
+              removedTaskIds: (state.removedTaskIds ?? []).filter((id) => id !== archived.id),
+            }
           }
           return state
         })
@@ -250,7 +331,7 @@ export const useTaskStore = create<TaskState>()(
               if (points > 0) {
                 usePointsStore
                   .getState()
-                  .addPoints(updatedTask.id, points, updatedTask.description || "Task", new Date())
+                  .addPoints(updatedTask.id, points, itemTitleOrUntitled(updatedTask, "Task"), new Date())
               }
             }
             // Central completion-date stamp: every completion path goes through
@@ -285,20 +366,30 @@ export const useTaskStore = create<TaskState>()(
                   : new Date(updatedTask.scheduledDate)
                 : undefined,
               completedDate: justReopened ? undefined : resolveCompletedDate(),
+              // The work window belongs to the completion, so re-opening drops it.
+              startedAt:
+                justReopened || !updatedTask.startedAt
+                  ? undefined
+                  : updatedTask.startedAt instanceof Date
+                    ? updatedTask.startedAt
+                    : new Date(updatedTask.startedAt),
             }
             didComplete = justCompleted
             // Apply item-type + list rules; rules that change attributes (e.g.
             // "when purchased, set owned") follow the item across all its lists.
             const ruled = applyItemRules(
-              taskWithDates,
+              syncTitleFromDescription(taskWithDates, prev),
               state.lists,
               useItemTypeStore.getState().types,
               didComplete ? "complete" : "update",
+              prev,
             )
+            const linked = applyListLinksToTask(ruled, prev, state.lists)
+            const archived = withArchiveListMembership(linked, prev, state.lists, state.folders)
             before = prev
-            after = ruled
+            after = archived
             const newTasks = [...state.tasks]
-            newTasks[index] = ruled
+            newTasks[index] = archived
             return { tasks: newTasks }
           }
           return state
@@ -319,9 +410,18 @@ export const useTaskStore = create<TaskState>()(
       },
 
       deleteTask: (id) =>
-        set((state) => ({
-          tasks: state.tasks.filter((task) => task.id !== id),
-        })),
+        set((state) => {
+          const prev = state.removedTaskIds ?? []
+          return {
+            tasks: state.tasks.filter((task) => task.id !== id),
+            removedTaskIds: prev.includes(id) ? prev : [...prev, id].slice(-4000),
+          }
+        }),
+
+      addItem: (item) => get().addTask(item),
+      updateItem: (item) => get().updateTask(item),
+      deleteItem: (id) => get().deleteTask(id),
+      getItems: () => get().tasks,
 
       updatePriorityFormula: (formula) =>
         set(() => ({
@@ -344,7 +444,7 @@ export const useTaskStore = create<TaskState>()(
           const index = state.lists.findIndex((c) => c.id === updatedCategory.id)
           if (index !== -1) {
             const newCategories = [...state.lists]
-            newCategories[index] = updatedCategory
+            newCategories[index] = preserveLinkedTargetIds(updatedCategory, state.lists[index])
             return { lists: newCategories }
           }
           return state
@@ -356,20 +456,37 @@ export const useTaskStore = create<TaskState>()(
           // Re-parent any sublists onto the deleted category's parent (or root)
           // so deleting a mid-tree category never orphans its descendants.
           const newParentId = deleted?.parentListId
-          const lists = state.lists
-            .filter((category) => category.id !== id)
-            .map((category) =>
-              category.parentListId === id
-                ? newParentId
-                  ? { ...category, parentListId: newParentId }
-                  : (() => {
-                      const next = { ...category }
-                      delete next.parentListId
-                      return next
-                    })()
-                : category,
-            )
+          const lists = stripListLinksForDeletedList(
+            state.lists
+              .filter((category) => category.id !== id)
+              .map((category) =>
+                category.parentListId === id
+                  ? newParentId
+                    ? { ...category, parentListId: newParentId }
+                    : (() => {
+                        const next = { ...category }
+                        delete next.parentListId
+                        return next
+                      })()
+                  : category,
+              ),
+            id,
+          )
           return { lists }
+        }),
+
+      addListLink: (sourceListId, targetListId) =>
+        set((state) => {
+          const lists = addListLinkToLists(state.lists, sourceListId, targetListId)
+          if (lists === state.lists) return state
+          const tasks = applyListLinksToTasks(state.tasks, lists)
+          return tasks === state.tasks ? { lists } : { lists, tasks }
+        }),
+
+      removeListLink: (sourceListId, targetListId) =>
+        set((state) => {
+          const lists = removeListLinkFromLists(state.lists, sourceListId, targetListId)
+          return lists === state.lists ? state : { lists }
         }),
 
       moveList: (id, newParentId) =>
@@ -384,7 +501,7 @@ export const useTaskStore = create<TaskState>()(
 
       setTasks: (tasks) => set(() => ({ tasks })),
       setLists: (lists) => set(() => ({ lists })),
-      clearAllData: () => set(() => ({ tasks: [], lists: [], folders: [] })),
+      clearAllData: () => set(() => ({ tasks: [], lists: [], folders: [], removedTaskIds: [] })),
       addFolder: (folder) =>
         set((state) => {
           if (state.folders.some((f) => f.id === folder.id)) return state
@@ -472,17 +589,40 @@ export const useTaskStore = create<TaskState>()(
         ),
     }),
     {
-      name: "cogs-task-storage", // unique name for localStorage key
+      name: persistKey("task-storage"),
       storage: {
-        getItem: (name) => taskPersistStorage.getItem(name),
+        getItem: async (name) => {
+          const value = await taskPersistStorage.getItem(name)
+          // A capture that landed while this read was in flight has to be
+          // allowed to write. The seed-overwrite guard only covers the wait.
+          taskPersistHydrated = true
+          return value
+        },
         setItem: (name, value) => {
           if (!taskPersistHydrated) return
           return taskPersistStorage.setItem(name, value)
         },
         removeItem: (name) => taskPersistStorage.removeItem(name),
       },
+      merge: (persisted, current) => {
+        const disk = (persisted ?? {}) as { tasks?: Task[]; removedTaskIds?: string[] }
+        const live = current.tasks ?? []
+        const diskTasks = Array.isArray(disk.tasks) ? disk.tasks : []
+        const removed = new Set([...(disk.removedTaskIds ?? []), ...(current.removedTaskIds ?? [])])
+        const byId = new Map(diskTasks.filter((task) => task?.id && !removed.has(task.id)).map((task) => [task.id, task]))
+        for (const task of live) {
+          if (!task?.id || byId.has(task.id) || SEED_TASK_IDS.has(task.id) || removed.has(task.id)) continue
+          byId.set(task.id, task)
+        }
+        return {
+          ...current,
+          ...disk,
+          tasks: [...byId.values()],
+          removedTaskIds: [...removed].slice(-4000),
+        }
+      },
       // Add version to handle schema changes
-      version: 10,
+      version: TASK_STORE_PERSIST_VERSION,
       // Migrate function to handle old data
       migrate: (persistedState: any, version: number) => {
         if (version < 2) {
@@ -575,18 +715,42 @@ export const useTaskStore = create<TaskState>()(
         if (version < 10) {
           persistedState = migrateStripKanbanListDisplays(persistedState)
         }
+        if (version < 11) {
+          // `title` becomes the field of record. Heals records whose
+          // `description` drifted ahead of their mirrored `title`; never
+          // clears `description`. See lib/migrations.ts.
+          persistedState = migrateTitleAsFieldOfRecord(persistedState)
+        }
+        if (version < 12) {
+          // Honest type on old rows: fill missing `type` only. Next Actions
+          // or inbox → "task"; else "item". Never overwrite an explicit type.
+          persistedState = migrateHonestItemTypes(persistedState)
+        }
+        if (!Array.isArray(persistedState.removedTaskIds)) {
+          persistedState.removedTaskIds = []
+        }
         return persistedState
       },
       onRehydrateStorage: () => (state) => {
         taskPersistHydrated = true
         if (!state?.tasks?.length) return
-        void migrateTaskFileValues(state.tasks).then(({ tasks, migrated }) => {
-          if (migrated > 0) useTaskStore.setState({ tasks })
-        })
+        // Attachment bytes leave the blob: `FileValue` data URLs first, then
+        // pictures pasted into `image` / `multiimage` attributes. One 592KB PNG
+        // in a custom attribute was filling the origin for every other vault.
+        void migrateTaskFileValues(state.tasks)
+          .then(async (files) => {
+            const images = await migrateTaskImageAttributes(files.tasks)
+            return { tasks: images.tasks, migrated: files.migrated + images.migrated }
+          })
+          .then(({ tasks, migrated }) => {
+            if (migrated > 0) useTaskStore.setState({ tasks })
+          })
       },
     },
   ),
 )
+
+registerPersistRehydrator(persistKey("task-storage"), () => useTaskStore.persist.rehydrate())
 
 /**
  * Best-effort diff of the flexible `attributes` record between two task

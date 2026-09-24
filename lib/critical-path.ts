@@ -15,7 +15,7 @@
  * store access, no `Date` math — durations are plain numbers.
  */
 
-/** PERT three-point estimate (any consistent unit; minutes in COGS). */
+/** PERT three-point estimate (any consistent unit; minutes in Brain2). */
 export interface PertEstimate {
   optimistic: number
   likely: number
@@ -227,4 +227,56 @@ export function criticalEdgeKeys(result: CpmResult, tasks: CpmTask[]): Set<strin
     }
   }
   return keys
+}
+
+function predecessorMap(tasks: CpmTask[]): Map<string, string[]> {
+  const preds = new Map<string, string[]>()
+  for (const t of tasks) {
+    preds.set(t.id, [...new Set((t.dependencies ?? []).filter((d) => d !== t.id))])
+  }
+  return preds
+}
+
+/**
+ * Ids forming the loop if `itemId` gained `dependencyId` as a predecessor
+ * (`itemId` depends on `dependencyId`). Empty when that edge is safe.
+ *
+ * Walks the *existing* predecessor graph from the new dependency toward
+ * `itemId`. Independent of {@link computeCriticalPath} so an unrelated cycle
+ * elsewhere does not block this edit. Does not mutate `tasks`.
+ */
+export function findCyclePath(tasks: CpmTask[], itemId: string, dependencyId: string): string[] {
+  if (!itemId || !dependencyId) return []
+  if (itemId === dependencyId) return [itemId, itemId]
+
+  const preds = predecessorMap(tasks)
+  const parent = new Map<string, string | null>()
+  parent.set(dependencyId, null)
+  const queue = [dependencyId]
+
+  while (queue.length) {
+    const cur = queue.shift()!
+    for (const p of preds.get(cur) ?? []) {
+      if (parent.has(p)) continue
+      parent.set(p, cur)
+      if (p === itemId) {
+        const back: string[] = [itemId]
+        let step: string | null = cur
+        while (step) {
+          back.push(step)
+          step = parent.get(step) ?? null
+        }
+        // back is T → … → D along the old predecessor walk; the new edge is
+        // T depends on D, so the loop reads T → D → … → T.
+        return [itemId, ...back.slice(1).reverse(), itemId]
+      }
+      queue.push(p)
+    }
+  }
+  return []
+}
+
+/** True when adding `dependencyId` onto `itemId` would close a loop. */
+export function wouldCreateCycle(tasks: CpmTask[], itemId: string, dependencyId: string): boolean {
+  return findCyclePath(tasks, itemId, dependencyId).length > 0
 }

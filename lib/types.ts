@@ -1,26 +1,29 @@
 /**
  * lib/types.ts — Shared data-model types
  *
- * The single source of TypeScript interfaces/enums used across COGS: tasks,
+ * The single source of TypeScript interfaces/enums used across Brain2: tasks,
  * to-do items, calendar events, plans, categories/folders, weekly-habit types,
  * scheduling, and review records.
  *
- * Spec: this is where the unified "Item" model (spec §5) will converge. The
- * current `Task` interface intentionally still carries v1's near-duplicate fields
- * (`category` vs `categories`, `entropy` vs `cognitiveLoad`, `context` vs future
- * tags) — see docs/SPEC_MAPPING.md §5 for the planned consolidation. Types map
- * to MongoDB document shapes (flexible `attributes`, `links`, embedded subdocs).
+ * Spec: this is where the unified "Item" model (spec §5) converges. Ontology:
+ * every row is an Item. Runtime: the persisted document interface is still named
+ * `Task` (v1); prefer `ItemRecord` on new signatures. Task-the-kind is
+ * `type: "task"` plus Next Actions membership — not a second storage shape.
+ * Kept distinctions: `title` vs `description`, `stage` vs `lists`, `entropy` vs
+ * `cognitiveLoad`. Types map to MongoDB document shapes (flexible `attributes`,
+ * `links`, embedded subdocs). See docs/CANONICAL_FIELDS.md and docs/SPEC_MAPPING.md §5.
  */
 /**
  * Unified Item model (spec §5). Every domain entity is an `Item` with a `type`
  * discriminator and the second-brain primitives `tags` + `links`. `attributes`
- * carry flexible, schema-driven fields. Concrete built-in subtypes (e.g. `Task`)
- * extend this.
+ * carry flexible, schema-driven fields. `Task` is the persisted document of an
+ * Item (v1 name) and also the built-in completable/scheduleable *kind*. Prefer
+ * `ItemRecord` when the function means "a row in the brain."
  *
  * Design notes (per project owner):
  *   - `type` is the foundational concept. Built-in types ship today ("task");
  *     users will define their own ("Book", "Friend", …) via `ItemTypeDefinition`,
- *     each with its own attributes/defaults/capabilities. This is what makes COGS
+ *     each with its own attributes/defaults/capabilities. This is what makes Brain2
  *     behave like a second brain.
  *   - An item also *belongs to* one or more **categories** (lists) and inherits
  *     that list's attribute schema + default values (see `List`).
@@ -220,14 +223,19 @@ export interface ItemTypeDefinition {
 
 export interface Item {
   id: string
-  /** Type discriminator. Defaults to "task" for migrated records; new list items use "item". */
+  /** Type discriminator. Missing type is filled in persist v12 (Next Actions / inbox → `"task"`, else `"item"`). Explicit types are never overwritten. New list items use `"item"`; Next Actions / To-Do create `"task"`. */
   type?: ItemType
   /** Canonical display label. Mirrors `Task.description` during transition. */
   title?: string
   createdAt: Date
   /** Free-form tags (spec §5) — e.g. "to schedule". */
   tags?: string[]
-  /** Typed relationships to other items (spec §5). */
+  /**
+   * Typed relationships to other items (spec §5). This is the graph: edges are
+   * `ItemLink`s; backlinks are derived (`getBacklinks`). Distinct from
+   * task-kind `Task.dependencies` / `parentTaskId` (scheduler/critical-path) —
+   * those arrays are not merged into `links` in this persist era.
+   */
   links?: ItemLink[]
   /** Flexible, schema-driven attributes keyed by AttributeDefinition.id. */
   attributes?: Record<string, AttributeValue>
@@ -267,16 +275,40 @@ export interface PriorityWeights {
 }
 
 // ---- Richer completion status (Feature 9, Worker I) -----------------------
-export type CompletionStatus = "active" | "done" | "partial" | "deferred" | "cancelled"
+export type CompletionStatus = "active" | "done" | "partial" | "deferred" | "cancelled" | "missed"
 
+/**
+ * Persisted document for one row in the brain (v1 name: Task).
+ *
+ * Ontology: the row is an Item. Task-the-kind is `type: "task"` (and Next
+ * Actions membership via `isTaskItem`). Fields below `Item` are type
+ * capabilities (schedule, complete, priority, subtasks, …) — not a second noun.
+ */
 export interface Task extends Item {
   id: string
+  /**
+   * The v1 name for the task's text, kept because every persisted vault and
+   * backup carries it. `Item.title` is the field of record now — read a name
+   * with `itemTitle()` / `itemTitleOrUntitled()` (`lib/item-utils.ts`), never
+   * this field directly.
+   *
+   * It is *mostly* a mirror of `title`, but not always: parked Apple Notes
+   * (`noteToParkedItem`) store their full body here so `lib/search.ts`, which
+   * indexes `description` and not `body`, can find them. See the open question
+   * in `docs/CANONICAL_FIELDS.md` before making the two fields agree by force.
+   */
   description: string
   // Built-in task lifecycle bucket (inbox → clarified → scheduled → completed,
   // or "list" for plain list items). Task-type behavior, not a core Item concept.
   // Historically named `category`; renamed to `stage` in the category→list
   // migration to disambiguate from list membership (`lists`).
   stage: "inbox" | "clarified" | "scheduled" | "completed" | "list"
+  /**
+   * Inbox partition. `true` is Monkey brain: a dump of compulsive, repetitive
+   * thoughts the user does not mean to revisit the way they revisit Inbox.
+   * Absent on a normal Inbox capture. Leaving Inbox (clarify, file) drops it.
+   */
+  monkeyBrain?: boolean
   createdAt: Date
   completed: boolean
   /**
@@ -287,12 +319,39 @@ export interface Task extends Item {
    */
   completedDate?: Date
   /**
+   * Wall-clock start of the work window that `completedDate` closes. Autogenerated
+   * completions derive it from the duration (`completedDate` − minutes) or from
+   * painted Tracking slots; see `lib/completion-window.ts`.
+   */
+  startedAt?: Date
+  /**
+   * Which of this record's values were assumed/derived rather than observed, and
+   * on what basis. Nothing is silently synthesized: an autogenerated time carries
+   * a `FieldEstimate` here until the user confirms or corrects it in the review.
+   * Helpers: `lib/estimated-values.ts`.
+   */
+  estimates?: FieldEstimate[]
+  /**
    * Richer completion status (Feature 9, Worker I). Invariant:
    * `status === "done"` ⇔ `completed === true`; helpers in
    * `lib/completion-status.ts` keep the two in sync.
+   * `"missed"` is too-late (not done): it leaves To Do / Next Actions the same
+   * way done does, but lands on the automatic Missed Opportunities list instead
+   * of Completed.
    */
   status?: CompletionStatus
+  /**
+   * When the task was marked a missed opportunity (too late). Stamped by
+   * `withStatus(..., "missed")` / `markMissedOpportunity`. Cleared on reopen.
+   */
+  missedAt?: Date
   lists: string[] // ids of the lists this task belongs to; attrs inherited
+  /**
+   * List ids this item was manually removed from. Connected-list links
+   * (`List.linkedTargetListIds`) will not auto-add these again until the user
+   * explicitly adds the item back. See `components/Lists/LIST_LINKS.md`.
+   */
+  listMembershipExclusions?: string[]
   // ---- Next-actions / scheduling fields (optional; only meaningful for items
   // in the Next Actions folder tree — see lib/item-utils.ts) ----------------
   estimatedDuration?: number // minutes
@@ -343,6 +402,20 @@ export interface Task extends Item {
   definitionOfDone?: string
   /** Post-mortem captured when this task was completed (spec §13.7). */
   completionReview?: TaskCompletionReview
+  /**
+   * Per-day morning walkthrough ratings (1–10). Key = local `YYYY-MM-DD`.
+   * `importance` / `excitement` are for that day; not the 1–5 priority `importance`.
+   */
+  dayRatings?: Record<string, { importance?: number; excitement?: number }>
+  /**
+   * Resistance samples over time (morning walkthrough and elsewhere). Append-only;
+   * each reading keeps its timestamp so Analytics can show the series.
+   */
+  resistanceReadings?: Array<{
+    at: string
+    value: number
+    source?: "morning-telegram" | "morning-desktop"
+  }>
   completedChunks?: { date: Date; duration: number; notes?: string }[] // track partial completions
   // New fields
   taskDescription?: string // Optional detailed description
@@ -381,6 +454,16 @@ export interface Task extends Item {
   contributesToGoalIds?: string[]
 }
 
+/**
+ * Preferred name for “a row in the brain” on new signatures.
+ *
+ * Same type as {@link Task}: storage, persist key `brain2-task-storage`, and the
+ * JSON array `tasks` are unchanged. `Task` stays exported so existing call
+ * sites compile. Prefer `ItemRecord` when the code means the record, and keep
+ * saying Task when the code means the completable/scheduleable kind.
+ */
+export type ItemRecord = Task
+
 export interface TimeLogEntry {
   id: string
   date: string // YYYY-MM-DD
@@ -391,6 +474,53 @@ export interface TimeLogEntry {
   taskId?: string
   location?: string
   activityLabel?: string
+}
+
+// ---- Estimated / autogenerated value provenance --------------------------
+// The app fills in a lot of time data on the user's behalf (a habit's minutes
+// from its per-unit rate, the clock window a completion occupied). Every such
+// value is *flagged* rather than passed off as observed, so the review can ask
+// the user to confirm or correct it. Helpers: `lib/estimated-values.ts`.
+
+/** Task fields that may hold an autogenerated value. */
+export type EstimatedField = "completedDate" | "startedAt" | "actualDuration"
+
+/** How an autogenerated value was produced (drives copy and review ordering). */
+export type EstimateKind =
+  /** Read off painted Tracking slots — the most trustworthy autogeneration. */
+  | "tracked"
+  /** The user's own logged number already was minutes (habit unit minutes/hours). */
+  | "logged"
+  /** Logged amount × a per-unit rate (e.g. 4 pages × 10 min/page). */
+  | "rate"
+  /** A flat per-completion length configured on the habit. */
+  | "flat"
+  /** Assumed the work finished just now (habit ticked off today). */
+  | "now"
+  /** Assumed a default time of day because the day is already over. */
+  | "anchor"
+
+export interface FieldEstimate {
+  field: EstimatedField
+  kind: EstimateKind
+  /** One-line explanation shown on the badge and in the review row. */
+  basis: string
+  /** ISO timestamp of when the value was autogenerated. */
+  generatedAt: string
+  /** ISO timestamp of the user confirming or correcting it. Absent = unconfirmed. */
+  confirmedAt?: string
+}
+
+/**
+ * How much clock time one period's worth of a habit is assumed to consume.
+ * `minutesPerUnit` scales with what was logged (10 min per page × 4 pages);
+ * `minutes` is a flat length for Yes/No habits. `precision: "definite"` means the
+ * length is known, so the derived duration is not flagged for confirmation.
+ */
+export interface HabitTimeEstimate {
+  minutesPerUnit?: number
+  minutes?: number
+  precision?: "estimated" | "definite"
 }
 
 /**
@@ -592,6 +722,59 @@ export interface IncrementalHabitLegacy {
 
 export type IncrementalHabitPersisted = IncrementalHabitData | IncrementalHabitLegacy
 
+/** Unit tracked minutes are converted to before they land on a habit. */
+export type HabitTrackingUnit = "minutes" | "hours"
+
+/**
+ * How tracked time combines with what the user typed into the habit cell.
+ * `add` — tracked time tops up the manual log (default).
+ * `max` — the habit shows whichever is larger.
+ * `replace` — the tracker is the only source; manual entries are ignored.
+ */
+export type HabitTrackingMode = "add" | "max" | "replace"
+
+/**
+ * Auto-fill a Goal / Yes-No habit from Tracking tags (`lib/time-tracking-store.ts`).
+ *
+ * Every minute painted with a pen carrying one of `tagIds` counts toward the
+ * habit for that day, week, or month (matching `WeeklyTask.frequency`). Minutes
+ * are unioned across scopes, so a minute painted "Do dishes" in Activity and
+ * "Home" in Location only counts once even if both pens carry the tag. Math
+ * lives in `lib/habit-tracking.ts`; the store bridge is `lib/habit-tracking-sync.ts`.
+ */
+export interface HabitTrackingLink {
+  /** Tag ids; a pen matches when it carries any one of them. */
+  tagIds: string[]
+  /** Converted unit for the habit value. Default `minutes`. */
+  unit?: HabitTrackingUnit
+  /** Default `add`. */
+  mode?: HabitTrackingMode
+  /** BOOLEAN habits: converted amount needed to auto-check. Default: any tracked time. */
+  threshold?: number
+  /** Default true. Keeps the tag selection when switched off. */
+  enabled?: boolean
+}
+
+/**
+ * Phone-ingest keyword that marks this habit when the *whole* message matches
+ * (see `lib/ingest/text-triggers.ts`). Editable on the habit in Settings / Habits.
+ */
+export interface HabitTextTrigger {
+  id: string
+  /** Whole-message keyword, e.g. `hemisync`, `read`, `exercise`, `chess`. */
+  keyword: string
+  /**
+   * - `done` — bare keyword (optional trailing note) marks complete
+   * - `quantity` — keyword + number + optional unit words + trailing note
+   * - `score` — keyword + connector (default `score`) + number + trailing note
+   */
+  mode: "done" | "quantity" | "score"
+  /** Unit tokens consumed after the number (`pages`, `min`, …). */
+  unitWords?: string[]
+  /** Phrase between keyword and number for `score` mode (default `score`). */
+  connector?: string
+}
+
 export interface WeeklyTask {
   id: string
   name: string
@@ -602,6 +785,73 @@ export interface WeeklyTask {
   rewardValue?: number
   frequency?: HabitFrequency // default daily
   incrementalData?: IncrementalHabitPersisted
+  /** Optional auto-fill from Tracking tags (daily / weekly / monthly GOAL/BOOLEAN habits). */
+  trackingLink?: HabitTrackingLink
+  /**
+   * How long completing this habit is assumed to take, so the Done row it writes
+   * carries a duration and a clock window instead of a bare date
+   * (`lib/habit-time-estimate.ts`).
+   */
+  timeEstimate?: HabitTimeEstimate
+  /**
+   * Telegram / phone keywords for this habit. Empty/undefined falls back to
+   * built-in presets that match the habit name (`hemisync`, `read`, …).
+   */
+  textTriggers?: HabitTextTrigger[]
+  /** User pin: stays until they turn it off. Adds +1 to effective priority. */
+  priorityPinned?: boolean
+  /** Drop missed-period auto-priority (manual deprioritize). Pin still applies. */
+  priorityMuted?: boolean
+  /** When the habit was created (ISO). Sort by date created; stamped on add. */
+  createdAt?: string
+  /** Row gem (catalog path or uploaded data URL). Assigned at create / one-time migrate; never a type or category default. */
+  gem?: string
+  /**
+   * Log blocks that lift this daily habit (`lib/habit-exemption.ts`).
+   * `undefined` uses the name preset. `[]` means that preset was cleared.
+   * All-nighter nights are the morning date: `evening-before` is the day that
+   * led into the night, `morning-of` is that morning.
+   */
+  logExemptions?: HabitLogExemption[]
+  /**
+   * Sleep clock that checks this habit (`lib/habit-connections.ts`).
+   * `undefined` uses the name preset. `null` means the preset was turned off.
+   */
+  sleepLink?: HabitSleepLink | null
+  /**
+   * Next-action list that checks this habit. `undefined` uses the name preset.
+   * `null` means that preset was turned off. The to-do block is the template.
+   */
+  listLink?: HabitListLink | null
+}
+
+/** A logged fact that can lift a daily habit. All-nighter is the morning date. */
+export type HabitLogSignal = "all-nighter"
+
+/**
+ * Which day that log lifts.
+ * `evening-before` — the day that led into the night (bedtime).
+ * `morning-of` — the morning the night is keyed by (wake, dream).
+ */
+export type HabitLogDay = "evening-before" | "morning-of"
+
+export interface HabitLogExemption {
+  when: HabitLogSignal
+  day: HabitLogDay
+}
+
+/** Sleep log that can check a daily yes/no habit. Thresholds use sleep-offset minutes. */
+export interface HabitSleepLink {
+  end: "bed" | "wake"
+  /** Met when the logged end is at or before this offset. */
+  beforeMinutes: number
+}
+
+/** Done next actions on a named list that can check a daily yes/no habit. */
+export interface HabitListLink {
+  listName: string
+  /** How many finished next actions on that list complete the day. */
+  count: number
 }
 
 export interface TaskCompletion {
@@ -610,6 +860,21 @@ export interface TaskCompletion {
   goal?: number
   text?: string
   incrementalValues?: Record<string, number>
+  /** Part of `value` contributed by the habit's tracking link. */
+  trackedValue?: number
+  /** Part of `value` the user typed, kept so tracked time can recompute `value`. */
+  manualValue?: number
+  /** BOOLEAN habits: `completed` was set by the tracking link, not by hand. */
+  trackedCompleted?: boolean
+  /** BOOLEAN habits: checked because the sleep log met this habit's clock. */
+  sleepCompleted?: boolean
+  /** BOOLEAN habits: checked because enough next actions on the linked list were done. */
+  listCompleted?: boolean
+  /**
+   * Wall clock of the last edit to this cell. A stale window's copy of the
+   * day loses to this, so a check cannot be unmarked by an older snapshot.
+   */
+  updatedAt?: number
 }
 
 // Updated to use date strings as keys instead of day names
@@ -649,6 +914,12 @@ export interface List {
   order?: number // for custom ordering
   /** Parent list for nested lists / sublists (Feature 8, Worker H). */
   parentListId?: string
+  /**
+   * Other lists that receive this list's items (membership, not nesting).
+   * A→B is stored only on A; B's settings derives "receives from A".
+   * See `components/Lists/LIST_LINKS.md`.
+   */
+  linkedTargetListIds?: string[]
   // When true (default), items in this list are surfaced in the Scheduler.
   scheduleable?: boolean
   // Optional custom icon (orb path or uploaded data URL) for the Lists view.
@@ -677,10 +948,41 @@ export interface List {
   /** Attribute ids shown in the list table view (defaults to all itemAttributes). */
   displayedAttributes?: string[]
   /**
+   * Per-list spreadsheet layout (sort / filter / freeze / widths / visible
+   * column ids). Independent of `displayedAttributes` and `detailsColumns`.
+   */
+  sheetConfig?: import("@/lib/spreadsheet-contract").SheetViewConfig
+  /**
+   * Ordered Details-table column ids for this list (attribute ids and
+   * `__field_*__` built-ins). Independent of `sheetConfig.columnIds`.
+   * Undefined = current Details defaults (schema / `displayedAttributes`, plus
+   * Next Actions urgency / importance / scheduled). `[]` = Name only.
+   */
+  detailsColumns?: string[]
+  /**
    * Which display modes are *offered* (selectable via the toolbar) for this
    * list. Undefined = all modes offered (backwards-compatible default).
    */
   enabledDisplays?: ListDisplayMode[]
+  /**
+   * Extra checklist tick columns besides Completed. Undefined = Completed only.
+   * `"missed"` adds a Missed opportunity checkbox. List Settings → View mode
+   * settings → Checklist view mode settings.
+   */
+  checklistCheckboxVars?: ChecklistCheckboxVar[]
+  /**
+   * Default view reading-row chrome for this list. Undefined = built-in layout
+   * (pip, 16px orb, name, type, U·I, date, first attribute chips). Custom
+   * prefs apply only when `custom === true`. Independent of Details
+   * `detailsColumns` and Spreadsheet `sheetConfig`.
+   * List Settings → View mode settings → Default view mode settings.
+   */
+  defaultView?: ListDefaultView
+  /**
+   * Next Actions auto-archive list. Set when sync creates or adopts
+   * **Completed** / **Missed Opportunities**.
+   */
+  autoArchive?: "completed" | "missed"
   /**
    * List-scoped automation/validation rules. These compose with the item type's
    * rules and apply to an item across *all* its lists (e.g. on a "Books to Buy"
@@ -714,6 +1016,37 @@ export type ItemDetailPanel =
  */
 export const LIST_DISPLAY_MODES = ["default", "checklist", "icons", "table", "spreadsheet"] as const
 export type ListDisplayMode = (typeof LIST_DISPLAY_MODES)[number]
+
+/** Ticks shown in Lists checklist view. Default is Completed only. */
+export const CHECKLIST_CHECKBOX_VARS = ["completed", "missed"] as const
+export type ChecklistCheckboxVar = (typeof CHECKLIST_CHECKBOX_VARS)[number]
+
+/** Chrome bits a list can show or hide on Default reading rows. */
+export const DEFAULT_VIEW_CHROME_KEYS = [
+  "pip",
+  "orb",
+  "type",
+  "priority",
+  "date",
+  "tags",
+  "listNames",
+  "estimate",
+  "description",
+  "attributeChips",
+] as const
+export type DefaultViewChromeKey = (typeof DEFAULT_VIEW_CHROME_KEYS)[number]
+export type DefaultViewDensity = "comfortable" | "compact"
+
+/**
+ * Per-list Default display. Undefined / `custom !== true` keeps the built-in
+ * reading row. Extra attribute ids are compact meta only — not a column grid.
+ */
+export interface ListDefaultView {
+  custom?: boolean
+  show?: Partial<Record<DefaultViewChromeKey, boolean>>
+  extraAttributeIds?: string[]
+  density?: DefaultViewDensity
+}
 
 export function isListDisplayMode(value: unknown): value is ListDisplayMode {
   return typeof value === "string" && (LIST_DISPLAY_MODES as readonly string[]).includes(value)
@@ -891,6 +1224,25 @@ export interface PeriodReview {
     intentions?: string[]
     affirmations?: string[]
     postponedTaskIds?: string[]
+    /** Did not sleep — skips bed/wake/dream. */
+    allNighter?: boolean
+    /** To-do items created during the morning ritual. */
+    todosAddedIds?: string[]
+    /** 3–5 highest-priority to-do ids for the day (Home → To Do). */
+    priorityTaskIds?: string[]
+    /** 1–3 daily habit ids prioritized for the day (Home → Habits). */
+    priorityHabitIds?: string[]
+    /** True when this ritual appended a day-plan log entry. */
+    dayPlanLogged?: boolean
+    mustDo?: string
+    mustNotDo?: string
+    newEvents?: string
+    excitedAbout?: string
+    bestDayWhy?: string
+    /** Morning gratitude list (often 10). Distinct from evening `gratitude`. */
+    gratitude?: string[]
+    /** Where the ritual was completed — label text-pipeline rows in Analytics. */
+    source?: "telegram" | "desktop"
   }
   /** Why each carried-over/skipped task was blocked, keyed by taskId. */
   blockedReasons?: Record<string, BlockedReason>
