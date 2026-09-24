@@ -375,6 +375,12 @@ export interface Task extends Item {
   scheduledWeek?: string // Week range (e.g., "2024-05-19_2024-05-25")
   scheduledMonth?: string // Month (e.g., "2024-05")
   scheduledYear?: string // Year (e.g., "2024")
+  /**
+   * Prior period placements kept when an unfinished schedule rolls up one level.
+   * Gray past funnel cells and analytics read these; automatic roll-up does not
+   * increment daysPushed / weeksPushed / monthsPushed.
+   */
+  schedulePlacements?: SchedulePlacement[]
   /** How many times this task was pushed forward in the To-Do day/week/month views. */
   daysPushed?: number
   weeksPushed?: number
@@ -1143,6 +1149,15 @@ export interface Goal {
 
 // Scheduling types
 export type SchedulePeriod = "always" | "year" | "month" | "week" | "day"
+
+/** One recorded period placement (live or historical after roll-up). */
+export type SchedulePlacementPeriod = Exclude<SchedulePeriod, "always">
+
+export interface SchedulePlacement {
+  period: SchedulePlacementPeriod
+  /** Day `YYYY-MM-DD`, week range, month `YYYY-MM`, or year `YYYY`. */
+  value: string
+}
 
 export interface ScheduleBox {
   id: string

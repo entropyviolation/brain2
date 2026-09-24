@@ -5,6 +5,10 @@
  * notify the UI whenever a task transitions to completed — regardless of which
  * screen completed it (checkbox, list, scheduler, …). The global completion
  * popup subscribes here so it appears on *every* completion.
+ *
+ * Batch paths (Scheduler selection Mark complete) can wrap work in
+ * `runWithoutCompletionPopup` so points and archive lists still run while the
+ * modal queue stays quiet.
  */
 "use client"
 
@@ -23,11 +27,30 @@ export interface TaskCompletedEvent {
 type Listener = (event: TaskCompletedEvent) => void
 
 const listeners = new Set<Listener>()
+let suppressPopupDepth = 0
 
 /** Subscribe to task-completed events. Returns an unsubscribe function. */
 export function onTaskCompleted(listener: Listener): () => void {
   listeners.add(listener)
   return () => listeners.delete(listener)
+}
+
+/** True when callers should emit the global completion popup. */
+export function shouldEmitCompletionPopup(): boolean {
+  return suppressPopupDepth === 0
+}
+
+/**
+ * Run a completion batch without queuing the global popup. Points and status
+ * still update through the normal store path.
+ */
+export function runWithoutCompletionPopup<T>(fn: () => T): T {
+  suppressPopupDepth++
+  try {
+    return fn()
+  } finally {
+    suppressPopupDepth--
+  }
 }
 
 /** Emit a task-completed event to all subscribers. */

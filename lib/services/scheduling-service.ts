@@ -2,15 +2,21 @@
  * lib/services/scheduling-service.ts — Task scheduling workflow
  *
  * Scheduling operations on top of the repository: place a task in a period
- * bucket, pin it to a specific day + time (the agenda), unschedule it, or push
- * it forward one period. Field math is delegated to `lib/scheduling.ts` and
- * `lib/item-utils.ts` so the Scheduler UI and this service stay in lockstep.
+ * bucket, pin it to a specific day + time (the agenda), unschedule it, push it
+ * forward one period, or roll an unfinished past period up one level while
+ * keeping the prior placement in `schedulePlacements`. Field math is delegated
+ * to `lib/scheduling.ts` and `lib/item-utils.ts` so the Scheduler UI and this
+ * service stay in lockstep.
  *
  * Spec: §7 (Scheduler period funnel).
  */
 import type { Task, SchedulePeriod } from "@/lib/types"
 import { taskRepository, type TaskRepository } from "@/lib/data/task-repository"
-import { scheduleFieldsForPeriod, clearedScheduleFields } from "@/lib/scheduling"
+import {
+  scheduleFieldsForPeriod,
+  clearedScheduleFields,
+  rollUpScheduleFieldsCascaded,
+} from "@/lib/scheduling"
 import { pushTaskOnePeriod } from "@/lib/item-utils"
 
 /** Schedule a task to a period bucket (year/month/week/day or always=clear). */
@@ -68,6 +74,39 @@ export function clearScheduledTime(id: string, repo: TaskRepository = taskReposi
   const task = repo.getById(id)
   if (!task) return undefined
   return repo.update({ ...task, scheduledTime: undefined })
+}
+
+/**
+ * Roll unfinished past period assignments up one (or more) levels.
+ * day → week → month → year → fully unscheduled. Records each vacated period
+ * on `schedulePlacements` so gray past cells still show what was planned.
+ * Does not increment daysPushed / weeksPushed / monthsPushed. Completed and
+ * missed stay put. An explicit push already wrote a current/future period, so
+ * it is not rolled. Returns the ids that were updated.
+ */
+export function rollUpExpiredSchedules(
+  now: Date = new Date(),
+  repo: TaskRepository = taskRepository,
+): string[] {
+  const rolled: string[] = []
+  for (const task of repo.getAll()) {
+    const patch = rollUpScheduleFieldsCascaded(task, now)
+    if (!patch) continue
+    repo.update({ ...task, ...patch })
+    rolled.push(task.id)
+  }
+  return rolled
+}
+
+/**
+ * @deprecated Prefer `rollUpExpiredSchedules`. Kept as an alias so older call
+ * sites keep working during the carry-over switch.
+ */
+export function releaseExpiredDaySchedules(
+  now: Date = new Date(),
+  repo: TaskRepository = taskRepository,
+): string[] {
+  return rollUpExpiredSchedules(now, repo)
 }
 
 /** Push a task forward one period in the day/week/month To-Do views. */
