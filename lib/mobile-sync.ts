@@ -1,5 +1,5 @@
 /**
- * lib/mobile-sync.ts — Client for the COGS sync hub.
+ * lib/mobile-sync.ts — Client for the Brain2 sync hub.
  *
  * Prefer same-origin `/api/sync` (unified `npm run dev` server). Fall back to
  * LAN host:3847 only for Capacitor/static shells that aren't on the Next port.
@@ -9,8 +9,10 @@ import { createFullBackup, parseBackup, restoreBackup, type Backup } from "@/lib
 import { useTaskStore } from "@/lib/task-store"
 import { useEventStore } from "@/lib/event-store"
 
+import { persistKey, readAliasedLocal, writeAliasedLocal } from "@/lib/storage-keys"
+
 export const MOBILE_SYNC_DEFAULT_URL = "http://127.0.0.1:3847"
-export const MOBILE_SYNC_URL_KEY = "cogs-mobile-sync-url"
+export const MOBILE_SYNC_URL_KEY = persistKey("mobile-sync-url")
 export const MOBILE_SYNC_PORT = 3847
 
 export type MobileSyncStatusResponse = {
@@ -78,7 +80,7 @@ export function readMobileSyncUrl(): string {
   if (typeof window === "undefined") return MOBILE_SYNC_DEFAULT_URL
   // Always prefer same-origin when we're on http(s) Next — ignores stale :3847 prefs.
   if (isHttpPageOrigin()) return window.location.origin
-  const stored = localStorage.getItem(MOBILE_SYNC_URL_KEY)?.trim()
+  const stored = readAliasedLocal(MOBILE_SYNC_URL_KEY)?.trim()
   if (stored) {
     if (isLoopbackUrl(stored) && !isLoopbackHost(window.location.hostname)) {
       return guessMobileSyncUrl()
@@ -90,7 +92,7 @@ export function readMobileSyncUrl(): string {
 
 export function writeMobileSyncUrl(url: string): void {
   const cleaned = normalizeBaseUrl(url.trim() || guessMobileSyncUrl())
-  localStorage.setItem(MOBILE_SYNC_URL_KEY, cleaned)
+  writeAliasedLocal(MOBILE_SYNC_URL_KEY, cleaned)
 }
 
 /** True when this client has essentially no user content (safe to auto-seed). */

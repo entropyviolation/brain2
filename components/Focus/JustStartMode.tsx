@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button"
 import { Check, X, Play, Pause, RotateCcw, Sparkles } from "lucide-react"
 import { useTaskStore } from "@/lib/task-store"
 import { completeSubtask, nextMolecularStep, subtaskProgress } from "@/lib/molecular"
+import { itemTitle } from "@/lib/item-utils"
 
 const FOCUS_SECONDS = 120
 
@@ -71,7 +72,7 @@ export default function JustStartMode({ taskId, onClose }: { taskId: string; onC
   const pct = Math.round(((FOCUS_SECONDS - secondsLeft) / FOCUS_SECONDS) * 100)
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-neutral-950 text-neutral-50 p-6">
+    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-neutral-950 text-neutral-50 p-6" data-ui-name="Just Start" data-ui-docs="components/Focus/README.md">
       <Button
         variant="ghost"
         size="icon"
@@ -88,7 +89,7 @@ export default function JustStartMode({ taskId, onClose }: { taskId: string; onC
             <>
               <div className="space-y-2">
                 <p className="text-xs uppercase tracking-[0.3em] text-neutral-500">Just start — one step</p>
-                <p className="text-sm text-neutral-400 truncate">{task.description}</p>
+                <p className="text-sm text-neutral-400 truncate">{itemTitle(task)}</p>
               </div>
 
               <div className="space-y-4">

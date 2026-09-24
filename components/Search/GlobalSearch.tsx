@@ -185,7 +185,7 @@ export function GlobalSearch({ open, onOpenChange, onSelect, limit = 20 }: Globa
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="top-[20%] translate-y-0 gap-0 overflow-hidden p-0 sm:max-w-xl">
+      <DialogContent className="top-[20%] translate-y-0 gap-0 overflow-hidden p-0 sm:max-w-xl" data-ui-name="Search" data-ui-docs="components/Search/README.md">
         <DialogTitle className="sr-only">Search items</DialogTitle>
         <div className="border-b p-2">
           <Input

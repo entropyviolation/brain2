@@ -9,6 +9,7 @@
 import { useState, type FormEvent } from "react"
 import { Button } from "@/components/ui/button"
 import { validateMobileCredentials, writeMobileSession } from "@/lib/mobile-auth"
+import { APP_NAME } from "@/lib/app-brand"
 
 type Props = {
   onLoggedIn: () => void
@@ -33,7 +34,7 @@ export function MobileLogin({ onLoggedIn }: Props) {
   return (
     <div className="cogs-mobile-login">
       <form className="cogs-mobile-login-card" onSubmit={handleSubmit}>
-        <h1>COGS Mobile</h1>
+        <h1>{APP_NAME} Mobile</h1>
         <p>Sign in to open the Home tab on this device.</p>
 
         <label htmlFor="cogs-mobile-username">Username</label>

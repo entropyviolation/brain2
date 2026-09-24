@@ -13,11 +13,13 @@ import { Reviews } from "@/components/Reviews/reviews"
 import { Inbox } from "@/components/inbox"
 import { EnhancedBulkAdd } from "@/components/enhanced-bulk-add"
 import { NotesIngest } from "@/components/notes-ingest"
+import { IphoneNotesStore } from "@/components/iphone-notes-store"
 import { TaskDetailPopup } from "@/components/ItemDetail/ItemDetailPopup"
 import { MobileLogin } from "@/components/Mobile/MobileLogin"
 import { MobilePullCard } from "@/components/Mobile/MobilePullCard"
 import { PersistStatusBanner } from "@/components/PersistStatusBanner"
 import { installTouchDnD } from "@/components/Mobile/install-touch-dnd"
+import { APP_NAME } from "@/lib/app-brand"
 import { clearMobileSession, readMobileSession } from "@/lib/mobile-auth"
 import { Button } from "@/components/ui/button"
 import "@/components/Mobile/mobile.css"
@@ -49,13 +51,14 @@ export function MobileApp() {
       <header className="cogs-mobile-chrome">
         <div className="cogs-mobile-topbar">
           <div className="cogs-mobile-brand">
-            <h1>COGS</h1>
+            <h1>{APP_NAME}</h1>
             <span>{tab === "home" ? "Home" : "Lists"}</span>
           </div>
           <div className="cogs-mobile-topbar-actions">
             <Inbox onTaskSelect={setSelectedTaskId} />
             <EnhancedBulkAdd />
             <NotesIngest />
+            <IphoneNotesStore />
             <Reviews />
             <Button
               type="button"

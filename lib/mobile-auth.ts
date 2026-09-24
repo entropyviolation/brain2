@@ -6,10 +6,13 @@
  * desktop localStorage keys or app data stores.
  */
 
+import { persistKey } from "@/lib/storage-keys"
+
 export const MOBILE_AUTH_USER = "admin"
 export const MOBILE_AUTH_PASSWORD = "admin"
 
-const SESSION_KEY = "cogs-mobile-auth-session"
+const SESSION_KEY = persistKey("mobile-auth-session")
+const LEGACY_SESSION_KEY = "cogs-mobile-auth-session"
 
 export type MobileAuthSession = {
   username: string
@@ -23,7 +26,7 @@ export function validateMobileCredentials(username: string, password: string): b
 export function readMobileSession(): MobileAuthSession | null {
   if (typeof window === "undefined") return null
   try {
-    const raw = sessionStorage.getItem(SESSION_KEY)
+    const raw = sessionStorage.getItem(SESSION_KEY) ?? sessionStorage.getItem(LEGACY_SESSION_KEY)
     if (!raw) return null
     const parsed = JSON.parse(raw) as MobileAuthSession
     if (!parsed?.username || parsed.username !== MOBILE_AUTH_USER) return null
@@ -39,9 +42,11 @@ export function writeMobileSession(username: string): MobileAuthSession {
     loggedInAt: new Date().toISOString(),
   }
   sessionStorage.setItem(SESSION_KEY, JSON.stringify(session))
+  sessionStorage.setItem(LEGACY_SESSION_KEY, JSON.stringify(session))
   return session
 }
 
 export function clearMobileSession(): void {
   sessionStorage.removeItem(SESSION_KEY)
+  sessionStorage.removeItem(LEGACY_SESSION_KEY)
 }

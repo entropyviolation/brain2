@@ -5,7 +5,7 @@ Owner: **Worker A**.
 
 ## `JustStartMode`
 
-A distraction-free, full-screen overlay for **one** stalled task. It shows only:
+A distraction-free, full-screen overlay (`data-ui-name="Just Start"`, z-[100]; Names plate still paints above it) for **one** stalled task. It shows only:
 
 - the task's **single smallest next molecular step** (`nextMolecularStep` from
   `lib/molecular.ts`) and that step's self-contained `context`,
@@ -44,3 +44,5 @@ open/close state. `Escape` closes it.
 The task needs `subtasks` (molecular steps). Add them from the task detail
 **Subtasks** tab → "Split into steps", and optionally flag the atomic ones as
 MOLECULAR so they're surfaced first.
+
+Planned, not built ([`docs/JungBrain2.md`](../../docs/JungBrain2.md) JG-7): when the open item has been pushed three or more times, or sits in Regret, a second button **Ask sideways** draws one prompt from a user-written Sideways list. The two-minute step stays the primary control.

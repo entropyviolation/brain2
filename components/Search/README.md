@@ -1,6 +1,6 @@
 # Search — Global Command Palette (Phase 6a)
 
-A Cmd/Ctrl-K command palette that searches across all items (tasks, notes, and
+A Cmd/Ctrl-K command palette across **Brain2** that searches across all items (tasks, notes, and
 any unified `Item`) by title/description, tags, and free-text attributes/notes.
 
 ## Files
@@ -9,7 +9,7 @@ any unified `Item`) by title/description, tags, and free-text attributes/notes.
 | --- | --- |
 | `../../lib/search.ts` | **Pure, framework-free** ranked search. `searchItems(query, items, opts?)` returns `SearchResult[]` (`{ item, score, matchedOn }`). Case-insensitive, multi-term AND, deterministic. Also exports the `SearchResult` / `SearchField` types and a `displayTitle(item)` helper. No React / store / I/O dependencies. |
 | `../../lib/search.test.ts` | Vitest unit tests: ranking order (title > tag > notes), multi-term AND across fields, case-insensitivity, empty query → `[]`, tag matches, no-match, determinism, and the `limit` option. |
-| `GlobalSearch.tsx` | The palette UI. Built on the shadcn `dialog` + `input` primitives (no `command` primitive exists in `components/ui/`). Reads items via `taskRepository.getAll()`, runs `searchItems`, and renders ranked results with Up/Down/Enter/Esc keyboard navigation. |
+| `GlobalSearch.tsx` | The palette UI (`data-ui-name="Search"` on dialog content). Built on the shadcn `dialog` + `input` primitives (no `command` primitive exists in `components/ui/`). Reads items via `taskRepository.getAll()`, runs `searchItems`, and renders ranked results with Up/Down/Enter/Esc keyboard navigation. |
 | `useGlobalSearchHotkey.ts` | Self-contained hook returning `{ open, setOpen }`, toggling on Cmd/Ctrl-K via a single `keydown` listener. Mounts nothing globally. |
 
 ## Ranking design

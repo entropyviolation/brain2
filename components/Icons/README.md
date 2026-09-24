@@ -1,6 +1,11 @@
 # Icons
 
-The single shared module for COGS's icon/orb system. Consolidates what used to live
+The single shared module for Brain2's icon/orb system — the **magical contents** of
+the curiosity-cabinet look (photographed shells, marbles, jade, opal). Chrome
+stays Win95 furniture; these objects stay luminous and personal. See
+[`docs/DESIGN_STYLE.md`](../../docs/DESIGN_STYLE.md).
+
+Consolidates what used to live
 in `components/Lists/lib/icon-utils.tsx`, `components/Lists/dialogs/OrbPickerDialog.tsx`,
 `lib/orbs-manifest.ts`, and `lib/lists-icon-grid.ts`.
 

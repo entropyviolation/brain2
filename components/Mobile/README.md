@@ -1,6 +1,6 @@
 # `components/Mobile/` — iOS / sideload Home shell
 
-Mobile entry for the **Home** tab only (Habits, Plan, To Do, Goals, Tracking — including nested sub-tabs). Reuses `HomeDashboard` unchanged so desktop behavior and data stay intact.
+Mobile entry for the **Home** tab only (Habits, Plan, To Do, Goals, Tracking — including nested sub-tabs). Native / PWA name is **BRAIN2**. Reuses `HomeDashboard` unchanged so desktop behavior and data stay intact.
 
 ## Manual hub (no always-on sync)
 
@@ -12,7 +12,7 @@ seeds the hub (`lib/mobile-sync.ts`). There is no continuous live-sync engine.
 | Path | Role |
 |------|------|
 | `app/mobile/page.tsx` | Route `/mobile/` |
-| `MobileApp.tsx` | Login gate + header (incl. **From Notes**) + `HomeDashboard` / Lists. Listing Apple Notes still needs Mac Notes.app. |
+| `MobileApp.tsx` | Login gate + sticky full-width topbar (incl. **From Notes**, **Phone Notes**, shelf shadow) + `HomeDashboard` / Lists. Listing Apple Notes still needs Mac Notes.app. Phone Notes is the Telegram Shortcut queue. |
 | `MobileLogin.tsx` | Credentials: **admin** / **admin** |
 | `MobilePullCard.tsx` | One-tap manual pull from the shared hub |
 | `lib/mobile-auth.ts` | sessionStorage login (no app-data keys) |
@@ -24,7 +24,7 @@ seeds the hub (`lib/mobile-sync.ts`). There is no continuous live-sync engine.
 **not** auto push/pull. To copy desktop data onto a phone:
 
 1. On your Mac: stop old servers, then `npm run dev`
-2. Open desktop COGS in the browser at the printed local URL
+2. Open desktop Brain2 in the browser at the printed local URL
 3. Settings → **Force push now** (seeds `data/mobile-sync.json`)
 4. Phone (same Wi‑Fi): open the printed `http://<mac-lan-ip>:<port>/mobile/` → login `admin` / `admin`
 5. Tap **Pull desktop data onto phone**

@@ -4,7 +4,7 @@
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  background: var(--background, #c0c0c0);
+  background: var(--background, var(--chrome-face, #c0c0c0));
   color: var(--foreground, #000);
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
@@ -14,7 +14,8 @@
   position: sticky;
   top: 0;
   z-index: 40;
-  background: #c0c0c0;
+  background: var(--chrome-face, #c0c0c0);
+  box-shadow: 0 2px 0 var(--chrome-frame, #0a0a0a), 0 4px 6px rgba(0, 0, 0, 0.22);
 }
 
 .cogs-mobile-topbar {
@@ -24,7 +25,7 @@
   padding: 0.5rem 0.65rem;
   padding-top: calc(0.5rem + env(safe-area-inset-top, 0px));
   border-bottom: 1px solid #808080;
-  background: #c0c0c0;
+  background: var(--chrome-face, #c0c0c0);
 }
 
 .cogs-mobile-brand {
@@ -35,7 +36,9 @@
 
 .cogs-mobile-brand h1 {
   font-size: 1.05rem;
-  font-weight: 700;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   margin: 0;
 }
 
@@ -108,7 +111,7 @@
   padding: 1.25rem;
   background:
     radial-gradient(circle at 20% 10%, rgba(255, 255, 255, 0.55), transparent 45%),
-    linear-gradient(160deg, #9aa4b2 0%, #c0c0c0 45%, #8a9099 100%);
+    linear-gradient(160deg, #9aa4b2 0%, var(--chrome-face, #c0c0c0) 45%, #8a9099 100%);
 }
 
 .cogs-mobile-login-card {
@@ -116,7 +119,7 @@
   padding: 1.25rem;
   border: 2px solid #808080;
   box-shadow: inset 1px 1px 0 #fff, 2px 2px 0 #404040;
-  background: #c0c0c0;
+  background: var(--chrome-face, #c0c0c0);
 }
 
 .cogs-mobile-login-card h1 {
@@ -283,7 +286,7 @@
   left: 0;
   z-index: 2;
   background: inherit;
-  background-color: #c0c0c0;
+  background-color: var(--chrome-face, #c0c0c0);
 }
 
 /* Plan panel mobile layout */

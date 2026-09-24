@@ -22,6 +22,7 @@
  * then id (asc) so the same inputs always produce the same ordering.
  */
 import type { Item, Task, AttributeValue } from "@/lib/types"
+import { itemTitle } from "@/lib/item-utils"
 
 /** The field category a query term matched on, ordered by descending weight. */
 export type SearchField = "title" | "tag" | "attribute"
@@ -224,6 +225,5 @@ function compareResults(a: SearchResult, b: SearchResult): number {
 
 /** Best-effort display label for an item (title, else description, else id). */
 export function displayTitle(item: Item): string {
-  const task = item as Partial<Task>
-  return item.title || task.description || item.id
+  return itemTitle(item as Partial<Task>) || item.id
 }

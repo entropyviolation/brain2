@@ -4,15 +4,24 @@
  * File bytes used to live as data URLs inside the Zustand JSON (localStorage,
  * ~5–10MB origin quota). New attachments are stored in IndexedDB (or an
  * in-memory map when IDB is missing — tests/SSR) and `FileValue.uri` holds
- * `idb:<id>`. Existing `data:` URLs keep working and are migrated on hydrate.
+ * `idb:<id>`. Live IndexedDB is `cogs-attachments`; Demo is
+ * `brain2-demo-attachments`. Existing `data:` URLs keep working and are
+ * migrated on hydrate. `image` / `multiimage` attributes hold the same
+ * `idb:<id>` URI (`migrateTaskImageAttributes` moves pasted data URLs out).
  *
  * Electron's renderer is Chromium, so IndexedDB is the shared web/desktop path.
  * A native userData file store can reuse the same uri field later.
  */
 import type { FileValue, Task } from "@/lib/types"
+import { isDemoProfile } from "@/lib/storage-keys"
 
 export const ATTACHMENT_URI_PREFIX = "idb:"
-const DB_NAME = "cogs-attachments"
+const LIVE_DB_NAME = "cogs-attachments"
+const DEMO_DB_NAME = "brain2-demo-attachments"
+
+function attachmentsDbName(): string {
+  return isDemoProfile() ? DEMO_DB_NAME : LIVE_DB_NAME
+}
 const DB_VERSION = 1
 const STORE_NAME = "blobs"
 
@@ -68,7 +77,7 @@ function idbAvailable(): boolean {
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION)
+    const req = indexedDB.open(attachmentsDbName(), DB_VERSION)
     req.onupgradeneeded = () => {
       const db = req.result
       if (!db.objectStoreNames.contains(STORE_NAME)) {
@@ -115,10 +124,10 @@ export async function putAttachment(id: string, blob: Blob, meta: { name: string
     mime: meta.mime || blob.type || "application/octet-stream",
     blob,
   }
-  if (!idbAvailable()) {
-    memory.set(id, record)
-    return attachmentUri(id)
-  }
+  // Keep the bytes even when IndexedDB rejects the write, so a full backup
+  // can still export a picture that never reached disk.
+  memory.set(id, record)
+  if (!idbAvailable()) return attachmentUri(id)
   const db = await openDb()
   try {
     await new Promise<void>((resolve, reject) => {
@@ -288,6 +297,69 @@ export async function migrateTaskFileValues(tasks: Task[]): Promise<{ tasks: Tas
             }),
           )
           nextAttrs[key] = files as typeof value
+        }
+      }
+      return changed ? { ...task, attributes: nextAttrs } : task
+    }),
+  )
+  return { tasks: next, migrated }
+}
+
+/**
+ * Content-addressed id (FNV-1a + length). Chrome and Electron each migrate their
+ * own copy of the vault, so the same picture has to yield the same `idb:<id>` in
+ * both — a random id would leave whichever window lost the hub race pointing at
+ * bytes only the other one has.
+ */
+function imageIdFor(dataUrl: string): string {
+  let hash = 0x811c9dc5
+  for (let i = 0; i < dataUrl.length; i++) {
+    hash ^= dataUrl.charCodeAt(i)
+    hash = Math.imul(hash, 0x01000193)
+  }
+  return `img_${dataUrl.length.toString(36)}_${(hash >>> 0).toString(36)}`
+}
+
+/** Store one pasted picture and return the `idb:<id>` an image attribute keeps. */
+export async function putImageDataUrl(dataUrl: string, name = "image"): Promise<string> {
+  const blob = dataUrlToBlob(dataUrl)
+  return putAttachment(imageIdFor(dataUrl), blob, { name, mime: blob.type || "image/png" })
+}
+
+function isImageDataUrl(value: unknown): value is string {
+  return typeof value === "string" && value.startsWith("data:image/")
+}
+
+/**
+ * `image` / `multiimage` attributes hold a bare URI string, not a `FileValue`,
+ * so they slipped past the file migration and kept whole pictures inside the
+ * Lists JSON: one 592KB PNG pasted into a custom attribute was 1.2MB of a 5MB
+ * origin, and every Lists *and* Tracking write failed for want of that room.
+ * Bytes move to the attachments IDB; the cell keeps `idb:<id>`.
+ */
+export async function migrateTaskImageAttributes(tasks: Task[]): Promise<{ tasks: Task[]; migrated: number }> {
+  let migrated = 0
+  const next = await Promise.all(
+    tasks.map(async (task) => {
+      const attrs = task.attributes
+      if (!attrs) return task
+      let changed = false
+      const nextAttrs: Record<string, (typeof attrs)[string]> = { ...attrs }
+      for (const [key, value] of Object.entries(attrs)) {
+        if (isImageDataUrl(value)) {
+          nextAttrs[key] = await putImageDataUrl(value, key)
+          changed = true
+          migrated += 1
+        } else if (Array.isArray(value) && value.some(isImageDataUrl)) {
+          const urls = await Promise.all(
+            value.map(async (entry) => {
+              if (!isImageDataUrl(entry)) return entry
+              migrated += 1
+              changed = true
+              return putImageDataUrl(entry, key)
+            }),
+          )
+          nextAttrs[key] = urls as typeof value
         }
       }
       return changed ? { ...task, attributes: nextAttrs } : task

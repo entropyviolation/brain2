@@ -2,10 +2,19 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import {
   APP_NAV_KEYS,
   APP_TABS,
+  docsScrollSlot,
   readListsNavigation,
+  readScrollOffset,
+  readStoredDate,
+  readStoredId,
+  readStoredRecord,
   readStoredTab,
   requestNavigateToList,
   writeListsNavigation,
+  writeScrollOffset,
+  writeStoredDate,
+  writeStoredId,
+  writeStoredRecordField,
   writeStoredTab,
 } from "@/lib/app-navigation"
 import { resetLocalStorage } from "@/tests/test-utils"
@@ -52,5 +61,44 @@ describe("app-navigation", () => {
     })
     expect(handler).toHaveBeenCalledTimes(1)
     window.removeEventListener("cogs-navigate-to-list", handler)
+  })
+
+  it("reads and writes optional ids", () => {
+    expect(readStoredId(APP_NAV_KEYS.docsDocId)).toBeNull()
+    writeStoredId(APP_NAV_KEYS.docsDocId, "doc-1")
+    expect(readStoredId(APP_NAV_KEYS.docsDocId)).toBe("doc-1")
+    writeStoredId(APP_NAV_KEYS.docsDocId, null)
+    expect(readStoredId(APP_NAV_KEYS.docsDocId)).toBeNull()
+  })
+
+  it("reads and writes per-id record fields", () => {
+    writeStoredRecordField(APP_NAV_KEYS.opsPanel, "op-1", "timeline")
+    writeStoredRecordField(APP_NAV_KEYS.opsPanel, "op-2", "log")
+    expect(readStoredRecord(APP_NAV_KEYS.opsPanel)).toEqual({
+      "op-1": "timeline",
+      "op-2": "log",
+    })
+    writeStoredRecordField(APP_NAV_KEYS.opsPanel, "op-1", null)
+    expect(readStoredRecord(APP_NAV_KEYS.opsPanel)).toEqual({ "op-2": "log" })
+  })
+
+  it("reads and writes local calendar dates", () => {
+    writeStoredDate(APP_NAV_KEYS.homeDate, new Date(2026, 8, 21, 15, 30))
+    const restored = readStoredDate(APP_NAV_KEYS.homeDate)
+    expect(restored?.getFullYear()).toBe(2026)
+    expect(restored?.getMonth()).toBe(8)
+    expect(restored?.getDate()).toBe(21)
+  })
+
+  it("persists document scroll offsets across a simulated refresh", () => {
+    const slot = docsScrollSlot("doc-long")
+    writeScrollOffset(slot, 840)
+    expect(readScrollOffset(slot)).toBe(840)
+    const snap = localStorage.getItem(APP_NAV_KEYS.uiScroll)
+    localStorage.clear()
+    localStorage.setItem(APP_NAV_KEYS.uiScroll, snap!)
+    expect(readScrollOffset(slot)).toBe(840)
+    writeScrollOffset(slot, 0)
+    expect(readScrollOffset(slot)).toBe(0)
   })
 })

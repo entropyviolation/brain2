@@ -10,6 +10,7 @@ import {
   isAttachmentRef,
   migrateFileValue,
   migrateTaskFileValues,
+  migrateTaskImageAttributes,
   putAttachment,
   replaceAllAttachments,
 } from "@/lib/attachments"
@@ -72,6 +73,30 @@ describe("attachments", () => {
     expect(result.migrated).toBe(1)
     const uri = (result.tasks[0].attributes?.doc as FileValue).uri
     expect(isAttachmentRef(uri)).toBe(true)
+  })
+
+  it("moves a picture pasted into an image attribute out of the Lists blob", async () => {
+    const png = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUg=="
+    const tasks: Task[] = [
+      {
+        id: "t2",
+        description: "winky bag",
+        stage: "clarified",
+        createdAt: new Date(),
+        completed: false,
+        lists: [],
+        attributes: { winky: png, shots: [png, "idb:already"], label: "not an image" },
+      },
+    ]
+    const result = await migrateTaskImageAttributes(tasks)
+    expect(result.migrated).toBe(2)
+    const attrs = result.tasks[0].attributes!
+    expect(isAttachmentRef(attrs.winky as string)).toBe(true)
+    expect((attrs.shots as string[]).map(isAttachmentRef)).toEqual([true, true])
+    expect(attrs.label).toBe("not an image")
+    expect(JSON.stringify(result.tasks)).not.toContain("base64")
+    const stored = await getAttachment(attrs.winky as string)
+    expect(stored?.mime).toBe("image/png")
   })
 
   it("round-trips the attachment export map", async () => {
