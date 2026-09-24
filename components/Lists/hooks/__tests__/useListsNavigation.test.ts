@@ -3,7 +3,7 @@ import { describe, expect, it, beforeEach } from "vitest"
 import { useListsNavigation } from "../useListsNavigation"
 import { resetLocalStorage } from "@/tests/test-utils"
 import { useTaskStore } from "@/lib/task-store"
-import { APP_NAV_KEYS } from "@/lib/app-navigation"
+import { APP_NAV_KEYS, applyListsNavigation } from "@/lib/app-navigation"
 
 describe("useListsNavigation", () => {
   beforeEach(() => {
@@ -74,5 +74,23 @@ describe("useListsNavigation", () => {
       result.current.openFolderAll("__root__")
     })
     expect(result.current.openTarget).toEqual({ type: "folder-all", folderId: "__root__" })
+  })
+
+  it("applies external navigate-to-list in place without remounting", () => {
+    const categories = [{ id: "list-456", name: "Test", color: "#000", description: "", createdAt: new Date(), order: 0 }]
+    const folders = [{ id: "folder-123", name: "Work", createdAt: new Date(), listIds: ["list-456"] }]
+    const { result } = renderHook(() => useListsNavigation(categories, folders))
+    expect(result.current.location).toBe("home")
+    expect(result.current.openTarget).toBeNull()
+
+    act(() => {
+      applyListsNavigation({
+        location: "folder-123",
+        openTarget: { type: "category", id: "list-456" },
+      })
+    })
+
+    expect(result.current.location).toBe("folder-123")
+    expect(result.current.openTarget).toEqual({ type: "category", id: "list-456" })
   })
 })

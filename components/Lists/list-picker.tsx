@@ -194,6 +194,31 @@ export function ListPicker({
 
   const renderListRow = (cat: List) => {
     const on = selected.includes(cat.id)
+    const glyph = <FolderGlyph size={fm ? 14 : 18} color={cat.color} />
+    const name = <span className="truncate">{cat.name}</span>
+    // Multi: label + checkbox (never a button wrapping Checkbox — invalid HTML / hydration error).
+    // Single: plain button. Whole-row click still toggles via the label association.
+    if (effectiveMulti) {
+      const rowClass = fm
+        ? `fm-picker-row${on ? " selected" : ""}`
+        : `list-picker-row w-full px-2 py-1.5 text-sm rounded hover:bg-muted/60${on ? " bg-muted" : ""}`
+      return (
+        <label key={cat.id} className={rowClass}>
+          {fm ? (
+            <input
+              type="checkbox"
+              checked={on}
+              onChange={() => toggle(cat.id)}
+              aria-label={`Add to ${cat.name}`}
+            />
+          ) : (
+            <Checkbox checked={on} onCheckedChange={() => toggle(cat.id)} aria-label={`Add to ${cat.name}`} />
+          )}
+          {glyph}
+          {name}
+        </label>
+      )
+    }
     if (fm) {
       return (
         <button
@@ -202,11 +227,8 @@ export function ListPicker({
           className={`fm-picker-row${on ? " selected" : ""}`}
           onClick={() => toggle(cat.id)}
         >
-          {effectiveMulti && (
-            <input type="checkbox" checked={on} readOnly aria-label={`Add to ${cat.name}`} tabIndex={-1} />
-          )}
-          <FolderGlyph size={14} color={cat.color} />
-          <span className="truncate">{cat.name}</span>
+          {glyph}
+          {name}
         </button>
       )
     }
@@ -217,9 +239,8 @@ export function ListPicker({
         className={`list-picker-row w-full px-2 py-1.5 text-sm rounded hover:bg-muted/60${on ? " bg-muted" : ""}`}
         onClick={() => toggle(cat.id)}
       >
-        {effectiveMulti && <Checkbox checked={on} className="pointer-events-none" />}
-        <FolderGlyph size={18} color={cat.color} />
-        <span className="truncate">{cat.name}</span>
+        {glyph}
+        {name}
       </button>
     )
   }

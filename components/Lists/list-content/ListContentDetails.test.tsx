@@ -63,7 +63,7 @@ describe("ListContentDetails columns", () => {
   it("defaults to schema attributes in declaration order", () => {
     renderDetails(books)
     const headers = headerTexts()
-    expect(headers).toEqual(["✓", "Name", "Author", "Pages", "Actions"])
+    expect(headers).toEqual(["Name", "Author", "Pages", "Actions"])
     expect(screen.getByText("Herbert")).toBeInTheDocument()
   })
 
@@ -73,15 +73,46 @@ describe("ListContentDetails columns", () => {
       detailsColumns: ["pages", builtinColumnId("importance"), "author"],
       sheetConfig: { columnIds: ["author"] },
     })
-    expect(headerTexts()).toEqual(["✓", "Name", "Pages", "Importance", "Author", "Actions"])
+    expect(headerTexts()).toEqual(["Name", "Pages", "Importance", "Author", "Actions"])
     expect(screen.getByText("884")).toBeInTheDocument()
     expect(screen.getByText("4")).toBeInTheDocument()
   })
 
   it("empty detailsColumns hides extras without dropping Name", () => {
     renderDetails({ ...books, detailsColumns: [] })
-    expect(headerTexts()).toEqual(["✓", "Name", "Actions"])
+    expect(headerTexts()).toEqual(["Name", "Actions"])
     expect(screen.queryByText("Author")).not.toBeInTheDocument()
     expect(screen.getByText("Dune")).toBeInTheDocument()
+  })
+
+  it("has no complete or missed checkboxes — those belong to Checklist", () => {
+    renderDetails(books)
+    expect(screen.queryByRole("button", { name: "Complete" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /Missed opportunity/i })).not.toBeInTheDocument()
+    expect(document.querySelectorAll(".fm-checkbox")).toHaveLength(0)
+  })
+
+  it("shows select-mode checkboxes without complete ticks", () => {
+    useTaskStore.getState().setLists([books])
+    useTaskStore.getState().setTasks([dune])
+    render(
+      <ListContentDetails
+        tasks={[dune]}
+        openCategory={books}
+        categories={[books]}
+        folders={[]}
+        openFolderAll={false}
+        currentFolder={null}
+        onTaskSelect={vi.fn()}
+        onCompleteTask={vi.fn()}
+        onTaskDragStart={vi.fn()}
+        onDragEnd={vi.fn()}
+        selectMode
+        selectedTaskIds={["b1"]}
+        onToggleTaskSelect={vi.fn()}
+      />,
+    )
+    expect(screen.getByRole("checkbox", { name: "Select Dune" })).toBeChecked()
+    expect(screen.queryByRole("button", { name: "Complete" })).not.toBeInTheDocument()
   })
 })

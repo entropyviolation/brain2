@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import type { Folder } from "@/lib/types"
-import { destinationFoldersForSelection, originFolderIdToUnlink, wouldCreateFolderCycle } from "@/lib/folder-selection"
+import { destinationFoldersForSelection, originFolderIdToUnlink, otherFolderIdsHoldingList, wouldCreateFolderCycle } from "@/lib/folder-selection"
 
 const folder = (partial: Partial<Folder> & Pick<Folder, "id" | "name">): Folder => ({
   createdAt: new Date(),
@@ -58,5 +58,17 @@ describe("originFolderIdToUnlink", () => {
   it("never unlinks when the origin is All", () => {
     expect(originFolderIdToUnlink({ mode: "move", originFolderId: "folder1", isAll: true })).toBeNull()
     expect(originFolderIdToUnlink({ mode: "move", originFolderId: null, isAll: true })).toBeNull()
+  })
+})
+
+describe("otherFolderIdsHoldingList", () => {
+  it("lists every non-scheduled folder that holds the list except the destination", () => {
+    const folders = [
+      folder({ id: "a", name: "A", listIds: ["books"] }),
+      folder({ id: "b", name: "B", listIds: ["books", "x"] }),
+      folder({ id: "c", name: "C", listIds: ["other"] }),
+      folder({ id: "na-sched-d-2026-08-25", name: "Tue", listIds: ["books"] }),
+    ]
+    expect(otherFolderIdsHoldingList(folders, "books", "a").sort()).toEqual(["b"])
   })
 })

@@ -86,7 +86,58 @@ export function placeTaskInList(
     originListId: opts.originListId,
     canMove: opts.canMove,
   })
-  if (unlink && unlink !== destListId) next = removeTaskFromList(next, unlink)
+  if (unlink && unlink !== destListId) {
+    next = removeTaskFromList(next, unlink)
+  } else if (opts.mode === "move" && opts.canMove && !opts.originListId) {
+    // No single origin (search / multi-home): keep dest, drop other movable memberships.
+    for (const id of [...(next.lists ?? [])]) {
+      if (id !== destListId && canMoveItemsFromOpenList(id)) {
+        next = removeTaskFromList(next, id)
+      }
+    }
+  }
   const dest = opts.lists.find((c) => c.id === destListId)
   return withListMembership(next, dest, opts.types ?? [])
+}
+
+/**
+ * Place into one or more destination lists. Search-style move (no origin) keeps
+ * every destination and drops other movable memberships in one pass.
+ */
+export function placeTaskIntoDestinationLists(
+  task: Task,
+  destListIds: string[],
+  opts: {
+    mode: ItemPlacementMode
+    originListId?: string | null
+    canMove: boolean
+    lists: List[]
+    folders: Folder[]
+    types?: ItemTypeDefinition[]
+  },
+): Task {
+  const unique = [...new Set(destListIds.filter(Boolean))]
+  if (unique.length === 0) return task
+
+  if (opts.mode === "move" && opts.canMove && !opts.originListId) {
+    let next = task
+    for (const destListId of unique) {
+      next = addTaskToList(next, destListId, opts.folders)
+      const dest = opts.lists.find((c) => c.id === destListId)
+      next = withListMembership(next, dest, opts.types ?? [])
+    }
+    const keep = new Set(unique)
+    for (const id of [...(next.lists ?? [])]) {
+      if (!keep.has(id) && canMoveItemsFromOpenList(id)) {
+        next = removeTaskFromList(next, id)
+      }
+    }
+    return next
+  }
+
+  let next = task
+  for (const destListId of unique) {
+    next = placeTaskInList(next, destListId, opts)
+  }
+  return next
 }

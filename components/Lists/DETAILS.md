@@ -1,6 +1,6 @@
 # Details table columns
 
-Details is the Lists **table** display (`currentDisplay === "table"`). Name, the complete tick, and Open stay as chrome. Extra columns are chosen per list.
+Details is the Lists **table** display (`currentDisplay === "table"`). Name and Open stay as chrome. Extra columns are chosen per list. **No complete or missed checkboxes** — those belong to Checklist view. Select mode still overlays selection checkboxes on the left when Select is on.
 
 ## Settings
 
@@ -23,7 +23,7 @@ Unchecking a Details column hides it in this list’s Details table only. It doe
 | Value | Meaning |
 |-------|---------|
 | `undefined` | Current Details defaults: schema attributes in `displayedAttributes` order (or declaration order), plus Urgency / Importance / Scheduled on Next Actions lists |
-| `[]` | No extra columns (Name / ✓ / Actions remain) |
+| `[]` | No extra columns (Name / Actions remain) |
 | `["pages", "__field_importance__", …]` | Those columns, in that order |
 
 Helpers: `lib/details-columns.ts` (`resolveDetailsColumnIds` / `defaultDetailsColumnIds`). UI: `dialogs/DetailsViewSettings.tsx`. Render: `list-content/ListContentDetails.tsx`. Folder **All Items** persists `detailsColumns` on `__all-items__{folderId}`; Home All on `__all-items__root` ([`FOLDER_ALL_ITEMS.md`](FOLDER_ALL_ITEMS.md)).

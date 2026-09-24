@@ -14,7 +14,6 @@ import {
 import { resolveDetailsColumnIds } from "@/lib/details-columns"
 import type { AttributeDefinition, Folder, List, Task } from "@/lib/types"
 import type { ListContentDetailsProps } from "./types"
-import { ListMissedButton } from "./ListMissedButton"
 
 export type { ListContentDetailsProps } from "./types"
 
@@ -93,8 +92,6 @@ export function ListContentDetails({
   openFolderAll,
   currentFolder,
   onTaskSelect,
-  onCompleteTask,
-  onMissedOpportunity,
   onTaskDragStart,
   onDragEnd,
   selectMode,
@@ -146,7 +143,6 @@ export function ListContentDetails({
       <thead>
         <tr>
           {selectMode && <th />}
-          <th>✓</th>
           <th>Name</th>
           {openFolderAll && <th>Lists</th>}
           {cols.map((c) => (
@@ -177,19 +173,6 @@ export function ListContentDetails({
                 />
               </td>
             )}
-            <td>
-              <button
-                className="fm-checkbox"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onCompleteTask(task.id)
-                }}
-                aria-label="Complete"
-              >
-                {task.completed ? "✓" : ""}
-              </button>
-              <ListMissedButton task={task} onMissed={onMissedOpportunity} />
-            </td>
             <td
               onClick={(e) => {
                 e.stopPropagation()

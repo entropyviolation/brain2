@@ -8,6 +8,7 @@ import {
   excludedListIdsForSelection,
   originListIdToUnlink,
   placeTaskInList,
+  placeTaskIntoDestinationLists,
   removeTaskFromList,
 } from "./item-selection"
 
@@ -104,16 +105,32 @@ describe("placeTaskInList", () => {
     expect(next.lists).not.toContain("work")
   })
 
-  it("does not unlink the origin when move is not allowed", () => {
-    const item = task({ id: "t1", description: "Task", lists: ["work"] })
-    const next = placeTaskInList(item, "home", {
+  it("moves off all other movable lists when there is no single origin (search)", () => {
+    const item = task({ id: "t1", description: "Task", lists: ["work", "archive"] })
+    const lists = [list("work", "Work"), list("home", "Home"), list("archive", "Archive")]
+    const folders = [folder({ id: "f1", name: "F1", listIds: ["work", "home", "archive"] })]
+    const next = placeTaskIntoDestinationLists(item, ["home"], {
       mode: "move",
-      originListId: "work",
-      canMove: false,
+      originListId: null,
+      canMove: true,
       lists,
       folders,
     })
-    expect(next.lists).toEqual(expect.arrayContaining(["work", "home"]))
+    expect(next.lists).toEqual(["home"])
+  })
+
+  it("keeps every destination list when moving from search to several lists", () => {
+    const item = task({ id: "t1", description: "Task", lists: ["work"] })
+    const lists = [list("work", "Work"), list("home", "Home"), list("errands", "Errands")]
+    const folders = [folder({ id: "f1", name: "F1", listIds: ["work", "home", "errands"] })]
+    const next = placeTaskIntoDestinationLists(item, ["home", "errands"], {
+      mode: "move",
+      originListId: null,
+      canMove: true,
+      lists,
+      folders,
+    })
+    expect(next.lists?.sort()).toEqual(["errands", "home"])
   })
 })
 

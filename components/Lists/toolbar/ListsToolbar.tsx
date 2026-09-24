@@ -56,46 +56,49 @@ export function ListsToolbar({
   onAutoOrganize,
 }: ListsToolbarProps) {
   return (
-    <div className="fm-toolbar">
-      <button className="fm-btn fm-btn-sm" disabled={!openTarget && (isHome || isAll)} onClick={onUp}>
-        ↑ Up
-      </button>
-      <div className="fm-toolbar-sep" role="separator" aria-label="New" />
-      <button className="fm-btn fm-btn-sm" onClick={onNewList}>
-        New List
-      </button>
-      <button className="fm-btn fm-btn-sm" onClick={onNewFolder}>
-        New Folder
-      </button>
-      <button className="fm-btn fm-btn-sm" onClick={onImportCsv} title="Import CSV, TSV, or Excel spreadsheet">
-        Import spreadsheet
-      </button>
-      <div className="fm-toolbar-sep" role="separator" />
-      <button className="fm-btn fm-btn-sm" onClick={onSettings}>
-        Settings
-      </button>
-      <button className={`fm-btn fm-btn-sm${selectMode ? " active" : ""}`} onClick={onToggleSelect}>
-        {selectMode ? "Cancel Select" : "Select"}
-      </button>
-      <div className="fm-toolbar-sep" role="separator" aria-label="View" />
-      <ViewModeControls
-        openTarget={openTarget}
-        folderView={folderView}
-        currentDisplay={currentDisplay}
-        location={location}
-        entryKeys={entryKeys}
-        enabledDisplays={enabledDisplays}
-        onFolderViewChange={onFolderViewChange}
-        onListDisplayChange={onListDisplayChange}
-        onAutoOrganize={onAutoOrganize}
-      />
-      <div className="fm-toolbar-spacer" />
-      <ToolbarSearch resetKey={searchResetKey} onChange={onSearchChange} />
-      {searchActive && (
-        <button className="fm-btn fm-btn-sm" onClick={onClearSearch}>
-          Clear
+    <div className="fm-toolbar-stack">
+      <div className="fm-toolbar">
+        <button className="fm-btn fm-btn-sm" disabled={!openTarget && (isHome || isAll)} onClick={onUp}>
+          ↑ Up
         </button>
-      )}
+        <div className="fm-toolbar-sep" role="separator" aria-label="New" />
+        <button className="fm-btn fm-btn-sm" onClick={onNewList}>
+          New List
+        </button>
+        <button className="fm-btn fm-btn-sm" onClick={onNewFolder}>
+          New Folder
+        </button>
+        <button className="fm-btn fm-btn-sm" onClick={onImportCsv} title="Import CSV, TSV, or Excel spreadsheet">
+          Import spreadsheet
+        </button>
+        <div className="fm-toolbar-sep" role="separator" />
+        <button className="fm-btn fm-btn-sm" onClick={onSettings}>
+          Settings
+        </button>
+        <button className={`fm-btn fm-btn-sm${selectMode ? " active" : ""}`} onClick={onToggleSelect}>
+          {selectMode ? "Cancel Select" : "Select"}
+        </button>
+        <div className="fm-toolbar-spacer" />
+        <ToolbarSearch resetKey={searchResetKey} onChange={onSearchChange} />
+        {searchActive && (
+          <button className="fm-btn fm-btn-sm" onClick={onClearSearch}>
+            Clear
+          </button>
+        )}
+      </div>
+      <div className="fm-toolbar fm-toolbar-modes">
+        <ViewModeControls
+          openTarget={openTarget}
+          folderView={folderView}
+          currentDisplay={currentDisplay}
+          location={location}
+          entryKeys={entryKeys}
+          enabledDisplays={enabledDisplays}
+          onFolderViewChange={onFolderViewChange}
+          onListDisplayChange={onListDisplayChange}
+          onAutoOrganize={onAutoOrganize}
+        />
+      </div>
     </div>
   )
 }

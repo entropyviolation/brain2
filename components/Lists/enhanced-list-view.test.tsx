@@ -91,11 +91,12 @@ describe("EnhancedCategoryView", () => {
     expect(screen.getByTestId("fm-status-tree")).toHaveTextContent(/Tree:/)
   })
 
-  it("groups the toolbar with Explorer separators", () => {
+  it("groups the toolbar with Explorer separators and a dedicated mode bay", () => {
     render(<EnhancedCategoryView onTaskSelect={vi.fn()} />)
     expect(screen.getByRole("separator", { name: "New" })).toBeInTheDocument()
-    expect(screen.getByRole("separator", { name: "View" })).toBeInTheDocument()
     expect(screen.getByRole("separator", { name: "Organize" })).toBeInTheDocument()
+    expect(document.querySelector(".fm-toolbar-modes")).toBeTruthy()
+    expect(screen.getByRole("radiogroup", { name: "Folder view" })).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Completed" })).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Missed Opportunities" })).not.toBeInTheDocument()
   })

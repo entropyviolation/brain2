@@ -78,12 +78,31 @@ describe("ListPicker", () => {
   })
 
   it("renders each list as a full-width row, not inline chips", () => {
-    render(<ListPicker selected={[]} onChange={vi.fn()} />)
+    render(<ListPicker selected={[]} onChange={vi.fn()} mode="single" />)
     const groceries = screen.getByRole("button", { name: "Groceries" })
     const books = screen.getByRole("button", { name: "Books" })
     expect(groceries).toHaveClass("list-picker-row")
     expect(books).toHaveClass("list-picker-row")
     expect(groceries).not.toBe(books)
+  })
+
+  it("does not nest the multi-select checkbox inside a button", () => {
+    render(<ListPicker selected={[]} onChange={vi.fn()} mode="multi" />)
+    const groceries = screen.getByRole("checkbox", { name: "Add to Groceries" })
+    const books = screen.getByRole("checkbox", { name: "Add to Books" })
+    // Radix Checkbox is itself a <button role="checkbox">; it must not sit inside another button.
+    expect(groceries.parentElement?.closest("button")).toBeNull()
+    expect(books.parentElement?.closest("button")).toBeNull()
+    expect(groceries.closest("label")).toHaveClass("list-picker-row")
+    expect(books.closest("label")).toHaveClass("list-picker-row")
+  })
+
+  it("toggles multi-select when clicking the row label, not only the checkbox", async () => {
+    const user = userEvent.setup()
+    render(<ControlledPicker />)
+    await user.click(screen.getByText("Groceries"))
+    expect(screen.getByText("Selected (1)")).toBeInTheDocument()
+    expect(screen.getByRole("checkbox", { name: "Add to Groceries" })).toBeChecked()
   })
 
   it("shows selected chips with remove when showSelectedChips is on", async () => {
@@ -105,7 +124,7 @@ describe("ListPicker", () => {
   it("pins suggested lists under a Recent label", () => {
     render(<ListPicker selected={[]} onChange={vi.fn()} suggestedIds={["list-2"]} />)
     expect(screen.getByLabelText("Recent lists")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Books" })).toBeInTheDocument()
+    expect(screen.getByRole("checkbox", { name: "Add to Books" })).toBeInTheDocument()
   })
 
   it("seeds New list with a search that matches no list name", async () => {

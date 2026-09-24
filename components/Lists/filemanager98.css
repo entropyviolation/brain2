@@ -256,6 +256,12 @@
 }
 
 /* ===== Toolbar / control bar (brushed silver bay) ===== */
+.fm98 .fm-toolbar-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
 .fm98 .fm-toolbar {
   display: flex;
   align-items: center;
@@ -271,6 +277,16 @@
     0 0 0 1px #6a6e72,
     inset 0 1px 0 rgba(255, 255, 255, 0.65),
     inset 0 2px 3px rgba(0, 0, 0, 0.12);
+}
+
+.fm98 .fm-toolbar-modes {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.fm98 .fm-toolbar-modes .fm-mode-deck {
+  flex: 1 1 auto;
+  width: 100%;
 }
 
 .fm98 .fm-toolbar-sep {
@@ -312,14 +328,37 @@
   flex-shrink: 0;
 }
 
+/*
+ * Mode deck — nameplate + recessed key bay.
+ * Container queries switch full labels ↔ short codes so keys never collide when
+ * the toolbar is narrow, and breathe when the pane is fully extended.
+ */
+.fm98 .fm-mode-deck {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.fm98 .fm-mode-deck > .fm-nameplate {
+  flex-shrink: 0;
+}
+
+.fm98 .fm-mode-deck > .fm-toolbar-sep {
+  align-self: stretch;
+}
+
 /* Sibling view keys share one bay; active = CRT + power lamp */
 .fm98 .fm-view-keys {
-  display: inline-flex;
+  display: flex;
+  flex-wrap: wrap;
   align-items: stretch;
-  gap: 4px;
-  flex: 1 1 14rem;
-  min-width: 12rem;
-  max-width: 28rem;
+  gap: 3px;
+  flex: 1 1 auto;
+  min-width: 0;
   padding: 4px;
   border-radius: 3px;
   background:
@@ -328,17 +367,80 @@
   box-shadow:
     0 0 0 1px #5c6064,
     inset 0 2px 3px rgba(0, 0, 0, 0.18);
+  container-type: inline-size;
+  container-name: fm-view-keys;
 }
 
-.fm98 .fm-view-keys .fm-btn {
+.fm98 .fm-view-keys .fm-view-key {
   position: relative;
-  flex: 1 1 0;
-  min-width: 0;
+  flex: 0 1 auto;
+  min-width: 4.25rem;
+  max-width: 100%;
   min-height: 28px;
-  letter-spacing: 0.1em;
+  padding: 3px 8px 4px;
+  letter-spacing: 0.06em;
+  justify-content: flex-start;
+  gap: 5px;
 }
 
-.fm98 .fm-view-keys .fm-btn.active {
+.fm98 .fm-view-key-led {
+  display: block;
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #d8dcd8 0 18%, #6a6e6a 45%, #2a2e2a 100%);
+  box-shadow:
+    0 0 0 1px #141816,
+    0 0 0 2px #9aa09c,
+    inset 0 1px 1px rgba(255, 255, 255, 0.35);
+}
+
+.fm98 .fm-view-key-label {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.fm98 .fm-view-key-full {
+  display: none;
+  white-space: nowrap;
+}
+
+.fm98 .fm-view-key-abbr {
+  display: inline;
+  white-space: nowrap;
+}
+
+/* Wide bay: full words; reserved LED gutter keeps keys aligned.
+   Selectors must match/beat `.fm98 .fm-view-keys .fm-view-key` specificity. */
+@container fm-view-keys (min-width: 22rem) {
+  .fm98 .fm-view-keys .fm-view-key {
+    flex: 1 1 0;
+    min-width: 5.5rem;
+    justify-content: center;
+    letter-spacing: 0.08em;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .fm98 .fm-view-key .fm-view-key-full {
+    display: inline;
+  }
+
+  .fm98 .fm-view-key .fm-view-key-abbr {
+    display: none;
+  }
+}
+
+@container fm-view-keys (min-width: 34rem) {
+  .fm98 .fm-view-keys .fm-view-key {
+    min-width: 6.25rem;
+    letter-spacing: 0.1em;
+  }
+}
+
+.fm98 .fm-view-keys .fm-view-key.active {
   color: var(--fm-crt);
   text-shadow: var(--fm-crt-glow);
   background:
@@ -350,13 +452,7 @@
   filter: none;
 }
 
-.fm98 .fm-view-keys .fm-btn.active::before {
-  content: "";
-  display: block;
-  flex-shrink: 0;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+.fm98 .fm-view-keys .fm-view-key.active .fm-view-key-led {
   background: radial-gradient(circle at 35% 30%, #f4fff8 0 16%, #7dffc4 42%, #0b4a32 100%);
   box-shadow:
     0 0 0 1px #141816,
@@ -387,6 +483,56 @@
   flex: 1 1 260px;
   min-width: 220px;
   max-width: 440px;
+}
+
+.fm98 .fm-folder-dest-bay {
+  gap: 8px;
+}
+
+.fm98 .fm-folder-dest-label {
+  font-size: 11px;
+  padding: 4px 4px 0;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.fm98 .fm-folder-dest {
+  flex: 1 1 260px;
+  min-width: 220px;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fm98 .fm-folder-dest-search {
+  width: 100%;
+}
+
+.fm98 .fm-folder-dest-search .fm-input {
+  width: 100%;
+}
+
+.fm98 .fm-folder-dest-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-height: 88px;
+  overflow-y: auto;
+  padding: 4px;
+  background: var(--fm-button-highlight, #fff);
+  box-shadow: var(--fm-border-field, inset 1px 1px 0 #808080, inset -1px -1px 0 #fff);
+}
+
+.fm98 .fm-folder-dest-btn {
+  flex: 0 1 auto;
+}
+
+.fm98 .fm-folder-dest-empty {
+  margin: 0;
+  padding: 6px 4px;
+  font-size: 11px;
+  color: var(--fm-button-shadow, #808080);
 }
 
 .fm98 .fm-list-picker {

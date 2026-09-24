@@ -8,6 +8,8 @@ export interface ItemSelectionToolbarProps {
   selectedCount: number
   placementMode: ItemPlacementMode
   canMove: boolean
+  /** Search has no single "this list" — labels say destination instead. */
+  fromSearch?: boolean
   excludeListIds: string[]
   onSelectAll: () => void
   onDeselectAll: () => void
@@ -22,6 +24,7 @@ export function ItemSelectionToolbar({
   selectedCount,
   placementMode,
   canMove,
+  fromSearch = false,
   excludeListIds,
   onSelectAll,
   onDeselectAll,
@@ -59,12 +62,18 @@ export function ItemSelectionToolbar({
             checked={placementMode === "keep"}
             onChange={() => onPlacementModeChange("keep")}
           />
-          Keep in this list
+          {fromSearch ? "Keep on current lists" : "Keep in this list"}
         </label>
         <label
           className="fm-radio-row"
           style={{ padding: "0 4px" }}
-          title={canMove ? undefined : "Items are never removed from All Items or smart lists"}
+          title={
+            canMove
+              ? fromSearch
+                ? "Add to the destination and remove from other real lists"
+                : undefined
+              : "Items are never removed from All Items or smart lists"
+          }
         >
           <input
             type="radio"
@@ -73,7 +82,7 @@ export function ItemSelectionToolbar({
             disabled={!canMove}
             onChange={() => onPlacementModeChange("move")}
           />
-          Move from this list
+          {fromSearch ? "Move to destination" : "Move from this list"}
         </label>
         <div className="fm-toolbar-sep" />
         <button className="fm-btn fm-btn-sm" onClick={onAddToNewList} disabled={selectedCount === 0}>

@@ -45,11 +45,12 @@ import {
   GLOBAL_ALL_ITEMS_KEY,
 } from "@/lib/folder-all-items"
 import { buildGridEntries, ROOT_ALL_FOLDER_ID } from "@/lib/lists-grid-entries"
-import { destinationFoldersForSelection, originFolderIdToUnlink, wouldCreateFolderCycle, type ListPlacementMode } from "@/lib/folder-selection"
+import { destinationFoldersForSelection, originFolderIdToUnlink, otherFolderIdsHoldingList, wouldCreateFolderCycle, type ListPlacementMode } from "@/lib/folder-selection"
 import {
   canMoveItemsFromOpenList,
   excludedListIdsForSelection,
   placeTaskInList,
+  placeTaskIntoDestinationLists,
   type ItemPlacementMode,
 } from "@/lib/item-selection"
 import { applyListMerge, type ListMergePlan } from "@/lib/list-merge"
@@ -693,15 +694,28 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
     [taskActions.handleAddTaskToCategory],
   )
 
-  const effectivePlacement: ListPlacementMode = isAll ? "keep" : placementMode
+  const effectivePlacement: ListPlacementMode =
+    searchActive || !isAll ? placementMode : "keep"
 
   const placeListsIntoFolder = useCallback(
     (destFolderId: string) => {
-      selectedCategories.forEach((catId) => addListToFolder(destFolderId, catId))
-      const unlink = originFolderIdToUnlink({ mode: effectivePlacement, originFolderId: currentFolder?.id, isAll })
-      if (unlink && unlink !== destFolderId) {
-        selectedCategories.forEach((catId) => removeListFromFolder(unlink, catId))
-      }
+      selectedCategories.forEach((catId) => {
+        addListToFolder(destFolderId, catId)
+        if (effectivePlacement === "move") {
+          if (searchActive) {
+            otherFolderIdsHoldingList(folders, catId, destFolderId).forEach((fid) =>
+              removeListFromFolder(fid, catId),
+            )
+          } else {
+            const unlink = originFolderIdToUnlink({
+              mode: effectivePlacement,
+              originFolderId: currentFolder?.id,
+              isAll,
+            })
+            if (unlink && unlink !== destFolderId) removeListFromFolder(unlink, catId)
+          }
+        }
+      })
       if (effectivePlacement === "move") {
         selectedFolderIds.forEach((fid) => {
           if (wouldCreateFolderCycle(folders, fid, destFolderId)) return
@@ -717,6 +731,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
       addListToFolder,
       removeListFromFolder,
       effectivePlacement,
+      searchActive,
       currentFolder?.id,
       isAll,
       folders,
@@ -725,16 +740,24 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
     ],
   )
 
-  const originListId = openTarget?.type === "category" ? openTarget.id : null
-  const itemCanMove = canMoveItemsFromOpenList(originListId)
+  const originListId = searchActive ? null : openTarget?.type === "category" ? openTarget.id : null
+  /** Search has no single origin list; Move still relocates off other real lists. */
+  const itemCanMove = searchActive || canMoveItemsFromOpenList(originListId)
   const effectiveItemPlacement: ItemPlacementMode = itemCanMove ? itemPlacementMode : "keep"
-  const itemSelectActive = !!(
+  const selectingOpenListItems = !!(
     selectMode &&
+    !searchActive &&
     openTarget &&
     openTarget.type !== "habits" &&
-    openTarget.type !== "objectives" &&
-    !searchActive
+    openTarget.type !== "objectives"
   )
+  const selectingSearchResults = !!(selectMode && searchActive)
+  const searchHasListsOrFolders =
+    searchResults.lists.length + searchResults.folders.length > 0 ||
+    selectedCategories.length + selectedFolderIds.length > 0
+  const searchHasItems = searchResults.tasks.length > 0 || selectedTaskIds.length > 0
+  const itemSelectActive = selectingOpenListItems || (selectingSearchResults && searchHasItems)
+  const listSelectActive = !!(selectMode && !selectingOpenListItems && (!searchActive || searchHasListsOrFolders))
   const openListKey = openTarget && openTarget.type !== "habits" && openTarget.type !== "objectives" ? openTargetKey(openTarget) : ""
   useEffect(() => {
     clearTaskSelection()
@@ -748,17 +771,14 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
       selectedTaskIds.forEach((taskId) => {
         const t = state.tasks.find((x) => x.id === taskId)
         if (!t) return
-        let next = t
-        for (const destListId of unique) {
-          next = placeTaskInList(next, destListId, {
-            mode: effectiveItemPlacement,
-            originListId,
-            canMove: itemCanMove,
-            lists: state.lists,
-            folders: state.folders,
-            types: itemTypes,
-          })
-        }
+        const next = placeTaskIntoDestinationLists(t, unique, {
+          mode: effectiveItemPlacement,
+          originListId,
+          canMove: itemCanMove,
+          lists: state.lists,
+          folders: state.folders,
+          types: itemTypes,
+        })
         updateTask(next)
       })
       selection.cancelSelectMode()
@@ -767,13 +787,32 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
   )
 
   const handleSelectAllVisible = useCallback(() => {
+    if (searchActive) {
+      selectAll(
+        searchResults.lists.map((l) => l.id),
+        searchResults.folders.map((f) => f.id),
+      )
+      return
+    }
     const ids = selectableEntryIds(entries)
     selectAll(ids.listIds, ids.folderIds)
-  }, [entries, selectAll])
+  }, [searchActive, searchResults.lists, searchResults.folders, entries, selectAll])
 
   const handleSelectAllItems = useCallback(() => {
+    if (searchActive) {
+      selectAllTasks(searchResults.tasks.map((t) => t.id))
+      return
+    }
     selectAllTasks(openTasks.map((t) => t.id))
-  }, [openTasks, selectAllTasks])
+  }, [searchActive, searchResults.tasks, openTasks, selectAllTasks])
+
+  const handleSelectAllSearchResults = useCallback(() => {
+    selectAll(
+      searchResults.lists.map((l) => l.id),
+      searchResults.folders.map((f) => f.id),
+    )
+    selectAllTasks(searchResults.tasks.map((t) => t.id))
+  }, [searchResults, selectAll, selectAllTasks])
 
   const handleDeleteSelectedItems = useCallback(() => {
     const n = selectedTaskIds.length
@@ -837,7 +876,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
   const handleApplyMerge = useCallback(
     (plan: ListMergePlan) => {
       const next = applyListMerge({ lists: categories, folders, tasks: allTasks }, plan)
-      setLists(next.lists)
+      setLists(next.lists, { tombstoneIds: plan.discardedIds })
       setFolders(next.folders)
       setTasks(next.tasks)
       setMergeOpen(false)
@@ -848,7 +887,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
 
   const handleApplyItemMerge = useCallback(
     (plan: ItemMergePlan) => {
-      setTasks(applyItemMerge(allTasks, plan))
+      setTasks(applyItemMerge(allTasks, plan), { tombstoneIds: plan.discardedIds })
       if (selectedTaskId && plan.discardedIds.includes(selectedTaskId)) setSelectedTaskId(null)
       setItemMergeOpen(false)
       selection.cancelSelectMode()
@@ -877,8 +916,20 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
           tasks={searchResults.tasks}
           getTasksForCategory={getTasksForCategory}
           onSelectFolder={handleNavTo}
-          onSelectList={(listId, parentId) => { setLocation(parentId || "all"); setOpenTarget({ type: "category", id: listId }); clearSearch() }}
+          onSelectList={(listId, parentId) => {
+            const parent = parentId || folders.find((f) => f.listIds.includes(listId))?.id || null
+            setLocation(parent || "all")
+            setOpenTarget({ type: "category", id: listId })
+            clearSearch()
+          }}
           onSelectTask={setSelectedTaskId}
+          selectMode={selectMode}
+          selectedFolderIds={selectedFolderIds}
+          selectedListIds={selectedCategories}
+          selectedTaskIds={selectedTaskIds}
+          onToggleFolderSelect={toggleFolderSelection}
+          onToggleListSelect={toggleCategorySelection}
+          onToggleTaskSelect={toggleTaskSelection}
         />
       )
     }
@@ -1077,9 +1128,17 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
               selectedCount={selectedTaskIds.length}
               placementMode={effectiveItemPlacement}
               canMove={itemCanMove}
+              fromSearch={selectingSearchResults}
               excludeListIds={excludedListIdsForSelection(categories, originListId)}
-              onSelectAll={handleSelectAllItems}
-              onDeselectAll={clearTaskSelection}
+              onSelectAll={selectingSearchResults ? handleSelectAllSearchResults : handleSelectAllItems}
+              onDeselectAll={
+                selectingSearchResults
+                  ? () => {
+                      clearTaskSelection()
+                      clearSelection()
+                    }
+                  : clearTaskSelection
+              }
               onPlacementModeChange={setItemPlacementMode}
               onAddToNewList={openNewCategoryDialog}
               onAddToLists={placeItemsIntoLists}
@@ -1087,18 +1146,26 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
               onDelete={handleDeleteSelectedItems}
             />
           )}
-          {selectMode && !itemSelectActive && (
+          {listSelectActive && (
             <SelectionToolbar
               selectedListCount={selectedCategories.length}
               selectedFolderCount={selectedFolderIds.length}
               placementMode={effectivePlacement}
-              originIsAll={isAll}
+              originIsAll={isAll && !searchActive}
+              fromSearch={selectingSearchResults}
               destinationFolders={destinationFoldersForSelection(folders, {
-                currentFolderId: currentFolder?.id,
+                currentFolderId: searchActive ? null : currentFolder?.id,
                 selectedFolderIds,
               })}
-              onSelectAll={handleSelectAllVisible}
-              onDeselectAll={clearSelection}
+              onSelectAll={selectingSearchResults ? handleSelectAllSearchResults : handleSelectAllVisible}
+              onDeselectAll={
+                selectingSearchResults
+                  ? () => {
+                      clearSelection()
+                      clearTaskSelection()
+                    }
+                  : clearSelection
+              }
               onPlacementModeChange={setPlacementMode}
               onAddToNewFolder={() => setShowNewFolderDialog(true)}
               onAddToFolder={placeListsIntoFolder}

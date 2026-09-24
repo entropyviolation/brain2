@@ -34,6 +34,7 @@ export function destinationFoldersForSelection(
  * Origin folder to unlink when placing lists.
  * All is not a real folder — lists must never be removed from it.
  * Home / no current folder also has nothing to unlink.
+ * Search selections unlink every other folder (see place path).
  */
 export function originFolderIdToUnlink(opts: {
   mode: ListPlacementMode
@@ -43,4 +44,15 @@ export function originFolderIdToUnlink(opts: {
   if (opts.mode !== "move") return null
   if (opts.isAll) return null
   return opts.originFolderId ?? null
+}
+
+/** Folder ids that currently hold `listId`, excluding `exceptFolderId`. */
+export function otherFolderIdsHoldingList(
+  folders: Folder[],
+  listId: string,
+  exceptFolderId: string,
+): string[] {
+  return folders
+    .filter((f) => f.id !== exceptFolderId && !isScheduledFolderId(f.id) && f.listIds.includes(listId))
+    .map((f) => f.id)
 }

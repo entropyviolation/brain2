@@ -18,6 +18,51 @@ export interface ViewModeControlsProps {
   onAutoOrganize: () => void
 }
 
+const FOLDER_VIEWS: { id: FolderView; full: string; abbr: string }[] = [
+  { id: "icons", full: "Icons", abbr: "Icons" },
+  { id: "list", full: "List", abbr: "List" },
+  { id: "details", full: "Details", abbr: "Det" },
+  { id: "cards", full: "Cards", abbr: "Cards" },
+]
+
+const LIST_DISPLAY_KEYS: { id: ListDisplay; full: string; abbr: string }[] = [
+  { id: "default", full: "Default", abbr: "Def" },
+  { id: "checklist", full: "Checklist", abbr: "Check" },
+  { id: "icons", full: "Icons", abbr: "Icon" },
+  { id: "table", full: "Details", abbr: "Det" },
+  { id: "spreadsheet", full: "Spreadsheet", abbr: "Sheet" },
+]
+
+function ModeKey({
+  full,
+  abbr,
+  active,
+  onClick,
+}: {
+  full: string
+  abbr: string
+  active: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={active}
+      aria-label={full}
+      title={full}
+      className={`fm-btn fm-btn-sm fm-view-key${active ? " active" : ""}`}
+      onClick={onClick}
+    >
+      <span className="fm-view-key-led" aria-hidden="true" />
+      <span className="fm-view-key-label">
+        <span className="fm-view-key-full">{full}</span>
+        <span className="fm-view-key-abbr">{abbr}</span>
+      </span>
+    </button>
+  )
+}
+
 export function ViewModeControls({
   openTarget,
   folderView,
@@ -29,18 +74,17 @@ export function ViewModeControls({
 }: ViewModeControlsProps) {
   if (!openTarget) {
     return (
-      <>
+      <div className="fm-mode-deck" data-ui-name="View">
         <span className="fm-nameplate">View</span>
-        <div className="fm-view-keys" role="group" aria-label="Folder view">
-          {(["icons", "list", "details", "cards"] as FolderView[]).map((v) => (
-            <button
-              key={v}
-              type="button"
-              className={`fm-btn fm-btn-sm${folderView === v ? " active" : ""}`}
-              onClick={() => onFolderViewChange(v)}
-            >
-              {v === "cards" ? "Cards" : v[0].toUpperCase() + v.slice(1)}
-            </button>
+        <div className="fm-view-keys" role="radiogroup" aria-label="Folder view">
+          {FOLDER_VIEWS.map((v) => (
+            <ModeKey
+              key={v.id}
+              full={v.full}
+              abbr={v.abbr}
+              active={folderView === v.id}
+              onClick={() => onFolderViewChange(v.id)}
+            />
           ))}
         </div>
         {folderView === "icons" && (
@@ -51,7 +95,7 @@ export function ViewModeControls({
             </button>
           </>
         )}
-      </>
+      </div>
     )
   }
 
@@ -65,21 +109,22 @@ export function ViewModeControls({
       ? allModes.filter((d) => enabledDisplays.includes(d))
       : allModes
 
+  const keys = LIST_DISPLAY_KEYS.filter((k) => modes.includes(k.id))
+
   return (
-    <>
+    <div className="fm-mode-deck" data-ui-name="Display">
       <span className="fm-nameplate">Display</span>
-      <div className="fm-view-keys" role="group" aria-label="List display">
-        {modes.map((d) => (
-          <button
-            key={d}
-            type="button"
-            className={`fm-btn fm-btn-sm${currentDisplay === d ? " active" : ""}`}
-            onClick={() => onListDisplayChange(openTargetKey(openTarget), d)}
-          >
-            {d === "table" ? "Details" : d === "spreadsheet" ? "Spreadsheet" : d[0].toUpperCase() + d.slice(1)}
-          </button>
+      <div className="fm-view-keys" role="radiogroup" aria-label="List display">
+        {keys.map((k) => (
+          <ModeKey
+            key={k.id}
+            full={k.full}
+            abbr={k.abbr}
+            active={currentDisplay === k.id}
+            onClick={() => onListDisplayChange(openTargetKey(openTarget), k.id)}
+          />
         ))}
       </div>
-    </>
+    </div>
   )
 }

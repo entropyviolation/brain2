@@ -3,10 +3,11 @@
 The **Lists** top-level tab. A Windows 95/98–styled file manager for folders, lists (categories), and items — the Explorer face of the **second brain**, not a silo. A row here is the same item Scheduler, Tracking, Modules, Reviews, and **Analytics** (the heart) can use. New rows default to generic `item` (or the list’s `itemTypeId`); they are not Tasks unless created as Next Actions. All item data flows through **`lib/task-store.ts`**.
 
 **Visual gold standard.** Lists is the reference for Brain2 look-and-feel: milled
-Explorer **frame** (brushed silver toolbars, equal-fill view keys with CRT +
-power lamp, engraved nameplates, CRT title / status counts — `filemanager98.css`),
-velvet desktop, photographed orb “trinkets,” and useful motion such as
-auto-organize. Velvet and orbs are the cabinet; do not sand them into gray metal.
+Explorer **frame** (brushed silver toolbars, Display/View mode deck with reserved
+LED gutters and container-query short↔full labels, engraved nameplates, CRT title /
+status counts — `filemanager98.css`), velvet desktop, photographed orb “trinkets,”
+and useful motion such as auto-organize. Velvet and orbs are the cabinet; do not
+sand them into gray metal.
 Text-field focus is navy `#000080` (never WebKit orange), matching `win95.css`
 app-wide. Other tabs should match both halves of that tension — never prettier
 chrome, never plainer contents. See [`docs/DESIGN_STYLE.md`](../../docs/DESIGN_STYLE.md).
@@ -39,7 +40,7 @@ components/Lists/
 │   ├── AttributeValueField.tsx    # Per-type single-value input
 │   └── AttributeValuesEditor.tsx  # Schema-driven + ad-hoc value editors
 ├── hooks/
-│   ├── useListsNavigation.ts      # Location, openTarget reducer, navTo, openEntry
+│   ├── useListsNavigation.ts      # Location, openTarget reducer, navTo, openEntry; syncs `cogs-navigate-to-list` in place (no remount)
 │   ├── useListsSearch.ts          # Search term + reset key + filtered folders/lists/tasks
 │   ├── useListsDragDrop.ts        # Drag-and-drop state and handlers
 │   ├── useListsSelection.ts       # Select mode + bulk list selection
@@ -54,7 +55,7 @@ components/Lists/
 │   ├── FolderViewList.tsx         # List view for folders
 │   ├── FolderViewDetails.tsx      # Details table for folders
 │   ├── FolderViewCards.tsx        # Classic cards board
-│   └── SearchResultsView.tsx      # Global search results panel
+│   └── SearchResultsView.tsx      # Global search results; Select mode for merge/move/all
 ├── list-content/
 │   ├── ListContentPanel.tsx       # Wrapper: add-item, bulk-add, display switch
 │   ├── AllViewCheckboxFilter.tsx # Folder/global All Items checkbox filter + Select all / Deselect all
@@ -88,7 +89,9 @@ components/Lists/
 ├── toolbar/
 │   ├── ListsToolbar.tsx           # Main toolbar — New / View / Organize (no archive buttons)
 │   ├── ToolbarSearch.tsx          # Local search field — never overwritten by filter results
-│   └── ViewModeControls.tsx       # Folder view / list display mode buttons
+│   ├── SelectionToolbar.tsx       # List/folder select: merge, move, searchable Add to folder
+│   ├── ItemSelectionToolbar.tsx   # Item select: merge, move, add to lists
+│   └── ViewModeControls.tsx       # Display/View mode deck (LED keys, container-query labels)
 ├── __tests__/                     # Integration + open-target reducer tests
 ├── filemanager98.css              # Scoped Lists Explorer skin (`.fm98`): milled fascia frame; velvet/orbs untouched; type floor 10px, reading chrome 11–13px
 └── …                              # attribute-editor, settings-dialog, list-picker (+ css), daily-habits-list
@@ -121,7 +124,7 @@ Related pure helpers in `lib/`:
 | `attributes/AttributeValueField.tsx` | Per-type single-value input (string, boolean, color, datetime, list, item, selection, image, link, goal, number). A picked `image` / `multiimage` file goes to the attachments IndexedDB (`lib/attachments.ts`) and the cell keeps `idb:<id>`; thumbnails resolve it through `useAttachmentSrcList`. It used to keep the whole data URL, which put picture bytes in the Lists vault and filled the origin for every other store. |
 | `attributes/AttributeValuesEditor.tsx` | Schema-driven `AttributeValuesEditor` + ad-hoc `AdHocAttributesEditor` |
 | `settings-dialog.tsx` | Global Lists settings (`data-ui-name="Lists settings"`): reorder lists, import/export JSON (`NextActionsSettingsDialog`). Dirty order / staged import uses the house unsaved-changes guard. |
-| `list-picker.tsx` | Searchable list selector (Inbox **in lists**, item detail, Connected lists, attribute fields). One name per row with folder-colored glyphs; optional selected chips (`showSelectedChips`); optional `suggestedIds` pin a **Recent** strip at the top (Inbox walk). **New list** copies the search text into the name when no list already has that exact name (still editable). `list-picker.css` keeps rows full-width so names never wrap as a chip soup. |
+| `list-picker.tsx` | Searchable list selector (Inbox **in lists**, item detail, Connected lists, attribute fields). One name per row with folder-colored glyphs; optional selected chips (`showSelectedChips`); optional `suggestedIds` pin a **Recent** strip at the top (Inbox walk). Multi-select rows are a `<label>` + checkbox (not a `<button>` wrapping Checkbox — invalid nested buttons / hydration). Single-select rows stay plain buttons. Whole-row click still toggles. **New list** copies the search text into the name when no list already has that exact name (still editable). `list-picker.css` keeps rows full-width so names never wrap as a chip soup. |
 | `daily-habits-list.tsx` | Daily / weekly / monthly habit views embedded in Lists (uses `lib/habits-store.ts`). The sheet waits until that vault has hydrated so a seed grid is not edited and then thrown away. Climb habits log a number vs the derived daily/weekly target; goal and text cells keep the typed draft (`habit-value-field.tsx`). Completing a habit also writes a To-Do Done log. Habits auto-filled from Tracking tags stay in sync here too (`useHabitTrackingSync`), including weekly/monthly Goal / Yes-No habits whose minutes are summed across the period. Daily Settings edits the same **completion to feel accomplished** / **accomplishment bonus** as Home Habits. Weekly/monthly lists show a done count for the current period. Exempt periods leave that fraction (the row reads “exempt”) and stay out of Home’s remaining-habit lists. |
 
 ## Navigation model
@@ -143,8 +146,8 @@ Default, Checklist, Icons, Details (table), and **Spreadsheet** — per-list set
 - **Default**: a reading/working list, distinct from Checklist / Details / Icons. Each row is a round status **pip** (a lamp, not a checkbox) + tiny orb + name (strikethrough when done) + type / U·I / date / attribute chips. **No complete checkboxes** and **no `<input type="checkbox">` unless Select mode is on** — that was the “two random ticks” leak (complete/missed boxes on a few completed orbs). Open pips are navy circles; done is gray; missed is rust. Click a row to open it. Inner caption bar reads **Default**, not the list name again. Per-list chrome is optional in List Settings → View mode settings → **Default view mode settings** (`List.defaultView`; unset = this built-in look). Compact density and extra attribute chips are custom-only. See [`DEFAULT_VIEW.md`](DEFAULT_VIEW.md).
 - **Icons**: photographed orbs with ✎ to change the picture.
 - **Checklist**: the only display whose *point* is complete checkboxes (plus optional Select ticks). Default is **one labeled Completed column**. Extra ticks (Missed opportunity) are opt-in in List Settings → View mode settings → Checklist view mode settings (`List.checklistCheckboxVars`). Ticking Completed opens the same reflection dialog as any other completion; Undo / dismiss leave the item incomplete. See [`CHECKLIST.md`](CHECKLIST.md).
-- **Details**: table of items with Name plus chosen columns. List Settings → View mode settings → Details view mode settings persists `List.detailsColumns` (on-this-list first, searchable; built-ins available). Independent of Spreadsheet `sheetConfig.columnIds`. Unset = current Details columns. See [`DETAILS.md`](DETAILS.md).
-- **Select mode**: overlays selection checkboxes on whichever display you are in, including Default.
+- **Details**: table of items with Name plus chosen columns — for scanning detail factors, opening an item, Select-mode selection, and sorting by those columns. **No complete or missed ticks** (those live only in Checklist). List Settings → View mode settings → Details view mode settings persists `List.detailsColumns` (on-this-list first, searchable; built-ins available). Independent of Spreadsheet `sheetConfig.columnIds`. Unset = current Details columns. See [`DETAILS.md`](DETAILS.md).
+- **Select mode**: overlays selection checkboxes on whichever display you are in, including Default. The same **Select** button works on **toolbar search results**: tick any single **folder**, **list**, or **item** hit, or multi-select several **items** (e.g. duplicates) and **Merge items**; **Merge lists** when 2+ lists are ticked; **Select All** takes the full hit set; keep/move + searchable **Add to folder** / **Add to lists** are the same toolbars as normal select. From search, **Move to destination** is on for items (drops other real-list memberships), lists (leaves other folders), and folders (reparents).
 - **Spreadsheet**: editable Google-Sheets-style grid of items × columns from the attribute catalog (on-this-list attrs + built-ins + vault). Per-list `List.sheetConfig` (column ids, sort, filter, freeze, widths). Add column (`+` pinned on the grid viewport) suggests associated attrs, then vault, or create + assign-to-all. Header ⋮: Sort, **Attribute settings** (existing schema editor for that attr id), insert / move, **Hide column**. Hide writes `sheetConfig.columnIds` — the same list as Spreadsheet view mode settings (unchecked there; not a global delete). Item name disables Attribute settings (not a custom attribute). Keyboard: arrows / Tab / Enter / type-to-replace / Escape. **□ Fullscreen** lifts the same live grid into a near-viewport Win95 child window (Esc / restore / close; commits in-progress edits). Default is in-pane. Headers are **centered** with roomy padding and a reserved sort-caret slot. Blanks (`empty` / `—`) always sort **last**. Widths persist at `sheetConfig.columnWidths` and are capped so columns cannot stretch over neighbors. See [`SPREADSHEET.md`](SPREADSHEET.md).
 
 ## Key features
@@ -159,12 +162,12 @@ Default, Checklist, Icons, Details (table), and **Spreadsheet** — per-list set
 - **Next Actions points**: Completing a task in the Next Actions folder awards **1 point** by default, or the list's **Points** number attribute if defined. The header **today's friend** also picks from this whole open set when the worn friend leans Next Actions (`lib/friend-suggestion.ts`), not only Home → To Do's day slice. Habit-leaning friends prefer unmet daily habits instead. **Later:** listBias UI, clock, **trinket or point rewards** — [`docs/FRIEND_COMPANION.md`](../../docs/FRIEND_COMPANION.md).
 - **Orb gallery**: 1000+ orbs from `lib/orbs-manifest.ts`; edit mode to hide orbs; custom upload with background removal (`components/Icons/OrbPicker.tsx`).
 - **Icon layout**: One layout system — absolute JS positions, never a CSS `auto-fill` grid fighting them. A folder that has **never been dragged** (`iconLayoutMode: auto`, or no saved coords) **packs to the live canvas width** — `cols = floor((W − pad) / cell)` (`112×118` cells, `lib/velvet-icon-grid.ts`). Resize may re-flow only while auto. The **first real drag** freezes every icon at its current slot, sets `freeform`, and moves **only** that icon: siblings do not crunch, slide, or reflow during drag or after drop, and a single drag does not invent an empty right-hand column. **Auto-organize** is an explicit button: it writes the same pack and sets mode back to `auto`. While icons sweep, a short canvas trail of classic pixel cursors and snowflake pads fades behind them (`folder-view-icons-trail.css`); final grid slots, drag behavior, and which icons exist are unchanged. `prefers-reduced-motion: reduce` skips the trail and still organizes. A 1px drag that happens to land on a lattice cell still stays freeform because the store flag wins over lattice detection.
-- **Toolbar**: Explorer bevel separators group **New** (list/folder/import), **View** (Icons/List/Details/Cards or Display modes), and **Organize** (Auto-organize). Archive browsing is the Completed / Missed Opportunities lists under Next Actions — those toolbar buttons are gone.
+- **Toolbar**: Two brushed bays. Top: **New** (list/folder/import), Settings, Select, Search. Bottom: the **View / Display** mode deck alone (Icons/List/Details/Cards or Default/Checklist/Icons/Details/Spreadsheet) so keys always own a full row — reserved LED gutter, container-query short codes when narrow, equal-fill full words when wide. Archive browsing is the Completed / Missed Opportunities lists under Next Actions — those toolbar buttons are gone.
 - **Status bar**: two counts, labeled. Left is **This folder** (open location); right is **Tree** (all folders and lists). Do not drop one as a duplicate. Type is 12px so the counts stay readable.
 - **Inspector** (`data-ui-name="List inspector"`): facts first (count, type, last touched — 12px), then actions. **Delete List lives only in List Settings** (red **Delete** in **Dangerous actions**, beside **Clear list**). The right rail does not offer Delete. Folder **All Items** and Home **All** still get **List Settings** for view prefs; those dialogs have no Delete / Clear. Inclusion checkboxes (lists in a folder All, folders in Home All) live on this rail.
 - **Clear list**: List Settings → Dangerous actions → **Clear list** → Win95 **Are you sure?** confirm. Confirm empties membership on this list (`removeTaskFromList` via `updateTask`, so connected-list exclusions stick). Items are not deleted; other lists keep them; the empty list remains. Cancel is a no-op.
 - **Type scale**: smallest Lists type is 10px (title glyphs, tree ±, orb badges, toolbar `.fm-btn-sm` left alone). Reading chrome is 11–13px: Default names / inspector facts / status 12px; U·I meta and inspector buttons 11px; Quick Access labels stay 13px.
-- **Toolbar search**: The field owns keystrokes (`ToolbarSearch`). Parent filter state is updated from the field, never written back into it (that write-back is what skipped letters). Clear / opening a hit bumps `searchResetKey` to wipe the field. Folder List view filters with `useDeferredValue` the same way. **Choosing a location** (Quick Access, folder tree, Up, opening a folder icon) calls `chooseListsLocation` so search clears and the folder's real contents show — you are not trapped in the previous query. Typing still searches; only a location choice clears.
+- **Toolbar search**: The field owns keystrokes (`ToolbarSearch`). Parent filter state is updated from the field, never written back into it (that write-back is what skipped letters). Clear / opening a hit bumps `searchResetKey` to wipe the field. Folder List view filters with `useDeferredValue` the same way. **Choosing a location** (Quick Access, folder tree, Up, opening a folder icon) calls `chooseListsLocation` so search clears and the folder's real contents show — you are not trapped in the previous query. Typing still searches; only a location choice clears. Select mode on the results panel is described under **Select mode** above. List/folder select’s **Add to folder** bay has its own folder search (empty = all destinations; no-match empty state; scroll when many).
 
 ## Open-target state machine
 
@@ -179,6 +182,10 @@ List/folder/habit/smart views are opened via a reducer in `open-target.ts`:
 | `CLOSE` | Return to folder browser |
 
 Managed by `useListsNavigation`; auto-closes if the underlying category is deleted.
+External jumps (item detail list chip, global search, Analytics) call
+`applyListsNavigation` / `requestNavigateToList`, which persist state and fire
+`cogs-navigate-to-list`. The hook applies `location` / `openTarget` in place — the
+app shell no longer remounts `EnhancedCategoryView` via a nav key.
 
 ## Stores
 
@@ -200,7 +207,7 @@ Managed by `useListsNavigation`; auto-closes if the underlying category is delet
 | `dialogs/InFoldersEditor.test.tsx` | Add/remove folders, Show nested (direct vs inherited), cycle guard, + New folder |
 | `dialogs/EditListDialog.test.tsx` | Wider shell (~600px), In folders section, Save still writes name/color; Clear list confirm cancel / yes empties membership; folder All Items and Home All omit Delete / Clear / filing / links |
 | `dialogs/ConnectedListsEditor.test.tsx` | Connect A→B, mirror on B, unlink without mass-delete; searchable row picker + selected chip |
-| `list-picker.test.tsx` | Rows, search, single/multi select, excludeIds, selected chips, Enter picks first hit, New list seeds from a search that names no list |
+| `list-picker.test.tsx` | Rows, search, single/multi select, excludeIds, selected chips, Enter picks first hit, New list seeds from a search that names no list; multi checkbox is not nested in a button; row label click toggles |
 | `__tests__/open-target.test.ts` | Reducer transitions |
 | `list-content/ListContentPanel.test.tsx` | Default reading rows; no item checkboxes unless selectMode (mixed completed+open); checklist keeps labeled Completed; All Items filters live in the inspector, not the item pane; select mode |
 | `list-content/ListContentDefault.test.tsx` | Unset = current chrome; custom hide type/date; Select ticks; no complete checkboxes |
@@ -208,11 +215,13 @@ Managed by `useListsNavigation`; auto-closes if the underlying category is delet
 | `dialogs/ChecklistViewSettings.test.tsx` | View mode settings host includes Default + checklist extra ticks |
 | `dialogs/DefaultViewSettings.test.tsx` | Use default layout vs custom; hide type/date; extra attributes searchable / on-this-list first |
 | `dialogs/DetailsViewSettings.test.tsx` | Details picker lists attrs; persist `detailsColumns` only; spreadsheet selection unchanged |
-| `list-content/ListContentDetails.test.tsx` | Default schema columns; persisted order including built-ins; empty = Name only |
+| `list-content/ListContentDetails.test.tsx` | Default schema columns; persisted order including built-ins; empty = Name only; no complete/missed ticks; Select checkboxes only when selectMode |
 | `list-content/ListContentSpreadsheet.test.tsx` | Persist `sheetConfig.columnWidths` per list; header chrome |
 | `list-content/SheetFullscreen.test.tsx` | Fullscreen enter/exit; Esc; one live grid; commit on close |
 | `list-content/sheet-fullscreen.test.ts` | `commitFocusedSheetEdit` blurs a focused field |
 | `toolbar/ListsToolbar.test.tsx` | Completed / Missed Opportunities buttons gone; New / Settings / Select remain |
+| `toolbar/SelectionToolbar.test.tsx` | Folder search filters destinations; empty / no-match; add-to-folder still fires |
+| `views/SearchResultsView.test.tsx` | Select mode toggles folders/lists/items instead of navigating |
 | `lib/velvet-icon-grid.test.ts` | Column count = floor((W−pad)/C); LTR fill; freeze moves one key; freeform does not re-pack siblings; auto still packs; sparse drag is not auto |
 | `views/FolderViewIcons.test.tsx` | Drag one icon → sibling `left`/`top` unchanged; canvas stays freeform (not CSS flow); default pack fills width; reduced-motion skips organize trail canvas; motion mounts trail without changing packed coords |
 | `lib/lists-location-choice.test.ts` | Search clears before folder navigation |
