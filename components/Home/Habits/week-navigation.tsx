@@ -1,14 +1,13 @@
 /**
  * components/Home/Habits/week-navigation.tsx — Habit week picker
  *
- * The week navigation pill: previous/next week, "Today", and the current
- * date-range label, driving which week the habit grid displays.
+ * Previous / next period, Today / This month, and the date-range nameplate.
+ * Raised metal keys + engraved range inside the milled Habits fascia.
  *
  * Spec: §9.3 (display & interaction).
  */
 "use client"
 
-import { Button } from "@/components/ui/button"
 import { formatDateRange } from "@/lib/date-utils"
 import { ChevronLeft, ChevronRight, Calendar } from "lucide-react"
 
@@ -18,6 +17,12 @@ interface WeekNavigationProps {
   onPreviousWeek: () => void
   onNextWeek: () => void
   onCurrentWeek: () => void
+  rangeLabel?: string
+  currentButtonLabel?: string
+  previousAriaLabel?: string
+  nextAriaLabel?: string
+  /** Current period is a state (sunken), not a larger control. */
+  isCurrentPeriod?: boolean
 }
 
 export function WeekNavigation({
@@ -26,39 +31,37 @@ export function WeekNavigation({
   onPreviousWeek,
   onNextWeek,
   onCurrentWeek,
+  rangeLabel,
+  currentButtonLabel = "Today",
+  previousAriaLabel = "Previous Week",
+  nextAriaLabel = "Next Week",
+  isCurrentPeriod = false,
 }: WeekNavigationProps) {
   return (
-    <div className="flex items-center gap-1 bg-white dark:bg-gray-900 p-1 rounded-full shadow-sm border border-gray-100 dark:border-gray-800">
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={onPreviousWeek}
-        className="h-7 w-7 rounded-full"
-      >
-        <ChevronLeft className="h-4 w-4" />
-        <span className="sr-only">Previous Week</span>
-      </Button>
+    <div className="habit-week-nav">
+      <button type="button" className="habit-chrome-btn" onClick={onPreviousWeek}>
+        <ChevronLeft className="h-3 w-3" />
+        <span className="sr-only">{previousAriaLabel}</span>
+      </button>
 
-      <Button
-        variant="outline"
+      <button
+        type="button"
+        className={`habit-chrome-btn${isCurrentPeriod ? " is-on" : ""}`}
+        aria-pressed={isCurrentPeriod}
         onClick={onCurrentWeek}
-        className="h-7 px-2.5 text-xs rounded-full"
       >
-        <Calendar className="h-3 w-3 mr-1" />
-        Today
-      </Button>
+        <Calendar className="h-3 w-3" />
+        {currentButtonLabel}
+      </button>
 
-      <span className="px-2 font-medium text-xs whitespace-nowrap">{formatDateRange(currentWeekStart, weekEndDate)}</span>
+      <span className="habit-week-nav-range">
+        {rangeLabel ?? formatDateRange(currentWeekStart, weekEndDate)}
+      </span>
 
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={onNextWeek}
-        className="h-7 w-7 rounded-full"
-      >
-        <ChevronRight className="h-5 w-5" />
-        <span className="sr-only">Next Week</span>
-      </Button>
+      <button type="button" className="habit-chrome-btn" onClick={onNextWeek}>
+        <ChevronRight className="h-3 w-3" />
+        <span className="sr-only">{nextAriaLabel}</span>
+      </button>
     </div>
   )
 }

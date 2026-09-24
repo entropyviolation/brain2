@@ -17,18 +17,24 @@ export function countHabitDaysMetInWeek(
   task: WeeklyTask,
   weeklyData: WeeklyData,
   weekStart: Date,
+  isExemptDay?: (dateKey: string) => boolean,
 ): number {
   const days = getWeekDates(weekStart)
   let n = 0
   for (const date of days) {
     const key = formatLocalDateKey(date)
+    if (isExemptDay?.(key)) continue
     if (isHabitGoalMet(task, weeklyData[key]?.[task.id], { date, weeklyData })) n++
   }
   return n
 }
 
 /** Mondays of weeks where this habit was done on ≥4 days. */
-export function fourPlusWeekMondayKeys(task: WeeklyTask, weeklyData: WeeklyData): string[] {
+export function fourPlusWeekMondayKeys(
+  task: WeeklyTask,
+  weeklyData: WeeklyData,
+  isExemptDay?: (dateKey: string) => boolean,
+): string[] {
   const mondays = new Set<string>()
   for (const dateKey of Object.keys(weeklyData)) {
     const date = parseLocalDate(dateKey)
@@ -39,7 +45,7 @@ export function fourPlusWeekMondayKeys(task: WeeklyTask, weeklyData: WeeklyData)
   for (const mondayKey of mondays) {
     const monday = parseLocalDate(mondayKey)
     if (!monday) continue
-    if (countHabitDaysMetInWeek(task, weeklyData, monday) >= WEEKLY_INCREMENT_MIN_DAYS) {
+    if (countHabitDaysMetInWeek(task, weeklyData, monday, isExemptDay) >= WEEKLY_INCREMENT_MIN_DAYS) {
       hits.push(mondayKey)
     }
   }
@@ -58,10 +64,11 @@ export function habitWeekStreakSummary(
   weeklyData: WeeklyData,
   weekStart: Date,
   asOf: Date = new Date(),
+  isExemptDay?: (dateKey: string) => boolean,
 ): HabitWeekStreakSummary {
-  const thisWeekDays = countHabitDaysMetInWeek(task, weeklyData, weekStart)
+  const thisWeekDays = countHabitDaysMetInWeek(task, weeklyData, weekStart, isExemptDay)
   const thisWeekHit = thisWeekDays >= WEEKLY_INCREMENT_MIN_DAYS
-  const streak = computeStreak(fourPlusWeekMondayKeys(task, weeklyData), { unit: "week", today: asOf })
+  const streak = computeStreak(fourPlusWeekMondayKeys(task, weeklyData, isExemptDay), { unit: "week", today: asOf })
   return {
     thisWeekDays,
     thisWeekHit,

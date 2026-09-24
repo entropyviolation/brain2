@@ -1,10 +1,12 @@
 /**
  * lib/points-store.ts — Points ledger store
  *
- * Zustand store for the gamification layer: an append-only `PointsEntry[]` ledger
+ * Zustand store for the gamification layer: a `PointsEntry[]` ledger
  * (date, taskId, points, description) persisted to localStorage under
  * `points-store`. Habit day scores use `upsertPoints` (replace by taskId+date)
- * so partial completion can be revised. Dates are local `YYYY-MM-DD`.
+ * so partial completion can be revised. `removePointsForTask` drops a task's
+ * rows for one local day (used when the completion popup undoes a mark-done).
+ * Dates are local `YYYY-MM-DD`.
  * "possible points" projections from not-yet-completed scheduled tasks (used by
  * the Home dashboard's Points Stats).
  *
@@ -32,6 +34,8 @@ interface PointsStore {
   pointsHistory: PointsEntry[]
   addPoints: (taskId: string, points: number, taskDescription: string, date?: Date) => void
   upsertPoints: (taskId: string, points: number, taskDescription: string, date?: Date) => void
+  /** Drop ledger rows for a task on a given day (today when `date` is omitted). */
+  removePointsForTask: (taskId: string, date?: Date) => void
   getTotalPoints: () => number
   getDayPoints: (date: Date) => number
   getWeekPoints: (date: Date) => number
@@ -71,6 +75,13 @@ export const usePointsStore = create<PointsStore>()(
             ],
           }
         })
+      },
+
+      removePointsForTask: (taskId, date = new Date()) => {
+        const dateKey = formatLocalDateKey(date)
+        set((state) => ({
+          pointsHistory: state.pointsHistory.filter((e) => !(e.taskId === taskId && e.date === dateKey)),
+        }))
       },
 
       getTotalPoints: () => {

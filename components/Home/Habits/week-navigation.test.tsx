@@ -22,6 +22,22 @@ describe("WeekNavigation", () => {
     expect(screen.getByRole("button", { name: "Next Week" })).toBeInTheDocument()
   })
 
+  it("marks Today as pressed on the current period without changing control size", () => {
+    render(
+      <WeekNavigation
+        currentWeekStart={currentWeekStart}
+        weekEndDate={weekEndDate}
+        isCurrentPeriod
+        onPreviousWeek={vi.fn()}
+        onNextWeek={vi.fn()}
+        onCurrentWeek={vi.fn()}
+      />,
+    )
+    const today = screen.getByRole("button", { name: /Today/ })
+    expect(today).toHaveAttribute("aria-pressed", "true")
+    expect(today.className).toContain("is-on")
+  })
+
   it("calls onPreviousWeek when previous button is clicked", async () => {
     const user = userEvent.setup()
     const onPreviousWeek = vi.fn()

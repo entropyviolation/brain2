@@ -1,14 +1,25 @@
-/* Compact Daily habit spreadsheet — fit name + 7 days + week % without horizontal scroll. */
+/* Compact Daily habit spreadsheet — name is capped; leftover width feeds day columns. */
 
 .habit-grid-wrap {
   width: 100%;
-  overflow-x: auto;
+  min-width: 0;
+  /* The Habits Tab Control Panel pins Willpower gems at the bottom; the sheet scrolls in `.hab-well`.
+     Wrap overflow stays visible so the well, not a nested inner scroller, is the pane. */
+  overflow: visible;
+}
+
+@media (max-width: 860px) {
+  .habit-grid-wrap {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
 }
 
 .habit-grid {
   width: 100%;
   table-layout: fixed;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 11px;
   line-height: 1.15;
 }
@@ -17,57 +28,165 @@
 .habit-grid td {
   padding: 2px 3px;
   vertical-align: middle;
+  overflow: visible;
   border-bottom: 1px solid hsl(var(--border) / 0.6);
 }
 
 .habit-grid thead th {
   height: auto;
-  padding: 4px 3px;
+  padding: 3px 2px;
   font-weight: 600;
   text-align: center;
 }
 
+.habit-grid .col-act {
+  width: 28px;
+  min-width: 28px;
+  text-align: center;
+  overflow: visible;
+}
+
 .habit-grid .col-name {
-  width: 15%;
+  width: 12.5rem;
+  min-width: 10rem;
   text-align: left;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .habit-grid .col-day {
-  width: 10.5%;
+  width: auto;
+  min-width: 7.5rem;
   text-align: center;
+  overflow: visible;
 }
 
 .habit-grid .col-pct {
-  width: 7.5%;
+  width: 6.25rem;
+  min-width: 6.25rem;
+  max-width: 6.25rem;
   text-align: center;
   font-variant-numeric: tabular-nums;
+  overflow: hidden;
 }
 
+.habit-grid.is-day-view .col-name {
+  width: auto;
+  min-width: 16rem;
+}
+
+.habit-grid.is-day-view .col-day {
+  width: auto;
+  min-width: 12rem;
+}
+
+.habit-grid.is-day-view .col-pct {
+  width: 7rem;
+  min-width: 7rem;
+  max-width: 7rem;
+}
+
+/* Fixed % slot: Loading Bar and numeric LED swap graphics, not geometry.
+   Channel fills this box; digit width must not shrink the bar. */
 .habit-pct {
+  box-sizing: border-box;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 2px;
+  justify-content: stretch;
+  gap: 0;
+  width: 100%;
+  height: 22px;
   min-width: 0;
+  min-height: 22px;
+  max-width: 100%;
+  max-height: 22px;
+  overflow: hidden;
 }
 
-.habit-grid .col-act {
-  width: 4.5%;
-  text-align: center;
+.habit-grid .habit-pct .hab-pled,
+.habit-grid .habit-pct .hab-pled-bar {
+  box-sizing: border-box;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  max-width: 100%;
+  flex: 1 1 auto;
+}
+
+.habit-grid .habit-pct .hab-pled-bar-bezel {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: none;
+}
+
+.habit-grid .habit-pct .hab-pled-bar-well {
+  box-sizing: border-box;
+  width: 100%;
+  justify-content: space-between;
+}
+
+.habit-grid .habit-pct .hab-pled-bar-read {
+  flex: 0 0 3.2em;
+  width: 3.2em;
+  min-width: 3.2em;
+  max-width: 3.2em;
+}
+
+.habit-grid .col-day .habit-pct {
+  width: 100%;
 }
 
 .habit-grid .habit-name {
   display: flex;
-  align-items: center;
-  gap: 4px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
   min-width: 0;
 }
 
-.habit-grid .habit-name > span:not(.habit-week-streak) {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.habit-grid .habit-name-title {
+  display: block;
+  width: 100%;
+  overflow: visible;
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  line-height: 1.15;
+  font-weight: 600;
+}
+
+.habit-grid.is-day-view .habit-name-title {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.habit-grid.is-day-view .habit-lamp-cell {
+  justify-content: flex-start;
+  padding-left: 6px;
+}
+
+.habit-grid .habit-name-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Fixed day slot: 15px lamp or consult window — same box as empty yes/no cells. */
+.habit-lamp-cell {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  width: 100%;
+  height: 22px;
+  min-width: 0;
+  min-height: 22px;
+  max-height: 22px;
+  padding: 0;
 }
 
 .habit-week-streak {
@@ -95,21 +214,43 @@
 .habit-cell-num {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 2px;
+  justify-content: flex-start;
+  gap: 4px;
+  width: 100%;
   min-width: 0;
+  box-sizing: border-box;
 }
 
-.habit-cell-num input {
-  flex: 1 1 0;
-  min-width: 0;
-  width: 100%;
-  max-width: 100%;
+/* One hardware slot for every tracked/ratio cell — size does not follow the suffix. */
+.habit-grid .habit-cell-num input.habit-cell-slot,
+.habit-grid input.habit-cell-slot {
+  box-sizing: border-box;
+  flex: 0 0 3.4rem;
+  width: 3.4rem;
+  min-width: 3.4rem;
+  max-width: 3.4rem;
   height: 22px;
-  padding: 0 2px;
-  font-size: 11px;
-  text-align: center;
-  border-radius: 4px;
+  margin: 0;
+  padding: 0 5px;
+  font-size: 12px;
+  line-height: 20px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  border-radius: 2px;
+}
+
+.habit-grid input.habit-cell-slot.habit-cell-slot-text {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  text-align: left;
+  padding: 0 6px;
+}
+
+.habit-cell-num .habit-cell-slot.is-met {
+  border-color: #22c55e;
+  background: #f0fdf4;
 }
 
 .habit-cell-num input::-webkit-outer-spin-button,
@@ -123,27 +264,62 @@
   appearance: textfield;
 }
 
-.habit-cell-num .habit-goal {
+/* Marks a cell the Tracking link filled in (lib/habit-tracking.ts). */
+.habit-cell-num .habit-tracked-mark {
   flex: 0 0 auto;
-  font-size: 10px;
+  width: 9px;
+  height: 9px;
+  color: #0284c7;
+}
+
+.habit-cell-num .habit-goal {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  min-width: 0;
+  flex: 1 1 auto;
+  font-size: 11px;
+  line-height: 1.2;
   color: hsl(var(--muted-foreground));
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+}
+
+.habit-cell-num .habit-goal-den {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.habit-cell-num .habit-goal-unit {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .habit-grid .habit-day-today {
-  background: linear-gradient(180deg, rgba(140, 212, 165, 0.18), rgba(159, 194, 165, 0.08));
-  box-shadow: inset 2px 0 0 #8cd4a5;
+  background: #c8d5ce;
+  box-shadow: inset 1px 0 0 #8a9a90, inset -1px 0 0 #8a9a90;
+}
+
+.habit-grid td.col-day.is-exempt,
+.habit-grid td.col-day.is-exempt.habit-day-today {
+  background: #d4d4d4;
+  color: #6e6e6e;
+  box-shadow: inset 0 0 0 1px #b0b0b0;
 }
 
 .habit-grid thead .habit-day-today {
-  background: linear-gradient(135deg, #8cd4a5, #9fc2a5);
-  color: #fff;
-  box-shadow: none;
+  background: #c8d5ce;
+  color: #111;
+  box-shadow: inset 1px 1px #808080, inset -1px -1px #fff;
 }
 
 .habit-grid thead .habit-day-today .habit-day-sub {
-  color: #fff;
-  font-weight: 700;
+  color: #2a2a2a;
+  font-weight: 600;
 }
 
 .habit-day-sub {
@@ -159,6 +335,54 @@
   align-items: center;
   gap: 8px;
   min-width: 0;
+}
+
+.habit-good-days {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 8px;
+  min-width: 0;
+  padding: 4px 8px;
+  border: none;
+  background: #c0c0c0;
+  box-shadow: inset 1px 1px 0 #808080, inset -1px -1px 0 #fff;
+  font-size: 11px;
+  cursor: pointer;
+  appearance: none;
+  font-family: inherit;
+  color: inherit;
+  text-align: left;
+}
+
+.habit-good-days:hover {
+  background: #d4d4d4;
+}
+
+.habit-good-days-stat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.habit-good-days-stat strong {
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.habit-good-days-of {
+  font-size: 11px;
+  font-weight: 500;
+  color: #404040;
+}
+
+.habit-good-days-divider {
+  width: 1px;
+  align-self: stretch;
+  background: #808080;
+  box-shadow: 1px 0 0 #fff;
 }
 
 .habit-week-grade {
@@ -203,10 +427,299 @@
   border-radius: inherit;
 }
 
-.habit-tracker-toolbar {
-  display: flex;
-  flex-wrap: wrap;
+/* Base period-nav; milled fascia lives in habit-chrome.css under `.hab95`. */
+.habit-week-nav {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 3px;
+  background: #c0c0c0;
+  box-shadow: inset 1px 1px #808080, inset -1px -1px #fff;
+}
+
+.habit-week-nav-range {
+  padding: 6px 14px 7px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.habit-gem {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+/* Row edit jewel: set into chrome, larger than a type chip, still inside the cell. */
+.habit-gem-socket .habit-gem,
+.habit-gem-btn .habit-gem {
+  width: 18px;
+  height: 18px;
+}
+
+.habit-gem.is-inverted {
+  filter: invert(1) hue-rotate(180deg) saturate(1.15) brightness(1.08);
+}
+
+body.win95-app .habit-gem-socket,
+body.win95-app .habit-gem-socket:active,
+.habit-gem-btn,
+.habit-gem-socket {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 2px;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.habit-gem-press {
+  display: grid;
+  place-items: center;
+  transform: translateY(0);
+  transition: transform 90ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.habit-gem-socket:active {
+  box-shadow: inset 1px 1px 0 #808080, inset -1px -1px 0 #fff;
+}
+
+.habit-gem-socket:active .habit-gem-press {
+  transform: translateY(1.5px) scale(0.9);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .habit-gem-press {
+    transition: none;
+  }
+
+  .habit-gem-socket:active .habit-gem-press {
+    transform: translateY(1px);
+  }
+}
+
+/* Base metal key; raised milled keys live in habit-chrome.css under `.hab95`. */
+.habit-chrome-btn {
+  appearance: none;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 5px 12px 6px;
+  color: #1c1e20;
+  background: #c0c0c0;
+  border: none;
+  border-radius: 2px;
+  box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px #808080, inset 2px 2px #dfdfdf;
+  cursor: pointer;
+}
+
+.habit-chrome-btn:active {
+  box-shadow: inset 1px 1px #0a0a0a, inset -1px -1px #fff, inset 2px 2px #808080, inset -2px -2px #dfdfdf;
+}
+
+.habit-chrome-btn.is-on {
+  background: #d4d4d4;
+  box-shadow: inset 1px 1px #808080, inset -1px -1px #fff;
+}
+
+.habit-prio-chip {
+  flex-shrink: 0;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0 4px;
+  background: #000080;
+  color: #fff;
+}
+
+.habit-priority-math {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  background: #c0c0c0;
+  box-shadow: inset 1px 1px #808080, inset -1px -1px #fff;
+}
+
+.habit-priority-math-toggle {
+  align-self: flex-start;
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: #000080;
+  text-decoration: underline;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.habit-priority-ledger {
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.habit-priority-ledger-eq {
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  padding: 6px;
+  background: #fff;
+  box-shadow: inset 1px 1px #808080, inset -1px -1px #fff;
+}
+
+.habit-heat {
+  padding: 10px 10px 8px;
+  background: #dfdfdf;
+  box-shadow: inset 1px 1px #808080, inset -1px -1px #fff;
+}
+
+.habit-heat-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.habit-heat-grid {
+  display: grid;
+  gap: 7px 6px;
+  align-items: center;
+  min-width: min-content;
+}
+
+.habit-heat-corner {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: #c0c0c0;
+  min-height: 36px;
+  box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff;
+}
+
+.habit-heat-head {
+  font-size: 9px;
+  font-weight: 700;
+  color: #111111;
+  text-align: center;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  height: 36px;
+  background: #c0c0c0;
+  box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff;
+}
+
+.habit-heat-head.is-today {
+  background: #c8d5ce;
+  color: #111111;
+  box-shadow: inset 1px 1px #808080, inset -1px -1px #fff;
+}
+
+.habit-heat-name {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 10rem;
+  min-height: 22px;
+  padding: 2px 8px;
+  border: none;
+  background: #c0c0c0;
+  color: #111111;
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: inset 0 -1px 0 #808080;
+}
+
+.habit-heat-name span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.habit-heat-name em {
+  font-style: normal;
+  font-size: 9px;
+  color: #3a3a3a;
+}
+
+.habit-heat-cell {
+  --hab-heat-fill: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  background:
+    linear-gradient(155deg, rgba(255, 255, 255, 0.78) 0 22%, transparent 46%),
+    var(--hab-heat-fill),
+    linear-gradient(180deg, #ececec, #d0d0d0);
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.95),
+    inset -1px -1px 0 rgba(80, 80, 80, 0.28),
+    0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+.habit-heat-cell.is-lit {
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.8),
+    inset -1px -1px 0 rgba(40, 40, 40, 0.2),
+    0 1px 3px rgba(40, 70, 50, 0.16);
+}
+
+.habit-heat-cell.is-full {
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1px rgba(140, 212, 165, 0.4),
+    0 2px 5px rgba(70, 130, 90, 0.2);
+}
+
+.habit-heat-cell.is-today {
+  background-color: #c8d5ce;
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.9),
+    inset -1px -1px 0 rgba(80, 80, 80, 0.22),
+    0 0 0 1px #8a9a90;
+}
+
+button.habit-heat-cell {
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+  appearance: none;
+}
+
+.habit-heat-cell.is-exempt,
+.habit-heat-cell.is-exempt.is-today {
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      #c8c8c8,
+      #c8c8c8 2px,
+      #aeaeae 2px,
+      #aeaeae 4px
+    );
+  background-color: #bdbdbd;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.28);
+  opacity: 0.8;
+}
+
+.habit-heat-hint {
+  margin: 10px 2px 0;
+  font-size: 11px;
+  color: #3a3a3a;
 }

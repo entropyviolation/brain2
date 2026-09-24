@@ -4,7 +4,16 @@ import { useHabitsStore } from "@/lib/habits-store"
 import { usePointsStore } from "@/lib/points-store"
 import { TaskType } from "@/lib/types"
 import { formatLocalDateKey } from "@/lib/date-utils"
-import { GRADE_BONUS_BOTH, gradeBonusTaskId, habitDayPointTaskId, RAW_DAY_BONUS, rawDayBonusTaskId } from "@/lib/habit-points"
+import {
+  dayGradeLiftTaskId,
+  GRADE_BONUS_BOTH,
+  gradeBonusTaskId,
+  habitDayPointTaskId,
+  RAW_DAY_BONUS,
+  rawDayBonusTaskId,
+  weeklyGradeLiftTaskId,
+} from "@/lib/habit-points"
+import { getWeekString } from "@/lib/date-utils"
 
 describe("daily habit points", () => {
   const monday = new Date(2026, 8, 14)
@@ -41,5 +50,58 @@ describe("daily habit points", () => {
       usePointsStore.getState().pointsHistory.find((e) => e.taskId === rawDayBonusTaskId(formatLocalDateKey(monday)))
         ?.points,
     ).toBe(RAW_DAY_BONUS)
+  })
+
+  it("uses the user accomplishment threshold and bonus instead of the 80/50 defaults", () => {
+    useHabitsStore.getState().setAccomplishmentThreshold(100)
+    useHabitsStore.getState().setAccomplishmentBonus(12)
+    useHabitsStore.getState().updateCompletion("water", monday, { completed: true })
+    useHabitsStore.getState().updateCompletion("pages", monday, { value: 10 })
+    expect(
+      usePointsStore.getState().pointsHistory.find((e) => e.taskId === rawDayBonusTaskId(formatLocalDateKey(monday)))
+        ?.points,
+    ).toBe(12)
+
+    useHabitsStore.getState().setAccomplishmentThreshold(50)
+    useHabitsStore.getState().updateCompletion("pages", monday, { value: 5 })
+    expect(
+      usePointsStore.getState().pointsHistory.find((e) => e.taskId === rawDayBonusTaskId(formatLocalDateKey(monday)))
+        ?.points,
+    ).toBe(12)
+  })
+
+  it("pays an editable bonus when habit grades beat yesterday, and drops it at 0", () => {
+    useHabitsStore.getState().setDayGradeLiftBonus(15)
+    useHabitsStore.getState().updateCompletion("water", monday, { completed: true })
+    useHabitsStore.getState().updateCompletion("pages", monday, { value: 10 })
+    const row = usePointsStore
+      .getState()
+      .pointsHistory.find((e) => e.taskId === dayGradeLiftTaskId(formatLocalDateKey(monday)))
+    expect(row?.points).toBe(30)
+    expect(row?.taskDescription).toBe("Higher habit grades than yesterday")
+
+    useHabitsStore.getState().setDayGradeLiftBonus(0)
+    expect(
+      usePointsStore.getState().pointsHistory.find((e) => e.taskId === dayGradeLiftTaskId(formatLocalDateKey(monday))),
+    ).toBeUndefined()
+  })
+
+  it("pays an editable bonus when this week's weekly habit grades beat last week", () => {
+    const lastWeek = new Date(2026, 8, 7)
+    const thisWeek = new Date(2026, 8, 14)
+    useHabitsStore.getState().setTasks([
+      { id: "wk", name: "Weekly review", type: TaskType.BOOLEAN, rewardValue: 10, frequency: "weekly" },
+    ])
+    useHabitsStore.getState().setWeeklyGradeLiftBonus(8)
+    useHabitsStore.getState().updateWeeklyHabitCompletion("wk", lastWeek, { completed: false })
+    useHabitsStore.getState().updateWeeklyHabitCompletion("wk", thisWeek, { completed: true })
+    const row = usePointsStore
+      .getState()
+      .pointsHistory.find((e) => e.taskId === weeklyGradeLiftTaskId(getWeekString(thisWeek)))
+    expect(row?.points).toBe(16)
+    expect(row?.taskDescription).toBe("Higher weekly habit grades than last week")
+    expect(
+      usePointsStore.getState().pointsHistory.find((e) => e.taskDescription === "Completed Weekly review")?.points,
+    ).toBe(10)
   })
 })

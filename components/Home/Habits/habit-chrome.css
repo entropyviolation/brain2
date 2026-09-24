@@ -1,0 +1,2272 @@
+/**
+ * components/Home/Habits/habit-chrome.css — Divine-machinery workstation
+ *
+ * Home → Habits is a contained instrument. Phase A steals (DESIGN_REFS Now):
+ * Jewel PCB + silver-book Willpower gems cartouche, TENO/gadget packed wells + FR4
+ * hairlines, noble-gas finger-tube grade meters + Tek/OSD/bloom elsewhere, paper-lace Needs
+ * Attention. Header, Daily/Weekly/Monthly keys, period nav, Settings / New habit,
+ * and the Habits Tab Control Panel share the house milled fascia
+ * (docs/DESIGN_STYLE.md#milled-fascia) — brushed silver bays, engraved nameplates,
+ * CRT title, active period key = CRT + round power lamp. CRT overlay is `.hab-crt`
+ * (off). `.hab-view-changer` is also used on Home Tracking (Time Grid / Activity
+ * Log / Day Log, and day-notes List / Bulk / Latest) so those keys match.
+ * Grade detail popups use the portaled `.hab-grade-sheet` milled skin (outside
+ * `.hab95`) — do not regress that sheet. Cool chrome tokens only — no brown-gray,
+ * no 100vw breakout, no Home `#fff` cards. Phosphor stays `--hab-crt-green`
+ * (`#7dffc4`). Widget hues stay on instrument fills only. Scoped under `.hab95`
+ * so Lists / Plan stay their own rooms (grade sheet is global).
+ */
+
+.hab95 {
+  --hab-metal: var(--chrome-face, #c0c0c0);
+  --hab-metal-hi: var(--chrome-hi, #ffffff);
+  --hab-metal-mid: var(--chrome-brush, #acacac);
+  --hab-metal-lo: var(--chrome-lo, #808080);
+  --hab-ink: #111111;
+  --hab-muted: #3a3a3a;
+  /* Shared CRT phosphor — Week grade / Perfect output, Home strip, streak wells. */
+  --hab-crt-green: #7dffc4;
+  --hab-crt-glow: 0 0 3px var(--hab-crt-green);
+  --hab-raised: var(
+    --w95-raised,
+    inset -1px -1px #0a0a0a,
+    inset 1px 1px #fff,
+    inset -2px -2px #808080,
+    inset 2px 2px #dfdfdf
+  );
+  --hab-sunken: var(
+    --w95-sunken,
+    inset -1px -1px #fff,
+    inset 1px 1px #0a0a0a,
+    inset -2px -2px #dfdfdf,
+    inset 2px 2px #808080
+  );
+  --hab-field: var(
+    --w95-field,
+    inset -1px -1px #fff,
+    inset 1px 1px #808080,
+    inset -2px -2px #dfdfdf,
+    inset 2px 2px #0a0a0a
+  );
+
+  position: relative;
+  color: var(--hab-ink);
+  --muted-foreground: 0 0% 18%;
+  font-family: var(--w95-font, Tahoma, "MS Sans Serif", Geneva, sans-serif);
+  font-size: 12px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 4px 0 8px;
+  min-height: 0;
+  background: transparent;
+}
+
+body.win95-app main:has(.hab95) [role="tabpanel"]:has(.hab95) {
+  margin-top: 0;
+}
+
+.hab95 .hab-console {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 5px;
+  background-color: var(--hab-metal);
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.16) 0 1px,
+      transparent 1px 3px
+    ),
+    repeating-linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.05) 0 1px,
+      transparent 1px 5px
+    );
+  box-shadow: var(--hab-raised), 0 0 0 1px var(--hab-metal-lo);
+}
+
+.hab95 .home95 {
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+.hab95 .home95 .home-window {
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.hab95 .home95 .home-title-bar:not(.home-date-plate) {
+  min-height: 22px;
+  padding: 3px 8px;
+  color: var(--hab-ink);
+  background-color: var(--hab-metal);
+  background-image: repeating-linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.28) 0 1px,
+    transparent 1px 2px
+  );
+  box-shadow: var(--hab-raised);
+}
+
+.hab95 .home95 .home-date-plate {
+  align-items: center;
+  min-height: 0;
+}
+
+.hab95 .home95 .home-title-bar:not(.home-date-plate) h2,
+.hab95 .home95 .home-title-bar:not(.home-date-plate) .home-title-year,
+.hab95 .home95 .home-title-icon {
+  color: var(--hab-ink);
+  text-shadow: none;
+}
+
+.hab95 .home95 .home-date-weekday {
+  color: var(--hab-crt-green);
+  text-shadow: var(--hab-crt-glow);
+}
+
+.hab95 .home95 .home-window-body {
+  padding: 6px;
+  gap: 6px;
+  background: var(--hab-metal-mid);
+  box-shadow: var(--hab-sunken);
+}
+
+/* Overview squares live in home-chrome.css — wrap as equal-height squares. */
+.hab95 .home95 .home-overview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  align-content: flex-start;
+  grid-template-columns: none;
+}
+
+.hab95 .home95 .home-overview > * {
+  flex-shrink: 0;
+}
+
+@media (max-width: 1023px) {
+  .hab95 .home95 .home-overview {
+    grid-template-columns: none;
+  }
+}
+
+.hab95 .hab-score-quad {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 3px;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  padding: 3px;
+  background: var(--hab-metal-mid);
+  box-shadow: var(--hab-sunken);
+  background-image: linear-gradient(
+    180deg,
+    transparent calc(50% - 1px),
+    rgba(0, 0, 0, 0.22) calc(50% - 1px),
+    rgba(255, 255, 255, 0.28) 50%,
+    transparent calc(50% + 1px)
+  );
+}
+
+.hab95 .hab-score-well {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  padding: 5px;
+  background: var(--hab-metal);
+  box-shadow: var(--hab-sunken);
+}
+
+.hab95 .hab-score-well.is-today {
+  box-shadow:
+    var(--hab-sunken),
+    inset 0 0 0 1px rgba(125, 255, 196, 0.42),
+    inset 0 0 8px rgba(176, 150, 255, 0.18);
+}
+
+.hab95 .hab-score-caption {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  line-height: 1.1;
+  color: #3a3a3a;
+}
+
+.hab95 .hab-score-gem {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  object-fit: contain;
+  filter: drop-shadow(0 0 2px rgba(158, 240, 255, 0.55));
+}
+
+.hab95 .hab-score-readout {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 3px 4px;
+  text-align: center;
+  font-size: 18px;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  color: var(--hab-crt-green);
+  text-shadow: var(--hab-crt-glow);
+  background: #040a08;
+  box-shadow: var(--hab-field);
+}
+
+.hab95 .hab-score-well.is-today .hab-score-readout {
+  font-size: 20px;
+  color: var(--hab-crt-green);
+  text-shadow: var(--hab-crt-glow);
+}
+
+@keyframes hab-score-flash {
+  from {
+    color: #d8ffd0;
+    text-shadow: 0 0 2px var(--hab-crt-green);
+  }
+  to {
+    color: var(--hab-crt-green);
+    text-shadow: var(--hab-crt-glow);
+  }
+}
+
+.hab95 .hab-score-readout.is-flash {
+  animation: hab-score-flash 360ms ease-out 1;
+}
+
+.hab95 .hab-score-sub {
+  margin: 0;
+  font-size: 9px;
+  line-height: 1.2;
+  color: #3a3a3a;
+}
+
+.hab95 .hab-score-sub-empty {
+  min-height: 0;
+}
+
+.hab95 .hab-progress-module {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  background: var(--hab-metal);
+  box-shadow: var(--hab-sunken);
+}
+
+.hab95 .hab-progress-title {
+  flex-shrink: 0;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--hab-crt-green);
+  text-shadow: var(--hab-crt-glow);
+  background: linear-gradient(180deg, #1a3220, #040a08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.hab95 .hab-progress-instrument {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 6px;
+  min-width: 0;
+  padding: 5px;
+}
+
+.hab95 .hab-progress-meters {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.hab95 .hab-meter {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hab95 .hab-meter-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  color: #3a3a3a;
+}
+
+.hab95 .hab-meter-name {
+  font-weight: 700;
+}
+
+.hab95 .hab-meter-stat,
+.hab95 .hab-meter-of {
+  margin: 0;
+  font-size: 9px;
+  color: #3a3a3a;
+}
+
+.hab95 .home-overview .hab-well-fill[role="progressbar"] {
+  height: 7px;
+  border-radius: 0;
+  overflow: hidden;
+  background: #1a0a22;
+  box-shadow: inset 1px 1px #000, inset -1px -1px #4a4a52;
+}
+
+.hab95 .home-overview .hab-well-fill[role="progressbar"] > * {
+  border-radius: 0;
+  background-color: transparent !important;
+  background-image: linear-gradient(
+    90deg,
+    var(--home-grad-led, #7e14ff),
+    var(--home-grad-grade, #508b51),
+    var(--home-grad-output, #25366a)
+  ) !important;
+  box-shadow: none;
+}
+
+.hab95 .home-overview .hab-well-fill[role="progressbar"][aria-valuenow="100"] > * {
+  box-shadow: inset 0 0 6px rgba(125, 255, 220, 0.75);
+}
+
+.hab95 .hab-spark-stack {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 84px;
+  min-width: 0;
+  min-height: 72px;
+}
+
+.hab95 .hab-spark-well {
+  position: relative;
+  flex: 1 1 84px;
+  width: 100%;
+  min-width: 0;
+  min-height: 72px;
+  padding: 4px;
+  background: var(--hab-metal);
+  box-shadow: var(--hab-raised);
+}
+
+.hab95 .hab-spark-well .hab-sparkline {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 72px;
+  border-radius: 2px;
+  box-shadow: inset 2px 2px #040a08, inset -1px -1px #6a8074;
+}
+
+/* CRT/interlace overlay — optional. Off unless `.hab-crt` is on `.hab95`. */
+.hab95.hab-crt .hab-spark-well::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 6px;
+  border-radius: 2px;
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.04) 0 1px,
+    transparent 1px 3px
+  );
+}
+
+.hab95 .hab-spark-caption {
+  margin: 2px 0 0;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: #3a3a3a;
+  text-align: center;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+/* Kill Home's inset-white fields. They were the remaining shifting block. */
+.hab95 .home95 .bg-card {
+  background: var(--hab-metal);
+  color: var(--hab-ink);
+  box-shadow: var(--hab-sunken);
+}
+
+.hab95 .home-window-body .bg-card > :first-child,
+.hab95 .home-window-body .bg-card > :last-child:not(:first-child) {
+  padding: 5px 7px;
+}
+
+.hab95 .home-review-banner {
+  background: var(--hab-metal);
+}
+
+.hab95 .hab-body {
+  display: flex;
+  flex-direction: column;
+  /* Air for the Home tabs bay lives as margin-top on the strip (home-chrome.css), not gap below it. */
+  gap: 0;
+  min-width: 0;
+}
+
+.hab95 .hab-body > [role="tablist"] {
+  align-self: stretch;
+}
+
+/* Milled fascia header: CRT title · period nameplate + metal keys · Settings. */
+.hab-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-radius: 3px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
+    linear-gradient(165deg, #d4d8dc 0%, var(--hab-metal, var(--chrome-face, #c0c0c0)) 48%, #969a9e 100%);
+  box-shadow:
+    0 0 0 1px #5c6064,
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -1px 0 rgba(40, 42, 46, 0.4),
+    inset 0 0 0 2px #b0b4b8;
+}
+
+.hab-head [role="tablist"] {
+  height: auto;
+  min-height: 22px;
+  padding: 1px;
+  gap: 1px;
+}
+
+.hab-head [role="tab"] {
+  height: 20px;
+  min-height: 20px;
+  padding: 0 7px;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.hab-head-title {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 6px 14px 7px;
+  border-radius: 2px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--hab-crt-green, #7dffc4);
+  text-shadow: var(--hab-crt-glow, 0 0 3px #7dffc4);
+  background:
+    radial-gradient(ellipse at 18% 0%, rgba(125, 255, 196, 0.14), transparent 46%),
+    #070c0a;
+  box-shadow:
+    0 0 0 1px #3a3e42,
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 10px 14px rgba(0, 0, 0, 0.4);
+}
+
+.hab-head-center {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.hab-head-utils {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.hab-head .habit-chrome-btn,
+.hab-head .hab-rocker {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.hab-head .habit-chrome-btn {
+  min-height: 30px;
+  padding: 5px 12px 6px;
+}
+
+/* Period bay: metal prev/next/today + engraved date nameplate. */
+.hab95 .habit-week-nav,
+body.win95-app .hab95 .habit-week-nav {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  height: auto;
+  min-height: 40px;
+  padding: 6px 8px;
+  border-radius: 3px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
+    linear-gradient(180deg, #d8dce0, var(--hab-metal-mid, var(--chrome-brush, #acacac)) 48%, #b0b4b8);
+  box-shadow:
+    0 0 0 1px #6a6e72,
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 2px 3px rgba(0, 0, 0, 0.08);
+}
+
+.hab95 .habit-week-nav .habit-chrome-btn,
+body.win95-app .hab95 .habit-week-nav .habit-chrome-btn {
+  min-height: 30px;
+  height: auto;
+  padding: 5px 10px 6px;
+}
+
+.hab95 .habit-week-nav-range,
+body.win95-app .hab95 .habit-week-nav-range {
+  margin: 0;
+  min-height: 30px;
+  padding: 6px 14px 7px;
+  display: inline-flex;
+  align-items: center;
+  flex: 1 1 auto;
+  justify-content: center;
+  border-radius: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #2a2c2e;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  white-space: nowrap;
+  background-image:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0 1px, transparent 1px 2px),
+    linear-gradient(180deg, #eef0f2 0%, var(--hab-metal, var(--chrome-face, #c0c0c0)) 48%, #a4a8ac 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1px #6a6e72;
+}
+
+.hab95 .habit-grades {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 4px;
+  padding: 3px 4px;
+  background: var(--hab-metal-mid);
+  box-shadow: var(--hab-sunken);
+}
+
+/* Daily / Weekly / Monthly (and Tracking kin): equal keys in one milled bay;
+ * active key is a CRT with a round power lamp — not a sunken gray folder tab. */
+.hab95 .hab-view-changer,
+.trk95 .hab-view-changer,
+body.win95-app .hab95 .hab-view-changer,
+body.win95-app .trk95 .hab-view-changer {
+  display: block;
+  padding: 4px;
+  border-radius: 3px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
+    #b4b8bc;
+  box-shadow:
+    0 0 0 1px #5c6064,
+    inset 0 2px 3px rgba(0, 0, 0, 0.18);
+}
+
+.hab95 .hab-view-changer [role="tablist"],
+.trk95 .hab-view-changer [role="tablist"],
+body.win95-app .hab95 .hab-view-changer [role="tablist"],
+body.win95-app .trk95 .hab-view-changer [role="tablist"] {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  width: 100%;
+  height: auto;
+  min-height: 28px;
+  padding: 0;
+  gap: 4px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.hab95 .hab-view-changer [role="tab"],
+.trk95 .hab-view-changer [role="tab"],
+body.win95-app .hab95 .hab-view-changer [role="tab"],
+body.win95-app .trk95 .hab-view-changer [role="tab"] {
+  position: relative;
+  display: inline-flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 28px;
+  height: auto;
+  padding: 4px 10px 5px;
+  border-radius: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #1c1e20;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 28%),
+    linear-gradient(165deg, #eceef0, #c0c4c8);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1px #4a4e52;
+}
+
+.hab95 .hab-view-changer [role="tab"][data-state="active"],
+.trk95 .hab-view-changer [role="tab"][data-state="active"],
+body.win95-app .hab95 .hab-view-changer [role="tab"][data-state="active"],
+body.win95-app .trk95 .hab-view-changer [role="tab"][data-state="active"] {
+  color: var(--hab-crt-green, #7dffc4);
+  font-weight: 700;
+  text-shadow: var(--hab-crt-glow, 0 0 3px #7dffc4);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.2), transparent 55%),
+    #070c0a;
+  box-shadow:
+    0 0 0 1px #3a3e42,
+    inset 0 8px 10px rgba(0, 0, 0, 0.4);
+}
+
+.hab95 .hab-view-changer [role="tab"][data-state="active"]::before,
+.trk95 .hab-view-changer [role="tab"][data-state="active"]::before,
+body.win95-app .hab95 .hab-view-changer [role="tab"][data-state="active"]::before,
+body.win95-app .trk95 .hab-view-changer [role="tab"][data-state="active"]::before {
+  content: "";
+  display: block;
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f4fff8 0 16%, #7dffc4 42%, #0b4a32 100%);
+  box-shadow:
+    0 0 0 1px #141816,
+    0 0 0 2px #9aa09c,
+    inset 0 1px 1px rgba(255, 255, 255, 0.55),
+    0 0 4px #7dffc4;
+}
+
+.hab95 .habit-week-grade,
+.hab95 .habit-good-days {
+  border: none;
+  border-radius: 2px;
+  background: var(--hab-metal);
+  box-shadow: var(--hab-raised);
+}
+
+.hab95 .habit-grades .habit-week-grade > span:first-child {
+  white-space: nowrap;
+}
+
+.hab95 .habit-week-grade:hover,
+.hab95 .habit-good-days:hover {
+  background: var(--hab-metal-hi);
+  border-color: transparent;
+}
+
+.hab95 .habit-week-grade strong,
+.hab95 .habit-good-days-stat strong {
+  color: var(--hab-ink);
+}
+
+/* Raised metal keys — Settings, New habit, period chevrons / Today. */
+.hab95 .habit-chrome-btn,
+body.win95-app .hab95 .habit-chrome-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 30px;
+  padding: 5px 12px 6px;
+  border: 0;
+  border-radius: 2px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #1c1e20;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
+    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--hab-metal, var(--chrome-face, #c0c0c0)) 70%, #9a9ea2 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 0 -1px 0 rgba(55, 58, 62, 0.45),
+    0 0 0 1px #4a4e52,
+    0 1px 0 #6a6e72;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.hab95 .habit-chrome-btn:hover:not(:disabled),
+body.win95-app .hab95 .habit-chrome-btn:hover:not(:disabled) {
+  filter: brightness(1.04);
+}
+
+.hab95 .habit-chrome-btn:active,
+.hab95 .habit-chrome-btn.is-on,
+body.win95-app .hab95 .habit-chrome-btn:active,
+body.win95-app .hab95 .habit-chrome-btn.is-on {
+  filter: none;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.06), transparent 40%),
+    var(--hab-metal-mid, var(--chrome-brush, #acacac));
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.35),
+    0 0 0 1px #3a3e42;
+}
+
+.hab95 .habit-chrome-btn-cta {
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.hab-pane {
+  margin: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+.hab-desk {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: stretch;
+  min-width: 0;
+  min-height: calc(100dvh - 15.5rem);
+  overflow: hidden;
+}
+
+/* Keep the Habits Tab Control Panel on the right; only drop it under the sheet on phones. */
+@media (max-width: 640px) {
+  .hab-desk {
+    grid-template-columns: 1fr;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .hab-control-panel {
+    width: 100% !important;
+    max-width: none;
+    justify-self: stretch;
+    height: auto;
+  }
+
+  .hab-well {
+    overflow: visible;
+  }
+}
+
+/* Dashboard usable width keeps one header unit. Stack only on phones. */
+@media (max-width: 720px) {
+  .hab-head {
+    grid-template-columns: 1fr;
+  }
+
+  .hab-head-title,
+  .hab-head-utils {
+    justify-self: stretch;
+  }
+
+  .hab-head-utils {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
+.hab-well {
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  overflow: auto;
+  padding: 3px;
+  background-color: var(--hab-metal-mid);
+  background-image:
+    repeating-linear-gradient(
+      45deg,
+      rgba(184, 112, 72, 0.09) 0 1px,
+      transparent 1px 5px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      rgba(40, 48, 64, 0.06) 0 1px,
+      transparent 1px 6px
+    );
+  box-shadow: var(--hab-sunken, inset 1px 1px #808080, inset -1px -1px #fff);
+}
+
+.hab-well .overflow-hidden,
+.hab-well .rounded-lg,
+.hab-well .shadow-sm,
+.hab-well .border-none {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* Table document inside the well. */
+.hab95 .habit-grid {
+  font-family: var(--font-karla), Tahoma, Geneva, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  font-size: 12px;
+  color: var(--hab-ink);
+  background: var(--chrome-mid, #dfdfdf);
+}
+
+.hab95 .habit-grid th,
+.hab95 .habit-grid td {
+  padding: 2px 3px;
+  border-bottom-color: var(--hab-metal-lo);
+  box-shadow:
+    inset 0 -1px 0 rgba(90, 120, 80, 0.22),
+    inset -1px 0 0 rgba(150, 165, 140, 0.16);
+}
+
+.hab95 .habit-grid thead th {
+  height: auto;
+  padding: 3px 2px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--hab-ink);
+  background-color: var(--hab-metal);
+  background-image: repeating-linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.32) 0 1px,
+    transparent 1px 2px
+  );
+  box-shadow: var(--hab-raised);
+}
+
+.hab95 .habit-grid .col-name {
+  width: 12.5rem;
+  min-width: 10rem;
+  overflow: visible;
+}
+
+.hab95 .habit-grid .col-day {
+  width: auto;
+  min-width: 7.5rem;
+  overflow: visible;
+}
+
+.hab95 .habit-grid .col-pct {
+  width: 6.25rem;
+  min-width: 6.25rem;
+  max-width: 6.25rem;
+}
+
+.hab95 .habit-grid .col-act {
+  width: 28px;
+  min-width: 28px;
+  overflow: visible;
+}
+
+.hab95 .habit-grid.is-day-view .col-name {
+  width: auto;
+  min-width: 16rem;
+}
+
+.hab95 .habit-grid.is-day-view .col-day {
+  width: auto;
+  min-width: 12rem;
+}
+
+.hab95 .habit-grid.is-day-view .col-pct {
+  width: 7rem;
+  min-width: 7rem;
+  max-width: 7rem;
+}
+
+.hab95 .habit-grid.is-day-view .habit-name-title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* Today: one solid mint fill — readable ink, no gradient ribbon. */
+.hab95 .habit-grid .col-day.habit-day-today {
+  background: #c8d5ce;
+  color: var(--hab-ink);
+  box-shadow:
+    inset 1px 0 0 #8a9a90,
+    inset -1px 0 0 #8a9a90;
+}
+
+.hab95 .habit-grid td.col-day.is-exempt,
+.hab95 .habit-grid td.col-day.is-exempt.habit-day-today {
+  background: #d4d4d4;
+  color: #6e6e6e;
+  box-shadow: inset 0 0 0 1px #b0b0b0;
+}
+
+.hab95 .habit-grid thead .habit-day-today {
+  background: #c8d5ce;
+  color: var(--hab-ink);
+  box-shadow: inset 1px 1px #7a7a74, inset -1px -1px #f4f4ee;
+}
+
+.hab95 .habit-grid thead .habit-day-today .habit-day-sub,
+.hab95 .habit-grid .habit-day-today .habit-day-sub {
+  color: #2a2a2a;
+}
+
+.hab95 .habit-grid tbody .habit-day-today input {
+  background: var(--chrome-hi, #ffffff);
+  color: #111;
+}
+
+.hab95 .habit-grid .habit-cell-num input.habit-cell-slot {
+  flex: 0 0 3.4rem;
+  width: 3.4rem;
+  min-width: 3.4rem;
+  max-width: 3.4rem;
+  height: 22px;
+  padding: 0 5px;
+  font-size: 12px;
+}
+
+.hab95 .habit-grid input.habit-cell-slot.habit-cell-slot-text {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  height: 22px;
+}
+
+/* Heatmap sheet: same light metal as the checklist, not a dark CRT board. */
+.hab95 .habit-heat {
+  background: var(--chrome-mid, #dfdfdf);
+  box-shadow: var(--hab-field);
+}
+
+.hab95 .habit-heat-corner,
+.hab95 .habit-heat-head,
+.hab95 .habit-heat-name {
+  background: var(--hab-metal);
+  color: var(--hab-ink);
+  box-shadow: var(--hab-raised);
+}
+
+.hab95 .habit-heat-head.is-today,
+.hab95 .habit-heat-cell.is-today {
+  background: #c8d5ce;
+  background-color: #c8d5ce;
+  color: var(--hab-ink);
+}
+
+.hab95 .habit-heat-cell.is-exempt,
+.hab95 .habit-heat-cell.is-exempt.is-today {
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      #c8c8c8,
+      #c8c8c8 2px,
+      #aeaeae 2px,
+      #aeaeae 4px
+    );
+  background-color: #bdbdbd;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.28);
+  opacity: 0.8;
+}
+
+.hab95 .habit-heat-cell {
+  background-color: var(--chrome-mid, #dfdfdf);
+}
+
+.hab95 .habit-heat-hint {
+  color: var(--hab-muted);
+}
+
+.hab95 .habit-gem {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0.5px 0 rgba(255, 255, 255, 0.55));
+}
+
+.hab95 .habit-gem-socket .habit-gem,
+.hab95 .habit-gem-btn .habit-gem {
+  width: 18px;
+  height: 18px;
+}
+
+.hab95 .habit-gem.is-inverted {
+  filter: invert(1) hue-rotate(180deg) saturate(1.15) brightness(1.08) drop-shadow(0 0.5px 0 rgba(255, 255, 255, 0.55));
+}
+
+.hab95 .habit-gem-btn,
+.hab95 .habit-gem-socket {
+  background: transparent;
+  box-shadow: none;
+  border-radius: 2px;
+}
+
+.hab95 .habit-gem-socket:active {
+  box-shadow: inset 1px 1px 0 var(--hab-metal-lo), inset -1px -1px 0 var(--hab-metal-hi);
+}
+
+.hab-issue-gem {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 1.6em;
+  padding: 0 4px 0 2px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: #4a0810;
+  background: transparent;
+  box-shadow: none;
+}
+
+.habit-gem-issue {
+  width: 14px;
+  height: 14px;
+}
+
+/* Jewel-PCB Habits Tab Control Panel — milled bay; gauges / rockers / New habit;
+ * Willpower gems stay the photographed chrome + black-mirror oval at the foot. */
+.hab-control-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 6px;
+  width: var(--hab-control-panel-width, 196px);
+  flex: 0 0 var(--hab-control-panel-width, 196px);
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  overflow: visible;
+  padding: 8px 7px 8px;
+  border-radius: 3px;
+  --hab-willpower-scale: 1;
+  background-color: var(--hab-metal, var(--chrome-face, #c0c0c0));
+  background-image:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
+    repeating-linear-gradient(
+      90deg,
+      rgba(210, 216, 222, 0.45) 0 1px,
+      transparent 1px 11px
+    ),
+    radial-gradient(ellipse 80% 50% at 28% 18%, rgba(255, 255, 255, 0.32), transparent 58%),
+    linear-gradient(165deg, #d4d8dc 0%, var(--hab-metal, var(--chrome-face, #c0c0c0)) 48%, #969a9e 100%);
+  box-shadow:
+    0 0 0 1px #5c6064,
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -1px 0 rgba(40, 42, 46, 0.35),
+    inset 0 0 0 2px #b0b4b8;
+}
+
+.hab-control-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+}
+
+.hab-control-gauges {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 5px 5px;
+  border-radius: 3px;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.08), transparent 30%),
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
+    #c4c8cc;
+  box-shadow:
+    0 0 0 1px #6a6e72,
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    inset 0 2px 3px rgba(0, 0, 0, 0.12);
+}
+
+.hab-control-gauges .habit-week-grade {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 3px;
+  padding: 6px 7px 7px;
+  border-radius: 2px;
+}
+
+.hab-control-gauges .habit-week-grade > span:first-child {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #2a2c2e;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.hab95 .hab-control-gauges .habit-week-grade strong {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  border-radius: 2px;
+  font-size: 18px;
+  line-height: 1.15;
+  letter-spacing: 0.08em;
+  color: var(--hab-crt-green);
+  text-shadow: var(--hab-crt-glow);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.12), transparent 55%),
+    #040a08;
+  box-shadow:
+    0 0 0 1px #3a3e42,
+    var(--hab-field);
+}
+
+.hab-control-gauges .habit-week-grade .hab-gas-tube {
+  width: 100%;
+  height: 42px;
+}
+
+.hab-control-streak {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  align-items: stretch;
+}
+
+.hab-control-streak .habit-good-days {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  min-width: 0;
+  height: 100%;
+  padding: 6px 5px 7px;
+  border-radius: 2px;
+}
+
+.hab-control-streak .habit-good-days-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  flex: 1;
+  min-height: 0;
+  gap: 4px;
+}
+
+.hab-control-streak .habit-good-days-stat > span:first-child {
+  flex: 1 1 auto;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: normal;
+  line-height: 1.2;
+  color: #2a2c2e;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.hab95 .hab-control-streak .habit-good-days-stat strong {
+  display: flex;
+  align-items: center;
+  margin-top: auto;
+  width: 100%;
+  box-sizing: border-box;
+  flex: 0 0 26px;
+  height: 26px;
+  min-height: 26px;
+  padding: 0 4px;
+  border-radius: 2px;
+  font-size: 16px;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  color: var(--hab-crt-green);
+  text-shadow: var(--hab-crt-glow);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.12), transparent 55%),
+    #040a08;
+  box-shadow:
+    0 0 0 1px #3a3e42,
+    var(--hab-field);
+}
+
+.hab-control-streak .habit-good-days-of {
+  color: color-mix(in srgb, var(--hab-crt-green) 42%, #3a4a48);
+}
+
+.hab-wand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 30px;
+  margin: 0 0 2px;
+  padding: 5px 10px 6px;
+  border: 0;
+  border-radius: 2px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: left;
+  color: #1c1e20;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
+    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--hab-metal, var(--chrome-face, #c0c0c0)) 70%, #9a9ea2 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 0 -1px 0 rgba(55, 58, 62, 0.45),
+    0 0 0 1px #4a4e52,
+    0 1px 0 #6a6e72;
+}
+
+.hab-wand:hover {
+  filter: brightness(1.04);
+}
+
+.hab-wand.is-on {
+  filter: none;
+  color: #1c1e20;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.06), transparent 40%),
+    var(--hab-metal-mid, var(--chrome-brush, #acacac));
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.35),
+    0 0 0 1px #3a3e42;
+}
+
+.hab-wand-mark {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+}
+
+.hab-wand.is-on .hab-wand-slash {
+  stroke: currentColor;
+}
+
+.habit-pct-vacant {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 22px;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: #7a756c;
+}
+
+.hab-control-toggles {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 5px;
+  border-radius: 3px;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.08), transparent 30%),
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
+    #c4c8cc;
+  box-shadow:
+    0 0 0 1px #6a6e72,
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    inset 0 2px 3px rgba(0, 0, 0, 0.12);
+}
+
+.hab-control-toggles .hab-rocker {
+  white-space: normal;
+  align-items: flex-start;
+}
+
+.hab-control-toggles .hab-rocker-caption {
+  line-height: 1.2;
+}
+
+.hab-sort {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  position: relative;
+  z-index: 3;
+}
+
+.hab-sort-legend {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #2a2c2e;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.hab-sort-keys,
+.hab-sort-dir {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.hab-sort-plate {
+  position: relative;
+  min-width: 0;
+  padding: 2px;
+  border-radius: 2px;
+  background: var(--hab-metal, var(--chrome-face, #c0c0c0));
+  box-shadow:
+    0 0 0 1px #5c6064,
+    inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+.hab-sort-face {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+  min-height: 26px;
+  margin: 0;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 2px;
+  appearance: none;
+  -webkit-appearance: none;
+  color: #2a2c2e;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65);
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0 1px, transparent 1px 2px),
+    var(--hab-metal-mid, #c0c0c0);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: var(--hab-sunken);
+}
+
+.hab-sort-face:focus-visible {
+  outline: 1px dotted #000;
+  outline-offset: 1px;
+}
+
+.hab-sort-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hab-sort-chevron {
+  flex: 0 0 8px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid #3a3a3a;
+  border-bottom: 2px solid #3a3a3a;
+  transform: rotate(45deg) translateY(-2px);
+}
+
+.hab-sort-plate.is-open .hab-sort-chevron {
+  transform: rotate(-135deg) translateY(-1px);
+}
+
+.hab-sort-menu {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 2px);
+  z-index: 8;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 3px;
+  list-style: none;
+  border-radius: 2px;
+  background: var(--hab-metal, var(--chrome-face, #c0c0c0));
+  box-shadow:
+    0 0 0 1px #5c6064,
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    2px 3px 0 rgba(0, 0, 0, 0.28);
+}
+
+.hab-sort-key {
+  display: block;
+  width: auto;
+  flex: 1 1 calc(50% - 3px);
+  min-height: 24px;
+  padding: 4px 4px;
+  text-align: center;
+  border: 0;
+  border-radius: 2px;
+  appearance: none;
+  color: #1c1e20;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0, transparent 28%),
+    var(--hab-metal-mid, #c0c0c0);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 0 0 1px #6a6e72;
+}
+
+.hab-sort-key.is-on,
+.hab-sort-key:hover {
+  background: #c8d5ce;
+}
+
+.hab-sort-key:focus-visible {
+  outline: 1px dotted #000;
+  outline-offset: 1px;
+}
+
+.hab-gem-chooser-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hab-control-new {
+  justify-content: center;
+  width: 100%;
+  min-height: 30px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.hab-willpower-gems {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin: auto 0 0;
+  padding: 0 6px;
+  box-sizing: border-box;
+  align-self: stretch;
+  flex: 0 0 auto;
+  overflow: visible;
+  isolation: isolate;
+  z-index: 3;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Beat `body.win95-app button` so the oval is a real push-button, not a
+ * rectangular Win95 bevel painted onto an ellipse. Inner chrome lives on
+ * ::before so a leftover global box-shadow cannot eat the rim. */
+body.win95-app button.hab-willpower-gems-hit,
+.hab95 button.hab-willpower-gems-hit,
+.hab-willpower-gems-hit {
+  display: block;
+  position: relative;
+  width: 100%;
+  padding: calc(10px * var(--hab-willpower-scale, 1)) calc(10px * var(--hab-willpower-scale, 1))
+    calc(18px * var(--hab-willpower-scale, 1));
+  border: 0;
+  border-radius: 50% / 42%;
+  overflow: visible;
+  color: inherit;
+  background:
+    radial-gradient(ellipse 70% 56% at 50% 32%, #5a6068 0%, #1a1c20 54%, #050608 100%);
+  box-shadow:
+    var(--hab-raised),
+    0 2px 0 #5a6066,
+    0 4px 0 #1a1c20,
+    0 5px 6px rgba(0, 0, 0, 0.28);
+  cursor: pointer;
+  transform: translateY(0);
+  transition: transform 50ms linear, box-shadow 50ms linear;
+}
+
+body.win95-app button.hab-willpower-gems-hit::before,
+.hab95 button.hab-willpower-gems-hit::before,
+.hab-willpower-gems-hit::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 0 1px #f2f4f6,
+    inset 0 0 0 3px #c4c9ce,
+    inset 0 0 0 5px #8a9098,
+    inset 0 0 0 8px #2a2e34,
+    inset 0 14px 18px rgba(255, 255, 255, 0.22),
+    inset 0 -18px 22px rgba(0, 0, 0, 0.62);
+}
+
+body.win95-app button.hab-willpower-gems-hit::after,
+.hab95 button.hab-willpower-gems-hit::after,
+.hab-willpower-gems-hit::after {
+  content: "";
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  top: 7%;
+  height: 18%;
+  z-index: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.42), transparent 70%);
+}
+
+.hab-willpower-gems-hit:disabled {
+  cursor: wait;
+}
+
+.hab-willpower-gems-hit:focus-visible {
+  outline: 1px dotted var(--hab-metal-hi);
+  outline-offset: 2px;
+}
+
+body.win95-app button.hab-willpower-gems-hit.is-pressed:not(.is-holding),
+.hab95 button.hab-willpower-gems-hit.is-pressed:not(.is-holding),
+.hab-willpower-gems-hit.is-pressed:not(.is-holding) {
+  transform: translateY(3px) scale(0.985);
+  box-shadow:
+    var(--hab-sunken),
+    0 0 0 1px #3a3e44,
+    0 1px 0 #1a1c20;
+}
+
+body.win95-app button.hab-willpower-gems-hit.is-pressed:not(.is-holding)::before,
+.hab95 button.hab-willpower-gems-hit.is-pressed:not(.is-holding)::before,
+.hab-willpower-gems-hit.is-pressed:not(.is-holding)::before {
+  box-shadow:
+    inset 0 0 0 1px #7a8086,
+    inset 0 0 0 3px #3a3e44,
+    inset 0 0 0 5px #1a1c20,
+    inset 0 0 0 8px #0a0b0d,
+    inset 0 18px 16px rgba(0, 0, 0, 0.62),
+    inset 0 -8px 10px rgba(255, 255, 255, 0.08);
+}
+
+body.win95-app button.hab-willpower-gems-hit.is-pressed:not(.is-holding)::after,
+.hab95 button.hab-willpower-gems-hit.is-pressed:not(.is-holding)::after,
+.hab-willpower-gems-hit.is-pressed:not(.is-holding)::after {
+  opacity: 0.28;
+  top: 11%;
+}
+
+body.win95-app button.hab-willpower-gems-hit.is-pressed:not(.is-holding) .hab-willpower-crystal,
+.hab95 button.hab-willpower-gems-hit.is-pressed:not(.is-holding) .hab-willpower-crystal,
+.hab-willpower-gems-hit.is-pressed:not(.is-holding) .hab-willpower-crystal {
+  transform: scale(1.46) translateY(4px);
+}
+
+.hab-willpower-gems-label {
+  position: relative;
+  z-index: 5;
+  display: block;
+  margin-top: 2px;
+  font-size: calc(8px * var(--hab-willpower-scale, 1));
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #e8eaee;
+  text-align: center;
+  text-shadow: 0 1px 0 #000, 0 0 8px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+}
+
+.hab-willpower-stage {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  overflow: visible;
+}
+
+.hab-willpower-stone {
+  position: absolute;
+  width: calc(12px * var(--hab-willpower-scale, 1));
+  height: calc(12px * var(--hab-willpower-scale, 1));
+  object-fit: contain;
+  pointer-events: auto;
+  z-index: 1;
+  filter: none;
+  cursor: grab;
+  touch-action: none;
+}
+
+.hab-willpower-stone.is-front {
+  z-index: 3;
+}
+
+.hab-willpower-stone.is-airborne {
+  z-index: 4;
+}
+
+.hab-willpower-stone.is-held {
+  z-index: 6;
+  cursor: grabbing;
+}
+
+.hab-willpower-crystal {
+  position: relative;
+  z-index: 2;
+  display: block;
+  width: 100%;
+  height: calc(72px * var(--hab-willpower-scale, 1));
+  object-fit: contain;
+  object-position: center;
+  background: transparent;
+  transform: scale(1.62);
+  transform-origin: 50% 50%;
+  pointer-events: none;
+}
+
+.hab-willpower-gems figcaption {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 4px 0 0;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--hab-metal-hi);
+  text-align: center;
+  text-shadow: 0 1px 0 #000;
+}
+
+.hab-willpower-lab-toggle {
+  min-height: 16px;
+  padding: 1px 5px;
+  font-size: 8px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.hab-willpower-lab-toggle.is-on {
+  color: var(--hab-crt-green);
+  text-shadow: var(--hab-crt-glow);
+}
+
+.hab-willpower-settings-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hab-willpower-preview {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  background: #1a1a18;
+  box-shadow: inset 1px 1px #000, inset -1px -1px #808080;
+}
+
+.hab95 [class*="text-muted"],
+.hab95 .text-muted-foreground {
+  color: var(--hab-muted);
+}
+
+/* Metal / screw checkboxes — still obviously checkboxes. Cell lamps opt out. */
+.hab95 [role="checkbox"]:not(.hab-lamp) {
+  width: 13px;
+  height: 13px;
+  border: none;
+  border-radius: 2px;
+  background-color: var(--hab-metal);
+  background-image: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.55), transparent 45%);
+  box-shadow: var(--hab-raised);
+  color: #111;
+}
+
+.hab95 [role="checkbox"]:not(.hab-lamp)[data-state="checked"] {
+  background-color: #b9c6d4;
+  color: #102030;
+  box-shadow: var(--hab-sunken);
+}
+
+.hab95 [role="checkbox"]:not(.hab-lamp) svg {
+  width: 10px;
+  height: 10px;
+}
+
+.hab95 .hab-lamp:not([data-fill="true"]),
+.hab95 .hab-lamp:not([data-fill="true"]):active {
+  width: 15px;
+  height: 15px;
+  min-width: 15px;
+  min-height: 15px;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.hab95 .hab-lamp[data-fill="true"],
+.hab95 .hab-lamp[data-fill="true"]:active {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.hab95 .hab-issue-gem {
+  padding: 1px 5px 1px 3px;
+  background: #2a0c12;
+  box-shadow: var(--hab-sunken);
+  color: #ffd0d6;
+}
+
+/* OSD AMP analog sliders + iridescent bloom fill. Honest numbers stay. */
+.hab95 [role="progressbar"]:not(.hab-gas-tube) {
+  height: 10px;
+  border-radius: 0;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.1) 0 1px,
+      transparent 1px 5px
+    ),
+    var(--hab-metal-mid);
+  box-shadow: var(--hab-sunken);
+}
+
+.hab95 [role="progressbar"]:not(.hab-gas-tube) > * {
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.42), transparent 42%, rgba(40, 36, 48, 0.12)),
+    linear-gradient(90deg, #b8e4d4, #d8c8e8 52%, #e8d8c4) !important;
+  background-color: transparent !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.hab95 [role="progressbar"]:not(.hab-gas-tube)[aria-valuenow="100"] > * {
+  box-shadow:
+    0 0 8px rgba(255, 236, 196, 0.65),
+    inset 0 0 6px rgba(255, 255, 255, 0.4);
+}
+
+.hab95 .habit-grades .habit-week-grade .hab-gas-tube {
+  flex: 1 1 120px;
+  min-width: 96px;
+  height: 40px;
+}
+
+/* Needs Attention mill lives in home-chrome.css (.home-na). No lace overlay. */
+
+.hab-gem-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 4px;
+  max-height: 220px;
+  overflow: auto;
+  padding: 4px;
+  background: #1a1a18;
+  box-shadow: var(--hab-sunken);
+}
+
+.hab-gem-picker-hit {
+  aspect-ratio: 1;
+  padding: 2px;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.hab-gem-picker-hit.is-on {
+  box-shadow: inset 0 0 0 2px #c9a227;
+}
+
+.hab-gem-picker-hit img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  content-visibility: auto;
+}
+
+.hab-gem-slots {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.hab-gem-slot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hab-gem-slot-swatch {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* ── Grade detail sheets (portaled) ─────────────────────────────────────────
+ * Week / Span / Month grade and Perfect output. Live outside `.hab95`, so
+ * style `.hab-grade-sheet` directly. Accent hue is `--hab-grade-tube` from the
+ * store (power lamp + CRT bloom). CSS fallbacks only when the var is unset.
+ */
+
+.hab-grade-sheet,
+body.win95-app .hab-grade-sheet {
+  --hab-grade-tube: #508b51;
+  --hab-grade-metal: var(--chrome-face, #c0c0c0);
+  --hab-grade-metal-hi: var(--chrome-hi, #ffffff);
+  --hab-grade-metal-mid: var(--chrome-brush, #acacac);
+  --hab-grade-metal-lo: var(--chrome-lo, #808080);
+  --hab-grade-ink: #2a2c2e;
+  --hab-grade-crt-glass: #070c0a;
+  --hab-grade-raised:
+    inset -1px -1px #0a0a0a,
+    inset 1px 1px #fff,
+    inset -2px -2px #808080,
+    inset 2px 2px #dfdfdf;
+  --hab-grade-sunken:
+    inset -1px -1px #fff,
+    inset 1px 1px #0a0a0a,
+    inset -2px -2px #dfdfdf,
+    inset 2px 2px #808080;
+  --hab-grade-field:
+    inset -1px -1px #fff,
+    inset 1px 1px #808080,
+    inset -2px -2px #dfdfdf,
+    inset 2px 2px #0a0a0a;
+
+  display: flex !important;
+  flex-direction: column;
+  gap: 8px !important;
+  width: min(26rem, calc(100vw - 1.5rem));
+  max-width: 26rem !important;
+  max-height: min(90vh, 760px) !important;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 10px 10px 12px !important;
+  border: 0 !important;
+  border-radius: 3px !important;
+  color: var(--hab-grade-ink);
+  background-color: var(--hab-grade-metal) !important;
+  background-image:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.1) 0, transparent 22%, transparent 78%, rgba(255, 255, 255, 0.06) 100%),
+    repeating-linear-gradient(90deg, transparent 0 2px, rgba(255, 255, 255, 0.05) 2px 3px),
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
+    linear-gradient(165deg, #c4c8cc 0%, var(--hab-grade-metal) 42%, #969a9e 100%) !important;
+  box-shadow:
+    0 0 0 1px #5c6064,
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    inset 0 2px 3px rgba(0, 0, 0, 0.12),
+    0 8px 0 rgba(74, 78, 82, 0.55) !important;
+  font-family: var(--w95-font, Tahoma, "MS Sans Serif", Geneva, sans-serif);
+  font-size: 12px;
+  -webkit-font-smoothing: none;
+}
+
+.hab-grade-sheet.is-output,
+body.win95-app .hab-grade-sheet.is-output {
+  --hab-grade-tube: #25366a;
+}
+
+/* Beat shadcn white card + close pip on the milled face. */
+.hab-grade-sheet > button.absolute,
+body.win95-app .hab-grade-sheet > button.absolute {
+  top: 8px;
+  right: 8px;
+  width: 18px;
+  height: 18px;
+  border-radius: 2px;
+  opacity: 1;
+  color: var(--hab-grade-ink);
+  background: var(--hab-grade-metal);
+  box-shadow: var(--hab-grade-raised);
+}
+
+.hab-grade-sheet > button.absolute:hover,
+body.win95-app .hab-grade-sheet > button.absolute:hover {
+  opacity: 1;
+  background: var(--hab-grade-metal-hi);
+}
+
+.hab-grade-sheet > button.absolute:active,
+body.win95-app .hab-grade-sheet > button.absolute:active {
+  box-shadow: var(--hab-grade-sunken);
+}
+
+.hab-grade-sheet > button.absolute svg {
+  width: 12px;
+  height: 12px;
+}
+
+.hab-grade-sheet-caption {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 2px 22px 2px 2px;
+  text-align: left;
+}
+
+.hab-grade-sheet-power {
+  flex: none;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      circle at 35% 30%,
+      #fff 0 14%,
+      var(--hab-grade-tube) 36%,
+      color-mix(in srgb, var(--hab-grade-tube) 35%, #0a0c10) 100%
+    );
+  box-shadow:
+    0 0 0 1px #1a1c20,
+    0 0 0 2px #9aa09c,
+    inset 0 1px 1px rgba(255, 255, 255, 0.55),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.45),
+    0 0 7px var(--hab-grade-tube);
+}
+
+.hab-grade-sheet-caption [data-slot="dialog-title"],
+.hab-grade-sheet-caption h2 {
+  margin: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase;
+  line-height: 1.2;
+  color: var(--hab-grade-ink) !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.hab-grade-sheet-lead {
+  flex: 1 1 100%;
+  margin: 2px 0 0;
+  padding: 6px 9px;
+  border-radius: 2px;
+  font-size: 11px !important;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.35;
+  color: var(--hab-grade-ink) !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0 1px, transparent 1px 2px),
+    var(--hab-grade-metal-mid);
+  box-shadow: var(--hab-grade-sunken);
+}
+
+.hab-grade-sheet-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 7px;
+  border-radius: 3px;
+  background: var(--hab-grade-metal-mid);
+  box-shadow: var(--hab-grade-sunken);
+}
+
+.hab-grade-sheet-hero-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--hab-grade-ink);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.hab-grade-sheet-crt {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  min-height: 56px;
+  padding: 10px 14px;
+  border-radius: 2px;
+  background:
+    radial-gradient(ellipse 80% 55% at 50% 0%, color-mix(in srgb, var(--hab-grade-tube) 22%, transparent), transparent 58%),
+    var(--hab-grade-crt-glass);
+  box-shadow:
+    0 0 0 1px #3a3e42,
+    var(--hab-grade-field),
+    0 0 14px color-mix(in srgb, var(--hab-grade-tube) 35%, transparent);
+}
+
+.hab-grade-sheet-crt-value {
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--hab-grade-tube) 42%, #7dffc4);
+  text-shadow:
+    0 0 10px var(--hab-grade-tube),
+    0 0 3px color-mix(in srgb, var(--hab-grade-tube) 55%, #7dffc4);
+}
+
+.hab-grade-sheet-crt-ordinary {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: color-mix(in srgb, var(--hab-grade-tube) 28%, #9ab8a8);
+  text-shadow: 0 0 4px color-mix(in srgb, var(--hab-grade-tube) 40%, transparent);
+}
+
+.hab-grade-sheet-eq {
+  margin: 0;
+  padding: 6px 9px;
+  border-radius: 2px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  line-height: 1.35;
+  color: var(--hab-grade-ink);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
+    var(--hab-grade-metal);
+  box-shadow: var(--hab-grade-raised);
+}
+
+.hab-grade-sheet-bay {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 8px 8px;
+  border-radius: 3px;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.08), transparent 30%),
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
+    #c4c8cc;
+  box-shadow:
+    0 0 0 1px #6a6e72,
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    inset 0 2px 3px rgba(0, 0, 0, 0.12);
+}
+
+.hab-grade-sheet-bay-legend {
+  margin: -2px 0 0;
+  padding: 1px 6px;
+  align-self: flex-start;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--hab-grade-ink);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  background: linear-gradient(180deg, #eef0f2, #c8cccf);
+  box-shadow: 0 0 0 1px #8a8e92;
+}
+
+.hab-grade-sheet-control {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hab-grade-sheet-control label,
+.hab-grade-sheet-control .hab-grade-sheet-field-label {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--hab-grade-ink);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.hab-grade-sheet-control-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hab-grade-sheet-control input[type="number"],
+.hab-grade-sheet-control .hab-grade-sheet-field {
+  width: 4.5rem;
+  min-height: 24px;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 2px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #111;
+  background: #f4f4f0;
+  box-shadow: var(--hab-grade-field);
+}
+
+.hab-grade-sheet-control input[type="number"]:focus,
+.hab-grade-sheet-control .hab-grade-sheet-field:focus {
+  outline: 1px dotted #111;
+  outline-offset: 1px;
+}
+
+.hab-grade-sheet-hint {
+  margin: 0;
+  padding: 5px 8px;
+  border-radius: 2px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--hab-grade-ink);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
+    var(--hab-grade-metal);
+  box-shadow: var(--hab-grade-sunken);
+}
+
+.hab-grade-sheet-hint.is-inline {
+  padding: 4px 8px;
+}
+
+.hab-grade-sheet-swatch-hex {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  color: var(--hab-grade-ink);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.hab-grade-sheet-bay .habit-priority-math {
+  margin: 0;
+  padding: 6px;
+  background: var(--hab-grade-metal);
+  box-shadow: var(--hab-grade-sunken);
+}
+
+.hab-grade-sheet-note {
+  margin: 0;
+  padding: 6px 9px;
+  border-radius: 2px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--hab-grade-ink);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
+    var(--hab-grade-metal-mid);
+  box-shadow: var(--hab-grade-sunken);
+}
+
+.hab-grade-sheet-proof {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.hab-grade-sheet-proof-head,
+.hab-grade-sheet-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 3.6rem 3.6rem;
+  gap: 4px;
+  align-items: center;
+  min-width: 0;
+}
+
+.hab-grade-sheet-proof-head {
+  padding: 0 2px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--hab-grade-ink);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.hab-grade-sheet-proof-head span:not(:first-child),
+.hab-grade-sheet-row-readout {
+  text-align: right;
+}
+
+.hab-grade-sheet-row {
+  padding: 4px 6px;
+  border-radius: 2px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0 1px, transparent 1px 2px),
+    var(--hab-grade-metal);
+  box-shadow: var(--hab-grade-raised);
+}
+
+.hab-grade-sheet-row.is-avg {
+  font-weight: 700;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0 1px, transparent 1px 2px),
+    #c8d5ce;
+  box-shadow: var(--hab-grade-sunken);
+}
+
+.hab-grade-sheet-row-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--hab-grade-ink);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+.hab-grade-sheet-row-readout {
+  padding: 2px 4px;
+  border-radius: 2px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.03em;
+  color: color-mix(in srgb, var(--hab-grade-tube) 35%, #7dffc4);
+  text-shadow: 0 0 4px color-mix(in srgb, var(--hab-grade-tube) 45%, transparent);
+  background: var(--hab-grade-crt-glass);
+  box-shadow: var(--hab-grade-field);
+}
+
+.hab-grade-sheet-row-readout.is-mute {
+  color: #8a908c;
+  text-shadow: none;
+}
+
+.hab-grade-sheet-empty {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 2px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--hab-grade-ink);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+  background: var(--hab-grade-metal-mid);
+  box-shadow: var(--hab-grade-sunken);
+}

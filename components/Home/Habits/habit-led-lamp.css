@@ -1,0 +1,423 @@
+/* Recessed panel indicator: flat instrument lamp in a square bezel — not a spherical nipple. */
+
+.hab-lamp {
+  --hab-lamp-tint: #7e14ff;
+  --hab-lamp-size: 15px;
+  box-sizing: border-box;
+  display: inline-grid;
+  place-items: center;
+  width: var(--hab-lamp-size);
+  height: var(--hab-lamp-size);
+  min-width: var(--hab-lamp-size);
+  min-height: var(--hab-lamp-size);
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+  cursor: pointer;
+  vertical-align: middle;
+  flex: 0 0 auto;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+body.win95-app .hab-lamp,
+body.win95-app .hab-lamp:active {
+  border-radius: 2px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.hab-lamp:focus-visible {
+  outline: 1px dotted #000;
+  outline-offset: 2px;
+}
+
+/* Square metal plate. Light brush, not a round crater. */
+.hab-lamp-socket {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 2px;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, #e8e8e8 0%, #c4c4c4 42%, #9a9a9a 100%);
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.85),
+    inset -1px -1px 0 rgba(50, 50, 50, 0.45),
+    0 0 0 0.5px rgba(0, 0, 0, 0.28);
+}
+
+/* Circular aperture punched into the plate — flush, recessed, no raised ring. */
+.hab-lamp-bezel {
+  display: grid;
+  place-items: center;
+  width: 72%;
+  height: 72%;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #4a4a4a;
+  box-shadow:
+    inset 0 1.5px 2px rgba(0, 0, 0, 0.7),
+    inset 0 -0.5px 0 rgba(255, 255, 255, 0.22);
+}
+
+.hab-lamp-glass {
+  position: relative;
+  width: 86%;
+  height: 86%;
+  border-radius: 50%;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, #2a2c2a 0%, #101210 55%, #070807 100%);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.12),
+    inset 0 -1px 1.5px rgba(0, 0, 0, 0.55);
+}
+
+/* Square emitter die — a chip behind flat glass, not a marble core. */
+.hab-lamp-die {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 34%;
+  height: 34%;
+  border-radius: 0.5px;
+  transform: translate(-50%, -50%);
+  background: linear-gradient(180deg, #3a3c3a, #161816);
+  box-shadow: inset 0 0 0 0.4px rgba(255, 255, 255, 0.12);
+  opacity: 0.95;
+  z-index: 2;
+}
+
+.hab-lamp-core {
+  display: none;
+}
+
+.hab-lamp-bloom {
+  position: absolute;
+  inset: 0;
+  border-radius: 0;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 1;
+}
+
+/* Linear slash on flat polycarbonate — not a spherical catchlight. */
+.hab-lamp-spec {
+  position: absolute;
+  top: 14%;
+  left: 16%;
+  width: 58%;
+  height: 22%;
+  border-radius: 1px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.22) 0%,
+    rgba(255, 255, 255, 0.04) 70%,
+    transparent 100%
+  );
+  filter: none;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.hab-lamp-spec-low {
+  display: none;
+}
+
+/*
+ * On = die lights in percentLedTint, lens tints, glow stays inside the recess.
+ * Mix the stored tint with dark metal — never ice-white / blast-white.
+ */
+.hab-lamp[data-state="on"] .hab-lamp-glass {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--hab-lamp-tint) 38%, #2c2820) 0%,
+      color-mix(in srgb, var(--hab-lamp-tint) 62%, #0c100c) 58%,
+      color-mix(in srgb, var(--hab-lamp-tint) 40%, #060806) 100%
+    );
+  box-shadow:
+    inset 0 1px 1px color-mix(in srgb, var(--hab-lamp-tint) 18%, transparent),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.45);
+}
+
+.hab-lamp[data-state="on"] .hab-lamp-die {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--hab-lamp-tint) 72%, #eee4d4),
+    var(--hab-lamp-tint) 55%,
+    color-mix(in srgb, var(--hab-lamp-tint) 78%, #0a120c)
+  );
+  box-shadow:
+    0 0 2px color-mix(in srgb, var(--hab-lamp-tint) 45%, transparent);
+  opacity: 1;
+}
+
+.hab-lamp[data-state="on"] .hab-lamp-bloom {
+  opacity: 0.4;
+  background: radial-gradient(
+    circle at 50% 50%,
+    color-mix(in srgb, var(--hab-lamp-tint) 55%, transparent) 0 32%,
+    transparent 72%
+  );
+}
+
+.hab-lamp[data-state="partial"] .hab-lamp-glass {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--hab-lamp-tint) 22%, #2a2c2a) 0%,
+      color-mix(in srgb, var(--hab-lamp-tint) 16%, #101210) 100%
+    );
+}
+
+.hab-lamp[data-state="partial"] .hab-lamp-die {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--hab-lamp-tint) 45%, #2a2820),
+    var(--hab-lamp-tint)
+  );
+  opacity: 0.7;
+}
+
+.hab-lamp[data-state="partial"] .hab-lamp-bloom {
+  opacity: 0.22;
+  background: radial-gradient(
+    circle at 50% 50%,
+    color-mix(in srgb, var(--hab-lamp-tint) 50%, transparent) 0 30%,
+    transparent 70%
+  );
+}
+
+.hab-lamp[data-tracked="true"] .hab-lamp-socket {
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.85),
+    inset -1px -1px 0 rgba(50, 50, 50, 0.45),
+    0 0 0 1.5px #38bdf8;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hab-lamp[data-state="on"] .hab-lamp-bloom {
+    filter: none;
+  }
+}
+
+/*
+ * Small LEDs off: rectangular consult / TENO / Tek panel window that fills the
+ * cell. Metal plate + inset bezel + flat glass. Even glow — not a 50% oval,
+ * not a scaled sphere, not a pill.
+ */
+.hab-lamp[data-fill="true"] {
+  --hab-lamp-size: 100%;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  max-width: 100%;
+  max-height: 100%;
+  align-self: stretch;
+  flex: 1 1 auto;
+  border-radius: 2px;
+}
+
+.hab-lamp[data-fill="true"] .hab-lamp-socket {
+  padding: 1px;
+  border-radius: 2px;
+}
+
+.hab-lamp[data-fill="true"] .hab-lamp-bezel {
+  width: 100%;
+  height: 100%;
+  border-radius: 2px;
+  background:
+    linear-gradient(180deg, #6e6e6e 0%, #3d3d3d 42%, #262626 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.32),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.55),
+    inset 1px 0 0 rgba(255, 255, 255, 0.08),
+    inset -1px 0 0 rgba(0, 0, 0, 0.35);
+}
+
+.hab-lamp[data-fill="true"] .hab-lamp-glass {
+  width: calc(100% - 2px);
+  height: calc(100% - 2px);
+  border-radius: 1px;
+  background:
+    linear-gradient(180deg, #222422 0%, #0c0e0c 52%, #060806 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.65);
+}
+
+.hab-lamp[data-fill="true"] .hab-lamp-die {
+  width: 70%;
+  height: 36%;
+  border-radius: 1px;
+}
+
+.hab-lamp[data-fill="true"] .hab-lamp-bloom {
+  border-radius: 1px;
+}
+
+.hab-lamp[data-fill="true"] .hab-lamp-spec {
+  top: 10%;
+  left: 8%;
+  width: 84%;
+  height: 30%;
+  border-radius: 1px;
+}
+
+.hab-lamp[data-fill="true"][data-state="on"] .hab-lamp-glass {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--hab-lamp-tint) 34%, #2a2820) 0%,
+      color-mix(in srgb, var(--hab-lamp-tint) 58%, #0c100c) 55%,
+      color-mix(in srgb, var(--hab-lamp-tint) 36%, #060806) 100%
+    );
+}
+
+.hab-lamp[data-fill="true"][data-state="on"] .hab-lamp-bloom,
+.hab-lamp[data-fill="true"][data-state="partial"] .hab-lamp-bloom {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--hab-lamp-tint) 42%, transparent) 0%,
+    color-mix(in srgb, var(--hab-lamp-tint) 16%, transparent) 100%
+  );
+}
+
+.hab-lamp[data-fill="true"][data-state="on"] .hab-lamp-bloom {
+  opacity: 0.5;
+}
+
+.hab-lamp[data-fill="true"][data-state="partial"] .hab-lamp-glass {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--hab-lamp-tint) 20%, #222422) 0%,
+      color-mix(in srgb, var(--hab-lamp-tint) 14%, #0c0e0c) 100%
+    );
+}
+
+.hab-lamp[data-fill="true"][data-state="partial"] .hab-lamp-bloom {
+  opacity: 0.28;
+}
+
+/* Exempt: pale dead plate. Not the green completion die, not the dark “still owed” glass. */
+.hab-lamp[data-state="unavailable"],
+.hab-lamp[data-state="unavailable"][data-fill="true"] {
+  opacity: 0.62;
+}
+
+.hab-lamp[data-state="unavailable"] .hab-lamp-socket,
+.hab-lamp[data-state="unavailable"][data-fill="true"] .hab-lamp-socket {
+  background: linear-gradient(180deg, #d2d2d2 0%, #a4a4a4 100%);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.28);
+}
+
+.hab-lamp[data-state="unavailable"] .hab-lamp-bezel,
+.hab-lamp[data-state="unavailable"][data-fill="true"] .hab-lamp-bezel,
+.hab-lamp[data-state="unavailable"] .hab-lamp-glass,
+.hab-lamp[data-state="unavailable"][data-fill="true"] .hab-lamp-glass {
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      #c8c8c8,
+      #c8c8c8 3px,
+      #b0b0b0 3px,
+      #b0b0b0 6px
+    );
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.22);
+}
+
+.hab-lamp[data-state="unavailable"] .hab-lamp-die,
+.hab-lamp[data-state="unavailable"] .hab-lamp-bloom,
+.hab-lamp[data-state="unavailable"] .hab-lamp-spec {
+  display: none;
+}
+
+.habit-exempt {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  height: 22px;
+  border-radius: 2px;
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      #c8c8c8,
+      #c8c8c8 3px,
+      #b0b0b0 3px,
+      #b0b0b0 6px
+    );
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.22);
+  opacity: 0.72;
+}
+
+/*
+ * Small checklist lamps share the percent-LED well: dark face, Win95 bevel,
+ * one round die. The large cell window (data-fill) keeps its glass panel.
+ */
+.hab-lamp:not([data-fill="true"]) .hab-lamp-socket {
+  background: linear-gradient(180deg, #1a1c1a 0%, #050605 55%, #0c0e0c 100%);
+  box-shadow:
+    inset 1px 1px 0 #000,
+    inset -1px -1px 0 #3a3a3a,
+    0 0 0 1px #808080,
+    1px 1px 0 #fff;
+}
+
+.hab-lamp:not([data-fill="true"]) .hab-lamp-bezel {
+  width: 62%;
+  height: 62%;
+  background: #050605;
+  box-shadow: inset 0 1px 1px #000, inset 0 -1px 0 #2a2c2a;
+}
+
+.hab-lamp:not([data-fill="true"]) .hab-lamp-glass {
+  width: 100%;
+  height: 100%;
+  background: #121412;
+  box-shadow: none;
+}
+
+.hab-lamp:not([data-fill="true"]) .hab-lamp-die {
+  width: 72%;
+  height: 72%;
+  border-radius: 50%;
+  background: #121412;
+  box-shadow: inset 0 0 0.5px rgba(255, 255, 255, 0.08);
+}
+
+.hab-lamp:not([data-fill="true"]) .hab-lamp-spec {
+  display: none;
+}
+
+.hab-lamp:not([data-fill="true"])[data-state="on"] .hab-lamp-glass,
+.hab-lamp:not([data-fill="true"])[data-state="partial"] .hab-lamp-glass {
+  background: #121412;
+  box-shadow: none;
+}
+
+.hab-lamp:not([data-fill="true"])[data-state="on"] .hab-lamp-die {
+  background: var(--hab-lamp-tint);
+  box-shadow:
+    0 0 3px var(--hab-lamp-tint),
+    0 0 1px #fff;
+}
+
+.hab-lamp:not([data-fill="true"])[data-state="partial"] .hab-lamp-die {
+  background: color-mix(in srgb, var(--hab-lamp-tint) 55%, #121412);
+  box-shadow: 0 0 2px color-mix(in srgb, var(--hab-lamp-tint) 70%, transparent);
+}
+
+.hab-lamp:not([data-fill="true"])[data-state="on"] .hab-lamp-bloom,
+.hab-lamp:not([data-fill="true"])[data-state="partial"] .hab-lamp-bloom {
+  display: none;
+}

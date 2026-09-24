@@ -1,0 +1,126 @@
+/**
+ * Glass envelope + still plasma for `.hab-gas-tube`.
+ *
+ * Finger-tube: hemispherical dome (not a pipette). Percent → plasma length
+ * is `--hab-plasma` and the SVG clip stadium width (`data-testid` rect).
+ * Default look is a photograph of a lit tube: barely-there ionization.
+ * `prefers-reduced-motion` is fully still.
+ */
+
+.hab-gas-tube {
+  --hab-plasma: 0%;
+  --hab-gas-core: #d8f4f8;
+  --hab-gas-mid: #4aa8c8;
+  --hab-gas-halo: #508b51;
+  --hab-gas-volume: #1a6a88;
+  --hab-gas-residual: #070d12;
+  --hab-gas-residual-hi: #101820;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  min-width: 72px;
+  height: 38px;
+  overflow: visible;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  pointer-events: none;
+  filter: none;
+  box-shadow: 0 0 3px color-mix(in srgb, var(--hab-gas-halo) 28%, transparent);
+}
+
+.hab-gas-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.hab-gas-cradle {
+  fill: #0c0c0e;
+  stroke: #1c1c22;
+  stroke-width: 0.55;
+}
+
+.hab-gas-occlusion {
+  fill: #08080a;
+  opacity: 0.78;
+  pointer-events: none;
+}
+
+.hab-gas-envelope {
+  fill: rgba(18, 28, 36, 0.42);
+  stroke: rgba(168, 196, 214, 0.38);
+  stroke-width: 1.05;
+}
+
+.hab-gas-residual {
+  fill: var(--hab-gas-residual);
+  opacity: 0.72;
+}
+
+.hab-gas-skin {
+  mix-blend-mode: overlay;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.hab-gas-rim {
+  fill: none;
+  opacity: 0.42;
+  pointer-events: none;
+}
+
+.hab-gas-volume {
+  opacity: 0.82;
+}
+
+.hab-gas-column {
+  opacity: 0.7;
+}
+
+.hab-gas-bloom {
+  opacity: 0.32;
+}
+
+.hab-gas-anode,
+.hab-gas-head {
+  opacity: 0.42;
+}
+
+.hab-gas-spine {
+  opacity: 0.28;
+}
+
+.hab-gas-live {
+  animation: hab-gas-shimmer 24s ease-in-out infinite;
+}
+
+.hab-gas-tube[aria-valuenow="0"] {
+  box-shadow: 0 0 1px color-mix(in srgb, var(--hab-gas-halo) 16%, transparent);
+}
+
+.hab-gas-tube[aria-valuenow="0"] .hab-gas-live {
+  opacity: 0.38;
+}
+
+.hab-gas-tube[aria-valuenow="0"] .hab-gas-spine,
+.hab-gas-tube[aria-valuenow="0"] .hab-gas-column {
+  opacity: 0.4;
+}
+
+@keyframes hab-gas-shimmer {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.97;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hab-gas-live {
+    animation: none;
+  }
+}
