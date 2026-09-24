@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { beforeEach, afterEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { getWeekDates, getWeekStartDate, getWeekString } from "@/lib/date-utils"
 import { format } from "date-fns"
@@ -19,6 +19,10 @@ describe("WeekView", () => {
     resetAllStores()
   })
 
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it("renders week range and time grid header", () => {
     render(
       <WeekView
@@ -35,9 +39,11 @@ describe("WeekView", () => {
       screen.getByText(`${format(weekStart, "MMM d")} - ${format(weekDates[6], "MMM d, yyyy")}`),
     ).toBeInTheDocument()
     expect(screen.getByText("Time")).toBeInTheDocument()
+    expect(document.querySelector(".plan-week")).toHaveAttribute("data-ui-name", "Week calendar")
+    expect(document.querySelector(".plan-group")).toHaveAttribute("data-ui-name", "Week Plan")
   })
 
-  it("saves week plan text to localStorage", async () => {
+  it("saves week plan text as a stamped entry on submit", async () => {
     const user = userEvent.setup()
     render(
       <WeekView
@@ -52,7 +58,9 @@ describe("WeekView", () => {
     )
 
     await user.type(screen.getByPlaceholderText(/Write your week plan/i), "Ship feature")
-    expect(localStorage.getItem(`weekPlan-${getWeekString(currentDate)}`)).toBe("Ship feature")
+    await user.click(screen.getByRole("button", { name: /Submit plan/i }))
+    const stored = JSON.parse(localStorage.getItem(`weekPlan-${getWeekString(currentDate)}`)!)
+    expect(stored.entries[0].text).toBe("Ship feature")
   })
 
   it("shows multi-day all-day events on every covered day in the week", () => {
@@ -83,5 +91,33 @@ describe("WeekView", () => {
     )
 
     expect(screen.getAllByText("Spring Break")).toHaveLength(4)
+  })
+
+  it("marks elapsed weekday columns with data-past", () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date("2026-06-20T12:00:00"))
+
+    const { container } = render(
+      <WeekView
+        currentDate={currentDate}
+        setCurrentDate={vi.fn()}
+        events={[]}
+        setEvents={vi.fn()}
+        onTaskClick={vi.fn()}
+        onEventClick={vi.fn()}
+        onCreateEvent={vi.fn()}
+      />,
+    )
+
+    const heads = [...container.querySelectorAll(".plan-week-head")].filter((el) => el.hasAttribute("data-past"))
+    const pastHeads = heads.filter((el) => el.getAttribute("data-past") === "true")
+    const todayHead = heads.find((el) => el.getAttribute("data-today") === "true")
+    expect(pastHeads.length).toBeGreaterThan(0)
+    expect(todayHead).toBeTruthy()
+    expect(todayHead).toHaveAttribute("data-past", "false")
+    expect(container.querySelector(".plan-week-cell[data-past='true']")).toBeTruthy()
+    expect(container.querySelector(".plan-week-cell[data-today='true']")).toHaveAttribute("data-past", "false")
+
+    vi.useRealTimers()
   })
 })

@@ -119,7 +119,7 @@ describe("parseEventText", () => {
     const { events } = parseEventText("July 25th: SHOW - Austin, TX @ Stubbs\nMEETING - Sync @ 3PM", {
       defaultYear: 2026,
     })
-    expect(events[0].color).toBe("#e89b6c")
+    expect(events[0].color).toBe("#7eb8b2")
     expect(events[1].color).toBe("#b89fbf")
   })
 

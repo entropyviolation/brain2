@@ -1,0 +1,2284 @@
+/**
+ * components/Home/Plan/plan-chrome.css — milled fascia for Plan
+ *
+ * Title, Month/Week/Day keys, period nameplate, and action keys share the
+ * house milled fascia (docs/DESIGN_STYLE.md#milled-fascia). Event color stays
+ * on chips (cabinet contents), never on the mark or view keys. Scoped under
+ * `.plan95`. Portaled dialogs use `.plan95-dialog` (they leave the window).
+ *
+ * Period nav is a nameplate date with metal prev/next/today keys. Fieldset
+ * legends are engraved nameplates off the bevel. Text fields take a navy house
+ * focus (`--p-focus`), never WebKit orange. Rail and desktop are sibling
+ * milled wells; the calendar document stays white inside. Opalescent chips
+ * and habit gems stay cabinet — nested metal frames them, never flattens them.
+ */
+
+.plan95 {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  --p-surface: var(--chrome-face, #c0c0c0);
+  --p-face: var(--chrome-mid, #dfdfdf);
+  --p-highlight: var(--chrome-hi, #ffffff);
+  --p-shadow: var(--chrome-lo, #808080);
+  --p-frame: var(--chrome-frame, #0a0a0a);
+  --p-blue: #000080;
+  --p-blue-light: #1084d0;
+  --p-ink: #111111;
+  --p-crt: var(--hab-crt-green, #7dffc4);
+  --p-opal-mint: #8cd4a5;
+  --p-opal-lilac: #b89fbf;
+  --p-today: #e8f3ec;
+  --p-focus: #000080;
+  --p-raised: inset -1px -1px var(--p-frame), inset 1px 1px var(--p-highlight),
+    inset -2px -2px var(--p-shadow), inset 2px 2px var(--p-face);
+  --p-sunken: inset -1px -1px var(--p-highlight), inset 1px 1px var(--p-frame),
+    inset -2px -2px var(--p-face), inset 2px 2px var(--p-shadow);
+  --p-field: inset -1px -1px var(--p-highlight), inset 1px 1px var(--p-shadow),
+    inset -2px -2px var(--p-face), inset 2px 2px var(--p-frame);
+
+  font-family: var(--w95-font, Tahoma, "MS Sans Serif", Geneva, sans-serif);
+  font-size: 12px;
+  color: var(--p-ink);
+  -webkit-font-smoothing: none;
+  --muted-foreground: 0 0% 25%;
+  accent-color: var(--p-blue);
+}
+
+.plan95 .plan-window {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 520px;
+  height: 100%;
+  flex: 1;
+  padding: 3px;
+  background: var(--p-surface);
+  box-shadow: var(--p-raised);
+}
+
+.plan95 .plan-fascia {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 3px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
+    linear-gradient(165deg, #d4d8dc 0%, var(--p-surface) 48%, #969a9e 100%);
+  box-shadow:
+    0 0 0 1px #5c6064,
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -1px 0 rgba(40, 42, 46, 0.4),
+    inset 0 0 0 2px #b0b4b8;
+}
+
+.plan95 .plan-fascia-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.plan95 .plan-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 4px 10px 4px 6px;
+  border-radius: 2px;
+  background:
+    radial-gradient(ellipse at 18% 0%, rgba(125, 255, 196, 0.14), transparent 46%),
+    #070c0a;
+  box-shadow:
+    0 0 0 1px #3a3e42,
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 10px 14px rgba(0, 0, 0, 0.4);
+}
+
+.plan95 .plan-mark h2 {
+  margin: 0;
+  color: var(--p-crt) !important;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-shadow: 0 0 3px var(--p-crt);
+}
+
+.plan95 .plan-mark-note {
+  margin: 0;
+  padding: 2px 6px;
+  border-radius: 2px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #d8fff0;
+  background: rgba(125, 255, 196, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(125, 255, 196, 0.35);
+}
+
+.plan95 .plan-title-orb {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.plan95 .plan-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.plan95 .plan-btn,
+.plan95 .plan-mode-toggle,
+.plan95 .plan-period-chev,
+.plan95 .plan-period-today,
+.plan95 .plan-rail-filters button,
+.plan95 .plan-add button,
+.plan95 .append-log-views button,
+.plan95 .append-log-copy,
+.plan95 .append-log-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 5px 12px 6px;
+  border: 0;
+  border-radius: 2px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #1c1e20;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
+    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--p-surface) 70%, #9a9ea2 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 0 -1px 0 rgba(55, 58, 62, 0.45),
+    0 0 0 1px #4a4e52,
+    0 1px 0 #6a6e72;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.plan95 .plan-btn:hover:not(:disabled),
+.plan95 .plan-mode-toggle:hover:not(:disabled),
+.plan95 .plan-period-chev:hover:not(:disabled),
+.plan95 .plan-period-today:hover:not(:disabled),
+.plan95 .plan-rail-filters button:hover:not(:disabled),
+.plan95 .plan-add button:hover:not(:disabled),
+.plan95 .append-log-views button:hover:not(:disabled),
+.plan95 .append-log-copy:hover:not(:disabled),
+.plan95 .append-log-submit:hover:not(:disabled) {
+  filter: brightness(1.04);
+}
+
+.plan95 .plan-btn:not(:disabled):active,
+.plan95 .plan-mode-toggle:not(:disabled):active,
+.plan95 .plan-mode-toggle[aria-pressed="true"],
+.plan95 .plan-period-chev:not(:disabled):active,
+.plan95 .plan-period-today:not(:disabled):active,
+.plan95 .plan-rail-filters button:not(:disabled):active,
+.plan95 .plan-rail-filters button[aria-pressed="true"],
+.plan95 .plan-add button:not(:disabled):active,
+.plan95 .append-log-views button:not([aria-pressed="true"]):active,
+.plan95 .append-log-views button[aria-pressed="true"],
+.plan95 .append-log-copy:not(:disabled):active,
+.plan95 .append-log-submit:not(:disabled):active {
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.35),
+    0 0 0 1px #3a3e42;
+  filter: none;
+}
+
+.plan95 .plan-mode-toggle[aria-pressed="true"],
+.plan95 .plan-rail-filters button[aria-pressed="true"],
+.plan95 .append-log-views button[aria-pressed="true"] {
+  color: var(--p-crt);
+  text-shadow: 0 0 3px var(--p-crt);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.18), transparent 55%),
+    #070c0a;
+  box-shadow:
+    0 0 0 1px #3a3e42,
+    inset 0 8px 10px rgba(0, 0, 0, 0.4);
+}
+
+.plan95 .plan-btn:disabled,
+.plan95 .plan-period-today:disabled,
+.plan95 .append-log-copy:disabled,
+.plan95 .append-log-submit:disabled {
+  color: #808080;
+  cursor: default;
+  filter: none;
+}
+
+/* Shared latch row: Dark lives here; gem-mode sibling can sit next to it. */
+.plan95 .plan-toolbar-modes {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+body.win95-app .plan95 .plan-view-keys[role="tablist"] {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 4px;
+  flex: 1 1 12rem;
+  min-width: 12rem;
+  max-width: 22rem;
+  margin: 0;
+  padding: 4px;
+  border-radius: 3px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
+    #b4b8bc;
+  box-shadow:
+    0 0 0 1px #5c6064,
+    inset 0 2px 3px rgba(0, 0, 0, 0.18);
+}
+
+body.win95-app .plan95 .plan-view-keys [role="tab"] {
+  position: relative;
+  display: inline-flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 28px;
+  padding: 4px 10px 5px;
+  border-radius: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #1c1e20;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 28%),
+    linear-gradient(165deg, #eceef0, #c0c4c8);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1px #4a4e52;
+}
+
+body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"] {
+  color: var(--p-crt);
+  font-weight: 700;
+  text-shadow: 0 0 3px var(--p-crt);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.2), transparent 55%),
+    #070c0a;
+  box-shadow:
+    0 0 0 1px #3a3e42,
+    inset 0 8px 10px rgba(0, 0, 0, 0.4);
+}
+
+body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before {
+  content: "";
+  display: block;
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f4fff8 0 16%, #7dffc4 42%, #0b4a32 100%);
+  box-shadow:
+    0 0 0 1px #141816,
+    0 0 0 2px #9aa09c,
+    inset 0 1px 1px rgba(255, 255, 255, 0.55),
+    0 0 4px #7dffc4;
+}
+
+.plan95 .plan-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  min-height: 0;
+  padding: 10px;
+  flex: 1;
+}
+
+.plan95 .plan-body [data-state="active"][role="tabpanel"] {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+.plan95 .plan-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 24px;
+  padding: 4px 10px;
+  border-radius: 2px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
+    var(--p-surface);
+  box-shadow: var(--p-sunken);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #2a2c2e;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.plan95 .plan-split {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+}
+
+/*
+ * Day split: agenda column stays viewport-tall while a long rail scrolls.
+ * Fieldset flex-grow is unreliable, so `.plan-schedule-well` (a div) takes
+ * leftover height; hour rows stay 152px. Week/month keep unconstrained split.
+ */
+.plan95 .plan-split-day {
+  flex: 1 1 auto;
+  min-height: 38rem;
+  height: max(38rem, calc(100dvh - 5.5rem));
+  max-height: none;
+  overflow: hidden;
+}
+
+.plan95 .plan-split-day .plan-rail {
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.plan95 .plan-split-day .plan-rail-list {
+  min-height: 0;
+}
+
+.plan95 .plan-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 18.5rem;
+  flex-shrink: 0;
+  min-height: 280px;
+  padding: 8px;
+  border-radius: 3px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
+    linear-gradient(180deg, #d8dce0, var(--p-surface) 42%, #a8acb0);
+  box-shadow:
+    0 0 0 1px #5c6064,
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 2px 3px rgba(0, 0, 0, 0.1),
+    var(--p-sunken);
+}
+
+.plan95 .plan-rail-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 6px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #2a2c2e;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  box-shadow: inset 0 -1px var(--p-shadow), inset 0 -2px var(--p-highlight);
+}
+
+.plan95 .plan-rail-count {
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: 2px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--p-crt);
+  text-shadow: 0 0 3px var(--p-crt);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.16), transparent 55%),
+    #070c0a;
+  box-shadow:
+    0 0 0 1px #3a3e42,
+    inset 0 4px 6px rgba(0, 0, 0, 0.35);
+}
+
+.plan95 .plan-capacity {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 0 2px;
+  padding: 8px 10px;
+  border-radius: 2px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #222;
+  background: #fff;
+  box-shadow:
+    0 0 0 1px #6a6e72,
+    var(--p-field);
+}
+
+.plan95 .plan-capacity[data-over="true"] {
+  font-weight: bold;
+}
+
+.plan95 .plan-capacity-pips {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.plan95 .plan-pip {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #9a9a9a;
+  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #505050;
+}
+
+.plan95 .plan-pip[data-on="true"] {
+  background: radial-gradient(circle at 35% 30%, #d8ffe8 0%, #3d8a62 72%);
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.55), 0 0 0 1px #2a5a40;
+}
+
+.plan95 .plan-rail-hint {
+  margin: 0 6px 4px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #404040;
+}
+
+.plan95 .plan-rail-list {
+  flex: 1;
+  min-height: 8rem;
+  overflow-y: auto;
+  padding: 4px 0;
+  background: #fff;
+  box-shadow: var(--p-field);
+}
+
+.plan95 .plan-rail-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 10px 10px;
+  color: #000;
+  background: transparent;
+  box-shadow: inset 0 -1px color-mix(in srgb, var(--p-shadow) 38%, transparent);
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.plan95 .plan-rail-item:last-child {
+  box-shadow: none;
+}
+
+.plan95 .plan-rail-gem {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  object-fit: contain;
+}
+
+.plan95 .plan-rail-item[draggable="true"] {
+  cursor: grab;
+}
+
+.plan95 .plan-rail-item[draggable="true"]:hover {
+  background: color-mix(in srgb, var(--p-opal-mint) 14%, #fff);
+}
+
+.plan95 .plan-rail-item[data-kind="habit"][draggable="true"],
+.plan95 .plan-rail-item[data-kind="next-action"][draggable="true"] {
+  cursor: grab;
+}
+
+.plan95 .plan-rail-handle {
+  flex-shrink: 0;
+  width: 0.7rem;
+  margin-top: 1px;
+  color: #606060;
+  font-size: 11px;
+  line-height: 1.2;
+  letter-spacing: -1px;
+  user-select: none;
+}
+
+.plan95 .plan-rail-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  overflow-wrap: break-word;
+}
+
+.plan95 .plan-rail-meta {
+  display: block;
+  font-size: 10px;
+  color: #404040;
+}
+
+.plan95 .plan-rail-mins {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: #404040;
+}
+
+.plan95 .plan-rail-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0 0 2px;
+  padding: 6px;
+  border-radius: 2px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0 1px, transparent 1px 2px),
+    var(--p-face);
+  box-shadow: var(--p-sunken);
+}
+
+.plan95 .plan-rail-tools input,
+.plan95 .plan-rail-tools select {
+  width: 100%;
+  height: 24px;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 0;
+  background: #fff;
+  color: #000;
+  font: inherit;
+  font-size: 11px;
+  box-shadow: var(--p-field);
+}
+
+.plan95 .plan-rail-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0 0 2px;
+  padding: 4px;
+  border-radius: 3px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
+    #b4b8bc;
+  box-shadow:
+    0 0 0 1px #5c6064,
+    inset 0 2px 3px rgba(0, 0, 0, 0.16);
+}
+
+.plan95 .plan-rail-filters button {
+  flex: 1;
+  min-height: 26px;
+  padding: 4px 8px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+}
+
+.plan95 .plan-add {
+  display: flex;
+  gap: 6px;
+  padding-top: 8px;
+  box-shadow: inset 0 1px var(--p-shadow), inset 0 2px var(--p-highlight);
+}
+
+.plan95 .plan-add input {
+  flex: 1;
+  min-width: 0;
+  height: 30px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 2px;
+  background: #fff;
+  box-shadow: var(--p-field);
+  font: inherit;
+  font-size: 12px;
+  color: #000;
+  outline-color: #000080;
+}
+
+.plan95 .plan-add button {
+  min-width: 30px;
+  min-height: 30px;
+  padding: 4px 10px;
+  font-size: 14px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.plan95 .plan-desktop {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+  padding: 10px 12px 12px;
+  border-radius: 3px;
+  color: #111;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0 1px, transparent 1px 2px),
+    linear-gradient(180deg, #d8dce0, var(--p-surface) 40%, #a8acb0);
+  box-shadow:
+    0 0 0 1px #5c6064,
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    var(--p-sunken);
+  --muted-foreground: 215.4 16.3% 46.9%;
+}
+
+.plan95 .plan-desktop-day {
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.plan95 .plan-desktop-day .plan-group:not(.plan-group-schedule) {
+  flex: 0 0 auto;
+}
+
+.plan95 .plan-schedule-well {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0%;
+  min-height: 22rem;
+  overflow: hidden;
+}
+
+.plan95 .plan-split-day .plan-desktop-day > .plan-group:not(.plan-group-schedule) {
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: 22%;
+  overflow: auto;
+}
+
+.plan95 .plan-split-day .plan-desktop-day > .plan-group:not(.plan-group-schedule) textarea {
+  min-height: 6rem;
+  max-height: 7rem;
+}
+
+.plan95 .plan-split-day .append-log-history {
+  max-height: 5.5rem;
+  overflow-y: auto;
+}
+
+.plan95 .plan-desktop-day .plan-group-schedule {
+  display: grid;
+  grid-template-rows: auto minmax(22rem, 1fr);
+  flex: 1 1 0%;
+  min-height: 0;
+  height: 100%;
+}
+
+/*
+ * Day agenda fills leftover column height (not a postage-stamp 58vh box).
+ * Hour rows stay 152px; the *surface* grows. Nested 24h scroll lands on now.
+ */
+.plan95 .plan-desktop-day .plan-group-schedule[data-plan-agenda-fill="column"] .agenda95,
+.plan95 .plan-desktop-day .plan-group-schedule .agenda95 {
+  min-height: 22rem;
+  max-height: none;
+  height: 100%;
+}
+
+.plan95 .plan-period {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 6px 8px;
+  border-radius: 3px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
+    linear-gradient(180deg, #d8dce0, var(--p-face) 48%, #b0b4b8);
+  box-shadow:
+    0 0 0 1px #6a6e72,
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 2px 3px rgba(0, 0, 0, 0.08);
+}
+
+.plan95 .plan-period h3 {
+  margin: 0;
+  min-height: 30px;
+  padding: 6px 14px 7px;
+  display: inline-flex;
+  align-items: center;
+  flex: 1 1 auto;
+  justify-content: center;
+  border-radius: 2px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #2a2c2e !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  background-image:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0 1px, transparent 1px 2px),
+    linear-gradient(180deg, #eef0f2 0%, var(--p-surface) 48%, #a4a8ac 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1px #6a6e72;
+}
+
+.plan95 .plan-period-chev {
+  min-width: 30px;
+  min-height: 30px;
+  padding: 2px 10px;
+  font-size: 14px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.plan95 .plan-period-today {
+  min-height: 30px;
+  padding: 5px 14px 6px;
+}
+
+.plan95 .plan-cal {
+  overflow-x: auto;
+  border-radius: 2px;
+  background: var(--p-surface);
+  box-shadow:
+    0 0 0 1px #5c6064,
+    var(--p-raised);
+}
+
+.plan95 .plan-weekdays,
+.plan95 .plan-month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(5.5rem, 1fr));
+  min-width: min-content;
+}
+
+.plan95 .plan-weekdays > span {
+  padding: 6px 3px;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #2a2c2e;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0 1px, transparent 1px 2px),
+    var(--p-face);
+  box-shadow: inset 0 -1px var(--p-shadow);
+}
+
+.plan95 .plan-day {
+  min-height: 88px;
+  height: 100%;
+  padding: 3px 4px 4px;
+  border-right: 1px solid var(--p-shadow);
+  border-bottom: 1px solid var(--p-shadow);
+  background: #fff;
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.45),
+    inset -1px -1px 0 color-mix(in srgb, var(--p-shadow) 28%, transparent);
+  cursor: pointer;
+  vertical-align: top;
+}
+
+.plan95 .plan-day:hover {
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--p-opal-mint) 12%, #fff),
+    color-mix(in srgb, var(--p-opal-lilac) 10%, #fff)
+  );
+}
+
+.plan95 .plan-day[data-past="true"] {
+  color: #6a6a6a;
+  background: #e8e8e8;
+}
+
+.plan95 .plan-day[data-past="true"]:hover {
+  background: #dedede;
+}
+
+.plan95 .plan-day[data-outside="true"] {
+  color: #808080;
+  background: #efefef;
+}
+
+.plan95 .plan-day[data-outside="true"]:hover {
+  background: #e4e4e4;
+}
+
+.plan95 .plan-day[data-selected="true"] {
+  outline: 1px dotted var(--p-blue);
+  outline-offset: -3px;
+}
+
+.plan95 .plan-day[data-today="true"] {
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--p-opal-mint) 28%, #fff) 0%,
+    color-mix(in srgb, var(--p-opal-lilac) 22%, #fff) 55%,
+    var(--p-today) 100%
+  );
+  box-shadow: inset 0 0 0 2px var(--p-blue);
+}
+
+.plan95 .plan-day[data-today="true"][data-selected="true"] {
+  outline: 1px dotted var(--p-blue);
+  outline-offset: -5px;
+  box-shadow: inset 0 0 0 2px var(--p-blue);
+}
+
+.plan95 .plan-day-num {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 2px;
+  font-size: 11px;
+  font-weight: bold;
+  line-height: 1.2;
+}
+
+.plan95 .plan-day[data-today="true"] .plan-day-num {
+  color: var(--p-blue);
+}
+
+.plan95 .plan-day-today-mark {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--p-crt);
+  text-shadow: 0 0 3px var(--p-crt);
+  background: #070c0a;
+  padding: 1px 4px;
+  line-height: 1.35;
+  border-radius: 2px;
+  box-shadow:
+    0 0 0 1px #3a3e42,
+    inset 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.plan95 .plan-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 0;
+}
+
+.plan95 .plan-month-grid .plan-chip {
+  padding: 1px 5px 2px 6px;
+  font-size: 10px;
+  line-height: 1.2;
+  border-left-width: 3px;
+}
+
+.plan95 .plan-month-grid .plan-chip-time {
+  font-size: 9px;
+}
+
+.plan95 .plan-month-grid .plan-more {
+  padding: 1px 4px;
+  gap: 4px;
+  font-size: 10px;
+}
+
+.plan95 .plan-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  min-width: 0;
+  padding: 8px 12px 12px;
+  border: 0;
+  border-radius: 3px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0 1px, transparent 1px 2px),
+    linear-gradient(180deg, #d8dce0, var(--p-surface) 40%, #a8acb0);
+  box-shadow:
+    0 0 0 1px #6a6e72,
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    var(--p-sunken);
+}
+
+.plan95 .plan-group > legend,
+.plan95 .plan-group-label {
+  float: left;
+  width: 100%;
+  margin: 0 0 8px;
+  padding: 6px 8px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  line-height: 1.35;
+  color: #2a2c2e;
+  text-decoration: none;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  background: transparent;
+  box-shadow: inset 0 -1px var(--p-shadow), inset 0 -2px var(--p-highlight);
+}
+
+.plan95 .plan-group > legend + * {
+  clear: both;
+}
+
+.plan95 .plan-group textarea {
+  display: block;
+  width: 100%;
+  min-height: 6.5rem;
+  margin: 0;
+  padding: 10px 12px 18px;
+  border: 0;
+  border-radius: 0;
+  resize: vertical;
+  background: #fff;
+  color: #000;
+  box-shadow: var(--p-field);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.5;
+  outline-color: #000080;
+}
+
+.plan95 .plan-desktop-day .plan-group:not(.plan-group-schedule) textarea {
+  min-height: 10rem;
+}
+
+.plan95 .plan-group textarea::-webkit-resizer {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.plan95 .plan-save-hint {
+  margin: 4px 2px 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #404040;
+}
+
+.append-log {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.append-log-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.append-log-views-well {
+  flex: 1;
+  min-width: 0;
+}
+
+.append-log-views {
+  display: flex;
+  flex: 1;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 3px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
+    #b4b8bc;
+  box-shadow:
+    0 0 0 1px #5c6064,
+    inset 0 2px 3px rgba(0, 0, 0, 0.16);
+}
+
+.append-log-views button {
+  flex: 1;
+  min-height: 26px;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 2px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #1c1e20;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 28%),
+    linear-gradient(165deg, #eceef0, #c0c4c8);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1px #4a4e52;
+  cursor: pointer;
+}
+
+.append-log-views button[aria-pressed="true"] {
+  color: var(--hab-crt-green, #7dffc4);
+  text-shadow: 0 0 3px var(--hab-crt-green, #7dffc4);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.18), transparent 55%),
+    #070c0a;
+  box-shadow:
+    0 0 0 1px #3a3e42,
+    inset 0 8px 10px rgba(0, 0, 0, 0.4);
+}
+
+.append-log-copy,
+.append-log-submit {
+  min-height: 28px;
+  padding: 4px 14px;
+  border: 0;
+  border-radius: 2px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #1c1e20;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
+    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--p-surface, #c0c0c0) 70%, #9a9ea2 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 0 -1px 0 rgba(55, 58, 62, 0.45),
+    0 0 0 1px #4a4e52,
+    0 1px 0 #6a6e72;
+  cursor: pointer;
+}
+
+.append-log-submit[data-default="true"] {
+  font-weight: 700;
+  box-shadow:
+    inset 0 0 0 1px #000,
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 0 -1px 0 rgba(55, 58, 62, 0.45),
+    0 0 0 1px #4a4e52;
+}
+
+.append-log-copy:disabled,
+.append-log-submit:disabled {
+  color: #6a6a6a;
+  cursor: default;
+}
+
+.append-log-copy:not(:disabled):active,
+.append-log-submit:not(:disabled):active,
+.append-log-views button:not([aria-pressed="true"]):active {
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.35),
+    0 0 0 1px #3a3e42;
+}
+
+.append-log-compose {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.append-log-hint {
+  margin: 4px 2px 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #404040;
+}
+
+.append-log-compose .append-log-hint {
+  margin: 0;
+}
+
+.append-log-compose .append-log-hint strong {
+  color: var(--p-blue, #000080);
+  font-weight: bold;
+}
+
+.append-log textarea {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 10px 12px 18px;
+  border: 0;
+  border-radius: 0;
+  resize: vertical;
+  background: #fff;
+  color: #000;
+  box-shadow: var(--p-field, inset -1px -1px #fff, inset 1px 1px #808080, inset -2px -2px #dfdfdf, inset 2px 2px #0a0a0a);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.append-log-history {
+  min-width: 0;
+}
+
+.append-log-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.append-log-entry {
+  flex-shrink: 0;
+  padding: 8px 10px 10px;
+  background: #fff;
+  box-shadow: var(--p-field, inset -1px -1px #fff, inset 1px 1px #808080, inset -2px -2px #dfdfdf, inset 2px 2px #0a0a0a);
+}
+
+.append-log-stamp {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #2a2c2e;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.append-log-body {
+  margin: 0;
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.append-log-bulk {
+  min-height: 8rem;
+  cursor: text;
+}
+
+.plan95 .plan-desktop-day .plan-group:not(.plan-group-schedule) .append-log textarea:not(.append-log-bulk) {
+  min-height: 10rem;
+}
+
+.plan95 .plan-week {
+  overflow: auto;
+  max-height: min(78vh, 780px);
+  border-radius: 2px;
+  background: #fff;
+  box-shadow:
+    0 0 0 1px #5c6064,
+    var(--p-field);
+}
+
+.plan95 .plan-week-grid {
+  display: grid;
+  grid-template-columns: 3.5rem repeat(7, minmax(6.5rem, 1fr));
+  min-width: min-content;
+}
+
+.plan95 .plan-week-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 10px 8px;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #2a2c2e;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
+    var(--p-face);
+  box-shadow: inset 0 -1px var(--p-shadow);
+}
+
+.plan95 .plan-week-head[data-past="true"] {
+  color: #6a6a6a;
+  background: #e8e8e8;
+}
+
+.plan95 .plan-week-head[data-today="true"] {
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--p-opal-mint) 22%, var(--p-face)),
+    color-mix(in srgb, var(--p-opal-lilac) 16%, var(--p-face))
+  );
+}
+
+.plan95 .plan-week-gutter {
+  padding: 10px 8px;
+  font-size: 11px;
+  color: #404040;
+  background: var(--p-face);
+  border-right: 1px solid var(--p-shadow);
+  border-bottom: 1px solid var(--p-surface);
+}
+
+.plan95 .plan-week-cell {
+  position: relative;
+  min-height: 72px;
+  padding: 6px;
+  border-right: 1px solid var(--p-surface);
+  border-bottom: 1px solid var(--p-surface);
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.4),
+    inset -1px -1px 0 color-mix(in srgb, var(--p-shadow) 22%, transparent);
+  cursor: pointer;
+}
+
+.plan95 .plan-week-cell[data-past="true"] {
+  color: #6a6a6a;
+  background: #e8e8e8;
+}
+
+.plan95 .plan-week-cell[data-today="true"] {
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--p-opal-mint) 14%, #fff),
+    color-mix(in srgb, var(--p-opal-lilac) 10%, #fff)
+  );
+}
+
+.plan95 .plan-allday {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 6px;
+}
+
+.plan95 .plan-banners {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Event / task chips: stripe + glass wash. Time range + wrapping title. */
+.plan95 .plan-chip,
+.plan-chip {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 6px 10px 7px 12px;
+  text-align: left;
+  font: inherit;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #102018;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--plan-chip-color, #8cd4a5) 78%, #fff) 0%,
+    color-mix(in srgb, #b89fbf 58%, #fff) 45%,
+    color-mix(in srgb, var(--plan-chip-color, #8cd4a5) 42%, #fff) 100%
+  );
+  border: 0;
+  border-left: 5px solid var(--plan-chip-color, #8cd4a5);
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.82), inset -1px -1px 0 rgba(40, 20, 50, 0.14);
+  backdrop-filter: blur(7px) saturate(1.45);
+  -webkit-backdrop-filter: blur(7px) saturate(1.45);
+  cursor: pointer;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: break-word;
+  hyphens: none;
+}
+
+.plan95 .plan-chip-time,
+.plan-chip-time {
+  display: block;
+  font-size: 10px;
+  color: #2a3a32;
+}
+
+.plan95 .plan-chip-title,
+.plan-chip-title {
+  font-weight: bold;
+}
+
+.plan95 .plan-more,
+.plan-more {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  font-size: 11px;
+  color: var(--p-blue, #000080);
+  cursor: default;
+}
+
+.plan95 .plan-more-orb,
+.plan-more-orb {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.plan95 .plan-chip-orb,
+.plan-chip-orb {
+  width: 12px;
+  height: 12px;
+  margin-right: 4px;
+  vertical-align: -2px;
+  object-fit: contain;
+}
+
+/* Hour agenda (Plan day + Tracking Day Log). Nested metal well, white document. */
+.agenda95 {
+  position: relative;
+  overflow-y: auto;
+  border-radius: 2px;
+  color: #111;
+  background: #fff;
+  box-shadow:
+    0 0 0 1px #5c6064,
+    inset -1px -1px var(--chrome-hi, #fff), inset 1px 1px var(--chrome-lo, #808080),
+    inset -2px -2px var(--chrome-mid, #dfdfdf), inset 2px 2px var(--chrome-frame, #0a0a0a);
+  --muted-foreground: 215.4 16.3% 46.9%;
+}
+
+.agenda95 .agenda-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #102018;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--plan-chip-color, #8cd4a5) 74%, #fff),
+    color-mix(in srgb, #b89fbf 52%, #fff)
+  );
+  border-left: 5px solid var(--plan-chip-color, #8cd4a5);
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.82), inset -1px -1px 0 rgba(40, 20, 50, 0.14);
+  backdrop-filter: blur(7px) saturate(1.45);
+  -webkit-backdrop-filter: blur(7px) saturate(1.45);
+  cursor: pointer;
+}
+
+.agenda95 .agenda-banner-title {
+  flex: 1;
+  min-width: 0;
+  font-weight: bold;
+  overflow-wrap: break-word;
+  white-space: normal;
+}
+
+.agenda95 .agenda-banner-when {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: #404040;
+}
+
+.agenda95 .agenda-hour {
+  display: flex;
+  border-bottom: 1px solid var(--p-surface);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--p-shadow, #808080) 18%, transparent);
+}
+
+.agenda95 .agenda-hour:hover {
+  background: color-mix(in srgb, var(--p-opal-mint, #8cd4a5) 10%, #fff);
+}
+
+.agenda95 .agenda-gutter {
+  width: 4.25rem;
+  flex-shrink: 0;
+  padding: 14px 10px;
+  border-right: 1px solid var(--p-shadow, #808080);
+  font-size: 12px;
+  color: #404040;
+  background: var(--p-face);
+}
+
+.agenda95 .agenda-hours {
+  position: relative;
+}
+
+.agenda95 .agenda-span {
+  left: calc(4.25rem + 8px);
+  z-index: 12;
+  text-align: left;
+  overflow: hidden;
+}
+
+.agenda95 .agenda-slot {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.agenda95 .agenda-slot[data-drag="true"],
+.agenda95 .agenda-slot[data-drop="true"] {
+  background: #c8d8f0;
+}
+
+.agenda95 .agenda-block {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: break-word;
+  white-space: normal;
+  cursor: pointer;
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.35), inset -1px -1px 0 rgba(0, 0, 0, 0.35);
+}
+
+.agenda95 .agenda-block-opal {
+  color: #102018;
+  border: 0;
+  border-left: 5px solid var(--plan-chip-color, #8cd4a5);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--plan-chip-color, #8cd4a5) 78%, #fff) 0%,
+    color-mix(in srgb, #b89fbf 55%, #fff) 48%,
+    color-mix(in srgb, var(--plan-chip-color, #8cd4a5) 40%, #fff) 100%
+  );
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.82), inset -1px -1px 0 rgba(40, 20, 50, 0.14);
+  backdrop-filter: blur(7px) saturate(1.45);
+  -webkit-backdrop-filter: blur(7px) saturate(1.45);
+}
+
+.agenda95 .agenda-block-planned {
+  color: #1a1a28;
+  border: 1px dashed #404080;
+  border-left: 5px dashed #404080;
+  background: repeating-linear-gradient(
+    -12deg,
+    #efe8d4 0 7px,
+    color-mix(in srgb, #d8d0b8 70%, #fff) 7px 14px
+  );
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.55), inset -1px -1px 0 rgba(40, 40, 70, 0.16);
+}
+
+.agenda95 .agenda-block-title {
+  font-weight: bold;
+}
+
+.agenda95 .agenda-block-sub {
+  font-size: 11px;
+  opacity: 0.85;
+  margin-top: 2px;
+}
+
+.plan-drag-ghost {
+  position: fixed;
+  z-index: 10000;
+  pointer-events: none;
+  max-width: 16rem;
+  padding: 6px 10px;
+  font: 12px/1.3 Tahoma, "MS Sans Serif", Geneva, sans-serif;
+  color: #1a1a28;
+  background: repeating-linear-gradient(
+    -12deg,
+    #efe8d4 0 7px,
+    color-mix(in srgb, #d8d0b8 70%, #fff) 7px 14px
+  );
+  border: 1px dashed #404080;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.28);
+}
+
+.plan-chip[data-kind="planned"] {
+  color: #1a1a28;
+  border: 1px dashed #404080;
+  border-left: 5px dashed #404080;
+  background: repeating-linear-gradient(
+    -12deg,
+    #efe8d4 0 7px,
+    color-mix(in srgb, #d8d0b8 70%, #fff) 7px 14px
+  );
+}
+
+.agenda95 .agenda-marker {
+  position: absolute;
+  left: 4rem;
+  right: 0;
+  pointer-events: none;
+}
+
+.agenda95 .agenda-marker-line {
+  height: 2px;
+}
+
+.agenda95 .agenda-marker-label {
+  position: absolute;
+  right: 4px;
+  top: -7px;
+  padding: 0 3px;
+  font-size: 10px;
+  font-weight: bold;
+  background: #fff;
+}
+
+/* Navy / mint house focus — never WebKit orange / peach. Scoped so Lists
+ * keeps its own dotted black. Tailwind ring utilities are zeroed here. */
+.plan95,
+.plan95-dialog {
+  accent-color: #000080;
+  -webkit-focus-ring-color: #000080;
+  -webkit-tap-highlight-color: color-mix(in srgb, var(--p-opal-mint, #8cd4a5) 28%, transparent);
+}
+
+/* Navy house focus — never WebKit orange / peach. Longhands (not outline
+ * shorthand + var()) so Chromium cannot drop the rule. Extra specificity
+ * beats `.plan-group textarea` field bevel. Scoped so Lists is untouched. */
+.plan95 .plan-group textarea:focus,
+.plan95 .plan-group textarea:focus-visible,
+.plan95 .plan-add input:focus,
+.plan95 .plan-add input:focus-visible,
+.plan95-dialog input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):focus,
+.plan95-dialog input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):focus-visible,
+.plan95-dialog textarea:focus,
+.plan95-dialog textarea:focus-visible,
+.plan95-dialog select:focus,
+.plan95-dialog select:focus-visible {
+  outline-width: 2px;
+  outline-style: solid;
+  outline-color: #000080;
+  outline-offset: -2px;
+  caret-color: #000080;
+  box-shadow: var(--p-field), inset 0 0 0 2px #000080;
+}
+
+.plan95 button:focus,
+.plan95 button:focus-visible,
+.plan95 [role="tab"]:focus-visible,
+.plan95-dialog button:focus,
+.plan95-dialog button:focus-visible {
+  outline-width: 1px;
+  outline-style: dotted;
+  outline-color: #000080;
+  outline-offset: -4px;
+}
+
+/* ---- Portaled Plan dialogs ----
+ * Bound Win95 window (not shadcn w-full / sm:max-w-2xl stretch). Navy caption
+ * stays a quoted ancestor; action keys are milled metal. */ 
+
+.plan95-dialog {
+  --p-surface: var(--chrome-face, #c0c0c0);
+  --p-face: var(--chrome-mid, #dfdfdf);
+  --p-highlight: var(--chrome-hi, #ffffff);
+  --p-shadow: var(--chrome-lo, #808080);
+  --p-frame: var(--chrome-frame, #0a0a0a);
+  --p-blue: #000080;
+  --p-focus: #000080;
+  --p-opal-mint: #8cd4a5;
+  --p-crt: var(--hab-crt-green, #7dffc4);
+  --p-raised: inset -1px -1px var(--p-frame), inset 1px 1px var(--p-highlight),
+    inset -2px -2px var(--p-shadow), inset 2px 2px var(--p-face);
+  --p-sunken: inset -1px -1px var(--p-highlight), inset 1px 1px var(--p-frame),
+    inset -2px -2px var(--p-face), inset 2px 2px var(--p-shadow);
+  --p-field: inset -1px -1px var(--p-highlight), inset 1px 1px var(--p-shadow),
+    inset -2px -2px var(--p-face), inset 2px 2px var(--p-frame);
+
+  display: flex !important;
+  flex-direction: column;
+  width: min(30.5rem, calc(100vw - 2.5rem)) !important;
+  max-width: 30.5rem !important;
+  padding: 3px !important;
+  gap: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: var(--p-surface) !important;
+  color: #000;
+  box-shadow: var(--p-raised), 4px 4px 0 rgba(0, 0, 0, 0.35) !important;
+  font-family: var(--w95-font, Tahoma, "MS Sans Serif", Geneva, sans-serif);
+  font-size: 12px;
+  --muted-foreground: 0 0% 25%;
+}
+
+.plan95-dialog.plan95-dialog-lg {
+  width: min(36rem, calc(100vw - 2.5rem)) !important;
+  max-width: 36rem !important;
+}
+
+.plan95-dialog > button.absolute {
+  display: none !important;
+}
+
+.plan95-dialog-caption {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  flex-shrink: 0;
+  min-height: 22px;
+  padding: 2px 3px 2px 6px;
+  margin: 0;
+  color: #fff;
+  text-align: left;
+  background: linear-gradient(90deg, var(--p-blue), #1084d0);
+  user-select: none;
+}
+
+.plan95-dialog-caption h2 {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 13px;
+  font-weight: bold;
+  letter-spacing: 0.4px;
+  color: #fff !important;
+  text-align: left;
+  text-shadow: 1px 1px 0 #000;
+  line-height: 1.2;
+}
+
+.plan95-title-btn {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 14px;
+  min-width: 16px;
+  min-height: 14px;
+  max-width: 16px;
+  max-height: 14px;
+  margin-left: auto;
+  padding: 0;
+  border: none;
+  line-height: 1;
+  font-size: 11px;
+  font-weight: bold;
+  color: #000;
+  background: var(--p-surface);
+  box-shadow: var(--p-raised);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.plan95-title-btn:active {
+  box-shadow: var(--p-sunken);
+}
+
+.plan95-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  padding: 12px 14px 14px;
+  overflow-y: auto;
+}
+
+.plan95-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.plan95-field > label {
+  font-size: 11px;
+  font-weight: bold;
+  color: #000;
+}
+
+.plan95-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #000;
+}
+
+.plan95-times {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.plan95-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 2px;
+  padding-top: 10px;
+  box-shadow: inset 0 1px var(--p-shadow), inset 0 2px var(--p-highlight);
+}
+
+.plan95-dialog-actions [data-danger="true"] {
+  margin-right: auto;
+}
+
+.plan95-dialog-actions button,
+.plan95-dialog .plan95-btn {
+  min-width: 88px;
+  min-height: 28px;
+  padding: 5px 16px 6px;
+  border: 0;
+  border-radius: 2px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
+    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--p-surface) 70%, #9a9ea2 100%);
+  color: #1c1e20;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 0 -1px 0 rgba(55, 58, 62, 0.45),
+    0 0 0 1px #4a4e52,
+    0 1px 0 #6a6e72;
+  cursor: pointer;
+}
+
+.plan95-dialog-actions button[data-default="true"],
+.plan95-dialog .plan95-btn-default {
+  font-weight: 700;
+  box-shadow:
+    inset 0 0 0 1px #000,
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 0 -1px 0 rgba(55, 58, 62, 0.45),
+    0 0 0 1px #4a4e52;
+}
+
+.plan95-dialog-actions button:active,
+.plan95-dialog .plan95-btn:active {
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.35),
+    0 0 0 1px #3a3e42;
+}
+
+.plan95-dialog-actions button:disabled,
+.plan95-dialog .plan95-btn:disabled {
+  color: #808080;
+  cursor: default;
+}
+
+.plan95-dialog h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.plan95-dialog p,
+.plan95-dialog label,
+.plan95-dialog li,
+.plan95-dialog h4 {
+  color: #000;
+}
+
+.plan95-dialog input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),
+.plan95-dialog textarea,
+.plan95-dialog select {
+  border-radius: 0;
+  background: #fff;
+  color: #000;
+  box-shadow: var(--p-field);
+  padding: 6px 10px;
+  outline-color: #000080;
+}
+
+.plan95-dialog button:not(.plan-color-preset):not(.plan-chip):not(.plan95-title-btn):not([role="switch"]) {
+  min-height: 26px;
+  padding: 4px 14px;
+}
+
+.plan95-dialog button.plan95-title-btn {
+  width: 16px;
+  height: 14px;
+  min-width: 16px;
+  min-height: 14px;
+  max-width: 16px;
+  max-height: 14px;
+  padding: 0;
+}
+
+.plan95-dialog .plan-stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  gap: 6px;
+}
+
+.plan95-dialog .plan-stat {
+  padding: 6px 8px;
+  text-align: center;
+  border-radius: 2px;
+  background: #070c0a;
+  box-shadow:
+    0 0 0 1px #3a3e42,
+    inset 0 8px 10px rgba(0, 0, 0, 0.4);
+}
+
+.plan95-dialog .plan-stat strong {
+  display: block;
+  font-size: 16px;
+  color: var(--p-crt, #7dffc4);
+  text-shadow: 0 0 3px var(--p-crt, #7dffc4);
+}
+
+.plan95-dialog .plan-danger {
+  padding: 8px 10px;
+  background: var(--p-surface);
+  box-shadow: var(--p-sunken);
+}
+
+.plan95-dialog .plan-preview {
+  max-height: 16rem;
+  overflow: auto;
+  background: #fff;
+  box-shadow: var(--p-field);
+}
+
+.plan95-dialog .plan-preview-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 8px;
+  border-bottom: 1px solid #d0d0d0;
+}
+
+.plan95-dialog .plan-color-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.plan95-dialog .plan-color-preset {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  box-shadow: var(--p-raised);
+  cursor: pointer;
+}
+
+.plan95-dialog .plan-color-preset:focus-visible {
+  outline-width: 1px;
+  outline-style: dotted;
+  outline-color: #000080;
+  outline-offset: 2px;
+}
+
+.plan95-dialog .plan-color-preset[data-selected="true"] {
+  box-shadow: var(--p-sunken), inset 0 0 0 1px #000;
+}
+
+/* ---- Optional Plan-only dark chrome ----
+ * Default remains milled silver. Latch is `.plan95[data-plan-dark="true"]`.
+ * Portaled `.plan95-dialog` stays light. Sage / violet / black-gray only.
+ * Metal chrome sits lighter than calendar paper so rail, grid, and week/day
+ * desks read as distinct wells — not one muddy slab. */
+
+body.win95-app .plan95[data-plan-dark="true"],
+.plan95[data-plan-dark="true"] {
+  --p-surface: #23252e;
+  --p-face: #2e313c;
+  --p-highlight: #55586a;
+  --p-shadow: #050508;
+  --p-frame: #000000;
+  --p-blue: #c4b5f5;
+  --p-blue-light: #d8ccff;
+  --p-ink: #f0f0f4;
+  --p-opal-mint: #a8d0b0;
+  --p-opal-lilac: #9b8ae0;
+  --p-today: #2c2440;
+  --p-focus: #9b8ae0;
+  --p-cell: #0c0d12;
+  --p-cell-past: #08090d;
+  --p-cell-out: #101117;
+  --p-paper: #101218;
+  --p-line: #3a3d4c;
+  --p-muted: #a7afbc;
+  --p-violet: #8b74e0;
+  --p-sage: #a8d0b0;
+  --p-crt: var(--hab-crt-green, #7dffc4);
+  color: var(--p-ink);
+}
+
+.plan95[data-plan-dark="true"] .plan-fascia {
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0 1px, transparent 1px 2px),
+    linear-gradient(165deg, #3a3d4a 0%, var(--p-surface) 48%, #1a1c24 100%);
+  box-shadow:
+    0 0 0 1px #0a0b10,
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.55),
+    inset 0 0 0 2px #343744;
+}
+
+.plan95[data-plan-dark="true"] .plan-mark {
+  background:
+    radial-gradient(ellipse at 18% 0%, rgba(125, 255, 196, 0.12), transparent 46%),
+    #050608;
+}
+
+.plan95[data-plan-dark="true"] .plan-btn,
+.plan95[data-plan-dark="true"] .plan-mode-toggle,
+.plan95[data-plan-dark="true"] .plan-period-chev,
+.plan95[data-plan-dark="true"] .plan-period-today,
+.plan95[data-plan-dark="true"] .plan-rail-filters button,
+.plan95[data-plan-dark="true"] .plan-add button,
+.plan95[data-plan-dark="true"] .append-log-views button,
+.plan95[data-plan-dark="true"] .append-log-copy,
+.plan95[data-plan-dark="true"] .append-log-submit {
+  color: var(--p-ink);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0, transparent 28%),
+    linear-gradient(165deg, #3a3d4a, var(--p-face) 55%, #1e2028 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.45),
+    0 0 0 1px #0a0b10;
+}
+
+body.win95-app .plan95[data-plan-dark="true"] .plan-view-keys[role="tablist"] {
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 2px),
+    #2a2c36;
+  box-shadow:
+    0 0 0 1px #0a0b10,
+    inset 0 2px 3px rgba(0, 0, 0, 0.4);
+}
+
+body.win95-app .plan95[data-plan-dark="true"] .plan-view-keys [role="tab"] {
+  color: var(--p-ink);
+  text-shadow: none;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0, transparent 30%),
+    var(--p-face);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 0 0 1px #0a0b10;
+}
+
+body.win95-app .plan95[data-plan-dark="true"] .plan-view-keys [role="tab"][data-state="active"] {
+  color: var(--p-crt);
+  text-shadow: 0 0 3px var(--p-crt);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.18), transparent 55%),
+    #070c0a;
+  box-shadow:
+    0 0 0 1px #3a3e42,
+    inset 0 8px 10px rgba(0, 0, 0, 0.5);
+}
+
+.plan95[data-plan-dark="true"] .plan-mode-toggle[aria-pressed="true"],
+.plan95[data-plan-dark="true"] .plan-rail-filters button[aria-pressed="true"],
+.plan95[data-plan-dark="true"] .append-log-views button[aria-pressed="true"] {
+  color: #fff;
+  text-shadow: none;
+  background: linear-gradient(180deg, #b59af0 0%, var(--p-violet) 100%);
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.28), inset -1px -1px 0 #3a2e78;
+}
+
+.plan95[data-plan-dark="true"] .plan-body {
+  background: #16171e;
+}
+
+.plan95[data-plan-dark="true"] .plan-rail,
+.plan95[data-plan-dark="true"] .plan-desktop,
+.plan95[data-plan-dark="true"] .plan-group {
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0 1px, transparent 1px 2px),
+    var(--p-surface);
+  box-shadow:
+    0 0 0 1px #0a0b10,
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    var(--p-sunken);
+}
+
+.plan95[data-plan-dark="true"] .plan-rail-head,
+.plan95[data-plan-dark="true"] .plan-group > legend,
+.plan95[data-plan-dark="true"] .plan-group-label,
+.plan95[data-plan-dark="true"] .plan-status,
+.plan95[data-plan-dark="true"] .append-log-stamp {
+  color: var(--p-sage);
+  text-shadow: none;
+}
+
+.plan95[data-plan-dark="true"] .plan-period {
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 2px),
+    var(--p-face);
+  box-shadow:
+    0 0 0 1px #0a0b10,
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.plan95[data-plan-dark="true"] .plan-period h3 {
+  color: var(--p-sage) !important;
+  text-shadow: none;
+  background-image:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0 1px, transparent 1px 2px),
+    linear-gradient(180deg, #3a3d4a, var(--p-surface));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 0 0 1px #0a0b10;
+}
+
+.plan95[data-plan-dark="true"] .plan-period-today {
+  color: #fff;
+  text-shadow: none;
+  font-weight: 700;
+  background: linear-gradient(180deg, #b59af0 0%, var(--p-violet) 48%, #5e4bb8 100%);
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.3), inset -1px -1px 0 #3a2e78,
+    0 0 0 1px #4a3a90;
+}
+
+.plan95[data-plan-dark="true"] .plan-cal {
+  background: var(--p-face);
+  box-shadow:
+    0 0 0 1px #0a0b10,
+    var(--p-raised);
+}
+
+.plan95[data-plan-dark="true"] .plan-weekdays > span {
+  color: #d6d8e4;
+  text-shadow: none;
+  background: #343744;
+  box-shadow: inset 0 -1px #0a0b10, inset 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.plan95[data-plan-dark="true"] .plan-day {
+  color: var(--p-ink);
+  background: var(--p-cell);
+  border-right-color: var(--p-line);
+  border-bottom-color: var(--p-line);
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.plan95[data-plan-dark="true"] .plan-day:hover {
+  background: #161822;
+}
+
+.plan95[data-plan-dark="true"] .plan-day[data-past="true"] {
+  color: #8b90a0;
+  background: var(--p-cell-past);
+}
+
+.plan95[data-plan-dark="true"] .plan-day[data-past="true"]:hover,
+.plan95[data-plan-dark="true"] .plan-day[data-outside="true"]:hover {
+  background: #15161e;
+}
+
+.plan95[data-plan-dark="true"] .plan-day[data-outside="true"] {
+  color: #6a6f7e;
+  background: var(--p-cell-out);
+}
+
+.plan95[data-plan-dark="true"] .plan-day[data-selected="true"] {
+  outline-color: var(--p-blue);
+}
+
+.plan95[data-plan-dark="true"] .plan-day[data-today="true"] {
+  background: linear-gradient(160deg, #1a2a22 0%, #12161c 100%);
+  box-shadow: inset 0 0 0 2px var(--p-sage);
+}
+
+.plan95[data-plan-dark="true"] .plan-day[data-today="true"][data-selected="true"] {
+  outline-color: var(--p-blue);
+  box-shadow: inset 0 0 0 2px var(--p-sage);
+}
+
+.plan95[data-plan-dark="true"] .plan-day[data-today="true"] .plan-day-num {
+  color: var(--p-sage);
+}
+
+.plan95[data-plan-dark="true"] .plan-day-today-mark {
+  color: var(--p-crt);
+  text-shadow: 0 0 3px var(--p-crt);
+  background: #070c0a;
+  box-shadow:
+    0 0 0 1px #3a3e42,
+    inset 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.plan95[data-plan-dark="true"] .plan-rail-list,
+.plan95[data-plan-dark="true"] .plan-capacity,
+.plan95[data-plan-dark="true"] .plan-group textarea,
+.plan95[data-plan-dark="true"] .plan-add input,
+.plan95[data-plan-dark="true"] .plan-week,
+.plan95[data-plan-dark="true"] .plan-rail-tools input,
+.plan95[data-plan-dark="true"] .plan-rail-tools select {
+  background: var(--p-paper);
+  color: var(--p-ink);
+}
+
+.plan95[data-plan-dark="true"] .plan-rail-item,
+.plan95[data-plan-dark="true"] .plan-desktop {
+  color: var(--p-ink);
+}
+
+.plan95[data-plan-dark="true"] .plan-rail-item:hover {
+  background: color-mix(in srgb, var(--p-sage) 14%, var(--p-paper));
+}
+
+.plan95[data-plan-dark="true"] .plan-rail-hint,
+.plan95[data-plan-dark="true"] .plan-rail-meta,
+.plan95[data-plan-dark="true"] .plan-rail-mins,
+.plan95[data-plan-dark="true"] .plan-save-hint,
+.plan95[data-plan-dark="true"] .plan-week-gutter,
+.plan95[data-plan-dark="true"] .plan-capacity {
+  color: var(--p-muted);
+}
+
+.plan95[data-plan-dark="true"] .plan-chip {
+  color: #f4faf4;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--plan-chip-color, var(--p-sage)) 78%, #1c2420) 0%,
+    color-mix(in srgb, var(--plan-chip-color, var(--p-sage)) 48%, #0c1010) 100%
+  );
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.18), inset -1px -1px 0 rgba(0, 0, 0, 0.55);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.plan95[data-plan-dark="true"] .plan-chip-time {
+  color: #cfe0d2;
+}
+
+.plan95[data-plan-dark="true"] .plan-more {
+  color: var(--p-blue);
+}
+
+.plan95[data-plan-dark="true"] .append-log textarea,
+.plan95[data-plan-dark="true"] .append-log-entry {
+  background: var(--p-paper);
+  color: var(--p-ink);
+}
+
+.plan95[data-plan-dark="true"] .append-log-compose .append-log-hint strong {
+  color: var(--p-sage);
+}
+
+.plan95[data-plan-dark="true"] .append-log-hint {
+  color: var(--p-muted);
+}
+
+.plan95[data-plan-dark="true"] .append-log-views {
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 2px),
+    #2a2c36;
+  box-shadow:
+    0 0 0 1px #0a0b10,
+    inset 0 2px 3px rgba(0, 0, 0, 0.35);
+}
+
+/* Week grid — same metal vs paper split as month. */
+.plan95[data-plan-dark="true"] .plan-week {
+  background: var(--p-cell);
+}
+
+.plan95[data-plan-dark="true"] .plan-week-head {
+  color: #d6d8e4;
+  background: #343744;
+  box-shadow: inset 0 -1px #0a0b10, inset 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.plan95[data-plan-dark="true"] .plan-week-gutter {
+  background: #2a2c36;
+  border-right-color: var(--p-line);
+  border-bottom-color: #1a1b22;
+}
+
+.plan95[data-plan-dark="true"] .plan-week-cell {
+  color: var(--p-ink);
+  background: var(--p-cell);
+  border-right-color: var(--p-line);
+  border-bottom-color: var(--p-line);
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.plan95[data-plan-dark="true"] .plan-week-cell[data-today="true"],
+.plan95[data-plan-dark="true"] .plan-week-head[data-today="true"] {
+  background: linear-gradient(160deg, #32284a 0%, #1c162c 100%);
+}
+
+.plan95[data-plan-dark="true"] .plan-week-cell[data-past="true"],
+.plan95[data-plan-dark="true"] .plan-week-head[data-past="true"] {
+  color: #8b90a0;
+  background: var(--p-cell-past);
+}
+
+/* Day agenda — sunken paper, metal gutters, sage blocks.
+ * `.agenda95` also matches chrome-patina; inherit Plan dark tokens so gutters
+ * do not snap back to gray Win95 face. */
+.plan95[data-plan-dark="true"] .agenda95 {
+  --p-surface: inherit;
+  --p-face: inherit;
+  --p-highlight: inherit;
+  --p-shadow: inherit;
+  --p-frame: inherit;
+  color: var(--p-ink);
+  background: var(--p-cell);
+}
+
+.plan95[data-plan-dark="true"] .agenda95 .agenda-gutter {
+  color: var(--p-muted);
+  background: #2a2c36;
+  border-right-color: var(--p-line);
+}
+
+.plan95[data-plan-dark="true"] .agenda95 .agenda-hour {
+  border-bottom-color: var(--p-line);
+  box-shadow: none;
+}
+
+.plan95[data-plan-dark="true"] .agenda95 .agenda-hour:hover {
+  background: color-mix(in srgb, var(--p-sage) 10%, var(--p-cell));
+}
+
+.plan95[data-plan-dark="true"] .agenda95 .agenda-marker-label {
+  background: var(--p-cell);
+  color: var(--p-ink);
+}
+
+.plan95[data-plan-dark="true"] .agenda95 .agenda-block-opal,
+.plan95[data-plan-dark="true"] .agenda95 .agenda-banner {
+  color: #f4faf4;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--plan-chip-color, var(--p-sage)) 78%, #1c2420),
+    color-mix(in srgb, var(--p-opal-lilac) 42%, #101018)
+  );
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.16), inset -1px -1px 0 rgba(0, 0, 0, 0.5);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.plan95[data-plan-dark="true"] .agenda95 .agenda-banner-when {
+  color: #cfe0d2;
+}
+
+.plan95[data-plan-dark="true"] .plan-group textarea:focus,
+.plan95[data-plan-dark="true"] .plan-group textarea:focus-visible,
+.plan95[data-plan-dark="true"] .plan-add input:focus,
+.plan95[data-plan-dark="true"] .plan-add input:focus-visible {
+  outline-color: var(--p-violet);
+  caret-color: var(--p-violet);
+  box-shadow: var(--p-field), inset 0 0 0 2px var(--p-violet);
+}
+
+.plan95[data-plan-dark="true"] button:focus,
+.plan95[data-plan-dark="true"] button:focus-visible,
+.plan95[data-plan-dark="true"] [role="tab"]:focus-visible {
+  outline-color: #c4b5f5;
+}
+

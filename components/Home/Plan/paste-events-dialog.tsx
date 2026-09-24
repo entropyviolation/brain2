@@ -8,14 +8,13 @@
 
 import { useEffect, useState } from "react"
 import { format } from "date-fns"
-import { ClipboardPaste, Trash2 } from "lucide-react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import type { CalendarEvent } from "@/lib/types"
 import { useEventStore } from "@/lib/event-store"
 import { parseEventText, type ParsedEventDraft } from "@/lib/parse-event-text"
+import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
 
 interface PasteEventsDialogProps {
   open: boolean
@@ -76,9 +75,10 @@ export function PasteEventsDialog({ open, onOpenChange }: PasteEventsDialogProps
   }
 
   const includedCount = preview.filter((r) => r.included).length
+  const isDirty = text.trim() !== "" || preview.length > 0
 
-  const handleImport = () => {
-    const selected = preview.filter((r) => r.included)
+  const importRows = (rows: PreviewRow[]) => {
+    const selected = rows.filter((r) => r.included)
     const base = Date.now()
     selected.forEach((draft, i) => {
       const event: CalendarEvent = {
@@ -97,27 +97,51 @@ export function PasteEventsDialog({ open, onOpenChange }: PasteEventsDialogProps
       }
       addEvent(event)
     })
-    onOpenChange(false)
+    return selected.length > 0
+  }
+
+  const persistPaste = () => {
+    if (includedCount > 0) return importRows(preview)
+    if (!text.trim()) return false
+    const result = parseEventText(text)
+    const rows: PreviewRow[] = result.events.map((draft, index) => ({
+      ...draft,
+      key: draftKey(draft, index),
+      included: true,
+    }))
+    return importRows(rows)
+  }
+
+  const guard = useUnsavedGuard({
+    open,
+    onOpenChange,
+    isDirty,
+    onSave: persistPaste,
+  })
+
+  const handleImport = () => {
+    if (!persistPaste()) return
+    guard.forceClose()
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl bg-gradient-to-br from-gray-900 via-gray-800 to-black border border-gray-700 shadow-2xl max-h-[90vh] overflow-y-auto backdrop-blur-xl">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-[#8cd4a5] via-[#b89fbf] to-[#8b7ecc] bg-clip-text text-transparent">
-            Paste Events
-          </DialogTitle>
-          <DialogDescription className="text-gray-400">
-            Paste unstructured schedule text (dates, shows, meetings). Preview what will be created, then import —
-            events stay fully editable afterward.
-          </DialogDescription>
+    <>
+    <Dialog open={open} onOpenChange={guard.handleOpenChange}>
+      <DialogContent className="plan95-dialog plan95-dialog-lg max-h-[90vh]" hideClose {...unsavedDismissProps(guard.requestClose)}>
+        <DialogHeader className="plan95-dialog-caption">
+          <DialogTitle>Paste Events</DialogTitle>
+          <button type="button" className="plan95-title-btn" aria-label="Close" onClick={guard.requestClose}>
+            ×
+          </button>
         </DialogHeader>
 
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="paste-events-text" className="text-sm font-semibold text-gray-200">
-              Event text
-            </Label>
+        <div className="plan95-dialog-body">
+          <p>
+            Paste unstructured schedule text (dates, shows, meetings). Preview what will be created, then import —
+            events stay fully editable afterward.
+          </p>
+          <div className="space-y-1">
+            <Label htmlFor="paste-events-text">Event text</Label>
             <Textarea
               id="paste-events-text"
               value={text}
@@ -127,22 +151,16 @@ export function PasteEventsDialog({ open, onOpenChange }: PasteEventsDialogProps
               }}
               placeholder={`July 10th: DRIVE DAY\nJuly 14th: WRITING TRIP\nMEETING - Weekly sync @ 2PM PST\nAugust 2026\nAugust 13th: SHOW - Santa Ana, CA @ Constellation Room`}
               rows={10}
-              className="bg-gray-800/50 border-gray-600 text-white placeholder-gray-500 focus:border-[#8cd4a5] focus:ring-[#8cd4a5]/20 transition-all duration-300 font-mono text-sm resize-y"
+              className="font-mono text-sm"
             />
           </div>
 
-          <div className="flex gap-3">
-            <Button
-              type="button"
-              onClick={handleParse}
-              disabled={!text.trim()}
-              className="bg-gradient-to-r from-[#8cd4a5] via-[#9fc2a5] to-[#adc29f] hover:from-[#7bc394] hover:via-[#8eb194] hover:to-[#9cb18e] text-black font-semibold disabled:opacity-50"
-            >
-              <ClipboardPaste className="h-4 w-4 mr-2" />
+          <div className="plan95-dialog-actions">
+            <button type="button" className="plan95-btn" onClick={handleParse} disabled={!text.trim()}>
               Parse
-            </Button>
+            </button>
             {parsed && (
-              <p className="self-center text-sm text-gray-400">
+              <p className="self-center text-sm">
                 {preview.length} event{preview.length === 1 ? "" : "s"} found
                 {skipped.length > 0 ? ` · ${skipped.length} line${skipped.length === 1 ? "" : "s"} skipped` : ""}
               </p>
@@ -150,40 +168,26 @@ export function PasteEventsDialog({ open, onOpenChange }: PasteEventsDialogProps
           </div>
 
           {parsed && preview.length > 0 && (
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold text-gray-200">Preview</Label>
-              <div className="max-h-64 overflow-y-auto rounded-lg border border-gray-600 divide-y divide-gray-700">
+            <div className="space-y-1">
+              <Label>Preview</Label>
+              <div className="plan-preview">
                 {preview.map((row) => (
-                  <div
-                    key={row.key}
-                    className={`flex items-start gap-3 px-3 py-2 text-sm ${row.included ? "bg-gray-800/40" : "bg-gray-900/60 opacity-50"}`}
-                  >
+                  <div key={row.key} className="plan-preview-row" style={{ opacity: row.included ? 1 : 0.5 }}>
                     <input
                       type="checkbox"
                       checked={row.included}
                       onChange={() => toggleRow(row.key)}
-                      className="mt-1 accent-[#8cd4a5]"
                       aria-label={`Include ${row.title}`}
                     />
-                    <span
-                      className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full"
-                      style={{ backgroundColor: row.color ?? "#8cd4a5" }}
-                      aria-hidden
-                    />
                     <div className="min-w-0 flex-1">
-                      <div className="font-medium text-gray-100 truncate">{row.title}</div>
-                      <div className="text-xs text-gray-400">
+                      <div className="font-bold">{row.title}</div>
+                      <div className="text-xs">
                         {formatPreviewWhen(row)}
                         {row.location ? ` · ${row.location}` : ""}
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => removeRow(row.key)}
-                      className="shrink-0 rounded p-1 text-gray-400 hover:bg-gray-700 hover:text-white transition-colors"
-                      aria-label={`Remove ${row.title} from preview`}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
+                    <button type="button" onClick={() => removeRow(row.key)} aria-label={`Remove ${row.title} from preview`}>
+                      ×
                     </button>
                   </div>
                 ))}
@@ -192,15 +196,15 @@ export function PasteEventsDialog({ open, onOpenChange }: PasteEventsDialogProps
           )}
 
           {parsed && preview.length === 0 && (
-            <p className="text-sm text-amber-400/90">
+            <p>
               No events could be parsed. Try lines like &quot;July 10th: DRIVE DAY&quot; or include a month header such
               as &quot;August 2026&quot;.
             </p>
           )}
 
           {skipped.length > 0 && (
-            <details className="text-xs text-gray-500">
-              <summary className="cursor-pointer hover:text-gray-400">Skipped lines</summary>
+            <details>
+              <summary>Skipped lines</summary>
               <ul className="mt-2 list-disc pl-5 space-y-0.5">
                 {skipped.map((line) => (
                   <li key={line} className="font-mono">
@@ -211,26 +215,18 @@ export function PasteEventsDialog({ open, onOpenChange }: PasteEventsDialogProps
             </details>
           )}
 
-          <div className="flex gap-3 pt-2">
-            <Button
-              type="button"
-              onClick={handleImport}
-              disabled={includedCount === 0}
-              className="flex-1 bg-gradient-to-r from-[#8cd4a5] via-[#9fc2a5] to-[#adc29f] hover:from-[#7bc394] hover:via-[#8eb194] hover:to-[#9cb18e] text-black font-semibold shadow-lg disabled:opacity-50"
-            >
+          <div className="plan95-dialog-actions">
+            <button type="button" data-default="true" onClick={handleImport} disabled={includedCount === 0 && !text.trim()}>
               Import {includedCount > 0 ? `${includedCount} Event${includedCount === 1 ? "" : "s"}` : "Events"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              className="border-gray-600 text-gray-200 hover:bg-gray-800"
-            >
+            </button>
+            <button type="button" onClick={guard.requestClose}>
               Cancel
-            </Button>
+            </button>
           </div>
         </div>
       </DialogContent>
     </Dialog>
+    <UnsavedChangesDialog {...guard.prompt} />
+    </>
   )
 }

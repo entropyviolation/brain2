@@ -65,7 +65,7 @@ const TIME_AT_RE = /@\s*(\d{1,2})(?::(\d{2}))?\s*(AM|PM)\b(?:\s*([A-Z]{2,5}))?/i
 const SHOW_LOCATION_RE = /^SHOW\s*-\s*(.+?)\s*@\s*(.+)$/i
 
 const COLOR_BY_PREFIX: Array<{ match: RegExp; color: string }> = [
-  { match: /^SHOW\b/i, color: "#e89b6c" },
+  { match: /^SHOW\b/i, color: "#7eb8b2" },
   { match: /^MEETING\b/i, color: "#b89fbf" },
   { match: /^GOAL\b/i, color: "#8b7ecc" },
   { match: /^RECORDING\b/i, color: "#8cd4a5" },

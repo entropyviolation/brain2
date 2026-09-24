@@ -4,24 +4,47 @@
  * Used by Plan day view (scheduling) and Tracking day log (actual time).
  * Supports drag-drop scheduling, unscheduling, current-time indicator,
  * sunrise/sunset lines (from Settings home location), and 15-minute snap
- * positioning.
+ * positioning. Log mode can overlay painted Tracking blocks (`trackedBlocks`)
+ * so Day Log shows the same intervals as the Time Grid and Activity Log.
+ * Tracked blocks that span hours render as **one continuous slab** (position +
+ * height across the hour grid) — clickable everywhere, title once — instead of
+ * a sliced reprint in every hour. Plan-mode events still slice per hour.
  */
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useRef, useMemo, useCallback } from "react"
-import { Clock, MapPin, CalendarClock } from "lucide-react"
+import { useState, useEffect, useRef, useMemo, useCallback, useLayoutEffect } from "react"
 import { format } from "date-fns"
-import { formatLocalDateKey, isToday, sameCalendarDay } from "@/lib/date-utils"
+import { formatDateKey, formatLocalDateKey, isToday, sameCalendarDay } from "@/lib/date-utils"
 import { getBannerEvents, getMustBeDoneBefore } from "@/lib/event-links"
 import { fetchDayClimate, minutesFromHhmm } from "@/lib/weather-client"
 import { DEFAULT_HOME_CITY, useUserSettingsStore } from "@/lib/user-settings-store"
 import type { CalendarEvent, Task, TimeLogEntry } from "@/lib/types"
+import { readPlanDrag, writePlanDrag, type PlanDragPayload } from "@/lib/plan-drag"
+import { usePlanPointerDrop } from "./use-plan-rail-drag"
+import {
+  hhmmToMinutes,
+  plannedDurationMinutes,
+  todoIdsCoveredByPlacements,
+  type PlannedAction,
+} from "@/lib/planned-actions"
+import { PLAN_TASK_COLOR, planEventTimeLabel, resolvePlanColor } from "./plan-chip"
+import "./plan-chrome.css"
 
-export const HOUR_HEIGHT = 70
+export const HOUR_HEIGHT = 152
 const SNAP_MINUTES = 15
 
 export type AgendaGridMode = "plan" | "log"
+
+/** A painted Tracking block overlaid on the Day Log agenda. */
+export interface TrackedAgendaBlock {
+  id: string
+  label: string
+  startMinutes: number
+  durationMinutes: number
+  color?: string
+  sublabel?: string
+}
 
 export interface AgendaGridProps {
   date: Date
@@ -34,15 +57,30 @@ export interface AgendaGridProps {
   onEventClick?: (event: CalendarEvent) => void
   onCreateEvent?: (date: Date, hour: number, endHour?: number) => void
   onScheduleTask?: (taskId: string, hour: number, minute: number) => void
+  onScheduleHabit?: (habitId: string, hour: number, minute: number) => void
   onRescheduleEvent?: (eventId: string, hour: number, minute: number) => void
+  onReschedulePlannedAction?: (actionId: string, hour: number, minute: number) => void
+  /** Click-drag empty minutes: start + end. Click without drag still uses onCreateEvent. */
+  onCreatePlannedAction?: (date: Date, startMinutes: number, endMinutes: number) => void
+  plannedActions?: PlannedAction[]
+  onPlannedActionClick?: (action: PlannedAction) => void
   /** Log mode: update or create time log entries */
   onUpdateTimeLog?: (taskId: string, logId: string, updates: Partial<TimeLogEntry>) => void
   onCreateTimeLog?: (taskId: string, hour: number, minute: number) => void
+  /**
+   * Log mode: painted Time Grid blocks for this day. These are the same
+   * intervals the Activity Log lists — Day Log overlays them on the plan so
+   * tracking input is visible here too.
+   */
+  trackedBlocks?: TrackedAgendaBlock[]
+  onTrackedBlockClick?: (id: string) => void
   showCurrentTimeIndicator?: boolean
   /** Sunrise/sunset lines from Settings home location. Default true. */
   showSunTimes?: boolean
   /** When false, skip all-day/multi-day banner rows (e.g. day view renders them separately). */
   showAllDayBanners?: boolean
+  /** Minutes past midnight to land the scroll (now, or wake). Midnight hours stay in the grid. */
+  scrollToMinutes?: number
 }
 
 function parseTimeParts(time?: string): { hour: number; minute: number } {
@@ -66,11 +104,13 @@ function snapMinute(raw: number): number {
   return Math.round(raw / SNAP_MINUTES) * SNAP_MINUTES
 }
 
-function dropPosition(e: React.DragEvent<HTMLDivElement>, hour: number): { hour: number; minute: number } {
+function dropPosition(e: { currentTarget: Element; clientY: number }, hour: number): { hour: number; minute: number } {
   const rect = e.currentTarget.getBoundingClientRect()
-  const y = Math.max(0, Math.min(rect.height, e.clientY - rect.top))
-  const minute = snapMinute(Math.round((y / rect.height) * 60))
-  return { hour, minute: Math.min(45, minute) }
+  const height = rect.height || HOUR_HEIGHT
+  const y = Math.max(0, Math.min(height, e.clientY - rect.top))
+  const raw = snapMinute(Math.round((y / height) * 60))
+  const minute = Number.isFinite(raw) ? Math.min(45, raw) : 0
+  return { hour, minute }
 }
 
 function getEventDurationMinutes(event: CalendarEvent): number {
@@ -80,15 +120,20 @@ function getEventDurationMinutes(event: CalendarEvent): number {
 }
 
 function markerTop(minutes: number): number {
-  return (minutes / 60) * (HOUR_HEIGHT + 4) + 2
+  return (minutes / 60) * HOUR_HEIGHT
+}
+
+/** Scroll offset so `landMinutes` sits about two hour-rows below the top of the agenda. */
+export function planAgendaScrollTop(landMinutes: number): number {
+  return Math.max(0, markerTop(Math.max(0, landMinutes)) - 2 * HOUR_HEIGHT)
 }
 
 type MarkerTone = "now" | "sunrise" | "sunset"
 
-const MARKER_TONE: Record<MarkerTone, { dot: string; line: string; text: string }> = {
-  now: { dot: "bg-red-500", line: "bg-red-500", text: "text-red-500" },
-  sunrise: { dot: "bg-amber-400", line: "bg-amber-400", text: "text-amber-700" },
-  sunset: { dot: "bg-orange-600", line: "bg-orange-500", text: "text-orange-800" },
+const MARKER_TONE: Record<MarkerTone, { line: string; text: string }> = {
+  now: { line: "#c00", text: "#c00" },
+  sunrise: { line: "#b8860b", text: "#8a6500" },
+  sunset: { line: "#c45c00", text: "#8a3b00" },
 }
 
 function GridTimeMarker({
@@ -107,17 +152,14 @@ function GridTimeMarker({
   const colors = MARKER_TONE[tone]
   return (
     <div
-      className="absolute left-20 right-0 pointer-events-none"
+      className="agenda-marker"
       style={{ top: markerTop(minutes), zIndex }}
       title={title}
     >
-      <div className="relative flex items-center">
-        <div className={`w-2.5 h-2.5 rounded-full ${colors.dot} -ml-1 shrink-0 shadow-sm`} />
-        <div className={`flex-1 h-0.5 ${colors.line} shadow-sm`} />
-        <span className={`text-[10px] font-semibold ${colors.text} ml-1 bg-white/90 px-1 rounded whitespace-nowrap`}>
-          {label}
-        </span>
-      </div>
+      <div className="agenda-marker-line" style={{ background: colors.line }} />
+      <span className="agenda-marker-label" style={{ color: colors.text }}>
+        {label}
+      </span>
     </div>
   )
 }
@@ -131,11 +173,12 @@ interface SunTimes {
 }
 
 interface GridItem {
-  kind: "task" | "event" | "log"
+  kind: "task" | "event" | "log" | "tracked" | "planned"
   id: string
   taskId?: string
   logId?: string
   event?: CalendarEvent
+  planned?: PlannedAction
   label: string
   startMinutes: number
   durationMinutes: number
@@ -152,20 +195,30 @@ export function AgendaGrid({
   events,
   tasks,
   mode,
-  maxHeight = "max-h-96",
+  maxHeight,
   onTaskClick,
   onEventClick,
   onCreateEvent,
   onScheduleTask,
+  onScheduleHabit,
   onRescheduleEvent,
+  onReschedulePlannedAction,
+  onCreatePlannedAction,
+  plannedActions,
+  onPlannedActionClick,
   onUpdateTimeLog,
   onCreateTimeLog,
+  trackedBlocks,
+  onTrackedBlockClick,
   showCurrentTimeIndicator = true,
   showSunTimes = true,
   showAllDayBanners = true,
+  scrollToMinutes,
 }: AgendaGridProps) {
-  const dragCreateHour = useRef<number | null>(null)
+  const dragCreateStart = useRef<{ hour: number; minute: number } | null>(null)
+  const dragCreateLast = useRef<{ hour: number; minute: number } | null>(null)
   const didDragCreate = useRef(false)
+  const rootRef = useRef<HTMLDivElement>(null)
   const [dragHighlight, setDragHighlight] = useState<{ lo: number; hi: number } | null>(null)
   const [nowMinutes, setNowMinutes] = useState(() => {
     const n = new Date()
@@ -175,6 +228,7 @@ export function AgendaGrid({
   const [sun, setSun] = useState<SunTimes | null>(null)
 
   const dayKey = formatLocalDateKey(date)
+  const utcDayKey = formatDateKey(date)
 
   useEffect(() => {
     if (!showCurrentTimeIndicator || !isToday(date)) return
@@ -245,8 +299,23 @@ export function AgendaGrid({
           sublabel: `${event.startTime} - ${event.endTime}`,
         })
       }
+      const coveredTodos = todoIdsCoveredByPlacements(plannedActions ?? [], date)
+      for (const action of plannedActions ?? []) {
+        if (action.date !== dayKey) continue
+        items.push({
+          kind: "planned",
+          id: action.id,
+          planned: action,
+          taskId: action.source === "todo" ? action.sourceId : undefined,
+          label: action.title,
+          startMinutes: hhmmToMinutes(action.startTime),
+          durationMinutes: plannedDurationMinutes(action),
+          sublabel: action.notes || `${action.startTime}–${action.endTime}`,
+        })
+      }
       for (const task of tasks) {
         if (!task.scheduledTime) continue
+        if (coveredTodos.has(task.id)) continue
         items.push({
           kind: "task",
           id: task.id,
@@ -263,7 +332,8 @@ export function AgendaGrid({
       const loggedTaskIds = new Set<string>()
       for (const task of tasks) {
         for (const log of task.timeLogs || []) {
-          if (log.date !== dayKey) continue
+          // Writers historically mixed UTC ISO keys with local calendar keys.
+          if (log.date !== dayKey && log.date !== utcDayKey) continue
           loggedTaskIds.add(task.id)
           const start = timeToMinutes(log.startTime)
           items.push({
@@ -303,23 +373,68 @@ export function AgendaGrid({
           sublabel: "Planned event",
         })
       }
+      for (const block of trackedBlocks ?? []) {
+        items.push({
+          kind: "tracked",
+          id: block.id,
+          label: block.label,
+          startMinutes: block.startMinutes,
+          durationMinutes: block.durationMinutes,
+          color: block.color,
+          sublabel: block.sublabel,
+        })
+      }
     }
 
     return items.sort((a, b) => a.startMinutes - b.startMinutes)
-  }, [mode, tasks, timedEvents, dayKey])
+  }, [mode, tasks, timedEvents, dayKey, utcDayKey, trackedBlocks, plannedActions, date])
 
   const onDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     e.dataTransfer.dropEffect = "move"
+    e.currentTarget.setAttribute("data-drop", "true")
   }
+
+  const onDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.currentTarget.removeAttribute("data-drop")
+  }
+
+  const applyPlanPayload = useCallback(
+    (payload: PlanDragPayload, hour: number, minute: number) => {
+      if (payload.kind === "action" && mode === "plan" && onReschedulePlannedAction) {
+        onReschedulePlannedAction(payload.id, hour, minute)
+        return
+      }
+      if (payload.kind === "habit" && mode === "plan" && onScheduleHabit) {
+        onScheduleHabit(payload.id, hour, minute)
+        return
+      }
+      if (payload.kind === "task") {
+        if (mode === "log" && onCreateTimeLog) onCreateTimeLog(payload.id, hour, minute)
+        else if (mode === "plan" && onScheduleTask) onScheduleTask(payload.id, hour, minute)
+        return
+      }
+      if (payload.kind === "event" && mode === "plan" && onRescheduleEvent) {
+        onRescheduleEvent(payload.id, hour, minute)
+      }
+    },
+    [mode, onCreateTimeLog, onRescheduleEvent, onReschedulePlannedAction, onScheduleHabit, onScheduleTask],
+  )
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>, hour: number) => {
     e.preventDefault()
+    e.stopPropagation()
+    e.currentTarget.removeAttribute("data-drop")
     const { minute } = dropPosition(e, hour)
-    const taskId = e.dataTransfer.getData("taskId")
-    const eventId = e.dataTransfer.getData("eventId")
-    const logId = e.dataTransfer.getData("logId")
-    const logTaskId = e.dataTransfer.getData("logTaskId")
+    let logId = ""
+    let logTaskId = ""
+    try {
+      logId = e.dataTransfer.getData("logId")
+      logTaskId = e.dataTransfer.getData("logTaskId")
+    } catch {
+      logId = ""
+      logTaskId = ""
+    }
 
     if (logId && logTaskId && mode === "log" && onUpdateTimeLog) {
       const task = tasks.find((t) => t.id === logTaskId)
@@ -335,25 +450,32 @@ export function AgendaGrid({
       return
     }
 
-    if (taskId) {
-      if (mode === "log" && onCreateTimeLog) {
-        onCreateTimeLog(taskId, hour, minute)
-      } else if (mode === "plan" && onScheduleTask) {
-        onScheduleTask(taskId, hour, minute)
-      }
-    } else if (eventId && mode === "plan" && onRescheduleEvent) {
-      onRescheduleEvent(eventId, hour, minute)
-    }
+    const payload = readPlanDrag(e.dataTransfer)
+    if (!payload) return
+    applyPlanPayload(payload, hour, minute)
   }
 
+  usePlanPointerDrop((payload, _clientX, clientY, target) => {
+    const root = rootRef.current
+    if (!root?.contains(target)) return
+    const slot = target.closest(".agenda-slot")
+    if (!(slot instanceof HTMLElement) || !root.contains(slot)) return
+    const hour = Number(slot.dataset.hour)
+    if (!Number.isFinite(hour)) return
+    const { minute } = dropPosition({ currentTarget: slot, clientY }, hour)
+    applyPlanPayload(payload, hour, minute)
+  })
+
   const onTaskDragStart = (e: React.DragEvent, taskId: string) => {
-    e.dataTransfer.setData("taskId", taskId)
-    e.dataTransfer.effectAllowed = "move"
+    writePlanDrag(e.dataTransfer, "task", taskId)
   }
 
   const onEventDragStart = (e: React.DragEvent, eventId: string) => {
-    e.dataTransfer.setData("eventId", eventId)
-    e.dataTransfer.effectAllowed = "move"
+    writePlanDrag(e.dataTransfer, "event", eventId)
+  }
+
+  const onPlannedDragStart = (e: React.DragEvent, actionId: string) => {
+    writePlanDrag(e.dataTransfer, "action", actionId)
   }
 
   const onLogDragStart = (e: React.DragEvent, taskId: string, logId: string) => {
@@ -363,142 +485,224 @@ export function AgendaGrid({
   }
 
   const itemsForHour = useCallback(
-    (hour: number) => gridItems.filter((item) => Math.floor(item.startMinutes / 60) === hour),
+    (hour: number) => {
+      const hourStart = hour * 60
+      const hourEnd = hourStart + 60
+      return gridItems.filter((item) => {
+        const end = item.startMinutes + Math.max(1, item.durationMinutes)
+        return item.startMinutes < hourEnd && end > hourStart
+      })
+    },
     [gridItems],
   )
+
+  useLayoutEffect(() => {
+    if (scrollToMinutes === undefined) return
+    const root = rootRef.current
+    if (!root) return
+    root.scrollTop = planAgendaScrollTop(scrollToMinutes)
+  }, [date, scrollToMinutes, bannerEvents.length])
 
   const showNowLine = showCurrentTimeIndicator && isToday(date)
 
   return (
-    <div className={`space-y-1 overflow-y-auto ${maxHeight} relative`}>
+    <div ref={rootRef} className={["agenda95", maxHeight].filter(Boolean).join(" ")}>
       {bannerEvents.length > 0 && (
-        <div className="space-y-1 pb-1">
+        <div>
           {bannerEvents.map((event) => {
-            const spansMultiDay = !!event.endDate
+            const when = planEventTimeLabel(event)
             return (
               <div
                 key={`banner-${event.id}`}
-                className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm text-white shadow-sm cursor-pointer"
-                style={{ backgroundColor: event.color || "#8cd4a5" }}
+                className="agenda-banner"
+                style={{ ["--plan-chip-color" as string]: resolvePlanColor(event.color) }}
                 onClick={() => onEventClick?.(event)}
+                title={`${when}  ${event.title}`}
               >
-                <CalendarClock className="h-3.5 w-3.5 shrink-0" />
-                <span className="font-semibold truncate">{event.title}</span>
-                <span className="ml-auto shrink-0 text-xs opacity-90">
-                  {spansMultiDay
-                    ? `${format(event.date, "MMM d")} – ${format(event.endDate as Date, "MMM d")}`
-                    : "All day"}
-                </span>
+                <span className="agenda-banner-title">{event.title}</span>
+                <span className="agenda-banner-when">{when}</span>
               </div>
             )
           })}
         </div>
       )}
+      <div className="agenda-hours">
       {Array.from({ length: 24 }, (_, hour) => (
-        <div
-          key={hour}
-          className="flex border-b border-slate-100 hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-purple-50/50 transition-all duration-200 rounded-lg"
-        >
-          <div className="w-20 text-sm text-slate-500 p-4 border-r border-slate-100 font-medium shrink-0">
-            {hour.toString().padStart(2, "0")}:00
-          </div>
+        <div key={hour} className="agenda-hour">
+          <div className="agenda-gutter">{hour.toString().padStart(2, "0")}:00</div>
           <div
-            className={`flex-1 relative cursor-pointer p-2 ${
-              dragHighlight && hour >= dragHighlight.lo && hour <= dragHighlight.hi
-                ? "bg-blue-100/60 ring-1 ring-blue-300"
-                : ""
-            }`}
+            className="agenda-slot"
+            data-plan-drop="hour"
+            data-hour={hour}
+            data-drag={
+              dragHighlight && hour >= dragHighlight.lo && hour <= dragHighlight.hi ? "true" : "false"
+            }
             style={{ minHeight: HOUR_HEIGHT }}
+            onDragEnter={(e) => {
+              e.preventDefault()
+              e.dataTransfer.dropEffect = "move"
+              e.currentTarget.setAttribute("data-drop", "true")
+            }}
             onDragOver={onDragOver}
+            onDragLeave={onDragLeave}
             onDrop={(e) => handleDrop(e, hour)}
-            onMouseDown={() => {
-              if (mode !== "plan" || !onCreateEvent) return
-              dragCreateHour.current = hour
+            onMouseDown={(e) => {
+              if (mode !== "plan") return
+              if (!onCreateEvent && !onCreatePlannedAction) return
+              if ((e.target as HTMLElement).closest(".agenda-block")) return
+              const pos = dropPosition(e, hour)
+              dragCreateStart.current = pos
+              dragCreateLast.current = pos
               didDragCreate.current = false
               setDragHighlight({ lo: hour, hi: hour })
             }}
-            onMouseEnter={() => {
-              if (dragCreateHour.current !== null) {
-                didDragCreate.current = true
-                const lo = Math.min(dragCreateHour.current, hour)
-                const hi = Math.max(dragCreateHour.current, hour)
+            onMouseEnter={(e) => {
+              if (dragCreateStart.current !== null) {
+                const pos = dropPosition(e, hour)
+                if (pos.hour !== dragCreateStart.current.hour || pos.minute !== dragCreateStart.current.minute) {
+                  didDragCreate.current = true
+                }
+                dragCreateLast.current = pos
+                const lo = Math.min(dragCreateStart.current.hour, hour)
+                const hi = Math.max(dragCreateStart.current.hour, hour)
                 setDragHighlight({ lo, hi })
               }
             }}
             onMouseUp={() => {
-              if (dragCreateHour.current !== null && mode === "plan" && onCreateEvent) {
-                if (didDragCreate.current) {
-                  onCreateEvent(date, dragCreateHour.current, hour)
-                } else {
-                  onCreateEvent(date, hour)
+              const start = dragCreateStart.current
+              const last = dragCreateLast.current ?? start
+              if (start && mode === "plan") {
+                const startMin = start.hour * 60 + start.minute
+                const endMin = last ? last.hour * 60 + last.minute : startMin
+                const dragged = didDragCreate.current || Math.abs(endMin - startMin) >= SNAP_MINUTES
+                if (dragged && onCreatePlannedAction) {
+                  onCreatePlannedAction(date, startMin, endMin === startMin ? startMin + 60 : endMin)
+                } else if (!dragged && onCreateEvent) {
+                  onCreateEvent(date, start.hour)
                 }
               }
-              dragCreateHour.current = null
+              dragCreateStart.current = null
+              dragCreateLast.current = null
               didDragCreate.current = false
               setDragHighlight(null)
             }}
           >
-            {itemsForHour(hour).map((item, idx) => {
-              const topOffset = (item.startMinutes % 60) * (HOUR_HEIGHT / 60)
-              const height = Math.max(28, (item.durationMinutes / 60) * HOUR_HEIGHT)
+            {itemsForHour(hour)
+              .filter((item) => item.kind !== "tracked")
+              .map((item) => {
+              const hourStart = hour * 60
+              const hourEnd = hourStart + 60
+              const itemEnd = item.startMinutes + Math.max(1, item.durationMinutes)
+              const sliceStart = Math.max(item.startMinutes, hourStart)
+              const sliceEnd = Math.min(itemEnd, hourEnd)
+              const topOffset = (sliceStart - hourStart) * (HOUR_HEIGHT / 60)
+              const height = Math.max(22, (sliceEnd - sliceStart) * (HOUR_HEIGHT / 60))
               const isLog = item.kind === "log"
               const isEvent = item.kind === "event"
-              const draggable = mode === "plan" || isLog || (mode === "log" && !!item.taskId)
+              const isTracked = item.kind === "tracked"
+              const isPlanned = item.kind === "planned"
+              const draggable = !isTracked && (mode === "plan" || isLog || (mode === "log" && !!item.taskId))
+              const continues = item.startMinutes < hourStart || itemEnd > hourEnd
+              const chipColor = isTracked || (isEvent && !item.isGhost) ? item.color : undefined
+              const isOpal = mode === "plan" && !isLog && !isTracked && !isPlanned && !item.isGhost
 
               return (
                 <div
-                  key={item.id}
-                  className={`absolute left-2 right-2 rounded-lg text-sm p-2 cursor-pointer shadow-md hover:shadow-lg transition-shadow ${
-                    item.isGhost
-                      ? "border-2 border-dashed border-slate-300 bg-slate-50/80 text-slate-500 opacity-60"
-                      : isEvent
-                        ? "text-white"
-                        : isLog
-                          ? "bg-gradient-to-r from-amber-100 to-orange-100 text-amber-900 border border-amber-200"
-                          : "bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-800 border border-emerald-200"
-                  }`}
+                  key={`${item.id}-${hour}`}
+                  className={
+                    isPlanned
+                      ? "agenda-block agenda-block-planned"
+                      : isOpal
+                        ? "agenda-block agenda-block-opal"
+                        : "agenda-block"
+                  }
+                  data-kind={item.kind}
                   style={{
-                    top: topOffset + idx * 4,
+                    top: topOffset,
                     height,
-                    backgroundColor: isEvent && !item.isGhost ? item.color : undefined,
-                    zIndex: item.isGhost ? 1 : 10 + idx,
+                    ["--plan-chip-color" as string]: isOpal
+                      ? isEvent
+                        ? resolvePlanColor(item.color)
+                        : PLAN_TASK_COLOR
+                      : undefined,
+                    color: isOpal
+                      ? undefined
+                      : chipColor
+                        ? "#fff"
+                        : isLog
+                          ? "#5c3b00"
+                          : item.isGhost
+                            ? "#404040"
+                            : "#063",
+                    backgroundColor: isOpal
+                      ? undefined
+                      : chipColor || (isLog ? "#f5e6b8" : item.isGhost ? "#f3f3f3" : "#cfe8d4"),
+                    border: isOpal ? undefined : item.isGhost ? "1px dashed #808080" : "1px solid #808080",
+                    zIndex: item.isGhost ? 1 : isTracked ? 12 : 10,
                   }}
                   draggable={draggable}
+                  title={item.sublabel ? `${item.sublabel}  ${item.label}` : item.label}
+                  onMouseDown={(e) => e.stopPropagation()}
                   onDragStart={(e) => {
                     if (isLog && item.taskId && item.logId) onLogDragStart(e, item.taskId, item.logId)
+                    else if (isPlanned) onPlannedDragStart(e, item.id)
                     else if (isEvent) onEventDragStart(e, item.id)
                     else if (item.taskId) onTaskDragStart(e, item.taskId)
                   }}
                   onClick={(e) => {
                     e.stopPropagation()
-                    if (isEvent && !item.isGhost && item.event) onEventClick?.(item.event)
+                    if (isPlanned && item.planned) onPlannedActionClick?.(item.planned)
+                    else if (isTracked) onTrackedBlockClick?.(item.id)
+                    else if (isEvent && item.event && (mode === "log" || !item.isGhost)) onEventClick?.(item.event)
                     else if (item.taskId && !item.isGhost) onTaskClick?.(item.taskId)
                     else if (item.taskId && item.isGhost && mode === "log") onTaskClick?.(item.taskId)
                   }}
                 >
-                  <div className="font-semibold truncate flex items-center gap-1">
-                    {!isEvent && <Clock className="h-3.5 w-3.5 shrink-0" />}
-                    {item.label}
+                  <div className="agenda-block-title">
+                    <span>{item.label}</span>
+                    {continues ? <span aria-hidden> …</span> : null}
                   </div>
-                  {item.sublabel && <div className="opacity-75 text-xs mt-0.5 truncate">{item.sublabel}</div>}
+                  {item.sublabel && sliceStart === item.startMinutes && (
+                    <div className="agenda-block-sub">{item.sublabel}</div>
+                  )}
                   {item.mustBeDoneBefore && (
-                    <div className="mt-1 inline-flex items-center gap-1 rounded bg-rose-100 px-1.5 py-0.5 text-[10px] font-medium text-rose-700">
-                      <CalendarClock className="h-3 w-3" />
+                    <div className="agenda-block-sub">
                       must be done before {format(item.mustBeDoneBefore, "MMM d, h:mm a")}
                     </div>
                   )}
-                  {item.location && (
-                    <div className="opacity-80 text-xs flex items-center gap-1 mt-0.5">
-                      <MapPin className="h-3 w-3" />
-                      {item.location}
-                    </div>
-                  )}
+                  {item.location && <div className="agenda-block-sub">{item.location}</div>}
                 </div>
               )
             })}
           </div>
         </div>
       ))}
+      {gridItems
+        .filter((item) => item.kind === "tracked")
+        .map((item) => {
+          const top = (item.startMinutes / 60) * HOUR_HEIGHT
+          const height = Math.max(22, (Math.max(1, item.durationMinutes) / 60) * HOUR_HEIGHT)
+          return (
+            <button
+              key={item.id}
+              type="button"
+              className="agenda-block agenda-span"
+              style={{
+                top,
+                height,
+                color: "#fff",
+                backgroundColor: item.color || "#1e3a5c",
+                border: "1px solid #808080",
+              }}
+              title={item.sublabel ? `${item.sublabel}  ${item.label}` : item.label}
+              onClick={() => onTrackedBlockClick?.(item.id)}
+            >
+              <div className="agenda-block-title">{item.label}</div>
+              {item.sublabel && <div className="agenda-block-sub">{item.sublabel}</div>}
+            </button>
+          )
+        })}
+      </div>
 
       {sun && (
         <>

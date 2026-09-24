@@ -11,10 +11,13 @@ import {
   taskScheduledInYear,
 } from "@/lib/date-utils"
 import { isNextActionsFolder } from "@/lib/item-utils"
+import { isClearedFromWork } from "@/lib/completion-status"
 
 export const NA_SMART_DAILY = "na-smart-daily"
 export const NA_SMART_WEEKLY = "na-smart-weekly"
 export const NA_SMART_MONTHLY = "na-smart-monthly"
+export const NA_SMART_COMPLETED = "na-smart-completed"
+export const NA_SMART_MISSED = "na-smart-missed"
 export const NA_SCHEDULED_FOLDER = "na-scheduled"
 
 type Mutators = {
@@ -61,8 +64,16 @@ export function syncNextActionsSmartLists(mut: Mutators): void {
     },
     { id: NA_SMART_MONTHLY, name: `To Do - ${format(now, "MMMM yyyy")}`, color: "#9333ea" },
   ]
+  const archiveSpecs: { id: string; name: string; color: string; autoArchive: "completed" | "missed" }[] = [
+    { id: NA_SMART_COMPLETED, name: "Completed", color: "#059669", autoArchive: "completed" },
+    { id: NA_SMART_MISSED, name: "Missed Opportunities", color: "#b45309", autoArchive: "missed" },
+  ]
 
   const categoryIdsToAdd: string[] = []
+
+  const ensureInFolder = (id: string) => {
+    if (!categoryIdsToAdd.includes(id)) categoryIdsToAdd.push(id)
+  }
 
   for (const spec of specs) {
     const existing = mut.lists.find((c) => c.id === spec.id)
@@ -75,10 +86,35 @@ export function syncNextActionsSmartLists(mut: Mutators): void {
         itemLabel: "task",
         scheduleable: true,
       })
-      categoryIdsToAdd.push(spec.id)
+      ensureInFolder(spec.id)
     } else if (existing.name !== spec.name) {
       mut.updateList({ ...existing, name: spec.name })
     }
+  }
+
+  for (const spec of archiveSpecs) {
+    const byId = mut.lists.find((c) => c.id === spec.id)
+    const byTag = mut.lists.find((c) => c.autoArchive === spec.autoArchive)
+    const byName = mut.lists.find((c) => na.listIds.includes(c.id) && c.name === spec.name)
+    const existing = byId || byTag || byName
+    if (!existing) {
+      mut.addList({
+        id: spec.id,
+        name: spec.name,
+        color: spec.color,
+        createdAt: new Date(),
+        itemLabel: "task",
+        scheduleable: false,
+        autoArchive: spec.autoArchive,
+      })
+      ensureInFolder(spec.id)
+      continue
+    }
+    const patch: Partial<List> = {}
+    if (existing.name !== spec.name) patch.name = spec.name
+    if (existing.autoArchive !== spec.autoArchive) patch.autoArchive = spec.autoArchive
+    if (Object.keys(patch).length > 0) mut.updateList({ ...existing, ...patch })
+    ensureInFolder(existing.id)
   }
 
   if (categoryIdsToAdd.length > 0) {
@@ -109,7 +145,7 @@ export function scheduledPeriodKeys(tasks: Task[]): {
   const now = new Date()
 
   for (const t of tasks) {
-    if (t.completed) continue
+    if (isClearedFromWork(t)) continue
     if (t.scheduledYear) years.add(t.scheduledYear)
     if (t.scheduledMonth) months.add(t.scheduledMonth)
     if (t.scheduledWeek) weeks.add(t.scheduledWeek)
@@ -165,26 +201,26 @@ export function getTasksForScheduledFolder(tasks: Task[], folderId: string): Tas
   if (folderId === NA_SCHEDULED_FOLDER) {
     return tasks.filter(
       (t) =>
-        !t.completed &&
+        !isClearedFromWork(t) &&
         !!(t.scheduledDate || t.scheduledWeek || t.scheduledMonth || t.scheduledYear || t.deadline),
     )
   }
   if (folderId.startsWith("na-sched-d-")) {
     const day = folderId.slice("na-sched-d-".length)
     const d = new Date(`${day}T12:00:00`)
-    return tasks.filter((t) => !t.completed && taskScheduledOnDay(t, d))
+    return tasks.filter((t) => !isClearedFromWork(t) && taskScheduledOnDay(t, d))
   }
   if (folderId.startsWith("na-sched-w-")) {
     const week = folderId.slice("na-sched-w-".length)
-    return tasks.filter((t) => !t.completed && taskScheduledInWeek(t, week))
+    return tasks.filter((t) => !isClearedFromWork(t) && taskScheduledInWeek(t, week))
   }
   if (folderId.startsWith("na-sched-m-")) {
     const month = folderId.slice("na-sched-m-".length)
-    return tasks.filter((t) => !t.completed && taskScheduledInMonth(t, month))
+    return tasks.filter((t) => !isClearedFromWork(t) && taskScheduledInMonth(t, month))
   }
   if (folderId.startsWith("na-sched-y-")) {
     const year = folderId.slice("na-sched-y-".length)
-    return tasks.filter((t) => !t.completed && taskScheduledInYear(t, year))
+    return tasks.filter((t) => !isClearedFromWork(t) && taskScheduledInYear(t, year))
   }
   return []
 }
@@ -264,8 +300,17 @@ export function syncScheduledFolderHierarchy(tasks: Task[], mut: Mutators): void
   }
 }
 
-export function isNaSmartCategoryId(id: string): boolean {
+export function isNaArchiveCategoryId(id: string, lists?: List[]): boolean {
+  if (id === NA_SMART_COMPLETED || id === NA_SMART_MISSED) return true
+  return !!lists?.some((l) => l.id === id && (l.autoArchive === "completed" || l.autoArchive === "missed"))
+}
+
+export function isNaPeriodSmartCategoryId(id: string): boolean {
   return id === NA_SMART_DAILY || id === NA_SMART_WEEKLY || id === NA_SMART_MONTHLY
+}
+
+export function isNaSmartCategoryId(id: string, lists?: List[]): boolean {
+  return isNaPeriodSmartCategoryId(id) || isNaArchiveCategoryId(id, lists)
 }
 
 export function naSmartIdToPeriod(id: string): "daily" | "weekly" | "monthly" | null {
@@ -273,4 +318,15 @@ export function naSmartIdToPeriod(id: string): "daily" | "weekly" | "monthly" | 
   if (id === NA_SMART_WEEKLY) return "weekly"
   if (id === NA_SMART_MONTHLY) return "monthly"
   return null
+}
+
+/** Live rows for a Next Actions period To Do smart list. Archives use membership (`tasksForArchiveList`). */
+export function tasksForNaSmartList(id: string, tasks: Task[], now = new Date()): Task[] {
+  const period = naSmartIdToPeriod(id)
+  if (period === "daily") return tasks.filter((t) => !isClearedFromWork(t) && taskScheduledOnDay(t, now))
+  if (period === "weekly") return tasks.filter((t) => !isClearedFromWork(t) && taskScheduledInWeek(t, getWeekString(now)))
+  if (period === "monthly") {
+    return tasks.filter((t) => !isClearedFromWork(t) && taskScheduledInMonth(t, format(now, "yyyy-MM")))
+  }
+  return []
 }

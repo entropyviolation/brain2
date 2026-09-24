@@ -6,7 +6,7 @@
  * into a single "intention → outcome variance score" (0-100).
  *
  * Inputs (all derivable from existing data, no new types needed):
- *  - plan free-text the user wrote (lib/plan-text.ts: dayPlan / weekPlan / monthPlan keys)
+ *  - plan-entry log the user submitted (lib/plan-text.ts: dayPlan / weekPlan / monthPlan keys)
  *  - tasks scheduled in the period (the planned workload) and their completion
  *  - points earned in the period (lib/points-store ledger)
  *

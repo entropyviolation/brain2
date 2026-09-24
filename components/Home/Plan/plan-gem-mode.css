@@ -1,0 +1,47 @@
+/**
+ * Past-day gem-mode layout only. Does not change month cell size, grid
+ * density, or Plan dark chrome. Toggle reuses `.plan-mode-toggle`.
+ */
+
+.plan95 .plan-gem-day {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 0;
+}
+
+.plan95 .plan-gem-day-icons {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 1px;
+}
+
+.plan95 .plan-gem-day .plan-gem-day-token {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  min-height: 16px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.plan95 .plan-gem-day-token img,
+.plan95 .plan-gem-day-token .habit-gem {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.plan95[data-plan-dark="true"] .plan-gem-day-token img,
+.plan95[data-plan-dark="true"] .plan-gem-day-token .habit-gem {
+  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.9)) brightness(1.12) saturate(1.08);
+}

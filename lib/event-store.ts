@@ -2,7 +2,7 @@
  * lib/event-store.ts — Calendar events store
  *
  * Zustand store for calendar `CalendarEvent`s shown in the Plan/Scheduler views.
- * CRUD + bulk `setEvents`, persisted to localStorage under `cogs-event-storage`
+ * CRUD + bulk `setEvents`, persisted to localStorage under `brain2-event-storage`
  * with Date-aware serialization. Seeded with two demo events on first run.
  *
  * Spec: §7.5 (Events). The spec's "event with a linked checklist" (via the
@@ -16,6 +16,7 @@ import { persist } from "zustand/middleware"
 import type { CalendarEvent } from "./types"
 import { toLocalCalendarDate } from "./date-utils"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
+import { persistKey } from "@/lib/storage-keys"
 
 // Date-typed fields on persisted CalendarEvent objects. The persist reviver
 // only resurrects Dates for these keys so it never converts unrelated strings
@@ -103,7 +104,7 @@ export const useEventStore = create<EventState>()(
       setEvents: (events) => set(() => ({ events })),
     }),
     {
-      name: "cogs-event-storage",
+      name: persistKey("event-storage"),
       storage: createCogsJSONStorage({
         // NOTE: `JSON.stringify` invokes `Date.prototype.toJSON()` (→ ISO string)
         // BEFORE this replacer runs, so the `value instanceof Date` branch never

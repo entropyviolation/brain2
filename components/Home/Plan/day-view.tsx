@@ -2,30 +2,43 @@
  * components/Home/Plan/day-view.tsx — Day calendar view
  *
  * Hour-by-hour day grid showing time-slotted tasks and events, the planned-tasks
- * side panel (items for this day not yet given a time), and the auto-growing
- * "Day Plan" text so a full written plan can live here without an inner scrollbar.
+ * rail (items for this day not yet given a time), and the auto-growing Day Plan
+ * composer. Submit plan stamps the writing time onto an immutable entry; List /
+ * Bulk / Latest choose how the log is shown (newest first). The schedule well
+ * stretches with the Plan split column (matching a long rail) so it is not a
+ * postage-stamp nested box over empty gray; hour rows keep 152px. The grid
+ * lands on now or wake.
  *
  * Spec: §7.4 (Day View).
  */
 "use client"
 
-import type React from "react"
-import { useState, useEffect, useLayoutEffect, useRef } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { ChevronLeft, ChevronRight, Edit3, Calendar, Sparkles, MapPin } from "lucide-react"
+import { useMemo, useState } from "react"
 import { useTaskStore } from "@/lib/task-store"
 import { useEventStore } from "@/lib/event-store"
+import { useHabitsStore } from "@/lib/habits-store"
+import { useSleepStore } from "@/lib/sleep-store"
+import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { format, addDays, subDays } from "date-fns"
 import type { CalendarEvent } from "@/lib/types"
-import { formatLocalDateKey, sameCalendarDay, toLocalCalendarDate } from "@/lib/date-utils"
+import { formatLocalDateKey, isToday, sameCalendarDay, toLocalCalendarDate } from "@/lib/date-utils"
 import { getBannerEvents } from "@/lib/event-links"
-import { getStoredPlanText, saveStoredPlanText } from "@/lib/plan-text"
+import { awakeWindowFor } from "@/lib/sleep-sync"
+import { MINUTES_PER_DAY } from "@/lib/time-entries"
+import { itemTitle } from "@/lib/item-utils"
+import {
+  movePlacement,
+  placementFromDragRange,
+  placementFromDrop,
+  type PlannedAction,
+} from "@/lib/planned-actions"
+import { usePlannedActionStore } from "@/lib/planned-action-store"
+import { DEFAULT_WAKE_MIN, firstUnpaintedWakingHour } from "@/components/Home/Tracking/waking-scroll"
 import { PlannedTasksSidebar } from "./planned-tasks-sidebar"
 import { AgendaGrid } from "./agenda-grid"
-
-const MIN_DAY_PLAN_HEIGHT = 280
+import { PlanChip, planChipTooltip, planEventTimeLabel } from "./plan-chip"
+import { PlanTextLog, planPeriodStampProps } from "./plan-text-log"
+import { PlannedActionDialog } from "./planned-action-dialog"
 
 interface DayViewProps {
   currentDate: Date
@@ -48,26 +61,30 @@ export function DayView({
   const tasks = useTaskStore((s) => s.tasks)
   const updateTask = useTaskStore((s) => s.updateTask)
   const updateEvent = useEventStore((s) => s.updateEvent)
-  const [dayPlan, setDayPlan] = useState("")
-  const dayPlanRef = useRef<HTMLTextAreaElement>(null)
+  const habits = useHabitsStore((s) => s.tasks)
+  const plannedActions = usePlannedActionStore((s) => s.actions)
+  const upsertSourcePlacement = usePlannedActionStore((s) => s.upsertSourcePlacement)
+  const updatePlannedAction = usePlannedActionStore((s) => s.updateAction)
+  const deleteForSource = usePlannedActionStore((s) => s.deleteForSource)
+  const deletePlannedAction = usePlannedActionStore((s) => s.deleteAction)
+  const nights = useSleepStore((s) => s.nights)
+  const trackingEntries = useTimeTrackingStore((s) => s.entries)
   const dayKey = formatLocalDateKey(currentDate)
+  const [editingPlacement, setEditingPlacement] = useState<PlannedAction | null>(null)
 
-  useEffect(() => {
-    setDayPlan(getStoredPlanText("day", dayKey) ?? "")
-  }, [dayKey])
-
-  useLayoutEffect(() => {
-    const el = dayPlanRef.current
-    if (!el) return
-    el.style.height = "auto"
-    el.style.height = `${Math.max(el.scrollHeight, MIN_DAY_PLAN_HEIGHT)}px`
-  }, [dayPlan])
-
-  const handleDayPlanChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const value = e.target.value
-    setDayPlan(value)
-    saveStoredPlanText("day", dayKey, value)
-  }
+  const scrollToMinutes = useMemo(() => {
+    if (isToday(currentDate)) {
+      const n = new Date()
+      return n.getHours() * 60 + n.getMinutes()
+    }
+    const awake = awakeWindowFor(dayKey, currentDate)
+    const hour = firstUnpaintedWakingHour({
+      map: Array.from({ length: MINUTES_PER_DAY }, () => null),
+      wakeMin: awake?.wake ?? DEFAULT_WAKE_MIN,
+      bedMin: awake?.bed,
+    })
+    return hour * 60
+  }, [currentDate, dayKey, nights, trackingEntries])
 
   const getScheduledTasks = (date: Date) => {
     return tasks.filter((task) => {
@@ -77,7 +94,6 @@ export function DayView({
   }
 
   const dayTasks = getScheduledTasks(currentDate)
-  // Include multi-day all-day events that span this day (not only the start date).
   const allDayEvents = getBannerEvents(events, currentDate)
 
   const handleScheduleTask = (taskId: string, hour: number, minute: number) => {
@@ -92,12 +108,76 @@ export function DayView({
       scheduledMonth: undefined,
       scheduledYear: undefined,
     })
+    const placed = upsertSourcePlacement(
+      placementFromDrop({
+        date: dayKey,
+        hour,
+        minute,
+        durationMinutes: task.estimatedDuration ?? 30,
+        source: "todo",
+        sourceId: task.id,
+        title: itemTitle(task),
+      }),
+    )
+    setEditingPlacement(placed)
+  }
+
+  const handleScheduleHabit = (habitId: string, hour: number, minute: number) => {
+    const habit = habits.find((row) => row.id === habitId)
+    const placed = upsertSourcePlacement(
+      placementFromDrop({
+        date: dayKey,
+        hour,
+        minute,
+        durationMinutes: habit?.timeEstimate?.minutes ?? 30,
+        source: "habit",
+        sourceId: habitId,
+        title: habit?.name ?? "Habit",
+      }),
+    )
+    setEditingPlacement(placed)
+  }
+
+  const handleCreatePlannedAction = (date: Date, startMinutes: number, endMinutes: number) => {
+    const placed = upsertSourcePlacement(
+      placementFromDragRange({
+        date: formatLocalDateKey(date),
+        startMinutes,
+        endMinutes,
+      }),
+    )
+    setEditingPlacement(placed)
+  }
+
+  const handleReschedulePlannedAction = (actionId: string, hour: number, minute: number) => {
+    const action = plannedActions.find((row) => row.id === actionId)
+    if (!action) return
+    const next = movePlacement(action, hour, minute)
+    updatePlannedAction(next)
+    if (action.source === "todo" && action.sourceId) {
+      const task = tasks.find((t) => t.id === action.sourceId)
+      if (task) {
+        updateTask({
+          ...task,
+          scheduledDate: new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), hour, minute),
+          scheduledTime: next.startTime,
+        })
+      }
+    }
   }
 
   const handleUnscheduleTask = (taskId: string) => {
     const task = tasks.find((t) => t.id === taskId)
     if (!task) return
     updateTask({ ...task, scheduledTime: undefined })
+    deleteForSource(dayKey, "todo", taskId)
+  }
+
+  const handleUnschedulePlannedAction = (actionId: string) => {
+    const action = plannedActions.find((row) => row.id === actionId)
+    if (!action) return
+    if (action.source === "todo" && action.sourceId) handleUnscheduleTask(action.sourceId)
+    else deletePlannedAction(actionId)
   }
 
   const handleRescheduleEvent = (eventId: string, hour: number, minute: number) => {
@@ -126,126 +206,98 @@ export function DayView({
   }
 
   return (
-    <div className="flex gap-6 h-full">
+    <div className="plan-split plan-split-day">
       <PlannedTasksSidebar
         mode="day"
         currentDate={currentDate}
         onTaskClick={onTaskClick}
         onUnscheduleTask={handleUnscheduleTask}
         onUnscheduleEvent={handleUnscheduleEvent}
+        onUnschedulePlannedAction={handleUnschedulePlannedAction}
       />
 
-      <div className="space-y-6 flex-1">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setCurrentDate(subDays(currentDate, 1))}
-              className="hover:bg-blue-50 hover:border-blue-200 transition-colors"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <h3 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
-              {format(currentDate, "EEEE, MMMM d, yyyy")}
-            </h3>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setCurrentDate(addDays(currentDate, 1))}
-              className="hover:bg-blue-50 hover:border-blue-200 transition-colors"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-          <Button
-            onClick={() => setCurrentDate(new Date())}
-            className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-md"
-          >
+      <div className="plan-desktop plan-desktop-day">
+        <div className="plan-period">
+          <button type="button" className="plan-period-chev" aria-label="Previous day" onClick={() => setCurrentDate(subDays(currentDate, 1))}>
+            &lt;
+          </button>
+          <h3>{format(currentDate, "EEEE, MMMM d, yyyy")}</h3>
+          <button type="button" className="plan-period-chev" aria-label="Next day" onClick={() => setCurrentDate(addDays(currentDate, 1))}>
+            &gt;
+          </button>
+          <button type="button" className="plan-period-today" onClick={() => setCurrentDate(new Date())}>
             Today
-          </Button>
+          </button>
         </div>
 
         {allDayEvents.length > 0 && (
-          <Card className="shadow-lg border-0 bg-gradient-to-r from-purple-100 to-blue-100">
-            <CardContent className="p-4">
-              <div className="space-y-2">
-                {allDayEvents.map((event) => (
-                  <div
-                    key={event.id}
-                    className="flex items-center gap-3 p-3 bg-white/80 rounded-lg cursor-pointer hover:bg-white/90 transition-colors"
-                    onClick={() => onEventClick(event)}
-                  >
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: event.color }} />
-                    <div className="flex-1">
-                      <div className="font-semibold text-slate-800">{event.title}</div>
-                      {event.location && (
-                        <div className="text-sm text-slate-600 flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          {event.location}
-                        </div>
-                      )}
-                    </div>
-                    <div className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">
-                      {event.endDate
-                        ? `${format(event.date, "MMM d")} – ${format(event.endDate, "MMM d")}`
-                        : "All Day"}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          <div className="plan-banners">
+            {allDayEvents.map((event) => {
+              const timeLabel = planEventTimeLabel(event)
+              return (
+                <PlanChip
+                  key={event.id}
+                  timeLabel={timeLabel}
+                  title={event.title}
+                  color={event.color}
+                  tooltip={planChipTooltip(timeLabel, event.title, event.location)}
+                  onClick={() => onEventClick(event)}
+                  jewel
+                />
+              )
+            })}
+          </div>
         )}
 
-        <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2 text-slate-700">
-              <Calendar className="h-5 w-5 text-blue-500" />
-              Schedule
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+        <div className="plan-schedule-well">
+          <fieldset
+            className="plan-group plan-group-schedule"
+            data-ui-name="Day schedule"
+            data-ui-help="Hour-by-hour agenda for the selected day — not the Day Plan log."
+            data-ui-docs="components/Home/Plan/README.md"
+            data-ui-docs-anchor="day"
+            data-plan-agenda-fill="column"
+          >
+            <legend>Schedule</legend>
             <AgendaGrid
               date={currentDate}
               events={events}
               tasks={dayTasks}
               mode="plan"
-              maxHeight="max-h-[600px]"
+              scrollToMinutes={scrollToMinutes}
               onTaskClick={onTaskClick}
               onEventClick={onEventClick}
               onCreateEvent={onCreateEvent}
+              onCreatePlannedAction={handleCreatePlannedAction}
               onScheduleTask={handleScheduleTask}
+              onScheduleHabit={handleScheduleHabit}
               onRescheduleEvent={handleRescheduleEvent}
+              onReschedulePlannedAction={handleReschedulePlannedAction}
+              plannedActions={plannedActions}
+              onPlannedActionClick={setEditingPlacement}
               showCurrentTimeIndicator
               showAllDayBanners={false}
             />
-          </CardContent>
-        </Card>
+          </fieldset>
+        </div>
 
-        <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2 text-slate-700">
-              <Edit3 className="h-5 w-5 text-blue-500" />
-              Day Plan - {format(currentDate, "MMMM dd, yyyy")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Textarea
-              ref={dayPlanRef}
-              placeholder="Write your day plan, goals, and objectives..."
-              value={dayPlan}
-              onChange={handleDayPlanChange}
-              rows={12}
-              className="min-h-[280px] overflow-hidden resize-y [field-sizing:content] border-slate-200 focus:border-blue-300 focus:ring-blue-200 bg-white/50"
-            />
-            <p className="text-xs text-slate-500 mt-3 flex items-center gap-1">
-              <Sparkles className="h-3 w-3" />
-              Auto-saved to local storage
-            </p>
-          </CardContent>
-        </Card>
+        <fieldset className="plan-group" {...planPeriodStampProps("day")}>
+          <legend>Day Plan — {format(currentDate, "MMMM dd, yyyy")}</legend>
+          <PlanTextLog
+            period="day"
+            periodKey={dayKey}
+            placeholder="Write your day plan, goals, and objectives..."
+            size="day"
+          />
+        </fieldset>
       </div>
+      <PlannedActionDialog
+        open={!!editingPlacement}
+        onOpenChange={(open) => {
+          if (!open) setEditingPlacement(null)
+        }}
+        action={editingPlacement}
+      />
     </div>
   )
 }
