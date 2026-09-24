@@ -13,7 +13,8 @@ describe("Book type definition", () => {
   it("is a built-in, completable type", () => {
     const def = getBookTypeDefinition()
     expect(def.id).toBe(BOOK_TYPE_ID)
-    expect(def.builtin).toBe(true)
+    expect(def.kind).toBe("catalog")
+    expect(def.detailLayout?.heroImageAttrId).toBe(BOOK_ATTR.cover)
     expect(def.capabilities?.completable).toBe(true)
   })
 
@@ -27,6 +28,9 @@ describe("Book type definition", () => {
     expect(byId.get(BOOK_ATTR.status)?.options).toEqual([...BOOK_STATUSES])
     // The headline new primitive: PDFs attach via a multifile attribute.
     expect(byId.get(BOOK_ATTR.files)?.type).toBe("multifile")
+    expect(byId.get(BOOK_ATTR.cover)?.type).toBe("image")
+    expect(byId.get(BOOK_ATTR.pagesRead)?.type).toBe("number")
+    expect(byId.get(BOOK_ATTR.pageCount)?.type).toBe("number")
   })
 
   it("defaults the status to 'to-read'", () => {

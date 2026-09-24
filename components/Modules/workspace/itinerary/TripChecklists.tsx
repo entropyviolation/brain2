@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
 import { Plus } from "lucide-react"
 import { useTaskStore } from "@/lib/task-store"
-import { createListItem, withCategoryDefaults, getItemLabel } from "@/lib/item-utils"
+import { createListItem, withCategoryDefaults, getItemLabel, itemTitle } from "@/lib/item-utils"
 import type { ModuleView } from "@/lib/modules-store"
 import type { Task } from "@/lib/types"
 import "./trip-checklists.css"
@@ -141,7 +141,7 @@ export function PackingChecklistView({
                       className={t.completed ? "is-done" : undefined}
                       onClick={() => onOpenItem?.(t.id)}
                     >
-                      {t.description}
+                      {itemTitle(t)}
                     </button>
                   </li>
                 ))}
@@ -277,7 +277,7 @@ export function PreTripChecklistView({
                 onChange={() => updateTask({ ...t, completed: true })}
               />
               <button type="button" onClick={() => onOpenItem?.(t.id)}>
-                {t.description}
+                {itemTitle(t)}
               </button>
               {t.attributes?.priority && (
                 <span className={`tc-badge ${t.attributes.priority === "High" ? "is-high" : ""}`}>
@@ -308,7 +308,7 @@ export function PreTripChecklistView({
                   onChange={() => updateTask({ ...t, completed: false })}
                 />
                 <button type="button" className="is-done" onClick={() => onOpenItem?.(t.id)}>
-                  {t.description}
+                  {itemTitle(t)}
                 </button>
               </li>
             ))}

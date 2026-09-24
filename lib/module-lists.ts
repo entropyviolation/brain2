@@ -5,6 +5,9 @@
  * a root `Module Lists` folder. That whole tree is hidden from the Lists tab's
  * global All directory (and All Items) by default, remains in the sidebar, and
  * stays findable via search.
+ *
+ * Shadow-database modules (Tidy, Trip Itinerary) also project their records
+ * into those lists via `syncModuleListContents` (`lib/module-list-import.ts`).
  */
 import type { Folder, List, Task } from "@/lib/types"
 import type { ModuleInstance, ModuleViewConfig } from "@/lib/modules-store"
@@ -25,6 +28,10 @@ export interface ModuleListsMutators {
   updateFolder: (f: Folder) => void
   addListToFolder: (folderId: string, categoryId: string) => void
   removeListFromFolder: (folderId: string, categoryId: string) => void
+  /** Present when the caller can project module records into items. */
+  tasks?: Task[]
+  upsertImportedItem?: (item: Task) => void
+  deleteImportedItem?: (id: string) => void
 }
 
 export function moduleChildFolderId(moduleId: string): string {
@@ -259,6 +266,9 @@ export function addModuleCreatedLists(mut: ModuleListsMutators, module: ModuleIn
 /**
  * Ensure Module Lists + per-module child folders exist and file autocreated
  * lists. Idempotent. No-op when there are no workspace modules.
+ *
+ * After folders are in place, callers that pass item mutators should also run
+ * `syncModuleListContents` so Tidy / Trip records land as nested list items.
  */
 export function syncModuleListFolders(mut: ModuleListsMutators, modules: ModuleInstance[]): void {
   const workspaces = modules.filter(isWorkspaceModule)
@@ -267,6 +277,30 @@ export function syncModuleListFolders(mut: ModuleListsMutators, modules: ModuleI
   for (const module of workspaces) {
     placeListsForModule(mut, module)
   }
+}
+
+function asDate(value: Date | string | number | undefined): Date | undefined {
+  if (value == null) return undefined
+  return value instanceof Date ? value : new Date(value)
+}
+
+/** Silent item write: no workflow dispatch, no completion popup, no points. */
+function upsertImportedItemInStore(item: Task): void {
+  useTaskStore.setState((state) => {
+    const normalized: Task = {
+      ...item,
+      createdAt: asDate(item.createdAt) ?? new Date(),
+      deadline: asDate(item.deadline),
+      scheduledDate: asDate(item.scheduledDate),
+      completedDate: item.completed ? asDate(item.completedDate) : undefined,
+      startedAt: asDate(item.startedAt),
+    }
+    const index = state.tasks.findIndex((t) => t.id === normalized.id)
+    if (index < 0) return { tasks: [...state.tasks, normalized] }
+    const next = [...state.tasks]
+    next[index] = normalized
+    return { tasks: next }
+  })
 }
 
 /** Live mutators that always read the current task store (safe after writes). */
@@ -279,11 +313,16 @@ export function taskStoreModuleListsMutators(): ModuleListsMutators {
     get folders() {
       return g().folders
     },
+    get tasks() {
+      return g().tasks
+    },
     addList: (c) => g().addList(c),
     updateList: (c) => g().updateList(c),
     addFolder: (f) => g().addFolder(f),
     updateFolder: (f) => g().updateFolder(f),
     addListToFolder: (folderId, categoryId) => g().addListToFolder(folderId, categoryId),
     removeListFromFolder: (folderId, categoryId) => g().removeListFromFolder(folderId, categoryId),
+    upsertImportedItem: upsertImportedItemInStore,
+    deleteImportedItem: (id) => g().deleteTask(id),
   }
 }

@@ -734,7 +734,7 @@ export function TripActivitiesView({
     })
   }
 
-  /** Import places from a COGS JSON export or compatible CSV. */
+  /** Import places from a Brain2 JSON export or compatible CSV. */
   const onImportFile = useCallback(
     async (file: File) => {
       if (!placesId || !placesList) {

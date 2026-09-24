@@ -2,10 +2,10 @@
  * components/Modules/workspace/ModulePopoutView.tsx — Standalone module window
  *
  * Renders a single module workspace on its own — no global header or app tabs —
- * for the "Pop out" feature. `app/page.tsx` mounts this when the URL hash matches
- * the pop-out convention (`#popout/module/<id>`). In Electron this is a real
- * `BrowserWindow`; in the browser it's a `window.open(...)` tab. Item clicks open
- * an inline detail view within the same window.
+ * for the "Pop out" feature. `app/popout/page.tsx` mounts this at
+ * `/popout/?module=<id>` (no global header or app tabs). In Electron this is a
+ * real `BrowserWindow`; in the browser it's a `window.open(...)` popup. Item
+ * clicks open an inline detail view within the same window.
  */
 "use client"
 
@@ -27,6 +27,15 @@ export function ModulePopoutView({ moduleId }: { moduleId: string }) {
     const t = setTimeout(() => setReady(true), 0)
     return () => clearTimeout(t)
   }, [])
+
+  useEffect(() => {
+    if (!module || typeof document === "undefined") return
+    const previous = document.title
+    document.title = module.title
+    return () => {
+      document.title = previous
+    }
+  }, [module])
 
   if (!module) {
     return (

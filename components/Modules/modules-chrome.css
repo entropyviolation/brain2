@@ -1,0 +1,620 @@
+/**
+ * components/Modules/modules-chrome.css — Modules catalog + workspace window
+ *
+ * `.mod95` — catalog on the PCB (mini-windows + gadget wells).
+ * `.mod95-ws` — opened workspace chrome so generic views are not glass on the plate.
+ * Feral interiors (Tidy, Film DNA, itinerary paper) still paint themselves
+ * inside the client well.
+ */
+
+.mod95,
+.mod95-ws {
+  --mod-surface: var(--chrome-face, #c0c0c0);
+  --mod-face: var(--chrome-mid, #dfdfdf);
+  --mod-hi: var(--chrome-hi, #ffffff);
+  --mod-lo: var(--chrome-lo, #808080);
+  --mod-frame: var(--chrome-frame, #0a0a0a);
+  --mod-blue: #000080;
+  --mod-blue-light: #1084d0;
+  --mod-ink: #000000;
+  --mod-muted: #404040;
+  --mod-scope: #0b1a12;
+  --mod-phosphor: #3dff8a;
+  --mod-raised: inset -1px -1px var(--mod-frame), inset 1px 1px var(--mod-hi),
+    inset -2px -2px var(--mod-lo), inset 2px 2px var(--mod-face);
+  --mod-sunken: inset -1px -1px var(--mod-hi), inset 1px 1px var(--mod-frame),
+    inset -2px -2px var(--mod-face), inset 2px 2px var(--mod-lo);
+  --mod-field: inset -1px -1px var(--mod-hi), inset 1px 1px var(--mod-lo),
+    inset -2px -2px var(--mod-face), inset 2px 2px var(--mod-frame);
+
+  color: var(--mod-ink);
+  font-family: var(--w95-font, Tahoma, "MS Sans Serif", Geneva, sans-serif);
+  -webkit-font-smoothing: none;
+}
+
+.mod95 {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.mod95 .mod-desk-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 10px 9px;
+  background: var(--mod-surface);
+  box-shadow: var(--mod-raised);
+}
+
+.mod95 .mod-desk-head h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: var(--mod-ink);
+  text-shadow: 1px 1px 0 var(--mod-hi);
+}
+
+.mod95 .mod-desk-lede {
+  margin: 3px 0 0;
+  max-width: 46rem;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--mod-muted);
+}
+
+.mod95 .mod-build {
+  flex-shrink: 0;
+  min-height: 24px;
+  padding: 2px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--mod-ink) !important;
+  background: var(--mod-surface) !important;
+  border-radius: 0;
+  box-shadow: inset -1px -1px var(--mod-frame), inset 1px 1px var(--mod-frame),
+    inset -2px -2px var(--mod-lo), inset 2px 2px var(--mod-hi),
+    inset -3px -3px var(--mod-frame), inset 3px 3px var(--mod-face);
+}
+
+.mod95 .mod-build:hover {
+  background: var(--mod-face) !important;
+}
+
+.mod95 .mod-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mod95 .mod-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: max-content;
+  margin: 0;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--mod-ink);
+  background: var(--mod-surface);
+  box-shadow: var(--mod-raised);
+}
+
+.mod95 .mod-legend-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  padding: 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--mod-ink);
+  background: var(--mod-surface);
+  box-shadow: var(--mod-sunken);
+}
+
+.mod95 .mod-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+@media (min-width: 768px) {
+  .mod95 .mod-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .mod95 .mod-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.mod95 .mod-empty {
+  padding: 22px 16px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--mod-muted);
+  background: var(--mod-surface);
+  box-shadow: var(--mod-sunken);
+}
+
+/* ---- Workspace tiles = miniature windows ---- */
+
+.mod95 .mod-ws-window {
+  display: flex;
+  flex-direction: column;
+  min-height: 138px;
+  padding: 3px;
+  margin: 0;
+  cursor: pointer;
+  color: var(--mod-ink);
+  background: var(--mod-surface) !important;
+  border: none;
+  border-radius: 0;
+  box-shadow: var(--mod-raised);
+}
+
+.mod95 .mod-ws-window:hover {
+  background: var(--mod-face) !important;
+}
+
+.mod95 .mod-ws-window:hover .mod-ws-caption {
+  filter: brightness(1.06);
+}
+
+.mod95 .mod-ws-window:focus-visible {
+  outline: 2px solid var(--mod-blue);
+  outline-offset: 2px;
+}
+
+.mod95 .mod-ws-caption {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  min-height: 22px;
+  padding: 2px 3px 2px 5px;
+  color: #fff;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 3px,
+      rgba(255, 255, 255, 0.05) 3px 4px
+    ),
+    linear-gradient(90deg, var(--mod-blue) 0, var(--mod-blue) 28%, var(--mod-blue-light) 100%);
+  user-select: none;
+}
+
+.mod95 .mod-ws-glyph,
+.mod95 .mod-ws-jewel {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  color: #fff;
+}
+
+.mod95 .mod-ws-jewel {
+  object-fit: cover;
+  background: #000;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+
+.mod95 .mod-ws-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 1px 1px 0 #000;
+}
+
+.mod95 .mod-caption-btn {
+  width: 16px !important;
+  height: 14px !important;
+  min-width: 16px !important;
+  padding: 0 !important;
+  color: #000 !important;
+  background: var(--mod-surface) !important;
+  border-radius: 0;
+  box-shadow: var(--mod-raised);
+}
+
+.mod95 .mod-caption-btn:hover {
+  background: var(--mod-face) !important;
+}
+
+.mod95 .mod-caption-btn svg {
+  width: 10px;
+  height: 10px;
+}
+
+.mod95 .mod-ws-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+  padding: 8px 8px 6px !important;
+}
+
+.mod95 .mod-ws-desc {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--mod-muted);
+}
+
+.mod95 .mod-ws-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+  padding: 3px 4px 2px;
+  background: var(--mod-surface);
+  box-shadow: var(--mod-sunken);
+}
+
+.mod95 .mod-ws-kinds {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.mod95 .mod-ws-kind {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: var(--mod-ink);
+  background: var(--mod-face);
+  box-shadow: var(--mod-raised);
+}
+
+.mod95 .mod-ws-kind svg {
+  width: 10px;
+  height: 10px;
+}
+
+.mod95 .mod-ws-count {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--mod-ink);
+}
+
+/* ---- Dashboard widgets = gadget wells ---- */
+
+.mod95 .mod-widget {
+  display: flex;
+  flex-direction: column;
+  min-height: 156px;
+  padding: 3px;
+  color: var(--mod-ink);
+  background: var(--mod-surface) !important;
+  border: none;
+  border-radius: 0;
+  box-shadow: var(--mod-raised);
+}
+
+.mod95 .mod-widget-bar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 3px 3px 3px 7px !important;
+  background: var(--mod-face);
+  box-shadow: inset 0 -1px 0 var(--mod-lo);
+}
+
+.mod95 .mod-widget-bar > * {
+  width: 100%;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.mod95 .mod-widget-bar button {
+  width: 18px !important;
+  height: 16px !important;
+  min-width: 18px;
+  padding: 0;
+  color: var(--mod-ink) !important;
+  background: var(--mod-surface) !important;
+}
+
+.mod95 .mod-widget-body {
+  flex: 1;
+  min-height: 0;
+  margin: 6px;
+  padding: 8px !important;
+  color: var(--mod-ink);
+  background: var(--mod-surface);
+  box-shadow: var(--mod-field);
+}
+
+.mod95 .mod-widget-body .text-muted-foreground {
+  color: var(--mod-muted) !important;
+}
+
+.mod95 .mod-widget[data-mod-type="analytics-stat"] .mod-widget-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--mod-scope);
+  color: #d8ffe8;
+  box-shadow: var(--mod-sunken);
+}
+
+.mod95 .mod-widget[data-mod-type="analytics-stat"] .mod-widget-body .text-4xl {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  color: var(--mod-phosphor);
+  text-shadow: 0 0 10px rgba(61, 255, 138, 0.45);
+}
+
+.mod95 .mod-widget[data-mod-type="analytics-stat"] .mod-widget-body .text-muted-foreground {
+  color: #8fd9a8 !important;
+}
+
+.mod95 .mod-widget-body .rounded-full {
+  border-radius: 0;
+}
+
+.mod95 .mod-widget-body .bg-muted {
+  background: var(--mod-lo);
+  box-shadow: var(--mod-sunken);
+}
+
+.mod95 .mod-widget-body .bg-primary {
+  background: var(--mod-blue);
+}
+
+/* ---- Opened workspace: a real window, not glass on the PCB ---- */
+
+.mod95-ws {
+  --foreground: 0 0% 0%;
+  --muted-foreground: 0 0% 28%;
+  --card: 0 0% 75%;
+  --card-foreground: 0 0% 0%;
+  --background: 0 0% 75%;
+  min-height: min(78vh, 860px);
+}
+
+.mod95-ws .mod-ws-window {
+  display: flex;
+  flex-direction: column;
+  min-height: min(78vh, 860px);
+  padding: 3px;
+  background: var(--mod-surface);
+  box-shadow: var(--mod-raised);
+  color: var(--mod-ink);
+}
+
+.mod95-ws .mod-ws-app-caption {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  flex-shrink: 0;
+  min-height: 26px;
+  padding: 3px 4px 3px 5px;
+  color: #fff;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 3px,
+      rgba(255, 255, 255, 0.05) 3px 4px
+    ),
+    linear-gradient(90deg, var(--mod-blue) 0, var(--mod-blue) 22%, var(--mod-blue-light) 100%);
+}
+
+.mod95-ws .mod-ws-app-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff !important;
+  text-shadow: 1px 1px 0 #000;
+  background: transparent !important;
+  box-shadow: none !important;
+  cursor: text;
+}
+
+.mod95-ws .mod-ws-app-title svg {
+  opacity: 0.55;
+  width: 11px;
+  height: 11px;
+}
+
+.mod95-ws .mod-ws-app-title:hover svg {
+  opacity: 1;
+}
+
+.mod95-ws .mod-ws-title-field {
+  height: 22px;
+  max-width: 16rem;
+  font-size: 13px;
+  font-weight: 700;
+  color: #000;
+}
+
+.mod95-ws .mod-caption-btn,
+.mod95-ws .mod-ws-tool {
+  min-height: 22px;
+  padding: 1px 8px;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--mod-ink) !important;
+  background: var(--mod-surface) !important;
+  border-radius: 0;
+  box-shadow: var(--mod-raised);
+}
+
+.mod95-ws .mod-caption-btn {
+  width: 22px;
+  min-width: 22px;
+  padding: 0;
+}
+
+.mod95-ws .mod-ws-tool-default {
+  font-weight: 700;
+  box-shadow: inset -1px -1px var(--mod-frame), inset 1px 1px var(--mod-frame),
+    inset -2px -2px var(--mod-lo), inset 2px 2px var(--mod-hi),
+    inset -3px -3px var(--mod-frame), inset 3px 3px var(--mod-face);
+}
+
+.mod95-ws .mod-ws-app-caption .mod-ws-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.mod95-ws .mod-ws-statusline {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 8px;
+  font-size: 11px;
+  color: var(--mod-muted);
+  background: var(--mod-surface);
+  box-shadow: inset 0 -1px 0 var(--mod-lo);
+}
+
+.mod95-ws .mod-ws-sync {
+  flex-shrink: 0;
+  padding: 2px 6px;
+  color: var(--mod-ink);
+  background: var(--mod-face);
+  box-shadow: var(--mod-sunken);
+}
+
+.mod95-ws .mod-ws-empty {
+  margin: 8px;
+  padding: 28px 16px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--mod-muted);
+  background: var(--mod-face);
+  box-shadow: var(--mod-sunken);
+}
+
+.mod95-ws .mod-ws-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  height: auto;
+  margin: 0;
+  padding: 4px 4px 0;
+  background: var(--mod-surface);
+  box-shadow: none;
+}
+
+.mod95-ws .mod-ws-client {
+  margin: 0 3px 3px;
+  padding: 8px;
+  background: var(--mod-face);
+  box-shadow: var(--mod-sunken);
+  color: var(--mod-ink);
+}
+
+.mod95-ws .mod-ws-viewbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.mod95-ws .mod-ws-viewbar h3 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--mod-ink);
+}
+
+.mod95-ws .mod-ws-viewbody {
+  padding: 10px;
+  background: var(--mod-surface);
+  box-shadow: var(--mod-field);
+  color: var(--mod-ink);
+  min-height: 220px;
+}
+
+.mod95-ws .mod-ws-viewbody:has(.itinerary-doc-root),
+.mod95-ws .mod-ws-viewbody:has(.film-dna),
+.mod95-ws .mod-ws-viewbody:has(.tidy),
+.mod95-ws .mod-ws-viewbody:has(.gradsearch-host) {
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  min-height: 0;
+}
+
+.mod95-ws .mod-ws-client:has(.gradsearch-host) {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.mod95-ws .mod-ws-client:has(.gradsearch-host) .mod-ws-viewbar {
+  display: none;
+}
+
+.mod95-ws .mod-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: var(--mod-face);
+  color: var(--mod-ink);
+  box-shadow: var(--mod-raised);
+  border: none;
+}
+
+.mod95-ws .mod-row > button:first-of-type {
+  color: inherit;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.mod95-ws .mod-clock {
+  font-variant-numeric: tabular-nums;
+  color: var(--mod-ink);
+}
+
+@media print {
+  .mod95-ws .mod-ws-window {
+    min-height: 0;
+    padding: 0;
+    background: #fff;
+    box-shadow: none;
+  }
+
+  .mod95-ws .mod-ws-client,
+  .mod95-ws .mod-ws-viewbody {
+    margin: 0;
+    padding: 0;
+    background: #fff;
+    box-shadow: none;
+  }
+}

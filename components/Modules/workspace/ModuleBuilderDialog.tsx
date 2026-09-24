@@ -5,7 +5,7 @@
  *   1. **From scratch** — author a brand-new `ModuleDefinition` (name, bound
  *      lists, views, plan-sync) in `ModuleSettingsDialog`, then instantiate it
  *      into a runnable workspace.
- *   2. **Workspace template** — Itinerary, Cleaning, House Cleaning (Tidy), Budget, Book Tasting, Film DNA, or Blank — which
+ *   2. **Workspace template** — Itinerary, House Cleaning (Tidy), Budget, Book Tasting, Film DNA, GradSearch, or Blank — which
  *      scaffolds the supporting lists + views in one click.
  *   3. **Dashboard widget** — a classic single card.
  *
@@ -16,7 +16,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Home, LayoutGrid, Plane, Sparkles, Wallet, FilePlus2, BarChart3, Wrench, Rocket, Clapperboard } from "lucide-react"
+import { Home, LayoutGrid, Plane, Wallet, FilePlus2, BarChart3, Wrench, Rocket, Clapperboard, GraduationCap } from "lucide-react"
 import { MODULE_TEMPLATES, instantiateModuleTemplate, type ModuleTemplateId } from "@/lib/module-templates"
 import type { ModuleDefinition } from "@/lib/types"
 import {
@@ -25,15 +25,16 @@ import {
   useModuleDefinitionsStore,
 } from "@/lib/module-definitions"
 import { ModuleSettingsDialog } from "./ModuleSettingsDialog"
+import { itemTitle } from "@/lib/item-utils"
 
 // Partial map (+ fallback) so templates added by sibling workstreams still render.
 const TEMPLATE_ICONS: Partial<Record<ModuleTemplateId, React.ComponentType<{ className?: string }>>> = {
   itinerary: Plane,
-  cleaning: Sparkles,
   "house-cleaning": Home,
   budget: Wallet,
   "book-tasting": FilePlus2,
   filmrecs: Clapperboard,
+  gradsearch: GraduationCap,
   blank: FilePlus2,
 }
 
@@ -140,7 +141,7 @@ export function ModuleBuilderDialog({
                         <Icon className="h-4 w-4 shrink-0" />
                         {t.name}
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1">{t.description}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{itemTitle(t)}</p>
                     </button>
                   )
                 })}

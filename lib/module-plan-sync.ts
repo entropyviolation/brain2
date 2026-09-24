@@ -2,15 +2,16 @@
  * lib/module-plan-sync.ts — Push finalized module items into the Plan
  *
  * A workspace module (e.g. the Itinerary Creator) can mark itself "plan-synced":
- * its dated, finalized items are written into the day Plan text (see
+ * its dated, finalized items are appended as a new day Plan entry (see
  * `lib/plan-text.ts`). This keeps a finalized trip in lockstep with the Scheduler
  * /Plan without duplicating the data model — the items stay the source of truth.
  */
 import type { ModuleInstance } from "@/lib/modules-store"
 import type { Task } from "@/lib/types"
 import { useTaskStore } from "@/lib/task-store"
-import { getStoredPlanText, saveStoredPlanText } from "@/lib/plan-text"
+import { getPlanBodies, appendPlanEntry } from "@/lib/plan-text"
 import { formatDateKey, safeToDate } from "@/lib/date-utils"
+import { itemTitle } from "@/lib/item-utils"
 
 export interface PlanSyncResult {
   days: number
@@ -76,14 +77,13 @@ export function syncModuleToPlan(module: ModuleInstance): PlanSyncResult {
 
   let lines = 0
   for (const [dayKey, dayItems] of byDay) {
-    const existing = getStoredPlanText("day", dayKey) || ""
+    const existing = getPlanBodies("day", dayKey) || ""
     const existingLines = new Set(existing.split("\n").map((l) => l.trim()))
     const additions = dayItems
-      .map((t) => `• ${t.description} [${module.title}]`)
+      .map((t) => `• ${itemTitle(t)} [${module.title}]`)
       .filter((line) => !existingLines.has(line.trim()))
     if (additions.length === 0) continue
-    const next = existing ? `${existing.replace(/\s+$/, "")}\n${additions.join("\n")}` : additions.join("\n")
-    saveStoredPlanText("day", dayKey, next)
+    appendPlanEntry("day", dayKey, additions.join("\n"))
     lines += additions.length
   }
 

@@ -5,7 +5,10 @@
  * platform. State lives on `module.config.houseCleaning` (same self-contained
  * pattern as `tripItinerary`) so the mini-app can keep its own tree of areas,
  * hierarchical tasks, needed items, stuck sessions, per-area subareas, and plans
- * without flattening them onto Lists/Items.
+ * without flattening them onto Lists/Items. `lib/module-list-import-tidy.ts`
+ * projects that tree into Module Lists (Whole house → area sublists → chores)
+ * so Lists, search, and Analytics can see the same records. Tidy remains the
+ * write source until two-way sync.
  *
  * Pure + unit-testable. The React shell is
  * `components/Modules/workspace/housecleaning/TidyView.tsx`.
@@ -460,7 +463,7 @@ export function normalizeSubareaSession(ses: HouseSubareaSession | null | undefi
   const areaId = String(ses.areaId || "")
   if (!areaId) return null
   const items = ses.items
-    .map((it) => {
+    .map((it): HouseSubareaSessionItem | null => {
       const title = String(it.title || "").trim()
       if (!title) return null
       const checks = normalizeChecks(it.checks)

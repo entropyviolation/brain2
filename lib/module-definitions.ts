@@ -8,7 +8,7 @@
  * the user actually opens, with its workflows registered in `lib/workflows-store`.
  *
  * Mirrors the Zustand + `persist` pattern of `lib/modules-store.ts`; persisted to
- * localStorage under `cogs-module-definitions` (target: MongoDB `moduleDefs`).
+ * localStorage under `brain2-module-definitions` (target: MongoDB `moduleDefs`).
  *
  * Pure helpers (`createEmptyDefinition`, `definitionToInstance`,
  * `serializeModuleDefinition`, `parseModuleDefinition`) are unit-testable and
@@ -20,6 +20,7 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
+import { persistKey } from "@/lib/storage-keys"
 import type { ModuleDefinition, WorkflowDefinition } from "@/lib/types"
 import { useModulesStore, type ModuleInstance } from "@/lib/modules-store"
 import { useWorkflowsStore } from "@/lib/workflows-store"
@@ -114,7 +115,7 @@ export const useModuleDefinitionsStore = create<ModuleDefinitionsState>()(
 
       setDefinitions: (definitions) => set(() => ({ definitions })),
     }),
-    { name: "cogs-module-definitions", version: 1, storage: createCogsJSONStorage() },
+    { name: persistKey("module-definitions"), version: 1, storage: createCogsJSONStorage() },
   ),
 )
 

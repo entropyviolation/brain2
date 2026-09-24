@@ -13,24 +13,54 @@ module live here:
 - **Widgets** — single dashboard cards (list explorer, writing prompt, random
   task, analytics stat, cause→effect rules) shown in a grid.
 
+## Where this is going
+
+The end state of this folder is an **install** flow, not a bigger set of
+built-in templates. You paste or generate a small `.tsx` app and a wizard ports
+it onto the brain: its state is mapped to **Items** and attribute schemas, its
+screens become views (stock kinds, or one custom component with its own CSS), and
+it declares **bridges** — the explicit list of what it may do to the rest of
+Brain2 (create items, paint Tracking minutes, increment habits, award points, write
+dates, claim an ingest phrase). A cheap LLM does the mapping once at install time
+and emits reviewable artifacts; installed modules then run offline forever.
+
+That is why `ModuleDefinition`, templates, the view-kind registry, workflows, and
+popout are the parts of this folder that must stay generic — they are the
+**installer**. A view body is allowed to be a 2k-line mini-app with its own
+stylesheet.
+
+**The one rule that makes it work:** a module's *data* is Items. `module.config`
+is layout, bindings, and preferences. `TidyView` and the itinerary views still
+*write* `module.config.houseCleaning` / `tripItinerary` (debt — do not copy), but
+those trees are **projected** into Module Lists items
+([`MODULE_LISTS.md`](../Lists/MODULE_LISTS.md)). Two-way Item writes are the
+remaining payoff.
+
+Full contract, install ladder, manifest shape, and migration plan:
+[`docs/MODULE_PLATFORM.md`](../../docs/MODULE_PLATFORM.md).
+
 ## Files
 
 | File | Purpose |
 |------|---------|
-| `modules-panel.tsx` | **Orchestrator**: lists workspaces + widgets, opens a workspace full-screen, hosts the build/config dialogs |
+| `modules-panel.tsx` | **Orchestrator**: lists workspaces + widgets, opens a workspace full-screen, hosts the build/config dialogs. Last open workspace survives refresh / tab switch. Catalog chrome is `.mod95` in `modules-chrome.css` (miniature windows + gadget wells; interiors keep their own skins). |
+| `modules-chrome.css` | Catalog (`.mod95`) + opened workspace window (`.mod95-ws`) so generic views/toolbars are not glass on the PCB. Imported from `app/layout.tsx`. |
 | `module-helpers.ts` | **Pure helpers + constants**: random pickers, writing word banks, `MODULE_META`, `WIDGET_MODULE_TYPES`, `ruleMatches`, `tasksInList`, stat/rule-operator options. Unit-tested in `module-helpers.test.ts` |
 | `module-bodies.tsx` | `ModuleCard` + per-widget render bodies (analytics stat, list summary, writing prompt, list explorer, random task, rules). Exports `AnalyticsStat` (reused by workspace `stat` views) |
 | `module-helpers.test.ts` | Unit tests for the pure helpers (`ruleMatches`, `tasksInList`, `randN`) |
 | `ModuleConfigDialog.tsx` | Add/configure a **widget** |
-| `workspace/ModuleWorkspace.tsx` | Full-screen workspace renderer: header (back / rename / add view / **Print–Export** / **Sync to Plan**) + a tab per view |
-| `workspace/module-view-bodies.tsx` | The per-kind view bodies + `ModuleViewBody` switch + shared countdown `Timer` |
+| `workspace/ModuleWorkspace.tsx` | Full-screen workspace renderer: Win95 window (back / rename / add view / **Print–Export** / **Sync to Plan** / **Pop out**) + a tab per view. Last view per workspace is restored. |
+| `workspace/module-popout.ts` | `/popout/?module=<id>` helpers + `openModulePopout` (Electron `BrowserWindow` or `window.open`). Hash `#popout/module/<id>` still parsed. |
+| `workspace/module-popout.test.ts` | Unit tests for path + hash round-trip |
+| `workspace/module-view-bodies.tsx` | The per-kind view bodies + `ModuleViewBody` switch + shared countdown `Timer` (writes `timeLogs` on complete) |
+| `workspace/module-view-bodies.timer.test.tsx` | Focus-timer complete → Working Now `timeLogs`, or a one-step item prompt |
 | `workspace/ModuleViewEditor.tsx` | Add/edit one bound view (kind, title, source list, group/sum/date attrs, pick count, timer, stat) |
 | `workspace/ModuleBuilderDialog.tsx` | "Build a module" chooser: **build from scratch** (definition-first), saved definitions, workspace templates, or a classic widget |
 | `workspace/ModuleSettingsDialog.tsx` | **Module definition / settings editor**: name, icon, description, bound lists (+ roles + attribute extensions), views (add/edit/remove/**reorder**), plan-sync + print toggles, attach workflows. Edits a controlled `ModuleDefinition` and reports via `onSave` |
 | `workspace/ModuleListsPanel.tsx` | In-workspace **bound-list editor**: each binding's `role`, list (category), optional item type, and per-binding attribute extensions (reuses Lists' `AttributeSchemaEditor`) |
 | `workspace/WorkflowBuilder.tsx` | **Visual workflow manager** ("Zapier for personal ideas"): list / add / edit / enable / delete / run a module's authored workflows. Persists to `lib/workflows-store.ts` |
 | `workspace/WorkflowStepEditor.tsx` | Composes a single serializable `WorkflowDefinition`: trigger → conditions → drag-reorderable action steps. No DSL — the JSON shape is the source of truth |
-| `workspace/ModulePopoutView.tsx` | Renders one module workspace **standalone** (no app shell) for the pop-out window; mounted by `app/page.tsx` on the pop-out hash route |
+| `workspace/ModulePopoutView.tsx` | Renders one module workspace **standalone** (no app shell) at `/popout/?module=<id>` |
 | `workspace/itinerary/DocPlanView.tsx` | Module **Plan** (`doc`): Docs `DocumentEditor` bound to a trip note (`config.docId`) |
 | `workspace/itinerary/ItineraryDocumentView.tsx` | Printable day-by-day itinerary (`itinerary-doc`); assembles via `lib/itinerary-assemble.ts` / `lib/trip-itinerary.ts` |
 | `workspace/itinerary/TripActivitiesView.tsx` | **Activities** host: Must do / Maybe buckets + map |
@@ -44,6 +74,10 @@ module live here:
 | `workspace/filmrecs/film-dna.css` | Letterboxd-adjacent Film DNA styles |
 | `workspace/housecleaning/TidyView.tsx` | **Tidy** house-cleaning mini-app (areas, stuck mode, plans) |
 | `workspace/housecleaning/tidy.css` | Scoped port of the Tidy stylesheet |
+| `workspace/gradsearch/GradSearchView.tsx` | **GradSearch** program explorer (shadow-DOM port of the standalone app) |
+| `workspace/gradsearch/engine.ts` | Search, filter, sort, score, compare, verify, favorites, hide |
+| `workspace/gradsearch/data.json` | Bundled catalog (the gradsearch `data.js` store) |
+| `workspace/gradsearch/shell.ts` / `styles.ts` | Original markup and stylesheet, mounted in the shadow root |
 | `lib/itinerary-migrate.ts` *(lib)* | Best-effort upgrade of older Itinerary workspaces to the v2 view set |
 
 ## Data
@@ -62,7 +96,7 @@ list (`categoryId`) and kind-specific options (`groupAttrId`/`valueAttrId`,
 `quizChoiceCount` (quiz), `cards` (dashboard)). Workspace instances may also carry
 `scheduleSync` (turn finalized dated items into events).
 
-The lists, items, and attributes a workspace operates on are **ordinary COGS
+The lists, items, and attributes a workspace operates on are **ordinary Brain2
 data** in `task-store` — so they also show up in Lists, Scheduler, Analytics, etc.
 Templates and the grid live in `lib/module-templates.ts` and
 `components/spreadsheet/SheetGrid.tsx`.
@@ -76,7 +110,7 @@ Templates and the grid live in `lib/module-templates.ts` and
 | `agenda` | Items grouped by a date attribute, sorted, with time + cost badges (the Itinerary view) |
 | `summary` | Rollups: group by an attribute, optionally sum a numeric/currency attribute (cost by booked/unbooked, spend by category, items per room) |
 | `randomizer` | Gamified "pick N" from open items with an optional countdown ("pick up 20 things", "clean for 20 min") |
-| `timer` | A focus countdown |
+| `timer` | A focus countdown. On complete, appends a `timeLogs` slice to Working Now’s item (`lib/focus-timer-log.ts`), or prompts which item. Does not pick 52:17 from load (#264). |
 | `stat` | A single analytics headline number |
 | `gallery` | Image cards for items with an image attribute |
 | `notes` | Free text (persisted to localStorage) — e.g. "my cleaning systems" |
@@ -84,7 +118,8 @@ Templates and the grid live in `lib/module-templates.ts` and
 | `itinerary-doc` | Self-contained printable trip days (`module.config.tripItinerary`): start/end auto-days, city or A→B labels, Open-Meteo weather, timed plans/notes, flight lookup by number |
 | `trip-map` | City-split Leaflet map of stays + wishlist places; multi-list filters (a place can be on several lists); walking/driving/transit distance |
 | `film-dna` | Film DNA Lab: shelves + likes wall, offline Watch ranking (safe/balanced/explore), Letterboxd **export folder** import/blend (`lib/letterboxd-parse.ts` merges watchlist/watched/ratings/diary/`likes/films.csv`) |
-| `house-cleaning` | Tidy house-cleaning app (self-contained on `module.config.houseCleaning`): area cards, hierarchical chores with importance/estimates/actuals, per-task timer + focus bar, today’s goal, bulk paste, Needed list, Stuck mode, Bare-minimum / Good / Exceptional plans |
+| `house-cleaning` | Tidy house-cleaning app (writes `module.config.houseCleaning`; **projected** into Module Lists as Whole house / area lists): area cards, hierarchical chores with importance/estimates/actuals, per-task timer + focus bar, today’s goal, bulk paste, Needed list, Stuck mode, Bare-minimum / Good / Exceptional plans |
+| `grad-search` | GradSearch program explorer. Same screen as the standalone app: search, field/tier/degree/funding/country/score/duration filters, live scoring weights and per-program overrides, vibes, notes, favorites, hide/restore, card and table views, compare (up to 4), and verify-with-web-search (prompt, diff, apply on this device). Catalog is the bundled research dataset. Personal marks use the same `gs-*` localStorage keys as the standalone explorer. |
 | `kanban` | Board grouped into columns by a selection/text attribute (`config.statusAttrId`); columns derived via `isKanbanGroupable` (`components/Lists/list-content/kanban-utils.ts`) |
 | `decision-matrix` | Weighted multi-criteria ranking (MCDA): rows = options (items), columns = criteria (numeric attributes, each with a weight + direction). Computes a normalized weighted score per option, ranks highest-first, and highlights the winner. Scoring core is `lib/decision-matrix.ts` |
 | `timeline` | Day-by-day timeline of dated items (`config.dateAttrId`/`timeAttrId`) with time, cost, and booked/finalized badges — the confirmed-trip companion to `agenda` |
@@ -113,11 +148,12 @@ and persists onto the view. Pure + unit-tested in `lib/decision-matrix.test.ts`.
 
 | Template | Lists created | Highlights |
 |----------|---------------|-----------|
-| **Itinerary Creator** | City Places, Packing, To Do Before Trip + linked Docs note + self-contained `tripItinerary` days | **Plan** (`doc`), printable **Itinerary** (start/end dates, weather API, flight lookup — not list-backed), **Activities** map, Packing/Before Trip checklists; **Print/Export** |
+| **Itinerary Creator** | City Places, Packing, To Do Before Trip + linked Docs note + ⚠ self-contained `tripItinerary` days (debt — days/flights are not Items) | **Plan** (`doc`), printable **Itinerary** (start/end dates, weather API, flight lookup — not list-backed), **Activities** map, Packing/Before Trip checklists; **Print/Export** |
 | **Budget Tracker** | Accounts, Monthly Payments, Debts, Expected Spend | **Dashboard** of optional-inclusion rollups (liquid total, net worth = accounts − debts, expected spend, monthly payments); per-list spreadsheets; payments-by-status summary |
 | **Book Tasting** | Reading List, PDF Shelf | A **matcher** that links each PDF (`file` attribute, extracted text) to its book with confidence + unmatched flags, plus a **quiz** that shows a random snippet and asks you to guess the title; "PDF added with no match → throw" workflow |
 | **Film DNA Lab** | Films (watchlist + likes) | **Film DNA** view (`film-dna`): vibe shelves, likes wall, Watch scatter + ranking, Blend with a friend's CSV, Letterboxd import; plus Films spreadsheet, poster gallery, randomizer, shelf summary. Seeded from Filmrecs catalog; import your own exports to replace |
-| **House Cleaning App** | *(none — self-contained)* | **Tidy** (`house-cleaning`): port of the house-cleaning tracker — areas, hierarchical tasks, importance + time, per-task timer, Needed, Stuck mode, and three-tier plans. State lives on `module.config.houseCleaning` |
+| **House Cleaning App** | **Whole house** + nested area lists (Kitchen, Living Room, …) + **Needed** — projected from `houseCleaning` on instantiate / Lists hydrate | **Tidy** (`house-cleaning`): areas, hierarchical tasks, importance + time, per-task timer, Needed, Stuck mode, three-tier plans. State still writes `module.config.houseCleaning`; Module Lists import maps every useful field onto items ([`MODULE_LISTS.md`](../Lists/MODULE_LISTS.md)). Two-way Item storage is still the platform target. |
+| **GradSearch** | None — the catalog is the bundled research dataset, not Brain2 items | **Explorer** (`grad-search`): the standalone GradSearch app, shadow-DOM mounted so it looks and behaves the same (search, filters, scoring model, compare, verify, favorites, hide). |
 | **Blank Workspace** | New List | Empty starting point — add your own lists and views |
 
 ## Building modules from scratch (definitions)
@@ -137,6 +173,11 @@ and stored in **`lib/module-definitions.ts`** (`cogs-module-definitions`).
 - `serializeModuleDefinition` / `parseModuleDefinition` — round-trippable JSON
   (no functions). Full-app JSON backup/restore lives in `lib/data/backup.ts`.
 
+`ModuleDefinition` is rung 1 of the install ladder. Its successor is the
+**`ModuleManifest`** — the same blueprint plus declared item types and **bridge
+grants**, so a module can be installed from a file rather than composed in-app.
+Shape and sequence: [`docs/MODULE_PLATFORM.md`](../../docs/MODULE_PLATFORM.md).
+
 ## Workflows (the "rules ACT" layer)
 
 `WorkflowBuilder` + `WorkflowStepEditor` author `WorkflowDefinition`s into
@@ -150,19 +191,20 @@ create/update/complete, attribute change, manual button, schedule), optional
 
 ## Pop-out windows
 
-A workspace can be **popped out** into its own window. The convention is a hash
-route the root page recognizes: **`#popout/module/<moduleId>`** (helpers
-`modulePopoutHash` / `parseModulePopoutModuleId` / `openModulePopout` in
-`workspace/ModuleWorkspace.tsx`). In Electron, `openModulePopout` calls
-`window.desktop.openModulePopout(hash)` → an IPC channel
-(`cogs:window:openModulePopout`) that opens a real `BrowserWindow` at the pop-out
-URL; in the browser it falls back to `window.open(...)`. `app/page.tsx` detects the
-hash and renders `<ModulePopoutView moduleId>` with no global header/tabs.
+A workspace can be **popped out** into its own window that shows **only that
+module** — not the **BRAIN2** header or tab bar. **Pop out** opens
+**`/popout/?module=<moduleId>`** (`modulePopoutPath` / `openModulePopout` in
+`workspace/module-popout.ts`). In Electron that path loads in a real
+`BrowserWindow` via `window.desktop.openModulePopout` →
+`cogs:window:openModulePopout`. In the browser it falls back to `window.open`.
+`app/popout/page.tsx` renders `<ModulePopoutView moduleId>` with no global chrome.
+The older hash `#popout/module/<id>` is still parsed if it lands on `/popout/`
+or (as a fallback) on the root page.
 
 ## Plan sync
 
 `lib/module-plan-sync.ts` (`syncModuleToPlan`) writes a workspace's finalized,
-dated items into the day Plan text (`lib/plan-text.ts`) — keeping a finalized trip
+dated items into the day Plan log (`lib/plan-text.ts`, a new stamped entry) — keeping a finalized trip
 in lockstep with the Scheduler/Plan without duplicating the data model.
 
 ## Props

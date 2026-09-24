@@ -4,6 +4,8 @@
 import type { Task } from "@/lib/types"
 import { getPlaceLists, encodePlaceLists } from "@/lib/trip-activity-lists"
 import { parseSpreadsheetText } from "@/lib/csv"
+import { itemTitle } from "@/lib/item-utils"
+import { APP_ID, type AppId } from "@/lib/app-brand"
 
 export const TRIP_ACTIVITIES_EXPORT_VERSION = 1 as const
 
@@ -29,7 +31,7 @@ export interface TripActivitiesPlaceExport {
 }
 
 export interface TripActivitiesExport {
-  app: "cogs"
+  app: AppId
   kind: "trip-activities-map"
   version: typeof TRIP_ACTIVITIES_EXPORT_VERSION
   exportedAt: string
@@ -74,7 +76,7 @@ export function placeToExportRow(place: Task): TripActivitiesPlaceExport {
   const attrs = (place.attributes || {}) as Record<string, unknown>
   return {
     id: place.id,
-    name: place.description || place.title || "",
+    name: itemTitle(place),
     lists: getPlaceLists(place),
     type: String(attrs.placeKind ?? "Place"),
     address: String(attrs.address ?? ""),
@@ -103,7 +105,7 @@ export function buildTripActivitiesExport(opts: {
 }): TripActivitiesExport {
   const places = opts.places.map(placeToExportRow)
   return {
-    app: "cogs",
+    app: APP_ID,
     kind: "trip-activities-map",
     version: TRIP_ACTIVITIES_EXPORT_VERSION,
     exportedAt: new Date().toISOString(),
@@ -285,7 +287,7 @@ function normalizePlaceRow(raw: Record<string, unknown>): TripActivitiesPlaceExp
   }
 }
 
-/** Parse a COGS activities JSON export (envelope or bare `{ places: [...] }` / array). */
+/** Parse a Brain2 activities JSON export (envelope or bare `{ places: [...] }` / array). */
 export function parseTripActivitiesJson(text: string): TripActivitiesImportResult {
   const data = JSON.parse(text) as unknown
   let placesRaw: unknown[] = []

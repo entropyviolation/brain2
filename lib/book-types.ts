@@ -1,30 +1,33 @@
 /**
- * lib/book-types.ts — Built-in **Book** item type (Workstream D)
+ * lib/book-types.ts — Catalog **Book** item type
  *
- * Defines the built-in `book` `ItemTypeDefinition`: a reading-list entry with an
- * author, ISBN, reading status, and a `multifile` attribute for attached PDFs
- * (e-books, papers) whose text is extracted + indexed (see `lib/file-extract.ts`
- * + `lib/search.ts`). It is the canonical demonstration of the new file/PDF
- * attribute primitive on a real, user-facing type.
+ * A reading-list entry: cover image, author, ISBN, status, page counts, and
+ * attached PDFs. This is the canonical demonstration that item types (not Task
+ * defaults) own the detail view — a book shows a large cover and pages-read,
+ * not Schedule / Subtasks / Analysis.
  *
- * The book's *title* is the item's core `title`/name (mirrors the precedent in
- * `lib/operation-types.ts` / `lib/second-brain-types.ts`, which never redefine
- * `title` as an attribute), so the schema only carries the extra fields.
+ * Catalog seeding: registered if missing; user customizations persist. The
+ * default implied-action rules log "read X pages of {title}" into Done and
+ * increment the default "Read at least 10 pages per day" habit (`task-9`).
  *
- * Pure + serializable: no store or React imports here. Registered into the
- * built-in registry via `withBookType()` (see `lib/item-types.ts`) and re-exposed
- * as an idempotent `seedBookType()` store action.
+ * Pure + serializable. Wired via `withBookType()` in `lib/item-types.ts`.
  */
 import type { AttributeDefinition, ItemTypeDefinition } from "@/lib/types"
 
 /** Stable item-type id, referenced by helpers, components, and tests. */
 export const BOOK_TYPE_ID = "book"
 
+/** Default daily-reading habit id from `getDefaultHabits()` — user-rewirable. */
+export const BOOK_DEFAULT_READING_HABIT_ID = "task-9"
+
 /** Attribute ids for the Book type (centralized so UI/tests avoid magic strings). */
 export const BOOK_ATTR = {
+  cover: "cover",
   author: "author",
   isbn: "isbn",
   status: "status",
+  pageCount: "pageCount",
+  pagesRead: "pagesRead",
   /** Attached PDFs / documents (multifile). Text is extracted + indexed. */
   files: "files",
 } as const
@@ -37,6 +40,7 @@ export type BookStatus = (typeof BOOK_STATUSES)[number]
 export const DEFAULT_BOOK_STATUS: BookStatus = "to-read"
 
 const BOOK_ATTRIBUTES: AttributeDefinition[] = [
+  { id: BOOK_ATTR.cover, name: "Cover", type: "image" },
   { id: BOOK_ATTR.author, name: "Author", type: "string" },
   { id: BOOK_ATTR.isbn, name: "ISBN", type: "string" },
   {
@@ -46,10 +50,12 @@ const BOOK_ATTRIBUTES: AttributeDefinition[] = [
     optionSource: "manual",
     options: [...BOOK_STATUSES],
   },
+  { id: BOOK_ATTR.pageCount, name: "Page count", type: "number", allowFloat: false },
+  { id: BOOK_ATTR.pagesRead, name: "Pages read", type: "number", allowFloat: false },
   { id: BOOK_ATTR.files, name: "Files", type: "multifile" },
 ]
 
-/** The Book item-type definition (built-in; always available app-wide). */
+/** The Book item-type definition (catalog seed; user-editable after first load). */
 export function getBookTypeDefinition(): ItemTypeDefinition {
   return {
     id: BOOK_TYPE_ID,
@@ -57,16 +63,46 @@ export function getBookTypeDefinition(): ItemTypeDefinition {
     pluralName: "Books",
     itemLabel: "book",
     description:
-      "A reading-list entry: author, ISBN, and reading status, with attached PDFs whose text is extracted and searchable.",
+      "A reading-list entry with a cover, author, page progress, and attached PDFs. Increasing pages read logs a Done activity and can count toward a daily reading habit.",
     builtin: true,
+    kind: "catalog",
     color: "#b45309",
     attributes: BOOK_ATTRIBUTES,
     defaultAttributeValues: {
       [BOOK_ATTR.status]: DEFAULT_BOOK_STATUS,
+      [BOOK_ATTR.pagesRead]: 0,
     },
-    displayedAttributes: [BOOK_ATTR.author, BOOK_ATTR.status, BOOK_ATTR.isbn],
+    displayedAttributes: [BOOK_ATTR.author, BOOK_ATTR.status, BOOK_ATTR.pagesRead, BOOK_ATTR.pageCount],
     detailPanels: ["details"],
+    detailLayout: {
+      heroImageAttrId: BOOK_ATTR.cover,
+      featuredAttributeIds: [BOOK_ATTR.pagesRead, BOOK_ATTR.pageCount, BOOK_ATTR.status],
+    },
     capabilities: { completable: true },
+    rules: [
+      {
+        id: "book-log-pages-read",
+        name: "Log pages read",
+        trigger: "update",
+        when: { field: BOOK_ATTR.pagesRead, operator: "increased" },
+        action: {
+          kind: "logAction",
+          titleTemplate: "read {delta} pages of {title}",
+          awardPoints: true,
+        },
+      },
+      {
+        id: "book-habit-pages-read",
+        name: "Count toward daily reading habit",
+        trigger: "update",
+        when: { field: BOOK_ATTR.pagesRead, operator: "increased" },
+        action: {
+          kind: "incrementHabit",
+          habitId: BOOK_DEFAULT_READING_HABIT_ID,
+          amount: "delta",
+        },
+      },
+    ],
   }
 }
 
@@ -75,9 +111,7 @@ export const BOOK_TYPE_IDS = [BOOK_TYPE_ID] as const
 
 /**
  * Pure "register the Book type" merge: returns `existing` with the Book type
- * appended if missing (existing definitions are preserved untouched, so this is
- * idempotent and never removes a user type). Wired into the built-in registry
- * and re-exposed as `seedBookType()` on the item-type store.
+ * appended if missing (existing definitions are preserved untouched).
  */
 export function withBookType(existing: ItemTypeDefinition[]): ItemTypeDefinition[] {
   if (existing.some((t) => t.id === BOOK_TYPE_ID)) return existing

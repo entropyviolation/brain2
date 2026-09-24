@@ -1,17 +1,12 @@
 /**
  * components/Scheduler/SchedulerFilters.tsx — Available-tasks filters & sort
  *
- * The collapsible "Filters & Sort" controls in the Scheduler's "Always" tab:
- * filter the available list by scheduleable lists and choose a sort key/order.
+ * Collapsible Filters & Sort for the Always inbox: scheduleable lists and
+ * sort key/order. Furniture buttons, not Lucide identity.
  */
 "use client"
 
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Filter, ChevronDown, ArrowUpDown } from "lucide-react"
+import { useState } from "react"
 import type { List } from "@/lib/types"
 import type { SchedulerSortBy, SchedulerSortOrder } from "./scheduler-utils"
 
@@ -34,85 +29,70 @@ export function SchedulerFilters({
   sortOrder: SchedulerSortOrder
   setSortOrder: (v: SchedulerSortOrder) => void
 }) {
+  const [open, setOpen] = useState(false)
+  const scheduleable = categories.filter((category) => scheduleableCategoryIds.has(category.id))
+
   return (
-    <div className="space-y-3">
-      <Collapsible>
-        <CollapsibleTrigger asChild>
-          <Button variant="outline" className="w-full justify-between focus-ring">
-            <span className="flex items-center gap-2">
-              <Filter className="h-4 w-4" />
-              Filters & Sort
-            </span>
-            <ChevronDown className="h-4 w-4" />
-          </Button>
-        </CollapsibleTrigger>
-        <CollapsibleContent className="space-y-4 pt-3">
-          <div className="space-y-2">
-            <Label className="text-xs font-medium">Filter by Lists</Label>
-            <div className="space-y-1 max-h-32 overflow-y-auto custom-scrollbar">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="all-categories"
-                  checked={selectedCategories.length === 0}
-                  onCheckedChange={(checked) => {
-                    if (checked) setSelectedCategories([])
+    <div className="sch-filters">
+      <button type="button" className="sch-btn" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+        Filters & Sort
+      </button>
+      {open && (
+        <div className="sch-filters-body">
+          <div>
+            <div className="sch-label">Filter by Lists</div>
+            <label className="sch-check-row">
+              <input
+                type="checkbox"
+                checked={selectedCategories.length === 0}
+                onChange={(e) => {
+                  if (e.target.checked) setSelectedCategories([])
+                }}
+              />
+              All lists
+            </label>
+            {scheduleable.map((category) => (
+              <label key={category.id} className="sch-check-row">
+                <input
+                  type="checkbox"
+                  checked={selectedCategories.includes(category.id)}
+                  onChange={(e) => {
+                    if (e.target.checked) setSelectedCategories([...selectedCategories, category.id])
+                    else setSelectedCategories(selectedCategories.filter((id) => id !== category.id))
                   }}
                 />
-                <Label htmlFor="all-categories" className="text-sm">
-                  All lists
-                </Label>
-              </div>
-              {categories
-                .filter((category) => scheduleableCategoryIds.has(category.id))
-                .map((category) => (
-                  <div key={category.id} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`category-${category.id}`}
-                      checked={selectedCategories.includes(category.id)}
-                      onCheckedChange={(checked) => {
-                        if (checked) setSelectedCategories([...selectedCategories, category.id])
-                        else setSelectedCategories(selectedCategories.filter((id) => id !== category.id))
-                      }}
-                    />
-                    <Label htmlFor={`category-${category.id}`} className="text-sm flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: category.color }} />
-                      {category.name}
-                    </Label>
-                  </div>
-                ))}
-            </div>
+                <span className="sch-swatch" style={{ backgroundColor: category.color }} />
+                {category.name}
+              </label>
+            ))}
           </div>
 
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <Label className="text-xs font-medium">Sort by</Label>
-              <Select value={sortBy} onValueChange={(value) => setSortBy(value as SchedulerSortBy)}>
-                <SelectTrigger className="h-8 focus-ring">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="importance">Importance</SelectItem>
-                  <SelectItem value="duration">Duration</SelectItem>
-                  <SelectItem value="deadline">Deadline</SelectItem>
-                  <SelectItem value="reward">Reward</SelectItem>
-                  <SelectItem value="category">List</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="pt-4">
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8 focus-ring"
-                onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+          <div style={{ display: "flex", gap: 6, alignItems: "flex-end" }}>
+            <label style={{ flex: 1 }}>
+              <div className="sch-label">Sort by</div>
+              <select
+                className="sch-address-field"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SchedulerSortBy)}
               >
-                <ArrowUpDown className="h-3 w-3" />
-              </Button>
-            </div>
+                <option value="importance">Importance</option>
+                <option value="duration">Duration</option>
+                <option value="deadline">Deadline</option>
+                <option value="reward">Reward</option>
+                <option value="category">List</option>
+              </select>
+            </label>
+            <button
+              type="button"
+              className="sch-btn sch-btn-icon"
+              title={sortOrder === "asc" ? "Ascending" : "Descending"}
+              onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+            >
+              {sortOrder === "asc" ? "↑" : "↓"}
+            </button>
           </div>
-        </CollapsibleContent>
-      </Collapsible>
+        </div>
+      )}
     </div>
   )
 }

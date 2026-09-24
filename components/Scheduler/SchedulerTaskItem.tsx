@@ -1,16 +1,16 @@
 /**
- * components/Scheduler/SchedulerTaskItem.tsx — Draggable scheduler task card
+ * components/Scheduler/SchedulerTaskItem.tsx — Draggable scheduler task row
  *
- * A single task row used across every Scheduler tab. Presentational: selection,
- * checkbox, unschedule, drag-start and click are all delegated via callbacks.
+ * A single task used across every Scheduler tab. Orb first (Lists contract),
+ * then bureaucratic title + counts. Drag/select/unschedule stay delegated.
  */
 "use client"
 
 import type React from "react"
-import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Clock, AlertTriangle, Star, GripVertical, X } from "lucide-react"
+import { iconFor } from "@/components/Icons"
 import type { Task } from "@/lib/types"
+import { itemTitle } from "@/lib/item-utils"
 
 export function SchedulerTaskItem({
   task,
@@ -35,52 +35,38 @@ export function SchedulerTaskItem({
 }) {
   return (
     <div
-      className={`p-3 border rounded-lg transition-all duration-200 group relative task-item ${
-        selected ? "border-primary bg-primary/5 shadow-sm" : "hover:bg-muted/50 hover:border-muted-foreground/20"
-      }`}
+      className={`sch-task task-item${selected ? " is-selected" : ""}`}
       draggable
       onDragStart={(e) => onDragStart(e, task.id)}
-      style={{ borderLeftColor: color, borderLeftWidth: "4px" }}
+      style={{ boxShadow: undefined, borderLeft: `3px solid ${color}` }}
     >
+      {showCheckbox && (
+        <div onClick={(e) => e.stopPropagation()}>
+          <Checkbox checked={selected} onCheckedChange={() => onToggleSelect?.(task.id)} />
+        </div>
+      )}
+      <img src={iconFor(task.id, task.icon)} alt="" className="sch-task-orb" draggable={false} />
+      <div className="sch-task-main" onClick={onClick}>
+        <p className="sch-task-title">{itemTitle(task)}</p>
+        <div className="sch-task-meta">
+          <span>{task.estimatedDuration ?? 0}m</span>
+          <span>u{task.urgency ?? 0}</span>
+          <span>i{task.importance ?? 0}</span>
+        </div>
+      </div>
       {showUnschedule && (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity focus-ring"
+        <button
+          type="button"
+          className="sch-btn sch-task-x"
+          title="Unschedule"
           onClick={(e) => {
             e.stopPropagation()
             onUnschedule?.(task.id)
           }}
         >
-          <X className="h-3 w-3" />
-        </Button>
+          ×
+        </button>
       )}
-
-      <div className="flex items-center gap-3">
-        {showCheckbox && (
-          <div onClick={(e) => e.stopPropagation()}>
-            <Checkbox checked={selected} onCheckedChange={() => onToggleSelect?.(task.id)} className="focus-ring" />
-          </div>
-        )}
-        <GripVertical className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-        <div className="flex-1 min-w-0 cursor-pointer" onClick={onClick}>
-          <p className="text-sm font-medium truncate">{task.description}</p>
-          <div className="flex gap-2 mt-1 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              {task.estimatedDuration}m
-            </span>
-            <span className="flex items-center gap-1">
-              <AlertTriangle className="h-3 w-3" />
-              {task.urgency}
-            </span>
-            <span className="flex items-center gap-1">
-              <Star className="h-3 w-3" />
-              {task.importance}
-            </span>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }

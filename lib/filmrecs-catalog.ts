@@ -2,7 +2,7 @@
  * lib/filmrecs-catalog.ts — Map Films-list tasks ↔ FilmRecord + Letterboxd merge
  */
 import type { AttributeValue, Task, List } from "@/lib/types"
-import { createListItem, withCategoryDefaults } from "@/lib/item-utils"
+import { createListItem, withCategoryDefaults, itemTitle, itemTitleOrUntitled } from "@/lib/item-utils"
 import {
   FILM_ATTR,
   FILMRECS_SHELVES,
@@ -45,7 +45,7 @@ export function taskToFilm(task: Task, shelves: readonly string[] = FILMRECS_SHE
   const shelfId = shelf ? shelves.indexOf(shelf) : -1
   return {
     id: task.id,
-    title: task.description || "Untitled",
+    title: itemTitleOrUntitled(task),
     year: asNumber(attrs[FILM_ATTR.year]),
     shelf,
     shelfId: shelfId >= 0 ? shelfId : null,
@@ -142,7 +142,7 @@ export function planLetterboxdMerge(
 ): { create: Task[]; update: Task[]; stats: MergeStats } {
   const byTitle = new Map<string, Task>()
   for (const t of existing) {
-    byTitle.set(normalizeFilmTitle(t.description || ""), t)
+    byTitle.set(normalizeFilmTitle(itemTitle(t)), t)
   }
   const create: Task[] = []
   const update: Task[] = []

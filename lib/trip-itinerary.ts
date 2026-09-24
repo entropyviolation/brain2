@@ -1,11 +1,12 @@
 /**
- * lib/trip-itinerary.ts — Self-contained trip itinerary (not list-backed)
+ * lib/trip-itinerary.ts — Self-contained trip itinerary (shadow database)
  *
  * Days are generated from start/end dates and stored on the module config.
- * Schedule rows (plans, notes, flights) live on each day — not as Tasks/lists.
+ * Schedule rows (plans, notes, flights) live on each day. Module Lists import
+ * (`lib/module-list-import-trip.ts`) projects days and rows into nested lists.
  */
 import { formatItineraryDateLabel, flightDurationLabel } from "@/lib/itinerary-assemble"
-import { dayPlanKey, getStoredPlanText, saveStoredPlanText } from "@/lib/plan-text"
+import { dayPlanKey, getPlanEntries, appendPlanEntry } from "@/lib/plan-text"
 import { airportFromCity, buildFlightDetail, buildFlightTitle, formatClock } from "@/lib/flight-lookup"
 
 export type TripCityMode = "city" | "travel"
@@ -518,7 +519,7 @@ export function citiesFromTripItinerary(data: TripItineraryData | undefined | nu
 }
 
 /**
- * Push this day's schedule into Home → Plan day text (merge, don't wipe).
+ * Push this day's schedule into Home → Plan as a new stamped entry (append, don't wipe).
  */
 export function syncDayToHomePlan(day: TripItineraryDay): void {
   if (typeof window === "undefined") return
@@ -545,18 +546,10 @@ export function syncDayToHomePlan(day: TripItineraryDay): void {
     lines.push(`Sleep: ${day.sleepName}${day.sleepAddress ? ` · ${day.sleepAddress}` : ""}`)
   }
   const block = lines.join("\n")
-  const existing = getStoredPlanText("day", day.date) || ""
-  const marker = "<!-- trip-itinerary -->"
-  let next: string
-  if (existing.includes(marker)) {
-    next = existing.replace(
-      new RegExp(`${marker}[\\s\\S]*?(?=${marker}|$)`),
-      `${marker}\n${block}\n`,
-    )
-  } else {
-    next = existing.trim() ? `${existing.trim()}\n\n${marker}\n${block}\n` : `${marker}\n${block}\n`
-  }
-  saveStoredPlanText("day", day.date, next)
+  const existing = getPlanEntries("day", day.date)
+  const last = existing[existing.length - 1]
+  if (last?.text === block) return
+  appendPlanEntry("day", day.date, block)
 }
 
 export { formatItineraryDateLabel, dayPlanKey }

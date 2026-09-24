@@ -12,6 +12,8 @@ import {
   parseWeekString,
   taskScheduledOnDay,
 } from "@/lib/date-utils"
+import { isAvailableNow } from "@/lib/available-tasks"
+import { isClearedFromWork } from "@/lib/completion-status"
 import { taskBelongsInOverviewBox } from "@/lib/item-utils"
 import { scheduleFieldsForPeriod, clearedScheduleFields } from "@/lib/scheduling"
 import type { Task, SchedulePeriod, List } from "@/lib/types"
@@ -55,14 +57,10 @@ export function getAvailableTasks(allTasks: Task[], opts: AvailableTasksOptions)
   const { activeTab, selectedCategories, sortBy, sortOrder, lists, scheduleableCategoryIds } = opts
 
   let tasks = allTasks.filter((task) => {
-    if (task.completed) return false
+    if (isClearedFromWork(task)) return false
     if (!isTaskScheduleable(task, scheduleableCategoryIds)) return false
 
-    const hasUnmetDependencies = (task.dependencies ?? []).some((depId) => {
-      const depTask = allTasks.find((t) => t.id === depId)
-      return depTask && !depTask.completed
-    })
-    if (hasUnmetDependencies) return false
+    if (!isAvailableNow(task, allTasks)) return false
 
     if (activeTab === "always") {
       return !task.scheduledYear && !task.scheduledMonth && !task.scheduledWeek && !task.scheduledDate
@@ -105,7 +103,7 @@ export function getTasksForPeriod(
   value: string | undefined,
   currentDate: Date,
 ): Task[] {
-  const availableTasks = allTasks.filter((task) => !task.completed)
+  const availableTasks = allTasks.filter((task) => !isClearedFromWork(task))
   switch (period) {
     case "year":
       return availableTasks.filter((task) => task.scheduledYear === value)
@@ -261,7 +259,7 @@ export function assignTasksToOverviewBoxes(allTasks: Task[], overviewBoxes: Over
   const map: Record<string, Task[]> = {}
   overviewBoxes.forEach((b) => (map[b.label] = []))
   allTasks
-    .filter((t) => !t.completed)
+    .filter((t) => !isClearedFromWork(t))
     .forEach((task) => {
       let best: OverviewBox | null = null
       for (const b of overviewBoxes) {

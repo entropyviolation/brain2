@@ -9,7 +9,7 @@
  *   - agenda      : items grouped by a date attribute (the Itinerary view)
  *   - summary     : rollups (count + sum) grouped by an attribute
  *   - randomizer  : gamified "pick N" with an optional countdown
- *   - timer       : a focus countdown
+ *   - timer       : a focus countdown that writes `timeLogs` on complete
  *   - stat        : a single analytics headline number
  *   - gallery     : image cards
  *   - notes       : free text (persisted to localStorage)
@@ -25,10 +25,11 @@ import { Trophy } from "lucide-react"
 import type { AttributeDefinition, AttributeValue, FileValue, ItemLink, Task, List } from "@/lib/types"
 import { useModulesStore, type DashboardCard, type ModuleView } from "@/lib/modules-store"
 import { useTaskStore } from "@/lib/task-store"
-import { createListItem, withCategoryDefaults, getItemLabel } from "@/lib/item-utils"
+import { createListItem, withCategoryDefaults, getItemLabel, itemTitle } from "@/lib/item-utils"
 import { safeDateFormat } from "@/lib/date-utils"
 import { formatAttributeValue } from "@/components/Lists/attribute-editor"
 import { SheetGrid } from "@/components/spreadsheet/SheetGrid"
+import { persistSheetViewConfig } from "@/lib/spreadsheet-contract"
 import {
   aggregateColumn,
   aggregateIncluded,
@@ -43,6 +44,7 @@ import { scoreDecisionMatrix, type MatrixCriterion, type MatrixOption } from "@/
 import { rand, randN } from "@/components/Modules/module-helpers"
 import { findBookMatch, type BookMatchCandidate } from "@/lib/book-match"
 import { AnalyticsStat } from "@/components/Modules/module-bodies"
+import { useAttachmentSrc } from "@/hooks/use-attachment-src"
 import {
   KANBAN_BACKLOG,
   deriveKanbanColumns,
@@ -54,7 +56,14 @@ import { PackingChecklistView, PreTripChecklistView } from "@/components/Modules
 import { TripActivitiesView } from "@/components/Modules/workspace/itinerary/TripActivitiesView"
 import { FilmDnaView } from "@/components/Modules/workspace/filmrecs/FilmDnaView"
 import { TidyView } from "@/components/Modules/workspace/housecleaning/TidyView"
+import { GradSearchView } from "@/components/Modules/workspace/gradsearch/GradSearchView"
 import type { ModuleInstance } from "@/lib/modules-store"
+import { useWorkSessionStore } from "@/lib/work-session-store"
+import {
+  appendFocusTimerTimeLogs,
+  completeFocusTimer,
+  focusTimerPickOptions,
+} from "@/lib/focus-timer-log"
 
 function getDef(cat: List | undefined, id?: string): AttributeDefinition | undefined {
   if (!cat || !id) return undefined
@@ -120,6 +129,8 @@ export function ModuleViewBody({
       return <FilmDnaView view={view} />
     case "house-cleaning":
       return <TidyView module={module} />
+    case "grad-search":
+      return <GradSearchView />
     case "decision-matrix":
       return <DecisionMatrixView view={view} onOpenItem={onOpenItem} />
     case "kanban":
@@ -161,7 +172,7 @@ function taskSearchText(task: Task, attrId?: string): string {
     }
     if (typeof raw === "string" && raw.trim()) return raw
   }
-  return task.description
+  return itemTitle(task)
 }
 
 function NoList() {
@@ -171,6 +182,7 @@ function NoList() {
 function SpreadsheetView({ view, onOpenItem }: { view: ModuleView; onOpenItem?: (id: string) => void }) {
   const { tasks, category } = useViewTasks(view)
   const folders = useTaskStore((s) => s.folders)
+  const updateList = useTaskStore((s) => s.updateList)
   if (!view.config.categoryId) return <NoList />
   return (
     <SheetGrid
@@ -178,6 +190,12 @@ function SpreadsheetView({ view, onOpenItem }: { view: ModuleView; onOpenItem?: 
       tasks={tasks}
       onOpenItem={onOpenItem}
       newItemLabel={getItemLabel(category, folders, view.config.categoryId)}
+      viewConfig={category?.sheetConfig}
+      onViewConfigChange={(config) => {
+        if (!category) return
+        const current = useTaskStore.getState().lists.find((l) => l.id === category.id) ?? category
+        updateList({ ...current, sheetConfig: persistSheetViewConfig(current.sheetConfig, config) })
+      }}
     />
   )
 }
@@ -212,7 +230,7 @@ function ChecklistView({ view, onOpenItem }: { view: ModuleView; onOpenItem?: (i
         className={`flex-1 text-left text-sm ${t.completed ? "line-through text-muted-foreground" : ""}`}
         onClick={() => onOpenItem?.(t.id)}
       >
-        {t.description}
+        {itemTitle(t)}
       </button>
       <div className="flex gap-1">
         {cols.map((d) => {
@@ -304,7 +322,7 @@ function AgendaView({ view, onOpenItem }: { view: ModuleView; onOpenItem?: (id: 
                 </span>
               )}
               <span className={`text-sm flex-1 ${t.completed ? "line-through text-muted-foreground" : ""}`}>
-                {t.description}
+                {itemTitle(t)}
               </span>
               {costDef && t.attributes?.[costDef.id] != null && (
                 <Badge variant="outline" className="text-[10px]">
@@ -405,10 +423,10 @@ function RandomizerView({ view, onOpenItem }: { view: ModuleView; onOpenItem?: (
       ) : (
         <div className="space-y-2">
           {picks.map((t) => (
-            <div key={t.id} className="flex items-center gap-2 border rounded px-3 py-2">
+            <div key={t.id} className="mod-row">
               <button className="flex-1 text-left font-medium hover:underline" onClick={() => onOpenItem?.(t.id)}>
                 {view.config.framing ? `${view.config.framing}: ` : ""}
-                {t.description}
+                {itemTitle(t)}
               </button>
               <Button
                 variant="outline"
@@ -432,6 +450,19 @@ function RandomizerView({ view, onOpenItem }: { view: ModuleView; onOpenItem?: (
   )
 }
 
+/** Image attributes keep `idb:<id>`, so a card resolves it before painting. */
+function GalleryCardImage({ uri, fallback }: { uri?: string; fallback?: string }) {
+  const src = useAttachmentSrc(uri)
+  if (!src && !fallback) {
+    return (
+      <div className="w-full h-28 bg-muted flex items-center justify-center text-muted-foreground text-xs">
+        No image
+      </div>
+    )
+  }
+  return <img src={src || fallback} alt="" className="w-full h-28 object-cover" loading="lazy" decoding="async" />
+}
+
 function GalleryView({ view, onOpenItem }: { view: ModuleView; onOpenItem?: (id: string) => void }) {
   const { tasks, category } = useViewTasks(view)
   const imageDef = category?.itemAttributes?.find((d) => d.type === "image" || d.type === "multiimage")
@@ -440,21 +471,15 @@ function GalleryView({ view, onOpenItem }: { view: ModuleView; onOpenItem?: (id:
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
       {tasks.map((t) => {
         const raw = imageDef ? t.attributes?.[imageDef.id] : undefined
-        const src = Array.isArray(raw) ? (raw[0] as string) : (raw as string | undefined)
+        const uri = Array.isArray(raw) ? (raw[0] as string) : (raw as string | undefined)
         return (
           <button
             key={t.id}
             onClick={() => onOpenItem?.(t.id)}
             className="border rounded overflow-hidden text-left hover:ring-2 hover:ring-primary"
           >
-            {src || t.icon ? (
-              <img src={src || t.icon} alt="" className="w-full h-28 object-cover" loading="lazy" decoding="async" />
-            ) : (
-              <div className="w-full h-28 bg-muted flex items-center justify-center text-muted-foreground text-xs">
-                No image
-              </div>
-            )}
-            <div className="p-2 text-sm truncate">{t.description}</div>
+            <GalleryCardImage uri={uri} fallback={t.icon} />
+            <div className="p-2 text-sm truncate">{itemTitle(t)}</div>
           </button>
         )
       })}
@@ -504,7 +529,7 @@ function DecisionMatrixView({ view, onOpenItem }: { view: ModuleView; onOpenItem
     }))
     const options: MatrixOption[] = tasks.map((t) => ({
       id: t.id,
-      label: t.description,
+      label: itemTitle(t),
       values: Object.fromEntries(criterionDefs.map(({ def }) => [def.id, toNumber(t.attributes?.[def.id]) ?? undefined])),
     }))
     return scoreDecisionMatrix(options, matrixCriteria)
@@ -588,7 +613,7 @@ function DecisionMatrixView({ view, onOpenItem }: { view: ModuleView; onOpenItem
                         onClick={() => onOpenItem?.(t.id)}
                       >
                         {winner && <Trophy className="h-3.5 w-3.5 text-amber-500 shrink-0" />}
-                        {t.description}
+                        {itemTitle(t)}
                       </button>
                     </td>
                     {criterionDefs.map(({ def }) => (
@@ -677,7 +702,7 @@ function KanbanView({ view, onOpenItem }: { view: ModuleView; onOpenItem?: (id: 
                   className="rounded border bg-background p-2 text-sm cursor-grab hover:ring-1 hover:ring-primary"
                   onClick={() => onOpenItem?.(id)}
                 >
-                  <span className={t.completed ? "line-through text-muted-foreground" : ""}>{t.description}</span>
+                  <span className={t.completed ? "line-through text-muted-foreground" : ""}>{itemTitle(t)}</span>
                 </div>
               )
             })}
@@ -757,7 +782,7 @@ function TimelineView({ view, onOpenItem }: { view: ModuleView; onOpenItem?: (id
                   </span>
                 )}
                 <span className={`text-sm flex-1 ${t.completed ? "line-through text-muted-foreground" : ""}`}>
-                  {t.description}
+                  {itemTitle(t)}
                 </span>
                 {booked != null && (
                   <Badge variant={booked ? "default" : "outline"} className="text-[10px]">
@@ -805,7 +830,7 @@ function MatcherView({ view, onOpenItem }: { view: ModuleView; onOpenItem?: (id:
       .filter((t) => t.lists?.includes(targetCatId))
       .map((t) => ({
         id: t.id,
-        title: t.description,
+        title: itemTitle(t),
         author: authorDef ? (toText(t.attributes?.[authorDef.id]) ?? undefined) : undefined,
       }))
   }, [allTasks, categories, targetCatId])
@@ -1112,7 +1137,7 @@ function DashboardCardView({ card, onOpenItem }: { card: DashboardCard; onOpenIt
                   <input type="checkbox" checked={included} onChange={() => toggle(t)} title="Include in calculation" />
                 )}
                 <button className={`flex-1 text-left truncate ${included ? "" : "text-muted-foreground line-through"}`} onClick={() => onOpenItem?.(t.id)}>
-                  {t.description}
+                  {itemTitle(t)}
                 </button>
                 <span className="tabular-nums text-muted-foreground">{formatNumber(n, def)}</span>
               </div>
@@ -1136,9 +1161,18 @@ export function TimerView({ minutes }: { minutes: number }) {
 }
 
 export function Timer({ minutes, compact = false }: { minutes: number; compact?: boolean }) {
+  const tasks = useTaskStore((s) => s.tasks)
+  const session = useWorkSessionStore((s) => s.session)
   const [remaining, setRemaining] = useState(minutes * 60)
   const [running, setRunning] = useState(false)
+  const [pickOpen, setPickOpen] = useState(false)
+  const [pickId, setPickId] = useState("")
+  const [loggedTo, setLoggedTo] = useState<string | null>(null)
   const ref = useRef<ReturnType<typeof setInterval> | null>(null)
+  const armedRef = useRef(false)
+  const loggedRef = useRef(false)
+
+  const pickOptions = useMemo(() => focusTimerPickOptions(tasks), [tasks])
 
   useEffect(() => {
     if (running) {
@@ -1157,29 +1191,114 @@ export function Timer({ minutes, compact = false }: { minutes: number; compact?:
     }
   }, [running])
 
+  useEffect(() => {
+    if (remaining !== 0 || !armedRef.current || loggedRef.current) return
+    loggedRef.current = true
+    const result = completeFocusTimer(minutes)
+    if (result.needsPick) {
+      setPickId(pickOptions[0]?.id ?? "")
+      setPickOpen(true)
+      return
+    }
+    if (result.taskId) {
+      const named = tasks.find((t) => t.id === result.taskId)
+      setLoggedTo(named ? itemTitle(named) : session?.title ?? "Working Now")
+    }
+  }, [remaining, minutes, tasks, pickOptions, session?.title])
+
+  const resetClock = () => {
+    setRunning(false)
+    setRemaining(minutes * 60)
+    armedRef.current = false
+    loggedRef.current = false
+    setPickOpen(false)
+    setLoggedTo(null)
+  }
+
+  const toggleClock = () => {
+    if (running) {
+      setRunning(false)
+      return
+    }
+    if (remaining === 0) {
+      loggedRef.current = false
+      setPickOpen(false)
+      setLoggedTo(null)
+    }
+    armedRef.current = true
+    setRemaining((r) => (r === 0 ? minutes * 60 : r))
+    setRunning(true)
+  }
+
+  const logToPicked = () => {
+    if (!pickId) {
+      setPickOpen(false)
+      return
+    }
+    const logs = appendFocusTimerTimeLogs({ taskId: pickId, durationMinutes: minutes })
+    const named = tasks.find((t) => t.id === pickId)
+    const label = named ? itemTitle(named) : pickOptions.find((opt) => opt.id === pickId)?.title
+    if (logs && label) setLoggedTo(label)
+    setPickOpen(false)
+  }
+
   const mm = String(Math.floor(remaining / 60)).padStart(2, "0")
   const ss = String(remaining % 60).padStart(2, "0")
 
   return (
     <div className={`flex items-center gap-3 ${compact ? "" : "flex-col"}`}>
-      <div className={`font-mono tabular-nums ${compact ? "text-2xl" : "text-6xl"} ${remaining === 0 ? "text-destructive" : ""}`}>
+      <div className={`mod-clock font-mono tabular-nums ${compact ? "text-2xl" : "text-6xl"} ${remaining === 0 ? "text-destructive" : ""}`}>
         {mm}:{ss}
       </div>
       <div className="flex gap-2">
-        <Button size={compact ? "sm" : "default"} variant="outline" onClick={() => setRunning((r) => !r)}>
+        <Button
+          size={compact ? "sm" : "default"}
+          variant="outline"
+          aria-label={running ? "Pause" : "Start"}
+          onClick={toggleClock}
+        >
           {running ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
         </Button>
         <Button
           size={compact ? "sm" : "default"}
           variant="outline"
-          onClick={() => {
-            setRunning(false)
-            setRemaining(minutes * 60)
-          }}
+          aria-label="Reset"
+          onClick={resetClock}
         >
           <RotateCcw className="h-4 w-4" />
         </Button>
       </div>
+      {loggedTo && (
+        <p className="text-xs text-muted-foreground">Logged {minutes} min to {loggedTo}</p>
+      )}
+      {pickOpen && (
+        <div className="flex flex-col gap-2 text-sm" role="dialog" aria-label="Log focus session">
+          <label className="flex flex-col gap-1">
+            Log {minutes} min to
+            <select
+              aria-label="Item to log"
+              value={pickId}
+              onChange={(e) => setPickId(e.target.value)}
+              className="border rounded px-2 py-1 bg-background"
+            >
+              {pickOptions.length === 0 && <option value="">No open items</option>}
+              {pickOptions.map((opt) => (
+                <option key={opt.id} value={opt.id}>
+                  {opt.title}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" disabled={!pickId} onClick={logToPicked}>
+              Log
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setPickOpen(false)}>
+              Skip
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

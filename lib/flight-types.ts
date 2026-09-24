@@ -60,6 +60,7 @@ export function getFlightTypeDefinition(): ItemTypeDefinition {
     description:
       "A flight segment: airline, flight number, departure/arrival airports and times, layovers, booking reference, and cost. Maps onto the global timeline.",
     builtin: true,
+    kind: "catalog",
     color: "#0ea5e9",
     attributes: FLIGHT_ATTRIBUTES,
     defaultAttributeValues: {

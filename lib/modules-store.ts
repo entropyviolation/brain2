@@ -15,6 +15,7 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
+import { persistKey } from "@/lib/storage-keys"
 import type { HouseCleaningState } from "@/lib/house-cleaning"
 import type { SheetViewConfig } from "@/lib/spreadsheet-contract"
 import type { TripItineraryData } from "@/lib/trip-itinerary"
@@ -66,6 +67,8 @@ export type ModuleViewKind =
   | "film-dna"
   /** Tidy house-cleaning app (areas, stuck mode, plans) — self-contained. */
   | "house-cleaning"
+  /** GradSearch program explorer (bundled catalog; personal marks in localStorage). */
+  | "grad-search"
 
 /**
  * A weighted criterion for the `decision-matrix` view. Each criterion binds to a
@@ -314,7 +317,7 @@ export const useModulesStore = create<ModulesState>()(
         })),
     }),
     {
-      name: "cogs-modules-store",
+      name: persistKey("modules-store"),
       storage: createCogsJSONStorage(),
       // v2: additive specialized view kinds (matcher/quiz/dashboard/timeline)
       // and optional view-config / scheduleSync fields. All new fields are

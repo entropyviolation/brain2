@@ -9,6 +9,7 @@ describe("buildModuleTemplate", () => {
       "budget",
       "book-tasting",
       "filmrecs",
+      "gradsearch",
       "blank",
     ])
   })
@@ -155,6 +156,16 @@ describe("buildModuleTemplate", () => {
     expect(built.seedTasks.every((t) => t.lists.includes(films.id))).toBe(true)
     const liked = built.seedTasks.filter((t) => t.attributes?.liked === true)
     expect(liked.length).toBeGreaterThan(20)
+  })
+
+  it("builds a GradSearch workspace with the explorer view and no lists", () => {
+    const built = buildModuleTemplate("gradsearch", 13)
+    expect(built.module.templateId).toBe("gradsearch")
+    expect(built.module.title).toBe("GradSearch")
+    expect(built.lists).toEqual([])
+    expect(built.seedTasks).toEqual([])
+    const kinds = (built.module.views ?? []).map((v) => v.kind)
+    expect(kinds).toEqual(["grad-search"])
   })
 
   it("every view + workflow across all templates references real categories", () => {

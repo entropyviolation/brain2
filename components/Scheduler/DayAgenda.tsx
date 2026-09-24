@@ -1,16 +1,15 @@
 /**
- * components/Scheduler/DayAgenda.tsx — 24-hour day agenda grid
+ * components/Scheduler/DayAgenda.tsx — 24-hour day agenda
  *
- * Hour-by-hour agenda for the Scheduler's Day tab. Tasks can be dropped onto an
- * hour to set their scheduledTime, dragged between hours, opened, or cleared.
+ * Hour rows stay reserved furniture. Occupied hours hold orb-bearing tasks
+ * that can be dropped, opened, or cleared.
  */
 "use client"
 
 import type React from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { CalendarClock, X } from "lucide-react"
+import { iconFor } from "@/components/Icons"
 import type { Task } from "@/lib/types"
+import { itemTitle } from "@/lib/item-utils"
 
 export function DayAgenda({
   currentDate,
@@ -28,65 +27,56 @@ export function DayAgenda({
   onTaskClick: (taskId: string) => void
 }) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <CalendarClock className="h-5 w-5" />
-          Daily Agenda - {currentDate.toLocaleDateString()}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-1">
-          {Array.from({ length: 24 }, (_, i) => {
-            const hour = i.toString().padStart(2, "0") + ":00"
-            const scheduledTasks = allTasks.filter(
-              (task) =>
-                task.scheduledDate &&
-                new Date(task.scheduledDate).toDateString() === currentDate.toDateString() &&
-                task.scheduledTime === hour,
-            )
+    <div className="sch-agenda">
+      {Array.from({ length: 24 }, (_, i) => {
+        const hour = i.toString().padStart(2, "0") + ":00"
+        const scheduledTasks = allTasks.filter(
+          (task) =>
+            task.scheduledDate &&
+            new Date(task.scheduledDate).toDateString() === currentDate.toDateString() &&
+            task.scheduledTime === hour,
+        )
 
-            return (
-              <div key={hour} className="flex border-b border-muted last:border-b-0">
-                <div className="w-16 py-2 text-xs font-medium text-muted-foreground border-r border-muted">{hour}</div>
+        return (
+          <div key={hour} className="sch-hour">
+            <div className="sch-hour-label">{hour}</div>
+            <div
+              className="sch-hour-slot"
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault()
+                const taskId = e.dataTransfer.getData("taskId")
+                if (taskId) onDropHour(taskId, hour)
+              }}
+            >
+              {scheduledTasks.map((task) => (
                 <div
-                  className="flex-1 min-h-[40px] p-2 hover:bg-muted/50 transition-colors"
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => {
-                    e.preventDefault()
-                    const taskId = e.dataTransfer.getData("taskId")
-                    if (taskId) onDropHour(taskId, hour)
-                  }}
+                  key={task.id}
+                  className="sch-hour-task"
+                  onClick={() => onTaskClick(task.id)}
+                  draggable
+                  onDragStart={(e) => onDragStart(e, task.id)}
                 >
-                  {scheduledTasks.map((task) => (
-                    <div
-                      key={task.id}
-                      className="bg-primary/10 border border-primary/20 rounded px-2 py-1 mb-1 text-xs cursor-pointer hover:bg-primary/20 transition-colors group relative"
-                      onClick={() => onTaskClick(task.id)}
-                      draggable
-                      onDragStart={(e) => onDragStart(e, task.id)}
-                    >
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute top-0 right-0 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onClearTime(task.id)
-                        }}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                      <div className="font-medium truncate pr-4">{task.description}</div>
-                      <div className="text-muted-foreground">{task.estimatedDuration}m</div>
-                    </div>
-                  ))}
+                  <img src={iconFor(task.id, task.icon)} alt="" className="sch-gantt-orb" draggable={false} />
+                  <span className="sch-task-title">{itemTitle(task)}</span>
+                  <span className="sch-task-meta">{task.estimatedDuration ?? 0}m</span>
+                  <button
+                    type="button"
+                    className="sch-btn sch-task-x"
+                    title="Clear time"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onClearTime(task.id)
+                    }}
+                  >
+                    ×
+                  </button>
                 </div>
-              </div>
-            )
-          })}
-        </div>
-      </CardContent>
-    </Card>
+              ))}
+            </div>
+          </div>
+        )
+      })}
+    </div>
   )
 }

@@ -24,43 +24,16 @@ import { ModuleViewBody } from "./module-view-bodies"
 import { ModuleViewEditor } from "./ModuleViewEditor"
 import { ModuleSettingsDialog } from "./ModuleSettingsDialog"
 import { WorkflowBuilder } from "./WorkflowBuilder"
+import { openModulePopout } from "./module-popout"
+import { APP_NAV_KEYS, readStoredRecord, writeStoredRecordField } from "@/lib/app-navigation"
 
-// ---- Pop-out window convention --------------------------------------------
-// A popped-out module is just the same app loaded at a hash route the root page
-// recognizes: `#popout/module/<moduleId>`. In Electron this loads in a real
-// BrowserWindow (via `window.desktop.openModulePopout`); in the browser it falls
-// back to `window.open(...)`.
-export const MODULE_POPOUT_PREFIX = "popout/module/"
-
-export function modulePopoutHash(moduleId: string): string {
-  return `#${MODULE_POPOUT_PREFIX}${encodeURIComponent(moduleId)}`
-}
-
-/** Extract a module id from a pop-out hash, or null if the hash isn't one. */
-export function parseModulePopoutModuleId(hash: string | undefined | null): string | null {
-  if (!hash) return null
-  const h = hash.replace(/^#/, "")
-  if (!h.startsWith(MODULE_POPOUT_PREFIX)) return null
-  const id = decodeURIComponent(h.slice(MODULE_POPOUT_PREFIX.length))
-  return id || null
-}
-
-interface DesktopPopoutBridge {
-  openModulePopout?: (hash: string) => void
-}
-
-/** Open a module in its own window: Electron BrowserWindow, else `window.open`. */
-export function openModulePopout(moduleId: string): void {
-  if (typeof window === "undefined") return
-  const hash = modulePopoutHash(moduleId)
-  const desktop = (window as unknown as { desktop?: DesktopPopoutBridge }).desktop
-  if (desktop?.openModulePopout) {
-    desktop.openModulePopout(hash)
-    return
-  }
-  const url = `${window.location.pathname}${window.location.search}${hash}`
-  window.open(url, `cogs-module-${moduleId}`, "noopener,width=1200,height=820")
-}
+export {
+  MODULE_POPOUT_PREFIX,
+  modulePopoutHash,
+  modulePopoutPath,
+  openModulePopout,
+  parseModulePopoutModuleId,
+} from "./module-popout"
 
 function instanceToDefinition(module: ModuleInstance): ModuleDefinition {
   return {
@@ -91,7 +64,11 @@ export function ModuleWorkspace({
   const updateModule = useModulesStore((s) => s.updateModule)
   const views = module.views ?? []
 
-  const [activeId, setActiveId] = useState<string>(views[0]?.id || "")
+  const [activeId, setActiveId] = useState<string>(() => {
+    const stored = readStoredRecord(APP_NAV_KEYS.modulesView)[module.id]
+    if (stored && views.some((v) => v.id === stored)) return stored
+    return views[0]?.id || ""
+  })
   const [editingView, setEditingView] = useState<ModuleView | null>(null)
   const [addingView, setAddingView] = useState(false)
   const [renaming, setRenaming] = useState(false)
@@ -100,6 +77,11 @@ export function ModuleWorkspace({
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [workflowsOpen, setWorkflowsOpen] = useState(false)
   const [dragIndex, setDragIndex] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (!activeId) return
+    writeStoredRecordField(APP_NAV_KEYS.modulesView, module.id, activeId)
+  }, [module.id, activeId])
 
   // Best-effort upgrade / repair of Trip Itinerary workspaces (incl. missing Activities).
   useEffect(() => {
@@ -173,11 +155,17 @@ export function ModuleWorkspace({
   const activeView = views.find((v) => v.id === activeId) || views[0]
 
   return (
-    <div className="space-y-4 print-area">
-      <div className="flex items-center justify-between gap-2 flex-wrap no-print">
-        <div className="flex items-center gap-2 min-w-0">
-          <Button variant="ghost" size="icon" onClick={onBack} title={popout ? "Close window" : "Back to Modules"}>
-            <ArrowLeft className="h-5 w-5" />
+    <div className="mod95-ws print-area">
+      <div className="mod-ws-window">
+        <div className="mod-ws-app-caption no-print">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="mod-caption-btn"
+            onClick={onBack}
+            title={popout ? "Close window" : "Back to Modules"}
+          >
+            <ArrowLeft className="h-4 w-4" />
           </Button>
           {renaming ? (
             <Input
@@ -189,101 +177,117 @@ export function ModuleWorkspace({
                 setRenaming(false)
               }}
               onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-              className="h-9 max-w-xs text-lg font-bold"
+              className="mod-ws-title-field"
             />
           ) : (
             <button
-              className="text-2xl font-bold truncate flex items-center gap-2 group"
+              className="mod-ws-app-title flex items-center gap-2 min-w-0"
               onClick={() => {
                 setTitleDraft(module.title)
                 setRenaming(true)
               }}
             >
               {module.title}
-              <Pencil className="h-4 w-4 opacity-0 group-hover:opacity-60" />
+              <Pencil />
             </button>
           )}
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {module.planSync && (
-            <Button variant="outline" size="sm" onClick={doSync}>
-              <CalendarCheck className="h-4 w-4 mr-2" />
-              Sync to Plan
+          <div className="mod-ws-tools">
+            {module.planSync && (
+              <Button variant="outline" size="sm" className="mod-ws-tool" onClick={doSync}>
+                <CalendarCheck className="h-3.5 w-3.5 mr-1" />
+                Sync to Plan
+              </Button>
+            )}
+            {module.enablePrint && (
+              <Button variant="outline" size="sm" className="mod-ws-tool" onClick={doPrint}>
+                <Printer className="h-3.5 w-3.5 mr-1" />
+                Print / Export
+              </Button>
+            )}
+            <Button variant="outline" size="sm" className="mod-ws-tool" onClick={() => setWorkflowsOpen(true)}>
+              <Zap className="h-3.5 w-3.5 mr-1" />
+              Workflows
             </Button>
-          )}
-          {module.enablePrint && (
-            <Button variant="outline" size="sm" onClick={doPrint}>
-              <Printer className="h-4 w-4 mr-2" />
-              Print / Export
+            <Button variant="outline" size="sm" className="mod-ws-tool" onClick={() => setSettingsOpen(true)}>
+              <Settings className="h-3.5 w-3.5 mr-1" />
+              Settings
             </Button>
-          )}
-          <Button variant="outline" size="sm" onClick={() => setWorkflowsOpen(true)}>
-            <Zap className="h-4 w-4 mr-2" />
-            Workflows
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)}>
-            <Settings className="h-4 w-4 mr-2" />
-            Settings
-          </Button>
-          {!popout && (
-            <Button variant="outline" size="sm" onClick={() => openModulePopout(module.id)} title="Open in its own window">
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Pop out
-            </Button>
-          )}
-          <Button size="sm" onClick={() => setAddingView(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add view
-          </Button>
-        </div>
-      </div>
-
-      {module.description && <p className="text-sm text-muted-foreground no-print">{module.description}</p>}
-      {syncMsg && (
-        <div className="text-sm rounded border border-primary/30 bg-primary/10 px-3 py-2 no-print">{syncMsg}</div>
-      )}
-
-      {views.length === 0 ? (
-        <div className="border rounded-lg py-16 text-center text-muted-foreground">
-          <p>No views yet.</p>
-          <Button className="mt-3" onClick={() => setAddingView(true)}>
-            <Plus className="h-4 w-4 mr-2" /> Add your first view
-          </Button>
-        </div>
-      ) : (
-        <Tabs value={activeView?.id} onValueChange={setActiveId}>
-          <TabsList className="flex-wrap h-auto no-print">
-            {views.map((v, i) => (
-              <TabsTrigger
-                key={v.id}
-                value={v.id}
-                className="data-[state=active]:font-semibold cursor-grab"
-                draggable
-                onDragStart={() => setDragIndex(i)}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={() => {
-                  if (dragIndex !== null) reorderViews(dragIndex, i)
-                  setDragIndex(null)
-                }}
-                title="Drag to reorder"
+            {!popout && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="mod-ws-tool"
+                onClick={() => openModulePopout(module.id)}
+                title="Open in its own window"
               >
-                {v.title}
-              </TabsTrigger>
+                <ExternalLink className="h-3.5 w-3.5 mr-1" />
+                Pop out
+              </Button>
+            )}
+            <Button size="sm" className="mod-ws-tool mod-ws-tool-default" onClick={() => setAddingView(true)}>
+              <Plus className="h-3.5 w-3.5 mr-1" />
+              Add view
+            </Button>
+          </div>
+        </div>
+
+        {(module.description || syncMsg) && (
+          <div className="mod-ws-statusline no-print">
+            {module.description ? <span>{module.description}</span> : <span />}
+            {syncMsg ? <span className="mod-ws-sync">{syncMsg}</span> : null}
+          </div>
+        )}
+
+        {views.length === 0 ? (
+          <div className="mod-ws-empty">
+            <p>No views yet.</p>
+            <Button className="mod-ws-tool mod-ws-tool-default mt-3" onClick={() => setAddingView(true)}>
+              <Plus className="h-4 w-4 mr-2" /> Add your first view
+            </Button>
+          </div>
+        ) : (
+          <Tabs value={activeView?.id} onValueChange={setActiveId}>
+            <TabsList className="mod-ws-tabs flex-wrap h-auto no-print">
+              {views.map((v, i) => (
+                <TabsTrigger
+                  key={v.id}
+                  value={v.id}
+                  className="data-[state=active]:font-semibold cursor-grab"
+                  draggable
+                  onDragStart={() => setDragIndex(i)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={() => {
+                    if (dragIndex !== null) reorderViews(dragIndex, i)
+                    setDragIndex(null)
+                  }}
+                  title="Drag to reorder"
+                >
+                  {v.title}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            {views.map((v) => (
+              <TabsContent key={v.id} value={v.id} className="mod-ws-client mt-0">
+                <div className="mod-ws-viewbar no-print">
+                  <h3>{v.title}</h3>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="mod-caption-btn"
+                    onClick={() => setEditingView(v)}
+                    title="Edit view"
+                  >
+                    <Settings className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+                <div className="mod-ws-viewbody">
+                  <ModuleViewBody view={v} onOpenItem={onOpenItem} module={module} />
+                </div>
+              </TabsContent>
             ))}
-          </TabsList>
-          {views.map((v) => (
-            <TabsContent key={v.id} value={v.id} className="space-y-2">
-              <div className="flex items-center justify-between no-print">
-                <h3 className="text-lg font-semibold">{v.title}</h3>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingView(v)} title="Edit view">
-                  <Settings className="h-4 w-4" />
-                </Button>
-              </div>
-              <ModuleViewBody view={v} onOpenItem={onOpenItem} module={module} />
-            </TabsContent>
-          ))}
-        </Tabs>
-      )}
+          </Tabs>
+        )}
+      </div>
 
       <ModuleViewEditor open={addingView} onClose={() => setAddingView(false)} onSave={saveView} />
       <ModuleViewEditor

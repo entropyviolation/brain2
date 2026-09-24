@@ -18,12 +18,20 @@ import { useTaskStore } from "@/lib/task-store"
 import { useModulesStore } from "@/lib/modules-store"
 import { useWorkflowsStore } from "@/lib/workflows-store"
 import { addModuleCreatedLists, taskStoreModuleListsMutators } from "@/lib/module-lists"
+import { syncModuleListContents } from "@/lib/module-list-import"
 import { FILMRECS_SHELVES } from "@/lib/filmrecs-types"
 import { seedFilmToTask, type SeedFilm } from "@/lib/filmrecs-catalog"
 import filmrecsSeed from "@/lib/filmrecs-seed.json"
 import { seedHouseCleaning } from "@/lib/house-cleaning"
 
-export type ModuleTemplateId = "itinerary" | "house-cleaning" | "budget" | "book-tasting" | "filmrecs" | "blank"
+export type ModuleTemplateId =
+  | "itinerary"
+  | "house-cleaning"
+  | "budget"
+  | "book-tasting"
+  | "filmrecs"
+  | "gradsearch"
+  | "blank"
 
 export interface ModuleTemplateMeta {
   id: ModuleTemplateId
@@ -61,6 +69,12 @@ export const MODULE_TEMPLATES: ModuleTemplateMeta[] = [
     name: "Film DNA Lab",
     description:
       "Letterboxd taste map: vibe shelves, likes wall, Watch ranking (safe / balanced / explore), blend with a friend's CSV, and import watchlist/likes exports into a Films list.",
+  },
+  {
+    id: "gradsearch",
+    name: "GradSearch",
+    description:
+      "Graduate program explorer: search, filter, re-score, compare, favorite, hide, and verify every tracked program — the same explorer as the standalone GradSearch app, with its full catalog.",
   },
   {
     id: "blank",
@@ -627,6 +641,21 @@ function buildFilmRecs(uid: Uid): BuiltModuleTemplate {
   return { lists: [films], seedTasks, module }
 }
 
+function buildGradSearch(uid: Uid): BuiltModuleTemplate {
+  const module: ModuleInstance = {
+    id: uid("module"),
+    type: "workspace",
+    kind: "workspace",
+    title: "GradSearch",
+    description: "Graduate Program Explorer — search, score, compare, and verify.",
+    templateId: "gradsearch",
+    icon: "graduation-cap",
+    config: {},
+    views: [view("grad-search", "Explorer", {}, uid)],
+  }
+  return { lists: [], seedTasks: [], module }
+}
+
 function buildBlank(uid: Uid): BuiltModuleTemplate {
   const list = makeCategory(uid, "New List", {
     color: "#64748b",
@@ -661,6 +690,8 @@ export function buildModuleTemplate(id: ModuleTemplateId, seedNum = Date.now()):
       return buildBookTasting(uid)
     case "filmrecs":
       return buildFilmRecs(uid)
+    case "gradsearch":
+      return buildGradSearch(uid)
     case "blank":
     default:
       return buildBlank(uid)
@@ -675,5 +706,7 @@ export function instantiateModuleTemplate(id: ModuleTemplateId): string {
   built.seedTasks.forEach((t) => taskStore.addTask(t))
   useModulesStore.getState().addModuleInstance(built.module)
   built.workflows?.forEach((w) => useWorkflowsStore.getState().addWorkflowDefinition(w))
+  const mut = taskStoreModuleListsMutators()
+  syncModuleListContents(mut, useModulesStore.getState().modules)
   return built.module.id
 }

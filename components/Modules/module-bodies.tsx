@@ -18,6 +18,7 @@ import { useHabitsStore } from "@/lib/habits-store"
 import type { ModuleInstance, AttrRule } from "@/lib/modules-store"
 import { mergeListAttributes } from "@/components/Lists/attribute-editor"
 import { formatDateKey } from "@/lib/date-utils"
+import { itemTitle } from "@/lib/item-utils"
 import {
   MODULE_META,
   WRITING_FORMS,
@@ -43,8 +44,8 @@ export function ModuleCard({
   const Meta = MODULE_META[module.type]
   const Icon = Meta.icon
   return (
-    <Card className="flex flex-col">
-      <CardHeader className="pb-2">
+    <Card className="mod-widget flex flex-col" data-mod-type={module.type}>
+      <CardHeader className="mod-widget-bar pb-2">
         <CardTitle className="text-base flex items-center justify-between gap-2">
           <span className="flex items-center gap-2 min-w-0">
             <Icon className="h-4 w-4 shrink-0" />
@@ -60,7 +61,7 @@ export function ModuleCard({
           </span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex-1">
+      <CardContent className="mod-widget-body flex-1">
         <ModuleBody module={module} onTaskSelect={onTaskSelect} />
       </CardContent>
     </Card>
@@ -121,7 +122,7 @@ function RulesModule({
             className="w-full text-left flex items-center justify-between gap-2 border rounded px-2 py-1.5 hover:bg-muted/50"
             onClick={() => onTaskSelect?.(item.id)}
           >
-            <span className="text-sm truncate flex-1">{item.description}</span>
+            <span className="text-sm truncate flex-1">{itemTitle(item)}</span>
             {matched ? (
               <Badge style={{ background: matched.color, color: "#fff" }} className="shrink-0">
                 {matched.label}
@@ -214,7 +215,7 @@ function WritingPrompt({ categoryId }: { categoryId?: string }) {
 
   const prompt = useMemo(() => {
     const form = rand(WRITING_FORMS) || "a short piece"
-    const sourceItems = categoryId ? tasksInList(tasks, categoryId).map((t) => t.description) : []
+    const sourceItems = categoryId ? tasksInList(tasks, categoryId).map((t) => itemTitle(t)) : []
     const topic = (sourceItems.length ? rand(sourceItems) : rand(WRITING_TOPICS)) || "anything"
     const constraint = rand(WRITING_CONSTRAINTS) || ""
     return { form, topic, constraint }
