@@ -1,0 +1,12 @@
+---
+description: AMAP means as much as possible, especially parallelize
+alwaysApply: true
+---
+
+# AMAP
+
+**AMAP** = as much as possible.
+
+When the user says AMAP, do as much as possible — especially **multitask and
+parallelize** (independent tools, edits, tests) instead of serializing work
+that can run together.

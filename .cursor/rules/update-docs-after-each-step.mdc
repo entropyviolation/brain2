@@ -1,0 +1,31 @@
+---
+description: After each implementation step, fully update every doc that the change affects
+alwaysApply: true
+---
+
+# Update docs after each step
+
+Do not batch documentation until the end of a task. After **each** completed step (new file, behavior change, API/type change, UI change, rename, or delete), update **every** doc that the change makes stale. Then continue.
+
+## What to touch
+
+- Colocated `README.md` in the folder you changed (`components/Lists/README.md`, `lib/README.md`, …) — architecture trees, file lists, and behavior notes.
+- Parent folder READMEs if the change is visible there (`components/README.md`, `app/README.md`).
+- Root `README.md` for user-facing features, overview claims, or the repository map.
+- `docs/README.md` if the docs index itself changed.
+- `docs/SPEC_MAPPING.md` when a spec’d feature moves between missing / partial / implemented.
+- `docs/tree.md` and `docs/tree.txt` when files or folders are added, moved, or removed (`npm run tree`).
+- `docs/screenshots/` PNG + `.txt` sidecars when a captured view’s UI or copy changed (`npm run capture-screenshots` while the app is running). See `docs/screenshots/README.md`.
+
+Skip docs that are unrelated. Do not invent entries in `docs/BRAIN2_FEATURE_IDEAS.md` unless the work was specifically about that idea bank.
+
+## How
+
+Match the existing README style (purpose sentence, file tree, short behavior notes). Fully rewrite stale sections; do not leave old names, paths, or “coming soon” that are now shipped.
+
+```text
+❌ BAD: land the Lists checkbox filter, then “docs at the end”
+✅ GOOD: ship the filter, then in the same step update
+   components/Lists/README.md (tree + behavior) and any screenshot write-up
+   for the Lists content view
+```
