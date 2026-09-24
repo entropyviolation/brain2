@@ -12,7 +12,8 @@
  *
  * Two entry points are exported:
  *  - `MetricLogger` — the full panel (drop into a Tracking tab / page),
- *  - `MetricLoggerButton` — a header button that opens the panel in a dialog.
+ *  - `MetricLoggerButton` — a header button that opens the panel in a dialog
+ *    (milled fascia shell via `.hpp95` / `header-popup-chrome.css`).
  */
 "use client"
 
@@ -266,11 +267,16 @@ export function MetricLoggerButton({ className }: { className?: string }) {
           Metrics
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Wellbeing metrics</DialogTitle>
+      <DialogContent className="hpp95 hpp95-dialog max-w-2xl max-h-[85vh] overflow-hidden flex flex-col" data-ui-name="Metrics" data-ui-docs="components/README.md">
+        <DialogHeader className="hpp-caption">
+          <div className="hpp-caption-mark">
+            <span className="hpp-power-lamp" aria-hidden />
+            <DialogTitle>Wellbeing metrics</DialogTitle>
+          </div>
         </DialogHeader>
-        <MetricLogger />
+        <div className="hpp-body">
+          <MetricLogger />
+        </div>
       </DialogContent>
     </Dialog>
   )

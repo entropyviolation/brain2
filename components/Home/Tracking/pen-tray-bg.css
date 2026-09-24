@@ -1,0 +1,86 @@
+/**
+ * components/Home/Tracking/pen-tray-bg.css — Photograph on the pen well
+ *
+ * Overrides the velvet (`/newvelv.jpg`) only inside `.trk-pen-tray` (selected
+ * strip + bead well). The photograph sits in a milled metal frame (stacked
+ * silver rings) — pens stay photographs. Copy sits on steel plates
+ * (`.trk-selected-plate`, `.trk-detail-plate`, `.trk-new-pen`) so every tray
+ * photo stays readable. Does not paint the Time Grid, sleep strip, tools
+ * column, or the rest of Tracking. Picker chips in View settings show the
+ * same plates.
+ */
+
+.trk95[data-pen-tray] .trk-pen-tray {
+  padding: 4px;
+  border-radius: 3px;
+  background-color: var(--pen-tray-fallback, #0b1c36);
+  background-image: var(--pen-tray-photo);
+  background-size: cover;
+  background-position: center;
+  background-clip: padding-box;
+  box-shadow:
+    0 0 0 1px #5c6064,
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -1px 0 rgba(40, 42, 46, 0.45),
+    inset 0 0 0 2px #b0b4b8,
+    inset 0 0 0 3px rgba(20, 22, 24, 0.35),
+    var(--t-sunken);
+}
+
+.trk95[data-pen-tray] .trk-pen-well,
+.trk95[data-pen-tray] .trk-selected {
+  background-color: transparent;
+  background-image: none;
+}
+
+.trk95 .trk-tray-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.trk95 .trk-tray-chip {
+  position: relative;
+  display: flex;
+  min-height: 3.75rem;
+  align-items: flex-end;
+  overflow: hidden;
+  padding: 5px 6px;
+  border: 0;
+  border-radius: 2px;
+  background-color: var(--pen-tray-fallback, #888);
+  background-image: var(--pen-tray-photo);
+  background-size: cover;
+  background-position: center;
+  cursor: pointer;
+  text-align: left;
+  box-shadow:
+    0 0 0 1px #5c6064,
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 0 0 2px #b0b4b8,
+    var(--t-raised);
+}
+
+.trk95 .trk-tray-chip[data-ink="light"] {
+  color: #f4f0e8;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75);
+}
+
+.trk95 .trk-tray-chip[data-ink="dark"] {
+  color: #161410;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.trk95 .trk-tray-chip[aria-pressed="true"] {
+  box-shadow: var(--t-sunken);
+  outline: 1px dotted #000;
+  outline-offset: -3px;
+}
+
+.trk95 .trk-tray-chip-label {
+  position: relative;
+  z-index: 1;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}

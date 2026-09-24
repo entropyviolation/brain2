@@ -369,7 +369,7 @@ async function nominatimGeocodeUncached(
     const res = await fetch(url.toString(), {
       headers: {
         Accept: "application/json",
-        "User-Agent": "cogs-app/1.0 (trip itinerary places)",
+        "User-Agent": "Brain2/1.0 (trip itinerary places)",
       },
     })
     if (!res.ok) return null

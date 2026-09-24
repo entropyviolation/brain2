@@ -1,0 +1,210 @@
+/**
+ * Day Log week board — seven plan-vs-tracked columns (not Time Grid paint week).
+ * Win95 steel under `.trk95`; lives beside tracking-chrome, not inside it.
+ */
+
+.trk95 .daylog-week {
+  flex: 1 1 auto;
+  min-height: 14rem;
+  overflow-x: auto;
+  background: var(--t-surface, #c0c0c0);
+  box-shadow: var(--t-sunken, inset 1px 1px #808080, inset -1px -1px #fff);
+  padding: 2px;
+}
+
+.trk95 .daylog-week-head-row,
+.trk95 .daylog-week-untimed-row,
+.trk95 .daylog-week-body {
+  display: grid;
+  grid-template-columns: 2.75rem repeat(7, minmax(4.5rem, 1fr));
+  min-width: min-content;
+}
+
+.trk95 .daylog-week-corner {
+  background: var(--t-surface, #c0c0c0);
+  box-shadow: inset -1px 0 var(--t-shadow, #808080), inset 1px 0 var(--t-highlight, #fff);
+  min-height: 36px;
+}
+
+.trk95 .daylog-week-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 36px;
+  padding: 4px 2px;
+  border: 0;
+  border-radius: 0;
+  background: var(--t-surface, #c0c0c0);
+  color: #000;
+  font: inherit;
+  font-size: 11px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: var(
+    --t-raised,
+    inset -1px -1px #0a0a0a,
+    inset 1px 1px #fff,
+    inset -2px -2px #808080,
+    inset 2px 2px #dfdfdf
+  );
+}
+
+.trk95 .daylog-week-head:focus-visible {
+  outline: 1px dotted #000;
+  outline-offset: -3px;
+}
+
+.trk95 .daylog-week-head[data-today="true"] {
+  box-shadow: var(--t-sunken, inset 1px 1px #808080, inset -1px -1px #fff),
+    inset 0 0 0 1px #000;
+}
+
+.trk95 .daylog-week-head-dow {
+  font-weight: bold;
+}
+
+.trk95 .daylog-week-head-dom {
+  font-weight: normal;
+  font-size: 10px;
+}
+
+.trk95 .daylog-week-untimed {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 3px;
+  background: var(--t-surface, #c0c0c0);
+  border-bottom: 1px solid var(--t-shadow, #808080);
+  min-height: 4px;
+}
+
+.trk95 .daylog-week-chip {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 2px 4px;
+  border: 0;
+  border-radius: 0;
+  text-align: left;
+  font: inherit;
+  font-size: 9px;
+  line-height: 1.2;
+  color: #000;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px #808080;
+}
+
+.trk95 .daylog-week-chip--planned {
+  background: repeating-linear-gradient(
+    -45deg,
+    #fff,
+    #fff 3px,
+    color-mix(in srgb, #6b8cae 22%, #fff) 3px,
+    color-mix(in srgb, #6b8cae 22%, #fff) 6px
+  );
+  box-shadow: inset 0 0 0 1px #6b8cae;
+}
+
+.trk95 .daylog-week-hours {
+  background: var(--t-surface, #c0c0c0);
+  box-shadow: inset -1px 0 var(--t-shadow, #808080), inset 1px 0 var(--t-highlight, #fff);
+}
+
+.trk95 .daylog-week-gutter {
+  padding: 2px 4px 0;
+  font-size: 9px;
+  line-height: 1;
+  color: #404040;
+  box-sizing: border-box;
+  border-bottom: 1px solid color-mix(in srgb, var(--t-shadow, #808080) 35%, transparent);
+}
+
+.trk95 .daylog-week-plot {
+  position: relative;
+  background: #fff;
+  border-right: 1px solid color-mix(in srgb, var(--t-shadow, #808080) 40%, transparent);
+  box-shadow: var(--t-sunken, inset 1px 1px #808080, inset -1px -1px #fff);
+}
+
+.trk95 .daylog-week-plot[data-today="true"] {
+  background: color-mix(in srgb, #c8e6c8 18%, #fff);
+}
+
+.trk95 .daylog-week-hour {
+  box-sizing: border-box;
+  border-bottom: 1px solid color-mix(in srgb, var(--t-shadow, #808080) 28%, transparent);
+}
+
+.trk95 .daylog-week-block {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 1px;
+  margin: 0;
+  padding: 2px 3px;
+  border: 0;
+  border-radius: 0;
+  overflow: hidden;
+  text-align: left;
+  font: inherit;
+  font-size: 9px;
+  line-height: 1.15;
+  cursor: pointer;
+  color: #000;
+}
+
+.trk95 .daylog-week-block:focus-visible {
+  outline: 1px dotted #000;
+  outline-offset: -1px;
+  z-index: 2;
+}
+
+.trk95 .daylog-week-block--tracked {
+  color: #fff;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.5);
+}
+
+.trk95 .daylog-week-block--planned {
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 255, 255, 0.92),
+    rgba(255, 255, 255, 0.92) 3px,
+    color-mix(in srgb, #6b8cae 28%, #fff) 3px,
+    color-mix(in srgb, #6b8cae 28%, #fff) 6px
+  );
+  box-shadow: inset 0 0 0 1px #6b8cae;
+}
+
+.trk95 .daylog-week-block--log {
+  background: color-mix(in srgb, #d4a017 42%, #fff);
+  box-shadow: inset 0 0 0 1px #a67c00;
+}
+
+.trk95 .daylog-week-block-title {
+  font-weight: bold;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trk95 .daylog-week-block-sub {
+  opacity: 0.85;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trk95 .daylog-week-switch {
+  margin-bottom: 6px;
+}

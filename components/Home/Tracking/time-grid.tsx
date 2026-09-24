@@ -1,485 +1,624 @@
 /**
  * components/Home/Tracking/time-grid.tsx — TimeGrid life tracker
+ *
+ * Paint the day with colored pens. Time is stored minute-accurately as intervals
+ * (`lib/time-entries.ts`); `gridStep` only decides how coarsely this view draws
+ * and paints, so switching from 5-minute cells to 1-minute cells reveals finer
+ * detail rather than converting anything. Hour rows carry a hairline gray rule
+ * on `.trk-plot`; minute cells use a 1px lighter tick so the plot stays paper,
+ * not a heavy lattice.
+ *
+ * Three labels stack on a block, each doing a different job:
+ *   - **Pen** — the activity. One per minute per scope.
+ *   - **Variant** — a finer cut inside the pen, several allowed at once
+ *     (`variant-chips.tsx`). Analytics breaks the pen down by these.
+ *   - **Tag** — cross-scope, and the join to Habits: tagged time flows into any
+ *     linked daily habit via `lib/habit-tracking-sync.ts`, which
+ *     `useHabitTrackingSync` keeps running while this view is mounted.
+ *
+ * Totals come from `lib/tracking-summary.ts` as occupancy — overlapping blocks
+ * on the same minute count once — the same module the Activity Log and the
+ * Analytics Tracking tab use, so the three can never disagree. TIME/DIV, Cell
+ * size (1 / 5 / 10 / 15 / 30), and Fill sit on one equal-height silkscreen
+ * strip on the plot bezel (`TrkPlotBezel`); leftover width and height go to
+ * the white plot, not a gray slab beside `width: fit-content` modules. The live
+ * cell step is navy inset with a phosphor cap. Day view date row is the same
+ * period toolbar as Plan (previous, centered date, next, Today). Fill lives in
+ * `fill-range-control.tsx` (longest empty gap; View-settings Day fill clocks
+ * are the fully-untracked fallback). Hidden pens stay in View settings.
+ * **Infinite scroll** sits next to Day/Week — one continuous strip, not two toggles.
+ * Day view now / sunrise / sunset are **horizontal** lines across the plot (same
+ * clock as Plan agenda and the Day Log tab). Discrete events stay vertical ticks.
+ * Do not remove the now line or the sunrise/sunset lines.
  */
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { ChevronLeft, ChevronRight, Plus, Trash2, Eraser, Pencil } from "lucide-react"
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
+import { addDays, subDays } from "date-fns"
+import { displayedPen, penCellStyle, useTimeTrackingStore } from "@/lib/time-tracking-store"
 import {
-  useTimeTrackingStore,
-  SLOT_MINUTES,
-  SLOTS_PER_DAY,
-  slotToLabel,
-  timeStringToSlot,
-  type TrackPen,
-  type TimeBlockDetail,
-} from "@/lib/time-tracking-store"
-
-const COLS_PER_HOUR = 60 / SLOT_MINUTES
+  GRID_SPANS,
+  GRID_STEPS,
+  MINUTES_PER_DAY,
+  assignedPenIds,
+  dominantEntry,
+  entriesForDay,
+  formatDuration,
+  instantsForDay,
+  minuteMap,
+  minutesToLabel,
+  minutesToTimeString,
+  entryDisplayName,
+} from "@/lib/time-entries"
+import { penTotals, tagTotals as tagTotalsOf, totalsFor } from "@/lib/tracking-summary"
+import { EntryDialog } from "@/components/Home/Tracking/entry-dialog"
+import { ERASE, SCISSORS, PenPalette } from "@/components/Home/Tracking/pen-palette"
+import { PenModeBar } from "@/components/Home/Tracking/pen-mode-bar"
+import { LogActivityLatch } from "@/components/Home/Tracking/log-activity-dialog"
+import { ScreenTimeEmptyHint } from "@/components/Home/Tracking/screentime-empty-hint"
+import { TrackingPeriodNav } from "@/components/Home/Tracking/tracking-period-nav"
+import { WeekGrid } from "@/components/Home/Tracking/week-grid"
+import { InfiniteStrip } from "@/components/Home/Tracking/infinite-strip"
+import { useTrackingViewPrefs } from "@/components/Home/Tracking/tracking-view-prefs"
+import { firstUnpaintedWakingHour } from "@/components/Home/Tracking/waking-scroll"
+import { CellSizeKeys } from "@/components/Home/Tracking/cell-size-keys"
+import { FillRangeControl } from "@/components/Home/Tracking/fill-range-control"
+import { cellPaintClass, trackingProbeText, TrkChromeStack, TrkCrtProbe, TrkPlotBezel, TrkRibbon } from "@/components/Home/Tracking/trk-instrument"
+import { TrkPlotMarkers, useTrackingDayMarkers } from "@/components/Home/Tracking/trk-time-markers"
+import { useHabitTrackingSync } from "@/lib/habit-tracking-sync"
+import { awakeWindowFor, useSleepSync } from "@/lib/sleep-sync"
+import { useScreenTimeSync } from "@/hooks/use-screentime-sync"
+import { usePenActionSync } from "@/lib/pen-action-sync"
+import "./tracking-chrome.css"
 
 function dateKey(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
 }
 
-function findBlockRange(slots: (string | null)[], slot: number): { start: number; end: number; penId: string } | null {
-  const penId = slots[slot]
-  if (!penId) return null
-  let start = slot
-  let end = slot
-  while (start > 0 && slots[start - 1] === penId) start--
-  while (end < SLOTS_PER_DAY - 1 && slots[end + 1] === penId) end++
-  return { start, end, penId }
-}
-
-export function TimeGrid({ compact = false }: { compact?: boolean }) {
+export function TimeGrid({
+  compact = false,
+  showPalette = true,
+  currentDate: controlledDate,
+  setCurrentDate: setControlledDate,
+}: {
+  compact?: boolean
+  /** False when the parent already rendered `PenPalette` + `PenModeBar` + Log activity (Home Tracking). */
+  showPalette?: boolean
+  currentDate?: Date
+  setCurrentDate?: (date: Date) => void
+} = {}) {
+  useHabitTrackingSync()
+  // Erasing or clearing sleep on the grid is a statement about the night.
+  useSleepSync()
+  useScreenTimeSync()
+  usePenActionSync()
   const scopes = useTimeTrackingStore((s) => s.scopes)
-  const data = useTimeTrackingStore((s) => s.data)
+  const tags = useTimeTrackingStore((s) => s.tags)
+  const entries = useTimeTrackingStore((s) => s.entries)
+  const gridStep = useTimeTrackingStore((s) => s.gridStep)
+  const gridSpan = useTimeTrackingStore((s) => s.gridSpan)
+  const infiniteScroll = useTimeTrackingStore((s) => s.infiniteScroll)
   const activeScopeId = useTimeTrackingStore((s) => s.activeScopeId)
   const selectedPenId = useTimeTrackingStore((s) => s.selectedPenId)
-  const setActiveScope = useTimeTrackingStore((s) => s.setActiveScope)
-  const setSelectedPen = useTimeTrackingStore((s) => s.setSelectedPen)
-  const addScope = useTimeTrackingStore((s) => s.addScope)
-  const removeScope = useTimeTrackingStore((s) => s.removeScope)
-  const addPen = useTimeTrackingStore((s) => s.addPen)
-  const updatePen = useTimeTrackingStore((s) => s.updatePen)
-  const removePen = useTimeTrackingStore((s) => s.removePen)
-  const paintRange = useTimeTrackingStore((s) => s.paintRange)
-  const paintSlotInStore = useTimeTrackingStore((s) => s.paintSlot)
+  const selectedVariantIds = useTimeTrackingStore((s) => s.selectedVariantIds)
+  const setGridSpan = useTimeTrackingStore((s) => s.setGridSpan)
+  const setGridStep = useTimeTrackingStore((s) => s.setGridStep)
+  const setInfiniteScroll = useTimeTrackingStore((s) => s.setInfiniteScroll)
+  const paintMinutes = useTimeTrackingStore((s) => s.paintMinutes)
+  const splitEntryAt = useTimeTrackingStore((s) => s.splitEntryAt)
   const clearDay = useTimeTrackingStore((s) => s.clearDay)
-  const setBlockDetail = useTimeTrackingStore((s) => s.setBlockDetail)
-  const getBlockDetail = useTimeTrackingStore((s) => s.getBlockDetail)
+  const prefs = useTrackingViewPrefs()
 
-  const [date, setDate] = useState(() => new Date())
+  const [internalDate, setInternalDate] = useState(() => new Date())
+  const date = controlledDate ?? internalDate
+  const setDate = setControlledDate ?? setInternalDate
   const dk = dateKey(date)
   const scope = scopes.find((s) => s.id === activeScopeId) || scopes[0]
-  const slots = (scope && data[dk]?.[scope.id]) || new Array(SLOTS_PER_DAY).fill(null)
 
-  const draggingRef = useRef(false)
-  const paintedRef = useRef(false)
-  const dragStartSlot = useRef<number | null>(null)
-  const [rangeFrom, setRangeFrom] = useState("09:00")
-  const [rangeTo, setRangeTo] = useState("10:00")
-  const [manage, setManage] = useState(false)
-  const [newPenName, setNewPenName] = useState("")
-  const [newPenColor, setNewPenColor] = useState("#3b82f6")
-  const [editingPen, setEditingPen] = useState<TrackPen | null>(null)
-  const [blockDetail, setBlockDetailState] = useState<TimeBlockDetail | null>(null)
+  const [openEntryId, setOpenEntryId] = useState<string | null>(null)
+  const [drag, setDrag] = useState<{ anchor: number; head: number } | null>(null)
+  const [now, setNow] = useState(() => new Date())
+  const [probe, setProbe] = useState<string | null>(null)
+  const [spark, setSpark] = useState<{ lo: number; hi: number } | null>(null)
 
-  useEffect(() => {
-    const up = () => {
-      draggingRef.current = false
-      paintedRef.current = false
-      dragStartSlot.current = null
-    }
-    window.addEventListener("mouseup", up)
-    window.addEventListener("touchend", up)
-    window.addEventListener("touchcancel", up)
-    return () => {
-      window.removeEventListener("mouseup", up)
-      window.removeEventListener("touchend", up)
-      window.removeEventListener("touchcancel", up)
-    }
+  const dragRef = useRef<{ anchor: number; head: number; moved: boolean } | null>(null)
+  const gridRef = useRef<HTMLDivElement>(null)
+  const sparkTimer = useRef<number | null>(null)
+
+  const flashStroke = useCallback((lo: number, hi: number) => {
+    if (sparkTimer.current) window.clearTimeout(sparkTimer.current)
+    setSpark({ lo, hi })
+    sparkTimer.current = window.setTimeout(() => {
+      setSpark(null)
+      sparkTimer.current = null
+    }, 110)
   }, [])
 
-  const penById = useCallback(
-    (id: string | null) => (id ? scope?.pens.find((p) => p.id === id) || null : null),
-    [scope],
+  useEffect(() => () => {
+    if (sparkTimer.current) window.clearTimeout(sparkTimer.current)
+  }, [])
+
+  const dayEntries = useMemo(
+    () => (scope ? entriesForDay(entries, dk, scope.id) : []),
+    [entries, dk, scope],
   )
 
-  const paintSlot = useCallback(
-    (slot: number) => {
+  const dayInstants = useMemo(
+    () => (scope ? instantsForDay(entries, dk, scope.id) : []),
+    [entries, dk, scope],
+  )
+
+  const map = useMemo(
+    () => (scope ? minuteMap(entries, dk, scope.id) : new Array(MINUTES_PER_DAY).fill(null)),
+    [entries, dk, scope],
+  )
+
+  const isToday = dk === dateKey(now)
+  const { nowMinute, sun } = useTrackingDayMarkers(date)
+  useEffect(() => {
+    if (!isToday) return
+    const id = setInterval(() => setNow(new Date()), 60_000)
+    return () => clearInterval(id)
+  }, [isToday])
+
+  const effectivePenId = selectedPenId === ERASE ? null : selectedPenId
+  const selectedPen = scope?.pens.find((p) => p.id === effectivePenId) ?? null
+
+  const commitPaint = useCallback(
+    (from: number, to: number) => {
       if (!scope || selectedPenId === null) return
-      paintedRef.current = true
-      paintSlotInStore(dk, scope.id, slot, selectedPenId === "ERASE" ? null : selectedPenId)
+      paintMinutes(
+        dk,
+        scope.id,
+        Math.min(from, to),
+        Math.max(from, to),
+        selectedPenId === ERASE ? null : selectedPenId,
+        selectedVariantIds,
+      )
     },
-    [scope, selectedPenId, paintSlotInStore, dk],
+    [scope, selectedPenId, selectedVariantIds, paintMinutes, dk],
   )
 
-  const openBlockDetail = (slot: number) => {
-    if (!scope) return
-    const range = findBlockRange(slots, slot)
-    if (!range) return
-    const existing =
-      getBlockDetail(dk, scope.id, range.penId, range.start, range.end) ||
-      useTimeTrackingStore
-        .getState()
-        .blockDetails.find(
-          (b) =>
-            b.date === dk &&
-            b.scopeId === scope.id &&
-            b.penId === range.penId &&
-            b.startSlot <= range.end &&
-            b.endSlot >= range.start,
-        ) ||
-      ({
-        date: dk,
-        scopeId: scope.id,
-        penId: range.penId,
-        startSlot: range.start,
-        endSlot: range.end,
-      } as TimeBlockDetail)
-    setBlockDetailState({ ...existing, startSlot: range.start, endSlot: range.end })
-  }
-
-  const effectivePenId = selectedPenId === "ERASE" ? null : selectedPenId
-
-  const handleSlotMouseUp = (slot: number) => {
-    const isClick = dragStartSlot.current === slot && !paintedRef.current
-    const cellPenId = slots[slot]
-
-    if (isClick && scope) {
-      if (cellPenId) {
-        if (selectedPenId === cellPenId) {
-          openBlockDetail(slot)
-        } else if (selectedPenId !== null) {
-          paintSlot(slot)
-        }
-      } else if (selectedPenId !== null && selectedPenId !== "ERASE") {
-        paintSlot(slot)
+  // Drag is resolved on release so one stroke becomes one block, rather than a
+  // run of adjacent one-cell blocks that merge back together afterwards.
+  const endDrag = useCallback(() => {
+    const state = dragRef.current
+    dragRef.current = null
+    setDrag(null)
+    if (!state) return
+    const lo = Math.min(state.anchor, state.head)
+    const hi = Math.max(state.anchor, state.head) + gridStep
+    if (selectedPenId === SCISSORS) {
+      const existing = map[state.anchor]
+      if (existing) {
+        splitEntryAt(existing.id, state.anchor)
+        flashStroke(state.anchor, state.anchor + gridStep)
       }
-    }
-
-    draggingRef.current = false
-    dragStartSlot.current = null
-    paintedRef.current = false
-  }
-
-  const applyTypedRange = () => {
-    if (!scope) return
-    if (selectedPenId === null) {
-      alert("Select a pen (or Erase) first.")
       return
     }
-    const from = timeStringToSlot(rangeFrom)
-    const to = timeStringToSlot(rangeTo)
-    if (from === null || to === null) return
-    const endSlot = to <= from ? to : to - 1
-    paintRange(dk, scope.id, from, Math.max(from, endSlot), selectedPenId === "ERASE" ? null : selectedPenId)
+    if (state.moved) {
+      commitPaint(lo, Math.min(MINUTES_PER_DAY, hi))
+      flashStroke(lo, Math.min(MINUTES_PER_DAY, hi))
+      return
+    }
+    const existing = map[state.anchor]
+    if (existing && selectedPenId !== ERASE) setOpenEntryId(existing.id)
+    else if (selectedPenId !== null) {
+      commitPaint(state.anchor, Math.min(MINUTES_PER_DAY, state.anchor + gridStep))
+      flashStroke(state.anchor, Math.min(MINUTES_PER_DAY, state.anchor + gridStep))
+    }
+  }, [commitPaint, flashStroke, gridStep, map, selectedPenId, splitEntryAt])
+
+  useEffect(() => {
+    window.addEventListener("mouseup", endDrag)
+    window.addEventListener("touchend", endDrag)
+    window.addEventListener("touchcancel", endDrag)
+    return () => {
+      window.removeEventListener("mouseup", endDrag)
+      window.removeEventListener("touchend", endDrag)
+      window.removeEventListener("touchcancel", endDrag)
+    }
+  }, [endDrag])
+
+  const beginDrag = (minute: number) => {
+    dragRef.current = { anchor: minute, head: minute, moved: false }
+    setDrag({ anchor: minute, head: minute })
   }
 
-  const totals: Record<string, number> = {}
-  slots.forEach((id) => {
-    if (id) totals[id] = (totals[id] || 0) + SLOT_MINUTES
-  })
-  const untracked = slots.filter((s) => !s).length * SLOT_MINUTES
-
-  const fmtMins = (m: number) => {
-    const h = Math.floor(m / 60)
-    const mm = m % 60
-    return h > 0 ? `${h}h${mm ? ` ${mm}m` : ""}` : `${mm}m`
+  const extendDrag = (minute: number) => {
+    const state = dragRef.current
+    if (!state || state.head === minute) return
+    dragRef.current = { ...state, head: minute, moved: true }
+    setDrag({ anchor: state.anchor, head: minute })
   }
+
+  const minuteFromEvent = (target: EventTarget | null): number | null => {
+    const el = target as HTMLElement | null
+    const raw = el?.dataset?.minute
+    if (raw == null) return null
+    const minute = Number(raw)
+    return Number.isFinite(minute) ? minute : null
+  }
+
+  const applyFillRange = (from: number, parsedTo: number) => {
+    if (!scope || selectedPenId === null) return
+    paintMinutes(
+      dk,
+      scope.id,
+      from,
+      parsedTo,
+      selectedPenId === ERASE ? null : selectedPenId,
+      selectedVariantIds,
+    )
+    flashStroke(from, parsedTo <= from && parsedTo !== 0 ? MINUTES_PER_DAY : parsedTo)
+  }
+
+  const pens = useMemo(() => penTotals(dayEntries, scope, [dk]), [dayEntries, scope, dk])
+  const totals = useMemo(() => totalsFor(dayEntries, [dk]), [dayEntries, dk])
+  const dayTagTotals = useMemo(
+    () => tagTotalsOf(entries.filter((e) => e.date === dk), scopes, tags, [dk]),
+    [entries, dk, scopes, tags],
+  )
+  const awake = awakeWindowFor(dk, date)
+  const startHour = firstUnpaintedWakingHour({ map, wakeMin: awake?.wake, bedMin: awake?.bed })
+  const rowHeight = compact ? 20 : 24
+
+  useLayoutEffect(() => {
+    const root = gridRef.current
+    if (!root) return
+    const hour = startHour
+    const align = () => {
+      const row = root.querySelector(`[data-hour="${hour}"]`) as HTMLElement | null
+      if (!row) return
+      const ruler = root.querySelector(".sticky") as HTMLElement | null
+      root.scrollTop = Math.max(0, row.offsetTop - (ruler?.offsetHeight ?? 0))
+    }
+    align()
+    const id = requestAnimationFrame(align)
+    return () => cancelAnimationFrame(id)
+  }, [dk, awake?.wake])
+
+  const openEntry = openEntryId ? entries.find((e) => e.id === openEntryId) : undefined
+  useEffect(() => {
+    if (openEntryId && !openEntry) setOpenEntryId(null)
+  }, [openEntryId, openEntry])
 
   if (!scope) return <div className="text-sm text-muted-foreground">No tracking scopes.</div>
 
-  const pen = blockDetail ? penById(blockDetail.penId) : null
+  const cellsPerHour = 60 / gridStep
+  const rulerEvery = gridStep <= 5 ? 5 : gridStep
+  const dragLo = drag ? Math.min(drag.anchor, drag.head) : -1
+  const dragHi = drag ? Math.max(drag.anchor, drag.head) + gridStep : -1
 
   return (
-    <div className="space-y-4 select-none">
-      <div className="flex flex-wrap items-center gap-2">
-        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setDate(new Date(date.getTime() - 864e5))}>
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <Button variant="outline" size="sm" onClick={() => setDate(new Date())}>
-          Today
-        </Button>
-        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setDate(new Date(date.getTime() + 864e5))}>
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-        <span className="font-semibold ml-1">
-          {date.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
-        </span>
-        <div className="flex-1" />
-        <Button variant="ghost" size="sm" onClick={() => clearDay(dk, scope.id)}>
-          Clear day
-        </Button>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-1">
-        {scopes.map((s) => (
-          <button
-            key={s.id}
-            onClick={() => setActiveScope(s.id)}
-            className={`px-3 py-1 text-sm border rounded ${
-              s.id === scope.id ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"
-            }`}
-          >
-            {s.name}
-          </button>
-        ))}
-        <button
-          onClick={() => {
-            const name = prompt("New tracking scope (e.g. Frame, Company):")
-            if (name?.trim()) addScope(name.trim())
-          }}
-          className="px-2 py-1 text-sm border rounded bg-background hover:bg-muted"
-          title="Add scope"
-        >
-          <Plus className="h-3.5 w-3.5" />
-        </button>
-        {scopes.length > 1 && (
-          <button
-            onClick={() => {
-              if (confirm(`Remove scope "${scope.name}"?`)) removeScope(scope.id)
-            }}
-            className="px-2 py-1 text-sm border rounded bg-background hover:bg-muted text-destructive"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
-        )}
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        {scope.pens.map((p) => (
-          <button
-            key={p.id}
-            onClick={() => setSelectedPen(p.id)}
-            className={`flex items-center gap-1.5 px-2 py-1 text-sm border rounded ${
-              selectedPenId === p.id ? "ring-2 ring-offset-1 ring-primary" : ""
-            }`}
-            style={{ background: p.color, color: "#fff", textShadow: "0 1px 1px rgba(0,0,0,0.4)" }}
-          >
-            {p.name}
-          </button>
-        ))}
-        <button
-          onClick={() => setSelectedPen("ERASE")}
-          className={`flex items-center gap-1 px-2 py-1 text-sm border rounded bg-background hover:bg-muted ${
-            selectedPenId === "ERASE" ? "ring-2 ring-primary" : ""
-          }`}
-        >
-          <Eraser className="h-3.5 w-3.5" /> Erase
-        </button>
-        <button onClick={() => setManage((m) => !m)} className="px-2 py-1 text-sm border rounded bg-background hover:bg-muted">
-          {manage ? "Done" : "Edit pens"}
-        </button>
-      </div>
-
-      {manage && (
-        <div className="border rounded p-3 space-y-3 bg-muted/40">
-          <div className="flex flex-wrap items-center gap-2">
-            <Input value={newPenName} onChange={(e) => setNewPenName(e.target.value)} placeholder="Pen name" className="h-8 w-40" />
-            <input type="color" value={newPenColor} onChange={(e) => setNewPenColor(e.target.value)} className="h-8 w-12" />
-            <Button
-              size="sm"
-              onClick={() => {
-                if (newPenName.trim()) {
-                  addPen(scope.id, { name: newPenName.trim(), color: newPenColor })
-                  setNewPenName("")
-                }
-              }}
-            >
-              Add pen
-            </Button>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {scope.pens.map((p) => (
-              <span key={p.id} className="flex items-center gap-1 text-xs border rounded px-2 py-1 bg-background">
-                <span className="inline-block w-3 h-3 rounded-sm" style={{ background: p.color }} />
-                {p.name}
-                <button onClick={() => setEditingPen({ ...p })} className="text-muted-foreground hover:text-foreground">
-                  <Pencil className="h-3 w-3" />
-                </button>
-                <button onClick={() => removePen(scope.id, p.id)} className="text-destructive">
-                  <Trash2 className="h-3 w-3" />
-                </button>
-              </span>
-            ))}
-          </div>
-        </div>
+    <div
+      className={`trk95 trk-canvas select-none${compact ? " trk-canvas-compact" : ""}`}
+      data-ui-name="Time grid"
+      data-ui-docs="components/Home/Tracking/README.md"
+      data-ui-docs-anchor="time-gridtsx-behavior"
+    >
+      {showPalette && (
+        <TrkChromeStack
+          pens={<PenPalette />}
+          modeBar={<PenModeBar />}
+          gridAction={<LogActivityLatch dateKey={dk} />}
+        />
       )}
 
-      {editingPen && (
-        <Dialog open onOpenChange={() => setEditingPen(null)}>
-          <DialogContent className="sm:max-w-sm">
-            <DialogHeader>
-              <DialogTitle>Edit pen</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3">
-              <div>
-                <Label>Name</Label>
-                <Input value={editingPen.name} onChange={(e) => setEditingPen({ ...editingPen, name: e.target.value })} />
+      <TrkPlotBezel
+        strip={
+          <>
+            <div className="trk-module">
+              <span className="trk-silk">Time / Div</span>
+              <div className="trk-span-switch" role="toolbar" aria-label="Time grid span">
+                {GRID_SPANS.map((option) => {
+                  const pressed = gridSpan === option && !infiniteScroll
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => {
+                        setGridSpan(option)
+                        setInfiniteScroll(false)
+                      }}
+                      aria-pressed={pressed}
+                      title={
+                        option === "day"
+                          ? "One day, down to the minute"
+                          : "Seven days side by side — fill a routine across several at once"
+                      }
+                      className="capitalize"
+                    >
+                      {option}
+                    </button>
+                  )
+                })}
+                <span className="trk-toolbar-split" aria-hidden />
+                <button
+                  type="button"
+                  aria-pressed={infiniteScroll}
+                  title="Continuous time, day rows with week bands. Origin stays put when you pick a day."
+                  onClick={() => setInfiniteScroll(!infiniteScroll)}
+                >
+                  Infinite scroll
+                </button>
               </div>
-              <div>
-                <Label>Color</Label>
-                <input type="color" value={editingPen.color} onChange={(e) => setEditingPen({ ...editingPen, color: e.target.value })} className="h-10 w-full" />
-              </div>
-              <Button
-                className="w-full"
-                onClick={() => {
-                  updatePen(scope.id, editingPen)
-                  setEditingPen(null)
-                }}
-              >
-                Save
-              </Button>
             </div>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      <div className="flex flex-wrap items-end gap-2">
-        <div>
-          <Label className="text-[10px]">From</Label>
-          <Input type="time" value={rangeFrom} onChange={(e) => setRangeFrom(e.target.value)} className="h-8 w-28" />
-        </div>
-        <div>
-          <Label className="text-[10px]">To</Label>
-          <Input type="time" value={rangeTo} onChange={(e) => setRangeTo(e.target.value)} className="h-8 w-28" />
-        </div>
-        <Button size="sm" variant="outline" onClick={applyTypedRange}>
-          Fill range with {selectedPenId === "ERASE" ? "erase" : penById(effectivePenId)?.name || "selected pen"}
-        </Button>
-      </div>
-
-      <p className="text-xs text-muted-foreground">
-        Drag (or finger-drag) to paint one slot at a time. Tap a block with the same pen selected to add details; another pen or Erase changes only that slot.
-      </p>
-
-      <div className="overflow-auto border rounded bg-white" style={{ maxHeight: compact ? 360 : "none" }}>
-        <div className="inline-block min-w-full">
-          {Array.from({ length: 24 }, (_, hour) => (
-            <div key={hour} className="flex items-stretch border-b last:border-b-0" style={{ height: 22 }}>
-              <div className="w-16 shrink-0 text-[10px] text-muted-foreground flex items-center justify-end pr-2 border-r">
-                {slotToLabel(hour * COLS_PER_HOUR)}
+            <CellSizeKeys steps={GRID_STEPS} value={gridStep} onChange={setGridStep} />
+            {!infiniteScroll && gridSpan === "day" && (
+              <FillRangeControl
+                dayEntries={dayEntries}
+                fallbackFrom={prefs.fillFrom}
+                fallbackTo={prefs.fillTo}
+                selectedPenId={selectedPenId}
+                penName={selectedPenId === ERASE ? "erase" : selectedPen?.name || "selected pen"}
+                onFill={applyFillRange}
+              />
+            )}
+            {!infiniteScroll && gridSpan === "day" && (
+              <div className="trk-occ-well">
+                <span className="trk-silk">Occupancy</span>
+                <div className="trk-occ-readout">
+                  <span className="trk-occ-pct">{Math.round(totals.coverage)}%</span>
+                  <span className="trk-occ-tracked">{formatDuration(totals.tracked)} tracked</span>
+                </div>
               </div>
-              <div className="flex flex-1">
-                {Array.from({ length: COLS_PER_HOUR }, (_, c) => {
-                  const slot = hour * COLS_PER_HOUR + c
-                  const cellPen = penById(slots[slot])
+            )}
+            {!infiniteScroll && gridSpan === "day" && <TrkCrtProbe text={probe} />}
+          </>
+        }
+      >
+      {infiniteScroll ? (
+        <InfiniteStrip
+          centerDate={date}
+          onDateChange={setDate}
+          onOpenDay={(day) => {
+            setDate(day)
+            setGridSpan("day")
+            setInfiniteScroll(false)
+          }}
+          onOpenWeek={(weekStart) => {
+            setDate(weekStart)
+            setGridSpan("week")
+            setInfiniteScroll(false)
+          }}
+          mode="week"
+          compact={compact}
+        />
+      ) : gridSpan === "week" ? (
+        <WeekGrid
+          date={date}
+          onDateChange={setDate}
+          onOpenDay={(day) => {
+            setDate(day)
+            setGridSpan("day")
+          }}
+          compact={compact}
+        />
+      ) : (
+        <>
+      <TrackingPeriodNav
+        label={date.toLocaleDateString(undefined, {
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+        })}
+        previousLabel="Previous day"
+        nextLabel="Next day"
+        onPrevious={() => setDate(subDays(date, 1))}
+        onNext={() => setDate(addDays(date, 1))}
+        onToday={() => setDate(new Date())}
+        trailing={
+          <button type="button" className="trk-micro-danger trk-period-aux" onClick={() => clearDay(dk, scope.id)}>
+            Clear day
+          </button>
+        }
+      />
+
+      {totals.tracked === 0 && <ScreenTimeEmptyHint date={dk} scopeId={scope.id} />}
+
+      <div
+        ref={gridRef}
+        className="trk-grid trk-grid-full-day"
+        data-start-hour={startHour}
+        style={compact ? { maxHeight: 360 } : undefined}
+        onMouseLeave={() => setProbe(null)}
+      >
+        <div
+          className="trk-plot-paper"
+          onMouseDown={(e) => {
+            const minute = minuteFromEvent(e.target)
+            if (minute === null) return
+            if (selectedPenId === null) {
+              const existing = map[minute]
+              if (existing) setOpenEntryId(existing.id)
+              return
+            }
+            e.preventDefault()
+            beginDrag(minute)
+          }}
+          onMouseOver={(e) => {
+            if (!dragRef.current) return
+            const minute = minuteFromEvent(e.target)
+            if (minute !== null) extendDrag(minute)
+          }}
+          onTouchStart={(e) => {
+            const minute = minuteFromEvent(e.target)
+            if (minute === null) return
+            if (selectedPenId === null) {
+              const existing = map[minute]
+              if (existing) setOpenEntryId(existing.id)
+              return
+            }
+            e.preventDefault()
+            beginDrag(minute)
+          }}
+          onTouchMove={(e) => {
+            if (!dragRef.current) return
+            e.preventDefault()
+            const touch = e.touches[0]
+            if (!touch) return
+            const minute = minuteFromEvent(document.elementFromPoint(touch.clientX, touch.clientY))
+            if (minute !== null) extendDrag(minute)
+          }}
+        >
+          <div className="trk-time-axis sticky top-0 z-20 flex items-stretch">
+            <div className="trk-hour-bezel">min</div>
+            <div className="flex flex-1">
+              {Array.from({ length: cellsPerHour }, (_, c) => {
+                const minute = c * gridStep
+                return (
+                  <div
+                    key={c}
+                    className={`flex-1 whitespace-nowrap ${
+                      c !== 0 && minute % 15 === 0 ? "trk-cell-quarter" : ""
+                    }`}
+                  >
+                    {minute % rulerEvery === 0 ? `:${String(minute).padStart(2, "0")}` : ""}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+          <div className="relative">
+          {Array.from({ length: 24 }, (_, hour) => (
+            <div
+              key={hour}
+              data-hour={hour}
+              className="trk-hour-row relative flex shrink-0 items-stretch"
+              style={{ height: rowHeight, minHeight: rowHeight }}
+            >
+              <div className="trk-hour-bezel flex items-center justify-end">
+                {minutesToLabel(hour * 60)}
+              </div>
+              <div className="trk-plot">
+                {Array.from({ length: cellsPerHour }, (_, c) => {
+                  const minute = hour * 60 + c * gridStep
+                  const cellEntry = dominantEntry(map, minute, gridStep)
+                  const pen = cellEntry ? displayedPen(scope, cellEntry.penId) : null
+                  const painted = cellEntry ? scope.pens.find((p) => p.id === cellEntry.penId) : null
+                  const inDrag = minute >= dragLo && minute < dragHi
+                  const onQuarter = minute % 15 === 0 && c !== 0
+                  const onFive = minute % 5 === 0 && !onQuarter && c !== 0
+                  const fill = inDrag
+                    ? { background: selectedPenId === ERASE ? "#fca5a5" : selectedPen?.color }
+                    : penCellStyle(pen, cellEntry?.precision, minute)
+                  const also = cellEntry
+                    ? assignedPenIds(cellEntry)
+                        .slice(1)
+                        .map((id) => scope.pens.find((p) => p.id === id)?.name)
+                        .filter((n): n is string => Boolean(n))
+                    : []
+                  const sparking = Boolean(spark && minute >= spark.lo && minute < spark.hi)
                   return (
                     <div
                       key={c}
-                      title={`${slotToLabel(slot)}${cellPen ? ` · ${cellPen.name}` : ""}`}
-                      onMouseDown={() => {
-                        dragStartSlot.current = slot
-                        draggingRef.current = true
+                      data-minute={minute}
+                      className={cellPaintClass({
+                        painted: Boolean(pen) || inDrag,
+                        quarter: onQuarter,
+                        five: onFive || (gridStep >= 5 && c !== 0 && !onQuarter),
+                        spark: sparking,
+                      })}
+                      style={{
+                        ...fill,
+                        opacity: inDrag ? 0.75 : 1,
                       }}
-                      onMouseEnter={() => {
-                        if (draggingRef.current && dragStartSlot.current !== null) {
-                          paintedRef.current = true
-                          paintSlot(slot)
-                        }
-                      }}
-                      onMouseUp={() => handleSlotMouseUp(slot)}
-                      onTouchStart={(e) => {
-                        // Paint via touch without blocking page scroll unless a pen is selected.
-                        if (selectedPenId === null) return
-                        e.preventDefault()
-                        dragStartSlot.current = slot
-                        draggingRef.current = true
-                        paintSlot(slot)
-                      }}
-                      onTouchMove={(e) => {
-                        if (!draggingRef.current || selectedPenId === null) return
-                        e.preventDefault()
-                        const t = e.touches[0]
-                        if (!t) return
-                        const el = document.elementFromPoint(t.clientX, t.clientY) as HTMLElement | null
-                        const slotAttr = el?.dataset?.timeslot
-                        if (slotAttr == null) return
-                        const next = Number(slotAttr)
-                        if (!Number.isFinite(next)) return
-                        paintedRef.current = true
-                        paintSlot(next)
-                      }}
-                      onTouchEnd={() => handleSlotMouseUp(slot)}
-                      data-timeslot={slot}
-                      className="flex-1 border-r last:border-r-0 cursor-pointer touch-none"
-                      style={{ background: cellPen?.color || "transparent" }}
+                      onMouseEnter={() =>
+                        setProbe(
+                          trackingProbeText({
+                            minute,
+                            step: gridStep,
+                            name: cellEntry ? entryDisplayName(cellEntry, painted?.name || pen?.name) : undefined,
+                            leafName: painted && painted.id !== pen?.id ? painted.name : undefined,
+                            assumed: cellEntry?.precision === "estimated",
+                            secondaries: also,
+                          }),
+                        )
+                      }
                     />
                   )
                 })}
+                {dayInstants
+                  .filter((event) => event.startMin >= hour * 60 && event.startMin < (hour + 1) * 60)
+                  .map((event) => {
+                    const eventPen = displayedPen(scope, event.penId)
+                    return (
+                      <button
+                        key={event.id}
+                        type="button"
+                        className="trk-instant"
+                        aria-label={`${minutesToLabel(event.startMin)} · ${entryDisplayName(event, eventPen?.name)}`}
+                        style={{
+                          left: `${((event.startMin - hour * 60) / 60) * 100}%`,
+                          background: eventPen?.color,
+                        }}
+                        onMouseEnter={() =>
+                          setProbe(
+                            trackingProbeText({
+                              minute: event.startMin,
+                              name: entryDisplayName(event, eventPen?.name),
+                            }),
+                          )
+                        }
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setOpenEntryId(event.id)
+                        }}
+                      />
+                    )
+                  })}
               </div>
             </div>
           ))}
+          <div
+            className="trk-day-clock-markers"
+            style={{
+              position: "absolute",
+              top: 0,
+              right: 0,
+              bottom: 0,
+              left: 64,
+              pointerEvents: "none",
+              zIndex: 6,
+            }}
+            aria-hidden
+          >
+            <TrkPlotMarkers
+              origin={0}
+              span={MINUTES_PER_DAY}
+              axis="y"
+              nowMinute={nowMinute}
+              sun={sun}
+              showNowLabel
+            />
+          </div>
+          </div>
+          {totals.tracked === 0 && <div className="trk-silkscreen">untracked</div>}
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-3 text-sm">
-        {scope.pens
-          .filter((p) => totals[p.id])
-          .map((p) => (
-            <span key={p.id} className="flex items-center gap-1.5">
-              <span className="inline-block w-3 h-3 rounded-sm" style={{ background: p.color }} />
-              {p.name}: <span className="font-medium">{fmtMins(totals[p.id])}</span>
+      <TrkRibbon pens={pens} untracked={totals.untracked} coverage={totals.coverage} />
+
+      {dayTagTotals.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          <span className="text-xs text-muted-foreground">By tag (all scopes)</span>
+          {dayTagTotals.map((t) => (
+            <span key={t.id} className="flex items-center gap-1.5">
+              <span className="inline-block h-3 w-3 rounded-sm" style={{ background: t.color }} />
+              {t.name}: <span className="font-medium">{formatDuration(t.minutes)}</span>
             </span>
           ))}
-        <span className="text-muted-foreground">Untracked: {fmtMins(untracked)}</span>
-      </div>
-
-      {blockDetail && pen && (
-        <Dialog open onOpenChange={() => setBlockDetailState(null)}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle style={{ color: pen.color }}>
-                {pen.name} · {slotToLabel(blockDetail.startSlot)} – {slotToLabel(blockDetail.endSlot + 1)}
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3">
-              <div>
-                <Label>What specifically?</Label>
-                <Input
-                  value={blockDetail.title || ""}
-                  onChange={(e) => setBlockDetailState({ ...blockDetail, title: e.target.value })}
-                  placeholder={scope.id === "activity" ? "e.g. Reading, Coding project X" : "Details"}
-                />
-              </div>
-              {scope.id === "activity" && (
-                <>
-                  <div>
-                    <Label>Project / context</Label>
-                    <Input
-                      value={blockDetail.project || ""}
-                      onChange={(e) => setBlockDetailState({ ...blockDetail, project: e.target.value })}
-                      placeholder="Which project or area"
-                    />
-                  </div>
-                  <div>
-                    <Label>Book(s)</Label>
-                    <Input
-                      value={blockDetail.books || ""}
-                      onChange={(e) => setBlockDetailState({ ...blockDetail, books: e.target.value })}
-                      placeholder="Title(s)"
-                    />
-                  </div>
-                  <div>
-                    <Label>Pages read</Label>
-                    <Input
-                      type="number"
-                      value={blockDetail.pages ?? ""}
-                      onChange={(e) =>
-                        setBlockDetailState({ ...blockDetail, pages: Number.parseInt(e.target.value) || undefined })
-                      }
-                    />
-                  </div>
-                </>
-              )}
-              <div>
-                <Label>Notes</Label>
-                <Textarea
-                  value={blockDetail.notes || ""}
-                  onChange={(e) => setBlockDetailState({ ...blockDetail, notes: e.target.value })}
-                  rows={2}
-                />
-              </div>
-              <Button
-                className="w-full"
-                onClick={() => {
-                  setBlockDetail(blockDetail)
-                  setBlockDetailState(null)
-                }}
-              >
-                Save details
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        </div>
       )}
+        </>
+      )}
+      </TrkPlotBezel>
+
+      {openEntry && <EntryDialog entry={openEntry} onClose={() => setOpenEntryId(null)} />}
     </div>
   )
 }
+
+export { dateKey as trackingDateKey, minutesToTimeString }

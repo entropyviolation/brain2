@@ -1,38 +1,343 @@
 # `components/Home/Tracking/` — Time & Day Logging
 
-The Home **Tracking** sub-tab (and the global header **Tracking** button via `cognitive-state.tsx`) captures how time is spent and what actually happened vs. the plan.
+The Home **Tracking** sub-tab in **Brain2** (and the global header **Tracking** button via `cognitive-state.tsx`) captures how time is spent and what actually happened vs. the plan.
+
+Time is stored as **minute-resolution intervals**, not slots. Each painted block is a real event with an id, a start, an end, a **primary pen** (optional **secondaries**), optional detail variants, and an optional **display name** — so the same block can be seen and edited from the grid, from the Activity Log, or from Analytics, and every view reports the same number. Assumed blocks stay hatched. A later block dialog will draw that block as a differential — event, object, label, higher labels, and the characteristics left out (GS-7, [`docs/ScienceandSanityBrain2.md`](../../../docs/ScienceandSanityBrain2.md)). Opening it does not rewrite the paint.
 
 ## Files
 
 | File | Purpose |
 |------|---------|
-| `time-grid.tsx` | **TimeGrid** — 15-minute slot grid per day. User paints slots with colored "pens" grouped into scopes (Activity, Location, Mood, etc.). Supports drag-paint, typed time ranges, pen/scope management, and per-block notes. Data in `lib/time-tracking-store.ts` (`cogs-timegrid-store`). |
-| `actual-day-view.tsx` | **Day Log** — Compare planned schedule (from `AgendaGrid`) against logged actual time. Lets you log duration/location/notes onto tasks via `task.timeLogs`; shows completed tasks and a manual log list for the selected day. |
+| `time-grid.tsx` | **TimeGrid** (`data-ui-name="Time grid"`, docs path this file, `#time-gridtsx-behavior`) — the grid. **TIME/DIV** (day / week / Infinite scroll), **Cell**, and **Fill** share one equal-height silkscreen strip on `.trk-plot-bezel`; leftover width and height go to the white plot (`.trk-plot-region`, `flex: 1`), not a gray slab beside `width: fit-content` wells. In *day*: 24 hourly rows, cells at the chosen **cell size** (`cell-size-keys.tsx`), drag to paint, click a block to open it (including Sleep), **Fill** mounts `fill-range-control.tsx` (longest empty gap by default; View-settings Day fill clocks only as a fully-untracked fallback), occupancy well + ribbon. Opens scrolled to the **first unpainted waking hour**, not midnight. Date row is period nameplate `.trk-period` (metal prev / engraved `h3` / metal next / Today; Clear day as `.trk-period-aux` in trailing). Hover is a phosphor LCD (`.trk-probe`, `#7dffc4`) on the strip — not a browser tooltip. **Now / sunrise / sunset** are one horizontal overlay across those hour rows (Plan agenda / Day Log clock). Discrete events stay vertical ticks at the logged minute. **Infinite scroll** is one control: time left-to-right, day rows with week bands, frozen origin. Not in View settings. In *week* it hands over to `week-grid.tsx`. Colors follow display depth; assumed blocks are hatched (pen color, not yellow); a pen **image** tiles as a mosaic. On Home Tracking the palette + view-mode bar are lifted above the plot (`showPalette={false}` here); TIME/DIV stays on this bezel strip. |
+| `empty-blocks.ts` | Pure untracked-gap math for Time Grid Fill, keyed by that day's interval entries. Discrete events are not occupancy; Sleep and other painted cells are. Gaps list **chronologically**; **longest** is the default (earlier start wins a tie). Empty midnight ends merge into one wrapping gap. Fully untracked → View-settings waking window; fully tracked → no gaps. |
+| `empty-blocks.test.ts` | Longest gap default; chronological order; wrap merge; fallback when empty; no crash / no gaps when fully tracked; sleep is occupied. |
+| `fill-range-control.tsx` | Time Grid **Fill** well (extracted from `time-grid.tsx`). Start–end labels, `<` `>` through chronological empty blocks (longest selected first), Fill paints the selected pen. **Double-click** a clock for the picker; single click does nothing. Fully tracked: Fill disabled + “Nothing empty to fill”. |
+| `fill-range-control.test.tsx` | Longest empty default; arrows cycle; double-click opens a time input; Fill writes the range; fully tracked does not crash. |
+| `time-grid.test.tsx` | Fill clocks, waking-hour open, now/sun markers, phosphor probe, **centered date cluster** (Today under the large date; prev/next/Today change the viewed day), painted-cell hairline (left-only, fainter than empty — not a 4-side inset). |
+| `cell-size-keys.tsx` | **Cell** well — 1m / 5m / 10m / 15m / 30m. The active step is `aria-pressed` plus `.trk-cell-size-btn-on` (navy inset, phosphor cap) so the current minute size is obvious from the buttons. |
+| `cell-size-keys.test.tsx` | Active key is pressed + selected class; clicking another step fires `onChange`. |
+| `week-grid.tsx` | **WeekGrid** — seven columns, one per day. Drag down a column to paint; scissors splits at the minute; click a cell for the block editor. Range fill (From/To + day ticks) stays on this grid — catching up is the week's job; cell size is in View settings. Opens on the first unpainted waking hour of the focused day. |
+| `infinite-strip.tsx` | The one **Infinite scroll** strip. Origin is frozen at mount; a single click on a day tile only highlights it. Double-click a left day tile to open the paged **Day** grid on that date; double-click a week band to open the paged **Week** grid on that week (Infinite turns off). Week-band mode (day-scale rows + week labels). Entries are indexed by date; only the virtual window draws cells (15m minimum so a row is 96 nodes, not 1440). Prepend restores scrollTop so the top sentinel cannot twitch. |
+| `infinite-window.ts` | Pure window math: date range, week bands, virtual slice, prepend scroll restore, per-scope date index. |
+| `infinite-window.test.ts` | Origin-stable range, 15m cell cap, prepend restore, date index. |
+| `infinite-strip.test.tsx` | Selecting a day does not rebuild the window; week bands render. |
+| `pen-palette.tsx` | Tracking control panel (`data-ui-name="Tracking control panel"`, `#cabinet-looks`). One nowrap rail: **Show as** / **Sort** labeled wells, **Expand** / **Conceal** (right of Tree; persists as `penWellExpanded`; caption follows the well), **New pen** (reveals the inline creator), then **Look** (`.trk-latches-well`) with **Hide** / **View** / **Tags**. **Log activity** is not here — it is a grid action on `.trk-grid-rail` (`LogActivityLatch`). View modes live in `pen-mode-bar.tsx`. Selected pen + search + beads sit in `.trk-pen-tray` (photographed plate from View settings; default **Cat traces**, not velvet) **only while Draw is the paint tool**; Erase / Scissors hide that tray. Beads default to **one row**; Expand unwraps them and the key reads Conceal until clicked again. The swatch + “New pen…” row stays **hidden** until **New pen**; a successful create, Escape, blur-without-create, or a second New pen click hides it again. Selected name, detail, and the **Tags** library sit on steel plates (`.trk-selected-plate`, `.trk-detail-plate`, `.trk-tags-well`). `ERASE` / `SCISSORS` sentinels re-exported from `tracking-tool-mode.ts`. Infinite scroll toggle on the Time Grid toolbar, not here. |
+| `pen-palette.test.tsx` | Palette stamps `data-pen-tray` from prefs; default is Cat traces, not velvet. Beads start collapsed; Expand sits after Tree, captions Conceal while open; click Conceal collapses. New pen creator is hidden by default, revealed by the toolbar key, re-hidden after create. Detail copy is on `.trk-detail-plate`. |
+| `pen-mode-bar.tsx` | View-mode trough (`data-ui-name="Tracking view modes"`): **Activity / Location / Mood / Company / Screen Time / iPhone Screen Time / iPhone Calls / iPhone Texts / …** plus compact + / red-capped trash. Rendered by the parent **under** the pen tray on `.trk-grid-rail` with **Log activity** on Time Grid / Day Log (Activity Log omits the rail latch), immediately **above** TIME/DIV + the Time Grid (`.trk-chrome-stack`). Shared across Time Grid, Activity Log, and Day Log. |
+| `pen-mode-bar.test.tsx` | Seeded views, add-view field, DOM order: pen tray → grid rail (modes + Log activity) → plot. |
+| `tracking-tool-mode.ts` | Paint-tool radio: **Draw** / **Erase** / **Scissors**. `ERASE` / `SCISSORS` sentinels for the grid; anything else is Draw. `showPenTray` is true only for Draw. Remembers the last real pen so leaving Erase/Scissors restores it. Hide / View / Tags are not stored here. |
+| `tracking-tool-mode.test.ts` | Exclusive radios; tray hidden unless Draw; Draw restores the last pen. |
+| `tracking-tools-tray.tsx` | Paint tools well (`data-ui-name="Paint tools"`, `#cabinet-looks`): **Draw**, **Erase**, **Scissors** radios in `.trk-tools-tray` on the far-right `.trk-tools-rail`. Compact `tool-detail.tsx` (jewel lamp + how-to) sits **under** those throws so copy survives Draw-off. **Hide** / **View** / **Tags** are `TrackingViewLatches` (`data-ui-name="View latches"`) in the top `.trk-latches-well` next to SHOW AS / SORT — independent latches, not paint radios. Keys are milled steel + jewel lamp (pressed = inset + lamp, never Lucide, never a growing banner). |
+| `tracking-tools-tray.test.tsx` | Paint keys sit in `.trk-tools-tray` inside `.trk-tools-rail` (last child of the row, `margin-left: auto`) whether the pen tray is showing or not; Hide / View / Tags sit in a distinct `.trk-latches-well` on the SHOW AS / SORT row (not on the paint rail). Search and selected pen stay in the pen tray while Draw is on; Erase/Scissors hide the tray; Hide/Tags do not deselect Draw. Tool-detail copy is present for Draw, Erase, and Scissors, lives inside the tools tray (not `.trk-pen-tray`), includes a jewel icon, and is not a 176px Selected slab. No Lucide `svg` in the tools tray. Paint keys stay 96×22px. |
+| `tool-detail.tsx` | Compact selected-tool silkscreen (`.trk-tool-detail`): jewel lamp + Draw / Erase / Scissors name + how-to under the paint throws. Lives on the tools rail inside `.trk-tools-tray`, not in the pen tray. Does not resize the 96×22 keys. |
+| `trk-instrument.tsx` | Hover probe copy (phosphor LCD `.trk-probe`), stacked-day occupancy ribbon (same `penTotals`, optional coverage %), cell paint classes, `TrkLatchesWell` (Look silk wrapping Hide / View / Tags on the top toolbar row), `TrkPenToolsRow` (`.trk-pen-tray` or `.trk-pen-tools-spacer` in column one; `.trk-tools-rail` / `.trk-tools-rail-silk` pinned right in column two; `showPens` hides the tray unless Draw), `TrkChromeStack` (pen tray, then `.trk-grid-rail` with `.trk-mode-bar` + optional Log activity — omit `gridAction` when the child already has it, then plot), and `TrkPlotBezel` (one `.trk-plot-strip` over a growing `.trk-plot-region`). Looks only. |
+| `trk-time-markers.tsx` | **Now line** (red) and **sunrise/sunset** lines (gray). Do not remove. Day grid: **horizontal** across the plot (Plan agenda / Day Log). Week/Infinite: same clock on that view's axis. Discrete events are not these lines — they stay vertical ticks on the day grid. |
+| `trk-instrument.test.tsx` | Probe string, spark class, painted left-hairline (not 4-side inset), ribbon from `TrackingSlice` plus occupancy %, plot bezel strip + `flex-grow` region, Look well separate from the paint rail, pen-tray then right-pinned `.trk-tools-rail`, `showPens={false}` omits `.trk-pen-tray` but keeps the rail via `.trk-pen-tools-spacer`, chrome stack pens → modes → plot, Log activity on `.trk-grid-rail`. |
+| `tracking-view-settings-dialog.tsx` | View settings (`data-ui-name="Tracking view settings"`) — **cell size** (day + week) with a CRT preview of the chosen step, **Fill range** clock hours (**Day fill starts/ends** = Time Grid fully-untracked fallback, **Week fill starts/ends** = week-grid default — not calendar dates), **pen tray photograph** (thumbnail picker of curated designref plates), hidden pens, OK / Cancel / Apply. The chrome is `.trk-view-settings`: title + buttons stay put, `.trk-dialog-body` scrolls when the tray picker overflows the viewport. Distinct from pen settings. Infinite scroll is not in this dialog. Prefs auto-apply (`isDirty: false`); close does not prompt. |
+| `tracking-view-settings-dialog.test.tsx` | Picker lists the six curated trays; default is Cat traces, not velvet; a thumbnail click persists. Body `overflow-y: auto`; fill clocks keep writing `fillFrom` / `fillTo` / `weekFillFrom` / `weekFillTo`. |
+| `tracking-view-prefs.ts` | Typed Fill clocks (`fillFrom` / `fillTo` = Time Grid Fill fallback when the day is fully untracked, `weekFillFrom` / `weekFillTo` for the week-grid default) plus `penTray` for View settings, `penWellExpanded` (Expand / Conceal, right of Tree; default one-line beads), and `notesWellExpanded` (day-notes collapsed strip vs tall composer + tall history; default collapsed). Clocks, not dates. Labels in `TRACKING_FILL_CLOCK_LABELS`. Not paint math; not a persist bump. Key: `brain2-tracking-view-prefs`. |
+| `tracking-view-prefs.test.ts` | Tray persist, unknown ids ignored, older blobs without `penTray` still load clocks. Pen-well and day-notes Expand default off and persist; older blobs stay collapsed. Fill clock labels name starts/ends hours. |
+| `pen-tray-bg.ts` | Curated plates: Cat traces (default), Pewter, Jewel PCB, Bloom, FR4, X-ray. Copies in `public/pen-tray/`. |
+| `pen-tray-bg.css` | Photograph on `.trk-pen-tray` only, seated in a milled metal frame; clears velvet from `.trk-selected` / `.trk-pen-well`. Copy lives on steel plates so every tray photo stays readable. Picker chips. |
+| `pen-tray-bg.test.ts` | Catalog, default not velvet, public `/pen-tray/` URLs. |
+| `waking-scroll.ts` | Pure pick of the first unpainted waking hour (default 7 AM). |
+| `waking-scroll.test.ts` | Empty day opens at 7 AM; painted waking hours are skipped. |
+| `tracking-undo.ts` | Capture-phase **Cmd/Ctrl-Z** (Ctrl+Y / Cmd+Shift-Z redo) while Home → Tracking is showing or the header Tracking dialog is open. Pops the existing `lib/action-history.ts` stack — paint, erase, edit, split, move, delete, clear, week fill, pen/tag edits. Does not steal undo from inputs, textareas, or contenteditable. |
+| `tracking-undo.test.tsx` | Undo last painted block on Cmd/Ctrl-Z from a focused grid; do not intercept Cmd+Z in an input or textarea; split restores the original block. |
+| `other-scope-hint.tsx` | Banner component when this view has 0m but another view has hours — **Show Activity (8h)**. Kept for unit tests and possible reuse; **not mounted** on Time Grid, week-grid, Activity Log, or Day Log. Returns null on Screen Time. |
+| `screentime-empty-hint.tsx` | Empty Screen Time day: ActivityWatch + Settings → Screen Time; says AW cannot import Apple Screen Time or pre-install history. Does **not** call `setActiveScope`. Mounted on Time Grid / week / Day Log / Activity Log when the scope is Screen Time. |
+| `tracking-period-nav.tsx` | Period nameplate date bar (`.trk-period`): metal previous chevron, engraved centered `h3`, metal next chevron, Today (`.trk-period-today`). Optional meta under the date; optional trailing (Clear day as `.trk-period-aux`, Log activity, week cell size) in `.trk-period-trailing`. Shared by time-grid day, week-grid, Activity Log, and Day Log. |
+| `pen-swatches.tsx` | Searchable well of pen beads (plate photograph comes from the palette wrapper). Optional pen **image** on the bead. Palette passes `expanded` so the well can clip to one row, and `showCreator` so the inline new-pen row stays hidden until **New pen**. Log activity / block editor omit `showCreator` and keep the row. The block editor only mounts this well after **add pen color**. |
+| `secondary-pens-field.tsx` | Extra pens on one block. Primary still paints the grid color; secondaries union their tags into habits / operations / goals. Chosen pens show as removable chips; the match list appears only once you type. In the block editor this field lives inside the **add pen color** library, not on the default surface. |
+| `block-pen-section.tsx` | Pen cluster on the block editor. Default: only colors already on that block (primary + secondaries). **add pen color** unfolds search, new pen, the full well, and `SecondaryPensField`. Clicking an associated secondary promotes it to primary and keeps the old primary on the block. |
+| `block-pen-section.test.tsx` | Default hides the library; **add pen color** reveals search / all pens; attaching a secondary fires `onSecondaries`. |
+| `entry-dialog.tsx` | **Block editor** (`data-ui-name="Tracking entry"`) — retime, **display name**, pens already on the block (library behind **add pen color**), optional **secondary pens**, tick variants, block tags, **Assumed / reconstructed** (default certain), Also happening, notes, **split at a chosen minute**, delete. Sleep blocks say **Fell asleep** / **Woke up** and invite dream notes. Discrete events have a single **When**. Start/End default to the block's calendar day; a **Date** latch optionally reveals a date so a wrap can start 11 PM one day and end 1 AM the next. **Must open immediately** — sleep/pen-action sync stays on the views, not this click path. Dirty close uses the house unsaved-changes guard. |
+| `entry-dialog.test.tsx` | Associated pens only by default; **add pen color** reveals the library; display name, secondary pens, tags, split-at-minute, sleep wording, optional date, delete. |
+| `log-activity-dialog.tsx` | **Log activity** (`data-ui-name="Log activity"`) — optional name, start/end (or one time for a **discrete event**), pen, notes, optional assumed. Times default to the selected calendar day; **Date** is hidden until asked. Focusing a clock reveals **right now** beside that picker (`now-time-button.tsx`) — stamps hours and minutes, keeps the dialog date. A discrete event can start or end a state block of another pen. Dirty close uses the house unsaved-changes guard. `LogActivityLatch` is the gray latch on `.trk-grid-rail` (next to TIME/DIV / view modes), not on the pen tray. |
+| `now-time-button.tsx` | **right now** latch for a live `<input type="time">`. Hidden until that field is focused; sits next to the picker (not over it). Click or keyboard sets HH:MM to now. Shared by Log activity start / end / When (and the same `OptionalClock` in the block editor). |
+| `now-time-button.test.tsx` | Idle clocks stay clean; start / end / discrete When stamp the current time; date is unchanged. |
+| `confirm-planned-dialog.tsx` | Day Log: confirm a planned task/event happened — paint it, optionally correct times/notes, and `completeTask` so dependents unlock. |
+| `companion-section.tsx` | **Also happening** — the other scopes' view of this block's window. |
+| `variant-chips.tsx` | Multi-select chips for a pen's variants, with inline "add". Several variants can be on at once. |
+| `tracking-activity-log.tsx` | **Activity Log** — chronological blocks + untracked gaps as CRT lines (tabular time, color pad, name, duration flush right). Each gap is a quieter white hairline **grid row**: time window, Untracked · duration, sunken white note field, Fill-with-pen, and a 22×22 `.trk-gap-add` **+**. **Log activity** sits on this view’s `.trk-period` trailing latch (Home does not also put `LogActivityLatch` on `.trk-grid-rail` here; Time Grid / Day Log keep the rail copy). Click a row for the block editor (including Sleep). Discrete events show a single clock time. **Done this day** is a sunken `.trk-aside-well`. |
+| `tracking-activity-log.test.tsx` | Lists blocks/gaps; **Log activity** query has length 1; gap add has `.trk-gap-add`; wrap dates; create pen. |
+| `tracking-day-notes.tsx` | **Day notes** — metal well (`#trk-day-notes.trk-notes`) under the plot inside the chrome stack. Append log for the calendar day (`components/append-log.tsx`). White composer (never cream); cream lace only inside the bevel. Collapsed is **only** the Day notes legend and Expand — no composer, history, or `.hab-view-changer`. Expand adds `.trk-notes-open`, a tall `size="day"` composer, and tall history (min-height 16rem); List / Bulk / Latest appear when open. **Submit note** stamps the writing time; past entries cannot be edited. `notesWellExpanded` on tracking-view-prefs. Writes `brain2-tracking-day-notes`. |
+| `tracking-day-notes.test.tsx` | Type/save, persist overlay, `#trk-day-notes.trk-notes` wrapper, earlier notes in `.append-log-history`, Expand/Collapse persist, List / Bulk / Latest. |
+| `pen-settings-dialog.tsx` | Rename, recolor, optional **image** (`data-ui-name="Pen settings"`), **Counts as**, tags, **default action format**, variants, delete. Nesting is retroactive. This is settings for the selected pen — not view settings. Dirty close uses the house unsaved-changes guard. |
+| `pen-parent-picker.tsx` | Retro searchable Counts-as control. One parent; Create new pen so this one can nest under a parent that does not exist yet. Options show the ancestor path (`Home › Ocean Beach › San Diego`); search matches those ancestors too, so typing Mexico surfaces Balboa Park. |
+| `pen-parent-picker.test.tsx` | Path labels and ancestor search. |
+| `pen-chain-visual.tsx` | Collapsible color chain (this pen → parents) and a branching diagram of pens that count as the current one. Each node opens that pen's settings. Cycle-safe; opens when a parent is assigned while the dialog is up. |
+| `pen-chain-visual.test.tsx` | Chain, branch, lonely-root copy, cycle guard. |
+| `pen-action-format-editor.tsx` | Default Done-today templates on a pen, separate from habit links. |
+| `tracking-chrome.css` | Milled fascia (`.trk95`): CRT **Tracking** title + equal-fill Time Grid / Activity Log / Day Log keys (`.trk-fascia` / `.hab-view-changer`, active = CRT + power lamp), period nameplate + metal prev/next/today (`.trk-period`), milled `.trk-now-module`, palette Show/Sort/Expand↔Conceal/New pen rail plus Look well (Hide / View / Tags), `.trk-chrome-stack` (pens → `.trk-grid-rail` (modes + Log activity) → `.trk-plot-bezel`), two-column `.trk-pen-tools-row` (grid `1fr auto`: `.trk-pen-tray` or `.trk-pen-tools-spacer` + right-pinned `.trk-tools-rail` / `.trk-tools-rail-silk` with milled jewel keys in `.trk-tools-tray` and compact `.trk-tool-detail` jewel + how-to under the paint throws), selected-pen latch, steel plates for selected/detail copy, one-line bead well (`.trk-pen-well-collapsed`), status bar. Shared packing (`--trk-gap` 3px, `--trk-well-pad` 3px, `--trk-key-h` 22px, `--trk-cluster-min` 28px) on SHOW AS / SORT / Look / mode bar / TIME/DIV strip / date cluster / tools rail. **Paint keys** in `.trk-tools-tray` are fixed **96×22px** (`.trk-tool-key`) — mill + jewel lamp, selected is inset + lamp, never Lucide, never flex-grown. Look latches share the mill + lamp at 22px high, max 96px wide. A focused clock shows `.trk-now-time` (**right now**) beside the picker. The tray photograph is **not** in this file — `pen-tray-bg.css` paints `.trk-pen-tray` inside a milled metal frame. Plot is **white with hairline gray ticks** (1px / lighter stroke on `.trk-cell` and hour rules on `.trk-plot`; **painted fills keep a fainter left-only tick** so slabs read as paint, not a 4-side window grid; not brown, not a dark pour) inside `.trk-plot-bezel`: one equal-height `.trk-plot-strip` (TIME/DIV + Cell + Fill + occupancy + phosphor `.trk-probe`) over a growing `.trk-plot-region` (`flex: 1`) with a milled CRT lip (white paper sunken inside the steel bezel). Day date rows share Plan-style `.trk-period` (nameplate `h3`, metal chevrons, Today; Clear day / Log activity in `.trk-period-trailing`). Hour bezels are milled steel. Occupancy ribbon uses CRT-green `%` and a quiet hatch for untracked. Cell-size keys (`.trk-cell-size-btn` / `.trk-cell-size-btn-on`) go navy inset with a phosphor cap when pressed. Notes, log rows, and untracked gaps stay **white/gray**. Activity Log rows are CRT lines (tabular time, color pad, name, duration flush right); untracked gaps are quieter hairline white rows. Day notes (`.trk-notes`) are a **metal well**: collapsed is legend + Expand only; Expand (`.trk-notes-open`) opens a tall white composer and tall `.append-log-history` (min-height 16rem), with List / Bulk / Latest as `.hab-view-changer` keys when open. Dialogs keep `.trk-dialog` milled furniture and open **immediately** (no zoom/slide). View settings (`.trk-view-settings`) caps at the viewport; `.trk-dialog-body` scrolls so the title and OK stay put. Home Tracking is one window; `.trk-now-module` sits under the fascia as a milled status bay (before the chrome stack); day notes sit at the bottom of the chrome stack after `.trk-desktop`; the palette is a panel inside it (`embedded`), not a second frame. Day Log paint strip / sheet (`.trk-daylog*`) are steel/sunken gunmetal with **black** type (`#111` / `#000`); the agenda picture stays white. Activity Log aside wells (`.trk-aside-well` / `.trk-aside-empty`) are milled steel with black type. |
+| `depth-control.tsx` | **Show as** well — silkscreen + depth keys (Country / Area / Place / Exact, or Category / Activity). Hidden when the palette is flat. Same control on Analytics → Tracking. |
+| `tracking-tags-panel.tsx` | Tag library when **Tags** is latched: add, rename, recolor (`ColorSwatch`), delete. Steel well (`.trk-tags-well`) — silkscreen, raised keys with a color bead, pen count, habit-link mark, edit/delete micros — same family as DETAIL / SHOW AS, not pastel islands on the tray photo. |
+| `tracking-tags-well.css` | Raised plate + keys + inset New tag field for that library. |
+| `tracking-tags-panel.test.tsx` | Seeded tags list; add/rename/delete; `.trk-tags-well` / `.trk-tag-key` / `.trk-tag-bead` / `.trk-tag-add` exist. |
+| `actual-day-view.tsx` | **Day Log** — plan vs tracked. Local **Day \| Week** switch on the sheet (default Day; not persisted). Raised Win95 span keys (`.daylog-week-switch.trk-span-switch`). **Day**: single-day `AgendaGrid` `mode="log"`. **Week**: `DayLogWeek` seven-column board for the week of the selected date (not Time Grid `week-grid.tsx`). Period nav steps day or week (`subWeeks` / `addWeeks`; label `MMM d – MMM d, yyyy`; Previous week / Next week / Today). Paint strip and Screen Time empty hint follow the selected day. Untimed tasks and “Time logged onto tasks” sit in sunken `.trk-aside-well` mills (22px Log time keys; amber pad instead of Lucide) — day-mode only. |
+| `actual-day-view.test.tsx` | Date nav + plan vs tracked grid; no nested Activity Log; week switch shows seven columns; previous/next week change range; day heading returns to day mode. |
+| `daylog-week.tsx` | Compact 7-column Day Log week: painted solids, dashed plan tasks/events, amber `timeLogs`, untimed chips in-column. Click a date heading → that day in day mode. Tracked click → entry dialog; dashed plan → confirm. No create-event. |
+| `daylog-week.css` | Week board layout (`.daylog-week*`) for the Day Log sheet — seven narrow white-well pictures on gunmetal chrome. |
+| `daylog-week.test.tsx` | Seven columns for the week of the selected date; day heading fires `onOpenDay`; painted blocks render. |
+| `working-now-strip.tsx` | Operations **"Working on this now"** bar. On Home Tracking it sits in `.trk-now-module` directly under the fascia view keys (before `TrkChromeStack`; not above day notes). While a session is live, a dashed steel **usually ~N** chip shows the median of past `timeLogs` / unflagged `actualDuration` for that title or named type (`usualDurationMinutes`). Live sessions also fill the app-header optional **now** well (between System and Capture; idle → hidden; name, elapsed, Stop, Pause↔Resume). |
+| `pen-color-now-strip.tsx` | Pen-color **"Working on right now"** (`data-ui-name="Working on right now"`), under the Operations clock in the same `.trk-now-module`. Search any pen (name, view, or ancestor path), or type a new name: Create row (swatch, view `<select>`, `Create "…"` / disabled **Already in this view**) adds the pen on that view and selects it. Start; the clock begins at that second; the block is that pen's color in that pen's view until stop. Independent of the Operations session. |
+
+## Cabinet (looks)
+
+Milled `.trk95` chassis (CRT title + view-key bay in `.trk-fascia`); pen color is the only chroma on the plot. Stack (`.trk-chrome-stack`): **Show as / Sort / Expand↔Conceal / New pen** plus **Look** (Hide / View / Tags) on the palette rail, then the two-column pen + tools rack, then `.trk-grid-rail` (`.trk-mode-bar` Activity / Location / Mood / Company / … + / trash, plus the **Log activity** gray latch) immediately above `.trk-plot-bezel`. The bezel is a milled CRT lip: one equal-height `.trk-plot-strip` (TIME/DIV + Cell + Fill + occupancy well + phosphor probe) over a growing `.trk-plot-region` of white paper sunken inside the steel — leftover width and height go to the picture, not a gray slab. `.trk-pen-tools-row` is a two-column rack: column one is `.trk-pen-tray` (selected + search + beads on a **photographed instrument plate in a metal frame**, default Cat traces) **only while Draw is selected**, or `.trk-pen-tools-spacer` when it is not, so column two (`.trk-tools-rail`) stays pinned to the far right. The rail holds `.trk-tools-tray`: milled **Draw** / **Erase** / **Scissors** jewel throws (radios) and compact `.trk-tool-detail` jewel + how-to under those throws for every paint tool. Hide / View / Tags live in `.trk-latches-well` on the top row, not on that rail. Beads default to one clipped row; Expand unwraps them and reads Conceal while open. The inline new-pen row is hidden until **New pen**. Search, selected name, detail, and the **Tags** library sit on **steel plates** so type stays black on every tray photo. The tag library is raised keys with a small color bead (`.trk-tag-key` / `.trk-tag-bead`), not filled pastel chips. Erase and Scissors hide the pen tray; the Time Grid still erases and splits. Change the plate in **View settings → Pen tray**. Paint keys stay **96×22px** (mill + jewel, `--t-raised` / `--t-sunken` when pressed — never Lucide, never a growing banner). Working now sits in `.trk-now-module` under the fascia as one milled status bay (Operations clock, then **Working on right now** for a searched or newly created pen color), not above day notes.
+
+Notes composer, Activity Log CRT rows, untracked gaps are **white / cool gray**. Day Log sheet / paint / caption type is **black on gunmetal**; the agenda (and week-column plots) stay white paper with solid tracked / dashed plan / amber task-log blocks. Day notes (`.trk-notes`) are a **metal well**: cream lace inset in the bevel only, **white** composer and log rows. Collapsed is legend + Expand only (no composer, history, or view keys). **Expand** (`.trk-notes-open`) opens a tall composer and tall history (min-height 16rem). List / Bulk / Latest reuse Habits `.hab-view-changer` keys when open. Do not fill notes cream, yellow, or brown (`#ece9e4` / `#d4d0c8` / `#f3f3e8`). Autofill must not paint them yellow.
+
+### Locked: dialogs open immediately
+
+Clicking a painted block (Time Grid, Activity Log, Day Log — **including Sleep**) must open `entry-dialog.tsx` on the click. Do not derive sleep nights, sync pen-action Done rows, fetch weather, or walk the whole entry list on that path. `useSleepSync` / `usePenActionSync` / `useScreenTimeSync` live on the views (Time Grid), not inside the dialog. Re-deriving an unchanged night must keep the same block ids.
+
+**Way I** (locked mix):
+
+| Cluster | Treatment |
+|---------|-----------|
+| Views | `.trk-mode-bar` under the pen tray, closest to TIME/DIV. Connected radio trough (selected segment navy inset) + compact + / trash |
+| Show as / Sort / Expand / New pen | Labeled wells, silkscreen SHOW / SORT; Expand↔Conceal is a split toggle right of Tree (one-line beads vs wrap); New pen reveals the hidden creator |
+| Look latches | `.trk-latches-well` on that same top row (after New pen). Independent Hide / View / Tags milled jewel throws — not paint radios, not stacked on the tools rail |
+| Paint tools | Own well pinned to the far right of `.trk-pen-tools-row` (`.trk-tools-rail`, spacer when the pen tray hides). Stacked **fixed 96×22px** milled jewel throws: Draw–Erase–Scissors (radios). Pressed = inset + lamp, not Lucide, not a banner. Compact `.trk-tool-detail` jewel + how-to sits under the paint throws for every paint tool. |
+| + / trash | Compact 22×22 micro-keys; trash red-capped, gray body |
+| Log activity | Heavy gray latch on `.trk-grid-rail` with the view modes, above TIME/DIV. Tiny LED. Not gold. Not on the pen tray. |
+| Pen Settings | Latch on the selected-pen strip — not a toolbar twin |
+
+Other families that informed the mix (swap **one** cluster later, not all): **A** classic raised keys, **B** module wells, **C** enamel/gem on the swatch only, **D** one holy TIME/DIV round (Day/Week/Infinite already is), **E** CRT title + milled fascia (shipped), **F** copper pads / gold Log activity (**rejected** for rails), **G** nature-window tabs (**rejected** as the view switcher), **H** HUD ticks (canvas overlay only).
+
+Plot: white field, **hairline** gray ticks (minute cells + hour rules — 1px / lighter stroke, not a heavy inset; **filled cells use a fainter left-only hairline** so color slabs stay paint), milled steel hour bezel, pad-like instants, occupancy well + stacked-day ribbon from `penTotals` (CRT-green `%`, hatched untracked). TIME/DIV, Cell **1m / 5m / 10m / 15m / 30m**, and Fill share one silkscreen strip on the plot bezel. The live cell step is a navy inset key with a phosphor lamp bar (`.trk-cell-size-btn-on`) — raised neighbors stay steel so a glance is enough. Hover is `.trk-probe` phosphor LCD (`#7dffc4`) on that strip.
+
+### Locked: now line + sunrise/sunset
+
+**Do not remove these.** They are part of the instrument, not decoration.
+
+| Marker | Color | Where |
+|--------|-------|--------|
+| **Now** | red `#c00` | Current minute on **today** |
+| **Sunrise / sunset** | gray `#555` | From Settings home location, **that row's date** |
+
+Day grid: hours stack top-to-bottom, so now / sunrise / sunset are **horizontal** lines across the plot at that minute — the same clock as Plan **agenda** and the **Day Log** tab. Discrete events (smoked weed, ate dinner, …) stay **vertical** labeled ticks at the exact minute. Week grid: time runs down the column, so now/sun stay **horizontal** (now on today's column; sun per column from that day's cache). Infinite: same clock on each day strip from **that row's date**. Persistence: `lib/sun-times-store.ts` (`brain2-sun-times`), keyed `YYYY-MM-DD|lat|lng`; first write for a calendar day sticks so last week is not overwritten with this morning. Astronomy: `lib/sun-times.ts`. Code: `trk-time-markers.tsx` (`axis="y"` on the day overlay). Do not fold them into View settings. Do not restyle them yellow or brown.
 
 ## Where they appear
 
 | Entry point | Component |
 |-------------|-----------|
-| Home → Tracking → Time Grid | `TimeGrid` (full layout) |
-| Home → Tracking → Day Log | `ActualDayView` |
-| Global header → Tracking button | `TimeGrid` with `compact` prop inside a dialog |
+| Home → Tracking → Time Grid | Tracking milled window (`tracking-chrome.css`) with fascia (CRT title + view keys), `TrkChromeStack` (`PenPalette` then `.trk-grid-rail` with `PenModeBar` + `LogActivityLatch` then plot, then Working now module immediately above `TrackingDayNotes`), `TimeGrid` (`showPalette={false}`) |
+| Home → Tracking → Activity Log | same chrome + `TrackingActivityLog` + `TrackingDayNotes` |
+| Home → Tracking → Day Log | same chrome + `ActualDayView` + `TrackingDayNotes` |
+| Global header → Tracking button | `WorkingNowStrip` + `TimeGrid` with `compact` (palette + mode bar + Log activity inside, then TIME/DIV) |
+
+## Undo
+
+**Cmd+Z** on Mac, **Ctrl+Z** elsewhere, reverses the last Tracking write while this tab (or the header Tracking dialog) is open: uncreate the block you just painted, or undo the last edit, move, split, erase, delete, clear, or week fill. Cmd/Ctrl-Shift-Z (Ctrl+Y on Windows) redo. The stack is `lib/action-history.ts` — the same world snapshot the rest of Home uses. `tracking-undo.ts` listens in the capture phase so a focused timegrid still gets the chord; inputs, textareas, and contenteditable keep the browser's undo.
+
+## The data model
+
+- **Entries**: `lib/time-entries.ts` defines `TimeEntry` — `{ id, date, scopeId, penId, secondaryPenIds?, startMin, endMin, kind?, startEventId?, endEventId?, splitAfter?, variantIds?, tagIds?, spanId?, title?, precision?, … }`. `penId` is the primary (grid color). `kind: "instant"` is a discrete event at `startMin` with duration 0 — occupancy ignores it; an interval may name it as `startEventId` / `endEventId`. `splitAfter` is a scissors seam: same-pen adjacent blocks still merge unless a cut lives between them. `title` is an optional **display name**. `precision` omitted means **certain**.
+- **Views (scopes)**: Independent dimensions. Seeded: **Activity**, **Location**, **Mood**, **Company** (Alone / Together / In conversation), **Screen Time** (Mac ActivityWatch), **iPhone Screen Time** / **iPhone Calls** / **iPhone Texts** (Telegram / Shortcuts pings — not Apple export). Company is who you were with — not an Activity called "hanging out". Add more views from the mode bar (inline name; persist **v6** migrates Company onto older vaults that do not already have one). Hide pens per view (`hiddenPenIds`) without deleting them.
+- **Pens**: Named colors, optional **image** for a grid mosaic. A pen may nest under another in the same view via `parentId` (one parent; **multiselect / parallel counts-as chains are planned, not implemented**). Painting writes the leaf and stamps `lastUsedAt`. `actionFormats` are optional Done-today templates (`lib/pen-action-format.ts` + `lib/pen-action-sync.ts`). The palette **Sort** is Recent (default), A–Z, or Tree. Persist **v7** backfills `lastUsedAt` from existing paint.
+- **Tags belong to time, not to pens.** A pen's tags are "always"; a block may carry extra tags of its own. Tags from **every assigned pen** (primary + secondaries) join Tracking to Habits. Parents are *in-view rollup*; tags are *cross-scope / habit*.
+- **Variants**: Overlapping labels *inside* one pen ("In conversation" → Elijah and Rebecca). Use parents when one thing *is a kind of* another; use variants when several labels can be true at once.
+- **Cell size** (`gridStep`, 1 / 5 / 10 / 15 / 30 on the Time Grid Cell well; `weekStep`, 15 / 30 / 60 in the week view) is a *rendering* choice only. The day keys live in `cell-size-keys.tsx` so the live step is pressed and phosphor-lit. View settings still has a copy plus week step. Switching cell size never regroups stored time. Typed **Fill** clock defaults (**Day fill starts/ends** = Time Grid fallback when the day is fully untracked; **Week fill starts/ends** = week-grid default) and the **pen tray photograph** live there too. The day grid Fill well is `fill-range-control.tsx` (longest empty gap, not a static 9–10 unless that fallback applies). The week grid still shows From/To clocks because catching up across days is that view's job.
+- Store: `lib/time-tracking-store.ts` (`cogs-timegrid-store`, persist **v12**). v12 appends iPhone Screen Time / Calls / Texts without switching `activeScopeId`. v11 appends Mac Screen Time (ActivityWatch). v10 folds infinite day/week into `infiniteScroll`. v9 adds hidden pens, untracked-gap notes, confirmed Day Log events. Optional `secondaryPenIds` / `title` / `actionFormats` / `kind` / `splitAfter` / `image` need no extra bump — omitted means the old behavior. v8 reopens a painted view when the saved view is empty. v7 stamps `lastUsedAt` + `penSort`. v6 adds Company, `parentId`, `displayDepth` / `depthLabels`. v5 added `dayNotes`. v4 folded slot arrays into intervals. Bottom notes live in `lib/day-notes-persist.ts` (`brain2-tracking-day-notes`) as an append log; the timegrid blob does **not** rewrite them on every submit. Persist merge + `lib/vault-guard.js` overlay that map when a richer hub vault of *entries* wins.
+
+## Categories, granularity, certainty
+
+Nesting is how "sweeping", "dishes", and "taking out the trash" all count as Cleaning, and how a week in Mexico can later be split into Airbnb / out / transit, then specific parks. **Show as** on the palette (and independently on Analytics → Tracking) picks the rung: depth 0 is the root, Exact is the painted leaf. A pen shallower than the requested depth stays itself — Mexico painted as Mexico is still Mexico when you zoom into neighborhoods.
+
+**Assumed / reconstructed** lives on the block (default certain). The grid hatches assumed time in the pen's own color (white dash, never yellow/gold/amber). Sleep **est.** / certain and the Working-now **usually ~N** chip use dashed **steel** (`.trk-est`). Analytics → Tracking has **Include assumed** (on by default); turning it off drops those minutes from occupancy, pies, and tags. Autolog from Done items or ingest is not wired yet — when it is, those guesses should land as estimated.
+
+## Activity Log
+
+`tracking-activity-log.tsx` lists the day as events. **Log activity** (`log-activity-dialog.tsx`) lives once on this tab’s `.trk-period` trailing latch; Time Grid and Day Log keep the shared `.trk-grid-rail` latch — types an optional name, a when, optional notes, and a pen. Start/End default to the selected calendar day; a **Date** latch is optional so 11 PM–1 AM can name both days without forcing a date pick. Focusing a start, end, or discrete **When** clock shows **right now** beside that picker (`now-time-button.tsx`) so the field can snap to this minute without changing the date. Toggle **Discrete event** for a single clock time (smoked weed, fell asleep, sunrise) that can start or end a state block of another pen. Block rows are CRT lines (tabular time, color pad, name, duration). Untracked gaps are a quieter white hairline grid row: time window, Untracked · duration, white note field, Fill, 22px `.trk-gap-add` **+**. **Done this day** lists To Do items finished on this calendar day in a sunken `.trk-aside-well` as hints; they are not auto-painted.
 
 ## `time-grid.tsx` behavior
 
-- **Scopes**: Independent dimensions (e.g. Activity vs. Location). Each scope has its own pen palette and slot array for the day.
-- **Pens**: Named colors used to paint contiguous time blocks.
-- **Slots**: 96 slots/day at 15 min each (`SLOT_MINUTES`, `SLOTS_PER_DAY` from the store).
-- **Painting**: Click or drag across slots; optional From/To time range input.
-- **Block details**: Optional notes attached to a painted block.
+- **Painting**: drag across the grid to lay one block in a stroke; or **Fill** (`fill-range-control.tsx`) the selected empty range. Gaps are the untracked stretches of the viewed day (`empty-blocks.ts`): listed **chronologically**, **longest selected by default** (earlier start wins a tie). `<` `>` walk those gaps (disabled at the ends). Sleep and other painted cells are not empty; discrete events are not occupancy. If both midnight ends are empty, they merge into one wrapping Fill (11:00 PM–2:00 AM is three hours). **Double-click** start or end to open the clock picker; a single click does nothing. View-settings **Day fill starts/ends** are only the fallback when the day is fully untracked (that waking window). A fully tracked day disables Fill (“Nothing empty to fill”). Week fill clocks are unchanged. `00:00` as the end still means the end of this day. The paint tools are radios: **Draw** (default — selected pen, pen tray open), **Erase** (clears minutes; tray hidden), **Scissors** (splits the block at the minute you click into two of the same pen, `splitAfter` so they do not merge back; tray hidden). How-to copy lives in `.trk-tool-detail` under the paint throws on the tools rail (and a short echo in the status bar), not on the tool key. Same-pen adjacent strokes without a seam still merge. **Cmd/Ctrl-Z** reverses the last paint, erase, edit, split, move, delete, or clear (`tracking-undo.ts`, same stack as the rest of Home).
+- **Editing**: clicking a painted block opens `entry-dialog.tsx` even when no pen is selected — including **Sleep**, which uses **Fell asleep** / **Woke up**. The dialog opens on the click; derived Sleep keeps a stable id so the editor cannot vanish. The Pen section shows **only the colors already on that block** (primary + secondaries); **add pen color** unfolds the full well (search, new pen, tree, attach another). Split from the editor at a chosen minute. Discrete events appear as ticks. The phosphor probe and the Activity Log / Day Log use `entryDisplayName`.
+- **Infinite scroll** (one toolbar button next to Day/Week): time runs left to right; day rows stack with week bands; hour labels stay sticky while you scroll back. Origin is frozen at mount so picking a day cannot remount the list. Cells draw at 15m or coarser. Toggle off the same button, or pick Day/Week to return to a paged grid. Double-click a **day tile** (left date gutter) to leave Infinite for that day's paged grid; double-click a **week band** to leave Infinite for that week's paged grid. Single click still only highlights.
+- **Pen image**: optional photograph on the pen, tiled across its cells as a mosaic.
+- **Adding pens**: an inline name field and a beveled `ColorSwatch` (`components/ui/color-swatch.tsx`) sit under the palette well and in Log activity. The block editor keeps that catalog behind **add pen color** so opening a painted block is not a dump of every pen. A search that matches nothing offers **Create “…”**.
+- **Sort**: **Recent** (default) floats what you last painted; **A–Z** is alphabetical; **Tree** keeps parent indent. `lib/pen-sort.ts`.
+- **Variants**: selecting a pen reveals its variant row; ticked variants are applied to the next block painted, and can be changed afterwards on any block.
+- **Cell size**: **1m / 5m / 10m / 15m / 30m** on the Time Grid bezel strip next to Day/Week/Infinite (`cell-size-keys.tsx`). The active key is `aria-pressed` and `.trk-cell-size-btn-on` (navy inset, phosphor cap). View settings still has a copy plus week step and Day/Week fill clock hours (day clocks = Fill fallback). Rendering only — stored time stays minute-accurate.
+- **Now line and sunrise/sunset**: required. `trk-time-markers.tsx`. Red now line at the current minute on today; gray sunrise/sunset from Settings home location **for that calendar day** (`useTrackingSunMap`, persisted in `lib/sun-times-store.ts`). Do not remove these lines. Day grid draws them as **horizontal** lines across the hour stack (Plan agenda / Day Log). Discrete events stay vertical ticks at the logged minute. Week and Infinite draw now/sun on that view's axis, with sun looked up by the row/column date — not `new Date()` stamped on every day.
+- **Open on waking hours**: the day (and week) grid scrolls to the first unpainted hour after wake — logged wake, else 7 AM — so Tracking does not open on midnight sleep.
+- **Period bar**: day (and week) span. Period nameplate `.trk-period`: metal previous chevron, engraved date `h3`, metal next chevron, **Today** (`.trk-period-today`). **Clear day** is `.trk-period-aux` in `.trk-period-trailing`, not inside `.trk-period-title`. Activity Log and Day Log share the same navigator (Activity Log puts **Log activity** in trailing).
+- **Canvas**: untracked minutes are white; hour bezel stays milled steel; minute/hour ticks are **hairline gray** (`.trk-cell` 1px lighter stroke, `.trk-plot` hour rule). Painted blocks keep pen color / mosaic with a **fainter left-only hairline** (not a 4-side gray inset). Discrete events are pad terminals (`.trk-instant`). Hover is a phosphor LCD on `.trk-plot-strip` (`.trk-probe`, `#7dffc4`) — not a native tooltip. A 110ms flash confirms a paint or scissors stroke. The plot region grows (`flex: 1`) so leftover chrome is white paper, not empty gray.
+- **Totals**: occupancy of the day (overlapping blocks count once — derived Sleep on top of already-painted morning time used to read as more than 24 hours) on the bezel occupancy well (readable CRT-green `%`) plus a stacked-day ribbon from the same `penTotals` (hatched untracked), then a **By tag (all scopes)** row.
+
+## Day or week
+
+The switch above the palette is a way of looking, not a second kind of data: both spans paint the same intervals with the same pens into the same store, and both total them through `lib/tracking-summary.ts`. The choice is kept in `gridSpan` on the tracking store, so the app reopens where you left it, and the date carries across — switch to week and you get the week containing the day you were on. **Infinite scroll** sits next to Day/Week on that same bezel strip (not View settings). It is one continuous looking — time across, day rows with week bands — mutually exclusive with the paged spans.
+
+**A day** is for accuracy: where exactly the afternoon went, down to the minute.
+
+**A week** is for shape and for catching up, which a single column cannot do:
+
+- Seven columns side by side make a routine, a gap, or three unlogged days obvious without remembering anything.
+- **Range fill takes days.** Type 9:00–17:00, tick **Mon–Fri**, press once, and five blocks exist. Catching up on a routine is bulk work, and doing it a day at a time is how tracking gets abandoned. The tick defaults to the day you were already on, so a mistyped range costs one day rather than seven — and Cmd/Ctrl-Z reverses the whole fill as one step either way.
+- **A stroke belongs to one day.** Dragging diagonally across columns would have to mean "9 to 5 on Tuesday and also on Wednesday", which is never what the gesture was for, so the stroke stays in the column it started in.
+- **Cells stop at 15 minutes.** A minute-resolution week is 1440 rows of nothing. Anything finer is a job for the day grid or the block editor — click a date heading and you are in the day view on that date, one click away.
+- Each column reports its own **occupancy** under the heading, with a **×** chip below the grid to clear that day in this scope; the week header reports tracked time, coverage, and how many of the seven days have anything on them at all — occupancy of the week, not the sum of overlapping block lengths.
+
+## Attaching scopes to each other
+
+Scopes are independent on purpose — the same hours are *Ian's House* in Location and *Social* in Activity, and neither owns the other. But logging honestly then meant painting the same afternoon two or three times. The **Also happening** section of the block editor does it from the block you already have open.
+
+Clicking a block shows one row per other scope: what it currently says about those exact minutes, and how much of the window it has left blank.
+
+- **Attach** — one click paints the companion across the window. This instance only; no rule is written, because most pairings are one-offs. The BBQ at Ian's was social; a Tuesday working from his spare room is not.
+- **Annotate in place** — the companion's variants are editable right there, so "who was at the party" gets recorded while you are thinking about it rather than after a second trip to the Activity scope. New names can be created inline, as can a whole new pen for a scope that has nothing suitable yet.
+- **Make it always** — promotes the pairing to a `PenLink` on the pen, applied on every future stroke of it. Offered only once a pairing exists, so a rule is something you confirm rather than something the app predicts.
+- **Usual pairings** are suggested from your own history: pens you have actually painted over the same minutes as this one, ranked by how much time they have shared. Nothing is generalized across pens.
+
+One rule governs all of it: **an attachment only fills minutes the other scope left blank.** If you already said you were Working for part of that window, a rule about Location does not get to overwrite it — the companion fills the gaps around it and the disagreement stays visible. Overwriting exists, but only when a human asks for it.
+
+Wiring: `lib/entry-links.ts` (pure — `companionsFor`, `attachCompanion`, `applyPenLinks`, `suggestedCompanions`), `TrackPen.links` for the standing rules, and `paintMinutes` firing them on the stroke that created the block (never reaching back to older ones). An attachment is an ordinary painted block, so every rollup, tag path and habit link keeps working with no knowledge that attaching exists.
+
+## Consistency
+
+`lib/tracking-summary.ts` is the single source of the rollups — occupancy, pen totals at a display depth (`penTotals` / `penTotalsAtDepth` / `childPenTotals`), variant totals, tag totals, longest block, switch counts, and `withPrecision` for dropping assumed blocks. The grid footer, the Activity Log footer, the Day Log summary strip and the Analytics Tracking tab all call it.
+
+**Tracked** and **% of the day / week** are occupancy: distinct minutes with a pen on them. Derived Sleep is painted without deleting whatever was already there (so a later correction cannot wipe morning Work), which used to make a day read as 30 hours and 128%. Overlapping blocks now count once, the same way the grid draws them. A day cannot exceed 100%. Pen rows still report each pen's own unique minutes, so Sleep and Work sharing an hour appear on both and their shares of occupancy can add up to more than 100% — that is the overlap, not a second clock.
+
+Two ways to split a pen's time, because both questions are real:
+
+- **Split** — every minute counted once; a block with two variants forms its own "Elijah + Rebecca" slice. Adds to 100%.
+- **Reach** — how much time each variant touched at all. Overlaps count for both, so the total can exceed the parent.
+
+## Tags → habits
+
+Tags are the join between Tracking and the Habits tab. Tag a pen ("Do dishes" → *Cleaning*), then in **Habits → edit a habit → Auto-fill from Tracking** link that tag: every minute carrying it — from *any* pen, in *any* scope, whether the tag came from the pen or from that one block — counts toward the habit's goal, with no manual entry. Daily habits take that day's minutes; weekly and monthly Goal / Yes-No habits **sum** tagged minutes across the week or calendar month.
+
+- Minutes are **unioned across scopes** before counting, so a minute tagged in both Activity and Location counts once. The "By tag" total is the exact number the habit receives.
+- A block with **secondary pens** unions those pens' standing tags too — youtube + studying spanish feeds both entertainment and study habits from the same minutes. Occupancy still counts the minute once; each pen's total includes the block.
+- Because scopes are independent, a zoo trip tagged *Exercise* in **Location** feeds the exercise habit even though the **Activity** scope for those hours says something else entirely. Analytics → Tracking → **By tag** → click the tag shows which pens, in which scopes, fed it.
+- Tracked and manual contributions are stored separately (`trackedValue` / `manualValue` on the completion), so repainting recomputes rather than double-counts, and erasing time withdraws it again.
+- Wiring: `lib/tracked-time.ts` (rollups) → `lib/habit-tracking.ts` (link math) → `lib/habit-tracking-sync.ts` (store bridge). `useHabitTrackingSync` runs while this view — or the Habits tab — is mounted.
+
+## Sleep
+
+There is no **Sleep this day** / Fell asleep / Woke up form on Tracking. Sleep is painted on the Time Grid (or typed in the block editor / Morning Review). The night log, derivation, and Analytics Sleep tab still run from `lib/sleep-store.ts`.
+
+Thursday 1 AM–9 AM is 8 hours on Thursday. Thursday 10 PM plus Friday 5 AM is the next night. Two complete stretches, two night records, no collision.
+
+### The night, not the day (storage)
+
+A night still straddles midnight in storage, so `lib/sleep-log.ts` names it after **the morning you wake into**: the night keyed `2026-09-17` is the one that ended on the 17th. Both ends are then stored as **signed minutes from midnight of that morning**:
+
+| You slept at | Stored as |
+|---|---|
+| 11:30 PM on the 16th | `sleptMin: -30` (night keyed the 17th) |
+| 12:45 AM on the 17th | `sleptMin: 45` (night keyed the 17th) |
+| 10:00 PM on the 17th | `sleptMin: -120` (night keyed the 18th) |
+| woke 7:00 AM on the 17th | `wokeMin: 420` |
+
+Clocks typed on a calendar day belong to that day (`placeAsleepOnDay` / `placeAwakeOnDay`). Before noon a bedtime lands on this morning's night; from noon on it is tonight, stored on the *next* morning as a negative offset. A wake time always belongs to the morning it was typed on.
+
+Morning Review still uses the noon-pivot parser (`parseBedtime`) against the morning you woke into — that ritual is "last night", not a Tracking-day clock.
+
+One signed number per end and one date per night is what makes the rest simple:
+
+- **Duration is always `wokeMin - sleptMin`** — no midnight branch, no second date to keep in step. Thursday 1–9 AM = 8h; Thursday 10 PM + Friday 5 AM = 7h.
+- **Averages are ordinary arithmetic.** Bedtimes cluster around midnight, where a mean of wall-clock times is nonsense (23:50 and 00:10 average to noon). Expressed relative to their own morning, -10 and +10 average to 0. Analytics needs no circular statistics.
+- **A night is one record**, so editing either end can never orphan the other.
+
+### What a logged night produces
+
+`lib/sleep-sync.ts` is the only place a night turns into consequences, all of them idempotent:
+
+- **Painted blocks** on the Sleep pen, split at midnight, stamped `generatedBy: { kind: "sleep", id }`. Re-deriving replaces only blocks bearing that stamp, so hand-painted time is never collected as collateral, and a correction three days later simply lands in the right place. Those minutes may therefore exist twice in the log (Sleep on top of Work); occupancy still counts them once — see [Consistency](#consistency).
+- **A Done row** (`Slept 7h 30m`) with a deterministic id, so the night appears in To-Do Done and Analytics counts.
+- **Habit minutes**, for free — the Sleep pen carries the Sleep tag, so a habit linked to it picks the minutes up through the normal tag path. Nothing sleep-specific exists in the habit code.
+
+A night with only one end recorded derives nothing and waits.
+
+The log and the grid hydrate from separate persist keys. `useSleepSync` therefore paints already-logged nights when a sleep-aware view **mounts**, after both vaults are ready — not only when a night *changes* later. Otherwise Analytics → Sleep (which reads the log) can show hours the Time Grid never drew.
+
+### Correcting a night from the grid
+
+A derived block is not a read-only artifact. Drag this morning's Sleep block out to 8 AM, split it around the hour you were awake, or delete it, and `reconcileNightFromGrid` reads the night back out of its own blocks and corrects the log — which then re-writes the Done row, the habit minutes and the Analytics Sleep tab. Dragging the block **is** how you say you got up at 8; before this the edit was quietly reverted the next time anything touched the log, and the tracker and Analytics disagreed about the same night.
+
+- The block editor says so when you open one, so the consequence is visible before the drag, not after.
+- The night's ends are the **outermost** ones, so an hour awake at 3 AM still reads "asleep 11:30, up at 7" — which is what those words mean, and the only thing a one-interval night can hold. The gap itself remains visible on the grid.
+- Deleting every block a night produced clears the night. Deleting one half keeps what survives.
+- Confidence is left alone: moving a block says nothing about how well the time is remembered, so the *est / certain* toggle stays the user's.
+- A log whose nights were never painted — no Sleep pen exists — is never emptied by a grid that was always silent.
+
+A night that began before midnight lands on **two** days. Occupancy still counts only that day's minutes. The block editor on each day's Sleep block shows that day's end.
+
+### Reading a night off the grid
+
+The log holds what you *said*; the grid holds what you *painted*. `lib/sleep-inference.ts` reconciles them so the second one counts too — someone who paints Sleep straight onto the grid, or whose night arrived from an import, is not invisible to the rest of the app.
+
+- Sleep is whatever carries the **Sleep tag**, from any scope, whether the tag sits on the pen or on that one block. A nap painted in Location counts like one painted in Activity.
+- A run touching midnight the evening before plus a run starting at midnight is the night, however short either side is. Only one of them exists → only that end is known, and the other stays blank rather than being invented.
+- A run that never touches midnight counts only if it sits in the small hours and lasts at least three hours, so a 25-minute morning doze is not filed as a night's sleep.
+- Blocks the sleep log itself generated are ignored, or it would read its own output back as evidence.
+
+Inference only ever fills a gap, **per end**: a stated bedtime always beats a painted one, and a logged wake time with no logged bedtime keeps its wake time and borrows the other. Anything borrowed is marked *estimated*, because "I was asleep during these minutes" is a weaker claim than "I fell asleep at 11:30". Morning Review pre-fills a blank field from the grid. Three tracked nights is the floor for claiming a routine exists.
+
+### Estimated or certain
+
+Each end carries its own confidence, reusing the `"estimated" | "definite"` vocabulary already on `HabitTimeEstimate.precision`. A typed time is **estimated** until the user says otherwise, which is the honest default for a number recalled after the fact; its Done row is flagged for confirmation through `lib/estimated-values.ts` — the same machinery the review uses to ask "was this right?". A time read off a clock is marked **certain** and is never questioned again.
+
+### Where else the times are used
+
+| Consumer | What it does with them |
+|---|---|
+| **Morning Review** | Its two time fields are a view onto this log, not a second copy. Saving writes the night, which is what makes the times count. A blank field opens pre-filled from the grid, so a painted night is confirmed rather than retyped. |
+| **`lib/completion-window.ts`** | A completion for a day that is over is assumed half an hour before that night's bedtime, taken from the log, from the grid, or from your median bedtime over the last month — in that order. Only with no sleep evidence at all does it reach the fixed 9 PM day anchor. No window is ever backdated into hours you were asleep. |
+| **Settings → Default time of day** | Reports which of those is actually in force, so a setting that has quietly stopped applying cannot masquerade as the answer. |
+| **Analytics → Sleep** | Duration, timing, regularity, extremes and trend — see `components/Analytics/README.md`. Reads logged and painted nights alike, follows edits made to sleep blocks on the grid, and reports naps separately rather than averaging them into "per night". |
 
 ## `actual-day-view.tsx` behavior
 
-- Day navigation (prev/next/today).
-- **Plan** tab: read-only `AgendaGrid` for scheduled tasks and events.
-- **Log** tab: log actual minutes on planned tasks; view all `timeLogs` for the day.
-- Writes to `Task.timeLogs` and updates `Task.actualDuration` via `lib/task-store.ts`.
+Day Log answers "how did the plan compare to what I tracked?", not "list the blocks again."
+
+- **Day \| Week** on the Day Log sheet (`.daylog-week-switch`, raised Win95 span keys). Default **Day**; local React state only — not persisted, not the Time Grid `gridSpan`.
+- Navigation shares the dashboard date. **Day** mode: previous / next day, full weekday label. **Week** mode: `subWeeks` / `addWeeks`, centered label `MMM d – MMM d, yyyy`, Previous week / Next week / Today. Time Grid on this tab uses the same date, so switching Tracking views cannot leave you on two different days.
+- **Day agenda.** Ghost (dashed) items are scheduled tasks and events from Plan — click one to **confirm** it happened (`confirm-planned-dialog.tsx`): paint a tracked block, optionally correct times and notes. If the plan was a task, `completeTask` marks it done for the day and unlocks dependents. Solid pen-colored blocks are painted `TimeEntry` intervals. A stretch that covers several hours is **one continuous slab** (`AgendaGrid` `.agenda-span`: position + height spanning the hour grid, title once) while remaining clickable in every hour it occupies. Amber blocks are `task.timeLogs`. Sheet / paint / caption type is black on gunmetal; the agenda stays white. Untimed planned tasks and **Time logged onto tasks** sit below in sunken wells (mill keys, amber pad — no Lucide check).
+- **Week agenda** (`daylog-week.tsx`). Seven compact columns for the week containing `currentDate` — same plan-vs-tracked vocabulary (painted solids, dashed plan, amber timeLogs, untimed chips in-column). **Not** Time Grid `week-grid.tsx` (no paint drag, no range fill, no create-event). Click a column **date heading** to set that date and return to day mode. Tracked click opens the entry dialog; dashed plan confirms for that column's day.
+- Paint strip (`.trk-daylog-paint`) and Screen Time empty hint still follow the **selected day**, not a week rollup.
+- **No nested Activity Log.** An inner Agenda / Activity Log tab pair used to sit here. That tab is gone.
+- Occupancy strip and per-pen totals come from `lib/tracking-summary.ts`, same module as the other two views. The shared mode bar under the pen tray switches which dimension is overlaid — Day Log does not keep its own view tabs.
+- Date keys are **local** (`formatLocalDateKey`). A UTC ISO key showed a different, often empty, day after evening in a negative-offset zone — which is why this view could disagree with the Activity Log about the same paint.
+- Task time logs stay a separate model from painted intervals — "how long did this task take" vs. "what was I doing at 3:15" — and both are visible on the same agenda rather than pretending to be each other.
+
+## Day notes
+
+`tracking-day-notes.tsx` is a **metal well** (`#trk-day-notes.trk-notes`) holding an **append log** for the calendar day on screen (`lib/append-log.ts`, same composer as Plan). It sits at the bottom of `TrkChromeStack` **under** `.trk-desktop` (Time Grid / Activity Log / Day Log), so switching views does not hide what you just wrote. `.trk-now-module` (Working on this now / Working on right now) sits under the fascia **before** the chrome stack — not above this well. Typical use: Expand, jot "went to the zoo from 4–5" or "ate something at 1pm" while reconstructing the day, then **Submit note** — the writing time is stamped (`9/21 4pm - …`) and that entry cannot be edited. Collapsed shows only the **Day notes** legend and Expand. Expand (`notesWellExpanded` on `brain2-tracking-view-prefs`) opens a tall composer and tall history; List / Bulk / Latest as Habits `.hab-view-changer` milled keys (active = CRT + power lamp) appear when open; newest first. Leftover plaintext migrates as one "earlier" entry. Frozen entries live in `.append-log-history` and scroll apart from the composer.
+
+- Keyed by local `YYYY-MM-DD`. Source of truth is `brain2-tracking-day-notes` (`lib/day-notes-persist.ts`), written on submit (Electron keeps this profile's map — a hub with more historical days cannot replace today's jot). Each day's value is the versioned JSON envelope. Mirrored in memory on `brain2-timegrid-store.dayNotes`; the huge timegrid blob is not rewritten per submit. Empty text drops the key.
+- Both aliases (`brain2-` / `cogs-`) are **read and unioned by entry id**, and a hub or timegrid copy of a day already on file unions too — entries are immutable, so no copy of an append log loses. That heals a pair split by a write that ran out of origin quota, which is how a stamped note sat on `cogs-tracking-day-notes` while the well showed the shorter log after refresh.
+- If that key's last write failed, the well says **this note is only in memory** (`.trk-notes-unsaved`, from `persistKeyFailed`) rather than showing a stamped entry that will not come back. A full origin is the usual cause; Settings → Restore exports a backup.
+- The composer uses the browser's undo. Cmd/Ctrl+Enter submits. Cmd/Ctrl-Z inside the notes field (or any input / textarea / contenteditable) stays native; on the grid or anywhere else on the Tracking tab it reverses the last paint.
+- The header Tracking dialog does not show notes — they belong to the Home Tracking tab.
+
+## Default action format
+
+A pen can carry `actionFormats` — templates that log a Done-today row when a block is painted (`lib/pen-action-format.ts`, `lib/pen-action-sync.ts`). Separate from habit tag links. Example: Walking → "Went for a walk"; a 15m block 1:00–1:15 appears in Home → To Do → Done. The most specific template whose placeholders all have values wins (`{minutes}` / `{x}`, `{hours}`, `{duration}`, `{name}`, `{pen}`, `{start}`, `{end}` always; `{location}` and `{project}` / `{project name}` only when present). The user can rename the Done row afterwards; if they leave the generated name, changing duration, location, project, or display name updates it. Sleep-derived blocks keep their own Done row and are skipped.
+
+## Next (not implemented)
+
+Search / index this model (display names, secondary pens, counts-as chains, action formats) in the tracker and Analytics. Multiselect and parallel counts-as chains stay planned: `parentId` is still a single nest.
+
+**Zoom-out tracking viz (future).** Eventually the strip should zoom out: time colored with category blocks for entire months (and later years), making the shape larger so more of this tracking picture fits on one screen. Same interval store, coarser cells, category color at display depth 0. Do not implement until Infinite scroll stays still.
 
 ## Related
 
-- Analytics **Tracking** tab aggregates TimeGrid scope data into charts.
+- Analytics **Tracking** tab (`components/Analytics/TrackingAnalytics.tsx`) aggregates these entries into percentages, headline stats, and the variant and tag drill-downs.
+- Analytics **Sleep** tab (`components/Analytics/SleepAnalytics.tsx`) reads the nightly log (`lib/sleep-store.ts`) *and* sleep painted directly on the grid, reconciled by `lib/sleep-inference.ts`.
 - Plan panel (`Home/Plan/`) supplies the scheduled view that Day Log compares against.
+- Habits (`Home/Habits/`) consumes tagged time through each habit's `trackingLink`.
+- Operations (`components/Operations/`) can carry the same tags. **Working on this now**
+  (`working-now-strip.tsx`, also on the operation workspace) paints an Activity
+  block for the live session; stop stamps To Do Done + `timeLogs`. The painted
+  block stays editable here like any other. See `lib/operation-work-session.ts`.
+  **Working on right now** (`pen-color-now-strip.tsx`, Home Tracking only) is the
+  same kind of clock for a pen you search: it starts at the current second and
+  paints that color until you stop. It does not write a Done row and does not
+  stop the Operations session. See `lib/pen-color-session.ts`.

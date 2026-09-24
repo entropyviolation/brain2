@@ -1,5 +1,26 @@
 /**
- * components/Home/Tracking/actual-day-view.tsx — Log what you actually did vs plan
+ * components/Home/Tracking/actual-day-view.tsx — Plan vs what Tracking recorded
+ *
+ * Day mode: one hour grid. Ghosts are the Plan (scheduled tasks and events).
+ * Solid colored blocks are the same painted intervals the Time Grid and Activity
+ * Log use — so anything tracked there shows up here without a second input. A
+ * stretch that covers several hours is **one continuous slab** (position + height
+ * spanning the hour grid, title once) while remaining clickable in every hour.
+ * Amber blocks are task `timeLogs`, the separate "how long did this planned
+ * task take" record that Plan vs Reality / Calibration score against.
+ *
+ * Week mode: seven compact columns for the week of `currentDate` with the same
+ * plan-vs-tracked vocabulary (not the Time Grid paint week). Date headings open
+ * that day back in day mode.
+ *
+ * There is no nested Activity Log. That tab was a second, empty list of
+ * planned hours that did not read Tracking, which made the day look blank
+ * after the grid had already been painted. Clicking a painted block opens
+ * the same block editor as the other two views.
+ *
+ * Occupancy still comes from `lib/tracking-summary.ts`. Date keys are local
+ * calendar days, matching the grid — a UTC ISO key would show a different
+ * (often empty) day after evening in a negative-offset zone.
  */
 "use client"
 
@@ -9,17 +30,37 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ChevronLeft, ChevronRight, Clock, MapPin, CheckCircle2, Calendar } from "lucide-react"
 import { useTaskStore } from "@/lib/task-store"
+import { rememberWorld } from "@/lib/action-history"
 import { useEventStore } from "@/lib/event-store"
-import { formatDateKey } from "@/lib/date-utils"
-import { format, addDays, subDays } from "date-fns"
-import type { Task, TimeLogEntry } from "@/lib/types"
+import {
+  formatDateKey,
+  formatLocalDateKey,
+  getWeekDates,
+  getWeekStartDate,
+  sameCalendarDay,
+} from "@/lib/date-utils"
+import { format, addDays, addWeeks, subDays, subWeeks } from "date-fns"
+import type { CalendarEvent, Task, TimeLogEntry } from "@/lib/types"
 import { AgendaGrid } from "@/components/Home/Plan/agenda-grid"
+import { EntryDialog } from "@/components/Home/Tracking/entry-dialog"
+import { ConfirmPlannedDialog } from "@/components/Home/Tracking/confirm-planned-dialog"
+import { ScreenTimeEmptyHint } from "@/components/Home/Tracking/screentime-empty-hint"
+import { TrackingPeriodNav } from "@/components/Home/Tracking/tracking-period-nav"
+import { DayLogWeek } from "@/components/Home/Tracking/daylog-week"
+import { displayedPen, findPen, useTimeTrackingStore } from "@/lib/time-tracking-store"
+import { assignedPenIds, entriesForDay, entryDisplayName, formatDuration, minutesToLabel, timeStringToMinutes } from "@/lib/time-entries"
+import { penTotals, totalsFor } from "@/lib/tracking-summary"
+import { usePenActionSync } from "@/lib/pen-action-sync"
+import "./tracking-chrome.css"
+import "./daylog-week.css"
 
 function rid() {
   return `log-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+}
+
+function logMatchesDay(logDate: string, day: Date): boolean {
+  return logDate === formatLocalDateKey(day) || logDate === formatDateKey(day)
 }
 
 export function ActualDayView({
@@ -29,47 +70,96 @@ export function ActualDayView({
   currentDate?: Date
   setCurrentDate?: (date: Date) => void
 } = {}) {
+  usePenActionSync()
   const [internalDate, setInternalDate] = useState(new Date())
   const currentDate = controlledDate ?? internalDate
   const setCurrentDate = setControlledDate ?? setInternalDate
   const tasks = useTaskStore((s) => s.tasks)
   const updateTask = useTaskStore((s) => s.updateTask)
   const events = useEventStore((s) => s.events)
-  const dayKey = formatDateKey(currentDate)
+  const trackingScopes = useTimeTrackingStore((s) => s.scopes)
+  const trackingEntries = useTimeTrackingStore((s) => s.entries)
+  const activeScopeId = useTimeTrackingStore((s) => s.activeScopeId)
+  const dayKey = formatLocalDateKey(currentDate)
+
+  const trackingScope = trackingScopes.find((s) => s.id === activeScopeId) ?? trackingScopes[0]
+  const confirmedEventIds = useTimeTrackingStore((s) => s.confirmedEventIds)
+  const paintedEntries = useMemo(
+    () => (trackingScope ? entriesForDay(trackingEntries, dayKey, trackingScope.id) : []),
+    [trackingEntries, dayKey, trackingScope],
+  )
+  const paintedTotals = useMemo(
+    () => totalsFor(paintedEntries, [dayKey]),
+    [paintedEntries, dayKey],
+  )
+  const paintedPens = useMemo(
+    () => penTotals(paintedEntries, trackingScope, [dayKey]),
+    [paintedEntries, trackingScope, dayKey],
+  )
+  const trackedBlocks = useMemo(
+    () =>
+      paintedEntries.map((entry) => {
+        const pen = trackingScope ? displayedPen(trackingScope, entry.penId) ?? findPen([trackingScope], entry.penId) : undefined
+        const leaf = trackingScope ? findPen([trackingScope], entry.penId) : undefined
+        const assumed = entry.precision === "estimated"
+        const extra = trackingScope
+          ? assignedPenIds(entry)
+              .slice(1)
+              .map((id) => findPen([trackingScope], id)?.name)
+              .filter(Boolean)
+          : []
+        return {
+          id: entry.id,
+          label: `${entryDisplayName(entry, leaf?.name || pen?.name || "Tracked")}${assumed ? " ≈" : ""}`,
+          startMinutes: entry.startMin,
+          durationMinutes: Math.max(1, entry.endMin - entry.startMin),
+          color: pen?.color,
+          sublabel: `${minutesToLabel(entry.startMin)}–${minutesToLabel(entry.endMin)} · ${formatDuration(entry.endMin - entry.startMin)}${
+            leaf && leaf.id !== pen?.id ? ` · ${leaf.name}` : ""
+          }${extra.length ? ` · also ${extra.join(", ")}` : ""}${assumed ? " · assumed" : ""}`,
+        }
+      }),
+    [paintedEntries, trackingScope],
+  )
 
   const plannedTasks = useMemo(
-    () =>
-      tasks.filter((t) => {
-        if (!t.scheduledDate || t.completed) return false
-        const d = t.scheduledDate instanceof Date ? t.scheduledDate : new Date(t.scheduledDate)
-        return formatDateKey(d) === dayKey
-      }),
-    [tasks, dayKey],
+    () => tasks.filter((t) => !t.completed && t.scheduledDate && sameCalendarDay(t.scheduledDate, currentDate)),
+    [tasks, currentDate],
   )
 
   const dayEvents = useMemo(
-    () =>
-      events.filter((e) => {
-        const d = e.date instanceof Date ? e.date : new Date(e.date)
-        return formatDateKey(d) === dayKey
-      }),
-    [events, dayKey],
+    () => events.filter((e) => sameCalendarDay(e.date, currentDate) && !confirmedEventIds.includes(e.id)),
+    [events, currentDate, confirmedEventIds],
   )
 
   const allDayLogs = useMemo(() => {
     const logs: { task: Task; log: TimeLogEntry }[] = []
     for (const task of tasks) {
       for (const log of task.timeLogs || []) {
-        if (log.date === dayKey) logs.push({ task, log })
+        if (logMatchesDay(log.date, currentDate)) logs.push({ task, log })
       }
     }
     return logs.sort((a, b) => (a.log.startTime || "").localeCompare(b.log.startTime || ""))
-  }, [tasks, dayKey])
+  }, [tasks, currentDate])
 
   const [loggingTaskId, setLoggingTaskId] = useState<string | null>(null)
+  const [confirming, setConfirming] = useState<{
+    task?: Task
+    event?: CalendarEvent
+    startMin: number
+    endMin: number
+    dateKey: string
+  } | null>(null)
   const [logMinutes, setLogMinutes] = useState("30")
   const [logLocation, setLogLocation] = useState("")
   const [logNotes, setLogNotes] = useState("")
+  const [openEntryId, setOpenEntryId] = useState<string | null>(null)
+  const [span, setSpan] = useState<"day" | "week">("day")
+
+  const weekStart = getWeekStartDate(currentDate)
+  const weekDates = getWeekDates(weekStart)
+  const weekLabel = `${format(weekStart, "MMM d")} – ${format(weekDates[6], "MMM d, yyyy")}`
+  const isWeek = span === "week"
 
   const logActualTime = (task: Task) => {
     const mins = Number.parseInt(logMinutes) || 0
@@ -85,6 +175,7 @@ export function ActualDayView({
     }
     const logs = [...(task.timeLogs || []), entry]
     const totalActual = logs.reduce((s, l) => s + l.durationMinutes, 0)
+    rememberWorld("day log")
     updateTask({ ...task, timeLogs: logs, actualDuration: totalActual })
     setLoggingTaskId(null)
     setLogMinutes("30")
@@ -111,6 +202,7 @@ export function ActualDayView({
     }
     const logs = [...(task.timeLogs || []), entry]
     const totalActual = logs.reduce((s, l) => s + l.durationMinutes, 0)
+    rememberWorld("day log")
     updateTask({ ...task, timeLogs: logs, actualDuration: totalActual })
   }
 
@@ -119,189 +211,196 @@ export function ActualDayView({
     if (!task) return
     const logs = (task.timeLogs || []).map((l) => (l.id === logId ? { ...l, ...updates } : l))
     const totalActual = logs.reduce((s, l) => s + l.durationMinutes, 0)
+    rememberWorld("day log")
     updateTask({ ...task, timeLogs: logs, actualDuration: totalActual })
   }
 
-  const totalLogged = plannedTasks.reduce((s, t) => s + (t.actualDuration || 0), 0)
+  const totalLogged = allDayLogs.reduce((s, { log }) => s + log.durationMinutes, 0)
   const totalEstimated = plannedTasks.reduce((s, t) => s + (t.estimatedDuration || 0), 0)
+  const openEntry = openEntryId ? trackingEntries.find((e) => e.id === openEntryId) : undefined
+  const untimedTasks = plannedTasks.filter((t) => !t.scheduledTime)
+
+  const openConfirmForTask = (task: Task, onDate: Date = currentDate) => {
+    const start = timeStringToMinutes(task.scheduledTime ?? "") ?? 9 * 60
+    const end = start + (task.estimatedDuration ?? 30)
+    setConfirming({
+      task,
+      startMin: start,
+      endMin: Math.min(1440, end),
+      dateKey: formatLocalDateKey(onDate),
+    })
+  }
+
+  const openConfirmForEvent = (event: CalendarEvent, onDate: Date = currentDate) => {
+    const start = timeStringToMinutes(event.startTime) ?? 9 * 60
+    const end = timeStringToMinutes(event.endTime) ?? start + 60
+    setConfirming({
+      event,
+      startMin: start,
+      endMin: end === 0 ? 1440 : end,
+      dateKey: formatLocalDateKey(onDate),
+    })
+  }
+
+  const openDayFromWeek = (date: Date) => {
+    setCurrentDate(date)
+    setSpan("day")
+  }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <Button variant="outline" size="icon" onClick={() => setCurrentDate(subDays(currentDate, 1))}>
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>
-          Today
-        </Button>
-        <Button variant="outline" size="icon" onClick={() => setCurrentDate(addDays(currentDate, 1))}>
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-        <span className="font-semibold">{format(currentDate, "EEEE, MMM d")}</span>
+    <div className="trk95 trk-canvas trk-daylog">
+      <TrackingPeriodNav
+        label={isWeek ? weekLabel : format(currentDate, "EEEE, MMMM d, yyyy")}
+        previousLabel={isWeek ? "Previous week" : "Previous day"}
+        nextLabel={isWeek ? "Next week" : "Next day"}
+        onPrevious={() => setCurrentDate(isWeek ? subWeeks(currentDate, 1) : subDays(currentDate, 1))}
+        onNext={() => setCurrentDate(isWeek ? addWeeks(currentDate, 1) : addDays(currentDate, 1))}
+        onToday={() => setCurrentDate(new Date())}
+        meta={`Planned ${totalEstimated}m · task logs ${totalLogged}m`}
+      />
+
+      {trackingScope && (
+        <div className="trk-daylog-paint">
+          <span>Painted in {trackingScope.name}</span>
+          <strong>{formatDuration(paintedTotals.tracked)}</strong>
+          <span>{Math.round(paintedTotals.coverage)}% of the day</span>
+          {paintedPens.slice(0, 5).map((pen) => (
+            <span key={pen.id} className="trk-daylog-pen">
+              <span className="trk-log-pad" style={{ background: pen.color }} aria-hidden />
+              {pen.name} {formatDuration(pen.minutes)}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {trackingScope && paintedTotals.tracked === 0 && (
+        <ScreenTimeEmptyHint date={dayKey} scopeId={trackingScope.id} />
+      )}
+
+      <div className="trk-daylog-sheet">
+        <div className="daylog-week-switch trk-span-switch" role="toolbar" aria-label="Day Log span">
+          <button type="button" aria-pressed={!isWeek} onClick={() => setSpan("day")}>
+            Day
+          </button>
+          <button type="button" aria-pressed={isWeek} onClick={() => setSpan("week")}>
+            Week
+          </button>
+        </div>
+        <p className="trk-silk">Plan vs tracked</p>
+        <p className="trk-daylog-caption">
+          Solid color is tracked. Dashed is planned — click to confirm it happened. Amber is time logged onto a
+          planned task.
+        </p>
+        {isWeek ? (
+          <DayLogWeek
+            currentDate={currentDate}
+            onOpenDay={openDayFromWeek}
+            onTrackedBlockClick={setOpenEntryId}
+            onTaskClick={(task, date) => openConfirmForTask(task, date)}
+            onEventClick={(event, date) => openConfirmForEvent(event, date)}
+          />
+        ) : (
+          <AgendaGrid
+            date={currentDate}
+            events={dayEvents}
+            tasks={plannedTasks}
+            mode="log"
+            maxHeight="max-h-[720px]"
+            trackedBlocks={trackedBlocks}
+            onTrackedBlockClick={setOpenEntryId}
+            onTaskClick={(id) => {
+              const task = plannedTasks.find((t) => t.id === id) || tasks.find((t) => t.id === id)
+              if (!task) return
+              openConfirmForTask(task)
+            }}
+            onEventClick={openConfirmForEvent}
+            onCreateTimeLog={handleCreateTimeLog}
+            onUpdateTimeLog={handleUpdateTimeLog}
+            showCurrentTimeIndicator
+          />
+        )}
       </div>
 
-      <div className="text-sm text-muted-foreground">
-        Planned: {totalEstimated}m estimated · Logged: {totalLogged}m actual
-      </div>
+      {!isWeek && untimedTasks.length > 0 && (
+        <div className="trk-aside-well trk-daylog-untimed">
+          <p className="trk-silk">Untimed tasks</p>
+          {untimedTasks.map((task) => (
+            <div key={task.id} className="trk-daylog-untimed-row">
+              <span>{task.description} (unscheduled)</span>
+              <button type="button" className="trk-latch" onClick={() => setLoggingTaskId(task.id)}>
+                Log time
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
-      <Tabs defaultValue="agenda">
-        <TabsList>
-          <TabsTrigger value="agenda">Agenda</TabsTrigger>
-          <TabsTrigger value="activity">Activity Log</TabsTrigger>
-        </TabsList>
+      {!isWeek && allDayLogs.length > 0 && (
+        <div className="trk-aside-well trk-daylog-tasklogs">
+          <p className="trk-silk">Time logged onto tasks</p>
+          {allDayLogs.map(({ task, log }) => (
+            <div key={log.id} className="trk-daylog-tasklog">
+              <span className="trk-log-pad" aria-hidden />
+              <span className="font-medium">{log.activityLabel || task.description}</span>
+              <span className="trk-daylog-tasklog-meta">
+                {log.startTime && `${log.startTime}–${log.endTime || ""} · `}
+                {log.durationMinutes}m
+                {log.notes && ` — ${log.notes}`}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
 
-        <TabsContent value="agenda" className="mt-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                Interactive day log — drag to set actual times
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <AgendaGrid
-                date={currentDate}
-                events={dayEvents}
-                tasks={plannedTasks}
-                mode="log"
-                maxHeight="max-h-[600px]"
-                onTaskClick={(id) => setLoggingTaskId(id)}
-                onCreateTimeLog={handleCreateTimeLog}
-                onUpdateTimeLog={handleUpdateTimeLog}
-                showCurrentTimeIndicator
-              />
-              <p className="text-xs text-muted-foreground mt-3">
-                Drop a planned task onto a time slot to log it. Drag logged blocks to adjust start time. Ghost items show the plan.
-              </p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="activity" className="mt-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                Activity log
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-1 max-h-[480px] overflow-y-auto">
-              {Array.from({ length: 24 }, (_, hour) => {
-                const hourTasks = plannedTasks.filter((t) => {
-                  if (!t.scheduledTime) return false
-                  return Number.parseInt(t.scheduledTime.split(":")[0]) === hour
-                })
-                const hourEvents = dayEvents.filter((e) => !e.isAllDay && Number.parseInt(e.startTime.split(":")[0]) === hour)
-                if (hourTasks.length === 0 && hourEvents.length === 0) return null
-                return (
-                  <div key={hour} className="flex border-b py-2 gap-3">
-                    <div className="w-14 text-xs text-muted-foreground shrink-0 pt-1">{hour.toString().padStart(2, "0")}:00</div>
-                    <div className="flex-1 space-y-2">
-                      {hourEvents.map((ev) => (
-                        <div key={ev.id} className="text-sm p-2 rounded border bg-muted/30">
-                          <span className="font-medium">{ev.title}</span>
-                          <span className="text-muted-foreground ml-2">{ev.startTime}–{ev.endTime}</span>
-                          {ev.location && (
-                            <span className="text-xs flex items-center gap-1 mt-1 text-muted-foreground">
-                              <MapPin className="h-3 w-3" /> Planned: {ev.location}
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                      {hourTasks.map((task) => (
-                        <div key={task.id} className="p-2 rounded border">
-                          <div className="flex justify-between items-start gap-2">
-                            <div>
-                              <p className="font-medium text-sm">{task.description}</p>
-                              <p className="text-xs text-muted-foreground">
-                                Planned {task.estimatedDuration ?? "?"}m
-                                {task.scheduledTime && ` at ${task.scheduledTime}`}
-                                {(task.actualDuration ?? 0) > 0 && ` · Logged ${task.actualDuration}m`}
-                              </p>
-                            </div>
-                            <Button size="sm" variant="outline" onClick={() => setLoggingTaskId(task.id)}>
-                              Log time
-                            </Button>
-                          </div>
-                          {(task.timeLogs?.length ?? 0) > 0 && (
-                            <ul className="mt-2 text-xs text-muted-foreground space-y-1">
-                              {task.timeLogs!.map((l) => (
-                                <li key={l.id} className="flex items-center gap-1">
-                                  <CheckCircle2 className="h-3 w-3 text-green-600" />
-                                  {l.startTime && `${l.startTime} · `}{l.durationMinutes}m{l.location ? ` @ ${l.location}` : ""}{l.notes ? ` — ${l.notes}` : ""}
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )
-              })}
-
-              {allDayLogs.length > 0 && (
-                <div className="mt-4 pt-4 border-t">
-                  <p className="text-sm font-medium mb-2">All logged entries</p>
-                  {allDayLogs.map(({ task, log }) => (
-                    <div key={log.id} className="text-sm py-1 flex items-center gap-2">
-                      <CheckCircle2 className="h-3 w-3 text-green-600 shrink-0" />
-                      <span className="font-medium">{log.activityLabel || task.description}</span>
-                      <span className="text-muted-foreground text-xs">
-                        {log.startTime && `${log.startTime}–${log.endTime || ""} · `}{log.durationMinutes}m
-                        {log.notes && ` — ${log.notes}`}
-                      </span>
-                    </div>
-                  ))}
+      {loggingTaskId &&
+        (() => {
+          const task = plannedTasks.find((t) => t.id === loggingTaskId) || tasks.find((t) => t.id === loggingTaskId)
+          if (!task) return null
+          return (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Log actual time — {task.description}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <Label>Actual duration (minutes)</Label>
+                  <Input type="number" value={logMinutes} onChange={(e) => setLogMinutes(e.target.value)} />
                 </div>
-              )}
-
-              {plannedTasks.length === 0 && dayEvents.length === 0 && allDayLogs.length === 0 && (
-                <p className="text-sm text-muted-foreground py-6 text-center">Nothing planned or logged for this day.</p>
-              )}
-
-              {plannedTasks.filter((t) => !t.scheduledTime).map((task) => (
-                <div key={task.id} className="p-2 rounded border mt-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm font-medium">{task.description} (unscheduled time)</span>
-                    <Button size="sm" variant="outline" onClick={() => setLoggingTaskId(task.id)}>Log time</Button>
-                  </div>
+                <div>
+                  <Label>Location (at time of activity — not assumed from plan)</Label>
+                  <Input
+                    value={logLocation}
+                    onChange={(e) => setLogLocation(e.target.value)}
+                    placeholder="Where were you?"
+                  />
                 </div>
-              ))}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                <div>
+                  <Label>Notes</Label>
+                  <Textarea value={logNotes} onChange={(e) => setLogNotes(e.target.value)} rows={2} />
+                </div>
+                <div className="flex gap-2">
+                  <Button onClick={() => logActualTime(task)}>Confirm log</Button>
+                  <Button variant="outline" onClick={() => setLoggingTaskId(null)}>
+                    Cancel
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })()}
 
-      {loggingTaskId && (() => {
-        const task = plannedTasks.find((t) => t.id === loggingTaskId) || tasks.find((t) => t.id === loggingTaskId)
-        if (!task) return null
-        return (
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Log actual time — {task.description}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div>
-                <Label>Actual duration (minutes)</Label>
-                <Input type="number" value={logMinutes} onChange={(e) => setLogMinutes(e.target.value)} />
-              </div>
-              <div>
-                <Label>Location (at time of activity — not assumed from plan)</Label>
-                <Input value={logLocation} onChange={(e) => setLogLocation(e.target.value)} placeholder="Where were you?" />
-              </div>
-              <div>
-                <Label>Notes</Label>
-                <Textarea value={logNotes} onChange={(e) => setLogNotes(e.target.value)} rows={2} />
-              </div>
-              <div className="flex gap-2">
-                <Button onClick={() => logActualTime(task)}>Confirm log</Button>
-                <Button variant="outline" onClick={() => setLoggingTaskId(null)}>Cancel</Button>
-              </div>
-            </CardContent>
-          </Card>
-        )
-      })()}
+      {openEntry && <EntryDialog entry={openEntry} onClose={() => setOpenEntryId(null)} />}
+      {confirming && trackingScope && (
+        <ConfirmPlannedDialog
+          dateKey={confirming.dateKey}
+          scopeId={trackingScope.id}
+          task={confirming.task}
+          event={confirming.event}
+          startMin={confirming.startMin}
+          endMin={confirming.endMin}
+          onClose={() => setConfirming(null)}
+        />
+      )}
     </div>
   )
 }
