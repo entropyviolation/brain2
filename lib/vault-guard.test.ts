@@ -428,6 +428,30 @@ describe("vault-guard", () => {
     expect(merged.state.removedTaskIds).toContain("gone")
   })
 
+  it("honors removedListIds so a list merge discard is not resurrected by union", () => {
+    const hub = JSON.stringify({
+      state: {
+        tasks: [{ id: "t1", stage: "list" }],
+        lists: [
+          { id: "keep", name: "Keep" },
+          { id: "gone", name: "Gone" },
+        ],
+      },
+    })
+    const desktop = JSON.stringify({
+      state: {
+        tasks: [{ id: "t1", stage: "list" }],
+        lists: [{ id: "keep", name: "Keep" }],
+        removedListIds: ["gone"],
+      },
+    })
+    const merged = JSON.parse(mergePersistSnapshots(hub, desktop, "cogs-task-storage") ?? "{}") as {
+      state: { lists: { id: string }[]; removedListIds: string[] }
+    }
+    expect(merged.state.lists.map((list) => list.id)).toEqual(["keep"])
+    expect(merged.state.removedListIds).toContain("gone")
+  })
+
   it("keeps a Telegram plan entry a thinner dayPlan left out", () => {
     const hub = JSON.stringify({
       v: 1,
