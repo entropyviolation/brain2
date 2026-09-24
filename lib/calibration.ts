@@ -20,6 +20,7 @@
  */
 import type { Task } from "@/lib/types"
 import { getWeekString, formatLocalDateKey } from "@/lib/date-utils"
+import { itemTitleOrUntitled } from "@/lib/item-utils"
 
 /** A task counts as "accurate" when |errorPct| ≤ this band. */
 export const ACCURATE_BAND_PCT = 10
@@ -97,7 +98,7 @@ export function getCalibrationPoints(tasks: Task[]): CalibrationPoint[] {
     if (estimated <= 0 || actual <= 0) continue
     points.push({
       taskId: task.id,
-      description: task.description || task.title || "Untitled",
+      description: itemTitleOrUntitled(task),
       estimated,
       actual,
       ratio: actual / estimated,

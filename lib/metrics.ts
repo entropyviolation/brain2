@@ -11,7 +11,11 @@
  *  - correlation → Pearson r over two date-aligned series (inner join by date),
  *  - change-points → windowed mean-shift detection (no parametric assumptions),
  *  - context switches → count of transitions in a tagged sequence (e.g. the
- *    TimeGrid slot pens of a day) plus a per-day series for a heatmap.
+ *    TimeGrid slot pens of a day) plus a per-day series for a heatmap,
+ *  - diversity → Shannon entropy (bits) of a weight vector,
+ *  - inequality → Gini coefficient and Herfindahl–Hirschman concentration,
+ *  - rhythm → lag-k autocorrelation, naive periodogram, coefficient of variation,
+ *  - survival → share of open items still older than age t.
  *
  * A "series" is an array of `{ date: "YYYY-MM-DD"; value: number }` points. Dates
  * are parsed as LOCAL calendar days (matching the rest of the app) so x-axis day
@@ -370,4 +374,144 @@ export function contextSwitchSeries(days: DaySequence[]): ContextSwitchPoint[] {
 /** Convert a context-switch series into a plain value series (for trend/etc.). */
 export function contextSwitchValueSeries(points: ContextSwitchPoint[]): SeriesPoint[] {
   return points.map((p) => ({ date: p.date, value: p.switches }))
+}
+
+// ---- diversity / inequality / rhythm ----------------------------------------
+
+function sharesOf(weights: number[]): number[] {
+  const cleaned = weights.filter((w) => Number.isFinite(w) && w > 0)
+  const total = cleaned.reduce((s, w) => s + w, 0)
+  if (total <= 0) return []
+  return cleaned.map((w) => w / total)
+}
+
+/**
+ * Shannon entropy in bits: H = −Σ pᵢ log₂ pᵢ after normalizing non-negative
+ * weights. Zero when one bucket takes everything; log₂(k) when k buckets are equal.
+ */
+export function shannonEntropy(weights: number[]): number {
+  const p = sharesOf(weights)
+  if (p.length === 0) return 0
+  let h = 0
+  for (const pi of p) {
+    if (pi <= 0) continue
+    h -= pi * Math.log2(pi)
+  }
+  return h
+}
+
+/** H / log₂(k) so 1 = even mix and 0 = a single pen. Undefined (0) for k < 2. */
+export function normalizedEntropy(weights: number[]): number {
+  const p = sharesOf(weights)
+  if (p.length < 2) return 0
+  return shannonEntropy(p) / Math.log2(p.length)
+}
+
+/**
+ * Gini coefficient of a non-negative allocation. 0 = equal shares, approaching 1
+ * when one value takes the mass. Mean-independent; empty/zero → 0.
+ */
+export function giniCoefficient(values: number[]): number {
+  const xs = values.filter((v) => Number.isFinite(v) && v >= 0).sort((a, b) => a - b)
+  const n = xs.length
+  if (n === 0) return 0
+  const total = xs.reduce((s, v) => s + v, 0)
+  if (total === 0) return 0
+  let acc = 0
+  for (let i = 0; i < n; i++) acc += (2 * (i + 1) - n - 1) * xs[i]
+  return acc / (n * total)
+}
+
+/**
+ * Herfindahl–Hirschman index: Σ sᵢ² of normalized shares. 1/k = even, 1 = monopoly.
+ */
+export function herfindahlIndex(weights: number[]): number {
+  const p = sharesOf(weights)
+  if (p.length === 0) return 0
+  return p.reduce((s, pi) => s + pi * pi, 0)
+}
+
+/** Coefficient of variation: σ / |μ|. 0 when the mean is 0 or n < 2. */
+export function coefficientOfVariation(values: number[]): number {
+  const xs = values.filter((v) => Number.isFinite(v))
+  if (xs.length < 2) return 0
+  const m = mean(xs)
+  if (m === 0) return 0
+  return stddev(xs) / Math.abs(m)
+}
+
+/**
+ * Pearson autocorrelation at lag k: corr(x[0..n-k-1], x[k..n-1]).
+ * Returns 0 when fewer than 3 overlapping points remain.
+ */
+export function autocorrelation(values: number[], lag: number): number {
+  if (lag < 1) return 0
+  const xs = values.filter((v) => Number.isFinite(v))
+  if (xs.length - lag < 3) return 0
+  const a = xs.slice(0, xs.length - lag)
+  const b = xs.slice(lag)
+  return pearson(a, b)
+}
+
+export interface PeriodogramBin {
+  /** Harmonic index k = 1 .. floor((n-1)/2). */
+  k: number
+  /** Period in samples (n / k). */
+  period: number
+  /** |X(k)|² / n — relative power. */
+  power: number
+}
+
+/**
+ * Naive DFT periodogram. For a real series x₀…xₙ₋₁, power at harmonic k is
+ * |Σ xₜ exp(−2π i k t / n)|² / n. Peak period is the bin with max power
+ * (k ≥ 1). Classical, not a Welch estimate — honest on short vault series.
+ */
+export function periodogram(values: number[]): PeriodogramBin[] {
+  const xs = values.filter((v) => Number.isFinite(v))
+  const n = xs.length
+  if (n < 4) return []
+  const m = mean(xs)
+  const centered = xs.map((v) => v - m)
+  const bins: PeriodogramBin[] = []
+  const kMax = Math.floor((n - 1) / 2)
+  for (let k = 1; k <= kMax; k++) {
+    let re = 0
+    let im = 0
+    const omega = (2 * Math.PI * k) / n
+    for (let t = 0; t < n; t++) {
+      re += centered[t] * Math.cos(omega * t)
+      im -= centered[t] * Math.sin(omega * t)
+    }
+    bins.push({ k, period: n / k, power: (re * re + im * im) / n })
+  }
+  return bins
+}
+
+export function dominantPeriod(values: number[]): PeriodogramBin | null {
+  const bins = periodogram(values)
+  if (bins.length === 0) return null
+  return bins.reduce((best, bin) => (bin.power > best.power ? bin : best))
+}
+
+export interface SurvivalPoint {
+  age: number
+  surviving: number
+}
+
+/**
+ * Share of a cohort still “alive” at age t: S(t) = #{age ≥ t} / n.
+ * For open items, age is days since create (or last touch). Not a fitted
+ * Kaplan–Meier with censoring — every item here is still open, so this is
+ * the empirical survival of the current stock.
+ */
+export function survivalCurve(ages: number[]): SurvivalPoint[] {
+  const xs = ages.filter((a) => Number.isFinite(a) && a >= 0).sort((a, b) => a - b)
+  const n = xs.length
+  if (n === 0) return []
+  const unique = [...new Set(xs)]
+  return unique.map((age) => ({
+    age,
+    surviving: xs.filter((a) => a >= age).length / n,
+  }))
 }

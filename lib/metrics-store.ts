@@ -18,13 +18,14 @@
  * calculations / prediction engines (each datapoint is a labelled observation).
  *
  * Storage mirrors `lib/modules-store.ts`: localStorage via zustand `persist`
- * under `cogs-metrics-store`. Target: a future MongoDB `metrics` collection.
+ * under `brain2-metrics-store`. Target: a future MongoDB `metrics` collection.
  */
 "use client"
 
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
+import { persistKey } from "@/lib/storage-keys"
 import type { SeriesPoint } from "@/lib/metrics"
 
 /** The five core wellbeing metrics, all reported on a 0–100 scale. */
@@ -232,7 +233,7 @@ export const useMetricsStore = create<MetricsState>()(
           .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0)),
     }),
     {
-      name: "cogs-metrics-store",
+      name: persistKey("metrics-store"),
       version: 2,
       storage: createCogsJSONStorage(),
       // v1 stored arbitrary metric definitions + per-day entries; that model is

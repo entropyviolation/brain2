@@ -1,23 +1,22 @@
 /**
  * components/Analytics/ContextSwitchHeatmap.tsx — Context-switching heatmap
  *
- * Self-contained analytics view. It reads the TimeGrid tracker via the
- * time-tracking-store's `getDay` action (read-only) and, for the selected scope,
- * counts how many times the painted activity changed across each day's slots
- * (pure `lib/metrics.ts` `contextSwitchSeries`). A GitHub-style calendar heatmap
- * surfaces fragmented (high-switch) vs. focused (low-switch) days, plus headline
- * stats and a trend. No LLM.
+ * A switch is a pen change: one block ending and another beginning. Shared
+ * Analytics range; a sparse window is not a trend.
  */
 "use client"
 
 import { useMemo, useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Shuffle } from "lucide-react"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
-import { formatLocalDateKey } from "@/lib/date-utils"
+import { entriesForDay } from "@/lib/time-entries"
+import { parseLocalDate, formatLocalDateKey } from "@/lib/date-utils"
 import { contextSwitchSeries, contextSwitchValueSeries, trend, mean } from "@/lib/metrics"
-
-const HEATMAP_WEEKS = 17 // ~4 months
+import { useTaskStore } from "@/lib/task-store"
+import { ChartFrame, OpenInListsButton } from "./chart-frame"
+import { useAnalyticsRange } from "./analytics-range-store"
+import { SAMPLE_FLOORS, isThinSample, thinWindowSentence } from "./analytics-range"
+import { DensityCalendar, StudioBars, StudioSelect } from "./studio-kit"
+import { hourLabel, switchCountsByHour } from "./hour-day"
 
 function addDays(d: Date, n: number) {
   const r = new Date(d)
@@ -25,55 +24,63 @@ function addDays(d: Date, n: number) {
   return r
 }
 
-function switchColor(count: number, max: number): string {
-  if (count <= 0) return "#ebedf0"
-  const ratio = max <= 0 ? 0 : count / max
-  if (ratio < 0.25) return "#fde68a"
-  if (ratio < 0.5) return "#fcd34d"
-  if (ratio < 0.75) return "#f59e0b"
-  return "#d97706"
+function switchColor(count: number): string {
+  if (count <= 0) return "#b0b0b0"
+  if (count === 1) return "hsl(38 50% 22%)"
+  if (count < 4) return "hsl(32 62% 32%)"
+  if (count < 7) return "hsl(28 72% 42%)"
+  return "hsl(18 78% 52%)"
 }
 
 export function ContextSwitchHeatmap() {
   const scopes = useTimeTrackingStore((s) => s.scopes)
-  // Subscribe to data so the view recomputes when slots change; values are still
-  // read through the getDay action below.
-  const data = useTimeTrackingStore((s) => s.data)
-  const getDay = useTimeTrackingStore((s) => s.getDay)
+  const entries = useTimeTrackingStore((s) => s.entries)
+  const tasks = useTaskStore((s) => s.tasks)
+  const { dateKeys, keySet, label } = useAnalyticsRange()
 
   const [scopeId, setScopeId] = useState(scopes[0]?.id ?? "")
   const scope = scopes.find((s) => s.id === scopeId) ?? scopes[0]
 
   const switchByDate = useMemo(() => {
     if (!scope) return new Map<string, number>()
-    const days: { date: string; sequence: (string | null)[] }[] = []
-    const today = new Date()
-    for (let i = 0; i < HEATMAP_WEEKS * 7; i++) {
-      const key = formatLocalDateKey(addDays(today, -i))
-      days.push({ date: key, sequence: getDay(key, scope.id) })
-    }
-    const series = contextSwitchSeries(days)
+    const dayRows = dateKeys.map((key) => ({
+      date: key,
+      sequence: entriesForDay(entries, key, scope.id).map((e) => e.penId),
+    }))
+    const series = contextSwitchSeries(dayRows)
     return new Map(series.map((p) => [p.date, p.switches]))
-    // `data` is intentionally a dependency so we recompute on paint.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scope, getDay, data])
+  }, [scope, entries, dateKeys])
 
   const heatmap = useMemo(() => {
-    const today = new Date()
-    const weekday = (today.getDay() + 6) % 7 // 0 = Monday
-    const start = addDays(today, -(HEATMAP_WEEKS * 7 - 1 + weekday))
-    const weeks: { date: Date; key: string; count: number }[][] = []
-    for (let w = 0; w < HEATMAP_WEEKS; w++) {
-      const col: { date: Date; key: string; count: number }[] = []
+    if (dateKeys.length === 0) return []
+    const start = parseLocalDate(dateKeys[0]) ?? new Date()
+    const weekday = (start.getDay() + 6) % 7
+    const aligned = addDays(start, -weekday)
+    const today = parseLocalDate(dateKeys[dateKeys.length - 1]) ?? new Date()
+    const totalDays = Math.round((today.getTime() - aligned.getTime()) / 86400000) + 1
+    const weeks = Math.ceil(totalDays / 7)
+    const cols: { key: string; value: number; out?: boolean }[][] = []
+    for (let w = 0; w < weeks; w++) {
+      const col: { key: string; value: number; out?: boolean }[] = []
       for (let day = 0; day < 7; day++) {
-        const d = addDays(start, w * 7 + day)
+        const d = addDays(aligned, w * 7 + day)
         const key = formatLocalDateKey(d)
-        col.push({ date: d, key, count: d > today ? -1 : switchByDate.get(key) ?? 0 })
+        col.push({
+          key,
+          value: !keySet.has(key) || d > today ? 0 : switchByDate.get(key) ?? 0,
+          out: !keySet.has(key) || d > today,
+        })
       }
-      weeks.push(col)
+      cols.push(col)
     }
-    return weeks
-  }, [switchByDate])
+    return cols
+  }, [switchByDate, dateKeys, keySet])
+
+  const hourRows = useMemo(() => {
+    if (!scope) return []
+    const hours = switchCountsByHour(entries, dateKeys, scope.id)
+    return hours.map((value, hour) => ({ name: hourLabel(hour), value }))
+  }, [scope, entries, dateKeys])
 
   const stats = useMemo(() => {
     const counts = [...switchByDate.values()].filter((v) => v > 0)
@@ -86,85 +93,69 @@ export function ContextSwitchHeatmap() {
     return { max, avg, activeDays: counts.length, direction: t.direction }
   }, [switchByDate])
 
-  const maxForColor = stats.max
+  const empty = stats.activeDays === 0
+  const thin = !empty && isThinSample(stats.activeDays, SAMPLE_FLOORS.contextSwitchDays)
+  const loggedIds = useMemo(
+    () =>
+      tasks
+        .filter((t) => (t.timeLogs ?? []).some((log) => keySet.has(log.date)))
+        .map((t) => t.id),
+    [tasks, keySet],
+  )
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader className="pb-3 flex flex-row items-center justify-between">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Shuffle className="h-4 w-4" />
-            Context switching (by day)
-          </CardTitle>
-          {scopes.length > 0 && (
-            <select
-              className="border rounded h-8 px-2 text-sm bg-background"
-              value={scope?.id ?? ""}
-              onChange={(e) => setScopeId(e.target.value)}
-            >
-              {scopes.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-          )}
-        </CardHeader>
-        <CardContent>
-          {!scope ? (
-            <p className="text-sm text-muted-foreground">No tracking scopes yet.</p>
-          ) : stats.activeDays === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No painted days for “{scope.name}” yet. Use the Tracking tab on Home to paint your day, then return here.
-            </p>
-          ) : (
+    <div className="an-canvas an-stack">
+      <header className="an-canvas-head">
+        <div>
+          <p className="an-canvas-title">Context switching</p>
+          <p className="an-canvas-kicker">{label} · a switch is a pen change — one block ending and another beginning.</p>
+        </div>
+        {scopes.length > 0 && (
+          <StudioSelect label="Scope" value={scope?.id ?? ""} onChange={setScopeId}>
+            {scopes.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </StudioSelect>
+        )}
+      </header>
+
+      {!scope ? (
+        <ChartFrame empty emptySentence="No tracking scopes yet." />
+      ) : empty ? (
+        <ChartFrame
+          empty
+          emptySentence={`No painted days for “${scope.name}” in the ${label}. A switch is a pen change on the Home → Tracking grid.`}
+        />
+      ) : thin ? (
+        <ChartFrame thin thinSentence={thinWindowSentence(stats.activeDays, SAMPLE_FLOORS.contextSwitchDays, label)} />
+      ) : (
+        <>
+          <p className="an-n">
+            n = {stats.activeDays} days with a switch · avg {stats.avg.toFixed(1)} / day · busiest {stats.max} · trend{" "}
+            {stats.direction}
+          </p>
+          <DensityCalendar weeks={heatmap} color={switchColor} />
+          <div className="an-legend">
+            <span>
+              <i style={{ background: switchColor(0) }} />
+              Focused (0 switches)
+            </span>
+            <span>
+              <i style={{ background: switchColor(8) }} />
+              Fragmented
+            </span>
+          </div>
+          {hourRows.some((r) => r.value > 0) && (
             <>
-              <div className="grid grid-cols-3 gap-3 mb-4">
-                <Stat label="Avg switches/day" value={stats.avg.toFixed(1)} />
-                <Stat label="Busiest day" value={stats.max} />
-                <Stat label="Trend" value={stats.direction} />
-              </div>
-              <div className="flex gap-[3px] overflow-x-auto pb-2">
-                {heatmap.map((week, wi) => (
-                  <div key={wi} className="flex flex-col gap-[3px]">
-                    {week.map((cell) => (
-                      <div
-                        key={cell.key}
-                        title={`${cell.key}: ${cell.count < 0 ? "—" : cell.count + " switches"}`}
-                        style={{
-                          width: 13,
-                          height: 13,
-                          borderRadius: 2,
-                          background: cell.count < 0 ? "transparent" : switchColor(cell.count, maxForColor),
-                        }}
-                      />
-                    ))}
-                  </div>
-                ))}
-              </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2">
-                Focused
-                {[0, 0.2, 0.4, 0.7, 1].map((p) => (
-                  <span
-                    key={p}
-                    style={{ width: 13, height: 13, borderRadius: 2, background: switchColor(Math.ceil(p * maxForColor), maxForColor) }}
-                  />
-                ))}
-                Fragmented
-              </div>
+              <p className="an-canvas-title">Hour of day</p>
+              <StudioBars rows={hourRows.filter((r) => r.value > 0)} max={Math.max(...hourRows.map((r) => r.value), 1)} unit="" />
             </>
           )}
-        </CardContent>
-      </Card>
-    </div>
-  )
-}
-
-function Stat({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="rounded-md border p-2">
-      <p className="text-[11px] text-muted-foreground">{label}</p>
-      <p className="text-lg font-semibold capitalize">{value}</p>
+        </>
+      )}
+      <OpenInListsButton taskIds={loggedIds} />
     </div>
   )
 }

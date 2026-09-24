@@ -13,6 +13,15 @@ import {
   contextSwitchSeries,
   contextSwitchValueSeries,
   normalizeSeries,
+  shannonEntropy,
+  normalizedEntropy,
+  giniCoefficient,
+  herfindahlIndex,
+  coefficientOfVariation,
+  autocorrelation,
+  periodogram,
+  dominantPeriod,
+  survivalCurve,
   type SeriesPoint,
 } from "@/lib/metrics"
 
@@ -173,5 +182,51 @@ describe("metrics — context switches", () => {
   it("contextSwitchValueSeries maps switches to a value series", () => {
     const pts = contextSwitchSeries([{ date: "2026-06-01", sequence: ["A", "B"] }])
     expect(contextSwitchValueSeries(pts)).toEqual([{ date: "2026-06-01", value: 1 }])
+  })
+})
+
+describe("metrics — entropy / gini / HHI / CV / autocorr / periodogram / survival", () => {
+  it("shannon entropy is 0 for a single bucket and 1 bit for a 50/50 split", () => {
+    expect(shannonEntropy([10])).toBe(0)
+    expect(shannonEntropy([1, 1])).toBeCloseTo(1)
+    expect(normalizedEntropy([1, 1, 1, 1])).toBeCloseTo(1)
+    expect(shannonEntropy([])).toBe(0)
+  })
+
+  it("gini is 0 when equal and positive when concentrated", () => {
+    expect(giniCoefficient([5, 5, 5, 5])).toBeCloseTo(0)
+    expect(giniCoefficient([0, 10])).toBeCloseTo(0.5)
+    expect(giniCoefficient([])).toBe(0)
+  })
+
+  it("HHI is 1 for a monopoly and 1/n when even", () => {
+    expect(herfindahlIndex([10])).toBeCloseTo(1)
+    expect(herfindahlIndex([1, 1, 1, 1])).toBeCloseTo(0.25)
+  })
+
+  it("coefficient of variation is σ/|mean|", () => {
+    expect(coefficientOfVariation([10, 10, 10])).toBe(0)
+    expect(coefficientOfVariation([2, 4, 6])).toBeCloseTo(Math.sqrt(8 / 3) / 4)
+  })
+
+  it("lag-1 autocorrelation of a perfect run is 1", () => {
+    const ramp = [1, 2, 3, 4, 5, 6, 7, 8]
+    expect(autocorrelation(ramp, 1)).toBeCloseTo(1)
+    expect(autocorrelation([1, 2], 1)).toBe(0)
+  })
+
+  it("periodogram of a 4-cycle peaks near period 4", () => {
+    const wave = Array.from({ length: 16 }, (_, t) => Math.sin((2 * Math.PI * t) / 4))
+    const peak = dominantPeriod(wave)
+    expect(peak).not.toBeNull()
+    expect(peak!.period).toBeCloseTo(4, 0)
+    expect(periodogram([1, 2]).length).toBe(0)
+  })
+
+  it("survival of ages [1,2,2,4] drops as age rises", () => {
+    const curve = survivalCurve([1, 2, 2, 4])
+    expect(curve[0]).toEqual({ age: 1, surviving: 1 })
+    expect(curve.find((p) => p.age === 2)?.surviving).toBeCloseTo(0.75)
+    expect(curve.find((p) => p.age === 4)?.surviving).toBeCloseTo(0.25)
   })
 })

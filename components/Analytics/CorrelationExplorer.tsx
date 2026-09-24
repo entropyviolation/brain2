@@ -1,175 +1,294 @@
 /**
- * components/Analytics/CorrelationExplorer.tsx — Pairwise metric correlation
+ * components/Analytics/CorrelationExplorer.tsx — Pairwise correlation matrix
  *
- * Self-contained analytics view (reads `metrics-store` itself). The user picks
- * two metrics; we inner-join their readings by date and compute a Pearson
- * correlation (via pure `lib/metrics.ts`), rendering a scatter plot plus a
- * plain-language insight. A small matrix lists the strongest pairwise links
- * across all metrics with enough overlapping days. No LLM.
+ * Sentence + n + caveat. Ranked links and the scatter stay hidden until the
+ * overlap clears the sample floor. Shared Analytics range. Not a chart builder.
  */
 "use client"
 
-import { useMemo, useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { useMemo, useState, type ReactNode } from "react"
 import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, Tooltip, CartesianGrid, ZAxis } from "recharts"
 import { useMetricsStore, METRIC_DEFINITIONS, resolveMetricColor, type MetricKey } from "@/lib/metrics-store"
+import { useHabitsStore } from "@/lib/habits-store"
+import { useTimeTrackingStore } from "@/lib/time-tracking-store"
+import { useSleepStore } from "@/lib/sleep-store"
+import { usePointsStore } from "@/lib/points-store"
+import { calculateDayPercentageAV } from "@/lib/calculations"
+import { exemptionTest } from "@/lib/habit-exemption"
+import { parseLocalDate } from "@/lib/date-utils"
+import { uniqueMinutesByDate } from "@/lib/tracking-summary"
+import { resolveNights } from "@/lib/sleep-inference"
+import { sleepMinutes } from "@/lib/sleep-log"
 import { alignSeries, correlate, type SeriesPoint } from "@/lib/metrics"
+import { ChartFrame, OpenInListsButton } from "./chart-frame"
+import { useAnalyticsRange } from "./analytics-range-store"
+import { SAMPLE_FLOORS, dateKeyOf, isThinSample, thinWindowSentence } from "./analytics-range"
+import { FindingBlock, STUDIO_AXIS, STUDIO_GRID, STUDIO_TOOLTIP } from "./studio-kit"
 
-const MIN_OVERLAP = 3
+interface NamedSeries {
+  id: string
+  name: string
+  points: SeriesPoint[]
+}
+
+function weekdayIndex(key: string): number {
+  const d = parseLocalDate(key)
+  return d ? d.getDay() : 0
+}
+
+function cellFill(r: number, n: number, floor: number): string {
+  if (n < floor) return "#b0b0b0"
+  const t = Math.min(1, Math.abs(r))
+  const hue = r >= 0 ? 166 : 8
+  return `hsl(${hue} ${40 + t * 40}% ${16 + t * 36}%)`
+}
 
 export function CorrelationExplorer() {
   const datapoints = useMetricsStore((s) => s.datapoints)
   const colors = useMetricsStore((s) => s.colors)
+  const habitTasks = useHabitsStore((s) => s.tasks)
+  const weeklyData = useHabitsStore((s) => s.weeklyData)
+  const habitExemptions = useHabitsStore((s) => s.habitExemptions)
+  const trackingEntries = useTimeTrackingStore((s) => s.entries)
+  const scopes = useTimeTrackingStore((s) => s.scopes)
+  const loggedNights = useSleepStore((s) => s.nights)
+  const pointsHistory = usePointsStore((s) => s.pointsHistory)
+  const { dateKeys, keySet, label } = useAnalyticsRange()
 
-  const active = METRIC_DEFINITIONS
-
-  const seriesById = useMemo(() => {
-    const map = new Map<string, SeriesPoint[]>()
-    for (const d of active) {
-      map.set(
-        d.key,
-        datapoints
+  const series = useMemo<NamedSeries[]>(() => {
+    const out: NamedSeries[] = []
+    for (const d of METRIC_DEFINITIONS) {
+      out.push({
+        id: d.key,
+        name: d.name,
+        points: datapoints
           .filter((dp) => dp.values[d.key] !== undefined)
-          .map((dp) => ({ date: dp.at, value: dp.values[d.key] as number }))
-          .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0)),
-      )
+          .filter((dp) => keySet.has(dateKeyOf(dp.at) ?? ""))
+          .map((dp) => ({ date: dp.at, value: dp.values[d.key] as number })),
+      })
     }
-    return map
-  }, [active, datapoints])
+    const habits: SeriesPoint[] = dateKeys.map((date) => ({
+      date,
+      value: habitTasks.length
+        ? calculateDayPercentageAV(date, habitTasks as never, weeklyData as never, weekdayIndex(date), exemptionTest(habitExemptions, "daily"))
+        : 0,
+    }))
+    out.push({ id: "habits", name: "Habit %", points: habits })
+    const tracking = uniqueMinutesByDate(trackingEntries)
+    out.push({
+      id: "tracking",
+      name: "Tracked min",
+      points: dateKeys.map((date) => ({ date, value: tracking[date] ?? 0 })),
+    })
+    const nights = resolveNights(loggedNights, { scopes, entries: trackingEntries }, dateKeys)
+    out.push({
+      id: "sleep",
+      name: "Sleep min",
+      points: dateKeys
+        .map((date) => {
+          const m = sleepMinutes(nights[date])
+          return m === null ? null : { date, value: m }
+        })
+        .filter((p): p is SeriesPoint => p !== null),
+    })
+    const pts: Record<string, number> = {}
+    for (const e of pointsHistory) if (keySet.has(e.date)) pts[e.date] = (pts[e.date] ?? 0) + e.points
+    out.push({
+      id: "points",
+      name: "Points",
+      points: dateKeys.map((date) => ({ date, value: pts[date] ?? 0 })),
+    })
+    return out
+  }, [datapoints, dateKeys, habitTasks, keySet, loggedNights, pointsHistory, scopes, trackingEntries, weeklyData, habitExemptions])
 
-  const [aId, setAId] = useState<MetricKey>(active[0]?.key ?? "joy")
-  const [bId, setBId] = useState<MetricKey>(active[1]?.key ?? active[0]?.key ?? "joy")
-
-  const defA = active.find((d) => d.key === aId)
-  const defB = active.find((d) => d.key === bId)
+  const [aId, setAId] = useState(series[0]?.id ?? "joy")
+  const [bId, setBId] = useState(series[1]?.id ?? series[0]?.id ?? "joy")
+  const defA = series.find((d) => d.id === aId) ?? series[0]
+  const defB = series.find((d) => d.id === bId) ?? series[1] ?? series[0]
 
   const aligned = useMemo(() => {
     if (!defA || !defB) return { dates: [], a: [], b: [] }
-    return alignSeries(seriesById.get(defA.key) ?? [], seriesById.get(defB.key) ?? [])
-  }, [defA, defB, seriesById])
+    return alignSeries(defA.points, defB.points)
+  }, [defA, defB])
 
   const result = useMemo(() => {
     if (!defA || !defB) return null
-    return correlate(seriesById.get(defA.key) ?? [], seriesById.get(defB.key) ?? [], {
-      a: defA.name,
-      b: defB.name,
-    })
-  }, [defA, defB, seriesById])
+    return correlate(defA.points, defB.points, { a: defA.name, b: defB.name })
+  }, [defA, defB])
 
   const scatterData = useMemo(
     () => aligned.dates.map((date, i) => ({ x: aligned.a[i], y: aligned.b[i], date })),
     [aligned],
   )
 
-  // Top pairwise links across all metrics with enough overlap.
+  const n = result?.n ?? 0
+  const empty = n < 2
+  const thin = !empty && isThinSample(n, SAMPLE_FLOORS.correlation)
+  const caveat = "Correlation does not imply causation. Overlap is inner-joined by calendar day."
+
+  const matrix = useMemo(() => {
+    return series.map((a) =>
+      series.map((b) => {
+        const r = correlate(a.points, b.points)
+        return { r: r.r, n: r.n }
+      }),
+    )
+  }, [series])
+
   const ranked = useMemo(() => {
-    const out: { a: string; b: string; r: number; n: number }[] = []
-    for (let i = 0; i < active.length; i++) {
-      for (let j = i + 1; j < active.length; j++) {
-        const r = correlate(seriesById.get(active[i].key) ?? [], seriesById.get(active[j].key) ?? [])
-        if (r.n >= MIN_OVERLAP) out.push({ a: active[i].name, b: active[j].name, r: r.r, n: r.n })
+    const out: { a: string; b: string; r: number; n: number; aId: string; bId: string }[] = []
+    for (let i = 0; i < series.length; i++) {
+      for (let j = i + 1; j < series.length; j++) {
+        const r = correlate(series[i].points, series[j].points)
+        if (r.n >= SAMPLE_FLOORS.correlation) {
+          out.push({ a: series[i].name, b: series[j].name, r: r.r, n: r.n, aId: series[i].id, bId: series[j].id })
+        }
       }
     }
     return out.sort((x, y) => Math.abs(y.r) - Math.abs(x.r)).slice(0, 8)
-  }, [active, seriesById])
+  }, [series])
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Correlation explorer</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {active.length < 2 ? (
-            <p className="text-sm text-muted-foreground">
-              Track at least two metrics (and log them on shared days) to explore correlations.
-            </p>
+    <div className="an-canvas an-stack">
+      <header className="an-canvas-head">
+        <div>
+          <p className="an-canvas-title">Correlation</p>
+          <p className="an-canvas-kicker">Pairwise Pearson r over the {label}. Click a cell to open the scatter.</p>
+        </div>
+      </header>
+
+      {series.length < 2 ? (
+        <ChartFrame empty emptySentence="Track at least two metrics (and log them on shared days) to explore correlations." />
+      ) : (
+        <>
+          <div
+            className="an-matrix"
+            style={{ gridTemplateColumns: `88px repeat(${series.length}, minmax(36px, 1fr))` }}
+          >
+            <span className="an-matrix-cell is-label" />
+            {series.map((s) => (
+              <span key={`h-${s.id}`} className="an-matrix-cell is-label">
+                {s.name.slice(0, 4)}
+              </span>
+            ))}
+            {series.map((row, i) => (
+              <FragmentRow key={row.id}>
+                <span className="an-matrix-cell is-label">{row.name}</span>
+                {series.map((col, j) => {
+                  const cell = matrix[i]?.[j]
+                  const active = row.id === aId && col.id === bId
+                  return (
+                    <button
+                      key={`${row.id}-${col.id}`}
+                      type="button"
+                      className={`an-matrix-cell${active ? " is-active" : ""}`}
+                      style={{ background: cellFill(cell?.r ?? 0, cell?.n ?? 0, SAMPLE_FLOORS.correlation) }}
+                      title={`${row.name} vs ${col.name}: r=${(cell?.r ?? 0).toFixed(2)} n=${cell?.n ?? 0}`}
+                      onClick={() => {
+                        setAId(row.id)
+                        setBId(col.id)
+                      }}
+                    >
+                      {cell && cell.n >= SAMPLE_FLOORS.correlation ? cell.r.toFixed(2) : "·"}
+                    </button>
+                  )
+                })}
+              </FragmentRow>
+            ))}
+          </div>
+
+          <div className="an-studio-tools">
+            <select className="an-chip" value={aId} onChange={(e) => setAId(e.target.value)}>
+              {series.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
+              ))}
+            </select>
+            <span className="an-canvas-kicker">vs</span>
+            <select className="an-chip" value={bId} onChange={(e) => setBId(e.target.value)}>
+              {series.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {empty ? (
+            <ChartFrame
+              empty
+              emptySentence={`No overlapping days for these two series in the ${label} — log both on the same dates.`}
+            />
+          ) : thin ? (
+            <ChartFrame thin thinSentence={thinWindowSentence(n, SAMPLE_FLOORS.correlation, label)} />
           ) : (
             <>
-              <div className="flex flex-wrap items-center gap-2 text-sm">
-                <select
-                  className="border rounded h-8 px-2 bg-background"
-                  value={aId}
-                  onChange={(e) => setAId(e.target.value as MetricKey)}
-                >
-                  {active.map((d) => (
-                    <option key={d.key} value={d.key}>
-                      {d.name}
-                    </option>
-                  ))}
-                </select>
-                <span className="text-muted-foreground">vs</span>
-                <select
-                  className="border rounded h-8 px-2 bg-background"
-                  value={bId}
-                  onChange={(e) => setBId(e.target.value as MetricKey)}
-                >
-                  {active.map((d) => (
-                    <option key={d.key} value={d.key}>
-                      {d.name}
-                    </option>
-                  ))}
-                </select>
-                {result && (
-                  <Badge variant={result.direction === "none" ? "outline" : "secondary"} className="ml-auto">
-                    r = {result.r.toFixed(2)} · n = {result.n}
-                  </Badge>
-                )}
-              </div>
-
-              {result && <p className="text-sm text-muted-foreground">{result.insight}</p>}
-
-              {scatterData.length >= 2 ? (
-                <ResponsiveContainer width="100%" height={280}>
-                  <ScatterChart margin={{ left: 8, right: 8, bottom: 8 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" dataKey="x" name={defA?.name} fontSize={11} />
-                    <YAxis type="number" dataKey="y" name={defB?.name} fontSize={11} />
-                    <ZAxis range={[60, 60]} />
-                    <Tooltip
-                      cursor={{ strokeDasharray: "3 3" }}
-                      formatter={(v: number, n: string) => [v, n === "x" ? defA?.name : defB?.name]}
-                    />
-                    <Scatter data={scatterData} fill={defA ? resolveMetricColor(defA.key, colors) : "#2563eb"} />
-                  </ScatterChart>
-                </ResponsiveContainer>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  No overlapping days yet — log both metrics on the same dates.
-                </p>
-              )}
+              <FindingBlock
+                sentence={result?.insight ?? ""}
+                n={`n = ${n} overlapping days · r = ${result?.r.toFixed(2)}`}
+                caveat={caveat}
+              />
+              <ResponsiveContainer width="100%" height={260}>
+                <ScatterChart margin={{ left: 8, right: 8, bottom: 8 }}>
+                  <CartesianGrid stroke={STUDIO_GRID} />
+                  <XAxis type="number" dataKey="x" name={defA?.name} fontSize={11} stroke={STUDIO_AXIS} />
+                  <YAxis type="number" dataKey="y" name={defB?.name} fontSize={11} stroke={STUDIO_AXIS} />
+                  <ZAxis range={[60, 60]} />
+                  <Tooltip
+                    cursor={{ strokeDasharray: "3 3" }}
+                    contentStyle={STUDIO_TOOLTIP}
+                    formatter={(v: number, name: string) => [v, name === "x" ? defA?.name : defB?.name]}
+                  />
+                  <Scatter
+                    data={scatterData}
+                    fill={
+                      METRIC_DEFINITIONS.some((m) => m.key === defA?.id)
+                        ? resolveMetricColor(defA.id as MetricKey, colors)
+                        : "#5eead4"
+                    }
+                  />
+                </ScatterChart>
+              </ResponsiveContainer>
+              {(aId === "habits" || bId === "habits") && <OpenInListsButton habits />}
             </>
           )}
-        </CardContent>
-      </Card>
+        </>
+      )}
 
       {ranked.length > 0 && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Strongest links</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {ranked.map((row, i) => (
-              <div key={i} className="flex items-center justify-between text-sm">
-                <span className="truncate">
-                  {row.a} ↔ {row.b}
-                </span>
-                <span className="flex items-center gap-2 shrink-0">
-                  <span className="text-xs text-muted-foreground">n={row.n}</span>
-                  <Badge variant={Math.abs(row.r) < 0.2 ? "outline" : "secondary"}>
-                    {row.r >= 0 ? "+" : ""}
+        <div>
+          <p className="an-canvas-title">Strongest links</p>
+          <ul className="an-list">
+            {ranked.map((row) => (
+              <li key={`${row.aId}-${row.bId}`}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAId(row.aId)
+                    setBId(row.bId)
+                  }}
+                >
+                  <span>
+                    {row.a} ↔ {row.b}
+                  </span>
+                  <span className="an-n">
+                    n={row.n} · {row.r >= 0 ? "+" : ""}
                     {row.r.toFixed(2)}
-                  </Badge>
-                </span>
-              </div>
+                  </span>
+                </button>
+              </li>
             ))}
-            <p className="text-[11px] text-muted-foreground pt-1">Correlation does not imply causation.</p>
-          </CardContent>
-        </Card>
+          </ul>
+          <p className="an-caveat">Correlation does not imply causation.</p>
+        </div>
       )}
     </div>
   )
+}
+
+function FragmentRow({ children }: { children: ReactNode }) {
+  return <>{children}</>
 }
 
 export default CorrelationExplorer

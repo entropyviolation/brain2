@@ -1,22 +1,13 @@
 /**
- * components/Analytics/RegretView.tsx — Regret accrual ledger (Feature 7, Worker G)
+ * components/Analytics/RegretView.tsx — Regret accrual ledger
  *
- * The mirror image of the Points stats: instead of rewarding completion, this
- * view surfaces the **accrued cost of not having done** important/overdue items.
- * It reads the persisted `regret-store` ledger and the task snapshot, accrues
- * the current day's increment on mount (idempotent), and renders day/week/month
- * totals, a recent-days trend, outstanding (projected) regret, the heaviest
- * offenders, and a breakdown by structured blocked reason (HM3).
- *
- * Self-contained: mounted as an Analytics tab by the coordinator in
- * `enhanced-analytics.tsx`.
+ * Regret is the accrued cost of important items sitting undone past their due
+ * date. Shared Analytics range; a thin window is not a finding. KPI cards stay
+ * dark when there is nothing to total.
  */
 "use client"
 
 import { useEffect, useMemo } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Frown, TrendingDown, AlertTriangle, CalendarClock } from "lucide-react"
 import {
   ResponsiveContainer,
   BarChart,
@@ -28,6 +19,12 @@ import {
 } from "recharts"
 import { useTaskStore } from "@/lib/task-store"
 import { useRegretStore, regretCost } from "@/lib/regret-store"
+import { parseLocalDate } from "@/lib/date-utils"
+import { ChartFrame, OpenInListsButton } from "./chart-frame"
+import { useAnalyticsRange } from "./analytics-range-store"
+import { SAMPLE_FLOORS, isThinSample, thinWindowSentence } from "./analytics-range"
+import { openItemsInLists } from "./open-in-lists"
+import { STUDIO_AXIS, STUDIO_GRID, STUDIO_TOOLTIP } from "./studio-kit"
 
 const BLOCKED_REASON_LABELS: Record<string, string> = {
   "no-energy": "No energy",
@@ -39,49 +36,15 @@ const BLOCKED_REASON_LABELS: Record<string, string> = {
   unspecified: "Unspecified",
 }
 
-function StatCard({
-  icon,
-  value,
-  label,
-  tone = "muted",
-}: {
-  icon: React.ReactNode
-  value: number
-  label: string
-  tone?: "muted" | "warn"
-}) {
-  return (
-    <Card className="card-hover">
-      <CardContent className="pt-6">
-        <div className="flex items-center gap-3">
-          <div
-            className={`rounded-full p-2 ${
-              tone === "warn" ? "bg-red-500/10 text-red-500" : "bg-muted text-muted-foreground"
-            }`}
-          >
-            {icon}
-          </div>
-          <div>
-            <p className="text-2xl font-bold">{Math.round(value)}</p>
-            <p className="text-xs text-muted-foreground">{label}</p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
 export function RegretView() {
   const tasks = useTaskStore((s) => s.tasks)
   const regretHistory = useRegretStore((s) => s.regretHistory)
   const accrueOverdue = useRegretStore((s) => s.accrueOverdue)
   const getDayRegret = useRegretStore((s) => s.getDayRegret)
-  const getWeekRegret = useRegretStore((s) => s.getWeekRegret)
-  const getMonthRegret = useRegretStore((s) => s.getMonthRegret)
   const getTopRegretTasks = useRegretStore((s) => s.getTopRegretTasks)
   const getRegretByReason = useRegretStore((s) => s.getRegretByReason)
+  const { dateKeys, keySet, label } = useAnalyticsRange()
 
-  // Accrue today's overdue increment once on mount (idempotent per task/day).
   useEffect(() => {
     accrueOverdue(tasks)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -89,30 +52,32 @@ export function RegretView() {
 
   const now = new Date()
 
-  const day = getDayRegret(now)
-  const week = getWeekRegret(now)
-  const month = getMonthRegret(now)
-
   const outstanding = useMemo(
     () => tasks.reduce((total, t) => total + regretCost(t, now), 0),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [tasks, regretHistory],
   )
 
-  const trend = useMemo(() => {
-    const out: { label: string; regret: number }[] = []
-    for (let i = 13; i >= 0; i--) {
-      const d = new Date()
-      d.setDate(d.getDate() - i)
-      out.push({
-        label: d.toLocaleDateString("en-US", { month: "numeric", day: "numeric" }),
-        regret: getDayRegret(d),
-      })
-    }
-    return out
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [regretHistory])
+  const inWindow = useMemo(
+    () => regretHistory.filter((e) => keySet.has(e.date)),
+    [regretHistory, keySet],
+  )
 
+  const trend = useMemo(
+    () =>
+      dateKeys.map((key) => {
+        const d = parseLocalDate(key) ?? new Date()
+        return {
+          label: d.toLocaleDateString("en-US", { month: "numeric", day: "numeric" }),
+          regret: getDayRegret(d),
+        }
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [dateKeys, regretHistory],
+  )
+
+  const daysWithRegret = trend.filter((d) => d.regret > 0).length
+  const windowTotal = inWindow.reduce((s, e) => s + e.regret, 0)
   const topTasks = useMemo(() => getTopRegretTasks(8), [regretHistory, getTopRegretTasks])
   const byReason = useMemo(
     () =>
@@ -122,97 +87,87 @@ export function RegretView() {
     [regretHistory, getRegretByReason],
   )
 
-  const hasData = regretHistory.length > 0 || outstanding > 0
-
-  if (!hasData) {
-    return (
-      <Card>
-        <CardContent className="pt-6">
-          <p className="text-sm text-muted-foreground">
-            No regret accrued — nothing important is overdue. Regret accumulates each day an important or
-            scheduled item slips past its due date without being done.
-          </p>
-        </CardContent>
-      </Card>
-    )
-  }
+  const empty = inWindow.length === 0 && outstanding <= 0
+  const thin = !empty && isThinSample(daysWithRegret, SAMPLE_FLOORS.regretDays)
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={<Frown className="h-5 w-5" />} value={day} label="Today's regret" tone="warn" />
-        <StatCard icon={<TrendingDown className="h-5 w-5" />} value={week} label="This week" />
-        <StatCard icon={<CalendarClock className="h-5 w-5" />} value={month} label="This month" />
-        <StatCard
-          icon={<AlertTriangle className="h-5 w-5" />}
-          value={outstanding}
-          label="Outstanding (not yet done)"
-          tone="warn"
+    <div className="an-canvas an-stack">
+      <p className="an-caveat">
+        Regret is the accrued cost of important items sitting undone past their due date — the mirror of points.
+      </p>
+
+      {empty ? (
+        <ChartFrame
+          empty
+          emptySentence={`No regret in the ${label} — nothing important is overdue. It accumulates each day a scheduled item slips.`}
         />
-      </div>
+      ) : thin ? (
+        <ChartFrame thin thinSentence={thinWindowSentence(daysWithRegret, SAMPLE_FLOORS.regretDays, label)} />
+      ) : (
+        <>
+          <p className="an-n">
+            n = {daysWithRegret} day{daysWithRegret === 1 ? "" : "s"} with accrued regret · {Math.round(windowTotal)} in
+            the {label} · {Math.round(outstanding)} still outstanding
+          </p>
 
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Regret accrued (last 14 days)</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={trend} margin={{ left: 0, right: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="label" fontSize={10} interval={1} />
-              <YAxis allowDecimals={false} fontSize={11} />
-              <Tooltip formatter={(v: number) => [`${Math.round(v)}`, "Regret"]} />
-              <Bar dataKey="regret" fill="#dc2626" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+          <div className="an-frame">
+            <p className="an-canvas-title">Regret accrued ({label})</p>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={trend} margin={{ left: 0, right: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={STUDIO_GRID} />
+                <XAxis dataKey="label" fontSize={10} interval={1} stroke={STUDIO_AXIS} tick={{ fill: STUDIO_AXIS }} />
+                <YAxis allowDecimals={false} fontSize={11} stroke={STUDIO_AXIS} tick={{ fill: STUDIO_AXIS }} />
+                <Tooltip contentStyle={STUDIO_TOOLTIP} formatter={(v: number) => [`${Math.round(v)}`, "Regret"]} />
+                <Bar dataKey="regret" fill="#f87171" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Heaviest regrets</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {topTasks.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No items have accrued regret yet.</p>
-            ) : (
-              <div className="divide-y">
-                {topTasks.map((t) => (
-                  <div key={t.taskId} className="flex items-center justify-between py-2 gap-3">
-                    <span className="text-sm truncate flex-1">{t.taskDescription}</span>
-                    <Badge variant="outline" className="text-red-600 border-red-200">
-                      {Math.round(t.regret)}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+          <div className="an-split">
+            <div>
+              <p className="an-canvas-title">Heaviest regrets</p>
+              {topTasks.length === 0 ? (
+                <p className="an-canvas-kicker">No items have accrued regret yet.</p>
+              ) : (
+                <>
+                  <ul className="an-list">
+                    {topTasks.map((t) => (
+                      <li key={t.taskId}>
+                        <button
+                          type="button"
+                          onClick={() => openItemsInLists({ taskIds: [t.taskId] })}
+                        >
+                          <span className="truncate">{t.taskDescription}</span>
+                          <span className="an-n">{Math.round(t.regret)}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  <OpenInListsButton taskIds={topTasks.map((t) => t.taskId)} />
+                </>
+              )}
+            </div>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">By reason</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {byReason.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                No structured reasons captured yet. Record why items were blocked during your reviews.
-              </p>
-            ) : (
-              <div className="divide-y">
-                {byReason.map(([reason, value]) => (
-                  <div key={reason} className="flex items-center justify-between py-2">
-                    <span className="text-sm">{BLOCKED_REASON_LABELS[reason] ?? reason}</span>
-                    <Badge variant="secondary">{Math.round(value)}</Badge>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+            <div>
+              <p className="an-canvas-title">By reason</p>
+              {byReason.length === 0 ? (
+                <p className="an-canvas-kicker">
+                  No structured reasons captured yet. Record why items were blocked during your reviews.
+                </p>
+              ) : (
+                <ul className="an-list">
+                  {byReason.map(([reason, value]) => (
+                    <li key={reason} className="an-list-row">
+                      <span>{BLOCKED_REASON_LABELS[reason] ?? reason}</span>
+                      <span className="an-n">{Math.round(value)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }
