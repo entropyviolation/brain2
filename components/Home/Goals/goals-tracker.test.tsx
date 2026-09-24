@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { useGoalsStore } from "@/lib/goals-store"
+import { orbFor } from "@/components/Icons"
 import { GoalsTracker } from "./goals-tracker"
 
 describe("GoalsTracker", () => {
@@ -28,8 +29,10 @@ describe("GoalsTracker", () => {
   })
 
   it("renders the objectives & goals header and the goal", () => {
-    render(<GoalsTracker />)
+    const { container } = render(<GoalsTracker />)
     expect(screen.getByText("Objectives & Goals")).toBeInTheDocument()
+    const plate = container.querySelector("[data-desk-plate='goals'] img")
+    expect(plate).toHaveAttribute("src", orbFor("home-goals"))
     expect(screen.getAllByText("Read 3 books").length).toBeGreaterThan(0)
   })
 

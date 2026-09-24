@@ -1,6 +1,6 @@
 # `components/Home/Goals/` — Objectives & Goals
 
-The Home **Goals** sub-tab, redesigned around two distinct concepts:
+The Home **Goals** sub-tab in **Brain2**, on a milled fascia (CRT title, metal keys, period lamps, recessed lists). Two distinct concepts:
 
 - **Objectives** — your *all-time, aspirational life directions* (qualitative, no
   target or deadline; e.g. "Read a lot", "Be healthy"). An objective can be
@@ -11,15 +11,21 @@ The Home **Goals** sub-tab, redesigned around two distinct concepts:
   "Surf once a week"). Tasks contribute to goals (incrementing their value) and to
   objectives (earning stacking point multipliers).
 
+A **Season** (a named stretch of life with its own aim, no fixed length) is
+specified in [`docs/JungBrain2.md`](../../../docs/JungBrain2.md) JG-9. It is not
+a review period and it is not built. Direction still runs on day / week / month /
+year.
+
 ## Files
 
 | File | Purpose |
 |------|---------|
-| `goals-tracker.tsx` | `GoalsTracker`: thin composition of the three sections below (objectives → goals → direction report). |
-| `ObjectivesPanel.tsx` | Two stacked containers driven by one period selector (**Day/Week/Month/Year/All**): a **Prioritized** card on top (objectives prioritized for the selected period; in **All** mode, every active priority across periods, with badges like "Week ×2"), and a **compact, collapsible "All objectives" list** below where a quick **star** prioritizes for the selected period (capped). Rows open the detail dialog. Plus an **Add Objective** dialog. |
-| `ObjectiveDetailDialog.tsx` | Edit one objective: title/description, **prioritize per period** (with a custom multiplier, capped), linked goals + their progress, the **contributing completed actions** list, a per-period **review** (success analysis), and archive/delete. |
-| `GoalsContainer.tsx` | Quantifiable goals shown together, filterable by period kind (day/week/month/year/custom range/aspirational). Per-goal progress, linked-objective chips, ±1 / boolean-complete, and **Log** (records a completed contributing action and awards the objective multiplier). Add/edit dialog requires ≥1 objective. |
-| `DirectionReport.tsx` | "Direction in life" view — a coverage score (share of active days that served a goal/objective), **drift days** (worked but served nothing), and **neglected goals** (no recent contributing action). Derived on read from each task's contribution fields + typed links. |
+| `goals-tracker.tsx` | `GoalsTracker` (`data-ui-name="Goals"`): milled fascia (CRT **Objectives & Goals**) composing objectives → goals → direction report, with an engraved status line. Under the window, on the desktop, the same title jewel (`orbFor("home-goals")`, the cat in the bed) sits at photograph size (`.gol-desk-plate`). |
+| `goals-chrome.css` | `.gol95` milled fascia + recessed wells + metal keys + 10-pip progress + `.gol95-dialog`. `.gol-desk-plate` is the title jewel at photograph height, centered on the desktop under the window (no frame). |
+| `ObjectivesPanel.tsx` | Period keys (**Day/Week/Month/Year/All**, persisted): **Prioritized** packed well, collapsible **All objectives** list with mill stars, **Add Objective** dialog (unsaved-changes guard). Rows open detail. |
+| `ObjectiveDetailDialog.tsx` | Edit one objective (`data-ui-name="Objective detail"`): title/description, **prioritize per period** (with a custom multiplier, capped), linked goals + their progress, the **contributing completed actions** list, a per-period **review** (success analysis), and archive/delete. Dirty close uses the house unsaved-changes guard. |
+| `GoalsContainer.tsx` | Packed goal rows, filterable by period kind (persists). 10-pip progress, linked chips, ±1 / boolean-complete, **Log**. Add/edit dialog requires ≥1 objective. Unsaved-changes guard. |
+| `DirectionReport.tsx` | Direction well: CRT coverage + 10-pip channel, 30-day lamp tape (served mint / drift pewter / idle gray), mill **drift dates**, packed neglected list. Same math as before. |
 
 ## Logic (pure helpers)
 
@@ -65,7 +71,7 @@ period). Multipliers **stack** across multiple contributing objectives. The
 contribution is captured on every completion via the global **completion popup**
 (`components/Completion/`), which records `Task.contributesToObjectiveIds` /
 `contributesToGoalIds`, advances linked goals, and awards the bonus on top of the
-base points.
+base points. **Undo** on that popup reopens the task as still to-do.
 
 ## Prioritization caps & reviews
 

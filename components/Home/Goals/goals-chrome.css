@@ -1,0 +1,848 @@
+/**
+ * components/Home/Goals/goals-chrome.css — milled fascia for Home → Goals
+ *
+ * CRT title, metal keys, period lamps, recessed list wells.
+ * docs/DESIGN_STYLE.md#milled-fascia. Portaled dialogs use `.gol95-dialog`.
+ */
+
+.gol95 {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  --g-surface: var(--chrome-face, #c0c0c0);
+  --g-face: var(--chrome-mid, #dfdfdf);
+  --g-highlight: var(--chrome-hi, #ffffff);
+  --g-shadow: var(--chrome-lo, #808080);
+  --g-frame: var(--chrome-frame, #0a0a0a);
+  --g-blue: #000080;
+  --g-blue-light: #1084d0;
+  --g-ink: #111111;
+  --g-crt: var(--hab-crt-green, #7dffc4);
+  --g-raised: inset -1px -1px var(--g-frame), inset 1px 1px var(--g-highlight),
+    inset -2px -2px var(--g-shadow), inset 2px 2px var(--g-face);
+  --g-sunken: inset -1px -1px var(--g-highlight), inset 1px 1px var(--g-frame),
+    inset -2px -2px var(--g-face), inset 2px 2px var(--g-shadow);
+  --g-field: inset -1px -1px var(--g-highlight), inset 1px 1px var(--g-shadow),
+    inset -2px -2px var(--g-face), inset 2px 2px var(--g-frame);
+
+  font-family: var(--w95-font, Tahoma, "MS Sans Serif", Geneva, sans-serif);
+  font-size: 12px;
+  color: var(--g-ink);
+  -webkit-font-smoothing: none;
+  --muted-foreground: 0 0% 25%;
+  accent-color: var(--g-blue);
+}
+
+.gol95 .gol-window {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 520px;
+  height: 100%;
+  flex: 1;
+  padding: 3px;
+  background: var(--g-surface);
+  box-shadow: var(--g-raised);
+}
+
+.gol95 .gol-fascia {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border-radius: 3px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
+    linear-gradient(165deg, #d4d8dc 0%, var(--g-surface) 48%, #969a9e 100%);
+  box-shadow:
+    0 0 0 1px #5c6064,
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -1px 0 rgba(40, 42, 46, 0.4),
+    inset 0 0 0 2px #b0b4b8;
+}
+
+.gol95 .gol-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 4px 14px 4px 8px;
+  border-radius: 2px;
+  background:
+    radial-gradient(ellipse at 18% 0%, rgba(125, 255, 196, 0.16), transparent 48%),
+    #070c0a;
+  box-shadow:
+    0 0 0 1px #3a3e42,
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 10px 14px rgba(0, 0, 0, 0.4);
+}
+
+.gol95 .gol-mark h2 {
+  margin: 0;
+  color: var(--g-crt) !important;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-shadow: 0 0 3px var(--g-crt);
+}
+
+.gol95 .gol-mark-note {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #2a2c2e;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+.gol95 .gol-title-orb {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.gol95 .gol-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  min-height: 0;
+  padding: 8px;
+  flex: 1;
+}
+
+.gol95 .gol-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 4px 10px 5px;
+  border: 0;
+  border-radius: 2px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #1c1e20;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.12) 16%, transparent 32%),
+    linear-gradient(165deg, #eceef0 0%, #d4d6d8 40%, var(--g-surface) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 0 -1px 0 rgba(55, 58, 62, 0.4),
+    0 0 0 1px #4a4e52;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.gol95 .gol-btn:hover:not(:disabled) {
+  filter: brightness(1.04);
+}
+
+.gol95 .gol-btn:not(:disabled):active,
+.gol95 .gol-btn[aria-pressed="true"] {
+  color: #7dffc4;
+  text-shadow: 0 0 3px #7dffc4;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.18), transparent 55%),
+    #070c0a;
+  box-shadow:
+    0 0 0 1px #3a3e42,
+    inset 0 8px 10px rgba(0, 0, 0, 0.4);
+}
+
+.gol95 .gol-btn:disabled {
+  color: #808080;
+  cursor: default;
+}
+
+.gol95 .gol-btn.is-star {
+  min-width: 22px;
+  padding: 1px 6px;
+  color: #9a7b00;
+}
+
+.gol95 .gol-btn.is-star.is-on {
+  color: #8a6a00;
+  background: #f3e27a;
+}
+
+.gol95 .gol-section {
+  position: relative;
+  margin: 0;
+  padding: 12px 10px 10px;
+  min-width: 0;
+  border: 0;
+  border-radius: 3px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
+    linear-gradient(180deg, #d8dce0, var(--g-surface) 40%, #a8acb0);
+  box-shadow:
+    0 0 0 1px #6a6e72,
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 2px 3px rgba(0, 0, 0, 0.08);
+}
+
+.gol95 .gol-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin: 0 0 6px;
+}
+
+.gol95 .gol-legend {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #2a2c2e;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.gol95 .gol-hint {
+  margin: 0;
+  font-size: 10px;
+  color: #404040;
+}
+
+.gol95 .gol-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 3px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
+    #b4b8bc;
+  box-shadow:
+    0 0 0 1px #5c6064,
+    inset 0 2px 3px rgba(0, 0, 0, 0.16);
+}
+
+body.win95-app .gol95 .gol-tabs[role="tablist"] {
+  height: auto;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
+    #b4b8bc;
+  box-shadow:
+    0 0 0 1px #5c6064,
+    inset 0 2px 3px rgba(0, 0, 0, 0.16);
+}
+
+body.win95-app .gol95 .gol-tabs [role="tab"] {
+  min-height: 28px;
+  padding: 4px 12px 5px;
+  border-radius: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #1c1e20;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 28%),
+    linear-gradient(165deg, #eceef0, #c0c4c8);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1px #4a4e52;
+}
+
+body.win95-app .gol95 .gol-tabs [role="tab"][data-state="active"] {
+  color: #7dffc4;
+  font-weight: 700;
+  text-shadow: 0 0 3px #7dffc4;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.2), transparent 55%),
+    #070c0a;
+  box-shadow:
+    0 0 0 1px #3a3e42,
+    inset 0 8px 10px rgba(0, 0, 0, 0.4);
+}
+
+.gol95 .gol-cap {
+  font-size: 10px;
+  color: #404040;
+}
+
+.gol95 .gol-list {
+  border-radius: 2px;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.06), transparent 18%),
+    #e6e8ea;
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.22),
+    0 0 0 1px #6a6e72;
+  max-height: min(32rem, 55vh);
+  overflow: auto;
+}
+
+.gol95 .gol-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-bottom: 1px solid color-mix(in srgb, #3a6b4a 18%, transparent);
+}
+
+.gol95 .gol-row:hover {
+  background: #e8f3ec;
+}
+
+.gol95 .gol-row.is-prio {
+  background: linear-gradient(90deg, rgba(243, 226, 122, 0.55), transparent 70%);
+}
+
+.gol95 .gol-row.is-prio:hover {
+  background: linear-gradient(90deg, rgba(243, 226, 122, 0.75), rgba(255, 255, 255, 0.3));
+}
+
+.gol95 .gol-row-name {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  font: inherit;
+  font-weight: bold;
+  color: #111;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gol95 .gol-row-name:hover {
+  text-decoration: underline;
+}
+
+.gol95 .gol-meta {
+  font-size: 10px;
+  color: #404040;
+  white-space: nowrap;
+}
+
+.gol95 .gol-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.gol95 .gol-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 16px;
+  padding: 0 5px;
+  font-size: 10px;
+  font-weight: bold;
+  color: #000;
+  background: var(--g-surface);
+  box-shadow: var(--g-raised);
+}
+
+.gol95 .gol-chip.is-gold {
+  background: #f3e27a;
+}
+
+.gol95 .gol-empty {
+  padding: 16px 8px;
+  text-align: center;
+  color: #404040;
+}
+
+.gol95 .gol-goals {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gol95 .gol-goal {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1.4fr) minmax(7rem, 1fr) minmax(6rem, auto);
+  gap: 8px;
+  align-items: center;
+  padding: 8px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.18));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    0 0 0 1px #8a8e92;
+}
+
+.gol95 .gol-goal:hover {
+  background: #e8f3ec;
+}
+
+.gol95 .gol-pips {
+  display: flex;
+  gap: 2px;
+  height: 8px;
+  margin-top: 4px;
+}
+
+.gol95 .gol-pip {
+  flex: 1;
+  min-width: 4px;
+  background: #fff;
+  box-shadow: var(--g-sunken);
+}
+
+.gol95 .gol-pip.is-on {
+  background: #3d9a5c;
+}
+
+.gol95 .gol-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.gol95 .gol-ok {
+  color: #166534;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.gol95 .gol-dir-console {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gol95 .gol-dir-readout {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.gol95 .gol-dir-crt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 4.75rem;
+  padding: 8px 12px;
+  border-radius: 2px;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.18), transparent 55%),
+    #070c0a;
+  box-shadow:
+    0 0 0 1px #3a3e42,
+    inset 0 8px 12px rgba(0, 0, 0, 0.45);
+  font-size: 22px;
+  font-weight: bold;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--g-crt);
+  text-shadow: 0 0 3px var(--g-crt);
+}
+
+.gol95 .gol-dir-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.gol95 .gol-dir-copy strong {
+  font-size: 11px;
+  color: var(--g-blue);
+}
+
+.gol95 .gol-dir-pips {
+  max-width: 12rem;
+  margin-top: 0;
+  height: 10px;
+}
+
+.gol95 .gol-dir-tape {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 2px;
+  padding: 6px;
+  border-radius: 2px;
+  background: #070c0a;
+  box-shadow:
+    0 0 0 1px #3a3e42,
+    inset 0 8px 12px rgba(0, 0, 0, 0.45);
+}
+
+.gol95 .gol-day {
+  flex: 1;
+  min-width: 0;
+  height: 16px;
+  box-shadow: var(--g-sunken);
+  background: #d4d4d4;
+}
+
+.gol95 .gol-day.is-served {
+  background: #3d9a5c;
+}
+
+.gol95 .gol-day.is-drift {
+  background: #6d7a86;
+}
+
+.gol95 .gol-dir-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 10px;
+  color: #404040;
+}
+
+.gol95 .gol-dir-key i {
+  display: inline-block;
+  width: 8px;
+  height: 10px;
+  margin-right: 4px;
+  vertical-align: -1px;
+  box-shadow: var(--g-sunken);
+  background: #d4d4d4;
+}
+
+.gol95 .gol-dir-key i.is-served {
+  background: #3d9a5c;
+}
+
+.gol95 .gol-dir-key i.is-drift {
+  background: #6d7a86;
+}
+
+.gol95 .gol-dir-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  align-items: stretch;
+  margin-top: 8px;
+}
+
+.gol95 .gol-dir-well {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.gol95 .gol-dir-well .gol-legend {
+  margin-bottom: 4px;
+}
+
+.gol95 .gol-dir-dates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 2px;
+  background: #e6e8ea;
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.2),
+    0 0 0 1px #6a6e72;
+}
+
+.gol95 .gol-dir-date {
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  padding: 1px 6px;
+  font-size: 11px;
+  color: #111;
+  background: var(--g-surface);
+  box-shadow: var(--g-raised);
+}
+
+.gol95 .gol-dir-list {
+  flex: 1;
+  min-height: 4rem;
+  max-height: 11rem;
+  overflow: auto;
+  border-radius: 2px;
+  background: #e6e8ea;
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.2),
+    0 0 0 1px #6a6e72;
+}
+
+.gol95 .gol-dir-list .gol-row {
+  padding: 4px 8px;
+}
+
+.gol95 .gol-dir-list .gol-row-name {
+  cursor: default;
+  font-weight: normal;
+}
+
+.gol95 .gol-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 28px;
+  margin-top: 8px;
+  padding: 6px 12px;
+  border-radius: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #2a2c2e;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0 1px, transparent 1px 2px),
+    linear-gradient(180deg, #e8eaec, #b4b8bc);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    0 0 0 1px #6a6e72;
+}
+
+.gol95 .gol-collapse {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #2a2c2e;
+  cursor: pointer;
+  text-align: left;
+}
+
+.gol95 input,
+.gol95 select,
+.gol95 textarea {
+  min-height: 22px;
+  padding: 2px 4px;
+  font: inherit;
+  font-size: 11px;
+  color: #000;
+  background: #fff;
+  border: 0;
+  box-shadow: var(--g-field);
+}
+
+.gol95 textarea {
+  min-height: 3.5rem;
+  resize: vertical;
+}
+
+.gol95 button:focus,
+.gol95 button:focus-visible,
+.gol95 [role="tab"]:focus-visible,
+.gol95 select:focus,
+.gol95 input:focus,
+.gol95 textarea:focus {
+  outline-width: 1px;
+  outline-style: dotted;
+  outline-color: var(--g-blue);
+  outline-offset: -3px;
+}
+
+.gol95 input:focus,
+.gol95 select:focus,
+.gol95 textarea:focus {
+  outline-width: 2px;
+  outline-style: solid;
+  outline-offset: -2px;
+  caret-color: var(--g-blue);
+  box-shadow: var(--g-field), inset 0 0 0 2px var(--g-blue);
+}
+
+.gol95-dialog.gol95 {
+  display: block;
+  min-height: 0;
+  height: auto;
+  flex: none;
+  max-width: 36rem;
+  max-height: 88vh;
+  overflow: auto;
+  padding: 3px;
+  gap: 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--chrome-face, #c0c0c0);
+  color: #000;
+  font-family: var(--w95-font, Tahoma, "MS Sans Serif", Geneva, sans-serif);
+  box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px #808080,
+    inset 2px 2px #dfdfdf;
+  accent-color: #000080;
+}
+
+.gol95-dialog .gol-dialog-caption {
+  display: flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 2px 4px;
+  margin: 0 0 8px;
+  color: #fff;
+  background: linear-gradient(90deg, #000080, #1084d0);
+}
+
+.gol95-dialog .gol-dialog-caption h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: bold;
+  color: #fff !important;
+}
+
+.gol95-dialog .gol-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 8px 10px 10px;
+}
+
+.gol95-dialog label {
+  display: block;
+  font-size: 11px;
+  font-weight: bold;
+  color: #000080;
+  margin-bottom: 2px;
+}
+
+.gol95-dialog p {
+  margin: 0;
+  font-size: 11px;
+  color: #202020;
+}
+
+.gol95-dialog input,
+.gol95-dialog select,
+.gol95-dialog textarea {
+  width: 100%;
+  min-height: 22px;
+  padding: 2px 4px;
+  font: inherit;
+  font-size: 12px;
+  background: #fff;
+  border: 0;
+  box-shadow: inset -1px -1px #fff, inset 1px 1px #808080, inset -2px -2px #dfdfdf,
+    inset 2px 2px #0a0a0a;
+}
+
+.gol95-dialog textarea {
+  min-height: 3.5rem;
+}
+
+.gol95-dialog input:focus,
+.gol95-dialog select:focus,
+.gol95-dialog textarea:focus {
+  outline: 2px solid #000080;
+  outline-offset: -2px;
+}
+
+.gol95-dialog .gol-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.gol95-dialog .gol-btn,
+.gol95-dialog .gol-dialog-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 22px;
+  padding: 2px 12px;
+  font: inherit;
+  font-size: 11px;
+  color: #000;
+  background: var(--chrome-face, #c0c0c0);
+  border: 0;
+  box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px #808080,
+    inset 2px 2px #dfdfdf;
+  cursor: pointer;
+}
+
+.gol95-dialog .gol-btn[aria-pressed="true"] {
+  box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf,
+    inset 2px 2px #808080;
+}
+
+.gol95-dialog .gol-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.gol95-dialog .gol-grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.gol95-dialog .gol-obj-picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-height: 10rem;
+  overflow: auto;
+  padding: 6px;
+  background: #fff;
+  box-shadow: inset -1px -1px #fff, inset 1px 1px #808080, inset -2px -2px #dfdfdf,
+    inset 2px 2px #0a0a0a;
+}
+
+.gol95-dialog .gol-danger {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 8px;
+}
+
+/* Title jewel at photograph size, on the desktop under the window. */
+.gol95 .gol-desk-plate {
+  align-self: stretch;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: calc(100vh - 4.25rem);
+  margin: 10px 0 0;
+  padding: 0;
+  pointer-events: none;
+  user-select: none;
+  background: none;
+  border: 0;
+  box-shadow: none;
+}
+
+.gol95 .gol-desk-plate img {
+  display: block;
+  width: auto;
+  height: min(92vh, 1080px);
+  max-width: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+  background: none;
+  border: 0;
+  box-shadow: none;
+}
+
+@media (max-width: 720px) {
+  .gol95 .gol-goal,
+  .gol95 .gol-dir-split,
+  .gol95-dialog .gol-grid-2,
+  .gol95-dialog .gol-grid-3 {
+    grid-template-columns: 1fr;
+  }
+}

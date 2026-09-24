@@ -1,25 +1,18 @@
 /**
  * components/Home/Goals/ObjectivesPanel.tsx — Objectives (prioritized + list)
  *
- * Two stacked containers:
+ * Two stacked wells:
  *  1. **Prioritized** — objectives prioritized for the selected period
  *     (day/week/month/year), or every active priority in **All** mode.
- *  2. **All objectives** — a collapsible card list; a quick star prioritizes
+ *  2. **All objectives** — a collapsible packed list; a quick star prioritizes
  *     an objective for the selected period (capped). Clicking a row opens detail.
  */
 "use client"
 
 import { useMemo, useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Textarea } from "@/components/ui/textarea"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Label } from "@/components/ui/label"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Compass, Plus, Star, ChevronDown } from "lucide-react"
 import { useGoalsStore } from "@/lib/goals-store"
 import {
   periodKeyFor,
@@ -27,12 +20,16 @@ import {
   prioritizedObjectives,
   MAX_PRIORITIES_PER_PERIOD,
 } from "@/lib/objectives"
+import { APP_NAV_KEYS } from "@/lib/app-navigation"
+import { usePersistedTab } from "@/lib/use-persisted-tab"
 import type { Objective, ObjectivePriority, PriorityPeriod } from "@/lib/types"
 import { ObjectiveDetailDialog } from "./ObjectiveDetailDialog"
+import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
 
 const PERIODS: PriorityPeriod[] = ["day", "week", "month", "year"]
 const PERIOD_LABELS: Record<PriorityPeriod, string> = { day: "Day", week: "Week", month: "Month", year: "Year" }
-type ViewMode = PriorityPeriod | "all"
+const VIEW_MODES = ["day", "week", "month", "year", "all"] as const
+type ViewMode = (typeof VIEW_MODES)[number]
 
 /** Priorities currently in effect (matching the period key for "now"). */
 function activePriorities(o: Objective): ObjectivePriority[] {
@@ -46,7 +43,7 @@ export function ObjectivesPanel() {
   const setObjectivePriority = useGoalsStore((s) => s.setObjectivePriority)
   const clearObjectivePriority = useGoalsStore((s) => s.clearObjectivePriority)
 
-  const [mode, setMode] = useState<ViewMode>("week")
+  const [mode, setMode] = usePersistedTab(APP_NAV_KEYS.homeGoalsPeriod, VIEW_MODES, "week")
   const [listOpen, setListOpen] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
   const [newTitle, setNewTitle] = useState("")
@@ -69,6 +66,26 @@ export function ObjectivesPanel() {
     setShowAdd(false)
   }
 
+  const addGuard = useUnsavedGuard({
+    open: showAdd,
+    onOpenChange: (next) => {
+      setShowAdd(next)
+      if (!next) {
+        setNewTitle("")
+        setNewDesc("")
+      }
+    },
+    isDirty: newTitle.trim() !== "" || newDesc.trim() !== "",
+    onSave: () => {
+      if (!newTitle.trim()) return false
+      handleAdd()
+    },
+    onDiscard: () => {
+      setNewTitle("")
+      setNewDesc("")
+    },
+  })
+
   const quickToggle = (objective: Objective, period: PriorityPeriod) => {
     const key = periodKeyFor(period)
     if (isObjectivePrioritized(objective, period)) {
@@ -83,14 +100,13 @@ export function ObjectivesPanel() {
   }
 
   const priorityBadges = (o: Objective) => (
-    <div className="flex flex-wrap gap-1 justify-end">
+    <div className="gol-chips">
       {activePriorities(o)
         .sort((a, b) => PERIODS.indexOf(a.period) - PERIODS.indexOf(b.period))
         .map((p) => (
-          <Badge key={`${p.period}-${p.periodKey}`} className="bg-yellow-100 text-yellow-800 border-yellow-200 text-[10px] px-1.5 py-0">
-            <Star className="h-2.5 w-2.5 mr-0.5" />
+          <span key={`${p.period}-${p.periodKey}`} className="gol-chip is-gold">
             {PERIOD_LABELS[p.period]} ×{p.multiplier}
-          </Badge>
+          </span>
         ))}
     </div>
   )
@@ -101,158 +117,133 @@ export function ObjectivesPanel() {
       : `${prioritizedObjectives(active, mode).length}/${MAX_PRIORITIES_PER_PERIOD[mode]} this ${mode}`
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap justify-between items-center gap-3">
+    <div className="gol-section">
+      <div className="gol-section-head">
         <div>
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            <Compass className="h-5 w-5" /> Objectives
-          </h3>
-          <p className="text-sm text-muted-foreground">
-            Your all-time directions. Prioritize a few per period to multiply points.
-          </p>
+          <h3 className="gol-legend">Objectives</h3>
+          <p className="gol-hint">Your all-time directions. Prioritize a few per period to multiply points.</p>
         </div>
-        <Dialog open={showAdd} onOpenChange={setShowAdd}>
+        <Dialog open={showAdd} onOpenChange={addGuard.handleOpenChange}>
           <DialogTrigger asChild>
-            <Button size="sm"><Plus className="h-4 w-4 mr-2" />Add Objective</Button>
+            <button type="button" className="gol-btn">
+              Add Objective
+            </button>
           </DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>New Objective</DialogTitle></DialogHeader>
-            <div className="space-y-3">
-              <div>
-                <Label>Title</Label>
-                <Input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="e.g., Read a lot" />
+          <DialogContent className="gol95 gol95-dialog" hideClose aria-describedby={undefined} {...unsavedDismissProps(addGuard.requestClose)}>
+            <div className="gol-dialog-caption">
+              <DialogTitle>New Objective</DialogTitle>
+            </div>
+            <div className="gol-dialog-body">
+              <label>
+                Title
+                <input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="e.g., Read a lot" />
+              </label>
+              <label>
+                Description
+                <textarea value={newDesc} onChange={(e) => setNewDesc(e.target.value)} rows={2} />
+              </label>
+              <div className="gol-dialog-actions">
+                <button type="button" className="gol-btn" onClick={() => addGuard.requestClose()}>
+                  Cancel
+                </button>
+                <button type="button" className="gol-btn" onClick={handleAdd}>
+                  Add Objective
+                </button>
               </div>
-              <div>
-                <Label>Description</Label>
-                <Textarea value={newDesc} onChange={(e) => setNewDesc(e.target.value)} rows={2} />
-              </div>
-              <Button onClick={handleAdd} className="w-full">Add Objective</Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
 
-      {/* Period selector (shared by both containers) */}
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="gol-section-head">
         <Tabs value={mode} onValueChange={(v) => setMode(v as ViewMode)}>
-          <TabsList>
+          <TabsList className="gol-tabs">
             {PERIODS.map((p) => (
-              <TabsTrigger key={p} value={p}>{PERIOD_LABELS[p]}</TabsTrigger>
+              <TabsTrigger key={p} value={p}>
+                {PERIOD_LABELS[p]}
+              </TabsTrigger>
             ))}
             <TabsTrigger value="all">All</TabsTrigger>
           </TabsList>
         </Tabs>
-        <span className="text-xs text-muted-foreground">{capLabel}</span>
+        <span className="gol-cap">{capLabel}</span>
       </div>
 
-      {/* Prioritized container */}
-      <Card>
-        <CardHeader className="py-3">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Star className="h-4 w-4 text-yellow-500" />
-            Prioritized {mode === "all" ? "(all periods)" : `· ${PERIOD_LABELS[mode as PriorityPeriod]}`}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0">
-          {prioritized.length === 0 ? (
-            <p className="text-xs text-muted-foreground py-1">
-              {mode === "all"
-                ? "No objectives prioritized for any period yet."
-                : `Nothing prioritized this ${mode}. Star an objective below to focus it.`}
-            </p>
-          ) : (
-            <div className="divide-y">
-              {prioritized.map((o) => (
-                <div key={o.id} className="flex items-center gap-2 py-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setOpenId(o.id)}
-                    className="flex-1 min-w-0 text-left text-sm font-medium truncate hover:underline"
-                  >
-                    {o.title}
-                  </button>
-                  {priorityBadges(o)}
+      <h4 className="gol-legend">
+        Prioritized {mode === "all" ? "(all periods)" : `· ${PERIOD_LABELS[mode as PriorityPeriod]}`}
+      </h4>
+      {prioritized.length === 0 ? (
+        <p className="gol-empty">
+          {mode === "all"
+            ? "No objectives prioritized for any period yet."
+            : `Nothing prioritized this ${mode}. Star an objective below to focus it.`}
+        </p>
+      ) : (
+        <div className="gol-list">
+          {prioritized.map((o) => (
+            <div key={o.id} className="gol-row is-prio">
+              <button type="button" className="gol-row-name" onClick={() => setOpenId(o.id)}>
+                {o.title}
+              </button>
+              {priorityBadges(o)}
+              {mode !== "all" && (
+                <button
+                  type="button"
+                  className="gol-btn is-star is-on"
+                  onClick={() => quickToggle(o, mode)}
+                  title="Remove priority"
+                >
+                  ★
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <Collapsible open={listOpen} onOpenChange={setListOpen}>
+        <CollapsibleTrigger asChild>
+          <button type="button" className="gol-collapse" data-no95>
+            <span aria-hidden>{listOpen ? "▾" : "▸"}</span>
+            <span>All objectives</span>
+            <span className="gol-cap">({active.length})</span>
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="gol-list">
+            {active.map((o) => {
+              const isPrio = mode !== "all" && isObjectivePrioritized(o, mode)
+              const n = goalCount(o.id)
+              return (
+                <div key={o.id} className={`gol-row${isPrio ? " is-prio" : ""}`}>
                   {mode !== "all" && (
                     <button
                       type="button"
+                      data-no95
+                      className={`gol-btn is-star${isPrio ? " is-on" : ""}`}
                       onClick={() => quickToggle(o, mode)}
-                      title="Remove priority"
-                      className="shrink-0"
+                      title={`Prioritize for this ${mode}`}
                     >
-                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-500" />
+                      {isPrio ? "★" : "☆"}
                     </button>
                   )}
+                  <button type="button" data-no95 className="gol-row-name" onClick={() => setOpenId(o.id)}>
+                    {o.title}
+                  </button>
+                  {priorityBadges(o)}
+                  <span className="gol-meta">
+                    {n} {n === 1 ? "goal" : "goals"}
+                  </span>
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* All objectives — collapsible list on a card so titles stay readable on the desktop */}
-      <Card>
-        <Collapsible open={listOpen} onOpenChange={setListOpen}>
-          <CollapsibleTrigger asChild>
-            <button
-              type="button"
-              data-no95
-              className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold hover:bg-muted/50 transition-colors"
-            >
-              <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${listOpen ? "" : "-rotate-90"}`} />
-              <span>All objectives</span>
-              <span className="text-muted-foreground font-normal">({active.length})</span>
-            </button>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <div className="border-t bg-white max-h-[min(32rem,65vh)] overflow-y-auto">
-              {active.map((o, i) => {
-                const isPrio = mode !== "all" && isObjectivePrioritized(o, mode)
-                const n = goalCount(o.id)
-                const rowTone = isPrio
-                  ? "bg-yellow-50 hover:bg-yellow-100"
-                  : i % 2 === 0
-                    ? "bg-muted/80 hover:bg-muted"
-                    : "bg-white hover:bg-muted/50"
-                return (
-                  <div
-                    key={o.id}
-                    className={`flex items-start gap-3 px-4 py-3 text-[15px] leading-snug ${rowTone}`}
-                  >
-                    {mode !== "all" && (
-                      <button
-                        type="button"
-                        data-no95
-                        onClick={() => quickToggle(o, mode)}
-                        title={`Prioritize for this ${mode}`}
-                        className="shrink-0 p-0.5 mt-0.5"
-                      >
-                        <Star className={`h-4 w-4 ${isPrio ? "fill-yellow-400 text-yellow-500" : "text-muted-foreground"}`} />
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      data-no95
-                      onClick={() => setOpenId(o.id)}
-                      className="flex-1 min-w-0 text-left font-medium text-foreground hover:underline"
-                    >
-                      {o.title}
-                    </button>
-                    {priorityBadges(o)}
-                    <span className="text-xs text-muted-foreground shrink-0 whitespace-nowrap tabular-nums mt-0.5 bg-muted px-1.5 py-0.5">
-                      {n} {n === 1 ? "goal" : "goals"}
-                    </span>
-                  </div>
-                )
-              })}
-              {active.length === 0 && (
-                <div className="px-4 py-8 text-center text-sm text-muted-foreground">No objectives yet.</div>
-              )}
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
-      </Card>
+              )
+            })}
+            {active.length === 0 && <div className="gol-empty">No objectives yet.</div>}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
 
       {openId && <ObjectiveDetailDialog objectiveId={openId} onClose={() => setOpenId(null)} />}
+      <UnsavedChangesDialog {...addGuard.prompt} />
     </div>
   )
 }

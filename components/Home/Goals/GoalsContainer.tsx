@@ -1,32 +1,25 @@
 /**
  * components/Home/Goals/GoalsContainer.tsx — Quantifiable goals
  *
- * Goals are measurable metrics over a period that serve one or more objectives
- * (no goal without an objective). Shown together, filterable by period kind
- * (day/week/month/year/custom range/aspirational). Each goal can be advanced
- * manually, or "logged" — which records a completed contributing action and
- * awards the stacking objective point multiplier.
+ * Packed well of measurable metrics that serve objectives. Filter, ±1, Log,
+ * complete, add/edit — same verbs, mill furniture.
  */
 "use client"
 
 import { useMemo, useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import { Trophy, Plus, Pencil, Trash2, CheckCircle2, PlusCircle } from "lucide-react"
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { useGoalsStore, taskObjectiveMultiplier } from "@/lib/goals-store"
 import { usePointsStore } from "@/lib/points-store"
 import { useTaskStore } from "@/lib/task-store"
 import { goalProgressPercent } from "@/lib/objectives"
 import type { Goal, GoalPeriodKind, Task } from "@/lib/types"
+import { APP_NAV_KEYS } from "@/lib/app-navigation"
+import { usePersistedTab } from "@/lib/use-persisted-tab"
+import { snapshotsEqual } from "@/lib/unsaved-changes"
+import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
 
 const PERIOD_KINDS: GoalPeriodKind[] = ["day", "week", "month", "year", "custom", "aspirational"]
+const GOAL_FILTERS = ["all", ...PERIOD_KINDS] as const
 const PERIOD_LABELS: Record<GoalPeriodKind, string> = {
   day: "Day",
   week: "Week",
@@ -60,6 +53,17 @@ const emptyDraft = (): GoalDraft => ({
   points: 20,
 })
 
+function GoalPips({ percent }: { percent: number }) {
+  const n = Math.round(Math.max(0, Math.min(100, percent)) / 10)
+  return (
+    <div className="gol-pips" aria-hidden>
+      {Array.from({ length: 10 }, (_, i) => (
+        <span key={i} className={`gol-pip${i < n ? " is-on" : ""}`} />
+      ))}
+    </div>
+  )
+}
+
 export function GoalsContainer() {
   const goals = useGoalsStore((s) => s.goals)
   const objectives = useGoalsStore((s) => s.objectives)
@@ -70,7 +74,7 @@ export function GoalsContainer() {
   const addTask = useTaskStore((s) => s.addTask)
   const addPoints = usePointsStore((s) => s.addPoints)
 
-  const [filter, setFilter] = useState<GoalPeriodKind | "all">("all")
+  const [filter, setFilter] = usePersistedTab(APP_NAV_KEYS.homeGoalsFilter, GOAL_FILTERS, "all")
   const [showAdd, setShowAdd] = useState(false)
   const [draft, setDraft] = useState<GoalDraft>(emptyDraft())
   const [editing, setEditing] = useState<Goal | null>(null)
@@ -96,8 +100,64 @@ export function GoalsContainer() {
     setShowAdd(false)
   }
 
-  // Logging a goal records a completed action that serves the goal's objectives
-  // and advances the goal — the inverse of completing a task that contributes.
+  const addDirty = !snapshotsEqual(draft, emptyDraft())
+  const addGuard = useUnsavedGuard({
+    open: showAdd,
+    onOpenChange: (next) => {
+      setShowAdd(next)
+      if (!next) setDraft(emptyDraft())
+    },
+    isDirty: addDirty,
+    onSave: () => {
+      if (!draft.title.trim() || draft.objectiveIds.length === 0) return false
+      handleAdd()
+    },
+    onDiscard: () => setDraft(emptyDraft()),
+  })
+  const [editBaseline, setEditBaseline] = useState<Goal | null>(null)
+  const editDirty = Boolean(editing && editBaseline && !snapshotsEqual(
+    {
+      title: editing.title,
+      description: editing.description ?? "",
+      type: editing.type,
+      target: editing.target,
+      unit: editing.unit ?? "",
+      periodKind: editing.periodKind,
+      periodLabel: editing.periodLabel ?? "",
+      objectiveIds: editing.objectiveIds,
+      points: editing.points,
+    },
+    {
+      title: editBaseline.title,
+      description: editBaseline.description ?? "",
+      type: editBaseline.type,
+      target: editBaseline.target,
+      unit: editBaseline.unit ?? "",
+      periodKind: editBaseline.periodKind,
+      periodLabel: editBaseline.periodLabel ?? "",
+      objectiveIds: editBaseline.objectiveIds,
+      points: editBaseline.points,
+    },
+  ))
+  const editGuard = useUnsavedGuard({
+    open: !!editing,
+    onOpenChange: (next) => {
+      if (!next) {
+        setEditing(null)
+        setEditBaseline(null)
+      }
+    },
+    isDirty: editDirty,
+    onSave: () => {
+      if (!editing) return false
+      updateGoal(editing)
+    },
+    onDiscard: () => {
+      setEditing(null)
+      setEditBaseline(null)
+    },
+  })
+
   const logAction = (goal: Goal) => {
     const now = new Date()
     const id = `goal-action-${Date.now()}`
@@ -121,76 +181,73 @@ export function GoalsContainer() {
   }
 
   const goalForm = (fields: GoalDraft, onChange: (v: GoalDraft) => void, onSubmit: () => void, submitLabel: string) => (
-    <div className="space-y-4">
-      <div>
-        <Label>Title</Label>
-        <Input value={fields.title} onChange={(e) => onChange({ ...fields, title: e.target.value })} placeholder="e.g., Read 20 books this year" />
+    <div className="gol-dialog-body">
+      <label>
+        Title
+        <input value={fields.title} onChange={(e) => onChange({ ...fields, title: e.target.value })} placeholder="e.g., Read 20 books this year" />
+      </label>
+      <label>
+        Description
+        <textarea value={fields.description} onChange={(e) => onChange({ ...fields, description: e.target.value })} rows={2} />
+      </label>
+      <div className="gol-grid-3">
+        <label>
+          Type
+          <select value={fields.type} onChange={(e) => onChange({ ...fields, type: e.target.value as Goal["type"] })}>
+            <option value="count">Count</option>
+            <option value="numerical">Numerical</option>
+            <option value="boolean">Yes/No</option>
+          </select>
+        </label>
+        <label>
+          Target
+          <input type="number" value={fields.target} onChange={(e) => onChange({ ...fields, target: Number.parseInt(e.target.value) || 1 })} />
+        </label>
+        <label>
+          Unit
+          <input value={fields.unit} onChange={(e) => onChange({ ...fields, unit: e.target.value })} placeholder="books" />
+        </label>
       </div>
-      <div>
-        <Label>Description</Label>
-        <Textarea value={fields.description} onChange={(e) => onChange({ ...fields, description: e.target.value })} rows={2} />
-      </div>
-      <div className="grid grid-cols-3 gap-3">
-        <div>
-          <Label>Type</Label>
-          <Select value={fields.type} onValueChange={(v) => onChange({ ...fields, type: v as Goal["type"] })}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="count">Count</SelectItem>
-              <SelectItem value="numerical">Numerical</SelectItem>
-              <SelectItem value="boolean">Yes/No</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label>Target</Label>
-          <Input type="number" value={fields.target} onChange={(e) => onChange({ ...fields, target: Number.parseInt(e.target.value) || 1 })} />
-        </div>
-        <div>
-          <Label>Unit</Label>
-          <Input value={fields.unit} onChange={(e) => onChange({ ...fields, unit: e.target.value })} placeholder="books" />
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <Label>Period</Label>
-          <Select value={fields.periodKind} onValueChange={(v) => onChange({ ...fields, periodKind: v as GoalPeriodKind })}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {PERIOD_KINDS.map((p) => (
-                <SelectItem key={p} value={p}>{PERIOD_LABELS[p]}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label>Points reward</Label>
-          <Input type="number" value={fields.points} onChange={(e) => onChange({ ...fields, points: Number.parseInt(e.target.value) || 0 })} />
-        </div>
+      <div className="gol-grid-2">
+        <label>
+          Period
+          <select value={fields.periodKind} onChange={(e) => onChange({ ...fields, periodKind: e.target.value as GoalPeriodKind })}>
+            {PERIOD_KINDS.map((p) => (
+              <option key={p} value={p}>
+                {PERIOD_LABELS[p]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Points reward
+          <input type="number" value={fields.points} onChange={(e) => onChange({ ...fields, points: Number.parseInt(e.target.value) || 0 })} />
+        </label>
       </div>
       {fields.periodKind === "custom" && (
-        <div>
-          <Label>Range label</Label>
-          <Input value={fields.periodLabel} onChange={(e) => onChange({ ...fields, periodLabel: e.target.value })} placeholder="while in South America" />
-        </div>
+        <label>
+          Range label
+          <input value={fields.periodLabel} onChange={(e) => onChange({ ...fields, periodLabel: e.target.value })} placeholder="while in South America" />
+        </label>
       )}
       <div>
-        <Label>Serves objective(s) — required</Label>
-        <p className="text-xs text-muted-foreground mb-1">A goal always moves you toward at least one objective.</p>
-        <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto rounded-md border p-2">
+        <label>Serves objective(s) — required</label>
+        <p>A goal always moves you toward at least one objective.</p>
+        <div className="gol-obj-picks">
           {activeObjectives.map((o) => {
             const on = fields.objectiveIds.includes(o.id)
             return (
               <button
                 key={o.id}
                 type="button"
+                className="gol-btn"
+                aria-pressed={on}
                 onClick={() =>
                   onChange({
                     ...fields,
                     objectiveIds: on ? fields.objectiveIds.filter((id) => id !== o.id) : [...fields.objectiveIds, o.id],
                   })
                 }
-                className={`text-xs rounded-full border px-2.5 py-1 ${on ? "bg-primary text-primary-foreground border-primary" : "hover:bg-muted"}`}
               >
                 {o.title}
               </button>
@@ -198,102 +255,110 @@ export function GoalsContainer() {
           })}
         </div>
       </div>
-      <Button onClick={onSubmit} className="w-full" disabled={!fields.title.trim() || fields.objectiveIds.length === 0}>
-        {submitLabel}
-      </Button>
+      <div className="gol-dialog-actions">
+        <button type="button" className="gol-btn" onClick={onSubmit} disabled={!fields.title.trim() || fields.objectiveIds.length === 0}>
+          {submitLabel}
+        </button>
+      </div>
     </div>
   )
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap justify-between items-center gap-3">
+    <div className="gol-section">
+      <div className="gol-section-head">
         <div>
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            <Trophy className="h-5 w-5" /> Goals
-          </h3>
-          <p className="text-sm text-muted-foreground">Quantifiable metrics that move your objectives forward.</p>
+          <h3 className="gol-legend">Goals</h3>
+          <p className="gol-hint">Quantifiable metrics that move your objectives forward.</p>
         </div>
-        <Dialog open={showAdd} onOpenChange={setShowAdd}>
+        <Dialog open={showAdd} onOpenChange={addGuard.handleOpenChange}>
           <DialogTrigger asChild>
-            <Button size="sm"><Plus className="h-4 w-4 mr-2" />Add Goal</Button>
+            <button type="button" className="gol-btn">
+              Add Goal
+            </button>
           </DialogTrigger>
-          <DialogContent className="max-h-[85vh] overflow-y-auto">
-            <DialogHeader><DialogTitle>New Goal</DialogTitle></DialogHeader>
+          <DialogContent className="gol95 gol95-dialog" hideClose aria-describedby={undefined} {...unsavedDismissProps(addGuard.requestClose)}>
+            <div className="gol-dialog-caption">
+              <DialogTitle>New Goal</DialogTitle>
+            </div>
             {goalForm(draft, setDraft, handleAdd, "Add Goal")}
           </DialogContent>
         </Dialog>
       </div>
 
-      <div className="flex flex-wrap gap-1">
-        <Button size="sm" variant={filter === "all" ? "default" : "outline"} onClick={() => setFilter("all")}>All</Button>
+      <div className="gol-tabs">
+        <button type="button" className="gol-btn" aria-pressed={filter === "all"} onClick={() => setFilter("all")}>
+          All
+        </button>
         {PERIOD_KINDS.map((p) => (
-          <Button key={p} size="sm" variant={filter === p ? "default" : "outline"} onClick={() => setFilter(p)}>
+          <button key={p} type="button" className="gol-btn" aria-pressed={filter === p} onClick={() => setFilter(p)}>
             {PERIOD_LABELS[p]}
-          </Button>
+          </button>
         ))}
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+      <div className="gol-goals">
         {visible.map((goal) => (
-          <Card key={goal.id} className="card-hover">
-            <CardHeader className="pb-2">
-              <div className="flex items-start justify-between gap-2">
-                <CardTitle className="text-base leading-snug">{goal.title}</CardTitle>
-                <div className="flex items-center gap-1 shrink-0">
-                  <Badge variant="outline" className="text-[10px]">{PERIOD_LABELS[goal.periodKind]}</Badge>
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditing(goal)}>
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
+          <div key={goal.id} className="gol-goal">
+            <div>
+              <div className="gol-row-name" style={{ display: "block" }}>
+                {goal.title}
               </div>
-              {goal.periodLabel && <p className="text-xs text-muted-foreground">{goal.periodLabel}</p>}
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">Progress</span>
-                <span className="font-medium">
-                  {goal.current} / {goal.target}{goal.unit ? ` ${goal.unit}` : ""}
-                </span>
+              <div className="gol-meta">
+                {PERIOD_LABELS[goal.periodKind]}
+                {goal.periodLabel ? ` · ${goal.periodLabel}` : ""}
               </div>
-              <Progress value={goalProgressPercent(goal)} className="h-2.5" />
-
-              <div className="flex flex-wrap gap-1">
+              <div className="gol-chips" style={{ justifyContent: "flex-start", marginTop: 4 }}>
                 {goal.objectiveIds.map((id) => (
-                  <Badge key={id} variant="secondary" className="text-[10px]">{objectiveTitle(id)}</Badge>
+                  <span key={id} className="gol-chip">
+                    {objectiveTitle(id)}
+                  </span>
                 ))}
               </div>
-
+            </div>
+            <div>
+              <div className="gol-meta">
+                {goal.current} / {goal.target}
+                {goal.unit ? ` ${goal.unit}` : ""}
+              </div>
+              <GoalPips percent={goalProgressPercent(goal)} />
+            </div>
+            <div className="gol-actions">
+              <button type="button" className="gol-btn" onClick={() => { setEditing(goal); setEditBaseline(goal) }}>
+                Edit
+              </button>
               {goal.completed ? (
-                <div className="flex items-center gap-2 text-green-600 text-sm">
-                  <CheckCircle2 className="h-4 w-4" /> Completed — {goal.points} pts
-                </div>
+                <span className="gol-ok">Completed — {goal.points} pts</span>
               ) : goal.type === "boolean" ? (
-                <Button size="sm" className="w-full" onClick={() => setGoalProgress(goal.id, 1)}>
-                  <CheckCircle2 className="h-4 w-4 mr-2" />Mark complete (+{goal.points} pts)
-                </Button>
+                <button type="button" className="gol-btn" onClick={() => setGoalProgress(goal.id, 1)}>
+                  Mark complete (+{goal.points} pts)
+                </button>
               ) : (
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={() => setGoalProgress(goal.id, Math.max(0, goal.current - 1))}>-1</Button>
-                  <Button size="sm" variant="outline" onClick={() => setGoalProgress(goal.id, goal.current + 1)}>+1</Button>
-                  <Button size="sm" className="flex-1" onClick={() => logAction(goal)} title="Record a completed action + earn objective points">
-                    <PlusCircle className="h-4 w-4 mr-1" />Log
-                  </Button>
-                </div>
+                <>
+                  <button type="button" className="gol-btn" onClick={() => setGoalProgress(goal.id, Math.max(0, goal.current - 1))}>
+                    -1
+                  </button>
+                  <button type="button" className="gol-btn" onClick={() => setGoalProgress(goal.id, goal.current + 1)}>
+                    +1
+                  </button>
+                  <button type="button" className="gol-btn" onClick={() => logAction(goal)} title="Record a completed action + earn objective points">
+                    Log
+                  </button>
+                </>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         ))}
         {visible.length === 0 && (
-          <div className="col-span-full text-center py-8 text-muted-foreground text-sm">
-            No goals here yet. Add one and link it to an objective.
-          </div>
+          <div className="gol-empty">No goals here yet. Add one and link it to an objective.</div>
         )}
       </div>
 
       {editing && (
-        <Dialog open onOpenChange={() => setEditing(null)}>
-          <DialogContent className="max-h-[85vh] overflow-y-auto">
-            <DialogHeader><DialogTitle>Edit Goal</DialogTitle></DialogHeader>
+        <Dialog open onOpenChange={editGuard.handleOpenChange}>
+          <DialogContent className="gol95 gol95-dialog" hideClose aria-describedby={undefined} {...unsavedDismissProps(editGuard.requestClose)}>
+            <div className="gol-dialog-caption">
+              <DialogTitle>Edit Goal</DialogTitle>
+            </div>
             {goalForm(
               {
                 title: editing.title,
@@ -322,15 +387,30 @@ export function GoalsContainer() {
               () => {
                 updateGoal(editing)
                 setEditing(null)
+                setEditBaseline(null)
               },
               "Save Changes",
             )}
-            <Button variant="destructive" className="w-full mt-2" onClick={() => { deleteGoal(editing.id); setEditing(null) }}>
-              <Trash2 className="h-4 w-4 mr-2" />Delete Goal
-            </Button>
+            <div className="gol-dialog-body">
+              <div className="gol-danger">
+                <button
+                  type="button"
+                  className="gol-btn"
+                  onClick={() => {
+                    deleteGoal(editing.id)
+                    setEditing(null)
+                    setEditBaseline(null)
+                  }}
+                >
+                  Delete Goal
+                </button>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
       )}
+      <UnsavedChangesDialog {...addGuard.prompt} />
+      <UnsavedChangesDialog {...editGuard.prompt} />
     </div>
   )
 }
