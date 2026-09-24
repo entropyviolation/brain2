@@ -297,11 +297,11 @@ Explorer frame in `filemanager98.css`):
 | --------------- | ------------------------------------------------------------------------ |
 | `hooks/`        | `useListsNavigation`, `useListsSearch`, `useListsDragDrop`, `useListsSelection`, `useListsTaskActions` |
 | `navigation/`   | `FolderTree.tsx`, `BreadcrumbNav.tsx`                                     |
-| `views/`        | `FolderViewIcons.tsx` + test, `FolderViewList/Details/Cards.tsx`, `SearchResultsView.tsx` |
+| `views/`        | `FolderViewIcons.tsx` + test, `FolderViewList/Details/Cards.tsx`, `SearchResultsView.tsx` + select-mode test |
 | `list-content/` | `ListContentPanel/Default/Checklist/Icons/Details/Spreadsheet.tsx`, `SheetFullscreen.tsx`, `AllViewCheckboxFilter.tsx`, `ListMissedButton.tsx` |
 | `dialogs/`      | `New/Edit List & Folder`, `InFoldersEditor`, `ConnectedListsEditor`, `ChecklistViewSettings` (view-mode host), `DefaultViewSettings`, `DetailsViewSettings`, `ListRulesEditor`, `CsvImportDialog`, `OrbPickerDialog` |
 | `attributes/`   | `AttributeSchemaEditor`, `AttributeSettingsDialog`, `AttributeValueField`, `AttributeValuesEditor`, `helpers.ts` |
-| `toolbar/`      | `ListsToolbar.tsx`, `ToolbarSearch.tsx`, `ViewModeControls.tsx`           |
+| `toolbar/`      | `ListsToolbar.tsx`, `ToolbarSearch.tsx`, `SelectionToolbar.tsx` (+ folder-search test), `ItemSelectionToolbar.tsx`, `ViewModeControls.tsx` (mode deck) |
 | `lib/`          | `icon-utils.tsx`, `velvet-icon-grid.ts` (pack-to-width), `lists-location-choice.ts` (clear search on folder nav) |
 
 **Top-level:** `attribute-editor.tsx` (barrel), `settings-dialog.tsx`, `list-picker.tsx` + `list-picker.css`,
@@ -331,13 +331,14 @@ Period funnel: **Always → Year → Month → Week → Day**. Split into orches
 | `scheduler-utils.ts`    | Pure logic — filtering, sort, period queries, grid builders (`lib/available-tasks` for unmet deps) |
 | `GanttView.tsx` / `DependencyGraph.tsx` | Timeline / precedence documents (orbs, not editable) |
 | `SchedulerTaskItem.tsx` | Draggable orb task row                                     |
-| `PeriodCell.tsx`        | Droppable bucket — reserved one-line furniture when empty  |
+| `PeriodCell.tsx`        | Droppable bucket — line furniture, or an Always drop card  |
 | `PeriodFunnelTab.tsx`   | Generic Year/Month/Week tab                               |
-| `AlwaysTab.tsx`         | Always list + filters + overview boxes                    |
+| `AlwaysTab.tsx`         | Always list + two columns of cards (incl. Eventually / Later) |
 | `DayTab.tsx` / `DayAgenda.tsx` | Day sidebar + 24-hour drop-to-hour agenda          |
 | `SchedulerFilters.tsx`  | Collapsible Filters & Sort                                 |
 
 Tasks appear only if in a **scheduleable** list (`TaskCategory.scheduleable !== false`).
+Today / Tomorrow store the local calendar date (`lib/day-clock.ts`). An unfinished period that has ended rolls up one level (`lib/scheduling.ts` `rollUpScheduleFields`, `hooks/use-day-rollover.ts`); prior placements stay on `schedulePlacements`. Eventually / Later files the task on the Next Actions list `eventually` (`lib/eventually-list.ts`) with no period.
 **Could add:** Auto-scheduling (§7.6), event-linked checklists.
 
 → [`components/Scheduler/README.md`](../components/Scheduler/README.md)
@@ -797,6 +798,7 @@ App-wide shared React hooks. Module-specific hooks live next to their UI (e.g.
 | `useQuickCaptureHotkey.ts` | Quick-capture open/close state + in-app capture chord; bridges the Electron global accelerator |
 | `useMessageIngest.ts` | Drain Telegram IPC / `/api/ingest` into `lib/ingest`; album buffer; split long read dumps |
 | `useUndoHotkey.ts` | Cmd/Ctrl-Z last-action undo / Cmd/Ctrl-Shift-Z redo for Home and Tracking; Tracking adds capture-phase `tracking-undo.ts` |
+| `use-day-rollover.ts` | Roll unfinished past period schedules up one level; bump `lib/day-clock.ts`. Mounted from `app/page.tsx` |
 | `useVocalConfidence.ts` | Mic → `AnalyserNode` → `ConfidenceTracker` live `ConfidenceScore` for the Morning affirmations ritual |
 | `use-screentime-sync.ts` | Poll ActivityWatch → Screen Time while Tracking/Analytics are mounted (not the block editor) |
 

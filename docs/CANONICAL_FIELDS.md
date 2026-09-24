@@ -153,6 +153,7 @@ future cleanup does not collapse them.
 | `scheduledWeek` | `string?` (`"YYYY-..._..."`) | canonical | yes (string) | yes | Coarse schedule level. |
 | `scheduledMonth` | `string?` (`"YYYY-MM"`) | canonical | yes (string) | yes | Coarse schedule level. |
 | `scheduledYear` | `string?` (`"YYYY"`) | canonical | yes (string) | yes | Coarse schedule level. |
+| `schedulePlacements` | `{ period, value }[]?` | canonical | yes | yes | Prior period placements kept when an unfinished schedule rolls up; gray past funnel cells read these. Automatic roll-up does not increment push counters. |
 | `deadline` | `Date?` | canonical | yes (Date-revived) | yes | In `DATE_KEYS`. |
 | `scheduleable` | `boolean?` | canonical | yes | no | Per-item override; resolved by `isTaskScheduleable` (else list/folder default). |
 | `dependencies` | `string[]?` (task ids) | canonical | yes | yes | Critical-path / Gantt / project network. |

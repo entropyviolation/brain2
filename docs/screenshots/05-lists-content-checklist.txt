@@ -7,9 +7,9 @@ SOURCE FILES:
 ================================================================================
 
 GLOBAL CHROME (all screens)
-  Pinned full-width mill title bar (`AppHeader`, sticky top, z-40): navy BRAIN2 caption with Tek POWER lamp + today's-friend jewel (chrome + black-mirror well; click for a Stardew to-do bubble) and Friend / Review / System / optional now well (between System and Capture; idle → hidden; live Working sessions show name, elapsed, Stop, Pause↔Resume) / Capture as Win95 groupboxes of milled press keys. Names stays Names and latches (sunken); tooltip Stop naming while on. Phosphor counts on Review and Inbox. Quick Add is the default framed key. Same doors as before — grouped furniture, not a menu bar.
-  Tabs: Home · Lists · Docs · Scheduler · Operations · Modules · Analytics.
+  Pinned full-width mill title bar (`AppHeader`, sticky top, z-40): navy BRAIN2 caption with Tek POWER lamp + today's-friend jewel (64px chrome + black-mirror well; click for a Stardew Next Action bubble; Esc / × / outside to close) and Friend / Review / System / Capture as Win95 groupboxes of milled press keys. Names stays Names and latches (sunken, aria-pressed); tooltip Stop naming while on. Phosphor counts on Review and Inbox. Quick Add is the default framed key, docked at the right of Capture. Same doors as before — grouped furniture, not a menu bar.
+  Tabs: milled fascia (brushed bay, raised silver keys, active key a CRT with a round power lamp) — Home · Lists · Docs · Scheduler · Operations · Modules · Analytics.
   Shortcuts: Cmd/Ctrl+K search · capture hotkey → Quick Add.
 
 VIEW-SPECIFIC
-Same open-list chrome. Inner caption = Checklist. Checklist: checkbox-first rows (complete in place) with a **missed opportunity — too late** control beside the complete box; click name → detail. Same Bulk add / Add Item (hidden on Completed / Missed Opportunities auto-lists). Right inspector: facts then actions; Delete gray and confirmed.
+Same open-list chrome + DISPLAY mode deck. Checklist: Completed ticks (optional Missed); Select overlays selection ticks. Click name → detail.

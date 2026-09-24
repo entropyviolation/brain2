@@ -271,8 +271,11 @@ Windows replica to protect. The Explorer verbs stay; the frame is milled fascia:
 - CRT title caption (`Lists — File Manager`) on a brushed silver bay, metal
   caption keys (`_`, `□`, `×`).
 - Brushed toolbar bay: raised metal keys for **↑ Up**, **New List**,
-  **New Folder**, Settings, Select; Icons / List / Details / Cards as equal-fill
-  view keys (active = CRT + round power lamp); Search on the same strip.
+  **New Folder**, Settings, Select, and Search on the first strip; a second
+  **View / Display** mode bay owns the full width (engraved nameplate +
+  recessed key bay). Every key keeps a reserved LED gutter so the active CRT
+  lamp never shoves the label; container queries on the bay switch short codes
+  ↔ full words so labels breathe when wide and never collide when narrow.
 - Address nameplate + path well (`All \ wanted`).
 - Left tree: Quick Access + Folders nameplates, classic explorer indent
   (selection blue stays the quote for the active row).
@@ -637,7 +640,7 @@ compact quadrant + one-row header). Tokens live on `app/win95.css`.
 | Surface | Why it counts |
 |---------|----------------|
 | **Home → Habits Daily (favorite — look here first)** | Most developed room. Metal workstation + Habits Tab Control Panel + analog furniture + Willpower gems (**chrome + black-mirror** oval) + CRT phosphor + designrefs skeuomorph. Extend other interiors from this, not from a card kit. |
-| Lists folder Icons | Velvet + orbs + auto-organize — the cabinet gold standard. **Frame** is milled fascia (CRT title, brushed toolbar bay, equal-fill view keys with power lamps, engraved nameplates, CRT status counts); velvet and orb photographs stay untouched |
+| Lists folder Icons | Velvet + orbs + auto-organize — the cabinet gold standard. **Frame** is milled fascia (CRT title, brushed toolbar bay, Display/View mode deck with reserved LED gutters + container-query labels, engraved nameplates, CRT status counts); velvet and orb photographs stay untouched |
 | Home → Tracking | Milled fascia (CRT title, Time Grid / Activity Log / Day Log bay with power lamps, period nameplate, metal prev/next/today, now bay) + Show/Sort/Expand↔Conceal/New pen rail + photographed pen tray in a metal frame (View settings; default Cat traces; one-line beads + steel plates for copy) + white/gray plot + now/sunrise/sunset lines + photographed title orb |
 | Home dashboard TOP strip | Date + Review due + points + Today's Progress. **Landed:** strip mounts on all five tabs; phosphor wells + CRT on every tab; numerals use shared `--hab-crt-green` (`#7dffc4`) matching Week grade / Perfect output; All Time / Today / Week / Month share the same metal face (no darker All Time plate); equal-height squares wrap (no tray x-scroll); weather analog; Widgets overlay. |
 | Home → Habits Daily | Milled fascia workstation (CRT **Habits** title, Daily/Weekly/Monthly bay with power lamps, period nameplate, metal Settings / New habit) + photographed gems + right **Habits Tab Control Panel** with noble-gas **finger-tube** grade meters (rounded dome) and **Willpower gems** (`.hab95`); contained, not a 100vw white sheet. Recessed panel lamps for Yes/No (**Small LEDs** ON = 15px, OFF = fill the cell; tint as on-color, not blast-white); completion % is a quiet 10-pip milled channel + `%` on one row (numeric LED optional); name column capped so day columns grow (no inner scroller on a wide desk); **Day View** = today + week %; 18px set-stone edit jewel in chrome with no dark disc. **Willpower gems** (canonical): week gems collect small around the crystal; row gem inverts while contributing; plate pinned to the control panel foot; compact column (Physics enlarges the plate); plate click stirs (grab does not press the well); crystal is a solid — gems do not tunnel; PNG occludes stones behind it; gems keep their photographed shape and stay visible past the rim; Physics lab maps the same world onto a larger chrome + black-mirror oval (smooth, live sliders, CRT wells); Settings still changes the crystal |

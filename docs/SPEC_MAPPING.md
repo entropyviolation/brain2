@@ -185,20 +185,23 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   messengers and Atlas-backed ingest are 🕓 later.
 - §4.4 Clarification — 🟡 `components/inbox.tsx` (`TaskClarificationDialog`).
   Open ideas are listed **newest first** (`sortInboxNewestFirst`).
-  Keyboard **Walk selected** steps only the current checkbox selection
-  (Select all / Deselect all) through that same dialog: rename, Discard
-  idea, Skip / Save & next, recent lists pinned at the top (`#244`).
-  Clarifying or discarding awards **1 point**; emptying the revisit Inbox awards
-  **50** (`lib/inbox-credit.ts`). Multi-select applies list, deadline,
-  merge, **Apply and clarify** from the list popup (file onto the chosen lists
-  and leave Inbox; **Apply** alone keeps them in the pile), **Mark clarified** (onto assigned lists, or All Items when none),
-  **Monkey brain** / **To inbox**, **Bulk edit** (the selection as bulk-add
-  text), or **delete** after an Are you sure? warning (`lib/inbox-batch.ts` +
-  `lib/item-merge.ts`, `#243`). **Monkey brain** is a second Inbox partition
+  Keyboard **Walk** starts at the caret when nothing is checked, and **Walk selected**
+  steps the checks (Select all / **Select N** / **Select unsorted** / Deselect).
+  `/` slices the pile to Dated or Bare. A navy bar is the caret; a filled well
+  is the selection. Click the words; shift-click ranges.
+  Clarifying, filing, or discarding awards **1 point**; emptying the revisit Inbox awards
+  **50** (`lib/inbox-credit.ts`). The foot counts this sitting. The walk sheet stays
+  mounted for the queue, and the pile behind it does not repaint until the walk
+  ends. After a check: Apply list, due,
+  merge (two or more), **File** (onto assigned lists, or All Items when none),
+  **Monkey brain** / **To inbox**, **Bulk edit**, or **delete** after Are you sure?
+  (one row’s trash asks the same way). **Apply and clarify** from the list popup
+  files onto the chosen lists and leaves Inbox; **Apply** alone keeps them in the pile
+  (`lib/inbox-batch.ts` + `lib/item-merge.ts`, `#243`). **Monkey brain** is a second Inbox partition
   for compulsive dumps (`-mb` / `-monkey` on Quick Add and Telegram); it does
-  not count as the revisit pile. Selection
-  outline is navy `#000080` (never orange). Still task-only (no type
-  switching among task/note/event/log).
+  not count as the revisit pile. The partition name stays the resting ink color;
+  the lamp and CRT count still change. A count of 10 or more uses a heavier phosphor.
+  Still task-only (no type switching among task/note/event/log).
 - §4.5 Inbox vs. review queue — ✅ Inbox exists, the Review header surfaces pending
   period reviews, and a separate **Needs Attention** queue ships on Home
   (`components/Home/NeedsAttention.tsx` over the pure selector in
@@ -322,6 +325,8 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   opt-in in List Settings → View mode settings → Checklist view mode settings.
   Details table columns are chosen in **Details view mode settings**
   (`List.detailsColumns`, independent of Spreadsheet `sheetConfig.columnIds`).
+  Details has no complete/missed ticks (Checklist only); Select mode still
+  overlays selection checkboxes. Name + Open stay as chrome.
   Ticking Completed opens the reflection dialog before the completion sticks.
   Default display is a reading row (status pip, not a complete checkbox).
   Per-list Default chrome is optional in View mode settings → Default view
@@ -336,7 +341,12 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
 
 ## §7 Scheduler & Calendar — ✅/🟡
 - Period funnel Always→Year→Month→Week→Day — ✅
-  `components/Scheduler/enhanced-scheduler.tsx`.
+  `components/Scheduler/enhanced-scheduler.tsx`. Shared selection: drag of a
+  selected task schedules the whole selection (`taskIdsForDragSchedule`);
+  **Deselect all** clears checks only; **Delete** / **Mark complete** act on the
+  selection (complete is quiet — no popup stack). Placing a task into a real
+  period bucket awards **1 point** when the assignment changes
+  (`lib/schedule-credit.ts`); Eventually / Later does not.
 - Calendar Month/Week/Day views — ✅ `components/Home/Plan/*`. Month / week /
   day rails share `planned-tasks-sidebar.tsx` (period-planned todos +
   incomplete period habits + Lists **Next Actions** workable in that period,
@@ -370,8 +380,14 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   Events** — ✅ `paste-events-dialog.tsx` + `lib/parse-event-text.ts` turns
   unstructured itinerary text into bulk-editable calendar events.
 - §7.6 Auto-scheduling — 🕓 deferred (constraint fields retained on `Task`).
-- §7.7 Carry-over logic — 🟡 partial: Review dialog offers push-forward per task;
-  no automatic end-of-period carry-over batch.
+- §7.7 Carry-over logic — 🟡 partial: unfinished periods that have ended roll up
+  one level on the funnel (`rollUpExpiredSchedules` on hydrate, local midnight,
+  and when the window becomes visible): day → that week, week → that month,
+  month → that year, year → fully unscheduled. Prior placements stay on
+  `schedulePlacements` for gray past cells and analytics. Automatic roll-up does
+  not increment push counters. Tomorrow's stored date becomes Today when that
+  date arrives. An explicit push writes the next period and wins. Completed and
+  missed stay put. Review and To Do still offer push-forward per task.
 
 ## §8 Home Dashboard — ✅/🟡
 - Tabbed dashboard (Habits/Plan/To-Do/Goals/**Tracking**) + top bar — ✅
@@ -918,7 +934,8 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
 ## §14 Points, Rewards & Regret — 🟡
 - Points ledger — ✅ `lib/points-store.ts` (task/habit/goal completions,
   Inbox **+1 per handled idea** and **+50 when the Inbox hits 0** via
-  `lib/inbox-credit.ts`,
+  `lib/inbox-credit.ts`, Scheduler **+1 per changed period placement** via
+  `lib/schedule-credit.ts`,
   `upsertPoints` for revisable daily-habit scores, day/week/month totals + possible).
   Daily habits: 50 × that day’s completion ratio; user accomplishment bonus if that day’s raw column
   score meets `accomplishmentThreshold` (default ≥80% → +50); +100 if either Week grade or Perfect output is 75%+ that
@@ -1085,8 +1102,9 @@ Spec-facing remainder, still true, but **not** the next checkout:
    `SyncingDataSource` (JSON backup/restore already ships; the local store stays
    the offline source of truth). Local selective restore and rolling
    `data/recovery-backups/` as a first-class source are in the plan before Atlas.
-4. **§7.7** Automatic end-of-period carry-over (Reviews already offer per-task
-   push-forward) — after Scheduler’s window chrome exists.
+4. **§7.7** Automatic end-of-period carry-over — 🟡 partial: unfinished periods
+   roll up one funnel level (`rollUpExpiredSchedules`); Reviews still offer
+   per-task push-forward.
 5. **§15** Predictive analytics still deferred. Category performance (**Lists &
    areas**) and cognitive-state (**Mood field**) now ship as Analytics studio
    views. Honesty (sample-size, shared range, chart → Lists) shipped in Wave 1;

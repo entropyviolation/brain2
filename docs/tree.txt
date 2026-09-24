@@ -569,6 +569,7 @@
 │   │   │   ├── ItemSelectionToolbar.tsx
 │   │   │   ├── ListsToolbar.test.tsx
 │   │   │   ├── ListsToolbar.tsx
+│   │   │   ├── SelectionToolbar.test.tsx
 │   │   │   ├── SelectionToolbar.tsx
 │   │   │   ├── ToolbarSearch.test.tsx
 │   │   │   ├── ToolbarSearch.tsx
@@ -583,6 +584,7 @@
 │   │       ├── FolderViewIcons.tsx
 │   │       ├── FolderViewList.test.tsx
 │   │       ├── FolderViewList.tsx
+│   │       ├── SearchResultsView.test.tsx
 │   │       ├── SearchResultsView.tsx
 │   │       └── folder-view-icons-trail.css
 │   ├── Mobile
@@ -820,16 +822,16 @@
 │   ├── recovery-backups
 │   │   ├── auto-brain2-habits-store-2026-09-24-04.json
 │   │   ├── auto-brain2-task-storage-2026-09-24-04.json
-│   │   ├── auto-brain2-timegrid-store-2026-09-24-03.json
+│   │   ├── auto-brain2-task-storage-2026-09-24-05.json
 │   │   ├── auto-brain2-timegrid-store-2026-09-24-04.json
-│   │   ├── auto-cogs-baby-animals-store-2026-09-24-03.json
 │   │   ├── auto-cogs-baby-animals-store-2026-09-24-04.json
 │   │   ├── auto-cogs-habits-store-2026-09-24-04.json
-│   │   ├── auto-cogs-task-storage-2026-09-24-04.json
-│   │   ├── auto-cogs-timegrid-store-2026-09-24-03.json
+│   │   ├── auto-cogs-habits-store-2026-09-24-05.json
+│   │   ├── auto-cogs-task-storage-2026-09-24-05.json
 │   │   ├── auto-cogs-timegrid-store-2026-09-24-04.json
-│   │   ├── auto-points-store-2026-09-24-03.json
+│   │   ├── auto-cogs-timegrid-store-2026-09-24-05.json
 │   │   ├── auto-points-store-2026-09-24-04.json
+│   │   ├── auto-points-store-2026-09-24-05.json
 │   │   ├── brain2-empty-ls-2026-09-21T07-45-39-912Z.json
 │   │   ├── chrome-ls-2026-09-20T03-12-52-878Z.json
 │   │   ├── cogs-backup-2026-09-21-user.json
@@ -1111,6 +1113,7 @@
 ├── hooks
 │   ├── README.md
 │   ├── use-attachment-src.ts
+│   ├── use-day-rollover.ts
 │   ├── use-screentime-sync.test.ts
 │   ├── use-screentime-sync.ts
 │   ├── useMessageIngest.ts
@@ -1378,6 +1381,7 @@
 │   ├── data-profile.ts
 │   ├── date-utils-local-day.test.ts
 │   ├── date-utils.ts
+│   ├── day-clock.ts
 │   ├── day-notes-persist.test.ts
 │   ├── day-notes-persist.ts
 │   ├── daylight.test.ts
@@ -1406,6 +1410,8 @@
 │   ├── event-links.ts
 │   ├── event-store.dates.test.ts
 │   ├── event-store.ts
+│   ├── eventually-list.test.ts
+│   ├── eventually-list.ts
 │   ├── file-extract.test.ts
 │   ├── file-extract.ts
 │   ├── filmrecs-catalog.ts

@@ -7,9 +7,9 @@ SOURCE FILES:
 ================================================================================
 
 GLOBAL CHROME (all screens)
-  Pinned full-width mill title bar (`AppHeader`, sticky top, z-40): navy BRAIN2 caption with Tek POWER lamp + today's-friend jewel (chrome + black-mirror well; click for a Stardew to-do bubble) and Friend / Review / System / optional now well (between System and Capture; idle → hidden; live Working sessions show name, elapsed, Stop, Pause↔Resume) / Capture as Win95 groupboxes of milled press keys. Names stays Names and latches (sunken); tooltip Stop naming while on. Phosphor counts on Review and Inbox. Quick Add is the default framed key. Same doors as before — grouped furniture, not a menu bar.
-  Tabs: Home · Lists · Docs · Scheduler · Operations · Modules · Analytics.
+  Pinned full-width mill title bar (`AppHeader`, sticky top, z-40): navy BRAIN2 caption with Tek POWER lamp + today's-friend jewel (64px chrome + black-mirror well; click for a Stardew Next Action bubble; Esc / × / outside to close) and Friend / Review / System / Capture as Win95 groupboxes of milled press keys. Names stays Names and latches (sunken, aria-pressed); tooltip Stop naming while on. Phosphor counts on Review and Inbox. Quick Add is the default framed key, docked at the right of Capture. Same doors as before — grouped furniture, not a menu bar.
+  Tabs: milled fascia (brushed bay, raised silver keys, active key a CRT with a round power lamp) — Home · Lists · Docs · Scheduler · Operations · Modules · Analytics.
   Shortcuts: Cmd/Ctrl+K search · capture hotkey → Quick Add.
 
 VIEW-SPECIFIC
-Same open-list chrome. Inner caption = Spreadsheet. Spreadsheet: formula bar, Filter…, frozen Name column (width-capped so it cannot cover later headers), attribute + built-in columns (per-list `sheetConfig`), header menu (sort / hide / insert), Add column pinned to the grid viewport (on-this-list first, then vault, or create + assign-to-all), Add Item… + Add row. Cell edit (click to select, double-click / Enter / type-to-replace; Escape cancels). Fill handle / Open to edit. Pop-out window supported. Inspector facts + actions; Delete lives in List Settings only. Column pickers also live in List Settings → View mode settings → Spreadsheet view mode settings.
+Same open-list chrome + DISPLAY mode deck. Spreadsheet: formula bar, Filter…, columns, sort, Add column, Add Item… + Add row. Cell edit / fill handle / Open to edit. Pop-out fullscreen supported.

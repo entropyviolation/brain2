@@ -64,10 +64,11 @@ async function dismissDialogs(page) {
 }
 
 async function clickFmBtn(page, label, { display = false } = {}) {
-  const scope = display
-    ? page.locator(".fm-toolbar").filter({ hasText: "Display:" })
-    : page.locator(".fm-toolbar").filter({ hasText: "View:" })
-  await scope.getByRole("button", { name: label, exact: true }).click()
+  // Mode deck uses role=radio in a radiogroup (List display vs Folder view).
+  const group = display
+    ? page.getByRole("radiogroup", { name: "List display" })
+    : page.getByRole("radiogroup", { name: "Folder view" })
+  await group.getByRole("radio", { name: label, exact: true }).click()
   await wait(400)
 }
 

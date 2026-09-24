@@ -526,7 +526,7 @@ detail: [`lib/README.md`](lib/README.md).
 
 ## Status vs. the v2 spec (summary)
 
-**Implemented in some form:** Inbox (Walk selected + rename/discard + recent lists + +1/+50 points + Select all / Deselect all + multi-select list / deadline / merge / mark clarified / Monkey brain / bulk edit / delete) / Quick Add / Bulk Add (colon paths `list: item` /
+**Implemented in some form:** Inbox (Walk from the caret or Walk selected + rename/discard + recent lists + +1/+50 points + Select all / Select N / Select unsorted + Dated/Bare slice + Apply list / due / merge / File / Monkey brain / bulk edit / delete) / Quick Add / Bulk Add (colon paths `list: item` /
 `folder: list: item`, optional skip clarification) / **From Notes** (this Mac: Apple Notes via Electron or localhost hub; close the dialog while listing — reopen to return) / **Phone Notes** (AirDrop `Dump iPhone Notes to Brain2.shortcut` → Telegram `iphone-notes:` → iPhone Notes Store) — both notes dialogs bulk-add with the same `Folder: List:` headers, so a second colon creates a new folder by name; **Lists** board with
 Win98-style folders, custom attributes, orb icons, CSV import, and per-folder All
 Items; Scheduler period funnel (Always→Year→Month→Week→Day); Home dashboard
