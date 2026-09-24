@@ -23,9 +23,10 @@ import {
   toLocalCalendarDate,
 } from "@/lib/date-utils"
 import type { PriorityWeights, Task, TaskCompletionReview, Folder, TodoItem } from "@/lib/types"
+import { isAvailableNow } from "@/lib/available-tasks"
 import { computePriorityScore } from "@/lib/priority"
-import { effectiveStatus, isAvailable, isOpen } from "@/lib/completion-status"
-import { isTaskItem } from "@/lib/item-utils"
+import { effectiveStatus, isAvailable, isClearedFromWork, isMissed, isOpen, isPartial } from "@/lib/completion-status"
+import { countsInDone } from "@/lib/item-utils"
 import { formatLocalMonthKey } from "@/lib/date-utils"
 
 export type TodoPeriod = "day" | "week" | "month"
@@ -100,6 +101,27 @@ export function filterTodosByStatus(
         return effectiveStatus(task) === filter
     }
   })
+}
+
+/** When enabled, drop rows whose task still has unmet dependencies. */
+export function filterTodosAvailableNow(todos: TodoItem[], tasks: Task[], enabled: boolean): TodoItem[] {
+  if (!enabled) return todos
+  return todos.filter((todo) => {
+    const task = tasks.find((t) => t.id === (todo.taskId ?? todo.id))
+    if (!task) return true
+    return isAvailableNow(task, tasks)
+  })
+}
+
+/** In progress = Partial (started, not finished). Soft WIP count. */
+export function countInProgress(tasks: Task[]): number {
+  return tasks.filter((task) => !task.completed && isPartial(task)).length
+}
+
+/** Chrome line when the count is over the cap; null when within the cap. */
+export function formatWipWarning(count: number, limit: number): string | null {
+  if (count <= limit) return null
+  return `${count} in progress (cap ${limit}) — warning only, not a block`
 }
 
 export const TIER_ORDER: Record<TodoItem["tier"], number> = {
@@ -189,7 +211,7 @@ function isTaskScheduled(task: Task, now: Date): boolean {
 /** Build the TodoItem mirror list from tasks (overdue counts, tier, Q/I). */
 export function buildTodoItems(tasks: Task[], showAllTasks: boolean, now: Date = new Date()): TodoItem[] {
   return tasks
-    .filter((task) => !task.completed && !task.hiddenFromTodo && (showAllTasks || isTaskScheduled(task, now)))
+    .filter((task) => !isClearedFromWork(task) && !task.hiddenFromTodo && (showAllTasks || isTaskScheduled(task, now)))
     .map((task) => {
       const scheduledDate = task.scheduledDate
         ? parseLocalDate(task.scheduledDate) ?? new Date(task.scheduledDate)
@@ -200,7 +222,7 @@ export function buildTodoItems(tasks: Task[], showAllTasks: boolean, now: Date =
       let daysOverdue = 0
       let weeksOverdue = 0
       let monthsOverdue = 0
-      if (scheduledDate && !task.completed) {
+      if (scheduledDate && !isClearedFromWork(task)) {
         daysOverdue = Math.max(0, differenceInDays(now, scheduledDate))
         weeksOverdue = Math.max(0, differenceInWeeks(now, scheduledDate))
         monthsOverdue = Math.max(0, differenceInMonths(now, scheduledDate))
@@ -246,7 +268,7 @@ export function filterAndSortTodos(
 
   return todoItems
     .filter((item) => {
-      if (item.completed) return false
+      if (isClearedFromWork(item) || item.completed) return false
       if (!hasSchedule(item)) return showAllTasks
       switch (period) {
         case "day":
@@ -397,6 +419,7 @@ export function createScheduledTodoTask(opts: {
   const task: Task = {
     id: `todo-${Date.now()}`,
     description: opts.description.trim(),
+    type: "task",
     stage: "clarified",
     createdAt: refDate,
     completed: false,
@@ -472,6 +495,34 @@ export function taskCompletedInMonth(task: Task, monthValue: string): boolean {
   return !!d && getMonthKey(d) === monthValue
 }
 
+/** When the task was marked too late. */
+export function getTaskMissedDate(task: Task): Date | null {
+  if (task.missedAt) {
+    const d = task.missedAt instanceof Date ? task.missedAt : new Date(task.missedAt)
+    if (!isNaN(d.getTime())) return d
+  }
+  if (!isMissed(task)) return null
+  return task.createdAt instanceof Date ? task.createdAt : new Date(task.createdAt)
+}
+
+export function taskMissedOnDay(task: Task, day: Date): boolean {
+  if (!isMissed(task)) return false
+  const d = getTaskMissedDate(task)
+  return !!d && sameCalendarDay(d, day)
+}
+
+export function taskMissedInWeek(task: Task, weekValue: string): boolean {
+  if (!isMissed(task)) return false
+  const d = getTaskMissedDate(task)
+  return !!d && getWeekString(d) === weekValue
+}
+
+export function taskMissedInMonth(task: Task, monthValue: string): boolean {
+  if (!isMissed(task)) return false
+  const d = getTaskMissedDate(task)
+  return !!d && getMonthKey(d) === monthValue
+}
+
 /** Minimal post-mortem stub so completion timestamps persist on quick-complete paths. */
 export function defaultCompletionReview(taskId: string, completedAt: Date): TaskCompletionReview {
   return {
@@ -533,7 +584,7 @@ export function buildDoneTodoItems(
 ): TodoItem[] {
   const filtered = tasks.filter((task) => {
     if (!task.completed) return false
-    if (!isTaskItem(task, folders)) return false
+    if (!countsInDone(task, folders)) return false
     switch (period) {
       case "day":
         return taskCompletedOnDay(task, refDate)
@@ -553,6 +604,37 @@ export function buildDoneTodoItems(
       const tb = tasks.find((t) => t.id === b.id)
       const da = ta ? getTaskCompletionDate(ta)?.getTime() ?? 0 : 0
       const db = tb ? getTaskCompletionDate(tb)?.getTime() ?? 0 : 0
+      return db - da
+    })
+}
+
+/** Missed-opportunity items for a period, sorted by when they were marked too late. */
+export function buildMissedTodoItems(
+  tasks: Task[],
+  period: TodoPeriod,
+  refDate: Date = new Date(),
+): TodoItem[] {
+  const filtered = tasks.filter((task) => {
+    if (!isMissed(task)) return false
+    switch (period) {
+      case "day":
+        return taskMissedOnDay(task, refDate)
+      case "week":
+        return taskMissedInWeek(task, getWeekString(refDate))
+      case "month":
+        return taskMissedInMonth(task, getMonthKey(refDate))
+      default:
+        return false
+    }
+  })
+
+  return filtered
+    .map((task) => taskToTodoItem(task, refDate))
+    .sort((a, b) => {
+      const ta = tasks.find((t) => t.id === a.id)
+      const tb = tasks.find((t) => t.id === b.id)
+      const da = ta ? getTaskMissedDate(ta)?.getTime() ?? 0 : 0
+      const db = tb ? getTaskMissedDate(tb)?.getTime() ?? 0 : 0
       return db - da
     })
 }
@@ -598,6 +680,20 @@ export function getTodoDoneTitle(period: TodoPeriod, refDate: Date, now: Date = 
       return current ? "Done this month" : format(refDate, "MMMM yyyy")
     default:
       return "Done"
+  }
+}
+
+export function getTodoMissedTitle(period: TodoPeriod, refDate: Date, now: Date = new Date()): string {
+  const current = isCurrentPeriod(period, refDate, now)
+  switch (period) {
+    case "day":
+      return current ? "Missed opportunities today" : `Missed ${format(refDate, "MMM d")}`
+    case "week":
+      return current ? "Missed this week" : "Missed that week"
+    case "month":
+      return current ? "Missed this month" : `Missed ${format(refDate, "MMMM yyyy")}`
+    default:
+      return "Missed opportunities"
   }
 }
 

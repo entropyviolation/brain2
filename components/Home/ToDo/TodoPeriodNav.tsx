@@ -1,12 +1,10 @@
 /**
  * components/Home/ToDo/TodoPeriodNav.tsx — Date navigation for To-Do periods
  *
- * Prev / Today / Next controls shared by day, week, and month tabs.
+ * Prev / centered label / Next / Today — same furniture as Plan’s period toolbar.
  */
 "use client"
 
-import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight, Calendar } from "lucide-react"
 import { navigateDate } from "@/components/Scheduler/scheduler-utils"
 import { getPeriodNavLabel, isCurrentPeriod, type TodoPeriod } from "./todo-utils"
 
@@ -20,38 +18,38 @@ export function TodoPeriodNav({
   onFocusedDateChange: (date: Date) => void
 }) {
   const atCurrent = isCurrentPeriod(period, focusedDate)
+  const prevLabel = period === "day" ? "Previous day" : period === "week" ? "Previous week" : "Previous month"
+  const nextLabel = period === "day" ? "Next day" : period === "week" ? "Next week" : "Next month"
 
   return (
-    <div className="flex flex-wrap items-center gap-2 mb-4">
-      <Button
-        variant="outline"
-        size="icon"
-        className="h-8 w-8"
+    <div className="todo-period">
+      <button
+        type="button"
+        className="todo-btn todo-btn-icon"
         title="Previous"
+        aria-label={prevLabel}
         onClick={() => onFocusedDateChange(navigateDate(focusedDate, period, -1))}
       >
-        <ChevronLeft className="h-4 w-4" />
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        className="h-8"
+        ‹
+      </button>
+      <h3>{getPeriodNavLabel(period, focusedDate)}</h3>
+      <button
+        type="button"
+        className="todo-btn todo-btn-icon"
+        title="Next"
+        aria-label={nextLabel}
+        onClick={() => onFocusedDateChange(navigateDate(focusedDate, period, 1))}
+      >
+        ›
+      </button>
+      <button
+        type="button"
+        className="todo-btn"
         disabled={atCurrent}
         onClick={() => onFocusedDateChange(new Date())}
       >
-        <Calendar className="h-3.5 w-3.5 mr-1.5" />
         Today
-      </Button>
-      <Button
-        variant="outline"
-        size="icon"
-        className="h-8 w-8"
-        title="Next"
-        onClick={() => onFocusedDateChange(navigateDate(focusedDate, period, 1))}
-      >
-        <ChevronRight className="h-4 w-4" />
-      </Button>
-      <span className="text-sm font-medium text-muted-foreground ml-1">{getPeriodNavLabel(period, focusedDate)}</span>
+      </button>
     </div>
   )
 }

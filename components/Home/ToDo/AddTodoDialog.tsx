@@ -1,20 +1,13 @@
 /**
  * components/Home/ToDo/AddTodoDialog.tsx — "Add Task" dialog for the To-Do panel
  *
- * Collects a description and tier for a new task. The task is scheduled to the
- * To-Do panel's active period (day/week/month) at the focused date — no specific
- * day is forced for week/month lists. Self-contained form state; emits a
- * completed draft via `onAdd`.
+ * Collects a description and tier. Scheduled to the active period at the
+ * focused date. Self-contained form state; emits a completed draft via `onAdd`.
  */
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus } from "lucide-react"
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import type { TodoItem } from "@/lib/types"
 
 export interface NewTodoDraft {
@@ -41,46 +34,46 @@ export function AddTodoDialog({ onAdd }: { onAdd: (draft: NewTodoDraft) => void 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
+        <button type="button" className="todo-btn">
           Add Task
-        </Button>
+        </button>
       </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
+      <DialogContent className="todo95-dialog" hideClose aria-describedby={undefined}>
+        <div className="todo-dialog-caption">
           <DialogTitle>Add New Task</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="todo-description">Description</Label>
-            <Input
-              id="todo-description"
-              value={draft.description}
-              onChange={(e) => setDraft({ ...draft, description: e.target.value })}
-              placeholder="Task description"
-            />
-          </div>
+        </div>
+        <div className="todo-dialog-body">
+          <label htmlFor="todo-description">Description</label>
+          <input
+            id="todo-description"
+            value={draft.description}
+            onChange={(e) => setDraft({ ...draft, description: e.target.value })}
+            placeholder="Task description"
+            onKeyDown={(e) => e.key === "Enter" && submit()}
+          />
 
-          <div>
-            <Label htmlFor="todo-tier">Tier</Label>
-            <Select value={draft.tier} onValueChange={(value) => setDraft({ ...draft, tier: value as TodoItem["tier"] })}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="A+">A+ (Critical)</SelectItem>
-                <SelectItem value="A">A (High)</SelectItem>
-                <SelectItem value="A/B">A/B (Medium-High)</SelectItem>
-                <SelectItem value="B">B (Medium)</SelectItem>
-                <SelectItem value="C">C (Low)</SelectItem>
-                <SelectItem value="D">D (Very Low)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <label htmlFor="todo-tier">Tier</label>
+          <select
+            id="todo-tier"
+            value={draft.tier}
+            onChange={(e) => setDraft({ ...draft, tier: e.target.value as TodoItem["tier"] })}
+          >
+            <option value="A+">A+ (Critical)</option>
+            <option value="A">A (High)</option>
+            <option value="A/B">A/B (Medium-High)</option>
+            <option value="B">B (Medium)</option>
+            <option value="C">C (Low)</option>
+            <option value="D">D (Very Low)</option>
+          </select>
 
-          <Button onClick={submit} className="w-full">
-            Add Task
-          </Button>
+          <div className="todo-dialog-actions">
+            <button type="button" className="todo-btn" onClick={() => setOpen(false)}>
+              Cancel
+            </button>
+            <button type="button" className="todo-btn" onClick={submit}>
+              Add Task
+            </button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

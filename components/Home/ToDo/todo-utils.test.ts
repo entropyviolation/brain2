@@ -4,6 +4,7 @@ import {
   tierToUrgencyImportance,
   buildTodoItems,
   buildDoneTodoItems,
+  buildMissedTodoItems,
   filterAndSortTodos,
   sortTodosByPriority,
   sortTodos,
@@ -13,9 +14,13 @@ import {
   taskCompletedOnDay,
   getTodoOpenTitle,
   getTodoDoneTitle,
+  getTodoMissedTitle,
   defaultCompletionReview,
   createScheduledTodoTask,
   getMonthKey,
+  filterTodosAvailableNow,
+  countInProgress,
+  formatWipWarning,
 } from "./todo-utils"
 import { getWeekString } from "@/lib/date-utils"
 import { DEFAULT_PRIORITY_WEIGHTS } from "@/lib/priority"
@@ -26,6 +31,7 @@ const now = new Date("2026-06-20T12:00:00")
 const task = (overrides: Partial<Task>): Task => ({
   id: "t1",
   description: "Task",
+  type: "task",
   stage: "scheduled",
   createdAt: now,
   completed: false,
@@ -62,6 +68,18 @@ describe("buildTodoItems", () => {
       now,
     )
     expect(items.map((i) => i.id)).toEqual(["a"])
+  })
+
+  it("excludes missed opportunities from the open list", () => {
+    const items = buildTodoItems(
+      [
+        task({ id: "open", scheduledDate: now }),
+        task({ id: "late", scheduledDate: now, status: "missed", missedAt: now }),
+      ],
+      true,
+      now,
+    )
+    expect(items.map((i) => i.id)).toEqual(["open"])
   })
 
   it("computes overdue days from the scheduled date", () => {
@@ -323,10 +341,26 @@ describe("buildDoneTodoItems", () => {
   })
 })
 
+describe("buildMissedTodoItems", () => {
+  it("includes only tasks marked missed on the focused day", () => {
+    const items = buildMissedTodoItems(
+      [
+        task({ id: "late-today", status: "missed", missedAt: new Date("2026-06-20T10:00:00") }),
+        task({ id: "late-yesterday", status: "missed", missedAt: new Date("2026-06-19T10:00:00") }),
+        task({ id: "done-today", completed: true, completedDate: new Date("2026-06-20T10:00:00") }),
+      ],
+      "day",
+      now,
+    )
+    expect(items.map((i) => i.id)).toEqual(["late-today"])
+  })
+})
+
 describe("period titles", () => {
   it("uses current-period labels for today", () => {
     expect(getTodoOpenTitle("day", now, now)).toBe("Today's Tasks")
     expect(getTodoDoneTitle("day", now, now)).toBe("Done Today")
+    expect(getTodoMissedTitle("day", now, now)).toBe("Missed opportunities today")
   })
 
   it("uses dated labels when browsing another day", () => {
@@ -364,5 +398,43 @@ describe("createScheduledTodoTask", () => {
     const monthTask = createScheduledTodoTask({ description: "month item", period: "month", date: now })
     expect(monthTask.scheduledMonth).toBe(getMonthKey(now))
     expect(monthTask.scheduledDate).toBeUndefined()
+  })
+})
+
+describe("filterTodosAvailableNow", () => {
+  it("is a no-op when the filter is off", () => {
+    const tasks = [
+      task({ id: "ready", scheduledDate: now }),
+      task({ id: "blocked", scheduledDate: now, dependencies: ["dep"] }),
+      task({ id: "dep", completed: false }),
+    ]
+    const items = buildTodoItems(tasks, false, now)
+    expect(filterTodosAvailableNow(items, tasks, false).map((i) => i.id)).toEqual(["ready", "blocked"])
+  })
+
+  it("hides rows with unmet dependencies when on", () => {
+    const tasks = [
+      task({ id: "ready", scheduledDate: now }),
+      task({ id: "blocked", scheduledDate: now, dependencies: ["dep"] }),
+      task({ id: "done-dep", scheduledDate: now, dependencies: ["finished"] }),
+      task({ id: "dep", completed: false }),
+      task({ id: "finished", completed: true }),
+    ]
+    const items = buildTodoItems(tasks, false, now)
+    expect(filterTodosAvailableNow(items, tasks, true).map((i) => i.id)).toEqual(["ready", "done-dep"])
+  })
+})
+
+describe("WIP helpers", () => {
+  it("counts partial incomplete tasks and warns only over the cap", () => {
+    const tasks = [
+      task({ id: "a", status: "partial" }),
+      task({ id: "b", status: "partial" }),
+      task({ id: "c", status: "active" }),
+      task({ id: "d", status: "partial", completed: true }),
+    ]
+    expect(countInProgress(tasks)).toBe(2)
+    expect(formatWipWarning(2, 3)).toBeNull()
+    expect(formatWipWarning(4, 3)).toBe("4 in progress (cap 3) — warning only, not a block")
   })
 })

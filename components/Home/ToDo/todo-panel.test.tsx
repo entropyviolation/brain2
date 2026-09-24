@@ -1,9 +1,10 @@
 import { fireEvent, render, screen, within } from "@testing-library/react"
-import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { useTaskStore } from "@/lib/task-store"
 import { getScheduleableCategoryIds, isTaskScheduleable } from "@/components/Scheduler/scheduler-utils"
+import { TODO_PREFS_KEY, resetTodoPrefsForTests } from "./todo-prefs"
+import { orbFor } from "@/components/Icons"
 import { TodoPanel } from "./todo-panel"
 
 vi.mock("@/components/ItemDetail/ItemDetailPopup", () => ({
@@ -17,6 +18,7 @@ describe("TodoPanel", () => {
     vi.useFakeTimers()
     vi.setSystemTime(today)
     resetAllStores()
+    resetTodoPrefsForTests()
     useTaskStore.getState().setTasks([
       {
         id: "todo-1",
@@ -41,16 +43,20 @@ describe("TodoPanel", () => {
   })
 
   afterEach(() => {
+    resetTodoPrefsForTests()
     vi.useRealTimers()
   })
 
   it("renders todo panel header and day tab", () => {
-    render(<TodoPanel />)
+    const { container } = render(<TodoPanel />)
     expect(screen.getByText("To Do")).toBeInTheDocument()
+    const plate = container.querySelector("[data-desk-plate='todo'] img")
+    expect(plate).toHaveAttribute("src", orbFor("home-todo"))
     expect(screen.getByText("Today's Tasks")).toBeInTheDocument()
     expect(screen.getByText("Finish slides")).toBeInTheDocument()
     expect(screen.getByLabelText("Sort")).toBeInTheDocument()
     expect(screen.getByLabelText("Sort ascending")).toBeInTheDocument()
+    expect(screen.getByLabelText("Available now")).not.toBeChecked()
   })
 
   it("defaults to tier order so higher tiers appear first", () => {
@@ -142,8 +148,7 @@ describe("TodoPanel", () => {
       },
     ])
     render(<TodoPanel />)
-    fireEvent.click(screen.getByLabelText("Sort"))
-    fireEvent.click(screen.getByRole("option", { name: "Name" }))
+    fireEvent.change(screen.getByLabelText("Sort"), { target: { value: "name" } })
     const apple = screen.getByText("Apple")
     const zebra = screen.getByText("Zebra")
     expect(apple.compareDocumentPosition(zebra) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
@@ -161,11 +166,22 @@ describe("TodoPanel", () => {
     expect(updated.completedDate).toBeTruthy()
   })
 
+  it("files a task as a missed opportunity instead of completing it", () => {
+    render(<TodoPanel />)
+    screen.getByTitle("Missed opportunity — too late").click()
+    const updated = useTaskStore.getState().tasks[0]
+    expect(updated.completed).toBe(false)
+    expect(updated.status).toBe("missed")
+    expect(updated.missedAt).toBeTruthy()
+    expect(screen.getByText("Missed opportunities today")).toBeInTheDocument()
+  })
+
   it("shows a collapsible done section for the active period", () => {
     useTaskStore.getState().setTasks([
       {
         id: "done-1",
         description: "Shipped hotfix",
+        type: "task",
         stage: "completed",
         createdAt: today,
         completed: true,
@@ -206,5 +222,107 @@ describe("TodoPanel", () => {
     expect(created?.scheduleable).toBe(true)
     // The Scheduler gate now lets this task through even though it has no list.
     expect(isTaskScheduleable(created!, getScheduleableCategoryIds([]))).toBe(true)
+  })
+
+  it("hides tasks with unmet dependencies when Available now is on", () => {
+    useTaskStore.getState().setTasks([
+      {
+        id: "ready",
+        description: "Ready to start",
+        stage: "scheduled",
+        createdAt: today,
+        completed: false,
+        scheduledDate: today,
+        lists: [],
+        urgency: 3,
+        importance: 3,
+        estimatedDuration: 30,
+        cognitiveLoad: 2,
+        dependencies: [],
+        context: "@work",
+        entropy: 0.5,
+        rewardValue: 1,
+        allowPartialCompletion: false,
+        minimumChunkSize: 15,
+      },
+      {
+        id: "blocked",
+        description: "Waiting on dep",
+        stage: "scheduled",
+        createdAt: today,
+        completed: false,
+        scheduledDate: today,
+        lists: [],
+        urgency: 3,
+        importance: 3,
+        estimatedDuration: 30,
+        cognitiveLoad: 2,
+        dependencies: ["dep"],
+        context: "@work",
+        entropy: 0.5,
+        rewardValue: 1,
+        allowPartialCompletion: false,
+        minimumChunkSize: 15,
+      },
+      {
+        id: "dep",
+        description: "The blocker",
+        stage: "scheduled",
+        createdAt: today,
+        completed: false,
+        lists: [],
+        urgency: 3,
+        importance: 3,
+        estimatedDuration: 30,
+        cognitiveLoad: 2,
+        dependencies: [],
+        context: "@work",
+        entropy: 0.5,
+        rewardValue: 1,
+        allowPartialCompletion: false,
+        minimumChunkSize: 15,
+      },
+    ])
+    render(<TodoPanel />)
+    expect(screen.getByText("Ready to start")).toBeInTheDocument()
+    expect(screen.getByText("Waiting on dep")).toBeInTheDocument()
+
+    fireEvent.click(screen.getByLabelText("Available now"))
+    expect(screen.getByText("Ready to start")).toBeInTheDocument()
+    expect(screen.queryByText("Waiting on dep")).not.toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem(TODO_PREFS_KEY) ?? "{}").availableNow).toBe(true)
+  })
+
+  it("warns in chrome when in-progress count exceeds the soft cap", () => {
+    useTaskStore.getState().setTasks(
+      ["one", "two", "three", "four"].map((id, index) => ({
+        id,
+        description: `WIP ${id}`,
+        stage: "scheduled",
+        createdAt: today,
+        completed: false,
+        status: "partial" as const,
+        scheduledDate: today,
+        lists: [],
+        urgency: 3,
+        importance: 3,
+        estimatedDuration: 30,
+        cognitiveLoad: 2,
+        dependencies: [],
+        context: "@work",
+        entropy: 0.5,
+        rewardValue: 1,
+        allowPartialCompletion: false,
+        minimumChunkSize: 15,
+        daysPushed: index,
+      })),
+    )
+    render(<TodoPanel />)
+    expect(screen.getByRole("status")).toHaveTextContent("4 in progress (cap 3)")
+    expect(screen.getByText("WIP one")).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText("In progress cap"), { target: { value: "5" } })
+    expect(screen.queryByRole("status")).not.toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem(TODO_PREFS_KEY) ?? "{}").wipLimit).toBe(5)
   })
 })

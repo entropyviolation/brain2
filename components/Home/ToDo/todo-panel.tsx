@@ -9,49 +9,56 @@
  *   - todo-utils.ts     pure tier/Q-I/build/filter helpers
  *   - TodoTable.tsx     per-period table
  *   - AddTodoDialog.tsx the "Add Task" form
+ *   - todo-desk-plate   the title jewel at photograph size, on the desktop under the window
  *
  * Spec: §8.4 (To-Do panel). Carry-over (§7.7) not yet automated.
  */
 "use client"
 
 import { useMemo, useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
-import { Calendar, Clock, AlertTriangle, SlidersHorizontal, RotateCcw, ArrowUpDown } from "lucide-react"
+import { orbFor } from "@/components/Icons"
 import { useTaskStore } from "@/lib/task-store"
 import { getWeekString, toLocalCalendarDate } from "@/lib/date-utils"
-import { completeTask } from "@/lib/services/completion-service"
+import { completeTask, markMissedOpportunity } from "@/lib/services/completion-service"
 import { pushTask } from "@/lib/services/scheduling-service"
 import { DEFAULT_PRIORITY_WEIGHTS } from "@/lib/priority"
 import { resolveCompletionPoints } from "@/lib/item-utils"
 import { usePointsStore } from "@/lib/points-store"
 import { emitTaskCompleted } from "@/lib/completion-events"
+import { completionWindow } from "@/lib/completion-window"
+import { awakeWindowFor } from "@/lib/sleep-sync"
+import { usePenActionSync } from "@/lib/pen-action-sync"
+import { formatLocalDateKey } from "@/lib/date-utils"
+import { makeEstimate } from "@/lib/estimated-values"
+import { confirmTaskTimes, type ConfirmedTimes } from "@/lib/services/completion-time-service"
+import { useUserSettingsStore } from "@/lib/user-settings-store"
 import type { TodoItem, Task, PriorityWeights, CompletionStatus } from "@/lib/types"
 import { TaskDetailPopup } from "@/components/ItemDetail/ItemDetailPopup"
 import JustStartMode from "@/components/Focus/JustStartMode"
 import { APP_NAV_KEYS } from "@/lib/app-navigation"
 import { usePersistedTab } from "@/lib/use-persisted-tab"
 import { effectiveStatus, withStatus } from "@/lib/completion-status"
+import { localDayKey, useReviewsStore } from "@/lib/reviews-store"
+import { itemTitleOrUntitled } from "@/lib/item-utils"
 import {
   buildTodoItems,
   buildDoneTodoItems,
+  buildMissedTodoItems,
   filterAndSortTodos,
   filterTodosByStatus,
+  filterTodosAvailableNow,
+  countInProgress,
+  formatWipWarning,
   sortTodos,
   tierToUrgencyImportance,
   getTodoOpenTitle,
   getTodoDoneTitle,
+  getTodoMissedTitle,
+  getPeriodNavLabel,
   getMonthKey,
   createScheduledTodoTask,
-  TODO_STATUS_FILTERS,
-  TODO_SORT_OPTIONS,
   DEFAULT_TODO_SORT_ORDER,
-  getTodoSortOptionLabel,
   type TodoPeriod,
   type TodoSortMode,
   type TodoSortOrder,
@@ -61,6 +68,10 @@ import { TodoTable } from "./TodoTable"
 import { AddTodoDialog, type NewTodoDraft } from "./AddTodoDialog"
 import { TodoPeriodNav } from "./TodoPeriodNav"
 import { DoneTodoSection } from "./DoneTodoSection"
+import { MissedTodoSection } from "./MissedTodoSection"
+import { TodoFilters } from "./todo-filters"
+import { useTodoPrefs, setTodoPrefs } from "./todo-prefs"
+import "./todo-chrome.css"
 
 const PRIORITY_WEIGHT_FIELDS: { key: keyof PriorityWeights; label: string; hint: string }[] = [
   { key: "urgency", label: "Urgency", hint: "Higher urgency ranks sooner" },
@@ -71,7 +82,14 @@ const PRIORITY_WEIGHT_FIELDS: { key: keyof PriorityWeights; label: string; hint:
 
 const TODO_TABS = ["day", "week", "month"] as const
 
+/** Assumed length for work logged after the fact, until the user says otherwise. */
+const DEFAULT_LOGGED_DONE_MINUTES = 30
+
+/** Stable empty snapshot for Zustand — `?? []` would allocate every getSnapshot and loop. */
+const EMPTY_PRIORITY_IDS: string[] = []
+
 export function TodoPanel() {
+  usePenActionSync()
   const tasks = useTaskStore((s) => s.tasks)
   const updateTask = useTaskStore((s) => s.updateTask)
   const addTask = useTaskStore((s) => s.addTask)
@@ -84,6 +102,7 @@ export function TodoPanel() {
   const [justStartTaskId, setJustStartTaskId] = useState<string | null>(null)
   const [activeTodoTab, setActiveTodoTab] = usePersistedTab(APP_NAV_KEYS.homeTodoTab, TODO_TABS, "day")
   const [focusedDate, setFocusedDate] = useState(() => new Date())
+  const { availableNow, wipLimit } = useTodoPrefs()
   const [showAllTasks, setShowAllTasks] = useState(false)
   const [statusFilter, setStatusFilter] = useState<TodoStatusFilter>("open")
   const [sortMode, setSortMode] = useState<TodoSortMode>("tier")
@@ -95,6 +114,16 @@ export function TodoPanel() {
     week: false,
     month: false,
   })
+  const [missedSectionsOpen, setMissedSectionsOpen] = useState<Record<TodoPeriod, boolean>>({
+    day: false,
+    week: false,
+    month: false,
+  })
+
+  const focusedDayKey = localDayKey(focusedDate)
+  const morningPriorities = useReviewsStore(
+    (s) => s.getMorningReview(focusedDayKey)?.priorityTaskIds ?? EMPTY_PRIORITY_IDS,
+  )
 
   useEffect(() => {
     setTodoItems(buildTodoItems(tasks, showAllTasks, focusedDate))
@@ -104,7 +133,8 @@ export function TodoPanel() {
     const order = (period: TodoPeriod) => {
       const base = filterAndSortTodos(todoItems, period, showAllTasks, focusedDate)
       const byStatus = filterTodosByStatus(base, tasks, statusFilter)
-      return sortTodos(byStatus, {
+      const available = filterTodosAvailableNow(byStatus, tasks, availableNow)
+      return sortTodos(available, {
         mode: sortMode,
         order: sortOrder,
         period,
@@ -117,7 +147,9 @@ export function TodoPanel() {
       week: order("week"),
       month: order("month"),
     } satisfies Record<TodoPeriod, TodoItem[]>
-  }, [todoItems, showAllTasks, statusFilter, sortMode, sortOrder, tasks, priorityWeights, focusedDate])
+  }, [todoItems, showAllTasks, statusFilter, availableNow, sortMode, sortOrder, tasks, priorityWeights, focusedDate])
+
+  const wipWarning = formatWipWarning(countInProgress(tasks), wipLimit)
 
   const doneByPeriod = useMemo(
     () => ({
@@ -126,6 +158,15 @@ export function TodoPanel() {
       month: buildDoneTodoItems(tasks, "month", focusedDate, folders),
     }),
     [tasks, focusedDate, folders],
+  )
+
+  const missedByPeriod = useMemo(
+    () => ({
+      day: buildMissedTodoItems(tasks, "day", focusedDate),
+      week: buildMissedTodoItems(tasks, "week", focusedDate),
+      month: buildMissedTodoItems(tasks, "month", focusedDate),
+    }),
+    [tasks, focusedDate],
   )
 
   const scheduleTaskForPeriod = (task: Task, period: TodoPeriod, refDate: Date) => {
@@ -152,10 +193,17 @@ export function TodoPanel() {
 
   const handleAddDone = (description: string) => {
     const refDate = toLocalCalendarDate(focusedDate)
-    // Stamp completion at noon of the focused day so it buckets into the period
-    // the user is viewing (and reads naturally regardless of timezone).
-    const completedAt = new Date(refDate)
-    completedAt.setHours(12, 0, 0, 0)
+    // Retroactive capture knows the day but not the hour, so derive a plausible
+    // window (just now for today, otherwise that night's bedtime or the day
+    // anchor) and flag it — an assumed time the user can settle later beats a
+    // silent midday stamp.
+    const window = completionWindow({
+      date: refDate,
+      durationMinutes: DEFAULT_LOGGED_DONE_MINUTES,
+      anchorMinutes: useUserSettingsStore.getState().dayAnchorMinutes,
+      awake: awakeWindowFor(formatLocalDateKey(refDate)),
+    })
+    const completedAt = window.completedAt
     const id = `done-${Date.now()}`
 
     const task: Task = {
@@ -166,11 +214,21 @@ export function TodoPanel() {
       completed: true,
       status: "done",
       completedDate: completedAt,
+      startedAt: window.startedAt,
+      actualDuration: DEFAULT_LOGGED_DONE_MINUTES,
+      estimates: [
+        ...window.estimatedFields.map((field) => makeEstimate(field, window.kind, window.basis)),
+        makeEstimate(
+          "actualDuration",
+          "flat",
+          `${DEFAULT_LOGGED_DONE_MINUTES}m assumed for work logged after the fact`,
+        ),
+      ],
       lists: [],
       scheduleable: true,
       urgency: 3,
       importance: 3,
-      estimatedDuration: 30,
+      estimatedDuration: DEFAULT_LOGGED_DONE_MINUTES,
       cognitiveLoad: 2,
       dependencies: [],
       context: "@general",
@@ -195,12 +253,25 @@ export function TodoPanel() {
     setDoneSectionsOpen((prev) => ({ ...prev, [activeTodoTab]: true }))
   }
 
+  // Settle an autogenerated time from the Done row's "est." chip. A correction is
+  // confirmed too, so the habit sync stops re-deriving over the user's number.
+  const handleConfirmTimes = (taskId: string, values: ConfirmedTimes) => {
+    confirmTaskTimes(taskId, values)
+  }
+
   const handleComplete = (todoId: string) => {
     setTodoItems((items) => items.map((item) => (item.id === todoId ? { ...item, completed: true } : item)))
     const todo = todoItems.find((item) => item.id === todoId)
     // The store stamps `completedDate` on this transition, so the row lands in
     // today's "Done" list no matter which day it was scheduled for.
     completeTask(todo?.taskId ?? todoId)
+  }
+
+  const handleMissed = (todoId: string) => {
+    setTodoItems((items) => items.filter((item) => item.id !== todoId))
+    const todo = todoItems.find((item) => item.id === todoId)
+    markMissedOpportunity(todo?.taskId ?? todoId)
+    setMissedSectionsOpen((prev) => ({ ...prev, [activeTodoTab]: true }))
   }
 
   const handleTierChange = (todoId: string, tier: TodoItem["tier"]) => {
@@ -234,190 +305,189 @@ export function TodoPanel() {
     updateTask(withStatus(task, status))
   }
 
-  const renderTab = (period: TodoPeriod, Icon: typeof Calendar) => (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Icon className="h-5 w-5" />
-          {getTodoOpenTitle(period, focusedDate)}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <TodoPeriodNav period={period} focusedDate={focusedDate} onFocusedDateChange={setFocusedDate} />
-        <TodoTable
-          todos={filteredByPeriod[period]}
-          period={period}
-          isExpanded={!!expandedPeriods[period]}
-          onToggleExpand={() => setExpandedPeriods((prev) => ({ ...prev, [period]: !prev[period] }))}
-          onComplete={handleComplete}
-          onPush={handlePush}
-          onHide={handleHide}
-          onTaskClick={setSelectedTaskId}
-          onTierChange={handleTierChange}
-          onJustStart={setJustStartTaskId}
-          getStatus={getStatus}
-          onStatusChange={handleStatusChange}
-        />
-        <DoneTodoSection
-          title={getTodoDoneTitle(period, focusedDate)}
-          todos={doneByPeriod[period]}
-          tasks={tasks}
-          period={period}
-          open={doneSectionsOpen[period]}
-          onOpenChange={(open) => setDoneSectionsOpen((prev) => ({ ...prev, [period]: open }))}
-          onTaskClick={setSelectedTaskId}
-          onAddDone={handleAddDone}
-        />
-      </CardContent>
-    </Card>
+  const renderTab = (period: TodoPeriod) => (
+    <div className="todo-sheet">
+      <h3 className="todo-sheet-title">{getTodoOpenTitle(period, focusedDate)}</h3>
+      {period === "day" && morningPriorities.length > 0 && (
+        <div className="todo-morning-priorities mb-3 rounded-md border border-dashed p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">
+            Morning priorities
+          </p>
+          <ol className="list-decimal pl-5 text-sm space-y-0.5">
+            {morningPriorities.map((id) => {
+              const task = tasks.find((t) => t.id === id)
+              return (
+                <li key={id}>
+                  <button
+                    type="button"
+                    className="text-left hover:underline"
+                    onClick={() => setSelectedTaskId(id)}
+                  >
+                    {task ? itemTitleOrUntitled(task) : id}
+                  </button>
+                </li>
+              )
+            })}
+          </ol>
+        </div>
+      )}
+      <TodoTable
+        todos={filteredByPeriod[period]}
+        period={period}
+        isExpanded={!!expandedPeriods[period]}
+        onToggleExpand={() => setExpandedPeriods((prev) => ({ ...prev, [period]: !prev[period] }))}
+        onComplete={handleComplete}
+        onMissed={handleMissed}
+        onPush={handlePush}
+        onHide={handleHide}
+        onTaskClick={setSelectedTaskId}
+        onTierChange={handleTierChange}
+        onJustStart={setJustStartTaskId}
+        getStatus={getStatus}
+        onStatusChange={handleStatusChange}
+      />
+      <DoneTodoSection
+        title={getTodoDoneTitle(period, focusedDate)}
+        todos={doneByPeriod[period]}
+        tasks={tasks}
+        period={period}
+        open={doneSectionsOpen[period]}
+        onOpenChange={(open) => setDoneSectionsOpen((prev) => ({ ...prev, [period]: open }))}
+        onTaskClick={setSelectedTaskId}
+        onAddDone={handleAddDone}
+        onConfirmTimes={handleConfirmTimes}
+      />
+      <MissedTodoSection
+        title={getTodoMissedTitle(period, focusedDate)}
+        todos={missedByPeriod[period]}
+        tasks={tasks}
+        period={period}
+        open={missedSectionsOpen[period]}
+        onOpenChange={(open) => setMissedSectionsOpen((prev) => ({ ...prev, [period]: open }))}
+        onTaskClick={setSelectedTaskId}
+      />
+    </div>
   )
 
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold">To Do</h2>
-          <p className="text-muted-foreground">Tier-based task management with overdue tracking</p>
-        </div>
+  const periodLabel = activeTodoTab === "day" ? "Day view" : activeTodoTab === "week" ? "Week view" : "Month view"
+  const openCount = filteredByPeriod[activeTodoTab].length
 
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center gap-2">
-            <Label htmlFor="todo-sort" className="text-sm font-medium leading-none">
-              Sort
-            </Label>
-            <Select
-              value={sortMode}
-              onValueChange={(value) => {
-                const mode = value as TodoSortMode
+  return (
+    <div
+      className="todo95"
+      data-ui-name="To Do"
+      data-ui-help="Day, week, and month tasks with filters, Done, and missed opportunities."
+      data-ui-docs="components/Home/ToDo/README.md"
+    >
+      <div className="todo-window">
+        <Tabs
+          value={activeTodoTab}
+          className="flex min-h-0 flex-1 flex-col"
+          onValueChange={(v) => setActiveTodoTab(v as TodoPeriod)}
+        >
+          <div className="todo-fascia">
+            <div className="todo-fascia-row">
+              <div className="todo-mark">
+                <img src={orbFor("home-todo")} alt="" className="todo-title-orb" />
+                <h2>To Do</h2>
+                <span className="todo-mark-count">{openCount}</span>
+              </div>
+              <TodoPeriodNav period={activeTodoTab} focusedDate={focusedDate} onFocusedDateChange={setFocusedDate} />
+              <AddTodoDialog onAdd={handleAddTodo} />
+              <TabsList className="todo-view-keys">
+                <TabsTrigger value="day">Day</TabsTrigger>
+                <TabsTrigger value="week">Week</TabsTrigger>
+                <TabsTrigger value="month">Month</TabsTrigger>
+              </TabsList>
+            </div>
+            <TodoFilters
+              period={activeTodoTab}
+              availableNow={availableNow}
+              onAvailableNowChange={(value) => setTodoPrefs({ availableNow: value })}
+              showAllTasks={showAllTasks}
+              onShowAllTasksChange={setShowAllTasks}
+              statusFilter={statusFilter}
+              onStatusFilterChange={setStatusFilter}
+              sortMode={sortMode}
+              onSortModeChange={(mode) => {
                 setSortMode(mode)
                 setSortOrder(DEFAULT_TODO_SORT_ORDER[mode])
               }}
-            >
-              <SelectTrigger id="todo-sort" className="w-44 h-8">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {TODO_SORT_OPTIONS.map(({ value }) => (
-                  <SelectItem key={value} value={value}>
-                    {getTodoSortOptionLabel(value, activeTodoTab)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="h-8 w-8"
-              title={sortOrder === "asc" ? "Ascending — click for descending" : "Descending — click for ascending"}
-              aria-label={sortOrder === "asc" ? "Sort ascending" : "Sort descending"}
-              onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-            >
-              <ArrowUpDown className="h-3 w-3" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              title="View / reweight the priority formula"
-              onClick={() => setShowFormula((v) => !v)}
-            >
-              <SlidersHorizontal className="h-4 w-4" />
-            </Button>
+              sortOrder={sortOrder}
+              onSortOrderChange={setSortOrder}
+              onToggleFormula={() => setShowFormula((v) => !v)}
+              wipLimit={wipLimit}
+              onWipLimitChange={(value) => setTodoPrefs({ wipLimit: value })}
+            />
           </div>
-          <div className="flex items-center gap-2">
-            <Label htmlFor="status-filter" className="text-sm font-medium leading-none">
-              Status
-            </Label>
-            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as TodoStatusFilter)}>
-              <SelectTrigger id="status-filter" className="w-40 h-8">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {TODO_STATUS_FILTERS.map(({ value, label }) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
-                  </SelectItem>
+
+          {wipWarning && (
+            <p className="todo-wip" role="status">
+              {wipWarning}
+            </p>
+          )}
+
+          {showFormula && (
+            <div className="todo-formula">
+              <div className="todo-formula-head">
+                <div>
+                  <h3>Priority formula</h3>
+                  <p className="todo-hint">
+                    score = w·urgency + w·importance + w·(quick win) + w·entropy. Set a weight to 0 to ignore that
+                    signal.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="todo-btn"
+                  onClick={() => updatePriorityWeights({ ...DEFAULT_PRIORITY_WEIGHTS })}
+                >
+                  Reset
+                </button>
+              </div>
+              <div className="todo-formula-grid">
+                {PRIORITY_WEIGHT_FIELDS.map(({ key, label, hint }) => (
+                  <label key={key}>
+                    <div className="todo-label">{label}</div>
+                    <input
+                      id={`pw-${key}`}
+                      type="number"
+                      min="0"
+                      step="0.25"
+                      value={priorityWeights[key]}
+                      onChange={(e) => {
+                        const n = Number.parseFloat(e.target.value)
+                        updatePriorityWeights({
+                          ...priorityWeights,
+                          [key]: Number.isFinite(n) && n >= 0 ? n : 0,
+                        })
+                      }}
+                    />
+                    <p className="todo-hint">{hint}</p>
+                  </label>
                 ))}
-              </SelectContent>
-            </Select>
+              </div>
+            </div>
+          )}
+
+          <div className="todo-body">
+            <TabsContent value="day">{renderTab("day")}</TabsContent>
+            <TabsContent value="week">{renderTab("week")}</TabsContent>
+            <TabsContent value="month">{renderTab("month")}</TabsContent>
           </div>
-          <Label htmlFor="show-all-tasks" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed">
-            Show All Tasks
-          </Label>
-          <Switch id="show-all-tasks" checked={showAllTasks} onCheckedChange={(checked) => setShowAllTasks(checked)} />
-          <AddTodoDialog onAdd={handleAddTodo} />
+        </Tabs>
+
+        <div className="todo-status">
+          <span>
+            {periodLabel} · {getPeriodNavLabel(activeTodoTab, focusedDate)}
+          </span>
+          <span className="todo-status-count">{openCount} open</span>
         </div>
       </div>
 
-      {showFormula && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <SlidersHorizontal className="h-4 w-4" />
-                Priority formula
-              </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 gap-1 text-xs"
-                onClick={() => updatePriorityWeights({ ...DEFAULT_PRIORITY_WEIGHTS })}
-              >
-                <RotateCcw className="h-3 w-3" />
-                Reset
-              </Button>
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              score = w·urgency + w·importance + w·(quick win) + w·entropy. Set a weight to 0 to ignore that signal.
-            </p>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {PRIORITY_WEIGHT_FIELDS.map(({ key, label, hint }) => (
-                <div key={key} className="space-y-1">
-                  <Label htmlFor={`pw-${key}`} className="text-sm">
-                    {label}
-                  </Label>
-                  <Input
-                    id={`pw-${key}`}
-                    type="number"
-                    min="0"
-                    step="0.25"
-                    value={priorityWeights[key]}
-                    onChange={(e) => {
-                      const n = Number.parseFloat(e.target.value)
-                      updatePriorityWeights({
-                        ...priorityWeights,
-                        [key]: Number.isFinite(n) && n >= 0 ? n : 0,
-                      })
-                    }}
-                  />
-                  <p className="text-xs text-muted-foreground">{hint}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <Tabs value={activeTodoTab} className="w-full" onValueChange={(v) => setActiveTodoTab(v as TodoPeriod)}>
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="day">Day</TabsTrigger>
-          <TabsTrigger value="week">Week</TabsTrigger>
-          <TabsTrigger value="month">Month</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="day" className="mt-6">
-          {renderTab("day", Calendar)}
-        </TabsContent>
-        <TabsContent value="week" className="mt-6">
-          {renderTab("week", Clock)}
-        </TabsContent>
-        <TabsContent value="month" className="mt-6">
-          {renderTab("month", AlertTriangle)}
-        </TabsContent>
-      </Tabs>
+      <div className="todo-desk-plate" data-desk-plate="todo" aria-hidden="true">
+        <img src={orbFor("home-todo")} alt="" draggable={false} />
+      </div>
 
       <TaskDetailPopup taskId={selectedTaskId} open={!!selectedTaskId} onClose={() => setSelectedTaskId(null)} />
 

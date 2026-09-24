@@ -1,0 +1,840 @@
+/**
+ * components/Home/ToDo/todo-chrome.css — milled fascia for Home → To Do
+ *
+ * Title, period, Day/Week/Month, and the Show / Sort / Pace bays share the
+ * header language (docs/DESIGN_STYLE.md#milled-fascia). The list well stays
+ * a sunken sheet. Portaled dialogs use `.todo95-dialog`.
+ */
+
+.todo95 {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  --td-surface: var(--chrome-face, #c0c0c0);
+  --td-face: var(--chrome-mid, #dfdfdf);
+  --td-highlight: var(--chrome-hi, #ffffff);
+  --td-shadow: var(--chrome-lo, #808080);
+  --td-frame: var(--chrome-frame, #0a0a0a);
+  --td-blue: #000080;
+  --td-blue-light: #1084d0;
+  --td-ink: #111111;
+  --td-crt: var(--hab-crt-green, #7dffc4);
+  --td-raised: inset -1px -1px var(--td-frame), inset 1px 1px var(--td-highlight),
+    inset -2px -2px var(--td-shadow), inset 2px 2px var(--td-face);
+  --td-sunken: inset -1px -1px var(--td-highlight), inset 1px 1px var(--td-frame),
+    inset -2px -2px var(--td-face), inset 2px 2px var(--td-shadow);
+  --td-field: inset -1px -1px var(--td-highlight), inset 1px 1px var(--td-shadow),
+    inset -2px -2px var(--td-face), inset 2px 2px var(--td-frame);
+
+  font-family: var(--w95-font, Tahoma, "MS Sans Serif", Geneva, sans-serif);
+  font-size: 12px;
+  color: var(--td-ink);
+  -webkit-font-smoothing: none;
+  --muted-foreground: 0 0% 25%;
+  accent-color: var(--td-blue);
+}
+
+.todo95 .todo-window {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 520px;
+  height: 100%;
+  flex: 1;
+  padding: 3px;
+  background: var(--td-surface);
+  box-shadow: var(--td-raised);
+}
+
+.todo95 .todo-fascia {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 3px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
+    linear-gradient(165deg, #d4d8dc 0%, var(--td-surface) 48%, #969a9e 100%);
+  box-shadow:
+    0 0 0 1px #5c6064,
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -1px 0 rgba(40, 42, 46, 0.4),
+    inset 0 0 0 2px #b0b4b8;
+}
+
+.todo95 .todo-fascia-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.todo95 .todo-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 4px 8px 4px 6px;
+  border-radius: 2px;
+  background:
+    radial-gradient(ellipse at 18% 0%, rgba(125, 255, 196, 0.14), transparent 46%),
+    #070c0a;
+  box-shadow:
+    0 0 0 1px #3a3e42,
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 10px 14px rgba(0, 0, 0, 0.4);
+}
+
+.todo95 .todo-mark h2 {
+  margin: 0;
+  color: var(--td-crt) !important;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-shadow: 0 0 3px var(--td-crt);
+}
+
+.todo95 .todo-mark-count {
+  min-width: 1.6em;
+  padding: 2px 6px;
+  border-radius: 2px;
+  color: #d8fff0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-align: center;
+  background: rgba(125, 255, 196, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(125, 255, 196, 0.35);
+}
+
+.todo95 .todo-title-orb {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.todo95 .todo-time label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.todo95 .todo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 5px 12px 6px;
+  border: 0;
+  border-radius: 2px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #1c1e20;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
+    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--td-surface) 70%, #9a9ea2 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 0 -1px 0 rgba(55, 58, 62, 0.45),
+    0 0 0 1px #4a4e52,
+    0 1px 0 #6a6e72;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.todo95 .todo-btn:hover:not(:disabled) {
+  filter: brightness(1.04);
+}
+
+.todo95 .todo-btn:not(:disabled):active,
+.todo95 .todo-btn[aria-expanded="true"],
+.todo95 .todo-btn[aria-pressed="true"] {
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.35),
+    0 0 0 1px #3a3e42;
+}
+
+.todo95 .todo-btn:disabled {
+  color: #808080;
+  cursor: default;
+}
+
+.todo95 .todo-btn-icon {
+  min-width: 22px;
+  padding: 1px 6px;
+  font-weight: bold;
+}
+
+.todo95 .todo-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.todo95 .todo-bay {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 12px 10px 10px;
+  border: 0;
+  border-radius: 3px;
+  min-width: 0;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.08), transparent 30%),
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
+    #c4c8cc;
+  box-shadow:
+    0 0 0 1px #6a6e72,
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    inset 0 2px 3px rgba(0, 0, 0, 0.12);
+}
+
+.todo95 .todo-bay legend {
+  position: absolute;
+  top: 0;
+  left: 10px;
+  transform: translateY(-50%);
+  padding: 1px 6px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #2a2c2e;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  background: linear-gradient(180deg, #eef0f2, #c8cccf);
+}
+
+.todo95 .todo-key-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 4px 10px;
+  border-radius: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 28%),
+    linear-gradient(165deg, #eceef0, #c0c4c8);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1px #4a4e52;
+  cursor: pointer;
+}
+
+.todo95 .todo-key-check:has(input:checked) {
+  color: #083024;
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.28),
+    0 0 0 1px #1a6b48;
+}
+
+.todo95 .todo-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+  color: #2a2c2e;
+}
+
+.todo95 .todo-check-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.todo95 .todo-hint {
+  margin: 0;
+  font-size: 10px;
+  color: #404040;
+  max-width: 16rem;
+}
+
+.todo95 .todo-bay select,
+.todo95 .todo-bay input[type="number"],
+.todo95 .todo-sheet select,
+.todo95 .todo-formula input[type="number"],
+.todo95 .todo-time input {
+  min-height: 22px;
+  padding: 1px 4px;
+  font: inherit;
+  font-size: 11px;
+  color: #000;
+  background: #fff;
+  border: 0;
+  box-shadow: var(--td-field);
+}
+
+.todo95 .todo-bay select,
+.todo95 .todo-bay input[type="number"] {
+  width: 100%;
+  border-radius: 2px;
+  background:
+    linear-gradient(180deg, #f4f6f8, #e4e6e8);
+}
+
+.todo95 .todo-filter-field {
+  min-width: 9rem;
+}
+
+.todo95 .todo-filter-row {
+  display: flex;
+  gap: 6px;
+  align-items: flex-end;
+}
+
+.todo95 .todo-wip {
+  margin: 8px 10px 0;
+  padding: 6px 12px;
+  border-radius: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ffd27a;
+  text-shadow: 0 0 3px #ffd27a;
+  background: #070c0a;
+  box-shadow:
+    0 0 0 1px #3a3e42,
+    inset 0 8px 12px rgba(0, 0, 0, 0.4);
+}
+
+.todo95 .todo-formula {
+  margin: 0 8px 8px;
+  padding: 8px;
+  background: var(--td-face);
+  box-shadow: var(--td-sunken);
+}
+
+.todo95 .todo-formula-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.todo95 .todo-formula h3 {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--td-blue);
+}
+
+.todo95 .todo-formula-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.todo95 .todo-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  min-height: 0;
+  padding: 8px;
+  flex: 1;
+}
+
+.todo95 .todo-body [data-state="active"][role="tabpanel"] {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+.todo95 .todo-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  flex: 1;
+}
+
+.todo95 .todo-period {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  margin-right: auto;
+}
+
+.todo95 .todo-period h3 {
+  margin: 0;
+  min-height: 30px;
+  padding: 6px 14px 7px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 2px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #2a2c2e !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  background-image:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0 1px, transparent 1px 2px),
+    linear-gradient(180deg, #eef0f2 0%, var(--td-surface) 48%, #a4a8ac 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1px #6a6e72;
+}
+
+body.win95-app .todo95 .todo-view-keys[role="tablist"] {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  padding: 4px;
+  border-radius: 3px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
+    #b4b8bc;
+  box-shadow:
+    0 0 0 1px #5c6064,
+    inset 0 2px 3px rgba(0, 0, 0, 0.18);
+}
+
+body.win95-app .todo95 .todo-view-keys [role="tab"] {
+  min-height: 28px;
+  padding: 4px 12px 5px;
+  border-radius: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #1c1e20;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 28%),
+    linear-gradient(165deg, #eceef0, #c0c4c8);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1px #4a4e52;
+}
+
+body.win95-app .todo95 .todo-view-keys [role="tab"][data-state="active"] {
+  color: #7dffc4;
+  font-weight: 700;
+  text-shadow: 0 0 3px #7dffc4;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.2), transparent 55%),
+    #070c0a;
+  box-shadow:
+    0 0 0 1px #3a3e42,
+    inset 0 8px 10px rgba(0, 0, 0, 0.4);
+}
+
+.todo95 .todo-sheet-title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #2a2c2e;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+.todo95 .todo-table {
+  flex: 1;
+  min-height: 12rem;
+  overflow: auto;
+  background: #fff;
+  box-shadow: var(--td-sunken);
+}
+
+.todo95 .todo-table-head,
+.todo95 .todo-row {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1.6fr) 7.5rem 4.5rem 4.2rem minmax(14rem, auto);
+  gap: 6px;
+  align-items: center;
+  padding: 6px 8px;
+}
+
+.todo95 .todo-table-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  font-size: 11px;
+  font-weight: bold;
+  color: var(--td-blue);
+  background: var(--td-face);
+  box-shadow: inset 0 -1px var(--td-shadow);
+}
+
+.todo95 .todo-row {
+  cursor: pointer;
+  border-bottom: 1px solid color-mix(in srgb, #3a6b4a 22%, transparent);
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 11px,
+    color-mix(in srgb, #3a6b4a 9%, transparent) 11px,
+    color-mix(in srgb, #3a6b4a 9%, transparent) 12px
+  );
+  background-size: 48px 1px;
+  background-repeat: repeat-x;
+  background-position: 0 100%;
+}
+
+.todo95 .todo-row:hover {
+  background-color: #e8f3ec;
+}
+
+.todo95 .todo-row-name {
+  font-weight: bold;
+  color: #111;
+}
+
+.todo95 .todo-row-meta {
+  margin-top: 2px;
+  font-size: 10px;
+  color: #404040;
+}
+
+.todo95 .todo-center {
+  text-align: center;
+}
+
+.todo95 .todo-pushed.is-hot {
+  color: #9a3412;
+  font-weight: bold;
+}
+
+.todo95 .todo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.todo95 .todo-empty {
+  padding: 24px 12px;
+  text-align: center;
+  color: #404040;
+}
+
+.todo95 .todo-more {
+  width: 100%;
+  min-height: 24px;
+  border: 0;
+  font: inherit;
+  font-size: 11px;
+  font-weight: bold;
+  color: #000;
+  background: var(--td-face);
+  box-shadow: inset 0 1px var(--td-highlight), inset 0 -1px var(--td-shadow);
+  cursor: pointer;
+}
+
+.todo95 .todo-section {
+  margin: 0;
+  padding: 8px;
+  min-width: 0;
+  border: 0;
+  background: var(--td-face);
+  box-shadow: var(--td-sunken);
+}
+
+.todo95 .todo-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 6px;
+}
+
+.todo95 .todo-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 11px;
+  font-weight: bold;
+  color: var(--td-blue);
+  cursor: pointer;
+}
+
+.todo95 .todo-count {
+  font-weight: normal;
+  color: #404040;
+}
+
+.todo95 .todo-est {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 5px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #9a3412;
+  background: #fff;
+  border: 1px dashed #d97706;
+  cursor: pointer;
+}
+
+.todo95 .todo-est[disabled] {
+  cursor: default;
+}
+
+.todo95 .todo-done-row,
+.todo95 .todo-missed-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 4px;
+  cursor: pointer;
+  background: #fff;
+  box-shadow: inset 0 -1px color-mix(in srgb, #3a6b4a 16%, transparent);
+}
+
+.todo95 .todo-done-row:hover,
+.todo95 .todo-missed-row:hover {
+  background: #e8f3ec;
+}
+
+.todo95 .todo-lamp {
+  width: 10px;
+  height: 10px;
+  margin-top: 4px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  box-shadow: var(--td-sunken), inset 0 0 4px rgba(0, 0, 0, 0.35);
+}
+
+.todo95 .todo-lamp.is-done {
+  background: #3d9a5c;
+}
+
+.todo95 .todo-lamp.is-missed {
+  background: #c45a12;
+}
+
+.todo95 .todo-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 24px;
+  padding: 4px 10px;
+  background: var(--td-surface);
+  box-shadow: var(--td-sunken);
+  font-size: 11px;
+}
+
+.todo95 .todo-status-count {
+  font-variant-numeric: tabular-nums;
+  color: #0a3d2a;
+  text-shadow: 0 0 3px var(--td-crt);
+}
+
+.todo95 select[data-todo-status="done"] {
+  color: #166534;
+}
+.todo95 select[data-todo-status="partial"] {
+  color: #1d4ed8;
+}
+.todo95 select[data-todo-status="deferred"] {
+  color: #a16207;
+}
+.todo95 select[data-todo-status="missed"] {
+  color: #9a3412;
+}
+.todo95 select[data-todo-status="cancelled"] {
+  color: #6b7280;
+  text-decoration: line-through;
+}
+
+.todo95 .todo-time {
+  margin-top: 2px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: #404040;
+}
+
+.todo95 button:focus,
+.todo95 button:focus-visible,
+.todo95 [role="tab"]:focus-visible,
+.todo95 select:focus,
+.todo95 select:focus-visible,
+.todo95 input:focus,
+.todo95 input:focus-visible {
+  outline-width: 1px;
+  outline-style: dotted;
+  outline-color: var(--td-blue);
+  outline-offset: -3px;
+}
+
+.todo95 input:not([type="checkbox"]):not([type="radio"]):focus,
+.todo95 input:not([type="checkbox"]):not([type="radio"]):focus-visible,
+.todo95 select:focus,
+.todo95 select:focus-visible {
+  outline-width: 2px;
+  outline-style: solid;
+  outline-offset: -2px;
+  caret-color: var(--td-blue);
+  box-shadow: var(--td-field), inset 0 0 0 2px var(--td-blue);
+}
+
+.todo95-dialog {
+  max-width: 26rem;
+  padding: 3px;
+  gap: 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--chrome-face, #c0c0c0);
+  color: #000;
+  font-family: var(--w95-font, Tahoma, "MS Sans Serif", Geneva, sans-serif);
+  box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px #808080,
+    inset 2px 2px #dfdfdf;
+  accent-color: #000080;
+}
+
+.todo95-dialog .todo-dialog-caption {
+  display: flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 2px 4px;
+  margin: 0 0 8px;
+  color: #fff;
+  background: linear-gradient(90deg, #000080, #1084d0);
+}
+
+.todo95-dialog .todo-dialog-caption h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: bold;
+  color: #fff !important;
+}
+
+.todo95-dialog .todo-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 10px 10px;
+}
+
+.todo95-dialog label {
+  font-size: 11px;
+  font-weight: bold;
+  color: #000080;
+}
+
+.todo95-dialog p {
+  margin: 0;
+  font-size: 11px;
+  color: #202020;
+}
+
+.todo95-dialog input,
+.todo95-dialog select {
+  width: 100%;
+  min-height: 22px;
+  padding: 2px 4px;
+  font: inherit;
+  font-size: 12px;
+  background: #fff;
+  border: 0;
+  box-shadow: inset -1px -1px #fff, inset 1px 1px #808080, inset -2px -2px #dfdfdf,
+    inset 2px 2px #0a0a0a;
+}
+
+.todo95-dialog input:focus,
+.todo95-dialog select:focus {
+  outline: 2px solid #000080;
+  outline-offset: -2px;
+}
+
+.todo95-dialog .todo-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.todo95-dialog .todo-dialog-actions button,
+.todo95-dialog button.todo-btn {
+  min-height: 22px;
+  padding: 2px 12px;
+  font: inherit;
+  font-size: 11px;
+  color: #000;
+  background: var(--chrome-face, #c0c0c0);
+  border: 0;
+  box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px #808080,
+    inset 2px 2px #dfdfdf;
+}
+
+/* Title jewel at photograph size, on the desktop under the window.
+   The 22px mark stays in the fascia; this one is the same picture, unsized
+   into the field the way it appears when the frame does not catch it. */
+.todo95 .todo-desk-plate {
+  align-self: stretch;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  box-sizing: border-box;
+  min-height: calc(100vh - 4.25rem);
+  margin: 10px 0 0;
+  padding: 0;
+  pointer-events: none;
+  user-select: none;
+  background: none;
+  border: 0;
+  box-shadow: none;
+}
+
+.todo95 .todo-desk-plate img {
+  display: block;
+  width: auto;
+  height: min(92vh, 1080px);
+  max-width: 100%;
+  object-fit: contain;
+  object-position: left bottom;
+  background: none;
+  border: 0;
+  box-shadow: none;
+}
+
+@media (max-width: 720px) {
+  .todo95 .todo-formula-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .todo95 .todo-table-head,
+  .todo95 .todo-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .todo95 .todo-table-head > :not(:first-child) {
+    display: none;
+  }
+}
