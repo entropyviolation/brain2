@@ -1,0 +1,762 @@
+/**
+ * components/baby-animal-nest.css — Header friend + Stardew chat bubble
+ *
+ * Borderless photograph cutout. Request lives in Gallery. Click the photograph
+ * for this friend's instrument (`components/friend-details/`). The photograph is cropped to the frame. Chat and Gallery are a pair of keys beside the name. Chat asks them to speak.
+ * Opening the bubble plays a short CRT power-on on `.baby-nest-crt` only
+ * (glass-edge phosphor → brighten → settle). The bubble line is not a Win95
+ * bevel button. Click it for the mission sheet. The task row opens item
+ * detail above that sheet.
+ */
+
+.baby-nest {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+  width: max-content;
+  max-width: 16rem;
+  min-height: 0;
+  overflow: visible;
+  z-index: 4;
+}
+
+.baby-nest-wordmark {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.baby-nest-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.baby-nest-hit {
+  position: relative;
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  box-shadow: none !important;
+  flex: none;
+  z-index: 1;
+}
+
+.baby-nest-hit:focus-visible {
+  outline: 1px dotted #fff;
+  outline-offset: 3px;
+}
+
+.brain2-mark {
+  margin: 0;
+  font-size: 1.85rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.baby-nest-crt {
+  position: relative;
+  display: block;
+  width: 92px;
+  height: 92px;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  isolation: isolate;
+}
+
+/* Glass-edge phosphor ignition — contained to the CRT well only. */
+.baby-nest-crt.is-powering::before {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  z-index: 2;
+  pointer-events: none;
+  border-radius: 1px;
+  opacity: 0;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, #7dffc4 0%, transparent),
+    inset 0 0 0 color-mix(in srgb, #7dffc4 0%, transparent);
+  animation: baby-nest-crt-edge 560ms ease-out forwards;
+}
+
+/* Brief phosphor bloom behind the glass, then off. */
+.baby-nest-crt.is-powering::after {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: 1px;
+  background: radial-gradient(
+    ellipse 70% 65% at 48% 42%,
+    color-mix(in srgb, #7dffc4 42%, transparent) 0%,
+    color-mix(in srgb, #7dffc4 12%, transparent) 42%,
+    transparent 72%
+  );
+  opacity: 0;
+  mix-blend-mode: screen;
+  animation: baby-nest-crt-bloom 560ms ease-out forwards;
+}
+
+.baby-nest-crt.is-powering .baby-nest-screen {
+  animation: baby-nest-crt-settle 560ms ease-out forwards;
+}
+
+@keyframes baby-nest-crt-edge {
+  0% {
+    opacity: 0;
+    box-shadow:
+      inset 0 0 0 0 transparent,
+      inset 0 0 0 transparent;
+  }
+  14% {
+    opacity: 1;
+    box-shadow:
+      inset 0 0 0 1.5px color-mix(in srgb, #7dffc4 88%, #fff),
+      inset 0 0 9px color-mix(in srgb, #7dffc4 50%, transparent);
+  }
+  38% {
+    opacity: 1;
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, #7dffc4 62%, #fff),
+      inset 0 0 12px color-mix(in srgb, #7dffc4 28%, transparent);
+  }
+  100% {
+    opacity: 0;
+    box-shadow:
+      inset 0 0 0 0 transparent,
+      inset 0 0 0 transparent;
+  }
+}
+
+@keyframes baby-nest-crt-bloom {
+  0% {
+    opacity: 0;
+  }
+  16% {
+    opacity: 0.9;
+  }
+  42% {
+    opacity: 0.35;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes baby-nest-crt-settle {
+  0% {
+    filter: brightness(0.78) contrast(1.04);
+  }
+  22% {
+    filter: brightness(1.28) contrast(1.06);
+  }
+  100% {
+    filter: brightness(1) contrast(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .baby-nest-crt.is-powering::before,
+  .baby-nest-crt.is-powering::after,
+  .baby-nest-crt.is-powering .baby-nest-screen {
+    animation: none !important;
+  }
+}
+
+.baby-nest-screen {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+  box-shadow: none;
+}
+
+.baby-nest-screen img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.baby-nest-placeholder {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 40% 35%, #3a7aaa, #071018);
+}
+
+.baby-nest-screen.is-busy .baby-nest-placeholder {
+  opacity: 0.7;
+}
+
+.baby-nest-chat-hit {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  margin: 0;
+  padding: 2px 8px;
+  min-height: 22px;
+  border: 0;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #f4f4f4, #c8c8c8 55%, #a4a4a4);
+  color: #1a1c1e;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 #fff, 0 1px 0 #6a6a6a !important;
+}
+
+.baby-nest-chat-hit:hover,
+.baby-nest-chat-hit:focus-visible {
+  color: #111;
+}
+
+.baby-nest-chat-hit:focus-visible {
+  outline: 1px dotted #fff;
+  outline-offset: 2px;
+}
+
+.baby-nest-gallery-hit {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  width: fit-content;
+  background: transparent;
+  color: #d8fff0;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-shadow: 1px 1px 0 #000;
+  cursor: pointer;
+  text-align: left;
+  box-shadow: none !important;
+}
+
+.baby-friend-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-sizing: border-box;
+  width: min(46rem, calc(100vw - 1.5rem));
+  max-width: 46rem;
+  max-height: min(88vh, 760px);
+  overflow: hidden;
+  padding: 16px 18px 14px;
+}
+
+.baby-friend-dialog-head {
+  flex: none;
+  padding-right: 28px;
+  gap: 6px;
+}
+
+.baby-friend-gallery {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  flex: 1;
+}
+
+.baby-friend-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.baby-friend-toolbar > button {
+  min-height: 28px;
+}
+
+.baby-nest-request,
+.baby-friend-request {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 10px;
+  align-items: end;
+}
+
+.baby-friend-status {
+  margin: 0;
+  padding: 0 2px;
+  line-height: 1.45;
+  font-size: 12px;
+  color: var(--muted-foreground, #444);
+  flex: none;
+}
+
+.baby-friend-error {
+  margin: 0;
+  font-size: 12px;
+  color: var(--destructive, #8b0000);
+  grid-column: 1 / -1;
+}
+
+.baby-friend-request-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.baby-friend-request-caption {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.baby-friend-request-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 8px 12px;
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+.baby-friend-request-input:focus,
+.baby-friend-request-input:focus-visible,
+.baby-friend-name:focus,
+.baby-friend-name:focus-visible {
+  outline: 2px solid #000080;
+  outline-offset: -2px;
+}
+
+.baby-friend-request-go {
+  min-height: 42px;
+  padding-inline: 16px;
+}
+
+.baby-friend-grid-scroll {
+  flex: 1 1 auto;
+  min-height: 14rem;
+  max-height: min(52vh, 30rem);
+  overflow-y: auto;
+  overflow-x: hidden;
+  margin: 0 -2px 0 0;
+  padding: 4px 14px 8px 2px;
+  scrollbar-gutter: stable;
+}
+
+.baby-friend-dialog .baby-friend-grid-scroll {
+  max-height: none;
+}
+
+.baby-friend-grid-scroll::-webkit-scrollbar {
+  width: 14px;
+}
+
+.baby-friend-grid-scroll::-webkit-scrollbar-track {
+  background: #808080;
+  box-shadow: inset 1px 1px 0 #000, inset -1px -1px 0 #fff;
+}
+
+.baby-friend-grid-scroll::-webkit-scrollbar-thumb {
+  background: var(--chrome-face, #c0c0c0);
+  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #000;
+  border: 1px solid #808080;
+}
+
+.baby-friend-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(176px, 1fr));
+  gap: 14px;
+  align-items: stretch;
+}
+
+.baby-friend-card {
+  display: grid;
+  grid-template-rows: 176px auto auto auto auto auto;
+  gap: 8px;
+  min-width: 0;
+  height: 100%;
+  padding: 10px;
+  background: var(--chrome-face, #c0c0c0);
+  box-shadow: var(--w95-raised);
+}
+
+.baby-friend-card.is-on {
+  outline: 2px solid #000080;
+}
+
+.baby-friend-wear {
+  display: grid;
+  place-items: stretch;
+  margin: 0;
+  padding: 8px;
+  border: 0;
+  width: 100%;
+  height: 176px;
+  background: #071018;
+  box-shadow: var(--w95-sunken);
+  cursor: pointer;
+}
+
+.baby-friend-wear img,
+.baby-friend-empty {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.baby-friend-name,
+.baby-friend-card-btn {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 28px;
+  margin: 0;
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
+.baby-friend-card-btn {
+  cursor: pointer;
+}
+
+.baby-friend-delete {
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0;
+  padding: 4px 8px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.baby-nest-name {
+  color: #fff;
+  font-size: 13px;
+  line-height: 1.2;
+  text-shadow: 1px 1px 0 #000;
+  max-width: 11rem;
+}
+
+.baby-friend-bubble {
+  position: absolute;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  left: 4px;
+  bottom: calc(100% - 10px);
+  z-index: 20;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: 18rem;
+  margin: 0;
+  padding: 10px 10px 11px 12px;
+  background: #fffef2;
+  color: #3c2817;
+  border: 3px solid #3c2817;
+  border-radius: 3px;
+  box-shadow: 3px 3px 0 #1a120c;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+  text-shadow: none;
+  pointer-events: auto;
+}
+
+.baby-friend-bubble-line {
+  margin: 0;
+  min-width: 0;
+  flex: 1;
+  padding: 0;
+  border: 0 !important;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: none !important;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.baby-friend-bubble-line:hover,
+.baby-friend-bubble-line:active,
+.baby-friend-bubble-line:focus {
+  border: 0 !important;
+  background: transparent;
+  box-shadow: none !important;
+}
+
+.baby-friend-bubble-line:focus-visible {
+  outline: 1px dotted #3c2817;
+  outline-offset: 2px;
+}
+
+.baby-friend-bubble.is-heart {
+  background: #fff5f8;
+  border-color: #8a2048;
+  color: #4a1024;
+  box-shadow: 3px 3px 0 #4a1024;
+}
+.baby-friend-bubble.is-heart::before { border-color: #8a2048 transparent transparent transparent; }
+.baby-friend-bubble.is-heart::after { border-color: #fff5f8 transparent transparent transparent; }
+
+.baby-friend-bubble.is-sparkle {
+  background: #f4f0ff;
+  border-color: #3a2080;
+  color: #1e1048;
+}
+.baby-friend-bubble.is-sparkle::before { border-color: #3a2080 transparent transparent transparent; }
+.baby-friend-bubble.is-sparkle::after { border-color: #f4f0ff transparent transparent transparent; }
+
+.baby-friend-bubble.is-stamp {
+  transform: rotate(-1.4deg);
+  background: #fff8e8;
+  letter-spacing: 0.02em;
+}
+
+.baby-friend-bubble.is-whisper {
+  font-style: italic;
+  font-weight: 600;
+  opacity: 0.94;
+}
+
+.baby-friend-bubble.is-bounce {
+  animation: baby-friend-bounce 0.55s ease;
+}
+
+@keyframes baby-friend-bounce {
+  0% { transform: translateY(6px) scale(0.96); }
+  60% { transform: translateY(-3px) scale(1.02); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+.baby-friend-mission {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-sizing: border-box;
+  width: min(34rem, calc(100vw - 2rem));
+  max-width: 34rem;
+  padding: 24px 26px 20px;
+}
+
+.baby-friend-mission-head {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 0;
+  text-align: left;
+}
+
+.baby-friend-mission-kicker {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #000080;
+}
+
+.baby-friend-mission-title {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.3;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.baby-friend-mission-task {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  margin: 0;
+  padding: 12px 14px;
+  border: 0;
+  text-align: left;
+  font: inherit;
+  color: #000080;
+  background: #fff;
+  box-shadow: var(--w95-sunken);
+  cursor: pointer;
+}
+
+.baby-friend-mission-task:hover,
+.baby-friend-mission-task:focus-visible {
+  background: #000080;
+  color: #fff;
+}
+
+.baby-friend-mission-task.is-static {
+  cursor: default;
+  color: #111;
+}
+
+.baby-friend-mission-task.is-static:hover,
+.baby-friend-mission-task.is-static:focus-visible {
+  background: #fff;
+  color: #111;
+}
+
+.baby-friend-mission-task-kicker {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.baby-friend-mission-task-title {
+  font-size: 1.25rem;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+.baby-friend-mission-blurb {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #222;
+}
+
+.baby-friend-mission-note,
+.baby-friend-mission-pay,
+.baby-friend-mission-ask {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.baby-friend-mission-pay {
+  flex: 1 1 12rem;
+  color: #000080;
+}
+
+.baby-friend-mission-actions.is-stack {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.baby-friend-decline-why {
+  width: 100%;
+  min-height: 4.5rem;
+  resize: vertical;
+}
+
+.baby-friend-mission-said {
+  margin: 0;
+  padding: 14px 16px;
+  background: #fffef2;
+  color: #3c2817;
+  box-shadow: var(--w95-sunken);
+  font-size: 14px;
+  line-height: 1.5;
+  font-style: italic;
+}
+
+.baby-friend-mission-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.baby-friend-cheer {
+  width: min(26rem, calc(100vw - 2rem));
+  max-width: 26rem;
+  padding: 28px 26px 18px;
+  text-align: center;
+  background: #fffef2;
+}
+
+.baby-friend-cheer-head {
+  align-items: center;
+  text-align: center;
+}
+
+.baby-friend-cheer-title {
+  margin: 4px 0 0;
+  font-size: 1.6rem;
+}
+
+.baby-friend-cheer-line,
+.baby-friend-cheer-extra {
+  margin: 8px 0 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #3c2817;
+}
+
+.baby-friend-cheer-ok {
+  margin-left: auto;
+  border: 0;
+  background: #000080;
+  color: #fff;
+  padding: 6px 16px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--w95-raised, none);
+}
+
+.baby-friend-bubble-close {
+  flex: none;
+  margin: -2px -2px 0 0;
+  padding: 0 4px;
+  border: 2px solid #3c2817;
+  background: #fffef2;
+  color: #3c2817;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.1;
+  cursor: pointer;
+  box-shadow: none !important;
+}
+
+.baby-friend-bubble-close:hover,
+.baby-friend-bubble-close:focus-visible {
+  background: #3c2817;
+  color: #fffef2;
+}
+
+.baby-friend-bubble::before,
+.baby-friend-bubble::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 28px;
+  width: 0;
+  height: 0;
+  border-style: solid;
+}
+
+.baby-friend-bubble::before {
+  border-width: 10px 8px 0 8px;
+  border-color: #3c2817 transparent transparent transparent;
+}
+
+.baby-friend-bubble::after {
+  left: 31px;
+  border-width: 6px 5px 0 5px;
+  border-color: #fffef2 transparent transparent transparent;
+}

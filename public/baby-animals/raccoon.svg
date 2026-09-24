@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="raccoon">
+  <defs>
+    <radialGradient id="crt" cx="46%" cy="38%">
+      <stop offset="0%" stop-color="#4aa0c8"/>
+      <stop offset="55%" stop-color="#1a4a68"/>
+      <stop offset="100%" stop-color="#071018"/>
+    </radialGradient>
+  </defs>
+  <rect width="64" height="64" fill="url(#crt)"/>
+  <rect x="2" y="2" width="60" height="60" fill="none" stroke="#8ec8e0" stroke-opacity="0.18"/>
+  
+    <ellipse cx="32" cy="42" rx="14" ry="11" fill="#8a8480"/>
+    <ellipse cx="32" cy="32" rx="10" ry="9" fill="#9a948e"/>
+    <ellipse cx="20" cy="24" rx="4" ry="7" fill="#6a6460"/>
+    <ellipse cx="44" cy="24" rx="4" ry="7" fill="#6a6460"/>
+    <ellipse cx="26" cy="32" rx="5" ry="3.5" fill="#1a1a22"/>
+    <ellipse cx="38" cy="32" rx="5" ry="3.5" fill="#1a1a22"/>
+    <circle cx="26" cy="32" r="1.4" fill="#f4f0e4"/>
+    <circle cx="38" cy="32" r="1.4" fill="#f4f0e4"/>
+    <ellipse cx="32" cy="38" rx="3" ry="2" fill="#f4f0e4"/>
+    <path d="M18 48 Q24 52 22 44" fill="#7a7470"/>
+    <rect x="28" y="50" width="3" height="6" fill="#5a5450"/>
+    <rect x="34" y="50" width="3" height="6" fill="#5a5450"/>
+</svg>

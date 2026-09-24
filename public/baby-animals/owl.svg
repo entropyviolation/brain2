@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="owl">
+  <defs>
+    <radialGradient id="crt" cx="46%" cy="38%">
+      <stop offset="0%" stop-color="#4aa0c8"/>
+      <stop offset="55%" stop-color="#1a4a68"/>
+      <stop offset="100%" stop-color="#071018"/>
+    </radialGradient>
+  </defs>
+  <rect width="64" height="64" fill="url(#crt)"/>
+  <rect x="2" y="2" width="60" height="60" fill="none" stroke="#8ec8e0" stroke-opacity="0.18"/>
+  
+    <ellipse cx="32" cy="40" rx="14" ry="13" fill="#7a6248"/>
+    <circle cx="25" cy="34" r="7" fill="#f0e6c8"/>
+    <circle cx="39" cy="34" r="7" fill="#f0e6c8"/>
+    <circle cx="25" cy="34" r="3.2" fill="#2a4a2a"/>
+    <circle cx="39" cy="34" r="3.2" fill="#2a4a2a"/>
+    <circle cx="26" cy="33" r="1" fill="#f4f0e4"/>
+    <circle cx="40" cy="33" r="1" fill="#f4f0e4"/>
+    <polygon points="32,38 28,44 36,44" fill="#e0a040"/>
+    <polygon points="20,26 24,32 18,32" fill="#5a4834"/>
+    <polygon points="44,26 46,32 40,32" fill="#5a4834"/>
+</svg>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="chick">
+  <defs>
+    <radialGradient id="crt" cx="46%" cy="38%">
+      <stop offset="0%" stop-color="#4aa0c8"/>
+      <stop offset="55%" stop-color="#1a4a68"/>
+      <stop offset="100%" stop-color="#071018"/>
+    </radialGradient>
+  </defs>
+  <rect width="64" height="64" fill="url(#crt)"/>
+  <rect x="2" y="2" width="60" height="60" fill="none" stroke="#8ec8e0" stroke-opacity="0.18"/>
+  
+    <circle cx="32" cy="38" r="14" fill="#f6d84a"/>
+    <circle cx="32" cy="24" r="8" fill="#f8e060"/>
+    <polygon points="32,24 28,30 36,30" fill="#e07a2a"/>
+    <circle cx="29" cy="22" r="1.4" fill="#1a120c"/>
+    <circle cx="35" cy="22" r="1.4" fill="#1a120c"/>
+    <ellipse cx="22" cy="38" rx="5" ry="3" fill="#efc83a"/>
+    <ellipse cx="42" cy="38" rx="5" ry="3" fill="#efc83a"/>
+    <path d="M28 50 Q32 54 36 50" fill="none" stroke="#e07a2a" stroke-width="1.5"/>
+    <circle cx="38" cy="34" r="2" fill="#f0a0a8"/>
+</svg>

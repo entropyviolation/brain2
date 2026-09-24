@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="wolf">
+  <defs>
+    <radialGradient id="crt" cx="46%" cy="38%">
+      <stop offset="0%" stop-color="#4aa0c8"/>
+      <stop offset="55%" stop-color="#1a4a68"/>
+      <stop offset="100%" stop-color="#071018"/>
+    </radialGradient>
+  </defs>
+  <rect width="64" height="64" fill="url(#crt)"/>
+  <rect x="2" y="2" width="60" height="60" fill="none" stroke="#8ec8e0" stroke-opacity="0.18"/>
+  
+    <ellipse cx="32" cy="42" rx="14" ry="11" fill="#7a848c"/>
+    <polygon points="18,18 24,34 14,34" fill="#6a747c"/>
+    <polygon points="46,18 50,34 40,34" fill="#6a747c"/>
+    <ellipse cx="32" cy="32" rx="10" ry="9" fill="#8a949c"/>
+    <ellipse cx="32" cy="38" rx="5" ry="4" fill="#e8e0d4"/>
+    <circle cx="27" cy="30" r="1.5" fill="#1a120c"/>
+    <circle cx="37" cy="30" r="1.5" fill="#1a120c"/>
+    <ellipse cx="32" cy="35" rx="1.8" ry="1.2" fill="#2a1810"/>
+    <path d="M16 46 Q12 52 22 48" fill="#6a747c"/>
+    <path d="M22 38 H28 M36 38 H42" stroke="#5a646c" stroke-width="0.7"/>
+</svg>
