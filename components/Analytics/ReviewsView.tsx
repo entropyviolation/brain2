@@ -4,7 +4,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { useReviewsStore } from "@/lib/reviews-store"
+import { periodLabel, useReviewsStore } from "@/lib/reviews-store"
 import { useTaskStore } from "@/lib/task-store"
 import { useHabitsStore } from "@/lib/habits-store"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
@@ -13,15 +13,8 @@ import { ChartFrame, OpenInListsButton } from "./chart-frame"
 import { useAnalyticsRange } from "./analytics-range-store"
 import { inRange } from "./analytics-range"
 import { SliceMosaic } from "./studio-kit"
-
-const REASON_LABELS: Record<string, string> = {
-  "no-energy": "No energy",
-  "missing-input": "Missing input",
-  procrastination: "Procrastination",
-  "no-time": "No time",
-  "blocked-by-other": "Blocked by other",
-  other: "Other",
-}
+import { PeriodArcReading } from "./PeriodArcReading"
+import { blockedReasonLabel, blockedReasonToken } from "@/lib/blocked-reason"
 
 const REASON_COLOR: Record<string, string> = {
   "no-energy": "#f59e0b",
@@ -45,13 +38,14 @@ function MorningBlock({
     morning.source === "telegram"
       ? "from text pipeline (BIM)"
       : morning.source === "desktop"
-        ? "desktop morning review"
+        ? "desktop morning ritual"
         : null
 
   return (
     <div className="an-morning-block space-y-3 rounded-md border border-dashed p-3">
       <p className="an-canvas-title" style={{ margin: 0 }}>
-        Morning review
+        Morning ritual
+        {morning.completed === false ? <span className="an-n"> · in progress</span> : null}
         {sourceLabel ? <span className="an-n"> · {sourceLabel}</span> : null}
       </p>
       {morning.allNighter && (
@@ -59,9 +53,19 @@ function MorningBlock({
           <strong>All nighter</strong> — no sleep clocks for this day.
         </p>
       )}
-      {!morning.allNighter && morning.wakeTime && (
+      {!morning.allNighter && (morning.bedTime || morning.wakeTime) && (
         <p>
-          <strong>Wake</strong> · {morning.wakeTime}
+          {morning.bedTime ? (
+            <>
+              <strong>Fell asleep</strong> · {morning.bedTime}
+            </>
+          ) : null}
+          {morning.bedTime && morning.wakeTime ? " · " : null}
+          {morning.wakeTime ? (
+            <>
+              <strong>Wake</strong> · {morning.wakeTime}
+            </>
+          ) : null}
         </p>
       )}
       {!morning.allNighter && morning.dream && (
@@ -197,17 +201,24 @@ export function ReviewsView() {
     const taskIds: string[] = []
     for (const r of reviewsInRange) {
       for (const [taskId, reason] of Object.entries(r.blockedReasons ?? {})) {
-        counts.set(reason, (counts.get(reason) ?? 0) + 1)
+        const label = blockedReasonLabel(reason) || "Other"
+        counts.set(label, (counts.get(label) ?? 0) + 1)
         taskIds.push(taskId)
       }
     }
-    const slices = [...counts.entries()].map(([id, minutes]) => ({
-      id,
-      name: REASON_LABELS[id] ?? id,
-      color: REASON_COLOR[id] ?? "#64748b",
-      minutes,
-      label: String(minutes),
-    }))
+    const slices = [...counts.entries()].map(([name, minutes]) => {
+      const sample = reviewsInRange
+        .flatMap((review) => Object.values(review.blockedReasons ?? {}))
+        .find((reason) => blockedReasonLabel(reason) === name)
+      const token = blockedReasonToken(sample) || "other"
+      return {
+        id: name,
+        name,
+        color: REASON_COLOR[token] ?? "#64748b",
+        minutes,
+        label: String(minutes),
+      }
+    })
     return { slices, taskIds, max: Math.max(...slices.map((s) => s.minutes), 1) }
   }, [reviewsInRange])
 
@@ -218,8 +229,8 @@ export function ReviewsView() {
           empty
           emptySentence={
             reviews.length === 0
-              ? "No reviews saved yet. Use the Review button in the header, or text gm to BIM."
-              : `No reviews in the ${range.label}.`
+              ? "No rituals saved yet. Use Rituals in the header, or text gm / gn / rituals to BIM."
+              : `No rituals in the ${range.label}.`
           }
         />
       ) : (
@@ -231,7 +242,7 @@ export function ReviewsView() {
 
           {morningDays.length > 0 && (
             <>
-              <p className="an-canvas-title">Morning reviews</p>
+              <p className="an-canvas-title">Morning rituals</p>
               <p className="an-n">Cute read-outs of what you answered at the start of the day.</p>
               {morningDays.map((r) => (
                 <article key={`morning-${r.id}`} className="an-review-card">
@@ -246,6 +257,8 @@ export function ReviewsView() {
               ))}
             </>
           )}
+
+          <PeriodArcReading reviews={reviewsInRange} />
 
           {reasons.slices.length > 0 && (
             <>
@@ -262,8 +275,8 @@ export function ReviewsView() {
               return (
                 <article key={r.id} className="an-review-card">
                   <header onClick={() => setOpenReviewId(open ? null : r.id)}>
-                    <span className="capitalize">{r.period}</span>
-                    <span>· {r.periodKey}</span>
+                    <span className="capitalize">{r.period === "quarter" ? "Season" : r.period}</span>
+                    <span>· {r.period === "quarter" ? periodLabel("quarter", r.periodKey) : r.periodKey}</span>
                     <span className="an-n" style={{ marginLeft: "auto" }}>
                       {new Date(r.completedAt).toLocaleDateString()}
                     </span>
@@ -271,6 +284,39 @@ export function ReviewsView() {
                   {open && (
                     <div className="an-review-body space-y-3">
                       {r.morning && <MorningBlock morning={r.morning} taskTitle={taskTitle} habitTitle={habitTitle} />}
+                      {r.start && (
+                        <div className="space-y-2 rounded-md border border-dashed p-3">
+                          <p className="an-canvas-title" style={{ margin: 0 }}>
+                            Start ritual
+                            {r.start.completed === false ? <span className="an-n"> · in progress</span> : null}
+                            {r.start.source === "telegram" ? (
+                              <span className="an-n"> · from text pipeline (BIM)</span>
+                            ) : r.start.source === "desktop" ? (
+                              <span className="an-n"> · desktop</span>
+                            ) : null}
+                          </p>
+                          {r.start.priorities && (
+                            <p>
+                              <strong>Priorities</strong> — {r.start.priorities}
+                            </p>
+                          )}
+                          {r.start.mustDo && (
+                            <p>
+                              <strong>Must do</strong> — {r.start.mustDo}
+                            </p>
+                          )}
+                          {r.start.summary && (
+                            <p>
+                              <strong>Intentions</strong> — {r.start.summary}
+                            </p>
+                          )}
+                          {r.start.nextPlans && (
+                            <p>
+                              <strong>Plan</strong> — {r.start.nextPlans}
+                            </p>
+                          )}
+                        </div>
+                      )}
                       {r.summary && (
                         <div>
                           <p className="an-canvas-title">Summary</p>

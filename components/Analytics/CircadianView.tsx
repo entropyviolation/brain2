@@ -55,15 +55,20 @@ export function CircadianView() {
             {mood && scope?.id === mood.id ? " · Mood field" : ""}
             {grid.instants.length > 0 ? ` · ${grid.instants.length} instants listed below` : ""}
           </p>
-          <div style={{ ["--an-cols" as string]: String(Math.max(dateKeys.length, 1)) }}>
-            <HourDayHeatmap grid={grid} hue={scope?.name === "Mood" ? 312 : 188} />
-          </div>
-          <CyclePlot
-            mean={cycle.mean}
-            title="Weekday cycle"
-            help="Cleveland (1993) cycle plot: mean occupancy by hour, one row per weekday. Only days with paint enter the mean — a blank Tuesday is not a 0-work Tuesday. Empty hours stay gray."
-            empty={`Nothing painted in ${scope?.name ?? "this scope"} in the ${label}.`}
-          />
+          <section className="an-plate">
+            <p className="an-canvas-title">Hour × day</p>
+            <div className="an-plot-well">
+              <HourDayHeatmap grid={grid} hue={scope?.name === "Mood" ? 312 : 188} />
+            </div>
+          </section>
+          <section className="an-plate">
+            <CyclePlot
+              mean={cycle.mean}
+              title="Weekday cycle"
+              help="Cleveland (1993) cycle plot: mean occupancy by hour, one row per weekday. Only days with paint enter the mean — a blank Tuesday is not a 0-work Tuesday. Empty hours stay opaque white."
+              empty={`Nothing painted in ${scope?.name ?? "this scope"} in the ${label}.`}
+            />
+          </section>
           {grid.instants.length > 0 && (
             <p className="an-canvas-hint">
               {grid.instants.length} instant{grid.instants.length === 1 ? "" : "s"} (no duration) in this window.

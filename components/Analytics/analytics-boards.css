@@ -1,0 +1,732 @@
+/**
+ * components/Analytics/analytics-boards.css — Tracking average-day / filmstrip / delta
+ *
+ * Light instrument boards for Analytics Time → Tracking. Face gray, white plot
+ * wells, milled rims, Karla, ink. Phosphor only on existing sparks elsewhere —
+ * not on these boards. Imported by Tracking board components.
+ */
+
+/* ---- Header control bay (centered under range) ---- */
+
+.fm98.an95 .an-track-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px 12px;
+  margin-bottom: 4px;
+  background: var(--an-panel);
+  box-shadow:
+    inset 1px 1px 0 var(--an-hi),
+    inset -1px -1px 0 var(--an-lo),
+    0 0 0 1px var(--an-line);
+}
+
+.fm98.an95 .an-track-header .an-studio-tools {
+  justify-content: center;
+  margin-bottom: 0;
+  gap: 10px 14px;
+}
+
+.fm98.an95 .an-track-header .an-studio-tools select,
+.fm98.an95 .an-track-header .an-studio-tools button,
+.fm98.an95 .an-track-header .an-chip {
+  height: 28px;
+  font-size: 12px;
+  padding: 0 12px;
+}
+
+.fm98.an95 .an-track-header .an-check {
+  height: 28px;
+  font-size: 12px;
+}
+
+.fm98.an95 .an-track-header .an-check input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+}
+
+.fm98.an95 .an-track-header .trk-module-show {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 10px;
+}
+
+.fm98.an95 .an-track-header .trk-depth > button {
+  height: 28px;
+  font-size: 12px;
+  padding: 0 12px;
+}
+
+.fm98.an95 .an-track-hint {
+  margin: 0;
+  max-width: 42rem;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--an-muted);
+}
+
+.fm98.an95 .an-track-hint .an-help {
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+/* ---- Facts (centered, slightly larger) ---- */
+
+.fm98.an95 .an-track-facts {
+  align-items: center;
+}
+
+.fm98.an95 .an-track-facts .an-canvas-title {
+  text-align: center;
+  width: 100%;
+}
+
+.fm98.an95 .an-track-facts .an-readouts {
+  width: 100%;
+  max-width: 52rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  padding: 8px;
+}
+
+.fm98.an95 .an-track-facts .an-readout-value {
+  font-size: 26px;
+}
+
+.fm98.an95 .an-track-facts .an-track-spark {
+  width: 100%;
+  max-width: 52rem;
+}
+
+.fm98.an95 .an-track-facts .an-track-spark .an-canvas-title {
+  font-size: 13px;
+}
+
+@media (max-width: 719px) {
+  .fm98.an95 .an-track-facts .an-readouts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ---- Composition plate: donut + rows band ---- */
+
+.fm98.an95 .an-track-comp .an-canvas-title {
+  text-align: center;
+}
+
+.fm98.an95 .an-track-comp-band {
+  display: grid;
+  grid-template-columns: 380px minmax(12rem, 1fr);
+  gap: 20px;
+  align-items: stretch;
+  justify-content: center;
+  max-width: 56rem;
+  margin: 0 auto;
+  width: 100%;
+  min-width: 0;
+}
+
+.fm98.an95 .an-track-donut {
+  width: min(380px, 100%);
+  aspect-ratio: 1;
+  height: auto;
+  min-height: 340px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  justify-self: center;
+}
+
+.fm98.an95 .an-track-donut .an-pie,
+.fm98.an95 .an-track-donut .an-pie-lg {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+/* SlicePie radii live in studio-kit; scale the chart so the 380px well reads large. */
+.fm98.an95 .an-track-donut .recharts-responsive-container {
+  transform: scale(1.38);
+  transform-origin: center center;
+}
+
+.fm98.an95 .an-track-donut .an-pie-hole-total {
+  font-size: 18px;
+}
+
+.fm98.an95 .an-track-donut .an-pie-hole-basis {
+  font-size: 11px;
+  max-width: 14ch;
+}
+
+.fm98.an95 .an-track-comp-band .an-slice-rows {
+  max-height: 380px;
+  overflow-y: auto;
+  align-self: stretch;
+}
+
+@media (max-width: 959px) {
+  .fm98.an95 .an-track-comp-band {
+    grid-template-columns: 1fr;
+    max-width: 26rem;
+  }
+
+  .fm98.an95 .an-track-donut {
+    width: min(380px, 100%);
+    height: min(380px, 100vw);
+    min-height: 340px;
+    margin: 0 auto;
+  }
+
+  .fm98.an95 .an-track-comp-band .an-slice-rows {
+    max-height: none;
+  }
+}
+
+.fm98.an95 .an-plate.is-hovering .an-avg-seg:not(.is-active):not(:hover) {
+  opacity: 0.4;
+}
+
+/* ---- Average-day board ---- */
+
+.fm98.an95 .an-avg-day {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  margin-top: 10px;
+}
+
+.fm98.an95 .an-avg-day-title {
+  margin: 0 0 2px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--an-ink);
+}
+
+.fm98.an95 .an-avg-day-well {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 10px 8px;
+}
+
+.fm98.an95 .an-avg-ticks {
+  display: grid;
+  grid-template-columns: 7rem 1fr;
+  gap: 8px;
+  align-items: end;
+  margin-bottom: 2px;
+}
+
+.fm98.an95 .an-avg-ticks-spacer {
+  min-height: 1px;
+}
+
+.fm98.an95 .an-avg-ticks-bar {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--an-muted);
+  font-variant-numeric: tabular-nums;
+  padding: 0 1px;
+}
+
+.fm98.an95 .an-avg-row {
+  display: grid;
+  grid-template-columns: 7rem 1fr;
+  gap: 8px;
+  align-items: center;
+  min-height: 28px;
+}
+
+.fm98.an95 .an-avg-label {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.fm98.an95 .an-avg-label-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--an-ink);
+  line-height: 1.2;
+}
+
+.fm98.an95 .an-avg-label-n {
+  font-size: 10px;
+  color: var(--an-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.fm98.an95 .an-avg-ribbon {
+  position: relative;
+  display: flex;
+  height: 32px;
+  width: 100%;
+  background: var(--an-hi);
+  box-shadow: inset 0 0 0 1px var(--an-line);
+  overflow: hidden;
+}
+
+.fm98.an95 .an-avg-ribbon.is-empty {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--an-hi),
+    var(--an-hi) 6px,
+    #f0f0f0 6px,
+    #f0f0f0 12px
+  );
+}
+
+.fm98.an95 .an-avg-slot {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+}
+
+.fm98.an95 .an-avg-seg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+  border: none;
+  padding: 0 2px;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: default;
+  box-sizing: border-box;
+}
+
+.fm98.an95 .an-avg-seg.is-active {
+  outline: 2px solid var(--an-ink);
+  outline-offset: -2px;
+  z-index: 1;
+}
+
+.fm98.an95 .an-avg-seg-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.fm98.an95 .an-avg-empty-line {
+  margin: 0;
+  font-size: 11px;
+  color: var(--an-muted);
+  padding: 6px 0;
+}
+
+/* ---- Period filmstrip ---- */
+
+.fm98.an95 .an-film {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  margin-top: 12px;
+}
+
+.fm98.an95 .an-film-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--an-ink);
+}
+
+.fm98.an95 .an-film-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 2px;
+}
+
+.fm98.an95 .an-film-well {
+  position: relative;
+  min-width: 100%;
+  padding: 8px 8px 18px;
+}
+
+.fm98.an95 .an-film-bar {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  height: 56px;
+  width: 100%;
+  min-width: max(100%, var(--an-film-min, 100%));
+  background: var(--an-hi);
+  box-shadow: inset 0 0 0 1px var(--an-line);
+  overflow: hidden;
+}
+
+.fm98.an95 .an-film-seg {
+  flex: var(--an-film-flex, 1) 1 0;
+  min-width: 2px;
+  height: 100%;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.fm98.an95 .an-film-seg:hover,
+.fm98.an95 .an-film-seg:focus-visible {
+  outline: 2px solid var(--an-ink);
+  outline-offset: -2px;
+  z-index: 1;
+}
+
+.fm98.an95 .an-film-seg.is-gap {
+  background: repeating-linear-gradient(
+    -45deg,
+    #e8e8e8,
+    #e8e8e8 4px,
+    #f5f5f5 4px,
+    #f5f5f5 8px
+  );
+  box-shadow: inset 0 0 0 1px #d0d0d0;
+}
+
+.fm98.an95 .an-film-ticks {
+  position: relative;
+  height: 14px;
+  margin-top: 4px;
+  min-width: max(100%, var(--an-film-min, 100%));
+}
+
+.fm98.an95 .an-film-tick {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  font-size: 9px;
+  color: var(--an-muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.fm98.an95 .an-film-tick::before {
+  content: "";
+  position: absolute;
+  top: -58px;
+  left: 50%;
+  width: 1px;
+  height: 56px;
+  background: rgba(0, 0, 0, 0.18);
+  pointer-events: none;
+}
+
+.fm98.an95 .an-film-tick.is-hairline {
+  color: transparent;
+  width: 0;
+  overflow: hidden;
+}
+
+.fm98.an95 .an-film-tick.is-hairline::before {
+  height: 56px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.fm98.an95 .an-film-empty {
+  margin: 0;
+  font-size: 11px;
+  color: var(--an-muted);
+  padding: 8px 0;
+}
+
+/* ---- Period delta table ---- */
+
+.fm98.an95 .an-delta-hint {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--an-muted);
+}
+
+.fm98.an95 .an-delta-well {
+  max-height: 320px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 4px 6px;
+  scrollbar-width: thin;
+  scrollbar-color: #808080 var(--an-hi);
+}
+
+.fm98.an95 .an-delta-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.fm98.an95 .an-delta-row {
+  display: grid;
+  grid-template-columns: 12px minmax(7rem, 1fr) 5.75rem 6.5rem 3.75rem;
+  column-gap: 10px;
+  align-items: center;
+  height: 28px;
+  min-height: 28px;
+  padding: 0 8px;
+  font-size: 12px;
+  color: var(--an-ink);
+  border-bottom: 1px solid rgba(128, 128, 128, 0.28);
+  box-sizing: border-box;
+}
+
+.fm98.an95 .an-delta-row:last-child {
+  border-bottom: none;
+}
+
+.fm98.an95 .an-delta-row:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.fm98.an95 .an-delta-swatch {
+  width: 10px;
+  height: 10px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+  flex-shrink: 0;
+}
+
+.fm98.an95 .an-delta-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.fm98.an95 .an-delta-num {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-align: right;
+  color: var(--an-ink);
+}
+
+.fm98.an95 .an-delta-sign {
+  font-weight: 600;
+  color: var(--an-ink);
+}
+
+.fm98.an95 .an-delta-empty {
+  margin: 0;
+  font-size: 12px;
+  color: var(--an-muted);
+}
+
+/* ---- Block search ---- */
+
+.fm98.an95 .an-find {
+  width: min(100%, 36rem);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: stretch;
+}
+
+.fm98.an95 .an-find-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fm98.an95 .an-find-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--an-ink);
+}
+
+.fm98.an95 .an-find-label input {
+  height: 28px;
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  padding: 0 8px;
+  background: var(--an-hi);
+  color: var(--an-ink);
+  border: 1px solid var(--an-lo);
+  box-shadow: inset 1px 1px 2px var(--an-lo);
+}
+
+.fm98.an95 .an-find-pop {
+  margin-top: 2px;
+  background: var(--an-hi);
+  border: 1px solid var(--an-line);
+  box-shadow: inset 1px 1px 0 var(--an-hi), inset -1px -1px 0 var(--an-lo);
+  max-height: 220px;
+  overflow: auto;
+  padding: 4px;
+}
+
+.fm98.an95 .an-find-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.fm98.an95 .an-find-hit {
+  display: flex;
+  width: 100%;
+  gap: 8px;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 4px 6px;
+  background: transparent;
+  border: none;
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  color: var(--an-ink);
+  cursor: pointer;
+}
+
+.fm98.an95 .an-find-hit:hover,
+.fm98.an95 .an-find-hit:focus-visible {
+  background: var(--an-panel);
+}
+
+.fm98.an95 .an-find-hit-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fm98.an95 .an-find-hit-meta,
+.fm98.an95 .an-find-hit-when,
+.fm98.an95 .an-find-empty,
+.fm98.an95 .an-find-note {
+  color: var(--an-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.fm98.an95 .an-find-empty,
+.fm98.an95 .an-find-note {
+  margin: 0;
+  font-size: 12px;
+  text-align: center;
+  padding: 4px;
+}
+
+.fm98.an95 .an-find-pop .an-chip {
+  width: 100%;
+  justify-content: center;
+  margin-top: 4px;
+  height: 28px;
+}
+
+.fm98.an95 .an-film-seg.is-hit {
+  outline: 2px solid #000;
+  outline-offset: -3px;
+  z-index: 2;
+  box-shadow: inset 0 0 0 3px #fff;
+}
+
+/* ---- Day / week grain ---- */
+
+.fm98.an95 .an-grain {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.fm98.an95 .an-grain-scroll {
+  overflow-x: auto;
+}
+
+.fm98.an95 .an-grain-well {
+  padding: 6px;
+}
+
+.fm98.an95 .an-grain-track {
+  display: flex;
+  gap: 2px;
+  min-width: 100%;
+  height: 28px;
+}
+
+.fm98.an95 .an-grain-cell {
+  flex: 1 0 10px;
+  min-width: 10px;
+  height: 100%;
+  background: var(--an-hi);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+
+/* ---- Tag trend bars ---- */
+
+.fm98.an95 .an-tag-board {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fm98.an95 .an-tag-board-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.fm98.an95 .an-tag-row {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 8rem) minmax(0, 1fr);
+  gap: 8px;
+  align-items: end;
+  min-height: 48px;
+}
+
+.fm98.an95 .an-tag-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  padding-bottom: 4px;
+}
+
+.fm98.an95 .an-tag-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 44px;
+  background: var(--an-hi);
+  box-shadow: inset 0 0 0 1px var(--an-line);
+  padding: 3px;
+}
+
+.fm98.an95 .an-tag-bar {
+  flex: 1 1 0;
+  min-width: 3px;
+  display: block;
+}
+
+.fm98.an95 .an-tag-bar.is-zero {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px rgba(128, 128, 128, 0.35);
+  align-self: flex-end;
+}

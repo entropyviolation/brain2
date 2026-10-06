@@ -3,12 +3,14 @@
  *
  * Light instrument studio, honest findings, density calendars, hour×day heat,
  * pies, treemaps, and mosaics. Used by every Analytics view so the tab is one language.
+ * Phosphor is for line traces only; canvases stay face gray with white plot wells.
  */
 "use client"
 
-import type { CSSProperties, ReactNode } from "react"
-import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from "recharts"
+import { memo, type CSSProperties, type KeyboardEvent, type ReactNode } from "react"
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts"
 import { Tooltip as UiTooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { contrastRatio, relativeLuminance } from "@/lib/chrome-patina"
 import { hourLabel, type HourDayGrid } from "./hour-day"
 
 export const STUDIO_GRID = "#808080"
@@ -17,11 +19,43 @@ export const STUDIO_TICK = "#1a1a1a"
 export const STUDIO_EMPTY = "#b0b0b0"
 export const STUDIO_PHOSPHOR = "#3dff8a"
 export const STUDIO_SCOPE = "#1a2a1e"
+export const STUDIO_HI = "#ffffff"
 export const STUDIO_TOOLTIP = {
   background: "#c0c0c0",
   border: "1px solid #808080",
   fontSize: 12,
   color: "#000000",
+}
+
+/** Ink on light fills; white on dark fills. */
+export function inkOnFill(fill: string): string {
+  return relativeLuminance(fill) > 0.62 ? STUDIO_AXIS : STUDIO_HI
+}
+
+function heatFill(hue: number, step: number): string {
+  if (step <= 0) return STUDIO_HI
+  const t = step / 5
+  return `hsl(${hue} ${42 + t * 38}% ${14 + t * 46}%)`
+}
+
+function heatStep(value: number, max: number): number {
+  if (value <= 0 || max <= 0) return 0
+  return Math.min(5, Math.max(1, Math.ceil((value / max) * 5)))
+}
+
+function formatHeatDay(date: string, index: number, dates: readonly string[]): string {
+  const last = dates.length - 1
+  if (index === 0 || index === last) {
+    const d = new Date(`${date}T12:00:00`)
+    if (Number.isNaN(d.getTime())) return date
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" })
+  }
+  if (index > 0 && date.slice(0, 7) !== dates[index - 1].slice(0, 7)) {
+    const d = new Date(`${date}T12:00:00`)
+    if (Number.isNaN(d.getTime())) return date.slice(0, 7)
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" })
+  }
+  return ""
 }
 
 export function FindingBlock({
@@ -139,11 +173,15 @@ export function SliceMosaic({
   max,
   onSelect,
   empty,
+  activeId,
+  onActiveChange,
 }: {
   slices: { id: string; name: string; color: string; minutes: number; label?: string }[]
   max: number
   onSelect?: (id: string) => void
   empty?: string
+  activeId?: string | null
+  onActiveChange?: (id: string | null) => void
 }) {
   if (slices.length === 0) {
     return empty ? <p className="an-chart-empty">{empty}</p> : null
@@ -153,31 +191,40 @@ export function SliceMosaic({
     <div className="an-mosaic">
       {slices.map((slice) => {
         const t = Math.min(1, slice.minutes / domain)
+        const ink = inkOnFill(slice.color)
         const style: CSSProperties = {
           background: slice.color,
-          opacity: 0.45 + t * 0.55,
+          color: ink,
           flex: `${Math.max(0.35, t) * 120} 1 ${Math.max(72, Math.round(t * 160))}px`,
         }
+        const label = slice.label ?? `${slice.minutes}m`
         const body = (
           <>
             <span className="an-mosaic-name">{slice.name}</span>
-            <span className="an-mosaic-count">{slice.label ?? `${slice.minutes}m`}</span>
+            <span className="an-mosaic-count">{label}</span>
           </>
         )
+        const common = {
+          className: activeId === slice.id ? "an-mosaic-cell is-active" : "an-mosaic-cell",
+          style,
+          title: `${slice.name}: ${label}`,
+          onMouseEnter: () => onActiveChange?.(slice.id),
+          onMouseLeave: () => onActiveChange?.(null),
+          onFocus: () => onActiveChange?.(slice.id),
+          onBlur: () => onActiveChange?.(null),
+        }
         return onSelect ? (
           <button
             key={slice.id}
             type="button"
-            className="an-mosaic-cell"
-            style={style}
+            {...common}
             aria-label={`Break down ${slice.name}`}
-            title={`${slice.name}: ${slice.label ?? `${slice.minutes}m`}`}
             onClick={() => onSelect(slice.id)}
           >
             {body}
           </button>
         ) : (
-          <div key={slice.id} className="an-mosaic-cell" style={style}>
+          <div key={slice.id} {...common} aria-label={`${slice.name}: ${label}`}>
             {body}
           </div>
         )
@@ -186,7 +233,7 @@ export function SliceMosaic({
   )
 }
 
-export function HourDayHeatmap({
+export const HourDayHeatmap = memo(function HourDayHeatmap({
   grid,
   hue = 188,
   title,
@@ -196,40 +243,66 @@ export function HourDayHeatmap({
   title?: string
 }) {
   if (grid.dates.length === 0) return null
+  const cols = Math.max(grid.dates.length, 1)
+  const hourMarks = new Set([0, 6, 12, 18])
   return (
-    <div className="an-hourday" role="img" aria-label={title ?? "Hour by day occupancy"}>
-      <div className="an-hourday-hours" aria-hidden>
-        <span />
-        {grid.dates.map((date) => (
-          <span key={date} className="an-hourday-tick">
-            {date.slice(8)}
-          </span>
-        ))}
+    <div
+      className="an-hourday"
+      role="img"
+      aria-label={title ?? "Hour by day occupancy"}
+      style={{ ["--an-cols" as string]: String(cols) }}
+    >
+      <div className="an-hourday-grid">
+        <span className="an-hourday-corner" aria-hidden />
+        {grid.dates.map((date, di) => {
+          const text = formatHeatDay(date, di, grid.dates)
+          return (
+            <span
+              key={`h-${date}`}
+              className={text ? "an-hourday-tick" : "an-hourday-tick is-hairline"}
+              title={date}
+            >
+              {text || "·"}
+            </span>
+          )
+        })}
+        {Array.from({ length: 24 }, (_, hour) => {
+          const label = (
+            <span key={`lab-${hour}`} className="an-hourday-label" title={hourLabel(hour)}>
+              {hourMarks.has(hour) ? hourLabel(hour) : ""}
+            </span>
+          )
+          const cells = grid.dates.map((date, di) => {
+            const value = grid.minutes[di]?.[hour] ?? 0
+            const step = heatStep(value, grid.max)
+            return (
+              <span
+                key={`${date}-${hour}`}
+                className="an-hourday-cell"
+                title={`${date} ${hourLabel(hour)}: ${value}m`}
+                style={{ background: heatFill(hue, step) }}
+              />
+            )
+          })
+          return [label, ...cells]
+        })}
       </div>
-      {Array.from({ length: 24 }, (_, hour) => (
-        <div key={hour} className="an-hourday-row">
-          <span className="an-hourday-label">{hour % 3 === 0 ? hourLabel(hour) : ""}</span>
-          <div className="an-hourday-cells">
-            {grid.dates.map((date, di) => {
-              const value = grid.minutes[di]?.[hour] ?? 0
-              const t = grid.max <= 0 ? 0 : value / grid.max
-              const fill =
-                value <= 0 ? "transparent" : `hsl(${hue} ${42 + t * 38}% ${14 + t * 46}%)`
-              return (
-                <span
-                  key={`${date}-${hour}`}
-                  className="an-hourday-cell"
-                  title={`${date} ${hourLabel(hour)}: ${value}m`}
-                  style={{ background: fill }}
-                />
-              )
-            })}
-          </div>
-        </div>
-      ))}
+      <div className="an-heat-legend" aria-hidden>
+        <span>0</span>
+        <span className="an-heat-legend-swatches">
+          {[0, 1, 2, 3, 4, 5].map((step) => (
+            <span
+              key={step}
+              className="an-heat-legend-swatch"
+              style={{ background: heatFill(hue, step) }}
+            />
+          ))}
+        </span>
+        <span>{Math.round(grid.max)}m</span>
+      </div>
     </div>
   )
-}
+})
 
 export function DensityCalendar({
   weeks,
@@ -247,7 +320,7 @@ export function DensityCalendar({
               key={cell.key}
               title={`${cell.key}: ${cell.out ? "—" : Math.round(cell.value)}`}
               className="an-cal-cell"
-              style={{ background: cell.out ? "transparent" : color(cell.value) }}
+              style={{ background: cell.out ? STUDIO_HI : color(cell.value) }}
             />
           ))}
         </div>
@@ -288,12 +361,34 @@ export function SlicePie({
   slices,
   onSelect,
   large,
+  holeTotal,
+  holeBasis,
+  activeId,
+  onActiveChange,
 }: {
   slices: { id: string; name: string; color: string; minutes: number; label?: string }[]
   onSelect?: (id: string) => void
   large?: boolean
+  holeTotal?: string
+  holeBasis?: string
+  activeId?: string | null
+  onActiveChange?: (id: string | null) => void
 }) {
   if (slices.length === 0) return null
+  const outer = large ? 128 : 108
+  const inner = Math.round(outer * 0.58)
+
+  const activate = (id: string) => onActiveChange?.(id)
+  const clear = () => onActiveChange?.(null)
+  const drill = (id: string) => onSelect?.(id)
+
+  const onKeyDown = (id: string) => (e: KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault()
+      drill(id)
+    }
+  }
+
   return (
     <div className={large ? "an-pie an-pie-lg" : "an-pie"} role="img" aria-label="Share of time as a pie">
       <ResponsiveContainer width="100%" height="100%">
@@ -304,18 +399,39 @@ export function SlicePie({
             nameKey="name"
             cx="50%"
             cy="50%"
-            innerRadius={large ? 64 : 48}
-            outerRadius={large ? 128 : 108}
-            paddingAngle={1}
+            innerRadius={inner}
+            outerRadius={outer}
+            paddingAngle={0}
             label={false}
+            isAnimationActive={false}
             onClick={(_, index) => {
               const slice = slices[index]
-              if (slice && onSelect) onSelect(slice.id)
+              if (slice) drill(slice.id)
             }}
+            onMouseEnter={(_, index) => {
+              const slice = slices[index]
+              if (slice) activate(slice.id)
+            }}
+            onMouseLeave={clear}
           >
-            {slices.map((slice) => (
-              <Cell key={slice.id} fill={slice.color} stroke="#c0c0c0" strokeWidth={1} />
-            ))}
+            {slices.map((slice) => {
+              const active = activeId === slice.id
+              return (
+                <Cell
+                  key={slice.id}
+                  fill={slice.color}
+                  stroke={active ? STUDIO_AXIS : STUDIO_HI}
+                  strokeWidth={2}
+                  // Lands on path.recharts-sector (not the pie <g>) — CSS dims via that class.
+                  className={active ? "is-active" : undefined}
+                  tabIndex={0}
+                  style={{ cursor: onSelect ? "pointer" : "default", outline: "none" }}
+                  onFocus={() => activate(slice.id)}
+                  onBlur={clear}
+                  onKeyDown={onKeyDown(slice.id)}
+                />
+              )
+            })}
           </Pie>
           <Tooltip
             contentStyle={STUDIO_TOOLTIP}
@@ -324,12 +440,14 @@ export function SlicePie({
               name,
             ]}
           />
-          <Legend formatter={(value: string) => {
-            const slice = slices.find((s) => s.name === value)
-            return slice ? `${slice.name}  ·  ${slice.label ?? `${slice.minutes}m`}` : value
-          }} />
         </PieChart>
       </ResponsiveContainer>
+      {(holeTotal || holeBasis) && (
+        <div className="an-pie-hole">
+          {holeTotal ? <p className="an-pie-hole-total">{holeTotal}</p> : null}
+          {holeBasis ? <p className="an-pie-hole-basis">{holeBasis}</p> : null}
+        </div>
+      )}
     </div>
   )
 }
@@ -347,9 +465,11 @@ export function SliceTreemap({
     <div className="an-treemap" role="list" aria-label="Sized by count">
       {slices.map((slice) => {
         const share = slice.minutes / total
+        const ink = inkOnFill(slice.color)
         const style: CSSProperties = {
           flex: `${Math.max(share, 0.04) * 100} 1 ${Math.max(72, Math.round(share * 420))}px`,
           background: slice.color,
+          color: ink,
         }
         const body = (
           <>
@@ -472,20 +592,30 @@ export function SplitBar({
   const total = slices.reduce((s, sl) => s + sl.minutes, 0) || 1
   return (
     <div className="an-split-bar" role="img" aria-label="Split of this pen">
-      {slices.map((slice) => (
-        <button
-          key={slice.id}
-          type="button"
-          className={activeId === slice.id ? "an-split-seg is-active" : "an-split-seg"}
-          style={{ background: slice.color, flex: `${Math.max(slice.minutes, 1)} 1 0` }}
-          title={`${slice.name} · ${slice.label ?? `${slice.minutes}m`} (${((slice.minutes / total) * 100).toFixed(1)}%)`}
-          aria-label={`List blocks for ${slice.name}`}
-          onClick={() => onSelect?.(slice.id)}
-        >
-          <span className="an-split-seg-name">{slice.name}</span>
-          <span className="an-split-seg-dur">{slice.label ?? `${slice.minutes}m`}</span>
-        </button>
-      ))}
+      {slices.map((slice) => {
+        const dur = slice.label ?? `${slice.minutes}m`
+        const pct = `${((slice.minutes / total) * 100).toFixed(1)}%`
+        const full = `${slice.name} · ${dur} · ${pct}`
+        return (
+          <button
+            key={slice.id}
+            type="button"
+            className={activeId === slice.id ? "an-split-seg is-active" : "an-split-seg"}
+            style={{ background: slice.color, flex: `${Math.max(slice.minutes, 1)} 1 0` }}
+            title={full}
+            aria-label={`List blocks for ${slice.name}: ${dur}, ${pct}`}
+            onClick={() => onSelect?.(slice.id)}
+          >
+            <span className="an-split-seg-label">
+              <span>{slice.name}</span>
+              {` · ${dur} · `}
+              <span>{pct}</span>
+            </span>
+          </button>
+        )
+      })}
     </div>
   )
 }
+
+export { contrastRatio }

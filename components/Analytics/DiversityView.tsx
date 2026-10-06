@@ -82,6 +82,7 @@ export function DiversityView() {
         <ChartFrame thin thinSentence={thinWindowSentence(active.length, SAMPLE_FLOORS.entropyDays, label)} />
       ) : (
         <>
+          <section className="an-plate">
           <div className="an-readouts">
             <StudioReadout
               label="Mean entropy"
@@ -108,6 +109,8 @@ export function DiversityView() {
               tip="Mean painted minutes on Sat–Sun in this window. Blank weekend days still sit in the denominator."
             />
           </div>
+          </section>
+          <section className="an-plate">
           <p className="an-canvas-title">Entropy · bits / day</p>
           <PhosphorTrace
             title="Shannon entropy of pens per day"
@@ -118,6 +121,7 @@ export function DiversityView() {
             Empty days are 0 bits (nothing to mix). A day of one pen is also 0. Two equal pens ≈ 1 bit.
             Gini of daily entropies: {giniCoefficient(active.map((d) => d.entropy)).toFixed(2)}.
           </p>
+          </section>
         </>
       )}
     </div>

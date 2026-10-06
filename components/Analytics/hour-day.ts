@@ -3,7 +3,9 @@
  *
  * Pure. Instants have no duration and stay off the heatmap (listed separately).
  * Missing hours stay 0 (a real empty hour), not null — occupancy is observed
- * as soon as the day has any paint in the scope.
+ * as soon as the day has any paint in the scope. Overlapping blocks on the
+ * same minute count once, so an hour stays at most 60. A pen's hour column
+ * still adds that occupancy across days.
  */
 import type { TimeEntry } from "@/lib/time-entries"
 
@@ -32,6 +34,22 @@ export function overlapMinutes(startMin: number, endMin: number, hour: number): 
   return Math.max(0, b - a)
 }
 
+const MINUTES_PER_DAY = 24 * 60
+
+/** Mark each occupied minute once. Overlapping blocks do not raise the count. */
+function paintOccupied(into: Uint8Array, startMin: number, endMin: number) {
+  const from = Math.max(0, Math.min(MINUTES_PER_DAY, startMin))
+  const to = Math.max(from, Math.min(MINUTES_PER_DAY, endMin))
+  for (let m = from; m < to; m++) into[m] = 1
+}
+
+function occupiedInHour(day: Uint8Array, hour: number): number {
+  const start = hour * 60
+  let count = 0
+  for (let m = start; m < start + 60; m++) count += day[m]
+  return count
+}
+
 export function buildHourDayGrid(
   entries: readonly TimeEntry[],
   dateKeys: readonly string[],
@@ -40,6 +58,7 @@ export function buildHourDayGrid(
   const keySet = new Set(dateKeys)
   const index = new Map(dateKeys.map((key, i) => [key, i]))
   const minutes = dateKeys.map(() => HOURS.map(() => 0))
+  const occupied = dateKeys.map(() => new Uint8Array(MINUTES_PER_DAY))
   const instants: TimeEntry[] = []
   let secondaryMinutes = 0
 
@@ -55,9 +74,11 @@ export function buildHourDayGrid(
     const span = entryMinutes(entry)
     if (span <= 0) continue
     if ((entry.secondaryPenIds?.length ?? 0) > 0) secondaryMinutes += span
-    for (const hour of HOURS) {
-      minutes[di][hour] += overlapMinutes(entry.startMin, entry.endMin, hour)
-    }
+    paintOccupied(occupied[di], entry.startMin, entry.endMin)
+  }
+
+  for (let di = 0; di < occupied.length; di++) {
+    for (const hour of HOURS) minutes[di][hour] = occupiedInHour(occupied[di], hour)
   }
 
   let max = 0
@@ -98,14 +119,29 @@ export function buildHourPenRows(
   limit = 8,
 ): { rows: HourPenRow[]; max: number } {
   const keySet = new Set(dateKeys)
-  const byPen = new Map<string, number[]>()
+  const byPenDay = new Map<string, Map<string, Uint8Array>>()
   for (const entry of entries) {
     if (entry.scopeId !== scopeId || !keySet.has(entry.date) || entry.kind === "instant") continue
-    const hours = byPen.get(entry.penId) ?? HOURS.map(() => 0)
-    for (const hour of HOURS) {
-      hours[hour] += overlapMinutes(entry.startMin, entry.endMin, hour)
+    if (entry.endMin <= entry.startMin) continue
+    let days = byPenDay.get(entry.penId)
+    if (!days) {
+      days = new Map()
+      byPenDay.set(entry.penId, days)
     }
-    byPen.set(entry.penId, hours)
+    let bits = days.get(entry.date)
+    if (!bits) {
+      bits = new Uint8Array(MINUTES_PER_DAY)
+      days.set(entry.date, bits)
+    }
+    paintOccupied(bits, entry.startMin, entry.endMin)
+  }
+  const byPen = new Map<string, number[]>()
+  for (const [penId, days] of byPenDay) {
+    const hours = HOURS.map(() => 0)
+    for (const bits of days.values()) {
+      for (const hour of HOURS) hours[hour] += occupiedInHour(bits, hour)
+    }
+    byPen.set(penId, hours)
   }
   const named = pens.map((p) => {
     const hours = byPen.get(p.id) ?? HOURS.map(() => 0)

@@ -298,30 +298,33 @@ export function SleepAnalytics() {
         </>
       ) : (
         <>
-          <div className="an-readouts">
-            <Stat
-              label="Average night"
-              value={formatSleepDuration(stats.averageMinutes)}
-              hint={`median ${formatSleepDuration(stats.medianMinutes)} · over ${counted} night${
-                counted === 1 ? "" : "s"
-              } tracked`}
-            />
-            <Stat
-              label="Usually asleep by"
-              value={offsetToLabel(stats.averageBedtime)}
-              hint={`give or take ${formatSleepDuration(stats.bedtimeVariation)}`}
-            />
-            <Stat
-              label="Usually up at"
-              value={offsetToLabel(stats.averageWake)}
-              hint={`give or take ${formatSleepDuration(stats.wakeVariation)}`}
-            />
-            <Stat
-              label={`Under ${formatSleepDuration(targetMinutes)}`}
-              value={formatSleepDuration(stats.debtMinutes)}
-              hint={`${stats.nightsAtTarget} of ${counted} nights hit the target`}
-            />
-          </div>
+          <section className="an-plate">
+            <p className="an-canvas-title">How much sleep</p>
+            <div className="an-readouts">
+              <Stat
+                label="Average night"
+                value={formatSleepDuration(stats.averageMinutes)}
+                hint={`median ${formatSleepDuration(stats.medianMinutes)} · over ${counted} night${
+                  counted === 1 ? "" : "s"
+                } tracked`}
+              />
+              <Stat
+                label="Usually asleep by"
+                value={offsetToLabel(stats.averageBedtime)}
+                hint={`give or take ${formatSleepDuration(stats.bedtimeVariation)}`}
+              />
+              <Stat
+                label="Usually up at"
+                value={offsetToLabel(stats.averageWake)}
+                hint={`give or take ${formatSleepDuration(stats.wakeVariation)}`}
+              />
+              <Stat
+                label={`Under ${formatSleepDuration(targetMinutes)}`}
+                value={formatSleepDuration(stats.debtMinutes)}
+                hint={`${stats.nightsAtTarget} of ${counted} nights hit the target`}
+              />
+            </div>
+          </section>
 
           {/* The extremes. An average hides the 3am night that explains the week. */}
           <div>

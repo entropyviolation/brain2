@@ -6,8 +6,16 @@
  */
 "use client"
 
+import { memo } from "react"
 import { ChartFrame } from "./chart-frame"
-import { CanvasTitle, STUDIO_AXIS, STUDIO_EMPTY } from "./studio-kit"
+import {
+  CanvasTitle,
+  STUDIO_AXIS,
+  STUDIO_EMPTY,
+  STUDIO_HI,
+  STUDIO_PHOSPHOR,
+  contrastRatio,
+} from "./studio-kit"
 import {
   WEEKDAY_SHORT,
   beeswarmOffsets,
@@ -95,7 +103,7 @@ export function RidgelineChart({
   const used = ridges.filter((r) => r.values.length > 0)
   if (used.length === 0) {
     return (
-      <div>
+      <div className="an-plate">
         <CanvasTitle title={title} help={help} />
         <ChartFrame empty emptySentence={empty ?? "Nothing to ridge yet."} />
       </div>
@@ -107,7 +115,7 @@ export function RidgelineChart({
   const pad = Math.max(1, (max - min) * 0.12)
   const xs = linspace(min - pad, max + pad, 48)
   return (
-    <div>
+    <div className="an-plate">
       <CanvasTitle title={title} help={help} />
       <div className="an-ridge" role="img" aria-label={title}>
         {ridges.map((ridge) => {
@@ -116,15 +124,15 @@ export function RidgelineChart({
           const d = dens
             .map((y, i) => {
               const x = (i / (xs.length - 1)) * 200
-              const yy = 34 - (y / peak) * 28
+              const yy = 48 - (y / peak) * 40
               return `${i === 0 ? "M" : "L"} ${x.toFixed(1)} ${yy.toFixed(1)}`
             })
             .join(" ")
           return (
             <div key={ridge.label} className="an-ridge-row">
               <span className="an-ridge-label">{ridge.label}</span>
-              <svg className="an-ridge-svg" viewBox="0 0 200 36" preserveAspectRatio="none">
-                <path d={`${d} L 200 34 L 0 34 Z`} fill="#3d6b99" opacity={ridge.values.length ? 0.55 : 0.12} />
+              <svg className="an-ridge-svg" viewBox="0 0 200 52" preserveAspectRatio="none">
+                <path d={`${d} L 200 48 L 0 48 Z`} fill="#3d6b99" opacity={ridge.values.length ? 0.55 : 0.12} />
                 <path d={d} fill="none" stroke="#0a2a40" strokeWidth={1} />
               </svg>
             </div>
@@ -132,14 +140,14 @@ export function RidgelineChart({
         })}
       </div>
       <p className="an-quantile">
-        n = {all.length}
+        <strong>n = {all.length}</strong>
         {unit ? ` · ${unit}` : ""} · Gaussian KDE, Silverman h. Empty weekdays stay a flat baseline.
       </p>
     </div>
   )
 }
 
-export function ViolinHistogram({
+export const ViolinHistogram = memo(function ViolinHistogram({
   values,
   unit = "m",
   empty,
@@ -174,11 +182,11 @@ export function ViolinHistogram({
   const q2 = median(values)
   const q3 = quantile(values, 0.75)
   const w = 400
-  const h = 150
+  const h = 180
   const padL = 36
   const padR = 8
-  const padT = 8
-  const padB = 22
+  const padT = 10
+  const padB = 24
   const innerW = w - padL - padR
   const innerH = h - padT - padB
   const xAt = (v: number) => padL + ((v - lo) / (hi - lo || 1)) * innerW
@@ -191,47 +199,60 @@ export function ViolinHistogram({
     })
   const top = violin.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y0.toFixed(1)}`).join(" ")
   const bot = [...violin].reverse().map((p) => `L ${p.x.toFixed(1)} ${p.y1.toFixed(1)}`).join(" ")
+  const iqrY0 = padT + innerH * 0.22
+  const iqrY1 = padT + innerH * 0.78
   return (
     <div>
       <CanvasTitle title={title} help={help} />
-      <svg className="an-violin" viewBox={`0 0 ${w} ${h}`} role="img" aria-label={title}>
-        {bins.map((bin, i) => {
-          const x = xAt(bin.start)
-          const bw = Math.max(1, xAt(bin.end) - x)
-          const bh = (bin.count / bMax) * (innerH * 0.38)
-          return (
-            <rect
-              key={i}
-              x={x}
-              y={padT + innerH - bh}
-              width={bw}
-              height={bh}
-              fill="#9aa0a6"
-              opacity={0.55}
-            />
-          )
-        })}
-        <path d={`${top} ${bot} Z`} fill="#1a4a6b" opacity={0.35} />
-        <path d={top} fill="none" stroke="#0a2a40" strokeWidth={1.2} />
-        <line x1={xAt(q2)} x2={xAt(q2)} y1={padT} y2={padT + innerH} stroke="#000" strokeWidth={1.4} />
-        <line x1={xAt(q1)} x2={xAt(q3)} y1={padT + innerH / 2} y2={padT + innerH / 2} stroke="#000" strokeWidth={2} />
-        <text x={4} y={h - 6} fill={STUDIO_AXIS} fontSize={9} fontFamily="Karla, sans-serif">
-          {Math.round(min)}
-          {unit}
-        </text>
-        <text x={w - padR} y={h - 6} fill={STUDIO_AXIS} fontSize={9} textAnchor="end" fontFamily="Karla, sans-serif">
-          {Math.round(max)}
-          {unit}
-        </text>
-      </svg>
+      <div className="an-plot-well" style={{ padding: 0 }}>
+        <svg className="an-violin" viewBox={`0 0 ${w} ${h}`} role="img" aria-label={title} style={{ boxShadow: "none" }}>
+          <rect x={xAt(q1)} y={iqrY0} width={Math.max(1, xAt(q3) - xAt(q1))} height={iqrY1 - iqrY0} fill="#000" opacity={0.06} />
+          {bins.map((bin, i) => {
+            const x = xAt(bin.start)
+            const bw = Math.max(1, xAt(bin.end) - x)
+            const bh = (bin.count / bMax) * (innerH * 0.38)
+            return (
+              <rect
+                key={i}
+                x={x}
+                y={padT + innerH - bh}
+                width={Math.max(1, bw * 0.35)}
+                height={bh}
+                fill="#000"
+                opacity={0.35}
+              />
+            )
+          })}
+          <path d={`${top} ${bot} Z`} fill="#000" opacity={0.12} />
+          <path d={top} fill="none" stroke="#000" strokeWidth={1.2} opacity={0.55} />
+          <line x1={xAt(q2)} x2={xAt(q2)} y1={padT} y2={padT + innerH} stroke="#000" strokeWidth={1.6} />
+          <text x={4} y={h - 6} fill={STUDIO_AXIS} fontSize={9} fontFamily="Karla, sans-serif">
+            {Math.round(min)}
+            {unit}
+          </text>
+          <text x={w - padR} y={h - 6} fill={STUDIO_AXIS} fontSize={9} textAnchor="end" fontFamily="Karla, sans-serif">
+            {Math.round(max)}
+            {unit}
+          </text>
+        </svg>
+      </div>
       <p className="an-quantile">
-        n = {values.length} · median {Math.round(q2)}
-        {unit} · IQR {Math.round(q1)}–{Math.round(q3)}
-        {unit}. Violin is Gaussian KDE; bars are Freedman–Diaconis bins. Thin n can look smoother than the sample.
+        <strong>n = {values.length}</strong>
+        {" · median "}
+        <strong>
+          {Math.round(q2)}
+          {unit}
+        </strong>
+        {" · IQR "}
+        <strong>
+          {Math.round(q1)}–{Math.round(q3)}
+          {unit}
+        </strong>
+        . Violin is Gaussian KDE; bars are Freedman–Diaconis bins. Thin n can look smoother than the sample.
       </p>
     </div>
   )
-}
+})
 
 function alluvialPath(flow: AlluvialFlow, x0: number, x1: number): string {
   const c = x0 + (x1 - x0) * 0.45
@@ -539,29 +560,36 @@ export function HourPenSmallMultiples({
     <div>
       <CanvasTitle title={title} help={help} />
       <div className="an-small-mult">
-        {rows.map((row) => (
-          <div key={row.id} className="an-small-mult-card">
-            <p className="an-small-mult-title" style={{ color: row.color }}>
-              {row.name}
-            </p>
-            <div className="an-small-mult-hours" role="img" aria-label={`${row.name} by hour`}>
-              {row.hours.map((m, hour) => (
-                <span
-                  key={hour}
-                  className="an-small-mult-hour"
-                  title={`${hourLabel(hour)}: ${Math.round(m)}m`}
-                  style={{
-                    height: `${Math.max(2, (m / max) * 100)}%`,
-                    background: m <= 0 ? STUDIO_EMPTY : row.color,
-                    opacity: m <= 0 ? 0.45 : 1,
-                  }}
-                />
-              ))}
+        {rows.map((row) => {
+          const nameOk = contrastRatio(row.color, STUDIO_HI) >= 4.5
+          return (
+            <div key={row.id} className="an-small-mult-card">
+              <p className="an-small-mult-title" style={{ color: nameOk ? row.color : STUDIO_AXIS }}>
+                {!nameOk ? <span className="an-small-mult-swatch" style={{ background: row.color }} aria-hidden /> : null}
+                {row.name}
+              </p>
+              <div className="an-small-mult-hours" role="img" aria-label={`${row.name} by hour`}>
+                {row.hours.map((m, hour) => (
+                  <span
+                    key={hour}
+                    className="an-small-mult-hour"
+                    title={`${hourLabel(hour)}: ${Math.round(m)}m`}
+                    style={{
+                      height: m <= 0 ? "100%" : `${Math.max(2, (m / max) * 100)}%`,
+                      background: m <= 0 ? STUDIO_HI : row.color,
+                      boxShadow: m <= 0 ? "inset 0 0 0 1px rgba(128,128,128,0.35)" : undefined,
+                    }}
+                  />
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
-      <p className="an-canvas-hint">Small multiples of hour-of-day occupancy. Same 24 columns, one well per pen. Empty hours stay gray, not zero-work green.</p>
+      <p className="an-canvas-hint">
+        Small multiples of hour-of-day occupancy. Same 24 columns, one shared white frame. Empty hours stay opaque
+        white, not zero-work green.
+      </p>
     </div>
   )
 }
@@ -600,9 +628,9 @@ export function CyclePlot({
                   className="an-small-mult-hour"
                   title={`${label} ${hourLabel(hour)}: ${Math.round(v)}m mean`}
                   style={{
-                    height: `${Math.max(2, (v / max) * 100)}%`,
-                    background: v <= 0 ? STUDIO_EMPTY : "#1a6b5c",
-                    opacity: v <= 0 ? 0.4 : 1,
+                    height: v <= 0 ? "100%" : `${Math.max(2, (v / max) * 100)}%`,
+                    background: v <= 0 ? STUDIO_HI : "var(--an-fill, #1a6b5c)",
+                    boxShadow: v <= 0 ? "inset 0 0 0 1px rgba(128,128,128,0.35)" : undefined,
                   }}
                 />
               ))}
@@ -612,7 +640,7 @@ export function CyclePlot({
       </div>
       <p className="an-canvas-hint">
         Cleveland cycle plot: each row is a weekday, each column an hour, cell is mean occupancy across those weekdays
-        in the window. A quiet Tuesday 3pm stays gray.
+        in the window. A quiet Tuesday 3pm stays opaque white on the plot well.
       </p>
     </div>
   )
@@ -629,16 +657,30 @@ export function StudioSpark({
   const max = Math.max(...values, 1)
   const min = Math.min(...values, 0)
   const span = max - min || 1
-  const d = values
-    .map((v, i) => {
-      const x = values.length === 1 ? 50 : (i / (values.length - 1)) * 100
-      const y = 26 - ((v - min) / span) * 22
-      return `${i === 0 ? "M" : "L"} ${x.toFixed(1)} ${y.toFixed(1)}`
-    })
-    .join(" ")
+  const w = 320
+  const h = 64
+  const padT = 6
+  const padB = 6
+  const innerH = h - padT - padB
+  const pts = values.map((v, i) => {
+    const x = values.length === 1 ? w / 2 : (i / (values.length - 1)) * w
+    const y = padT + innerH - ((v - min) / span) * innerH
+    return { x, y }
+  })
+  const d = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ")
+  const area = `${d} L ${pts[pts.length - 1].x.toFixed(1)} ${h - padB} L ${pts[0].x.toFixed(1)} ${h - padB} Z`
   return (
-    <svg className="an-spark" viewBox="0 0 100 28" preserveAspectRatio="none" role="img" aria-label={title ?? "sparkline"}>
-      <path d={d} fill="none" stroke="#0a4a3c" strokeWidth={1.4} />
-    </svg>
+    <div className="an-scope" role="img" aria-label={title ?? "sparkline"}>
+      <svg
+        className="an-spark"
+        viewBox={`0 0 ${w} ${h}`}
+        preserveAspectRatio="none"
+        width="100%"
+        height={64}
+      >
+        <path d={area} fill={STUDIO_PHOSPHOR} opacity={0.18} />
+        <path d={d} fill="none" stroke={STUDIO_PHOSPHOR} strokeWidth={1.8} vectorEffect="non-scaling-stroke" />
+      </svg>
+    </div>
   )
 }

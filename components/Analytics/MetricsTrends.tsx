@@ -100,8 +100,8 @@ export function MetricsTrends() {
                   Log {selected?.name ?? "metric"}
                 </button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-                <DialogHeader>
+              <DialogContent className="an-popup max-w-2xl max-h-[85vh] overflow-y-auto">
+                  <DialogHeader>
                   <DialogTitle>Log {selected?.name ?? "metric"}</DialogTitle>
                 </DialogHeader>
                 <MetricLogger />

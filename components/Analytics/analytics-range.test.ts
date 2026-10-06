@@ -4,16 +4,20 @@ import {
   ANALYTICS_RANGE_STORAGE_KEY,
   DEFAULT_ANALYTICS_RANGE,
   SAMPLE_FLOORS,
+  analyticsWindowUnit,
   customRangeLabel,
   dateKeyOf,
   dateKeysInclusive,
   inRange,
   isThinSample,
   namedPeriodWindow,
+  nextAnalyticsWindow,
   periodKeysFromDateKeys,
+  previousAnalyticsWindow,
   rangeLabel,
   rangeWindowCaption,
   readStoredAnalyticsRange,
+  stepAnalyticsWindow,
   thinWindowSentence,
   writeStoredAnalyticsRange,
 } from "./analytics-range"
@@ -30,6 +34,7 @@ beforeEach(() => {
     mode: "preset",
     fromKey: null,
     toKey: null,
+    stepUnit: null,
     hydrated: false,
   })
 })
@@ -107,6 +112,65 @@ describe("custom analytics range", () => {
     expect(thinWindowSentence(2, SAMPLE_FLOORS.calibration, "2026-08-01 – 2026-09-21")).toBe(
       "n = 2 in 2026-08-01 – 2026-09-21 — too thin to treat as a finding (need 8).",
     )
+  })
+})
+
+describe("analytics range prev/next", () => {
+  it("detects week, month, and season shapes; otherwise day length", () => {
+    expect(analyticsWindowUnit("2026-09-14", "2026-09-20")).toBe("week")
+    expect(analyticsWindowUnit("2026-09-01", "2026-09-30")).toBe("month")
+    expect(analyticsWindowUnit("2026-07-01", "2026-09-30")).toBe("quarter")
+    expect(analyticsWindowUnit("2026-09-01", "2026-09-07")).toBe("days")
+  })
+
+  it("steps a 7-day window back by its own length, then forward to today", () => {
+    expect(previousAnalyticsWindow("2026-09-14", "2026-09-20")).toEqual({
+      from: "2026-09-07",
+      to: "2026-09-13",
+    })
+    expect(nextAnalyticsWindow("2026-09-07", "2026-09-13", TODAY)).toEqual({
+      from: "2026-09-14",
+      to: "2026-09-20",
+    })
+    expect(nextAnalyticsWindow("2026-09-14", "2026-09-20", TODAY)).toBeNull()
+  })
+
+  it("steps this week / month / season by calendar unit", () => {
+    expect(stepAnalyticsWindow("2026-09-14", "2026-09-20", -1, TODAY, "week")).toEqual({
+      from: "2026-09-07",
+      to: "2026-09-13",
+    })
+    expect(stepAnalyticsWindow("2026-09-01", "2026-09-30", -1, TODAY, "month")).toEqual({
+      from: "2026-08-01",
+      to: "2026-08-31",
+    })
+    expect(stepAnalyticsWindow("2026-07-01", "2026-09-30", -1, TODAY, "quarter")).toEqual({
+      from: "2026-04-01",
+      to: "2026-06-30",
+    })
+  })
+
+  it("custom inclusive length shifts by day count; Next clamps to today", () => {
+    expect(previousAnalyticsWindow("2026-08-01", "2026-09-21")).toEqual({
+      from: "2026-06-10",
+      to: "2026-07-31",
+    })
+    expect(stepAnalyticsWindow("2026-08-01", "2026-08-31", 1, TODAY, "days")).toEqual({
+      from: "2026-08-21",
+      to: "2026-09-20",
+    })
+  })
+
+  it("the store Previous turns a rolling preset into the prior inclusive window", () => {
+    useAnalyticsRangeStore.getState().setDays(7)
+    useAnalyticsRangeStore.getState().stepPeriod(-1)
+    const state = useAnalyticsRangeStore.getState()
+    expect(state.mode).toBe("custom")
+    expect(state.fromKey).toBe("2026-09-07")
+    expect(state.toKey).toBe("2026-09-13")
+    useAnalyticsRangeStore.getState().stepPeriod(1)
+    expect(useAnalyticsRangeStore.getState().fromKey).toBe("2026-09-14")
+    expect(useAnalyticsRangeStore.getState().toKey).toBe("2026-09-20")
   })
 })
 

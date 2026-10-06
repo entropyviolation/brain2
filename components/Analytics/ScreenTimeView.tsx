@@ -67,28 +67,32 @@ export function ScreenTimeView() {
         <ChartFrame empty emptySentence={`Nothing painted in Screen Time in the ${label}. ActivityWatch only records from when its watchers run. Sync from Settings → Screen Time after using the Mac.`} />
       ) : (
         <>
-          <div className="flex flex-wrap gap-3">
-            <StudioReadout label="Active" value={formatDuration(totals.tracked)} note={`${totals.coverage.toFixed(0)}% of the window`} />
-            <StudioReadout label="Untracked" value={formatDuration(totals.untracked)} note="AFK and idle sit here" />
-            <StudioReadout
-              label="Last sync"
-              value={prefs.lastSuccessAt ? new Date(prefs.lastSuccessAt).toLocaleString() : "never"}
-            />
-          </div>
-          <ChartFrame>
-            <p className="text-xs text-muted-foreground">Alignment vs Activity occupancy</p>
-            <p className="text-sm">
-              Activity {formatDuration(activityMin)} · Screen Time {formatDuration(screenMin)} · overlap{" "}
-              {formatDuration(overlap)} ({overlapPct}% of Activity)
-            </p>
-            <div className="mt-2 flex h-3 overflow-hidden rounded border">
-              <span className="bg-sky-600" style={{ width: `${Math.min(100, (screenMin / Math.max(activityMin, screenMin, 1)) * 100)}%` }} title="Screen Time" />
-              <span className="bg-emerald-600/80" style={{ width: `${Math.min(100, (activityMin / Math.max(activityMin, screenMin, 1)) * 100)}%` }} title="Activity" />
+          <section className="an-plate">
+            <div className="an-readouts">
+              <StudioReadout label="Active" value={formatDuration(totals.tracked)} note={`${totals.coverage.toFixed(0)}% of the window`} />
+              <StudioReadout label="Untracked" value={formatDuration(totals.untracked)} note="AFK and idle sit here" />
+              <StudioReadout
+                label="Last sync"
+                value={prefs.lastSuccessAt ? new Date(prefs.lastSuccessAt).toLocaleString() : "never"}
+              />
             </div>
-          </ChartFrame>
+          </section>
+          <section className="an-plate">
+            <p className="an-canvas-title">Alignment vs Activity occupancy</p>
+            <div className="an-plot-well">
+              <p className="an-canvas-hint">
+                Activity {formatDuration(activityMin)} · Screen Time {formatDuration(screenMin)} · overlap{" "}
+                {formatDuration(overlap)} ({overlapPct}% of Activity)
+              </p>
+              <div className="mt-2 flex h-3 overflow-hidden" style={{ boxShadow: "inset 0 0 0 1px #808080" }}>
+                <span className="bg-sky-600" style={{ width: `${Math.min(100, (screenMin / Math.max(activityMin, screenMin, 1)) * 100)}%` }} title="Screen Time" />
+                <span className="bg-emerald-600/80" style={{ width: `${Math.min(100, (activityMin / Math.max(activityMin, screenMin, 1)) * 100)}%` }} title="Activity" />
+              </div>
+            </div>
+          </section>
           {apps.length > 0 && (
-            <>
-              <p className="text-xs text-muted-foreground">Top apps (exact pens)</p>
+            <section className="an-plate">
+              <p className="an-canvas-title">Top apps (exact pens)</p>
               <SliceMosaic
                 slices={apps.slice(0, 12).map((s) => ({
                   id: s.id,
@@ -99,11 +103,11 @@ export function ScreenTimeView() {
                 }))}
                 max={Math.max(...apps.map((s) => s.minutes), 1)}
               />
-            </>
+            </section>
           )}
           {categories.length > 0 && (
-            <>
-              <p className="text-xs text-muted-foreground">Top categories (depth 0)</p>
+            <section className="an-plate">
+              <p className="an-canvas-title">Top categories (depth 0)</p>
               <SliceMosaic
                 slices={categories.slice(0, 12).map((s) => ({
                   id: s.id,
@@ -114,7 +118,7 @@ export function ScreenTimeView() {
                 }))}
                 max={Math.max(...categories.map((s) => s.minutes), 1)}
               />
-            </>
+            </section>
           )}
         </>
       )}

@@ -6,6 +6,19 @@ write the vault. This tab is mass personal data and information-resource
 into endless tools. A chart that cannot open its items, or a finding that
 cannot become a next instrument, is unfinished.
 
+## Public door
+
+Other rooms mount `EnhancedAnalytics` (`enhanced-analytics.tsx`). The shell
+lazy-loads that export from `app/page.tsx`. Views are interior
+(`analytics-views.tsx`). The shell also loads `analytics-chrome.css` from
+`app/layout.tsx`.
+
+Analytics reads the task, habit, and tracking stores. It is not the writer of
+tasks, habits, or tracking.
+
+The remembered window is `useAnalyticsRangeStore` in `analytics-range-store.ts`.
+Other rooms do not write it.
+
 The **Analytics** top-level tab is a light instrument studio over the vault
 already captured: tasks, points, habits, tracking scopes, sleep, metrics,
 reviews, operations, goals, and the item library. Charts use **recharts**
@@ -18,16 +31,21 @@ and `signal-stats.ts` here. No LLM. No new stores.
 so Analytics still lives in Brain2 next to Lists. Range + left index chrome use the
 house [milled fascia](../../docs/DESIGN_STYLE.md#milled-fascia) (equal metal keys,
 CRT active + power lamp, engraved nameplates); canvases stay a **light instrument
-studio** (Win95 face `#c0c0c0`, ink `#000000`, Karla only, nested wells — phosphor
-for traces, not a dark CRT theme). Do not restyle Lists, Habits, Plan, Tracking,
-or Scheduler to match.
+studio** (Win95 face `#c0c0c0` / `--an-paper`, ink `#000000`, Karla only, nested
+milled wells, **white plot wells** `--an-hi` inside milled rims — phosphor
+`#3dff8a` for line traces only, not a dark CRT theme and not cream paper).
+Sections use `.an-plate` with 16px air between plates. Do not restyle Lists,
+Habits, Plan, Tracking, or Scheduler to match.
 
 **Always create as many tooltips and provide as many clear instructions as
 possible if applicable and needed.** Each view has `ANALYTICS_TAB_HELP` under the
 nav, `?` help on titled canvases, and native `title` on controls.
 
 One remembered date range is labeled once (`last 30 days`, 7 / 14 / 90, **or**
-an inclusive custom window labeled as `2026-08-01 – 2026-09-21`). Interpretive
+an inclusive custom window labeled as `2026-08-01 – 2026-09-21`). **Prev** /
+**Next** milled keys shift that same window back or forward by its own length
+(calendar week / month / season when those chips set it; otherwise inclusive
+day count), with Next clamped so the end never passes today. Interpretive
 views show **n** and refuse to treat a thin window as a finding.
 Empty charts keep the frame and put one sentence inside it. Clicking a series
 opens the underlying items in Lists (`open-in-lists.ts`). Derived numbers stay
@@ -51,33 +69,44 @@ meaningful on its own.
 
 | File | Purpose |
 |------|---------|
-| `enhanced-analytics.tsx` | Window: title + studio range/nav/canvas + status. Persists the active view and canvas scroll. `data-ui-name="Analytics"` (docs path this file). Mounts `useScreenTimeSync` while Analytics is open. |
+| `enhanced-analytics.tsx` | Window: title + studio range/nav/canvas + status. Persists the active view and canvas scroll. `data-ui-name="Analytics"` (docs path this file). Mounts `useScreenTimeSync` while Analytics is open. The open view is a lazy chunk (`analytics-views.tsx`); the shell does not import every chart. |
+| `analytics-views.tsx` | One `React.lazy` chunk per Analytics view. |
 | `AnalyticsNav.tsx` | Left studio index (`data-ui-name="Analytics index"`, one-line `data-ui-help`, `#studio-views`). Groups then views; `role="tab"`; last view per group (persisted). Names attrs are the help — do not add a second `?` button. |
 | `analytics-tabs.ts` | Five groups (behavior, time, accuracy, meta, library), views, `groupForTab` / `tabLabel` / `ANALYTICS_TAB_HELP`. A sixth group, Meaning, is specified in [`docs/JungBrain2.md`](../../docs/JungBrain2.md) and is not in this file yet. |
-| `analytics-range.ts` | Presets, custom inclusive from–to, named week/month, labels, `SAMPLE_FLOORS`, thin-window copy, date-key helpers. |
-| `analytics-range-store.ts` | Remembered rolling or custom window (`cogs-analytics-range` / `brain2-analytics-range`). |
+| `analytics-range.ts` | Presets, custom inclusive from–to, named week/month/season, prev/next (`stepAnalyticsWindow` / `previousAnalyticsWindow` / `nextAnalyticsWindow`), labels, `SAMPLE_FLOORS`, thin-window copy, date-key helpers. |
+| `analytics-range-store.ts` | Remembered rolling or custom window (`cogs-analytics-range` / `brain2-analytics-range`); `stepPeriod` for Prev/Next. |
 | `chart-frame.tsx` | Empty / thin furniture + **Open in Lists** (`an-open-lists`). |
+| `CompletionReviewPlates.tsx` | Plates shared by Reflection and Goals, reading the completion popup (not period rituals): exact / est. / unknown time, and the same three marks for starts (an unknown start is a count, not a time), expected vs actual difficulty, optional feelings, where hard or joyful work went, and quick-review points. |
 | `open-in-lists.ts` | Chart → Lists jump. |
-| `analytics-chrome.css` | Milled range/index chrome + light instrument interior (nested **gray** wells, pie, treemap, density, mosaic, hour×day, phosphor scope, horizon/violin/alluvial). Title/status stay Lists. |
-| `studio-kit.tsx` | FindingBlock, StudioReadout, StudioHelp, StudioCheck, CanvasTitle, SlicePie, SliceTreemap, SliceMosaic, SplitBar, HourDayHeatmap, DensityCalendar, StudioBars, PhosphorTrace. |
-| `studio-plots.tsx` / `studio-plot-stats.ts` | Horizon, ridgeline, violin+histogram, alluvial, beeswarm, slopegraph, UpSet, hour×pen small multiples, Cleveland cycle, sparkline. |
-| `hour-day.ts` | Hour × day occupancy. Instants off the heat; missing hours stay 0. Hour×pen small multiples + weekday cycle. |
+| `analytics-chrome.css` | Milled range/index chrome + light instrument interior (`.an-plate`, white `.an-plot-well`, pie, treemap, density, mosaic, hour×day, phosphor `.an-scope`, horizon/violin/alluvial). Plate hover dims rows/mosaic at 0.35; pie dims per `.recharts-sector` at 0.72 (not the pie `<g>` wrapper). One body scroll on `.an-content`. Title/status stay Lists. Drill / popup titles (`.an-drill`, `.an-popup`) are crisp Karla ink-green — opted out of the global CRT glow caption in `app/win95.css`. |
+| `studio-kit.tsx` | FindingBlock, StudioReadout, StudioHelp, StudioCheck, CanvasTitle, SlicePie (no Recharts Legend; white 2px slice gaps; hole label; pen fills stay opaque — hover/active dims other sectors to 0.72 and strokes the active path 2px ink; never opacity on the whole pie SVG), SliceTreemap, SliceMosaic (full chroma; luminance text), SplitBar (one segment row: name · duration · percent; clickable; narrow segments keep full text in title/aria), HourDayHeatmap (opaque empty cells; first/month/last day labels), DensityCalendar, StudioBars, PhosphorTrace. |
+| `studio-plots.tsx` / `studio-plot-stats.ts` | Horizon, ridgeline, violin+histogram, alluvial, beeswarm, slopegraph, UpSet, hour×pen small multiples (shared white frame), Cleveland cycle, StudioSpark (phosphor on `.an-scope`). |
+| `hour-day.ts` | Hour × day occupancy. Instants off the heat; missing hours stay 0. Overlapping blocks on one minute count once, so an hour stays ≤ 60. Hour×pen small multiples + weekday cycle. |
 | `observatory-findings.ts` | Pearson-r findings for Observatory. Named apart from `Observatory.tsx` (macOS case-fold). |
 | `signal-stats.ts` | Shannon entropy of pens/day, Gini, list HHI, Markov transitions, weekday/weekend cut, open-item ages. |
 | `HabitsView.tsx` | Density calendar, sorted bars, week/month grade, Good days, climb, tracking-link split, habit-% lag trace, horizon of daily %, weekday/weekend slopegraph. Day % and rates drop exempt periods from the denominator. |
 | `PointsView.tsx` | Daily stacked source split (habit / bonus / task) + cumulative + top earners. |
 | `StreaksWidget.tsx` | Current + longest (not clipped). Optional week-habit streak. Not merged with Home. |
-| `ReflectionView.tsx` | Four score trajectories + queue. |
+| `ReflectionView.tsx` | Legacy score trajectory + queue, plus completion-review plates (`CompletionReviewPlates.tsx`): points, clock certainty, expected vs actual difficulty, feelings, goal/objective texture. |
 | `TodoPulseView.tsx` | Morning to-do walkthrough: labeled tier / duration / points / day importance / resistance series / day excitement; BIM mornings tagged. |
-| `ReviewsView.tsx` | Morning review reader (all-nighter, affirmations, to-dos, priorities, habit priorities, day plan, circumstances, best day, gratitude — labeled when from BIM text pipeline) + blocked-reason mosaic + expandable period reviews. |
+| `ReviewsView.tsx` | Rituals reader: morning (sun), start slices, end/night body, blocked-reason mosaic (Other shows the typed words). Quarter cards show the season label. |
+| `PeriodArcReading.tsx` | Week, month, season, and year reflections in the analytics range, grouped by the ritual headings. Inspiration photos use the attachment store. |
+| `SeasonsView.tsx` | Calendar-quarter comparison (this year + last year): completions, points, quarter rituals, climate rollup, season goals. |
 | `OvercommitmentView.tsx` | Sentence + n; weeks/months pushed in the finding when present. Does not reschedule. |
 | `VelocityView.tsx` | Completions, points, median cycle time, reward scatter. |
-| `TrackingAnalytics.tsx` | Occupancy, **pie** + mosaic, hour×day, weekday/weekend, instants, scope, depth, assumed, pen + tag drill (lists blocks; click opens `entry-dialog.tsx`), block-length violin, hour×pen small multiples, daily sparkline. |
+| `TrackingAnalytics.tsx` | Centered header bay (scope, % basis, untracked, assumed, depth, **Find blocks**) under the range bar; full help behind `?`. Plates: **How much** (metal readouts + phosphor spark), **Composition** (large donut + ranked rows as legend + **period filmstrip** + **day/week color strips** above average-day All/Mon–Sun ribbons + tags + tag bars), **Up / down** (compact white-well table vs `previousAnalyticsWindow`), **Hour × day**, **Rhythm** (weekday/weekend + hour×pen), **Duration** (violin + instants + Open in Lists). Linked `activeId` highlight lives on the composition plate — hovering a pen does not rebuild the filmstrip or the hour×day grid. Pen drill: Split/Reach, donut, **one** SplitBar with name · duration · percent (no duplicate percent row), block list → `entry-dialog` / gap → `LogActivityDialog` with `an-popup` crisp titles. Mosaic rectangles removed from Tracking only (`SliceMosaic` stays for other views). |
+| `average-day.ts` / `AverageDayBoard.tsx` | Pure 15-minute slot averages → All days + Mon–Sun ribbons. Stable pen order from ranked rows; empty occupancy is white well. Sits **under** the period filmstrip in Composition. |
+| `period-filmstrip.ts` / `PeriodFilmstrip.tsx` | Chronological pen bar for the whole window (Home Tracking ribbon language), **above** average-day ribbons. One owner per minute (same as the time grid); painted minutes plus gaps equal days × 1440. Gaps respect Show untracked; click block → EntryDialog, click gap → Log activity. A search jump adds `is-hit` and scrolls that block into the strip. The daily sparkline uses `uniqueMinutesByDate`. |
+| `grain-strips.ts` / `GrainStrips.tsx` | One equal cell per day, and per week when the window spans two Mondays. Color is the pen at the current display depth that owned the most minutes (`minuteMap`, so overlap votes once). Empty days stay white. A tie keeps the earlier pen in the palette. |
+| `tag-trends.ts` / `TagTrendBoard.tsx` | Monthly tag bars beside the weekly series from `tagWeekTrend`. Same union as `tagTotals`: a minute tagged in two scopes counts once. Zero buckets stay in the row. |
+| `block-search.ts` / `BlockSearch.tsx` | Find blocks on this surface. Matcher is `searchTracking` in `lib/tracking-search.ts` (display name, notes, project, primary pen, secondary pens, counts-as chains, action formats, and a mood reading’s word, body, vibe, shorthand, reframe, and about-that). A row jumps: switch scope, highlight the filmstrip segment, open `entry-dialog`. A date outside the shared window opens the block and says so — the window does not move. **Show matches in this view** reruns the Tracking measures on that set (`SEARCH_FILTER_LIMIT`). Other paint is omitted, not called untracked, and Show untracked is paused until Clear. |
+| `period-delta.ts` / `PeriodDeltaTable.tsx` | Pen minutes vs previous equal window from `previousAnalyticsWindow` (same stepper as the range bar). Ink ± deltas; "new" / "same". Renders as a tight four-column table in a scrollable white plot well (max ~320px). |
+| `analytics-boards.css` | Tracking header, composition band, average-day, filmstrip, compact delta-table styles. Imported by the board components. |
 | `SleepAnalytics.tsx` | Nightly strip on 6pm→noon; `~` estimated, **est.** read off the grid; duration CV + lag-1; weekday ridgelines; **against the sun**; **all-nighters** (count, frequency, time, desktop vs text-pipeline/BIM source). |
 | `ScreenTimeView.tsx` | ActivityWatch-painted Screen Time: active vs untracked, top apps / categories, last-sync, alignment vs Activity occupancy. Empty sentence notes AW only records from when watchers run. `data-testid="screentime-view"`. |
 | `CircadianView.tsx` | Hour × day atlas (Activity default, Mood) + Cleveland weekday cycle plot. |
 | `PlacesView.tsx` | Location time-at-pen mosaic. Not a geo map. |
-| `MoodFieldView.tsx` | Spec §15 cognitive-state: Mood pens + metric overlays. |
+| `MoodFieldView.tsx` | Any painted mood name (mosaic), then **Same word**, **The water**, and **Marks**. **How to read this** sits under the title. A color with no card stays out of the averages. Logged wellbeing metrics stay a separate plate. |
 | `DiversityView.tsx` | Shannon entropy of pens/day + Gini of allocation + weekday vs weekend. |
 | `TransitionsView.tsx` | Markov matrix of Tracking pen changes + alluvial of switch counts. |
 | `ContextSwitchHeatmap.tsx` | Density calendar + hour-of-day; per-scope; Open in Lists for items with time logs. |
@@ -87,7 +116,7 @@ meaningful on its own.
 | `CalibrationView.tsx` | Sentence + n + caveat; scatter; type/list breakdown when n clears the floor; PERT bands when present. |
 | `CycleView.tsx` | `daysPushed` distribution, open important items, estimate confirmation, empirical survival of open stock, age beeswarm. |
 | `RegretView.tsx` | Accrued cost of important items sitting undone. |
-| `GoalsAnalytics.tsx` | Objective contribution, neglected goals, progress. |
+| `GoalsAnalytics.tsx` | Objective contribution, neglected goals, progress, and which linked goals held the harder or more enjoyable work. |
 | `Observatory.tsx` | Classical findings + linked Cross-section (`data-ui-name="Observatory"`, `#studio-views`). Thin overlap watermarked. |
 | `CrossSection.tsx` | Linked density (habits, tracking, sleep, completions, points, operations, regret, mood, joy, switches, places, goals, Screen Time occupancy). `data-ui-name="Cross-section"`, `#studio-views`. |
 | `cross-section.ts` | Pure series builders: missing stays missing. |
@@ -99,10 +128,15 @@ meaningful on its own.
 | `AttributesView.tsx` | Typed attribute histograms from schemas that exist. Not a chart builder. |
 | `LibraryCuts.tsx` | Tags (treemap + UpSet combinations), Stages, Weight — fields already on items. |
 
+### Shell loading
+
+One `React.lazy` view at a time. Switching unmounts the previous view; the loaded chunk stays cached.
+
 ## Studio views
 
 The range chips sit under the title (7 / 14 / 30 / 90 plus **Custom** from–to
-or this week / this month). The **studio index** holds groups; views of
+or this week / this month / **This season**, plus **Prev** / **Next** period
+keys). The **studio index** holds groups; views of
 the selected group sit beneath (`role="tab"`). Default view remains **Habits**.
 **Tasks completed** includes habit Done logs (`loggedAction` from
 `lib/habit-done-log.ts`) as well as Tasks, counted inside the window.
@@ -113,26 +147,27 @@ the selected group sit beneath (`role="tab"`). Default view remains **Habits**.
 | | **Streaks** | habits, reviews | Current + longest; not clipped. Not merged with Home. |
 | | **Points** | `points-store` | Stacked source split + cumulative; top earners jump to Lists. |
 | | **Velocity** | tasks, points | Completions, median cycle time, reward vs minutes. |
-| | **Reflection** | completion reviews | Four 1–10 trajectories + queue. |
-| | **Reviews** | `reviews-store` | Blocked-reason mosaic + expandable text. |
+| | **Reflection** | completion reviews | Legacy 1–10 trajectory (missing scores skipped) + queue. Plates for review points (3 + 0.1 per word), exact vs estimated vs unknown time, and the same three counts for starts (unknown is not a time), expected vs actual difficulty, feelings, and which goals or objectives held the hard or joyful work. |
+| | **Reviews** | `reviews-store` | Blocked-reason mosaic + expandable text. Quarter cards use the season label. |
+| | **Seasons** | tasks, points, reviews, goals | This year and last year by calendar quarter (Spring / Summer / Fall / Winter), plus a climate rollup and season goals. Not clipped to the shared window. |
 | | **Overcommit** | `daysPushed` + `timeLogs` | Sentence + n; week/month pushes noted. Not a nanny. |
-| **Time** | **Tracking** | `time-tracking-store` | **Pie** + mosaic + hour×day + weekday/weekend + block-length violin + hour×pen small multiples. Drill lists every block; click a slice to filter, click a block to edit via Home Tracking `entry-dialog.tsx`. |
+| **Time** | **Tracking** | `time-tracking-store` | Centered controls; **Find blocks** (jump or show matches); facts; composition (donut + ranked rows + period filmstrip + day/week color strips **above** average-day All/Mon–Sun + tags + week/month tag bars); up/down compact white-well table vs previous window (`previousAnalyticsWindow`, same match set when a search filter is on); hour×day; weekday/weekend + hour×pen; violin. Pen drill: one SplitBar (name · dur · %); crisp `an-drill` / `an-popup` titles. Untracked drills to gap list → Log activity; painted blocks → `entry-dialog.tsx`. |
 | | **Sleep** | `sleep-store` + tracking | Duration, timing, 6pm→noon strip; `~` / **est.**; duration CV + lag-1; weekday ridgelines. |
 | | **Screen Time** | Screen Time scope + ActivityWatch prefs | Active vs untracked; top apps/categories; last-sync; alignment vs Activity occupancy. Empty: AW only records from when watchers run. |
 | | **Circadian** | tracking | Hour × day occupancy + Cleveland weekday cycle. Missing hours are 0, not occupancy. |
 | | **Places** | Location scope | Time-at-pen mosaic. No lat/lng — not a map. |
-| | **Mood field** | Mood + metrics | Cognitive-state trends (§15). |
+| | **Mood field** | Mood pens + `moodReading` + metrics | Any name in the mosaic. Same word, the water, and marks (with n) read only opened stretches. Wellbeing metrics stay separate. |
 | | **Diversity** | tracking | Shannon entropy of pens/day, Gini of allocation, weekday vs weekend. |
 | | **Transitions** | tracking | Markov P(to \| from) among pen switches + alluvial of counts. |
 | | **Context Switch** | tracking | Switch density + hour-of-day; Open in Lists for time-logged items. |
 | | **Text events** | tracking (`generatedBy.text` instants) | Discrete phone events + switch markers; counts by day; always from text pipeline. |
 | | **Text spans** | tracking (`generatedBy.text` intervals) | currently / stopped / switched durations + switch count; always from text pipeline. |
 | | **Operations** | operation items | Stage/category mosaic + work vs neglect. |
-| **Accuracy** | **Plan vs Reality** | plan, events, capacity, sleep | Ribbon + events as planned minutes + waking capacity. |
+| **Accuracy** | **Plan vs Reality** | plan, events, capacity, sleep | Ribbon + events as planned minutes + waking capacity. Grain includes Season (`YYYY-Qn`). |
 | | **Calibration** | tasks | Sentence + n; type/list when floor clears; PERT when present. |
 | | **Cycle** | pushes, estimates | Stall distribution + confirmation rate + survival + age beeswarm of open important items. |
-| | **Regret** | `regret-store` | Accrued / outstanding. |
-| | **Goals** | `goals-store` | Progress, neglected, contributing completions. |
+| | **Regret** | `regret-store` | Accrued / outstanding. Rows are local `YYYY-MM-DD`, same as the Analytics window. An old evening UTC key can still sit on the next civil day. |
+| | **Goals** | `goals-store` | Progress, neglected, contributing completions, and the hard / joyful texture of linked work. |
 | **Meta** | **Observatory** | aligned series | Pearson findings + Cross-section (includes Activity vs Screen Time occupancy). Thin overlap withheld. |
 | | **Cross-section** | many stores | Linked density; extra series: mood, joy, switches, places, goals, Screen Time. |
 | | **Metrics** | `metrics-store` | All five small-multiples + **Log {name}**. |
@@ -153,7 +188,8 @@ missing nights stay blank; empty rows say so.
 
 - `lib/tracking-summary.ts` — occupancy (`uniqueMinutes`: overlapping blocks count
   once, so coverage cannot exceed 100%), pen totals at a display depth, child
-  drill, variant split/reach, tag totals, `withPrecision`.
+  drill, variant split/reach, tag totals, `tagWeekTrend`, `withPrecision`.
+  `tag-trends.ts` here adds the month buckets with the same union.
 - `lib/plan-vs-reality.ts` — variance/alignment scoring; `recentPeriodKeys`.
 - `components/Home/Plan/plan-capacity.ts` — planned vs waking window (labeled `~`
   when sleep is inferred).
@@ -165,11 +201,20 @@ missing nights stay blank; empty rows say so.
 - `components/Analytics/studio-plot-stats.ts` — KDE, histogram, horizon bands,
   beeswarm, alluvial layout, UpSet intersections, weekday ridges.
 - `lib/overcommitment.ts` — day-push reconstruction + logged minutes.
-- `lib/regret-store.ts` — accrued cost of important overdue items.
+- `lib/regret-store.ts` — accrued cost of important overdue items. Rows are local `YYYY-MM-DD`, same as the Analytics window. An old evening UTC key can still sit on the next civil day.
 - `lib/operations.ts` — `buildHeatmap` for operations minutes.
 - `lib/habit-accomplishment.ts` — Good days.
 - `lib/incremental-habits.ts` — climb targets (not re-derived here).
 - Habit % from `calculateDayPercentageAV` (`lib/calculations.ts`).
+
+## Time context (not built)
+
+“Only time at home”, “alone vs with Elijah”, and the other life-context slices
+are specified in [`docs/time-context-vision.md`](../../docs/time-context-vision.md).
+They are not in the product. Find blocks is a word search over stored blocks.
+It is not a context slice. A later slice should be a predicate over `TimeEntry`
+and then the same measures (`totalsFor`, filmstrip, circadian, deltas) — not a
+second clock.
 
 ## Screenshots
 

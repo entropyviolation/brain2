@@ -71,7 +71,7 @@ describe("EnhancedAnalytics", () => {
     }))
   })
 
-  it("renders the window, group bar, view changer, and shared range once", () => {
+  it("renders the window, group bar, view changer, and shared range once", async () => {
     render(<EnhancedAnalytics />)
 
     expect(screen.getByText("Analytics")).toBeInTheDocument()
@@ -86,7 +86,7 @@ describe("EnhancedAnalytics", () => {
     expect(within(views).getByRole("tab", { name: "Habits" })).toHaveAttribute("aria-selected", "true")
     expect(within(views).getByRole("tab", { name: "Streaks" })).toBeInTheDocument()
     expect(screen.queryByText("Item Types live in Settings")).not.toBeInTheDocument()
-    expect(screen.getByText(/Nothing in the last 30 days to total yet/)).toBeInTheDocument()
+    expect(await screen.findByText(/Nothing in the last 30 days to total yet/)).toBeInTheDocument()
     expect(screen.getByText("Daily habit completion heatmap")).toBeInTheDocument()
   })
 
@@ -96,7 +96,7 @@ describe("EnhancedAnalytics", () => {
 
     await user.click(screen.getByRole("tab", { name: "Library" }))
     expect(screen.getByRole("tab", { name: "Item Types" })).toHaveAttribute("aria-selected", "true")
-    expect(screen.getByTestId("item-types-library")).toBeInTheDocument()
+    expect(await screen.findByTestId("item-types-library")).toBeInTheDocument()
     expect(screen.getAllByText(/Settings still edits schemas/).length).toBeGreaterThan(0)
   })
 
@@ -105,7 +105,7 @@ describe("EnhancedAnalytics", () => {
     render(<EnhancedAnalytics />)
 
     await user.click(screen.getByRole("tab", { name: "Overcommit" }))
-    expect(screen.getByTestId("overcommit-view")).toBeInTheDocument()
+    expect(await screen.findByTestId("overcommit-view")).toBeInTheDocument()
     expect(screen.getByText(/No day-pushes or logged minutes in the last 30 days/)).toBeInTheDocument()
   })
 
@@ -115,7 +115,7 @@ describe("EnhancedAnalytics", () => {
 
     await user.click(screen.getByRole("tab", { name: "Meta" }))
     await user.click(screen.getByRole("tab", { name: "Cross-section" }))
-    expect(screen.getByTestId("cross-section")).toBeInTheDocument()
+    expect(await screen.findByTestId("cross-section")).toBeInTheDocument()
     expect(screen.getByText(/Nothing recorded in the last 30 days to align yet/)).toBeInTheDocument()
   })
 
@@ -130,7 +130,7 @@ describe("EnhancedAnalytics", () => {
     await user.click(screen.getByRole("tab", { name: "Time" }))
     await user.click(screen.getByRole("tab", { name: "Sleep" }))
     expect(screen.getByLabelText("Analytics date range")).toHaveTextContent("last 7 days")
-    expect(screen.getByText(/1 of 7 nights tracked|0 of 7 nights tracked/)).toBeInTheDocument()
+    expect(await screen.findByText(/1 of 7 nights tracked|0 of 7 nights tracked/)).toBeInTheDocument()
   })
 
   it("opens a custom inclusive window and labels it as the dates", async () => {
@@ -150,7 +150,7 @@ describe("EnhancedAnalytics", () => {
 
     await user.click(screen.getByRole("tab", { name: "Points" }))
 
-    expect(screen.getByText("Points (last 30 days)")).toBeInTheDocument()
+    expect(await screen.findByText("Points (last 30 days)")).toBeInTheDocument()
     expect(screen.getByText("Cumulative points")).toBeInTheDocument()
     expect(screen.getByText("Top point earners")).toBeInTheDocument()
     expect(screen.getByText("Complete tasks to earn points.")).toBeInTheDocument()
@@ -176,7 +176,7 @@ describe("EnhancedAnalytics", () => {
     await user.click(screen.getByRole("tab", { name: "Time" }))
     await user.click(screen.getByRole("tab", { name: "Tracking" }))
 
-    expect(screen.getAllByText("Work").length).toBeGreaterThan(0)
+    expect((await screen.findAllByText("Work")).length).toBeGreaterThan(0)
     expect(screen.getAllByText("30m").length).toBeGreaterThan(0)
     expect(screen.queryByText("Untracked")).not.toBeInTheDocument()
   })
@@ -199,7 +199,7 @@ describe("EnhancedAnalytics", () => {
     render(<EnhancedAnalytics />)
     await user.click(screen.getByRole("tab", { name: "Time" }))
     await user.click(screen.getByRole("tab", { name: "Tracking" }))
-    await user.click(screen.getByLabelText("Show untracked"))
+    await user.click(await screen.findByLabelText("Show untracked"))
 
     expect(screen.getAllByText("Untracked").length).toBeGreaterThan(0)
   })
@@ -252,7 +252,8 @@ describe("EnhancedAnalytics", () => {
     render(<EnhancedAnalytics />)
     await user.click(screen.getByRole("tab", { name: "Time" }))
     await user.click(screen.getByRole("tab", { name: "Tracking" }))
-    await user.click(screen.getAllByRole("button", { name: /^Break down Hanging out/ })[0])
+    const breakdown = await screen.findAllByRole("button", { name: /^Break down Hanging out/ })
+    await user.click(breakdown[0])
 
     const dialog = await screen.findByRole("dialog")
     expect(within(dialog).getAllByText("Elijah").length).toBeGreaterThan(0)

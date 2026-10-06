@@ -76,6 +76,8 @@ describe("studio empty rooms", () => {
   it("Mood field stays empty without Mood paint", () => {
     render(<MoodFieldView />)
     expect(screen.getByTestId("mood-field")).toBeInTheDocument()
+    expect(screen.getByText("How to read this")).toBeInTheDocument()
+    expect(screen.getByText(/A painted name with no card is still a color/)).toBeInTheDocument()
     expect(screen.getByText(/Nothing painted in Mood|No Mood scope yet/)).toBeInTheDocument()
   })
 
@@ -129,10 +131,10 @@ describe("studio shell navigates new rooms", () => {
     render(<EnhancedAnalytics />)
     await user.click(screen.getByRole("tab", { name: "Meta" }))
     expect(screen.getByRole("tab", { name: "Observatory" })).toHaveAttribute("aria-selected", "true")
-    expect(screen.getByTestId("observatory")).toBeInTheDocument()
+    expect(await screen.findByTestId("observatory")).toBeInTheDocument()
     await user.click(screen.getByRole("tab", { name: "Behavior" }))
     await user.click(screen.getByRole("tab", { name: "Velocity" }))
-    expect(screen.getByTestId("velocity-view")).toBeInTheDocument()
+    expect(await screen.findByTestId("velocity-view")).toBeInTheDocument()
   })
 })
 

@@ -1,7 +1,7 @@
 /**
  * components/Analytics/PlanVsReality.tsx — Plan-vs-reality dashboard
  *
- * Shared Analytics window. Grain (day/week/month) is how a period is scored,
+ * Shared Analytics window. Grain (day/week/month/season) is how a period is scored,
  * not a second date picker. A thin sample is not a variance finding. The
  * comparison is a visual, not two lists.
  */
@@ -22,6 +22,7 @@ import {
   taskScheduledInWeek,
   taskScheduledInMonth,
 } from "@/lib/date-utils"
+import { quarterLabel, taskTouchesQuarter } from "@/lib/seasons"
 import { ChartFrame, OpenInListsButton } from "./chart-frame"
 import { useAnalyticsRange } from "./analytics-range-store"
 import { SAMPLE_FLOORS, isThinSample, periodKeysFromDateKeys, thinWindowSentence } from "./analytics-range"
@@ -30,6 +31,7 @@ const GRAINS: { value: PlanPeriod; label: string }[] = [
   { value: "day", label: "Day" },
   { value: "week", label: "Week" },
   { value: "month", label: "Month" },
+  { value: "quarter", label: "Season" },
 ]
 
 function periodKeyLabel(period: PlanPeriod, key: string): string {
@@ -41,6 +43,7 @@ function periodKeyLabel(period: PlanPeriod, key: string): string {
     const r = parseWeekString(key)
     return r ? `Week of ${r.start.toLocaleDateString(undefined, { month: "short", day: "numeric" })}` : key
   }
+  if (period === "quarter") return quarterLabel(key)
   const d = new Date(`${key}-01T00:00:00`)
   return d.toLocaleDateString(undefined, { month: "long", year: "numeric" })
 }
@@ -81,6 +84,7 @@ export function PlanVsReality() {
           if (!activeKey) return false
           if (period === "day") return taskScheduledOnDay(t, activeKey)
           if (period === "week") return taskScheduledInWeek(t, activeKey)
+          if (period === "quarter") return taskTouchesQuarter(t, activeKey)
           return taskScheduledInMonth(t, activeKey)
         })
         .map((t) => t.id),

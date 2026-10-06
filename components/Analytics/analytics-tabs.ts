@@ -16,6 +16,7 @@ export const ANALYTICS_TAB_GROUPS = [
       { id: "reflection", label: "Reflection" },
       { id: "todo-pulse", label: "To-do pulse" },
       { id: "reviews", label: "Reviews" },
+      { id: "seasons", label: "Seasons" },
       { id: "overcommit", label: "Overcommit" },
     ],
   },
@@ -106,15 +107,17 @@ export const ANALYTICS_TAB_HELP: Record<AnalyticsTab, string> = {
   velocity:
     "Completions and points per day, plus median time from start (or create) to done. Display only — does not nag.",
   reflection:
-    "Satisfaction, resistance, focus, and distraction (1–10) from completion reviews. Thin samples stay unlabeled.",
+    "Completion reviews. Legacy satisfaction / resistance / focus / distraction stay on the trajectory (a missing score is skipped, not a 5). New plates: review points (3 + 0.1 per word), exact vs estimated vs unknown time (unknown is a count, not zero), and the same three marks for starts (an unknown start is a count, not a time), expected vs actual difficulty, optional feelings, and which goals or objectives held the hard or joyful work.",
   "todo-pulse":
     "Morning walkthrough fields on to-dos: tier, expected duration, points, day importance (0–10), resistance readings over time (0–10, many samples), and day excitement (0–10). Each number is labeled. Text-pipeline mornings stay tagged as from BIM.",
   reviews:
     "Saved period + morning reviews. Morning cards show all-nighter, affirmations, to-dos, priorities, habit priorities, day plan, circumstances, best day, gratitude (BIM text-pipeline labeled). Expand a period card for evening text. Blocked-reason mosaic is counts, not a ranking.",
+  seasons:
+    "Calendar quarters named as seasons: Q1 Spring, Q2 Summer, Q3 Fall, Q4 Winter. This year and last year show completions, points, and season rituals. Season goals are the Goals whose period is Season. This view is not clipped to the shared date window.",
   overcommit:
     "Reconstructed day-pushes and logged minutes. This tab does not reschedule anything.",
     tracking:
-    "Same minutes as Home → Tracking. Pie and mosaic are the same slices: click either to drill. The drill lists every block in the window; click a slice to filter, click a block to edit it. % of tracked vs % of day are both meant. Include assumed if you want estimated blocks in the total. Block-length violin is duration of painted spans; hour × pen small multiples share Circadian's 24 columns.",
+    "Same minutes as Home → Tracking. Donut and ranked rows are the same slices — click either to drill. The period filmstrip is chronological paint; Days and Weeks color each cell by the pen that took the most minutes at the selected depth. Average-day ribbons (All + Mon–Sun) show when pens typically sit on the clock in 15-minute slots. Find blocks matches names, pens, secondary pens, counts-as chains, and action formats — jump highlights the block, Show matches redraws this view on that set only (other paint is hidden, not called untracked). Click Untracked for gap list, then Log activity; click a painted block (drill or filmstrip) to edit via the Home Tracking entry dialog. % of tracked vs % of day are both meant. Include assumed if you want estimated blocks in the total. Up/down compares each pen to the equal-length period before this window. Tag bars are weekly and monthly minutes, a minute tagged in two scopes counted once. Block-length violin is duration of painted spans; hour × pen small multiples share Circadian's 24 columns.",
   sleep:
     "Nights from the sleep log and Sleep-painted grid, same stretch as Tracking. ~ means an end was estimated; est. means the night was read off paint. Blank nights are excluded from averages, not counted as zero. Ridgelines are Gaussian KDEs of duration and bedtime by weekday. Against the sun uses each day's stored sunrise/sunset (not today's clock on every night); productivity and joy around the sun can join later.",
   screentime:
@@ -124,7 +127,7 @@ export const ANALYTICS_TAB_HELP: Record<AnalyticsTab, string> = {
   places:
     "Location pens as time-at-pen. No coordinates are stored, so this is not a map. Depth uses the same rungs as Tracking.",
   "mood-field":
-    "Painted Mood pens plus logged joy / suffering / alignment when n allows. Spec §15 cognitive-state trends.",
+    "Any painted mood name, plus the stretches you opened: same word, the water, and marks (each with n; blanks left out). A color with no card stays out of the averages. Logged joy / suffering / alignment still sit beside that when n allows.",
   diversity:
     "Shannon entropy of Tracking pens per day (H = −Σ p log₂ p of that day's minute shares) plus Gini of the window's pen totals and weekday vs weekend occupancy. 0 bits = one pen took the day.",
   transitions:
@@ -146,7 +149,7 @@ export const ANALYTICS_TAB_HELP: Record<AnalyticsTab, string> = {
   regret:
     "Accrued cost of important items sitting undone past due. Not a to-do list.",
   goals:
-    "Objective contribution and neglected goals in this window. Open those items in Lists.",
+    "Objective contribution and neglected goals in this window, plus which linked goals held the harder or more enjoyable work. Open those items in Lists.",
   observatory:
     "Classical Pearson r on inner-joined calendar days. Correlation is not causation. Thin overlap is watermarked, not a finding.",
   "cross-section":

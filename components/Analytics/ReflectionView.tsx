@@ -6,17 +6,22 @@
 import { useMemo, useState } from "react"
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts"
 import { useTaskStore } from "@/lib/task-store"
+import { useGoalsStore } from "@/lib/goals-store"
 import type { Task } from "@/lib/types"
 import { itemTitle } from "@/lib/item-utils"
 import { parseLocalDate } from "@/lib/date-utils"
+import { summarizeCompletionReviews } from "@/lib/completion-review"
 import { PostMortemDialog } from "@/components/Reviews/PostMortemDialog"
 import { ChartFrame, OpenInListsButton } from "./chart-frame"
 import { useAnalyticsRange } from "./analytics-range-store"
 import { inRange } from "./analytics-range"
 import { STUDIO_AXIS, STUDIO_GRID, STUDIO_TOOLTIP } from "./studio-kit"
+import { CompletionReviewPlates } from "./CompletionReviewPlates"
 
 export function ReflectionView() {
   const allTasks = useTaskStore((s) => s.tasks)
+  const goals = useGoalsStore((s) => s.goals)
+  const objectives = useGoalsStore((s) => s.objectives)
   const range = useAnalyticsRange()
   const [reflectTask, setReflectTask] = useState<Task | null>(null)
 
@@ -34,16 +39,40 @@ export function ReflectionView() {
   )
   const postMortemSummary = useMemo(() => {
     if (reflectedTasks.length === 0) return null
-    const avg = (pick: (r: NonNullable<Task["completionReview"]>) => number) =>
-      reflectedTasks.reduce((s, t) => s + pick(t.completionReview!), 0) / reflectedTasks.length
+    const avg = (pick: (r: NonNullable<Task["completionReview"]>) => number | undefined) => {
+      const values = reflectedTasks
+        .map((t) => pick(t.completionReview!))
+        .filter((n): n is number => typeof n === "number")
+      if (values.length === 0) return null
+      return values.reduce((sum, n) => sum + n, 0) / values.length
+    }
+    const satisfaction = avg((r) => r.satisfaction)
+    const resistance = avg((r) => r.resistance)
+    const focus = avg((r) => r.focus)
+    const distraction = avg((r) => r.distraction)
+    const parts = [
+      satisfaction != null ? `satisfaction ${satisfaction.toFixed(1)}` : null,
+      resistance != null ? `resistance ${resistance.toFixed(1)}` : null,
+      focus != null ? `focus ${focus.toFixed(1)}` : null,
+      distraction != null ? `distraction ${distraction.toFixed(1)}` : null,
+    ].filter(Boolean)
     return {
       count: reflectedTasks.length,
-      satisfaction: avg((r) => r.satisfaction),
-      resistance: avg((r) => r.resistance),
-      focus: avg((r) => r.focus),
-      distraction: avg((r) => r.distraction),
+      sentence: parts.length ? parts.join(", ") : "no legacy 1–10 scores",
     }
   }, [reflectedTasks])
+
+  const reviewSummary = useMemo(
+    () =>
+      summarizeCompletionReviews({
+        tasks: allTasks,
+        goals: goals.map((goal) => ({ id: goal.id, title: goal.title })),
+        objectives: objectives.map((objective) => ({ id: objective.id, title: objective.title })),
+        inWindow: (date) => inRange(date, range.keySet),
+        titleOf: (row) => itemTitle(row),
+      }),
+    [allTasks, goals, objectives, range.keySet],
+  )
 
   const trajectory = useMemo(
     () =>
@@ -58,10 +87,10 @@ export function ReflectionView() {
           const d = parseLocalDate(r.completedAt) ?? new Date(r.completedAt)
           return {
             label: d.toLocaleDateString(undefined, { month: "numeric", day: "numeric" }),
-            satisfaction: r.satisfaction,
-            resistance: r.resistance,
-            focus: r.focus,
-            distraction: r.distraction,
+            satisfaction: r.satisfaction ?? null,
+            resistance: r.resistance ?? null,
+            focus: r.focus ?? null,
+            distraction: r.distraction ?? null,
           }
         }),
     [reflectedTasks],
@@ -71,13 +100,14 @@ export function ReflectionView() {
     <div className="an-canvas an-stack">
       {postMortemSummary ? (
         <p className="an-finding">
-          {postMortemSummary.count} reflection{postMortemSummary.count === 1 ? "" : "s"} in the {range.label}:
-          satisfaction {postMortemSummary.satisfaction.toFixed(1)}, resistance {postMortemSummary.resistance.toFixed(1)},
-          focus {postMortemSummary.focus.toFixed(1)}, distraction {postMortemSummary.distraction.toFixed(1)} (1–10).
+          {postMortemSummary.count} reflection{postMortemSummary.count === 1 ? "" : "s"} in the {range.label}:{" "}
+          {postMortemSummary.sentence} (1–10, scored reviews only).
         </p>
       ) : (
         <ChartFrame empty emptySentence={`No reflections in the ${range.label}.`} />
       )}
+
+      {reviewSummary.doneCount > 0 && <CompletionReviewPlates summary={reviewSummary} />}
 
       {trajectory.length >= 2 && (
         <ResponsiveContainer width="100%" height={200}>
@@ -135,7 +165,24 @@ export function ReflectionView() {
                       <span>
                         <span className="block truncate">{itemTitle(t)}</span>
                         <span className="an-n">
-                          sat {r.satisfaction} · resist {r.resistance} · focus {r.focus} · distract {r.distraction}
+                          {[
+                            r.satisfaction != null ? `sat ${r.satisfaction}` : null,
+                            r.resistance != null ? `resist ${r.resistance}` : null,
+                            r.focus != null ? `focus ${r.focus}` : null,
+                            r.distraction != null ? `distract ${r.distraction}` : null,
+                            r.enjoyment != null ? `joy ${r.enjoyment}` : null,
+                            r.actualDifficulty != null ? `hard ${r.actualDifficulty}` : null,
+                            r.durationCertainty === "unknown"
+                              ? "time unknown"
+                              : r.durationCertainty === "estimated" && r.actualDuration
+                                ? `~${r.actualDuration}m`
+                                : r.actualDuration
+                                  ? `${r.actualDuration}m`
+                                  : null,
+                            r.reviewPoints != null ? `${r.reviewPoints} pts` : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ") || "reflected"}
                         </span>
                       </span>
                       <span className="an-n">{new Date(r.completedAt).toLocaleDateString()}</span>

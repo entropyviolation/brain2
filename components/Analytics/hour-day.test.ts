@@ -23,6 +23,19 @@ describe("hour-day occupancy", () => {
     expect(grid.max).toBe(60)
   })
 
+  it("counts overlapping blocks in one hour once", () => {
+    const grid = buildHourDayGrid(
+      [
+        entry({ id: "sleep", date: "2026-09-20", penId: "sleep", startMin: 0, endMin: 10 * 60 }),
+        entry({ id: "work", date: "2026-09-20", penId: "work", startMin: 9 * 60, endMin: 10 * 60 }),
+      ],
+      ["2026-09-20"],
+      "activity",
+    )
+    expect(grid.minutes[0][9]).toBe(60)
+    expect(grid.minutes[0].reduce((sum, n) => sum + n, 0)).toBe(10 * 60)
+  })
+
   it("lists instants separately and keeps them off the heatmap", () => {
     const grid = buildHourDayGrid(
       [
@@ -61,6 +74,20 @@ describe("hour-day occupancy", () => {
     expect(rows[0].hours[9]).toBe(60)
     expect(rows[0].hours[8]).toBe(0)
     expect(max).toBe(60)
+  })
+
+  it("does not double-count one pen's overlapping hour, and still adds across days", () => {
+    const { rows } = buildHourPenRows(
+      [
+        entry({ id: "a", date: "2026-09-20", penId: "work", startMin: 9 * 60, endMin: 10 * 60 }),
+        entry({ id: "b", date: "2026-09-20", penId: "work", startMin: 9 * 60, endMin: 10 * 60 }),
+        entry({ id: "c", date: "2026-09-21", penId: "work", startMin: 9 * 60, endMin: 10 * 60 }),
+      ],
+      ["2026-09-20", "2026-09-21"],
+      "activity",
+      [{ id: "work", name: "Work", color: "#00f" }],
+    )
+    expect(rows[0].hours[9]).toBe(120)
   })
 
   it("weekday cycle plot averages only days with paint", () => {

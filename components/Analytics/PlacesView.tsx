@@ -53,16 +53,19 @@ export function PlacesView() {
           {slices.length === 0 ? (
             <ChartFrame empty emptySentence={`Nothing painted in Location in the ${label}.`} />
           ) : (
-            <SliceMosaic
-              slices={slices.map((s) => ({
-                id: s.id,
-                name: s.name,
-                color: s.color,
-                minutes: s.minutes,
-                label: formatDuration(s.minutes),
-              }))}
-              max={Math.max(...slices.map((s) => s.minutes), 1)}
-            />
+            <section className="an-plate">
+              <p className="an-canvas-title">Time at pen</p>
+              <SliceMosaic
+                slices={slices.map((s) => ({
+                  id: s.id,
+                  name: s.name,
+                  color: s.color,
+                  minutes: s.minutes,
+                  label: formatDuration(s.minutes),
+                }))}
+                max={Math.max(...slices.map((s) => s.minutes), 1)}
+              />
+            </section>
           )}
         </>
       )}

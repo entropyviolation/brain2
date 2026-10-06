@@ -7,8 +7,9 @@
 
 import { useMemo } from "react"
 import { useTaskStore } from "@/lib/task-store"
+import { operationTasks } from "@/lib/item-slices"
 import { useReviewsStore } from "@/lib/reviews-store"
-import { buildHeatmap, isOperation } from "@/lib/operations"
+import { buildHeatmap } from "@/lib/operations"
 import { getOperationCategories, OPERATION_ATTR } from "@/lib/operation-types"
 import { parseLocalDate } from "@/lib/date-utils"
 import { ChartFrame, OpenInListsButton } from "./chart-frame"
@@ -24,11 +25,10 @@ const STAGE_COLOR: Record<string, string> = {
 }
 
 export function OperationsAnalytics() {
-  const tasks = useTaskStore((s) => s.tasks)
+  const ops = useTaskStore((s) => operationTasks(s.tasks))
   const operationReviews = useReviewsStore((s) => s.operationReviews)
   const { dateKeys, label } = useAnalyticsRange()
 
-  const ops = useMemo(() => tasks.filter((t) => isOperation(t)), [tasks])
   const start = parseLocalDate(dateKeys[0] ?? "") ?? new Date()
   const end = parseLocalDate(dateKeys[dateKeys.length - 1] ?? "") ?? new Date()
 
@@ -82,44 +82,53 @@ export function OperationsAnalytics() {
         <ChartFrame empty emptySentence="No operations yet." />
       ) : (
         <>
-          <div className="an-readouts">
-            <StudioReadout label="Operations" value={ops.length} />
-            <StudioReadout label="Reviews" value={operationReviews.length} />
-            <StudioReadout label="Rated" value={rated.length} />
-          </div>
-          <p className="an-canvas-title">Stage</p>
-          <SliceMosaic slices={stages} max={Math.max(...stages.map((s) => s.minutes), 1)} />
+          <section className="an-plate">
+            <div className="an-readouts">
+              <StudioReadout label="Operations" value={ops.length} />
+              <StudioReadout label="Reviews" value={operationReviews.length} />
+              <StudioReadout label="Rated" value={rated.length} />
+            </div>
+          </section>
+          <section className="an-plate">
+            <p className="an-canvas-title">Stage</p>
+            <SliceMosaic slices={stages} max={Math.max(...stages.map((s) => s.minutes), 1)} />
+          </section>
           {categories.length > 0 && (
-            <>
+            <section className="an-plate">
               <p className="an-canvas-title">Categories</p>
               <SliceMosaic slices={categories} max={Math.max(...categories.map((s) => s.minutes), 1)} />
-            </>
+            </section>
           )}
-          {heat.some((c) => c.minutes > 0) ? (
-            <div
-              className="an-density-cells"
-              style={{ ["--an-cols" as string]: String(Math.max(heat.length, 1)) }}
-              role="img"
-              aria-label="Operations work minutes by day"
-            >
-              {heat.map((cell) => (
-                <span
-                  key={cell.date}
-                  className="an-density-cell"
-                  title={`${cell.date}: ${cell.minutes}m`}
-                  style={{
-                    background:
-                      cell.minutes <= 0
-                        ? "#b0b0b0"
-                        : `hsl(312 ${30 + cell.level * 12}% ${16 + cell.level * 10}%)`,
-                  }}
-                />
-              ))}
-            </div>
-          ) : (
-            <ChartFrame empty emptySentence={`No operation timeLogs in the ${label}.`} />
-          )}
-          <OpenInListsButton taskIds={ops.map((t) => t.id)} />
+          <section className="an-plate">
+            <p className="an-canvas-title">Work by day</p>
+            {heat.some((c) => c.minutes > 0) ? (
+              <div className="an-plot-well">
+                <div
+                  className="an-density-cells"
+                  style={{ ["--an-cols" as string]: String(Math.max(heat.length, 1)) }}
+                  role="img"
+                  aria-label="Operations work minutes by day"
+                >
+                  {heat.map((cell) => (
+                    <span
+                      key={cell.date}
+                      className="an-density-cell"
+                      title={`${cell.date}: ${cell.minutes}m`}
+                      style={{
+                        background:
+                          cell.minutes <= 0
+                            ? "#ffffff"
+                            : `hsl(312 ${30 + cell.level * 12}% ${16 + cell.level * 10}%)`,
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <ChartFrame empty emptySentence={`No operation timeLogs in the ${label}.`} />
+            )}
+            <OpenInListsButton taskIds={ops.map((t) => t.id)} />
+          </section>
         </>
       )}
     </div>

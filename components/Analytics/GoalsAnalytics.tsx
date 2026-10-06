@@ -7,6 +7,9 @@ import { useMemo } from "react"
 import { useGoalsStore } from "@/lib/goals-store"
 import { useTaskStore } from "@/lib/task-store"
 import { goalProgressPercent, goalsNeedingAttention } from "@/lib/objectives"
+import { itemTitle } from "@/lib/item-utils"
+import { summarizeCompletionReviews } from "@/lib/completion-review"
+import { GoalTexturePlate } from "./CompletionReviewPlates"
 import { ChartFrame, OpenInListsButton } from "./chart-frame"
 import { useAnalyticsRange } from "./analytics-range-store"
 import { inRange } from "./analytics-range"
@@ -19,6 +22,7 @@ export function GoalsAnalytics() {
   const { keySet, label } = useAnalyticsRange()
 
   const activeGoals = goals.filter((g) => !g.completed)
+  const seasonGoals = goals.filter((g) => g.periodKind === "quarter")
   const atTarget = goals.filter((g) => g.target > 0 && g.current >= g.target)
   const stale = useMemo(
     () =>
@@ -53,6 +57,18 @@ export function GoalsAnalytics() {
     [activeGoals],
   )
 
+  const reviewSummary = useMemo(
+    () =>
+      summarizeCompletionReviews({
+        tasks,
+        goals: goals.map((goal) => ({ id: goal.id, title: goal.title })),
+        objectives: objectives.map((objective) => ({ id: objective.id, title: objective.title })),
+        inWindow: (date) => inRange(date, keySet),
+        titleOf: (row) => itemTitle(row),
+      }),
+    [tasks, goals, objectives, keySet],
+  )
+
   const empty = goals.length === 0 && objectives.length === 0
 
   return (
@@ -71,6 +87,7 @@ export function GoalsAnalytics() {
         <>
           <div className="an-readouts">
             <StudioReadout label="At target" value={`${atTarget.length}/${goals.length}`} />
+            <StudioReadout label="Season goals" value={seasonGoals.length} note="period Season" />
             <StudioReadout label="Neglected" value={stale.length} note="no action in 14 days" />
           </div>
           {rows.length === 0 ? (
@@ -91,6 +108,7 @@ export function GoalsAnalytics() {
             </ul>
           )}
           <OpenInListsButton taskIds={served.map((t) => t.id)} />
+          <GoalTexturePlate summary={reviewSummary} />
         </>
       )}
     </div>
