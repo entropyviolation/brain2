@@ -67,4 +67,23 @@ describe("PeriodHabitList", () => {
     await user.click(screen.getByRole("checkbox"))
     expect(onUpdate).toHaveBeenCalledWith("h1", weekStart, { completed: true })
   })
+
+  it("hatches a missed week when the rocker is on and leaves it unmarked when off", () => {
+    const key = periods[0].key
+    const data = { [key]: { h1: { completed: false, missedOpportunity: true } } }
+    const props = {
+      tasks,
+      periods,
+      data,
+      onUpdate: vi.fn(),
+      onEdit: vi.fn(),
+      calculateTaskPercentage: () => 0,
+      calculatePeriodPercentage: () => 0,
+    }
+    const { rerender } = render(<PeriodHabitList {...props} hideCompletedAndMissed />)
+    expect(screen.getByRole("img", { name: "Weekly review 6/15 missed opportunity" })).toHaveClass("habit-exempt")
+    rerender(<PeriodHabitList {...props} />)
+    expect(screen.getByRole("checkbox", { name: "Weekly review 6/15" })).toHaveAttribute("aria-checked", "false")
+    expect(screen.queryByRole("img", { name: /missed opportunity/i })).not.toBeInTheDocument()
+  })
 })

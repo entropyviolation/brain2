@@ -85,6 +85,7 @@ export function TaskFormDialog({
             initialTask={initialTask}
             defaultFrequency={defaultFrequency}
             onDirtyChange={setDirty}
+            onLeaveForItem={() => onOpenChange(false)}
           />
         </div>
       </DialogContent>

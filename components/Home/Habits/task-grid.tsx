@@ -2,50 +2,33 @@
  * components/Home/Habits/task-grid.tsx — Habit grid
  *
  * Compact spreadsheet: gem/edit | wrapping name + streak | 7 weekdays
- * (or Day View: today only, larger bold titles) | week % readout
- * (10-pip channel or numeric LED; Day View daily footer uses a wide fill).
+ * (or Day View: the selected day only, larger bold titles) | week % readout
+ * (glass thermometer or numeric LED; Day View uses the same tube, wider).
  * Yes/No cells are photoreal lamps. Delete lives in habit settings.
  * Climb cells stay `value / target`. Layout: `habit-grid.css`.
+ * Cell bodies: `HabitCompletionCell` (presentational; writes stay here).
  *
  * Spec: §9.2 (habit types), §9.3 (display & interaction).
  */
 "use client"
 
 import { useCallback } from "react"
-import { Clock } from "lucide-react"
 import { type WeeklyTask as Task, TaskType, type TaskCompletion, type WeeklyData } from "@/lib/types"
-import { formatLocalDateKey, getDayOfWeek, isToday } from "@/lib/date-utils"
-import { isHabitGoalMet, isGoalType } from "@/lib/habit-utils"
-import {
-  incrementalCompletionPayload,
-  incrementalDataForTask,
-  incrementalGoalOn,
-  incrementalLoggedValue,
-} from "@/lib/incremental-habits"
+import { formatLocalDateKey, getDayOfWeek, isToday, startOfLocalDay } from "@/lib/date-utils"
+import { isGoalType, isHabitGoalMet } from "@/lib/habit-utils"
+import { completionCellShowsHatch, isMissedOpportunity, printedGoalAmounts } from "@/lib/habit-missed-opportunity"
+import { habitHiddenWhenComplete } from "@/lib/habit-completion-source"
+import { incrementalCompletionPayload } from "@/lib/incremental-habits"
 import { habitWeekStreakSummary } from "@/lib/habit-week-streaks"
-import { trackingUnitLabel } from "@/lib/habit-tracking"
 import { effectivePriorityWeight } from "@/lib/habit-priority"
-import { useThemeStore } from "@/lib/theme-store"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { HabitEditGemButton } from "@/components/Home/Habits/habit-gems"
-import { HabitExemptCell, HabitLedLamp } from "@/components/Home/Habits/habit-led-lamp"
+import { HabitCompletionCell } from "@/components/Home/Habits/habit-completion-cell"
 import { HabitRowName } from "@/components/Home/Habits/habit-row-name"
 import { HabitPercentReadout } from "@/components/Home/Habits/habit-percent-readout"
-import { HabitNumberField, HabitTextField } from "@/components/Home/Habits/habit-value-field"
 import { habitContributesWillpowerStone } from "@/lib/willpower-stones"
-import { exemptionRestLabel, exemptionWandTitle, isExemptKind, loggedExemptionDay, type ExemptionKind } from "@/lib/habit-exemption"
-import { autoCheckHint } from "@/lib/habit-connections"
+import { isExemptKind, type ExemptionKind } from "@/lib/habit-exemption"
 import "./habit-grid.css"
-
-/** Tooltip for a cell the tracking link contributed to. */
-function trackedCellHint(task: Task, completion: TaskCompletion | undefined): string {
-  if (task.type === TaskType.BOOLEAN) return autoCheckHint(completion) ?? "Checked off automatically by tracked time"
-  const unit = trackingUnitLabel(task.trackingLink?.unit)
-  const tracked = completion?.trackedValue ?? 0
-  const manual = completion?.manualValue ?? 0
-  const manualPart = manual > 0 ? ` + ${manual} logged by hand` : ""
-  return `${tracked} ${unit} from Tracking${manualPart}`
-}
 
 interface TaskGridProps {
   tasks: Task[]
@@ -60,8 +43,12 @@ interface TaskGridProps {
   exemptionWand?: boolean
   exemptionKindFor?: (task: Task, dateKey: string) => ExemptionKind
   onSetExempt?: (taskId: string, date: Date, exempt: boolean) => void
+  /** Missed op wand: eligible cells toggle `missedOpportunity`. */
+  missedOpWand?: boolean
+  /** Hatch completed and missed-op cells. Does not remove rows. */
+  hideCompletedAndMissed?: boolean
   viewMode?: "week" | "day"
-  /** When true, only today's column plus the week % column. */
+  /** When true, only the selected day's column plus the week % column. */
   dayView?: boolean
   selectedDate?: Date
   onDateSelect?: (date: Date) => void
@@ -79,27 +66,31 @@ export function TaskGrid({
   exemptionWand = false,
   exemptionKindFor,
   onSetExempt,
+  missedOpWand = false,
+  hideCompletedAndMissed = false,
   viewMode = "week",
   dayView = false,
   selectedDate,
   onDateSelect,
 }: TaskGridProps) {
-  const colors = useThemeStore((s) => s.colors)
   const weekStart = weekDates[0] ?? new Date()
   const asOf = selectedDate ?? new Date()
-  const focusKey = formatLocalDateKey(selectedDate ?? weekDates.find((d) => isToday(d)) ?? weekDates[weekDates.length - 1] ?? new Date())
-  const visibleDates = dayView
-    ? weekDates.filter((d) => formatLocalDateKey(d) === focusKey)
-    : weekDates
-  const sheetDates = visibleDates.length > 0 ? visibleDates : weekDates.slice(-1)
+  const focusDate = startOfLocalDay(
+    selectedDate ?? weekDates.find((d) => isToday(d)) ?? weekDates[weekDates.length - 1] ?? new Date(),
+  )
+  const sheetDates = dayView ? [focusDate] : weekDates
 
   let filteredTasks = tasks
 
   if (hideCompleted && viewMode === "day" && selectedDate) {
     const dateKey = formatLocalDateKey(selectedDate)
     filteredTasks = filteredTasks.filter((task) => {
-      if (exemptionKindFor?.(task, dateKey) === "auto" || exemptionKindFor?.(task, dateKey) === "waved") return false
-      return !isHabitGoalMet(task, weeklyData[dateKey]?.[task.id], { date: selectedDate, weeklyData })
+      const kind = exemptionKindFor?.(task, dateKey)
+      return !habitHiddenWhenComplete(task, weeklyData[dateKey]?.[task.id], {
+        date: selectedDate,
+        weeklyData,
+        exempt: isExemptKind(kind),
+      })
     })
   }
 
@@ -122,112 +113,6 @@ export function TaskGrid({
     if (!task || task.type !== TaskType.INCREMENTAL) return
     onUpdateTaskCompletion(taskId, date, incrementalCompletionPayload(value))
   }, [onUpdateTaskCompletion, tasks])
-
-  const renderTaskCell = (task: Task, date: Date) => {
-    const dateKey = formatLocalDateKey(date)
-    const completion = weeklyData[dateKey]?.[task.id]
-    const kind = exemptionKindFor?.(task, dateKey) ?? "required"
-    const exempt = isExemptKind(kind)
-    const logDay = kind === "logged" ? loggedExemptionDay(task, dateKey, "daily") : null
-
-    if (exemptionWand && onSetExempt) {
-      const title = exemptionWandTitle(kind, "day", logDay)
-      return (
-        <div className="habit-lamp-cell" title={title}>
-          <HabitLedLamp
-            checked={exempt}
-            unavailable={exempt}
-            onCheckedChange={(checked) => onSetExempt(task.id, date, checked)}
-            label={`${task.name} ${dateKey} exemption`}
-          />
-        </div>
-      )
-    }
-
-    if (exempt) {
-      const label = exemptionRestLabel(task.name, dateKey, kind, logDay)
-      return (
-        <div className="habit-lamp-cell">
-          <HabitExemptCell label={label} />
-        </div>
-      )
-    }
-
-    switch (task.type) {
-      case TaskType.BOOLEAN:
-        return (
-          <div className="habit-lamp-cell" title={autoCheckHint(completion) ?? (completion?.trackedCompleted ? trackedCellHint(task, completion) : undefined)}>
-            <HabitLedLamp
-              checked={completion?.completed || false}
-              onCheckedChange={(checked) => handleBooleanChange(task.id, date, checked)}
-              label={`${task.name} ${dateKey}`}
-              tracked={!!(completion?.trackedCompleted || completion?.sleepCompleted || completion?.listCompleted)}
-            />
-          </div>
-        )
-
-      case TaskType.GOAL:
-      case TaskType.TIME:
-      case TaskType.COUNT: {
-        const tracked = completion?.trackedValue ?? 0
-        return (
-          <div className="habit-cell-num" title={tracked > 0 ? trackedCellHint(task, completion) : undefined}>
-            <HabitNumberField
-              value={completion?.value}
-              onValue={(n) => handleGoalChange(task.id, date, n)}
-              className="habit-cell-slot"
-              style={{ borderColor: tracked > 0 ? "#38bdf8" : `${colors.habitGoal}40` }}
-              ariaLabel={`${task.name} ${dateKey}`}
-            />
-            {tracked > 0 && <Clock className="habit-tracked-mark" aria-label="includes tracked time" />}
-            <span className="habit-goal">
-              <span className="habit-goal-den">/{task.goal}</span>
-            </span>
-          </div>
-        )
-      }
-
-      case TaskType.TEXT:
-        return (
-          <HabitTextField
-            value={completion?.text || ""}
-            onValue={(text) => handleTextChange(task.id, date, text)}
-            className="habit-cell-slot habit-cell-slot-text"
-            placeholder="…"
-          />
-        )
-
-      case TaskType.INCREMENTAL: {
-        const climb = incrementalDataForTask(task)
-        if (!climb) return null
-        const goal = incrementalGoalOn(task, weeklyData, date)
-        const value = incrementalLoggedValue(completion)
-        const isCompleted = isHabitGoalMet(task, completion, { date, weeklyData })
-        const unit = climb.unit || task.unit || ""
-        const hint =
-          climb.cadence === "daily" ? `${isCompleted ? "hit" : "need"} +${climb.increment}` : `${goal}${unit ? ` ${unit}` : ""}`
-        return (
-          <div className="habit-cell-num" title={hint}>
-            <HabitNumberField
-              value={value}
-              onValue={(n) => handleIncrementalChange(task.id, date, n)}
-              className={`habit-cell-slot${isCompleted ? " is-met" : ""}`}
-              style={{ borderColor: isCompleted ? undefined : `${colors.habitIncremental}40` }}
-              placeholder={climb.cadence === "daily" ? String(goal) : "0"}
-              ariaLabel={`${task.name} ${formatLocalDateKey(date)}`}
-            />
-            <span className="habit-goal">
-              <span className="habit-goal-den">/{goal}</span>
-              {unit ? <span className="habit-goal-unit"> {unit}</span> : null}
-            </span>
-          </div>
-        )
-      }
-
-      default:
-        return null
-    }
-  }
 
   return (
     <div className="habit-grid-wrap">
@@ -295,14 +180,53 @@ export function TaskGrid({
                   </td>
 
                   {sheetDates.map((date) => {
-                    const kind = exemptionKindFor?.(task, formatLocalDateKey(date)) ?? "required"
+                    const dateKey = formatLocalDateKey(date)
+                    const kind = exemptionKindFor?.(task, dateKey) ?? "required"
                     const exempt = isExemptKind(kind)
+                    const completion = weeklyData[dateKey]?.[task.id]
+                    const printed = printedGoalAmounts(task, completion)
+                    const showHatch = completionCellShowsHatch({
+                      exempt,
+                      met: isHabitGoalMet(task, completion, { date, weeklyData }),
+                      missed: isMissedOpportunity(completion),
+                      exemptionWand,
+                      missedOpWand,
+                      hideCompletedAndMissed,
+                      shown: printed.shown,
+                      goal: printed.goal,
+                    })
                     return (
                       <td
                         key={date.toISOString()}
-                        className={`col-day ${isToday(date) ? "habit-day-today" : ""}${exempt ? " is-exempt" : ""}`}
+                        className={`col-day ${isToday(date) ? "habit-day-today" : ""}${showHatch ? " is-exempt" : ""}`}
                       >
-                        {renderTaskCell(task, date)}
+                        <HabitCompletionCell
+                          task={task}
+                          date={date}
+                          periodKey={dateKey}
+                          periodLabel={dateKey}
+                          completion={completion}
+                          weeklyData={weeklyData}
+                          variant="daily"
+                          frequency="daily"
+                          exemptionNoun="day"
+                          exemptionWand={exemptionWand}
+                          missedOpWand={missedOpWand}
+                          hideCompletedAndMissed={hideCompletedAndMissed}
+                          onToggleMissedOpportunity={(missed) =>
+                            onUpdateTaskCompletion(task.id, date, { missedOpportunity: missed })
+                          }
+                          exemptionKind={kind}
+                          onSetExempt={
+                            onSetExempt
+                              ? (checked) => onSetExempt(task.id, date, checked)
+                              : undefined
+                          }
+                          onBooleanChange={(checked) => handleBooleanChange(task.id, date, checked)}
+                          onGoalChange={(n) => handleGoalChange(task.id, date, n)}
+                          onTextChange={(text) => handleTextChange(task.id, date, text)}
+                          onIncrementalChange={(n) => handleIncrementalChange(task.id, date, n)}
+                        />
                       </td>
                     )
                   })}
@@ -316,7 +240,7 @@ export function TaskGrid({
           )}
 
           {filteredTasks.length > 0 && (
-            <tr className="font-semibold">
+            <tr className="habit-grid-foot font-semibold">
               <td className="col-act" />
               <td className="col-name">Daily Completion</td>
               {sheetDates.map((date) => {

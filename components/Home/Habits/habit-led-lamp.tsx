@@ -1,22 +1,74 @@
 /**
- * components/Home/Habits/habit-led-lamp.tsx — Recessed panel indicator
+ * components/Home/Habits/habit-led-lamp.tsx — Skeuomorphic panel lamp
  *
  * Shared Yes/No lamp for Daily / Weekly / Monthly sheets (and any other
- * boolean). **Small LEDs** ON (default): 15px dark well with one round die,
- * the same lamp language as the percent readout. OFF: rectangular consult /
- * TENO / Tek panel window that
- * fills the same cell (`data-fill`) — glass, metal bezel, even glow; not an oval,
- * sphere, or pill. The cell box does not grow or shrink. Same write path: click or Space/Enter toggles `completed`.
+ * boolean). **Small LEDs** ON (default): 15px silver-chrome rim + smoked glass
+ * + lit die (Tek POWER / gadget-wall). OFF: rectangular consult / TENO / Tek
+ * panel window that fills the same cell (`data-fill`) — glass, metal bezel,
+ * even glow; not an oval, sphere, or pill. The cell box does not grow or
+ * shrink. Click or Space/Enter flips the lamp in that event. The completion
+ * write (undo snapshot, grades, points, coverage) waits for the next turn,
+ * after that paint. The timer carries only the reconcile — the click already
+ * committed the glass. When `saved` changes, the lamp shows the stored
+ * `checked` again, including when a reconcile kept the old boolean.
  * Off = dark glass; on = `percentLedTint` (warm/dark mix, not blast-white);
  * partial = dimmer tint. Unavailable = grey plate: the period is exempt,
  * neither done nor still owed.
  */
 "use client"
 
-import type { CSSProperties } from "react"
+import { useEffect, useRef, useState, type CSSProperties } from "react"
 import { booleanLampState, type HabitLampState } from "@/lib/habit-led"
 import { useHabitsStore } from "@/lib/habits-store"
 import "./habit-led-lamp.css"
+
+/**
+ * Paint `checked` on the click. The grade / points / coverage scan waits for
+ * the next turn so it is not in the same flush as that paint. `saved` is the
+ * stored record's identity; a new one means the write (or an undo) has landed.
+ */
+function usePaintFirstToggle(
+  checked: boolean,
+  saved: unknown,
+  onCheckedChange: (checked: boolean) => void,
+) {
+  const [pending, setPending] = useState<boolean | null>(null)
+  const [seenSaved, setSeenSaved] = useState(saved)
+  const onChangeRef = useRef(onCheckedChange)
+  onChangeRef.current = onCheckedChange
+  const clickGen = useRef(0)
+  const issuedGen = useRef(0)
+
+  if (saved !== seenSaved) {
+    setSeenSaved(saved)
+    if (pending !== null && issuedGen.current === clickGen.current) {
+      clickGen.current = 0
+      issuedGen.current = 0
+      setPending(null)
+    }
+  }
+
+  const shown = pending ?? checked
+
+  useEffect(() => {
+    if (pending === null) return
+    const gen = clickGen.current
+    if (issuedGen.current === gen) return
+    const timer = window.setTimeout(() => {
+      if (issuedGen.current === gen) return
+      issuedGen.current = gen
+      onChangeRef.current(pending)
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [pending])
+
+  const toggle = () => {
+    clickGen.current += 1
+    setPending(!shown)
+  }
+
+  return { shown, toggle }
+}
 
 export function HabitLedLamp({
   checked,
@@ -26,6 +78,8 @@ export function HabitLedLamp({
   ratio,
   tint,
   unavailable = false,
+  unavailableFollowsCheck = false,
+  saved,
 }: {
   checked: boolean
   onCheckedChange: (checked: boolean) => void
@@ -35,26 +89,32 @@ export function HabitLedLamp({
   tint?: string
   /** Exempt period: grey plate, not the completion light and not the dark “still owed” glass. */
   unavailable?: boolean
+  /** Exemption wand: the grey plate tracks the optimistic check, same as the click. */
+  unavailableFollowsCheck?: boolean
+  /** Identity of the saved cell or exemption. A new value drops the optimistic check. */
+  saved?: unknown
 }) {
   const storedTint = useHabitsStore((s) => s.percentLedTint)
   const smallLeds = useHabitsStore((s) => s.habitSmallLeds)
-  const state: HabitLampState = booleanLampState(checked, ratio)
+  const { shown, toggle } = usePaintFirstToggle(checked, saved, onCheckedChange)
+  const state: HabitLampState = booleanLampState(shown, ratio)
   const color = tint || storedTint
+  const paintUnavailable = unavailableFollowsCheck ? shown : unavailable
 
   return (
     <button
       type="button"
       role="checkbox"
-      aria-checked={checked}
+      aria-checked={shown}
       aria-label={label}
       title={label}
-      data-state={unavailable ? "unavailable" : state}
+      data-state={paintUnavailable ? "unavailable" : state}
       data-tracked={tracked ? "true" : undefined}
       data-fill={smallLeds ? undefined : "true"}
       data-no95=""
       className="hab-lamp"
       style={{ "--hab-lamp-tint": color } as CSSProperties}
-      onClick={() => onCheckedChange(!checked)}
+      onClick={toggle}
     >
       <span className="hab-lamp-socket" aria-hidden="true">
         <span className="hab-lamp-bezel">

@@ -1,6 +1,7 @@
 import { act, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
+import { formatLocalDateKey } from "@/lib/date-utils"
 import { TaskType } from "@/lib/types"
 import { resetAllStores } from "@/tests/test-utils"
 import { useHabitsStore } from "@/lib/habits-store"
@@ -51,6 +52,16 @@ describe("TaskGrid", () => {
     expect(document.querySelector(".habit-name-title")?.textContent).toBe("Drink water")
     const wrap = container.querySelector(".habit-grid-wrap") as HTMLElement
     expect(window.getComputedStyle(wrap).overflowY).toBe("visible")
+    const header = document.querySelector("th.col-name") as HTMLElement
+    const dayHeader = document.querySelector("th.col-day") as HTMLElement
+    expect(window.getComputedStyle(header).position).toBe("sticky")
+    expect(window.getComputedStyle(header).top).toBe("0px")
+    expect(window.getComputedStyle(dayHeader).position).toBe("sticky")
+    const foot = document.querySelector("tr.habit-grid-foot td.col-name") as HTMLElement
+    const footDay = document.querySelector("tr.habit-grid-foot td.col-day") as HTMLElement
+    expect(window.getComputedStyle(foot).position).toBe("sticky")
+    expect(window.getComputedStyle(foot).bottom).toBe("0px")
+    expect(window.getComputedStyle(footDay).overflow).toBe("visible")
     const socket = document.querySelector(".habit-gem-socket") as HTMLElement
     expect(socket).toBeTruthy()
     expect(window.getComputedStyle(socket).borderRadius).not.toBe("50%")
@@ -194,6 +205,32 @@ describe("TaskGrid", () => {
     expect(document.querySelector("[class*='progress']")).toBeNull()
   })
 
+  it("day view keeps the selected day when it sits outside the viewed week", async () => {
+    const user = userEvent.setup()
+    const onUpdateTaskCompletion = vi.fn()
+    const outside = new Date(2026, 5, 30)
+    render(
+      <TaskGrid
+        tasks={tasks}
+        weeklyData={{}}
+        weekDates={weekDates}
+        onUpdateTaskCompletion={onUpdateTaskCompletion}
+        onEditTask={vi.fn()}
+        calculateTaskPercentage={() => 0}
+        calculateDayPercentage={() => 0}
+        dayView
+        viewMode="day"
+        selectedDate={outside}
+      />,
+    )
+    expect(document.querySelectorAll("th.col-day")).toHaveLength(1)
+    expect(document.querySelector("th.col-day")?.textContent).toMatch(/Tue/)
+    expect(document.querySelector("th.col-day")?.textContent).toMatch(/6\/30/)
+    expect(screen.queryByText("Sun")).not.toBeInTheDocument()
+    await user.click(screen.getByRole("checkbox"))
+    expect(onUpdateTaskCompletion).toHaveBeenCalledWith("h1", outside, { completed: true })
+  })
+
   it("shows only today and the week % column in day view", () => {
     render(
       <TaskGrid
@@ -221,10 +258,9 @@ describe("TaskGrid", () => {
     expect(window.getComputedStyle(title).fontSize).toBe("15px")
     const daily = screen.getByRole("meter", { name: /daily 40%/ })
     expect(daily).toHaveAttribute("data-density", "wide")
-    expect(daily.querySelectorAll(".hab-pled-bar-tick")).toHaveLength(9)
-    expect((daily.querySelector(".hab-pled-bar-fill") as HTMLElement).style.width).toBe("40%")
+    expect((daily.querySelector(".hab-pled-bar-mercury") as HTMLElement).style.width).toBe("40%")
     expect(screen.getByRole("meter", { name: /Drink water week 20%/ })).toHaveAttribute("data-density", "compact")
-    expect(screen.getByRole("meter", { name: /Drink water week 20%/ }).querySelectorAll(".hab-pled-bar-lamp")).toHaveLength(10)
+    expect((screen.getByRole("meter", { name: /Drink water week 20%/ }).querySelector(".hab-pled-bar-mercury") as HTMLElement).style.width).toBe("20%")
     expect(window.getComputedStyle(document.querySelector("th.col-day") as Element).minWidth).toBe("12rem")
   })
 
@@ -252,7 +288,7 @@ describe("TaskGrid", () => {
     expect(window.getComputedStyle(title).fontWeight).toBe("600")
     expect(window.getComputedStyle(title).fontSize).not.toBe("15px")
     expect(container.querySelector("tr.font-semibold .hab-pled-bar")).toHaveAttribute("data-density", "compact")
-    expect(container.querySelector("tr.font-semibold .hab-pled-bar")?.querySelectorAll(".hab-pled-bar-lamp")).toHaveLength(10)
+    expect(container.querySelector("tr.font-semibold .hab-pled-bar .hab-pled-bar-glass")).toBeTruthy()
   })
 
   it("keeps every row percent channel the same slot width", () => {
@@ -485,5 +521,232 @@ describe("TaskGrid", () => {
     )
     expect(screen.queryByText("Drink water")).not.toBeInTheDocument()
     expect(screen.getByText("Pages")).toBeInTheDocument()
+  })
+
+  it("hides wake-before-9 style habits when sleep-completed for the day", () => {
+    const wake = {
+      id: "wake",
+      name: "wake up before 9",
+      type: TaskType.BOOLEAN,
+      rewardValue: 10,
+      frequency: "daily" as const,
+      sleepLink: { end: "wake" as const, beforeMinutes: 9 * 60 },
+    }
+    const open = {
+      id: "open",
+      name: "Stretch",
+      type: TaskType.BOOLEAN,
+      rewardValue: 10,
+      frequency: "daily" as const,
+    }
+    render(
+      <TaskGrid
+        tasks={[wake, open]}
+        weeklyData={{ "2026-06-16": { wake: { completed: true, sleepCompleted: true } } }}
+        weekDates={weekDates}
+        onUpdateTaskCompletion={vi.fn()}
+        onEditTask={vi.fn()}
+        calculateTaskPercentage={() => 0}
+        calculateDayPercentage={() => 0}
+        hideCompleted
+        viewMode="day"
+        selectedDate={weekDates[0]}
+      />,
+    )
+    expect(screen.queryByText("wake up before 9")).not.toBeInTheDocument()
+    expect(screen.getByText("Stretch")).toBeInTheDocument()
+  })
+
+  it("hides numeric goal habits once the threshold is met", () => {
+    const pages = {
+      id: "pages",
+      name: "Read pages",
+      type: TaskType.GOAL,
+      goal: 10,
+      rewardValue: 10,
+      frequency: "daily" as const,
+    }
+    const open = {
+      id: "open",
+      name: "Stretch",
+      type: TaskType.BOOLEAN,
+      rewardValue: 10,
+      frequency: "daily" as const,
+    }
+    render(
+      <TaskGrid
+        tasks={[pages, open]}
+        weeklyData={{ "2026-06-16": { pages: { value: 10, goal: 10, completed: true } } }}
+        weekDates={weekDates}
+        onUpdateTaskCompletion={vi.fn()}
+        onEditTask={vi.fn()}
+        calculateTaskPercentage={() => 0}
+        calculateDayPercentage={() => 0}
+        hideCompleted
+        viewMode="day"
+        selectedDate={weekDates[0]}
+      />,
+    )
+    expect(screen.queryByText("Read pages")).not.toBeInTheDocument()
+    expect(screen.getByText("Stretch")).toBeInTheDocument()
+  })
+
+  it("hatches completed and missed-op cells only while the rocker is on", () => {
+    const pages = {
+      id: "pages",
+      name: "Read pages",
+      type: TaskType.GOAL,
+      goal: 3,
+      rewardValue: 10,
+      frequency: "daily" as const,
+    }
+    const weeklyData = {
+      "2026-06-16": {
+        h1: { completed: true },
+        pages: { value: 3, goal: 3 },
+      },
+      "2026-06-17": {
+        h1: { completed: false, missedOpportunity: true },
+        pages: { value: 1, goal: 3, missedOpportunity: true },
+      },
+    }
+    const props = {
+      tasks: [...tasks, pages],
+      weeklyData,
+      weekDates,
+      onUpdateTaskCompletion: vi.fn(),
+      onEditTask: vi.fn(),
+      calculateTaskPercentage: () => 0,
+      calculateDayPercentage: () => 0,
+      exemptionKindFor: (task: (typeof tasks)[number], key: string) =>
+        task.id === "h1" && key === "2026-06-18" ? ("waved" as const) : ("required" as const),
+    }
+    const { rerender } = render(<TaskGrid {...props} hideCompletedAndMissed />)
+    expect(screen.getByRole("img", { name: "Drink water 2026-06-16 completed" })).toHaveClass("habit-exempt")
+    expect(screen.getByRole("img", { name: "Read pages 2026-06-16 completed" })).toHaveClass("habit-exempt")
+    expect(screen.getByRole("img", { name: "Drink water 2026-06-17 missed opportunity" })).toHaveClass("habit-exempt")
+    expect(screen.getByRole("img", { name: "Read pages 2026-06-17 missed opportunity" })).toHaveClass("habit-exempt")
+    const exempt = screen.getByRole("img", { name: /Drink water 2026-06-18 exempt/i })
+    expect(exempt).toHaveClass("habit-exempt")
+    expect(exempt.closest("td")).toHaveClass("is-exempt")
+    expect(screen.getByRole("checkbox", { name: "Drink water 2026-06-19" })).toBeInTheDocument()
+
+    rerender(<TaskGrid {...props} />)
+    expect(screen.queryByRole("img", { name: /missed opportunity/i })).not.toBeInTheDocument()
+    const missed = screen.getByRole("checkbox", { name: "Drink water 2026-06-17" })
+    expect(missed).toHaveAttribute("aria-checked", "false")
+    expect(missed.closest("td")).not.toHaveClass("is-exempt")
+    expect(screen.getByRole("checkbox", { name: "Drink water 2026-06-16" })).toHaveAttribute("aria-checked", "true")
+    expect(screen.getByRole("img", { name: /Drink water 2026-06-18 exempt/i })).toHaveClass("habit-exempt")
+    expect(screen.getByRole("textbox", { name: "Read pages 2026-06-17" })).toBeInTheDocument()
+  })
+
+  it("hatches a printed 30/30 when trust still calls the cell unmet", () => {
+    const exercise = {
+      id: "ex",
+      name: "Exercise for at least 30 minutes",
+      type: TaskType.GOAL,
+      goal: 30,
+      unit: "minutes",
+      frequency: "daily" as const,
+      completionSources: ["manual", "tags", "keywords"] as const,
+    }
+    const short = {
+      id: "short",
+      name: "Short walk",
+      type: TaskType.GOAL,
+      goal: 30,
+      frequency: "daily" as const,
+      completionSources: ["manual", "tags", "keywords"] as const,
+    }
+    render(
+      <TaskGrid
+        tasks={[exercise, short]}
+        weeklyData={{
+          "2026-06-16": {
+            ex: { value: 30, goal: 30, manualValue: 30, trackedValue: 10, completed: false },
+            short: { value: 15, goal: 30, manualValue: 15, trackedValue: 10, completed: false },
+          },
+        }}
+        weekDates={weekDates}
+        onUpdateTaskCompletion={vi.fn()}
+        onEditTask={vi.fn()}
+        calculateTaskPercentage={() => 0}
+        calculateDayPercentage={() => 0}
+        hideCompletedAndMissed
+      />,
+    )
+    expect(screen.getByRole("img", { name: "Exercise for at least 30 minutes 2026-06-16 completed" })).toHaveClass(
+      "habit-exempt",
+    )
+    expect(screen.getByRole("textbox", { name: "Short walk 2026-06-16" })).toHaveValue("15")
+  })
+
+  it("prefixes current-period coverage pace inside the day cell", () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(2026, 9, 6, 15, 0, 0))
+    const today = new Date(2026, 9, 6, 15, 0, 0)
+    const key = formatLocalDateKey(today)
+    const log = {
+      id: "log",
+      name: "Log 75% of the day",
+      type: TaskType.GOAL,
+      goal: 75,
+      frequency: "daily" as const,
+      coverageLink: { threshold: 75, enabled: true },
+    }
+    const pages = {
+      id: "pages",
+      name: "Pages",
+      type: TaskType.GOAL,
+      goal: 3,
+      frequency: "daily" as const,
+    }
+    const { container } = render(
+      <TaskGrid
+        tasks={[log, pages]}
+        weeklyData={{ [key]: { log: { value: 15.5, goal: 75 } } }}
+        weekDates={[today]}
+        onUpdateTaskCompletion={vi.fn()}
+        onEditTask={vi.fn()}
+        calculateTaskPercentage={() => 40}
+        calculateDayPercentage={() => 10}
+      />,
+    )
+    const pace = screen.getByTestId("habit-cell-pace")
+    expect(pace.textContent).toMatch(/^PROG: \d+%$/)
+    expect(pace.closest(".habit-cell-stack")).toBeTruthy()
+    expect(pace.closest("td")?.className).toContain("col-day")
+    expect(pace.closest("td.col-pct")).toBeNull()
+    const pcts = [...container.querySelectorAll("tbody tr.group td.col-pct")]
+    expect(pcts).toHaveLength(2)
+    const widths = pcts.map((el) => window.getComputedStyle(el).width)
+    expect(widths[0]).toBe(widths[1])
+    vi.useRealTimers()
+  })
+
+  it("does not mark a completed or exempt cell with the missed-op wand", async () => {
+    const user = userEvent.setup()
+    const onUpdateTaskCompletion = vi.fn()
+    render(
+      <TaskGrid
+        tasks={tasks}
+        weeklyData={{ "2026-06-16": { h1: { completed: true } } }}
+        weekDates={weekDates}
+        onUpdateTaskCompletion={onUpdateTaskCompletion}
+        onEditTask={vi.fn()}
+        calculateTaskPercentage={() => 0}
+        calculateDayPercentage={() => 0}
+        missedOpWand
+        exemptionKindFor={(_task, key) => (key === "2026-06-17" ? "waved" : "required")}
+      />,
+    )
+    expect(screen.getByRole("img", { name: "Drink water 2026-06-16 already done" })).toHaveClass("habit-exempt")
+    expect(screen.queryByRole("checkbox", { name: /2026-06-16 missed opportunity/i })).not.toBeInTheDocument()
+    expect(screen.getByRole("img", { name: /Drink water 2026-06-17 exempt/i })).toHaveClass("habit-exempt")
+    await user.click(screen.getByRole("img", { name: "Drink water 2026-06-16 already done" }))
+    expect(onUpdateTaskCompletion).not.toHaveBeenCalled()
+    await user.click(screen.getByRole("checkbox", { name: "Drink water 2026-06-18 missed opportunity" }))
+    expect(onUpdateTaskCompletion).toHaveBeenCalledWith(tasks[0].id, weekDates[2], { missedOpportunity: true })
   })
 })

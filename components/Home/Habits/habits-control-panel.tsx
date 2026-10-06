@@ -39,7 +39,7 @@ export function HabitsControlPanel({
       aria-label={children ? HABITS_CONTROL_PANEL_NAME : "Willpower gems"}
       data-control-panel="habits"
       data-ui-name="Habits control panel"
-      data-ui-help="Grades, streaks, exemption wand, view rockers, New habit, and Willpower gems."
+      data-ui-help="Grades, streaks, exemption wand, missed op wand, view rockers, New habit, and Willpower gems."
       data-ui-docs="components/Home/Habits/README.md"
       style={
         {

@@ -4,15 +4,12 @@
   width: 100%;
   min-width: 0;
   /* The Habits Tab Control Panel pins Willpower gems at the bottom; the sheet scrolls in `.hab-well`.
-     Wrap overflow stays visible so the well, not a nested inner scroller, is the pane. */
+     Wrap overflow stays visible so the well, not a nested inner scroller, is the pane.
+     A nested overflow would also stop the header and totals rows from sticking to that well.
+     Air sits above the sheet only. Padding under the table, or on the bottom of the well,
+     would leave a strip where a scrolled row shows through beneath the sticky totals. */
   overflow: visible;
-}
-
-@media (max-width: 860px) {
-  .habit-grid-wrap {
-    overflow-x: auto;
-    overflow-y: hidden;
-  }
+  padding: 4px 0 0;
 }
 
 .habit-grid {
@@ -33,10 +30,33 @@
 }
 
 .habit-grid thead th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
   height: auto;
   padding: 3px 2px;
   font-weight: 600;
   text-align: center;
+  background-color: var(--chrome-mid, #dfdfdf);
+}
+
+/* Totals stick to the bottom of `.hab-well` the way the header sticks to the top.
+   Solid chrome so a row cannot show through. Overflow stays the cell default
+   (visible) so the glass percent tubes are not clipped. */
+.habit-grid tbody tr.habit-grid-foot td {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  background-color: var(--chrome-mid, #dfdfdf);
+  box-shadow: 0 -1px 0 var(--chrome-mid, #dfdfdf);
+}
+
+.habit-grid tbody tr.habit-grid-foot td.habit-day-today {
+  background-color: #c8d5ce;
+  box-shadow:
+    0 -1px 0 #c8d5ce,
+    inset 1px 0 0 #8a9a90,
+    inset -1px 0 0 #8a9a90;
 }
 
 .habit-grid .col-act {
@@ -120,10 +140,9 @@
   max-width: none;
 }
 
-.habit-grid .habit-pct .hab-pled-bar-well {
+.habit-grid .habit-pct .hab-pled-bar-glass {
   box-sizing: border-box;
   width: 100%;
-  justify-content: space-between;
 }
 
 .habit-grid .habit-pct .hab-pled-bar-read {
@@ -211,6 +230,54 @@
   color: #ea580c;
 }
 
+.habit-cell-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  /* PROG shares this cell with the number. Containing the inline size stops
+     that label from becoming the column's min-content and shoving the row tube. */
+  contain: inline-size;
+}
+
+.habit-cell-pace {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 9px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: #3d5c58;
+}
+
+.habit-cell-tube {
+  position: relative;
+  display: block;
+  width: 3.4rem;
+  height: 4px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(198, 210, 214, 0.5));
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.95),
+    inset 0 -1px 1px rgba(60, 80, 96, 0.28),
+    0 0 0 1px rgba(80, 96, 104, 0.4);
+}
+
+.habit-cell-mercury {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(180deg, #e7fff6, #3d9a86 55%, #1c6d5e);
+}
+
 .habit-cell-num {
   display: flex;
   align-items: center;
@@ -239,13 +306,98 @@
   border-radius: 2px;
 }
 
-.habit-grid input.habit-cell-slot.habit-cell-slot-text {
+.habit-grid input.habit-cell-slot.habit-cell-slot-text,
+.habit-grid button.habit-cell-text-preview {
   flex: 1 1 auto;
   width: 100%;
   min-width: 0;
   max-width: none;
   text-align: left;
   padding: 0 6px;
+}
+
+.habit-cell-text-preview {
+  box-sizing: border-box;
+  height: 22px;
+  margin: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  border: none;
+  border-radius: 2px;
+  background: #fff;
+  color: #000;
+  font: inherit;
+  font-size: 12px;
+  line-height: 20px;
+  cursor: text;
+  box-shadow: inset 1px 1px 0 #808080, inset -1px -1px 0 #fff;
+}
+
+.habit-text-editor-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  pointer-events: none;
+}
+
+.habit-text-editor-shade {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+  border: none;
+  background: transparent;
+  cursor: default;
+}
+
+.habit-text-editor {
+  position: fixed;
+  z-index: 81;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  background: #c0c0c0;
+  color: #000;
+  font-family: var(--w95-font, Tahoma, "MS Sans Serif", Geneva, Verdana, sans-serif);
+  box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px #808080, inset 2px 2px #dfdfdf,
+    3px 3px 0 rgba(0, 0, 0, 0.28);
+}
+
+.habit-text-editor-area {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 7.5rem;
+  resize: vertical;
+  margin: 0;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 0;
+  background: #fff;
+  color: #000;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.35;
+  box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px #808080;
+}
+
+.habit-text-editor-bar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.habit-text-editor-bar button {
+  min-width: 4.5rem;
+  height: 22px;
+  padding: 0 10px;
+  border: none;
+  background: #c0c0c0;
+  color: #000;
+  font: inherit;
+  font-size: 12px;
+  box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px #808080, inset 2px 2px #dfdfdf;
+  cursor: pointer;
 }
 
 .habit-cell-num .habit-cell-slot.is-met {
@@ -581,20 +733,41 @@ body.win95-app .habit-gem-socket:active,
   box-shadow: inset 1px 1px #808080, inset -1px -1px #fff;
 }
 
+/* Heatmap: a small handheld screen set into the metal well.
+   Pearl lip, flat dusty-aqua cells. Pitch (14px + 2px gap) is also
+   HEAT_CELL_PX / HEAT_GAP_PX in habit-heatmap.tsx — keep them together. */
 .habit-heat {
-  padding: 10px 10px 8px;
-  background: #dfdfdf;
-  box-shadow: inset 1px 1px #808080, inset -1px -1px #fff;
+  min-width: 0;
+  max-width: 100%;
+  padding: 7px 7px 6px;
+  border-radius: 4px;
+  background:
+    linear-gradient(180deg, #f4f6f3 0%, #e3e6e2 46%, #d0d3cf 100%);
+  box-shadow:
+    inset 1px 1px #ffffff,
+    inset -1px -1px #8a8d88,
+    0 0 0 1px #9ea19c;
 }
 
 .habit-heat-scroll {
-  overflow-x: auto;
+  min-width: 0;
   max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  padding: 7px 6px 6px;
+  border-radius: 3px;
+  background:
+    linear-gradient(180deg, #e8f1e4 0%, #d5e4d1 42%, #c9d9c5 100%);
+  box-shadow:
+    inset 0 0 0 1px #7f9a82,
+    inset 0 0 0 3px #c3d4c0,
+    inset 0 3px 5px rgba(36, 58, 40, 0.22);
 }
 
 .habit-heat-grid {
   display: grid;
-  gap: 7px 6px;
+  row-gap: 2px;
   align-items: center;
   min-width: min-content;
 }
@@ -603,27 +776,38 @@ body.win95-app .habit-gem-socket:active,
   position: sticky;
   left: 0;
   z-index: 2;
-  background: #c0c0c0;
-  min-height: 36px;
-  box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff;
+  background: #e7ebe4;
+  min-height: 28px;
+  border-radius: 3px;
+  box-shadow:
+    inset 0 1px 0 #ffffff,
+    inset 0 -1px 0 #b7bdb4;
 }
 
 .habit-heat-head {
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
-  color: #111111;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: #1a2b20;
   text-align: center;
   writing-mode: vertical-rl;
   transform: rotate(180deg);
-  height: 36px;
-  background: #c0c0c0;
-  box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff;
+  transform-origin: center;
+  height: 28px;
+  background: #e7ebe4;
+  border-radius: 3px;
+  box-shadow:
+    inset 0 1px 0 #ffffff,
+    inset 0 -1px 0 #b7bdb4;
 }
 
 .habit-heat-head.is-today {
   background: #c8d5ce;
-  color: #111111;
-  box-shadow: inset 1px 1px #808080, inset -1px -1px #fff;
+  color: #142018;
+  box-shadow:
+    inset 0 1px 0 #f4faf6,
+    inset 0 0 0 1px #8a9a90;
 }
 
 .habit-heat-name {
@@ -638,13 +822,16 @@ body.win95-app .habit-gem-socket:active,
   min-height: 22px;
   padding: 2px 8px;
   border: none;
-  background: #c0c0c0;
-  color: #111111;
+  border-radius: 3px;
+  background: #e7ebe4;
+  color: #142018;
   font: inherit;
   font-size: 12px;
   text-align: left;
   cursor: pointer;
-  box-shadow: inset 0 -1px 0 #808080;
+  box-shadow:
+    inset 0 1px 0 #ffffff,
+    inset 0 -1px 0 #b7bdb4;
 }
 
 .habit-heat-name span {
@@ -656,44 +843,26 @@ body.win95-app .habit-gem-socket:active,
 .habit-heat-name em {
   font-style: normal;
   font-size: 9px;
-  color: #3a3a3a;
+  font-weight: 700;
+  color: #3d5c46;
 }
 
 .habit-heat-cell {
-  --hab-heat-fill: none;
-  width: 20px;
-  height: 20px;
-  border-radius: 5px;
-  background:
-    linear-gradient(155deg, rgba(255, 255, 255, 0.78) 0 22%, transparent 46%),
-    var(--hab-heat-fill),
-    linear-gradient(180deg, #ececec, #d0d0d0);
-  box-shadow:
-    inset 1px 1px 0 rgba(255, 255, 255, 0.95),
-    inset -1px -1px 0 rgba(80, 80, 80, 0.28),
-    0 1px 2px rgba(0, 0, 0, 0.12);
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  background-color: #e4ebe8;
+  box-shadow: inset 0 0 0 1px rgba(70, 96, 94, 0.22);
 }
 
-.habit-heat-cell.is-lit {
-  box-shadow:
-    inset 1px 1px 0 rgba(255, 255, 255, 0.8),
-    inset -1px -1px 0 rgba(40, 40, 40, 0.2),
-    0 1px 3px rgba(40, 70, 50, 0.16);
-}
-
+.habit-heat-cell.is-lit,
 .habit-heat-cell.is-full {
-  box-shadow:
-    inset 1px 1px 0 rgba(255, 255, 255, 0.9),
-    0 0 0 1px rgba(140, 212, 165, 0.4),
-    0 2px 5px rgba(70, 130, 90, 0.2);
+  box-shadow: inset 0 0 0 1px rgba(48, 78, 76, 0.28);
 }
 
 .habit-heat-cell.is-today {
-  background-color: #c8d5ce;
-  box-shadow:
-    inset 1px 1px 0 rgba(255, 255, 255, 0.9),
-    inset -1px -1px 0 rgba(80, 80, 80, 0.22),
-    0 0 0 1px #8a9a90;
+  background: #c8d5ce;
+  box-shadow: inset 0 0 0 1px #8a9a90;
 }
 
 button.habit-heat-cell {
@@ -719,7 +888,78 @@ button.habit-heat-cell {
 }
 
 .habit-heat-hint {
-  margin: 10px 2px 0;
+  margin: 6px 2px 0;
   font-size: 11px;
+  line-height: 1.35;
+  color: #2c3a30;
+}
+
+.good-days-averages {
+  display: grid;
+  gap: 8px;
+  padding: 8px 10px;
+  background: #c0c0c0;
+  box-shadow: inset 1px 1px 0 #808080, inset -1px -1px 0 #fff;
+}
+
+.good-days-averages-note {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.35;
   color: #3a3a3a;
+}
+
+.good-days-averages-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.good-days-average-label {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  line-height: 1.2;
+  color: #2a2c2e;
+}
+
+.good-days-average-line {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.good-days-average-value {
+  font-variant-numeric: tabular-nums;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  color: #141414;
+}
+
+.good-days-averages-note .good-days-average-value {
+  font-size: inherit;
+  font-weight: 700;
+}
+
+.good-days-average-vs {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.good-days-average-vs[data-comparison="lower"] {
+  color: #145c32;
+}
+
+.good-days-average-vs[data-comparison="same"] {
+  color: #5c5c5c;
+}
+
+.good-days-average-vs[data-comparison="higher"] {
+  color: #8b2e2e;
 }

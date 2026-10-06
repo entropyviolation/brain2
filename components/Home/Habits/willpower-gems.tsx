@@ -4,17 +4,20 @@
  * Photographed object at the foot of the Home Dashboard Habits Tab
  * Control Panel. The plate is a skeuomorphic oval button: chrome rim,
  * black-mirror well, press-in click. Clicking the well stirs collected habit
- * gems; grabbing a gem throws it through the same sim. Lift a gem off the
- * plate (including in the Physics lab) and drop it — height and velocity
- * enter the integrator so bounce, collisions, and the lab equations follow.
- * The crystal is a solid (gems do not clip through) and a Y-sort occluder.
- * Physics opens a Win95 lab that plays the identical world (second plate +
- * equations). Gems paint outside the rim. The display is centered in the
- * panel foot. Grab does not stir or press the plate. The lab maps the compact
- * sim onto the larger oval; idle frames do not spin the dialog. Stir is a short
- * whirl, not a scatter bomb. Physics sliders are a painted Win95 thumb over a
- * native range (edits do not snap the world to min). Equations and knob
- * explanations collapse; Show all / Hide all explanations sit on the toolbar.
+ * gems with a visible hop (default Δv_z clears ~a gem diameter of z); grab
+ * throws through the same TypeScript integrator as the Physics lab. Lab cards,
+ * z(t) graph, sparklines, and knobs name the laws the step integrates
+ * (accelerations, full-vector drag, U = m g z + ½ m κ r², tracked-gem e,
+ * net |Σ m v|, ΣE including spin K). Equations render as KaTeX (CRT phosphor);
+ * Show equation expands the law, live numerics stay beside it, Explain is prose.
+ * Held gems are kinematic — cards say so (no fake z̈ = −g while held).
+ * The crystal is a solid and a Y-sort occluder. Gems paint outside the rim.
+ * Grab does not stir or press the plate. Stir is a short whirl, not a scatter
+ * bomb. A full plate rests: glassy on a real hit, quiet at rest, dish lets go
+ * of a supported gem. Painted Win95 sliders; collapsible equations / explains.
+ * The physics frame pauses when no plate is on screen — hidden document,
+ * scrolled out of the viewport, or an inactive ancestor tab — and resumes
+ * the same motion when a plate is visible again.
  */
 "use client"
 
@@ -33,14 +36,14 @@ import {
   type ReactNode,
   type Ref,
 } from "react"
+import katex from "katex"
+import "katex/dist/katex.min.css"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { orbFor } from "@/components/Icons"
 import { removeBackground } from "@/lib/remove-background"
 import { useHabitsStore } from "@/lib/habits-store"
 import {
-  bouncingBallApex,
-  bouncingBallTimeToApex,
-  bouncingBallTimeToFloor,
+  bodyPotentialParts,
   clamp,
   DEFAULT_WILLPOWER_PHYSICS,
   dishPeriod,
@@ -53,12 +56,13 @@ import {
   makeWillpowerGem,
   mapWillpowerPoint,
   poseWillpowerGrab,
-  predictedArc,
+  predictBounceFlight,
   releaseWillpowerGem,
   restOrbit,
   sanitizeWillpowerPhysics,
   resolveWillpowerOverlaps,
   scaleWillpowerBodies,
+  spinEnergy,
   stepWillpowerWorld,
   stirWillpower,
   stoneIsBehindCrystal,
@@ -158,6 +162,52 @@ function fmt(n: number, digits = 0): string {
   return n.toFixed(digits)
 }
 
+/** CRT-green KaTeX. Falls back to plain text if KaTeX throws. */
+function LatexEq({
+  tex,
+  fallback,
+  display = false,
+  className,
+  decorative = false,
+}: {
+  tex: string
+  fallback?: string
+  display?: boolean
+  className?: string
+  /** Hide from a11y tree (button labels / screen readers use aria-label instead). */
+  decorative?: boolean
+}) {
+  const wrap = (node: ReactNode) =>
+    decorative ? (
+      <span aria-hidden="true" className="hab-willpower-latex-host">
+        {node}
+      </span>
+    ) : (
+      node
+    )
+  try {
+    const html = katex.renderToString(tex, {
+      throwOnError: true,
+      displayMode: display,
+      strict: "ignore",
+      trust: false,
+      output: "html",
+    })
+    return wrap(
+      <span
+        className={`hab-willpower-latex${display ? " is-display" : ""}${className ? ` ${className}` : ""}`}
+        dangerouslySetInnerHTML={{ __html: html }}
+      />,
+    )
+  } catch {
+    return wrap(
+      <span className={`hab-willpower-latex is-fallback${display ? " is-display" : ""}${className ? ` ${className}` : ""}`}>
+        {fallback ?? tex}
+      </span>,
+    )
+  }
+}
+
 function Sparkline({
   values,
   label,
@@ -210,75 +260,160 @@ const KNOB_GROUPS: Array<{ title: string; keys: Array<(typeof WILLPOWER_PHYSICS_
   { title: "Stir", keys: ["stirHop", "stirSpeed", "chaos", "repulsion"] },
 ]
 
-const EQ_CARDS: Array<{
-  id: string
-  title: ReactNode
-  value: (ctx: LabEqCtx) => string
-  explain: string
-}> = [
-  {
-    id: "eq-g",
-    title: (
-      <>
-        z̈ = −g
-      </>
-    ),
-    value: (ctx) => `−${fmt(ctx.params.g)} px/s²`,
-    explain: "Newton’s second law on the vertical axis. The dish does not change g; it only adds a horizontal pull toward the crystal.",
-  },
-  {
-    id: "eq-vz",
-    title: (
-      <>
-        v<sub>z</sub>(t) = v<sub>z0</sub> − g t
-      </>
-    ),
-    value: (ctx) => `${fmt(ctx.vz0)} − ${fmt(ctx.params.g)} t`,
-    explain: "Speed after a hop. The slope is gravity. When this crosses zero the gem is at apex.",
-  },
-  {
-    id: "eq-z",
-    title: (
-      <>
-        z(t) = z<sub>0</sub> + v<sub>z0</sub> t − ½ g t²
-      </>
-    ),
-    value: (ctx) => `${fmt(ctx.z0, 1)} + ${fmt(ctx.vz0)} t − ½(${fmt(ctx.params.g)}) t²`,
-    explain: "Height of the tracked gem as a parabola. This is the same bouncing-ball law as a tennis ball, in plate pixels.",
-  },
-  {
-    id: "eq-e",
-    title: (
-      <>
-        e = −v<sub>z</sub>⁺ / v<sub>z</sub>⁻
-      </>
-    ),
-    value: (ctx) => fmt(ctx.params.restitution, 2),
-    explain: "Coefficient of restitution on the lacquer. Each bounce multiplies downward speed by e and flips the sign.",
-  },
-  {
-    id: "eq-k",
-    title: <>K = ½ m |v|²</>,
-    value: (ctx) => `½(${fmt(ctx.mass, 2)}) (${fmt(ctx.speed)})² = ${fmt(ctx.ke)}`,
-    explain: "Kinetic energy of the tracked gem. Stir injects K; drag, friction, and inelastic bounce spend it.",
-  },
-  {
-    id: "eq-u",
-    title: <>U = m g z + ½ κ r²</>,
-    value: (ctx) => `mgz = ${fmt(ctx.pe)} · ½κr² = ${fmt(ctx.dishU)}`,
-    explain: "Potential: height in the well plus the dish spring. Gems rest where U is smallest — around the crystal, on the plate.",
-  },
-]
-
 type LabEqCtx = {
   params: WillpowerPhysicsParams
+  held: boolean
   z0: number
   vz0: number
   mass: number
+  e: number
   speed: number
   ke: number
-  pe: number
+  gravU: number
   dishU: number
+  totalU: number
+}
+
+type LabEqCard = {
+  id: string
+  /** Short identity in the collapsed CRT row (KaTeX). */
+  titleLatex: string
+  titleFallback: string
+  /** Full law revealed by Show equation (KaTeX display). */
+  equationLatex: string
+  equationFallback: string
+  /** Live numeric evaluation — stays beside the math, never substitutes for it. */
+  value: (ctx: LabEqCtx) => string
+  explain: string
+}
+
+function eqCardsFor(held: boolean): LabEqCard[] {
+  if (held) {
+    return [
+      {
+        id: "eq-g",
+        titleLatex: "\\text{held}",
+        titleFallback: "held",
+        equationLatex: "\\text{kinematic (pointer)}",
+        equationFallback: "kinematic (pointer)",
+        value: () => "pointer",
+        explain:
+          "This gem is held. z and xy follow the pointer; the integrator skips it until release. Gravity and drag resume on throw.",
+      },
+      {
+        id: "eq-vz",
+        titleLatex: "v_z",
+        titleFallback: "v_z",
+        equationLatex: "v_z = v_{z,\\text{pointer}}",
+        equationFallback: "v_z = v_z,pointer",
+        value: (ctx) => `${fmt(ctx.vz0)} px/s`,
+        explain:
+          "Vertical speed from the grab drag. On release this becomes the free-flight v_z0 — no hidden hop.",
+      },
+      {
+        id: "eq-z",
+        titleLatex: "z",
+        titleFallback: "z",
+        equationLatex: "z = z_{\\text{pointer}}",
+        equationFallback: "z = z_pointer",
+        value: (ctx) => `${fmt(ctx.z0, 1)} px`,
+        explain: "Height is posed so drawY stays under the cursor. Release keeps this z and the pointer velocity.",
+      },
+      {
+        id: "eq-e",
+        titleLatex: "e = -\\dfrac{v_z^{+}}{v_z^{-}}",
+        titleFallback: "e = −v_z⁺ / v_z⁻",
+        equationLatex: "e = -\\dfrac{v_z^{+}}{v_z^{-}},\\quad v_z^{+} = -e\\, v_z^{-}",
+        equationFallback: "e = −v_z⁺ / v_z⁻,  v_z⁺ = −e v_z⁻",
+        value: (ctx) => fmt(ctx.e, 2),
+        explain:
+          "This gem’s coefficient (slider × chaos). Floor bounce is v_z⁺ = −e v_z⁻ until the rest cutoff (~28 px/s), where effective e = 0.",
+      },
+      {
+        id: "eq-k",
+        titleLatex: "K = \\tfrac12 m |\\mathbf{v}|^2",
+        titleFallback: "K = ½ m |v|²",
+        equationLatex: "K = \\tfrac12 m |\\mathbf{v}|^2",
+        equationFallback: "K = ½ m |v|²",
+        value: (ctx) => `${fmt(ctx.ke)}`,
+        explain: "Kinetic energy of the held gem (tracked). While held, speed is the pointer’s.",
+      },
+      {
+        id: "eq-u",
+        titleLatex: "U = mgz + \\tfrac12 m \\kappa r^2",
+        titleFallback: "U = m g z + ½ m κ r²",
+        equationLatex: "U = mgz + \\tfrac12 m \\kappa r^2",
+        equationFallback: "U = m g z + ½ m κ r²",
+        value: (ctx) => `${fmt(ctx.totalU)}`,
+        explain:
+          "Potential of the tracked gem. Static friction freezes the pile on a dead disk r ≤ μN/κ, not at the crystal U minimum.",
+      },
+    ]
+  }
+  return [
+    {
+      id: "eq-g",
+      titleLatex: "\\ddot{z} = -g + (a_d)_z",
+      titleFallback: "z̈ = −g + (a_d)_z",
+      equationLatex:
+        "\\begin{aligned}\\ddot{z} &= -g + (a_d)_z \\\\ \\mathbf{a}_d &= -(b + c|\\mathbf{v}|)\\,\\mathbf{v}\\end{aligned}",
+      equationFallback: "z̈ = −g + (a_d)_z,  a_d = −(b + c |v|) v",
+      value: (ctx) => `−${fmt(ctx.params.g)} px/s²`,
+      explain:
+        "Vertical free-flight law the step integrates. Dish pull is horizontal only; air drag a_d = −(b + c |v|) v acts on v_z too.",
+    },
+    {
+      id: "eq-vz",
+      titleLatex: "v_z(t)",
+      titleFallback: "v_z(t)",
+      equationLatex: "\\dot{v}_z = -g - (b + c|\\mathbf{v}|)\\, v_z",
+      equationFallback: "v̇_z = −g − (b + c|v|) v_z",
+      value: (ctx) => `${fmt(ctx.vz0)} px/s`,
+      explain:
+        "Live vertical speed of the tracked gem. With drag, v_z is not a vacuum line v_z0 − g t — the graph integrates the same step.",
+    },
+    {
+      id: "eq-z",
+      titleLatex: "z(t)",
+      titleFallback: "z(t)",
+      equationLatex:
+        "\\begin{aligned}z(t) &= z_0 + v_{z0}\\,t - \\tfrac12 g t^2 \\quad\\text{(vacuum)} \\\\ \\ddot{z} &= -g - (b + c|\\mathbf{v}|)\\, v_z \\quad\\text{(with drag)}\\end{aligned}",
+      equationFallback: "z(t) = z_0 + v_z0 t − ½ g t² (vacuum); z̈ = −g − (b + c|v|) v_z (with drag)",
+      value: (ctx) => `${fmt(ctx.z0, 1)} px`,
+      explain:
+        "Height of the tracked gem. The z(t) graph uses the same free-flight Euler step as the integrator (g + full-vector drag).",
+    },
+    {
+      id: "eq-e",
+      titleLatex: "e = -\\dfrac{v_z^{+}}{v_z^{-}}",
+      titleFallback: "e = −v_z⁺ / v_z⁻",
+      equationLatex: "e = -\\dfrac{v_z^{+}}{v_z^{-}},\\quad v_z^{+} = -e\\, v_z^{-}",
+      equationFallback: "e = −v_z⁺ / v_z⁻,  v_z⁺ = −e v_z⁻",
+      value: (ctx) => fmt(ctx.e, 2),
+      explain:
+        "This gem’s coefficient (slider × chaos), not the raw knob. Floor bounce is exact until rebound < ~28 px/s, where effective e = 0 so the pile can rest.",
+    },
+    {
+      id: "eq-k",
+      titleLatex: "K = \\tfrac12 m |\\mathbf{v}|^2",
+      titleFallback: "K = ½ m |v|²",
+      equationLatex: "K = \\tfrac12 m |\\mathbf{v}|^2",
+      equationFallback: "K = ½ m |v|²",
+      value: (ctx) => `${fmt(ctx.ke)}`,
+      explain:
+        "Kinetic energy of the tracked gem (held, else highest K). Stir injects K; drag, friction, inelastic bounce, rest cutoff, spin damping, and speed clamps spend it.",
+    },
+    {
+      id: "eq-u",
+      titleLatex: "U = mgz + \\tfrac12 m \\kappa r^2",
+      titleFallback: "U = m g z + ½ m κ r²",
+      equationLatex: "U = mgz + \\tfrac12 m \\kappa r^2",
+      equationFallback: "U = m g z + ½ m κ r²",
+      value: (ctx) => `${fmt(ctx.totalU)}`,
+      explain:
+        "Potential of the tracked gem; −∇U/m = (a_dish, −g). Gems freeze where static friction beats dish pull (r ≤ μN/κ), not because they sit on the crystal U minimum.",
+    },
+  ]
 }
 
 function formatKnob(field: (typeof WILLPOWER_PHYSICS_FIELDS)[number], value: number) {
@@ -309,7 +444,10 @@ const PhysicsKnobs = memo(function PhysicsKnobs({
           {group.keys.map((key) => {
             const field = WILLPOWER_PHYSICS_FIELDS.find((f) => f.key === key)
             if (!field) return null
-            const shown = open.has(field.key)
+            const eqId = `${field.key}-eq`
+            const whyId = field.key
+            const eqShown = open.has(eqId)
+            const whyShown = open.has(whyId)
             const value = params[field.key]
             const span = field.max - field.min || 1
             const pct = clamp(((value - field.min) / span) * 100, 0, 100)
@@ -347,20 +485,35 @@ const PhysicsKnobs = memo(function PhysicsKnobs({
                     {field.unit ? ` ${field.unit}` : ""}
                   </em>
                 </label>
-                <button
-                  type="button"
-                  className="hab-willpower-explain-toggle"
-                  aria-expanded={shown}
-                  onClick={() => onToggle(field.key)}
-                >
-                  {shown ? "Hide explain" : "Explain"} {field.symbol}
-                </button>
-                {shown ? (
-                  <p className="hab-willpower-explain">
-                    <code>{field.equation}</code>
-                    {field.explain}
-                  </p>
+                <div className="hab-willpower-knob-toggles">
+                  <button
+                    type="button"
+                    className="hab-willpower-explain-toggle"
+                    aria-expanded={eqShown}
+                    onClick={() => onToggle(eqId)}
+                  >
+                    {eqShown ? "Hide equation" : "Show equation"} {field.symbol}
+                  </button>
+                  <button
+                    type="button"
+                    className="hab-willpower-explain-toggle"
+                    aria-expanded={whyShown}
+                    onClick={() => onToggle(whyId)}
+                  >
+                    {whyShown ? "Hide explain" : "Explain"} {field.symbol}
+                  </button>
+                </div>
+                {eqShown ? (
+                  <div className="hab-willpower-eq-body" role="math" aria-label={field.equation}>
+                    <LatexEq
+                      tex={field.equationLatex}
+                      fallback={field.equation}
+                      display
+                      decorative
+                    />
+                  </div>
                 ) : null}
+                {whyShown ? <p className="hab-willpower-explain">{field.explain}</p> : null}
               </div>
             )
           })}
@@ -401,19 +554,32 @@ function PhysicsLab({
     }, null)
   const z0 = tracked?.z ?? 0
   const vz0 = tracked?.vz ?? 0
-  const apex = bouncingBallApex(z0, vz0, params.g)
-  const tApex = bouncingBallTimeToApex(vz0, params.g)
-  const tFloor = bouncingBallTimeToFloor(z0, vz0, params.g)
+  const flight = predictBounceFlight(z0, vz0, params, { vx: tracked?.vx, vy: tracked?.vy }, 20)
+  const apex = flight.apex
+  const tApex = flight.tApex
+  const tFloor = flight.tFloor
   const speed = tracked ? Math.hypot(tracked.vx, tracked.vy, tracked.vz) : 0
   const ke = tracked ? 0.5 * tracked.mass * speed * speed : 0
-  const pe = tracked ? tracked.mass * params.g * Math.max(tracked.z, 0) : 0
-  const dishR2 =
-    tracked && crystal ? (tracked.x - crystal.x) ** 2 + (tracked.y - crystal.y) ** 2 : 0
-  const dishU = 0.5 * params.dishK * dishR2
-  const airborne = gems.filter((b) => b.z > 0.45).length
-  const omega = gems.reduce((s, b) => s + Math.abs(b.omega), 0) / Math.max(gems.length, 1)
-  const momentum = gems.reduce((s, b) => s + b.mass * Math.hypot(b.vx, b.vy, b.vz), 0)
-  const spinK = gems.reduce((s, b) => s + 0.2 * b.mass * b.r * b.r * b.omega * b.omega, 0)
+  const pot = tracked && crystal
+    ? bodyPotentialParts(tracked, crystal, params)
+    : { grav: 0, dish: 0, total: 0 }
+  const tel = willpowerTelemetry(pose, {
+    width: 0,
+    height: 0,
+    cx: crystal?.x ?? 0,
+    cy: crystal?.y ?? 0,
+    rx: 1,
+    ry: 1,
+    scale: 1,
+    seed: 1,
+    stirAge: 99,
+    bounces,
+  }, params)
+  const airborne = tel.airborne
+  const omega = tel.meanOmega
+  const momentum = tel.momentum
+  const spinK = spinEnergy(gems)
+  const totalE = tel.energy
   const comR =
     crystal && gems.length
       ? gems.reduce((s, b) => s + Math.hypot(b.x - crystal.x, b.y - crystal.y), 0) / gems.length
@@ -422,7 +588,7 @@ function PhysicsLab({
     ? gems.length / Math.max((Math.PI * crystal.r * crystal.r) / 36, 1)
     : 0
   const period = dishPeriod(params.dishK)
-  const arc = predictedArc(z0, vz0, params.g, 20)
+  const arc = flight.arc
   const zMax = Math.max(apex, 8, ...arc.map((p) => p.z))
   const tMax = Math.max(arc[arc.length - 1]?.t ?? 0.4, 0.12)
   const arcPath = arc
@@ -434,14 +600,18 @@ function PhysicsLab({
     .join(" ")
   const eqCtx: LabEqCtx = {
     params,
+    held: Boolean(held),
     z0,
     vz0,
     mass: tracked?.mass ?? params.mass,
+    e: tracked?.e ?? params.restitution,
     speed,
     ke,
-    pe,
-    dishU,
+    gravU: pot.grav,
+    dishU: pot.dish,
+    totalU: pot.total,
   }
+  const eqCards = eqCardsFor(Boolean(held))
   const [open, setOpen] = useState<Set<string>>(() => new Set())
   const toggle = useCallback((id: string) => {
     setOpen((prev) => {
@@ -453,8 +623,8 @@ function PhysicsLab({
   }, [])
   const allIds = useMemo(
     () => [
-      ...EQ_CARDS.flatMap((c) => [c.id, `${c.id}-why`]),
-      ...WILLPOWER_PHYSICS_FIELDS.map((f) => f.key),
+      ...eqCardsFor(false).flatMap((c) => [c.id, `${c.id}-why`]),
+      ...WILLPOWER_PHYSICS_FIELDS.flatMap((f) => [f.key, `${f.key}-eq`]),
       "eq-extra",
       "eq-extra-why",
     ],
@@ -484,9 +654,9 @@ function PhysicsLab({
       <div className="hab-willpower-lab-main">
         <div className="hab-willpower-lab-readout">
           <section className="hab-willpower-eq-block" aria-label="Live equations">
-            <h3>{held ? "Held gem" : "Live gem"}</h3>
+            <h3>{held ? "Held gem (kinematic)" : "Tracked gem (held, else highest K)"}</h3>
             <div className="hab-willpower-eq-list">
-              {EQ_CARDS.map((card) => {
+              {eqCards.map((card) => {
                 const eqOpen = open.has(card.id)
                 const whyOpen = open.has(`${card.id}-why`)
                 return (
@@ -496,16 +666,26 @@ function PhysicsLab({
                         type="button"
                         className="hab-willpower-eq-head"
                         aria-expanded={eqOpen}
+                        aria-label={eqOpen ? "Hide equation" : "Show equation"}
                         onClick={() => toggle(card.id)}
                       >
-                        <span>
-                          {card.title}
-                          <small>{eqOpen ? "Hide equation" : "Show equation"}</small>
+                        <span className="hab-willpower-eq-identity">
+                          <LatexEq tex={card.titleLatex} fallback={card.titleFallback} decorative />
+                          <small aria-hidden="true">{eqOpen ? "Hide equation" : "Show equation"}</small>
                         </span>
                       </button>
                       <em>{card.value(eqCtx)}</em>
                     </div>
-                    {eqOpen ? <p className="hab-willpower-eq-body">{card.value(eqCtx)}</p> : null}
+                    {eqOpen ? (
+                      <div className="hab-willpower-eq-body" role="math" aria-label={card.equationFallback}>
+                        <LatexEq
+                          tex={card.equationLatex}
+                          fallback={card.equationFallback}
+                          display
+                          decorative
+                        />
+                      </div>
+                    ) : null}
                     <button
                       type="button"
                       className="hab-willpower-explain-toggle"
@@ -537,32 +717,64 @@ function PhysicsLab({
                   <small>{open.has("eq-extra") ? "Hide" : "Show"}</small>
                 </span>
               </button>
-              <em>E {fmt(ke + pe)}</em>
+              <em>ΣE {fmt(totalE)}</em>
             </div>
             {open.has("eq-extra") ? (
               <dl>
                 <div>
-                  <dt>ΣE = K + U</dt>
-                  <dd>{fmt(ke + pe)}</dd>
+                  <dt>
+                    <LatexEq
+                      tex={"\\Sigma E = \\Sigma(K + U + K_{\\omega})"}
+                      fallback="ΣE = Σ(K + U + K_ω)"
+                      decorative
+                    />
+                  </dt>
+                  <dd>{fmt(totalE)}</dd>
                 </div>
                 <div>
-                  <dt>|p| = Σ m|v|</dt>
+                  <dt>
+                    <LatexEq
+                      tex={"|\\mathbf{p}| = |\\Sigma m \\mathbf{v}|"}
+                      fallback="|p| = |Σ m v|"
+                      decorative
+                    />
+                  </dt>
                   <dd>{fmt(momentum)}</dd>
                 </div>
                 <div>
-                  <dt>K<sub>ω</sub> ≈ ⅕ m r² ω²</dt>
+                  <dt>
+                    <LatexEq
+                      tex={"K_{\\omega} \\approx \\tfrac15 m r^2 \\omega^2"}
+                      fallback="K_ω ≈ ⅕ m r² ω²"
+                      decorative
+                    />
+                  </dt>
                   <dd>{fmt(spinK)}</dd>
                 </div>
                 <div>
-                  <dt>ω̄</dt>
+                  <dt>
+                    <LatexEq tex={"\\bar{\\omega}"} fallback="ω̄" decorative />
+                  </dt>
                   <dd>{fmt(omega, 2)} rad/s</dd>
                 </div>
                 <div>
-                  <dt>T<sub>κ</sub> = 2π/√κ</dt>
+                  <dt>
+                    <LatexEq
+                      tex={"T_{\\kappa} = 2\\pi/\\sqrt{\\kappa}"}
+                      fallback="T_κ = 2π/√κ"
+                      decorative
+                    />
+                  </dt>
                   <dd>{fmt(period, 2)} s</dd>
                 </div>
                 <div>
-                  <dt>⟨r⟩ from crystal</dt>
+                  <dt>
+                    <LatexEq
+                      tex={"\\langle r \\rangle\\ \\text{from crystal}"}
+                      fallback="⟨r⟩ from crystal"
+                      decorative
+                    />
+                  </dt>
                   <dd>{fmt(comR, 1)} px</dd>
                 </div>
                 <div>
@@ -585,20 +797,21 @@ function PhysicsLab({
             </button>
             {open.has("eq-extra-why") ? (
               <p className="hab-willpower-explain">
-                Total mechanical energy, net momentum, spin kinetic energy, mean spin, the dish
-                oscillation period, how far the week’s gems sit from the crystal, packing, and
-                floor-bounce count. Energy falls as bounce (e &lt; 1) and drag spend it. Slow-mo
-                scales dt so the same laws are easier to watch.
+                Crowd instruments: ΣE = Σ(K + U + K_ω) over every gem (same U and spin as the
+                sparkline), net momentum |Σ m v|, spin K for a solid sphere, mean spin, dish
+                period T_κ, mean radius from the crystal, packing, and floor-bounce count. Energy
+                falls from e &lt; 1, the rest cutoff, drag, friction, spin damping, and speed
+                clamps. Slow-mo scales dt so the same laws are easier to watch.
               </p>
             ) : null}
           </section>
           <section className="hab-willpower-graphs" aria-label="Live trajectories">
             <Sparkline values={history.ke} label="ΣK" unit="px²/s²" />
             <Sparkline values={history.e} label="ΣE" unit="" />
-            <Sparkline values={history.z} label="z" unit="px" digits={1} />
+            <Sparkline values={history.z} label="max z" unit="px" digits={1} />
             <figure className="hab-willpower-spark-wrap">
               <figcaption>
-                <span>z(t) next bounce</span>
+                <span>z(t) next bounce (same step)</span>
                 <em>{fmt(apex, 1)} px</em>
               </figcaption>
               <svg className="hab-willpower-spark hab-willpower-arc" viewBox="0 0 280 48" aria-hidden>
@@ -770,6 +983,18 @@ function WillpowerPlate({
   )
 }
 
+/** Home stays mounted under other app tabs; an inactive tabpanel is not a visible plate. */
+function willpowerHostAsleep(el: Element | null): boolean {
+  let node = el?.parentElement ?? null
+  while (node) {
+    if (node.getAttribute("role") === "tabpanel") {
+      if (node.hasAttribute("hidden") || node.getAttribute("data-state") === "inactive") return true
+    }
+    node = node.parentElement
+  }
+  return false
+}
+
 function WillpowerGemsStage({
   orbSrc,
   stones,
@@ -784,6 +1009,11 @@ function WillpowerGemsStage({
   const bodiesRef = useRef<WillpowerBody[]>([])
   const worldRef = useRef<WillpowerWorld>(emptyWillpowerWorld())
   const rafRef = useRef(0)
+  const seenRef = useRef(true)
+  const hitRef = useRef(new Map<Element, boolean>())
+  const attachRef = useRef<() => void>(() => {})
+  const ioRef = useRef<IntersectionObserver | null>(null)
+  const moRef = useRef<MutationObserver | null>(null)
   const lastRef = useRef(0)
   const sampleRef = useRef(0)
   const hudRef = useRef(false)
@@ -856,7 +1086,29 @@ function WillpowerGemsStage({
     setBounces(worldRef.current.bounces)
   }
 
+  const frameAllowed = () => {
+    if (typeof document !== "undefined" && document.hidden) return false
+    return seenRef.current
+  }
+
+  const stopTick = () => {
+    if (!rafRef.current) return
+    cancelAnimationFrame(rafRef.current)
+    rafRef.current = 0
+  }
+
+  const resumeTick = () => {
+    if (!frameAllowed()) return
+    if (rafRef.current) return
+    if (!worldIsLive(bodiesRef.current) && !grabRef.current) return
+    rafRef.current = requestAnimationFrame((now) => tickRef.current(now))
+  }
+
   const tick = (now: number) => {
+    if (!frameAllowed()) {
+      rafRef.current = 0
+      return
+    }
     const last = lastRef.current || now
     lastRef.current = now
     const scale = slowMoRef.current ? SLOW_MO : 1
@@ -884,8 +1136,106 @@ function WillpowerGemsStage({
   const startTick = () => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current)
     lastRef.current = 0
+    if (!frameAllowed()) {
+      rafRef.current = 0
+      return
+    }
     rafRef.current = requestAnimationFrame(tick)
   }
+
+  const tickRef = useRef(tick)
+  tickRef.current = tick
+
+  const plates = () =>
+    [stageRef.current, labStageRef.current].filter((el): el is HTMLSpanElement => el instanceof HTMLElement)
+
+  const plateOnScreen = (el: HTMLElement) => {
+    if (willpowerHostAsleep(el)) return false
+    return hitRef.current.get(el) !== false
+  }
+
+  const syncSeen = () => {
+    const list = plates()
+    const next = list.length > 0 && list.some(plateOnScreen)
+    const became = next && !seenRef.current
+    seenRef.current = next
+    if (!frameAllowed()) {
+      stopTick()
+      return
+    }
+    if (became) resumeTick()
+  }
+
+  const attachWatch = () => {
+    ioRef.current?.disconnect()
+    moRef.current?.disconnect()
+    ioRef.current = null
+    moRef.current = null
+    const list = plates()
+    const live = new Set<Element>(list)
+    for (const key of hitRef.current.keys()) {
+      if (!live.has(key)) hitRef.current.delete(key)
+    }
+    if (typeof IntersectionObserver !== "undefined" && list.length > 0) {
+      const io = new IntersectionObserver((entries) => {
+        for (const entry of entries) hitRef.current.set(entry.target, entry.isIntersecting)
+        syncSeen()
+      })
+      for (const el of list) io.observe(el)
+      ioRef.current = io
+    }
+    if (typeof MutationObserver !== "undefined") {
+      const panels: HTMLElement[] = []
+      const seenPanels = new Set<HTMLElement>()
+      for (const el of list) {
+        let node = el.parentElement
+        while (node) {
+          if (node.getAttribute("role") === "tabpanel" && !seenPanels.has(node)) {
+            seenPanels.add(node)
+            panels.push(node)
+          }
+          node = node.parentElement
+        }
+      }
+      if (panels.length > 0) {
+        const mo = new MutationObserver(() => syncSeen())
+        for (const panel of panels) {
+          mo.observe(panel, { attributes: true, attributeFilter: ["hidden", "data-state"] })
+        }
+        moRef.current = mo
+      }
+    }
+    syncSeen()
+  }
+  attachRef.current = attachWatch
+
+  const onControlStage = useCallback((node: HTMLSpanElement | null) => {
+    stageRef.current = node
+    attachRef.current()
+  }, [])
+  const onLabStage = useCallback((node: HTMLSpanElement | null) => {
+    labStageRef.current = node
+    attachRef.current()
+  }, [])
+
+  useEffect(() => {
+    const onVis = () => {
+      if (typeof document !== "undefined" && document.hidden) {
+        stopTick()
+        return
+      }
+      resumeTick()
+    }
+    document.addEventListener("visibilitychange", onVis)
+    attachRef.current()
+    return () => {
+      document.removeEventListener("visibilitychange", onVis)
+      ioRef.current?.disconnect()
+      moRef.current?.disconnect()
+      ioRef.current = null
+      moRef.current = null
+    }
+  }, [])
 
   useEffect(() => {
     const el = stageRef.current
@@ -1148,7 +1498,7 @@ function WillpowerGemsStage({
             <div className="hab-willpower-lab-play">
               <WillpowerPlate
                 {...plateProps}
-                stageRef={labStageRef}
+                stageRef={onLabStage}
                 label="Stir Willpower gems"
               />
             </div>
@@ -1165,7 +1515,7 @@ function WillpowerGemsStage({
           </div>
         </DialogContent>
       </Dialog>
-      <WillpowerPlate {...plateProps} stageRef={stageRef} label="Stir Willpower gems" />
+      <WillpowerPlate {...plateProps} stageRef={onControlStage} label="Stir Willpower gems" />
     </>
   )
 }

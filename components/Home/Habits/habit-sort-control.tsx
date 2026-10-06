@@ -1,9 +1,10 @@
 /**
  * components/Home/Habits/habit-sort-control.tsx — Analog sort plate
  *
- * The five orders sit on the plate as keys, so switching does not open a menu.
- * Ascending / descending flips the current order. A mode with no explicit
- * direction keeps the order it has always used.
+ * Orders sit in a milled bay as equal keys (the completion-% key spans the row).
+ * That key names the period on screen: Weekly on day and week, Monthly, Season.
+ * Selected keys use the same CRT face as the period switcher. Ascending /
+ * Descending sit under a hairline so direction is obvious.
  */
 "use client"
 
@@ -21,12 +22,15 @@ export function HabitSortControl({
   onChange,
   onDirection,
   id = "habit-sort",
+  completionLabel = "Weekly completion %",
 }: {
   value: HabitSortMode
   direction: "asc" | "desc" | null
   onChange: (mode: HabitSortMode) => void
   onDirection: (direction: "asc" | "desc") => void
   id?: string
+  /** Day and week stay weekly. Month and season name that period. */
+  completionLabel?: string
 }) {
   const legendId = useId()
   const descending = effectiveSortDescending(value, direction)
@@ -36,39 +40,43 @@ export function HabitSortControl({
       <span className="hab-sort-legend" id={legendId}>
         Sort Habits
       </span>
-      <div className="hab-sort-keys" role="radiogroup" aria-labelledby={legendId}>
-        {HABIT_SORT_MODES.map((mode) => (
+      <div className="hab-sort-bay">
+        <div className="hab-sort-keys" role="radiogroup" aria-labelledby={legendId}>
+          {HABIT_SORT_MODES.map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              role="radio"
+              aria-checked={mode === value}
+              className={`hab-sort-key${mode === "weeklyCompletion" ? " hab-sort-key-wide" : ""}${
+                mode === value ? " is-on" : ""
+              }`}
+              onClick={() => onChange(mode)}
+            >
+              {mode === "weeklyCompletion" ? completionLabel : HABIT_SORT_LABELS[mode]}
+            </button>
+          ))}
+        </div>
+        <div className="hab-sort-dir" role="radiogroup" aria-label="Sort direction">
           <button
-            key={mode}
             type="button"
             role="radio"
-            aria-checked={mode === value}
-            className={`hab-sort-key${mode === value ? " is-on" : ""}`}
-            onClick={() => onChange(mode)}
+            aria-checked={!descending}
+            className={`hab-sort-key${!descending ? " is-on" : ""}`}
+            onClick={() => onDirection("asc")}
           >
-            {HABIT_SORT_LABELS[mode]}
+            Ascending
           </button>
-        ))}
-      </div>
-      <div className="hab-sort-dir" role="radiogroup" aria-label="Sort direction">
-        <button
-          type="button"
-          role="radio"
-          aria-checked={!descending}
-          className={`hab-sort-key${!descending ? " is-on" : ""}`}
-          onClick={() => onDirection("asc")}
-        >
-          Ascending
-        </button>
-        <button
-          type="button"
-          role="radio"
-          aria-checked={descending}
-          className={`hab-sort-key${descending ? " is-on" : ""}`}
-          onClick={() => onDirection("desc")}
-        >
-          Descending
-        </button>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={descending}
+            className={`hab-sort-key${descending ? " is-on" : ""}`}
+            onClick={() => onDirection("desc")}
+          >
+            Descending
+          </button>
+        </div>
       </div>
     </div>
   )

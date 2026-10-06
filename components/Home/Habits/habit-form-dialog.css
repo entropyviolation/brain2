@@ -159,7 +159,8 @@
 .habit95-form input[type="text"],
 .habit95-form input[type="number"],
 .habit95-form select,
-.habit95-form .habit95-input {
+.habit95-form .habit95-input,
+.habit95-form .habit95-select {
   height: 24px;
   padding: 2px 6px;
   border: none;
@@ -169,6 +170,133 @@
   box-shadow: var(--h95-field-bevel);
   font-family: inherit;
   font-size: 12px;
+}
+
+.habit95-form select {
+  appearance: none;
+  padding-right: 18px;
+  background-image: linear-gradient(45deg, transparent 50%, #000 50%), linear-gradient(135deg, #000 50%, transparent 50%);
+  background-position: calc(100% - 12px) 9px, calc(100% - 7px) 9px;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
+.habit95-sources {
+  position: relative;
+}
+
+.habit95-select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.habit95-select-label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.habit95-select-arrow {
+  flex: 0 0 auto;
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid #000;
+}
+
+.habit95-select-menu {
+  position: absolute;
+  z-index: 6;
+  left: 0;
+  right: 0;
+  margin-top: 2px;
+  padding: 6px;
+  background: var(--h95-surface);
+  box-shadow: var(--h95-raised);
+}
+
+.habit95-source-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 6px;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.habit95-source-hint {
+  grid-column: 1 / -1;
+}
+
+.habit95-source-moves {
+  display: flex;
+  gap: 3px;
+}
+
+.habit95-source-rank {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Daily-habit picker: same Win95 menu as completion sources, with a search
+   well and navy option highlight (the pen-parent menu, in this dialog's skin). */
+.habit95-pick {
+  position: relative;
+}
+
+.habit95-habit-menu {
+  z-index: 8;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.habit95-habit-menu .habit95-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.habit95-habit-options {
+  display: flex;
+  flex-direction: column;
+  max-height: 180px;
+  overflow: auto;
+}
+
+.habit95-habit-option {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 3px 6px;
+  border: 0;
+  text-align: left;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--h95-ink);
+  background: transparent;
+  cursor: pointer;
+}
+
+.habit95-habit-option:hover,
+.habit95-habit-option[data-active="true"] {
+  color: #fff;
+  background: var(--h95-blue);
+}
+
+.habit95-keyword-test {
+  margin-top: 8px;
+  padding: 6px;
+  background: var(--h95-face);
+  box-shadow: var(--h95-field-bevel);
+}
+
+.habit95-keyword-result {
+  margin: 6px 0 0;
+  min-height: 2.4em;
 }
 
 .habit95-form input:focus,
@@ -198,6 +326,33 @@
 
 .habit95-group > legend + * {
   clear: both;
+}
+
+.habit95-details > summary {
+  display: block;
+  margin: 0;
+  padding: 0;
+  font-size: 11px;
+  font-weight: bold;
+  color: var(--h95-blue);
+  cursor: pointer;
+  list-style: none;
+}
+
+.habit95-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.habit95-details > summary::before {
+  content: "▸ ";
+}
+
+.habit95-details[open] > summary {
+  margin-bottom: 6px;
+}
+
+.habit95-details[open] > summary::before {
+  content: "▾ ";
 }
 
 .habit95-freq {
@@ -501,7 +656,7 @@ body.win95-app .hab-willpower-lab-play button.hab-willpower-gems-hit,
 }
 
 .hab-willpower-eq-block {
-  padding: 10px 12px 12px;
+  padding: 12px 14px 14px;
 }
 
 .hab-willpower-lab h3 {
@@ -524,46 +679,60 @@ body.win95-app .hab-willpower-lab-play button.hab-willpower-gems-hit,
 
 .hab-willpower-eq-list {
   display: grid;
-  gap: 6px;
+  gap: 8px;
 }
 
-.hab-willpower-eq-card,
+.hab-willpower-eq-card {
+  display: grid;
+  gap: 6px;
+  padding: 8px 10px 10px;
+  background: #040a08;
+  box-shadow: inset 1px 1px #000, inset -1px -1px #14261c;
+}
+
 .hab-willpower-extra {
   display: grid;
-  gap: 4px;
+  gap: 6px;
 }
 
 .hab-willpower-eq-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(7.5rem, auto);
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) minmax(5.5rem, auto);
+  gap: 12px;
   align-items: center;
 }
 
 .hab-willpower-eq-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 8px;
   margin: 0;
-  padding: 0;
+  padding: 4px 6px;
   border: 0;
   background: transparent;
   color: inherit;
-  text-align: left;
+  text-align: center;
   cursor: pointer;
   font: inherit;
+  min-width: 0;
 }
 
-.hab-willpower-eq-head span {
+.hab-willpower-eq-identity {
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  font-family: ui-serif, "Times New Roman", Georgia, serif;
-  font-style: italic;
-  font-size: 13px;
-  line-height: 1.3;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
   color: #e7fff4;
+}
+
+.hab-willpower-eq-identity .hab-willpower-latex {
+  max-width: 100%;
+  overflow-x: auto;
+  text-align: center;
 }
 
 .hab-willpower-eq-head small,
@@ -576,20 +745,54 @@ body.win95-app .hab-willpower-lab-play button.hab-willpower-gems-hit,
   color: #8be0b8;
 }
 
-.hab-willpower-eq-row em,
-.hab-willpower-eq-body {
+.hab-willpower-eq-row em {
   margin: 0;
+  padding: 2px 0;
   font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   font-style: normal;
   font-size: 12px;
   color: #9fffd4;
   text-align: right;
+  white-space: nowrap;
 }
 
 .hab-willpower-eq-body {
-  padding: 2px 0 4px;
-  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 10px 12px 12px;
+  background: #020705;
+  box-shadow: inset 1px 1px #000, inset -1px -1px #1a3224;
   color: #c8ffe8;
+  text-align: center;
+  overflow-x: auto;
+}
+
+.hab-willpower-latex {
+  color: inherit;
+  line-height: 1.35;
+}
+
+.hab-willpower-latex .katex {
+  color: inherit;
+  font-size: 1.05em;
+}
+
+.hab-willpower-latex.is-display .katex {
+  font-size: 1.12em;
+}
+
+.hab-willpower-latex.is-fallback {
+  font-family: ui-serif, "Times New Roman", Georgia, serif;
+  font-style: italic;
+  white-space: pre-wrap;
+}
+
+.hab-willpower-knob-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
 }
 
 .hab-willpower-explain-toggle {
@@ -604,7 +807,7 @@ body.win95-app .hab-willpower-lab-play button.hab-willpower-gems-hit,
 
 .hab-willpower-explain {
   margin: 0;
-  padding: 6px 8px;
+  padding: 8px 10px;
   background: #040a08;
   box-shadow: inset 1px 1px #000, inset -1px -1px #14261c;
   font-size: 11px;
@@ -612,22 +815,15 @@ body.win95-app .hab-willpower-lab-play button.hab-willpower-gems-hit,
   color: #b7ecd2;
 }
 
-.hab-willpower-explain code {
-  display: block;
-  margin-bottom: 4px;
-  font-size: 11px;
-  color: #e7fff4;
-}
-
 .hab-willpower-extra {
-  padding: 8px 10px 10px;
+  padding: 10px 12px 12px;
 }
 
 .hab-willpower-extra dl {
   margin: 0;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 6px 12px;
+  gap: 8px 14px;
 }
 
 .hab-willpower-extra dl div {
@@ -642,6 +838,11 @@ body.win95-app .hab-willpower-lab-play button.hab-willpower-gems-hit,
   font-style: italic;
   font-size: 12px;
   color: #e7fff4;
+  min-width: 0;
+}
+
+.hab-willpower-extra dt .hab-willpower-latex .katex {
+  font-size: 0.98em;
 }
 
 .hab-willpower-extra dd {
@@ -654,7 +855,7 @@ body.win95-app .hab-willpower-lab-play button.hab-willpower-gems-hit,
 
 .hab-willpower-eq-meta {
   margin: 0;
-  padding: 6px 10px;
+  padding: 8px 12px;
   font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   font-size: 11px;
   color: #8be0b8;

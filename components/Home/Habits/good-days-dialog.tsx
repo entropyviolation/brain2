@@ -2,14 +2,22 @@
  * components/Home/Habits/good-days-dialog.tsx — Good day streak + last-30 breakdown
  *
  * Separate from Week grade / Perfect output. Lists which of the last 30 days
- * met the user's "completion to feel accomplished" threshold.
+ * met the user's "completion to feel accomplished" threshold, and reads the
+ * prior 7-day and prior 30-day raw completion averages against today,
+ * yesterday's raw completion, and this week's raw average against last week,
+ * this year, and all weeks with data. Each card says how many percentage
+ * points apart the two figures are.
  */
 "use client"
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { GOOD_DAYS_LOOKBACK, type GoodDaySummary } from "@/lib/habit-accomplishment"
+import {
+  GOOD_DAYS_LOOKBACK,
+  type GoodDaySummary,
+  type OlderAverageVsToday,
+} from "@/lib/habit-accomplishment"
 import { PriorityMathPanel } from "@/components/Home/Habits/priority-math"
 import { format } from "date-fns"
 
@@ -23,6 +31,55 @@ interface GoodDaysDialogProps {
   onUsePriorityChange?: (value: boolean) => void
   todayOverall?: number
   todayPriority?: number | null
+}
+
+function pointsNoun(points: number): string {
+  return points === 1 ? "point" : "points"
+}
+
+/** Whole-percent gap between an older figure and the one it is compared with. */
+function averageVsDetail(
+  average: number,
+  todayRaw: number,
+  subject = "today",
+): { vs: OlderAverageVsToday; phrase: string } {
+  const older = Math.round(Number.isFinite(average) ? average : 0)
+  const today = Math.round(Number.isFinite(todayRaw) ? todayRaw : 0)
+  const delta = older - today
+  if (delta > 0) return { vs: "higher", phrase: `${delta} ${pointsNoun(delta)} higher than ${subject}` }
+  if (delta < 0) {
+    const points = Math.abs(delta)
+    return { vs: "lower", phrase: `${points} ${pointsNoun(points)} lower than ${subject}` }
+  }
+  return { vs: "same", phrase: `same as ${subject}` }
+}
+
+function AverageReading({
+  testId,
+  label,
+  average,
+  todayRaw,
+  subject = "today",
+}: {
+  testId: string
+  label: string
+  average: number
+  todayRaw: number
+  subject?: string
+}) {
+  const percent = Math.round(average)
+  const { vs, phrase } = averageVsDetail(average, todayRaw, subject)
+  return (
+    <p data-testid={testId}>
+      <span className="good-days-average-label">{label}</span>
+      <span className="good-days-average-line">
+        <strong className="good-days-average-value">{percent}%</strong>
+        <span className="good-days-average-vs" data-comparison={vs}>
+          {phrase}
+        </span>
+      </span>
+    </p>
+  )
 }
 
 export function GoodDaysDialog({
@@ -59,6 +116,69 @@ export function GoodDaysDialog({
             </strong>
             <span className="text-muted-foreground"> / {GOOD_DAYS_LOOKBACK}</span>
           </p>
+        </div>
+
+        <div className="good-days-averages" data-testid="good-days-averages">
+          <p className="good-days-averages-note">
+            Raw completion on the days before today. Today is{" "}
+            <strong className="good-days-average-value" data-testid="good-days-today-raw">
+              {Math.round(summary.todayCompletionRaw)}%
+            </strong>
+            .
+          </p>
+          <div className="good-days-averages-grid">
+            <AverageReading
+              testId="good-days-avg-30"
+              label="Last 30 days"
+              average={summary.prior30Average}
+              todayRaw={summary.todayCompletionRaw}
+            />
+            <AverageReading
+              testId="good-days-avg-7"
+              label="Prior 7 days"
+              average={summary.prior7Average}
+              todayRaw={summary.todayCompletionRaw}
+            />
+            <AverageReading
+              testId="good-days-yesterday"
+              label="Yesterday"
+              average={summary.yesterdayCompletionRaw}
+              todayRaw={summary.todayCompletionRaw}
+            />
+          </div>
+        </div>
+
+        <div className="good-days-averages" data-testid="good-days-week-averages">
+          <p className="good-days-averages-note">
+            Week raw average of the days that have happened, including today. This week is{" "}
+            <strong className="good-days-average-value" data-testid="good-days-this-week-raw">
+              {Math.round(summary.weeks.thisWeek)}%
+            </strong>
+            .
+          </p>
+          <div className="good-days-averages-grid">
+            <AverageReading
+              testId="good-days-week-last"
+              label="Last week"
+              average={summary.weeks.lastWeek}
+              todayRaw={summary.weeks.thisWeek}
+              subject="this week"
+            />
+            <AverageReading
+              testId="good-days-week-year"
+              label="This year"
+              average={summary.weeks.thisYear}
+              todayRaw={summary.weeks.thisWeek}
+              subject="this week"
+            />
+            <AverageReading
+              testId="good-days-week-all"
+              label="All time"
+              average={summary.weeks.allTime}
+              todayRaw={summary.weeks.thisWeek}
+              subject="this week"
+            />
+          </div>
         </div>
 
         {onUsePriorityChange && (

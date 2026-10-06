@@ -1,7 +1,7 @@
 /**
  * components/Home/Habits/habit-percent-readout.tsx — Row/column % display
  *
- * Loading Bar on → milled channel (compact 10-pip, or wide fill+ticks).
+ * Loading Bar on → thin glass thermometer (compact row, or a wider Day View tube).
  * Off → numeric dot-matrix LED. Both sit in the same `.habit-pct` slot so
  * the column and footer cells stay put (22px tall; bar fills the slot).
  */

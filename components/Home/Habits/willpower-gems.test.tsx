@@ -1,8 +1,9 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react"
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { useHabitsStore } from "@/lib/habits-store"
+import * as willpowerPhysics from "@/lib/willpower-physics"
 import {
   DEFAULT_WILLPOWER_ORB,
   WillpowerGems,
@@ -14,6 +15,61 @@ import "./habit-chrome.css"
 vi.mock("@/lib/remove-background", () => ({
   removeBackground: vi.fn(async () => "data:image/png;base64,willpower"),
 }))
+
+class FakeIntersectionObserver {
+  constructor(readonly cb: IntersectionObserverCallback) {}
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+  takeRecords(): IntersectionObserverEntry[] {
+    return []
+  }
+  emit(target: Element, isIntersecting: boolean) {
+    this.cb(
+      [{ target, isIntersecting } as IntersectionObserverEntry],
+      this as unknown as IntersectionObserver,
+    )
+  }
+}
+
+function installFrameQueue() {
+  const queue: { id: number; cb: FrameRequestCallback; dead: boolean }[] = []
+  let seq = 0
+  const realRaf = window.requestAnimationFrame.bind(window)
+  const realCancel = window.cancelAnimationFrame.bind(window)
+  vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => {
+    const id = ++seq
+    queue.push({ id, cb, dead: false })
+    return id
+  })
+  vi.stubGlobal("cancelAnimationFrame", (id: number) => {
+    const item = queue.find((frame) => frame.id === id)
+    if (item) item.dead = true
+  })
+  const pending = () => queue.filter((frame) => !frame.dead)
+  const flush = () => {
+    const batch = pending()
+    for (const frame of batch) frame.dead = true
+    for (const frame of batch) frame.cb(performance.now())
+  }
+  const drain = (max = 80) => {
+    let n = 0
+    while (pending().length > 0 && n < max) {
+      flush()
+      n += 1
+    }
+    return n
+  }
+  return {
+    flush,
+    drain,
+    restore() {
+      vi.unstubAllGlobals()
+      window.requestAnimationFrame = realRaf
+      window.cancelAnimationFrame = realCancel
+    },
+  }
+}
 
 describe("WillpowerGems", () => {
   beforeEach(() => {
@@ -134,7 +190,15 @@ describe("WillpowerGems", () => {
     expect(screen.getByRole("dialog", { name: /Willpower gems physics/i })).toBeInTheDocument()
     expect(screen.getByLabelText("Live equations")).toBeInTheDocument()
     expect(screen.getByLabelText("Live trajectories")).toBeInTheDocument()
-    expect(document.body.textContent).toMatch(/½ g t/)
+    expect(document.body.textContent).toMatch(/Tracked gem/)
+    expect(document.querySelector(".hab-willpower-latex .katex")).toBeTruthy()
+    const showEq = screen.getAllByRole("button", { name: /Show equation/i })[0]!
+    expect(document.querySelector(".hab-willpower-eq-body")).toBeNull()
+    await user.click(showEq)
+    const body = document.querySelector(".hab-willpower-eq-body")
+    expect(body).toBeTruthy()
+    expect(body?.querySelector(".katex")).toBeTruthy()
+    expect(body?.getAttribute("role")).toBe("math")
     const g = screen.getByLabelText(/Gravity g/i) as HTMLInputElement
     fireEvent.change(g, { target: { value: "400" } })
     expect(g).toHaveValue("400")
@@ -273,14 +337,138 @@ describe("WillpowerGems", () => {
     const user = userEvent.setup()
     render(<WillpowerGems />)
     await user.click(screen.getByRole("button", { name: "Physics" }))
-    expect(screen.queryByText(/Newton/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Vertical free-flight/)).not.toBeInTheDocument()
     expect(screen.queryByText(/Downward acceleration/)).not.toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: "Show all explanations" }))
-    expect(screen.getByText(/Newton/)).toBeInTheDocument()
+    expect(screen.getByText(/Vertical free-flight/)).toBeInTheDocument()
     expect(screen.getByText(/Downward acceleration/)).toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: "Hide all explanations" }))
-    expect(screen.queryByText(/Newton/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Vertical free-flight/)).not.toBeInTheDocument()
     expect(screen.queryByText(/Downward acceleration/)).not.toBeInTheDocument()
+  })
+
+  it("pauses the physics frame when the host tab is inactive and resumes the same motion", async () => {
+    const frames = installFrameQueue()
+    const step = vi.spyOn(willpowerPhysics, "stepWillpowerWorld")
+    const panel = document.createElement("div")
+    panel.setAttribute("role", "tabpanel")
+    panel.setAttribute("data-state", "inactive")
+    panel.hidden = true
+    document.body.appendChild(panel)
+    try {
+      render(
+        <WillpowerGems
+          stones={[{ id: "drink:2026-09-21", src: "/gems-removebackground/gem5.png", name: "Drink water" }]}
+        />,
+        { container: panel },
+      )
+      await act(async () => {
+        frames.drain()
+      })
+      step.mockClear()
+      const plate = screen.getByRole("button", { name: /Stir Willpower gems/i, hidden: true })
+      fireEvent.click(plate)
+      await act(async () => {
+        frames.drain()
+      })
+      expect(plate).toHaveClass("is-stirring")
+      expect(step).not.toHaveBeenCalled()
+
+      panel.hidden = false
+      panel.setAttribute("data-state", "active")
+      await act(async () => {
+        await Promise.resolve()
+        frames.flush()
+      })
+      expect(step).toHaveBeenCalled()
+    } finally {
+      panel.remove()
+      frames.restore()
+    }
+  })
+
+  it("pauses the physics frame while the plate is outside the viewport and resumes when it intersects", async () => {
+    const frames = installFrameQueue()
+    const observers: FakeIntersectionObserver[] = []
+    vi.stubGlobal(
+      "IntersectionObserver",
+      class extends FakeIntersectionObserver {
+        constructor(cb: IntersectionObserverCallback) {
+          super(cb)
+          observers.push(this)
+        }
+      },
+    )
+    const step = vi.spyOn(willpowerPhysics, "stepWillpowerWorld")
+    try {
+      render(
+        <WillpowerGems
+          stones={[{ id: "drink:2026-09-21", src: "/gems-removebackground/gem5.png", name: "Drink water" }]}
+        />,
+      )
+      await act(async () => {
+        frames.drain()
+      })
+      const stage = document.querySelector(".hab-willpower-stage") as HTMLElement
+      const io = observers.at(-1)
+      expect(io).toBeTruthy()
+      act(() => {
+        io?.emit(stage, false)
+      })
+      step.mockClear()
+      fireEvent.click(screen.getByRole("button", { name: /Stir Willpower gems/i }))
+      await act(async () => {
+        frames.drain()
+      })
+      expect(step).not.toHaveBeenCalled()
+
+      act(() => {
+        io?.emit(stage, true)
+      })
+      await act(async () => {
+        frames.flush()
+      })
+      expect(step).toHaveBeenCalled()
+    } finally {
+      frames.restore()
+    }
+  })
+
+  it("pauses the physics frame while the document is hidden and resumes when it is shown", async () => {
+    const frames = installFrameQueue()
+    const step = vi.spyOn(willpowerPhysics, "stepWillpowerWorld")
+    let hidden = false
+    const previous = Object.getOwnPropertyDescriptor(document, "hidden")
+    Object.defineProperty(document, "hidden", { configurable: true, get: () => hidden })
+    try {
+      render(
+        <WillpowerGems
+          stones={[{ id: "drink:2026-09-21", src: "/gems-removebackground/gem5.png", name: "Drink water" }]}
+        />,
+      )
+      await act(async () => {
+        frames.drain()
+      })
+      hidden = true
+      document.dispatchEvent(new Event("visibilitychange"))
+      step.mockClear()
+      fireEvent.click(screen.getByRole("button", { name: /Stir Willpower gems/i }))
+      await act(async () => {
+        frames.drain()
+      })
+      expect(step).not.toHaveBeenCalled()
+
+      hidden = false
+      document.dispatchEvent(new Event("visibilitychange"))
+      await act(async () => {
+        frames.flush()
+      })
+      expect(step).toHaveBeenCalled()
+    } finally {
+      if (previous) Object.defineProperty(document, "hidden", previous)
+      else delete (document as { hidden?: boolean }).hidden
+      frames.restore()
+    }
   })
 })
 

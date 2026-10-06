@@ -37,7 +37,7 @@ export function ExemptionWandButton({
   )
 }
 
-function WandMark({ crossed }: { crossed: boolean }) {
+export function WandMark({ crossed }: { crossed: boolean }) {
   return (
     <svg className="hab-wand-mark" viewBox="0 0 24 24" aria-hidden="true">
       <path

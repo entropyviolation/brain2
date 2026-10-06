@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
+import { resetAllStores } from "@/tests/test-utils"
 import { SettingsDialog } from "./settings-dialog"
 
 const required = {
@@ -17,6 +18,10 @@ const required = {
 }
 
 describe("SettingsDialog (Habits)", () => {
+  beforeEach(() => {
+    resetAllStores()
+  })
+
   it("renders settings dialog when open", () => {
     render(<SettingsDialog {...required} />)
     expect(screen.getByText("Settings")).toBeInTheDocument()
@@ -29,6 +34,13 @@ describe("SettingsDialog (Habits)", () => {
     expect(screen.getByText("Gems")).toBeInTheDocument()
     expect(screen.getByLabelText("Percent LED tint")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /Change image/i })).toBeInTheDocument()
+    expect(screen.getByTestId("grade-lift-yesterday")).toBeInTheDocument()
+    expect(screen.getByTestId("grade-lift-last-week")).toBeInTheDocument()
+    expect(screen.getByTestId("grade-lift-yesterday-delta")).toBeInTheDocument()
+    expect(screen.getByTestId("grade-lift-last-week-delta")).toBeInTheDocument()
+    expect(screen.getByTestId("grade-lift-last-week-output-delta")).toBeInTheDocument()
+    expect(screen.getByLabelText(/Above the prior 7 days/i)).toHaveValue(5)
+    expect(screen.getByLabelText(/Above the prior 30 days/i)).toHaveValue(5)
   })
 
   it("edits accomplishment settings", async () => {

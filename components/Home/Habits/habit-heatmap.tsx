@@ -1,9 +1,13 @@
 /**
  * components/Home/Habits/habit-heatmap.tsx — Compact completion mosaic
  *
- * Rows of beveled squares, newest on the right. Scroll left to load older
+ * Rows of soft squares, newest on the right. Scroll left to load older
  * columns (daily days, weekly weeks, or monthly months) without a hard stop.
- * Chrome matches the Daily checklist: light metal / paper well, gem fills.
+ * Scroll position and the visible column window update once per animation frame,
+ * and again when the scroller resizes. The window uses the real pitch
+ * (cell + column gap) so the left of the scrollport stays mounted.
+ * A zero-width scroller still paints the whole span.
+ * Surface is a pearl handheld screen of flat dusty-aqua squares in the Habits metal well.
  */
 "use client"
 
@@ -21,8 +25,11 @@ import {
 } from "@/lib/date-utils"
 import { effectivePriorityWeight, habitCellRatio } from "@/lib/habit-priority"
 import { isHabitGoalMet } from "@/lib/habit-utils"
+import { isMissedOpportunity, missedOpportunityEligible } from "@/lib/habit-missed-opportunity"
+import { habitHiddenWhenComplete } from "@/lib/habit-completion-source"
 import { exemptionHeatTitle, isExemptKind, loggedExemptionDay, type ExemptionKind } from "@/lib/habit-exemption"
 import { format } from "date-fns"
+import { precedingQuarterStarts, quarterKey, seasonOfDate } from "@/lib/seasons"
 
 export interface HeatmapColumn {
   key: string
@@ -55,6 +62,15 @@ function weekColumns(asOf: Date, count: number): HeatmapColumn[] {
   }))
 }
 
+function seasonColumns(asOf: Date, count: number): HeatmapColumn[] {
+  return precedingQuarterStarts(asOf, count).map((start) => ({
+    key: quarterKey(start),
+    date: start,
+    label: seasonOfDate(start).slice(0, 2),
+    sub: `Q${Math.floor(start.getMonth() / 3) + 1}`,
+  }))
+}
+
 function monthColumns(asOf: Date, count: number): HeatmapColumn[] {
   return getPrecedingMonthStarts(asOf, count).map((start) => ({
     key: formatLocalMonthKey(start),
@@ -64,13 +80,69 @@ function monthColumns(asOf: Date, count: number): HeatmapColumn[] {
   }))
 }
 
-function cellFill(ratio: number): string {
+/** Must match `.habit-heat-grid` (10rem label, 14px cell, 2px column gap). */
+export const HEAT_CELL_PX = 14
+export const HEAT_GAP_PX = 2
+export const HEAT_LABEL_PX = 160
+const HEAT_BUFFER = 8
+
+export interface HeatmapBandMetrics {
+  cell?: number
+  gap?: number
+  label?: number
+}
+
+/**
+ * Columns mounted around the scrollport.
+ * Pitch is the cell plus the column gap. Dividing by the cell alone walks the
+ * window too far right, and the left of the visible mosaic unmounts.
+ * A zero-width scroller paints the whole span.
+ */
+export function heatmapColumnBand(
+  scrollLeft: number,
+  clientWidth: number,
+  count: number,
+  metrics: HeatmapBandMetrics = {},
+) {
+  if (count <= 0) return { start: 0, end: 0 }
+  const cell = metrics.cell ?? HEAT_CELL_PX
+  const gap = metrics.gap ?? HEAT_GAP_PX
+  const label = metrics.label ?? HEAT_LABEL_PX
+  const pitch = cell + gap
+  if (!(clientWidth > 0) || !(pitch > 0)) return { start: 0, end: count }
+  const origin = label + gap
+  const viewEnd = scrollLeft + clientWidth
+  let first = 0
+  if (scrollLeft > origin) {
+    first = Math.floor((scrollLeft - origin - cell) / pitch) + 1
+    if (first < 0) first = 0
+  }
+  const last = Math.max(first, Math.floor((viewEnd - origin - 0.01) / pitch))
+  const start = Math.max(0, Math.min(first, count) - HEAT_BUFFER)
+  const end = Math.min(count, Math.max(last, first) + 1 + HEAT_BUFFER)
+  return { start, end }
+}
+
+function readHeatMetrics(scroller: HTMLElement): HeatmapBandMetrics {
+  const grid = scroller.querySelector(".habit-heat-grid") as HTMLElement | null
+  const head = grid?.querySelector(".habit-heat-head") as HTMLElement | null
+  const corner = grid?.querySelector(".habit-heat-corner") as HTMLElement | null
+  if (!head || head.offsetWidth <= 0) return {}
+  const cell = head.offsetWidth
+  const label = corner && corner.offsetWidth > 0 ? corner.offsetWidth : HEAT_LABEL_PX
+  const parsed = grid ? Number.parseFloat(getComputedStyle(grid).columnGap) : Number.NaN
+  const gap = Number.isFinite(parsed) && parsed >= 0 ? parsed : HEAT_GAP_PX
+  return { cell, gap, label }
+}
+
+/** Flat dusty aqua. Empty stays quiet metal; full is a deeper blue-green. */
+export function heatmapCellFill(ratio: number): string {
   if (ratio <= 0) return "transparent"
-  if (ratio >= 1) return "linear-gradient(135deg, #8cd4a5, #c9f0d8)"
-  if (ratio >= 0.75) return "linear-gradient(135deg, #8b7ecc, #d4c4e8)"
-  if (ratio >= 0.5) return "linear-gradient(135deg, #5f756d, #adc29f)"
-  if (ratio >= 0.25) return "linear-gradient(135deg, #571833, #8b7ecc)"
-  return "linear-gradient(135deg, #404040, #6b6b6b)"
+  if (ratio >= 1) return "#6f9e98"
+  if (ratio >= 0.75) return "#8fb3af"
+  if (ratio >= 0.5) return "#afc7c4"
+  if (ratio >= 0.25) return "#c5d9d6"
+  return "#d7e6e4"
 }
 
 interface HabitHeatmapProps {
@@ -84,6 +156,9 @@ interface HabitHeatmapProps {
   exemptionWand?: boolean
   exemptionKindFor?: (task: WeeklyTask, periodKey: string) => ExemptionKind
   onToggleExempt?: (taskId: string, periodKey: string, exempt: boolean) => void
+  missedOpWand?: boolean
+  hideCompletedAndMissed?: boolean
+  onToggleMissed?: (taskId: string, periodKey: string, missed: boolean) => void
 }
 
 export function HabitHeatmap({
@@ -97,18 +172,33 @@ export function HabitHeatmap({
   exemptionWand = false,
   exemptionKindFor,
   onToggleExempt,
+  missedOpWand = false,
+  hideCompletedAndMissed = false,
+  onToggleMissed,
 }: HabitHeatmapProps) {
   const [span, setSpan] = useState(frequency === "daily" ? 42 : 16)
+  const [band, setBand] = useState({ start: 0, end: 48 })
   const scroller = useRef<HTMLDivElement>(null)
   const pendingRestore = useRef<number | null>(null)
   const didInitScroll = useRef(false)
+  const scrollFrame = useRef(0)
+  const frequencyRef = useRef(frequency)
+  const columnCountRef = useRef(0)
+  if (frequencyRef.current !== frequency) {
+    didInitScroll.current = false
+    pendingRestore.current = null
+  }
+  frequencyRef.current = frequency
 
   const columns =
-    frequency === "monthly"
-      ? monthColumns(asOf, span)
-      : frequency === "weekly"
-        ? weekColumns(asOf, span)
-        : dailyColumns(asOf, span)
+    frequency === "quarterly"
+      ? seasonColumns(asOf, span)
+      : frequency === "monthly"
+        ? monthColumns(asOf, span)
+        : frequency === "weekly"
+          ? weekColumns(asOf, span)
+          : dailyColumns(asOf, span)
+  columnCountRef.current = columns.length
 
   useLayoutEffect(() => {
     const el = scroller.current
@@ -116,35 +206,74 @@ export function HabitHeatmap({
     if (pendingRestore.current !== null) {
       el.scrollLeft = el.scrollWidth - pendingRestore.current
       pendingRestore.current = null
-      return
-    }
-    if (!didInitScroll.current) {
+    } else if (!didInitScroll.current) {
       el.scrollLeft = el.scrollWidth
       didInitScroll.current = true
     }
-  }, [span, columns.length])
+    const next = heatmapColumnBand(el.scrollLeft, el.clientWidth, columns.length, readHeatMetrics(el))
+    setBand((prev) => (prev.start === next.start && prev.end === next.end ? prev : next))
+  }, [span, columns.length, frequency])
 
   useEffect(() => {
-    didInitScroll.current = false
-    setSpan(frequency === "daily" ? 42 : 16)
+    const next = frequency === "daily" ? 42 : 16
+    setSpan((current) => {
+      if (current !== next) didInitScroll.current = false
+      return next
+    })
+    if (scrollFrame.current) {
+      cancelAnimationFrame(scrollFrame.current)
+      scrollFrame.current = 0
+    }
   }, [frequency])
 
-  const onScroll = () => {
+  useEffect(() => {
     const el = scroller.current
-    if (!el || el.scrollLeft > 24) return
-    pendingRestore.current = el.scrollWidth - el.scrollLeft
-    setSpan((n) => n + (frequency === "daily" ? 28 : 12))
+    if (!el || typeof ResizeObserver === "undefined") {
+      return () => {
+        if (scrollFrame.current) cancelAnimationFrame(scrollFrame.current)
+      }
+    }
+    const ro = new ResizeObserver(() => {
+      const node = scroller.current
+      if (!node) return
+      const next = heatmapColumnBand(node.scrollLeft, node.clientWidth, columnCountRef.current, readHeatMetrics(node))
+      setBand((prev) => (prev.start === next.start && prev.end === next.end ? prev : next))
+    })
+    ro.observe(el)
+    return () => {
+      ro.disconnect()
+      if (scrollFrame.current) cancelAnimationFrame(scrollFrame.current)
+    }
+  }, [])
+
+  const onScroll = () => {
+    if (scrollFrame.current) return
+    scrollFrame.current = requestAnimationFrame(() => {
+      scrollFrame.current = 0
+      const el = scroller.current
+      if (!el) return
+      const next = heatmapColumnBand(el.scrollLeft, el.clientWidth, columnCountRef.current, readHeatMetrics(el))
+      setBand((prev) => (prev.start === next.start && prev.end === next.end ? prev : next))
+      if (el.scrollLeft > 24) return
+      pendingRestore.current = el.scrollWidth - el.scrollLeft
+      const step = frequencyRef.current === "daily" ? 28 : 12
+      setSpan((n) => n + step)
+    })
   }
+
+  const shownColumns = columns.slice(band.start, band.end)
+  const padBefore = band.start
+  const padAfter = Math.max(0, columns.length - band.end)
 
   const shown =
     hideCompleted && focusKey
       ? tasks.filter((task) => {
           const kind = exemptionKindFor?.(task, focusKey)
-          if (isExemptKind(kind)) return false
           const column = columns.find((col) => col.key === focusKey)
-          return !isHabitGoalMet(task, data[focusKey]?.[task.id], {
+          return !habitHiddenWhenComplete(task, data[focusKey]?.[task.id], {
             date: column?.date ?? asOf,
             weeklyData: data,
+            exempt: isExemptKind(kind),
           })
         })
       : tasks
@@ -154,11 +283,21 @@ export function HabitHeatmap({
   }
 
   return (
-    <div className="habit-heat" aria-label={exemptionWand ? "Exemption wand" : "Habit heatmap"}>
+    <div
+      className="habit-heat"
+      aria-label={exemptionWand ? "Exemption wand" : missedOpWand ? "Missed op wand" : "Habit heatmap"}
+    >
       <div className="habit-heat-scroll" ref={scroller} onScroll={onScroll}>
-        <div className="habit-heat-grid" style={{ gridTemplateColumns: `10rem repeat(${columns.length}, 20px)` }}>
+        <div
+          className="habit-heat-grid"
+          style={{
+            gridTemplateColumns: `10rem repeat(${columns.length}, ${HEAT_CELL_PX}px)`,
+            columnGap: HEAT_GAP_PX,
+          }}
+        >
           <div className="habit-heat-corner" />
-          {columns.map((col) => (
+          {padBefore > 0 ? <div style={{ gridColumn: `span ${padBefore}` }} /> : null}
+          {shownColumns.map((col) => (
             <div
               key={col.key}
               className={`habit-heat-head ${isToday(col.date) ? "is-today" : ""}`}
@@ -167,19 +306,25 @@ export function HabitHeatmap({
               <span>{col.label}</span>
             </div>
           ))}
+          {padAfter > 0 ? <div style={{ gridColumn: `span ${padAfter}` }} /> : null}
           {shown.map((task) => {
             const weight = effectivePriorityWeight(task, data, asOf, frequency)
             return (
               <HeatmapRow
                 key={task.id}
                 task={task}
-                columns={columns}
+                columns={shownColumns}
+                padBefore={padBefore}
+                padAfter={padAfter}
                 data={data}
                 weight={weight}
                 onEdit={() => onEditTask(task)}
                 exemptionWand={exemptionWand}
                 exemptionKindFor={exemptionKindFor}
                 onToggleExempt={onToggleExempt}
+                missedOpWand={missedOpWand}
+                hideCompletedAndMissed={hideCompletedAndMissed}
+                onToggleMissed={onToggleMissed}
                 frequency={frequency}
               />
             )
@@ -189,7 +334,9 @@ export function HabitHeatmap({
       <p className="habit-heat-hint">
         {exemptionWand
           ? "Grey squares are exempt. Click a square to waive or restore that period."
-          : `Scroll left for older ${frequency === "monthly" ? "months" : frequency === "weekly" ? "weeks" : "days"}. Squares fill with how complete that period was.`}
+          : missedOpWand
+            ? "Grey squares are already done or exempt. Click an open square to mark that period definitely not done."
+            : `Scroll left for older ${frequency === "quarterly" ? "seasons" : frequency === "monthly" ? "months" : frequency === "weekly" ? "weeks" : "days"}. Squares fill with how complete that period was.`}
       </p>
     </div>
   )
@@ -204,7 +351,12 @@ function HeatmapRow({
   exemptionWand = false,
   exemptionKindFor,
   onToggleExempt,
+  missedOpWand = false,
+  hideCompletedAndMissed = false,
+  onToggleMissed,
   frequency,
+  padBefore = 0,
+  padAfter = 0,
 }: {
   task: WeeklyTask
   columns: HeatmapColumn[]
@@ -214,7 +366,12 @@ function HeatmapRow({
   exemptionWand?: boolean
   exemptionKindFor?: (task: WeeklyTask, periodKey: string) => ExemptionKind
   onToggleExempt?: (taskId: string, periodKey: string, exempt: boolean) => void
+  missedOpWand?: boolean
+  hideCompletedAndMissed?: boolean
+  onToggleMissed?: (taskId: string, periodKey: string, missed: boolean) => void
   frequency: HabitFrequency
+  padBefore?: number
+  padAfter?: number
 }) {
   return (
     <>
@@ -222,38 +379,90 @@ function HeatmapRow({
         <span>{task.name}</span>
         {weight > 0 && <em>×{weight}</em>}
       </button>
+      {padBefore > 0 ? <div style={{ gridColumn: `span ${padBefore}` }} /> : null}
       {columns.map((col) => {
         const kind = exemptionKindFor?.(task, col.key) ?? "required"
         const exempt = isExemptKind(kind)
-        if (exempt || (exemptionWand && onToggleExempt)) {
+        const cell = data[col.key]?.[task.id]
+        const met = isHabitGoalMet(task, cell, { date: col.date, weeklyData: data })
+        const missed = isMissedOpportunity(cell)
+        const todayClass = isToday(col.date) ? "is-today" : ""
+        if (exemptionWand && onToggleExempt) {
           const logDay = kind === "logged" ? loggedExemptionDay(task, col.key, frequency) : null
           const title = exemptionHeatTitle(task.name, kind, logDay)
-          const className = `habit-heat-cell${exempt ? " is-exempt" : ""} ${isToday(col.date) ? "is-today" : ""}`
-          if (exemptionWand && onToggleExempt) {
+          const className = `habit-heat-cell${exempt ? " is-exempt" : ""} ${todayClass}`
+          return (
+            <button
+              key={col.key}
+              type="button"
+              className={className}
+              title={title}
+              aria-pressed={exempt}
+              aria-label={title}
+              onClick={() => onToggleExempt(task.id, col.key, !exempt)}
+            />
+          )
+        }
+        if (missedOpWand && onToggleMissed) {
+          if (!missedOpportunityEligible(exempt, met)) {
+            const title = exempt
+              ? exemptionHeatTitle(task.name, kind, kind === "logged" ? loggedExemptionDay(task, col.key, frequency) : null)
+              : `${task.name} · already done`
             return (
-              <button
+              <div
                 key={col.key}
-                type="button"
-                className={className}
+                className={`habit-heat-cell is-exempt ${todayClass}`}
                 title={title}
-                aria-pressed={exempt}
                 aria-label={title}
-                onClick={() => onToggleExempt(task.id, col.key, !exempt)}
               />
             )
           }
-          return <div key={col.key} className={className} title={title} aria-label={title} />
+          const title = missed
+            ? `${task.name} · missed opportunity. Click to clear.`
+            : `${task.name} · click to mark missed opportunity`
+          return (
+            <button
+              key={col.key}
+              type="button"
+              className={`habit-heat-cell${missed ? " is-exempt" : ""} ${todayClass}`}
+              title={title}
+              aria-pressed={missed}
+              aria-label={title}
+              onClick={() => onToggleMissed(task.id, col.key, !missed)}
+            />
+          )
         }
-        const ratio = habitCellRatio(task, data[col.key]?.[task.id], data, col.date)
+        if (exempt || (hideCompletedAndMissed && (met || missed))) {
+          const logDay = kind === "logged" ? loggedExemptionDay(task, col.key, frequency) : null
+          const title = exempt
+            ? exemptionHeatTitle(task.name, kind, logDay)
+            : met
+              ? `${task.name} · completed`
+              : `${task.name} · missed opportunity`
+          return (
+            <div
+              key={col.key}
+              className={`habit-heat-cell is-exempt ${todayClass}`}
+              title={title}
+              aria-label={title}
+            />
+          )
+        }
+        const ratio = habitCellRatio(task, cell, data, col.date)
         return (
           <div
             key={col.key}
             className={`habit-heat-cell ${ratio > 0 ? "is-lit" : ""} ${ratio >= 1 ? "is-full" : ""} ${isToday(col.date) ? "is-today" : ""}`}
-            style={{ ["--hab-heat-fill" as string]: cellFill(ratio) }}
+            style={
+              ratio > 0 && !isToday(col.date)
+                ? { backgroundColor: heatmapCellFill(ratio) }
+                : undefined
+            }
             title={`${task.name} · ${format(col.date, "EEE MMM d")} · ${Math.round(ratio * 100)}%`}
           />
         )
       })}
+      {padAfter > 0 ? <div style={{ gridColumn: `span ${padAfter}` }} /> : null}
     </>
   )
 }

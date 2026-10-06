@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { useHabitsStore } from "@/lib/habits-store"
+import { localDayKey, useReviewsStore } from "@/lib/reviews-store"
 import { TaskType } from "@/lib/types"
 import { WeeklyTaskTracker } from "./habit-tracker"
 import { plasmaClipWidth } from "./noble-gas-tube"
@@ -95,6 +96,21 @@ describe("WeeklyTaskTracker", () => {
     expect(changer?.textContent).toMatch(/Monthly/)
   })
 
+  it("keeps morning priorities above the desk so the control panel stays the right column", () => {
+    const day = localDayKey(new Date("2026-06-20T12:00:00"))
+    useReviewsStore.getState().saveMorningReview(day, { priorityHabitIds: ["d1"] })
+    render(<WeeklyTaskTracker currentDate={new Date("2026-06-20T12:00:00")} />)
+    expect(screen.getByText("Morning habit priorities")).toBeInTheDocument()
+    expect(screen.getByText("Daily habit")).toBeInTheDocument()
+    const desk = document.querySelector(".hab-desk")
+    expect(desk?.children).toHaveLength(2)
+    expect(desk?.querySelector(":scope > .hab-well")).toBeTruthy()
+    expect(desk?.querySelector(":scope > .hab-control-panel")).toBeTruthy()
+    expect(desk?.textContent).not.toMatch(/Morning habit priorities/)
+    const morning = screen.getByText("Morning habit priorities").closest(".hab-morning")
+    expect(morning?.compareDocumentPosition(desk!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
   it("switches the checklist to heatmap view from the sidebar rocker", async () => {
     const user = userEvent.setup()
     render(<WeeklyTaskTracker currentDate={new Date("2026-06-20T12:00:00")} />)
@@ -145,6 +161,23 @@ describe("WeeklyTaskTracker", () => {
     expect(useHabitsStore.getState().habitSortDirection).toBe("desc")
     await user.click(screen.getByRole("radio", { name: "Ascending" }))
     expect(useHabitsStore.getState().habitSortDirection).toBe("asc")
+  })
+
+  it("names monthly completion sort for the month, not the week", async () => {
+    const user = userEvent.setup()
+    render(<WeeklyTaskTracker currentDate={new Date("2026-06-20T12:00:00")} />)
+    expect(screen.getByRole("radio", { name: "Weekly completion %" })).toBeInTheDocument()
+    await user.click(screen.getByRole("switch", { name: "Day View" }))
+    expect(screen.getByRole("radio", { name: "Weekly completion %" })).toBeInTheDocument()
+    await user.click(screen.getByRole("tab", { name: /Weekly \(/ }))
+    expect(screen.getByRole("radio", { name: "Weekly completion %" })).toBeInTheDocument()
+    await user.click(screen.getByRole("tab", { name: /Monthly \(/ }))
+    expect(screen.getByRole("radio", { name: "Monthly completion %" })).toBeInTheDocument()
+    expect(screen.getByRole("radio", { name: "Alphabetical" })).toBeInTheDocument()
+    expect(screen.queryByRole("radio", { name: "Weekly completion %" })).not.toBeInTheDocument()
+    await user.click(screen.getByRole("tab", { name: /Season \(/ }))
+    expect(screen.getByRole("radio", { name: "Season completion %" })).toBeInTheDocument()
+    expect(screen.queryByRole("radio", { name: /Weekly/ })).not.toBeInTheDocument()
   })
 
   it("switches to weekly tab content when clicked", async () => {
@@ -297,5 +330,27 @@ describe("WeeklyTaskTracker", () => {
     expect(screen.getByText("Loading habits…")).toBeInTheDocument()
     expect(screen.queryByText("No habits yet. Add one to get started.")).not.toBeInTheDocument()
     vi.restoreAllMocks()
+  })
+
+  it("puts Missed op wand under Exemption wand and keeps the hide rocker off", async () => {
+    const user = userEvent.setup()
+    render(<WeeklyTaskTracker currentDate={new Date("2026-06-20T12:00:00")} />)
+    const wands = document.querySelectorAll(".hab-control-toggles .hab-wand")
+    expect(wands[0]).toHaveAttribute("data-ui-name", "Exemption wand")
+    expect(wands[1]).toHaveAttribute("data-ui-name", "Missed op wand")
+    const hideToday = screen.getByRole("switch", { name: "Hide Completed Today" })
+    const hideBoth = screen.getByRole("switch", { name: "Hide completed and missed" })
+    expect(hideBoth).toHaveClass("hab-rocker")
+    expect(hideBoth).toHaveAttribute("aria-checked", "false")
+    expect(hideToday.compareDocumentPosition(hideBoth) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    await user.click(screen.getByRole("button", { name: "Missed op wand" }))
+    expect(screen.getByRole("button", { name: "Missed op wand on" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: "Exemption wand" })).toHaveAttribute("aria-pressed", "false")
+    await user.click(screen.getByRole("button", { name: "Exemption wand" }))
+    expect(screen.getByRole("button", { name: "Exemption wand on" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: "Missed op wand" })).toHaveAttribute("aria-pressed", "false")
+    await user.click(hideBoth)
+    expect(useHabitsStore.getState().hideCompletedAndMissed).toBe(true)
+    expect(useHabitsStore.getState().hideCompletedToday).toBe(false)
   })
 })

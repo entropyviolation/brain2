@@ -11,14 +11,13 @@ describe("PercentLedBar", () => {
     resetAllStores()
   })
 
-  it("lights five of ten lamps at 50% and keeps the numeric label", () => {
+  it("fills the glass tube to 50% and keeps the numeric label", () => {
     render(<PercentLedBar value={50} label="row" />)
     const meter = screen.getByRole("meter", { name: "row 50%" })
     expect(meter).toHaveAttribute("aria-valuenow", "50")
     expect(meter).toHaveAttribute("data-lit", "5")
-    expect(meter.querySelector(".hab-pled-bar-well")).toBeTruthy()
-    expect(meter.querySelectorAll(".hab-pled-bar-lamp")).toHaveLength(10)
-    expect(meter.querySelectorAll(".hab-pled-bar-lamp.is-on")).toHaveLength(5)
+    expect(meter.querySelector(".hab-pled-bar-glass")).toBeTruthy()
+    expect((meter.querySelector(".hab-pled-bar-mercury") as HTMLElement).style.width).toBe("50%")
     expect(meter.textContent).toContain("50%")
     expect(meter).toHaveStyle({ "--hab-led-tint": "#7e14ff" })
   })
@@ -27,10 +26,10 @@ describe("PercentLedBar", () => {
     useHabitsStore.getState().setPercentLedTint("#ff8800")
     render(<PercentLedBar value={100} />)
     expect(screen.getByRole("meter")).toHaveStyle({ "--hab-led-tint": "#ff8800" })
-    expect(screen.getByRole("meter").querySelectorAll(".hab-pled-bar-lamp.is-on")).toHaveLength(10)
+    expect((screen.getByRole("meter").querySelector(".hab-pled-bar-mercury") as HTMLElement).style.width).toBe("100%")
   })
 
-  it("keeps compact as ten pips and does not let the % label shrink the channel", () => {
+  it("keeps the tube beside a fixed-width % label", () => {
     const { container } = render(<PercentLedBar value={0} />)
     const bar = container.querySelector(".hab-pled-bar") as HTMLElement
     const read = container.querySelector(".hab-pled-bar-read") as HTMLElement
@@ -44,15 +43,14 @@ describe("PercentLedBar", () => {
     expect(window.getComputedStyle(bezel).flexGrow).toBe("1")
   })
 
-  it("fills a wide slot with a percent-true bar and 10% ticks", () => {
+  it("fills a wide slot with the same glass tube", () => {
     render(<PercentLedBar value={19} label="daily" density="wide" />)
     const meter = screen.getByRole("meter", { name: "daily 19%" })
     expect(meter).toHaveAttribute("aria-valuenow", "19")
     expect(meter).toHaveAttribute("data-density", "wide")
     expect(meter).toHaveAttribute("data-lit", "2")
-    expect(meter.querySelectorAll(".hab-pled-bar-lamp")).toHaveLength(0)
-    expect(meter.querySelectorAll(".hab-pled-bar-tick")).toHaveLength(9)
-    expect((meter.querySelector(".hab-pled-bar-fill") as HTMLElement).style.width).toBe("19%")
+    expect(meter.querySelector(".hab-pled-bar-glass")).toBeTruthy()
+    expect((meter.querySelector(".hab-pled-bar-mercury") as HTMLElement).style.width).toBe("19%")
   })
 })
 
@@ -99,6 +97,6 @@ describe("HabitPercentReadout", () => {
   it("passes wide density through to the loading bar", () => {
     render(<HabitPercentReadout value={19} label="daily" density="wide" />)
     expect(document.querySelector(".hab-pled-bar")).toHaveAttribute("data-density", "wide")
-    expect((document.querySelector(".hab-pled-bar-fill") as HTMLElement).style.width).toBe("19%")
+    expect((document.querySelector(".hab-pled-bar-mercury") as HTMLElement).style.width).toBe("19%")
   })
 })

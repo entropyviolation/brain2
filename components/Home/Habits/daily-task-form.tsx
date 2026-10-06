@@ -11,18 +11,32 @@
  * (`lib/habit-tracking.ts`).
  *
  * **Time estimate** gives the habit a clock length: minutes per unit of the goal
- * (10 min per page) or a flat length per completion. That is what lets the Done
- * row it writes carry a duration and a real window instead of a bare date
- * (`lib/habit-time-estimate.ts`). Anything derived from a rate is flagged for
- * confirmation in the review unless it is marked as a known ("definite") length.
+ * (10 min per page) or a flat length per completion. **N/A** stores no minutes
+ * (`timeEstimateNA`) for a habit with no meaningful duration. That is what lets
+ * the Done row it writes carry a duration and a real window instead of a bare
+ * date (`lib/habit-time-estimate.ts`). Anything derived from a rate is flagged
+ * for confirmation in the review unless it is marked as a known ("definite") length.
+ *
+ * **Auto-fill from Tracking** (tags and Create tag) is shown only while the
+ * Tracking tags completion source is checked. Hiding it keeps the saved tags.
+ * That section is the minute source. **Tagged tasks** is a different source:
+ * while it is checked, a tag field is shown and the goal is a count of Done
+ * tasks (and tracked activities that file one Done line) with that tag.
+ *
+ * **Done task wording** is optional and collapsed. `{value}` is the number
+ * logged. Blank keeps the habit name on the Done line (`lib/habit-done-log.ts`).
  *
  * **Lift when a log says** and **Connections** are the editable blocks for an
  * all-nighter exemption, a sleep clock (bedtime / wake at or before a threshold),
  * and a done next-action list. The to-do connection is the template for another habit.
  *
+ * **Completion sources** are an ordered trust list (rows sit most trusted first).
+ * **Daily habit total** picks its habit with the same Win95 menu, and you can type to filter.
  * **Text keywords (phone)** are whole-message Telegram triggers
- * (`WeeklyTask.textTriggers` / `lib/ingest/text-triggers.ts`). Empty habits get
- * name-matched presets (hemisync, read, exercise, chess) as an editable preview.
+ * (`WeeklyTask.textTriggers` / `lib/ingest/text-triggers.ts`). **Try a phrase**
+ * previews the parser. Quantity adds. Empty habits get name-matched presets
+ * (hemisync, read, exercise, chess) as an editable preview.
+ * **Open item in Lists** uses the standing habit item and the existing item-detail Back.
  *
  * Spec: §9.4 (habit data model).
  */
@@ -30,7 +44,7 @@
 
 import type React from "react"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useId, useRef, useState } from "react"
 import {
   type WeeklyTask,
   TaskType,
@@ -42,15 +56,18 @@ import {
   type HabitListLink,
   type HabitLogExemption,
   type HabitSleepLink,
+  type HabitCompletionSourceId,
+  type HabitCoverageLink,
+  type HabitDailyFloorLink,
   type HabitTextTrigger,
   type IncrementalHabitData,
 } from "@/lib/types"
 import { normalizeTaskType } from "@/lib/habit-utils"
 import { describeHabitTimeEstimate, isTimeMeasuredHabit } from "@/lib/habit-time-estimate"
-import { formatLocalDateKey } from "@/lib/date-utils"
+import { formatLocalDateKey, formatLocalMonthKey, getWeekString, getWeekStartDate } from "@/lib/date-utils"
 import { normalizeIncrementalData } from "@/lib/incremental-habits"
 import { supportsTrackingLink } from "@/lib/habit-tracking"
-import { defaultTriggersForHabit, makeHabitTriggerId } from "@/lib/ingest/text-triggers"
+import { defaultTriggersForHabit, describeHabitTriggerPreview, makeHabitTriggerId } from "@/lib/ingest/text-triggers"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { penIdsForTags } from "@/lib/tracked-time"
 import { useThemeStore } from "@/lib/theme-store"
@@ -59,7 +76,21 @@ import { HabitGemChooser } from "@/components/Home/Habits/gem-picker"
 import { pickRandomCatalogGem, resolveTaskGem } from "@/lib/habit-gems"
 import { serializeSnapshot } from "@/lib/unsaved-changes"
 import { presetLogExemptions, sanitizeLogExemptions } from "@/lib/habit-exemption"
-import { presetListLink, presetSleepLink } from "@/lib/habit-connections"
+import { effectiveListLink, effectiveSleepLink, presetListLink, presetSleepLink } from "@/lib/habit-connections"
+import {
+  clampCoverageThreshold,
+  DEFAULT_COVERAGE_THRESHOLD,
+  deriveCompletionSources,
+  effectiveCoverageLink,
+  effectiveDailyFloorLink,
+  presetCoverageLink,
+  presetDailyFloorLink,
+} from "@/lib/habit-completion-source"
+import { openHabitInLists } from "@/lib/habit-list-item"
+import { normalizeTag } from "@/lib/links"
+import { HabitSourcesField } from "@/components/Home/Habits/habit-sources-field"
+import { useHabitsStore } from "@/lib/habits-store"
+import { DAILY_HABIT_COMPLETION_POINTS } from "@/lib/habit-points"
 import { offsetToClock, parseBedtime, parseWakeTime } from "@/lib/sleep-log"
 
 interface TaskFormProps {
@@ -69,12 +100,15 @@ interface TaskFormProps {
   initialTask?: WeeklyTask | null
   defaultFrequency?: HabitFrequency
   onDirtyChange?: (dirty: boolean) => void
+  /** Close the window without the unsaved prompt — the draft is stashed for the return trip. */
+  onLeaveForItem?: () => void
 }
 
 const FREQUENCIES: { value: HabitFrequency; label: string }[] = [
   { value: "daily", label: "Daily" },
   { value: "weekly", label: "Weekly" },
   { value: "monthly", label: "Monthly" },
+  { value: "quarterly", label: "Season" },
 ]
 
 const HABIT_TYPES: {
@@ -123,10 +157,128 @@ function emptyClimb(): IncrementalHabitData {
   }
 }
 
-export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFrequency = "daily", onDirtyChange }: TaskFormProps) {
+/** Searchable daily-habit menu. Same Win95 trigger as completion sources; type-to-filter like the pen parent picker. */
+function DailyHabitPicker({
+  habits,
+  habitId,
+  onChange,
+}: {
+  habits: { id: string; name: string }[]
+  habitId: string
+  onChange: (habitId: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState("")
+  const rootRef = useRef<HTMLDivElement>(null)
+  const menuId = useId()
+  const buttonId = useId()
+  const selected = habits.find((habit) => habit.id === habitId)
+  const needle = query.trim().toLowerCase()
+  const matches = needle ? habits.filter((habit) => habit.name.toLowerCase().includes(needle)) : habits
+
+  const close = () => {
+    setOpen(false)
+    setQuery("")
+  }
+
+  useEffect(() => {
+    if (!open) return
+    const shut = () => {
+      setOpen(false)
+      setQuery("")
+    }
+    const onPointer = (event: MouseEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) shut()
+    }
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return
+      event.stopPropagation()
+      shut()
+    }
+    window.addEventListener("mousedown", onPointer)
+    window.addEventListener("keydown", onKey)
+    return () => {
+      window.removeEventListener("mousedown", onPointer)
+      window.removeEventListener("keydown", onKey)
+    }
+  }, [open])
+
+  return (
+    <div className="habit95-field">
+      <label htmlFor={buttonId}>Add up this daily habit</label>
+      <div className="habit95-pick" ref={rootRef}>
+        <button
+          id={buttonId}
+          type="button"
+          className="habit95-select"
+          aria-label="Daily habit to add up"
+          aria-expanded={open}
+          aria-haspopup="listbox"
+          aria-controls={menuId}
+          onClick={() => (open ? close() : setOpen(true))}
+        >
+          <span className="habit95-select-label">{selected?.name || "Choose a daily habit"}</span>
+          <span className="habit95-select-arrow" aria-hidden />
+        </button>
+        {open ? (
+          <div className="habit95-select-menu habit95-habit-menu" id={menuId} role="listbox" aria-label="Daily habits">
+            <input
+              className="habit95-input"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search daily habits"
+              aria-label="Search daily habits"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter") e.preventDefault()
+              }}
+            />
+            <div className="habit95-habit-options">
+              {needle ? null : (
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={!habitId}
+                  data-active={!habitId ? "true" : undefined}
+                  className="habit95-habit-option"
+                  onClick={() => {
+                    onChange("")
+                    close()
+                  }}
+                >
+                  Choose a daily habit
+                </button>
+              )}
+              {matches.map((habit) => (
+                <button
+                  key={habit.id}
+                  type="button"
+                  role="option"
+                  aria-selected={habit.id === habitId}
+                  data-active={habit.id === habitId ? "true" : undefined}
+                  className="habit95-habit-option"
+                  onClick={() => {
+                    onChange(habit.id)
+                    close()
+                  }}
+                >
+                  {habit.name}
+                </button>
+              ))}
+              {matches.length === 0 ? <p className="habit95-hint">No daily habits match “{query.trim()}”.</p> : null}
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
+export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFrequency = "daily", onDirtyChange, onLeaveForItem }: TaskFormProps) {
   const colors = useThemeStore((s) => s.colors)
   const trackingTags = useTimeTrackingStore((s) => s.tags)
   const trackingScopes = useTimeTrackingStore((s) => s.scopes)
+  const allHabits = useHabitsStore((s) => s.tasks)
   const initialClimb = initialTask ? normalizeIncrementalData(initialTask.incrementalData) : undefined
   const seededTriggers = seedTextTriggers(initialTask)
   const hadStoredTriggers = Boolean(initialTask?.textTriggers?.length)
@@ -135,17 +287,37 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
   const [logsLocked, setLogsLocked] = useState(Array.isArray(initialTask?.logExemptions))
   const [sleepLocked, setSleepLocked] = useState(!!initialTask && initialTask.sleepLink !== undefined)
   const [listLocked, setListLocked] = useState(!!initialTask && initialTask.listLink !== undefined)
+  const [coverageLocked, setCoverageLocked] = useState(!!initialTask && initialTask.coverageLink !== undefined)
+  const [floorLocked, setFloorLocked] = useState(!!initialTask && initialTask.dailyFloorLink !== undefined)
+  const [sourcesLocked, setSourcesLocked] = useState(Array.isArray(initialTask?.completionSources))
+  const estimateHold = useRef<HabitTimeEstimate | undefined>(initialTask?.timeEstimate)
+  const [phrase, setPhrase] = useState("")
+  const [newTagName, setNewTagName] = useState("")
+  const addTrackingTag = useTimeTrackingStore((s) => s.addTag)
   const [task, setTask] = useState<WeeklyTask>({
     id: initialTask?.id || "",
     name: initialTask?.name || "",
     type: initialTask ? normalizeTaskType(initialTask.type) : TaskType.BOOLEAN,
     goal: initialTask?.goal || 0,
     unit: initialTask?.unit || initialClimb?.unit || "",
-    rewardValue: initialTask?.rewardValue || 10,
+    rewardValue: initialTask?.rewardValue ?? 10,
     frequency: initialTask?.frequency || defaultFrequency,
     incrementalData: initialClimb,
     trackingLink: initialTask?.trackingLink,
-    timeEstimate: initialTask?.timeEstimate,
+    completionSources: initialTask?.completionSources,
+    coverageLink:
+      initialTask && initialTask.coverageLink !== undefined
+        ? initialTask.coverageLink
+        : presetCoverageLink(seedName),
+    dailyFloorLink:
+      initialTask && initialTask.dailyFloorLink !== undefined
+        ? initialTask.dailyFloorLink
+        : presetDailyFloorLink(seedName),
+    timeEstimate: initialTask?.timeEstimateNA ? undefined : initialTask?.timeEstimate,
+    timeEstimateNA: initialTask?.timeEstimateNA ? true : undefined,
+    doneTaskPhrase: initialTask?.doneTaskPhrase,
+    doneTaskUseText: initialTask?.doneTaskUseText,
+    taggedTaskTag: initialTask?.taggedTaskTag,
     textTriggers: seededTriggers,
     priorityPinned: initialTask?.priorityPinned,
     priorityMuted: initialTask?.priorityMuted,
@@ -153,17 +325,31 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
     logExemptions: initialTask?.logExemptions ?? presetLogExemptions(seedName),
     sleepLink: initialTask && initialTask.sleepLink !== undefined ? initialTask.sleepLink : presetSleepLink(seedName),
     listLink: initialTask && initialTask.listLink !== undefined ? initialTask.listLink : presetListLink(seedName),
+    habitValueLink: initialTask?.habitValueLink ?? null,
+    showGoalBar: initialTask?.showGoalBar,
   })
   const [baseline] = useState(() => serializeSnapshot({
     name: initialTask?.name || "",
     type: initialTask ? normalizeTaskType(initialTask.type) : TaskType.BOOLEAN,
     goal: initialTask?.goal || 0,
     unit: initialTask?.unit || initialClimb?.unit || "",
-    rewardValue: initialTask?.rewardValue || 10,
+    rewardValue: initialTask?.rewardValue ?? 10,
     frequency: initialTask?.frequency || defaultFrequency,
     incrementalData: initialClimb,
     trackingLink: initialTask?.trackingLink,
-    timeEstimate: initialTask?.timeEstimate,
+    coverageLink:
+      initialTask && initialTask.coverageLink !== undefined
+        ? initialTask.coverageLink
+        : presetCoverageLink(seedName),
+    dailyFloorLink:
+      initialTask && initialTask.dailyFloorLink !== undefined
+        ? initialTask.dailyFloorLink
+        : presetDailyFloorLink(seedName),
+    timeEstimate: initialTask?.timeEstimateNA ? undefined : initialTask?.timeEstimate,
+    timeEstimateNA: initialTask?.timeEstimateNA ? true : undefined,
+    doneTaskPhrase: initialTask?.doneTaskPhrase ?? "",
+    doneTaskUseText: initialTask?.doneTaskUseText ? true : undefined,
+    taggedTaskTag: initialTask?.taggedTaskTag ?? "",
     textTriggers: seededTriggers,
     gem: task.gem,
     priorityPinned: initialTask?.priorityPinned,
@@ -171,6 +357,9 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
     logExemptions: initialTask?.logExemptions ?? presetLogExemptions(seedName),
     sleepLink: initialTask && initialTask.sleepLink !== undefined ? initialTask.sleepLink : presetSleepLink(seedName),
     listLink: initialTask && initialTask.listLink !== undefined ? initialTask.listLink : presetListLink(seedName),
+    completionSources: initialTask?.completionSources,
+    habitValueLink: initialTask?.habitValueLink ?? null,
+    showGoalBar: !!initialTask?.showGoalBar,
   }))
 
   useEffect(() => {
@@ -184,7 +373,13 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
         frequency: task.frequency,
         incrementalData: task.incrementalData,
         trackingLink: task.trackingLink,
+        coverageLink: task.coverageLink ?? null,
+        dailyFloorLink: task.dailyFloorLink ?? null,
         timeEstimate: task.timeEstimate,
+        timeEstimateNA: task.timeEstimateNA ? true : undefined,
+        doneTaskPhrase: task.doneTaskPhrase ?? "",
+        doneTaskUseText: task.doneTaskUseText ? true : undefined,
+        taggedTaskTag: task.taggedTaskTag ?? "",
         textTriggers: task.textTriggers ?? [],
         gem: task.gem,
         priorityPinned: task.priorityPinned,
@@ -192,6 +387,9 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
         logExemptions: task.logExemptions ?? [],
         sleepLink: task.sleepLink ?? null,
         listLink: task.listLink ?? null,
+        completionSources: task.completionSources,
+        habitValueLink: task.habitValueLink ?? null,
+        showGoalBar: !!task.showGoalBar,
       }) !== baseline,
     )
   }, [task, baseline, onDirtyChange])
@@ -216,13 +414,19 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
       skipLinkSync.current = false
       if (task.name === (initialTask?.name || "")) return
     }
-    setTask((current) => ({
-      ...current,
-      logExemptions: logsLocked ? current.logExemptions : presetLogExemptions(current),
-      sleepLink: sleepLocked ? current.sleepLink : presetSleepLink(current),
-      listLink: listLocked ? current.listLink : presetListLink(current),
-    }))
-  }, [task.name, task.frequency, task.type, logsLocked, sleepLocked, listLocked])
+    setTask((current) => {
+      const next = {
+        ...current,
+        logExemptions: logsLocked ? current.logExemptions : presetLogExemptions(current),
+        sleepLink: sleepLocked ? current.sleepLink : presetSleepLink(current),
+        listLink: listLocked ? current.listLink : presetListLink(current),
+        coverageLink: coverageLocked ? current.coverageLink : presetCoverageLink(current),
+        dailyFloorLink: floorLocked ? current.dailyFloorLink : presetDailyFloorLink(current),
+      }
+      if (!sourcesLocked) next.completionSources = deriveCompletionSources(next)
+      return next
+    })
+  }, [task.name, task.frequency, task.type, logsLocked, sleepLocked, listLocked, coverageLocked, floorLocked, sourcesLocked])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -237,10 +441,39 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
     }
     // An empty selection is no link at all, so the sync can clean up after it.
     finalTask.trackingLink = task.trackingLink?.tagIds.length ? task.trackingLink : undefined
-    // Drop an estimate with no numbers rather than persisting an empty object.
-    const estimate = task.timeEstimate
-    finalTask.timeEstimate =
-      estimate && ((estimate.minutesPerUnit ?? 0) > 0 || (estimate.minutes ?? 0) > 0) ? estimate : undefined
+    finalTask.coverageLink = task.coverageLink === null ? null : task.coverageLink ?? null
+    if (finalTask.coverageLink) {
+      finalTask.coverageLink = {
+        threshold: clampCoverageThreshold(finalTask.coverageLink.threshold),
+        enabled: finalTask.coverageLink.enabled !== false,
+      }
+      if (finalTask.type === TaskType.GOAL) {
+        finalTask.goal = finalTask.coverageLink.threshold
+        finalTask.unit = finalTask.unit || "%"
+      }
+    }
+    finalTask.dailyFloorLink =
+      task.dailyFloorLink === null
+        ? null
+        : task.dailyFloorLink
+          ? {
+              floorPercent: Math.min(100, Math.max(0, Math.round(task.dailyFloorLink.floorPercent ?? 0))),
+              enabled: task.dailyFloorLink.enabled !== false,
+            }
+          : null
+    // N/A stores the flag and no minutes. Otherwise drop an empty estimate object.
+    if (task.timeEstimateNA) {
+      finalTask.timeEstimate = undefined
+      finalTask.timeEstimateNA = true
+    } else {
+      const estimate = task.timeEstimate
+      finalTask.timeEstimate =
+        estimate && ((estimate.minutesPerUnit ?? 0) > 0 || (estimate.minutes ?? 0) > 0) ? estimate : undefined
+      finalTask.timeEstimateNA = undefined
+    }
+    const donePhrase = (task.doneTaskPhrase ?? "").trim()
+    finalTask.doneTaskPhrase = donePhrase || undefined
+    finalTask.doneTaskUseText = task.type === TaskType.TEXT && task.doneTaskUseText ? true : undefined
     // Stamp editable triggers (including preset defaults) when present; clear when empty.
     const cleaned = (task.textTriggers ?? [])
       .map((t) => ({
@@ -258,6 +491,17 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
         ? { listName: task.listLink.listName.trim(), count: Math.max(1, Math.round(task.listLink.count) || 1) }
         : null
     finalTask.gem = task.gem || pickRandomCatalogGem()
+    finalTask.showGoalBar = task.showGoalBar ? true : undefined
+    finalTask.habitValueLink = task.habitValueLink?.habitId
+      ? { habitId: task.habitValueLink.habitId, enabled: task.habitValueLink.enabled !== false }
+      : null
+    finalTask.completionSources =
+      sourcesLocked && Array.isArray(task.completionSources)
+        ? task.completionSources
+        : deriveCompletionSources(finalTask)
+    const tagged = normalizeTag(task.taggedTaskTag ?? "")
+    finalTask.taggedTaskTag =
+      finalTask.completionSources?.includes("taggedTasks") && tagged ? tagged : undefined
     onSubmit(finalTask)
   }
 
@@ -290,17 +534,157 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
   const link: HabitTrackingLink = task.trackingLink ?? { tagIds: [] }
   const setLink = (patch: Partial<HabitTrackingLink>) =>
     setTask((current) => ({ ...current, trackingLink: { ...(current.trackingLink ?? { tagIds: [] }), ...patch } }))
-  const toggleLinkTag = (id: string) =>
-    setLink({ tagIds: link.tagIds.includes(id) ? link.tagIds.filter((t) => t !== id) : [...link.tagIds, id] })
+  const toggleLinkTag = (id: string) => {
+    const on = link.tagIds.includes(id)
+    setSourcesLocked(true)
+    setTask((current) => {
+      const linkNow = current.trackingLink ?? { tagIds: [] }
+      const tagIds = on ? linkNow.tagIds.filter((tag) => tag !== id) : [...linkNow.tagIds, id]
+      const order =
+        sourcesLocked && Array.isArray(current.completionSources)
+          ? current.completionSources
+          : deriveCompletionSources(current)
+      const completionSources = tagIds.length
+        ? order.includes("tags")
+          ? order
+          : [...order, "tags"]
+        : order.filter((source) => source !== "tags")
+      return {
+        ...current,
+        completionSources,
+        trackingLink: { ...linkNow, tagIds, enabled: tagIds.length > 0 },
+      }
+    })
+  }
 
   const periodWord =
-    task.frequency === "weekly" ? "that week" : task.frequency === "monthly" ? "that month" : "that day"
-  const showTracking = supportsTrackingLink(task)
+    task.frequency === "weekly"
+      ? "that week"
+      : task.frequency === "monthly"
+        ? "that month"
+        : task.frequency === "quarterly"
+          ? "that season"
+          : "that day"
   const linkedPenCount = penIdsForTags(trackingScopes, link.tagIds).size
+  const sourceOrder =
+    sourcesLocked && Array.isArray(task.completionSources)
+      ? task.completionSources
+      : deriveCompletionSources(task)
+  const showTracking = supportsTrackingLink(task) && sourceOrder.includes("tags")
+  const dailyValueSources = allHabits.filter(
+    (habit) =>
+      (habit.frequency || "daily") === "daily" &&
+      habit.id !== task.id &&
+      habit.type !== TaskType.TEXT,
+  )
+
+  const applySources = (order: HabitCompletionSourceId[]) => {
+    setSourcesLocked(true)
+    setCoverageLocked(true)
+    setFloorLocked(true)
+    setSleepLocked(true)
+    setListLocked(true)
+    setTask((current) => {
+      let next: WeeklyTask = { ...current, completionSources: order }
+      if (order.includes("coverage")) {
+        const threshold = clampCoverageThreshold(
+          (effectiveCoverageLink(current)?.threshold ?? current.goal) || DEFAULT_COVERAGE_THRESHOLD,
+        )
+        next = { ...next, coverageLink: { threshold, enabled: true }, goal: current.goal || threshold, unit: current.unit || "%" }
+      } else {
+        next = { ...next, coverageLink: null }
+      }
+      if (order.includes("dailyFloor")) {
+        next = {
+          ...next,
+          frequency: "weekly",
+          type: current.type === TaskType.GOAL ? current.type : TaskType.BOOLEAN,
+          dailyFloorLink: effectiveDailyFloorLink({ ...current, frequency: "weekly", type: TaskType.BOOLEAN }) ?? {
+            floorPercent: 0,
+            enabled: true,
+          },
+        }
+      } else {
+        next = { ...next, dailyFloorLink: null }
+      }
+      if (order.includes("sleep")) {
+        next = { ...next, sleepLink: effectiveSleepLink(current) ?? { end: "wake", beforeMinutes: 9 * 60 } }
+      } else {
+        next = { ...next, sleepLink: null }
+      }
+      if (order.includes("list")) {
+        next = { ...next, listLink: effectiveListLink(current) ?? { listName: "to do", count: 1 } }
+      } else {
+        next = { ...next, listLink: null }
+      }
+      if (order.includes("tags")) {
+        next = { ...next, trackingLink: { ...(current.trackingLink ?? { tagIds: [] }), enabled: true } }
+      } else if (current.trackingLink) {
+        next = { ...next, trackingLink: { ...current.trackingLink, enabled: false } }
+      }
+      if (order.includes("habitValue")) {
+        const habitId = current.habitValueLink?.habitId || ""
+        next = { ...next, habitValueLink: habitId ? { habitId, enabled: true } : current.habitValueLink ?? null }
+      } else {
+        next = { ...next, habitValueLink: null }
+      }
+      return next
+    })
+  }
+
+  const createTrackingTag = () => {
+    const name = newTagName.trim()
+    if (!name) return
+    const id = addTrackingTag(name)
+    if (!id) return
+    setNewTagName("")
+    setSourcesLocked(true)
+    setTask((current) => {
+      const linkNow = current.trackingLink ?? { tagIds: [] }
+      const tagIds = linkNow.tagIds.includes(id) ? linkNow.tagIds : [...linkNow.tagIds, id]
+      const order =
+        sourcesLocked && Array.isArray(current.completionSources)
+          ? current.completionSources
+          : deriveCompletionSources(current)
+      return {
+        ...current,
+        completionSources: order.includes("tags") ? order : [...order, "tags"],
+        trackingLink: { ...linkNow, tagIds, enabled: true },
+      }
+    })
+  }
+
+  const loggedNow = (() => {
+    if (!task.id) return 0
+    const habits = useHabitsStore.getState()
+    const today = new Date()
+    if ((task.frequency || "daily") === "weekly") {
+      return habits.weeklyHabitData[getWeekString(getWeekStartDate(today))]?.[task.id]?.value ?? 0
+    }
+    if (task.frequency === "monthly") {
+      return habits.monthlyHabitData[formatLocalMonthKey(today)]?.[task.id]?.value ?? 0
+    }
+    if (task.frequency === "quarterly") return 0
+    return habits.weeklyData[formatLocalDateKey(today)]?.[task.id]?.value ?? 0
+  })()
+  const phrasePreview = describeHabitTriggerPreview(phrase, task.textTriggers ?? [], loggedNow)
 
   const timeEstimate: HabitTimeEstimate = task.timeEstimate ?? {}
   const setTimeEstimate = (patch: Partial<HabitTimeEstimate>) =>
-    setTask((current) => ({ ...current, timeEstimate: { ...(current.timeEstimate ?? {}), ...patch } }))
+    setTask((current) => {
+      const next = { ...(current.timeEstimate ?? {}), ...patch }
+      estimateHold.current = next
+      return { ...current, timeEstimate: next }
+    })
+  const setEstimateNA = (na: boolean) => {
+    setTask((current) => {
+      if (na) {
+        estimateHold.current = current.timeEstimate ?? estimateHold.current
+        return { ...current, timeEstimateNA: true, timeEstimate: undefined }
+      }
+      return { ...current, timeEstimateNA: undefined, timeEstimate: estimateHold.current }
+    })
+  }
   // A habit logged in minutes/hours already is a duration; a rate would double-count.
   const measuredInTime = isTimeMeasuredHabit(task)
   const usesRate = !measuredInTime && (task.type === TaskType.GOAL || task.type === TaskType.INCREMENTAL)
@@ -338,6 +722,20 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
           required
           autoFocus
         />
+        {initialTask ? (
+          <button
+            type="button"
+            className="habit95-btn"
+            style={{ marginTop: 6, alignSelf: "flex-start" }}
+            onClick={() => {
+              const habit = { ...task, id: initialTask.id }
+              openHabitInLists(habit)
+              onLeaveForItem?.()
+            }}
+          >
+            Open item in Lists
+          </button>
+        ) : null}
       </div>
 
       <fieldset className="habit95-group">
@@ -429,12 +827,23 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
                 min="0"
                 step="0.5"
                 value={task.goal || ""}
-                onChange={(e) =>
-                  setTask({
-                    ...task,
-                    goal: Number.parseFloat(e.target.value) || 0,
+                onChange={(e) => {
+                  const goal = Number.parseFloat(e.target.value) || 0
+                  setTask((current) => {
+                    const next = { ...current, goal }
+                    // Amount is the same number as the coverage threshold when linked —
+                    // keep coverageLink in sync so submit does not overwrite with the old %.
+                    if (effectiveCoverageLink(current)) {
+                      setCoverageLocked(true)
+                      next.coverageLink = {
+                        threshold: clampCoverageThreshold(goal),
+                        enabled: true,
+                      }
+                      next.unit = current.unit || "%"
+                    }
+                    return next
                   })
-                }
+                }}
                 placeholder="10"
                 required
               />
@@ -450,6 +859,15 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
               />
             </div>
           </div>
+          <label className="habit95-check">
+            <input
+              type="checkbox"
+              checked={!!task.showGoalBar}
+              onChange={(e) => setTask({ ...task, showGoalBar: e.target.checked || undefined })}
+            />
+            Cell progress tube
+          </label>
+          <p className="habit95-hint">A thin tube under the number, filled by how close the cell is to its amount.</p>
         </fieldset>
       )}
 
@@ -523,6 +941,180 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
       )}
 
       <fieldset className="habit95-group">
+        <legend>Points &amp; bonus</legend>
+        <p className="habit95-hint">
+          Completing this habit awards the points below (full mark). Daily habits also earn a scaled ledger line of{" "}
+          {DAILY_HABIT_COMPLETION_POINTS} × that day&apos;s completion ratio. Day-wide bonuses (accomplishment,
+          grade 75%+, grade-lift) live in Habits → Settings.
+        </p>
+        <div className="habit95-goal-grid">
+          <div className="habit95-field">
+            <label htmlFor="habit-reward">Completion points</label>
+            <input
+              id="habit-reward"
+              className="habit95-input"
+              type="number"
+              min={0}
+              step={1}
+              aria-label="Completion points"
+              value={task.rewardValue ?? 0}
+              onChange={(e) =>
+                setTask({
+                  ...task,
+                  rewardValue: Math.max(0, Number.parseInt(e.target.value, 10) || 0),
+                })
+              }
+            />
+          </div>
+          <div className="habit95-field">
+            <label htmlFor="habit-bonus-note">Bonus formula</label>
+            <input
+              id="habit-bonus-note"
+              className="habit95-input"
+              readOnly
+              value={
+                (task.frequency || "daily") === "daily"
+                  ? `${DAILY_HABIT_COMPLETION_POINTS} × day ratio + completion points when newly met`
+                  : "Completion points when newly met"
+              }
+              aria-label="Bonus formula"
+            />
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset className="habit95-group">
+        <legend>Completion sources</legend>
+        <p className="habit95-hint">
+          A habit can listen to more than one place. The list is trust order: the first source that has something to
+          say wins when they disagree. A source with no observation is skipped. What you already logged stays in the
+          cell.
+        </p>
+        <HabitSourcesField order={sourceOrder} onChange={applySources} />
+        {sourceOrder.includes("taggedTasks") && (
+          <div className="habit95-brick" style={{ marginTop: 8 }}>
+            <p className="habit95-hint">
+              Done tasks and tracked activities with this tag each count as 1. The goal is how many complete the period.
+            </p>
+            {trackingTags.length > 0 ? (
+              <div className="habit95-tags" role="group" aria-label="Tagged tasks tag">
+                {trackingTags.map((tag) => {
+                  const on = normalizeTag(tag.name) === normalizeTag(task.taggedTaskTag ?? "")
+                  return (
+                    <button
+                      key={tag.id}
+                      type="button"
+                      className="habit95-tag"
+                      aria-pressed={on}
+                      onClick={() =>
+                        setTask((current) => ({
+                          ...current,
+                          taggedTaskTag: on ? "" : normalizeTag(tag.name),
+                        }))
+                      }
+                    >
+                      <span className="habit95-tag-dot" style={{ background: tag.color }} />
+                      {tag.name}
+                    </button>
+                  )
+                })}
+              </div>
+            ) : null}
+            <div className="habit95-field">
+              <label htmlFor="tagged-task-tag">Tag</label>
+              <input
+                id="tagged-task-tag"
+                className="habit95-input"
+                aria-label="Tagged task tag"
+                value={task.taggedTaskTag ?? ""}
+                placeholder="cooking"
+                onChange={(e) => setTask((current) => ({ ...current, taggedTaskTag: e.target.value }))}
+              />
+            </div>
+          </div>
+        )}
+        {sourceOrder.includes("habitValue") && (
+          <div className="habit95-brick" style={{ marginTop: 8 }}>
+            <DailyHabitPicker
+              habits={dailyValueSources}
+              habitId={task.habitValueLink?.habitId || ""}
+              onChange={(habitId) => {
+                setSourcesLocked(true)
+                setTask((current) => ({
+                  ...current,
+                  habitValueLink: habitId ? { habitId, enabled: true } : null,
+                }))
+              }}
+            />
+            <span className="habit95-hint">
+              Each cell of this week, month, or season is the sum of that daily habit on the days that have already
+              happened.
+            </span>
+          </div>
+        )}
+        {effectiveCoverageLink(task) && (
+          <div className="habit95-brick" style={{ marginTop: 8 }}>
+            <label className="habit95-field">
+              Complete at or above
+              <input
+                className="habit95-input"
+                type="number"
+                min={1}
+                max={100}
+                aria-label="Coverage threshold percent"
+                value={effectiveCoverageLink(task)?.threshold ?? DEFAULT_COVERAGE_THRESHOLD}
+                onChange={(e) => {
+                  setCoverageLocked(true)
+                  const threshold = clampCoverageThreshold(Number.parseFloat(e.target.value))
+                  setTask((current) => ({
+                    ...current,
+                    goal: threshold,
+                    unit: "%",
+                    coverageLink: { threshold, enabled: true },
+                  }))
+                }}
+              />
+            </label>
+            <span className="habit95-hint">
+              Activity Occupancy — the same “% of the{" "}
+              {task.frequency === "weekly"
+                ? "week"
+                : task.frequency === "monthly"
+                  ? "month"
+                  : task.frequency === "quarterly"
+                    ? "season"
+                    : "day"}” Tracking shows on the Activity Time Grid / Week
+              (`activityOccupancyCoverage`). Cell label caps at the threshold; stored % stays real.
+            </span>
+          </div>
+        )}
+        {effectiveDailyFloorLink(task) && (
+          <div className="habit95-brick" style={{ marginTop: 8 }}>
+            <label className="habit95-field">
+              Each daily habit above
+              <input
+                className="habit95-input"
+                type="number"
+                min={0}
+                max={100}
+                aria-label="Daily habit floor percent"
+                value={effectiveDailyFloorLink(task)?.floorPercent ?? 0}
+                onChange={(e) => {
+                  setFloorLocked(true)
+                  const floorPercent = Math.min(100, Math.max(0, Math.round(Number.parseFloat(e.target.value) || 0)))
+                  setTask((current) => ({
+                    ...current,
+                    dailyFloorLink: { floorPercent, enabled: true },
+                  }))
+                }}
+              />
+            </label>
+            <span className="habit95-hint">% week completion. 0 means every daily habit was attempted at least once.</span>
+          </div>
+        )}
+      </fieldset>
+
+      <fieldset className="habit95-group">
         <legend>Time estimate</legend>
         <p className="habit95-hint">
           Marking this habit done writes a row on your To&nbsp;Do list. Give it a length and that row carries a real
@@ -533,52 +1125,94 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
           <p className="habit95-hint">{describeHabitTimeEstimate(task)}</p>
         ) : (
           <>
-            <div className="habit95-goal-grid">
-              {usesRate && (
-                <div className="habit95-field">
-                  <label htmlFor="time-per-unit">Minutes per {task.unit?.trim() || "unit"}</label>
-                  <input
-                    id="time-per-unit"
-                    className="habit95-input"
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={timeEstimate.minutesPerUnit ?? ""}
-                    onChange={(e) =>
-                      setTimeEstimate({ minutesPerUnit: Number.parseFloat(e.target.value) || undefined })
-                    }
-                    placeholder="10"
-                  />
-                </div>
-              )}
-              <div className="habit95-field">
-                <label htmlFor="time-flat">Minutes per completion</label>
-                <input
-                  id="time-flat"
-                  className="habit95-input"
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={timeEstimate.minutes ?? ""}
-                  onChange={(e) => setTimeEstimate({ minutes: Number.parseFloat(e.target.value) || undefined })}
-                  placeholder={usesRate ? "fallback when nothing is logged" : "20"}
-                />
-              </div>
-            </div>
-
             <label className="habit95-check">
               <input
                 type="checkbox"
-                checked={timeEstimate.precision === "definite"}
-                onChange={(e) => setTimeEstimate({ precision: e.target.checked ? "definite" : "estimated" })}
+                checked={!!task.timeEstimateNA}
+                onChange={(e) => setEstimateNA(e.target.checked)}
               />
-              This length is exact, not a guess
+              N/A
             </label>
+            {task.timeEstimateNA ? (
+              <p className="habit95-hint">No duration is stored. Grades and the plan treat this as no time estimate.</p>
+            ) : (
+              <>
+                <div className="habit95-goal-grid">
+                  {usesRate && (
+                    <div className="habit95-field">
+                      <label htmlFor="time-per-unit">Minutes per {task.unit?.trim() || "unit"}</label>
+                      <input
+                        id="time-per-unit"
+                        className="habit95-input"
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={timeEstimate.minutesPerUnit ?? ""}
+                        onChange={(e) =>
+                          setTimeEstimate({ minutesPerUnit: Number.parseFloat(e.target.value) || undefined })
+                        }
+                        placeholder="10"
+                      />
+                    </div>
+                  )}
+                  <div className="habit95-field">
+                    <label htmlFor="time-flat">Minutes per completion</label>
+                    <input
+                      id="time-flat"
+                      className="habit95-input"
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={timeEstimate.minutes ?? ""}
+                      onChange={(e) => setTimeEstimate({ minutes: Number.parseFloat(e.target.value) || undefined })}
+                      placeholder={usesRate ? "fallback when nothing is logged" : "20"}
+                    />
+                  </div>
+                </div>
 
-            <p className="habit95-hint">{describeHabitTimeEstimate(task)}</p>
+                <label className="habit95-check">
+                  <input
+                    type="checkbox"
+                    checked={timeEstimate.precision === "definite"}
+                    onChange={(e) => setTimeEstimate({ precision: e.target.checked ? "definite" : "estimated" })}
+                  />
+                  This length is exact, not a guess
+                </label>
+
+                <p className="habit95-hint">{describeHabitTimeEstimate(task)}</p>
+              </>
+            )}
           </>
         )}
       </fieldset>
+
+      <details className="habit95-group habit95-details">
+        <summary>Done task wording</summary>
+        <p className="habit95-hint">
+          Optional. “read {"{value}"} pages” with 7 logged becomes “read 7 pages”, even when the goal is 3. Leave this
+          blank to keep the habit name.
+        </p>
+        {task.type === TaskType.TEXT ? (
+          <label className="habit95-check">
+            <input
+              type="checkbox"
+              checked={!!task.doneTaskUseText}
+              onChange={(e) => setTask((current) => ({ ...current, doneTaskUseText: e.target.checked || undefined }))}
+            />
+            Use the text entered
+          </label>
+        ) : null}
+        <div className="habit95-field">
+          <label htmlFor="done-task-phrase">Phrase</label>
+          <input
+            id="done-task-phrase"
+            className="habit95-input"
+            value={task.doneTaskPhrase ?? ""}
+            placeholder="read {value} pages"
+            onChange={(e) => setTask((current) => ({ ...current, doneTaskPhrase: e.target.value }))}
+          />
+        </div>
+      </details>
 
       {showTracking && (
         <fieldset className="habit95-group">
@@ -588,11 +1222,7 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
             habit {periodWord} — no typing.
           </p>
 
-          {trackingTags.length === 0 ? (
-            <p className="habit95-hint">
-              No tracking tags yet. Create them in Home → Tracking → Edit pens.
-            </p>
-          ) : (
+          {trackingTags.length > 0 ? (
             <div className="habit95-tags" role="group" aria-label="Tracking tags">
               {trackingTags.map((tag) => {
                 const on = link.tagIds.includes(tag.id)
@@ -610,7 +1240,36 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
                 )
               })}
             </div>
+          ) : (
+            <p className="habit95-hint">No tracking tags yet. Name one here and it shows up in Tracking too.</p>
           )}
+          <div className="habit95-goal-grid" style={{ marginTop: 8 }}>
+            <div className="habit95-field">
+              <label htmlFor="new-tracking-tag">New tag</label>
+              <input
+                id="new-tracking-tag"
+                className="habit95-input"
+                value={newTagName}
+                placeholder="Deep work"
+                aria-label="New tracking tag"
+                onChange={(e) => setNewTagName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault()
+                    createTrackingTag()
+                  }
+                }}
+              />
+            </div>
+            <div className="habit95-field">
+              <label htmlFor="create-tracking-tag" className="sr-only">
+                Create tag
+              </label>
+              <button id="create-tracking-tag" type="button" className="habit95-btn" onClick={createTrackingTag} disabled={!newTagName.trim()}>
+                Create tag
+              </button>
+            </div>
+          </div>
 
           {link.tagIds.length > 0 && (
             <>
@@ -985,6 +1644,25 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
         <button type="button" className="habit95-btn" style={{ marginTop: 8 }} onClick={addTrigger}>
           Add keyword
         </button>
+        <div className="habit95-keyword-test">
+          <label className="habit95-field" htmlFor="keyword-try">
+            Try a phrase
+            <input
+              id="keyword-try"
+              className="habit95-input"
+              value={phrase}
+              placeholder="studied for 20 min"
+              aria-label="Try a phrase"
+              onChange={(e) => setPhrase(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") e.preventDefault()
+              }}
+            />
+          </label>
+          <p className="habit95-hint habit95-keyword-result" role="status">
+            {phrasePreview.text}
+          </p>
+        </div>
       </fieldset>
       </div>
 

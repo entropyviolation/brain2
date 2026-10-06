@@ -361,63 +361,202 @@ body.win95-app .hab-lamp:active {
 }
 
 /*
- * Small checklist lamps share the percent-LED well: dark face, Win95 bevel,
- * one round die. The large cell window (data-fill) keeps its glass panel.
+ * Small LEDs ON: skeuomorphic chrome lamp — silver rim, smoked glass, lit die.
+ * Cute and precise (Tek POWER / gadget-wall), not a flat well or toy plastic.
  */
+.hab-lamp:not([data-fill="true"]) {
+  --hab-lamp-size: 15px;
+}
+
 .hab-lamp:not([data-fill="true"]) .hab-lamp-socket {
-  background: linear-gradient(180deg, #1a1c1a 0%, #050605 55%, #0c0e0c 100%);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 28%, #f4f6f8 0 12%, transparent 38%),
+    linear-gradient(155deg, #e8eaee 0%, #b8bcc2 38%, #8a9098 68%, #c8ccd2 100%);
   box-shadow:
-    inset 1px 1px 0 #000,
-    inset -1px -1px 0 #3a3a3a,
-    0 0 0 1px #808080,
-    1px 1px 0 #fff;
+    0 0 0 0.5px #5a6068,
+    0 0 0 1.5px #d0d4da,
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 1px rgba(40, 44, 50, 0.55),
+    0 1px 2px rgba(0, 0, 0, 0.28);
 }
 
 .hab-lamp:not([data-fill="true"]) .hab-lamp-bezel {
-  width: 62%;
-  height: 62%;
-  background: #050605;
-  box-shadow: inset 0 1px 1px #000, inset 0 -1px 0 #2a2c2a;
+  width: 78%;
+  height: 78%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 40%, #2a2e2a 0%, #0a0c0a 70%);
+  box-shadow:
+    inset 0 0 0 0.6px #6a7078,
+    inset 0 1.5px 2px rgba(0, 0, 0, 0.85),
+    inset 0 -0.5px 0 rgba(255, 255, 255, 0.28),
+    0 0 0 0.5px rgba(255, 255, 255, 0.35);
 }
 
 .hab-lamp:not([data-fill="true"]) .hab-lamp-glass {
-  width: 100%;
-  height: 100%;
-  background: #121412;
-  box-shadow: none;
+  width: 88%;
+  height: 88%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.14) 0 18%, transparent 42%),
+    linear-gradient(180deg, #1c201c 0%, #080a08 55%, #040504 100%);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.18),
+    inset 0 -1px 1.5px rgba(0, 0, 0, 0.65);
 }
 
 .hab-lamp:not([data-fill="true"]) .hab-lamp-die {
-  width: 72%;
-  height: 72%;
+  width: 42%;
+  height: 42%;
   border-radius: 50%;
-  background: #121412;
-  box-shadow: inset 0 0 0.5px rgba(255, 255, 255, 0.08);
+  background: radial-gradient(circle at 40% 35%, #3a3e3a, #141814 70%);
+  box-shadow:
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.2),
+    0 0 0 0.4px rgba(0, 0, 0, 0.4);
+  opacity: 0.95;
+}
+
+.hab-lamp:not([data-fill="true"]) .hab-lamp-core {
+  display: block;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 22%;
+  height: 22%;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle at 40% 35%, #2a2e2a, #0c0e0c);
+  opacity: 0.55;
+  z-index: 2;
+  pointer-events: none;
 }
 
 .hab-lamp:not([data-fill="true"]) .hab-lamp-spec {
-  display: none;
+  display: block;
+  top: 12%;
+  left: 18%;
+  width: 48%;
+  height: 28%;
+  border-radius: 50%;
+  background: linear-gradient(
+    160deg,
+    rgba(255, 255, 255, 0.55) 0%,
+    rgba(255, 255, 255, 0.12) 45%,
+    transparent 70%
+  );
+  filter: blur(0.2px);
 }
 
-.hab-lamp:not([data-fill="true"])[data-state="on"] .hab-lamp-glass,
-.hab-lamp:not([data-fill="true"])[data-state="partial"] .hab-lamp-glass {
-  background: #121412;
-  box-shadow: none;
+.hab-lamp:not([data-fill="true"]) .hab-lamp-spec-low {
+  display: block;
+  top: auto;
+  bottom: 14%;
+  left: 28%;
+  width: 36%;
+  height: 14%;
+  border-radius: 50%;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(255, 255, 255, 0.12)
+  );
+  opacity: 0.55;
+}
+
+.hab-lamp:not([data-fill="true"])[data-state="on"] .hab-lamp-glass {
+  background:
+    radial-gradient(
+      circle at 50% 48%,
+      color-mix(in srgb, var(--hab-lamp-tint) 55%, transparent) 0 28%,
+      transparent 62%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--hab-lamp-tint) 32%, #2a2820) 0%,
+      color-mix(in srgb, var(--hab-lamp-tint) 48%, #0c100c) 58%,
+      color-mix(in srgb, var(--hab-lamp-tint) 28%, #060806) 100%
+    );
+  box-shadow:
+    inset 0 1px 1px color-mix(in srgb, var(--hab-lamp-tint) 22%, transparent),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.4),
+    0 0 4px color-mix(in srgb, var(--hab-lamp-tint) 35%, transparent);
 }
 
 .hab-lamp:not([data-fill="true"])[data-state="on"] .hab-lamp-die {
-  background: var(--hab-lamp-tint);
+  background: radial-gradient(
+    circle at 38% 32%,
+    color-mix(in srgb, var(--hab-lamp-tint) 78%, #fff8e8),
+    var(--hab-lamp-tint) 55%,
+    color-mix(in srgb, var(--hab-lamp-tint) 70%, #0a120c)
+  );
   box-shadow:
-    0 0 3px var(--hab-lamp-tint),
-    0 0 1px #fff;
+    0 0 3px color-mix(in srgb, var(--hab-lamp-tint) 55%, transparent),
+    inset 0 0.5px 0 color-mix(in srgb, var(--hab-lamp-tint) 40%, #fff);
+  opacity: 1;
+}
+
+.hab-lamp:not([data-fill="true"])[data-state="on"] .hab-lamp-core {
+  background: radial-gradient(
+    circle at 40% 35%,
+    color-mix(in srgb, var(--hab-lamp-tint) 90%, #fff),
+    var(--hab-lamp-tint)
+  );
+  opacity: 0.95;
+  box-shadow: 0 0 2px color-mix(in srgb, var(--hab-lamp-tint) 60%, transparent);
+}
+
+.hab-lamp:not([data-fill="true"])[data-state="on"] .hab-lamp-bloom {
+  display: block;
+  opacity: 0.55;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 50%,
+    color-mix(in srgb, var(--hab-lamp-tint) 60%, transparent) 0 30%,
+    transparent 72%
+  );
+}
+
+.hab-lamp:not([data-fill="true"])[data-state="partial"] .hab-lamp-glass {
+  background:
+    radial-gradient(
+      circle at 50% 48%,
+      color-mix(in srgb, var(--hab-lamp-tint) 28%, transparent) 0 22%,
+      transparent 55%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--hab-lamp-tint) 18%, #1c201c) 0%,
+      color-mix(in srgb, var(--hab-lamp-tint) 12%, #080a08) 100%
+    );
 }
 
 .hab-lamp:not([data-fill="true"])[data-state="partial"] .hab-lamp-die {
-  background: color-mix(in srgb, var(--hab-lamp-tint) 55%, #121412);
-  box-shadow: 0 0 2px color-mix(in srgb, var(--hab-lamp-tint) 70%, transparent);
+  background: radial-gradient(
+    circle at 38% 32%,
+    color-mix(in srgb, var(--hab-lamp-tint) 48%, #2a2820),
+    var(--hab-lamp-tint)
+  );
+  opacity: 0.72;
+  box-shadow: 0 0 2px color-mix(in srgb, var(--hab-lamp-tint) 35%, transparent);
 }
 
-.hab-lamp:not([data-fill="true"])[data-state="on"] .hab-lamp-bloom,
+.hab-lamp:not([data-fill="true"])[data-state="partial"] .hab-lamp-core {
+  background: radial-gradient(
+    circle at 40% 35%,
+    color-mix(in srgb, var(--hab-lamp-tint) 55%, #1a1c18),
+    color-mix(in srgb, var(--hab-lamp-tint) 40%, #0c0e0c)
+  );
+  opacity: 0.7;
+}
+
 .hab-lamp:not([data-fill="true"])[data-state="partial"] .hab-lamp-bloom {
-  display: none;
+  display: block;
+  opacity: 0.28;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 50%,
+    color-mix(in srgb, var(--hab-lamp-tint) 45%, transparent) 0 28%,
+    transparent 68%
+  );
 }

@@ -105,6 +105,51 @@ describe("TaskFormDialog", () => {
     })
   })
 
+  it("skips the sand immediately on Escape", async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const onOpenChange = vi.fn()
+    render(
+      <TaskFormDialog
+        open
+        onOpenChange={onOpenChange}
+        onSubmit={vi.fn()}
+        initialTask={null}
+      />,
+    )
+
+    await user.click(screen.getByRole("button", { name: "Close" }))
+    expect(screen.getByTestId("window-sand-canvas")).toBeInTheDocument()
+    expect(onOpenChange).not.toHaveBeenCalled()
+
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }))
+    })
+
+    await waitFor(() => {
+      expect(onOpenChange).toHaveBeenCalledWith(false)
+    })
+  })
+
+  it("skips the sand from the skip button", async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const onOpenChange = vi.fn()
+    render(
+      <TaskFormDialog
+        open
+        onOpenChange={onOpenChange}
+        onSubmit={vi.fn()}
+        initialTask={null}
+      />,
+    )
+
+    await user.click(screen.getByRole("button", { name: "Close" }))
+    await user.click(screen.getByRole("button", { name: "Skip" }))
+
+    await waitFor(() => {
+      expect(onOpenChange).toHaveBeenCalledWith(false)
+    })
+  })
+
   it("snaps shut with no dust when prefers-reduced-motion is reduce", async () => {
     mockReducedMotion(true)
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })

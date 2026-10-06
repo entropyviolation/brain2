@@ -1,15 +1,131 @@
-import { act, render, screen } from "@testing-library/react"
+import { act, fireEvent, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
+import { undoLastAction } from "@/lib/action-history"
+import { formatLocalDateKey } from "@/lib/date-utils"
+import { habitDayPointTaskId } from "@/lib/habit-points"
 import { useHabitsStore } from "@/lib/habits-store"
+import { usePointsStore } from "@/lib/points-store"
+import { TaskType } from "@/lib/types"
 import { HabitLedLamp } from "./habit-led-lamp"
 import "./habit-led-lamp.css"
+
+async function flushLampWrite() {
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0))
+  })
+}
 
 describe("HabitLedLamp", () => {
   beforeEach(() => {
     resetAllStores()
   })
+  it("flips the lamp before the completion handler runs", async () => {
+    let ariaWhenHandlerRan: string | null = null
+    const onCheckedChange = vi.fn(() => {
+      ariaWhenHandlerRan = screen.getByRole("checkbox", { name: "water" }).getAttribute("aria-checked")
+    })
+    render(<HabitLedLamp checked={false} onCheckedChange={onCheckedChange} label="water" />)
+    const lamp = screen.getByRole("checkbox", { name: "water" })
+    let callsDuringClick = -1
+    const onWindowClick = () => {
+      callsDuringClick = onCheckedChange.mock.calls.length
+    }
+    window.addEventListener("click", onWindowClick)
+    try {
+      fireEvent.click(lamp)
+    } finally {
+      window.removeEventListener("click", onWindowClick)
+    }
+    expect(callsDuringClick).toBe(0)
+    expect(onCheckedChange).not.toHaveBeenCalled()
+    expect(lamp).toHaveAttribute("aria-checked", "true")
+    expect(lamp).toHaveAttribute("data-state", "on")
+    await flushLampWrite()
+    expect(ariaWhenHandlerRan).toBe("true")
+    expect(onCheckedChange).toHaveBeenCalledTimes(1)
+    expect(onCheckedChange).toHaveBeenCalledWith(true)
+  })
+
+  it("shows the saved check when the write keeps the lamp off", async () => {
+    const first = { completed: false }
+    const onCheckedChange = vi.fn()
+    const { rerender } = render(
+      <HabitLedLamp checked={false} saved={first} onCheckedChange={onCheckedChange} label="water" />,
+    )
+    fireEvent.click(screen.getByRole("checkbox", { name: "water" }))
+    expect(screen.getByRole("checkbox", { name: "water" })).toHaveAttribute("data-state", "on")
+    expect(onCheckedChange).not.toHaveBeenCalled()
+    await flushLampWrite()
+    rerender(<HabitLedLamp checked={false} saved={{ completed: false }} onCheckedChange={onCheckedChange} label="water" />)
+    const lamp = screen.getByRole("checkbox", { name: "water" })
+    expect(lamp).toHaveAttribute("aria-checked", "false")
+    expect(lamp).toHaveAttribute("data-state", "off")
+  })
+
+  it("keeps the lit lamp when the saved completion agrees", () => {
+    const { rerender } = render(
+      <HabitLedLamp checked={false} saved={0} onCheckedChange={vi.fn()} label="water" />,
+    )
+    fireEvent.click(screen.getByRole("checkbox", { name: "water" }))
+    rerender(<HabitLedLamp checked saved={1} onCheckedChange={vi.fn()} label="water" />)
+    expect(screen.getByRole("checkbox", { name: "water" })).toHaveAttribute("aria-checked", "true")
+    expect(screen.getByRole("checkbox", { name: "water" })).toHaveAttribute("data-state", "on")
+  })
+
+  it("still completes, scores, and undoes after the lamp has flipped", async () => {
+    const date = new Date(2026, 5, 20)
+    const dateKey = formatLocalDateKey(date)
+    useHabitsStore.getState().setTasks([
+      { id: "h-water", name: "Water", type: TaskType.BOOLEAN, rewardValue: 10, frequency: "daily" },
+    ])
+
+    function Harness() {
+      const cell = useHabitsStore((s) => s.weeklyData[dateKey]?.["h-water"])
+      const update = useHabitsStore((s) => s.updateCompletion)
+      return (
+        <HabitLedLamp
+          checked={!!cell?.completed}
+          saved={cell}
+          label="Water"
+          onCheckedChange={(next) => update("h-water", date, { completed: next })}
+        />
+      )
+    }
+
+    render(<Harness />)
+    const lamp = screen.getByRole("checkbox", { name: "Water" })
+    let completedDuringClick = true
+    const onWindowClick = () => {
+      completedDuringClick = !!useHabitsStore.getState().weeklyData[dateKey]?.["h-water"]?.completed
+    }
+    window.addEventListener("click", onWindowClick)
+    try {
+      fireEvent.click(lamp)
+    } finally {
+      window.removeEventListener("click", onWindowClick)
+    }
+
+    expect(completedDuringClick).toBe(false)
+    expect(lamp).toHaveAttribute("data-state", "on")
+    expect(useHabitsStore.getState().weeklyData[dateKey]?.["h-water"]?.completed).toBeUndefined()
+    await flushLampWrite()
+    expect(useHabitsStore.getState().weeklyData[dateKey]?.["h-water"]?.completed).toBe(true)
+    const pointId = habitDayPointTaskId("h-water", dateKey)
+    expect(usePointsStore.getState().pointsHistory.some((entry) => entry.taskId === pointId && entry.points > 0)).toBe(
+      true,
+    )
+
+    act(() => {
+      undoLastAction()
+    })
+    expect(useHabitsStore.getState().weeklyData[dateKey]?.["h-water"]).toBeUndefined()
+    expect(usePointsStore.getState().pointsHistory.some((entry) => entry.taskId === pointId)).toBe(false)
+    expect(lamp).toHaveAttribute("aria-checked", "false")
+    expect(lamp).toHaveAttribute("data-state", "off")
+  })
+
   it("toggles like a checkbox with the same write callback", async () => {
     const user = userEvent.setup()
     const onCheckedChange = vi.fn()
@@ -30,7 +146,7 @@ describe("HabitLedLamp", () => {
     expect(screen.getByRole("checkbox")).toHaveAttribute("data-state", "partial")
   })
 
-  it("keeps a square plate with a recessed round lens, not a spherical nipple", () => {
+  it("keeps a chrome-rimmed round lamp with glass, die, and specular", () => {
     render(<HabitLedLamp checked={false} onCheckedChange={vi.fn()} label="shape" />)
     const lamp = screen.getByRole("checkbox", { name: "shape" })
     expect(lamp).toHaveAttribute("data-no95")
@@ -39,13 +155,15 @@ describe("HabitLedLamp", () => {
     expect(lamp.querySelector(".hab-lamp-die")).toBeTruthy()
     expect(lamp.querySelector(".hab-lamp-bezel")).toBeTruthy()
     expect(lamp.querySelector(".hab-lamp-bloom")).toBeTruthy()
+    expect(lamp.querySelector(".hab-lamp-core")).toBeTruthy()
     expect(window.getComputedStyle(lamp).overflow).toBe("visible")
-    expect(window.getComputedStyle(lamp).borderRadius).toBe("2px")
     expect(window.getComputedStyle(lamp).getPropertyValue("--hab-lamp-size").trim()).toBe("15px")
     const glass = lamp.querySelector(".hab-lamp-glass") as HTMLElement
     expect(window.getComputedStyle(glass).overflow).toBe("hidden")
+    const socket = lamp.querySelector(".hab-lamp-socket") as HTMLElement
+    expect(window.getComputedStyle(socket).borderRadius).toBe("50%")
     const spec = lamp.querySelector(".hab-lamp-spec") as HTMLElement
-    expect(window.getComputedStyle(spec).borderRadius).toBe("1px")
+    expect(window.getComputedStyle(spec).display).not.toBe("none")
   })
 
   it("uses the given tint as the on-color, not a white default", () => {
