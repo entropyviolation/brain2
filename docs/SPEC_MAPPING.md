@@ -580,7 +580,12 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   are an ordered trust list on the habit (`WeeklyTask.completionSources`,
   `lib/habit-completion-trust.ts`): the first source with an observation wins.
   Sources: by hand, tracking tags, tagged tasks, activity occupancy, sleep clock, next actions,
-  daily habits floor, daily habit total, phone keywords. **Tagged tasks**
+  daily habits floor, daily habit total, daily completion average, phone keywords.
+  **Daily completion average** (`dailyCompletionAverage`, `lib/habit-daily-completion-average.ts`)
+  is the raw mean of each daily habit’s row percent for a Monday week (the week % column),
+  or for the days of a month or season that have already happened. The habit’s goal is the
+  percent that completes it. A typed cell keeps its number. Missing from the source list means off.
+  **Tagged tasks**
   (`WeeklyTask.taggedTaskTag`, `lib/habit-tagged-count.ts`) counts Done tasks with that tag
   (two tagged cooking tasks in the week meet a goal of 2; a tracked activity with the tag
   files one Done line and counts once). The minute tracking-tags source is unchanged.
