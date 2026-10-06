@@ -163,19 +163,29 @@ async function pollLoop() {
         offset,
         allowed_updates: JSON.stringify(["message", "edited_message"]),
       })
+      const batch = []
       for (const update of updates || []) {
         offset = Math.max(offset, (update.update_id || 0) + 1)
         const payload = await hydrateTelegramUpdate(update, token, (method, params) =>
           telegramApi(token, method, params),
         )
-        if (payload && sendToRenderer) sendToRenderer(MESSAGE, payload)
+        if (payload) batch.push(payload)
+      }
+      batch.sort((a, b) => {
+        const at = Date.parse(a.receivedAt || "") || 0
+        const bt = Date.parse(b.receivedAt || "") || 0
+        if (at !== bt) return at - bt
+        return (a.telegramMessageId || 0) - (b.telegramMessageId || 0)
+      })
+      for (const payload of batch) {
+        if (sendToRenderer) sendToRenderer(MESSAGE, payload)
       }
       writeOffset(offset)
     } catch (err) {
       if (sendToRenderer) {
         sendToRenderer(POLL_STATUS, { ok: false, error: err && err.message ? err.message : "poll failed" })
       }
-      await new Promise((r) => setTimeout(r, 4000))
+      await new Promise((r) => setTimeout(r, 1000))
     }
   }
 }

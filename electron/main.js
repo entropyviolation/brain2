@@ -5,8 +5,10 @@
  * privileged `app://` scheme, creates the BrowserWindow, and loads either the
  * Next dev server (development) or the bundled `out/` export via `app://`
  * (production). Resolves static file paths (including `trailingSlash` index.html
- * handling), routes external links to the system browser, and manages the
- * app/window lifecycle.
+ * handling) and memoizes them for the life of the process. Routes external
+ * links to the system browser, and manages the app/window lifecycle. The
+ * Chrome persist hub is parsed once per file revision and reused for every
+ * window.
  *
  * Spec: §2.1 "Option B — Electron". A future **MongoDB** connection + IPC layer
  * (spec §3; local `mongod` or Atlas) would be initialized here.
@@ -16,6 +18,8 @@ const path = require("path")
 const fs = require("fs")
 const { pathToFileURL } = require("url")
 const { resolveElectronUserData } = require("./user-data-path")
+const { createSharedPersistCache, hubRevArgument } = require("./persist-hub-cache")
+const { createStaticFileResolver } = require("./static-file")
 
 const isDev = !app.isPackaged
 
@@ -62,6 +66,11 @@ const GET_SHARED_PERSIST_IPC_CHANNEL = "cogs:persist:getShared"
 // Directory containing the static Next.js export (`next build` with
 // `output: "export"`). In production this is bundled alongside the app.
 const OUT_DIR = path.join(__dirname, "..", "out")
+const sharedPersist = createSharedPersistCache(
+  fs,
+  path.join(__dirname, "..", "data", "shared-persist.json"),
+)
+const resolveStaticFile = createStaticFileResolver(fs, OUT_DIR)
 
 // Register a privileged custom scheme so the renderer behaves like it is on a
 // real origin (needed for things like localStorage, fetch, history API, etc.).
@@ -77,38 +86,6 @@ protocol.registerSchemesAsPrivileged([
   },
 ])
 
-/**
- * Resolve a request pathname to an actual file inside the static export,
- * mirroring how a static file server resolves clean URLs.
- */
-function resolveStaticFile(pathname) {
-  let relativePath = decodeURIComponent(pathname)
-  if (relativePath === "/" || relativePath === "") {
-    return path.join(OUT_DIR, "index.html")
-  }
-
-  const candidate = path.join(OUT_DIR, relativePath)
-
-  // Direct file hit (assets like /_next/static/..., images, etc.).
-  if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
-    return candidate
-  }
-
-  // Clean route -> `route.html`.
-  if (fs.existsSync(`${candidate}.html`)) {
-    return `${candidate}.html`
-  }
-
-  // Directory route -> `route/index.html`.
-  const indexCandidate = path.join(candidate, "index.html")
-  if (fs.existsSync(indexCandidate)) {
-    return indexCandidate
-  }
-
-  // SPA fallback so client-side navigation still works.
-  return path.join(OUT_DIR, "index.html")
-}
-
 // Tracks the primary window so the global capture shortcut can focus it.
 let mainWindow = null
 
@@ -120,12 +97,7 @@ function createWindow() {
     minHeight: 600,
     title: "BRAIN2",
     backgroundColor: "#ffffff",
-    webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true,
-    },
+    webPreferences: windowWebPreferences(),
   })
 
   win.webContents.on("did-fail-load", (_event, errorCode, errorDescription, validatedURL) => {
@@ -138,7 +110,11 @@ function createWindow() {
 
   if (isDev) {
     win.loadURL(DEV_SERVER_URL)
-    win.webContents.openDevTools({ mode: "detach" })
+    // Detached DevTools on this vault doubles the renderer cost. Opt in with
+    // COGS_DEVTOOLS=1; otherwise Cmd-Opt-I still opens them.
+    if (process.env.COGS_DEVTOOLS === "1") {
+      win.webContents.openDevTools({ mode: "detach" })
+    }
   } else {
     win.loadURL("app://local/")
   }
@@ -262,12 +238,7 @@ function openPopoutWindow(target) {
     minHeight: 500,
     title: "BRAIN2",
     backgroundColor: "#ffffff",
-    webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true,
-    },
+    webPreferences: windowWebPreferences(),
   })
 
   popoutWindows.set(url, win)
@@ -291,27 +262,40 @@ function registerWindowIpcHandlers() {
   ipcMain.on(OPEN_MODULE_POPOUT_IPC_CHANNEL, (_event, hash) => openPopoutWindow(hash))
 }
 
-/** Read the Chrome-seeded hub file. Never writes Chrome's profile. */
-function readSharedPersistSnapshot() {
-  const file = path.join(__dirname, "..", "data", "shared-persist.json")
-  try {
-    if (!fs.existsSync(file)) return { items: {} }
-    const parsed = JSON.parse(fs.readFileSync(file, "utf8"))
-    const items = parsed.items && typeof parsed.items === "object" ? parsed.items : {}
-    return {
-      items,
-      source: parsed.source ?? null,
-      updatedAt: parsed.updatedAt ?? null,
-    }
-  } catch {
-    return { items: {} }
+/**
+ * Preload webPreferences, including the current hub revision. The renderer
+ * compares that token to keys it already has and skips IPC when they match.
+ * Read at window-creation time so a hub write between windows is visible
+ * without another full parse when mtime and size are unchanged.
+ */
+function windowWebPreferences() {
+  return {
+    preload: path.join(__dirname, "preload.js"),
+    contextIsolation: true,
+    nodeIntegration: false,
+    sandbox: true,
+    // Default Blink waits until a script is hot, so each pop-out recompiles
+    // the same Next bundles. Cache on the first compile instead.
+    v8CacheOptions: "bypassHeatCheck",
+    additionalArguments: [hubRevArgument(sharedPersist.revToken())],
   }
 }
 
+/** Read the Chrome-seeded hub file. Never writes Chrome's profile. */
+function readSharedPersistSnapshot() {
+  return sharedPersist.readSnapshot()
+}
+
 function registerPersistIpcHandlers() {
+  const reply = () => readSharedPersistSnapshot()
+  // Cold seed only: preload sendSync must finish before the boot script.
+  // The parsed object is the in-memory cache (one parse per mtime+size).
   ipcMain.on(GET_SHARED_PERSIST_IPC_CHANNEL, (event) => {
-    event.returnValue = readSharedPersistSnapshot()
+    event.returnValue = reply()
   })
+  // Hub revision changed, previous keys still present, localhost getItem
+  // already waits: invoke the same cached snapshot instead of sendSync.
+  ipcMain.handle(GET_SHARED_PERSIST_IPC_CHANNEL, () => reply())
 }
 
 /** Copy Chrome's localhost IndexedDB snapshot into Electron userData. Dev only. */
@@ -375,7 +359,7 @@ function registerQuickCaptureShortcut() {
   })
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   if (!isDev) {
     protocol.handle("app", (request) => {
       const { pathname } = new URL(request.url)
@@ -385,6 +369,8 @@ app.whenReady().then(() => {
   }
 
   registerPersistIpcHandlers()
+  // Parse once before the first window so its cold sendSync is a cache hit.
+  await sharedPersist.warm()
   hydrateIndexedDBFromChromeSnapshot()
   createWindow()
   registerQuickCaptureShortcut()

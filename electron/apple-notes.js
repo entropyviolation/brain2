@@ -11,8 +11,10 @@ const { execFile } = require("child_process")
 const path = require("path")
 
 const SCRIPT_PATH = path.join(__dirname, "apple-notes.jxa")
-const TIMEOUT_MS = 60000
+const TIMEOUT_MS = 90000
 const MAX_BUFFER = 32 * 1024 * 1024
+/** One Notes.app read at a time. A second click must not stack osascripts. */
+let inflight = null
 
 /** Map osascript / TCC failures onto a short machine code + human message. */
 function classifyError(err, stderr) {
@@ -73,12 +75,18 @@ function fetchAppleNotes(range) {
   const args = ["-l", "JavaScript", SCRIPT_PATH, sinceISO, untilISO, mode]
   if (mode !== "preview") args.push(JSON.stringify(range.ids.slice(0, 200)))
 
+  if (inflight) {
+    try { inflight.kill() } catch (e) {}
+    inflight = null
+  }
+
   return new Promise((resolve) => {
-    execFile(
+    const child = execFile(
       "osascript",
       args,
       { timeout: TIMEOUT_MS, maxBuffer: MAX_BUFFER },
       (err, stdout, stderr) => {
+        if (inflight === child) inflight = null
         if (err) {
           resolve({ ok: false, ...classifyError(err, stderr) })
           return
@@ -104,6 +112,7 @@ function fetchAppleNotes(range) {
         }
       },
     )
+    inflight = child
   })
 }
 

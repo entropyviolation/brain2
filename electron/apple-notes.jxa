@@ -4,7 +4,7 @@
  * Run via:
  *   osascript -l JavaScript apple-notes.jxa <sinceISO> <untilISO> [preview|snippet|bodies] [idsJSON]
  *
- * `preview` (default): metadata only — id, title, dates. No note bodies.
+ * `preview` (default): walk Notes folders and read id, title, and modification date in bulk. No note bodies. A library-wide `whose()` hangs or returns nothing on a large Notes library.
  * `snippet`: truncated plaintext for given ids (preview on the swipe card).
  * `bodies`: full plaintext for given ids (bulk-add / save for later).
  */
@@ -70,45 +70,78 @@ function readBodyOne(note) {
   }
 }
 
-function listPreview(Notes, since, until) {
-  var matches
-  try {
-    matches = Notes.notes.whose({ modificationDate: { ">=": since } })()
-  } catch (e) {
-    matches = []
+var PREVIEW_MAX = 500
+
+function inWindow(modified, since, until) {
+  if (!(modified instanceof Date)) {
+    try { modified = new Date(modified) } catch (e) { return null }
+  }
+  if (!(modified instanceof Date) || isNaN(modified.getTime())) return null
+  if (modified < since || modified > until) return null
+  return modified
+}
+
+function pushPreview(results, seen, id, title, folderName, accountName, modified) {
+  id = String(id || "")
+  if (!id || seen[id]) return
+  seen[id] = true
+  results.push({
+    id: id,
+    title: String(title || ""),
+    body: "",
+    folder: folderName,
+    account: accountName,
+    createdAt: "",
+    modifiedAt: iso(modified),
+    passwordProtected: false,
+  })
+}
+
+function collectFolder(folder, accountName, since, until, results, seen) {
+  if (results.length >= PREVIEW_MAX) return
+  var folderName = ""
+  try { folderName = String(folder.name()) } catch (e) {}
+  if (isTrashFolder(folderName)) return
+
+  var spec = folder.notes
+  var ids = bulk(spec, function (s) { return s.id() })
+  var names = bulk(spec, function (s) { return s.name() })
+  var mods = bulk(spec, function (s) { return s.modificationDate() })
+  if (ids && mods) {
+    var n = Math.min(ids.length, mods.length)
+    for (var i = 0; i < n; i++) {
+      if (results.length >= PREVIEW_MAX) return
+      var modified = inWindow(mods[i], since, until)
+      if (!modified) continue
+      var title = names && names[i] != null ? names[i] : ""
+      pushPreview(results, seen, ids[i], title, folderName, accountName, modified)
+    }
   }
 
+  var children = []
+  try { children = folder.folders() } catch (e) {}
+  for (var c = 0; c < children.length; c++) {
+    collectFolder(children[c], accountName, since, until, results, seen)
+    if (results.length >= PREVIEW_MAX) return
+  }
+}
+
+function listPreview(Notes, since, until) {
   var results = []
-  var MAX = 500
-  for (var i = 0; i < matches.length; i++) {
-    if (results.length >= MAX) break
-    var note = matches[i]
-    var modified
-    try {
-      modified = note.modificationDate()
-    } catch (e) {
-      continue
+  var seen = {}
+  var accounts = []
+  try { accounts = Notes.accounts() } catch (e) { accounts = [] }
+  for (var a = 0; a < accounts.length; a++) {
+    if (results.length >= PREVIEW_MAX) break
+    var account = accounts[a]
+    var accountName = ""
+    try { accountName = String(account.name()) } catch (e) {}
+    var folders = []
+    try { folders = account.folders() } catch (e) { folders = [] }
+    for (var f = 0; f < folders.length; f++) {
+      collectFolder(folders[f], accountName, since, until, results, seen)
+      if (results.length >= PREVIEW_MAX) break
     }
-    if (!(modified instanceof Date)) {
-      try { modified = new Date(modified) } catch (e2) { continue }
-    }
-    if (isNaN(modified.getTime()) || modified < since || modified > until) continue
-
-    var title = ""
-    var id = ""
-    try { title = String(note.name()) } catch (e) {}
-    try { id = String(note.id()) } catch (e) {}
-
-    results.push({
-      id: id,
-      title: title,
-      body: "",
-      folder: "",
-      account: "",
-      createdAt: "",
-      modifiedAt: iso(modified),
-      passwordProtected: false,
-    })
   }
   return results
 }

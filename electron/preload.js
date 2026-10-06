@@ -6,6 +6,13 @@
  * This is the only privileged surface available to the renderer; all app data
  * stays in localStorage/Zustand in the renderer today; future MongoDB access
  * will go through IPC handlers exposed here (see docs/SPEC_MAPPING.md §3).
+ *
+ * Persist hub: seeds missing localStorage keys from data/shared-persist.json
+ * before the boot script and Zustand read them. A relaunch or pop-out that
+ * already has those keys for the current hub revision does no IPC. The first
+ * seed is sendSync against the main-process cache. On localhost, a revision
+ * change with the previous keys still present uses invoke, because persist
+ * getItem already waits.
  */
 const { contextBridge, ipcRenderer } = require("electron")
 
@@ -69,42 +76,195 @@ const TELEGRAM_POLL_STATUS = "cogs:telegram:pollStatus"
 // Chrome localhost persist snapshot. MUST match electron/main.js.
 const GET_SHARED_PERSIST_IPC_CHANNEL = "cogs:persist:getShared"
 
-function hydrateLocalStorageFromChromeHub() {
-  try {
-    const snapshot = ipcRenderer.sendSync(GET_SHARED_PERSIST_IPC_CHANNEL)
-    const items = snapshot && snapshot.items
-    if (!items || typeof items !== "object") return
-    for (const [name, value] of Object.entries(items)) {
-      if (typeof name !== "string" || typeof value !== "string") continue
-      // Hub dual-writes brain2-* and cogs-*. Applying both doubles quota and
-      // can resurrect a stale cogs twin over a live brain2 vault.
-      if (name.startsWith("cogs-")) {
-        const twin = "brain2-" + name.slice("cogs-".length)
-        if (typeof items[twin] === "string") continue
-      }
-      if (name.includes("friend-pic:")) continue
-      const local = localStorage.getItem(name)
-      // This profile's theme blob / PCB / LED pins are the last pick. A hub
-      // snapshot (or a stale pin overlay on it) must not paint them back on launch.
-      if (shouldSkipHubAppearanceCopy(name, local)) {
-        if (typeof local === "string" && local && name.endsWith("theme-store")) {
-          try {
-            stampAppearancePins(local, name)
-          } catch {
-            /* pin restamp is best-effort */
-          }
-        }
-        continue
-      }
-      const chosen = pickPersistItem(local, value, name)
-      if (typeof chosen === "string" && chosen !== local) {
-        try {
-          localStorage.setItem(name, chosen)
-        } catch {
-          /* quota: skip this hub key; live keys already in the profile stay */
-        }
+// Opaque hub revision on process.argv (electron/persist-hub-cache.js). Must
+// stay byte-for-byte identical to HUB_REV_PREFIX there. Sandbox blocks require
+// of that file, so the prefix is duplicated.
+const HUB_REV_PREFIX = "--brain2-hub-rev="
+
+// Local manifest of hub keys already applied for that revision. Not a vault
+// store. The `brain2-telegram` prefix is what phone vault push already skips,
+// so this list is not written into data/shared-persist.json.
+const HUB_SEED_MARKER = "brain2-telegram-hub-seed"
+
+function hubRevFromArgv(argv) {
+  const list = argv || (typeof process !== "undefined" && process.argv) || []
+  for (let i = 0; i < list.length; i++) {
+    const arg = list[i]
+    if (typeof arg === "string" && arg.indexOf(HUB_REV_PREFIX) === 0) {
+      try {
+        return decodeURIComponent(arg.slice(HUB_REV_PREFIX.length))
+      } catch {
+        return ""
       }
     }
+  }
+  return null
+}
+
+function persistHubWaitLocation(protocol, hostname) {
+  return protocol === "http:" && (hostname === "localhost" || hostname === "127.0.0.1")
+}
+
+function hydratePathWaits() {
+  try {
+    return persistHubWaitLocation(window.location.protocol, window.location.hostname)
+  } catch {
+    return false
+  }
+}
+
+function readHubSeedMarker(raw) {
+  if (typeof raw !== "string" || !raw) return null
+  try {
+    const marker = JSON.parse(raw)
+    if (!marker || typeof marker !== "object" || !Array.isArray(marker.keys)) return null
+    if (typeof marker.rev !== "string") return null
+    return marker
+  } catch {
+    return null
+  }
+}
+
+function seedKeyNames(items) {
+  const names = []
+  if (!items || typeof items !== "object") return names
+  for (const name of Object.keys(items)) {
+    const value = items[name]
+    if (typeof name !== "string" || typeof value !== "string" || value === "") continue
+    if (name === HUB_SEED_MARKER) continue
+    // Hub dual-writes brain2-* and cogs-*. Applying both doubles quota and
+    // can resurrect a stale cogs twin over a live brain2 vault.
+    if (name.startsWith("cogs-")) {
+      const twin = "brain2-" + name.slice("cogs-".length)
+      if (typeof items[twin] === "string") continue
+    }
+    if (name.includes("friend-pic:")) continue
+    names.push(name)
+  }
+  return names
+}
+
+function markerKeysPresent(marker, getItem) {
+  const keys = marker.keys
+  for (let i = 0; i < keys.length; i++) {
+    const name = keys[i]
+    if (typeof name !== "string") return false
+    let local = null
+    try {
+      local = getItem(name)
+    } catch {
+      return false
+    }
+    if (typeof local !== "string" || local === "") return false
+  }
+  return true
+}
+
+function hubSeedCovered(raw, rev, getItem) {
+  if (typeof rev !== "string") return false
+  const marker = readHubSeedMarker(raw)
+  if (!marker || marker.rev !== rev) return false
+  return markerKeysPresent(marker, getItem)
+}
+
+function knownSeedStillPresent(raw, getItem) {
+  const marker = readHubSeedMarker(raw)
+  if (!marker || marker.keys.length === 0) return false
+  return markerKeysPresent(marker, getItem)
+}
+
+function chooseHubSeedTransport({ vaultGuardLoaded, rev, waits, raw, getItem }) {
+  if (!vaultGuardLoaded && hubSeedCovered(raw, rev, getItem)) return "skip"
+  // Keys from the last seed are already here, and localhost persist getItem
+  // waits on /api/persist for anything still missing. Don't sendSync.
+  // app:// has no waiter, and a first seed (no marker) must land before the
+  // boot script and Zustand read localStorage.
+  if (!vaultGuardLoaded && rev !== null && waits && knownSeedStillPresent(raw, getItem)) return "invoke"
+  return "sendSync"
+}
+
+function rememberHubSeed(rev, snapshot) {
+  try {
+    const keys = seedKeyNames(snapshot && snapshot.items)
+    localStorage.setItem(HUB_SEED_MARKER, JSON.stringify({ rev: rev == null ? "" : String(rev), keys }))
+  } catch {
+    /* quota: next launch seeds again */
+  }
+}
+
+function applyHubSnapshot(snapshot) {
+  const items = snapshot && snapshot.items
+  if (!items || typeof items !== "object") return
+  for (const [name, value] of Object.entries(items)) {
+    if (typeof name !== "string" || typeof value !== "string") continue
+    if (name === HUB_SEED_MARKER) continue
+    if (name.startsWith("cogs-")) {
+      const twin = "brain2-" + name.slice("cogs-".length)
+      if (typeof items[twin] === "string") continue
+    }
+    if (name.includes("friend-pic:")) continue
+    const local = localStorage.getItem(name)
+    // This profile's theme blob / PCB / LED pins are the last pick. A hub
+    // snapshot (or a stale pin overlay on it) must not paint them back on launch.
+    if (shouldSkipHubAppearanceCopy(name, local)) {
+      if (typeof local === "string" && local && name.endsWith("theme-store")) {
+        try {
+          stampAppearancePins(local, name)
+        } catch {
+          /* pin restamp is best-effort */
+        }
+      }
+      continue
+    }
+    const chosen = pickPersistItem(local, value, name)
+    if (typeof chosen === "string" && chosen !== local) {
+      try {
+        localStorage.setItem(name, chosen)
+      } catch {
+        /* quota: skip this hub key; live keys already in the profile stay */
+      }
+    }
+  }
+}
+
+function hydrateLocalStorageFromChromeHub() {
+  try {
+    const rev = hubRevFromArgv()
+    // Sandbox cannot load vault-guard, so a present local value always wins.
+    // If the guard did load, a richer hub may replace a seed-sized local, and
+    // that comparison still needs the snapshot.
+    const vaultGuardLoaded = pickPersistItem !== keepPresentLocal
+    let raw = null
+    try {
+      raw = localStorage.getItem(HUB_SEED_MARKER)
+    } catch {
+      raw = null
+    }
+    const getItem = (name) => localStorage.getItem(name)
+    const transport = chooseHubSeedTransport({
+      vaultGuardLoaded,
+      rev,
+      waits: hydratePathWaits(),
+      raw,
+      getItem,
+    })
+    if (transport === "skip") return
+
+    const finish = (snapshot) => {
+      try {
+        applyHubSnapshot(snapshot)
+        rememberHubSeed(rev, snapshot)
+      } catch {
+        /* hub is optional */
+      }
+    }
+
+    if (transport === "invoke") {
+      Promise.resolve(ipcRenderer.invoke(GET_SHARED_PERSIST_IPC_CHANNEL)).then(finish).catch(() => {})
+      return
+    }
+
+    finish(ipcRenderer.sendSync(GET_SHARED_PERSIST_IPC_CHANNEL))
   } catch {
     // Hub is optional; never throw out of preload.
   }
@@ -167,3 +327,21 @@ contextBridge.exposeInMainWorld("electron", {
     return () => ipcRenderer.removeListener(QUICK_CAPTURE_IPC_CHANNEL, listener)
   },
 })
+
+try {
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = {
+      HUB_SEED_MARKER,
+      HUB_REV_PREFIX,
+      hubRevFromArgv,
+      persistHubWaitLocation,
+      seedKeyNames,
+      hubSeedCovered,
+      knownSeedStillPresent,
+      chooseHubSeedTransport,
+      hydrateLocalStorageFromChromeHub,
+    }
+  }
+} catch {
+  /* sandboxed preload does not export */
+}

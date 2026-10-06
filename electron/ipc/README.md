@@ -2,21 +2,18 @@
 
 This folder holds the **channel contract** for exposing a `DataSource` to the
 renderer over Electron IPC. It is **scaffolding only** — nothing here is imported
-by `electron/main.js` yet, so the running app is unaffected. Wiring it up is the
-drop-in follow-up described below. Channel string prefixes stay `cogs:` (historical);
+by `electron/main.js` yet, so the running app is unaffected. Wiring it is not
+scheduled. Channel string prefixes stay `cogs:` (historical);
 the product name is **BRAIN2**.
 
-> **Direction (see [`../../docs/SPEC_MAPPING.md`](../../docs/SPEC_MAPPING.md) §3).** Brain2 is
-> **offline-first**: the renderer's local store is the source of truth, so Electron
-> main reverts to a **thin shell** (optionally a connector/cache host) — **not** the
-> data host. The earlier "Electron main as the data host" idea is dropped (it could
-> never serve a future mobile app). This IPC scaffolding is **preserved and
-> repurposed** as *one transport on the remote/sync side*: a way to reach the
-> remote `DataSource`/`MongoDataSource` from a desktop renderer. Treat the
-> "host `DataSource` in main" wording below as that remote/sync host, not the
-> primary store.
+> **See [`../../docs/SPEC_MAPPING.md`](../../docs/SPEC_MAPPING.md) §3.** Brain2 is
+> **offline-first**: the renderer's local store is the source of truth, and
+> Electron main is a **thin shell**, not the data host. This folder is unwired
+> scaffolding. MongoDB Atlas, `@brain2/core`, and Expo are speculation, not the
+> storage plan. The sync that exists is the manual phone hub. Wording below
+> that describes a host `DataSource` in main is that same unwired sketch.
 
-## Target architecture
+## Sketch (not the storage plan)
 
 ```
 ┌── renderer (Next.js) ───────────────┐        ┌── main process (electron) ──────────┐
