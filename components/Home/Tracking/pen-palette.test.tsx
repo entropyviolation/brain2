@@ -9,22 +9,15 @@ beforeEach(() => {
   resetTrackingViewPrefs()
 })
 
-describe("PenPalette tray photograph", () => {
-  it("stamps the default Cat traces plate on the pen container, not velvet", () => {
+describe("PenPalette tray", () => {
+  it("keeps the pen container plain steel, with no photograph", () => {
     render(<PenPalette embedded />)
     const root = document.querySelector(".trk95")
-    expect(root).toHaveAttribute("data-pen-tray", "cat")
-    expect(root).toHaveAttribute("data-pen-tray-ink", "light")
-    expect(root).not.toHaveAttribute("data-pen-tray", "velvet")
-    expect((root as HTMLElement).style.getPropertyValue("--pen-tray-photo")).toBe('url("/pen-tray/cat.jpg")')
-  })
-
-  it("follows a persisted tray pick", () => {
-    setTrackingViewPrefs({ penTray: "jewel" })
-    render(<PenPalette embedded />)
-    const root = document.querySelector(".trk95")
-    expect(root).toHaveAttribute("data-pen-tray", "jewel")
-    expect(root).toHaveAttribute("data-pen-tray-ink", "dark")
+    expect(root).not.toHaveAttribute("data-pen-tray")
+    expect((root as HTMLElement).style.getPropertyValue("--pen-tray-photo")).toBe("")
+    const well = document.querySelector(".trk-pen-well") as HTMLElement
+    expect(well).toBeTruthy()
+    expect(["", "none"]).toContain(getComputedStyle(well).backgroundImage)
   })
 })
 
@@ -36,11 +29,16 @@ describe("PenPalette bead well", () => {
     expect(well).toHaveClass("trk-pen-well-collapsed")
     expect(well).toHaveAttribute("data-expanded", "false")
 
-    const tree = screen.getByRole("button", { name: "Sort pens Tree" })
+    const sort = screen.getByRole("button", { name: "Sort pens Recent" })
     const expand = screen.getByRole("button", { name: "Expand" })
     expect(expand).toHaveAttribute("aria-pressed", "false")
-    expect(tree.compareDocumentPosition(expand) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    expect(expand.compareDocumentPosition(tree) & Node.DOCUMENT_POSITION_FOLLOWING).toBeFalsy()
+    expect(sort.compareDocumentPosition(expand) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(screen.queryByRole("option", { name: "Sort pens Tree" })).not.toBeInTheDocument()
+    fireEvent.click(sort)
+    const tree = screen.getByRole("option", { name: "Sort pens Tree" })
+    expect(sort.compareDocumentPosition(tree) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    fireEvent.click(tree)
+    expect(screen.getByRole("button", { name: "Sort pens Tree" })).toBeInTheDocument()
 
     fireEvent.click(expand)
     expect(document.querySelector(".trk-pen-well")).not.toHaveClass("trk-pen-well-collapsed")
@@ -80,38 +78,35 @@ describe("PenPalette bead well", () => {
 })
 
 describe("PenPalette new pen", () => {
-  it("hides the inline creator until New pen, then re-hides after a successful create", () => {
+  it("keeps + New pen at the bottom while the well is expanded", () => {
+    setTrackingViewPrefs({ penWellExpanded: true })
     render(<PenPalette embedded />)
 
-    const newPen = screen.getByRole("button", { name: "New pen" })
-    expect(newPen).toHaveAttribute("aria-pressed", "false")
-    expect(screen.queryByLabelText("New pen name")).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "New pen" })).not.toBeInTheDocument()
+    const add = screen.getByRole("button", { name: "+ New pen" })
+    const well = document.querySelector(".trk-pen-well")
+    expect(well).toBeTruthy()
+    expect(well!.compareDocumentPosition(add) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
 
-    fireEvent.click(newPen)
-    expect(screen.getByRole("button", { name: "New pen" })).toHaveAttribute("aria-pressed", "true")
     const name = screen.getByLabelText("New pen name")
-    expect(name).toBeInTheDocument()
-
     fireEvent.change(name, { target: { value: "Sketching" } })
-    fireEvent.click(screen.getByRole("button", { name: "Add pen" }))
+    fireEvent.click(add)
 
-    expect(screen.queryByLabelText("New pen name")).not.toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "New pen" })).toHaveAttribute("aria-pressed", "false")
     expect(screen.getByRole("button", { name: /^Sketching$/ })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "+ New pen" })).toBeInTheDocument()
   })
 
-  it("hides the creator again when New pen is clicked a second time", () => {
+  it("offers Create new pen from a collapsed search that matches nothing, using the query as the name", () => {
     render(<PenPalette embedded />)
-    fireEvent.click(screen.getByRole("button", { name: "New pen" }))
-    expect(screen.getByLabelText("New pen name")).toBeInTheDocument()
-    fireEvent.click(screen.getByRole("button", { name: "New pen" }))
-    expect(screen.queryByLabelText("New pen name")).not.toBeInTheDocument()
-  })
+    expect(screen.queryByRole("button", { name: "+ New pen" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Create new pen" })).not.toBeInTheDocument()
 
-  it("hides the creator on Escape without creating", () => {
-    render(<PenPalette embedded />)
-    fireEvent.click(screen.getByRole("button", { name: "New pen" }))
-    fireEvent.keyDown(screen.getByLabelText("New pen name"), { key: "Escape" })
-    expect(screen.queryByLabelText("New pen name")).not.toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText("Search pens"), { target: { value: "Sketching" } })
+    const name = screen.getByLabelText("New pen name")
+    expect(name).toHaveValue("Sketching")
+    fireEvent.click(screen.getByRole("button", { name: "Create new pen" }))
+
+    expect(screen.getByRole("button", { name: /^Sketching$/ })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Create new pen" })).not.toBeInTheDocument()
   })
 })

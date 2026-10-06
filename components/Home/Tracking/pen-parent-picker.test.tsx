@@ -45,4 +45,16 @@ describe("PenParentPicker", () => {
     expect(screen.getByRole("option", { name: /Balboa Park/ })).toBeInTheDocument()
     expect(screen.queryByRole("option", { name: /^Mexico$/ })).not.toBeInTheDocument()
   })
+
+  it("keeps the new-parent name in a growing field beside Create", () => {
+    openPicker()
+    fireEvent.click(screen.getByRole("button", { name: /Create new pen/i }))
+    const name = screen.getByLabelText("New parent pen name")
+    expect(name.closest(".trk-parent-create")).not.toBeNull()
+    fireEvent.change(name, { target: { value: "Pacific Beach" } })
+    expect(name).toHaveValue("Pacific Beach")
+    const create = screen.getByRole("button", { name: "Create" })
+    expect(create).toHaveClass("trk-parent-create-add")
+    expect(create).not.toHaveClass("trk-parent-option")
+  })
 })

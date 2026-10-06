@@ -1,0 +1,112 @@
+/**
+ * components/Home/Tracking/entry-dialog.css — Block editor drawer
+ *
+ * The entry editor is a non-modal steel drawer on the right, not a centered
+ * dialog. `.trk95.trk-dialog` in tracking-chrome.css still paints the fascia
+ * and forces a centered translate; the extra class here wins that translate
+ * so the grid stays in view beside the drawer. The wash does not take clicks,
+ * so another block can open. Do not move these rules into tracking-chrome.css.
+ */
+
+.trk-entry-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(70, 74, 78, 0.16);
+  pointer-events: none;
+}
+
+.trk95.trk-dialog.trk-entry-drawer {
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: auto !important;
+  z-index: 51;
+  width: clamp(16rem, 40vw, 28rem) !important;
+  max-width: clamp(16rem, 40vw, 28rem) !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  max-height: none !important;
+  margin: 0 !important;
+  transform: none !important;
+  translate: none !important;
+  border-radius: 3px 0 0 3px !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  animation: none !important;
+  transition: none !important;
+  box-shadow:
+    -12px 0 28px rgba(20, 22, 24, 0.16),
+    0 0 0 1px #5c6064,
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -1px 0 rgba(40, 42, 46, 0.4),
+    inset 0 0 0 2px #b0b4b8,
+    var(--t-raised);
+}
+
+.trk95.trk-dialog.trk-entry-drawer .trk-entry-drawer-head {
+  padding-right: 1.75rem;
+}
+
+.trk95 .trk-mood {
+  gap: 10px;
+}
+
+.trk95 .trk-mood-guide,
+.trk95 .trk-mood-part,
+.trk95 .trk-mood-offer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.trk95 .trk-mood-guide ol {
+  margin: 0;
+  padding-left: 1.15rem;
+  font-size: 11px;
+  line-height: 1.35;
+  color: #222;
+}
+
+.trk95 .trk-mood-guide li + li {
+  margin-top: 3px;
+}
+
+.trk95 .trk-mood-rank {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 3.25rem;
+  gap: 2px 8px;
+  align-items: center;
+}
+
+.trk95 .trk-mood-rank .trk-help {
+  grid-column: 1 / -1;
+}
+
+.trk95 .trk-mood-rank input {
+  width: 3.25rem;
+  height: 22px;
+  padding: 0 4px;
+  font-size: 12px;
+}
+
+.trk95 .trk-mood-scale {
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #333;
+}
+
+.trk95 .trk-mood-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.trk95 .trk-mood-sentence {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #111;
+}

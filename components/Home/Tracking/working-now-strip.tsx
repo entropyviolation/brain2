@@ -88,7 +88,14 @@ export function WorkingNowStrip() {
       >
         {live && selected ? `Stop working on ${selected.description}` : "Working on this now"}
       </button>
-      <span className="ops-now-meta">
+      <span
+        className="ops-now-meta"
+        title={
+          tagNames.length > 0
+            ? `Tags: ${tagNames.join(", ")}${fedHabits.length > 0 ? ` · feeds ${fedHabits.map((h) => h.name).join(", ")}` : ""}`
+            : "No tracking tags — set them on the operation in Settings."
+        }
+      >
         {tagNames.length > 0
           ? `Tags: ${tagNames.join(", ")}`
           : "No tracking tags — set them on the operation in Settings."}

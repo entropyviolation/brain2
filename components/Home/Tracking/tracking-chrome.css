@@ -6,7 +6,8 @@
  * The well is a photographed plate; beads sit on it. Search, new-pen, selected
  * name, and detail copy sit on small steel plates so type never washes out.
  * Collapsed beads are one row (`.trk-pen-well-collapsed`); Expand (right of Tree)
- * unwraps them and reads Conceal while open. **New pen** (same SORT cluster)
+ * unwraps them into a short scrolling field (about three rows) and reads
+ * Conceal while open. **New pen** (same SORT cluster)
  * reveals `.trk-new-pen`; that row stays hidden until the key is pressed.
  * Scoped under `.trk95`. Portaled dialogs keep `.trk-dialog` (they leave the window).
  *
@@ -14,7 +15,8 @@
  * active = CRT black glass + round power lamp — same language as Habits /
  * Plan). Way I hybrid: Show/Sort/Expand/New pen are labeled wells on the palette
  * rail; Hide / View / Tags sit beside them in `.trk-latches-well` (Look);
- * views sit in `.trk-mode-bar` under the pen tray (closest to TIME/DIV);
+ * views sit in `.trk-mode-bar` under the pen tray; Time Grid adds
+ * `.trk-super-bar` under that bar and above the plot;
  * Draw–Erase–Scissors sit in `.trk-tools-rail` pinned to the far right of
  * `.trk-pen-tools-row` (grid `1fr auto` + spacer when the tray hides) as
  * milled jewel keys in `.trk-tools-tray` (pressed = inset + lamp, never a
@@ -23,10 +25,10 @@
  * `.trk-grid-rail`. A focused clock shows `.trk-now-time` (**right now**)
  * beside the picker, not over it. `.trk-now-module` sits under the fascia as a
  * milled status bay (shared by Time Grid, Activity Log, and Day Log): the
- * Operations clock, then `.trk-pen-now` (search a pen color or create one,
- * timer from this second).
- * Cell-size keys (`.trk-cell-size-btn`) light navy +
- * phosphor when pressed. Fill (`.trk-plot-fill` / `.trk-fill-range`) defaults
+ * Operations clock and `.trk-pen-now` share one row when the desk is wide
+ * (they stack on a narrow one). Each hint stays one line and ellipsizes.
+ * Cell size is one milled rotary knob (`.trk-cell-knob`); the indicator
+ * turns with the step, and the minutes sit beside it. Fill (`.trk-plot-fill` / `.trk-fill-range`) defaults
  * to the longest empty gap; double-click a clock. The plot is white with gray **hairline** ticks
  * (1px / lighter stroke on `.trk-cell` and hour rules on `.trk-plot`;
  * painted cells keep a fainter left-only tick, never a 4-side inset);
@@ -46,7 +48,11 @@
  * `.trk-dialog` opens without a zoom/slide twitch.
  * View settings (`.trk-view-settings`) caps height at the viewport; `.trk-dialog-body`
  * scrolls; title and OK / Cancel / Apply stay put.
+ * Period fascia / nameplate / metal keys: `components/period-nav-chrome.css`
+ * (parameterized by `--period-*` from `--t-*`).
  */
+
+@import "../../period-nav-chrome.css";
 
 .trk95 {
   display: flex;
@@ -168,9 +174,23 @@
 .trk95 .trk-fascia .hab-view-changer.trk-view-keys,
 .trk95 .trk-fascia .trk-view-keys {
   flex: 1 1 14rem;
-  min-width: 12rem;
+  min-width: min(100%, 12rem);
   max-width: 28rem;
   margin: 0;
+}
+
+/* Narrow fascia: Time Grid / Activity Log / Day Log wrap to a second line
+   instead of squeezing the last key off the lip. */
+@media (max-width: 1100px) {
+  .trk95 .trk-fascia .hab-view-changer.trk-view-keys,
+  .trk95 .trk-fascia .trk-view-keys {
+    flex: 1 1 100%;
+    max-width: none;
+  }
+
+  .trk95 .trk-fascia .trk-view-keys [role="tablist"] {
+    grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  }
 }
 
 .trk95 .trk-panel {
@@ -287,29 +307,95 @@
   align-self: stretch;
 }
 
+/* Ghost row. Secondary to the mode bar: silk + dashed keys, not a second mill. */
+.trk95 .trk-super-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 4px;
+  min-height: 0;
+  padding: 0 2px;
+  overflow: visible;
+  background: transparent;
+  box-shadow: none;
+}
+
+.trk95 .trk-super-bar .trk-silk {
+  flex: 0 0 auto;
+}
+
+.trk95 .trk-super-keys {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+}
+
+.trk95 .trk-super-bar button,
+body.win95-app .trk95 .trk-super-bar button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 18px;
+  min-height: 18px;
+  padding: 0 7px;
+  border: 1px dashed #5c6064;
+  border-radius: 2px;
+  color: #333;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  text-shadow: none;
+  white-space: nowrap;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.trk95 .trk-super-bar button:focus-visible {
+  outline: 1px solid #1c1e20;
+  outline-offset: 1px;
+}
+
+.trk95 .trk-super-bar button[aria-pressed="true"],
+body.win95-app .trk95 .trk-super-bar button[aria-pressed="true"] {
+  color: #111;
+  text-shadow: none;
+  background: #e4e6e8;
+  border-style: solid;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.28);
+}
+
 .trk95 .trk-toolbar {
   display: flex;
   flex-direction: column;
-  gap: var(--trk-gap);
-  padding: 6px;
-  border-radius: 3px;
-  background:
-    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
-    linear-gradient(165deg, #d4d8dc 0%, var(--t-surface) 48%, #9a9ea2 100%);
-  box-shadow:
-    0 0 0 1px #5c6064,
-    inset 0 1px 0 rgba(255, 255, 255, 0.7),
-    inset 0 0 0 2px #b0b4b8;
+  gap: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .trk95 .trk-toolbar-row {
   display: flex;
   flex-wrap: wrap;
-  align-items: stretch;
+  align-items: center;
   gap: var(--trk-gap);
-  min-height: var(--trk-cluster-min);
-  overflow-x: auto;
-  overflow-y: hidden;
+  min-height: var(--trk-key-h);
+  overflow: visible;
+}
+
+.trk95 .trk-toolbar .trk-module {
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  padding: 0 2px;
+  background: transparent;
+  box-shadow: none;
 }
 
 .trk95 .trk-toolbar button:not([role="tab"]),
@@ -433,18 +519,6 @@
   box-shadow: var(--t-sunken);
 }
 
-/* Cell-size keys: the active minute step must read at a glance.
-   body.win95-app button { box-shadow: raised } is (0,4,2) — outrank it. */
-.trk95 .trk-module-keys > .trk-cell-size-btn[aria-pressed="true"],
-.trk95 .trk-module-keys > .trk-cell-size-btn.trk-cell-size-btn-on,
-body.win95-app .trk95 .trk-module-keys > .trk-cell-size-btn[aria-pressed="true"],
-body.win95-app .trk95 .trk-module-keys > .trk-cell-size-btn.trk-cell-size-btn-on {
-  color: #fff;
-  font-weight: bold;
-  background: linear-gradient(var(--t-phosphor) 0 3px, var(--t-blue) 3px 100%);
-  box-shadow: var(--t-sunken);
-}
-
 .trk95 .trk-silk,
 .trk95 .trk-module .trk-label,
 .trk-depth .trk-silk {
@@ -476,7 +550,37 @@ body.win95-app .trk95 .trk-module-keys > .trk-cell-size-btn.trk-cell-size-btn-on
   box-shadow: var(--t-sunken);
 }
 
-.trk95 .trk-module-sort .trk-module-keys > button,
+.trk95 .trk-module-sort {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.trk95 .trk-sort-readout,
+body.win95-app .trk95 .trk-sort-readout {
+  min-width: 4.5rem;
+}
+
+.trk95 .trk-sort-menu {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 28px;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  min-width: 7rem;
+  padding: 3px;
+  background: var(--t-surface);
+  box-shadow: var(--t-raised);
+}
+
+.trk95 .trk-sort-menu button[aria-selected="true"] {
+  box-shadow: var(--t-sunken);
+}
+
 .trk95 .trk-depth button {
   min-width: 56px;
 }
@@ -579,8 +683,15 @@ body.win95-app .trk95 .trk-module-keys > .trk-cell-size-btn.trk-cell-size-btn-on
 }
 
 .trk95 .trk-latches-well {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--trk-gap);
   flex: 0 0 auto;
-  min-width: 0;
+  min-width: max-content;
+  padding: 0;
+  background: none;
+  box-shadow: none;
 }
 
 .trk95 .trk-latches-well .trk-tools-latches {
@@ -769,11 +880,11 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
 }
 
 .trk95 .trk-now-module {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  gap: 2px;
   margin: 0 0 2px;
-  padding: 6px 8px;
+  padding: 3px 4px;
   border-radius: 3px;
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
@@ -875,9 +986,28 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
 .trk95 .trk-now-module .ops-now-bar {
   margin: 0;
   padding: 2px 4px;
+  flex-wrap: wrap;
+  min-width: 0;
   background: transparent;
   border: 0;
   box-shadow: none;
+}
+
+.trk95 .trk-now-module .ops-now-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trk95 .trk-now-module .ops-now-bar select {
+  min-width: 0;
+  max-width: 11rem;
+}
+
+.trk95 .trk-now-module .trk-pen-now-field {
+  flex: 1 1 13rem;
+  min-width: min(100%, 13rem);
+  max-width: none;
 }
 
 .trk95 .trk-toolbar-split {
@@ -1035,23 +1165,13 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   color: #111;
 }
 
-/* Period nameplate date + metal prev/next/today keys (Plan kin). */
+/* Period layout (grid + meta/trailing). Fascia / nameplate / metal keys in period-nav-chrome. */
 .trk95 .trk-period {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
   column-gap: 8px;
-  min-height: 40px;
   margin: 0 0 6px;
-  padding: 6px 8px;
-  border-radius: 3px;
-  background:
-    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
-    linear-gradient(180deg, #d8dce0, var(--t-face) 48%, #b0b4b8);
-  box-shadow:
-    0 0 0 1px #6a6e72,
-    inset 0 1px 0 rgba(255, 255, 255, 0.7),
-    inset 0 2px 3px rgba(0, 0, 0, 0.08);
 }
 
 .trk95 .trk-period[data-trailing="true"] {
@@ -1063,28 +1183,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
 }
 
 .trk95 .trk-period-title h3 {
-  margin: 0;
-  min-height: 30px;
-  padding: 6px 14px 7px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   width: 100%;
-  border-radius: 2px;
-  text-align: center;
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--t-nameplate) !important;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
-  background-image:
-    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0 1px, transparent 1px 2px),
-    linear-gradient(180deg, #eef0f2 0%, var(--t-surface) 48%, #a4a8ac 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 0 0 1px #6a6e72;
 }
 
 .trk95 .trk-period-meta {
@@ -1095,69 +1194,13 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   color: #333;
 }
 
-.trk95 .trk-period-chev,
-.trk95 .trk-period-today,
-.trk95 .trk-period-aux {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 30px;
-  border: 0;
-  border-radius: 2px;
-  color: #1c1e20;
-  font: inherit;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
-  line-height: 1;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
-    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--t-surface) 70%, #9a9ea2 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.92),
-    inset 0 -1px 0 rgba(55, 58, 62, 0.45),
-    0 0 0 1px #4a4e52,
-    0 1px 0 #6a6e72;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.trk95 .trk-period-chev {
-  min-width: 30px;
-  padding: 2px 10px;
-  font-size: 14px;
-  letter-spacing: 0;
-  text-transform: none;
-}
-
-.trk95 .trk-period-today,
-.trk95 .trk-period-aux {
-  padding: 5px 14px 6px;
-}
-
-.trk95 .trk-period-chev:hover:not(:disabled),
-.trk95 .trk-period-today:hover:not(:disabled),
-.trk95 .trk-period-aux:hover:not(:disabled) {
-  filter: brightness(1.04);
-}
-
-.trk95 .trk-period-chev:not(:disabled):active,
-.trk95 .trk-period-today:not(:disabled):active,
-.trk95 .trk-period-aux:not(:disabled):active {
-  box-shadow:
-    inset 0 1px 2px rgba(0, 0, 0, 0.35),
-    0 0 0 1px #3a3e42;
-  filter: none;
-}
-
 .trk95 .trk-period-trailing {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 6px;
   min-width: 0;
+  overflow: visible;
 }
 
 .trk95 .trk-period-trailing .trk-micro-danger {
@@ -1182,9 +1225,9 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
 .trk95 .trk-body {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
   min-width: 0;
-  padding: 4px;
+  padding: 2px 4px 3px;
 }
 
 .trk95 .trk-swatches {
@@ -1222,10 +1265,11 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
 
 .trk95 .trk-pen-well {
   min-height: 0;
-  max-height: 148px;
+  /* About three bead rows. The rest of the palette stays in view; scroll for the rest. */
+  max-height: 86px;
   overflow-y: auto;
-  padding: 3px 4px;
-  background: #2a1020 url("/newvelv.jpg") center / cover;
+  padding: 3px;
+  background: #fff;
   box-shadow: var(--t-sunken);
 }
 
@@ -1247,7 +1291,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
-  gap: 4px;
+  gap: 3px;
 }
 
 .trk95 .trk-pen-slot {
@@ -1258,30 +1302,35 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
 .trk95 .trk-pen {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  max-width: 100%;
-  padding: 2px 7px 2px 4px;
+  gap: 4px;
+  height: 22px;
+  max-width: 160px;
+  min-width: 0;
+  padding: 0 7px;
+  overflow: hidden;
   border: 0;
-  color: #fff;
+  border-radius: 2px;
   font-size: 11px;
-  line-height: 1.2;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.65);
-  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.35), inset -1px -1px 0 rgba(0, 0, 0, 0.45),
-    1px 1px 0 #000;
+  line-height: 22px;
+  box-shadow: none;
   cursor: pointer;
 }
 
-.trk95 .trk-pen[data-selected="true"] {
-  outline: 1px dotted #fff;
-  outline-offset: -3px;
-  box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.5), inset -1px -1px 0 rgba(255, 255, 255, 0.25),
-    0 0 0 1px #fff, 1px 1px 0 #000;
-  transform: translateY(-1px);
+.trk95 .trk-pen[data-dark="true"] {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.75);
 }
 
-.trk95 .trk-pen[data-indent="true"] {
-  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.35), inset -1px -1px 0 rgba(0, 0, 0, 0.45),
-    -4px 0 0 -2px #8a6a3a, 1px 1px 0 #000;
+.trk95 .trk-pen[data-selected="true"] {
+  box-shadow:
+    0 0 0 1px #fff,
+    0 0 0 3px #1c1e20;
+}
+
+.trk95 .trk-pen[data-dark="true"][data-selected="true"] {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.75),
+    0 0 0 1px #fff,
+    0 0 0 3px #1c1e20;
 }
 
 .trk95 .trk-pen-bead {
@@ -1289,20 +1338,59 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   height: 11px;
   flex-shrink: 0;
   border-radius: 50%;
-  box-shadow: inset -1px -1px 2px rgba(0, 0, 0, 0.45), inset 1px 1px 1px rgba(255, 255, 255, 0.55);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
 }
 
 .trk95 .trk-pen-name {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .trk95 .trk-pen-meta {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+  line-height: 14px;
+  opacity: 0.85;
+}
+
+.trk95 .trk-pen-count {
+  flex: 0 0 auto;
+  min-width: 14px;
+  height: 14px;
   padding: 0 3px;
-  font-size: 9px;
-  line-height: 12px;
-  background: rgba(0, 0, 0, 0.25);
+  border-radius: 2px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 14px;
+  text-align: center;
+}
+
+.trk95 .trk-pen[data-ink="light"] .trk-pen-count {
+  background: #fff;
+  color: #111;
+}
+
+.trk95 .trk-pen[data-ink="dark"] .trk-pen-count {
+  background: #111;
+  color: #fff;
+}
+
+.trk95 .trk-pen-tags {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 2px;
+}
+
+.trk95 .trk-pen-tags > span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
 }
 
 .trk95 .trk-new-pen {
@@ -1354,6 +1442,26 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
 .trk95 .trk-new-pen .trk-micro svg {
   width: 12px;
   height: 12px;
+}
+
+.trk95 .trk-new-pen-add {
+  flex: 0 0 auto;
+  height: 22px;
+  padding: 0 8px;
+  border: 0;
+  background: var(--t-surface);
+  color: #111;
+  font: inherit;
+  font-size: 11px;
+  white-space: nowrap;
+  box-shadow: var(--t-raised);
+  cursor: pointer;
+}
+
+.trk95 .trk-new-pen-add:disabled {
+  color: var(--t-shadow);
+  text-shadow: 1px 1px var(--t-highlight);
+  cursor: default;
 }
 
 /* Block editor / pen settings: milled fascia furniture inside a shadcn dialog. */
@@ -1594,6 +1702,72 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   opacity: 0.75;
 }
 
+/* Create-parent row. Do not reuse `.trk-parent-option` on the button — that
+   class is width:100% and crushes the name field to a blank square. The name
+   matches the pen Name well: dark plate, light type, navy selection. */
+.trk95 .trk-parent-create {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  padding-top: 4px;
+  border-top: 1px solid #808080;
+}
+
+.trk95 .trk-parent-create input:not([type="color"]) {
+  display: block;
+  height: 22px;
+  min-width: 8rem;
+  flex: 1 1 auto;
+  width: auto;
+  margin: 0;
+  padding: 2px 6px;
+  border: 1px solid #3a3e42;
+  border-radius: 0;
+  font: inherit;
+  font-size: 12px;
+  line-height: 16px;
+  color: #f4f7f5;
+  caret-color: #f4f7f5;
+  -webkit-text-fill-color: #f4f7f5;
+  background: #121816;
+  color-scheme: dark;
+  box-shadow: var(--t-field);
+}
+
+.trk95 .trk-parent-create input:not([type="color"])::placeholder {
+  color: #8aa094;
+  -webkit-text-fill-color: #8aa094;
+  opacity: 1;
+}
+
+.trk95 .trk-parent-create input:not([type="color"])::selection {
+  background: #000080;
+  color: #fff;
+  -webkit-text-fill-color: #fff;
+}
+
+.trk95 .trk-parent-create-add {
+  flex: 0 0 auto;
+  width: auto;
+  height: 22px;
+  padding: 0 8px;
+  border: 0;
+  background: var(--t-surface);
+  color: #111;
+  font: inherit;
+  font-size: 11px;
+  white-space: nowrap;
+  box-shadow: var(--t-raised);
+  cursor: pointer;
+}
+
+.trk95 .trk-parent-create-add:disabled {
+  color: var(--t-shadow);
+  text-shadow: 1px 1px var(--t-highlight);
+  cursor: default;
+}
+
 .trk95 .trk-tag {
   display: inline-flex;
   align-items: center;
@@ -1680,6 +1854,62 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   margin: 0;
   font-size: 11px;
   color: #222;
+}
+
+.trk95 .trk-find {
+  position: relative;
+  min-width: 11rem;
+}
+
+.trk95 .trk-find input {
+  height: 22px;
+  width: 11rem;
+  border-radius: 0;
+  font-size: 12px;
+}
+
+.trk95 .trk-find-list {
+  position: absolute;
+  z-index: 8;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 2px;
+  list-style: none;
+  background: #c0c0c0;
+  border: 2px solid;
+  border-color: #fff #404040 #404040 #fff;
+  max-height: 220px;
+  overflow: auto;
+}
+
+.trk95 .trk-find-hit,
+.trk95 .trk-find-empty {
+  display: flex;
+  width: 100%;
+  gap: 8px;
+  align-items: baseline;
+  text-align: left;
+  font-size: 12px;
+  padding: 2px 4px;
+  background: #fff;
+  border: 0;
+}
+
+.trk95 .trk-find-hit:hover {
+  background: #000080;
+  color: #fff;
+}
+
+.trk95 .trk-instant.trk-instant-week {
+  top: auto;
+  bottom: auto;
+  left: 2px;
+  right: 2px;
+  width: auto;
+  height: 8px;
+  margin: -4px 0 0;
 }
 
 .trk95 .trk-field-controls {
@@ -1821,6 +2051,18 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   min-height: 0;
 }
 
+@media (max-width: 1100px) {
+  .trk95 .trk-chrome-stack {
+    gap: 4px;
+    padding: 4px;
+  }
+
+  .trk95 .trk-plot-bezel {
+    min-height: min(68dvh, calc(100dvh - 14rem));
+    padding: 4px;
+  }
+}
+
 .trk95 .trk-plot-strip {
   display: flex;
   flex-direction: row;
@@ -1844,16 +2086,24 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
     inset 0 2px 2px rgba(0, 0, 0, 0.08);
 }
 
+.trk95 .trk-plot-strip > * {
+  flex: 0 0 auto;
+  align-self: center;
+  min-width: max-content;
+  white-space: nowrap;
+}
+
 .trk95 .trk-plot-strip > .trk-module {
   width: auto !important;
   margin: 0 !important;
-  flex: 0 1 auto;
-  min-width: 0;
-  align-self: stretch;
+  flex: 0 0 auto;
+  min-width: max-content;
+  align-self: center;
 }
 
 .trk95 .trk-plot-fill {
-  flex: 1 1 12rem;
+  flex: 0 0 auto;
+  min-width: max-content;
 }
 
 .trk95 .trk-plot-fill button {
@@ -1902,11 +2152,19 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   flex-direction: column;
   justify-content: center;
   gap: 2px;
-  flex: 1 1 8rem;
-  min-width: 8rem;
+  flex: 0 0 auto;
+  min-width: max-content;
   padding: var(--trk-well-pad) 6px;
   background: var(--t-surface);
   box-shadow: var(--t-sunken);
+}
+
+.trk95 .trk-occ-of {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #333;
 }
 
 .trk95 .trk-occ-readout {
@@ -1957,8 +2215,30 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
 .trk95 .trk-grid {
   position: relative;
   overflow: auto;
+  overflow-anchor: none;
   background: var(--t-pour);
   box-shadow: var(--t-sunken);
+}
+
+.trk95 .trk-grid:focus {
+  outline: none;
+}
+
+/* Ghost wash: the other view's own color, faint, never the click target. */
+.trk95 .trk-super {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.32;
+  background-image: none;
+}
+
+.trk95 .trk-instant.trk-super-instant {
+  pointer-events: none;
+  opacity: 0.4;
+  z-index: 2;
+  cursor: default;
 }
 
 .trk95 .trk-plot-region .trk-grid {
@@ -2033,6 +2313,28 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   box-shadow: inset 1px 0 0 rgb(148 148 148 / 0.14);
 }
 
+/* Today, after the red now line: hairlines drop to about half. Fill stays white.
+   Week columns can add `.trk-future` on cells past now. */
+.trk95 .trk-cell.trk-future {
+  box-shadow: inset 1px 0 0 rgb(176 176 176 / 0.1);
+}
+
+.trk95 .trk-cell.trk-future.trk-cell-tick {
+  box-shadow: inset 1px 0 0 rgb(168 168 168 / 0.11);
+}
+
+.trk95 .trk-cell.trk-future.trk-cell-quarter {
+  box-shadow: inset 1px 0 0 rgb(148 148 148 / 0.14);
+}
+
+.trk95 .trk-cell.trk-future.trk-cell-painted {
+  box-shadow: inset 1px 0 0 rgb(176 176 176 / 0.05);
+}
+
+.trk95 .trk-hour-row.trk-future .trk-plot {
+  box-shadow: inset 0 -1px 0 rgb(176 176 176 / 0.11);
+}
+
 .trk95 .trk-cell-spark {
   animation: trk-spark 110ms linear;
 }
@@ -2100,12 +2402,44 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
 }
 
 .trk95 .trk-marker-y .trk-marker-label {
-  right: 4px;
-  top: -7px;
+  left: 8px;
+  right: auto;
+  top: -5px;
 }
 
 .trk95 .trk-marker-now .trk-marker-label {
   color: #c00;
+}
+
+.trk95 .trk-block-run {
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  pointer-events: none;
+  container-type: inline-size;
+}
+
+.trk95 .trk-block-label {
+  display: block;
+  min-width: 0;
+  padding: 0 4px;
+  overflow: hidden;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.1;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+@container (max-width: 47px) {
+  .trk-block-label {
+    display: none;
+  }
 }
 
 .trk95 .trk-silkscreen {
@@ -2145,13 +2479,25 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   left: auto;
   bottom: auto;
   z-index: 1;
-  flex: 1 1 12rem;
-  min-width: 10rem;
+  flex: 0 1 auto;
+  min-width: max-content;
   max-width: 28rem;
-  margin-left: auto;
-  align-self: stretch;
+  margin-left: 0;
+  align-self: center;
   display: flex;
   align-items: center;
+}
+
+.trk95 .trk-plot-strip > .trk-probe[data-empty="true"] {
+  flex: 0 0 0;
+  width: 0;
+  min-width: 0;
+  max-width: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: transparent;
+  box-shadow: none;
 }
 
 .trk95 .trk-probe[data-empty="true"] {
@@ -2163,10 +2509,82 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   flex-direction: column;
   gap: 5px;
   flex: 0 0 auto;
+  min-width: 0;
+  max-width: 100%;
   margin-top: 6px;
   padding: 4px 6px;
   background: var(--t-surface);
   box-shadow: var(--t-sunken);
+}
+
+.trk95 .trk-cell-dial {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 5px;
+  flex: 0 0 auto;
+  min-width: max-content;
+}
+
+/* Amp dial: 270° travel, two quiet end ticks, one pointer. */
+.trk95 .trk-cell-knob {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  background:
+    conic-gradient(from -135deg, #1c1e20 0 2.5deg, transparent 2.5deg 267.5deg, #1c1e20 267.5deg 270deg, transparent 270deg),
+    radial-gradient(circle, transparent 58%, #b4b8bc 60%, #6e7276 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    0 0 0 1px #4a4e52;
+}
+
+.trk95 .trk-cell-knob:active {
+  cursor: grabbing;
+}
+
+.trk95 .trk-cell-knob:focus-visible {
+  outline: 1px solid #000080;
+  outline-offset: 2px;
+}
+
+.trk95 .trk-cell-knob-face {
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 50%, #1c1e20 0 1.5px, transparent 2px),
+    radial-gradient(circle at 38% 32%, #f4f5f6 0%, #c8ccd0 34%, #8a8e92 72%, #5c6064 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.38),
+    0 0 0 1px #4a4e52;
+}
+
+.trk95 .trk-cell-knob-mark {
+  position: absolute;
+  left: 50%;
+  top: 3px;
+  width: 2px;
+  height: 8px;
+  transform: translateX(-50%);
+  border-radius: 1px;
+  background: #1c1e20;
+  box-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.45);
+}
+
+.trk95 .trk-cell-knob-readout {
+  min-width: 1.8em;
+  color: #1c1e20;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
 }
 
 .trk95 .trk-ribbon-bar {
@@ -2194,7 +2612,25 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   display: flex;
   flex-wrap: wrap;
   gap: 8px 14px;
+  min-width: 0;
+  max-width: 100%;
   font-size: 12px;
+  color: #222;
+}
+
+.trk95 .trk-ribbon-legend > span {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.trk95 .trk-tag-strip {
+  max-width: 100%;
+}
+
+.trk95 .trk-tag-strip-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
   color: #222;
 }
 
@@ -2671,10 +3107,9 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   display: flex;
   align-items: center;
   gap: 6px;
-  min-height: 28px;
-  padding: 4px 5px;
-  background: #2a1020 url("/newvelv.jpg") center / cover;
-  box-shadow: var(--t-sunken);
+  min-height: 0;
+  padding: 0;
+  background: transparent;
 }
 
 .trk95 .trk-selected-plate,
@@ -2695,9 +3130,10 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
 
 .trk95 .trk-selected-plate {
   flex: 1 1 auto;
-  flex-direction: column;
-  justify-content: center;
-  padding: 2px 7px;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 8px;
+  padding: 1px 7px;
 }
 
 .trk95 .trk-detail-plate,
@@ -2766,6 +3202,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
 }
 
 .trk95 .trk-selected-name {
+  flex-shrink: 0;
   font-size: 12px;
   font-weight: bold;
   color: #000;
@@ -2773,6 +3210,9 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
 }
 
 .trk95 .trk-selected-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 10px;
   color: #222;
   text-shadow: none;
@@ -3187,4 +3627,50 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   color: #111;
   font-size: 12px;
   line-height: 1.4;
+}
+
+/* Pen settings: the color sits in a black-mirror well, name beside it. */
+.trk95.trk-pen-settings {
+  width: min(calc(100vw - 24px), 32rem);
+}
+
+.trk95 .trk-pen-mast {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: end;
+  padding: 12px;
+  border-radius: 3px;
+  background:
+    radial-gradient(ellipse at 18% 0%, rgba(125, 255, 196, 0.16), transparent 52%),
+    #070c0a;
+  box-shadow:
+    0 0 0 1px #3a3e42,
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 10px 16px rgba(0, 0, 0, 0.45);
+}
+
+.trk95 .trk-pen-mast label {
+  color: #c5d5cc;
+}
+
+.trk95 .trk-pen-mast input {
+  background: #121816;
+  color: #f4f7f5;
+  border-color: #3a3e42;
+}
+
+.trk95 .trk-detail-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.28);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+.trk95 .trk-detail-bead {
+  display: inline-flex;
+  cursor: pointer;
 }

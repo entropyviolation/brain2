@@ -6,11 +6,13 @@
  *
  * - **Counts as** — nest this pen under another in the same view. Painting still
  *   writes this pen; the grid and Analytics can roll it up to the parent.
- *   Searchable control + Create new pen. One parent (multiselect / parallel
- *   chains are planned, not implemented). Color chain for navigation.
+ *   Searchable control + Create new pen. Several parents can be ticked; the
+ *   first is the display parent. Color chain for navigation.
+ * - **Detail** — the same relationship, seen from the parent. Adding Walk under
+ *   Exercise creates a Walk pen that counts as Exercise. Nesting Walk under
+ *   Exercise adds Walk to Exercise's detail list. Several can apply at once.
  * - **Tags** — cross-scope, and how a pen feeds the Habits tab.
  * - **Default action format** — Done-today templates, separate from habit links.
- * - **Variants** — a finer cut inside this pen.
  */
 "use client"
 
@@ -48,7 +50,7 @@ export function PenSettingsDialog({ scopeId, pen: openedPen, onClose, onDeleted 
   const removePen = useTimeTrackingStore((s) => s.removePen)
   const addPen = useTimeTrackingStore((s) => s.addPen)
   const addTag = useTimeTrackingStore((s) => s.addTag)
-  const setPenParent = useTimeTrackingStore((s) => s.setPenParent)
+  const setPenParents = useTimeTrackingStore((s) => s.setPenParents)
   const habits = useHabitsStore((s) => s.tasks)
 
   const [editingId, setEditingId] = useState(openedPen.id)
@@ -157,19 +159,16 @@ export function PenSettingsDialog({ scopeId, pen: openedPen, onClose, onDeleted 
   return (
     <>
     <Dialog open onOpenChange={guard.handleOpenChange}>
-      <DialogContent className="trk95 trk-dialog sm:max-w-md max-h-[85vh] overflow-y-auto" data-ui-name="Pen settings" data-ui-docs="components/Home/Tracking/README.md" {...unsavedDismissProps(guard.requestClose)}>
-        <DialogHeader>
-          <DialogTitle style={{ color }}>Pen settings · {pen.name}</DialogTitle>
+      <DialogContent className="trk95 trk-dialog trk-pen-settings sm:max-w-lg max-h-[85vh] overflow-y-auto" data-ui-name="Pen settings" data-ui-docs="components/Home/Tracking/README.md" {...unsavedDismissProps(guard.requestClose)}>
+        <DialogHeader className="trk-dialog-head">
+          <DialogTitle>Pen · {name || pen.name}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
-          <div className="grid grid-cols-[1fr_auto] gap-2 items-end">
-            <div>
+          <div className="trk-pen-mast">
+            <ColorSwatch id="pen-color" value={color} onChange={setColor} aria-label="Pen color" size="lg" />
+            <div className="min-w-0">
               <Label htmlFor="pen-name">Name</Label>
               <Input id="pen-name" value={name} onChange={(e) => setName(e.target.value)} />
-            </div>
-            <div>
-              <Label htmlFor="pen-color">Color</Label>
-              <ColorSwatch id="pen-color" value={color} onChange={setColor} aria-label="Pen color" size="lg" />
             </div>
           </div>
 
@@ -201,20 +200,21 @@ export function PenSettingsDialog({ scopeId, pen: openedPen, onClose, onDeleted 
           <div className="trk-section space-y-1.5">
             <Label className="trk-section-title">Counts as</Label>
             <p className="trk-help">
-              Nest this pen under a broader one in <strong>this view</strong>. Painting still writes{" "}
-              <strong>{name || pen.name}</strong> — the grid and Analytics can roll those minutes up to the
-              parent (Ocean Beach can roll up to San Diego; San Diego does not become Ocean Beach). Already-logged
-              time follows the assignment. One parent only; several parallel chains are planned, not built yet.
+              Nest <strong>{name || pen.name}</strong> under broader pens in this view. Tick several.
+              The first is the display parent — Show as follows that chain, and the grid keeps one color.
+              Other parents share the minutes so those rows sum to the block, not past it. Painting still
+              writes this pen. A pen that counts as this one also appears in Detail below.
             </p>
             <PenParentPicker
               pens={parents}
               treePens={scopePens}
-              parentId={livePen?.parentId}
+              parentIds={livePen ? (livePen.parentIds ?? (livePen.parentId ? [livePen.parentId] : [])) : []}
               currentName={name || pen.name}
-              onSelect={(id) => setPenParent(scopeId, pen.id, id)}
+              onSelect={(ids) => setPenParents(scopeId, pen.id, ids)}
               onCreate={(parentName, parentColor) => {
                 const id = addPen(scopeId, { name: parentName, color: parentColor })
-                if (id) setPenParent(scopeId, pen.id, id)
+                const current = livePen?.parentIds ?? (livePen?.parentId ? [livePen.parentId] : [])
+                if (id) setPenParents(scopeId, pen.id, [...current, id])
               }}
             />
             <PenChainVisual pens={scopePens} penId={pen.id} onOpenPen={openPen} />
@@ -279,8 +279,10 @@ export function PenSettingsDialog({ scopeId, pen: openedPen, onClose, onDeleted 
               Break this pen down by…
             </Label>
             <p className="trk-help">
-              Optional finer detail inside {name || pen.name}. More than one can apply to the same minutes, and
-              Analytics shows the pen&apos;s total before splitting it by these.
+              A detail of {name || pen.name} is a pen that counts as it. Add Walk here and Walk appears in the well,
+              counting as {name || pen.name}. Nest Gym under {name || pen.name} and Gym shows up in this list.
+              Several can apply to the same minutes. Double-click a color to open that pen. Analytics shows the
+              total first, then these — including time painted on the detail pen itself.
             </p>
             <Input
               id="pen-variant-label"
@@ -291,13 +293,21 @@ export function PenSettingsDialog({ scopeId, pen: openedPen, onClose, onDeleted 
             />
             <div className="space-y-1">
               {variants.map((variant) => (
-                <div key={variant.id} className="flex items-center gap-2">
-                  <ColorSwatch
-                    value={variant.color || color}
-                    onChange={(next) => updateVariant(scopeId, pen.id, { ...variant, color: next })}
-                    aria-label={`Color for ${variant.name}`}
-                    size="sm"
-                  />
+                <div key={variant.id} className="trk-detail-row">
+                  <span
+                    className="trk-detail-bead"
+                    title={variant.penId ? `Double-click to open ${variant.name}` : variant.name}
+                    onDoubleClick={() => {
+                      if (variant.penId) openPen(variant.penId)
+                    }}
+                  >
+                    <ColorSwatch
+                      value={variant.color || color}
+                      onChange={(next) => updateVariant(scopeId, pen.id, { ...variant, color: next })}
+                      aria-label={`Color for ${variant.name}`}
+                      size="sm"
+                    />
+                  </span>
                   <Input
                     value={variant.name}
                     onChange={(e) => updateVariant(scopeId, pen.id, { ...variant, name: e.target.value })}
@@ -308,7 +318,7 @@ export function PenSettingsDialog({ scopeId, pen: openedPen, onClose, onDeleted 
                     size="sm"
                     variant="ghost"
                     className="h-7 px-1.5 text-destructive"
-                    title={`Remove ${variant.name} — tracked time is kept, it just loses this label`}
+                    title={`Remove ${variant.name} — the pen stays in the well and no longer counts as this one. Painted minutes stay.`}
                     onClick={() => removeVariant(scopeId, pen.id, variant.id)}
                   >
                     <Trash2 className="h-3.5 w-3.5" />

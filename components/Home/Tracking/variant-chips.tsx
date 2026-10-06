@@ -9,6 +9,10 @@
  * Used in three places, always meaning the same thing: the TimeGrid palette
  * (what the next stroke will be labeled), the entry editor (what this block was),
  * and the pen settings dialog (managing the list itself).
+ *
+ * Each option is a pen that counts as this one. Double-click a chip to open
+ * that pen's settings. A single click still toggles it; the second click of a
+ * double-click toggles back, so the selection is unchanged.
  */
 "use client"
 
@@ -24,6 +28,8 @@ interface VariantChipsProps {
   onToggle: (variantId: string) => void
   /** Omit to hide the inline creator. */
   onCreate?: (name: string) => void
+  /** Double-click opens the pen this detail is. */
+  onOpenPen?: (penId: string) => void
   size?: "sm" | "md"
   className?: string
 }
@@ -32,7 +38,7 @@ export function variantChipColor(pen: TrackPen, variant: PenVariant): string {
   return variant.color || pen.color
 }
 
-export function VariantChips({ pen, selected, onToggle, onCreate, size = "md", className }: VariantChipsProps) {
+export function VariantChips({ pen, selected, onToggle, onCreate, onOpenPen, size = "md", className }: VariantChipsProps) {
   const [draft, setDraft] = useState("")
   const [adding, setAdding] = useState(false)
   const variants = pen.variants ?? []
@@ -61,6 +67,13 @@ export function VariantChips({ pen, selected, onToggle, onCreate, size = "md", c
             key={variant.id}
             type="button"
             onClick={() => onToggle(variant.id)}
+            onDoubleClick={(event) => {
+              if (!variant.penId || !onOpenPen) return
+              event.preventDefault()
+              event.stopPropagation()
+              onOpenPen(variant.penId)
+            }}
+            title={variant.penId ? `${variant.name}. Double-click to open this pen` : variant.name}
             aria-pressed={on}
             className={`flex items-center gap-1 rounded border ${pad} ${on ? "text-white" : "bg-background hover:bg-muted"}`}
             style={on ? { background: color, borderColor: color } : { borderColor: `${color}80` }}

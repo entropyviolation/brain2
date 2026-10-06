@@ -27,6 +27,7 @@ import { minutesToTimeString, timeStringToMinutes } from "@/lib/time-entries"
 import { useTrackingViewPrefs } from "@/components/Home/Tracking/tracking-view-prefs"
 import { snapshotsEqual } from "@/lib/unsaved-changes"
 import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
+import { openPenSettings } from "@/components/Home/Tracking/open-pen-settings"
 import { PenSwatches } from "@/components/Home/Tracking/pen-swatches"
 import { VariantChips } from "@/components/Home/Tracking/variant-chips"
 import { ClockTime } from "@/components/Home/Tracking/now-time-button"
@@ -82,12 +83,15 @@ export function LogActivityDialog({
   defaultStartMin,
   defaultEndMin,
   onClose,
+  contentClassName,
 }: {
   dateKey: string
   scopeId: string
   defaultStartMin: number
   defaultEndMin: number
   onClose: () => void
+  /** Extra DialogContent classes (e.g. Analytics `an-popup` for crisp titles). */
+  contentClassName?: string
 }) {
   const scopes = useTimeTrackingStore((s) => s.scopes)
   const tags = useTimeTrackingStore((s) => s.tags)
@@ -199,7 +203,14 @@ export function LogActivityDialog({
   return (
     <>
     <Dialog open onOpenChange={guard.handleOpenChange}>
-      <DialogContent className="trk95 trk-dialog sm:max-w-md max-h-[85vh] overflow-y-auto" data-ui-name="Log activity" data-ui-docs="components/Home/Tracking/README.md" {...unsavedDismissProps(guard.requestClose)}>
+      <DialogContent
+        className={["trk95 trk-dialog sm:max-w-md max-h-[85vh] overflow-y-auto", contentClassName]
+          .filter(Boolean)
+          .join(" ")}
+        data-ui-name="Log activity"
+        data-ui-docs="components/Home/Tracking/README.md"
+        {...unsavedDismissProps(guard.requestClose)}
+      >
         <DialogHeader>
           <DialogTitle>Log {scope.name.toLowerCase()}</DialogTitle>
         </DialogHeader>
@@ -261,6 +272,7 @@ export function LogActivityDialog({
                 const id = addPen(scope.id, { name, color })
                 if (id) pickPen(id)
               }}
+              onOpenPen={(id) => openPenSettings(scope.id, id)}
               sortMode={penSort}
               compact
             />
@@ -282,6 +294,7 @@ export function LogActivityDialog({
                   const id = addVariant(scope.id, pen.id, name)
                   if (id) setVariantIds((current) => [...current, id])
                 }}
+                onOpenPen={(id) => openPenSettings(scope.id, id)}
               />
             </div>
           )}

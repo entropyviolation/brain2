@@ -10,10 +10,12 @@
  * bump persist or rewrite paint math. `penWellExpanded` is the one-line vs
  * wrapped bead well (Expand / Conceal, right of Tree). `notesWellExpanded`
  * is the day-notes metal well (hidden log vs a tall composer and history).
+ * `superimposeByScope` remembers a faint second view **per active scope**.
+ * Painting still writes the active view. The map is not tied to the viewed day.
  */
 "use client"
 
-import { useSyncExternalStore } from "react"
+import { useEffect, useSyncExternalStore } from "react"
 import { timeStringToMinutes } from "@/lib/time-entries"
 import { persistKey, readAliasedLocal, writeAliasedLocal } from "@/lib/storage-keys"
 import { DEFAULT_PEN_TRAY, isPenTrayId, parsePenTray, type PenTrayId } from "./pen-tray-bg"
@@ -33,6 +35,11 @@ export type TrackingViewPrefs = {
   penWellExpanded: boolean
   /** Day notes fully open (tall composer + history). Off hides the log. */
   notesWellExpanded: boolean
+  /**
+   * Overlay scope id keyed by the view you were standing on.
+   * Missing key, empty, unknown, or a value equal to the key means off.
+   */
+  superimposeByScope: Record<string, string>
 }
 
 /** View-settings copy for the Fill clocks. Persist keys stay the four fields above. */
@@ -51,6 +58,7 @@ export const DEFAULT_TRACKING_VIEW_PREFS: TrackingViewPrefs = {
   penTray: DEFAULT_PEN_TRAY,
   penWellExpanded: false,
   notesWellExpanded: false,
+  superimposeByScope: {},
 }
 
 const KEY = persistKey("tracking-view-prefs")
@@ -62,12 +70,36 @@ function isClock(value: unknown): value is string {
   return typeof value === "string" && timeStringToMinutes(value) !== null
 }
 
+/** Drop empty and self-overlay entries. Leave every other scope alone. */
+export function sanitizeSuperimposeMap(value: unknown): Record<string, string> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {}
+  const out: Record<string, string> = {}
+  for (const [key, raw] of Object.entries(value as Record<string, unknown>)) {
+    if (!key || typeof raw !== "string" || !raw || raw === key) continue
+    out[key] = raw
+  }
+  return out
+}
+
+function mapsEqual(a: Record<string, string>, b: Record<string, string>): boolean {
+  const keys = Object.keys(a)
+  if (keys.length !== Object.keys(b).length) return false
+  return keys.every((key) => a[key] === b[key])
+}
+
+function clonePrefs(prefs: TrackingViewPrefs): TrackingViewPrefs {
+  return { ...prefs, superimposeByScope: { ...prefs.superimposeByScope } }
+}
+
 function load(): TrackingViewPrefs {
-  if (typeof window === "undefined") return DEFAULT_TRACKING_VIEW_PREFS
+  if (typeof window === "undefined") return clonePrefs(DEFAULT_TRACKING_VIEW_PREFS)
   try {
     const raw = readAliasedLocal(KEY)
-    if (!raw) return { ...DEFAULT_TRACKING_VIEW_PREFS }
+    if (!raw) return clonePrefs(DEFAULT_TRACKING_VIEW_PREFS)
     const parsed = JSON.parse(raw) as Partial<TrackingViewPrefs>
+    // The old global `superimpose` / `superimposeScopeId` is ignored. Copying
+    // that one lens onto every view is the bug this map replaces. A blob
+    // without `superimposeByScope` reads as all-off.
     return {
       fillFrom: isClock(parsed.fillFrom) ? parsed.fillFrom : DEFAULT_TRACKING_VIEW_PREFS.fillFrom,
       fillTo: isClock(parsed.fillTo) ? parsed.fillTo : DEFAULT_TRACKING_VIEW_PREFS.fillTo,
@@ -76,9 +108,10 @@ function load(): TrackingViewPrefs {
       penTray: parsePenTray(parsed.penTray),
       penWellExpanded: parsed.penWellExpanded === true,
       notesWellExpanded: parsed.notesWellExpanded === true,
+      superimposeByScope: sanitizeSuperimposeMap(parsed.superimposeByScope),
     }
   } catch {
-    return { ...DEFAULT_TRACKING_VIEW_PREFS }
+    return clonePrefs(DEFAULT_TRACKING_VIEW_PREFS)
   }
 }
 
@@ -94,13 +127,14 @@ function sameAsDefault(prefs: TrackingViewPrefs): boolean {
     prefs.weekFillTo === DEFAULT_TRACKING_VIEW_PREFS.weekFillTo &&
     prefs.penTray === DEFAULT_TRACKING_VIEW_PREFS.penTray &&
     prefs.penWellExpanded === DEFAULT_TRACKING_VIEW_PREFS.penWellExpanded &&
-    prefs.notesWellExpanded === DEFAULT_TRACKING_VIEW_PREFS.notesWellExpanded
+    prefs.notesWellExpanded === DEFAULT_TRACKING_VIEW_PREFS.notesWellExpanded &&
+    mapsEqual(prefs.superimposeByScope, DEFAULT_TRACKING_VIEW_PREFS.superimposeByScope)
   )
 }
 
 export function getTrackingViewPrefs(): TrackingViewPrefs {
   if (typeof window !== "undefined" && !readAliasedLocal(KEY)) {
-    if (!sameAsDefault(snapshot)) snapshot = { ...DEFAULT_TRACKING_VIEW_PREFS }
+    if (!sameAsDefault(snapshot)) snapshot = clonePrefs(DEFAULT_TRACKING_VIEW_PREFS)
   }
   return snapshot
 }
@@ -115,6 +149,10 @@ export function setTrackingViewPrefs(patch: Partial<TrackingViewPrefs>): void {
     penTray: isPenTrayId(patch.penTray) ? patch.penTray : snapshot.penTray,
     penWellExpanded: typeof patch.penWellExpanded === "boolean" ? patch.penWellExpanded : snapshot.penWellExpanded,
     notesWellExpanded: typeof patch.notesWellExpanded === "boolean" ? patch.notesWellExpanded : snapshot.notesWellExpanded,
+    superimposeByScope:
+      patch.superimposeByScope === undefined
+        ? snapshot.superimposeByScope
+        : sanitizeSuperimposeMap(patch.superimposeByScope),
   }
   try {
     writeAliasedLocal(KEY, JSON.stringify(snapshot))
@@ -122,6 +160,19 @@ export function setTrackingViewPrefs(patch: Partial<TrackingViewPrefs>): void {
     /* private mode — prefs still apply for this session */
   }
   emit()
+}
+
+/**
+ * Write the overlay for one view. `null` (or the view itself) deletes only
+ * that key. Other views' entries stay.
+ */
+export function setScopeSuperimpose(activeScopeId: string, overlayScopeId: string | null): void {
+  if (!activeScopeId) return
+  const next = { ...snapshot.superimposeByScope }
+  if (!overlayScopeId || overlayScopeId === activeScopeId) delete next[activeScopeId]
+  else next[activeScopeId] = overlayScopeId
+  if (mapsEqual(snapshot.superimposeByScope, next)) return
+  setTrackingViewPrefs({ superimposeByScope: next })
 }
 
 /** Tests: re-read localStorage (or defaults) after a store reset. */
@@ -137,4 +188,35 @@ export function subscribeTrackingViewPrefs(listener: () => void): () => void {
 
 export function useTrackingViewPrefs(): TrackingViewPrefs {
   return useSyncExternalStore(subscribeTrackingViewPrefs, getTrackingViewPrefs, () => DEFAULT_TRACKING_VIEW_PREFS)
+}
+
+/**
+ * The other view this scope wants drawn faintly, or null when that entry is
+ * missing, empty, unknown, or the scope itself.
+ */
+export function resolveSuperimposeScopeId(
+  activeScopeId: string | undefined,
+  scopeIds: readonly string[],
+  prefs: Pick<TrackingViewPrefs, "superimposeByScope">,
+): string | null {
+  if (!activeScopeId) return null
+  const id = prefs.superimposeByScope[activeScopeId]
+  if (!id || id === activeScopeId) return null
+  if (!scopeIds.includes(id)) return null
+  return id
+}
+
+/**
+ * Resolved overlay for the view you are standing on. A self-entry is deleted
+ * for that scope only — switching views never clears the rest of the map.
+ */
+export function useSuperimposeScope(activeScopeId: string | undefined, scopeIds: readonly string[]): string | null {
+  const prefs = useTrackingViewPrefs()
+  const resolved = resolveSuperimposeScopeId(activeScopeId, scopeIds, prefs)
+  useEffect(() => {
+    if (!activeScopeId) return
+    const stored = prefs.superimposeByScope[activeScopeId]
+    if (stored && stored === activeScopeId) setScopeSuperimpose(activeScopeId, null)
+  }, [activeScopeId, prefs.superimposeByScope])
+  return resolved
 }

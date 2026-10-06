@@ -31,6 +31,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useTaskStore } from "@/lib/task-store"
+import { tasksForDayLog } from "@/lib/item-slices"
 import { rememberWorld } from "@/lib/action-history"
 import { useEventStore } from "@/lib/event-store"
 import {
@@ -43,13 +44,17 @@ import {
 import { format, addDays, addWeeks, subDays, subWeeks } from "date-fns"
 import type { CalendarEvent, Task, TimeLogEntry } from "@/lib/types"
 import { AgendaGrid } from "@/components/Home/Plan/agenda-grid"
+import { EventDialog } from "@/components/Home/Plan/event-dialog"
+import { PLAN_DEFAULT_EVENT_COLOR } from "@/components/Home/Plan/plan-chip"
 import { EntryDialog } from "@/components/Home/Tracking/entry-dialog"
+import { openPenSettings } from "@/components/Home/Tracking/open-pen-settings"
 import { ConfirmPlannedDialog } from "@/components/Home/Tracking/confirm-planned-dialog"
 import { ScreenTimeEmptyHint } from "@/components/Home/Tracking/screentime-empty-hint"
 import { TrackingPeriodNav } from "@/components/Home/Tracking/tracking-period-nav"
 import { DayLogWeek } from "@/components/Home/Tracking/daylog-week"
-import { displayedPen, findPen, useTimeTrackingStore } from "@/lib/time-tracking-store"
-import { assignedPenIds, entriesForDay, entryDisplayName, formatDuration, minutesToLabel, timeStringToMinutes } from "@/lib/time-entries"
+import { trackedAgendaBlocks } from "@/components/Home/Tracking/tracked-agenda-blocks"
+import { useTimeTrackingStore } from "@/lib/time-tracking-store"
+import { entriesForDay, formatDuration, timeStringToMinutes } from "@/lib/time-entries"
 import { penTotals, totalsFor } from "@/lib/tracking-summary"
 import { usePenActionSync } from "@/lib/pen-action-sync"
 import "./tracking-chrome.css"
@@ -66,17 +71,22 @@ function logMatchesDay(logDate: string, day: Date): boolean {
 export function ActualDayView({
   currentDate: controlledDate,
   setCurrentDate: setControlledDate,
+  lockDate = false,
 }: {
   currentDate?: Date
   setCurrentDate?: (date: Date) => void
+  /** Stay on this date. Week stepping stays hidden. */
+  lockDate?: boolean
 } = {}) {
   usePenActionSync()
   const [internalDate, setInternalDate] = useState(new Date())
   const currentDate = controlledDate ?? internalDate
   const setCurrentDate = setControlledDate ?? setInternalDate
-  const tasks = useTaskStore((s) => s.tasks)
+  const tasks = useTaskStore((s) => tasksForDayLog(s.tasks, [currentDate]))
   const updateTask = useTaskStore((s) => s.updateTask)
   const events = useEventStore((s) => s.events)
+  const addEvent = useEventStore((s) => s.addEvent)
+  const updateEvent = useEventStore((s) => s.updateEvent)
   const trackingScopes = useTimeTrackingStore((s) => s.scopes)
   const trackingEntries = useTimeTrackingStore((s) => s.entries)
   const activeScopeId = useTimeTrackingStore((s) => s.activeScopeId)
@@ -97,29 +107,8 @@ export function ActualDayView({
     [paintedEntries, trackingScope, dayKey],
   )
   const trackedBlocks = useMemo(
-    () =>
-      paintedEntries.map((entry) => {
-        const pen = trackingScope ? displayedPen(trackingScope, entry.penId) ?? findPen([trackingScope], entry.penId) : undefined
-        const leaf = trackingScope ? findPen([trackingScope], entry.penId) : undefined
-        const assumed = entry.precision === "estimated"
-        const extra = trackingScope
-          ? assignedPenIds(entry)
-              .slice(1)
-              .map((id) => findPen([trackingScope], id)?.name)
-              .filter(Boolean)
-          : []
-        return {
-          id: entry.id,
-          label: `${entryDisplayName(entry, leaf?.name || pen?.name || "Tracked")}${assumed ? " ≈" : ""}`,
-          startMinutes: entry.startMin,
-          durationMinutes: Math.max(1, entry.endMin - entry.startMin),
-          color: pen?.color,
-          sublabel: `${minutesToLabel(entry.startMin)}–${minutesToLabel(entry.endMin)} · ${formatDuration(entry.endMin - entry.startMin)}${
-            leaf && leaf.id !== pen?.id ? ` · ${leaf.name}` : ""
-          }${extra.length ? ` · also ${extra.join(", ")}` : ""}${assumed ? " · assumed" : ""}`,
-        }
-      }),
-    [paintedEntries, trackingScope],
+    () => trackedAgendaBlocks(trackingEntries, trackingScope, dayKey),
+    [trackingEntries, trackingScope, dayKey],
   )
 
   const plannedTasks = useMemo(
@@ -155,11 +144,25 @@ export function ActualDayView({
   const [logNotes, setLogNotes] = useState("")
   const [openEntryId, setOpenEntryId] = useState<string | null>(null)
   const [span, setSpan] = useState<"day" | "week">("day")
+  const [showEventDialog, setShowEventDialog] = useState(false)
+  const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null)
+  const [newEvent, setNewEvent] = useState({
+    title: "",
+    startTime: "09:00",
+    endTime: "10:00",
+    type: "event" as CalendarEvent["type"],
+    date: currentDate,
+    endDate: undefined as Date | undefined,
+    isAllDay: false,
+    location: "",
+    description: "",
+    color: PLAN_DEFAULT_EVENT_COLOR,
+  })
 
   const weekStart = getWeekStartDate(currentDate)
   const weekDates = getWeekDates(weekStart)
   const weekLabel = `${format(weekStart, "MMM d")} – ${format(weekDates[6], "MMM d, yyyy")}`
-  const isWeek = span === "week"
+  const isWeek = lockDate ? false : span === "week"
 
   const logActualTime = (task: Task) => {
     const mins = Number.parseInt(logMinutes) || 0
@@ -184,7 +187,7 @@ export function ActualDayView({
   }
 
   const handleCreateTimeLog = (taskId: string, hour: number, minute: number) => {
-    const task = tasks.find((t) => t.id === taskId)
+    const task = useTaskStore.getState().tasks.find((t) => t.id === taskId)
     if (!task) return
     const duration = task.estimatedDuration ?? 30
     const startTotal = hour * 60 + minute
@@ -207,7 +210,7 @@ export function ActualDayView({
   }
 
   const handleUpdateTimeLog = (taskId: string, logId: string, updates: Partial<TimeLogEntry>) => {
-    const task = tasks.find((t) => t.id === taskId)
+    const task = useTaskStore.getState().tasks.find((t) => t.id === taskId)
     if (!task) return
     const logs = (task.timeLogs || []).map((l) => (l.id === logId ? { ...l, ...updates } : l))
     const totalActual = logs.reduce((s, l) => s + l.durationMinutes, 0)
@@ -242,6 +245,25 @@ export function ActualDayView({
     })
   }
 
+  const openCreateEvent = (date: Date, hour: number) => {
+    const startH = Math.min(23, Math.max(0, hour))
+    const endH = Math.min(24, startH + 1)
+    setEditingEvent(null)
+    setNewEvent({
+      title: "",
+      startTime: `${startH.toString().padStart(2, "0")}:00`,
+      endTime: `${endH.toString().padStart(2, "0")}:00`,
+      type: "event",
+      date,
+      endDate: undefined,
+      isAllDay: false,
+      location: "",
+      description: "",
+      color: PLAN_DEFAULT_EVENT_COLOR,
+    })
+    setShowEventDialog(true)
+  }
+
   const openDayFromWeek = (date: Date) => {
     setCurrentDate(date)
     setSpan("day")
@@ -256,6 +278,7 @@ export function ActualDayView({
         onPrevious={() => setCurrentDate(isWeek ? subWeeks(currentDate, 1) : subDays(currentDate, 1))}
         onNext={() => setCurrentDate(isWeek ? addWeeks(currentDate, 1) : addDays(currentDate, 1))}
         onToday={() => setCurrentDate(new Date())}
+        locked={lockDate}
         meta={`Planned ${totalEstimated}m · task logs ${totalLogged}m`}
       />
 
@@ -266,7 +289,16 @@ export function ActualDayView({
           <span>{Math.round(paintedTotals.coverage)}% of the day</span>
           {paintedPens.slice(0, 5).map((pen) => (
             <span key={pen.id} className="trk-daylog-pen">
-              <span className="trk-log-pad" style={{ background: pen.color }} aria-hidden />
+              <span
+                className="trk-log-pad"
+                style={{ background: pen.color }}
+                title={`Double-click to open ${pen.name} settings`}
+                onDoubleClick={(event) => {
+                  event.preventDefault()
+                  event.stopPropagation()
+                  openPenSettings(trackingScope.id, pen.id)
+                }}
+              />
               {pen.name} {formatDuration(pen.minutes)}
             </span>
           ))}
@@ -278,14 +310,14 @@ export function ActualDayView({
       )}
 
       <div className="trk-daylog-sheet">
-        <div className="daylog-week-switch trk-span-switch" role="toolbar" aria-label="Day Log span">
+        {!lockDate && <div className="daylog-week-switch trk-span-switch" role="toolbar" aria-label="Day Log span">
           <button type="button" aria-pressed={!isWeek} onClick={() => setSpan("day")}>
             Day
           </button>
           <button type="button" aria-pressed={isWeek} onClick={() => setSpan("week")}>
             Week
           </button>
-        </div>
+        </div>}
         <p className="trk-silk">Plan vs tracked</p>
         <p className="trk-daylog-caption">
           Solid color is tracked. Dashed is planned — click to confirm it happened. Amber is time logged onto a
@@ -298,6 +330,7 @@ export function ActualDayView({
             onTrackedBlockClick={setOpenEntryId}
             onTaskClick={(task, date) => openConfirmForTask(task, date)}
             onEventClick={(event, date) => openConfirmForEvent(event, date)}
+            onCreateEvent={openCreateEvent}
           />
         ) : (
           <AgendaGrid
@@ -309,7 +342,7 @@ export function ActualDayView({
             trackedBlocks={trackedBlocks}
             onTrackedBlockClick={setOpenEntryId}
             onTaskClick={(id) => {
-              const task = plannedTasks.find((t) => t.id === id) || tasks.find((t) => t.id === id)
+              const task = plannedTasks.find((t) => t.id === id) || useTaskStore.getState().tasks.find((t) => t.id === id)
               if (!task) return
               openConfirmForTask(task)
             }}
@@ -354,7 +387,7 @@ export function ActualDayView({
 
       {loggingTaskId &&
         (() => {
-          const task = plannedTasks.find((t) => t.id === loggingTaskId) || tasks.find((t) => t.id === loggingTaskId)
+          const task = plannedTasks.find((t) => t.id === loggingTaskId) || useTaskStore.getState().tasks.find((t) => t.id === loggingTaskId)
           if (!task) return null
           return (
             <Card>
@@ -390,6 +423,24 @@ export function ActualDayView({
         })()}
 
       {openEntry && <EntryDialog entry={openEntry} onClose={() => setOpenEntryId(null)} />}
+      <EventDialog
+        open={showEventDialog}
+        onOpenChange={setShowEventDialog}
+        editingEvent={editingEvent}
+        setEditingEvent={setEditingEvent}
+        newEvent={newEvent}
+        setNewEvent={setNewEvent}
+        events={events}
+        setEvents={(nextEvents) => {
+          if (editingEvent) {
+            const updated = nextEvents.find((event) => event.id === editingEvent.id)
+            if (updated) updateEvent(updated)
+          } else {
+            const created = nextEvents[nextEvents.length - 1]
+            if (created) addEvent(created)
+          }
+        }}
+      />
       {confirming && trackingScope && (
         <ConfirmPlannedDialog
           dateKey={confirming.dateKey}

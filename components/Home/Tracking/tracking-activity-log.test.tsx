@@ -167,7 +167,7 @@ describe("TrackingActivityLog", () => {
     fireEvent.change(within(dialog).getByLabelText("Start"), { target: { value: "16:00" } })
     fireEvent.change(within(dialog).getByLabelText("End"), { target: { value: "16:30" } })
     fireEvent.change(within(dialog).getByLabelText("New pen name"), { target: { value: "Trash" } })
-    fireEvent.click(within(dialog).getByRole("button", { name: "Add pen" }))
+    fireEvent.click(within(dialog).getByRole("button", { name: "+ New pen" }))
     fireEvent.click(within(dialog).getByRole("button", { name: "Log block" }))
 
     const pens = useTimeTrackingStore.getState().scopes.find((s) => s.id === "activity")!.pens
@@ -183,7 +183,8 @@ describe("TrackingActivityLog", () => {
     fireEvent.click(screen.getByRole("button", { name: "Log activity" }))
     const dialog = screen.getByRole("dialog")
     fireEvent.change(within(dialog).getByLabelText("Search pens"), { target: { value: "Balboa Park" } })
-    fireEvent.click(within(dialog).getByRole("button", { name: 'Create “Balboa Park”' }))
+    expect(within(dialog).getByLabelText("New pen name")).toHaveValue("Balboa Park")
+    fireEvent.click(within(dialog).getByRole("button", { name: "+ New pen" }))
     fireEvent.change(within(dialog).getByLabelText("Start"), { target: { value: "10:00" } })
     fireEvent.change(within(dialog).getByLabelText("End"), { target: { value: "11:00" } })
     fireEvent.click(within(dialog).getByRole("button", { name: "Log block" }))

@@ -24,7 +24,7 @@ describe("PenColorNowStrip", () => {
     await user.click(screen.getByRole("option", { name: /Work · Location/ }))
     expect(screen.getByText("Location · starts this second")).toBeInTheDocument()
 
-    await user.click(screen.getByRole("button", { name: "Working on right now" }))
+    await user.click(screen.getByRole("button", { name: "Start this pen's clock" }))
     const session = usePenColorSessionStore.getState().session
     expect(session?.penId).toBe("loc-work")
     expect(session?.startedAt).toBeTruthy()
@@ -39,7 +39,7 @@ describe("PenColorNowStrip", () => {
     await user.click(screen.getByRole("button", { name: "Stop working on Work" }))
     expect(usePenColorSessionStore.getState().session).toBeNull()
     expect(useTimeTrackingStore.getState().entries.some((e) => e.penId === "loc-work")).toBe(true)
-    expect(screen.getByRole("button", { name: "Working on right now" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Start this pen's clock" })).toBeInTheDocument()
   })
 
   it("creates a typed name on the active view and selects that pen", async () => {
@@ -57,7 +57,7 @@ describe("PenColorNowStrip", () => {
     const pens = useTimeTrackingStore.getState().scopes.find((s) => s.id === scopeId)?.pens ?? []
     const created = pens.find((p) => p.name === "Balboa Park")
     expect(created).toBeTruthy()
-    expect(screen.getByRole("button", { name: "Working on right now" })).toBeEnabled()
+    expect(screen.getByRole("button", { name: "Start this pen's clock" })).toBeEnabled()
     expect(screen.getByText(new RegExp(`${scopeName} · starts this second`))).toBeInTheDocument()
   })
 })

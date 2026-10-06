@@ -3,7 +3,8 @@
  *
  * Opening a block is not a trip through the catalog. Default: only the colors
  * already on this block (primary + secondaries). The full well — search, add
- * new, every pen, tree — waits behind **add pen color**.
+ * new, every pen, tree — waits behind **add pen color**. Double-click a color
+ * to open that pen's settings.
  */
 "use client"
 
@@ -13,6 +14,7 @@ import { Label } from "@/components/ui/label"
 import { assignedPenIds } from "@/lib/time-entries"
 import type { PenSortMode } from "@/lib/pen-sort"
 import type { TrackPen, TrackTag } from "@/lib/time-tracking-store"
+import { PEN_COLOR_OPEN_TITLE } from "@/components/Home/Tracking/open-pen-settings"
 import { PenSwatches } from "@/components/Home/Tracking/pen-swatches"
 import { SecondaryPensField } from "@/components/Home/Tracking/secondary-pens-field"
 import "./tracking-chrome.css"
@@ -21,10 +23,12 @@ function AssociatedBead({
   pen,
   primary,
   onPromote,
+  onOpenPen,
 }: {
   pen: TrackPen
   primary: boolean
   onPromote: (id: string) => void
+  onOpenPen?: (id: string) => void
 }) {
   return (
     <span className="trk-pen-slot">
@@ -34,7 +38,16 @@ function AssociatedBead({
         data-selected={primary ? "true" : "false"}
         data-block-pen={primary ? "primary" : "secondary"}
         onClick={() => onPromote(pen.id)}
-        title={primary ? `${pen.name} — primary (grid color)` : `${pen.name} — also on this block; click to make primary`}
+        onDoubleClick={(event) => {
+          event.preventDefault()
+          event.stopPropagation()
+          onOpenPen?.(pen.id)
+        }}
+        title={
+          primary
+            ? `${pen.name} — primary (grid color). ${PEN_COLOR_OPEN_TITLE}`
+            : `${pen.name} — also on this block; click to make primary. ${PEN_COLOR_OPEN_TITLE}`
+        }
         className="trk-pen"
         style={{ background: pen.color }}
       >
@@ -66,6 +79,7 @@ export function BlockPenSection({
   onPrimary,
   onSecondaries,
   onCreate,
+  onOpenPen,
   sortMode = "recent",
 }: {
   pens: TrackPen[]
@@ -75,6 +89,7 @@ export function BlockPenSection({
   onPrimary: (id: string) => void
   onSecondaries: (ids: string[]) => void
   onCreate: (name: string, color: string) => void
+  onOpenPen?: (id: string) => void
   sortMode?: PenSortMode
 }) {
   const [libraryOpen, setLibraryOpen] = useState(false)
@@ -103,8 +118,8 @@ export function BlockPenSection({
       <Label className="trk-section-title">Pen</Label>
       <p className="trk-help">
         {libraryOpen
-          ? "Primary color on the grid. Search or create a pen, then attach extras."
-          : "Colors already on this block. Primary paints the grid."}
+          ? "Primary color on the grid. Search or create a pen, then attach extras. Double-click a color to open that pen."
+          : "Colors already on this block. Primary paints the grid. Double-click a color to open that pen."}
       </p>
       <div className="trk-pen-row" role="group" aria-label="Pens on this block">
         {associated.map((pen) => (
@@ -113,6 +128,7 @@ export function BlockPenSection({
             pen={pen}
             primary={pen.id === primaryId}
             onPromote={promoteOnBlock}
+            onOpenPen={onOpenPen}
           />
         ))}
       </div>
@@ -135,6 +151,7 @@ export function BlockPenSection({
             selectedId={primaryId}
             onSelect={pickFromLibrary}
             onCreate={onCreate}
+            onOpenPen={onOpenPen}
             sortMode={sortMode}
             compact
           />

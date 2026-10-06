@@ -1,8 +1,10 @@
 import { render, screen, fireEvent } from "@testing-library/react"
-import { beforeEach, describe, expect, it } from "vitest"
+import userEvent from "@testing-library/user-event"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { trackedMinutesForTags } from "@/lib/tracked-time"
+import { moodPenColor } from "@/lib/mood-reading"
 import { EntryDialog } from "./entry-dialog"
 
 const KEY = "2026-09-17"
@@ -10,6 +12,11 @@ const KEY = "2026-09-17"
 function paint(startMin = 540, endMin = 600, penId = "act-work", variantIds?: string[]) {
   useTimeTrackingStore.getState().paintMinutes(KEY, "activity", startMin, endMin, penId, variantIds)
   return useTimeTrackingStore.getState().entriesFor(KEY, "activity")[0]
+}
+
+function paintMood() {
+  useTimeTrackingStore.getState().paintMinutes(KEY, "mood", 540, 600, "mood-meh")
+  return useTimeTrackingStore.getState().entriesFor(KEY, "mood")[0]!
 }
 
 const reload = (id: string) => useTimeTrackingStore.getState().entries.find((e) => e.id === id)
@@ -185,6 +192,113 @@ describe("EntryDialog", () => {
     render(<EntryDialog entry={paint()} onClose={() => {}} />)
     fireEvent.click(screen.getByRole("button", { name: "Delete block" }))
     expect(useTimeTrackingStore.getState().entriesFor(KEY, "activity")).toHaveLength(0)
+  })
+
+  it("hides the stretch on activity and shows the guide on a mood block", () => {
+    const { unmount } = render(<EntryDialog entry={paint()} onClose={() => {}} />)
+    expect(screen.queryByTestId("mood-stretch")).not.toBeInTheDocument()
+    expect(screen.queryByText("Using a stretch")).not.toBeInTheDocument()
+    unmount()
+
+    render(<EntryDialog entry={paintMood()} onClose={() => {}} />)
+    expect(screen.getByTestId("mood-stretch")).toBeInTheDocument()
+    expect(screen.getByText("Using a stretch")).toBeInTheDocument()
+    expect(screen.getByText(/practice of description, not a treatment/)).toBeInTheDocument()
+    expect(screen.getByText(/None of this has to be carried past the stretch/)).toBeInTheDocument()
+    const pens = screen.getByRole("group", { name: "Mood pens" })
+    expect(pens).toHaveTextContent("Great")
+    expect(pens).toHaveTextContent("Good")
+    expect(pens).toHaveTextContent("Meh")
+    expect(pens).toHaveTextContent("Low")
+  })
+
+  it("creates a pen for a new mood name and leaves the sentence out of notes", () => {
+    const entry = paintMood()
+    render(<EntryDialog entry={entry} onClose={() => {}} />)
+    fireEvent.change(screen.getByLabelText("Body"), { target: { value: "a tight chest" } })
+    expect(screen.getByTestId("mood-sentence").textContent).toMatch(/etc\.$/)
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Thin" } })
+    fireEvent.click(screen.getByRole("button", { name: "Save block" }))
+
+    const saved = reload(entry.id)
+    const pens = useTimeTrackingStore.getState().scopes.find((s) => s.id === "mood")?.pens ?? []
+    const pen = pens.find((item) => item.name === "Thin")
+    expect(pen?.color).toBe(moodPenColor("Thin"))
+    expect(saved?.penId).toBe(pen?.id)
+    expect(saved?.moodReading).toMatchObject({ word: "Thin", sensation: "a tight chest" })
+    expect(saved?.notes).toBeUndefined()
+    expect(saved?.moodReading && "sentence" in saved.moodReading).toBe(false)
+    expect(pens.some((item) => item.id === "mood-great")).toBe(true)
+    expect(pens.some((item) => item.id === "mood-good")).toBe(true)
+    expect(pens.some((item) => item.id === "mood-meh")).toBe(true)
+    expect(pens.some((item) => item.id === "mood-low")).toBe(true)
+  })
+
+  it("offers a lighter map and keeps the shorthand unless it is accepted", () => {
+    const entry = paintMood()
+    render(<EntryDialog entry={entry} onClose={() => {}} />)
+    fireEvent.change(screen.getByLabelText("Body"), { target: { value: "a tight chest" } })
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "hopeless" } })
+    fireEvent.change(screen.getByLabelText("Shorthand"), { target: { value: `This stretch, ${KEY}: I am hopeless` } })
+    expect(screen.queryByRole("button", { name: "Accept" })).not.toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText("Shorthand"), { target: { value: "I am hopeless" } })
+    expect(screen.getByText(/A lighter map, still true/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Accept" }))
+    fireEvent.click(screen.getByRole("button", { name: "Save block" }))
+
+    const saved = reload(entry.id)
+    expect(saved?.moodReading?.narrative).toBe("I am hopeless")
+    expect(saved?.moodReading?.reframe).toMatch(/a tight chest/)
+    expect(saved?.moodReading?.reframe).toMatch(/still true|hopeless/)
+    expect(saved?.notes).toBeUndefined()
+  })
+
+  it("docks on the right instead of centering", () => {
+    render(<EntryDialog entry={paint()} onClose={() => {}} />)
+    const dialog = screen.getByRole("dialog")
+    expect(dialog).toHaveClass("trk-entry-drawer")
+    expect(dialog).toHaveAttribute("data-presentation", "drawer")
+    const style = getComputedStyle(dialog)
+    expect(style.position).toBe("fixed")
+    expect(style.right).toBe("0px")
+    expect(style.top).toBe("0px")
+    expect(style.left).not.toBe("50%")
+    expect(style.transform).toBe("none")
+    const overlay = document.querySelector(".trk-entry-overlay")
+    expect(overlay).toBeTruthy()
+    expect(getComputedStyle(overlay as Element).pointerEvents).toBe("none")
+  })
+
+  it("replaces the open block when another entry is passed", () => {
+    const store = useTimeTrackingStore.getState()
+    store.paintMinutes(KEY, "activity", 540, 600, "act-work")
+    store.paintMinutes(KEY, "activity", 600, 660, "act-rest")
+    const entries = useTimeTrackingStore.getState().entriesFor(KEY, "activity")
+    const work = entries.find((e) => e.startMin === 540)!
+    const rest = entries.find((e) => e.startMin === 600)!
+    const { rerender } = render(<EntryDialog entry={work} onClose={() => {}} />)
+    expect(screen.getByText(/Work · 9:00 AM – 10:00 AM/)).toBeInTheDocument()
+
+    rerender(<EntryDialog entry={rest} onClose={() => {}} />)
+    expect(screen.getByText(/Rest · 10:00 AM – 11:00 AM/)).toBeInTheDocument()
+    expect(screen.queryByText(/Work · 9:00 AM – 10:00 AM/)).not.toBeInTheDocument()
+  })
+
+  it("asks before closing a dirty drawer and ignores outside presses", async () => {
+    const user = userEvent.setup()
+    const onClose = vi.fn()
+    render(<EntryDialog entry={paint()} onClose={onClose} />)
+    await user.type(screen.getByLabelText("Notes"), "dream")
+    fireEvent.pointerDown(document.body)
+    expect(onClose).not.toHaveBeenCalled()
+    expect(screen.queryByRole("heading", { name: "Unsaved changes" })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: "Close" }))
+    expect(screen.getByRole("heading", { name: "Unsaved changes" })).toBeInTheDocument()
+    expect(onClose).not.toHaveBeenCalled()
+    await user.click(screen.getByRole("button", { name: "Cancel" }))
+    expect(screen.getByLabelText("Notes")).toHaveValue("dream")
   })
 })
 

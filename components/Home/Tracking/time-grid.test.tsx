@@ -1,11 +1,14 @@
-import { act, fireEvent, render, screen } from "@testing-library/react"
+import { act, fireEvent, render, screen, within } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { useSleepStore } from "@/lib/sleep-store"
 import { fetchDayClimate } from "@/lib/weather-client"
 import { useSunTimesStore } from "@/lib/sun-times-store"
+import { useUndoHotkey } from "@/hooks/useUndoHotkey"
 import { TimeGrid } from "./time-grid"
+import { useTrackingUndoHotkey } from "./tracking-undo"
+import { getTrackingViewPrefs, resetTrackingViewPrefs, setScopeSuperimpose } from "./tracking-view-prefs"
 
 vi.mock("@/lib/weather-client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/weather-client")>()
@@ -22,6 +25,7 @@ describe("TimeGrid", () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date("2026-06-20T12:00:00"))
     resetAllStores()
+    resetTrackingViewPrefs()
     fetchDayClimateMock.mockResolvedValue(null)
   })
 
@@ -74,22 +78,15 @@ describe("TimeGrid", () => {
     expect(screen.getByText("Clear day")).toBeInTheDocument()
   })
 
-  it("offers 1m 5m 10m cell size on the grid chrome, not only in View settings", () => {
+  it("offers cell size on the grid chrome dial, not only in View settings", () => {
     render(<TimeGrid />)
-    expect(screen.getByRole("button", { name: "1m" })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "5m" })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "10m" })).toBeInTheDocument()
-    const five = screen.getByRole("button", { name: "5m" })
-    expect(five).toHaveAttribute("aria-pressed", "true")
-    expect(five).toHaveClass("trk-cell-size-btn")
-    expect(five).toHaveClass("trk-cell-size-btn-on")
-    fireEvent.click(screen.getByRole("button", { name: "10m" }))
+    const knob = screen.getByRole("slider", { name: "Cell size" })
+    expect(knob).toHaveAttribute("aria-valuenow", "5")
+    expect(knob).toHaveAttribute("aria-valuetext", "5 minutes")
+    expect(knob.parentElement).toHaveTextContent("5m")
+    fireEvent.keyDown(knob, { key: "ArrowRight" })
     expect(useTimeTrackingStore.getState().gridStep).toBe(10)
-    const ten = screen.getByRole("button", { name: "10m" })
-    expect(ten).toHaveAttribute("aria-pressed", "true")
-    expect(ten).toHaveClass("trk-cell-size-btn-on")
-    expect(five).toHaveAttribute("aria-pressed", "false")
-    expect(five).not.toHaveClass("trk-cell-size-btn-on")
+    expect(knob).toHaveAttribute("aria-valuenow", "10")
     fireEvent.click(screen.getByRole("button", { name: /^View$/ }))
     expect(screen.getByLabelText("Day fill starts")).toHaveValue("09:00")
     expect(screen.getByLabelText("Day fill ends")).toHaveValue("10:00")
@@ -141,6 +138,31 @@ describe("TimeGrid", () => {
     expect(useTimeTrackingStore.getState().entries).toHaveLength(0)
   })
 
+  it("keeps an existing pen when a stroke passes through it and then leaves", () => {
+    const store = useTimeTrackingStore.getState()
+    store.setSelectedPen("act-work")
+    store.setGridStep(5)
+    store.paintMinutes("2026-06-20", "activity", 10 * 60, 10 * 60 + 30, "act-work")
+    render(<TimeGrid />)
+
+    const cell = (minute: number) => document.querySelector(`[data-minute="${minute}"]`) as HTMLElement
+    const painted = cell(10 * 60)
+    expect(painted).toBeTruthy()
+    const kept = painted.style.background
+
+    fireEvent.mouseDown(cell(10 * 60 + 20))
+    fireEvent.mouseOver(cell(10 * 60))
+    fireEvent.mouseOver(cell(11 * 60))
+
+    expect(cell(10 * 60).style.background).toBe(kept)
+    expect(kept).not.toBe("")
+    expect(cell(11 * 60).style.background).not.toBe("")
+
+    fireEvent.mouseUp(window)
+    const still = useTimeTrackingStore.getState().entries.filter((e) => e.penId === "act-work")
+    expect(still.some((e) => e.startMin <= 10 * 60 && e.endMin > 10 * 60)).toBe(true)
+  })
+
   it("shows the day total and the pen breakdown from the shared summary", () => {
     useTimeTrackingStore.getState().paintMinutes("2026-06-20", "activity", 540, 660, "act-work")
     render(<TimeGrid />)
@@ -154,10 +176,11 @@ describe("TimeGrid", () => {
 
   it("shows Company as its own view", () => {
     render(<TimeGrid />)
-    expect(screen.getByRole("button", { name: /^Company$/ })).toBeInTheDocument()
-    fireEvent.click(screen.getByRole("button", { name: /^Company$/ }))
-    expect(screen.getByTitle("Alone")).toBeInTheDocument()
-    expect(screen.getByTitle("In conversation")).toBeInTheDocument()
+    const modes = screen.getByRole("toolbar", { name: "Tracking view modes" })
+    expect(within(modes).getByRole("button", { name: /^Company$/ })).toBeInTheDocument()
+    fireEvent.click(within(modes).getByRole("button", { name: /^Company$/ }))
+    expect(screen.getByTitle(/^Alone\b/)).toBeInTheDocument()
+    expect(screen.getByTitle(/^In conversation\b/)).toBeInTheDocument()
   })
 
   it("adds a new view from the inline field instead of window.prompt", () => {
@@ -165,7 +188,7 @@ describe("TimeGrid", () => {
     fireEvent.click(screen.getByTitle("Add view"))
     fireEvent.change(screen.getByLabelText("New view name"), { target: { value: "Frame" } })
     fireEvent.click(screen.getByRole("button", { name: "Add" }))
-    expect(screen.getByRole("button", { name: /^Frame$/ })).toBeInTheDocument()
+    expect(within(screen.getByRole("toolbar", { name: "Tracking view modes" })).getByRole("button", { name: /^Frame$/ })).toBeInTheDocument()
     expect(useTimeTrackingStore.getState().scopes.some((s) => s.name === "Frame")).toBe(true)
   })
 
@@ -174,7 +197,8 @@ describe("TimeGrid", () => {
     render(<TimeGrid />)
     const names = [...document.querySelectorAll(".trk-pen-well .trk-pen-name")].map((el) => el.textContent)
     expect(names[0]).toBe("Rest")
-    fireEvent.click(screen.getByRole("button", { name: "Sort pens A–Z" }))
+    fireEvent.click(screen.getByRole("button", { name: /Sort pens/ }))
+    fireEvent.click(screen.getByRole("option", { name: "Sort pens A–Z" }))
     const az = [...document.querySelectorAll(".trk-pen-well .trk-pen-name")].map((el) => el.textContent)
     expect(az[0]).toBe("Chores")
   })
@@ -237,7 +261,7 @@ describe("TimeGrid", () => {
     const region = document.querySelector(".trk-plot-region") as HTMLElement
     const grid = document.querySelector(".trk-grid-full-day") as HTMLElement
     const span = screen.getByRole("toolbar", { name: "Time grid span" })
-    const five = screen.getByRole("button", { name: "5m" })
+    const five = screen.getByRole("slider", { name: "Cell size" })
     const fill = screen.getByRole("button", { name: /Fill .* with / })
     expect(strip).toBeTruthy()
     expect(region).toBeTruthy()
@@ -355,6 +379,52 @@ describe("TimeGrid", () => {
     expect(tick.closest(".trk-day-clock-markers")).toBeNull()
   })
 
+  it("opens the editor from a discrete-event tick and saves the note", () => {
+    useTimeTrackingStore.getState().paintMinutes(
+      "2026-06-20",
+      "activity",
+      12 * 60 + 17,
+      12 * 60 + 17,
+      "act-work",
+      undefined,
+      undefined,
+      undefined,
+      { kind: "instant", title: "dab pen", notes: "intake" },
+    )
+    render(<TimeGrid />)
+    fireEvent.click(screen.getByRole("button", { name: /dab pen/ }))
+    expect(screen.getByLabelText("When")).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText("Notes"), { target: { value: "edited note" } })
+    fireEvent.click(screen.getByRole("button", { name: "Save event" }))
+    const saved = useTimeTrackingStore.getState().entries.find((row) => row.title === "dab pen")
+    expect(saved?.notes).toBe("edited note")
+    expect(saved?.kind).toBe("instant")
+  })
+
+  it("edits a log range from its block", () => {
+    useTimeTrackingStore.getState().paintMinutes(
+      "2026-06-20",
+      "activity",
+      7 * 60 + 30,
+      7 * 60 + 45,
+      "act-work",
+      undefined,
+      undefined,
+      undefined,
+      { title: "shower", notes: "log" },
+    )
+    render(<TimeGrid />)
+    fireEvent.mouseDown(document.querySelector('[data-minute="450"]') as HTMLElement)
+    expect(screen.getByLabelText("Start")).toBeInTheDocument()
+    expect(screen.getByLabelText("End")).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText("Notes"), { target: { value: "longer shower" } })
+    fireEvent.click(screen.getByRole("button", { name: "Save block" }))
+    const saved = useTimeTrackingStore.getState().entries.find((row) => row.title === "shower")
+    expect(saved?.notes).toBe("longer shower")
+    expect(saved?.startMin).toBe(7 * 60 + 30)
+    expect(saved?.endMin).toBe(7 * 60 + 45)
+  })
+
   it("uses a plan-style period bar with Today and Clear day trailing", () => {
     render(<TimeGrid />)
     const period = document.querySelector(".trk-period") as HTMLElement
@@ -417,5 +487,127 @@ describe("TimeGrid", () => {
     fireEvent.mouseDown(document.querySelector('[data-minute="60"]') as HTMLElement)
     expect(screen.getByLabelText("Fell asleep")).toBeInTheDocument()
     expect(screen.getByLabelText("Woke up")).toBeInTheDocument()
+  })
+
+  it("undoes the last stroke on Cmd+Z after the plot takes focus, and leaves a text field alone", () => {
+    function Host() {
+      useUndoHotkey()
+      useTrackingUndoHotkey()
+      return <TimeGrid />
+    }
+    useTimeTrackingStore.getState().setSelectedPen("act-work")
+    render(<Host />)
+    const search = screen.getByLabelText("Search pens")
+    search.focus()
+    const cell = document.querySelector('[data-minute="600"]') as HTMLElement
+    expect(cell).toBeTruthy()
+    fireEvent.mouseDown(cell)
+    fireEvent.mouseUp(window)
+    expect(useTimeTrackingStore.getState().entries.some((e) => e.penId === "act-work")).toBe(true)
+    expect(document.activeElement).not.toBe(search)
+
+    fireEvent.keyDown(document.activeElement ?? window, { key: "z", metaKey: true })
+    expect(useTimeTrackingStore.getState().entries.some((e) => e.penId === "act-work")).toBe(false)
+    fireEvent.keyDown(window, { key: "z", metaKey: true })
+    expect(useTimeTrackingStore.getState().entries.some((e) => e.penId === "act-work")).toBe(false)
+    fireEvent.keyDown(window, { key: "z", metaKey: true, shiftKey: true })
+    expect(useTimeTrackingStore.getState().entries.some((e) => e.penId === "act-work" && e.startMin === 600)).toBe(true)
+
+    search.focus()
+    fireEvent.keyDown(search, { key: "z", metaKey: true })
+    expect(useTimeTrackingStore.getState().entries.some((e) => e.penId === "act-work")).toBe(true)
+  })
+
+  it("undoes a paint while sleep sync is mounted without putting the stroke back", () => {
+    function Host() {
+      useUndoHotkey()
+      useTrackingUndoHotkey()
+      return <TimeGrid />
+    }
+    useSleepStore.getState().setBedtime("2026-06-20", -30, "definite")
+    useSleepStore.getState().setWakeTime("2026-06-20", 7 * 60, "definite")
+    render(<Host />)
+    useTimeTrackingStore.getState().paintMinutes("2026-06-20", "activity", 600, 660, "act-work")
+    const grid = document.querySelector(".trk-grid") as HTMLElement
+    grid.focus()
+    fireEvent.keyDown(grid, { key: "z", metaKey: true })
+    expect(useTimeTrackingStore.getState().entries.some((e) => e.penId === "act-work")).toBe(false)
+    fireEvent.keyDown(grid, { key: "z", metaKey: true, shiftKey: true })
+    expect(useTimeTrackingStore.getState().entries.some((e) => e.penId === "act-work" && e.startMin === 600)).toBe(true)
+  })
+
+  it("draws a faint superimpose layer and still paints the active view", () => {
+    // Activity already has a block, so opening the grid stays on Activity
+    // instead of jumping to the only occupied view.
+    useTimeTrackingStore.getState().paintMinutes("2026-06-20", "activity", 8 * 60, 9 * 60, "act-work")
+    useTimeTrackingStore.getState().paintMinutes("2026-06-20", "location", 10 * 60, 11 * 60, "loc-home")
+    useTimeTrackingStore.getState().setActiveScope("activity")
+    setScopeSuperimpose("activity", "location")
+    render(<TimeGrid />)
+    const mode = screen.getByRole("toolbar", { name: "Tracking view modes" })
+    const bar = screen.getByRole("toolbar", { name: "Superimpose" })
+    const grid = document.querySelector(".trk-grid") as HTMLElement
+    expect(mode.compareDocumentPosition(bar) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(bar.compareDocumentPosition(grid) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(within(bar).queryByRole("button", { name: /^Activity$/ })).toBeNull()
+    expect(within(bar).getByRole("button", { name: /^Location$/ })).toHaveAttribute("aria-pressed", "true")
+    const cell = document.querySelector('[data-minute="600"]') as HTMLElement
+    expect(grid.getAttribute("data-superimpose")).toBe("location")
+    expect(cell.querySelector(".trk-super")).toBeTruthy()
+    expect(cell.querySelector(".trk-super")).toHaveClass("trk-super")
+    expect(cell.querySelector(".trk-super")).toHaveStyle({ backgroundColor: "#16a34a" })
+
+    useTimeTrackingStore.getState().setSelectedPen("act-work")
+    fireEvent.mouseDown(cell)
+    fireEvent.mouseUp(window)
+    const entries = useTimeTrackingStore.getState().entries
+    expect(entries.some((e) => e.scopeId === "activity" && e.penId === "act-work" && e.startMin === 600)).toBe(true)
+    expect(entries.filter((e) => e.scopeId === "location")).toHaveLength(1)
+    expect(entries.find((e) => e.scopeId === "location")).toMatchObject({ penId: "loc-home", startMin: 10 * 60, endMin: 11 * 60 })
+  })
+
+  it("shows a quiet grid when the superimposed view has nothing logged", () => {
+    setScopeSuperimpose("activity", "mood")
+    render(<TimeGrid />)
+    expect(document.querySelector(".trk-super")).toBeNull()
+    expect(screen.queryByText(/error/i)).not.toBeInTheDocument()
+    expect(document.querySelector("[data-superimpose='mood']")).toBeTruthy()
+  })
+
+  it("keeps each view's overlay across view and day changes", () => {
+    useTimeTrackingStore.getState().paintMinutes("2026-06-20", "activity", 8 * 60, 9 * 60, "act-work")
+    useTimeTrackingStore.getState().paintMinutes("2026-06-20", "location", 10 * 60, 11 * 60, "loc-home")
+    useTimeTrackingStore.getState().setActiveScope("activity")
+    setScopeSuperimpose("activity", "location")
+    render(<TimeGrid />)
+    expect(document.querySelector("[data-superimpose]")?.getAttribute("data-superimpose")).toBe("location")
+
+    act(() => {
+      useTimeTrackingStore.getState().setActiveScope("company")
+    })
+    expect(document.querySelector("[data-superimpose]")).toBeNull()
+    expect(getTrackingViewPrefs().superimposeByScope).toEqual({ activity: "location" })
+    const companyBar = screen.getByRole("toolbar", { name: "Superimpose" })
+    expect(within(companyBar).getByRole("button", { name: "Off" })).toHaveAttribute("aria-pressed", "true")
+    expect(within(companyBar).queryByRole("button", { name: /^Company$/ })).toBeNull()
+
+    act(() => {
+      useTimeTrackingStore.getState().setActiveScope("activity")
+    })
+    expect(document.querySelector("[data-superimpose]")?.getAttribute("data-superimpose")).toBe("location")
+
+    fireEvent.click(screen.getByRole("button", { name: "Next day" }))
+    expect(getTrackingViewPrefs().superimposeByScope).toEqual({ activity: "location" })
+    expect(document.querySelector("[data-superimpose]")?.getAttribute("data-superimpose")).toBe("location")
+
+    fireEvent.click(within(screen.getByRole("toolbar", { name: "Superimpose" })).getByRole("button", { name: "Off" }))
+    expect(getTrackingViewPrefs().superimposeByScope).toEqual({})
+    expect(document.querySelector("[data-superimpose]")).toBeNull()
+
+    act(() => {
+      useTimeTrackingStore.getState().setActiveScope("company")
+    })
+    expect(getTrackingViewPrefs().superimposeByScope).toEqual({})
+    expect(document.querySelector("[data-superimpose]")).toBeNull()
   })
 })

@@ -70,4 +70,23 @@ describe("DayLogWeek", () => {
 
     expect(screen.getByText("Work")).toBeInTheDocument()
   })
+
+  it("asks to create an event when an empty hour is clicked", () => {
+    const onCreateEvent = vi.fn()
+    render(
+      <div className="trk95">
+        <DayLogWeek
+          currentDate={currentDate}
+          onOpenDay={vi.fn()}
+          onTrackedBlockClick={vi.fn()}
+          onTaskClick={vi.fn()}
+          onEventClick={vi.fn()}
+          onCreateEvent={onCreateEvent}
+        />
+      </div>,
+    )
+    const monday = weekDates[0]
+    fireEvent.click(screen.getByRole("button", { name: `New event ${format(monday, "EEE d")} 09:00` }))
+    expect(onCreateEvent).toHaveBeenCalledWith(monday, 9)
+  })
 })

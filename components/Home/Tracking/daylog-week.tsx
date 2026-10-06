@@ -1,9 +1,10 @@
 /**
  * components/Home/Tracking/daylog-week.tsx — Day Log week of plan vs tracked
  *
- * Seven columns for the week containing `currentDate`. Same data rules as the
- * single-day Day Log (painted tracking, dashed plan, amber task timeLogs) —
- * not the Time Grid paint week. Date headings open that day in day mode.
+ * Seven columns for the week containing `currentDate`. The today column follows
+ * the wall clock, not the selected day. Same data rules as the single-day Day
+ * Log (painted tracking, dashed plan, amber task timeLogs) — not the Time Grid
+ * paint week. Date headings open that day in day mode.
  */
 "use client"
 
@@ -18,18 +19,12 @@ import {
   sameCalendarDay,
 } from "@/lib/date-utils"
 import { useTaskStore } from "@/lib/task-store"
+import { tasksForDayLog } from "@/lib/item-slices"
 import { useEventStore } from "@/lib/event-store"
-import { displayedPen, findPen, useTimeTrackingStore, type TrackScope } from "@/lib/time-tracking-store"
-import {
-  assignedPenIds,
-  entriesForDay,
-  entryDisplayName,
-  formatDuration,
-  minutesToLabel,
-  timeStringToMinutes,
-  type TimeEntry,
-} from "@/lib/time-entries"
-import { useCurrentDate } from "@/lib/use-current-date"
+import { trackedAgendaBlocks } from "@/components/Home/Tracking/tracked-agenda-blocks"
+import { useTimeTrackingStore } from "@/lib/time-tracking-store"
+import { timeStringToMinutes } from "@/lib/time-entries"
+import { useLiveToday } from "@/lib/use-current-date"
 import "./daylog-week.css"
 
 const HOUR_H = 28
@@ -39,54 +34,26 @@ function logMatchesDay(logDate: string, day: Date): boolean {
   return logDate === formatLocalDateKey(day) || logDate === formatDateKey(day)
 }
 
-type TrackedChip = {
-  id: string
-  label: string
-  startMinutes: number
-  durationMinutes: number
-  color?: string
-  sublabel?: string
-}
-
-function trackedChipsForDay(day: Date, entries: TimeEntry[], scope: TrackScope | undefined): TrackedChip[] {
-  if (!scope) return []
-  const dayKey = formatLocalDateKey(day)
-  return entriesForDay(entries, dayKey, scope.id).map((entry) => {
-    const pen = displayedPen(scope, entry.penId) ?? findPen([scope], entry.penId)
-    const leaf = findPen([scope], entry.penId)
-    const assumed = entry.precision === "estimated"
-    const extra = assignedPenIds(entry)
-      .slice(1)
-      .map((id) => findPen([scope], id)?.name)
-      .filter(Boolean)
-    return {
-      id: entry.id,
-      label: `${entryDisplayName(entry, leaf?.name || pen?.name || "Tracked")}${assumed ? " ≈" : ""}`,
-      startMinutes: entry.startMin,
-      durationMinutes: Math.max(1, entry.endMin - entry.startMin),
-      color: pen?.color,
-      sublabel: `${minutesToLabel(entry.startMin)}–${minutesToLabel(entry.endMin)} · ${formatDuration(entry.endMin - entry.startMin)}${
-        leaf && leaf.id !== pen?.id ? ` · ${leaf.name}` : ""
-      }${extra.length ? ` · also ${extra.join(", ")}` : ""}${assumed ? " · assumed" : ""}`,
-    }
-  })
-}
-
 export function DayLogWeek({
   currentDate,
   onOpenDay,
   onTrackedBlockClick,
   onTaskClick,
   onEventClick,
+  onCreateEvent,
 }: {
   currentDate: Date
   onOpenDay: (date: Date) => void
   onTrackedBlockClick: (id: string) => void
   onTaskClick: (task: Task, date: Date) => void
   onEventClick: (event: CalendarEvent, date: Date) => void
+  /** Empty hour — same create gesture as Plan day. */
+  onCreateEvent?: (date: Date, hour: number) => void
 }) {
-  const { currentDate: today } = useCurrentDate()
-  const tasks = useTaskStore((s) => s.tasks)
+  const today = useLiveToday()
+  const weekStart = getWeekStartDate(currentDate)
+  const weekDates = getWeekDates(weekStart)
+  const tasks = useTaskStore((s) => tasksForDayLog(s.tasks, weekDates))
   const events = useEventStore((s) => s.events)
   const trackingScopes = useTimeTrackingStore((s) => s.scopes)
   const trackingEntries = useTimeTrackingStore((s) => s.entries)
@@ -94,14 +61,11 @@ export function DayLogWeek({
   const confirmedEventIds = useTimeTrackingStore((s) => s.confirmedEventIds)
   const trackingScope = trackingScopes.find((s) => s.id === activeScopeId) ?? trackingScopes[0]
 
-  const weekStart = getWeekStartDate(currentDate)
-  const weekDates = getWeekDates(weekStart)
-
   const columns = useMemo(() => {
     return weekDates.map((date) => {
       const planned = tasks.filter((t) => !t.completed && t.scheduledDate && sameCalendarDay(t.scheduledDate, date))
       const dayEvents = events.filter((e) => sameCalendarDay(e.date, date) && !confirmedEventIds.includes(e.id))
-      const tracked = trackedChipsForDay(date, trackingEntries, trackingScope)
+      const tracked = trackedAgendaBlocks(trackingEntries, trackingScope, formatLocalDateKey(date))
       const logs: { task: Task; log: TimeLogEntry }[] = []
       for (const task of tasks) {
         for (const log of task.timeLogs || []) {
@@ -177,9 +141,20 @@ export function DayLogWeek({
             data-today={col.isToday ? "true" : "false"}
             style={{ height: 24 * HOUR_H }}
           >
-            {HOURS.map((hour) => (
-              <div key={hour} className="daylog-week-hour" style={{ height: HOUR_H }} aria-hidden />
-            ))}
+            {HOURS.map((hour) =>
+              onCreateEvent ? (
+                <button
+                  key={hour}
+                  type="button"
+                  className="daylog-week-hour"
+                  style={{ height: HOUR_H }}
+                  aria-label={`New event ${format(col.date, "EEE d")} ${hour.toString().padStart(2, "0")}:00`}
+                  onClick={() => onCreateEvent(col.date, hour)}
+                />
+              ) : (
+                <div key={hour} className="daylog-week-hour" style={{ height: HOUR_H }} aria-hidden />
+              ),
+            )}
 
             {col.tracked.map((block) => (
               <button

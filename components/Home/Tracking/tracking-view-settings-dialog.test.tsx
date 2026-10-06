@@ -1,11 +1,9 @@
 import { fireEvent, render, screen } from "@testing-library/react"
 import { beforeEach, describe, expect, it } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
-import { PEN_TRAY_IDS, PEN_TRAY_META } from "./pen-tray-bg"
 import {
   getTrackingViewPrefs,
   resetTrackingViewPrefs,
-  setTrackingViewPrefs,
   TRACKING_FILL_CLOCK_LABELS,
 } from "./tracking-view-prefs"
 import { TrackingViewSettingsDialog } from "./tracking-view-settings-dialog"
@@ -15,33 +13,11 @@ beforeEach(() => {
   resetTrackingViewPrefs()
 })
 
-describe("TrackingViewSettingsDialog pen tray picker", () => {
-  it("lists every curated tray and defaults to Cat traces, not velvet", () => {
+describe("TrackingViewSettingsDialog pen well", () => {
+  it("does not offer a pen-tray photograph", () => {
     render(<TrackingViewSettingsDialog scopeId="activity" onClose={() => {}} />)
-    const group = screen.getByRole("radiogroup", { name: "Pen tray photograph" })
-    const options = screen.getAllByRole("radio")
-    expect(options).toHaveLength(PEN_TRAY_IDS.length)
-    expect(PEN_TRAY_IDS).not.toContain("velvet")
-    expect(screen.queryByRole("radio", { name: /velvet/i })).not.toBeInTheDocument()
-    for (const id of PEN_TRAY_IDS) {
-      expect(screen.getByRole("radio", { name: PEN_TRAY_META[id].label })).toBeInTheDocument()
-    }
-    expect(screen.getByRole("radio", { name: "Cat traces" })).toHaveAttribute("aria-checked", "true")
-    expect(group.querySelectorAll("[aria-checked='true']")).toHaveLength(1)
-  })
-
-  it("persists a thumbnail pick onto tracking-view-prefs", () => {
-    render(<TrackingViewSettingsDialog scopeId="activity" onClose={() => {}} />)
-    fireEvent.click(screen.getByRole("radio", { name: "Pewter" }))
-    expect(getTrackingViewPrefs().penTray).toBe("pewter")
-    expect(screen.getByRole("radio", { name: "Pewter" })).toHaveAttribute("aria-checked", "true")
-    expect(screen.getByRole("radio", { name: "Cat traces" })).toHaveAttribute("aria-checked", "false")
-  })
-
-  it("shows the saved tray as pressed", () => {
-    setTrackingViewPrefs({ penTray: "xray" })
-    render(<TrackingViewSettingsDialog scopeId="activity" onClose={() => {}} />)
-    expect(screen.getByRole("radio", { name: "X-ray" })).toHaveAttribute("aria-checked", "true")
+    expect(screen.queryByRole("radiogroup", { name: "Pen tray photograph" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("radio", { name: "Cat traces" })).not.toBeInTheDocument()
   })
 })
 
@@ -89,5 +65,13 @@ describe("TrackingViewSettingsDialog layout and fill clocks", () => {
       weekFillFrom: "07:00",
       weekFillTo: "18:30",
     })
+  })
+
+  it("does not offer a second superimpose control", () => {
+    render(<TrackingViewSettingsDialog scopeId="activity" onClose={() => {}} />)
+    expect(screen.queryByText("Superimpose")).not.toBeInTheDocument()
+    expect(screen.queryByRole("group", { name: "Superimposed view" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Off" })).not.toBeInTheDocument()
+    expect(getTrackingViewPrefs().superimposeByScope).toEqual({})
   })
 })

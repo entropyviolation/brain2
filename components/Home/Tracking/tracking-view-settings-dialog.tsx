@@ -2,10 +2,10 @@
  * components/Home/Tracking/tracking-view-settings-dialog.tsx — Settings for this view
  *
  * Distinct from pen settings. How the grid looks: cell size, typed fill
- * defaults, which pens are hiding in the well, photographed plate under the
- * pen tray. Infinite scroll lives on the Time Grid toolbar next to Day/Week —
- * not here. It does not rename or recolor a pen — that lives next to the big
- * selected-pen swatch.
+ * defaults, and which pens are hiding in the well. Superimpose lives on the
+ * Time Grid, under the view-mode bar — not in this popup. Infinite scroll
+ * lives on the Time Grid toolbar next to Day/Week — not here. It does not
+ * rename or recolor a pen — that lives next to the selected-pen swatch.
  */
 "use client"
 
@@ -19,10 +19,8 @@ import {
   useTrackingViewPrefs,
   setTrackingViewPrefs,
 } from "@/components/Home/Tracking/tracking-view-prefs"
-import { PEN_TRAY_IDS, PEN_TRAY_META, parsePenTray, penTrayStyle } from "@/components/Home/Tracking/pen-tray-bg"
 import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
 import "./tracking-chrome.css"
-import "./pen-tray-bg.css"
 
 function StepButtons<T extends number>({
   steps,
@@ -183,34 +181,6 @@ export function TrackingViewSettingsDialog({
                   />
                 </div>
               </div>
-            </div>
-          </div>
-
-          <div className="trk-section space-y-2">
-            <Label className="trk-section-title">Pen tray</Label>
-            <p className="trk-help">Photograph behind the pens. Time Grid stays white.</p>
-            <div className="trk-tray-grid" role="radiogroup" aria-label="Pen tray photograph">
-              {PEN_TRAY_IDS.map((id) => {
-                const option = PEN_TRAY_META[id]
-                const selected = parsePenTray(prefs.penTray) === id
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    role="radio"
-                    className="trk-tray-chip"
-                    data-ink={option.ink}
-                    style={penTrayStyle(id)}
-                    aria-checked={selected}
-                    aria-pressed={selected}
-                    aria-label={option.label}
-                    title={option.hint}
-                    onClick={() => setTrackingViewPrefs({ penTray: id })}
-                  >
-                    <span className="trk-tray-chip-label">{option.label}</span>
-                  </button>
-                )
-              })}
             </div>
           </div>
 

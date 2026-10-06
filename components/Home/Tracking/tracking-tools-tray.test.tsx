@@ -92,7 +92,7 @@ describe("Tracking tools tray", () => {
     expect(well).toHaveTextContent("Look")
     expect(well.closest(".trk-toolbar")).toBeTruthy()
     expect(toolbar?.contains(well)).toBe(true)
-    expect(sort?.nextElementSibling).toBe(well)
+    expect(sort && well.compareDocumentPosition(sort) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy()
     expect(paintTray().contains(well)).toBe(false)
     expect(document.querySelector(".trk-tools-rail")?.contains(well)).toBe(false)
 

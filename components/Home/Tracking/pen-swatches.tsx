@@ -1,19 +1,20 @@
 /**
  * components/Home/Tracking/pen-swatches.tsx — Searchable pen picker
  *
- * Pens sit as beads on a photographed well. Search flattens
- * matches with their path. Recent / A–Z / Tree is chosen by the palette;
- * a query always flattens. Creating a pen lives here so Log activity does
- * not bounce you back to the grid. The palette keeps this row hidden until
- * **New pen**; dialogs still show it whenever `onCreate` is passed.
- * `expanded` (palette only) unwraps the bead row; dialogs leave it open.
+ * Pens sit as named beads in a plain sunken well. Search flattens matches
+ * with their path. Recent / A–Z / Tree is chosen by the palette; a query
+ * always flattens. **+ New pen** sits under the well. The palette shows that
+ * row whenever the well is expanded. Collapsed, it appears only when a search
+ * misses, labeled **Create new pen**, with the query already in the name.
+ * Dialogs always show the row. `expanded` (palette only) unwraps the beads.
  */
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import { Plus } from "lucide-react"
 import { ColorSwatch } from "@/components/ui/color-swatch"
 import { Input } from "@/components/ui/input"
+import { PEN_COLOR_OPEN_TITLE } from "@/components/Home/Tracking/open-pen-settings"
+import { inkOnFill } from "@/components/Home/Tracking/trk-instrument"
 import { ancestorChain } from "@/lib/pen-tree"
 import { orderPens, orderedChildren, type PenSortMode } from "@/lib/pen-sort"
 import { PEN_PALETTE, type TrackPen, type TrackTag } from "@/lib/time-tracking-store"
@@ -26,6 +27,7 @@ function PenBead({
   tags,
   indent = 0,
   onSelect,
+  onOpenPen,
 }: {
   pen: TrackPen
   selected: boolean
@@ -33,48 +35,56 @@ function PenBead({
   tags: TrackTag[]
   indent?: number
   onSelect: (id: string) => void
+  onOpenPen?: (id: string) => void
 }) {
   const penTags = tags.filter((t) => pen.tags?.includes(t.id))
   const title = path ? `${path} › ${pen.name}` : penTags.length ? `${pen.name} · tags: ${penTags.map((t) => t.name).join(", ")}` : pen.name
+  const ink = inkOnFill(pen.color)
   return (
     <span className="trk-pen-slot">
       <button
         type="button"
         data-no95
         data-selected={selected ? "true" : "false"}
+        data-dark={ink === "#ffffff" ? "true" : "false"}
+        data-ink={ink === "#ffffff" ? "light" : "dark"}
         onClick={() => onSelect(pen.id)}
-        title={title}
+        onDoubleClick={(event) => {
+          event.preventDefault()
+          event.stopPropagation()
+          onOpenPen?.(pen.id)
+        }}
+        title={onOpenPen ? `${title}. ${PEN_COLOR_OPEN_TITLE}` : title}
         className="trk-pen"
         data-indent={indent ? "true" : "false"}
         style={{
           background: pen.color,
+          color: ink,
           marginLeft: indent ? indent * 10 : undefined,
         }}
       >
-        <span
-          className="trk-pen-bead"
-          style={{
-            background: pen.color,
-            backgroundImage: pen.image ? `url("${pen.image}")` : undefined,
-            backgroundSize: "cover",
-          }}
-          aria-hidden
-        />
+        {pen.image ? (
+          <span
+            className="trk-pen-bead"
+            style={{
+              backgroundColor: pen.color,
+              backgroundImage: `url("${pen.image}")`,
+              backgroundSize: "cover",
+            }}
+            aria-hidden
+          />
+        ) : null}
         {path ? <span className="trk-pen-meta">{path} ›</span> : null}
         <span className="trk-pen-name">{pen.name}</span>
       {pen.variants && pen.variants.length > 0 && (
-        <span className="trk-pen-meta" title={`${pen.variants.length} detail options`}>
+        <span className="trk-pen-count" title={`${pen.variants.length} detail options`}>
           {pen.variants.length}
         </span>
       )}
       {penTags.length > 0 && (
-        <span className="flex gap-0.5" aria-hidden>
+        <span className="trk-pen-tags" aria-hidden>
           {penTags.map((t) => (
-            <span
-              key={t.id}
-              className="inline-block h-1.5 w-1.5 rounded-full ring-1 ring-white/70"
-              style={{ background: t.color }}
-            />
+            <span key={t.id} style={{ background: t.color }} />
           ))}
         </span>
       )}
@@ -89,37 +99,38 @@ export function PenSwatches({
   selectedId,
   onSelect,
   onCreate,
+  onOpenPen,
   sortMode = "recent",
   searchPlaceholder = "Search pens…",
   compact: _compact = false,
   expanded = true,
-  showCreator,
-  onDismissCreator,
+  creator = "always",
 }: {
   pens: TrackPen[]
   tags?: TrackTag[]
   selectedId: string | null
   onSelect: (id: string) => void
   onCreate?: (name: string, color: string) => void
+  /** Double-click a bead to open that pen. */
+  onOpenPen?: (id: string) => void
   sortMode?: PenSortMode
   searchPlaceholder?: string
   compact?: boolean
   /** Palette well: false clips to one bead row. Dialogs keep the default wrap. */
   expanded?: boolean
-  /** Palette: false until **New pen**. Dialogs omit this and keep the row. */
-  showCreator?: boolean
-  onDismissCreator?: () => void
+  /**
+   * `always` — the **+ New pen** row stays under the well (expanded palette
+   * and dialogs). `on-miss` — collapsed palette: the row appears only when
+   * the search matches nothing, labeled **Create new pen**.
+   */
+  creator?: "always" | "on-miss"
 }) {
   const [query, setQuery] = useState("")
   const [newName, setNewName] = useState("")
+  const [nameDirty, setNameDirty] = useState(false)
   const [newColor, setNewColor] = useState(PEN_PALETTE[0])
   const nameRef = useRef<HTMLInputElement>(null)
   const needle = query.trim().toLowerCase()
-  const creatorOpen = Boolean(onCreate) && showCreator !== false
-
-  useEffect(() => {
-    if (showCreator === true) nameRef.current?.focus()
-  }, [showCreator])
 
   const matches = useMemo(() => {
     if (!needle) return null
@@ -136,11 +147,20 @@ export function PenSwatches({
     return orderPens(hit, sortMode === "tree" ? "recent" : sortMode)
   }, [needle, pens, tags, sortMode])
 
+  const miss = Boolean(needle && matches && matches.length === 0)
+  const creatorOpen = Boolean(onCreate) && (creator === "always" || miss)
+
+  useEffect(() => {
+    if (nameDirty) return
+    setNewName(miss ? query.trim() : "")
+  }, [miss, nameDirty, query])
+
   const create = (name: string, color = newColor) => {
     const trimmed = name.trim()
     if (!trimmed || !onCreate) return
     onCreate(trimmed, color)
     setNewName("")
+    setNameDirty(false)
     setQuery("")
     const idx = PEN_PALETTE.indexOf(color)
     setNewColor(PEN_PALETTE[(idx >= 0 ? idx + 1 : 0) % PEN_PALETTE.length])
@@ -156,6 +176,7 @@ export function PenSwatches({
           tags={tags}
           indent={indent}
           onSelect={onSelect}
+          onOpenPen={onOpenPen}
         />
         {kids.map((child) => renderTree(child, indent + 1))}
       </div>
@@ -196,6 +217,7 @@ export function PenSwatches({
                     path={path || undefined}
                     tags={tags}
                     onSelect={onSelect}
+                    onOpenPen={onOpenPen}
                   />
                 )
               })
@@ -208,36 +230,24 @@ export function PenSwatches({
                     selected={selectedId === pen.id}
                     tags={tags}
                     onSelect={onSelect}
+                    onOpenPen={onOpenPen}
                   />
                 ))}
-          {matches?.length === 0 && (
-            <span className="trk-miss">
-              No pens match “{query}”.
-              {onCreate && query.trim() && (
-                <button type="button" onClick={() => create(query, newColor)}>
-                  Create “{query.trim()}”
-                </button>
-              )}
-            </span>
+          {matches?.length === 0 && !onCreate && (
+            <span className="trk-miss">No pens match “{query}”.</span>
           )}
         </div>
       </div>
       {creatorOpen && (
-        <span
-          className="trk-new-pen"
-          onBlur={(e) => {
-            const next = e.relatedTarget as HTMLElement | null
-            if (!next || e.currentTarget.contains(next)) return
-            if (next.getAttribute("aria-label") === "New pen") return
-            setNewName("")
-            onDismissCreator?.()
-          }}
-        >
+        <span className="trk-new-pen">
           <ColorSwatch value={newColor} onChange={setNewColor} aria-label="New pen color" size="sm" />
           <Input
             ref={nameRef}
             value={newName}
-            onChange={(e) => setNewName(e.target.value)}
+            onChange={(e) => {
+              setNameDirty(true)
+              setNewName(e.target.value)
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault()
@@ -245,8 +255,8 @@ export function PenSwatches({
               }
               if (e.key === "Escape") {
                 e.preventDefault()
-                setNewName("")
-                onDismissCreator?.()
+                setNameDirty(false)
+                setNewName(miss ? query.trim() : "")
               }
             }}
             placeholder="New pen…"
@@ -255,13 +265,11 @@ export function PenSwatches({
           />
           <button
             type="button"
-            className="trk-micro"
+            className="trk-new-pen-add"
             onClick={() => create(newName)}
             disabled={!newName.trim()}
-            title="Add pen"
           >
-            <Plus />
-            <span className="sr-only">Add pen</span>
+            {creator === "on-miss" ? "Create new pen" : "+ New pen"}
           </button>
         </span>
       )}

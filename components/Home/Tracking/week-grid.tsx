@@ -6,11 +6,12 @@
  * I fill Monday through Friday without visiting five screens.
  *
  * Nothing new is stored. A stroke here calls the same `paintMinutes` with the
- * same pen and variants, a cell click opens the same `EntryDialog`, and the
- * totals come from `lib/tracking-summary.ts` as occupancy of each day, then
- * summed — so a week's coverage cannot exceed 100% even when Sleep and Work
- * share a morning, and the week's numbers are the sum of its days by
- * construction rather than by agreement.
+ * same pen and variants. A click on a cell that already shows a block opens
+ * the same `EntryDialog` the day grid opens, even while a pen is selected;
+ * empty time still paints. Totals come from `lib/tracking-summary.ts` as
+ * occupancy of each day, then summed — so a week's coverage cannot exceed 100%
+ * even when Sleep and Work share a morning, and the week's numbers are the
+ * sum of its days by construction rather than by agreement.
  *
  * Three things make a week's worth of cells usable rather than merely dense:
  *
@@ -23,16 +24,25 @@
  * - **Cells are 15 minutes at the finest.** A minute-resolution week is 1440
  *   rows of nothing; anything finer than a quarter hour is a job for the day
  *   grid or the block editor, both one click away.
+ * - **Only the rows in view are mounted.** Same window as the day grid's hours:
+ *   the scrollport, one row above, two below. Spacers keep the day the same
+ *   height, so a row that scrolls in is still the cell it always was.
+ *
+ * A merged run shows one `.trk-block-label` on its first cell (display name,
+ * else the pen). Later rows stay quiet, and the label does not take the click.
+ * On today's column, cells after now wear `.trk-future`. Other days do not.
  */
 "use client"
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
-import { displayedPen, penCellStyle, useTimeTrackingStore, type TimeEntry } from "@/lib/time-tracking-store"
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
+import { displayedPen, penCellStyle, useTimeTrackingStore, type TimeEntry, type TrackPen, type TrackScope } from "@/lib/time-tracking-store"
+import { strokeCellStyle } from "@/components/Home/Tracking/grid-stroke"
 import {
   MINUTES_PER_DAY,
   WEEK_STEPS,
   dominantEntry,
   formatDuration,
+  instantsForDay,
   minuteMap,
   minutesToLabel,
   timeStringToMinutes,
@@ -44,13 +54,224 @@ import { EntryDialog } from "@/components/Home/Tracking/entry-dialog"
 import { ERASE, SCISSORS } from "@/components/Home/Tracking/pen-palette"
 import { ScreenTimeEmptyHint } from "@/components/Home/Tracking/screentime-empty-hint"
 import { TrackingPeriodNav } from "@/components/Home/Tracking/tracking-period-nav"
-import { useTrackingViewPrefs } from "@/components/Home/Tracking/tracking-view-prefs"
+import { useSuperimposeScope, useTrackingViewPrefs } from "@/components/Home/Tracking/tracking-view-prefs"
+import { focusTrackingPlot } from "@/components/Home/Tracking/tracking-undo"
 import { firstUnpaintedWakingHour } from "@/components/Home/Tracking/waking-scroll"
-import { cellPaintClass, trackingProbeText, TrkCrtProbe, TrkRibbon } from "@/components/Home/Tracking/trk-instrument"
-import { TrkPlotMarkers, useTrackingDayMarkers, useTrackingSunMap } from "@/components/Home/Tracking/trk-time-markers"
+import { cellPaintClass, SuperimposeWash, trackingProbeText, TrkBlockLabel, TrkProbePlate, TrkRibbon, TrkTagStrip, writeTrkProbe } from "@/components/Home/Tracking/trk-instrument"
+import { TrkPlotMarkers, useTrackingSunMap, type TrackingSunTimes } from "@/components/Home/Tracking/trk-time-markers"
 import { awakeWindowFor } from "@/lib/sleep-sync"
 import { runAsAction } from "@/lib/action-history"
 import "./tracking-chrome.css"
+
+/**
+ * Week rows are only a few pixels tall, so a click often slips into the next
+ * cell. That slip is still a click. A stroke that actually travels paints.
+ */
+const CLICK_SLOP_PX = 6
+
+/**
+ * Visible week rows, plus the day grid's hour overscan (one above, two below).
+ * A zero-height scrollport mounts the whole day — jsdom, and the first measure
+ * before the plot has a box. Stored minutes are untouched; this only picks nodes.
+ */
+export function weekRowBand(
+  scrollTop: number,
+  clientHeight: number,
+  rowHeight: number,
+  rowCount: number,
+): { start: number; end: number } {
+  if (clientHeight <= 0 || rowHeight <= 0 || rowCount <= 0) return { start: 0, end: rowCount }
+  const start = Math.max(0, Math.floor(scrollTop / rowHeight) - 1)
+  const end = Math.min(rowCount, Math.ceil((scrollTop + clientHeight) / rowHeight) + 2)
+  return { start, end }
+}
+
+function strokeOverlapUnchanged(
+  prevLo: number,
+  prevHi: number,
+  nextLo: number,
+  nextHi: number,
+  rowLo: number,
+  rowHi: number,
+): boolean {
+  const clip = (lo: number, hi: number): [number, number] | null => {
+    if (!(hi > rowLo && lo < rowHi)) return null
+    const a = Math.max(lo, rowLo)
+    const b = Math.min(hi, rowHi)
+    return b > a ? [a, b] : null
+  }
+  const prev = clip(prevLo, prevHi)
+  const next = clip(nextLo, nextHi)
+  if (prev === next) return true
+  if (!prev || !next) return false
+  return prev[0] === next[0] && prev[1] === next[1]
+}
+
+interface WeekSlot {
+  byDay: Record<string, TimeEntry | null>
+  overlay: Record<string, TimeEntry | null>
+}
+
+interface WeekMinuteProps {
+  minute: number
+  rowHeight: number
+  weekStep: number
+  dateKeys: string[]
+  slot: WeekSlot
+  strokeLo: number
+  strokeHi: number
+  strokeDay: string
+  scope: TrackScope
+  overlayScope?: TrackScope
+  selectedPenId: string | null
+  selectedPen: TrackPen | null
+  todayKey: string
+  nowMinute: number | null
+  sunByDate: Record<string, TrackingSunTimes>
+  instants: Record<string, TimeEntry[]>
+  onOpenInstant: (id: string) => void
+  onProbe: (text: string | null) => void
+}
+
+function weekMinutePropsEqual(prev: WeekMinuteProps, next: WeekMinuteProps): boolean {
+  if (prev.minute !== next.minute) return false
+  if (prev.rowHeight !== next.rowHeight) return false
+  if (prev.weekStep !== next.weekStep) return false
+  if (prev.dateKeys !== next.dateKeys) return false
+  if (prev.slot !== next.slot) return false
+  if (prev.scope !== next.scope) return false
+  if (prev.overlayScope !== next.overlayScope) return false
+  if (prev.selectedPenId !== next.selectedPenId) return false
+  if (prev.selectedPen !== next.selectedPen) return false
+  if (prev.todayKey !== next.todayKey) return false
+  if (prev.nowMinute !== next.nowMinute) return false
+  if (prev.sunByDate !== next.sunByDate) return false
+  if (prev.instants !== next.instants) return false
+  if (prev.onOpenInstant !== next.onOpenInstant) return false
+  if (prev.onProbe !== next.onProbe) return false
+  const rowLo = prev.minute
+  const rowHi = prev.minute + prev.weekStep
+  if (prev.strokeDay !== next.strokeDay) {
+    const prevHit = prev.strokeDay !== "" && prev.minute >= prev.strokeLo && prev.minute < prev.strokeHi
+    const nextHit = next.strokeDay !== "" && next.minute >= next.strokeLo && next.minute < next.strokeHi
+    return !prevHit && !nextHit
+  }
+  return strokeOverlapUnchanged(prev.strokeLo, prev.strokeHi, next.strokeLo, next.strokeHi, rowLo, rowHi)
+}
+
+const WeekMinuteRow = memo(function WeekMinuteRow({
+  minute,
+  rowHeight,
+  weekStep,
+  dateKeys,
+  slot,
+  strokeLo,
+  strokeHi,
+  strokeDay,
+  scope,
+  overlayScope,
+  selectedPenId,
+  selectedPen,
+  todayKey,
+  nowMinute,
+  sunByDate,
+  instants,
+  onOpenInstant,
+  onProbe,
+}: WeekMinuteProps) {
+  const onHour = minute % 60 === 0
+  return (
+    <div
+      data-hour={onHour ? minute / 60 : undefined}
+      className={`trk-hour-row flex items-stretch ${onHour ? "trk-cell-quarter" : "trk-cell-tick"}`}
+      style={{ height: rowHeight }}
+    >
+      <div className="trk-hour-bezel flex items-center justify-end" style={{ width: 48, fontSize: 9 }}>
+        {onHour ? minutesToLabel(minute) : ""}
+      </div>
+      {dateKeys.map((key) => {
+        const cellEntry = slot.byDay[key] ?? null
+        const pen = cellEntry ? displayedPen(scope, cellEntry.penId) : null
+        const painted = cellEntry ? scope.pens.find((p) => p.id === cellEntry.penId) : null
+        const inDrag = strokeDay === key && minute >= strokeLo && minute < strokeHi
+        const erasing = selectedPenId === ERASE
+        const strokePen = !erasing && selectedPen ? displayedPen(scope, selectedPen.id) ?? selectedPen : null
+        const inStroke = inDrag && selectedPenId !== SCISSORS
+        const overlayEntry = slot.overlay[key] ?? null
+        const overlayPen = overlayEntry && overlayScope ? displayedPen(overlayScope, overlayEntry.penId) : null
+        const futureCell = key === todayKey && nowMinute != null && minute > nowMinute
+        const runStarts =
+          cellEntry != null && cellEntry.startMin >= minute && cellEntry.startMin < minute + weekStep
+        const runColor = runStarts ? pen?.color || painted?.color : undefined
+        return (
+          <div
+            key={key}
+            data-day={key}
+            data-minute={minute}
+            className={`${cellPaintClass({ painted: Boolean(pen) || (inDrag && !erasing) })} relative${futureCell ? " trk-future" : ""}`}
+            style={strokeCellStyle({
+              inStroke,
+              erasing,
+              samePen: Boolean(cellEntry && selectedPen && cellEntry.penId === selectedPen.id),
+              existing: penCellStyle(pen, cellEntry?.precision, minute),
+              incoming: penCellStyle(strokePen, undefined, minute),
+            })}
+            onMouseEnter={() =>
+              onProbe(
+                trackingProbeText({
+                  minute,
+                  step: weekStep,
+                  name: cellEntry ? entryDisplayName(cellEntry, painted?.name || pen?.name) : undefined,
+                  leafName: painted && painted.id !== pen?.id ? painted.name : undefined,
+                  assumed: cellEntry?.precision === "estimated",
+                }),
+              )
+            }
+          >
+            {overlayPen && !inStroke ? <SuperimposeWash color={overlayPen.color} /> : null}
+            {cellEntry && runColor ? (
+              <TrkBlockLabel
+                name={entryDisplayName(cellEntry, pen?.name || painted?.name)}
+                color={runColor}
+                left={0}
+                width={100}
+              />
+            ) : null}
+            {(instants[key] ?? [])
+              .filter((event) => event.startMin >= minute && event.startMin < minute + weekStep)
+              .map((event) => {
+                const eventPen = displayedPen(scope, event.penId)
+                return (
+                  <button
+                    key={event.id}
+                    type="button"
+                    className="trk-instant trk-instant-week"
+                    aria-label={`${minutesToLabel(event.startMin)} · ${entryDisplayName(event, eventPen?.name)}`}
+                    style={{
+                      top: `${((event.startMin - minute) / weekStep) * 100}%`,
+                      background: eventPen?.color,
+                    }}
+                    onMouseDown={(eventClick) => eventClick.stopPropagation()}
+                    onClick={(eventClick) => {
+                      eventClick.stopPropagation()
+                      onOpenInstant(event.id)
+                    }}
+                  />
+                )
+              })}
+            <TrkPlotMarkers
+              origin={minute}
+              span={weekStep}
+              axis="y"
+              nowMinute={key === todayKey ? nowMinute : null}
+              sun={sunByDate[key] ?? null}
+            />
+          </div>
+        )
+      })}
+    </div>
+  )
+}, weekMinutePropsEqual)
 
 interface WeekGridProps {
   /** Any day inside the week to show. Shared with the day grid, so switching spans keeps your place. */
@@ -78,25 +299,39 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false }: Wee
   const selectedVariantIds = useTimeTrackingStore((s) => s.selectedVariantIds)
   const paintMinutes = useTimeTrackingStore((s) => s.paintMinutes)
   const splitEntryAt = useTimeTrackingStore((s) => s.splitEntryAt)
-  const clearDay = useTimeTrackingStore((s) => s.clearDay)
 
   const scope = scopes.find((s) => s.id === activeScopeId) || scopes[0]
   const prefs = useTrackingViewPrefs()
+  const scopeIds = useMemo(() => scopes.map((s) => s.id), [scopes])
+  const overlayScopeId = useSuperimposeScope(scope?.id, scopeIds)
+  const overlayScope = scopes.find((s) => s.id === overlayScopeId)
 
   const [rangeFrom, setRangeFrom] = useState(prefs.weekFillFrom)
   const [rangeTo, setRangeTo] = useState(prefs.weekFillTo)
   const [openEntryId, setOpenEntryId] = useState<string | null>(null)
   const [drag, setDrag] = useState<Drag | null>(null)
   const [now, setNow] = useState(() => new Date())
-  const [probe, setProbe] = useState<string | null>(null)
+  const probeRef = useRef<HTMLDivElement>(null)
+  const writeProbe = useCallback((text: string | null) => writeTrkProbe(probeRef.current, text), [])
 
-  const dragRef = useRef<(Drag & { moved: boolean }) | null>(null)
+  const dragRef = useRef<(Drag & { moved: boolean; originY: number | null }) | null>(null)
   const gridRef = useRef<HTMLDivElement>(null)
+  const aligning = useRef(false)
+  const rowCount = MINUTES_PER_DAY / weekStep
+  const rowHeight = compact ? 10 : weekStep === 60 ? 22 : weekStep === 30 ? 14 : 9
+  const [rowBand, setRowBand] = useState({ start: 0, end: 0 })
+
+  const publishRowBand = useCallback((scrollTop: number, clientHeight: number) => {
+    const next = weekRowBand(scrollTop, clientHeight, rowHeight, rowCount)
+    setRowBand((prev) => (prev.start === next.start && prev.end === next.end ? prev : next))
+  }, [rowHeight, rowCount])
+  const layoutRef = useRef({ rowHeight, weekStep, publishRowBand })
+  layoutRef.current = { rowHeight, weekStep, publishRowBand }
 
   const days = useMemo(() => getWeekDates(getWeekStartDate(date)), [date])
   const dateKeys = useMemo(() => days.map(formatLocalDateKey), [days])
   const todayKey = formatLocalDateKey(now)
-  const { nowMinute } = useTrackingDayMarkers(date)
+  const nowMinute = dateKeys.includes(todayKey) ? now.getHours() * 60 + now.getMinutes() : null
   const sunByDate = useTrackingSunMap(dateKeys)
 
   // Fill defaults to the day you are looking at rather than the whole week: a
@@ -120,11 +355,39 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false }: Wee
     [entries, dateKeys, scope],
   )
 
+  const instants = useMemo(() => {
+    const byDay: Record<string, TimeEntry[]> = {}
+    for (const key of dateKeys) byDay[key] = scope ? instantsForDay(entries, key, scope.id) : []
+    return byDay
+  }, [dateKeys, entries, scope])
+
   const maps = useMemo(() => {
     const byDay: Record<string, (TimeEntry | null)[]> = {}
     for (const key of dateKeys) byDay[key] = scope ? minuteMap(entries, key, scope.id) : []
     return byDay
   }, [dateKeys, entries, scope])
+
+  const overlayMaps = useMemo(() => {
+    const byDay: Record<string, (TimeEntry | null)[]> = {}
+    if (!overlayScope) return byDay
+    for (const key of dateKeys) byDay[key] = minuteMap(entries, key, overlayScope.id)
+    return byDay
+  }, [dateKeys, entries, overlayScope])
+
+  const slots = useMemo(() => {
+    const out: WeekSlot[] = []
+    for (let r = rowBand.start; r < rowBand.end; r++) {
+      const minute = r * weekStep
+      const byDay: Record<string, TimeEntry | null> = {}
+      const overlay: Record<string, TimeEntry | null> = {}
+      for (const key of dateKeys) {
+        byDay[key] = dominantEntry(maps[key] ?? [], minute, weekStep)
+        overlay[key] = overlayMaps[key] ? dominantEntry(overlayMaps[key], minute, weekStep) : null
+      }
+      out.push({ byDay, overlay })
+    }
+    return out
+  }, [maps, overlayMaps, dateKeys, weekStep, rowBand.start, rowBand.end])
 
   const dayTotals = useMemo(() => {
     const covered = uniqueMinutesByDate(weekEntries)
@@ -144,16 +407,31 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false }: Wee
   useLayoutEffect(() => {
     const root = gridRef.current
     if (!root) return
+    publishRowBand(root.scrollTop, root.clientHeight)
+  }, [publishRowBand])
+
+  useLayoutEffect(() => {
+    const root = gridRef.current
+    if (!root) return
     const hour = startHour
     const align = () => {
+      const { rowHeight: height, weekStep: step, publishRowBand: publish } = layoutRef.current
       const row = root.querySelector(`[data-hour="${hour}"]`) as HTMLElement | null
-      if (!row) return
       const heading = root.querySelector(".sticky") as HTMLElement | null
-      root.scrollTop = Math.max(0, row.offsetTop - (heading?.offsetHeight ?? 0))
+      const rowIndex = Math.floor((hour * 60) / step)
+      const top = row
+        ? Math.max(0, row.offsetTop - (heading?.offsetHeight ?? 0))
+        : rowIndex * height
+      aligning.current = true
+      root.scrollTop = top
+      aligning.current = false
+      publish(root.scrollTop, root.clientHeight)
     }
     align()
     const id = requestAnimationFrame(align)
     return () => cancelAnimationFrame(id)
+    // The day and the wake time move the scroll. A stroke does not, so startHour
+    // stays the value from this run; row size is read live from layoutRef.
   }, [focusKey, awake?.wake])
 
   useEffect(() => {
@@ -194,7 +472,10 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false }: Wee
       commitPaint(state.day, lo, hi)
       return
     }
-    const existing = maps[state.day]?.[state.anchor]
+    // The block the cell is painted with — not only the entry on its first
+    // minute. A block that starts mid-cell still owns the click, so the pen
+    // in hand opens it instead of painting over it. Same rule as the day grid.
+    const existing = dominantEntry(maps[state.day] ?? [], state.anchor, weekStep)
     if (existing && selectedPenId !== ERASE) setOpenEntryId(existing.id)
     else if (selectedPenId !== null) commitPaint(state.day, state.anchor, Math.min(MINUTES_PER_DAY, state.anchor + weekStep))
   }, [commitPaint, maps, selectedPenId, weekStep, splitEntryAt])
@@ -211,24 +492,35 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false }: Wee
   }, [endDrag])
 
   const cellFromEvent = (target: EventTarget | null): { day: string; minute: number } | null => {
-    const el = target as HTMLElement | null
-    const day = el?.dataset?.day
-    const raw = el?.dataset?.minute
+    const start = target instanceof Element ? target : null
+    const el = start?.closest("[data-day][data-minute]")
+    if (!(el instanceof HTMLElement)) return null
+    const day = el.dataset.day
+    const raw = el.dataset.minute
     if (!day || raw == null) return null
     const minute = Number(raw)
     return Number.isFinite(minute) ? { day, minute } : null
   }
 
-  const beginDrag = (cell: { day: string; minute: number }) => {
-    dragRef.current = { day: cell.day, anchor: cell.minute, head: cell.minute, moved: false }
+  const blockOnCell = (day: string, minute: number) => dominantEntry(maps[day] ?? [], minute, weekStep)
+
+  const beginDrag = (cell: { day: string; minute: number }, originY: number | null) => {
+    dragRef.current = { day: cell.day, anchor: cell.minute, head: cell.minute, moved: false, originY }
     setDrag({ day: cell.day, anchor: cell.minute, head: cell.minute })
   }
 
-  const extendDrag = (cell: { day: string; minute: number }) => {
+  const extendDrag = (cell: { day: string; minute: number }, pointerY: number | null) => {
     const state = dragRef.current
     // A stroke stays in its own column: a diagonal drag means a longer block on
     // one day, never the same block on two.
     if (!state || state.day !== cell.day || state.head === cell.minute) return
+    const steps = Math.abs(cell.minute - state.anchor) / weekStep
+    const slipped =
+      pointerY != null &&
+      state.originY != null &&
+      steps <= 1 &&
+      Math.abs(pointerY - state.originY) < CLICK_SLOP_PX
+    if (slipped) return
     dragRef.current = { ...state, head: cell.minute, moved: true }
     setDrag({ day: state.day, anchor: state.anchor, head: cell.minute })
   }
@@ -266,8 +558,6 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false }: Wee
 
   if (!scope) return <div className="text-sm text-muted-foreground">No tracking scopes.</div>
 
-  const rows = MINUTES_PER_DAY / weekStep
-  const rowHeight = compact ? 10 : weekStep === 60 ? 22 : weekStep === 30 ? 14 : 9
   const dragLo = drag ? Math.min(drag.anchor, drag.head) : -1
   const dragHi = drag ? Math.max(drag.anchor, drag.head) + weekStep : -1
   const selectedPen = scope.pens.find((p) => p.id === selectedPenId) ?? null
@@ -360,38 +650,49 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false }: Wee
       <div
         ref={gridRef}
         className="trk-grid trk-week-plot"
+        tabIndex={-1}
         data-start-hour={startHour}
+        data-superimpose={overlayScope?.id || undefined}
         style={{ maxHeight: compact ? 360 : 620 }}
-        onMouseLeave={() => setProbe(null)}
+        onMouseLeave={() => writeProbe(null)}
+        onScroll={() => {
+          if (aligning.current) return
+          const root = gridRef.current
+          if (!root) return
+          publishRowBand(root.scrollTop, root.clientHeight)
+        }}
       >
         <div
           className="min-w-[640px]"
           onMouseDown={(e) => {
+            focusTrackingPlot(gridRef.current)
             const cell = cellFromEvent(e.target)
             if (!cell) return
             if (selectedPenId === null) {
-              const existing = maps[cell.day]?.[cell.minute]
+              const existing = blockOnCell(cell.day, cell.minute)
               if (existing) setOpenEntryId(existing.id)
               return
             }
             e.preventDefault()
-            beginDrag(cell)
+            beginDrag(cell, e.clientY)
           }}
           onMouseOver={(e) => {
             if (!dragRef.current) return
             const cell = cellFromEvent(e.target)
-            if (cell) extendDrag(cell)
+            if (cell) extendDrag(cell, e.clientY)
           }}
           onTouchStart={(e) => {
+            focusTrackingPlot(gridRef.current)
             const cell = cellFromEvent(e.target)
             if (!cell) return
             if (selectedPenId === null) {
-              const existing = maps[cell.day]?.[cell.minute]
+              const existing = blockOnCell(cell.day, cell.minute)
               if (existing) setOpenEntryId(existing.id)
               return
             }
             e.preventDefault()
-            beginDrag(cell)
+            const touch = e.touches[0]
+            beginDrag(cell, touch?.clientY ?? null)
           }}
           onTouchMove={(e) => {
             if (!dragRef.current) return
@@ -399,7 +700,7 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false }: Wee
             const touch = e.touches[0]
             if (!touch) return
             const cell = cellFromEvent(document.elementFromPoint(touch.clientX, touch.clientY))
-            if (cell) extendDrag(cell)
+            if (cell) extendDrag(cell, touch.clientY)
           }}
         >
           {/* ---- day headings ---- */}
@@ -432,65 +733,40 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false }: Wee
             })}
           </div>
 
-          {/* ---- rows ---- */}
-          {Array.from({ length: rows }, (_, r) => {
-            const minute = r * weekStep
-            const onHour = minute % 60 === 0
+          {rowBand.start > 0 ? (
+            <div data-week-spacer="" aria-hidden style={{ height: rowBand.start * rowHeight }} />
+          ) : null}
+          {slots.map((slot, index) => {
+            const minute = (rowBand.start + index) * weekStep
             return (
-              <div
-                key={r}
-                data-hour={onHour ? minute / 60 : undefined}
-                className={`trk-hour-row flex items-stretch ${onHour ? "trk-cell-quarter" : "trk-cell-tick"}`}
-                style={{ height: rowHeight }}
-              >
-                <div className="trk-hour-bezel flex items-center justify-end" style={{ width: 48, fontSize: 9 }}>
-                  {onHour ? minutesToLabel(minute) : ""}
-                </div>
-                {dateKeys.map((key) => {
-                  const cellEntry = dominantEntry(maps[key] ?? [], minute, weekStep)
-                  const pen = cellEntry ? displayedPen(scope, cellEntry.penId) : null
-                  const painted = cellEntry ? scope.pens.find((p) => p.id === cellEntry.penId) : null
-                  const inDrag = drag?.day === key && minute >= dragLo && minute < dragHi
-                  return (
-                    <div
-                      key={key}
-                      data-day={key}
-                      data-minute={minute}
-                      className={cellPaintClass({ painted: Boolean(pen) || inDrag })}
-                      style={{
-                        ...((() => {
-                          if (inDrag) return { background: selectedPenId === ERASE ? "#fca5a5" : selectedPen?.color }
-                          return penCellStyle(pen, cellEntry?.precision, minute)
-                        })()),
-                        opacity: inDrag ? 0.75 : 1,
-                      }}
-                      onMouseEnter={() =>
-                        setProbe(
-                          trackingProbeText({
-                            minute,
-                            step: weekStep,
-                            name: cellEntry ? entryDisplayName(cellEntry, painted?.name || pen?.name) : undefined,
-                            leafName: painted && painted.id !== pen?.id ? painted.name : undefined,
-                            assumed: cellEntry?.precision === "estimated",
-                          }),
-                        )
-                      }
-                    >
-                      <TrkPlotMarkers
-                        origin={minute}
-                        span={weekStep}
-                        axis="y"
-                        nowMinute={key === todayKey ? nowMinute : null}
-                        sun={sunByDate[key] ?? null}
-                      />
-                    </div>
-                  )
-                })}
-              </div>
+              <WeekMinuteRow
+                key={minute}
+                minute={minute}
+                rowHeight={rowHeight}
+                weekStep={weekStep}
+                dateKeys={dateKeys}
+                slot={slot}
+                strokeLo={dragLo}
+                strokeHi={dragHi}
+                strokeDay={drag?.day ?? ""}
+                scope={scope}
+                overlayScope={overlayScope}
+                selectedPenId={selectedPenId}
+                selectedPen={selectedPen}
+                todayKey={todayKey}
+                nowMinute={nowMinute}
+                sunByDate={sunByDate}
+                instants={instants}
+                onOpenInstant={setOpenEntryId}
+                onProbe={writeProbe}
+              />
             )
           })}
+          {rowBand.end < rowCount ? (
+            <div data-week-spacer="" aria-hidden style={{ height: (rowCount - rowBand.end) * rowHeight }} />
+          ) : null}
         </div>
-        <TrkCrtProbe text={probe} />
+        <TrkProbePlate nodeRef={probeRef} />
       </div>
 
       <div className="trk-ribbon-legend">
@@ -500,16 +776,6 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false }: Wee
             <span key={key}>
               {day.toLocaleDateString(undefined, { weekday: "short" })}{" "}
               <span className="tabular-nums">{formatDuration(dayTotals[key] ?? 0)}</span>
-              {dayTotals[key] > 0 && (
-                <button
-                  type="button"
-                  onClick={() => clearDay(key, scope.id)}
-                  aria-label={`Clear ${day.toLocaleDateString(undefined, { weekday: "long" })}`}
-                  title="Clear this day in this scope"
-                >
-                  ×
-                </button>
-              )}
             </span>
           )
         })}
@@ -517,17 +783,7 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false }: Wee
 
       <TrkRibbon pens={pens} untracked={totals.untracked} />
 
-      {weekTagTotals.length > 0 && (
-        <div className="flex flex-wrap items-center gap-3 text-sm">
-          <span className="text-xs text-muted-foreground">By tag (all scopes)</span>
-          {weekTagTotals.map((t) => (
-            <span key={t.id} className="flex items-center gap-1.5">
-              <span className="inline-block h-3 w-3 rounded-sm" style={{ background: t.color }} />
-              {t.name}: <span className="font-medium">{formatDuration(t.minutes)}</span>
-            </span>
-          ))}
-        </div>
-      )}
+      <TrkTagStrip tags={weekTagTotals} />
 
       {openEntry && <EntryDialog entry={openEntry} onClose={() => setOpenEntryId(null)} />}
     </div>

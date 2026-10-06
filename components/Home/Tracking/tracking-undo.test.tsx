@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { canUndo, peekUndoLabel, resetActionHistory } from "@/lib/action-history"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
+import { useUndoHotkey } from "@/hooks/useUndoHotkey"
 import { handleTrackingUndoKey, TRACKING_ACTION_LABELS, useTrackingUndoHotkey } from "./tracking-undo"
 
 const DAY = "2026-09-17"
@@ -111,6 +112,21 @@ describe("handleTrackingUndoKey", () => {
     grid.remove()
   })
 
+  it("leaves a contenteditable Cmd+Z alone", () => {
+    paintWork()
+    const field = document.createElement("div")
+    field.contentEditable = "true"
+    field.setAttribute("contenteditable", "true")
+    document.body.appendChild(field)
+    field.focus()
+    const event = new KeyboardEvent("keydown", { key: "z", metaKey: true, bubbles: true })
+    Object.defineProperty(event, "target", { value: field })
+    expect(handleTrackingUndoKey(event)).toBe(false)
+    expect(useTimeTrackingStore.getState().entries).toHaveLength(1)
+    expect(canUndo()).toBe(true)
+    field.remove()
+  })
+
   it("leaves a text input's Cmd+Z alone", () => {
     paintWork()
     const input = document.createElement("input")
@@ -122,6 +138,24 @@ describe("handleTrackingUndoKey", () => {
     expect(useTimeTrackingStore.getState().entries).toHaveLength(1)
     expect(canUndo()).toBe(true)
     input.remove()
+  })
+
+  it("pops one step when the shell hook and the tracking hook both hear the chord", () => {
+    function Both() {
+      useUndoHotkey()
+      useTrackingUndoHotkey()
+      useEffect(() => {
+        paintWork(540, 600)
+        paintWork(720, 780)
+      }, [])
+      return <div tabIndex={0} data-testid="timegrid" />
+    }
+    render(<Both />)
+    expect(useTimeTrackingStore.getState().entries).toHaveLength(2)
+    fireEvent.keyDown(screen.getByTestId("timegrid"), { key: "z", metaKey: true })
+    expect(useTimeTrackingStore.getState().entries).toHaveLength(1)
+    fireEvent.keyDown(screen.getByTestId("timegrid"), { key: "z", metaKey: true })
+    expect(useTimeTrackingStore.getState().entries).toHaveLength(0)
   })
 
   it("names the Tracking writes the stack records", () => {

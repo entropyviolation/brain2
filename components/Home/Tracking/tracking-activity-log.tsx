@@ -38,15 +38,20 @@ import {
 } from "@/lib/time-entries"
 import { penTotals, tagTotals as tagTotalsOf, totalsFor } from "@/lib/tracking-summary"
 import { EntryDialog } from "@/components/Home/Tracking/entry-dialog"
+import { openPenSettings } from "@/components/Home/Tracking/open-pen-settings"
 import { LogActivityDialog } from "@/components/Home/Tracking/log-activity-dialog"
 import { ScreenTimeEmptyHint } from "@/components/Home/Tracking/screentime-empty-hint"
 import { TrackingPeriodNav } from "@/components/Home/Tracking/tracking-period-nav"
-import { TrkRibbon } from "@/components/Home/Tracking/trk-instrument"
+import { TrkRibbon, TrkTagStrip } from "@/components/Home/Tracking/trk-instrument"
 import { useHabitTrackingSync } from "@/lib/habit-tracking-sync"
 import "./tracking-chrome.css"
 import { usePenActionSync } from "@/lib/pen-action-sync"
 import { useTaskStore } from "@/lib/task-store"
 import { buildDoneTodoItems } from "@/components/Home/ToDo/todo-utils"
+import { proposeDoneEstimates } from "@/lib/estimate-proposals"
+import { getTaskCompletionDate } from "@/lib/completion-status"
+import { TrackingFind } from "@/components/Home/Tracking/tracking-find"
+import { ERASE } from "@/components/Home/Tracking/tracking-tool-mode"
 
 function dateKey(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
@@ -58,9 +63,11 @@ const MIN_GAP_MINUTES = 15
 interface TrackingActivityLogProps {
   currentDate: Date
   setCurrentDate: (d: Date) => void
+  /** Hide day-stepping so a ritual stays on its own date. */
+  lockDate?: boolean
 }
 
-export function TrackingActivityLog({ currentDate, setCurrentDate }: TrackingActivityLogProps) {
+export function TrackingActivityLog({ currentDate, setCurrentDate, lockDate = false }: TrackingActivityLogProps) {
   useHabitTrackingSync()
   usePenActionSync()
   const scopes = useTimeTrackingStore((s) => s.scopes)
@@ -70,6 +77,8 @@ export function TrackingActivityLog({ currentDate, setCurrentDate }: TrackingAct
   const selectedPenId = useTimeTrackingStore((s) => s.selectedPenId)
   const selectedVariantIds = useTimeTrackingStore((s) => s.selectedVariantIds)
   const paintMinutes = useTimeTrackingStore((s) => s.paintMinutes)
+  const updateEntry = useTimeTrackingStore((s) => s.updateEntry)
+  const setActiveScope = useTimeTrackingStore((s) => s.setActiveScope)
   const tasks = useTaskStore((s) => s.tasks)
   const folders = useTaskStore((s) => s.folders)
 
@@ -101,6 +110,35 @@ export function TrackingActivityLog({ currentDate, setCurrentDate }: TrackingAct
     () => buildDoneTodoItems(tasks, "day", currentDate, folders),
     [tasks, currentDate, folders],
   )
+  const placedDoneIds = useMemo(() => {
+    const ids = new Set<string>()
+    for (const entry of dayEntries) {
+      if (entry.estimateOf?.kind === "done") ids.add(entry.estimateOf.id)
+    }
+    return ids
+  }, [dayEntries])
+  const proposals = useMemo(() => {
+    if (!scope) return []
+    const occupied = dayEntries
+      .filter((entry) => entry.kind !== "instant")
+      .map((entry) => ({ startMin: entry.startMin, endMin: entry.endMin }))
+    return proposeDoneEstimates(
+      doneItems.map((item) => {
+        const task = tasks.find((candidate) => candidate.id === item.id)
+        const completed = task ? getTaskCompletionDate(task) : null
+        const sameDay = completed ? dateKey(completed) === dk : false
+        const minutes = task?.actualDuration || item.estimatedDuration || 30
+        return {
+          id: item.id,
+          title: item.description,
+          minutes,
+          preferredStart: sameDay && completed ? completed.getHours() * 60 + completed.getMinutes() : undefined,
+        }
+      }),
+      occupied,
+      placedDoneIds,
+    )
+  }, [scope, dayEntries, doneItems, tasks, dk, placedDoneIds])
 
   const logWindow = useMemo(() => {
     const nine = 9 * 60
@@ -153,13 +191,24 @@ export function TrackingActivityLog({ currentDate, setCurrentDate }: TrackingAct
         onPrevious={() => setCurrentDate(subDays(currentDate, 1))}
         onNext={() => setCurrentDate(addDays(currentDate, 1))}
         onToday={() => setCurrentDate(new Date())}
+        locked={lockDate}
         meta={`${dayEntries.length} block${dayEntries.length === 1 ? "" : "s"} · ${formatDuration(totals.tracked)} tracked · ${Math.round(totals.coverage)}% of the day`}
         trailing={
-          <button type="button" className="trk-latch trk-latch-log" onClick={() => setLogging(logWindow)}>
-            <span className="trk-led" aria-hidden />
-            <Plus />
-            Log activity
-          </button>
+          <>
+            <TrackingFind
+              onJump={(hit) => {
+                const [y, m, d] = hit.date.split("-").map(Number)
+                setActiveScope(hit.scopeId)
+                setCurrentDate(new Date(y, (m ?? 1) - 1, d ?? 1))
+                setOpenEntryId(hit.entryId)
+              }}
+            />
+            <button type="button" className="trk-latch trk-latch-log" onClick={() => setLogging(logWindow)}>
+              <span className="trk-led" aria-hidden />
+              <Plus />
+              Log activity
+            </button>
+          </>
         }
       />
 
@@ -254,8 +303,18 @@ export function TrackingActivityLog({ currentDate, setCurrentDate }: TrackingAct
                 </span>
                 <span
                   className="trk-log-pad"
+                  data-pen-color="true"
                   style={{ background: pen?.color }}
-                  aria-hidden
+                  title={pen ? `Double-click to open ${pen.name} settings` : undefined}
+                  onDoubleClick={
+                    pen
+                      ? (event) => {
+                          event.preventDefault()
+                          event.stopPropagation()
+                          openPenSettings(scope.id, pen.id)
+                        }
+                      : undefined
+                  }
                 />
                 <span className="trk-log-copy">
                   <span className="flex flex-wrap items-center gap-1.5">
@@ -273,6 +332,17 @@ export function TrackingActivityLog({ currentDate, setCurrentDate }: TrackingAct
                     ))}
                     {assumed && (
                       <span className="rounded border px-1 text-[10px] text-muted-foreground">assumed</span>
+                    )}
+                    {assumed && (
+                      <span
+                        className="trk-latch"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          updateEntry(entry.id, { precision: undefined })
+                        }}
+                      >
+                        Confirm
+                      </span>
                     )}
                     {variants.map((v) => (
                       <span
@@ -318,19 +388,9 @@ export function TrackingActivityLog({ currentDate, setCurrentDate }: TrackingAct
         </div>
       )}
 
-      <TrkRibbon pens={pens} untracked={totals.untracked} />
+      <TrkRibbon pens={pens} untracked={totals.untracked} coverage={totals.coverage} />
 
-      {dayTags.length > 0 && (
-        <div className="flex flex-wrap items-center gap-3 text-sm">
-          <span className="text-xs text-muted-foreground">By tag (all scopes)</span>
-          {dayTags.map((t) => (
-            <span key={t.id} className="flex items-center gap-1.5">
-              <span className="inline-block h-3 w-3 rounded-sm" style={{ background: t.color }} />
-              {t.name}: <span className="font-medium">{formatDuration(t.minutes)}</span>
-            </span>
-          ))}
-        </div>
-      )}
+      <TrkTagStrip tags={dayTags} />
 
       {doneItems.length > 0 && (
         <div className="trk-aside-well">
@@ -338,20 +398,48 @@ export function TrackingActivityLog({ currentDate, setCurrentDate }: TrackingAct
             Done this day · {doneItems.length} item{doneItems.length === 1 ? "" : "s"}
           </p>
           <ul className="space-y-1">
-            {doneItems.map((item) => (
-              <li key={item.id} className="flex items-baseline gap-2 text-sm">
-                <span className="min-w-0 flex-1 truncate">{item.description}</span>
-                {item.estimatedDuration ? (
-                  <span className="trk-log-mins shrink-0">
-                    {formatDuration(item.estimatedDuration)}
-                  </span>
-                ) : null}
-              </li>
-            ))}
+            {doneItems.map((item) => {
+              const proposal = proposals.find((row) => row.sourceId === item.id)
+              const placed = dayEntries.find((entry) => entry.estimateOf?.kind === "done" && entry.estimateOf.id === item.id)
+              const penId = selectedPenId && selectedPenId !== ERASE ? selectedPenId : scope.pens[0]?.id
+              return (
+                <li key={item.id} className="flex items-baseline gap-2 text-sm">
+                  <span className="min-w-0 flex-1 truncate">{item.description}</span>
+                  {item.estimatedDuration ? (
+                    <span className="trk-log-mins shrink-0">{formatDuration(item.estimatedDuration)}</span>
+                  ) : null}
+                  {placed?.precision === "estimated" ? (
+                    <button
+                      type="button"
+                      className="trk-latch shrink-0"
+                      onClick={() => updateEntry(placed.id, { precision: undefined })}
+                    >
+                      Confirm
+                    </button>
+                  ) : placed ? (
+                    <span className="trk-log-mins shrink-0">on the grid</span>
+                  ) : proposal && penId ? (
+                    <button
+                      type="button"
+                      className="trk-latch shrink-0"
+                      onClick={() =>
+                        paintMinutes(dk, scope.id, proposal.startMin, proposal.endMin, penId, selectedVariantIds, undefined, "estimated", {
+                          title: proposal.title,
+                          estimateOf: { kind: "done", id: item.id },
+                        })
+                      }
+                    >
+                      Place as assumed
+                    </button>
+                  ) : null}
+                </li>
+              )
+            })}
           </ul>
           <p className="trk-help">
-            Finished To Do items for this calendar day — useful when reconstructing what happened. They are not
-            auto-painted (that pipeline will land later as assumed blocks).
+            Finished To Do items for this calendar day. Place as assumed lays a hatched block in an open gap. Confirm
+            turns that hatch into an ordinary block. Screen Time and other imports that are already estimated confirm
+            the same way on their row.
           </p>
         </div>
       )}

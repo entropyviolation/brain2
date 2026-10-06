@@ -4,8 +4,10 @@
  * Native `<select>` was an ugly system menu that hid "Ocean Beach counts as
  * San Diego" behind a flat list. This is a sunken Win95 field: type to filter,
  * pick a parent in this view, or **Create new pen** so this one can nest under
- * a parent that does not exist yet. One parent only — multiselect / parallel
- * counts-as chains are documented as planned, not implemented.
+ * a parent that does not exist yet. The create row is a dark inset name field
+ * (same voice as the pen Name well) that fills the row beside the swatch and
+ * Create, so the letters stay readable while you type. Several parents can
+ * be ticked; the first one is the display parent **Show as** follows.
  */
 "use client"
 
@@ -36,6 +38,7 @@ export function PenParentPicker({
   pens,
   treePens,
   parentId,
+  parentIds,
   currentName,
   onSelect,
   onCreate,
@@ -43,9 +46,11 @@ export function PenParentPicker({
   pens: TrackPen[]
   /** Full view, including ancestors of `pens`, so path labels and search stay honest. */
   treePens?: TrackPen[]
+  /** Display parent. Used when `parentIds` is omitted (older call sites). */
   parentId?: string
+  parentIds?: string[]
   currentName: string
-  onSelect: (id: string | null) => void
+  onSelect: (ids: string[]) => void
   onCreate: (name: string, color: string) => void
 }) {
   const [open, setOpen] = useState(false)
@@ -56,13 +61,16 @@ export function PenParentPicker({
   const root = useRef<HTMLDivElement>(null)
 
   const tree = treePens ?? pens
-  const selected = tree.find((p) => p.id === parentId) ?? pens.find((p) => p.id === parentId)
+  const selectedIds = parentIds ?? (parentId ? [parentId] : [])
+  const selectedPens = selectedIds
+    .map((id) => tree.find((pen) => pen.id === id) ?? pens.find((pen) => pen.id === id))
+    .filter((pen): pen is TrackPen => Boolean(pen))
   const needle = query.trim().toLowerCase()
   const matches = useMemo(() => {
     if (!needle) return pens
     return pens.filter((p) => matchesNeedle(tree, p, needle))
   }, [pens, tree, needle])
-  const selectedPath = selected ? pathOf(tree, selected.id) : ""
+  const selectedPath = selectedPens[0] ? pathOf(tree, selectedPens[0].id) : ""
 
   useEffect(() => {
     if (!open) return
@@ -73,10 +81,12 @@ export function PenParentPicker({
     return () => document.removeEventListener("mousedown", onDoc)
   }, [open])
 
-  const label = selected
-    ? selectedPath
-      ? `${selected.name} · ${selectedPath}`
-      : selected.name
+  const label = selectedPens.length
+    ? selectedPens.length === 1
+      ? selectedPath
+        ? `${selectedPens[0].name} · ${selectedPath}`
+        : selectedPens[0].name
+      : selectedPens.map((pen, index) => (index === 0 ? `${pen.name} (display)` : pen.name)).join(" · ")
     : `Nothing — top-level ${currentName || "pen"}`
 
   const create = () => {
@@ -101,8 +111,8 @@ export function PenParentPicker({
         onClick={() => setOpen((v) => !v)}
         className="trk-parent-trigger"
       >
-        {selected ? (
-          <span className="trk-chain-bead" style={{ background: selected.color }} aria-hidden />
+        {selectedPens[0] ? (
+          <span className="trk-chain-bead" style={{ background: selectedPens[0].color }} aria-hidden />
         ) : null}
         <span className="min-w-0 flex-1 truncate">{label}</span>
         <span aria-hidden>▾</span>
@@ -120,11 +130,11 @@ export function PenParentPicker({
           <button
             type="button"
             role="option"
-            aria-selected={!parentId}
-            data-active={!parentId ? "true" : undefined}
+            aria-selected={selectedIds.length === 0}
+            data-active={selectedIds.length === 0 ? "true" : undefined}
             className="trk-parent-option"
             onClick={() => {
-              onSelect(null)
+              onSelect([])
               setOpen(false)
             }}
           >
@@ -137,18 +147,19 @@ export function PenParentPicker({
                 key={pen.id}
                 type="button"
                 role="option"
-                aria-selected={pen.id === parentId}
-                data-active={pen.id === parentId ? "true" : undefined}
+                aria-selected={selectedIds.includes(pen.id)}
+                data-active={selectedIds.includes(pen.id) ? "true" : undefined}
                 className="trk-parent-option"
                 onClick={() => {
-                  onSelect(pen.id)
-                  setOpen(false)
+                  if (selectedIds.includes(pen.id)) onSelect(selectedIds.filter((id) => id !== pen.id))
+                  else onSelect([...selectedIds, pen.id])
                 }}
               >
                 <span className="trk-chain-bead" style={{ background: pen.color }} aria-hidden />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate">{pen.name}</span>
                   {path ? <span className="trk-parent-path">{path}</span> : null}
+                  {selectedIds[0] === pen.id ? <span className="trk-parent-path">display</span> : null}
                 </span>
               </button>
             )
@@ -157,14 +168,14 @@ export function PenParentPicker({
             <p className="px-2 py-1 text-[11px]">No pens match “{query.trim()}”.</p>
           )}
           {creating ? (
-            <div className="mt-1 flex items-center gap-1 border-t border-[#808080] pt-1">
+            <div className="trk-parent-create">
               <ColorSwatch value={newColor} onChange={setNewColor} aria-label="New parent color" size="sm" />
               <Input
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="New parent pen…"
                 aria-label="New parent pen name"
-                className="h-7 flex-1 text-sm"
+                autoFocus
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault()
@@ -172,7 +183,7 @@ export function PenParentPicker({
                   }
                 }}
               />
-              <button type="button" className="trk-parent-option w-auto shrink-0" onClick={create} disabled={!(newName.trim() || query.trim())}>
+              <button type="button" className="trk-parent-create-add" onClick={create} disabled={!(newName.trim() || query.trim())}>
                 Create
               </button>
             </div>

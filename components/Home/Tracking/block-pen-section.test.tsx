@@ -59,6 +59,23 @@ describe("BlockPenSection", () => {
     expect(screen.getByLabelText("Add a secondary pen")).toBeInTheDocument()
   })
 
+  it("opens pen settings on a double-click of the color", () => {
+    const onOpenPen = vi.fn()
+    render(
+      <BlockPenSection
+        pens={pens}
+        primaryId="work"
+        secondaryPenIds={[]}
+        onPrimary={vi.fn()}
+        onSecondaries={vi.fn()}
+        onCreate={vi.fn()}
+        onOpenPen={onOpenPen}
+      />,
+    )
+    fireEvent.doubleClick(screen.getByRole("button", { name: /^Work/ }))
+    expect(onOpenPen).toHaveBeenCalledWith("work")
+  })
+
   it("attaches another pen from the library as a secondary", () => {
     const { onSecondaries } = renderSection()
 

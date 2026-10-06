@@ -138,7 +138,13 @@
 
 .trk95 .daylog-week-hour {
   box-sizing: border-box;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
   border-bottom: 1px solid color-mix(in srgb, var(--t-shadow, #808080) 28%, transparent);
+  cursor: pointer;
 }
 
 .trk95 .daylog-week-block {

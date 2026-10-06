@@ -9,7 +9,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { ancestorChain, childrenOf } from "@/lib/pen-tree"
+import { ancestorChains, childrenOf } from "@/lib/pen-tree"
 import type { TrackPen } from "@/lib/time-tracking-store"
 import "./tracking-chrome.css"
 
@@ -81,9 +81,10 @@ export function PenChainVisual({
   penId: string
   onOpenPen: (id: string) => void
 }) {
-  const chain = ancestorChain(pens, penId) as TrackPen[]
+  const chains = ancestorChains(pens, penId) as TrackPen[][]
+  const chain = chains[0] ?? []
   const descendants = (childrenOf(pens, penId) as TrackPen[]).length
-  const hasChain = chain.length > 1 || descendants > 0
+  const hasChain = chains.some((path) => path.length > 1) || descendants > 0
   const [open, setOpen] = useState(hasChain)
 
   // Assigning a parent turns a lonely root into a chain while the dialog is
@@ -109,18 +110,20 @@ export function PenChainVisual({
       </button>
       {open && (
         <div className="space-y-2">
-          <div className="trk-chain" aria-label="Counts-as chain">
-            {[...chain].reverse().map((pen, i) => (
-              <span key={pen.id} className="contents">
-                {i > 0 ? (
-                  <span className="trk-chain-arrow" aria-hidden>
-                    →
-                  </span>
-                ) : null}
-                <Node pen={pen} current={pen.id === penId} onOpen={onOpenPen} />
-              </span>
-            ))}
-          </div>
+          {chains.map((path, index) => (
+            <div key={path.map((pen) => pen.id).join("-") || index} className="trk-chain" aria-label="Counts-as chain">
+              {[...path].reverse().map((pen, i) => (
+                <span key={pen.id} className="contents">
+                  {i > 0 ? (
+                    <span className="trk-chain-arrow" aria-hidden>
+                      →
+                    </span>
+                  ) : null}
+                  <Node pen={pen} current={pen.id === penId} onOpen={onOpenPen} />
+                </span>
+              ))}
+            </div>
+          ))}
           {descendants > 0 && (
             <div>
               <p className="trk-help mb-1">Pens that count as {chain[chain.length - 1]?.name}:</p>

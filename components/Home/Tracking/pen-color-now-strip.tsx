@@ -79,11 +79,22 @@ export function usePenColorSessionClock() {
   useEffect(() => {
     if (!session) return
     tickPenColorSession()
-    const ui = window.setInterval(() => setNow(Date.now()), 1000)
-    const grid = window.setInterval(() => tickPenColorSession(), PEN_COLOR_SESSION_TICK_MS)
+    const ui = window.setInterval(() => {
+      if (document.hidden) return
+      setNow(Date.now())
+    }, 1000)
+    const grid = window.setInterval(() => {
+      if (document.hidden) return
+      tickPenColorSession()
+    }, PEN_COLOR_SESSION_TICK_MS)
+    const onVis = () => {
+      if (!document.hidden) setNow(Date.now())
+    }
+    document.addEventListener("visibilitychange", onVis)
     return () => {
       window.clearInterval(ui)
       window.clearInterval(grid)
+      document.removeEventListener("visibilitychange", onVis)
     }
   }, [session?.penId, session?.startedAt, session?.pausedAt, session?.pausedAccumMs])
 
@@ -162,7 +173,7 @@ export function PenColorNowStrip() {
           aria-autocomplete="list"
           value={fieldValue}
           disabled={live}
-          placeholder="Search pen colors"
+          placeholder="Starts this pen's clock"
           onFocus={() => {
             if (live) return
             setCreateScopeId(activeScopeId || scopes[0]?.id || "")
@@ -255,9 +266,22 @@ export function PenColorNowStrip() {
         disabled={!selected}
         onClick={() => selected && togglePenColorSession(selected.penId)}
       >
-        {live && selected ? `Stop working on ${selected.name}` : "Working on right now"}
+        {live && selected
+          ? `Stop working on ${selected.name}`
+          : selected
+            ? "Start this pen's clock"
+            : "Choose a pen to start its clock"}
       </button>
-      <span className="ops-now-meta">
+      <span
+        className="ops-now-meta"
+        title={
+          live && session
+            ? `${selected?.scopeName ?? "Tracking"} · since ${formatStartSecond(session.startedAt)}`
+            : selected
+              ? `${selected.scopeName} · starts this second`
+              : "Search a pen, or type a new name and create it. The timer starts this second."
+        }
+      >
         {live && session
           ? `${selected?.scopeName ?? "Tracking"} · since ${formatStartSecond(session.startedAt)}`
           : selected

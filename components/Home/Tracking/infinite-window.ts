@@ -6,8 +6,22 @@
  * over a date-indexed map. Prepending days restores scrollTop by the height
  * added so the IntersectionObserver cannot chase its own sentinel.
  */
-import { formatLocalDateKey } from "@/lib/date-utils"
+import {
+  addCalendarDays,
+  formatLocalDateKey,
+  getWeekStartDate,
+  startOfLocalDay,
+} from "@/lib/date-utils"
 import { MINUTES_PER_DAY, type TimeEntry } from "@/lib/time-entries"
+
+/** Strip API name — identical to `startOfLocalDay` (local midnight). */
+export const startOfDay = startOfLocalDay
+/** Strip API name — identical to `addCalendarDays`. */
+export function addDays(date: Date, days: number): Date {
+  return addCalendarDays(date, days)
+}
+/** Strip API name — identical to `getWeekStartDate` (Monday). */
+export const mondayOf = getWeekStartDate
 
 export const INFINITE_DAY_BEFORE = 14
 export const INFINITE_DAY_AFTER = 7
@@ -24,20 +38,6 @@ export type StripMode = "day" | "week"
 export type StripItem =
   | { kind: "band"; key: string; label: string; date: Date }
   | { kind: "day"; key: string; date: Date }
-
-export function startOfDay(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate())
-}
-
-export function addDays(date: Date, days: number): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days)
-}
-
-export function mondayOf(date: Date): Date {
-  const next = startOfDay(date)
-  next.setDate(next.getDate() - ((next.getDay() + 6) % 7))
-  return next
-}
 
 export function daysInRange(origin: Date, before: number, after: number): Date[] {
   const start = startOfDay(origin)

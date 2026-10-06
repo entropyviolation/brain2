@@ -3,11 +3,16 @@
  *
  * A painted block is an event, not a color: it has a start, an end, a primary
  * pen plus optional secondaries, a display name, any number of variants, and
- * notes. This is the one editor for all of that, opened from the Time Grid,
+ * notes. A Mood block also carries This stretch: any name, then the body,
+ * the water, and the heaps. Activity blocks do not. This is the one editor
+ * for all of that, opened from the Time Grid,
  * the Activity Log, or the Day Log, so the views can never drift apart on what
  * a block means. It must open on the click — sleep/pen-action sync stays on
- * the views, not this dialog. The Pen section shows colors already on the
- * block; **add pen color** unfolds the catalog.
+ * the views, not this dialog. It is a non-modal drawer docked to the right
+ * (`entry-dialog.css`): a light wash leaves the grid visible, and a click on
+ * another block replaces this one. × / Escape still run the unsaved-changes
+ * guard. The Pen section shows colors already on the block; **add pen color**
+ * unfolds the catalog. Double-click a pen color to open that pen's settings.
  *
  * Changing the times re-lays the block over the day and clears whatever it lands
  * on, exactly as painting would — so the grid can never end up double-booked.
@@ -24,7 +29,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogPortal, DialogTitle } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
 import { Scissors, Trash2 } from "lucide-react"
 import { snapshotsEqual } from "@/lib/unsaved-changes"
@@ -45,13 +50,19 @@ import {
 import { VariantChips } from "@/components/Home/Tracking/variant-chips"
 import { CompanionSection } from "@/components/Home/Tracking/companion-section"
 import { BlockPenSection } from "@/components/Home/Tracking/block-pen-section"
+import { openPenSettings } from "@/components/Home/Tracking/open-pen-settings"
+import { MoodStretchCard } from "@/components/Home/Tracking/mood-stretch-card"
+import { compactMoodReading, moodPenColor, normalizeWord, type MoodReading } from "@/lib/mood-reading"
 import { parseLocalDate } from "@/lib/date-utils"
 import { OptionalClock } from "@/components/Home/Tracking/log-activity-dialog"
 import "./tracking-chrome.css"
+import "./entry-dialog.css"
 
 interface EntryDialogProps {
   entry: TimeEntry
   onClose: () => void
+  /** Extra DialogContent classes (e.g. Analytics `an-popup` for crisp titles). */
+  contentClassName?: string
 }
 
 /** "the night ending Thu, Sep 17" — sleep is keyed by the morning it ended. */
@@ -60,7 +71,13 @@ function nightLabel(date: string): string {
   return parsed ? parsed.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }) : date
 }
 
-export function EntryDialog({ entry, onClose }: EntryDialogProps) {
+export function EntryDialog(props: EntryDialogProps) {
+  // A new block must remount the draft. The same instance would keep the
+  // previous block's fields when the grid click only swaps `entry`.
+  return <EntryDialogForm key={props.entry.id} {...props} />
+}
+
+function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps) {
   // Sleep / pen-action sync lives on the Tracking views, not on this click path.
   // Deriving every night here made the dialog lag ~1s and minted new Sleep ids.
   const scopes = useTimeTrackingStore((s) => s.scopes)
@@ -105,6 +122,7 @@ export function EntryDialog({ entry, onClose }: EntryDialogProps) {
   const [books, setBooks] = useState(entry.books ?? "")
   const [pages, setPages] = useState(entry.pages?.toString() ?? "")
   const [notes, setNotes] = useState(entry.notes ?? "")
+  const [reading, setReading] = useState<MoodReading>(entry.moodReading ?? {})
   const [assumed, setAssumed] = useState(entry.precision === "estimated")
 
   // The store may replace this block (a split, or a neighbour merging into it);
@@ -145,13 +163,29 @@ export function EntryDialog({ entry, onClose }: EntryDialogProps) {
     setNewTag("")
   }
 
+  const isMood = entry.scopeId === "mood"
+
+  const resolvePenId = () => {
+    if (!isMood || !scope) return penId
+    const word = compactMoodReading(reading)?.word
+    if (!word) return penId
+    const key = normalizeWord(word)
+    const existing = scope.pens.find((item) => normalizeWord(item.name) === key)
+    if (existing) return existing.id
+    const created = addPen(scope.id, { name: word, color: moodPenColor(word) })
+    return created || penId
+  }
+
   const save = () => {
     const startMin = timeStringToMinutes(from)
     if (startMin === null) return
+    if (!isInstant(entry) && timeStringToMinutes(to) === null) return
+    const savedPenId = resolvePenId()
+    const moodPatch = isMood ? { moodReading: compactMoodReading(reading) } : {}
     if (isInstant(entry)) {
       updateEntry(origin.id, {
         date: fromDate,
-        penId,
+        penId: savedPenId,
         secondaryPenIds,
         startMin,
         endMin: startMin,
@@ -164,6 +198,7 @@ export function EntryDialog({ entry, onClose }: EntryDialogProps) {
         pages: pages.trim() ? Number.parseInt(pages, 10) || undefined : undefined,
         notes: notes.trim() || undefined,
         precision: assumed ? "estimated" : undefined,
+        ...moodPatch,
       })
       onClose()
       return
@@ -177,7 +212,7 @@ export function EntryDialog({ entry, onClose }: EntryDialogProps) {
       origin.id,
       {
         date: fromDate,
-        penId,
+        penId: savedPenId,
         secondaryPenIds,
         startMin,
         endMin,
@@ -189,6 +224,7 @@ export function EntryDialog({ entry, onClose }: EntryDialogProps) {
         pages: pages.trim() ? Number.parseInt(pages, 10) || undefined : undefined,
         notes: notes.trim() || undefined,
         precision: assumed ? "estimated" : undefined,
+        ...moodPatch,
       },
       wrapEndDate,
     )
@@ -203,6 +239,10 @@ export function EntryDialog({ entry, onClose }: EntryDialogProps) {
   }
 
   const isActivity = entry.scopeId === "activity"
+  const startForSentence = timeStringToMinutes(from) ?? origin.startMin
+  const endForSentence = isInstant(entry)
+    ? startForSentence
+    : (timeStringToMinutes(to) ?? last.endMin % 1440)
 
   const draft = {
     penId,
@@ -216,6 +256,7 @@ export function EntryDialog({ entry, onClose }: EntryDialogProps) {
     books,
     pages,
     notes,
+    reading,
     assumed,
     variantIds: liveVariantIds,
     tagIds,
@@ -235,10 +276,30 @@ export function EntryDialog({ entry, onClose }: EntryDialogProps) {
 
   return (
     <>
-    <Dialog open onOpenChange={guard.handleOpenChange}>
-      <DialogContent className="trk95 trk-dialog sm:max-w-md max-h-[85vh] overflow-y-auto" data-ui-name="Tracking entry" data-ui-docs="components/Home/Tracking/README.md" {...unsavedDismissProps(guard.requestClose)}>
-        <DialogHeader>
-          <DialogTitle style={{ color: pen?.color }}>
+    <Dialog open modal={false} onOpenChange={guard.handleOpenChange}>
+      {/* Radix skips its overlay when the dialog is non-modal, so the wash is our own. */}
+      <DialogPortal>
+        <div className="trk-entry-overlay" aria-hidden="true" />
+      </DialogPortal>
+      <DialogContent
+        className={["trk95 trk-dialog trk-entry-drawer", contentClassName].filter(Boolean).join(" ")}
+        aria-describedby={undefined}
+        data-presentation="drawer"
+        data-ui-name="Tracking entry"
+        data-ui-docs="components/Home/Tracking/README.md"
+        {...unsavedDismissProps(guard.requestClose)}
+        onPointerDownOutside={(event) => {
+          event.preventDefault()
+        }}
+        onInteractOutside={(event) => {
+          event.preventDefault()
+        }}
+        onFocusOutside={(event) => {
+          event.preventDefault()
+        }}
+      >
+        <DialogHeader className="trk-entry-drawer-head">
+          <DialogTitle style={contentClassName?.includes("an-popup") ? undefined : { color: pen?.color }}>
             {displayName} · {minutesToLabel(origin.startMin)} – {minutesToLabel(last.endMin)}
             {crossesMidnight ? " (next day)" : ""}
           </DialogTitle>
@@ -300,6 +361,18 @@ export function EntryDialog({ entry, onClose }: EntryDialogProps) {
             />
           </div>
 
+          {isMood && scope && (
+            <MoodStretchCard
+              reading={reading}
+              onChange={setReading}
+              pens={scope.pens}
+              onUsePen={setPenId}
+              date={fromDate}
+              startLabel={minutesToLabel(startForSentence)}
+              endLabel={minutesToLabel(endForSentence)}
+            />
+          )}
+
           <div className="flex items-center justify-between gap-2 trk-section">
             <div>
               <Label htmlFor="entry-assumed" className="cursor-pointer text-sm">
@@ -328,6 +401,7 @@ export function EntryDialog({ entry, onClose }: EntryDialogProps) {
                   setSecondaryPenIds((current) => current.filter((x) => x !== id))
                 }
               }}
+              onOpenPen={(id) => openPenSettings(entry.scopeId, id)}
               sortMode={penSort}
             />
           )}
@@ -336,7 +410,9 @@ export function EntryDialog({ entry, onClose }: EntryDialogProps) {
             <div className="trk-section space-y-1.5">
               <Label>{pen.variantLabel || "Detail"}</Label>
               <p className="trk-help">
-                Tick every one that applies — Analytics shows {pen.name} as a whole first, then splits it by these.
+                Tick every one that applies. Each option is a pen that counts as {pen.name} — add one here or nest a
+                pen under it, and it shows in both places. Double-click an option to open that pen. Analytics shows{" "}
+                {pen.name} as a whole first, then splits it by these.
               </p>
               <VariantChips
                 pen={pen}
@@ -350,6 +426,7 @@ export function EntryDialog({ entry, onClose }: EntryDialogProps) {
                   const id = addVariant(entry.scopeId, pen.id, name)
                   if (id) setVariantIds((current) => [...current, id])
                 }}
+                onOpenPen={(id) => openPenSettings(entry.scopeId, id)}
               />
             </div>
           )}

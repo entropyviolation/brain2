@@ -5,6 +5,8 @@ import {
   DEFAULT_TRACKING_VIEW_PREFS,
   getTrackingViewPrefs,
   resetTrackingViewPrefs,
+  resolveSuperimposeScopeId,
+  setScopeSuperimpose,
   setTrackingViewPrefs,
   TRACKING_FILL_CLOCK_LABELS,
 } from "./tracking-view-prefs"
@@ -98,6 +100,63 @@ describe("tracking view prefs", () => {
     resetTrackingViewPrefs()
     expect(getTrackingViewPrefs().penWellExpanded).toBe(false)
     expect(getTrackingViewPrefs().penTray).toBe("fr4")
+  })
+
+  it("remembers superimpose per view and leaves the other views alone", () => {
+    expect(getTrackingViewPrefs().superimposeByScope).toEqual({})
+    setScopeSuperimpose("activity", "location")
+    setScopeSuperimpose("company", "mood")
+    expect(getTrackingViewPrefs().superimposeByScope).toEqual({ activity: "location", company: "mood" })
+    expect(JSON.parse(localStorage.getItem(KEY) ?? "{}").superimposeByScope).toEqual({
+      activity: "location",
+      company: "mood",
+    })
+
+    setTrackingViewPrefs({ fillFrom: "07:00" })
+    expect(getTrackingViewPrefs().superimposeByScope).toEqual({ activity: "location", company: "mood" })
+
+    setScopeSuperimpose("activity", null)
+    expect(getTrackingViewPrefs().superimposeByScope).toEqual({ company: "mood" })
+
+    const ids = ["activity", "location", "mood", "company"]
+    const prefs = getTrackingViewPrefs()
+    expect(resolveSuperimposeScopeId("activity", ids, prefs)).toBeNull()
+    expect(resolveSuperimposeScopeId("company", ids, prefs)).toBe("mood")
+    expect(resolveSuperimposeScopeId("location", ids, { superimposeByScope: { activity: "location" } })).toBeNull()
+    expect(resolveSuperimposeScopeId("activity", ids, { superimposeByScope: {} })).toBeNull()
+    expect(resolveSuperimposeScopeId("activity", ["activity"], { superimposeByScope: { activity: "location" } })).toBeNull()
+    expect(resolveSuperimposeScopeId("activity", ids, { superimposeByScope: { activity: "activity" } })).toBeNull()
+    expect(resolveSuperimposeScopeId("activity", ids, { superimposeByScope: { activity: "gone" } })).toBeNull()
+  })
+
+  it("drops a self-overlay without clearing the other views", () => {
+    setTrackingViewPrefs({
+      superimposeByScope: { activity: "location", location: "location", company: "mood" },
+    })
+    expect(getTrackingViewPrefs().superimposeByScope).toEqual({ activity: "location", company: "mood" })
+    setScopeSuperimpose("activity", "activity")
+    expect(getTrackingViewPrefs().superimposeByScope).toEqual({ company: "mood" })
+  })
+
+  it("treats an older blob without the per-view map as all-off", () => {
+    localStorage.setItem(
+      KEY,
+      JSON.stringify({ fillFrom: "08:00", fillTo: "09:30", superimpose: true, superimposeScopeId: "location" }),
+    )
+    resetTrackingViewPrefs()
+    expect(getTrackingViewPrefs().superimposeByScope).toEqual({})
+    expect(getTrackingViewPrefs().fillFrom).toBe("08:00")
+    expect(resolveSuperimposeScopeId("activity", ["activity", "location"], getTrackingViewPrefs())).toBeNull()
+
+    setScopeSuperimpose("activity", "mood")
+    const stored = JSON.parse(localStorage.getItem(KEY) ?? "{}") as {
+      superimpose?: boolean
+      superimposeScopeId?: string
+      superimposeByScope?: Record<string, string>
+    }
+    expect(stored.superimposeByScope).toEqual({ activity: "mood" })
+    expect(stored.superimpose).toBeUndefined()
+    expect(stored.superimposeScopeId).toBeUndefined()
   })
 
   it("keeps Fill clock labels honest about hours, not dates", () => {

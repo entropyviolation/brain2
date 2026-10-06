@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react"
+import { act, fireEvent, render, screen } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { formatLocalDateKey } from "@/lib/date-utils"
@@ -79,6 +79,44 @@ describe("InfiniteStrip", () => {
     const opened = onOpenWeek.mock.calls[0][0] as Date
     expect(opened.getDay()).toBe(1)
     expect(formatLocalDateKey(opened)).toBe(band.getAttribute("data-week-band"))
+  })
+
+  it("coalesces scroll into one bounds update per animation frame", () => {
+    render(<InfiniteStrip centerDate={WED} onDateChange={vi.fn()} mode="day" />)
+    const scroller = document.querySelector(".trk-infinite") as HTMLElement
+    let top = scroller.scrollTop
+    Object.defineProperty(scroller, "scrollTop", {
+      configurable: true,
+      get: () => top,
+      set: (value: number) => {
+        top = value
+      },
+    })
+    const first = scroller.querySelector("[data-day-row]")?.getAttribute("data-day-row")
+    expect(first).toBeTruthy()
+
+    const queued: FrameRequestCallback[] = []
+    const spy = vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => {
+      queued.push(cb)
+      return queued.length
+    })
+    try {
+      scroller.scrollTop = 400
+      fireEvent.scroll(scroller)
+      scroller.scrollTop = 680
+      fireEvent.scroll(scroller)
+      expect(queued).toHaveLength(1)
+      expect(scroller.querySelector("[data-day-row]")?.getAttribute("data-day-row")).toBe(first)
+
+      act(() => {
+        queued[0](0)
+      })
+      const after = scroller.querySelector("[data-day-row]")?.getAttribute("data-day-row")
+      expect(after).toBeTruthy()
+      expect(after).not.toBe(first)
+    } finally {
+      spy.mockRestore()
+    }
   })
 
   it("labels sunrise from each row's date, not a single today stamp", () => {
