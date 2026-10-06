@@ -111,7 +111,20 @@ Plan Week: Win95 window (Plan — Calendar). Settings / Paste Events / Add Event
       "components/Home/Plan/plan-chrome.css",
     ],
     description: `Home window: milled date plate (weekday CRT, calendar nameplate, Widgets key); shared overview squares (Review due, All Time / Today / Week / Month, Today's Progress; Widgets) in one equal-height CRT row. Needs Attention (Overdue / Blocked / Unclarified — click opens detail). Sub-tabs: Habits · Plan · To Do · Goals · Tracking.
-Plan Day: Win95 window (Plan — Calendar). Settings / Paste Events / Add Event / Add Plan (bounded Win95 dialogs; dirty close prompts). Add Plan writes a planned action — a dashed linen chip, not an event — on the selected day. Toolbar Month / Week / Day + Dark latch. Sidebar Planned Today: packed nested wells, 10-pip capacity, search/sort, To Do / Habits / Next actions filters, habit gems on incomplete daily habits, Add a to-do; drop here to unschedule. Period toolbar: roomy chevrons, centered date, padded Today. Fieldset legends are navy labels (not links). All-day banners (opal chip + crystal-ball mark) + a tall agenda with 152px hour rows that lands on now (today, red now-line) or waking hour (other days); FR4 hairlines; opalescent events; sunrise/sunset. Drag sidebar rows onto hours to plan them (native drag plus a pointer fallback, so a host that strips DataTransfer still drops); the new placement opens the planned-action dialog for duration and notes. Click event → detail. Day Plan log: Submit plan stamps writing time; List / Bulk / Latest; copy-only history, newest first (composer capped so the agenda stays the large surface). Status bar: view · date · event count.`,
+Plan Day: Win95 window (Plan — Calendar). Settings / Paste Events / Add Event / Add Plan (bounded Win95 dialogs; dirty close prompts). Add Plan writes a planned action — a dashed linen chip, not an event — on the selected day. Toolbar Season / Month / Week / Day + Dark latch. Sidebar Planned Today: packed nested wells, 10-pip capacity, search/sort, To Do / Habits / Next actions filters, habit gems on incomplete daily habits, Add a to-do; drop here to unschedule. Period toolbar: roomy chevrons, centered date, padded Today. Fieldset legends are navy labels (not links). All-day banners (opal chip + crystal-ball mark) + a tall agenda with 152px hour rows that lands on now (today, red now-line) or waking hour (other days); FR4 hairlines; opalescent events; sunrise/sunset. Drag sidebar rows onto hours to plan them (native drag plus a pointer fallback, so a host that strips DataTransfer still drops); the new placement opens the planned-action dialog for duration and notes. Click event → detail. Day Plan log: Submit plan stamps writing time; List / Bulk / Latest; copy-only history, newest first (composer capped so the agenda stays the large surface). Status bar: view · date · event count.`,
+  },
+  {
+    file: "02-home-plan-season.png",
+    area: "Home → Plan → Season",
+    view: "Home tab → Plan → Season view",
+    sources: [
+      "components/Home/Plan/plan-panel.tsx",
+      "components/Home/Plan/season-view.tsx",
+      "components/Home/Plan/plan-text-log.tsx",
+      "components/Home/Plan/plan-period-nav.tsx",
+    ],
+    description: `${HOME_CHROME}
+Plan Season: three months of the calendar quarter, named as a season (Q4 is Winter). Previous / next season, This season. Click a day for Day view, or a month name for Month view. Written season plan below the months (Submit plan stamps an entry).`,
   },
   {
     file: "03-home-todo.png",
@@ -126,7 +139,7 @@ Plan Day: Win95 window (Plan — Calendar). Settings / Paste Events / Add Event 
       "components/Focus/JustStartMode.tsx",
     ],
     description: `${HOME_CHROME}
-To Do: Sort (Tier / Priority / Name / Date created / Date added / Days pushed) + asc/desc + formula (Urgency / Importance / Quick win / Entropy, Reset); Status (Open / Active / Partial / Deferred / Cancelled / All); Show All Tasks; Add Task (description + tier). Tabs Day / Week / Month. Today's Tasks: date nav; cols Task / Status / Tier (A+…D) / Days (pushed) / Actions (complete, Just Start, push, details, hide). Show N more. Done Today (n, N est.) + Log done. Done rows: clock window · duration · ~est. (Looks right / Finished / Took). Just Start overlay: timer, Done with this step.`,
+To Do: Sort (Tier / Priority / Name / Date created / Date added / Days pushed) + asc/desc + formula (Urgency / Importance / Quick win / Entropy, Reset); Status (Open / Active / Partial / Deferred / Cancelled / All); Show All Tasks; Add Task (description + tier). Tabs Day / Week / Month / Season. Load strip: days left, estimated time (All assigned / Required / Required + prioritized), hours left, working hours left, comfort (manageable / overfilled / behind). Required list, then Assigned (search box, Prioritized tag). Row keys include Required and Prioritized. Each row has a minutes box and + for nested steps. Today's Tasks: date nav; cols Task / Status / Tier (A+…D) / Days (pushed) / Actions (complete, Just Start, push, details, delete). Show N more. Done Today (n, N est.) + Log done. Done rows: clock window · duration · ~est. (Looks right / Finished / Took). Just Start overlay: timer, Done with this step.`,
   },
   {
     file: "03-home-todo-week.png",
@@ -134,7 +147,7 @@ To Do: Sort (Tier / Priority / Name / Date created / Date added / Days pushed) +
     view: "Home tab → To Do → Week period",
     sources: ["components/Home/ToDo/todo-panel.tsx", "components/Home/ToDo/TodoPeriodNav.tsx"],
     description: `${HOME_CHROME}
-To Do Week: same Sort / formula / Status / Show All / Add Task. This Week's Tasks: week nav; cols Task / Status / Tier / Weeks (pushed) / Actions. Done this week + Log done. Done rows dated, with duration and est. chip.`,
+To Do Week: same Sort / formula / Status / Show All / Add Task. Load strip includes "N days left in week", hours left, and working hours left. Required, then Assigned with search. This Week's Tasks: week nav; cols Task / Status / Tier / Weeks (pushed) / Actions (delete). Minutes box and nested steps on each row. Done this week + Log done. Done rows dated, with duration and est. chip.`,
   },
   {
     file: "03-home-todo-month.png",
@@ -142,7 +155,14 @@ To Do Week: same Sort / formula / Status / Show All / Add Task. This Week's Task
     view: "Home tab → To Do → Month period",
     sources: ["components/Home/ToDo/todo-panel.tsx"],
     description: `${HOME_CHROME}
-To Do Month: same toolbar. This Month's Tasks: month nav; table Task / Status / Tier / Months (pushed) / Actions. Done this month + Log done. Done rows dated, with duration and est. chip.`,
+To Do Month: same toolbar. Load strip includes "N days left in month", hours left, and working hours left. Required, then Assigned with search. This Month's Tasks: month nav; table Task / Status / Tier / Months (pushed) / Actions (delete). Minutes box and nested steps on each row. Done this month + Log done. Done rows dated, with duration and est. chip.`,
+  },
+  {
+    file: "03-home-todo-just-start.png",
+    area: "Home → To Do → Just Start",
+    view: "To Do row → Start (Just Start focus mode)",
+    sources: ["components/Focus/JustStartMode.tsx", "components/Home/ToDo/TodoTable.tsx", "lib/molecular.ts"],
+    description: `Just Start overlay from a To Do row (Start). Dark full-screen focus: the smallest next molecular step, a 2-minute countdown, Done with this step, Exit focus mode. Escape closes it.`,
   },
   {
     file: "04-home-goals.png",
@@ -266,7 +286,7 @@ Tracking → Day Log inside the Tracking window (no nested Agenda / Activity Log
       "components/Lists/filemanager98.css",
       "lib/lists-ui-store.ts",
     ],
-    description: `File Manager (_ □ ×). Two toolbar bays: Up / New List / New Folder / Import spreadsheet / Settings / Select + Search; then VIEW mode deck (LED keys: Icons / List / Details / Cards; short↔full labels) + Auto-organize on Icons. Address bar. Sidebar Quick Access: Home, All, folder tree, + New Folder. Velvet Icons: smart-list orbs (Daily/Weekly/Monthly Habits, Objectives, Daily/Weekly/Monthly To Do) — double-click opens; ★ pin, ✎ change icon. Status: This folder / Tree counts + Smart lists checkbox. Select + search results support Move to destination for folders/lists/items.`,
+    description: `File Manager (_ □ ×). Two toolbar bays: Up / New List / New Folder / Import spreadsheet / Settings / Select + Search; then VIEW mode deck (LED keys: Icons / List / Details / Cards; short↔full labels) + Auto-organize on Icons. Address bar. Sidebar Quick Access: Home, All, folder tree (each folder is a photographed cut-out plus its color swatch), + New Folder. Velvet Icons: lists and smart lists are orbs; folders are photographed folder cut-outs assigned like orbs (stable per id; a custom icon still wins) — Daily/Weekly/Monthly Habits, Objectives, Daily/Weekly/Monthly To Do. Double-click opens; ★ pin, ✎ change icon. Status: This folder / Tree counts + Smart lists checkbox. Select + search results support Move to destination for folders/lists/items.`,
   },
   {
     file: "05-lists-list.png",
@@ -308,7 +328,7 @@ Tracking → Day Log inside the Tracking window (no nested Agenda / Activity Log
     area: "Lists → list → Spreadsheet",
     view: "Lists tab → Example List → Spreadsheet display",
     sources: ["components/Lists/list-content/ListContentSpreadsheet.tsx"],
-    description: `Same open-list chrome + DISPLAY mode deck. Spreadsheet: formula bar, Filter…, columns, sort, Add column, Add Item… + Add row. Cell edit / fill handle / Open to edit. Pop-out fullscreen supported.`,
+    description: `Same open-list chrome + DISPLAY mode deck (Spreadsheet active). Spreadsheet: formula bar, Filter…, lean default columns (list schema / displayedAttributes; Name-only when unset on empty-schema lists such as All Items — extras via Add column / view settings), sort, Add column, Add Item… + Add row. Cell edit / fill handle / Open to edit. Pop-out fullscreen supported.`,
   },
 
   // ── Scheduler ─────────────────────────────────────────────────────────────
@@ -366,7 +386,77 @@ Tracking → Day Log inside the Tracking window (no nested Agenda / Activity Log
       "components/Operations/ResourcesPanel.tsx",
       "components/Operations/ToDoNextRail.tsx",
     ],
-    description: `Back / Board; click title to rename; stage badge. Menubar: Settings (panels, categories, tracking tags, presets, Delete operation with Are you sure), After-action report, category chips, Working now. Tabs from Settings: Home / To do / Phases / Parts / Timeline / Locations / Plan / Resources / Log. Parts: kinds, part pages, ideas, glance metrics. Home: Mission, Stage, Notes, Work/neglect heatmap. To do next rail (Mark done, open). Status: N panels on.`,
+    description: `Back / Board; click title to rename; stage badge. Menubar: Settings (panels, categories, tracking tags, presets, Delete operation with Are you sure), After-action report, category chips, Working now. Tabs from Settings: Home / To do / Phases / Parts / Timeline / Locations / Plan / Resources / Log. Home: Mission, Stage, Notes, Work/neglect heatmap. To do next rail. Status: N panels on.`,
+  },
+  {
+    file: "10-operations-todo.png",
+    area: "Operations → To do",
+    view: "Operation workspace → To do",
+    sources: ["components/Operations/OperationTasksPanel.tsx", "lib/operation-lists.ts"],
+    description: `To do panel: the operation's backing list (same Lists content panel). Seeded coast-weekend tasks, including phase steps filed on that list.`,
+  },
+  {
+    file: "10-operations-phases.png",
+    area: "Operations → Phases",
+    view: "Operation workspace → Phases",
+    sources: ["components/Operations/PhasesPanel.tsx", "lib/operations.ts"],
+    description: `Phases linked has-phase / phase-of. Each phase expands to its steps (has-part). Pack the car and Drive Highway 1, with a completed step and an open one.`,
+  },
+  {
+    file: "10-operations-parts.png",
+    area: "Operations → Parts",
+    view: "Operation workspace → Parts",
+    sources: ["components/Operations/PartsPanel.tsx", "lib/operation-parts.ts"],
+    description: `Kinds (Day, nested Stop) from partFormulas, and instances (Saturday headlands, Point Reyes pull-off) from partInstances, including an idea. Glance meters and the new-kind form.`,
+  },
+  {
+    file: "10-operations-timeline.png",
+    area: "Operations → Timeline",
+    view: "Operation workspace → Timeline",
+    sources: ["components/Operations/OperationFieldPlanPanels.tsx", "components/Modules/workspace/itinerary/ItineraryDocumentView.tsx"],
+    description: `Timeline: day-by-day field plan for the coast weekend (Mendocino, Point Reyes) with timed plans and notes. Backed by the operation's itinerary module.`,
+  },
+  {
+    file: "10-operations-locations.png",
+    area: "Operations → Locations",
+    view: "Operation workspace → Locations",
+    sources: ["components/Operations/OperationFieldPlanPanels.tsx", "components/Modules/workspace/itinerary/TripActivitiesView.tsx"],
+    description: `Locations: places for the operation. Headlands Inn is a place on the backing list, with a map pin.`,
+  },
+  {
+    file: "10-operations-plan.png",
+    area: "Operations → Plan",
+    view: "Operation workspace → Plan",
+    sources: ["components/Operations/OperationFieldPlanPanels.tsx", "components/Modules/workspace/itinerary/DocPlanView.tsx"],
+    description: `Plan: the long-form coast weekend document (drive, walk, home before dark). Same note the Docs tab opens.`,
+  },
+  {
+    file: "10-operations-resources.png",
+    area: "Operations → Resources",
+    view: "Operation workspace → Resources",
+    sources: ["components/Operations/ResourcesPanel.tsx"],
+    description: `Resources linked has-resource. The AAA coast map is attached. Inline add-a-resource row.`,
+  },
+  {
+    file: "10-operations-log.png",
+    area: "Operations → Log",
+    view: "Operation workspace → Log",
+    sources: ["components/Operations/OperationLogFeed.tsx"],
+    description: `Reverse-chronological time log for the operation and its task tree, plus the punch-in form. Seeded minutes on the operation and on Reserve the Headlands Inn.`,
+  },
+  {
+    file: "10-operations-settings.png",
+    area: "Operations → Settings",
+    view: "Operation workspace → Settings dialog",
+    sources: ["components/Operations/OperationSettingsDialog.tsx", "lib/operation-types.ts"],
+    description: `Operation settings: name, mission, stage, categories, panel switches (Timeline, Locations, Plan, Resources included), tracking tags, presets, Delete operation.`,
+  },
+  {
+    file: "10-operations-postmortem.png",
+    area: "Operations → After-action report",
+    view: "Operation workspace → After-action report dialog",
+    sources: ["components/Operations/OperationPostMortemDialog.tsx"],
+    description: `After-action report dialog: summary, what worked, what failed, lessons, Execution / Planning / Morale ratings.`,
   },
 
   // ── Modules ───────────────────────────────────────────────────────────────
@@ -391,6 +481,22 @@ Tracking → Day Log inside the Tracking window (no nested Agenda / Activity Log
       "lib/module-templates.ts",
     ],
     description: `Back; click title to rename; Print / Export; Workflows; Settings; Pop out; Add view. View tabs (Plan / Itinerary / Activities / Packing / Before Trip — per template). Per-view settings gear. Doc/grid body + editor toolbar. Status (word count).`,
+  },
+
+  // ── Docs ──────────────────────────────────────────────────────────────────
+  {
+    file: "12-docs.png",
+    area: "Docs",
+    view: "Docs tab → folder homepage",
+    sources: ["components/Docs/DocsPanel.tsx", "components/Docs/DocsHome.tsx", "components/Docs/doc-actions.ts"],
+    description: `Docs window: folder sidebar (All / Unfiled / named folders), search, blank and upload cards, document tiles. Seeded notes: Coast weekend plan (Trips) and Kiln wiring notes (Studio).`,
+  },
+  {
+    file: "12-docs-reading.png",
+    area: "Docs → reading",
+    view: "Docs tab → open document",
+    sources: ["components/Docs/DocsPanel.tsx", "components/Docs/DocumentEditor.tsx", "lib/doc-persist.ts"],
+    description: `Open document: title, folder, font, editor body. Coast weekend plan — drive, headlands walk, home before dark.`,
   },
 
   // ── Analytics ─────────────────────────────────────────────────────────────
@@ -615,7 +721,7 @@ Location scope as a time-at-pen mosaic (country → park via displayDepth). Not 
     view: "Analytics tab → Time → Mood field",
     sources: ["components/Analytics/MoodFieldView.tsx"],
     description: `${ANALYTICS_CHROME}
-Spec §15 cognitive-state: painted Mood pens plus overlay of logged wellbeing metrics.`,
+Mood field: any painted name in the mosaic (Great, Good, Meh, and Low are starter pens, not the scale). Under the title, **How to read this**. Plates: **Same word** (one label, many dates), **The water** (vibe phrases and leanings, with n), **Marks** (means and tone counts, missing marks left out). A color with no card stays out of the averages. Logged wellbeing metrics remain a separate plate. Open a block from Tracking for the three-part reading.`,
   },
   {
     file: "07-analytics-diversity.png",
@@ -736,12 +842,13 @@ Importance, cognitive load, and entropy already on items. Missing stays missing.
     sources: [
       "components/Settings/SettingsDialog.tsx",
       "components/Settings/HomeLocationField.tsx",
+      "components/Settings/BirthdayField.tsx",
       "components/Settings/DayAnchorField.tsx",
       "components/Settings/BackupRestore.tsx",
       "components/Settings/MessageIngestPanel.tsx",
       "components/Settings/ScreenTimePanel.tsx",
     ],
-    description: `Settings. Home location (City). Default time of day: what is assumed when work is ticked off after the day has ended and there is no tracked time to read a real finish from. Once a few nights are logged this reports that the sleep log is answering it instead — your usual bedtime, less half an hour — and the Assumed finish time field below it is the fallback for days with no sleep data at all. Full App Backup: Export Full Backup / Restore From Backup. Phone↔Desktop Live Sync: Check hub / Force push now / Force pull now. Message ingest: enable, Telegram token (desktop), pairing code, cheat-sheet, simulate a phrase. **Screen Time**: ActivityWatch URL, connection lamp, lookback, Sync now. Item Types → Manage Item Types. Second Brain seed. PNG may need scroll.`,
+    description: `Settings. Home location (City). Birthday: the Star Lord Report opens on this day (new moon and full moon open on their own). Default time of day: what is assumed when work is ticked off after the day has ended and there is no tracked time to read a real finish from. Once a few nights are logged this reports that the sleep log is answering it instead — your usual bedtime, less half an hour — and the Assumed finish time field below it is the fallback for days with no sleep data at all. Full App Backup: Export Full Backup / Restore From Backup. Phone↔Desktop Live Sync: Check hub / Force push now / Force pull now. Message ingest: enable, Telegram token (desktop), pairing code, cheat-sheet, simulate a phrase. **Screen Time**: ActivityWatch URL, connection lamp, lookback, Sync now. Item Types → Manage Item Types. Second Brain seed. PNG may need scroll.`,
   },
   {
     file: "20-dialog-inbox.png",
@@ -786,6 +893,13 @@ Importance, cognitive load, and entropy already on items. Missing stays missing.
     description: `Wellbeing metrics. Log a datapoint: Joy / Suffering / Alignment / Self satisfaction / Situational satisfaction (/100 + color). When, Context, Details. Log datapoint. Recent datapoints (+ delete).`,
   },
   {
+    file: "20-dialog-completion.png",
+    area: "Completion dialog",
+    view: "To Do → Done → completion popup",
+    sources: ["components/Completion/CompletionDialog.tsx", "components/Completion/CompletionPopupHost.tsx"],
+    description: `Task completed. Optional quick reflection: Exact / Est. / Unknown length, start time, optional 1–10 scores, notes, live points line. Footer: Undo (reopen as still to-do), Skip, Save.`,
+  },
+  {
     file: "21-item-detail-popup.png",
     area: "Item detail popup",
     view: "Item detail popup (from Lists)",
@@ -794,15 +908,57 @@ Importance, cognitive load, and entropy already on items. Missing stays missing.
       "components/ItemDetail/useItemDetailDraft.ts",
       "components/ItemDetail/ItemAttributesSection.tsx",
     ],
-    description: `Item detail. Title. Delete / Complete / Save Changes. Tabs: Details / Scheduling / Dependencies / Subtasks / Analysis / Time / Body. Details: description, duration, reward, urgency/importance, Show in Scheduler, repeat, Type, Lists (+ New list), Tags, Related, Attributes, Completion status (Active/Partial/Deferred/Cancelled/Done). Scheduling: dates, deadline, constraints. Deps, subtasks, why/if-not notes, estimated vs actual logs, body.`,
+    description: `Item detail, Details tab. Title Photograph the headlands. Delete / Complete / Save Changes. Detailed description, duration, reward, urgency/importance, Show in Scheduler, Type, Lists, Tags. Other tabs: Scheduling, Dependencies, Subtasks, Analysis, Time, Body.`,
+  },
+  {
+    file: "21-item-detail-scheduling.png",
+    area: "Item detail → Scheduling",
+    view: "Item detail popup → Scheduling",
+    sources: ["components/ItemDetail/ItemDetailPopup.tsx", "components/ItemDetail/ItemScheduleFlags.tsx"],
+    description: `Scheduling: scheduled date and time, deadline, flexible scheduling, constraints. The headlands photo is dated and has a deadline.`,
+  },
+  {
+    file: "21-item-detail-dependencies.png",
+    area: "Item detail → Dependencies",
+    view: "Item detail popup → Dependencies",
+    sources: ["components/ItemDetail/ItemDetailPopup.tsx"],
+    description: `Dependencies: Photograph the headlands waits on Buy a roll of black-and-white film.`,
+  },
+  {
+    file: "21-item-detail-subtasks.png",
+    area: "Item detail → Subtasks",
+    view: "Item detail popup → Subtasks",
+    sources: ["components/ItemDetail/ItemDetailPopup.tsx", "lib/molecular.ts"],
+    description: `Subtasks: Pack the small tripod (done) and One frame of the inn roof (open, molecular).`,
+  },
+  {
+    file: "21-item-detail-analysis.png",
+    area: "Item detail → Analysis",
+    view: "Item detail popup → Analysis",
+    sources: ["components/ItemDetail/ItemDetailPopup.tsx"],
+    description: `Analysis: why, what happens if you don't, additional notes. All three filled for the headlands photo.`,
+  },
+  {
+    file: "21-item-detail-time.png",
+    area: "Item detail → Time",
+    view: "Item detail popup → Time",
+    sources: ["components/ItemDetail/ItemDetailPopup.tsx"],
+    description: `Time: estimated vs actual, and a logged scout of the overlook.`,
+  },
+  {
+    file: "21-item-detail-body.png",
+    area: "Item detail → Body",
+    view: "Item detail popup → Body",
+    sources: ["components/ItemDetail/BodyPanel.tsx", "components/ItemDetail/ItemDetailPopup.tsx"],
+    description: `Body: the note about standing on the north trail until the fog lifts. The Example List adds the Body panel.`,
   },
 ]
 
 export const COVERAGE_AREAS = [
   { area: "App shell & global header", shots: ["20-dialog-*", "Global chrome visible in all full-page shots"] },
   { area: "Home → Habits", shots: ["01-home-daily-habits.png", "01-home-habits-weekly.png", "01-home-habits-monthly.png"] },
-  { area: "Home → Plan", shots: ["02-home-plan.png", "02-home-plan-week.png", "02-home-plan-day.png"] },
-  { area: "Home → To Do", shots: ["03-home-todo.png", "03-home-todo-week.png", "03-home-todo-month.png"] },
+  { area: "Home → Plan", shots: ["02-home-plan.png", "02-home-plan-week.png", "02-home-plan-day.png", "02-home-plan-season.png"] },
+  { area: "Home → To Do", shots: ["03-home-todo.png", "03-home-todo-week.png", "03-home-todo-month.png", "03-home-todo-just-start.png"] },
   { area: "Home → Goals", shots: ["04-home-goals.png"] },
   {
     area: "Home → Tracking",
@@ -816,8 +972,10 @@ export const COVERAGE_AREAS = [
   { area: "Lists folder views", shots: ["05-lists.png", "05-lists-list.png", "05-lists-details.png", "05-lists-cards.png"] },
   { area: "Lists content displays", shots: ["05-lists-content-*.png"] },
   { area: "Scheduler", shots: ["06-scheduler.png", "06-scheduler-day.png", "06-scheduler-gantt.png", "06-scheduler-dependencies.png"] },
-  { area: "Operations", shots: ["10-operations.png", "10-operations-workspace.png"] },
+  { area: "Operations", shots: ["10-operations.png", "10-operations-workspace.png", "10-operations-todo.png", "10-operations-phases.png", "10-operations-parts.png", "10-operations-timeline.png", "10-operations-locations.png", "10-operations-plan.png", "10-operations-resources.png", "10-operations-log.png", "10-operations-settings.png", "10-operations-postmortem.png"] },
   { area: "Modules", shots: ["09-modules.png", "09-modules-workspace.png"] },
+  { area: "Docs", shots: ["12-docs.png", "12-docs-reading.png"] },
   { area: "Analytics (all tabs)", shots: ["07-analytics*.png"] },
-  { area: "Item detail popup", shots: ["21-item-detail-popup.png"] },
+  { area: "Item detail popup", shots: ["21-item-detail-popup.png", "21-item-detail-scheduling.png", "21-item-detail-dependencies.png", "21-item-detail-subtasks.png", "21-item-detail-analysis.png", "21-item-detail-time.png", "21-item-detail-body.png"] },
+  { area: "Completion dialog", shots: ["20-dialog-completion.png"] },
 ]

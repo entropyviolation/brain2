@@ -126,6 +126,6 @@ while (true) {
     await flushReplies()
   } catch (err) {
     console.warn("[cogs-ingest]", err.message)
-    await new Promise((r) => setTimeout(r, 4000))
+    await new Promise((r) => setTimeout(r, 1000))
   }
 }

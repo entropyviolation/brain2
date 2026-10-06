@@ -20,6 +20,8 @@ import { fileURLToPath } from "node:url"
 import { dumpLocalStorage, fillLocalStorage, installPhoneHubGlobals } from "./phone-hub-polyfill.mjs"
 import { handlePersistApi, mergeSharedPersistItems, readSharedPersist } from "./persist-api.mjs"
 import { hydrateTelegramUpdate } from "./telegram-file.mjs"
+import { flushScheduledPersist } from "../lib/persist-storage.ts"
+import { compareSentOrder } from "../lib/ingest/message-time.ts"
 
 installPhoneHubGlobals()
 
@@ -63,6 +65,7 @@ try {
 }
 
 let ingestIncomingAsync
+let dropLocationDuringRitual
 let deliverIngestReply
 let incomingFromTelegram
 let stores = []
@@ -142,6 +145,7 @@ async function loadStores() {
   ]
   await Promise.all(stores.map(waitHydrated))
   ingestIncomingAsync = exec.ingestIncomingAsync
+  dropLocationDuringRitual = exec.dropLocationDuringRitual
   deliverIngestReply = deliver.deliverIngestReply
   incomingFromTelegram = bridge.incomingFromTelegram
 }
@@ -164,6 +168,7 @@ function flushVault() {
   flushing = true
   ignoreWatch = true
   try {
+    flushScheduledPersist()
     mergeSharedPersistItems(dumpLocalStorage(), "phone-hub")
   } finally {
     flushing = false
@@ -194,28 +199,40 @@ const transport = {
   },
 }
 
-async function handlePayload(payload) {
-  // A message applied on a stale in-memory vault stamps a fresh contentRev
-  // and then flushes that older copy over newer habit titles and cells.
-  await rehydrateFromDisk()
+async function handlePayload(payload, rehydrate = false) {
+  // Rehydrate once per poll batch, not before every text. A per-message
+  // reload was reading the vault from before this turn's persist flush and
+  // dropping the open ritual, so the next line looked like a new command.
+  if (rehydrate) await rehydrateFromDisk()
+  if (
+    dropLocationDuringRitual?.({
+      channel: "telegram",
+      chatId: String(payload.chatId),
+      text: payload.text,
+      locationUpdate: Boolean(payload.locationUpdate),
+    })
+  ) {
+    return
+  }
   const result = await ingestIncomingAsync(incomingFromTelegram(payload))
   await deliverIngestReply(payload.chatId, result, transport)
   flushVault()
 }
 
 const albumWait = new Map()
-function pushAlbum(payload) {
+function pushAlbum(payload, rehydrate = false) {
   const gid = payload.mediaGroupId
-  if (!gid) return handlePayload(payload)
-  const row = albumWait.get(gid) || { payloads: [], timer: null }
+  if (!gid) return handlePayload(payload, rehydrate)
+  const row = albumWait.get(gid) || { payloads: [], timer: null, rehydrate }
   row.payloads.push(payload)
+  row.rehydrate = row.rehydrate || rehydrate
   if (row.timer) clearTimeout(row.timer)
   row.timer = setTimeout(() => {
     albumWait.delete(gid)
     const first = row.payloads[0]
     const text = row.payloads.map((p) => p.text).find((value) => String(value || "").trim()) || first.text
     const attachments = row.payloads.flatMap((p) => p.attachments || [])
-    void handlePayload({ ...first, text, attachments })
+    void handlePayload({ ...first, text, attachments }, row.rehydrate)
   }, 1100)
   albumWait.set(gid, row)
 }
@@ -228,18 +245,22 @@ async function pollLoop() {
         offset,
         allowed_updates: JSON.stringify(["message", "edited_message"]),
       })
+      const batch = []
       for (const update of updates || []) {
         offset = Math.max(offset, (update.update_id || 0) + 1)
         const payload = await hydrateTelegramUpdate(update, TOKEN, telegramApi)
-        if (payload) await pushAlbum(payload)
+        if (payload) batch.push(payload)
       }
+      batch.sort(compareSentOrder)
+      if (batch.length) await rehydrateFromDisk()
+      for (const payload of batch) await pushAlbum(payload)
       mkdirSync(join(ROOT, "data"), { recursive: true })
       writeFileSync(OFFSET_FILE, JSON.stringify({ offset }), "utf8")
       writeStatus()
     } catch (err) {
       console.error("[phone-hub] poll", err instanceof Error ? err.message : err)
       writeStatus({ error: err instanceof Error ? err.message : "poll failed" })
-      await new Promise((r) => setTimeout(r, 4000))
+      await new Promise((r) => setTimeout(r, 1000))
     }
   }
 }
@@ -291,7 +312,7 @@ async function onRequest(req, res) {
     try {
       const update = JSON.parse((await readBody(req)) || "{}")
       const payload = await hydrateTelegramUpdate(update, TOKEN, telegramApi)
-      if (payload) await pushAlbum(payload)
+      if (payload) await pushAlbum(payload, true)
       sendJson(res, 200, { ok: true })
     } catch (err) {
       sendJson(res, 400, { ok: false, error: err instanceof Error ? err.message : "bad update" })

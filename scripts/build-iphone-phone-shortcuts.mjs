@@ -163,11 +163,23 @@ const LOCATION = {
   name: "BB333333-3333-4333-A333-333333333333",
   lat: "BB444444-4444-4444-A444-444444444444",
   lon: "BB555555-5555-4555-A555-555555555555",
+  now: "BB5A5A5A-5A5A-45A5-A5A5-5555555555A5",
+  stamp: "BB5B5B5B-5B5B-45B5-B5B5-5555555555B5",
+  line: "BB5C5C5C-5C5C-45C5-C5C5-5555555555C5",
+  append: "BB5D5D5D-5D5D-45D5-D5D5-5555555555D5",
+  read: "BB5E5E5E-5E5E-45E5-E5E5-5555555555E5",
   message: "BB666666-6666-4666-A666-666666666666",
   setOutgoing: "BB6A6A6A-6A6A-46A6-A6A6-6666666666A6",
   send: "BB777777-7777-4777-A777-777777777777",
+  blank: "BB7B7B7B-7B7B-47B7-B7B7-7777777777B7",
+  clear: "BB7C7C7C-7C7C-47C7-C7C7-7777777777C7",
   notify: "BB888888-8888-4888-A888-888888888888",
 }
+
+/** iCloud Drive. Append's path is relative to /Shortcuts/; Get and Save want the full path. */
+const ICLOUD_DRIVE = { WFStorageService: "iCloudDrive" }
+const LOCATION_LOG = "Brain2-location-log.txt"
+const LOCATION_LOG_PATH = `/Shortcuts/${LOCATION_LOG}`
 
 export function buildScreenTimeWorkflow() {
   const actions = [
@@ -320,34 +332,69 @@ export function buildLocationWorkflow() {
   const actions = [
     action("is.workflow.actions.comment", LOCATION.comment, {
       WFCommentActionText:
-        `Sends gps: Name\\nlat,lon to ${BOT}.\n` +
-        `Pair Brain2 first. On import, pick the bot chat in Telegram.\n` +
-        `Attach duplicates to Automation → Arrive and Leave.\n` +
-        `iOS will not poll every minute.`,
+        `Saves each fix to iCloud Drive/Shortcuts/${LOCATION_LOG}, then sends the whole file as gps-log:.\n` +
+        `If Telegram cannot send, the file keeps the lines and the next run delivers them.\n` +
+        `A successful send clears the file. Pair Brain2 first. On import, pick the bot chat.\n` +
+        `Attach duplicates to Automation → Arrive and Leave. iOS will not poll every minute.`,
     }),
     action("is.workflow.actions.getcurrentlocation", LOCATION.getLoc, {}),
     locationDetail(LOCATION.name, "Name"),
     locationDetail(LOCATION.lat, "Latitude"),
     locationDetail(LOCATION.lon, "Longitude"),
-    action("is.workflow.actions.gettext", LOCATION.message, {
+    action("is.workflow.actions.date", LOCATION.now, {
+      WFDateActionMode: "Current Date",
+    }),
+    action("is.workflow.actions.format.date", LOCATION.stamp, {
+      WFDateFormatStyle: "Custom",
+      WFDateFormat: "yyyy-MM-dd'T'HH:mm:ss",
+      WFInput: attachment(LOCATION.now, "Date"),
+    }),
+    action("is.workflow.actions.gettext", LOCATION.line, {
       WFTextActionText: textWithTokens([
-        "gps: ",
-        { uuid: LOCATION.name, name: "Name" },
-        "\n",
+        { uuid: LOCATION.stamp, name: "Formatted Date" },
+        ";",
         { uuid: LOCATION.lat, name: "Latitude" },
         ",",
         { uuid: LOCATION.lon, name: "Longitude" },
+        ";",
+        { uuid: LOCATION.name, name: "Name" },
       ]),
+    }),
+    action("is.workflow.actions.file.append", LOCATION.append, {
+      WFFileStorageService: ICLOUD_DRIVE,
+      WFFilePath: LOCATION_LOG,
+      WFAppendFileWriteMode: "Append",
+      WFAppendOnNewLine: true,
+      WFInput: attachment(LOCATION.line, "Text"),
+    }),
+    action("is.workflow.actions.documentpicker.open", LOCATION.read, {
+      WFFileStorageService: ICLOUD_DRIVE,
+      WFShowFilePicker: false,
+      WFGetFilePath: LOCATION_LOG_PATH,
+      WFFileErrorIfNotFound: false,
+    }),
+    action("is.workflow.actions.gettext", LOCATION.message, {
+      WFTextActionText: textWithTokens(["gps-log:\n", { uuid: LOCATION.read, name: "File" }]),
     }),
     setOutgoing(LOCATION.setOutgoing, LOCATION.message),
     sendMessage(LOCATION.send),
+    action("is.workflow.actions.gettext", LOCATION.blank, {
+      WFTextActionText: textWithTokens(["."]),
+    }),
+    action("is.workflow.actions.documentpicker.save", LOCATION.clear, {
+      WFFileStorageService: ICLOUD_DRIVE,
+      WFAskWhereToSave: false,
+      WFFileDestinationPath: LOCATION_LOG_PATH,
+      WFSaveFileOverwrite: true,
+      WFInput: attachment(LOCATION.blank, "Text"),
+    }),
     action("is.workflow.actions.notification", LOCATION.notify, {
       WFNotificationActionBody: "Sent location to Brain2.",
       WFNotificationActionTitle: "Brain2",
     }),
   ]
 
-  return wrapWorkflow({
+  const workflow = wrapWorkflow({
     name: "Location to Brain2",
     color: 4282601983,
     glyph: 59511,
@@ -357,6 +404,16 @@ export function buildLocationWorkflow() {
     types: RUN_TYPES,
     hasInputVars: false,
   })
+  const fileQuestion = {
+    Category: "Parameter",
+    ParameterKey: "WFFileStorageService",
+    Text: "Pick iCloud Drive. Brain2 keeps the location log in Shortcuts/Brain2-location-log.txt until Telegram can send it.",
+  }
+  for (const uuid of [LOCATION.append, LOCATION.read, LOCATION.clear]) {
+    const index = actions.findIndex((row) => row.WFWorkflowActionParameters.UUID === uuid)
+    workflow.WFWorkflowImportQuestions.push({ ...fileQuestion, ActionIndex: index })
+  }
+  return workflow
 }
 
 export const PHONE_SHORTCUTS = [

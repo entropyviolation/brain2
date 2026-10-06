@@ -10,12 +10,18 @@
  *   PW_CHANNEL=chrome
  *   COGS_FRESH=1   — clear localStorage before load (consistent seed data)
  *   COGS_ONLY=01-home-daily-habits.png  — capture + rewrite sidecar for listed files only (comma-separated)
+ *
+ * Before the app boots, init scripts write throwaway Zustand blobs (tracking,
+ * sleep, tasks/operations, modules, goals, habit completions, plan logs).
+ * POST /api/persist stays blocked so this never lands in a real vault.
+ * Each live PNG is copied into docs/screenshots/history/ before overwrite.
  */
 import { chromium } from "playwright"
 import { mkdir, writeFile } from "fs/promises"
 import path from "path"
 import { fileURLToPath } from "url"
 import { SHOTS, GLOBAL_HEADER } from "./screenshot-manifest.mjs"
+import { archiveShot, writeReelIndex } from "./screenshot-archive.mjs"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const OUT = path.join(__dirname, "..", "docs", "screenshots")
@@ -38,6 +44,7 @@ function wantAny(files) {
 
 async function screenshot(page, file, opts = {}) {
   if (!wantShot(file)) return
+  archiveShot(OUT, file)
   const p = path.join(OUT, file)
   await page.screenshot({ path: p, fullPage: true, ...opts })
   console.log("  ✓", file)
@@ -134,7 +141,9 @@ async function captureHome(page) {
     "02-home-plan.png",
     "02-home-plan-week.png",
     "02-home-plan-day.png",
+    "02-home-plan-season.png",
     "03-home-todo.png",
+    "03-home-todo-just-start.png",
     "03-home-todo-week.png",
     "03-home-todo-month.png",
     "04-home-goals.png",
@@ -168,6 +177,10 @@ async function captureHome(page) {
   await planTabs.getByRole("tab", { name: "Day", exact: true }).click()
   await wait(500)
   await screenshot(page, "02-home-plan-day.png")
+
+  await planTabs.getByRole("tab", { name: "Season", exact: true }).click()
+  await wait(500)
+  await screenshot(page, "02-home-plan-season.png")
 
   await clickHomeSubTab(page, "To Do")
   await page.getByRole("tab", { name: "Day", exact: true }).click()
@@ -228,6 +241,18 @@ async function captureHome(page) {
   await page.getByRole("tab", { name: "Day Log" }).click()
   await wait(500)
   await screenshot(page, "08-home-tracking-daylog.png")
+
+  if (wantShot("03-home-todo-just-start.png")) {
+    await clickHomeSubTab(page, "To Do")
+    await page.getByRole("tab", { name: "Day", exact: true }).click()
+    await wait(400)
+    const pack = page.locator(".todo-row-closed").filter({ hasText: "Pack the coast bag" })
+    await pack.getByRole("button", { name: "Start", exact: true }).click()
+    await wait(600)
+    await screenshot(page, "03-home-todo-just-start.png")
+    await page.getByRole("button", { name: "Exit focus mode" }).click()
+    await wait(300)
+  }
 }
 
 async function captureLists(page) {
@@ -263,55 +288,130 @@ async function captureLists(page) {
 
   // Open item detail popup — Default is reading rows, not orbs or a blue link.
   await clickFmBtn(page, "Default", { display: true })
-  const taskLink = page.locator("[data-testid=list-default-read] .fm-read-name").first()
+  const named = page
+    .locator("[data-testid=list-default-read] .fm-read-name")
+    .filter({ hasText: "Photograph the headlands" })
+    .first()
+  const taskLink = (await named.count())
+    ? named
+    : page.locator("[data-testid=list-default-read] .fm-read-name").first()
   if (await taskLink.count()) {
     await taskLink.click()
   } else {
-    // Example List empty: skip popup (manifest notes optional capture)
-    console.warn("  ⚠ no tasks for 21-item-detail-popup.png — skipping")
+    console.warn("  ⚠ no tasks for 21-item-detail-*.png — skipping")
   }
-  if (await page.locator('[role="dialog"][data-state="open"]').count()) {
-    await screenshot(page, "21-item-detail-popup.png")
+  const detail = page.locator('[role="dialog"][data-state="open"]').last()
+  if (await detail.count()) {
+    const detailTabs = [
+      ["Details", "21-item-detail-popup.png"],
+      ["Scheduling", "21-item-detail-scheduling.png"],
+      ["Dependencies", "21-item-detail-dependencies.png"],
+      ["Subtasks", "21-item-detail-subtasks.png"],
+      ["Analysis", "21-item-detail-analysis.png"],
+      ["Time", "21-item-detail-time.png"],
+      ["Body", "21-item-detail-body.png"],
+    ]
+    for (const [name, file] of detailTabs) {
+      const tab = detail.getByRole("tab", { name, exact: true })
+      if (!(await tab.count())) {
+        console.warn(`  ⚠ no ${name} tab — skipping ${file}`)
+        continue
+      }
+      await tab.click()
+      await wait(350)
+      await screenshot(page, file)
+    }
     await page.keyboard.press("Escape")
     await wait(300)
   }
 }
 
 async function captureScheduler(page) {
+  const sch = page.locator(".sch95")
+  const funnel = sch.getByRole("button", { name: "Funnel", exact: true })
   await clickTopTab(page, "Scheduler")
-  await wait(600)
+  try {
+    await funnel.waitFor({ timeout: 20_000 })
+  } catch {
+    // A Fast Refresh reload during the lazy Scheduler chunk returns the page
+    // to Home. Open the tab again once the window is back.
+    await clickTopTab(page, "Scheduler")
+    await funnel.waitFor({ timeout: 20_000 })
+  }
 
-  await page.getByRole("button", { name: "Funnel" }).click()
+  await funnel.click()
   await wait(300)
-  await page.getByRole("tab", { name: "Always" }).click()
+  await sch.getByRole("tab", { name: "Always", exact: true }).click()
   await wait(500)
   await screenshot(page, "06-scheduler.png")
 
-  await page.getByRole("tab", { name: "Day" }).click()
+  await sch.getByRole("tab", { name: "Day", exact: true }).click()
   await wait(500)
   await screenshot(page, "06-scheduler-day.png")
 
-  await page.getByRole("button", { name: "Gantt" }).click()
+  await sch.getByRole("button", { name: "Gantt", exact: true }).click()
   await wait(600)
   await screenshot(page, "06-scheduler-gantt.png")
 
-  await page.getByRole("button", { name: "Dependencies" }).click()
+  await sch.getByRole("button", { name: "Dependencies", exact: true }).click()
   await wait(600)
   await screenshot(page, "06-scheduler-dependencies.png")
 }
 
 async function captureOperations(page) {
   await clickTopTab(page, "Operations")
-  await wait(500)
+  await wait(700)
   await screenshot(page, "10-operations.png")
 
-  await page.getByLabel("New operation name").fill("Demo Operation")
-  await page.getByRole("button", { name: "New Operation" }).click()
+  await page.getByRole("button", { name: /Coast weekend/ }).click()
   await wait(800)
+  const ops = page.locator(".ops95")
   await screenshot(page, "10-operations-workspace.png")
 
-  await page.getByRole("button", { name: "Back" }).click()
+  const panels = [
+    ["To do", "10-operations-todo.png"],
+    ["Phases", "10-operations-phases.png"],
+    ["Parts", "10-operations-parts.png"],
+    ["Timeline", "10-operations-timeline.png"],
+    ["Locations", "10-operations-locations.png"],
+    ["Plan", "10-operations-plan.png"],
+    ["Resources", "10-operations-resources.png"],
+    ["Log", "10-operations-log.png"],
+  ]
+  for (const [name, file] of panels) {
+    await ops.getByRole("tab", { name, exact: true }).click()
+    await wait(name === "Timeline" || name === "Locations" || name === "Plan" ? 1000 : 500)
+    await screenshot(page, file)
+  }
+
+  await ops.getByRole("button", { name: "Settings", exact: true }).click()
+  await page.getByRole("heading", { name: "Operation settings" }).waitFor({ timeout: 8000 })
   await wait(400)
+  await screenshot(page, "10-operations-settings.png")
+  await page.keyboard.press("Escape")
+  await wait(300)
+
+  await ops.getByRole("button", { name: "After-action report" }).click()
+  await page.getByRole("heading", { name: "After-action report" }).waitFor({ timeout: 8000 })
+  await wait(400)
+  await screenshot(page, "10-operations-postmortem.png")
+  await page.keyboard.press("Escape")
+  await wait(300)
+
+  await ops.getByRole("button", { name: "Board" }).click()
+  await wait(400)
+}
+
+async function captureDocs(page) {
+  await clickTopTab(page, "Docs")
+  await page.getByRole("heading", { name: "Brainclip Docs — Document Editor" }).waitFor({ timeout: 30_000 })
+  await page.getByRole("button", { name: /Coast weekend plan/ }).first().waitFor({ timeout: 15_000 })
+  await wait(400)
+  await screenshot(page, "12-docs.png")
+
+  await page.getByRole("button", { name: /Coast weekend plan/ }).first().click()
+  await wait(800)
+  await screenshot(page, "12-docs-reading.png")
 }
 
 async function captureModules(page) {
@@ -398,17 +498,19 @@ async function captureDialogs(page) {
   await clickTopTab(page, "Home")
   await wait(400)
 
-  // End-of-period review
+  // End-of-day review. The rituals menu labels it Night (today), not "day review".
   await page.locator("[data-home-review-entry]").click()
   await wait(300)
-  await page.getByRole("menuitem", { name: /day review/i }).click()
+  await page.locator("[data-ritual-slot=day-night]").click()
   await wait(600)
   await screenshot(page, "20-dialog-reviews.png")
   await page.keyboard.press("Escape")
   await wait(300)
 
-  // Morning review
-  await page.locator("[data-morning-review-entry]").click()
+  // Morning review lives in the same Rituals menu (Morning), not a header key.
+  await page.locator("[data-home-review-entry]").click()
+  await wait(300)
+  await page.locator("[data-ritual-slot=day-morning]").click()
   await wait(600)
   await screenshot(page, "20-dialog-morning-review.png")
   await page.keyboard.press("Escape")
@@ -447,10 +549,10 @@ async function captureDialogs(page) {
   await page.keyboard.press("Meta+k")
   await wait(600)
   await screenshot(page, "20-dialog-global-search.png")
-  await page.keyboard.press("Escape")
+  await dismissDialogs(page)
   await wait(300)
 
-  await page.getByRole("button", { name: "Tracking" }).click()
+  await page.locator("fieldset").filter({ hasText: "System" }).getByRole("button", { name: "Tracking", exact: true }).click()
   await wait(600)
   await screenshot(page, "20-dialog-time-tracking.png")
   await page.keyboard.press("Escape")
@@ -461,6 +563,19 @@ async function captureDialogs(page) {
   await screenshot(page, "20-dialog-metrics.png")
   await page.keyboard.press("Escape")
   await wait(300)
+
+  if (wantShot("20-dialog-completion.png")) {
+    await clickHomeSubTab(page, "To Do")
+    await page.getByRole("tab", { name: "Day", exact: true }).click()
+    await wait(400)
+    const pack = page.locator(".todo-row-closed").filter({ hasText: "Pack the coast bag" })
+    await pack.getByRole("button", { name: "Done", exact: true }).click()
+    await page.getByRole("heading", { name: "Task completed" }).waitFor({ timeout: 8000 })
+    await wait(400)
+    await screenshot(page, "20-dialog-completion.png")
+    await page.getByRole("button", { name: "Undo completion" }).click()
+    await wait(400)
+  }
 }
 
 function txtForShot(shot) {
@@ -723,6 +838,584 @@ function seedSleep() {
   )
 }
 
+/**
+ * Throwaway vault for a headless Chrome context. Chrome persist does not
+ * hydrate from /api/persist, and newContext() has no profile, so every store
+ * the shots need is written here before boot. Keys match Zustand persist
+ * (`{ state, version }` on the brain2-* name the store reads).
+ */
+function seedVault() {
+  const pad = (n) => String(n).padStart(2, "0")
+  const shift = (offset) => {
+    const d = new Date()
+    d.setDate(d.getDate() + offset)
+    return d
+  }
+  const ymd = (offset) => {
+    const d = shift(offset)
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  }
+  const noon = (offset) => {
+    const d = shift(offset)
+    d.setHours(12, 0, 0, 0)
+    return d.toISOString()
+  }
+  const weekKey = () => {
+    const now = new Date()
+    const day = now.getDay()
+    const monday = new Date(now)
+    monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1))
+    monday.setHours(0, 0, 0, 0)
+    const sunday = new Date(monday)
+    sunday.setDate(monday.getDate() + 6)
+    const fmt = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+    return `${fmt(monday)}_${fmt(sunday)}`
+  }
+  const monthKey = `${new Date().getFullYear()}-${pad(new Date().getMonth() + 1)}`
+  const quarter = `${new Date().getFullYear()}-Q${Math.floor(new Date().getMonth() / 3) + 1}`
+  const nowIso = new Date().toISOString()
+  const today = ymd(0)
+  const link = (id, relation, targetId) => ({ id, relation, targetId })
+
+  const task = (partial) => ({
+    stage: "clarified",
+    estimatedDuration: 45,
+    cognitiveLoad: 2,
+    urgency: 3,
+    importance: 3,
+    dependencies: [],
+    context: "@anywhere",
+    entropy: 0.2,
+    rewardValue: 20,
+    completed: false,
+    lists: [],
+    allowPartialCompletion: false,
+    minimumChunkSize: 15,
+    type: "task",
+    createdAt: nowIso,
+    ...partial,
+  })
+
+  const formulas = [
+    {
+      id: "kind-day",
+      name: "Day",
+      parentFormulaId: null,
+      stages: ["packed", "walked"],
+      finishSteps: ["journaled"],
+    },
+    {
+      id: "kind-stop",
+      name: "Stop",
+      parentFormulaId: "kind-day",
+      stages: ["picked"],
+      finishSteps: [],
+    },
+  ]
+  const instances = [
+    {
+      id: "inst-sat",
+      formulaId: "kind-day",
+      title: "Saturday headlands",
+      parentInstanceId: null,
+      ideas: [
+        {
+          id: "idea-tide",
+          text: "Low tide is mid-morning — walk the north trail first.",
+          createdAt: nowIso,
+        },
+      ],
+    },
+    {
+      id: "inst-pt",
+      formulaId: "kind-stop",
+      title: "Point Reyes pull-off",
+      parentInstanceId: "inst-sat",
+      ideas: [],
+    },
+  ]
+
+  const days = [0, 1, 2].map((offset) => {
+    const cities = ["Mendocino, CA", "Mendocino, CA", "Point Reyes, CA"]
+    return {
+      date: ymd(offset),
+      cityMode: "city",
+      city: cities[offset],
+      dayNote: offset === 0 ? "Leave before the bridge traffic." : offset === 1 ? "Headlands walk." : "Home before dark.",
+      sleepName: offset === 2 ? "" : "Headlands Inn",
+      sleepAddress: offset === 2 ? "" : "Mendocino, CA",
+      schedule: [
+        { id: `sch-${offset}-a`, kind: "plan", time: "09:00", text: offset === 0 ? "Drive Highway 1" : "Walk the north trail" },
+        { id: `sch-${offset}-b`, kind: "note", text: "Stop if the light is good." },
+      ],
+    }
+  })
+
+  const tasks = [
+    task({
+      id: "item-headlands",
+      description: "Photograph the headlands",
+      title: "Photograph the headlands",
+      taskDescription: "North trail at low tide. One roll of the black-and-white, then the bakery on Lansing.",
+      lists: ["example"],
+      scheduledDate: noon(1),
+      scheduledTime: "09:30",
+      deadline: noon(3),
+      estimatedDuration: 90,
+      actualDuration: 40,
+      urgency: 4,
+      importance: 4,
+      dependencies: ["item-film"],
+      why: "The weekend only works if the pictures exist before the light goes.",
+      consequences: "The trip becomes a drive with nothing to show for the walk.",
+      notes: "Bring the small tripod. The overlook faces west.",
+      body: "<p>Stand on the north trail until the fog lifts. One frame of the inn roof, then the water.</p>",
+      subtasks: [
+        { id: "sub-tripod", description: "Pack the small tripod", completed: true, isMolecular: true },
+        { id: "sub-frame", description: "One frame of the inn roof", completed: false, isMolecular: true, context: "West overlook, after the fog lifts." },
+      ],
+      timeLogs: [
+        { id: "log-headlands", date: ymd(-1), durationMinutes: 40, notes: "Scouted the overlook", activityLabel: "Scout", taskId: "item-headlands" },
+      ],
+    }),
+    task({
+      id: "item-film",
+      description: "Buy a roll of black-and-white film",
+      lists: ["example"],
+      stage: "list",
+      urgency: 3,
+      importance: 3,
+    }),
+    task({
+      id: "item-wool",
+      description: "Pack a wool layer",
+      lists: ["example"],
+      stage: "list",
+    }),
+    task({
+      id: "item-bakery",
+      description: "Note the bakery on Lansing",
+      lists: ["example"],
+      stage: "list",
+    }),
+    task({
+      id: "item-library",
+      description: "Return the library book before Friday",
+      lists: ["example", "list-reading"],
+      stage: "list",
+      deadline: noon(4),
+    }),
+    task({
+      id: "item-shore",
+      description: "The Wilder Shore",
+      type: "item",
+      lists: ["list-reading"],
+      stage: "list",
+      notes: "Field guide for the headlands walk.",
+    }),
+    task({
+      id: "todo-tide",
+      description: "Order a tide chart",
+      lists: ["list-errands"],
+      stage: "list",
+      urgency: 2,
+      importance: 3,
+    }),
+    task({
+      id: "todo-inn-call",
+      description: "Call the inn about a late arrival",
+      lists: ["list-desk"],
+      scheduledDate: noon(0),
+      scheduledTime: "11:00",
+      estimatedDuration: 15,
+      dependencies: ["todo-tide"],
+      urgency: 3,
+      importance: 3,
+    }),
+    task({
+      id: "todo-pack",
+      description: "Pack the coast bag",
+      lists: ["example"],
+      scheduledDate: noon(0),
+      scheduledTime: "16:00",
+      estimatedDuration: 30,
+      urgency: 5,
+      importance: 5,
+      subtasks: [
+        { id: "sub-wool", description: "Fold the wool layer into the top of the bag", completed: false, isMolecular: true },
+      ],
+    }),
+    task({
+      id: "todo-email",
+      description: "Email the tide chart to the inn",
+      scheduledDate: noon(0),
+      scheduledTime: "15:00",
+      estimatedDuration: 20,
+      urgency: 3,
+      importance: 4,
+      scheduleable: true,
+    }),
+    task({
+      id: "todo-route",
+      description: "Print the Highway 1 route",
+      scheduledWeek: weekKey(),
+      estimatedDuration: 15,
+      urgency: 2,
+      importance: 3,
+    }),
+    task({
+      id: "todo-letter",
+      description: "Write the trip letter",
+      scheduledMonth: monthKey,
+      estimatedDuration: 40,
+      urgency: 2,
+      importance: 2,
+    }),
+    task({
+      id: "op-coast",
+      description: "Coast weekend",
+      type: "operation",
+      lists: ["list-desk"],
+      importance: 5,
+      urgency: 4,
+      estimatedDuration: 480,
+      attributes: {
+        mission: "One quiet weekend on the Mendocino headlands before the quarter turns.",
+        stage: "active",
+        categories: ["trip"],
+        homeNotes: "Inn is booked. Photograph the north trail at low tide and keep the drive under four hours.",
+        targetDate: ymd(2),
+        panels: ["home", "tasks", "phases", "parts", "timeline", "locations", "plan", "resources", "log", "queue"],
+        taskListId: "op-list-op-coast",
+        partFormulas: JSON.stringify(formulas),
+        partInstances: JSON.stringify(instances),
+        itineraryModuleId: "mod-coast-field",
+        trackingTagIds: ["tag-rest"],
+      },
+      links: [
+        link("lnk-phase-pack", "has-phase", "phase-pack"),
+        link("lnk-phase-drive", "has-phase", "phase-drive"),
+        link("lnk-todo-reserve", "has-part", "todo-reserve"),
+        link("lnk-res-map", "has-resource", "res-map"),
+      ],
+      timeLogs: [
+        { id: "log-coast", date: today, durationMinutes: 75, notes: "Mapped the north trail", activityLabel: "Planning", taskId: "op-coast" },
+      ],
+    }),
+    task({
+      id: "phase-pack",
+      description: "Pack the car",
+      links: [
+        link("lnk-bags", "has-part", "step-bags"),
+        link("lnk-step-film", "has-part", "step-film"),
+      ],
+    }),
+    task({
+      id: "step-bags",
+      description: "Pack the wool layer and the tripod",
+      lists: ["op-list-op-coast"],
+      completed: true,
+      completedDate: noon(-1),
+      estimatedDuration: 20,
+    }),
+    task({
+      id: "step-film",
+      description: "Put the film in the glove box",
+      lists: ["op-list-op-coast"],
+      estimatedDuration: 5,
+    }),
+    task({
+      id: "phase-drive",
+      description: "Drive Highway 1",
+      links: [link("lnk-leave", "has-part", "step-leave")],
+    }),
+    task({
+      id: "step-leave",
+      description: "Leave before the bridge traffic",
+      lists: ["op-list-op-coast"],
+      estimatedDuration: 15,
+    }),
+    task({
+      id: "todo-reserve",
+      description: "Reserve the Headlands Inn",
+      lists: ["op-list-op-coast"],
+      scheduledDate: noon(0),
+      estimatedDuration: 20,
+      timeLogs: [
+        { id: "log-reserve", date: ymd(-2), durationMinutes: 25, notes: "Called and held Friday night", taskId: "todo-reserve" },
+      ],
+    }),
+    task({
+      id: "res-map",
+      description: "AAA coast map, 2024 edition",
+      type: "item",
+      stage: "list",
+      notes: "Glove box. The inn is marked in pencil.",
+    }),
+    task({
+      id: "place-inn",
+      description: "Headlands Inn",
+      type: "item",
+      lists: ["list-coast-places"],
+      stage: "list",
+      attributes: {
+        address: "Mendocino, CA",
+        lat: 39.3077,
+        lng: -123.7995,
+        placeKind: "Stay",
+      },
+    }),
+    task({
+      id: "doc-coast-plan",
+      description: "Coast weekend plan",
+      type: "note",
+      stage: "list",
+      body: "<h1>Coast weekend</h1><p>Drive Friday on Highway 1, walk the headlands Saturday at low tide, and be home Sunday before dark. The inn is booked. Keep the film in the glove box.</p><h2>Goals</h2><ul><li>One roll of the north trail</li><li>Dinner at the inn, not the highway</li></ul>",
+      attributes: {
+        docsFolder: "Trips",
+        status: "draft",
+        docsFontFamily: "Merriweather",
+        docsUpdatedAt: nowIso,
+      },
+      tags: ["docs", "operation"],
+    }),
+    task({
+      id: "doc-wiring",
+      description: "Kiln wiring notes",
+      type: "note",
+      stage: "list",
+      body: "<p>Photograph each connection before disconnecting the old board. Keep the iron oxide note in the studio folder, not here.</p>",
+      attributes: {
+        docsFolder: "Studio",
+        status: "evergreen",
+        docsUpdatedAt: nowIso,
+      },
+      tags: ["docs"],
+    }),
+    task({
+      id: "op-class",
+      description: "October class handout",
+      type: "operation",
+      importance: 3,
+      urgency: 2,
+      attributes: {
+        mission: "A one-page handout for Thursday's intro class.",
+        stage: "planning",
+        categories: ["project"],
+        homeNotes: "Three throws, one collapsed cylinder, a line about slowing the wheel.",
+        panels: ["home", "tasks", "phases", "parts", "log", "queue"],
+      },
+    }),
+  ]
+
+  const lists = [
+    {
+      id: "example",
+      name: "Example List",
+      color: "#EF4444",
+      description: "Weekend packing and the headlands pictures",
+      createdAt: nowIso,
+      order: 0,
+      scheduleable: false,
+      detailPanels: ["body"],
+    },
+    {
+      id: "list-reading",
+      name: "Reading",
+      color: "#a855f7",
+      description: "Books for the trip",
+      createdAt: nowIso,
+      order: 1,
+      scheduleable: false,
+    },
+    {
+      id: "list-errands",
+      name: "Errands",
+      color: "#eab308",
+      description: "Out of the house",
+      createdAt: nowIso,
+      order: 2,
+      scheduleable: true,
+    },
+    {
+      id: "list-desk",
+      name: "Desk",
+      color: "#0ea5e9",
+      description: "Calls and drafts",
+      createdAt: nowIso,
+      order: 3,
+      scheduleable: true,
+    },
+    {
+      id: "list-coast-places",
+      name: "Places — Coast weekend",
+      color: "#14b8a6",
+      description: "Places plotted on the operation map",
+      createdAt: nowIso,
+      order: 4,
+      scheduleable: false,
+    },
+    {
+      id: "op-list-op-coast",
+      name: "Coast weekend",
+      color: "#0f766e",
+      description: "To do for the coast weekend operation",
+      createdAt: nowIso,
+      order: 5,
+      scheduleable: false,
+    },
+  ]
+
+  const folders = [
+    {
+      id: "folder-home",
+      name: "Home",
+      createdAt: nowIso,
+      listIds: ["example", "list-reading", "list-errands"],
+      color: "#64748b",
+    },
+    {
+      id: "folder-desk",
+      name: "Desk",
+      createdAt: nowIso,
+      listIds: ["list-desk"],
+      color: "#0ea5e9",
+    },
+    {
+      id: "folder-operations",
+      name: "Operations",
+      createdAt: nowIso,
+      listIds: ["op-list-op-coast"],
+      color: "#0f766e",
+      description: "One list per operation.",
+    },
+  ]
+
+  const put = (key, version, state) => {
+    localStorage.setItem(key, JSON.stringify({ state, version }))
+  }
+
+  put("brain2-task-storage", 17, {
+    tasks,
+    lists,
+    folders,
+    removedTaskIds: [],
+    removedListIds: [],
+    priorityFormula: { urgencyWeight: 1, importanceWeight: 1, effortWeight: 1, cognitiveLoadWeight: 1 },
+    priorityWeights: { urgency: 1, importance: 1, cognitiveLoad: 1, entropy: 1 },
+  })
+
+  put("brain2-modules-store", 2, {
+    modules: [
+      { id: "mod-points", type: "analytics-stat", title: "Points this week", config: { stat: "points-week" } },
+      { id: "mod-write", type: "writing-prompt", title: "Writing Assignment Generator", config: {} },
+      { id: "mod-random", type: "random-task", title: "What should I do now?", config: {} },
+      {
+        id: "mod-coast-field",
+        type: "workspace",
+        kind: "workspace",
+        title: "Coast weekend — Field plan",
+        description: "Day-by-day itinerary and places for the coast weekend.",
+        templateId: "itinerary",
+        config: {
+          operationId: "op-coast",
+          planDocId: "doc-coast-plan",
+          placesCategoryId: "list-coast-places",
+          itineraryUiVersion: 3,
+          tripItinerary: {
+            startDate: ymd(0),
+            endDate: ymd(2),
+            showSleep: true,
+            globalCity: "Mendocino, CA",
+            days,
+          },
+          activityListNames: ["Must do", "Maybe"],
+        },
+        views: [
+          { id: "view-coast-plan", title: "Plan", kind: "doc", config: { docId: "doc-coast-plan" } },
+          { id: "view-coast-timeline", title: "Itinerary", kind: "itinerary-doc", config: {} },
+          {
+            id: "view-coast-map",
+            title: "Locations",
+            kind: "trip-map",
+            config: { categoryId: "list-coast-places", placesCategoryId: "list-coast-places" },
+          },
+        ],
+      },
+    ],
+  })
+
+  put("brain2-goals-store", 3, {
+    objectives: [
+      {
+        id: "obj-weekend",
+        title: "Take one real weekend away each season",
+        description: "Leave the desk. Come back with pictures.",
+        createdAt: nowIso,
+        priorities: [],
+        reviews: [],
+      },
+    ],
+    goals: [
+      {
+        id: "goal-headlands",
+        title: "Walk the Mendocino headlands",
+        type: "count",
+        target: 1,
+        current: 0,
+        unit: "walk",
+        periodKind: "quarter",
+        objectiveIds: ["obj-weekend"],
+        points: 20,
+        completed: false,
+        createdAt: nowIso,
+      },
+    ],
+  })
+
+  const weeklyData = {}
+  for (let i = 0; i < 14; i++) {
+    const date = ymd(-i)
+    weeklyData[date] = {
+      "task-4": { completed: i % 3 !== 0 },
+      "task-5": { completed: i % 2 === 0 },
+      "task-10": { completed: i % 4 !== 0 },
+      "task-1": { value: i % 3 === 0 ? 40 : 70, goal: 60 },
+      "task-2": { value: i % 2 === 0 ? 35 : 15, goal: 30 },
+      "task-14": { text: i % 5 === 0 ? "Sketch the inn roof" : "" },
+    }
+  }
+  put("brain2-habits-store", 25, {
+    weeklyData,
+    weeklyHabitData: {
+      [weekKey()]: {
+        "task-w-review": { completed: true },
+        "task-w-deep": { value: 6, goal: 10 },
+        "task-w-workout": { completed: true },
+        "task-w-lesson": { text: "Leave before the bridge, not after." },
+      },
+    },
+    monthlyHabitData: {
+      [monthKey]: {
+        "task-m-bills": { completed: true },
+      },
+    },
+    contentRev: 0,
+  })
+
+  const planLog = (text) =>
+    JSON.stringify({
+      v: 1,
+      entries: [{ id: `plan-${text.slice(0, 12)}`, createdAt: nowIso, text }],
+    })
+  localStorage.setItem(`dayPlan-${today}`, planLog("Pack before four. Call the inn if the drive runs long."))
+  localStorage.setItem(`weekPlan-${weekKey()}`, planLog("Coast weekend sits on Friday through Sunday. Keep Thursday light."))
+  localStorage.setItem(
+    `quarterPlan-${quarter}`,
+    planLog("One weekend away this quarter: Mendocino headlands, then back to the desk."),
+  )
+}
+
 async function main() {
   await mkdir(OUT, { recursive: true })
 
@@ -747,11 +1440,33 @@ async function main() {
     })
   }
 
+  // The Next dev indicator is not part of the product. Hide it so a compile
+  // badge from the dev server does not sit on every photograph. The document
+  // may not exist yet when this init script runs.
+  await context.addInitScript(() => {
+    const install = () => {
+      const root = document.head || document.documentElement
+      if (!root || root.querySelector("[data-capture-hide-dev]")) return !!root
+      const style = document.createElement("style")
+      style.setAttribute("data-capture-hide-dev", "")
+      style.textContent = "nextjs-portal{display:none!important}"
+      root.appendChild(style)
+      return true
+    }
+    if (!install()) {
+      const id = setInterval(() => {
+        if (install()) clearInterval(id)
+      }, 30)
+    }
+  })
+
   // Seeded after the clear, or FRESH would wipe it.
   await context.addInitScript(seedTracking)
   await context.addInitScript(seedSleep)
+  await context.addInitScript(seedVault)
 
   const page = await context.newPage()
+  page.on("pageerror", (err) => console.warn("  pageerror:", err.message.split("\n")[0]))
 
   console.log("Loading", BASE)
   await page.goto(BASE, { waitUntil: "networkidle", timeout: 120_000 })
@@ -762,6 +1477,7 @@ async function main() {
   const sections = [
     ["Home", captureHome],
     ["Lists", captureLists],
+    ["Docs", captureDocs],
     ["Scheduler", captureScheduler],
     ["Operations", captureOperations],
     ["Modules", captureModules],
@@ -771,12 +1487,13 @@ async function main() {
   const skipped = []
   const sectionPrefix = {
     Home: ["01-", "02-", "03-", "04-", "08-"],
-    Lists: ["05-"],
+    Lists: ["05-", "21-"],
+    Docs: ["12-"],
     Scheduler: ["06-"],
     Operations: ["10-"],
     Modules: ["09-"],
     Analytics: ["07-"],
-    Dialogs: ["20-", "21-"],
+    Dialogs: ["20-"],
   }
   for (const [name, capture] of sections) {
     if (ONLY.length && !ONLY.some((file) => (sectionPrefix[name] ?? []).some((p) => file.startsWith(p)))) {
@@ -787,7 +1504,7 @@ async function main() {
       await capture(page)
     } catch (error) {
       skipped.push(name)
-      console.warn(`  ! ${name} incomplete: ${error.message.split("\n")[0]}`)
+      console.warn(`  ! ${name} incomplete:\n${error.message.split("\n").slice(0, 8).join("\n")}`)
       await page.keyboard.press("Escape").catch(() => {})
     }
   }
@@ -796,6 +1513,13 @@ async function main() {
 
   console.log("\nDescriptions…")
   await writeDescriptions()
+
+  try {
+    const reel = writeReelIndex(OUT)
+    console.log(`Reel index — ${reel.shotCount} shots, ${reel.frameCount} frames`)
+  } catch (error) {
+    console.warn(`  ! reel index skipped: ${error.message.split("\n")[0]}`)
+  }
 
   console.log("\nDone —", OUT)
   if (skipped.length) {

@@ -20,9 +20,11 @@ const nextConfig = {
       // One regexp is a legal WatchOptions.ignored value. Hub writes, Cursor
       // junk, and build output must not Fast Refresh the UI (that reordered CSS
       // and snapped the skin back to unskinned Tailwind).
-      // Keep the compiler cache on disk so a long Fast Refresh session does
-      // not grow the Node heap until OOM abort (which used to leave port 3000 stuck).
-      config.cache = { type: "filesystem" }
+      // Leave config.cache alone. Next already uses a filesystem cache with
+      // maxMemoryGenerations: 0 (the heap bound that used to OOM port 3000).
+      // Replacing it with `{ type: "filesystem" }` drops the versioned
+      // cacheDirectory, so the client and server compilers stall and the
+      // browser times out loading app/layout.js (ChunkLoadError).
       config.watchOptions = {
         ...config.watchOptions,
         ignored:

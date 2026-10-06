@@ -1,11 +1,9 @@
-# `public/pen-tray/` — Tracking pen-well photographs
+# `public/pen-tray/` — Retired pen-well photographs
 
-Photoreal stills served as the **pen container** background (the well of beads
-plus the selected-pen strip). Source files live in
-[`designrefs/`](../../designrefs/); these copies are the URLs CSS can load.
-`designrefs/` itself is not a static asset folder.
-
-Default is **Cat traces** (`cat.jpg`) — a navy instrument plate, not velvet.
+These stills used to be the **pen container** background. The well is plain
+steel now; the palette does not paint them. Source files live in
+[`designrefs/`](../../designrefs/). `penTray` on tracking view prefs is still
+parsed so an older blob loads, and View settings no longer offers a picker.
 
 | File | Mode | Source |
 |------|------|--------|
@@ -16,6 +14,5 @@ Default is **Cat traces** (`cat.jpg`) — a navy instrument plate, not velvet.
 | `fr4.jpg` | FR4 classic | `designrefs/5f3b8feaa2e9037ae0323d6635e28bb5.jpg` |
 | `xray.jpg` | X-ray PCB | `designrefs/2dc0e2cd6390065e28da01f96665db4a.jpg` |
 
-Modes, ink, and the View settings picker: `components/Home/Tracking/pen-tray-bg.ts`,
-`pen-tray-bg.css`, `tracking-view-prefs.ts`, `tracking-view-settings-dialog.tsx`.
-Choice persists on `brain2-tracking-view-prefs` (`penTray`).
+Catalog still lives in `components/Home/Tracking/pen-tray-bg.ts`. The well
+does not use it.

@@ -40,12 +40,14 @@ function expectTelegramSend(workflow: {
       action.WFWorkflowActionParameters.WFVariableName === "Outgoing",
   )
   expect(outgoing).toHaveLength(1)
-  expect(workflow.WFWorkflowImportQuestions).toEqual([
-    expect.objectContaining({
-      ActionIndex: index,
-      ParameterKey: "WFSendMessageActionRecipients",
-    }),
-  ])
+  expect(workflow.WFWorkflowImportQuestions).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        ActionIndex: index,
+        ParameterKey: "WFSendMessageActionRecipients",
+      }),
+    ]),
+  )
 }
 
 function textBlob(workflow: {
@@ -117,7 +119,7 @@ describe("buildTextWorkflow", () => {
 })
 
 describe("buildLocationWorkflow", () => {
-  it("gets current location, sends gps: text, and asks for the Telegram bot chat", () => {
+  it("gets current location, queues a timestamped gps-log, and asks for the Telegram bot chat", () => {
     const workflow = buildLocationWorkflow()
     expectTelegramSend(workflow)
     expect(workflow.WFWorkflowName).toBe("Location to Brain2")
@@ -127,7 +129,29 @@ describe("buildLocationWorkflow", () => {
           a.WFWorkflowActionIdentifier === "is.workflow.actions.getcurrentlocation",
       ),
     ).toBe(true)
-    expect(textBlob(workflow)).toMatch(/^gps: /)
+    const texts = workflow.WFWorkflowActions.filter(
+      (a: { WFWorkflowActionIdentifier: string }) => a.WFWorkflowActionIdentifier === "is.workflow.actions.gettext",
+    ).map(
+      (a: { WFWorkflowActionParameters: { WFTextActionText?: { Value: { string: string } } } }) =>
+        a.WFWorkflowActionParameters.WFTextActionText?.Value.string ?? "",
+    )
+    expect(texts.some((text) => text.startsWith("gps-log:\n"))).toBe(true)
+    expect(
+      workflow.WFWorkflowActions.some(
+        (a: { WFWorkflowActionIdentifier: string }) => a.WFWorkflowActionIdentifier === "is.workflow.actions.file.append",
+      ),
+    ).toBe(true)
+    const append = workflow.WFWorkflowActions.findIndex(
+      (a: { WFWorkflowActionIdentifier: string }) => a.WFWorkflowActionIdentifier === "is.workflow.actions.file.append",
+    )
+    const send = sendIndex(workflow)
+    const clear = workflow.WFWorkflowActions.findIndex(
+      (a: { WFWorkflowActionIdentifier: string }) =>
+        a.WFWorkflowActionIdentifier === "is.workflow.actions.documentpicker.save",
+    )
+    expect(append).toBeGreaterThan(-1)
+    expect(append).toBeLessThan(send)
+    expect(clear).toBeGreaterThan(send)
     expect(workflow.WFWorkflowTypes).toEqual(
       expect.arrayContaining(["NCWidget", "WatchKit", "MenuBar", "QuickActions"]),
     )

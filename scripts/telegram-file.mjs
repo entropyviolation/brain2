@@ -7,10 +7,22 @@ function locationLines(msg) {
   const loc = msg && msg.location
   if (!loc || typeof loc.latitude !== "number" || typeof loc.longitude !== "number") return null
   const title = msg.venue && typeof msg.venue.title === "string" ? msg.venue.title.trim() : ""
+  const live = typeof loc.live_period === "number" && loc.live_period > 0
+  // A restaurant card is a place someone shared, not where the phone is standing.
+  if (title && !live) {
+    return ["gps:", "shared-place", title, `${loc.latitude},${loc.longitude}`].join("\n")
+  }
   const lines = [title ? `gps: ${title}` : "gps:"]
   lines.push(`${loc.latitude},${loc.longitude}`)
   if (typeof loc.horizontal_accuracy === "number") lines.push(`±${Math.round(loc.horizontal_accuracy)}m`)
   return lines.join("\n")
+}
+
+/** Original send time (`message.date`). Edit time is not when they sent it. */
+function telegramSentAtIso(msg) {
+  const unix = Number(msg && msg.date)
+  if (!Number.isFinite(unix) || unix <= 0) return new Date().toISOString()
+  return new Date(unix * 1000).toISOString()
 }
 
 export function extractTelegramMessage(update) {
@@ -29,7 +41,7 @@ export function extractTelegramMessage(update) {
     isGroup,
     telegramMessageId: msg.message_id,
     telegramUpdateId: update && update.update_id != null ? update.update_id : undefined,
-    receivedAt: new Date(((msg.edit_date || msg.date) || 0) * 1000).toISOString() || new Date().toISOString(),
+    receivedAt: telegramSentAtIso(msg),
     mediaGroupId: msg.media_group_id != null ? String(msg.media_group_id) : undefined,
   }
 
@@ -62,7 +74,7 @@ export function extractTelegramMessage(update) {
   }
 
   const located = locationLines(msg)
-  if (located) return { ...base, text: located }
+  if (located) return { ...base, text: located, locationUpdate: true }
 
   // Voice / audio notes — no download needed; ritual advance treats them as answers.
   const voice = msg.voice || msg.audio

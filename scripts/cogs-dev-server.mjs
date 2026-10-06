@@ -131,6 +131,12 @@ const server = createServer(async (req, res) => {
   try {
     const parsedUrl = parse(req.url || "/", true)
     const pathname = parsedUrl.pathname || "/"
+    if (pathname === "/api/health") {
+      res.statusCode = 200
+      res.setHeader("content-type", "text/plain")
+      res.end("ok")
+      return
+    }
     if (await handlePersistApi(req, res, pathname)) return
     if (await handleSyncApi(req, res, pathname)) return
     if (await handleIngestApi(req, res, pathname)) return
