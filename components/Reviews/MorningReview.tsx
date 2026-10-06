@@ -5,26 +5,32 @@
  * Lists "affirmations" list, today's to-dos (add + 3–5 priorities), daily habit
  * priorities (1–3), go-through to-do (six-slot fields), plaintext day plan,
  * branching circumstances, best-day why, and 10 gratitude. Mirrors BIM's `gm`
- * text flow. The `morning` slice merges onto today's day PeriodReview via
- * `reviews-store.saveMorningReview`.
+ * text flow. Save progress writes the answers filled in so far (empty questions
+ * stay open). Save Morning Review marks the day complete. Day arrows open
+ * another day's saved review. The slice lives on that day's PeriodReview via
+ * `reviews-store.replaceMorningReview`, same record the text ritual updates.
  * Dialog shell is milled fascia (`.hpp95` / `header-popup-chrome.css`).
  */
 "use client"
 
-import { Component, useEffect, useMemo, useState, type ErrorInfo, type ReactNode } from "react"
+import { Component, useEffect, useMemo, useRef, useState, type ErrorInfo, type ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Sun, Plus, X, Moon, Mic, Sparkles } from "lucide-react"
+import { Sun, Plus, X, Moon, Mic, Sparkles, ChevronLeft, ChevronRight } from "lucide-react"
 import { useTaskStore } from "@/lib/task-store"
 import { useHabitsStore } from "@/lib/habits-store"
 import { describeAllNighterLifts, isHabitPeriodExempt } from "@/lib/habit-exemption"
-import { useReviewsStore, localDayKey, periodLabel } from "@/lib/reviews-store"
+import { useReviewsStore, localDayKey, morningReviewPhase, periodLabel } from "@/lib/reviews-store"
+import { useGoalsStore } from "@/lib/goals-store"
+import { nightCarryForMorning } from "@/lib/ritual-carry"
+import { taskServesFocusGoals } from "@/lib/goal-focus"
 import { taskScheduledOnDay } from "@/lib/date-utils"
 import type { PeriodReview, Task } from "@/lib/types"
 import { AffirmationsDialog } from "@/components/Reviews/AffirmationsDialog"
+import { CommitmentMarkList } from "@/components/Reviews/CommitmentMarkList"
 import { useExemptionContext, useSleepStore } from "@/lib/sleep-store"
 import { useSleepSync } from "@/lib/sleep-sync"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
@@ -39,6 +45,7 @@ import {
 } from "@/lib/sleep-log"
 import { itemTitle } from "@/lib/item-utils"
 import { createScheduledTodoTask, getTierFromTask } from "@/components/Home/ToDo/todo-utils"
+import { taskIsPrioritized, taskIsRequired, tasksWithCommitment } from "@/lib/todo-commitment"
 import {
   AFFIRMATIONS_PER_SESSION,
   DEFAULT_AFFIRMATIONS,
@@ -186,14 +193,14 @@ function seedFromMorning(existing: MorningSlice | undefined, draft: MorningDraft
     return {
       allNighter: !!existing.allNighter,
       wakeTime: asString(existing.wakeTime),
-      bedTime: "",
+      bedTime: asString(existing.bedTime),
       dream: asString(existing.dream),
       affirmations: asStringList(existing.affirmations),
       newTodoLines: [""] as string[],
       priorityIds: asStringList(existing.priorityTaskIds),
       priorityHabitIds: asStringList(existing.priorityHabitIds),
       todoWalkById: {} as Record<string, TodoWalkFormFields>,
-      dayPlan: "",
+      dayPlan: asString(existing.dayPlanText),
       circumstance: {
         mustDo: !!existing.mustDo,
         mustNotDo: !!existing.mustNotDo,
@@ -331,14 +338,22 @@ function ensureAffirmationLines(lists: List[], tasks: Task[], addList: (n: strin
 export function MorningReviewDialog({
   open,
   onClose,
-  date = new Date(),
+  date,
 }: {
   open: boolean
   onClose: () => void
   date?: Date
 }) {
   useSleepSync()
-  const dayKey = localDayKey(date)
+  const [activeDate, setActiveDate] = useState(() => date ?? new Date())
+  const dateKey = date ? localDayKey(date) : ""
+  useEffect(() => {
+    if (!open) return
+    setActiveDate(date ?? new Date())
+    // `date` objects are not stable; key the reset on the calendar day.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, dateKey])
+  const dayKey = localDayKey(activeDate)
   const tasks = useTaskStore((s) => s.tasks)
   const lists = useTaskStore((s) => s.lists)
   const addList = useTaskStore((s) => s.addList)
@@ -346,7 +361,7 @@ export function MorningReviewDialog({
   const updateTask = useTaskStore((s) => s.updateTask)
   const habitTasks = useHabitsStore((s) => s.tasks)
   const habitExemptions = useHabitsStore((s) => s.habitExemptions)
-  const saveMorningReview = useReviewsStore((s) => s.saveMorningReview)
+  const replaceMorningReview = useReviewsStore((s) => s.replaceMorningReview)
   const existing = useReviewsStore((s) => s.getReview("day", dayKey)?.morning)
 
   const loggedNight = useSleepStore((s) => s.nights[dayKey])
@@ -381,6 +396,7 @@ export function MorningReviewDialog({
   const [affirmations, setAffirmations] = useState<string[]>(seed.affirmations)
   const [newTodoLines, setNewTodoLines] = useState<string[]>(seed.newTodoLines)
   const [priorityIds, setPriorityIds] = useState<string[]>(seed.priorityIds)
+  const [requiredIds, setRequiredIds] = useState<string[]>([])
   const [priorityHabitIds, setPriorityHabitIds] = useState<string[]>(seed.priorityHabitIds)
   const [todoWalkById, setTodoWalkById] = useState<Record<string, TodoWalkFormFields>>(seed.todoWalkById)
   const [dayPlan, setDayPlan] = useState(seed.dayPlan)
@@ -393,43 +409,58 @@ export function MorningReviewDialog({
   const [gratitude, setGratitude] = useState<string[]>(seed.gratitude)
   const [affirmationsOpen, setAffirmationsOpen] = useState(false)
   const [sessionAffirmations, setSessionAffirmations] = useState<string[]>(seed.affirmations)
+  const [savedNote, setSavedNote] = useState("")
+  const baselineRef = useRef("")
+  const affirmationsTouchedRef = useRef(false)
+  const submittedRef = useRef(false)
+  const reviews = useReviewsStore((s) => s.reviews)
+  const goals = useGoalsStore((s) => s.goals)
+  const carry = useMemo(() => nightCarryForMorning(reviews, activeDate), [reviews, activeDate])
+
+  const packForm = (fields: MorningDraft) => JSON.stringify(fields)
 
   useEffect(() => {
     if (!open) return
-    setAllNighterLocal(seed.allNighter)
-    setWakeTime(seed.wakeTime)
-    setBedTime(seed.bedTime)
-    setDream(seed.dream)
-    setAffirmations(seed.affirmations)
-    setNewTodoLines(seed.newTodoLines)
-    setPriorityIds(seed.priorityIds)
-    setPriorityHabitIds(seed.priorityHabitIds)
-    setTodoWalkById(seed.todoWalkById)
-    setDayPlan(seed.dayPlan)
-    setCircumstance(seed.circumstance)
-    setMustDo(seed.mustDo)
-    setMustNotDo(seed.mustNotDo)
-    setNewEvents(seed.newEvents)
-    setExcitedAbout(seed.excitedAbout)
-    setBestDayWhy(seed.bestDayWhy)
-    setGratitude(seed.gratitude)
-    setSessionAffirmations(seed.affirmations)
-  }, [open, dayKey, seed])
-
-  useEffect(() => {
-    if (!open) return
-    if (seed.affirmations.length) return
-    try {
-      const picked = ensureAffirmationLines(lists, tasks, addList, addTask)
-      setSessionAffirmations(picked)
-      setAffirmations(picked)
-    } catch {
-      setSessionAffirmations(DEFAULT_AFFIRMATIONS.slice(0, AFFIRMATIONS_PER_SESSION))
-      setAffirmations(DEFAULT_AFFIRMATIONS.slice(0, AFFIRMATIONS_PER_SESSION))
+    let lines = seed.affirmations
+    if (!lines.length) {
+      try {
+        lines = ensureAffirmationLines(lists, tasks, addList, addTask)
+      } catch {
+        lines = DEFAULT_AFFIRMATIONS.slice(0, AFFIRMATIONS_PER_SESSION)
+      }
     }
-    // Only re-pick when the dialog opens without a finished/draft affirmation set.
+    const next: MorningDraft = { ...seed, affirmations: lines }
+    const dayTasks = useTaskStore
+      .getState()
+      .tasks.filter((task) => !task.completed && taskScheduledOnDay(task, activeDate))
+    const markedPriority = dayTasks.filter((task) => taskIsPrioritized(task, "day", dayKey)).map((task) => task.id)
+    const markedRequired = dayTasks.filter((task) => taskIsRequired(task, "day", dayKey)).map((task) => task.id)
+    const seededPriority = [...new Set([...next.priorityIds, ...markedPriority])]
+    setAllNighterLocal(next.allNighter)
+    setWakeTime(next.wakeTime)
+    setBedTime(next.bedTime)
+    setDream(next.dream)
+    setAffirmations(next.affirmations)
+    setNewTodoLines(next.newTodoLines)
+    setPriorityIds(seededPriority)
+    setRequiredIds(markedRequired)
+    setPriorityHabitIds(next.priorityHabitIds)
+    setTodoWalkById(next.todoWalkById)
+    setDayPlan(next.dayPlan)
+    setCircumstance(next.circumstance)
+    setMustDo(next.mustDo)
+    setMustNotDo(next.mustNotDo)
+    setNewEvents(next.newEvents)
+    setExcitedAbout(next.excitedAbout)
+    setBestDayWhy(next.bestDayWhy)
+    setGratitude(next.gratitude)
+    setSessionAffirmations(lines)
+    setSavedNote("")
+    affirmationsTouchedRef.current = lines.length > 0 && seed.affirmations.length > 0
+    baselineRef.current = packForm({ ...next, priorityIds: seededPriority })
+    // Re-seed when the open day changes. Store churn must not wipe field edits.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, dayKey])
+  }, [open, dayKey, seed])
 
   // Persist in-progress answers for refresh / close-reopen on the same day.
   // Never overwrite a finished review in the store — only session draft.
@@ -478,10 +509,14 @@ export function MorningReviewDialog({
     gratitude,
   ])
 
-  const todaysTasks = useMemo<Task[]>(
-    () => tasks.filter((t) => !t.completed && taskScheduledOnDay(t, date)),
-    [tasks, date],
-  )
+  const todaysTasks = useMemo<Task[]>(() => {
+    const open = tasks.filter((t) => !t.completed && taskScheduledOnDay(t, activeDate))
+    const focused = new Set(
+      open.filter((task) => taskServesFocusGoals(task, goals, carry.focusGoalIds)).map((task) => task.id),
+    )
+    if (focused.size === 0) return open
+    return [...open.filter((task) => focused.has(task.id)), ...open.filter((task) => !focused.has(task.id))]
+  }, [tasks, activeDate, goals, carry.focusGoalIds])
 
   const storedExemption = useExemptionContext()
   const habitPickCtx = useMemo(() => {
@@ -535,14 +570,35 @@ export function MorningReviewDialog({
       [id]: { ...(prev[id] ?? emptyTodoWalkForm()), ...patch },
     }))
 
-  const handleSave = () => {
+  const currentForm = (): MorningDraft => ({
+    allNighter,
+    wakeTime,
+    bedTime,
+    dream,
+    affirmations,
+    newTodoLines,
+    priorityIds,
+    priorityHabitIds,
+    todoWalkById,
+    dayPlan,
+    circumstance,
+    mustDo,
+    mustNotDo,
+    newEvents,
+    excitedAbout,
+    bestDayWhy,
+    gratitude,
+  })
+
+  const commitMorning = (complete: boolean) => {
+    if (complete) submittedRef.current = true
     try {
       const addedIds: string[] = []
       for (const line of newTodoLines.map((s) => s.trim()).filter(Boolean)) {
         const task = createScheduledTodoTask({
           description: line,
           period: "day",
-          date,
+          date: activeDate,
         })
         task.id = `todo-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
         task.notes = LOGGED_FROM_TEXT
@@ -561,10 +617,14 @@ export function MorningReviewDialog({
       }
 
       const planText = dayPlan.trim()
-      let dayPlanLogged = false
-      if (planText) {
+      let dayPlanLogged = !!existing?.dayPlanLogged
+      let dayPlanText = existing?.dayPlanText
+      if (planText && planText !== (existing?.dayPlanText ?? "")) {
         appendPlanEntry("day", dayKey, planText, now)
         dayPlanLogged = true
+        dayPlanText = planText
+      } else if (!planText) {
+        dayPlanText = undefined
       }
 
       if (allNighter) {
@@ -575,42 +635,101 @@ export function MorningReviewDialog({
         setStoreBedtime(dayKey, bedTime.trim() ? parseBedtime(bedTime) : undefined)
       }
 
-      const allPriority = [
-        ...priorityIds,
-        // Newly added items selected? priorities only from checkboxes on existing + we'll refresh
-      ].filter((id, i, arr) => arr.indexOf(id) === i)
-
-      saveMorningReview(dayKey, {
-        wakeTime: allNighter ? undefined : wakeTime.trim() || undefined,
-        dream: allNighter ? undefined : dream.trim() || undefined,
-        intentions: [],
-        affirmations: affirmations.map((s) => s.trim()).filter(Boolean),
-        postponedTaskIds: [],
-        allNighter,
-        todosAddedIds: [...asStringList(existing?.todosAddedIds), ...addedIds],
-        priorityTaskIds: allPriority,
-        priorityHabitIds,
-        dayPlanLogged,
-        mustDo: circumstance.mustDo ? mustDo.trim() || undefined : undefined,
-        mustNotDo: circumstance.mustNotDo ? mustNotDo.trim() || undefined : undefined,
-        newEvents: circumstance.newEvents ? newEvents.trim() || undefined : undefined,
-        excitedAbout: circumstance.excited ? excitedAbout.trim() || undefined : undefined,
-        bestDayWhy: bestDayWhy.trim() || undefined,
-        gratitude: gratitude.map((s) => s.trim()).filter(Boolean),
+      const allPriority = priorityIds.filter((id, i, arr) => arr.indexOf(id) === i)
+      const spoken = affirmations.map((s) => s.trim()).filter(Boolean)
+      const grateful = gratitude.map((s) => s.trim()).filter(Boolean)
+      const phase = morningReviewPhase(existing)
+      const gap = (() => {
+        if (!allNighter && !bedTime.trim()) return "bed"
+        if (!allNighter && !wakeTime.trim()) return "wake"
+        if (!allNighter && !dream.trim()) return "dream"
+        if (!spoken.length) return "affirmation"
+        if (!allPriority.length && existing?.priorityTaskIds === undefined && !addedIds.length && !existing?.todosAddedIds?.length)
+          return "todo-show"
+        if (!allPriority.length && existing?.priorityTaskIds === undefined) return "todo-priorities"
+        if (!priorityHabitIds.length && existing?.priorityHabitIds === undefined) return "habit-priorities"
+        if (!planText && !dayPlanLogged) return "day-plan"
+        const anyBranch = circumstance.mustDo || circumstance.mustNotDo || circumstance.newEvents || circumstance.excited
+        if (!anyBranch && !bestDayWhy.trim() && !grateful.length) return "circumstances"
+        if (!bestDayWhy.trim()) return "best-day"
+        if (!grateful.length) return "gratitude"
+        return undefined
+      })()
+      const morning: MorningSlice = {
         source: "desktop",
-      })
+        completed: complete ? true : phase === "done" ? true : false,
+      }
+      if (!complete) {
+        const resume = existing?.resumeStep || gap
+        if (resume) morning.resumeStep = resume
+      }
+      if (allNighter) morning.allNighter = true
+      if (!allNighter && wakeTime.trim()) morning.wakeTime = wakeTime.trim()
+      if (!allNighter && bedTime.trim()) morning.bedTime = bedTime.trim()
+      if (!allNighter && dream.trim()) morning.dream = dream.trim()
+      if (spoken.length && (complete || (existing?.affirmations?.length ?? 0) > 0 || affirmationsTouchedRef.current)) {
+        morning.affirmations = spoken
+      }
+      if (existing?.shownAffirmations?.length) morning.shownAffirmations = existing.shownAffirmations
+      if (typeof existing?.affirmationIndex === "number") morning.affirmationIndex = existing.affirmationIndex
+      if (typeof existing?.walkIndex === "number") morning.walkIndex = existing.walkIndex
+      if (existing?.circumstanceNums?.length) morning.circumstanceNums = existing.circumstanceNums
+      const keptTodos = [...asStringList(existing?.todosAddedIds), ...addedIds]
+      if (keptTodos.length) morning.todosAddedIds = keptTodos
+      if (allPriority.length || complete) morning.priorityTaskIds = allPriority
+      if (priorityHabitIds.length || complete) morning.priorityHabitIds = priorityHabitIds
+      if (dayPlanLogged) morning.dayPlanLogged = true
+      if (dayPlanText) morning.dayPlanText = dayPlanText
+      if (circumstance.mustDo && mustDo.trim()) morning.mustDo = mustDo.trim()
+      if (circumstance.mustNotDo && mustNotDo.trim()) morning.mustNotDo = mustNotDo.trim()
+      if (circumstance.newEvents && newEvents.trim()) morning.newEvents = newEvents.trim()
+      if (circumstance.excited && excitedAbout.trim()) morning.excitedAbout = excitedAbout.trim()
+      if (bestDayWhy.trim()) morning.bestDayWhy = bestDayWhy.trim()
+      if (grateful.length || complete) morning.gratitude = grateful
+
+      replaceMorningReview(dayKey, morning)
+      const scopeIds = todaysTasks.map((task) => task.id)
+      const marked = tasksWithCommitment(
+        useTaskStore.getState().tasks,
+        "day",
+        dayKey,
+        scopeIds,
+        requiredIds,
+        allPriority,
+      )
+      for (const next of marked) updateTask(next)
       clearMorningDraft(dayKey)
-      onClose()
+      const clearedLines = [""]
+      setNewTodoLines(clearedLines)
+      baselineRef.current = packForm({ ...currentForm(), newTodoLines: clearedLines })
+      if (complete) onClose()
+      else setSavedNote("Saved. Unanswered questions stay open.")
     } catch (err) {
       console.error("[MorningReview] save failed", err)
     }
+  }
+
+  const dismiss = () => {
+    if (!submittedRef.current && packForm(currentForm()) !== baselineRef.current) commitMorning(false)
+    submittedRef.current = true
+    onClose()
+  }
+
+  const shiftDay = (delta: number) => {
+    if (packForm(currentForm()) !== baselineRef.current) commitMorning(false)
+    setSavedNote("")
+    setActiveDate((d) => {
+      const next = new Date(d)
+      next.setDate(next.getDate() + delta)
+      return next
+    })
   }
 
   return (
     <Dialog
       open={open}
       onOpenChange={(next) => {
-        if (!next) onClose()
+        if (!next) dismiss()
       }}
     >
       <DialogContent
@@ -626,10 +745,65 @@ export function MorningReviewDialog({
               Morning Review
             </DialogTitle>
           </div>
-          <DialogDescription className="hpp-caption-lead">{periodLabel("day", dayKey)}</DialogDescription>
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              aria-label="Previous day"
+              onClick={() => shiftDay(-1)}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <DialogDescription className="hpp-caption-lead flex-1 text-center" data-morning-day={dayKey}>
+              {periodLabel("day", dayKey)}
+              {morningReviewPhase(existing) === "partial"
+                ? " · in progress"
+                : morningReviewPhase(existing) === "done"
+                  ? " · saved"
+                  : ""}
+            </DialogDescription>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              aria-label="Next day"
+              disabled={dayKey >= localDayKey(new Date())}
+              onClick={() => shiftDay(1)}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </DialogHeader>
 
         <div className="hpp-body flex-1 overflow-y-auto space-y-6 pr-1">
+          {(carry.wakeReminder || carry.tomorrowMatters || carry.focusGoalIds.length > 0) && (
+            <section className="space-y-2 rounded-md border bg-muted/40 p-3" data-testid="morning-carry">
+              {carry.wakeReminder ? (
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground">From last night</p>
+                  <p className="text-sm whitespace-pre-wrap">{carry.wakeReminder}</p>
+                </div>
+              ) : null}
+              {carry.tomorrowMatters ? (
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground">What matters most today</p>
+                  <p className="text-sm whitespace-pre-wrap">{carry.tomorrowMatters}</p>
+                </div>
+              ) : null}
+              {carry.focusGoalIds.length > 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  Focus:{" "}
+                  {carry.focusGoalIds
+                    .map((id) => goals.find((goal) => goal.id === id)?.title)
+                    .filter(Boolean)
+                    .join(", ")}
+                </p>
+              ) : null}
+            </section>
+          )}
           <label className="flex items-start gap-2 rounded-md border p-3 text-sm cursor-pointer">
             <input
               type="checkbox"
@@ -750,27 +924,39 @@ export function MorningReviewDialog({
             <StringListEditor values={newTodoLines} onChange={setNewTodoLines} placeholder="New to-do…" />
           </section>
 
+          {todaysTasks.length > 0 && (
+            <section className="space-y-2">
+              <Label className="font-semibold text-sm">Required — must be done today</Label>
+              <p className="text-xs text-muted-foreground">
+                Absolutely non-negotiable. These sit on the Required list. Leave them unchecked to keep a task
+                only assigned.
+              </p>
+              <CommitmentMarkList
+                tasks={todaysTasks}
+                requiredIds={requiredIds}
+                marks="required"
+                onToggle={(_kind, id) =>
+                  setRequiredIds((ids) =>
+                    ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id],
+                  )
+                }
+              />
+            </section>
+          )}
+
           {(todaysTasks.length > 0 || newTodoLines.some((l) => l.trim())) && (
             <section className="space-y-2">
               <Label className="font-semibold text-sm">3–5 highest priorities</Label>
               <p className="text-xs text-muted-foreground">
                 Pick up to five from today&apos;s list (new items appear after save — select existing ones now).
               </p>
-              <div className="space-y-1">
-                {todaysTasks.map((t) => (
-                  <label
-                    key={t.id}
-                    className="flex items-center gap-2 border rounded-md p-2 text-sm cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={priorityIds.includes(t.id)}
-                      onChange={() => togglePriority(t.id)}
-                    />
-                    <span className="truncate flex-1">{itemTitle(t)}</span>
-                  </label>
-                ))}
-              </div>
+              <CommitmentMarkList
+                tasks={todaysTasks}
+                requiredIds={requiredIds}
+                prioritizedIds={priorityIds}
+                marks="prioritized"
+                onToggle={(_kind, id) => togglePriority(id)}
+              />
             </section>
           )}
 
@@ -938,11 +1124,17 @@ export function MorningReviewDialog({
           </section>
         </div>
 
-        <div className="hpp-actions">
-          <Button variant="outline" onClick={onClose}>
-            Cancel
+        <div className="hpp-actions flex-wrap">
+          {savedNote ? <p className="w-full text-xs text-muted-foreground">{savedNote}</p> : null}
+          <Button variant="outline" onClick={dismiss}>
+            Close
           </Button>
-          <Button className="hpp-key-go" onClick={handleSave}>Save Morning Review</Button>
+          <Button variant="outline" onClick={() => commitMorning(false)}>
+            Save progress
+          </Button>
+          <Button className="hpp-key-go" onClick={() => commitMorning(true)}>
+            Save Morning Review
+          </Button>
         </div>
       </DialogContent>
 
@@ -950,7 +1142,10 @@ export function MorningReviewDialog({
         open={affirmationsOpen}
         onClose={() => {
           setAffirmationsOpen(false)
-          if (sessionAffirmations.length) setAffirmations(sessionAffirmations)
+          if (sessionAffirmations.length) {
+            setAffirmations(sessionAffirmations)
+            affirmationsTouchedRef.current = true
+          }
         }}
       />
     </Dialog>
@@ -969,19 +1164,21 @@ function MorningReviewButton({ variant = "outline" }: { variant?: "outline" | "d
   const [open, setOpen] = useState(false)
   // Persist rehydrates from localStorage on the client only — gate the ✓ so the
   // first client paint matches the server ("Morning") and avoid a hydration crash.
-  const [showDone, setShowDone] = useState(false)
+  const [shownPhase, setShownPhase] = useState<"none" | "partial" | "done">("none")
   const today = localDayKey(new Date())
-  const done = useReviewsStore((s) => !!s.getReview("day", today)?.morning)
+  const phase = useReviewsStore((s) => morningReviewPhase(s.getReview("day", today)?.morning))
 
   useEffect(() => {
-    setShowDone(done)
-  }, [done])
+    setShownPhase(phase)
+  }, [phase])
+
+  const label = shownPhase === "done" ? "Morning ✓" : shownPhase === "partial" ? "Morning …" : "Morning"
 
   return (
     <>
       <Button variant={variant} size="sm" onClick={() => setOpen(true)} data-morning-review-entry>
         <Sun className="h-4 w-4 mr-2" />
-        {showDone ? "Morning ✓" : "Morning"}
+        {label}
       </Button>
       <MorningReviewDialog open={open} onClose={() => setOpen(false)} />
     </>

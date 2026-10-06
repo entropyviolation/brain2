@@ -1,153 +1,197 @@
-# `components/Reviews/` — End-of-Period Reviews
+# `components/Reviews/` — Rituals
 
-Global **BRAIN2** header **Review** dropdown (not a top-level tab). Guides the user through closing out a day, week, month, quarter, or year. Dialog shells use the shared pin-bar milled fascia (`.hpp95` / `components/header-popup-chrome.css`): CRT caption, brushed bay, engraved nameplates, raised metal keys — looks only.
+Global **BRAIN2** header **Rituals** control (not a top-level tab). Day rituals use
+sun (morning) and moon (night). Week / month / quarter / year offer **Start
+ritual** (plan the coming period) and **Review ritual** (end: clarify, push,
+document, evaluate). Dialog shells use the shared pin-bar milled fascia
+(`.hpp95` / `components/header-popup-chrome.css`).
+
+Internal persistence still uses `PeriodReview` / `reviews-store` so existing
+data opens unchanged. User-facing copy is Rituals.
+
+## Public door
+
+Other rooms may import:
+
+- `Reviews` from `reviews.tsx` — header Rituals control (`Rituals` is the same component). The pin bar mounts it (`components/AppHeader.tsx`). The mobile shell mounts it (`components/Mobile/MobileApp.tsx`).
+- `PostMortemDialog` from `PostMortemDialog.tsx` — Analytics opens a task reflection (`components/Analytics/ReflectionView.tsx`).
+
+This room writes **`lib/reviews-store.ts`** (`useReviewsStore`: `saveReview`, `replaceMorningReview`, `replaceStartRitual`). `PostMortemDialog` saves the task reflection through `saveCompletionReview` in `lib/services/completion-service.ts`.
+
+Interiors stay in this room: `MorningReviewDialog`, `MorningReview`, `StartRitualDialog`, `ReviewDialog`, `StarLordReportDialog`, `AffirmationsDialog`, `CommitmentMarkList`, `DayReviewTomorrowSection`, `NightTimeGlance`, `WhyBlockedControl`, `PeriodReviewStudio`, `AssumedTimesSection`, and `pendingAssumedTasks`.
+
+This room also writes **`lib/star-lord-store.ts`** for the three Star Lord Reports.
 
 ## Files
 
 | File | Purpose |
 |------|---------|
-| `reviews.tsx` | `Reviews` header button + `ReviewDialog` (`data-ui-name="Period review"`) for each period type; mounts the `MorningReview` entry; `.hpp95` shell |
-| `MorningReview.tsx` | `MorningReview` button + `MorningReviewDialog` (`data-ui-name="Morning review"`) — start-of-day ritual (HM2): all-nighter (lists the habit blocks it lifts: evening before / that morning), sleep, affirmations, to-do add/priorities, daily habit priorities (1–3, skipping habits the all-nighter lifts), go-through to-do (six-slot fields), plaintext day plan, circumstances, best day, gratitude; writes sleep through `lib/sleep-store.ts`; `.hpp95` shell |
-| `AffirmationsDialog.tsx` | Spoken-affirmations ritual launched from the morning dialog (stacks above it). Picks 5 random lines from the Lists → "Affirmations" list and gates "Next" on confident vocal delivery; CRT mic well (no purple soft circles); `.hpp95` shell |
-| `DayReviewTomorrowSection.tsx` | End of day review: tomorrow's plan append log (`PlanTextLog`) + search-to-schedule / create tomorrow to-dos |
-| `PostMortemDialog.tsx` | Per-task post-mortem launched from a "Reflect" affordance on a completed task (in the review carry-over or Analytics). Captures the four scales (satisfaction / resistance / focus / distraction, 1-10), an optional actual-duration correction, and notes, then persists via `saveCompletionReview` (`lib/services/completion-service.ts`); `.hpp95` shell |
+| `reviews.tsx` | `Rituals` header button (`Reviews` alias) — day sun/moon + **prior-day night** + period Start/Review; **Star Lord Report** on the local new moon, full moon, and birthday; `ReviewDialog` (`data-ui-name="Period review"`) for night/end; `.hpp95` shell |
+| `StarLordReportDialog.tsx` | Star Lord Report (`data-ui-name="Star Lord Report"`). Preparation, three ledger questions, three inner-alchemy questions, closing. New moon is at home, facing north. Close saves a draft. Save awards section points plus the whole-ritual bonus |
+| `StartRitualDialog.tsx` | Start / planning ritual for week–year (`data-ui-name="Start ritual"`): undone from last period, priorities, must-dos, **mark assigned tasks** required / prioritized, intentions, plan, gratitude |
+| `MorningReview.tsx` | `MorningReviewDialog` (`data-ui-name="Morning review"`) — day morning (sun) ritual (HM2); same answers as text `gm` |
+| `CommitmentMarkList.tsx` | Shared required / prioritized task checkboxes (`marks`: `required` \| `prioritized` \| `both`) for morning sections and start-ritual rows |
+| `AffirmationsDialog.tsx` | Spoken-affirmations ritual from the morning dialog |
+| `DayReviewTomorrowSection.tsx` | Night / day end: "make a plan for tomorrow" (plan log + schedule/create tomorrow to-dos) |
+| `NightTimeGlance.tsx` | Night ritual: time grid, day log, and activity log pinned to that ritual's day, plus a short analysis note. Day-log slabs keep their pen colors inside the dialog |
+| `WhyBlockedControl.tsx` | Why blocked? Presets stay tokens. **Other** opens a text field |
+| `PeriodReviewStudio.tsx` | Week, month, season, and year: period stats, then the shared reflection questions |
+| `PostMortemDialog.tsx` | Later per-task note from **Reflect** on a period ritual, or from Analytics. Satisfaction, resistance, focus, distraction (optional 1–10; clearing a score removes it, and a score this dialog does not show is left as saved) and its own note (`completionReview.reflectNotes`). It does not select goals, award the quick review, or edit length, start, or the quick-review `notes` — those stay on the completion popup (`components/Completion/`). It does not create, revise, or delete the `review:${taskId}` points row. A note saved before this split, and never awarded, still opens here; saving it stores `reflectNotes` and leaves `notes` alone. Close saves a changed note. |
+| `AssumedTimesSection.tsx` | Confirm assumed completion times in the end ritual. Optional **Est.** marks duration or start as a rough estimate (`Task.timeRough`) |
 
 ## Entry point
 
-Rendered in the `AppHeader` pin bar (`app/page.tsx`) in the **Review** group, beside Tracking, Inbox, Bulk Add, From Notes, and Quick Add.
+Rendered in the `AppHeader` pin bar (`app/page.tsx`) in the **Rituals** group,
+beside System and Capture.
 
-- The **Morning** button opens the morning ritual for today. First paint matches SSR (`Morning` only); ✓ appears after mount if today’s review is saved. A small error boundary keeps a throw inside the widget from unmounting Home / To Do; same-day session draft resumes an unfinished panel after close or refresh without discarding a finished review.
-- The **Review** dropdown lists all five (evening/end-of-period) period types. A life **Season** is specified as its own record, not a sixth period, in [`docs/JungBrain2.md`](../../docs/JungBrain2.md) (not built).
-- CRT **due** count with a tooltip naming how many just-ended periods still need a review.
-- Saved reviews browsable from Analytics → Reviews tab; regret accrual surfaces in Analytics → `RegretView`.
+- **Rituals** opens a menu of every period. Badge = count of available/undone
+  slots (`lib/rituals.ts` → `countAvailableRituals`), plus an open Star Lord Report.
+- **Day:** sun → morning dialog for today; moon → night dialog for today; a second moon row opens **yesterday's** night (so a missed night is not stuck on today).
+- **Week–year:** Start ritual → `StartRitualDialog` for the **current** period;
+  Review ritual → end dialog for the **just-ended** period.
+- **Star Lord Report:** shown when today is the local new moon, the local full moon, or the birthday in Settings → **Birthday**. A birthday that falls on a moon keeps both rites. An undone report from yesterday stays in the menu through the next day. The walk is preparation, the ledger, inner alchemy, and a closing toward the north. Answers live in `lib/star-lord-store.ts`. Telegram `rituals` lists an open report and points at Header → Rituals; the questions themselves are the desktop dialog.
+- Menu footer reminds Telegram: `rituals · gm · gn · review week · ritual start week`.
+- Home overview tile **Rituals due** lists available slots with app path + Telegram
+  command, and an open Star Lord Report. Analytics → Reviews reads morning / start / end slices.
 
-## Morning review ritual (HM2)
+## Model (day vs other periods)
 
-`MorningReview` (header/Home banner entry) → `MorningReviewDialog` captures:
+| Period | Start | End |
+|--------|-------|-----|
+| Day | Morning (sun) → `PeriodReview.morning` | Night (moon) → review root + `endCompleted` |
+| Week / month / quarter / year | Start ritual → `PeriodReview.start` | Review ritual → review root + `endCompleted` |
+
+Legacy rows without `endCompleted` still count as end-done when they have end
+body content, or when they are empty shells with no morning/start (old Save
+Review). A morning-only or start-only shell does **not** mark the end ritual done.
+
+## Morning ritual (HM2)
+
+Same flow as before — see historical morning steps in this README's morning
+section below. Desktop and text `gm` share `replaceMorningReview`.
+
+## Start ritual (week–year)
+
+1. **Undone from last period** — pull into this period or note them.
+2. **Priorities** — free text for what matters most.
+3. **Must be done** — required outcomes, plus `CommitmentMarkList` (`marks="both"`) that marks this period's assigned tasks **Required** or **Prioritized** (`Task.todoMarks`).
+4. **Intentions** — tone / focus.
+5. **Plan** — concrete plan for the period.
+6. **Gratitude**.
+
+**Close** saves a draft. **Save progress** / **Save Start ritual**. A start ritual that was already submitted stays submitted if you close it after a tweak. Undone from the last period uses the same date-scoped unfinished list as the night ritual. Telegram: `ritual start week` (etc.). After must-dos, the text walk asks `required: 1, 8` and `priority: 2` (a bare comma list marks required).
+
+## Night / Review (end) flow (`ReviewDialog`)
+
+1. **Unfinished items** — the ritual's own period, not "today". A past day uses the Undone ledger (`lib/ritual-unfinished.ts`), so work that rolled onto the next day still appears. Done completes in place. **Push** uses the Scheduler's `pushCardWorkingQueue` (`lib/ritual-push.ts`): the task is reassigned to the next open period and the row leaves this ritual. A failed push leaves the row. **Why blocked?** is optional. Presets stay the token. **Other** opens a text field; the words are stored with the token (`{ reason: "other", note }`). A blank Other stays the token `"other"`.
+2. **Assumed times** — correct or confirm. Optional **Est.** (`Task.timeRough`) means the duration or the start (or both) is a rough estimate. It stays on the task and shows on Done rows.
+3. **This period** (week, month, season, year — not night) — missed points, points vs last period, the habit grade for that span vs the previous one (weeks listed inside a month or season; months inside a year), daily habits never done in the span, and a tracking breakdown by the scopes already on the desk (activity, location, and the rest). Then the longer reflection (`PeriodReview.arc`).
+4. **How the day was spent** (night only) — time grid, day log, and activity log for that date, plus a short note (`timeReflection`). Day-log colors are the pen colors.
+5. **Summary** / **Gratitude** / **Plan reflection** (day/week/month)
+6. **Reflection** — went well / improve / learned (these stay separate from the longer arc questions)
+7. **Wake-up reminder** and **What matters most tomorrow?** (night only). Empty shows nothing. The next morning shows the reminder first, then what matters most.
+8. **Goals to focus on tomorrow** (night only) — `tomorrowFocusGoalIds`. Tasks that serve those goals (or their objectives) are listed first in the next morning and are more likely to be suggested. Points use the goal-focus multiplier (Settings → Automatic point allocation, default 1.5×). If an objective multiplier already boosts the task, the larger one is kept — they are not multiplied together. Beat-the-clock stays inside the base.
+9. **Tomorrow's plan** — the prompt is "make a plan for tomorrow". The plan log and tomorrow's to-dos stay.
+
+**Close** (X or Close) saves a draft (`endCompleted: false` unless the ritual was already submitted) and awards no points. The longer answers restore on reopen. **Save Night ritual** / **Save Review ritual** submits it as done and awards points.
+
+Points (`lib/ritual-points.ts`, edited in Settings → **Automatic point allocation**): **10** per section actually filled or confirmed, plus **30** for submitting the whole ritual. Vacuous sections (nothing unfinished, nothing assumed) count. Optional blanks do not. Each answered reflection question counts on its own, including each filled arc question on a week, month, season, or year. A photo with no caption counts as the inspiration question. Fear and its reframe are one question. The stats panel is not a question. Night does not score `arc`. Re-saving replaces that ritual's ledger row (`ritual:{period}:{key}`) instead of stacking.
+
+Telegram: `gn` / `good night` (today's night); `review week` / `ritual end week`
+(just-ended period). The text walk follows the same steps, including assumed
+times, the night time note or the longer stats and arc, the wake-up reminder,
+what matters most, and goals to focus. `3 other the rain` stores Other with
+that note. `cancel` leaves the walk. A reply inside the walk is not a `log:`.
+
+## Available / undone list
+
+| Surface | How |
+|---------|-----|
+| App — Rituals menu | Due / … / ✓ on each slot; badge on the Rituals key |
+| App — Home tile | **Rituals due** with Open + dialog listing command + path |
+| Telegram | `rituals` or `reviews` → board with every slot, status, command, and app path |
+
+Helpers: `lib/rituals.ts` (`listAvailableRituals`, `formatRitualsBoard`,
+`endRitualPhase`, `startRitualPhase`). Star Lord slots are `lib/star-lord.ts`
+(`listStarLordSlots`) and count on the same badge.
+
+## Star Lord Report
+
+Three rites, one dialog (`data-ui-name="Star Lord Report"`). The day is the
+local calendar day that contains the new moon, the local day that contains the
+full moon (`lib/lunar.ts`), or the birthday in Settings. February 29 is read
+on March 1 in a year without that day.
+
+1. **Before you begin** — three slow breaths, wash hands and face, sit facing north, optional incense or a cup of clear water. The new moon says to do this at home, in a quiet room.
+2. **The ledger** — three questions for that rite (what to clear or plant, what the month has done, or the year's return to the source).
+3. **Inner alchemy** — three further questions. The note asks to breathe the question into the belly and write what remains.
+4. **Closing** — warm the palms, rest them over the heart, bow slightly toward the north, and the three lines beginning "May my thoughts match the clarity of the Void."
+
+**Close** saves a draft and awards nothing. **Save Star Lord Report** submits it. Each answered question is a section. Re-saving replaces `ritual:star-lord:{kind}:{date}` in the points ledger. A rite that was already submitted stays submitted if you close it after a tweak.
+
+## Telegram (BIM)
+
+| Command | Ritual |
+|---------|--------|
+| `gm` / `good morning` / `ritual morning` | Day morning (sun) |
+| `gn` / `good night` / `night` / `ritual night` / `review today` | Day night (moon) for today |
+| `ritual start week\|month\|quarter\|year` | Start / planning |
+| `review week\|…` / `ritual end week\|…` | End / review (just-ended) |
+| `review` / `ritual` (bare) | First available/undone slot |
+| `rituals` / `reviews` | Board, including an open Star Lord Report |
+| `cancel` | Leave night/start/end |
+| `STOP` | Leave morning (all caps) |
+
+Backward compatible: `reviews` / `review` still work; preferred user language is Rituals.
+
+## Morning review ritual (HM2) — detail
+
+`MorningReviewDialog` captures:
 
 1. **All nighter** checkbox (skip sleep clocks) or fell-asleep / wake / dream
-2. **Five affirmations** randomly picked from Lists → `affirmations` (Speak them opens `AffirmationsDialog`)
-3. **To do for today** — show today's list, add new lines (notes: `logged from text`), pick 3–5 priorities (shown on Home → To Do)
-4. **Daily habit priorities** — optionally pick 1–3 daily habits (shown on Home → Habits as Morning habit priorities)
-5. **Go through to do list** — per item: tier, expected duration, points, day importance (0–10), resistance (0–10, append-only series), day excitement (0–10). Blank / `-` leaves a field unchanged; Skip leaves the item untouched. Shared grammar with BIM (`lib/morning-todo-walk.ts`)
-6. **Plaintext day plan** — appends today's Plan log (desktop stamp, not falsely labeled "from text")
-7. **Circumstances** — must-do / must-not / new events / excitement (checkbox + answers)
-8. **Why is today going to be the best day ever?**
-9. **10 things you are grateful for today**
+2. **Five affirmations** from Lists → `affirmations`
+3. **To do for today** — add lines and/or `rm 1 3`, then `CommitmentMarkList` for **Required — must be done today** and **3–5 highest priorities** (those ids become `todoMarks` on save)
+4. **Daily habit priorities** — 1–3
+5. **Go through to do list** — six-slot walk
+6. **Plaintext day plan**
+7. **Circumstances** — must-not / events / excitement (required tasks are asked with the to-do list)
+8. **Best day ever**
+9. **10 gratitude**
 
-The `morning` slice merges onto today's **day** `PeriodReview` via
-`reviews-store.saveMorningReview` so it coexists with the evening review for the
-same day. Text pipeline (`gm` via BIM) writes the same shape with
-`source: "telegram"`. Analytics → Reviews reads the answers; Analytics → To-do pulse
-charts the walkthrough fields; Analytics → Sleep tracks all-nighter days.
-
-Planned, not built ([`docs/JungBrain2.md`](../../docs/JungBrain2.md)): if yesterday is in the top or bottom 5% on habits, points, mood, or reflection, the next morning asks one optional question and stores the answer on this morning slice. A non-empty dream also upserts a Dream item. The year review later gains three afternoon prompts. None of that is in the dialog yet.
-
-Its two time fields — **fell asleep** and **wake time** — are a view onto
-`lib/sleep-store.ts`, not a second copy of the data (unless all-nighter is on).
-Saving writes the night there, which is what paints it on the Sleep pen, logs it
-in To-Do Done, and feeds any habit linked to the Sleep tag; `morning.wakeTime` is
-still written so older reviews and exports keep reading correctly.
-
-A field with nothing stated yet opens **pre-filled from the Tracking grid**
-(`lib/sleep-inference.ts`), so someone who painted their night is confirming a
-time rather than retyping it. See `components/Home/Tracking/README.md` for the
-model.
-
-## Spoken affirmations ritual
-
-The morning dialog's **Speak them** button opens `AffirmationsDialog`, a popup
-that stacks above the morning review. It reads its lines from a normal Lists
-list named **"affirmations"** (visible under Lists → All; older **"Affirmations"**
-lists still match), seeding sensible defaults the first time so it works out of
-the box. Five lines are chosen at random; tapping the mic streams audio through
-`useVocalConfidence`
-(`hooks/useVocalConfidence.ts`), and each affirmation is shown one at a time with
-a live confidence meter (volume · steadiness · conviction · full delivery).
-**"Next" only unlocks once the line is delivered with full confidence** — loud,
-steady, convicted (no uptalk, no trailing off, no hesitation), and spoken all the
-way through.
-
-Over BIM text (`gm`), affirmations are also one-at-a-time; almost any reply
-advances — including a voice note.
-
-Voice scoring is a transparent, client-side analyzer in `lib/vocal-confidence.ts`
-(no API keys, audio never leaves the device, degrades gracefully without a mic).
-The scoring boundary (`scoreConfidence`) is deliberately swappable for a real
-model later. The four meters shown — **Volume**, **Steadiness**, **Conviction**,
-**Full delivery** — map to acoustic correlates of perceived speaker confidence
-established in the speech-prosody literature:
-
-| Meter | Signals | Grounded in |
-|-------|---------|-------------|
-| **Volume** | mean intensity (RMS loudness) | Jiang & Pell (2014, 2017); Sabu & Rao (2020) |
-| **Steadiness** | low cycle-to-cycle *jitter* (f0) + *shimmer* (amplitude) tremor, plus HNR voice quality. Uses *local* perturbation, not macro pitch range, so expressive intonation isn't penalized | Jiang & Pell; Sabu & Rao (2020); Boersma (1993) HNR |
-| **Conviction** | a **weighted average** (intonation 0.40, fluency 0.35, projection 0.25) of: terminal pitch contour (falling/level = confident; rising **uptalk** = doubt), fluency (prompt onset, few/short pauses), and loudness **projection** (ending doesn't fade/mumble out). It's a smooth, interpretable meter; the hard "any one weak cue blocks Next" logic lives in the per-cue **gates** (fluency, intonation, projection, conviction floor). Projection uses the end-vs-**median** loudness with a tolerant band, so a *natural* phrase-final taper is **not** mistaken for trailing off | Ponsot et al. (2018); Pon-Barry (2008); Duchi et al. (2015) |
-| **Full delivery** | voiced duration vs. the line's word count (proxy for completing the utterance at a natural rate) | Sabu & Rao (2020) speech-rate / duration |
-
-**Accuracy & robustness (why it now catches a deliberately-unsure delivery):**
-
-- **`confident` is hard-gated, not just thresholded.** A line only unlocks when it
-  is loud, steady, *and* convicted, with the conviction sub-cues additionally
-  gated: no rising **uptalk**, no **trailing off**, fully voiced. Sounding unsure
-  on any one of these blocks "Next".
-- **Pitch uses the McLeod Pitch Method** (NSDF + 0.9 peak-pick + parabolic
-  interpolation), which tracks higher (female) f0 as reliably as lower (male) f0
-  and resists octave errors — so uptalk/jitter are measured correctly for any
-  voice. Absolute pitch *height* is intentionally **not** scored (it would bias
-  across speakers); only speaker-independent cues are used.
-- **Frames are decimated to ~`ANALYSIS_INTERVAL_MS` (45 ms)** so successive
-  windows are decorrelated. Earlier versions measured jitter/shimmer on
-  heavily-overlapping ~16 ms frames, which made "steadiness" read high even for a
-  wavering voice; decimation makes tremor actually measurable.
-- A tracked-but-shaky pitch is **penalized** (not ignored): the amplitude-only
-  steadiness fallback applies only when *no* pitch could be tracked at all.
-
-The pure helpers (`detectPitch` (MPM), `relativePerturbation`,
-`terminalContourRise`, `terminalLoudnessRatio`, `clarityToHnr`,
-`scoreConfidence`, `ConfidenceTracker`) are unit-tested in
-`lib/vocal-confidence.test.ts` (incl. female-range pitch and each gate).
-
-| File / helper | Role |
-|---------------|------|
-| `lib/affirmations.ts` | Find/seed the "Affirmations" list, read its items, random subset (`pickRandom`) |
-| `lib/vocal-confidence.ts` | Pure DSP + confidence scoring (`computeFrameMetrics`, `ConfidenceTracker`, `scoreConfidence`) |
-| `hooks/useVocalConfidence.ts` | Mic (getUserMedia) → AnalyserNode → tracker → live `ConfidenceScore` |
+`completed: false` = in progress; `true` = full submit. Older saves without the
+flag still count as done when populated. Closing the dialog saves the draft the
+same way **Save progress** does, and does not mark the morning done. The top of
+the dialog shows the previous night's wake-up reminder, then what matters most,
+when those were written. Over Telegram, Live Location updates
+are ignored until the ritual ends; the same share resumes on the next edit.
+The text walk keeps every step above and adds the previous night's carry on
+the opening prompt. Required items are a line of only comma-separated numbers
+(`1,8` or `1, 8`); a line with any other text is a new to-do, not a split.
+On the six-slot walk, importance, resistance, and excitement are 0–10 and may
+be decimals (`- 90 200 6.5 3.5 9`). A line that fails stays on that same item.
+`SKIP` leaves one item. `SKIP ALL` leaves the rest and continues at the day plan.
 
 ## Why-blocked reasons (HM3)
 
-In the carry-over step each unfinished item exposes a **Why blocked?** picker
-(`no-energy` · `missing-input` · `procrastination` · `no-time` ·
-`blocked-by-other` · `other`). Selected reasons are saved on the review's
-`blockedReasons` map and tag the item's accrued **regret** entry
-(`lib/regret-store.ts`) so Analytics can break regret down by cause.
+**Why blocked?** on a ritual push saves `blockedReasons`. A preset is the token (`"no-time"`). **Other** with text is `{ reason: "other", note: "the rain" }`. Other left blank is the token `"other"` — it does not pretend a custom reason was written. Analytics → Reviews shows the words. The regret ledger keeps the token only.
 
-## Review flow (`ReviewDialog`)
+## Longer reflection (week, month, season, year)
 
-1. **Unfinished items** — tasks scheduled in the period but not completed; mark Done or Push to next period.
-2. **Summary** — free-text recap.
-3. **Gratitude** — multiple gratitude lines.
-4. **Your plan** (day/week/month only) — read-only stamped plan log from `lib/plan-text.ts` + reflection textarea. Day review also hosts `DayReviewTomorrowSection` (same submit-stamped composer for tomorrow).
-5. **Reflection** — What went well? / What could improve? / What did you learn?
-6. **Next plans** — intentions for the upcoming period.
+One shape, `PeriodReview.arc` (`lib/period-arc.ts`). Night does not ask these. Headings: Growth and Accomplishments, Health and Well-Being, Relationships and Support, Planning for the Next Period, then inspiration (text and photos via the existing attachment store), joy, fear and reframe, best and worst, and an ideal next period. Wording follows the period ("this past week" / "this season" / "next year"). Empty answers are not sections. Analytics → Reviews reads them in those groups, photos included, inside the analytics range.
 
 ## Data
 
 | Store / helper | Role |
 |----------------|------|
-| `lib/reviews-store.ts` | Persists `PeriodReview[]` + `OperationReview[]` (`cogs-reviews-store`); `saveReview`/`getReview`, `saveMorningReview`, operation-review actions, and period helpers |
-| `lib/pending-reviews.ts` | `getPendingReviews` / `countPendingReviews` — which just-ended period of each type still needs a review (drives the "due" badges) |
-| `lib/regret-store.ts` | Regret ledger (`regret-store`); blocked-reason-tagged accrual |
-| `lib/task-store.ts` | Incomplete tasks, push/done actions |
-| `lib/plan-text.ts` | Loads the day/week/month plan-entry log (`getStoredPlanText` formatted; `appendPlanEntry` to add) |
-| `lib/services/completion-service.ts` | `saveCompletionReview` — persists a `TaskCompletionReview` from `PostMortemDialog` without touching the hot `completeTask` path |
-| `lib/services/review-service.ts` | `carryOverIncomplete` + period-review repository helpers |
-
-## Operation post-mortem (Feature 2, #277 — for Worker B)
-
-`reviews-store.addOperationReview(input)` upserts an `OperationReview`
-(`operation:${operationId}` id) and is the integration point Worker B calls when
-closing an Operation. Read one back with `getOperationReview(operationId)`.
+| `lib/reviews-store.ts` | `PeriodReview[]` + operation reviews; morning + **start** helpers; period keys |
+| `lib/rituals.ts` | Slots, available/undone, board text, phase helpers |
+| `lib/pending-reviews.ts` | Just-ended **end** rituals still due (uses `endRitualPhase`) |
+| `lib/ingest/apply-ritual.ts` | Telegram board, night, start, end walks; morning via `apply-morning-gm` |
+| `lib/services/review-service.ts` | Carry-over helpers |
+| `lib/ritual-push.ts` | Ritual push — the Scheduler's `pushCardWorkingQueue` |
+| `lib/blocked-reason.ts` | Preset tokens, Other text, labels |
+| `lib/period-arc.ts` | Shared reflection prompts and which answers count |
+| `lib/period-ritual-stats.ts` | Period stats for the longer review (habit grade, points, tracking) |
 
 ## Period keys
 
@@ -156,28 +200,19 @@ closing an Operation. Read one back with `getOperationReview(operationId)`.
 | Day | `YYYY-MM-DD` |
 | Week | `getWeekString` range |
 | Month | `YYYY-MM` |
-| Quarter | `YYYY-Qn` |
+| Quarter | `YYYY-Qn`. Menu and dialogs show `Quarter YYYY Qn (Season)` from `lib/seasons.ts` (Q1 Spring, Q2 Summer, Q3 Fall, Q4 Winter). 26 Sep 2026 is **Quarter 2026 Q3 (Fall)**. |
 | Year | `YYYY` |
-
-Helpers: `getPeriodKey`, `dateFromPeriodKey`, `previousPeriodDate`, `nextPeriodDate`, `periodLabel`, `localDayKey` in `reviews-store.ts`.
 
 ## Push behavior
 
-Pushing a task increments the period's push counter (`daysPushed`, `weeksPushed`, or `monthsPushed`) and reschedules to the next period's field.
+**Push** in the review dialog calls `ritualPushPatch` → `pushCardWorkingQueue`.
+The period being left is marked `pushed` and drops off this ritual's unfinished
+list. Home → To Do Undone still lists it. The live schedule moves to the next
+open period (a past week pushed today lands on the current week). A season
+pushes the month the task sits on, and marks the season's other months that
+held it. Counters (`daysPushed` / `weeksPushed` / `monthsPushed`) still increment.
 
-## Planned — map and territory (Wave 13)
+## Icons
 
-Not built. Evening and weekly reviews gain describe-then-infer (GS-5): facts
-first, then a `formulation` with role `inference` linked to those facts.
-Morning review keeps its current order. Each period ends with a handoff the
-next period opens on (GS-6). An optional extensional check may offer a dated
-rewrite and never blocks save (GS-4). Sequence:
-[`docs/ScienceandSanityBrain2.md`](../../docs/ScienceandSanityBrain2.md) Part 3.
-
-## Planned — meaning beside the average (Wave 14)
-
-Not built. Sequence: [`docs/JungBrain2.md`](../../docs/JungBrain2.md).
-
-- Morning: one optional exception question when yesterday is an extreme day; a non-empty dream upserts a Dream item.
-- Year: three prompts (keep / revise / retire standing rules, one neglected objective, what was finished on purpose). Week, month, and quarter stay as they are.
-- Season is a separate record, not a sixth `ReviewPeriod`.
+Day sun/moon: `RitualSunIcon` / `RitualMoonIcon` from `@/components/Icons`
+(registered in `icon-registry.ts`).

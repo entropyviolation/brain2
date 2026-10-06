@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
+import { useReviewsStore } from "@/lib/reviews-store"
 import { useSleepStore } from "@/lib/sleep-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { MorningReviewDialog } from "./MorningReview"
@@ -24,6 +25,30 @@ afterEach(() => {
 })
 
 describe("MorningReviewDialog", () => {
+  it("shows last night's wake-up reminder and what matters most", () => {
+    useReviewsStore.setState({
+      reviews: [
+        {
+          id: "day:2026-09-16",
+          period: "day",
+          periodKey: "2026-09-16",
+          completedAt: new Date(2026, 8, 16, 22, 0, 0),
+          summary: "",
+          gratitude: [],
+          nextPlans: "",
+          reflections: {},
+          resolvedTaskIds: [],
+          pushedTaskIds: [],
+          wakeReminder: "water the fern",
+          tomorrowMatters: "the letter",
+        },
+      ],
+    })
+    render(<MorningReviewDialog open onClose={() => {}} date={TODAY} />)
+    expect(screen.getByText("water the fern")).toBeInTheDocument()
+    expect(screen.getByText("the letter")).toBeInTheDocument()
+  })
+
   it("shows the night already logged elsewhere", () => {
     useSleepStore.setState({ nights: { [MORNING]: { date: MORNING, sleptMin: -45, wokeMin: 420 } } })
     render(<MorningReviewDialog open onClose={() => {}} date={TODAY} />)
@@ -76,5 +101,38 @@ describe("MorningReviewDialog", () => {
     fireEvent.click(screen.getByRole("button", { name: /Save Morning Review/ }))
 
     expect(useSleepStore.getState().nights[MORNING]?.sleptMin).toBe(30)
+  })
+
+  it("saves one answer and leaves the dialog open", () => {
+    const onClose = vi.fn()
+    render(<MorningReviewDialog open onClose={onClose} date={TODAY} />)
+
+    fireEvent.change(screen.getByPlaceholderText("Anything you remember…"), {
+      target: { value: "a long hallway" },
+    })
+    fireEvent.click(screen.getByRole("button", { name: "Save progress" }))
+
+    expect(onClose).not.toHaveBeenCalled()
+    const morning = useReviewsStore.getState().getMorningReview(MORNING)
+    expect(morning?.dream).toBe("a long hallway")
+    expect(morning?.completed).toBe(false)
+    expect(morning?.bestDayWhy).toBeUndefined()
+    expect(morning?.gratitude).toBeUndefined()
+    expect(screen.getByText(/Unanswered questions stay open/)).toBeTruthy()
+  })
+
+  it("opens another day and shows that day's saved review", () => {
+    useReviewsStore.getState().replaceMorningReview("2026-09-16", {
+      dream: "yesterday's river",
+      completed: true,
+      source: "desktop",
+    })
+    render(<MorningReviewDialog open onClose={() => {}} date={TODAY} />)
+
+    fireEvent.click(screen.getByRole("button", { name: "Previous day" }))
+
+    expect(screen.getByText(/September 16/)).toBeTruthy()
+    expect(screen.getByDisplayValue("yesterday's river")).toBeTruthy()
+    expect(screen.getByRole("button", { name: "Next day" })).not.toBeDisabled()
   })
 })

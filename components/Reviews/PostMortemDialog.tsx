@@ -1,116 +1,157 @@
 /**
  * components/Reviews/PostMortemDialog.tsx — Task post-mortem (Brain2 #40)
  *
- * A small reflection dialog launched from a "Reflect" affordance on a completed
- * task (in the Reviews ritual or Analytics). Captures the four post-mortem
- * dimensions (satisfaction / resistance / focus / distraction, 1-10), an
- * optional actual-duration correction, and free-text notes, then persists a
- * `TaskCompletionReview` onto the task via `saveCompletionReview` (a task-store
- * action CALL — this feature never touches the hot completeTask path).
+ * A later reflection, opened from Reflect on a period ritual or from Analytics.
+ * It is not the completion popup. That popup (`CompletionDialog`) is what
+ * appears when a task is marked done: goals, objectives, the clock, the quick
+ * review, and its points. This dialog only adds the older 1–10 notes
+ * (satisfaction, resistance, focus, distraction) and its own written note
+ * (`reflectNotes`). It does not award the quick review, and it does not rewrite
+ * the quick-review notes, the points ledger, duration, or start. A score left
+ * off is cleared. Close saves a changed reflection.
  * Dialog shell is milled fascia (`.hpp95` / `header-popup-chrome.css`).
  */
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Sparkles } from "lucide-react"
 import type { Task } from "@/lib/types"
-import { saveCompletionReview } from "@/lib/services/completion-service"
+import { postMortemReviewInput, saveCompletionReview } from "@/lib/services/completion-service"
+import { itemTitle } from "@/lib/item-utils"
 
-interface ScaleDef {
-  key: "satisfaction" | "resistance" | "focus" | "distraction"
-  label: string
-  hint: string
-}
-
-const SCALES: ScaleDef[] = [
+const SCALES: { key: "satisfaction" | "resistance" | "focus" | "distraction"; label: string; hint: string }[] = [
   { key: "satisfaction", label: "Satisfaction", hint: "How happy are you with the result?" },
-  { key: "resistance", label: "Resistance", hint: "How hard was it to get started?" },
-  { key: "focus", label: "Focus", hint: "How focused were you while working?" },
+  { key: "resistance", label: "Resistance", hint: "How hard was it to start or stay with it?" },
+  { key: "focus", label: "Focus", hint: "How absorbed were you?" },
   { key: "distraction", label: "Distraction", hint: "How often were you pulled away?" },
 ]
 
-function Scale({
-  def,
+function ScoreRow({
+  label,
+  hint,
   value,
   onChange,
 }: {
-  def: ScaleDef
-  value: number
-  onChange: (v: number) => void
+  label: string
+  hint: string
+  value: number | undefined
+  onChange: (value: number | undefined) => void
 }) {
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-baseline justify-between">
-        <Label className="text-sm font-medium">{def.label}</Label>
-        <span className="text-sm tabular-nums font-semibold text-primary">{value}/10</span>
+    <div className="space-y-1">
+      <div className="flex items-baseline justify-between gap-2">
+        <Label className="text-sm font-medium" title={hint}>
+          {label}
+        </Label>
+        <span className="text-xs text-muted-foreground">{value ? `${value}/10` : "optional"}</span>
       </div>
-      <input
-        type="range"
-        min={1}
-        max={10}
-        step={1}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full accent-primary cursor-pointer"
-        aria-label={def.label}
-      />
-      <p className="text-xs text-muted-foreground">{def.hint}</p>
+      <div className="flex gap-0.5" role="group" aria-label={label}>
+        {Array.from({ length: 10 }, (_, i) => {
+          const n = i + 1
+          const on = value === n
+          return (
+            <button
+              key={n}
+              type="button"
+              aria-label={`${label} ${n}`}
+              aria-pressed={on}
+              onClick={() => onChange(on ? undefined : n)}
+              className={`h-6 flex-1 rounded border text-[10px] ${on ? "border-primary bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+            >
+              {n}
+            </button>
+          )
+        })}
+      </div>
+      <p className="text-xs text-muted-foreground">{hint}</p>
     </div>
   )
 }
 
-export function PostMortemDialog({
+function reflectDraft(review: Task["completionReview"]): string {
+  if (!review) return ""
+  if (review.reflectNotes) return review.reflectNotes
+  if (review.reviewPoints == null && review.notes) return review.notes
+  return ""
+}
+
+function PostMortemForm({
   task,
   open,
   onClose,
   onSaved,
 }: {
-  task: Task | null
+  task: Task
   open: boolean
   onClose: () => void
   onSaved?: (task: Task) => void
 }) {
-  const existing = task?.completionReview
-  const [satisfaction, setSatisfaction] = useState(existing?.satisfaction ?? 5)
-  const [resistance, setResistance] = useState(existing?.resistance ?? 5)
-  const [focus, setFocus] = useState(existing?.focus ?? 5)
-  const [distraction, setDistraction] = useState(existing?.distraction ?? 5)
-  const [actualDuration, setActualDuration] = useState<string>(
-    existing?.actualDuration?.toString() ?? task?.actualDuration?.toString() ?? "",
-  )
-  const [notes, setNotes] = useState(existing?.notes ?? "")
+  const existing = task.completionReview
+  const [scores, setScores] = useState<{
+    satisfaction?: number
+    resistance?: number
+    focus?: number
+    distraction?: number
+  }>(() => ({
+    satisfaction: existing?.satisfaction,
+    resistance: existing?.resistance,
+    focus: existing?.focus,
+    distraction: existing?.distraction,
+  }))
+  const [notes, setNotes] = useState(() => reflectDraft(existing))
 
-  const values = { satisfaction, resistance, focus, distraction }
-  const setters: Record<ScaleDef["key"], (v: number) => void> = {
-    satisfaction: setSatisfaction,
-    resistance: setResistance,
-    focus: setFocus,
-    distraction: setDistraction,
+  const setScore = (key: "satisfaction" | "resistance" | "focus" | "distraction", value: number | undefined) =>
+    setScores((prev) => {
+      const next = { ...prev }
+      if (value === undefined) delete next[key]
+      else next[key] = value
+      return next
+    })
+
+  const closedRef = useRef(false)
+  const initialRef = useRef(JSON.stringify({ scores: {
+    satisfaction: existing?.satisfaction,
+    resistance: existing?.resistance,
+    focus: existing?.focus,
+    distraction: existing?.distraction,
+  }, notes: reflectDraft(existing) }))
+  const dirty = () => JSON.stringify({ scores, notes }) !== initialRef.current
+
+  const write = () => {
+    if (!task) return
+    const updated = saveCompletionReview(
+      task.id,
+      postMortemReviewInput({
+        satisfaction: scores.satisfaction,
+        resistance: scores.resistance,
+        focus: scores.focus,
+        distraction: scores.distraction,
+        note: notes,
+      }),
+    )
+    if (updated && onSaved) onSaved(updated)
   }
 
   const handleSave = () => {
-    if (!task) return
-    const parsedDuration = actualDuration.trim() === "" ? undefined : Number(actualDuration)
-    const updated = saveCompletionReview(task.id, {
-      satisfaction,
-      resistance,
-      focus,
-      distraction,
-      notes: notes.trim() || undefined,
-      actualDuration: Number.isFinite(parsedDuration) ? parsedDuration : undefined,
-    })
-    if (updated && onSaved) onSaved(updated)
+    closedRef.current = true
+    write()
+    onClose()
+  }
+
+  const dismiss = () => {
+    if (closedRef.current) return
+    closedRef.current = true
+    if (dirty()) write()
     onClose()
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="hpp95 hpp95-dialog sm:max-w-md">
+    <Dialog open={open} onOpenChange={(o) => !o && dismiss()}>
+      <DialogContent className="hpp95 hpp95-dialog sm:max-w-md max-h-[88vh] overflow-y-auto">
         <DialogHeader className="hpp-caption">
           <div className="hpp-caption-mark">
             <span className="hpp-power-lamp" aria-hidden />
@@ -119,27 +160,22 @@ export function PostMortemDialog({
               Reflect on this task
             </DialogTitle>
           </div>
-          <DialogDescription className="hpp-caption-lead truncate">{task?.description}</DialogDescription>
+          <DialogDescription className="hpp-caption-lead truncate">{task ? itemTitle(task) : ""}</DialogDescription>
         </DialogHeader>
 
         <div className="hpp-body space-y-4 py-1">
-          {SCALES.map((def) => (
-            <Scale key={def.key} def={def} value={values[def.key]} onChange={setters[def.key]} />
-          ))}
-
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium" htmlFor="pm-actual-duration">
-              Actual time spent (minutes)
-            </Label>
-            <Input
-              id="pm-actual-duration"
-              type="number"
-              min={0}
-              value={actualDuration}
-              onChange={(e) => setActualDuration(e.target.value)}
-              placeholder="e.g. 45"
+          <p className="text-xs text-muted-foreground">
+            This is a later note. Length, start, enjoyment, the quick-review notes, and the quick-review points stay on the completion popup.
+          </p>
+          {SCALES.map((scale) => (
+            <ScoreRow
+              key={scale.key}
+              label={scale.label}
+              hint={scale.hint}
+              value={scores[scale.key]}
+              onChange={(value) => setScore(scale.key, value)}
             />
-          </div>
+          ))}
 
           <div className="space-y-1.5">
             <Label className="text-sm font-medium" htmlFor="pm-notes">
@@ -156,8 +192,8 @@ export function PostMortemDialog({
         </div>
 
         <div className="hpp-actions">
-          <Button variant="outline" onClick={onClose}>
-            Cancel
+          <Button variant="outline" onClick={dismiss}>
+            Close
           </Button>
           <Button className="hpp-key-go" onClick={handleSave} disabled={!task}>
             Save reflection
@@ -166,6 +202,16 @@ export function PostMortemDialog({
       </DialogContent>
     </Dialog>
   )
+}
+
+export function PostMortemDialog(props: {
+  task: Task | null
+  open: boolean
+  onClose: () => void
+  onSaved?: (task: Task) => void
+}) {
+  if (!props.open || !props.task) return null
+  return <PostMortemForm key={props.task.id} {...props} task={props.task} />
 }
 
 export default PostMortemDialog

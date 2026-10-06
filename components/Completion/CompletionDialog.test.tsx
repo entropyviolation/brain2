@@ -209,4 +209,109 @@ describe("CompletionDialog", () => {
     expect(done?.completed).toBe(true)
     expect(onClose).toHaveBeenCalledTimes(1)
   })
+
+  it("creates an objective and a goal without leaving the popup", async () => {
+    const user = userEvent.setup()
+    render(<CompletionDialog taskId="t1" basePoints={1} onClose={vi.fn()} />)
+
+    await user.type(screen.getByLabelText("New objective"), "Write the letter")
+    await user.click(screen.getByRole("button", { name: "Add objective" }))
+    const created = useGoalsStore.getState().objectives.find((o) => o.title === "Write the letter")
+    expect(created).toBeTruthy()
+    expect(screen.getByRole("button", { name: /Write the letter/ })).toHaveAttribute("aria-pressed", "true")
+
+    await user.type(screen.getByLabelText("New goal"), "Send one letter")
+    await user.click(screen.getByRole("button", { name: "Add goal" }))
+    const goal = useGoalsStore.getState().goals.find((g) => g.title === "Send one letter")
+    expect(goal?.objectiveIds).toContain(created!.id)
+    expect(goal?.type).toBe("count")
+    expect(screen.getByRole("button", { name: /Send one letter/ })).toHaveAttribute("aria-pressed", "true")
+  })
+
+  it("requires an objective before a new goal can be added", () => {
+    render(<CompletionDialog taskId="t1" basePoints={1} onClose={vi.fn()} />)
+    expect(screen.getByRole("button", { name: "Add goal" })).toBeDisabled()
+  })
+
+  it("awards 3 points plus 0.1 per word for the quick review", async () => {
+    const user = userEvent.setup()
+    render(<CompletionDialog taskId="t1" basePoints={1} onClose={vi.fn()} />)
+
+    await user.click(screen.getByRole("switch", { name: "Add a quick reflection" }))
+    await user.type(screen.getByLabelText("Notes"), "one two three")
+    expect(screen.getByTestId("review-points-preview")).toHaveTextContent("3.3")
+    expect(screen.getByTestId("review-points-preview")).toHaveTextContent("3 words")
+
+    await user.click(screen.getByRole("button", { name: "Save" }))
+    const saved = useTaskStore.getState().tasks.find((t) => t.id === "t1")
+    expect(saved?.completionReview?.reviewWordCount).toBe(3)
+    expect(saved?.completionReview?.reviewPoints).toBe(3.3)
+    expect(saved?.completionReview?.resistance).toBeUndefined()
+    const ledger = usePointsStore.getState().pointsHistory.find((entry) => entry.taskId === "review:t1")
+    expect(ledger?.points).toBe(3.3)
+    expect(ledger?.taskDescription).toMatch(/Quick review/)
+  })
+
+  it("stores an unknown length without a number and an estimated start", async () => {
+    const user = userEvent.setup()
+    render(<CompletionDialog taskId="t1" basePoints={1} onClose={vi.fn()} />)
+
+    await user.click(screen.getByRole("switch", { name: "Add a quick reflection" }))
+    await user.click(screen.getByRole("button", { name: "Unknown duration" }))
+    await user.click(screen.getByRole("button", { name: "Estimated start" }))
+    await user.type(screen.getByLabelText("Start time"), "09:15")
+    await user.click(screen.getByRole("button", { name: "Enjoyment 8" }))
+    await user.click(screen.getByRole("button", { name: "Save" }))
+
+    const saved = useTaskStore.getState().tasks.find((t) => t.id === "t1")
+    expect(saved?.durationCertainty).toBe("unknown")
+    expect(saved?.actualDuration).toBeUndefined()
+    expect(saved?.completionReview?.actualDuration).toBeUndefined()
+    expect(saved?.completionReview?.durationCertainty).toBe("unknown")
+    expect(saved?.startCertainty).toBe("estimated")
+    expect(saved?.timeRough).toBe(true)
+    expect(saved?.startedAt?.getHours()).toBe(9)
+    expect(saved?.startedAt?.getMinutes()).toBe(15)
+    expect(saved?.completionReview?.enjoyment).toBe(8)
+    expect(saved?.completionReview?.satisfaction).toBeUndefined()
+  })
+
+  it("keeps an estimated length out of the exact slot", async () => {
+    const user = userEvent.setup()
+    render(<CompletionDialog taskId="t1" basePoints={1} onClose={vi.fn()} />)
+
+    await user.click(screen.getByRole("switch", { name: "Add a quick reflection" }))
+    await user.click(screen.getByRole("button", { name: "Estimated duration" }))
+    await user.type(screen.getByLabelText("Duration minutes"), "40")
+    await user.click(screen.getByRole("button", { name: "Save" }))
+
+    const saved = useTaskStore.getState().tasks.find((t) => t.id === "t1")
+    expect(saved?.durationCertainty).toBe("estimated")
+    expect(saved?.actualDuration).toBe(40)
+    expect(saved?.timeRough).toBe(true)
+    expect(saved?.completionReview?.durationCertainty).toBe("estimated")
+  })
+
+  it("stores an unknown start with no time", async () => {
+    const user = userEvent.setup()
+    render(<CompletionDialog taskId="t1" basePoints={1} onClose={vi.fn()} />)
+
+    await user.click(screen.getByRole("switch", { name: "Add a quick reflection" }))
+    await user.click(screen.getByRole("button", { name: "Exact start" }))
+    await user.type(screen.getByLabelText("Start time"), "10:05")
+    await user.click(screen.getByRole("button", { name: "Unknown start" }))
+    expect(screen.queryByLabelText("Start time")).not.toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: "Exact start" }))
+    expect(screen.getByLabelText("Start time")).toHaveValue("")
+    await user.click(screen.getByRole("button", { name: "Unknown start" }))
+    await user.click(screen.getByRole("button", { name: "Save" }))
+
+    const cleared = useTaskStore.getState().tasks.find((t) => t.id === "t1")
+    expect(cleared?.startCertainty).toBe("unknown")
+    expect(cleared?.startedAt).toBeUndefined()
+    expect(cleared?.timeRough).toBeUndefined()
+    expect(cleared?.completionReview?.startCertainty).toBe("unknown")
+    expect(cleared?.completionReview?.startedAt).toBeUndefined()
+    expect(cleared?.completionReview?.reviewPoints).toBe(3)
+  })
 })

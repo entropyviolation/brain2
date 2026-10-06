@@ -122,10 +122,11 @@ export function DayReviewTomorrowSection({ reviewedDayKey }: { reviewedDayKey: s
         <p className="text-xs text-muted-foreground mt-0.5">{periodLabel("day", tomorrowKey)}</p>
       </div>
 
+      <p className="text-sm text-muted-foreground">make a plan for tomorrow</p>
       <PlanTextLog
         period="day"
         periodKey={tomorrowKey}
-        placeholder="What matters most tomorrow?"
+        placeholder="make a plan for tomorrow"
         size="compact"
         composerTestId="tomorrow-plan-text"
       />

@@ -35,6 +35,12 @@ import {
 import { dateFromPeriodKey } from "@/lib/reviews-store"
 import { itemTitle } from "@/lib/item-utils"
 
+export function pendingAssumedTasks(tasks: Task[], period: ReviewPeriod, periodKey: string): Task[] {
+  return tasks
+    .filter((task) => task.completed && hasUnconfirmedEstimates(task) && completedInPeriod(task, period, periodKey))
+    .sort((a, b) => (a.completedDate?.getTime() ?? 0) - (b.completedDate?.getTime() ?? 0))
+}
+
 function completedInPeriod(task: Task, period: ReviewPeriod, key: string): boolean {
   const ref = dateFromPeriodKey(period, key)
   switch (period) {
@@ -51,6 +57,7 @@ function completedInPeriod(task: Task, period: ReviewPeriod, key: string): boole
 }
 
 function AssumedTimeRow({ task, period }: { task: Task; period: ReviewPeriod }) {
+  const updateTask = useTaskStore((s) => s.updateTask)
   const completedAt = task.completedDate
   const [time, setTime] = useState(() => (completedAt ? format(completedAt, "HH:mm") : ""))
   const [minutes, setMinutes] = useState(() => String(task.actualDuration ?? ""))
@@ -120,6 +127,15 @@ function AssumedTimeRow({ task, period }: { task: Task; period: ReviewPeriod }) 
         <Button size="sm" variant="outline" className="h-7" onClick={save}>
           Save correction
         </Button>
+        <label className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={!!task.timeRough}
+            aria-label={`Est. ${itemTitle(task)}`}
+            onChange={(e) => updateTask({ ...task, timeRough: e.target.checked ? true : undefined })}
+          />
+          Est.
+        </label>
       </div>
     </div>
   )
@@ -128,13 +144,7 @@ function AssumedTimeRow({ task, period }: { task: Task; period: ReviewPeriod }) 
 export function AssumedTimesSection({ period, periodKey }: { period: ReviewPeriod; periodKey: string }) {
   const tasks = useTaskStore((s) => s.tasks)
 
-  const pending = useMemo(
-    () =>
-      tasks
-        .filter((task) => task.completed && hasUnconfirmedEstimates(task) && completedInPeriod(task, period, periodKey))
-        .sort((a, b) => (a.completedDate?.getTime() ?? 0) - (b.completedDate?.getTime() ?? 0)),
-    [tasks, period, periodKey],
-  )
+  const pending = useMemo(() => pendingAssumedTasks(tasks, period, periodKey), [tasks, period, periodKey])
 
   if (period === "quarter" || period === "year") return null
 

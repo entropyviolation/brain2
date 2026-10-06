@@ -1,23 +1,25 @@
 /**
  * components/Completion/CompletionDialog.tsx — Per-completion contribution popup
  *
- * Shown on *every* task completion (driven by the completion event bus). Lets
+ * Shown on *every* task completion (driven by the completion event bus). This
+ * is the done review, not a day/week/month/season ritual (`ReviewDialog`,
+ * morning, or start). Lets
  * the user record which Objectives and Goals the finished task contributed to,
- * which (a) increments the linked goal values and (b) awards stacking objective
- * point multipliers (default 1.5× per objective, or a prioritized objective's
- * custom multiplier). An optional reflection can be captured inline. **Undo**
- * reopens the task (as if it was never marked done) and closes the dialog;
- * **Skip** keeps the completion without recording a contribution.
+ * or create a new one of either without leaving the popup. An optional quick
+ * review records how long the work took and when it started. Each is exact,
+ * estimated, or unknown. Unknown stores no minutes and no start time. A few
+ * 1–10 reflections and notes follow. Agreeing to that review
+ * awards 3 points plus 0.1 per word. **Undo** reopens the task; **Skip** keeps
+ * the completion without a contribution.
  */
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useState, type ReactNode } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { CheckCircle2, Search, Star, Target, Trophy, Undo2 } from "lucide-react"
 import { useTaskStore } from "@/lib/task-store"
@@ -28,15 +30,33 @@ import {
   taskObjectiveMultiplier,
   DEFAULT_OBJECTIVE_MULTIPLIER,
 } from "@/lib/goals-store"
+import { composePointMultiplier, taskServesFocusGoals } from "@/lib/goal-focus"
+import { nightCarryForMorning } from "@/lib/ritual-carry"
+import { useReviewsStore } from "@/lib/reviews-store"
+import { useUserSettingsStore } from "@/lib/user-settings-store"
 import { usePointsStore } from "@/lib/points-store"
 import { isObjectivePrioritized } from "@/lib/objectives"
-import type { TaskCompletionReview } from "@/lib/types"
+import type { ClockCertainty, CompletionReflections } from "@/lib/types"
+import { REFLECTION_SCALES, type ReflectionScoreKey } from "@/lib/completion-review"
+import {
+  applyClockWrite,
+  clearQuickReviewPoints,
+  clockDraftFromTask,
+  clockWriteFromDraft,
+  composeCompletionReview,
+  formatReviewPoints,
+  pickReflectionScores,
+  quickReviewPoints,
+  recordQuickReviewPoints,
+  reviewWordCount,
+  type ClockDraft,
+} from "@/lib/completion-review"
 import { itemTitle, itemTitleOrUntitled } from "@/lib/item-utils"
 import { usualDurationMinutes } from "@/lib/estimated-values"
 import { snapshotsEqual } from "@/lib/unsaved-changes"
 import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
 
-const PRIORITY_PERIODS = ["day", "week", "month", "year"] as const
+const PRIORITY_PERIODS = ["day", "week", "month", "quarter", "year"] as const
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100
@@ -74,6 +94,101 @@ function ListSearch({
   )
 }
 
+function ClockCertaintyField({
+  legend,
+  groupLabel,
+  choices,
+  value,
+  onChange,
+  unknownHint,
+  estimatedHint,
+  control,
+}: {
+  legend: string
+  groupLabel: string
+  choices: { id: ClockCertainty; label: string; name: string }[]
+  value: ClockCertainty | "unspecified"
+  onChange: (next: ClockCertainty) => void
+  unknownHint: string
+  estimatedHint: string
+  control: ReactNode
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs">{legend}</Label>
+      <div className="flex gap-1" role="group" aria-label={groupLabel}>
+        {choices.map((choice) => {
+          const on = value === choice.id
+          return (
+            <button
+              key={choice.id}
+              type="button"
+              aria-label={choice.name}
+              aria-pressed={on}
+              onClick={() => onChange(choice.id)}
+              className={`h-7 rounded border px-2 text-xs ${
+                on ? "border-primary bg-primary text-primary-foreground" : "bg-background hover:bg-muted"
+              }`}
+            >
+              {choice.label}
+            </button>
+          )
+        })}
+      </div>
+      {value === "unknown" ? (
+        <p className="text-[10px] text-muted-foreground">{unknownHint}</p>
+      ) : (
+        control
+      )}
+      {value === "estimated" && <p className="text-[10px] text-muted-foreground">{estimatedHint}</p>}
+    </div>
+  )
+}
+
+function ScoreRow({
+  label,
+  hint,
+  value,
+  onChange,
+}: {
+  label: string
+  hint: string
+  value: number | undefined
+  onChange: (value: number | undefined) => void
+}) {
+  return (
+    <div className="space-y-1">
+      <div className="flex items-baseline justify-between gap-2">
+        <Label className="text-xs" title={hint}>
+          {label}
+        </Label>
+        <span className="text-[10px] text-muted-foreground">{value ? `${value}/10` : "optional"}</span>
+      </div>
+      <div className="flex gap-0.5" role="group" aria-label={label}>
+        {Array.from({ length: 10 }, (_, i) => {
+          const n = i + 1
+          const on = value === n
+          return (
+            <button
+              key={n}
+              type="button"
+              aria-label={`${label} ${n}`}
+              aria-pressed={on}
+              title={hint}
+              onClick={() => onChange(on ? undefined : n)}
+              className={`h-6 flex-1 rounded border text-[10px] tabular-nums ${
+                on ? "border-primary bg-primary text-primary-foreground" : "bg-background hover:bg-muted"
+              }`}
+            >
+              {n}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 export function CompletionDialog({
   taskId,
   basePoints,
@@ -91,32 +206,36 @@ export function CompletionDialog({
   const updateTask = useTaskStore((s) => s.updateTask)
   const objectives = useGoalsStore((s) => s.objectives)
   const goals = useGoalsStore((s) => s.goals)
+  const addObjective = useGoalsStore((s) => s.addObjective)
+  const addGoal = useGoalsStore((s) => s.addGoal)
   const setGoalProgress = useGoalsStore((s) => s.setGoalProgress)
   const addPoints = usePointsStore((s) => s.addPoints)
+
+  const initialClock = clockDraftFromTask(task)
+  const initialScores = pickReflectionScores(task?.completionReview)
 
   const [objectiveIds, setObjectiveIds] = useState<string[]>(task?.contributesToObjectiveIds ?? [])
   const [goalIds, setGoalIds] = useState<string[]>(task?.contributesToGoalIds ?? [])
   const [objectiveQuery, setObjectiveQuery] = useState("")
   const [goalQuery, setGoalQuery] = useState("")
+  const [objectiveDraft, setObjectiveDraft] = useState("")
+  const [goalDraft, setGoalDraft] = useState("")
   const [showReflection, setShowReflection] = useState(false)
-  const [satisfaction, setSatisfaction] = useState("7")
-  const [actualDuration, setActualDuration] = useState(
-    task?.actualDuration?.toString() ?? task?.estimatedDuration?.toString() ?? "",
-  )
+  const [scores, setScores] = useState<Partial<CompletionReflections>>(initialScores)
+  const [durationCertainty, setDurationCertainty] = useState<ClockDraft["durationCertainty"]>(initialClock.durationCertainty)
+  const [actualDuration, setActualDuration] = useState(initialClock.durationMinutes)
+  const [startCertainty, setStartCertainty] = useState<ClockDraft["startCertainty"]>(initialClock.startCertainty)
+  const [startTime, setStartTime] = useState(initialClock.startTime)
   const [notes, setNotes] = useState("")
 
   const activeObjectives = useMemo(() => objectives.filter((o) => !o.archived), [objectives])
 
-  // Selected objectives stay visible (and pinned first) while searching so they
-  // can still be toggled off.
   const visibleObjectives = useMemo(() => {
     return activeObjectives
       .filter((o) => objectiveIds.includes(o.id) || matchesQuery(objectiveQuery, o.title, o.description))
       .sort((a, b) => Number(objectiveIds.includes(b.id)) - Number(objectiveIds.includes(a.id)))
   }, [activeObjectives, objectiveIds, objectiveQuery])
 
-  // Goals serving a selected objective float to the top of the goal list.
-  // Selected goals stay visible while searching so they can still be toggled off.
   const visibleGoals = useMemo(() => {
     const relevant = (g: { objectiveIds: string[] }) => g.objectiveIds.some((id) => objectiveIds.includes(id))
     return [...goals]
@@ -124,54 +243,108 @@ export function CompletionDialog({
       .sort((a, b) => Number(goalIds.includes(b.id)) - Number(goalIds.includes(a.id)) || Number(relevant(b)) - Number(relevant(a)))
   }, [goals, goalIds, goalQuery, objectiveIds])
 
-  const multiplier = useMemo(
-    () => taskObjectiveMultiplier(objectives, objectiveIds),
-    [objectives, objectiveIds],
-  )
-  const effectiveBase = basePoints > 0 ? basePoints : objectiveIds.length ? 1 : 0
+  const reviews = useReviewsStore((s) => s.reviews)
+  const focusMultiplier = useUserSettingsStore((s) => s.goalFocusMultiplier)
+  const multiplier = useMemo(() => {
+    const objectiveMultiplier = taskObjectiveMultiplier(objectives, objectiveIds)
+    const carry = nightCarryForMorning(reviews, new Date())
+    const focused = taskServesFocusGoals(
+      {
+        contributesToGoalIds: goalIds.length ? goalIds : task?.contributesToGoalIds,
+        contributesToObjectiveIds: objectiveIds.length ? objectiveIds : task?.contributesToObjectiveIds,
+      },
+      goals,
+      carry.focusGoalIds,
+    )
+    return composePointMultiplier(objectiveMultiplier, focusMultiplier ?? 1.5, focused)
+  }, [objectives, objectiveIds, reviews, focusMultiplier, goalIds, goals, task])
+  const focusedForBase = multiplier > 1 && objectiveIds.length === 0 && basePoints <= 0
+  const effectiveBase = basePoints > 0 ? basePoints : objectiveIds.length || focusedForBase ? 1 : 0
   const total = round2(effectiveBase * multiplier)
   const bonus = round2(total - basePoints)
 
   const usual = useMemo(() => usualDurationMinutes(tasks, task), [tasks, task])
+  const words = reviewWordCount(notes)
+  const reviewPoints = quickReviewPoints(words)
 
   const toggleObjective = (id: string) =>
     setObjectiveIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]))
   const toggleGoal = (id: string) =>
     setGoalIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]))
 
+  const setScore = (key: ReflectionScoreKey, value: number | undefined) =>
+    setScores((prev) => {
+      const next = { ...prev }
+      if (value === undefined) delete next[key]
+      else next[key] = value
+      return next
+    })
+
+  const createObjective = () => {
+    const title = objectiveDraft.trim()
+    if (!title) return
+    const id = addObjective({ title })
+    setObjectiveIds((ids) => (ids.includes(id) ? ids : [...ids, id]))
+    setObjectiveDraft("")
+  }
+
+  const createGoal = () => {
+    const title = goalDraft.trim()
+    if (!title || objectiveIds.length === 0) return
+    const id = addGoal({
+      title,
+      type: "count",
+      target: 1,
+      periodKind: "year",
+      objectiveIds: [...objectiveIds],
+      points: 0,
+    })
+    setGoalIds((ids) => (ids.includes(id) ? ids : [...ids, id]))
+    setGoalDraft("")
+  }
+
   const handleSave = () => {
     if (!task) return
-    const review: TaskCompletionReview | undefined = showReflection
-      ? {
+    const draft: ClockDraft = {
+      durationCertainty,
+      durationMinutes: actualDuration,
+      startCertainty,
+      startTime,
+    }
+    const clockTouched = !snapshotsEqual(draft, initialClock)
+    const clock = clockWriteFromDraft(task, draft)
+    const base = clockTouched || showReflection ? applyClockWrite(task, clock) : task
+    const completedAt = task.completedDate instanceof Date ? task.completedDate : task.completedDate ? new Date(task.completedDate) : new Date()
+    const review = showReflection
+      ? composeCompletionReview({
           taskId: task.id,
-          completedAt: new Date(),
-          actualDuration: Number.parseInt(actualDuration) || task.estimatedDuration || 0,
-          satisfaction: Number.parseInt(satisfaction) || 5,
-          resistance: 5,
-          focus: 5,
-          distraction: 5,
-          notes: notes.trim() || undefined,
-        }
+          completedAt,
+          notes,
+          clock,
+          scores,
+          awardQuickReview: true,
+        })
       : undefined
 
     updateTask({
-      ...task,
+      ...base,
       completed: true,
       contributesToObjectiveIds: objectiveIds.length ? objectiveIds : undefined,
       contributesToGoalIds: goalIds.length ? goalIds : undefined,
-      ...(actualDuration ? { actualDuration: Number.parseInt(actualDuration) || task.actualDuration } : {}),
       ...(review ? { completionReview: review } : {}),
     })
 
-    // Each contributed goal advances by one occurrence.
     for (const id of goalIds) {
       const goal = goals.find((g) => g.id === id)
       if (goal) setGoalProgress(goal.id, goal.current + 1)
     }
 
-    // Award the stacking objective multiplier bonus on top of the base points.
     if (bonus > 0) {
-      addPoints(task.id, bonus, `Objective bonus: ${itemTitleOrUntitled(task, "Task")}`, new Date())
+      addPoints(task.id, bonus, `Objective bonus: ${itemTitleOrUntitled(task, "Task")}`, completedAt)
+    }
+
+    if (review) {
+      recordQuickReviewPoints(task.id, itemTitleOrUntitled(task, "Task"), notes, completedAt)
     }
 
     onClose()
@@ -185,6 +358,7 @@ export function CompletionDialog({
     if (!pending) {
       uncompleteTask(task.id)
       usePointsStore.getState().removePointsForTask(task.id, task.completedDate)
+      clearQuickReviewPoints(task.id, task.completedDate)
     }
     onClose()
   }
@@ -203,13 +377,30 @@ export function CompletionDialog({
     goalIds: task?.contributesToGoalIds ?? [],
     notes: "",
     showReflection: false,
-    satisfaction: "7",
-    actualDuration: task?.actualDuration?.toString() ?? task?.estimatedDuration?.toString() ?? "",
+    scores: initialScores,
+    durationCertainty: initialClock.durationCertainty,
+    actualDuration: initialClock.durationMinutes,
+    startCertainty: initialClock.startCertainty,
+    startTime: initialClock.startTime,
+    objectiveDraft: "",
+    goalDraft: "",
   }
   const isDirty = Boolean(
     task &&
       !snapshotsEqual(
-        { objectiveIds, goalIds, notes, showReflection, satisfaction, actualDuration },
+        {
+          objectiveIds,
+          goalIds,
+          notes,
+          showReflection,
+          scores,
+          durationCertainty,
+          actualDuration,
+          startCertainty,
+          startTime,
+          objectiveDraft,
+          goalDraft,
+        },
         initialContribution,
       ),
   )
@@ -224,6 +415,17 @@ export function CompletionDialog({
   })
 
   if (!task) return null
+
+  const durationChoices: { id: ClockCertainty; label: string; name: string }[] = [
+    { id: "exact", label: "Exact", name: "Exact duration" },
+    { id: "estimated", label: "Est.", name: "Estimated duration" },
+    { id: "unknown", label: "Unknown", name: "Unknown duration" },
+  ]
+  const startChoices: { id: ClockCertainty; label: string; name: string }[] = [
+    { id: "exact", label: "Exact", name: "Exact start" },
+    { id: "estimated", label: "Est.", name: "Estimated start" },
+    { id: "unknown", label: "Unknown", name: "Unknown start" },
+  ]
 
   return (
     <>
@@ -250,7 +452,6 @@ export function CompletionDialog({
             </p>
           )}
 
-          {/* Objective contribution */}
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Target className="h-4 w-4" />
@@ -280,6 +481,7 @@ export function CompletionDialog({
                       <button
                         key={o.id}
                         type="button"
+                        aria-pressed={on}
                         onClick={() => toggleObjective(o.id)}
                         className={`text-xs rounded-full border px-2.5 py-1 transition-colors ${
                           on
@@ -295,54 +497,102 @@ export function CompletionDialog({
                   })
                 )}
               </div>
+              <div className="flex gap-1.5 border-t p-1.5">
+                <Input
+                  value={objectiveDraft}
+                  onChange={(e) => setObjectiveDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault()
+                      createObjective()
+                    }
+                  }}
+                  placeholder="New objective"
+                  aria-label="New objective"
+                  className="h-8"
+                />
+                <Button type="button" size="sm" variant="outline" aria-label="Add objective" disabled={!objectiveDraft.trim()} onClick={createObjective}>
+                  Add
+                </Button>
+              </div>
             </div>
           </div>
 
-          {/* Goal contribution */}
-          {goals.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Trophy className="h-4 w-4" />
-                <Label className="text-sm font-medium">Counts toward goal(s)</Label>
-                <span className="text-xs text-muted-foreground">+1 each</span>
-              </div>
-              <div className="rounded-md border">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Trophy className="h-4 w-4" />
+              <Label className="text-sm font-medium">Counts toward goal(s)</Label>
+              <span className="text-xs text-muted-foreground">+1 each</span>
+            </div>
+            <div className="rounded-md border">
+              {goals.length > 0 && (
                 <ListSearch
                   value={goalQuery}
                   onChange={setGoalQuery}
                   placeholder="Search goals…"
                   aria-label="Search goals"
                 />
-                <div className="space-y-1 max-h-40 overflow-y-auto p-2">
-                  {visibleGoals.length === 0 ? (
-                    <p className="text-xs text-muted-foreground py-1">No matching goals</p>
-                  ) : (
-                    visibleGoals.map((g) => {
-                      const on = goalIds.includes(g.id)
-                      return (
-                        <button
-                          key={g.id}
-                          type="button"
-                          onClick={() => toggleGoal(g.id)}
-                          className={`w-full flex items-center justify-between gap-2 text-xs rounded px-2 py-1.5 text-left transition-colors ${
-                            on ? "bg-primary/10 ring-1 ring-primary" : "hover:bg-muted"
-                          }`}
-                        >
-                          <span className="truncate">{g.title}</span>
-                          <span className="text-muted-foreground shrink-0">
-                            {on ? `${g.current + 1}` : g.current}/{g.target}
-                            {g.unit ? ` ${g.unit}` : ""}
-                          </span>
-                        </button>
-                      )
-                    })
-                  )}
-                </div>
+              )}
+              <div className="space-y-1 max-h-40 overflow-y-auto p-2">
+                {visibleGoals.length === 0 ? (
+                  <p className="text-xs text-muted-foreground py-1">
+                    {goals.length === 0 ? "No goals yet" : "No matching goals"}
+                  </p>
+                ) : (
+                  visibleGoals.map((g) => {
+                    const on = goalIds.includes(g.id)
+                    return (
+                      <button
+                        key={g.id}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() => toggleGoal(g.id)}
+                        className={`w-full flex items-center justify-between gap-2 text-xs rounded px-2 py-1.5 text-left transition-colors ${
+                          on ? "bg-primary/10 ring-1 ring-primary" : "hover:bg-muted"
+                        }`}
+                      >
+                        <span className="truncate">{g.title}</span>
+                        <span className="text-muted-foreground shrink-0">
+                          {on ? `${g.current + 1}` : g.current}/{g.target}
+                          {g.unit ? ` ${g.unit}` : ""}
+                        </span>
+                      </button>
+                    )
+                  })
+                )}
               </div>
+              <div className="flex gap-1.5 border-t p-1.5">
+                <Input
+                  value={goalDraft}
+                  onChange={(e) => setGoalDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault()
+                      createGoal()
+                    }
+                  }}
+                  placeholder="New goal"
+                  aria-label="New goal"
+                  className="h-8"
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  aria-label="Add goal"
+                  disabled={!goalDraft.trim() || objectiveIds.length === 0}
+                  title={objectiveIds.length === 0 ? "A goal serves an objective. Select or add one first." : "Counts once this year, toward the objectives selected above."}
+                  onClick={createGoal}
+                >
+                  Add
+                </Button>
+              </div>
+              <p className="px-2 pb-2 text-[10px] text-muted-foreground">
+                A new goal counts once this year and serves the objectives selected above.
+              </p>
             </div>
-          )}
+          </div>
 
-          {/* Points preview */}
           <div className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2 text-sm">
             <span className="text-muted-foreground">
               Points{" "}
@@ -363,37 +613,97 @@ export function CompletionDialog({
             </p>
           )}
 
-          {/* Optional reflection */}
           <div className="flex items-center justify-between">
-            <Label className="text-sm">Add a quick reflection</Label>
-            <Switch checked={showReflection} onCheckedChange={setShowReflection} />
+            <Label className="text-sm" htmlFor="quick-review-switch">Add a quick reflection</Label>
+            <Switch id="quick-review-switch" checked={showReflection} onCheckedChange={setShowReflection} aria-label="Add a quick reflection" />
           </div>
+          <p className="text-xs text-muted-foreground -mt-3" data-testid="review-points-preview">
+            {showReflection ? (
+              <>
+                Quick review awards <span className="font-semibold text-foreground">{formatReviewPoints(reviewPoints)}</span> points
+                {" "}— 3 for agreeing, plus 0.1 × {words} {words === 1 ? "word" : "words"}.
+              </>
+            ) : (
+              <>Agreeing to a quick review awards 3 points, plus 0.1 per word you write.</>
+            )}
+          </p>
           {showReflection && (
             <div className="space-y-3 rounded-md border p-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">Satisfaction (1-10)</Label>
-                  <Select value={satisfaction} onValueChange={setSatisfaction}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {Array.from({ length: 10 }, (_, i) => (
-                        <SelectItem key={i + 1} value={(i + 1).toString()}>{i + 1}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Actual time (min)</Label>
+              <ClockCertaintyField
+                legend="How long"
+                groupLabel="How long this took"
+                choices={durationChoices}
+                value={durationCertainty}
+                onChange={(id) => {
+                  setDurationCertainty(id)
+                  if (id === "unknown") setActualDuration("")
+                }}
+                unknownHint="No length. Left out of time totals."
+                estimatedHint="Estimated minutes stay out of exact totals."
+                control={
                   <Input
                     type="number"
+                    min={1}
                     value={actualDuration}
-                    onChange={(e) => setActualDuration(e.target.value)}
+                    onChange={(e) => {
+                      setActualDuration(e.target.value)
+                      if (durationCertainty === "unspecified") setDurationCertainty("exact")
+                    }}
+                    placeholder="minutes"
+                    aria-label="Duration minutes"
                   />
-                </div>
+                }
+              />
+
+              <ClockCertaintyField
+                legend="Started"
+                groupLabel="When this started"
+                choices={startChoices}
+                value={startCertainty}
+                onChange={(id) => {
+                  setStartCertainty(id)
+                  if (id === "unknown") setStartTime("")
+                }}
+                unknownHint="No start time."
+                estimatedHint="Approximate start. The time stays editable."
+                control={
+                  <Input
+                    id="completion-start"
+                    type="time"
+                    value={startTime}
+                    onChange={(e) => {
+                      setStartTime(e.target.value)
+                      if (startCertainty === "unspecified") setStartCertainty("exact")
+                    }}
+                    aria-label="Start time"
+                    className="h-8"
+                  />
+                }
+              />
+
+              <div className="space-y-2">
+                {REFLECTION_SCALES.map((scale) => (
+                  <ScoreRow
+                    key={scale.key}
+                    label={scale.label}
+                    hint={scale.hint}
+                    value={scores[scale.key]}
+                    onChange={(value) => setScore(scale.key, value)}
+                  />
+                ))}
               </div>
+
               <div className="space-y-1">
-                <Label className="text-xs">Notes</Label>
-                <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
+                <Label className="text-xs" htmlFor="completion-notes">Notes</Label>
+                <Textarea
+                  id="completion-notes"
+                  aria-label="Notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={2}
+                  placeholder="What worked, what to do differently…"
+                />
+                <p className="text-[10px] text-muted-foreground">A word is a stretch of text between spaces.</p>
               </div>
             </div>
           )}
