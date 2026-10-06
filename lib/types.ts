@@ -1016,6 +1016,7 @@ export type HabitCompletionSourceId =
   | "list"
   | "dailyFloor"
   | "habitValue"
+  | "dailyCompletionAverage"
   | "keywords"
 
 export interface TaskCompletion {
@@ -1038,6 +1039,12 @@ export interface TaskCompletion {
   coverageCompleted?: boolean
   /** Sum of a linked daily habit across the days of this period so far. */
   habitSumValue?: number
+  /**
+   * Raw mean of daily-habit row percents for this week, month, or season
+   * (`lib/habit-daily-completion-average.ts`). Kept when a hand-typed number
+   * owns `value`.
+   */
+  dailyCompletionAverage?: number
   /**
    * How many Done tasks carrying `taggedTaskTag` fell on a day of this period
    * that has already happened. 0 is a reading, not a number typed by hand.

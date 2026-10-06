@@ -3,7 +3,7 @@
  *
  * A habit may listen to several places (a hand tick, Tracking tags, a count of
  * tagged Done tasks, occupancy, a sleep clock, a list, the daily-habit floor,
- * a summed daily habit, a phone keyword). They are an
+ * a summed daily habit, the raw daily-completion average, a phone keyword). They are an
  * ordered list. The first source that actually has something to say wins.
  * A source with no observation is skipped. Logged flags and numbers stay on
  * the cell either way — trust only decides whether the habit is met.
@@ -19,6 +19,7 @@ export const HABIT_COMPLETION_SOURCE_ORDER: readonly HabitCompletionSourceId[] =
   "list",
   "dailyFloor",
   "habitValue",
+  "dailyCompletionAverage",
   "keywords",
 ]
 
@@ -31,6 +32,7 @@ export const COMPLETION_SOURCE_LABELS: Record<HabitCompletionSourceId, string> =
   list: "Next actions",
   dailyFloor: "Daily habits floor",
   habitValue: "Daily habit total",
+  dailyCompletionAverage: "Daily completion average",
   keywords: "Phone keywords",
 }
 
@@ -43,6 +45,8 @@ export const COMPLETION_SOURCE_HINTS: Record<HabitCompletionSourceId, string> = 
   list: "Done next actions on a named list.",
   dailyFloor: "Every daily habit cleared the week.",
   habitValue: "Adds up one daily habit across the days of this week, month, or season.",
+  dailyCompletionAverage:
+    "Raw average of daily-habit completion for this week, month, or season. The goal is the percent that completes it.",
   keywords: "A whole-message line from your phone.",
 }
 
@@ -115,6 +119,7 @@ export function manualReading(cell: TaskCompletion | undefined, goal = 0): Sourc
   }
   if (cell.habitSumValue !== undefined && cell.manualValue === undefined) return { state: "empty" }
   if (cell.taggedTaskCount !== undefined && cell.manualValue === undefined) return { state: "empty" }
+  if (cell.dailyCompletionAverage !== undefined && cell.manualValue === undefined) return { state: "empty" }
   if (cell.value !== undefined) return { state: meets(cell.value, goal), value: cell.value }
   if (cell.completed && !cell.keywordLogged) return { state: "met" }
   return { state: "empty" }
@@ -164,6 +169,12 @@ export function readingsFromCell(
       cell?.habitSumValue === undefined
         ? { state: "empty" }
         : { state: meets(cell.habitSumValue, goal), value: cell.habitSumValue }
+  }
+  if (enabled.has("dailyCompletionAverage")) {
+    out.dailyCompletionAverage =
+      cell?.dailyCompletionAverage === undefined
+        ? { state: "empty" }
+        : { state: meets(cell.dailyCompletionAverage, goal), value: cell.dailyCompletionAverage }
   }
   if (enabled.has("keywords")) {
     if (!cell?.keywordLogged) out.keywords = { state: "empty" }

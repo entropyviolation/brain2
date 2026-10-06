@@ -22,6 +22,9 @@
  * That section is the minute source. **Tagged tasks** is a different source:
  * while it is checked, a tag field is shown and the goal is a count of Done
  * tasks (and tracked activities that file one Done line) with that tag.
+ * **Daily completion average** is one checkbox for a weekly, monthly, or season
+ * habit. The hint under the list is the whole setting: the raw mean of
+ * daily-habit completion, and the goal is the percent that completes it. No tag.
  *
  * **Done task wording** is optional and collapsed. `{value}` is the number
  * logged. Blank keeps the habit name on the Done line (`lib/habit-done-log.ts`).
@@ -89,6 +92,7 @@ import {
 import { openHabitInLists } from "@/lib/habit-list-item"
 import { normalizeTag } from "@/lib/links"
 import { HabitSourcesField } from "@/components/Home/Habits/habit-sources-field"
+import { COMPLETION_SOURCE_HINTS } from "@/lib/habit-completion-trust"
 import { useHabitsStore } from "@/lib/habits-store"
 import { DAILY_HABIT_COMPLETION_POINTS } from "@/lib/habit-points"
 import { offsetToClock, parseBedtime, parseWakeTime } from "@/lib/sleep-log"
@@ -991,6 +995,11 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
           cell.
         </p>
         <HabitSourcesField order={sourceOrder} onChange={applySources} />
+        {sourceOrder.includes("dailyCompletionAverage") && (
+          <p className="habit95-hint" style={{ marginTop: 8 }}>
+            {COMPLETION_SOURCE_HINTS.dailyCompletionAverage}
+          </p>
+        )}
         {sourceOrder.includes("taggedTasks") && (
           <div className="habit95-brick" style={{ marginTop: 8 }}>
             <p className="habit95-hint">

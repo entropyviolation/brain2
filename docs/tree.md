@@ -768,6 +768,7 @@ localStorage keys are **`brain2-*`**. Historical **`cogs-*`** keys are a lossles
 | `habit-connection-sync.ts` | Writes those connection checks when the sleep log or a finished next action changes (bootstrap via `start-hydrated-store-sync.ts`) |
 | `habit-coverage-sync.ts` | Pushes Activity Occupancy into coverage habits and recomputes the daily-floor week habit; ignores re-entry from its own cell writes |
 | `habit-value-sync.ts` | Daily habit total: sums one daily habit into a weekly, monthly, or season cell for the days so far |
+| `habit-daily-completion-average.ts` | Daily completion average: raw mean of daily-habit row percents into a weekly, monthly, or season cell |
 | `habit-tagged-count.ts` | Tagged tasks: counts Done tasks with a tag; a tracking block files one Done line |
 | `habit-utils.ts` | Habit type aliases; `isHabitGoalMet` with date/`weeklyData` for climb; `completionWithGoalFlag` stays checked when an auto flag is set |
 | `attribute-utils.ts` | Legacy attribute normalization/coercion |

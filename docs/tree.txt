@@ -2079,6 +2079,7 @@
 │   ├── habit-connections.ts
 │   ├── habit-coverage-sync.test.ts
 │   ├── habit-coverage-sync.ts
+│   ├── habit-daily-completion-average.ts
 │   ├── habit-done-log.test.ts
 │   ├── habit-done-log.ts
 │   ├── habit-exemption.test.ts
