@@ -2,9 +2,9 @@
  * components/Home/Habits/habits-tab-controls.tsx — Per-tab control stack
  *
  * Shared stack inside HabitsControlPanel: two GradeFace tubes, optional Good
- * days, optional monthly or weekly window plate, Sort Habits, Exemption wand, view
- * rockers, New habit. Grade numbers and store writes stay at the habit-tracker
- * call site.
+ * day / week / month / season wells, optional monthly or weekly window plate,
+ * Sort Habits, Exemption wand, view rockers, New habit. Grade numbers and store
+ * writes stay at the habit-tracker call site.
  */
 "use client"
 
@@ -66,11 +66,18 @@ export interface HabitsTabControlsProps {
   outputBarValue: number | null
   outputHue: string
   onOutputClick: () => void
-  /** Daily-only Good day streak / last-month wells. */
+  /**
+   * Good day / week / month / season wells. Labels default to the daily plate.
+   * Week, month, and season pass their own noun and lookback.
+   */
   goodDays?: {
     streak: number
     last30Count: number
     onClick: () => void
+    streakLabel?: string
+    countLabel?: string
+    countOf?: number
+    title?: string
   }
   sortId?: string
   /** Completion-% key. Day and week: Weekly. Month: Monthly. Season: Season. */
@@ -244,25 +251,25 @@ export function HabitsTabControls({
           <button
             type="button"
             className="habit-good-days"
-            title="Click for Good day streak, last 30 days, and accomplishment settings"
+            title={goodDays.title ?? "Click for Good day streak, last 30 days, and accomplishment settings"}
             onClick={goodDays.onClick}
           >
             <span className="habit-good-days-stat">
-              <span className="text-muted-foreground">Good day streak</span>
+              <span className="text-muted-foreground">{goodDays.streakLabel ?? "Good day streak"}</span>
               <strong>{goodDays.streak}</strong>
             </span>
           </button>
           <button
             type="button"
             className="habit-good-days"
-            title="Click for Good day streak, last 30 days, and accomplishment settings"
+            title={goodDays.title ?? "Click for Good day streak, last 30 days, and accomplishment settings"}
             onClick={goodDays.onClick}
           >
             <span className="habit-good-days-stat">
-              <span className="text-muted-foreground">Good days in the last month</span>
+              <span className="text-muted-foreground">{goodDays.countLabel ?? "Good days in the last month"}</span>
               <strong>
                 {goodDays.last30Count}
-                <span className="habit-good-days-of">/{GOOD_DAYS_LOOKBACK}</span>
+                <span className="habit-good-days-of">/{goodDays.countOf ?? GOOD_DAYS_LOOKBACK}</span>
               </strong>
             </span>
           </button>

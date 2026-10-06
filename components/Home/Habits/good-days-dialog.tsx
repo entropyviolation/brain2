@@ -1,12 +1,12 @@
 /**
- * components/Home/Habits/good-days-dialog.tsx — Good day streak + last-30 breakdown
+ * components/Home/Habits/good-days-dialog.tsx — Good day / week / month / season plate
  *
- * Separate from Week grade / Perfect output. Lists which of the last 30 days
- * met the user's "completion to feel accomplished" threshold, and reads the
- * prior 7-day and prior 30-day raw completion averages against today,
- * yesterday's raw completion, and this week's raw average against last week,
- * this year, and all weeks with data. Each card says how many percentage
- * points apart the two figures are.
+ * Presentational. The top line is how many whole points the current period
+ * still needs (`pointsStillNeededPhrase`). Daily lists the last 30 days and
+ * reads yesterday, the prior 7, the prior 30, and this week's raw average
+ * against last week, this year, and all weeks with data. Week, month, and
+ * season reuse this plate with that period's noun, streak, and lookback.
+ * Separate from Week grade / Perfect output.
  */
 "use client"
 
@@ -15,7 +15,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
   GOOD_DAYS_LOOKBACK,
+  pointsStillNeededPhrase,
   type GoodDaySummary,
+  type GoodPeriodSummary,
   type OlderAverageVsToday,
 } from "@/lib/habit-accomplishment"
 import { PriorityMathPanel } from "@/components/Home/Habits/priority-math"
@@ -25,6 +27,8 @@ interface GoodDaysDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   summary: GoodDaySummary
+  /** Week, month, or season plate. Daily leaves this unset. */
+  period?: GoodPeriodSummary | null
   onThresholdChange: (value: number) => void
   onBonusChange: (value: number) => void
   usePriority?: boolean
@@ -86,6 +90,7 @@ export function GoodDaysDialog({
   open,
   onOpenChange,
   summary,
+  period = null,
   onThresholdChange,
   onBonusChange,
   usePriority = false,
@@ -93,31 +98,57 @@ export function GoodDaysDialog({
   todayOverall,
   todayPriority = null,
 }: GoodDaysDialogProps) {
+  const noun = period?.noun ?? "day"
+  const plural = period?.plural ?? "days"
+  const phrase = period?.pointsPhrase ?? pointsStillNeededPhrase(summary.todayCompletionRaw, summary.threshold, "day")
+  const streak = period?.streak ?? summary.streak
+  const count = period?.lookbackCount ?? summary.last30Count
+  const countOf = period?.lookbackSize ?? GOOD_DAYS_LOOKBACK
+  const streakLabel = period?.streakLabel ?? "Good day streak"
+  const countLabel = period?.countLabel ?? "Good days in the last month"
+  const threshold = period?.threshold ?? summary.threshold
+  const bonus = period?.bonus ?? summary.bonus
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Good days</DialogTitle>
+          <DialogTitle>Good {plural}</DialogTitle>
           <DialogDescription>
-            A Good day is overall daily-habit completion at or above your
-            accomplishment threshold. Independent of Week grade and Perfect output.
+            {period
+              ? `A good ${noun} is that ${noun}'s raw daily-completion average at or above your accomplishment threshold — the same line as a Good day. Independent of Span grade and Perfect output.`
+              : "A Good day is overall daily-habit completion at or above your accomplishment threshold. Independent of Week grade and Perfect output."}
           </DialogDescription>
         </DialogHeader>
 
+        <div className="good-days-averages" data-testid="good-period-points">
+          <p className="good-days-averages-note">{phrase}</p>
+          {period && (
+            <p className="good-days-averages-note">
+              This {noun} is{" "}
+              <strong className="good-days-average-value" data-testid="good-period-current-raw">
+                {Math.round(period.currentRaw)}%
+              </strong>
+              .
+            </p>
+          )}
+        </div>
+
         <div className="grid grid-cols-2 gap-3 text-sm">
           <p>
-            <span className="text-muted-foreground block text-xs">Good day streak</span>
-            <strong className="text-base tabular-nums">{summary.streak}</strong>
+            <span className="text-muted-foreground block text-xs">{streakLabel}</span>
+            <strong className="text-base tabular-nums">{streak}</strong>
           </p>
           <p>
-            <span className="text-muted-foreground block text-xs">Good days in the last month</span>
+            <span className="text-muted-foreground block text-xs">{countLabel}</span>
             <strong className="text-base tabular-nums">
-              {summary.last30Count}
+              {count}
             </strong>
-            <span className="text-muted-foreground"> / {GOOD_DAYS_LOOKBACK}</span>
+            <span className="text-muted-foreground"> / {countOf}</span>
           </p>
         </div>
 
+        {!period && (
+        <>
         <div className="good-days-averages" data-testid="good-days-averages">
           <p className="good-days-averages-note">
             Raw completion on the days before today. Today is{" "}
@@ -190,6 +221,8 @@ export function GoodDaysDialog({
             label="prioritized habits for Good days"
           />
         )}
+        </>
+        )}
 
         <div className="space-y-3 border-t pt-3">
           <div className="space-y-1">
@@ -201,11 +234,11 @@ export function GoodDaysDialog({
                 min={1}
                 max={100}
                 step={1}
-                value={summary.threshold}
+                value={threshold}
                 onChange={(e) => onThresholdChange(Number(e.target.value))}
                 className="w-24"
               />
-              <span className="text-sm text-muted-foreground">% overall = a Good day</span>
+              <span className="text-sm text-muted-foreground">% overall = a Good {noun}</span>
             </div>
           </div>
           <div className="space-y-1">
@@ -217,21 +250,45 @@ export function GoodDaysDialog({
                 min={0}
                 max={10000}
                 step={1}
-                value={summary.bonus}
+                value={bonus}
                 onChange={(e) => onBonusChange(Number(e.target.value))}
                 className="w-24"
               />
-              <span className="text-sm text-muted-foreground">points on a Good day</span>
+              <span className="text-sm text-muted-foreground">points on a Good {noun}</span>
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            Same settings live under Daily habits → Settings. Today is{" "}
-            {summary.todayRaw.toFixed(0)}%
-            {summary.todayGood ? " (Good day)" : " (not yet a Good day)"}.
+            Same settings live under Daily habits → Settings.{" "}
+            {period
+              ? `This ${noun} is ${Math.round(period.currentRaw)}%${period.currentGood ? ` (Good ${noun})` : ` (not yet a good ${noun})`}.`
+              : `Today is ${summary.todayRaw.toFixed(0)}%${summary.todayGood ? " (Good day)" : " (not yet a Good day)"}.`}
           </p>
         </div>
 
-        {summary.last30.length > 0 ? (
+        {period ? (
+          period.lookback.length > 0 ? (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-muted-foreground border-b">
+                  <th className="py-1 font-medium capitalize">{noun}</th>
+                  <th className="py-1 font-medium text-right">Raw</th>
+                  <th className="py-1 font-medium text-right">Good {noun}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...period.lookback].reverse().map((row) => (
+                  <tr key={row.dateKey} className="border-b border-border/60">
+                    <td className="py-1">{row.label}</td>
+                    <td className="py-1 text-right tabular-nums">{Math.round(row.raw)}%</td>
+                    <td className="py-1 text-right">{row.good ? "Yes" : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p className="text-sm text-muted-foreground">No {plural} in the lookback window yet.</p>
+          )
+        ) : summary.last30.length > 0 ? (
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-muted-foreground border-b">

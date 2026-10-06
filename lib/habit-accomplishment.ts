@@ -10,6 +10,11 @@
  * `weekRawAverage` is the mean of those day scores for one Monday week: days
  * that have happened, including today, while the week is in progress, and all
  * seven once the week is finished. Empty days in that span count as 0.
+ * `monthRawAverage` and `seasonRawAverage` are that same mean for one civil
+ * month and one calendar season. A good week, month, or season is that
+ * average at or above the same accomplishment line — not the curved grade.
+ * `pointsStillNeeded` is the whole-point gap from that line (round each
+ * figure, then subtract), the same rounding as the comparison phrases.
  *
  * Week grade / Perfect output curves are independent — this module never reads
  * `gradeTolerance` or `outputGradeTolerance`.
@@ -17,13 +22,28 @@
  * Spec: §9, §14.
  */
 import { calculateDayPercentageAV, type HabitExemptFn } from "./calculations"
-import { formatLocalDateKey, getWeekDates, getWeekStartDate, parseLocalDate } from "./date-utils"
+import {
+  formatLocalDateKey,
+  getMonthDates,
+  getPrecedingMonthStarts,
+  getPrecedingWeekStarts,
+  getWeekDates,
+  getWeekStartDate,
+  parseLocalDate,
+} from "./date-utils"
+import { precedingQuarterStarts, quarterEndDate, quarterKey, quarterOf, quarterStartDate, seasonOfDate } from "./seasons"
 import { computeStreak } from "./streaks"
 import type { WeeklyData, WeeklyTask } from "./types"
 
 export const DEFAULT_ACCOMPLISHMENT_THRESHOLD = 80
 export const DEFAULT_ACCOMPLISHMENT_BONUS = 50
 export const GOOD_DAYS_LOOKBACK = 30
+/** Recent weeks shown beside the good-week streak. */
+export const GOOD_WEEKS_LOOKBACK = 12
+/** Recent months shown beside the good-month streak — one year. */
+export const GOOD_MONTHS_LOOKBACK = 12
+/** Recent seasons shown beside the good-season streak — one year. */
+export const GOOD_SEASONS_LOOKBACK = 4
 /** Calendar days before today used for the weekly raw-completion average. */
 export const PRIOR_WEEK_DAYS = 7
 export const MAX_ACCOMPLISHMENT_BONUS = 10_000
@@ -118,6 +138,37 @@ export function isAccomplishedDay(rawPercent: number, threshold: number): boolea
   return rawPercent >= clampAccomplishmentThreshold(threshold)
 }
 
+export type GoodPeriodNoun = "day" | "week" | "month" | "season"
+
+export interface PointsStillNeeded {
+  /** Whole points still short of the line. 0 when the rounded percent has met it. */
+  needed: number
+  met: boolean
+}
+
+/**
+ * Whole-point gap between a raw percent and the accomplishment line.
+ * Each figure is rounded first, the same way the comparison phrases are.
+ * Does not change `isAccomplishedDay` (that stays an unrounded `>=`).
+ */
+export function pointsStillNeeded(rawPercent: number, threshold: number): PointsStillNeeded {
+  const line = clampAccomplishmentThreshold(threshold)
+  const current = Math.round(Number.isFinite(rawPercent) ? rawPercent : 0)
+  const needed = Math.max(0, line - current)
+  return { needed, met: needed === 0 }
+}
+
+/** "10 needed to be a good day", or "Met — a good day" when the rounded percent has cleared the line. */
+export function pointsStillNeededPhrase(
+  rawPercent: number,
+  threshold: number,
+  noun: GoodPeriodNoun = "day",
+): string {
+  const { needed, met } = pointsStillNeeded(rawPercent, threshold)
+  if (met) return `Met — a good ${noun}`
+  return `${needed} needed to be a good ${noun}`
+}
+
 export function accomplishmentBonusPoints(
   rawPercent: number,
   threshold: number = DEFAULT_ACCOMPLISHMENT_THRESHOLD,
@@ -196,6 +247,41 @@ function weekHasRecordedCompletion(
 }
 
 /**
+ * Mean raw day completion across a span of calendar days.
+ * In progress: days from the first through `asOf`, divided by how many of those days exist.
+ * Finished (the last day is on or before `asOf`): every day in the span, empty ones as 0.
+ */
+function spanRawAverage(
+  tasks: WeeklyTask[],
+  weeklyData: WeeklyData,
+  dates: Date[],
+  asOf: Date,
+  isExempt?: HabitExemptFn,
+): number {
+  if (dates.length === 0) return 0
+  const asOfKey = formatLocalDateKey(asOf)
+  if (formatLocalDateKey(dates[0]) > asOfKey) return 0
+  const finished = formatLocalDateKey(dates[dates.length - 1]) <= asOfKey
+  const included = finished ? dates : dates.filter((date) => formatLocalDateKey(date) <= asOfKey)
+  if (included.length === 0) return 0
+  let sum = 0
+  for (const date of included) sum += rawDayCompletionPercent(tasks, weeklyData, date, isExempt)
+  return sum / (finished ? dates.length : included.length)
+}
+
+/** Every local calendar date from `start` through `end`, inclusive. */
+function localDatesThrough(start: Date, end: Date): Date[] {
+  const dates: Date[] = []
+  const cursor = new Date(start.getFullYear(), start.getMonth(), start.getDate())
+  const last = new Date(end.getFullYear(), end.getMonth(), end.getDate()).getTime()
+  while (cursor.getTime() <= last) {
+    dates.push(new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate()))
+    cursor.setDate(cursor.getDate() + 1)
+  }
+  return dates
+}
+
+/**
  * Mean raw day completion for one week.
  * In progress: days from Monday through `asOf`, divided by how many of those days exist.
  * Finished (Sunday is on or before `asOf`): all seven days, empty ones as 0.
@@ -207,15 +293,39 @@ export function weekRawAverage(
   asOf: Date,
   isExempt?: HabitExemptFn,
 ): number {
-  const dates = getWeekDates(getWeekStartDate(weekStart))
-  const asOfKey = formatLocalDateKey(asOf)
-  if (formatLocalDateKey(dates[0]) > asOfKey) return 0
-  const finished = formatLocalDateKey(dates[6]) <= asOfKey
-  const included = finished ? dates : dates.filter((date) => formatLocalDateKey(date) <= asOfKey)
-  if (included.length === 0) return 0
-  let sum = 0
-  for (const date of included) sum += rawDayCompletionPercent(tasks, weeklyData, date, isExempt)
-  return sum / (finished ? 7 : included.length)
+  return spanRawAverage(tasks, weeklyData, getWeekDates(getWeekStartDate(weekStart)), asOf, isExempt)
+}
+
+/**
+ * Mean raw day completion for one civil month.
+ * In progress: the 1st through `asOf`. Finished: every day of the month, empty ones as 0.
+ */
+export function monthRawAverage(
+  tasks: WeeklyTask[],
+  weeklyData: WeeklyData,
+  month: Date,
+  asOf: Date,
+  isExempt?: HabitExemptFn,
+): number {
+  const start = new Date(month.getFullYear(), month.getMonth(), 1)
+  return spanRawAverage(tasks, weeklyData, getMonthDates(start), asOf, isExempt)
+}
+
+/**
+ * Mean raw day completion for one calendar season (Jan–Mar, Apr–Jun, Jul–Sep, Oct–Dec).
+ * In progress: the season's first day through `asOf`. Finished: every day, empty ones as 0.
+ */
+export function seasonRawAverage(
+  tasks: WeeklyTask[],
+  weeklyData: WeeklyData,
+  season: Date,
+  asOf: Date,
+  isExempt?: HabitExemptFn,
+): number {
+  const start = quarterStartDate(season)
+  const end = quarterEndDate(quarterKey(start))
+  if (!end) return 0
+  return spanRawAverage(tasks, weeklyData, localDatesThrough(start, end), asOf, isExempt)
 }
 
 function weekStartsWithData(tasks: WeeklyTask[], weeklyData: WeeklyData, asOf: Date): Date[] {
@@ -353,5 +463,241 @@ export function goodDaySummary(
     yesterdayCompletionRaw,
     yesterdayVsToday: olderAverageComparedToToday(yesterdayCompletionRaw, todayCompletionRaw),
     weeks,
+  }
+}
+
+export type GoodPeriodUnit = "week" | "month" | "season"
+
+export interface GoodPeriodReading {
+  date: Date
+  dateKey: string
+  label: string
+  raw: number
+  good: boolean
+}
+
+export interface GoodPeriodSummary {
+  unit: GoodPeriodUnit
+  noun: "week" | "month" | "season"
+  plural: "weeks" | "months" | "seasons"
+  threshold: number
+  bonus: number
+  streak: number
+  longestStreak: number
+  /** Good periods inside the lookback, including the current one. */
+  lookbackCount: number
+  lookbackSize: number
+  streakLabel: string
+  countLabel: string
+  lookback: GoodPeriodReading[]
+  /** Raw daily-completion average of the current period. */
+  currentRaw: number
+  currentGood: boolean
+  pointsNeeded: number
+  pointsMet: boolean
+  pointsPhrase: string
+}
+
+const PERIOD_LOOKBACK: Record<GoodPeriodUnit, number> = {
+  week: GOOD_WEEKS_LOOKBACK,
+  month: GOOD_MONTHS_LOOKBACK,
+  season: GOOD_SEASONS_LOOKBACK,
+}
+
+const PERIOD_COPY: Record<
+  GoodPeriodUnit,
+  Pick<GoodPeriodSummary, "noun" | "plural" | "streakLabel" | "countLabel">
+> = {
+  week: {
+    noun: "week",
+    plural: "weeks",
+    streakLabel: "Good week streak",
+    countLabel: "Good weeks in the last 12",
+  },
+  month: {
+    noun: "month",
+    plural: "months",
+    streakLabel: "Good month streak",
+    countLabel: "Good months in the last year",
+  },
+  season: {
+    noun: "season",
+    plural: "seasons",
+    streakLabel: "Good season streak",
+    countLabel: "Good seasons in the last year",
+  },
+}
+
+function periodAnchor(unit: GoodPeriodUnit, date: Date): Date {
+  if (unit === "week") return getWeekStartDate(date)
+  if (unit === "month") return new Date(date.getFullYear(), date.getMonth(), 1)
+  return quarterStartDate(date)
+}
+
+function lookbackAnchors(unit: GoodPeriodUnit, asOf: Date, count: number): Date[] {
+  if (unit === "week") return getPrecedingWeekStarts(getWeekStartDate(asOf), count)
+  if (unit === "month") return getPrecedingMonthStarts(asOf, count)
+  return precedingQuarterStarts(asOf, count)
+}
+
+function periodRaw(
+  unit: GoodPeriodUnit,
+  tasks: WeeklyTask[],
+  weeklyData: WeeklyData,
+  anchor: Date,
+  asOf: Date,
+  isExempt?: HabitExemptFn,
+): number {
+  if (unit === "week") return weekRawAverage(tasks, weeklyData, anchor, asOf, isExempt)
+  if (unit === "month") return monthRawAverage(tasks, weeklyData, anchor, asOf, isExempt)
+  return seasonRawAverage(tasks, weeklyData, anchor, asOf, isExempt)
+}
+
+function periodLabel(unit: GoodPeriodUnit, anchor: Date): string {
+  if (unit === "week") return anchor.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+  if (unit === "month") return anchor.toLocaleDateString("en-US", { month: "short", year: "numeric" })
+  return `${seasonOfDate(anchor)} ${anchor.getFullYear()}`
+}
+
+function bucketHasTask(bucket: WeeklyData[string] | undefined, tasks: WeeklyTask[]): boolean {
+  if (!bucket) return false
+  for (const task of tasks) {
+    if (bucket[task.id]) return true
+  }
+  return false
+}
+
+/** Period starts that hold at least one daily-habit cell on or before `asOf`. */
+function anchorsWithData(
+  unit: GoodPeriodUnit,
+  tasks: WeeklyTask[],
+  weeklyData: WeeklyData,
+  asOf: Date,
+): Date[] {
+  const asOfKey = formatLocalDateKey(asOf)
+  const seen = new Set<string>()
+  const anchors: Date[] = []
+  for (const key of Object.keys(weeklyData || {})) {
+    if (key > asOfKey) continue
+    const date = parseLocalDate(key)
+    if (!date || !bucketHasTask(weeklyData[key], tasks)) continue
+    const anchor = periodAnchor(unit, date)
+    const id = formatLocalDateKey(anchor)
+    if (seen.has(id) || id > asOfKey) continue
+    seen.add(id)
+    anchors.push(anchor)
+  }
+  return anchors
+}
+
+/** Season index: Q4 then next Q1 are consecutive. Matches `computeStreak`'s one-period grace. */
+function seasonIndex(date: Date): number {
+  return date.getFullYear() * 4 + quarterOf(date) - 1
+}
+
+/**
+ * Current run ends at `current`, or at `current - 1` when the current period is not in the set.
+ * Same grace `computeStreak` gives today.
+ */
+function streakFromIndices(indices: number[], current: number): { current: number; longest: number } {
+  const sorted = [...new Set(indices)].sort((a, b) => a - b)
+  if (sorted.length === 0) return { current: 0, longest: 0 }
+  let longest = 1
+  let run = 1
+  for (let i = 1; i < sorted.length; i++) {
+    if (sorted[i] === sorted[i - 1] + 1) run += 1
+    else run = 1
+    if (run > longest) longest = run
+  }
+  const present = new Set(sorted)
+  let cursor: number
+  if (present.has(current)) cursor = current
+  else if (present.has(current - 1)) cursor = current - 1
+  else return { current: 0, longest }
+  let currentRun = 0
+  while (present.has(cursor)) {
+    currentRun += 1
+    cursor -= 1
+  }
+  return { current: currentRun, longest }
+}
+
+/**
+ * Good weeks, months, or seasons: one raw daily-completion average per period,
+ * compared with the same accomplishment line as a Good day.
+ * The streak is consecutive good periods ending at the current one, or at the
+ * last finished one when the current period is not yet good.
+ */
+export function goodPeriodSummary(
+  tasks: WeeklyTask[],
+  weeklyData: WeeklyData,
+  asOf: Date,
+  unit: GoodPeriodUnit,
+  threshold: number,
+  bonus: number = DEFAULT_ACCOMPLISHMENT_BONUS,
+  isExempt?: HabitExemptFn,
+): GoodPeriodSummary {
+  const t = clampAccomplishmentThreshold(threshold)
+  const copy = PERIOD_COPY[unit]
+  const lookbackSize = PERIOD_LOOKBACK[unit]
+  const cache = new Map<string, number>()
+  const rawOf = (anchor: Date) => {
+    const key = formatLocalDateKey(anchor)
+    const hit = cache.get(key)
+    if (hit !== undefined) return hit
+    const value = periodRaw(unit, tasks, weeklyData, anchor, asOf, isExempt)
+    cache.set(key, value)
+    return value
+  }
+  const reading = (anchor: Date): GoodPeriodReading => {
+    const raw = rawOf(anchor)
+    return {
+      date: anchor,
+      dateKey: formatLocalDateKey(anchor),
+      label: periodLabel(unit, anchor),
+      raw,
+      good: isAccomplishedDay(raw, t),
+    }
+  }
+  const lookback = lookbackAnchors(unit, asOf, lookbackSize).map(reading)
+  const goodAnchors = anchorsWithData(unit, tasks, weeklyData, asOf).filter((anchor) => reading(anchor).good)
+  const currentAnchor = periodAnchor(unit, asOf)
+  let streakCurrent = 0
+  let longest = 0
+  if (unit === "season") {
+    const run = streakFromIndices(
+      goodAnchors.map((anchor) => seasonIndex(anchor)),
+      seasonIndex(asOf),
+    )
+    streakCurrent = run.current
+    longest = run.longest
+  } else {
+    const run = computeStreak(
+      goodAnchors.map((anchor) => formatLocalDateKey(anchor)),
+      { unit, today: asOf },
+    )
+    streakCurrent = run.current
+    longest = run.longest
+  }
+  const currentRaw = rawOf(currentAnchor)
+  const points = pointsStillNeeded(currentRaw, t)
+  return {
+    unit,
+    noun: copy.noun,
+    plural: copy.plural,
+    threshold: t,
+    bonus: clampAccomplishmentBonus(bonus),
+    streak: streakCurrent,
+    longestStreak: longest,
+    lookbackCount: lookback.filter((row) => row.good).length,
+    lookbackSize,
+    streakLabel: copy.streakLabel,
+    countLabel: copy.countLabel,
+    lookback,
+    currentRaw,
+    currentGood: isAccomplishedDay(currentRaw, t),
+    pointsNeeded: points.needed,
+    pointsMet: points.met,
+    pointsPhrase: pointsStillNeededPhrase(currentRaw, t, copy.noun),
   }
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { TaskType, type WeeklyTask } from "@/lib/types"
-import { formatLocalDateKey } from "@/lib/date-utils"
+import { formatLocalDateKey, getWeekDates } from "@/lib/date-utils"
 import {
   accomplishmentBonusPoints,
   clampAccomplishmentBonus,
@@ -10,13 +10,18 @@ import {
   DEFAULT_ACCOMPLISHMENT_THRESHOLD,
   GOOD_DAYS_LOOKBACK,
   goodDaySummary,
+  goodPeriodSummary,
   isAccomplishedDay,
   localCalendarDaysEndingOn,
+  monthRawAverage,
   olderAverageComparedToToday,
+  pointsStillNeeded,
+  pointsStillNeededPhrase,
   priorCalendarDays,
   priorRawAverage,
   PRIOR_WEEK_DAYS,
   rawDayCompletionPercent,
+  seasonRawAverage,
   weekRawAverage,
 } from "./habit-accomplishment"
 
@@ -46,6 +51,21 @@ describe("isAccomplishedDay", () => {
     expect(isAccomplishedDay(80, 80)).toBe(true)
     expect(isAccomplishedDay(100, 80)).toBe(true)
     expect(isAccomplishedDay(0, 80)).toBe(false)
+  })
+})
+
+describe("pointsStillNeeded", () => {
+  it("says 10 needed when raw completion is 40 and the line is 50", () => {
+    expect(pointsStillNeeded(40, 50)).toEqual({ needed: 10, met: false })
+    expect(pointsStillNeededPhrase(40, 50)).toContain("10 needed")
+    expect(pointsStillNeededPhrase(40, 50, "week")).toContain("10 needed")
+    expect(pointsStillNeededPhrase(40, 50, "week")).toContain("good week")
+  })
+
+  it("says met when raw completion is 50 and the line is 50", () => {
+    expect(pointsStillNeeded(50, 50)).toEqual({ needed: 0, met: true })
+    expect(pointsStillNeededPhrase(50, 50).toLowerCase()).toContain("met")
+    expect(pointsStillNeededPhrase(50, 50)).toContain("good day")
   })
 })
 
@@ -187,5 +207,67 @@ describe("weekRawAverage", () => {
       [formatLocalDateKey(monday)]: { water: { completed: true }, pages: { value: 10 } },
     }
     expect(weekRawAverage(daily, weeklyData, monday, later)).toBeCloseTo(100 / 7, 5)
+  })
+})
+
+describe("monthRawAverage and seasonRawAverage", () => {
+  it("divides an in-progress month and season by the days that have happened", () => {
+    const first = day(2026, 8, 1)
+    const third = day(2026, 8, 3)
+    const weeklyData = {
+      [formatLocalDateKey(first)]: { water: { completed: true }, pages: { value: 10 } },
+    }
+    expect(monthRawAverage(daily, weeklyData, first, third)).toBeCloseTo(100 / 3, 5)
+    const july = day(2026, 6, 1)
+    const julyThird = day(2026, 6, 3)
+    const seasonData = {
+      [formatLocalDateKey(july)]: { water: { completed: true }, pages: { value: 10 } },
+    }
+    expect(seasonRawAverage(daily, seasonData, july, julyThird)).toBeCloseTo(100 / 3, 5)
+  })
+})
+
+describe("goodPeriodSummary", () => {
+  const full = { water: { completed: true }, pages: { value: 10 } }
+  const half = { water: { completed: true }, pages: { value: 0 } }
+
+  function fillWeek(weeklyData: Record<string, Record<string, { completed?: boolean; value?: number }>>, monday: Date, cell: { completed?: boolean; value?: number } | Record<string, { completed?: boolean; value?: number }>) {
+    for (const date of getWeekDates(monday)) {
+      weeklyData[formatLocalDateKey(date)] = cell as Record<string, { completed?: boolean; value?: number }>
+    }
+  }
+
+  it("counts a week whose raw average equals the line as good", () => {
+    const monday = day(2026, 8, 7)
+    const sunday = day(2026, 8, 13)
+    const weeklyData: Record<string, Record<string, { completed?: boolean; value?: number }>> = {}
+    fillWeek(weeklyData, monday, half)
+    expect(weekRawAverage(daily, weeklyData, monday, sunday)).toBe(50)
+    const summary = goodPeriodSummary(daily, weeklyData, sunday, "week", 50)
+    expect(summary.currentRaw).toBe(50)
+    expect(summary.currentGood).toBe(true)
+    expect(summary.pointsMet).toBe(true)
+    expect(summary.lookback.find((row) => row.dateKey === "2026-09-07")?.good).toBe(true)
+  })
+
+  it("stops a streak of two good weeks at a bad one", () => {
+    const weeklyData: Record<string, Record<string, { completed?: boolean; value?: number }>> = {}
+    fillWeek(weeklyData, day(2026, 7, 31), full)
+    fillWeek(weeklyData, day(2026, 8, 14), full)
+    fillWeek(weeklyData, day(2026, 8, 21), full)
+    const summary = goodPeriodSummary(daily, weeklyData, day(2026, 8, 27), "week", 80)
+    expect(summary.currentGood).toBe(true)
+    expect(summary.streak).toBe(2)
+    expect(summary.longestStreak).toBe(2)
+  })
+
+  it("keeps two finished good weeks when this week is not yet good", () => {
+    const weeklyData: Record<string, Record<string, { completed?: boolean; value?: number }>> = {}
+    fillWeek(weeklyData, day(2026, 8, 14), full)
+    fillWeek(weeklyData, day(2026, 8, 21), full)
+    const summary = goodPeriodSummary(daily, weeklyData, day(2026, 8, 30), "week", 80)
+    expect(summary.currentGood).toBe(false)
+    expect(summary.streak).toBe(2)
+    expect(summary.pointsPhrase).toContain("needed")
   })
 })

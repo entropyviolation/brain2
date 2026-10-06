@@ -838,8 +838,11 @@ body.win95-app .hab95 button.hab-willpower-lab-toggle.is-on {
   width: 100%;
   overflow: auto;
   /* Side air only. Top padding would sit above the sticky header and let
-     scrolled rows show through that strip. The sheet's own wrap keeps the rest. */
-  padding: 0 10px;
+     scrolled rows show through that strip. Bottom padding would do the same
+     under the sticky totals. The sheet's own wrap keeps the air above the
+     sheet. The wider right inset is the gutter for the 16px vintage bar
+     (it overlays on this platform) so the track does not cover the percent tubes. */
+  padding: 0 20px 0 10px;
   background-color: var(--hab-metal-mid);
   background-image:
     repeating-linear-gradient(
@@ -1117,63 +1120,64 @@ body.win95-app .hab95 button.hab-willpower-lab-toggle.is-on {
   flex: 1 1 auto;
   box-sizing: border-box;
   /* Room for the 1px card rings. overflow-y:auto would otherwise
-     compute overflow-x to auto and slice those rings flush. */
-  padding: 3px 8px 6px 8px;
+     compute overflow-x to auto and slice those rings flush.
+     The wider right inset is the gutter for the 16px vintage bar so it
+     does not cover the last key. */
+  padding: 3px 20px 6px 8px;
   overflow-x: clip;
   overflow-y: auto;
 }
 
-/* Thin instrument scroll for the control stack and the checklist well.
-   Quieter than the 16px shell bar; still a milled thumb, not a gimmick. */
+/* Vintage Win95 bar — the shell recipe in app/win95.css, scoped to these
+   two panes so the rest of the app is not restyled. Textured track, raised
+   thumb, 16px. The right padding on these panes is the inset that keeps the
+   track off the last key and the glass percent tubes. */
 .hab-control-stack,
-.hab-well,
-.hab-well .habit-grid-wrap {
-  scrollbar-width: thin;
-  scrollbar-color: #7d848b transparent;
+.hab-well {
+  scrollbar-width: auto;
+  scrollbar-color: var(--chrome-face, #c0c0c0) var(--chrome-brush, #acacac);
 }
 
 body.win95-app .hab-control-stack::-webkit-scrollbar,
-body.win95-app .hab-well::-webkit-scrollbar,
-body.win95-app .hab-well .habit-grid-wrap::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
+body.win95-app .hab-well::-webkit-scrollbar {
+  width: 16px;
+  height: 16px;
 }
 
 body.win95-app .hab-control-stack::-webkit-scrollbar-track,
-body.win95-app .hab-well::-webkit-scrollbar-track,
-body.win95-app .hab-well .habit-grid-wrap::-webkit-scrollbar-track {
-  background: transparent;
-  background-image: none;
+body.win95-app .hab-well::-webkit-scrollbar-track {
+  background-color: var(--chrome-face);
+  background-image: linear-gradient(
+      45deg,
+      var(--chrome-hi) 25%,
+      transparent 25%,
+      transparent 75%,
+      var(--chrome-hi) 75%
+    ),
+    linear-gradient(
+      45deg,
+      var(--chrome-hi) 25%,
+      var(--chrome-face) 25%,
+      var(--chrome-face) 75%,
+      var(--chrome-hi) 75%
+    );
+  background-size: 2px 2px;
+  background-position: 0 0, 1px 1px;
   box-shadow: none;
-  margin: 4px 0;
 }
 
 body.win95-app .hab-control-stack::-webkit-scrollbar-thumb,
-body.win95-app .hab-well::-webkit-scrollbar-thumb,
-body.win95-app .hab-well .habit-grid-wrap::-webkit-scrollbar-thumb {
-  background-color: #8a9198;
-  background-image: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.5),
-    rgba(255, 255, 255, 0.08) 46%,
-    rgba(30, 34, 38, 0.2)
-  );
-  border: 2px solid transparent;
-  border-radius: 7px;
-  background-clip: padding-box;
-  box-shadow: none;
-}
-
-body.win95-app .hab-control-stack::-webkit-scrollbar-thumb:hover,
-body.win95-app .hab-well::-webkit-scrollbar-thumb:hover,
-body.win95-app .hab-well .habit-grid-wrap::-webkit-scrollbar-thumb:hover {
-  background-color: #6e757c;
+body.win95-app .hab-well::-webkit-scrollbar-thumb {
+  background-color: var(--w95-surface);
+  background-image: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: var(--w95-raised);
 }
 
 body.win95-app .hab-control-stack::-webkit-scrollbar-corner,
-body.win95-app .hab-well::-webkit-scrollbar-corner,
-body.win95-app .hab-well .habit-grid-wrap::-webkit-scrollbar-corner {
-  background: transparent;
+body.win95-app .hab-well::-webkit-scrollbar-corner {
+  background: var(--w95-surface);
 }
 
 .hab-control-gauges {

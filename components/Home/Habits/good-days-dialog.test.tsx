@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 import { GoodDaysDialog } from "./good-days-dialog"
-import type { GoodDaySummary } from "@/lib/habit-accomplishment"
+import type { GoodDaySummary, GoodPeriodSummary } from "@/lib/habit-accomplishment"
 
 const summary: GoodDaySummary = {
   threshold: 80,
@@ -105,6 +105,78 @@ describe("GoodDaysDialog", () => {
     expect(screen.getByTestId("good-days-avg-7")).toHaveTextContent("50 points higher than today")
     expect(screen.getByTestId("good-days-avg-7").querySelector("[data-comparison='higher']")).toBeTruthy()
     expect(screen.getByTestId("good-days-today-raw")).toHaveTextContent("40%")
+  })
+
+  it("says how many points today still needs, or that the line is met", () => {
+    const { rerender } = render(
+      <GoodDaysDialog
+        open
+        onOpenChange={vi.fn()}
+        summary={{ ...summary, threshold: 50, todayCompletionRaw: 40 }}
+        onThresholdChange={vi.fn()}
+        onBonusChange={vi.fn()}
+      />,
+    )
+    expect(screen.getByTestId("good-period-points")).toHaveTextContent("10 needed")
+    expect(screen.getByTestId("good-period-points")).toHaveTextContent("good day")
+
+    rerender(
+      <GoodDaysDialog
+        open
+        onOpenChange={vi.fn()}
+        summary={{ ...summary, threshold: 50, todayCompletionRaw: 50 }}
+        onThresholdChange={vi.fn()}
+        onBonusChange={vi.fn()}
+      />,
+    )
+    expect(screen.getByTestId("good-period-points").textContent?.toLowerCase()).toContain("met")
+  })
+
+  it("reuses the plate for a good week, with that week's points at the top", () => {
+    const period: GoodPeriodSummary = {
+      unit: "week",
+      noun: "week",
+      plural: "weeks",
+      threshold: 50,
+      bonus: 50,
+      streak: 2,
+      longestStreak: 2,
+      lookbackCount: 2,
+      lookbackSize: 12,
+      streakLabel: "Good week streak",
+      countLabel: "Good weeks in the last 12",
+      currentRaw: 40,
+      currentGood: false,
+      pointsNeeded: 10,
+      pointsMet: false,
+      pointsPhrase: "10 needed to be a good week",
+      lookback: [
+        {
+          date: new Date(2026, 8, 14),
+          dateKey: "2026-09-14",
+          label: "Sep 14",
+          raw: 50,
+          good: true,
+        },
+      ],
+    }
+    render(
+      <GoodDaysDialog
+        open
+        onOpenChange={vi.fn()}
+        summary={summary}
+        period={period}
+        onThresholdChange={vi.fn()}
+        onBonusChange={vi.fn()}
+      />,
+    )
+    expect(screen.getByRole("dialog", { name: /Good weeks/i })).toBeInTheDocument()
+    expect(screen.getByTestId("good-period-points")).toHaveTextContent("10 needed")
+    expect(screen.getByTestId("good-period-points")).toHaveTextContent("good week")
+    expect(screen.getByText("Good week streak")).toBeInTheDocument()
+    expect(screen.getByText("Good weeks in the last 12")).toBeInTheDocument()
+    expect(screen.getByTestId("good-period-current-raw")).toHaveTextContent("40%")
+    expect(screen.queryByTestId("good-days-today-raw")).not.toBeInTheDocument()
   })
 
   it("edits accomplishment threshold and bonus", async () => {

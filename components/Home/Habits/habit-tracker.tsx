@@ -70,7 +70,7 @@ import { SettingsDialog } from "@/components/Home/Habits/settings-dialog"
 import { useHabitsStore } from "@/lib/habits-store"
 import { useReviewsStore, localDayKey } from "@/lib/reviews-store"
 import { useHabitTrackingSync, syncTrackedHabitsForTask } from "@/lib/habit-tracking-sync"
-import { goodDaySummary, rawDayCompletionPercent, type GoodDaySummary } from "@/lib/habit-accomplishment"
+import { goodDaySummary, goodPeriodSummary, rawDayCompletionPercent, type GoodDaySummary } from "@/lib/habit-accomplishment"
 import {
   blendPriorityScore,
   prioritizedHabits,
@@ -804,6 +804,38 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
       ? rawDayCompletionPercent(todayPrioHabits, weeklyData, goodDayAsOf, dailyExempt)
       : null
   }, [habitTab, dailyTasks, weeklyData, goodDayAsOf, dailyExempt])
+  const goodPeriod = useMemo(() => {
+    if (habitTab !== "weekly" && habitTab !== "monthly" && habitTab !== "quarterly") return null
+    const unit = habitTab === "weekly" ? "week" : habitTab === "monthly" ? "month" : "season"
+    return goodPeriodSummary(
+      dailyTasks,
+      weeklyData,
+      goodDayAsOf,
+      unit,
+      accomplishmentThreshold,
+      accomplishmentBonus,
+      dailyExempt,
+    )
+  }, [
+    habitTab,
+    dailyTasks,
+    weeklyData,
+    goodDayAsOf,
+    accomplishmentThreshold,
+    accomplishmentBonus,
+    dailyExempt,
+  ])
+  const periodWells = goodPeriod
+    ? {
+        streak: goodPeriod.streak,
+        last30Count: goodPeriod.lookbackCount,
+        streakLabel: goodPeriod.streakLabel,
+        countLabel: goodPeriod.countLabel,
+        countOf: goodPeriod.lookbackSize,
+        title: `Click for ${goodPeriod.streakLabel}, recent ${goodPeriod.plural}, and accomplishment settings`,
+        onClick: () => setShowGoodDays(true),
+      }
+    : undefined
   const viewingCurrentPeriod =
     habitTab === "quarterly"
       ? quarterKey(currentQuarter) === quarterKey(currentDate)
@@ -1086,6 +1118,7 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
                 outputBarValue={outputReady ? shownOutput : null}
                 outputHue={outputGradeTubeColor}
                 onOutputClick={() => setShowOutputGradeBreakdown(true)}
+                goodDays={habitTab === "weekly" ? periodWells : undefined}
                 sortId="habit-sort-weekly"
                 sortCompletionLabel="Weekly completion %"
                 weekWindow={
@@ -1176,6 +1209,7 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
                 outputBarValue={outputReady ? shownOutput : null}
                 outputHue={outputGradeTubeColor}
                 onOutputClick={() => setShowOutputGradeBreakdown(true)}
+                goodDays={habitTab === "monthly" ? periodWells : undefined}
                 sortId="habit-sort-monthly"
                 sortCompletionLabel="Monthly completion %"
                 monthWindow={
@@ -1275,6 +1309,7 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
                 outputBarValue={outputReady ? shownOutput : null}
                 outputHue={outputGradeTubeColor}
                 onOutputClick={() => setShowOutputGradeBreakdown(true)}
+                goodDays={habitTab === "quarterly" ? periodWells : undefined}
                 sortId="habit-sort-season"
                 sortCompletionLabel="Season completion %"
                 habitSortMode={habitSortMode}
@@ -1352,6 +1387,7 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
         open={showGoodDays}
         onOpenChange={setShowGoodDays}
         summary={goodDays}
+        period={habitTab === "daily" ? null : goodPeriod}
         onThresholdChange={setAccomplishmentThreshold}
         onBonusChange={setAccomplishmentBonus}
         usePriority={goodDaysUsePriority}
