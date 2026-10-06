@@ -68,12 +68,12 @@ describe("app page shell", () => {
     vi.spyOn(useTaskStore.persist, "hasHydrated").mockReturnValue(false)
   })
 
-  it("keeps the pinned header mounted when item detail is open", () => {
+  it("keeps the pinned header mounted when item detail is open", async () => {
     writeStoredId(APP_NAV_KEYS.appItemId, "pin-item-1")
     render(<Home />)
 
     expect(screen.getByTestId("app-header")).toHaveAttribute("data-pin", "viewport")
-    expect(screen.getByTestId("item-detail")).toHaveTextContent("pin-item-1")
+    expect(await screen.findByTestId("item-detail")).toHaveTextContent("pin-item-1")
     // Desk stays in the document (hidden) so Lists can remain warm.
     expect(screen.getByTestId("app-desk")).toHaveAttribute("aria-hidden", "true")
     expect(screen.queryByRole("tab", { name: "Home" })).not.toBeInTheDocument()
@@ -96,7 +96,7 @@ describe("app page shell", () => {
     expect(listsMounts).toHaveBeenCalledTimes(1)
 
     await user.click(screen.getByRole("button", { name: "open item" }))
-    expect(screen.getByTestId("item-detail")).toHaveTextContent("item-1")
+    expect(await screen.findByTestId("item-detail")).toHaveTextContent("item-1")
     expect(screen.getByTestId("app-desk")).toHaveAttribute("aria-hidden", "true")
     // Lists stayed mounted under the hidden desk.
     expect(screen.getByTestId("lists-desk")).toBeInTheDocument()

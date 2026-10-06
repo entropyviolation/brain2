@@ -1,14 +1,15 @@
 /**
  * app/layout.tsx — Next.js root layout
  *
- * The App Router root layout that wraps every page: loads Karla (app) and
- * Source Serif 4 (Analytics titles via `--font-an-serif`), applies
+ * The App Router root layout that wraps every page: loads Karla (`--font-karla`;
+ * the pixel face is `public/fonts/w95fa.woff` via `win95.css`), applies
  * global metadata, and imports global + module chrome stylesheets (so Fast Refresh
  * cannot drop lazy-tab CSS). `win95.css` owns `--chrome-*`; `chrome-patina.css`
  * remaps module aliases onto that family; `pcb-backdrop.css` paints the
  * desktop field (teal by default, optional PCB photos); `baby-animal-nest.css` skins the header CRT companion;
+ * `machine-loading.css` skins the wait instrument (phosphor sine + screen pet);
  * `win95.css` also sets navy `#000080` text-field and checkbox/radio focus (never WebKit orange);
- * `shell-chrome.css` skins the pinned mill title bar; `modules-chrome.css` skins the Modules catalog; `settings-chrome.css` skins Settings dialogs; `header-popup-chrome.css` skins pin-bar capture/review dialogs; `UiNamesHost` stamps
+ * `shell-chrome.css` skins the pinned mill title bar; `search-chrome.css` skins the Cmd/Ctrl-K palette; `modules-chrome.css` skins the Modules catalog; `settings-chrome.css` skins Settings dialogs; `header-popup-chrome.css` skins pin-bar capture/review dialogs; `UiNamesHost` stamps
  * `data-ui-mode` on `<html>` (Names is the first overlay); `ChromePatina` writes the live gunmetal; `PcbBackdrop`
  * stamps `data-pcb-mode` on `<html>` (`suppressHydrationWarning` so a saved
  * plate cannot mismatch SSR). Server component (no "use client") since it only
@@ -18,7 +19,7 @@
  */
 import type React from "react"
 import type { Metadata } from "next"
-import { Karla, Source_Serif_4 } from "next/font/google"
+import { Karla } from "next/font/google"
 import "./globals.css"
 import "./win95.css"
 // Module chrome must live on the root layout, not only on lazy tab chunks.
@@ -31,6 +32,9 @@ import "@/components/Home/Plan/plan-chrome.css"
 import "@/components/Home/Habits/habit-grid.css"
 import "@/components/Home/Habits/habit-chrome.css"
 import "@/components/Home/Habits/habit-form-dialog.css"
+import "@/components/Home/Habits/percent-led-bar.css"
+import "@/components/Home/Habits/cockpit-switch.css"
+import "@/components/ui/window-sand-close.css"
 import "@/components/Operations/operations-chrome.css"
 import "@/components/Scheduler/scheduler-chrome.css"
 import "@/components/Analytics/analytics-chrome.css"
@@ -42,7 +46,9 @@ import "@/components/Docs/document-editor.css"
 import "@/components/Editor/editor.css"
 import "@/components/Mobile/mobile.css"
 import "@/components/baby-animal-nest.css"
+import "@/components/machine-loading.css"
 import "@/components/shell-chrome.css"
+import "@/components/Search/search-chrome.css"
 import "@/components/UiNames/ui-names.css"
 import "./chrome-patina.css"
 import "./pcb-backdrop.css"
@@ -52,16 +58,11 @@ import { CompletionPopupHost } from "@/components/Completion/CompletionPopupHost
 import { UiNamesHost } from "@/components/UiNames/UiNamesHost"
 import { APP_NAME } from "@/lib/app-brand"
 import { DEFAULT_PCB_MODE, PCB_BACKDROP_BOOT_SCRIPT, pcbInkFor } from "@/lib/pcb-backdrop"
+import { NAV_BOOT_SCRIPT } from "@/lib/nav-boot"
 
 const karla = Karla({
   subsets: ["latin"],
   variable: "--font-karla",
-  display: "swap",
-})
-
-const sourceSerif = Source_Serif_4({
-  subsets: ["latin"],
-  variable: "--font-an-serif",
   display: "swap",
 })
 
@@ -80,13 +81,14 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${karla.variable} ${sourceSerif.variable}`}
+      className={karla.variable}
       data-pcb-mode={DEFAULT_PCB_MODE}
       data-pcb-ink={pcbInkFor(DEFAULT_PCB_MODE)}
       suppressHydrationWarning
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: PCB_BACKDROP_BOOT_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: NAV_BOOT_SCRIPT }} />
       </head>
       <body className={`${karla.className} win95-app`}>
         <ChromePatina />

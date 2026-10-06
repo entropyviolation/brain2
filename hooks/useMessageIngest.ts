@@ -11,7 +11,7 @@
 "use client"
 
 import { useEffect } from "react"
-import { ingestIncomingAsync } from "@/lib/ingest/executor"
+import { ingestIncomingAsync, dropLocationDuringRitual } from "@/lib/ingest/executor"
 import { deliverIngestReply } from "@/lib/ingest/deliver-reply"
 import { useIngestStore } from "@/lib/ingest/ingest-store"
 import { MediaAlbumBuffer } from "@/lib/ingest/media-album"
@@ -64,6 +64,16 @@ export function useMessageIngest() {
     }
 
     const applyPayload = async (payload: IncomingTelegramPayload) => {
+      if (
+        dropLocationDuringRitual({
+          channel: "telegram",
+          chatId: payload.chatId,
+          text: payload.text,
+          locationUpdate: payload.locationUpdate,
+        })
+      ) {
+        return
+      }
       const result = await ingestIncomingAsync(incomingFromTelegram(payload))
       if (desktop) {
         await deliverIngestReply(payload.chatId, result, {
@@ -83,8 +93,12 @@ export function useMessageIngest() {
       if (text) await postHubReply(payload.chatId, text)
     }
 
+    let chain: Promise<void> = Promise.resolve()
+    const enqueue = (payload: IncomingTelegramPayload) => {
+      chain = chain.then(() => applyPayload(payload)).catch(() => undefined)
+    }
     const albums = new MediaAlbumBuffer<IncomingTelegramPayload>((merged) => {
-      void applyPayload(merged)
+      enqueue(merged)
     })
 
     void (async () => {
@@ -129,14 +143,21 @@ export function useMessageIngest() {
           if (cancelled) return
           setPollStatus(status.ok, "hub", status.ok ? null : "ingest hub offline")
           if (!status.ok) return
-          const pending = await fetchHubPending()
+          const pending = [...(await fetchHubPending())].sort((a, b) => {
+            const at = Date.parse(a.receivedAt || "") || 0
+            const bt = Date.parse(b.receivedAt || "") || 0
+            if (at !== bt) return at - bt
+            return (a.telegramMessageId || 0) - (b.telegramMessageId || 0)
+          })
           for (const payload of pending) {
             if (cancelled) break
             albums.push(payload)
           }
         }
         void tick()
-        hubTimer = window.setInterval(() => void tick(), 3000)
+        hubTimer = window.setInterval(() => {
+          void tick()
+        }, 1000)
       }
     })()
 
