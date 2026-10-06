@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it, vi } from "vitest"
+import { COMPLETION_SOURCE_HINTS } from "@/lib/habit-completion-trust"
 import { GEM_PATHS } from "@/lib/gems-manifest"
 import { defaultHabitGem } from "@/lib/habit-gems"
 import { useHabitsStore } from "@/lib/habits-store"
@@ -418,6 +419,42 @@ describe("TaskForm", () => {
       expect.objectContaining({
         taggedTaskTag: "cooking",
         completionSources: ["manual", "taggedTasks"],
+      }),
+    )
+  })
+
+  it("shows the daily completion average hint and saves that source with no tag", async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    render(
+      <TaskForm
+        onSubmit={onSubmit}
+        onCancel={vi.fn()}
+        initialTask={{
+          id: "perfect-week",
+          name: "50% Perfect output for daily tasks",
+          type: TaskType.GOAL,
+          goal: 50,
+          unit: "%",
+          rewardValue: 10,
+          frequency: "weekly",
+          completionSources: ["manual"],
+        }}
+      />,
+    )
+    expect(screen.queryByText(COMPLETION_SOURCE_HINTS.dailyCompletionAverage)).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: "Completion sources" }))
+    await user.click(screen.getByRole("checkbox", { name: /^Daily completion average/ }))
+    expect(screen.getAllByText(COMPLETION_SOURCE_HINTS.dailyCompletionAverage).length).toBeGreaterThan(0)
+    expect(screen.queryByLabelText("Tagged task tag")).not.toBeInTheDocument()
+    expect(screen.queryByText("Auto-fill from Tracking")).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: "Update Habit" }))
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        completionSources: ["manual", "dailyCompletionAverage"],
+        taggedTaskTag: undefined,
       }),
     )
   })
