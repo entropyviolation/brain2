@@ -1,57 +1,113 @@
 import { describe, expect, it } from "vitest"
 import {
+  SAND_EMPTY,
   SAND_LOOSE,
+  SAND_SETTLED,
   SAND_SOLID,
+  WINDOW_SAND_WIND_AT,
+  beginWind,
   countState,
-  createSandGrid,
-  releaseSand,
-  stepSand,
+  createSandWorld,
+  stepSandWorld,
+  type SandWorld,
   type WindowSandGeom,
 } from "./window-sand-sim"
 
 const geom: WindowSandGeom = {
   left: 0,
   top: 0,
-  width: 20,
-  height: 16,
-  originX: 18,
-  originY: 2,
+  width: 96,
+  height: 72,
+  originX: 90,
+  originY: 4,
+}
+
+function run(world: SandWorld, until: number) {
+  let t = 0
+  while (t < until) {
+    const next = Math.min(until, t + 16)
+    stepSandWorld(world, next, next - t)
+    t = next
+  }
+}
+
+function indexAt(world: SandWorld, which: "near" | "far") {
+  let pick = 0
+  for (let i = 1; i < world.n; i++) {
+    const closer = world.releaseAt[i] < world.releaseAt[pick]
+    if (which === "near" ? closer : !closer && world.releaseAt[i] >= world.releaseAt[pick]) pick = i
+  }
+  return pick
 }
 
 describe("window sand", () => {
-  it("releases the corner at the × before the far side", () => {
-    const grid = createSandGrid(geom, null, { grain: 2, frontMs: 1000, extraRatio: 0.5 })
-    const near = 0 * grid.cols + (grid.cols - 1)
-    const far = (grid.winRows - 1) * grid.cols + 0
-    expect(grid.spawnAt[near]).toBeLessThan(grid.spawnAt[far] ?? Infinity)
-    expect(grid.state[near]).toBe(SAND_SOLID)
+  it("releases the corner at the × before the far side, and the far side stays put", () => {
+    const world = createSandWorld(geom, null, { grain: 2, frontMs: 1000 })
+    const near = indexAt(world, "near")
+    const far = indexAt(world, "far")
+    expect(world.releaseAt[near]).toBeLessThan(world.releaseAt[far])
+    expect(world.state[near]).toBe(SAND_SOLID)
+    expect(world.state[far]).toBe(SAND_SOLID)
 
-    releaseSand(grid, grid.spawnAt[near] ?? 0)
-    expect(grid.state[near]).toBe(SAND_LOOSE)
-    expect(grid.state[far]).toBe(SAND_SOLID)
+    const farY = world.y[far]
+    const nearY = world.y[near]
+    run(world, (world.releaseAt[near] ?? 0) + 220)
+
+    expect(world.state[near]).not.toBe(SAND_SOLID)
+    expect(world.y[near]).toBeGreaterThan(nearY + 4)
+    expect(world.state[far]).toBe(SAND_SOLID)
+    expect(world.y[far]).toBe(farY)
   })
 
-  it("drops loose sand into a pile and leaves unreleased grains in place", () => {
-    const grid = createSandGrid(geom, null, { grain: 2, frontMs: 1000, extraRatio: 1 })
-    const near = grid.spawnAt[0 * grid.cols + (grid.cols - 1)] ?? 0
-    releaseSand(grid, near)
-    const solidBefore = countState(grid, SAND_SOLID)
-    expect(countState(grid, SAND_LOOSE)).toBeGreaterThan(0)
+  it("heaps grains into a dune and does not leave a solid frame", () => {
+    const world = createSandWorld(geom, null, { grain: 2, frontMs: 400, windAt: 1600 })
+    run(world, 1500)
 
-    for (let i = 0; i < 12; i++) stepSand(grid, i % 2 === 0)
+    expect(countState(world, SAND_SOLID)).toBe(0)
+    expect(countState(world, SAND_SETTLED)).toBeGreaterThan(world.n * 0.45)
 
-    expect(countState(grid, SAND_SOLID)).toBe(solidBefore)
-
-    releaseSand(grid, 10_000)
-    for (let i = 0; i < 80; i++) stepSand(grid, i % 2 === 0)
-
-    let piledBelow = 0
-    for (let y = grid.winRows; y < grid.rows; y++) {
-      for (let x = 0; x < grid.cols; x++) {
-        if (grid.state[y * grid.cols + x] === SAND_LOOSE) piledBelow++
-      }
+    let minY = Infinity
+    let maxY = -Infinity
+    for (let i = 0; i < world.n; i++) {
+      if (world.state[i] !== SAND_SETTLED) continue
+      if (world.y[i] < minY) minY = world.y[i]
+      if (world.y[i] > maxY) maxY = world.y[i]
     }
-    expect(piledBelow).toBeGreaterThan(0)
-    expect(countState(grid, SAND_SOLID)).toBe(0)
+    expect(maxY).toBeGreaterThan(geom.height * 0.45)
+    expect(minY).toBeLessThan(maxY - world.grain * 4)
+  })
+
+  it("blows the dune to the right once the wind starts", () => {
+    const world = createSandWorld(geom, null, { grain: 2, frontMs: 400, windAt: 1600 })
+    run(world, 1500)
+    let mean = 0
+    let settled = 0
+    for (let i = 0; i < world.n; i++) {
+      if (world.state[i] !== SAND_SETTLED) continue
+      mean += world.x[i]
+      settled++
+    }
+    mean /= settled || 1
+
+    run(world, 1600 + 1400)
+    let gone = countState(world, SAND_EMPTY)
+    let shifted = 0
+    for (let i = 0; i < world.n; i++) {
+      if (world.state[i] === SAND_EMPTY) continue
+      if (world.x[i] > mean + 24) shifted++
+    }
+    expect(gone + shifted).toBeGreaterThan(world.n * 0.5)
+    expect(countState(world, SAND_SOLID)).toBe(0)
+  })
+
+  it("frees any grain the wind reaches so a solid frame cannot stay behind", () => {
+    const world = createSandWorld(geom, null, { grain: 2, frontMs: 5000, windAt: WINDOW_SAND_WIND_AT })
+    run(world, 200)
+    const far = indexAt(world, "far")
+    expect(world.state[far]).toBe(SAND_SOLID)
+    beginWind(world, 200)
+    expect(world.windAt).toBe(200)
+    run(world, 280)
+    expect(world.state[far]).not.toBe(SAND_SOLID)
   })
 })

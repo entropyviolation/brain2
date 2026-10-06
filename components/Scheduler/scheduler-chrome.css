@@ -693,6 +693,96 @@ body.win95-app .sch95 .sch-period-tabs [role="tab"][data-state="active"]::before
   white-space: nowrap;
 }
 
+.sch95 button.sch-bucket-name {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sch95 button.sch-bucket-name:hover {
+  text-decoration: underline;
+}
+
+.sch95 .sch-card-detail {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--s-face);
+  box-shadow: var(--s-raised);
+}
+
+.sch95 .sch-card-detail-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  background: var(--s-surface);
+  box-shadow: inset 0 -1px var(--s-shadow);
+}
+
+.sch95 .sch-card-detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.sch95 .sch-card-detail-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.sch95 .sch-card-detail-body {
+  overflow: auto;
+  padding: 6px 8px 10px;
+}
+
+.sch95 .sch-card-section {
+  margin-top: 8px;
+}
+
+.sch95 .sch-card-section-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  font-size: 12px;
+}
+
+.sch95 .sch-card-section-title span {
+  font-weight: normal;
+  color: #404040;
+}
+
+.sch95 .sch-card-detail-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sch95 .sch-card-detail-row .sch-task {
+  flex: 1;
+  min-width: 0;
+}
+
+.sch95 .sch-card-actions {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+  max-width: 16rem;
+}
+
 .sch95 .sch-bucket-sub {
   font-size: 10px;
   font-weight: normal;

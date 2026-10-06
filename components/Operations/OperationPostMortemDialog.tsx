@@ -9,7 +9,7 @@
  */
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useReviewsStore } from "@/lib/reviews-store"
 import type { Task } from "@/lib/types"
@@ -39,7 +39,19 @@ export function OperationPostMortemDialog({
   const [ratings, setRatings] = useState<Record<string, number>>(existing?.ratings ?? {})
   const [notice, setNotice] = useState<string | null>(null)
 
-  const handleSave = () => {
+  const closedRef = useRef(false)
+  const initialRef = useRef(
+    JSON.stringify({
+      summary: existing?.summary ?? "",
+      whatWorked: existing?.whatWorked ?? "",
+      whatFailed: existing?.whatFailed ?? "",
+      lessons: (existing?.lessons ?? []).join("\n"),
+      ratings: existing?.ratings ?? {},
+    }),
+  )
+  const dirty = () => JSON.stringify({ summary, whatWorked, whatFailed, lessons, ratings }) !== initialRef.current
+
+  const write = () => {
     const result = saveOperationPostMortem(operation.id, {
       summary: summary.trim(),
       whatWorked: whatWorked.trim() || undefined,
@@ -54,17 +66,30 @@ export function OperationPostMortemDialog({
       setNotice(
         "Saved locally is unavailable — the reviews-store operation-review action isn't wired yet. Try again after integration.",
       )
-      return
+      return false
     }
+    return true
+  }
+
+  const handleSave = () => {
+    if (!write()) return
+    closedRef.current = true
+    onClose()
+  }
+
+  const dismiss = () => {
+    if (closedRef.current) return
+    if (dirty() && !write()) return
+    closedRef.current = true
     onClose()
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+    <Dialog open={open} onOpenChange={(o) => !o && dismiss()}>
       <DialogContent className="ops95-dialog sm:max-w-lg">
         <DialogHeader className="ops-title-bar flex-row items-center space-y-0 text-left">
           <DialogTitle className="ops-title-text">After-action report</DialogTitle>
-          <button type="button" className="ops-title-btn" aria-label="Close" onClick={onClose}>
+          <button type="button" className="ops-title-btn" aria-label="Close" onClick={dismiss}>
             ×
           </button>
         </DialogHeader>
@@ -125,8 +150,8 @@ export function OperationPostMortemDialog({
         </div>
 
         <div className="ops-actions">
-          <button type="button" className="ops-btn" onClick={onClose}>
-            Cancel
+          <button type="button" className="ops-btn" onClick={dismiss}>
+            Close
           </button>
           <button type="button" className="ops-btn ops-btn-default" onClick={handleSave}>
             File report

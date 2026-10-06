@@ -17,6 +17,19 @@ mark an is-of-identity or an allness word and offer a dated rewrite; it will
 not block save or replace the sentence on its own.
 [`docs/ScienceandSanityBrain2.md`](../../docs/ScienceandSanityBrain2.md).
 
+## Public door
+
+`app/page.tsx` mounts `DocsPanel`. Trip Itinerary Plan
+(`components/Modules/workspace/itinerary/DocPlanView.tsx`) mounts `DocumentEditor`
+and calls `documentFont`, `loadDocumentBody`, `setDocumentBody`, and `setDocumentFont`
+from `doc-actions.ts`.
+
+Those helpers write `note` items through `useTaskStore` (`addTask`, `updateTask`,
+`deleteTask`; type `NOTE_TYPE_ID`) and the HTML body through `lib/doc-persist.ts`
+(`putPersistedDoc`, `deletePersistedDoc`).
+
+Interiors: `DocumentEditor` and `LinkDialog`.
+
 ## Files
 
 | File | Purpose |

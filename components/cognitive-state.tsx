@@ -4,6 +4,8 @@
  * The global-header button that opens the TimeGrid life tracker (see
  * components/Home/Tracking/time-grid.tsx) plus the Operations **"Working on
  * this now"** strip so a live session paints the compact grid from here too.
+ * The button, caption, and strip stay with the header. TimeGrid loads when
+ * this dialog opens.
  * cognitive-state form: state, mood, location, activity, etc. are now all
  * captured by painting the day's minute grid per scope. The export name is kept
  * as `CognitiveState` so the header wiring in app/page.tsx is unchanged.
@@ -16,13 +18,17 @@
  */
 "use client"
 
-import { useState } from "react"
+import { lazy, Suspense, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Brain } from "lucide-react"
-import { TimeGrid } from "@/components/Home/Tracking/time-grid"
+import { MachineLoading } from "@/components/machine-loading"
 import { WorkingNowStrip } from "@/components/Home/Tracking/working-now-strip"
 import { useTrackingUndoHotkey } from "@/components/Home/Tracking/tracking-undo"
+
+const TimeGrid = lazy(() =>
+  import("@/components/Home/Tracking/time-grid").then((mod) => ({ default: mod.TimeGrid })),
+)
 
 export function CognitiveState() {
   const [open, setOpen] = useState(false)
@@ -47,7 +53,9 @@ export function CognitiveState() {
           </DialogDescription>
         </DialogHeader>
         <WorkingNowStrip />
-        <TimeGrid compact />
+        <Suspense fallback={<MachineLoading />}>
+          <TimeGrid compact />
+        </Suspense>
       </DialogContent>
     </Dialog>
   )

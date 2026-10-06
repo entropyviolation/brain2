@@ -4,6 +4,8 @@
  * Filterable available-task list on the left. The right side is two columns
  * of drop cards (This Year … Tomorrow, plus Eventually / Later). Today and
  * Tomorrow show the real calendar date. Drag or click still schedules.
+ * The card title opens that card across this board. Drop on the available
+ * list puts the task back there, with no period.
  * Selection tools: Deselect all, Remove from Scheduler, Delete, Mark complete.
  */
 "use client"
@@ -13,6 +15,7 @@ import type { Task, SchedulePeriod, List } from "@/lib/types"
 import { PeriodCell } from "./PeriodCell"
 import { SchedulerFilters } from "./SchedulerFilters"
 import type { OverviewBox, SchedulerSortBy, SchedulerSortOrder } from "./scheduler-utils"
+import type { SchedulerTaskItemOpts } from "./PeriodFunnelTab"
 
 export function AlwaysTab({
   availableTasks,
@@ -35,6 +38,9 @@ export function AlwaysTab({
   onDropEventually,
   onCellClick,
   onEventuallyClick,
+  onOpenBox,
+  detail,
+  onSidebarDrop,
   renderTaskItem,
 }: {
   availableTasks: Task[]
@@ -57,13 +63,22 @@ export function AlwaysTab({
   onDropEventually: (e: React.DragEvent) => void
   onCellClick: (period: SchedulePeriod, value: string) => void
   onEventuallyClick: () => void
-  renderTaskItem: (task: Task, opts?: { showCheckbox?: boolean; showUnschedule?: boolean }) => React.ReactNode
+  onOpenBox: (box: OverviewBox) => void
+  /** Schedule Card Detail, in place of the card board. */
+  detail?: React.ReactNode
+  onSidebarDrop?: (e: React.DragEvent) => void
+  renderTaskItem: (task: Task, opts?: SchedulerTaskItemOpts) => React.ReactNode
 }) {
   return (
     <div className="sch-split">
-      <aside className="sch-pane">
+      <aside
+        className="sch-pane"
+        onDragOver={detail ? (e) => e.preventDefault() : undefined}
+        onDrop={detail ? onSidebarDrop : undefined}
+      >
         <div className="sch-pane-head">
           Available Tasks
+          {detail && <span>Drop here to return</span>}
           {selectedCount > 0 && <span>{selectedCount} selected</span>}
         </div>
         <div className="sch-pane-tools">
@@ -103,10 +118,13 @@ export function AlwaysTab({
         </div>
       </aside>
 
-      <div className="sch-always-board">
+      {detail ?? <div className="sch-always-board">
         <p className="sch-hint">
-          Drag onto a card. Today and Tomorrow use the real date. An unfinished Today returns here the next day
-          unless you push it forward. Eventually / Later files it on the eventually list, with no period.
+          Drag onto a card. Today and Tomorrow use the real date. An unfinished past period rolls up one
+          level (day → week → month → year), unless Auto-push is on — then it moves to the next To Do
+          period of the same grain. Gray past cells keep history; × or drag them to clear that
+          placement or move the task live again. Eventually / Later files it on the eventually list, with
+          no period.
         </p>
         <div className="sch-bucket-grid cols-2 sch-always-cards">
           {overviewBoxes.map((box) => {
@@ -129,12 +147,19 @@ export function AlwaysTab({
                 emptyText="Empty"
                 onDrop={(e) => (eventually ? onDropEventually(e) : onDrop(e, box.period, box.value))}
                 onClick={() => (eventually ? onEventuallyClick() : onCellClick(box.period, box.value))}
-                renderTaskItem={(task) => renderTaskItem(task, { showUnschedule: true })}
+                onOpenDetail={() => onOpenBox(box)}
+                renderTaskItem={(task) =>
+                  renderTaskItem(task, {
+                    showUnschedule: true,
+                    fromPeriod: eventually || box.period === "always" ? undefined : box.period,
+                    fromValue: eventually ? undefined : box.value,
+                  })
+                }
               />
             )
           })}
         </div>
-      </div>
+      </div>}
     </div>
   )
 }

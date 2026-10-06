@@ -1,0 +1,143 @@
+/**
+ * components/period-nav-chrome.css — Shared period-nav chrome tokens
+ *
+ * Brushed fascia strip, inset nameplate, and metal prev/next/today keys for
+ * Plan (`.plan-period*`) and Tracking (`.trk-period*`). Hosts keep their own
+ * surface tokens (`--p-*` / `--t-*`) via `--period-face` / `--period-surface` /
+ * `--period-nameplate` so themes stay distinct. Layout (flex vs grid) and
+ * Tracking-only meta/trailing stay in each chrome file. To Do reuses only the
+ * nameplate recipe (buttons stay todo-local).
+ *
+ * Imported from plan-chrome / tracking-chrome / todo-chrome.
+ */
+
+.plan95 {
+  --period-face: var(--p-face);
+  --period-surface: var(--p-surface);
+  --period-nameplate: #2a2c2e;
+  --period-nameplate-size: 12px;
+  --period-nameplate-tracking: 0.12em;
+}
+
+.trk95 {
+  --period-face: var(--t-face);
+  --period-surface: var(--t-surface);
+  --period-nameplate: var(--t-nameplate);
+  --period-nameplate-size: 11px;
+  --period-nameplate-tracking: 0.14em;
+}
+
+.todo95 {
+  --period-surface: var(--td-surface);
+  --period-nameplate: #2a2c2e;
+  --period-nameplate-size: 12px;
+  --period-nameplate-tracking: 0.12em;
+}
+
+/* Fascia mill — visual recipe only; hosts keep display/grid/flex + margins. */
+.plan95 .plan-period,
+.trk95 .trk-period {
+  min-height: 40px;
+  padding: 6px 8px;
+  border-radius: 3px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
+    linear-gradient(180deg, #d8dce0, var(--period-face) 48%, #b0b4b8);
+  box-shadow:
+    0 0 0 1px #6a6e72,
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 2px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Inset nameplate — typography vars keep Plan (12px) vs Tracking (11px). */
+.plan95 .plan-period h3,
+.trk95 .trk-period-title h3,
+.todo95 .todo-period h3 {
+  margin: 0;
+  min-height: 30px;
+  padding: 6px 14px 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+  text-align: center;
+  font-size: var(--period-nameplate-size);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: var(--period-nameplate-tracking);
+  text-transform: uppercase;
+  color: var(--period-nameplate) !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  background-image:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0 1px, transparent 1px 2px),
+    linear-gradient(180deg, #eef0f2 0%, var(--period-surface) 48%, #a4a8ac 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1px #6a6e72;
+}
+
+/* Metal period keys — Plan/Tracking only; To Do buttons stay local. */
+.plan95 .plan-period-chev,
+.plan95 .plan-period-today,
+.trk95 .trk-period-chev,
+.trk95 .trk-period-today,
+.trk95 .trk-period-aux {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  border: 0;
+  border-radius: 2px;
+  color: #1c1e20;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  line-height: 1;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
+    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--period-surface) 70%, #9a9ea2 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 0 -1px 0 rgba(55, 58, 62, 0.45),
+    0 0 0 1px #4a4e52,
+    0 1px 0 #6a6e72;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.plan95 .plan-period-chev,
+.trk95 .trk-period-chev {
+  min-width: 30px;
+  padding: 2px 10px;
+  font-size: 14px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.plan95 .plan-period-today,
+.trk95 .trk-period-today,
+.trk95 .trk-period-aux {
+  padding: 5px 14px 6px;
+}
+
+.plan95 .plan-period-chev:hover:not(:disabled),
+.plan95 .plan-period-today:hover:not(:disabled),
+.trk95 .trk-period-chev:hover:not(:disabled),
+.trk95 .trk-period-today:hover:not(:disabled),
+.trk95 .trk-period-aux:hover:not(:disabled) {
+  filter: brightness(1.04);
+}
+
+.plan95 .plan-period-chev:not(:disabled):active,
+.plan95 .plan-period-today:not(:disabled):active,
+.trk95 .trk-period-chev:not(:disabled):active,
+.trk95 .trk-period-today:not(:disabled):active,
+.trk95 .trk-period-aux:not(:disabled):active {
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.35),
+    0 0 0 1px #3a3e42;
+  filter: none;
+}

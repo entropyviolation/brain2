@@ -3,6 +3,8 @@
  *
  * A single task used across every Scheduler tab. Orb first (Lists contract),
  * then bureaucratic title + counts. Drag/select/unschedule stay delegated.
+ * Checkbox sits outside other controls; × is a sibling button (not nested), so
+ * there is no button-inside-button.
  */
 "use client"
 

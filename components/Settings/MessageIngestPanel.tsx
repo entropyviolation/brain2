@@ -537,9 +537,12 @@ export function MessageIngestPanel() {
             The bot cannot pull location off the phone. AirDrop{" "}
             <code className="text-foreground">Location to Brain2.shortcut</code> in{" "}
             <code className="text-foreground">docs/shortcuts/</code> (same Telegram Send Message as Notes —
-            pick the @brain2_phone_bot chat on import). Attach duplicates to Automation → Arrive and Leave
-            (Ask Before Running off). Or share <strong>Live Location</strong> in the bot chat (Telegram →
-            Location → Always), or text <code className="text-foreground">gps: Home</code>. Recipe:{" "}
+            pick the @brain2_phone_bot chat on import). Each run appends a timestamped fix to iCloud
+            Drive/Shortcuts/Brain2-location-log.txt and sends the file; a failed send leaves the lines for
+            the next run. A fix paints Location up to that minute, not the rest of the day. Attach duplicates
+            to Automation → Arrive and Leave (Ask Before Running off). Or share <strong>Live Location</strong>{" "}
+            in the bot chat (Telegram → Location → Always), or text{" "}
+            <code className="text-foreground">gps: Home</code>. Recipe:{" "}
             <code className="text-foreground">docs/shortcuts/iphone-location-to-brain2.md</code>.
           </p>
         </div>

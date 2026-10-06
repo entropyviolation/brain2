@@ -10,6 +10,7 @@
 "use client"
 
 import { lazy, Suspense, useEffect, useState } from "react"
+import { MachineLoading } from "@/components/machine-loading"
 import { useModulesStore } from "@/lib/modules-store"
 import { ModuleWorkspace } from "./ModuleWorkspace"
 
@@ -41,9 +42,11 @@ export function ModulePopoutView({ moduleId }: { moduleId: string }) {
     return (
       <main className="min-h-screen bg-background">
         <div className="container mx-auto px-6 py-10">
-          <p className="text-muted-foreground">
-            {ready ? "This module could not be found. It may have been deleted." : "Loading module…"}
-          </p>
+          {ready ? (
+            <p className="text-muted-foreground">This module could not be found. It may have been deleted.</p>
+          ) : (
+            <MachineLoading label="Loading module…" />
+          )}
         </div>
       </main>
     )
@@ -53,7 +56,7 @@ export function ModulePopoutView({ moduleId }: { moduleId: string }) {
     <main className="min-h-screen bg-background">
       <div className="container mx-auto px-6 py-6 sm:px-8 lg:px-12">
         {selectedTaskId ? (
-          <Suspense fallback={<div className="py-16 text-center text-muted-foreground">Loading…</div>}>
+          <Suspense fallback={<MachineLoading />}>
             <EnhancedTaskDetail taskId={selectedTaskId} onBack={() => setSelectedTaskId(null)} />
           </Suspense>
         ) : (

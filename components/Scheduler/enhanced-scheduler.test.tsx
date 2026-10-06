@@ -6,6 +6,8 @@ import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { resetLocalStorage } from "@/tests/test-utils"
 import { useTaskStore } from "@/lib/task-store"
+import { readListsNavigation } from "@/lib/app-navigation"
+import { useListsUiStore } from "@/lib/lists-ui-store"
 import type { Task, List } from "@/lib/types"
 import { EnhancedScheduler } from "./enhanced-scheduler"
 
@@ -77,7 +79,7 @@ describe("EnhancedScheduler", () => {
     expect(within(viewbar).getByRole("button", { name: "Dependencies" })).toHaveAttribute("aria-pressed", "false")
 
     const tabs = within(screen.getByRole("tablist")).getAllByRole("tab")
-    expect(tabs.map((t) => t.textContent)).toEqual(["Always", "Year", "Month", "Week", "Day"])
+    expect(tabs.map((t) => t.textContent)).toEqual(["Always", "Year", "Season", "Month", "Week", "Day"])
     expect(screen.getByText("Available Tasks")).toBeInTheDocument()
     expect(screen.getByText("Plan quarterly review")).toBeInTheDocument()
     expect(screen.getByText("Plan quarterly review").closest(".task-item")?.querySelector("img.sch-task-orb")).toBeTruthy()
@@ -126,9 +128,9 @@ describe("EnhancedScheduler", () => {
     const checkbox = within(taskRow as HTMLElement).getByRole("checkbox")
     await user.click(checkbox)
 
-    const thisYearCard = screen.getByText("This Year").closest("[class*='cursor-pointer']")
+    const thisYearCard = screen.getByText("This Year").closest(".sch-bucket-card")
     expect(thisYearCard).toBeTruthy()
-    await user.click(thisYearCard!)
+    await user.click(thisYearCard!.querySelector(".sch-bucket-empty")!)
 
     const year = new Date().getFullYear().toString()
     const updated = useTaskStore.getState().tasks.find((t) => t.id === "task-unscheduled")
@@ -138,6 +140,20 @@ describe("EnhancedScheduler", () => {
     expect(updated?.scheduledDate).toBeUndefined()
   })
 
+  it("opens a schedule card from its title and closes it", async () => {
+    const user = userEvent.setup()
+    render(<EnhancedScheduler />)
+
+    await user.click(screen.getByRole("button", { name: "Open This Year" }))
+    expect(screen.getByRole("heading", { name: "This Year" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Close schedule card" })).toBeInTheDocument()
+    expect(screen.queryByText("Empty")).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: "Close schedule card" }))
+    expect(screen.getByRole("button", { name: "Open This Year" })).toBeInTheDocument()
+    expect(screen.getAllByText("Empty").length).toBeGreaterThan(0)
+  })
+
   it("pins a selected task to today's local date", async () => {
     const user = userEvent.setup()
     render(<EnhancedScheduler />)
@@ -145,7 +161,7 @@ describe("EnhancedScheduler", () => {
     const taskRow = screen.getByText("Plan quarterly review").closest(".task-item")
     await user.click(within(taskRow as HTMLElement).getByRole("checkbox"))
     const todayCard = screen.getByText("Today").closest(".sch-bucket-card")
-    await user.click(todayCard!)
+    await user.click(todayCard!.querySelector(".sch-bucket-empty")!)
 
     const updated = useTaskStore.getState().tasks.find((t) => t.id === "task-unscheduled")
     const scheduled = updated?.scheduledDate
@@ -163,7 +179,7 @@ describe("EnhancedScheduler", () => {
     const taskRow = screen.getByText("Plan quarterly review").closest(".task-item")
     await user.click(within(taskRow as HTMLElement).getByRole("checkbox"))
     const later = screen.getByText("Eventually / Later").closest(".sch-bucket-card")
-    await user.click(later!)
+    await user.click(later!.querySelector(".sch-bucket-empty")!)
 
     const state = useTaskStore.getState()
     const list = state.lists.find((l) => l.name === "eventually")
@@ -273,5 +289,64 @@ describe("EnhancedScheduler", () => {
     expect(done?.completed).toBe(true)
     expect(screen.queryByText("1 selected")).not.toBeInTheDocument()
     expect(screen.queryByText("Plan quarterly review")).not.toBeInTheDocument()
+  })
+
+  it("× on a past-history day row clears that placement without throwing", async () => {
+    const user = userEvent.setup()
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    vi.setSystemTime(new Date(2026, 8, 22, 10, 0, 0)) // Tue Sep 22
+
+    useTaskStore.setState({
+      tasks: [
+        {
+          ...unscheduledTask,
+          id: "past-hist",
+          description: "Rolled Monday chore",
+          scheduledWeek: "2026-09-21_2026-09-27",
+          schedulePlacements: [{ period: "day", value: "2026-09-21" }],
+        },
+      ],
+      lists: [list],
+      folders: [],
+    })
+
+    render(<EnhancedScheduler />)
+    await user.click(screen.getByRole("tab", { name: "Week" }))
+
+    const pastBucket = screen
+      .getAllByText("Rolled Monday chore")
+      .map((el) => el.closest(".sch-bucket"))
+      .find((bucket) => bucket?.getAttribute("data-past") === "true")
+    expect(pastBucket).toBeTruthy()
+
+    const x = within(pastBucket as HTMLElement).getByTitle("Unschedule")
+    await user.click(x)
+
+    const after = useTaskStore.getState().tasks.find((t) => t.id === "past-hist")
+    expect(after?.schedulePlacements ?? []).toEqual([])
+    expect(after?.scheduledWeek).toBe("2026-09-21_2026-09-27")
+    expect(
+      screen
+        .queryAllByText("Rolled Monday chore")
+        .map((el) => el.closest(".sch-bucket"))
+        .some((bucket) => bucket?.getAttribute("data-past") === "true"),
+    ).toBe(false)
+  })
+
+  it("opens the period To do list from a schedule card", async () => {
+    const user = userEvent.setup()
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    vi.setSystemTime(new Date(2026, 8, 2, 10, 0, 0))
+
+    render(<EnhancedScheduler />)
+    await user.click(screen.getByRole("tab", { name: "Month" }))
+    await user.click(screen.getByRole("button", { name: "Open Week 8/31-9/6" }))
+    await user.click(screen.getByRole("button", { name: "Open To do 8/31-9/6 in Lists" }))
+
+    const list = useTaskStore.getState().lists.find((item) => item.name === "To do 8/31-9/6")
+    expect(list).toBeTruthy()
+    expect(readListsNavigation().openTarget).toEqual({ type: "category", id: list!.id })
+    expect(useListsUiStore.getState().folderView).toBe("list")
+    expect(useListsUiStore.getState().listDisplay[list!.id]).toBe("default")
   })
 })

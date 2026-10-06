@@ -1,18 +1,20 @@
 /**
- * components/notes-ingest.tsx — Ingest from iPhone / Mac Apple Notes
+ * components/notes-ingest.tsx — From Notes (Notes.app on this Mac)
  *
  * Date range → swipe Parse/Skip (title + content preview) → for each parsed note,
  * freely edit bulk-add syntax or park the full note on "notes to ingest" in the
- * auto-created iPhone Notes Ingest folder. Already-ingested Apple Note ids are skipped.
+ * auto-created Mac Notes folder. Already-ingested Apple Note ids are skipped.
  * Closing the dialog keeps the session (listing continues); From Notes reopens it.
  * Dialog shell is milled fascia (`.hpp95` / `header-popup-chrome.css`).
+ * Phone Notes (Telegram Shortcut dumps) is a different door.
  */
 "use client"
 
 import type React from "react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { format } from "date-fns"
-import { Check, Loader2, Smartphone, Undo2, X } from "lucide-react"
+import { Check, Loader2, StickyNote, Undo2, X } from "lucide-react"
+import { MachineLoading } from "@/components/machine-loading"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -27,6 +29,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useTaskStore } from "@/lib/task-store"
 import {
   NOTES_PERIOD_PRESETS,
+  MAC_NOTES_FOLDER_NAME,
   NOTES_TO_INGEST_LIST_NAME,
   canFetchAppleNotes,
   ensureIphoneNotesIngestDestination,
@@ -279,6 +282,7 @@ export function NotesIngest() {
       addList: state.addList,
       addFolder: state.addFolder,
       addListToFolder: state.addListToFolder,
+      updateFolder: state.updateFolder,
     }).list
   }
 
@@ -362,7 +366,7 @@ export function NotesIngest() {
         aria-busy={triggerBusy}
         title={step === "loading" ? "Listing continues in the background — click to return" : undefined}
       >
-        {triggerBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Smartphone className="h-4 w-4" />}
+        {triggerBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <StickyNote className="h-4 w-4" />}
         <span>{triggerLabel}</span>
       </Button>
       <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -370,10 +374,10 @@ export function NotesIngest() {
           <DialogHeader className="hpp-caption">
             <div className="hpp-caption-mark">
               <span className="hpp-power-lamp" aria-hidden />
-              <DialogTitle>Ingest from iPhone Notes</DialogTitle>
+              <DialogTitle>Notes on this Mac</DialogTitle>
             </div>
             <DialogDescription className="hpp-caption-lead">
-              Preview title and contents, mark notes to parse, then bulk-add or save to “{NOTES_TO_INGEST_LIST_NAME}”.
+              Notes.app on this Mac — iCloud and On My Mac. Preview, mark notes to parse, then bulk-add or save to “{NOTES_TO_INGEST_LIST_NAME}”.
             </DialogDescription>
           </DialogHeader>
 
@@ -382,7 +386,7 @@ export function NotesIngest() {
             <div className="space-y-4">
               {!notesAvailable && (
                 <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
-                  Live Apple Notes are read on this Mac through Notes.app (iCloud / iPhone). Open Brain2 at http://localhost:3000 or the desktop window — not a phone browser. You can still set a period; listing will explain if Notes isn&apos;t reachable.
+                  This reads Notes.app on this Mac. Open Brain2 in the desktop window or at http://localhost:3000. A phone browser cannot list Mac notes. You can still set a period; listing will explain if Notes isn&apos;t reachable.
                 </p>
               )}
               <div className="space-y-2">
@@ -425,7 +429,7 @@ export function NotesIngest() {
                 </div>
               )}
               <p className="text-xs text-muted-foreground">
-                Already ingested Apple Notes are skipped. Parked notes land in the iPhone Notes Ingest folder, list “{NOTES_TO_INGEST_LIST_NAME}”.
+                Already ingested notes are skipped. Parked notes land in the {MAC_NOTES_FOLDER_NAME} folder, list “{NOTES_TO_INGEST_LIST_NAME}”. Phone Notes is a separate door.
               </p>
               <div className="flex justify-end">
                 <Button type="button" onClick={() => void loadPreviews()} disabled={busy}>
@@ -437,9 +441,8 @@ export function NotesIngest() {
           )}
 
           {step === "loading" && (
-            <div className="py-10 text-center space-y-3">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
-              <p className="text-sm font-medium">Listing Apple Notes…</p>
+            <div className="py-6 text-center space-y-3">
+              <MachineLoading size="nest" label="Listing Apple Notes…" />
               <p className="text-xs text-muted-foreground">
                 Titles first, then a content preview on each card. macOS may ask to let Brain2 control Notes.
               </p>
@@ -710,10 +713,10 @@ function SwipeStage({
             {note.passwordProtected ? (
               <p className="mt-2 text-sm text-muted-foreground">Locked in Notes — body not available.</p>
             ) : snippetLoading && !snippet ? (
-              <p className="mt-2 text-sm text-muted-foreground flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
+              <div className="mt-2 text-sm text-muted-foreground flex items-center gap-2">
+                <MachineLoading size="pip" decorative />
                 Loading preview…
-              </p>
+              </div>
             ) : snippet ? (
               <p className="mt-2 text-sm text-muted-foreground whitespace-pre-wrap overflow-y-auto flex-1">{snippet}</p>
             ) : (

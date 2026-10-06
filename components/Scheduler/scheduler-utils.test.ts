@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { formatLocalDateKey } from "@/lib/date-utils"
+import { formatLocalDateKey, parseWeekString } from "@/lib/date-utils"
 import { isExpiredDaySchedule } from "@/lib/scheduling"
 import {
   getScheduleableCategoryIds,
@@ -8,6 +8,7 @@ import {
   taskInheritsScheduleableFromLists,
   getAvailableTasks,
   getTasksForPeriod,
+  getWeeksInMonth,
   scheduleUpdatesForPeriod,
   unscheduleUpdates,
   getCategoryColor,
@@ -17,6 +18,7 @@ import {
   taskIdsForDragSchedule,
   isPastFunnelPeriod,
 } from "./scheduler-utils"
+import { isExplicitlyScheduleable } from "@/lib/scheduling"
 import type { Task, List } from "@/lib/types"
 
 const cat = (overrides: Partial<List>): List => ({
@@ -38,16 +40,26 @@ const task = (overrides: Partial<Task>): Task => ({
 })
 
 describe("getScheduleableCategoryIds / isTaskScheduleable", () => {
-  it("treats lists as scheduleable unless explicitly disabled", () => {
-    const ids = getScheduleableCategoryIds([cat({ id: "a" }), cat({ id: "b", scheduleable: false })])
+  it("includes a list only when Scheduleable was turned on", () => {
+    const ids = getScheduleableCategoryIds([
+      cat({ id: "a", scheduleable: true }),
+      cat({ id: "b", scheduleable: false }),
+      cat({ id: "c" }),
+    ])
     expect(ids.has("a")).toBe(true)
     expect(ids.has("b")).toBe(false)
+    expect(ids.has("c")).toBe(false)
     expect(isTaskScheduleable(task({ lists: ["a"] }), ids)).toBe(true)
     expect(isTaskScheduleable(task({ lists: ["b"] }), ids)).toBe(false)
+    expect(isTaskScheduleable(task({ lists: ["c"] }), ids)).toBe(false)
+    expect(isExplicitlyScheduleable(null)).toBe(false)
   })
 
   it("honors the task-level scheduleable override above its lists", () => {
-    const ids = getScheduleableCategoryIds([cat({ id: "a" }), cat({ id: "b", scheduleable: false })])
+    const ids = getScheduleableCategoryIds([
+      cat({ id: "a", scheduleable: true }),
+      cat({ id: "b", scheduleable: false }),
+    ])
     expect(isTaskScheduleable(task({ lists: ["a"], scheduleable: false }), ids)).toBe(false)
     expect(isTaskScheduleable(task({ lists: ["b"], scheduleable: true }), ids)).toBe(true)
   })
@@ -62,7 +74,10 @@ describe("nextTaskScheduleableFlag", () => {
   })
 
   it("detects inherit-on from scheduleable lists", () => {
-    const ids = getScheduleableCategoryIds([cat({ id: "a" }), cat({ id: "b", scheduleable: false })])
+    const ids = getScheduleableCategoryIds([
+      cat({ id: "a", scheduleable: true }),
+      cat({ id: "b", scheduleable: false }),
+    ])
     expect(taskInheritsScheduleableFromLists(task({ lists: ["a"] }), ids)).toBe(true)
     expect(taskInheritsScheduleableFromLists(task({ lists: ["b"] }), ids)).toBe(false)
     expect(taskInheritsScheduleableFromLists(task({ lists: [] }), ids)).toBe(false)
@@ -70,7 +85,7 @@ describe("nextTaskScheduleableFlag", () => {
 })
 
 describe("getAvailableTasks", () => {
-  const categories = [cat({ id: "c1" })]
+  const categories = [cat({ id: "c1", scheduleable: true })]
   const ids = getScheduleableCategoryIds(categories)
 
   it("excludes completed, non-scheduleable, and dependency-blocked tasks", () => {
@@ -188,11 +203,46 @@ describe("taskIdsForDragSchedule", () => {
   })
 })
 
+describe("getWeeksInMonth", () => {
+  it("uses the Monday–Sunday key the rest of the app schedules with", () => {
+    const weeks = getWeeksInMonth("2026-09")
+    expect(weeks.map((week) => week.value)).toContain("2026-08-31_2026-09-06")
+    for (const week of weeks) {
+      expect(parseWeekString(week.value)?.start.getDay()).toBe(1)
+    }
+  })
+})
+
 describe("navigateDate", () => {
   it("moves by the active period", () => {
     const d = new Date("2026-06-20T12:00:00")
     expect(navigateDate(d, "year", 1).getFullYear()).toBe(2027)
     expect(navigateDate(d, "day", -1).getDate()).toBe(19)
+  })
+
+  it("keeps month steps inside the adjacent month when the day does not exist there", () => {
+    const jan31 = new Date(2026, 0, 31, 15, 0, 0)
+    const next = navigateDate(jan31, "month", 1)
+    expect(next.getFullYear()).toBe(2026)
+    expect(next.getMonth()).toBe(1)
+    expect(next.getDate()).toBe(28)
+
+    const mar31 = new Date(2026, 2, 31)
+    const prev = navigateDate(mar31, "month", -1)
+    expect(prev.getMonth()).toBe(1)
+    expect(prev.getDate()).toBe(28)
+    const skipped = navigateDate(mar31, "month", 1)
+    expect(skipped.getMonth()).toBe(3)
+    expect(skipped.getDate()).toBe(30)
+  })
+
+  it("clamps a leap day when the next year is not a leap year", () => {
+    const leap = new Date(2024, 1, 29, 9, 30, 0)
+    const next = navigateDate(leap, "year", 1)
+    expect(next.getFullYear()).toBe(2025)
+    expect(next.getMonth()).toBe(1)
+    expect(next.getDate()).toBe(28)
+    expect(next.getHours()).toBe(9)
   })
 })
 
@@ -246,6 +296,41 @@ describe("overview boxes", () => {
     expect(pastDay.map((t) => t.id)).toEqual(["rolled"])
     expect(weekLive.map((t) => t.id)).toEqual(["rolled"])
     expect(getTasksForPeriod([rolled], "day", "2026-09-22", tuesday, tuesday)).toEqual([])
+  })
+
+  it("a past week keeps unfinished month work and drops a handled row", () => {
+    const tuesday = new Date(2026, 8, 22, 10, 0, 0)
+    const week = "2026-09-14_2026-09-20"
+    const month = task({ id: "month", scheduledMonth: "2026-09" })
+    const handled = task({
+      id: "handled",
+      scheduledMonth: "2026-09",
+      schedulePlacements: [{ period: "week", value: week, resolved: "clarified" }],
+    })
+    expect(getTasksForPeriod([month, handled], "week", week, tuesday, tuesday).map((t) => t.id)).toEqual(["month"])
+  })
+
+  it("a past week includes an undone month that contains it", () => {
+    const tuesday = new Date(2026, 8, 22, 10, 0, 0)
+    const augustWeek = "2026-08-03_2026-08-09"
+    const septemberWeek = "2026-09-14_2026-09-20"
+    const rolled = task({
+      id: "aug",
+      scheduledYear: "2026",
+      schedulePlacements: [{ period: "month", value: "2026-08" }],
+    })
+    expect(getTasksForPeriod([rolled], "week", augustWeek, tuesday, tuesday).map((t) => t.id)).toEqual(["aug"])
+    expect(getTasksForPeriod([rolled], "week", septemberWeek, tuesday, tuesday)).toEqual([])
+  })
+
+  it("a past day includes an undone week that contains it", () => {
+    const tuesday = new Date(2026, 8, 22, 10, 0, 0)
+    const inside = task({
+      id: "day",
+      schedulePlacements: [{ period: "week", value: "2026-08-31_2026-09-06" }],
+    })
+    expect(getTasksForPeriod([inside], "day", "2026-09-02", tuesday, tuesday).map((t) => t.id)).toEqual(["day"])
+    expect(getTasksForPeriod([inside], "day", "2026-09-14", tuesday, tuesday)).toEqual([])
   })
 
   it("marks past days via isPastFunnelPeriod and leaves today live", () => {

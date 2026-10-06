@@ -25,11 +25,22 @@ export function useWorkSessionClock() {
   useEffect(() => {
     if (!session) return
     tickWorkSession()
-    const ui = window.setInterval(() => setNow(Date.now()), 1000)
-    const grid = window.setInterval(() => tickWorkSession(), WORK_SESSION_TICK_MS)
+    const ui = window.setInterval(() => {
+      if (document.hidden) return
+      setNow(Date.now())
+    }, 1000)
+    const grid = window.setInterval(() => {
+      if (document.hidden) return
+      tickWorkSession()
+    }, WORK_SESSION_TICK_MS)
+    const onVis = () => {
+      if (!document.hidden) setNow(Date.now())
+    }
+    document.addEventListener("visibilitychange", onVis)
     return () => {
       window.clearInterval(ui)
       window.clearInterval(grid)
+      document.removeEventListener("visibilitychange", onVis)
     }
   }, [session?.operationId, session?.startedAt, session?.pausedAt, session?.pausedAccumMs])
 

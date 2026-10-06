@@ -17,6 +17,7 @@ import { TagInput } from "@/components/ItemDetail/TagInput"
 import { LinkPicker } from "@/components/ItemDetail/LinkPicker"
 import { RelatedItemsPanel } from "@/components/ItemDetail/RelatedItemsPanel"
 import { BodyPanel } from "@/components/ItemDetail/BodyPanel"
+import { HabitLinkedDetail } from "@/components/ItemDetail/HabitLinkedDetail"
 import { ListPicker } from "@/components/Lists/list-picker"
 import { IsolatedInput, IsolatedTextarea } from "@/components/ui/isolated-text-field"
 import { SubtaskComposer } from "@/components/ItemDetail/SubtaskComposer"
@@ -26,7 +27,9 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { Switch } from "@/components/ui/switch"
+import { TodoCommitmentFields } from "@/components/ItemDetail/TodoCommitmentFields"
+import { ItemEstimateField } from "@/components/ItemDetail/ItemEstimateField"
+import { ItemScheduleFlags } from "@/components/ItemDetail/ItemScheduleFlags"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -41,7 +44,6 @@ import {
   ArrowLeft,
   Save,
   Calendar,
-  Clock,
   AlertTriangle,
   Star,
   CheckCircle,
@@ -77,17 +79,13 @@ import {
 import { isTaskItem } from "@/lib/item-utils"
 import { isClearedFromWork } from "@/lib/completion-status"
 import { markMissedOpportunity } from "@/lib/services/completion-service"
-import {
-  getScheduleableCategoryIds,
-  isTaskScheduleable,
-  nextTaskScheduleableFlag,
-  taskInheritsScheduleableFromLists,
-} from "@/components/Scheduler/scheduler-utils"
+import { getScheduleableCategoryIds } from "@/components/Scheduler/scheduler-utils"
 import { useTaskStore } from "@/lib/task-store"
 import type { AttributeDefinition, AttributeValue, ItemTypeDefinition, Subtask, Task } from "@/lib/types"
-import { safeDateFormat, safeISODateString } from "@/lib/date-utils"
+import { dateInputValue, parseLocalDate, safeDateFormat } from "@/lib/date-utils"
 import { ItemTypeEditor } from "@/components/ItemTypes/ItemTypeEditor"
-import { APP_NAV_KEYS, readStoredRecord, requestNavigateToList, writeStoredRecordField } from "@/lib/app-navigation"
+import { APP_NAV_KEYS, readStoredRecord, requestNavigateToListAfterPaint, writeStoredRecordField } from "@/lib/app-navigation"
+import { armHabitSettingsReturn, peekHabitSettingsReturn, sourceHabitIdOf } from "@/lib/habit-list-item"
 import {
   addStepsAsSubtasks,
   parseSteps,
@@ -244,7 +242,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
 
         switch (type) {
           case "date":
-            updates.scheduledDate = value ? new Date(value) : undefined
+            updates.scheduledDate = value ? parseLocalDate(value) ?? undefined : undefined
             break
           case "week":
             updates.scheduledWeek = value
@@ -385,13 +383,38 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
   )
   const primaryTypeId = task?.type ?? (isTask ? BUILTIN_TASK_TYPE_ID : BUILTIN_ITEM_TYPE_ID)
 
+  const sourceHabitId = sourceHabitIdOf(task?.attributes)
+
   const handleNavigateToList = useCallback(
     (listId: string) => {
-      requestNavigateToList(listId, folders)
-      onBack()
+      // Back on a habit-opened detail returns to habit settings. The list chip
+      // opens this list instead. The shell's navigate event closes the page.
+      requestNavigateToListAfterPaint(listId, folders)
+      if (!peekHabitSettingsReturn()) onBack()
     },
     [folders, onBack],
   )
+
+  const commitNotes = useCallback(
+    (notes: string) => {
+      touchDraft({ notes })
+      setTask((prev) => (prev ? { ...prev, notes } : prev))
+      if (isEditing) return
+      const base = getDraft()
+      if (!base) return
+      const next = { ...base, notes }
+      recordItemWrite(originalTask ?? base, next, { tasks: allTasks, lists })
+      updateTask(next)
+      setOriginalTask(next)
+    },
+    [touchDraft, setTask, isEditing, getDraft, originalTask, allTasks, lists, updateTask, setOriginalTask],
+  )
+
+  const openHabitSettings = useCallback(() => {
+    if (!sourceHabitId) return
+    armHabitSettingsReturn(sourceHabitId)
+    onBack()
+  }, [sourceHabitId, onBack])
 
   const handleSaveItemType = useCallback(
     (def: ItemTypeDefinition) => {
@@ -540,7 +563,16 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
 
         <TabsContent value="details" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-6">
+            <div className={sourceHabitId ? "id-detail-main lg:col-span-2" : "lg:col-span-2 space-y-6"}>
+              {sourceHabitId ? (
+                <HabitLinkedDetail
+                  habitId={sourceHabitId}
+                  notes={task.notes || ""}
+                  onNotesLive={(notes) => touchDraft({ notes })}
+                  onNotesCommit={commitNotes}
+                  onHabitSettings={openHabitSettings}
+                />
+              ) : null}
               {isTask && (
               <Card>
                 <CardHeader>
@@ -548,27 +580,13 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="estimated-duration">Estimated Duration (minutes)</Label>
-                      {isEditing ? (
-                        <IsolatedInput
-                          id="estimated-duration"
-                          type="number"
-                          value={String(task.estimatedDuration ?? "")}
-                          onLiveChange={(v) => touchDraft({ estimatedDuration: Number.parseInt(v) || 0 })}
-                          onCommit={(v) =>
-                            setTask((prev) =>
-                              prev ? { ...prev, estimatedDuration: Number.parseInt(v) || 0 } : prev,
-                            )
-                          }
-                        />
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-muted-foreground" />
-                          <span>{task.estimatedDuration} minutes</span>
-                        </div>
-                      )}
-                    </div>
+                    <ItemEstimateField
+                      estimatedDuration={task.estimatedDuration}
+                      touchDraft={touchDraft}
+                      setTask={setTask}
+                      variant="page"
+                      isEditing={isEditing}
+                    />
 
                     <div className="space-y-2">
                       <Label htmlFor="reward-value">Reward Value (1-10)</Label>
@@ -879,27 +897,13 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex items-center justify-between rounded-lg border p-3">
-                <div>
-                  <Label className="text-sm font-semibold">Schedulable</Label>
-                  <p className="text-xs text-muted-foreground">
-                    Lists still decide the default; this switch is only this item.
-                  </p>
-                </div>
-                <Switch
-                  checked={isTaskScheduleable(task, scheduleableCategoryIds)}
-                  onCheckedChange={(checked) =>
-                    setTask({
-                      ...task,
-                      scheduleable: nextTaskScheduleableFlag({
-                        turnOn: !!checked,
-                        inheritsOnFromLists: taskInheritsScheduleableFromLists(task, scheduleableCategoryIds),
-                      }),
-                    })
-                  }
-                  disabled={!isEditing}
-                />
-              </div>
+              <ItemScheduleFlags
+                task={task}
+                scheduleableCategoryIds={scheduleableCategoryIds}
+                onChange={setTask}
+                disabled={!isEditing}
+              />
+              <TodoCommitmentFields task={task} onChange={setTask} disabled={!isEditing} />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <h3 className="font-medium">Specific Date & Time</h3>
@@ -908,7 +912,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
                     <Input
                       id="scheduled-date"
                       type="date"
-                      value={safeISODateString(task.scheduledDate)}
+                      value={dateInputValue(task.scheduledDate)}
                       onChange={(e) => handleSchedule("date", e.target.value)}
                       disabled={!isEditing}
                     />
@@ -936,9 +940,9 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
                     <Input
                       id="deadline"
                       type="date"
-                      value={safeISODateString(task.deadline)}
+                      value={dateInputValue(task.deadline)}
                       onChange={(e) => {
-                        const date = e.target.value ? new Date(e.target.value) : undefined
+                        const date = e.target.value ? parseLocalDate(e.target.value) ?? undefined : undefined
                         setTask({ ...task, deadline: date })
                       }}
                       disabled={!isEditing}

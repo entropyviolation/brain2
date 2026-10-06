@@ -2,9 +2,13 @@
  * components/AppHeader.tsx — Pinned mill title bar
  *
  * Full-width fascia at the top of the viewport: navy **BRAIN2** caption with a
- * Tek POWER lamp, today's-friend jewel in a Friend key-well (click for a Stardew
- * Next Action bubble), and Review / System / now / Capture as milled silver
- * key-wells of chunky press keys (Y2K handheld / TENO). The **now** well
+ * Tek POWER lamp, leading **Nav** Back/Forward mill keys (in-app screen
+ * history), today's-friend jewel in a Friend key-well (click for a Stardew
+ * Next Action bubble), and Rituals / System / now / Capture as milled silver
+ * key-wells of chunky press keys (Y2K handheld / TENO). Wide shell: one row.
+ * Narrower than the clusters' label widths: whole clusters wrap onto further
+ * rows; a cluster wider than the shell scrolls inside its bay. Keys do not
+ * flex-shrink, and phosphor counts stay on them. The **now** well
  * appears only while an Operations or pen-color work timer is live. System is
  * Settings | Tracking | Names so a later Help / Inspect key can sit beside
  * Names. The Names key stays **Names** and latches (`aria-pressed`); the
@@ -28,6 +32,7 @@ import { MetricLoggerButton } from "@/components/Tracking/MetricLogger"
 import { BabyAnimalNest } from "@/components/baby-animal-nest"
 import { SettingsDialog } from "@/components/Settings/SettingsDialog"
 import { HeaderNowBox } from "@/components/header-now-box"
+import { HeaderNavButtons } from "@/components/header-nav-buttons"
 import { Button } from "@/components/ui/button"
 import { useUiNamesStore } from "@/lib/ui-names-store"
 import "./shell-chrome.css"
@@ -74,13 +79,14 @@ export function AppHeader({
         <span className="b2-shell-caption-mill" aria-hidden="true" />
       </div>
       <div className="b2-shell-body">
+        <HeaderNavButtons />
         <fieldset className="b2-shell-brand">
           <legend>Friend</legend>
           <BabyAnimalNest />
         </fieldset>
         <div className="b2-shell-rail" role="toolbar" aria-label="Global actions">
           <fieldset className="b2-shell-group">
-            <legend>Review</legend>
+            <legend>Rituals</legend>
             <div className="b2-shell-keys">
               <Reviews />
             </div>

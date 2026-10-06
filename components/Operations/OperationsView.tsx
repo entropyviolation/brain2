@@ -39,6 +39,7 @@ import type { Task } from "@/lib/types"
 import { OperationWorkspace } from "./OperationWorkspace"
 import { createOperation } from "./operation-actions"
 import { APP_NAV_KEYS, readStoredId, writeStoredId } from "@/lib/app-navigation"
+import { subscribeNavRestore } from "@/lib/screen-location"
 import { usePersistHydrated } from "@/lib/use-persist-hydrated"
 import "./operations-chrome.css"
 
@@ -111,6 +112,12 @@ export function OperationsView({ onTaskSelect }: OperationsViewProps) {
   useEffect(() => {
     writeStoredId(APP_NAV_KEYS.opsId, selectedId)
   }, [selectedId])
+
+  useEffect(() => {
+    return subscribeNavRestore(() => {
+      setSelectedId(readStoredId(APP_NAV_KEYS.opsId))
+    })
+  }, [])
 
   useEffect(() => {
     if (!hydrated) return

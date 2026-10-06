@@ -1,0 +1,353 @@
+/* Wait instrument — Tek well, phosphor sine, screen pet on the floor.
+   Tokens from app/win95.css (--fascia-*, --hab-crt-green, --w95-font). */
+
+.ml-load {
+  --ml-phosphor: var(--hab-crt-green, #7dffc4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 9.5rem;
+  padding: 12px 8px;
+  font-family: var(--w95-font, Tahoma, "MS Sans Serif", sans-serif);
+}
+
+.ml-load[data-size="nest"] {
+  min-height: 7.5rem;
+  padding: 8px 4px;
+}
+
+.ml-load[data-size="pip"] {
+  display: inline-flex;
+  flex-direction: row;
+  min-height: 0;
+  padding: 0;
+  vertical-align: middle;
+}
+
+.ml-chassis {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px 7px 7px;
+  background: var(--fascia-bay, #c0c0c0);
+  box-shadow: var(--fascia-bay-ring, inset -1px -1px #fff, inset 1px 1px #404040);
+}
+
+.ml-load[data-size="pip"] .ml-chassis {
+  gap: 4px;
+  padding: 2px 3px;
+}
+
+.ml-pwr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  flex: none;
+}
+
+.ml-pwr-lamp {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #e9fff6 0%, #7dffc4 42%, #1d8a62 78%);
+  box-shadow:
+    0 0 0 1px #0c3d30,
+    0 0 6px #7dffc4,
+    inset 0 1px 1px rgba(255, 255, 255, 0.75);
+  animation: ml-power 1.6s ease-in-out infinite;
+}
+
+.ml-load[data-lamp="blue"] .ml-pwr-lamp {
+  background: radial-gradient(circle at 35% 30%, #e7f6ff 0%, #7ec8ff 42%, #1a5f9a 78%);
+  box-shadow:
+    0 0 0 1px #0c2740,
+    0 0 6px #7ec8ff,
+    inset 0 1px 1px rgba(255, 255, 255, 0.75);
+}
+
+.ml-load[data-size="pip"] .ml-pwr-lamp {
+  width: 6px;
+  height: 6px;
+}
+
+.ml-pwr-word {
+  font-size: 8px;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  color: var(--fascia-nameplate, #2a2c2e);
+}
+
+.ml-load[data-size="pip"] .ml-pwr-word {
+  display: none;
+}
+
+.ml-glass {
+  position: relative;
+  width: 172px;
+  height: 84px;
+  overflow: hidden;
+  flex: none;
+  background: var(--fascia-crt-glass, #070c0a);
+  box-shadow: var(--fascia-crt-ring, inset 0 0 0 1px #3a3e42);
+}
+
+.ml-load[data-size="nest"] .ml-glass {
+  width: 140px;
+  height: 68px;
+}
+
+.ml-load[data-size="pip"] .ml-glass {
+  width: 54px;
+  height: 16px;
+}
+
+.ml-glass::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  background: linear-gradient(
+    118deg,
+    rgba(255, 255, 255, 0.16) 0%,
+    transparent 26%,
+    transparent 72%,
+    rgba(125, 255, 196, 0.06) 100%
+  );
+}
+
+.ml-scope {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+.ml-grid {
+  stroke: rgba(125, 255, 196, 0.18);
+  stroke-width: 0.6;
+}
+
+.ml-load[data-size="pip"] .ml-grid {
+  display: none;
+}
+
+.ml-sine-ghost,
+.ml-sine {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ml-sine-ghost {
+  stroke: rgba(125, 255, 196, 0.28);
+  stroke-width: 1;
+}
+
+.ml-sine {
+  stroke: #f3fff8;
+  stroke-width: 1.7;
+  stroke-dasharray: 42 220;
+  filter: drop-shadow(0 0 3px var(--ml-phosphor));
+  animation: ml-beam 2.8s linear infinite;
+}
+
+.ml-floor {
+  --ml-pet: 20px;
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 3px;
+  height: 22px;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.ml-ground {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--ml-phosphor);
+  box-shadow: 0 0 3px var(--ml-phosphor);
+  opacity: 0.7;
+}
+
+.ml-pet {
+  position: absolute;
+  bottom: 1px;
+  left: 0;
+  width: var(--ml-pet);
+  height: var(--ml-pet);
+  animation: ml-pace 6s ease-in-out infinite;
+  animation-delay: calc(var(--i) * -1.5s);
+}
+
+.ml-load[data-size="nest"] .ml-floor {
+  --ml-pet: 16px;
+  height: 16px;
+}
+
+.ml-pet-sprite {
+  display: block;
+  width: 100%;
+  height: 100%;
+  shape-rendering: crispEdges;
+  filter: drop-shadow(0 0 2px #7dffc4);
+}
+
+.ml-pet-body {
+  fill: #7dffc4;
+}
+
+.ml-pet-eyes {
+  fill: #04140e;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ml-pet-blink 4.2s steps(1, end) infinite;
+}
+
+.ml-pet-leg {
+  fill: #7dffc4;
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: ml-leg 0.28s steps(1, end) infinite;
+}
+
+.ml-pet-leg-b {
+  animation-delay: -0.14s;
+}
+
+.ml-scan {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0.55;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0 2px,
+    rgba(0, 0, 0, 0.42) 2px 3px
+  );
+}
+
+.ml-readout {
+  margin: 0;
+  min-width: 9em;
+  padding: 3px 12px 4px;
+  text-align: center;
+  font-size: 11px;
+  line-height: 1.3;
+  letter-spacing: 0.04em;
+  color: var(--ml-phosphor);
+  background: var(--fascia-scope, #070c0a);
+  box-shadow: var(--w95-field, inset 1px 1px #404040, inset -1px -1px #fff);
+  text-shadow: 0 0 4px rgba(125, 255, 196, 0.9);
+}
+
+.ml-bars {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: 0.4em;
+  vertical-align: -0.05em;
+}
+
+.ml-bar {
+  width: 0.28em;
+  height: 0.72em;
+  background: var(--ml-phosphor);
+  box-shadow: 0 0 3px var(--ml-phosphor);
+  animation: ml-bar 1.05s steps(1, end) infinite;
+}
+
+@keyframes ml-power {
+  0%,
+  100% {
+    opacity: 0.62;
+    filter: saturate(0.85);
+  }
+  50% {
+    opacity: 1;
+    filter: saturate(1.15);
+  }
+}
+
+@keyframes ml-beam {
+  to {
+    stroke-dashoffset: -262;
+  }
+}
+
+@keyframes ml-pace {
+  0%,
+  100% {
+    left: 0;
+  }
+  50% {
+    left: calc(100% - var(--ml-pet));
+  }
+}
+
+@keyframes ml-leg {
+  0%,
+  49% {
+    transform: translateY(0);
+  }
+  50%,
+  100% {
+    transform: translateY(-1px);
+  }
+}
+
+@keyframes ml-pet-blink {
+  0%,
+  86%,
+  100% {
+    transform: none;
+  }
+  90%,
+  96% {
+    transform: scaleY(0.2);
+  }
+}
+
+@keyframes ml-bar {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0.15;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ml-pwr-lamp,
+  .ml-sine,
+  .ml-pet,
+  .ml-pet-leg,
+  .ml-pet-eyes,
+  .ml-bar {
+    animation: none;
+  }
+
+  .ml-sine {
+    stroke-dasharray: none;
+    stroke: var(--ml-phosphor);
+  }
+
+  .ml-pet {
+    transform: none;
+    left: calc(var(--i) * 18px);
+  }
+
+  .ml-bar {
+    opacity: 1;
+  }
+}

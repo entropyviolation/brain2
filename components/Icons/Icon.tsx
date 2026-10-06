@@ -1,8 +1,13 @@
 import { hashString } from "@/lib/string-utils"
-import { ORB_PATHS } from "./icon-registry"
+import { FOLDER_PATHS, ORB_PATHS } from "./icon-registry"
 
 export function orbFor(id: string): string {
   return ORB_PATHS[hashString(id) % ORB_PATHS.length]
+}
+
+/** Stable photographed folder for an id — same contract as `orbFor`. */
+export function folderFor(id: string): string {
+  return FOLDER_PATHS[hashString(id) % FOLDER_PATHS.length]
 }
 
 /** Resolve the icon for an entity: explicit custom icon, else a stable orb. */

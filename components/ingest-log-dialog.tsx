@@ -2,7 +2,8 @@
  * components/ingest-log-dialog.tsx — Header log of applied / failed / pending ingest
  *
  * Pending chat count is a CRT well on the Ingest key (tooltip names the count).
- * Dialog shell is milled fascia (`.hpp95` / `header-popup-chrome.css`).
+ * GPS tracking points stay off this list unless Show GPS is on. Location still
+ * collects them. Dialog shell is milled fascia (`.hpp95` / `header-popup-chrome.css`).
  */
 "use client"
 
@@ -17,13 +18,19 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { hiddenGpsCount, useGpsIngestLog, visibleIngestEvents } from "@/lib/ingest/gps-log"
 import { useIngestStore } from "@/lib/ingest/ingest-store"
 
 export function IngestLogDialog() {
   const [open, setOpen] = useState(false)
+  const [showGps, setShowGps] = useState(false)
   const events = useIngestStore((s) => s.events)
+  const gpsEvents = useGpsIngestLog((s) => s.events)
   const clearEvents = useIngestStore((s) => s.clearEvents)
   const pendingCount = useIngestStore((s) => Object.keys(s.pendingByChat).length)
+  const visible = visibleIngestEvents(events, gpsEvents, showGps)
+  const hiddenGps = hiddenGpsCount(events, gpsEvents)
+  const hasLog = events.length > 0 || gpsEvents.length > 0
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -45,16 +52,21 @@ export function IngestLogDialog() {
             <DialogTitle>Message ingest log</DialogTitle>
           </div>
           <DialogDescription className="hpp-caption-lead">
-            Phone texts applied through Settings → Message ingest. Pairing and the cheat-sheet live
-            there too.
+            Phone texts applied through Settings → Message ingest. GPS tracking points stay on
+            Location and off this log unless you show them. Pairing and the cheat-sheet live there
+            too.
           </DialogDescription>
         </DialogHeader>
         <div className="hpp-body">
-          {events.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No messages yet. Simulate one in Settings, or pair Telegram.</p>
+          {visible.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              {hiddenGps > 0
+                ? "No other messages. GPS points stay on Location and off this log until you show them."
+                : "No messages yet. Simulate one in Settings, or pair Telegram."}
+            </p>
           ) : (
             <ul className="space-y-2 text-sm">
-              {events.map((ev) => (
+              {visible.map((ev) => (
                 <li key={ev.id} className="rounded border p-2">
                   <div className="flex justify-between gap-2 text-xs text-muted-foreground">
                     <span>
@@ -68,11 +80,24 @@ export function IngestLogDialog() {
               ))}
             </ul>
           )}
-          {events.length > 0 && (
-            <Button type="button" variant="ghost" size="sm" onClick={clearEvents}>
-              Clear log
-            </Button>
-          )}
+          {hasLog ? (
+            <div className="flex flex-wrap gap-2">
+              {hiddenGps > 0 || showGps ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  aria-pressed={showGps}
+                  onClick={() => setShowGps((on) => !on)}
+                >
+                  {showGps ? "Hide GPS" : `Show GPS (${hiddenGps})`}
+                </Button>
+              ) : null}
+              <Button type="button" variant="ghost" size="sm" onClick={clearEvents}>
+                Clear log
+              </Button>
+            </div>
+          ) : null}
         </div>
       </DialogContent>
     </Dialog>

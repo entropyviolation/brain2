@@ -1,16 +1,21 @@
-# Search — Global Command Palette (Phase 6a)
+# Search — Global Command Palette
 
-A Cmd/Ctrl-K command palette across **Brain2** that searches across all items (tasks, notes, and
-any unified `Item`) by title/description, tags, and free-text attributes/notes.
+A Cmd/Ctrl-K command palette across **Brain2**. It searches items (tasks, notes, and
+any unified `Item`) by title/description, tags, and free-text attributes/notes, plus
+list and folder names. The palette is mounted from `app/page.tsx` (lazy, when the
+hotkey opens it) and is available on every tab.
 
 ## Files
 
 | File | Responsibility |
 | --- | --- |
 | `../../lib/search.ts` | **Pure, framework-free** ranked search. `searchItems(query, items, opts?)` returns `SearchResult[]` (`{ item, score, matchedOn }`). Case-insensitive, multi-term AND, deterministic. Also exports the `SearchResult` / `SearchField` types and a `displayTitle(item)` helper. No React / store / I/O dependencies. |
-| `../../lib/search.test.ts` | Vitest unit tests: ranking order (title > tag > notes), multi-term AND across fields, case-insensitivity, empty query → `[]`, tag matches, no-match, determinism, and the `limit` option. |
-| `GlobalSearch.tsx` | The palette UI (`data-ui-name="Search"` on dialog content). Built on the shadcn `dialog` + `input` primitives (no `command` primitive exists in `components/ui/`). Reads items via `taskRepository.getAll()`, runs `searchItems`, and renders ranked results with Up/Down/Enter/Esc keyboard navigation. |
-| `useGlobalSearchHotkey.ts` | Self-contained hook returning `{ open, setOpen }`, toggling on Cmd/Ctrl-K via a single `keydown` listener. Mounts nothing globally. |
+| `../../lib/search.test.ts` | Vitest unit tests for the ranker: title > tag > notes, multi-term AND, case-insensitivity, empty query → `[]`, tags, no-match, determinism, and `limit`. |
+| `GlobalSearch.tsx` | The palette (`data-ui-name="Search"`). One dialog. Snapshots items, lists, and folders on open, runs `searchItems`, and renders the ranked hits. Up/Down move, Enter opens, Esc closes — from the field or anywhere in the palette that is not an Advanced control. |
+| `search-chrome.css` | Milled fascia for `.b2-search`: sunken query well, result well, phosphor lamp on the active row. Same face tokens as the header (`--fascia-*`, `--hab-crt-green`). Imported from `app/layout.tsx` so the lazy palette does not paint unskinned. |
+| `useGlobalSearchHotkey.ts` | `{ open, setOpen }`. Toggles on Cmd/Ctrl-K. Shift and Alt chords are ignored (Cmd/Ctrl-Shift-K stays quick capture). Key repeat does not toggle. Mounts nothing by itself. |
+| `GlobalSearch.test.tsx` | Palette behavior: empty copy, click and Enter open the right id and kind, highlight returns to the first hit when the query changes, arrows work from Advanced, rows show type / list / date, hidden-only empty state. |
+| `useGlobalSearchHotkey.test.tsx` | Cmd/Ctrl-K toggles; Shift and Alt do not; repeat does not. |
 
 ## Ranking design
 
@@ -28,13 +33,28 @@ exact field match `+50`, prefix `+20`, word-boundary `+10`. Results are stably
 sorted by score (desc), then title (asc), then id (asc), so identical inputs
 always yield identical ordering. An empty/whitespace query returns `[]`.
 
+The palette merges folder, list, and item hits with that same order and then
+caps the list (default 20). It does not rescore them.
+
+## What a row shows
+
+Type, then the title, then the place and a date when the record already has them.
+
+- **Item** — type name (Task, Note, …), list membership (`Seeds`, or `Seeds +2`), then scheduled date (`sched`), else deadline (`due`), else the created date.
+- **List** — parent folder name, then created date.
+- **Folder** — parent folder name when it is nested, then created date.
+
+The active row is a CRT well with a lit lamp. The tooltip names the field the ranker matched.
+
 ## Component API
 
 ```tsx
 <GlobalSearch
   open={open}
   onOpenChange={setOpen}
-  onSelect={(itemId) => { /* open the item */ }}
+  onSelect={(selection) => {
+    // selection is { id, kind } where kind is "item" | "list" | "folder"
+  }}
   limit={20} // optional, default 20
 />
 ```
@@ -43,48 +63,18 @@ always yield identical ordering. An empty/whitespace query returns `[]`.
 const { open, setOpen } = useGlobalSearchHotkey()
 ```
 
-## Integration TODO (for the parent — NOT wired up yet)
+`app/page.tsx` owns both. Items open in the detail popup. Folders and lists call
+`applyListsNavigation` and switch to the Lists tab; that event also clears a
+full-page item so the desk is visible.
 
-These files are intentionally **not** mounted anywhere. To finish Phase 6a, the
-parent should wire them into the app shell (e.g. `app/page.tsx` or a top-level
-client layout component) as follows:
+## Behavior
 
-1. Import the pieces near the app root:
-
-   ```tsx
-   import { GlobalSearch } from "@/components/Search/GlobalSearch"
-   import { useGlobalSearchHotkey } from "@/components/Search/useGlobalSearchHotkey"
-   ```
-
-2. Call the hook in a top-level **client** component and render the palette once,
-   near the app root (so Cmd/Ctrl-K works from anywhere):
-
-   ```tsx
-   const { open, setOpen } = useGlobalSearchHotkey()
-
-   return (
-     <>
-       {/* …existing app shell… */}
-       <GlobalSearch
-         open={open}
-         onOpenChange={setOpen}
-         onSelect={(itemId) => {
-           // Route selection to the existing item-detail flow, e.g. set the
-           // selected task id / open the ItemDetail popup used elsewhere in the
-           // app (see components/ItemDetail/*). For tasks today that likely
-           // means opening the task-detail popup with taskRepository.getById(itemId).
-         }}
-       />
-     </>
-   )
-   ```
-
-3. Optionally surface a visible affordance (a search button in the header) that
-   also calls `setOpen(true)`.
-
-Notes for the integrator:
-- `GlobalSearch` snapshots `taskRepository.getAll()` each time it opens, so it
-  reflects current store state without re-reading on every keystroke.
-- If/when a non-task `Item` source exists, pass a merged list into a thin wrapper
-  or extend `GlobalSearch` to accept an `items` prop; the underlying
-  `searchItems` already works on any `Item[]`.
+- The catalog is snapshotted when the palette opens, so typing does not re-read
+  the store on every keystroke. If the vault finishes hydrating while the palette
+  is open, the snapshot is taken again.
+- Completed tasks and items hidden from To-Do are out of the list until
+  **Include hidden items** is on. If they were the only matches, the empty line
+  says so.
+- Changing the query or the Advanced filters moves the highlight back to the
+  first hit, so Enter opens the best match.
+- Cmd/Ctrl-K toggles the palette. Cmd/Ctrl-Shift-K does not.

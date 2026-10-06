@@ -26,9 +26,10 @@ describe("CognitiveState", () => {
   it("opens the time tracking dialog with TimeGrid", async () => {
     const user = userEvent.setup()
     render(<CognitiveState />)
+    expect(screen.getByRole("button", { name: /Tracking/i })).toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: /Tracking/i }))
     expect(screen.getByRole("dialog")).toBeInTheDocument()
     expect(screen.getByText("Time Tracking")).toBeInTheDocument()
-    expect(screen.getByTestId("time-grid")).toHaveTextContent("compact grid")
+    expect(await screen.findByTestId("time-grid")).toHaveTextContent("compact grid")
   })
 })

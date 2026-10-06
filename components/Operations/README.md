@@ -31,6 +31,19 @@ real tasks. Ideas are not. See below.
 Resolution reads **both** link directions (`getRelatedChildren` in
 `lib/operations.ts`), so a child linked either way is discovered.
 
+## Public door
+
+Other rooms may import:
+
+- `useWorkSessionClock` from `WorkingNowControl.tsx` — the shared live clock. The header (`components/header-now-box.tsx`) and Tracking's `WorkingNowStrip` (`components/Home/Tracking/working-now-strip.tsx`) already use it. The hook reads `lib/work-session-store.ts` and calls `tickWorkSession`, which writes that store (`setSession`) and grows the live block on `lib/time-tracking-store.ts`.
+- `OperationsView` from `OperationsView.tsx` — the shell lazy-loads the tab (`app/page.tsx`).
+- `upgradeTaskToOperation` and `OPERATION_TYPE_ID` from the barrel (`index.ts`) — item detail's menu (`components/ItemDetail/ItemDetailPage.tsx`).
+- `operations-chrome.css` — the shell (`app/layout.tsx`) and Tracking's working-now and pen-color strips.
+
+Mutations in `operation-actions.ts` write **`lib/task-store.ts`** (`useTaskStore`). Start and stop go through `lib/operation-work-session.ts`, which writes **`lib/work-session-store.ts`** and, on stop, tasks through `taskRepository`.
+
+Stay in this room: the `WorkingNowControl` button, `OperationWorkspace`, and the panels — `OperationHome`, `OperationTasksPanel`, `PhasesPanel`, `PartsPanel`, `OperationFieldPlanPanels`, `ToDoNextRail`, `ResourcesPanel`, `OperationLogFeed`, `OperationSettingsDialog`, `OperationPostMortemDialog`. Nothing outside imports them.
+
 ## Panels
 
 `OPERATION_PANELS` (in `lib/operation-types.ts`) is the prebuilt registry. Each
@@ -104,7 +117,8 @@ tab uses — over a real `List` created by `lib/operation-lists.ts`:
 - one list per operation (`op-list-{operationId}`), filed in an **Operations**
   folder, named after the operation and renamed with it;
 - items added there are ordinary tasks with `lists: [thatList]`, so they carry
-  item types, attributes, detail panels, scheduling, search, and All Items;
+  item types, attributes, detail panels, search, and All Items. The list is
+  not schedulable until someone turns that on;
 - each item is *also* linked `has-part` to the operation, so it feeds the
   progress bar and the Queue rail;
 - phase checklist steps and part stage/finish tasks are filed onto the same

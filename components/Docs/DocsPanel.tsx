@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { ArrowLeft, FileText, FileUp, Folder, Plus, Trash2, Download } from "lucide-react"
 import { useTaskStore } from "@/lib/task-store"
 import { APP_NAV_KEYS, writeStoredTab, writeStoredId, readStoredId, DOCS_SIDEBAR_SCROLL_SLOT } from "@/lib/app-navigation"
+import { subscribeNavRestore } from "@/lib/screen-location"
 import { usePersistedScroll } from "@/lib/use-persisted-scroll"
 import { exportDocumentAsPdf } from "@/lib/doc-export"
 import { listPersistedDocs } from "@/lib/doc-persist"
@@ -96,6 +97,13 @@ export function DocsPanel() {
   useEffect(() => {
     writeStoredTab(APP_NAV_KEYS.docsFolder, folderFilter)
   }, [folderFilter])
+
+  useEffect(() => {
+    return subscribeNavRestore(() => {
+      setSelectedId(readStoredId(APP_NAV_KEYS.docsDocId))
+      setFolderFilter(readStoredId(APP_NAV_KEYS.docsFolder) || ALL_FOLDER)
+    })
+  }, [])
 
   useEffect(() => {
     void hydrateDocumentsFromIdb().finally(() => setHydrated(true))

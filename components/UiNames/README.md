@@ -38,7 +38,7 @@ root), not every field.
 | `data-ui-docs-anchor` | Optional existing `##` heading slug. Do not invent headings for this. |
 
 New major panel **or popup**: add these attrs in the **same step** as the README update.
-Deepest `[data-ui-name]` wins (`Element.closest`), so stamp inner roots (Month Plan composer, Month calendar, Planned tasks) inside a named window. Hovering the **Month Plan — September 2026** cabinet must read **Month Plan**, not **Plan**.
+Deepest `[data-ui-name]` wins (`Element.closest`), so stamp inner roots (Month Plan composer, Month calendar, Planned tasks; To Do fascia, period nameplate, period keys, period sheet, load strip, Required, Assigned, composer, Done, Missed, Undone) inside a named window. Hovering the **Month Plan — September 2026** cabinet must read **Month Plan**, not **Plan**. Hovering the To Do load strip must read **Period load**, not **To Do**.
 
 ## Files
 

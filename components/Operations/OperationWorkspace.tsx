@@ -29,6 +29,7 @@ import {
   type OperationStage,
 } from "@/lib/operation-types"
 import { APP_NAV_KEYS, opsPanelScrollSlot, readStoredRecord, writeStoredRecordField } from "@/lib/app-navigation"
+import { subscribeNavRestore } from "@/lib/screen-location"
 import { usePersistedScroll } from "@/lib/use-persisted-scroll"
 import { renameOperation } from "./operation-actions"
 import { OperationHome } from "./OperationHome"
@@ -127,6 +128,14 @@ export function OperationWorkspace({
   useEffect(() => {
     writeStoredRecordField(APP_NAV_KEYS.opsPanel, operationId, tab)
   }, [operationId, tab])
+
+  useEffect(() => {
+    return subscribeNavRestore(() => {
+      const stored = readStoredRecord(APP_NAV_KEYS.opsPanel)[operationId]
+      const next = canonicalOperationPanelId(stored)
+      if (next) setTab(next)
+    })
+  }, [operationId])
 
   if (!operation) {
     return (

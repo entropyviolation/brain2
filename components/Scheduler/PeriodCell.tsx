@@ -4,6 +4,7 @@
  * Funnel grids keep empty buckets as reserved one-line furniture. The Always
  * board uses `variant="card"`: a two-column drop card with an Empty line.
  * Past periods use `isPast` for muted gray furniture. Drag and click-to-schedule stay.
+ * The title opens Schedule Card Detail and does not schedule the selection.
  */
 "use client"
 
@@ -23,6 +24,7 @@ export function PeriodCell({
   variant = "line",
   onDrop,
   onClick,
+  onOpenDetail,
   renderTaskItem,
 }: {
   title: string
@@ -38,6 +40,8 @@ export function PeriodCell({
   variant?: "line" | "card"
   onDrop: (e: React.DragEvent) => void
   onClick: () => void
+  /** Title only. The card body still schedules a selection. */
+  onOpenDetail?: () => void
   renderTaskItem: (task: Task) => React.ReactNode
 }) {
   const overflow = tasks.length - maxVisible
@@ -53,7 +57,21 @@ export function PeriodCell({
     >
       <div className="sch-bucket-line">
         <span className="sch-bucket-title">
-          <span className="sch-bucket-name">{title}</span>
+          {onOpenDetail ? (
+            <button
+              type="button"
+              className="sch-bucket-name"
+              aria-label={`Open ${title}`}
+              onClick={(e) => {
+                e.stopPropagation()
+                onOpenDetail()
+              }}
+            >
+              {title}
+            </button>
+          ) : (
+            <span className="sch-bucket-name">{title}</span>
+          )}
           {detail && <span className="sch-bucket-sub">{detail}</span>}
         </span>
         {badge}

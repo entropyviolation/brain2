@@ -7,12 +7,17 @@
  * and which ids a drag drop should schedule (`taskIdsForDragSchedule`).
  * Pure so they're unit-testable. See spec §7.1–7.2.
  */
+import { addMonths, addYears } from "date-fns"
 import {
+  addCalendarDays,
   formatLocalDateKey,
   formatLocalMonthKey,
   formatWeekRange,
+  getWeekStartDate,
   getWeekString,
+  parseLocalDate,
   parseWeekString,
+  sameWeekKey,
   taskScheduledOnDay,
 } from "@/lib/date-utils"
 import { isAvailableNow } from "@/lib/available-tasks"
@@ -23,9 +28,13 @@ import {
   scheduleFieldsForPeriod,
   clearedScheduleFields,
   isPastFunnelPeriod,
-  taskHasSchedulePlacement,
+  isSchedulePlacementHandled,
+  isExplicitlyScheduleable,
 } from "@/lib/scheduling"
 import type { Task, SchedulePeriod, SchedulePlacementPeriod, List } from "@/lib/types"
+import { quarterKey, quarterLabel, quarterMonthCells, shiftQuarter } from "@/lib/seasons"
+
+export { quarterMonthCells }
 
 export type SchedulerSortBy = "category" | "duration" | "importance" | "deadline" | "reward"
 export type SchedulerSortOrder = "asc" | "desc"
@@ -41,16 +50,17 @@ export interface OverviewBox {
 }
 
 /**
- * IDs of lists marked scheduleable. A list is scheduleable unless explicitly
- * turned off, so older lists without the flag still appear.
+ * IDs of lists marked scheduleable. Only an explicit `true` includes the
+ * list. Omitted and `false` stay out, so a new list is not in the Scheduler
+ * until someone turns it on.
  */
 export function getScheduleableCategoryIds(lists: List[]): Set<string> {
-  return new Set(lists.filter((c) => c.scheduleable !== false).map((c) => c.id))
+  return new Set(lists.filter((c) => isExplicitlyScheduleable(c)).map((c) => c.id))
 }
 
 export function isTaskScheduleable(task: Task, scheduleableCategoryIds: Set<string>): boolean {
   // A task-level override always wins over its lists' scheduleable flags, so
-  // toggling Schedulable off in the item detail view removes it here.
+  // toggling Send to Scheduler off in the item detail view removes it here.
   if (task.scheduleable === false) return false
   if (task.scheduleable === true) return true
   return taskInheritsScheduleableFromLists(task, scheduleableCategoryIds)
@@ -65,7 +75,7 @@ export function taskInheritsScheduleableFromLists(
 }
 
 /**
- * Next raw `task.scheduleable` after the Schedulable switch flips.
+ * Next raw `task.scheduleable` after the Send to Scheduler switch flips.
  * Off → force hidden. On → inherit (`undefined`) when a list already includes
  * the item; force `true` only when every list is unschedulable (or there are none).
  */
@@ -77,8 +87,10 @@ export function nextTaskScheduleableFlag(opts: {
   return opts.inheritsOnFromLists ? undefined : true
 }
 
+export type SchedulerLens = SchedulePeriod | "quarter"
+
 export interface AvailableTasksOptions {
-  activeTab: SchedulePeriod
+  activeTab: SchedulerLens
   selectedCategories: string[]
   sortBy: SchedulerSortBy
   sortOrder: SchedulerSortOrder
@@ -134,6 +146,39 @@ export function getAvailableTasks(allTasks: Task[], opts: AvailableTasksOptions)
   })
 }
 
+/** An unresolved placement for this cell, or for a coarser period that contains it. */
+function openPlacementCovers(
+  task: Task,
+  period: SchedulePlacementPeriod,
+  value: string,
+  now: Date,
+): boolean {
+  for (const placement of task.schedulePlacements ?? []) {
+    if (placement.resolved) continue
+    if (!isPastFunnelPeriod(placement.period, placement.value, now)) continue
+    if (placement.period === period && (period === "week" ? sameWeekKey(placement.value, value) : placement.value === value)) {
+      return true
+    }
+    if (period === "week" && placement.period === "month") {
+      const range = parseWeekString(value)
+      if (!range) continue
+      if (placement.value === formatLocalMonthKey(range.start) || placement.value === formatLocalMonthKey(range.end)) {
+        return true
+      }
+    }
+    if (period === "week" && placement.period === "year" && value.startsWith(`${placement.value}-`)) return true
+    if (period === "day" && placement.period === "month" && value.startsWith(`${placement.value}-`)) return true
+    if (period === "day" && placement.period === "year" && value.startsWith(`${placement.value}-`)) return true
+    if (period === "day" && placement.period === "week") {
+      const range = parseWeekString(placement.value)
+      const date = parseLocalDate(value)
+      if (range && date && date >= range.start && date <= range.end) return true
+    }
+    if (period === "month" && placement.period === "year" && value.startsWith(`${placement.value}-`)) return true
+  }
+  return false
+}
+
 function liveTasksForPeriod(
   tasks: Task[],
   period: SchedulePeriod,
@@ -147,14 +192,10 @@ function liveTasksForPeriod(
       return tasks.filter((task) => task.scheduledMonth === value)
     case "week":
       return tasks.filter((task) => {
-        if (task.scheduledWeek === value) return true
+        if (task.scheduledWeek && value && sameWeekKey(task.scheduledWeek, value)) return true
         if (task.scheduledMonth && value) {
           const weekRange = parseWeekString(value)
-          if (weekRange) {
-            const monthStart = new Date(task.scheduledMonth + "-01")
-            const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0)
-            return weekRange.start >= monthStart && weekRange.start <= monthEnd
-          }
+          if (weekRange && formatLocalMonthKey(weekRange.start) === task.scheduledMonth) return true
         }
         return false
       })
@@ -169,8 +210,10 @@ function liveTasksForPeriod(
 
 /**
  * Tasks assigned to a period bucket. Current and future cells show live open
- * work only. Past cells also surface historical placements (`schedulePlacements`)
- * and completed/missed rows that still carry that period field.
+ * work only. A past cell is the Undone queue: unfinished work still assigned
+ * there, including a coarser live assignment that surfaces in this cell, plus
+ * an unresolved placement. A handled placement (push, dismiss, unschedule, or
+ * done) leaves this cell. The placement stays on the task.
  */
 export function getTasksForPeriod(
   allTasks: Task[],
@@ -198,21 +241,21 @@ export function getTasksForPeriod(
     value,
     currentDate,
   )
-  const liveCleared = liveTasksForPeriod(
-    allTasks.filter((task) => isClearedFromWork(task)),
-    period,
-    value,
-    currentDate,
-  )
   const fromHistory =
     value != null && placementPeriod
-      ? allTasks.filter((task) => taskHasSchedulePlacement(task, placementPeriod, value))
+      ? allTasks.filter(
+          (task) =>
+            !isClearedFromWork(task) &&
+            !isSchedulePlacementHandled(task, placementPeriod, value) &&
+            openPlacementCovers(task, placementPeriod, value, now),
+        )
       : []
 
   const seen = new Set<string>()
   const out: Task[] = []
-  for (const task of [...liveOpen, ...liveCleared, ...fromHistory]) {
+  for (const task of [...liveOpen, ...fromHistory]) {
     if (seen.has(task.id)) continue
+    if (placementPeriod && value && isSchedulePlacementHandled(task, placementPeriod, value)) continue
     seen.add(task.id)
     out.push(task)
   }
@@ -258,8 +301,10 @@ function formatBucketDate(date: Date): string {
   return date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })
 }
 
-export function getNavigationLabel(activeTab: SchedulePeriod, currentDate: Date): string {
+export function getNavigationLabel(activeTab: SchedulerLens, currentDate: Date): string {
   switch (activeTab) {
+    case "quarter":
+      return quarterLabel(quarterKey(currentDate))
     case "year":
       return currentDate.getFullYear().toString()
     case "month":
@@ -275,24 +320,32 @@ export function getNavigationLabel(activeTab: SchedulePeriod, currentDate: Date)
   }
 }
 
-/** Return a new Date moved one `activeTab` period in `dir` (-1 prev, +1 next). */
-export function navigateDate(currentDate: Date, activeTab: SchedulePeriod, dir: -1 | 1): Date {
-  const newDate = new Date(currentDate)
+/**
+ * Return a new Date moved one `activeTab` period in `dir` (-1 prev, +1 next).
+ * Month and year clamp to the last real day (31 Jan → 28 Feb, 29 Feb → 28 Feb
+ * the next year) so a short month is not skipped.
+ */
+export function navigateDate(currentDate: Date, activeTab: SchedulerLens, dir: -1 | 1): Date {
   switch (activeTab) {
+    case "quarter":
+      return shiftQuarter(currentDate, dir)
     case "year":
-      newDate.setFullYear(newDate.getFullYear() + dir)
-      break
+      return addYears(currentDate, dir)
     case "month":
-      newDate.setMonth(newDate.getMonth() + dir)
-      break
-    case "week":
-      newDate.setDate(newDate.getDate() + 7 * dir)
-      break
-    case "day":
-      newDate.setDate(newDate.getDate() + dir)
-      break
+      return addMonths(currentDate, dir)
+    case "week": {
+      const next = new Date(currentDate)
+      next.setDate(next.getDate() + 7 * dir)
+      return next
+    }
+    case "day": {
+      const next = new Date(currentDate)
+      next.setDate(next.getDate() + dir)
+      return next
+    }
+    case "always":
+      return new Date(currentDate)
   }
-  return newDate
 }
 
 export function getMonths(currentDate: Date): { value: string; label: string }[] {
@@ -309,19 +362,15 @@ export function getMonths(currentDate: Date): { value: string; label: string }[]
 
 export function getWeeksInMonth(monthValue: string): { value: string; label: string }[] {
   const [year, month] = monthValue.split("-").map(Number)
+  if (!year || !month) return []
   const firstDay = new Date(year, month - 1, 1)
   const lastDay = new Date(year, month, 0)
-  const weeks = []
+  const weeks: { value: string; label: string }[] = []
+  let cursor = getWeekStartDate(firstDay)
 
-  const currentWeekStart = new Date(firstDay)
-  currentWeekStart.setDate(firstDay.getDate() - firstDay.getDay())
-
-  while (currentWeekStart <= lastDay) {
-    const weekEnd = new Date(currentWeekStart)
-    weekEnd.setDate(currentWeekStart.getDate() + 6)
-    const weekString = `${formatLocalDateKey(currentWeekStart)}_${formatLocalDateKey(weekEnd)}`
-    weeks.push({ value: weekString, label: formatWeekRange(currentWeekStart) })
-    currentWeekStart.setDate(currentWeekStart.getDate() + 7)
+  while (cursor <= lastDay) {
+    weeks.push({ value: getWeekString(cursor), label: formatWeekRange(cursor) })
+    cursor = addCalendarDays(cursor, 7)
   }
   return weeks
 }

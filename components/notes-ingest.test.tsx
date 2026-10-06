@@ -88,7 +88,7 @@ describe("NotesIngest", () => {
     await waitFor(() => {
       const { tasks, lists, folders } = useTaskStore.getState()
       expect(lists.some((l) => l.name === NOTES_TO_INGEST_LIST_NAME)).toBe(true)
-      expect(folders.some((f) => f.name === "iPhone Notes Ingest")).toBe(true)
+      expect(folders.some((f) => f.name === "Mac Notes")).toBe(true)
       expect(tasks).toHaveLength(1)
       expect(tasks[0].description).toContain("Milk")
       expect(tasks[0].description).toContain("Eggs")

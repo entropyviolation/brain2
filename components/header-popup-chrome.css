@@ -331,9 +331,9 @@ body.win95-app .hpp95-dialog > button.absolute:active {
   border-color: #8a8e92 !important;
 }
 
-/* Raised metal keys */
-.hpp95 .hpp-body button:not(.absolute):not([role="checkbox"]):not([role="switch"]),
-.hpp95-dialog .hpp-body button:not(.absolute):not([role="checkbox"]):not([role="switch"]) {
+/* Raised metal keys. Day-log slabs keep their pen color (inline background). */
+.hpp95 .hpp-body button:not(.absolute):not([role="checkbox"]):not([role="switch"]):not(.agenda-span),
+.hpp95-dialog .hpp-body button:not(.absolute):not([role="checkbox"]):not([role="switch"]):not(.agenda-span) {
   border: none !important;
   border-radius: 2px !important;
   color: #1c1e20 !important;
@@ -344,13 +344,13 @@ body.win95-app .hpp95-dialog > button.absolute:active {
   letter-spacing: 0.06em;
 }
 
-.hpp95 .hpp-body button:not(.absolute):hover:not(:disabled),
-.hpp95-dialog .hpp-body button:not(.absolute):hover:not(:disabled) {
+.hpp95 .hpp-body button:not(.absolute):not(.agenda-span):hover:not(:disabled),
+.hpp95-dialog .hpp-body button:not(.absolute):not(.agenda-span):hover:not(:disabled) {
   filter: brightness(1.04);
 }
 
-.hpp95 .hpp-body button:not(.absolute):active:not(:disabled),
-.hpp95-dialog .hpp-body button:not(.absolute):active:not(:disabled) {
+.hpp95 .hpp-body button:not(.absolute):not(.agenda-span):active:not(:disabled),
+.hpp95-dialog .hpp-body button:not(.absolute):not(.agenda-span):active:not(:disabled) {
   box-shadow: var(--hpp-sunken) !important;
   text-shadow: none;
 }

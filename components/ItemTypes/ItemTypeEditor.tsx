@@ -51,7 +51,7 @@ import { useHabitsStore } from "@/lib/habits-store"
 
 const CAPABILITY_FIELDS: { key: keyof ItemTypeCapabilities; label: string }[] = [
   { key: "completable", label: "Completable" },
-  { key: "scheduleable", label: "Scheduleable" },
+  { key: "scheduleable", label: "Scheduling fields" },
   { key: "subtasks", label: "Subtasks" },
   { key: "deadline", label: "Deadline" },
   { key: "duration", label: "Duration" },
@@ -721,7 +721,7 @@ export function ItemTypeEditor({
             <section className="space-y-2">
               <h4 className="text-sm font-semibold">Capabilities</h4>
               <p className="text-xs text-muted-foreground">
-                These gate the item-detail tabs. Uncheck Scheduleable to hide Scheduling. Task is the hardcoded
+                These gate the item-detail tabs. Uncheck Scheduling fields to hide Scheduling. Task is the hardcoded
                 work surface — other types opt into slices of it here.
               </p>
               <div className="grid grid-cols-2 gap-2">

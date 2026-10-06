@@ -41,6 +41,7 @@ import { ModuleConfigDialog } from "./ModuleConfigDialog"
 import { ModuleWorkspace, openModulePopout } from "./workspace/ModuleWorkspace"
 import { ModuleBuilderDialog } from "./workspace/ModuleBuilderDialog"
 import { APP_NAV_KEYS, readStoredId, writeStoredId } from "@/lib/app-navigation"
+import { subscribeNavRestore } from "@/lib/screen-location"
 import { usePersistHydrated } from "@/lib/use-persist-hydrated"
 
 const WORKSPACE_GLYPHS: Partial<Record<ModuleTemplateId, ComponentType<{ className?: string }>>> = {
@@ -88,6 +89,12 @@ export function ModulesPanel({ onTaskSelect }: ModulesPanelProps) {
   useEffect(() => {
     writeStoredId(APP_NAV_KEYS.modulesWorkspaceId, openWorkspaceId)
   }, [openWorkspaceId])
+
+  useEffect(() => {
+    return subscribeNavRestore(() => {
+      setOpenWorkspaceId(readStoredId(APP_NAV_KEYS.modulesWorkspaceId))
+    })
+  }, [])
 
   useEffect(() => {
     if (!hydrated) return

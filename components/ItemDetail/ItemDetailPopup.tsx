@@ -31,7 +31,6 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Separator } from "@/components/ui/separator"
 import {
   Save,
-  Clock,
   AlertTriangle,
   Star,
   CheckCircle,
@@ -56,7 +55,7 @@ import { ItemActivityPanel } from "@/components/ItemDetail/ItemActivityPanel"
 import { CycleConfirmDialog } from "@/components/ItemDetail/CycleConfirmDialog"
 import { recordItemWrite } from "@/lib/item-activity"
 import type { Task, TaskCompletionReview, ItemDetailPanel, TimeLogEntry, CompletionStatus } from "@/lib/types"
-import { safeDateFormat, safeISODateString, getWeekString } from "@/lib/date-utils"
+import { dateInputValue, getWeekString, parseLocalDate, safeDateFormat } from "@/lib/date-utils"
 import {
   COMPLETION_STATUSES,
   COMPLETION_STATUS_LABELS,
@@ -68,19 +67,16 @@ import {
 import { ItemAttributesSection } from "@/components/ItemDetail/ItemAttributesSection"
 import { isTaskItem } from "@/lib/item-utils"
 import { markMissedOpportunity } from "@/lib/services/completion-service"
-import {
-  getScheduleableCategoryIds,
-  isTaskScheduleable,
-  nextTaskScheduleableFlag,
-  taskInheritsScheduleableFromLists,
-} from "@/components/Scheduler/scheduler-utils"
+import { getScheduleableCategoryIds } from "@/components/Scheduler/scheduler-utils"
 import { assignedItemTypes, BUILTIN_ITEM_TYPE_ID, BUILTIN_TASK_TYPE_ID, resolveDetailView } from "@/lib/item-types"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { useTaskStore } from "@/lib/task-store"
 import type { AttributeDefinition, AttributeValue, ItemTypeDefinition } from "@/lib/types"
-import { Switch } from "@/components/ui/switch"
+import { TodoCommitmentFields } from "@/components/ItemDetail/TodoCommitmentFields"
+import { ItemEstimateField } from "@/components/ItemDetail/ItemEstimateField"
+import { ItemScheduleFlags } from "@/components/ItemDetail/ItemScheduleFlags"
 import { ItemTypeEditor } from "@/components/ItemTypes/ItemTypeEditor"
-import { APP_NAV_KEYS, readStoredRecord, requestNavigateToList, writeStoredRecordField } from "@/lib/app-navigation"
+import { APP_NAV_KEYS, readStoredRecord, requestNavigateToListAfterPaint, writeStoredRecordField } from "@/lib/app-navigation"
 import { snapshotsEqual } from "@/lib/unsaved-changes"
 import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
 import "./item-detail-chrome.css"
@@ -310,8 +306,8 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
 
   const handleNavigateToList = useCallback(
     (listId: string) => {
-      requestNavigateToList(listId, folders)
       onClose()
+      requestNavigateToListAfterPaint(listId, folders)
     },
     [folders, onClose],
   )
@@ -514,29 +510,12 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
 
                       {(caps.duration || isTask) && (
                       <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-3">
-                          <Label htmlFor="estimated-duration" className="text-sm font-semibold flex items-center gap-2">
-                            <Clock className="h-4 w-4" />
-                            Estimated Duration
-                          </Label>
-                          <div className="relative">
-                            <IsolatedInput
-                              id="estimated-duration"
-                              type="number"
-                              value={String(task.estimatedDuration ?? "")}
-                              onLiveChange={(v) => touchDraft({ estimatedDuration: Number.parseInt(v) || 0 })}
-                              onCommit={(v) =>
-                                setTask((prev) =>
-                                  prev ? { ...prev, estimatedDuration: Number.parseInt(v) || 0 } : prev,
-                                )
-                              }
-                              className="focus-ring pr-12"
-                            />
-                            <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground">
-                              min
-                            </span>
-                          </div>
-                        </div>
+                        <ItemEstimateField
+                          estimatedDuration={task.estimatedDuration}
+                          touchDraft={touchDraft}
+                          setTask={setTask}
+                          variant="popup"
+                        />
 
                         <div className="space-y-3">
                           <Label htmlFor="reward-value" className="text-sm font-semibold flex items-center gap-2">
@@ -914,29 +893,12 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
 
                 <TabsContent value="scheduling" className="space-y-6 mt-0">
                   <div className="space-y-8">
-                    <div className="flex items-center justify-between rounded-lg border p-3">
-                      <div>
-                        <Label className="text-sm font-semibold">Schedulable</Label>
-                        <p className="text-xs text-muted-foreground">
-                          Lists still decide the default; this switch is only this item.
-                        </p>
-                      </div>
-                      <Switch
-                        checked={isTaskScheduleable(task, scheduleableCategoryIds)}
-                        onCheckedChange={(checked) =>
-                          setTask({
-                            ...task,
-                            scheduleable: nextTaskScheduleableFlag({
-                              turnOn: !!checked,
-                              inheritsOnFromLists: taskInheritsScheduleableFromLists(
-                                task,
-                                scheduleableCategoryIds,
-                              ),
-                            }),
-                          })
-                        }
-                      />
-                    </div>
+                    <ItemScheduleFlags
+                      task={task}
+                      scheduleableCategoryIds={scheduleableCategoryIds}
+                      onChange={setTask}
+                    />
+                    <TodoCommitmentFields task={task} onChange={setTask} />
                     {task.scheduledDate && !task.scheduledWeek && (
                       <div className="flex items-center justify-between gap-3 p-4 rounded-lg border bg-blue-50/60 border-blue-200">
                         <div>
@@ -966,9 +928,9 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
                               <Input
                                 id="scheduled-date"
                                 type="date"
-                                value={safeISODateString(task.scheduledDate)}
+                                value={dateInputValue(task.scheduledDate)}
                                 onChange={(e) => {
-                                  const date = e.target.value ? new Date(e.target.value) : undefined
+                                  const date = e.target.value ? parseLocalDate(e.target.value) ?? undefined : undefined
                                   setTask({
                                     ...task,
                                     scheduledDate: date,
@@ -1011,9 +973,9 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
                             <Input
                               id="deadline"
                               type="date"
-                              value={safeISODateString(task.deadline)}
+                              value={dateInputValue(task.deadline)}
                               onChange={(e) => {
-                                const date = e.target.value ? new Date(e.target.value) : undefined
+                                const date = e.target.value ? parseLocalDate(e.target.value) ?? undefined : undefined
                                 setTask({ ...task, deadline: date })
                               }}
                               className="focus-ring"
@@ -1034,9 +996,8 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
                                 id="scheduled-week"
                                 type="date"
                                 onChange={(e) => {
-                                  if (e.target.value) {
-                                    handleScheduleToWeek(new Date(e.target.value))
-                                  }
+                                  const date = e.target.value ? parseLocalDate(e.target.value) : null
+                                  if (date) handleScheduleToWeek(date)
                                 }}
                                 placeholder="Select any day in the week"
                                 className="focus-ring"
@@ -1121,9 +1082,9 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
                           <Input
                             id="must-be-done-after"
                             type="date"
-                            value={safeISODateString(task.schedulingConstraints?.mustBeDoneAfter)}
+                            value={dateInputValue(task.schedulingConstraints?.mustBeDoneAfter)}
                             onChange={(e) => {
-                              const date = e.target.value ? new Date(e.target.value) : undefined
+                              const date = e.target.value ? parseLocalDate(e.target.value) ?? undefined : undefined
                               setTask({
                                 ...task,
                                 schedulingConstraints: {
@@ -1143,9 +1104,9 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
                           <Input
                             id="must-be-done-before"
                             type="date"
-                            value={safeISODateString(task.schedulingConstraints?.mustBeDoneBefore)}
+                            value={dateInputValue(task.schedulingConstraints?.mustBeDoneBefore)}
                             onChange={(e) => {
-                              const date = e.target.value ? new Date(e.target.value) : undefined
+                              const date = e.target.value ? parseLocalDate(e.target.value) ?? undefined : undefined
                               setTask({
                                 ...task,
                                 schedulingConstraints: {

@@ -8,8 +8,11 @@
  *  - Desktop (`PcbBackdropField`) — teal field or a photographed plate behind the UI.
  *  - Baby animal friend gallery (photographs + cute names on the CRT nest).
  *  - Home location (city) for Plan day sunrise/sunset lines (default San Diego).
+ *  - Birthday — opens the Star Lord Report on that day (new moon and full moon open on their own).
  *  - Default time of day (`DayAnchorField`) — the finish time assumed for work
  *    logged against a day that is already over (default 9:00 PM).
+ *  - Automatic point allocation (`PointAllocationField`) — ritual section points,
+ *    whole-ritual bonus, and the tomorrow goal-focus multiplier.
  *  - Full app backup / restore (JSON export + per-store preview restore — spec §3.2).
  *  - Manual mobile hub push/pull (`MobileSyncPanel`). Continuous live sync is
  *    parked until a dedicated semi-mobile live sync component lands.
@@ -43,7 +46,9 @@ import { ChromeFaceField } from "@/components/Settings/ChromeFaceField"
 import { PcbBackdropField } from "@/components/Settings/PcbBackdropField"
 import { BabyAnimalFriendField } from "@/components/Settings/BabyAnimalFriendField"
 import { HomeLocationField } from "@/components/Settings/HomeLocationField"
+import { BirthdayField } from "@/components/Settings/BirthdayField"
 import { DayAnchorField } from "@/components/Settings/DayAnchorField"
+import { PointAllocationField } from "@/components/Settings/PointAllocationField"
 import { MobileSyncPanel } from "@/components/Settings/MobileSyncPanel"
 import { MessageIngestPanel } from "@/components/Settings/MessageIngestPanel"
 import { ScreenTimePanel } from "@/components/Settings/ScreenTimePanel"
@@ -86,7 +91,7 @@ export function SettingsDialog() {
             <DialogTitle>Settings</DialogTitle>
           </div>
           <DialogDescription className="set-caption-lead">
-            Window gray, desktop PCB, data profile (Live vs Demo), baby animal friend, home location, assumed time of day, data backup, phone ingest, Screen Time
+            Window gray, desktop PCB, data profile (Live vs Demo), baby animal friend, home location, assumed time of day, automatic point allocation, data backup, phone ingest, Screen Time
             (ActivityWatch), and optional knowledge-base setup.
           </DialogDescription>
         </DialogHeader>
@@ -103,7 +108,11 @@ export function SettingsDialog() {
 
             <HomeLocationField />
 
+            <BirthdayField />
+
             <DayAnchorField />
+
+            <PointAllocationField />
 
             <BackupRestore />
 

@@ -3,18 +3,27 @@
  *
  * Sidebar of tasks at the parent period plus reserved child-period rows.
  * Empty cells stay one-line furniture; occupied rows open to show work.
- * Past child periods are grayed (`isPastCell`). Shares the orchestrator
- * selection; Deselect / Delete / Mark complete when checked.
+ * Past child periods are grayed (`isPastCell`). The cell title opens that
+ * period across this grid. Drop on the sidebar returns the task to the
+ * parent period. Shares the orchestrator selection; Deselect / Delete /
+ * Mark complete when checked.
  */
 "use client"
 
 import type React from "react"
-import type { Task, SchedulePeriod } from "@/lib/types"
+import type { Task, SchedulePeriod, SchedulePlacementPeriod } from "@/lib/types"
 import { PeriodCell } from "./PeriodCell"
 
 export interface FunnelCell {
   value: string
   label: string
+}
+
+export type SchedulerTaskItemOpts = {
+  showCheckbox?: boolean
+  showUnschedule?: boolean
+  fromPeriod?: SchedulePlacementPeriod
+  fromValue?: string
 }
 
 export function PeriodFunnelTab({
@@ -35,6 +44,9 @@ export function PeriodFunnelTab({
   tasksForCell,
   onDrop,
   onCellClick,
+  onOpenCell,
+  detail,
+  onSidebarDrop,
   renderTaskItem,
 }: {
   sidebarTitle: string
@@ -55,13 +67,21 @@ export function PeriodFunnelTab({
   tasksForCell: (value: string) => Task[]
   onDrop: (e: React.DragEvent, period: SchedulePeriod, value: string) => void
   onCellClick: (period: SchedulePeriod, value: string) => void
-  renderTaskItem: (task: Task, opts?: { showCheckbox?: boolean; showUnschedule?: boolean }) => React.ReactNode
+  onOpenCell: (cell: FunnelCell) => void
+  detail?: React.ReactNode
+  onSidebarDrop?: (e: React.DragEvent) => void
+  renderTaskItem: (task: Task, opts?: SchedulerTaskItemOpts) => React.ReactNode
 }) {
   return (
     <div className="sch-split">
-      <aside className="sch-pane">
+      <aside
+        className="sch-pane"
+        onDragOver={detail ? (e) => e.preventDefault() : undefined}
+        onDrop={detail ? onSidebarDrop : undefined}
+      >
         <div className="sch-pane-head">
           {sidebarTitle}
+          {detail && <span>Drop here to return</span>}
           {selectedCount > 0 && <span>{selectedCount} selected</span>}
         </div>
         {selectedCount > 0 && (
@@ -88,7 +108,7 @@ export function PeriodFunnelTab({
         </div>
       </aside>
 
-      <div className={`sch-bucket-grid ${gridColsClass}`}>
+      {detail ?? <div className={`sch-bucket-grid ${gridColsClass}`}>
         {cells.map((cell) => {
           const isCurrent = cell.value === currentKey
           const isPast = isPastCell?.(cell.value) ?? false
@@ -103,11 +123,18 @@ export function PeriodFunnelTab({
               maxVisible={cellMaxVisible}
               onDrop={(e) => onDrop(e, cellPeriod, cell.value)}
               onClick={() => onCellClick(cellPeriod, cell.value)}
-              renderTaskItem={(task) => renderTaskItem(task, { showUnschedule: true })}
+              onOpenDetail={() => onOpenCell(cell)}
+              renderTaskItem={(task) =>
+                renderTaskItem(task, {
+                  showUnschedule: true,
+                  fromPeriod: cellPeriod === "always" ? undefined : (cellPeriod as SchedulePlacementPeriod),
+                  fromValue: cell.value,
+                })
+              }
             />
           )
         })}
-      </div>
+      </div>}
     </div>
   )
 }

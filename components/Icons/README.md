@@ -13,21 +13,24 @@ in `components/Lists/lib/icon-utils.tsx`, `components/Lists/dialogs/OrbPickerDia
 
 | File | Responsibility |
 | --- | --- |
-| `Icon.tsx` | Icon resolution + rendering helpers: `orbFor(id)`, `iconFor(id, custom?)`, and the `FolderGlyph` SVG. |
+| `Icon.tsx` | Icon resolution + rendering helpers: `orbFor(id)`, `folderFor(id)` (photographed folders, same hash contract as orbs), `iconFor(id, custom?)`, and the `FolderGlyph` SVG (list chips). |
 | `OrbPicker.tsx` | `OrbPickerDialog` — orb gallery + custom upload (background removed via `lib/remove-background`) + search; an "Edit gallery" mode hides/restores orbs, and your uploads live in a personal library. Hidden orbs + the uploaded library persist in `lib/lists-ui-store`. Exports `OrbPickerDialogProps`. |
-| `icon-registry.ts` | Central data registry: re-exports the orb manifest (`ORB_IMAGES`, `ORB_PATHS`) and the freeform grid layout (`computeIconGridPositions`). |
+| `icon-registry.ts` | Central data registry: re-exports the orb manifest (`ORB_IMAGES`, `ORB_PATHS`), folder manifest, freeform grid layout (`computeIconGridPositions`), and Rituals glyphs (`RitualSunIcon`, `RitualMoonIcon` from lucide). |
 | `index.ts` | Barrel exporting the public surface. |
 
 ## Public surface
 
 ```ts
 import {
-  orbFor, iconFor, FolderGlyph,
+  orbFor, iconFor, folderFor, FolderGlyph,
   OrbPickerDialog, type OrbPickerDialogProps,
   ORB_IMAGES, ORB_PATHS, computeIconGridPositions,
+  RitualSunIcon, RitualMoonIcon,
 } from "@/components/Icons"
 ```
 
+`RitualSunIcon` / `RitualMoonIcon` power the day morning / night pair in
+Header → Rituals.
 ## Barrel strategy (zero behavioral change)
 
 This module is the canonical implementation, but every previous import path still

@@ -1,37 +1,37 @@
 "use client"
 
 /**
- * components/Search/GlobalSearch.tsx — Phase 6a global command-palette search.
+ * components/Search/GlobalSearch.tsx — global command-palette search.
  *
- * A dialog-based search palette. It reads all items from the task repository
- * (plus lists/folders from the task store), runs the pure ranked search in
- * `lib/search.ts`, and renders the ranked hits with full keyboard navigation
- * (Up/Down to move, Enter to select, Esc to close). Selecting a result calls
- * `onSelect({ id, kind })` and closes the palette; the parent decides what
- * "open this result" means (see README).
+ * One dialog, mounted from `app/page.tsx`. It snapshots items, lists, and
+ * folders when it opens (and again if the vault finishes hydrating while it
+ * is open), runs the ranked search in `lib/search.ts`, and renders the hits.
+ * Up/Down move, Enter opens, Esc closes. Selecting a result calls
+ * `onSelect({ id, kind })` and closes the palette; the page routes items to
+ * the detail popup and folders/lists into Lists.
  *
- * Advanced options (collapsible) let the user choose which kinds of records to
- * search (folders, lists, items), whether to include hidden items, and whether
- * to match titles only or any text value within a record.
+ * Advanced options choose which kinds to search, whether completed / hidden
+ * items are included, and whether to match titles only.
  *
- * Lists and folders hidden from the Lists tab's global All directory (Module
- * Lists and autocreated module lists) remain searchable here — "hidden" in the
- * advanced options only refers to completed / hidden-from-To-Do items.
- *
- * No shadcn `command` primitive exists in `components/ui/`, so this is built on
- * the `dialog` + `input` primitives with a hand-rolled, accessible results list.
+ * Chrome lives in `search-chrome.css` (`.b2-search`): milled fascia, sunken
+ * query well, phosphor lamp on the active row. Ranking math stays in
+ * `lib/search.ts`.
  */
 import * as React from "react"
 import { ChevronRight } from "lucide-react"
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { cn } from "@/lib/utils"
 import { taskRepository } from "@/lib/data/task-repository"
 import { useTaskStore } from "@/lib/task-store"
+import { useItemTypeStore } from "@/lib/item-type-store"
+import { getBuiltinItemTypes, getItemType } from "@/lib/item-types"
+import { formatDateDisplay } from "@/lib/date-utils"
 import { searchItems, displayTitle, type SearchResult } from "@/lib/search"
-import type { Item, Task, List, Folder } from "@/lib/types"
+import type { Item, Task, List, Folder, ItemTypeDefinition } from "@/lib/types"
+import "./search-chrome.css"
 
 /** The kind of record a search hit refers to. */
 export type SearchEntryKind = "item" | "list" | "folder"
@@ -57,9 +57,10 @@ export interface GlobalSearchProps {
   limit?: number
 }
 
-/** Whether an item is hidden and should be excluded from search results unless
- * the user opts to include hidden items. An item counts as hidden when it is
- * explicitly hidden from To-Do lists, or when it is a completed task. */
+const LISTBOX_ID = "b2-search-results"
+
+/** Whether an item is hidden and should be excluded unless the user opts in.
+ * Hidden means explicitly hidden from To-Do, or a completed task. */
 function isHidden(item: Item): boolean {
   const task = item as Partial<Task>
   if (task.hiddenFromTodo) return true
@@ -68,9 +69,8 @@ function isHidden(item: Item): boolean {
   return false
 }
 
-/** Adapt a list/folder to the generic `Item` shape so it can be ranked by the
- * same search. The name becomes the title; the description (if any) becomes a
- * free-text attribute so it only matches when searching "any value within". */
+/** Adapt a list/folder so the same ranker can score it. The name is the title;
+ * the description is an attribute so it only matches when searching any value. */
 function toSearchableItem(record: List | Folder): Item {
   return {
     id: record.id,
@@ -80,10 +80,73 @@ function toSearchableItem(record: List | Folder): Item {
   }
 }
 
-const KIND_LABEL: Record<SearchEntryKind, string> = {
-  item: "item",
-  list: "list",
-  folder: "folder",
+function asDate(value: unknown): Date | null {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return value
+  if (typeof value === "string" || typeof value === "number") {
+    const date = new Date(value)
+    if (!Number.isNaN(date.getTime())) return date
+  }
+  return null
+}
+
+function typeLabel(kind: SearchEntryKind, item: Item, types: ItemTypeDefinition[]): string {
+  if (kind === "folder") return "Folder"
+  if (kind === "list") return "List"
+  return getItemType(types, item.type).name
+}
+
+/** List membership for an item, or the parent folder for a list/folder. */
+function placeCaption(
+  kind: SearchEntryKind,
+  item: Item,
+  lists: List[],
+  folders: Folder[],
+): string | null {
+  if (kind === "item") {
+    const ids = (item as Partial<Task>).lists
+    if (!ids?.length) return null
+    const names = ids
+      .map((id) => lists.find((list) => list.id === id)?.name)
+      .filter((name): name is string => Boolean(name))
+    if (names.length === 0) return null
+    if (names.length === 1) return names[0]
+    return `${names[0]} +${names.length - 1}`
+  }
+  if (kind === "list") {
+    return folders.find((folder) => folder.listIds.includes(item.id))?.name ?? null
+  }
+  const folder = folders.find((entry) => entry.id === item.id)
+  if (!folder?.parentFolderId) return null
+  return folders.find((entry) => entry.id === folder.parentFolderId)?.name ?? null
+}
+
+/** Scheduled date, else deadline, else the created date already on the record. */
+function dateCaption(item: Item): string | null {
+  const task = item as Partial<Task>
+  const scheduled = asDate(task.scheduledDate)
+  if (scheduled) return `sched ${formatDateDisplay(scheduled)}`
+  const due = asDate(task.deadline)
+  if (due) return `due ${formatDateDisplay(due)}`
+  const created = asDate(item.createdAt)
+  if (created) return formatDateDisplay(created)
+  return null
+}
+
+function promptCopy(includeFolders: boolean, includeLists: boolean, includeItems: boolean): string {
+  const parts = [
+    includeFolders ? "folders" : null,
+    includeLists ? "lists" : null,
+    includeItems ? "items" : null,
+  ].filter((part): part is string => Boolean(part))
+  if (parts.length === 0) return "Turn on folders, lists, or items under Advanced."
+  if (parts.length === 1) return `Type to search ${parts[0]}.`
+  if (parts.length === 2) return `Type to search ${parts[0]} and ${parts[1]}.`
+  return "Type to search folders, lists, and items."
+}
+
+function isPaletteControl(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false
+  return Boolean(target.closest("button, [role='checkbox'], a, label"))
 }
 
 export function GlobalSearch({ open, onOpenChange, onSelect, limit = 20 }: GlobalSearchProps) {
@@ -91,7 +154,6 @@ export function GlobalSearch({ open, onOpenChange, onSelect, limit = 20 }: Globa
   const [activeIndex, setActiveIndex] = React.useState(0)
   const [advancedOpen, setAdvancedOpen] = React.useState(false)
 
-  // Advanced options.
   const [includeFolders, setIncludeFolders] = React.useState(true)
   const [includeLists, setIncludeLists] = React.useState(true)
   const [includeItems, setIncludeItems] = React.useState(true)
@@ -100,44 +162,56 @@ export function GlobalSearch({ open, onOpenChange, onSelect, limit = 20 }: Globa
 
   const listRef = React.useRef<HTMLUListElement>(null)
 
-  // Snapshot the records whenever the palette opens so results are stable while
-  // typing (and we don't re-read the stores on every keystroke).
   const [items, setItems] = React.useState<Item[]>([])
   const [categories, setLists] = React.useState<List[]>([])
   const [folders, setFolders] = React.useState<Folder[]>([])
-  React.useEffect(() => {
-    if (open) {
+  const [types, setTypes] = React.useState<ItemTypeDefinition[]>(() => getBuiltinItemTypes())
+
+  // Snapshot on open so keystrokes don't re-read the store. If the vault is
+  // still hydrating, pull again when it lands — otherwise the palette stays
+  // empty over a catalog that arrived a moment later.
+  React.useLayoutEffect(() => {
+    if (!open) return
+    let alive = true
+    const pull = () => {
+      if (!alive) return
       const state = useTaskStore.getState()
       setItems(taskRepository.getAll())
       setLists(state.lists)
       setFolders(state.folders)
-      setQuery("")
-      setActiveIndex(0)
+      setTypes(useItemTypeStore.getState().types)
+    }
+    pull()
+    setQuery("")
+    setActiveIndex(0)
+    const unsubs = [useTaskStore.persist.onFinishHydration(pull), useItemTypeStore.persist.onFinishHydration(pull)]
+    return () => {
+      alive = false
+      for (const unsub of unsubs) unsub()
     }
   }, [open])
 
-  const results = React.useMemo<CombinedResult[]>(() => {
+  const { results, hiddenOnly } = React.useMemo(() => {
     const opts = { titleOnly }
     const combined: CombinedResult[] = []
 
     if (includeFolders) {
-      for (const r of searchItems(query, folders.map(toSearchableItem), opts)) {
-        combined.push({ kind: "folder", result: r })
+      for (const result of searchItems(query, folders.map(toSearchableItem), opts)) {
+        combined.push({ kind: "folder", result })
       }
     }
     if (includeLists) {
-      for (const r of searchItems(query, categories.map(toSearchableItem), opts)) {
-        combined.push({ kind: "list", result: r })
+      for (const result of searchItems(query, categories.map(toSearchableItem), opts)) {
+        combined.push({ kind: "list", result })
       }
     }
     if (includeItems) {
       const searchable = includeHidden ? items : items.filter((item) => !isHidden(item))
-      for (const r of searchItems(query, searchable, opts)) {
-        combined.push({ kind: "item", result: r })
+      for (const result of searchItems(query, searchable, opts)) {
+        combined.push({ kind: "item", result })
       }
     }
 
-    // Merge the per-kind ranked lists into one, best-first, then cap.
     combined.sort((a, b) => {
       if (b.result.score !== a.result.score) return b.result.score - a.result.score
       const at = displayTitle(a.result.item)
@@ -145,13 +219,30 @@ export function GlobalSearch({ open, onOpenChange, onSelect, limit = 20 }: Globa
       if (at !== bt) return at < bt ? -1 : 1
       return a.result.item.id < b.result.item.id ? -1 : 1
     })
-    return combined.slice(0, Math.max(0, limit))
+
+    let hiddenMatches = 0
+    if (includeItems && !includeHidden && query.trim()) {
+      const hidden = items.filter(isHidden)
+      if (hidden.length > 0) {
+        hiddenMatches = searchItems(query, hidden, { ...opts, limit: 1 }).length
+      }
+    }
+
+    return { results: combined.slice(0, Math.max(0, limit)), hiddenOnly: hiddenMatches > 0 }
   }, [query, items, categories, folders, includeFolders, includeLists, includeItems, includeHidden, titleOnly, limit])
 
-  // Keep the active index within bounds as results change.
+  // A new query or filter lands on the best hit. Same query with a new catalog
+  // (vault hydration) only clamps the highlight into range.
+  const highlightKey = `${query}\0${includeFolders}\0${includeLists}\0${includeItems}\0${includeHidden}\0${titleOnly}`
+  const highlightKeyRef = React.useRef(highlightKey)
   React.useEffect(() => {
-    setActiveIndex((i) => (results.length === 0 ? 0 : Math.min(i, results.length - 1)))
-  }, [results.length])
+    if (highlightKeyRef.current !== highlightKey) {
+      highlightKeyRef.current = highlightKey
+      setActiveIndex(0)
+      return
+    }
+    setActiveIndex((index) => (results.length === 0 ? 0 : Math.min(index, results.length - 1)))
+  }, [highlightKey, results])
 
   const select = React.useCallback(
     (index: number) => {
@@ -160,116 +251,147 @@ export function GlobalSearch({ open, onOpenChange, onSelect, limit = 20 }: Globa
       onSelect({ id: hit.result.item.id, kind: hit.kind })
       onOpenChange(false)
     },
-    [results, onSelect, onOpenChange]
+    [results, onSelect, onOpenChange],
   )
 
-  function onKeyDown(e: React.KeyboardEvent) {
-    if (results.length === 0) return
-    if (e.key === "ArrowDown") {
-      e.preventDefault()
-      setActiveIndex((i) => (i + 1) % results.length)
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault()
-      setActiveIndex((i) => (i - 1 + results.length) % results.length)
-    } else if (e.key === "Enter") {
-      e.preventDefault()
+  const onPaletteKeyDown = React.useCallback(
+    (event: React.KeyboardEvent) => {
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        if (results.length === 0) return
+        event.preventDefault()
+        setActiveIndex((index) => {
+          if (event.key === "ArrowDown") return (index + 1) % results.length
+          return (index - 1 + results.length) % results.length
+        })
+        return
+      }
+      if (event.key !== "Enter" || event.nativeEvent.isComposing) return
+      if (isPaletteControl(event.target)) return
+      if (results.length === 0) return
+      event.preventDefault()
       select(activeIndex)
-    }
-  }
+    },
+    [results.length, activeIndex, select],
+  )
 
-  // Keep the active row scrolled into view.
   React.useEffect(() => {
     const el = listRef.current?.querySelector<HTMLElement>(`[data-index="${activeIndex}"]`)
     el?.scrollIntoView({ block: "nearest" })
-  }, [activeIndex])
+  }, [activeIndex, results])
+
+  const queryEmpty = query.trim().length === 0
+  const activeId = results.length > 0 ? `b2-search-opt-${activeIndex}` : undefined
+  const emptyCopy = !includeFolders && !includeLists && !includeItems
+    ? "Folders, lists, and items are turned off."
+    : hiddenOnly
+      ? "No results. Completed and hidden items are off."
+      : "No results."
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="top-[20%] translate-y-0 gap-0 overflow-hidden p-0 sm:max-w-xl" data-ui-name="Search" data-ui-docs="components/Search/README.md">
-        <DialogTitle className="sr-only">Search items</DialogTitle>
-        <div className="border-b p-2">
+      <DialogContent
+        className="b2-search"
+        data-ui-name="Search"
+        data-ui-docs="components/Search/README.md"
+        onKeyDown={onPaletteKeyDown}
+      >
+        <div className="b2-search-caption">
+          <span className="b2-search-power" aria-hidden />
+          <DialogTitle>Search</DialogTitle>
+          <DialogDescription className="sr-only">
+            Search folders, lists, and items. Arrow keys move, Enter opens, Escape closes.
+          </DialogDescription>
+        </div>
+
+        <div className="b2-search-query">
           <Input
             autoFocus
             value={query}
             placeholder="Search folders, lists, tasks, tags, notes…"
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={onKeyDown}
-            className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+            onChange={(event) => setQuery(event.target.value)}
+            className="b2-search-field"
+            role="combobox"
             aria-label="Search items"
+            aria-expanded={results.length > 0}
+            aria-controls={results.length > 0 ? LISTBOX_ID : undefined}
+            aria-activedescendant={activeId}
+            aria-autocomplete="list"
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
           />
 
           <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
-            <CollapsibleTrigger className="mt-1 flex items-center gap-1 px-1 text-xs font-medium text-muted-foreground hover:text-foreground">
+            <CollapsibleTrigger className="b2-search-advanced-trigger">
               <ChevronRight className={cn("h-3.5 w-3.5 transition-transform", advancedOpen && "rotate-90")} />
               Advanced
             </CollapsibleTrigger>
-            <CollapsibleContent className="px-1 pb-1 pt-2">
-              <div className="flex flex-col gap-3 text-xs text-muted-foreground">
-                <div className="flex flex-col gap-1.5">
-                  <span className="font-medium text-foreground">Search in</span>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-                    <CheckOption label="Folders" checked={includeFolders} onChange={setIncludeFolders} />
-                    <CheckOption label="Lists" checked={includeLists} onChange={setIncludeLists} />
-                    <CheckOption label="Items" checked={includeItems} onChange={setIncludeItems} />
-                  </div>
+            <CollapsibleContent className="b2-search-advanced">
+              <div className="b2-search-advanced-group">
+                <span className="b2-search-advanced-label">Search in</span>
+                <div className="b2-search-checks">
+                  <CheckOption label="Folders" checked={includeFolders} onChange={setIncludeFolders} />
+                  <CheckOption label="Lists" checked={includeLists} onChange={setIncludeLists} />
+                  <CheckOption label="Items" checked={includeItems} onChange={setIncludeItems} />
                 </div>
-                <div className="flex flex-col gap-1.5">
-                  <span className="font-medium text-foreground">Match</span>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-                    <CheckOption label="Title only" checked={titleOnly} onChange={setTitleOnly} />
-                    <CheckOption label="Include hidden items" checked={includeHidden} onChange={setIncludeHidden} />
-                  </div>
+              </div>
+              <div className="b2-search-advanced-group">
+                <span className="b2-search-advanced-label">Match</span>
+                <div className="b2-search-checks">
+                  <CheckOption label="Title only" checked={titleOnly} onChange={setTitleOnly} />
+                  <CheckOption label="Include hidden items" checked={includeHidden} onChange={setIncludeHidden} />
                 </div>
               </div>
             </CollapsibleContent>
           </Collapsible>
         </div>
 
-        <ul ref={listRef} className="max-h-80 overflow-y-auto p-1" role="listbox">
-          {query.trim().length === 0 ? (
-            <li className="px-3 py-6 text-center text-sm text-muted-foreground">
-              Type to search across all folders, lists, and items.
-            </li>
+        <div className="b2-search-well">
+          {queryEmpty ? (
+            <p className="b2-search-empty" role="status">
+              {promptCopy(includeFolders, includeLists, includeItems)}
+            </p>
           ) : results.length === 0 ? (
-            <li className="px-3 py-6 text-center text-sm text-muted-foreground">No results.</li>
+            <p className="b2-search-empty" role="status">
+              {emptyCopy}
+            </p>
           ) : (
-            results.map((hit, index) => (
-              <li
-                key={`${hit.kind}:${hit.result.item.id}`}
-                data-index={index}
-                role="option"
-                aria-selected={index === activeIndex}
-                onMouseEnter={() => setActiveIndex(index)}
-                onClick={() => select(index)}
-                className={cn(
-                  "flex cursor-pointer items-center justify-between gap-2 rounded-md px-3 py-2 text-sm",
-                  index === activeIndex ? "bg-accent text-accent-foreground" : "hover:bg-accent/50"
-                )}
-              >
-                <span className="flex min-w-0 items-center gap-2">
-                  <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium uppercase text-primary">
-                    {KIND_LABEL[hit.kind]}
-                  </span>
-                  <span className="truncate">{displayTitle(hit.result.item)}</span>
-                </span>
-                <span className="flex shrink-0 gap-1">
-                  {hit.result.matchedOn.map((field) => (
-                    <span
-                      key={field}
-                      className="rounded bg-muted px-1.5 py-0.5 text-[10px] uppercase text-muted-foreground"
-                    >
-                      {field}
-                    </span>
-                  ))}
-                </span>
-              </li>
-            ))
+            <ul ref={listRef} id={LISTBOX_ID} className="b2-search-list" role="listbox" aria-label="Search results">
+              {results.map((hit, index) => {
+                const title = displayTitle(hit.result.item)
+                const kind = typeLabel(hit.kind, hit.result.item, types)
+                const meta = [placeCaption(hit.kind, hit.result.item, categories, folders), dateCaption(hit.result.item)]
+                  .filter(Boolean)
+                  .join(" · ")
+                const active = index === activeIndex
+                return (
+                  <li
+                    key={`${hit.kind}:${hit.result.item.id}`}
+                    id={`b2-search-opt-${index}`}
+                    data-index={index}
+                    role="option"
+                    aria-selected={active}
+                    title={`Matched ${hit.result.matchedOn.join(", ")}`}
+                    onMouseEnter={() => setActiveIndex(index)}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => select(index)}
+                    className={cn("b2-search-row", active && "is-active")}
+                  >
+                    <span className="b2-search-lamp" aria-hidden />
+                    <span className="b2-search-kind">{kind}</span>
+                    <span className="b2-search-title">{title}</span>
+                    <span className="b2-search-meta">{meta}</span>
+                  </li>
+                )
+              })}
+            </ul>
           )}
-        </ul>
+        </div>
 
-        <div className="flex items-center justify-between border-t px-3 py-1.5 text-[11px] text-muted-foreground">
+        <div className="b2-search-status">
           <span>↑↓ navigate · ↵ open · esc close</span>
-          <span>{results.length > 0 ? `${results.length} result${results.length === 1 ? "" : "s"}` : ""}</span>
+          <span>{queryEmpty ? "" : `${results.length} shown`}</span>
         </div>
       </DialogContent>
     </Dialog>
@@ -286,12 +408,8 @@ function CheckOption({
   onChange: (value: boolean) => void
 }) {
   return (
-    <label className="flex cursor-pointer select-none items-center gap-2">
-      <Checkbox
-        checked={checked}
-        onCheckedChange={(value) => onChange(value === true)}
-        aria-label={label}
-      />
+    <label className="b2-search-check">
+      <Checkbox checked={checked} onCheckedChange={(value) => onChange(value === true)} />
       {label}
     </label>
   )

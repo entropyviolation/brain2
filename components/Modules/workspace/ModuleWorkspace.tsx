@@ -26,6 +26,7 @@ import { ModuleSettingsDialog } from "./ModuleSettingsDialog"
 import { WorkflowBuilder } from "./WorkflowBuilder"
 import { openModulePopout } from "./module-popout"
 import { APP_NAV_KEYS, readStoredRecord, writeStoredRecordField } from "@/lib/app-navigation"
+import { subscribeNavRestore } from "@/lib/screen-location"
 
 export {
   MODULE_POPOUT_PREFIX,
@@ -82,6 +83,13 @@ export function ModuleWorkspace({
     if (!activeId) return
     writeStoredRecordField(APP_NAV_KEYS.modulesView, module.id, activeId)
   }, [module.id, activeId])
+
+  useEffect(() => {
+    return subscribeNavRestore(() => {
+      const stored = readStoredRecord(APP_NAV_KEYS.modulesView)[module.id]
+      if (stored && views.some((v) => v.id === stored)) setActiveId(stored)
+    })
+  }, [module.id, views])
 
   // Best-effort upgrade / repair of Trip Itinerary workspaces (incl. missing Activities).
   useEffect(() => {

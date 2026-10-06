@@ -13,6 +13,29 @@ module live here:
 - **Widgets** — single dashboard cards (list explorer, writing prompt, random
   task, analytics stat, cause→effect rules) shown in a grid.
 
+## Public door
+
+Other rooms may mount **`ModulesPanel`** (`modules-panel.tsx`) — the Modules tab,
+`onTaskSelect(taskId)`. The app shell mounts it from `app/page.tsx`. The
+standalone entry is **`ModulePopoutView`** (`workspace/ModulePopoutView.tsx`):
+one workspace, no app chrome. `app/popout/page.tsx` mounts it at
+`/popout/?module=<id>`; `app/page.tsx` mounts it when the hash fallback lands
+on the root page. Both pages read the id with `parseModulePopoutLocation` /
+`parseModulePopoutModuleId` (`workspace/module-popout.ts`).
+
+This room may write **`lib/modules-store.ts`**, **`lib/module-definitions.ts`**,
+and **`lib/workflows-store.ts`**.
+
+Workspace interiors are private. Other rooms must not import Tidy
+(`workspace/housecleaning/TidyView.tsx`), Trip (`workspace/itinerary/`), Film DNA
+(`workspace/filmrecs/FilmDnaView.tsx`), or the other view bodies
+(`workspace/module-view-bodies.tsx`, GradSearch, and the rest of a workspace's
+screens).
+
+Current practice: Operations already imports three Trip interiors from
+`components/Operations/OperationFieldPlanPanels.tsx` — `ItineraryDocumentView`,
+`TripActivitiesView`, and `DocPlanView`.
+
 ## Where this is going
 
 The end state of this folder is an **install** flow, not a bigger set of

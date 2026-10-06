@@ -1,7 +1,7 @@
 /**
  * TaskDetailPopup — compact inline task detail modal.
  */
-import { render, screen, fireEvent } from "@testing-library/react"
+import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetLocalStorage } from "@/tests/test-utils"
@@ -74,17 +74,30 @@ describe("TaskDetailPopup", () => {
     expect(screen.getByRole("button", { name: /Complete/i })).toBeInTheDocument()
   })
 
-  it("shows Schedulable on the Scheduling tab with inherit-on for scheduleable lists", async () => {
+  it("shows Send to Scheduler on the Scheduling tab with inherit-on for lists sent there", async () => {
     const user = userEvent.setup()
     render(<TaskDetailPopup taskId="popup-task" open onClose={onClose} />)
     await user.click(screen.getByRole("tab", { name: /Scheduling/i }))
-    expect(screen.getByText("Schedulable")).toBeInTheDocument()
-    const toggle = screen.getByRole("switch")
+    expect(screen.getByText("Send to Scheduler")).toBeInTheDocument()
+    const toggle = screen.getByRole("switch", { name: "Send to Scheduler" })
     expect(toggle).toBeChecked()
     await user.click(toggle)
     expect(toggle).not.toBeChecked()
     await user.click(screen.getByRole("button", { name: /Save Changes/i }))
     expect(useTaskStore.getState().tasks.find((t) => t.id === "popup-task")?.scheduleable).toBe(false)
+  })
+
+  it("leaves Auto-push off until the Scheduling switch is turned on", async () => {
+    const user = userEvent.setup()
+    render(<TaskDetailPopup taskId="popup-task" open onClose={onClose} />)
+    await user.click(screen.getByRole("tab", { name: /Scheduling/i }))
+    const auto = screen.getByRole("switch", { name: "Auto-push" })
+    expect(auto).not.toBeChecked()
+    await user.click(auto)
+    await user.click(screen.getByRole("button", { name: /Save Changes/i }))
+    const saved = useTaskStore.getState().tasks.find((t) => t.id === "popup-task")
+    expect(saved?.autoPush).toBe(true)
+    expect(saved?.scheduleable).toBeUndefined()
   })
 
   it("shows Save Changes after editing description and persists to store", async () => {
@@ -113,7 +126,9 @@ describe("TaskDetailPopup", () => {
     render(<TaskDetailPopup taskId="popup-task" open onClose={onClose} />)
     await user.dblClick(screen.getByTitle("Double-click to open this list"))
     expect(onClose).toHaveBeenCalled()
-    expect(localStorage.getItem("cogs-lists-navigation")).toContain("na-list")
+    await waitFor(() => {
+      expect(localStorage.getItem("brain2-lists-navigation")).toContain("na-list")
+    })
   })
 
   it("hides Scheduling and Complete for a non-scheduleable furniture item", () => {
@@ -155,7 +170,7 @@ describe("TaskDetailPopup", () => {
     expect(screen.queryByRole("tab", { name: /Analysis/i })).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: /^Complete$/i })).not.toBeInTheDocument()
     expect(screen.getByText(/No photo yet/i)).toBeInTheDocument()
-    expect(screen.queryByText("Schedulable")).not.toBeInTheDocument()
+    expect(screen.queryByText("Send to Scheduler")).not.toBeInTheDocument()
     expect(screen.queryByText("Show in Scheduler")).not.toBeInTheDocument()
     expect(screen.queryByText("Repeated Task Settings")).not.toBeInTheDocument()
   })

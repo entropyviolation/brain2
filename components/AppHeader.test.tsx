@@ -1,5 +1,7 @@
 /**
- * AppHeader — pinned mill title bar (friend jewel + milled silver key-wells).
+ * AppHeader — pinned mill title bar (Nav + friend jewel + milled silver key-wells).
+ * Wide shell: one row. Narrower than label width: clusters wrap; a cluster
+ * wider than the shell scrolls inside its bay. Keys do not flex-shrink.
  */
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
@@ -10,6 +12,7 @@ import { useTaskStore } from "@/lib/task-store"
 import { rollBabyAnimalFriend } from "@/lib/baby-animal-friend"
 import { useUiNamesStore } from "@/lib/ui-names-store"
 import { AppHeader } from "./AppHeader"
+import { resetScreenHistoryForTests } from "@/lib/screen-history-controller"
 import type { Task } from "@/lib/types"
 
 vi.mock("@/lib/baby-animal-friend", () => ({
@@ -58,6 +61,7 @@ function inboxTask(): Task {
 describe("AppHeader", () => {
   beforeEach(() => {
     resetLocalStorage()
+    resetScreenHistoryForTests()
     useBabyAnimalsStore.getState().resetGallery()
     useBabyAnimalsStore.getState().addAndWear(friend)
     useTaskStore.getState().clearAllData()
@@ -78,14 +82,16 @@ describe("AppHeader", () => {
     expect(screen.getByRole("heading", { name: "BRAIN2" })).toBeInTheDocument()
     expect(await screen.findByText("Little Baby Hedgehog")).toBeInTheDocument()
     expect(screen.getByRole("toolbar", { name: "Global actions" })).toBeInTheDocument()
+    expect(screen.getByRole("group", { name: "Nav" })).toBeInTheDocument()
+    expect(screen.getByTestId("header-nav-back")).toBeDisabled()
+    expect(screen.getByTestId("header-nav-forward")).toBeDisabled()
     expect(screen.getByRole("group", { name: "Friend" })).toBeInTheDocument()
-    expect(screen.getByRole("group", { name: "Review" })).toBeInTheDocument()
+    expect(screen.getByRole("group", { name: "Rituals" })).toBeInTheDocument()
     expect(screen.getByRole("group", { name: "System" })).toBeInTheDocument()
     expect(screen.getByRole("group", { name: "Capture" })).toBeInTheDocument()
 
     for (const name of [
-      /Morning/,
-      /^Review/,
+      /^Rituals/,
       /^Settings/,
       /^Tracking/,
       /^Names/,
@@ -100,9 +106,9 @@ describe("AppHeader", () => {
       expect(screen.getByRole("button", { name })).toBeInTheDocument()
     }
 
-    expect(screen.getByRole("button", { name: /^Review/ })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: /^Rituals/ })).toHaveAttribute(
       "title",
-      expect.stringMatching(/end-of-period review/),
+      expect.stringMatching(/ritual/i),
     )
     expect(screen.getByRole("button", { name: /^Inbox/ })).toHaveAttribute("title", "1 to revisit")
     expect(screen.getByRole("button", { name: /Quick Add/i })).toHaveClass("b2-shell-go")
@@ -110,6 +116,28 @@ describe("AppHeader", () => {
     expect(screen.getByTestId("app-header")).toHaveAttribute("data-ui-docs", "components/README.md")
     expect(screen.getByRole("group", { name: "Capture" })).toHaveAttribute("data-ui-name", "Capture")
     expect(screen.getByRole("group", { name: "Capture" })).toHaveAttribute("data-ui-docs", "components/README.md")
+  })
+
+  it("wraps clusters at label width instead of shrinking their keys", () => {
+    render(<AppHeader onTaskSelect={() => {}} />)
+    const header = screen.getByTestId("app-header")
+    const body = header.querySelector(".b2-shell-body") as HTMLElement
+    const rail = screen.getByRole("toolbar", { name: "Global actions" })
+    const capture = screen.getByRole("group", { name: "Capture" })
+    const keys = capture.querySelector(".b2-shell-keys") as HTMLElement
+    const inbox = screen.getByRole("button", { name: /^Inbox/ })
+
+    expect(getComputedStyle(body).flexWrap).toBe("wrap")
+    expect(getComputedStyle(rail).flexWrap).toBe("wrap")
+    expect(getComputedStyle(rail).flexShrink).toBe("0")
+    expect(getComputedStyle(rail).maxWidth).toBe("100%")
+    expect(getComputedStyle(capture).flexShrink).toBe("0")
+    expect(getComputedStyle(capture).maxWidth).toBe("100%")
+    expect(getComputedStyle(keys).flexWrap).toBe("nowrap")
+    expect(getComputedStyle(keys).overflowX).toBe("auto")
+    expect(getComputedStyle(inbox).flexShrink).toBe("0")
+    expect(getComputedStyle(inbox).minWidth).toContain("max-content")
+    expect(getComputedStyle(inbox).whiteSpace).toBe("nowrap")
   })
 
   it("presses Names to set the overlay mode and html flag via the store", async () => {
