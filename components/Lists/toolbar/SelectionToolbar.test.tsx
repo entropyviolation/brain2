@@ -26,9 +26,19 @@ const base = {
   onAddToFolder: vi.fn(),
   onMerge: vi.fn(),
   onDelete: vi.fn(),
+  onDuplicate: vi.fn(),
 }
 
 describe("SelectionToolbar folder search", () => {
+  it("places actions in the select mode control strip beside Add to folder", () => {
+    render(<SelectionToolbar {...base} />)
+    const strip = screen.getByRole("region", { name: "Select mode control strip" })
+    expect(strip).toBeInTheDocument()
+    expect(strip).toHaveTextContent("2 selected")
+    expect(screen.getByRole("button", { name: "Duplicate selection" })).toBeInTheDocument()
+    expect(screen.getByRole("listbox", { name: "Destination folders" })).toBeInTheDocument()
+  })
+
   it("lists every destination folder when search is empty", () => {
     render(<SelectionToolbar {...base} />)
     expect(screen.getByRole("option", { name: "→ Work" })).toBeInTheDocument()

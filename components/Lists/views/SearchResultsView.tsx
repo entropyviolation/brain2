@@ -1,7 +1,7 @@
 "use client"
 
 import type { Task, List, Folder } from "@/lib/types"
-import { FolderGlyph, iconFor } from "@/components/Lists/lib/icon-utils"
+import { folderFor, iconFor } from "@/components/Lists/lib/icon-utils"
 import { itemTitle } from "@/lib/item-utils"
 
 export interface SearchResultsViewProps {
@@ -74,7 +74,7 @@ export function SearchResultsView({
                     onChange={() => onToggleFolderSelect?.(f.id)}
                   />
                 )}
-                <FolderGlyph size={22} color={f.color || undefined} />
+                <img className="fm-link-icon" src={f.icon || folderFor(f.id)} alt="" draggable={false} loading="lazy" decoding="async" />
                 <span className="fm-link-text">{f.name}</span>
               </div>
             ))}

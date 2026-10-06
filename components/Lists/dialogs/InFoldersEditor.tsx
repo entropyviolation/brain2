@@ -17,7 +17,9 @@ import {
   visibleFolderMemberships,
 } from "@/lib/folder-membership"
 import { buildFolderTree, flattenFolderTree } from "@/lib/folder-tree"
-import { FolderGlyph } from "@/components/Icons/Icon"
+import { folderFor } from "@/components/Icons/Icon"
+import { isAutoCreatedFolder } from "@/lib/lists-duplicate"
+import { AutoMark } from "@/components/Lists/dialogs/FolderRelationsEditor"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -142,8 +144,16 @@ export function InFoldersEditor({ listId }: { listId: string }) {
                     : m.folder.name
                 }
               >
-                <FolderGlyph size={12} color={m.folder.color || undefined} />
+                <img
+                  src={m.folder.icon || folderFor(m.folder.id)}
+                  alt=""
+                  width={14}
+                  height={14}
+                  draggable={false}
+                  style={{ width: 14, height: 14, objectFit: "contain" }}
+                />
                 <span className="max-w-[10rem] truncate">{m.folder.name}</span>
+                <AutoMark show={isAutoCreatedFolder(m.folder)} />
                 {inherited ? (
                   <span className="text-[10px] uppercase tracking-wide opacity-70">nested</span>
                 ) : (
@@ -202,8 +212,18 @@ export function InFoldersEditor({ listId }: { listId: string }) {
                       : undefined
                   }
                 >
-                  <FolderGlyph size={16} color={n.folder.color || undefined} />
-                  <span className="truncate flex-1">{n.folder.name}</span>
+                  <img
+                    src={n.folder.icon || folderFor(n.folder.id)}
+                    alt=""
+                    width={16}
+                    height={16}
+                    draggable={false}
+                    style={{ width: 16, height: 16, objectFit: "contain", flexShrink: 0 }}
+                  />
+                  <span className="truncate flex-1">
+                    {n.folder.name}
+                    <AutoMark show={isAutoCreatedFolder(n.folder)} />
+                  </span>
                 </button>
               )
             })

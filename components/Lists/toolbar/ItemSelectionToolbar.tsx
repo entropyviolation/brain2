@@ -3,6 +3,7 @@
 import { useState } from "react"
 import type { ItemPlacementMode } from "@/lib/item-selection"
 import { ListPicker } from "@/components/Lists/list-picker"
+import { SelectModeActionChrome } from "./SelectModeActionChrome"
 
 export interface ItemSelectionToolbarProps {
   selectedCount: number
@@ -47,58 +48,34 @@ export function ItemSelectionToolbar({
   return (
     <div>
       <div className="fm-toolbar" style={{ marginTop: 3 }}>
-        <span className="fm-crt-count">{selectedCount} selected</span>
-        <button className="fm-btn fm-btn-sm" onClick={onSelectAll}>
-          Select All
-        </button>
-        <button className="fm-btn fm-btn-sm" onClick={onDeselectAll} disabled={selectedCount === 0}>
-          Deselect All
-        </button>
-        <div className="fm-toolbar-sep" />
-        <label className="fm-radio-row" style={{ padding: "0 4px" }}>
-          <input
-            type="radio"
-            name="item-placement"
-            checked={placementMode === "keep"}
-            onChange={() => onPlacementModeChange("keep")}
-          />
-          {fromSearch ? "Keep on current lists" : "Keep in this list"}
-        </label>
-        <label
-          className="fm-radio-row"
-          style={{ padding: "0 4px" }}
-          title={
+        <SelectModeActionChrome
+          selectedCount={selectedCount}
+          onSelectAll={onSelectAll}
+          onDeselectAll={onDeselectAll}
+          placementName="item-placement"
+          placementMode={placementMode}
+          onPlacementModeChange={onPlacementModeChange}
+          keepLabel={fromSearch ? "Keep on current lists" : "Keep in this list"}
+          moveLabel={fromSearch ? "Move to destination" : "Move from this list"}
+          moveDisabled={!canMove}
+          moveTitle={
             canMove
               ? fromSearch
                 ? "Add to the destination and remove from other real lists"
                 : undefined
               : "Items are never removed from All Items or smart lists"
           }
-        >
-          <input
-            type="radio"
-            name="item-placement"
-            checked={placementMode === "move"}
-            disabled={!canMove}
-            onChange={() => onPlacementModeChange("move")}
-          />
-          {fromSearch ? "Move to destination" : "Move from this list"}
-        </label>
-        <div className="fm-toolbar-sep" />
-        <button className="fm-btn fm-btn-sm" onClick={onAddToNewList} disabled={selectedCount === 0}>
-          Add to New List
-        </button>
-        <button
-          className="fm-btn fm-btn-sm"
-          onClick={onMerge}
-          disabled={selectedCount < 2}
-          title="Merge 2 or more items into one"
-        >
-          Merge items
-        </button>
-        <button className="fm-btn fm-btn-sm fm-btn-danger" onClick={onDelete} disabled={selectedCount === 0}>
-          Delete selected
-        </button>
+          onMerge={onMerge}
+          mergeLabel="Merge items"
+          mergeDisabled={selectedCount < 2}
+          mergeTitle="Merge 2 or more items into one"
+          onDelete={onDelete}
+          beforeMerge={
+            <button className="fm-btn fm-btn-sm" onClick={onAddToNewList} disabled={selectedCount === 0}>
+              Add to New List
+            </button>
+          }
+        />
       </div>
       <div className="fm-toolbar" style={{ alignItems: "flex-start", marginTop: 1 }}>
         <span style={{ fontSize: 11, padding: "4px 4px 0" }}>Add to lists</span>

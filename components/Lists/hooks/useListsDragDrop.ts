@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react"
 import type React from "react"
 import type { Task, List, Folder, ItemTypeDefinition } from "@/lib/types"
-import { getWeekString } from "@/lib/date-utils"
+import { formatLocalMonthKey, getWeekString } from "@/lib/date-utils"
 import { withListMembership } from "@/lib/item-utils"
 import {
   assignTaskToFolderList,
@@ -84,7 +84,7 @@ export function useListsDragDrop({
       const patch: Partial<Task> = {}
       if (smart === "daily") patch.scheduledDate = now
       else if (smart === "weekly") patch.scheduledWeek = getWeekString(now)
-      else patch.scheduledMonth = now.toISOString().slice(0, 7)
+      else patch.scheduledMonth = formatLocalMonthKey(now)
       updateTask({ ...task, ...patch })
     },
     [updateTask],

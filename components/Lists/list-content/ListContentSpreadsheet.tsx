@@ -12,7 +12,7 @@
  */
 "use client"
 
-import { useCallback, useRef } from "react"
+import { useCallback, useEffect, useRef } from "react"
 import { SheetGrid } from "@/components/spreadsheet/SheetGrid"
 import { persistSheetViewConfig, type SheetViewConfig } from "@/lib/spreadsheet-contract"
 import { useTaskStore } from "@/lib/task-store"
@@ -38,8 +38,12 @@ export function ListContentSpreadsheet({
   onViewConfigChange?: (config: SheetViewConfig) => void
 }) {
   const updateList = useTaskStore((s) => s.updateList)
+  // Updated after commit so a filter blur during list switch still writes the
+  // list that owned the grid, not the list that just opened.
   const listRef = useRef(openCategory)
-  listRef.current = openCategory
+  useEffect(() => {
+    listRef.current = openCategory
+  }, [openCategory])
 
   const persist = useCallback(
     (config: SheetViewConfig) => {

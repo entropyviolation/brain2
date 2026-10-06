@@ -26,6 +26,7 @@ import { TaskFormDialog } from "@/components/Home/Habits/daily-task-form-dialog"
 import { SettingsDialog } from "@/components/Home/Habits/settings-dialog"
 import { syncTrackedHabitsForTask, useHabitTrackingSync } from "@/lib/habit-tracking-sync"
 import { format } from "date-fns"
+import { quarterKey, quarterStartDate } from "@/lib/seasons"
 
 export function DailyHabitsList() {
   useHabitTrackingSync()
@@ -227,16 +228,23 @@ export function MonthlyHabitsList() {
   return <PeriodHabitsListPanel frequency="monthly" title="Monthly Habits" />
 }
 
-function PeriodHabitsListPanel({ frequency, title }: { frequency: "weekly" | "monthly"; title: string }) {
+/** Season (quarter) habits list for Lists panel */
+export function SeasonHabitsList() {
+  return <PeriodHabitsListPanel frequency="quarterly" title="Season Habits" />
+}
+
+function PeriodHabitsListPanel({ frequency, title }: { frequency: "weekly" | "monthly" | "quarterly"; title: string }) {
   useHabitTrackingSync()
   useExemptionContext()
   const hydrated = usePersistHydrated(useHabitsStore.persist)
   const tasks = useHabitsStore((s) => s.tasks)
   const weeklyHabitData = useHabitsStore((s) => s.weeklyHabitData)
   const monthlyHabitData = useHabitsStore((s) => s.monthlyHabitData)
+  const quarterlyHabitData = useHabitsStore((s) => s.quarterlyHabitData)
   const habitExemptions = useHabitsStore((s) => s.habitExemptions)
   const updateWeekly = useHabitsStore((s) => s.updateWeeklyHabitCompletion)
   const updateMonthly = useHabitsStore((s) => s.updateMonthlyHabitCompletion)
+  const updateQuarterly = useHabitsStore((s) => s.updateQuarterlyHabitCompletion)
   const addTask = useHabitsStore((s) => s.addTask)
   const updateTask = useHabitsStore((s) => s.updateTask)
   const deleteTask = useHabitsStore((s) => s.deleteTask)
@@ -247,14 +255,16 @@ function PeriodHabitsListPanel({ frequency, title }: { frequency: "weekly" | "mo
   const filtered = filterHabitsByFrequency(tasks, frequency)
   const now = new Date()
   const weekStart = getWeekStartDate(now)
-  const periodKey = frequency === "weekly" ? getWeekString(weekStart) : format(now, "yyyy-MM")
-  const data = frequency === "weekly" ? weeklyHabitData : monthlyHabitData
+  const periodKey =
+    frequency === "weekly" ? getWeekString(weekStart) : frequency === "quarterly" ? quarterKey(now) : format(now, "yyyy-MM")
+  const data = frequency === "weekly" ? weeklyHabitData : frequency === "quarterly" ? quarterlyHabitData : monthlyHabitData
   const bucket = data[periodKey] || {}
   const required = filtered.filter((t) => !isHabitPeriodExempt(t, periodKey, frequency, habitExemptions))
   const doneCount = required.filter((t) => isHabitGoalMet(t, bucket[t.id])).length
 
   const setCompletion = (task: WeeklyTask, partial: TaskCompletion) => {
     if (frequency === "weekly") updateWeekly(task.id, weekStart, partial)
+    else if (frequency === "quarterly") updateQuarterly(task.id, quarterStartDate(now), partial)
     else updateMonthly(task.id, now, partial)
   }
 

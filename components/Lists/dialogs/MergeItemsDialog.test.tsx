@@ -47,4 +47,23 @@ describe("MergeItemsDialog", () => {
       }),
     )
   })
+
+  it("keeps every note while Keep all details is on, and offers None only when it is off", () => {
+    render(
+      <MergeItemsDialog
+        open
+        items={[
+          { ...task("a", "Alpha", ["work"]), notes: "note A" },
+          { ...task("b", "Beta", ["home"]), notes: "note B" },
+        ]}
+        lists={[list("work", "Work"), list("home", "Home")]}
+        onClose={vi.fn()}
+        onMerge={vi.fn()}
+      />,
+    )
+    expect(screen.getByText("Every note is kept. The selected one is placed first.")).toBeInTheDocument()
+    expect(screen.queryByRole("radio", { name: "None" })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole("checkbox", { name: "Keep all details" }))
+    expect(screen.getByRole("radio", { name: "None" })).toBeInTheDocument()
+  })
 })

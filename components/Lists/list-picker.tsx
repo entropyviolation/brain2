@@ -10,7 +10,8 @@
 
 import { useMemo, useState, useCallback } from "react"
 import { useTaskStore } from "@/lib/task-store"
-import { FolderGlyph } from "@/components/Lists/lib/icon-utils"
+import { isExplicitlyScheduleable } from "@/lib/scheduling"
+import { folderFor, FolderGlyph } from "@/components/Lists/lib/icon-utils"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -179,7 +180,7 @@ export function ListPicker({
       description: "",
       createdAt: new Date(),
       order: categories.length,
-      scheduleable: true,
+      scheduleable: isExplicitlyScheduleable(folders.find((f) => f.id === browseFolderId)),
     })
     if (browseFolderId) addListToFolder(browseFolderId, id)
     onChange(effectiveMulti ? [...selected, id] : [id])
@@ -248,7 +249,7 @@ export function ListPicker({
   const renderFolderRow = (f: (typeof folders)[number]) =>
     fm ? (
       <button key={f.id} type="button" className="fm-picker-row" onClick={() => setBrowseFolderId(f.id)}>
-        <FolderGlyph size={14} color={f.color || "#808080"} />
+        <img src={f.icon || folderFor(f.id)} alt="" width={14} height={14} draggable={false} style={{ width: 14, height: 14, objectFit: "contain", flexShrink: 0 }} />
         <span className="truncate">{f.name}</span>
       </button>
     ) : (
@@ -258,7 +259,7 @@ export function ListPicker({
         className="list-picker-row w-full px-2 py-1.5 text-left text-sm rounded hover:bg-muted/60"
         onClick={() => setBrowseFolderId(f.id)}
       >
-        <FolderGlyph size={18} color={f.color || "#808080"} />
+        <img src={f.icon || folderFor(f.id)} alt="" width={18} height={18} draggable={false} style={{ width: 18, height: 18, objectFit: "contain", flexShrink: 0 }} />
         <span className="truncate">{f.name}</span>
       </button>
     )

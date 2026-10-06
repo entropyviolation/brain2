@@ -4,7 +4,7 @@ import type React from "react"
 import { memo, startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { List, Task } from "@/lib/types"
 import type { GridEntry, SmartId } from "@/components/Lists/types"
-import { FolderGlyph, iconFor, orbFor } from "@/components/Lists/lib/icon-utils"
+import { folderFor, iconFor, orbFor } from "@/components/Lists/lib/icon-utils"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -21,6 +21,7 @@ import {
   Star,
   Eye,
 } from "lucide-react"
+import { MachineLoading } from "@/components/machine-loading"
 import { safeDateFormat } from "@/lib/date-utils"
 import { itemTitle } from "@/lib/item-utils"
 const TASK_PREVIEW_LIMIT = 8
@@ -518,7 +519,7 @@ export function FolderViewCards({
     <div className="fm-sunken fm-cards">
       {isBusy && statusText && (
         <div className="fm-cards-status" role="status" aria-live="polite" data-testid="fm-cards-status">
-          <span className="fm-cards-spinner" />
+          <MachineLoading size="pip" decorative />
           {statusText}
         </div>
       )}
@@ -569,7 +570,14 @@ export function FolderViewCards({
             onDrop={(e) => handleDropOnEntry(e, entry)}
           >
             <CardHeader className="pb-3 flex flex-row items-center gap-3">
-              <FolderGlyph size={32} color={entry.color} />
+              <img
+                src={entry.icon || folderFor(entry.id)}
+                alt=""
+                className="w-8 h-8 object-contain"
+                draggable={false}
+                loading="lazy"
+                decoding="async"
+              />
               <div>
                 <CardTitle className="text-lg">{entry.name}</CardTitle>
                 <p className="text-sm text-muted-foreground">{entry.count} lists</p>

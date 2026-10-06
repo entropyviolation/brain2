@@ -1,11 +1,13 @@
 import type { AttributeDefinition } from "@/lib/types"
 
-export type SmartId = "daily" | "weekly" | "monthly"
+export type SmartId = "daily" | "weekly" | "monthly" | "quarterly"
+
+export type HabitListId = "habits" | "weekly-habits" | "monthly-habits" | "season-habits"
 
 export type OpenTarget =
   | { type: "category"; id: string }
   | { type: "smart"; id: SmartId }
-  | { type: "habits"; id: "habits" | "weekly-habits" | "monthly-habits" }
+  | { type: "habits"; id: "habits" | "weekly-habits" | "monthly-habits" | "season-habits" }
   | { type: "objectives" }
   | { type: "folder-all"; folderId: string }
   | null
@@ -15,7 +17,7 @@ export type OpenTargetState = Exclude<OpenTarget, null> | { mode: "closed" }
 export type OpenTargetAction =
   | { type: "OPEN_CATEGORY"; id: string }
   | { type: "OPEN_SMART"; id: SmartId }
-  | { type: "OPEN_HABITS"; id: "habits" | "weekly-habits" | "monthly-habits" }
+  | { type: "OPEN_HABITS"; id: "habits" | "weekly-habits" | "monthly-habits" | "season-habits" }
   | { type: "OPEN_OBJECTIVES" }
   | { type: "OPEN_FOLDER_ALL"; folderId: string }
   | { type: "CLOSE" }

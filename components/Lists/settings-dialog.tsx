@@ -11,7 +11,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useLayoutEffect } from "react"
 import { useTaskStore } from "@/lib/task-store"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -62,9 +62,10 @@ export function NextActionsSettingsDialog({ open, onClose }: NextActionsSettings
   const [showImportChoice, setShowImportChoice] = useState(false)
   const [exportCategoryId, setExportCategoryId] = useState<string>("")
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    if (!open) return
     setLocalCategories([...lists].sort((a, b) => (a.order || 0) - (b.order || 0)))
-  }, [lists])
+  }, [open, lists])
 
   const handleDragStart = (e: React.DragEvent, categoryId: string) => {
     setDraggedCategory(categoryId)
@@ -242,12 +243,12 @@ export function NextActionsSettingsDialog({ open, onClose }: NextActionsSettings
     setTimeout(() => setImportStatus(""), 5000)
   }
 
-  const completedTasks = tasks.filter((task) => task.completed)
-  const activeTasks = tasks.filter((task) => !task.completed)
+  const completedTasks = open ? tasks.filter((task) => task.completed) : []
+  const activeTasks = open ? tasks.filter((task) => !task.completed) : []
 
-  const listsOrder = [...lists].sort((a, b) => (a.order || 0) - (b.order || 0)).map((c) => c.id)
-  const localOrder = localCategories.map((c) => c.id)
-  const isDirty = !snapshotsEqual(listsOrder, localOrder) || Boolean(pendingImport)
+  const listsOrder = open ? [...lists].sort((a, b) => (a.order || 0) - (b.order || 0)).map((c) => c.id) : []
+  const localOrder = open ? localCategories.map((c) => c.id) : []
+  const isDirty = open && (!snapshotsEqual(listsOrder, localOrder) || Boolean(pendingImport))
   const guard = useUnsavedGuard({
     open,
     onOpenChange: (next) => {

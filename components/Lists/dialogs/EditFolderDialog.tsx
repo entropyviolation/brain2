@@ -5,15 +5,17 @@ import type { Folder } from "@/lib/types"
 import { isScheduledFolderId } from "@/lib/scheduled-lists-sync"
 import { isAutoScheduledPeriodFolder } from "@/lib/folder-tree"
 import { isFolderHiddenFromGlobalAll } from "@/lib/module-lists"
+import { isAutoCreatedFolder } from "@/lib/lists-duplicate"
 import { useTaskStore } from "@/lib/task-store"
-import { FolderGlyph } from "@/components/Lists/lib/icon-utils"
+import { folderFor } from "@/components/Lists/lib/icon-utils"
+import { FolderRelationsEditor, AutoMark } from "@/components/Lists/dialogs/FolderRelationsEditor"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { IsolatedInput } from "@/components/ui/isolated-text-field"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Trash, CalendarClock, Settings, Star, Eye } from "lucide-react"
+import { Trash, CalendarClock, Settings, Star, Eye, Copy } from "lucide-react"
 
 export interface EditFolderDialogProps {
   editingFolder: Folder | null
@@ -23,6 +25,7 @@ export interface EditFolderDialogProps {
   onOpenIconPicker: () => void
   onSave: (folder: Folder) => void
   onDelete: () => void
+  onDuplicate?: () => void
 }
 
 export function EditFolderDialog({
@@ -33,6 +36,7 @@ export function EditFolderDialog({
   onOpenIconPicker,
   onSave,
   onDelete,
+  onDuplicate,
 }: EditFolderDialogProps) {
   const folders = useTaskStore((s) => s.folders)
   const textRef = useRef({ name: "", description: "" })
@@ -50,14 +54,20 @@ export function EditFolderDialog({
   const isSystemScheduled = isScheduledFolderId(editingFolder.id)
   const isAutoPeriod = isAutoScheduledPeriodFolder(editingFolder.id)
   const hiddenFromAll = isFolderHiddenFromGlobalAll(editingFolder, folders)
+  const showAuto = isAutoCreatedFolder(editingFolder)
 
   return (
     <Dialog open={!!editingFolder} onOpenChange={() => onEditingFolderChange(null)}>
-      <DialogContent className="fm98-dialog" data-ui-name="Folder settings" data-ui-docs="components/Lists/README.md">
+      <DialogContent
+        className="fm98-dialog max-h-[85vh] overflow-y-auto"
+        data-ui-name="Folder settings"
+        data-ui-docs="components/Lists/README.md"
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Settings className="h-5 w-5" />
             Folder Settings
+            <AutoMark show={showAuto} />
           </DialogTitle>
           <DialogDescription>
             {isAutoPeriod
@@ -69,11 +79,12 @@ export function EditFolderDialog({
         </DialogHeader>
         <div className="space-y-4">
           <div className="flex items-center gap-3">
-            {editingFolder.icon ? (
-              <img src={editingFolder.icon} alt="" className="w-12 h-12 object-contain border rounded-md p-1" />
-            ) : (
-              <FolderGlyph size={40} color={editingFolder.color || undefined} />
-            )}
+            <img
+              src={editingFolder.icon || folderFor(editingFolder.id)}
+              alt=""
+              className="w-12 h-12 object-contain"
+              draggable={false}
+            />
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={onOpenIconPicker}>
                 Change Icon
@@ -119,17 +130,28 @@ export function EditFolderDialog({
               onChange={(e) => onEditingFolderChange({ ...editingFolder, color: e.target.value })}
             />
           </div>
+
+          {!isAutoPeriod && (
+            <FolderRelationsEditor
+              folder={editingFolder}
+              onFolderPatch={(patch) => onEditingFolderChange({ ...editingFolder, ...patch })}
+            />
+          )}
+
           <div className="flex items-center justify-between rounded-lg border p-3">
             <div className="space-y-0.5">
               <Label htmlFor="edit-folder-scheduleable" className="flex items-center gap-2">
                 <CalendarClock className="h-4 w-4" />
-                Scheduleable
+                Send to Scheduler
               </Label>
-              <p className="text-xs text-muted-foreground">Default for lists created inside this folder.</p>
+              <p className="text-xs text-muted-foreground">
+                Off unless you turn it on. New lists in this folder then start sent to the Scheduler. Dates
+                on a list do not do this.
+              </p>
             </div>
             <Switch
               id="edit-folder-scheduleable"
-              checked={editingFolder.scheduleable !== false}
+              checked={editingFolder.scheduleable === true}
               onCheckedChange={(checked) => onEditingFolderChange({ ...editingFolder, scheduleable: checked })}
             />
           </div>
@@ -163,7 +185,7 @@ export function EditFolderDialog({
               }
             />
           </div>
-          <div className="flex justify-between gap-2">
+          <div className="flex justify-between gap-2 flex-wrap">
             {!isSystemScheduled ? (
               <Button variant="destructive" onClick={onDelete}>
                 <Trash className="h-4 w-4 mr-2" />
@@ -172,7 +194,13 @@ export function EditFolderDialog({
             ) : (
               <span />
             )}
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
+              {onDuplicate && !isAutoPeriod && (
+                <Button type="button" variant="outline" onClick={onDuplicate}>
+                  <Copy className="h-4 w-4 mr-2" />
+                  Duplicate folder
+                </Button>
+              )}
               <Button variant="outline" onClick={() => onEditingFolderChange(null)}>
                 Cancel
               </Button>

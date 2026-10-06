@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useDeferredValue, useMemo, useState } from "react"
 import type { Task, List, Folder } from "@/lib/types"
 import { itemTitle } from "@/lib/item-utils"
 
@@ -8,6 +8,8 @@ export interface SearchResults {
   tasks: Task[]
 }
 
+const EMPTY_SEARCH: SearchResults = { folders: [], lists: [], tasks: [] }
+
 export function useListsSearch(
   folders: Folder[],
   categories: List[],
@@ -15,7 +17,10 @@ export function useListsSearch(
 ) {
   const [searchTerm, setSearchTerm] = useState("")
   const [searchResetKey, setSearchResetKey] = useState(0)
-  const q = searchTerm.trim().toLowerCase()
+  // The field owns keystrokes. The vault scan follows a frame later so typing
+  // is not blocked, and this deferred string is never written back into the input.
+  const deferredTerm = useDeferredValue(searchTerm)
+  const q = deferredTerm.trim().toLowerCase()
   const searchActive = q.length > 0
 
   const clearSearch = useCallback(() => {
@@ -24,7 +29,7 @@ export function useListsSearch(
   }, [])
 
   const searchResults = useMemo<SearchResults>(() => {
-    if (!searchActive) return { folders: [], lists: [], tasks: [] }
+    if (!q) return EMPTY_SEARCH
     const f = folders.filter(
       (x) => x.name.toLowerCase().includes(q) || (x.description || "").toLowerCase().includes(q),
     )
@@ -33,9 +38,7 @@ export function useListsSearch(
     )
     const t = allTasks.filter((x) => !x.completed && itemTitle(x).toLowerCase().includes(q)).slice(0, 50)
     return { folders: f, lists: l, tasks: t }
-  }, [searchActive, q, folders, categories, allTasks])
-
-  const filteredItems = searchActive ? searchResults.tasks : allTasks.filter((t) => !t.completed)
+  }, [q, folders, categories, allTasks])
 
   return {
     searchTerm,
@@ -44,6 +47,10 @@ export function useListsSearch(
     clearSearch,
     searchActive,
     searchResults,
-    filteredItems,
+    // Nothing in the file manager reads this. A getter keeps the test value
+    // without scanning every incomplete item on renders that never ask for it.
+    get filteredItems() {
+      return q ? searchResults.tasks : allTasks.filter((t) => !t.completed)
+    },
   }
 }

@@ -11,6 +11,7 @@ import {
   isEditableFolder,
 } from "@/lib/folder-tree"
 import { buildListTree, flattenListTree } from "@/lib/list-tree"
+import { folderFor } from "@/components/Icons"
 
 export interface FolderTreeProps {
   folders: Folder[]
@@ -68,9 +69,14 @@ export function FolderTree({
 
   useEffect(() => {
     setExpandedIds((prev) => {
+      let grew = false
       const next = new Set(prev)
-      for (const id of defaultExpandedFolderIds(folders, location)) next.add(id)
-      return next
+      for (const id of defaultExpandedFolderIds(folders, location)) {
+        if (next.has(id)) continue
+        next.add(id)
+        grew = true
+      }
+      return grew ? next : prev
     })
   }, [folders, location])
 
@@ -177,7 +183,14 @@ export function FolderTree({
               ) : (
                 <span className="fm-tree-toggle-spacer" aria-hidden />
               )}
-              <span className="fm-tree-swatch" style={{ background: folder.color || "#9CA3AF" }} />
+              <img
+                className="fm-tree-icon"
+                src={folder.icon || folderFor(folder.id)}
+                alt=""
+                draggable={false}
+                loading="lazy"
+                decoding="async"
+              />
               <span className="fm-tree-label">{folder.name}</span>
               {onEditFolder && isEditableFolder(folder.id) && (
                 <button
@@ -215,7 +228,6 @@ export function FolderTree({
               data-category-id={category.id}
               data-depth={depth}
             >
-              <span className="fm-tree-swatch" style={{ background: category.color || "#9CA3AF" }} />
               <span className="fm-tree-label">{category.name}</span>
             </div>
           ))}

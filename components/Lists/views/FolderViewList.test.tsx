@@ -6,8 +6,10 @@ import { FolderViewList } from "./FolderViewList"
 
 vi.mock("@/components/Lists/lib/icon-utils", () => ({
   FolderGlyph: () => <span data-testid="folder-glyph" />,
+  folderFor: () => "/folder.png",
   iconFor: () => "/orb.png",
   orbFor: () => "/orb.png",
+  entryIconSrc: () => "/orb.png",
 }))
 
 const entry = (kind: GridEntry["kind"], id: string, name: string): GridEntry => ({
@@ -83,5 +85,27 @@ describe("FolderViewList", () => {
     const { props } = renderList({ selectMode: true, onToggleListSelect: vi.fn() })
     fireEvent.doubleClick(screen.getByText("list 1"))
     expect(props.openEntry).not.toHaveBeenCalled()
+  })
+
+  it("opens a folder context menu on right-click and can rename in place", () => {
+    const onFolderContextMenu = vi.fn()
+    const onCommitFolderRename = vi.fn()
+    const { rerender, props } = renderList({ onFolderContextMenu })
+    fireEvent.contextMenu(screen.getByText("Subfolder"))
+    expect(onFolderContextMenu).toHaveBeenCalledWith("sub", expect.any(Number), expect.any(Number))
+
+    rerender(
+      <FolderViewList
+        {...props}
+        onFolderContextMenu={onFolderContextMenu}
+        renamingFolderId="sub"
+        onCommitFolderRename={onCommitFolderRename}
+        onCancelFolderRename={vi.fn()}
+      />,
+    )
+    const input = screen.getByRole("textbox", { name: "Rename folder" })
+    fireEvent.change(input, { target: { value: "Pantry" } })
+    fireEvent.keyDown(input, { key: "Enter" })
+    expect(onCommitFolderRename).toHaveBeenCalledWith("sub", "Pantry")
   })
 })

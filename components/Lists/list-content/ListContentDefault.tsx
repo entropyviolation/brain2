@@ -1,5 +1,6 @@
 "use client"
 
+import { useMemo } from "react"
 import { mergeListAttributes, listAttributeSchema, formatAttributeValue } from "@/components/Lists/attribute-editor"
 import { iconFor } from "@/components/Lists/lib/icon-utils"
 import { isMissed } from "@/lib/completion-status"
@@ -18,6 +19,7 @@ import { itemTitle } from "@/lib/item-utils"
 import type { AttributeDefinition, List, Task } from "@/lib/types"
 import { ItemSelectCheckbox, activateListItem } from "./item-select"
 import type { ListContentDefaultProps } from "./types"
+import { useWindowedSlice } from "./use-windowed-slice"
 
 export type { ListContentDefaultProps } from "./types"
 
@@ -38,11 +40,14 @@ function priorityBits(task: Task): string[] {
   return bits
 }
 
-function otherListNames(task: Task, categories: List[], openCategory: List | null): string[] {
-  return (task.lists ?? [])
-    .filter((id) => id !== openCategory?.id)
-    .map((id) => categories.find((c) => c.id === id)?.name?.trim())
-    .filter((name): name is string => Boolean(name))
+function otherListNames(task: Task, namesById: Map<string, string>, openCategory: List | null): string[] {
+  const names: string[] = []
+  for (const id of task.lists ?? []) {
+    if (id === openCategory?.id) continue
+    const name = namesById.get(id)
+    if (name) names.push(name)
+  }
+  return names
 }
 
 function chipText(
@@ -70,14 +75,27 @@ export function ListContentDefault({
   const density = resolveDefaultViewDensity(prefs)
   const extraIds = resolveDefaultViewExtraAttributeIds(prefs)
   const extraSet = new Set(extraIds)
+  const listNameById = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const list of categories) {
+      const name = list.name?.trim()
+      if (name) map.set(list.id, name)
+    }
+    return map
+  }, [categories])
+  const rowPx = density === "compact" ? 28 : 40
+  const { ref, start, end } = useWindowedSlice(tasks.length, rowPx)
+  const visible = tasks.slice(start, end)
 
   return (
     <div
+      ref={ref}
       className={`fm-readlist${density === "compact" ? " compact" : ""}`}
       data-testid="list-default-read"
       data-density={density}
     >
-      {tasks.map((task) => {
+      {start > 0 ? <div style={{ height: start * rowPx }} aria-hidden /> : null}
+      {visible.map((task) => {
         const defs = openCategory
           ? listAttributeSchema(openCategory, types)
           : mergeListAttributes(categories, task.lists, types)
@@ -104,7 +122,7 @@ export function ListContentDefault({
         const pip = pipKind(task)
         const bits = show.priority ? priorityBits(task) : []
         const tags = show.tags ? (task.tags ?? []).filter((t) => t.trim()) : []
-        const lists = show.listNames ? otherListNames(task, categories, openCategory) : []
+        const lists = show.listNames ? otherListNames(task, listNameById, openCategory) : []
         const estimate = show.estimate ? formatEstimateMinutes(task.estimatedDuration) : ""
         const snippet = show.description ? descriptionSnippet(task) : ""
         const type = show.type ? typeLabel(task, openCategory, types) : ""
@@ -175,6 +193,7 @@ export function ListContentDefault({
           </div>
         )
       })}
+      {end < tasks.length ? <div style={{ height: (tasks.length - end) * rowPx }} aria-hidden /> : null}
     </div>
   )
 }

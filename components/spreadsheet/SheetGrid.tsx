@@ -120,6 +120,8 @@ const DEFAULT_NAME_W = 200
 const DEFAULT_COL_W = 160
 const DEFAULT_ROW_H = 28
 const MIN_ROW_H = 22
+/** Trailing pause before filter text is written onto sheet config. Blur commits sooner. */
+const FILTER_COMMIT_MS = 400
 
 interface SheetGridProps {
   /** Schema source + new-row/new-column target. */
@@ -134,7 +136,7 @@ interface SheetGridProps {
   className?: string
   /** Initial sort / filter / freeze / width state. */
   viewConfig?: SheetViewConfig
-  /** Notified whenever the user changes sort / filter / freeze / widths. */
+  /** Notified when sort, freeze, widths, or columns change, and when filter text commits (blur or idle). */
   onViewConfigChange?: (config: SheetViewConfig) => void
   selectMode?: boolean
   selectedTaskIds?: string[]
@@ -168,10 +170,25 @@ export function SheetGrid({
 
   // ---- View state (sort / filter / freeze / widths / columns) ---------------
   const [config, setConfig] = useState<SheetViewConfig>(viewConfig ?? {})
+  // Filter text filters the grid immediately and is written with column-style
+  // persistence: not on each character. Blur and a trailing idle commit it.
+  const [filterDraft, setFilterDraft] = useState(viewConfig?.filterText ?? "")
+  const filterDraftRef = useRef(filterDraft)
+  filterDraftRef.current = filterDraft
+  const filterIdleRef = useRef(0)
+  const onViewConfigChangeRef = useRef(onViewConfigChange)
+  onViewConfigChangeRef.current = onViewConfigChange
+  const skipCategoryHydrate = useRef(true)
   useEffect(() => {
-    // Rehydrate when switching lists. Do not reset live widths on task refresh
-    // or on the echo of our own persist write.
+    // Initial state already came from viewConfig. Rehydrate only when the list
+    // changes — not on task refresh or the echo of our own persist write.
+    if (skipCategoryHydrate.current) {
+      skipCategoryHydrate.current = false
+      return
+    }
+    window.clearTimeout(filterIdleRef.current)
     setConfig(viewConfig ?? {})
+    setFilterDraft(viewConfig?.filterText ?? "")
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categoryId])
   const incomingColumnIds = viewConfig?.columnIds
@@ -189,10 +206,32 @@ export function SheetGrid({
   const patchConfig = (patch: Partial<SheetViewConfig>) => {
     setConfig((prev) => {
       const next = persistSheetViewConfig(prev, patch)
-      onViewConfigChange?.(next)
+      onViewConfigChangeRef.current?.(next)
       return next
     })
   }
+
+  const commitFilterText = (text: string) => {
+    window.clearTimeout(filterIdleRef.current)
+    setConfig((prev) => {
+      if ((prev.filterText ?? "") === text) return prev
+      const next = persistSheetViewConfig(prev, { filterText: text })
+      onViewConfigChangeRef.current?.(next)
+      return next
+    })
+  }
+
+  const onFilterChange = (value: string) => {
+    setFilterDraft(value)
+    window.clearTimeout(filterIdleRef.current)
+    filterIdleRef.current = window.setTimeout(() => commitFilterText(value), FILTER_COMMIT_MS)
+  }
+
+  useEffect(() => {
+    return () => {
+      window.clearTimeout(filterIdleRef.current)
+    }
+  }, [])
 
   const catalog = useMemo(
     () =>
@@ -230,7 +269,7 @@ export function SheetGrid({
   }, [category, lists, tasks, attrColumns, types, catalog])
 
   const sort = config.sort
-  const filterText = config.filterText ?? ""
+  const filterText = filterDraft
   const frozenColCount = Math.max(1, config.frozenColCount ?? 1)
   const widths = config.columnWidths ?? {}
 
@@ -257,8 +296,46 @@ export function SheetGrid({
     patchConfig(applyColumnWidth({}, columnId, width, MIN_SHEET_COL_WIDTH))
   }
 
-  const rowHeights = config.rowHeights ?? {}
-  const rowHeightOf = (rowId: string): number => rowHeights[rowId] ?? DEFAULT_ROW_H
+  const rowHeights = config.rowHeights
+  const rowHeightOf = (rowId: string): number => rowHeights?.[rowId] ?? DEFAULT_ROW_H
+  const rowOffsets = useMemo(() => {
+    const offsets = new Array<number>(displayTasks.length + 1)
+    offsets[0] = 0
+    for (let i = 0; i < displayTasks.length; i++) {
+      offsets[i + 1] = offsets[i] + (rowHeights?.[displayTasks[i].id] ?? DEFAULT_ROW_H)
+    }
+    return offsets
+  }, [displayTasks, rowHeights])
+  const sheetScrollRef = useRef<HTMLDivElement>(null)
+  const [sheetSpan, setSheetSpan] = useState({ start: 0, end: 40 })
+  useEffect(() => {
+    const el = sheetScrollRef.current
+    if (!el) return
+    let timer = 0
+    const update = () => {
+      const top = el.scrollTop
+      const view = el.clientHeight || 480
+      let start = 0
+      while (start < displayTasks.length && rowOffsets[start + 1] < top - 240) start++
+      let end = start
+      while (end < displayTasks.length && rowOffsets[end] < top + view + 240) end++
+      if (end < start + 1) end = Math.min(displayTasks.length, start + 1)
+      setSheetSpan((prev) => (prev.start === start && prev.end === end ? prev : { start, end }))
+    }
+    const onScroll = () => {
+      window.clearTimeout(timer)
+      timer = window.setTimeout(update, 0)
+    }
+    onScroll()
+    el.addEventListener("scroll", onScroll, { passive: true })
+    const observed = typeof ResizeObserver === "function" ? new ResizeObserver(onScroll) : null
+    observed?.observe(el)
+    return () => {
+      window.clearTimeout(timer)
+      el.removeEventListener("scroll", onScroll)
+      observed?.disconnect()
+    }
+  }, [displayTasks.length, rowOffsets])
   const onResizeRow = (rowId: string, height: number) => {
     patchConfig({ rowHeights: { ...rowHeights, [rowId]: Math.max(MIN_ROW_H, Math.round(height)) } })
   }
@@ -273,6 +350,15 @@ export function SheetGrid({
   // Inline edit mode (Sheets: double-click / F2 / type-to-replace). `seed` replaces
   // the cell contents when the user starts typing a printable character.
   const [editingCell, setEditingCell] = useState<(GridCell & { seed?: string }) | null>(null)
+  const pinnedRow = editingCell?.row ?? active?.row
+  const sheetEnd = Math.min(
+    displayTasks.length,
+    pinnedRow == null ? sheetSpan.end : Math.max(sheetSpan.end, pinnedRow + 1),
+  )
+  const sheetStart = Math.min(
+    sheetEnd,
+    pinnedRow == null ? sheetSpan.start : Math.min(sheetSpan.start, pinnedRow),
+  )
 
   const applyWrite = useCallback(
     (task: Task, column: SheetColumn, value: AttributeValue): Task => {
@@ -714,7 +800,8 @@ export function SheetGrid({
     <div className={className}>
       <SheetToolbar
         filterText={filterText}
-        onFilterChange={(v) => patchConfig({ filterText: v })}
+        onFilterChange={onFilterChange}
+        onFilterBlur={() => commitFilterText(filterDraftRef.current)}
         selectedTask={selectedTask}
         selectedColumn={selectedColumn}
         cellAddress={active ? `${columnToLetters(active.col)}${active.row + 1}` : "—"}
@@ -730,7 +817,7 @@ export function SheetGrid({
       />
 
       <div className="sheet-grid-host">
-        <div className="overflow-auto border rounded-md max-h-[70vh] bg-background">
+        <div ref={sheetScrollRef} className="overflow-auto border rounded-md max-h-[70vh] bg-background">
         <table className="sheet-grid border-collapse text-sm">
           <thead className="sticky top-0 z-20">
             <tr>
@@ -786,7 +873,13 @@ export function SheetGrid({
             </tr>
           </thead>
           <tbody>
-            {displayTasks.map((task, rowIdx) => {
+            {sheetStart > 0 && (
+              <tr aria-hidden style={{ height: rowOffsets[sheetStart] }}>
+                <td colSpan={attrColumns.length + 3} />
+              </tr>
+            )}
+            {displayTasks.slice(sheetStart, sheetEnd).map((task, localIdx) => {
+              const rowIdx = sheetStart + localIdx
               const rowSelected = !!selectMode && !!selectedTaskIds?.includes(task.id)
               return (
               <tr
@@ -889,6 +982,11 @@ export function SheetGrid({
               </tr>
               )
             })}
+            {sheetEnd < displayTasks.length && (
+              <tr aria-hidden style={{ height: rowOffsets[displayTasks.length] - rowOffsets[sheetEnd] }}>
+                <td colSpan={attrColumns.length + 3} />
+              </tr>
+            )}
             {displayTasks.length === 0 && (
               <tr>
                 <td colSpan={attrColumns.length + 2} className="px-3 py-6 text-center text-muted-foreground">
@@ -1073,6 +1171,7 @@ function FillHandle({ onStart }: { onStart: (e: React.MouseEvent) => void }) {
 function SheetToolbar({
   filterText,
   onFilterChange,
+  onFilterBlur,
   selectedTask,
   selectedColumn,
   cellAddress,
@@ -1080,6 +1179,7 @@ function SheetToolbar({
 }: {
   filterText: string
   onFilterChange: (value: string) => void
+  onFilterBlur: () => void
   selectedTask: Task | null
   selectedColumn: SheetColumn | null
   cellAddress: string
@@ -1135,6 +1235,7 @@ function SheetToolbar({
         aria-label="Filter rows"
         value={filterText}
         onChange={(e) => onFilterChange(e.target.value)}
+        onBlur={onFilterBlur}
         placeholder="Filter…"
         className="h-8 max-w-[180px]"
       />

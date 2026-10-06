@@ -10,6 +10,7 @@ import { isListHiddenFromGlobalAll } from "@/lib/module-lists"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { useTaskStore } from "@/lib/task-store"
 import { iconFor } from "@/components/Lists/lib/icon-utils"
+import { listDisplayCaption } from "@/components/Lists/lib/velvet-icon-grid"
 import { AttributeSchemaEditor, AttributeValuesEditor, listAttributeSchema } from "@/components/Lists/attribute-editor"
 import { ListRulesEditor } from "@/components/Lists/dialogs/ListRulesEditor"
 import { ItemTypeEditor } from "@/components/ItemTypes/ItemTypeEditor"
@@ -20,10 +21,13 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Trash, CalendarClock, Settings, Star, Shapes, Pencil, Eye } from "lucide-react"
+import { Trash, CalendarClock, Settings, Star, Shapes, Pencil, Eye, Copy } from "lucide-react"
 import { ConnectedListsEditor } from "@/components/Lists/dialogs/ConnectedListsEditor"
 import { InFoldersEditor } from "@/components/Lists/dialogs/InFoldersEditor"
+import { ListChildrenEditor } from "@/components/Lists/dialogs/ListChildrenEditor"
+import { AutoMark } from "@/components/Lists/dialogs/FolderRelationsEditor"
 import { ChecklistViewSettings } from "@/components/Lists/dialogs/ChecklistViewSettings"
+import { isAutoCreatedList } from "@/lib/lists-duplicate"
 import { snapshotsEqual } from "@/lib/unsaved-changes"
 import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
 
@@ -38,14 +42,10 @@ export interface EditListDialogProps {
   onOpenIconPicker: () => void
   onSave: (category: List) => void
   onDelete: () => void
+  onDuplicate?: () => void
 }
 
 const ALL_DISPLAYS: ListDisplayMode[] = [...LIST_DISPLAY_MODES]
-
-function displayLabel(d: ListDisplayMode): string {
-  if (d === "table") return "Details"
-  return d[0].toUpperCase() + d.slice(1)
-}
 
 export function EditListDialog({
   editingCategory,
@@ -56,6 +56,7 @@ export function EditListDialog({
   onOpenIconPicker,
   onSave,
   onDelete,
+  onDuplicate,
 }: EditListDialogProps) {
   const types = useItemTypeStore((s) => s.types)
   const addType = useItemTypeStore((s) => s.addType)
@@ -159,6 +160,7 @@ export function EditListDialog({
           <DialogTitle className="flex items-center gap-2">
             <Settings className="h-5 w-5" />
             List Settings
+            <AutoMark show={isAutoCreatedList(editingCategory)} />
           </DialogTitle>
           <DialogDescription>
             {isFolderAll
@@ -240,6 +242,8 @@ export function EditListDialog({
 
           <InFoldersEditor listId={editingCategory.id} />
 
+          <ListChildrenEditor listId={editingCategory.id} />
+
           <ConnectedListsEditor listId={editingCategory.id} />
 
           {/* Item type — items in this list adopt this type's attributes + defaults. */}
@@ -316,7 +320,7 @@ export function EditListDialog({
                 return (
                   <label key={d} className="flex items-center gap-2 rounded-md border p-2 cursor-pointer text-sm">
                     <input type="checkbox" checked={on} onChange={() => toggleDisplay(d)} />
-                    <span>{displayLabel(d)}</span>
+                    <span>{listDisplayCaption(d)}</span>
                   </label>
                 )
               })}
@@ -460,13 +464,17 @@ export function EditListDialog({
             <div className="space-y-0.5">
               <Label htmlFor="edit-category-scheduleable" className="flex items-center gap-2">
                 <CalendarClock className="h-4 w-4" />
-                Scheduleable
+                Send to Scheduler
               </Label>
-              <p className="text-xs text-muted-foreground">Show items in this list in the Scheduler.</p>
+              <p className="text-xs text-muted-foreground">
+                Off unless you turn it on. Puts this list in the Scheduler, the tool that sorts to-do lists
+                into year, month, week, and day. A list can be scheduled — a trip itinerary with dates —
+                without being sent there.
+              </p>
             </div>
             <Switch
               id="edit-category-scheduleable"
-              checked={editingCategory.scheduleable !== false}
+              checked={editingCategory.scheduleable === true}
               onCheckedChange={(checked) => onEditingCategoryChange({ ...editingCategory, scheduleable: checked })}
             />
           </div>
@@ -520,22 +528,32 @@ export function EditListDialog({
           </>
           )}
         </div>
-        <div className="flex justify-end gap-2 pt-3 border-t shrink-0">
-          <Button variant="outline" onClick={guard.requestClose}>
-            Cancel
-          </Button>
-          <Button
-            onClick={() =>
-              onSave({
-                ...editingCategory,
-                name: textRef.current.name,
-                description: textRef.current.description,
-                itemLabel: textRef.current.itemLabel || undefined,
-              })
-            }
-          >
-            Save Changes
-          </Button>
+        <div className="flex justify-between gap-2 pt-3 border-t shrink-0 flex-wrap">
+          <div>
+            {onDuplicate && !isFolderAll && (
+              <Button type="button" variant="outline" onClick={onDuplicate}>
+                <Copy className="h-4 w-4 mr-2" />
+                Duplicate list
+              </Button>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={guard.requestClose}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() =>
+                onSave({
+                  ...editingCategory,
+                  name: textRef.current.name,
+                  description: textRef.current.description,
+                  itemLabel: textRef.current.itemLabel || undefined,
+                })
+              }
+            >
+              Save Changes
+            </Button>
+          </div>
         </div>
       </DialogContent>
 

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useState } from "react"
 import type { Folder, List } from "@/lib/types"
 import { readListsNavigation, writeListsNavigation, COGS_NAVIGATE_TO_LIST_EVENT } from "@/lib/app-navigation"
+import { subscribeNavRestore } from "@/lib/screen-location"
 import { openTargetFromEntry, openTargetKey, openTargetReducer } from "@/components/Lists/open-target"
 import { ROOT_ALL_FOLDER_ID } from "@/components/Lists/constants"
 import type { GridEntry, OpenTarget } from "@/components/Lists/types"
@@ -45,11 +46,11 @@ export function useListsNavigation(categories: List[], folders: Folder[]) {
     dispatchOpenTarget({ type: "OPEN_CATEGORY", id: listId })
   }, [])
 
-  const openSmartList = useCallback((id: "daily" | "weekly" | "monthly") => {
+  const openSmartList = useCallback((id: "daily" | "weekly" | "monthly" | "quarterly") => {
     dispatchOpenTarget({ type: "OPEN_SMART", id })
   }, [])
 
-  const openHabits = useCallback((id: "habits" | "weekly-habits" | "monthly-habits") => {
+  const openHabits = useCallback((id: "habits" | "weekly-habits" | "monthly-habits" | "season-habits") => {
     dispatchOpenTarget({ type: "OPEN_HABITS", id })
   }, [])
 
@@ -92,6 +93,15 @@ export function useListsNavigation(categories: List[], folders: Folder[]) {
     }
     window.addEventListener(COGS_NAVIGATE_TO_LIST_EVENT, handler)
     return () => window.removeEventListener(COGS_NAVIGATE_TO_LIST_EVENT, handler)
+  }, [])
+
+  // Screen history Back/Forward rewrites lists nav without the jump-to-Lists event.
+  useEffect(() => {
+    return subscribeNavRestore(() => {
+      const nav = readListsNavigation()
+      setLocation(nav.location)
+      dispatchOpenTarget({ type: "SET", target: nav.openTarget })
+    })
   }, [])
 
   useEffect(() => {

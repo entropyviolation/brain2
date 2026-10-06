@@ -1246,4 +1246,74 @@ describe("EnhancedCategoryView Integration", () => {
       expect(useTaskStore.getState().removedTaskIds).toContain("task-2")
     })
   })
+
+  it("merges items selected from search results — originals gone, search finds only survivor", async () => {
+    const user = userEvent.setup()
+    useTaskStore.getState().setLists([
+      { id: "list-1", name: "Work Tasks", color: "#ff0000", description: "", createdAt: new Date(), order: 0 },
+      { id: "list-2", name: "Home Tasks", color: "#00ff00", description: "", createdAt: new Date(), order: 1 },
+    ])
+    useTaskStore.getState().setTasks([
+      {
+        id: "dup-a",
+        description: "Grocery milk",
+        lists: ["list-1"],
+        tags: ["work"],
+        stage: "list",
+        completed: false,
+        createdAt: new Date(),
+        urgency: 1,
+        importance: 1,
+      },
+      {
+        id: "dup-b",
+        description: "Grocery milk errand",
+        lists: ["list-2"],
+        tags: ["errand"],
+        stage: "list",
+        completed: false,
+        createdAt: new Date(),
+        urgency: 1,
+        importance: 1,
+      },
+      {
+        id: "other",
+        description: "Unrelated",
+        lists: ["list-1"],
+        stage: "list",
+        completed: false,
+        createdAt: new Date(),
+        urgency: 1,
+        importance: 1,
+      },
+    ])
+
+    render(<EnhancedCategoryView onTaskSelect={vi.fn()} />)
+    await user.type(screen.getByPlaceholderText("Search folders, lists, items…"), "grocery")
+    expect(await screen.findByText(/Search: grocery/i)).toBeInTheDocument()
+    expect(screen.getByText("Grocery milk")).toBeInTheDocument()
+    expect(screen.getByText("Grocery milk errand")).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: "Select" }))
+    fireEvent.click(screen.getByText("Grocery milk"))
+    fireEvent.click(screen.getByText("Grocery milk errand"))
+    fireEvent.click(screen.getByRole("button", { name: "Merge items" }))
+    fireEvent.click(await screen.findByRole("button", { name: "Continue" }))
+    fireEvent.click(screen.getByRole("button", { name: "Merge" }))
+
+    await waitFor(() => {
+      const state = useTaskStore.getState()
+      expect(state.tasks.find((t) => t.id === "dup-b")).toBeUndefined()
+      expect(state.tasks.find((t) => t.id === "other")).toBeDefined()
+      const survivor = state.tasks.find((t) => t.id === "dup-a")
+      expect(survivor).toBeDefined()
+      expect(survivor?.lists).toEqual(expect.arrayContaining(["list-1", "list-2"]))
+      expect(survivor?.tags).toEqual(expect.arrayContaining(["work", "errand"]))
+      expect(state.removedTaskIds).toContain("dup-b")
+    })
+
+    // Search stays live off the store — discarded titles must not reappear.
+    expect(screen.queryByText("Grocery milk errand")).not.toBeInTheDocument()
+    expect(screen.getByText("Grocery milk")).toBeInTheDocument()
+  })
 })

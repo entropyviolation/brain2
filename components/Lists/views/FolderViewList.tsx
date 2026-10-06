@@ -3,7 +3,8 @@
 import { useDeferredValue, useMemo, useState } from "react"
 import type React from "react"
 import type { GridEntry } from "@/components/Lists/types"
-import { FolderGlyph, iconFor, orbFor } from "@/components/Lists/lib/icon-utils"
+import { entryIconSrc } from "@/components/Lists/lib/icon-utils"
+import { FolderRenameInput } from "@/components/Lists/views/FolderContextMenu"
 import { isMultiSelectableEntry, pinMatchingListsToTop } from "@/lib/lists-folder-search"
 
 export interface FolderViewListProps {
@@ -22,6 +23,10 @@ export interface FolderViewListProps {
   onToggleFolderSelect?: (folderId: string) => void
   /** When true, search placeholder mentions the current folder. */
   inFolder?: boolean
+  onFolderContextMenu?: (folderId: string, clientX: number, clientY: number) => void
+  renamingFolderId?: string | null
+  onCommitFolderRename?: (folderId: string, name: string) => void
+  onCancelFolderRename?: () => void
 }
 
 export function FolderViewList({
@@ -39,6 +44,10 @@ export function FolderViewList({
   onToggleListSelect,
   onToggleFolderSelect,
   inFolder = false,
+  onFolderContextMenu,
+  renamingFolderId = null,
+  onCommitFolderRename,
+  onCancelFolderRename,
 }: FolderViewListProps) {
   const [listSearch, setListSearch] = useState("")
   const deferredSearch = useDeferredValue(listSearch)
@@ -81,11 +90,18 @@ export function FolderViewList({
               onDrop={(e) => handleDropOnEntry(e, entry)}
               onDragEnd={clearDrag}
               onClick={() => {
+                if (renamingFolderId === entry.id) return
                 if (selectMode && selectable) toggleSelect(entry)
                 else setActiveIconId(entry.id)
               }}
               onDoubleClick={() => {
                 if (!selectMode) openEntry(entry)
+              }}
+              onContextMenu={(e) => {
+                if (entry.kind !== "folder" || !onFolderContextMenu) return
+                e.preventDefault()
+                e.stopPropagation()
+                onFolderContextMenu(entry.id, e.clientX, e.clientY)
               }}
             >
               {selectMode && selectable && (
@@ -97,19 +113,24 @@ export function FolderViewList({
                   onChange={() => toggleSelect(entry)}
                 />
               )}
-              {entry.kind === "folder" && !entry.icon ? (
-                <FolderGlyph size={22} color={entry.color} />
-              ) : (
-                <img
-                  className="fm-link-icon"
-                  src={entry.kind === "smart" || entry.kind === "habits" || entry.kind === "objectives" ? orbFor(entry.id) : iconFor(entry.id, entry.icon)}
-                  alt=""
-                  draggable={false}
-                  loading="lazy"
-                  decoding="async"
+              <img
+                className="fm-link-icon"
+                src={entryIconSrc(entry)}
+                alt=""
+                draggable={false}
+                loading="lazy"
+                decoding="async"
+              />
+              {entry.kind === "folder" && renamingFolderId === entry.id && onCommitFolderRename && onCancelFolderRename ? (
+                <FolderRenameInput
+                  name={entry.name}
+                  className="fm-input fm-rename-input fm-rename-input-row"
+                  onCommit={(next) => onCommitFolderRename(entry.id, next)}
+                  onCancel={onCancelFolderRename}
                 />
+              ) : (
+                <span className="fm-link-text">{entry.name}</span>
               )}
-              <span className="fm-link-text">{entry.name}</span>
               <span className="fm-icon-badge">{entry.count}</span>
             </div>
           )

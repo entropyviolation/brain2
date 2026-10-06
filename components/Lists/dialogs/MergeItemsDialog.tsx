@@ -7,9 +7,8 @@ import { uniqueNonEmpty } from "@/lib/list-merge"
 import { defaultItemMergePlan, itemMergeLabel, type ItemMergePlan } from "@/lib/item-merge"
 import { isNaSmartCategoryId } from "@/lib/scheduled-lists-sync"
 import { Button } from "@/components/ui/button"
-import { IsolatedInput } from "@/components/ui/isolated-text-field"
-import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { MergeFieldGroup, MergeKeepCheckbox, MergeMembershipToggles } from "./MergeFieldGroup"
 
 export interface MergeItemsDialogProps {
   open: boolean
@@ -54,119 +53,78 @@ export function MergeItemsDialog({ open, items, lists, onClose, onMerge }: Merge
         <DialogHeader>
           <DialogTitle>Merge items</DialogTitle>
           <DialogDescription>
-            Combine {items.length} items into one. Choose what to keep on the merged item. Extra item records are
-            removed after the merge.
+            Combine {items.length} items into one survivor. Every attribute from the selected items is combined onto
+            that survivor (tags, lists, custom fields, links, and the rest). Extra item records are removed after the
+            merge — a later search will not find them.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 text-sm">
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={plan.keepAllDetails}
-              onChange={(e) => patch({ keepAllDetails: e.target.checked })}
-            />
-            Keep all details
-          </label>
-          <div className="space-y-2">
-            <Label>Title</Label>
-            {titles.length > 1 ? (
-              titles.map((description) => (
-                <label key={description} className="flex items-start gap-2">
-                  <input
-                    type="radio"
-                    name="merge-item-title"
-                    checked={plan.description === description}
-                    onChange={() => patch({ description })}
-                  />
-                  <span>{description}</span>
-                </label>
-              ))
-            ) : (
-              <IsolatedInput
-                value={plan.description}
-                onCommit={(description) => patch({ description })}
-              />
-            )}
-          </div>
+          <MergeKeepCheckbox
+            label="Keep all details"
+            checked={plan.keepAllDetails}
+            onChange={(keepAllDetails) => patch({ keepAllDetails })}
+          />
+          <MergeFieldGroup
+            label="Title"
+            radioName="merge-item-title"
+            options={titles}
+            value={plan.description}
+            onChange={(description) => patch({ description: description ?? "" })}
+            inputFallback
+          />
           {notes.length > 0 && (
-            <div className="space-y-2">
-              <Label>Notes</Label>
-              <label className="flex items-center gap-2">
-                <input type="radio" name="merge-item-notes" checked={!plan.notes} onChange={() => patch({ notes: undefined })} />
-                None
-              </label>
-              {notes.map((value) => (
-                <label key={value} className="flex items-start gap-2">
-                  <input
-                    type="radio"
-                    name="merge-item-notes"
-                    checked={plan.notes === value}
-                    onChange={() => patch({ notes: value })}
-                  />
-                  <span>{value}</span>
-                </label>
-              ))}
-            </div>
+            <MergeFieldGroup
+              label="Notes"
+              radioName="merge-item-notes"
+              options={notes}
+              value={plan.notes}
+              onChange={(notesValue) => patch({ notes: notesValue })}
+              allowNone
+              keepAllHint={
+                plan.keepAllDetails
+                  ? "Every note is kept. The selected one is placed first."
+                  : undefined
+              }
+            />
           )}
           {whys.length > 0 && (
-            <div className="space-y-2">
-              <Label>Why</Label>
-              <label className="flex items-center gap-2">
-                <input type="radio" name="merge-item-why" checked={!plan.why} onChange={() => patch({ why: undefined })} />
-                None
-              </label>
-              {whys.map((value) => (
-                <label key={value} className="flex items-start gap-2">
-                  <input
-                    type="radio"
-                    name="merge-item-why"
-                    checked={plan.why === value}
-                    onChange={() => patch({ why: value })}
-                  />
-                  <span>{value}</span>
-                </label>
-              ))}
-            </div>
+            <MergeFieldGroup
+              label="Why"
+              radioName="merge-item-why"
+              options={whys}
+              value={plan.why}
+              onChange={(why) => patch({ why })}
+              allowNone
+              keepAllHint={
+                plan.keepAllDetails
+                  ? "Every why is kept. The selected one is placed first."
+                  : undefined
+              }
+            />
           )}
-          <div className="space-y-2">
-            <Label>Lists</Label>
-            <p className="text-xs text-muted-foreground">The merged item can belong to more than one list.</p>
-            {membershipLists.map((list) => (
-              <label key={list.id} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={plan.listIds.includes(list.id)}
-                  onChange={(e) => toggleList(list.id, e.target.checked)}
-                />
-                {list.name}
-              </label>
-            ))}
-            {membershipLists.length === 0 && <p className="text-xs text-muted-foreground">No lists yet.</p>}
-          </div>
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={plan.preserveAttributes}
-              onChange={(e) => patch({ preserveAttributes: e.target.checked })}
-            />
-            Preserve attributes from every item
-          </label>
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={plan.preserveTags}
-              onChange={(e) => patch({ preserveTags: e.target.checked })}
-            />
-            Preserve tags from every item
-          </label>
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={plan.preserveLinks}
-              onChange={(e) => patch({ preserveLinks: e.target.checked })}
-            />
-            Preserve links from every item
-          </label>
+          <MergeMembershipToggles
+            label="Lists"
+            hint="The merged item can belong to more than one list."
+            items={membershipLists.map((l) => ({ id: l.id, name: l.name }))}
+            selectedIds={plan.listIds}
+            onToggle={toggleList}
+            emptyMessage="No lists yet."
+          />
+          <MergeKeepCheckbox
+            label="Preserve attributes from every item"
+            checked={plan.preserveAttributes}
+            onChange={(preserveAttributes) => patch({ preserveAttributes })}
+          />
+          <MergeKeepCheckbox
+            label="Preserve tags from every item"
+            checked={plan.preserveTags}
+            onChange={(preserveTags) => patch({ preserveTags })}
+          />
+          <MergeKeepCheckbox
+            label="Preserve links from every item"
+            checked={plan.preserveLinks}
+            onChange={(preserveLinks) => patch({ preserveLinks })}
+          />
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={onClose}>
               Cancel

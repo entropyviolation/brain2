@@ -3,6 +3,7 @@
 import { ItemSelectCheckbox, activateListItem } from "./item-select"
 import { ListMissedButton } from "./ListMissedButton"
 import type { ListContentChecklistProps } from "./types"
+import { useWindowedSlice } from "./use-windowed-slice"
 import { itemTitle } from "@/lib/item-utils"
 import {
   CHECKLIST_CHECKBOX_LABELS,
@@ -29,16 +30,19 @@ export function ListContentChecklist({
   const showMissed = checklistHasVar(vars, "missed") && !!onMissedOpportunity
   const checkCols = `repeat(${showMissed ? 2 : 1}, minmax(4.6rem, auto))`
   const gridTemplate = `${selectMode ? "18px " : ""}${checkCols} minmax(0, 1fr)`
+  const rowPx = 32
+  const { ref, start, end } = useWindowedSlice(tasks.length, rowPx)
 
   return (
-    <div className="fm-linklist fm-checklist">
+    <div ref={ref} className="fm-linklist fm-checklist">
       <div className="fm-link-row fm-check-head" style={{ gridTemplateColumns: gridTemplate }} aria-hidden={false}>
         {selectMode && <span className="fm-check-head-spacer" />}
         <span className="fm-check-head-col">{CHECKLIST_CHECKBOX_LABELS.completed}</span>
         {showMissed && <span className="fm-check-head-col">{CHECKLIST_CHECKBOX_LABELS.missed}</span>}
         <span className="fm-check-head-rest" />
       </div>
-      {tasks.map((task) => (
+      {start > 0 ? <div style={{ height: start * rowPx }} aria-hidden /> : null}
+      {tasks.slice(start, end).map((task) => (
         <div
           key={task.id}
           className={`fm-link-row${selectMode && selected.has(task.id) ? " selected" : ""}`}
@@ -80,6 +84,7 @@ export function ListContentChecklist({
           </span>
         </div>
       ))}
+      {end < tasks.length ? <div style={{ height: (tasks.length - end) * rowPx }} aria-hidden /> : null}
     </div>
   )
 }

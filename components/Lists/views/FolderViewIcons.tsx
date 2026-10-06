@@ -3,7 +3,7 @@
 import type React from "react"
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import type { GridEntry, IconPickerTarget } from "@/components/Lists/types"
-import { FolderGlyph, iconFor, orbFor } from "@/components/Lists/lib/icon-utils"
+import { entryIconSrc, folderFor } from "@/components/Lists/lib/icon-utils"
 import {
   freezeVelvetPositions,
   inferIconLayoutMode,
@@ -15,13 +15,21 @@ import {
   VELVET_ICON_CELL,
   type IconLayoutMode,
 } from "@/components/Lists/lib/velvet-icon-grid"
+import { FolderRenameInput } from "@/components/Lists/views/FolderContextMenu"
 import "./folder-view-icons-trail.css"
 
 function renderEntryIcon(entry: GridEntry, px: number) {
-  if ((entry.kind === "folder" || entry.kind === "folder-all") && !entry.icon)
-    return <FolderGlyph size={px} color={entry.color} />
-  const src = entry.kind === "smart" || entry.kind === "habits" || entry.kind === "objectives" ? orbFor(entry.id) : iconFor(entry.id, entry.icon)
-  return <img className="fm-icon-img" src={src} alt="" draggable={false} loading="lazy" decoding="async" style={{ maxWidth: px, maxHeight: px }} />
+  return (
+    <img
+      className="fm-icon-img"
+      src={entryIconSrc(entry)}
+      alt=""
+      draggable={false}
+      loading="lazy"
+      decoding="async"
+      style={{ maxWidth: px, maxHeight: px }}
+    />
+  )
 }
 
 function iconPosKey(entry: GridEntry) {
@@ -236,6 +244,11 @@ export interface FolderViewIconsProps {
   setIconPickerFor: (target: IconPickerTarget) => void
   openNewCategoryDialog: () => void
   onCanvasWidth?: (width: number) => void
+  /** Right-click a folder icon → context menu (Open / Rename / settings). */
+  onFolderContextMenu?: (folderId: string, clientX: number, clientY: number) => void
+  renamingFolderId?: string | null
+  onCommitFolderRename?: (folderId: string, name: string) => void
+  onCancelFolderRename?: () => void
 }
 
 interface ActiveDrag {
@@ -283,6 +296,10 @@ export function FolderViewIcons({
   setIconPickerFor,
   openNewCategoryDialog,
   onCanvasWidth,
+  onFolderContextMenu,
+  renamingFolderId = null,
+  onCommitFolderRename,
+  onCancelFolderRename,
 }: FolderViewIconsProps) {
   const canvasRef = useRef<HTMLDivElement>(null)
   const [canvasWidth, setCanvasWidth] = useState(VELVET_GRID_FALLBACK_WIDTH)
@@ -368,7 +385,8 @@ export function FolderViewIcons({
   const beginPointerDrag = useCallback(
     (entry: GridEntry, e: React.MouseEvent) => {
       if (e.button !== 0) return
-      if ((e.target as HTMLElement).closest(".fm-icon-pin, .fm-icon-edit")) return
+      if ((e.target as HTMLElement).closest(".fm-icon-pin, .fm-icon-edit, .fm-rename-input")) return
+      if (renamingFolderId && entry.kind === "folder" && entry.id === renamingFolderId) return
       if (selectMode && entry.kind === "list") return
 
       const key = iconPosKey(entry)
@@ -404,7 +422,15 @@ export function FolderViewIcons({
           commitIconLayout?.(location, frozen, "freeform")
         }
         const next = { x: Math.max(0, drag.origX + dx), y: Math.max(0, drag.origY + dy) }
-        setDragPos(next)
+        dragPosRef.current = next
+        const base = dragFreezeRef.current?.[drag.key]
+        if (!base) return
+        const node = canvasRef.current?.querySelector<HTMLElement>(
+          `[data-icon-entry][data-kind="${drag.kind}"][data-id="${drag.id}"]`,
+        )
+        if (node) {
+          node.style.transform = `translate3d(${next.x - base.x}px, ${next.y - base.y}px, 0)`
+        }
 
         if (drag.kind === "list") {
           const under =
@@ -435,9 +461,15 @@ export function FolderViewIcons({
             if (targetEntry) {
               onFileCategoryOnEntry(drag.id, targetEntry)
             } else if (dragPosRef.current) {
+              canvasRef.current
+                ?.querySelector<HTMLElement>(`[data-icon-entry][data-kind="${drag.kind}"][data-id="${drag.id}"]`)
+                ?.style.removeProperty("transform")
               setIconPosition(location, drag.key, dragPosRef.current.x, dragPosRef.current.y)
             }
           } else if (dragPosRef.current) {
+            canvasRef.current
+              ?.querySelector<HTMLElement>(`[data-icon-entry][data-kind="${drag.kind}"][data-id="${drag.id}"]`)
+              ?.style.removeProperty("transform")
             setIconPosition(location, drag.key, dragPosRef.current.x, dragPosRef.current.y)
           }
         }
@@ -455,7 +487,17 @@ export function FolderViewIcons({
       window.addEventListener("mousemove", onMove)
       window.addEventListener("mouseup", onUp)
     },
-    [commitIconLayout, entries, location, onFileCategoryOnEntry, positions, selectMode, setDropTargetId, setIconPosition],
+    [
+      commitIconLayout,
+      entries,
+      location,
+      onFileCategoryOnEntry,
+      positions,
+      renamingFolderId,
+      selectMode,
+      setDropTargetId,
+      setIconPosition,
+    ],
   )
 
   // --- Auto-organize: cursor/snowflake canvas trace + DOM heads -------------
@@ -587,7 +629,17 @@ export function FolderViewIcons({
     return positions[key] ?? { x: 16, y: 16 }
   }
 
+  const [scrollBand, setScrollBand] = useState({ top: 0, height: 900 })
   const rows = Math.max(1, Math.ceil(entries.length / velvetGridColumns(canvasWidth)))
+  const paintEntries =
+    entries.length < 60
+      ? entries
+      : entries.filter((entry) => {
+          const key = iconPosKey(entry)
+          if (dragKey === key) return true
+          const y = positions[key]?.y ?? 0
+          return y > scrollBand.top - 280 && y < scrollBand.top + scrollBand.height + 280
+        })
   const gridMinHeight = Math.max(480, rows * VELVET_ICON_CELL.h + VELVET_ICON_CELL.pad * 2)
   const paintMode: IconLayoutMode = dragFreeze || dragKey ? "freeform" : layoutMode
 
@@ -597,6 +649,14 @@ export function FolderViewIcons({
       key={`icons-${location}`}
       className="fm-sunken fm-desktop velvet fm-icon-canvas"
       data-icon-pack={paintMode}
+      onScroll={(event) => {
+        const el = event.currentTarget
+        setScrollBand((prev) =>
+          Math.abs(prev.top - el.scrollTop) < 48 && prev.height === el.clientHeight
+            ? prev
+            : { top: el.scrollTop, height: el.clientHeight || prev.height },
+        )
+      }}
     >
       <div
         className="fm-icon-grid fm-icon-grid-free"
@@ -628,7 +688,7 @@ export function FolderViewIcons({
             )
           })}
 
-        {entries.map((entry) => {
+        {paintEntries.map((entry) => {
           const pos = getRenderPosition(entry)
           const key = iconPosKey(entry)
           const isSel = selectedCategories.includes(entry.id)
@@ -653,6 +713,12 @@ export function FolderViewIcons({
               title={`${entry.name} (drag to move, double-click to open)`}
               onClick={() => handleIconClick(entry, isSel)}
               onDoubleClick={() => handleIconDoubleClick(entry)}
+              onContextMenu={(e) => {
+                if (entry.kind !== "folder" || !onFolderContextMenu) return
+                e.preventDefault()
+                e.stopPropagation()
+                onFolderContextMenu(entry.id, e.clientX, e.clientY)
+              }}
             >
               {entry.kind !== "smart" && entry.kind !== "folder-all" && (
                 <button
@@ -697,16 +763,25 @@ export function FolderViewIcons({
                 {renderEntryIcon(entry, 60)}
                 {entry.color && entry.kind !== "folder-all" && <span className="fm-icon-swatch" style={{ background: entry.color }} />}
               </div>
-              <span className="fm-icon-label">
-                {entry.name}
-                {entry.count > 0 ? ` (${entry.count})` : ""}
-              </span>
+              {entry.kind === "folder" && renamingFolderId === entry.id && onCommitFolderRename && onCancelFolderRename ? (
+                <FolderRenameInput
+                  name={entry.name}
+                  className="fm-input fm-rename-input fm-rename-input-icon"
+                  onCommit={(next) => onCommitFolderRename(entry.id, next)}
+                  onCancel={onCancelFolderRename}
+                />
+              ) : (
+                <span className="fm-icon-label">
+                  {entry.name}
+                  {entry.count > 0 ? ` (${entry.count})` : ""}
+                </span>
+              )}
             </div>
           )
         })}
         {entries.length === 0 && (
           <div className="fm-empty" style={{ color: "#fff", textShadow: "0 1px 2px #000" }}>
-            <FolderGlyph size={48} />
+            <img className="fm-icon-img" src={folderFor("lists-empty")} alt="" draggable={false} style={{ maxWidth: 48, maxHeight: 48 }} />
             <p>{isHome ? "Pin lists/folders here, or create one." : "This location is empty."}</p>
             <button className="fm-btn fm-btn-sm" onClick={openNewCategoryDialog}>
               Create a list

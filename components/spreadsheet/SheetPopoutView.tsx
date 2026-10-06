@@ -13,6 +13,7 @@
 "use client"
 
 import { lazy, Suspense, useEffect, useMemo, useState } from "react"
+import { MachineLoading } from "@/components/machine-loading"
 import { useTaskStore } from "@/lib/task-store"
 import { persistSheetViewConfig, type SheetViewConfig } from "@/lib/spreadsheet-contract"
 import { getItemLabel } from "@/lib/item-utils"
@@ -41,9 +42,11 @@ export function SheetPopoutView({ categoryId }: { categoryId: string }) {
     return (
       <main className="min-h-screen bg-background">
         <div className="container mx-auto px-6 py-10">
-          <p className="text-muted-foreground">
-            {ready ? "This list could not be found. It may have been deleted." : "Loading list…"}
-          </p>
+          {ready ? (
+            <p className="text-muted-foreground">This list could not be found. It may have been deleted.</p>
+          ) : (
+            <MachineLoading label="Loading list…" />
+          )}
         </div>
       </main>
     )
@@ -53,7 +56,7 @@ export function SheetPopoutView({ categoryId }: { categoryId: string }) {
     return (
       <main className="min-h-screen bg-background">
         <div className="container mx-auto px-6 py-6 sm:px-8 lg:px-12">
-          <Suspense fallback={<div className="py-16 text-center text-muted-foreground">Loading…</div>}>
+          <Suspense fallback={<MachineLoading />}>
             <EnhancedTaskDetail taskId={selectedTaskId} onBack={() => setSelectedTaskId(null)} />
           </Suspense>
         </div>

@@ -62,8 +62,8 @@ sync. User extras are kept (see Merge).
 | Stuck templates, sidequests, subarea sessions, plan tiers | Not imported yet (behavior + skin; see Future). |
 
 Chores use `type: "item"` so they stay list rows (not Next Actions / To-Do Done).
-Area lists are `scheduleable: false`, checklist + table enabled, item label
-`chore`.
+Area lists are `scheduleable: false` (not sent to the Scheduler), checklist + table enabled, item label
+`chore`. A trip itinerary is the same: it is scheduled on its own list, and persist v15 turns Send to Scheduler off for any list a module created.
 
 ### How the user's Whole house sample looks
 

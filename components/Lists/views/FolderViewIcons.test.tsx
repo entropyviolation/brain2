@@ -7,8 +7,10 @@ import { FolderViewIcons, prefersOrganizeTrailReduced } from "./FolderViewIcons"
 
 vi.mock("@/components/Lists/lib/icon-utils", () => ({
   FolderGlyph: () => <span data-testid="folder-glyph" />,
+  folderFor: () => "/folder.png",
   iconFor: () => "/orb.png",
   orbFor: () => "/orb.png",
+  entryIconSrc: () => "/orb.png",
 }))
 
 const entry = (id: string, name: string): GridEntry => ({

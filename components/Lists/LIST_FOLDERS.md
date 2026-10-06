@@ -24,6 +24,13 @@ folders. Folders themselves stay a single-parent tree via `parentFolderId` —
 a folder cannot have two parents, because that would corrupt the sidebar tree
 and breadcrumbs. Lists-in-folders are the many-to-many half.
 
+**Paste (Same lists / folders):** With select mode on, Cmd/Ctrl+C copies the
+selection (works even when focus is on a select checkbox or Keep/Move radio).
+Cmd/Ctrl+V opens `PasteSelectionDialog` before any write; **Same** adds those
+lists into the destination folder (multi-membership). Folders are not
+multi-filed — Same paste leaves folder parents alone; use **Copies** for a new
+folder under the destination.
+
 ## Direct vs nested (inherited)
 
 If list L is filed in folder F, and F lives in parent P:
@@ -55,8 +62,10 @@ Putting L in F never creates a folder-tree cycle. Moving **folders** still uses
 ## Editor
 
 List Settings → **In folders**: searchable multiselect (same shape as item
-**In lists** — search, colored folder-icon rows, selected chips with ×,
-+ New folder, Selected (n)). Folders only; ordinary lists are not in this picker.
+**In lists** — search, folder-icon rows, selected chips with ×,
++ New folder, Selected (n)). Auto-created folders get a faint **auto** label.
+Folders only; ordinary lists are not in this picker. Folder Settings edits the
+inverse (parent folder + child folders/lists) via `FolderRelationsEditor`.
 
 **Show nested** defaults off. Membership writes immediately to the store (same
 as Connected lists), so the sidebar tree, Quick Access, and drag-into-folder

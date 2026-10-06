@@ -5,9 +5,8 @@ import type { Folder, List, Task } from "@/lib/types"
 import { isScheduledFolderId } from "@/lib/scheduled-lists-sync"
 import { defaultMergePlan, uniqueNonEmpty, type ListMergePlan } from "@/lib/list-merge"
 import { Button } from "@/components/ui/button"
-import { IsolatedInput } from "@/components/ui/isolated-text-field"
-import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { MergeFieldGroup, MergeKeepCheckbox, MergeMembershipToggles } from "./MergeFieldGroup"
 
 export interface MergeListsDialogProps {
   open: boolean
@@ -54,114 +53,80 @@ export function MergeListsDialog({ open, lists, folders, tasks, onClose, onMerge
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 text-sm">
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={plan.keepAllItems}
-              onChange={(e) => patch({ keepAllItems: e.target.checked })}
-            />
-            Keep all items
-          </label>
-          <div className="space-y-2">
-            <Label>Title</Label>
-            {titles.length > 1 ? (
-              titles.map((name) => (
-                <label key={name} className="flex items-center gap-2">
-                  <input type="radio" name="merge-title" checked={plan.name === name} onChange={() => patch({ name })} />
-                  {name}
-                </label>
-              ))
-            ) : (
-              <IsolatedInput value={plan.name} onCommit={(name) => patch({ name })} />
-            )}
-          </div>
+          <MergeKeepCheckbox
+            label="Keep all items"
+            checked={plan.keepAllItems}
+            onChange={(keepAllItems) => patch({ keepAllItems })}
+          />
+          <MergeFieldGroup
+            label="Title"
+            radioName="merge-title"
+            options={titles}
+            value={plan.name}
+            onChange={(name) => patch({ name: name ?? "" })}
+            inputFallback
+            optionAlign="center"
+          />
           {colors.length > 1 && (
-            <div className="space-y-2">
-              <Label>Color</Label>
-              {colors.map((color) => (
-                <label key={color} className="flex items-center gap-2">
-                  <input type="radio" name="merge-color" checked={plan.color === color} onChange={() => patch({ color })} />
+            <MergeFieldGroup
+              label="Color"
+              radioName="merge-color"
+              options={colors}
+              value={plan.color}
+              onChange={(color) => patch({ color: color ?? plan.color })}
+              optionAlign="center"
+              renderOption={(color) => (
+                <>
                   <span className="inline-block h-4 w-4 rounded-sm border" style={{ background: color }} />
                   {color}
-                </label>
-              ))}
-            </div>
+                </>
+              )}
+            />
           )}
           {descriptions.length > 0 && (
-            <div className="space-y-2">
-              <Label>Description</Label>
-              <label className="flex items-center gap-2">
-                <input type="radio" name="merge-desc" checked={!plan.description} onChange={() => patch({ description: undefined })} />
-                None
-              </label>
-              {descriptions.map((description) => (
-                <label key={description} className="flex items-start gap-2">
-                  <input
-                    type="radio"
-                    name="merge-desc"
-                    checked={plan.description === description}
-                    onChange={() => patch({ description })}
-                  />
-                  <span>{description}</span>
-                </label>
-              ))}
-            </div>
+            <MergeFieldGroup
+              label="Description"
+              radioName="merge-desc"
+              options={descriptions}
+              value={plan.description}
+              onChange={(description) => patch({ description })}
+              allowNone
+            />
           )}
           {labels.length > 1 && (
-            <div className="space-y-2">
-              <Label>Item label</Label>
-              {labels.map((itemLabel) => (
-                <label key={itemLabel} className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="merge-label"
-                    checked={plan.itemLabel === itemLabel}
-                    onChange={() => patch({ itemLabel })}
-                  />
-                  {itemLabel}
-                </label>
-              ))}
-            </div>
+            <MergeFieldGroup
+              label="Item label"
+              radioName="merge-label"
+              options={labels}
+              value={plan.itemLabel}
+              onChange={(itemLabel) => patch({ itemLabel: itemLabel ?? plan.itemLabel })}
+              optionAlign="center"
+              renderOption={(itemLabel) => itemLabel}
+            />
           )}
-          <div className="space-y-2">
-            <Label>Folders</Label>
-            <p className="text-xs text-muted-foreground">The merged list can live in more than one folder.</p>
-            {userFolders.map((folder) => (
-              <label key={folder.id} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={plan.folderIds.includes(folder.id)}
-                  onChange={(e) => toggleFolder(folder.id, e.target.checked)}
-                />
-                {folder.name}
-              </label>
-            ))}
-            {userFolders.length === 0 && <p className="text-xs text-muted-foreground">No folders yet.</p>}
-          </div>
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={plan.scheduleable}
-              onChange={(e) => patch({ scheduleable: e.target.checked })}
-            />
-            Scheduleable
-          </label>
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={plan.preserveAttributes}
-              onChange={(e) => patch({ preserveAttributes: e.target.checked })}
-            />
-            Preserve attributes from every list
-          </label>
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={plan.preserveRules}
-              onChange={(e) => patch({ preserveRules: e.target.checked })}
-            />
-            Preserve rules from every list
-          </label>
+          <MergeMembershipToggles
+            label="Folders"
+            hint="The merged list can live in more than one folder."
+            items={userFolders.map((f) => ({ id: f.id, name: f.name }))}
+            selectedIds={plan.folderIds}
+            onToggle={toggleFolder}
+            emptyMessage="No folders yet."
+          />
+          <MergeKeepCheckbox
+            label="Send to Scheduler"
+            checked={plan.scheduleable}
+            onChange={(scheduleable) => patch({ scheduleable })}
+          />
+          <MergeKeepCheckbox
+            label="Preserve attributes from every list"
+            checked={plan.preserveAttributes}
+            onChange={(preserveAttributes) => patch({ preserveAttributes })}
+          />
+          <MergeKeepCheckbox
+            label="Preserve rules from every list"
+            checked={plan.preserveRules}
+            onChange={(preserveRules) => patch({ preserveRules })}
+          />
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={onClose}>
               Cancel

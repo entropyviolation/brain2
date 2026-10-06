@@ -147,6 +147,24 @@ describe("FolderTree", () => {
     expect(screen.getByRole("navigation", { name: "Lists folders" })).toBeInTheDocument()
   })
 
+  it("shows folder icon and name without a color swatch in the tree", () => {
+    const { container } = render(
+      <FolderTree
+        folders={mockFolders}
+        location="f1"
+        openTarget={null}
+        isHome={false}
+        isAll={false}
+        onNavTo={vi.fn()}
+        onDragOver={vi.fn()}
+        onDrop={vi.fn()}
+        onCreateFolder={vi.fn()}
+      />,
+    )
+    expect(container.querySelector(".fm-tree-swatch")).toBeNull()
+    expect(screen.getByText("Work").closest(".fm-tree-folder")?.querySelector(".fm-tree-icon")).toBeTruthy()
+  })
+
   it("adds Module Lists to Quick Access when the folder exists", () => {
     render(
       <FolderTree

@@ -4,6 +4,7 @@ import type { FolderView, ListDisplay } from "@/lib/lists-ui-store"
 import { LIST_DISPLAY_MODES, type ListDisplayMode } from "@/lib/types"
 import type { OpenTarget } from "@/components/Lists/types"
 import { openTargetKey } from "@/components/Lists/open-target"
+import { listDisplayCaption } from "@/components/Lists/lib/velvet-icon-grid"
 
 export interface ViewModeControlsProps {
   openTarget: OpenTarget
@@ -25,13 +26,21 @@ const FOLDER_VIEWS: { id: FolderView; full: string; abbr: string }[] = [
   { id: "cards", full: "Cards", abbr: "Cards" },
 ]
 
-const LIST_DISPLAY_KEYS: { id: ListDisplay; full: string; abbr: string }[] = [
-  { id: "default", full: "Default", abbr: "Def" },
-  { id: "checklist", full: "Checklist", abbr: "Check" },
-  { id: "icons", full: "Icons", abbr: "Icon" },
-  { id: "table", full: "Details", abbr: "Det" },
-  { id: "spreadsheet", full: "Spreadsheet", abbr: "Sheet" },
-]
+const LIST_DISPLAY_ABBR: Record<ListDisplay, string> = {
+  default: "Def",
+  checklist: "Check",
+  icons: "Icon",
+  table: "Det",
+  spreadsheet: "Sheet",
+}
+
+const LIST_DISPLAY_KEYS: { id: ListDisplay; full: string; abbr: string }[] = (
+  LIST_DISPLAY_MODES as readonly ListDisplay[]
+).map((id) => ({
+  id,
+  full: listDisplayCaption(id),
+  abbr: LIST_DISPLAY_ABBR[id],
+}))
 
 function ModeKey({
   full,

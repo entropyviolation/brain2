@@ -7,9 +7,10 @@ import { LIST_TEMPLATES } from "@/components/Lists/constants"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { CalendarClock } from "lucide-react"
+import { isExplicitlyScheduleable } from "@/lib/scheduling"
+import { parseBulkCreateNames } from "@/lib/lists-duplicate"
+import { BulkNamesField, PlacementModeRadios, ScheduleableSwitch } from "./new-dialog-fields"
 
 export interface NewListFields {
   name: string
@@ -25,6 +26,7 @@ export interface NewListDialogProps {
   isHome: boolean
   onOpenChange: (open: boolean) => void
   onCreate: (fields: NewListFields) => void
+  onBulkCreate?: (fields: Omit<NewListFields, "name"> & { names: string[] }) => void
   selectedCount?: number
   placementMode?: ItemPlacementMode
   canMove?: boolean
@@ -39,6 +41,7 @@ export function NewListDialog({
   isHome,
   onOpenChange,
   onCreate,
+  onBulkCreate,
   selectedCount = 0,
   placementMode = "keep",
   canMove = true,
@@ -48,8 +51,10 @@ export function NewListDialog({
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
   const [color, setColor] = useState("#3B82F6")
-  const [scheduleable, setScheduleable] = useState(true)
+  const [scheduleable, setScheduleable] = useState(false)
   const [template, setTemplate] = useState("none")
+  const [bulkMode, setBulkMode] = useState(false)
+  const [bulkText, setBulkText] = useState("")
 
   const wasOpen = useRef(false)
   useEffect(() => {
@@ -62,106 +67,149 @@ export function NewListDialog({
     setName(initialName.trim())
     setDescription(currentFolder?.description || "")
     setColor(currentFolder?.color || "#3B82F6")
-    setScheduleable(currentFolder ? currentFolder.scheduleable !== false : true)
+    setScheduleable(isExplicitlyScheduleable(currentFolder))
     setTemplate("none")
+    setBulkMode(false)
+    setBulkText("")
   }, [open, currentFolder, initialName])
+
+  const bulkNames = parseBulkCreateNames(bulkText)
+  const selectionActive = selectedCount > 0 && !bulkMode
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="fm98-dialog" data-ui-name="New list" data-ui-docs="components/Lists/README.md">
         <DialogHeader>
-          <DialogTitle>Create New List</DialogTitle>
+          <DialogTitle>{bulkMode ? "Bulk create lists" : "Create New List"}</DialogTitle>
           <DialogDescription>
-            {selectedCount > 0
-              ? canMove
-                ? placementMode === "move"
-                  ? "Name your list. Selected items will be moved into it."
-                  : "Name your list. Selected items will also stay in the current list."
-                : "Name your list. Selected items will be added to it without leaving their current lists."
-              : currentFolder
-              ? `Create a new list inside "${currentFolder.name}". Settings are inherited from the folder by default.`
-              : isHome
-                ? "Create a new list (it will be pinned to Home)."
-                : "Create a new list to organize your tasks."}
+            {bulkMode
+              ? currentFolder
+                ? `One list name per line inside “${currentFolder.name}”. Empty lines are ignored.`
+                : "One list name per line. Empty lines are ignored."
+              : selectedCount > 0
+                ? canMove
+                  ? placementMode === "move"
+                    ? "Name your list. Selected items will be moved into it."
+                    : "Name your list. Selected items will also stay in the current list."
+                  : "Name your list. Selected items will be added to it without leaving their current lists."
+                : currentFolder
+                  ? `Create a new list inside "${currentFolder.name}". Settings are inherited from the folder by default.`
+                  : isHome
+                    ? "Create a new list (it will be pinned to Home)."
+                    : "Create a new list to organize your tasks."}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="category-name">List Name</Label>
-            <Input id="category-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Work Projects" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="category-description">Description (optional)</Label>
-            <Input
-              id="category-description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Brief description of this list"
+          {onBulkCreate && (
+            <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+              <input
+                type="checkbox"
+                checked={bulkMode}
+                onChange={(e) => setBulkMode(e.target.checked)}
+              />
+              Bulk create lists
+            </label>
+          )}
+
+          {bulkMode ? (
+            <BulkNamesField
+              id="list-bulk-names"
+              label="List names"
+              placeholder={"Reading\nOwned\nWishlist"}
+              ariaLabel="List names, one per line"
+              value={bulkText}
+              onChange={setBulkText}
+              names={bulkNames}
+              entitySingular="list"
             />
-          </div>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="category-name">List Name</Label>
+                <Input
+                  id="category-name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g., Work Projects"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="category-description">Description (optional)</Label>
+                <Input
+                  id="category-description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Brief description of this list"
+                />
+              </div>
+            </>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="category-color">Color</Label>
             <Input id="category-color" type="color" value={color} onChange={(e) => setColor(e.target.value)} />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="category-template">Item template</Label>
-            <select
-              id="category-template"
-              className="w-full border rounded-md h-9 px-2 bg-background text-sm"
-              value={template}
-              onChange={(e) => setTemplate(e.target.value)}
-            >
-              {Object.entries(LIST_TEMPLATES).map(([key, t]) => (
-                <option key={key} value={key}>
-                  {t.label}
-                </option>
-              ))}
-            </select>
-            <p className="text-xs text-muted-foreground">
-              Gives items in this list a starting set of attributes (e.g. price &amp; store, or author &amp; pages). Editable later.
-            </p>
-          </div>
-          <div className="flex items-center justify-between rounded-lg border p-3">
-            <div className="space-y-0.5">
-              <Label htmlFor="category-scheduleable" className="flex items-center gap-2">
-                <CalendarClock className="h-4 w-4" />
-                Scheduleable
-              </Label>
-              <p className="text-xs text-muted-foreground">Show items in this list in the Scheduler.</p>
+          {!bulkMode && (
+            <div className="space-y-2">
+              <Label htmlFor="category-template">Item template</Label>
+              <select
+                id="category-template"
+                className="w-full border rounded-md h-9 px-2 bg-background text-sm"
+                value={template}
+                onChange={(e) => setTemplate(e.target.value)}
+              >
+                {Object.entries(LIST_TEMPLATES).map(([key, t]) => (
+                  <option key={key} value={key}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-muted-foreground">
+                Gives items in this list a starting set of attributes (e.g. price &amp; store, or author &amp; pages). Editable later.
+              </p>
             </div>
-            <Switch id="category-scheduleable" checked={scheduleable} onCheckedChange={setScheduleable} />
-          </div>
-          {selectedCount > 0 && onPlacementModeChange && (
-            <div className="space-y-2 rounded-lg border p-3">
-              <Label>Selected items</Label>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  name="new-list-placement"
-                  checked={placementMode === "keep"}
-                  onChange={() => onPlacementModeChange("keep")}
-                />
-                Keep in the current list and add here
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  name="new-list-placement"
-                  checked={placementMode === "move"}
-                  disabled={!canMove}
-                  onChange={() => onPlacementModeChange("move")}
-                />
-                Move out of the current list
-              </label>
-            </div>
+          )}
+          <ScheduleableSwitch
+            id="category-scheduleable"
+            checked={scheduleable}
+            onCheckedChange={setScheduleable}
+            description="Off unless you turn it on. Puts this list in the Scheduler, the tool that sorts to-do lists into year, month, week, and day. A list can be scheduled — a trip itinerary with dates — without being sent there."
+          />
+          {selectionActive && onPlacementModeChange && (
+            <PlacementModeRadios
+              legend="Selected items"
+              radioName="new-list-placement"
+              mode={placementMode}
+              onModeChange={onPlacementModeChange}
+              keepLabel="Keep in the current list and add here"
+              moveLabel="Move out of the current list"
+              moveDisabled={!canMove}
+            />
           )}
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button onClick={() => onCreate({ name, description, color, scheduleable, template })}>
-              Create List
-            </Button>
+            {bulkMode ? (
+              <Button
+                onClick={() =>
+                  onBulkCreate?.({
+                    names: bulkNames,
+                    description,
+                    color,
+                    scheduleable,
+                    template: "none",
+                  })
+                }
+                disabled={bulkNames.length === 0}
+              >
+                Create {bulkNames.length || ""} List{bulkNames.length === 1 ? "" : "s"}
+              </Button>
+            ) : (
+              <Button onClick={() => onCreate({ name, description, color, scheduleable, template })}>
+                Create List
+              </Button>
+            )}
           </div>
         </div>
       </DialogContent>

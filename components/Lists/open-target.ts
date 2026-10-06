@@ -44,8 +44,8 @@ export function openTargetFromEntry(
   }
   if (entry.kind === "list") return { type: "category", id: entry.id }
   if (entry.kind === "habits") {
-    return { type: "habits", id: entry.id as "habits" | "weekly-habits" | "monthly-habits" }
+    return { type: "habits", id: entry.id as "habits" | "weekly-habits" | "monthly-habits" | "season-habits" }
   }
   if (entry.kind === "objectives") return { type: "objectives" }
-  return { type: "smart", id: entry.id as "daily" | "weekly" | "monthly" }
+  return { type: "smart", id: entry.id as "daily" | "weekly" | "monthly" | "quarterly" }
 }

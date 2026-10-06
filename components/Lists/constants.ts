@@ -11,9 +11,11 @@ export const PRESET_ICON_POSITIONS: Record<string, { x: number; y: number }> = {
   "habits-habits": { x: 16, y: 16 },
   "habits-weekly-habits": { x: 104, y: 16 },
   "habits-monthly-habits": { x: 192, y: 16 },
+  "habits-season-habits": { x: 368, y: 16 },
   "smart-daily": { x: 16, y: 112 },
   "smart-weekly": { x: 104, y: 112 },
   "smart-monthly": { x: 192, y: 112 },
+  "smart-quarterly": { x: 280, y: 112 },
   "folder-all-all-root": { x: 16, y: 16 },
   "objectives-objectives": { x: 280, y: 16 },
 }
@@ -44,4 +46,5 @@ export const SMART_LISTS: { id: SmartId; name: string; color: string }[] = [
   { id: "daily", name: "Daily To Do List", color: "#16a34a" },
   { id: "weekly", name: "Weekly To Do List", color: "#2563eb" },
   { id: "monthly", name: "Monthly To Do List", color: "#9333ea" },
+  { id: "quarterly", name: "Season To Do List", color: "#c4622d" },
 ]

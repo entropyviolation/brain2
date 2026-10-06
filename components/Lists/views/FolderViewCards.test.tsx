@@ -7,8 +7,10 @@ import { FolderViewCards } from "./FolderViewCards"
 
 vi.mock("@/components/Lists/lib/icon-utils", () => ({
   FolderGlyph: () => <span data-testid="folder-glyph" />,
+  folderFor: () => "/folder.png",
   iconFor: () => "/orb.png",
   orbFor: () => "/orb.png",
+  entryIconSrc: () => "/orb.png",
 }))
 
 const list = (id: string, name: string): List => ({

@@ -18,11 +18,14 @@ import {
   getItemLabel,
 } from "@/lib/item-utils"
 import { isClearedFromWork } from "@/lib/completion-status"
+import { isExplicitlyScheduleable } from "@/lib/scheduling"
 import {
   syncNextActionsSmartLists,
   syncScheduledFolderHierarchy,
   isNaArchiveCategoryId,
   isNaPeriodSmartCategoryId,
+  isPeriodLedgerListId,
+  tasksForPeriodLedgerList,
   tasksForNaSmartList,
   isScheduledFolderId,
   getTasksForScheduledFolder,
@@ -65,7 +68,7 @@ import {
 } from "@/lib/lists-task-index"
 import { TaskDetailPopup } from "@/components/ItemDetail/ItemDetailPopup"
 import { NextActionsSettingsDialog } from "@/components/Lists/settings-dialog"
-import { DailyHabitsList, WeeklyHabitsList, MonthlyHabitsList } from "@/components/Lists/daily-habits-list"
+import { DailyHabitsList, WeeklyHabitsList, MonthlyHabitsList, SeasonHabitsList } from "@/components/Lists/daily-habits-list"
 import { ObjectivesList } from "@/components/Lists/objectives-list"
 import { useGoalsStore } from "@/lib/goals-store"
 import { useModulesStore } from "@/lib/modules-store"
@@ -103,6 +106,29 @@ import { MergeItemsConfirmDialog } from "@/components/Lists/dialogs/MergeItemsCo
 import { MergeItemsDialog } from "@/components/Lists/dialogs/MergeItemsDialog"
 import { EditListDialog } from "@/components/Lists/dialogs/EditListDialog"
 import { EditFolderDialog } from "@/components/Lists/dialogs/EditFolderDialog"
+import { DuplicateSelectionDialog } from "@/components/Lists/dialogs/DuplicateSelectionDialog"
+import { PasteSelectionDialog } from "@/components/Lists/dialogs/PasteSelectionDialog"
+import {
+  FolderContextMenu,
+  type FolderContextMenuState,
+} from "@/components/Lists/views/FolderContextMenu"
+import {
+  applyDuplicateFolderPlan,
+  applyDuplicateListPlan,
+  planDuplicateFolder,
+  planDuplicateList,
+  type DuplicateScope,
+} from "@/lib/lists-duplicate"
+import {
+  applyListsClipboardPaste,
+  buildListsClipboardPayload,
+  isListsClipboardKeyboardBlocked,
+  isListsClipboardSurfaceActive,
+  listsClipboardIsEmpty,
+  type ListsClipboardPayload,
+  type PasteMode,
+} from "@/lib/lists-clipboard"
+import { isEditableFolder } from "@/lib/folder-tree"
 import { LIST_TEMPLATES, SMART_LISTS } from "@/components/Lists/constants"
 import { iconFor, orbFor } from "@/components/Lists/lib/icon-utils"
 import {
@@ -156,6 +182,64 @@ function InspectorFacts({
   )
 }
 
+function sameIds(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false
+  return true
+}
+
+/** A sync that moves a folder and moves it back must not publish a new tree. */
+function sameFolderTree(before: Folder[], after: Folder[]): boolean {
+  if (before.length !== after.length) return false
+  for (let i = 0; i < before.length; i++) {
+    const a = before[i]
+    const b = after[i]
+    if (a === b) continue
+    if (a.id !== b.id || a.name !== b.name || a.parentFolderId !== b.parentFolderId) return false
+    if (!sameIds(a.listIds, b.listIds)) return false
+  }
+  return true
+}
+
+function sameListShelf(before: List[], after: List[]): boolean {
+  if (before.length !== after.length) return false
+  for (let i = 0; i < before.length; i++) {
+    const a = before[i]
+    const b = after[i]
+    if (a === b) continue
+    if (a.id !== b.id || a.name !== b.name || a.autoArchive !== b.autoArchive) return false
+  }
+  return true
+}
+
+/** Fields the Lists maintenance pass actually reads. Title edits must not rerun it. */
+function scheduleMaintenanceKey(tasks: Task[]): string {
+  let h = tasks.length || 1
+  const mix = (s: string | undefined) => {
+    if (!s) {
+      h = Math.imul(h ^ 0, 33)
+      return
+    }
+    for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 33)
+  }
+  const stamp = (value: unknown) => {
+    if (value instanceof Date) mix(String(value.getTime()))
+    else if (typeof value === "string" || typeof value === "number") mix(String(value))
+  }
+  for (const t of tasks) {
+    mix(t.id)
+    mix(t.completed ? "1" : "0")
+    mix(t.status)
+    for (const id of t.lists ?? []) mix(id)
+    stamp(t.scheduledDate)
+    stamp(t.deadline)
+    mix(t.scheduledYear)
+    mix(t.scheduledMonth)
+    mix(t.scheduledWeek)
+  }
+  return (h >>> 0).toString(36)
+}
+
 export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps) {
   const allTasks = useTaskStore((s) => s.tasks)
   const categories = useTaskStore((s) => s.lists)
@@ -184,6 +268,8 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
   const toggleHomePin = useListsUiStore((s) => s.toggleHomePin)
   const showSmartLists = useListsUiStore((s) => s.showSmartLists)
   const setShowSmartLists = useListsUiStore((s) => s.setShowSmartLists)
+  const showPeriodLedgerListsInAll = useListsUiStore((s) => s.showPeriodLedgerListsInAll)
+  const setShowPeriodLedgerListsInAll = useListsUiStore((s) => s.setShowPeriodLedgerListsInAll)
   const listDisplay = useListsUiStore((s) => s.listDisplay)
   const setListDisplay = useListsUiStore((s) => s.setListDisplay)
   const folderView = useListsUiStore((s) => s.folderView)
@@ -217,6 +303,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
   const [newCategoryOpen, setNewCategoryOpen] = useState(false)
   const [editingCategory, setEditingCategory] = useState<List | null>(null)
   const csvRef = useRef<HTMLInputElement>(null)
+  const listsSurfaceRef = useRef<HTMLDivElement>(null)
   const [csvImport, setCsvImport] = useState<CsvImportState | null>(null)
   const [addingTaskToTarget, setAddingTaskToTarget] = useState<string | null>(null)
   const [showBulkAdd, setShowBulkAdd] = useState(false)
@@ -224,6 +311,14 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
   const [showCategorySettings, setShowCategorySettings] = useState(false)
   const [showNewFolderDialog, setShowNewFolderDialog] = useState(false)
   const [editingFolder, setEditingFolder] = useState<Folder | null>(null)
+  const [duplicateOpen, setDuplicateOpen] = useState(false)
+  const [duplicateSubject, setDuplicateSubject] = useState<
+    null | { kind: "selection" } | { kind: "folder"; id: string } | { kind: "list"; id: string }
+  >(null)
+  const [listsClipboard, setListsClipboard] = useState<ListsClipboardPayload | null>(null)
+  const [pasteOpen, setPasteOpen] = useState(false)
+  const [folderContextMenu, setFolderContextMenu] = useState<FolderContextMenuState | null>(null)
+  const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null)
   const [iconPickerFor, setIconPickerFor] = useState<IconPickerTarget>(null)
   const [organizeEpoch, setOrganizeEpoch] = useState(0)
   const [organizeFromSnapshot, setOrganizeFromSnapshot] = useState<Record<string, { x: number; y: number }> | null>(
@@ -270,6 +365,8 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
     return useTaskStore.persist.onFinishHydration(() => setTaskStoreHydrated(true))
   }, [taskStoreHydrated])
 
+  const taskScheduleKey = useMemo(() => scheduleMaintenanceKey(allTasks), [allTasks])
+
   const taskIndexPrevRef = useRef<ListsTaskIndex | null>(null)
   const taskIndex = useMemo(() => {
     const next = buildListsTaskIndex(allTasks, taskIndexPrevRef.current)
@@ -286,36 +383,79 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
   useEffect(() => {
     if (!taskStoreHydrated) return
     let cancelled = false
-    const frame = requestAnimationFrame(() => {
+    const run = () => {
       if (cancelled) return
       startTransition(() => {
         const state = useTaskStore.getState()
+        let folders = state.folders
+        let lists = state.lists
+        let tasks = state.tasks
+        let foldersDirty = false
+        let listsDirty = false
+        let tasksDirty = false
         const mut = {
-          lists: state.lists,
-          folders: state.folders,
-          addList: state.addList,
-          updateList: state.updateList,
-          addFolder: state.addFolder,
-          updateFolder: state.updateFolder,
-          deleteFolder: state.deleteFolder,
+          get folders() { return folders },
+          get lists() { return lists },
+          get tasks() { return tasks },
+          addList: (list: List) => {
+            if (lists.some((l) => l.id === list.id)) return
+            lists = [...lists, list]
+            listsDirty = true
+          },
+          updateList: (list: List) => {
+            lists = lists.map((l) => (l.id === list.id ? list : l))
+            listsDirty = true
+          },
+          addFolder: (folder: Folder) => {
+            if (folders.some((f) => f.id === folder.id)) return
+            folders = [...folders, folder]
+            foldersDirty = true
+          },
+          updateFolder: (folder: Folder) => {
+            folders = folders.map((f) => (f.id === folder.id ? folder : f))
+            foldersDirty = true
+          },
+          deleteFolder: (id: string) => {
+            folders = folders.filter((f) => f.id !== id)
+            foldersDirty = true
+          },
+          deleteList: (id: string) => {
+            lists = lists.filter((list) => list.id !== id)
+            listsDirty = true
+          },
         }
         syncNextActionsSmartLists(mut)
-        syncScheduledFolderHierarchy(allTasks, mut)
+        syncScheduledFolderHierarchy(tasks, mut)
         syncFolderAllItemsCategories(mut)
         syncGlobalAllItemsList(mut)
-        const after = useTaskStore.getState()
-        const joined = joinArchiveListMembership(after.tasks, after.lists, after.folders)
-        if (joined !== after.tasks) after.setTasks(joined)
+        const joined = joinArchiveListMembership(tasks, lists, folders)
+        if (joined !== tasks) {
+          tasks = joined
+          tasksDirty = true
+        }
+        if (foldersDirty && sameFolderTree(state.folders, folders)) foldersDirty = false
+        if (listsDirty && sameListShelf(state.lists, lists)) listsDirty = false
+        if (foldersDirty || listsDirty || tasksDirty) {
+          useTaskStore.setState({
+            ...(foldersDirty ? { folders } : {}),
+            ...(listsDirty ? { lists } : {}),
+            ...(tasksDirty ? { tasks } : {}),
+          })
+        }
         const moduleMut = taskStoreModuleListsMutators()
         syncModuleListFolders(moduleMut, modules)
         syncModuleListContents(moduleMut, modules)
       })
-    })
+    }
+    const idle = typeof requestIdleCallback === "function"
+      ? requestIdleCallback(run, { timeout: 400 })
+      : window.setTimeout(run, 32)
     return () => {
       cancelled = true
-      cancelAnimationFrame(frame)
+      if (typeof cancelIdleCallback === "function" && typeof idle === "number") cancelIdleCallback(idle)
+      else window.clearTimeout(idle)
     }
-  }, [taskStoreHydrated, allTasks, modules])
+  }, [taskStoreHydrated, taskScheduleKey, modules])
 
   const getSmartTasks = useCallback(
     (id: SmartId) => smartTasksFor(taskIndex, id),
@@ -329,9 +469,10 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
         return tasksForArchiveList(allTasks, categoryId, kind)
       }
       if (isNaPeriodSmartCategoryId(categoryId)) return tasksForNaSmartList(categoryId, allTasks)
+      if (isPeriodLedgerListId(categoryId)) return tasksForPeriodLedgerList(categoryId, allTasks, folders)
       return tasksForList(taskIndex, categoryId)
     },
-    [taskIndex, allTasks, categories],
+    [taskIndex, allTasks, categories, folders],
   )
 
   const countForFolder = useCallback(
@@ -367,13 +508,28 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
         categories,
         homePinned,
         showSmartLists,
+        showPeriodLedgerListsInAll,
         allTasks,
         getSmartTasks,
         getTasksForCategory,
         countForFolder,
         objectiveCount,
       }),
-    [isHome, isAll, currentFolder, folders, categories, homePinned, showSmartLists, allTasks, getSmartTasks, getTasksForCategory, countForFolder, objectiveCount],
+    [
+      isHome,
+      isAll,
+      currentFolder,
+      folders,
+      categories,
+      homePinned,
+      showSmartLists,
+      showPeriodLedgerListsInAll,
+      allTasks,
+      getSmartTasks,
+      getTasksForCategory,
+      countForFolder,
+      objectiveCount,
+    ],
   )
 
   const openCategory = openTarget?.type === "category" ? categories.find((c) => c.id === openTarget.id) || null : null
@@ -396,7 +552,13 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
   const openName = openObjectives
     ? "Objectives"
     : openHabits
-    ? openTarget?.id === "weekly-habits" ? "Weekly Habits" : openTarget?.id === "monthly-habits" ? "Monthly Habits" : "Daily Habits"
+    ? openTarget?.id === "weekly-habits"
+      ? "Weekly Habits"
+      : openTarget?.id === "monthly-habits"
+        ? "Monthly Habits"
+        : openTarget?.id === "season-habits"
+          ? "Season Habits"
+          : "Daily Habits"
     : openFolderAll ? "All Items" : openCategory?.name || openSmart?.name || ""
   const openIconKey = openCategory ? iconFor(openCategory.id, openCategory.icon) : isRootAll ? iconFor("lists-root", undefined) : openFolderAll && currentFolder ? iconFor(currentFolder.id, currentFolder.icon) : openSmart ? orbFor(openSmart.id) : openObjectives ? orbFor("objectives") : openHabits ? orbFor("daily-habits") : orbFor("lists-root")
 
@@ -534,6 +696,228 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
     selection,
   ])
 
+  const handleBulkCreateFolders = useCallback(
+    (fields: Omit<NewFolderFields, "name"> & { names: string[] }) => {
+      for (const name of fields.names) {
+        const id = Date.now().toString() + Math.random().toString(36).substr(2, 5)
+        addFolder({
+          id,
+          name,
+          createdAt: new Date(),
+          listIds: [],
+          color: fields.color,
+          scheduleable: fields.scheduleable,
+          parentFolderId: currentFolder?.id,
+        })
+      }
+      setShowNewFolderDialog(false)
+    },
+    [addFolder, currentFolder],
+  )
+
+  const handleBulkCreateLists = useCallback(
+    (fields: Omit<NewListFields, "name"> & { names: string[] }) => {
+      let order = categories.length
+      for (const name of fields.names) {
+        const id = Date.now().toString() + Math.random().toString(36).substr(2, 5)
+        addList({
+          id,
+          name,
+          color: fields.color,
+          description: fields.description,
+          createdAt: new Date(),
+          order: order++,
+          scheduleable: fields.scheduleable,
+        })
+        if (currentFolder) addListToFolder(currentFolder.id, id)
+        if (isHome) toggleHomePin(id)
+      }
+      setNewCategoryOpen(false)
+    },
+    [addList, addListToFolder, categories.length, currentFolder, isHome, toggleHomePin],
+  )
+
+  const openDuplicateSelection = useCallback(() => {
+    setDuplicateSubject({ kind: "selection" })
+    setDuplicateOpen(true)
+  }, [])
+
+  const openDuplicateFolder = useCallback((folder: Folder) => {
+    setDuplicateSubject({ kind: "folder", id: folder.id })
+    setDuplicateOpen(true)
+  }, [])
+
+  const openDuplicateList = useCallback((list: List) => {
+    setDuplicateSubject({ kind: "list", id: list.id })
+    setDuplicateOpen(true)
+  }, [])
+
+  const handleFolderContextMenu = useCallback((folderId: string, clientX: number, clientY: number) => {
+    setFolderContextMenu({ folderId, x: clientX, y: clientY })
+  }, [])
+
+  const handleCommitFolderRename = useCallback(
+    (folderId: string, name: string) => {
+      const folder = folders.find((f) => f.id === folderId)
+      if (!folder || !isEditableFolder(folderId)) {
+        setRenamingFolderId(null)
+        return
+      }
+      const next = name.trim()
+      if (next && next !== folder.name) updateFolder({ ...folder, name: next })
+      setRenamingFolderId(null)
+    },
+    [folders, updateFolder],
+  )
+
+  const handleConfirmPaste = useCallback(
+    (mode: PasteMode) => {
+      if (listsClipboardIsEmpty(listsClipboard)) return
+      applyListsClipboardPaste(
+        listsClipboard!,
+        mode,
+        {
+          destinationFolderId: currentFolder?.id ?? null,
+          getSnapshot: () => {
+            const s = useTaskStore.getState()
+            return { folders: s.folders, lists: s.lists, tasks: s.tasks }
+          },
+        },
+        { addFolder, addList, addListToFolder, addTask },
+      )
+    },
+    [listsClipboard, currentFolder?.id, addFolder, addList, addListToFolder, addTask],
+  )
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey)) return
+      const key = e.key.toLowerCase()
+      if (key !== "c" && key !== "v") return
+      // Warm-mounted Lists tab must not steal copy/paste from Home / other desks.
+      if (!isListsClipboardSurfaceActive(listsSurfaceRef.current)) return
+      if (isListsClipboardKeyboardBlocked(e.target)) return
+      if (key === "c") {
+        if (!selectMode) return
+        const payload = buildListsClipboardPayload({
+          listIds: selectedCategories,
+          folderIds: selectedFolderIds,
+        })
+        if (listsClipboardIsEmpty(payload)) return
+        e.preventDefault()
+        setListsClipboard(payload)
+        return
+      }
+      if (listsClipboardIsEmpty(listsClipboard)) return
+      e.preventDefault()
+      setPasteOpen(true)
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [selectMode, selectedCategories, selectedFolderIds, listsClipboard])
+
+  const handleConfirmDuplicate = useCallback(
+    (scope: DuplicateScope) => {
+      const state = useTaskStore.getState()
+      const mut = {
+        addFolder,
+        addList,
+        addListToFolder,
+        addTask,
+      }
+      if (duplicateSubject?.kind === "folder") {
+        const source = state.folders.find((f) => f.id === duplicateSubject.id)
+        if (!source || isScheduledFolderId(source.id)) return
+        const plan = planDuplicateFolder(source, {
+          scope,
+          folders: state.folders,
+          lists: state.lists,
+          tasks: state.tasks,
+        })
+        applyDuplicateFolderPlan(plan, mut)
+        setEditingFolder(null)
+        return
+      }
+      if (duplicateSubject?.kind === "list") {
+        const source = state.lists.find((l) => l.id === duplicateSubject.id)
+        if (!source || isFolderAllItemsCategoryId(source.id)) return
+        const plan = planDuplicateList(source, {
+          scope,
+          lists: state.lists,
+          folders: state.folders,
+          tasks: state.tasks,
+        })
+        applyDuplicateListPlan(plan, mut)
+        setEditingCategory(null)
+        return
+      }
+      // Selection: folders first (so nested picks aren't double-copied as loose lists), then lists.
+      const selectedFolderSet = new Set(selectedFolderIds)
+      const folderIdsToCopy = selectedFolderIds.filter((id) => {
+        const f = state.folders.find((x) => x.id === id)
+        if (!f || isScheduledFolderId(f.id)) return false
+        // Skip if an ancestor folder is also selected (contents mode would nest it).
+        let walk = f.parentFolderId
+        while (walk) {
+          if (selectedFolderSet.has(walk)) return false
+          walk = state.folders.find((x) => x.id === walk)?.parentFolderId
+        }
+        return true
+      })
+      const listIdsToCopy = selectedCategories.filter((id) => {
+        if (isFolderAllItemsCategoryId(id)) return false
+        // Skip lists that live only inside a selected folder tree when copying contents —
+        // they'll be included by the folder plan. Settings-only still copies them as siblings.
+        if (scope === "settings_and_contents") {
+          for (const fid of folderIdsToCopy) {
+            const f = state.folders.find((x) => x.id === fid)
+            if (f?.listIds.includes(id)) return false
+          }
+        }
+        return true
+      })
+      for (const fid of folderIdsToCopy) {
+        const source = state.folders.find((f) => f.id === fid)
+        if (!source) continue
+        applyDuplicateFolderPlan(
+          planDuplicateFolder(source, {
+            scope,
+            folders: useTaskStore.getState().folders,
+            lists: useTaskStore.getState().lists,
+            tasks: useTaskStore.getState().tasks,
+          }),
+          mut,
+        )
+      }
+      for (const lid of listIdsToCopy) {
+        const source = useTaskStore.getState().lists.find((l) => l.id === lid)
+        if (!source) continue
+        applyDuplicateListPlan(
+          planDuplicateList(source, {
+            scope,
+            lists: useTaskStore.getState().lists,
+            folders: useTaskStore.getState().folders,
+            tasks: useTaskStore.getState().tasks,
+            folderIds: currentFolder ? [currentFolder.id] : undefined,
+          }),
+          mut,
+        )
+      }
+      selection.cancelSelectMode()
+    },
+    [
+      addFolder,
+      addList,
+      addListToFolder,
+      addTask,
+      currentFolder,
+      duplicateSubject,
+      selectedCategories,
+      selectedFolderIds,
+      selection,
+    ],
+  )
+
   const handleEditCategory = useCallback((category: List) => {
     updateList(category)
     setEditingCategory(null)
@@ -604,7 +988,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
         description: `Imported from ${csvImport.fileName}`,
         createdAt: new Date(),
         order: categories.length,
-        scheduleable: true,
+        scheduleable: isExplicitlyScheduleable(currentFolder),
         itemAttributes: attrDefs,
       })
       if (currentFolder) addListToFolder(currentFolder.id, categoryId)
@@ -758,6 +1142,27 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
   const searchHasItems = searchResults.tasks.length > 0 || selectedTaskIds.length > 0
   const itemSelectActive = selectingOpenListItems || (selectingSearchResults && searchHasItems)
   const listSelectActive = !!(selectMode && !selectingOpenListItems && (!searchActive || searchHasListsOrFolders))
+  const selectStripOpen = itemSelectActive || listSelectActive
+  const selectBandRef = useRef<HTMLDivElement>(null)
+  const [selectBandPx, setSelectBandPx] = useState(0)
+  useEffect(() => {
+    if (!selectStripOpen) {
+      setSelectBandPx(0)
+      return
+    }
+    const el = selectBandRef.current
+    if (!el) return
+    const measure = () => {
+      // margin-top on the strip sits outside the border box; the window must grow by both
+      const next = Math.ceil(el.getBoundingClientRect().height) + 3
+      setSelectBandPx((prev) => (prev === next ? prev : next))
+    }
+    measure()
+    if (typeof ResizeObserver !== "function") return
+    const observer = new ResizeObserver(measure)
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [selectStripOpen])
   const openListKey = openTarget && openTarget.type !== "habits" && openTarget.type !== "objectives" ? openTargetKey(openTarget) : ""
   useEffect(() => {
     clearTaskSelection()
@@ -875,25 +1280,38 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
 
   const handleApplyMerge = useCallback(
     (plan: ListMergePlan) => {
-      const next = applyListMerge({ lists: categories, folders, tasks: allTasks }, plan)
+      // Search-result and folder select both land here — one replace path.
+      const state = useTaskStore.getState()
+      const next = applyListMerge({ lists: state.lists, folders: state.folders, tasks: state.tasks }, plan)
       setLists(next.lists, { tombstoneIds: plan.discardedIds })
       setFolders(next.folders)
       setTasks(next.tasks)
       setMergeOpen(false)
       selection.cancelSelectMode()
     },
-    [categories, folders, allTasks, setLists, setFolders, setTasks, selection],
+    [setLists, setFolders, setTasks, selection],
   )
 
   const handleApplyItemMerge = useCallback(
     (plan: ItemMergePlan) => {
-      setTasks(applyItemMerge(allTasks, plan), { tombstoneIds: plan.discardedIds })
+      // Search-result Select and open-list Select both call this — one replace
+      // path. Read the live vault so we never merge a stale snapshot, then stamp
+      // discarded ids so hub/persist union cannot resurrect originals.
+      const live = useTaskStore.getState().tasks
+      setTasks(applyItemMerge(live, plan), { tombstoneIds: plan.discardedIds })
       if (selectedTaskId && plan.discardedIds.includes(selectedTaskId)) setSelectedTaskId(null)
       setItemMergeOpen(false)
       selection.cancelSelectMode()
     },
-    [allTasks, setTasks, selectedTaskId, selection],
+    [setTasks, selectedTaskId, selection],
   )
+
+  const folderRenameProps = {
+    onFolderContextMenu: handleFolderContextMenu,
+    renamingFolderId,
+    onCommitFolderRename: handleCommitFolderRename,
+    onCancelFolderRename: () => setRenamingFolderId(null),
+  }
 
   const folderViewCommon = {
     entries,
@@ -905,6 +1323,16 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
     handleDropOnEntry: drag.handleDropOnEntry,
     clearDrag: drag.clearDrag,
   }
+
+  const pasteSameEnabled =
+    !!currentFolder &&
+    !isScheduledFolderId(currentFolder.id) &&
+    (listsClipboard?.listIds.length ?? 0) > 0
+  const pasteSameDisabledReason = !currentFolder
+    ? "Open a folder to add the same lists into it. Folders keep one parent and cannot be multi-filed."
+    : isScheduledFolderId(currentFolder.id)
+      ? "Scheduled folders cannot receive Same-identity paste."
+      : "Same identity applies to lists (multi-folder membership). Folders keep one parent."
 
   const renderMainContent = () => {
     if (searchActive) {
@@ -936,6 +1364,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
     if (openTarget?.type === "habits") {
       if (openTarget.id === "weekly-habits") return <WeeklyHabitsList />
       if (openTarget.id === "monthly-habits") return <MonthlyHabitsList />
+      if (openTarget.id === "season-habits") return <SeasonHabitsList />
       return <DailyHabitsList />
     }
     if (openTarget?.type === "objectives") return <ObjectivesList />
@@ -1013,6 +1442,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
           setIconPickerFor={setIconPickerFor}
           openNewCategoryDialog={openNewCategoryDialog}
           onCanvasWidth={handleCanvasWidth}
+          {...folderRenameProps}
         />
       )
     }
@@ -1026,6 +1456,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
           onToggleListSelect={toggleCategorySelection}
           onToggleFolderSelect={toggleFolderSelection}
           inFolder={!!currentFolder}
+          {...folderRenameProps}
         />
       )
     }
@@ -1064,7 +1495,17 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
   }
 
   return (
-    <div className="fm98" style={{ height: "calc(100vh - 150px)", minHeight: 560 }}>
+    <div
+      ref={listsSurfaceRef}
+      className="fm98"
+      style={{
+        // Select mode adds the control strip inside a fixed viewport. Grow the
+        // window by that band so the folder tree and content keep the height
+        // they have when select mode is off.
+        height: selectBandPx ? `calc(100vh - 150px + ${selectBandPx}px)` : "calc(100vh - 150px)",
+        minHeight: 560 + selectBandPx,
+      }}
+    >
       <div
         className="fm-window"
         data-ui-name="Lists"
@@ -1123,55 +1564,60 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
             <div className="fm-status-field">{breadcrumb}</div>
           </div>
 
-          {itemSelectActive && (
-            <ItemSelectionToolbar
-              selectedCount={selectedTaskIds.length}
-              placementMode={effectiveItemPlacement}
-              canMove={itemCanMove}
-              fromSearch={selectingSearchResults}
-              excludeListIds={excludedListIdsForSelection(categories, originListId)}
-              onSelectAll={selectingSearchResults ? handleSelectAllSearchResults : handleSelectAllItems}
-              onDeselectAll={
-                selectingSearchResults
-                  ? () => {
-                      clearTaskSelection()
-                      clearSelection()
-                    }
-                  : clearTaskSelection
-              }
-              onPlacementModeChange={setItemPlacementMode}
-              onAddToNewList={openNewCategoryDialog}
-              onAddToLists={placeItemsIntoLists}
-              onMerge={() => setItemMergeConfirmOpen(true)}
-              onDelete={handleDeleteSelectedItems}
-            />
-          )}
-          {listSelectActive && (
-            <SelectionToolbar
-              selectedListCount={selectedCategories.length}
-              selectedFolderCount={selectedFolderIds.length}
-              placementMode={effectivePlacement}
-              originIsAll={isAll && !searchActive}
-              fromSearch={selectingSearchResults}
-              destinationFolders={destinationFoldersForSelection(folders, {
-                currentFolderId: searchActive ? null : currentFolder?.id,
-                selectedFolderIds,
-              })}
-              onSelectAll={selectingSearchResults ? handleSelectAllSearchResults : handleSelectAllVisible}
-              onDeselectAll={
-                selectingSearchResults
-                  ? () => {
-                      clearSelection()
-                      clearTaskSelection()
-                    }
-                  : clearSelection
-              }
-              onPlacementModeChange={setPlacementMode}
-              onAddToNewFolder={() => setShowNewFolderDialog(true)}
-              onAddToFolder={placeListsIntoFolder}
-              onMerge={() => setMergeConfirmOpen(true)}
-              onDelete={handleDeleteSelected}
-            />
+          {selectStripOpen && (
+            <div ref={selectBandRef}>
+              {itemSelectActive && (
+                <ItemSelectionToolbar
+                  selectedCount={selectedTaskIds.length}
+                  placementMode={effectiveItemPlacement}
+                  canMove={itemCanMove}
+                  fromSearch={selectingSearchResults}
+                  excludeListIds={excludedListIdsForSelection(categories, originListId)}
+                  onSelectAll={selectingSearchResults ? handleSelectAllSearchResults : handleSelectAllItems}
+                  onDeselectAll={
+                    selectingSearchResults
+                      ? () => {
+                          clearTaskSelection()
+                          clearSelection()
+                        }
+                      : clearTaskSelection
+                  }
+                  onPlacementModeChange={setItemPlacementMode}
+                  onAddToNewList={openNewCategoryDialog}
+                  onAddToLists={placeItemsIntoLists}
+                  onMerge={() => setItemMergeConfirmOpen(true)}
+                  onDelete={handleDeleteSelectedItems}
+                />
+              )}
+              {listSelectActive && (
+                <SelectionToolbar
+                  selectedListCount={selectedCategories.length}
+                  selectedFolderCount={selectedFolderIds.length}
+                  placementMode={effectivePlacement}
+                  originIsAll={isAll && !searchActive}
+                  fromSearch={selectingSearchResults}
+                  destinationFolders={destinationFoldersForSelection(folders, {
+                    currentFolderId: searchActive ? null : currentFolder?.id,
+                    selectedFolderIds,
+                  })}
+                  onSelectAll={selectingSearchResults ? handleSelectAllSearchResults : handleSelectAllVisible}
+                  onDeselectAll={
+                    selectingSearchResults
+                      ? () => {
+                          clearSelection()
+                          clearTaskSelection()
+                        }
+                      : clearSelection
+                  }
+                  onPlacementModeChange={setPlacementMode}
+                  onAddToNewFolder={() => setShowNewFolderDialog(true)}
+                  onAddToFolder={placeListsIntoFolder}
+                  onMerge={() => setMergeConfirmOpen(true)}
+                  onDelete={handleDeleteSelected}
+                  onDuplicate={openDuplicateSelection}
+                />
+              )}
+            </div>
           )}
 
           <div className="fm-split">
@@ -1304,15 +1750,87 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
                 Smart lists
               </label>
             </div>
+            {isAll ? (
+              <div className="fm-status-field shrink" style={{ minWidth: 160 }} data-testid="fm-status-period-ledgers">
+                <label style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={showPeriodLedgerListsInAll}
+                    onChange={(e) => setShowPeriodLedgerListsInAll(e.target.checked)}
+                  />
+                  Show to do / done / undone
+                </label>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
 
-      <NewListDialog open={newCategoryOpen} currentFolder={currentFolder} isHome={isHome} selectedCount={selectedTaskIds.length} placementMode={effectiveItemPlacement} canMove={itemCanMove} onPlacementModeChange={setItemPlacementMode} initialName={newListSeed} onOpenChange={setNewCategoryOpen} onCreate={handleCreateCategory} />
+      <NewListDialog open={newCategoryOpen} currentFolder={currentFolder} isHome={isHome} selectedCount={selectedTaskIds.length} placementMode={effectiveItemPlacement} canMove={itemCanMove} onPlacementModeChange={setItemPlacementMode} initialName={newListSeed} onOpenChange={setNewCategoryOpen} onCreate={handleCreateCategory} onBulkCreate={handleBulkCreateLists} />
       {csvImport && <CsvImportDialog csvImport={csvImport} categories={categories} onClose={() => setCsvImport(null)} onImport={performCsvImport} onUpdate={setCsvImport} />}
-      <EditListDialog editingCategory={editingCategory} onEditingCategoryChange={setEditingCategory} folders={folders} homePinned={homePinned} listDisplay={listDisplay} setListDisplay={setListDisplay} toggleHomePin={toggleHomePin} onOpenIconPicker={() => editingCategory && setIconPickerFor({ kind: "category", id: editingCategory.id })} onSave={handleEditCategory} onDelete={() => { if (!editingCategory || isFolderAllItemsCategoryId(editingCategory.id)) return; if (confirm(`Delete list "${editingCategory.name}"?`)) { deleteList(editingCategory.id); if (openTarget?.type === "category" && openTarget.id === editingCategory.id) closeTarget(); setEditingCategory(null) } }} />
-      <EditFolderDialog editingFolder={editingFolder} onEditingFolderChange={setEditingFolder} homePinned={homePinned} toggleHomePin={toggleHomePin} onOpenIconPicker={() => editingFolder && setIconPickerFor({ kind: "folder", id: editingFolder.id })} onSave={(folder) => { updateFolder(folder); setEditingFolder(null) }} onDelete={() => { if (editingFolder && confirm("Delete this folder? The lists inside it will not be deleted.")) { deleteFolder(editingFolder.id); if (location === editingFolder.id) handleNavTo("all"); setEditingFolder(null) } }} />
-      <NewFolderDialog open={showNewFolderDialog} selectedCount={selectedCategories.length + selectedFolderIds.length} placementMode={effectivePlacement} originIsAll={isAll} onPlacementModeChange={setPlacementMode} onOpenChange={setShowNewFolderDialog} onCreate={handleCreateFolder} />
+      <EditListDialog editingCategory={editingCategory} onEditingCategoryChange={setEditingCategory} folders={folders} homePinned={homePinned} listDisplay={listDisplay} setListDisplay={setListDisplay} toggleHomePin={toggleHomePin} onOpenIconPicker={() => editingCategory && setIconPickerFor({ kind: "category", id: editingCategory.id })} onSave={handleEditCategory} onDelete={() => { if (!editingCategory || isFolderAllItemsCategoryId(editingCategory.id)) return; if (confirm(`Delete list "${editingCategory.name}"?`)) { deleteList(editingCategory.id); if (openTarget?.type === "category" && openTarget.id === editingCategory.id) closeTarget(); setEditingCategory(null) } }} onDuplicate={() => editingCategory && openDuplicateList(editingCategory)} />
+      <EditFolderDialog editingFolder={editingFolder} onEditingFolderChange={setEditingFolder} homePinned={homePinned} toggleHomePin={toggleHomePin} onOpenIconPicker={() => editingFolder && setIconPickerFor({ kind: "folder", id: editingFolder.id })} onSave={(folder) => { updateFolder(folder); setEditingFolder(null) }} onDelete={() => { if (editingFolder && confirm("Delete this folder? The lists inside it will not be deleted.")) { deleteFolder(editingFolder.id); if (location === editingFolder.id) handleNavTo("all"); setEditingFolder(null) } }} onDuplicate={() => editingFolder && openDuplicateFolder(editingFolder)} />
+      <NewFolderDialog open={showNewFolderDialog} selectedCount={selectedCategories.length + selectedFolderIds.length} placementMode={effectivePlacement} originIsAll={isAll} onPlacementModeChange={setPlacementMode} onOpenChange={setShowNewFolderDialog} onCreate={handleCreateFolder} onBulkCreate={handleBulkCreateFolders} />
+      <DuplicateSelectionDialog
+        open={duplicateOpen}
+        folderCount={
+          duplicateSubject?.kind === "folder"
+            ? 1
+            : duplicateSubject?.kind === "list"
+              ? 0
+              : selectedFolderIds.length
+        }
+        listCount={
+          duplicateSubject?.kind === "list"
+            ? 1
+            : duplicateSubject?.kind === "folder"
+              ? 0
+              : selectedCategories.length
+        }
+        subjectLabel={
+          duplicateSubject?.kind === "folder"
+            ? folders.find((f) => f.id === duplicateSubject.id)?.name
+            : duplicateSubject?.kind === "list"
+              ? categories.find((l) => l.id === duplicateSubject.id)?.name
+              : undefined
+        }
+        onOpenChange={(open) => {
+          setDuplicateOpen(open)
+          if (!open) setDuplicateSubject(null)
+        }}
+        onConfirm={handleConfirmDuplicate}
+      />
+      <PasteSelectionDialog
+        open={pasteOpen}
+        folderCount={listsClipboard?.folderIds.length ?? 0}
+        listCount={listsClipboard?.listIds.length ?? 0}
+        sameEnabled={pasteSameEnabled}
+        sameDisabledReason={pasteSameDisabledReason}
+        onOpenChange={setPasteOpen}
+        onConfirm={handleConfirmPaste}
+      />
+      {folderContextMenu ? (
+        <FolderContextMenu
+          menu={folderContextMenu}
+          canRename={isEditableFolder(folderContextMenu.folderId)}
+          onClose={() => setFolderContextMenu(null)}
+          onOpen={() => {
+            const folder = folders.find((f) => f.id === folderContextMenu.folderId)
+            setFolderContextMenu(null)
+            if (folder) handleOpenEntry({ kind: "folder", id: folder.id, name: folder.name, count: 0 })
+          }}
+          onRename={() => {
+            const id = folderContextMenu.folderId
+            setFolderContextMenu(null)
+            if (isEditableFolder(id)) setRenamingFolderId(id)
+          }}
+          onFolderSettings={() => {
+            const folder = folders.find((f) => f.id === folderContextMenu.folderId)
+            setFolderContextMenu(null)
+            if (folder && isEditableFolder(folder.id)) setEditingFolder(folder)
+          }}
+        />
+      ) : null}
       <MergeListsConfirmDialog open={mergeConfirmOpen} listNames={selectedMergeLists.map((l) => l.name)} onCancel={() => setMergeConfirmOpen(false)} onContinue={() => { setMergeConfirmOpen(false); setMergeOpen(true) }} />
       <MergeListsDialog open={mergeOpen} lists={selectedMergeLists} folders={folders} tasks={allTasks} onClose={() => setMergeOpen(false)} onMerge={handleApplyMerge} />
       <MergeItemsConfirmDialog open={itemMergeConfirmOpen} itemNames={selectedMergeItems.map(itemMergeLabel)} onCancel={() => setItemMergeConfirmOpen(false)} onContinue={() => { setItemMergeConfirmOpen(false); setItemMergeOpen(true) }} />
