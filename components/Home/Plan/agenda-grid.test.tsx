@@ -140,6 +140,54 @@ describe("AgendaGrid", () => {
     expect(onTracked).toHaveBeenCalledWith("te-sleep")
   })
 
+  it("draws plan-mode tracking ghosts as non-interactive outlines", () => {
+    const onTaskClick = vi.fn()
+    render(
+      <AgendaGrid
+        date={date}
+        events={[]}
+        tasks={tasks}
+        mode="plan"
+        onTaskClick={onTaskClick}
+        trackedGhosts={[
+          {
+            id: "te-stroll",
+            label: "Recorded stroll",
+            startMinutes: 9 * 60,
+            durationMinutes: 60,
+            color: "#2563eb",
+          },
+        ]}
+      />,
+    )
+    const ghost = document.querySelector('[data-kind="tracked-ghost"]')
+    expect(ghost).toHaveTextContent("Recorded stroll")
+    expect(ghost).toHaveClass("agenda-tracked-ghost")
+    expect((ghost as HTMLElement).style.pointerEvents).toBe("none")
+    fireEvent.click(screen.getByText("Write docs"))
+    expect(onTaskClick).toHaveBeenCalledWith("task-1")
+  })
+
+  it("ignores tracking ghosts outside plan mode", () => {
+    render(
+      <AgendaGrid
+        date={date}
+        events={[]}
+        tasks={[]}
+        mode="log"
+        trackedGhosts={[
+          {
+            id: "te-stroll",
+            label: "Recorded stroll",
+            startMinutes: 9 * 60,
+            durationMinutes: 60,
+          },
+        ]}
+      />,
+    )
+    expect(screen.queryByText("Recorded stroll")).not.toBeInTheDocument()
+  })
+
   it("lands the agenda two hour-rows above the target minute", () => {
     expect(planAgendaScrollTop(0)).toBe(0)
     expect(planAgendaScrollTop(7 * 60)).toBe(5 * HOUR_HEIGHT)

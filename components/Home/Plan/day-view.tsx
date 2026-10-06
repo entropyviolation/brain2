@@ -7,13 +7,14 @@
  * Bulk / Latest choose how the log is shown (newest first). The schedule well
  * stretches with the Plan split column (matching a long rail) so it is not a
  * postage-stamp nested box over empty gray; hour rows keep 152px. The grid
- * lands on now or wake.
+ * lands on now or wake. Past hours carry a non-interactive outline of what
+ * Tracking already logged for this day (the Day Log slabs). Later hours stay clear.
  *
  * Spec: §7.4 (Day View).
  */
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useTaskStore } from "@/lib/task-store"
 import { useEventStore } from "@/lib/event-store"
 import { useHabitsStore } from "@/lib/habits-store"
@@ -21,11 +22,13 @@ import { useSleepStore } from "@/lib/sleep-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { format, addDays, subDays } from "date-fns"
 import type { CalendarEvent } from "@/lib/types"
-import { formatLocalDateKey, isToday, sameCalendarDay, toLocalCalendarDate } from "@/lib/date-utils"
+import { formatLocalDateKey, isToday, toLocalCalendarDate } from "@/lib/date-utils"
+import { tasksScheduledOnCalendarDay } from "@/lib/item-slices"
 import { getBannerEvents } from "@/lib/event-links"
 import { awakeWindowFor } from "@/lib/sleep-sync"
 import { MINUTES_PER_DAY } from "@/lib/time-entries"
 import { itemTitle } from "@/lib/item-utils"
+import { habitScheduleMinutes } from "@/lib/habit-time-estimate"
 import {
   movePlacement,
   placementFromDragRange,
@@ -37,8 +40,10 @@ import { DEFAULT_WAKE_MIN, firstUnpaintedWakingHour } from "@/components/Home/Tr
 import { PlannedTasksSidebar } from "./planned-tasks-sidebar"
 import { AgendaGrid } from "./agenda-grid"
 import { PlanChip, planChipTooltip, planEventTimeLabel } from "./plan-chip"
+import { PlanPeriodNav } from "./plan-period-nav"
 import { PlanTextLog, planPeriodStampProps } from "./plan-text-log"
 import { PlannedActionDialog } from "./planned-action-dialog"
+import { planDayTrackedGhosts } from "./plan-tracked-ghosts"
 
 interface DayViewProps {
   currentDate: Date
@@ -58,7 +63,7 @@ export function DayView({
   onEventClick,
   onCreateEvent,
 }: DayViewProps) {
-  const tasks = useTaskStore((s) => s.tasks)
+  const dayTasks = useTaskStore((s) => tasksScheduledOnCalendarDay(s.tasks, currentDate))
   const updateTask = useTaskStore((s) => s.updateTask)
   const updateEvent = useEventStore((s) => s.updateEvent)
   const habits = useHabitsStore((s) => s.tasks)
@@ -69,8 +74,27 @@ export function DayView({
   const deletePlannedAction = usePlannedActionStore((s) => s.deleteAction)
   const nights = useSleepStore((s) => s.nights)
   const trackingEntries = useTimeTrackingStore((s) => s.entries)
+  const trackingScopes = useTimeTrackingStore((s) => s.scopes)
+  const activeScopeId = useTimeTrackingStore((s) => s.activeScopeId)
   const dayKey = formatLocalDateKey(currentDate)
   const [editingPlacement, setEditingPlacement] = useState<PlannedAction | null>(null)
+  const [ghostNow, setGhostNow] = useState(() => new Date())
+
+  useEffect(() => {
+    const id = window.setInterval(() => setGhostNow(new Date()), 30_000)
+    return () => window.clearInterval(id)
+  }, [])
+
+  const trackedGhosts = useMemo(() => {
+    const scope = trackingScopes.find((row) => row.id === activeScopeId) ?? trackingScopes[0]
+    return planDayTrackedGhosts({
+      entries: trackingEntries,
+      scope,
+      dayKey,
+      viewedDay: currentDate,
+      now: ghostNow,
+    })
+  }, [trackingEntries, trackingScopes, activeScopeId, dayKey, currentDate, ghostNow])
 
   const scrollToMinutes = useMemo(() => {
     if (isToday(currentDate)) {
@@ -86,18 +110,10 @@ export function DayView({
     return hour * 60
   }, [currentDate, dayKey, nights, trackingEntries])
 
-  const getScheduledTasks = (date: Date) => {
-    return tasks.filter((task) => {
-      if (!task.scheduledDate) return false
-      return sameCalendarDay(task.scheduledDate, date)
-    })
-  }
-
-  const dayTasks = getScheduledTasks(currentDate)
   const allDayEvents = getBannerEvents(events, currentDate)
 
   const handleScheduleTask = (taskId: string, hour: number, minute: number) => {
-    const task = tasks.find((t) => t.id === taskId)
+    const task = useTaskStore.getState().tasks.find((t) => t.id === taskId)
     if (!task) return
     const scheduledDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), hour, minute)
     updateTask({
@@ -124,12 +140,14 @@ export function DayView({
 
   const handleScheduleHabit = (habitId: string, hour: number, minute: number) => {
     const habit = habits.find((row) => row.id === habitId)
+    const durationMinutes = habitScheduleMinutes(habit)
+    if (durationMinutes == null) return
     const placed = upsertSourcePlacement(
       placementFromDrop({
         date: dayKey,
         hour,
         minute,
-        durationMinutes: habit?.timeEstimate?.minutes ?? 30,
+        durationMinutes,
         source: "habit",
         sourceId: habitId,
         title: habit?.name ?? "Habit",
@@ -155,7 +173,7 @@ export function DayView({
     const next = movePlacement(action, hour, minute)
     updatePlannedAction(next)
     if (action.source === "todo" && action.sourceId) {
-      const task = tasks.find((t) => t.id === action.sourceId)
+      const task = useTaskStore.getState().tasks.find((t) => t.id === action.sourceId)
       if (task) {
         updateTask({
           ...task,
@@ -167,7 +185,7 @@ export function DayView({
   }
 
   const handleUnscheduleTask = (taskId: string) => {
-    const task = tasks.find((t) => t.id === taskId)
+    const task = useTaskStore.getState().tasks.find((t) => t.id === taskId)
     if (!task) return
     updateTask({ ...task, scheduledTime: undefined })
     deleteForSource(dayKey, "todo", taskId)
@@ -217,18 +235,14 @@ export function DayView({
       />
 
       <div className="plan-desktop plan-desktop-day">
-        <div className="plan-period">
-          <button type="button" className="plan-period-chev" aria-label="Previous day" onClick={() => setCurrentDate(subDays(currentDate, 1))}>
-            &lt;
-          </button>
-          <h3>{format(currentDate, "EEEE, MMMM d, yyyy")}</h3>
-          <button type="button" className="plan-period-chev" aria-label="Next day" onClick={() => setCurrentDate(addDays(currentDate, 1))}>
-            &gt;
-          </button>
-          <button type="button" className="plan-period-today" onClick={() => setCurrentDate(new Date())}>
-            Today
-          </button>
-        </div>
+        <PlanPeriodNav
+          label={format(currentDate, "EEEE, MMMM d, yyyy")}
+          previousLabel="Previous day"
+          nextLabel="Next day"
+          onPrevious={() => setCurrentDate(subDays(currentDate, 1))}
+          onNext={() => setCurrentDate(addDays(currentDate, 1))}
+          onToday={() => setCurrentDate(new Date())}
+        />
 
         {allDayEvents.length > 0 && (
           <div className="plan-banners">
@@ -275,6 +289,7 @@ export function DayView({
               onReschedulePlannedAction={handleReschedulePlannedAction}
               plannedActions={plannedActions}
               onPlannedActionClick={setEditingPlacement}
+              trackedGhosts={trackedGhosts}
               showCurrentTimeIndicator
               showAllDayBanners={false}
             />

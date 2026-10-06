@@ -89,6 +89,93 @@ describe("MonthView", () => {
     expect(stored.entries[0].text).toBe("Focus on shipping")
   })
 
+  it("shows scheduled work and past completions, not inbox or reminder dumps", () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date("2026-10-06T15:00:00"))
+    const past = new Date(2026, 9, 4, 12)
+    const today = new Date(2026, 9, 6, 12)
+    const future = new Date(2026, 9, 11, 12)
+    useTaskStore.getState().setTasks([
+      {
+        id: "scheduled",
+        description: "Finish CDs",
+        title: "Finish CDs",
+        stage: "clarified",
+        createdAt: today,
+        completed: false,
+        scheduledDate: today,
+        lists: [],
+      },
+      {
+        id: "done-past",
+        description: "Swept floors",
+        title: "Swept floors",
+        stage: "completed",
+        createdAt: past,
+        completed: true,
+        completedDate: past,
+        lists: [],
+      },
+      {
+        id: "reminder",
+        description: "write things down",
+        title: "write things down",
+        stage: "clarified",
+        createdAt: today,
+        completed: false,
+        lists: ["reminders"],
+      },
+      {
+        id: "inbox-parsed",
+        description: "Do not sign while Mercury is near",
+        title: "Do not sign while Mercury is near",
+        stage: "inbox",
+        createdAt: today,
+        completed: false,
+        scheduledDate: future,
+        lists: ["reminders"],
+      },
+      {
+        id: "inbox-plain",
+        description: "loose inbox note",
+        title: "loose inbox note",
+        stage: "inbox",
+        createdAt: today,
+        completed: false,
+        lists: [],
+      },
+      {
+        id: "future-open",
+        description: "someday hike",
+        title: "someday hike",
+        stage: "clarified",
+        createdAt: today,
+        completed: false,
+        lists: [],
+      },
+    ])
+
+    render(
+      <MonthView
+        currentDate={today}
+        setCurrentDate={vi.fn()}
+        events={[]}
+        setEvents={vi.fn()}
+        onTaskClick={vi.fn()}
+        onEventClick={vi.fn()}
+        onOpenDay={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText("Finish CDs")).toBeInTheDocument()
+    expect(screen.getByText("Swept floors")).toBeInTheDocument()
+    expect(screen.queryByText("write things down")).not.toBeInTheDocument()
+    expect(screen.queryByText("Do not sign while Mercury is near")).not.toBeInTheDocument()
+    expect(screen.queryByText("loose inbox note")).not.toBeInTheDocument()
+    expect(screen.queryByText("someday hike")).not.toBeInTheDocument()
+    vi.useRealTimers()
+  })
+
   it("shows overflow +N more with a tooltip of hidden titles", () => {
     const day = new Date(2026, 5, 20)
     const events = [1, 2, 3, 4].map((n) => ({

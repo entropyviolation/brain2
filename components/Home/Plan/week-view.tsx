@@ -1,8 +1,9 @@
 /**
  * components/Home/Plan/week-view.tsx — Week calendar view
  *
- * Seven-day hourly grid. Elapsed columns use `data-past` gray furniture.
- * Clicking an hour still creates an event. Week Plan is the shared stamped log.
+ * Seven-day hourly grid. Elapsed columns use `data-past` gray furniture from
+ * the wall clock (`useLiveToday`), the same cutoff as Month. Clicking an hour
+ * still creates an event. Week Plan is the shared stamped log.
  */
 "use client"
 
@@ -11,14 +12,17 @@ import type React from "react"
 import { useTaskStore } from "@/lib/task-store"
 import { useEventStore } from "@/lib/event-store"
 import { useHabitsStore } from "@/lib/habits-store"
-import { formatLocalDateKey, sameCalendarDay, toLocalCalendarDate, getWeekStartDate, getWeekDates, getWeekString } from "@/lib/date-utils"
-import { useCurrentDate } from "@/lib/use-current-date"
+import { formatLocalDateKey, isPastLocalCalendarDay, sameCalendarDay, toLocalCalendarDate, getWeekStartDate, getWeekDates, getWeekString } from "@/lib/date-utils"
+import { useLiveToday } from "@/lib/use-current-date"
 import { eventCoversDay } from "@/lib/event-links"
 import { format, addWeeks, subWeeks } from "date-fns"
+import { tasksTimedOnDays } from "@/lib/item-slices"
 import type { CalendarEvent } from "@/lib/types"
 import { PlannedTasksSidebar } from "./planned-tasks-sidebar"
+import { PlanPeriodNav } from "./plan-period-nav"
 import { PlanTextLog, planPeriodStampProps } from "./plan-text-log"
 import { itemTitle } from "@/lib/item-utils"
+import { habitScheduleMinutes } from "@/lib/habit-time-estimate"
 import { consumePlanDragClick, readPlanDrag, writePlanDrag } from "@/lib/plan-drag"
 import { usePlanPointerDrop } from "./use-plan-rail-drag"
 import { hhmmToMinutes, movePlacement, placementFromDrop, type PlannedAction } from "@/lib/planned-actions"
@@ -44,14 +48,21 @@ interface WeekViewProps {
   onPlannedActionClick?: (action: PlannedAction) => void
 }
 
-function isElapsedPlanDay(date: Date, today: Date) {
-  return toLocalCalendarDate(date).getTime() < toLocalCalendarDate(today).getTime()
-}
-
 function getEventDurationMinutes(event: CalendarEvent): number {
   const [startHour, startMin] = event.startTime.split(":").map(Number)
   const [endHour, endMin] = event.endTime.split(":").map(Number)
   return endHour * 60 + endMin - (startHour * 60 + startMin)
+}
+
+function slotKey(dayKey: string, hour: number): string {
+  return `${dayKey}|${hour}`
+}
+
+function pushSlot<T>(map: Map<string, T[]>, dayKey: string, hour: number, item: T) {
+  const key = slotKey(dayKey, hour)
+  const bucket = map.get(key)
+  if (bucket) bucket.push(item)
+  else map.set(key, [item])
 }
 
 export function WeekView({
@@ -63,8 +74,10 @@ export function WeekView({
   onCreateEvent,
   onPlannedActionClick,
 }: WeekViewProps) {
-  const { currentDate: today } = useCurrentDate()
-  const tasks = useTaskStore((s) => s.tasks)
+  const today = useLiveToday()
+  const weekStart = getWeekStartDate(currentDate)
+  const weekDates = getWeekDates(weekStart)
+  const tasks = useTaskStore((s) => tasksTimedOnDays(s.tasks, weekDates))
   const updateTask = useTaskStore((s) => s.updateTask)
   const updateEvent = useEventStore((s) => s.updateEvent)
   const habits = useHabitsStore((s) => s.tasks)
@@ -72,12 +85,20 @@ export function WeekView({
   const upsertSourcePlacement = usePlannedActionStore((s) => s.upsertSourcePlacement)
   const updatePlannedAction = usePlannedActionStore((s) => s.updateAction)
 
-  const weekStart = getWeekStartDate(currentDate)
-  const weekDates = getWeekDates(weekStart)
   const weekKey = getWeekString(currentDate)
 
-  const getScheduledTasks = (date: Date) => {
-    return tasks.filter((task) => task.scheduledDate && sameCalendarDay(task.scheduledDate, date))
+  const timedEventsBySlot = new Map<string, CalendarEvent[]>()
+  const tasksBySlot = new Map<string, (typeof tasks)[number][]>()
+  for (const date of weekDates) {
+    const dayKey = formatLocalDateKey(date)
+    for (const event of events) {
+      if (event.isAllDay || !sameCalendarDay(event.date, date)) continue
+      pushSlot(timedEventsBySlot, dayKey, Number.parseInt(event.startTime.split(":")[0]), event)
+    }
+    for (const task of tasks) {
+      if (!task.scheduledDate || !task.scheduledTime || !sameCalendarDay(task.scheduledDate, date)) continue
+      pushSlot(tasksBySlot, dayKey, Number.parseInt(task.scheduledTime.split(":")[0]), task)
+    }
   }
 
   const onDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -87,7 +108,7 @@ export function WeekView({
 
   const applyDrop = (payload: { kind: string; id: string }, date: Date, hour: number) => {
     if (payload.kind === "task") {
-      const task = tasks.find((t) => t.id === payload.id)
+      const task = useTaskStore.getState().tasks.find((t) => t.id === payload.id)
       if (!task) return
       const scheduledDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hour)
       updateTask({
@@ -113,12 +134,14 @@ export function WeekView({
     }
     if (payload.kind === "habit") {
       const habit = habits.find((row) => row.id === payload.id)
+      const durationMinutes = habitScheduleMinutes(habit)
+      if (durationMinutes == null) return
       upsertSourcePlacement(
         placementFromDrop({
           date: formatLocalDateKey(date),
           hour,
           minute: 0,
-          durationMinutes: habit?.timeEstimate?.minutes ?? 30,
+          durationMinutes,
           source: "habit",
           sourceId: payload.id,
           title: habit?.name ?? "Habit",
@@ -173,7 +196,7 @@ export function WeekView({
   }
 
   const handleUnscheduleTask = (taskId: string) => {
-    const task = tasks.find((t) => t.id === taskId)
+    const task = useTaskStore.getState().tasks.find((t) => t.id === taskId)
     if (!task) return
     updateTask({
       ...task,
@@ -197,15 +220,6 @@ export function WeekView({
     return events.filter((event) => event.isAllDay && eventCoversDay(event, date))
   }
 
-  const getTimedEventsForSlot = (date: Date, hour: number) => {
-    return events.filter(
-      (event) =>
-        !event.isAllDay &&
-        sameCalendarDay(event.date, date) &&
-        Number.parseInt(event.startTime.split(":")[0]) === hour,
-    )
-  }
-
   return (
     <div className="plan-split">
       <PlannedTasksSidebar
@@ -216,20 +230,14 @@ export function WeekView({
       />
 
       <div className="plan-desktop">
-        <div className="plan-period">
-          <button type="button" className="plan-period-chev" aria-label="Previous week" onClick={() => setCurrentDate(subWeeks(currentDate, 1))}>
-            &lt;
-          </button>
-          <h3>
-            {format(weekStart, "MMM d")} - {format(weekDates[6], "MMM d, yyyy")}
-          </h3>
-          <button type="button" className="plan-period-chev" aria-label="Next week" onClick={() => setCurrentDate(addWeeks(currentDate, 1))}>
-            &gt;
-          </button>
-          <button type="button" className="plan-period-today" onClick={() => setCurrentDate(new Date())}>
-            Today
-          </button>
-        </div>
+        <PlanPeriodNav
+          label={`${format(weekStart, "MMM d")} - ${format(weekDates[6], "MMM d, yyyy")}`}
+          previousLabel="Previous week"
+          nextLabel="Next week"
+          onPrevious={() => setCurrentDate(subWeeks(currentDate, 1))}
+          onNext={() => setCurrentDate(addWeeks(currentDate, 1))}
+          onToday={() => setCurrentDate(new Date())}
+        />
 
         <div
           className="plan-week"
@@ -251,7 +259,7 @@ export function WeekView({
                 <div
                   key={date.toISOString()}
                   className="plan-week-head"
-                  data-past={isElapsedPlanDay(date, today) ? "true" : "false"}
+                  data-past={isPastLocalCalendarDay(date, today) ? "true" : "false"}
                   data-today={sameCalendarDay(date, today) ? "true" : "false"}
                 >
                   <div>
@@ -281,15 +289,17 @@ export function WeekView({
               <div key={hour} className="contents">
                 <div className="plan-week-gutter">{hour.toString().padStart(2, "0")}:00</div>
                 {weekDates.map((date, dayIndex) => {
-                  const dayEvents = getTimedEventsForSlot(date, hour)
+                  const dayKey = formatLocalDateKey(date)
+                  const dayEvents = timedEventsBySlot.get(slotKey(dayKey, hour)) ?? []
+                  const hourTasks = tasksBySlot.get(slotKey(dayKey, hour)) ?? []
                   return (
                     <div
                       key={`${hour}-${dayIndex}`}
                       className="plan-week-cell"
                       data-plan-drop="week"
                       data-hour={hour}
-                      data-date={formatLocalDateKey(date)}
-                      data-past={isElapsedPlanDay(date, today) ? "true" : "false"}
+                      data-date={dayKey}
+                      data-past={isPastLocalCalendarDay(date, today) ? "true" : "false"}
                       data-today={sameCalendarDay(date, today) ? "true" : "false"}
                       onDragOver={onDragOver}
                       onDrop={(e) => onDrop(e, date, hour)}
@@ -323,9 +333,7 @@ export function WeekView({
                         </div>
                       ))}
 
-                      {getScheduledTasks(date)
-                        .filter((task) => task.scheduledTime && Number.parseInt(task.scheduledTime.split(":")[0]) === hour)
-                        .map((task, idx) => (
+                      {hourTasks.map((task, idx) => (
                         <div
                           key={task.id}
                           className="plan-chip"
@@ -353,7 +361,7 @@ export function WeekView({
                       ))}
 
                       {plannedActions
-                        .filter((action) => action.date === formatLocalDateKey(date) && Math.floor(hhmmToMinutes(action.startTime) / 60) === hour)
+                        .filter((action) => action.date === dayKey && Math.floor(hhmmToMinutes(action.startTime) / 60) === hour)
                         .map((action) => (
                           <PlanChip
                             key={action.id}

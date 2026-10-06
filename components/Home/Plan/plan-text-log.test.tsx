@@ -81,6 +81,49 @@ describe("PlanTextLog", () => {
     expect(screen.getByText("Focus on shipping")).toBeInTheDocument()
   })
 
+  it("opens an empty composer when the stored draft repeats a submitted entry", () => {
+    localStorage.setItem(
+      "monthPlan-2026-09",
+      JSON.stringify({
+        v: 1,
+        entries: [
+          {
+            id: "al_sep",
+            createdAt: "2026-10-06T22:24:17.404Z",
+            text: "Plan for september",
+          },
+        ],
+        draft: "Plan for september ",
+      }),
+    )
+    localStorage.setItem(
+      "monthPlan-2026-10",
+      JSON.stringify({
+        v: 1,
+        entries: [
+          {
+            id: "al_oct",
+            createdAt: "2026-10-06T22:07:00.000Z",
+            text: "ASTROLOGICAL MONTH PREDICTIONS AND NOTES: October",
+          },
+        ],
+        draft: "october notes still unsent",
+      }),
+    )
+    const { rerender } = render(
+      <PlanTextLog period="month" periodKey="2026-09" placeholder="Write your month plan" />,
+    )
+    expect(screen.getByPlaceholderText(/Write your month plan/i)).toHaveValue("")
+    expect(screen.getByText("Plan for september")).toBeInTheDocument()
+
+    rerender(<PlanTextLog period="month" periodKey="2026-10" placeholder="Write your month plan" />)
+    expect(screen.getByPlaceholderText(/Write your month plan/i)).toHaveValue("october notes still unsent")
+    expect(screen.getByText("ASTROLOGICAL MONTH PREDICTIONS AND NOTES: October")).toBeInTheDocument()
+
+    rerender(<PlanTextLog period="week" periodKey="2026-W38" placeholder="Write your week plan" />)
+    expect(screen.getByPlaceholderText(/Write your week plan/i)).toHaveValue("")
+  })
+
   it("keeps unsubmitted month plaintext after a remount", async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     localStorage.setItem("monthPlan-2026-09", "")

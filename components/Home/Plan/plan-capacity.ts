@@ -3,12 +3,13 @@
  *
  * Pure math for the Plan sidebar capacity line. Sleep evidence is read by the
  * caller via `awakeWindowFor` (`lib/sleep-sync.ts`); this file does not import
- * Tracking stores.
+ * Tracking stores. Inbox captures are not planned minutes.
  */
 import type { CalendarEvent, Task } from "@/lib/types"
 import { formatLocalDateKey, sameCalendarDay } from "@/lib/date-utils"
 import { eventCoversDay, isMultiDayEvent } from "@/lib/event-links"
 import { formatDuration } from "@/lib/time-entries"
+import { scheduledDateCountsOnPlan } from "@/lib/item-utils"
 import {
   plannedDurationMinutes,
   todoIdsCoveredByPlacements,
@@ -34,6 +35,7 @@ export function plannedMinutesForDay(
   const dayKey = formatLocalDateKey(date)
   for (const task of tasks) {
     if (coveredTodos.has(task.id)) continue
+    if (!scheduledDateCountsOnPlan(task)) continue
     if (task.scheduledDate && sameCalendarDay(task.scheduledDate, date)) {
       minutes += task.estimatedDuration ?? 0
     }

@@ -11,7 +11,11 @@
  * focus (`--p-focus`), never WebKit orange. Rail and desktop are sibling
  * milled wells; the calendar document stays white inside. Opalescent chips
  * and habit gems stay cabinet — nested metal frames them, never flattens them.
+ * Period fascia / nameplate / metal keys: `components/period-nav-chrome.css`
+ * (parameterized by `--period-*` from `--p-*`).
  */
+
+@import "../../period-nav-chrome.css";
 
 .plan95 {
   display: flex;
@@ -136,8 +140,6 @@
 
 .plan95 .plan-btn,
 .plan95 .plan-mode-toggle,
-.plan95 .plan-period-chev,
-.plan95 .plan-period-today,
 .plan95 .plan-rail-filters button,
 .plan95 .plan-add button,
 .plan95 .append-log-views button,
@@ -171,8 +173,6 @@
 
 .plan95 .plan-btn:hover:not(:disabled),
 .plan95 .plan-mode-toggle:hover:not(:disabled),
-.plan95 .plan-period-chev:hover:not(:disabled),
-.plan95 .plan-period-today:hover:not(:disabled),
 .plan95 .plan-rail-filters button:hover:not(:disabled),
 .plan95 .plan-add button:hover:not(:disabled),
 .plan95 .append-log-views button:hover:not(:disabled),
@@ -184,8 +184,6 @@
 .plan95 .plan-btn:not(:disabled):active,
 .plan95 .plan-mode-toggle:not(:disabled):active,
 .plan95 .plan-mode-toggle[aria-pressed="true"],
-.plan95 .plan-period-chev:not(:disabled):active,
-.plan95 .plan-period-today:not(:disabled):active,
 .plan95 .plan-rail-filters button:not(:disabled):active,
 .plan95 .plan-rail-filters button[aria-pressed="true"],
 .plan95 .plan-add button:not(:disabled):active,
@@ -235,7 +233,7 @@ body.win95-app .plan95 .plan-view-keys[role="tablist"] {
   gap: 4px;
   flex: 1 1 12rem;
   min-width: 12rem;
-  max-width: 22rem;
+  max-width: 28rem;
   margin: 0;
   padding: 4px;
   border-radius: 3px;
@@ -697,60 +695,16 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
   height: 100%;
 }
 
+/* Period layout (flex wrap). Fascia / nameplate / metal keys in period-nav-chrome. */
 .plan95 .plan-period {
   display: inline-flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  min-height: 40px;
-  padding: 6px 8px;
-  border-radius: 3px;
-  background:
-    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
-    linear-gradient(180deg, #d8dce0, var(--p-face) 48%, #b0b4b8);
-  box-shadow:
-    0 0 0 1px #6a6e72,
-    inset 0 1px 0 rgba(255, 255, 255, 0.7),
-    inset 0 2px 3px rgba(0, 0, 0, 0.08);
 }
 
 .plan95 .plan-period h3 {
-  margin: 0;
-  min-height: 30px;
-  padding: 6px 14px 7px;
-  display: inline-flex;
-  align-items: center;
   flex: 1 1 auto;
-  justify-content: center;
-  border-radius: 2px;
-  text-align: center;
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #2a2c2e !important;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
-  background-image:
-    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0 1px, transparent 1px 2px),
-    linear-gradient(180deg, #eef0f2 0%, var(--p-surface) 48%, #a4a8ac 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 0 0 1px #6a6e72;
-}
-
-.plan95 .plan-period-chev {
-  min-width: 30px;
-  min-height: 30px;
-  padding: 2px 10px;
-  font-size: 14px;
-  letter-spacing: 0;
-  text-transform: none;
-}
-
-.plan95 .plan-period-today {
-  min-height: 30px;
-  padding: 5px 14px 6px;
 }
 
 .plan95 .plan-cal {
@@ -1412,6 +1366,26 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
   z-index: 12;
   text-align: left;
   overflow: hidden;
+}
+
+/* Past tracked time on the Plan day agenda. Under scheduled chips; clicks pass through. */
+.agenda95 .agenda-span.agenda-tracked-ghost {
+  position: absolute;
+  z-index: 1;
+  right: 8px;
+  padding: 4px 8px;
+  pointer-events: none;
+  cursor: default;
+  color: color-mix(in srgb, var(--ghost-ink, #3a3a3a) 82%, #1a1a1a);
+  background: color-mix(in srgb, var(--ghost-ink, #5c6064) 7%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--ghost-ink, #5c6064) 72%, #404040);
+  box-shadow: none;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.agenda95 .agenda-tracked-ghost .agenda-block-title {
+  font-weight: 600;
 }
 
 .agenda95 .agenda-slot {
@@ -2263,6 +2237,12 @@ body.win95-app .plan95[data-plan-dark="true"] .plan-view-keys [role="tab"][data-
   -webkit-backdrop-filter: none;
 }
 
+.plan95[data-plan-dark="true"] .agenda95 .agenda-tracked-ghost {
+  color: color-mix(in srgb, var(--ghost-ink, #d0d0d0) 62%, #f4faf4);
+  background: color-mix(in srgb, var(--ghost-ink, #d0d0d0) 14%, transparent);
+  border-color: color-mix(in srgb, var(--ghost-ink, #d0d0d0) 70%, #f4faf4);
+}
+
 .plan95[data-plan-dark="true"] .agenda95 .agenda-banner-when {
   color: #cfe0d2;
 }
@@ -2280,5 +2260,78 @@ body.win95-app .plan95[data-plan-dark="true"] .plan-view-keys [role="tab"][data-
 .plan95[data-plan-dark="true"] button:focus-visible,
 .plan95[data-plan-dark="true"] [role="tab"]:focus-visible {
   outline-color: #c4b5f5;
+}
+
+.plan95 .season-board[data-season="spring"] { --season-ink: #1d6b3a; --season-wash: #e7f4ea; }
+.plan95 .season-board[data-season="summer"] { --season-ink: #8a5a08; --season-wash: #f8f1d4; }
+.plan95 .season-board[data-season="fall"] { --season-ink: #8a3b12; --season-wash: #f6e4d2; }
+.plan95 .season-board[data-season="winter"] { --season-ink: #1c4e74; --season-wash: #e3eef6; }
+
+.plan95 .season-board .plan-period h3 {
+  color: var(--season-ink, inherit);
+}
+
+.plan95 .season-months {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 8px;
+}
+
+.plan95 .season-month {
+  background: var(--season-wash, #ececec);
+  border: 1px solid #8a8e92;
+  padding: 6px;
+  min-width: 0;
+}
+
+.plan95 .season-month-title {
+  display: block;
+  width: 100%;
+  margin-bottom: 4px;
+  font-weight: 700;
+  color: var(--season-ink, inherit);
+  background: transparent;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.plan95 .season-weekdays,
+.plan95 .season-month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+}
+
+.plan95 .season-weekdays span {
+  text-align: center;
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+.plan95 .season-day {
+  min-height: 2.6rem;
+  padding: 1px;
+  background: #f4f4f4;
+  border: 1px solid #c8c8c8;
+  text-align: left;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.plan95 .season-day[data-outside="true"] {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.plan95 .season-day[data-today="true"] {
+  outline: 1px solid var(--season-ink, #1a1a1a);
+}
+
+@media (max-width: 900px) {
+  .plan95 .season-months {
+    grid-template-columns: 1fr;
+  }
 }
 

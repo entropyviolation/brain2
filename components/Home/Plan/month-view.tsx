@@ -8,6 +8,8 @@
  * Local today uses `data-today` plus a number-row mark, distinct from `data-selected`.
  * Month cells stay compact (numbered squares + small chips) so a 6-week grid does not balloon.
  * Optional `gemMode` swaps past-of-today chips for gems/orbs; today/future stay chips. Default off.
+ * A day chip is a real schedule (`taskOnPlanCalendarDay`) or a completion on a past day.
+ * Inbox prose dates and Reminders membership do not place an item.
  *
  * Spec: §7.4 (Month View).
  */
@@ -19,6 +21,7 @@ import { useMemo } from "react"
 import { useTaskStore } from "@/lib/task-store"
 import { useEventStore } from "@/lib/event-store"
 import { formatLocalDateKey, formatLocalMonthKey, isPastLocalCalendarDay, sameCalendarDay, startOfLocalToday, toLocalCalendarDate } from "@/lib/date-utils"
+import { taskOnPlanCalendarDay, tasksForPlanCalendar } from "@/lib/item-slices"
 import { eventCoversDay, isMultiDayEvent } from "@/lib/event-links"
 import {
   format,
@@ -36,6 +39,8 @@ import { usePlanPointerDrop } from "./use-plan-rail-drag"
 import { hhmmToMinutes, placementFromDrop, type PlannedAction } from "@/lib/planned-actions"
 import { usePlannedActionStore } from "@/lib/planned-action-store"
 import { useHabitsStore } from "@/lib/habits-store"
+import { habitScheduleMinutes } from "@/lib/habit-time-estimate"
+import { PlanPeriodNav } from "./plan-period-nav"
 import { PlannedTasksSidebar } from "./planned-tasks-sidebar"
 import { PlanTextLog, planPeriodStampProps } from "./plan-text-log"
 import { itemTitle } from "@/lib/item-utils"
@@ -62,6 +67,11 @@ interface MonthViewProps {
   gemMode?: boolean
 }
 
+type DayChipTarget =
+  | { source: "event"; event: CalendarEvent }
+  | { source: "task"; taskId: string }
+  | { source: "planned"; action: PlannedAction }
+
 type DayChip = {
   id: string
   timeLabel: string
@@ -69,7 +79,7 @@ type DayChip = {
   color?: string
   tooltip: string
   sortMinutes: number
-  onClick: () => void
+  target: DayChipTarget
   kind?: "planned"
 }
 
@@ -90,20 +100,22 @@ export function MonthView({
   gemMode = false,
 }: MonthViewProps) {
   const todayStart = startOfLocalToday()
-  const tasks = useTaskStore((s) => s.tasks)
+  const todayMs = todayStart.getTime()
+  const monthKey = formatLocalMonthKey(currentDate)
+  const calendarDays = useMemo(() => {
+    const [year, month] = monthKey.split("-").map(Number)
+    const monthStart = startOfMonth(new Date(year, month - 1, 1))
+    const monthEnd = endOfMonth(monthStart)
+    const startDate = addDays(monthStart, -monthStart.getDay())
+    const endDate = addDays(monthEnd, 6 - monthEnd.getDay())
+    return eachDayOfInterval({ start: startDate, end: endDate })
+  }, [monthKey])
+  const tasks = useTaskStore((s) => tasksForPlanCalendar(s.tasks, calendarDays, todayStart))
   const updateTask = useTaskStore((s) => s.updateTask)
   const updateEvent = useEventStore((s) => s.updateEvent)
   const habits = useHabitsStore((s) => s.tasks)
   const plannedActions = usePlannedActionStore((s) => s.actions)
   const upsertSourcePlacement = usePlannedActionStore((s) => s.upsertSourcePlacement)
-  const monthKey = formatLocalMonthKey(currentDate)
-
-  const monthStart = startOfMonth(currentDate)
-  const monthEnd = endOfMonth(currentDate)
-  const startDate = addDays(monthStart, -monthStart.getDay())
-  const endDate = addDays(monthEnd, 6 - monthEnd.getDay())
-  const calendarDays = eachDayOfInterval({ start: startDate, end: endDate })
-
   const chipsByDay = useMemo(() => {
     const map = new Map<string, DayChip[]>()
     for (const date of calendarDays) {
@@ -123,11 +135,11 @@ export function MonthView({
           color: event.color,
           tooltip: planChipTooltip(timeLabel, event.title, event.location),
           sortMinutes: event.isAllDay || isMultiDayEvent(event) ? -1 : timeToMinutes(event.startTime),
-          onClick: () => onEventClick(event),
+          target: { source: "event", event },
         })
       }
       for (const task of tasks) {
-        if (!task.scheduledDate || !sameCalendarDay(task.scheduledDate, date)) continue
+        if (!taskOnPlanCalendarDay(task, date, new Date(todayMs))) continue
         const timeLabel = task.scheduledTime ? `${task.scheduledTime}` : ""
         const title = itemTitle(task)
         chips.push({
@@ -137,7 +149,7 @@ export function MonthView({
           color: PLAN_TASK_COLOR,
           tooltip: planChipTooltip(timeLabel, title),
           sortMinutes: timeToMinutes(task.scheduledTime),
-          onClick: () => onTaskClick(task.id),
+          target: { source: "task", taskId: task.id },
         })
       }
       const dayKey = formatLocalDateKey(date)
@@ -150,7 +162,7 @@ export function MonthView({
           title: action.title,
           tooltip: planChipTooltip(timeLabel, action.title, action.notes),
           sortMinutes: hhmmToMinutes(action.startTime),
-          onClick: () => onPlannedActionClick?.(action),
+          target: { source: "planned", action },
           kind: "planned",
         })
       }
@@ -158,7 +170,13 @@ export function MonthView({
       map.set(key, chips)
     }
     return map
-  }, [calendarDays, events, tasks, plannedActions, onEventClick, onTaskClick, onPlannedActionClick])
+  }, [calendarDays, events, tasks, plannedActions, todayMs])
+
+  const openChip = (target: DayChipTarget) => {
+    if (target.source === "event") onEventClick(target.event)
+    else if (target.source === "task") onTaskClick(target.taskId)
+    else onPlannedActionClick?.(target.action)
+  }
 
   const onDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
@@ -166,7 +184,7 @@ export function MonthView({
 
   const applyDrop = (payload: { kind: string; id: string }, date: Date) => {
     if (payload.kind === "task") {
-      const task = tasks.find((t) => t.id === payload.id)
+      const task = useTaskStore.getState().tasks.find((t) => t.id === payload.id)
       if (task) updateTask({ ...task, scheduledDate: toLocalCalendarDate(date) })
       return
     }
@@ -177,12 +195,14 @@ export function MonthView({
     }
     if (payload.kind === "habit") {
       const habit = habits.find((row) => row.id === payload.id)
+      const durationMinutes = habitScheduleMinutes(habit)
+      if (durationMinutes == null) return
       upsertSourcePlacement(
         placementFromDrop({
           date: formatLocalDateKey(date),
           hour: 9,
           minute: 0,
-          durationMinutes: habit?.timeEstimate?.minutes ?? 30,
+          durationMinutes,
           source: "habit",
           sourceId: payload.id,
           title: habit?.name ?? "Habit",
@@ -205,7 +225,7 @@ export function MonthView({
   })
 
   const handleUnscheduleTask = (taskId: string) => {
-    const task = tasks.find((t) => t.id === taskId)
+    const task = useTaskStore.getState().tasks.find((t) => t.id === taskId)
     if (!task) return
     updateTask({
       ...task,
@@ -226,18 +246,14 @@ export function MonthView({
       />
 
       <div className="plan-desktop">
-        <div className="plan-period">
-          <button type="button" className="plan-period-chev" aria-label="Previous month" onClick={() => setCurrentDate(subMonths(currentDate, 1))}>
-            &lt;
-          </button>
-          <h3>{format(currentDate, "MMMM yyyy")}</h3>
-          <button type="button" className="plan-period-chev" aria-label="Next month" onClick={() => setCurrentDate(addMonths(currentDate, 1))}>
-            &gt;
-          </button>
-          <button type="button" className="plan-period-today" onClick={() => setCurrentDate(new Date())}>
-            Today
-          </button>
-        </div>
+        <PlanPeriodNav
+          label={format(currentDate, "MMMM yyyy")}
+          previousLabel="Previous month"
+          nextLabel="Next month"
+          onPrevious={() => setCurrentDate(subMonths(currentDate, 1))}
+          onNext={() => setCurrentDate(addMonths(currentDate, 1))}
+          onToday={() => setCurrentDate(new Date())}
+        />
 
         <div
           className="plan-cal"
@@ -311,7 +327,7 @@ export function MonthView({
                           title={chip.title}
                           color={chip.color}
                           tooltip={chip.tooltip}
-                          onClick={chip.onClick}
+                          onClick={() => openChip(chip.target)}
                           kind={chip.kind}
                         />
                       ))}

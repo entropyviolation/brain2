@@ -2,7 +2,7 @@
  * components/Home/Plan/plan-panel.tsx — Plan panel container
  *
  * Milled fascia calendar on the Home Plan sub-tab (CRT title, metal keys,
- * Month/Week/Day bay). Hosts Month/Week/Day views, Add Event / Add Plan /
+ * Season/Month/Week/Day bay). Hosts Season/Month/Week/Day views, Add Event / Add Plan /
  * Paste Events / Settings, and wires dialogs. The selected day is the shared
  * `useCurrentDate` cursor passed in from Home. Month cell clicks call
  * `setPlanTab("day")` for that date; Add Event remains the event control;
@@ -16,12 +16,13 @@
  */
 "use client"
 
-import { useState, useEffect } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TaskDetailPopup } from "@/components/ItemDetail/ItemDetailPopup"
 import { orbFor } from "@/components/Icons"
 import type { CalendarEvent } from "@/lib/types"
 import type { PlannedAction } from "@/lib/planned-actions"
+import { SeasonView } from "./season-view"
 import { MonthView } from "./month-view"
 import { WeekView } from "./week-view"
 import { DayView } from "./day-view"
@@ -39,10 +40,11 @@ import { usePlanGemMode } from "./plan-gem-mode"
 import { PlanGemModeToggle } from "./plan-gem-mode-toggle"
 import "./plan-chrome.css"
 
-const PLAN_TABS = ["month", "week", "day"] as const
+const PLAN_TABS = ["quarter", "month", "week", "day"] as const
 type PlanTab = (typeof PLAN_TABS)[number]
 
 const TAB_STATUS: Record<PlanTab, string> = {
+  quarter: "Season view",
   month: "Month view",
   week: "Week view",
   day: "Day view",
@@ -114,7 +116,7 @@ export function PlanPanel({
     setShowEventDialog(true)
   }
 
-  const handleEventClick = (event: CalendarEvent) => {
+  const handleEventClick = useCallback((event: CalendarEvent) => {
     setEditingEvent(event)
     setNewEvent({
       title: event.title,
@@ -129,16 +131,16 @@ export function PlanPanel({
       color: resolvePlanColor(event.color),
     })
     setShowEventDialog(true)
-  }
+  }, [])
 
-  const handleTaskClick = (taskId: string) => {
+  const handleTaskClick = useCallback((taskId: string) => {
     setSelectedTaskId(taskId)
-  }
+  }, [])
 
-  const handleOpenPlannedAction = (action: PlannedAction) => {
+  const handleOpenPlannedAction = useCallback((action: PlannedAction) => {
     setPlanDialogAction(action)
     setShowPlanDialog(true)
-  }
+  }, [])
 
   const handleEventUpdate = (_updatedEvents: CalendarEvent[]) => {
     // Views write through the event store directly.
@@ -152,7 +154,7 @@ export function PlanPanel({
       className="plan95"
       data-plan-dark={planDark ? "true" : "false"}
       data-ui-name="Plan"
-      data-ui-help="Calendar window: Month, Week, and Day plus written plan logs."
+      data-ui-help="Calendar window: Season, Month, Week, and Day plus written plan logs."
       data-ui-docs="components/Home/Plan/README.md"
     >
       <div className="plan-window">
@@ -186,6 +188,7 @@ export function PlanPanel({
                 </button>
               </div>
               <TabsList className="plan-view-keys">
+                <TabsTrigger value="quarter">Season</TabsTrigger>
                 <TabsTrigger value="month">Month</TabsTrigger>
                 <TabsTrigger value="week">Week</TabsTrigger>
                 <TabsTrigger value="day">Day</TabsTrigger>
@@ -208,6 +211,20 @@ export function PlanPanel({
           </div>
 
           <div className="plan-body">
+            <TabsContent value="quarter" className="mt-0 min-h-0 flex-1">
+              <SeasonView
+                currentDate={currentDate}
+                setCurrentDate={setCurrentDate}
+                events={events}
+                onOpenDay={handleOpenDay}
+                onOpenMonth={(date) => {
+                  setCurrentDate(date)
+                  setPlanTab("month")
+                }}
+                onEventClick={handleEventClick}
+              />
+            </TabsContent>
+
             <TabsContent value="month" className="mt-0 min-h-0 flex-1">
               <MonthView
                 currentDate={currentDate}

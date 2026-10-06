@@ -9,6 +9,9 @@
  * Tracked blocks that span hours render as **one continuous slab** (position +
  * height across the hour grid) — clickable everywhere, title once — instead of
  * a sliced reprint in every hour. Plan-mode events still slice per hour.
+ * Plan day view may also pass `trackedGhosts`: outline slabs of those same
+ * intervals, past minutes only, with pointer-events none so they never take
+ * a click from a scheduled chip.
  */
 "use client"
 
@@ -21,6 +24,7 @@ import { fetchDayClimate, minutesFromHhmm } from "@/lib/weather-client"
 import { DEFAULT_HOME_CITY, useUserSettingsStore } from "@/lib/user-settings-store"
 import type { CalendarEvent, Task, TimeLogEntry } from "@/lib/types"
 import { readPlanDrag, writePlanDrag, type PlanDragPayload } from "@/lib/plan-drag"
+import type { TrackedAgendaBlock } from "@/components/Home/Tracking/tracked-agenda-blocks"
 import { usePlanPointerDrop } from "./use-plan-rail-drag"
 import {
   hhmmToMinutes,
@@ -36,15 +40,7 @@ const SNAP_MINUTES = 15
 
 export type AgendaGridMode = "plan" | "log"
 
-/** A painted Tracking block overlaid on the Day Log agenda. */
-export interface TrackedAgendaBlock {
-  id: string
-  label: string
-  startMinutes: number
-  durationMinutes: number
-  color?: string
-  sublabel?: string
-}
+export type { TrackedAgendaBlock }
 
 export interface AgendaGridProps {
   date: Date
@@ -73,6 +69,11 @@ export interface AgendaGridProps {
    * tracking input is visible here too.
    */
   trackedBlocks?: TrackedAgendaBlock[]
+  /**
+   * Plan mode only. Outline of painted Tracking blocks already in the past.
+   * Ignored in log mode. Pointer-events stay off so scheduling still owns the click.
+   */
+  trackedGhosts?: TrackedAgendaBlock[]
   onTrackedBlockClick?: (id: string) => void
   showCurrentTimeIndicator?: boolean
   /** Sunrise/sunset lines from Settings home location. Default true. */
@@ -209,6 +210,7 @@ export function AgendaGrid({
   onUpdateTimeLog,
   onCreateTimeLog,
   trackedBlocks,
+  trackedGhosts,
   onTrackedBlockClick,
   showCurrentTimeIndicator = true,
   showSunTimes = true,
@@ -677,6 +679,28 @@ export function AgendaGrid({
           </div>
         </div>
       ))}
+      {mode === "plan" &&
+        (trackedGhosts ?? []).map((block) => {
+          const top = (block.startMinutes / 60) * HOUR_HEIGHT
+          const height = Math.max(8, (Math.max(1, block.durationMinutes) / 60) * HOUR_HEIGHT)
+          return (
+            <div
+              key={block.id}
+              className="agenda-span agenda-tracked-ghost"
+              data-kind="tracked-ghost"
+              style={{
+                top,
+                height,
+                pointerEvents: "none",
+                ["--ghost-ink" as string]: block.color || "#5c6064",
+              }}
+              title={block.sublabel ? `${block.sublabel}  ${block.label}` : block.label}
+            >
+              <div className="agenda-block-title">{block.label}</div>
+              {block.sublabel ? <div className="agenda-block-sub">{block.sublabel}</div> : null}
+            </div>
+          )
+        })}
       {gridItems
         .filter((item) => item.kind === "tracked")
         .map((item) => {

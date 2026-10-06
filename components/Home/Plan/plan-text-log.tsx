@@ -1,9 +1,10 @@
 /**
  * components/Home/Plan/plan-text-log.tsx — Plan append log
  *
- * Day / Week / Month Plan composer. Submit plan stamps the writing time onto
+ * Day / Week / Month / Season Plan composer. Submit plan stamps the writing time onto
  * the shared append log (`lib/append-log.ts`). Unsubmitted plaintext is stored
- * on the same period key as `draft` so a refresh keeps the writing. List /
+ * on the same period key as `draft` so a refresh keeps the writing. Text that
+ * was already submitted stays in the log and does not refill the box. List /
  * Bulk / Latest; past entries cannot be edited.
  */
 "use client"
@@ -25,6 +26,12 @@ import type { UiNameStamp } from "@/components/append-log"
 export const PLAN_DOCS = "components/Home/Plan/README.md"
 
 export const PLAN_PERIOD_STAMPS: Record<PlanTextPeriod, UiNameStamp> = {
+  quarter: {
+    name: "Season plan",
+    help: "Quarterly written plan for this season. Submit stamps an entry — Fall, Winter, Spring, or Summer.",
+    docs: PLAN_DOCS,
+    docsAnchor: "season",
+  },
   month: {
     name: "Month Plan",
     help: "Monthly written plan log. Submit stamps an entry — not the calendar and not the event chips.",

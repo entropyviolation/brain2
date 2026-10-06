@@ -3,13 +3,14 @@
  *
  * Month view only. Events stay Plan chips. Completed habits/list items become
  * clickable gems/orbs (same assets as Habits + Lists). Incomplete scheduled
- * tasks stay chips. Empty past days keep the numbered rectangle.
+ * tasks stay chips. Inbox prose dates do not. Empty past days keep the numbered rectangle.
  */
 "use client"
 
 import { useMemo } from "react"
 import { useHabitsStore } from "@/lib/habits-store"
 import { useTaskStore } from "@/lib/task-store"
+import { taskOnPlanCalendarDay, tasksForGemDay } from "@/lib/item-slices"
 import { sameCalendarDay } from "@/lib/date-utils"
 import { eventCoversDay, isMultiDayEvent } from "@/lib/event-links"
 import { itemTitle } from "@/lib/item-utils"
@@ -53,7 +54,7 @@ export function PlanGemDayBody({
   onTaskClick: (taskId: string) => void
   onEventClick: (event: CalendarEvent) => void
 }) {
-  const tasks = useTaskStore((s) => s.tasks)
+  const tasks = useTaskStore((s) => tasksForGemDay(s.tasks, date))
   const habits = useHabitsStore((s) => s.tasks)
   const weeklyData = useHabitsStore((s) => s.weeklyData)
 
@@ -83,7 +84,7 @@ export function PlanGemDayBody({
       })
     }
     for (const task of tasks) {
-      if (!task.scheduledDate || !sameCalendarDay(task.scheduledDate, date)) continue
+      if (!taskOnPlanCalendarDay(task, date)) continue
       if (hideTaskIds.has(task.id)) continue
       const timeLabel = task.scheduledTime ? `${task.scheduledTime}` : ""
       const title = itemTitle(task)

@@ -58,6 +58,14 @@ describe("plan-capacity", () => {
     const tasks = [
       task({ id: "t1", description: "Write", scheduledDate: date, estimatedDuration: 600 }),
       task({ id: "t2", description: "Other month", scheduledMonth: "2026-06", estimatedDuration: 120 }),
+      task({
+        id: "inbox",
+        description: "Mercury on the 11th",
+        stage: "inbox",
+        scheduledDate: date,
+        estimatedDuration: 90,
+        lists: ["reminders"],
+      }),
     ]
     expect(eventDurationMinutes(events[0])).toBe(60)
     expect(eventDurationMinutes(events[1])).toBe(0)
