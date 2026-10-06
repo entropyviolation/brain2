@@ -2,8 +2,10 @@ import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
+import { useHomeDaysUntilStore } from "@/lib/home-days-until-store"
 import { useHomeWidgetsStore } from "@/lib/home-widgets-store"
 import { useHabitsStore } from "@/lib/habits-store"
+import { TaskType } from "@/lib/types"
 import { usePointsStore } from "@/lib/points-store"
 import { HomeOverview } from "./home-overview"
 import { HomeWidgetsMenu } from "./home-widgets-menu"
@@ -396,19 +398,26 @@ describe("HomeOverview", () => {
     }
   })
 
-  it("keeps Start review and Dismiss on the review square", async () => {
+  it("keeps Open and Dismiss on the rituals square", async () => {
     const user = userEvent.setup()
     const onStartReview = vi.fn()
     render(<HomeOverview currentDate={currentDate} onStartReview={onStartReview} />)
-    expect(screen.getByText("Review due")).toBeInTheDocument()
-    await user.click(screen.getByRole("button", { name: "Start review" }))
+    expect(screen.getByText("Rituals due")).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: /^Open$/ }))
     expect(onStartReview).toHaveBeenCalledOnce()
     await user.click(screen.getByRole("button", { name: "Dismiss" }))
-    expect(screen.queryByText("Review due")).not.toBeInTheDocument()
+    expect(screen.queryByText("Rituals due")).not.toBeInTheDocument()
   })
 
   it("opens a points breakdown and a progress detail", async () => {
     const user = userEvent.setup()
+    useHabitsStore.setState({
+      tasks: [
+        { id: "habit-water", name: "Drink water", type: TaskType.BOOLEAN, frequency: "daily" },
+        { id: "habit-blank", name: "   ", type: TaskType.BOOLEAN, frequency: "daily" },
+      ],
+      weeklyData: {},
+    })
     render(<HomeOverview currentDate={currentDate} />)
     await screen.findAllByText("42")
     await user.click(screen.getByRole("button", { name: "Open Points" }))
@@ -418,7 +427,34 @@ describe("HomeOverview", () => {
     expect(pointsDialog).toHaveTextContent("42")
     await user.keyboard("{Escape}")
     await user.click(screen.getByRole("button", { name: "Open Today's Progress" }))
-    expect(await screen.findByRole("dialog")).toHaveTextContent("To do:")
+    const progress = await screen.findByRole("dialog")
+    expect(progress).toHaveTextContent("To do:")
+    expect(progress).toHaveTextContent("Remaining habits")
+    const habitSummary = [...progress.querySelectorAll("summary")].find((node) =>
+      node.textContent?.includes("Remaining habits"),
+    )
+    expect(habitSummary).toBeTruthy()
+    const shut = habitSummary!.querySelector(".is-shut") as HTMLElement
+    const openMark = habitSummary!.querySelector(".is-open") as HTMLElement
+    expect(shut).toHaveTextContent(">")
+    expect(openMark).toHaveTextContent("^")
+    expect(getComputedStyle(shut).display).not.toBe("none")
+    expect(getComputedStyle(openMark).display).toBe("none")
+    await user.click(habitSummary!)
+    expect(habitSummary!.closest("details")).toHaveAttribute("open")
+    expect(getComputedStyle(shut).display).toBe("none")
+    expect(getComputedStyle(openMark).display).not.toBe("none")
+    const habitNames = [...progress.querySelectorAll(".home-widget-remain li")].map((node) => node.textContent)
+    expect(habitNames).toContain("Drink water")
+    expect(habitNames).toContain("Untitled habit")
+    expect(habitNames).not.toContain("habit")
+  })
+
+  it("shows the moon phase and the sooner countdown", () => {
+    render(<HomeOverview currentDate={currentDate} />)
+    const moon = screen.getByTestId("home-moon-tile")
+    expect(moon).toHaveTextContent(/New moon|Waxing crescent|First quarter|Waxing gibbous|Full moon|Waning gibbous|Last quarter|Waning crescent/)
+    expect(moon).toHaveTextContent(/days until (full|new) moon|Full moon today|New moon today/)
   })
 
   it("saves a Days Until date and label", async () => {
@@ -427,9 +463,8 @@ describe("HomeOverview", () => {
     expect(screen.getByTestId("home-daysuntil-tile")).toHaveTextContent("Set a date")
     await user.click(screen.getByRole("button", { name: "Open Days Until" }))
     await user.type(screen.getByLabelText("Label"), "Birth Day")
-    await user.type(screen.getByLabelText("Date"), "2026-10-01")
-    expect(screen.getByTestId("home-daysuntil-tile")).toHaveTextContent("Days Until Birth Day")
-    expect(screen.getByTestId("home-daysuntil-tile")).toHaveTextContent("10")
+    await user.type(screen.getByLabelText("Date"), "2027-10-01")
+    expect(screen.getByTestId("home-daysuntil-tile")).toHaveTextContent("Until Birth Day")
   })
 
   it("shows Solar remainder and Tracking now when added", async () => {
@@ -442,9 +477,30 @@ describe("HomeOverview", () => {
       </div>,
     )
     expect(screen.getByTestId("home-solar-tile")).toHaveTextContent("Solar remainder")
-    expect(screen.getByTestId("home-tracking-tile")).toHaveTextContent("Activity")
-    expect(screen.getByTestId("home-tracking-tile")).toHaveTextContent("Location")
+    expect(screen.getByTestId("home-tracking-tile")).toHaveTextContent("Last")
+    expect(screen.getByTestId("home-tracking-tile")).toHaveTextContent("Update")
     await user.click(screen.getByRole("button", { name: "Update" }))
-    expect(await screen.findByText("What is true right now?")).toBeInTheDocument()
+    expect(await screen.findByText(/What is true right now/)).toBeInTheDocument()
+  })
+
+  it("shows a live Days Until countdown and format choice", async () => {
+    const user = userEvent.setup()
+    useHomeDaysUntilStore.getState().setCountdown({
+      label: "Launch",
+      date: "2027-06-01",
+      time: "15:00",
+      format: "unit",
+    })
+    render(
+      <div className="home95">
+        <HomeOverview currentDate={currentDate} />
+      </div>,
+    )
+    const tile = screen.getByTestId("home-daysuntil-tile")
+    expect(tile).toHaveTextContent("Until Launch")
+    await user.click(screen.getByRole("button", { name: "Open Days Until" }))
+    expect(screen.getByLabelText(/Time/)).toBeInTheDocument()
+    await user.click(screen.getByRole("radio", { name: /Decimal/ }))
+    expect(useHomeDaysUntilStore.getState().format).toBe("decimal")
   })
 })

@@ -22,8 +22,14 @@ import { safeDateFormat } from "@/lib/date-utils"
 import { itemTitle } from "@/lib/item-utils"
 import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
 
-const PERIODS: PriorityPeriod[] = ["day", "week", "month", "year"]
-const PERIOD_LABELS: Record<PriorityPeriod, string> = { day: "Day", week: "Week", month: "Month", year: "Year" }
+const PERIODS: PriorityPeriod[] = ["day", "week", "month", "quarter", "year"]
+const PERIOD_LABELS: Record<PriorityPeriod, string> = {
+  day: "Day",
+  week: "Week",
+  month: "Month",
+  quarter: "Season",
+  year: "Year",
+}
 
 function GoalPips({ percent }: { percent: number }) {
   const n = Math.round(Math.max(0, Math.min(100, percent)) / 10)

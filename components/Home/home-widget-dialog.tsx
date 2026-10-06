@@ -25,15 +25,17 @@ export function HomeWidgetDialog({
   onOpenChange,
   title,
   children,
+  className,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   title: string
   children: ReactNode
+  className?: string
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="home-widget-dialog home-widget-instrument" aria-describedby={undefined} hideClose>
+      <DialogContent className={cn("home-widget-dialog home-widget-instrument", className)} aria-describedby={undefined} hideClose>
         <button type="button" className="home-widget-dismiss" aria-label="Close" onClick={() => onOpenChange(false)}>
           ×
         </button>

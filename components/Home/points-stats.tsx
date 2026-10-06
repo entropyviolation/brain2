@@ -2,22 +2,23 @@
  * components/Home/points-stats.tsx — Points wells for the Home overview strip
  *
  * Math is unchanged (ledger totals + possible-points fill). Overview wells
- * share one metal face and one CRT glass; `instrument` still packs all four
- * for callers that want the set.
+ * share one metal face and one CRT glass; detail adds sparkline trends.
+ * `instrument` still packs all four for callers that want the set.
  */
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Trophy, Target, Calendar, TrendingUp } from "lucide-react"
+import { addCalendarDays } from "@/lib/date-utils"
 import { usePointsStore } from "@/lib/points-store"
 import { useTaskStore } from "@/lib/task-store"
 import { useHabitsStore } from "@/lib/habits-store"
 import { useThemeStore } from "@/lib/theme-store"
 import { HabitSlotGem } from "@/components/Home/Habits/habit-gems"
 import type { HabitGemSlot } from "@/lib/habit-gems"
-import { HOME_WIDGET_LABEL, type HomeWidgetId } from "@/lib/home-widgets"
+import { HOME_WIDGET_LABEL, homeInstrumentColorVars, type HomeWidgetId } from "@/lib/home-widgets"
 import { HomeWidgetDialog, TileHide, TileOpen, WidgetWell, WidgetWells } from "@/components/Home/home-widget-dialog"
 import { cn } from "@/lib/utils"
 
@@ -114,10 +115,63 @@ const POINT_ROWS: { kind: WellKind; short: string }[] = [
   { kind: "month", short: "Month" },
 ]
 
+function pointsSeries(currentDate: Date, days: number, getDayPoints: (d: Date) => number): number[] {
+  const end = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate())
+  const out: number[] = []
+  for (let i = days - 1; i >= 0; i -= 1) {
+    out.push(getDayPoints(addCalendarDays(end, -i)))
+  }
+  return out
+}
+
+function PointsSparkline({ values, label }: { values: number[]; label: string }) {
+  const hasSignal = values.some((v) => v !== 0)
+  if (!hasSignal) {
+    return (
+      <div className="home-widget-chart">
+        <span className="home-widget-chart-label">{label}</span>
+        <p className="home-widget-spark-empty">No points in this window yet.</p>
+      </div>
+    )
+  }
+  const max = Math.max(...values, 1)
+  const min = Math.min(...values, 0)
+  const span = max - min || 1
+  const w = 320
+  const h = 56
+  const padT = 6
+  const padB = 6
+  const innerH = h - padT - padB
+  const pts = values.map((v, i) => {
+    const x = values.length === 1 ? w / 2 : (i / (values.length - 1)) * w
+    const y = padT + innerH - ((v - min) / span) * innerH
+    return { x, y }
+  })
+  const d = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ")
+  const area = `${d} L ${pts[pts.length - 1]!.x.toFixed(1)} ${h - padB} L ${pts[0]!.x.toFixed(1)} ${h - padB} Z`
+  return (
+    <div className="home-widget-chart" role="img" aria-label={label}>
+      <span className="home-widget-chart-label">{label}</span>
+      <svg className="home-widget-spark" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" width="100%" height={56}>
+        <path className="home-widget-spark-area" d={area} />
+        <path className="home-widget-spark-line" d={d} />
+      </svg>
+    </div>
+  )
+}
+
 /** One overview tile for all four point periods. */
 export function PointsBoard({ currentDate, onHide }: { currentDate: Date; onHide: () => void }) {
   const points = useHomePoints(currentDate)
+  const getDayPoints = usePointsStore((s) => s.getDayPoints)
+  const percentLedTint = useHabitsStore((s) => s.percentLedTint)
+  const gradeTubeColor = useHabitsStore((s) => s.gradeTubeColor)
+  const outputGradeTubeColor = useHabitsStore((s) => s.outputGradeTubeColor)
+  const colorVars = homeInstrumentColorVars(percentLedTint, gradeTubeColor, outputGradeTubeColor)
   const [open, setOpen] = useState(false)
+
+  const last14 = useMemo(() => pointsSeries(currentDate, 14, getDayPoints), [currentDate, getDayPoints])
+  const last30 = useMemo(() => pointsSeries(currentDate, 30, getDayPoints), [currentDate, getDayPoints])
 
   return (
     <>
@@ -146,19 +200,23 @@ export function PointsBoard({ currentDate, onHide }: { currentDate: Date; onHide
         </TileOpen>
       </div>
       <HomeWidgetDialog open={open} onOpenChange={setOpen} title="Points">
-        <WidgetWells>
-          {POINT_ROWS.map((row) => (
-            <WidgetWell key={row.kind} label={points[row.kind].caption} tone="nixie">
-              <strong suppressHydrationWarning>{points[row.kind].score}</strong>
-              {points[row.kind].sub ? <em>{points[row.kind].sub}</em> : null}
-              {points[row.kind].fill != null ? (
-                <span className="home-widget-meter" aria-hidden="true">
-                  <span style={{ width: `${points[row.kind].fill}%` }} />
-                </span>
-              ) : null}
-            </WidgetWell>
-          ))}
-        </WidgetWells>
+        <div style={colorVars as CSSProperties}>
+          <WidgetWells>
+            {POINT_ROWS.map((row) => (
+              <WidgetWell key={row.kind} label={points[row.kind].caption} tone="nixie">
+                <strong suppressHydrationWarning>{points[row.kind].score}</strong>
+                {points[row.kind].sub ? <em>{points[row.kind].sub}</em> : null}
+                {points[row.kind].fill != null ? (
+                  <span className="home-widget-meter" aria-hidden="true">
+                    <span style={{ width: `${points[row.kind].fill}%` }} />
+                  </span>
+                ) : null}
+              </WidgetWell>
+            ))}
+          </WidgetWells>
+          <PointsSparkline values={last14} label="Last 14 days" />
+          <PointsSparkline values={last30} label="Last 30 days" />
+        </div>
       </HomeWidgetDialog>
     </>
   )

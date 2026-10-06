@@ -5,6 +5,7 @@ import { fireEvent, render, screen } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { taskRepository } from "@/lib/data/task-repository"
+import { useTaskStore } from "@/lib/task-store"
 import type { Task } from "@/lib/types"
 import { NeedsAttention } from "./NeedsAttention"
 
@@ -166,6 +167,16 @@ describe("NeedsAttention", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Show Unclarified/ }))
     expect(screen.getByText("Vague idea")).toBeInTheDocument()
+  })
+
+  it("keeps the count at zero until the task vault has hydrated", () => {
+    vi.spyOn(useTaskStore.persist, "hasHydrated").mockReturnValue(false)
+    taskRepository.add(task({ id: "overdue", description: "Late report", deadline: daysAgo(2) }))
+
+    render(<NeedsAttention onOpenItem={() => {}} options={{ now: NOW }} defaultCollapsed={false} />)
+
+    expect(screen.getByLabelText("0 need attention")).toBeInTheDocument()
+    expect(screen.queryByText("Late report")).not.toBeInTheDocument()
   })
 
   it("starts collapsed by default and hides the queue", () => {

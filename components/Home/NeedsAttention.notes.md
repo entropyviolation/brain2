@@ -14,7 +14,7 @@ clicks those actions.
 | --- | --- |
 | `lib/needs-attention.ts` | Pure selector `getNeedsAttention(tasks, opts?)` + `groupNeedsAttentionByReason`, reason labels, `clarifyNeedsAttentionItem`, `splitNeedsAttentionItem`. No store writes. |
 | `lib/needs-attention.test.ts` | Vitest unit tests for every reason, exclusions, thresholds, multi-reason items, grouping, and the queue helpers. |
-| `components/Home/NeedsAttention.tsx` | The fascia. Reads `taskRepository.getAll()` + goals-store, runs the selector, groups by reason, hides categories from the key row, and offers clarify (inbox only) / split / delete on neglected / zombie / unclarified rows that exist in the item store. |
+| `components/Home/NeedsAttention.tsx` | The fascia. Reads `taskRepository.getAll()` + goals-store, runs the selector, groups by reason, hides categories from the key row, and offers clarify (inbox only) / split / delete on neglected / zombie / unclarified rows that exist in the item store. The gem count stays 0 until the task and goals persist snapshots have hydrated, so server HTML matches the client. Hidden category keys are read after that same mount. |
 | `components/Home/NeedsAttention.test.tsx` | Card tests (jsdom / Vitest mocks only). |
 | `tests/integration/needs-attention.test.ts` | Selector over a reset in-memory store snapshot. |
 
@@ -22,7 +22,7 @@ clicks those actions.
 
 | Reason | Condition | Configurable |
 | --- | --- | --- |
-| `overdue` | `deadline` in the past and still open work (not done, not missed) | — |
+| `overdue` | Date-only (local midnight, or UTC midnight of a calendar day) is overdue only when that local calendar day is before today, so the due day stays open; a clock time is overdue once that instant has passed. Done and missed stay excluded. | — |
 | `unclarified` | `stage === "inbox"` and still open work | — |
 | `blocked` | has `dependencies` where ≥1 referenced task is still open work (unknown ids count as blocking; done **or** missed deps do not) | — |
 | `stale` | still open work, no schedule, `createdAt` older than `staleDays` (strictly greater than). Kept on the selector; **omitted from the Home card**. | `opts.staleDays` (default **14**) |

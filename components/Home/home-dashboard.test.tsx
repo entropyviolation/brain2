@@ -1,14 +1,14 @@
 /**
  * HomeDashboard — container behavior tests.
  */
-import { act, render, screen, within } from "@testing-library/react"
+import { act, render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { format } from "date-fns"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { resetLocalStorage } from "@/tests/test-utils"
 import { HomeDashboard } from "./home-dashboard"
-import { msUntilLocalMidnight } from "@/lib/use-current-date"
-import { APP_NAV_KEYS, writeStoredDate } from "@/lib/app-navigation"
+import { useHomeWidgetsStore } from "@/lib/home-widgets-store"
+import { msUntilLocalMidnight, pinHomeCursor } from "@/lib/use-current-date"
 
 vi.mock("@/components/Home/Habits/habit-tracker", () => ({
   WeeklyTaskTracker: ({ currentDate }: { currentDate?: Date }) => (
@@ -23,7 +23,9 @@ vi.mock("@/components/Home/Plan/plan-panel", () => ({
 }))
 
 vi.mock("@/components/Home/ToDo/todo-panel", () => ({
-  TodoPanel: () => <div data-testid="panel-todo">To Do panel</div>,
+  TodoPanel: ({ currentDate }: { currentDate?: Date }) => (
+    <div data-testid="panel-todo">To Do {currentDate?.toISOString()}</div>
+  ),
 }))
 
 vi.mock("@/components/Home/Goals/goals-tracker", () => ({
@@ -58,6 +60,7 @@ describe("HomeDashboard", () => {
   beforeEach(() => {
     resetLocalStorage()
     overviewSpy.mockClear()
+    useHomeWidgetsStore.setState({ widgetsFollowClock: false })
   })
 
   describe("layout and header", () => {
@@ -77,14 +80,20 @@ describe("HomeDashboard", () => {
       expect(screen.getByText(format(fixedNow, "yyyy"))).toBeInTheDocument()
     })
 
-    it("keeps the weekday plate on the clock when another day is selected", () => {
-      writeStoredDate(APP_NAV_KEYS.homeDate, new Date(2026, 0, 2))
+    it("keeps the weekday plate on the clock when another day is selected", async () => {
+      const pinned = new Date(2026, 0, 2)
+      pinHomeCursor(pinned, false)
+      localStorage.setItem("cogs-home-tab", "todo")
       render(<HomeDashboard />)
+      await act(async () => {
+        await Promise.resolve()
+      })
       expect(screen.getByText("Saturday")).toBeInTheDocument()
       expect(screen.getByText("June 20")).toBeInTheDocument()
       expect(screen.queryByText("Friday")).not.toBeInTheDocument()
       const passed = overviewSpy.mock.calls.at(-1)?.[0].currentDate as Date
       expect(format(passed, "yyyy-MM-dd")).toBe("2026-01-02")
+      expect(screen.getByTestId("panel-todo")).toHaveTextContent(pinned.toISOString())
     })
 
     it("passes the selected day to the shared overview strip", () => {
@@ -93,6 +102,21 @@ describe("HomeDashboard", () => {
         expect.objectContaining({ currentDate: fixedNow }),
       )
       expect(screen.getByTestId("home-overview")).toBeInTheDocument()
+    })
+
+    it("passes the wall clock to overview widgets when they follow the clock", async () => {
+      const pinned = new Date(2026, 0, 2)
+      pinHomeCursor(pinned, false)
+      useHomeWidgetsStore.setState({ widgetsFollowClock: true })
+      localStorage.setItem("cogs-home-tab", "todo")
+      render(<HomeDashboard />)
+      await act(async () => {
+        await Promise.resolve()
+      })
+      const passed = overviewSpy.mock.calls.at(-1)?.[0].currentDate as Date
+      expect(format(passed, "yyyy-MM-dd")).toBe("2026-06-20")
+      expect(screen.getByText("June 20")).toBeInTheDocument()
+      expect(screen.getByTestId("panel-todo").textContent).toContain("2026-01-02")
     })
 
     it("wraps Habits in the metal console", () => {
@@ -324,6 +348,43 @@ describe("HomeDashboard", () => {
         Node.DOCUMENT_POSITION_FOLLOWING,
       )
       expect(now!.nextElementSibling).toBe(stack)
+    })
+
+    it("scrolls the tracking window under the app header when Tracking opens", async () => {
+      const header = document.createElement("header")
+      header.dataset.testid = "app-header"
+      document.body.appendChild(header)
+      const origRect = HTMLElement.prototype.getBoundingClientRect
+      const rects = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function rectFor(
+        this: HTMLElement,
+      ) {
+        if (this.dataset.testid === "app-header") return new DOMRect(0, 0, 800, 88)
+        if (this.classList.contains("trk-window")) return new DOMRect(0, 720, 800, 900)
+        return origRect.call(this)
+      })
+      const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation(() => {})
+      const user = userEvent.setup()
+      render(<HomeDashboard />)
+      await user.click(screen.getByRole("tab", { name: "Plan" }))
+      expect(scrollTo).not.toHaveBeenCalled()
+
+      await user.click(screen.getByRole("tab", { name: "Tracking" }))
+      await waitFor(() => {
+        expect(scrollTo).toHaveBeenCalledWith({ top: 720 - 88, left: 0, behavior: "auto" })
+      })
+
+      scrollTo.mockClear()
+      await user.click(screen.getByRole("tab", { name: "Goals" }))
+      expect(scrollTo).not.toHaveBeenCalled()
+
+      await user.click(screen.getByRole("tab", { name: "Tracking" }))
+      await waitFor(() => {
+        expect(scrollTo).toHaveBeenCalledWith({ top: 720 - 88, left: 0, behavior: "auto" })
+      })
+
+      rects.mockRestore()
+      scrollTo.mockRestore()
+      header.remove()
     })
 
     it("does not render the Sleep this day / Fell asleep / Woke up form", async () => {

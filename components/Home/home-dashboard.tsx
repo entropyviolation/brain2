@@ -3,7 +3,9 @@
  *
  * "The epicenter": the screen opened first each session. Renders the date card,
  * today's progress, points wells, and hidable overview squares (same strip on
- * every Home sub-tab), review tile, and the five sub-tabs
+ * every Home sub-tab). Those squares read the selected day unless Widgets →
+ * Follow the clock is on, in which case they read the wall clock. The date
+ * plate stays the clock. Then the review tile and the five sub-tabs
  * (Habits / Plan / To Do / Goals / Tracking), mounting the matching sub-view.
  * Tracking also mounts a shared `PenPalette` + `PenModeBar` above Time Grid /
  * Activity Log / Day Log. The Tracking window uses milled fascia (CRT title +
@@ -13,55 +15,107 @@
  * view keys), then Working now (`.trk-now-module`: Operations clock, then
  * pen-color **Working on right now**, shared by all three tabs), then pen tray +
  * tools, view modes, TIME/DIV + the plot, then `TrackingDayNotes` under all three.
+ * Selecting Tracking scrolls `.trk-window` to the top of the viewport just under
+ * the pinned app header. The view bar and the date are not sticky.
  *
  * Spec: §8 (Home Dashboard).
  */
 "use client"
 
-import { useCallback, useState } from "react"
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { WeeklyTaskTracker } from "@/components/Home/Habits/habit-tracker"
-import { PlanPanel } from "@/components/Home/Plan/plan-panel"
-import { TodoPanel } from "@/components/Home/ToDo/todo-panel"
-import { GoalsTracker } from "@/components/Home/Goals/goals-tracker"
+import { MachineLoading } from "@/components/machine-loading"
 import { HomeOverview } from "@/components/Home/home-overview"
 import { HomeWidgetsMenu } from "@/components/Home/home-widgets-menu"
 import { NeedsAttention } from "@/components/Home/NeedsAttention"
 import { TaskDetailPopup } from "@/components/ItemDetail/ItemDetailPopup"
-import { TimeGrid } from "@/components/Home/Tracking/time-grid"
-import { ActualDayView } from "@/components/Home/Tracking/actual-day-view"
-import { TrackingActivityLog } from "@/components/Home/Tracking/tracking-activity-log"
-import { WorkingNowStrip } from "@/components/Home/Tracking/working-now-strip"
-import { PenColorNowStrip } from "@/components/Home/Tracking/pen-color-now-strip"
-import { TrackingDayNotes } from "@/components/Home/Tracking/tracking-day-notes"
-import { PenPalette } from "@/components/Home/Tracking/pen-palette"
-import { PenModeBar } from "@/components/Home/Tracking/pen-mode-bar"
-import { LogActivityLatch } from "@/components/Home/Tracking/log-activity-dialog"
-import { TrkChromeStack } from "@/components/Home/Tracking/trk-instrument"
+import { homeWidgetDate } from "@/lib/home-widgets"
+import { useHomeWidgetsStore } from "@/lib/home-widgets-store"
 import { useCurrentDate, useLiveToday } from "@/lib/use-current-date"
 import { format } from "date-fns"
 import type { ReviewPeriod } from "@/lib/types"
 import { APP_NAV_KEYS } from "@/lib/app-navigation"
 import { usePersistedTab } from "@/lib/use-persisted-tab"
-import { orbFor } from "@/components/Icons"
 import { useTrackingUndoHotkey } from "@/components/Home/Tracking/tracking-undo"
 import "./home-chrome.css"
 import "@/components/Home/Tracking/tracking-chrome.css"
 import "@/components/Home/Habits/habit-chrome.css"
 
 type HomeTab = "habits" | "plan" | "todo" | "goals" | "tracking"
-type TrackingTab = "grid" | "activity" | "daylog"
 
 const HOME_TABS: HomeTab[] = ["habits", "plan", "todo", "goals", "tracking"]
-const TRACKING_TABS: TrackingTab[] = ["grid", "activity", "daylog"]
+
+const WeeklyTaskTracker = lazy(() =>
+  import("@/components/Home/Habits/habit-tracker").then((mod) => ({ default: mod.WeeklyTaskTracker })),
+)
+const PlanPanel = lazy(() =>
+  import("@/components/Home/Plan/plan-panel").then((mod) => ({ default: mod.PlanPanel })),
+)
+const TodoPanel = lazy(() =>
+  import("@/components/Home/ToDo/todo-panel").then((mod) => ({ default: mod.TodoPanel })),
+)
+const GoalsTracker = lazy(() =>
+  import("@/components/Home/Goals/goals-tracker").then((mod) => ({ default: mod.GoalsTracker })),
+)
+const TrackingPanel = lazy(() =>
+  import("@/components/Home/Tracking/tracking-desk").then((mod) => ({ default: mod.TrackingDesk })),
+)
+
+function HomePanelFallback() {
+  return <MachineLoading size="nest" />
+}
+
+/** Wall clock for the overview strip. A fresh instant on each pulse, once a minute, only while Follow the clock is on. */
+function useWidgetClock(active: boolean): Date {
+  const [pulse, setPulse] = useState(0)
+
+  useEffect(() => {
+    if (!active) return
+    const id = window.setInterval(() => setPulse((n) => n + 1), 60_000)
+    return () => window.clearInterval(id)
+  }, [active])
+
+  return useMemo(() => new Date(), [active, pulse])
+}
+
+/** Put the Tracking window at the top of the viewport, just under the pinned app header. */
+function scrollTrackingWindowUnderHeader(): boolean {
+  const target = document.querySelector<HTMLElement>(".trk-window")
+  if (!target) return false
+  const header = document.querySelector<HTMLElement>('[data-testid="app-header"]')
+  const headerH = header?.getBoundingClientRect().height ?? 0
+  const top = target.getBoundingClientRect().top + window.scrollY - headerH
+  window.scrollTo({ top: Math.max(0, top), left: 0, behavior: "auto" })
+  return true
+}
 
 export function HomeDashboard() {
   const { currentDate, setCurrentDate } = useCurrentDate()
   const liveToday = useLiveToday()
+  const widgetsFollowClock = useHomeWidgetsStore((s) => s.widgetsFollowClock)
+  const widgetNow = useWidgetClock(widgetsFollowClock)
+  const overviewDate = homeWidgetDate(currentDate, widgetNow, widgetsFollowClock)
   const [activeTab, setActiveTab] = usePersistedTab(APP_NAV_KEYS.homeTab, HOME_TABS, "habits")
-  const [trackingTab, setTrackingTab] = usePersistedTab(APP_NAV_KEYS.homeTrackingTab, TRACKING_TABS, "grid")
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   useTrackingUndoHotkey(activeTab === "tracking")
+
+  useEffect(() => {
+    if (activeTab !== "tracking") return
+    let cancelled = false
+    let frame = 0
+    const started = performance.now()
+    const attempt = () => {
+      if (cancelled) return
+      if (scrollTrackingWindowUnderHeader()) return
+      if (performance.now() - started > 2000) return
+      frame = requestAnimationFrame(attempt)
+    }
+    attempt()
+    return () => {
+      cancelled = true
+      cancelAnimationFrame(frame)
+    }
+  }, [activeTab])
 
   const handleStartReview = useCallback((_period: ReviewPeriod, _periodKey: string) => {
     // Header Reviews dropdown owns the full dialog; banner nudges the user there.
@@ -87,7 +141,7 @@ export function HomeDashboard() {
           </div>
           <div className="home-window-body">
             <HomeOverview
-              currentDate={currentDate}
+              currentDate={overviewDate}
               onStartReview={handleStartReview}
               onOpenHomeTab={(tab) => setActiveTab(tab)}
             />
@@ -117,65 +171,33 @@ export function HomeDashboard() {
         </TabsList>
 
         <TabsContent value="habits" className={habitsConsole ? "hab-pane home-pane" : "home-pane"}>
-          <WeeklyTaskTracker currentDate={currentDate} />
+          <Suspense fallback={<HomePanelFallback />}>
+            <WeeklyTaskTracker currentDate={currentDate} />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="plan" className="home-pane">
-          <PlanPanel currentDate={currentDate} setCurrentDate={setCurrentDate} />
+          <Suspense fallback={<HomePanelFallback />}>
+            <PlanPanel currentDate={currentDate} setCurrentDate={setCurrentDate} />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="todo" className="home-pane">
-          <TodoPanel />
+          <Suspense fallback={<HomePanelFallback />}>
+            <TodoPanel currentDate={currentDate} setCurrentDate={setCurrentDate} />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="goals" className="home-pane">
-          <GoalsTracker />
+          <Suspense fallback={<HomePanelFallback />}>
+            <GoalsTracker />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="tracking" className="home-pane">
-          <div className="trk95" data-ui-name="Tracking" data-ui-docs="components/Home/Tracking/README.md">
-            <div className="trk-window">
-              <Tabs value={trackingTab} onValueChange={(v) => setTrackingTab(v as TrackingTab)}>
-                <div className="trk-fascia">
-                  <div className="trk-fascia-row">
-                    <div className="trk-mark">
-                      <img src={orbFor("home-tracking")} alt="" className="trk-title-orb" />
-                      <h2>Tracking</h2>
-                    </div>
-                    <div className="hab-view-changer trk-view-keys">
-                      <TabsList aria-label="Tracking view">
-                        <TabsTrigger value="grid">Time Grid</TabsTrigger>
-                        <TabsTrigger value="activity">Activity Log</TabsTrigger>
-                        <TabsTrigger value="daylog">Day Log</TabsTrigger>
-                      </TabsList>
-                    </div>
-                  </div>
-                </div>
-                <div className="trk-now-module">
-                  <WorkingNowStrip />
-                  <PenColorNowStrip />
-                </div>
-                <TrkChromeStack
-                  pens={<PenPalette embedded />}
-                  modeBar={<PenModeBar />}
-                  gridAction={trackingTab === "activity" ? undefined : <LogActivityLatch />}
-                >
-                  <div className="trk-desktop">
-                    <TabsContent value="grid" className="mt-0">
-                      <TimeGrid showPalette={false} currentDate={currentDate} setCurrentDate={setCurrentDate} />
-                    </TabsContent>
-                    <TabsContent value="activity" className="mt-0">
-                      <TrackingActivityLog currentDate={currentDate} setCurrentDate={setCurrentDate} />
-                    </TabsContent>
-                    <TabsContent value="daylog" className="mt-0">
-                      <ActualDayView currentDate={currentDate} setCurrentDate={setCurrentDate} />
-                    </TabsContent>
-                  </div>
-                  <TrackingDayNotes currentDate={currentDate} />
-                </TrkChromeStack>
-              </Tabs>
-            </div>
-          </div>
+          <Suspense fallback={<HomePanelFallback />}>
+            <TrackingPanel currentDate={currentDate} setCurrentDate={setCurrentDate} />
+          </Suspense>
         </TabsContent>
       </Tabs>
 

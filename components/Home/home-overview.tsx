@@ -1,10 +1,12 @@
 /**
  * components/Home/home-overview.tsx — Shared Home header squares
  *
- * One strip for Habits / Plan / To Do / Goals / Tracking. Equal-height tiles
+ * One strip for Habits / Plan / To Do / Goals / Tracking. `currentDate` is the
+ * day the squares describe: the selected day, or the wall clock when Follow
+ * the clock is on (chosen in `home-dashboard.tsx`). Equal-height tiles
  * share the row (flex, max 200px) and wrap only when the window is narrow.
  * Points, Latest award, progress, weather, review, the screen pet, Next, Day lamp,
- * Days Until, Solar remainder, Tracking now, Night well, Harvest leftover,
+ * Days Until, Moon, Solar remainder, Tracking now, Night well, Harvest leftover,
  * and Inbox mill each use caption + CRT +
  * footer. Click a tile for a closer look. × asks Are you sure? before hide.
  * The Widgets catalog lives on the date bar
@@ -32,6 +34,7 @@ import { NextTile } from "@/components/Home/home-next-tile"
 import { ScreenPetTile } from "@/components/Home/home-screen-pet"
 import { AwardTile } from "@/components/Home/home-award-tile"
 import { HarvestTile, InboxMillTile, NightWellTile } from "@/components/Home/home-glance-tiles"
+import { MoonTile } from "@/components/Home/home-moon-tile"
 import { SolarRemainderTile } from "@/components/Home/home-solar-tile"
 import { TrackingNowTile } from "@/components/Home/home-tracking-tile"
 import { HomeWidgetDialog, TileHide, WidgetWell, WidgetWells } from "@/components/Home/home-widget-dialog"
@@ -111,6 +114,9 @@ export function HomeOverview({ currentDate, onStartReview, onOpenHomeTab }: Home
         }
         if (id === "daysuntil") {
           return <DaysUntilTile key={id} currentDate={currentDate} onHide={() => hideWidget("daysuntil")} />
+        }
+        if (id === "moon") {
+          return <MoonTile key={id} currentDate={currentDate} onHide={() => hideWidget("moon")} />
         }
         if (id === "solar") {
           return <SolarRemainderTile key={id} onHide={() => hideWidget("solar")} />
@@ -193,21 +199,56 @@ function OverviewTile({
   )
 }
 
-function ProgressDetail({ currentDate }: { currentDate: Date }) {
-  const { todo, habit } = useHomeDayStats(currentDate)
+function RemainFold({
+  label,
+  items,
+}: {
+  label: string
+  items: { id: string; title: string }[]
+}) {
   return (
-    <WidgetWells>
-      <WidgetWell label="To do:">
-        {todo.completed}/{todo.total}
-        <span className="home-widget-meter" aria-hidden="true"><span style={{ width: `${todo.percent}%` }} /></span>
-      </WidgetWell>
-      <WidgetWell label="To do left" tone="nixie">{todo.remaining}</WidgetWell>
-      <WidgetWell label="Habits">
-        {habit.completed}/{habit.total}
-        <span className="home-widget-meter" aria-hidden="true"><span style={{ width: `${habit.percent}%` }} /></span>
-      </WidgetWell>
-      <WidgetWell label="Habits left" tone="nixie">{habit.remaining}</WidgetWell>
-    </WidgetWells>
+    <details>
+      <summary>
+        <span className="home-widget-fold" aria-hidden="true">
+          <span className="is-shut">&gt;</span>
+          <span className="is-open">^</span>
+        </span>
+        {label} ({items.length})
+      </summary>
+      {items.length === 0 ? (
+        <p className="home-widget-remain-empty">None left today.</p>
+      ) : (
+        <ul>
+          {items.map((item) => (
+            <li key={item.id}>{item.title}</li>
+          ))}
+        </ul>
+      )}
+    </details>
+  )
+}
+
+function ProgressDetail({ currentDate }: { currentDate: Date }) {
+  const { todo, habit, remainingTodos, remainingHabits } = useHomeDayStats(currentDate)
+  return (
+    <>
+      <WidgetWells>
+        <WidgetWell label="To do:">
+          {todo.completed}/{todo.total}
+          <span className="home-widget-meter" aria-hidden="true"><span style={{ width: `${todo.percent}%` }} /></span>
+        </WidgetWell>
+        <WidgetWell label="To do left" tone="nixie">{todo.remaining}</WidgetWell>
+        <WidgetWell label="Habits">
+          {habit.completed}/{habit.total}
+          <span className="home-widget-meter" aria-hidden="true"><span style={{ width: `${habit.percent}%` }} /></span>
+        </WidgetWell>
+        <WidgetWell label="Habits left" tone="nixie">{habit.remaining}</WidgetWell>
+      </WidgetWells>
+      <div className="home-widget-remain">
+        <RemainFold label="Remaining to-dos" items={remainingTodos} />
+        <RemainFold label="Remaining habits" items={remainingHabits} />
+      </div>
+    </>
   )
 }
 

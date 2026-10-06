@@ -1,28 +1,48 @@
 /**
- * components/Home/home-days-until.tsx — Days Until countdown
+ * components/Home/home-days-until.tsx — Days Until live countdown
  *
- * Caption, a CRT count, and "Days Until {label}". Click sets the date and
- * the label. The count is calendar days from the selected Home day.
+ * Caption, a CRT countdown, and what you are counting toward. Optional
+ * clock time and unit/decimal format live in the detail view; the compact
+ * card shows the chosen form and ticks while open.
  */
 "use client"
 
-import { useState } from "react"
-import { daysUntilCount, daysUntilFace } from "@/lib/home-widgets"
-import { useHomeDaysUntilStore } from "@/lib/home-days-until-store"
+import { useEffect, useState } from "react"
+import { daysUntilLiveFace, daysUntilRemainingMs } from "@/lib/home-widgets"
+import {
+  useHomeDaysUntilStore,
+  type DaysUntilFormat,
+} from "@/lib/home-days-until-store"
 import { HomeWidgetDialog, TileHide, TileOpen, WidgetWell } from "@/components/Home/home-widget-dialog"
 
 export function DaysUntilTile({
-  currentDate,
+  currentDate: _currentDate,
   onHide,
 }: {
   currentDate: Date
   onHide: () => void
 }) {
+  void _currentDate
   const label = useHomeDaysUntilStore((s) => s.label)
   const date = useHomeDaysUntilStore((s) => s.date)
+  const time = useHomeDaysUntilStore((s) => s.time)
+  const format = useHomeDaysUntilStore((s) => s.format)
   const setCountdown = useHomeDaysUntilStore((s) => s.setCountdown)
   const [open, setOpen] = useState(false)
-  const face = daysUntilFace(daysUntilCount(date, currentDate), label)
+  const [now, setNow] = useState(() => new Date())
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(new Date()), 15_000)
+    return () => window.clearInterval(id)
+  }, [])
+
+  const remainingMs = daysUntilRemainingMs(date, time, now)
+  const face = daysUntilLiveFace({
+    remainingMs,
+    label,
+    format,
+    hasTime: Boolean(time),
+  })
 
   return (
     <>
@@ -32,7 +52,7 @@ export function DaysUntilTile({
           <div className="hab-score-caption">
             <span>Days Until</span>
           </div>
-          <div className="hab-score-readout home-daysuntil-count" data-centered="true">
+          <div className="hab-score-readout home-daysuntil-count" data-centered="true" suppressHydrationWarning>
             {face.crt}
           </div>
           <div className="home-tile-foot">
@@ -41,7 +61,9 @@ export function DaysUntilTile({
         </TileOpen>
       </div>
       <HomeWidgetDialog open={open} onOpenChange={setOpen} title="Days Until">
-        <WidgetWell label={face.footer || "Days"} tone="nixie">{face.crt}</WidgetWell>
+        <WidgetWell label={face.footer || "Countdown"} tone="nixie">
+          <span suppressHydrationWarning>{face.crt}</span>
+        </WidgetWell>
         <label className="home-widget-field">
           Label
           <input
@@ -58,6 +80,44 @@ export function DaysUntilTile({
             onChange={(event) => setCountdown({ date: event.target.value })}
           />
         </label>
+        <label className="home-widget-field">
+          Time <span className="home-widget-optional">(optional)</span>
+          <input
+            type="time"
+            value={time}
+            onChange={(event) => setCountdown({ time: event.target.value })}
+          />
+        </label>
+        {time ? (
+          <button
+            type="button"
+            className="home-review-key"
+            onClick={() => setCountdown({ time: "" })}
+          >
+            Clear time
+          </button>
+        ) : null}
+        <fieldset className="home-widget-fieldset">
+          <legend>Display</legend>
+          <label className="home-widget-choice">
+            <input
+              type="radio"
+              name="daysuntil-format"
+              checked={format === "unit"}
+              onChange={() => setCountdown({ format: "unit" satisfies DaysUntilFormat })}
+            />
+            Units — <code>01 day 3 hours</code> / <code>03 hours 30 min</code>
+          </label>
+          <label className="home-widget-choice">
+            <input
+              type="radio"
+              name="daysuntil-format"
+              checked={format === "decimal"}
+              onChange={() => setCountdown({ format: "decimal" })}
+            />
+            Decimal — <code>1.25 days</code> / <code>3.5 hours</code>
+          </label>
+        </fieldset>
       </HomeWidgetDialog>
     </>
   )

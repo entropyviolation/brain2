@@ -18,12 +18,13 @@ import { usePersistedTab } from "@/lib/use-persisted-tab"
 import { snapshotsEqual } from "@/lib/unsaved-changes"
 import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
 
-const PERIOD_KINDS: GoalPeriodKind[] = ["day", "week", "month", "year", "custom", "aspirational"]
+const PERIOD_KINDS: GoalPeriodKind[] = ["day", "week", "month", "quarter", "year", "custom", "aspirational"]
 const GOAL_FILTERS = ["all", ...PERIOD_KINDS] as const
 const PERIOD_LABELS: Record<GoalPeriodKind, string> = {
   day: "Day",
   week: "Week",
   month: "Month",
+  quarter: "Season",
   year: "Year",
   custom: "Custom range",
   aspirational: "Aspirational",

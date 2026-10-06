@@ -8,10 +8,10 @@
 import { useMemo, useState } from "react"
 import { pickHomeNext } from "@/lib/home-widgets"
 import { HomeWidgetDialog, TileHide, TileOpen, WidgetWell } from "@/components/Home/home-widget-dialog"
-import { taskScheduledOnDay } from "@/lib/date-utils"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
 import { useEventStore } from "@/lib/event-store"
 import { useTaskStore } from "@/lib/task-store"
+import { openTodosOnDay } from "@/lib/item-slices"
 
 export function NextTile({
   currentDate,
@@ -23,16 +23,14 @@ export function NextTile({
   onOpenHomeTab?: (tab: "plan" | "todo") => void
 }) {
   const events = useEventStore((s) => s.events)
-  const tasks = useTaskStore((s) => s.tasks)
+  const tasks = useTaskStore((s) => openTodosOnDay(s.tasks, currentDate))
   const lists = useTaskStore((s) => s.lists)
 
   const hit = useMemo(() => {
-    const todos = tasks
-      .filter((task) => !task.hiddenFromTodo && !task.completed && taskScheduledOnDay(task, currentDate))
-      .map((task) => {
-        const list = lists.find((item) => item.id === task.lists?.[0])
-        return { title: itemTitleOrUntitled(task), footer: list?.name || "To Do" }
-      })
+    const todos = tasks.map((task) => {
+      const list = lists.find((item) => item.id === task.lists?.[0])
+      return { title: itemTitleOrUntitled(task), footer: list?.name || "To Do" }
+    })
     return pickHomeNext({
       now: currentDate,
       clock: new Date(),

@@ -6,13 +6,14 @@
  * and the operation heatmap keep their own views — this card is the daily door.
  *
  * Kill / split / clarify use inbox + molecular helpers. Mutations go through
- * `taskRepository` only when the user clicks an action.
+ * `taskRepository` only when the user clicks an action. The gem count waits
+ * for the task and goals persist snapshots so SSR and hydration agree.
  *
  * Spec: §6b (Needs Attention). See components/Home/NeedsAttention.notes.md.
  */
 "use client"
 
-import { useMemo, useState, type MouseEvent } from "react"
+import { useDeferredValue, useLayoutEffect, useMemo, useState, type MouseEvent } from "react"
 import { ChevronDown } from "lucide-react"
 import { useTaskStore } from "@/lib/task-store"
 import { useGoalsStore } from "@/lib/goals-store"
@@ -33,6 +34,7 @@ import {
   type HomeNeedsAttentionState,
 } from "@/lib/app-navigation"
 import { usePersistedTab } from "@/lib/use-persisted-tab"
+import { usePersistHydrated } from "@/lib/use-persist-hydrated"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
 import { cn } from "@/lib/utils"
 import { IssueGem } from "@/components/Home/Habits/habit-gems"
@@ -82,6 +84,10 @@ export function NeedsAttention({
   // through the repository to stay on the canonical data-access seam.
   const tasks = useTaskStore((s) => s.tasks)
   const goals = useGoalsStore((s) => s.goals)
+  // Persist rehydrate finishes before React hydrates, so a live count (0 on
+  // the server, the vault on the client) mismatches. `usePersistHydrated`
+  // stays false for the server HTML and the hydration pass, then flips.
+  const vaultReady = usePersistHydrated(useTaskStore.persist) && usePersistHydrated(useGoalsStore.persist)
   const fallback: HomeNeedsAttentionState = defaultCollapsed ? "collapsed" : "expanded"
   const [panelState, setPanelState] = usePersistedTab(
     APP_NAV_KEYS.homeNeedsAttention,
@@ -89,18 +95,29 @@ export function NeedsAttention({
     fallback,
   )
   const collapsed = panelState === "collapsed"
-  const [hiddenReasons, setHiddenReasons] = useState<BoxReason[]>(readHiddenReasons)
+  const [hiddenReasons, setHiddenReasons] = useState<BoxReason[]>([])
 
+  useLayoutEffect(() => {
+    const stored = readHiddenReasons()
+    setHiddenReasons((prev) => {
+      if (prev.length === stored.length && prev.every((reason, index) => reason === stored[index])) return prev
+      return stored
+    })
+  }, [])
+
+  const deferredTasks = useDeferredValue(tasks)
+  const deferredGoals = useDeferredValue(goals)
   const entries = useMemo(() => {
-    void tasks
-    void goals
+    if (!vaultReady) return []
+    void deferredTasks
+    void deferredGoals
     const requested = options?.reasons ?? BOX_REASONS
     return getNeedsAttention(taskRepository.getAll(), {
       ...options,
       goals: options?.goals ?? goals,
       reasons: requested.filter((reason) => reason !== "stale"),
     })
-  }, [tasks, goals, options])
+  }, [vaultReady, deferredTasks, deferredGoals, options])
 
   const groups = useMemo(() => groupNeedsAttentionByReason(entries), [entries])
   const total = entries.length
@@ -173,13 +190,16 @@ export function NeedsAttention({
                   <h3>{NEEDS_ATTENTION_REASON_LABELS[reason]}</h3>
                   <p>{REASON_BLURB[reason]}</p>
                   <ul>
-                    {group.map((entry) => (
+                    {group.slice(0, 40).map((entry) => (
                       <NeedsAttentionRow
                         key={`${reason}-${entry.item.id}`}
                         entry={entry}
                         onOpenItem={onOpenItem}
                       />
                     ))}
+                    {group.length > 40 ? (
+                      <li className="home-na-more">{group.length - 40} more</li>
+                    ) : null}
                   </ul>
                 </section>
               )

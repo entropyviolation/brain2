@@ -2,7 +2,8 @@
  * components/Home/home-widgets-menu.tsx — Widgets catalog on the date bar
  *
  * A small key, not a peer tile. The popover lists every overview module so
- * the strip itself stays a row of instruments.
+ * the strip itself stays a row of instruments. Follow the clock (default off)
+ * makes those squares read the wall clock instead of the day being viewed.
  */
 "use client"
 
@@ -10,6 +11,7 @@ import { useEffect, useRef, useState } from "react"
 import { HOME_WIDGET_LABEL, type HomeWidgetId } from "@/lib/home-widgets"
 import { useHomeWidgetsStore, selectHiddenHomeWidgets } from "@/lib/home-widgets-store"
 import { HideWidgetConfirm } from "@/components/Home/home-widget-dialog"
+import { CockpitSwitch } from "@/components/Home/Habits/cockpit-switch"
 
 export function HomeWidgetsMenu() {
   const [open, setOpen] = useState(false)
@@ -17,6 +19,8 @@ export function HomeWidgetsMenu() {
   const rootRef = useRef<HTMLDivElement>(null)
   const order = useHomeWidgetsStore((s) => s.order)
   const hidden = useHomeWidgetsStore((s) => s.hidden)
+  const followClock = useHomeWidgetsStore((s) => s.widgetsFollowClock)
+  const setWidgetsFollowClock = useHomeWidgetsStore((s) => s.setWidgetsFollowClock)
   const showWidget = useHomeWidgetsStore((s) => s.showWidget)
   const hideWidget = useHomeWidgetsStore((s) => s.hideWidget)
   const moveWidget = useHomeWidgetsStore((s) => s.moveWidget)
@@ -44,6 +48,16 @@ export function HomeWidgetsMenu() {
       </button>
       {open && (
         <div className="home-add-menu" role="group" aria-label="Home widgets">
+          <div className="home-widgets-clock" data-testid="home-widgets-follow-clock">
+            <CockpitSwitch
+              checked={followClock}
+              onCheckedChange={setWidgetsFollowClock}
+              label="Follow the clock"
+            />
+            <p className="home-widgets-clock-note">
+              {followClock ? "Widgets use right now." : "Widgets use the day you're viewing."}
+            </p>
+          </div>
           {order.map((id) => {
             const showing = !tucked.has(id)
             return (

@@ -11,7 +11,6 @@ import { useMemo, useState } from "react"
 import { harvestFace, inboxMillFace, nightWellFace, pickHomeNight } from "@/lib/home-glances"
 import { previousDateKey } from "@/lib/sleep-log"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
-import { inInboxPartition, sortInboxNewestFirst } from "@/lib/inbox-batch"
 import { computeDaySun, SAN_DIEGO_COORDS } from "@/lib/sun-times"
 import { sunPlaceForCity, useSunTimesStore } from "@/lib/sun-times-store"
 import { useHomeWeatherStore } from "@/lib/home-weather-store"
@@ -19,6 +18,7 @@ import { useUserSettingsStore } from "@/lib/user-settings-store"
 import { useSleepStore } from "@/lib/sleep-store"
 import { usePointsStore } from "@/lib/points-store"
 import { useTaskStore } from "@/lib/task-store"
+import { revisitInboxTasks } from "@/lib/item-slices"
 import { HomeWidgetDialog, TileHide, TileOpen, WidgetWell, WidgetWells } from "@/components/Home/home-widget-dialog"
 
 export function NightWellTile({
@@ -107,15 +107,11 @@ export function HarvestTile({
 }
 
 export function InboxMillTile({ onHide }: { onHide: () => void }) {
-  const tasks = useTaskStore((s) => s.tasks)
+  const inboxTasks = useTaskStore((s) => revisitInboxTasks(s.tasks))
   const [open, setOpen] = useState(false)
   const ideas = useMemo(
-    () =>
-      sortInboxNewestFirst(tasks.filter((task) => inInboxPartition(task, "inbox"))).map((task) => ({
-        id: task.id,
-        title: itemTitleOrUntitled(task),
-      })),
-    [tasks],
+    () => inboxTasks.map((task) => ({ id: task.id, title: itemTitleOrUntitled(task) })),
+    [inboxTasks],
   )
   const face = inboxMillFace(ideas.map((idea) => idea.title))
   const openInbox = () => {

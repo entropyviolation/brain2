@@ -26,9 +26,15 @@ import type { Objective, ObjectivePriority, PriorityPeriod } from "@/lib/types"
 import { ObjectiveDetailDialog } from "./ObjectiveDetailDialog"
 import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
 
-const PERIODS: PriorityPeriod[] = ["day", "week", "month", "year"]
-const PERIOD_LABELS: Record<PriorityPeriod, string> = { day: "Day", week: "Week", month: "Month", year: "Year" }
-const VIEW_MODES = ["day", "week", "month", "year", "all"] as const
+const PERIODS: PriorityPeriod[] = ["day", "week", "month", "quarter", "year"]
+const PERIOD_LABELS: Record<PriorityPeriod, string> = {
+  day: "Day",
+  week: "Week",
+  month: "Month",
+  quarter: "Season",
+  year: "Year",
+}
+const VIEW_MODES = ["day", "week", "month", "quarter", "year", "all"] as const
 type ViewMode = (typeof VIEW_MODES)[number]
 
 /** Priorities currently in effect (matching the period key for "now"). */

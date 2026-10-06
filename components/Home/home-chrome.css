@@ -10,11 +10,13 @@
  * (same recipe as App tabs in `app/win95.css`). The date plate is a milled
  * bay: weekday in a CRT, calendar date on a nameplate with a power lamp,
  * Widgets as a raised key. CRT numerals use `--hab-crt-green` (`#7dffc4`) +
- * `--hab-crt-glow`. Each tile is nameplate + CRT + padded silver footer.
- * The strip wraps into one equal-height row (tiles flex up to 200px).
- * Weather click opens the day-strip + tide instrument (no orange).
- * Air between Needs Attention / overview and the Home tab bay sits above
- * the bay; panels sit flush under the keys (no mt-6 under the strip).
+ * `--hab-crt-glow`. Each tile is nameplate + CRT + full-width silver footer.
+ * Detail handhelds use vibrant navy LED numbers and the same Habits 3-stop
+ * gradient meters as the compact wells. The strip wraps into one equal-height
+ * row (tiles flex up to 200px). Weather click opens the day-strip + tide
+ * instrument (no orange). Air between Needs Attention / overview and the Home
+ * tab bay sits above the bay; panels sit flush under the keys (no mt-6 under
+ * the strip).
  */
 
 .home95 {
@@ -425,6 +427,9 @@
 
 .home95 .home-tile-foot {
   flex: 0 0 auto;
+  align-self: stretch;
+  width: auto;
+  box-sizing: border-box;
   height: auto;
   min-height: 40px;
   max-height: 44px;
@@ -433,9 +438,12 @@
   justify-content: center;
   min-width: 0;
   margin-top: auto;
-  padding: 6px 9px 7px;
+  margin-left: -8px;
+  margin-right: -8px;
+  margin-bottom: -8px;
+  padding: 6px 17px 7px;
   overflow: hidden;
-  border-radius: 2px;
+  border-radius: 0 0 2px 2px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.08) 42%, rgba(0, 0, 0, 0.06) 100%);
   box-shadow:
@@ -709,8 +717,11 @@
 }
 
 .home95 .home-daysuntil-count {
-  font-size: 28px;
-  line-height: 1;
+  font-size: 15px;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  padding-left: 6px;
+  padding-right: 6px;
 }
 
 .home95 .home-solar-readout {
@@ -722,12 +733,85 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 1px;
+  gap: 2px;
   min-height: 0;
   flex: 1;
-  padding: 4px 6px;
+  padding: 6px 8px;
   color: var(--hab-crt-green);
   text-shadow: var(--hab-crt-glow);
+}
+
+.home95 .home-presence-activity {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home95 .home-presence-meta {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 0;
+  font-size: 11px;
+  line-height: 1.2;
+  color: #9adbb8;
+  text-shadow: none;
+}
+
+.home95 .home-presence-meta span:nth-child(odd) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home95 .home-presence-company {
+  margin: 0;
+  font-size: 10px;
+  line-height: 1.2;
+  color: #7ec8a8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home95 .home-presence-foot {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.home95 .home-presence-foot .hab-score-sub {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.home95 .home-presence-update {
+  flex: 0 0 auto;
+  padding: 2px 8px;
+  border-radius: 2px;
+  border: 0;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #1c1e20;
+  background:
+    linear-gradient(180deg, #f3f3f3, #b5b5b5 55%, #8f8f8f);
+  box-shadow: inset 0 1px 0 #fff, 0 1px 0 #666;
+  cursor: pointer;
+}
+
+.home95 .home-presence-update:hover,
+.home95 .home-presence-update:focus-visible {
+  outline: 1px solid #000080;
+  outline-offset: 1px;
 }
 
 .home95 .home-presence-line {
@@ -766,9 +850,13 @@ body .home-widget-dialog.home-widget-instrument {
   --friend-silver: #c8c8c8;
   --friend-ink: #1c140f;
   --friend-glow: #7dffc4;
-  --friend-nixie: #ff9a3c;
+  /* Vibrant navy LED on dark wells — same family as Win95 title blue. */
+  --friend-nixie: #4a7fd4;
   --friend-lcd: #07140f;
   --friend-amber: #e6a23c;
+  --home-grad-led: #7e14ff;
+  --home-grad-grade: #508b51;
+  --home-grad-output: #25366a;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -918,8 +1006,8 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
 }
 
 .home-widget-nixie {
-  color: var(--friend-nixie, #ff9a3c);
-  text-shadow: 0 0 6px rgba(255, 120, 20, 0.8);
+  color: var(--friend-nixie, #4a7fd4);
+  text-shadow: 0 0 6px rgba(74, 127, 212, 0.75);
 }
 
 .home-widget-well em,
@@ -951,9 +1039,9 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
 .home-widget-dialog .home-points-detail strong,
 .home-widget-dialog .home-widget-row strong {
   margin-left: auto;
-  color: var(--friend-nixie, #ff9a3c);
+  color: var(--friend-nixie, #4a7fd4);
   font-family: ui-monospace, Menlo, Consolas, monospace;
-  text-shadow: 0 0 6px rgba(255, 120, 20, 0.75);
+  text-shadow: 0 0 6px rgba(74, 127, 212, 0.7);
 }
 
 .home-widget-dialog .home-widget-field {
@@ -1010,15 +1098,21 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
   display: block;
   height: 6px;
   margin-top: 4px;
-  border-radius: 99px;
-  background: #141414;
+  border-radius: 0;
+  background: #1a0a22;
+  box-shadow: inset 1px 1px #000, inset -1px -1px #4a4a52;
   overflow: hidden;
 }
 
 .home-widget-meter > span {
   display: block;
   height: 100%;
-  background: linear-gradient(90deg, #f3c6ff, #7dffc4, #ffe08a);
+  background-image: linear-gradient(
+    90deg,
+    var(--home-grad-led, #7e14ff),
+    var(--home-grad-grade, #508b51),
+    var(--home-grad-output, #25366a)
+  );
 }
 
 .home-widget-pet {
@@ -1029,8 +1123,158 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
 
 @media (prefers-reduced-motion: reduce) {
   .home-widget-meter > span {
-    background: #7dffc4;
+    background-image: none;
+    background-color: var(--home-grad-grade, #508b51);
   }
+}
+
+.home-widget-fieldset {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border: 1px solid #808080;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.home-widget-fieldset legend {
+  padding: 0 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.home-widget-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 4px 0;
+  font-size: 11px;
+  line-height: 1.35;
+  cursor: pointer;
+}
+
+.home-widget-choice code {
+  font-size: 10px;
+  padding: 0 2px;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.home-widget-optional {
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+  opacity: 0.65;
+}
+
+.home-widget-chart {
+  margin-top: 8px;
+  padding: 8px;
+  border-radius: 6px;
+  background: var(--friend-lcd, #07140f);
+  box-shadow: inset 0 0 0 1px #1d3a2c, 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.home-widget-chart-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(125, 255, 196, 0.72);
+}
+
+.home-widget-spark {
+  display: block;
+  width: 100%;
+  height: 56px;
+}
+
+.home-widget-spark-line {
+  fill: none;
+  stroke: var(--friend-nixie, #4a7fd4);
+  stroke-width: 1.8;
+  vector-effect: non-scaling-stroke;
+}
+
+.home-widget-spark-area {
+  fill: var(--friend-nixie, #4a7fd4);
+  opacity: 0.18;
+}
+
+.home-widget-spark-empty {
+  margin: 0;
+  padding: 10px 0;
+  text-align: center;
+  font-size: 11px;
+  color: rgba(215, 255, 233, 0.55);
+}
+
+.home-widget-remain {
+  margin-top: 8px;
+}
+
+.home-widget-remain details {
+  margin-top: 6px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--friend-lcd, #07140f);
+  box-shadow: inset 0 0 0 1px #1d3a2c;
+  color: #d7ffe9;
+}
+
+.home-widget-remain summary {
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(125, 255, 196, 0.85);
+  list-style: none;
+}
+
+.home-widget-remain summary::-webkit-details-marker,
+.home-widget-remain summary::marker {
+  content: "";
+  display: none;
+}
+
+.home-widget-fold {
+  display: inline-block;
+  width: 0.9em;
+  margin-right: 0.15em;
+  font-family: ui-monospace, "Cascadia Mono", monospace;
+  font-weight: 700;
+  color: #9ecbff;
+}
+
+.home-widget-fold .is-open {
+  display: none;
+}
+
+.home-widget-remain details[open] .home-widget-fold .is-shut {
+  display: none;
+}
+
+.home-widget-remain details[open] .home-widget-fold .is-open {
+  display: inline;
+}
+
+.home-widget-remain ul {
+  margin: 6px 0 2px;
+  padding: 0 0 0 14px;
+}
+
+.home-widget-remain li {
+  margin: 2px 0;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.home-widget-remain-empty {
+  margin: 6px 0 2px;
+  font-size: 11px;
+  color: rgba(215, 255, 233, 0.55);
 }
 
 .home95 .home-weather-copy {
@@ -1646,8 +1890,20 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
   fill: #04140e;
 }
 
+.home95 .home-pet-moon {
+  fill: #c9d4ff;
+}
+
+.home95 .home-pet-sprite[data-pose="asleep"] .home-pet-z {
+  animation: home-pet-z 2.4s steps(2, end) infinite;
+}
+
 .home95 .home-pet-sprite[data-pose="idle"] .home-pet-eyes {
   animation: home-pet-blink 4.2s steps(1, end) infinite;
+}
+
+.home95 .home-pet-sprite[data-pose="idle"] {
+  animation: home-pet-sway 3.6s steps(2, end) infinite;
 }
 
 .home95 .home-pet-sprite[data-pose="pleased"] {
@@ -1668,17 +1924,39 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
 }
 
 @keyframes home-pet-bob {
-  from {
+  0%,
+  100% {
     transform: translateY(0);
   }
-  to {
+  50% {
     transform: translateY(-1px);
+  }
+}
+
+@keyframes home-pet-sway {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(1px);
+  }
+}
+
+@keyframes home-pet-z {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .home95 .home-pet-sprite,
-  .home95 .home-pet-sprite[data-pose="idle"] .home-pet-eyes {
+  .home95 .home-pet-sprite[data-pose="idle"] .home-pet-eyes,
+  .home95 .home-pet-sprite[data-pose="asleep"] .home-pet-z {
     animation: none;
   }
 }
@@ -1719,6 +1997,331 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
+}
+
+.home95 .home-moon-crt {
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 4px 3px;
+  background: #070b16;
+}
+
+.home-moon-px {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto;
+  display: block;
+  shape-rendering: crispEdges;
+  image-rendering: pixelated;
+}
+
+.home-moon-px.is-detail {
+  width: 96px;
+  height: 96px;
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.home-moon-px-star {
+  animation: home-moon-blink 2.4s steps(2, end) infinite;
+}
+
+.home95 .home-moon-name {
+  margin: 0;
+  max-width: 100%;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.15;
+  text-align: center;
+  color: var(--hab-crt-green, #7dffc4);
+  text-shadow: var(--hab-crt-glow, 0 0 3px #7dffc4);
+}
+
+.home-moon-facts {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 10px;
+  background: #070b16;
+  box-shadow: inset 1px 1px #000, inset -1px -1px #1c3d2c;
+}
+
+.home-moon-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  color: #d7ffe9;
+}
+
+.home-moon-copy .home-widget-lead {
+  color: #f4f1ea;
+}
+
+.home-moon-lines {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 1.1em;
+  list-style: disc;
+}
+
+body .home-widget-dialog.home-widget-instrument.is-sky {
+  width: min(68rem, calc(100vw - 1.5rem));
+  max-width: 68rem;
+  max-height: min(92vh, 920px);
+}
+
+.home-sky-lab {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(12rem, 0.7fr);
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+.home-sky-stage {
+  position: relative;
+  min-width: 0;
+  min-height: 240px;
+  aspect-ratio: 520 / 400;
+  overflow: hidden;
+  background: #050806;
+  box-shadow: inset 1px 1px #000, inset -1px -1px #1c3d2c, 0 0 0 1px #0a1c14;
+}
+
+.home-sky-chart {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.home-sky-glass {
+  fill: #050806;
+}
+
+.home-sky-star {
+  fill: #cfe8ff;
+  opacity: 0.55;
+}
+
+.home-sky-world {
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.home-sky-orbit {
+  fill: none;
+  stroke: rgba(125, 255, 196, 0.22);
+  stroke-width: 0.6;
+}
+
+.home-sky-equinox {
+  stroke: rgba(125, 255, 196, 0.28);
+  stroke-dasharray: 2 3;
+}
+
+.home-sky-zero {
+  fill: rgba(159, 255, 212, 0.55);
+  font-size: 9px;
+  font-family: var(--w95-font, Tahoma, sans-serif);
+}
+
+.home-sky-sun {
+  fill: #f0c14a;
+  opacity: 0.35;
+}
+
+.home-sky-sun-core {
+  fill: #fff4cf;
+}
+
+.home-sky-ring,
+.home-sky-disk,
+.home-sky-photo {
+  pointer-events: none;
+}
+
+.home-sky-ring {
+  fill: none;
+  stroke: rgba(236, 211, 161, 0.8);
+  stroke-width: 0.8;
+}
+
+.home-sky-pick {
+  fill: transparent;
+  cursor: pointer;
+}
+
+.home-sky-select {
+  fill: none;
+  stroke: #9fffd4;
+  stroke-width: 0.7;
+  pointer-events: none;
+}
+
+.home-sky-tag {
+  fill: #c8ffe8;
+  font-size: 8px;
+  font-family: var(--w95-font, Tahoma, sans-serif);
+  letter-spacing: 0.04em;
+}
+
+.home-sky-moon {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.home-sky-world.is-earth .home-sky-moon {
+  opacity: 1;
+}
+
+.home-sky-moon-orbit {
+  fill: none;
+  stroke: rgba(244, 241, 234, 0.7);
+  stroke-width: 0.35;
+}
+
+.home-sky-moon-body {
+  fill: #2a2e44;
+}
+
+.home-sky-moon-lit {
+  fill: #f4f1ea;
+}
+
+.home-sky-stage .home-sky-back {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  z-index: 1;
+  background-color: #c4c4c4;
+  background-image: linear-gradient(180deg, #f4f4f4, #b5b5b5 55%, #8d8d8d);
+  color: #1c140f;
+}
+
+.home-sky-readout {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 8px;
+  background: #050806;
+  color: #9fffd4;
+  box-shadow: inset 1px 1px #000, inset -1px -1px #1c3d2c;
+}
+
+.home-sky-readout h3 {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #c8ffe8;
+}
+
+.home-sky-epoch {
+  margin: -4px 0 0;
+  font-size: 11px;
+  color: rgba(200, 255, 232, 0.75);
+}
+
+.home-sky-card {
+  display: grid;
+  gap: 6px;
+  padding: 8px 10px;
+  background: #07110c;
+  box-shadow: inset 1px 1px #000, inset -1px -1px #14261c;
+}
+
+.home-sky-card-name {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #e7fff4;
+}
+
+.home-sky-card dl {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+}
+
+.home-sky-card dl div {
+  display: grid;
+  grid-template-columns: 3.6rem 1fr;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.home-sky-card dt {
+  margin: 0;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(159, 255, 212, 0.7);
+}
+
+.home-sky-card dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  color: #e7fff4;
+}
+
+.home-sky-roster {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-sky-roster button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 3px 4px;
+  border: 0;
+  background: transparent;
+  color: #c8ffe8;
+  font: inherit;
+  font-size: 11px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.home-sky-roster button.is-on {
+  background: #0c1c16;
+  box-shadow: inset 1px 1px #000, inset -1px -1px #1c3d2c;
+}
+
+.home-sky-bead {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6);
+}
+
+@keyframes home-moon-blink {
+  0%,
+  45% { opacity: 1; }
+  50%,
+  100% { opacity: 0.25; }
+}
+
+@media (max-width: 720px) {
+  .home-sky-lab {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-moon-px-star,
+  .home-sky-world {
+    animation: none;
+    transition: none;
+  }
 }
 
 .home95 .home-daylamp-word {
@@ -1775,12 +2378,39 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  width: 220px;
-  max-height: 240px;
+  width: 232px;
+  max-height: 280px;
   overflow: auto;
   padding: 3px;
   background: var(--hab-metal);
   box-shadow: var(--h-raised);
+}
+
+.home95 .home-widgets-clock {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 4px 4px 6px;
+  background: var(--hab-metal);
+  box-shadow: inset 0 -1px 0 rgba(40, 42, 46, 0.35);
+}
+
+.home95 .home-widgets-clock .hab-rocker {
+  width: 100%;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.home95 .home-widgets-clock-note {
+  margin: 0;
+  font-size: 9px;
+  line-height: 1.3;
+  color: #1c1e20;
 }
 
 .home95 .home-add-row {
@@ -1858,7 +2488,7 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
   --friend-silver: #c8c8c8;
   --friend-ink: #1c140f;
   --friend-glow: #7dffc4;
-  --friend-nixie: #ff9a3c;
+  --friend-nixie: #4a7fd4;
   --friend-lcd: #07140f;
   width: min(36rem, calc(100vw - 1.5rem));
   max-width: 36rem;
