@@ -2,34 +2,37 @@
 
 Moodboard inventory. Source folder: [`designrefs/`](../designrefs/)
 (49 stills: 47 `.jpg`, 1 `.png`, 1 `.webp`, plus `babyanimals/` and one running-app
-screenshot that is not a motif). This file is the **how to steal** brief.
-[`DESIGN_STYLE.md`](DESIGN_STYLE.md) is the house law: **motif, cabinet,
-impossible**. These stills are the pictures that law is made of. Do not restyle
-the running app from this document alone — and do not treat a Win95 dialog as
-the thing the folder is protecting.
+screenshot that is not a motif). The folder has no caption text files. This
+document is how to read the stills.
 
-**Applied example: Home → Habits.** That tab is the favorite surface and the
-most developed UI in the house. The catalog below has already been stolen there
-(Habits Tab Control Panel, analog furniture, Willpower gems, CRT phosphor, noble-gas
-tubes, panel lamps, lace lining). Future work on Plan, To Do, Goals, Tracking,
-Lists interiors, or a new room should open Habits Daily first — steal the
-*language*, not `.hab95`. How to extend:
-[`DESIGN_STYLE.md` — Look at Habits](DESIGN_STYLE.md#look-at-habits--how-to-extend).
+[`DESIGN_STYLE.md`](DESIGN_STYLE.md) is the house order: failures, then layout,
+then a palette. These stills support that palette. They are ingredients for
+**more** magical interaction, a Nintendo DSi feel (pixel type, hard pixel
+edges, small glowing indicator lights), and a retrofuturistic esoteric-technology
+vibe. Major redesigns are planned. A still is not a template that freezes the
+app as one costume, and it is not an instruction to stay plain.
+
+Habits Daily and Lists turned out well using some of these pictures. They are
+examples, not rooms to clone. A new room may invent furniture when the layout
+rules hold and the four failures are avoided. The interactions the redesign
+should make more of are named in
+[`DESIGN_STYLE.md`](DESIGN_STYLE.md): willpower gems
+(`willpower-gems.tsx`, `lib/willpower-physics.ts`), Lists orbs
+(`FolderViewIcons.tsx`), and the Habit-form sand close
+(`useWindowSandClose`). None of those motions is a still in this folder.
 
 Every still is tagged as one or more of:
 
 | Lane | Meaning |
 |------|---------|
-| **Idea** | A composition, motif, or mechanic that could be used. Steal the thought, not the pixels. |
-| **Direct** | A photograph that could be shown in the UI as an asset (desktop plate, orb/gem, overlay, living picture). Knock out or copy; do not redraw as Lucide. |
-| **Apply** | Visual language to rebuild in CSS/furniture: materials, lamps, CRTs, metal, weather instruments, equal-height modules. |
+| **Idea** | A composition or mechanic that could be used. Steal the thought, not the pixels. |
+| **Direct** | A photograph that could be shown in the UI as an asset (desktop plate, orb/gem, overlay, living picture). Knock out or copy; do not redraw as a generic line icon. |
+| **Apply** | Visual language to rebuild in CSS: materials, lamps, CRTs, metal, pixel type, small lights. |
 
-> **Law.** The whole house may be divine machinery: a vintage machine, a
-> painting, and one motion a 1997 OS could not do. Habits is the furthest
-> along; the shell, Lists, Plan, and Scheduler frames are in bounds for the
-> same language. Cabinet *contents* stay jewels, gems, orbs. Never
-> Lucide-the-cabinet. Never costume the whole app as one still (a single TENO
-> skin, a tribal-chrome caption, a literal Windows replica). Never SaaS it.
+> **How to use a still.** Read it as a machine you could hold, as a painting,
+> or as an ancestor. Then add the motion the picture cannot show. Pasting one
+> still onto every window is a costume. Being magical, pixel, or esoteric is
+> the direction, not a defect.
 
 ## How to read every still
 
@@ -38,20 +41,95 @@ motion the picture cannot show.
 
 | Register | What the still is for | What the app adds |
 |----------|----------------------|-------------------|
-| **Machine** | A device you could hold or sit at: silver PDA, phosphor console, word processor, oscilloscope, camera LCD, patch bay | Chunky keys, stylus glass, milled rims, nested wells. The frame feels held. |
-| **Art** | A circuit, cursor, voltage, or mushroom that is already a drawing | Sigils, lace, living pictures, flocks. The cabinet is a painting. |
-| **Ancestor** | A Windows dialog or beige workstation UI | Bevel, navy, inset field, pixel font — a quote inside the machine, not the costume. |
-| **Impossible** | None of these stills move | Dissolve, melt, flock, grow. Rare, on a real verb, obviously beyond the decade. |
+| **Machine** | A device you could hold or sit at: silver handheld, phosphor console, word processor, oscilloscope, camera LCD, patch bay | Chunky keys, stylus glass, milled rims, nested wells, small indicator lamps. The frame feels held. |
+| **Art** | A circuit, cursor, voltage, mushroom, or stone that is already a drawing | Sigils, lace, living pictures, flocks, jewels set where solder would be. The room may be esoteric. |
+| **Ancestor** | A Windows dialog or beige workstation UI | Bevel, navy, inset field, pixel font — a quote inside the machine, not the costume, and not a File menu to copy. |
+| **Impossible** | None of these stills move | Dissolve, melt, flock, sand, the willpower stir. Rare, on a real verb. |
 
-Uniform Win95 and uniform 8-bit are both misreadings. Photoreal surrealism and
-pixel-game UI are two registers in one house; a window may pass from one into
-the other.
+Pixel-game UI and photoreal surrealism are both wanted. A window may pass
+from one into the other. A DSi-like screen is pixel type plus a few glowing
+lamps, not a second copy of the TENO screenshot.
 
-**Do not delete** Plan chip opalescence, Analytics’ modern-canvas exception,
-hairline texture on furniture, or the WILLPOWER rules (small photographed orb,
-user-replaceable, plate pinned to the control panel foot, `willpower-gems.tsx`).
-Photograph change is **Settings**; plate click is physics stir. The crystal
-PNG occludes gems that pass behind it.
+**Leave in place** Plan chip opalescence, the Analytics light-instrument
+canvases, hairline texture, and the willpower plate (`willpower-gems.tsx`):
+small photographed crystal, Settings changes the photograph, plate click is
+physics stir, the crystal PNG occludes gems that pass behind it. Those are
+rooms and interactions that turned out well, not a kit to spread by force.
+
+## Gaps
+
+What this folder does **not** contain. A later redesign is not blocked by a
+missing still. The running components are the reference for motion. Notes
+below are only for files opened while writing this section. The catalog
+further down describes the rest of the inventory; do not treat an unopened
+row as a new eyewitness citation.
+
+- **No Nintendo DSi.** No dual screen, no DSi font specimen, no DSi power or
+  wireless LED. Closest lights actually opened: Tek 465B’s green POWER lamp
+  and red trigger lamp (`a898e04c534aeed3017938c701efdb2f.jpg`); TENO’s tiny
+  orange and green lamps and nixie digits
+  (`5d58e7b46cf9bd493eb09f761340fb17.jpg`); the Kyocera Finecam’s green SET UP
+  lamp (`117ebb9171f51c2bd7a913a12489fea9.jpg`); the Sony editor’s green and
+  red pixel type (`ffa2396fc4af38ae8e97e646029c2e2e.jpg`); the gadget wall’s
+  many small glowing readouts (`6586d2eaaa241117d4612337591d5563.jpg`).
+  Closest pixel: TENO, the cursor angel
+  (`2902904327ee778cd54eb65ae0c231ec.jpg`), the Sony editor, the flower CRTs
+  (`9d225800a3f631bc7559c83d11f1aaa2.jpg`), and the pixel forest inside the
+  Display Properties monitor (`60d7202cb958e11734ce0567eb382868.jpg`).
+- **No still of the three shipped interactions.** Willpower-gem physics, Lists
+  orb drag and auto-organize, and the collapsing-sand close are in code
+  ([`DESIGN_STYLE.md`](DESIGN_STYLE.md)). Do not wait on a reference photograph
+  of them.
+- **Stills do not move.** Dissolve, melt, flock, sand, and bounce are not
+  pictured. The cursor angel is the flock standing still.
+- **`babyanimals/`.** `babyfox.jpg` was opened: a cutout fox kit on white,
+  cabinet stock, not a machine. These were not opened, so they are not
+  described here: `images.png`, `physics_bowling_19.png`,
+  `Analyzing-Bowling-Ball-Path.webp`, `babylamb.webp`.
+- **Running-app shot, not a motif.** `Screenshot 2026-09-21 at 2.49.46 PM.png`
+  shows the BRAIN2 header with Friend, Review, System, and Capture as visible
+  groups — doors, not a File menu — over a lace-and-circuit desktop with a
+  kitten. Evidence that the doors are the chrome. Not a template to redraw.
+
+## Conflicts
+
+Read these as ancestors, not templates.
+
+- **Win95 MDI** (`2a0002d93dfba067de848caec9951b23.jpg`). Four nature photos in
+  child windows, and a menu bar: File, Edit, Search, Help. The photos sitting
+  in windows are the useful part. The menu bar conflicts with the first
+  failure: do not hide working doors behind a File / Capture / Review menu.
+  Do not take the gray frame as the costume for a new room.
+- **Display Properties** (`60d7202cb958e11734ce0567eb382868.jpg`). A gray
+  dialog whose monitor holds a pixel forest. The useful part is picture-in-glass
+  and pixel treatment. The dialog as the whole face would freeze a Win95-only
+  costume.
+- **TENO** (`5d58e7b46cf9bd493eb09f761340fb17.jpg`) and the **gadget wall**
+  (`6586d2eaaa241117d4612337591d5563.jpg`) support pixel type, small lights,
+  and dense esoteric instruments. Pasting either picture as the app skin
+  would be a costume. Read them for lamps and pixel, then invent.
+- **No opened still is a stack of floating white cards.** Nothing in the
+  files opened for this pass authorizes restacking an instrument into SaaS
+  cards. That restack is a failure in [`DESIGN_STYLE.md`](DESIGN_STYLE.md),
+  not a look this folder is missing.
+- **Instructions that fought the vision.** Older lines in this file told
+  agents to copy Habits onto the next room, to keep copy plain, or to treat
+  decoration as the thing to avoid. Those are withdrawn. Magical, esoteric,
+  beautiful interaction is wanted. A teaching caption is welcome when the
+  line is real and sourced (failure 4 in [`DESIGN_STYLE.md`](DESIGN_STYLE.md)).
+  One still pasted on every window is still a costume. That limit is not a
+  ban on magic.
+
+Stills opened for the gaps and conflicts above, and read as support rather
+than costume: mushroom desk (a living thing wired into the racks,
+`6cabaec24a39680944ab58f2989afd7e.jpg`), jewel PCB (stones as solder on nacre,
+`f54430419ed206fa1bea7b27a4ff6a9e.jpg`), crystal-ball cat (a scrying orb,
+`308a1c67d85e5e4f0e903e2dce6b8baf.jpg`), lightning seraph (engraved voltage, a
+gesture, `39846df63bc1eb54a7b7e2fbcd6566a1.jpg`), flower CRTs (pixel flowers
+on three equal phosphor screens), cursor angel, and the handhelds Pocket PC,
+hiptop, Motorola flip, Sharp 書院, Kyocera Finecam, and Sony editor — held
+machines with a picture in glass. They are kin to a DSi’s object. They are
+not a DSi photograph.
 
 ---
 
@@ -60,12 +138,12 @@ PNG occludes gems that pass behind it.
 | When | Surface | Who | Steal from (nicknames below) |
 |------|---------|-----|------------------------------|
 | **Now (shipped)** | App-wide desktop field | — | Default **teal** (classic Win95). Optional photoreal PCB plates: ceramic, mint snowflake, ice, x-ray, FR4. Settings → **Desktop**. Copies in `public/pcb/`. Saved plates are never migrated onto teal. |
-| **Now (shipped)** | Daily Habits interior — **favorite / most developed UI** (look here first) | Fawn | Jewel PCB, TENO console, gadget wall, Tek scope, silver book, iridescent bloom, crystal-ball cat, EQ sliders. Lightning-seraph *gesture* on 100% bars only — not a seraph logo. **WILLPOWER week shipped** (satellites, invert, pin, stir, PNG occlusion, Settings-only orb; **Small LEDs** rocker) |
+| **Now (shipped)** | Daily Habits interior — one room that turned out well, not a template | Fawn | Jewel PCB, TENO console, gadget wall, Tek scope, silver book, iridescent bloom, crystal-ball cat, EQ sliders. Lightning-seraph *gesture* on 100% bars only — not a seraph logo. **Willpower gems shipped** (satellites, invert, pin, stir, PNG occlusion, Settings-only crystal; **Small LEDs** rocker) |
 | **Parallel (shipped)** | App-wide gunmetal gray (slow slider on the existing patina) | Colt | Gadget wall, TENO, IRIX workstation, Display Properties (cool face, not yellow-gray) |
 | **Later** | Home TOP leftover **square widgets** (review, affirmation, **weather instrument**, user add/hide) | Home lane | IRIX cattle + gadget wall: **equal-height modules**; analog meters as weather, not a forecast card. See [Visual language to APPLY](#visual-language-to-apply) |
 | **Shipped, and in bounds** | Global header cabinet (BRAIN2 caption + friend well + Friend / Review / System / optional **now** well / Capture groupboxes) | Shell | Home window + **Tek POWER lamp**, fieldset legends, TENO milled keys, phosphor counts. Optional **now** well between System and Capture for live Working sessions. The caption stays readable type, not a Lucide set and not one pasted cockpit. The fascia may still become silver key-wells and may dissolve — [easy alignments](DESIGN_STYLE.md#easy-alignments-not-started). Today's friend sits in the Friend groupbox. Top tabs still later. |
 | **Later** | Top tabs | not this wave | Quoted folder tabs may become pixel-game lamps (TENO mode keys). Labels stay. Do not hide them in a modern tab bar, and do not reskin the whole shell as one console screenshot. |
-| **Allowed** | Lists / Plan / Scheduler *frames* | — | Machine, art, one dissolve. See [Do not costume](#do-not-costume-the-whole-app). Contents stay orbs, gems, opalescent chips. |
+| **Allowed** | Lists / Plan / Scheduler *frames*, and any new room | — | Machine, art, pixel, small lights, one dissolve. See [Do not costume](#do-not-costume-the-whole-app). Lists orbs, Plan chips, and Habits gems stay their own objects. |
 
 CRT / interlace is an **optional overlay** (scanlines, phosphor glow on a bezel),
 not a chart that fakes precision. Empty axes still get a sentence, not a
@@ -75,16 +153,16 @@ cross-hatch performing science.
 
 ## Ideas that could be used
 
-Steal the thought. Do not paste these compositions onto chrome.
+Steal the thought. Do not paste these compositions onto every window — that is a costume. Use them as fuel for pixel, lights, and esoteric interaction.
 
 | Idea | From | Could become |
 |------|------|----------------|
 | Jewelry as solder — rhinestones sitting on nacre traces | **Jewel PCB** | More cabinet gems; WILLPOWER kin (already an orb, not a board) |
 | Packed pixel cockpit: patch cables, nixie digits, CRT stills, analog throws | **TENO console** | The 8-bit register. Habits wells (shipped packing). Header keys and tab lamps may speak this pixel. Not a single skin pasted on every window |
-| Y2K instrument collage: clocks, analog meters, LCDs, chrome pipes, cassette | **Gadget wall** | Home leftover squares as **weather instruments**. Tracking pen tray shipped as photographed plates (not this collage — too busy behind beads) |
+| Y2K instrument collage: clocks, analog meters, LCDs, chrome pipes, cassette | **Gadget wall** | Home leftover squares as **weather instruments**. The Tracking pen well is plain steel (not this collage, and not a photographed plate) |
 | Living picture inside a CRT, nested instrument wells around it | **IRIX cattle** | Today's friend nest (shipped, tiny). Home TOP as stacked **equal-height modules** |
 | Real oscilloscope: green sine in a bezel, POWER LED, BNC, knobs | **Tek 465B** | Habits / Home CRT wells (shipped phosphor). Analytics optional bezel. Never fake-precision axes |
-| Animal drawn in copper on a board | **Cat traces** | Engraved hairlines (shipped on Habits grid). Tracking pen-tray default photograph |
+| Animal drawn in copper on a board | **Cat traces** | Engraved hairlines (shipped on Habits grid). Tracking pen well is plain steel; this plate is a retired reference |
 | Body + board + radial heatsink jewel | **Viscera collage** | Density for Needs Attention (lace won). Radial jewel as a gem crop |
 | Wireframe glove meeting flesh at a circuit star; operator at a mushroom desk | **Mesh hands**, **Mushroom desk** | Feral module energy. Ribbon cable as mycelium on table *edges* (deferred) |
 | Connector encyclopedia | **Ports chart** | Tracking pen-well mouths later. Not a toolbar |
@@ -97,7 +175,7 @@ Steal the thought. Do not paste these compositions onto chrome.
 | Botanical catalog HUD around a mountain photo | **Botanical HUD** | Green terminal type as *readout*, not a SaaS overlay |
 | Operator under a wired mushroom | **Mushroom desk** | Installed-module feral interiors (Tidy / Film DNA already do this) |
 | Winamp-class player with analog EQ and playlist | **OSD AMP** | Overview sliders (shipped bloom). **Do not** steal the EQ for row percents |
-| Holy-card lace stuffed with club flyers | **Lace + rave** | Sacred + nightlife lining. Copy stays plain |
+| Holy-card lace stuffed with club flyers | **Lace + rave** | Sacred + nightlife lining. A teaching caption is welcome when the line is real and sourced |
 | Kitten on a keyboard in a nest of beige CRTs and mylar | **CRT kitten** | Mood for today's friend. Click the photo for a Stardew chat bubble (mission nudge). Click the bubble for details. Not a caption-bar restyle |
 
 ---
@@ -114,23 +192,26 @@ stay in `designrefs/`; shipped copies live under `public/`.
 | `cfd93985b7a2a76aa69823561c8525d1.jpg` | Ceramic PCB | `public/pcb/ceramic.jpg` | Settings → **Desktop** |
 | `d09ee9b9432fa21ba8db4f1400a533e9.jpg` | Snowflake circuitry | `public/pcb/mint.jpg` | same |
 | `07e703d6f9fda08564ed32ba1eea8295.jpg` | Ice PCB | `public/pcb/ice.jpg` | same (stock watermark is veiled in CSS) |
-| `2dc0e2cd6390065e28da01f96665db4a.jpg` | X-ray PCB | `public/pcb/xray.jpg` | Settings → **Desktop**; also Tracking **Pen tray** (`public/pen-tray/xray.jpg`) |
-| `5f3b8feaa2e9037ae0323d6635e28bb5.jpg` | FR4 classic | `public/pcb/fr4.jpg` | Settings → **Desktop**; also Tracking **Pen tray** (`public/pen-tray/fr4.jpg`) |
-| `e624b3aca52ff4d3f8cfe5fe476d3a7e.jpg` | Cat traces | `public/pen-tray/cat.jpg` | Tracking View settings → **Pen tray** (default) |
-| `28003c286757ff410d03de24bc24c898.jpg` | Silver book | `public/pen-tray/pewter.jpg` | Tracking **Pen tray** |
-| `f54430419ed206fa1bea7b27a4ff6a9e.jpg` | Jewel PCB | `public/pen-tray/jewel.jpg` | Tracking **Pen tray** |
-| `5934b2e94f44ba6bdf53382877091c3c.jpg` | Iridescent bloom | `public/pen-tray/bloom.jpg` | Tracking **Pen tray** |
+| `2dc0e2cd6390065e28da01f96665db4a.jpg` | X-ray PCB | `public/pcb/xray.jpg` | Settings → **Desktop**; also a retired Tracking pen-well plate (`public/pen-tray/xray.jpg`) |
+| `5f3b8feaa2e9037ae0323d6635e28bb5.jpg` | FR4 classic | `public/pcb/fr4.jpg` | Settings → **Desktop**; also a retired Tracking pen-well plate (`public/pen-tray/fr4.jpg`) |
+| `e624b3aca52ff4d3f8cfe5fe476d3a7e.jpg` | Cat traces | `public/pen-tray/cat.jpg` | Retired pen-well plate. The well is plain steel |
+| `28003c286757ff410d03de24bc24c898.jpg` | Silver book | `public/pen-tray/pewter.jpg` | Retired Tracking pen-well plate |
+| `f54430419ed206fa1bea7b27a4ff6a9e.jpg` | Jewel PCB | `public/pen-tray/jewel.jpg` | Retired Tracking pen-well plate |
+| `5934b2e94f44ba6bdf53382877091c3c.jpg` | Iridescent bloom | `public/pen-tray/bloom.jpg` | Retired Tracking pen-well plate |
 
-### Now — Tracking pen tray (shipped)
+### Now — Time Grid plot
 
-The palette well is a photographed instrument plate, not velvet. View settings
-→ **Pen tray** picks Cat traces (default) / Pewter / Jewel PCB / Bloom / FR4 /
-X-ray. Copies in [`public/pen-tray/`](../public/pen-tray/). Only `.trk-pen-tray`
-(selected strip + beads) takes the photo — not the Time Grid. Search, new-pen,
-selected name, and detail sit on steel plates so type stays readable on every
-photo. Beads default to one row; **Expand** (right of Tree) unwraps them and
-reads **Conceal** while open. **New pen** (same cluster) reveals the inline
-creator; that row stays hidden until asked.
+The Time Grid plot uses Tek 465B (paper inside a bezel; phosphor only on the live occupancy figure), Pocket PC (the glass fills the lip), TENO (one packed toolbar row, a shorter ghost row), and FR4 hairlines (ticks, fainter after now). This pass does not restore the retired pen-tray photographs.
+
+### Now — Tracking pen well (plain steel)
+
+The palette well is plain steel, not a photograph and not velvet. Retired
+plates (Cat traces / Pewter / Jewel PCB / Bloom / FR4 / X-ray) stay in
+[`public/pen-tray/`](../public/pen-tray/) and are not painted. Beads default
+to one row; **Expand** (right of Tree) unwraps them and reads **Conceal**
+while open. **+ New pen** sits under the beads while expanded. Collapsed, a
+search that matches nothing offers **Create new pen** with that query as the
+name.
 
 Do not paste a PCB onto Lists/Plan window chrome or the Habits grid — those
 rooms already have their own materials. The PCB is the *estate*, not the furniture.
@@ -195,7 +276,7 @@ Rebuild in furniture. Copy materials and packing, not screenshots.
 
 | Lamp | From | Apply as |
 |------|------|----------|
-| Tek POWER LED + TENO tiny LED strips + FR4 via rows | Tek 465B, TENO, ceramic / x-ray / snowflake pads | Yes/No **panel lamps** (`habit-led-lamp.tsx`); **10-pip loading channel** (`percent-led-bar.tsx`) |
+| Tek POWER LED + TENO tiny LED strips + FR4 via rows | Tek 465B, TENO, ceramic / x-ray / snowflake pads | Yes/No **panel lamps** (`habit-led-lamp.tsx`); **glass percent tube** (`percent-led-bar.tsx`) |
 | Jewel lamp on a rocker | TENO / gadget wall | Cockpit switch jewel (`cockpit-switch.tsx`) |
 | Nixie-like digits | TENO | Numeric 5×7 luminaire when Loading Bar is off (`percent-led.tsx`) |
 | Smoked circular well, visible die | Gadget wall LCDs / TENO | Recessed lamp language — warm `percentLedTint`, not blast-white |
@@ -231,7 +312,7 @@ squares should read as **instruments**, not forecast cards.
 | Steal | From | Apply as |
 |-------|------|----------|
 | Round analog meter in a metal well | Gadget wall | Weather widget: needle + engraved scale (temp / condition), not a SaaS chip |
-| Small LCD / Casio readout | Gadget wall, Pocket PC, hiptop, Kyocera | Secondary facts as a tiny display, plain copy. The glass is a picture sitting in a machine |
+| Small LCD / Casio readout | Gadget wall, Pocket PC, hiptop, Kyocera | Secondary facts as a tiny display. The glass is a picture sitting in a machine |
 | Nested instrument around a living picture | IRIX cattle | Affirmation / review / weather share one console strip |
 | Botanical HUD green type | Botanical HUD | Optional readout type on the weather well — still dark ink on metal |
 
@@ -263,11 +344,14 @@ See [`DESIGN_STYLE.md`](DESIGN_STYLE.md#depth--spacing).
 Nicknames are for agents. Paths are `designrefs/<filename>`. **Lane:** Idea /
 Direct / Apply as above.
 
-### Keystone (steal first)
+### Keystone (read first)
 
-Read these as the house, not as Habits-only stickers. Win95 MDI is an ancestor
-later in this catalog, not the first still. A file named here may appear again
-below with its shipping path; the keystone row is how to read it.
+Read these as fuel for a more magical, more pixel, more esoteric room — not
+as Habits-only stickers, and not as a skin to paste on the next screen.
+Win95 MDI is an ancestor later in this catalog, not the first still. A file
+named here may appear again below with its shipping path; the keystone row
+is how to read it. Gaps and conflicts for files opened this pass are at the
+top of this document.
 
 | File | Nickname | Shows | Materials / motifs | Lane |
 |------|----------|-------|-------------------|------|
@@ -276,11 +360,11 @@ below with its shipping path; the keystone row is how to read it.
 | `2902904327ee778cd54eb65ae0c231ec.jpg` | **Cursor angel** | Win cursors flocking into a figure | Pixel UI as a body. The impossible layer is the flock moving | Idea |
 | `39846df63bc1eb54a7b7e2fbcd6566a1.jpg` | **Lightning seraph** | Winged voltage over mountains | Engraved hyperreal line. A gesture, not a logo | Idea |
 | `d09ee9b9432fa21ba8db4f1400a533e9.jpg` | **Snowflake circuitry** | Mint art-print board | Traces that finish as snowflakes. Art that a window may melt into. **Shipped desktop** (`public/pcb/mint.jpg`) | Direct, Apply |
-| `e624b3aca52ff4d3f8cfe5fe476d3a7e.jpg` | **Cat traces** | Cat drawn in copper on navy board | Circuit as drawing. **Shipped pen tray** | Idea, Direct, Apply |
+| `e624b3aca52ff4d3f8cfe5fe476d3a7e.jpg` | **Cat traces** | Cat drawn in copper on navy board | Circuit as drawing. Retired pen-well plate; the well is plain steel | Idea, Direct, Apply |
 | `f54430419ed206fa1bea7b27a4ff6a9e.jpg` | **Jewel PCB** | FR4 board whose solder is jewelry | Pearl / nacre, silver traces, rhinestones. **This is the object.** | Idea, Direct, Apply |
 | `36bc1715c629f42e163d54abe8741ac6.jpg` | **Pocket PC** | Silver handheld, picture in the glass, stylus | The machine you hold. Header and dialogs should feel like this object | Idea, Apply |
 | `6586d2eaaa241117d4612337591d5563.jpg` | **Gadget wall** | Y2K instrument collage | Gunmetal, ribbon cable, LCDs, chrome pipes, cassette, **analog meters**, tight wells | Idea, Apply (weather, equal-height, metal, lamps) |
-| `a898e04c534aeed3017938c701efdb2f.jpg` | **Tek 465B** | Real oscilloscope | Beige/gray plastic, BNC, knobs, **green phosphor sine in a bezel**, POWER LED | Idea, Apply (CRT, lamps) |
+| `a898e04c534aeed3017938c701efdb2f.jpg` | **Tek 465B** | Real oscilloscope | Beige/gray plastic, BNC, knobs, **green phosphor sine in a bezel**, POWER LED. The same well is the wait instrument | Idea, Apply (CRT, lamps) |
 | `designref1.jpg` | **IRIX cattle** | Instrument with a living picture inside | **Equal-height nested wells**, fractal cloud over pasture, small CRT readouts. Beige furniture is the ancestor; the fractal in the CRT is the art | Idea, Direct (pasture-in-CRT), Apply (equal-height) |
 | `eb64e7e2716a968c513504e27d963fa2.jpg` | **Botanical HUD** | White suit, mountain, plant catalog in green type | Hyperreal photograph wearing a terminal. Readout type, not a SaaS overlay | Idea, Apply |
 
@@ -342,13 +426,15 @@ below with its shipping path; the keystone row is how to read it.
 
 ### Machines you hold (Y2K silver, stylus, LCD)
 
-The app should feel like one of these objects, not like the OS dialog that
-ran on them. Chunky, silver, a picture sitting in glass, a stylus nearby.
+A held machine: chunky, silver, a picture sitting in glass, a stylus nearby.
+None of these is a Nintendo DSi. The closest lights and pixel in this group
+are the Finecam’s green SET UP lamp and the Sony editor’s green and red pixel
+type. See [Gaps](#gaps).
 
 | File | Nickname | Shows | Materials / motifs | Lane |
 |------|----------|-------|-------------------|------|
 | `36bc1715c629f42e163d54abe8741ac6.jpg` | **Pocket PC** | Acer n10, Wikipedia on the glass, stylus beside it | Brushed silver, black bezel, D-pad, a living picture in a small LCD | Idea, Apply (header as a held machine; picture-in-glass) |
-| `42ed97f9c02c9f0168d26cc793346aae.jpg` | **Motorola flip** | Clamshell closed and open, calendar on the inner screen, two styli | Silver shell, hinge, tiny outer LCD, thumb keyboard, blue night-lamp | Idea (a window that opens like a lid; close can fold or melt) |
+| `42ed97f9c02c9f0168d26cc793346aae.jpg` | **Motorola flip** | Clamshell closed and open, calendar on the inner screen, two styli | Silver shell, hinge, tiny outer LCD, thumb keyboard. Opened for this pass: no glowing indicator lamp was visible | Idea (a window that opens like a lid; close can fold or melt) |
 | `233182978b0c64031a84ff84ec18e12e.jpg` | **Hiptop** | Two Danger hiptops, IM and news on the glass | Silver, chunky chiclet keys, thumb wheel, a screen that is already a little webpage from the past | Idea, Apply (milled key wells on the header) |
 | `a272dce1d120178b12922f925b46523f.jpg` | **Sharp 書院** | Japanese word processor, icon menu, coiled pen | Beige-gray body, dense key field, side numeric pad, a screen of tiny pictures | Idea, Apply (equal-height keys; picture menu, not Lucide) |
 | `117ebb9171f51c2bd7a913a12489fea9.jpg` | **Kyocera Finecam** | Silver camera back, clouds in the LCD | Magnesium body, mode lamps, a photograph sitting in a machine | Idea, Direct (sky-in-glass as a well) |
@@ -380,22 +466,24 @@ PCB onto Lists/Plan window chrome or the Habits grid — those rooms already hav
 their own materials. The PCB is the *estate*, not the furniture. A saved plate
 is never rewritten to teal.
 
-### Now — Daily Habits interior (Fawn) — favorite surface
+### Now — Daily Habits interior — a room that turned out well
 
-This is where the catalog has been applied. Plan / To Do / Goals / Tracking /
-Lists interiors look here first (Habits Tab Control Panel, analog furniture, Willpower gems
-**chrome + black-mirror** plate, CRT phosphor, skeuomorph). Steal the *language*, not `.hab95`.
-Repeat **milled chrome around a black-mirror well** for other precious objects.
+This is one place the catalog has been applied: control panel, analog
+furniture, willpower gems, CRT phosphor, panel lamps. It is not a template
+for Plan, To Do, Goals, Tracking, Lists, or the next room. Do not clone
+`.hab95`. Object chrome is a material a precious object may use
+([`DESIGN_STYLE.md`](DESIGN_STYLE.md#chrome-and-black-mirror)), not a quota.
 
-The room is already a metal console on nacre (`.hab95`). Push it toward
-**divine machinery** without turning the global header into a second product.
+The room is a metal console on nacre (`.hab95`). More magical interaction
+belongs here and in other rooms. The global header stays a header: its doors
+stay visible (failure 1).
 
 | Habits surface | Steal | How (smallest true shape) | Status |
 |----------------|-------|---------------------------|--------|
 | **Table / grid** | TENO console, gadget wall, IRIX cattle | Nested bevels already exist — pack cells as instrument wells. Hairline traces like Bare FR4 / Cat traces as *engraved rules*, not a PCB background image pasted on the grid. | **Shipped** — packed wells + FR4 hairlines |
-| **Willpower gems** | Jewel PCB, crystal-ball cat, silver-book oval | Keep the small user crystal (`willpowerImage`). Seat it in a photoreal **chrome + black-mirror** oval (milled silver rim, black-lacquer well, photograph in the cavity). This object language is canonical — repeat it for other jewels/instruments. Default compact; open **Physics** to enlarge the same handful on a larger oval still centered on the crystal. Do not replace the photo with Lucide. Pin the oval plate to the **control panel foot**, centered in the well. Plate click = bouncing-ball stir (a short whirl, not a scatter bomb); a gem grab must not also press or stir the well. Photograph change is Settings-only. Each weekday completion adds **one small copy** of that habit’s gem around the plate; gems bounce off the crystal (no tunneling); the row gem **inverts** while any hit this week remains; the crystal PNG occludes stones that pass behind it. Press stirs; grab/lift throws (works off the plate and in the lab; equations follow z). Gems paint past the rim. **Physics** opens a Win95 popup lab with a mapped twin plate, CRT wells, and live sliders (no idle 60fps). | **Shipped** — control panel, photoreal chrome oval button, black-mirror well, week satellites, invert, pin, stir, grab/lift (no ghost stir), crystal solid, overflow, PNG occlusion, Settings field, Physics popup (mapped twin, CRT wells, memo knobs). Canonical: [`DESIGN_STYLE.md`](DESIGN_STYLE.md#willpower-gems--example-of-perfect-design) + [chrome and black mirror](DESIGN_STYLE.md#chrome-and-black-mirror) |
-| **Progress** | Tek 465B POWER LED, TENO tiny LED strips, FR4 / x-ray / ceramic via rows, snowflake-circuitry pads. Grade tubes: noble-gas ampoule rack + **fan of tubes** (rounded dome). Overview sliders: OSD AMP + iridescent bloom. | **Grade meters** (Week / Span grade + Perfect output): photoreal glass **finger-tubes** (hemispherical dome, not a pointed ampoule) — plasma column clipped to percent (`noble-gas-tube.tsx`); discharge hue from `gradeTubeColor` / `outputGradeTubeColor` (defaults week-grade green `#508b51` / perfect-output navy `#25366a`). Spreadsheet **row/col %** default to a **quiet milled channel of 10 via-dots** (`percent-led-bar.tsx`, Loading bar ON) plus a text %; OFF is the smaller numeric LED. Same bar for rows and column totals. Not a toy equalizer (do **not** steal OSD AMP’s EQ), not pastel bars, not Yes/No cell lamps reused as percents. Home overview strip keeps analog OSD bloom + vertical Tek spark. Interlace, if any, is a CSS overlay on the bezel, toggleable. | **Shipped** — noble-gas grade tubes (still photo, per-grade hue); quiet 10-pip loading channel default; table OSD bloom; overview 2×2 + vertical Tek well. CRT overlay (`.hab-crt`) is off by default |
-| **Needs Attention** | Paper lace (one), viscera collage (density), CRT kitten (urgency glow) | A lace *lining* or filigree rule around the well — cream on metal, not a holy-card skin on the Home window. Keep plain copy. Expand when count > 0 (already in the plan). | **Shipped** — lace lining (`.hab-na`). Home `#fff` cards killed |
+| **Willpower gems** | Jewel PCB, crystal-ball cat, silver-book oval | Keep the small user crystal (`willpowerImage`). Seat it in a photoreal **chrome + black-mirror** oval (milled silver rim, black-lacquer well, photograph in the cavity). This interaction is the one to make more of. It is not a plate to stamp on every control. Default compact; open **Physics** to enlarge the same handful on a larger oval still centered on the crystal. Do not replace the photo with Lucide. Pin the oval plate to the **control panel foot**, centered in the well. Plate click = bouncing-ball stir (a short whirl, not a scatter bomb); a gem grab must not also press or stir the well. Photograph change is Settings-only. Each weekday completion adds **one small copy** of that habit’s gem around the plate; gems bounce off the crystal (no tunneling); the row gem **inverts** while any hit this week remains; the crystal PNG occludes stones that pass behind it. Press stirs; grab/lift throws (works off the plate and in the lab; equations follow z). Gems paint past the rim. **Physics** opens a Win95 popup lab with a mapped twin plate, CRT wells, and live sliders (no idle 60fps). | **Shipped** — control panel, photoreal chrome oval button, black-mirror well, week satellites, invert, pin, stir, grab/lift (no ghost stir), crystal solid, overflow, PNG occlusion, Settings field, Physics popup (mapped twin, CRT wells, memo knobs). Canonical: [`DESIGN_STYLE.md`](DESIGN_STYLE.md#willpower-gems--example-of-perfect-design) + [chrome and black mirror](DESIGN_STYLE.md#chrome-and-black-mirror) |
+| **Progress** | Tek 465B POWER LED, TENO tiny LED strips, FR4 / x-ray / ceramic via rows, snowflake-circuitry pads. Grade tubes: noble-gas ampoule rack + **fan of tubes** (rounded dome). Overview sliders: OSD AMP + iridescent bloom. | **Grade meters** (Week / Span grade + Perfect output): photoreal glass **finger-tubes** (hemispherical dome, not a pointed ampoule) — plasma column clipped to percent (`noble-gas-tube.tsx`); plasma hue from `gradeTubeColor` / `outputGradeTubeColor` (defaults week-grade green `#508b51` / perfect-output navy `#25366a`). Spreadsheet **row/col %** default to a **thin glass thermometer** (`percent-led-bar.tsx`, Loading bar ON) plus a text %; OFF is the smaller numeric LED. Same tube for rows and column totals. Not a toy equalizer (do **not** steal OSD AMP’s EQ), not pastel bars, not Yes/No cell lamps reused as percents. Home overview strip keeps analog OSD bloom + vertical Tek spark. Interlace, if any, is a CSS overlay on the bezel, toggleable. | **Shipped** — noble-gas grade tubes (still photo, per-grade hue); quiet 10-pip loading channel default; table OSD bloom; overview 2×2 + vertical Tek well. CRT overlay (`.hab-crt`) is off by default |
+| **Needs Attention** | Paper lace (one), viscera collage (density), CRT kitten (urgency glow) | A lace *lining* or filigree rule around the well — cream on metal, not a holy-card skin on the Home window. A teaching caption is welcome when it is real and sourced. Expand when count > 0 is still open layout ([`UI_NEXT.md`](UI_NEXT.md)). | **Shipped** — lace lining (`.hab-na`). Home `#fff` cards killed |
 
 Cockpit rockers stay (Heatmap View, **Day View** = today column + week % only, Hide Completed Today, **Loading Bar**, and **Small LEDs** — not a rename of Loading Bar). **Sort Habits** stays **above** that group. Type/score gems stay 12–16px; row **edit jewels** are 18px set stones (36 cutouts), far-left, no dark disc — no gem before the title. Streak / × under the wrapping title. Week satellites around WILLPOWER stay **smaller** than the row jewel. Yes/No cells stay recessed panel lamps (on-color = `percentLedTint`, dim/warm, not blast-white; **Small LEDs** ON = 15px, OFF = fill the cell). Ink stays dark on pearl/metal. Furniture metal is `--chrome-face` / `--hab-metal`, never `#c5c3bc`.
 
@@ -408,10 +496,11 @@ Display Properties is only the ancestor of that trick (wallpaper inside a
 monitor). The CRT kitten and gadget wall are the machine's atmosphere, not a
 brief to Lucide the caption buttons or restyle Quick Add as Winamp.
 
-Do this wave **after** Habits interior + gunmetal slider have shipped and sat
-next to Lists Icons without a style break. Then: denser grouping of capture
-doors, still Win95 separators — already specified in [`PLAN_OF_ACTION.md`](PLAN_OF_ACTION.md)
-Wave 7. Do not open a third icon language.
+Habits’ interior and the gunmetal slider have shipped. Header and tab work
+can go further into pixel lamps and a held-machine feel. Keep the capture
+doors visible — denser grouping, not a File menu
+([`PLAN_OF_ACTION.md`](PLAN_OF_ACTION.md) Wave 7). A new picture language is
+allowed when the layout holds. Do not hide the doors.
 
 ### App-wide gunmetal (Colt)
 
@@ -420,20 +509,25 @@ Bias `lib/chrome-patina.ts` toward the cool faces in TENO / gadget wall / IRIX
 house. Lists furniture stays honest `#c0c0c0`-family; it may patina cooler.
 Do not paint Lists velvet or Plan chips gunmetal.
 
-### Other rooms (contents only, later)
+### Other rooms
 
-| Room | Allowed from refs | Forbidden |
-|------|-------------------|-----------|
-| **Lists** | Orbs/jewels already; sky jewel-case / UV rabbit / Mandelbrot as *optional orb photos*. Frame may take silver, a pixel throw, or a dissolve on organize/close | Tribal chrome *as the caption*; paper-lace replacing the title; Winamp as the whole window; ports chart as the toolbar; Lucide instead of orbs |
-| **Plan** | Opalescent chips stay (iridescent bloom is kin). Crystal-ball as an event mark (**shipped** on `+N more` and Day all-day banners). Rail capacity pips + habit gems are cabinet contents. **Shipped:** roomy period toolbar, navy field focus (never orange — now **app-wide** in `win95.css`, not Plan-only), fieldset legends as navy labels off the bevel, nested metal rail/desktop wells, textarea inner padding (native `+` grip hidden). Frame may leave pure gray. | Gunmetal calendar that hides the chips; CRT grid that fakes precision; dark-slate SaaS calendar |
-| **To Do** | Plan-kin instrument window (caption orb, mill toolbar, packed white list well, FR4 hairlines, period chevrons, navy legends on Done/Missed). Same verbs as before. Steal Habits packing, not `.hab95`. Pixel lamps and a close-dissolve are in bounds. | Lucide action row; SaaS cards; one TENO screenshot pasted on the table; PCB as the table |
-| **Goals** | Same Plan-kin window as To Do. Packed objective list, 10-pip goal progress, gold priority chips, Direction CRT + pewter drift tape (no yellow date chips). | Card kit; Trophy/Compass Lucide identity; a full cockpit costume |
-| **Scheduler** | Quoted instrument frame. Contents may gem. A bucket drag may leave a cursor-flock | A glassy restyle; hiding the buckets |
-| **Analytics** | Tek bezel / phosphor as *optional* on a chart chrome; canvas stays the modern-instrument exception | Fake-precision CRT axes; restyling Lists to match |
-| **Tracking** | Milled fascia (CRT title, equal-fill view keys + power lamps, period nameplate, metal period keys, milled now bay). Photographed pen tray in a metal frame (View settings picker; default Cat traces, not velvet); Show/Sort/Expand↔Conceal/New pen rail; one-line beads + steel plates for copy; white/gray plot + now/sunrise/sunset lines + stacked-day ribbon. Pens stay the chroma. | Replacing paint with a gadget wall; dark-glow / brown plot; recoding pen colors; removing the now line or sun lines |
-| **Home TOP strip** | IRIX equal-height modules; gadget-wall **weather instruments** in leftover squares | White cards; stretched `fr` wells; SaaS forecast chips |
-| **Operations** | Milled fascia landed (CRT title, metal keys, readable phosphor). Steal flower CRTs / Tek for wells only | Unreadable scanlines; Lucide costume |
-| **Modules** | Feral interiors already (mushroom desk energy) | Extracting that chrome into `components/ui/` |
+Each room already has its own furniture. A redesign may push it further into
+pixel, small lights, and esoteric interaction. It does not clone Habits, and
+it does not paste one still onto the window. The four failures live in
+[`DESIGN_STYLE.md`](DESIGN_STYLE.md).
+
+| Room | Already its own | Would fight the room |
+|------|-----------------|----------------------|
+| **Lists** | Orbs and jewels; sky jewel-case / UV rabbit / Mandelbrot as *optional* orb photos. Frame may take silver, a pixel throw, or a dissolve on organize/close | Tribal chrome *as the caption*; paper-lace replacing the title; one Winamp or TENO skin as the whole window; replacing orbs with a line-icon font |
+| **Plan** | Opalescent chips (iridescent bloom is kin). Crystal-ball as an event mark (**shipped** on `+N more` and Day all-day banners). Rail capacity pips + habit gems. Roomy period toolbar, navy field focus (`win95.css`), nested metal wells. Frame may leave pure gray | A calendar field that hides the chips; a CRT grid that fakes precision; restacking the month into floating cards |
+| **To Do** | Instrument window (caption orb, mill toolbar, packed list well, period keys). Same verbs as before. Pixel lamps and a close-dissolve are in bounds. Layout still open: the push-count legend ([`UI_NEXT.md`](UI_NEXT.md)) | One TENO screenshot pasted on the table; a PCB as the table; hiding the rows behind a menu |
+| **Goals** | Packed objective list, 10-pip goal progress, gold priority chips, Direction CRT + pewter drift tape. Layout still open: chunky steppers ([`UI_NEXT.md`](UI_NEXT.md)) | A full cockpit costume of another room |
+| **Scheduler** | Instrument frame. Contents may gem. A bucket drag may leave a cursor-flock | Hiding the buckets |
+| **Analytics** | Tek bezel / phosphor optional on chart chrome; canvases stay the light-instrument studio | CRT axes that fake precision; restyling Lists to match the studio |
+| **Tracking** | Milled frame, power lamps, plain steel pen well, white paper in a bezel, pens as the chroma. Phosphor only on the live occupancy figure | Replacing paint with the gadget-wall collage; removing the now line or sun lines; pasting retired pen-tray photos back behind the chips |
+| **Home top strip** | Equal-height modules; gadget-wall weather instruments in leftover squares | Floating white cards; one well stretched across the leftover width |
+| **Operations** | Milled frame, metal keys, phosphor. Flower CRTs / Tek are kin for wells. Layout still open: empty-state objects ([`UI_NEXT.md`](UI_NEXT.md)) | Scanlines that make the type unreadable |
+| **Modules** | Interiors may stay feral (mushroom-desk energy). Layout still open: orbs on the board ([`UI_NEXT.md`](UI_NEXT.md)) | Sanding an interior into `components/ui/` |
 
 ---
 
@@ -448,11 +542,11 @@ crosshair); Needs Attention lace lining (`.hab-na`). CRT overlay is CSS-ready
 — the parse fail had let Home’s inset `#fff` cards (Needs Attention) show through.
 Grade meters are **noble-gas tubes**; WILLPOWER is an **orb**; today is a solid
 fill; heatmap is a light Daily sidebar mosaic. **Landed (working tree):**
-15px recessed Yes/No panel lamps (tint as on-color, not blast-white); **Loading Bar** default ON (quiet milled channel of 10 via-dots + % text on one row; OFF = smaller numeric LED);
+15px recessed Yes/No panel lamps (tint as on-color, not blast-white); **Loading Bar** default ON (thin glass tube + % text on one row; OFF = smaller numeric LED);
 **Day View** rocker (today + week %); far-left 18px set-stone gem/edit (no dark
 disc; no gem before the title; streak/× under the name); WILLPOWER crystal
 scaled inside the same oval plate; Habits Settings already has
-`WillpowerSettingsField`;
+`WillpowerGemsSettingsField`;
 Delete-in-settings; jewelry heatmap cells; **Sort Habits** above grouped
 rockers. **Landed:** **Small LEDs** rocker (default ON = 15px Yes/No lamps;
 OFF = fill the cell); week-complete gems collect small around WILLPOWER; row
@@ -466,7 +560,8 @@ completion math. Colocated file list stays with
 table edges, barrel-distortion CRT. No PNG recapture this pass.
 
 **Phase B — Gunmetal slider (parallel).** Colt. Cool-bias the existing
-`--chrome-*` family. Do not invent a second theme pack. Do not retint orbs.
+`--chrome-*` family. One mix for the current face. Do not retint orbs. A
+later redesign may leave this slider; it is not a freeze.
 
 **Phase C — After A+B survive Lists.** Header/tabs/Quick Add density only.
 Optional CRT overlay token (off by default) for Habits bezels and Operations
@@ -486,24 +581,26 @@ implementer; see [`DESIGN_STYLE.md`](DESIGN_STYLE.md#depth--spacing).
 
 ## Do not costume the whole app
 
-These stills are ingredients. Pasting one of them onto every title bar makes
-a costume, which is the same mistake as freezing every title bar as Windows.
+These stills are ingredients for a more magical, more pixel, more esoteric
+house. Pasting one of them onto every title bar makes a costume. Freezing
+every title bar as the Win95 MDI menu bar makes the other costume, and it
+hides doors (failure 1). Neither reading is the redesign.
 
-Do not:
+Read as ancestor, not template:
 
-- Replace a readable caption with the tribal chrome frame (`204a5f9b…`) or a paper-lace holy card
-- Skin every window as the TENO screenshot, the gadget wall, or Winamp (`5d58e7b46…`, `6586d2eaaa…`, `7735cf78…`)
-- Use the speaker-cross as a toolbar icon
-- Use the oscilloscope or the ports chart as the file-manager's only face
-- Replace orbs with Lucide (or any line-icon font)
-- "Upgrade" the ancestor into SaaS glass, 24px radii, or a brand gradient
+- Win95 MDI (`2a0002d93…`) — child windows holding pictures. Not its File menu.
+- Display Properties (`60d7202cb…`) — a picture inside a machine. Not the gray dialog as the product.
+- TENO (`5d58e7b46…`), the gadget wall (`6586d2eaaa…`), and Winamp (`7735cf78…`) — pixel, lamps, and instruments to steal from. Not a skin pasted on every window.
+- Tribal chrome (`204a5f9b…`) and the paper-lace holy cards — a well’s frame or lining. Not a replacement for a readable caption.
+- The speaker cross — a picture, not a toolbar icon.
+- The oscilloscope and the ports chart — lamps, bezels, and cable mouths. Not the file manager’s only face.
 
 Do:
 
-- Let header keys, tab lamps, and wells speak TENO pixel and hiptop silver
-- Let a close or an auto-organize **move** like the cursor angel or the snowflake plate
-- Keep velvet, orbs, and opalescent chips as the cabinet
-- Keep Win95 bevels only as a quote inside that machine (`2a0002d93…`, `60d7202cb…`)
+- Let keys, tab lamps, and wells take TENO pixel, hiptop silver, and small glowing lights. More of this, including a DSi-like lamp the folder does not contain ([Gaps](#gaps)).
+- Let a close, an auto-organize, a gem stir, or a sand collapse **move**. The cursor angel and the snowflake plate are the stills; the motion is the app’s.
+- Keep Lists velvet and orbs, Plan’s opalescent chips, and the willpower plate as rooms that turned out well. A new room may invent the next object.
+- Keep Win95 bevels as a quote inside the machine when a room wants them. A room may leave them.
 
 ---
 
@@ -512,10 +609,11 @@ Do:
 | Path | Role |
 |------|------|
 | `designrefs/` | Raw moodboard (not shipped assets, except the five desktop PCB stills copied to `public/pcb/`) |
-| This file | Catalog + steal brief (ideas / direct assets / apply language) |
+| This file | Catalog, plus how to read the stills under the redesign (gaps and conflicts at the top) |
 | [`public/pcb/`](../public/pcb/) | Served desktop plates |
-| [`DESIGN_STYLE.md`](DESIGN_STYLE.md) | House law (motif, cabinet, impossible; Habits depth; Plan opalescence; Analytics canvas; equal-height modules; weather instruments; easy alignments not started) |
-| [`PLAN_OF_ACTION.md`](PLAN_OF_ACTION.md) | Work order (Habits now, header later) |
+| [`DESIGN_STYLE.md`](DESIGN_STYLE.md) | Failures, layout, palette. Magical interaction, DSi pixel and lights, esoteric technology. Habits and Lists are examples, not templates |
+| [`UI_NEXT.md`](UI_NEXT.md) | Open layout tasks |
+| [`PLAN_OF_ACTION.md`](PLAN_OF_ACTION.md) | Combined work order (not edited from this pass) |
 | `components/Home/Habits/habit-chrome.css` | Current Daily console |
 | `components/Home/Habits/habits-control-panel.tsx` | Home Dashboard Habits Tab Control Panel (compact 196px) |
 | `components/Home/Habits/willpower-gems.tsx` | Willpower gems chrome button + Settings field (week satellites, invert, press-stir, grab/lift/throw, overflow, PNG occlusion, Physics popup with live twin plate) |

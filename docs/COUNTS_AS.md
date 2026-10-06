@@ -68,7 +68,9 @@ field that opens a list you can type into.
 - **Nothing — this is a top-level X** is the first option and clears the parent.
 - **Create new pen…** makes the parent on the spot, with a name and a color, so
   you can nest *Ocean Beach* under a *San Diego* that does not exist yet
-  instead of abandoning the dialog to go make it first.
+  instead of abandoning the dialog to go make it first. The name sits in a dark
+  inset field (same voice as the pen Name well) that fills the row beside the
+  swatch and Create, so the letters stay visible while you type.
 - A pen can never be nested under itself or under one of its own descendants —
   `validParents` / `wouldCycle` in `lib/pen-tree.ts` remove those from the list,
   so a loop is not something you can build by hand.
@@ -98,52 +100,59 @@ a line of prose instead of an empty box.
 
 ---
 
-## Planned: parallel counts-as chains
+## Details are the same ladder
 
-**Not implemented.** Written down so the data model does not drift away from it.
+A **detail** of a pen is a pen that counts as it. The chip list and the tree
+are two doors on one fact (`lib/pen-detail-sync.ts`, persist **v13**).
 
-Today `TrackPen.parentId` is a single optional id: one pen, one parent, one
-chain to the root. The obvious next want is **multiselect** — *Ocean Beach*
-counting as both *San Diego* and *Beaches*, two chains in parallel.
+| You do this | What also happens |
+|---|---|
+| Add **Walk** as a detail of Exercise | A Walk pen is created (or a same-name pen with no parent is adopted). Walk's parent is Exercise. |
+| Set Walk's parent to Exercise | Walk shows up in Exercise's detail list. |
+| Paint Exercise and tick Walk | The block stays Exercise, with Walk applied. Those minutes also count as the Walk pen. |
+| Paint the Walk pen directly | Exercise's detail breakdown includes that time as Walk. California painted as California shows up in USA's states. |
+| Remove the Walk detail | Walk no longer counts as Exercise. The Walk pen stays in the well. Painted minutes stay; the block just loses that label. |
 
-The storage migration is small: `parentId?: string` becomes
-`parentIds?: string[]`, with a persist step wrapping each existing `parentId`
-in an array and a compatibility getter so nothing has to change at once. The
-UI is already shaped for it: `PenParentPicker` owns selection behind a
-`value / onSelect` interface, and `PenChainVisual` already renders a branching
-diagram downward — showing two chains upward is the same component run twice.
+Several details can still apply to the same minutes (Elijah and Rebecca on one
+hour). That overlap is why details stay a list on the block, not a second
+primary pen. **Show as** still chooses which rung of the tree the grid draws.
 
-The hard parts are not storage, and are why this is not shipping yet:
+A same-name pen that already counts as something else is not stolen and not
+forked. Cogs under Focus stays under Focus; a Computer work detail also named
+Cogs remains a label until you nest them yourself.
 
-1. **Depth stops being a number.** `displayDepth` assumes one path to the root,
-   so "depth 1" is unambiguous. With two parents at different heights, a block
-   has two depth-1 ancestors and the grid must pick a color. Options: a
-   designated *primary* parent for display (mirroring how a block already has a
-   primary pen), or depth becoming per-chain.
-2. **Occupancy must not double-count.** `lib/tracking-summary.ts` counts a
-   minute once. A pen rolling up into two parents must add its minutes to both
-   parent totals while still contributing one minute to the day — the same
-   union the tag rollup already does, but applied to the pen tree.
-3. **Cycle detection gets harder.** `wouldCycle` walks one chain. With several
-   parents it becomes a graph reachability check over all of them.
-
-Until those are answered, one parent per pen is the honest model, and the
-single-parent code should stay readable rather than being pre-generalized.
-
-### A related note on robustness
-
-`ancestorChain` guards against a cyclic `parentId` on purpose — "a corrupt
-vault should still paint". Anything new that walks the pen graph, in either
-direction, should carry the same guard. `wouldCycle` protects the write path;
-it does nothing about a cycle that arrived from an import, a partial migration,
-or a future `parentIds` conversion.
+Double-click a pen color — on a block, in the well, on a detail chip, in the
+Activity Log, on the Day Log strip, or on an Analytics swatch — to open that
+pen's settings. The chain in settings still opens a pen with one click.
 
 ---
 
-## Next step (not implemented)
+## Parallel counts-as
 
-Using this model — chains, block names, secondary pens — to **hide, show,
-search and index** time in the Tracker and the Analytics Tracking tab.
+A pen may count as several others. *Ocean Beach* can count as both *San Diego*
+and *Beaches*.
+
+`parentIds` is the full list. `parentId` is the display parent, and it is
+always `parentIds[0]`. Persist **v14** copies a lone `parentId` into
+`parentIds` and leaves `parentId` in place, so an old vault still paints.
+`pen-parent-picker.tsx` is the multiselect. `assignParents` in `lib/pen-tree.ts`
+writes both fields together.
+
+**Show as** follows the display parent only (`ancestorChain` / `penAtDepth`),
+so the grid keeps one color. Further chains are `ancestorChains`. At Exact the
+painted pen gets the whole block. At a collapsed depth, each distinct ancestor
+at that depth gets a share, and those shares sum to the block (`pensAtDepth`
+plus `addSplit` in `lib/tracking-summary.ts`). An ancestor reached twice is
+paid once. A secondary pen on the block still receives the full block — that
+overlap is the same rule as before.
+
+`wouldCycle` walks every parent. `ancestorChains` still stops a missing or
+cyclic parent so a corrupt vault paints.
+
+**Find** (`lib/tracking-search.ts`) searches counts-as names along with the
+block's display name, notes, project, pen, secondary pens, and action-format
+templates. The Time Grid bezel, the Activity Log, and Analytics → Tracking
+all call it.
 
 ## Related
 

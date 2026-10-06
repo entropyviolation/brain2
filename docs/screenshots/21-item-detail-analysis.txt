@@ -1,0 +1,15 @@
+================================================================================
+SCREENSHOT: 21-item-detail-analysis.png
+VIEW: Item detail popup → Analysis
+AREA: Item detail → Analysis
+SOURCE FILES:
+  - components/ItemDetail/ItemDetailPopup.tsx
+================================================================================
+
+GLOBAL CHROME (all screens)
+  Pinned full-width mill title bar (`AppHeader`, sticky top, z-40): navy BRAIN2 caption with Tek POWER lamp + today's-friend jewel (64px chrome + black-mirror well; click for a Stardew Next Action bubble; Esc / × / outside to close) and Friend / Review / System / Capture as Win95 groupboxes of milled press keys. Names stays Names and latches (sunken, aria-pressed); tooltip Stop naming while on. Phosphor counts on Review and Inbox. Quick Add is the default framed key, docked at the right of Capture. Same doors as before — grouped furniture, not a menu bar.
+  Tabs: milled fascia (brushed bay, raised silver keys, active key a CRT with a round power lamp) — Home · Lists · Docs · Scheduler · Operations · Modules · Analytics.
+  Shortcuts: Cmd/Ctrl+K search · capture hotkey → Quick Add.
+
+VIEW-SPECIFIC
+Analysis: why, what happens if you don't, additional notes. All three filled for the headlands photo.

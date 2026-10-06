@@ -41,8 +41,8 @@ Design: local-first, LLM-free, capture-first.
 | Bulk add, ingest log UI, `help`, simulate | ✅ |
 | Read-back (`read:`, `lists`, `folders`, `info`, search/status) | ✅ |
 | Grocery shortcuts (`groc` / `got` / `pin`) + tracker notes (`n` / `day:`) | ✅ |
-| `needed:`, `get:`, activity spans, discrete events + `log:` / `log-` | ✅ |
-| Whole-message habit keywords + Settings discrete triggers | ✅ |
+| `needed:`, `get:`, activity spans, `log:` / `intake:` / `st:` / `so:` / `transit:` | ✅ |
+| Habit keywords behind `dh:` + Settings discrete triggers | ✅ |
 | Telegram dedupe (`update_id` / `message_id`) | ✅ |
 | Analytics **Text events** / **Text spans** | ✅ |
 | Always-on phone hub (`npm run phone:hub`) + webhook | ✅ |
@@ -73,6 +73,24 @@ running. A closed laptop cannot answer `groc` at the store. Two paths stay live:
 
 Telegram still keeps unclaimed updates about **24 hours**, so texts sent while
 nothing is polling land the next time a poller runs. Older than that are dropped.
+There is **no scheduled `gm` autotext**. Morning starts when you send `gm`, or
+when a process that is actually running receives it. A sleeping laptop cannot
+answer. Always-on means `npm run phone:hub` (long-poll, or
+`COGS_TELEGRAM_WEBHOOK`) on a host that stays awake.
+
+Inbox `createdAt`, tracking minutes, and other “when you sent this” fields use
+Telegram `message.date` (`receivedAt`), never the clock when the poller woke.
+A backlog is applied in send order. The same update is not applied twice
+(dedupe); the offset is written after the batch so a throw retries. Clocks
+such as `3:30` sit on that send date in the **process timezone** — there is no
+separate user timezone. The machine running the bot should be in your zone.
+
+Replies stay prompt while a consumer is up: the phone hub rehydrates the vault
+once per poll batch (not before every message) and flushes the debounced
+persist write before it snapshots, so a ritual answer is still pending for the
+next text. Electron and the renderer apply a batch in send order on one queue.
+A failed poll waits 1s, not 4s. The long-poll itself still returns as soon as
+Telegram has an update.
 
 **Use one Telegram consumer:** `phone:hub` **or** Electron **or** `npm run ingest`.
 
@@ -146,9 +164,11 @@ Before any write, the executor applies this order (see `lib/ingest/executor.ts`)
 1. **Dedupe** — same Telegram `update_id` or `(channel, chat_id, message_id)` is ignored once (`lib/ingest/dedupe.ts`).
 2. **Help / start / info** — `help`, `/help`, `commands`; `/start` (pairing when followed by a code); `info`, `manual`, `cmds`, `instructions` (rewritten cheat-sheets in `lib/ingest/help.ts`).
 3. **Explicit verbs** — grocery (`groc`, …), `needed:` / `get:`, `plan for rn`, `currently` / `stopped` / `switched to`, `log:` / `log-`, and the rest of the verb table below (habit `h`, `track:`, `read:`, …).
-4. **Whole-message habit keywords** — only when the *entire* message matches an editable trigger on a habit (`lib/ingest/text-triggers.ts`, `apply-habit-trigger.ts`). Presets: `hemisync`, `read N pages`, `exercise N min`, `chess score N`. Edit on the habit form (**Text keywords (phone)**).
-5. **Whole-message discrete events** — Settings → **Message ingest** → discrete triggers (defaults: `smoked weed`, `drank water`, `ate {item}`, `took {item}`) via `apply-discrete-event.ts`. Separate from `log:` / `log-`.
+4. **`dh:` habit keywords** — the text after `dh:` must match an editable trigger on a habit (`lib/ingest/text-triggers.ts`, `apply-habit-trigger.ts`). Presets: `hemisync`, `read N pages`, `exercise N min`, `chess score N`. A few filler words may sit before the number (`dh: studied for 20 min`). Quantity **adds** to the day’s total; a score replaces it. The habit form’s **Try a phrase** box previews the same parser and writes nothing. Edit on the habit form (**Text keywords (phone)**). A bare keyword, with no `dh:`, captures to Inbox.
+5. **Whole-message discrete events** — Settings → **Message ingest** → discrete triggers (defaults: `smoked weed`, `drank water`, `ate {item}`, `took {item}`) via `apply-discrete-event.ts`. Separate from `log:` / `log-`. These stay unprefixed.
 6. **Else** — remaining parsed verbs, multi-line list dumps, or Inbox capture.
+
+An open walkthrough is earlier than this ladder: the reply belongs to that question. `gm` during night, start, or end still opens the morning ritual. `cancel` still quits those walks. Morning ignores `gm` as a command and keeps the current question until `STOP`.
 
 Text-pipeline tracker rows (`generatedBy.kind === "text"`) feed Analytics → **Text events** (instants + switch markers) and **Text spans** (`currently` / `stopped` / `switched to` intervals).
 
@@ -163,35 +183,34 @@ Text-pipeline tracker rows (`generatedBy.kind === "text"`) feed Analytics → **
 | Forward a **PDF** (caption `pdf: title` optional) | Docs item; extract text with pdfjs / desktop `extractPdfText` |
 | `inv` / `inv oats` / `pantry` | Dump or bump the pantry list |
 | `pin` / `live` / `snapshot` | Refresh the pinned grocery card (+ a one-line now) |
-| `n stuck in aisle 4` / `note:` / `jot:` / `memo:` | Append onto the activity block covering *now* |
-| `n loc: crowded` / `n mood: low` / `n activity: deep work` | Note on that Tracking scope |
+| `n stuck in aisle 4` / `note:` / `jot:` / `memo:` | Discrete event at send time. Also appended onto the activity block covering that minute. A second line is the note. |
+| `n loc: crowded` / `n mood: low` / `n activity: deep work` | Same tick on that Tracking scope, and on the block covering that minute |
 | `day: tired` / `daynote:` / `n day:` | Tracking day jot (append log). Bare `day` → `today` |
 | `pick up milk` / `qa:` / `add:` / `inbox:` / `idea:` / `quick add:` | Capture. Same smart-parse as Quick Add. Inbox on. `-mb` or `-monkey` on the line dumps it in **Monkey brain** (a separate Inbox pile for compulsive thoughts — not the Inbox you mean to revisit). |
-| `Chores: milk` | One line: capture with a list path (still Inbox unless you use Bulk / `groc`) |
+| `Chores: milk` | One line: capture with a list path (still Inbox unless you use Bulk / `groc`). A list created by this stays out of the Scheduler until List Settings → **Send to Scheduler** |
 | `Grocery list:` then `eggs` / `rice` / `butter`, or `Grocery list: grocery list:` | Files onto the grocery **store** list (`groc` uses the same one). Does not create a second folder. Identical open lines are skipped |
-| `before elijah gets home:` then the lines | That list, found or created, one item per line |
+| `before elijah gets home:` then the lines | That list, found or created, one item per line. A new list is not sent to the Scheduler |
 | `before 9/12:` / `before Friday:` / `before Sept 12:` | Following lines are **due that day** (`deadline` and `mustBeDoneBefore`). A past `M/D` rolls forward a year. Words after `before` stay a list name |
-| `bulk:` then one item per line | Bulk Add. Header lines `list:` / `folder: list:` work. Files onto lists (Inbox off). `Home: Groceries:` keeps that folder. A grocery name with no other folder uses the store list |
+| `bulk:` then one item per line | Bulk Add. Header lines `list:` / `folder: list:` work. Files onto lists (Inbox off). `Home: Groceries:` keeps that folder. A grocery name with no other folder uses the store list. A list created here is not sent to the Scheduler, even when the folder is |
 | `iphone-notes:` / `inotes:` / `phone notes:` | Park an On My iPhone note dumped by the signed [iOS Shortcut](shortcuts/dump-iphone-notes-to-brain2.md) (`Dump iPhone Notes to Brain2.shortcut`). One note per message; long bodies `iphone-notes 2/3:`. Lands in Lists → **iPhone Notes Store** → **Parked** (header **Phone Notes**). Not the tracker `n` / `note:` jot. Mac **From Notes** is a different folder. |
 | `habit: exercise 30` / `h stretch` / `did: stretch` | Habit for **today** (optional `yesterday`). Fuzzy-matches the habit name. Bare `h` → help. |
-| `hemisync` / `read 12 pages` / `exercise 30 min` / `chess score 1200` | Whole-message **habit keywords** when configured on that habit (see precedence above). Not substring matches inside longer prose. |
+| `dh: hemisync` / `dh: read 12 pages` / `dh: exercise 30 min` / `dh: chess score 1200` | Habit keywords. The colon is required. The same words without `dh:` capture to Inbox. |
 | `smoked weed` / `drank water` / `ate lunch` / `took ibuprofen` | Whole-message **discrete events** (editable in Settings). `generatedBy.kind === "text"`. |
-| `log: drink water` / `log-drink water` | Explicit instant log on Activity (same text-pipeline label; not a habit write). |
+| `log: left home` / `log: left home at 3:30` / `log: shower 7:30 - 7:45` / `log: shower 10m` / `log: START walk` / `log: END walk 5:00` | Tracking note on Activity. No time → a point at send time. `at 3:30` is a point that day. A clock range is a block. `10m` / `10 min` just finished (end = send time). `START` stays open until `END` of the same name, which becomes the range. A line under the event is the note; the clock stays on the first line. A later block over that minute leaves the point. Pens: **Text log**. |
+| `intake: 1 dab dab pen` / `intake: coffee at 8:15` | Food, drink, medicine, or any intake. Always a point. No time → send time. A trailing clock uses that time on the send date. Duration words stay in the title. A line under the event is the note. Pen: **Intake**. A later block leaves the point. |
+| `st:` / `switch task:` · `so:` / `switch objective:` · `transit:` | From/to flags. `from: … to: …` (colon required). Unlabeled text is `to`. Optional time, else send time. Pens: **Switch**, **Objective**, **Transit**. Example: `st: from: talking to elijah to: cleaning up the living room a bit`. |
 | `currently deep work` / `stopped` / `switched to email` | Open, close, or switch an **activity span** through end of day; Analytics → **Text spans**. |
 | `at: gym` / `w gym` / `@ home` / `location:` / `here:` | Location **now** through tonight. Bare `w` / `@` → `where`. |
-| `gps: Home` / a Telegram location or **Live Location** | Location pen from a place name and/or lat,lon. The same place stays quiet. AirDrop [`Location to Brain2.shortcut`](shortcuts/Location%20to%20Brain2.shortcut) for Arrive / Leave (see [iPhone location](shortcuts/iphone-location-to-brain2.md)). |
+| `gps: Home` / `gps-log:` / a Telegram **Live Location** | Location up to the sample minute, not the rest of the day. Same coordinates keep the current pen. A venue pin (a restaurant card) is not where you are. `at:` stamps the sample. Points stay on Location and off the header ingest log unless you **Show GPS**. AirDrop [`Location to Brain2.shortcut`](shortcuts/Location%20to%20Brain2.shortcut) — it keeps a log on the phone and sends the backlog when Telegram can (see [iPhone location](shortcuts/iphone-location-to-brain2.md)). |
 | `plan for rn:` then lines | Append today's Plan log (Day tab) with stamp suffix **from text**. |
 | `read plan for today` / `read plans for today` | Latest entry, or every entry in bulk plaintext. |
 | `do: call dentist` / `next action:` | Next Actions → **General**. Not scheduled. |
 | `to do today: call dentist` / `todo today:` / `do today:` | Home → To Do for today. |
 | `read to do today` | That open list, numbered. |
-| `gm` / `good morning` | Morning review with BIM: all nighter skips sleep Qs; 5 affirmations one-at-a-time (voice advances); to-do add + 3–5 priorities; 1–3 habit priorities; go through each to-do (six slots: tier duration points importance resistance excitement; dash = keep; skip = leave item); plaintext day plan stamped **from text**; circumstance branches; best day; 10 gratitude. `skip` / blank moves on. |
-| `info` / `manual` / `cmds` / `instructions` | BIM basics + how to ask for `{prefix} info`, `{prefix} commands`, `all commands`. |
-| `{prefix} info` | Deep dive for one family (groc, log, review, monitor, to do, …). |
-| `{prefix} commands` | Full keyword glossary for that family. |
-| `all commands` | Every command and keyword across BIM. |
-| `ping` / `pong` | Liveness. Reply: **BIM is listening.** |
-| `reviews` / `review` / `review today` / `review day` / `review week` | See what's due, or walk the period review. `cancel` quits. |
+| `gm` / `good morning` | Morning ritual (sun). Opens with last night's wake-up reminder, what matters most, and focus goals when those were saved. Then all nighter or sleep; 5 affirmations one-at-a-time (voice advances); to-do add (`rm 1 3`); required (`1,8` or `1, 8` — a line of only numbers; any other line is a new to-do); 3–5 priorities; 1–3 habit priorities; each to-do as six slots (tier, duration, points, importance, resistance, excitement — the last three are 0–10 and may be `6.5`; a bad line stays on that item; `SKIP` one; `SKIP ALL` the rest); plaintext day plan stamped **from text**; circumstance branches; best day; 10 gratitude. `skip` / blank moves on. |
+| `gn` / `good night` / `night` | Night ritual (moon) for today — unfinished (done / push / why blocked, Other plus a note); assumed times; how the day was spent; summary; gratitude; plan; went well / improve / learned; wake-up reminder; what matters most; goals to focus; tomorrow's plan. Week and longer reviews add the period stats and the longer reflection before the summary. |
+| `rituals` / `reviews` | Rituals board: every available/undone slot with status, Telegram command, and in-app path (Header → Rituals). |
+| `review` / `ritual` / `review today` / `review week` / `ritual start week` / `ritual end week` | Open a ritual (first available, named end, or start). `cancel` quits night/start/end; morning uses `STOP`. |
 | `tt work` / `track: exercise 30m` / `doing: work 9-11` | Activity block (duration ending now, or an explicit clock window). |
 | `screen: Instagram 30m` / `screentime:` / `phone-screen:` / `iphone:` / `ios:` | **iPhone Screen Time** only (estimated). Same duration / clock window as `track:`, or from now until the next ping. Auto-creates an app pen. Not Mac Screen Time. Apple cannot export Screen Time — typed phrase or AirDrop [`Screen Time to Brain2.shortcut`](shortcuts/Screen%20Time%20to%20Brain2.shortcut) (Ask-for-app ping; attach a duplicate to App Is Opened for automation). |
 | `call: Jane 12m` / `called:` / `phone-call:` | **iPhone Calls** interval (who + duration or `3:02-3:17`). Estimated. Apple cannot dump Phone recents. AirDrop [`iPhone Call to Brain2.shortcut`](shortcuts/iPhone%20Call%20to%20Brain2.shortcut). |
@@ -223,10 +242,12 @@ messages (4096 cap). The grocery **pin** is the last dump card.
 ### Habits
 
 **Two phone paths:** `habit:` / `h` / `did:` fuzzy-match a habit name and write
-today's completion (optional `yesterday`). **Whole-message keywords** (`read 10
-pages`, `hemisync`, …) match only when the entire Telegram body fits the trigger
+today's completion (optional `yesterday`). **`dh:` keywords** (`dh: read 10
+pages`, `dh: hemisync`, …) match only when the text after `dh:` fits the trigger
 on that habit — edit triggers on the habit form or accept name-based presets when
-you save. Keywords run *after* explicit verbs and *before* Inbox capture.
+you save. Quantity keywords add (`dh: studied for 20 min` on top of time already
+logged). A score replaces. `dh:` runs with explicit verbs. The same words without
+`dh:` capture to Inbox.
 
 Remainder after the name (for `habit:` writes):
 
@@ -278,9 +299,11 @@ to send `text: Name body`. Recipe:
 
 ### Tracker notes
 
-`n …` appends onto the activity interval that covers now. If nothing is painted,
-the line is saved as a Tracking **day note** instead. `day:` always uses the day
-jot (`lib/day-notes-persist.ts`).
+`n` / `note:` / `jot:` / `memo:` write a discrete event at send time. The first
+line is the title; lines under it are the note. If a block covers that minute,
+the same text is also appended there. `day:` / `n day:` stay the Tracking day
+jot (`lib/day-notes-persist.ts`) and do not become a tick. A later paint or
+erase of those minutes leaves the point.
 
 ## Security
 
@@ -302,7 +325,7 @@ jot (`lib/day-notes-persist.ts`).
   (`revokedChatIds` tombstone). A message is allowed when its chat id **or**
   user id is on the list.
 - Groups are ignored unless Settings enables them.
-- The ingest log (local) keeps source chat id + raw text for audit / undo.
+- The ingest log (local) keeps source chat id + raw text for audit / undo. GPS tracking points are not stored in that 200-line log (a live stream was burying everything else). Location still collects them. **Show GPS** on the header log reveals points this window collected. A failed `gps:` and an unpaired refusal stay on the log.
 - Webhook mode checks `COGS_TELEGRAM_WEBHOOK_SECRET` when set.
 
 ## Telegram setup
@@ -337,7 +360,7 @@ required). **Do not run two pollers.**
 |-----------------|----------------------|
 | Desktop app | Applied within a few seconds; pin refreshes. |
 | `npm run phone:hub` on a machine that stays on | Live replies + pin + vault write. |
-| Nothing (laptop asleep) | Open the **pinned** grocery card for the last dump. New texts wait up to ~24h for the next poller. |
+| Nothing (laptop asleep) | Open the **pinned** grocery card for the last dump. New texts, including `gm` and a walkthrough already in progress, wait up to ~24h for the next poller. There is no outbound morning cron. |
 | `npm run ingest` only | Queued until a renderer drains `/api/ingest/pending`. Prefer the phone hub. |
 
 ## Photos, PDFs, receipts
@@ -375,22 +398,23 @@ pass. Settings → **Simulate a scan** uses the same path without Telegram.
 | `lib/ingest/dedupe.ts` | Telegram `update_id` / `message_id` dedupe at the executor gate |
 | `lib/ingest/text-triggers.ts` | Whole-message habit + discrete trigger patterns (Settings + habit form) |
 | `lib/ingest/apply-needed.ts` | `needed:` / `get:` → list **needed**, notes **sent from text** |
-| `lib/ingest/apply-discrete-event.ts` | `log:` / `log-` + discrete trigger instants (`generatedBy.kind === "text"`) |
+| `lib/ingest/apply-discrete-event.ts` | `log:` / `intake:` / `st:` / `so:` / `transit:` + discrete trigger instants (`generatedBy.kind === "text"`). A line under the event is the note. Log ranges are blocks. Points stay when a later block covers that minute. |
 | `lib/ingest/apply-activity-span.ts` | `currently` / `stopped` / `switched to` activity intervals |
-| `lib/ingest/apply-habit-trigger.ts` | Whole-message habit keyword completions |
+| `lib/ingest/apply-habit-trigger.ts` | `dh:` habit keyword completions. Bare keywords do not log. |
 | `lib/ingest/apply-phone-screen.ts` | `screen:` / `ios:` → **iPhone Screen Time** only (estimated; no Mac AW stamp). AirDrop `Screen Time to Brain2.shortcut`. |
 | `lib/ingest/apply-phone-life.ts` | `call:` → **iPhone Calls** interval; `text:` → **iPhone Texts** instant. AirDrop `iPhone Call to Brain2.shortcut` / `iPhone Text to Brain2.shortcut`. |
 | `lib/ingest/apply-iphone-notes.ts` | Parse Shortcut wire format, join `2/3` continuations, park on **iPhone Notes Store**; `parkLooseText` parks a read that named nothing |
 | `lib/ingest/apply-plan-text.ts` | `plan for rn:` appends today's plan log. `read plan for today` / `read plans for today` |
 | `lib/ingest/apply-todos.ts` | `do:` → Next Actions General. `to do today:` → Home To Do. `read to do today` |
-| `lib/ingest/apply-ritual.ts` | `gm` and `review` / `reviews` over text. skip or a blank message leaves a step empty |
-| `lib/ingest/apply-gps.ts` | `gps:` and Telegram location / Live Location. Same place stays quiet. AirDrop `Location to Brain2.shortcut`. |
+| `lib/ingest/apply-ritual.ts` | `gm` and `review` / `reviews` over text. Morning moves on skip or next; a blank message waits. Live Location is paused until the ritual ends, then the same share resumes |
+| `lib/ingest/apply-gps.ts` | `gps:` / `gps-log:` and Telegram Live Location. Paints up to the sample, not through midnight. Same coordinates keep the pen. A venue pin is ignored. AirDrop `Location to Brain2.shortcut` (on-phone log). Points stay off the persisted ingest log. |
+| `lib/ingest/gps-log.ts` | Memory-only ring for those GPS points. Header **Show GPS** reveals what this window collected. |
 | `lib/ingest/apply-media.ts` / `apply-receipt.ts` / `apply-scan-doc.ts` / `ocr.ts` / `scan-page.ts` / `jpeg-pdf.ts` | Local OCR, deskew, JPEG→PDF, Docs parking, receipt checkout |
 | `hooks/useMessageIngest.ts` | Renderer drain (Electron IPC or `/api/ingest`); album buffer; yields to phone hub; vault push |
 | `lib/ingest/pairing.ts` | Codes + `unpairedSenders` (one-click pairing of a logged refusal) |
 | `components/Settings/MessageIngestPanel.tsx` | Token, pairing (code **or** Texted but not paired), hub URL, shortcuts, iPhone Notes / Screen Time / Call / Text / Location Shortcut AirDrop steps, cheat-sheet, simulate message + scan |
 | `components/iphone-notes-store.tsx` | Header **Phone Notes** queue over the Parked list |
-| `components/ingest-log-dialog.tsx` | Header **Ingest** log |
+| `components/ingest-log-dialog.tsx` | Header **Ingest** log. GPS tracking points hidden unless **Show GPS**. |
 | `docs/shortcuts/Dump iPhone Notes to Brain2.shortcut` | Signed Shortcut (`--mode anyone`) — AirDrop onto the iPhone |
 | `docs/shortcuts/Screen Time to Brain2.shortcut` | Signed Ask-for-app `screen:` ping (`--mode anyone`) — AirDrop; attach a duplicate to App Is Opened |
 | `docs/shortcuts/iPhone Call to Brain2.shortcut` | Signed Ask who + duration `call:` ping (`--mode anyone`) — AirDrop |

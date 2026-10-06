@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Brain2 screenshot reel</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #100e0c;
+      --panel: #171512;
+      --ink: #f3ecdf;
+      --muted: #a89b8a;
+      --line: #3a342c;
+      --gold: #d7c4a3;
+      --pick: #241f1a;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: var(--bg);
+      color: var(--ink);
+    }
+
+    body {
+      font-family: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif;
+      display: grid;
+      grid-template-columns: 15.5rem minmax(0, 1fr) 22.5rem;
+      grid-template-rows: auto minmax(0, 1fr);
+      height: 100vh;
+      height: 100dvh;
+    }
+
+    header {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: baseline;
+      gap: 1.1rem;
+      padding: 0.85rem 1.25rem;
+      border-bottom: 1px solid var(--line);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.2rem;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+    }
+
+    #view-line {
+      margin: 0;
+      color: var(--muted);
+      min-width: 0;
+    }
+
+    nav {
+      overflow: auto;
+      background: var(--panel);
+      border-right: 1px solid var(--line);
+      padding-bottom: 1.5rem;
+    }
+
+    nav h2 {
+      margin: 1.05rem 0.9rem 0.2rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--gold);
+    }
+
+    button.shot {
+      display: block;
+      width: 100%;
+      text-align: left;
+      font: inherit;
+      font-size: 0.95rem;
+      line-height: 1.35;
+      color: var(--muted);
+      background: transparent;
+      border: 0;
+      border-left: 2px solid transparent;
+      padding: 0.38rem 0.85rem 0.38rem 0.75rem;
+      cursor: pointer;
+    }
+
+    button.shot small {
+      display: block;
+      margin-top: 0.1rem;
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0;
+    }
+
+    button.shot:hover { color: var(--ink); }
+
+    button.shot[aria-current="true"] {
+      color: var(--ink);
+      background: var(--pick);
+      border-left-color: var(--gold);
+    }
+
+    main {
+      min-width: 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stage {
+      flex: 1 1 auto;
+      min-height: 42vh;
+      display: grid;
+      place-items: center;
+      padding: 1.15rem 1.4rem 0.4rem;
+    }
+
+    .stage img {
+      max-width: 100%;
+      max-height: calc(100vh - 15rem);
+      max-height: calc(100dvh - 15rem);
+      object-fit: contain;
+      background: transparent;
+    }
+
+    .stage img:not([src]) { visibility: hidden; }
+
+    .transport {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.55rem 0.75rem;
+      padding: 0.35rem 1.4rem 0.2rem;
+    }
+
+    .transport button {
+      font: inherit;
+      color: var(--ink);
+      background: transparent;
+      border: 1px solid var(--line);
+      border-radius: 2px;
+      padding: 0.18rem 0.72rem;
+      cursor: pointer;
+    }
+
+    .transport button:hover { border-color: var(--gold); }
+
+    .transport button:disabled {
+      opacity: 0.35;
+      cursor: default;
+    }
+
+    #count {
+      font-variant-numeric: tabular-nums;
+      min-width: 4.5rem;
+    }
+
+    #when { color: var(--muted); }
+
+    .kind {
+      color: var(--gold);
+      font-size: 0.82rem;
+    }
+
+    .hint {
+      margin-left: auto;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    #caption, #caption-note, #empty {
+      margin: 0.6rem 1.4rem 1.2rem;
+      color: var(--muted);
+      white-space: pre-wrap;
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 0.75rem;
+      line-height: 1.45;
+    }
+
+    #caption {
+      overflow: auto;
+      max-height: 16vh;
+    }
+
+    #empty {
+      font-family: "Iowan Old Style", Palatino, Georgia, serif;
+      font-size: 1rem;
+      color: var(--ink);
+    }
+
+    aside.notes {
+      overflow: auto;
+      background: var(--panel);
+      border-left: 1px solid var(--line);
+      padding: 0.85rem 1rem 1.5rem;
+    }
+
+    aside.notes h2 {
+      margin: 0.2rem 0 0.6rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    aside.notes label {
+      display: block;
+      margin: 0.75rem 0 0.25rem;
+      color: var(--gold);
+      font-size: 0.78rem;
+    }
+
+    aside.notes input,
+    aside.notes textarea {
+      width: 100%;
+      font: inherit;
+      font-size: 0.92rem;
+      color: var(--ink);
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: 2px;
+      padding: 0.35rem 0.45rem;
+    }
+
+    aside.notes textarea { min-height: 6.5rem; resize: vertical; }
+    #feature-style { min-height: 4.5rem; }
+
+    .note-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.45rem;
+      margin-top: 0.75rem;
+    }
+
+    .note-actions button {
+      font: inherit;
+      color: var(--ink);
+      background: transparent;
+      border: 1px solid var(--line);
+      border-radius: 2px;
+      padding: 0.22rem 0.6rem;
+      cursor: pointer;
+    }
+
+    .note-actions button:hover { border-color: var(--gold); }
+
+    #save-state {
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    #save-state.bad { color: #c9a59a; }
+
+    #doc-preview {
+      margin-top: 0.9rem;
+      color: var(--ink);
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+
+    #doc-preview:empty { display: none; }
+
+    #doc-preview h1,
+    #doc-preview h2,
+    #doc-preview h3,
+    #doc-preview h4 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 0.85rem 0 0.3rem;
+    }
+
+    #doc-preview p { margin: 0.35rem 0; }
+    #doc-preview ul { margin: 0.35rem 0; padding-left: 1.1rem; }
+    #doc-preview img { max-width: 100%; height: auto; }
+    #doc-preview pre {
+      overflow: auto;
+      background: var(--bg);
+      padding: 0.45rem 0.55rem;
+    }
+
+    #doc-preview code {
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 0.84em;
+    }
+
+    @media (max-width: 1100px) {
+      body {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto auto;
+        height: auto;
+        min-height: 100vh;
+      }
+
+      nav {
+        max-height: 28vh;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      aside.notes {
+        border-left: 0;
+        border-top: 1px solid var(--line);
+      }
+
+      .hint { margin-left: 0; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Brain2 screenshot reel</h1>
+    <p id="view-line"></p>
+  </header>
+  <nav id="picker" aria-label="Screens"></nav>
+  <main>
+    <div class="stage">
+      <img id="frame" alt="">
+    </div>
+    <div class="transport">
+      <button type="button" id="prev" aria-label="Older frame">&lt;</button>
+      <button type="button" id="next" aria-label="Newer frame">&gt;</button>
+      <span id="count"></span>
+      <span id="when"></span>
+      <span class="kind" id="kind"></span>
+      <button type="button" id="oldest">Oldest</button>
+      <button type="button" id="newest">Newest</button>
+      <span class="hint">← → · Home End</span>
+    </div>
+    <pre id="caption"></pre>
+    <p id="caption-note" hidden></p>
+    <p id="empty" hidden></p>
+  </main>
+  <aside class="notes" aria-label="Feature notes">
+    <h2>Feature</h2>
+    <label for="feature-name">Feature name</label>
+    <input id="feature-name" type="text" autocomplete="off">
+    <label for="feature-description">Feature description</label>
+    <textarea id="feature-description"></textarea>
+    <label for="feature-style">Style notes</label>
+    <textarea id="feature-style"></textarea>
+    <label for="feature-doc">Documentation</label>
+    <input id="feature-doc" type="text" autocomplete="off" spellcheck="false" placeholder="repo-relative .md">
+    <div class="note-actions">
+      <button type="button" id="preview-doc">Preview documentation</button>
+      <button type="button" id="save-notes">Save</button>
+      <span id="save-state"></span>
+    </div>
+    <div id="doc-preview"></div>
+  </aside>
+  <script src="./reel.js"></script>
+  <script>
+    const reel = window.SCREENSHOT_REEL
+    const picker = document.getElementById("picker")
+    const frameEl = document.getElementById("frame")
+    const viewLine = document.getElementById("view-line")
+    const countEl = document.getElementById("count")
+    const whenEl = document.getElementById("when")
+    const kindEl = document.getElementById("kind")
+    const captionEl = document.getElementById("caption")
+    const captionNote = document.getElementById("caption-note")
+    const emptyEl = document.getElementById("empty")
+    const prevBtn = document.getElementById("prev")
+    const nextBtn = document.getElementById("next")
+    const oldestBtn = document.getElementById("oldest")
+    const newestBtn = document.getElementById("newest")
+
+    const shots = new Map()
+    let current = null
+    let index = 0
+    let captionToken = 0
+
+    function srcUrl(src) {
+      return src.split("/").map(encodeURIComponent).join("/")
+    }
+
+    function sidecarName(file) {
+      return file.replace(/\.png$/i, ".txt")
+    }
+
+    function select(file, frameIndex) {
+      const shot = shots.get(file)
+      if (!shot || !shot.frames.length) return
+      const previous = current && current.file
+      current = shot
+      const last = shot.frames.length - 1
+      index = Math.max(0, Math.min(last, frameIndex == null ? last : frameIndex))
+      const nextHash = "#" + encodeURIComponent(file)
+      if (location.hash !== nextHash) {
+        try {
+          history.replaceState(null, "", nextHash)
+        } catch {
+          location.hash = encodeURIComponent(file)
+        }
+      }
+      for (const button of picker.querySelectorAll("button.shot")) {
+        if (button.dataset.file === file) button.setAttribute("aria-current", "true")
+        else button.removeAttribute("aria-current")
+      }
+      const selected = picker.querySelector('button.shot[aria-current="true"]')
+      if (selected) selected.scrollIntoView({ block: "nearest" })
+      show()
+      if (previous !== shot.file) {
+        loadCaption(shot.file)
+        showFeature(shot.file)
+      }
+    }
+
+    let frameToken = 0
+
+    function show() {
+      const frames = current.frames
+      const frame = frames[index]
+      const token = ++frameToken
+      frameEl.dataset.token = String(token)
+      if (captionNote.textContent === "This frame file is missing.") {
+        captionNote.hidden = true
+        captionNote.textContent = ""
+      }
+      frameEl.onload = () => {
+        if (frameEl.dataset.token !== String(token)) return
+        if (captionNote.textContent === "This frame file is missing.") captionNote.hidden = true
+      }
+      frameEl.onerror = () => {
+        if (frameEl.dataset.token !== String(token)) return
+        captionNote.hidden = false
+        captionNote.textContent = "This frame file is missing."
+      }
+      frameEl.src = srcUrl(frame.src)
+      frameEl.alt = current.view || current.file
+      viewLine.textContent = current.view || current.file
+      countEl.textContent = (index + 1) + " / " + frames.length
+      whenEl.textContent = frame.label || ""
+      kindEl.textContent = frame.kind === "current" ? "current" : ""
+      const atStart = index === 0
+      const atEnd = index === frames.length - 1
+      prevBtn.disabled = atStart
+      oldestBtn.disabled = atStart
+      nextBtn.disabled = atEnd
+      newestBtn.disabled = atEnd
+    }
+
+    function step(delta) {
+      if (!current) return
+      select(current.file, index + delta)
+    }
+
+    function loadCaption(file) {
+      const token = ++captionToken
+      const name = sidecarName(file)
+      captionEl.textContent = ""
+      captionNote.hidden = true
+      fetch("./" + encodeURIComponent(name))
+        .then((res) => {
+          if (!res.ok) throw new Error(String(res.status))
+          return res.text()
+        })
+        .then((text) => {
+          if (token !== captionToken) return
+          captionEl.textContent = text
+        })
+        .catch(() => {
+          if (token !== captionToken) return
+          captionEl.textContent = ""
+          captionNote.hidden = false
+          captionNote.textContent = "Caption is in " + name + "."
+        })
+    }
+
+    function buildPicker() {
+      const groups = Array.isArray(reel.groups) && reel.groups.length
+        ? reel.groups
+        : [{ area: "Screens", files: reel.shots.map((shot) => shot.file) }]
+
+      for (const shot of reel.shots) shots.set(shot.file, shot)
+
+      for (const group of groups) {
+        const files = (group.files || []).filter((file) => shots.has(file))
+        if (!files.length) continue
+        const heading = document.createElement("h2")
+        heading.textContent = group.area || "Screens"
+        picker.appendChild(heading)
+        for (const file of files) {
+          const shot = shots.get(file)
+          const button = document.createElement("button")
+          button.type = "button"
+          button.className = "shot"
+          button.dataset.file = file
+          button.appendChild(document.createTextNode(shot.view || file))
+          const small = document.createElement("small")
+          small.textContent = file
+          button.appendChild(small)
+          button.addEventListener("click", () => select(file))
+          picker.appendChild(button)
+        }
+      }
+    }
+
+    const featureName = document.getElementById("feature-name")
+    const featureDescription = document.getElementById("feature-description")
+    const featureStyle = document.getElementById("feature-style")
+    const featureDoc = document.getElementById("feature-doc")
+    const previewEl = document.getElementById("doc-preview")
+    const saveState = document.getElementById("save-state")
+    const noteFields = [featureName, featureDescription, featureStyle, featureDoc]
+    let notes = {}
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+    }
+
+    function imageTag(alt, src, docPath) {
+      const safeAlt = escapeHtml(alt)
+      if (/^https?:\/\//i.test(src)) {
+        return '<img alt="' + safeAlt + '" src="' + escapeHtml(src) + '">'
+      }
+      const query = new URLSearchParams({ doc: docPath || "", src: src })
+      return '<img alt="' + safeAlt + '" src="/api/asset?' + query.toString() + '">'
+    }
+
+    function renderInline(raw, docPath) {
+      const re = /!\[([^\]]*)\]\(([^)\s]+)\)|\[([^\]]+)\]\(([^)\s]+)\)|`([^`]+)`|\*\*([^*]+)\*\*|\*([^*]+)\*/g
+      let last = 0
+      let match
+      let html = ""
+      while ((match = re.exec(raw))) {
+        html += escapeHtml(raw.slice(last, match.index))
+        if (match[0].charAt(0) === "!") html += imageTag(match[1], match[2], docPath)
+        else if (match[3] != null) html += escapeHtml(match[3] + " (" + match[4] + ")")
+        else if (match[5] != null) html += "<code>" + escapeHtml(match[5]) + "</code>"
+        else if (match[6] != null) html += "<strong>" + escapeHtml(match[6]) + "</strong>"
+        else if (match[7] != null) html += "<em>" + escapeHtml(match[7]) + "</em>"
+        last = match.index + match[0].length
+      }
+      return html + escapeHtml(raw.slice(last))
+    }
+
+    function renderMarkdown(md, docPath) {
+      const fences = []
+      const text = String(md).replace(/```[^\n]*\n([\s\S]*?)```/g, function (_, code) {
+        fences.push("<pre><code>" + escapeHtml(code.replace(/\n$/, "")) + "</code></pre>")
+        return "\n\n@@F" + (fences.length - 1) + "@@\n\n"
+      })
+      return text.split(/\n{2,}/).map(function (block) {
+        const fence = /^@@F(\d+)@@$/.exec(block.trim())
+        if (fence) return fences[Number(fence[1])] || ""
+        const lines = block.split("\n")
+        if (lines.every(function (line) { return /^#{1,6}\s+/.test(line) })) {
+          return lines.map(function (line) {
+            const heading = /^(#{1,6})\s+(.*)$/.exec(line)
+            const level = Math.min(heading[1].length, 4)
+            return "<h" + level + ">" + renderInline(heading[2], docPath) + "</h" + level + ">"
+          }).join("")
+        }
+        if (lines.filter(function (line) { return line.trim() }).every(function (line) { return /^\s*[-*]\s+/.test(line) })) {
+          const items = lines.filter(function (line) { return line.trim() }).map(function (line) {
+            return "<li>" + renderInline(line.replace(/^\s*[-*]\s+/, ""), docPath) + "</li>"
+          })
+          return "<ul>" + items.join("") + "</ul>"
+        }
+        return "<p>" + lines.map(function (line) { return renderInline(line, docPath) }).join("<br>") + "</p>"
+      }).join("")
+    }
+
+    function recordFromFields() {
+      return {
+        name: featureName.value,
+        description: featureDescription.value,
+        styleNotes: featureStyle.value,
+        docPath: featureDoc.value.trim(),
+      }
+    }
+
+    function storedRecord(file) {
+      const rec = notes[file]
+      if (!rec || typeof rec !== "object") {
+        return { name: "", description: "", styleNotes: "", docPath: "" }
+      }
+      return {
+        name: rec.name || "",
+        description: rec.description || "",
+        styleNotes: rec.styleNotes || "",
+        docPath: rec.docPath || "",
+      }
+    }
+
+    function setStatus(text, bad) {
+      saveState.textContent = text || ""
+      saveState.classList.toggle("bad", !!bad)
+    }
+
+    function showFeature(file) {
+      const rec = storedRecord(file)
+      featureName.value = rec.name
+      featureDescription.value = rec.description
+      featureStyle.value = rec.styleNotes
+      featureDoc.value = rec.docPath
+      previewEl.textContent = ""
+      setStatus("")
+    }
+
+    let saveChain = Promise.resolve()
+
+    function saveNotes() {
+      if (!current) return saveChain
+      const file = current.file
+      const record = recordFromFields()
+      if (JSON.stringify(record) === JSON.stringify(storedRecord(file))) return saveChain
+      saveChain = saveChain.then(function () { return postRecord(file, record) })
+      return saveChain
+    }
+
+    function postRecord(file, record) {
+      if (current && current.file === file) setStatus("Saving…")
+      return fetch("/api/notes", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ file: file, record: record }),
+      }).then(function (res) {
+        if (!res.ok) return res.text().then(function (text) { throw new Error(text || "Could not save") })
+        notes[file] = record
+        if (current && current.file === file) setStatus("Saved")
+      }).catch(function (error) {
+        if (current && current.file === file) setStatus(error.message || "Could not save", true)
+      })
+    }
+
+    function previewDoc() {
+      const docPath = featureDoc.value.trim()
+      previewEl.textContent = ""
+      if (!docPath) {
+        previewEl.textContent = "No documentation path."
+        return
+      }
+      fetch("/api/doc?path=" + encodeURIComponent(docPath))
+        .then(function (res) {
+          if (res.status === 404) throw new Error("missing")
+          if (!res.ok) return res.text().then(function (text) { throw new Error(text || "Could not read that file.") })
+          return res.text()
+        })
+        .then(function (text) {
+          previewEl.innerHTML = renderMarkdown(text, docPath)
+        })
+        .catch(function (error) {
+          previewEl.textContent = error.message === "missing"
+            ? "No file at " + docPath + "."
+            : (error.message || "Could not read that file.")
+        })
+    }
+
+    function loadNotesFile() {
+      return fetch("/api/notes")
+        .then(function (res) { if (!res.ok) throw new Error("notes") ; return res.json() })
+        .catch(function () {
+          return fetch("./feature-notes.json").then(function (res) {
+            if (!res.ok) throw new Error("notes")
+            return res.json()
+          })
+        })
+        .catch(function () { return {} })
+    }
+
+    for (const field of noteFields) {
+      field.addEventListener("blur", function () { saveNotes() })
+    }
+    document.getElementById("save-notes").addEventListener("click", function () { saveNotes() })
+    document.getElementById("preview-doc").addEventListener("click", function () { previewDoc() })
+
+    prevBtn.addEventListener("click", () => step(-1))
+    nextBtn.addEventListener("click", () => step(1))
+    oldestBtn.addEventListener("click", () => current && select(current.file, 0))
+    newestBtn.addEventListener("click", () => current && select(current.file, current.frames.length - 1))
+
+    document.addEventListener("keydown", (event) => {
+      const tag = event.target && event.target.tagName
+      if (tag === "INPUT" || tag === "TEXTAREA") return
+      if (event.key === "ArrowLeft" || event.key === "<") {
+        event.preventDefault()
+        step(-1)
+      } else if (event.key === "ArrowRight" || event.key === ">") {
+        event.preventDefault()
+        step(1)
+      } else if (event.key === "Home") {
+        event.preventDefault()
+        if (current) select(current.file, 0)
+      } else if (event.key === "End") {
+        event.preventDefault()
+        if (current) select(current.file, current.frames.length - 1)
+      }
+    })
+
+    if (!reel || !Array.isArray(reel.shots) || !reel.shots.length) {
+      emptyEl.hidden = false
+      emptyEl.textContent = "No screenshots indexed. Run npm run screenshot-reel, then reload."
+      document.querySelector(".transport").hidden = true
+      frameEl.hidden = true
+    } else {
+      buildPicker()
+      const fromHash = decodeURIComponent((location.hash || "").replace(/^#/, ""))
+      const first = reel.shots[0].file
+      loadNotesFile().then(function (data) {
+        notes = data && typeof data === "object" ? data : {}
+        select(shots.has(fromHash) ? fromHash : first)
+      })
+    }
+  </script>
+</body>
+</html>

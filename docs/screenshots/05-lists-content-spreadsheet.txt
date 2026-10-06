@@ -12,4 +12,4 @@ GLOBAL CHROME (all screens)
   Shortcuts: Cmd/Ctrl+K search · capture hotkey → Quick Add.
 
 VIEW-SPECIFIC
-Same open-list chrome + DISPLAY mode deck. Spreadsheet: formula bar, Filter…, columns, sort, Add column, Add Item… + Add row. Cell edit / fill handle / Open to edit. Pop-out fullscreen supported.
+Same open-list chrome + DISPLAY mode deck (Spreadsheet active). Spreadsheet: formula bar, Filter…, lean default columns (list schema / displayedAttributes; Name-only when unset on empty-schema lists such as All Items — extras via Add column / view settings), sort, Add column, Add Item… + Add row. Cell edit / fill handle / Open to edit. Pop-out fullscreen supported.

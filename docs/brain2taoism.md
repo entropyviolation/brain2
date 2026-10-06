@@ -1,0 +1,333 @@
+Brain2 and the Source Text: Parallels, Features, and Changes
+Sep 23, 2026 · @allie
+Overview
+Eva Wong's Taoism: An Essential Guide (Shambhala, 2011) and brain2 are built on the same idea. One nameless thing sits underneath everything: the Tao in the book, the Item in brain2. It splits into many forms. Watchers keep a record of it. It moves through cycles. Feedback shows its health as light.
+The book has three parts. History (ch. 1–6) runs from Yü the shaman to the Complete Reality synthesis. Systems (ch. 7–11) covers the five ways: Power, Seeing, Devotion, Transformation, Right Action. Practices (ch. 12–14) covers meditation, body cultivation, purification and talismans. Every part has a counterpart somewhere in brain2's structure, processes or roadmap.
+This doc has three parts:
+• Parallels: 60 correspondences in seven groups, each tied to a chapter.
+• Five new features that bring more of the book into the app.
+• Five key changes to rooms that already exist.
+One house law carries over. docs/MAP_LOOP_MEANING.md says the product never names its source books. So every proposal below uses plain words on screen. The Taoist term stays in code comments and docs.
+Book quotes are kept short. Everything else is paraphrased, with chapter numbers so you can check the source.
+Parallels
+There are 60 parallels, grouped by what they touch in brain2: the data model, energy and tracking, feedback, record-keeping, time, companions and scripts, and method. Chapter numbers point to the book.
+1. One substrate that splits into many forms (the data model)
+#
+In the book
+In brain2
+1
+The Tao has no name and no form. All things depend on it, and it stays constant under all the change (ch. 2).
+The Item is the one noun. Lists, Scheduler, Habits, Docs, Modules and Reviews are rooms on one graph, not separate products.
+2
+Wu-chi (stillness, undivided) gives rise to t'ai-chi (change). That splits into four, then the eight trigrams, then doubles up to 64 hexagrams (ch. 8, fig. 8.4).
+Raw capture lands undivided in the Inbox. Clarifying splits it into type, subtype, category, tag and attribute. Colon paths do the same: folder: list: item.
+3
+The Earlier Heaven trigrams describe what things are. The Later Heaven trigrams describe how they change (ch. 8).
+ItemTypeDefinition says what an item is. The append-only History tab (lib/item-activity.ts) says what happened to it.
+4
+Chuang-tzu's equality of all things: no being ranks above another (ch. 2).
+New list items default to the generic item. A book, a friend and a chore sit on the graph as equals.
+5
+The body is a small universe that mirrors the large one (ch. 4, 8).
+"One nervous system": capture is the senses, the vault is memory, Analytics is the heart, and installed modules are organs in the same body.
+6
+T'ao Hung-ching put the pantheon in order: ranks, looks, robes and symbols of authority (ch. 4).
+The Item Types library. Catalog types (Book, Flight) own their detail views. Orbs and gems work as regalia.
+7
+In 471 CE Lu Hsiu-ching gathered scattered scriptures into the first canon, in seven sections (ch. 3).
+The Lists file manager. From Notes and Phone Notes pull scattered text into one vault.
+8
+Between 404 and 429 CE the Shang-ch'ing texts split among custodians. Some were hoarded and lost (ch. 4).
+Offline-first local vault, plain JSON backup, and union reads of day-note keys. If a jot doesn't save, the well says so.
+9
+Buddhist figures entered Taoist temples under Taoist names, as incarnations of Taoist deities (ch. 6, 9).
+The cogs → brain2 rename. cogs-* keys are lossless aliases, and backups marked app: "cogs" still restore. Same being, new name.
+2. The three energies, leakage, and tracking
+#
+In the book
+In brain2
+10
+Generative, vital and spirit energy (ching, ch'i, shen) drain away through desire, emotion and a busy mind (ch. 10).
+Tracking scopes (Activity, Mood, Company, Screen Time, Sleep) show where the day's energy actually went.
+11
+Energy leaks out through the openings of the body, the eyes among them (ch. 10).
+Screen Time through ActivityWatch measures the leak through the eyes, minute by minute.
+12
+While energy is refined, the cauldron has to stay sealed so nothing escapes (ch. 10).
+A day can't show more than 24 tracked hours. Attachments only fill minutes another scope left blank, so nothing logged is overwritten.
+13
+Energy practice is built into sitting, standing, walking and sleeping (ch. 13).
+Tracking covers every minute, sleep included. A Walking pen writes "Went for a walk" into Done.
+14
+Chen Hsi-yi's sleeping postures turn sleep into practice (ch. 13).
+The two-field sleep log paints Sleep blocks, feeds habits, and gets its own Analytics tab.
+15
+Internal Observation: watch thoughts rise and fall, learn their patterns, then stop them before they start (ch. 12).
+Analytics correlation, context-switch heatmaps, and the Overcommit early warning.
+16
+Counting breaths gets a beginner started. Drop the count once the mind is focused, or it becomes a crutch (ch. 13).
+Autogenerated est. values fill in fast and ask to be confirmed. Just-Start gives one small step and a short timer, then gets out of the way.
+17
+The firing process: fast fire and slow fire. Too hot burns, too cool undercooks (ch. 5, 10).
+The cybernetics plan: gain runs 0–1, and a correction may never push harder than the gap.
+18
+The sun and moon's essence is taken at sunrise and sunset, when the light is gentle (ch. 4, 13).
+Gray sunrise and sunset lines on the Tracking grid, stored per day.
+3. Feedback as light: guardians, monsters, gates
+#
+In the book
+In brain2
+19
+Shang-ch'ing adepts visualize guardian spirits as feedback. Bright and vivid means healthy, dull means weak (ch. 4).
+Home → Habits shows health as light: glass noble-gas tubes (Week grade, Perfect output), CRT phosphor and lamps.
+20
+Each person's birth star shines bright or dim with their health (ch. 9).
+The header POWER lamp and the friend jewel: one light for the whole person.
+21
+The Seven Star Lantern's seven lamps must not go out during the rite (ch. 7).
+Streaks and the seven-day WILLPOWER week.
+22
+Monsters in the body feed on desire and close the gates. They look attractive until seen in their "true form" (ch. 4).
+The Overcommit sentence with its n, or "pushed 9 times since Jul 3". The copy shows the pattern as it is, dated, and never labels the person.
+23
+Three gates along the spine control access to the energy fields. A blockage stops the gathering (ch. 10).
+Scheduler dependency and critical-path views. Dependency cycles are refused.
+24
+Massage and knocking open a stuck gate (ch. 13).
+Focus / Just-Start breaks paralysis with one smallest step.
+25
+The Microcosmic Orbit: energy rises up the back and falls down the front in one circuit (ch. 10).
+The loop: capture → vault → Analytics → Plan → act → capture. In the cybernetics plan, the gap circulates at fast, day and slow speeds.
+26
+The Macrocosmic Orbit extends the circuit down the legs to the soles of the feet (ch. 10).
+BIM on Telegram and the iPhone Shortcuts carry the circuit out into the world, as far as the grocery aisle.
+4. Record-keeping, judgment, and the celestial bureaucracy
+#
+In the book
+In brain2
+27
+The Kitchen Lord watches the household and reports each member's deeds at year's end (ch. 9, 11).
+The Day Log, Done rows and the Tidy house module keep the household record. The yearly review is the report.
+28
+The Star Lords report on the 1st and 15th of each lunar month and on your birthday (ch. 9, 11).
+The Star Lord Report: local new moon, local full moon, and the birthday in Settings (`lib/star-lord.ts`). The day, week, month, quarter, and year reviews stay their own rites.
+29
+Wen-chang Ti-chün keeps a register of each person's deeds and files the reports (ch. 9).
+The append-only item History and lib/action-history.ts for honest undo.
+30
+Celestial clerks register every new temple and every ordained priest, so heaven knows who may perform rites (ch. 9).
+Module definitions, and the planned install manifest that asks which bridges a module may use.
+31
+Good and bad deeds are tallied, and the Director of Destiny rewards or punishes (ch. 11).
+points-store: 50 × completion, bonuses, and stacking objective multipliers.
+32
+A thought weighs as much as a deed (ch. 11).
+Plan text is an append-only log of stamped intentions, kept beside what actually happened.
+33
+Repentance undoes a wrong if the promise not to repeat it is kept (ch. 11).
+Undo reopens a completion. Post-mortems. The exemption wand waives a period without faking it as done.
+34
+Reward and retribution carry over to descendants (ch. 11).
+Carry-over (§7.7) and the handoff onto the Plan rail: the next period starts where the last one stopped.
+35
+Deities are promoted and demoted. Heaven judges them by what they accomplish and how much people trust them (ch. 9).
+Pens sort by Recent. Objectives are re-prioritized each period. A neglected objective can come back.
+36
+The underworld is for rehabilitation, not punishment. A soul that is lost past 49 days turns into a menace (ch. 7, 9).
+Missed Opportunities keeps missed items instead of deleting them. Unnamed texts wait in Phone Notes.
+5. Time, cycles, and seeing patterns
+#
+In the book
+In brain2
+37
+Time runs in nested cycles: a 60-year cycle, Three Eras, Nine Cycles, 24 seasonal markers (ch. 8).
+The Scheduler funnel: Always → Year → Month → Week → Day.
+38
+The Nine Palaces are the trigrams in motion. Their positions shift with the year, month, day and season (ch. 8).
+The Time Grid's Day / Week / Infinite views: same data, different span.
+39
+A twelve-month calendar of feast days (Table 9.1).
+Habits with daily, weekly, monthly, climb and goal cadences.
+40
+Purification lead times: three days before a Great Service, one day before a Ritual Gathering, the day itself for a Feast Day (ch. 14).
+Scheduler dependency lead times and Plan-rail prep.
+41
+The Three Officers preside over the beginning, middle and end of the year (ch. 9).
+Quarterly and yearly reviews, where standing rules are kept, revised or retired.
+42
+Destiny isn't fixed. What we do (Later Heaven) can change what we were given (Earlier Heaven) (ch. 8).
+Plan-vs-reality and calibration. A forecast is a possibility, and the miss becomes the next input.
+43
+Divination is for seeing how things depend on each other, not for living by predictions (ch. 8).
+Analytics as the heart. Cross-section. The Meaning layer shows a coincidence but never claims it as a cause.
+44
+A Tzu-wei chart maps twelve factors of destiny: health, career, home, wealth, siblings, and more (ch. 8).
+Objectives, life-area folders, and Operations categories.
+45
+Feng-shui: the land is alive. Energy flows along roads, and each room's use matters (ch. 8).
+The Location scope, gps:, the Trip map, the Operations Locations panel, and Tidy's rooms.
+6. Companions, practitioners, and scripts of power
+#
+In the book
+In brain2
+46
+Yü changed into a bear and trusted animals, and they gave him their secrets (ch. 1).
+Today's friend: photographed baby animals, species bias, missions.
+47
+The great deities have personal messengers, usually shown as children (ch. 9).
+A baby animal carries the house's messages to you.
+48
+Avatars take mortal form to inspire, teach and advise (ch. 9).
+The friend's Stardew missions and BIM's replies.
+49
+The Five Animal Exercises: tiger for bones, leopard for tendons, dragon for the spine, snake for flexibility, crane for stored energy (ch. 13).
+Species presets and personality types (lib/baby-animal-personality.ts).
+50
+Talismans: short scripts of command that act at a distance (ch. 3, 14).
+BIM phrases like groc, habit: exercise 30 and log: that write the vault from a phone.
+51
+Some objects keep working once activated, like a talisman on a door. Others are useless without the magician (ch. 7).
+Workflows and standing rules on pens run on their own. Views need the person there.
+52
+In sandwriting, the medium writes, a separate interpreter reads, and helpers record and smooth the sand (ch. 7).
+Capture fast (Quick Add, BIM), then clarify later (Inbox Walk, Phone Notes). The roles stay separate.
+53
+The fang-shih were the "masters of the formulae" (ch. 3).
+Formula columns, per-cell =A1, LOOKUP/ROLLUP, and Operations Parts formulas.
+7. Method, philosophy, and the future
+#
+In the book
+In brain2
+54
+In the Tao-te ching, wu-wei means not forcing. The sage helps without intruding and steps back when the work is done (ch. 2).
+No lecturing in the chrome. The friend offers something or sits quiet, and three declines pause that kind of nudge.
+55
+Taoism has no heretics, only sects, and the sects respect each other (ch. 4, 6).
+Feral module interiors (Tidy, Film DNA, Trip map), each with its own look over the same Items.
+56
+Ko Hung's encyclopedia held formulas, ethics, calisthenics and stories without seeing any conflict (ch. 5).
+One item used in as many honest ways as it can bear, plus the idea bank in BRAIN2_FEATURE_IDEAS.md.
+57
+Complete Reality joined three teachings, with Taoism as the base. It was a synthesis, not a mix (ch. 6).
+MAP_LOOP_MEANING.md puts Korzybski, Wiener and Jung on one bench, unnamed in the product. This book is a natural fourth.
+58
+Emperors wanted fast-acting elixirs and died of mineral poisoning. The internal methods outlasted them (ch. 5).
+The plan's "Do not build (wrong medicine)" list. No runtime model: deterministic after install, offline forever.
+59
+Wong calls her guide "a map and field guide to a territory", not the territory itself (Introduction).
+README: a record is a map, not the life. Four orders (observed, recorded, derived, inferred). est. chips.
+60
+Each alchemical stage is the foundation for the next. The original spirit makes short journeys, then longer ones, then leaves the shell (ch. 10).
+Plan-of-action Waves 0–15, the module platform's rungs, pop-out windows, and a future mobile app. Files are never cleared, because a life is one long run.
+Five new features
+Each feature takes one practice from the book and builds it from data brain2 already collects. On screen they use plain names. All are deterministic, with no runtime model.
+#
+Feature (on-screen name)
+From the book
+Lives in
+1
+Reserves
+The Three Treasures, and guardians that brighten or dim (ch. 4, 10)
+Home → Habits rail, Analytics → Time
+2
+Almanac
+Cyclical time, the festival calendar, purification lead times (ch. 8, 9, 14)
+Scheduler, Plan rail
+3
+Gates
+Three gates, blockages, and seeing monsters in their true form (ch. 4, 10)
+Analytics → Accuracy, Operations panel
+4
+Hearth ledger
+The Response of the Tao and the Kitchen Lord's report (ch. 9, 11)
+New Analytics view, mid-year and year-end reviews
+5
+Foundations
+Staged alchemy, and dropping the breath count once focused (ch. 10, 13)
+Habits and Goals
+1. Reserves: three tubes that dim when energy leaks
+In chapter 10, health rests on three energies. Desire drains generative energy, moods drain vital energy, and a busy mind drains spirit energy. Chapter 4 adds that a Shang-ch'ing adept reads health from how bright the inner guardians look. Brain2 already records all three drains. It just never adds them up.
+• What it does: three glass tubes (Body, Heart, Mind), each derived from existing scopes:
+    ◦ Body: sleep duration and regularity, plus minutes tagged for exercise.
+    ◦ Heart: swings in the Mood scope, plus Company time.
+    ◦ Mind: Screen Time switching and the context-switch count.
+• Brightness, not a score: the tube dims as its 14-day reading falls. Hovering names the biggest drain in one dated sentence, e.g. "Screen Time switches up 40% since Sep 9 (n = 12 days)".
+• Where: a new pure lib/reserves.ts, a tube on the Habits instrument rail, and a breakdown in Analytics → Time.
+• Guardrails: these are derived values with an est.-style mark. There are sample floors, and a thin window stays dark instead of guessing. It never writes back to any record.
+2. Almanac: the sun's markers, the moon, and your own feast days, with prep time built in
+Chapter 8 treats time as cycles, including 24 seasonal markers and the lunar month. Chapter 9 lists a feast for every month. Chapter 14 adds preparation windows: three days for a Great Service, one day for a Ritual Gathering, and the day itself for a Feast Day.
+• What it does: a date overlay in the Scheduler with:
+    ◦ the 24 solar markers (computed every 15° of solar longitude);
+    ◦ new and full moons;
+    ◦ your own feast days: birthdays on person items, objective anniversaries, and any date you mark.
+• Prep windows: each feast day has a rank (Great, Gathering or Day). The rank sets a lead time of 3 days, 1 day or 0. When the window opens, a prep item appears on the Plan rail.
+• Year markers: following the Three Officers (ch. 9), beginning-, middle- and end-of-year markers link to the quarterly and yearly reviews.
+• Where: a pure lib/almanac.ts (no network, like sunrise and sunset), plus Scheduler Month/Year and the Plan rail.
+• Guardrails: it's an overlay, not a new ReviewPeriod, and JG-9 seasons stay as they are. The markers are just dates. The app never reads meaning into them.
+3. Gates: where the flow stops
+In chapter 10, energy can't collect in a field while its gate on the spine is shut. Chapter 4 says the thing that shuts it looks harmless until you see its true form. Brain2 has push counts, ages and dependencies, but no single view of where work gets stuck.
+flowchart LR
+  A[Captured] -->|Start gate| B[Started]
+  B -->|Middle gate| C[Half done]
+  C -->|Finish gate| D[Done]
+  D -.->|review feeds| A
+Each objective, list or operation shows how many items wait at each gate and for how long.
+• True form: click a gate to see its stuck items as plain dated cards. Each card shows pushes, age, last touch and blockers, and nothing else.
+• Where: Analytics → Accuracy (beside Overcommit), plus a Gates panel in Operations.
+• Guardrails: it describes events, never the person. Sample floors apply. Gates only diagnoses. The remedies are change 2 below.
+4. Hearth ledger: kindness and repair, reported twice a year
+Chapter 11's founding text teaches that every action gets a response. It says a thought weighs as much as a deed, and that repentance works if the promise is kept. In chapter 9, the Kitchen Lord reports each household member's deeds, twice a year in Table 9.1 and again at year's end. Brain2 already logs calls, texts, Company time and people items. It never gathers what you did for others.
+• What it does: a ledger of deeds for other people. It draws on call: / text: logs, Company blocks, and any item tagged with a person. Next to it is a list of repairs: a promise (what, and by when) tied to a missed or regretted item, which closes when you keep it.
+• The report: a Hearth report at mid-year and year-end. It lists deeds per person, promises kept and open repairs, all counted and dated.
+• Where: a new Analytics view, plus one step in the yearly review.
+• Guardrails: it counts events and never grades character. There are no identity labels. Points for deeds are optional and off by default.
+5. Foundations: staged habits whose training wheels come off
+Chapter 10 splits the work into stages, each the foundation for the next. Chapter 6 shows two orders: mind before body, or body before mind. Chapter 13 warns that counting breaths should stop once the mind is focused, or it turns into a crutch.
+• What it does: you write stages for a habit or goal, for example 5-minute walk → 20-minute walk → run. Each stage has a hold rule (N weeks at or above a grade). The next stage unlocks only when the current one holds.
+• Scaffolds retire: once a stage holds, its reminders, friend nudges and est. prompts go quiet on their own. The Plan rail notes the date they stopped.
+• Where: it extends Habits' climb type (weekly + / daily +) and Goals.
+• Guardrails: you write the stages. The hold check is deterministic, and turning off a scaffold can be undone.
+Five key changes
+These change rooms that already exist. They keep each room's chrome and mechanics and change how it behaves.
+#
+Change
+Room
+From the book
+1
+Lights dim gradually instead of switching on and off
+Habits, friend jewel
+Guardians and the birth star (ch. 4, 9)
+2
+Missed Opportunities becomes a 49-day recovery queue with four remedies
+Inbox, Phone Notes, Missed Opportunities
+The underworld as school; the four ways to handle a spirit (ch. 7, 9)
+3
+Points can be earned back by keeping a promise
+points-store, completion popup
+Repentance redresses a wrong (ch. 11)
+4
+The friend speaks on a lunar schedule and follows the Five Animals
+Today's friend
+The Star Lords' visits; the Five Animal Exercises (ch. 9, 13)
+5
+Nudges use two heats and step back when the work is done
+Overcommit, friend push, loop effectors
+The firing process; wu-wei (ch. 2, 5, 10)
+1. Habits lights dim gradually, not on/off
+Today: tubes and gems mostly report whether something happened. Change: brightness follows a rolling 14-day hold, so a habit fades before its streak breaks. This is Shang-ch'ing's guardian feedback: a dull image warns before illness (ch. 4). The friend jewel gets the same treatment for the house as a whole, echoing the birth star that dims with health (ch. 9). It's a refinement of Home → Habits, so the instrument rail and phosphor stay as they are.
+2. Missed Opportunities becomes a 49-day recovery queue
+Today: a missed item moves to Missed Opportunities and stops there, and unsorted Inbox or Phone Notes items can wait forever. Change: anything left untouched for 49 days goes to this queue. In the book, a soul lost past 49 days turns into a menace, and the underworld exists to teach, not to punish (ch. 7, 9). Each item offers the four ways a Taoist handles a spirit (ch. 7) as one-click actions:
+1. Drive away: push it to a later date. Temporary, and the push is counted.
+2. Contain: park it on a Someday list.
+3. Bind: link it to an objective or a dependency so it has a home.
+4. Dissolve: release it. It stays in History and earns no points.
+Chapter 7 also says exorcism should educate, calm or rehabilitate before it destroys. So the default action is rewrite as a smaller step, which reuses Just-Start's smallest-step logic.
+3. Points can be earned back through repair
+Today: a Missed Opportunity earns no points, ever, and Undo only reverses a completion. Change: following chapter 11, repentance works if the promise is kept. You can attach a repair promise to a missed item, with what and by when (up to 7 days). If you keep it, the item earns back part of its points (proposal: half), with a dated "repaired" mark in History. A broken promise simply expires, with no penalty. This also feeds feature 4's Hearth ledger.
+4. The friend keeps the Star Lords' calendar and the Five Animals
+Today: FRIEND_COMPANION.md lists the friend's Clock (speaking without a click) as "later", and species bias is mostly flavor. Change:
+• Clock: the friend speaks unprompted only on the 1st and 15th of the month, on your birthday, and at the mid-year and year-end Hearth reports. These are the days the Star Lords come down to report (ch. 9, 11). The rest of the time it waits to be clicked.
+• Species bias: mission picks follow the Five Animals (ch. 13): tiger for strength habits, leopard for quick tasks, dragon for long projects, snake for stretching and flexibility, crane for rest and sleep. Each species preset maps to its nearest animal.
+5. Nudges use two heats and step back when the work is done
+Today: Overcommit and friend pushes fire when their thresholds trip. Change: use the firing process from chapters 5 and 10. Slow fire is the default: quiet incubation, and inside the band nothing speaks. Fast fire (a nudge) only comes when a gap has widened two periods in a row, and never harder than the gap's gain. Once an objective is fully served, it steps back from Home on its own. That follows the Tao-te ching's advice (ch. 2): help without intruding, then retire when the work is done. This matches the loop's "silence is the success test" law, so it tunes the planned effectors rather than adding new ones.
+Source: Eva Wong, Taoism: An Essential Guide (Boston: Shambhala, 2011), read in full. Brain2 references: README.md, docs/MAP_LOOP_MEANING.md, docs/PLAN_OF_ACTION.md, docs/FRIEND_COMPANION.md, docs/JungBrain2.md, and lib/, all in the local ~/brain2 repo.

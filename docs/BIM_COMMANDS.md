@@ -166,13 +166,43 @@ In chat: `info` · `{prefix} info` · `{prefix} commands` · `all commands`.
 - **Forms / aliases:** `chess score …`
 - **Does:** Whole-message score keyword for chess-like habits (preset).
 
+### `dh:`
+
+- **Format:** `dh: hemisync` · `dh: read 30 pages` · `dh: chess score 355`
+- **Forms / aliases:** `dh:`
+- **Does:** Habit keyword. The phrase after dh: is the existing whole-message keyword. Bare keywords are not logged.
+
 ## Discrete event log
 
 ### `log:`
 
-- **Format:** `log: drink water` · `log-something happening`
+- **Format:** `log: drink water` · `log: left home at 3:30` · `log: shower 7:30 - 7:45` · `log: shower 10m` · `log: START walk` · `log: END walk 5:00`
 - **Forms / aliases:** `log:`, `log-`
-- **Does:** Explicit discrete event on Activity. Whatever follows is the event title. Labeled from text pipeline. Bare `o` is NOT a log.
+- **Does:** Tracking note on Activity. No time → point at send time. `at 3:30` is a point on the send date. `7:30 - 7:45` is a range. `10m` / `10 min` just finished (end = send time). START/END pair an activity. A line under the event is the note; the clock stays on the first line. A later block over that minute leaves the point. Times use the machine timezone. Labeled from text pipeline. Bare `o` is NOT a log.
+
+### `intake:`
+
+- **Format:** `intake: 1 dab dab pen` · `intake: coffee at 8:15`
+- **Forms / aliases:** `intake:`
+- **Does:** Food, drink, medicine, or any intake. Always a point — no duration. No time uses the send time. A following clock uses that time on the send date. A line under the event is the note. Vertical line on the Tracking grid. A later block leaves the point.
+
+### `st:`
+
+- **Format:** `st: from: talking to elijah to: cleaning up the living room`
+- **Forms / aliases:** `st:`, `switch task:`
+- **Does:** Tracking flag. from: is what you stopped, to: is what you started. Unlabeled text is to. Optional time, else send time.
+
+### `so:`
+
+- **Format:** `so: get living room into a decent state`
+- **Forms / aliases:** `so:`, `switch objective:`
+- **Does:** Same from/to rules as switch task. Unlabeled text is the objective you are on now.
+
+### `transit:`
+
+- **Format:** `transit: from: home to: the store` · `transit: the store`
+- **Forms / aliases:** `transit:`
+- **Does:** Location change as a tracking note. Unlabeled text is to. Optional time, else send time.
 
 ### `smoked weed`
 
@@ -264,13 +294,19 @@ In chat: `info` · `{prefix} info` · `{prefix} commands` · `all commands`.
 - **Forms / aliases:** `read to do today`, `read todo today`, `read todays list`
 - **Does:** Numbered dump of open to-do items for today.
 
-## Reviews & morning (GM)
+## Rituals (GM / night / start / end)
 
 ### `gm`
 
 - **Format:** `gm` · `good morning`
 - **Forms / aliases:** `gm`, `good morning`, `goodmorning`
-- **Does:** Start morning review over text: sleep (or all nighter) → 5 affirmations one-at-a-time → to-do add → 3–5 priorities → 1–3 habit priorities → go through each to-do (six slots: tier duration points importance resistance excitement) → plaintext day plan → circumstance branches → best day → 10 gratitude.
+- **Does:** Start the day morning ritual (sun) over text. Opens with last night's wake-up reminder, what matters most, and focus goals when those were saved. Then sleep (or all nighter) → 5 affirmations one-at-a-time → to-do add (lines and/or rm 1 3) → required tasks (a line of only comma-separated numbers, like 1,8 or 1, 8, selects those indexes; any other line is a new to-do) → 3–5 priorities → 1–3 habit priorities → go through each to-do (six slots: tier duration points importance resistance excitement; the last three are 0–10 and may be decimals; a bad line stays on that same item; SKIP skips one; SKIP ALL skips the rest) → plaintext day plan → circumstance branches (must-not, events, excitement) → best day → 10 gratitude. Answers save as you go. If today already has some, gm asks 1 start over, 2 continue, 3 jump (that menu only). Shortcuts stay off until STOP. Live Location is paused until the ritual ends, then the same Telegram share resumes.
+
+### `gn`
+
+- **Format:** `gn` · `good night` · `night`
+- **Forms / aliases:** `gn`, `good night`, `goodnight`, `night`
+- **Does:** Start today's night ritual (moon) over text. Unfinished (done / push / why blocked, including other plus a note) → assumed times → how the day was spent → summary → gratitude → plan reflection → went well / improve / learned → wake-up reminder → what matters most tomorrow → goals to focus → tomorrow's plan. Week and longer reviews add the period stats and the longer reflection questions before the summary. cancel quits. A walkthrough answer is not a log.
 
 ### `all nighter`
 
@@ -280,27 +316,33 @@ In chat: `info` · `{prefix} info` · `{prefix} commands` · `all commands`.
 
 ### `skip`
 
-- **Format:** `skip` or a blank message
+- **Format:** `skip` or `next` · a blank message on period review
 - **Forms / aliases:** `skip`, `pass`, `next`, `blank`, `empty`, `n/a`, `na`, `-`, `.`, `—`, `(empty message)`
-- **Does:** Advance a ritual step without an answer (morning or period review).
+- **Does:** Advance a ritual step without an answer (morning, night, start, or end). Morning review moves on skip or next and leaves that question empty; a blank message waits. Live Location is paused while a text ritual is open and resumes on the next edit after it ends. Period review still treats a blank message as skip.
 
-### `reviews`
+### `rituals`
 
-- **Format:** `reviews`
-- **Forms / aliases:** `reviews`
-- **Does:** Reviews board: morning done/not yet + which period reviews are due.
+- **Format:** `rituals` · `reviews`
+- **Forms / aliases:** `rituals`, `reviews`
+- **Does:** Rituals board: every available/undone slot (morning, night, start, review) with status, the Telegram command to open it, and the in-app path (Header → Rituals).
 
 ### `review`
 
-- **Format:** `review` · `review today` · `review day|week|month|quarter|year`
-- **Forms / aliases:** `review`
-- **Does:** Start the first due period review, or a named period. Walk unfinished tasks, summary, gratitude, plan reflection, etc.
+- **Format:** `review` · `ritual` · `review today` · `review day|week|month|quarter|year` · `ritual start week|month|quarter|year` · `ritual end week|…` · `ritual morning` · `ritual night`
+- **Forms / aliases:** `review`, `ritual`
+- **Does:** Open a ritual. Bare review/ritual starts the first available/undone slot. review <period> / ritual end <period> = end/review for the just-ended period. ritual start <period> = plan the current period, including required: 1, 8 and priority: 2 on assigned tasks. review today / ritual night = today's night (moon). ritual morning = same as gm.
 
 ### `cancel`
 
 - **Format:** `cancel` · `quit` · `nevermind`
 - **Forms / aliases:** `cancel`, `quit`, `nevermind`, `never mind`
-- **Does:** Stop a ritual (morning or period) in progress.
+- **Does:** Stop a night / start / end ritual in progress. Morning ritual ignores cancel — send STOP in all caps to quit and save.
+
+### `STOP`
+
+- **Format:** `STOP` (all caps, the whole message)
+- **Forms / aliases:** `STOP`
+- **Does:** Quit the morning ritual and keep every answer so far. Shortcuts turn back on. Lowercase stop is a normal reply. Text gm afterward to start over, continue, or jump.
 
 ## Tracking (location / activity / mood / working now)
 
@@ -332,7 +374,7 @@ In chat: `info` · `{prefix} info` · `{prefix} commands` · `all commands`.
 
 - **Format:** `mood: good` · `feeling: tired` · `state: …`
 - **Forms / aliases:** `mood`, `feeling`, `feel`, `state`
-- **Does:** Paint Mood scope until further notice.
+- **Does:** Paint Mood scope until further notice, any word. The Tracking card holds the full report; a message does not fill it.
 
 ### `m`
 
@@ -364,7 +406,7 @@ In chat: `info` · `{prefix} info` · `{prefix} commands` · `all commands`.
 
 - **Format:** `n stuck in aisle 4` · `note: …` · `jot: …` · `memo: …`
 - **Forms / aliases:** `n`, `note`, `jot`, `memo`, `day note`, `daynote`, `dnote`
-- **Does:** Append a note onto the activity block covering *now* (or scoped with `n loc:` / `n mood:` / `n activity:`).
+- **Does:** A discrete event at send time (first line is the title; lines under it are the note). Also appended onto the block covering that minute, including `n loc:` / `n mood:` / `n activity:`. `day:` stays the day jot.
 
 ### `day:`
 
@@ -384,9 +426,9 @@ In chat: `info` · `{prefix} info` · `{prefix} commands` · `all commands`.
 
 ### `gps:`
 
-- **Format:** `gps: Home` · `geo: …` · Telegram location / Live Location
-- **Forms / aliases:** `gps`, `geo`
-- **Does:** Paint Location from a place name and/or lat,lon. Same place stays quiet. Arrive/Leave Shortcut sends gps: lines.
+- **Format:** `gps: Home` · `gps-log:` · `at: 2026-10-05T19:04:00` · Telegram Live Location
+- **Forms / aliases:** `gps`, `geo`, `gps-log`
+- **Does:** Paint Location up to the sample time, never through the rest of the day. Same coordinates keep the current pen. A Telegram venue pin is a shared place, not where you are. A fuzzy fix does not move you. gps-log: replays lines the phone saved while offline. Message ingest hides these points unless you show GPS. A text ritual pauses Live Location and the same share resumes when that ritual ends.
 
 ## iPhone Screen Time
 

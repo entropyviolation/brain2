@@ -604,7 +604,7 @@ everything below, so they are named here once:
     cluster, and propose smartly-labeled dynamic categories. **From the doc:**
     "Topic extraction from every text… find the topics that cluster… dynamically
     generated categories with smart labels." **In Brain2:** an analytics/maintenance
-    job (needs embeddings; aligns with MongoDB vector roadmap).
+    job (needs embeddings). Atlas vector search is speculation, not a roadmap.
 
 83. **Self-updating but lockable knowledge.** The graph re-derives itself as new
     sources arrive, except where the user has locked nodes. **From the doc:**
@@ -774,7 +774,7 @@ left out, let the person delay the label. The entries below stay a menu.
 111. **"Search your brain" universal semantic search.** One box that retrieves
      across every item type by meaning, not just keyword. **From the doc:**
      "'Search your brain'"; "Search your brain" + semantic search emphasis. **In
-     Brain2:** the planned MongoDB text/vector search over all items.
+     Brain2:** not built. Atlas text/vector search is speculation, not the storage plan.
 
 112. **Semantic-reaction triggers.** Certain words/tags in an item automatically
      pull in associated resources/rules. **From the doc:** "Certain words in the
@@ -1007,8 +1007,7 @@ left out, let the person delay the label. The entries below stay a menu.
 151. **MongoDB + semantic/fuzzy/vector search backend.** The durable store that
      unlocks "search your brain," dedup, clustering, and recommendations. **From
      the doc:** vector DBs (Pinecone/Weaviate/Elastic), embeddings, semantic
-     search throughout. **In Brain2:** SPEC §3 planned MongoDB layer via Electron
-     IPC.
+     search throughout. **In Brain2:** Atlas via Electron IPC is speculation, not the storage plan.
 
 152. **Per-item provenance/origin metadata.** Every item records where/when/how it
      came to exist (captured, imported, spawned-by-review, derived). **From the
@@ -1251,7 +1250,7 @@ left out, let the person delay the label. The entries below stay a menu.
      access." **From the doc:** "creating/saving notes not really working it seems / Maybe
      issue with database access?" **In Brain2:** route writes through the stubbed
      `lib/data/task-repository.ts` + `lib/data/schemas.ts` with optimistic local persistence
-     and `lib/data/backup.ts` snapshots, ahead of the MongoDB cutover.
+     and `lib/data/backup.ts` snapshots. Atlas is speculation, not a cutover.
 
 186. **Self-hosted semantic search over notes & sources (FAST-TRACK).** Search notes,
      resources, and documents by meaning using a local embedding index — no paid tokens —
@@ -1276,8 +1275,7 @@ left out, let the person delay the label. The entries below stay a menu.
 189. **Login / profile gate for the desktop shell.** A working sign-in so data and (future)
      sync are scoped to a user — the one piece the prototype shipped solidly. **From the
      doc:** "Login system works." **In Brain2:** a local profile gate in `electron/main.js` +
-     `preload.js`, scoping localStorage/MongoDB keys per profile (deferred until the
-     storage layer lands).
+     `preload.js`, scoping localStorage keys per profile. Atlas is speculation, not a storage layer waiting to land.
 
 ### W. State architecture, links & theming lessons
 
@@ -1332,12 +1330,10 @@ left out, let the person delay the label. The entries below stay a menu.
      (`useIsMobile()`) to drive responsive layouts in `home-dashboard.tsx` and Lists, since
      the build already runs as a plain web app.
 
-198. **Connect to a real database (durable source of truth).** **Status:** shipped locally — same repository seam; Mongo is optional later. Move off fragile
+198. **Connect to a real database (durable source of truth).** **Status:** shipped locally — same repository seam. Move off fragile
      localStorage to a proper document store, as both prototypes wished. **From the doc:**
      "Connect to a database" (planning prototype) + the databrain's "issue with database
-     access?" **In Brain2:** realize the planned MongoDB layer via Electron IPC behind
-     `lib/data/task-repository.ts` + `lib/data/schemas.ts`, with `lib/migrations.ts` running
-     versioned migrations (SPEC §3).
+     access?" **In Brain2:** Atlas via Electron IPC is speculation, not a scheduled layer.
 
 199. **One-click backup/restore before the DB cutover.** **Status:** shipped — same as #150. Make data portable and safe with
      JSON export/import and snapshots, de-risking the storage migration. **From the doc:**
@@ -1764,7 +1760,7 @@ left out, let the person delay the label. The entries below stay a menu.
 
 ### AE. The transparent, editable priority engine
 
-248. **First-class editable priority formula store.** **Status:** shipped — persisted `priorityFormula` weights. Persist the weighted formula
+248. **First-class editable priority formula store.** **Status:** shipped — live controls are `priorityWeights` (To Do sliders, `lib/priority.ts`). `priorityFormula` is a persisted field with no reader and no writer. Persist the weighted formula
      `Priority = (Importance × Urgency) / (Effort + CognitiveLoadWeight)` with
      user-tunable weights, recomputed live as factors change. **From the doc:** the
      literal `priorityFormula: { urgencyWeight, importanceWeight, effortWeight,
@@ -2817,12 +2813,13 @@ loop must not flatten.
      still matters returns as a small step. **In Brain2:** Someday list plus
      the stage review (JG-10); return uses Just Start.
 
-392. **Mood as weather, not as a star.** Mood is painted across the day like
-     a cloud (a wash), while items stay countable stars. Statistics for the
-     wash; identities for the stars. **From the text:** stars versus clouds
-     (pp. 30–33). **In Brain2:** mood on the day as a continuous mark in
-     Tracking’s visual language; the discrete mood metric can remain as a
-     summary.
+392. **Mood as weather, not as a star.** **Status:** partial — any label may
+     paint the wash; the three-part reading is the report. Mood is painted
+     across the day like a cloud (a wash), while items stay countable stars.
+     Statistics for the wash; identities for the stars. **From the text:**
+     stars versus clouds (pp. 30–33). **In Brain2:** any pen name paints the
+     Mood scope; **This stretch** (`moodReading`) holds the body, the water,
+     and the heaps. The discrete wellbeing metrics remain a separate summary.
 
 393. **Absence as a choice.** The person can record “I am not tracking X this
      week.” The gap is then information, a decision, not a hole pretending
@@ -3189,8 +3186,11 @@ loop must not flatten.
      may speak (#403), and a short report opens: the year’s deeds in the
      hearth sense, promises kept, and one line the person writes. It is not
      the January review. **From the text:** the star lords also report on
-     the birthday (ch. 9, 11). **In Brain2:** a review variant keyed off the
-     birthday on the person item. Dated, optional.
+     the birthday (ch. 9, 11). **In Brain2:** the Star Lord Report
+     (`lib/star-lord.ts`) opens on the birthday set in Settings, and also on
+     the local new moon and full moon. It is six questions and a closing, not
+     the January review. The friend still does not speak on its own, and the
+     hearth ledger is still #398.
 
 441. **What the recovered item taught.** Leaving the 49-day queue (#401) can
      ask for one optional line: what it taught. The line is a note. The item

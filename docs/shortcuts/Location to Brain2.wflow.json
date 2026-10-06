@@ -10,10 +10,28 @@
   },
   "WFWorkflowImportQuestions": [
     {
-      "ActionIndex": 7,
+      "ActionIndex": 12,
       "Category": "Parameter",
       "ParameterKey": "WFSendMessageActionRecipients",
       "Text": "Pick the Brain2 bot chat in Telegram (@brain2_phone_bot). Pair it in Brain2 Settings first, then open that chat once."
+    },
+    {
+      "Category": "Parameter",
+      "ParameterKey": "WFFileStorageService",
+      "Text": "Pick iCloud Drive. Brain2 keeps the location log in Shortcuts/Brain2-location-log.txt until Telegram can send it.",
+      "ActionIndex": 8
+    },
+    {
+      "Category": "Parameter",
+      "ParameterKey": "WFFileStorageService",
+      "Text": "Pick iCloud Drive. Brain2 keeps the location log in Shortcuts/Brain2-location-log.txt until Telegram can send it.",
+      "ActionIndex": 9
+    },
+    {
+      "Category": "Parameter",
+      "ParameterKey": "WFFileStorageService",
+      "Text": "Pick iCloud Drive. Brain2 keeps the location log in Shortcuts/Brain2-location-log.txt until Telegram can send it.",
+      "ActionIndex": 14
     }
   ],
   "WFWorkflowInputContentItemClasses": [],
@@ -31,7 +49,7 @@
       "WFWorkflowActionIdentifier": "is.workflow.actions.comment",
       "WFWorkflowActionParameters": {
         "UUID": "BB111111-1111-4111-A111-111111111111",
-        "WFCommentActionText": "Sends gps: Name\\nlat,lon to @brain2_phone_bot.\nPair Brain2 first. On import, pick the bot chat in Telegram.\nAttach duplicates to Automation → Arrive and Leave.\niOS will not poll every minute."
+        "WFCommentActionText": "Saves each fix to iCloud Drive/Shortcuts/Brain2-location-log.txt, then sends the whole file as gps-log:.\nIf Telegram cannot send, the file keeps the lines and the next run delivers them.\nA successful send clears the file. Pair Brain2 first. On import, pick the bot chat.\nAttach duplicates to Automation → Arrive and Leave. iOS will not poll every minute."
       }
     },
     {
@@ -86,27 +104,106 @@
       }
     },
     {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.date",
+      "WFWorkflowActionParameters": {
+        "UUID": "BB5A5A5A-5A5A-45A5-A5A5-5555555555A5",
+        "WFDateActionMode": "Current Date"
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.format.date",
+      "WFWorkflowActionParameters": {
+        "UUID": "BB5B5B5B-5B5B-45B5-B5B5-5555555555B5",
+        "WFDateFormatStyle": "Custom",
+        "WFDateFormat": "yyyy-MM-dd'T'HH:mm:ss",
+        "WFInput": {
+          "Value": {
+            "OutputName": "Date",
+            "OutputUUID": "BB5A5A5A-5A5A-45A5-A5A5-5555555555A5",
+            "Type": "ActionOutput"
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.gettext",
+      "WFWorkflowActionParameters": {
+        "UUID": "BB5C5C5C-5C5C-45C5-C5C5-5555555555C5",
+        "WFTextActionText": {
+          "Value": {
+            "string": "￼;￼,￼;￼",
+            "attachmentsByRange": {
+              "{0, 1}": {
+                "Type": "ActionOutput",
+                "OutputUUID": "BB5B5B5B-5B5B-45B5-B5B5-5555555555B5",
+                "OutputName": "Formatted Date"
+              },
+              "{2, 1}": {
+                "Type": "ActionOutput",
+                "OutputUUID": "BB444444-4444-4444-A444-444444444444",
+                "OutputName": "Latitude"
+              },
+              "{4, 1}": {
+                "Type": "ActionOutput",
+                "OutputUUID": "BB555555-5555-4555-A555-555555555555",
+                "OutputName": "Longitude"
+              },
+              "{6, 1}": {
+                "Type": "ActionOutput",
+                "OutputUUID": "BB333333-3333-4333-A333-333333333333",
+                "OutputName": "Name"
+              }
+            }
+          },
+          "WFSerializationType": "WFTextTokenString"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.file.append",
+      "WFWorkflowActionParameters": {
+        "UUID": "BB5D5D5D-5D5D-45D5-D5D5-5555555555D5",
+        "WFFileStorageService": {
+          "WFStorageService": "iCloudDrive"
+        },
+        "WFFilePath": "Brain2-location-log.txt",
+        "WFAppendFileWriteMode": "Append",
+        "WFAppendOnNewLine": true,
+        "WFInput": {
+          "Value": {
+            "OutputName": "Text",
+            "OutputUUID": "BB5C5C5C-5C5C-45C5-C5C5-5555555555C5",
+            "Type": "ActionOutput"
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.documentpicker.open",
+      "WFWorkflowActionParameters": {
+        "UUID": "BB5E5E5E-5E5E-45E5-E5E5-5555555555E5",
+        "WFFileStorageService": {
+          "WFStorageService": "iCloudDrive"
+        },
+        "WFShowFilePicker": false,
+        "WFGetFilePath": "/Shortcuts/Brain2-location-log.txt",
+        "WFFileErrorIfNotFound": false
+      }
+    },
+    {
       "WFWorkflowActionIdentifier": "is.workflow.actions.gettext",
       "WFWorkflowActionParameters": {
         "UUID": "BB666666-6666-4666-A666-666666666666",
         "WFTextActionText": {
           "Value": {
-            "string": "gps: ￼\n￼,￼",
+            "string": "gps-log:\n￼",
             "attachmentsByRange": {
-              "{5, 1}": {
-                "Type": "ActionOutput",
-                "OutputUUID": "BB333333-3333-4333-A333-333333333333",
-                "OutputName": "Name"
-              },
-              "{7, 1}": {
-                "Type": "ActionOutput",
-                "OutputUUID": "BB444444-4444-4444-A444-444444444444",
-                "OutputName": "Latitude"
-              },
               "{9, 1}": {
                 "Type": "ActionOutput",
-                "OutputUUID": "BB555555-5555-4555-A555-555555555555",
-                "OutputName": "Longitude"
+                "OutputUUID": "BB5E5E5E-5E5E-45E5-E5E5-5555555555E5",
+                "OutputName": "File"
               }
             }
           },
@@ -138,6 +235,39 @@
           "Value": {
             "Type": "Variable",
             "VariableName": "Outgoing"
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.gettext",
+      "WFWorkflowActionParameters": {
+        "UUID": "BB7B7B7B-7B7B-47B7-B7B7-7777777777B7",
+        "WFTextActionText": {
+          "Value": {
+            "string": ".",
+            "attachmentsByRange": {}
+          },
+          "WFSerializationType": "WFTextTokenString"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.documentpicker.save",
+      "WFWorkflowActionParameters": {
+        "UUID": "BB7C7C7C-7C7C-47C7-C7C7-7777777777C7",
+        "WFFileStorageService": {
+          "WFStorageService": "iCloudDrive"
+        },
+        "WFAskWhereToSave": false,
+        "WFFileDestinationPath": "/Shortcuts/Brain2-location-log.txt",
+        "WFSaveFileOverwrite": true,
+        "WFInput": {
+          "Value": {
+            "OutputName": "Text",
+            "OutputUUID": "BB7B7B7B-7B7B-47B7-B7B7-7777777777B7",
+            "Type": "ActionOutput"
           },
           "WFSerializationType": "WFTextTokenAttachment"
         }

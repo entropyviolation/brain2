@@ -24,13 +24,11 @@ Legend:
 > Direction chosen for this rebuild: **incremental evolution** of the existing
 > localStorage/Zustand + Electron app toward the spec (not a from-scratch
 > rewrite). **Storage model:** the local store stays **offline-first** (the
-> working source of truth on every client); **MongoDB** (Atlas, replacing the
-> spec's original SQLite recommendation) becomes a *cloud sync target* behind an
-> opportunistic `SyncingDataSource` — for a flexible document model,
-> semantic/fuzzy/advanced search, and aggregation-based routing as the dataset
-> grows relational. This file is the running checklist for that work and the
-> architectural plan (offline-first + opportunistic Atlas sync + shared
-> `@brain2/core` + future mobile).
+> working source of truth). The sync that exists is the manual phone hub
+> (`lib/mobile-sync.ts`). MongoDB Atlas, a shared `@brain2/core` package, and
+> an Expo app are speculation, not the storage plan. The spec's original
+> SQLite recommendation was not adopted. Store catalog:
+> [`lib/README.md`](../lib/README.md).
 
 Screenshots and per-screen write-ups: [`docs/screenshots/`](screenshots/).
 
@@ -52,15 +50,13 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
 
 ## §2 System Architecture
 - **Shape chosen by this repo:** Option B (Electron) + localStorage via Zustand
-  `persist`, kept **offline-first**. Future direction:
-  each client (web/desktop renderer + a future **mobile** app) keeps a complete
-  local store; a `SyncingDataSource` opportunistically reconciles with **MongoDB
-  Atlas** (cloud) in the background. Electron main reverts to a **thin shell**
-  (optionally a connector/cache host), not the data host; its IPC + Mongo
-  scaffolding is repurposed as one transport on the remote/sync side. A separate
-  read-only **external data** layer (Open-Meteo weather, Photon places) feeds
-  widgets, cached with a TTL and degrading offline. Shared logic lives in a future
-  `@brain2/core` package. See `electron/`, `README.md`.
+  `persist`, kept **offline-first**. Electron main is a **thin shell**, not the
+  data host. IPC and Mongo files under `electron/ipc/` and `lib/data/mongo/`
+  are unwired scaffolding. A separate read-only **external data** layer
+  (Open-Meteo weather, Photon places) feeds widgets, cached with a TTL and
+  degrading offline. MongoDB Atlas, a shared `@brain2/core` package, and an
+  Expo app are speculation, not the storage plan. The sync that exists is the
+  manual phone hub (§3). See `electron/`, `README.md`.
 - Module list (§2.2) maps to top-level tabs in `app/page.tsx` and
   `components/<Module>/` folders:
   **Home** | **Lists** | **Docs** | **Scheduler** | **Operations** | **Modules** |
@@ -69,21 +65,20 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   **now** well (between System and Capture; idle → hidden; live Working sessions
   show name, elapsed, Stop, Pause↔Resume) / Capture groupboxes).
 
-## §3 Data Storage & Sync — 🟡/⛔
-- **Current:** a dozen-plus Zustand stores → localStorage:
-  `task-store` (`cogs-task-storage`), `event-store` (`cogs-event-storage`),
-  `habits-store` (`cogs-habits-store`), `goals-store` (`cogs-goals-store`),
-  `points-store` (`points-store`), `time-tracking-store` (`cogs-timegrid-store`),
-  `reviews-store` (`cogs-reviews-store`), `modules-store` (`cogs-modules-store`),
-  `module-definitions` (`cogs-module-definitions`), `workflows-store`
-  (`cogs-workflows-store`), `item-type-store` (`cogs-item-types-store`),
-  `lists-ui-store` (`cogs-lists-ui`), `theme-store` (`cogs-theme-store`).
+## §3 Data Storage & Sync — 🟡
+- **Current:** Zustand stores persist to localStorage. Live persist keys are
+  `brain2-*` (`lib/storage-keys.ts`). `cogs-*` is a legacy alias. The store
+  catalog — sleep, metrics, regret, planned actions, home widgets, ingest, and
+  the rest — is [`lib/README.md`](../lib/README.md). `task-store` is
+  `brain2-task-storage` at persist **v17** (`TASK_STORE_PERSIST_VERSION` in
+  `lib/task-store.ts`).
 - **Also persisted outside stores:** append logs (`lib/append-log.ts`) — plan
   period keys (`lib/plan-text.ts`: `dayPlan-*`, `weekPlan-*`, `monthPlan-*`,
   hub-synced; optional `draft` on the envelope) and
   Tracking day notes (`lib/day-notes-persist.ts`); one-time import of legacy
-  `weekly-habits-*` keys into `habits-store` (persist v3 also migrates climb
-  config onto `IncrementalHabitData` and logs onto `TaskCompletion.value`).
+  `weekly-habits-*` keys into `habits-store` (an early habits migration also
+  moves climb config onto `IncrementalHabitData` and logs onto
+  `TaskCompletion.value`). Detail is in [`lib/README.md`](../lib/README.md).
 - **Done:** one-click **JSON export/import** of all data — `lib/data/backup.ts`
   (`createFullBackup`/`downloadBackup`/`previewBackup`/`restoreBackup` over every persisted store,
   including home layout, weather place, sun history, and Names, plus plan text, attachments, docs,
@@ -97,27 +92,24 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   `data/recovery-backups/` lists via GET `/api/recovery-backups` when present),
   surfaced in the header **Settings** dialog. Settings also has a **Live vs Demo**
   data profile (`brain2-data-profile`); Demo lives on `brain2-demo-*` keys and
-  cannot restore onto Live. A nascent
-  `DataSource`/repository seam (`lib/data/`) abstracts local/IPC/mongo sources.
-- **Gap:** no cloud **MongoDB Atlas** sync target yet (`brain2` database —
-  collections for items, plans, habits, reviews, etc.) or a numbered **schema
-  migration** runner wired to the live stores. MongoDB was chosen over the spec's
-  SQLite recommendation for:
-  schemaless/flexible documents (unified `Item` + custom attributes), text indexes
-  and Atlas Search for **fuzzy search**, vector indexes for future **semantic
-  search**, aggregation pipelines for **advanced search and routing**, and native
-  BSON/JSON interchange.
-- **Revised direction (offline-first + opportunistic sync):** the local store is
-  **not** being replaced — it stays the working source of truth on every client.
-  Atlas becomes a background **sync target** behind a future `SyncingDataSource`
-  (per-field last-write-wins to start; upgradeable to RxDB / PowerSync / Atlas
-  Device Sync). The `DataSource`/repository seam (below) is what makes this — and a
-  future mobile client — possible.
-- **Multi-device sync is now planned, not deferred.** It is opportunistic and
-  best-effort (never blocks offline use); a future **mobile** app (Expo / React
-  Native) is an explicit target consumer.
-- **Phone data uses a manual hub.** Settings → Mobile Sync and `/mobile` pull
-  (`lib/mobile-sync.ts`) copy a snapshot. There is no always-on live-sync engine.
+  cannot restore onto Live. `lib/data/` is that backup, the Zod schemas
+  (`schemas.ts`), and `taskRepository` (`task-repository.ts`) over the local
+  store. `DataSource`, the IPC source, and `lib/data/mongo/` are unwired
+  scaffolding (no Mongo driver).
+- **Sync that exists:** the manual phone hub. Settings → Mobile Sync and
+  `/mobile` pull a snapshot (`lib/mobile-sync.ts`,
+  [`components/Mobile/README.md`](../components/Mobile/README.md)). There is no
+  always-on multi-device engine. Telegram `npm run phone:hub` is message
+  capture ([`MESSAGE_INGEST.md`](MESSAGE_INGEST.md)), not vault sync across
+  devices.
+- **Speculation, not the storage plan:** MongoDB Atlas, a shared `@brain2/core`
+  package, and an Expo / React Native app. They are not scheduled. The spec
+  recommended SQLite; this repo did not adopt it, and Atlas is not the
+  replacement plan.
+- **Gap vs spec:** the working store is localStorage plus JSON export/import.
+  A numbered schema-migration runner separate from each store's Zustand
+  `migrate` is not wired. Multi-device sync beyond the manual phone hub is
+  not built.
 
 ## §4 Inbox / Capture
 - §4.2 Quick Add — ✅ `components/quick-add.tsx` + `lib/smart-parse.ts` +
@@ -126,7 +118,8 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   **Send to Inbox for clarification** (on by default; uncheck to file on the
   target list or All Items). `-mb` / `-monkey` files the line in **Monkey brain**.
   Shorthand help in-dialog
-  (`components/capture-shorthand.tsx`).
+  (`components/capture-shorthand.tsx`). A list this shorthand creates is not
+  sent to the Scheduler, even when its folder is.
 - §4.3 Bulk Add — ✅ `components/enhanced-bulk-add.tsx`. Header lines ending in
   `:` (`list:` or `folder: list:`), same path + smart-parse on item lines,
   auto-creates folders/lists. Inbox checkbox off by default (files onto lists).
@@ -136,7 +129,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   Chrome at `http://localhost:3000` can list the same Notes.app library. Date-range
   listing, parse/skip with title+content preview, then bulk-add (`List:` syntax,
   or `Folder: List:` to create a new folder by name)
-  or park the **full note** on Lists → **iPhone Notes Ingest** → **notes to ingest**.
+  or park the **full note** on Lists → **Mac Notes** → **notes to ingest**.
   The dialog session survives close/reopen so a slow first listing can finish in
   the background. Already-ingested Apple Note ids are skipped.
   **On My iPhone notes that do not sync:** signed iOS Shortcut
@@ -164,7 +157,8 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   **Text events** / **Text spans**. Grocery dumps **pin** in the Telegram chat
   so a store trip can read the last list with the laptop off. Live 24/7 replies:
   `npm run phone:hub` (hydrate persist, own Telegram, webhook optional).
-  Shortcuts: `got milk`, `n …`, `day:`, custom first-word aliases (e.g. `store`
+  Shortcuts: `got milk`, `n …` (a discrete tick at send time, also on the covering
+  block; `day:` stays the day jot), custom first-word aliases (e.g. `store`
   → `groc`). **On My iPhone Notes:** AirDrop `Dump iPhone Notes to Brain2.shortcut`
   → `iphone-notes:` → iPhone Notes
   Store. **iPhone Screen Time / Calls / Texts:** typed Telegram verbs
@@ -199,7 +193,11 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   files onto the chosen lists and leaves Inbox; **Apply** alone keeps them in the pile
   (`lib/inbox-batch.ts` + `lib/item-merge.ts`, `#243`). **Monkey brain** is a second Inbox partition
   for compulsive dumps (`-mb` / `-monkey` on Quick Add and Telegram); it does
-  not count as the revisit pile. The partition name stays the resting ink color;
+  not count as the revisit pile. More than **100** open revisit ideas adds a To Do
+  for today named **process inbox information** with Auto-push on
+  (`lib/inbox-process-todo.ts`, mounted from `app/page.tsx`). One open copy
+  is enough; marking it done waits until the next local day to add another
+  if the pile is still over 100. The partition name stays the resting ink color;
   the lamp and CRT count still change. A count of 10 or more uses a heavier phosphor.
   Still task-only (no type switching among task/note/event/log).
 - §4.5 Inbox vs. review queue — ✅ Inbox exists, the Review header surfaces pending
@@ -213,8 +211,10 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
 ## §5 Item Data Model — 🟡 (most important refactor target)
 - Current model: `lib/types.ts` `Task` is the persisted document; **Item** is
   the ontology. Prefer `ItemRecord` (`type ItemRecord = Task`) on new
-  signatures. Runtime array is still `tasks[]` in `cogs-task-storage` (persist
-  **v12**). Store aliases: `addItem` / `updateItem` / `deleteItem` /
+  signatures. Runtime array is still `tasks[]` on `brain2-task-storage`
+  (task-store persist **v17**). Live persist keys are `brain2-*`; `cogs-*` is
+  a legacy alias. The catalog is [`lib/README.md`](../lib/README.md).
+  Store aliases: `addItem` / `updateItem` / `deleteItem` /
   `getItems` → `addTask` / `updateTask` / `deleteTask` / `tasks`. UI still
   calls `useTaskStore`. Separate interfaces for habits (`WeeklyTask`), events
   (`CalendarEvent`), time-grid intervals, reviews (`PeriodReview`), modules
@@ -225,11 +225,12 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   `categories` collision is gone: they are now `Task.stage` (lifecycle bucket)
   and `Task.lists` (list membership), two real axes under two honest names.
 - **Gap vs §5.1–5.3:** a unified `Item` core exists (`id/type/title/tags/links/
-  attributes` in `lib/types.ts`); the runtime record is still named `Task` /
-  stored in `tasks[]` (aliases started). Persist **v12** fills a missing `type`
-  (Next Actions or inbox → `"task"`, else `"item"`) and never overwrites an
-  explicit type or deletes `description`. Rows that already carry `type` (including
-  `"task"` stamped by the old v7 default) are left as-is. The one overlap left
+  attributes` in `lib/types.ts`);   the runtime record is still named `Task` /
+  stored in `tasks[]` (aliases started). A missing `type` is filled
+  (Next Actions or inbox → `"task"`, else `"item"`) and an explicit type or
+  `description` is never overwritten. Rows that already carry `type` (including
+  `"task"` stamped by an older default) are left as-is. Persist history is in
+  [`lib/README.md`](../lib/README.md). The one overlap left
   on the document is `title` vs `description`. `Item.title` is
   the field of record and every display read now goes through `itemTitle()` /
   `itemTitleOrUntitled()` in `lib/item-utils.ts`; `description` is kept as a
@@ -341,7 +342,16 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
 
 ## §7 Scheduler & Calendar — ✅/🟡
 - Period funnel Always→Year→Month→Week→Day — ✅
-  `components/Scheduler/enhanced-scheduler.tsx`. Shared selection: drag of a
+  `components/Scheduler/enhanced-scheduler.tsx`. The switch is **Send to Scheduler**
+  (`scheduleable: true` only). New lists and folders start off. A dated list, such
+  as a trip itinerary, is scheduled on its own and is not sent here. A task or
+  next action is not included on its own. A card **title** opens Schedule Card
+  Detail across the board (work at this grain, finer periods, and open Undone);
+  **Open list** jumps to Lists on that period's To do list (`To do 8/31-9/6`). The same folder also has **Done** for the period and **Undone** once it has ended.
+  Home → To Do Day / Week / Month has the same **Open list**. The card body still
+  schedules a selection. A past card is that Undone queue
+  (Push to the current period of that size, Mark done, Dismiss, Unschedule).
+  Shared selection: drag of a
   selected task schedules the whole selection (`taskIdsForDragSchedule`);
   **Deselect all** clears checks only; **Delete** / **Mark complete** act on the
   selection (complete is quiet — no popup stack). Placing a task into a real
@@ -356,8 +366,15 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   `brain2-planned-actions` placements with notes — not events; habit
   drop does not complete). Click-drag empty minutes or toolbar **Add Plan**
   creates a planned action; click without drag still opens Add Event. Day hour
-  rows are 152px. Month cells are
-  compact numbered squares. Optional Plan-only dark chrome (`data-plan-dark`,
+  rows are 152px. Past hours of the day agenda outline painted Tracking blocks
+  from the active scope (same slabs as Day Log); a block crossing now is clipped
+  there; future times stay clear; the outlines do not take clicks. Week and
+  month do not draw them. Month cells are
+  compact numbered squares. A month task chip is scheduled for that day, or
+  completed on a day already past (`taskOnPlanCalendarDay`). Inbox captures
+  and list membership (Reminders included) do not place a chip; a date parsed
+  from Inbox prose is not a schedule on the month grid, the week hours, or the
+  day agenda, and it does not sit on the day rail. Optional Plan-only dark chrome (`data-plan-dark`,
   persist `brain2-plan-dark`) is a latch — default remains gray Win95. Optional
   **Gem and trinket** mode (`brain2-plan-gem-mode`, `#plan-gem-mode`) is Month
   past-days only: completed daily habits use `resolveTaskGem`, completed list
@@ -370,8 +387,8 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
 - Persisted plan text — 🟡 **append log** via `lib/append-log.ts` +
   `lib/plan-text.ts` (`dayPlan-*` / `weekPlan-*` / `monthPlan-*` JSON logs,
   persist-hub writes; unsubmitted `draft` survives refresh; **Submit plan**
-  stamps writing time; List / Bulk / Latest). Target is
-  MongoDB-backed plan documents (`plans` collection keyed by period).
+  stamps writing time; List / Bulk / Latest). A Mongo `plans` collection is
+  speculation in `lib/data/mongo/`, not the storage plan.
   Plan log + `planReflection` shown in Reviews — ✅.
 - §7.5 Events with linked checklist — ✅ `lib/event-links.ts` derives each linked
   task's `mustBeDoneBefore` from the event date; attach/detach a prerequisite
@@ -380,17 +397,38 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   Events** — ✅ `paste-events-dialog.tsx` + `lib/parse-event-text.ts` turns
   unstructured itinerary text into bulk-editable calendar events.
 - §7.6 Auto-scheduling — 🕓 deferred (constraint fields retained on `Task`).
-- §7.7 Carry-over logic — 🟡 partial: unfinished periods that have ended roll up
-  one level on the funnel (`rollUpExpiredSchedules` on hydrate, local midnight,
-  and when the window becomes visible): day → that week, week → that month,
-  month → that year, year → fully unscheduled. Prior placements stay on
-  `schedulePlacements` for gray past cells and analytics. Automatic roll-up does
-  not increment push counters. Tomorrow's stored date becomes Today when that
-  date arrives. An explicit push writes the next period and wins. Completed and
-  missed stay put. Review and To Do still offer push-forward per task.
+- §7.7 Carry-over logic — 🟡 partial: unfinished periods that have ended are
+  settled by `rollUpExpiredSchedules` (hydrate, local midnight, and when the
+  window becomes visible). **Auto-push off** (default): roll up one funnel
+  level — day → that week, week → that month, month → that year, year → fully
+  unscheduled — without incrementing push counters. **Auto-push on**
+  (`autoPush` in item detail, To Do only, not the Scheduler): push the same
+  grain onto the next To Do period (week 1 unfinished → Undone for week 1 and
+  `scheduledWeek` for week 2) and increment that counter; every missed step on
+  the way is recorded. Prior placements stay on `schedulePlacements` for gray
+  past cells, analytics, and Undone. Periods are independent. Tomorrow's stored
+  date becomes Today when that date arrives. An explicit push writes the next
+  period and wins. Completed and missed stay put. Day / week / month pushes
+  (open-list Push, Undone Push, review carry-over, review Push, message-ingest
+  ritual) record the period being left as Undone. Home → To Do on a **past**
+  day / week / month lists those placements as **Undone** (Assimilate keeps the
+  coarser list, Push schedules the next still-open period, Discard cancels).
+  Push and assimilate do not clear the period off Home Undone. An explicit push
+  and auto-push set `resolved: "pushed"` so the Scheduler queue drops that
+  period; roll-up leaves it unset so the card can still triage it. A past
+  card's Push assigns the current period of that size. Mark done finishes the
+  task inside the period and is the action that removes it from that Undone
+  list. Dismiss and Unschedule set `resolved: "clarified"` (the queue clears,
+  the Undone list keeps the row, Unschedule returns the task to Always).
+  Discard sets `resolved: "discarded"`. The earliest non-discarded Undone start feeds the priority date
+  (`priorityDateOf`), which To Do overdue and (with no deadline) regret measure
+  from.
 
 ## §8 Home Dashboard — ✅/🟡
 - Tabbed dashboard (Habits/Plan/To-Do/Goals/**Tracking**) + top bar — ✅
+  Header **Nav** Back/Forward (`header-nav-buttons.tsx`) walks an in-app screen
+  stack (`lib/screen-history.ts`) across tabs, Lists folders, and full-page item
+  detail — not only `window.history`.
   `components/Home/home-dashboard.tsx`, `app/page.tsx`.
   Global header **today's friend** (`baby-animal-nest.tsx`) is the first
   gamify beat: click the **photograph** for that friend’s details. The **chat
@@ -412,14 +450,22 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   picks among those cards. Gallery text fields use navy focus.
   Gallery **Remove** confirms; dismissed friends stay gone. Plan + remaining
   clock / trinkets: [`FRIEND_COMPANION.md`](FRIEND_COMPANION.md).
-- **TOP strip** (large weekday + Review due + one Points tile + **Today's Progress** + screen pet + Days Until) — ✅
+- **TOP strip** (large weekday + Review due + one Points tile + **Today's Progress** + screen pet + Days Until + **Moon**) — ✅
   shared by **all five** Home tabs. Equal-height tiles (caption + CRT + footer)
   flex up to 200px. Optional affirmation / weather / Next / Day lamp /
   Solar remainder / Tracking now / Night well / Harvest leftover / Inbox mill.
+  **Moon** is an 8-bit moon, the phase name, and days until the sooner of the
+  next full moon and the next new moon. Detail adds illumination, the previous
+  and next major phase with local time, and a heliocentric chart of the eight
+  planets as photographs at true relative size (the Moon shows only in the
+  Earth zoom, at true size and distance).
   **Latest award** shows the newest positive ledger row and why (task completion,
-  high-completion bonus, habit grades higher than yesterday, weekly habit grades
-  higher than last week).
+  high-completion bonus, raw daily completion higher than yesterday, Week grade /
+  Perfect output higher than last week).
   × asks Are you sure? before hide. The weekday plate is the clock's date.
+  Overview squares follow the selected day unless **Widgets → Follow the clock**
+  is on (`cogs-home-widgets` persist v8, default off). Habits, Plan, To Do,
+  Goals, and Tracking stay on the selected day either way.
   Centered CRT numerals, three Habits tints, shared `--hab-crt-green`.
   All time / today / week / month share one Points tile. **Widgets** sits in
   the corner of the large weekday plate. Click a tile for a silver handheld: dark wells, nixie digits, chunky keys.
@@ -428,13 +474,25 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   See [`DESIGN_STYLE.md`](DESIGN_STYLE.md#depth--spacing).
 - **Today's Progress** quickview (to-do + habit completion) — ✅
   `daily-progress-quickview.tsx` as a hidable tile on every Home tab (meters
-  in the CRT, one footer line).
+  in the CRT, one footer line). Detail lists undone to-do titles and habit
+  names; each list folds with `>` shut and `^` open.
 - Points stats — ✅ `components/Home/points-stats.tsx`. One hidable Points tile
   on every Home tab (all time, today, week, month). Cards and the instrument
   quad still list the four periods.
 - §8.4 To-Do tiers + overdue — ✅ `components/Home/ToDo/todo-panel.tsx`.
+  Open rows are **assigned**; `todoMarks` adds **Required** (its own list) and
+  **Prioritized** (tagged on Assigned). The load strip shows days left,
+  estimated time (all / required / required + prioritized; typed estimate or the
+  sum of nested steps, whichever is larger), hours left, working hours left,
+  and comfort (`lib/todo-commitment.ts`). Assigned has search. Rows break into
+  nested steps (`lib/todo-steps.ts`). The row trash icon deletes the task.
   **Done** also includes Operation **Working on this now** sessions as
-  `worked on {name}` (`lib/operation-work-session.ts`).
+  `worked on {name}` (`lib/operation-work-session.ts`). Past periods add
+  **Undone** (`UndoneTodoSection.tsx`) for each past period a task was scheduled
+  on To Do and not finished then. Periods stack independently. Push leaves the
+  left period Undone. Item detail **Auto-push** (default off) continues that
+  push when the period ends. Open rows show `waiting Nd` from the priority
+  date (live scheduled day, or an earlier Undone start, or an earlier deadline).
 - §8.7 Review entry points — ✅ header Review button with a pending badge
   **plus** a Home overview **Review due** square
   (`components/Home/home-review-banner.tsx`) with Start review / Dismiss.
@@ -450,39 +508,39 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   carrying a derived **duration and clock window** rather than the old noon stamp.
   Daily tab **Week grade** is the mean of elapsed days' overall % after an
   optional daily curve (`gradeTolerance`: raw % that counts as 100; **0% stays 0**).
-  Click the grade for a raw-vs-curved breakdown (scrollable; notes 50-pt habits,
+  Click the grade for a raw-vs-curved breakdown (scrollable; the CRT also shows the average week grade across every week that has a completion; notes 50-pt habits,
   the user accomplishment bonus, 75% bonuses, and the grade-lift bonuses). Optional **50% floor** from
   prioritized habits (`lib/habit-priority.ts`; toggles in the grade / Good-day
   dialogs). **Perfect output** is a second, independent
   grade: mean of each habit's elapsed-paced row % (`outputGradeTolerance`, same
   curve formula, zeros not lifted). Grid week % still uses /7. Daily rows show 4+ day **week streaks**
   without changing climb bump rules. Per-habit week % and the daily-completion
-  row are a quiet 10-pip milled channel by default (`percent-led-bar.tsx`) or a smaller
+  row are a thin glass thermometer by default (`percent-led-bar.tsx`) or a smaller
   numeric LED (`percent-led.tsx`; rail **Loading Bar**; tint `percentLedTint` in
   Habits Settings). Yes/No cells are recessed panel lamps (tint as on-color, not blast-white). Daily **Day View** shows today + week % only. Daily habits upsert **50 × completion
   ratio** plus a user **accomplishment bonus** when that day's raw score meets
   `accomplishmentThreshold` (default ≥80% → +50; Settings / Good days dialog), **+100 / +300**
-  grade bonuses, and editable lift bonuses when grades beat yesterday or last week (`lib/habit-points.ts`). **Good day streak** and **Good days in the last month**
+  grade bonuses, editable lift bonuses when raw daily completion beats yesterday or rail grades beat last week, and two average bonuses (default +5 each, Habits → Settings) when raw completion is above the prior 7-day average and above the prior 30-day average (`lib/habit-points.ts`). **Good day streak** and **Good days in the last month**
   (previous 30 days at/above the threshold) sit in the Daily Habits Tab Control Panel, not in a header strip
-  (`lib/habit-accomplishment.ts`). Weekly and Monthly tabs use the same compact
-  spreadsheet (7 weeks or 7 months), row % LEDs, period-completion footer, **Span grade**
-  (mean of elapsed period columns) and **Perfect output**. Daily **New habit** is on
+  (`lib/habit-accomplishment.ts`). The Good days detail scores wall-clock today (the checklist’s today column), and shows yesterday plus the prior 7-day and prior 30-day raw averages against that figure, with the gap in percentage points. Under that, this week’s raw average (elapsed days, or all 7 when the week is finished) is compared with last week, this year, and every week that has data. Weekly and Monthly tabs use the same compact
+  spreadsheet (weekly columns from `lib/habit-week-window.ts`, default seven weeks; monthly columns from `lib/habit-month-window.ts`), row % LEDs, period-completion footer, **Span grade**
+  (mean of the weeks or months on that sheet — seven weeks, this civil month, this app quarter, four weeks, or this synodic month; year so far, 12 months ending this month, or since the stored birthday, default 5 May) and **Perfect output**. Daily **New habit** is on
   the Habits Tab Control Panel on every tab. Optional Daily **heatmap** (sidebar Heatmap View rocker)
   with infinite scroll into the past, jewelry cells in the **same light metal well**
-  as the checklist, a **Sort Habits** custom plate above grouped Heatmap View /
-  **Day View** / **Hide Completed Today** (persisted) / **Loading Bar** / **Small LEDs** rockers, today as a **solid** mint fill, and noble-gas tubes for Week/Span
+  as the checklist, a **Sort Habits** milled bay (CRT selected keys) above grouped Heatmap View /
+  **Day View** / **Hide Completed Today** (persisted) / **Hide completed and missed** (persisted, default off; hatches completed and missed-op cells, does not remove rows) / **Loading Bar** / **Small LEDs** rockers, **Missed op wand** under **Exemption wand**, today as a **solid** mint fill, and noble-gas tubes for Week/Span
   grade and Perfect output (Willpower gems stay a crystal, plate pinned to the control panel
-  foot). One inset gem/edit sits far left;
+  foot with a solid **Physics** key; **New habit** matches that raised metal). Daily/Weekly/Monthly/Season sit in one **four-up** period bay. One inset gem/edit sits far left;
   the title wraps with streak/× under it; Delete is in habit settings.
   **Willpower gems:** completed daily-habit gems collect small around the plate
   all week (derived from completions); the row gem inverts while contributing;
   plate click stirs; grab/lift throws; photograph change is Settings-only.
   See
   [`components/Home/Habits/README.md`](../components/Home/Habits/README.md#daily-layout--chrome-intent).
-- Shared store — ✅ `lib/habits-store.ts` persist **v20** (exemption wand: automatic pre-creation waivers, all-nighter `logExemptions`, plus explicit `habitExemptions`; sleep-clock and next-action list connections; sort direction; **v19** `contentRev` for titles/details/completions/overrides; hollow live maps overlay disk completions so grades keep paint; **`hideCompletedToday`** also hides exempt rows; calm Willpower physics defaults; control panel width pinned compact;
+- Shared store — ✅ `lib/habits-store.ts` persist **v23** (Tracking Activity Occupancy + daily-floor link habits ensured on upgrade; **v20** exemption wand: automatic pre-creation waivers, all-nighter `logExemptions`, plus explicit `habitExemptions`; sleep-clock, next-action list, Activity Occupancy %, and daily-floor connections; sort direction; **v19** `contentRev` for titles/details/completions/overrides; hollow live maps overlay disk completions so grades keep paint; **`hideCompletedToday`** also hides exempt rows and sleep/coverage-met habits; **missed opportunity** is optional `TaskCompletion.missedOpportunity` (absence is not marked; grades, percents, streaks, gems, and points do not read it) plus `missedOpWand` and `hideCompletedAndMissed` (default false, migrate fills a missing key, no version bump); calm Willpower physics defaults; control panel width pinned compact;
   persist **v16** `habitsControlPanelWidth` / physics lab; persist **v15** (`habitSmallLeds` default on;
   persist **v14** `gradeTubeColor` /
-  `outputGradeTubeColor` discharge hues for Week/Span vs Perfect output tubes;
+  `outputGradeTubeColor` plasma hues for Week/Span vs Perfect output tubes;
   persist **v13** random catalog
   `WeeklyTask.gem` stamp for habits that lacked one; user-picked gems kept;
   `habitDayView` +
@@ -504,18 +562,38 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   derives the duration from the best evidence — the habit's own minutes/hours value,
   painted Tracking minutes, then the rate — and `lib/completion-window.ts` places it
   in the day. Everything assumed is flagged for confirmation (see §13).
-- **Auto-fill from Tracking** — ✅ GOAL/BOOLEAN habits (daily, weekly, or monthly)
+- **Auto-fill from Tracking** — ✅ GOAL/BOOLEAN habits (daily, weekly, monthly, or season)
   can link TimeGrid **tags** (Add/Edit Habit → *Auto-fill from Tracking*) so tagged
-  minutes count toward the goal with no manual entry. Daily habits use that day’s
-  minutes; weekly/monthly habits **sum** tagged minutes across the week or calendar
-  month. `TaskCompletion` keeps `manualValue` and `trackedValue` apart, so
-  repainting recomputes instead of accumulating and erasing time withdraws it;
-  `value` stays the combined number every other calculation already reads.
-  Climb/Text habits are excluded (`supportsTrackingLink`). An Operation can carry
-  the same tags, so **Working on this now** paints minutes the habit already knows
-  how to count. A tag pinned to a single block counts identically to a pen tag, and
-  a logged sleep night feeds a Sleep-tagged habit with no sleep-specific code in
-  the habit path. See §12.
+  minutes count toward the goal with no manual entry, **or** link **Tracking Activity
+  Occupancy %** (`activityOccupancyCoverage` — the same Occupancy figure Activity Time
+  Grid / Week shows) for the habit’s period (editable threshold, default 75; seed:
+  Log 75% of the day/week/month/season). Cell label caps at the threshold
+  (`coverageDisplayAmount`: complete reads 75/75, not 100/75); stored percent and grades
+  stay uncapped. On the current period only, a second line is that occupancy divided by
+  how much of the period has already passed (`lib/habit-period-pace.ts`) — the share of
+  time already lived that has been logged. Goal habits can optionally draw a cell tube
+  (`showGoalBar`, off unless the habit form asks for it) filled by the shown amount over
+  the goal. Weekly, monthly, and season habits can also add up one daily habit across the
+  days so far (`habitValueLink`, `lib/habit-value-sync.ts`). Weekly habits can also link
+  **No daily habit at 0%**
+  (`lib/habit-completion-source.ts`, `lib/habit-coverage-sync.ts`). **Completion sources**
+  are an ordered trust list on the habit (`WeeklyTask.completionSources`,
+  `lib/habit-completion-trust.ts`): the first source with an observation wins.
+  Sources: by hand, tracking tags, tagged tasks, activity occupancy, sleep clock, next actions,
+  daily habits floor, daily habit total, phone keywords. **Tagged tasks**
+  (`WeeklyTask.taggedTaskTag`, `lib/habit-tagged-count.ts`) counts Done tasks with that tag
+  (two tagged cooking tasks in the week meet a goal of 2; a tracked activity with the tag
+  files one Done line and counts once). The minute tracking-tags source is unchanged.
+  A new tracking tag can be created on the
+  habit form and is a real Tracking tag. Daily tag links use that day’s minutes; weekly/monthly
+  habits **sum** tagged minutes across the week or calendar month. `TaskCompletion`
+  keeps `manualValue` and `trackedValue` apart, so repainting recomputes instead of
+  accumulating and erasing time withdraws it; `value` stays the combined number every
+  other calculation already reads. Climb/Text habits are excluded (`supportsTrackingLink`).
+  An Operation can carry the same tags, so **Working on this now** paints minutes the
+  habit already knows how to count. A tag pinned to a single block counts identically
+  to a pen tag, and a logged sleep night feeds a Sleep-tagged habit with no sleep-specific
+  code in the habit path. See §12.
 
 ## §10 Goals & Objectives — ✅/🟡
 - **Objectives** — ✅ all-time aspirational directions (`Objective` entity, 26 seeded)
@@ -525,10 +603,13 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
 - **Goals** — ✅ quantifiable metrics (`count|boolean|numerical`, period kinds incl.
   custom ranges) that each serve ≥1 objective. `Home/Goals/GoalsContainer.tsx`.
 - **Contributions & multipliers** — ✅ tasks carry `contributesTo{Objective,Goal}Ids`;
-  the global completion popup (`components/Completion/`) advances goals and awards a
+  the global completion popup (`components/Completion/`) selects **or creates**
+  objectives and goals, advances goals, and awards a
   **stacking** objective multiplier (1.5× default, or a prioritized objective's custom
-  value) via `lib/goals-store.ts` (`taskObjectiveMultiplier`). **Undo** on that popup
-  reopens the task (`uncompleteTask`) and drops that day's base points; **Skip** keeps
+  value) via `lib/goals-store.ts` (`taskObjectiveMultiplier`). A new goal from the
+  popup is a year count of 1 serving the objectives selected there. **Undo** on that popup
+  reopens the task (`uncompleteTask`) and drops that day's base points and any
+  quick-review points; **Skip** keeps
   the completion without recording a contribution.
 - **Direction in life** — ✅ `lib/objectives.ts` coverage (neglected goals, drift days)
   + `Home/Goals/DirectionReport.tsx`. Persisted in `lib/goals-store.ts` (persist v3).
@@ -663,15 +744,20 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   range fills every ticked day at once (**Mon–Fri** in one press), which is what
   makes catching up on a routine practical; each column reports its own total and
   can be cleared on its own; a date heading drops back into the day view on that
-  date. **Zoom-out (not implemented):** a later pass should show category-colored
-  month/year blocks on the same interval store — do not build it until Infinite
-  scroll stays still.
+  date. **Infinite zoom** — ✅ Cells / Hour / 3h / Day on that same strip
+  (`infinite-strip.tsx`). Hour, 3h, and Day color the root category
+  (`penAtDepth` 0). A month or a year is the Day zoom, scrolled. The week grid
+  draws discrete-event ticks and opens the block editor.
 - **Activity Log** — ✅ `components/Home/Tracking/tracking-activity-log.tsx`
   lists every block of the day with its times, duration, variants, title and the
   tags it feeds, shows untracked gaps as one aligned row (time, Untracked · duration,
   white note, Fill, 22px `.trk-gap-add` **+**), **Log activity** once on this tab’s `.trk-period` (Time Grid / Day Log keep the grid-rail latch next to TIME/DIV / view modes; optional name, notes, optional **Date** on start/end, **right now** on a focused clock, and **discrete events** with one clock time that can
   start or end a state block), and **Done this day** (To Do items finished on this
-  calendar day — listed as reconstruction hints, not auto-painted). Every row
+  calendar day). **Place as assumed** writes a hatched block into an open gap
+  (`precision: "estimated"`, `estimateOf: { kind: "done", id }`). **Confirm**
+  clears `precision` on that row and on any block that is already estimated
+  (Screen Time, phone ingest). Nothing stamps `estimateOf.kind === "import"`
+  yet. **Find** on this view’s period bar uses `lib/tracking-search.ts`. Every row
   opens the block editor. A block may carry an optional **display name** (`TimeEntry.title`; empty
   falls back to the primary pen) and **secondary pens** (`secondaryPenIds`; older
   vaults omit this — primary only). Grid color stays the primary. Tags from every
@@ -683,7 +769,8 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   painted intervals on the planned agenda (`AgendaGrid` log mode, `trackedBlocks`).
   **Week** (`daylog-week.tsx`) is a compact seven-column plan-vs-tracked board for
   the week of the selected date — not Time Grid `week-grid.tsx`; period nav steps
-  by week; a column date heading opens that day. Ghosts are the Plan — click to
+  by week; a column date heading opens that day. An empty hour opens the Plan
+  event dialog. Ghosts are the Plan — click to
   **confirm** (paint + optional notes; tasks go through `completeTask` so
   dependents unlock). Solid pen-colored blocks are Tracking; a multi-hour stretch
   in day mode is one continuous slab (title once, still clickable in every hour).
@@ -729,13 +816,18 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   (`lib/pen-tree.ts`); **Show as** sets `displayDepth` (Exact by default). Nesting
   is retroactive. **Counts as** in pen settings is a searchable retro control with
   **Create new pen** and a collapsible color chain (this pen → parents; on a parent,
-  pens that roll up to it). One parent only — **multiselect / parallel counts-as
-  chains are planned, not implemented**. The palette **Sort** is Recent (default), A–Z, or Tree
+  pens that roll up to it). A pen may count as several others: `parentIds` is
+  the full list, display parent first, and `parentId` stays that display parent.
+  Persist **v14** copies a lone `parentId` into `parentIds`. The palette **Sort** is Recent (default), A–Z, or Tree
   (`lib/pen-sort.ts`; persist **v7** stamps `lastUsedAt` from existing paint).
   Persist **v6** added Company, parents, and depth.
-- **Pen variants (sub-categorization)** — ✅ overlapping labels *inside* one pen.
-  Parents are for *is-a* rollup; variants are for several labels true at once.
-  Analytics drills children first, then Split / Reach variants.
+- **Pen variants (sub-categorization)** — ✅ overlapping labels *inside* one pen,
+  and the same ladder as counts-as. A detail of Exercise is a pen that counts as
+  Exercise (Walk, Gym). Adding a detail creates or adopts that pen; nesting a
+  pen adds it to the parent's detail list (`PenVariant.penId`, persist **v13**,
+  `lib/pen-detail-sync.ts`). Several can still apply at once. Analytics drills
+  children first, then Split / Reach — both include time painted on the detail
+  pen itself. A same-name pen that already counts as something else is not stolen.
 - **Block display name** — ✅ `TimeEntry.title` is an optional label for one
   block ("walk to the beach" on a block of *walking*). It changes what surfaces
   print, never what anything counts: rollups, tags, habits and Analytics all
@@ -753,8 +845,9 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   means "primary only". UI: `components/Home/Tracking/secondary-pens-field.tsx`
   behind **add pen color** in the block editor (`block-pen-section.tsx` shows
   only pens already on the block until then).
-- **Counts as — explained, searchable, and drawn** — ✅ three changes to pen
-  nesting, all over the existing `parentId`:
+- **Counts as — explained, searchable, and drawn** — ✅ pen nesting. `parentId`
+  is the display parent. `parentIds` is the full counts-as list, display parent
+  first (`lib/pen-tree.ts`, persist **v14**):
   1. The copy now says what nesting actually does — painting still writes *this*
      pen; the grid and Analytics may roll it up to the parent — instead of
      implying that "Ocean Beach counts as San Diego" relabels the time.
@@ -783,13 +876,18 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   `components/Home/Tracking/pen-action-format-editor.tsx`. Separate from habit
   tag links: this names an action, tags feed a goal.
   Reference: [`docs/PEN_ACTION_FORMATS.md`](./PEN_ACTION_FORMATS.md).
-- **Planned, not implemented — parallel counts-as.** A pen counts as exactly
-  one parent (`parentId`). Multiselect, so a pen can roll up along two chains at
-  once, is designed for but deliberately unbuilt; keep `parentId` a single nest
-  so the model stays extensible. See [`docs/COUNTS_AS.md`](./COUNTS_AS.md#planned-parallel-counts-as-chains).
-- **Planned, not implemented — hide / show / search / index.** Using block
-  names, secondary pens and action formats to filter and index the Tracker and
-  the Analytics Tracking tab is the stated next step. Nothing ships this pass.
+- **Parallel counts-as** — ✅ `parentIds` on the pen, multiselect in
+  `pen-parent-picker.tsx`. **Show as** follows the display parent only, so the
+  grid keeps one color. Occupancy still counts a minute once. At Exact the
+  painted pen gets the whole block; at a collapsed depth each distinct ancestor
+  gets a share, and those shares sum to the block (`addSplit` in
+  `lib/tracking-summary.ts`). A secondary pen still receives the full block.
+  See [`docs/COUNTS_AS.md`](./COUNTS_AS.md#parallel-counts-as).
+- **Find** — ✅ `lib/tracking-search.ts`. Time Grid bezel and Activity Log
+  period bar (`tracking-find.tsx`) search display name, notes, project, pen,
+  secondary pens, counts-as names, and action-format templates, then jump to
+  the block. Analytics → Time → Tracking uses the same matcher
+  (`components/Analytics/block-search.ts`).
 - **Tags belong to time, not to pens** — ✅ `effectiveTagIds` (`lib/tracked-time.ts`)
   makes a block's tags the union of **every assigned pen's** standing tags (primary
   plus secondaries) and any pinned to that
@@ -887,34 +985,69 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   `log` Item — though it now has the identity, span, detail fields, midnight-crossing
   `spanId` slices, and edit surface the spec assumes. Old `tracking-store.ts` /
   slider form removed.
-- **Gap:** autolog pipelines that would paint assumed blocks from Done items,
-  ingest, or other app evidence onto **Activity** are not implemented. Activity Log already *lists*
-  Done-for-day as reconstruction hints; those minutes are not written to the grid.
-  **Screen Time** (ActivityWatch, own scope) is the exception — estimated blocks
+- **Assumed blocks from Done** — ✅ Activity Log **Done this day** can **Place
+  as assumed** (`lib/estimate-proposals.ts` picks an open gap; the click writes
+  the hatch). Confirm turns it into an ordinary block and leaves `estimateOf`
+  so the same item is not proposed again. There is still no unattended writer
+  that paints Done items, ingest, or other app evidence onto **Activity**
+  without that click.
+  **Screen Time** (ActivityWatch, own scope) writes estimated blocks
   stamped `generatedBy.kind === "screentime"`. Phone ingest paints **iPhone
   Screen Time / Calls / Texts** as estimated / instants without that stamp (Mac
-  AW replace cannot delete them). Not Apple Screen Time, Recents, or Messages
+  AW replace cannot delete them). Those already-estimated imports confirm the
+  same way. Not Apple Screen Time, Recents, or Messages
   export. No Scolect import.
 
-## §13 Reviews — 🟡
-- Period reviews — 🟡 `components/Reviews/reviews.tsx` + `lib/reviews-store.ts`.
-  Supports day/week/month/quarter/year with carry-over prompts, gratitude,
-  reflection questions, saved plan text, and `planReflection`.
-- **Morning review ritual** — ✅ `components/Reviews/MorningReview.tsx` +
-  BIM `gm` (`lib/ingest/apply-morning-gm.ts`). `PeriodReview.morning`: all-nighter
-  (lifts habits whose settings carry an all-nighter block — bedtime the evening
-  before, wake and dream that morning),
-  wake/dream (when slept), affirmations, to-dos added, 3–5 priorities, 1–3 habit
-  priorities, day-plan flag, circumstance branches (must-do / must-not / events /
-  excitement), best-day why, gratitude; `source` labels text-pipeline vs desktop.
-  After priorities: go-through to-do six-slot walk (`lib/morning-todo-walk.ts` →
-  task tier/duration/points + `dayRatings` + `resistanceReadings`) and plaintext
-  day plan (Plan log; Telegram stamps **from text**). Surfaced from the Review
-  header, Home → To Do / Habits morning priority bands, Analytics → Reviews +
-  To-do pulse. Sleep clocks read/write `lib/sleep-store.ts` (all-nighter tracked
-  there too for Analytics → Sleep). See §12.
+## §13 Rituals (reviews) — ✅
+- **Rituals** — ✅ `components/Reviews/reviews.tsx` (`Rituals` / `Reviews` alias) +
+  `lib/rituals.ts` + `lib/reviews-store.ts`. Day: morning (sun) + night (moon).
+  Week/month/quarter/year: **Start ritual** (plan current period on
+  `PeriodReview.start`) + **Review ritual** (end just-ended period on the review
+  root + `endCompleted`). Carry-over, gratitude, reflection, plan text,
+  `planReflection`. Available/undone list in the Rituals menu, Home **Rituals due**
+  tile, and Telegram `rituals` / `reviews` board (command + in-app path per slot).
+  Quarter copy is `Quarter YYYY Qn (Season)` (`lib/seasons.ts`: Q1 Spring, Q2 Summer,
+  Q3 Fall, Q4 Winter), so 26 Sep 2026 reads **Quarter 2026 Q3 (Fall)**.
+- Period reviews (end) — ✅ same `ReviewDialog` / Telegram end walk as before;
+  night for day is the same walk keyed to today (`gn`) or the prior day (`review day`
+  and Header → Rituals → Night · yesterday). Unfinished rows use that period's
+  ledger (`lib/ritual-unfinished.ts`), not whatever is scheduled today. **Push**
+  uses the Scheduler queue (`lib/ritual-push.ts` → `pushCardWorkingQueue`) and
+  the row leaves this ritual. Close saves a draft (`endCompleted: false`) and
+  does not award points. Submit awards section points (default 10) plus a
+  whole-ritual bonus (default 30), edited in Settings → Automatic point
+  allocation. Each answered longer-ritual question is a section; a photo with
+  no caption counts; the stats panel does not. Night also keeps a wake-up
+  reminder, what matters most tomorrow (both shown on the next morning), goals
+  to focus tomorrow, and a glance at that day's time grid / day log / activity
+  log in the pen colors. Week, month, season, and year add period stats and
+  `PeriodReview.arc` (one reflection model; Analytics → Reviews reads it).
+- **Star Lord Report** — ✅ `components/Reviews/StarLordReportDialog.tsx` +
+  `lib/star-lord.ts` + `lib/lunar.ts` + `lib/star-lord-store.ts`. Opens from
+  Header → Rituals on the local day of the new moon, the local day of the full
+  moon, and the birthday in Settings → Birthday (`user-settings` persist v4).
+  A moon and a birthday on the same day are two rites. An undone report stays
+  listed through the next day. Preparation, three ledger questions, three
+  inner-alchemy questions, and a closing toward the north. Close saves a draft
+  and awards nothing. Submit awards the same section points and whole-ritual
+  bonus as other rituals (`ritual:star-lord:{kind}:{date}`). Telegram `rituals`
+  names an open report and points at the app. The new-moon place is at home.
+- **Morning ritual** — ✅ `components/Reviews/MorningReview.tsx` +
+  BIM `gm` (`lib/ingest/apply-morning-gm.ts`). Unchanged flow; opened from Rituals → sun.
+  `PeriodReview.morning`: all-nighter, wake/dream, affirmations, to-dos, priorities,
+  required-today marks (`todoMarks`),
+  habit priorities, day-plan, circumstances, best-day, gratitude; `source` labels
+  text vs desktop. Partial progress + `STOP`. Surfaced on Home → To Do / Habits
+  priority bands, Analytics → Reviews + To-do pulse.
+- **Start ritual (week–year)** — ✅ `StartRitualDialog` + Telegram
+  `ritual start week|month|quarter|year`: undone from last period, priorities,
+  must-do, mark assigned tasks required / prioritized, intentions, plan, gratitude on `PeriodReview.start`.
+- **Night / end over Telegram** — ✅ `gn` / `good night` / `night` / `ritual night`;
+  `review <period>` / `ritual end <period>`; bare `review`/`ritual` opens the first
+  available slot. Legacy `reviews`/`review` kept.
 - **Structured "why blocked/skipped" reasons** — ✅ `BlockedReason` +
-  `PeriodReview.blockedReasons` captured in the carry-over step.
+  `PeriodReview.blockedReasons` (`StoredBlockedReason`) in the carry-over step.
+  **Other** stores the typed note beside the token. Analytics shows the words.
 - **Assumed-time confirmation** — ✅ `components/Reviews/AssumedTimesSection.tsx`.
   Autogenerated time data is never presented as observed: each derived value carries
   a `FieldEstimate` (`Task.estimates`, `lib/estimated-values.ts`) naming the field,
@@ -923,33 +1056,52 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   (`lib/services/completion-time-service.ts`); the same rows expose an **est.** chip
   in Home → To Do → Done. Confirmation is sticky, so the habit sync stops re-deriving
   over a settled value.
-- **Task post-mortems (§13.7)** — ✅ `components/Reviews/PostMortemDialog.tsx` for
-  any completed task (launched from the review carry-over step or Analytics →
-  Reflection): satisfaction / resistance / focus / distraction, an optional
-  actual-duration correction, and notes, persisted by `saveCompletionReview`.
-  Operations have their own debrief (`addOperationReview` +
-  `OperationPostMortemDialog`).
+- **Task completion review** — ✅ `CompletionDialog` (global, on every done).
+  Separate from period rituals. Select or create objectives and goals, optional
+  quick review: length and start are each **exact / estimated / unknown** (unknown
+  stores no minutes and no start time; a saved start of `known` reads as exact),
+  optional 1–10 scores (expected vs
+  actual difficulty, enjoyment, resistance, energy, focus, meaning), notes.
+  A cleared score is removed; a save that omits a score leaves it. Agreeing
+  awards **3 points + 0.1 per word** in those notes (`review:${taskId}`).
+  Only that award writes the ledger row. `saveCompletionReview` /
+  `lib/completion-review.ts`. Analytics → Reflection and Goals read that summary.
+- **Task post-mortems (§13.7)** — ✅ `PostMortemDialog`, a later note from
+  ritual **Reflect** or Analytics. Satisfaction, resistance, focus, distraction,
+  and `reflectNotes` (not the quick-review notes). It does not create, revise,
+  or delete the quick-review points. It does not replace the completion popup.
+  Operations have their own debrief (`addOperationReview` + `OperationPostMortemDialog`).
 - **Gap:** no scheduled prompting beyond the header badge.
 
 ## §14 Points, Rewards & Regret — 🟡
 - Points ledger — ✅ `lib/points-store.ts` (task/habit/goal completions,
+  quick review **3 + 0.1 per word** via `lib/completion-review.ts`,
   Inbox **+1 per handled idea** and **+50 when the Inbox hits 0** via
   `lib/inbox-credit.ts`, Scheduler **+1 per changed period placement** via
   `lib/schedule-credit.ts`,
   `upsertPoints` for revisable daily-habit scores, day/week/month totals + possible).
   Daily habits: 50 × that day’s completion ratio; user accomplishment bonus if that day’s raw column
   score meets `accomplishmentThreshold` (default ≥80% → +50); +100 if either Week grade or Perfect output is 75%+ that
-  day, +300 if both; editable lift bonuses (default +25 each) when Week grade or Perfect output is higher than
-  yesterday, and when a weekly-habit grade or output is higher than last week
+  day, +300 if both; editable lift bonuses (default +25 each) when raw daily-habit
+  completion is higher than yesterday, and when Week grade or Perfect output is higher
+  than the prior full calendar week; and two more editable bonuses (default +5 each) when that day’s raw completion is above the prior 7-day average and above the prior 30-day average. Both can apply. A missing saved amount migrates to 5. 0 turns a rule off
   (`lib/habit-points.ts`, `lib/habit-accomplishment.ts`, Habits → Settings).
 - List completion points — ✅ `resolveCompletionPoints()` (default 1 or **Points**
   attribute).
 - Objective point sources + configurable multipliers — ✅ contributing to an
   objective applies a stacking multiplier (1.5× default, or a prioritized objective's
   user-set value) via `lib/goals-store.ts` + `components/Completion/`.
+  Tomorrow's goal focus (night ritual) applies its own multiplier (default 1.5×,
+  Settings → Automatic point allocation). If an objective multiplier is already
+  above 1, the completion keeps the larger and does not multiply the two
+  (`lib/goal-focus.ts`). Beat-the-clock stays inside the base. The same number
+  weights friend suggestions toward those tasks.
 - **Gap:** other configurable multipliers (urgency/consistency); retroactive adjustment.
 - §14.4 Regret accrual — ✅ `lib/regret-store.ts` (accrues the cost of not-done
   important/overdue items; day/week/month totals) + `Analytics/RegretView.tsx`.
+  Regret rows are local `YYYY-MM-DD`, same as the Analytics window. An old evening
+  UTC key can still sit on the next civil day. Ledger equals `regretCost` for days
+  written after the bridge; one stolen legacy date can stay one increment short.
 
 ## §15 Analytics — 🟡
 **Heart of the product**, not a leftover tab: the vault of items, time, habits,
@@ -962,13 +1114,16 @@ how a finding stays a living item, not a screenshot.
   not dark CRT). Five
   groups (Behavior / Time / Accuracy / Meta / Library).
   Views include **Observatory**, **Circadian**, **Places**, **Mood field**
-  (cognitive-state trends), **Velocity**, **Cycle** (plus open-item survival),
+  (any painted name, plus Same word / The water / Marks from the stretch
+  reading — not only four pens — with wellbeing metrics still beside that),
+  **Velocity**, **Cycle** (plus open-item survival),
   **Goals**, **Operations**, **Lists & areas** (size-by-items treemap + HHI),
   **Tags**, **Stages**, **Weight**, **Attributes**, **Diversity** (Shannon entropy
   + Gini + weekday/weekend), **Transitions** (Markov pen matrix + alluvial), **Spectrum**
   (autocorr / periodogram / sleep CV), plus Habits (horizon + weekday/weekend slope) /
-  Tracking (**pie** + mosaic + block-length violin + hour×pen small multiples
-  + enlarged drill that lists and edits blocks) / Sleep (weekday ridgelines) /
+  Tracking (**pie** + ranked rows + average-day ribbons + period filmstrip +
+  up/down vs previous window + block-length violin + hour×pen small multiples
+  + enlarged drill that lists and edits blocks; Untracked drills to gaps) / Sleep (weekday ridgelines) /
   Circadian (Cleveland cycle) / Cycle (age beeswarm) / Tags (UpSet) / Calibration.
   Settings still **edits** types. One remembered range (`analytics-range-store.ts`)
   — 7 / 14 / 30 / 90 **or** a custom inclusive from–to, labeled as the dates.
@@ -976,6 +1131,22 @@ how a finding stays a living item, not a screenshot.
   charts keep the frame (`chart-frame.tsx`). Chart → Lists (`open-in-lists.ts`).
   Classical stats only (`lib/metrics.ts`, `signal-stats.ts`, `studio-plot-stats.ts`). Derived numbers use
   `~` / **est.** Every view has `ANALYTICS_TAB_HELP` plus tooltips.
+- **Tracking find, grain, tags** — ✅ on Analytics → Time → Tracking.
+  **Find blocks** (`block-search.ts` → `lib/tracking-search.ts`): a jump outlines
+  the block on the period filmstrip and opens the editor; **Show matches in this
+  view** reruns the Tracking measures on that set only. **Days** and **Weeks**
+  strips (`grain-strips.ts`): one cell per period, colored by the pen at the
+  current display depth that owned the most minutes. Overlap votes once. Empty
+  days stay white. A tie keeps the earlier pen. The week strip shows when the
+  window spans two Mondays. Tag bars by week (`tagWeekTrend`) and by month
+  (`tag-trends.ts`, minute-union: a minute tagged in two scopes counts once).
+  Hidden when the window is too short to trend (a series needs more than one
+  bucket).
+- **Time-context slices** — specified, not built.
+  [`time-context-vision.md`](time-context-vision.md). A slice is a predicate
+  over `TimeEntry`. Home versus away, alone versus with someone, and the other
+  life-context pictures are not in the product. Find blocks is a word match,
+  not a slice.
 - **Self-tracking metrics & analytics** — ✅ `lib/metrics-store.ts` + `lib/metrics.ts`
   (classical trend/slope, Pearson correlation, change-point, context-switch counts,
   Shannon entropy, Gini, HHI, autocorrelation, periodogram, CV, survival;
@@ -1100,16 +1271,17 @@ Spec-facing remainder, still true, but **not** the next checkout:
    wizard, then its LLM-assisted mapping step; finish two-way migration of the
    `module.config.houseCleaning` / `tripItinerary` shadow databases onto Items
    (one-way Module Lists projection already ships).
-3. **§3** Wire opportunistic cloud sync to **MongoDB Atlas** via a
-   `SyncingDataSource` (JSON backup/restore already ships; the local store stays
-   the offline source of truth). Local selective restore and rolling
-   `data/recovery-backups/` as a first-class source are in the plan before Atlas.
+3. **§3** Multi-device sync beyond the manual phone hub is not built. MongoDB
+   Atlas, `@brain2/core`, and Expo are speculation, not a scheduled storage
+   plan. JSON backup/restore already ships; the local store stays the offline
+   source of truth.
 4. **§7.7** Automatic end-of-period carry-over — 🟡 partial: unfinished periods
    roll up one funnel level (`rollUpExpiredSchedules`); Reviews still offer
    per-task push-forward.
 5. **§15** Predictive analytics still deferred. Category performance (**Lists &
-   areas**) and cognitive-state (**Mood field**) now ship as Analytics studio
-   views. Honesty (sample-size, shared range, chart → Lists) shipped in Wave 1;
+   areas**) and cognitive-state (**Mood field**: painted names plus the
+   three-part reading, not only the four starter pens and the wellbeing
+   metrics) now ship as Analytics studio views. Honesty (sample-size, shared range, chart → Lists) shipped in Wave 1;
    the studio interior is the current house exception (title + status stay Lists).
 6. **§13** Scheduled review prompts. Generic task post-mortems already ship
    (`PostMortemDialog`).

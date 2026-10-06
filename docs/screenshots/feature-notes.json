@@ -1,0 +1,584 @@
+{
+  "01-home-daily-habits.png": {
+    "name": "Home tab → Habits sub-tab → Daily frequency",
+    "description": "Home window: milled date plate (weekday CRT, calendar nameplate, Widgets key); shared overview squares (Review due, All Time / Today / Week / Month, Today's Progress; Widgets adds Affirmation / Weather) in one equal-height row. Wells stay narrow and share one metal/CRT face (no extra-dark All Time); CRT values are centered in `--hab-crt-green`; Weather uses a sun/cloud/rain glyph; Widgets catalog is an overlay. Fill bars use Habits Percent LED + grade-tube colors. Same strip on Plan / To Do / Goals / Tracking. Needs Attention (Overdue / Blocked / Unclarified — click opens detail). Sub-tabs: Habits · Plan · To Do · Goals · Tracking.\nHabits Daily sits in a contained gunmetal console (`.hab95`) — teal desktop gutters by default (photograph plates stay opt-in). Header is one textured row: Habits | week nav | Settings. Daily / Weekly / Monthly inset keys sit above the sheet (no green glow). Today is a sunken state, not a larger control. Right Habits Tab Control Panel: Week grade + Perfect output tubes; Good day streak + Good days in the last month; Sort Habits plate; Heatmap View / Day View / Hide Completed Today / Loading Bar / Small LEDs rockers; New habit; Willpower gems photoreal chrome + black-mirror oval button (press to stir — a short whirl; grab a gem to throw it, which must not also click-stir the plate; crystal is a solid — gems do not clip through; gems visible past the rim; plate centered in the well; compact column; Physics opens a popup lab with a mapped twin plate, CRT equation/graph wells, and live sliders). Current-day column is a single solid mint fill. Heatmap View is a light metal month-of-cells mosaic (same well as the checklist). Grid: gem/edit | wrapping Task name | Mon–Sun cells (day columns grow with leftover width) | %. Yes/No cells are recessed square-plate panel lamps (on-color is Percent LED tint, dim/warm, not blast-white). Goal/climb cells share one number slot plus `/goal` suffix. Clock glyph + blue border = Tracking auto-fill. Daily Completion % row uses a quiet 10-pip milled channel + % text (Loading Bar; numeric LED optional). New habit = Add Habit (frequency, type, Target, Time estimate, Auto-fill from Tracking).",
+    "styleNotes": "",
+    "docPath": "app/README.md"
+  },
+  "01-home-habits-monthly.png": {
+    "name": "Home tab → Habits → Monthly frequency",
+    "description": "Home window: milled date plate (weekday CRT, calendar nameplate, Widgets key); shared overview squares (Review due, All Time / Today / Week / Month, Today's Progress; Widgets) in one equal-height CRT row. Needs Attention (Overdue / Blocked / Unclarified — click opens detail). Sub-tabs: Habits · Plan · To Do · Goals · Tracking.\nHabits: month navigation in the console header (This month + 7-month window); Daily / Weekly / Monthly inset keys above the sheet; Habits Tab Control Panel with Span grade + Perfect output tubes, Sort plate, Hide Completed This Month, Loading Bar, Small LEDs, New habit, Willpower gems. Compact grid: monthly habits × 7 months + row % + monthly-completion footer (same chrome as Weekly, gem Edit/Delete). Fresh seed includes Pay recurring bills, Finish 1 book this month, Chore hours (Tracking Cleaning tag), and This month's theme (text). Completions feed Analytics heatmap/points. Goal / Yes-No can Auto-fill from Tracking (month sum).",
+    "styleNotes": "",
+    "docPath": "components/Home/Habits/README.md"
+  },
+  "01-home-habits-weekly.png": {
+    "name": "Home tab → Habits → Weekly frequency",
+    "description": "Home window: milled date plate (weekday CRT, calendar nameplate, Widgets key); shared overview squares (Review due, All Time / Today / Week / Month, Today's Progress; Widgets) in one equal-height CRT row. Needs Attention (Overdue / Blocked / Unclarified — click opens detail). Sub-tabs: Habits · Plan · To Do · Goals · Tracking.\nHabits: week navigation in the console header (Today + 7-week window); Daily / Weekly / Monthly inset keys above the sheet; Habits Tab Control Panel with Span grade + Perfect output tubes, Sort plate, Hide Completed This Week, Loading Bar, Small LEDs, New habit, Willpower gems. Compact grid: weekly habits × 7 weeks + row % + weekly-completion footer (same chrome as Daily, gem Edit/Delete). Fresh seed includes Weekly review, Deep work hours (Tracking Work tag), Get one workout in (Exercise auto-fill), and One lesson from this week (text). Type-matched cells (checkbox / count / text / climb), Tracking clock marks when auto-filled. Same store as Lists → Weekly Habits.",
+    "styleNotes": "",
+    "docPath": "components/Home/Habits/README.md"
+  },
+  "02-home-plan-day.png": {
+    "name": "Home tab → Plan → Day view",
+    "description": "Home window: milled date plate (weekday CRT, calendar nameplate, Widgets key); shared overview squares (Review due, All Time / Today / Week / Month, Today's Progress; Widgets) in one equal-height CRT row. Needs Attention (Overdue / Blocked / Unclarified — click opens detail). Sub-tabs: Habits · Plan · To Do · Goals · Tracking.\nPlan Day: Win95 window (Plan — Calendar). Settings / Paste Events / Add Event / Add Plan (bounded Win95 dialogs; dirty close prompts). Add Plan writes a planned action — a dashed linen chip, not an event — on the selected day. Toolbar Season / Month / Week / Day + Dark latch. Sidebar Planned Today: packed nested wells, 10-pip capacity, search/sort, To Do / Habits / Next actions filters, habit gems on incomplete daily habits, Add a to-do; drop here to unschedule. Period toolbar: roomy chevrons, centered date, padded Today. Fieldset legends are navy labels (not links). All-day banners (opal chip + crystal-ball mark) + a tall agenda with 152px hour rows that lands on now (today, red now-line) or waking hour (other days); FR4 hairlines; opalescent events; sunrise/sunset. Drag sidebar rows onto hours to plan them (native drag plus a pointer fallback, so a host that strips DataTransfer still drops); the new placement opens the planned-action dialog for duration and notes. Click event → detail. Day Plan log: Submit plan stamps writing time; List / Bulk / Latest; copy-only history, newest first (composer capped so the agenda stays the large surface). Status bar: view · date · event count.",
+    "styleNotes": "",
+    "docPath": "components/Home/Plan/README.md"
+  },
+  "02-home-plan-season.png": {
+    "name": "Home tab → Plan → Season view",
+    "description": "Home window: milled date plate (weekday CRT, calendar nameplate, Widgets key); Review due banner (Start review / Dismiss); All Time / Today / Week / Month points; Today's Progress (To Do + Habits remaining/done); Needs Attention (Overdue / Blocked / Unclarified — click opens detail). Sub-tabs: Habits · Plan · To Do · Goals · Tracking.\nPlan Season: three months of the calendar quarter, named as a season (Q4 is Winter). Previous / next season, This season. Click a day for Day view, or a month name for Month view. Written season plan below the months (Submit plan stamps an entry).",
+    "styleNotes": "",
+    "docPath": "components/Home/Plan/README.md"
+  },
+  "02-home-plan-week.png": {
+    "name": "Home tab → Plan → Week view",
+    "description": "Home window: milled date plate (weekday CRT, calendar nameplate, Widgets key); shared overview squares (Review due, All Time / Today / Week / Month, Today's Progress; Widgets) in one equal-height CRT row. Needs Attention (Overdue / Blocked / Unclarified — click opens detail). Sub-tabs: Habits · Plan · To Do · Goals · Tracking.\nPlan Week: Win95 window (Plan — Calendar). Settings / Paste Events / Add Event / Add Plan (bounded Win95 dialogs; dirty close prompts). Toolbar Month / Week / Day + Dark latch. Sidebar Planned This Week: packed list well + 10-pip capacity, search/sort, To Do / Habits filters, incomplete weekly habit gems, add a week to-do (same records as Home → To Do); drag onto hours / drop here to unschedule / click → detail. Nested metal wells. Period toolbar + padded Today. Time × Mon–Sun slots with FR4 hairlines; today’s column can wash mint; timed events are one spanning opal block (not reprinted each hour). Planned actions ride the same grid as dashed linen chips; click one to edit it. Click slot/event to create/edit. Week Plan log (Submit plan stamps writing time; List / Bulk / Latest). Status bar: view · date · event count.",
+    "styleNotes": "",
+    "docPath": "components/Home/Plan/README.md"
+  },
+  "02-home-plan.png": {
+    "name": "Home tab → Plan sub-tab → Month view",
+    "description": "Home window: milled date plate (weekday CRT, calendar nameplate, Widgets key); shared overview squares (Review due, All Time / Today / Week / Month, Today's Progress; Widgets) in one equal-height CRT row. Needs Attention (Overdue / Blocked / Unclarified — click opens detail). Sub-tabs: Habits · Plan · To Do · Goals · Tracking.\nPlan: Win95 window (Plan — Calendar). Settings; Paste Events (Parse → Import); Add Event is a bounded Win95 dialog (navy caption, ~30.5rem, not a stretched sheet; dirty close prompts Save / Cancel / Exit without saving); Add Plan opens the same-sized planned-action dialog, which writes a dashed linen chip instead of an event. Toolbar tabs Month / Week / Day; optional Dark latch (Plan-only). Sidebar Planned This Month: packed list well (not raised buttons), search + sort, To Do / Habits filters, incomplete monthly habit gems, 10-pip capacity channel + sentence (drag onto days / drop here to unschedule / click → detail; add a month to-do; empty rail stays). Nested metal rail + desktop wells. Period toolbar (< / centered label / > / padded Today). Compact day squares with FR4 hairlines; today is a mint dashed cell; opalescent event chips (time range + wrap + +N more with a tiny orb; left stripe + glass wash; user color, default mint); planned actions sit beside them as dashed linen chips. Month Plan log (Submit plan stamps writing time; List / Bulk / Latest). Status bar: view · date · event count.",
+    "styleNotes": "",
+    "docPath": "components/Home/Plan/README.md"
+  },
+  "03-home-todo-just-start.png": {
+    "name": "To Do row → Start (Just Start focus mode)",
+    "description": "Just Start overlay from a To Do row (Start). Dark full-screen focus: the smallest next molecular step, a 2-minute countdown, Done with this step, Exit focus mode. Escape closes it.",
+    "styleNotes": "",
+    "docPath": "components/Focus/README.md"
+  },
+  "03-home-todo-month.png": {
+    "name": "Home tab → To Do → Month period",
+    "description": "Home window: milled date plate (weekday CRT, calendar nameplate, Widgets key); Review due banner (Start review / Dismiss); All Time / Today / Week / Month points; Today's Progress (To Do + Habits remaining/done); Needs Attention (Overdue / Blocked / Unclarified — click opens detail). Sub-tabs: Habits · Plan · To Do · Goals · Tracking.\nTo Do Month: same toolbar. Load strip includes \"N days left in month\", hours left, and working hours left. Required, then Assigned with search. This Month's Tasks: month nav; table Task / Status / Tier / Months (pushed) / Actions (delete). Minutes box and nested steps on each row. Done this month + Log done. Done rows dated, with duration and est. chip.",
+    "styleNotes": "",
+    "docPath": "components/Home/ToDo/README.md"
+  },
+  "03-home-todo-week.png": {
+    "name": "Home tab → To Do → Week period",
+    "description": "Home window: milled date plate (weekday CRT, calendar nameplate, Widgets key); Review due banner (Start review / Dismiss); All Time / Today / Week / Month points; Today's Progress (To Do + Habits remaining/done); Needs Attention (Overdue / Blocked / Unclarified — click opens detail). Sub-tabs: Habits · Plan · To Do · Goals · Tracking.\nTo Do Week: same Sort / formula / Status / Show All / Add Task. Load strip includes \"N days left in week\", hours left, and working hours left. Required, then Assigned with search. This Week's Tasks: week nav; cols Task / Status / Tier / Weeks (pushed) / Actions (delete). Minutes box and nested steps on each row. Done this week + Log done. Done rows dated, with duration and est. chip.",
+    "styleNotes": "",
+    "docPath": "components/Home/ToDo/README.md"
+  },
+  "03-home-todo.png": {
+    "name": "Home tab → To Do sub-tab → Day period",
+    "description": "Home window: milled date plate (weekday CRT, calendar nameplate, Widgets key); Review due banner (Start review / Dismiss); All Time / Today / Week / Month points; Today's Progress (To Do + Habits remaining/done); Needs Attention (Overdue / Blocked / Unclarified — click opens detail). Sub-tabs: Habits · Plan · To Do · Goals · Tracking.\nTo Do: Sort (Tier / Priority / Name / Date created / Date added / Days pushed) + asc/desc + formula (Urgency / Importance / Quick win / Entropy, Reset); Status (Open / Active / Partial / Deferred / Cancelled / All); Show All Tasks; Add Task (description + tier). Tabs Day / Week / Month / Season. Load strip: days left, estimated time (All assigned / Required / Required + prioritized), hours left, working hours left, comfort (manageable / overfilled / behind). Required list, then Assigned (search box, Prioritized tag). Row keys include Required and Prioritized. Each row has a minutes box and + for nested steps. Today's Tasks: date nav; cols Task / Status / Tier (A+…D) / Days (pushed) / Actions (complete, Just Start, push, details, delete). Show N more. Done Today (n, N est.) + Log done. Done rows: clock window · duration · ~est. (Looks right / Finished / Took). Just Start overlay: timer, Done with this step.",
+    "styleNotes": "",
+    "docPath": "components/Home/ToDo/README.md"
+  },
+  "04-home-goals.png": {
+    "name": "Home tab → Goals sub-tab",
+    "description": "Home window: milled date plate (weekday CRT, calendar nameplate, Widgets key); Review due banner (Start review / Dismiss); All Time / Today / Week / Month points; Today's Progress (To Do + Habits remaining/done); Needs Attention (Overdue / Blocked / Unclarified — click opens detail). Sub-tabs: Habits · Plan · To Do · Goals · Tracking.\nObjectives: Add Objective; period Day / Week / Month / Year / All; Prioritized (star); All objectives accordion (click → detail: periods, linked goals, Archive, Delete). Goals: Add Goal; filters All / Day / Week / Month / Year / Custom range / Aspirational; cards: period, edit, progress, linked chips, −1 / +1, Log, Mark complete. Direction in Life: coverage strip, Drift days, Neglected goals.",
+    "styleNotes": "",
+    "docPath": "components/Home/Goals/README.md"
+  },
+  "05-lists-cards.png": {
+    "name": "Lists tab → Home → Cards folder view",
+    "description": "Same Lists chrome (VIEW mode deck). Cards: title, description, counts; + add, settings, delete; Eye opens list. Smart to-do cards show due empty copy.",
+    "styleNotes": "",
+    "docPath": ""
+  },
+  "05-lists-content-checklist.png": {
+    "name": "Lists tab → Example List → Checklist display",
+    "description": "Same open-list chrome + DISPLAY mode deck. Checklist: Completed ticks (optional Missed); Select overlays selection ticks. Click name → detail.",
+    "styleNotes": "",
+    "docPath": ""
+  },
+  "05-lists-content-default.png": {
+    "name": "Lists tab → Example List → Default display",
+    "description": "Open-list chrome: actions bay (Up / New / Import / Settings / Select + Search) + DISPLAY mode deck (LED keys: Default / Checklist / Icons / Details / Spreadsheet). Address. Sidebar. Inner caption = Default. Reading rows (pip + name; no complete ticks). Right inspector: Add / Bulk add / List Settings / Change Icon / Pin — Delete only in List Settings. Status + Smart lists.",
+    "styleNotes": "",
+    "docPath": ""
+  },
+  "05-lists-content-spreadsheet.png": {
+    "name": "Lists tab → Example List → Spreadsheet display",
+    "description": "Same open-list chrome + DISPLAY mode deck (Spreadsheet active). Spreadsheet: formula bar, Filter…, lean default columns (list schema / displayedAttributes; Name-only when unset on empty-schema lists such as All Items — extras via Add column / view settings), sort, Add column, Add Item… + Add row. Cell edit / fill handle / Open to edit. Pop-out fullscreen supported.",
+    "styleNotes": "",
+    "docPath": ""
+  },
+  "05-lists-details.png": {
+    "name": "Lists tab → Home → Details folder view",
+    "description": "Same Lists chrome (VIEW mode deck). Folder Details table: columns for name / type / counts — dblclick opens. (List content Details is separate: no complete/missed ticks.)",
+    "styleNotes": "",
+    "docPath": ""
+  },
+  "05-lists-list.png": {
+    "name": "Lists tab → Home → List folder view",
+    "description": "Same Lists chrome (two-bay toolbar + VIEW mode deck). List view: Search lists…; named rows with type icons — click/dblclick opens. Select-mode checkboxes when Select is on.",
+    "styleNotes": "",
+    "docPath": ""
+  },
+  "05-lists.png": {
+    "name": "Lists tab → Home folder → Icons view",
+    "description": "File Manager (_ □ ×). Two toolbar bays: Up / New List / New Folder / Import spreadsheet / Settings / Select + Search; then VIEW mode deck (LED keys: Icons / List / Details / Cards; short↔full labels) + Auto-organize on Icons. Address bar. Sidebar Quick Access: Home, All, folder tree (each folder is a photographed cut-out plus its color swatch), + New Folder. Velvet Icons: lists and smart lists are orbs; folders are photographed folder cut-outs assigned like orbs (stable per id; a custom icon still wins) — Daily/Weekly/Monthly Habits, Objectives, Daily/Weekly/Monthly To Do. Double-click opens; ★ pin, ✎ change icon. Status: This folder / Tree counts + Smart lists checkbox. Select + search results support Move to destination for folders/lists/items.",
+    "styleNotes": "",
+    "docPath": "components/Lists/README.md"
+  },
+  "06-scheduler-day.png": {
+    "name": "Scheduler tab → Funnel → Day period",
+    "description": "Funnel → Day. Date nav (< / date / > / Today). Period tabs Always / Year / Month / Week / Day. Sidebar Today's Tasks (drag onto hours). Daily Agenda 00:00–23:00: drop to hour, click opens item, X clears time.",
+    "styleNotes": "",
+    "docPath": "components/Scheduler/README.md"
+  },
+  "06-scheduler-dependencies.png": {
+    "name": "Scheduler tab → Dependencies graph",
+    "description": "Dependencies view. Dependency Graph: task count + Critical count. Nodes (click opens item); edges show blockers before downstream work.",
+    "styleNotes": "",
+    "docPath": "components/Scheduler/README.md"
+  },
+  "06-scheduler-gantt.png": {
+    "name": "Scheduler tab → Gantt view",
+    "description": "Gantt view. Gantt & Critical Path: project length; legend Critical path / Has slack. Named task rows (click opens) + duration bars on a time axis.",
+    "styleNotes": "",
+    "docPath": "components/Scheduler/README.md"
+  },
+  "06-scheduler.png": {
+    "name": "Scheduler tab → Funnel → Always period",
+    "description": "Scheduler — Funnel. Views: Funnel / Gantt / Dependencies. Periods: Always / Year / Month / Week / Day. Available Tasks + Filters & Sort. Task rows drag onto two columns of cards: This Year, This Month, Next Month, This Week, Next Week, Today (real local date), Tomorrow (real local date), Eventually / Later (Next Actions list eventually, no period). Empty cards say Empty. An unfinished past period rolls up one level (day→week→month→year→unscheduled) unless it was pushed; prior placements stay visible in gray past cells.",
+    "styleNotes": "",
+    "docPath": "components/Scheduler/README.md"
+  },
+  "07-analytics-attributes.png": {
+    "name": "Analytics tab → Library → Attributes",
+    "description": "Analytics window: navy **title bar** and **status bar** stay Lists furniture. Interior is a light instrument studio (Karla only, ink on beige nested wells, phosphor traces — not cream-on-cream, not dark CRT), range chips (7 / 14 / 30 / 90 or Custom inclusive from–to, labeled as the dates) labeled once, left studio index Behavior / Time / Accuracy / Meta / Library with views of the selected group (`role=\"tab\"`). Views include Observatory, Circadian, **Screen Time**, Places, Mood field, Diversity, Transitions, Spectrum, Velocity, Cycle, Goals, Operations, Lists & areas (size by items + HHI), Tags, Stages, Weight, Attributes, Item Types, Cross-section, Overcommit. Tracking shows a **pie** plus mosaic; the drill lists blocks and opens the Tracking editor. Empty charts keep the frame and one sentence; interpretive views show n and watermark a thin sample. Hover **?** and native titles for instructions. Status: last N days or custom dates · current view.\nFixed histograms of typed attributes (including catalog fields). Not a custom chart builder.",
+    "styleNotes": "",
+    "docPath": "components/Analytics/README.md"
+  },
+  "07-analytics-calibration.png": {
+    "name": "Analytics tab → Calibration",
+    "description": "Analytics window: navy **title bar** and **status bar** stay Lists furniture. Interior is a light instrument studio (Karla only, ink on beige nested wells, phosphor traces — not cream-on-cream, not dark CRT), range chips (7 / 14 / 30 / 90 or Custom inclusive from–to, labeled as the dates) labeled once, left studio index Behavior / Time / Accuracy / Meta / Library with views of the selected group (`role=\"tab\"`). Views include Observatory, Circadian, **Screen Time**, Places, Mood field, Diversity, Transitions, Spectrum, Velocity, Cycle, Goals, Operations, Lists & areas (size by items + HHI), Tags, Stages, Weight, Attributes, Item Types, Cross-section, Overcommit. Tracking shows a **pie** plus mosaic; the drill lists blocks and opens the Tracking editor. Empty charts keep the frame and one sentence; interpretive views show n and watermark a thin sample. Hover **?** and native titles for instructions. Status: last N days or custom dates · current view.\nSentence + n + caveat. Scatter / histogram / trend only when n clears the sample floor; otherwise a watermark. Open in Lists.",
+    "styleNotes": "",
+    "docPath": "components/Analytics/README.md"
+  },
+  "07-analytics-circadian.png": {
+    "name": "Analytics tab → Time → Circadian",
+    "description": "Analytics window: navy **title bar** and **status bar** stay Lists furniture. Interior is a light instrument studio (Karla only, ink on beige nested wells, phosphor traces — not cream-on-cream, not dark CRT), range chips (7 / 14 / 30 / 90 or Custom inclusive from–to, labeled as the dates) labeled once, left studio index Behavior / Time / Accuracy / Meta / Library with views of the selected group (`role=\"tab\"`). Views include Observatory, Circadian, **Screen Time**, Places, Mood field, Diversity, Transitions, Spectrum, Velocity, Cycle, Goals, Operations, Lists & areas (size by items + HHI), Tags, Stages, Weight, Attributes, Item Types, Cross-section, Overcommit. Tracking shows a **pie** plus mosaic; the drill lists blocks and opens the Tracking editor. Empty charts keep the frame and one sentence; interpretive views show n and watermark a thin sample. Hover **?** and native titles for instructions. Status: last N days or custom dates · current view.\nHour × day occupancy atlas. Instants stay off the heat. Missing hours are empty, not occupancy.",
+    "styleNotes": "",
+    "docPath": "components/Analytics/README.md"
+  },
+  "07-analytics-context-switch.png": {
+    "name": "Analytics tab → Context Switch",
+    "description": "Analytics window: navy **title bar** and **status bar** stay Lists furniture. Interior is a light instrument studio (Karla only, ink on beige nested wells, phosphor traces — not cream-on-cream, not dark CRT), range chips (7 / 14 / 30 / 90 or Custom inclusive from–to, labeled as the dates) labeled once, left studio index Behavior / Time / Accuracy / Meta / Library with views of the selected group (`role=\"tab\"`). Views include Observatory, Circadian, **Screen Time**, Places, Mood field, Diversity, Transitions, Spectrum, Velocity, Cycle, Goals, Operations, Lists & areas (size by items + HHI), Tags, Stages, Weight, Attributes, Item Types, Cross-section, Overcommit. Tracking shows a **pie** plus mosaic; the drill lists blocks and opens the Tracking editor. Empty charts keep the frame and one sentence; interpretive views show n and watermark a thin sample. Hover **?** and native titles for instructions. Status: last N days or custom dates · current view.\nContext switching (by day) for the shared window: n / avg / busiest / trend when the sample is thick enough. Legend: a switch is a pen change — one block ending and another beginning.",
+    "styleNotes": "",
+    "docPath": "components/Analytics/README.md"
+  },
+  "07-analytics-correlation.png": {
+    "name": "Analytics tab → Correlation",
+    "description": "Analytics window: navy **title bar** and **status bar** stay Lists furniture. Interior is a light instrument studio (Karla only, ink on beige nested wells, phosphor traces — not cream-on-cream, not dark CRT), range chips (7 / 14 / 30 / 90 or Custom inclusive from–to, labeled as the dates) labeled once, left studio index Behavior / Time / Accuracy / Meta / Library with views of the selected group (`role=\"tab\"`). Views include Observatory, Circadian, **Screen Time**, Places, Mood field, Diversity, Transitions, Spectrum, Velocity, Cycle, Goals, Operations, Lists & areas (size by items + HHI), Tags, Stages, Weight, Attributes, Item Types, Cross-section, Overcommit. Tracking shows a **pie** plus mosaic; the drill lists blocks and opens the Tracking editor. Empty charts keep the frame and one sentence; interpretive views show n and watermark a thin sample. Hover **?** and native titles for instructions. Status: last N days or custom dates · current view.\nPairwise Pearson matrix of metrics plus habit % / tracking / sleep / points. Click a cell for scatter + sentence. Thin overlap watermarked. Not a chart builder.",
+    "styleNotes": "",
+    "docPath": "components/Analytics/README.md"
+  },
+  "07-analytics-cross-section.png": {
+    "name": "Analytics tab → Meta → Cross-section",
+    "description": "Analytics window: navy **title bar** and **status bar** stay Lists furniture. Interior is a light instrument studio (Karla only, ink on beige nested wells, phosphor traces — not cream-on-cream, not dark CRT), range chips (7 / 14 / 30 / 90 or Custom inclusive from–to, labeled as the dates) labeled once, left studio index Behavior / Time / Accuracy / Meta / Library with views of the selected group (`role=\"tab\"`). Views include Observatory, Circadian, **Screen Time**, Places, Mood field, Diversity, Transitions, Spectrum, Velocity, Cycle, Goals, Operations, Lists & areas (size by items + HHI), Tags, Stages, Weight, Attributes, Item Types, Cross-section, Overcommit. Tracking shows a **pie** plus mosaic; the drill lists blocks and opens the Tracking editor. Empty charts keep the frame and one sentence; interpretive views show n and watermark a thin sample. Hover **?** and native titles for instructions. Status: last N days or custom dates · current view.\nLinked density small-multiples over the shared range: Habits, Tracking, Sleep, Completed, Points, Operations, Regret, Mood, Joy, Switches, Places, Goals. Hover/pin a day to highlight the same column in every series. Missing nights stay blank; n is on every row. Empty canvas: one sentence in the frame.",
+    "styleNotes": "",
+    "docPath": "components/Analytics/README.md"
+  },
+  "07-analytics-cycle.png": {
+    "name": "Analytics tab → Accuracy → Cycle",
+    "description": "Analytics window: navy **title bar** and **status bar** stay Lists furniture. Interior is a light instrument studio (Karla only, ink on beige nested wells, phosphor traces — not cream-on-cream, not dark CRT), range chips (7 / 14 / 30 / 90 or Custom inclusive from–to, labeled as the dates) labeled once, left studio index Behavior / Time / Accuracy / Meta / Library with views of the selected group (`role=\"tab\"`). Views include Observatory, Circadian, **Screen Time**, Places, Mood field, Diversity, Transitions, Spectrum, Velocity, Cycle, Goals, Operations, Lists & areas (size by items + HHI), Tags, Stages, Weight, Attributes, Item Types, Cross-section, Overcommit. Tracking shows a **pie** plus mosaic; the drill lists blocks and opens the Tracking editor. Empty charts keep the frame and one sentence; interpretive views show n and watermark a thin sample. Hover **?** and native titles for instructions. Status: last N days or custom dates · current view.\ndaysPushed distribution, open important items, estimate confirmation rate.",
+    "styleNotes": "",
+    "docPath": "components/Analytics/README.md"
+  },
+  "07-analytics-diversity.png": {
+    "name": "Analytics tab → Time → Diversity",
+    "description": "Analytics window: navy **title bar** and **status bar** stay Lists furniture. Interior is a light instrument studio (Karla only, ink on beige nested wells, phosphor traces — not cream-on-cream, not dark CRT), range chips (7 / 14 / 30 / 90 or Custom inclusive from–to, labeled as the dates) labeled once, left studio index Behavior / Time / Accuracy / Meta / Library with views of the selected group (`role=\"tab\"`). Views include Observatory, Circadian, **Screen Time**, Places, Mood field, Diversity, Transitions, Spectrum, Velocity, Cycle, Goals, Operations, Lists & areas (size by items + HHI), Tags, Stages, Weight, Attributes, Item Types, Cross-section, Overcommit. Tracking shows a **pie** plus mosaic; the drill lists blocks and opens the Tracking editor. Empty charts keep the frame and one sentence; interpretive views show n and watermark a thin sample. Hover **?** and native titles for instructions. Status: last N days or custom dates · current view.\nShannon entropy of Tracking pens per day (H = −Σ p log₂ p), Gini of the window's pen totals, weekday vs weekend occupancy. Phosphor trace. Thin windows watermarked.",
+    "styleNotes": "",
+    "docPath": "components/Analytics/README.md"
+  },
+  "07-analytics-goals.png": {
+    "name": "Analytics tab → Accuracy → Goals",
+    "description": "Analytics window: navy **title bar** and **status bar** stay Lists furniture. Interior is a light instrument studio (Karla only, ink on beige nested wells, phosphor traces — not cream-on-cream, not dark CRT), range chips (7 / 14 / 30 / 90 or Custom inclusive from–to, labeled as the dates) labeled once, left studio index Behavior / Time / Accuracy / Meta / Library with views of the selected group (`role=\"tab\"`). Views include Observatory, Circadian, **Screen Time**, Places, Mood field, Diversity, Transitions, Spectrum, Velocity, Cycle, Goals, Operations, Lists & areas (size by items + HHI), Tags, Stages, Weight, Attributes, Item Types, Cross-section, Overcommit. Tracking shows a **pie** plus mosaic; the drill lists blocks and opens the Tracking editor. Empty charts keep the frame and one sentence; interpretive views show n and watermark a thin sample. Hover **?** and native titles for instructions. Status: last N days or custom dates · current view.\nGoal progress, neglected goals, contributing completions in the window. Open those items in Lists.",
+    "styleNotes": "",
+    "docPath": "components/Analytics/README.md"
+  },
+  "07-analytics-item-types.png": {
+    "name": "Analytics tab → Library → Item Types",
+    "description": "Analytics window: navy **title bar** and **status bar** stay Lists furniture. Interior is a light instrument studio (Karla only, ink on beige nested wells, phosphor traces — not cream-on-cream, not dark CRT), range chips (7 / 14 / 30 / 90 or Custom inclusive from–to, labeled as the dates) labeled once, left studio index Behavior / Time / Accuracy / Meta / Library with views of the selected group (`role=\"tab\"`). Views include Observatory, Circadian, **Screen Time**, Places, Mood field, Diversity, Transitions, Spectrum, Velocity, Cycle, Goals, Operations, Lists & areas (size by items + HHI), Tags, Stages, Weight, Attributes, Item Types, Cross-section, Overcommit. Tracking shows a **pie** plus mosaic; the drill lists blocks and opens the Tracking editor. Empty charts keep the frame and one sentence; interpretive views show n and watermark a thin sample. Hover **?** and native titles for instructions. Status: last N days or custom dates · current view.\nItem Types library: mosaic of types by item count, sortable list (name / count / kind), system/catalog/user filter, drill into items and Open in Lists. Settings still edits schemas. Edit type opens the existing editor.",
+    "styleNotes": "",
+    "docPath": "components/Analytics/README.md"
+  },
+  "07-analytics-lists-areas.png": {
+    "name": "Analytics tab → Library → Lists & areas",
+    "description": "Analytics window: navy **title bar** and **status bar** stay Lists furniture. Interior is a light instrument studio (Karla only, ink on beige nested wells, phosphor traces — not cream-on-cream, not dark CRT), range chips (7 / 14 / 30 / 90 or Custom inclusive from–to, labeled as the dates) labeled once, left studio index Behavior / Time / Accuracy / Meta / Library with views of the selected group (`role=\"tab\"`). Views include Observatory, Circadian, **Screen Time**, Places, Mood field, Diversity, Transitions, Spectrum, Velocity, Cycle, Goals, Operations, Lists & areas (size by items + HHI), Tags, Stages, Weight, Attributes, Item Types, Cross-section, Overcommit. Tracking shows a **pie** plus mosaic; the drill lists blocks and opens the Tracking editor. Empty charts keep the frame and one sentence; interpretive views show n and watermark a thin sample. Hover **?** and native titles for instructions. Status: last N days or custom dates · current view.\nCategory performance. Default **Size by items** (area ∝ count). Completion rate is a toggle. Click a tile to open the list.",
+    "styleNotes": "",
+    "docPath": "components/Analytics/README.md"
+  },
+  "07-analytics-metrics.png": {
+    "name": "Analytics tab → Metrics",
+    "description": "Analytics window: navy **title bar** and **status bar** stay Lists furniture. Interior is a light instrument studio (Karla only, ink on beige nested wells, phosphor traces — not cream-on-cream, not dark CRT), range chips (7 / 14 / 30 / 90 or Custom inclusive from–to, labeled as the dates) labeled once, left studio index Behavior / Time / Accuracy / Meta / Library with views of the selected group (`role=\"tab\"`). Views include Observatory, Circadian, **Screen Time**, Places, Mood field, Diversity, Transitions, Spectrum, Velocity, Cycle, Goals, Operations, Lists & areas (size by items + HHI), Tags, Stages, Weight, Attributes, Item Types, Cross-section, Overcommit. Tracking shows a **pie** plus mosaic; the drill lists blocks and opens the Tracking editor. Empty charts keep the frame and one sentence; interpretive views show n and watermark a thin sample. Hover **?** and native titles for instructions. Status: last N days or custom dates · current view.\nMetric trend + picker for the shared window. **Log {name}** opens MetricLogger. n + direction + R² when there is a series; otherwise one sentence in the frame.",
+    "styleNotes": "",
+    "docPath": "components/Analytics/README.md"
+  },
+  "07-analytics-mood-field.png": {
+    "name": "Analytics tab → Time → Mood field",
+    "description": "Analytics window: navy **title bar** and **status bar** stay Lists furniture. Interior is a light instrument studio (Karla only, ink on beige nested wells, phosphor traces — not cream-on-cream, not dark CRT), range chips (7 / 14 / 30 / 90 or Custom inclusive from–to, labeled as the dates) labeled once, left studio index Behavior / Time / Accuracy / Meta / Library with views of the selected group (`role=\"tab\"`). Views include Observatory, Circadian, **Screen Time**, Places, Mood field, Diversity, Transitions, Spectrum, Velocity, Cycle, Goals, Operations, Lists & areas (size by items + HHI), Tags, Stages, Weight, Attributes, Item Types, Cross-section, Overcommit. Tracking shows a **pie** plus mosaic; the drill lists blocks and opens the Tracking editor. Empty charts keep the frame and one sentence; interpretive views show n and watermark a thin sample. Hover **?** and native titles for instructions. Status: last N days or custom dates · current view.\nSpec §15 cognitive-state: painted Mood pens plus overlay of logged wellbeing metrics.",
+    "styleNotes": "",
+    "docPath": "components/Analytics/README.md"
+  },
+  "07-analytics-observatory.png": {
+    "name": "Analytics tab → Meta → Observatory",
+    "description": "Analytics window: navy **title bar** and **status bar** stay Lists furniture. Interior is a light instrument studio (Karla only, ink on beige nested wells, phosphor traces — not cream-on-cream, not dark CRT), range chips (7 / 14 / 30 / 90 or Custom inclusive from–to, labeled as the dates) labeled once, left studio index Behavior / Time / Accuracy / Meta / Library with views of the selected group (`role=\"tab\"`). Views include Observatory, Circadian, **Screen Time**, Places, Mood field, Diversity, Transitions, Spectrum, Velocity, Cycle, Goals, Operations, Lists & areas (size by items + HHI), Tags, Stages, Weight, Attributes, Item Types, Cross-section, Overcommit. Tracking shows a **pie** plus mosaic; the drill lists blocks and opens the Tracking editor. Empty charts keep the frame and one sentence; interpretive views show n and watermark a thin sample. Hover **?** and native titles for instructions. Status: last N days or custom dates · current view.\nClassical Pearson findings over aligned series (habit %, tracking, sleep, points, joy, switches). Thin overlap is watermarked. Linked Cross-section beneath.",
+    "styleNotes": "",
+    "docPath": "components/Analytics/README.md"
+  },
+  "07-analytics-operations.png": {
+    "name": "Analytics tab → Time → Operations",
+    "description": "Analytics window: navy **title bar** and **status bar** stay Lists furniture. Interior is a light instrument studio (Karla only, ink on beige nested wells, phosphor traces — not cream-on-cream, not dark CRT), range chips (7 / 14 / 30 / 90 or Custom inclusive from–to, labeled as the dates) labeled once, left studio index Behavior / Time / Accuracy / Meta / Library with views of the selected group (`role=\"tab\"`). Views include Observatory, Circadian, **Screen Time**, Places, Mood field, Diversity, Transitions, Spectrum, Velocity, Cycle, Goals, Operations, Lists & areas (size by items + HHI), Tags, Stages, Weight, Attributes, Item Types, Cross-section, Overcommit. Tracking shows a **pie** plus mosaic; the drill lists blocks and opens the Tracking editor. Empty charts keep the frame and one sentence; interpretive views show n and watermark a thin sample. Hover **?** and native titles for instructions. Status: last N days or custom dates · current view.\nOperation stage/category mosaic and work vs neglect heatmap from timeLogs. Does not restyle the Operations module.",
+    "styleNotes": "",
+    "docPath": "components/Analytics/README.md"
+  },
+  "07-analytics-overcommit.png": {
+    "name": "Analytics tab → Behavior → Overcommit",
+    "description": "Analytics window: navy **title bar** and **status bar** stay Lists furniture. Interior is a light instrument studio (Karla only, ink on beige nested wells, phosphor traces — not cream-on-cream, not dark CRT), range chips (7 / 14 / 30 / 90 or Custom inclusive from–to, labeled as the dates) labeled once, left studio index Behavior / Time / Accuracy / Meta / Library with views of the selected group (`role=\"tab\"`). Views include Observatory, Circadian, **Screen Time**, Places, Mood field, Diversity, Transitions, Spectrum, Velocity, Cycle, Goals, Operations, Lists & areas (size by items + HHI), Tags, Stages, Weight, Attributes, Item Types, Cross-section, Overcommit. Tracking shows a **pie** plus mosaic; the drill lists blocks and opens the Tracking editor. Empty charts keep the frame and one sentence; interpretive views show n and watermark a thin sample. Hover **?** and native titles for instructions. Status: last N days or custom dates · current view.\nOne sentence + n on reconstructed day-pushes and logged minutes over the shared range. Thin windows are watermarked, not findings. Does not reschedule.",
+    "styleNotes": "",
+    "docPath": "components/Analytics/README.md"
+  },
+  "07-analytics-places.png": {
+    "name": "Analytics tab → Time → Places",
+    "description": "Analytics window: navy **title bar** and **status bar** stay Lists furniture. Interior is a light instrument studio (Karla only, ink on beige nested wells, phosphor traces — not cream-on-cream, not dark CRT), range chips (7 / 14 / 30 / 90 or Custom inclusive from–to, labeled as the dates) labeled once, left studio index Behavior / Time / Accuracy / Meta / Library with views of the selected group (`role=\"tab\"`). Views include Observatory, Circadian, **Screen Time**, Places, Mood field, Diversity, Transitions, Spectrum, Velocity, Cycle, Goals, Operations, Lists & areas (size by items + HHI), Tags, Stages, Weight, Attributes, Item Types, Cross-section, Overcommit. Tracking shows a **pie** plus mosaic; the drill lists blocks and opens the Tracking editor. Empty charts keep the frame and one sentence; interpretive views show n and watermark a thin sample. Hover **?** and native titles for instructions. Status: last N days or custom dates · current view.\nLocation scope as a time-at-pen mosaic (country → park via displayDepth). Not a geo map.",
+    "styleNotes": "",
+    "docPath": "components/Analytics/README.md"
+  },
+  "07-analytics-plan-vs-reality.png": {
+    "name": "Analytics tab → Plan vs Reality",
+    "description": "Analytics window: navy **title bar** and **status bar** stay Lists furniture. Interior is a light instrument studio (Karla only, ink on beige nested wells, phosphor traces — not cream-on-cream, not dark CRT), range chips (7 / 14 / 30 / 90 or Custom inclusive from–to, labeled as the dates) labeled once, left studio index Behavior / Time / Accuracy / Meta / Library with views of the selected group (`role=\"tab\"`). Views include Observatory, Circadian, **Screen Time**, Places, Mood field, Diversity, Transitions, Spectrum, Velocity, Cycle, Goals, Operations, Lists & areas (size by items + HHI), Tags, Stages, Weight, Attributes, Item Types, Cross-section, Overcommit. Tracking shows a **pie** plus mosaic; the drill lists blocks and opens the Tracking editor. Empty charts keep the frame and one sentence; interpretive views show n and watermark a thin sample. Hover **?** and native titles for instructions. Status: last N days or custom dates · current view.\nGrain Day / Week / Month inside the shared Analytics window (not a second date range). Window ribbon of every period in the range (alignment height; hollow when nothing was planned). Planned vs actual as paired bars (not two lists). Thin sample watermarked. Intentions as one line of plan prose.",
+    "styleNotes": "",
+    "docPath": "components/Analytics/README.md"
+  },
+  "07-analytics-points.png": {
+    "name": "Analytics tab → Points",
+    "description": "Analytics window: navy **title bar** and **status bar** stay Lists furniture. Interior is a light instrument studio (Karla only, ink on beige nested wells, phosphor traces — not cream-on-cream, not dark CRT), range chips (7 / 14 / 30 / 90 or Custom inclusive from–to, labeled as the dates) labeled once, left studio index Behavior / Time / Accuracy / Meta / Library with views of the selected group (`role=\"tab\"`). Views include Observatory, Circadian, **Screen Time**, Places, Mood field, Diversity, Transitions, Spectrum, Velocity, Cycle, Goals, Operations, Lists & areas (size by items + HHI), Tags, Stages, Weight, Attributes, Item Types, Cross-section, Overcommit. Tracking shows a **pie** plus mosaic; the drill lists blocks and opens the Tracking editor. Empty charts keep the frame and one sentence; interpretive views show n and watermark a thin sample. Hover **?** and native titles for instructions. Status: last N days or custom dates · current view.\nPoints daily stacked by source (habit / bonus / task) + cumulative for the shared window; Top point earners jump to Lists. Empty: one sentence in the frame.",
+    "styleNotes": "",
+    "docPath": "components/Analytics/README.md"
+  },
+  "07-analytics-reflection.png": {
+    "name": "Analytics tab → Reflection",
+    "description": "Analytics window: navy **title bar** and **status bar** stay Lists furniture. Interior is a light instrument studio (Karla only, ink on beige nested wells, phosphor traces — not cream-on-cream, not dark CRT), range chips (7 / 14 / 30 / 90 or Custom inclusive from–to, labeled as the dates) labeled once, left studio index Behavior / Time / Accuracy / Meta / Library with views of the selected group (`role=\"tab\"`). Views include Observatory, Circadian, **Screen Time**, Places, Mood field, Diversity, Transitions, Spectrum, Velocity, Cycle, Goals, Operations, Lists & areas (size by items + HHI), Tags, Stages, Weight, Attributes, Item Types, Cross-section, Overcommit. Tracking shows a **pie** plus mosaic; the drill lists blocks and opens the Tracking editor. Empty charts keep the frame and one sentence; interpretive views show n and watermark a thin sample. Hover **?** and native titles for instructions. Status: last N days or custom dates · current view.\nWindow averages as one sentence (not 0.0 KPI cards). Reflect on completed tasks. Prompt history (notes + 1–10 scores).",
+    "styleNotes": "",
+    "docPath": "components/Analytics/README.md"
+  },
+  "07-analytics-regret.png": {
+    "name": "Analytics tab → Regret",
+    "description": "Analytics window: navy **title bar** and **status bar** stay Lists furniture. Interior is a light instrument studio (Karla only, ink on beige nested wells, phosphor traces — not cream-on-cream, not dark CRT), range chips (7 / 14 / 30 / 90 or Custom inclusive from–to, labeled as the dates) labeled once, left studio index Behavior / Time / Accuracy / Meta / Library with views of the selected group (`role=\"tab\"`). Views include Observatory, Circadian, **Screen Time**, Places, Mood field, Diversity, Transitions, Spectrum, Velocity, Cycle, Goals, Operations, Lists & areas (size by items + HHI), Tags, Stages, Weight, Attributes, Item Types, Cross-section, Overcommit. Tracking shows a **pie** plus mosaic; the drill lists blocks and opens the Tracking editor. Empty charts keep the frame and one sentence; interpretive views show n and watermark a thin sample. Hover **?** and native titles for instructions. Status: last N days or custom dates · current view.\nOne line: regret is the accrued cost of important items sitting undone past their due date. n days with accrued regret in the shared window; bars + heaviest + by reason when the sample is thick enough. Open heaviest in Lists.",
+    "styleNotes": "",
+    "docPath": "components/Analytics/README.md"
+  },
+  "07-analytics-reviews.png": {
+    "name": "Analytics tab → Reviews",
+    "description": "Analytics window: navy **title bar** and **status bar** stay Lists furniture. Interior is a light instrument studio (Karla only, ink on beige nested wells, phosphor traces — not cream-on-cream, not dark CRT), range chips (7 / 14 / 30 / 90 or Custom inclusive from–to, labeled as the dates) labeled once, left studio index Behavior / Time / Accuracy / Meta / Library with views of the selected group (`role=\"tab\"`). Views include Observatory, Circadian, **Screen Time**, Places, Mood field, Diversity, Transitions, Spectrum, Velocity, Cycle, Goals, Operations, Lists & areas (size by items + HHI), Tags, Stages, Weight, Attributes, Item Types, Cross-section, Overcommit. Tracking shows a **pie** plus mosaic; the drill lists blocks and opens the Tracking editor. Empty charts keep the frame and one sentence; interpretive views show n and watermark a thin sample. Hover **?** and native titles for instructions. Status: last N days or custom dates · current view.\nExpandable saved reviews (period · key): Summary / Gratitude / Plans; resolved vs pushed counts. Empty: use header Review.",
+    "styleNotes": "",
+    "docPath": "components/Analytics/README.md"
+  },
+  "07-analytics-screentime.png": {
+    "name": "Analytics tab → Time → Screen Time",
+    "description": "Analytics window: navy **title bar** and **status bar** stay Lists furniture. Interior is a light instrument studio (Karla only, ink on beige nested wells, phosphor traces — not cream-on-cream, not dark CRT), range chips (7 / 14 / 30 / 90 or Custom inclusive from–to, labeled as the dates) labeled once, left studio index Behavior / Time / Accuracy / Meta / Library with views of the selected group (`role=\"tab\"`). Views include Observatory, Circadian, **Screen Time**, Places, Mood field, Diversity, Transitions, Spectrum, Velocity, Cycle, Goals, Operations, Lists & areas (size by items + HHI), Tags, Stages, Weight, Attributes, Item Types, Cross-section, Overcommit. Tracking shows a **pie** plus mosaic; the drill lists blocks and opens the Tracking editor. Empty charts keep the frame and one sentence; interpretive views show n and watermark a thin sample. Hover **?** and native titles for instructions. Status: last N days or custom dates · current view.\nActivityWatch-painted Screen Time for the shared range: active vs untracked (AFK is untracked), top apps / categories from the same pens as Home → Tracking, last-sync from Settings prefs, alignment vs human Activity occupancy. Empty: one sentence (nothing painted / connect ActivityWatch). Does not dual-write onto Activity.",
+    "styleNotes": "",
+    "docPath": "components/Analytics/README.md"
+  },
+  "07-analytics-sleep.png": {
+    "name": "Analytics tab → Sleep",
+    "description": "Analytics window: navy **title bar** and **status bar** stay Lists furniture. Interior is a light instrument studio (Karla only, ink on beige nested wells, phosphor traces — not cream-on-cream, not dark CRT), range chips (7 / 14 / 30 / 90 or Custom inclusive from–to, labeled as the dates) labeled once, left studio index Behavior / Time / Accuracy / Meta / Library with views of the selected group (`role=\"tab\"`). Views include Observatory, Circadian, **Screen Time**, Places, Mood field, Diversity, Transitions, Spectrum, Velocity, Cycle, Goals, Operations, Lists & areas (size by items + HHI), Tags, Stages, Weight, Attributes, Item Types, Cross-section, Overcommit. Tracking shows a **pie** plus mosaic; the drill lists blocks and opens the Tracking editor. Empty charts keep the frame and one sentence; interpretive views show n and watermark a thin sample. Hover **?** and native titles for instructions. Status: last N days or custom dates · current view.\nShared Analytics range (not a second 7d/30d/90d picker), then coverage — nights tracked, nights blank, how many were read off the Tracking grid rather than typed, and the % of ends marked estimated. Copy: same nights as Home → Tracking (no live night jump). Blank nights are excluded from every average rather than counted as zero. The tab reads the sleep log and Sleep-tagged blocks on the grid alike (lib/sleep-inference.ts), per end, so a stated time always wins and a painted one fills a gap.\nFour cards: Average night (with median — the honest one when a single all-nighter skews the mean — and how many nights it rests on) · Usually asleep by (with spread, the standard deviation of bedtime) · Usually up at (with spread) · Debt against the target, plus how many nights hit it.\nHow far the ends swing: the earliest and latest bedtime and the earliest and latest wake time, each with its date, and the gap between them. Bedtimes are signed offsets from their own morning, so 10 PM sorts before 1 AM without a wrap-around case.\nNight by night: one bar per night on a fixed 6 PM → noon axis, so irregular bedtimes are visible as ragged left edges rather than hidden by per-row scaling. Amber means under target; a trailing ~ means at least one end was estimated and **est.** means the night was reconstructed from painted time. Duration is printed at the right.\nWhat changed: compares the two halves of the range — change in sleep length, in bedtime, and in wake time, plus which end of the night moves around more and the shortest/longest nights. Needs at least two nights in each half or it says so instead of reading one bad night as a trend.",
+    "styleNotes": "",
+    "docPath": "components/Analytics/README.md"
+  },
+  "07-analytics-spectrum.png": {
+    "name": "Analytics tab → Meta → Spectrum",
+    "description": "Analytics window: navy **title bar** and **status bar** stay Lists furniture. Interior is a light instrument studio (Karla only, ink on beige nested wells, phosphor traces — not cream-on-cream, not dark CRT), range chips (7 / 14 / 30 / 90 or Custom inclusive from–to, labeled as the dates) labeled once, left studio index Behavior / Time / Accuracy / Meta / Library with views of the selected group (`role=\"tab\"`). Views include Observatory, Circadian, **Screen Time**, Places, Mood field, Diversity, Transitions, Spectrum, Velocity, Cycle, Goals, Operations, Lists & areas (size by items + HHI), Tags, Stages, Weight, Attributes, Item Types, Cross-section, Overcommit. Tracking shows a **pie** plus mosaic; the drill lists blocks and opens the Tracking editor. Empty charts keep the frame and one sentence; interpretive views show n and watermark a thin sample. Hover **?** and native titles for instructions. Status: last N days or custom dates · current view.\nLag-1 / lag-7 autocorrelation of daily habit % and sleep duration, naive DFT periodogram of habit %, coefficient of variation of sleep. Phosphor traces. Not a forecast.",
+    "styleNotes": "",
+    "docPath": "components/Analytics/README.md"
+  },
+  "07-analytics-stages.png": {
+    "name": "Analytics tab → Library → Stages",
+    "description": "Analytics window: navy **title bar** and **status bar** stay Lists furniture. Interior is a light instrument studio (Karla only, ink on beige nested wells, phosphor traces — not cream-on-cream, not dark CRT), range chips (7 / 14 / 30 / 90 or Custom inclusive from–to, labeled as the dates) labeled once, left studio index Behavior / Time / Accuracy / Meta / Library with views of the selected group (`role=\"tab\"`). Views include Observatory, Circadian, **Screen Time**, Places, Mood field, Diversity, Transitions, Spectrum, Velocity, Cycle, Goals, Operations, Lists & areas (size by items + HHI), Tags, Stages, Weight, Attributes, Item Types, Cross-section, Overcommit. Tracking shows a **pie** plus mosaic; the drill lists blocks and opens the Tracking editor. Empty charts keep the frame and one sentence; interpretive views show n and watermark a thin sample. Hover **?** and native titles for instructions. Status: last N days or custom dates · current view.\nTask.stage buckets (inbox / clarified / scheduled / completed / list). Area ∝ count.",
+    "styleNotes": "",
+    "docPath": "components/Analytics/README.md"
+  },
+  "07-analytics-streaks.png": {
+    "name": "Analytics tab → Streaks",
+    "description": "Analytics window: navy **title bar** and **status bar** stay Lists furniture. Interior is a light instrument studio (Karla only, ink on beige nested wells, phosphor traces — not cream-on-cream, not dark CRT), range chips (7 / 14 / 30 / 90 or Custom inclusive from–to, labeled as the dates) labeled once, left studio index Behavior / Time / Accuracy / Meta / Library with views of the selected group (`role=\"tab\"`). Views include Observatory, Circadian, **Screen Time**, Places, Mood field, Diversity, Transitions, Spectrum, Velocity, Cycle, Goals, Operations, Lists & areas (size by items + HHI), Tags, Stages, Weight, Attributes, Item Types, Cross-section, Overcommit. Tracking shows a **pie** plus mosaic; the drill lists blocks and opens the Tracking editor. Empty charts keep the frame and one sentence; interpretive views show n and watermark a thin sample. Hover **?** and native titles for instructions. Status: last N days or custom dates · current view.\nCurrent + longest habit and daily-review streaks — not clipped to the Analytics window (Home glance vs Analytics analysis stay split on purpose).",
+    "styleNotes": "",
+    "docPath": "components/Analytics/README.md"
+  },
+  "07-analytics-tags.png": {
+    "name": "Analytics tab → Library → Tags",
+    "description": "Analytics window: navy **title bar** and **status bar** stay Lists furniture. Interior is a light instrument studio (Karla only, ink on beige nested wells, phosphor traces — not cream-on-cream, not dark CRT), range chips (7 / 14 / 30 / 90 or Custom inclusive from–to, labeled as the dates) labeled once, left studio index Behavior / Time / Accuracy / Meta / Library with views of the selected group (`role=\"tab\"`). Views include Observatory, Circadian, **Screen Time**, Places, Mood field, Diversity, Transitions, Spectrum, Velocity, Cycle, Goals, Operations, Lists & areas (size by items + HHI), Tags, Stages, Weight, Attributes, Item Types, Cross-section, Overcommit. Tracking shows a **pie** plus mosaic; the drill lists blocks and opens the Tracking editor. Empty charts keep the frame and one sentence; interpretive views show n and watermark a thin sample. Hover **?** and native titles for instructions. Status: last N days or custom dates · current view.\nFree-form item tags as a treemap (area ∝ count). Click a tile to open those items.",
+    "styleNotes": "",
+    "docPath": "components/Analytics/README.md"
+  },
+  "07-analytics-tracking-breakdown.png": {
+    "name": "Analytics tab → Tracking → click a pen row",
+    "description": "Analytics window: navy **title bar** and **status bar** stay Lists furniture. Interior is a light instrument studio (Karla only, ink on beige nested wells, phosphor traces — not cream-on-cream, not dark CRT), range chips (7 / 14 / 30 / 90 or Custom inclusive from–to, labeled as the dates) labeled once, left studio index Behavior / Time / Accuracy / Meta / Library with views of the selected group (`role=\"tab\"`). Views include Observatory, Circadian, **Screen Time**, Places, Mood field, Diversity, Transitions, Spectrum, Velocity, Cycle, Goals, Operations, Lists & areas (size by items + HHI), Tags, Stages, Weight, Attributes, Item Types, Cross-section, Overcommit. Tracking shows a **pie** plus mosaic; the drill lists blocks and opens the Tracking editor. Empty charts keep the frame and one sentence; interpretive views show n and watermark a thin sample. Hover **?** and native titles for instructions. Status: last N days or custom dates · current view.\nPen drill-down dialog (`sm:max-w-3xl`): pen name, total over the range, % of tracked. Nested pens show an **Inside {parent}** child list first. Split / Reach for variants on the exact pen. Pie + split bar with name · duration (not jammed). Click a slice to list its blocks; click a block to open Home Tracking `entry-dialog.tsx`.",
+    "styleNotes": "",
+    "docPath": "components/Analytics/README.md"
+  },
+  "07-analytics-tracking-tag.png": {
+    "name": "Analytics tab → Tracking → click a tag in By tag",
+    "description": "Analytics window: navy **title bar** and **status bar** stay Lists furniture. Interior is a light instrument studio (Karla only, ink on beige nested wells, phosphor traces — not cream-on-cream, not dark CRT), range chips (7 / 14 / 30 / 90 or Custom inclusive from–to, labeled as the dates) labeled once, left studio index Behavior / Time / Accuracy / Meta / Library with views of the selected group (`role=\"tab\"`). Views include Observatory, Circadian, **Screen Time**, Places, Mood field, Diversity, Transitions, Spectrum, Velocity, Cycle, Goals, Operations, Lists & areas (size by items + HHI), Tags, Stages, Weight, Attributes, Item Types, Cross-section, Overcommit. Tracking shows a **pie** plus mosaic; the drill lists blocks and opens the Tracking editor. Empty charts keep the frame and one sentence; interpretive views show n and watermark a thin sample. Hover **?** and native titles for instructions. Status: last N days or custom dates · current view.\nTag drill-down dialog: the tag, its total over the range, and every pen that fed it — pen name, its scope, minutes and share. Because tags belong to time rather than to pens, a tag can be fed by a pen that does not carry it: the zoo afternoon was painted in Location and tagged Exercise on that block alone, so Exercise shows Location minutes next to the Activity ones. This is the number a habit linked to the tag receives, with minutes unioned across scopes so a doubly-tagged minute counts once.",
+    "styleNotes": "",
+    "docPath": "components/Analytics/README.md"
+  },
+  "07-analytics-tracking.png": {
+    "name": "Analytics tab → Tracking",
+    "description": "Analytics window: navy **title bar** and **status bar** stay Lists furniture. Interior is a light instrument studio (Karla only, ink on beige nested wells, phosphor traces — not cream-on-cream, not dark CRT), range chips (7 / 14 / 30 / 90 or Custom inclusive from–to, labeled as the dates) labeled once, left studio index Behavior / Time / Accuracy / Meta / Library with views of the selected group (`role=\"tab\"`). Views include Observatory, Circadian, **Screen Time**, Places, Mood field, Diversity, Transitions, Spectrum, Velocity, Cycle, Goals, Operations, Lists & areas (size by items + HHI), Tags, Stages, Weight, Attributes, Item Types, Cross-section, Overcommit. Tracking shows a **pie** plus mosaic; the drill lists blocks and opens the Tracking editor. Empty charts keep the frame and one sentence; interpretive views show n and watermark a thin sample. Hover **?** and native titles for instructions. Status: last N days or custom dates · current view.\nTime distribution for the shared Analytics range: scope picker; % of tracked / % of day; Show untracked; **Include assumed**; **Show as** depth. **Pie** (same slices as mosaic) + mosaic + hour × day heatmap; instants listed separately. Stats Tracked / Coverage / Average per day / Longest block. Click a pie slice, mosaic tile, or row to drill. Open in Lists when items have timeLogs in the window.",
+    "styleNotes": "",
+    "docPath": "components/Analytics/README.md"
+  },
+  "07-analytics-transitions.png": {
+    "name": "Analytics tab → Time → Transitions",
+    "description": "Analytics window: navy **title bar** and **status bar** stay Lists furniture. Interior is a light instrument studio (Karla only, ink on beige nested wells, phosphor traces — not cream-on-cream, not dark CRT), range chips (7 / 14 / 30 / 90 or Custom inclusive from–to, labeled as the dates) labeled once, left studio index Behavior / Time / Accuracy / Meta / Library with views of the selected group (`role=\"tab\"`). Views include Observatory, Circadian, **Screen Time**, Places, Mood field, Diversity, Transitions, Spectrum, Velocity, Cycle, Goals, Operations, Lists & areas (size by items + HHI), Tags, Stages, Weight, Attributes, Item Types, Cross-section, Overcommit. Tracking shows a **pie** plus mosaic; the drill lists blocks and opens the Tracking editor. Empty charts keep the frame and one sentence; interpretive views show n and watermark a thin sample. Hover **?** and native titles for instructions. Status: last N days or custom dates · current view.\nMarkov matrix of Tracking pen changes. P(to | from) among switches only; same-pen continuation omitted. Rows sum to 1.",
+    "styleNotes": "",
+    "docPath": "components/Analytics/README.md"
+  },
+  "07-analytics-velocity.png": {
+    "name": "Analytics tab → Behavior → Velocity",
+    "description": "Analytics window: navy **title bar** and **status bar** stay Lists furniture. Interior is a light instrument studio (Karla only, ink on beige nested wells, phosphor traces — not cream-on-cream, not dark CRT), range chips (7 / 14 / 30 / 90 or Custom inclusive from–to, labeled as the dates) labeled once, left studio index Behavior / Time / Accuracy / Meta / Library with views of the selected group (`role=\"tab\"`). Views include Observatory, Circadian, **Screen Time**, Places, Mood field, Diversity, Transitions, Spectrum, Velocity, Cycle, Goals, Operations, Lists & areas (size by items + HHI), Tags, Stages, Weight, Attributes, Item Types, Cross-section, Overcommit. Tracking shows a **pie** plus mosaic; the drill lists blocks and opens the Tracking editor. Empty charts keep the frame and one sentence; interpretive views show n and watermark a thin sample. Hover **?** and native titles for instructions. Status: last N days or custom dates · current view.\nCompletions and points per day, median cycle time, optional reward vs actual minutes. Display only.",
+    "styleNotes": "",
+    "docPath": "components/Analytics/README.md"
+  },
+  "07-analytics-weight.png": {
+    "name": "Analytics tab → Library → Weight",
+    "description": "Analytics window: navy **title bar** and **status bar** stay Lists furniture. Interior is a light instrument studio (Karla only, ink on beige nested wells, phosphor traces — not cream-on-cream, not dark CRT), range chips (7 / 14 / 30 / 90 or Custom inclusive from–to, labeled as the dates) labeled once, left studio index Behavior / Time / Accuracy / Meta / Library with views of the selected group (`role=\"tab\"`). Views include Observatory, Circadian, **Screen Time**, Places, Mood field, Diversity, Transitions, Spectrum, Velocity, Cycle, Goals, Operations, Lists & areas (size by items + HHI), Tags, Stages, Weight, Attributes, Item Types, Cross-section, Overcommit. Tracking shows a **pie** plus mosaic; the drill lists blocks and opens the Tracking editor. Empty charts keep the frame and one sentence; interpretive views show n and watermark a thin sample. Hover **?** and native titles for instructions. Status: last N days or custom dates · current view.\nImportance, cognitive load, and entropy already on items. Missing stays missing.",
+    "styleNotes": "",
+    "docPath": "components/Analytics/README.md"
+  },
+  "07-analytics.png": {
+    "name": "Analytics tab → Habits",
+    "description": "Analytics window: navy **title bar** and **status bar** stay Lists furniture. Interior is a light instrument studio (Karla only, ink on beige nested wells, phosphor traces — not cream-on-cream, not dark CRT), range chips (7 / 14 / 30 / 90 or Custom inclusive from–to, labeled as the dates) labeled once, left studio index Behavior / Time / Accuracy / Meta / Library with views of the selected group (`role=\"tab\"`). Views include Observatory, Circadian, **Screen Time**, Places, Mood field, Diversity, Transitions, Spectrum, Velocity, Cycle, Goals, Operations, Lists & areas (size by items + HHI), Tags, Stages, Weight, Attributes, Item Types, Cross-section, Overcommit. Tracking shows a **pie** plus mosaic; the drill lists blocks and opens the Tracking editor. Empty charts keep the frame and one sentence; interpretive views show n and watermark a thin sample. Hover **?** and native titles for instructions. Status: last N days or custom dates · current view.\nHabits: Daily habit completion heatmap for the shared window (Less→More scale); Habit completion bars sorted by rate. Empty heatmap: one sentence in the frame.",
+    "styleNotes": "",
+    "docPath": "components/Analytics/README.md"
+  },
+  "08-home-tracking-activity.png": {
+    "name": "Home tab → Tracking → Activity Log",
+    "description": "Home window: milled date plate (weekday CRT, calendar nameplate, Widgets key); Review due banner (Start review / Dismiss); All Time / Today / Week / Month points; Today's Progress (To Do + Habits remaining/done); Needs Attention (Overdue / Blocked / Unclarified — click opens detail). Sub-tabs: Habits · Plan · To Do · Goals · Tracking.\nTracking → Activity Log inside the Tracking window. Palette Sort Recent / A–Z / Tree; velvet pen well; **Log activity** on the shared palette. Day nav + block count · occupancy; one row per block (display name, assumed badge when reconstructed, secondary pens as +name, discrete events as a single clock) and untracked gaps with a **+** in line with the pencil (opens Log activity for that window) plus an optional personal note. **Log activity** types optional name, start / end (or one time for a discrete event), pen, notes; a discrete event can start or end a state block. Mark as assumed. **Done this day** lists To Do items finished on this calendar day (hints, not auto-painted; pen action-format rows appear here too). Footer per-pen and By tag totals. Day notes under the list.",
+    "styleNotes": "",
+    "docPath": "components/Home/Tracking/README.md"
+  },
+  "08-home-tracking-block.png": {
+    "name": "Home tab → Tracking → Activity Log → click a block",
+    "description": "Home window: milled date plate (weekday CRT, calendar nameplate, Widgets key); Review due banner (Start review / Dismiss); All Time / Today / Week / Month points; Today's Progress (To Do + Habits remaining/done); Needs Attention (Overdue / Blocked / Unclarified — click opens detail). Sub-tabs: Habits · Plan · To Do · Goals · Tracking.\nEntry dialog — one block, opened from the grid or an Activity Log row. Header: display name · clock span, duration + scope. Start / End (Sleep: **Fell asleep** / **Woke up**; discrete events: a single **When**); **Split at** a chosen minute; **Assumed / reconstructed** (default certain). Display name (defaults to the pen). Searchable pen picker with New pen (name + beveled color swatch, or Create from a search miss); secondary pens; Detail (variant chips); Also counts as (block tags). Also happening. Split (scissors seam so halves do not merge back), Delete, Save. Sleep invites dream notes.",
+    "styleNotes": "",
+    "docPath": "components/Home/Tracking/README.md"
+  },
+  "08-home-tracking-daylog.png": {
+    "name": "Home tab → Tracking → Day Log",
+    "description": "Home window: milled date plate (weekday CRT, calendar nameplate, Widgets key); Review due banner (Start review / Dismiss); All Time / Today / Week / Month points; Today's Progress (To Do + Habits remaining/done); Needs Attention (Overdue / Blocked / Unclarified — click opens detail). Sub-tabs: Habits · Plan · To Do · Goals · Tracking.\nTracking → Day Log inside the Tracking window (no nested Agenda / Activity Log). Shared palette includes **Log activity**. Day nav; Planned Xm estimated · Task logs Xm. Painted occupancy strip. One hour grid with more room per hour: solid = tracked (display-depth color; ≈ if assumed); dashed = planned (click to confirm it happened — paint, optional notes; tasks completeTask and unlock dependents); amber = task timeLogs. Sleep and long blocks are sliced so every occupied hour is clickable. Click a painted block → Entry dialog. Day notes under every Tracking view.",
+    "styleNotes": "",
+    "docPath": "components/Home/Tracking/README.md"
+  },
+  "08-home-tracking-week.png": {
+    "name": "Home tab → Tracking → Time Grid → week",
+    "description": "Home window: milled date plate (weekday CRT, calendar nameplate, Widgets key); Review due banner (Start review / Dismiss); All Time / Today / Week / Month points; Today's Progress (To Do + Habits remaining/done); Needs Attention (Overdue / Blocked / Unclarified — click opens detail). Sub-tabs: Habits · Plan · To Do · Goals · Tracking.\nTime Grid with the span switch on week. Tracking Win95 window; palette Sort Recent / A–Z / Tree; Erase / Scissors / Hide / View; velvet pen well. Seven columns, Monday first, each heading a clickable date (weekday + day) that drops back into the day view on that date, with the day's occupancy under it (overlapping blocks count once). Optional infinite week (View settings) stacks week bands with time running left to right. Header: week nav (‹ · This week · ›), the date range, tracked total · % of the week · N of 7 days logged — occupancy of the week, so coverage cannot exceed 100%. Tools: cell size 15m / 30m / 60m; From / To; an On row of seven day toggles plus Mon–Fri and All 7; Fill N days with {pen}. Drag down a column to paint that day; scissors splits at the minute; click a painted cell for the Entry dialog. Pen images tile as a mosaic. Below: per-day chips with a × to clear one day in this scope, then per-pen minutes and % and By tag (all scopes) totals. Day notes under the week.",
+    "styleNotes": "",
+    "docPath": "components/Home/Tracking/README.md"
+  },
+  "08-home-tracking.png": {
+    "name": "Home tab → Tracking → Time Grid",
+    "description": "Home window: milled date plate (weekday CRT, calendar nameplate, Widgets key); Review due banner (Start review / Dismiss); All Time / Today / Week / Month points; Today's Progress (To Do + Habits remaining/done); Needs Attention (Overdue / Blocked / Unclarified — click opens detail). Sub-tabs: Habits · Plan · To Do · Goals · Tracking.\nTracking in a Win95 window (navy title + orb). Toolbar tabs: Time Grid · Activity Log · Day Log. Working now (if ops), then **Working on right now** (search a pen color; timer from this second). No Sleep this day form — sleep is painted on the grid. Logged nights still paint onto the grid when the tab mounts. Pen palette (panel, not a nested window): views on one toolbar row (Activity / Location / Mood / Company / **Screen Time** / **iPhone Screen Time** / **iPhone Calls** / **iPhone Texts** / … — Activity is the painted one on launch; Screen Time is ActivityWatch meaning, not a steal of the active view); Show as + **Sort Recent / A–Z / Tree** + Erase / Scissors / Hide / View / Tags + **Log activity** on the next. Selected pen is a large swatch + name + **Settings** for that pen (View settings is a separate dialog: infinite day/week, hidden pens). **1m / 5m / 10m / 15m / 30m** cell size on the grid chrome; the live step is navy inset with a phosphor cap. Velvet well of pen beads (recently painted first; optional image on the bead); search; New pen (beveled color swatch). Detail variants. Status: N pens · sorted recent. Time Grid in the white field (dark ink, gray hour labels): day / week; optional infinite scroll (time L→R, days stacked); occupancy; if this view is empty a banner offers **Show Activity (Nh)**; drag to paint (assumed hatched; pen image tiles as a mosaic); scissors splits at the minute; click a block including Sleep → Entry dialog (display name, primary + secondary pens; sleep says Fell asleep / Woke up). Day notes under the grid. Pen settings: searchable Counts as, color chain, default action format, optional image.",
+    "styleNotes": "",
+    "docPath": "components/Home/Tracking/README.md"
+  },
+  "09-modules-workspace.png": {
+    "name": "Modules tab → Itinerary Creator workspace",
+    "description": "Back; click title to rename; Print / Export; Workflows; Settings; Pop out; Add view. View tabs (Plan / Itinerary / Activities / Packing / Before Trip — per template). Per-view settings gear. Doc/grid body + editor toolbar. Status (word count).",
+    "styleNotes": "",
+    "docPath": "lib/README.md"
+  },
+  "09-modules.png": {
+    "name": "Modules tab → dashboard",
+    "description": "Modules. Build module (scratch / saved defs / templates: Itinerary, Cleaning, Budget, Book Tasting, Film DNA, Blank; or New widget). Workspaces cards (open, pop out). Dashboard widgets: gear config, × remove. Bodies e.g. Points this week; Writing Assignment Generator (New prompt); What should I do now? (Another / Mark done).",
+    "styleNotes": "",
+    "docPath": "components/Modules/README.md"
+  },
+  "10-operations-locations.png": {
+    "name": "Operation workspace → Locations",
+    "description": "Locations: places for the operation. Headlands Inn is a place on the backing list, with a map pin.",
+    "styleNotes": "",
+    "docPath": "components/Operations/README.md"
+  },
+  "10-operations-log.png": {
+    "name": "Operation workspace → Log",
+    "description": "Reverse-chronological time log for the operation and its task tree, plus the punch-in form. Seeded minutes on the operation and on Reserve the Headlands Inn.",
+    "styleNotes": "",
+    "docPath": "components/Operations/README.md"
+  },
+  "10-operations-parts.png": {
+    "name": "Operation workspace → Parts",
+    "description": "Kinds (Day, nested Stop) from partFormulas, and instances (Saturday headlands, Point Reyes pull-off) from partInstances, including an idea. Glance meters and the new-kind form.",
+    "styleNotes": "",
+    "docPath": "components/Operations/README.md"
+  },
+  "10-operations-phases.png": {
+    "name": "Operation workspace → Phases",
+    "description": "Phases linked has-phase / phase-of. Each phase expands to its steps (has-part). Pack the car and Drive Highway 1, with a completed step and an open one.",
+    "styleNotes": "",
+    "docPath": "components/Operations/README.md"
+  },
+  "10-operations-plan.png": {
+    "name": "Operation workspace → Plan",
+    "description": "Plan: the long-form coast weekend document (drive, walk, home before dark). Same note the Docs tab opens.",
+    "styleNotes": "",
+    "docPath": "components/Operations/README.md"
+  },
+  "10-operations-postmortem.png": {
+    "name": "Operation workspace → After-action report dialog",
+    "description": "After-action report dialog: summary, what worked, what failed, lessons, Execution / Planning / Morale ratings.",
+    "styleNotes": "",
+    "docPath": "components/Operations/README.md"
+  },
+  "10-operations-resources.png": {
+    "name": "Operation workspace → Resources",
+    "description": "Resources linked has-resource. The AAA coast map is attached. Inline add-a-resource row.",
+    "styleNotes": "",
+    "docPath": "components/Operations/README.md"
+  },
+  "10-operations-settings.png": {
+    "name": "Operation workspace → Settings dialog",
+    "description": "Operation settings: name, mission, stage, categories, panel switches (Timeline, Locations, Plan, Resources included), tracking tags, presets, Delete operation.",
+    "styleNotes": "",
+    "docPath": "components/Operations/README.md"
+  },
+  "10-operations-timeline.png": {
+    "name": "Operation workspace → Timeline",
+    "description": "Timeline: day-by-day field plan for the coast weekend (Mendocino, Point Reyes) with timed plans and notes. Backed by the operation's itinerary module.",
+    "styleNotes": "",
+    "docPath": "components/Operations/README.md"
+  },
+  "10-operations-todo.png": {
+    "name": "Operation workspace → To do",
+    "description": "To do panel: the operation's backing list (same Lists content panel). Seeded coast-weekend tasks, including phase steps filed on that list.",
+    "styleNotes": "",
+    "docPath": "components/Operations/README.md"
+  },
+  "10-operations-workspace.png": {
+    "name": "Operations tab → Operation workspace",
+    "description": "Back / Board; click title to rename; stage badge. Menubar: Settings (panels, categories, tracking tags, presets, Delete operation with Are you sure), After-action report, category chips, Working now. Tabs from Settings: Home / To do / Phases / Parts / Timeline / Locations / Plan / Resources / Log. Home: Mission, Stage, Notes, Work/neglect heatmap. To do next rail. Status: N panels on.",
+    "styleNotes": "",
+    "docPath": "components/Operations/README.md"
+  },
+  "10-operations.png": {
+    "name": "Operations tab → list landing",
+    "description": "Operations — Command Center. Name a new operation…; Shape preset (Standard / Blank / Trip / Project / Paid job); New Operation. When ops exist: Sort (Name / Stage / Target date / Newest), Group by category, Show archived (completed and inactive stay hidden until then), category + Uncategorized filters. Cards: name, stage, mission, category chips, panel count — click opens workspace. Empty copy + status counts (archived hidden called out).",
+    "styleNotes": "",
+    "docPath": "components/Operations/README.md"
+  },
+  "12-docs-reading.png": {
+    "name": "Docs tab → open document",
+    "description": "Open document: title, folder, font, editor body. Coast weekend plan — drive, headlands walk, home before dark.",
+    "styleNotes": "",
+    "docPath": "components/Docs/README.md"
+  },
+  "12-docs.png": {
+    "name": "Docs tab → folder homepage",
+    "description": "Docs window: folder sidebar (All / Unfiled / named folders), search, blank and upload cards, document tiles. Seeded notes: Coast weekend plan (Trips) and Kiln wiring notes (Studio).",
+    "styleNotes": "",
+    "docPath": "components/Docs/README.md"
+  },
+  "20-dialog-bulk-add.png": {
+    "name": "Header → Bulk Add",
+    "description": "Bulk Add Tasks with Lists. Multi-line textarea (one item/line; headers list: or folder: list:). Send to Inbox checkbox. Shorthand & where items go. Ready count. Add Tasks. ×.",
+    "styleNotes": "",
+    "docPath": "components/README.md"
+  },
+  "20-dialog-completion.png": {
+    "name": "To Do → Done → completion popup",
+    "description": "Task completed. Optional quick reflection: Exact / Est. / Unknown length, start time, optional 1–10 scores, notes, live points line. Footer: Undo (reopen as still to-do), Skip, Save.",
+    "styleNotes": "",
+    "docPath": "components/Completion/README.md"
+  },
+  "20-dialog-global-search.png": {
+    "name": "Cmd/Ctrl+K search palette",
+    "description": "Search folders, lists, tasks, tags, notes…. Advanced: Folders / Lists / Items, Title only, Include hidden items. Ranked results (item/list/folder). ↑↓ navigate · ↵ open · esc close.",
+    "styleNotes": "",
+    "docPath": "components/Search/README.md"
+  },
+  "20-dialog-inbox.png": {
+    "name": "Header → Inbox",
+    "description": "Inbox — Clarify Your Ideas. Per capture: title, added time, chips, Clarify, Delete. Clarify All Ideas. Clarify Idea form: description, duration, reward, urgency/importance, Lists, attributes, Save & Clarify.",
+    "styleNotes": "",
+    "docPath": "components/README.md"
+  },
+  "20-dialog-metrics.png": {
+    "name": "Header → Metrics",
+    "description": "Wellbeing metrics. Log a datapoint: Joy / Suffering / Alignment / Self satisfaction / Situational satisfaction (/100 + color). When, Context, Details. Log datapoint. Recent datapoints (+ delete).",
+    "styleNotes": "",
+    "docPath": "lib/README.md"
+  },
+  "20-dialog-morning-review.png": {
+    "name": "Header → Morning dialog",
+    "description": "Morning Review. Fell asleep / Wake time — a view onto the sleep log rather than a second copy, so saving paints the night on the Sleep pen, logs it in Done and feeds sleep habits; a blank field opens pre-filled from sleep painted on the grid. A line below reports the night's length. Dream journal. Intentions (+ Add). Affirmations (+ Add) + Affirmations spoken dialog (Start / meters / Next / Finish). Consciously postpone checkboxes. Cancel / Save Morning Review.",
+    "styleNotes": "",
+    "docPath": "components/Reviews/README.md"
+  },
+  "20-dialog-quick-add.png": {
+    "name": "Header → Quick Add",
+    "description": "Add Idea. Single-line Idea (colon paths folder: list: item). Send to Inbox checkbox. Shorthand help. Live destination chips. Add to Inbox (or Add if skip Inbox). ×.",
+    "styleNotes": "",
+    "docPath": "components/README.md"
+  },
+  "20-dialog-reviews.png": {
+    "name": "Header → Review → day review dialog",
+    "description": "Day Review. Unfinished scheduled items: Done / Push / Reflect / Why blocked? Assumed times (Looks right, Finished, Took, Confirm all as-is). Summary. Gratitude (+ Add). Your period plan. Reflection: What went well? / better? / learned? Day only: Tomorrow's plan + to-do search/New/tier/Add. Cancel / Save Review. PNG may omit Assumed times.",
+    "styleNotes": "",
+    "docPath": "components/Reviews/README.md"
+  },
+  "20-dialog-settings.png": {
+    "name": "Header → Settings",
+    "description": "Settings. Home location (City). Birthday: the Star Lord Report opens on this day (new moon and full moon open on their own). Default time of day: what is assumed when work is ticked off after the day has ended and there is no tracked time to read a real finish from. Once a few nights are logged this reports that the sleep log is answering it instead — your usual bedtime, less half an hour — and the Assumed finish time field below it is the fallback for days with no sleep data at all. Full App Backup: Export Full Backup / Restore From Backup. Phone↔Desktop Live Sync: Check hub / Force push now / Force pull now. Message ingest: enable, Telegram token (desktop), pairing code, cheat-sheet, simulate a phrase. **Screen Time**: ActivityWatch URL, connection lamp, lookback, Sync now. Item Types → Manage Item Types. Second Brain seed. PNG may need scroll.",
+    "styleNotes": "",
+    "docPath": "components/Settings/README.md"
+  },
+  "20-dialog-time-tracking.png": {
+    "name": "Header → Tracking",
+    "description": "Time Tracking dialog — same stack as Home Time Grid: Working now (if ops); pen tray; view-mode bar (Activity / Location / Mood / Company / Screen Time / iPhone Screen Time / iPhone Calls / iPhone Texts / …); TIME/DIV + Cell + Fill; grid; Untracked.",
+    "styleNotes": "",
+    "docPath": "components/README.md"
+  },
+  "21-item-detail-analysis.png": {
+    "name": "Item detail popup → Analysis",
+    "description": "Analysis: why, what happens if you don't, additional notes. All three filled for the headlands photo.",
+    "styleNotes": "",
+    "docPath": "components/ItemDetail/README.md"
+  },
+  "21-item-detail-body.png": {
+    "name": "Item detail popup → Body",
+    "description": "Body: the note about standing on the north trail until the fog lifts. The Example List adds the Body panel.",
+    "styleNotes": "",
+    "docPath": "components/ItemDetail/README.md"
+  },
+  "21-item-detail-dependencies.png": {
+    "name": "Item detail popup → Dependencies",
+    "description": "Dependencies: Photograph the headlands waits on Buy a roll of black-and-white film.",
+    "styleNotes": "",
+    "docPath": "components/ItemDetail/README.md"
+  },
+  "21-item-detail-popup.png": {
+    "name": "Item detail popup (from Lists)",
+    "description": "Item detail, Details tab. Title Photograph the headlands. Delete / Complete / Save Changes. Detailed description, duration, reward, urgency/importance, Show in Scheduler, Type, Lists, Tags. Other tabs: Scheduling, Dependencies, Subtasks, Analysis, Time, Body.",
+    "styleNotes": "",
+    "docPath": "components/ItemDetail/README.md"
+  },
+  "21-item-detail-scheduling.png": {
+    "name": "Item detail popup → Scheduling",
+    "description": "Scheduling: scheduled date and time, deadline, flexible scheduling, constraints. The headlands photo is dated and has a deadline.",
+    "styleNotes": "",
+    "docPath": "components/ItemDetail/README.md"
+  },
+  "21-item-detail-subtasks.png": {
+    "name": "Item detail popup → Subtasks",
+    "description": "Subtasks: Pack the small tripod (done) and One frame of the inn roof (open, molecular).",
+    "styleNotes": "",
+    "docPath": "components/ItemDetail/README.md"
+  },
+  "21-item-detail-time.png": {
+    "name": "Item detail popup → Time",
+    "description": "Time: estimated vs actual, and a logged scout of the overlook.",
+    "styleNotes": "",
+    "docPath": "components/ItemDetail/README.md"
+  },
+  "habits-noble-gas-rail.png": {
+    "name": "Habits control-panel crop; no sidecar",
+    "description": "",
+    "styleNotes": "",
+    "docPath": ""
+  }
+}

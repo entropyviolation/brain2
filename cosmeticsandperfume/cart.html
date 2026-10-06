@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shopping carts</title>
+<style>
+  :root {
+    color-scheme: light;
+    --ink: #1c1915;
+    --muted: #5c564c;
+    --line: #d9d0c3;
+    --paper: #f6f1e8;
+    --card: #fffdf8;
+    --accent: #2f4a3a;
+    --accent-soft: #e4efe7;
+    --warn: #6b4a1e;
+  }
+  * { box-sizing: border-box; }
+  html { font-size: 16px; }
+  body {
+    margin: 0;
+    color: var(--ink);
+    background: var(--paper);
+    font-family: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif;
+    line-height: 1.45;
+  }
+  header, main { width: min(1120px, calc(100% - 1.5rem)); margin: 0 auto; }
+  header { padding: 1.25rem 0 0.5rem; }
+  h1 { font-size: 1.75rem; font-weight: 600; margin: 0 0 0.35rem; letter-spacing: -0.02em; }
+  .lede { margin: 0; max-width: 42rem; color: var(--muted); }
+  .controls {
+    margin: 1rem 0;
+    padding: 0.85rem 0.9rem;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+  }
+  .controls h2 {
+    margin: 0 0 0.45rem;
+    font-family: "Avenir Next", "Segoe UI", sans-serif;
+    font-size: 0.78rem;
+    font-weight: 650;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .checks { display: flex; flex-wrap: wrap; gap: 0.35rem 0.7rem; }
+  label.check {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-family: "Avenir Next", "Segoe UI", sans-serif;
+    font-size: 0.92rem;
+    min-height: 1.75rem;
+  }
+  .sorts { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+  button {
+    font-family: "Avenir Next", "Segoe UI", sans-serif;
+    font-size: 0.92rem;
+    color: var(--ink);
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 0.35rem 0.75rem;
+    min-height: 2.25rem;
+    cursor: pointer;
+  }
+  button[aria-pressed="true"] {
+    background: var(--accent);
+    color: #f6f1e8;
+    border-color: var(--accent);
+  }
+  .sort-note { margin: 0.45rem 0 0; color: var(--muted); font-size: 0.92rem; }
+  .summary {
+    display: grid;
+    gap: 0.75rem;
+    margin: 0 0 1rem;
+  }
+  .grand {
+    background: var(--accent);
+    color: #f6f1e8;
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+  }
+  .grand strong { font-size: 1.55rem; font-variant-numeric: tabular-nums; }
+  .grand p { margin: 0.2rem 0 0; }
+  .subs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+    gap: 0.45rem;
+  }
+  .sub {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 0.45rem 0.65rem;
+  }
+  .sub span { display: block; color: var(--muted); font-family: "Avenir Next", "Segoe UI", sans-serif; font-size: 0.78rem; }
+  .sub b { font-variant-numeric: tabular-nums; }
+  .wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
+  table { width: 100%; border-collapse: collapse; min-width: 720px; }
+  th, td { text-align: left; vertical-align: top; padding: 0.55rem 0.6rem; border-bottom: 1px solid var(--line); }
+  th {
+    font-family: "Avenir Next", "Segoe UI", sans-serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: #f3eee4;
+    position: sticky;
+    top: 0;
+  }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .tags { display: flex; flex-wrap: wrap; gap: 0.25rem; }
+  .tag {
+    font-family: "Avenir Next", "Segoe UI", sans-serif;
+    font-size: 0.75rem;
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-radius: 999px;
+    padding: 0.1rem 0.45rem;
+    white-space: nowrap;
+  }
+  a { color: var(--accent); }
+  .note { color: var(--warn); }
+  .empty { margin: 1rem; color: var(--muted); }
+  footer { width: min(1120px, calc(100% - 1.5rem)); margin: 1rem auto 2rem; color: var(--muted); font-size: 0.92rem; }
+  @media (max-width: 760px) {
+    .wrap { overflow: visible; border: 0; background: transparent; }
+    table { min-width: 0; }
+    thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    tr {
+      display: block;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      margin: 0 0 0.7rem;
+      padding: 0.65rem 0.75rem 0.5rem;
+    }
+    td {
+      display: block;
+      border: 0;
+      padding: 0.12rem 0;
+    }
+    td::before {
+      content: attr(data-label);
+      display: block;
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+      font-size: 0.72rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    td.num { text-align: left; font-size: 1.15rem; }
+    td.num::before { margin-bottom: 0.1rem; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Shopping carts</h1>
+  <p class="lede">Checked 5 October 2026. Prices are the shopping-list figures, including lines marked about or estimated. Shipping is extra on each supplier box.</p>
+</header>
+<main>
+  <section class="controls" aria-label="Filters">
+    <h2>Projects</h2>
+    <div class="checks" id="projects"></div>
+    <h2 style="margin-top:0.8rem">Supplier carts</h2>
+    <div class="checks" id="suppliers"></div>
+    <h2 style="margin-top:0.8rem">Sort</h2>
+    <div class="sorts">
+      <button type="button" id="sort-supplier" aria-pressed="true">Supplier, then price</button>
+      <button type="button" id="sort-price" aria-pressed="false">Price</button>
+      <button type="button" id="sort-name" aria-pressed="false">Item name</button>
+      <button type="button" id="clear">Show all</button>
+    </div>
+    <p class="sort-note" id="sort-note">Sorted by supplier, then price, low to high. Check a project or a cart to narrow the rows. Subtotals follow the rows on screen.</p>
+  </section>
+  <section class="summary" aria-live="polite">
+    <div class="grand">
+      <div>Goods total</div>
+      <strong id="grand">$0.00</strong>
+      <p id="grand-note"></p>
+    </div>
+    <div class="subs" id="subs"></div>
+  </section>
+  <div class="wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Supplier cart</th>
+          <th>Item</th>
+          <th>Size</th>
+          <th class="num">Price</th>
+          <th>Projects</th>
+          <th>Link</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+</main>
+<footer>
+  Blank links are pages that were not verified. Do not treat a search box as a product. Marketplace essential oils stay off this list.
+</footer>
+<script type="application/json" id="cart-data">
+[
+  {"supplier":"Eden Botanicals","item":"Lavender Maillette","size":"30 ml","price":20.5,"projects":["perfume","hair mist","shampoo bar","glitter mist","shimmer oil","laundry"],"url":"https://www.edenbotanicals.com/lavender-maillette.html","note":"30 ml because laundry and the shampoo bar finish a 15 ml bottle."},
+  {"supplier":"Eden Botanicals","item":"Virginia cedarwood","size":"30 ml","price":10.25,"projects":["perfume","shampoo bar","shimmer oil","solid perfume","laundry"],"url":"https://www.edenbotanicals.com/cedarwood-virginia.html","note":"Pencil cedar for perfume, the tin, the bar, and the dryer. Atlas is a different oil."},
+  {"supplier":"Eden Botanicals","item":"Atlas cedarwood, organic","size":"15 ml","price":9,"projects":["perfume"],"url":"https://www.edenbotanicals.com/cedarwood-atlas-organic.html","note":"Sweet balsamic cedar. Not the solid-perfume line."},
+  {"supplier":"Eden Botanicals","item":"Balsam fir","size":"30 ml","price":15.5,"projects":["perfume","laundry"],"url":"https://www.edenbotanicals.com/fir-balsam.html","note":"Clean woods, and the castile wash with cedar and sweet orange."},
+  {"supplier":"Eden Botanicals","item":"Black spruce, organic","size":"15 ml","price":14.5,"projects":["perfume"],"url":"https://www.edenbotanicals.com/spruce-black-organic.html","note":"Clean-woods needle oil."},
+  {"supplier":"Eden Botanicals","item":"Cypress, organic","size":"15 ml","price":12.75,"projects":["perfume","shampoo bar"],"url":"https://www.edenbotanicals.com/cypress-leaf-sample.html","note":"The shampoo bar can use this, along with perfume."},
+  {"supplier":"Eden Botanicals","item":"Scotch pine, organic","size":"15 ml","price":11,"projects":["perfume","shampoo bar"],"url":"https://www.edenbotanicals.com/pine-scotch-organic.html","note":"The shampoo bar can use this, along with perfume."},
+  {"supplier":"Eden Botanicals","item":"Hinoki wood","size":"15 ml","price":21.75,"projects":["perfume","hair mist","glitter mist","shimmer oil"],"url":"https://www.edenbotanicals.com/hinoki-wood.html","note":"Wood oil, not the leaf. Plantation sawmill offcuts. Dilute."},
+  {"supplier":"Eden Botanicals","item":"Ylang ylang complete, organic","size":"15 ml","price":12.5,"projects":["perfume","hair mist","shampoo bar","laundry"],"url":"https://www.edenbotanicals.com/ylang-ylang-complete-organic-2080.html","note":"Stay near 0.8% on skin. The bar and the dryer are rinse-off."},
+  {"supplier":"Eden Botanicals","item":"Rose geranium","size":"15 ml","price":15,"projects":["perfume","shampoo bar","laundry"],"url":"https://www.edenbotanicals.com/geranium-rose.html","note":"Rose note for soap and laundry. Page is Geranium, Rose. Africa organic is a second bottle."},
+  {"supplier":"Eden Botanicals","item":"Patchouli, dark","size":"15 ml","price":11.5,"projects":["perfume","shampoo bar"],"url":"https://www.edenbotanicals.com/patchouli-dark.html","note":"The bar can use this. Expensive florals do not survive that rinse."},
+  {"supplier":"Eden Botanicals","item":"Frankincense CO2, India (Boswellia serrata)","size":"5 ml","price":11,"projects":["perfume"],"url":"https://www.edenbotanicals.com/frankincense-co2-india.html","note":"Boswellia serrata, the soap and perfume resin."},
+  {"supplier":"Eden Botanicals","item":"Sweet orange","size":"15 ml","price":7.75,"projects":["perfume","shampoo bar","laundry"],"url":"https://www.edenbotanicals.com/orange-sweet-organic.html","note":"Expressed peel oxidizes. In the bar it is a rinse-off dose. Page is the organic oil; the list does not say organic."},
+  {"supplier":"Eden Botanicals","item":"Pink grapefruit","size":"15 ml","price":8,"projects":["perfume"],"url":"https://www.edenbotanicals.com/grapefruit-pink.html","note":"Phototoxic in daylight on skin. Night wear, or use more bergamot FCF."},
+  {"supplier":"Eden Botanicals","item":"Lemon, distilled, organic","size":"15 ml","price":11,"projects":["perfume"],"url":"https://www.edenbotanicals.com/lemon-distilled-organic.html","note":"Distilled, so not the phototoxic expressed peel oil."},
+  {"supplier":"Eden Botanicals","item":"Bergamot FCF, organic","size":"15 ml","price":19,"projects":["perfume","shimmer oil"],"url":"https://www.edenbotanicals.com/bergamot-fcf-organic.html","note":"FCF, phototoxicity-reduced. Expressed bergamot stays off the cart."},
+  {"supplier":"Eden Botanicals","item":"Ginger CO2","size":"5 ml","price":9,"projects":["perfume"],"url":"https://www.edenbotanicals.com/ginger-co2.html","note":"Potent CO2 for perfume."},
+  {"supplier":"Eden Botanicals","item":"Amyris","size":"15 ml","price":10,"projects":["perfume"],"url":"https://www.edenbotanicals.com/amyris-essential-oil.html","note":"Sandalwood blender. The 1 ml Australian spicatum is the true-wood trace. Album stays off this order."},
+  {"supplier":"Eden Botanicals","item":"Peppermint","size":"15 ml","price":9.5,"projects":["perfume"],"url":"https://www.edenbotanicals.com/peppermint-usa.html","note":"Page is Peppermint, USA. The cart size is 15 ml; that page listed 1 ml and 30 ml."},
+  {"supplier":"Eden Botanicals","item":"Clove bud, organic","size":"15 ml","price":9,"projects":["perfume"],"url":"https://www.edenbotanicals.com/clove-bud-organic.html","note":"At or under 0.5% of anything left on skin. Not the hair mist."},
+  {"supplier":"Eden Botanicals","item":"Nutmeg","size":"15 ml","price":8,"projects":["perfume"],"url":"https://www.edenbotanicals.com/nutmeg.html","note":""},
+  {"supplier":"Eden Botanicals","item":"Black pepper, organic","size":"5 ml","price":10,"projects":["perfume"],"url":"https://www.edenbotanicals.com/pepper-black-organic.html","note":"Burnt-woods accord."},
+  {"supplier":"Eden Botanicals","item":"Pink pepper","size":"5 ml","price":10.25,"projects":["perfume"],"url":"https://www.edenbotanicals.com/peppercorn-pink.html","note":"Can cross-react with cashew, mango, and pistachio allergy."},
+  {"supplier":"Eden Botanicals","item":"Petitgrain bigarade","size":"15 ml","price":12,"projects":["perfume"],"url":"https://www.edenbotanicals.com/petitgrain-bigarade-paraguay-organic.html","note":"Wearable in daylight. This page is Paraguay organic; the other bigarade page was not found."},
+  {"supplier":"Eden Botanicals","item":"Labdanum absolute clear, 10%","size":"30 ml","price":10,"projects":["perfume","laundry"],"url":"https://www.edenbotanicals.com/labdanum-absolute-clear-10.html","note":"Needs a glass dropper. It glues plastic."},
+  {"supplier":"Eden Botanicals","item":"Benzoin absolute, Sumatra","size":"15 ml","price":11.5,"projects":["perfume"],"url":"https://www.edenbotanicals.com/benzoin.html","note":"Warm the bottle in hot water. Raw resin will not pour into a roller."},
+  {"supplier":"Eden Botanicals","item":"Jasmine sambac absolute, 10%","size":"middle size","price":12.5,"projects":["perfume","laundry"],"url":"https://www.edenbotanicals.com/jasmine-sambac-absolute-10.html","note":"10% in fractionated coconut. It clouds in alcohol, so it stays in a jojoba roller."},
+  {"supplier":"Eden Botanicals","item":"Turkish rose by-absolute","size":"1 ml","price":12,"projects":["perfume"],"url":"https://www.edenbotanicals.com/rose-by-absolute.html","note":"Turkish by-absolute, 1 ml. Not rose otto."},
+  {"supplier":"Eden Botanicals","item":"Rose hydrosol, organic","size":"4 oz","price":15.5,"projects":["serum"],"url":"https://www.edenbotanicals.com/rose-hydrosol-organic.html","note":"Optional serum water, plus face use."},
+  {"supplier":"Eden Botanicals","item":"Vanilla CO2","size":"1 ml","price":9.75,"projects":["perfume"],"url":"https://www.edenbotanicals.com/vanilla-co2.html","note":"Perfume sweet. Vanillin is the bar and the dryer."},
+  {"supplier":"Eden Botanicals","item":"Tonka bean absolute","size":"1 ml","price":17.75,"projects":["perfume"],"url":"https://www.edenbotanicals.com/tonka-bean-absolute.html","note":"Worn perfume only. Not a flavoring, and not the shampoo bar."},
+  {"supplier":"Eden Botanicals","item":"Bitter almond, prussic acid removed","size":"1 ml","price":6,"projects":["perfume"],"url":"https://www.edenbotanicals.com/almond-bitter.html","note":"Prussic-acid-free listing. Still not for eating."},
+  {"supplier":"Eden Botanicals","item":"Vetiver, Java","size":"5 ml","price":12.25,"projects":["perfume"],"url":"https://www.edenbotanicals.com/vetiver-java.html","note":"Burnt woods and the citrus-wood accord."},
+  {"supplier":"Eden Botanicals","item":"Fossilized amber oil, 5%","size":"15 ml","price":13.5,"projects":["perfume"],"url":"https://www.edenbotanicals.com/amber-oil-fossilized-5.html","note":"Already 5%. Neat fossilized amber stays off the cart."},
+  {"supplier":"Eden Botanicals","item":"Fractionated coconut oil, organic","size":"4 oz","price":12,"projects":["perfume","pantry"],"url":"https://www.edenbotanicals.com/fractionated-coconut-oil-organic.html","note":"For absolute dilutions. Odorless, so it is not a coconut perfume. Not the shimmer spray."},
+  {"supplier":"Eden Botanicals","item":"Jojoba, golden, organic","size":"4 oz","price":15.5,"projects":["perfume","shimmer oil","pantry"],"url":"https://www.edenbotanicals.com/jojoba-oil-golden-organic.html","note":"Roller oil and the shimmer spray. Four ounces covers both."},
+  {"supplier":"Eden Botanicals","item":"Argan oil, organic","size":"30 ml","price":13.5,"projects":["hair mist"],"url":"https://www.edenbotanicals.com/argan-oil-wildcrafted.html","note":"Hair mist only. Do not put it in the shimmer spray."},
+  {"supplier":"Eden Botanicals","item":"Palmarosa, organic","size":"15 ml","price":8,"projects":["perfume","solid perfume"],"url":"https://www.edenbotanicals.com/palmarosa-organic.html","note":"Low-risk sensitizer. This tin is about 1%; dermal maximum 6.5%."},
+  {"supplier":"Eden Botanicals","item":"Cardamom, organic","size":"1 ml","price":4,"projects":["perfume","solid perfume"],"url":"https://www.edenbotanicals.com/cardamom-organic.html","note":"High in 1,8-cineole. Keep it off infants' faces. Flammable, shipping class 3."},
+  {"supplier":"Eden Botanicals","item":"Sandalwood, Australian, premium (Santalum spicatum)","size":"1 ml","price":9.5,"projects":["perfume"],"url":"https://www.edenbotanicals.com/sandalwood-australian-premium-1ml.html","note":"Education size. Trace in the Illicit night variant. Album at $13 for 1 ml stays off."},
+  {"supplier":"Eden Botanicals","item":"Orange, bitter red, cold-pressed peel","size":"1 ml","price":3,"projects":["perfume"],"url":"https://www.edenbotanicals.com/orange-bitter-red-sample.html","note":"Phototoxic. Night and soap only. Petitgrain stays the daylight orange."},
+  {"supplier":"Perfumer's Apprentice","item":"Iso E Super","size":"15 ml","price":11,"projects":["perfume"],"url":"https://shop.perfumersapprentice.com/p-6120-iso-e-super-iff.aspx","note":"Alcohol perfume and candles. Not the shampoo bar, the castile, or the washer."},
+  {"supplier":"Perfumer's Apprentice","item":"Hedione","size":"15 ml","price":11,"projects":["perfume"],"url":"https://shop.perfumersapprentice.com/p-6100-hedione-firmenich.aspx","note":"Same wash-off rule as Iso E Super."},
+  {"supplier":"Perfumer's Apprentice","item":"Ethylene brassylate","size":"15 ml","price":11,"projects":["perfume"],"url":"https://shop.perfumersapprentice.com/p-6079-ethylene-brassylate.aspx","note":"The musk. Ambrette seed stays unbought."},
+  {"supplier":"Perfumer's Apprentice","item":"Norlimbanol","size":"4 ml","price":8.75,"projects":["perfume"],"url":"https://shop.perfumersapprentice.com/p-7397-norlimbanol-firmenich.aspx","note":"Dilute to 10% the day it arrives. Neat, it blinds the nose."},
+  {"supplier":"Perfumer's Apprentice","item":"Cashmeran","size":"4 ml","price":7,"projects":["perfume"],"url":"https://shop.perfumersapprentice.com/p-6022-cashmeran-iff.aspx","note":""},
+  {"supplier":"Perfumer's Apprentice","item":"Veramoss","size":"8 g","price":6.75,"projects":["perfume"],"url":"https://shop.perfumersapprentice.com/p-6243-veramoss-iff.aspx","note":"Oakmoss note without oakmoss allergens. Raw oakmoss stays off."},
+  {"supplier":"Perfumer's Apprentice","item":"Birch tar, rectified, 10%","size":"4 ml","price":6,"projects":["perfume"],"url":"https://shop.perfumersapprentice.com/p-9566-birch-tar-rectified-10-bb.aspx","note":"Already 10%. Weigh it. Not cade, and not the hair mist."},
+  {"supplier":"Perfumer's Apprentice","item":"Guaiacwood","size":"4 ml","price":6.5,"projects":["perfume"],"url":"https://shop.perfumersapprentice.com/p-7310-guaiacwood-multi-origin.aspx","note":"Burnt-woods accord."},
+  {"supplier":"Perfumer's Apprentice","item":"Honeysuckle fragrance oil","size":"15 ml","price":6,"projects":["perfume"],"url":"https://shop.perfumersapprentice.com/p-6339-honeysuckle-fragrance-oil.aspx","note":"There is no ordinary honeysuckle essential oil. This accord is the bottle."},
+  {"supplier":"Perfumer's Apprentice","item":"Cherry fragrance oil","size":"15 ml","price":6,"projects":["perfume"],"url":"https://shop.perfumersapprentice.com/p-6303-cherry-fragrance-oil.aspx","note":"Candy cherry. The bitter almond is a different bottle, and not for eating."},
+  {"supplier":"Perfumer's Apprentice","item":"Vanillin","size":"smallest","price":6,"projects":["shampoo bar","laundry"],"url":"https://shop.perfumersapprentice.com/p-7993-vanillin-crystals-natural-10-alc.aspx","note":"Bar and dryer sweet. The $6 listing is 4 ml at 10% in alcohol. Crystals are $6.50 for 8 g."},
+  {"supplier":"Perfumer's Apprentice","item":"Base de Parfum","size":"250 ml","price":18,"projects":["perfume","pantry"],"url":"https://shop.perfumersapprentice.com/p-9064-base-de-parfum.aspx","note":"Eau de parfum is about 15% concentrate in this base."},
+  {"supplier":"Perfumer's Apprentice","item":"Ethyl maltol crystals","size":"8 g","price":6,"projects":["perfume"],"url":"https://shop.perfumersapprentice.com/p-6666-ethyl-maltol-crystals.aspx","note":"Caramel crystal for the Illicit night variant. Dissolve in the alcohol base. Not a syrup."},
+  {"supplier":"Perfumer's Apprentice","item":"Honey lactone essence","size":"4 ml","price":6.5,"projects":["perfume"],"url":"https://shop.perfumersapprentice.com/p-9334-honey-lactone-essence-fragrance.aspx","note":"Honey accord. Beeswax absolute stays unbought."},
+  {"supplier":"Perfumer's Apprentice","item":"Coconut II fragrance oil","size":"15 ml","price":6,"projects":["perfume"],"url":"https://shop.perfumersapprentice.com/p-6309-coconut-ii-fragrance-oil.aspx","note":"The coconut smell. Fractionated coconut oil is odorless and is a different bottle. Body oil stays at or under 3%."},
+  {"supplier":"Perfumer's Apprentice","item":"Green tea fragrance oil","size":"15 ml","price":6,"projects":["perfume"],"url":"https://shop.perfumersapprentice.com/p-6329-green-tea-fragrance-oil.aspx","note":"Tea accord for Goddess. No bottle named jasmine tea was listed."},
+  {"supplier":"Lotioncrafter","item":"SCI, fine powder","size":"8 oz","price":10.45,"projects":["shampoo bar"],"url":"https://lotioncrafter.com/products/surfpro-sci","note":"Powder mask. The page discloses trace 1,4-dioxane and ethylene oxide under 1 ppm."},
+  {"supplier":"Lotioncrafter","item":"SLSa","size":"1 lb","price":21.95,"projects":["shampoo bar"],"url":"https://lotioncrafter.com/products/surfpro-slsa","note":"Powder mask. The fluff next to SCI. Not SLS."},
+  {"supplier":"Lotioncrafter","item":"Cocamidopropyl betaine","size":"4 oz","price":6.25,"projects":["shampoo bar"],"url":"https://lotioncrafter.com/products/surfpro-capb","note":"Brings water into the bar, so the bar needs PE 9010."},
+  {"supplier":"Lotioncrafter","item":"Hydrolyzed rice protein, liquid","size":"1 oz","price":5,"projects":["shampoo bar"],"url":"https://lotioncrafter.com/products/hydrolyzed-rice-protein","note":"Brings water into the bar. Price research listed about $4.95 to $7.95; the cart uses about $5."},
+  {"supplier":"Lotioncrafter","item":"Grapeseed oil","size":"16 oz","price":10,"projects":["shampoo bar","shimmer oil","solid perfume","pantry"],"url":"","note":"The one linoleic oil. High-oleic sunflower stays off. No stable product URL found."},
+  {"supplier":"Lotioncrafter","item":"Refined shea butter","size":"1 lb","price":13.95,"projects":["shimmer oil","pantry"],"url":"https://lotioncrafter.com/products/shea-butter-refined","note":"Fallback shimmer oil can use 4 g. The wax spray does not require it."},
+  {"supplier":"Lotioncrafter","item":"Kokum butter, refined","size":"4 oz","price":10,"projects":["pantry"],"url":"","note":"Brittle butter. Shea cannot stand in for it. No stable product URL found."},
+  {"supplier":"Lotioncrafter","item":"Beeswax, white NF pastilles","size":"smallest","price":7.45,"projects":["solid perfume","pantry"],"url":"https://lotioncrafter.com/products/beeswax-white-nf","note":"Solid perfume. From $7.45. The ounce size was not printed on the fetched page."},
+  {"supplier":"Lotioncrafter","item":"Cetearyl alcohol NF","size":"smallest","price":5.75,"projects":["pantry"],"url":"https://lotioncrafter.com/products/cetearyl-alcohol-nf","note":""},
+  {"supplier":"Lotioncrafter","item":"Cetyl alcohol","size":"8 oz","price":6.95,"projects":["pantry"],"url":"https://lotioncrafter.com/products/cetyl-alcohol","note":""},
+  {"supplier":"Lotioncrafter","item":"Stearic acid","size":"smallest","price":7,"projects":["pantry"],"url":"https://lotioncrafter.com/products/stearic-acid-triple-pressed-flakes","note":""},
+  {"supplier":"Lotioncrafter","item":"Vitamin E, mixed tocopherols T50","size":"1 oz","price":12.95,"projects":["hair mist","shampoo bar","shimmer oil","solid perfume","pantry"],"url":"https://lotioncrafter.com/products/vitamin-e-mixed-tocopherols-t50","note":"Antioxidant, not a preservative."},
+  {"supplier":"Lotioncrafter","item":"Emulsifying wax NF","size":"small","price":8.95,"projects":["pantry"],"url":"https://lotioncrafter.com/products/emulsifying-wax-nf","note":""},
+  {"supplier":"Lotioncrafter","item":"PE 9010","size":"2 oz","price":5.95,"projects":["shampoo bar","glitter mist","serum","dish brick","pantry"],"url":"https://lotioncrafter.com/products/lotioncrafter-pe-9010","note":"0.5 to 1%, never over 1.1%. Not Germall Plus. Neat liquid irritates eyes."},
+  {"supplier":"Lotioncrafter","item":"Polysorbate 20","size":"4.5 oz","price":5.5,"projects":["glitter mist","pantry"],"url":"https://lotioncrafter.com/products/polysorbate-20","note":"Wets the mica so oil does not float."},
+  {"supplier":"Lotioncrafter","item":"LC995 cyclomethicone (D5)","size":"8 oz","price":7.95,"projects":["hair mist","serum","pantry"],"url":"https://lotioncrafter.com/products/lc995-cyclomethicone","note":"D5, not D4. Flash point 77°C. No Priority Mail. Do not pour leftovers down the sink."},
+  {"supplier":"Lotioncrafter","item":"Ester AB, C12-15 alkyl benzoate","size":"8 oz","price":11.95,"projects":["hair mist","pantry"],"url":"https://lotioncrafter.com/products/ester-ab-natural","note":"Light ester for the hair mist. The shimmer wax blobs in this ester."},
+  {"supplier":"Lotioncrafter","item":"DM350 dimethicone","size":"8 oz","price":8.95,"projects":["serum","pantry"],"url":"https://lotioncrafter.com/products/dm350-dimethicone","note":"Non-volatile silicone at 2% in the serum. Flash point 599°F. Will not make a dry mist."},
+  {"supplier":"Lotioncrafter","item":"Aristoflex AVC","size":"2 oz","price":13.95,"projects":["serum"],"url":"https://lotioncrafter.com/products/aristoflex-avc","note":"No electrolytes. Aloe, sodium lactate, and urea collapse the gel."},
+  {"supplier":"Lotioncrafter","item":"Coenzyme Q10, Q-MAX","size":"8 g","price":7.45,"projects":["serum"],"url":"https://lotioncrafter.com/products/coenzyme-q10-qmax","note":"Not pure CoQ10 powder. Colors the gel yellow."},
+  {"supplier":"Lotioncrafter","item":"Propanediol 1,3","size":"4 oz (113.4 g)","price":6.95,"projects":["serum"],"url":"https://lotioncrafter.com/products/propanediol-13","note":"Pre-disperse PE 9010 in this."},
+  {"supplier":"Lotioncrafter","item":"Ceramide complex","size":"25 g","price":29.85,"projects":["serum"],"url":"https://lotioncrafter.com/products/ceramide-complex","note":"25 g because 15 g was out of stock. Already preserved. Store at 10 to 15°C."},
+  {"supplier":"Lotioncrafter","item":"dl-Panthenol","size":"1 oz","price":8.95,"projects":["serum"],"url":"https://lotioncrafter.com/products/dl-panthenol","note":""},
+  {"supplier":"Lotioncrafter","item":"Hyaluronic acid ELMW (80-110 kDa)","size":"1 g","price":5.95,"projects":["serum"],"url":"https://lotioncrafter.com/products/hyaluronic-acid-elmw-80-110-kda","note":"80 to 110 kDa powder. Do not store an unpreserved hyaluronic gel."},
+  {"supplier":"Lotioncrafter","item":"Niacinamide, USP","size":"2 oz","price":6.55,"projects":["serum"],"url":"https://lotioncrafter.com/products/vitamin-b3-niacinamide-usp","note":"Keep the finished gel at pH 5 to 6."},
+  {"supplier":"Lotioncrafter","item":"Allantoin","size":"2 oz","price":5.85,"projects":["serum"],"url":"https://lotioncrafter.com/products/allantoin","note":"Stay at 0.5%. It crystallizes above that."},
+  {"supplier":"Lotioncrafter","item":"N-Acetyl glucosamine","size":"50 g","price":13.95,"projects":["serum"],"url":"https://lotioncrafter.com/products/n-acetyl-glucosamine-nag","note":"From crustacean shells. A 5 g jar is only two serums."},
+  {"supplier":"Lotioncrafter","item":"Airless treatment pump, white, 50 ml","size":"5-pack","price":14.95,"projects":["serum"],"url":"https://lotioncrafter.com/products/airless-treatment-pump-bottle-white-50ml","note":"Singles are not sold. A high silicone load can slip the gasket."},
+  {"supplier":"TKB Trading","item":"Crystal Clear Wax","size":"10 g sample","price":9.25,"projects":["shimmer oil"],"url":"https://tkbtrading.com/products/crystal-clear-wax-tkb-trading","note":"Heat the oil to about 90°C. It blobs in alkyl benzoate and in mineral oil."},
+  {"supplier":"TKB Trading","item":"HiLite Copper","size":"6 g sample","price":4.5,"projects":["shimmer oil"],"url":"https://tkbtrading.com/products/hilite-copper","note":"Fine mica for the oil spray. Wet it. Do not aerosolize dry powder. Micron range was not reprinted on the TKB page."},
+  {"supplier":"Wholesale Supplies Plus","item":"Sodium coco sulfate, powder","size":"two 2 oz jars","price":4.62,"projects":["dish brick"],"url":"https://www.wholesalesuppliesplus.com/products/sodium-coco-sulfate-powder-scs","note":"Powder mask. Not SCI and not SLS. One jar is two bricks. The page price was $2.31, so two jars are $4.62."},
+  {"supplier":"Formulator Sample Shop","item":"Caprylyl/capryl glucoside","size":"2 oz","price":10,"projects":["dish brick"],"url":"https://www.formulatorsampleshop.com/products/caprylyl-capryl-glucoside","note":"Not polysorbate 20. Confirm 2 oz is in stock. The page has also shown sold out."},
+  {"supplier":"Chem-Impex","item":"Iota carrageenan","size":"100 g","price":20,"projects":["dish brick"],"url":"https://www.chemimpex.com/products/36946","note":"Pure iota. The $9.99 culinary jar is cut with maltodextrin. Powder mask."},
+  {"supplier":"Grocery, pharmacy, bottles","item":"Superfine rice flour, or rice starch","size":"small bag","price":6,"projects":["shampoo bar"],"url":"","note":"Not glutinous, Mochiko, or sweet rice flour. No stable product URL found."},
+  {"supplier":"Grocery, pharmacy, bottles","item":"Distilled water","size":"1 gallon","price":2,"projects":["shampoo bar","glitter mist","serum","dish brick","pantry"],"url":"","note":"No stable product URL found."},
+  {"supplier":"Grocery, pharmacy, bottles","item":"Vegetable glycerin, USP","size":"6 oz","price":5,"projects":["glitter mist","dish brick","pantry"],"url":"","note":"No stable product URL found."},
+  {"supplier":"Grocery, pharmacy, bottles","item":"Dr. Bronner's unscented baby castile","size":"32 oz","price":15,"projects":["laundry"],"url":"","note":"Dilute about 1:3, then add fir, cedar, and sweet orange. No stable product URL found."},
+  {"supplier":"Grocery, pharmacy, bottles","item":"Wool dryer balls","size":"set of 6","price":12,"projects":["laundry"],"url":"","note":"Six to eight drops a load: lavender, Virginia cedar, and a little ylang or geranium. No stable product URL found."},
+  {"supplier":"Grocery, pharmacy, bottles","item":"Epsom salt","size":"small bag","price":5,"projects":["laundry"],"url":"","note":"Closet sachet, with a drop each of jasmine 10%, cedar, and labdanum 10%. No stable product URL found."},
+  {"supplier":"Grocery, pharmacy, bottles","item":"Nitrile gloves and a dust mask","size":"set","price":12,"projects":["tools"],"url":"","note":"Powder mask for SCI, SLSa, SCS, and carrageenan. No stable product URL found."},
+  {"supplier":"Grocery, pharmacy, bottles","item":"50 g scale, 0.001 g, with draft cover","size":"one","price":35,"projects":["tools","pantry"],"url":"","note":"The cover is what lets it see 0.075 g of hair-mist scent. No stable product URL found."},
+  {"supplier":"Grocery, pharmacy, bottles","item":"Glass perfume sprays, metal pumps","size":"10 to 12 of 10 ml, plus two 30 ml","price":16,"projects":["perfume","hair mist","pantry"],"url":"","note":"One 30 ml mister is the argan hair mist. No stable product URL found."},
+  {"supplier":"Grocery, pharmacy, bottles","item":"Wider mister, glitter spray only","size":"one","price":4,"projects":["glitter mist"],"url":"","note":"40 to 200 micron mica clogs a perfume atomizer. No stable product URL found."},
+  {"supplier":"Grocery, pharmacy, bottles","item":"Glass spray, shimmer oil","size":"60 ml","price":4,"projects":["shimmer oil"],"url":"","note":"Estimate. No page price, so no link. Test the mister with HiLite Copper."},
+  {"supplier":"Grocery, pharmacy, bottles","item":"Glass rollers, stainless balls","size":"12 of 10 ml","price":14,"projects":["perfume","pantry"],"url":"","note":"Jojoba roller oil. No stable product URL found."},
+  {"supplier":"Grocery, pharmacy, bottles","item":"Amber vials","size":"50 of 1 to 2 ml","price":10,"projects":["perfume"],"url":"","note":"No stable product URL found."},
+  {"supplier":"Grocery, pharmacy, bottles","item":"Glass droppers and plastic pipettes","size":"a bag","price":14,"projects":["perfume","tools"],"url":"","note":"Labdanum and benzoin glue plastic. Use glass droppers for those. No stable product URL found."},
+  {"supplier":"Grocery, pharmacy, bottles","item":"Notebook, tape, pen","size":"set","price":8,"projects":["tools"],"url":"","note":"Write grams, date, dilution, and the skin test. No stable product URL found."},
+  {"supplier":"Grocery, pharmacy, bottles","item":"Slotted soap dish","size":"one","price":6,"projects":["shampoo bar","dish brick"],"url":"","note":"The bar drains between showers. The brick can live here too. No stable product URL found."},
+  {"supplier":"Grocery, pharmacy, bottles","item":"Quarter-ounce tin, solid perfume","size":"one","price":2,"projects":["solid perfume"],"url":"","note":"Estimate. No page price, so no link. The batch may want a second tin."},
+  {"supplier":"Grocery, pharmacy, bottles","item":"Mad Micas Sparkle Plenty","size":"sample","price":1.49,"projects":["glitter mist"],"url":"https://www.madmicas.com/products/sparkle-plenty-glitter","note":"Plastic-free mica for the water mist. Powder until it is wet. Too coarse for the shimmer spray."},
+  {"supplier":"Grocery, pharmacy, bottles","item":"Arm & Hammer Super Washing Soda","size":"55 oz","price":5.38,"projects":["dish brick"],"url":"https://www.homedepot.com/p/ARM-HAMMER-55-oz-Super-Washing-Soda-Household-Cleaner-and-Laundry-Booster-03020/329481749","note":"Sodium carbonate, not baking soda. Keep off aluminum. Cart price is Walmart and Lowe's at $5.38. This Home Depot page listed $5.98."}
+]
+</script>
+<script>
+(function () {
+  var PROJECTS = ["perfume","hair mist","shampoo bar","glitter mist","serum","dish brick","shimmer oil","solid perfume","laundry","pantry","tools"];
+  var SUPPLIERS = ["Eden Botanicals","Perfumer's Apprentice","Lotioncrafter","TKB Trading","Wholesale Supplies Plus","Formulator Sample Shop","Chem-Impex","Grocery, pharmacy, bottles"];
+  var rows = JSON.parse(document.getElementById("cart-data").textContent);
+  var sortKey = "supplier";
+  var sortDir = 1;
+  var projectBox = document.getElementById("projects");
+  var supplierBox = document.getElementById("suppliers");
+
+  function money(n) {
+    return n.toLocaleString("en-US", { style: "currency", currency: "USD" });
+  }
+  function cents(n) { return Math.round(n * 100); }
+  function checkedValues(root) {
+    return Array.prototype.map.call(root.querySelectorAll("input:checked"), function (el) { return el.value; });
+  }
+  function addChecks(root, values) {
+    values.forEach(function (value) {
+      var label = document.createElement("label");
+      label.className = "check";
+      var input = document.createElement("input");
+      input.type = "checkbox";
+      input.value = value;
+      input.addEventListener("change", render);
+      label.appendChild(input);
+      label.appendChild(document.createTextNode(value));
+      root.appendChild(label);
+    });
+  }
+  function visible() {
+    var projects = checkedValues(projectBox);
+    var suppliers = checkedValues(supplierBox);
+    return rows.filter(function (row) {
+      if (suppliers.length && suppliers.indexOf(row.supplier) === -1) return false;
+      if (!projects.length) return true;
+      return projects.some(function (project) { return row.projects.indexOf(project) !== -1; });
+    });
+  }
+  function compare(a, b) {
+    if (sortKey === "price") return (a.price - b.price) * sortDir;
+    if (sortKey === "name") return a.item.localeCompare(b.item) * sortDir;
+    var supplier = SUPPLIERS.indexOf(a.supplier) - SUPPLIERS.indexOf(b.supplier);
+    if (supplier) return supplier;
+    return a.price - b.price;
+  }
+  function cell(label, text, className) {
+    var td = document.createElement("td");
+    td.dataset.label = label;
+    if (className) td.className = className;
+    td.textContent = text;
+    return td;
+  }
+  function render() {
+    var list = visible().slice().sort(compare);
+    var body = document.getElementById("rows");
+    body.textContent = "";
+    if (!list.length) {
+      var tr = document.createElement("tr");
+      var td = document.createElement("td");
+      td.colSpan = 7;
+      td.className = "empty";
+      td.textContent = "No rows match these filters.";
+      tr.appendChild(td);
+      body.appendChild(tr);
+    }
+    list.forEach(function (row) {
+      var tr = document.createElement("tr");
+      tr.appendChild(cell("Supplier cart", row.supplier));
+      tr.appendChild(cell("Item", row.item));
+      tr.appendChild(cell("Size", row.size));
+      tr.appendChild(cell("Price", money(row.price), "num"));
+      var projects = document.createElement("td");
+      projects.dataset.label = "Projects";
+      var tags = document.createElement("div");
+      tags.className = "tags";
+      row.projects.forEach(function (project) {
+        var tag = document.createElement("span");
+        tag.className = "tag";
+        tag.textContent = project;
+        tags.appendChild(tag);
+      });
+      projects.appendChild(tags);
+      tr.appendChild(projects);
+      var link = document.createElement("td");
+      link.dataset.label = "Link";
+      if (row.url) {
+        var a = document.createElement("a");
+        a.href = row.url;
+        a.target = "_blank";
+        a.rel = "noopener";
+        a.textContent = "Open";
+        link.appendChild(a);
+      }
+      tr.appendChild(link);
+      var note = cell("Notes", row.note);
+      note.classList.add("note");
+      tr.appendChild(note);
+      body.appendChild(tr);
+    });
+    var total = list.reduce(function (sum, row) { return sum + cents(row.price); }, 0);
+    var full = rows.reduce(function (sum, row) { return sum + cents(row.price); }, 0);
+    document.getElementById("grand").textContent = money(total / 100);
+    var note = list.length + " of " + rows.length + " rows. Shipping is extra.";
+    if (total !== full) note += " Full list is " + money(full / 100) + ".";
+    document.getElementById("grand-note").textContent = note;
+    var subs = document.getElementById("subs");
+    subs.textContent = "";
+    SUPPLIERS.forEach(function (supplier) {
+      var part = list.filter(function (row) { return row.supplier === supplier; });
+      if (!part.length) return;
+      var amount = part.reduce(function (sum, row) { return sum + cents(row.price); }, 0);
+      var box = document.createElement("div");
+      box.className = "sub";
+      var name = document.createElement("span");
+      name.textContent = supplier;
+      var value = document.createElement("b");
+      value.textContent = money(amount / 100);
+      box.appendChild(name);
+      box.appendChild(value);
+      subs.appendChild(box);
+    });
+  }
+  function setSort(key) {
+    if (key === "supplier") {
+      sortKey = "supplier";
+      sortDir = 1;
+    } else if (sortKey === key) {
+      sortDir = -sortDir;
+    } else {
+      sortKey = key;
+      sortDir = 1;
+    }
+    document.getElementById("sort-supplier").setAttribute("aria-pressed", sortKey === "supplier" ? "true" : "false");
+    document.getElementById("sort-price").setAttribute("aria-pressed", sortKey === "price" ? "true" : "false");
+    document.getElementById("sort-name").setAttribute("aria-pressed", sortKey === "name" ? "true" : "false");
+    var label = "Sorted by supplier, then price, low to high.";
+    if (sortKey === "price") label = sortDir === 1 ? "Sorted by price, low to high." : "Sorted by price, high to low.";
+    if (sortKey === "name") label = sortDir === 1 ? "Sorted by item name, A to Z." : "Sorted by item name, Z to A.";
+    document.getElementById("sort-note").textContent = label + " Check a project or a cart to narrow the rows. Subtotals follow the rows on screen.";
+    render();
+  }
+  addChecks(projectBox, PROJECTS);
+  addChecks(supplierBox, SUPPLIERS);
+  document.getElementById("sort-supplier").addEventListener("click", function () { setSort("supplier"); });
+  document.getElementById("sort-price").addEventListener("click", function () { setSort("price"); });
+  document.getElementById("sort-name").addEventListener("click", function () { setSort("name"); });
+  document.getElementById("clear").addEventListener("click", function () {
+    document.querySelectorAll(".checks input").forEach(function (input) { input.checked = false; });
+    setSort("supplier");
+  });
+  render();
+})();
+</script>
+</body>
+</html>

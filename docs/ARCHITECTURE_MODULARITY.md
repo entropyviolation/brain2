@@ -5,8 +5,9 @@ chrome, and how to make the code more modular without flattening the
 Lists / module skins that [`DESIGN_STYLE.md`](DESIGN_STYLE.md) protects.
 
 This is an analysis snapshot, not a commitment to extract everything listed. It
-is subordinate to [`MODULE_PLATFORM.md`](MODULE_PLATFORM.md), which states where
-the platform is going; this file is the refactor order that gets there.
+is subordinate to [`MODULE_PLATFORM.md`](MODULE_PLATFORM.md), which states what
+is shipped (compose and blueprints), the private-database rule, and the next
+step (a hand-written manifest). This file is the refactor order for that.
 What to *do next* (including UI waves that must not wait on this sequence) is
 [`PLAN_OF_ACTION.md`](PLAN_OF_ACTION.md).
 Pair with the live canvas
@@ -17,14 +18,20 @@ from `cogs copy` to `brain2`, the canvas files live with this workspace.
 ## North star
 
 Brain2 is intended as a **living application** — a new type of software:
-adaptable, alive, beautiful, cutting-edge, infinite. Everything below serves
-one goal that makes that possible: **any small app should be installable into
-the brain** — see [`MODULE_PLATFORM.md`](MODULE_PLATFORM.md). That goal, not
-component reuse, decides what is worth refactoring. A generic component library
-would make this ordinary. A dense Item graph with feral rooms is the new thing.
-Structure is the content: modules add relations and views, not a new kind of
-noun. A record stays at its own order — observed, recorded, derived, inferred —
-and a higher label never overwrites it
+adaptable, alive, beautiful, cutting-edge, infinite. What exists for modules
+is rung 0 (compose a workspace from lists and view kinds) and rung 1 (a
+`ModuleDefinition` you can save, re-instantiate, and export as JSON). The
+rule that matters now: a new module does not get a private database.
+`module.config` holds bindings, layout, and preferences. House Cleaning
+(`lib/house-cleaning.ts`, `module.config.houseCleaning`) and Trip Itinerary
+(`lib/trip-itinerary.ts`, `module.config.tripItinerary`) are the two
+existing violations, kept as debt, not the pattern to copy. See
+[`MODULE_PLATFORM.md`](MODULE_PLATFORM.md). That rule decides what is worth
+refactoring. A generic component library would make this ordinary. A dense
+Item graph with feral rooms is the new thing. Structure is the content:
+modules add relations and views, not a new kind of noun. A record stays at
+its own order — observed, recorded, derived, inferred — and a higher label
+never overwrites it
 ([`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)).
 
 ## Verdict
@@ -33,10 +40,11 @@ and a higher label never overwrites it
 
 1. The **Item graph** — Lists, Docs, Scheduler, search, ingest, implied actions,
    Analytics. This is the brain, and it is good.
-2. **Shadow databases** — `module.config.houseCleaning` (`lib/house-cleaning.ts`)
-   and `module.config.tripItinerary` (`lib/trip-itinerary.ts`) keep their own
-   record trees *specifically so they do not flatten onto Lists/Items*. Those
-   modules do **not** use the brain; they sit beside it.
+2. **Shadow databases (debt)** — `module.config.houseCleaning`
+   (`lib/house-cleaning.ts`) and `module.config.tripItinerary`
+   (`lib/trip-itinerary.ts`) keep their own record trees. A new module does
+   not get one. These two sit beside the Item graph until their records move
+   onto Items. Their skins can stay.
 3. **Field aliases** — `title` vs `description`
    ([`CANONICAL_FIELDS.md`](CANONICAL_FIELDS.md)), so "what is this called" has
    two answers before any module is written. This is the only remaining one:
@@ -45,9 +53,12 @@ and a higher label never overwrites it
    membership), which are two real axes and stay two fields.
 
 **UI reuse is uneven, and only some of that is a problem.** Lists' Win95 chrome
-and Tidy's overlays *should* differ — that is the gold standard. The real
-inconsistency is Home speaking modern-SaaS (rounded-full, shadow-sm pills in
-`WeekNavigation`) while Lists speaks 1998.
+and Tidy's overlays *should* differ — that is the gold standard. Habits speaks
+the same milled fascia: `WeekNavigation` is `habit-chrome-btn` keys
+(`components/Home/Habits/week-navigation.tsx` — previous, Today with `is-on`
+on the current period, the engraved range, next). Raised metal lives in
+`habit-chrome.css` under `.hab95`. [`DESIGN_STYLE.md`](DESIGN_STYLE.md) says
+to protect that chrome. Do not restyle it.
 
 The right end-state is not a generic component library. It is:
 
@@ -65,7 +76,7 @@ The right end-state is not a generic component library. It is:
 ## Modules are separate in *look*, never in *meaning*
 
 A module's interior is allowed to be its own piece of software: its own CSS, its
-own overlays, its own vocabulary, even a 2k-line component. Forcing `TidyView`
+own overlays, its own vocabulary, even a long component. Forcing `TidyView`
 onto `Button` or `PeriodNavigator` would destroy the thing that makes it feel
 like a real application. Sharing `SheetGrid` or `AttributeSchemaEditor` when a
 view *is* a spreadsheet or a schema editor is ordinary reuse.
@@ -81,8 +92,9 @@ as debt in [`MODULE_PLATFORM.md`](MODULE_PLATFORM.md), not as the pattern.
 in `categories` / `panels` / `trackingTagIds` attributes. Same composition idea,
 zero private storage. Tidy should be that aggressive.
 
-**Modularize the install/compose path** — manifests, definitions, templates, view
-kinds, bridge grants, workflows. That is what makes variety infinite. Splitting
+**Modularize the compose and blueprint path** — definitions, templates, view
+kinds, workflows — and, as the next platform step, a hand-written manifest
+and bridge grants. That is what makes variety infinite. Splitting
 `TidyView` into more files does not.
 
 The extract list below applies to **Home, Lists, Scheduler, Analytics,
@@ -101,8 +113,9 @@ ItemDetail** — the shared brain UI — not to every module view.
 | `lib/services/` | Completion / mutation / scheduling above repositories. |
 | `electron/` | Thin shell; data stays in the renderer. |
 
-**19 persisted Zustand stores** all use `createCogsJSONStorage()` (historical
-helper name; the product is **Brain2**). That
+**Persisted Zustand stores** use `createCogsJSONStorage()` (historical
+helper name; the product is **Brain2**). The catalog is
+[`lib/README.md`](../lib/README.md). That
 consistency is real, and merging stores is not the win. The missing piece is
 naming the **transaction**: `habit-tracking-sync`, `sleep-sync`,
 `work-session-store`, `points-store`, and `action-history`'s multi-vault
@@ -112,7 +125,7 @@ architecture; slicing a store file is not.
 ## Extractable components
 
 Ranked by leverage, which is neither call-site count **nor running order** —
-everything below `usePeriodCursor` is chrome and waits until step 9 of the
+everything below `usePeriodCursor` is chrome and waits until step 7 of the
 sequenced plan. The shared *verbs*
 (time, gesture, confirmation) are worth extracting; shared *chrome* mostly is
 not — see the deferred list under the sequenced plan.
@@ -125,39 +138,42 @@ not — see the deferred list under the sequenced plan.
 | `ItemDetail` density mode (`page` \| `popover`) | Medium | Popup/page chrome delta | `ItemDetailPage`, `ItemDetailPopup` |
 | `DayAgendaShell` | Low | Date chrome around `AgendaGrid` | Plan day-view + Tracking actual-day-view |
 
-A generic `PeriodNavigator` with `variant="pill" | "outline" | "tracking"` is
-explicitly **not** the goal: Habits' `WeekNavigation` is a `rounded-full`
-`shadow-sm` SaaS pill, and a shared variant would canonize that as Brain2 style
-against [`DESIGN_STYLE.md`](DESIGN_STYLE.md). Unify the *period*, not the chevrons.
+A generic `PeriodNavigator` is explicitly **not** the goal. Habits'
+`WeekNavigation` is milled `habit-chrome-btn` keys on the Habits fascia.
+A shared pill variant would flatten that chrome, which
+[`DESIGN_STYLE.md`](DESIGN_STYLE.md) says to protect. Unify the *period*, not the chevrons.
 
 ### Do not extract
 
 - **SheetGrid** into a generic data grid — it is the product.
 - **Habit `task-grid`** with tracking paint grids — different models and CSS.
+- **Habits chrome** (`habit-chrome.css`, including `WeekNavigation`'s
+  `habit-chrome-btn` keys) — [`DESIGN_STYLE.md`](DESIGN_STYLE.md) protects this
+  fascia. Do not restyle it into a shared control.
 - **Lists Win95 chrome** into `components/ui/` — skin is the gold standard.
 - **Module interiors** (Tidy, Trip, Film DNA) into Home/`ui/` — their *skins* are
   the point. Platform (manifests, definitions, templates, view kinds) is the
   reuse. This protects their CSS, not their private data shapes.
 - **All stores into one store** — backup and persist keys assume slices.
 
-## Split candidates (line counts approximate)
+## Split candidates
 
-| Lines | File | Split along |
-|------:|------|-------------|
-| 2270 | `components/Modules/workspace/housecleaning/TidyView.tsx` | Optional local split only — this is a mini-app, not shared chrome |
-| 2083 | `components/Modules/workspace/itinerary/TripActivitiesView.tsx` | Same: itinerary app interior; keep on the Item/list bus |
-| 1839 | `lib/house-cleaning.ts` | Should not exist as a second model — migrate to Items ([`MODULE_PLATFORM.md`](MODULE_PLATFORM.md)) |
-| 1423 | `components/ItemDetail/ItemDetailPopup.tsx` | Data seam is already shared (`useItemDetailDraft`); remaining delta is chrome density |
-| 1404 | `components/spreadsheet/SheetGrid.tsx` | Selection, fill, formula bar, clipboard |
-| 1318 | `ItineraryDocumentView.tsx` | Doc chrome vs day blocks |
-| 1304 | `components/ItemDetail/ItemDetailPage.tsx` | Same — one surface with a density mode, not a second mirror |
-| 1185 | `module-view-bodies.tsx` | One file per view kind |
-| 1114 | `lib/types.ts` | The field problem itself; slice after `Item` is one type |
-| 1095 | `components/Lists/enhanced-list-view.tsx` | Further orchestrator thinning |
+| File | Split along |
+|------|-------------|
+| `components/Modules/workspace/housecleaning/TidyView.tsx` | Optional local split only — this is a mini-app, not shared chrome |
+| `components/Modules/workspace/itinerary/TripActivitiesView.tsx` | Same: itinerary app interior; keep on the Item/list bus |
+| `lib/house-cleaning.ts` | Should not exist as a second model — migrate to Items ([`MODULE_PLATFORM.md`](MODULE_PLATFORM.md)) |
+| `components/ItemDetail/ItemDetailPopup.tsx` | Data seam is already shared (`useItemDetailDraft`); remaining delta is chrome density |
+| `components/spreadsheet/SheetGrid.tsx` | Selection, fill, formula bar, clipboard |
+| `ItineraryDocumentView.tsx` | Doc chrome vs day blocks |
+| `components/ItemDetail/ItemDetailPage.tsx` | Same — one surface with a density mode, not a second mirror |
+| `module-view-bodies.tsx` | One file per view kind |
+| `lib/types.ts` | The field problem itself; slice after `Item` is one type |
+| `components/Lists/enhanced-list-view.tsx` | Further orchestrator thinning |
 
 ## Pattern inconsistencies
 
-1. **~388 `Button` vs ~426 raw `<button>`** — expected in module skins (Tidy);
+1. **shadcn `Button` and raw `<button>`** — expected in module skins (Tidy);
    worth unifying only in Home / Lists / Scheduler chrome.
 2. **shadcn Dialog vs custom overlays** — Focus and Tidy overlays are
    product-specific; don’t force them onto the shared Dialog.
@@ -165,7 +181,7 @@ against [`DESIGN_STYLE.md`](DESIGN_STYLE.md). Unify the *period*, not the chevro
    Today / next.
 4. **Settings** — global `SettingsDialog` plus Habits / Plan / Pen / Lists /
    Module / Operation settings shells.
-5. **Item detail** — page and popup both ~1.3–1.4k lines. The *data* seam is
+5. **Item detail** — page and popup. The *data* seam is
    already de-duplicated (`useItemDetailDraft`); what differs is chrome density.
 6. **Four “grids”** — paint, agenda, habit spreadsheet, SheetGrid. Only
    time-grid and week-grid share a data model.
@@ -179,11 +195,14 @@ Foundation before paint. Do not batch; after each step update colocated READMEs
 (workspace rule).
 
 This is the same sequence as [`MODULE_PLATFORM.md`](MODULE_PLATFORM.md)
-"How we get there from here" — the two lists are kept identical on purpose.
-**Data first, chrome last.** The period cursor is early because it is shared
-*data*; the paint hook, `confirm()`, and the ItemDetail density mode are late
-because they are shared *chrome*, and harvesting chrome before the manifest
-exists would freeze today's chrome as the platform's API.
+"How we get there from here" — steps 1–7 match on purpose. The optional file
+split below is only in this doc. **Data first, chrome last.** The period
+cursor is early because it is shared *data*; the paint hook, `confirm()`, and
+the ItemDetail density mode are late because they are shared *chrome*, and
+harvesting chrome before the manifest exists would freeze today's chrome as
+the platform's API. Rung 3 (install wizard), rung 4 (LLM mapping), rung 5
+(share), and the sixth workflow law (CY-10) are **UNBUILT**. They are the
+appendix in [`MODULE_PLATFORM.md`](MODULE_PLATFORM.md), not the next edit.
 
 1. **Canonical fields** ([`CANONICAL_FIELDS.md`](CANONICAL_FIELDS.md)). Types are
    the load-bearing wall. Dual names for "what this is called" get inherited by
@@ -191,16 +210,29 @@ exists would freeze today's chrome as the platform's API.
    `description` — `stage` / `lists` and `entropy` / `cognitiveLoad` are
    deliberate distinctions the owner has ruled **keep**. Migration-sensitive, so
    it is careful work — not later work.
-2. **One write door.** Consolidate on `task-store` as the single implementation
-   with `taskRepository` as the only caller-facing seam (it already validates);
-   workflows and implied actions keep subscribing through
-   `dispatchItemMutation`. Adding a third API would make a sixth door, not one.
+2. **One write door.** Implementation is `task-store`. UI and ingest call
+   `useTaskStore` directly. `taskRepository` is the validating seam for
+   services and sync (completion, scheduling, habit-done, sleep, pen actions,
+   work sessions, implied actions). It is not what most screens call.
+   Workflows and implied actions keep subscribing through
+   `dispatchItemMutation`.
    Name the cross-store transaction that `habit-tracking-sync`, `sleep-sync`,
    `work-session`, `points`, and `action-history` already form implicitly.
+
+   **New writes.** `commitItemEdit` and `applyLinkedEffects`
+   (`lib/commit-item-edit.ts`) are the door for new code. `commitItemEdit`
+   validates through `taskRepository`, writes with the store's existing update,
+   and that update dispatches the same patch through `dispatchItemMutation`
+   (known fields and unknown attribute keys, previous and next on one
+   `item-activity` line, optional order `observed` | `recorded` | `derived` |
+   `inferred`). Existing `useTaskStore` calls stay. `applyLinkedEffects` is
+   opt-in — kind `habit` | `night` | `session` calls the ripple that already
+   exists (`syncTrackedHabits`, `syncSleepNight`, `stopWorkingOnOperation`).
+   It is not part of a rename, and `commitItemEdit` does not call it.
 3. **Period as data** — one `usePeriodCursor` (or a shell-level date) that
    Habits / To Do / Plan / Tracking / Reviews read. Chrome stays local: do **not**
-   unify the three navs into `variant="pill"`, which would canonize Home's SaaS
-   pill as the shared style.
+   unify the navs into one shared control. Habits' milled `habit-chrome-btn`
+   keys stay Habits chrome.
 4. **Bridges as data** — `ModuleBridgeGrant`, with the bridges that already
    exist informally (tracking tags, habit increments, points on completion,
    plan sync, ingest phrase claims) routed through it. Serializable,
@@ -210,19 +242,16 @@ exists would freeze today's chrome as the platform's API.
    manifest is wrong — fix the manifest, not the template.
 6. **Migrate the shadow databases** onto Items, stylesheets untouched. Tidy
    first; `tidy.css` changes by zero lines.
-7. **Install wizard** (rung 3), manual mapping first, with the dry-run against
-   a scratch snapshot built *before* any assist.
-8. **LLM mapping assist** (rung 4), install-time only.
-9. **Then** the small shared verbs, and only these: `usePaintStroke` (gesture
+7. **Then** the small shared verbs, and only these: `usePaintStroke` (gesture
    math shared by the day and week Tracking grids, Tracking's look stays in
    Tracking), `confirm({ title, body, danger })` as a function skinned per
    surface, and **ItemDetail** as one surface with
    `density: "page" | "popover"` since the draft/mutator seam
    (`useItemDetailDraft`) is already shared. Call sites stay specific — a
    merge-lists confirm is not "Add Todo," and a generic `FormDialog` is how a
-   product becomes Settings.exe.
-10. **Optional:** split TidyView / TripActivities only if those files hurt the
-    people editing *that* mini-app. Do not pull them into `components/ui/`.
+   product becomes Settings.exe. This waits on the manifest (rung 2).
+8. **Optional:** split TidyView / TripActivities only if those files hurt the
+   people editing *that* mini-app. Do not pull them into `components/ui/`.
 
 Deferred on purpose: `ChartCard`, `CalendarHeatmap`, `GradeBreakdownShell`,
 `PostMortemForm`, `AttributeSchemaForm`, `Button`-vs-`<button>` counts. A habit

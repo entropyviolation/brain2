@@ -2,11 +2,14 @@
 
 The Telegram bot cannot pull location off the iPhone. The phone has to send
 it. Pair [@brain2_phone_bot](https://t.me/brain2_phone_bot) first, and keep
-`npm run phone:hub` running (or the Brain2 desktop) so a pin is written onto
-the Location grid for today.
+`npm run phone:hub` running (or the Brain2 desktop) so a sample is written
+onto the Location grid at the time the phone recorded it.
 
 A place that is already the current Location pen does not get another reply.
-That is what keeps a live share from flooding the chat.
+That is what keeps a live share from flooding the chat. While a text ritual
+is open (morning, night, start, or end), those updates are ignored. The
+Telegram share stays on, and the next edit after the ritual ends is recorded
+again.
 
 The signed file lives next to this note:
 
@@ -19,12 +22,16 @@ code → `/start 123456` in the bot chat).
 Regenerate after a wire-format change: `npm run shortcut:iphone-phone`
 (`scripts/build-iphone-phone-shortcuts.mjs`, signed `--mode anyone`).
 
-Each run sends one message:
+Each run appends one timestamped line to a file on the phone, then sends the whole file:
 
 ```
-gps: <Name>
-<Latitude>,<Longitude>
+gps-log:
+2026-10-05T19:04:00;37.7694,-122.4862;Home
 ```
+
+Brain2 paints Location **up to that minute**. It does not fill the rest of the day, and it does not keep a block open into the future. The same coordinates keep the pen you already have, so a reverse-geocoded restaurant name does not move you while you are still standing in the same spot. A Telegram **venue** pin (a restaurant card, a dropped place) is a shared place, not where the phone is.
+
+The file is `iCloud Drive/Shortcuts/Brain2-location-log.txt`. The shortcut appends the new fix first. If Telegram cannot send, later actions do not run, so the file still holds the line. The next run that can send delivers every saved line, then clears the file. Re-import this shortcut after pulling the repo — an older copy sent `gps:` with no timestamp and no log.
 
 Do **not** use `https://t.me/share` or `tg://msg` — those do not land as a user
 message on the bot poller. This file uses Telegram **Send Message**, same as
@@ -34,8 +41,10 @@ Variable Outgoing only.
 ## Install on the iPhone
 
 **Delete any older Location to Brain2 first**, then re-import this file.
-Older copies handed Send Message a Get Text ActionOutput token instead of
-Variable **Outgoing**, which made iOS say “could not run Send Message”.
+Older copies painted from the moment they sent until the end of the day, and
+they did not keep a log for when the phone was offline. They also handed Send
+Message a Get Text ActionOutput token instead of Variable **Outgoing**, which
+made iOS say “could not run Send Message”.
 
 ### Same Apple ID as this Mac (easiest)
 
@@ -45,7 +54,9 @@ Variable **Outgoing**, which made iOS say “could not run Send Message”.
 3. Shortcuts.app adds it. If **iCloud → Shortcuts** is on, it appears on the
    iPhone in a few seconds — open Shortcuts there and run it.
 4. First add/run asks **who to send to**. Pick the Telegram conversation with
-   the bot (open that chat once in Telegram if it is missing).
+   the bot (open that chat once in Telegram if it is missing). It also asks
+   where to keep the log — pick **iCloud Drive** each time (append, read, and
+   clear all use the same folder).
 
 ### AirDrop / Files (different Apple ID, or iCloud Shortcuts off)
 
@@ -58,7 +69,7 @@ Variable **Outgoing**, which made iOS say “could not run Send Message”.
    (No AirDrop: Mail it to yourself, or drop it in iCloud Drive / Files.)
 4. On the iPhone, tap the file. Shortcuts opens → **Add Shortcut**.
 5. When it asks for the recipient, pick the **@brain2_phone_bot** chat — not a
-   friend, not a group.
+   friend, not a group. When it asks for a file service, pick **iCloud Drive**.
 
 Finder → right-click the `.shortcut` → Share → AirDrop is the same file.
 
@@ -81,8 +92,7 @@ on each one.
      when you did not cross a saved fence.
 3. Turn **Ask Before Running** **off**.
 
-Each run sends one `gps:` message with the reverse-geocoded Name and lat,lon.
-Live Location (below) covers the time in between.
+Each run records one fix at that moment (about fifteen minutes ending then, or a continuation of the same place if the previous sample was recent). It does not paint from now until midnight. Live Location (below) fills the time in between while the phone is online. The on-phone log fills the gap when a run happened but Telegram could not deliver.
 
 ## Live Location (the continuous stream)
 
@@ -92,8 +102,11 @@ This is the closest thing to a stream. No Shortcut.
 2. Attach → Location → **Share Live Location** → **Until I turn it off**
    (or the longest duration Telegram offers).
 3. On the iPhone: Settings → Telegram → Location → **Always**.
-4. Leave the share on. Telegram sends updates; Brain2 paints Location from
-   each new place and stays quiet while you are still there.
+4. Leave the share on. Telegram sends updates; Brain2 extends Location up to
+   each new sample and stays quiet while you are still there. Those points
+   stay off the header Message ingest log unless you press **Show GPS**.
+   An update that arrives late is applied at the time Telegram edited it,
+   not at the moment the laptop happened to read the queue.
 
 Limits, stated plainly:
 
@@ -126,5 +139,8 @@ Desktop test (no phone): Settings → Message ingest → Simulate `gps: Home`.
 
 - Let the bot pull location off the phone by itself.
 - Poll every few minutes in the background (iOS will not do that).
-- Replace Live Location for continuous movement — Arrive/Leave is the
-  named-place path; Live Location is the continuous stream.
+- Invent the hours between two samples that are far apart. A fix at 9:00 and
+  the next at 17:00 are two short blocks, unless the on-phone log or Live
+  Location recorded the time in between.
+- Replace Live Location for continuous movement — Arrive/Leave plus the
+  on-phone log is the named-place path; Live Location is the continuous stream.

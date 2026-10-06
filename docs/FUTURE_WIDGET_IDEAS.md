@@ -11,7 +11,7 @@ Product chrome never names those sources.
 
 The strip is caption + CRT + footer, equal height, hidable from the date-bar
 **Widgets** key. Do not clone Review, Points, Today’s Progress, the screen pet,
-Affirmation, Weather, Next, Day lamp, Days Until, **Latest award**, **Solar remainder**,
+Affirmation, Weather, Next, Day lamp, Days Until, **Moon**, **Latest award**, **Solar remainder**,
 **Tracking now**, **Night well**, **Harvest leftover**, or **Inbox mill**.
 Do not clone the header **now** well, **today’s friend**, or
 the Needs Attention queue.
@@ -28,6 +28,7 @@ the Needs Attention queue.
 | `harvest` | Harvest leftover | Points still available today. Footer: `N left of M`. |
 | `inbox` | Inbox mill | Unclarified count and the newest title. Click opens Inbox. |
 | `award` | Latest award | Newest positive points and why (completion, high % bonus, grades above yesterday, weekly grades above last week). |
+| `moon` | Moon | 8-bit moon, phase name, and days until the sooner of the next full moon and the next new moon. Detail: illumination, previous and next major phase, photographic planets at true relative size, Earth–Moon zoom at true scale. |
 
 ---
 

@@ -19,50 +19,57 @@ organism from becoming a pile of features.
    what came back becomes the next input. What lines up without a cause is
    shown as meaning, and never sold as a reason. The join — how to use those
    three ideas to perfect the house — is
-   [`MAP_LOOP_MEANING.md`](MAP_LOOP_MEANING.md). The work orders stay the work
-   orders: map
-   [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md), meaning
+   [`MAP_LOOP_MEANING.md`](MAP_LOOP_MEANING.md).
+   [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md),
    [`JungBrain2.md`](JungBrain2.md) (essay [`jungideas.md`](jungideas.md)),
-   loop [`cyberneticsbrain2.md`](cyberneticsbrain2.md). Not built yet.
+   [`cyberneticsbrain2.md`](cyberneticsbrain2.md),
+   [`brain2taoism.md`](brain2taoism.md), and
+   [`BRAIN2_FEATURE_IDEAS.md`](BRAIN2_FEATURE_IDEAS.md) are source material.
+   The slices they describe are unbuilt. Build only an open wave in
+   [`PLAN_OF_ACTION.md`](PLAN_OF_ACTION.md).
 
-The product is **Brain2**. Chrome is **BRAIN2**. Persist keys, IPC prefixes, and
-CLI env vars still say `cogs` on purpose — see the root [`README.md`](../README.md)
-and [`lib/app-brand.ts`](../lib/app-brand.ts).
+The product is **Brain2**. Chrome is **BRAIN2**. Live persist keys are
+`brain2-*`; `cogs-*` is a legacy alias — see
+[`lib/app-brand.ts`](../lib/app-brand.ts) and
+[`lib/storage-keys.ts`](../lib/storage-keys.ts).
 
 | File / folder | Purpose |
 |---------------|---------|
-| `FUTURE_WIDGET_IDEAS.md` | Potential Home overview squares (caption + CRT + footer). Solar remainder, Tracking now, Night well, Harvest leftover, and Inbox mill shipped; the rest are plans, including meaning-layer sketches ([`jungideas.md`](jungideas.md)), map-and-territory sketches ([`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)), and steersman sketches ([`cyberneticsbrain2.md`](cyberneticsbrain2.md) Part 3). |
-| `SPEC_MAPPING.md` | Section-by-section mapping of `Cognitive_Management_System_Spec.docx` (Brain2 v2) to the codebase: what is implemented (✅), partial (🟡), missing (⛔), or deferred (🕓), plus the spec-facing remainder. **Storage target:** MongoDB (replacing the spec's SQLite recommendation) for flexible documents, semantic/fuzzy/advanced search, and aggregation-based routing. For *what to do next*, start at [`PLAN_OF_ACTION.md`](PLAN_OF_ACTION.md). |
-| `MODULE_PLATFORM.md` | **North star for Modules.** The end goal: install any small `.tsx` app into the second brain through a port wizard (a cheap LLM assists the mapping once, at install time), so every module is a lens on the same `Item` graph — searchable, schedulable, ingestible, undoable — with feral per-module skins. Five laws, the install ladder, the manifest + bridge-grant shape, and the shadow-database debt. Read this before designing anything module-shaped. |
+| `FUTURE_WIDGET_IDEAS.md` | Potential Home overview squares (caption + CRT + footer). Solar remainder, Tracking now, Night well, Harvest leftover, and Inbox mill shipped; the rest are plans, including meaning-layer sketches ([`jungideas.md`](jungideas.md)), map-and-territory sketches ([`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)), and steersman sketches ([`cyberneticsbrain2.md`](cyberneticsbrain2.md)). |
+| `SPEC_MAPPING.md` | Section-by-section mapping of `Cognitive_Management_System_Spec.docx` (Brain2 v2) to the codebase: what is implemented (✅), partial (🟡), missing (⛔), or deferred (🕓), plus the spec-facing remainder. Storage is localStorage; the sync that exists is the manual phone hub. Atlas, `@brain2/core`, and Expo are speculation. Store catalog: [`lib/README.md`](../lib/README.md). Decisions, each with a status, are [`PLAN_OF_ACTION.md`](PLAN_OF_ACTION.md). |
+| `MODULE_PLATFORM.md` | What the Modules tab is today: compose a workspace, save a blueprint. A new module does not get a private database. The paste-a-`.tsx` wizard and the model assist are an unbuilt appendix. |
 | `ARCHITECTURE_MODULARITY.md` | What is already a platform vs duplicated chrome, and the foundation-first refactor order (canonical fields → one write door → period cursor → manifest/installer) that `MODULE_PLATFORM.md` depends on. Also the deliberate *do not extract* list. |
-| `MESSAGE_INGEST.md` | Phone-message ingest (**BIM**): matching precedence, manuals (`info` / `{prefix} info` / `{prefix} commands` / `all commands`), grocery/`needed`/activity/discrete/habit keywords, dedupe, Analytics text tabs, hub, pin, pairing, iOS Shortcuts, OCR. |
+| `MESSAGE_INGEST.md` | Phone-message ingest (**BIM**): matching precedence, manuals (`info` / `{prefix} info` / `{prefix} commands` / `all commands`), grocery/`needed`/activity/`log:`/`intake:`/`st:`/`so:`/`transit:`/`dh:`, send-time stamps, dedupe, Analytics text tabs, hub (no morning cron), pin, pairing, iOS Shortcuts, OCR. |
 | `BIM_COMMANDS.md` | **Complete BIM command catalog** — every parser verb, alias, expansion, habit/discrete preset, bulk dump form, morning GM reply, and retired bare `g`. Mirrors in-chat `all commands`. |
-| `shortcuts/` | iOS Shortcuts. Signed AirDrop files: [`Dump iPhone Notes to Brain2.shortcut`](shortcuts/Dump%20iPhone%20Notes%20to%20Brain2.shortcut) ([install](shortcuts/dump-iphone-notes-to-brain2.md) — delete any old copy that asks you to “update Shortcuts”), [`Screen Time to Brain2.shortcut`](shortcuts/Screen%20Time%20to%20Brain2.shortcut) ([install](shortcuts/screen-time-to-brain2.md) — not Apple Screen Time export), [`iPhone Call to Brain2.shortcut`](shortcuts/iPhone%20Call%20to%20Brain2.shortcut) + [`iPhone Text to Brain2.shortcut`](shortcuts/iPhone%20Text%20to%20Brain2.shortcut) ([install](shortcuts/iphone-calls-and-texts-to-brain2.md) — not Recents or Messages DB), [`Location to Brain2.shortcut`](shortcuts/Location%20to%20Brain2.shortcut) ([install](shortcuts/iphone-location-to-brain2.md) — Arrive/Leave + Live Location; `gps:`). |
-| `DESIGN_STYLE.md` | Visual / UI gold standard. Brain2 is a **vintage machine that knows it is a painting**: motif (Y2K / 8-bit / phosphor), cabinet (orbs, velvet, jewels), and the **impossible** (a window that melts, a flock of cursors — rare, on a real verb). **Never SaaS the frame. Never plain the contents. Never costume the whole app as one still.** **Home → Habits** is the favorite interior; **Lists Icons** is the favorite cabinet (velvet + orbs + auto-organize). The shell is in bounds for the same three layers — a gray Windows dialog is the look to leave. Object chrome: photoreal **chrome + black-mirror** wells ([Willpower gems](DESIGN_STYLE.md#willpower-gems--example-of-perfect-design), [Chrome and black mirror](DESIGN_STYLE.md#chrome-and-black-mirror)). **Milled fascia** + [Fascia rollout](DESIGN_STYLE.md#fascia-rollout) (looks-only priority for remaining plain rooms). **Depth & spacing**: nested bevels, tight packing. See [`DESIGN_REFS.md`](DESIGN_REFS.md). |
+| `shortcuts/` | iOS Shortcuts. Signed AirDrop files: [`Dump iPhone Notes to Brain2.shortcut`](shortcuts/Dump%20iPhone%20Notes%20to%20Brain2.shortcut) ([install](shortcuts/dump-iphone-notes-to-brain2.md) — delete any old copy that asks you to “update Shortcuts”), [`Screen Time to Brain2.shortcut`](shortcuts/Screen%20Time%20to%20Brain2.shortcut) ([install](shortcuts/screen-time-to-brain2.md) — not Apple Screen Time export), [`iPhone Call to Brain2.shortcut`](shortcuts/iPhone%20Call%20to%20Brain2.shortcut) + [`iPhone Text to Brain2.shortcut`](shortcuts/iPhone%20Text%20to%20Brain2.shortcut) ([install](shortcuts/iphone-calls-and-texts-to-brain2.md) — not Recents or Messages DB), [`Location to Brain2.shortcut`](shortcuts/Location%20to%20Brain2.shortcut) ([install](shortcuts/iphone-location-to-brain2.md) — Arrive/Leave + on-phone log + Live Location; paints up to the sample). |
+| `DESIGN_STYLE.md` | Visual standard in three layers: **failures**, **layout**, and **palette**. The direction is magical interaction, DSi pixel and indicator lights, and retrofuturistic esoteric technology. A teaching from Korzybski, Watts, or Jung is welcome when the quote is real and sourced. |
 | `DESIGN_REFS.md` | Inventory of `designrefs/` (49 stills). How to read each picture as **machine**, **art**, **ancestor**, or the **impossible** the still cannot show. Lanes: **ideas**, images used **directly** (desktop PCB plates in `public/pcb/`; Tracking pen-tray stills in `public/pen-tray/`; later orb/gem knockouts), and visual language to **apply**. Keystones lead with mushroom desk, TENO, cursor angel, seraph, snowflake, cat traces, Pocket PC — not Win95 MDI. Held machines (Pocket PC, Motorola, hiptop, Sharp, Kyocera, Sony) are cataloged. **Do not costume the whole app** as one still. |
-| `PLAN_OF_ACTION.md` | **Combined work order** for multiple agents: Person B’s screen brief, UI sequence, analytics honesty, period cursor, ontology continuation, and the explicit do-not list. Conflicts between briefs are resolved here. Start here when picking the next slice of work. Wave 13 points at the map-and-territory build. Wave 14 points at the meaning-layer build ([`JungBrain2.md`](JungBrain2.md)). Wave 15 points at the steersman build ([`cyberneticsbrain2.md`](cyberneticsbrain2.md) Part 3). |
-| `MAP_LOOP_MEANING.md` | **The join.** How map (Korzybski), loop (Wiener), and meaning (Jung) perfect Brain2 as one house: honest records, a miss that steers, a coincidence that is shown and never causalized. Laws for builders. Not the queue — Waves 13–15 stay the work orders. |
-| `ScienceandSanityBrain2.md` | **Map and territory.** How Brain2 already practices general semantics (orders of abstraction, dating, non-allness, description before inference, time-binding), and the ten-slice plan that extends it (GS-1 … GS-10). The product never names the book. Execute Part 3; do not re-sequence from the essay. |
+| `PLAN_OF_ACTION.md` | Decision list. Each item has a status. |
+| `MAP_LOOP_MEANING.md` | **The join.** How map (Korzybski), loop (Wiener), and meaning (Jung) perfect Brain2 as one house: honest records, a miss that steers, a coincidence that is shown and never causalized. Laws for builders. An open wave in [`PLAN_OF_ACTION.md`](PLAN_OF_ACTION.md) is what gets built. |
+| `ScienceandSanityBrain2.md` | **Source.** Map and territory: how Brain2 already practices general semantics (orders of abstraction, dating, non-allness, description before inference, time-binding), and a ten-slice sketch (GS-1 … GS-10). The product never names the book. Those slices are unbuilt. An open wave in [`PLAN_OF_ACTION.md`](PLAN_OF_ACTION.md) is what gets built. |
 | `jungideas.md` | **Source essay.** Jung’s Synchronicity and Stages of Life read against Brain2. Parallels only. The Stages PDF in `litrefs/` is corrupted; those points are paraphrased. |
-| `JungBrain2.md` | **Meaning-layer build.** Ten slices (JG-1 … JG-10): coincidence log, named outliers, exception interviews, affect on capture, dream symbols, Ask sideways, friend-interest retirement, life seasons, yearly afternoon prompts. Meaning group is on by default and can be hidden. A coincidence is shown and never called a cause. Not built yet. Execute that file; do not re-sequence from the essay. |
-| `cyberneticsbrain2.md` | **The steersman.** How Brain2 already practices control and communication (sense, memory, effectors, feedback), and the eleven-slice plan that closes the loop (CY-1 … CY-11). One derived gap, three speeds, silence inside a band. The product never names the book. Not built yet. Execute Part 3; do not re-sequence from the essay. |
-| `brain2taoism.md` | **Source essay.** Eva Wong’s *Taoism: An Essential Guide* read against Brain2: 60 parallels, five practices (Reserves, Almanac, Gates, Hearth ledger, Foundations), and five changes to existing rooms. Screen words stay plain. Parallels and proposals; not a work order. Ideas 395–464 in [`BRAIN2_FEATURE_IDEAS.md`](BRAIN2_FEATURE_IDEAS.md). |
+| `JungBrain2.md` | **Source.** Meaning layer: ten slices (JG-1 … JG-10) — coincidence log, named outliers, exception interviews, affect on capture, dream symbols, Ask sideways, friend-interest retirement, life seasons, yearly afternoon prompts. Meaning group is on by default and can be hidden. A coincidence is shown and never called a cause. Those slices are unbuilt. An open wave in [`PLAN_OF_ACTION.md`](PLAN_OF_ACTION.md) is what gets built. |
+| `cyberneticsbrain2.md` | **Source.** The steersman: how Brain2 already practices control and communication (sense, memory, effectors, feedback), and an eleven-slice sketch (CY-1 … CY-11). One derived gap, three speeds, silence inside a band. The product never names the book. Those slices are unbuilt. An open wave in [`PLAN_OF_ACTION.md`](PLAN_OF_ACTION.md) is what gets built. |
+| `brain2taoism.md` | **Source essay.** Eva Wong’s *Taoism: An Essential Guide* read against Brain2: 60 parallels, five practices (Reserves, Almanac, Gates, Hearth ledger, Foundations), and five changes to existing rooms. Screen words stay plain. Parallels and proposals. Ideas 395–464 in [`BRAIN2_FEATURE_IDEAS.md`](BRAIN2_FEATURE_IDEAS.md). |
 | `FRIEND_COMPANION.md` | North-star plan for **today's friend** (personality, missions, rewards, clock). Pack gallery, picker, the friend instrument, accept-until-midnight missions, list-bias beads, and first rewards **shipped**; clock / trinkets / learned personality later. |
-| `UI_NEXT.md` | Ranked **UI-only** executable list toward `DESIGN_STYLE.md`. Subordinate to `PLAN_OF_ACTION.md`. What to do in order, and what not to “fix” from the critique. |
-| `UI_CRITIQUE.md` | Section-by-section interface review: **three concrete improvements for every top-level tab and sub-tab**, plus the item-detail surfaces and global dialogs, judged against `DESIGN_STYLE.md` and the `screenshots/` captures. Ends with the five cross-cutting patterns (oversized empty states, stacked controls, duplicated choices, destructive/primary parity, two off-style tabs). Observations only — do **not** work top to bottom; execute via `PLAN_OF_ACTION.md` / `UI_NEXT.md`. |
-| `BRAIN2_FEATURE_IDEAS.md` | Large idea bank of potential buildouts, mapped onto the data model. A menu, not a commitment. Ideas 1–160 from the `Brain2Ideas` brain-dump; 161–280 from later prototype and theory docs; **281–394 (Expansion III)** from the map, the loop, and the meaning layer; **395–464 (Expansion IV)** from [`brain2taoism.md`](brain2taoism.md). The “realistic and worth doing” slice has a Sep 2026 **shipped / partial / not shipped** audit in-file; leftover top 10 is [`PLAN_OF_ACTION.md`](PLAN_OF_ACTION.md) Wave 11. |
+| `UI_NEXT.md` | Layout backlog. Not a second style law. Decisions stay in [`PLAN_OF_ACTION.md`](PLAN_OF_ACTION.md). |
+| `UI_CRITIQUE.md` | Historical. An observation dump from an older shell, not a work list. Open notes are already queued in [`UI_NEXT.md`](UI_NEXT.md) and [`PLAN_OF_ACTION.md`](PLAN_OF_ACTION.md). |
+| `BRAIN2_FEATURE_IDEAS.md` | Large idea bank of potential buildouts, mapped onto the data model. Source material, a menu. Ideas 1–160 from the `Brain2Ideas` brain-dump; 161–280 from later prototype and theory docs; **281–394 (Expansion III)** from the map, the loop, and the meaning layer; **395–464 (Expansion IV)** from [`brain2taoism.md`](brain2taoism.md). A Sep 2026 shipped / partial / not shipped audit of the “realistic and worth doing” slice stays in the file. An open wave in [`PLAN_OF_ACTION.md`](PLAN_OF_ACTION.md) is what gets built. |
 | `CANONICAL_FIELDS.md` | Field-level authority for the data model: canonical vs legacy vs derived. Title-as-record has shipped; remaining naming debt is parked-note `description` vs `body`. Wave 10 of the plan. |
-| `AGENT_COORDINATION.md` | Live lock table when more than one agent is editing. Lanes for new work are in `PLAN_OF_ACTION.md`. |
-| `COUNTS_AS.md` | Tracking pen **nesting**: what "Ocean Beach counts as San Diego" does and does not mean, the searchable parent picker, the colored chain diagram, and the design for **parallel counts-as chains** (planned, deliberately not implemented). |
+| `COUNTS_AS.md` | Tracking pen **nesting**: what "Ocean Beach counts as San Diego" does and does not mean, the searchable parent picker, the colored chain diagram, and the rule that a **detail** is a pen that counts as its parent (persist v13). A pen may count as several others (`parentIds`, persist v14); `parentId` stays the display parent. |
 | `PEN_ACTION_FORMATS.md` | Tracking pen **default action formats**: how a painted block becomes a Done-today row, the template variables, which template wins, and how the row stays in step with the block. |
+| `time-context-vision.md` | **Time-context slices, specified and not shipped.** A slice is a predicate over `TimeEntry`. Find blocks and “Show matches in this view” are the pattern to copy. Home versus away, alone versus with someone, and the other life-context pictures are not in the product. |
+| `AstrologyPredictions.md` | Hellenistic timing for the 5 May 2000, 20:19 UT, Rogers chart, sorted by period. Natal sections are labeled as natal. The forecast is the pasted profections, firdaria, and transits only. |
+| `monthpredictions.md` | Twenty-four profection months, 5 October 2026 through 4 October 2028, for the same Rogers chart. Whole-sign judgments. Transit dates recomputed with the Swiss Ephemeris and clocked in America/Los_Angeles. |
 | `tree.md` | Annotated, clickable index of the whole repository (pairs with `tree.txt`). |
 | `tree.txt` | Plain `tree` command output (regenerate with `npm run tree`). |
-| `screenshots/` | Full-page PNG captures of every major app view plus matching `.txt` inventories of on-screen controls. Re-capture with `npm run capture-screenshots` while `npm run dev` is running. See [`screenshots/README.md`](screenshots/README.md). |
+| `screenshots/` | The capture set: PNG files and matching `.txt` write-ups. 97 PNGs are on disk (96 with sidecars; `habits-noble-gas-rail.png` has none). Freshness is the status table in [`screenshots/README.md`](screenshots/README.md). Re-capture with `npm run capture-screenshots` while `npm run dev` is running. `npm run screenshot-reel` serves [`screenshots/viewer.html`](screenshots/viewer.html): step through older and newer frames, and edit the feature notes beside them. |
 
 ### Screenshot index
 
-See [`screenshots/README.md`](screenshots/README.md) for the full index (56 PNG +
-56 `.txt` sidecars). Quick map:
+The folder is the capture set. File dates, freshness, and the surfaces that
+still have no file are the status table and the gap list in
+[`screenshots/README.md`](screenshots/README.md). Prefixes only:
 
 | Prefix | Area |
 |--------|------|
@@ -72,11 +79,11 @@ See [`screenshots/README.md`](screenshots/README.md) for the full index (56 PNG 
 | `04-*` | Home → Goals |
 | `05-*` | Lists (folder + content displays) |
 | `06-*` | Scheduler |
-| `07-*` | Analytics studio (title+status Lists; ~26 views). Recapture `07-analytics*` with `COGS_FRESH=0`. |
+| `07-*` | Analytics studio |
 | `08-*` | Home → Tracking |
 | `09-*` | Modules |
 | `10-*` | Operations |
-| `12-*` | Docs *(planned — not captured yet)* |
+| `12-*` | Docs |
 | `20-*` | Global header dialogs |
 | `21-*` | Item detail popup |
 

@@ -13,4 +13,4 @@ GLOBAL CHROME (all screens)
 
 VIEW-SPECIFIC
 Home window: milled date plate (weekday CRT, calendar nameplate, Widgets key); Review due banner (Start review / Dismiss); All Time / Today / Week / Month points; Today's Progress (To Do + Habits remaining/done); Needs Attention (Overdue / Blocked / Unclarified — click opens detail). Sub-tabs: Habits · Plan · To Do · Goals · Tracking.
-To Do Month: same toolbar. This Month's Tasks: month nav; table Task / Status / Tier / Months (pushed) / Actions. Done this month + Log done. Done rows dated, with duration and est. chip.
+To Do Month: same toolbar. Load strip includes "N days left in month", hours left, and working hours left. Required, then Assigned with search. This Month's Tasks: month nav; table Task / Status / Tier / Months (pushed) / Actions (delete). Minutes box and nested steps on each row. Done this month + Log done. Done rows dated, with duration and est. chip.

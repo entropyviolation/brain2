@@ -50,8 +50,10 @@ your plans actually matched reality**.
 
 Treat Brain2 as software that is **alive**: it fills in records, compares
 intention to outcome, grows new rooms, and still looks like one vintage machine
-that is also a painting — phosphor and silver and pixel as motif, luminous
-contents, and room for a motion the 90s could not render — on a teal desktop
+that is also a painting — phosphor and silver and pixel as motif, the house
+pictures used as much as possible (a brain, a light bulb, graph nodes joined
+by traces), luminous contents, and room for a motion the 90s could not
+render — on a teal desktop
 by default (Settings → **Desktop**; optional PCB photographs).
 The chrome stays furniture. The insides stay personal.
 The graph has no ceiling.
@@ -69,36 +71,32 @@ The aim is for Brain2 to do all of this at once:
   be invented from it. Other tabs live in the graph; Analytics is where the
   graph becomes instrument.
 - **A planning and reflection engine.** Built-in **daily / weekly / monthly /
-  quarterly / yearly reflections** assist planning, and the system continuously
+  quarterly / yearly reflections** assist planning. A quarter is a calendar
+  season (`Quarter 2026 Q3 (Fall)`: Q1 Spring, Q2 Summer, Q3 Fall, Q4 Winter)
+  on rituals, habits, goals, plans, and analytics. The system continuously
   compares intentions against outcomes (plan-vs-reality).
-- **A custom-module platform.** Users can compose extremely powerful, complex
-  custom modules on top of the same data — turning Brain2 into whatever tool the
-  moment demands.
+- **A custom-module platform.** Users compose workspaces from their lists and
+  view kinds, save them as blueprints, and keep every record an item — turning
+  Brain2 into whatever tool the moment demands.
 - **A place to externalize everything.** Pour every idea and consideration into
   lists — reading lists, watch lists, vacation plans, decision matrices — then
   visualize, sort, and reason over them.
 
-**The end goal — install any app into your brain.** The final form of the
-Modules platform is an **install** flow: you write, paste, or generate a small
-`.tsx` app — a chore tracker, a plant log, a climbing pyramid, a wine cellar —
-and a **wizard ports it in**. It maps that app's state onto **Items**, turns its
-screens into views, and asks which **bridges** it may use (create items, paint
-Tracking minutes, increment habits, award points, write dates, claim a
-text-message phrase). A cheap, structured-output **LLM does the tedious mapping
-once, at install time**, and produces reviewable artifacts — a manifest and a
-diff — after which the module runs offline forever with no model involved.
-
-The point is that a newly installed module is not a guest. It is a room in the
-house: its records show up in Lists and Cmd/Ctrl-K search, its dated things reach
-the Scheduler, its effort reaches Habits and Tracking, its completions award
-points, its numbers chart in Analytics, and a text from a phone can create one.
-**Infinite adaptability, one nervous system.** That is the new type of thing:
-not an app store bolted on, not a plugin that lives in a sandbox — a brain that
-can grow organs forever and still be one body. The laws that keep that possible —
-Item is the only noun, config is layout not domain, one write door, skins stay
-feral, deterministic after install — plus the rung-by-rung plan and the two
-current exceptions to them, live in
-[`docs/MODULE_PLATFORM.md`](docs/MODULE_PLATFORM.md).
+**Modules today — compose, then blueprint.** Rung 0 is a workspace built from
+your lists and view kinds. Rung 1 is a `ModuleDefinition`: save it, make
+another instance, export and import the JSON. The rule that matters now: a
+new module does not get a private database. `module.config` holds bindings,
+layout, and preferences. House Cleaning (`lib/house-cleaning.ts`,
+`module.config.houseCleaning`) and Trip Itinerary (`lib/trip-itinerary.ts`,
+`module.config.tripItinerary`) are the two existing violations, kept as debt,
+not the pattern to copy. Records that stay Items show up in Lists and
+Cmd/Ctrl-K, reach the Scheduler, Habits, Tracking, points, and Analytics, and
+can be created from a text message. **Infinite adaptability, one nervous
+system:** one body that can grow organs and still be one graph. Five laws are
+in force — Item is the only noun, config is layout not domain, one write door,
+skins stay feral, deterministic after install. The next platform step is a
+hand-written manifest (rung 2): one serializable object, written by hand.
+Detail: [`docs/MODULE_PLATFORM.md`](docs/MODULE_PLATFORM.md).
 
 **Module platform (built):** the **Modules** tab is now a full place to compose
 your own tools. Beyond single-card widgets, you can build full-screen
@@ -116,6 +114,12 @@ schemas, seed data, views, and workflows for an **Itinerary Creator**, a
 inside the module. List-backed templates sit on the same `Item` / `ItemType` / attribute foundation,
 so their data also flows through Lists, Scheduler, and Analytics. Reusable module
 **definitions** (blueprints) can be saved, re-instantiated, and exported/imported.
+
+**Later, unbuilt.** An install wizard that ports an arbitrary `.tsx` app
+(rung 3), an LLM that does that mapping once at install time (rung 4), and
+sharing a module as a file or URL (rung 5). A sixth workflow law — intent, dry
+run, pause, and a run log (CY-10) — is specified and not built. Those sit in
+the UNBUILT appendix of [`docs/MODULE_PLATFORM.md`](docs/MODULE_PLATFORM.md).
 
 **Google Sheets–style grids (built):** list/attribute data can be edited in a
 spreadsheet display (`components/spreadsheet/SheetGrid.tsx`) — inline cells,
@@ -158,18 +162,21 @@ report tab: **calibration** (estimate vs. actual), **streaks**,
 (Settings still edits types). **Reviews** add a morning review and per-task
 **post-mortems**; and a **Focus / Just-Start** mode (`components/Focus/`) breaks
 paralysis with one smallest step + a short timer. These are backed by pure logic
-in `lib/` and a nascent data layer (`lib/data/` with Mongo collections/sources +
-JSON backup) and domain `lib/services/`.
+in `lib/` and domain `lib/services/`. JSON backup, Zod schemas, and
+`taskRepository` live in `lib/data/`. The Mongo / `DataSource` files there are
+unwired scaffolding. The store catalog is [`lib/README.md`](lib/README.md).
 
 **Phone capture (built):** text **BIM** (Brain2 Ingestion Messenger — you can call
 him BIM for short) at the Telegram bot with short phrases
-(`groc`, `got milk`, `needed:`, `get:`, `plan for rn:`, `currently …`, whole-message habit
-keywords, discrete events + `log:`, `n stuck in aisle 4`, `qa: pick up milk`, `habit: exercise 30`,
+(`groc`, `got milk`, `needed:`, `get:`, `plan for rn:`, `currently …`, `dh:` habit
+keywords, discrete events + `log:` / `intake:` / `st:` / `so:` / `transit:`, `n stuck in aisle 4` (a point at send time), `qa: pick up milk`, `habit: exercise 30`,
 `at: gym`, `do:`, `to do today:`, `gm`, `review`, `gps:`,
 `screen: Instagram 30m`, `call: Jane 12m`, `text: Jane on my way`, `iphone-notes:` from the iOS Shortcut).
 Send `info` for basics, `{prefix} info` / `{prefix} commands` for one family, or
-`all commands` for every keyword. They land through the same writes as the desktop. Pairing stays put across a refresh. Grocery dumps
+`all commands` for every keyword. They land through the same writes as the desktop. `gps:` and Live Location still paint Location; those points stay off the Message ingest log unless you **Show GPS**. Pairing stays put across a refresh. Grocery dumps
 **pin** in the chat so you can read the list at the store with the laptop off.
+Inbox and tracking stamps use the Telegram send time. There is no morning
+autotext: `gm` runs only while `phone:hub` or the desktop poller is awake.
 A message that is a list name, then one item per line (`Grocery list:` / `before elijah gets home:`), files onto that list — grocery names use the store list, identical open items ask see / again / dismiss, and `before 9/12:` makes the following lines due that day.
 Snap a **receipt** (OCR → check off grocery + bump pantry), a **journal page**
 (deskewed PDF + searchable Docs note), or **forward a PDF**. Live 24/7 replies:
@@ -182,21 +189,22 @@ answering with a picker of near-misses. iPhone Screen Time / Calls / Texts: AirD
 
 **Eventual expansion** (not yet built): deeper computed-attribute editing UX on
 top of the in-grid **formula** columns and cross-item rollups that already exist.
-Document items / Docs are built (see above). Other messengers wait on Atlas sync.
+Document items / Docs are built (see above). Other messengers are not built.
+Atlas is speculation, not a reason they are waiting.
 A **hosted webhook** for Telegram is built on the always-on phone hub
 (`COGS_TELEGRAM_WEBHOOK`). Telegram **media ingest** (journal photos stored as
 PDF, forwarded PDFs, receipt OCR into inventory / grocery list) is built — see
-[`docs/MESSAGE_INGEST.md`](docs/MESSAGE_INGEST.md). Also not yet built: the **module install / port
-wizard** and its LLM-assisted mapping step (rungs 2–4 in
-[`docs/MODULE_PLATFORM.md`](docs/MODULE_PLATFORM.md)), and the migration of
-Tidy's and Trip Itinerary's self-contained `module.config.*` state onto ordinary
-Items as the *write* path (a one-way **Module Lists** projection already ports
-Tidy chores and Trip days into nested lists — [`components/Lists/MODULE_LISTS.md`](components/Lists/MODULE_LISTS.md)).
+[`docs/MESSAGE_INGEST.md`](docs/MESSAGE_INGEST.md). Still open: House Cleaning
+and Trip Itinerary write a private tree on `module.config.houseCleaning` and
+`module.config.tripItinerary` (`lib/house-cleaning.ts`,
+`lib/trip-itinerary.ts`). A one-way **Module Lists** projection already ports
+Tidy chores and Trip days into nested lists
+([`components/Lists/MODULE_LISTS.md`](components/Lists/MODULE_LISTS.md));
+Items are not yet the write path. **Later, unbuilt:** the module install /
+port wizard and its LLM mapping step (rungs 3–4, appendix of
+[`docs/MODULE_PLATFORM.md`](docs/MODULE_PLATFORM.md)).
 
-The sections below describe **what actually runs today** — the living foundation
-those ambitions are being built on. The vision above is not marketing copy; it
-is the design constraint. The rest of this document is ground truth for the
-current body.
+The vision above is the design constraint. **What actually runs** is recorded in the folder READMEs: stores in [`lib/README.md`](lib/README.md), the spec checklist in [`docs/SPEC_MAPPING.md`](docs/SPEC_MAPPING.md), the time grid in [`components/Home/Tracking/README.md`](components/Home/Tracking/README.md), the metric logger in `components/Tracking/` (no folder README), and Habits in [`components/Home/Habits/README.md`](components/Home/Habits/README.md). The sync that exists is the manual phone hub ([`components/Mobile/README.md`](components/Mobile/README.md)). MongoDB Atlas, `@brain2/core`, and Expo are speculation, not the storage plan.
 
 ## What this repository is today
 
@@ -251,9 +259,11 @@ because correcting it is cheap and nothing pretends to be observed.
   + photographed orbs on velvet) is the UI gold standard — see
   [`docs/DESIGN_STYLE.md`](docs/DESIGN_STYLE.md).
 - **Zustand** stores with `persist` middleware for state, backed by the browser's
-  **localStorage**. This local store stays the offline-first source of truth;
-  **MongoDB Atlas** becomes a future *cloud sync target* (not a replacement) behind
-  an opportunistic `SyncingDataSource` — see `docs/SPEC_MAPPING.md` §3.
+  **localStorage**. That local store is the offline-first source of truth.
+  The sync that exists is the manual phone hub
+  ([`components/Mobile/README.md`](components/Mobile/README.md)).
+  MongoDB Atlas, a shared `@brain2/core` package, and an Expo app are
+  speculation, not the storage plan — see [`docs/SPEC_MAPPING.md`](docs/SPEC_MAPPING.md) §3.
 - **Electron** desktop shell (`electron/`) that serves the static export via a
   custom `app://` protocol. The same build also runs as a plain web app.
 
@@ -261,16 +271,16 @@ because correcting it is cheap and nothing pretends to be observed.
 
 ```
 Next.js (static export, all client-side)
-        │  COMPLETE local store via Zustand + localStorage (offline source of truth)
+        │  local store via Zustand + localStorage (offline source of truth)
         │  (+ plan text keys, legacy habit import)
         ▼
 out/ (HTML/CSS/JS + public assets)
         │  loaded by
         ▼
 Electron main process (electron/main.js)  →  desktop window (thin shell)
-        ┊  future: opportunistic background sync, best-effort
-        ▼
-MongoDB Atlas (cloud) — sync target behind SyncingDataSource/RemoteDataSource
+
+Manual phone hub — Settings → Mobile Sync and /mobile pull a snapshot
+(lib/mobile-sync.ts). Atlas, @brain2/core, and Expo are speculation, not this picture.
 ```
 
 Most features run entirely in the renderer and read/write localStorage through
@@ -279,17 +289,16 @@ text). Trip Itinerary maps and weather call Open-Meteo / Photon from the client
 (`lib/city-search.ts`, `lib/weather-client.ts`, `lib/places-search.ts`, cached by
 `lib/api-cache.ts`) so they work
 with static `output: "export"` — there is no required API layer. The app is
-**offline-first**: the local store remains the working source of truth. A future
-opportunistic `SyncingDataSource` reconciles with **MongoDB Atlas** in the
-background when online so multiple devices (including a future mobile app)
-converge — without ever blocking offline use. See
-[`docs/SPEC_MAPPING.md`](docs/SPEC_MAPPING.md) §3.
+**offline-first**: the local store remains the working source of truth. The sync
+that exists is the manual phone hub. See
+[`docs/SPEC_MAPPING.md`](docs/SPEC_MAPPING.md) §3 and
+[`lib/README.md`](lib/README.md).
 
 ### Application map
 
 ```
 app/page.tsx
-├── Pinned mill title bar (full width): BRAIN2 caption + friend jewel (click → suggestion bubble) | Review | Settings | Tracking | Names | now (live Working sessions only) | Inbox | Ingest | Metrics | Bulk Add | From Notes | Phone Notes | Quick Add   (+ Cmd/Ctrl-K search, Cmd/Ctrl-Z undo)
+├── Pinned mill title bar (full width): BRAIN2 caption + Nav Back/Forward + friend jewel (click → suggestion bubble) | Review | Settings | Tracking | Names | now (live Working sessions only) | Inbox | Ingest | Metrics | Bulk Add | From Notes | Phone Notes | Quick Add   (+ Cmd/Ctrl-K search, Cmd/Ctrl-Z undo)
 └── Tabs
     ├── Home ────── Habits | Plan | To Do | Goals | Tracking
     ├── Lists ───── Win98 file manager (folders, lists, items, orb gallery, spreadsheet)
@@ -304,9 +313,9 @@ Selecting a task from **Lists** (or Modules, Inbox, or global search) opens the
 full-screen detail view (`components/ItemDetail/ItemDetailPage.tsx`).
 
 Home **Tracking** is a Win95 window (navy title, photographed orb) with a
-photographed well of pen beads (**Draw** tool, default). Beads show one row
+plain steel well of pen beads (**Draw** tool, default). Beads show one row
 until **Expand** (right of Tree) unwraps them — the key then reads **Conceal**; **New pen** reveals the hidden creator; selected name and detail sit on
-steel plates so tray photos cannot wash the type out. **Erase** and **Scissors**
+steel plates. **Erase** and **Scissors**
 are radios on the far-right tools rail — they hide the pen tray (a spacer keeps
 the keys docked right) and never grow a banner. A stable **tool-detail** well
 beside the keys keeps how-to copy for Draw, Erase, and Scissors. **Sort** defaults to **Recent** so the pens you actually paint
@@ -315,21 +324,30 @@ the **minute**. Paint the grid with colored pens (cells render at 1, 5, 10, 15 o
 minutes over minute-accurate data), and each painted block is a real event: it can
 be reopened from the grid, the **Activity Log**, or the **Day Log**, retimed,
 renamed, split, or deleted. **Cmd/Ctrl-Z** reverses the last
-paint, erase, edit, split, move, or fill; typing in a field keeps the
-browser's own undo. A **day / week** switch changes the
+paint, erase, edit, split, move, or fill; a stroke on the plot takes focus so
+that chord is the grid's, and typing in a field keeps the browser's own undo.
+**Superimpose** sits under the view-mode bar on the time grid (day, week, and
+infinite) and remembers the faint second view **per active view**, including
+across day changes, while paint still writes the active view. Activity Log and
+Day Log stay a single view. A **day / week** switch changes the
 span without changing the data: the week shows seven columns side by side, where
 an unlogged day is obvious at a glance and a routine can be filled in one press —
 type 9:00–17:00, tick Mon–Fri, done. Click any date heading to drop back into
 that single day. **Infinite scroll** sits next to Day/Week on the
 grid toolbar (not View settings): one continuous strip, time left to right,
-day rows with week bands, origin stays put when you pick a day. Double-click a
+day rows with week bands, origin stays put when you pick a day. **Zoom** on
+that same strip is **Cells / Hour / 3h / Day**; Hour, 3h, and Day color the
+root category. Double-click a
 day tile to open that paged day; double-click a week band to open that paged
 week. **1m / 5m / 10m / 15m / 30m** cell size sits on the grid chrome next to
-Day/Week; the live step is a navy inset key with a phosphor lamp bar. A **red now line** and **gray sunrise/sunset** mark the day plot as
+Day/Week as a rotary amp dial. Grab it and turn clockwise for a coarser
+step; scrolling the page does not change the step. The minutes sit beside
+the knob. A **red now line** and **gray sunrise/sunset** mark the day plot as
 horizontal lines across the hours, like Plan agenda and Day Log (do not
 remove). Week and Infinite label sunrise/sunset from **that row's date** (persisted
 per day), not today's clock on every row. Discrete events stay small vertical ticks at the minute they were
-logged. **Time Grid / Activity Log / Day Log** use the same inset metal
+logged. The week grid draws those ticks and opens the block editor. An empty
+hour on the Day Log week opens the Plan event dialog. **Time Grid / Activity Log / Day Log** use the same inset metal
 `.hab-view-changer` keys as Habits Daily / Weekly / Monthly. **Day Log** has a local **Day \| Week** agenda switch (default Day, not persisted): Day overlays those same painted blocks on the planned agenda as **one continuous slab** per stretch; Week is a compact seven-column plan-vs-tracked board for that week (not the Time Grid paint week; click a date heading to open that day). Ghosts are the plan; solid color is tracked time; click Sleep to edit. A plaintext **notes**
 field sits under all three Tracking views for the calendar day — white, not cream; jots like
 "went to the zoo from 4–5" stay with the date while you figure out where they
@@ -338,7 +356,10 @@ hub blob) — both of those keys are read and unioned, and if a full origin keep
 submitted jot out of storage the well says so instead of pretending it saved. **Tracked** and **% of the day** are occupancy: overlapping
 blocks (derived Sleep sitting on Work that was already there) count once, so a
 day cannot read as more than 24 hours. Independent **views** (Activity, Location,
-Mood, **Company**, **Screen Time**) each have their own pens. Company is who you were with — Alone,
+Mood, **Company**, **Screen Time**) each have their own pens. The Mood view takes any pen name.
+Great, Good, Meh, and Low stay in the vault as starter pens, equal to any other name. The block
+editor holds a three-part reading on a mood stretch (the body, the water, and the heaps); the
+derived sentence is not written into notes. Company is who you were with — Alone,
 Together, In conversation — not an Activity called hanging out. **Screen Time** reads a running
 [ActivityWatch](https://github.com/ActivityWatch/activitywatch) server (loopback `127.0.0.1:5600`);
 Brain2 is the meaning layer, not a window watcher. AFK stays untracked. ActivityWatch only records
@@ -346,15 +367,38 @@ from when its watchers run — it cannot import Apple Screen Time or anything fr
 A successful sync with 0 blocks means AW had nothing usable yet, not a broken pipe. Settings → Screen Time
 connects and syncs; Analytics → Time → Screen Time reports active vs untracked. Pens can **nest**
 (trash under Cleaning, a park under Out under Mexico); **Show as** picks how coarse
-the grid and Analytics read. **Counts as** is a searchable retro picker with
-**Create new pen** and a color chain (one parent; parallel chains planned). A block
+the grid and Analytics read. **Counts as** is a searchable picker: a pen may
+count as several others (`parentIds`). `parentId` stays the display parent,
+first in that list. Persist **v14** copies an old `parentId` into `parentIds`.
+**Show as** colors that first chain, so the grid keeps one color. A block's
+minutes count once in the day. At Exact the painted pen gets the whole block;
+at a collapsed depth each distinct ancestor gets a share, and those shares sum
+to the block. A secondary pen still receives the full block. A block
 is **certain** unless marked assumed (hatched in the pen color; sleep **est.** is steel, not yellow);
-Analytics can hide assumed time. A painted block can carry a **display name**
+Analytics can hide assumed time. **Done this day** can **Place as assumed**
+(a hatched block in an open gap, `estimateOf` kind `done`). **Confirm** clears
+that hatch, and the same confirm clears an import that was already estimated.
+**Find** on the Time Grid bezel and the Activity Log searches display name,
+notes, project, pen, secondary pens, counts-as names, action-format
+templates, and a mood reading (word, body, vibe, shorthand, reframe, about-that),
+then jumps to the block (`lib/tracking-search.ts`). A painted block can carry a **display name**
 (defaults to the pen) and **secondary pens** whose tags still feed habits. A pen
 can carry a **default action format** so a Walking block logs "Went for a walk"
 into To-Do Done. A pen can also carry overlapping
 **variants**, so Analytics shows the share of a category first and then breaks
 that share down.
+
+Analytics → Time → **Tracking** uses the same search as **Find blocks**. A jump
+outlines the block on the period filmstrip and opens the editor. **Show matches
+in this view** redraws the Tracking measures on that set only. **Days** and
+**Weeks** strips give one cell per period, colored by the pen at the current
+display depth that owned the most minutes (overlap votes once; empty days stay
+white; a tie keeps the earlier pen). The week strip appears when the window
+spans two Mondays. Tag bars run by week and by month — a minute tagged in two
+scopes counts once — and stay hidden when the window is too short to trend.
+Life-context slices (home versus away, alone versus with someone) are specified
+in [`docs/time-context-vision.md`](docs/time-context-vision.md) and are not in
+the product.
 
 Tracking and **Habits** are connected by **tags**, which belong to *time* rather
 than to pens. Tagging a pen is the shorthand for "always" — tag a "Do dishes" pen
@@ -388,21 +432,16 @@ See [`components/Home/Tracking/README.md`](components/Home/Tracking/README.md).
 
 Brain2 is **offline-first and stays that way**. Highlights:
 
-- **Offline-first, always.** Every client (web/desktop renderer and a future
-  **mobile** app) keeps a **complete local store** that is the working source of
-  truth offline (today: Zustand + `persist`). The app never requires the network.
-- **Opportunistic cloud sync.** A future `SyncingDataSource` wraps the local store
-  and, when online, reconciles with **MongoDB Atlas** in the background so devices
-  converge. Conflict resolution starts as per-field last-write-wins (upgradeable to
-  a sync engine: RxDB / PowerSync / Atlas Device Sync). Sync is best-effort and
-  never blocks offline use.
-- **Shared `@brain2/core` package.** A future monorepo extraction holding the data
-  model (`lib/types.ts`), Zod schemas, the `DataSource` interface, domain services,
-  and pure logic (search, needs-attention, links, scheduling) — shared
-  by web, desktop, and mobile.
-- **Future mobile app** (Expo / React Native) consuming `@brain2/core` + a local
-  cache + the same syncing remote data source. Today, phones use a **manual
-  hub pull** (`lib/mobile-sync.ts`, Settings → Mobile Sync, `/mobile`).
+- **Offline-first.** The web and desktop renderer keep a complete local store
+  (Zustand + `persist`). The app does not require the network for vault data.
+- **The sync that exists** is the manual phone hub: Settings → Mobile Sync and
+  `/mobile` pull a snapshot (`lib/mobile-sync.ts`,
+  [`components/Mobile/README.md`](components/Mobile/README.md)). There is no
+  always-on multi-device engine. Telegram `npm run phone:hub` is message
+  capture ([`docs/MESSAGE_INGEST.md`](docs/MESSAGE_INGEST.md)), not that sync.
+- **Speculation, not the storage plan.** MongoDB Atlas, a shared `@brain2/core`
+  package, and an Expo / React Native app are not scheduled. Unwired sketches
+  live under `lib/data/mongo/` and `electron/ipc/`.
 - **External data** (read-only, starting with **weather** via Open-Meteo) feeds
   itinerary widgets: fetched when online, cached locally with a TTL, degrading
   gracefully offline. Deliberately **not** on the user-data sync path.
@@ -413,9 +452,10 @@ Brain2 is **offline-first and stays that way**. Highlights:
   `lists` / `info` dump data back as plain text (bare `g` is Inbox only; `-mb` / `-monkey` dumps a capture in Monkey brain). Text-pipeline
   tracker rows show in Analytics **Text events** / **Text spans**. Token is gitignored `.env.local`
   or Electron `safeStorage`. See [`docs/MESSAGE_INGEST.md`](docs/MESSAGE_INGEST.md).
-- **Electron main becomes a thin shell** (optionally a connector/cache host), not
-  the source of truth. The existing IPC + Mongo scaffolding is repurposed as the
-  **remote/sync** side rather than a desktop-local datastore.
+- **Electron main is a thin shell**, not the source of truth. IPC and Mongo
+  files under `electron/ipc/` and `lib/data/mongo/` are unwired scaffolding.
+  Treating Atlas as the remote side of that scaffolding is speculation, not the
+  storage plan.
 
 ## Getting started
 
@@ -454,7 +494,7 @@ picks up the live lists/habits instead of an empty `brain2` profile.
 | `app/` | Next.js App Router entry: layout, single page, global + Win95 CSS | [`app/README.md`](app/README.md) |
 | `components/` | All React UI — modules, dialogs, shared widgets | [`components/README.md`](components/README.md) |
 | `components/Home/` | Home dashboard (Habits, Plan, ToDo, Goals, Tracking) | [`components/Home/README.md`](components/Home/README.md) |
-| `components/Completion/` | Global task-completion popup (objective/goal contributions + multipliers; Undo reopens the task) | [`components/Completion/README.md`](components/Completion/README.md) |
+| `components/Completion/` | Global task-completion popup (select or create objectives/goals, optional time and reflections, quick-review points; Undo reopens the task) | [`components/Completion/README.md`](components/Completion/README.md) |
 | `components/Lists/` | Lists file manager — orchestrator, hooks, views, dialogs (`components/Lists/README.md`) | [`components/Lists/README.md`](components/Lists/README.md) |
 | `components/Docs/` | Top-level Docs tab — WYSIWYG notes over `note` items | [`components/Docs/README.md`](components/Docs/README.md) |
 | `components/Scheduler/` | Period scheduling funnel + dependency/gantt views | [`components/Scheduler/README.md`](components/Scheduler/README.md) |
@@ -468,18 +508,19 @@ picks up the live lists/habits instead of an empty `brain2` profile.
 | `components/Settings/` | Data profile (Live/Demo), window gray, desktop PCB, backup/restore, Message ingest (Telegram), item types, Second Brain setup, manual mobile hub | [`components/Settings/README.md`](components/Settings/README.md) |
 | `components/Focus/` | Just-Start anti-paralysis mode | [`components/Focus/README.md`](components/Focus/README.md) |
 | `components/Mobile/` | Sideload Home + Lists shell; manual hub pull | [`components/Mobile/README.md`](components/Mobile/README.md) |
-| `components/Icons/` | Shared icon system + orb picker | [`components/Icons/README.md`](components/Icons/README.md) |
-| `components/Tracking/` | Quick self-tracking metric logger | — |
-| `components/Reviews/` | End-of-period review ritual (header) + post-mortems | [`components/Reviews/README.md`](components/Reviews/README.md) |
+| `components/Icons/` | Shared icon system: orb picker + photographed folder icons | [`components/Icons/README.md`](components/Icons/README.md) |
+| `components/Tracking/` | Metric logger (`MetricLogger.tsx`): wellbeing datapoints. Not the time grid — that folder is `components/Home/Tracking/`. | — |
+| `components/Reviews/` | Rituals (header sun/moon + start/end) + post-mortems | [`components/Reviews/README.md`](components/Reviews/README.md) |
 | `components/spreadsheet/` | Reusable Google-Sheets-style editable grid | [`components/spreadsheet/README.md`](components/spreadsheet/README.md) |
 | `components/ui/` | shadcn/ui primitives (Button, Dialog, Tabs, …) | [`components/ui/README.md`](components/ui/README.md) |
 | `lib/` | Data model types, Zustand stores, pure helpers | [`lib/README.md`](lib/README.md) |
-| `lib/data/` | Nascent data layer: `DataSource` sources, Mongo collections/schemas, JSON backup | [`lib/data/mongo/README.md`](lib/data/mongo/README.md) |
+| `lib/data/` | Live JSON backup, Zod schemas, and `taskRepository`. Mongo / `DataSource` / IPC files are unwired scaffolding (Atlas is speculation). | [`lib/README.md`](lib/README.md) · [`lib/data/mongo/README.md`](lib/data/mongo/README.md) |
 | `lib/services/` | Domain services (completion, review, scheduling, item-mutation / implied actions) | — |
 | `electron/` | Desktop shell: main process + preload | [`electron/README.md`](electron/README.md) |
 | `docs/` | Spec mapping, **plan of action**, the map-loop-meaning join, map-and-territory philosophy, meaning-layer plan, steersman plan, module-platform north star, design style, design refs, modularity assessment, screen write-ups | [`docs/README.md`](docs/README.md) · [`docs/PLAN_OF_ACTION.md`](docs/PLAN_OF_ACTION.md) · [`docs/MAP_LOOP_MEANING.md`](docs/MAP_LOOP_MEANING.md) · [`docs/ScienceandSanityBrain2.md`](docs/ScienceandSanityBrain2.md) · [`docs/JungBrain2.md`](docs/JungBrain2.md) · [`docs/cyberneticsbrain2.md`](docs/cyberneticsbrain2.md) · [`docs/DESIGN_REFS.md`](docs/DESIGN_REFS.md) |
-| `docs/screenshots/` | PNG captures + per-screen `.txt` write-ups (56 views) | [`docs/screenshots/README.md`](docs/screenshots/README.md) |
-| `public/` | Static assets: orb PNGs (`orbs-removebackground/`), fonts, icons, link connectors | — |
+| `cosmeticsandperfume/` | Personal pantry and perfume kit: priced shopping list, sortable cart page, hair mist, rice shampoo bar, glitter mist, serum, dish brick, solid perfume, shimmer oil, perfume trials, perfume experiments, laundry scents, laundry detergent, fabric softener, and a safety note. Not part of the app. | [`cosmeticsandperfume/README.md`](cosmeticsandperfume/README.md) · [`cosmeticsandperfume/plan.md`](cosmeticsandperfume/plan.md) · [`cosmeticsandperfume/cart.html`](cosmeticsandperfume/cart.html) |
+| `docs/screenshots/` | PNG captures + per-screen `.txt` write-ups (status table, not a fixed count) | [`docs/screenshots/README.md`](docs/screenshots/README.md) |
+| `public/` | Static assets: orb PNGs (`orbs-removebackground/`), folder photos (`folders-removebackground/`), fonts, icons, link connectors | — |
 | `hooks/` | Shared React hooks (`useUndoHotkey`, `useQuickCaptureHotkey`, `useVocalConfidence`); module hooks live in subfolders (e.g. `components/Lists/hooks/`) | [`hooks/README.md`](hooks/README.md) |
 | `out/` | Built static export (generated by `npm run build`; git-ignored) | — |
 
@@ -491,49 +532,28 @@ picks up the live lists/habits instead of an empty `brain2` profile.
 | `components/Home/Plan/` | [`README.md`](components/Home/Plan/README.md) |
 | `components/Home/ToDo/` | [`README.md`](components/Home/ToDo/README.md) |
 | `components/Home/Goals/` | [`README.md`](components/Home/Goals/README.md) |
-| `components/Home/Tracking/` | [`README.md`](components/Home/Tracking/README.md) |
+| `components/Home/Tracking/` | Time grid (not `components/Tracking/`, the metric logger). [`README.md`](components/Home/Tracking/README.md) |
 
-## Data layer (summary)
+## Data layer
 
-A dozen-plus Zustand stores in `lib/` persist to **localStorage** — the complete,
-offline-first source of truth (including the newer `module-definitions`,
-`workflows-store`, and `item-type-store`). Persist **keys** are **`brain2-*`**.
-Historical **`cogs-*`** keys are a lossless alias so a rename does not empty the
-vault (`lib/storage-keys.ts`). The future **MongoDB Atlas**
-`brain2` database is a
-*cloud sync target* (reached via a `RemoteDataSource`/`SyncingDataSource`, not the
-durable store) — flexible documents, text/vector search indexes, and aggregation
-pipelines for advanced search and routing. See [`docs/SPEC_MAPPING.md`](docs/SPEC_MAPPING.md) §3.
-Key store examples:
+Zustand stores in `lib/` persist to **localStorage**. Live keys are **`brain2-*`**; historical **`cogs-*`** keys are a lossless alias (`lib/storage-keys.ts`). The catalog, including persist versions, is [`lib/README.md`](lib/README.md). `task-store` is `brain2-task-storage` at persist **v17**.
 
-| Store | Key | Used for |
-|-------|-----|----------|
-| `task-store` | `brain2-task-storage` | Item records (`tasks[]`), lists, folders (persist v12) |
-| `habits-store` | `brain2-habits-store` | Habit definitions + weekly completion data |
-| `time-tracking-store` | `brain2-timegrid-store` | Tracking views (Activity / Location / Mood / Company / Screen Time), pens (with parents, last-used, Recent/A–Z/Tree sort), minute intervals, block tags/variants/precision, mirrored per-day append-log notes. Persist v11. |
-| `day-notes-persist` | `brain2-tracking-day-notes` | Tracking bottom scratch pad (the jot that survives refresh) |
-| `screentime/prefs` | `brain2-screentime-prefs` | ActivityWatch URL, lookback, min duration, window-titles opt-in (off), last sync + honest empty-success note |
-| `sleep-store` | `brain2-sleep-store` | Nightly sleep log (day-local asleep/wake + precision), keyed by the morning |
-| `reviews-store` | `brain2-reviews-store` | Period reviews |
-| `lists-ui-store` | `brain2-lists-ui` | Lists UI prefs, orb gallery |
+The sync that exists is the manual phone hub ([`components/Mobile/README.md`](components/Mobile/README.md)). MongoDB Atlas, `@brain2/core`, and Expo are speculation, not the storage plan ([`docs/SPEC_MAPPING.md`](docs/SPEC_MAPPING.md) §3).
 
-Plan free-text uses interim `plan-text.ts` helpers (`dayPlan-*`, `weekPlan-*`,
-`monthPlan-*` keys) as an append-only log of stamped entries (`9/20 9pm - …`)
-plus an unsubmitted `draft` on the same key so typing survives refresh;
-target is MongoDB `plans` collection. Optional Plan-only dark chrome latches
-`brain2-plan-dark` (`1`/`0`); default stays gray Win95. Full file-by-file
-detail: [`lib/README.md`](lib/README.md).
+Plan free-text and the other non-store keys are in that same catalog. Optional Plan-only dark chrome latches `brain2-plan-dark` (`1`/`0`); default stays gray Win95.
 
 ## Status vs. the v2 spec (summary)
 
-**Implemented in some form:** Inbox (Walk from the caret or Walk selected + rename/discard + recent lists + +1/+50 points + Select all / Select N / Select unsorted + Dated/Bare slice + Apply list / due / merge / File / Monkey brain / bulk edit / delete) / Quick Add / Bulk Add (colon paths `list: item` /
-`folder: list: item`, optional skip clarification) / **From Notes** (this Mac: Apple Notes via Electron or localhost hub; close the dialog while listing — reopen to return) / **Phone Notes** (AirDrop `Dump iPhone Notes to Brain2.shortcut` → Telegram `iphone-notes:` → iPhone Notes Store) — both notes dialogs bulk-add with the same `Folder: List:` headers, so a second colon creates a new folder by name; **Lists** board with
+Folder READMEs are the behavior record. This section is orientation.
+
+**Implemented in some form:** Inbox (Walk from the caret or Walk selected + rename/discard + recent lists + +1/+50 points + Select all / Select N / Select unsorted + Dated/Bare slice + Apply list / due / merge / File / Monkey brain / bulk edit / delete; more than 100 open revisit ideas add today's To Do **process inbox information** with Auto-push on) / Quick Add / Bulk Add (colon paths `list: item` /
+`folder: list: item`, optional skip clarification; a list created this way is not sent to the Scheduler) / **From Notes** (this Mac: Apple Notes via Electron or localhost hub; close the dialog while listing — reopen to return) / **Phone Notes** (AirDrop `Dump iPhone Notes to Brain2.shortcut` → Telegram `iphone-notes:` → iPhone Notes Store) — both notes dialogs bulk-add with the same `Folder: List:` headers, so a second colon creates a new folder by name; **Lists** board with
 Win98-style folders, custom attributes, orb icons, CSV import, and per-folder All
 Items; Scheduler period funnel (Always→Year→Month→Week→Day); Home dashboard
-(Habits / Plan / To Do / Goals / Tracking, including the Habits **exemption wand** that waives a period without marking it done, all-nighter blocks on each habit, and connections that check bedtime, wake, and a done to-do from the log); five habit types (boolean, goal, text,
+(Habits / Plan / To Do / Goals / Tracking, including the Habits **exemption wand** that waives a period without marking it done, a **missed opportunity** mark (`missedOpportunity` on the cell; grades ignore it) with a **Missed op wand** and a **Hide completed and missed** rocker, all-nighter blocks on each habit, connections that check bedtime, wake, and a done to-do from the log, and **completion sources** in a trust order); five habit types (boolean, goal, text,
 climb with **weekly +** / **daily +** cadences) with shared `habits-store`, **Week grade**
 and **Perfect output** as glass noble-gas tubes, optional habit heatmap and priority sort, daily points (50 × completion, user accomplishment bonus default +50 at ≥80% raw day, +100/+300
-grade bonuses); minute-resolution time tracking (header + Home Tracking tab) in a
+grade bonuses, and +5 when raw completion is above the prior 7-day average and +5 when it is above the prior 30-day average, both editable in Habits Settings); minute-resolution time tracking (header + Home Tracking tab) in a
 **day or week** span, the week filling a typed range across any set of ticked
 days in one press, occupancy totals that cannot exceed 100% of a day even when
 derived Sleep sits on already-painted Work, with
@@ -554,9 +574,25 @@ apart from nights;
 **habit time estimates** (minutes per unit of a
 goal, or a flat length) so completing a habit writes a Done row with a real clock
 window and duration instead of a bare date, with every autogenerated value flagged
-**est.** and confirmable in the review; period **Reviews**
-with plan text, reflection, and an **Assumed times** step (plus morning review and
-per-task post-mortems);
+**est.** and confirmable in the review; period **Rituals**
+(morning, night — including yesterday's night — and start/review for longer periods)
+with unfinished work for that period (Push reassigns it the way the Scheduler
+does, and **Other** on Why blocked? keeps the typed words), assumed times and an
+optional **Est.** mark, a night glance at the time grid / day log / activity log
+in the real pen colors, a wake-up reminder and what matters most (shown the next
+morning), goals to focus tomorrow, plan text, and reflection. Week, month, season,
+and year also show the period's points, habit grade, and tracked time, then a
+shared set of longer questions (growth, health, relationships, planning, plus
+inspiration photos). On the local new moon, the local full moon, and the birthday
+set in Settings, Rituals also offers a **Star Lord Report**: preparation facing
+north, six questions, and a closing. Closing saves a draft; submitting awards points (default 10
+per completed section — each answered question — + 30, Settings → Automatic point
+allocation). The Star Lord Report uses the same section points and bonus, one
+section per answered question. Per-task
+post-mortems (a later note from Reflect) save on close when something changed.
+The completion popup — separate from those rituals — awards 3 points plus 0.1
+per word for a quick review, and can mark a length exact, estimated, or unknown
+and a start exact, estimated, or unknown;
 **Modules** platform (user-buildable full-screen **workspaces** with bound
 spreadsheet/agenda/summary/randomizer/timer/checklist/gallery/notes/decision-matrix/
 timeline/matcher/quiz/dashboard/doc/itinerary-doc/trip-map/film-dna/house-cleaning/grad-search views,
@@ -581,21 +617,29 @@ global **completion popup** that captures objective/goal contributions on every
 task completion (**Undo** reopens the item as still to-do; **Skip** keeps the
 win without a contribution); **Missed opportunity** (too late) clears the same
 open To Do / Next Actions row onto an automatic **Missed Opportunities** list
-under Next Actions instead of Completed, with no points and no popup; points on task/habit/goal completion (with stacking objective
+under Next Actions instead of Completed, with no points and no popup; To Do open rows are **assigned**; **Required** is the lace band of one shared ledger and **Prioritized** stays on Assigned with a jewel (set from the row, item detail, morning ritual, or start ritual). A load strip shows Casio working hours and est. hours of work remaining (days left on week, month, and season), a Hofstadter comfort needle, scope lamps, an in-progress POWER lamp, and a via-channel for estimate vs working hours. Assigned can be searched. Closed rows are one instrument line (padded name, tier menu, active lamp, true completion percent); the clamshell lid is one name plus collapsible Flags / Time / Steps. Time is one segmented control, with the counts and progress readouts apart, and nested steps as rounded cards that fold — the time that counts is the greater of the typed estimate and the sum of the steps. The dove sits in a side well, not under a tall empty plate. Past
+To Do days, weeks, and months list **Undone** (each missed period on its own;
+a later push leaves the earlier period Undone) with Assimilate / Push /
+Discard; item detail **Auto-push** (off unless turned on) keeps pushing an
+unfinished day, week, or month onto the next To Do period without putting it
+in the Scheduler; **Send to Scheduler** is the funnel opt-in (a trip itinerary
+with dates is scheduled and is not that tool); a Scheduler card title opens
+that period full width, **Open list** jumps to Lists on `To do 8/31-9/6` (Done and Undone lists sit in the same folder; Home
+→ To Do Day / Week / Month has the same link), and a past card can push,
+dismiss, or mark done while the period stays in the record; the earliest Undone start feeds the priority date behind
+`waiting Nd`; points on task/habit/goal completion (with stacking objective
 multipliers); Scheduler **dependency / Gantt** views; **global
 Cmd/Ctrl-K search**; consolidated **ItemDetail** with tags/links/rich-text body;
 **Second Brain** item types + **JSON backup/restore** (header Settings);
-Plan **Paste Events**; Plan Day rail **To Do / Habits / Next actions** (Lists orbs on to-dos and next actions, habit gems on habits; double-click opens detail) drag onto the agenda to plan (notes + time, persist `brain2-planned-actions`, not events and not habit completion); Day agenda fills the column beside a long rail; optional Plan **Dark** / **light mode** chrome; optional Plan **Gem and trinket** / **no gem no trinket** month mode (past days);
+Plan **Paste Events**; Plan Day rail **To Do / Habits / Next actions** (Lists orbs on to-dos and next actions, habit gems on habits; double-click opens detail) drag onto the agenda to plan (notes + time, persist `brain2-planned-actions`, not events and not habit completion); Day agenda fills the column beside a long rail and outlines past tracked blocks (same painted intervals as Day Log; future hours stay clear); optional Plan **Dark** / **light mode** chrome; optional Plan **Gem and trinket** / **no gem no trinket** month mode (past days);
 and Analytics charts
 plus Brain2 views (calibration, streaks, plan-vs-reality, regret).
 
-**Not yet matching the spec** (tracked in `docs/SPEC_MAPPING.md`): a durable
-**MongoDB** storage layer (flexible documents, text/vector search indexes) wired
-behind the nascent `lib/data/` sources + schema migrations (§3), unified Item data
-model with de-duplicated fields (§5), auto-progress / penalties on the
-Goals→Objectives model (§10),
-complete Reviews cadence set (§13), the full set of spec Analytics views (§15), and
-fully automatic carry-over logic (§7.7).
+**Not yet matching the spec** (tracked in [`docs/SPEC_MAPPING.md`](docs/SPEC_MAPPING.md)):
+unified Item fields (§5), auto-progress / penalties on the Goals→Objectives model (§10),
+the full Reviews cadence (§13), the full set of spec Analytics views (§15), and
+fully automatic carry-over (§7.7). Multi-device sync beyond the manual phone hub
+is not built. MongoDB Atlas, `@brain2/core`, and Expo are speculation, not that gap's plan.
 
 **Toward the living application** (beyond the current spec — see "What this is
 trying to be" above): denser **type ↔ category ↔ tag ↔ attribute ↔ link** modeling
@@ -606,10 +650,12 @@ implied actions wire attribute deltas into Done / points / habits). The
 and **Docs** are built. The unified `Item`/`ItemTypeDefinition`/`links`/`attributes`
 primitives in `lib/types.ts` remain the foundation.
 
-The destination for the module half of that vision is spelled out in
-[`docs/MODULE_PLATFORM.md`](docs/MODULE_PLATFORM.md): **installable modules**.
-Today you *compose* a workspace inside the app; the goal is to *install* an
-arbitrary small `.tsx` app through a port wizard, so the brain grows new organs
-without growing new databases. Its two prerequisites are the same two items in
-the gap list above — a single honest `Item` (§5, `docs/CANONICAL_FIELDS.md`) and
-one write path — which is why those come before any further UI work.
+The module half of that vision, as it exists, is in
+[`docs/MODULE_PLATFORM.md`](docs/MODULE_PLATFORM.md): compose a workspace
+(rung 0) and save a blueprint (rung 1). A new module does not get a private
+database. A hand-written manifest (rung 2) is the next platform step. Pasting
+an arbitrary `.tsx` through a port wizard, and an LLM mapping step, are later
+and unbuilt. A single honest `Item` (§5,
+[`docs/CANONICAL_FIELDS.md`](docs/CANONICAL_FIELDS.md)) and one write path
+remain open. Keep building screens. UI waves do not wait on that cleanup
+([`docs/PLAN_OF_ACTION.md`](docs/PLAN_OF_ACTION.md)).
