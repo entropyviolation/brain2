@@ -38,7 +38,14 @@ export function AddTodoDialog({ onAdd }: { onAdd: (draft: NewTodoDraft) => void 
           Add Task
         </button>
       </DialogTrigger>
-      <DialogContent className="todo95-dialog" hideClose aria-describedby={undefined}>
+      <DialogContent
+        className="todo95-dialog"
+        hideClose
+        aria-describedby={undefined}
+        data-ui-name="Add Task"
+        data-ui-help="New task scheduled on the focused period."
+        data-ui-docs="components/Home/ToDo/README.md"
+      >
         <div className="todo-dialog-caption">
           <DialogTitle>Add New Task</DialogTitle>
         </div>

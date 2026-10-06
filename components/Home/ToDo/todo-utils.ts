@@ -13,20 +13,29 @@ import {
   differenceInMonths,
 } from "date-fns"
 import {
+  formatLocalDateKey,
   getWeekString,
   parseWeekString,
   parseLocalDate,
   sameCalendarDay,
+  sameWeekKey,
   taskScheduledOnDay,
   taskScheduledInWeek,
   taskScheduledInMonth,
   toLocalCalendarDate,
 } from "@/lib/date-utils"
-import type { PriorityWeights, Task, TaskCompletionReview, Folder, TodoItem } from "@/lib/types"
+import type { CompletionStatus, PriorityWeights, Task, TaskCompletionReview, Folder, TodoItem } from "@/lib/types"
 import { isAvailableNow } from "@/lib/available-tasks"
 import { computePriorityScore } from "@/lib/priority"
-import { effectiveStatus, isAvailable, isClearedFromWork, isMissed, isOpen, isPartial } from "@/lib/completion-status"
-import { countsInDone } from "@/lib/item-utils"
+import { effectiveStatus, getTaskCompletionDate, isAvailable, isClearedFromWork, isMissed, isOpen, isPartial } from "@/lib/completion-status"
+import { tasksCompletedInPeriod, tasksUndoneForPeriod } from "@/lib/period-ledger"
+import {
+  isPastFunnelPeriod,
+  nextOpenPeriodValue,
+  priorityDateOf,
+} from "@/lib/scheduling"
+
+export { getTaskCompletionDate }
 import { formatLocalMonthKey } from "@/lib/date-utils"
 
 export type TodoPeriod = "day" | "week" | "month"
@@ -111,6 +120,17 @@ export function filterTodosAvailableNow(todos: TodoItem[], tasks: Task[], enable
     if (!task) return true
     return isAvailableNow(task, tasks)
   })
+}
+
+/**
+ * The row's active lamp. Active ↔ partial, and both stay on the Open list.
+ * Anything else (deferred, cancelled, …) returns to active.
+ *
+ * The old cycle was active → partial → deferred → cancelled. The second click
+ * landed on deferred, and the default Open lens then hid the row.
+ */
+export function toggleTodoActiveLamp(status: CompletionStatus): CompletionStatus {
+  return status === "active" ? "partial" : "active"
 }
 
 /** In progress = Partial (started, not finished). Soft WIP count. */
@@ -198,7 +218,7 @@ export function getScheduleLabel(todo: TodoItem): string {
 }
 
 function isTaskScheduled(task: Task, now: Date): boolean {
-  const monthKey = now.toISOString().slice(0, 7)
+  const monthKey = getMonthKey(now)
   const weekKey = getWeekString(now)
   return (
     taskScheduledOnDay(task, now) ||
@@ -206,6 +226,17 @@ function isTaskScheduled(task: Task, now: Date): boolean {
     taskScheduledInMonth(task, monthKey) ||
     !!task.scheduledYear
   )
+}
+
+/**
+ * Date overdue counts measure from. The earlier of the priority date (live
+ * scheduled day, or an earlier Undone period) and the deadline.
+ */
+function overdueAnchor(task: Pick<Task, "schedulePlacements" | "scheduledDate" | "deadline">): Date | null {
+  const priority = priorityDateOf(task)
+  const deadline = task.deadline ? parseLocalDate(task.deadline) : null
+  if (priority && deadline) return priority.getTime() <= deadline.getTime() ? priority : deadline
+  return priority ?? deadline
 }
 
 /** Build the TodoItem mirror list from tasks (overdue counts, tier, Q/I). */
@@ -222,10 +253,11 @@ export function buildTodoItems(tasks: Task[], showAllTasks: boolean, now: Date =
       let daysOverdue = 0
       let weeksOverdue = 0
       let monthsOverdue = 0
-      if (scheduledDate && !isClearedFromWork(task)) {
-        daysOverdue = Math.max(0, differenceInDays(now, scheduledDate))
-        weeksOverdue = Math.max(0, differenceInWeeks(now, scheduledDate))
-        monthsOverdue = Math.max(0, differenceInMonths(now, scheduledDate))
+      const anchor = overdueAnchor(task)
+      if (anchor && !isClearedFromWork(task)) {
+        daysOverdue = Math.max(0, differenceInDays(now, anchor))
+        weeksOverdue = Math.max(0, differenceInWeeks(now, anchor))
+        monthsOverdue = Math.max(0, differenceInMonths(now, anchor))
       }
 
       return {
@@ -276,7 +308,7 @@ export function filterAndSortTodos(
         case "week":
           return taskScheduledInWeek(item, getWeekString(now))
         case "month":
-          return taskScheduledInMonth(item, now.toISOString().slice(0, 7))
+          return taskScheduledInMonth(item, getMonthKey(now))
         default:
           return true
       }
@@ -346,6 +378,23 @@ export function sortTodosByPriority(
     })
     .sort((a, b) => (a.score - b.score) * dir || a.index - b.index)
     .map((x) => x.todo)
+}
+
+/**
+ * Keep prioritized rows at the front of Assigned while preserving the caller's
+ * sort order inside each partition (prioritized block, then the rest).
+ */
+export function pinPrioritizedFirst<T>(
+  items: readonly T[],
+  isPrioritized: (item: T) => boolean,
+): T[] {
+  const prioritized: T[] = []
+  const rest: T[] = []
+  for (const item of items) {
+    if (isPrioritized(item)) prioritized.push(item)
+    else rest.push(item)
+  }
+  return prioritized.length === 0 ? [...items] : [...prioritized, ...rest]
 }
 
 export function sortTodos(
@@ -451,32 +500,6 @@ export function createScheduledTodoTask(opts: {
   return task
 }
 
-/** Best-effort completion timestamp for a done task. */
-export function getTaskCompletionDate(task: Task): Date | null {
-  // Canonical: stamped by the task store on every completion path.
-  if (task.completedDate) {
-    const d = task.completedDate instanceof Date ? task.completedDate : new Date(task.completedDate)
-    if (!isNaN(d.getTime())) return d
-  }
-  const review = task.completionReview?.completedAt
-  if (review) {
-    const d = review instanceof Date ? review : new Date(review)
-    if (!isNaN(d.getTime())) return d
-  }
-  const chunks = task.completedChunks
-  if (chunks && chunks.length > 0) {
-    const last = chunks[chunks.length - 1].date
-    const d = last instanceof Date ? last : new Date(last)
-    if (!isNaN(d.getTime())) return d
-  }
-  if (task.completed) {
-    const sched = task.scheduledDate ? parseLocalDate(task.scheduledDate) : null
-    if (sched) return sched
-    return task.createdAt instanceof Date ? task.createdAt : new Date(task.createdAt)
-  }
-  return null
-}
-
 export function taskCompletedOnDay(task: Task, day: Date): boolean {
   if (!task.completed) return false
   const d = getTaskCompletionDate(task)
@@ -523,16 +546,15 @@ export function taskMissedInMonth(task: Task, monthValue: string): boolean {
   return !!d && getMonthKey(d) === monthValue
 }
 
-/** Minimal post-mortem stub so completion timestamps persist on quick-complete paths. */
+/**
+ * Minimal post-mortem stub so completion timestamps persist on quick-complete paths.
+ * The length is unknown — no minutes, and no invented 1–10 scores.
+ */
 export function defaultCompletionReview(taskId: string, completedAt: Date): TaskCompletionReview {
   return {
     taskId,
     completedAt,
-    actualDuration: 0,
-    satisfaction: 5,
-    resistance: 5,
-    focus: 5,
-    distraction: 5,
+    durationCertainty: "unknown",
   }
 }
 
@@ -546,10 +568,11 @@ function taskToTodoItem(task: Task, now: Date): TodoItem {
   let daysOverdue = 0
   let weeksOverdue = 0
   let monthsOverdue = 0
-  if (scheduledDate && !task.completed) {
-    daysOverdue = Math.max(0, differenceInDays(now, scheduledDate))
-    weeksOverdue = Math.max(0, differenceInWeeks(now, scheduledDate))
-    monthsOverdue = Math.max(0, differenceInMonths(now, scheduledDate))
+  const anchor = overdueAnchor(task)
+  if (anchor && !task.completed) {
+    daysOverdue = Math.max(0, differenceInDays(now, anchor))
+    weeksOverdue = Math.max(0, differenceInWeeks(now, anchor))
+    monthsOverdue = Math.max(0, differenceInMonths(now, anchor))
   }
 
   return {
@@ -582,20 +605,7 @@ export function buildDoneTodoItems(
   refDate: Date = new Date(),
   folders: Folder[] = [],
 ): TodoItem[] {
-  const filtered = tasks.filter((task) => {
-    if (!task.completed) return false
-    if (!countsInDone(task, folders)) return false
-    switch (period) {
-      case "day":
-        return taskCompletedOnDay(task, refDate)
-      case "week":
-        return taskCompletedInWeek(task, getWeekString(refDate))
-      case "month":
-        return taskCompletedInMonth(task, getMonthKey(refDate))
-      default:
-        return false
-    }
-  })
+  const filtered = tasksCompletedInPeriod(tasks, period, todoPeriodValue(period, refDate), folders)
 
   return filtered
     .map((task) => taskToTodoItem(task, refDate))
@@ -637,6 +647,78 @@ export function buildMissedTodoItems(
       const db = tb ? getTaskMissedDate(tb)?.getTime() ?? 0 : 0
       return db - da
     })
+}
+
+/** Day key, week range, or month key for the focused To Do period. */
+export function todoPeriodValue(period: TodoPeriod, refDate: Date): string {
+  switch (period) {
+    case "day":
+      return formatLocalDateKey(refDate)
+    case "week":
+      return getWeekString(refDate)
+    case "month":
+      return getMonthKey(refDate)
+  }
+}
+
+/** True when the focused day / week / month has already ended. Today is not past. */
+export function isPastTodoPeriod(period: TodoPeriod, refDate: Date, now: Date = new Date()): boolean {
+  return isPastFunnelPeriod(period, todoPeriodValue(period, refDate), now)
+}
+
+/**
+ * Open tasks that were scheduled for a past period and were not finished.
+ * Current and future periods return nothing — that work is the open list.
+ * A triaged placement (assimilated, pushed, discarded) stays in history and
+ * leaves this list.
+ */
+export function buildUndoneTodoItems(
+  tasks: Task[],
+  period: TodoPeriod,
+  refDate: Date,
+  now: Date = new Date(),
+): TodoItem[] {
+  if (!isPastTodoPeriod(period, refDate, now)) return []
+  return tasksUndoneForPeriod(tasks, period, todoPeriodValue(period, refDate), now)
+    .map((task) => taskToTodoItem(task, now))
+    .sort((a, b) => TIER_ORDER[a.tier] - TIER_ORDER[b.tier] || a.description.localeCompare(b.description))
+}
+
+/** Where an undone task lives now, after roll-up or a later schedule. */
+export function undoneLivesOnLabel(task: Pick<Task, "scheduledDate" | "scheduledWeek" | "scheduledMonth" | "scheduledYear">, now: Date = new Date()): string {
+  if (task.scheduledDate) {
+    const date = parseLocalDate(task.scheduledDate)
+    if (date && sameCalendarDay(date, now)) return "Now on today"
+    if (date) return `Now on ${format(date, "MMM d")}`
+  }
+  if (task.scheduledWeek) {
+    if (sameWeekKey(task.scheduledWeek, getWeekString(now))) return "Now on this week"
+    const range = parseWeekString(task.scheduledWeek)
+    return range ? `Now on week of ${format(range.start, "MMM d")}` : "Now on a week"
+  }
+  if (task.scheduledMonth) {
+    if (task.scheduledMonth === getMonthKey(now)) return "Now on this month"
+    const parsed = parseLocalDate(`${task.scheduledMonth}-01`)
+    return parsed ? `Now on ${format(parsed, "MMMM yyyy")}` : "Now on a month"
+  }
+  if (task.scheduledYear) {
+    return task.scheduledYear === String(now.getFullYear()) ? "Now on this year" : `Now on ${task.scheduledYear}`
+  }
+  return "Unscheduled"
+}
+
+/** Button title for pushing an undone row onto the next period that is still open. */
+export function undonePushTitle(period: TodoPeriod, refDate: Date, now: Date = new Date()): string {
+  const dest = nextOpenPeriodValue(period, refDate, now)
+  if (period === "day") {
+    if (dest === formatLocalDateKey(now)) return "Push to today"
+    const date = parseLocalDate(dest)
+    return date ? `Push to ${format(date, "MMM d")}` : "Push to the next day"
+  }
+  if (period === "week") {
+    return sameWeekKey(dest, getWeekString(now)) ? "Push to this week" : "Push to the next open week"
+  }
+  return dest === getMonthKey(now) ? "Push to this month" : "Push to the next open month"
 }
 
 export function isCurrentPeriod(period: TodoPeriod, refDate: Date, now: Date = new Date()): boolean {
@@ -681,6 +763,10 @@ export function getTodoDoneTitle(period: TodoPeriod, refDate: Date, now: Date = 
     default:
       return "Done"
   }
+}
+
+export function getTodoUndoneTitle(): string {
+  return "Undone"
 }
 
 export function getTodoMissedTitle(period: TodoPeriod, refDate: Date, now: Date = new Date()): string {

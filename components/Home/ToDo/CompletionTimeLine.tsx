@@ -125,6 +125,14 @@ export function CompletionTimeLine({
           </span>
         </>
       )}
+      {task.timeRough && !assumed && (
+        <>
+          <span aria-hidden>·</span>
+          <span className="todo-est" title="Duration or start time is a rough estimate">
+            Est.
+          </span>
+        </>
+      )}
       {assumed && (
         <>
           <span aria-hidden>·</span>

@@ -31,7 +31,15 @@ export function MissedTodoSection({
   const byId = new Map(tasks.map((t) => [t.id, t]))
 
   return (
-    <Collapsible open={open} onOpenChange={onOpenChange} className="todo-section">
+    <Collapsible
+      open={open}
+      onOpenChange={onOpenChange}
+      className="todo-section is-missed"
+      data-ui-name="Missed"
+      data-ui-help="Marked too late for this period."
+      data-ui-docs="components/Home/ToDo/README.md"
+      data-ui-docs-anchor="completion-status-feature-9"
+    >
       <div className="todo-section-head">
         <CollapsibleTrigger asChild>
           <button type="button" className="todo-legend">

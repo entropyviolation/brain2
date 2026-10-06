@@ -43,7 +43,15 @@ export function DoneTodoSection({
   }).length
 
   return (
-    <Collapsible open={open} onOpenChange={onOpenChange} className="todo-section">
+    <Collapsible
+      open={open}
+      onOpenChange={onOpenChange}
+      className="todo-section is-done"
+      data-ui-name="Done"
+      data-ui-help="Finished work for this period, including assumed times."
+      data-ui-docs="components/Home/ToDo/README.md"
+      data-ui-docs-anchor="done-rows-carry-a-real-time-and-say-when-it-was-assumed"
+    >
       <div className="todo-section-head">
         <CollapsibleTrigger asChild>
           <button type="button" className="todo-legend">

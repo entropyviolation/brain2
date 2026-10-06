@@ -46,7 +46,14 @@ export function TodoFilters({
   onWipLimitChange: (value: number) => void
 }) {
   return (
-    <div className="todo-filters" aria-label="Filters and sort">
+    <div
+      className="todo-filters"
+      aria-label="Filters and sort"
+      data-ui-name="Show / Sort / Pace"
+      data-ui-help="Available now, status, sort, the priority formula, and the in-progress cap."
+      data-ui-docs="components/Home/ToDo/README.md"
+      data-ui-docs-anchor="options"
+    >
       <fieldset className="todo-bay">
         <legend>Show</legend>
         <label className="todo-key-check">

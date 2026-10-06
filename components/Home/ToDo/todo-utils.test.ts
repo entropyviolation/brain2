@@ -5,9 +5,13 @@ import {
   buildTodoItems,
   buildDoneTodoItems,
   buildMissedTodoItems,
+  buildUndoneTodoItems,
+  undoneLivesOnLabel,
+  undonePushTitle,
   filterAndSortTodos,
   sortTodosByPriority,
   sortTodos,
+  pinPrioritizedFirst,
   getTodoAddedAt,
   getTodoSortOptionLabel,
   getTaskCompletionDate,
@@ -21,6 +25,7 @@ import {
   filterTodosAvailableNow,
   countInProgress,
   formatWipWarning,
+  toggleTodoActiveLamp,
 } from "./todo-utils"
 import { getWeekString } from "@/lib/date-utils"
 import { DEFAULT_PRIORITY_WEIGHTS } from "@/lib/priority"
@@ -245,6 +250,28 @@ describe("sortTodos", () => {
   })
 })
 
+describe("pinPrioritizedFirst", () => {
+  it("keeps prioritized items ahead while preserving each partition's order", () => {
+    const items = [
+      { id: "a", pri: false },
+      { id: "b", pri: true },
+      { id: "c", pri: false },
+      { id: "d", pri: true },
+    ]
+    expect(pinPrioritizedFirst(items, (item) => item.pri).map((item) => item.id)).toEqual([
+      "b",
+      "d",
+      "a",
+      "c",
+    ])
+  })
+
+  it("returns a copy unchanged when nothing is prioritized", () => {
+    const items = [{ id: "a", pri: false }, { id: "b", pri: false }]
+    expect(pinPrioritizedFirst(items, (item) => item.pri).map((item) => item.id)).toEqual(["a", "b"])
+  })
+})
+
 describe("getTodoAddedAt", () => {
   it("uses scheduledDate for the day list", () => {
     const [item] = buildTodoItems(
@@ -356,6 +383,78 @@ describe("buildMissedTodoItems", () => {
   })
 })
 
+describe("buildUndoneTodoItems", () => {
+  const yesterday = new Date(2026, 5, 19, 12, 0, 0)
+
+  it("lists open tasks that were scheduled on a past day", () => {
+    const items = buildUndoneTodoItems(
+      [
+        task({
+          id: "slid",
+          description: "Write",
+          scheduledWeek: getWeekString(yesterday),
+          schedulePlacements: [{ period: "day", value: "2026-06-19" }],
+        }),
+        task({
+          id: "done",
+          completed: true,
+          completedDate: yesterday,
+          schedulePlacements: [{ period: "day", value: "2026-06-19" }],
+        }),
+        task({
+          id: "later",
+          completed: true,
+          completedDate: now,
+          description: "Finished the next day",
+          schedulePlacements: [{ period: "day", value: "2026-06-19" }],
+        }),
+        task({ id: "today", scheduledDate: now }),
+        task({
+          id: "kept",
+          schedulePlacements: [{ period: "day", value: "2026-06-19", resolved: "assimilated" }],
+          scheduledWeek: getWeekString(yesterday),
+        }),
+        task({
+          id: "dropped",
+          schedulePlacements: [{ period: "day", value: "2026-06-19", resolved: "discarded" }],
+        }),
+      ],
+      "day",
+      yesterday,
+      now,
+    )
+    expect(items.map((item) => item.id).sort()).toEqual(["kept", "later", "slid"])
+    expect(undoneLivesOnLabel(task({ scheduledWeek: getWeekString(now) }), now)).toBe("Now on this week")
+    expect(undonePushTitle("day", yesterday, now)).toBe("Push to today")
+  })
+
+  it("counts waiting from the earliest undone day after the live date moves forward", () => {
+    const tomorrow = new Date(2026, 5, 21, 12, 0, 0)
+    const [item] = buildTodoItems(
+      [
+        task({
+          id: "a",
+          scheduledDate: tomorrow,
+          schedulePlacements: [{ period: "day", value: "2026-06-18" }],
+        }),
+      ],
+      true,
+      now,
+    )
+    expect(item.daysOverdue).toBe(2)
+  })
+
+  it("is empty for the current day", () => {
+    const items = buildUndoneTodoItems(
+      [task({ id: "today", scheduledDate: now, schedulePlacements: [{ period: "day", value: "2026-06-20" }] })],
+      "day",
+      now,
+      now,
+    )
+    expect(items).toEqual([])
+  })
+})
+
 describe("period titles", () => {
   it("uses current-period labels for today", () => {
     expect(getTodoOpenTitle("day", now, now)).toBe("Today's Tasks")
@@ -399,6 +498,14 @@ describe("createScheduledTodoTask", () => {
     expect(monthTask.scheduledMonth).toBe(getMonthKey(now))
     expect(monthTask.scheduledDate).toBeUndefined()
   })
+
+  it("keeps a last-evening month task on the local month", () => {
+    const late = new Date(2026, 8, 30, 23, 30, 0)
+    const monthTask = createScheduledTodoTask({ description: "sept", period: "month", date: late })
+    const items = buildTodoItems([monthTask], false, late)
+    expect(monthTask.scheduledMonth).toBe(getMonthKey(late))
+    expect(filterAndSortTodos(items, "month", false, late).map((item) => item.description)).toEqual(["sept"])
+  })
 })
 
 describe("filterTodosAvailableNow", () => {
@@ -426,6 +533,14 @@ describe("filterTodosAvailableNow", () => {
 })
 
 describe("WIP helpers", () => {
+  it("toggles the active lamp between active and partial", () => {
+    expect(toggleTodoActiveLamp("active")).toBe("partial")
+    expect(toggleTodoActiveLamp("partial")).toBe("active")
+    expect(toggleTodoActiveLamp(toggleTodoActiveLamp("active"))).toBe("active")
+    expect(toggleTodoActiveLamp("deferred")).toBe("active")
+    expect(toggleTodoActiveLamp("cancelled")).toBe("active")
+  })
+
   it("counts partial incomplete tasks and warns only over the cap", () => {
     const tasks = [
       task({ id: "a", status: "partial" }),

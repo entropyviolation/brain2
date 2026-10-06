@@ -12,17 +12,28 @@ export function TodoPeriodNav({
   period,
   focusedDate,
   onFocusedDateChange,
+  listName,
+  onOpenList,
 }: {
   period: TodoPeriod
   focusedDate: Date
   onFocusedDateChange: (date: Date) => void
+  /** Period To do list in Lists, such as `To do 8/31-9/6`. */
+  listName?: string
+  onOpenList?: () => void
 }) {
   const atCurrent = isCurrentPeriod(period, focusedDate)
   const prevLabel = period === "day" ? "Previous day" : period === "week" ? "Previous week" : "Previous month"
   const nextLabel = period === "day" ? "Next day" : period === "week" ? "Next week" : "Next month"
 
   return (
-    <div className="todo-period">
+    <div
+      className="todo-period"
+      data-ui-name="Period nameplate"
+      data-ui-help="Moves the focused day, week, or month. Open list opens that To do list in Lists."
+      data-ui-docs="components/Home/ToDo/README.md"
+      data-ui-docs-anchor="instrument-layout"
+    >
       <button
         type="button"
         className="todo-btn todo-btn-icon"
@@ -50,6 +61,17 @@ export function TodoPeriodNav({
       >
         Today
       </button>
+      {listName && onOpenList && (
+        <button
+          type="button"
+          className="todo-btn"
+          title={`Open ${listName} in Lists`}
+          aria-label={`Open ${listName} in Lists`}
+          onClick={onOpenList}
+        >
+          Open list
+        </button>
+      )}
     </div>
   )
 }

@@ -1,8 +1,9 @@
 /**
  * components/Home/ToDo/todo-prefs.ts — To Do view prefs
  *
- * Available-now filter (default off) and the soft WIP cap (default 3). Same
- * localStorage snapshot pattern as Tracking view prefs. Not a second store.
+ * Available-now filter (default off), the soft WIP cap (default 3), and which
+ * open-lid sections are collapsed (flags / time / steps, default all open).
+ * Same localStorage snapshot pattern as Tracking view prefs. Not a second store.
  */
 "use client"
 
@@ -16,14 +17,35 @@ export const DEFAULT_WIP_LIMIT = 3
 export const MIN_WIP_LIMIT = 1
 export const MAX_WIP_LIMIT = 99
 
+export const LID_SECTIONS = ["flags", "time", "steps"] as const
+export type TodoLidSection = (typeof LID_SECTIONS)[number]
+
 export type TodoPrefs = {
   availableNow: boolean
   wipLimit: number
+  /** True when that open-lid section is folded. Missing keys stay open. */
+  lidCollapsed: Record<TodoLidSection, boolean>
+}
+
+export const DEFAULT_LID_COLLAPSED: Record<TodoLidSection, boolean> = {
+  flags: false,
+  time: false,
+  steps: false,
 }
 
 export const DEFAULT_TODO_PREFS: TodoPrefs = {
   availableNow: false,
   wipLimit: DEFAULT_WIP_LIMIT,
+  lidCollapsed: { ...DEFAULT_LID_COLLAPSED },
+}
+
+export function normalizeLidCollapsed(value: unknown): Record<TodoLidSection, boolean> {
+  const raw = value && typeof value === "object" ? (value as Partial<Record<TodoLidSection, boolean>>) : {}
+  return {
+    flags: raw.flags === true,
+    time: raw.time === true,
+    steps: raw.steps === true,
+  }
 }
 
 const listeners = new Set<() => void>()
@@ -44,6 +66,7 @@ function load(): TodoPrefs {
     return {
       availableNow: parsed.availableNow === true,
       wipLimit: clampWipLimit(parsed.wipLimit),
+      lidCollapsed: normalizeLidCollapsed(parsed.lidCollapsed),
     }
   } catch {
     return { ...DEFAULT_TODO_PREFS }
@@ -58,16 +81,27 @@ export function getTodoPrefs(): TodoPrefs {
   if (typeof window !== "undefined" && !readAliasedLocal(TODO_PREFS_KEY)) {
     const same =
       snapshot.availableNow === DEFAULT_TODO_PREFS.availableNow &&
-      snapshot.wipLimit === DEFAULT_TODO_PREFS.wipLimit
+      snapshot.wipLimit === DEFAULT_TODO_PREFS.wipLimit &&
+      snapshot.lidCollapsed.flags === false &&
+      snapshot.lidCollapsed.time === false &&
+      snapshot.lidCollapsed.steps === false
     if (!same) snapshot = { ...DEFAULT_TODO_PREFS }
   }
   return snapshot
 }
 
-export function setTodoPrefs(patch: Partial<TodoPrefs>): void {
+export function setTodoPrefs(
+  patch: Partial<Omit<TodoPrefs, "lidCollapsed">> & {
+    lidCollapsed?: Partial<TodoPrefs["lidCollapsed"]>
+  },
+): void {
   snapshot = {
     availableNow: patch.availableNow ?? snapshot.availableNow,
     wipLimit: patch.wipLimit !== undefined ? clampWipLimit(patch.wipLimit) : snapshot.wipLimit,
+    lidCollapsed: normalizeLidCollapsed({
+      ...snapshot.lidCollapsed,
+      ...(patch.lidCollapsed ?? {}),
+    }),
   }
   try {
     writeAliasedLocal(TODO_PREFS_KEY, JSON.stringify(snapshot))

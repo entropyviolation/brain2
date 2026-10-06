@@ -22,11 +22,19 @@ export function AddDoneDialog({ onAdd, label = "Log done" }: { onAdd: (descripti
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <button type="button" className="todo-btn">
+        <button type="button" className="todo-btn todo-log-done">
           {label}
         </button>
       </DialogTrigger>
-      <DialogContent className="todo95-dialog" hideClose aria-describedby={undefined}>
+      <DialogContent
+        className="todo95-dialog"
+        hideClose
+        aria-describedby={undefined}
+        data-ui-name="Log done"
+        data-ui-help="Record finished work that was not on the list."
+        data-ui-docs="components/Home/ToDo/README.md"
+        data-ui-docs-anchor="done-rows-carry-a-real-time-and-say-when-it-was-assumed"
+      >
         <div className="todo-dialog-caption">
           <DialogTitle>Log completed work</DialogTitle>
         </div>
