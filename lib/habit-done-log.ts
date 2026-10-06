@@ -18,14 +18,19 @@
  * The estimate is also **refreshed** while the goal stays met: logging a 4th page
  * on a 3-page habit lifts the recorded duration, unless the user already
  * confirmed that value, in which case their number stands.
+ *
+ * Optional Done-task wording (`doneTaskPhrase`, `doneTaskUseText`) is applied
+ * when the row is created, and again only when the row still shows the line this
+ * helper would have written for the previous log. Older rows that still use the
+ * habit name are left alone.
  */
-import type { FieldEstimate, Task, TaskCompletion, WeeklyData, WeeklyTask } from "@/lib/types"
+import { TaskType, type FieldEstimate, type Task, type TaskCompletion, type WeeklyData, type WeeklyTask } from "@/lib/types"
 import { LOGGED_ACTION_TYPE_ID } from "@/lib/item-types"
 import { taskRepository } from "@/lib/data/task-repository"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { isHabitGoalMet } from "@/lib/habit-utils"
 import { activeTrackingLink } from "@/lib/habit-tracking"
-import { habitDurationEstimate, type HabitDuration } from "@/lib/habit-time-estimate"
+import { habitDurationEstimate, habitLoggedAmount, type HabitDuration } from "@/lib/habit-time-estimate"
 import { completionWindow, type CompletionWindow } from "@/lib/completion-window"
 import { trackedMinuteSetForTags } from "@/lib/tracked-time"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
@@ -35,6 +40,51 @@ import { canRegenerate, makeEstimate, mergeEstimates } from "@/lib/estimated-val
 
 export function habitDoneLogId(habitId: string, date: Date): string {
   return `habit-done-${habitId}-${formatLocalDateKey(date)}`
+}
+
+const VALUE_TOKEN = "{value}"
+
+function loggedPhraseNumber(habit: WeeklyTask, completion: TaskCompletion | undefined): string {
+  if (completion && typeof completion.value === "number" && Number.isFinite(completion.value)) {
+    return String(completion.value)
+  }
+  return String(habitLoggedAmount(habit, completion))
+}
+
+/**
+ * The Done-list line for a habit that is being logged now.
+ * No custom wording → the habit name, exactly as before.
+ * `{value}` is the number logged (7 pages stays 7 even when the goal is 3).
+ * A phrase with no token is used as written. A text habit can use the cell text.
+ */
+export function habitDoneLogLine(habit: WeeklyTask, completion: TaskCompletion | undefined): string {
+  if (habit.type === TaskType.TEXT && habit.doneTaskUseText) {
+    const text = completion?.text?.trim()
+    if (text) return text
+  }
+  const phrase = habit.doneTaskPhrase?.trim() ?? ""
+  if (!phrase) return habit.name
+  if (!phrase.includes(VALUE_TOKEN)) return phrase
+  return phrase.split(VALUE_TOKEN).join(loggedPhraseNumber(habit, completion))
+}
+
+/**
+ * Move the Done line only when it still matches the wording the previous log
+ * would have produced. A row written before any phrase, or a title someone
+ * edited by hand, stays put.
+ */
+function wordingPatch(
+  existing: Task,
+  habit: WeeklyTask,
+  previous: TaskCompletion | undefined,
+  completion: TaskCompletion,
+): Partial<Task> | null {
+  const line = habitDoneLogLine(habit, completion)
+  const previousLine = habitDoneLogLine(habit, previous)
+  if (existing.description !== previousLine || line === existing.description) return null
+  const patch: Partial<Task> = { description: line }
+  if (existing.title === previousLine || existing.title === existing.description) patch.title = line
+  return patch
 }
 
 /** Minutes painted on this habit's linked tags for `date`, if it has a live link. */
@@ -53,10 +103,10 @@ interface DerivedCompletion {
 }
 
 /**
- * Duration + clock window + provenance for a habit day. Exported for the habit
- * form preview and for tests; the store path goes through `syncHabitDoneLog`.
+ * Duration + clock window + provenance for a habit day. The store path goes
+ * through `syncHabitDoneLog`.
  */
-export function deriveHabitCompletion(
+function deriveHabitCompletion(
   habit: WeeklyTask,
   date: Date,
   completion: TaskCompletion,
@@ -144,7 +194,8 @@ export function syncHabitDoneLog(
   if (nowMet && wasMet) {
     if (!existing) return
     const patch = refreshPatch(existing, deriveHabitCompletion(habit, date, completion, now), now)
-    if (patch) taskRepository.update({ ...existing, ...patch })
+    const words = wordingPatch(existing, habit, previous, completion)
+    if (patch || words) taskRepository.update({ ...existing, ...patch, ...words })
     return
   }
 
@@ -154,10 +205,11 @@ export function syncHabitDoneLog(
     if (existing) return
     const derived = deriveHabitCompletion(habit, date, completion, now)
     const { completedAt, startedAt } = derived.window
+    const line = habitDoneLogLine(habit, completion)
     taskRepository.add({
       id,
-      description: habit.name,
-      title: habit.name,
+      description: line,
+      title: line,
       type: LOGGED_ACTION_TYPE_ID,
       loggedAction: true,
       stage: "completed",

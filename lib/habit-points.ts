@@ -7,9 +7,13 @@
  * Perfect output is 75%+ (after its curve), 300 if both are; plus the user
  * accomplishment bonus when that day's raw column score meets
  * `accomplishmentThreshold` (`lib/habit-accomplishment.ts`, default 80% → 50).
- * A further editable bonus pays once per grade (Week grade and Perfect output)
- * that is higher than yesterday, and once per weekly-habit grade that is
- * higher than last week (`dayGradeLiftBonus` / `weeklyGradeLiftBonus`).
+ * A further editable bonus pays once when raw daily-habit completion beats
+ * yesterday (`dayGradeLiftBonus`), and once per rail grade (Week grade and
+ * Perfect output) that beats the prior full calendar week
+ * (`weeklyGradeLiftBonus`). Two more pay once each when that day's raw
+ * completion is above the prior 7-day average (`weeklyAverageBeatBonus`)
+ * and above the prior 30-day average (`monthlyAverageBeatBonus`). Defaults
+ * are 5. Both can apply on the same day. 0 turns a rule off.
  *
  * Spec: §9, §14.
  */
@@ -29,10 +33,14 @@ export const GRADE_BONUS_BOTH = 300
 export const GRADE_BONUS_THRESHOLD = 75
 export const RAW_DAY_BONUS = DEFAULT_ACCOMPLISHMENT_BONUS
 export const RAW_DAY_BONUS_THRESHOLD = DEFAULT_ACCOMPLISHMENT_THRESHOLD
-/** Points per daily grade (Week grade, Perfect output) that beats yesterday. */
+/** Points when raw daily-habit completion beats yesterday. */
 export const DEFAULT_DAY_GRADE_LIFT_BONUS = 25
-/** Points per weekly-habit grade that beats last week. */
+/** Points per rail grade (Week grade, Perfect output) that beats last week. */
 export const DEFAULT_WEEKLY_GRADE_LIFT_BONUS = 25
+/** Points when raw daily completion is above the prior 7-day average. */
+export const DEFAULT_WEEKLY_AVERAGE_BEAT_BONUS = 5
+/** Points when raw daily completion is above the prior 30-day average. */
+export const DEFAULT_MONTHLY_AVERAGE_BEAT_BONUS = 5
 
 export function habitDayPointTaskId(taskId: string, dateKey: string): string {
   return `habit-day:${taskId}:${dateKey}`
@@ -52,6 +60,14 @@ export function dayGradeLiftTaskId(dateKey: string): string {
 
 export function weeklyGradeLiftTaskId(weekKey: string): string {
   return `habit-weekly-grade-lift:${weekKey}`
+}
+
+export function weeklyAverageBeatTaskId(dateKey: string): string {
+  return `habit-weekly-avg-beat:${dateKey}`
+}
+
+export function monthlyAverageBeatTaskId(dateKey: string): string {
+  return `habit-monthly-avg-beat:${dateKey}`
 }
 
 /** Ledger line for finishing a habit or task. */
@@ -138,30 +154,104 @@ export interface GradePair {
   output: number
 }
 
+/** Signed percentage-point delta (whole percents, same rounding as the tubes). */
+export function gradeLiftDelta(current: number, prior: number): number {
+  const a = Math.round(Number.isFinite(current) ? current : 0)
+  const b = Math.round(Number.isFinite(prior) ? prior : 0)
+  return a - b
+}
+
+/** Compact signed readout: +10, −10, or 0. Uses a true minus for under. */
+export function formatGradeLiftDelta(delta: number | null | undefined): string {
+  if (delta === null || delta === undefined || !Number.isFinite(delta)) return "—"
+  const n = Math.round(delta)
+  if (n > 0) return `+${n}`
+  if (n < 0) return `−${Math.abs(n)}`
+  return "0"
+}
+
+export function formatGradeLiftYesterdayCaption(raw: number | null | undefined): string {
+  if (raw === null || raw === undefined || !Number.isFinite(raw)) return "No prior day yet"
+  return `Yesterday — ${Math.round(raw)}% daily completion`
+}
+
+export function formatGradeLiftLastWeekCaption(prior: GradePair | null | undefined): string {
+  if (!prior) return "No prior week yet"
+  const week = Math.round(Number.isFinite(prior.week) ? prior.week : 0)
+  const output = Math.round(Number.isFinite(prior.output) ? prior.output : 0)
+  return `Last week — week grade ${week}% · perfect output ${output}%`
+}
+
 /**
- * One editable amount, paid once for each grade that rose.
+ * @deprecated Prefer {@link formatGradeLiftYesterdayCaption} /
+ * {@link formatGradeLiftLastWeekCaption}. Kept for older call sites.
+ */
+export function formatGradeLiftPriorCaption(
+  prior: GradePair | null | undefined,
+  scope: "day" | "week",
+): string {
+  if (scope === "day") {
+    if (!prior) return formatGradeLiftYesterdayCaption(null)
+    return formatGradeLiftYesterdayCaption(prior.week)
+  }
+  return formatGradeLiftLastWeekCaption(prior)
+}
+
+/**
+ * One editable amount when today's raw daily completion is strictly above an
+ * older average. Whole percents match the Good days sheet. Equal pays nothing.
+ */
+export function rawDayBeatsAverage(
+  currentRaw: number,
+  averageRaw: number,
+  bonus: number,
+  window: "week" | "month",
+): { points: number; description: string } {
+  const each = clampAccomplishmentBonus(bonus)
+  const up = Math.round(currentRaw) > Math.round(averageRaw)
+  const description =
+    window === "week"
+      ? "Higher daily completion than the prior 7 days"
+      : "Higher daily completion than the last 30 days"
+  return { points: up ? each : 0, description }
+}
+
+/** One editable amount when today's raw daily-habit completion beats yesterday. */
+export function rawDayBeatsPrior(
+  currentRaw: number,
+  priorRaw: number,
+  bonus: number,
+): { points: number; description: string } {
+  const each = clampAccomplishmentBonus(bonus)
+  const up = Math.round(currentRaw) > Math.round(priorRaw)
+  return {
+    points: up ? each : 0,
+    description: "Higher daily completion than yesterday",
+  }
+}
+
+/**
+ * One editable amount, paid once for each rail grade that rose vs last week.
  * Whole percents match the tubes, so 74.6 and 75.4 are not a lift.
  */
 export function gradesBeatPrior(
   current: GradePair,
   prior: GradePair,
   bonusEach: number,
-  scope: "day" | "week",
+  scope: "day" | "week" = "week",
 ): { points: number; description: string } {
+  if (scope === "day") {
+    // Legacy: day lift now uses rawDayBeatsPrior. Still accept GradePair.week as the raw %.
+    return rawDayBeatsPrior(current.week, prior.week, bonusEach)
+  }
   const each = clampAccomplishmentBonus(bonusEach)
   const weekUp = Math.round(current.week) > Math.round(prior.week)
   const outputUp = Math.round(current.output) > Math.round(prior.output)
   const points = ((weekUp ? 1 : 0) + (outputUp ? 1 : 0)) * each
-  if (scope === "day") {
-    if (weekUp && outputUp) return { points, description: "Higher habit grades than yesterday" }
-    if (weekUp) return { points, description: "Higher week grade than yesterday" }
-    if (outputUp) return { points, description: "Higher output grade than yesterday" }
-    return { points: 0, description: "Higher habit grades than yesterday" }
-  }
-  if (weekUp && outputUp) return { points, description: "Higher weekly habit grades than last week" }
-  if (weekUp) return { points, description: "Higher weekly habit grade than last week" }
-  if (outputUp) return { points, description: "Higher weekly output than last week" }
-  return { points: 0, description: "Higher weekly habit grades than last week" }
+  if (weekUp && outputUp) return { points, description: "Higher habit grades than last week" }
+  if (weekUp) return { points, description: "Higher week grade than last week" }
+  if (outputUp) return { points, description: "Higher output grade than last week" }
+  return { points: 0, description: "Higher habit grades than last week" }
 }
 
 export interface LedgerAward {
@@ -176,7 +266,12 @@ export function awardReason(entry: Pick<LedgerAward, "taskId" | "taskDescription
   const text = entry.taskDescription.trim()
   if (!text) return "Points"
   if (/bonus|completed|goal |friend:|inbox/i.test(text)) return text
-  if (entry.taskId.startsWith("habit-grade") || entry.taskId.startsWith("habit-raw") || entry.taskId.includes("lift")) {
+  if (
+    entry.taskId.startsWith("habit-grade") ||
+    entry.taskId.startsWith("habit-raw") ||
+    entry.taskId.includes("lift") ||
+    entry.taskId.includes("avg-beat")
+  ) {
     return text
   }
   return habitCompletionReason(text)

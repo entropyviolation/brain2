@@ -4,10 +4,11 @@
  * Writes only through `writeAliasedLocal` after Settings has set the selector
  * to Demo, so physical keys are `brain2-demo-*`. Never seeds Live. The persona
  * is invented (River Hale, Cedar Stacks library, Portland) — no real PII.
+ * `lib/demo-corpus/` layers a denser graph on top and fills any bare day of
+ * the current week with one or two fictional planned, tracked, or completed rows.
  */
 
 import { addDays, format, startOfWeek } from "date-fns"
-import { serializeAppendLog } from "@/lib/append-log"
 import { BOOK_ATTR, BOOK_TYPE_ID } from "@/lib/book-types"
 import { formatLocalDateKey, getWeekString } from "@/lib/date-utils"
 import { FLIGHT_ATTR, FLIGHT_TYPE_ID } from "@/lib/flight-types"
@@ -16,7 +17,6 @@ import { ITEM_TYPE_STORE_PERSIST_VERSION } from "@/lib/item-type-store"
 import { getBuiltinItemTypes } from "@/lib/item-types"
 import { NOTE_ATTR, NOTE_TYPE_ID } from "@/lib/note-types"
 import { OPERATION_ATTR, OPERATION_TYPE_ID } from "@/lib/operation-types"
-import { dayPlanKey, monthPlanKey, weekPlanKey } from "@/lib/plan-text"
 import { BELIEF_ATTR, BELIEF_TYPE_ID, SOURCE_ATTR, SOURCE_TYPE_ID, withSecondBrainTypes } from "@/lib/second-brain-types"
 import { NA_SMART_DAILY, NA_SMART_WEEKLY, NA_SCHEDULED_FOLDER } from "@/lib/scheduled-lists-sync"
 import {
@@ -27,11 +27,10 @@ import {
 } from "@/lib/storage-keys"
 import { TASK_STORE_PERSIST_VERSION } from "@/lib/task-store"
 import { DEFAULT_GRID_STEP } from "@/lib/time-entries"
-import { defaultScopes, defaultTags } from "@/lib/time-tracking-store"
-import type { Goal, List, Objective, PeriodReview, Task } from "@/lib/types"
+import { enrichDemoSeed } from "@/lib/demo-corpus/enrich"
+import { defaultScopes, defaultTags, scopesWithDetails } from "@/lib/time-tracking-store"
+import type { Folder, Goal, List, Objective, PeriodReview, Task } from "@/lib/types"
 import { TaskType } from "@/lib/types"
-
-const PERSONA = "River Hale"
 
 function wrap(version: number, state: object): string {
   return JSON.stringify({ state, version })
@@ -90,7 +89,7 @@ function buildLists(now: Date): List[] {
     { id: "list-someday", name: "Someday / maybe", color: "#94a3b8", createdAt, order: 6, scheduleable: false },
     { id: "list-errands", name: "Errands", color: "#eab308", createdAt, order: 7, scheduleable: true },
     { id: "list-people", name: "People", color: "#ec4899", createdAt, order: 8, scheduleable: false },
-    { id: "list-trips", name: "Trips", color: "#14b8a6", createdAt, order: 9, scheduleable: true, itemTypeId: FLIGHT_TYPE_ID },
+    { id: "list-trips", name: "Trips", color: "#14b8a6", createdAt, order: 9, scheduleable: false, itemTypeId: FLIGHT_TYPE_ID },
     { id: "list-house", name: "House", color: "#84cc16", createdAt, order: 10, scheduleable: true },
     { id: "list-research", name: "Research", color: "#6366f1", createdAt, order: 11, scheduleable: false },
   ]
@@ -347,10 +346,10 @@ function buildTasks(now: Date): Task[] {
 
 function habitCompletions(now: Date) {
   const habits = getDefaultHabits()
-  const weeklyData: Record<string, Record<string, { completed?: boolean; value?: number; text?: string }>> = {}
+  const weeklyData: Record<string, Record<string, { completed?: boolean; value?: number; goal?: number; text?: string }>> = {}
   for (let i = 21; i >= 0; i--) {
     const date = ymd(addDays(now, -i))
-    const day: Record<string, { completed?: boolean; value?: number; text?: string }> = {}
+    const day: Record<string, { completed?: boolean; value?: number; goal?: number; text?: string }> = {}
     for (const habit of habits) {
       if (habit.frequency === "weekly" || habit.frequency === "monthly") continue
       if (habit.type === TaskType.BOOLEAN) {
@@ -536,87 +535,126 @@ function reviews(now: Date): PeriodReview[] {
   ]
 }
 
-function planLogs(now: Date) {
-  const day = ymd(now)
-  const week = getWeekString(now)
-  const month = format(now, "yyyy-MM")
-  put(
-    dayPlanKey(day),
-    serializeAppendLog(
-      [
-        {
-          id: "al-day-1",
-          createdAt: iso(now),
-          text: `${PERSONA} — morning: catalog notes, then a short wheel session. Afternoon: insurance packet and kiln photos.`,
-        },
-      ],
-      "Draft: leave by 5:15 to catch the #15.",
-    ),
-  )
-  put(
-    weekPlanKey(week),
-    serializeAppendLog(
-      [
-        {
-          id: "al-week-1",
-          createdAt: iso(addDays(now, -1)),
-          text: "Protect Tuesday/Thursday studio mornings. Conference hop is in twelve days — pack the glaze notebook.",
-        },
-      ],
-      "",
-    ),
-  )
-  put(
-    monthPlanKey(month),
-    serializeAppendLog(
-      [
-        {
-          id: "al-month-1",
-          createdAt: iso(addDays(now, -8)),
-          text: "October: kiln back online, one firing party, Spanish streak to 20 days.",
-        },
-      ],
-      "",
-    ),
-  )
+function baseFolders(now: Date): Folder[] {
+  return [
+    {
+      id: "folder-next-actions",
+      name: "Next Actions",
+      createdAt: now,
+      listIds: [NA_SMART_DAILY, NA_SMART_WEEKLY],
+      scheduleable: true,
+      color: "#2563eb",
+    },
+    {
+      id: NA_SCHEDULED_FOLDER,
+      name: "Scheduled",
+      createdAt: now,
+      listIds: [],
+      scheduleable: true,
+      color: "#0f766e",
+    },
+    {
+      id: "folder-areas",
+      name: "Areas",
+      createdAt: now,
+      listIds: ["list-work", "list-studio", "list-house", "list-reading"],
+      color: "#64748b",
+    },
+  ]
+}
+
+function baseEvents(now: Date) {
+  return [
+    {
+      id: "demo-ev-class",
+      title: "Intro throwing class",
+      startTime: "18:30",
+      endTime: "20:30",
+      date: iso(addDays(now, 3)),
+      type: "event",
+      color: "#f97316",
+      isScheduled: true,
+      isAllDay: false,
+      location: "River's studio",
+      description: "Six beginners. Bring extra bats.",
+    },
+    {
+      id: "demo-ev-garden",
+      title: "Community garden shift",
+      startTime: "09:00",
+      endTime: "12:00",
+      date: iso(addDays(now, 5)),
+      type: "event",
+      color: "#16a34a",
+      isScheduled: true,
+      isAllDay: false,
+      location: "Hawthorne beds",
+      description: "",
+    },
+    {
+      id: "demo-ev-conference",
+      title: "Northwest library meetup",
+      startTime: "09:00",
+      endTime: "17:00",
+      date: iso(addDays(now, 12)),
+      type: "event",
+      color: "#0ea5e9",
+      isScheduled: true,
+      isAllDay: true,
+      location: "Seattle",
+      description: "Panel on rural interlibrary loan.",
+    },
+  ]
 }
 
 function seedDemoVault(): void {
   const now = new Date()
-  const lists = buildLists(now)
-  const tasks = buildTasks(now)
   const habits = habitCompletions(now)
+  const seed = enrichDemoSeed({
+    now,
+    tasks: buildTasks(now),
+    lists: buildLists(now),
+    folders: baseFolders(now),
+    entries: trackingEntries(now),
+    scopes: scopesWithDetails(defaultScopes()),
+    tags: defaultTags(),
+    actions: [
+      {
+        id: "demo-pa-1",
+        date: ymd(now),
+        startTime: "10:00",
+        endTime: "11:30",
+        source: "todo",
+        sourceId: "demo-na-catalog",
+        title: "Catalog notes",
+        notes: "",
+      },
+      {
+        id: "demo-pa-2",
+        date: ymd(now),
+        startTime: "14:30",
+        endTime: "15:00",
+        source: "habit",
+        sourceId: "task-10",
+        title: "Plan the day",
+        notes: "",
+      },
+    ],
+    events: baseEvents(now),
+    reviews: reviews(now),
+    objectives: demoObjectives(now),
+    goals: demoGoals(now),
+    weeklyData: habits.weeklyData,
+    nights: sleepNights(now),
+  })
+  const { tasks, lists, folders } = seed
 
   put(
     persistKey("task-storage"),
     wrap(TASK_STORE_PERSIST_VERSION, {
       tasks,
       lists,
-      folders: [
-        {
-          id: "folder-next-actions",
-          name: "Next Actions",
-          createdAt: iso(now),
-          listIds: [NA_SMART_DAILY, NA_SMART_WEEKLY],
-          scheduleable: true,
-          color: "#2563eb",
-        },
-        {
-          id: NA_SCHEDULED_FOLDER,
-          name: "Scheduled",
-          createdAt: iso(now),
-          listIds: [],
-          scheduleable: true,
-          color: "#0f766e",
-        },
-        {
-          id: "folder-areas",
-          name: "Areas",
-          createdAt: iso(now),
-          listIds: ["list-work", "list-studio", "list-house", "list-reading"],
-          color: "#64748b",
-        },
-      ],
+      folders,
       priorityFormula: { urgencyWeight: 1, importanceWeight: 1, effortWeight: 1, cognitiveLoadWeight: 1 },
       priorityWeights: { urgency: 1, importance: 1, cognitiveLoad: 1, entropy: 1 },
     }),
@@ -628,6 +666,7 @@ function seedDemoVault(): void {
       tasks: getDefaultHabits(),
       categories: getDefaultHabitCategories(),
       ...habits,
+      weeklyData: seed.weeklyData,
       habitViewMode: "grid",
       habitSortMode: "default",
       appearanceRev: 1,
@@ -636,85 +675,21 @@ function seedDemoVault(): void {
 
   put(
     persistKey("event-storage"),
-    wrap(1, {
-      events: [
-        {
-          id: "demo-ev-class",
-          title: "Intro throwing class",
-          startTime: "18:30",
-          endTime: "20:30",
-          date: iso(addDays(now, 3)),
-          type: "event",
-          color: "#f97316",
-          isScheduled: true,
-          isAllDay: false,
-          location: "River's studio",
-          description: "Six beginners. Bring extra bats.",
-        },
-        {
-          id: "demo-ev-garden",
-          title: "Community garden shift",
-          startTime: "09:00",
-          endTime: "12:00",
-          date: iso(addDays(now, 5)),
-          type: "event",
-          color: "#16a34a",
-          isScheduled: true,
-          isAllDay: false,
-          location: "Hawthorne beds",
-          description: "",
-        },
-        {
-          id: "demo-ev-conference",
-          title: "Northwest library meetup",
-          startTime: "09:00",
-          endTime: "17:00",
-          date: iso(addDays(now, 12)),
-          type: "event",
-          color: "#0ea5e9",
-          isScheduled: true,
-          isAllDay: true,
-          location: "Seattle",
-          description: "Panel on rural interlibrary loan.",
-        },
-      ],
-    }),
+    wrap(1, { events: seed.events }),
   )
 
   put(
     persistKey("planned-actions"),
-    wrap(1, {
-      actions: [
-        {
-          id: "demo-pa-1",
-          date: ymd(now),
-          startTime: "10:00",
-          endTime: "11:30",
-          source: "todo",
-          sourceId: "demo-na-catalog",
-          title: "Catalog notes",
-          notes: "",
-        },
-        {
-          id: "demo-pa-2",
-          date: ymd(now),
-          startTime: "14:30",
-          endTime: "15:00",
-          source: "habit",
-          sourceId: "task-10",
-          title: "Plan the day",
-          notes: "",
-        },
-      ],
-    }),
+    wrap(1, { actions: seed.actions }),
   )
 
-  put(persistKey("goals-store"), wrap(3, { objectives: demoObjectives(now), goals: demoGoals(now) }))
+  put(persistKey("goals-store"), wrap(3, { objectives: seed.objectives, goals: seed.goals }))
   put("points-store", wrap(0, {
     pointsHistory: [
       { date: ymd(addDays(now, -1)), taskId: "task-1", points: 50, taskDescription: "Work for at least 1 hour" },
       { date: ymd(addDays(now, -1)), taskId: "demo-done-newsletter", points: 20, taskDescription: "Send the friends-of-the-library newsletter" },
       { date: ymd(now), taskId: "task-4", points: 10, taskDescription: "Drink water" },
+      ...seed.extraPoints,
     ],
   }))
   put("regret-store", wrap(0, {
@@ -726,31 +701,28 @@ function seedDemoVault(): void {
         taskDescription: "Mail the studio insurance renewal",
         reason: "no-time",
       },
+      ...seed.extraRegrets,
     ],
   }))
 
-  put(persistKey("reviews-store"), wrap(1, { reviews: reviews(now), operationReviews: [] }))
+  put(persistKey("reviews-store"), wrap(1, { reviews: seed.reviews, operationReviews: [] }))
   put(
     persistKey("timegrid-store"),
-    wrap(11, {
-      scopes: defaultScopes(),
-      tags: defaultTags(),
-      entries: trackingEntries(now),
+    wrap(13, {
+      scopes: seed.scopes,
+      tags: seed.tags,
+      entries: seed.entries,
       gridStep: DEFAULT_GRID_STEP,
       gridSpan: "week",
       infiniteScroll: false,
       hiddenPenIds: {},
-      untrackedNotes: {},
+      untrackedNotes: seed.untrackedNotes,
+      dayNotes: seed.dayNotes,
       confirmedEventIds: [],
     }),
   )
-  put(
-    persistKey("tracking-day-notes"),
-    JSON.stringify({
-      [ymd(now)]: serializeAppendLog([{ id: "dn-1", createdAt: iso(now), text: "Desk was loud until 11; deep work after lunch." }], ""),
-    }),
-  )
-  put(persistKey("sleep-store"), wrap(1, { nights: sleepNights(now), targetMinutes: 480 }))
+  put(persistKey("tracking-day-notes"), JSON.stringify(seed.dayNotes))
+  put(persistKey("sleep-store"), wrap(1, { nights: seed.nights, targetMinutes: 480 }))
   put(
     persistKey("metrics-store"),
     wrap(2, {
@@ -782,9 +754,34 @@ function seedDemoVault(): void {
           title: "Studio kiln",
           kind: "workspace",
           config: { categoryId: "list-studio" },
-          views: [{ id: "v1", kind: "checklist", title: "Rebuild steps", config: { categoryId: "list-studio" } }],
+          views: [
+            { id: "v1", kind: "checklist", title: "Rebuild steps", config: { categoryId: "list-studio" } },
+            { id: "v-kanban", kind: "kanban", title: "Kiln board", config: { categoryId: "list-studio", statusAttrId: "stage" } },
+            { id: "v-notes", kind: "notes", title: "Firing log", config: { categoryId: "list-studio", notesKey: "demo-firing-log" } },
+            {
+              id: "v-dash",
+              kind: "dashboard",
+              title: "Clay & ink",
+              config: {
+                cards: [{ id: "card-ink", label: "Open ink orders", categoryId: "list-shopping", attrId: "price", fn: "sum", unit: "$" }],
+              },
+            },
+          ],
+        },
+        {
+          id: "demo-mod-press",
+          type: "workspace",
+          title: "Fall hours poster",
+          kind: "workspace",
+          config: { categoryId: "list-letterpress", operationId: "demo-op-press" },
+          views: [
+            { id: "v-press", kind: "checklist", title: "Passes", config: { categoryId: "list-letterpress" } },
+            { id: "v-time", kind: "timeline", title: "When", config: { categoryId: "list-letterpress", dateAttrId: "scheduledDate" } },
+          ],
         },
         { id: "demo-mod-reading", type: "list-explorer", title: "Reading stack", config: { categoryId: "list-reading" } },
+        { id: "demo-mod-films", type: "list-explorer", title: "Friday pictures", config: { categoryId: "list-films" } },
+        { id: "demo-mod-stat", type: "analytics-stat", title: "Studio hours", config: { stat: "tracked" } },
       ],
     }),
   )
@@ -800,6 +797,15 @@ function seedDemoVault(): void {
           conditions: [{ field: "lists", operator: "contains", value: "list-waiting" }],
           actions: [{ kind: "setAttribute", field: "stage", value: "list" }],
         },
+        {
+          id: "demo-wf-pages",
+          name: "When pages read increase, log the sitting",
+          enabled: true,
+          scope: { listIds: ["list-reading"], itemTypeIds: ["book"] },
+          trigger: { kind: "attribute", attrId: "pagesRead", event: "change" },
+          conditions: [{ field: "pagesRead", operator: "increased" }],
+          actions: [{ kind: "logAction", titleTemplate: "Read {delta} pages of {title}", awardPoints: true }],
+        },
       ],
     }),
   )
@@ -807,7 +813,7 @@ function seedDemoVault(): void {
   put(persistKey("theme-store"), wrap(4, { pcbMode: "ice", chromeFace: 50, appearanceRev: 1 }))
   put(persistKey("pcb-mode"), "ice")
 
-  planLogs(now)
+  for (const [key, value] of Object.entries(seed.plans)) put(key, value)
 }
 
 /** Fill `brain2-demo-*` when the selector is already Demo. No-op on Live. */

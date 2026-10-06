@@ -68,7 +68,7 @@ export const CATALOG_CATEGORY_LABELS: Record<CatalogCategory, string> = {
   monitor: "Activity monitor (currently / stopped / switched)",
   plan: "Plan log",
   todo: "To-do & Next Actions",
-  review: "Reviews & morning (GM)",
+  review: "Rituals (GM / night / start / end)",
   track: "Tracking (location / activity / mood / working now)",
   note: "Notes",
   sleep: "Sleep",
@@ -344,9 +344,58 @@ export const BIM_COMMAND_CATALOG: CatalogEntry[] = [
     category: "log",
     primary: "log:",
     forms: ["log:", "log-"],
-    format: "`log: drink water` · `log-something happening`",
+    format:
+      "`log: drink water` · `log: left home at 3:30` · `log: shower 7:30 - 7:45` · `log: shower 10m` · `log: START walk` · `log: END walk 5:00`",
     explanation:
-      "Explicit discrete event on Activity. Whatever follows is the event title. Labeled from text pipeline. Bare `o` is NOT a log.",
+      "Tracking note on Activity. No time → point at send time. `at 3:30` is a point on the send date. `7:30 - 7:45` is a range. `10m` / `10 min` just finished (end = send time). START/END pair an activity. A line under the event is the note; the clock stays on the first line. A later block over that minute leaves the point. Times use the machine timezone. Labeled from text pipeline. Bare `o` is NOT a log.",
+    status: "active",
+  },
+  {
+    id: "intake",
+    category: "log",
+    primary: "intake:",
+    forms: ["intake:"],
+    format: "`intake: 1 dab dab pen` · `intake: coffee at 8:15`",
+    explanation:
+      "Food, drink, medicine, or any intake. Always a point — no duration. No time uses the send time. A following clock uses that time on the send date. A line under the event is the note. Vertical line on the Tracking grid. A later block leaves the point.",
+    status: "active",
+  },
+  {
+    id: "switch-task",
+    category: "log",
+    primary: "st:",
+    forms: ["st:", "switch task:"],
+    format: "`st: from: talking to elijah to: cleaning up the living room`",
+    explanation:
+      "Tracking flag. from: is what you stopped, to: is what you started. Unlabeled text is to. Optional time, else send time.",
+    status: "active",
+  },
+  {
+    id: "switch-objective",
+    category: "log",
+    primary: "so:",
+    forms: ["so:", "switch objective:"],
+    format: "`so: get living room into a decent state`",
+    explanation: "Same from/to rules as switch task. Unlabeled text is the objective you are on now.",
+    status: "active",
+  },
+  {
+    id: "transit",
+    category: "log",
+    primary: "transit:",
+    forms: ["transit:"],
+    format: "`transit: from: home to: the store` · `transit: the store`",
+    explanation: "Location change as a tracking note. Unlabeled text is to. Optional time, else send time.",
+    status: "active",
+  },
+  {
+    id: "dh",
+    category: "habits",
+    primary: "dh:",
+    forms: ["dh:"],
+    format: "`dh: hemisync` · `dh: read 30 pages` · `dh: chess score 355`",
+    explanation:
+      "Habit keyword. The phrase after dh: is the existing whole-message keyword. Bare keywords are not logged.",
     status: "active",
   },
   {
@@ -482,7 +531,7 @@ export const BIM_COMMAND_CATALOG: CatalogEntry[] = [
     status: "active",
   },
 
-  // ── Reviews / GM ────────────────────────────────────────────────
+  // ── Rituals / GM ────────────────────────────────────────────────
   {
     id: "gm",
     category: "review",
@@ -490,7 +539,17 @@ export const BIM_COMMAND_CATALOG: CatalogEntry[] = [
     forms: ["gm", "good morning", "goodmorning"],
     format: "`gm` · `good morning`",
     explanation:
-      "Start morning review over text: sleep (or all nighter) → 5 affirmations one-at-a-time → to-do add → 3–5 priorities → 1–3 habit priorities → go through each to-do (six slots: tier duration points importance resistance excitement) → plaintext day plan → circumstance branches → best day → 10 gratitude.",
+      "Start the day morning ritual (sun) over text. Opens with last night's wake-up reminder, what matters most, and focus goals when those were saved. Then sleep (or all nighter) → 5 affirmations one-at-a-time → to-do add (lines and/or rm 1 3) → required tasks (a line of only comma-separated numbers, like 1,8 or 1, 8, selects those indexes; any other line is a new to-do) → 3–5 priorities → 1–3 habit priorities → go through each to-do (six slots: tier duration points importance resistance excitement; the last three are 0–10 and may be decimals; a bad line stays on that same item; SKIP skips one; SKIP ALL skips the rest) → plaintext day plan → circumstance branches (must-not, events, excitement) → best day → 10 gratitude. Answers save as you go. If today already has some, gm asks 1 start over, 2 continue, 3 jump (that menu only). Shortcuts stay off until STOP. Live Location is paused until the ritual ends, then the same Telegram share resumes.",
+    status: "active",
+  },
+  {
+    id: "gn",
+    category: "review",
+    primary: "gn",
+    forms: ["gn", "good night", "goodnight", "night"],
+    format: "`gn` · `good night` · `night`",
+    explanation:
+      "Start today's night ritual (moon) over text. Unfinished (done / push / why blocked, including other plus a note) → assumed times → how the day was spent → summary → gratitude → plan reflection → went well / improve / learned → wake-up reminder → what matters most tomorrow → goals to focus → tomorrow's plan. Week and longer reviews add the period stats and the longer reflection questions before the summary. cancel quits. A walkthrough answer is not a log.",
     status: "active",
   },
   {
@@ -508,26 +567,30 @@ export const BIM_COMMAND_CATALOG: CatalogEntry[] = [
     category: "review",
     primary: "skip",
     forms: ["skip", "pass", "next", "blank", "empty", "n/a", "na", "-", ".", "—", "(empty message)"],
-    format: "`skip` or a blank message",
-    explanation: "Advance a ritual step without an answer (morning or period review).",
+    format: "`skip` or `next` · a blank message on period review",
+    explanation:
+      "Advance a ritual step without an answer (morning, night, start, or end). Morning review moves on skip or next and leaves that question empty; a blank message waits. Live Location is paused while a text ritual is open and resumes on the next edit after it ends. Period review still treats a blank message as skip.",
     status: "active",
   },
   {
     id: "reviews",
     category: "review",
-    primary: "reviews",
-    forms: ["reviews"],
-    format: "`reviews`",
-    explanation: "Reviews board: morning done/not yet + which period reviews are due.",
+    primary: "rituals",
+    forms: ["rituals", "reviews"],
+    format: "`rituals` · `reviews`",
+    explanation:
+      "Rituals board: every available/undone slot (morning, night, start, review) with status, the Telegram command to open it, and the in-app path (Header → Rituals).",
     status: "active",
   },
   {
     id: "review",
     category: "review",
     primary: "review",
-    forms: ["review"],
-    format: "`review` · `review today` · `review day|week|month|quarter|year`",
-    explanation: "Start the first due period review, or a named period. Walk unfinished tasks, summary, gratitude, plan reflection, etc.",
+    forms: ["review", "ritual"],
+    format:
+      "`review` · `ritual` · `review today` · `review day|week|month|quarter|year` · `ritual start week|month|quarter|year` · `ritual end week|…` · `ritual morning` · `ritual night`",
+    explanation:
+      "Open a ritual. Bare review/ritual starts the first available/undone slot. review <period> / ritual end <period> = end/review for the just-ended period. ritual start <period> = plan the current period, including required: 1, 8 and priority: 2 on assigned tasks. review today / ritual night = today's night (moon). ritual morning = same as gm.",
     status: "active",
   },
   {
@@ -536,7 +599,18 @@ export const BIM_COMMAND_CATALOG: CatalogEntry[] = [
     primary: "cancel",
     forms: ["cancel", "quit", "nevermind", "never mind"],
     format: "`cancel` · `quit` · `nevermind`",
-    explanation: "Stop a ritual (morning or period) in progress.",
+    explanation:
+      "Stop a night / start / end ritual in progress. Morning ritual ignores cancel — send STOP in all caps to quit and save.",
+    status: "active",
+  },
+  {
+    id: "morning-stop",
+    category: "review",
+    primary: "STOP",
+    forms: ["STOP"],
+    format: "`STOP` (all caps, the whole message)",
+    explanation:
+      "Quit the morning ritual and keep every answer so far. Shortcuts turn back on. Lowercase stop is a normal reply. Text gm afterward to start over, continue, or jump.",
     status: "active",
   },
 
@@ -583,7 +657,8 @@ export const BIM_COMMAND_CATALOG: CatalogEntry[] = [
     primary: "mood:",
     forms: ["mood", "feeling", "feel", "state"],
     format: "`mood: good` · `feeling: tired` · `state: …`",
-    explanation: "Paint Mood scope until further notice.",
+    explanation:
+      "Paint Mood scope until further notice, any word. The Tracking card holds the full report; a message does not fill it.",
     status: "active",
   },
   {
@@ -639,7 +714,8 @@ export const BIM_COMMAND_CATALOG: CatalogEntry[] = [
     primary: "n",
     forms: ["n", "note", "jot", "memo", "day note", "daynote", "dnote"],
     format: "`n stuck in aisle 4` · `note: …` · `jot: …` · `memo: …`",
-    explanation: "Append a note onto the activity block covering *now* (or scoped with `n loc:` / `n mood:` / `n activity:`).",
+    explanation:
+      "A discrete event at send time (first line is the title; lines under it are the note). Also appended onto the block covering that minute, including `n loc:` / `n mood:` / `n activity:`. `day:` stays the day jot.",
     status: "active",
   },
   {
@@ -677,9 +753,10 @@ export const BIM_COMMAND_CATALOG: CatalogEntry[] = [
     id: "gps",
     category: "gps",
     primary: "gps:",
-    forms: ["gps", "geo"],
-    format: "`gps: Home` · `geo: …` · Telegram location / Live Location",
-    explanation: "Paint Location from a place name and/or lat,lon. Same place stays quiet. Arrive/Leave Shortcut sends gps: lines.",
+    forms: ["gps", "geo", "gps-log"],
+    format: "`gps: Home` · `gps-log:` · `at: 2026-10-05T19:04:00` · Telegram Live Location",
+    explanation:
+      "Paint Location up to the sample time, never through the rest of the day. Same coordinates keep the current pen. A Telegram venue pin is a shared place, not where you are. A fuzzy fix does not move you. gps-log: replays lines the phone saved while offline. Message ingest hides these points unless you show GPS. A text ritual pauses Live Location and the same share resumes when that ritual ends.",
     status: "active",
   },
 

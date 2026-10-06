@@ -30,7 +30,7 @@
  * Pure: intervals in, intervals out. The store is the only stateful layer.
  */
 
-import { clampMinute, entriesForDay, paintRange, type TimeEntry } from "@/lib/time-entries"
+import { clampMinute, entriesForDay, isInstant, paintRange, type TimeEntry } from "@/lib/time-entries"
 import type { TrackPen, TrackScope } from "@/lib/time-tracking-store"
 
 /**
@@ -79,6 +79,7 @@ export function openRangesIn(
   const open: MinuteRange[] = []
   let cursor = lo
   for (const entry of entriesForDay(entries, date, scopeId)) {
+    if (isInstant(entry)) continue
     if (entry.endMin <= lo || entry.startMin >= hi) continue
     if (entry.startMin > cursor) open.push({ startMin: cursor, endMin: Math.min(entry.startMin, hi) })
     cursor = Math.max(cursor, entry.endMin)

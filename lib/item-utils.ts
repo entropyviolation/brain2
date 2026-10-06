@@ -8,6 +8,8 @@
 import type { Task, ItemRecord, List, Folder, AttributeValue, ItemTypeDefinition, ItemTypeRule } from "@/lib/types"
 import { composeListDefaults, getItemType, gatherItemRules, applyRules, type ItemLike } from "@/lib/item-types"
 import {
+  formatLocalDateKey,
+  formatLocalMonthKey,
   getWeekString,
   parseLocalDate,
   parseWeekString,
@@ -15,6 +17,7 @@ import {
   sameCalendarDay,
   type SchedulableFields,
 } from "@/lib/date-utils"
+import { recordPushedPlacement } from "@/lib/scheduling"
 import { normalizeAttributeType } from "@/lib/attribute-utils"
 import type { AttributeDefinition } from "@/lib/types"
 import { computeFormulaValue } from "@/lib/formula"
@@ -200,9 +203,18 @@ export function isWeekOnlyPlanned(task: Task, weekKey: string): boolean {
   return false
 }
 
+/**
+ * A stored `scheduledDate` is a Plan schedule except on Inbox.
+ * Capture copies a date out of Inbox prose, and Inbox has no Scheduling tab.
+ */
+export function scheduledDateCountsOnPlan(task: Pick<Task, "stage">): boolean {
+  return task.stage !== "inbox"
+}
+
 /** Day sidebar: on today's to-do but not placed on the time grid yet. */
 export function isDayUnscheduledPlanned(task: Task, date: Date): boolean {
   if (isClearedFromWork(task)) return false
+  if (!scheduledDateCountsOnPlan(task)) return false
   if (taskHasDaySchedule(task)) return false
   if (task.scheduledDate && sameCalendarDay(task.scheduledDate, date)) return true
   if (!task.scheduledDate && task.deadline && sameCalendarDay(task.deadline, date)) return true
@@ -453,6 +465,7 @@ export function pushTaskOnePeriod(
         scheduledDate: next,
         daysPushed: (task.daysPushed ?? 0) + 1,
         hiddenFromTodo: false,
+        schedulePlacements: recordPushedPlacement(task.schedulePlacements, "day", formatLocalDateKey(base)),
       }
     }
     case "week": {
@@ -461,11 +474,13 @@ export function pushTaskOnePeriod(
         : (parseLocalDate(task.scheduledDate) ?? refDate)
       const next = new Date(base)
       next.setDate(next.getDate() + 7)
+      const leftWeek = task.scheduledWeek ?? getWeekString(base)
       return {
         ...cleared,
         scheduledWeek: getWeekString(next),
         weeksPushed: (task.weeksPushed ?? 0) + 1,
         hiddenFromTodo: false,
+        schedulePlacements: recordPushedPlacement(task.schedulePlacements, "week", leftWeek),
       }
     }
     case "month": {
@@ -473,11 +488,13 @@ export function pushTaskOnePeriod(
         ? (parseLocalDate(`${task.scheduledMonth}-01`) ?? refDate)
         : (parseLocalDate(task.scheduledDate) ?? refDate)
       const next = new Date(base.getFullYear(), base.getMonth() + 1, 1)
+      const leftMonth = task.scheduledMonth ?? formatLocalMonthKey(base)
       return {
         ...cleared,
         scheduledMonth: `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}`,
         monthsPushed: (task.monthsPushed ?? 0) + 1,
         hiddenFromTodo: false,
+        schedulePlacements: recordPushedPlacement(task.schedulePlacements, "month", leftMonth),
       }
     }
   }

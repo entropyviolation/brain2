@@ -9,7 +9,11 @@
  * painted Tracking time to read a real finish time from
  * (`lib/completion-window.ts`). Stored as minutes past midnight; 9:00 PM default.
  *
- * Storage: localStorage today.
+ * `birthday` is `YYYY-MM-DD` or empty. The Star Lord Report opens on that
+ * month and day (the year is kept for the date field). February 29 is read
+ * on March 1 in a common year.
+ *
+ * Storage: localStorage today. Persist v4.
  */
 "use client"
 
@@ -18,6 +22,13 @@ import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
 import { clampAnchorMinutes, DEFAULT_DAY_ANCHOR_MINUTES } from "@/lib/completion-window"
+import { clampFocusMultiplier, DEFAULT_GOAL_FOCUS_MULTIPLIER } from "@/lib/goal-focus"
+import { parseBirthday } from "@/lib/star-lord"
+import {
+  clampPointAmount,
+  DEFAULT_RITUAL_COMPLETION_BONUS,
+  DEFAULT_RITUAL_SECTION_POINTS,
+} from "@/lib/ritual-points"
 
 export const DEFAULT_HOME_CITY = "San Diego, California"
 
@@ -27,6 +38,18 @@ interface UserSettingsState {
   resetHomeLocation: () => void
   dayAnchorMinutes: number
   setDayAnchorMinutes: (minutes: number) => void
+  /** Points per ritual section actually completed. Default 10. */
+  ritualSectionPoints: number
+  setRitualSectionPoints: (points: number) => void
+  /** Bonus for submitting a ritual as done. Default 30. */
+  ritualCompletionBonus: number
+  setRitualCompletionBonus: (points: number) => void
+  /** Multiplier for tasks serving tomorrow's focused goals. Default 1.5. */
+  goalFocusMultiplier: number
+  setGoalFocusMultiplier: (multiplier: number) => void
+  /** `YYYY-MM-DD`, or empty when unset. Month and day open the birthday rite. */
+  birthday: string
+  setBirthday: (value: string) => void
 }
 
 export const useUserSettingsStore = create<UserSettingsState>()(
@@ -37,15 +60,50 @@ export const useUserSettingsStore = create<UserSettingsState>()(
       resetHomeLocation: () => set({ homeCity: DEFAULT_HOME_CITY }),
       dayAnchorMinutes: DEFAULT_DAY_ANCHOR_MINUTES,
       setDayAnchorMinutes: (minutes) => set({ dayAnchorMinutes: clampAnchorMinutes(minutes) }),
+      ritualSectionPoints: DEFAULT_RITUAL_SECTION_POINTS,
+      setRitualSectionPoints: (points) =>
+        set({ ritualSectionPoints: clampPointAmount(points, DEFAULT_RITUAL_SECTION_POINTS) }),
+      ritualCompletionBonus: DEFAULT_RITUAL_COMPLETION_BONUS,
+      setRitualCompletionBonus: (points) =>
+        set({ ritualCompletionBonus: clampPointAmount(points, DEFAULT_RITUAL_COMPLETION_BONUS) }),
+      goalFocusMultiplier: DEFAULT_GOAL_FOCUS_MULTIPLIER,
+      setGoalFocusMultiplier: (multiplier) => set({ goalFocusMultiplier: clampFocusMultiplier(multiplier) }),
+      birthday: "",
+      setBirthday: (value) => {
+        const trimmed = value.trim()
+        if (!trimmed) {
+          set({ birthday: "" })
+          return
+        }
+        const parsed = parseBirthday(trimmed)
+        if (!parsed) return
+        const month = String(parsed.month).padStart(2, "0")
+        const day = String(parsed.day).padStart(2, "0")
+        const year = parsed.year ? String(parsed.year).padStart(4, "0") : ""
+        set({ birthday: year ? `${year}-${month}-${day}` : `${month}-${day}` })
+      },
     }),
     {
       name: persistKey("user-settings"),
-      version: 2,
+      version: 4,
       storage: createCogsJSONStorage(),
       migrate: (state, version) => {
         const prev = (state ?? {}) as Partial<UserSettingsState>
-        if (version < 2) return { ...prev, dayAnchorMinutes: DEFAULT_DAY_ANCHOR_MINUTES } as UserSettingsState
-        return prev as UserSettingsState
+        const withAnchor =
+          version < 2 ? { ...prev, dayAnchorMinutes: DEFAULT_DAY_ANCHOR_MINUTES } : prev
+        const withPoints =
+          version < 3
+            ? {
+                ...withAnchor,
+                ritualSectionPoints: DEFAULT_RITUAL_SECTION_POINTS,
+                ritualCompletionBonus: DEFAULT_RITUAL_COMPLETION_BONUS,
+                goalFocusMultiplier: DEFAULT_GOAL_FOCUS_MULTIPLIER,
+              }
+            : withAnchor
+        if (version < 4) {
+          return { ...withPoints, birthday: "" } as UserSettingsState
+        }
+        return withPoints as UserSettingsState
       },
     },
   ),

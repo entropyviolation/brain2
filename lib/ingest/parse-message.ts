@@ -53,10 +53,11 @@ const VERBS: VerbSpec[] = [
   { kind: "todo-today", aliases: ["to do today", "todo today", "do today", "tdt"] },
   { kind: "do", aliases: ["next action", "do"] },
   { kind: "morning", aliases: ["good morning", "goodmorning", "gm"] },
-  { kind: "reviews", aliases: ["reviews"] },
-  { kind: "review", aliases: ["review"] },
+  { kind: "night", aliases: ["good night", "goodnight", "gn", "night"] },
+  { kind: "reviews", aliases: ["reviews", "rituals"] },
+  { kind: "review", aliases: ["review", "ritual"] },
   { kind: "cancel", aliases: ["nevermind", "never mind", "cancel", "quit"] },
-  { kind: "gps", aliases: ["geo", "gps"] },
+  { kind: "gps", aliases: ["gps-log", "geo", "gps"] },
   { kind: "plan", aliases: ["calendar", "agenda"] },
   { kind: "ping", aliases: ["ping", "pong"] },
   { kind: "grocery", aliases: ["groceries", "grocery", "groc", "shop", "shopping"] },
@@ -98,11 +99,42 @@ function matchVerb(text: string, now: Date): IngestIntent | null {
   const firstLine = (firstLineEnd === -1 ? text : text.slice(0, firstLineEnd)).trim()
   const restLines = firstLineEnd === -1 ? "" : text.slice(firstLineEnd + 1)
 
-  // `log:` / `log-` (with or without a space) — discrete event, not habit.
+  // `log:` / `log-` (with or without a space) — tracking note, not a habit.
   const logHeader = /^(log)\s*[:\-]\s*([\s\S]*)$/i.exec(firstLine)
   if (logHeader) {
     const payload = [logHeader[2].trim(), restLines].filter((s) => s.length > 0).join("\n")
     return { kind: "event-log", payload, raw: text }
+  }
+
+  // Colon required so a bare habit keyword is not logged by accident.
+  const dhHeader = /^(dh)\s*[:：]\s*([\s\S]*)$/i.exec(firstLine)
+  if (dhHeader) {
+    const payload = [dhHeader[2].trim(), restLines].filter((s) => s.length > 0).join("\n")
+    return { kind: "habit-trigger", payload, raw: text }
+  }
+
+  const intakeHeader = /^(intake)\s*[:：]\s*([\s\S]*)$/i.exec(firstLine)
+  if (intakeHeader) {
+    const payload = [intakeHeader[2].trim(), restLines].filter((s) => s.length > 0).join("\n")
+    return { kind: "intake", payload, raw: text }
+  }
+
+  const switchTask = /^(?:switch\s+task|st)\s*[:：]\s*([\s\S]*)$/i.exec(firstLine)
+  if (switchTask) {
+    const payload = [switchTask[1].trim(), restLines].filter((s) => s.length > 0).join("\n")
+    return { kind: "switch-task", payload, raw: text }
+  }
+
+  const switchObjective = /^(?:switch\s+objective|so)\s*[:：]\s*([\s\S]*)$/i.exec(firstLine)
+  if (switchObjective) {
+    const payload = [switchObjective[1].trim(), restLines].filter((s) => s.length > 0).join("\n")
+    return { kind: "switch-objective", payload, raw: text }
+  }
+
+  const transitHeader = /^(transit)\s*[:：]\s*([\s\S]*)$/i.exec(firstLine)
+  if (transitHeader) {
+    const payload = [transitHeader[2].trim(), restLines].filter((s) => s.length > 0).join("\n")
+    return { kind: "transit", payload, raw: text }
   }
 
   // `get:` (colon required) — same writer as `needed:` (list "needed").
@@ -141,6 +173,7 @@ function matchVerb(text: string, now: Date): IngestIntent | null {
       kind === "todo-today" ||
       kind === "gps" ||
       kind === "event-log" ||
+      kind === "note" ||
       kind === "currently" ||
       kind === "stopped-activity" ||
       kind === "switched-to"

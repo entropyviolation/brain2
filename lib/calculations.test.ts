@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { TaskType, type WeeklyTask } from "@/lib/types"
-import { calculateDayPercentageAV, calculateTaskPercentage, calculateWeekToDateGrade, calculateWeekToDateOutputGrade, calculatePeriodColumnPercentage, calculatePeriodGrade, calculatePeriodOutputGrade, calculatePeriodTaskPercentage, gradeAsOfForVisibleWindow, weekToDateDays } from "./calculations"
+import { averageWeekGradeAcrossWeeksWithData, calculateDayPercentageAV, calculateTaskPercentage, calculateWeekToDateGrade, calculateWeekToDateOutputGrade, calculatePeriodColumnPercentage, calculatePeriodGrade, calculatePeriodOutputGrade, calculatePeriodTaskPercentage, gradeAsOfForVisibleWindow, weekToDateDays } from "./calculations"
 import { getWeekString } from "./date-utils"
 
 const monday = new Date(2026, 8, 14)
@@ -109,6 +109,37 @@ describe("calculateWeekToDateGrade", () => {
     expect(result.days.map((d) => d.raw)).toEqual([100, 0])
     expect(result.days.map((d) => d.curved)).toEqual([120, 0])
     expect(result.grade).toBe(60)
+  })
+})
+
+describe("averageWeekGradeAcrossWeeksWithData", () => {
+  it("averages only weeks that have a completion, through Sunday for a past week", () => {
+    const weeklyData = {
+      "2026-09-07": { a: { completed: true }, b: { completed: true } },
+      "2026-09-14": { a: { completed: true }, b: { completed: true } },
+      "2026-09-15": { a: { completed: true } },
+    }
+    const asOf = new Date(2026, 8, 15)
+    const past = calculateWeekToDateGrade(
+      tasks,
+      weeklyData,
+      Array.from({ length: 7 }, (_, i) => new Date(2026, 8, 7 + i)),
+      new Date(2026, 8, 13),
+    )
+    const current = calculateWeekToDateGrade(tasks, weeklyData, weekDates, asOf)
+    const avg = averageWeekGradeAcrossWeeksWithData(tasks, weeklyData, asOf)
+    expect(past.grade).toBeCloseTo(100 / 7)
+    expect(current.grade).toBe(75)
+    expect(avg).toBeCloseTo((past.grade + current.grade) / 2)
+  })
+
+  it("skips weeks that have no recorded completion", () => {
+    const weeklyData = {
+      "2026-09-14": { a: { completed: true }, b: { completed: true } },
+      "2026-09-08": {},
+    }
+    expect(averageWeekGradeAcrossWeeksWithData(tasks, weeklyData, new Date(2026, 8, 14))).toBe(100)
+    expect(averageWeekGradeAcrossWeeksWithData([], weeklyData, new Date(2026, 8, 14))).toBeNull()
   })
 })
 

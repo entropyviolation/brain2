@@ -5,13 +5,15 @@
  * **current** when a block covers now (including Telegram `currently` painted
  * through end of day), or a live Working-on-now / pen-color session owns that
  * scope. Otherwise the most recent interval that already started is **last**.
- * Instants do not count. Update paints `switchScopePen` from now through the
- * rest of the day.
+ * Instants do not count.
+ *
+ * Home Update stamps the present only: the open stretch from the previous log
+ * up to now (or just the current minute when nothing precedes). Future minutes
+ * are erased — never painted through midnight.
  */
 
 import { formatLocalDateKey } from "@/lib/date-utils"
-import { switchScopePen } from "@/lib/ingest/switch-scope"
-import { minutesPastMidnight } from "@/lib/ingest/times"
+import { minutesPastMidnight, MINUTES_PER_DAY } from "@/lib/ingest/times"
 import { isInstant, type TimeEntry } from "@/lib/time-entries"
 import { PEN_PALETTE, useTimeTrackingStore, type TrackPen, type TrackScope } from "@/lib/time-tracking-store"
 
@@ -86,7 +88,7 @@ export function presenceLaneForScope(
   const mine = input.entries.filter((entry) => entry.scopeId === scopeId)
   const covering = mine.find((entry) => covers(entry, input.date, input.min))
   if (covering) {
-    return { scopeId, kind: "current", name: penName(input.scopes, covering.penId, covering.title) }
+    return { scopeId, kind: "current", name: laneLabel(covering, input.scopes) }
   }
   if (live?.name) return { scopeId, kind: "current", name: live.name }
 
@@ -96,7 +98,16 @@ export function presenceLaneForScope(
     last = last ? later(last, entry) : entry
   }
   if (!last) return { scopeId, kind: "empty", name: "—" }
-  return { scopeId, kind: "last", name: penName(input.scopes, last.penId, last.title) }
+  return { scopeId, kind: "last", name: laneLabel(last, input.scopes) }
+}
+
+/** Mood prefers the word written on the stretch. The pen name is the fallback. */
+function laneLabel(entry: TimeEntry, scopes: TrackScope[]): string {
+  if (entry.scopeId === "mood") {
+    const word = entry.moodReading?.word?.trim()
+    if (word) return word
+  }
+  return penName(scopes, entry.penId, entry.title)
 }
 
 export function trackingPresenceSnapshot(input: {
@@ -161,21 +172,61 @@ export function ensureScopePen(scopeId: string, name: string): string | null {
   })
 }
 
+/**
+ * Start of the paint for a Home presence stamp.
+ * - Covering block → current minute only (close the past; do not rewrite history).
+ * - Gap after a prior log → fill that open stretch up to now.
+ * - Nothing earlier today → current minute only.
+ */
+export function presencePaintStart(
+  date: string,
+  scopeId: string,
+  nowMin: number,
+  entries: TimeEntry[],
+): number {
+  const slot = Math.min(Math.max(0, Math.floor(nowMin)), MINUTES_PER_DAY - 1)
+  const mine = entries.filter(
+    (entry) => entry.date === date && entry.scopeId === scopeId && !isInstant(entry),
+  )
+  if (mine.some((entry) => covers(entry, date, slot))) return slot
+
+  let priorEnd = -1
+  for (const entry of mine) {
+    if (entry.endMin <= slot && entry.endMin > priorEnd) priorEnd = entry.endMin
+  }
+  if (priorEnd >= 0) return priorEnd
+  return slot
+}
+
+/** Exclusive end covering the current minute — never past now into the future. */
+export function presencePaintEnd(nowMin: number): number {
+  const slot = Math.min(Math.max(0, Math.floor(nowMin)), MINUTES_PER_DAY - 1)
+  return Math.min(slot + 1, MINUTES_PER_DAY)
+}
+
 export function applyTrackingPresenceUpdate(
   patches: Partial<Record<PresenceScopeId, string>>,
   now = new Date(),
 ): void {
   const date = formatLocalDateKey(now)
   const min = minutesPastMidnight(now)
+  const endMin = presencePaintEnd(min)
+  const store = useTimeTrackingStore.getState()
+
   for (const scopeId of PRESENCE_SCOPE_IDS) {
     const raw = patches[scopeId]?.trim()
     if (!raw) continue
-    const store = useTimeTrackingStore.getState()
     const scope = store.scopes.find((item) => item.id === scopeId)
     const byId = scope?.pens.find((pen) => pen.id === raw)
     const penId = byId ? byId.id : ensureScopePen(scopeId, raw)
     if (!penId) continue
-    switchScopePen(date, scopeId, min, penId)
+
+    const startMin = presencePaintStart(date, scopeId, min, store.entries)
+    // Drop any open-until-midnight tail so later hours stay empty.
+    if (endMin < MINUTES_PER_DAY) {
+      store.paintMinutes(date, scopeId, endMin, MINUTES_PER_DAY, null)
+    }
+    store.paintMinutes(date, scopeId, startMin, endMin, penId)
   }
 }
 

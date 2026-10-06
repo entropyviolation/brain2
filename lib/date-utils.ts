@@ -2,11 +2,16 @@
  * lib/date-utils.ts — Date helpers (app-wide)
  *
  * Pure date utilities used throughout the app: safe parsing/formatting
- * (`safe*`), YYYY-MM-DD keys (`formatDateKey`), week math
- * (`getWeekStartDate`/`getWeekDates`/`getPrecedingWeekStarts`), month windows
- * (`getPrecedingMonthStarts`/`getMonthDates`), scheduler week-range strings
- * (`getWeekString`/`parseWeekString`/`formatWeekRange`), display formatters,
- * `getDayOfWeek`, `isToday`, `startOfLocalToday`, and `isPastLocalCalendarDay`.
+ * (`safe*`), YYYY-MM-DD keys (`formatDateKey` / `formatLocalDateKey` /
+ * `dateKeyOf` / `dateInputValue`), local midnight (`startOfLocalDay` /
+ * `toLocalCalendarDate` / `localMidnightFromUtcDateOnly` /
+ * `startOfLocalToday` / `endOfLocalDay`), week math
+ * (`getWeekStartDate`/`getWeekDates`/`getPrecedingWeekStarts`/`addCalendarDays`),
+ * month windows (`getPrecedingMonthStarts`/`getMonthDates`), scheduler
+ * week-range strings (`getWeekString`/`parseWeekString`/`formatWeekRange`),
+ * display formatters, `getDayOfWeek`, `isToday`, and `isPastLocalCalendarDay`.
+ * Period-key identity (day/week/month/quarter/year) lives in `period-keys.ts`
+ * so this file does not import `seasons` (seasons already imports date-utils).
  *
  * Spec: supports §7 (Scheduler week ranges) and §9 (habit grid dates).
  */
@@ -70,15 +75,13 @@ export function getWeekString(date: Date): string {
 }
 
 export function parseWeekString(weekString: string): { start: Date; end: Date } | null {
-  try {
-    const [startStr, endStr] = weekString.split("_")
-    return {
-      start: new Date(startStr),
-      end: new Date(endStr),
-    }
-  } catch {
-    return null
-  }
+  if (!weekString) return null
+  const [startStr, endStr] = weekString.split("_")
+  if (!startStr || !endStr) return null
+  const start = parseLocalDate(startStr)
+  const end = parseLocalDate(endStr)
+  if (!start || !end) return null
+  return { start, end }
 }
 
 /**
@@ -143,6 +146,24 @@ export function addCalendarDays(date: Date, days: number): Date {
   return d
 }
 
+/**
+ * Monday–Sunday key for a stored week range.
+ * A `getWeekString` value passes through. An older Sunday-start range (the
+ * month grid used to draw those) maps through its Wednesday, so it still
+ * names the week the funnel shows.
+ */
+export function canonicalWeekKey(weekString: string): string {
+  const range = parseWeekString(weekString)
+  if (!range) return weekString
+  return getWeekString(addCalendarDays(range.start, 3))
+}
+
+/** True when two week ranges are the same Monday–Sunday week. */
+export function sameWeekKey(a: string | null | undefined, b: string | null | undefined): boolean {
+  if (!a || !b) return false
+  return a === b || canonicalWeekKey(a) === canonicalWeekKey(b)
+}
+
 export function isSameLocalWeek(a: Date, b: Date): boolean {
   return getWeekString(a) === getWeekString(b)
 }
@@ -176,15 +197,45 @@ export function sameCalendarDay(a: Date | string | null | undefined, b: Date): b
   return formatLocalDateKey(da) === formatLocalDateKey(b)
 }
 
+/**
+ * Local YYYY-MM-DD for a Date or parseable string, or null when missing/invalid.
+ * Prefer this over hand-rolled `formatLocalDateKey(parseLocalDate(...))`.
+ */
+export function dateKeyOf(value: Date | string | null | undefined): string | null {
+  if (!value) return null
+  const parsed = parseLocalDate(value)
+  if (!parsed || Number.isNaN(parsed.getTime())) return null
+  return formatLocalDateKey(parsed)
+}
+
+/** Value for `<input type="date">`: local YYYY-MM-DD, or "" when missing. */
+export function dateInputValue(value: Date | string | null | undefined): string {
+  return dateKeyOf(value) ?? ""
+}
+
 /** Normalize any date value to local midnight on its calendar day. */
 export function toLocalCalendarDate(date: Date | string): Date {
   const d = parseLocalDate(date) ?? (date instanceof Date ? date : new Date(date))
   return new Date(d.getFullYear(), d.getMonth(), d.getDate())
 }
 
+/**
+ * Canonical local-midnight helper. Same as `toLocalCalendarDate`; prefer this
+ * name at call sites that previously inlined `new Date(y, m, d)`.
+ */
+export function startOfLocalDay(date: Date | string): Date {
+  return toLocalCalendarDate(date)
+}
+
+/** Last millisecond of the local calendar day containing `date`. */
+export function endOfLocalDay(date: Date | string): Date {
+  const d = toLocalCalendarDate(date)
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999)
+}
+
 /** Local midnight of the current calendar day (`now`, default wall clock). */
 export function startOfLocalToday(now: Date = new Date()): Date {
-  return toLocalCalendarDate(now)
+  return startOfLocalDay(now)
 }
 
 /**
@@ -285,6 +336,25 @@ export function parseLocalDate(value: Date | string | null | undefined): Date | 
   return safeToDate(value)
 }
 
+/**
+ * `<input type="date">` used to be stored with `new Date("YYYY-MM-DD")`, which
+ * is UTC midnight. The day the person picked is that UTC date. A timestamp
+ * with any other time is a real instant and is returned unchanged.
+ */
+export function localMidnightFromUtcDateOnly(value: Date): Date {
+  if (Number.isNaN(value.getTime())) return value
+  if (
+    value.getUTCHours() !== 0 ||
+    value.getUTCMinutes() !== 0 ||
+    value.getUTCSeconds() !== 0 ||
+    value.getUTCMilliseconds() !== 0
+  ) {
+    return value
+  }
+  const local = new Date(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate())
+  return local.getTime() === value.getTime() ? value : local
+}
+
 export function taskScheduledOnDay(task: SchedulableFields, value: Date | string): boolean {
   const compare = parseLocalDate(value)
   if (!compare) return false
@@ -294,15 +364,15 @@ export function taskScheduledOnDay(task: SchedulableFields, value: Date | string
 }
 
 export function taskScheduledInWeek(task: SchedulableFields, weekValue: string): boolean {
-  if (task.scheduledWeek && task.scheduledWeek === weekValue) return true
+  if (task.scheduledWeek && sameWeekKey(task.scheduledWeek, weekValue)) return true
   const taskDate = safeToDate(task.scheduledDate ?? undefined)
   if (taskDate && getWeekString(taskDate) === weekValue) return true
   const deadline = safeToDate((task as { deadline?: Date | string }).deadline)
   if (deadline && getWeekString(deadline) === weekValue) return true
-  // A month-scheduled task surfaces in any week contained in that month.
+  // A month-scheduled task surfaces in any week whose Monday falls in that month.
   if (task.scheduledMonth) {
     const range = parseWeekString(weekValue)
-    if (range && range.start.toISOString().slice(0, 7) === task.scheduledMonth) return true
+    if (range && formatLocalMonthKey(range.start) === task.scheduledMonth) return true
   }
   return false
 }
@@ -314,7 +384,7 @@ export function taskScheduledInMonth(task: SchedulableFields, monthValue: string
   const deadline = parseLocalDate((task as { deadline?: Date | string }).deadline)
   if (deadline && formatLocalMonthKey(deadline) === monthValue) return true
   if (task.scheduledWeek) {
-    const range = parseWeekString(task.scheduledWeek)
+    const range = parseWeekString(canonicalWeekKey(task.scheduledWeek))
     if (range && formatLocalMonthKey(range.start) === monthValue) return true
   }
   return false
@@ -328,7 +398,7 @@ export function taskScheduledInYear(task: SchedulableFields, yearValue: string):
   if (deadline && deadline.getFullYear().toString() === yearValue) return true
   if (task.scheduledMonth && task.scheduledMonth.slice(0, 4) === yearValue) return true
   if (task.scheduledYear === undefined && task.scheduledWeek) {
-    const range = parseWeekString(task.scheduledWeek)
+    const range = parseWeekString(canonicalWeekKey(task.scheduledWeek))
     if (range && range.start.getFullYear().toString() === yearValue) return true
   }
   return false

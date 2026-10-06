@@ -10,9 +10,12 @@
  * updates the other. Daily habits award 50 pts × day completion (partial counts)
  * plus per-day grade bonuses (100 if either Week grade or Perfect output is 75%+,
  * 300 if both), the user accomplishment bonus when that day's raw column
- * score meets `accomplishmentThreshold` (default 80% → 50 pts), and editable
- * lift bonuses when Week grade / Perfect output beat yesterday or weekly-habit
- * grades beat last week, via `lib/habit-points.ts` / `lib/habit-accomplishment.ts`.
+ * score meets `accomplishmentThreshold` (default 80% → 50 pts), editable
+ * lift bonuses when raw daily completion beats yesterday or Week grade /
+ * Perfect output beat last week, and two average bonuses (default 5 each)
+ * when that day's raw completion is above the prior 7-day average and above
+ * the prior 30-day average, via `lib/habit-points.ts` /
+ * `lib/habit-accomplishment.ts`.
  * Completing a habit also writes a
  * Done-list `loggedAction` (`lib/habit-done-log.ts`).
  *
@@ -20,9 +23,16 @@
  * Tracking tab lands on the day, week, or month via `applyTrackedValue`, keeping
  * the manual and tracked halves of the value apart (`lib/habit-tracking.ts`).
  *
+ * Persist version 22 adds `quarterlyHabitData` (season habits, keyed `YYYY-Qn`).
+ * Persist version 26 adds `weeklyAverageBeatBonus` / `monthlyAverageBeatBonus`
+ * (default 5). Each pays once on a local day when that day's raw completion
+ * is above the prior 7-day average, or above the prior 30-day average.
+ * A missing value migrates to 5. 0 turns that rule off. Editing the amount
+ * rewrites the ledger row for that day; dropping back to or below the average
+ * removes it, the same way the other habit bonuses do.
  * Persist version 21 adds `dayGradeLiftBonus` / `weeklyGradeLiftBonus`
- * (points per grade that beats yesterday, and per weekly-habit grade that
- * beats last week). 0 turns a lift off.
+ * (points when raw daily completion beats yesterday, and per rail grade that
+ * beats last week's Week grade / Perfect output). 0 turns a lift off.
  * Persist version 20 adds the exemption wand: `exemptionWand` plus
  * `habitExemptions` (explicit waive / require overrides). Periods that end
  * before the habit existed are exempt without a stored flag. The day comes
@@ -32,6 +42,8 @@
  * habit title, detail, and completion write. A late hub rehydrate or a second
  * window that still holds an older snapshot cannot roll those edits back —
  * the same failure `appearanceRev` already stops for LED / tube hues.
+ * Persist version 24 lifts leftover `willpowerPhysics.stirHop` still at the old
+ * default (160) to 480 so a normal plate press clears ~a gem diameter of z.
  * Persist version 18 resets `willpowerPhysics` to the calm default whirl so
  * leftover scatter-bomb knobs do not survive a lab rewrite. Persist version 17
  * pins `habitsControlPanelWidth` back to the compact 196px (seam resize
@@ -46,10 +58,23 @@
  * Persist version 13 stamps a random catalog `WeeklyTask.gem` on habits that
  * only had a type-slot fallback (user-picked / uploaded gems are kept).
  * Persist version 12 adds `habitDayView` (Daily sheet: today + week % only)
- * and `percentLoadingBar` (10-pip channel totals; default on).
+ * and `percentLoadingBar` (glass-tube totals; default on).
  * `hideCompletedToday` is a control-panel rocker (same boolean on Daily /
  * Weekly / Monthly; label changes). Default false; migrate fills it like the
  * other UI prefs — no persist version bump.
+ * `missedOpportunity` on a completion cell is optional. Absence means not
+ * marked. Readers of grades, percents, streaks, gems, and points do not
+ * look at it. `missedOpWand` and `hideCompletedAndMissed` are control-panel
+ * prefs (default false). `migrateHabitsState` fills a missing key; no
+ * persist version bump.
+ * `habitMonthWindow` (default `yearToDate`) and `habitBirthday`
+ * (`{ month: 5, day: 5 }`) choose the monthly sheet. A missing value fills
+ * those defaults. No persist version bump — same rule as `hideCompletedToday`.
+ * `habitWeekWindow` (default `sevenWeeks`) chooses the weekly sheet the same
+ * way. A missing value fills `sevenWeeks`. No persist version bump.
+ * `timeEstimateNA`, `doneTaskPhrase`, and `doneTaskUseText` are optional on
+ * each habit. A missing key keeps the previous behavior (a stored estimate
+ * still counts; the Done line stays the habit name). No persist version bump.
  * Persist version 11 adds `percentLedTint` (hex for row/column completion lamps and Yes/No cells)
  * and keeps per-habit `WeeklyTask.gem`. Persist version 10 adds `habitSortMode`
  * (default / A–Z / created / priority / weekly completion %). The old
@@ -90,6 +115,19 @@ import { createCogsJSONStorage, registerPersistRehydrator } from "@/lib/persist-
 import { persistKey, readAliasedLocal, writeAliasedLocal } from "@/lib/storage-keys"
 import { migrateHabitSortMode, type HabitSortMode } from "@/lib/habit-sort"
 import {
+  DEFAULT_HABIT_BIRTHDAY,
+  DEFAULT_HABIT_MONTH_WINDOW,
+  parseHabitMonthWindowMode,
+  sanitizeHabitBirthday,
+  type HabitBirthday,
+  type HabitMonthWindowMode,
+} from "@/lib/habit-month-window"
+import {
+  DEFAULT_HABIT_WEEK_WINDOW,
+  parseHabitWeekWindowMode,
+  type HabitWeekWindowMode,
+} from "@/lib/habit-week-window"
+import {
   clampHabitsControlPanelWidth,
   HABITS_CONTROL_PANEL_DEFAULT_WIDTH,
 } from "@/lib/habits-control-panel"
@@ -101,8 +139,11 @@ import {
 import { rememberWorld } from "@/lib/action-history"
 import { type WeeklyTask, TaskType, type TaskCompletion, type WeeklyData, type Category, type HabitFrequency } from "@/lib/types"
 import { addCalendarDays, formatLocalDateKey, formatLocalMonthKey, getWeekString, getWeekStartDate, getWeekDates, parseLocalDate } from "@/lib/date-utils"
+import { quarterKey, quarterStartDate } from "@/lib/seasons"
 import { usePointsStore } from "@/lib/points-store"
-import { isHabitGoalMet, completionWithGoalFlag, normalizeTaskType } from "@/lib/habit-utils"
+import { isHabitGoalMet, completionWithGoalFlag, normalizeTaskType, isGoalType } from "@/lib/habit-utils"
+import { deriveCompletionSources } from "@/lib/habit-completion-source"
+import { patchIsHandEdit, textEditNeedsHeavySync } from "@/lib/habit-completion-trust"
 import {
   activeTrackingLink,
   applyTrackedToCompletion,
@@ -112,8 +153,6 @@ import {
 import { migrateIncrementalHabits, migrateIncrementalTask } from "@/lib/incremental-habits"
 import { syncHabitDoneLog } from "@/lib/habit-done-log"
 import {
-  calculatePeriodGrade,
-  calculatePeriodOutputGrade,
   calculateWeekToDateGrade,
   calculateWeekToDateOutputGrade,
   clampGradeTolerance,
@@ -132,16 +171,26 @@ import {
   habitCompletionReason,
   habitDayPointTaskId,
   isDailyHabit,
+  monthlyAverageBeatTaskId,
+  rawDayBeatsAverage,
+  rawDayBeatsPrior,
   rawDayBonusDescription,
   rawDayBonusPoints,
   rawDayBonusTaskId,
+  weeklyAverageBeatTaskId,
   weeklyGradeLiftTaskId,
+  DEFAULT_MONTHLY_AVERAGE_BEAT_BONUS,
+  DEFAULT_WEEKLY_AVERAGE_BEAT_BONUS,
 } from "@/lib/habit-points"
 import {
   clampAccomplishmentBonus,
   clampAccomplishmentThreshold,
   DEFAULT_ACCOMPLISHMENT_BONUS,
   DEFAULT_ACCOMPLISHMENT_THRESHOLD,
+  GOOD_DAYS_LOOKBACK,
+  PRIOR_WEEK_DAYS,
+  priorRawAverage,
+  rawDayCompletionPercent,
 } from "@/lib/habit-accomplishment"
 import {
   blendPriorityScore,
@@ -197,11 +246,47 @@ function migratePersistedHabits(state: HabitsState): HabitsState {
     weeklyData,
     weeklyHabitData: asWeeklyData(state.weeklyHabitData),
     monthlyHabitData: asWeeklyData(state.monthlyHabitData),
+    quarterlyHabitData: asWeeklyData(state.quarterlyHabitData),
   }
 }
 
 /** Persist bump. Zustand requires `migrate` when `version` changes or it drops the blob. */
-export const HABITS_STORE_PERSIST_VERSION = 21
+export const HABITS_STORE_PERSIST_VERSION = 26
+
+/**
+ * Text edits that do not cross empty ↔ filled skip grade and coverage work.
+ * The coverage subscriber reads this during the Zustand `set` that writes the cell.
+ */
+let quietHabitWrite = false
+
+export function habitWriteIsQuiet(): boolean {
+  return quietHabitWrite
+}
+
+function quietTextPatch(task: WeeklyTask, previous: TaskCompletion | undefined, patch: TaskCompletion): boolean {
+  if (normalizeTaskType(task.type) !== TaskType.TEXT) return false
+  if (!("text" in patch)) return false
+  return !textEditNeedsHeavySync(task, previous, patch.text ?? "")
+}
+
+function withHandMark(task: WeeklyTask, patch: TaskCompletion, cell: TaskCompletion): TaskCompletion {
+  // A keyword line just wrote a new total. The old hand tick was about the previous number.
+  if (patch.keywordLogged) {
+    if (cell.handCompleted === undefined) return cell
+    const { handCompleted: _stale, ...rest } = cell
+    return rest
+  }
+  if (!patchIsHandEdit(patch)) return cell
+  const type = normalizeTaskType(task.type)
+  if (type === TaskType.TEXT) return { ...cell, handCompleted: !!(patch.text ?? "").trim() }
+  if (type === TaskType.BOOLEAN) return { ...cell, handCompleted: !!patch.completed }
+  if (isGoalType(type)) {
+    const amount = cell.manualValue ?? cell.value ?? 0
+    const goal = task.goal || cell.goal || 0
+    return { ...cell, handCompleted: goal ? amount >= goal : amount > 0 }
+  }
+  return cell
+}
 
 function unwrapPersistedHabits(persisted: unknown): Record<string, unknown> {
   if (!persisted || typeof persisted !== "object") return {}
@@ -288,6 +373,7 @@ export function migrateHabitsState(persisted: unknown, version: number): HabitsS
     weeklyData: asWeeklyData(state.weeklyData),
     weeklyHabitData: asWeeklyData(state.weeklyHabitData),
     monthlyHabitData: asWeeklyData(state.monthlyHabitData),
+    quarterlyHabitData: asWeeklyData(state.quarterlyHabitData),
     gradeTolerance: clampGradeTolerance((state.gradeTolerance as number) ?? DEFAULT_GRADE_TOLERANCE),
     outputGradeTolerance: clampGradeTolerance(
       (state.outputGradeTolerance as number) ?? DEFAULT_GRADE_TOLERANCE,
@@ -303,6 +389,12 @@ export function migrateHabitsState(persisted: unknown, version: number): HabitsS
     ),
     weeklyGradeLiftBonus: clampAccomplishmentBonus(
       (state.weeklyGradeLiftBonus as number) ?? DEFAULT_WEEKLY_GRADE_LIFT_BONUS,
+    ),
+    weeklyAverageBeatBonus: clampAccomplishmentBonus(
+      (state.weeklyAverageBeatBonus as number) ?? DEFAULT_WEEKLY_AVERAGE_BEAT_BONUS,
+    ),
+    monthlyAverageBeatBonus: clampAccomplishmentBonus(
+      (state.monthlyAverageBeatBonus as number) ?? DEFAULT_MONTHLY_AVERAGE_BEAT_BONUS,
     ),
     gradeUsePriority: !!state.gradeUsePriority,
     outputUsePriority: !!state.outputUsePriority,
@@ -338,20 +430,64 @@ export function migrateHabitsState(persisted: unknown, version: number): HabitsS
     percentLoadingBar: state.percentLoadingBar !== false,
     habitSmallLeds: state.habitSmallLeds !== false,
     hideCompletedToday: !!state.hideCompletedToday,
+    hideCompletedAndMissed: !!state.hideCompletedAndMissed,
+    habitMonthWindow: parseHabitMonthWindowMode(state.habitMonthWindow),
+    habitBirthday: sanitizeHabitBirthday(has("habitBirthday") ? state.habitBirthday : DEFAULT_HABIT_BIRTHDAY),
+    habitWeekWindow: parseHabitWeekWindowMode(state.habitWeekWindow),
     exemptionWand: !!state.exemptionWand,
+    missedOpWand: !!state.missedOpWand,
     habitExemptions: sanitizeExemptionBooks(state.habitExemptions),
     habitsControlPanelWidth: HABITS_CONTROL_PANEL_DEFAULT_WIDTH,
     willpowerPhysicsHud: !!state.willpowerPhysicsHud,
-    willpowerPhysics:
-      version < 18
-        ? { ...DEFAULT_WILLPOWER_PHYSICS }
-        : sanitizeWillpowerPhysics(state.willpowerPhysics),
+    willpowerPhysics: (() => {
+      const base =
+        version < 18
+          ? { ...DEFAULT_WILLPOWER_PHYSICS }
+          : sanitizeWillpowerPhysics(state.willpowerPhysics)
+      // Old default hop was invisible under foreshortening; bump only that leftover.
+      if (version < 24 && base.stirHop === 160) {
+        return { ...base, stirHop: DEFAULT_WILLPOWER_PHYSICS.stirHop }
+      }
+      return base
+    })(),
   } as HabitsState
 
   if (!Array.isArray(next.tasks)) {
     delete (next as { tasks?: WeeklyTask[] }).tasks
+  } else if (version < 23 && version >= 20) {
+    // Production vaults on the exemption-wand era pick up coverage / floor habits.
+    next.tasks = ensurePeriodLinkHabits(next.tasks)
+  }
+  if (Array.isArray(next.tasks) && version < 25) {
+    next.tasks = next.tasks.map((task) =>
+      Array.isArray(task.completionSources) ? task : { ...task, completionSources: deriveCompletionSources(task) },
+    )
   }
   return next
+}
+
+/** Append coverage / daily-floor habits when a vault is missing them (no duplicates). */
+export function ensurePeriodLinkHabits(tasks: WeeklyTask[]): WeeklyTask[] {
+  const extras = getDefaultHabits().filter((seed) => {
+    if (seed.coverageLink) {
+      return !tasks.some(
+        (task) =>
+          task.id === seed.id ||
+          ((task.frequency || "daily") === (seed.frequency || "daily") &&
+            (task.coverageLink || /log\s+\d+\s*%\s+of\s+the/.test((task.name || "").toLowerCase()))),
+      )
+    }
+    if (seed.dailyFloorLink) {
+      return !tasks.some(
+        (task) =>
+          task.id === seed.id ||
+          (task.frequency === "weekly" &&
+            (task.dailyFloorLink || (/0\s*%/.test((task.name || "").toLowerCase()) && /daily/.test((task.name || "").toLowerCase())))),
+      )
+    }
+    return false
+  })
+  return extras.length ? [...tasks, ...extras] : tasks
 }
 
 export const getDefaultHabits = (): WeeklyTask[] =>
@@ -404,6 +540,24 @@ export const getDefaultHabits = (): WeeklyTask[] =>
     timeEstimate: { minutes: 45 },
   },
   {
+    id: "task-w-coverage",
+    name: "Log 75% of the week",
+    type: TaskType.GOAL,
+    goal: 75,
+    unit: "%",
+    rewardValue: 35,
+    frequency: "weekly",
+    coverageLink: { threshold: 75, enabled: true },
+  },
+  {
+    id: "task-w-daily-floor",
+    name: "No 0% completed daily tasks",
+    type: TaskType.BOOLEAN,
+    rewardValue: 30,
+    frequency: "weekly",
+    dailyFloorLink: { floorPercent: 0, enabled: true },
+  },
+  {
     id: "task-w-deep",
     name: "Deep work hours this week",
     type: TaskType.GOAL,
@@ -436,6 +590,16 @@ export const getDefaultHabits = (): WeeklyTask[] =>
     frequency: "monthly",
   },
   {
+    id: "task-m-coverage",
+    name: "Log 75% of the month",
+    type: TaskType.GOAL,
+    goal: 75,
+    unit: "%",
+    rewardValue: 35,
+    frequency: "monthly",
+    coverageLink: { threshold: 75, enabled: true },
+  },
+  {
     id: "task-m-book",
     name: "Finish 1 book this month",
     type: TaskType.GOAL,
@@ -461,6 +625,26 @@ export const getDefaultHabits = (): WeeklyTask[] =>
     rewardValue: 15,
     frequency: "monthly",
   },
+  {
+    id: "task-d-coverage",
+    name: "Log 75% of the day",
+    type: TaskType.GOAL,
+    goal: 75,
+    unit: "%",
+    rewardValue: 25,
+    frequency: "daily",
+    coverageLink: { threshold: 75, enabled: true },
+  },
+  {
+    id: "task-q-coverage",
+    name: "Log 75% of the season",
+    type: TaskType.GOAL,
+    goal: 75,
+    unit: "%",
+    rewardValue: 40,
+    frequency: "quarterly",
+    coverageLink: { threshold: 75, enabled: true },
+  },
 ], seedRng(0x68616231))
 
 export const getDefaultHabitCategories = (): Category[] => [
@@ -478,6 +662,8 @@ interface HabitsState {
   weeklyHabitData: WeeklyData
   /** Monthly-frequency habits keyed by YYYY-MM */
   monthlyHabitData: WeeklyData
+  /** Quarterly (season) habits keyed by YYYY-Qn */
+  quarterlyHabitData: WeeklyData
   /** Raw daily % that counts as 100 on the week grade curve (1–100, default 100). */
   gradeTolerance: number
   setGradeTolerance: (tolerance: number) => void
@@ -505,6 +691,18 @@ interface HabitsState {
    */
   weeklyGradeLiftBonus: number
   setWeeklyGradeLiftBonus: (bonus: number) => void
+  /**
+   * Points paid once when that day's raw completion is above the prior 7-day
+   * average. Default 5. 0 turns it off. Persist v26.
+   */
+  weeklyAverageBeatBonus: number
+  setWeeklyAverageBeatBonus: (bonus: number) => void
+  /**
+   * Points paid once when that day's raw completion is above the prior 30-day
+   * average. Default 5. 0 turns it off. Persist v26. Independent of the weekly rule.
+   */
+  monthlyAverageBeatBonus: number
+  setMonthlyAverageBeatBonus: (bonus: number) => void
   /** Blend prioritized habits into Week / Span grade (50% floor). */
   gradeUsePriority: boolean
   setGradeUsePriority: (value: boolean) => void
@@ -573,7 +771,7 @@ interface HabitsState {
   /** Daily spreadsheet: only today's column + the week % column. Persist v12. */
   habitDayView: boolean
   setHabitDayView: (value: boolean) => void
-  /** Row/column totals as a quiet 10-pip channel (default) vs numeric LED. Persist v12. */
+  /** Row/column totals as a thin glass tube (default) vs numeric LED. Persist v12. */
   percentLoadingBar: boolean
   setPercentLoadingBar: (value: boolean) => void
   /**
@@ -590,11 +788,39 @@ interface HabitsState {
   hideCompletedToday: boolean
   setHideCompletedToday: (value: boolean) => void
   /**
+   * Paint completed cells and missed-op cells with the exemption hatch.
+   * Does not remove rows. Default false, so the sheet looks as it does today.
+   */
+  hideCompletedAndMissed: boolean
+  setHideCompletedAndMissed: (value: boolean) => void
+  /**
+   * Which months the monthly sheet and its span grade share.
+   * Default `yearToDate`. Missing values fill that default. No version bump.
+   */
+  habitMonthWindow: HabitMonthWindowMode
+  setHabitMonthWindow: (mode: HabitMonthWindowMode) => void
+  /** Birthday month/day for the since-birthday window. Default 5 May. */
+  habitBirthday: HabitBirthday
+  setHabitBirthday: (birthday: HabitBirthday) => void
+  /**
+   * Which weeks the weekly sheet and its span grade share.
+   * Default `sevenWeeks`. Missing values fill that default. No version bump.
+   */
+  habitWeekWindow: HabitWeekWindowMode
+  setHabitWeekWindow: (mode: HabitWeekWindowMode) => void
+  /**
    * Exemption wand is on: every cell is a yes/no lamp for “this period is
    * waived”, not for completion. Shared across Daily / Weekly / Monthly.
+   * Turns the missed-op wand off.
    */
   exemptionWand: boolean
   setExemptionWand: (value: boolean) => void
+  /**
+   * Missed op wand is on: an eligible cell toggles `missedOpportunity`.
+   * Complete and exempt cells cannot take the mark. Turns the exemption wand off.
+   */
+  missedOpWand: boolean
+  setMissedOpWand: (value: boolean) => void
   /** Explicit waive / require overrides. Automatic pre-creation waivers are not stored. */
   habitExemptions: ExemptionBooks
   setHabitExemption: (frequency: HabitFrequency, periodKey: string, taskId: string, exempt: boolean) => void
@@ -613,12 +839,14 @@ interface HabitsState {
   applyTrackedValue: (taskId: string, date: Date, tracked: number) => void
   updateWeeklyHabitCompletion: (taskId: string, weekStart: Date, completion: TaskCompletion) => void
   updateMonthlyHabitCompletion: (taskId: string, monthDate: Date, completion: TaskCompletion) => void
+  updateQuarterlyHabitCompletion: (taskId: string, quarterStart: Date, completion: TaskCompletion) => void
   setWeeklyData: (data: WeeklyData) => void
   importData: (data: {
     tasks: WeeklyTask[]
     weeklyData: WeeklyData
     weeklyHabitData?: WeeklyData
     monthlyHabitData?: WeeklyData
+    quarterlyHabitData?: WeeklyData
     categories?: Category[]
   }) => void
   resetData: () => void
@@ -665,6 +893,8 @@ type GradeSyncState = Pick<
   | "accomplishmentBonus"
   | "dayGradeLiftBonus"
   | "weeklyGradeLiftBonus"
+  | "weeklyAverageBeatBonus"
+  | "monthlyAverageBeatBonus"
   | "gradeUsePriority"
   | "outputUsePriority"
   | "goodDaysUsePriority"
@@ -710,42 +940,50 @@ function dailyShownGrades(state: GradeSyncState, day: Date): { week: number; out
   }
 }
 
-function weeklyShownGrades(state: GradeSyncState, weekStart: Date): { week: number; output: number } {
-  const weekly = state.tasks.filter((task) => task.frequency === "weekly")
-  if (weekly.length === 0) return { week: 0, output: 0 }
-  const period = { key: getWeekString(weekStart), date: weekStart }
-  const asOf = addCalendarDays(weekStart, 6)
+/**
+ * Prior targets for the Habits settings grade-lift fields.
+ * Yesterday = raw daily-habit completion % (partial credit). Last week = rail
+ * Week grade + Perfect output for the prior full calendar week (Sunday end).
+ */
+export function getGradeLiftComparisonTargets(asOf: Date = new Date()): {
+  yesterdayRaw: number | null
+  todayRaw: number | null
+  yesterdayDelta: number | null
+  lastWeek: { week: number; output: number } | null
+  thisWeek: { week: number; output: number } | null
+  lastWeekDeltas: { week: number; output: number } | null
+} {
+  const state = useHabitsStore.getState()
+  const today = new Date(asOf.getFullYear(), asOf.getMonth(), asOf.getDate())
+  const yesterday = addCalendarDays(today, -1)
+  const yesterdayKey = formatLocalDateKey(yesterday)
+  const daily = state.tasks.filter(isDailyHabit)
   const books = state.habitExemptions ?? emptyExemptionBooks()
-  const isExempt = (task: WeeklyTask, key: string) => isHabitPeriodExempt(task, key, "weekly", books)
-  const grade = calculatePeriodGrade(
-    weekly,
-    state.weeklyHabitData,
-    [period],
-    asOf,
-    state.gradeTolerance,
-    isExempt,
-  )
-  const output = calculatePeriodOutputGrade(
-    weekly,
-    state.weeklyHabitData,
-    [period],
-    asOf,
-    state.outputGradeTolerance,
-    isExempt,
-  )
-  const prio = prioritizedHabits(weekly, state.weeklyHabitData, asOf, "weekly")
-  const prioWeek =
-    prio.length > 0
-      ? calculatePeriodGrade(prio, state.weeklyHabitData, [period], asOf, state.gradeTolerance, isExempt).grade
-      : null
-  const prioOut =
-    prio.length > 0
-      ? calculatePeriodOutputGrade(prio, state.weeklyHabitData, [period], asOf, state.outputGradeTolerance, isExempt)
-          .grade
-      : null
+  const isExempt = (task: WeeklyTask, key: string) => isHabitPeriodExempt(task, key, "daily", books)
+  const hasDayHistory = Object.keys(state.weeklyData || {}).some((key) => key <= yesterdayKey)
+  const yesterdayRaw = hasDayHistory
+    ? rawDayCompletionPercent(daily, state.weeklyData, yesterday, isExempt)
+    : null
+  const todayRaw = rawDayCompletionPercent(daily, state.weeklyData, today, isExempt)
+  const lastWeekStart = addCalendarDays(getWeekStartDate(asOf), -7)
+  const lastWeekEnd = addCalendarDays(lastWeekStart, 6)
+  const lastWeekEndKey = formatLocalDateKey(lastWeekEnd)
+  const hasWeekHistory = Object.keys(state.weeklyData || {}).some((key) => key <= lastWeekEndKey)
+  const weekPrior = hasWeekHistory ? dailyShownGrades(state, lastWeekEnd) : null
+  const weekCurrent = dailyShownGrades(state, today)
   return {
-    week: blendPriorityScore(grade.grade, prioWeek, !!state.gradeUsePriority),
-    output: blendPriorityScore(output.grade, prioOut, !!state.outputUsePriority),
+    yesterdayRaw,
+    todayRaw,
+    yesterdayDelta:
+      yesterdayRaw === null ? null : Math.round(todayRaw) - Math.round(yesterdayRaw),
+    lastWeek: weekPrior ? { week: weekPrior.week, output: weekPrior.output } : null,
+    thisWeek: { week: weekCurrent.week, output: weekCurrent.output },
+    lastWeekDeltas: weekPrior
+      ? {
+          week: Math.round(weekCurrent.week) - Math.round(weekPrior.week),
+          output: Math.round(weekCurrent.output) - Math.round(weekPrior.output),
+        }
+      : null,
   }
 }
 
@@ -760,6 +998,9 @@ function syncGradeBonusesForWeek(
   const elapsed = weekToDateDays(weekDates, asOf)
   const upsert = usePointsStore.getState().upsertPoints
   const liftEach = state.dayGradeLiftBonus ?? DEFAULT_DAY_GRADE_LIFT_BONUS
+  const weekAvgEach = state.weeklyAverageBeatBonus ?? DEFAULT_WEEKLY_AVERAGE_BEAT_BONUS
+  const monthAvgEach = state.monthlyAverageBeatBonus ?? DEFAULT_MONTHLY_AVERAGE_BEAT_BONUS
+  const rawCache = new Map<string, number>()
   const shownFor = (day: Date) => {
     const key = formatLocalDateKey(day)
     const hit = cache.get(key)
@@ -784,22 +1025,43 @@ function syncGradeBonusesForWeek(
       rawDayBonusDescription(rawBonus, state.accomplishmentThreshold ?? DEFAULT_ACCOMPLISHMENT_THRESHOLD),
       day,
     )
-    const prior = shownFor(addCalendarDays(day, -1))
-    const lift = gradesBeatPrior(shown, prior, liftEach, "day")
+    const priorDay = addCalendarDays(day, -1)
+    const books = state.habitExemptions ?? emptyExemptionBooks()
+    const isExempt = (task: WeeklyTask, key: string) => isHabitPeriodExempt(task, key, "daily", books)
+    const daily = state.tasks.filter(isDailyHabit)
+    const currentRaw = rawDayCompletionPercent(daily, state.weeklyData, day, isExempt)
+    const priorRaw = rawDayCompletionPercent(daily, state.weeklyData, priorDay, isExempt)
+    const lift = rawDayBeatsPrior(currentRaw, priorRaw, liftEach)
     upsert(dayGradeLiftTaskId(dateKey), lift.points, lift.description, day)
+    rawCache.set(formatLocalDateKey(day), currentRaw)
+    rawCache.set(formatLocalDateKey(priorDay), priorRaw)
+    const weekAvg = priorRawAverage(daily, state.weeklyData, day, PRIOR_WEEK_DAYS, isExempt, rawCache)
+    const monthAvg = priorRawAverage(daily, state.weeklyData, day, GOOD_DAYS_LOOKBACK, isExempt, rawCache)
+    const weekBeat = rawDayBeatsAverage(currentRaw, weekAvg, weekAvgEach, "week")
+    const monthBeat = rawDayBeatsAverage(currentRaw, monthAvg, monthAvgEach, "month")
+    upsert(weeklyAverageBeatTaskId(dateKey), weekBeat.points, weekBeat.description, day)
+    upsert(monthlyAverageBeatTaskId(dateKey), monthBeat.points, monthBeat.description, day)
   }
 }
 
-function syncWeeklyGradeLifts(state: GradeSyncState) {
+function syncWeeklyGradeLifts(state: GradeSyncState, only?: Date[]) {
   const starts = new Map<string, Date>()
   const add = (date: Date) => {
     const start = getWeekStartDate(date)
     starts.set(getWeekString(start), start)
   }
-  add(new Date())
-  for (const key of Object.keys(state.weeklyHabitData || {})) {
-    const parsed = parseLocalDate(key.split("_")[0] ?? "")
-    if (parsed) add(parsed)
+  if (only && only.length > 0) {
+    for (const date of only) add(date)
+  } else {
+    add(new Date())
+    for (const key of Object.keys(state.weeklyData || {})) {
+      const parsed = parseLocalDate(key)
+      if (parsed) add(parsed)
+    }
+    for (const key of Object.keys(state.weeklyHabitData || {})) {
+      const parsed = parseLocalDate(key.split("_")[0] ?? "")
+      if (parsed) add(parsed)
+    }
   }
   const now = new Date()
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
@@ -807,10 +1069,17 @@ function syncWeeklyGradeLifts(state: GradeSyncState) {
   const liftEach = state.weeklyGradeLiftBonus ?? DEFAULT_WEEKLY_GRADE_LIFT_BONUS
   for (const [weekKey, start] of starts) {
     if (start > today) continue
-    const current = weeklyShownGrades(state, start)
-    const prior = weeklyShownGrades(state, addCalendarDays(start, -7))
-    const lift = gradesBeatPrior(current, prior, liftEach, "week")
     const end = addCalendarDays(start, 6)
+    const asOf = today >= start && today <= end ? today : end
+    const priorEnd = addCalendarDays(start, -1)
+    const current = dailyShownGrades(state, asOf)
+    const prior = dailyShownGrades(state, priorEnd)
+    const lift = gradesBeatPrior(
+      { week: current.week, output: current.output },
+      { week: prior.week, output: prior.output },
+      liftEach,
+      "week",
+    )
     const dated = today >= start && today <= end ? today : end
     upsert(weeklyGradeLiftTaskId(weekKey), lift.points, lift.description, dated)
   }
@@ -845,9 +1114,13 @@ function syncGradeBonusesFromState(state: HabitsState, extraAnchor?: Date) {
   const anchors: Date[] = [new Date()]
   const cache = new Map<string, ReturnType<typeof dailyShownGrades>>()
   if (extraAnchor) anchors.push(extraAnchor)
-  for (const key of Object.keys(state.weeklyData || {})) {
-    const parsed = parseLocalDate(key)
-    if (parsed) anchors.push(parsed)
+  // A dated edit only rewrites that week and today. Settings changes (no
+  // anchor) still walk the vault so older weeks pick up a new bonus.
+  if (!extraAnchor) {
+    for (const key of Object.keys(state.weeklyData || {})) {
+      const parsed = parseLocalDate(key)
+      if (parsed) anchors.push(parsed)
+    }
   }
   for (const anchor of anchors) {
     const weekKey = getWeekString(anchor)
@@ -855,7 +1128,7 @@ function syncGradeBonusesFromState(state: HabitsState, extraAnchor?: Date) {
     seen.add(weekKey)
     syncGradeBonusesForWeek(anchor, state, cache)
   }
-  syncWeeklyGradeLifts(state)
+  syncWeeklyGradeLifts(state, extraAnchor ? anchors : undefined)
 }
 
 function stripCompletionFromData(data: WeeklyData, taskId: string): WeeklyData {
@@ -900,6 +1173,7 @@ export const useHabitsStore = create<HabitsState>()(
       weeklyData: {},
       weeklyHabitData: {},
       monthlyHabitData: {},
+      quarterlyHabitData: {},
       gradeTolerance: DEFAULT_GRADE_TOLERANCE,
       setGradeTolerance: (tolerance) => {
         set({ gradeTolerance: clampGradeTolerance(tolerance) })
@@ -928,6 +1202,16 @@ export const useHabitsStore = create<HabitsState>()(
       weeklyGradeLiftBonus: DEFAULT_WEEKLY_GRADE_LIFT_BONUS,
       setWeeklyGradeLiftBonus: (bonus) => {
         set({ weeklyGradeLiftBonus: clampAccomplishmentBonus(bonus) })
+        syncGradeBonusesFromState(get())
+      },
+      weeklyAverageBeatBonus: DEFAULT_WEEKLY_AVERAGE_BEAT_BONUS,
+      setWeeklyAverageBeatBonus: (bonus) => {
+        set({ weeklyAverageBeatBonus: clampAccomplishmentBonus(bonus) })
+        syncGradeBonusesFromState(get())
+      },
+      monthlyAverageBeatBonus: DEFAULT_MONTHLY_AVERAGE_BEAT_BONUS,
+      setMonthlyAverageBeatBonus: (bonus) => {
+        set({ monthlyAverageBeatBonus: clampAccomplishmentBonus(bonus) })
         syncGradeBonusesFromState(get())
       },
       gradeUsePriority: false,
@@ -1007,8 +1291,20 @@ export const useHabitsStore = create<HabitsState>()(
       setHabitSmallLeds: (value) => set({ habitSmallLeds: !!value }),
       hideCompletedToday: false,
       setHideCompletedToday: (value) => set({ hideCompletedToday: !!value }),
+      hideCompletedAndMissed: false,
+      setHideCompletedAndMissed: (value) => set({ hideCompletedAndMissed: !!value }),
+      habitMonthWindow: DEFAULT_HABIT_MONTH_WINDOW,
+      setHabitMonthWindow: (mode) => set({ habitMonthWindow: parseHabitMonthWindowMode(mode) }),
+      habitBirthday: { ...DEFAULT_HABIT_BIRTHDAY },
+      setHabitBirthday: (birthday) => set({ habitBirthday: sanitizeHabitBirthday(birthday) }),
+      habitWeekWindow: DEFAULT_HABIT_WEEK_WINDOW,
+      setHabitWeekWindow: (mode) => set({ habitWeekWindow: parseHabitWeekWindowMode(mode) }),
       exemptionWand: false,
-      setExemptionWand: (value) => set({ exemptionWand: !!value }),
+      setExemptionWand: (value) =>
+        set(value ? { exemptionWand: true, missedOpWand: false } : { exemptionWand: false }),
+      missedOpWand: false,
+      setMissedOpWand: (value) =>
+        set(value ? { missedOpWand: true, exemptionWand: false } : { missedOpWand: false }),
       habitExemptions: emptyExemptionBooks(),
       setHabitExemption: (frequency, periodKey, taskId, exempt) => {
         const task = get().tasks.find((row) => row.id === taskId)
@@ -1120,6 +1416,7 @@ export const useHabitsStore = create<HabitsState>()(
           weeklyData: stripCompletionFromData(state.weeklyData, taskId),
           weeklyHabitData: stripCompletionFromData(state.weeklyHabitData, taskId),
           monthlyHabitData: stripCompletionFromData(state.monthlyHabitData, taskId),
+          quarterlyHabitData: stripCompletionFromData(state.quarterlyHabitData, taskId),
           habitExemptions: stripTaskExemptions(state.habitExemptions ?? emptyExemptionBooks(), taskId),
         })),
       setTasks: (tasks) =>
@@ -1134,7 +1431,11 @@ export const useHabitsStore = create<HabitsState>()(
         })),
 
       updateCompletion: (taskId, date, completion) => {
-        rememberWorld("habit")
+        const liveTask = get().tasks.find((t) => t.id === taskId)
+        const dateKey = formatLocalDateKey(date)
+        const quiet = liveTask ? quietTextPatch(liveTask, get().weeklyData[dateKey]?.[taskId], completion) : false
+        if (!quiet) rememberWorld("habit")
+        quietHabitWrite = quiet
         let sync:
           | { task: WeeklyTask; previous: TaskCompletion | undefined; final: TaskCompletion; priorData: WeeklyData }
           | undefined
@@ -1142,18 +1443,19 @@ export const useHabitsStore = create<HabitsState>()(
           const task = state.tasks.find((t) => t.id === taskId)
           if (!task || (task.frequency && task.frequency !== "daily")) return state
 
-          const dateKey = formatLocalDateKey(date)
           const weeklyData = { ...state.weeklyData }
           const day = { ...(weeklyData[dateKey] || {}) }
           const previous = day[taskId]
           const reconciled = reconcileManualEntry(task, previous, { ...previous, ...completion })
-          const finalCompletion = completionWithGoalFlag(task, reconciled, { date, weeklyData: state.weeklyData })
+          const marked = withHandMark(task, completion, reconciled)
+          const finalCompletion = completionWithGoalFlag(task, marked, { date, weeklyData: state.weeklyData })
           day[taskId] = stampCompletion(finalCompletion)
           weeklyData[dateKey] = day
           sync = { task, previous, final: day[taskId], priorData: state.weeklyData }
           return { weeklyData, contentRev: nextContentRev(state.contentRev) }
         })
-        if (sync) {
+        quietHabitWrite = false
+        if (sync && !quiet) {
           syncDailyHabitDayPoints(sync.task, date, get().weeklyData)
           syncGradeBonusesFromState(get(), date)
           syncHabitDoneLog(sync.task, date, sync.previous, sync.final, sync.priorData)
@@ -1167,7 +1469,7 @@ export const useHabitsStore = create<HabitsState>()(
               previous: TaskCompletion | undefined
               final: TaskCompletion
               priorData: WeeklyData
-              frequency: "daily" | "weekly" | "monthly"
+              frequency: "daily" | "weekly" | "monthly" | "quarterly"
               anchor: Date
             }
           | undefined
@@ -1229,6 +1531,32 @@ export const useHabitsStore = create<HabitsState>()(
             }
             return { monthlyHabitData, contentRev: nextContentRev(state.contentRev) }
           }
+          if (frequency === "quarterly") {
+            const seasonStart = quarterStartDate(date)
+            const seasonKey = quarterKey(seasonStart)
+            const previous = state.quarterlyHabitData[seasonKey]?.[taskId]
+            const next = link
+              ? applyTrackedToCompletion(task, link, previous, tracked)
+              : clearTrackedFromCompletion(task, previous)
+            if (!next) return state
+            const quarterlyHabitData = { ...state.quarterlyHabitData }
+            const bucket = { ...(quarterlyHabitData[seasonKey] || {}) }
+            const finalCompletion = completionWithGoalFlag(task, next, {
+              date: seasonStart,
+              weeklyData: state.quarterlyHabitData,
+            })
+            bucket[taskId] = stampCompletion(finalCompletion)
+            quarterlyHabitData[seasonKey] = bucket
+            sync = {
+              task,
+              previous,
+              final: finalCompletion,
+              priorData: state.quarterlyHabitData,
+              frequency,
+              anchor: seasonStart,
+            }
+            return { quarterlyHabitData, contentRev: nextContentRev(state.contentRev) }
+          }
 
           const dateKey = formatLocalDateKey(date)
           const previous = state.weeklyData[dateKey]?.[taskId]
@@ -1258,25 +1586,30 @@ export const useHabitsStore = create<HabitsState>()(
       },
 
       updateWeeklyHabitCompletion: (taskId, weekStart, completion) => {
-        rememberWorld("habit")
+        const weekKey = getWeekString(weekStart)
+        const liveTask = get().tasks.find((t) => t.id === taskId)
+        const quiet = liveTask ? quietTextPatch(liveTask, get().weeklyHabitData[weekKey]?.[taskId], completion) : false
+        if (!quiet) rememberWorld("habit")
+        quietHabitWrite = quiet
         let sync:
           | { task: WeeklyTask; previous: TaskCompletion | undefined; final: TaskCompletion; priorData: WeeklyData }
           | undefined
         set((state) => {
           const task = state.tasks.find((t) => t.id === taskId)
           if (!task) return state
-          const weekKey = getWeekString(weekStart)
           const weeklyHabitData = { ...state.weeklyHabitData }
           const bucket = { ...(weeklyHabitData[weekKey] || {}) }
           const previous = bucket[taskId]
           const reconciled = reconcileManualEntry(task, previous, { ...previous, ...completion })
-          const finalCompletion = completionWithGoalFlag(task, reconciled, { date: weekStart, weeklyData: state.weeklyHabitData })
+          const marked = withHandMark(task, completion, reconciled)
+          const finalCompletion = completionWithGoalFlag(task, marked, { date: weekStart, weeklyData: state.weeklyHabitData })
           bucket[taskId] = stampCompletion(finalCompletion)
           weeklyHabitData[weekKey] = bucket
           sync = { task, previous, final: bucket[taskId], priorData: state.weeklyHabitData }
           return { weeklyHabitData, contentRev: nextContentRev(state.contentRev) }
         })
-        if (sync) {
+        quietHabitWrite = false
+        if (sync && !quiet) {
           awardPointsIfNewlyMet(sync.task, sync.previous, sync.final, weekStart, sync.priorData)
           syncHabitDoneLog(sync.task, weekStart, sync.previous, sync.final, sync.priorData)
           syncGradeBonusesFromState(get(), weekStart)
@@ -1284,27 +1617,67 @@ export const useHabitsStore = create<HabitsState>()(
       },
 
       updateMonthlyHabitCompletion: (taskId, monthDate, completion) => {
-        rememberWorld("habit")
+        const monthKey = formatLocalMonthKey(monthDate)
+        const liveTask = get().tasks.find((t) => t.id === taskId)
+        const quiet = liveTask ? quietTextPatch(liveTask, get().monthlyHabitData[monthKey]?.[taskId], completion) : false
+        if (!quiet) rememberWorld("habit")
+        quietHabitWrite = quiet
         let sync:
           | { task: WeeklyTask; previous: TaskCompletion | undefined; final: TaskCompletion; priorData: WeeklyData }
           | undefined
         set((state) => {
           const task = state.tasks.find((t) => t.id === taskId)
           if (!task) return state
-          const monthKey = formatLocalMonthKey(monthDate)
           const monthlyHabitData = { ...state.monthlyHabitData }
           const bucket = { ...(monthlyHabitData[monthKey] || {}) }
           const previous = bucket[taskId]
           const reconciled = reconcileManualEntry(task, previous, { ...previous, ...completion })
-          const finalCompletion = completionWithGoalFlag(task, reconciled, { date: monthDate, weeklyData: state.monthlyHabitData })
+          const marked = withHandMark(task, completion, reconciled)
+          const finalCompletion = completionWithGoalFlag(task, marked, { date: monthDate, weeklyData: state.monthlyHabitData })
           bucket[taskId] = stampCompletion(finalCompletion)
           monthlyHabitData[monthKey] = bucket
           sync = { task, previous, final: bucket[taskId], priorData: state.monthlyHabitData }
           return { monthlyHabitData, contentRev: nextContentRev(state.contentRev) }
         })
-        if (sync) {
+        quietHabitWrite = false
+        if (sync && !quiet) {
           awardPointsIfNewlyMet(sync.task, sync.previous, sync.final, monthDate, sync.priorData)
           syncHabitDoneLog(sync.task, monthDate, sync.previous, sync.final, sync.priorData)
+        }
+      },
+
+      updateQuarterlyHabitCompletion: (taskId, quarterStart, completion) => {
+        const seasonKey = quarterKey(quarterStartDate(quarterStart))
+        const liveTask = get().tasks.find((t) => t.id === taskId)
+        const quiet = liveTask
+          ? quietTextPatch(liveTask, get().quarterlyHabitData[seasonKey]?.[taskId], completion)
+          : false
+        if (!quiet) rememberWorld("habit")
+        quietHabitWrite = quiet
+        let sync:
+          | { task: WeeklyTask; previous: TaskCompletion | undefined; final: TaskCompletion; priorData: WeeklyData }
+          | undefined
+        set((state) => {
+          const task = state.tasks.find((t) => t.id === taskId)
+          if (!task) return state
+          const quarterlyHabitData = { ...state.quarterlyHabitData }
+          const bucket = { ...(quarterlyHabitData[seasonKey] || {}) }
+          const previous = bucket[taskId]
+          const reconciled = reconcileManualEntry(task, previous, { ...previous, ...completion })
+          const marked = withHandMark(task, completion, reconciled)
+          const finalCompletion = completionWithGoalFlag(task, marked, {
+            date: quarterStartDate(quarterStart),
+            weeklyData: state.quarterlyHabitData,
+          })
+          bucket[taskId] = stampCompletion(finalCompletion)
+          quarterlyHabitData[seasonKey] = bucket
+          sync = { task, previous, final: bucket[taskId], priorData: state.quarterlyHabitData }
+          return { quarterlyHabitData, contentRev: nextContentRev(state.contentRev) }
+        })
+        quietHabitWrite = false
+        if (sync && !quiet) {
+          awardPointsIfNewlyMet(sync.task, sync.previous, sync.final, quarterStartDate(quarterStart), sync.priorData)
+          syncHabitDoneLog(sync.task, quarterStartDate(quarterStart), sync.previous, sync.final, sync.priorData)
         }
       },
 
@@ -1318,6 +1691,7 @@ export const useHabitsStore = create<HabitsState>()(
           weeklyData: migrated.weeklyData,
           weeklyHabitData: data.weeklyHabitData ?? {},
           monthlyHabitData: data.monthlyHabitData ?? {},
+          quarterlyHabitData: data.quarterlyHabitData ?? {},
           categories: data.categories ?? getDefaultHabitCategories(),
         }))
       },
@@ -1327,6 +1701,7 @@ export const useHabitsStore = create<HabitsState>()(
           weeklyData: {},
           weeklyHabitData: {},
           monthlyHabitData: {},
+          quarterlyHabitData: {},
           categories: [],
           gradeTolerance: state.gradeTolerance,
           outputGradeTolerance: state.outputGradeTolerance,
@@ -1334,6 +1709,8 @@ export const useHabitsStore = create<HabitsState>()(
           accomplishmentBonus: state.accomplishmentBonus,
           dayGradeLiftBonus: state.dayGradeLiftBonus,
           weeklyGradeLiftBonus: state.weeklyGradeLiftBonus,
+          weeklyAverageBeatBonus: state.weeklyAverageBeatBonus,
+          monthlyAverageBeatBonus: state.monthlyAverageBeatBonus,
           gradeUsePriority: state.gradeUsePriority,
           outputUsePriority: state.outputUsePriority,
           goodDaysUsePriority: state.goodDaysUsePriority,
@@ -1354,7 +1731,9 @@ export const useHabitsStore = create<HabitsState>()(
           percentLoadingBar: state.percentLoadingBar,
           habitSmallLeds: state.habitSmallLeds,
           hideCompletedToday: state.hideCompletedToday,
+          hideCompletedAndMissed: state.hideCompletedAndMissed,
           exemptionWand: state.exemptionWand,
+          missedOpWand: state.missedOpWand,
           habitExemptions: emptyExemptionBooks(),
         })),
     }),
@@ -1400,6 +1779,7 @@ export const useHabitsStore = create<HabitsState>()(
                 weeklyData: mergeCompletionData(current.weeklyData, p.weeklyData),
                 weeklyHabitData: mergeCompletionData(current.weeklyHabitData, p.weeklyHabitData),
                 monthlyHabitData: mergeCompletionData(current.monthlyHabitData, p.monthlyHabitData),
+                quarterlyHabitData: mergeCompletionData(current.quarterlyHabitData, p.quarterlyHabitData),
                 habitExemptions: exemptionBooksEmpty(current.habitExemptions)
                   ? sanitizeExemptionBooks(p.habitExemptions)
                   : current.habitExemptions,

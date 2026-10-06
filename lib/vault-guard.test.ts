@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest"
+import { formatAppendLog } from "./append-log"
 import { applyAppearancePins, pickPersistItem, mergePersistSnapshots, shouldRejectVaultShrink, vaultRecordCount, shouldRejectAppearanceDowngrade, shouldRejectContentDowngrade, shouldRejectIngestDowngrade, stampAppearancePins, shouldSkipHubAppearanceCopy, shouldRejectHubLogShrink, unionPersistSnapshots } from "./vault-guard.js"
 
 function tasks(n: number) {
@@ -347,6 +348,54 @@ describe("vault-guard", () => {
     expect(afterDelete.state.entries.map((entry) => entry.id)).toEqual(["st-new"])
   })
 
+  it("keeps a new pen when the other snapshot has the block but not the pen", () => {
+    const fresh = JSON.stringify({
+      state: {
+        scopes: [
+          {
+            id: "activity",
+            name: "Activity",
+            pens: [
+              { id: "act-work", name: "Work", color: "#2563eb" },
+              { id: "pen-new", name: "Sketching", color: "#b72424", editedAt: 50 },
+            ],
+          },
+        ],
+        entries: [{ id: "block", penId: "pen-new" }],
+      },
+    })
+    const stale = JSON.stringify({
+      state: {
+        scopes: [{ id: "activity", name: "Activity", pens: [{ id: "act-work", name: "Work", color: "#2563eb" }] }],
+        entries: [{ id: "block", penId: "pen-new" }],
+      },
+    })
+    const merged = JSON.parse(unionPersistSnapshots(stale, fresh, "brain2-timegrid-store") ?? "{}") as {
+      state: { scopes: { pens: { id: string; color: string }[] }[] }
+    }
+    const sketching = merged.state.scopes[0].pens.find((pen) => pen.id === "pen-new")
+    expect(sketching).toMatchObject({ name: "Sketching", color: "#b72424" })
+  })
+
+  it("keeps a newer pen color when a stale copy of the same pen arrives", () => {
+    const fresh = JSON.stringify({
+      state: {
+        scopes: [{ id: "activity", name: "Activity", pens: [{ id: "pen-new", name: "Sketching", color: "#b72424", editedAt: 80 }] }],
+        entries: [],
+      },
+    })
+    const stale = JSON.stringify({
+      state: {
+        scopes: [{ id: "activity", name: "Activity", pens: [{ id: "pen-new", name: "Sketching", color: "#2563eb", editedAt: 10 }] }],
+        entries: [],
+      },
+    })
+    const merged = JSON.parse(unionPersistSnapshots(stale, fresh, "brain2-timegrid-store") ?? "{}") as {
+      state: { scopes: { pens: { color: string }[] }[] }
+    }
+    expect(merged.state.scopes[0].pens[0].color).toBe("#b72424")
+  })
+
   it("keeps a habit check a stale snapshot does not have", () => {
     const saved = JSON.stringify({
       state: {
@@ -366,6 +415,40 @@ describe("vault-guard", () => {
       state: { weeklyData: Record<string, Record<string, { completed?: boolean }>>; contentRev: number }
     }
     expect(merged.state.weeklyData["2026-09-21"].h1.completed).toBe(true)
+  })
+
+  it("drops gps tracking points so they cannot crowd the ingest log", () => {
+    const gps = Array.from({ length: 200 }, (_, i) => ({
+      id: `g${i}`,
+      at: `2026-09-22T04:${String(i % 60).padStart(2, "0")}:00.000Z`,
+      kind: "gps",
+      status: i % 2 === 0 ? "applied" : "ignored",
+      summary: i % 2 === 0 ? "GPS → Home" : "Still at Home",
+    }))
+    const saved = JSON.stringify({
+      state: { events: gps, allowedChats: [{ chatId: "1" }], allowlistRev: 1 },
+    })
+    const note = JSON.stringify({
+      state: {
+        events: [
+          { id: "note", at: "2026-09-22T03:00:00.000Z", kind: "capture", status: "applied" },
+          { id: "bad", at: "2026-09-22T06:00:00.000Z", kind: "gps", status: "error", summary: "Where?" },
+          {
+            id: "unpaired",
+            at: "2026-09-22T06:01:00.000Z",
+            kind: "gps",
+            status: "ignored",
+            summary: "Unpaired sender",
+          },
+        ],
+        allowedChats: [{ chatId: "1" }],
+        allowlistRev: 1,
+      },
+    })
+    const merged = JSON.parse(mergePersistSnapshots(saved, note, "brain2-ingest-store") ?? "{}") as {
+      state: { events: { id: string }[] }
+    }
+    expect(merged.state.events.map((event) => event.id)).toEqual(["unpaired", "bad", "note"])
   })
 
   it("keeps a telegram event a shorter log left out", () => {
@@ -499,6 +582,55 @@ describe("vault-guard", () => {
 
   it("heals a seed profile from a richer hub", () => {
     expect(pickPersistItem(tasks(15), tasks(2455), "cogs-task-storage")).toBe(tasks(2455))
+  })
+
+  it("does not put a just-submitted plan back into the composer draft", () => {
+    const filed = "Plan for september"
+    const previous = JSON.stringify({
+      v: 1,
+      entries: [{ id: "al_a", createdAt: "2026-09-24T00:18:19.667Z", text: filed }],
+      draft: `${filed} `,
+    })
+    const submitted = JSON.stringify({
+      v: 1,
+      entries: [
+        { id: "al_a", createdAt: "2026-09-24T00:18:19.667Z", text: filed },
+        { id: "al_b", createdAt: "2026-10-06T22:24:17.404Z", text: filed },
+      ],
+    })
+    const merged = JSON.parse(pickPersistItem(submitted, previous, "monthPlan-2026-09")!)
+    expect(merged.entries).toHaveLength(2)
+    expect(merged.draft).toBeUndefined()
+    const typing = JSON.stringify({
+      v: 1,
+      entries: [{ id: "al_a", createdAt: "2026-09-24T00:18:19.667Z", text: filed }],
+      draft: "still writing",
+    })
+    const kept = JSON.parse(pickPersistItem(typing, submitted, "monthPlan-2026-09")!)
+    expect(kept.draft).toBe("still writing")
+    expect(kept.entries.map((entry: { id: string }) => entry.id).sort()).toEqual(["al_a", "al_b"])
+  })
+
+  it("drops a draft that is only the stamped list of submitted entries", () => {
+    const entry = {
+      id: "al_oct",
+      createdAt: "2026-10-06T22:07:00.000Z",
+      text: "ASTROLOGICAL MONTH PREDICTIONS AND NOTES:\n\nOctober body",
+    }
+    const older = JSON.stringify({ v: 1, entries: [entry] })
+    const dumped = JSON.stringify({ v: 1, entries: [entry], draft: formatAppendLog([entry], "all") })
+    const merged = JSON.parse(pickPersistItem(dumped, older, "monthPlan-2026-10")!)
+    expect(merged.draft).toBeUndefined()
+    expect(merged.entries).toHaveLength(1)
+    expect(merged.entries[0].text).toContain("ASTROLOGICAL MONTH PREDICTIONS")
+    const typing = JSON.stringify({
+      v: 1,
+      entries: [entry],
+      draft: "9/21 4:14pm - plan for literally rn rn",
+    })
+    const kept = JSON.parse(pickPersistItem(typing, older, "monthPlan-2026-10")!)
+    expect(kept.draft).toBe("9/21 4:14pm - plan for literally rn rn")
+    expect(kept.entries).toHaveLength(1)
   })
 
   it("does not treat an empty monthPlan hub string as a vault", () => {

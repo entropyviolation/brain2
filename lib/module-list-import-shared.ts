@@ -5,6 +5,7 @@
  */
 import type { AttributeDefinition, AttributeValue, List, Task } from "@/lib/types"
 import { withCompleted } from "@/lib/completion-status"
+import { isExplicitlyScheduleable } from "@/lib/scheduling"
 
 export const MODULE_SOURCE_ATTR = "moduleSource"
 export const MODULE_SOURCE_ID_ATTR = "moduleSourceId"
@@ -219,7 +220,7 @@ function listSignature(list: List): string {
     enabledDisplays: list.enabledDisplays ?? [],
     itemAttributes: (list.itemAttributes ?? []).map((a) => a.id),
     createdByModuleId: list.createdByModuleId ?? "",
-    scheduleable: list.scheduleable !== false,
+    scheduleable: isExplicitlyScheduleable(list),
   })
 }
 

@@ -30,6 +30,15 @@ describe("calibration", () => {
     expect(pts.map((p) => p.taskId)).toEqual(["a"])
   })
 
+  it("leaves estimated and unknown lengths out of the exact comparison", () => {
+    const pts = getCalibrationPoints([
+      task({ id: "exact", completed: true, estimatedDuration: 60, actualDuration: 60, durationCertainty: "exact" }),
+      task({ id: "est", completed: true, estimatedDuration: 60, actualDuration: 120, durationCertainty: "estimated" }),
+      task({ id: "unk", completed: true, estimatedDuration: 60, durationCertainty: "unknown" }),
+    ])
+    expect(pts.map((p) => p.taskId)).toEqual(["exact"])
+  })
+
   it("computes ratio and signed error %", () => {
     const pts = getCalibrationPoints([
       task({ id: "a", completed: true, estimatedDuration: 60, actualDuration: 90 }),

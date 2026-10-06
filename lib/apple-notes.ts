@@ -9,12 +9,14 @@
  * Pure helpers (period math, HTML strip, payload parse, item mapping) live here
  * so they stay unit-testable without osascript.
  */
-import { addDays, startOfDay } from "date-fns"
-import { formatLocalDateKey } from "@/lib/date-utils"
+import { addDays } from "date-fns"
+import { endOfLocalDay, formatLocalDateKey, startOfLocalDay } from "@/lib/date-utils"
 import { createListItem, withCategoryDefaults } from "@/lib/item-utils"
 import { parsePathHeader } from "@/lib/smart-parse"
 import type { Folder, List, Task } from "@/lib/types"
 import { persistKey, readAliasedLocal, writeAliasedLocal } from "@/lib/storage-keys"
+
+export { endOfLocalDay, startOfLocalDay }
 
 /** Attribute keys written onto ingested items so re-runs can skip duplicates. */
 export const APPLE_NOTE_ATTR = {
@@ -28,7 +30,11 @@ export const APPLE_NOTES_SOURCE = "apple-notes"
 
 export const IPHONE_NOTES_INGEST_MODULE_ID = "iphone-notes-ingest"
 export const IPHONE_NOTES_INGEST_FOLDER_ID = "folder-iphone-notes-ingest"
-export const IPHONE_NOTES_INGEST_FOLDER_NAME = "iPhone Notes Ingest"
+/** Lists folder where Mac From Notes parks a note for later. */
+export const MAC_NOTES_FOLDER_NAME = "Mac Notes"
+/** Older auto-created name. `ensureIphoneNotesIngestDestination` renames it. */
+export const LEGACY_IPHONE_NOTES_INGEST_FOLDER_NAME = "iPhone Notes Ingest"
+export const IPHONE_NOTES_INGEST_FOLDER_NAME = MAC_NOTES_FOLDER_NAME
 export const NOTES_TO_INGEST_LIST_ID = "list-notes-to-ingest"
 export const NOTES_TO_INGEST_LIST_NAME = "notes to ingest"
 
@@ -262,14 +268,6 @@ export function parseAppleNotesPayload(raw: unknown): AppleNote[] {
   return out
 }
 
-export function endOfLocalDay(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999)
-}
-
-export function startOfLocalDay(date: Date): Date {
-  return startOfDay(date)
-}
-
 /** Inclusive local date range for a preset (or custom YYYY-MM-DD fields). */
 export function notesPeriodRange(
   preset: NotesPeriodPreset,
@@ -500,12 +498,18 @@ export interface IngestDestinationMutators {
   addList: (list: List) => void
   addFolder: (folder: Folder) => void
   addListToFolder: (folderId: string, listId: string) => void
+  updateFolder?: (folder: Folder) => void
 }
 
-/** Auto-create the iPhone Notes Ingest folder + "notes to ingest" list if missing. */
+/** Auto-create the Mac Notes folder + "notes to ingest" list if missing. */
 export function ensureIphoneNotesIngestDestination(mut: IngestDestinationMutators): { folder: Folder; list: List } {
   let folder = mut.folders.find((f) => f.id === IPHONE_NOTES_INGEST_FOLDER_ID)
     ?? mut.folders.find((f) => f.name.toLowerCase() === IPHONE_NOTES_INGEST_FOLDER_NAME.toLowerCase())
+    ?? mut.folders.find((f) => f.name.toLowerCase() === LEGACY_IPHONE_NOTES_INGEST_FOLDER_NAME.toLowerCase())
+  if (folder && folder.name === LEGACY_IPHONE_NOTES_INGEST_FOLDER_NAME && mut.updateFolder) {
+    folder = { ...folder, name: MAC_NOTES_FOLDER_NAME }
+    mut.updateFolder(folder)
+  }
   if (!folder) {
     folder = {
       id: IPHONE_NOTES_INGEST_FOLDER_ID,
@@ -514,6 +518,7 @@ export function ensureIphoneNotesIngestDestination(mut: IngestDestinationMutator
       listIds: [],
       color: "#0ea5e9",
       description: "Parked Apple Notes waiting to be bulk-added into lists.",
+      scheduleable: false,
       createdByModuleId: IPHONE_NOTES_INGEST_MODULE_ID,
       hiddenFromGlobalAll: false,
     }
@@ -529,6 +534,7 @@ export function ensureIphoneNotesIngestDestination(mut: IngestDestinationMutator
       color: "#38bdf8",
       description: "Apple Notes saved for later ingest. Edit into bulk-add syntax, then extract items.",
       createdAt: new Date(),
+      scheduleable: false,
       createdByModuleId: IPHONE_NOTES_INGEST_MODULE_ID,
       hiddenFromGlobalAll: false,
     }
@@ -594,6 +600,7 @@ export function ensureIphoneNotesStoreDestination(mut: IngestDestinationMutators
       listIds: [],
       color: "#a855f7",
       description: "On My iPhone notes dumped via Telegram Shortcut, waiting to be bulk-added.",
+      scheduleable: false,
       createdByModuleId: IPHONE_NOTES_STORE_MODULE_ID,
       hiddenFromGlobalAll: false,
     }
@@ -609,6 +616,7 @@ export function ensureIphoneNotesStoreDestination(mut: IngestDestinationMutators
       color: "#c084fc",
       description: "Phone notes parked from the iOS Shortcut. Edit into bulk-add syntax, then extract items.",
       createdAt: new Date(),
+      scheduleable: false,
       createdByModuleId: IPHONE_NOTES_STORE_MODULE_ID,
       hiddenFromGlobalAll: false,
     }

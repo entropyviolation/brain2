@@ -30,6 +30,8 @@ export interface IncomingTelegramPayload {
   receivedAt: string
   attachments?: IncomingAttachment[]
   mediaGroupId?: string
+  /** Set when the update is a Telegram location or Live Location edit. */
+  locationUpdate?: boolean
 }
 
 interface DesktopWithTelegram {

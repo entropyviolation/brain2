@@ -135,6 +135,12 @@ describe("persist-storage", () => {
     expect(shouldAwaitPersistHub("brain2-tracking-day-notes", oneNote)).toBe(false)
     expect(shouldAwaitPersistHub("cogs-tracking-day-notes", null)).toBe(true)
     expect(shouldAwaitPersistHub("monthPlan-2026-09", "")).toBe(true)
+    const monthLog = JSON.stringify({
+      v: 1,
+      entries: [{ id: "al_oct", createdAt: "2026-10-06T20:26:00.000Z", text: "already on this profile" }],
+    })
+    expect(shouldAwaitPersistHub("monthPlan-2026-10", monthLog)).toBe(true)
+    expect(shouldAwaitPersistHub("brain2-monthPlan-2026-10", monthLog)).toBe(true)
     expect(cogsStateStorage().getItem("monthPlan-2026-09")).toBeNull()
     localStorage.setItem("monthPlan-2026-09", "")
     expect(cogsStateStorage().getItem("monthPlan-2026-09")).toBeNull()

@@ -1,10 +1,11 @@
 import { describe, it, expect, beforeEach } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { taskRepository } from "@/lib/data/task-repository"
-import { completeTask, uncompleteTask, toggleCompletion, saveCompletionReview, markMissedOpportunity, unmarkMissedOpportunity } from "@/lib/services/completion-service"
+import { completeTask, uncompleteTask, toggleCompletion, saveCompletionReview, postMortemReviewInput, markMissedOpportunity, unmarkMissedOpportunity } from "@/lib/services/completion-service"
 import type { Task } from "@/lib/types"
 import { NA_SMART_COMPLETED, NA_SMART_MISSED } from "@/lib/scheduled-lists-sync"
 import { useTaskStore } from "@/lib/task-store"
+import { usePointsStore } from "@/lib/points-store"
 
 const task = (overrides: Partial<Task>): Task => ({
   id: "t1",
@@ -119,6 +120,128 @@ describe("completion-service", () => {
     taskRepository.add(task({ id: "a", completed: true, actualDuration: 30 }))
     saveCompletionReview("a", { satisfaction: 5, resistance: 5, focus: 5, distraction: 5 })
     expect(taskRepository.getById("a")?.completionReview?.actualDuration).toBe(30)
+  })
+
+  it("stores an unknown length without a number", () => {
+    taskRepository.add(task({ id: "a", completed: true, actualDuration: 40 }))
+    saveCompletionReview("a", { durationCertainty: "unknown", satisfaction: 6 })
+    const updated = taskRepository.getById("a")
+    expect(updated?.durationCertainty).toBe("unknown")
+    expect(updated?.actualDuration).toBeUndefined()
+    expect(updated?.completionReview?.durationCertainty).toBe("unknown")
+    expect(updated?.completionReview?.actualDuration).toBeUndefined()
+    expect(updated?.completionReview?.satisfaction).toBe(6)
+  })
+
+  it("keeps an estimated length out of the exact slot and awards quick-review points", () => {
+    taskRepository.add(task({ id: "a", completed: true, description: "Letter" }))
+    saveCompletionReview("a", {
+      durationCertainty: "estimated",
+      actualDuration: 25,
+      awardQuickReview: true,
+      notes: "one two three",
+      enjoyment: 8,
+    })
+    const updated = taskRepository.getById("a")
+    expect(updated?.durationCertainty).toBe("estimated")
+    expect(updated?.actualDuration).toBe(25)
+    expect(updated?.timeRough).toBe(true)
+    expect(updated?.completionReview?.reviewWordCount).toBe(3)
+    expect(updated?.completionReview?.reviewPoints).toBe(3.3)
+    expect(updated?.completionReview?.enjoyment).toBe(8)
+    expect(updated?.completionReview?.resistance).toBeUndefined()
+    const ledger = usePointsStore.getState().pointsHistory.find((entry) => entry.taskId === "review:a")
+    expect(ledger?.points).toBe(3.3)
+  })
+
+  it("clears a saved reflection score and leaves scores this save does not mention", () => {
+    taskRepository.add(task({ id: "a", completed: true }))
+    saveCompletionReview("a", { enjoyment: 8, resistance: 4, expectedDifficulty: 3 })
+    saveCompletionReview("a", { enjoyment: null })
+    const review = taskRepository.getById("a")?.completionReview
+    expect(review?.enjoyment).toBeUndefined()
+    expect(review && "enjoyment" in review).toBe(false)
+    expect(review?.resistance).toBe(4)
+    expect(review?.expectedDifficulty).toBe(3)
+    saveCompletionReview("a", { focus: 6 })
+    const kept = taskRepository.getById("a")?.completionReview
+    expect(kept?.enjoyment).toBeUndefined()
+    expect(kept?.resistance).toBe(4)
+    expect(kept?.expectedDifficulty).toBe(3)
+    expect(kept?.focus).toBe(6)
+  })
+
+  it("a later reflect note does not revise the quick-review award", () => {
+    taskRepository.add(task({ id: "a", completed: true, description: "Letter" }))
+    saveCompletionReview("a", {
+      awardQuickReview: true,
+      notes: "one two three",
+      enjoyment: 8,
+      resistance: 4,
+    })
+    const before = usePointsStore.getState().pointsHistory.filter((entry) => entry.taskId === "review:a")
+    const input = postMortemReviewInput({
+      note: "a much longer note with many extra words here",
+      satisfaction: 6,
+      focus: 9,
+    })
+    expect(input).not.toHaveProperty("notes")
+    expect(input).not.toHaveProperty("awardQuickReview")
+    expect(input.resistance).toBeNull()
+    saveCompletionReview("a", input)
+    const review = taskRepository.getById("a")?.completionReview
+    expect(review?.notes).toBe("one two three")
+    expect(review?.reflectNotes).toBe("a much longer note with many extra words here")
+    expect(review?.reviewWordCount).toBe(3)
+    expect(review?.reviewPoints).toBe(3.3)
+    expect(review?.enjoyment).toBe(8)
+    expect(review?.resistance).toBeUndefined()
+    expect(review && "resistance" in review).toBe(false)
+    expect(review?.focus).toBe(9)
+    const after = usePointsStore.getState().pointsHistory.filter((entry) => entry.taskId === "review:a")
+    expect(after).toEqual(before)
+    expect(after).toHaveLength(1)
+    expect(after[0]?.points).toBe(3.3)
+
+    saveCompletionReview("a", { notes: "one two three four five" })
+    const untouched = taskRepository.getById("a")?.completionReview
+    expect(untouched?.notes).toBe("one two three four five")
+    expect(untouched?.reviewWordCount).toBe(3)
+    expect(untouched?.reviewPoints).toBe(3.3)
+    const still = usePointsStore.getState().pointsHistory.filter((entry) => entry.taskId === "review:a")
+    expect(still).toEqual(before)
+  })
+
+  it("persists an exact start, an estimated start, and an unknown start with no time", () => {
+    const at = new Date(2026, 5, 20, 9, 15)
+    taskRepository.add(task({ id: "a", completed: true, description: "Letter" }))
+
+    saveCompletionReview("a", { startCertainty: "exact", startedAt: at, enjoyment: 8 })
+    let saved = taskRepository.getById("a")
+    expect(saved?.startCertainty).toBe("exact")
+    expect(saved?.startedAt?.getHours()).toBe(9)
+    expect(saved?.timeRough).toBeUndefined()
+    expect(saved?.completionReview?.startCertainty).toBe("exact")
+    expect(saved?.completionReview?.startedAt?.getMinutes()).toBe(15)
+    expect(saved?.completionReview?.enjoyment).toBe(8)
+
+    saveCompletionReview("a", { startCertainty: "estimated", startedAt: at })
+    saved = taskRepository.getById("a")
+    expect(saved?.startCertainty).toBe("estimated")
+    expect(saved?.startedAt).toBeDefined()
+    expect(saved?.timeRough).toBe(true)
+    expect(saved?.completionReview?.enjoyment).toBe(8)
+
+    saveCompletionReview("a", { startCertainty: "unknown", enjoyment: null })
+    saved = taskRepository.getById("a")
+    expect(saved?.startCertainty).toBe("unknown")
+    expect(saved?.startedAt).toBeUndefined()
+    expect(saved?.timeRough).toBeUndefined()
+    expect(saved?.completionReview?.startCertainty).toBe("unknown")
+    expect(saved?.completionReview?.startedAt).toBeUndefined()
+    expect(saved?.completionReview && "startedAt" in saved.completionReview).toBe(false)
+    expect(saved?.completionReview?.enjoyment).toBeUndefined()
+    expect(saved?.completionReview && "enjoyment" in saved.completionReview).toBe(false)
   })
 
   it("returns undefined when reviewing a missing task", () => {

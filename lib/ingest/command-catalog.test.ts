@@ -42,7 +42,8 @@ const EXPECTED_KIND_MARKERS: Array<{ kind: string; mustMention: string }> = [
   { kind: "todo-today", mustMention: "to do today" },
   { kind: "do", mustMention: "do:" },
   { kind: "morning", mustMention: "gm" },
-  { kind: "reviews", mustMention: "reviews" },
+  { kind: "night", mustMention: "gn" },
+  { kind: "reviews", mustMention: "rituals" },
   { kind: "review", mustMention: "review" },
   { kind: "cancel", mustMention: "cancel" },
   { kind: "gps", mustMention: "gps:" },
@@ -60,6 +61,11 @@ const EXPECTED_KIND_MARKERS: Array<{ kind: string; mustMention: string }> = [
   { kind: "inventory", mustMention: "inv" },
   { kind: "capture", mustMention: "add" },
   { kind: "event-log", mustMention: "log:" },
+  { kind: "intake", mustMention: "intake:" },
+  { kind: "switch-task", mustMention: "st:" },
+  { kind: "switch-objective", mustMention: "so:" },
+  { kind: "transit", mustMention: "transit:" },
+  { kind: "habit-trigger", mustMention: "dh:" },
 ]
 
 describe("BIM_COMMAND_CATALOG", () => {

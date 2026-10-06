@@ -5,8 +5,9 @@
  * planned) flight segment with airline, flight number, departure/arrival
  * airports + times, structured layovers, a booking reference, cost, and a
  * `booked` flag. These fields are what a future **Itinerary** module reads to
- * "map flights onto the global timeline" — the `departureTime`/`arrivalTime`
- * datetimes make a flight `scheduleable`.
+ * "map flights onto the global timeline". Departure and arrival are scheduling
+ * fields. They do not send the flight to the Scheduler unless the list or item
+ * opts in with Send to Scheduler (`scheduleable: true`).
  *
  * Layovers are modelled as a `multistring` of free-form stop descriptors (e.g.
  * "ATL 1h20m") — the most expressive *serializable* shape available in the
@@ -73,7 +74,7 @@ export function getFlightTypeDefinition(): ItemTypeDefinition {
       FLIGHT_ATTR.arrivalAirport,
       FLIGHT_ATTR.departureTime,
     ],
-    // Flights have start/end datetimes, so they place on the Scheduler timeline.
+    // Scheduling fields (departure and arrival). Not Scheduler membership.
     detailPanels: ["details", "scheduling"],
     capabilities: { scheduleable: true, deadline: true },
   }

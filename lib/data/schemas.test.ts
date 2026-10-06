@@ -53,6 +53,16 @@ describe("taskSchema", () => {
     expect(parsed.legacyField).toBe(42)
   })
 
+  it("accepts a leftover lifecycle word on status by dropping it", () => {
+    const parsed = taskSchema.parse({ ...validTask, status: "clarified" })
+    expect(parsed.status).toBeUndefined()
+  })
+
+  it("rewrites the old completed word to done", () => {
+    const parsed = taskSchema.parse({ ...validTask, status: "completed", completed: true })
+    expect(parsed.status).toBe("done")
+  })
+
   it("accepts molecular subtasks with extra fields", () => {
     expect(
       taskSchema.safeParse({

@@ -7,7 +7,14 @@ import {
   isExpiredDaySchedule,
   rollUpScheduleFields,
   rollUpScheduleFieldsCascaded,
+  priorityDateOf,
   appendSchedulePlacement,
+  dismissFromPeriodFields,
+  livePeriodMatches,
+  assimilateUndoneFields,
+  pushUndoneFields,
+  discardUndoneFields,
+  nextOpenPeriodValue,
 } from "@/lib/scheduling"
 import { getWeekString, formatLocalMonthKey } from "@/lib/date-utils"
 import type { Task } from "@/lib/types"
@@ -105,5 +112,125 @@ describe("rollUpScheduleFields", () => {
   it("appendSchedulePlacement skips duplicates", () => {
     const once = appendSchedulePlacement(undefined, { period: "day", value: "2026-09-21" })
     expect(appendSchedulePlacement(once, { period: "day", value: "2026-09-21" })).toEqual(once)
+  })
+})
+
+describe("dismissFromPeriodFields", () => {
+  const tuesday = new Date(2026, 8, 22, 10, 0, 0)
+
+  it("removes only the matching historical placement without throwing", () => {
+    const week = getWeekString(new Date(2026, 8, 21))
+    const open = task({
+      id: "hist",
+      scheduledWeek: week,
+      schedulePlacements: [
+        { period: "day", value: "2026-09-21" },
+        { period: "week", value: "2026-09-14_2026-09-20" },
+      ],
+    })
+    const patch = dismissFromPeriodFields(open, "day", "2026-09-21", tuesday)
+    expect(patch.schedulePlacements).toEqual([{ period: "week", value: "2026-09-14_2026-09-20" }])
+    expect({ ...open, ...patch }.scheduledWeek).toBe(week)
+    expect(livePeriodMatches(open, "day", "2026-09-21")).toBe(false)
+  })
+
+  it("rolls a still-live past day up to the week without re-pinning that day", () => {
+    const monday = new Date(2026, 8, 21, 9, 0, 0)
+    const open = task({ id: "stale", scheduledDate: monday, scheduledTime: "09:00" })
+    const patch = dismissFromPeriodFields(open, "day", "2026-09-21", tuesday)
+    expect(patch.scheduledDate).toBeUndefined()
+    expect(patch.scheduledTime).toBeUndefined()
+    expect(patch.scheduledWeek).toBe(getWeekString(monday))
+    expect(patch.schedulePlacements ?? []).not.toContainEqual({ period: "day", value: "2026-09-21" })
+  })
+})
+
+describe("auto-push", () => {
+  const tuesday = new Date(2026, 8, 22, 10, 0, 0)
+
+  it("schedules the next week and records the missed week", () => {
+    const open = task({
+      id: "week",
+      autoPush: true,
+      scheduledWeek: "2026-09-14_2026-09-20",
+    })
+    const next = { ...open, ...rollUpScheduleFieldsCascaded(open, tuesday)! }
+    expect(next.scheduledWeek).toBe("2026-09-21_2026-09-27")
+    expect(next.scheduledMonth).toBeUndefined()
+    expect(next.weeksPushed).toBe(1)
+    expect(next.schedulePlacements).toEqual([
+      { period: "week", value: "2026-09-14_2026-09-20", resolved: "pushed" },
+    ])
+  })
+
+  it("records every missed day on the way to today", () => {
+    const sunday = new Date(2026, 8, 20, 9, 0, 0)
+    const open = task({ id: "days", autoPush: true, scheduledDate: sunday })
+    const next = { ...open, ...rollUpScheduleFieldsCascaded(open, tuesday)! }
+    expect(next.scheduledDate && new Date(next.scheduledDate).getDate()).toBe(22)
+    expect(next.daysPushed).toBe(2)
+    expect(next.schedulePlacements).toEqual([
+      { period: "day", value: "2026-09-20", resolved: "pushed" },
+      { period: "day", value: "2026-09-21", resolved: "pushed" },
+    ])
+    expect(priorityDateOf(next)?.getDate()).toBe(20)
+  })
+})
+
+describe("undone triage", () => {
+  const tuesday = new Date(2026, 8, 22, 10, 0, 0)
+  const week = getWeekString(tuesday)
+
+  it("jumps a stale next-day push onto today", () => {
+    expect(nextOpenPeriodValue("day", new Date(2026, 8, 1), tuesday)).toBe("2026-09-22")
+    expect(nextOpenPeriodValue("day", new Date(2026, 8, 21), tuesday)).toBe("2026-09-22")
+  })
+
+  it("assimilate keeps a rolled-up task on its week and leaves the day undone", () => {
+    const open = task({
+      id: "slid",
+      scheduledWeek: week,
+      schedulePlacements: [{ period: "day", value: "2026-09-21" }],
+    })
+    const patch = assimilateUndoneFields(open, "day", "2026-09-21", tuesday)
+    expect(patch).toEqual({})
+    expect({ ...open, ...patch }.scheduledWeek).toBe(week)
+    expect({ ...open, ...patch }.schedulePlacements).toEqual([{ period: "day", value: "2026-09-21" }])
+  })
+
+  it("assimilate rolls a still-live past day onto that week and keeps the day undone", () => {
+    const monday = new Date(2026, 8, 21, 9, 0, 0)
+    const open = task({ id: "stale", scheduledDate: monday })
+    const patch = assimilateUndoneFields(open, "day", "2026-09-21", tuesday)
+    const next = { ...open, ...patch }
+    expect(next.scheduledDate).toBeUndefined()
+    expect(next.scheduledWeek).toBe(getWeekString(monday))
+    expect(next.schedulePlacements).toEqual([{ period: "day", value: "2026-09-21" }])
+  })
+
+  it("push lands on today and leaves the day undone", () => {
+    const open = task({
+      id: "push",
+      scheduledWeek: week,
+      schedulePlacements: [{ period: "day", value: "2026-09-21" }],
+    })
+    const next = { ...open, ...pushUndoneFields(open, "day", "2026-09-21", new Date(2026, 8, 21), tuesday) }
+    expect(next.scheduledWeek).toBeUndefined()
+    expect(next.scheduledDate && new Date(next.scheduledDate).getDate()).toBe(22)
+    expect(next.daysPushed).toBe(1)
+    expect(next.schedulePlacements).toEqual([{ period: "day", value: "2026-09-21", resolved: "pushed" }])
+  })
+
+  it("discard cancels the task and clears the live schedule", () => {
+    const open = task({
+      id: "drop",
+      scheduledWeek: week,
+      schedulePlacements: [{ period: "day", value: "2026-09-21" }],
+    })
+    const next = { ...open, ...discardUndoneFields(open, "day", "2026-09-21") }
+    expect(next.status).toBe("cancelled")
+    expect(next.completed).toBe(false)
+    expect(next.scheduledWeek).toBeUndefined()
+    expect(next.schedulePlacements).toEqual([{ period: "day", value: "2026-09-21", resolved: "discarded" }])
   })
 })

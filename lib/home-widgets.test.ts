@@ -12,8 +12,13 @@ import {
   dayLampWord,
   daysUntilCount,
   daysUntilFace,
+  daysUntilLiveFace,
+  daysUntilRemainingMs,
+  formatCountdownDecimal,
+  formatCountdownSpan,
   homeInstrumentColorVars,
   homeWellGradient,
+  homeWidgetDate,
   migrateHomeWidgetPersist,
   moveHomeWidget,
   petPose,
@@ -56,6 +61,7 @@ describe("home widget catalog", () => {
       "next",
       "daylamp",
       "daysuntil",
+      "moon",
       "solar",
       "tracking",
       "night",
@@ -74,6 +80,9 @@ describe("home widget catalog", () => {
     expect(petPose(0, 3)).toBe("asleep")
     expect(petPose(40, 3)).toBe("idle")
     expect(petPose(100, 3)).toBe("pleased")
+    expect(petPose(40, 3, 23)).toBe("asleep")
+    expect(petPose(100, 3, 23)).toBe("pleased")
+    expect(petPose(0, 0, 2)).toBe("asleep")
   })
 
   it("picks the next event, then an open to-do", () => {
@@ -119,7 +128,7 @@ describe("home widget catalog", () => {
       },
       2,
     )
-    expect(folded.order).toEqual(["review", "points", "award", "progress"])
+    expect(folded.order).toEqual(["review", "points", "award", "progress", "moon"])
     expect(folded.hidden).toContain("points")
     expect(folded.hidden).not.toContain("today")
     const kept = migrateHomeWidgetPersist(
@@ -128,6 +137,31 @@ describe("home widget catalog", () => {
     )
     expect(kept.order?.slice(0, 4)).toEqual(["review", "points", "award", "progress"])
     expect(kept.hidden).not.toContain("points")
+  })
+
+  it("keeps overview squares on the selected day unless they follow the clock", () => {
+    const selected = new Date(2026, 0, 2, 15, 0)
+    const now = new Date(2026, 5, 20, 14, 30)
+    expect(homeWidgetDate(selected, now, false)).toBe(selected)
+    expect(homeWidgetDate(selected, now, true)).toBe(now)
+  })
+
+  it("leaves Follow the clock off when migrating a v7 blob", () => {
+    const next = migrateHomeWidgetPersist(
+      { order: ["review", "moon"], hidden: ["solar"], widgetsFollowClock: true },
+      7,
+    )
+    expect(next.widgetsFollowClock).toBe(false)
+    expect(next.hidden).toEqual(["solar"])
+  })
+
+  it("places Moon after Days Until and leaves it showing", () => {
+    const next = migrateHomeWidgetPersist(
+      { order: ["review", "points", "award", "daysuntil", "solar"], hidden: ["solar"] },
+      6,
+    )
+    expect(next.order).toEqual(["review", "points", "award", "daysuntil", "moon", "solar"])
+    expect(next.hidden).not.toContain("moon")
   })
 
   it("counts calendar days until a label", () => {
@@ -140,6 +174,32 @@ describe("home widget catalog", () => {
     expect(daysUntilFace(0, "Birthday")).toEqual({ crt: "0", footer: "Birthday is today" })
     expect(daysUntilFace(-2, "Birthday")).toEqual({ crt: "2", footer: "Days since Birthday" })
     expect(daysUntilFace(null, "")).toEqual({ crt: "—", footer: "Set a date" })
+  })
+
+  it("formats a live countdown in unit and decimal forms", () => {
+    const day = 86_400_000
+    const hour = 3_600_000
+    const min = 60_000
+    expect(formatCountdownSpan(day + 3 * hour, "unit")).toBe("01 day 3 hours")
+    expect(formatCountdownSpan(3 * hour + 30 * min, "unit")).toBe("03 hours 30 min")
+    expect(formatCountdownSpan(1.25 * day, "decimal")).toBe("1.25 days")
+    expect(formatCountdownSpan(3.5 * hour, "decimal")).toBe("3.5 hours")
+    expect(formatCountdownDecimal(1.5)).toBe("1.5")
+    expect(formatCountdownDecimal(1.25)).toBe("1.25")
+    expect(daysUntilLiveFace({
+      remainingMs: day + 3 * hour,
+      label: "Launch",
+      format: "unit",
+      hasTime: true,
+    })).toEqual({ crt: "01 day 3 hours", footer: "Until Launch" })
+    expect(daysUntilLiveFace({
+      remainingMs: 3 * hour + 30 * min,
+      label: "Launch",
+      format: "unit",
+      hasTime: true,
+    })).toEqual({ crt: "03 hours 30 min", footer: "Until Launch" })
+    expect(daysUntilRemainingMs("2026-09-28", "15:00", new Date(2026, 8, 27, 15, 0))).toBe(day)
+    expect(daysUntilRemainingMs("2026-09-28", "", new Date(2026, 8, 27, 12, 0))).toBe(12 * hour)
   })
 
   it("moves a widget within the order", () => {
@@ -263,6 +323,29 @@ describe("home widgets store persist", () => {
       "harvest",
       "inbox",
     ])
+  })
+
+  it("persists Follow the clock, default off", async () => {
+    expect(useHomeWidgetsStore.getState().widgetsFollowClock).toBe(false)
+    useHomeWidgetsStore.getState().setWidgetsFollowClock(true)
+    const snap = localStorage.getItem("cogs-home-widgets")
+    expect(snap).toContain('"widgetsFollowClock":true')
+
+    useHomeWidgetsStore.setState({ widgetsFollowClock: false })
+    writeAliasedLocal("cogs-home-widgets", snap!)
+    await useHomeWidgetsStore.persist.rehydrate()
+    expect(useHomeWidgetsStore.getState().widgetsFollowClock).toBe(true)
+
+    writeAliasedLocal(
+      "cogs-home-widgets",
+      JSON.stringify({
+        state: { order: ["review", "points"], hidden: ["solar"] },
+        version: 7,
+      }),
+    )
+    await useHomeWidgetsStore.persist.rehydrate()
+    expect(useHomeWidgetsStore.getState().widgetsFollowClock).toBe(false)
+    expect(useHomeWidgetsStore.getState().order).toContain("moon")
   })
 
   it("shows a hidden widget again", () => {

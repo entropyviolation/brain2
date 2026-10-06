@@ -49,8 +49,8 @@ describe("ItemRecord aliases (slice 1)", () => {
     expect(getItems()).toBe(tasks)
   })
 
-  it("persist version is 12 after the honest-type backfill", () => {
-    expect(TASK_STORE_PERSIST_VERSION).toBe(12)
+  it("persist version is 17 after UTC-midnight schedule dates are repaired", () => {
+    expect(TASK_STORE_PERSIST_VERSION).toBe(17)
   })
 
   it("createListItem is type item; createNextActionItem is type task", () => {

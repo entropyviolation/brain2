@@ -43,6 +43,7 @@ export function ensureInventoryList(): List {
     createdAt: new Date(),
     color: "#84cc16",
     description: "Pantry / fridge stock bumped from receipts.",
+    scheduleable: false,
   }
   useTaskStore.getState().addList(list)
   return list

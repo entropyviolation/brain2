@@ -43,7 +43,7 @@ function ensureNextActionsFolder(): Folder {
     name: "Next Actions",
     createdAt: new Date(),
     listIds: [],
-    scheduleable: true,
+    scheduleable: false,
     color: "#2563eb",
   }
   store.addFolder(folder)
@@ -61,6 +61,7 @@ export function ensureEventuallyList(): string {
       color: "#78716c",
       createdAt: new Date(),
       itemLabel: "task",
+      // This list exists so a Scheduler drop can hold items with no period.
       scheduleable: true,
       description: "Held for later. No period until you schedule it.",
     })

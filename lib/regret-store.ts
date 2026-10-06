@@ -8,10 +8,11 @@
  * localStorage under `regret-store`.
  *
  * The accrual math is pure and exported (`regretCost`, `dailyRegretIncrement`,
- * `projectedRegret`, …) so it can be unit-tested without the store. Daily
- * accrual is idempotent per task per day: re-running `accrueOverdue` on the
- * same day never double-counts, and the cumulative ledger for a task equals its
- * `regretCost` (= daysOverdue × weight).
+ * `projectedRegret`, …) so it can be unit-tested without the store. One accrual
+ * per task per local calendar day: re-running `accrueOverdue` on the same local
+ * day never double-counts. A same-task row on `formatDateKey(asOf)` still counts
+ * as already accrued. The cumulative ledger for a task equals its `regretCost`
+ * (= daysOverdue × weight).
  *
  * Spec: §14 (Points, Rewards & Regret) — the regret-accrual half. Storage:
  * localStorage today; target MongoDB `regretLedger` collection (§3).
@@ -21,7 +22,8 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
-import { formatDateKey } from "./date-utils"
+import { formatDateKey, formatLocalDateKey, startOfLocalDay } from "./date-utils"
+import { priorityDateOf } from "@/lib/scheduling"
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns"
 import type { Task, BlockedReason } from "@/lib/types"
 
@@ -40,12 +42,6 @@ export interface RegretEntry {
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000
 
-function startOfDay(date: Date): Date {
-  const d = new Date(date)
-  d.setHours(0, 0, 0, 0)
-  return d
-}
-
 function toDate(value: Date | string | undefined | null): Date | null {
   if (!value) return null
   const d = typeof value === "string" ? new Date(value) : value
@@ -54,14 +50,15 @@ function toDate(value: Date | string | undefined | null): Date | null {
 
 /**
  * The date an item was "due". Prefers an explicit `deadline`, then a
- * `mustBeDoneBefore` scheduling constraint, then the scheduled day. Returns
- * null when the item carries no due signal (and therefore accrues no regret).
+ * `mustBeDoneBefore` scheduling constraint, then the priority date (the live
+ * scheduled day, or an earlier Undone period). Returns null when the item
+ * carries no due signal (and therefore accrues no regret).
  */
 export function dueDateOf(task: Task): Date | null {
   return (
     toDate(task.deadline) ??
     toDate(task.schedulingConstraints?.mustBeDoneBefore) ??
-    toDate(task.scheduledDate)
+    priorityDateOf(task)
   )
 }
 
@@ -69,7 +66,10 @@ export function dueDateOf(task: Task): Date | null {
 export function daysOverdue(task: Task, asOf: Date = new Date()): number {
   const due = dueDateOf(task)
   if (!due) return 0
-  const diff = startOfDay(asOf).getTime() - startOfDay(due).getTime()
+  // Overdue math stays on local midnights. New rows use formatLocalDateKey.
+  // The UTC key remains only so an evening row already stored under tomorrow
+  // is not accrued again as today's local key.
+  const diff = startOfLocalDay(asOf).getTime() - startOfLocalDay(due).getTime()
   if (diff <= 0) return 0
   return Math.floor(diff / MS_PER_DAY)
 }
@@ -117,8 +117,9 @@ interface RegretStore {
   ) => void
   /**
    * Accrue one day's regret increment for every overdue, incomplete item in the
-   * snapshot. Idempotent per task per day: skips any task that already has an
-   * entry on `asOf`'s date key. Returns the task ids that accrued this call.
+   * snapshot. One accrual per task per local calendar day: skips a task that
+   * already has a row on `formatLocalDateKey(asOf)` or on `formatDateKey(asOf)`.
+   * New rows use the local key. Returns the task ids that accrued this call.
    */
   accrueOverdue: (tasks: Task[], asOf?: Date) => string[]
   removeTaskRegret: (taskId: string) => void
@@ -156,7 +157,7 @@ export const useRegretStore = create<RegretStore>()(
 
       addRegret: (taskId, regret, taskDescription, date = new Date(), reason) => {
         const entry: RegretEntry = {
-          date: formatDateKey(date),
+          date: formatLocalDateKey(date),
           taskId,
           regret,
           taskDescription,
@@ -166,10 +167,13 @@ export const useRegretStore = create<RegretStore>()(
       },
 
       accrueOverdue: (tasks, asOf = new Date()) => {
-        const dateKey = formatDateKey(asOf)
+        const localKey = formatLocalDateKey(asOf)
+        const legacyKey = formatDateKey(asOf)
         const existing = get().regretHistory
         const accruedTodayFor = new Set(
-          existing.filter((e) => e.date === dateKey).map((e) => e.taskId),
+          existing
+            .filter((e) => e.date === localKey || e.date === legacyKey)
+            .map((e) => e.taskId),
         )
 
         const newEntries: RegretEntry[] = []
@@ -178,7 +182,7 @@ export const useRegretStore = create<RegretStore>()(
           if (accruedTodayFor.has(task.id)) continue
           if (daysOverdue(task, asOf) <= 0) continue
           newEntries.push({
-            date: dateKey,
+            date: localKey,
             taskId: task.id,
             regret: dailyRegretIncrement(task),
             taskDescription: task.description,
@@ -199,7 +203,7 @@ export const useRegretStore = create<RegretStore>()(
       getTotalRegret: () => get().regretHistory.reduce((total, e) => total + e.regret, 0),
 
       getDayRegret: (date) => {
-        const dateKey = formatDateKey(date)
+        const dateKey = formatLocalDateKey(date)
         return get()
           .regretHistory.filter((e) => e.date === dateKey)
           .reduce((total, e) => total + e.regret, 0)

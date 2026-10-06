@@ -3,9 +3,13 @@
  *
  * TIME/COUNT alias GOAL. `isHabitGoalMet` takes optional `{ date, weeklyData }`
  * so climb (INCREMENTAL) habits resolve the derived target for that day.
+ * `completionWithGoalFlag` checks the cell when the numeric goal is met or an
+ * auto flag is set (coverage, daily floor, sleep, list, tracked), so a link
+ * that is met stays checked when it disagrees with `task.goal`.
  */
 import { TaskType, type TaskCompletion, type WeeklyData, type WeeklyTask } from "./types"
 import { incrementalDataForTask, incrementalLoggedValue, isIncrementalCompleteOn } from "./incremental-habits"
+import { readingsFromCell, trustedOutcome } from "./habit-completion-trust"
 
 /** TIME and COUNT are legacy aliases for GOAL. */
 export function isGoalType(type: TaskType): boolean {
@@ -28,6 +32,11 @@ export function isHabitGoalMet(
   ctx?: HabitEvalContext,
 ): boolean {
   if (!completion) return false
+  if (Array.isArray(task.completionSources) && task.type !== TaskType.INCREMENTAL) {
+    const order = task.completionSources
+    const outcome = trustedOutcome(order, readingsFromCell(order, completion, task.goal))
+    return outcome.met
+  }
   switch (task.type) {
     case TaskType.BOOLEAN:
       return !!completion.completed
@@ -51,11 +60,24 @@ export function isHabitGoalMet(
   }
 }
 
+function autoFlagMet(completion: TaskCompletion): boolean {
+  return !!(
+    completion.coverageCompleted ||
+    completion.dailyFloorCompleted ||
+    completion.sleepCompleted ||
+    completion.listCompleted ||
+    completion.trackedCompleted
+  )
+}
+
 export function completionWithGoalFlag(
   task: WeeklyTask,
   completion: TaskCompletion,
   ctx?: HabitEvalContext,
 ): TaskCompletion {
-  const met = isHabitGoalMet(task, completion, ctx)
+  // An ordered source list decides. Or-ing every auto flag would undo that.
+  const met = Array.isArray(task.completionSources)
+    ? isHabitGoalMet(task, completion, ctx)
+    : autoFlagMet(completion) || isHabitGoalMet(task, completion, ctx)
   return met ? { ...completion, completed: true } : { ...completion, completed: false }
 }

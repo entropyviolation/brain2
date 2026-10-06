@@ -247,6 +247,9 @@ describe("backup/restore", () => {
     expect(backup.extras?.["inbox-recent-list-ids"]).toMatch(/groceries/)
     expect(backup.extras?.["brain2-last-persist-ok"]).toBeUndefined()
     expect(backup.extras?.["brain2-pcb-pick"]).toBeUndefined()
+    localStorage.setItem("brain2-telegram-hub-seed", JSON.stringify({ rev: "1", keys: ["brain2-task-storage"] }))
+    expect(parseBackup(serializeBackup()).extras?.["brain2-telegram-hub-seed"]).toBeUndefined()
+    localStorage.removeItem("brain2-telegram-hub-seed")
 
     localStorage.removeItem("brain2-item-activity")
     localStorage.removeItem("notes-mod1")

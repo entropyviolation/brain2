@@ -1,14 +1,16 @@
 import { describe, it, expect, beforeEach } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { taskRepository } from "@/lib/data/task-repository"
+import { useTaskStore } from "@/lib/task-store"
 import {
   scheduleTask,
   scheduleTaskToTime,
   unscheduleTask,
+  dismissTaskFromPeriod,
   pushTask,
   rollUpExpiredSchedules,
 } from "@/lib/services/scheduling-service"
-import { getWeekString } from "@/lib/date-utils"
+import { getWeekString, formatLocalDateKey } from "@/lib/date-utils"
 import type { Task } from "@/lib/types"
 
 const task = (overrides: Partial<Task>): Task => ({
@@ -85,6 +87,9 @@ describe("scheduling-service", () => {
     expect(taskRepository.getById("done")?.scheduledDate).toEqual(monday)
     expect(taskRepository.getById("pushed")?.scheduledDate?.getDate()).toBe(22)
     expect(taskRepository.getById("pushed")?.daysPushed).toBe(1)
+    expect(taskRepository.getById("pushed")?.schedulePlacements).toEqual([
+      { period: "day", value: "2026-09-21", resolved: "pushed" },
+    ])
     expect(rollUpExpiredSchedules(tuesday)).toEqual([])
   })
 
@@ -98,6 +103,20 @@ describe("scheduling-service", () => {
     expect(t?.schedulePlacements).toEqual([{ period: "month", value: "2026-09" }])
   })
 
+  it("rolls a task that still stores a lifecycle word on status", () => {
+    const monday = new Date(2026, 8, 21, 9, 0, 0)
+    const tuesday = new Date(2026, 8, 22, 10, 0, 0)
+    useTaskStore.getState().addTask(
+      task({ id: "stale", scheduledDate: monday, status: "clarified" as Task["status"] }),
+    )
+    expect(rollUpExpiredSchedules(tuesday)).toEqual(["stale"])
+    const stale = taskRepository.getById("stale")
+    expect(stale?.status).toBeUndefined()
+    expect(stale?.stage).toBe("list")
+    expect(stale?.scheduledDate).toBeUndefined()
+    expect(stale?.scheduledWeek).toBe(getWeekString(monday))
+  })
+
   it("keeps a pushed-to-today task on today", () => {
     const yesterday = new Date(2026, 8, 21, 9, 0, 0)
     const today = new Date(2026, 8, 22, 9, 0, 0)
@@ -105,5 +124,37 @@ describe("scheduling-service", () => {
     pushTask("pushed", "day", taskRepository, yesterday)
     expect(rollUpExpiredSchedules(today)).toEqual([])
     expect(taskRepository.getById("pushed")?.scheduledDate?.getDate()).toBe(22)
+  })
+
+  it("dismisses a past-history placement without throwing and leaves a coarser live week", () => {
+    const monday = new Date(2026, 8, 21, 9, 0, 0)
+    const tuesday = new Date(2026, 8, 22, 10, 0, 0)
+    taskRepository.add(task({ id: "stale", scheduledDate: monday }))
+    rollUpExpiredSchedules(tuesday)
+    expect(() => dismissTaskFromPeriod("stale", "day", "2026-09-21", tuesday)).not.toThrow()
+    const t = taskRepository.getById("stale")
+    expect(t?.schedulePlacements ?? []).toEqual([])
+    expect(t?.scheduledWeek).toBe(getWeekString(monday))
+  })
+
+  it("schedules a history-only past row onto today and drops only that past placement", () => {
+    taskRepository.add(
+      task({
+        id: "hist",
+        schedulePlacements: [
+          { period: "day", value: "2026-09-21" },
+          { period: "month", value: "2026-08" },
+        ],
+      }),
+    )
+    expect(() =>
+      scheduleTask("hist", "day", "2026-09-22", taskRepository, {
+        removePlacement: { period: "day", value: "2026-09-21" },
+      }),
+    ).not.toThrow()
+    const t = taskRepository.getById("hist")
+    expect(t?.scheduledDate).toEqual(expect.any(Date))
+    expect(t?.scheduledDate && formatLocalDateKey(t.scheduledDate)).toBe("2026-09-22")
+    expect(t?.schedulePlacements).toEqual([{ period: "month", value: "2026-08" }])
   })
 })

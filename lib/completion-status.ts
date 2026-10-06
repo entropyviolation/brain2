@@ -16,6 +16,7 @@
  * Everything here is pure (no React / store access) so it is trivially testable
  * and reusable across the To-Do panel and the legacy item-detail popups.
  */
+import { parseLocalDate } from "@/lib/date-utils"
 import type { CompletionStatus, Task } from "@/lib/types"
 
 /** All statuses, ordered for display in selects (open → resolved). */
@@ -77,6 +78,41 @@ const CLEARED_FROM_WORK_STATUSES: ReadonlySet<CompletionStatus> = new Set<Comple
 /** Is `value` one of the known completion statuses? */
 export function isCompletionStatus(value: unknown): value is CompletionStatus {
   return typeof value === "string" && (COMPLETION_STATUSES as readonly string[]).includes(value)
+}
+
+/**
+ * Read a persisted `status` as a completion status.
+ *
+ * Older vaults stored the lifecycle bucket here (`inbox` / `clarified` /
+ * `scheduled` / `list`) before `stage` existed, and used the word `completed`
+ * for finished work. Those are not `CompletionStatus`. Stage words become
+ * "no status" (`completed` still decides active vs done). The word `completed`
+ * becomes `"done"`.
+ */
+export function storedCompletionStatus(value: unknown): CompletionStatus | undefined {
+  if (isCompletionStatus(value)) return value
+  if (typeof value !== "string") return undefined
+  const raw = value.trim().toLowerCase()
+  if (raw === "completed" || raw === "complete") return "done"
+  if (raw === "canceled") return "cancelled"
+  if (isCompletionStatus(raw)) return raw
+  return undefined
+}
+
+/**
+ * Drop a leftover stage word on `status`, or rewrite `completed` → `done`.
+ * A record that already has a real completion status is returned as-is.
+ */
+export function repairStoredTaskStatus<T extends { status?: unknown; completed?: boolean }>(task: T): T {
+  if (!task || typeof task !== "object" || !("status" in task) || task.status === undefined) return task
+  if (isCompletionStatus(task.status)) return task
+  const next = storedCompletionStatus(task.status)
+  if (next === undefined) {
+    const { status: _dropped, ...rest } = task
+    return rest as T
+  }
+  if (next === "done") return { ...task, status: next, completed: true }
+  return { ...task, status: next }
 }
 
 /**
@@ -182,6 +218,31 @@ export function isResolved(task: Pick<Task, "status" | "completed">): boolean {
 export function isClearedFromWork(task: Pick<Task, "status" | "completed">): boolean {
   if (task.completed) return true
   return CLEARED_FROM_WORK_STATUSES.has(effectiveStatus(task))
+}
+
+/** When the work was finished. Completed rows fall back to the scheduled day, then created. */
+export function getTaskCompletionDate(task: Task): Date | null {
+  if (task.completedDate) {
+    const d = task.completedDate instanceof Date ? task.completedDate : new Date(task.completedDate)
+    if (!isNaN(d.getTime())) return d
+  }
+  const review = task.completionReview?.completedAt
+  if (review) {
+    const d = review instanceof Date ? review : new Date(review)
+    if (!isNaN(d.getTime())) return d
+  }
+  const chunks = task.completedChunks
+  if (chunks && chunks.length > 0) {
+    const last = chunks[chunks.length - 1].date
+    const d = last instanceof Date ? last : new Date(last)
+    if (!isNaN(d.getTime())) return d
+  }
+  if (task.completed) {
+    const sched = task.scheduledDate ? parseLocalDate(task.scheduledDate) : null
+    if (sched) return sched
+    return task.createdAt instanceof Date ? task.createdAt : new Date(task.createdAt)
+  }
+  return null
 }
 
 // ---- Availability (dependency-aware) --------------------------------------

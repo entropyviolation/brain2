@@ -48,6 +48,36 @@ describe("computePlanVsReality", () => {
     expect(r.hasPlan).toBe(true)
   })
 
+  it("keeps estimated and unknown lengths out of actual minutes", () => {
+    const tasks = [
+      task({
+        id: "exact",
+        scheduledDate: dayDate,
+        completed: true,
+        estimatedDuration: 30,
+        actualDuration: 30,
+        durationCertainty: "exact",
+      }),
+      task({
+        id: "est",
+        scheduledDate: dayDate,
+        completed: true,
+        estimatedDuration: 30,
+        actualDuration: 90,
+        durationCertainty: "estimated",
+      }),
+      task({
+        id: "unk",
+        scheduledDate: dayDate,
+        completed: true,
+        estimatedDuration: 30,
+        durationCertainty: "unknown",
+      }),
+    ]
+    const r = computePlanVsReality("day", day, tasks, [], null)
+    expect(r.actualMinutes).toBe(30)
+  })
+
   it("scores high variance when nothing planned was accomplished", () => {
     const tasks = [
       task({ id: "a", scheduledDate: dayDate, completed: false, estimatedDuration: 60, rewardValue: 50 }),

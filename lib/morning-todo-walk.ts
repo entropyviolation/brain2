@@ -51,9 +51,19 @@ function parseTier(token: string): TodoItem["tier"] | null {
 }
 
 function parseOptionalNumber(token: string, min: number, max: number, label: string): number | null | "bad" {
+  void label
   if (isDash(token)) return null
   const n = Number(token)
   if (!Number.isFinite(n) || !Number.isInteger(n) || n < min || n > max) return "bad"
+  return n
+}
+
+/** 0–10 scale. Integers and decimals (6.5, 1.1) are both readings. */
+function parseScale(token: string): number | null | "bad" {
+  if (isDash(token)) return null
+  if (!/^\d+(?:\.\d+)?$/.test(token)) return "bad"
+  const n = Number(token)
+  if (!Number.isFinite(n) || n < 0 || n > 10) return "bad"
   return n
 }
 
@@ -86,19 +96,19 @@ export function parseTodoWalkReply(text: string): TodoWalkParseResult {
     return { ok: false, error: `Points must be a non-negative integer, or -. Got "${tokens[2]}".` }
   }
 
-  const importance = parseOptionalNumber(tokens[3]!, 0, 10, "importance")
+  const importance = parseScale(tokens[3]!)
   if (importance === "bad") {
-    return { ok: false, error: `Importance must be 0–10, or -. Got "${tokens[3]}".` }
+    return { ok: false, error: `Importance must be 0–10 (decimals allowed), or -. Got "${tokens[3]}".` }
   }
 
-  const resistance = parseOptionalNumber(tokens[4]!, 0, 10, "resistance")
+  const resistance = parseScale(tokens[4]!)
   if (resistance === "bad") {
-    return { ok: false, error: `Resistance must be 0–10, or -. Got "${tokens[4]}".` }
+    return { ok: false, error: `Resistance must be 0–10 (decimals allowed), or -. Got "${tokens[4]}".` }
   }
 
-  const excitement = parseOptionalNumber(tokens[5]!, 0, 10, "excitement")
+  const excitement = parseScale(tokens[5]!)
   if (excitement === "bad") {
-    return { ok: false, error: `Excitement must be 0–10, or -. Got "${tokens[5]}".` }
+    return { ok: false, error: `Excitement must be 0–10 (decimals allowed), or -. Got "${tokens[5]}".` }
   }
 
   return {
@@ -123,6 +133,8 @@ export function todoWalkGrammarHelp(): string {
     `  A+ - 40 - 10 0`,
     `→ tier A+, keep duration 10m, points 40, no importance created, resistance 10, excitement 0`,
     ``,
+    `Importance, resistance, and excitement are 0–10 and may be decimals (6.5, 1.1).`,
+    `SKIP skips this item. SKIP ALL skips the rest of this list.`,
     `Or skip to leave this item untouched.`,
   ].join("\n")
 }

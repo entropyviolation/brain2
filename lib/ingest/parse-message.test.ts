@@ -104,6 +104,7 @@ describe("parseMessage", () => {
     })
     expect(parseMessage("got milk")).toMatchObject({ kind: "bought", payload: "milk" })
     expect(parseMessage("n stuck")).toMatchObject({ kind: "note", payload: "stuck" })
+    expect(parseMessage("n stuck\nin aisle 4")).toMatchObject({ kind: "note", payload: "stuck\nin aisle 4" })
     expect(parseMessage("pin")).toMatchObject({ kind: "pin", payload: "" })
     expect(parseMessage("receipt")).toMatchObject({ kind: "receipt", payload: "" })
     expect(parseMessage("journal: morning")).toMatchObject({ kind: "journal", payload: "morning" })
@@ -128,10 +129,15 @@ describe("parseMessage", () => {
     expect(parseMessage("to do today: call dentist").kind).toBe("todo-today")
     expect(parseMessage("READ to do today").kind).toBe("read-todo-today")
     expect(parseMessage("gm").kind).toBe("morning")
+    expect(parseMessage("gn").kind).toBe("night")
+    expect(parseMessage("good night").kind).toBe("night")
+    expect(parseMessage("rituals").kind).toBe("reviews")
     expect(parseMessage("reviews").kind).toBe("reviews")
     expect(parseMessage("review today")).toMatchObject({ kind: "review", payload: "today" })
+    expect(parseMessage("ritual start week")).toMatchObject({ kind: "review", payload: "start week" })
     expect(parseMessage("today").kind).toBe("today")
     expect(parseMessage("gps: Home\n37.77,-122.42").kind).toBe("gps")
+    expect(parseMessage("gps-log:\n2026-09-21T16:00:00;37.77,-122.42;Home").kind).toBe("gps")
   })
 
   it("keeps inbox: as capture, not an inbox dump", () => {

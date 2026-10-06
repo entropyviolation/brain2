@@ -5,11 +5,14 @@
  * Simulate skips pairing. Unknown senders get no reply. Photos and PDFs
  * go through `ingestIncomingAsync`. Matching precedence: dedupe → help/pair
  * → explicit commands → habit/discrete triggers → everything else.
+ * An open morning review skips that ladder until the message is exactly STOP.
+ * Blank text waits. Live Location is dropped while any text ritual is open
+ * and resumes on the next edit after that ritual ends.
  */
 import { INGEST_HELP } from "./help"
 import { BIM_PAIR_OK } from "./bim"
 import { tryApplyGlossary } from "./apply-glossary"
-import { isMorningVoiceAdvance } from "./apply-morning-gm"
+import { holdMorningReview, isMorningVoiceAdvance, isTelegramLocationPin } from "./apply-morning-gm"
 import { UNPAIRED_SUMMARY, pairingCodeValid } from "./pairing"
 import { parseMessage, looksLikeVerb } from "./parse-message"
 import { expandIngestText } from "./expand"
@@ -18,7 +21,15 @@ import { applyCapture } from "./apply-capture"
 import { applyBulk, isDuplicateFollowup, resolveDuplicateClarify } from "./apply-bulk"
 import { applyHabit, writeHabit } from "./apply-habit"
 import { tryApplyHabitTrigger } from "./apply-habit-trigger"
-import { applyDiscreteLog, applyDiscreteTriggerLine } from "./apply-discrete-event"
+import {
+  applyDiscreteLog,
+  applyDiscreteTriggerLine,
+  applyIntake,
+  applySwitchObjective,
+  applySwitchTask,
+  applyTransit,
+} from "./apply-discrete-event"
+import { messageSentAt } from "./message-time"
 import { applyCurrently, applyStoppedActivity, applySwitchedTo } from "./apply-activity-span"
 import { applyNeeded } from "./apply-needed"
 import {
@@ -56,11 +67,12 @@ import { applyIphoneNotes } from "./apply-iphone-notes"
 import { applyPlanForNow, applyReadPlanToday } from "./apply-plan-text"
 import { applyDoNext, applyReadTodoToday, applyTodoToday } from "./apply-todos"
 import { applyGps } from "./apply-gps"
-import { advanceRitual, startMorningReview, startPeriodReview, startReviewsBoard } from "./apply-ritual"
+import { advanceRitual, startMorningReview, startNightRitual, startPeriodReview, startReviewsBoard } from "./apply-ritual"
 import { applyPin } from "./apply-pin"
 import { applyInventory } from "./apply-inventory"
 import { applyReceiptAnswer, applyReceiptText } from "./apply-receipt"
 import { applyJournalText, applyMedia } from "./apply-media"
+import { isGpsTrackingLogEvent, useGpsIngestLog } from "./gps-log"
 import { makeIngestEventId, useIngestStore } from "./ingest-store"
 import { useHabitsStore } from "@/lib/habits-store"
 import type { ApplyResult, IncomingMessage, IngestIntent, PendingClarify } from "./types"
@@ -76,27 +88,81 @@ const PRIORITY_EXPLICIT = new Set<IngestIntent["kind"]>([
   "stopped-activity",
   "switched-to",
   "event-log",
+  "habit-trigger",
+  "intake",
+  "switch-task",
+  "switch-objective",
+  "transit",
 ])
 
+/**
+ * Drop a Live Location update while any text ritual is open. The Telegram
+ * share stays on; the next edit after the ritual ends is recorded again.
+ */
+export function dropLocationDuringRitual(input: {
+  channel: IncomingMessage["source"]["channel"]
+  chatId: string
+  text?: string
+  locationUpdate?: boolean
+}): boolean {
+  const pin = Boolean(input.locationUpdate) || isTelegramLocationPin(String(input.text ?? ""))
+  if (!pin) return false
+  const pending = useIngestStore.getState().getPending(input.channel, input.chatId)
+  return pending?.kind === "ritual"
+}
+
+/**
+ * Live Location edits and empty text are not answers. Pending stays put,
+ * and nothing is sent back.
+ */
+function holdMorningNoise(message: IncomingMessage, _now: Date): ApplyResult | null {
+  const pending = useIngestStore.getState().getPending(message.source.channel, message.source.chatId)
+  if (pending?.kind !== "ritual" || pending.ritual?.flow !== "morning") return null
+  if (isMorningVoiceAdvance(message.attachments)) return null
+  const raw = String(message.text ?? "").replace(/^\uFEFF/, "").trim()
+  if (
+    dropLocationDuringRitual({
+      channel: message.source.channel,
+      chatId: message.source.chatId,
+      text: raw,
+    })
+  ) {
+    return { status: "ignored", kind: "morning", summary: "Live location paused during review" }
+  }
+  if (!raw && !message.attachments?.length) {
+    return { status: "ignored", kind: "morning", summary: "Waiting for a morning-review reply" }
+  }
+  return null
+}
+
 export function ingestIncoming(message: IncomingMessage, now = new Date()): ApplyResult {
-  const blocked = authorizeIncoming(message, now)
+  const when = messageSentAt(message, now)
+  const blocked = authorizeIncoming(message, when)
   if (blocked) return blocked
-  return finishIngest(message, applyTextIntent(message, now))
+  const waiting = holdMorningNoise(message, when)
+  if (waiting) return waiting
+  return finishIngest(message, applyTextIntent(message, when))
 }
 
 export async function ingestIncomingAsync(message: IncomingMessage, now = new Date()): Promise<ApplyResult> {
-  const blocked = authorizeIncoming(message, now)
+  const when = messageSentAt(message, now)
+  const blocked = authorizeIncoming(message, when)
   if (blocked) return blocked
 
-  // Voice/audio during an open morning ritual counts as an answer (not OCR media).
+  // Morning review swallows every message until STOP. Photos wait; voice counts as a reply.
+  const waiting = holdMorningNoise(message, when)
+  if (waiting) return waiting
   const store = useIngestStore.getState()
   const pending = store.getPending(message.source.channel, message.source.chatId)
-  if (
-    pending?.kind === "ritual" &&
-    pending.ritual?.flow === "morning" &&
-    isMorningVoiceAdvance(message.attachments)
-  ) {
-    return finishIngest(message, advanceRitual(pending, message.text || "", now))
+  if (pending?.kind === "ritual" && pending.ritual?.flow === "morning") {
+    const raw = String(message.text ?? "").replace(/^\uFEFF/, "").trim()
+    if (isMorningVoiceAdvance(message.attachments)) {
+      return finishIngest(message, advanceRitual(pending, raw || "skip", when))
+    }
+    if (message.attachments?.length && raw !== "STOP") {
+      return finishIngest(message, holdMorningReview(pending, when))
+    }
+    return finishIngest(message, advanceRitual(pending, raw, when))
   }
 
   if (message.attachments?.length) {
@@ -110,10 +176,10 @@ export async function ingestIncomingAsync(message: IncomingMessage, now = new Da
         summary: "Voice note (no ritual)",
       })
     }
-    const result = await applyMedia(message, now)
+    const result = await applyMedia(message, when)
     return finishIngest(message, result)
   }
-  return finishIngest(message, applyTextIntent(message, now))
+  return finishIngest(message, applyTextIntent(message, when))
 }
 
 function authorizeIncoming(message: IncomingMessage, now: Date): ApplyResult | null {
@@ -167,8 +233,19 @@ function authorizeIncoming(message: IncomingMessage, now: Date): ApplyResult | n
 function applyTextIntent(message: IncomingMessage, now: Date): ApplyResult {
   const store = useIngestStore.getState()
   const { source } = message
-  const text = expandIngestText(message.text)
   const pending = store.getPending(source.channel, source.chatId)
+  // An open walkthrough owns the reply. Commands (including log:) wait until it ends.
+  // `gm` still starts or continues the morning ritual the way it does outside one.
+  if (pending?.kind === "ritual" && !message.attachments?.length) {
+    const raw = String(message.text ?? "").replace(/^\uFEFF/, "").trim()
+    if (pending.ritual?.flow === "morning") return advanceRitual(pending, raw, now)
+    if (/^(gm|good morning|goodmorning)$/i.test(raw)) return startMorningReview(now)
+    if (/^(cancel|nevermind|never mind|quit)$/i.test(raw)) {
+      return { status: "ok", kind: "cancel", reply: "Stopped.", summary: "Cancelled" }
+    }
+    return advanceRitual(pending, raw, now)
+  }
+  const text = expandIngestText(message.text)
   if (pending && !message.attachments?.length) {
     if (pending.kind === "duplicate" && isDuplicateFollowup(text)) {
       return resolveDuplicateClarify(pending, text, now)
@@ -189,15 +266,17 @@ function applyTextIntent(message: IncomingMessage, now: Date): ApplyResult {
   // Precedence: help/info already in PRIORITY; then other explicit commands;
   // then whole-message habit / discrete triggers; then remaining verbs + capture.
   if (PRIORITY_EXPLICIT.has(intent.kind)) {
-    return dispatch(intent, now)
+    return dispatchIntent(message, intent, now)
   }
-
-  const habitHit = tryApplyHabitTrigger(text, now)
-  if (habitHit) return habitHit
 
   const discreteHit = applyDiscreteTriggerLine(text, store.discreteEventTriggers, now)
   if (discreteHit) return discreteHit
 
+  return dispatchIntent(message, intent, now)
+}
+
+/** `now` is the send time (`message.date`), so a backlog is not stamped when the poller woke up. */
+function dispatchIntent(_message: IncomingMessage, intent: IngestIntent, now: Date): ApplyResult {
   return dispatch(intent, now)
 }
 
@@ -245,12 +324,20 @@ function dispatch(intent: IngestIntent, now: Date): ApplyResult {
       return applyHabit(intent.payload, now)
     case "habit-trigger":
       return (
-        tryApplyHabitTrigger(intent.raw, now) ?? {
+        tryApplyHabitTrigger(intent.payload, now) ?? {
           status: "error",
           kind: "habit-trigger",
-          reply: "No habit matched that keyword.",
+          reply: "No habit matched that keyword. Send dh: and the phrase from the habit.",
         }
       )
+    case "intake":
+      return applyIntake(intent.payload, now)
+    case "switch-task":
+      return applySwitchTask(intent.payload, now)
+    case "switch-objective":
+      return applySwitchObjective(intent.payload, now)
+    case "transit":
+      return applyTransit(intent.payload, now)
     case "location":
       return applyLocation(intent.payload, now)
     case "track":
@@ -318,6 +405,7 @@ function dispatch(intent: IngestIntent, now: Date): ApplyResult {
     case "gps":
       return applyGps(intent.payload, now)
     case "morning":
+    case "night":
     case "reviews":
     case "review":
     case "cancel":
@@ -360,6 +448,7 @@ function dispatchRitual(intent: IngestIntent, now: Date): ApplyResult {
     return { status: "ok", kind: "cancel", reply: "Stopped.", summary: "Cancelled" }
   }
   if (intent.kind === "morning") return startMorningReview(now)
+  if (intent.kind === "night") return startNightRitual(now)
   if (intent.kind === "reviews") {
     return intent.payload.trim() ? startPeriodReview(intent.payload, now) : startReviewsBoard(now)
   }
@@ -467,7 +556,7 @@ function logAndReturn(message: IncomingMessage, result: ApplyResult): ApplyResul
           ? result.summary || "Ignored"
           : result.reply
 
-  useIngestStore.getState().appendEvent({
+  const event = {
     id: makeIngestEventId(),
     at: message.receivedAt || new Date().toISOString(),
     channel: message.source.channel,
@@ -479,6 +568,10 @@ function logAndReturn(message: IncomingMessage, result: ApplyResult): ApplyResul
     status,
     summary,
     itemIds: result.status === "ok" ? result.itemIds : undefined,
-  })
+  }
+  // Location still paints. Tracking points must not fill the 200-line log
+  // or rewrite the persist hub on every Live Location tick.
+  if (isGpsTrackingLogEvent(event)) useGpsIngestLog.getState().push(event)
+  else useIngestStore.getState().appendEvent(event)
   return result
 }

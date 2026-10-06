@@ -17,7 +17,16 @@ you can call him BIM for short. `info` covers basics plus how to ask for
 `{prefix} info`, `{prefix} commands`, and `all commands`. Full catalog:
 [`docs/BIM_COMMANDS.md`](../../docs/BIM_COMMANDS.md). Bare `g` is retired
 (Inbox capture). Matching order: dedupe → help/start/info → explicit verbs →
-whole-message habit/discrete triggers → else.
+whole-message discrete triggers → else. Habit keywords need `dh:` first
+(`dh: hemisync`); a bare keyword captures to Inbox. A quantity keyword adds
+to the day’s total (`dh: studied for 20 min`); a score replaces. The habit
+form previews the same parse. An open walkthrough owns the reply (a `log:`
+mid-ritual is an answer). Morning stays until the message is exactly `STOP`.
+During night, start, or end, `gm` still opens the morning ritual and `cancel`
+still quits. Blank morning messages wait. Live Location is paused until the
+ritual ends, then the same share is recorded again. Writes use Telegram
+`message.date` (send time), not the moment the poller woke. Clocks without a
+date sit on that send date in the process timezone.
 `iphone-notes:` parks On My iPhone Shortcut dumps on the dedicated
 store list. Grocery dumps pin a Telegram card. Token is not in this folder:
 gitignored `.env.local` or Electron `safeStorage`. Bot:
@@ -29,7 +38,10 @@ Docs folder **From phone**, grocery checkout + pantry bump. See
 | File | Purpose |
 |------|---------|
 | `types.ts` | Intents, sources, apply results, ingest log events |
-| `parse-message.ts` | Verb + payload parser. Prefix-less text → Inbox capture, except a multi-line `Name:` dump → bulk. Grocery verb is `groc` / `grocery` / `groceries` / `shop` (not bare `g`). A header that only *starts* with `grocery` stays a list name. `log:` / `log-` → discrete event. `screen` / `screentime` / `iphone` / `ios` / `phone-screen` → iPhone Screen Time (`iphone-notes` still wins over `iphone`) |
+| `parse-message.ts` | Verb + payload parser. Prefix-less text → Inbox capture, except a multi-line `Name:` dump → bulk. Grocery verb is `groc` / `grocery` / `groceries` / `shop` (not bare `g`). A header that only *starts* with `grocery` stays a list name. Colon headers (case-insensitive): `log:` / `log-`, `dh:`, `intake:`, `st:` / `switch task:`, `so:` / `switch objective:`, `transit:`. `screen` / `screentime` / `iphone` / `ios` / `phone-screen` → iPhone Screen Time (`iphone-notes` still wins over `iphone`) |
+| `parse-tracking-note.ts` | One parser each for `log:`, `intake:`, and from/to notes (`st:` / `so:` / `transit:`). `at 3:30` is a point on the send date. `10m` on a log just finished. Intake never grows a duration. The first line is the event; lines under it are the note (`splitEventLine`). |
+| `message-time.ts` | `messageSentAt` prefers `receivedAt` (Telegram `message.date`). `compareSentOrder` sorts a backlog by send time, then message id. |
+| `index-list.ts` | A line that is only comma-separated numbers (`1,8`, `1, 8`) is a list of indexes. Any other text stays one line. |
 | `dedupe.ts` | Ignore retried Telegram `update_id` / `message_id` before any write |
 | `text-triggers.ts` | Whole-message habit keywords + discrete event patterns (Settings + habit form) |
 | `expand.ts` | Custom shortcuts + one-letter rewrites (`w gym` → `at: gym`). Legacy expansions still pointing at bare `g` remap to `groc` |
@@ -43,14 +55,14 @@ Docs folder **From phone**, grocery checkout + pantry bump. See
 | `command-catalog.ts` | **Complete command catalog** — every verb/alias/expansion/preset/GM reply/retired `g`; feeds `all commands` and `docs/BIM_COMMANDS.md` |
 | `command-glossary.ts` | `info`, `{prefix} info`, `{prefix} commands`, `all commands` manuals (commands bodies from catalog) |
 | `apply-glossary.ts` | Glossary matcher + apply helpers |
-| `apply-morning-gm.ts` | `gm` morning flow: all-nighter, one-at-a-time affirmations (voice advances), to-do add/priorities, 1–3 habit priorities, go-through to-do (six-slot grammar), plaintext day plan (`from text` stamp), circumstance branches, best day, gratitude |
+| `apply-morning-gm.ts` | `gm` morning flow: last night's wake reminder, what matters, and focus goals when saved; all-nighter; one-at-a-time affirmations (voice advances); to-do add; required (`1,8` / `1, 8`); 3–5 priorities; 1–3 habit priorities; go-through to-do (six slots; importance / resistance / excitement are 0–10 and may be decimals; a bad line stays on that item; `SKIP` one item; `SKIP ALL` the rest); plaintext day plan (`from text` stamp); circumstance branches; best day; gratitude. Each answer is stored immediately; skip leaves the question empty. Existing answers open a start-over / continue / jump menu. `STOP` quits and saves |
 | `ritual-skip.ts` | Shared skip tokens for text rituals |
-| `apply-capture.ts` | Quick Add pipeline (`parseSmartCapture` → `buildCapturedTask` → `addTask`). Reply says Monkey brain when the line had `-mb` / `-monkey`. |
-| `apply-bulk.ts` | Bulk Add pipeline (Inbox off). Grocery headers with no other folder land on the store list. Identical open titles are skipped; `see` / `again` / `dismiss` |
+| `apply-capture.ts` | Quick Add pipeline (`parseSmartCapture` → `buildCapturedTask` → `addTask`). Reply says Monkey brain when the line had `-mb` / `-monkey`. A list created here is not sent to the Scheduler. |
+| `apply-bulk.ts` | Bulk Add pipeline (Inbox off). Grocery headers with no other folder land on the store list. Identical open titles are skipped; `see` / `again` / `dismiss`. A list created here is not sent to the Scheduler. |
 | `apply-habit.ts` | `updateCompletion` / increment for today (optional `yesterday`) |
-| `apply-habit-trigger.ts` | Whole-message habit keyword matches (`text-triggers.ts`) |
+| `apply-habit-trigger.ts` | `dh:` habit keyword matches (`text-triggers.ts`). Bare keywords do not log. |
 | `apply-needed.ts` | `needed:` / `get:` → list **needed**, item notes **sent from text** |
-| `apply-discrete-event.ts` | `log:` / `log-` and Settings discrete triggers → Activity instants (`generatedBy.kind === "text"`) |
+| `apply-discrete-event.ts` | `log:` / `log-` (point, range, `10m` just finished, `START`/`END`), `intake:`, `st:` / `so:` / `transit:`, and Settings discrete triggers → Activity (`generatedBy.kind === "text"`). Points are instants. A log range is a block. A line under the event is stored on `notes`. `logDiscreteNote` writes an `n` / `note:` tick. `START` stays open in this process until `END` replaces it with the range. |
 | `apply-activity-span.ts` | `currently` / `stopped` / `switched to` spans (Analytics **Text spans**) |
 | `apply-tracking.ts` | Location / mood / activity / sleep / working now |
 | `apply-phone-screen.ts` | `screen:` / `screentime:` / `iphone:` / `ios:` / `phone-screen:` → **iPhone Screen Time** only (estimated; no Mac AW stamp). Signed file: `docs/shortcuts/Screen Time to Brain2.shortcut`. |
@@ -66,20 +78,21 @@ Docs folder **From phone**, grocery checkout + pantry bump. See
 | `receipt-parse.ts` | Product lines from receipt OCR |
 | `media-album.ts` | Collapse Telegram `media_group_id` bursts |
 | `bytes.ts` | data-URL helpers |
-| `apply-note.ts` | Tracker notes on the live block or the day jot |
+| `apply-note.ts` | `n` / `note:` / `jot:` / `memo:` is a discrete event at send time, and is also appended to the block covering that minute. `day:` / `n day:` stay the day jot. |
 | `apply-iphone-notes.ts` | `iphone-notes:` Shortcut dump → park on iPhone Notes Store / Parked; `2/3` continuations; skip by `iphone:` id. `parkLooseText` parks free text that named nothing. Signed file: `docs/shortcuts/Dump iPhone Notes to Brain2.shortcut`. |
 | `apply-pin.ts` | Refresh the pinned grocery card |
 | `apply-read.ts` | Plain-text dumps: named list/folder, catalogs, inbox (newest first), search, habits, status. A read that matches **nothing** parks the words on iPhone Notes Store instead of replying with a picker |
 | `apply-plan-text.ts` | `plan for rn:` appends today's plan log (`stampSuffix: "from text"`). `read plan for today` / `read plans for today` |
 | `apply-todos.ts` | `do:` → Next Actions **General**. `to do today:` → Home To Do. `read to do today` |
-| `apply-ritual.ts` | Period `review` / `reviews` over text; morning `gm` delegates to `apply-morning-gm`. `skip` or blank leaves a step empty |
-| `apply-gps.ts` | `gps:` and Telegram location pins paint Location. The same place stays quiet. Signed file: `docs/shortcuts/Location to Brain2.shortcut` (Arrive / Leave) |
+| `apply-ritual.ts` | Telegram rituals board (`rituals`/`reviews`), morning (`gm`), night (`gn`), start (`ritual start <period>`), end (`review`/`ritual end <period>`). Morning delegates to `apply-morning-gm`. Night follows the app: unfinished (Other can carry a note), assumed times, how the day was spent or period stats + arc, summary, gratitude, plan, went well / improve / learned, wake reminder, what matters, focus goals, tomorrow's plan. Start adds `required: 1, 8` / `priority: 2` after must-dos. Morning moves on `skip`/`next`; blank waits. Live Location is paused until the ritual ends. End/start treat blank as skip. Day/week/month push uses `pushTaskOnePeriod` (left period stays Undone). |
+| `apply-gps.ts` | `gps:` / `gps-log:` and Telegram Live Location paint Location up to the sample, not through midnight. Same coordinates keep the pen. A venue pin is ignored. Signed file: `docs/shortcuts/Location to Brain2.shortcut` (Arrive / Leave, on-phone log). Tracking points are not written into the ingest log |
+| `gps-log.ts` | Memory-only ring for those points. The header log hides them unless **Show GPS**. A failed `gps:` and an unpaired refusal stay on the persisted log |
 | `deliver-reply.ts` | Chunk replies and pin the grocery card |
 | `vault-push.ts` | Push this profile’s persist keys to a live always-on phone hub (skips friend-pic data URLs; large keys are not dual-aliased). Not used on a timer against localhost `/api/persist`. |
 | `chunk-text.ts` | Split long replies for Telegram's 4096-character cap |
-| `switch-scope.ts` | Paint a Tracking pen from *now* through end of day |
-| `ingest-store.ts` | `brain2-ingest-store`: pairing, allowlist (`allowlistRev`, revoke tombstones), shortcuts (v4 remaps retired `g` expansions → `groc`), hub URL, pins, log. Rehydrate unions chats so an empty seed cannot unpair |
-| `executor.ts` | `ingestIncoming` / `ingestIncomingAsync` — dedupe, expand, pairing, allowlist, precedence (explicit → habit/discrete triggers → dispatch), clarify, media, log |
+| `switch-scope.ts` | Paint a Tracking pen from *now* through end of day (`at:`, mood, `currently`). Phone GPS does not use this |
+| `ingest-store.ts` | `brain2-ingest-store`: pairing, allowlist (`allowlistRev`, revoke tombstones), shortcuts (v4 remaps retired `g` expansions → `groc`; v5 drops GPS tracking rows from the log), hub URL, pins, log. Rehydrate unions chats so an empty seed cannot unpair |
+| `executor.ts` | `ingestIncoming` / `ingestIncomingAsync` — dedupe, expand, pairing, allowlist, precedence (explicit → `dh:` / discrete triggers → dispatch), clarify, media, log. The `now` argument is send time. An open ritual owns the text. GPS tracking points go to `gps-log.ts`, not this log |
 | `telegram-bridge.ts` | Renderer IPC + `/api/ingest` hub client |
 | `index.ts` | Barrel |
 

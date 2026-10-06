@@ -115,6 +115,58 @@ describe("plan-text", () => {
     expect(localStorage.getItem("monthPlan-2026-09")).not.toBe("")
   })
 
+  it("does not keep a submitted paragraph as the composer draft", () => {
+    localStorage.setItem(
+      "monthPlan-2026-09",
+      JSON.stringify({
+        v: 1,
+        entries: [
+          {
+            id: "al_sep",
+            createdAt: "2026-10-06T22:24:17.404Z",
+            text: "Plan for september",
+          },
+        ],
+        draft: "Plan for september ",
+      }),
+    )
+    expect(getPlanDraft("month", "2026-09")).toBe("")
+    expect(getPlanEntries("month", "2026-09")).toHaveLength(1)
+    expect(getPlanEntries("month", "2026-09")[0]?.text).toBe("Plan for september")
+  })
+
+  it("clears the composer draft when that text is submitted", () => {
+    savePlanDraft("month", "2026-09", "Focus on shipping ")
+    appendPlanEntry("month", "2026-09", "Focus on shipping ")
+    expect(getPlanEntries("month", "2026-09")[0]?.text).toBe("Focus on shipping")
+    expect(getPlanDraft("month", "2026-09")).toBe("")
+    expect(JSON.parse(localStorage.getItem("monthPlan-2026-09")!).draft).toBeUndefined()
+  })
+
+  it("keeps an unsubmitted draft that is not already in the log", () => {
+    appendPlanEntry("month", "2026-09", "already filed")
+    savePlanDraft("month", "2026-09", "still writing this month")
+    expect(getPlanDraft("month", "2026-09")).toBe("still writing this month")
+    expect(getPlanEntries("month", "2026-09")).toHaveLength(1)
+  })
+
+  it("does not refill the composer with the stamped list of submitted entries", () => {
+    const text = "ASTROLOGICAL MONTH PREDICTIONS AND NOTES:\n\nOctober body"
+    appendPlanEntry("month", "2026-10", text, new Date("2026-10-06T22:07:00.000Z"))
+    const entries = getPlanEntries("month", "2026-10")
+    savePlanDraft("month", "2026-10", formatPlanLog(entries, "all"))
+    expect(getPlanDraft("month", "2026-10")).toBe("")
+    expect(getPlanEntries("month", "2026-10")[0]?.text).toBe(text)
+  })
+
+  it("restores a draft that mentions a time but is not a submitted entry", () => {
+    appendPlanEntry("day", "2026-09-21", "filed earlier")
+    const draft = "9/21 4:14pm - plan for literally rn rn: do as many daily tasks as possible"
+    savePlanDraft("day", "2026-09-21", draft)
+    expect(getPlanDraft("day", "2026-09-21")).toBe(draft)
+    expect(getPlanEntries("day", "2026-09-21")).toHaveLength(1)
+  })
+
   it("keeps an unsubmitted month/week/day draft on the same period key across reload", () => {
     savePlanDraft("month", "2026-09", "type this month plan")
     savePlanDraft("week", "2026-W38", "type this week plan")

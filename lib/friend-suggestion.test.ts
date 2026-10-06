@@ -111,4 +111,15 @@ describe("pickFriendSuggestion source bias", () => {
     })
     expect(picked.taskId).toBe("na-2")
   })
+
+  it("prefers a task that serves a focused goal", () => {
+    const rows = [task("na-1", "File the taxes"), task("na-2", "Write the letter")]
+    const picked = pickFriendSuggestion(rows, folders, null, () => 0, {
+      personality: speciesPersonality("crow"),
+      now,
+      focusTaskIds: new Set(["na-2"]),
+      focusMultiplier: 1.5,
+    })
+    expect(picked.taskId).toBe("na-2")
+  })
 })

@@ -10,7 +10,7 @@
 import type { TrackPen } from "@/lib/time-tracking-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { syncTrackedHabits } from "@/lib/habit-tracking-sync"
-import { runAsAction, withoutUndo } from "@/lib/action-history"
+import { isRestoring, runAsAction, withoutUndo } from "@/lib/action-history"
 import {
   sessionActiveEnd,
   splitIntoDaySlices,
@@ -159,7 +159,7 @@ export function stopPenColorSession(now = new Date()): PenColorSession | null {
 export function tickPenColorSession(now = new Date()): PenColorSession | null {
   return withoutUndo(() => {
     const session = usePenColorSessionStore.getState().session
-    if (!session) return null
+    if (!session || isRestoring()) return session ?? null
     if (!locatePen(session.penId)) {
       usePenColorSessionStore.getState().clearSession()
       return null

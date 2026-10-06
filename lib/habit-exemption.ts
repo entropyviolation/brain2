@@ -193,7 +193,7 @@ export function exemptionRestLabel(
   return `${name} ${periodLabel}`
 }
 
-export function exemptionWandTitle(kind: ExemptionKind, noun: "day" | "week" | "month", logDay: HabitLogDay | null): string {
+export function exemptionWandTitle(kind: ExemptionKind, noun: "day" | "week" | "month" | "season", logDay: HabitLogDay | null): string {
   if (kind === "auto") {
     return noun === "day"
       ? "Exempt — this day is before the habit was created. Click to require it."
@@ -212,7 +212,7 @@ export function exemptionHeatTitle(name: string, kind: ExemptionKind, logDay: Ha
 }
 
 export function emptyExemptionBooks(): ExemptionBooks {
-  return { daily: {}, weekly: {}, monthly: {} }
+  return { daily: {}, weekly: {}, monthly: {}, quarterly: {} }
 }
 
 function sanitizeBook(value: unknown): ExemptionBook {
@@ -235,6 +235,7 @@ export function sanitizeExemptionBooks(value: unknown): ExemptionBooks {
     daily: sanitizeBook(raw.daily),
     weekly: sanitizeBook(raw.weekly),
     monthly: sanitizeBook(raw.monthly),
+    quarterly: sanitizeBook(raw.quarterly),
   }
 }
 
@@ -272,10 +273,15 @@ export function habitCreatedKey(task: Pick<WeeklyTask, "id" | "createdAt">): str
   return formatLocalDateKey(parsed)
 }
 
-/** Period start encoded in a daily / weekly / monthly completion key. */
+/** Period start encoded in a daily / weekly / monthly / quarterly completion key. */
 export function periodStartFromKey(frequency: HabitFrequency, periodKey: string): Date | null {
   if (frequency === "daily") return parseLocalDate(periodKey)
   if (frequency === "weekly") return parseLocalDate(periodKey.split("_")[0])
+  if (frequency === "quarterly") {
+    const match = /^(\d{4})-Q([1-4])$/.exec(periodKey)
+    if (!match) return null
+    return new Date(Number(match[1]), (Number(match[2]) - 1) * 3, 1)
+  }
   const month = /^(\d{4})-(\d{2})$/.exec(periodKey)
   if (!month) return null
   return new Date(Number(month[1]), Number(month[2]) - 1, 1)
@@ -285,6 +291,10 @@ export function periodStartFromKey(frequency: HabitFrequency, periodKey: string)
 export function periodEndKey(periodStart: Date, frequency: HabitFrequency): string {
   if (frequency === "daily") return formatLocalDateKey(periodStart)
   if (frequency === "weekly") return formatLocalDateKey(addCalendarDays(periodStart, 6))
+  if (frequency === "quarterly") {
+    const end = new Date(periodStart.getFullYear(), periodStart.getMonth() + 3, 0)
+    return formatLocalDateKey(end)
+  }
   const end = new Date(periodStart.getFullYear(), periodStart.getMonth() + 1, 0)
   return formatLocalDateKey(end)
 }
@@ -356,7 +366,7 @@ export function withExemptionOverride(
 
 export function stripTaskExemptions(books: ExemptionBooks, taskId: string): ExemptionBooks {
   const next = emptyExemptionBooks()
-  for (const frequency of ["daily", "weekly", "monthly"] as const) {
+  for (const frequency of ["daily", "weekly", "monthly", "quarterly"] as const) {
     for (const [periodKey, row] of Object.entries(books[frequency] || {})) {
       if (!row) continue
       const cells = { ...row }

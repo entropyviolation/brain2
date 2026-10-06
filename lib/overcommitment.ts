@@ -6,7 +6,7 @@
  * from `timeLogs`. Trend, rolling slope, and change-points come from
  * `lib/metrics.ts`. Nothing here reschedules a day.
  */
-import { formatLocalDateKey, parseLocalDate } from "@/lib/date-utils"
+import { dateKeyOf, formatLocalDateKey, parseLocalDate } from "@/lib/date-utils"
 import {
   detectChangePoints,
   rollingSlope,
@@ -56,12 +56,6 @@ function shiftDateKey(key: string, deltaDays: number): string | null {
   const d = parseLocalDate(key)
   if (!d) return null
   d.setDate(d.getDate() + deltaDays)
-  return formatLocalDateKey(d)
-}
-
-function dateKeyOf(value: Date | string | null | undefined): string | null {
-  const d = parseLocalDate(value)
-  if (!d || Number.isNaN(d.getTime())) return null
   return formatLocalDateKey(d)
 }
 

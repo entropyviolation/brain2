@@ -76,6 +76,7 @@ describe("period keys + prioritization", () => {
     expect(periodKeyFor("day", date)).toBe("2026-06-24")
     expect(periodKeyFor("month", date)).toBe("2026-06")
     expect(periodKeyFor("year", date)).toBe("2026")
+    expect(periodKeyFor("quarter", new Date(2026, 8, 26))).toBe("2026-Q3")
   })
 
   it("detects whether an objective is prioritized for the period", () => {

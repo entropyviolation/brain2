@@ -1,10 +1,12 @@
 /**
  * lib/plan-text.ts — Plan period keys on the shared append log
  *
- * Day / week / month Plan areas are append logs (`lib/append-log.ts`), not one
+ * Day / week / month / quarter (season) Plan areas are append logs (`lib/append-log.ts`), not one
  * overwriteable blob. Each Submit plan stamps the writing time. Storage keys
- * `dayPlan-*`, `weekPlan-*`, `monthPlan-*` hold the versioned JSON envelope
- * (entries + optional unsubmitted `draft`). Writes go through `cogsStateStorage`
+ * `dayPlan-*`, `weekPlan-*`, `monthPlan-*`, `quarterPlan-*` hold the versioned JSON envelope
+ * (entries + optional unsubmitted `draft`). A draft that only repeats an already
+ * stamped entry, or the stamped list of those entries, does not refill the composer.
+ * A draft that is still unsent writing does. Writes go through `cogsStateStorage`
  * so Chrome posts the persist hub and Electron can hydrate missing keys.
  * An empty string on a plan key is a tombstone (not a value); it is skipped
  * so aliases and a later write can win. Hub / phone-hub merges **union entries
@@ -35,7 +37,7 @@ import {
   subscribeAppendLog,
 } from "@/lib/append-log"
 
-export type PlanTextPeriod = Extract<ReviewPeriod, "day" | "week" | "month">
+export type PlanTextPeriod = Extract<ReviewPeriod, "day" | "week" | "month" | "quarter">
 export type PlanTextViewMode = AppendLogViewMode
 export type PlanEntry = AppendLogEntry
 
@@ -55,6 +57,10 @@ export function weekPlanKey(weekKey: string): string {
 
 export function monthPlanKey(monthKey: string): string {
   return `monthPlan-${monthKey}`
+}
+
+export function quarterPlanKey(periodKey: string): string {
+  return `quarterPlan-${periodKey}`
 }
 
 export function canonicalMonthPeriodKey(periodKey: string): string {
@@ -110,6 +116,8 @@ export function planPeriodKeyAliases(period: PlanTextPeriod, periodKey: string):
       return monthPeriodKeyAliases(periodKey)
     case "week":
       return weekPeriodKeyAliases(periodKey)
+    case "quarter":
+      return [...new Set([periodKey])]
     case "day":
       return [...new Set([periodKey])]
   }
@@ -123,6 +131,8 @@ export function planStorageKey(period: PlanTextPeriod, periodKey: string): strin
       return weekPlanKey(periodKey)
     case "month":
       return monthPlanKey(canonicalMonthPeriodKey(periodKey))
+    case "quarter":
+      return quarterPlanKey(periodKey)
   }
 }
 
@@ -153,7 +163,7 @@ function candidateStorageKeys(period: PlanTextPeriod, periodKey: string): string
     return keys
   }
   for (const alias of planPeriodKeyAliases(period, periodKey)) {
-    push(period === "week" ? weekPlanKey(alias) : dayPlanKey(alias))
+    push(period === "week" ? weekPlanKey(alias) : period === "quarter" ? quarterPlanKey(alias) : dayPlanKey(alias))
   }
   return keys
 }
@@ -213,15 +223,33 @@ function rawForPeriod(period: PlanTextPeriod, periodKey: string): { storageKey: 
 }
 
 export function getPlanEntries(period: ReviewPeriod, periodKey: string): PlanEntry[] {
-  if (period !== "day" && period !== "week" && period !== "month") return []
+  if (period !== "day" && period !== "week" && period !== "month" && period !== "quarter") return []
   if (typeof window === "undefined") return []
   return parseAppendLog(rawForPeriod(period, periodKey).raw)
 }
 
+/**
+ * Composer text that is only an already-stamped entry (plus surrounding space),
+ * or the stamped List/Bulk dump of those entries, is not a draft. Other text is.
+ */
+export function planDraftIfUnsubmitted(draft: string, entries: PlanEntry[], now = new Date()): string {
+  const trimmed = draft.replace(/^\s+/, "").replace(/\s+$/, "")
+  if (!trimmed) return ""
+  if (entries.some((entry) => entry.text === trimmed || formatAppendEntry(entry, now) === trimmed)) return ""
+  if (
+    entries.length > 0 &&
+    (formatAppendLog(entries, "all", now) === trimmed || formatAppendLog(entries, "latest", now) === trimmed)
+  ) {
+    return ""
+  }
+  return draft
+}
+
 export function getPlanDraft(period: ReviewPeriod, periodKey: string): string {
-  if (period !== "day" && period !== "week" && period !== "month") return ""
+  if (period !== "day" && period !== "week" && period !== "month" && period !== "quarter") return ""
   if (typeof window === "undefined") return ""
-  return parseAppendLogDraft(rawForPeriod(period, periodKey).raw)
+  const raw = rawForPeriod(period, periodKey).raw
+  return planDraftIfUnsubmitted(parseAppendLogDraft(raw), parseAppendLog(raw))
 }
 
 export function savePlanDraft(period: PlanTextPeriod, periodKey: string, draft: string): void {

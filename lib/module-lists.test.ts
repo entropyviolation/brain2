@@ -241,6 +241,50 @@ describe("Global All grid hides the Module Lists tree", () => {
     expect(ids).toContain("errands")
     expect(ids).toContain("user")
   })
+
+  it("can hide period ledger lists from global All without matching ordinary names", () => {
+    const folders = [folder({ id: "user", name: "Work" })]
+    const categories = [
+      list("errands", "To do later"),
+      list("na-todo-d-2026-08-25", "To do 8/25"),
+      list("na-done-d-2026-08-25", "Done 8/25"),
+      list("na-undone-d-2026-08-24", "Undone 8/24"),
+    ]
+    const hidden = buildGridEntries({
+      isHome: false,
+      isAll: true,
+      currentFolder: null,
+      folders,
+      categories,
+      homePinned: [],
+      showSmartLists: false,
+      showPeriodLedgerListsInAll: false,
+      allTasks: [],
+      getSmartTasks: () => [],
+      getTasksForCategory: () => [],
+      countForFolder: () => 0,
+    }).map((e) => e.id)
+    expect(hidden).toContain("errands")
+    expect(hidden).not.toContain("na-todo-d-2026-08-25")
+    expect(hidden).not.toContain("na-done-d-2026-08-25")
+    expect(hidden).not.toContain("na-undone-d-2026-08-24")
+
+    const shown = buildGridEntries({
+      isHome: false,
+      isAll: true,
+      currentFolder: null,
+      folders,
+      categories,
+      homePinned: [],
+      showSmartLists: false,
+      showPeriodLedgerListsInAll: true,
+      allTasks: [],
+      getSmartTasks: () => [],
+      getTasksForCategory: () => [],
+      countForFolder: () => 0,
+    }).map((e) => e.id)
+    expect(shown).toContain("na-todo-d-2026-08-25")
+  })
 })
 
 describe("instantiateModuleTemplate files lists under Module Lists", () => {

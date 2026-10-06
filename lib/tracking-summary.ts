@@ -13,8 +13,9 @@
  * ## Variants and why there are two breakdowns
  *
  * A pen may carry several variants over the same minutes — an hour of "Hanging
- * out" can be with Elijah *and* Rebecca. That makes two different, both-correct
- * questions:
+ * out" can be with Elijah *and* Rebecca. Each variant is also a pen that counts
+ * as this one. `entriesAsDetails` folds time painted on those pens into the
+ * same slices. That makes two different, both-correct questions:
  *
  * - **Reach** (`variantTotals`): how much of the pen's time included Elijah?
  *   Overlapping, so these can add up to more than the pen's total. Read as bars.
@@ -24,11 +25,16 @@
  *
  * ## Categories and display depth
  *
- * Pens can nest (`parentId`). `penTotals` uses the scope's `displayDepth` so the
- * Time Grid footer, Activity Log, Day Log and Analytics Tracking tab all roll up
- * the same way. `penTotalsAtDepth` takes an explicit depth (Analytics' own
+ * Pens can nest (`parentId` / `parentIds`). `penTotals` uses the scope's
+ * `displayDepth` so the Time Grid footer, Activity Log, Day Log and Analytics
+ * Tracking tab all roll up the same way. **Show as** follows the display
+ * parent only, so the grid keeps one color. At a collapsed depth, one pen
+ * with several parents splits its minutes across the distinct ancestors at
+ * that depth — those shares sum to the block, and an ancestor reached twice
+ * is paid once. `penTotalsAtDepth` takes an explicit depth (Analytics' own
  * control). `childPenTotals` is the drill: minutes under a parent, grouped by
- * the next child.
+ * the next child, split the same way when two chains arrive through different
+ * children.
  *
  * `withPrecision(entries, includeSpeculative)` drops `precision: "estimated"`
  * blocks when Analytics asks for observed time only.
@@ -36,7 +42,8 @@
  * Pure: takes entries and pen definitions, touches no store.
  */
 import { assignedPenIds, entriesForDay, entryMinutes, isSpeculative, MINUTES_PER_DAY, type TimeEntry } from "@/lib/time-entries"
-import { childrenOf, penAtDepth, type DisplayDepth } from "@/lib/pen-tree"
+import { ancestorChains, childrenOf, pensAtDepth, type DisplayDepth, type TreePen } from "@/lib/pen-tree"
+import { formatLocalDateKey, getWeekStartDate } from "@/lib/date-utils"
 import { effectiveTagIds } from "@/lib/tracked-time"
 import type { TrackPen, TrackScope, TrackTag } from "@/lib/time-tracking-store"
 
@@ -67,6 +74,41 @@ export interface TrackingTotals {
 }
 
 const percent = (part: number, whole: number) => (whole > 0 ? (part / whole) * 100 : 0)
+
+function addSpan(set: Set<string>, date: string, from: number, to: number) {
+  for (let m = from; m < to; m++) set.add(`${date}#${m}`)
+}
+
+/**
+ * Give `[from, to)` to `ids`. One id receives the whole span. Several ids
+ * split it into contiguous pieces that sum to the span — category shares of
+ * this pen do not add up past the block. The same id listed twice is one share.
+ */
+function addSplit(minutes: Map<string, Set<string>>, date: string, from: number, to: number, ids: string[]) {
+  const unique = [...new Set(ids.filter(Boolean))]
+  if (!unique.length || to <= from) return
+  if (unique.length === 1) {
+    let set = minutes.get(unique[0])
+    if (!set) {
+      set = new Set()
+      minutes.set(unique[0], set)
+    }
+    addSpan(set, date, from, to)
+    return
+  }
+  const len = to - from
+  for (let i = 0; i < unique.length; i++) {
+    const a = from + Math.floor((i * len) / unique.length)
+    const b = from + Math.floor(((i + 1) * len) / unique.length)
+    if (b <= a) continue
+    let set = minutes.get(unique[i])
+    if (!set) {
+      set = new Set()
+      minutes.set(unique[i], set)
+    }
+    addSpan(set, date, a, b)
+  }
+}
 
 /**
  * Distinct minutes these blocks cover.
@@ -119,6 +161,23 @@ export function entriesInRange(
     .sort((a, b) => a.date.localeCompare(b.date) || a.startMin - b.startMin)
 }
 
+/**
+ * Scope whose Occupancy % feeds "log N% of the period" habits.
+ * Matches Tracking Time Grid / Week when Activity is selected — not Screen Time
+ * or a union across every scope.
+ */
+export const COVERAGE_HABIT_SCOPE_ID = "activity"
+
+/** Activity (or fallback) Occupancy for `dateKeys` — same math as Tracking's Occupancy ribbon. */
+export function activityOccupancyCoverage(
+  entries: TimeEntry[],
+  dateKeys: string[],
+  scopeId: string = COVERAGE_HABIT_SCOPE_ID,
+): number {
+  if (!dateKeys.length) return 0
+  return totalsFor(entriesInRange(entries, dateKeys, scopeId), dateKeys).coverage
+}
+
 export function totalsFor(entries: TimeEntry[], dateKeys: string[]): TrackingTotals {
   const tracked = uniqueMinutes(entries, dateKeys)
   const days = Math.max(1, dateKeys.length)
@@ -167,32 +226,32 @@ export function penTotals(
 /**
  * Same occupancy as `penTotals`, grouped by the ancestor at `depth`.
  * `null` is Exact — the painted leaf.
+ *
+ * `trackedMinutes`, when passed, is that window's occupancy total
+ * (`uniqueMinutes` / `totalsFor().tracked`). Percents use it instead of
+ * walking the entries again. Omit it and the total is computed here.
  */
 export function penTotalsAtDepth(
   entries: TimeEntry[],
   scope: TrackScope | undefined,
   dateKeys: string[],
   depth: DisplayDepth,
+  trackedMinutes?: number,
 ): TrackingSlice[] {
   if (!scope) return []
   const minutes = new Map<string, Set<string>>()
   const wanted = new Set(dateKeys)
   for (const e of entries) {
     if (wanted.size && !wanted.has(e.date)) continue
+    const from = Math.max(0, e.startMin)
+    const to = Math.min(MINUTES_PER_DAY, e.endMin)
     for (const penId of assignedPenIds(e)) {
-      const shown = penAtDepth(scope.pens, penId, depth)
-      const id = shown?.id ?? penId
-      let set = minutes.get(id)
-      if (!set) {
-        set = new Set()
-        minutes.set(id, set)
-      }
-      const from = Math.max(0, e.startMin)
-      const to = Math.min(MINUTES_PER_DAY, e.endMin)
-      for (let m = from; m < to; m++) set.add(`${e.date}#${m}`)
+      const shown = pensAtDepth(scope.pens, penId, depth)
+      const ids = shown.length ? shown.map((pen) => pen.id) : [penId]
+      addSplit(minutes, e.date, from, to, ids)
     }
   }
-  const tracked = uniqueMinutes(entries, dateKeys)
+  const tracked = trackedMinutes !== undefined ? trackedMinutes : uniqueMinutes(entries, dateKeys)
   const period = Math.max(1, dateKeys.length) * MINUTES_PER_DAY
   const byId = new Map(scope.pens.map((p) => [p.id, p]))
 
@@ -229,30 +288,33 @@ export function childPenTotals(
   const minutes = new Map<string, Set<string>>()
   for (const e of entries) {
     if (wanted.size && !wanted.has(e.date)) continue
+    const from = Math.max(0, e.startMin)
+    const to = Math.min(MINUTES_PER_DAY, e.endMin)
+    const byId = new Map(scope.pens.map((p) => [p.id, p]))
     for (const penId of assignedPenIds(e)) {
-      const shown = penAtDepth(scope.pens, penId, null)
-      if (!shown) continue
-      // Walk: if this pen or an ancestor is parentId, bucket at the child of parent.
-      const chain: string[] = []
-      const byId = new Map(scope.pens.map((p) => [p.id, p]))
-      let current = byId.get(penId)
-      const seen = new Set<string>()
-      while (current && !seen.has(current.id)) {
-        seen.add(current.id)
-        chain.unshift(current.id)
-        current = current.parentId ? byId.get(current.parentId) : undefined
+      const buckets: string[] = []
+      for (const chain of ancestorChains(scope.pens, penId)) {
+        const ids = chain.map((pen) => pen.id)
+        const idx = ids.indexOf(parentId)
+        if (idx < 0) continue
+        let bucket = ids[idx + 1] ?? parentId
+        // A block painted on the parent and ticked with one detail counts as that
+        // child pen. Several details at once stay on this level; Split shows the mix.
+        if (e.penId === parentId && bucket === parentId) {
+          const parent = byId.get(parentId)
+          const linked = [
+            ...new Set(
+              (e.variantIds ?? [])
+                .map((id) => parent?.variants?.find((variant) => variant.id === id)?.penId)
+                .filter((id): id is string => Boolean(id)),
+            ),
+          ]
+          if (linked.length === 1) bucket = linked[0]
+        }
+        buckets.push(bucket)
       }
-      const idx = chain.indexOf(parentId)
-      if (idx < 0) continue
-      const bucket = chain[idx + 1] ?? parentId
-      let set = minutes.get(bucket)
-      if (!set) {
-        set = new Set()
-        minutes.set(bucket, set)
-      }
-      const from = Math.max(0, e.startMin)
-      const to = Math.min(MINUTES_PER_DAY, e.endMin)
-      for (let m = from; m < to; m++) set.add(`${e.date}#${m}`)
+      if (!buckets.length) continue
+      addSplit(minutes, e.date, from, to, buckets)
     }
   }
   const tracked = uniqueMinutes(entries, dateKeys)
@@ -283,6 +345,33 @@ export function childPenTotals(
 export function withPrecision(entries: TimeEntry[], includeSpeculative: boolean): TimeEntry[] {
   if (includeSpeculative) return entries
   return entries.filter((e) => !isSpeculative(e))
+}
+
+/**
+ * Blocks that belong in this pen's detail breakdown: minutes painted with the
+ * pen itself, plus minutes painted on a pen that counts as it (or deeper).
+ * A descendant is reported as the one detail that is the next child, so
+ * California painted directly and "USA › California" are the same slice.
+ * The copy is shallow — stored entries are not rewritten.
+ */
+export function entriesAsDetails(entries: TimeEntry[], pen: TrackPen, pens: TreePen[]): TimeEntry[] {
+  const out: TimeEntry[] = []
+  for (const entry of entries) {
+    if (entry.penId === pen.id) {
+      out.push(entry)
+      continue
+    }
+    for (const chain of ancestorChains(pens, entry.penId)) {
+      const idx = chain.findIndex((item) => item.id === pen.id)
+      if (idx < 0 || idx >= chain.length - 1) continue
+      const childId = chain[idx + 1]?.id
+      const variant = pen.variants?.find((item) => item.penId === childId)
+      if (!variant) continue
+      out.push({ ...entry, penId: pen.id, variantIds: [variant.id] })
+      break
+    }
+  }
+  return out
 }
 
 export const UNLABELED_VARIANT_ID = "__unlabeled__"
@@ -434,6 +523,78 @@ export function switchCount(entries: TimeEntry[], date: string, scopeId: string)
     if (day[i].penId !== day[i - 1].penId) switches++
   }
   return switches
+}
+
+export interface TagTrendPoint {
+  /** Monday of the week, local `YYYY-MM-DD`. */
+  key: string
+  minutes: number
+}
+
+export interface TagTrendRow {
+  id: string
+  name: string
+  color: string
+  points: TagTrendPoint[]
+}
+
+function weekBucket(dateKey: string): string {
+  const [y, m, d] = dateKey.split("-").map(Number)
+  const date = new Date(y, (m ?? 1) - 1, d ?? 1)
+  return formatLocalDateKey(getWeekStartDate(date))
+}
+
+/**
+ * Per-tag minutes by week inside `dateKeys`. Same union as `tagTotals` — a
+ * minute tagged in two scopes counts once — bucketed by the Monday of that
+ * date. Weeks with no paint are 0 so a short series still lines up.
+ */
+export function tagWeekTrend(
+  entries: TimeEntry[],
+  scopes: TrackScope[],
+  tags: TrackTag[],
+  dateKeys: string[],
+): TagTrendRow[] {
+  const weeks: string[] = []
+  const seenWeeks = new Set<string>()
+  for (const key of dateKeys) {
+    const week = weekBucket(key)
+    if (seenWeeks.has(week)) continue
+    seenWeeks.add(week)
+    weeks.push(week)
+  }
+  const byTag = new Map<string, Map<string, Set<string>>>()
+  const wanted = new Set(dateKeys)
+  for (const entry of entries) {
+    if (wanted.size && !wanted.has(entry.date)) continue
+    const entryTags = effectiveTagIds(entry, scopes)
+    if (!entryTags.length) continue
+    const week = weekBucket(entry.date)
+    for (const tagId of entryTags) {
+      let weeksMap = byTag.get(tagId)
+      if (!weeksMap) {
+        weeksMap = new Map()
+        byTag.set(tagId, weeksMap)
+      }
+      let set = weeksMap.get(week)
+      if (!set) {
+        set = new Set()
+        weeksMap.set(week, set)
+      }
+      addSpan(set, entry.date, Math.max(0, entry.startMin), Math.min(MINUTES_PER_DAY, entry.endMin))
+    }
+  }
+  return tags
+    .filter((tag) => byTag.has(tag.id))
+    .map((tag) => {
+      const weeksMap = byTag.get(tag.id)
+      return {
+        id: tag.id,
+        name: tag.name,
+        color: tag.color,
+        points: weeks.map((key) => ({ key, minutes: weeksMap?.get(key)?.size ?? 0 })),
+      }
+    })
 }
 
 /** Local date keys for the N days ending today, oldest first. */

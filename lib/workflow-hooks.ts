@@ -22,6 +22,11 @@ export interface ItemMutationEvent {
   after?: Task
   /** Best-effort list of changed attribute ids (update only). */
   changedAttrs?: string[]
+  /**
+   * Open bag of keys the caller wrote, values included. Set when the write
+   * went through `commitItemEdit`. Older listeners can ignore it.
+   */
+  patch?: Record<string, unknown>
 }
 
 type Dispatcher = (e: ItemMutationEvent) => void

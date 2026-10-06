@@ -148,6 +148,13 @@ describe("usualDurationMinutes", () => {
     expect(usualDurationMinutes([done("a", { actualDuration: 40 })], like)).toBeNull()
   })
 
+  it("ignores a person-marked estimate and an unknown length", () => {
+    const estimated = done("a", { actualDuration: 99, durationCertainty: "estimated" })
+    const unknown = done("b", { durationCertainty: "unknown" })
+    const peers = [done("c", { actualDuration: 30, durationCertainty: "exact" }), done("d", { actualDuration: 50 })]
+    expect(usualDurationMinutes([estimated, unknown, ...peers], like)?.minutes).toBe(40)
+  })
+
   it("ignores assumed actualDuration and never reads estimatedDuration", () => {
     const assumed = done("a", {
       actualDuration: 99,

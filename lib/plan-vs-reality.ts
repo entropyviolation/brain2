@@ -26,6 +26,8 @@
  * was planned the score is 0 and `hasPlan` is false (nothing to compare).
  */
 import type { Task, ReviewPeriod } from "@/lib/types"
+import { exactDurationMinutes } from "@/lib/completion-review"
+import { quarterKey, taskTouchesQuarter } from "@/lib/seasons"
 import {
   taskScheduledOnDay,
   taskScheduledInWeek,
@@ -35,7 +37,7 @@ import {
   getWeekString,
 } from "@/lib/date-utils"
 
-export type PlanPeriod = Extract<ReviewPeriod, "day" | "week" | "month">
+export type PlanPeriod = Extract<ReviewPeriod, "day" | "week" | "month" | "quarter">
 
 export interface PointsLedgerEntry {
   date: string // YYYY-MM-DD
@@ -98,6 +100,8 @@ function taskInPeriod(task: Task, period: PlanPeriod, periodKey: string): boolea
       return taskScheduledInWeek(task, periodKey)
     case "month":
       return taskScheduledInMonth(task, periodKey)
+    case "quarter":
+      return taskTouchesQuarter(task, periodKey)
   }
 }
 
@@ -109,6 +113,8 @@ function dateInPeriod(date: Date, period: PlanPeriod, periodKey: string): boolea
       return getWeekString(date) === periodKey
     case "month":
       return formatLocalDateKey(date).slice(0, 7) === periodKey
+    case "quarter":
+      return quarterKey(date) === periodKey
   }
 }
 
@@ -132,8 +138,11 @@ function loggedMinutesInPeriod(task: Task, period: PlanPeriod, periodKey: string
     }
   }
 
-  // Fall back to actualDuration for a completed task with no granular logs.
-  if (!sawLog && task.completed && task.actualDuration) minutes = task.actualDuration
+  // Fall back to an exact length only. Estimated and unknown stay out of this total.
+  if (!sawLog && task.completed) {
+    const exact = exactDurationMinutes(task)
+    if (exact) minutes = exact
+  }
   return minutes
 }
 
@@ -240,9 +249,12 @@ export function recentPeriodKeys(period: PlanPeriod, count: number, today = new 
     } else if (period === "week") {
       d.setDate(d.getDate() - i * 7)
       keys.push(getWeekString(d))
-    } else {
+    } else if (period === "month") {
       d.setMonth(d.getMonth() - i)
       keys.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`)
+    } else {
+      d.setMonth(d.getMonth() - i * 3)
+      keys.push(quarterKey(d))
     }
   }
   return keys

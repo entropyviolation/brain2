@@ -127,6 +127,7 @@ function ensureFolder(
     listIds: [],
     parentFolderId: parentId,
     color: randomColor(),
+    scheduleable: false,
   }
   mut.addFolder(folder)
   return folder
@@ -148,6 +149,9 @@ function ensureList(getMut: CaptureMutatorsFn, name: string, folder?: Folder): L
     color: randomColor(),
     description: `Auto-created from capture`,
     createdAt: new Date(),
+    // A folder's Send to Scheduler switch does not opt this list in.
+    // Turn it on in List Settings, or add the item to a list already sent.
+    scheduleable: false,
   }
   mut.addList(list)
   if (folder) mut.addListToFolder(folder.id, list.id)
@@ -204,6 +208,8 @@ export function buildCapturedTask(opts: {
   sendToInbox: boolean
   target: ResolvedCaptureTarget
   folders: Folder[]
+  /** When the person sent the capture. Desktop clicks omit this and use now. */
+  now?: Date
 }): Task {
   const description = opts.suggestion.description || opts.fallbackText.trim()
   const listIds = opts.target.listIds
@@ -213,6 +219,7 @@ export function buildCapturedTask(opts: {
     : createListItem(description, listIds)
   task = withCategoryDefaults(task, opts.target.list)
   task = applySuggestionFields(task, opts.suggestion)
+  if (opts.now) task = { ...task, createdAt: opts.now }
 
   if (!opts.target.list && opts.suggestion.category) {
     task = { ...task, tags: [...(task.tags ?? []), opts.suggestion.category] }

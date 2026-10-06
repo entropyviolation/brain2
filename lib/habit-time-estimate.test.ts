@@ -4,6 +4,7 @@ import {
   describeHabitTimeEstimate,
   habitDurationEstimate,
   habitLoggedAmount,
+  habitScheduleMinutes,
   habitUnitMinutes,
   isTimeMeasuredHabit,
 } from "@/lib/habit-time-estimate"
@@ -85,6 +86,21 @@ describe("habit time estimates", () => {
     expect(isTimeMeasuredHabit(stretch)).toBe(false)
     expect(habitLoggedAmount(stretch, { completed: true })).toBe(1)
     expect(habitLoggedAmount(writing, { value: 4 })).toBe(4)
+  })
+
+  it("treats N/A as no estimate, even when minutes are still on the object", () => {
+    const sip: WeeklyTask = { ...stretch, timeEstimateNA: true }
+    expect(habitDurationEstimate(sip, { completed: true })).toBeNull()
+    expect(habitScheduleMinutes(sip)).toBeNull()
+    const pages: WeeklyTask = { ...writing, timeEstimateNA: true }
+    expect(habitDurationEstimate(pages, { value: 7, completed: true })).toBeNull()
+    expect(habitScheduleMinutes({ timeEstimate: { minutes: 0 }, timeEstimateNA: true })).toBeNull()
+  })
+
+  it("still uses a stored length, and the 30-minute plan fallback when there is no estimate", () => {
+    expect(habitScheduleMinutes(stretch)).toBe(12)
+    expect(habitScheduleMinutes({ timeEstimate: { minutesPerUnit: 10 } })).toBe(30)
+    expect(habitDurationEstimate(stretch, { completed: true })?.minutes).toBe(12)
   })
 
   it("describes what a habit's estimate will produce", () => {

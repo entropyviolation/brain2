@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { defaultScopes, migrateCompanyAndDepth, migrateIphoneScreenTime, migrateRecentPens, migrateScreenTime, migrateSlotsToEntries, penCellStyle, restoreOccupiedScope, useTimeTrackingStore } from "./time-tracking-store"
+import { defaultScopes, migrateCompanyAndDepth, migrateIphoneScreenTime, migrateRecentPens, migrateScreenTime, migrateSlotsToEntries, penCellStyle, restoreOccupiedScope, scopesWithRecoveredPens, useTimeTrackingStore } from "./time-tracking-store"
 import { entriesForDay } from "./time-entries"
 import { undoLastAction } from "./action-history"
 
@@ -8,6 +8,7 @@ const DAY = "2026-09-17"
 beforeEach(() => {
   useTimeTrackingStore.setState({
     entries: [],
+    removedEntryIds: [],
     dayNotes: {},
     selectedVariantIds: [],
     gridStep: 5,
@@ -107,6 +108,21 @@ describe("pens and variants", () => {
     expect(useTimeTrackingStore.getState().scopes[0].pens.at(-1)).toMatchObject({ id, name: "Dishes" })
   })
 
+  it("makes a new detail a pen that counts as the parent", () => {
+    const id = useTimeTrackingStore.getState().addVariant("activity", "act-exercise", "Walk")
+    const pens = useTimeTrackingStore.getState().scopes[0].pens
+    const exercise = pens.find((pen) => pen.id === "act-exercise")
+    const walk = pens.find((pen) => pen.name === "Walk")
+    expect(exercise?.variants?.find((variant) => variant.id === id)?.penId).toBe(walk?.id)
+    expect(walk?.parentId).toBe("act-exercise")
+  })
+
+  it("lists a nested pen as a detail of its parent", () => {
+    useTimeTrackingStore.getState().setPenParent("activity", "act-chores", "act-exercise")
+    const exercise = useTimeTrackingStore.getState().scopes[0].pens.find((pen) => pen.id === "act-exercise")
+    expect(exercise?.variants?.some((variant) => variant.penId === "act-chores" && variant.name === "Chores")).toBe(true)
+  })
+
   it("reuses a variant rather than creating a duplicate name", () => {
     const store = useTimeTrackingStore.getState()
     const first = store.addVariant("activity", "act-social", "Elijah")
@@ -131,6 +147,41 @@ describe("pens and variants", () => {
     store.paintMinutes(DAY, "activity", 540, 600, "act-work")
     store.removePen("activity", "act-work")
     expect(useTimeTrackingStore.getState().entriesFor(DAY, "activity")).toHaveLength(0)
+  })
+
+  it("stamps editedAt when a pen color changes", () => {
+    useTimeTrackingStore.getState().updatePen("activity", {
+      id: "act-work",
+      name: "Computer Work",
+      color: "#4e628d",
+    })
+    const pen = useTimeTrackingStore.getState().scopes[0].pens.find((p) => p.id === "act-work")
+    expect(pen?.color).toBe("#4e628d")
+    expect(pen?.editedAt).toEqual(expect.any(Number))
+  })
+
+  it("puts a dropped pen back so a painted block can show on the grid", () => {
+    const healed = scopesWithRecoveredPens(
+      [{ id: "activity", name: "Activity", pens: [] }],
+      [
+        {
+          id: "block",
+          date: DAY,
+          scopeId: "activity",
+          penId: "pen-lost",
+          startMin: 0,
+          endMin: 30,
+          title: "Sketching",
+        },
+      ],
+    )
+    expect(healed?.[0].pens[0]).toMatchObject({ id: "pen-lost", name: "Sketching" })
+    expect(healed?.[0].pens[0].color).toMatch(/^#[0-9a-f]{6}$/i)
+    const again = scopesWithRecoveredPens(healed, [
+      { id: "block", date: DAY, scopeId: "activity", penId: "pen-lost", startMin: 0, endMin: 30 },
+    ])
+    expect(again?.[0].pens).toHaveLength(1)
+    expect(again?.[0].pens[0].color).toBe(healed?.[0].pens[0].color)
   })
 
   it("drops a stale variant selection when the pen changes", () => {

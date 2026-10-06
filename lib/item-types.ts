@@ -93,7 +93,8 @@ function getBaseBuiltinItemTypes(): ItemTypeDefinition[] {
       itemLabel: "task",
       builtin: true,
       kind: "system",
-      description: "An actionable item with optional scheduling, points, and subtasks.",
+      description:
+        "An actionable item. Scheduling fields are optional. Send to Scheduler is separate: a task is not in the Scheduler unless this item or one of its lists is sent.",
       capabilities: {
         scheduleable: true,
         nextActions: true,

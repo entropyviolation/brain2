@@ -38,6 +38,7 @@ import { useGoalsStore } from "@/lib/goals-store"
 import { useHabitsStore } from "@/lib/habits-store"
 import { usePointsStore } from "@/lib/points-store"
 import { useReviewsStore } from "@/lib/reviews-store"
+import { useStarLordStore } from "@/lib/star-lord-store"
 import { useModulesStore } from "@/lib/modules-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { getDayNotesPersist, hydrateDayNotesFromStorage } from "@/lib/day-notes-persist"
@@ -150,6 +151,7 @@ export const BACKUP_STORES: StoreDescriptor[] = [
   { key: persistKey("habits-store"), rehydrate: persistRehydrate(useHabitsStore) },
   { key: "points-store", rehydrate: persistRehydrate(usePointsStore) },
   { key: persistKey("reviews-store"), rehydrate: persistRehydrate(useReviewsStore) },
+  { key: persistKey("star-lord-store"), rehydrate: persistRehydrate(useStarLordStore) },
   { key: persistKey("modules-store"), rehydrate: persistRehydrate(useModulesStore) },
   { key: persistKey("timegrid-store"), rehydrate: persistRehydrate(useTimeTrackingStore) },
   { key: persistKey("tracking-day-notes"), rehydrate: () => hydrateDayNotesFromStorage() },
@@ -189,6 +191,8 @@ export const BACKUP_STORE_LABELS: Record<string, string> = {
   "points-store": "Points",
   [persistKey("reviews-store")]: "Reviews",
   "cogs-reviews-store": "Reviews",
+  [persistKey("star-lord-store")]: "Star Lord Reports",
+  "cogs-star-lord-store": "Star Lord Reports",
   [persistKey("modules-store")]: "Modules",
   "cogs-modules-store": "Modules",
   [persistKey("timegrid-store")]: "Tracking",
@@ -314,6 +318,8 @@ const EPHEMERAL_BACKUP_KEYS = new Set([
   DEMO_VAULT_READY_KEY,
   "brain2-pcb-pick",
   "brain2-led-pick",
+  // Electron preload's hub-seed manifest. Not user data.
+  "brain2-telegram-hub-seed",
 ])
 
 /** User data that never grew a `brain2-` prefix. */
@@ -455,6 +461,7 @@ const LIVE_STORES: Record<string, LivePersistStore> = {
   [persistKey("habits-store")]: asLiveStore(useHabitsStore),
   "points-store": asLiveStore(usePointsStore),
   [persistKey("reviews-store")]: asLiveStore(useReviewsStore),
+  [persistKey("star-lord-store")]: asLiveStore(useStarLordStore),
   [persistKey("modules-store")]: asLiveStore(useModulesStore),
   [persistKey("timegrid-store")]: asLiveStore(useTimeTrackingStore),
   [persistKey("sleep-store")]: asLiveStore(useSleepStore),

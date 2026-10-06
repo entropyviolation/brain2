@@ -5,6 +5,7 @@ import {
   withListMembership,
   applyItemRules,
   isDayUnscheduledPlanned,
+  scheduledDateCountsOnPlan,
   MAX_BEAT_THE_CLOCK_BONUS,
   isTaskItem,
   countsInDone,
@@ -302,6 +303,25 @@ describe("isDayUnscheduledPlanned", () => {
         evening,
       ),
     ).toBe(true)
+  })
+
+  it("does not treat an Inbox date copied from the prose as a day plan", () => {
+    const day = new Date(2026, 9, 11, 12, 0, 0)
+    expect(scheduledDateCountsOnPlan({ stage: "inbox" })).toBe(false)
+    expect(
+      isDayUnscheduledPlanned(
+        {
+          id: "inbox-1",
+          description: "Mercury on the 11th",
+          stage: "inbox",
+          createdAt: day,
+          completed: false,
+          lists: ["reminders"],
+          scheduledDate: day,
+        },
+        day,
+      ),
+    ).toBe(false)
   })
 })
 

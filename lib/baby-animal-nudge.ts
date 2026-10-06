@@ -6,7 +6,22 @@
  * Flavor, missions, and rewards: `docs/FRIEND_COMPANION.md`.
  */
 import { pickFriendSuggestion, type FriendSuggestion, type FriendSuggestionContext } from "@/lib/friend-suggestion"
+import { taskServesFocusGoals } from "@/lib/goal-focus"
+import { nightCarryForMorning } from "@/lib/ritual-carry"
+import { useGoalsStore } from "@/lib/goals-store"
+import { useReviewsStore } from "@/lib/reviews-store"
+import { useUserSettingsStore } from "@/lib/user-settings-store"
 import type { Folder, Task } from "@/lib/types"
+
+function focusContext(tasks: Task[], now = new Date()): Pick<FriendSuggestionContext, "focusTaskIds" | "focusMultiplier"> {
+  const carry = nightCarryForMorning(useReviewsStore.getState().reviews, now)
+  const goals = useGoalsStore.getState().goals
+  const ids = new Set<string>()
+  for (const task of tasks) {
+    if (taskServesFocusGoals(task, goals, carry.focusGoalIds)) ids.add(task.id)
+  }
+  return { focusTaskIds: ids, focusMultiplier: useUserSettingsStore.getState().goalFocusMultiplier ?? 1.5 }
+}
 
 export type FriendNudge = FriendSuggestion
 
@@ -20,5 +35,6 @@ export function pickFriendTodoNudge(
   rng: () => number = Math.random,
   ctx: FriendSuggestionContext = {},
 ): FriendNudge {
-  return pickFriendSuggestion(tasks, folders, lastTaskId, rng, ctx)
+  const focus = ctx.focusTaskIds ? {} : focusContext(tasks, ctx.now)
+  return pickFriendSuggestion(tasks, folders, lastTaskId, rng, { ...focus, ...ctx })
 }

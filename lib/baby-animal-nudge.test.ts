@@ -28,11 +28,13 @@ function task(id: string, description: string, extra: Partial<Task> = {}): Task 
 
 describe("pickFriendTodoNudge", () => {
   it("returns the empty line when nothing is open", () => {
-    expect(pickFriendTodoNudge([task("done", "Old", { completed: true })], folders, null, () => 0)).toEqual({
-      taskId: null,
-      line: EMPTY_FRIEND_NUDGE,
-      source: null,
-    })
+    expect(pickFriendTodoNudge([task("done", "Old", { completed: true })], folders, null, () => 0)).toEqual(
+      expect.objectContaining({
+        taskId: null,
+        line: EMPTY_FRIEND_NUDGE,
+        source: null,
+      }),
+    )
   })
 
   it("skips completed rows and items outside Next Actions", () => {

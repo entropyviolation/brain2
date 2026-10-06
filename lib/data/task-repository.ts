@@ -15,6 +15,7 @@
 import type { ItemRecord, List, Folder } from "@/lib/types"
 import { useTaskStore } from "@/lib/task-store"
 import { parseOrThrow, taskSchema } from "@/lib/data/schemas"
+import { repairStoredTaskStatus } from "@/lib/completion-status"
 import { addLink as addLinkTo, removeLink as removeLinkFrom } from "@/lib/links"
 
 export interface TaskRepository {
@@ -23,8 +24,11 @@ export interface TaskRepository {
   find(predicate: (item: ItemRecord) => boolean): ItemRecord[]
   /** Persist an item record (delegates to `addTask`). */
   add(item: ItemRecord): ItemRecord
-  /** Update an item record (delegates to `updateTask`). */
-  update(item: ItemRecord): ItemRecord
+  /**
+   * Update an item record (delegates to `updateTask`).
+   * `patch`, when passed, rides on the store's existing mutation event.
+   */
+  update(item: ItemRecord, patch?: Record<string, unknown>): ItemRecord
   remove(id: string): void
   getLists(): List[]
   getFolders(): Folder[]
@@ -55,15 +59,17 @@ export const taskRepository: TaskRepository = {
   },
 
   add(item) {
-    parseOrThrow(taskSchema, item, "task")
-    useTaskStore.getState().addTask(item)
-    return item
+    const repaired = repairStoredTaskStatus(item)
+    parseOrThrow(taskSchema, repaired, "task")
+    useTaskStore.getState().addTask(repaired)
+    return repaired
   },
 
-  update(item) {
-    parseOrThrow(taskSchema, item, "task")
-    useTaskStore.getState().updateTask(item)
-    return item
+  update(item, patch) {
+    const repaired = repairStoredTaskStatus(item)
+    parseOrThrow(taskSchema, repaired, "task")
+    useTaskStore.getState().updateTask(repaired, patch)
+    return repaired
   },
 
   remove(id) {

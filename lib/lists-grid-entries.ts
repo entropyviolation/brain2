@@ -1,6 +1,6 @@
 import type { Folder, Task, List } from "@/lib/types"
 import { isFolderAllItemsCategoryId, folderListCategoryIds, getTasksForFolderAllView } from "@/lib/folder-all-items"
-import { isScheduledFolderId, getTasksForScheduledFolder } from "@/lib/scheduled-lists-sync"
+import { isPeriodLedgerListId, isScheduledFolderId, getTasksForScheduledFolder } from "@/lib/scheduled-lists-sync"
 import { getRootFolders, getFolderChildren } from "@/lib/folder-tree"
 import { ROOT_ALL_FOLDER_ID, SMART_LISTS, OBJECTIVES_LIST_ID } from "@/components/Lists/constants"
 import { isFolderHiddenFromGlobalAll, isListHiddenFromGlobalAll, filterTasksHiddenFromGlobalAll } from "@/lib/module-lists"
@@ -15,6 +15,8 @@ export interface BuildGridEntriesParams {
   categories: List[]
   homePinned: string[]
   showSmartLists: boolean
+  /** Global All only: when false, omit period To do / Done / Undone ledger lists. Default true. */
+  showPeriodLedgerListsInAll?: boolean
   allTasks: Task[]
   getSmartTasks: (id: SmartId) => Task[]
   getTasksForCategory: (categoryId: string) => Task[]
@@ -36,6 +38,7 @@ export function buildGridEntries(params: BuildGridEntriesParams): GridEntry[] {
     categories,
     homePinned,
     showSmartLists,
+    showPeriodLedgerListsInAll = true,
     allTasks,
     getSmartTasks,
     getTasksForCategory,
@@ -62,6 +65,7 @@ export function buildGridEntries(params: BuildGridEntriesParams): GridEntry[] {
     add({ kind: "habits", id: "habits", name: "Daily Habits", color: "#0ea5e9", count: 0 })
     add({ kind: "habits", id: "weekly-habits", name: "Weekly Habits", color: "#6366f1", count: 0 })
     add({ kind: "habits", id: "monthly-habits", name: "Monthly Habits", color: "#9333ea", count: 0 })
+    add({ kind: "habits", id: "season-habits", name: "Season Habits", color: "#c4622d", count: 0 })
     if (showSmartLists) {
       SMART_LISTS.forEach((s) =>
         add({ kind: "smart", id: s.id, name: s.name, color: s.color, count: getSmartTasks(s.id).length }),
@@ -96,7 +100,12 @@ export function buildGridEntries(params: BuildGridEntriesParams): GridEntry[] {
         add({ kind: "folder", id: f.id, name: f.name, color: f.color, icon: f.icon, count: countForFolder(f) }),
       )
     categories
-      .filter((c) => !isFolderAllItemsCategoryId(c.id) && !isListHiddenFromGlobalAll(c, folders))
+      .filter((c) => {
+        if (isFolderAllItemsCategoryId(c.id)) return false
+        if (isListHiddenFromGlobalAll(c, folders)) return false
+        if (!showPeriodLedgerListsInAll && isPeriodLedgerListId(c.id)) return false
+        return true
+      })
       .forEach((c) =>
         add({ kind: "list", id: c.id, name: c.name, color: c.color, icon: c.icon, count: getTasksForCategory(c.id).length }),
       )

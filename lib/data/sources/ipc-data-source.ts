@@ -30,6 +30,7 @@ import {
   taskCategorySchema,
   categoryFolderSchema,
 } from "@/lib/data/schemas"
+import { repairStoredTaskStatus } from "@/lib/completion-status"
 import {
   DataSourceError,
   type DataSource,
@@ -122,13 +123,15 @@ export class IpcDataSource implements DataSource {
   }
 
   addTask(task: Task): Promise<Task> {
-    parseOrThrow(taskSchema, task, "task")
-    return bridge().invoke<Task>(COGS_IPC_CHANNELS.addTask, { task })
+    const repaired = repairStoredTaskStatus(task)
+    parseOrThrow(taskSchema, repaired, "task")
+    return bridge().invoke<Task>(COGS_IPC_CHANNELS.addTask, { task: repaired })
   }
 
   updateTask(task: Task): Promise<Task> {
-    parseOrThrow(taskSchema, task, "task")
-    return bridge().invoke<Task>(COGS_IPC_CHANNELS.updateTask, { task })
+    const repaired = repairStoredTaskStatus(task)
+    parseOrThrow(taskSchema, repaired, "task")
+    return bridge().invoke<Task>(COGS_IPC_CHANNELS.updateTask, { task: repaired })
   }
 
   removeTask(id: string): Promise<void> {

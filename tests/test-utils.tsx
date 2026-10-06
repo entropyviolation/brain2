@@ -34,7 +34,12 @@ import {
   DEFAULT_ACCOMPLISHMENT_BONUS,
   DEFAULT_ACCOMPLISHMENT_THRESHOLD,
 } from "@/lib/habit-accomplishment"
-import { DEFAULT_DAY_GRADE_LIFT_BONUS, DEFAULT_WEEKLY_GRADE_LIFT_BONUS } from "@/lib/habit-points"
+import {
+  DEFAULT_DAY_GRADE_LIFT_BONUS,
+  DEFAULT_MONTHLY_AVERAGE_BEAT_BONUS,
+  DEFAULT_WEEKLY_AVERAGE_BEAT_BONUS,
+  DEFAULT_WEEKLY_GRADE_LIFT_BONUS,
+} from "@/lib/habit-points"
 import { DEFAULT_GRADE_TOLERANCE } from "@/lib/calculations"
 import { DEFAULT_PERCENT_LED_TINT } from "@/lib/habit-led"
 import { DEFAULT_GRADE_TUBE_COLOR, DEFAULT_OUTPUT_TUBE_COLOR } from "@/lib/habit-tube"
@@ -58,6 +63,8 @@ export function resetAllStores() {
     accomplishmentBonus: DEFAULT_ACCOMPLISHMENT_BONUS,
     dayGradeLiftBonus: DEFAULT_DAY_GRADE_LIFT_BONUS,
     weeklyGradeLiftBonus: DEFAULT_WEEKLY_GRADE_LIFT_BONUS,
+    weeklyAverageBeatBonus: DEFAULT_WEEKLY_AVERAGE_BEAT_BONUS,
+    monthlyAverageBeatBonus: DEFAULT_MONTHLY_AVERAGE_BEAT_BONUS,
     willpowerImage: null,
     habitGems: {},
     percentLedTint: DEFAULT_PERCENT_LED_TINT,
@@ -69,10 +76,15 @@ export function resetAllStores() {
     percentLoadingBar: true,
     habitSmallLeds: true,
     hideCompletedToday: false,
+    hideCompletedAndMissed: false,
     exemptionWand: false,
+    missedOpWand: false,
     habitExemptions: { daily: {}, weekly: {}, monthly: {} },
     habitViewMode: "grid",
     habitSortMode: "default",
+    habitMonthWindow: "yearToDate",
+    habitBirthday: { month: 5, day: 5 },
+    habitWeekWindow: "sevenWeeks",
     sortHabitsByPriorityFlag: false,
     willpowerPhysicsHud: false,
     willpowerPhysics: DEFAULT_WILLPOWER_PHYSICS,
@@ -94,6 +106,7 @@ export function resetAllStores() {
   useUserSettingsStore.getState().resetHomeLocation()
   useTimeTrackingStore.setState({
     entries: [],
+    removedEntryIds: [],
     dayNotes: {},
     untrackedNotes: {},
     hiddenPenIds: {},

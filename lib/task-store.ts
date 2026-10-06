@@ -35,6 +35,11 @@ import {
   migrateModulePlatform,
   migrateTitleAsFieldOfRecord,
   migrateHonestItemTypes,
+  migrateLegacyStageStatus,
+  migrateScheduleableOptIn,
+  migrateModuleListsOutOfScheduler,
+  migratePastAssignmentsToUndone,
+  migrateUtcMidnightScheduleDates,
 } from "@/lib/migrations"
 import { dispatchItemMutation } from "@/lib/workflow-hooks"
 import { usePointsStore } from "@/lib/points-store"
@@ -47,15 +52,10 @@ import {
 import { emitTaskCompleted, shouldEmitCompletionPopup } from "@/lib/completion-events"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { normalizeTag } from "@/lib/links"
+import { taskIndexOf } from "@/lib/task-index"
 import { createCogsJSONStorage, registerPersistRehydrator } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
 import { migrateTaskFileValues, migrateTaskImageAttributes } from "@/lib/attachments"
-import {
-  moveList as moveListPure,
-  getChildren as getChildListsPure,
-  getDescendants as getDescendantListsPure,
-  getAncestors as getListAncestorsPure,
-} from "@/lib/list-tree"
 import {
   addListLinkToLists,
   applyListLinksToTask,
@@ -123,7 +123,7 @@ interface TaskState {
   /** Tunable weights for the transparent To-Do priority formula (lib/priority.ts). */
   priorityWeights: PriorityWeights
   addTask: (task: Task) => void
-  updateTask: (task: Task) => void
+  updateTask: (task: Task, patch?: Record<string, unknown>) => void
   deleteTask: (id: string) => void
   /** Same write as `addTask` — prefer when the caller means an item record. */
   addItem: (item: ItemRecord) => void
@@ -133,23 +133,10 @@ interface TaskState {
   deleteItem: (id: string) => void
   /** Snapshot of persisted item records (same array as `tasks`). */
   getItems: () => ItemRecord[]
-  updatePriorityFormula: (formula: TaskState["priorityFormula"]) => void
   updatePriorityWeights: (weights: PriorityWeights) => void
   addList: (category: List) => void
   updateList: (category: List) => void
   deleteList: (id: string) => void
-  /**
-   * Re-parent a category (nested lists / sublists, Feature 8). Pass
-   * `null` to detach to root. No-op when the move would create a cycle or the
-   * ids are unknown (see lib/list-tree.ts:canMoveList).
-   */
-  moveList: (id: string, newParentId: string | null) => void
-  /** Direct child lists of `id` (computed over `lists`). */
-  getChildLists: (id: string) => List[]
-  /** All transitive descendant lists of `id`. */
-  getDescendantLists: (id: string) => List[]
-  /** Ancestor lists of `id`, nearest parent → root. */
-  getListAncestors: (id: string) => List[]
   /**
    * Connect source→target so source items auto-join the target (membership,
    * not nesting). Syncs existing items; honors exclusions. See LIST_LINKS.md.
@@ -191,7 +178,7 @@ const initialLists: List[] = [
     description: "An example list for demonstration purposes",
     createdAt: new Date(),
     order: 0,
-    scheduleable: true,
+    scheduleable: false,
   },
 ]
 
@@ -268,8 +255,8 @@ export function appendTombstoneIds(
   return next.slice(-cap)
 }
 
-/** Persist blob version. v12 backfills missing `type` only (honest Item vs Task). */
-export const TASK_STORE_PERSIST_VERSION = 12
+/** Persist blob version. v17 repairs UTC-midnight schedule dates. v16 records past assignments as Undone. */
+export const TASK_STORE_PERSIST_VERSION = 17
 
 /** False until persist finishes reading disk so mount-time list sync cannot persist seed tasks over the vault. Tests persist immediately. */
 let taskPersistHydrated = typeof process !== "undefined" && !!process.env.VITEST
@@ -347,7 +334,7 @@ export const useTaskStore = create<TaskState>()(
         }
       },
 
-      updateTask: (updatedTask) => {
+      updateTask: (updatedTask, patch) => {
         // Captured for the workflow-hooks dispatch after the state commit.
         let before: Task | undefined
         let after: Task | undefined
@@ -438,6 +425,9 @@ export const useTaskStore = create<TaskState>()(
             before,
             after,
             changedAttrs: diffChangedAttrs(before, after),
+            // `commitItemEdit` passes the open patch through this same call.
+            // Omitting it keeps every existing update event unchanged.
+            ...(patch !== undefined ? { patch } : {}),
           })
           // Notify the global completion popup on every completion transition,
           // unless a batch path asked for quiet complete (no modal stack).
@@ -457,11 +447,6 @@ export const useTaskStore = create<TaskState>()(
       updateItem: (item) => get().updateTask(item),
       deleteItem: (id) => get().deleteTask(id),
       getItems: () => get().tasks,
-
-      updatePriorityFormula: (formula) =>
-        set(() => ({
-          priorityFormula: formula,
-        })),
 
       updatePriorityWeights: (weights) =>
         set(() => ({
@@ -526,16 +511,6 @@ export const useTaskStore = create<TaskState>()(
           const lists = removeListLinkFromLists(state.lists, sourceListId, targetListId)
           return lists === state.lists ? state : { lists }
         }),
-
-      moveList: (id, newParentId) =>
-        set((state) => {
-          const lists = moveListPure(state.lists, id, newParentId)
-          return lists === state.lists ? state : { lists }
-        }),
-
-      getChildLists: (id) => getChildListsPure(get().lists, id),
-      getDescendantLists: (id) => getDescendantListsPure(get().lists, id),
-      getListAncestors: (id) => getListAncestorsPure(get().lists, id),
 
       setTasks: (tasks, opts) =>
         set((state) => {
@@ -623,25 +598,27 @@ export const useTaskStore = create<TaskState>()(
       getByTag: (tag) => {
         const wanted = normalizeTag(tag)
         if (!wanted) return []
-        return get().tasks.filter((t) => (t.tags ?? []).some((x) => normalizeTag(x) === wanted))
+        return taskIndexOf(get().tasks).byTag.get(wanted) ?? []
       },
 
       getLinkedItems: (id, relation) => {
-        const { tasks } = get()
-        const source = tasks.find((t) => t.id === id)
+        const indexed = taskIndexOf(get().tasks)
+        const source = indexed.byId.get(id)
         if (!source) return []
-        const targetIds = new Set(
-          (source.links ?? [])
-            .filter((l) => !relation || l.relation === relation)
-            .map((l) => l.targetId),
-        )
-        return tasks.filter((t) => targetIds.has(t.id))
+        const out: typeof source[] = []
+        for (const link of source.links ?? []) {
+          if (relation && link.relation !== relation) continue
+          const target = indexed.byId.get(link.targetId)
+          if (target) out.push(target)
+        }
+        return out
       },
 
-      getBacklinks: (id, relation) =>
-        get().tasks.filter((t) =>
-          (t.links ?? []).some((l) => l.targetId === id && (!relation || l.relation === relation)),
-        ),
+      getBacklinks: (id, relation) => {
+        const hits = taskIndexOf(get().tasks).backlinks.get(id) ?? []
+        if (!relation) return hits
+        return hits.filter((item) => (item.links ?? []).some((link) => link.targetId === id && link.relation === relation))
+      },
     }),
     {
       name: persistKey("task-storage"),
@@ -792,6 +769,31 @@ export const useTaskStore = create<TaskState>()(
           // Honest type on old rows: fill missing `type` only. Next Actions
           // or inbox → "task"; else "item". Never overwrite an explicit type.
           persistedState = migrateHonestItemTypes(persistedState)
+        }
+        if (version < 13) {
+          // `status` held the lifecycle bucket (`clarified`, `inbox`, …) or
+          // the word `completed`. Completion status is a different axis.
+          persistedState = migrateLegacyStageStatus(persistedState)
+        }
+        if (version < 14) {
+          // Folder Send-to-Scheduler defaults turn off. Lists already marked
+          // schedulable stay in the Scheduler.
+          persistedState = migrateScheduleableOptIn(persistedState)
+        }
+        if (version < 15) {
+          // Module-created lists (itineraries) leave the Scheduler. A person
+          // can turn Send to Scheduler back on. Other lists stay as they are.
+          persistedState = migrateModuleListsOutOfScheduler(persistedState)
+        }
+        if (version < 16) {
+          // Unfinished live assignments whose period has ended get an Undone
+          // placement. The schedule fields stay.
+          persistedState = migratePastAssignmentsToUndone(persistedState)
+        }
+        if (version < 17) {
+          // Date inputs stored as UTC midnight move to local midnight of that
+          // UTC date. Only the four schedule fields. Nothing is deleted.
+          persistedState = migrateUtcMidnightScheduleDates(persistedState)
         }
         if (!Array.isArray(persistedState.removedTaskIds)) {
           persistedState.removedTaskIds = []

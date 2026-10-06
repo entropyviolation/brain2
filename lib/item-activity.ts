@@ -6,12 +6,14 @@
  * at the item, and the History tab on item detail. Entries are never rewritten.
  *
  * Storage: localStorage `brain2-item-activity`. A full Settings backup carries
- * this key in `extras` and writes it back on restore.
+ * this key in `extras` and writes it back on restore. There is no persist
+ * version: `source` and `order` are optional, and lines written before them
+ * still load.
  */
 
 import { itemTitle } from "@/lib/item-utils"
 import { persistKey, readAliasedLocal, removeAliasedLocal, writeAliasedLocal } from "@/lib/storage-keys"
-import type { List, Task } from "@/lib/types"
+import type { List, Task, TodoPeriodMark } from "@/lib/types"
 
 export const ITEM_ACTIVITY_STORAGE_KEY = persistKey("item-activity")
 export const MAX_ACTIVITY_PER_ITEM = 200
@@ -19,9 +21,14 @@ export const MAX_ACTIVITY_PER_ITEM = 200
 export interface ItemActivityChange {
   field: string
   label: string
+  /** Previous value. */
   from: string
+  /** Next value. */
   to: string
 }
+
+/** Abstraction order on a ledger line. Leaving it off is valid. */
+export type ItemActivityOrder = "observed" | "recorded" | "derived" | "inferred"
 
 export interface ItemActivityEntry {
   id: string
@@ -29,6 +36,10 @@ export interface ItemActivityEntry {
   at: string
   summary: string
   changes: ItemActivityChange[]
+  /** Which screen or ingest line wrote the row. Absent on older lines. */
+  source?: string
+  /** Absent on older lines and on writes that do not name an order. */
+  order?: ItemActivityOrder
 }
 
 export interface ItemActivityLookup {
@@ -56,6 +67,7 @@ const FIELD_LABELS: Record<string, string> = {
   importance: "Importance",
   urgency: "Urgency",
   missedAt: "Missed opportunity",
+  todoMarks: "Required / prioritized",
 }
 
 const WATCHED_FIELDS = Object.keys(FIELD_LABELS)
@@ -103,7 +115,20 @@ function listName(id: string, lookup?: ItemActivityLookup): string {
   return lookup?.lists?.find((l) => l.id === id)?.name ?? id
 }
 
+function formatTodoMarks(value: unknown): string {
+  if (!Array.isArray(value) || value.length === 0) return "(none)"
+  return (value as TodoPeriodMark[])
+    .map((mark) => {
+      const flags = [mark.required ? "required" : null, mark.prioritized ? "prioritized" : null]
+        .filter(Boolean)
+        .join(" + ")
+      return `${mark.period} ${mark.periodKey}${flags ? ` (${flags})` : ""}`
+    })
+    .join("; ")
+}
+
 function stringifyField(field: string, value: unknown, lookup?: ItemActivityLookup): string {
+  if (field === "todoMarks") return formatTodoMarks(value)
   if (field === "dependencies" || field === "lists") {
     const ids = Array.isArray(value) ? (value as string[]) : []
     if (!ids.length) return "(none)"
@@ -173,6 +198,8 @@ export function appendItemActivity(entry: Omit<ItemActivityEntry, "id"> & { id?:
     summary: entry.summary,
     changes: entry.changes,
   }
+  if (entry.source !== undefined) next.source = entry.source
+  if (entry.order !== undefined) next.order = entry.order
   const rows = [...(all[entry.itemId] ?? []), next]
   all[entry.itemId] = rows.length > MAX_ACTIVITY_PER_ITEM ? rows.slice(rows.length - MAX_ACTIVITY_PER_ITEM) : rows
   writeAll(all)

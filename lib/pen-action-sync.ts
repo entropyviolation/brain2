@@ -5,17 +5,21 @@
  * or secondary) writes a `loggedAction` row so it appears in To-Do Done / Home
  * Done today. Create, retime, rename, retag location, change project, or delete
  * the block and this module updates or drops the row. A title the user edited
- * in To-Do is left alone; duration and clock still follow the block.
+ * in To-Do is left alone; duration and clock still follow the block. If no pen
+ * has `actionFormats` and no `pen-action-` row exists, the sync returns without
+ * writing tasks. Dropping the last format still deletes leftover rows.
  *
  * Sleep-derived blocks already have a Done row (`lib/sleep-sync.ts`) and are
  * skipped. Operation work sessions are a separate path (`operation-work-session`).
  *
- * Only this file imports the tracking store *and* the task repository, matching
- * `habit-tracking-sync.ts`. Pure title math lives in `lib/pen-action-format.ts`.
+ * `lib/habit-done-log.ts`, `lib/sleep-sync.ts`, and `lib/operation-work-session.ts`
+ * also import the tracking store and/or the task repository. Pure title math lives
+ * in `lib/pen-action-format.ts`.
  */
 "use client"
 
 import { useEffect } from "react"
+import { isRestoring } from "@/lib/action-history"
 import { taskRepository } from "@/lib/data/task-repository"
 import { LOGGED_ACTION_TYPE_ID } from "@/lib/item-types"
 import { parseLocalDate } from "@/lib/date-utils"
@@ -153,12 +157,26 @@ function wantedIds(
   return ids
 }
 
+function noPenActionWork(scopes: ReturnType<typeof useTimeTrackingStore.getState>["scopes"]): boolean {
+  for (const scope of scopes) {
+    for (const pen of scope.pens) {
+      if (pen.actionFormats?.length) return false
+    }
+  }
+  for (const task of taskRepository.getAll()) {
+    if (String(task.id).startsWith("pen-action-")) return false
+  }
+  return true
+}
+
 /**
  * Reconcile Done rows with the current vault. Safe to call often — ids are
- * deterministic, and a customised title is not overwritten.
+ * deterministic, and a customised title is not overwritten. Returns immediately
+ * when no pen has formats and no `pen-action-` row exists.
  */
 export function syncPenActions(): void {
   const { entries, scopes } = useTimeTrackingStore.getState()
+  if (noPenActionWork(scopes)) return
   const wanted = wantedIds(entries, scopes)
 
   for (const group of groupsFrom(entries)) {
@@ -181,6 +199,10 @@ export function startPenActionSync(): () => void {
   if (unsubscribe) return unsubscribe
   let previous = useTimeTrackingStore.getState()
   const stop = useTimeTrackingStore.subscribe((state) => {
+    if (isRestoring()) {
+      previous = state
+      return
+    }
     const entriesChanged = state.entries !== previous.entries
     const scopesChanged = state.scopes !== previous.scopes
     previous = state

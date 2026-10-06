@@ -16,6 +16,7 @@
 import type { Folder, HabitListLink, HabitSleepLink, List, Task, TaskCompletion, WeeklyTask } from "./types"
 import { TaskType } from "./types"
 import { addCalendarDays, formatLocalDateKey, parseLocalDate } from "./date-utils"
+import { applyHabitAutoFlag } from "./habit-auto-flag"
 import { taskIsNextAction } from "./item-utils"
 import { parseBedtime, parseWakeTime } from "./sleep-log"
 
@@ -134,33 +135,15 @@ export function doneNextActionCount(
 }
 
 /**
- * Merge one auto flag into a boolean cell. A hand tick (completed, with no auto
- * flag) stays ticked when the log does not qualify. Returns null when the cell
- * would not change. Does not open an empty miss for a day the log is silent on.
+ * Merge sleep / list auto flags into a boolean cell. Thin wrapper over
+ * `applyHabitAutoFlag` — hand ticks stay; null when unchanged.
  */
 export function applyAutoFlag(
   completion: TaskCompletion | undefined,
   flag: "sleepCompleted" | "listCompleted",
   met: boolean,
 ): TaskCompletion | null {
-  const prevMet = !!completion?.[flag]
-  if (!met && !completion) return null
-  const sleep = flag === "sleepCompleted" ? met : !!completion?.sleepCompleted
-  const list = flag === "listCompleted" ? met : !!completion?.listCompleted
-  const tracked = !!completion?.trackedCompleted
-  const manual =
-    !!completion?.completed &&
-    !completion?.trackedCompleted &&
-    !completion?.sleepCompleted &&
-    !completion?.listCompleted
-  const completed = manual || tracked || sleep || list
-  if (prevMet === met && !!completion?.completed === completed) return null
-  const next: TaskCompletion = { ...completion, completed }
-  if (sleep) next.sleepCompleted = true
-  else delete next.sleepCompleted
-  if (list) next.listCompleted = true
-  else delete next.listCompleted
-  return next
+  return applyHabitAutoFlag(completion, flag, met)
 }
 
 export function autoCheckHint(completion: TaskCompletion | undefined): string | null {
@@ -169,6 +152,8 @@ export function autoCheckHint(completion: TaskCompletion | undefined): string | 
   if (completion.sleepCompleted) parts.push("the sleep log")
   if (completion.listCompleted) parts.push("a done next action")
   if (completion.trackedCompleted) parts.push("tracked time")
+  if (completion.coverageCompleted) parts.push("tracking coverage")
+  if (completion.dailyFloorCompleted) parts.push("daily habit floor")
   if (!parts.length) return null
   return `Checked from ${parts.join(" and ")}. You can still tick it yourself.`
 }

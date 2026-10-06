@@ -95,9 +95,6 @@ export function trackedMinuteSetForTags(
   return minutes
 }
 
-/** @deprecated Slot-era name kept for call sites; returns minute indices. */
-export const trackedSlotsForTags = trackedMinuteSetForTags
-
 export function trackedMinutesForTags(source: TrackedTimeSource, dateKey: string, tagIds: string[]): number {
   return trackedMinuteSetForTags(source, dateKey, tagIds).size
 }

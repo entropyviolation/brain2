@@ -106,6 +106,113 @@ describe("getNeedsAttention — reasons", () => {
   })
 })
 
+describe("getNeedsAttention — date-only deadlines", () => {
+  it("keeps today's local midnight open through the afternoon", () => {
+    const now = new Date(2026, 5, 23, 16, 0)
+    const task = makeTask({
+      id: "due-today",
+      deadline: new Date(2026, 5, 23),
+      createdAt: now,
+      scheduledDate: now,
+    })
+    const entries = getNeedsAttention([task], { now })
+    expect(reasonsFor(entries, "due-today")).not.toContain("overdue")
+  })
+
+  it("flags yesterday's local midnight on the next afternoon", () => {
+    const now = new Date(2026, 5, 23, 16, 0)
+    const task = makeTask({
+      id: "due-yesterday",
+      deadline: new Date(2026, 5, 22),
+      createdAt: now,
+      scheduledDate: now,
+    })
+    const entries = getNeedsAttention([task], { now })
+    expect(reasonsFor(entries, "due-yesterday")).toEqual(["overdue"])
+  })
+
+  it("flags a same-day clock time once that instant has passed", () => {
+    const now = new Date(2026, 5, 23, 16, 0)
+    const task = makeTask({
+      id: "at-three",
+      deadline: new Date(2026, 5, 23, 15, 0),
+      createdAt: now,
+      scheduledDate: now,
+    })
+    const entries = getNeedsAttention([task], { now })
+    expect(reasonsFor(entries, "at-three")).toEqual(["overdue"])
+  })
+
+  it("does not flag a same-day clock time before that instant", () => {
+    const now = new Date(2026, 5, 23, 14, 0)
+    const task = makeTask({
+      id: "at-three",
+      deadline: new Date(2026, 5, 23, 15, 0),
+      createdAt: now,
+      scheduledDate: now,
+    })
+    const entries = getNeedsAttention([task], { now })
+    expect(reasonsFor(entries, "at-three")).not.toContain("overdue")
+  })
+
+  it("excludes a completed task whose date-only deadline is today", () => {
+    const now = new Date(2026, 5, 23, 16, 0)
+    const task = makeTask({
+      id: "done-today",
+      deadline: new Date(2026, 5, 23),
+      completed: true,
+      createdAt: now,
+      scheduledDate: now,
+    })
+    expect(getNeedsAttention([task], { now })).toEqual([])
+  })
+
+  it("excludes a missed task whose date-only deadline is today", () => {
+    const now = new Date(2026, 5, 23, 16, 0)
+    const task = makeTask({
+      id: "missed-today",
+      deadline: new Date(2026, 5, 23),
+      status: "missed",
+      completed: false,
+      createdAt: now,
+      scheduledDate: now,
+    })
+    expect(getNeedsAttention([task], { now })).toEqual([])
+  })
+
+  it("excludes completed and missed tasks whose date-only deadline was yesterday", () => {
+    const now = new Date(2026, 5, 23, 16, 0)
+    const done = makeTask({
+      id: "done-yesterday",
+      deadline: new Date(2026, 5, 22),
+      completed: true,
+      createdAt: now,
+      scheduledDate: now,
+    })
+    const missed = makeTask({
+      id: "missed-yesterday",
+      deadline: new Date(2026, 5, 22),
+      status: "missed",
+      completed: false,
+      createdAt: now,
+      scheduledDate: now,
+    })
+    expect(getNeedsAttention([done, missed], { now })).toEqual([])
+  })
+
+  it("treats a UTC-midnight calendar day as still open on that local afternoon", () => {
+    const now = new Date(2026, 5, 23, 16, 0)
+    const task = makeTask({
+      id: "utc-day",
+      deadline: new Date("2026-06-23T00:00:00.000Z"),
+      createdAt: now,
+      scheduledDate: now,
+    })
+    const entries = getNeedsAttention([task], { now })
+    expect(reasonsFor(entries, "utc-day")).not.toContain("overdue")
+  })
+})
+
 describe("getNeedsAttention — exclusions", () => {
   it("excludes completed tasks even when they would otherwise flag", () => {
     const task = makeTask({

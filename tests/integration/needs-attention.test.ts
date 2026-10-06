@@ -129,6 +129,64 @@ describe("integration: needs-attention over the store", () => {
     expect(reasonsFor(entries, "blocked")).toEqual([])
   })
 
+  it("keeps today's local-midnight deadline open at noon", () => {
+    taskRepository.add(task({ id: "due-today", deadline: new Date("2026-06-23T00:00:00") }))
+    const entries = getNeedsAttention(taskRepository.getAll(), { now: NOW })
+    expect(reasonsFor(entries, "due-today")).not.toContain("overdue")
+  })
+
+  it("flags yesterday's local-midnight deadline", () => {
+    taskRepository.add(task({ id: "due-yesterday", deadline: new Date("2026-06-22T00:00:00") }))
+    const entries = getNeedsAttention(taskRepository.getAll(), { now: NOW })
+    expect(reasonsFor(entries, "due-yesterday")).toEqual(["overdue"])
+  })
+
+  it("compares a clock-time deadline to the instant", () => {
+    taskRepository.add(task({ id: "at-three", deadline: new Date("2026-06-23T15:00:00") }))
+    const later = new Date("2026-06-23T16:00:00")
+    const earlier = new Date("2026-06-23T14:00:00")
+    expect(reasonsFor(getNeedsAttention(taskRepository.getAll(), { now: later }), "at-three")).toEqual([
+      "overdue",
+    ])
+    expect(
+      reasonsFor(getNeedsAttention(taskRepository.getAll(), { now: earlier }), "at-three"),
+    ).not.toContain("overdue")
+  })
+
+  it("excludes done and missed tasks on today's or yesterday's date-only deadline", () => {
+    taskRepository.add(
+      task({ id: "done-today", deadline: new Date("2026-06-23T00:00:00"), completed: true }),
+    )
+    taskRepository.add(
+      task({
+        id: "missed-today",
+        deadline: new Date("2026-06-23T00:00:00"),
+        status: "missed",
+        completed: false,
+      }),
+    )
+    taskRepository.add(
+      task({ id: "done-yesterday", deadline: new Date("2026-06-22T00:00:00"), completed: true }),
+    )
+    taskRepository.add(
+      task({
+        id: "missed-yesterday",
+        deadline: new Date("2026-06-22T00:00:00"),
+        status: "missed",
+        completed: false,
+      }),
+    )
+    const entries = getNeedsAttention(taskRepository.getAll(), { now: NOW })
+    expect(entries.map((e) => e.item.id)).toEqual([])
+  })
+
+  it("keeps a UTC-midnight calendar day open on that local afternoon", () => {
+    taskRepository.add(task({ id: "utc-day", deadline: new Date("2026-06-23T00:00:00.000Z") }))
+    const afternoon = new Date("2026-06-23T16:00:00")
+    const entries = getNeedsAttention(taskRepository.getAll(), { now: afternoon })
+    expect(reasonsFor(entries, "utc-day")).not.toContain("overdue")
+  })
+
   it("honors a custom staleDays threshold", () => {
     taskRepository.add(
       task({ id: "old", createdAt: new Date("2026-06-18T12:00:00"), scheduledDate: undefined }),

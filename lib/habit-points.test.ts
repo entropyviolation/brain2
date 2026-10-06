@@ -8,9 +8,15 @@ import {
   GRADE_BONUS_BOTH,
   GRADE_BONUS_EITHER,
   gradeBonusPoints,
+  formatGradeLiftDelta,
+  formatGradeLiftLastWeekCaption,
+  formatGradeLiftYesterdayCaption,
+  gradeLiftDelta,
   gradesBeatPrior,
   latestPointAward,
   RAW_DAY_BONUS,
+  rawDayBeatsAverage,
+  rawDayBeatsPrior,
   rawDayBonusPoints,
 } from "./habit-points"
 
@@ -39,23 +45,73 @@ describe("gradeBonusPoints", () => {
   })
 })
 
-describe("gradesBeatPrior", () => {
-  it("pays once per grade that rose, and names which one", () => {
-    expect(gradesBeatPrior({ week: 10, output: 10 }, { week: 10, output: 10 }, 25, "day").points).toBe(0)
-    expect(gradesBeatPrior({ week: 80, output: 10 }, { week: 40, output: 10 }, 25, "day")).toEqual({
-      points: 25,
-      description: "Higher week grade than yesterday",
+describe("rawDayBeatsAverage", () => {
+  it("pays the edited amount only when today is strictly above that average", () => {
+    expect(rawDayBeatsAverage(80, 70, 5, "week")).toEqual({
+      points: 5,
+      description: "Higher daily completion than the prior 7 days",
     })
-    expect(gradesBeatPrior({ week: 80, output: 90 }, { week: 40, output: 10 }, 25, "day")).toEqual({
+    expect(rawDayBeatsAverage(80, 70, 12, "month")).toEqual({
+      points: 12,
+      description: "Higher daily completion than the last 30 days",
+    })
+    expect(rawDayBeatsAverage(70, 70, 5, "week").points).toBe(0)
+    expect(rawDayBeatsAverage(60, 70, 5, "month").points).toBe(0)
+    expect(rawDayBeatsAverage(80.4, 79.6, 5, "week").points).toBe(0)
+    expect(rawDayBeatsAverage(90, 10, 0, "week").points).toBe(0)
+  })
+})
+
+describe("rawDayBeatsPrior", () => {
+  it("pays once when raw daily completion rises", () => {
+    expect(rawDayBeatsPrior(40, 40, 25).points).toBe(0)
+    expect(rawDayBeatsPrior(50, 40, 25)).toEqual({
+      points: 25,
+      description: "Higher daily completion than yesterday",
+    })
+    expect(rawDayBeatsPrior(39.4, 40.4, 25).points).toBe(0)
+  })
+})
+
+describe("gradesBeatPrior", () => {
+  it("pays once per rail grade that rose vs last week", () => {
+    expect(gradesBeatPrior({ week: 10, output: 10 }, { week: 10, output: 10 }, 25, "week").points).toBe(0)
+    expect(gradesBeatPrior({ week: 80, output: 10 }, { week: 40, output: 10 }, 25, "week")).toEqual({
+      points: 25,
+      description: "Higher week grade than last week",
+    })
+    expect(gradesBeatPrior({ week: 80, output: 90 }, { week: 40, output: 10 }, 25, "week")).toEqual({
       points: 50,
-      description: "Higher habit grades than yesterday",
+      description: "Higher habit grades than last week",
     })
     expect(gradesBeatPrior({ week: 70, output: 40 }, { week: 80, output: 10 }, 40, "week")).toEqual({
       points: 40,
-      description: "Higher weekly output than last week",
+      description: "Higher output grade than last week",
     })
-    expect(gradesBeatPrior({ week: 74.6, output: 0 }, { week: 75.4, output: 0 }, 25, "day").points).toBe(0)
+    expect(gradesBeatPrior({ week: 74.6, output: 0 }, { week: 75.4, output: 0 }, 25, "week").points).toBe(0)
     expect(gradesBeatPrior({ week: 1, output: 1 }, { week: 0, output: 0 }, 0, "week").points).toBe(0)
+  })
+})
+
+describe("grade-lift captions and deltas", () => {
+  it("shows yesterday as one raw daily completion percent", () => {
+    expect(formatGradeLiftYesterdayCaption(40.4)).toBe("Yesterday — 40% daily completion")
+    expect(formatGradeLiftYesterdayCaption(null)).toBe("No prior day yet")
+  })
+
+  it("shows last week as week grade and perfect output", () => {
+    expect(formatGradeLiftLastWeekCaption({ week: 51.2, output: 57.4 })).toBe(
+      "Last week — week grade 51% · perfect output 57%",
+    )
+    expect(formatGradeLiftLastWeekCaption(null)).toBe("No prior week yet")
+  })
+
+  it("formats signed deltas with over / under / even", () => {
+    expect(gradeLiftDelta(50, 40)).toBe(10)
+    expect(gradeLiftDelta(30, 40)).toBe(-10)
+    expect(formatGradeLiftDelta(10)).toBe("+10")
+    expect(formatGradeLiftDelta(-10)).toBe("−10")
+    expect(formatGradeLiftDelta(0)).toBe("0")
   })
 })
 
@@ -73,6 +129,12 @@ describe("latestPointAward", () => {
     expect(awardReason({ taskId: "habit-raw-day-bonus:2026-09-23", taskDescription: "Accomplishment bonus (80%+)" })).toBe(
       "Accomplishment bonus (80%+)",
     )
+    expect(
+      awardReason({
+        taskId: "habit-weekly-avg-beat:2026-09-23",
+        taskDescription: "Higher daily completion than the prior 7 days",
+      }),
+    ).toBe("Higher daily completion than the prior 7 days")
   })
 })
 

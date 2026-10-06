@@ -19,6 +19,11 @@
  * `estimated: false` means nobody has to confirm the number. Anything else is
  * flagged on the Done row via `lib/estimated-values.ts`.
  *
+ * `timeEstimateNA` means the habit has no duration (drink water). Rate and flat
+ * minutes are ignored, the same as a habit that never had an estimate. A logged
+ * minutes/hours value and painted Tracking time are still observed. N/A is not
+ * stored as 0 minutes.
+ *
  * Pure: takes tracked minutes as an argument so tests never touch a store.
  */
 import { TaskType, type EstimateKind, type TaskCompletion, type WeeklyTask } from "@/lib/types"
@@ -69,13 +74,29 @@ export function habitLoggedAmount(habit: WeeklyTask, completion: TaskCompletion 
 }
 
 function rateOf(habit: WeeklyTask): number {
+  if (habit.timeEstimateNA) return 0
   const rate = habit.timeEstimate?.minutesPerUnit
   return Number.isFinite(rate) && (rate as number) > 0 ? (rate as number) : 0
 }
 
 function flatOf(habit: WeeklyTask): number {
+  if (habit.timeEstimateNA) return 0
   const flat = habit.timeEstimate?.minutes
   return Number.isFinite(flat) && (flat as number) > 0 ? (flat as number) : 0
+}
+
+/**
+ * Minutes to reserve when this habit is dropped on the plan.
+ * N/A is not a duration (`null`) — not 0, which the planner would turn into a
+ * real block. A habit with no estimate still uses the 30-minute fallback.
+ */
+export function habitScheduleMinutes(
+  habit: Pick<WeeklyTask, "timeEstimate" | "timeEstimateNA"> | undefined,
+): number | null {
+  if (habit?.timeEstimateNA) return null
+  const minutes = habit?.timeEstimate?.minutes
+  if (typeof minutes === "number" && Number.isFinite(minutes) && minutes > 0) return minutes
+  return 30
 }
 
 /** A `definite` length is known, so it never asks the user to confirm it. */
@@ -167,6 +188,7 @@ export function habitDurationEstimate(
 
 /** Form/grid summary of what a habit's time estimate will produce. */
 export function describeHabitTimeEstimate(habit: WeeklyTask): string {
+  if (habit.timeEstimateNA) return "No time estimate. Done rows and the plan do not count a duration for this habit."
   const rate = rateOf(habit)
   const flat = flatOf(habit)
   if (isTimeMeasuredHabit(habit)) return "Measured in time already — the logged value is the duration."

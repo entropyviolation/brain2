@@ -1,12 +1,16 @@
 /**
  * lib/ingest/apply-note.ts — Tracker notes from a text phrase
  *
- * Default: append onto the activity block covering *now*. `n loc:` / `n mood:`
- * target those scopes. `day:` / `n day:` append the Tracking day jot.
+ * A moment note (`n` / `note:` / `jot:` / `memo:`) is a discrete event at send
+ * time. If a block covers that minute, the text is also appended there.
+ * `n loc:` / `n mood:` use those scopes. `day:` / `n day:` stay the day jot
+ * and do not become a tick.
  */
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { appendDayNote, getDayNote } from "@/lib/day-notes-persist"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
+import { logDiscreteNote } from "./apply-discrete-event"
+import { splitEventLine } from "./parse-tracking-note"
 import { minutesPastMidnight } from "./times"
 import type { ApplyResult } from "./types"
 
@@ -35,10 +39,28 @@ export function applyNote(payload: string, now = new Date()): ApplyResult {
     }
   }
 
+  const split = splitEventLine(peeled.text)
   const nowMin = minutesPastMidnight(now)
   const store = useTimeTrackingStore.getState()
   const covering = coveringEntry(store.entries, date, peeled.target, nowMin)
-  if (!covering) {
+  const instantId = logDiscreteNote(peeled.target, split.line, now, split.note)
+  if (covering) {
+    const next = covering.notes ? `${covering.notes}\n${peeled.text}` : peeled.text
+    store.updateEntry(covering.id, { notes: next })
+    const pen = store.scopes
+      .find((s) => s.id === covering.scopeId)
+      ?.pens.find((p) => p.id === covering.penId)
+    const label = pen?.name ?? peeled.target
+    return {
+      status: "ok",
+      kind: "note",
+      reply: `Noted on ${label}: ${peeled.text}`,
+      summary: `Note → ${label}`,
+      itemIds: instantId ? [covering.id, instantId] : [covering.id],
+    }
+  }
+
+  if (!instantId) {
     appendDayNote(date, `[${peeled.target}] ${peeled.text}`, now)
     useTimeTrackingStore.getState().setDayNotes(date, getDayNote(date))
     return {
@@ -49,18 +71,12 @@ export function applyNote(payload: string, now = new Date()): ApplyResult {
     }
   }
 
-  const next = covering.notes ? `${covering.notes}\n${peeled.text}` : peeled.text
-  store.updateEntry(covering.id, { notes: next })
-  const pen = store.scopes
-    .find((s) => s.id === covering.scopeId)
-    ?.pens.find((p) => p.id === covering.penId)
-  const label = pen?.name ?? peeled.target
   return {
     status: "ok",
     kind: "note",
-    reply: `Noted on ${label}: ${peeled.text}`,
-    summary: `Note → ${label}`,
-    itemIds: [covering.id],
+    reply: `Logged: ${split.line}`,
+    summary: `Note → ${peeled.target}`,
+    itemIds: [instantId],
   }
 }
 

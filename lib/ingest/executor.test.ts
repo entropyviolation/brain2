@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { ingestIncoming } from "./executor"
 import { resetIphoneNoteContinuations } from "./apply-iphone-notes"
-import { generatePairingCode } from "./pairing"
+import { generatePairingCode, UNPAIRED_SUMMARY } from "./pairing"
 import { useIngestStore } from "./ingest-store"
 import { useTaskStore } from "@/lib/task-store"
 import { parkedIphoneStoreItems } from "@/lib/apple-notes"
@@ -13,9 +13,12 @@ import { formatLocalDateKey, sameCalendarDay, taskScheduledOnDay } from "@/lib/d
 import { isFolderAllItemsCategoryId } from "@/lib/folder-all-items"
 import { getPlanEntries } from "@/lib/plan-text"
 import { useReviewsStore } from "@/lib/reviews-store"
+import { createScheduledTodoTask } from "@/components/Home/ToDo/todo-utils"
+import { taskIsRequired } from "@/lib/todo-commitment"
 import { TaskType } from "@/lib/types"
 import { DEFAULT_DISCRETE_EVENT_TRIGGERS } from "./text-triggers"
 import { resetIngestDedupeForTests } from "./dedupe"
+import { resetGpsIngestLogForTests, useGpsIngestLog } from "./gps-log"
 import type { IncomingMessage } from "./types"
 
 const NOW = new Date(2026, 8, 19, 17, 42, 0)
@@ -41,6 +44,7 @@ describe("ingestIncoming", () => {
     resetAllStores()
     resetIphoneNoteContinuations()
     resetIngestDedupeForTests()
+    resetGpsIngestLogForTests()
     useHabitsStore.setState({ tasks: getDefaultHabits(), weeklyData: {} })
     useIngestStore.setState({
       enabled: true,
@@ -359,16 +363,15 @@ describe("ingestIncoming", () => {
     expect(empty.reply).toMatch(/nothing added/i)
   })
 
-  it("notes the live activity block", () => {
+  it("notes the live activity block and keeps a discrete tick", () => {
     ingestIncoming(sim("track: work"), NOW)
     const result = ingestIncoming(sim("n stuck in aisle 4"), NOW)
     expect(result.status).toBe("ok")
     if (result.status !== "ok") return
     expect(result.reply).toMatch(/stuck in aisle 4/)
-    const notes = useTimeTrackingStore
-      .getState()
-      .entries.some((entry) => entry.notes?.includes("stuck in aisle 4"))
-    expect(notes).toBe(true)
+    const entries = useTimeTrackingStore.getState().entries
+    expect(entries.some((entry) => entry.kind !== "instant" && entry.notes?.includes("stuck in aisle 4"))).toBe(true)
+    expect(entries.some((entry) => entry.kind === "instant" && entry.title === "stuck in aisle 4")).toBe(true)
   })
 
   it("expands a custom shortcut into grocery dump", () => {
@@ -421,12 +424,14 @@ describe("ingestIncoming", () => {
       ],
       weeklyData: {},
     })
-    const hemi = ingestIncoming(sim("hemisync"), NOW)
+    const bare = ingestIncoming(sim("hemisync"), NOW)
+    expect(bare.kind).toBe("capture")
+    const hemi = ingestIncoming(sim("dh: hemisync"), NOW)
     expect(hemi.status).toBe("ok")
     expect(hemi.kind).toBe("habit-trigger")
     const buried = ingestIncoming(sim("remember hemisync tonight"), NOW)
     expect(buried.kind).toBe("capture")
-    const pages = ingestIncoming(sim("read 30 pages"), NOW)
+    const pages = ingestIncoming(sim("dh: read 30 pages"), NOW)
     expect(pages.status).toBe("ok")
     expect(pages.kind).toBe("habit-trigger")
     const smoked = ingestIncoming(sim("smoked weed"), NOW)
@@ -495,6 +500,122 @@ describe("ingestIncoming", () => {
     const morning = useReviewsStore.getState().getMorningReview(formatLocalDateKey(NOW))
     expect(morning).toBeTruthy()
     expect(morning?.source).toBe("telegram")
+  })
+
+  it("adds and removes today's to-dos, then marks required tasks", () => {
+    const alpha = createScheduledTodoTask({ description: "alpha", period: "day", date: NOW })
+    alpha.id = "todo-alpha"
+    const beta = createScheduledTodoTask({ description: "beta", period: "day", date: NOW })
+    beta.id = "todo-beta"
+    useTaskStore.getState().addTask(alpha)
+    useTaskStore.getState().addTask(beta)
+
+    let step = ingestIncoming(sim("gm"), NOW)
+    for (let i = 0; i < 20 && step.status === "needs_clarify" && !/rm 1 3/i.test(step.reply ?? ""); i++) {
+      step = ingestIncoming(sim("skip"), NOW)
+    }
+    expect(step.status).toBe("needs_clarify")
+    if (step.status !== "needs_clarify") return
+    expect(step.reply).toMatch(/alpha/)
+    expect(step.reply).toMatch(/beta/)
+
+    step = ingestIncoming(sim("rm 1\ncall mom"), NOW)
+    expect(step.status).toBe("needs_clarify")
+    if (step.status !== "needs_clarify") return
+    expect(step.reply).toMatch(/required/i)
+    expect(step.reply).toMatch(/Nothing is required yet/)
+    expect(taskScheduledOnDay(useTaskStore.getState().tasks.find((t) => t.id === "todo-alpha")!, NOW)).toBe(false)
+    expect(useTaskStore.getState().tasks.some((t) => t.description === "call mom" && taskScheduledOnDay(t, NOW))).toBe(true)
+
+    step = ingestIncoming(sim("1\npay rent"), NOW)
+    expect(step.status).toBe("needs_clarify")
+    if (step.status !== "needs_clarify") return
+    expect(step.reply).toMatch(/highest priorities/i)
+    const dayKey = formatLocalDateKey(NOW)
+    const open = useTaskStore.getState().tasks.filter((t) => taskScheduledOnDay(t, NOW) && !t.completed)
+    const first = open[0]
+    const rent = useTaskStore.getState().tasks.find((t) => t.description === "pay rent")
+    expect(first && taskIsRequired(first, "day", dayKey)).toBe(true)
+    expect(rent && taskIsRequired(rent, "day", dayKey)).toBe(true)
+    expect(rent && taskScheduledOnDay(rent, NOW)).toBe(true)
+  })
+
+  it("treats morning-review replies as answers until STOP", () => {
+    let step = ingestIncoming(sim("gm"), NOW)
+    expect(step.status).toBe("needs_clarify")
+    step = ingestIncoming(sim("M"), NOW)
+    expect(step.status).toBe("needs_clarify")
+    if (step.status !== "needs_clarify") return
+    expect(step.reply).not.toMatch(/Which mood/)
+    expect(step.reply).toMatch(/Bedtime/)
+    expect(step.reply).toMatch(/STOP/)
+
+    step = ingestIncoming(sim("all nighter"), NOW)
+    expect(step.reply).toMatch(/Affirmation 1/)
+    step = ingestIncoming(sim("Next"), NOW)
+    expect(step.reply).toMatch(/Affirmation 2/)
+    expect(step.reply ?? "").not.toMatch(/Inbox/)
+    step = ingestIncoming(sim("mood: good"), NOW)
+    expect(step.reply).toMatch(/Affirmation 3/)
+    expect(step.reply ?? "").not.toMatch(/Which mood/)
+    step = ingestIncoming(sim("Why isnt it working"), NOW)
+    expect(step.reply).toMatch(/Affirmation 4/)
+    expect(step.reply ?? "").not.toMatch(/Inbox/)
+
+    step = ingestIncoming(sim("stop"), NOW)
+    expect(step.status).toBe("needs_clarify")
+    expect(step.reply).toMatch(/Affirmation 5/)
+
+    step = ingestIncoming(sim("STOP"), NOW)
+    expect(step.status).toBe("ok")
+    if (step.status !== "ok") return
+    expect(step.reply).toMatch(/saved/i)
+    const morning = useReviewsStore.getState().getMorningReview(formatLocalDateKey(NOW))
+    expect(morning?.allNighter).toBe(true)
+    expect(morning?.completed).toBe(false)
+    expect(morning?.affirmations?.length).toBe(4)
+    expect(morning?.resumeStep).toBe("affirmation")
+    expect(morning?.bedTime).toBeUndefined()
+
+    const again = ingestIncoming(sim("gm"), NOW)
+    expect(again.status).toBe("needs_clarify")
+    if (again.status !== "needs_clarify") return
+    expect(again.reply).toMatch(/start over/)
+    expect(again.reply).toMatch(/continue/)
+    expect(again.reply).toMatch(/jump/)
+  })
+
+  it("does not advance morning review on a live location pin or a blank message", () => {
+    const step = ingestIncoming(sim("gm"), NOW)
+    expect(step.status).toBe("needs_clarify")
+    const pin = ingestIncoming(sim("gps:\n37.77,-122.42\n±8m"), NOW)
+    expect(pin.status).toBe("ignored")
+    expect(pin.reply ?? "").toBe("")
+    const again = ingestIncoming(sim("gps:\n37.771,-122.421\n±8m"), NOW)
+    expect(again.status).toBe("ignored")
+    expect(useIngestStore.getState().getPending("simulate", "sim")?.ritual?.step).toBe("bed")
+    expect(useTimeTrackingStore.getState().entriesFor(formatLocalDateKey(NOW), "location")).toHaveLength(0)
+
+    const blank = ingestIncoming(sim("   "), NOW)
+    expect(blank.status).toBe("ignored")
+    expect(blank.reply ?? "").toBe("")
+    expect(useIngestStore.getState().getPending("simulate", "sim")?.ritual?.step).toBe("bed")
+
+    const moved = ingestIncoming(sim("next"), NOW)
+    expect(moved.status).toBe("needs_clarify")
+    if (moved.status !== "needs_clarify") return
+    expect(moved.reply).toMatch(/Wake time/i)
+  })
+
+  it("resumes live location after the morning review ends", () => {
+    ingestIncoming(sim("gm"), NOW)
+    ingestIncoming(sim("gps:\n37.77,-122.42\n±8m"), NOW)
+    expect(useTimeTrackingStore.getState().entriesFor(formatLocalDateKey(NOW), "location")).toHaveLength(0)
+    const stopped = ingestIncoming(sim("STOP"), NOW)
+    expect(stopped.status).toBe("ok")
+    const resumed = ingestIncoming(sim("gps:\n37.77,-122.42\n±8m"), NOW)
+    expect(resumed.status === "ok" || resumed.status === "ignored").toBe(true)
+    expect(useTimeTrackingStore.getState().entriesFor(formatLocalDateKey(NOW), "location").length).toBeGreaterThan(0)
   })
 
   it("files a grocery header onto the store list and skips identical open items", () => {
@@ -589,5 +710,30 @@ describe("ingestIncoming", () => {
     expect(useTimeTrackingStore.getState().entriesFor(date, "location").length).toBeGreaterThan(0)
     const again = ingestIncoming(sim("gps: Home\n37.77,-122.42"), NOW)
     expect(again.status).toBe("ignored")
+  })
+
+  it("keeps gps tracking points off the message ingest log", () => {
+    ingestIncoming(sim("gps: Home\n37.77,-122.42"), NOW)
+    ingestIncoming(sim("gps: Home\n37.77,-122.42"), NOW)
+    expect(useIngestStore.getState().events.some((event) => event.kind === "gps")).toBe(false)
+    expect(useGpsIngestLog.getState().events).toHaveLength(2)
+    ingestIncoming(sim("pick up milk"), NOW)
+    expect(useIngestStore.getState().events[0]?.kind).toBe("capture")
+    expect(useIngestStore.getState().events[0]?.raw).toMatch(/pick up milk/)
+  })
+
+  it("still logs a gps message that failed", () => {
+    const result = ingestIncoming(sim("gps:"), NOW)
+    expect(result.status).toBe("error")
+    expect(useIngestStore.getState().events[0]?.kind).toBe("gps")
+    expect(useIngestStore.getState().events[0]?.status).toBe("error")
+    expect(useGpsIngestLog.getState().events).toHaveLength(0)
+  })
+
+  it("keeps an unpaired gps refusal on the ingest log", () => {
+    const result = ingestIncoming(tg("gps: Home\n37.77,-122.42"), NOW)
+    expect(result.status).toBe("ignored")
+    expect(useIngestStore.getState().events[0]?.summary).toBe(UNPAIRED_SUMMARY)
+    expect(useGpsIngestLog.getState().events).toHaveLength(0)
   })
 })

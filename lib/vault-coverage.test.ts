@@ -21,6 +21,7 @@ import { useGoalsStore } from "@/lib/goals-store"
 import { useHabitsStore } from "@/lib/habits-store"
 import { usePointsStore } from "@/lib/points-store"
 import { useReviewsStore } from "@/lib/reviews-store"
+import { useStarLordStore } from "@/lib/star-lord-store"
 import { useModulesStore } from "@/lib/modules-store"
 import { useModuleDefinitionsStore } from "@/lib/module-definitions"
 import { useWorkflowsStore } from "@/lib/workflows-store"
@@ -57,7 +58,7 @@ const PREF_ONLY_VAULTS: Record<string, string> = {
   "cogs-ingest-store": "trimmed event log; pendingByChat drains as clarifications are answered",
   "cogs-home-widgets": "overview tile order; reset is allowed to restore the default set",
   "cogs-home-weather": "one place object for the Home weather instrument",
-  "cogs-home-days-until": "one countdown date and label for the Days Until tile",
+  "cogs-home-days-until": "one countdown date, optional time, label, and unit/decimal format for the Days Until tile",
   "cogs-sun-times": "astronomy cache; a reset is allowed to empty it, and backup still keeps the history",
   "cogs-ui-names": "overlay mode string",
 }
@@ -70,6 +71,7 @@ const GUARDED_STORE_STATE: Record<string, () => unknown> = {
   "cogs-goals-store": () => useGoalsStore.getState(),
   "cogs-habits-store": () => useHabitsStore.getState(),
   "cogs-reviews-store": () => useReviewsStore.getState(),
+  "cogs-star-lord-store": () => useStarLordStore.getState(),
   "cogs-modules-store": () => useModulesStore.getState(),
   "cogs-module-definitions": () => useModuleDefinitionsStore.getState(),
   "cogs-workflows-store": () => useWorkflowsStore.getState(),

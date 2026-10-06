@@ -7,6 +7,7 @@ import {
   regretCost,
   projectedRegret,
 } from "@/lib/regret-store"
+import { formatDateKey, parseLocalDate } from "@/lib/date-utils"
 import type { Task } from "@/lib/types"
 
 function makeTask(partial: Partial<Task>): Task {
@@ -138,5 +139,94 @@ describe("useRegretStore", () => {
     useRegretStore.getState().addRegret("b", 3, "B", ASOF)
     useRegretStore.getState().removeTaskRegret("a")
     expect(useRegretStore.getState().getTotalRegret()).toBe(3)
+  })
+
+  // 20:45 PDT on 5 Oct 2026 is already 6 Oct UTC. Overdue before that civil day.
+  const EVENING = new Date(2026, 9, 5, 20, 45)
+  const NEXT_MORNING = new Date(2026, 9, 6, 8, 0)
+  const eveningTask = () =>
+    makeTask({ id: "eve", description: "Evening slip", deadline: new Date(2026, 9, 1), importance: 3 })
+
+  it("stores an evening accrual on the local calendar day, inside the UTC-next-day window", () => {
+    expect(formatDateKey(EVENING)).toBe("2026-10-06")
+    const task = eveningTask()
+    const accrued = useRegretStore.getState().accrueOverdue([task], EVENING)
+    expect(accrued).toEqual(["eve"])
+    expect(useRegretStore.getState().regretHistory).toEqual([
+      {
+        date: "2026-10-05",
+        taskId: "eve",
+        regret: dailyRegretIncrement(task),
+        taskDescription: "Evening slip",
+      },
+    ])
+    const increment = dailyRegretIncrement(task)
+    expect(useRegretStore.getState().getDayRegret(EVENING)).toBe(increment)
+    expect(useRegretStore.getState().getDayRegret(parseLocalDate("2026-10-05")!)).toBe(increment)
+  })
+
+  it("does not accrue again the same evening", () => {
+    const task = eveningTask()
+    useRegretStore.getState().accrueOverdue([task], EVENING)
+    const second = useRegretStore.getState().accrueOverdue([task], EVENING)
+    expect(second).toEqual([])
+    expect(useRegretStore.getState().getTotalRegret()).toBe(dailyRegretIncrement(task))
+    expect(useRegretStore.getState().regretHistory.map((e) => e.date)).toEqual(["2026-10-05"])
+  })
+
+  it("accrues the next local morning on the next local key", () => {
+    const task = eveningTask()
+    const increment = dailyRegretIncrement(task)
+    useRegretStore.getState().accrueOverdue([task], EVENING)
+    const next = useRegretStore.getState().accrueOverdue([task], NEXT_MORNING)
+    expect(next).toEqual(["eve"])
+    expect(useRegretStore.getState().regretHistory.map((e) => e.date)).toEqual(["2026-10-05", "2026-10-06"])
+    expect(useRegretStore.getState().getTotalRegret()).toBe(increment * 2)
+  })
+
+  it("accrues once when morning and the same evening both run", () => {
+    const task = eveningTask()
+    const morning = useRegretStore.getState().accrueOverdue([task], new Date(2026, 9, 5, 8, 0))
+    const evening = useRegretStore.getState().accrueOverdue([task], EVENING)
+    expect(morning).toEqual(["eve"])
+    expect(evening).toEqual([])
+    expect(useRegretStore.getState().regretHistory.map((e) => e.date)).toEqual(["2026-10-05"])
+    expect(useRegretStore.getState().getTotalRegret()).toBe(dailyRegretIncrement(task))
+  })
+
+  it("skips an evening write when a legacy UTC row already occupies formatDateKey(asOf)", () => {
+    const task = eveningTask()
+    useRegretStore.setState({
+      regretHistory: [
+        {
+          date: "2026-10-06",
+          taskId: task.id,
+          regret: dailyRegretIncrement(task),
+          taskDescription: task.description,
+        },
+      ],
+    })
+    const accrued = useRegretStore.getState().accrueOverdue([task], EVENING)
+    expect(accrued).toEqual([])
+    expect(useRegretStore.getState().regretHistory).toHaveLength(1)
+    expect(useRegretStore.getState().regretHistory[0].date).toBe("2026-10-06")
+  })
+
+  it("skips the next civil day when a legacy evening row already sits on that date", () => {
+    const task = eveningTask()
+    useRegretStore.setState({
+      regretHistory: [
+        {
+          date: "2026-10-06",
+          taskId: task.id,
+          regret: dailyRegretIncrement(task),
+          taskDescription: task.description,
+        },
+      ],
+    })
+    const accrued = useRegretStore.getState().accrueOverdue([task], NEXT_MORNING)
+    expect(accrued).toEqual([])
+    expect(useRegretStore.getState().regretHistory).toHaveLength(1)
+    expect(useRegretStore.getState().getTotalRegret()).toBe(dailyRegretIncrement(task))
   })
 })

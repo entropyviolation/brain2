@@ -17,18 +17,15 @@ import {
   parseLocalDate,
   parseWeekString,
   sameCalendarDay,
+  startOfLocalDay,
 } from "@/lib/date-utils"
 import { isLoggedAction, taskIsNextAction } from "@/lib/item-utils"
 import type { Folder, Task } from "@/lib/types"
 
 export type PlanRailPeriod = "day" | "week" | "month"
 
-function startOfDay(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate())
-}
-
 function periodEnd(mode: PlanRailPeriod, date: Date): Date {
-  if (mode === "day") return startOfDay(date)
+  if (mode === "day") return startOfLocalDay(date)
   if (mode === "week") {
     const start = getWeekStartDate(date)
     return new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6)
@@ -43,12 +40,12 @@ export function canWorkDuringPlanPeriod(task: Task, mode: PlanRailPeriod, date: 
   if (task.scheduledDate) {
     const scheduled = parseLocalDate(task.scheduledDate)
     if (!scheduled) return true
-    return startOfDay(scheduled) <= end
+    return startOfLocalDay(scheduled) <= end
   }
   if (task.scheduledWeek) {
     const range = parseWeekString(task.scheduledWeek)
     if (!range) return true
-    return startOfDay(range.start) <= end
+    return startOfLocalDay(range.start) <= end
   }
   if (task.scheduledMonth) {
     const monthEnd = formatLocalMonthKey(end)

@@ -3,8 +3,10 @@ import type { TimeEntry } from "./time-entries"
 import type { TrackPen, TrackScope, TrackTag } from "./time-tracking-store"
 import {
   UNLABELED_VARIANT_NAME,
+  activityOccupancyCoverage,
   childPenTotals,
   combinationTotals,
+  entriesAsDetails,
   entriesInRange,
   longestBlock,
   penTotals,
@@ -12,11 +14,13 @@ import {
   recentDateKeys,
   switchCount,
   tagTotals,
+  tagWeekTrend,
   otherScopeOccupancy,
   totalsFor,
   variantTotals,
   withPrecision,
 } from "./tracking-summary"
+import { coverageMeetsThreshold } from "./habit-completion-source"
 
 const social: TrackPen = {
   id: "social",
@@ -99,6 +103,28 @@ describe("period totals", () => {
     )
     expect(rows.map((r) => r.id)).toEqual(["activity", "location"])
     expect(rows[0].minutes).toBe(60)
+  })
+
+  it("Activity Occupancy ignores other scopes (logging habits match Tracking Activity)", () => {
+    // ~6% of the day on Activity; Screen Time alone would look almost full if unioned.
+    const activityMins = Math.round(1440 * 0.06)
+    const entries = [
+      block("work", 0, activityMins),
+      { ...block("home", 0, 1400, undefined, "location") },
+      {
+        id: "st1",
+        date: DAY,
+        scopeId: "screentime",
+        penId: "st-cat-work",
+        startMin: 0,
+        endMin: 1300,
+      },
+    ]
+    const coverage = activityOccupancyCoverage(entries, [DAY])
+    expect(coverage).toBeCloseTo(6, 0)
+    expect(coverageMeetsThreshold(coverage, 70)).toBe(false)
+    // Union across scopes would wrongly clear a 70% log habit.
+    expect(coverageMeetsThreshold(totalsFor(entries, [DAY]).coverage, 70)).toBe(true)
   })
 })
 
@@ -258,11 +284,62 @@ describe("pen tree rollup", () => {
     )
   })
 
+  it("counts a parent block ticked with one detail as that child, and child paint as that detail", () => {
+    const usa: TrackPen = {
+      id: "usa",
+      name: "USA",
+      color: "#2563eb",
+      variants: [{ id: "var-ca", name: "California", color: "#f59e0b", penId: "ca" }],
+    }
+    const california: TrackPen = { id: "ca", name: "California", color: "#f59e0b", parentId: "usa" }
+    const activity: TrackScope = { id: "location", name: "Location", pens: [usa, california] }
+    const entries = [block("usa", 540, 600, ["var-ca"], "location"), block("ca", 600, 720, undefined, "location")]
+    const kids = childPenTotals(entries, activity, [DAY], "usa")
+    expect(kids.find((row) => row.id === "ca")?.minutes).toBe(180)
+    const details = entriesAsDetails(entries, usa, activity.pens)
+    const reach = variantTotals(details, usa)
+    expect(reach.find((row) => row.name === "California")?.minutes).toBe(180)
+  })
+
+  it("splits one block across two parents so the shares sum to the block", () => {
+    const exercise: TrackPen = { id: "exercise", name: "Exercise", color: "#16a34a" }
+    const beach: TrackPen = { id: "beach", name: "Beach", color: "#0ea5e9" }
+    const walk: TrackPen = {
+      id: "walk",
+      name: "Walk to the beach",
+      color: "#22c55e",
+      parentId: "exercise",
+      parentIds: ["exercise", "beach"],
+    }
+    const activity: TrackScope = { id: "activity", name: "Activity", pens: [exercise, beach, walk] }
+    const entries = [block("walk", 540, 600)]
+    const rolled = penTotalsAtDepth(entries, activity, [DAY], 0)
+    const minutes = Object.fromEntries(rolled.map((row) => [row.id, row.minutes]))
+    expect(minutes.exercise + minutes.beach).toBe(60)
+    expect(minutes.exercise).toBeGreaterThan(0)
+    expect(minutes.beach).toBeGreaterThan(0)
+    expect(totalsFor(entries, [DAY]).tracked).toBe(60)
+    expect(penTotalsAtDepth(entries, activity, [DAY], null)[0]).toMatchObject({ id: "walk", minutes: 60 })
+  })
+
   it("drops estimated blocks when asked", () => {
     const entries = [block("work", 540, 600), { ...block("work", 600, 720), precision: "estimated" as const }]
     expect(withPrecision(entries, true)).toHaveLength(2)
     expect(withPrecision(entries, false)).toHaveLength(1)
     expect(withPrecision(entries, false)[0].startMin).toBe(540)
+  })
+})
+
+describe("tagWeekTrend", () => {
+  it("buckets a tag by week with the same union as tag totals", () => {
+    const sample = [block("work", 540, 600), { ...block("work", 600, 660), date: "2026-09-07" }]
+    const keys = [DAY, "2026-09-07"]
+    const rows = tagWeekTrend(sample, scopes, tags, keys)
+    const work = rows.find((row) => row.id === "tag-work")
+    expect(work?.points).toHaveLength(2)
+    expect(work?.points.reduce((sum, point) => sum + point.minutes, 0)).toBe(
+      tagTotals(sample, scopes, tags, keys).find((row) => row.id === "tag-work")?.minutes,
+    )
   })
 })
 

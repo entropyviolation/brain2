@@ -1,5 +1,7 @@
 /**
- * usePersistedTab — restore after mount so Radix tab triggers stay in sync.
+ * usePersistedTab — live panels read storage on first render.
+ * The app shell uses hydrate mode so Radix matches the static HTML, then
+ * a layout effect selects the stored tab before paint.
  */
 import { StrictMode } from "react"
 import { act, render, renderHook, screen } from "@testing-library/react"
@@ -18,7 +20,7 @@ function Probe() {
 }
 
 function AppTabStrip() {
-  const [tab, setTab] = usePersistedTab(APP_NAV_KEYS.appTab, APP_TABS, "home")
+  const [tab, setTab] = usePersistedTab(APP_NAV_KEYS.appTab, APP_TABS, "home", "hydrate")
   return (
     <Tabs value={tab} onValueChange={(v) => setTab(v as AppTab)}>
       <TabsList>
@@ -51,10 +53,10 @@ describe("usePersistedTab", () => {
     expect(result.current[0]).toBe("home")
   })
 
-  it("restores a stored tab after mount without clobbering it with the fallback", () => {
+  it("reads a stored tab on the first render", () => {
     localStorage.setItem(APP_NAV_KEYS.appTab, "docs")
-    render(<Probe />)
-    expect(screen.getByTestId("tab")).toHaveTextContent("docs")
+    const { result } = renderHook(() => usePersistedTab(APP_NAV_KEYS.appTab, APP_TABS, "home"))
+    expect(result.current[0]).toBe("docs")
     expect(readStoredTab(APP_NAV_KEYS.appTab, APP_TABS, "home")).toBe("docs")
   })
 

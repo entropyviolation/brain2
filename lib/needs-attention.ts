@@ -8,8 +8,10 @@
  * this; tests exercise it with plain arrays.
  *
  * Reasons (all deterministic):
- *   - overdue:     has a `deadline` in the past and is still open work
- *                  (not done, not a missed opportunity).
+ *   - overdue:     a date-only deadline (local midnight, or UTC midnight encoding a
+ *                  calendar day) is overdue only when that local calendar day is
+ *                  before today; a deadline with a clock time is overdue once that
+ *                  instant has passed; done and missed stay excluded by the caller.
  *   - unclarified: `stage === "inbox"` and not Monkey brain (the revisit pile).
  *   - blocked:     has `dependencies` where at least one referenced task (resolved
  *                  against the passed `tasks`) is still open work.
@@ -27,7 +29,12 @@
  * docs/SPEC_MAPPING.md for the broader GTD lifecycle.
  */
 import type { Goal, Task } from "@/lib/types"
-import { safeToDate, taskHasNoSchedule } from "@/lib/date-utils"
+import {
+  isPastLocalCalendarDay,
+  localMidnightFromUtcDateOnly,
+  safeToDate,
+  taskHasNoSchedule,
+} from "@/lib/date-utils"
 import { addStepsAsSubtasks, parseSteps } from "@/lib/molecular"
 import {
   goalsNeedingAttention,
@@ -118,8 +125,16 @@ export const NEEDS_ATTENTION_REASON_LABELS: Record<NeedsAttentionReason, string>
 const CLOSED_OPERATION_STAGES = new Set(["done", "abandoned"])
 
 function isOverdue(task: Task, now: Date): boolean {
-  const deadline = safeToDate(task.deadline)
-  return !!deadline && deadline.getTime() < now.getTime()
+  const raw = safeToDate(task.deadline)
+  if (!raw) return false
+  const day = localMidnightFromUtcDateOnly(raw)
+  const dateOnly =
+    day.getHours() === 0 &&
+    day.getMinutes() === 0 &&
+    day.getSeconds() === 0 &&
+    day.getMilliseconds() === 0
+  if (dateOnly) return isPastLocalCalendarDay(day, now)
+  return raw.getTime() < now.getTime()
 }
 
 function isUnclarified(task: Task): boolean {

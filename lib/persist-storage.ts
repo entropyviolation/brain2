@@ -16,20 +16,26 @@
  * (`/api/persist`, ~800ms cap) so a reboot cannot leave the desktop shell stuck
  * on an empty Chromium profile while Chrome has the live vault. A *rich* local
  * snapshot returns immediately — waiting on the 2MB hub JSON froze Daily Habits
- * (blank grid, seed habits, then a late swap). Chrome always reads and writes
- * its own localStorage (never imported from the hub). Electron seeds *missing*
- * keys from the hub on first boot, then keeps this profile's own snapshot so a
- * refresh cannot clobber completions, deletes, or new day to-dos. A *rich*
- * Electron vault also POSTs (hub shrink / Inbox-resurrection guards); seed-sized
- * Electron POSTs still skip. Plan-text keys (`monthPlan-*`, …) are the
- * exception: an empty hub tombstone re-seeded a blank Month Plan on refresh.
+ * (blank grid, seed habits, then a late swap). Plan-text keys still wait: the
+ * hub file can hold a newer stamped entry (a month write-up appended on disk)
+ * that this profile has not copied yet, and the open log unions those entries
+ * by id. Chrome always reads and writes its own localStorage (never imported
+ * from the hub). Electron seeds *missing* keys from the hub on first boot, then
+ * keeps this profile's own snapshot so a refresh cannot clobber completions,
+ * deletes, or new day to-dos. A *rich* Electron vault also POSTs (hub shrink /
+ * Inbox-resurrection guards); seed-sized Electron POSTs still skip. Plan-text
+ * keys (`monthPlan-*`, …) are the exception on POST: an empty hub tombstone
+ * re-seeded a blank Month Plan on refresh.
  *
  * Electron `userData` is pinned to Application Support/`cogs` (`electron/user-data-path.js`).
  * Do not let package.json `name` or `productName` choose a new empty profile.
  * Demo profile (`brain2-data-profile=demo`) skips the hub entirely so stock
  * fiction cannot POST into the Live persist file.
  *
- * Identical `setItem` payloads are no-ops (no localStorage write, no hub POST)
+ * Identical `setItem` payloads are no-ops (no localStorage write, no hub POST).
+ * Outside tests, the JSON write is coalesced (~48ms) and flushed on
+ * `pagehide` / when the tab is hidden, so a burst of edits stringifies once.
+ * A richer hub snapshot rehydrates on idle, not on the first paint turn.
  * so a 3-second ingest poll cannot thrash the hub file. The hub itself also
  * refuses Tracking/Sleep/Lists/Habits snapshots that shrink to less than half
  * the stored records (`scripts/persist-api.mjs`). When a richer hub vault wins,
@@ -59,6 +65,7 @@
  * blob; it does not re-apply an old pin onto that blob (that was resetting
  * Percent LED tint to a previous purple on refresh).
  */
+import { emitAppendLogChange } from "@/lib/append-log"
 import { createJSONStorage, type PersistStorage, type StateStorage } from "zustand/middleware"
 import { overlayHabitCompletions, overlayIngestAllowlist, pickPersistItem as pickVaultItem, presentPersistValue, shouldRejectAppearanceDowngrade, shouldRejectContentDowngrade, shouldRejectIngestDowngrade, shouldRejectVaultShrink, stampAppearancePins, unionPersistSnapshots, vaultRecordCount } from "@/lib/vault-guard.js"
 import {
@@ -250,6 +257,10 @@ export function shouldAwaitPersistHub(name: string, local: string | null): boole
   // One or two day-notes keys look "seed sized" vs the 20-record cutoff.
   // Waiting on the hub then let a larger historical map replace today's jot.
   if (typeof name === "string" && name.endsWith("tracking-day-notes")) return false
+  // A month log appended to the hub file is invisible while this profile's
+  // older copy is non-empty: plan keys are not record-counted, so they used
+  // to return immediately and never union the new entry.
+  if (isPlanTextStorageKey(name)) return true
   const count = vaultRecordCount(name, local)
   if (count == null) return false
   return count <= PERSIST_SEED_MAX_RECORDS
@@ -336,8 +347,14 @@ function followHubAfterPaint(name: string, local: string | null, painted: string
     if (chosen === painted && chosen === fresh) return
     writeChosenLocal(name, fresh ?? local, chosen)
     if (chosen === painted) return
+    if (isPlanTextStorageKey(name)) emitAppendLogChange()
     const rehydrate = persistRehydrators.get(name) ?? persistRehydrators.get(persistKey(name))
-    if (rehydrate) void rehydrate()
+    if (!rehydrate) return
+    const run = () => {
+      void rehydrate()
+    }
+    if (typeof requestIdleCallback === "function") requestIdleCallback(run)
+    else setTimeout(run, 0)
   })
 }
 
@@ -492,6 +509,37 @@ export function cogsStateStorage(): StateStorage {
  * Drop-in replacement for Zustand `createJSONStorage(() => localStorage)`.
  * Catches stringify failures (huge state) as well as QuotaExceeded on setItem.
  */
+const pendingPersistWrites = new Map<string, () => void>()
+let persistFlushTimer: ReturnType<typeof setTimeout> | null = null
+
+/** Write queued Zustand persist jobs now. Phone hub calls this before it snapshots the vault. */
+export function flushScheduledPersist() {
+  flushPersistWrites()
+}
+
+function flushPersistWrites() {
+  if (persistFlushTimer) {
+    clearTimeout(persistFlushTimer)
+    persistFlushTimer = null
+  }
+  const jobs = [...pendingPersistWrites.values()]
+  pendingPersistWrites.clear()
+  for (const job of jobs) job()
+}
+
+function schedulePersistWrite(name: string, run: () => void) {
+  pendingPersistWrites.set(name, run)
+  if (persistFlushTimer) clearTimeout(persistFlushTimer)
+  persistFlushTimer = setTimeout(flushPersistWrites, 48)
+}
+
+if (typeof window !== "undefined") {
+  window.addEventListener("pagehide", flushPersistWrites)
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") flushPersistWrites()
+  })
+}
+
 export function createCogsJSONStorage<S>(options?: JsonStorageOptions): PersistStorage<S> {
   const inner = createJSONStorage<S>(() => cogsStateStorage(), options)
   if (!inner) {
@@ -506,11 +554,18 @@ export function createCogsJSONStorage<S>(options?: JsonStorageOptions): PersistS
   return {
     getItem: (name) => inner.getItem(name),
     setItem: (name, value) => {
-      try {
-        return inner.setItem(name, value)
-      } catch (error) {
-        recordPersistFailure(error, name)
+      const run = () => {
+        try {
+          return inner.setItem(name, value)
+        } catch (error) {
+          recordPersistFailure(error, name)
+        }
       }
+      if (process.env.NODE_ENV === "test") {
+        run()
+        return
+      }
+      schedulePersistWrite(name, run)
     },
     removeItem: (name) => inner.removeItem(name),
   }

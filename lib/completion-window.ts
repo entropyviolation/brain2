@@ -27,6 +27,7 @@
  * Pure: takes `now`, the painted minutes, the anchor and the night as arguments.
  */
 import { format } from "date-fns"
+import { sameCalendarDay, startOfLocalDay } from "@/lib/date-utils"
 import { MINUTES_PER_DAY } from "@/lib/time-entries"
 import type { EstimatedField, EstimateKind } from "@/lib/types"
 
@@ -43,16 +44,6 @@ export interface CompletionWindow {
 }
 
 const MS_PER_MINUTE = 60_000
-
-function startOfDay(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0)
-}
-
-function sameLocalDay(a: Date, b: Date): boolean {
-  return (
-    a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
-  )
-}
 
 export function clampAnchorMinutes(minutes: number | undefined): number {
   if (!Number.isFinite(minutes)) return DEFAULT_DAY_ANCHOR_MINUTES
@@ -119,7 +110,7 @@ export function completionWindow({
   anchorMinutes,
   awake,
 }: CompletionWindowInput): CompletionWindow {
-  const dayStart = startOfDay(date)
+  const dayStart = startOfLocalDay(date)
   const duration = Math.max(0, Math.round(durationMinutes))
 
   // A logged night beats a fixed anchor: the last hour before bed is a better
@@ -162,7 +153,7 @@ export function completionWindow({
     }
   }
 
-  if (sameLocalDay(date, now)) {
+  if (sameCalendarDay(date, now)) {
     return {
       startedAt: back(now),
       completedAt: now,

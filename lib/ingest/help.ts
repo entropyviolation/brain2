@@ -20,13 +20,17 @@ Grocery / needed
 • needed: batteries  /  get: then lines  — list "needed" (notes: sent from text)
 • got milk  /  x bread  — check off grocery
 • pin  — refresh the pinned grocery card
-Habits (whole message = the command)
-• hemisync  — mark that daily habit done
-• read 30 pages  ·  exercise 15 min walked…  ·  chess score 355
+Habits (dh: then the keyword)
+• dh: hemisync  — mark that daily habit done
+• dh: read 30 pages  ·  dh: exercise 15 min  ·  dh: chess score 355
 • habit: exercise 30  — by habit name (optional yesterday)
-Events (whole message, or log:)
+• A bare keyword is not a habit log
+Events (whole message, or log: / intake:)
 • smoked weed  ·  drank water  ·  ate egg salad  ·  took 2 adderall
-• log: drink water  ·  log-something happening
+• log: drink water  ·  log: left home at 3:30  ·  log: shower 10m  ·  log: START walk
+  A line under the event is the note. The clock stays on the first line.
+• intake: coffee  — point only, no duration
+• st: from: … to: …  ·  so: objective  ·  transit: to the store
 Activity spans
 • currently deep work  ·  stopped deep work  ·  switched to cooking
 Plan / capture
@@ -88,8 +92,8 @@ Presets:
 • ate {item}     →  ate egg salad
 • took {item}    →  took 2 adderall
 • log: drink water  |  log-drink water
-  Whatever follows is the event title. Bare “o” is NOT a log unless you
-  send log: o or set “o” as a trigger.
+  Whatever follows is the event title. A line under it is the note.
+  Bare “o” is NOT a log unless you send log: o or set “o” as a trigger.
 
 ACTIVITY SPANS  (Activity scope, labeled from text pipeline)
 • currently deep work — start this activity now (open until end of day)
@@ -105,8 +109,8 @@ PLAN / TO-DO / MORNING
 • do: call dentist — Next Actions → General
 • to do today: call dentist — Home → To Do, today
 • read to do today
-• gm — morning review over text (skip or blank moves on)
-• reviews  ·  review  ·  cancel
+• gm — morning review over text (skip or next leaves a question open; blank waits; STOP quits and saves)
+• rituals  ·  reviews  ·  gm  ·  gn  ·  review  ·  ritual start week  ·  cancel (end/start; morning uses STOP)
 
 CAPTURE / LISTS
 • plain text or qa: → Inbox
@@ -117,7 +121,8 @@ CAPTURE / LISTS
 • lists  ·  folders  ·  today  ·  where  ·  search: milk
 
 TRACK / LOCATION / NOTES
-• n stuck in aisle 4  ·  day: tired
+• n stuck in aisle 4 — a point at send time; also on the block covering that minute
+• day: tired — day jot, not a tick
 • at: gym  ·  tt work  ·  track: exercise 30m
 • start: write paper  ·  stop (working-now / pause)
 • mood: good  ·  sleep: 11:30-7:00

@@ -5,6 +5,7 @@ import type { AttributeDefinition, Folder, List, Task } from "@/lib/types"
 import { sanitizeEnabledDisplays } from "@/lib/types"
 import { isFolderAllItemsCategoryId } from "@/lib/folder-all-items"
 import { isScheduledFolderId } from "@/lib/scheduled-lists-sync"
+import { isExplicitlyScheduleable } from "@/lib/scheduling"
 
 export interface ListMergePlan {
   survivorId: string
@@ -70,6 +71,22 @@ export function buildMergedList(lists: List[], plan: ListMergePlan): List | null
   const detailPanels = [...new Set(sources.flatMap((l) => l.detailPanels ?? []))]
   const hiddenDetailPanels = [...new Set(sources.flatMap((l) => l.hiddenDetailPanels ?? []))]
   const rules = plan.preserveRules ? sources.flatMap((l) => l.rules ?? []) : survivor.rules
+  const linkedTargetListIds = plan.preserveAttributes
+    ? [...new Set(sources.flatMap((l) => l.linkedTargetListIds ?? []))]
+    : survivor.linkedTargetListIds
+  const checklistCheckboxVars = plan.preserveAttributes
+    ? [...new Set(sources.flatMap((l) => l.checklistCheckboxVars ?? []))]
+    : survivor.checklistCheckboxVars
+  const sheetColumnIds = plan.preserveAttributes
+    ? [...new Set(sources.flatMap((l) => l.sheetConfig?.columnIds ?? []))]
+    : survivor.sheetConfig?.columnIds
+  const sheetConfig =
+    plan.preserveAttributes && (survivor.sheetConfig || sources.some((l) => l.sheetConfig) || sheetColumnIds.length)
+      ? {
+          ...(survivor.sheetConfig ?? {}),
+          ...(sheetColumnIds.length ? { columnIds: sheetColumnIds } : {}),
+        }
+      : survivor.sheetConfig
   return {
     ...survivor,
     name: plan.name,
@@ -87,6 +104,9 @@ export function buildMergedList(lists: List[], plan: ListMergePlan): List | null
     detailPanels: detailPanels.length ? detailPanels : survivor.detailPanels,
     hiddenDetailPanels: hiddenDetailPanels.length ? hiddenDetailPanels : survivor.hiddenDetailPanels,
     rules: rules?.length ? rules : survivor.rules,
+    linkedTargetListIds: linkedTargetListIds?.length ? linkedTargetListIds : survivor.linkedTargetListIds,
+    checklistCheckboxVars: checklistCheckboxVars?.length ? checklistCheckboxVars : survivor.checklistCheckboxVars,
+    sheetConfig,
   }
 }
 
@@ -137,7 +157,7 @@ export function defaultMergePlan(lists: List[], folders: Folder[]): ListMergePla
     color: survivor.color,
     description: survivor.description,
     icon: survivor.icon,
-    scheduleable: lists.some((l) => l.scheduleable !== false),
+    scheduleable: lists.some((l) => isExplicitlyScheduleable(l)),
     itemTypeId: survivor.itemTypeId,
     itemLabel: survivor.itemLabel,
     folderIds: defaultMergeFolderIds(folders, lists.map((l) => l.id)),

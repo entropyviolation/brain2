@@ -8,6 +8,9 @@
  * (rev 0, no chats) must not replace a paired chat — that race was the bot
  * “randomly” unpairing. `revokedChatIds` are tombstones so a union of two
  * snapshots cannot put a removed chat back.
+ *
+ * v5 drops GPS tracking rows from `events`. They stay on Location and in
+ * the memory-only ring (`gps-log.ts`) so a live stream cannot fill the log.
  */
 "use client"
 
@@ -16,6 +19,7 @@ import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
 import { mergeIngestAllowlistFields } from "@/lib/vault-guard.js"
+import { useGpsIngestLog, withoutGpsTrackingLog } from "./gps-log"
 import { chatKey } from "./pairing"
 import { remapRetiredGroceryExpansion, remapRetiredGroceryShortcuts } from "./shortcut-remap"
 import type { IngestChannel, IngestEvent, PendingClarify } from "./types"
@@ -157,9 +161,12 @@ export const useIngestStore = create<IngestState>()(
       getPending: (channel, chatId) => get().pendingByChat[chatKey(channel, chatId)],
       appendEvent: (event) =>
         set((state) => ({
-          events: [event, ...state.events].slice(0, MAX_EVENTS),
+          events: withoutGpsTrackingLog([event, ...state.events]).slice(0, MAX_EVENTS),
         })),
-      clearEvents: () => set({ events: [] }),
+      clearEvents: () => {
+        useGpsIngestLog.getState().clear()
+        set({ events: [] })
+      },
       setPollStatus: (ok, source, error) =>
         set({
           lastPollAt: new Date().toISOString(),
@@ -223,7 +230,7 @@ export const useIngestStore = create<IngestState>()(
     }),
     {
       name: persistKey("ingest-store"),
-      version: 4,
+      version: 5,
       storage: createCogsJSONStorage(),
       migrate: (persisted) => {
         const p = (persisted ?? {}) as Record<string, unknown>
@@ -232,8 +239,10 @@ export const useIngestStore = create<IngestState>()(
           : DEFAULT_DISCRETE_EVENT_TRIGGERS.map((t) => ({ ...t }))
         const rawShortcuts =
           p.shortcuts && typeof p.shortcuts === "object" ? (p.shortcuts as Record<string, string>) : {}
+        const events = Array.isArray(p.events) ? withoutGpsTrackingLog(p.events as IngestEvent[]) : []
         return {
           ...p,
+          events,
           shortcuts: remapRetiredGroceryShortcuts(rawShortcuts),
           phoneHubUrl: typeof p.phoneHubUrl === "string" ? p.phoneHubUrl : "",
           livePins: p.livePins && typeof p.livePins === "object" ? p.livePins : {},
@@ -257,6 +266,7 @@ export const useIngestStore = create<IngestState>()(
         return {
           ...live,
           ...saved,
+          events: withoutGpsTrackingLog(saved.events ?? live.events),
           allowedChats: allow.allowedChats,
           revokedChatIds: allow.revokedChatIds,
           allowlistRev: allow.allowlistRev,

@@ -11,6 +11,8 @@
  *    Climb uses `incrementalDayPercentage`.
  *  - `calculateWeekToDateGrade`: mean of elapsed days' AV % (Mon → as-of date),
  *    optional daily curve via `tolerance` (`curveDayPercentage`; 0% stays 0).
+ *  - `averageWeekGradeAcrossWeeksWithData`: mean of those week grades for every
+ *    Monday-week that has a recorded completion, through `asOf`.
  *  - `calculateWeekToDateOutputGrade`: mean of elapsed-paced row % per habit
  *    (Perfect Output), same curve, separate tolerance.
  *  - Period (weekly/monthly) analogs: `calculatePeriodTaskPercentage`,
@@ -24,7 +26,7 @@
  * Spec: §9 (Habit Tracker). Uses ISO-date-keyed `WeeklyData` (spec §9.4).
  */
 import { type WeeklyTask as Task, TaskType, type TaskCompletion, type WeeklyData } from "./types"
-import { addCalendarDays, formatLocalDateKey, parseLocalDate } from "./date-utils"
+import { addCalendarDays, formatLocalDateKey, getWeekDates, getWeekStartDate, parseLocalDate } from "./date-utils"
 import {
   incrementalDataForTask,
   incrementalDayPercentage,
@@ -369,6 +371,52 @@ export function calculateWeekToDateGrade(
   })
 
   return { ...averageOpenDays(days), days, tolerance: t, curveBonus }
+}
+
+/**
+ * Mean of `calculateWeekToDateGrade` for every Monday-week that has at least
+ * one recorded completion for these habits, through `asOf`. Weeks with no
+ * completions are left out (they are not scored as 0). A past week is graded
+ * through Sunday; the week that contains `asOf` is graded through that day.
+ * Returns null when no week has data.
+ */
+export function averageWeekGradeAcrossWeeksWithData(
+  tasks: Task[],
+  weeklyData: WeeklyData,
+  asOf: Date,
+  tolerance: number = DEFAULT_GRADE_TOLERANCE,
+  isExempt?: HabitExemptFn,
+): number | null {
+  if (tasks.length === 0) return null
+  const taskIds = new Set(tasks.map((task) => task.id))
+  const asOfKey = formatLocalDateKey(asOf)
+  const weekStarts = new Map<string, Date>()
+  for (const dateKey of Object.keys(weeklyData || {})) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey) || dateKey > asOfKey) continue
+    const bucket = weeklyData[dateKey]
+    if (!bucket) continue
+    const recorded = Object.keys(bucket).some((id) => taskIds.has(id) && bucket[id] != null)
+    if (!recorded) continue
+    const date = parseLocalDate(dateKey)
+    if (!date) continue
+    const start = getWeekStartDate(date)
+    weekStarts.set(formatLocalDateKey(start), start)
+  }
+  if (weekStarts.size === 0) return null
+
+  let sum = 0
+  let count = 0
+  for (const start of weekStarts.values()) {
+    const dates = getWeekDates(start)
+    const end = dates[dates.length - 1]
+    if (!end) continue
+    const gradeAsOf = gradeAsOfForVisibleWindow(start, end, asOf, asOf)
+    const result = calculateWeekToDateGrade(tasks, weeklyData, dates, gradeAsOf, tolerance, isExempt)
+    if (!result.days.some((day) => !day.vacant)) continue
+    sum += result.grade
+    count += 1
+  }
+  return count > 0 ? sum / count : null
 }
 
 export interface OutputGradeHabit {

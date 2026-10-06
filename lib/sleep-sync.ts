@@ -37,6 +37,7 @@
 "use client"
 
 import { useEffect } from "react"
+import { isRestoring } from "@/lib/action-history"
 import { useSleepStore } from "@/lib/sleep-store"
 import { useTimeTrackingStore, type TrackPen, type TrackScope } from "@/lib/time-tracking-store"
 import { mergeAdjacent, type TimeEntry } from "@/lib/time-entries"
@@ -268,6 +269,9 @@ export function syncSleepNight(date: string, now = new Date()): void {
 let deriving = false
 
 function setDerivedEntries(entries: TimeEntry[]): void {
+  // A restore already wrote the grid. Deriving from the night that belonged to
+  // the stroke just undone would put those minutes back.
+  if (isRestoring()) return
   deriving = true
   try {
     useTimeTrackingStore.setState({ entries })
@@ -499,7 +503,7 @@ export function useSleepSync(): void {
       started = true
 
       useSleepStore.subscribe((state, previous) => {
-        if (deriving || state.nights === previous.nights) return
+        if (deriving || isRestoring() || state.nights === previous.nights) return
         const keys = new Set([...Object.keys(state.nights), ...Object.keys(previous.nights)])
         for (const key of keys) {
           if (state.nights[key] !== previous.nights[key]) syncSleepNight(key)
@@ -507,7 +511,7 @@ export function useSleepSync(): void {
       })
 
       useTimeTrackingStore.subscribe((state, previous) => {
-        if (deriving || state.entries === previous.entries) return
+        if (deriving || isRestoring() || state.entries === previous.entries) return
         // Nights whose blocks existed a moment ago are the ones a user could have
         // just edited or deleted; a night that appears out of nowhere is this
         // module's own work and has nothing to say back.

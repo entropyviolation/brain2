@@ -43,6 +43,28 @@ describe("parseTodoWalkReply", () => {
     })
   })
 
+  it("accepts decimal importance, resistance, and excitement", () => {
+    const r = parseTodoWalkReply("- 90 200 6.5 3.5 9")
+    expect(r).toEqual({
+      ok: true,
+      slots: {
+        tier: null,
+        duration: 90,
+        points: 200,
+        importance: 6.5,
+        resistance: 3.5,
+        excitement: 9,
+      },
+    })
+  })
+
+  it("rejects a scale above 10", () => {
+    const r = parseTodoWalkReply("- 90 200 10.5 3 9")
+    expect(r.ok).toBe(false)
+    if (r.ok) return
+    expect(r.error).toMatch(/Importance/)
+  })
+
   it("rejects wrong slot counts", () => {
     const r = parseTodoWalkReply("A+ 10 40")
     expect(r.ok).toBe(false)

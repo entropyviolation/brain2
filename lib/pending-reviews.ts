@@ -1,17 +1,19 @@
 /**
- * lib/pending-reviews.ts — Which end-of-period reviews are still due
+ * lib/pending-reviews.ts — Which end-of-period (review/end) rituals are still due
+ *
+ * Uses `endRitualPhase` so a morning-only or start-only shell does not mark
+ * the end ritual complete. Start/morning availability lives in `lib/rituals.ts`.
  */
 import type { PeriodReview, ReviewPeriod } from "@/lib/types"
-import { REVIEW_PERIODS, getPeriodKey, previousPeriodDate } from "@/lib/reviews-store"
+import { REVIEW_PERIODS } from "@/lib/reviews-store"
+import { endRitualNeeded } from "@/lib/rituals"
 
 export type PendingReviewMap = Record<ReviewPeriod, { key: string; needed: boolean }>
 
 export function getPendingReviews(reviews: PeriodReview[], now = new Date()): PendingReviewMap {
   const map = {} as PendingReviewMap
   REVIEW_PERIODS.forEach((period) => {
-    const key = getPeriodKey(period, previousPeriodDate(period, now))
-    const done = reviews.some((r) => r.period === period && r.periodKey === key)
-    map[period] = { key, needed: !done }
+    map[period] = endRitualNeeded(reviews, period, now)
   })
   return map
 }

@@ -47,6 +47,27 @@ describe("destinationFoldersForSelection", () => {
       destinationFoldersForSelection(folders, { selectedFolderIds: ["folder1"] }).map((f) => f.id),
     ).toEqual(["folder2"])
   })
+
+  it("orders sibling folders first when viewing a nested folder", () => {
+    const tree = [
+      folder({ id: "house", name: "House" }),
+      folder({ id: "kitchen", name: "Kitchen", parentFolderId: "house" }),
+      folder({ id: "yard", name: "Yard", parentFolderId: "house" }),
+      folder({ id: "elsewhere", name: "Elsewhere" }),
+      folder({ id: "deep", name: "Deep", parentFolderId: "kitchen" }),
+    ]
+    expect(
+      destinationFoldersForSelection(tree, { currentFolderId: "kitchen" }).map((f) => f.id),
+    ).toEqual(["yard", "house", "elsewhere", "deep"])
+  })
+
+  it("keeps existing order when there is no current folder", () => {
+    expect(destinationFoldersForSelection(folders).map((f) => f.id)).toEqual([
+      "folder1",
+      "folder2",
+      "sub",
+    ])
+  })
 })
 
 describe("originFolderIdToUnlink", () => {

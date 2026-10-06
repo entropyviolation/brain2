@@ -1,8 +1,10 @@
 /**
  * lib/home-widgets.ts — Home overview strip catalog
  *
- * Square modules on the Home header (every sub-tab). Persist v6 shows
- * Latest award. Persist v5 tucks Night well, Harvest leftover, and Inbox mill.
+ * Square modules on the Home header (every sub-tab). Persist v8 adds
+ * `widgetsFollowClock` (default off: squares stay on the day you are viewing).
+ * Persist v7 shows Moon after Days Until. Persist v6 shows Latest award.
+ * Persist v5 tucks Night well, Harvest leftover, and Inbox mill.
  * Persist lives in `home-widgets-store.ts`. Gradient stops are the three Habits hues —
  * Percent LED, Week grade tube, Perfect output tube — read-only.
  * `weatherIconKind` maps Open-Meteo copy to sun / cloud / rain glyphs.
@@ -12,6 +14,7 @@
  */
 
 import { formatLocalDateKey } from "@/lib/date-utils"
+import type { DaysUntilFormat } from "@/lib/home-days-until-store"
 import { DEFAULT_PERCENT_LED_TINT, sanitizePercentLedTint } from "@/lib/habit-led"
 import {
   DEFAULT_GRADE_TUBE_COLOR,
@@ -37,6 +40,7 @@ export const HOME_WIDGET_IDS = [
   "next",
   "daylamp",
   "daysuntil",
+  "moon",
   "solar",
   "tracking",
   "night",
@@ -50,7 +54,7 @@ export const LEGACY_POINTS_WIDGET_IDS = ["alltime", "today", "week", "month"] as
 export type HomeWidgetId = (typeof HOME_WIDGET_IDS)[number]
 
 export const HOME_WIDGET_LABEL: Record<HomeWidgetId, string> = {
-  review: "Review",
+  review: "Rituals",
   points: "Points",
   award: "Latest award",
   progress: "Today's Progress",
@@ -60,6 +64,7 @@ export const HOME_WIDGET_LABEL: Record<HomeWidgetId, string> = {
   next: "Next",
   daylamp: "Day lamp",
   daysuntil: "Days Until",
+  moon: "Moon",
   solar: "Solar remainder",
   tracking: "Tracking now",
   night: "Night well",
@@ -92,6 +97,18 @@ export const HOME_WIDGETS_TUCKED_IN_V4: HomeWidgetId[] = ["solar", "tracking"]
 export const HOME_WIDGETS_TUCKED_IN_V5: HomeWidgetId[] = ["night", "harvest", "inbox"]
 
 /** Latest award joins the strip in persist version 6. It stays visible. */
+
+/** Moon joins the strip in persist version 7, after Days Until. It stays visible. */
+
+/** Persist v8. Off keeps overview squares on the day being viewed. */
+
+/**
+ * Date the overview strip should read. Off (the default) is the selected day.
+ * On is the wall clock, so a browsed day does not move the squares.
+ */
+export function homeWidgetDate(selected: Date, now: Date, followClock: boolean): Date {
+  return followClock ? now : selected
+}
 
 export function isHomeWidgetId(value: unknown): value is HomeWidgetId {
   return typeof value === "string" && (HOME_WIDGET_IDS as readonly string[]).includes(value)
@@ -361,11 +378,13 @@ export function dayLampWord(input: {
 
 export type PetPose = "asleep" | "idle" | "pleased"
 
-/** Screen-pet pose from today's habit completion. No habits → idle, not asleep. */
-export function petPose(habitPercent: number, habitTotal: number): PetPose {
-  if (habitTotal <= 0) return "idle"
+/** Screen-pet pose from today's habit completion and the hour.
+ * No habits → idle by day, asleep at night. Pleased wins over night. */
+export function petPose(habitPercent: number, habitTotal: number, hour?: number): PetPose {
+  const night = hour != null && (hour < 6 || hour >= 22)
+  if (habitTotal <= 0) return night ? "asleep" : "idle"
   if (habitPercent >= 100) return "pleased"
-  if (habitPercent < 20) return "asleep"
+  if (habitPercent < 20 || night) return "asleep"
   return "idle"
 }
 
@@ -436,11 +455,11 @@ function isLegacyPoint(id: string): boolean {
   return (LEGACY_POINTS_WIDGET_IDS as readonly string[]).includes(id)
 }
 
-/** Persist v1 → v2 tucks Next and Day lamp. v2 → v3 folds four points wells into one. v3 → v4 tucks Solar remainder and Tracking now. v4 → v5 tucks Night well, Harvest leftover, and Inbox mill. v5 → v6 places Latest award after Points and leaves it showing. */
+/** Persist v1 → v2 tucks Next and Day lamp. v2 → v3 folds four points wells into one. v3 → v4 tucks Solar remainder and Tracking now. v4 → v5 tucks Night well, Harvest leftover, and Inbox mill. v5 → v6 places Latest award after Points and leaves it showing. v6 → v7 places Moon after Days Until and leaves it showing. v7 → v8 leaves widgets on the selected day (`widgetsFollowClock` false). */
 export function migrateHomeWidgetPersist(
-  persisted: { order?: unknown; hidden?: unknown } | undefined,
+  persisted: { order?: unknown; hidden?: unknown; widgetsFollowClock?: unknown } | undefined,
   fromVersion: number,
-): { order: string[]; hidden: HomeWidgetId[] } {
+): { order: string[]; hidden: HomeWidgetId[]; widgetsFollowClock: boolean } {
   let order = asIdList(persisted?.order)
   let hidden = Array.isArray(persisted?.hidden) ? asIdList(persisted.hidden) : [...DEFAULT_HOME_WIDGET_HIDDEN]
 
@@ -478,7 +497,16 @@ export function migrateHomeWidgetPersist(
     order.splice(at < 0 ? order.length : at + 1, 0, "award")
   }
 
-  return { order, hidden: sanitizeHomeWidgetHidden(hidden) }
+  if (fromVersion < 7 && !order.includes("moon")) {
+    const at = order.indexOf("daysuntil")
+    order.splice(at < 0 ? order.length : at + 1, 0, "moon")
+  }
+
+  return {
+    order,
+    hidden: sanitizeHomeWidgetHidden(hidden),
+    widgetsFollowClock: fromVersion >= 8 && persisted?.widgetsFollowClock === true,
+  }
 }
 
 export function daysUntilCount(target: string, from: Date): number | null {
@@ -503,4 +531,117 @@ export function daysUntilFace(count: number | null, label: string): { crt: strin
   if (count > 0) return { crt: String(count), footer: `Days Until ${name}` }
   if (count === 0) return { crt: "0", footer: `${name} is today` }
   return { crt: String(Math.abs(count)), footer: `Days since ${name}` }
+}
+
+const MS_PER_MIN = 60_000
+const MS_PER_HOUR = 3_600_000
+const MS_PER_DAY = 86_400_000
+
+/** Local instant for the countdown. No time → start of that local day. */
+export function daysUntilTargetDate(date: string, time = ""): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date.trim())
+  if (!match) return null
+  const year = Number(match[1])
+  const month = Number(match[2])
+  const day = Number(match[3])
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null
+  let hours = 0
+  let minutes = 0
+  const clock = /^(\d{2}):(\d{2})$/.exec(time.trim())
+  if (clock) {
+    hours = Number(clock[1])
+    minutes = Number(clock[2])
+    if (hours > 23 || minutes > 59) return null
+  }
+  const target = new Date(year, month - 1, day, hours, minutes, 0, 0)
+  if (
+    target.getFullYear() !== year ||
+    target.getMonth() !== month - 1 ||
+    target.getDate() !== day
+  ) {
+    return null
+  }
+  return target
+}
+
+/** Signed ms until the target (positive = future). Null when the date is unset/invalid. */
+export function daysUntilRemainingMs(date: string, time: string, now: Date): number | null {
+  const target = daysUntilTargetDate(date, time)
+  if (!target) return null
+  return target.getTime() - now.getTime()
+}
+
+function pad2(n: number): string {
+  return String(Math.max(0, n)).padStart(2, "0")
+}
+
+/** Trim trailing zeros but keep a meaningful tenth (`1.5`, not `1.50` or `1`). */
+export function formatCountdownDecimal(value: number): string {
+  const rounded = Math.round(value * 100) / 100
+  if (!Number.isFinite(rounded)) return "0"
+  const fixed = rounded.toFixed(2)
+  return fixed.replace(/(\.\d*[1-9])0+$/, "$1").replace(/\.00$/, "").replace(/(\.\d)0$/, "$1")
+}
+
+function unitWord(n: number, singular: string, plural: string): string {
+  return n === 1 ? singular : plural
+}
+
+/**
+ * Live CRT + footer for the Days Until tile.
+ * Unit: `01 day 3 hours` (≥1d) or `03 hours 30 min` (<1d).
+ * Decimal: `1.25 days` (≥1d) or `3.5 hours` (<1d). Never shows `0 days`.
+ */
+export function daysUntilLiveFace(input: {
+  remainingMs: number | null
+  label: string
+  format: DaysUntilFormat
+  hasTime: boolean
+}): { crt: string; footer: string } {
+  const name = input.label.trim() || "that day"
+  if (input.remainingMs == null) return { crt: "—", footer: "Set a date" }
+
+  const ms = input.remainingMs
+  if (ms <= 0) {
+    if (!input.hasTime && ms > -MS_PER_DAY) {
+      return { crt: "0", footer: `${name} is today` }
+    }
+    if (Math.abs(ms) < MS_PER_MIN) {
+      return { crt: "now", footer: name }
+    }
+    const elapsed = Math.abs(ms)
+    return {
+      crt: formatCountdownSpan(elapsed, input.format),
+      footer: `Since ${name}`,
+    }
+  }
+
+  return {
+    crt: formatCountdownSpan(ms, input.format),
+    footer: `Until ${name}`,
+  }
+}
+
+export function formatCountdownSpan(ms: number, format: DaysUntilFormat): string {
+  const total = Math.max(0, ms)
+  if (format === "decimal") {
+    if (total >= MS_PER_DAY) {
+      const days = total / MS_PER_DAY
+      const text = formatCountdownDecimal(days)
+      return `${text} ${parseFloat(text) === 1 ? "day" : "days"}`
+    }
+    const hours = total / MS_PER_HOUR
+    const text = formatCountdownDecimal(Math.max(hours, 0.1))
+    return `${text} ${parseFloat(text) === 1 ? "hour" : "hours"}`
+  }
+
+  if (total >= MS_PER_DAY) {
+    const days = Math.floor(total / MS_PER_DAY)
+    const hours = Math.floor((total % MS_PER_DAY) / MS_PER_HOUR)
+    return `${pad2(days)} ${unitWord(days, "day", "days")} ${hours} ${unitWord(hours, "hour", "hours")}`
+  }
+
+  const hours = Math.floor(total / MS_PER_HOUR)
+  const mins = Math.floor((total % MS_PER_HOUR) / MS_PER_MIN)
+  return `${pad2(hours)} ${unitWord(hours, "hour", "hours")} ${pad2(mins)} min`
 }

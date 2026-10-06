@@ -39,7 +39,7 @@ export function buildFolderAllItemsList(folder: Folder): List {
     color: folder.color || "#64748b",
     description: "All items in this folder",
     createdAt: new Date(),
-    scheduleable: folder.scheduleable !== false,
+    scheduleable: false,
   }
 }
 

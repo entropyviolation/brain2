@@ -89,6 +89,20 @@ describe("migrateHabitsState", () => {
     expect(kept.habitsControlPanelWidth).toBe(196)
   })
 
+  it("v24 lifts leftover stirHop 160 to the visible default hop", () => {
+    const lifted = migrateHabitsState(
+      { ...v9State(), willpowerPhysics: { ...DEFAULT_WILLPOWER_PHYSICS, stirHop: 160 } },
+      23,
+    )
+    expect(lifted.willpowerPhysics.stirHop).toBe(DEFAULT_WILLPOWER_PHYSICS.stirHop)
+    expect(lifted.willpowerPhysics.stirHop).toBe(480)
+    const custom = migrateHabitsState(
+      { ...v9State(), willpowerPhysics: { ...DEFAULT_WILLPOWER_PHYSICS, stirHop: 300 } },
+      23,
+    )
+    expect(custom.willpowerPhysics.stirHop).toBe(300)
+  })
+
   it("keeps v10 sort mode and does not empty tasks", () => {
     const next = migrateHabitsState(
       { ...v9State(), habitSortMode: "alphabetical", sortHabitsByPriorityFlag: false },
@@ -138,6 +152,29 @@ describe("migrateHabitsState", () => {
     const next = migrateHabitsState({ ...v9State(), habitSmallLeds: false }, 15)
     expect(next.habitSmallLeds).toBe(false)
     expect(next.tasks).toHaveLength(2)
+  })
+
+  it("fills a missing monthly window with year-to-date and 5 May", () => {
+    const next = migrateHabitsState(v9State(), 9)
+    expect(next.habitMonthWindow).toBe("yearToDate")
+    expect(next.habitBirthday).toEqual({ month: 5, day: 5 })
+    const kept = migrateHabitsState(
+      { ...v9State(), habitMonthWindow: "trailing12", habitBirthday: { month: 5, day: 5 } },
+      26,
+    )
+    expect(kept.habitMonthWindow).toBe("trailing12")
+    expect(kept.habitBirthday).toEqual({ month: 5, day: 5 })
+    expect(kept.tasks).toHaveLength(2)
+  })
+
+  it("fills a missing weekly window with seven weeks and keeps a saved mode", () => {
+    const next = migrateHabitsState(v9State(), 9)
+    expect(next.habitWeekWindow).toBe("sevenWeeks")
+    const kept = migrateHabitsState({ ...v9State(), habitWeekWindow: "thisMoon" }, 26)
+    expect(kept.habitWeekWindow).toBe("thisMoon")
+    expect(kept.tasks).toHaveLength(2)
+    const junk = migrateHabitsState({ ...v9State(), habitWeekWindow: "yearToDate" }, 26)
+    expect(junk.habitWeekWindow).toBe("sevenWeeks")
   })
 
   it("does not invent an empty tasks array when the blob omitted tasks", () => {
@@ -383,7 +420,19 @@ describe("habits store rehydrate from older persist versions", () => {
   it("starts the exemption wand off and with empty override books", () => {
     const next = migrateHabitsState(v9State(), 19)
     expect(next.exemptionWand).toBe(false)
-    expect(next.habitExemptions).toEqual({ daily: {}, weekly: {}, monthly: {} })
+    expect(next.habitExemptions).toEqual({ daily: {}, weekly: {}, monthly: {}, quarterly: {} })
+  })
+
+  it("fills a missing missed-op wand and hide rocker as off, and keeps a saved one", () => {
+    const fresh = migrateHabitsState(v9State(), 26)
+    expect(fresh.missedOpWand).toBe(false)
+    expect(fresh.hideCompletedAndMissed).toBe(false)
+    const kept = migrateHabitsState(
+      { ...v9State(), missedOpWand: true, hideCompletedAndMissed: true },
+      26,
+    )
+    expect(kept.missedOpWand).toBe(true)
+    expect(kept.hideCompletedAndMissed).toBe(true)
   })
 })
 
@@ -431,5 +480,24 @@ describe("habit content writes", () => {
     expect(cell?.value).toBe(4)
     expect(cell?.trackedValue).toBe(1)
     expect(cell?.completed).toBe(true)
+  })
+
+  it("v25 stamps an ordered completion-source list and leaves logged cells alone", () => {
+    const next = migrateHabitsState(v9State(), 24)
+    const laundryTask = next.tasks.find((task) => task.id === "custom-laundry")
+    expect(laundryTask?.completionSources?.[0]).toBe("manual")
+    expect(next.weeklyData["2026-09-01"]?.["custom-laundry"]).toEqual({ completed: true })
+  })
+
+  it("v26 defaults average-beat bonuses to 5 and keeps a saved amount", () => {
+    const fresh = migrateHabitsState({ tasks: [], weeklyData: {} }, 25)
+    expect(fresh.weeklyAverageBeatBonus).toBe(5)
+    expect(fresh.monthlyAverageBeatBonus).toBe(5)
+    const saved = migrateHabitsState(
+      { tasks: [], weeklyData: {}, weeklyAverageBeatBonus: 8, monthlyAverageBeatBonus: 0 },
+      25,
+    )
+    expect(saved.weeklyAverageBeatBonus).toBe(8)
+    expect(saved.monthlyAverageBeatBonus).toBe(0)
   })
 })

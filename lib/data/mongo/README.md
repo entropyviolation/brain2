@@ -1,21 +1,14 @@
-# `lib/data/mongo/` — MongoDB Atlas cloud sync target (Phase 11 groundwork)
+# `lib/data/mongo/` — unwired Mongo sketches (speculation)
 
-Driver-agnostic scaffolding for Brain2's future **cloud sync target**: **MongoDB
-Atlas** (spec §3, replacing the original SQLite suggestion). Planned database
-name: **`brain2`**. Nothing here imports a
-Mongo driver yet — these are the document model (`collections.ts`), the
-`DataSource` skeleton (`mongo-data-source.ts`), and this index/transaction plan.
+Driver-agnostic sketches of a Mongo document model. **Not the storage plan.**
+Nothing here imports a Mongo driver — `collections.ts` and
+`mongo-data-source.ts` (every method throws) are scaffolding only. The sync
+that exists is the manual phone hub (`lib/mobile-sync.ts`). Atlas, a shared
+`@brain2/core` package, and an Expo app are speculation.
 
-> **Direction (see [`../../../docs/SPEC_MAPPING.md`](../../../docs/SPEC_MAPPING.md) §3).** Brain2
-> is **offline-first**: the local store on each client is the working source of
-> truth. Mongo is **not** a desktop-local datastore and does **not** replace
-> localStorage — it is the **remote** side of an opportunistic `SyncingDataSource`
-> that reconciles in the background when online so devices (including a future
-> mobile app) converge. Conflict resolution starts as per-field last-write-wins
-> (upgradeable to RxDB / PowerSync / Atlas Device Sync). `MongoDataSource` is the
-> `RemoteDataSource` impl; it can be reached over any transport (e.g. the existing
-> Electron IPC bridge in `electron/ipc/`, repurposed for the remote side), never
-> as the app's primary store.
+> **See [`../../../docs/SPEC_MAPPING.md`](../../../docs/SPEC_MAPPING.md) §3.**
+> Brain2 is **offline-first**: localStorage is the working source of truth.
+> These files do not replace it and are not scheduled work.
 
 ## Files
 
@@ -23,9 +16,11 @@ Mongo driver yet — these are the document model (`collections.ts`), the
 |------|---------|
 | `collections.ts` | Collection names, document shapes (`_id` strategy), and the index plan. No driver import. |
 | `mongo-data-source.ts` | `DataSource` skeleton; every method stubbed with `// TODO(phase-11):` notes. No driver import. |
-| `README.md` | This migration/index/transaction plan. |
+| `README.md` | This file. The shapes below are speculation, not a scheduled migration. |
 
 ## Collections & document mapping
+
+Speculation only. Nothing below is wired, and none of it is the storage plan.
 
 One collection per entity family (`tasks`, `categories`, `folders`, `reviews`,
 `points`, `plans`). Brain2 entities are already document-shaped (flexible
@@ -80,7 +75,9 @@ it (also flagged in `mongo-data-source.ts`):
 > Note: transactions require a replica set (or `mongod` started as a single-node
 > replica set). The migration step documents enabling this for local installs.
 
-## Migration plan (localStorage → Mongo)
+## Sketch of a migration (not scheduled)
+
+These steps are not the plan. The sync that exists is the manual phone hub.
 
 1. **Export** the current state with the existing `lib/data/backup.ts`
    (`createBackup()`), which already enumerates every persisted store + plan
@@ -92,18 +89,14 @@ it (also flagged in `mongo-data-source.ts`):
    entry log). Validate each doc
    with the Zod schemas; promote `id → _id`.
 3. **Create indexes** from `INDEXES` after the bulk load.
-4. **localStorage stays the offline-first source of truth**: `LocalDataSource`
-   remains the working store. A `SyncingDataSource` wraps it and, when online,
-   reconciles against the remote `MongoDataSource` (reached over a transport such
-   as `IpcDataSource`) in the background — pushing a queued-writes outbox and
-   pulling remote changes (per-field last-write-wins). Atlas is the convergence
-   point across devices, not a replacement for the local store.
+4. **localStorage stays the working store.** A background reconcile against
+   Atlas would be speculation. Do not treat it as scheduled.
 5. **Round-trip export** stays available: a Mongo → backup-JSON dump reuses the
    same `Backup` shape for portability (spec §3.2 one-click export/import).
 
-## Remaining wiring TODO
+## If someone later wired a driver (not scheduled)
 
-- Install the driver: `npm i mongodb` (NOT done here — would break typecheck).
+- Installing `mongodb` is not current work.
 - In `collections.ts`/`mongo-data-source.ts`, replace `MongoDbHandle = unknown`
   with `import type { Db } from "mongodb"` and fill each stubbed method.
 - Stand up `mongod` (single-node replica set for transactions) or Atlas; manage

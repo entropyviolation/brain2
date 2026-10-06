@@ -19,7 +19,7 @@ export function destinationFoldersForSelection(
   opts: { currentFolderId?: string | null; selectedFolderIds?: string[] } = {},
 ): Folder[] {
   const selected = new Set(opts.selectedFolderIds ?? [])
-  return folders.filter((f) => {
+  const filtered = folders.filter((f) => {
     if (isScheduledFolderId(f.id)) return false
     if (opts.currentFolderId && f.id === opts.currentFolderId) return false
     if (selected.has(f.id)) return false
@@ -28,6 +28,30 @@ export function destinationFoldersForSelection(
     }
     return true
   })
+  return orderDestinationFoldersSiblingFirst(filtered, folders, opts.currentFolderId)
+}
+
+/**
+ * Sibling folders first: same `parentFolderId` as the folder being viewed, then
+ * the rest in their prior order. No current folder (All / Home / search) keeps
+ * the existing order — do not invent a fake sibling group.
+ */
+export function orderDestinationFoldersSiblingFirst(
+  destinations: Folder[],
+  allFolders: Folder[],
+  currentFolderId?: string | null,
+): Folder[] {
+  if (!currentFolderId) return destinations
+  const current = allFolders.find((f) => f.id === currentFolderId)
+  if (!current) return destinations
+  const parentKey = current.parentFolderId ?? null
+  const siblings: Folder[] = []
+  const rest: Folder[] = []
+  for (const f of destinations) {
+    if ((f.parentFolderId ?? null) === parentKey) siblings.push(f)
+    else rest.push(f)
+  }
+  return [...siblings, ...rest]
 }
 
 /**

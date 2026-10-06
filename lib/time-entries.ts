@@ -22,6 +22,8 @@
  * (`lib/time-tracking-store.ts`).
  */
 
+import { compactMoodReading, sameMoodReading, type MoodReading } from "./mood-reading"
+
 export const MINUTES_PER_DAY = 24 * 60
 
 /** Cell sizes the grid can render. Data stays minute-accurate regardless. */
@@ -174,10 +176,32 @@ export interface TimeEntry {
   pages?: number
   /** Omitted = certain. `"estimated"` is assumed / speculative. */
   precision?: TrackingPrecision
+  /**
+   * Mood scope only. The three-part reading on this stretch. Omitted when
+   * empty. A blank mark is not stored as zero. The derived sentence is not
+   * copied into `notes`. Different readings do not merge; a split keeps the
+   * reading on both halves.
+   */
+  moodReading?: MoodReading
+  /**
+   * Where an assumed block was proposed from. Confirming clears `precision`
+   * and leaves this stamp so the same Done item or import is not proposed again.
+   * Omitted on hand-painted and older blocks.
+   */
+  estimateOf?: { kind: "done" | "import"; id: string }
 }
 
 /** The detail fields that make two otherwise identical blocks worth keeping apart. */
-const DETAIL_KEYS = ["title", "notes", "project", "books", "pages", "startEventId", "endEventId"] as const
+const DETAIL_KEYS = [
+  "title",
+  "notes",
+  "project",
+  "books",
+  "pages",
+  "startEventId",
+  "endEventId",
+  "moodReading",
+] as const
 
 export function isInstant(entry: Pick<TimeEntry, "kind">): boolean {
   return entry.kind === "instant"
@@ -315,24 +339,48 @@ export function entryDisplayName(entry: Pick<TimeEntry, "title">, penName?: stri
 }
 
 function sameDetails(a: TimeEntry, b: TimeEntry): boolean {
-  return DETAIL_KEYS.every((key) => (a[key] ?? undefined) === (b[key] ?? undefined))
+  return DETAIL_KEYS.every((key) => {
+    if (key === "moodReading") return sameMoodReading(a.moodReading, b.moodReading)
+    return (a[key] ?? undefined) === (b[key] ?? undefined)
+  })
 }
 
 export function hasDetails(entry: Partial<TimeEntry>): boolean {
   return DETAIL_KEYS.some((key) => {
+    if (key === "moodReading") return compactMoodReading(entry.moodReading) !== undefined
     const value = entry[key]
     return value !== undefined && value !== "" && value !== null
   })
 }
 
+const emptyDayEntries: TimeEntry[] = []
+let indexedEntryList: TimeEntry[] | null = null
+let entriesByDate = new Map<string, TimeEntry[]>()
+
+function dayBuckets(entries: TimeEntry[]): Map<string, TimeEntry[]> {
+  if (indexedEntryList === entries) return entriesByDate
+  indexedEntryList = entries
+  entriesByDate = new Map()
+  for (const entry of entries) {
+    const bucket = entriesByDate.get(entry.date)
+    if (bucket) bucket.push(entry)
+    else entriesByDate.set(entry.date, [entry])
+  }
+  return entriesByDate
+}
+
 /** Entries for one scope-day, chronological. */
 export function entriesForDay(entries: TimeEntry[], date: string, scopeId: string): TimeEntry[] {
-  return entries.filter((e) => e.date === date && e.scopeId === scopeId).sort((a, b) => a.startMin - b.startMin)
+  const bucket = dayBuckets(entries).get(date)
+  if (!bucket) return emptyDayEntries
+  return bucket.filter((e) => e.scopeId === scopeId).sort((a, b) => a.startMin - b.startMin)
 }
 
 /** Every scope's entries for a day, chronological — the Activity Log's source. */
 export function entriesOnDate(entries: TimeEntry[], date: string): TimeEntry[] {
-  return entries.filter((e) => e.date === date).sort((a, b) => a.startMin - b.startMin || a.scopeId.localeCompare(b.scopeId))
+  const bucket = dayBuckets(entries).get(date)
+  if (!bucket) return emptyDayEntries
+  return bucket.slice().sort((a, b) => a.startMin - b.startMin || a.scopeId.localeCompare(b.scopeId))
 }
 
 export function entryAt(
@@ -389,6 +437,8 @@ export function mergeAdjacent(entries: TimeEntry[], date: string, scopeId: strin
       previous.generatedBy?.id === entry.generatedBy?.id &&
       previous.spanId === entry.spanId &&
       (previous.precision ?? "definite") === (entry.precision ?? "definite") &&
+      previous.estimateOf?.kind === entry.estimateOf?.kind &&
+      previous.estimateOf?.id === entry.estimateOf?.id &&
       sameDetails(previous, entry)
     ) {
       merged[merged.length - 1] = { ...previous, endMin: entry.endMin }
@@ -403,6 +453,9 @@ export function mergeAdjacent(entries: TimeEntry[], date: string, scopeId: strin
  * Punch `[from, to)` out of a scope-day. Blocks that straddle the hole are
  * trimmed; one that fully contains it splits in two, keeping its details on both
  * halves — the notes describe the activity, not the minutes.
+ *
+ * Discrete events (`kind: "instant"`) do not occupy minutes, so a paint or an
+ * erase leaves them where they are. Delete one from the block editor.
  */
 export function clearRange(
   entries: TimeEntry[],
@@ -418,7 +471,13 @@ export function clearRange(
 
   const next: TimeEntry[] = []
   for (const entry of entries) {
-    if (entry.date !== date || entry.scopeId !== scopeId || entry.endMin <= lo || entry.startMin >= hi) {
+    if (
+      isInstant(entry) ||
+      entry.date !== date ||
+      entry.scopeId !== scopeId ||
+      entry.endMin <= lo ||
+      entry.startMin >= hi
+    ) {
       next.push(entry)
       continue
     }
@@ -450,8 +509,11 @@ export interface PaintRangeInput {
   kind?: TimeEntryKind
   startEventId?: string
   endEventId?: string
+  /** Mood reading. Omitted from the block when empty. */
+  moodReading?: MoodReading
   /** Later calendar day for an explicit wrap. Not stored — slices carry `date`. */
   endDate?: string
+  estimateOf?: { kind: "done" | "import"; id: string }
 }
 
 function entryFromPaint(input: PaintRangeInput, lo: number, hi: number, id: string): TimeEntry {
@@ -475,7 +537,14 @@ function entryFromPaint(input: PaintRangeInput, lo: number, hi: number, id: stri
     precision: input.precision,
     startEventId: input.startEventId,
     endEventId: input.endEventId,
+    estimateOf: input.estimateOf,
+    ...moodReadingField(input.moodReading),
   }
+}
+
+function moodReadingField(reading: MoodReading | undefined): { moodReading: MoodReading } | Record<string, never> {
+  const packed = compactMoodReading(reading)
+  return packed ? { moodReading: packed } : {}
 }
 
 /** Lay a block over `[startMin, endMin)`, replacing whatever was there. */

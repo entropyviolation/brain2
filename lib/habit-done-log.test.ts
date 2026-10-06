@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { TaskType, type WeeklyTask } from "@/lib/types"
 import { useHabitsStore } from "@/lib/habits-store"
 import { useTaskStore } from "@/lib/task-store"
-import { habitDoneLogId } from "@/lib/habit-done-log"
+import { habitDoneLogId, habitDoneLogLine } from "@/lib/habit-done-log"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { confirmEstimates, isEstimated, findEstimate } from "@/lib/estimated-values"
 import { buildDoneTodoItems } from "@/components/Home/ToDo/todo-utils"
@@ -118,6 +118,66 @@ describe("habit Done log", () => {
     expect(logged?.completedDate).toEqual(new Date(2026, 8, 15, 21, 0))
     expect(logged?.startedAt).toEqual(new Date(2026, 8, 15, 20, 30))
     expect(findEstimate(logged?.estimates, "completedDate")?.kind).toBe("anchor")
+  })
+
+  it("writes a phrase template from the number logged, not the goal", () => {
+    const read: WeeklyTask = { ...writing, doneTaskPhrase: "read {value} pages" }
+    expect(habitDoneLogLine(read, { value: 7, completed: true })).toBe("read 7 pages")
+    useHabitsStore.setState({ tasks: [water, read] })
+    useHabitsStore.getState().updateCompletion("h2", day, { value: 7 })
+    const logged = loggedRow("h2", day)
+    expect(logged?.description).toBe("read 7 pages")
+    expect(logged?.title).toBe("read 7 pages")
+    expect(logged?.attributes).toMatchObject({ sourceHabitId: "h2" })
+  })
+
+  it("uses a fixed phrase for a yes/no habit", () => {
+    const sip: WeeklyTask = { ...water, doneTaskPhrase: "drank water" }
+    expect(habitDoneLogLine(sip, { completed: true })).toBe("drank water")
+    useHabitsStore.setState({ tasks: [sip, writing] })
+    useHabitsStore.getState().updateCompletion("h1", day, { completed: true })
+    expect(loggedRow("h1", day)?.description).toBe("drank water")
+  })
+
+  it("uses the text entered for a text habit and keeps the habit link", () => {
+    const make: WeeklyTask = {
+      id: "h3",
+      name: "Make something",
+      type: TaskType.TEXT,
+      rewardValue: 10,
+      frequency: "daily",
+      doneTaskUseText: true,
+    }
+    expect(habitDoneLogLine(make, { text: "made jewelery", completed: true })).toBe("made jewelery")
+    useHabitsStore.setState({ tasks: [water, writing, make] })
+    useHabitsStore.getState().updateCompletion("h3", day, { text: "made jewelery", completed: true })
+    const logged = loggedRow("h3", day)
+    expect(logged?.description).toBe("made jewelery")
+    expect(logged?.attributes).toMatchObject({ sourceHabitId: "h3" })
+  })
+
+  it("keeps the habit name when the template is empty", () => {
+    expect(habitDoneLogLine({ ...water, doneTaskPhrase: "   " }, { completed: true })).toBe("Drink water")
+    expect(habitDoneLogLine(water, { completed: true })).toBe("Drink water")
+    useHabitsStore.getState().updateCompletion("h1", day, { completed: true })
+    expect(loggedRow("h1", day)?.description).toBe("Drink water")
+  })
+
+  it("does not rewrite a Done line logged before the phrase was set", () => {
+    useHabitsStore.getState().updateCompletion("h1", day, { completed: true })
+    expect(loggedRow("h1", day)?.description).toBe("Drink water")
+    useHabitsStore.setState({ tasks: [{ ...water, doneTaskPhrase: "drank water" }, writing] })
+    useHabitsStore.getState().updateCompletion("h1", day, { completed: true })
+    expect(loggedRow("h1", day)?.description).toBe("Drink water")
+  })
+
+  it("updates {value} when more is logged on a row that already used the phrase", () => {
+    const read: WeeklyTask = { ...writing, doneTaskPhrase: "read {value} pages" }
+    useHabitsStore.setState({ tasks: [water, read] })
+    useHabitsStore.getState().updateCompletion("h2", day, { value: 4 })
+    expect(loggedRow("h2", day)?.description).toBe("read 4 pages")
+    useHabitsStore.getState().updateCompletion("h2", day, { value: 7 })
+    expect(loggedRow("h2", day)?.description).toBe("read 7 pages")
   })
 
   it("carries no duration for a habit with no time component", () => {

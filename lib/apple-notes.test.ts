@@ -1,7 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 import {
   FALLBACK_LIST_NAME,
+  IPHONE_NOTES_INGEST_FOLDER_ID,
   IPHONE_NOTES_INGEST_FOLDER_NAME,
+  LEGACY_IPHONE_NOTES_INGEST_FOLDER_NAME,
+  MAC_NOTES_FOLDER_NAME,
   IPHONE_NOTES_STORE_FOLDER_NAME,
   IPHONE_NOTES_STORE_LIST_ID,
   IPHONE_NOTES_STORE_LIST_NAME,
@@ -185,7 +188,7 @@ describe("noteToParkedItem", () => {
 })
 
 describe("ensureIphoneNotesIngestDestination", () => {
-  it("creates the iPhone Notes Ingest folder and notes to ingest list", () => {
+  it("creates the Mac Notes folder and notes to ingest list", () => {
     const folders: Folder[] = []
     const lists: List[] = []
     const dest = ensureIphoneNotesIngestDestination({
@@ -198,9 +201,32 @@ describe("ensureIphoneNotesIngestDestination", () => {
         if (f && !f.listIds.includes(listId)) f.listIds.push(listId)
       },
     })
-    expect(dest.folder.name).toBe(IPHONE_NOTES_INGEST_FOLDER_NAME)
+    expect(dest.folder.name).toBe(MAC_NOTES_FOLDER_NAME)
+    expect(IPHONE_NOTES_INGEST_FOLDER_NAME).toBe(MAC_NOTES_FOLDER_NAME)
     expect(dest.list.name).toBe(NOTES_TO_INGEST_LIST_NAME)
     expect(folders[0].listIds).toContain(dest.list.id)
+  })
+
+  it("renames a legacy iPhone Notes Ingest folder to Mac Notes", () => {
+    const folders: Folder[] = [{
+      id: IPHONE_NOTES_INGEST_FOLDER_ID,
+      name: LEGACY_IPHONE_NOTES_INGEST_FOLDER_NAME,
+      createdAt: new Date(),
+      listIds: [],
+    }]
+    const lists: List[] = []
+    const dest = ensureIphoneNotesIngestDestination({
+      lists,
+      folders,
+      addList: (l) => lists.push(l),
+      addFolder: (f) => folders.push(f),
+      addListToFolder: () => {},
+      updateFolder: (f) => {
+        const i = folders.findIndex((x) => x.id === f.id)
+        if (i >= 0) folders[i] = f
+      },
+    })
+    expect(dest.folder.name).toBe(MAC_NOTES_FOLDER_NAME)
   })
 })
 

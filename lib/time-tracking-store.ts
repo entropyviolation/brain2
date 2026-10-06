@@ -23,23 +23,30 @@
  *
  * - **Pen** — the label itself. One **primary** pen per minute per scope (grid
  *   color), plus optional **secondaries** that still feed tags/habits. A pen
- *   may sit under another in the same view (`parentId`): "taking out the trash"
- *   counts as Cleaning. Painting always writes the specific pen; `displayDepth`
- *   decides which ancestor you see (`lib/pen-tree.ts`). A pen may also carry
+ *   may sit under other pens in the same view (`parentIds`, display parent
+ *   mirrored on `parentId`): "walk to the beach" can count as both Exercise
+ *   and Out. Painting always writes the specific pen; `displayDepth` follows
+ *   the first parent (`lib/pen-tree.ts`). A pen may also carry
  *   **actionFormats** that log a Done-today row when a block is painted.
- * - **Variant** — a finer cut *within* a pen ("In conversation" → Elijah).
- *   Several may be true at once. Use this for overlapping labels; use parents
- *   when one thing *is a kind of* another.
+ * - **Variant / detail** — a finer cut *within* a pen ("Exercise" → Walk, Gym).
+ *   Several may be true at once. Each detail is also a pen that **counts as**
+ *   this one (`PenVariant.penId` + `parentId`), so the chip list and the tree
+ *   stay the same set. Overlapping labels stay on the block; the child pen is
+ *   how that detail rolls up.
  * - **Tag** — a cross-scope label from a shared library. Tags join Tracking to
  *   the Habits tab: a daily habit links tags and every minute painted with a
  *   matching pen counts toward its goal (`lib/tracked-time.ts` rolls up per tag,
  *   `lib/habit-tracking-sync.ts` writes the result).
  *
  * A stroke is **certain** unless the block is marked `precision: "estimated"`.
- * Analytics can drop assumed time. Future autolog pipelines (done tasks, ingest)
- * should stamp estimated rather than pretending the machine saw the day.
+ * Analytics can drop assumed time. Done items and imports that are already
+ * estimated confirm into a normal block; the hatch is the assumption.
  *
- * Persisted to localStorage under `brain2-timegrid-store`. Persist **v12**
+ * Persisted to localStorage under `brain2-timegrid-store`. Persist **v14**
+ * copies each `parentId` into `parentIds` and keeps `parentId` as the display
+ * parent. Persist **v13**
+ * links each detail to the pen that counts as its parent (`PenVariant.penId`),
+ * so Walk under Exercise and a Walk pen are one fact. **v12**
  * appends **iPhone Screen Time**, **iPhone Calls**, and **iPhone Texts**
  * (Telegram / Shortcuts pings, not Apple export or CallKit) without switching
  * `activeScopeId`. **v11** appends the **Screen Time** view
@@ -86,7 +93,8 @@ import {
   type TrackingPrecision,
   type WeekStep,
 } from "@/lib/time-entries"
-import { DEFAULT_DEPTH_LABELS, penAtDepth, wouldCycle, type DisplayDepth } from "@/lib/pen-tree"
+import { assignParents, DEFAULT_DEPTH_LABELS, penAtDepth, penParentIds, wouldCycle, type DisplayDepth } from "@/lib/pen-tree"
+import { syncScopeDetails } from "@/lib/pen-detail-sync"
 import { lastUsedFromEntries, type PenSortMode } from "@/lib/pen-sort"
 import {
   applyPenLinks,
@@ -94,7 +102,8 @@ import {
   type CompanionTarget,
   type PenLink,
 } from "@/lib/entry-links"
-import { rememberWorld } from "@/lib/action-history"
+import { isRestoring, rememberWorld } from "@/lib/action-history"
+import { compactMoodReading } from "@/lib/mood-reading"
 
 export type { PenLink, CompanionTarget } from "@/lib/entry-links"
 
@@ -113,16 +122,20 @@ export interface TrackTag {
 }
 
 /**
- * A finer cut within a pen. Several may be true over the same minutes — an hour
- * of conversation can be with Elijah *and* Rebecca — which is why variants live
- * on the entry as a list rather than being separate pens: the parent total has to
- * stay one span of time so Analytics can show it whole before breaking it down.
+ * A finer cut within a pen, and the pen that cut *is*.
+ * Several may be true over the same minutes — an hour of conversation can be
+ * with Elijah *and* Rebecca — so they live on the entry as a list. The parent
+ * block stays one span. `penId` is that option's own pen, which counts as this
+ * one (`TrackPen.parentId`). Adding a detail creates that pen; nesting a pen
+ * adds the detail. See `lib/pen-detail-sync.ts`.
  */
 export interface PenVariant {
   id: string
   name: string
   /** Falls back to the pen's color when unset. */
   color?: string
+  /** The pen this detail is. That pen's `parentId` is the pen that owns the detail. */
+  penId?: string
 }
 
 export interface TrackPen {
@@ -135,6 +148,12 @@ export interface TrackPen {
    * Painting writes this pen. Display depth picks which ancestor you see.
    */
   parentId?: string
+  /**
+   * Every pen this one counts as, display parent first. Older vaults omit
+   * this; readers treat `parentId` as a one-element list. Persist **v14**
+   * fills it without dropping `parentId`.
+   */
+  parentIds?: string[]
   /** `TrackTag` ids. A pen may carry several tags. */
   tags?: string[]
   /** What the variants answer, e.g. "Who?". Shown as the picker's heading. */
@@ -142,6 +161,11 @@ export interface TrackPen {
   variants?: PenVariant[]
   /** Epoch ms of the last stroke (or creation). Drives Recent sort. */
   lastUsedAt?: number
+  /**
+   * Epoch ms of the last name, color, or settings edit. A persist merge keeps
+   * the newer stamp so a stale snapshot cannot paint the old color back.
+   */
+  editedAt?: number
   /**
    * Standing cross-scope implications: "Ian's House always means Social".
    * Applied on every stroke by `lib/entry-links.ts`, which only ever fills
@@ -165,9 +189,7 @@ export interface TrackPen {
 
 /**
  * One default-action template on a pen. `{minutes}`, `{hours}`, `{location}`,
- * `{project}`, `{name}` and kin are substituted from the block. Planned:
- * parallel counts-as chains and multi-select parents — not implemented; keep
- * `parentId` a single nest.
+ * `{project}`, `{name}` and kin are substituted from the block.
  */
 export interface PenActionFormat {
   id: string
@@ -240,8 +262,13 @@ interface TimeTrackingState {
   addPen: (scopeId: string, pen: Omit<TrackPen, "id">) => string
   updatePen: (scopeId: string, pen: TrackPen) => void
   removePen: (scopeId: string, penId: string) => void
-  /** Nest `penId` under `parentId` in the same view. `null` makes it a root. */
+  /** Nest `penId` under one parent. `null` makes it a root. Display parent = that id. */
   setPenParent: (scopeId: string, penId: string, parentId: string | null) => void
+  /**
+   * Replace the counts-as list. The first id is the display parent (**Show as**
+   * follows it). Ids that would cycle are dropped. `[]` makes the pen a root.
+   */
+  setPenParents: (scopeId: string, penId: string, parentIds: string[]) => void
 
   /** Returns the new variant's id. Re-uses an existing same-named one. */
   addVariant: (scopeId: string, penId: string, name: string, color?: string) => string
@@ -293,7 +320,16 @@ interface TimeTrackingState {
     extras?: Partial<
       Pick<
         PaintRangeInput,
-        "title" | "notes" | "kind" | "startEventId" | "endEventId" | "tagIds" | "secondaryPenIds" | "endDate"
+        | "title"
+        | "notes"
+        | "kind"
+        | "startEventId"
+        | "endEventId"
+        | "tagIds"
+        | "secondaryPenIds"
+        | "endDate"
+        | "estimateOf"
+        | "moodReading"
       >
     >,
   ) => void
@@ -334,6 +370,53 @@ export const PEN_PALETTE = [
   "#8b5cf6",
   "#64748b",
 ]
+
+/** Stable palette color for a pen id. The same id always lands on the same swatch. */
+export function stablePenColor(id: string): string {
+  let hash = 0
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0
+  return PEN_PALETTE[hash % PEN_PALETTE.length]
+}
+
+/**
+ * A painted block whose pen was dropped from the scope still counts in the
+ * footer and used to vanish from the grid. Put a pen back so the block has a
+ * name and a stable color. The original color is gone; this only covers that hole.
+ */
+export function scopesWithRecoveredPens(
+  scopes: TrackScope[] | undefined,
+  entries: TimeEntry[] | undefined,
+): TrackScope[] | undefined {
+  if (!scopes) return scopes
+  if (!entries?.length) return scopes
+  const known = new Set<string>()
+  for (const scope of scopes) {
+    for (const pen of scope.pens) known.add(pen.id)
+  }
+  const additions = new Map<string, TrackPen[]>()
+  for (const entry of entries) {
+    const ids = [entry.penId, ...(entry.secondaryPenIds ?? [])]
+    for (const penId of ids) {
+      if (!penId || known.has(penId)) continue
+      const scopeId = scopes.some((scope) => scope.id === entry.scopeId) ? entry.scopeId : scopes[0]?.id
+      if (!scopeId) continue
+      const pen: TrackPen = {
+        id: penId,
+        name: entry.title?.trim() || "Recovered pen",
+        color: stablePenColor(penId),
+      }
+      const list = additions.get(scopeId) ?? []
+      list.push(pen)
+      additions.set(scopeId, list)
+      known.add(penId)
+    }
+  }
+  if (additions.size === 0) return scopes
+  return scopes.map((scope) => {
+    const add = additions.get(scope.id)
+    return add ? { ...scope, pens: [...scope.pens, ...add] } : scope
+  })
+}
 
 /** The seeded tag library. Exported so tests can restore a clean slate. */
 export const defaultTags = (): TrackTag[] => [
@@ -726,6 +809,35 @@ export function restoreOccupiedScope(state: LegacyState): LegacyState {
   }
 }
 
+/** Keep detail chips and counts-as children the same set. See `lib/pen-detail-sync.ts`. */
+export function scopesWithDetails(scopes: TrackScope[]): TrackScope[] {
+  return scopes.map((scope) => ({
+    ...scope,
+    pens: syncScopeDetails(scope.pens, (kind) => rid(kind)).pens,
+  }))
+}
+
+function syncOneScope(scopes: TrackScope[], scopeId: string): { scopes: TrackScope[]; droppedVariantIds: string[] } {
+  const droppedVariantIds: string[] = []
+  const next = scopes.map((scope) => {
+    if (scope.id !== scopeId) return scope
+    const synced = syncScopeDetails(scope.pens, (kind) => rid(kind))
+    droppedVariantIds.push(...synced.droppedVariantIds)
+    return { ...scope, pens: synced.pens }
+  })
+  return { scopes: next, droppedVariantIds }
+}
+
+function withoutVariantIds(entries: TimeEntry[], dropped: string[]): TimeEntry[] {
+  if (!dropped.length) return entries
+  const gone = new Set(dropped)
+  return entries.map((entry) =>
+    entry.variantIds?.some((id) => gone.has(id))
+      ? { ...entry, variantIds: normalizeIds(entry.variantIds.filter((id) => !gone.has(id))) }
+      : entry,
+  )
+}
+
 function migrate(persisted: unknown, version: number): LegacyState {
   let state = (persisted ?? {}) as LegacyState
   if (version < 3) state = migrateTags(state)
@@ -752,10 +864,56 @@ function migrate(persisted: unknown, version: number): LegacyState {
   }
   if (version < 11) state = migrateScreenTime(state)
   if (version < 12) state = migrateIphoneScreenTime(state)
+  if (version < 13) {
+    const scopes = scopesWithDetails(state.scopes ?? [])
+    state = { ...state, scopes }
+  }
+  if (version < 14) state = migrateParentLists(state)
   return state
 }
 
+/** Copy a lone `parentId` into `parentIds`. The display parent stays `parentId`. */
+function migrateParentLists(state: LegacyState): LegacyState {
+  return {
+    ...state,
+    scopes: (state.scopes ?? []).map((scope) => ({
+      ...scope,
+      pens: (scope.pens ?? []).map((pen) => {
+        const ids = penParentIds(pen)
+        if (!ids.length) return pen
+        return assignParents(pen, ids)
+      }),
+    })),
+  }
+}
+
 // ---- store ------------------------------------------------------------------
+
+const REMOVED_ENTRY_CAP = 4000
+
+/**
+ * Persist merge: drop ids the live grid has tombstoned and no longer holds.
+ * A stale blob from before Cmd+Z still contains the block; the tombstone is
+ * the word that it stays gone.
+ */
+function mergeTrackedEntries(
+  persisted: TimeEntry[] | undefined,
+  currentEntries: TimeEntry[],
+  currentRemoved: string[] | undefined,
+  persistedRemoved: string[] | undefined,
+): { entries: TimeEntry[]; removedEntryIds: string[] } {
+  const live = new Set(currentEntries.map((entry) => entry.id))
+  const tombstones = new Set((currentRemoved ?? []).filter((id) => !live.has(id)))
+  const base = persisted ?? currentEntries
+  const entries = tombstones.size === 0 ? base : base.filter((entry) => !tombstones.has(entry.id))
+  const kept = new Set(entries.map((entry) => entry.id))
+  const removed = new Set<string>([...(persistedRemoved ?? []), ...(currentRemoved ?? [])])
+  for (const id of tombstones) removed.add(id)
+  for (const id of kept) removed.delete(id)
+  const removedEntryIds =
+    removed.size > REMOVED_ENTRY_CAP ? [...removed].slice(removed.size - REMOVED_ENTRY_CAP) : [...removed]
+  return { entries, removedEntryIds }
+}
 
 /** Remember ids this edit dropped so a later union cannot paint the block back. */
 function dropping(
@@ -767,14 +925,15 @@ function dropping(
   for (const entry of state.entries) {
     if (!live.has(entry.id)) removed.add(entry.id)
   }
-  const removedEntryIds = removed.size > 4000 ? [...removed].slice(removed.size - 4000) : [...removed]
+  for (const id of live) removed.delete(id)
+  const removedEntryIds = removed.size > REMOVED_ENTRY_CAP ? [...removed].slice(removed.size - REMOVED_ENTRY_CAP) : [...removed]
   return { entries, removedEntryIds }
 }
 
 export const useTimeTrackingStore = create<TimeTrackingState>()(
   persist(
     (set, get) => ({
-      scopes: defaultScopes(),
+      scopes: scopesWithDetails(defaultScopes()),
       tags: defaultTags(),
       entries: [],
       removedEntryIds: [],
@@ -869,54 +1028,95 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
       },
       updatePen: (scopeId, pen) => {
         rememberWorld("update pen")
+        const next = { ...pen, editedAt: Date.now() }
         set((state) => ({
-          scopes: state.scopes.map((s) =>
-            s.id === scopeId ? { ...s, pens: s.pens.map((p) => (p.id === pen.id ? pen : p)) } : s,
-          ),
+          scopes: state.scopes.map((s) => {
+            if (s.id !== scopeId) return s
+            return {
+              ...s,
+              pens: s.pens.map((p) => {
+                if (p.id === pen.id) return next
+                if (!p.variants?.some((variant) => variant.penId === pen.id)) return p
+                return {
+                  ...p,
+                  variants: p.variants.map((variant) =>
+                    variant.penId === pen.id ? { ...variant, name: next.name, color: next.color } : variant,
+                  ),
+                }
+              }),
+            }
+          }),
         }))
       },
       removePen: (scopeId, penId) => {
         rememberWorld("remove pen")
         set((state) => {
           const orphanParent = state.scopes.find((s) => s.id === scopeId)?.pens.find((p) => p.id === penId)?.parentId
+          const stripped = state.scopes.map((s) => ({
+            ...s,
+            pens: (s.id === scopeId ? s.pens.filter((p) => p.id !== penId) : s.pens).map((p) => {
+              const next = withoutLinksTo(p, (l) => l.penId === penId)
+              const variants = next.variants?.filter((variant) => variant.penId !== penId)
+              const withoutDetail = variants?.length ? { ...next, variants } : { ...next, variants: undefined }
+              if (s.id !== scopeId) return withoutDetail
+              const ids = penParentIds(withoutDetail).filter((id) => id !== penId)
+              if (withoutDetail.parentId === penId && orphanParent && !ids.includes(orphanParent)) {
+                return assignParents(withoutDetail, [orphanParent, ...ids])
+              }
+              return assignParents(withoutDetail, ids)
+            }),
+          }))
+          const synced = syncOneScope(stripped, scopeId)
+          const gone = new Set(synced.droppedVariantIds)
           return {
-            scopes: state.scopes.map((s) => ({
-              ...s,
-              pens: (s.id === scopeId ? s.pens.filter((p) => p.id !== penId) : s.pens).map((p) => {
-                const next = withoutLinksTo(p, (l) => l.penId === penId)
-                if (s.id === scopeId && next.parentId === penId) {
-                  return { ...next, parentId: orphanParent }
-                }
-                return next
-              }),
-            })),
+            scopes: synced.scopes,
             // Time painted with a deleted pen is time that did not happen
             // when it was the primary. A secondary mention is dropped, not the block.
-            entries: state.entries
-              .filter((e) => e.penId !== penId)
-              .map((e) =>
-                e.secondaryPenIds?.includes(penId)
-                  ? { ...e, secondaryPenIds: normalizeIds(e.secondaryPenIds.filter((id) => id !== penId)) }
-                  : e,
-              ),
+            entries: withoutVariantIds(
+              state.entries
+                .filter((e) => e.penId !== penId)
+                .map((e) =>
+                  e.secondaryPenIds?.includes(penId)
+                    ? { ...e, secondaryPenIds: normalizeIds(e.secondaryPenIds.filter((id) => id !== penId)) }
+                    : e,
+                ),
+              synced.droppedVariantIds,
+            ),
             selectedPenId: state.selectedPenId === penId ? null : state.selectedPenId,
+            selectedVariantIds: state.selectedVariantIds.filter((id) => !gone.has(id)),
           }
         })
       },
       setPenParent: (scopeId, penId, parentId) => {
-        rememberWorld("set pen parent")
-        set((state) => ({
-          scopes: state.scopes.map((s) => {
+        get().setPenParents(scopeId, penId, parentId ? [parentId] : [])
+      },
+      setPenParents: (scopeId, penId, parentIds) => {
+        const scope = get().scopes.find((s) => s.id === scopeId)
+        if (!scope) return
+        const clean: string[] = []
+        for (const id of parentIds) {
+          if (!id || id === penId || clean.includes(id)) continue
+          if (!scope.pens.some((pen) => pen.id === id)) continue
+          if (wouldCycle(scope.pens, penId, id)) continue
+          clean.push(id)
+        }
+        rememberWorld("set pen parents")
+        set((state) => {
+          const nested = state.scopes.map((s) => {
             if (s.id !== scopeId) return s
-            if (parentId && wouldCycle(s.pens, penId, parentId)) return s
             return {
               ...s,
-              pens: s.pens.map((p) =>
-                p.id === penId ? { ...p, parentId: parentId || undefined } : p,
-              ),
+              pens: s.pens.map((p) => (p.id === penId ? assignParents(p, clean) : p)),
             }
-          }),
-        }))
+          })
+          const synced = syncOneScope(nested, scopeId)
+          const gone = new Set(synced.droppedVariantIds)
+          return {
+            scopes: synced.scopes,
+            entries: withoutVariantIds(state.entries, synced.droppedVariantIds),
+            selectedVariantIds: state.selectedVariantIds.filter((id) => !gone.has(id)),
+          }
+        })
       },
 
       addVariant: (scopeId, penId, name, color) => {
@@ -927,8 +1127,8 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
         if (existing) return existing.id
         rememberWorld("add variant")
         const id = rid("var")
-        set((state) => ({
-          scopes: state.scopes.map((s) =>
+        set((state) => {
+          const withVariant = state.scopes.map((s) =>
             s.id !== scopeId
               ? s
               : {
@@ -949,37 +1149,65 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
                         },
                   ),
                 },
-          ),
-        }))
+          )
+          const synced = syncOneScope(withVariant, scopeId)
+          const gone = new Set(synced.droppedVariantIds)
+          return {
+            scopes: synced.scopes,
+            entries: withoutVariantIds(state.entries, synced.droppedVariantIds),
+            selectedVariantIds: state.selectedVariantIds.filter((variantId) => !gone.has(variantId)),
+          }
+        })
         return id
       },
       updateVariant: (scopeId, penId, variant) => {
         rememberWorld("update variant")
+        const name = variant.name.trim()
         set((state) => ({
-          scopes: state.scopes.map((s) =>
-            s.id !== scopeId
-              ? s
-              : {
-                  ...s,
-                  pens: s.pens.map((p) =>
-                    p.id !== penId
-                      ? p
-                      : { ...p, variants: (p.variants ?? []).map((v) => (v.id === variant.id ? variant : v)) },
-                  ),
-                },
-          ),
+          scopes: state.scopes.map((s) => {
+            if (s.id !== scopeId) return s
+            return {
+              ...s,
+              pens: s.pens.map((p) => {
+                if (p.id === penId) {
+                  return {
+                    ...p,
+                    variants: (p.variants ?? []).map((v) => (v.id === variant.id ? { ...variant, name: variant.name } : v)),
+                  }
+                }
+                if (variant.penId && p.id === variant.penId) {
+                  return {
+                    ...p,
+                    name: name || p.name,
+                    color: variant.color || p.color,
+                    editedAt: Date.now(),
+                  }
+                }
+                return p
+              }),
+            }
+          }),
         }))
       },
       removeVariant: (scopeId, penId, variantId) => {
         rememberWorld("remove variant")
-        set((state) => ({
+        set((state) => {
+          const linkedPenId = state.scopes
+            .find((s) => s.id === scopeId)
+            ?.pens.find((p) => p.id === penId)
+            ?.variants?.find((v) => v.id === variantId)?.penId
+          return {
           scopes: state.scopes.map((s) => ({
             ...s,
             pens: s.pens.map((p) => {
-              const base =
-                s.id === scopeId && p.id === penId
-                  ? { ...p, variants: (p.variants ?? []).filter((v) => v.id !== variantId) }
+              const unlinked =
+                s.id === scopeId && linkedPenId && p.id === linkedPenId && penParentIds(p).includes(penId)
+                  ? assignParents(p, penParentIds(p).filter((id) => id !== penId))
                   : p
+              const base =
+                s.id === scopeId && unlinked.id === penId
+                  ? { ...unlinked, variants: (unlinked.variants ?? []).filter((v) => v.id !== variantId) }
+                  : unlinked
               // Another pen's link may pre-tick this variant; that half of the
               // rule is gone, but the link itself still means something.
               if (!base.links?.some((l) => l.variantIds?.includes(variantId))) return base
@@ -1000,7 +1228,8 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
               : e,
           ),
           selectedVariantIds: state.selectedVariantIds.filter((v) => v !== variantId),
-        }))
+        }
+        })
       },
 
       addTag: (name, color) => {
@@ -1068,6 +1297,9 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
       },
 
       paintMinutes: (date, scopeId, startMin, endMin, penId, variantIds, spanId, precision, extras) => {
+        // A restore is the last word for this stroke. A session tick or a
+        // subscriber that paints again in the same turn would put the block back.
+        if (isRestoring()) return
         rememberWorld(penId ? "paint" : "erase")
         set((state) => {
           if (!penId) {
@@ -1092,12 +1324,18 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
               tagIds: extras?.tagIds,
               secondaryPenIds: extras?.secondaryPenIds,
               endDate: extras?.endDate,
+              estimateOf: extras?.estimateOf,
+              moodReading: extras?.moodReading,
             },
             () => rid("te"),
           )
           // Standing links fire on the stroke, not on the whole day: painting
           // one block must not reach back and fill in around older ones.
-          const slices = wrappingSlices(date, startMin, endMin, extras?.endDate)
+          // A discrete event is one minute, not "until midnight" — equal clocks
+          // on an interval mean end of day, and that reading must not fan links
+          // out from a point.
+          const slices =
+            extras?.kind === "instant" ? [] : wrappingSlices(date, startMin, endMin, extras?.endDate)
           let next = painted
           for (const entry of painted) {
             if (entry.scopeId !== scopeId) continue
@@ -1130,6 +1368,12 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
           const target = state.entries.find((e) => e.id === id)
           if (!target) return state
           const next = { ...target, ...patch, id: target.id }
+          if ("precision" in patch && patch.precision !== "estimated") delete next.precision
+          if ("moodReading" in patch) {
+            const packed = compactMoodReading(patch.moodReading)
+            if (packed) next.moodReading = packed
+            else delete next.moodReading
+          }
           if (patch.variantIds !== undefined) next.variantIds = normalizeIds(patch.variantIds)
           if (patch.tagIds !== undefined) next.tagIds = normalizeIds(patch.tagIds)
           if (patch.secondaryPenIds !== undefined || patch.penId !== undefined) {
@@ -1169,6 +1413,7 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
                     pages: next.pages,
                     spanId: target.spanId,
                     precision: next.precision,
+                    moodReading: next.moodReading,
                   },
                   () => rid("te"),
                 ),
@@ -1281,14 +1526,27 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
     }),
     {
       name: persistKey("timegrid-store"),
-      version: 12,
+      version: 14,
       storage: createCogsJSONStorage(),
       migrate: (persisted, version) => migrate(persisted, version) as TimeTrackingState,
       merge: (persistedState, currentState) => {
         const persisted = (persistedState ?? {}) as Partial<TimeTrackingState>
+        // A late rehydrate (hub follow-up, popout) must not paint an id the live
+        // grid just undid. Tombstones live on `removedEntryIds`; the blob may
+        // still be the pre-undo copy.
+        const tracked = mergeTrackedEntries(
+          persisted.entries,
+          currentState.entries,
+          currentState.removedEntryIds,
+          persisted.removedEntryIds,
+        )
+        const scopes = scopesWithRecoveredPens(persisted.scopes ?? currentState.scopes, tracked.entries)
         return {
           ...currentState,
           ...persisted,
+          ...(scopes ? { scopes } : {}),
+          entries: tracked.entries,
+          removedEntryIds: tracked.removedEntryIds,
           // Dedicated `brain2-tracking-day-notes` wins over an empty hub blob.
           // In-memory notes (typed during a hub wait) still overlay an empty
           // persist snapshot. Empty current keys never wipe a stored jot.
@@ -1316,6 +1574,20 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
 )
 
 registerPersistRehydrator(persistKey("timegrid-store"), () => useTimeTrackingStore.persist.rehydrate())
+
+// A restore tombstones the block, then a subscriber may setState the pre-undo
+// entries back (sleep derive, screen time, a stale closure). The id is still
+// in `removedEntryIds`, so that write is not the last word — drop it. Redo
+// clears the tombstone in the same setState, so the block stays.
+useTimeTrackingStore.subscribe((state) => {
+  const removed = state.removedEntryIds
+  if (!removed?.length) return
+  const dead = new Set(removed)
+  if (!state.entries.some((entry) => dead.has(entry.id))) return
+  useTimeTrackingStore.setState({
+    entries: state.entries.filter((entry) => !dead.has(entry.id)),
+  })
+})
 
 // ---- helpers ----------------------------------------------------------------
 

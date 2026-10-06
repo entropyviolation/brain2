@@ -8,6 +8,7 @@
 import { useHabitsStore } from "@/lib/habits-store"
 import { habitDoneLogId } from "@/lib/habit-done-log"
 import { taskRepository } from "@/lib/data/task-repository"
+import { formatLocalDateKey } from "@/lib/date-utils"
 import { TaskType, type WeeklyTask } from "@/lib/types"
 import { writeHabit } from "./apply-habit"
 import {
@@ -30,9 +31,51 @@ export function applyHabitTriggerMatch(hit: HabitTriggerMatch, now = new Date())
     return { status: "error", kind: "habit-trigger", reply: "That habit disappeared. Try again." }
   }
 
+  const dateKey = formatLocalDateKey(now)
+  const previous = useHabitsStore.getState().weeklyData[dateKey]?.[habit.id]
+  const goal = habit.goal ?? previous?.goal ?? 0
+
+  // Quantity adds onto what is already logged. A score is a reading and replaces.
+  if (hit.trigger.mode === "quantity" && hit.value != null) {
+    const value = (previous?.value ?? 0) + hit.value
+    useHabitsStore.getState().updateCompletion(habit.id, now, {
+      value,
+      goal,
+      keywordLogged: true,
+      keywordValue: (previous?.keywordValue ?? 0) + hit.value,
+    })
+    const note = fromTextMessageNote(now, hit.note)
+    attachDoneNotes(habit, now, note)
+    const unit = habit.unit ? ` ${habit.unit}` : ""
+    return {
+      status: "ok",
+      kind: "habit-trigger",
+      reply: `${habit.name}: +${hit.value}${unit} (total ${value}${unit})`,
+      summary: `${habit.name} +${hit.value} from text`,
+    }
+  }
+
+  if (hit.trigger.mode === "score" && hit.value != null) {
+    useHabitsStore.getState().updateCompletion(habit.id, now, {
+      value: hit.value,
+      goal,
+      keywordLogged: true,
+      keywordValue: hit.value,
+    })
+    const note = fromTextMessageNote(now, hit.note)
+    attachDoneNotes(habit, now, note)
+    return {
+      status: "ok",
+      kind: "habit-trigger",
+      reply: `${habit.name}: score ${hit.value}`,
+      summary: `${habit.name} score ${hit.value} from text`,
+    }
+  }
+
   const remainder = buildRemainder(habit, hit)
   const result = writeHabit(habit, remainder, now)
   if (result.status !== "ok") return { ...result, kind: "habit-trigger" }
+  useHabitsStore.getState().updateCompletion(habit.id, now, { keywordLogged: true })
 
   const note = fromTextMessageNote(now, hit.note)
   attachDoneNotes(habit, now, note)

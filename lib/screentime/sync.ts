@@ -10,7 +10,7 @@
  */
 "use client"
 
-import { formatLocalDateKey } from "@/lib/date-utils"
+import { formatLocalDateKey, startOfLocalDay } from "@/lib/date-utils"
 import { mergeAdjacent, type TimeEntry } from "@/lib/time-entries"
 import * as trackingStore from "@/lib/time-tracking-store"
 import { PEN_PALETTE, useTimeTrackingStore, type TrackPen, type TrackScope } from "@/lib/time-tracking-store"
@@ -311,10 +311,6 @@ export function screenTimeLookbackDates(lookbackDays: number, now = new Date()):
 /** Today and yesterday — callers who want the live edge pass this as `dates`. */
 export function screenTimeOngoingDates(now = new Date()): string[] {
   return screenTimeLookbackDates(2, now)
-}
-
-function startOfLocalDay(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate())
 }
 
 function ensurePensFor(interval: ScreenTimeInterval): void {

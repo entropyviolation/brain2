@@ -20,6 +20,7 @@
  */
 import type { Task, TimeLogEntry } from "@/lib/types"
 import { isClearedFromWork } from "@/lib/completion-status"
+import { addCalendarDays, formatLocalDateKey, startOfLocalDay } from "@/lib/date-utils"
 import {
   OPERATION_ATTR,
   OPERATION_STAGES,
@@ -256,7 +257,7 @@ export function buildHeatmap(
   const now = options.now ?? new Date()
   const end = options.end ?? now
   const span = Math.max(1, options.days ?? 30)
-  const start = options.start ?? addDays(end, -(span - 1))
+  const start = options.start ?? addCalendarDays(end, -(span - 1))
   const thresholds = options.thresholds ?? DEFAULT_HEAT_THRESHOLDS
 
   // Sum minutes by day key across all tasks.
@@ -270,10 +271,10 @@ export function buildHeatmap(
   }
 
   const cells: HeatCell[] = []
-  const cursor = startOfDay(start)
-  const last = startOfDay(end)
+  const cursor = startOfLocalDay(start)
+  const last = startOfLocalDay(end)
   while (cursor.getTime() <= last.getTime()) {
-    const date = dayKey(cursor)
+    const date = formatLocalDateKey(cursor)
     const minutes = byDay.get(date) ?? 0
     cells.push({ date, minutes, level: heatLevel(minutes, thresholds), worked: minutes > 0 })
     cursor.setDate(cursor.getDate() + 1)
@@ -513,28 +514,15 @@ function toDate(value: Date | string | undefined | null): Date | null {
   return isNaN(d.getTime()) ? null : d
 }
 
-function startOfDay(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate())
-}
-
-function addDays(date: Date, days: number): Date {
-  const d = startOfDay(date)
-  d.setDate(d.getDate() + days)
-  return d
-}
-
-function dayKey(date: Date): string {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, "0")
-  const d = String(date.getDate()).padStart(2, "0")
-  return `${y}-${m}-${d}`
-}
-
-/** Normalize a `TimeLogEntry.date` ("YYYY-MM-DD" or ISO) to a local day key. */
+/**
+ * Normalize a `TimeLogEntry.date` ("YYYY-MM-DD" or ISO) to a day key.
+ * Bare / prefixed YYYY-MM-DD keeps the string digits as written (not re-parsed
+ * through local midnight) so stored time-log keys stay stable.
+ */
 function normalizeDayKey(value: string | undefined | null): string | null {
   if (!value) return null
   const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value)
   if (match) return `${match[1]}-${match[2]}-${match[3]}`
   const d = new Date(value)
-  return isNaN(d.getTime()) ? null : dayKey(d)
+  return isNaN(d.getTime()) ? null : formatLocalDateKey(d)
 }

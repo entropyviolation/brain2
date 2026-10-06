@@ -18,7 +18,7 @@
 import type { Task, TimeLogEntry } from "@/lib/types"
 import { LOGGED_ACTION_TYPE_ID } from "@/lib/item-types"
 import { taskRepository } from "@/lib/data/task-repository"
-import { formatLocalDateKey } from "@/lib/date-utils"
+import { formatLocalDateKey, startOfLocalDay } from "@/lib/date-utils"
 import {
   OPERATION_ATTR,
   getOperationTrackingTagIds,
@@ -31,7 +31,7 @@ import {
 } from "@/lib/time-tracking-store"
 import { syncTrackedHabits } from "@/lib/habit-tracking-sync"
 import { useWorkSessionStore, type WorkSession } from "@/lib/work-session-store"
-import { runAsAction, withoutUndo } from "@/lib/action-history"
+import { isRestoring, runAsAction, withoutUndo } from "@/lib/action-history"
 
 export const ACTIVITY_SCOPE_ID = "activity"
 export const WORK_SESSION_TICK_MS = 15_000
@@ -88,13 +88,8 @@ export function sessionActiveEnd(session: SessionClockFields, now = new Date()):
   return new Date(new Date(session.startedAt).getTime() + sessionElapsedMs(session, now.getTime()))
 }
 
-export function minutesPastMidnight(date: Date): number {
-  return date.getHours() * 60 + date.getMinutes()
-}
-
-export function startOfLocalDay(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate())
-}
+/** Re-export: local midnight for session day-slice math. */
+export { startOfLocalDay }
 
 function atLocalMinutes(dateKey: string, minutes: number): Date {
   const [y, mo, d] = dateKey.split("-").map(Number)
@@ -423,7 +418,7 @@ export function stopWorkingOnOperation(now = new Date()): WorkSession | null {
 export function tickWorkSession(now = new Date()): WorkSession | null {
   return withoutUndo(() => {
   const session = useWorkSessionStore.getState().session
-  if (!session) return null
+  if (!session || isRestoring()) return session ?? null
   if (!session.penId) return session
   const ids = extendLiveEntry(session, sessionActiveEnd(session, now))
   const next = { ...session, trackingEntryIds: ids }
@@ -469,8 +464,4 @@ export function toggleWorkingOnOperation(operationId: string, now = new Date()):
     return null
   }
   return startWorkingOnOperation(operationId, now)
-}
-
-export function isWorkingOn(operationId: string): boolean {
-  return useWorkSessionStore.getState().session?.operationId === operationId
 }

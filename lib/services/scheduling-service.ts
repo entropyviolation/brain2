@@ -2,22 +2,30 @@
  * lib/services/scheduling-service.ts — Task scheduling workflow
  *
  * Scheduling operations on top of the repository: place a task in a period
- * bucket, pin it to a specific day + time (the agenda), unschedule it, push it
- * forward one period, or roll an unfinished past period up one level while
- * keeping the prior placement in `schedulePlacements`. Field math is delegated
- * to `lib/scheduling.ts` and `lib/item-utils.ts` so the Scheduler UI and this
+ * bucket, pin it to a specific day + time (the agenda), unschedule it, dismiss
+ * it from a past funnel cell (`dismissTaskFromPeriod`), push it forward one
+ * period, or roll an unfinished past period up one level while keeping the
+ * prior placement in `schedulePlacements`. Field math is delegated to
+ * `lib/scheduling.ts` and `lib/item-utils.ts` so the Scheduler UI and this
  * service stay in lockstep.
  *
  * Spec: §7 (Scheduler period funnel).
  */
-import type { Task, SchedulePeriod } from "@/lib/types"
+import type { Task, SchedulePeriod, SchedulePlacementPeriod } from "@/lib/types"
 import { taskRepository, type TaskRepository } from "@/lib/data/task-repository"
 import {
   scheduleFieldsForPeriod,
   clearedScheduleFields,
   rollUpScheduleFieldsCascaded,
+  dismissFromPeriodFields,
+  removeSchedulePlacement,
 } from "@/lib/scheduling"
 import { pushTaskOnePeriod } from "@/lib/item-utils"
+
+export type ScheduleTaskOptions = {
+  /** Drop one historical placement (the past cell the row was dragged from). */
+  removePlacement?: { period: SchedulePlacementPeriod; value: string }
+}
 
 /** Schedule a task to a period bucket (year/month/week/day or always=clear). */
 export function scheduleTask(
@@ -25,11 +33,22 @@ export function scheduleTask(
   period: SchedulePeriod,
   value: string,
   repo: TaskRepository = taskRepository,
+  opts?: ScheduleTaskOptions,
 ): Task | undefined {
   const task = repo.getById(id)
   if (!task) return undefined
-  if (period === "always") return repo.update({ ...task, ...clearedScheduleFields() })
-  return repo.update({ ...task, ...scheduleFieldsForPeriod(period, value) })
+  const leave = opts?.removePlacement
+  const placements = leave
+    ? removeSchedulePlacement(task.schedulePlacements, leave.period, leave.value)
+    : task.schedulePlacements
+  if (period === "always") {
+    return repo.update({ ...task, ...clearedScheduleFields(), schedulePlacements: placements })
+  }
+  return repo.update({
+    ...task,
+    ...scheduleFieldsForPeriod(period, value),
+    schedulePlacements: placements,
+  })
 }
 
 /** Pin a task to a specific date + time of day (used by the daily agenda). */
@@ -58,7 +77,25 @@ export function unscheduleTask(id: string, repo: TaskRepository = taskRepository
   return repo.update({ ...task, ...clearedScheduleFields() })
 }
 
-/** Toggle whether a task shows in the Scheduler (the "Show in Scheduler" flag). */
+/**
+ * Dismiss a task from one past funnel cell (× on a gray history row).
+ * Removes that `schedulePlacements` entry. If live fields still match the past
+ * cell, rolls them up one level without re-pinning the dismissed cell. Keeps a
+ * coarser live schedule when present. Does not award schedule points.
+ */
+export function dismissTaskFromPeriod(
+  id: string,
+  period: SchedulePlacementPeriod,
+  value: string,
+  now: Date = new Date(),
+  repo: TaskRepository = taskRepository,
+): Task | undefined {
+  const task = repo.getById(id)
+  if (!task) return undefined
+  return repo.update({ ...task, ...dismissFromPeriodFields(task, period, value, now) })
+}
+
+/** Toggle Send to Scheduler (`scheduleable`). Dates alone do not do this. */
 export function setTaskScheduleable(
   id: string,
   scheduleable: boolean,
@@ -77,12 +114,13 @@ export function clearScheduledTime(id: string, repo: TaskRepository = taskReposi
 }
 
 /**
- * Roll unfinished past period assignments up one (or more) levels.
- * day → week → month → year → fully unscheduled. Records each vacated period
- * on `schedulePlacements` so gray past cells still show what was planned.
- * Does not increment daysPushed / weeksPushed / monthsPushed. Completed and
- * missed stay put. An explicit push already wrote a current/future period, so
- * it is not rolled. Returns the ids that were updated.
+ * Settle unfinished past period assignments.
+ * Auto-push (`task.autoPush === true`) walks the same grain onto the next
+ * period and records every missed one as Undone, incrementing that push counter.
+ * Otherwise roll up one or more levels: day → week → month → year → unscheduled,
+ * recording each vacated period without incrementing push counters.
+ * Completed and missed stay put. An explicit push already wrote a current or
+ * future period, so it is not moved again. Returns the ids that were updated.
  */
 export function rollUpExpiredSchedules(
   now: Date = new Date(),

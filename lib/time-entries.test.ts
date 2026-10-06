@@ -241,6 +241,51 @@ describe("reads", () => {
     const entries = [entry({ startMin: 540, endMin: 600 }), entry({ startMin: 600, endMin: 660 })]
     expect(mergeAdjacent(entries, DATE, "activity")).toHaveLength(1)
   })
+
+  it("keeps adjacent blocks apart when their mood readings differ", () => {
+    const entries = [
+      entry({
+        scopeId: "mood",
+        penId: "mood-low",
+        startMin: 540,
+        endMin: 600,
+        moodReading: { word: "Low", energy: 2 },
+      }),
+      entry({
+        scopeId: "mood",
+        penId: "mood-low",
+        startMin: 600,
+        endMin: 660,
+        moodReading: { word: "Low", energy: 8 },
+      }),
+    ]
+    expect(mergeAdjacent(entries, DATE, "mood")).toHaveLength(2)
+  })
+
+  it("merges adjacent blocks that carry the same mood reading", () => {
+    const reading = { word: "Low", energy: 2 }
+    const entries = [
+      entry({ scopeId: "mood", penId: "mood-low", startMin: 540, endMin: 600, moodReading: reading }),
+      entry({ scopeId: "mood", penId: "mood-low", startMin: 600, endMin: 660, moodReading: { ...reading } }),
+    ]
+    const merged = mergeAdjacent(entries, DATE, "mood")
+    expect(merged).toHaveLength(1)
+    expect(merged[0]?.moodReading).toEqual(reading)
+  })
+
+  it("omits an empty mood reading and keeps a split's reading on both halves", () => {
+    const empty = paint([], { startMin: 540, endMin: 600, moodReading: { word: "  ", energy: 0 } })
+    expect(empty[0]?.moodReading).toBeUndefined()
+    const painted = paint([], {
+      startMin: 540,
+      endMin: 660,
+      moodReading: { word: "Thin", sensation: "tight chest", energy: 4 },
+    })
+    const halves = splitEntry(painted, painted[0]!.id, 600, makeId).sort((a, b) => a.startMin - b.startMin)
+    expect(halves[0]?.moodReading).toEqual(halves[1]?.moodReading)
+    expect(halves[0]?.moodReading?.word).toBe("Thin")
+    expect(halves[1]?.notes).toBeUndefined()
+  })
 })
 
 describe("formatting", () => {
@@ -369,5 +414,18 @@ describe("discrete instants", () => {
     )
     expect(result.filter((e) => !isInstant(e))).toHaveLength(1)
     expect(result.filter(isInstant)).toHaveLength(1)
+  })
+
+  it("keeps a discrete event when a block is painted over that minute", () => {
+    let result = paintRange(
+      [],
+      { date: DATE, scopeId: "activity", penId: "text", startMin: 570, endMin: 570, kind: "instant", title: "drink water" },
+      makeId,
+    )
+    result = paint(result, { startMin: 540, endMin: 600 })
+    const tick = result.find((entry) => entry.title === "drink water")
+    expect(tick && isInstant(tick)).toBe(true)
+    expect(tick).toMatchObject({ startMin: 570, endMin: 570 })
+    expect(result.filter((entry) => !isInstant(entry))).toHaveLength(1)
   })
 })

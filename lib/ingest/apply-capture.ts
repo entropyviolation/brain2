@@ -34,6 +34,7 @@ export function applyCapture(text: string, opts?: { sendToInbox?: boolean; now?:
     sendToInbox,
     target,
     folders: useTaskStore.getState().folders,
+    now: opts?.now,
   })
   useTaskStore.getState().addTask(task)
   const title = task.description.trim() || trimmed

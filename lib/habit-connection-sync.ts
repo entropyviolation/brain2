@@ -8,7 +8,7 @@
  */
 "use client"
 
-import { useEffect } from "react"
+import { isRestoring } from "@/lib/action-history"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import {
   applyAutoFlag,
@@ -21,7 +21,7 @@ import {
 import { useHabitsStore } from "@/lib/habits-store"
 import { useSleepStore } from "@/lib/sleep-store"
 import { useTaskStore } from "@/lib/task-store"
-import { afterPersistHydrated } from "@/lib/use-persist-hydrated"
+import { startHydratedStoreSync, type HydratedStoreSyncSlot } from "@/lib/start-hydrated-store-sync"
 import type { TaskCompletion } from "@/lib/types"
 
 type AutoUpdate = {
@@ -101,58 +101,34 @@ export function syncHabitConnections(): void {
   if (pending.length) useHabitsStore.getState().applyAutoChecks(pending)
 }
 
-let stopper: (() => void) | null = null
+const connectionSyncSlot: HydratedStoreSyncSlot = { stopper: null }
 
 /** Idempotent. Components leave the singleton up; tests can call the stopper. */
 export function startHabitConnectionSync(): () => void {
-  if (stopper) return stopper
-  let stopped = false
-  const waiters: Array<() => void> = []
-  let unsubscribe: (() => void) | null = null
-
-  const boot = () => {
-    if (stopped || unsubscribe) return
-    const unNights = useSleepStore.subscribe((state, prev) => {
-      if (state.nights !== prev.nights) syncHabitConnections()
-    })
-    const unTasks = useTaskStore.subscribe((state, prev) => {
-      if (state.tasks !== prev.tasks || state.lists !== prev.lists || state.folders !== prev.folders) {
-        syncHabitConnections()
+  return startHydratedStoreSync({
+    slot: connectionSyncSlot,
+    persists: [useHabitsStore.persist, useSleepStore.persist, useTaskStore.persist],
+    onReady: () => {
+      const unNights = useSleepStore.subscribe((state, prev) => {
+        if (isRestoring()) return
+        if (state.nights !== prev.nights) syncHabitConnections()
+      })
+      const unTasks = useTaskStore.subscribe((state, prev) => {
+        if (isRestoring()) return
+        if (state.tasks !== prev.tasks || state.lists !== prev.lists || state.folders !== prev.folders) {
+          syncHabitConnections()
+        }
+      })
+      const unHabits = useHabitsStore.subscribe((state, prev) => {
+        if (isRestoring()) return
+        if (state.tasks !== prev.tasks) syncHabitConnections()
+      })
+      syncHabitConnections()
+      return () => {
+        unNights()
+        unTasks()
+        unHabits()
       }
-    })
-    const unHabits = useHabitsStore.subscribe((state, prev) => {
-      if (state.tasks !== prev.tasks) syncHabitConnections()
-    })
-    unsubscribe = () => {
-      unNights()
-      unTasks()
-      unHabits()
-      unsubscribe = null
-    }
-    syncHabitConnections()
-  }
-
-  waiters.push(
-    afterPersistHydrated(useHabitsStore.persist, () => {
-      waiters.push(
-        afterPersistHydrated(useSleepStore.persist, () => {
-          waiters.push(afterPersistHydrated(useTaskStore.persist, boot))
-        }),
-      )
-    }),
-  )
-
-  stopper = () => {
-    stopped = true
-    for (const stop of waiters) stop()
-    unsubscribe?.()
-    stopper = null
-  }
-  return stopper
-}
-
-export function useHabitConnectionSync(): void {
-  useEffect(() => {
-    startHabitConnectionSync()
-  }, [])
+    },
+  })
 }

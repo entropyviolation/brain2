@@ -29,6 +29,7 @@ function ensureNeededList(): List {
     color: "#78716c",
     description: "Things needed — from phone text",
     createdAt: new Date(),
+    scheduleable: false,
   }
   useTaskStore.getState().addList(list)
   return useTaskStore.getState().lists.find((l) => l.id === list.id) ?? list

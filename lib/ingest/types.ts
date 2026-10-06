@@ -41,6 +41,7 @@ export type IngestIntentKind =
   | "todo-today"
   | "read-todo-today"
   | "morning"
+  | "night"
   | "reviews"
   | "review"
   | "cancel"
@@ -59,6 +60,10 @@ export type IngestIntentKind =
   | "pair"
   | "event-log"
   | "event-trigger"
+  | "intake"
+  | "switch-task"
+  | "switch-objective"
+  | "transit"
   | "habit-trigger"
   | "currently"
   | "stopped-activity"
@@ -133,11 +138,11 @@ export interface PendingClarify {
    * Steps advance in `lib/ingest/apply-ritual.ts`.
    */
   ritual?: {
-    flow: "morning" | "period" | "day" | "week" | "month" | "quarter" | "year"
+    flow: "morning" | "period" | "start" | "day" | "week" | "month" | "quarter" | "year"
     periodKey: string
     step: string
     draft: Record<string, unknown>
-    /** Period reviews only — which bucket is in progress. */
+    /** Period / start reviews — which bucket is in progress. */
     period?: "day" | "week" | "month" | "quarter" | "year"
   }
   /**

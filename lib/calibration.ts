@@ -16,11 +16,13 @@
  *  - "accurate" = within ±ACCURATE_BAND_PCT of the estimate.
  *
  * Only completed tasks with a positive estimatedDuration and a positive
- * actualDuration are considered (others can't be calibrated).
+ * exact actualDuration are considered. Estimated and unknown lengths are
+ * left out so they cannot pretend to be observed minutes.
  */
 import type { Task } from "@/lib/types"
-import { getWeekString, formatLocalDateKey } from "@/lib/date-utils"
+import { periodKeyFor } from "@/lib/period-keys"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
+import { exactDurationMinutes } from "@/lib/completion-review"
 
 /** A task counts as "accurate" when |errorPct| ≤ this band. */
 export const ACCURATE_BAND_PCT = 10
@@ -94,7 +96,7 @@ export function getCalibrationPoints(tasks: Task[]): CalibrationPoint[] {
   for (const task of tasks) {
     if (!task.completed) continue
     const estimated = task.estimatedDuration ?? 0
-    const actual = task.actualDuration ?? 0
+    const actual = exactDurationMinutes(task) ?? 0
     if (estimated <= 0 || actual <= 0) continue
     points.push({
       taskId: task.id,
@@ -182,17 +184,6 @@ export function ratioDistribution(points: CalibrationPoint[]): RatioBucket[] {
   }))
 }
 
-function periodKeyFor(date: Date, period: CalibrationPeriod): string {
-  switch (period) {
-    case "day":
-      return formatLocalDateKey(date)
-    case "week":
-      return getWeekString(date)
-    case "month":
-      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
-  }
-}
-
 /**
  * Median ratio + bias per period, ordered chronologically. Points without a
  * resolvable completion date are skipped (can't be placed on the timeline).
@@ -204,7 +195,7 @@ export function calibrationTrend(
   const groups = new Map<string, CalibrationPoint[]>()
   for (const p of points) {
     if (!p.completedAt) continue
-    const key = periodKeyFor(p.completedAt, period)
+    const key = periodKeyFor(period, p.completedAt)
     const list = groups.get(key) ?? []
     list.push(p)
     groups.set(key, list)

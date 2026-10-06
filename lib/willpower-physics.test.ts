@@ -1,18 +1,23 @@
 import { describe, expect, it } from "vitest"
 import {
+  bodyPotentialParts,
   bouncingBallApex,
   bouncingBallTimeToApex,
   bouncingBallTimeToFloor,
   DEFAULT_WILLPOWER_PHYSICS,
   dishPeriod,
+  FLOOR_REST_VZ,
   gemVariation,
   kineticEnergy,
   makeWillpowerCrystal,
   makeWillpowerGem,
+  potentialEnergy,
+  predictBounceFlight,
   predictedArc,
   restOrbit,
   sanitizeWillpowerPhysics,
   sortWillpowerPaintOrder,
+  spinEnergy,
   stepWillpowerWorld,
   stirCrowdFactor,
   stirWillpower,
@@ -24,6 +29,7 @@ import {
   hitWillpowerGem,
   mapWillpowerPoint,
   viewWillpowerBody,
+  willpowerTelemetry,
   WILLPOWER_CRYSTAL_RADIUS,
   WILLPOWER_FRICTION,
   WILLPOWER_GRAVITY,
@@ -31,6 +37,7 @@ import {
   WILLPOWER_MAX_Z,
   WILLPOWER_PERSPECTIVE,
   WILLPOWER_RESTITUTION,
+  WILLPOWER_STIR_HOP,
   WILLPOWER_STIR_SPEED,
   WILLPOWER_STIR_TANGENTIAL,
   worldIsLive,
@@ -126,7 +133,7 @@ describe("willpower physics", () => {
     const stirred = stirWillpower(bodies, w, 90, 60, DEFAULT_WILLPOWER_PHYSICS, 42)
     expect(kineticEnergy(stirred)).toBeGreaterThan(kineticEnergy(bodies))
     expect(stirred.find((b) => b.id === "crystal")?.vx).toBe(0)
-    expect(stirred.find((b) => b.id === "a")!.vz).toBeGreaterThan(80)
+    expect(stirred.find((b) => b.id === "a")!.vz).toBeGreaterThan(200)
     const moved = stepWillpowerWorld(stirred, w, 1 / 60)
     expect(moved.find((b) => b.id === "a")).toBeTruthy()
     expect(moved).toHaveLength(3)
@@ -256,37 +263,46 @@ describe("willpower physics", () => {
     expect(mean).toBeGreaterThan(12)
   })
 
-  it("a hop follows bouncing-ball kinematics z = z0 + vz t − ½ g t²", () => {
-    const g = DEFAULT_WILLPOWER_PHYSICS.g
-    const start = stone({ id: "a", x: 90, y: 60, z: 0, vz: 400, restX: 90, restY: 60 })
-    const apex = bouncingBallApex(0, 400, g)
-    expect(apex).toBeCloseTo((400 * 400) / (2 * g), 5)
-    expect(bouncingBallTimeToApex(400, g)).toBeCloseTo(400 / g, 5)
+  it("a hop follows the drag-aware free-flight predictor the lab graph uses", () => {
+    const params = { ...DEFAULT_WILLPOWER_PHYSICS, dishK: 0, friction: 0, magnus: 0 }
+    const start = stone({ id: "a", x: 90, y: 60, z: 0, vz: 400, vx: 0, vy: 0, restX: 90, restY: 60 })
+    const predicted = predictBounceFlight(0, 400, params, { vx: 0, vy: 0 })
+    const vacuum = bouncingBallApex(0, 400, params.g)
+    expect(vacuum).toBeCloseTo((400 * 400) / (2 * params.g), 5)
+    expect(bouncingBallTimeToApex(400, params.g)).toBeCloseTo(400 / params.g, 5)
+    expect(predicted.apex).toBeLessThan(vacuum)
+    expect(predicted.apex).toBeGreaterThan(vacuum * 0.7)
     const w = worldOf({ stirAge: 99 })
     let next = [start]
     let peak = 0
     for (let i = 0; i < 80; i++) {
-      next = stepWillpowerWorld(next, w, 1 / 60)
+      next = stepWillpowerWorld(next, w, 1 / 60, params)
       peak = Math.max(peak, next[0]!.z)
     }
-    expect(peak).toBeGreaterThan(apex * 0.55)
-    expect(peak).toBeLessThan(apex * 1.15)
+    expect(peak).toBeGreaterThan(predicted.apex * 0.92)
+    expect(peak).toBeLessThan(predicted.apex * 1.08)
   })
 
   it("floor bounce reverses vz with coefficient e = −v⁺/v⁻", () => {
+    const params = { ...DEFAULT_WILLPOWER_PHYSICS, linearDrag: 0, quadDrag: 0, dishK: 0, friction: 0, magnus: 0 }
     const start = stone({ id: "a", x: 90, y: 60, z: 8, vz: -220, restX: 90, restY: 60, e: 0.8 })
     const w = worldOf({ stirAge: 99 })
     let next = [start]
     let bounced: WillpowerBody | null = null
+    let incoming = 0
     for (let i = 0; i < 12; i++) {
-      next = stepWillpowerWorld(next, w, 1 / 60)
-      if (next[0]!.vz > 0) {
+      const prev = next[0]!
+      next = stepWillpowerWorld(next, w, 1 / 60, params)
+      if (prev.vz < 0 && next[0]!.vz > 0) {
+        incoming = prev.vz
         bounced = next[0]!
         break
       }
     }
     expect(bounced).toBeTruthy()
-    expect(bounced!.vz).toBeGreaterThan(80)
+    // Exact e on the contact sample; gravity during the same substep can nibble ~1 px/s.
+    expect(bounced!.vz / -incoming).toBeCloseTo(0.8, 1)
+    expect(bounced!.vz).toBeGreaterThan(FLOOR_REST_VZ)
     expect(bounced!.squash).toBeGreaterThan(0)
   })
 
@@ -307,7 +323,7 @@ describe("willpower physics", () => {
     const low = bouncingBallApex(0, 300, 400)
     const highG = bouncingBallApex(0, 300, 1200)
     expect(low).toBeGreaterThan(highG * 2)
-    const arc = predictedArc(0, 300, 820)
+    const arc = predictedArc(0, 300, 820, 12, DEFAULT_WILLPOWER_PHYSICS)
     expect(arc.length).toBeGreaterThan(8)
     expect(arc[0]!.z).toBe(0)
     expect(Math.max(...arc.map((p) => p.z))).toBeGreaterThan(10)
@@ -326,6 +342,36 @@ describe("willpower physics", () => {
     const a = gemVariation("drink:2026-09-21", DEFAULT_WILLPOWER_PHYSICS)
     const b = gemVariation("other:2026-09-21", DEFAULT_WILLPOWER_PHYSICS)
     expect(a.mass).not.toBe(b.mass)
+  })
+
+  it("a full plate bounces, then rests, and does not start buzzing again", () => {
+    const w = worldOf({ stirAge: 0 })
+    const orbit = restOrbit(48, w.cx, w.cy, 36, 24)
+    const bodies = [
+      makeWillpowerCrystal(w),
+      ...orbit.map((p, i) => makeWillpowerGem(`s${i}`, p.x, p.y, w, DEFAULT_WILLPOWER_PHYSICS)),
+    ]
+    let next = stirWillpower(bodies, w, w.cx, w.cy, DEFAULT_WILLPOWER_PHYSICS, 11)
+    expect(kineticEnergy(next)).toBeGreaterThan(1000)
+    let airborne = 0
+    for (let i = 0; i < 40; i++) {
+      next = stepWillpowerWorld(next, w, 1 / 60)
+      airborne = Math.max(airborne, next.filter((b) => !b.pinned && b.z > 1).length)
+    }
+    expect(airborne).toBeGreaterThan(4)
+    for (let i = 0; i < 700; i++) next = stepWillpowerWorld(next, w, 1 / 60)
+    const gems = next.filter((b) => !b.pinned)
+    expect(worldIsLive(next)).toBe(false)
+    expect(kineticEnergy(gems)).toBeLessThan(30)
+    for (const b of gems) {
+      expect(Number.isFinite(b.x + b.y + b.vx + b.vy + b.vz)).toBe(true)
+      const e = ((b.x - w.cx) ** 2) / (w.rx * w.rx) + ((b.y - w.cy) ** 2) / (w.ry * w.ry)
+      expect(e).toBeLessThanOrEqual(1.85)
+    }
+    const quiet = kineticEnergy(gems)
+    for (let i = 0; i < 120; i++) next = stepWillpowerWorld(next, w, 1 / 60)
+    expect(kineticEnergy(next.filter((b) => !b.pinned))).toBeLessThan(quiet + 8)
+    expect(worldIsLive(next)).toBe(false)
   })
 
   it("a crowded stir stays live mid-air instead of freezing as a puck", () => {
@@ -363,10 +409,10 @@ describe("willpower physics", () => {
     const stepped = stepWillpowerWorld(dragged, worldOf({ stirAge: 99 }), 1 / 60)
     expect(stepped[0]!.x).toBeCloseTo(130, 0)
     expect(stepped[0]!.held).toBe(true)
-    const thrown = releaseWillpowerGem(stepped, "a", 200, -80)
+    const thrown = releaseWillpowerGem(stepped, "a", 200, -80, 40)
     expect(thrown[0]!.held).toBe(false)
     expect(thrown[0]!.vx).toBe(200)
-    expect(thrown[0]!.vz).toBeGreaterThan(0)
+    expect(thrown[0]!.vz).toBe(40)
   })
 
   it("lifts a grabbed gem in z when the pointer is above the dish", () => {
@@ -474,4 +520,66 @@ describe("willpower physics", () => {
     expect(Math.hypot(a.x - crystal.x, a.y - crystal.y)).toBeGreaterThanOrEqual(crystal.r + a.r - 0.8)
     expect(WILLPOWER_CRYSTAL_RADIUS).toBeGreaterThan(20)
   })
+
+  it("vacuum vertical law matches predictor when drag is off", () => {
+    const params = { ...DEFAULT_WILLPOWER_PHYSICS, linearDrag: 0, quadDrag: 0 }
+    const flight = predictBounceFlight(0, 360, params)
+    const vacuumApex = bouncingBallApex(0, 360, params.g)
+    expect(flight.apex).toBeCloseTo(vacuumApex, 0)
+    expect(flight.tApex).toBeCloseTo(bouncingBallTimeToApex(360, params.g), 1)
+    expect(flight.tFloor).toBeCloseTo(bouncingBallTimeToFloor(0, 360, params.g), 1)
+  })
+
+  it("potential U matches −∇U/m = a_dish and includes mass on the spring", () => {
+    const w = worldOf()
+    const gem = stone({ id: "a", x: w.cx + 40, y: w.cy, z: 10, mass: 2 })
+    const parts = bodyPotentialParts(gem, w, DEFAULT_WILLPOWER_PHYSICS)
+    expect(parts.grav).toBeCloseTo(2 * DEFAULT_WILLPOWER_PHYSICS.g * 10, 5)
+    expect(parts.dish).toBeCloseTo(0.5 * 2 * DEFAULT_WILLPOWER_PHYSICS.dishK * 40 * 40, 5)
+    expect(parts.total).toBeCloseTo(parts.grav + parts.dish, 5)
+    expect(potentialEnergy([gem], w, DEFAULT_WILLPOWER_PHYSICS)).toBeCloseTo(parts.total, 5)
+    // a_dish = −κ r ⇒ |a| = κ · 40
+    expect(DEFAULT_WILLPOWER_PHYSICS.dishK * 40).toBeCloseTo(DEFAULT_WILLPOWER_PHYSICS.dishK * 40, 5)
+  })
+
+  it("telemetry momentum is |Σ m v| and ΣE includes spin K", () => {
+    const w = worldOf()
+    const a = stone({ id: "a", x: 80, y: 60, vx: 10, mass: 2, omega: 5, r: 6 })
+    const b = stone({ id: "b", x: 100, y: 60, vx: -4, mass: 1, omega: 0, r: 6 })
+    const tel = willpowerTelemetry([a, b], w, DEFAULT_WILLPOWER_PHYSICS)
+    expect(tel.momentum).toBeCloseTo(Math.abs(2 * 10 + 1 * -4), 5)
+    const spin = spinEnergy([a, b])
+    expect(spin).toBeGreaterThan(0)
+    expect(tel.energy).toBeCloseTo(tel.ke + tel.pe + spin, 5)
+  })
+
+  it("default stir hop clears about a gem diameter of z at n=1 and still hops when crowded", () => {
+    expect(WILLPOWER_STIR_HOP).toBe(480)
+    const w = worldOf()
+    const one = stirWillpower(
+      [makeWillpowerCrystal(w), makeWillpowerGem("solo", w.cx, w.cy - 28, w, DEFAULT_WILLPOWER_PHYSICS)],
+      w,
+      w.cx,
+      w.cy,
+      DEFAULT_WILLPOWER_PHYSICS,
+      3,
+    )
+    const solo = one.find((b) => b.id === "solo")!
+    const apex1 = predictBounceFlight(0, solo.vz, DEFAULT_WILLPOWER_PHYSICS).apex
+    expect(solo.vz).toBeGreaterThan(250)
+    expect(apex1).toBeGreaterThan(12) // ≥ gem diameter (2r = 12)
+
+    const orbit = restOrbit(48, w.cx, w.cy, 36, 24)
+    const crowded = [
+      makeWillpowerCrystal(w),
+      ...orbit.map((p, i) => makeWillpowerGem(`s${i}`, p.x, p.y, w, DEFAULT_WILLPOWER_PHYSICS)),
+    ]
+    const stirred = stirWillpower(crowded, w, w.cx, w.cy, DEFAULT_WILLPOWER_PHYSICS, 11)
+    const hops = stirred.filter((b) => !b.pinned && b.vz > 180)
+    expect(hops.length).toBeGreaterThan(30)
+    const meanVz = hops.reduce((s, b) => s + b.vz, 0) / hops.length
+    const apexN = predictBounceFlight(0, meanVz, DEFAULT_WILLPOWER_PHYSICS).apex
+    expect(apexN).toBeGreaterThan(10)
+  })
+
 })

@@ -16,7 +16,6 @@
  */
 
 import {
-  assignedPenIds,
   entryDisplayName,
   entryMinutes,
   formatDuration,
@@ -143,18 +142,4 @@ export function renderPenActionTitle(
 /** Id of the Done row for one block (or a midnight-crossing span). */
 export function penActionLogId(entry: Pick<TimeEntry, "id" | "spanId">): string {
   return `pen-action-${entry.spanId || entry.id}`
-}
-
-export function entriesWithActionFormats(
-  entries: TimeEntry[],
-  scopes: TrackScope[],
-): TimeEntry[] {
-  const byId = new Map<string, TrackPen>()
-  for (const scope of scopes) {
-    for (const pen of scope.pens) byId.set(pen.id, pen)
-  }
-  return entries.filter((entry) => {
-    if (entry.generatedBy?.kind === "sleep") return false
-    return assignedPenIds(entry).some((id) => (byId.get(id)?.actionFormats?.length ?? 0) > 0)
-  })
 }

@@ -5,6 +5,11 @@ import {
   migrateModulePlatform,
   migrateTitleAsFieldOfRecord,
   migrateHonestItemTypes,
+  migrateLegacyStageStatus,
+  migrateScheduleableOptIn,
+  migrateModuleListsOutOfScheduler,
+  migratePastAssignmentsToUndone,
+  migrateUtcMidnightScheduleDates,
 } from "@/lib/migrations"
 import { countsInDone, isTaskItem } from "@/lib/item-utils"
 import type { Folder } from "@/lib/types"
@@ -103,7 +108,7 @@ describe("task-store v10 migrateStripKanbanListDisplays", () => {
 /**
  * Pre-v7 vault shape: no `type`, legacy category/categories keys, a mix of
  * inbox / furniture / operation / Next Actions rows. Round-trip through the
- * same named steps the persist hook runs (v7→v12) without deleting description.
+ * same named steps the persist hook runs (v7→v13) without deleting description.
  */
 function legacyVaultBlob() {
   return {
@@ -139,10 +144,11 @@ function migrateLegacyVault(blob: ReturnType<typeof legacyVaultBlob>) {
   state = migrateStripKanbanListDisplays(state)
   state = migrateTitleAsFieldOfRecord(state)
   state = migrateHonestItemTypes(state)
+  state = migrateLegacyStageStatus(state)
   return state
 }
 
-describe("persist v7–v12 round-trip of a real-looking vault", () => {
+describe("persist v7–v13 round-trip of a real-looking vault", () => {
   it("infers type without dropping description or rewriting explicit types", () => {
     const result = migrateLegacyVault(legacyVaultBlob())
     const byId = Object.fromEntries(result.tasks.map((t: { id: string }) => [t.id, t]))
@@ -171,5 +177,139 @@ describe("persist v7–v12 round-trip of a real-looking vault", () => {
     expect(isTaskItem(na, folders)).toBe(true)
     expect(countsInDone({ ...rug, completed: true }, folders)).toBe(false)
     expect(countsInDone({ ...na, completed: true }, folders)).toBe(true)
+  })
+})
+
+describe("task-store v14 migrateScheduleableOptIn", () => {
+  it("turns folder defaults off and leaves lists that were already schedulable", () => {
+    const next = migrateScheduleableOptIn({
+      folders: [
+        { id: "work", name: "Work", scheduleable: true },
+        { id: "reading", name: "Reading", scheduleable: false },
+      ],
+      lists: [
+        { id: "desk", name: "Desk", scheduleable: true },
+        { id: "books", name: "Books" },
+        { id: "__all-items__work", name: "All Items", scheduleable: true },
+      ],
+    })
+    expect(next.folders.map((f) => (f as { scheduleable?: boolean }).scheduleable)).toEqual([false, false])
+    expect(next.lists.map((l) => (l as { id: string; scheduleable?: boolean }).scheduleable)).toEqual([
+      true,
+      undefined,
+      false,
+    ])
+  })
+})
+
+describe("task-store v15 migrateModuleListsOutOfScheduler", () => {
+  it("turns off module-created lists and leaves a list someone already sent", () => {
+    const next = migrateModuleListsOutOfScheduler({
+      lists: [
+        { id: "itinerary", name: "Cusco", createdByModuleId: "trip", scheduleable: true },
+        { id: "desk", name: "Desk", scheduleable: true },
+        { id: "already", name: "Quiet", createdByModuleId: "trip", scheduleable: false },
+      ],
+    })
+    expect(next.lists.map((l) => (l as { scheduleable?: boolean }).scheduleable)).toEqual([false, true, false])
+  })
+})
+
+describe("task-store v16 migratePastAssignmentsToUndone", () => {
+  it("records a past live week and leaves the schedule field", () => {
+    const now = new Date(2026, 8, 26, 12)
+    const next = migratePastAssignmentsToUndone(
+      {
+        tasks: [
+          {
+            id: "old",
+            completed: false,
+            scheduledWeek: "2026-09-14_2026-09-20",
+            description: "old",
+            createdAt: now,
+          },
+          {
+            id: "now",
+            completed: false,
+            scheduledWeek: "2026-09-21_2026-09-27",
+            description: "now",
+            createdAt: now,
+          },
+          {
+            id: "done",
+            completed: true,
+            scheduledWeek: "2026-09-07_2026-09-13",
+            description: "done",
+            createdAt: now,
+          },
+        ],
+      },
+      now,
+    )
+    const old = next.tasks?.[0] as { scheduledWeek?: string; schedulePlacements?: { period: string; value: string; resolved?: string }[] }
+    expect(old.scheduledWeek).toBe("2026-09-14_2026-09-20")
+    expect(old.schedulePlacements).toEqual([{ period: "week", value: "2026-09-14_2026-09-20" }])
+    expect((next.tasks?.[1] as { schedulePlacements?: unknown }).schedulePlacements).toBeUndefined()
+    expect((next.tasks?.[2] as { schedulePlacements?: unknown }).schedulePlacements).toBeUndefined()
+  })
+})
+
+describe("task-store v17 migrateUtcMidnightScheduleDates", () => {
+  it("moves UTC-midnight schedule dates onto that UTC calendar day and leaves everything else", () => {
+    const createdAt = "2026-09-01T08:30:00.000Z"
+    const keptDates = ["2026-09-21T00:00:00.000Z"]
+    const next = migrateUtcMidnightScheduleDates({
+      lists: [{ id: "reading", name: "Reading" }],
+      tasks: [
+        {
+          id: "shifted",
+          description: "Pick Monday",
+          lists: ["reading"],
+          createdAt,
+          scheduledDate: "2026-09-21T00:00:00.000Z",
+          deadline: "2026-09-22T00:00:00.000Z",
+          schedulingConstraints: {
+            mustBeDoneAfter: "2026-09-20T00:00:00.000Z",
+            mustBeDoneBefore: new Date("2026-09-30T18:00:00.000Z"),
+            timeOfDayPreference: "morning",
+            canOnlyBeDoneOnDates: keptDates,
+          },
+        },
+        {
+          id: "timed",
+          description: "Already local",
+          scheduledDate: new Date(2026, 8, 21, 15, 0),
+          createdAt: new Date("2026-06-01T08:30:00.000Z"),
+        },
+      ],
+    })
+
+    const shifted = next.tasks?.[0] as {
+      description: string
+      lists: string[]
+      createdAt: string
+      scheduledDate: Date
+      deadline: Date
+      schedulingConstraints: {
+        mustBeDoneAfter: Date
+        mustBeDoneBefore: Date
+        timeOfDayPreference: string
+        canOnlyBeDoneOnDates: string[]
+      }
+    }
+    expect(shifted.description).toBe("Pick Monday")
+    expect(shifted.lists).toEqual(["reading"])
+    expect(shifted.createdAt).toBe(createdAt)
+    expect(shifted.scheduledDate).toEqual(new Date(2026, 8, 21))
+    expect(shifted.deadline).toEqual(new Date(2026, 8, 22))
+    expect(shifted.schedulingConstraints.mustBeDoneAfter).toEqual(new Date(2026, 8, 20))
+    expect(shifted.schedulingConstraints.mustBeDoneBefore).toEqual(new Date("2026-09-30T18:00:00.000Z"))
+    expect(shifted.schedulingConstraints.timeOfDayPreference).toBe("morning")
+    expect(shifted.schedulingConstraints.canOnlyBeDoneOnDates).toBe(keptDates)
+    expect(next.lists).toEqual([{ id: "reading", name: "Reading" }])
+
+    const timed = next.tasks?.[1] as { scheduledDate: Date; createdAt: Date }
+    expect(timed.scheduledDate).toEqual(new Date(2026, 8, 21, 15, 0))
+    expect(timed.createdAt).toEqual(new Date("2026-06-01T08:30:00.000Z"))
   })
 })

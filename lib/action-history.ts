@@ -8,16 +8,34 @@
  *
  * One snapshot covers the stores that chase each other (Tracking entries, the
  * sleep log, the live work session, the live pen-color session, habit
- * completions, points, tasks). Sleep
- * sync and habit-tracking sync rewrite derived rows after a paint; restoring
- * only the grid would let them resurrect the stroke. Capturing the cluster
- * means one Cmd+Z returns the Home dashboard to the moment before the action.
+ * completions, points, tasks). Sleep sync and habit-tracking sync rewrite
+ * derived rows after a paint; restoring only the grid would let them resurrect
+ * the stroke. Capturing the cluster means one Cmd+Z returns the Home dashboard
+ * to the moment before the action.
+ *
+ * The grid commits on the keydown. Tracking entries, scopes, tags, and the
+ * removal tombstones land synchronously. Sleep, habits, points, and tasks are
+ * the same snapshot, applied on the next turn so a coverage scan cannot sit
+ * in front of the paint. `isRestoring()` stays set until that bookkeeping
+ * finishes, so a listener cannot write the stroke back after the flag would
+ * have dropped. Tests apply the whole snapshot before `undoLastAction` returns.
+ *
+ * An undone block is listed in `removedEntryIds`. The persist union, a late
+ * rehydrate, and any later `entries` write that still carries that id all
+ * drop it. Redo clears the tombstone in the same setState, so the block stays.
  *
  * Snapshots keep the *references* the stores already hold. Every write here
  * replaces those objects rather than mutating them, so the previous array is
  * still the previous state. `withoutUndo` silences ticks and other bookkeeping
  * that should not become their own undo steps. `runAsAction` collapses a burst
  * (Mon–Fri fill, start/stop work) into one step.
+ *
+ * Derived sync (sleep, habits, pen actions, coverage) must read `isRestoring()`
+ * and stand down. A restore already contains the world from before the action;
+ * letting those listeners rewrite entries or nights on the way back re-applies
+ * the stroke and can recurse until the tab stops painting. A nested
+ * undo/redo during the apply is ignored. A later chord flushes any deferred
+ * bookkeeping and then pops the next step.
  */
 "use client"
 
@@ -38,41 +56,148 @@ export interface HistoryAction {
 
 let undoStack: HistoryAction[] = []
 let redoStack: HistoryAction[] = []
-let restoring = false
+/** Inside the synchronous apply. A nested undo/redo returns without popping. */
+let applying = false
+/**
+ * Tracking is already restored and the rest of the snapshot is waiting for the
+ * next turn. Writers still stand down. A new chord flushes this first.
+ */
+let settling = false
 let silenced = 0
 let batchDepth = 0
 let recordedThisBatch = false
 
-function captureWorld(): () => void {
-  const tracking = useTimeTrackingStore.getState()
-  const nights = useSleepStore.getState().nights
-  const session = useWorkSessionStore.getState().session
-  const penSession = usePenColorSessionStore.getState().session
-  const habits = useHabitsStore.getState()
-  const pointsHistory = usePointsStore.getState().pointsHistory
-  const tasks = useTaskStore.getState().tasks
+const REMOVED_ENTRY_CAP = 4000
 
-  const entries = tracking.entries
-  const scopes = tracking.scopes
-  const tags = tracking.tags
-  const weeklyData = habits.weeklyData
-  const weeklyHabitData = habits.weeklyHabitData
-  const monthlyHabitData = habits.monthlyHabitData
+type WorldSnap = {
+  entries: ReturnType<typeof useTimeTrackingStore.getState>["entries"]
+  scopes: ReturnType<typeof useTimeTrackingStore.getState>["scopes"]
+  tags: ReturnType<typeof useTimeTrackingStore.getState>["tags"]
+  removedEntryIds: string[]
+  nights: ReturnType<typeof useSleepStore.getState>["nights"]
+  session: ReturnType<typeof useWorkSessionStore.getState>["session"]
+  penSession: ReturnType<typeof usePenColorSessionStore.getState>["session"]
+  weeklyData: ReturnType<typeof useHabitsStore.getState>["weeklyData"]
+  weeklyHabitData: ReturnType<typeof useHabitsStore.getState>["weeklyHabitData"]
+  monthlyHabitData: ReturnType<typeof useHabitsStore.getState>["monthlyHabitData"]
+  quarterlyHabitData: ReturnType<typeof useHabitsStore.getState>["quarterlyHabitData"]
+  pointsHistory: ReturnType<typeof usePointsStore.getState>["pointsHistory"]
+  tasks: ReturnType<typeof useTaskStore.getState>["tasks"]
+}
 
-  return () => {
-    useTimeTrackingStore.setState({ entries, scopes, tags })
-    useSleepStore.setState({ nights })
-    useWorkSessionStore.setState({ session })
-    usePenColorSessionStore.setState({ session: penSession })
-    useHabitsStore.setState({ weeklyData, weeklyHabitData, monthlyHabitData })
-    usePointsStore.setState({ pointsHistory })
-    useTaskStore.setState({ tasks })
+let pendingBook: (() => void) | null = null
+let bookTimer: ReturnType<typeof setTimeout> | null = null
+
+function capRemoved(ids: Set<string>): string[] {
+  const list = [...ids]
+  return list.length > REMOVED_ENTRY_CAP ? list.slice(list.length - REMOVED_ENTRY_CAP) : list
+}
+
+/** Ids the live grid no longer has must stay tombstoned so a union cannot repaint them. */
+function applyTracking(snap: WorldSnap): void {
+  const current = useTimeTrackingStore.getState()
+  const live = new Set(snap.entries.map((entry) => entry.id))
+  const removed = new Set(snap.removedEntryIds)
+  for (const entry of current.entries) {
+    if (!live.has(entry.id)) removed.add(entry.id)
+  }
+  for (const id of live) removed.delete(id)
+  useTimeTrackingStore.setState({
+    entries: snap.entries,
+    scopes: snap.scopes,
+    tags: snap.tags,
+    removedEntryIds: capRemoved(removed),
+  })
+}
+
+function applyBookkeeping(snap: WorldSnap): void {
+  useSleepStore.setState({ nights: snap.nights })
+  useWorkSessionStore.setState({ session: snap.session })
+  usePenColorSessionStore.setState({ session: snap.penSession })
+  useHabitsStore.setState({
+    weeklyData: snap.weeklyData,
+    weeklyHabitData: snap.weeklyHabitData,
+    monthlyHabitData: snap.monthlyHabitData,
+    quarterlyHabitData: snap.quarterlyHabitData,
+  })
+  usePointsStore.setState({ pointsHistory: snap.pointsHistory })
+  useTaskStore.setState({ tasks: snap.tasks })
+}
+
+/** Browser keydowns paint the grid before habit/points/task bookkeeping. Tests stay synchronous. */
+function deferBookkeeping(): boolean {
+  return typeof window !== "undefined" && process.env.NODE_ENV !== "test"
+}
+
+function flushDeferred(): void {
+  if (bookTimer != null) {
+    clearTimeout(bookTimer)
+    bookTimer = null
+  }
+  const book = pendingBook
+  pendingBook = null
+  if (!book) {
+    settling = false
+    return
+  }
+  applying = true
+  try {
+    book()
+  } finally {
+    applying = false
+    settling = true
+    queueMicrotask(() => {
+      if (pendingBook || applying) return
+      settling = false
+    })
   }
 }
 
-/** True while a restore is applying, so nested writes do not push a new step. */
+function scheduleBookkeeping(book: () => void): void {
+  pendingBook = book
+  settling = true
+  if (bookTimer != null) clearTimeout(bookTimer)
+  bookTimer = setTimeout(() => {
+    bookTimer = null
+    flushDeferred()
+  }, 0)
+}
+
+function captureWorld(): () => void {
+  const tracking = useTimeTrackingStore.getState()
+  const habits = useHabitsStore.getState()
+  const snap: WorldSnap = {
+    entries: tracking.entries,
+    scopes: tracking.scopes,
+    tags: tracking.tags,
+    removedEntryIds: tracking.removedEntryIds ?? [],
+    nights: useSleepStore.getState().nights,
+    session: useWorkSessionStore.getState().session,
+    penSession: usePenColorSessionStore.getState().session,
+    weeklyData: habits.weeklyData,
+    weeklyHabitData: habits.weeklyHabitData,
+    monthlyHabitData: habits.monthlyHabitData,
+    quarterlyHabitData: habits.quarterlyHabitData,
+    pointsHistory: usePointsStore.getState().pointsHistory,
+    tasks: useTaskStore.getState().tasks,
+  }
+
+  return () => {
+    applyTracking(snap)
+    const book = () => applyBookkeeping(snap)
+    if (deferBookkeeping()) scheduleBookkeeping(book)
+    else book()
+  }
+}
+
+/**
+ * True while a restore is applying or its deferred bookkeeping has not landed.
+ * Nested writes must not push a step or repaint the grid from the stroke that
+ * was just undone. A nested undo/redo is ignored only for the synchronous apply;
+ * `undoLastAction` flushes deferred bookkeeping and then pops.
+ */
 export function isRestoring(): boolean {
-  return restoring
+  return applying || settling
 }
 
 /**
@@ -80,7 +205,7 @@ export function isRestoring(): boolean {
  * restoring, silenced, or already captured inside `runAsAction`.
  */
 export function rememberWorld(label: string): void {
-  if (restoring || silenced > 0) return
+  if (applying || settling || silenced > 0) return
   if (batchDepth > 0 && recordedThisBatch) return
 
   undoStack.push({ label, restore: captureWorld() })
@@ -94,7 +219,7 @@ export function rememberWorld(label: string): void {
  * the start, before any of `fn` writes.
  */
 export function runAsAction<T>(label: string, fn: () => T): T {
-  if (restoring || silenced > 0) return fn()
+  if (applying || settling || silenced > 0) return fn()
   batchDepth++
   try {
     rememberWorld(label)
@@ -116,28 +241,33 @@ export function withoutUndo<T>(fn: () => T): T {
 }
 
 export function undoLastAction(): boolean {
+  // A listener that runs because this restore wrote state must not pop again.
+  if (applying) return false
+  flushDeferred()
   const action = undoStack.pop()
   if (!action) return false
   const redoRestore = captureWorld()
-  restoring = true
+  applying = true
   try {
     action.restore()
   } finally {
-    restoring = false
+    applying = false
   }
   redoStack.push({ label: action.label, restore: redoRestore })
   return true
 }
 
 export function redoLastAction(): boolean {
+  if (applying) return false
+  flushDeferred()
   const action = redoStack.pop()
   if (!action) return false
   const undoRestore = captureWorld()
-  restoring = true
+  applying = true
   try {
     action.restore()
   } finally {
-    restoring = false
+    applying = false
   }
   undoStack.push({ label: action.label, restore: undoRestore })
   return true
@@ -161,9 +291,13 @@ export function peekRedoLabel(): string | undefined {
 
 /** Tests and store resets. */
 export function resetActionHistory(): void {
+  if (bookTimer != null) clearTimeout(bookTimer)
+  bookTimer = null
+  pendingBook = null
   undoStack = []
   redoStack = []
-  restoring = false
+  applying = false
+  settling = false
   silenced = 0
   batchDepth = 0
   recordedThisBatch = false

@@ -5,6 +5,7 @@ import {
   migrateModulePlatform,
   migrateTitleAsFieldOfRecord,
   migrateHonestItemTypes,
+  migrateLegacyStageStatus,
   inferMissingItemType,
 } from "@/lib/migrations"
 
@@ -200,5 +201,24 @@ describe("migrateHonestItemTypes (v12)", () => {
     })
     expect(result.tasks[0].type).toBe("item")
     expect(result.tasks[0].description).toBe("Rug")
+  })
+})
+
+describe("migrateLegacyStageStatus (v13)", () => {
+  it("drops lifecycle words on status and rewrites completed to done", () => {
+    const clarified = { id: "a", description: "Open", status: "clarified", stage: "clarified", completed: false }
+    const finished = { id: "b", description: "Closed", status: "completed", stage: "inbox", completed: true }
+    const done = { id: "c", description: "Already", status: "done", completed: true }
+    const state = { tasks: [clarified, finished, done] }
+    const result = migrateLegacyStageStatus(state)
+    expect(result.tasks[0]).not.toHaveProperty("status")
+    expect(result.tasks[0]).toMatchObject({ stage: "clarified", completed: false })
+    expect(result.tasks[1]).toMatchObject({ status: "done", completed: true, stage: "inbox" })
+    expect(result.tasks[2]).toBe(done)
+  })
+
+  it("is a no-op when every status is already a completion status or absent", () => {
+    const state = { tasks: [{ id: "a", status: "active" }, { id: "b", description: "none" }] }
+    expect(migrateLegacyStageStatus(state)).toBe(state)
   })
 })

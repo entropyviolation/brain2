@@ -5,8 +5,9 @@
  * the Lists tab) that backs its **To do** panel. That is what makes an
  * operation's work *items* rather than a bespoke data structure: they are
  * ordinary tasks with `lists: [operationList.id]`, so they inherit the item
- * model (item types, attributes, detail panels, scheduling) and show up in the
- * Lists tab, All Items, search, and the scheduler like anything else.
+ * model (item types, attributes, detail panels) and show up in the Lists tab,
+ * All Items, and search. The list is not schedulable unless someone turns
+ * that on to send every item to the Scheduler.
  *
  * The list is created lazily on the first visit to the Tasks panel and linked
  * from the operation through `OPERATION_ATTR.taskListId`. Phase steps and part
@@ -42,7 +43,7 @@ function ensureOperationsFolder(): Folder {
     listIds: [],
     color: "#0f766e",
     description: "One list per operation. Items here are the operation's Tasks panel.",
-    scheduleable: true,
+    scheduleable: false,
     // Operation work is real work: keep it in the global All directory.
     hiddenFromGlobalAll: false,
   }
@@ -82,7 +83,7 @@ export function ensureOperationTaskList(operationId: string): List | null {
       description: `Tasks and items for the "${operationTaskListName(operation.description)}" operation.`,
       itemTypeId: "task",
       itemLabel: "task",
-      scheduleable: true,
+      scheduleable: false,
       hiddenFromGlobalAll: false,
       enabledDisplays: ["default", "checklist", "table", "spreadsheet"],
     }

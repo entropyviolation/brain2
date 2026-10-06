@@ -225,12 +225,12 @@ Basics
 
 What you can do (families)
 • Plans — plan for rn:, read plan(s) for today, agenda
-• Reviews — gm / good morning, review, reviews
-• Habits — hemisync, habit keywords, habit: / did: / h
+• Rituals — gm / gn / rituals / review / ritual start week
+• Habits — dh: keyword, habit: / did: / h (bare keywords do not log)
 • Grocery — groc (dump/add/pin); got / x / bought / check off
 • Needed — needed: batteries · get: then lines → list "needed"
 • To-do — to do today:, do: / next action:, read to do today
-• Log — log: / log- events; smoked weed, drank water, ate …, took …
+• Log — log: / intake: / st: / so: / transit:; smoked weed, drank water, ate …, took …
 • Monitor — currently / stopped / switched to
 • Capture / add — plain text, qa:, add:, inbox:, idea:, quick add: (-mb / -monkey → Monkey brain)
 • Bulk — bulk: / bulk add; Name: dumps; before 9/12:
@@ -304,8 +304,8 @@ What it is
   (editable on each habit) or habit: / did: / h.
 
 How to use it
-• hemisync — done (preset)
-• read 30 pages  ·  exercise 15 min …  ·  chess score 355
+• dh: hemisync — done (preset). Bare hemisync is not a habit log
+• dh: read 30 pages  ·  dh: exercise 15 min …  ·  dh: chess score 355
 • habit: exercise 30  |  did: stretch  |  h stretch
 • habits  |  hi  |  habit board — dump today's board
 Optional yesterday. Notes stamp: from text message at {time}.
@@ -314,10 +314,16 @@ Send "habit commands" for the glossary.`,
 
   log: `${BIM_SHORT} · Discrete event log
 What it is
-  Instant tracker events (not painted intervals). Always labeled from text pipeline.
+  Tracking notes on Activity. Points are vertical lines. Ranges are blocks.
+  Click either one to edit the note and the time. Always labeled from text pipeline.
+  Clocks use the machine's timezone on the send date.
 
 How to use it
-• log: drink water  |  log-something happening
+• log: drink water  |  log: left home at 3:30  |  log: shower 7:30 - 7:45
+• log: shower 10m  — just finished (end is send time)
+• log: START walk  |  log: END walk 5:00
+• intake: 1 dab dab pen  — point only, no duration
+• st: from: talking to elijah to: cleaning  |  so: tidy the room  |  transit: the store
 • Presets (Settings → Discrete event triggers):
   smoked weed · drank water · ate {item} · took {item}
 
@@ -363,14 +369,19 @@ How to use it
 
 Send "ingest commands" or "add commands" or "bulk commands".`,
 
-  review: `${BIM_SHORT} · Reviews & morning (GM)
+  review: `${BIM_SHORT} · Rituals (morning / night / start / end)
 What it is
-  Start-of-day morning review over text, and end-of-period reviews.
+  Period rituals over text and in the app. Day: morning (sun) + night (moon).
+  Week–year: Start ritual (plan) + Review ritual (end).
 
-Morning — text gm or good morning
+Board — text rituals or reviews
+  Lists every available/undone slot with status, the Telegram command, and the
+  in-app path (Header → Rituals).
+
+Morning — text gm or good morning (same as ritual morning)
 1. Sleep (bed / wake / dream) — or reply "all nighter" to lift habits with an all-nighter block
 2. Five affirmations, one at a time (Lists "affirmations") — voice note advances
-3. Today's to-do: add items (or no/skip), then pick 3–5 priorities
+3. Today's to-do: add lines and/or "rm 1 3" to take numbers off today, then required tasks (numbers and/or new lines, or skip), then pick 3–5 priorities
 4. Daily habits: optionally pick 1–3 to prioritize (or skip / no / n)
 5. Go through to do list — one item at a time. Six slots:
      tier  duration  points  importance  resistance  excitement
@@ -378,18 +389,29 @@ Morning — text gm or good morning
      A+ - 40 - 10 0
    Or skip that item. Empty list: BIM says so and moves on.
 6. Plaintext day plan — appends today's Plan log stamped "from text" (or skip / no / n)
-7. Circumstances — numbers 1–4 (must-do, must-not, events, excitement)
+7. Circumstances — numbers 1–3 (must-not, events, excitement). Required tasks are asked with the to-do list.
 8. Why is today going to be the best day ever?
 9. Ten things you are grateful for today
 
+Night — text gn / good night / night / ritual night / review today
+  End-of-day walk: unfinished → summary → gratitude → plan → went well / improve / learned → tomorrow.
+
+Start — text ritual start week|month|quarter|year
+  Plan the current period: undone from last → priorities → must-do → intentions → plan → gratitude.
+
+End / Review — text review week|month|quarter|year · ritual end <period>
+  Clarify, push, document, and evaluate the just-ended period.
+
 Also
-• reviews — board · review / review today / review day|week|month|quarter|year
-• cancel / quit / nevermind — stop a ritual
-• skip or blank moves a step on
+• Each morning answer is saved immediately. Send skip or next to leave a question empty. A blank message waits. Live Location is paused during the review and resumes when it ends.
+• If today already has morning answers, gm asks: 1 start over · 2 continue · 3 jump (that menu only)
+• STOP (all caps) quits morning and saves. Shortcuts stay off until then — m, mood, inbox, and cancel are just text
+• cancel / quit / nevermind — leave a night / start / end walk (not morning)
+• Legacy reviews / review still work; rituals / ritual are preferred
 
-Desktop Morning Review mirrors the same flow.
+Desktop: Header → Rituals (sun/moon for day; Start / Review for other periods).
 
-Send "review commands" or "gm commands".`,
+Send "review commands" or "ritual commands" or "gm commands".`,
 
   track: `${BIM_SHORT} · Tracking
 What it is
@@ -406,8 +428,9 @@ How to use it
 Send "track commands" for the glossary.`,
 
   note: `${BIM_SHORT} · Notes
-• n stuck in aisle 4  ·  note:  ·  memo:  ·  jot:
-• day: tired  ·  daynote:  ·  dnote:  ·  n day:
+• n stuck in aisle 4  ·  note:  ·  memo:  ·  jot: — a point at send time
+  Also appended to the block covering that minute. A second line is the note.
+• day: tired  ·  daynote:  ·  dnote:  ·  n day: — day jot, not a tick
 • day alone → today
 
 Send "note commands".`,
@@ -420,9 +443,13 @@ Send "note commands".`,
 Send "sleep commands".`,
 
   gps: `${BIM_SHORT} · GPS / location pin
-• gps: Home  ·  geo:
+• gps: Home  ·  geo:  ·  gps-log:
+• at: 2026-10-05T19:04:00  stamps the sample
+• Paints up to that minute, not the rest of the day
 • Telegram Live Location in the bot chat
-• Arrive/Leave Shortcut → gps: lines
+• A venue pin is a shared place, not where you are
+• Arrive/Leave Shortcut stores a log and sends it when it can
+• Message ingest hides these unless you show GPS
 
 Send "gps commands".`,
 

@@ -53,7 +53,7 @@ export interface PointsLedgerEntry {
  * Only `day`/`week`/`month` carry plan text. `text` on this seam is the
  * formatted dump; writers append one new entry.
  */
-export type PlanTextPeriod = Extract<ReviewPeriod, "day" | "week" | "month">
+export type PlanTextPeriod = Extract<ReviewPeriod, "day" | "week" | "month" | "quarter">
 
 export interface PlanTextEntry {
   period: PlanTextPeriod

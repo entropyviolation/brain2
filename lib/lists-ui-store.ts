@@ -28,6 +28,11 @@ interface ListsUiState {
   homePinned: string[]
   // Show the auto smart lists (daily/weekly/monthly) in Home.
   showSmartLists: boolean
+  /**
+   * Global All directory: show period To do / Done / Undone ledger lists
+   * (`isPeriodLedgerListId`). Default true — nothing disappears until unchecked.
+   */
+  showPeriodLedgerListsInAll: boolean
   // Per-list chosen display type for its contents.
   listDisplay: Record<string, ListDisplay>
   // Last-used folder content view.
@@ -66,6 +71,7 @@ interface ListsUiState {
   toggleHomePin: (id: string) => void
   isPinned: (id: string) => boolean
   setShowSmartLists: (v: boolean) => void
+  setShowPeriodLedgerListsInAll: (v: boolean) => void
   setListDisplay: (id: string, d: ListDisplay) => void
   setFolderView: (v: FolderView) => void
   addLibraryIcon: (dataUrl: string) => void
@@ -99,6 +105,7 @@ export const useListsUiStore = create<ListsUiState>()(
     (set, get) => ({
       homePinned: [],
       showSmartLists: true,
+      showPeriodLedgerListsInAll: true,
       listDisplay: {},
       folderView: "icons",
       iconLibrary: [],
@@ -120,6 +127,7 @@ export const useListsUiStore = create<ListsUiState>()(
         })),
       isPinned: (id) => get().homePinned.includes(id),
       setShowSmartLists: (v) => set({ showSmartLists: v }),
+      setShowPeriodLedgerListsInAll: (v) => set({ showPeriodLedgerListsInAll: v }),
       setListDisplay: (id, d) => set((state) => ({ listDisplay: { ...state.listDisplay, [id]: d } })),
       setFolderView: (v) => set({ folderView: v }),
       addLibraryIcon: (dataUrl) =>
@@ -214,7 +222,7 @@ export const useListsUiStore = create<ListsUiState>()(
     }),
     {
       name: persistKey("lists-ui"),
-      version: 5,
+      version: 6,
       storage: createCogsJSONStorage(),
       migrate: (persistedState, version) => {
         const state = { ...((persistedState ?? {}) as Record<string, unknown>) }
@@ -228,6 +236,9 @@ export const useListsUiStore = create<ListsUiState>()(
         }
         if (version < 5) {
           state.iconLayoutMode = (state.iconLayoutMode as Record<string, "auto" | "freeform">) ?? {}
+        }
+        if (version < 6) {
+          state.showPeriodLedgerListsInAll = true
         }
         return state as unknown as ListsUiState
       },

@@ -4,7 +4,7 @@
 import type { Folder, ItemTypeDefinition, List, Task } from "@/lib/types"
 import { assignTaskToFolderList, isFolderAllItemsCategoryId } from "@/lib/folder-all-items"
 import { withListMembership } from "@/lib/item-utils"
-import { isNaPeriodSmartCategoryId } from "@/lib/scheduled-lists-sync"
+import { isNaPeriodSmartCategoryId, isPeriodLedgerListId } from "@/lib/scheduled-lists-sync"
 
 export type ItemPlacementMode = "keep" | "move"
 
@@ -16,7 +16,7 @@ export function destinationListsForSelection(
   return lists
     .filter((list) => {
       if (isFolderAllItemsCategoryId(list.id)) return false
-      if (isNaPeriodSmartCategoryId(list.id)) return false
+      if (isNaPeriodSmartCategoryId(list.id) || isPeriodLedgerListId(list.id)) return false
       if (opts.currentListId && list.id === opts.currentListId) return false
       return true
     })
@@ -46,7 +46,7 @@ export function originListIdToUnlink(opts: {
 export function canMoveItemsFromOpenList(listId?: string | null): boolean {
   if (!listId) return false
   if (isFolderAllItemsCategoryId(listId)) return false
-  if (isNaPeriodSmartCategoryId(listId)) return false
+  if (isNaPeriodSmartCategoryId(listId) || isPeriodLedgerListId(listId)) return false
   return true
 }
 

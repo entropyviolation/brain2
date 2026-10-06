@@ -12,7 +12,7 @@ describe("getPendingReviews", () => {
     expect(pending.month.needed).toBe(true)
   })
 
-  it("marks a period done when a matching review exists", () => {
+  it("marks a period done when a matching end review exists", () => {
     const reviews: PeriodReview[] = [
       {
         id: "day:2026-06-19",
@@ -30,6 +30,25 @@ describe("getPendingReviews", () => {
     const pending = getPendingReviews(reviews, now)
     expect(pending.day.needed).toBe(false)
     expect(pending.week.needed).toBe(true)
+  })
+
+  it("keeps end due when only a morning slice exists", () => {
+    const reviews: PeriodReview[] = [
+      {
+        id: "day:2026-06-19",
+        period: "day",
+        periodKey: "2026-06-19",
+        completedAt: now,
+        summary: "",
+        gratitude: [],
+        nextPlans: "",
+        reflections: {},
+        resolvedTaskIds: [],
+        pushedTaskIds: [],
+        morning: { completed: true, wakeTime: "07:00" },
+      },
+    ]
+    expect(getPendingReviews(reviews, now).day.needed).toBe(true)
   })
 })
 

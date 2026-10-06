@@ -180,7 +180,7 @@ function srgbToLinear(channel: number): number {
   return x <= 0.04045 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4
 }
 
-function relativeLuminance(hex: string): number {
+export function relativeLuminance(hex: string): number {
   const [r, g, b] = parseHex(hex)
   return 0.2126 * srgbToLinear(r) + 0.7152 * srgbToLinear(g) + 0.0722 * srgbToLinear(b)
 }

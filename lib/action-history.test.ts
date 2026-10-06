@@ -16,6 +16,10 @@ import {
 import { useTimeTrackingStore } from "./time-tracking-store"
 import { useSleepStore } from "./sleep-store"
 import { useHabitsStore } from "./habits-store"
+import { startHabitCoverageSync, syncHabitCoverageLinks } from "./habit-coverage-sync"
+import { syncSleepNight, useSleepSync } from "./sleep-sync"
+import { persistKey } from "./storage-keys"
+import { renderHook } from "@testing-library/react"
 import { TaskType } from "./types"
 
 const DAY = "2026-09-17"
@@ -99,6 +103,104 @@ describe("action history", () => {
   it("returns false when there is nothing to undo", () => {
     expect(undoLastAction()).toBe(false)
     expect(redoLastAction()).toBe(false)
+  })
+
+  it("does not pop a second step when a subscriber undoes during the restore", () => {
+    const store = useTimeTrackingStore.getState()
+    store.paintMinutes(DAY, "activity", 540, 600, "act-work")
+    store.paintMinutes(DAY, "activity", 600, 660, "act-rest")
+    const stop = useTimeTrackingStore.subscribe(() => {
+      undoLastAction()
+    })
+    expect(undoLastAction()).toBe(true)
+    stop()
+    expect(useTimeTrackingStore.getState().entries).toHaveLength(1)
+    expect(useTimeTrackingStore.getState().entries[0].penId).toBe("act-work")
+  })
+
+  it("tombstones an undone block so a stale rehydrate cannot paint it back", async () => {
+    useTimeTrackingStore.getState().paintMinutes(DAY, "activity", 540, 600, "act-work")
+    const id = useTimeTrackingStore.getState().entries[0]?.id
+    expect(id).toBeTruthy()
+    undoLastAction()
+    expect(useTimeTrackingStore.getState().entries).toHaveLength(0)
+    expect(useTimeTrackingStore.getState().removedEntryIds).toContain(id)
+
+    const key = persistKey("timegrid-store")
+    const raw = localStorage.getItem(key)
+    const parsed = JSON.parse(raw ?? "{}") as {
+      state?: { entries?: unknown[]; removedEntryIds?: string[] }
+      version?: number
+    }
+    const stale = {
+      ...parsed,
+      state: {
+        ...(parsed.state ?? {}),
+        entries: [
+          ...(Array.isArray(parsed.state?.entries) ? parsed.state.entries : []),
+          {
+            id,
+            date: DAY,
+            scopeId: "activity",
+            penId: "act-work",
+            startMin: 540,
+            endMin: 600,
+          },
+        ],
+        removedEntryIds: [],
+      },
+    }
+    localStorage.setItem(key, JSON.stringify(stale))
+    await useTimeTrackingStore.persist.rehydrate()
+    expect(useTimeTrackingStore.getState().entries.find((entry) => entry.id === id)).toBeUndefined()
+  })
+
+  it("strips a tombstoned entry when a later write pastes it back", () => {
+    useTimeTrackingStore.getState().paintMinutes(DAY, "activity", 540, 600, "act-work")
+    const entry = useTimeTrackingStore.getState().entries[0]
+    undoLastAction()
+    useTimeTrackingStore.setState((state) => ({ entries: [...state.entries, entry] }))
+    expect(useTimeTrackingStore.getState().entries.find((item) => item.id === entry.id)).toBeUndefined()
+    expect(useTimeTrackingStore.getState().removedEntryIds).toContain(entry.id)
+  })
+
+  it("redoes the block and drops its tombstone", () => {
+    useTimeTrackingStore.getState().paintMinutes(DAY, "activity", 540, 600, "act-work")
+    const id = useTimeTrackingStore.getState().entries[0]?.id
+    undoLastAction()
+    expect(redoLastAction()).toBe(true)
+    const state = useTimeTrackingStore.getState()
+    expect(state.entries.map((entry) => entry.id)).toContain(id)
+    expect(state.removedEntryIds).not.toContain(id)
+  })
+
+  it("leaves the block gone after coverage and sleep sync run", async () => {
+    const habit = {
+      id: "cov-undo",
+      name: "Log the day",
+      type: TaskType.BOOLEAN,
+      frequency: "daily" as const,
+      coverageLink: { threshold: 1, enabled: true },
+    }
+    useHabitsStore.setState({ tasks: [habit] })
+    const stop = startHabitCoverageSync()
+    try {
+      renderHook(() => useSleepSync())
+      useSleepStore.getState().setBedtime(DAY, -30, "definite")
+      useSleepStore.getState().setWakeTime(DAY, 420, "definite")
+      useTimeTrackingStore.getState().paintMinutes(DAY, "activity", 540, 600, "act-work")
+      expect(peekUndoLabel()).toBe("paint")
+      const painted = useTimeTrackingStore.getState().entries.find((entry) => entry.penId === "act-work")
+      expect(painted).toBeTruthy()
+      undoLastAction()
+      syncHabitCoverageLinks()
+      syncSleepNight(DAY)
+      await Promise.resolve()
+      expect(useTimeTrackingStore.getState().entries.find((entry) => entry.id === painted?.id)).toBeUndefined()
+      expect(peekUndoLabel()).not.toBe("paint")
+    } finally {
+      stop()
+    }
   })
 
   it("clears redo after a new action", () => {

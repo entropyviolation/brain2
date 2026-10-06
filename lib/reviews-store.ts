@@ -1,13 +1,17 @@
 /**
- * lib/reviews-store.ts — Period reviews store + helpers
+ * lib/reviews-store.ts — Period reviews / rituals store + helpers
  *
  * Persists day/week/month/quarter/year reviews and provides the pure helpers the
- * Review dialog uses to (a) key a review to a period, (b) derive a representative
+ * Rituals UI uses to (a) key a review to a period, (b) derive a representative
  * date from a period key, (c) compute the *previous* (just-ended) period so the
- * app can prompt for a review, and (d) compute the *next* period for pushing
- * unfinished tasks forward.
+ * app can prompt for an end/night ritual, and (d) compute the *next* period for
+ * pushing unfinished tasks forward.
  *
- * Spec: end-of-period review ritual (carry-over §7.7, reflection/gratitude).
+ * User-facing concept: Rituals. Day = morning (sun) + night (moon). Other
+ * periods = start (plan) + end/review. `PeriodReview.morning` is day start;
+ * `PeriodReview.start` is week–year start; root body + `endCompleted` is end.
+ *
+ * Spec: §13 rituals (carry-over §7.7, reflection/gratitude).
  * Storage: localStorage today; target MongoDB `reviews` collection (§3).
  */
 "use client"
@@ -16,8 +20,11 @@ import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
-import type { PeriodReview, ReviewPeriod, BlockedReason } from "@/lib/types"
+import type { BlockedReason, PeriodReview, PeriodStartRitual, ReviewPeriod, StoredBlockedReason } from "@/lib/types"
 import { getWeekString, parseWeekString } from "@/lib/date-utils"
+import { quarterKey, quarterLabel } from "@/lib/seasons"
+
+export { quarterOf } from "@/lib/seasons"
 
 /**
  * Operation post-mortem (Feature 2, #277). Worker B builds these from an
@@ -72,9 +79,25 @@ interface ReviewsState {
   ) => PeriodReview
   /** Morning ritual (HM2): record/merge the `morning` slice on a day review. */
   saveMorningReview: (dayKey: string, morning: NonNullable<PeriodReview["morning"]>) => PeriodReview
+  /** Replace today's morning slice. Omitted fields are cleared. `undefined` removes it. */
+  replaceMorningReview: (
+    dayKey: string,
+    morning: NonNullable<PeriodReview["morning"]> | undefined,
+  ) => PeriodReview
+  /** Drop the morning slice and leave the evening review for that day in place. */
+  clearMorningReview: (dayKey: string) => void
   getMorningReview: (dayKey: string) => PeriodReview["morning"] | undefined
+  /** Start ritual (week–year): merge into `start` slice. */
+  saveStartRitual: (period: ReviewPeriod, key: string, start: PeriodStartRitual) => PeriodReview
+  /** Replace the start slice. `undefined` removes it. */
+  replaceStartRitual: (
+    period: ReviewPeriod,
+    key: string,
+    start: PeriodStartRitual | undefined,
+  ) => PeriodReview
+  getStartRitual: (period: ReviewPeriod, key: string) => PeriodStartRitual | undefined
   /** Structured "why blocked/skipped" capture (HM3) for a task in a review. */
-  setBlockedReason: (period: ReviewPeriod, key: string, taskId: string, reason: BlockedReason) => void
+  setBlockedReason: (period: ReviewPeriod, key: string, taskId: string, reason: StoredBlockedReason) => void
   /** Record an item spawned (e.g. a follow-up) during a review. */
   addSpawnedItem: (period: ReviewPeriod, key: string, itemId: string) => void
   /**
@@ -125,7 +148,40 @@ export const useReviewsStore = create<ReviewsState>()(
         return get().upsertReview("day", dayKey, { morning: { ...base.morning, ...morning } })
       },
 
+      replaceMorningReview: (dayKey, morning) => {
+        const base = get().getReview("day", dayKey) ?? emptyReview("day", dayKey)
+        const review: PeriodReview = { ...base }
+        if (morning) review.morning = morning
+        else delete review.morning
+        get().saveReview(review)
+        return review
+      },
+
+      clearMorningReview: (dayKey) => {
+        const base = get().getReview("day", dayKey)
+        if (!base?.morning) return
+        const review: PeriodReview = { ...base }
+        delete review.morning
+        get().saveReview(review)
+      },
+
       getMorningReview: (dayKey) => get().getReview("day", dayKey)?.morning,
+
+      saveStartRitual: (period, key, start) => {
+        const base = get().getReview(period, key) ?? emptyReview(period, key)
+        return get().upsertReview(period, key, { start: { ...base.start, ...start } })
+      },
+
+      replaceStartRitual: (period, key, start) => {
+        const base = get().getReview(period, key) ?? emptyReview(period, key)
+        const review: PeriodReview = { ...base }
+        if (start) review.start = start
+        else delete review.start
+        get().saveReview(review)
+        return review
+      },
+
+      getStartRitual: (period, key) => get().getReview(period, key)?.start,
 
       setBlockedReason: (period, key, taskId, reason) => {
         const base = get().getReview(period, key) ?? emptyReview(period, key)
@@ -159,6 +215,39 @@ export const useReviewsStore = create<ReviewsState>()(
   ),
 )
 
+export type MorningReviewPhase = "none" | "partial" | "done"
+
+/**
+ * `completed: false` is an unfinished ritual with some answers saved.
+ * `completed: true` is a full submit. Older saves omitted the flag and only
+ * existed once the ritual finished, so a populated slice without the flag is done.
+ */
+export function morningReviewPhase(
+  morning: PeriodReview["morning"] | undefined,
+): MorningReviewPhase {
+  if (!morning) return "none"
+  if (morning.completed === false) return "partial"
+  if (morning.completed === true) return "done"
+  const legacy =
+    !!morning.allNighter ||
+    !!morning.wakeTime ||
+    !!morning.bedTime ||
+    morning.dream !== undefined ||
+    (morning.affirmations?.length ?? 0) > 0 ||
+    (morning.gratitude?.length ?? 0) > 0 ||
+    !!morning.bestDayWhy ||
+    !!morning.mustDo ||
+    !!morning.mustNotDo ||
+    !!morning.newEvents ||
+    !!morning.excitedAbout ||
+    !!morning.source ||
+    !!morning.resumeStep ||
+    (morning.priorityTaskIds?.length ?? 0) > 0 ||
+    (morning.priorityHabitIds?.length ?? 0) > 0 ||
+    !!morning.dayPlanLogged
+  return legacy ? "done" : "none"
+}
+
 export const REVIEW_PERIODS: ReviewPeriod[] = ["day", "week", "month", "quarter", "year"]
 
 export function localDayKey(date: Date): string {
@@ -166,10 +255,6 @@ export function localDayKey(date: Date): string {
   const m = String(date.getMonth() + 1).padStart(2, "0")
   const d = String(date.getDate()).padStart(2, "0")
   return `${y}-${m}-${d}`
-}
-
-export function quarterOf(date: Date): number {
-  return Math.floor(date.getMonth() / 3) + 1
 }
 
 export function getPeriodKey(period: ReviewPeriod, date: Date): string {
@@ -181,7 +266,7 @@ export function getPeriodKey(period: ReviewPeriod, date: Date): string {
     case "month":
       return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
     case "quarter":
-      return `${date.getFullYear()}-Q${quarterOf(date)}`
+      return quarterKey(date)
     case "year":
       return `${date.getFullYear()}`
   }
@@ -259,7 +344,7 @@ export function periodLabel(period: ReviewPeriod, key: string): string {
     case "month":
       return d.toLocaleDateString("en-US", { month: "long", year: "numeric" })
     case "quarter":
-      return key.replace("-Q", " Q")
+      return quarterLabel(key)
     case "year":
       return key
   }

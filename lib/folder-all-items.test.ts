@@ -47,6 +47,7 @@ describe("folderAllItemsList / buildFolderAllItemsList", () => {
     const built = buildFolderAllItemsList(f)
     expect(built.id).toBe("__all-items__folder1")
     expect(built.name).toBe("All Items")
+    expect(built.scheduleable).toBe(false)
     expect(folderAllItemsList([built], "folder1")?.id).toBe(built.id)
     expect(folderAllItemsList([], "folder1")).toBeUndefined()
   })

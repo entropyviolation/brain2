@@ -58,6 +58,43 @@ describe("ingest allowlist rehydrate", () => {
     expect(useIngestStore.getState().isAllowed("99")).toBe(false)
   })
 
+  it("drops gps tracking points from the log on rehydrate", async () => {
+    localStorage.setItem(
+      KEY,
+      JSON.stringify({
+        state: {
+          events: [
+            {
+              id: "g",
+              at: "2026-09-22T04:00:00.000Z",
+              kind: "gps",
+              status: "applied",
+              summary: "GPS → Home",
+              channel: "telegram",
+              chatId: "1",
+              raw: "gps: Home",
+            },
+            {
+              id: "c",
+              at: "2026-09-22T05:00:00.000Z",
+              kind: "capture",
+              status: "applied",
+              summary: "Inbox",
+              channel: "telegram",
+              chatId: "1",
+              raw: "milk",
+            },
+          ],
+          allowedChats: [],
+          allowlistRev: 0,
+        },
+        version: 4,
+      }),
+    )
+    await useIngestStore.persist.rehydrate()
+    expect(useIngestStore.getState().events.map((event) => event.id)).toEqual(["c"])
+  })
+
   it("treats the Telegram user id as the same paired sender", () => {
     useIngestStore.getState().allowChat({
       chatId: "99",

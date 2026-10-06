@@ -25,6 +25,7 @@ import { isHabitGoalMet } from "@/lib/habit-utils"
 import { isHabitPeriodExempt, type ExemptionBooks } from "@/lib/habit-exemption"
 import { isDailyHabit } from "@/lib/habit-points"
 import { formatLocalDateKey } from "@/lib/date-utils"
+import { focusSelectionWeight } from "@/lib/goal-focus"
 import { buildTodoItems, filterAndSortTodos } from "@/components/Home/ToDo/todo-utils"
 import type { Folder, Task, WeeklyData, WeeklyTask } from "@/lib/types"
 
@@ -57,6 +58,10 @@ export type FriendSuggestionContext = {
   now?: Date
   /** Affection / whim rolls. Nest turns this on; unit tests leave it off. */
   flavor?: boolean
+  /** Task ids serving tomorrow's focused goals. Score is multiplied for these. */
+  focusTaskIds?: ReadonlySet<string>
+  /** Goal-focus multiplier. 1 leaves every score unchanged. */
+  focusMultiplier?: number
 }
 
 export function openFriendNextActions(tasks: Task[], folders: Folder[]): Task[] {
@@ -162,13 +167,19 @@ export function collectFriendCandidates(
   return [...byId.values()]
 }
 
-export function scoreFriendCandidate(row: FriendCandidate, personality: FriendPersonality): number {
+export function scoreFriendCandidate(
+  row: FriendCandidate,
+  personality: FriendPersonality,
+  focus: { ids?: ReadonlySet<string>; multiplier?: number } = {},
+): number {
   const source = sourceWeight(personality, row.source)
   const urg = Math.max(0, Math.min(5, row.urgency)) / 5
   const imp = Math.max(0, Math.min(5, row.importance)) / 5
   const lists = listScore(personality, row.listIds) / 100
   const love = titleLoveBoost(row.title, personality.titleLoves)
-  return source * 2 + personality.urgencyBias * urg + imp * 20 + lists * 25 + love
+  const base = source * 2 + personality.urgencyBias * urg + imp * 20 + lists * 25 + love
+  const focused = focus.ids?.has(row.id) ?? false
+  return base * focusSelectionWeight(focused, focus.multiplier ?? 1)
 }
 
 function pickWeighted<T>(rows: Array<{ item: T; weight: number }>, rng: () => number): T {
@@ -247,13 +258,14 @@ export function pickFriendSuggestion(
   const pool = lastId && all.length > 1 ? all.filter((row) => row.id !== lastId) : all
   const live = pool.filter((row) => sourceWeight(personality, row.source) > 0)
   const usable = live.length > 0 ? live : pool
+  const focus = { ids: ctx.focusTaskIds, multiplier: ctx.focusMultiplier }
   const ranked = [...usable].sort((a, b) => {
-    const diff = scoreFriendCandidate(b, personality) - scoreFriendCandidate(a, personality)
+    const diff = scoreFriendCandidate(b, personality, focus) - scoreFriendCandidate(a, personality, focus)
     if (diff !== 0) return diff
     return a.id.localeCompare(b.id)
   })
   const picked = pickWeighted(
-    ranked.map((row) => ({ item: row, weight: Math.max(1, scoreFriendCandidate(row, personality)) })),
+    ranked.map((row) => ({ item: row, weight: Math.max(1, scoreFriendCandidate(row, personality, focus)) })),
     rng,
   )
   return pack(

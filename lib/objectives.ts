@@ -19,7 +19,8 @@
  * path (that lives in the task-store, owned by another worker).
  */
 import type { Goal, Objective, PriorityPeriod, ItemLink } from "@/lib/types"
-import { formatLocalDateKey, getWeekString } from "@/lib/date-utils"
+import { formatLocalDateKey } from "@/lib/date-utils"
+import { periodKeyFor as periodKeyForDate } from "@/lib/period-keys"
 
 // --- Action model ----------------------------------------------------------
 //
@@ -82,19 +83,11 @@ export function actionsForTarget(actions: ActionRecord[], targetId: string): Act
  *   day   → YYYY-MM-DD (local)
  *   week  → getWeekString (Monday-start range)
  *   month → YYYY-MM
+ *   quarter → YYYY-Qn
  *   year  → YYYY
  */
 export function periodKeyFor(period: PriorityPeriod, date = new Date()): string {
-  switch (period) {
-    case "day":
-      return formatLocalDateKey(date)
-    case "week":
-      return getWeekString(date)
-    case "month":
-      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
-    case "year":
-      return `${date.getFullYear()}`
-  }
+  return periodKeyForDate(period, date)
 }
 
 /** Max number of objectives that may be prioritized for a period. */
@@ -102,6 +95,7 @@ export const MAX_PRIORITIES_PER_PERIOD: Record<PriorityPeriod, number> = {
   day: 3,
   week: 3,
   month: 3,
+  quarter: 4,
   year: 5,
 }
 

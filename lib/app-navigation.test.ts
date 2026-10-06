@@ -11,6 +11,7 @@ import {
   readStoredTab,
   applyListsNavigation,
   requestNavigateToList,
+  requestNavigateToListAfterPaint,
   writeListsNavigation,
   writeScrollOffset,
   writeStoredDate,
@@ -65,6 +66,25 @@ describe("app-navigation", () => {
     })
     expect(handler).toHaveBeenCalledTimes(1)
     expect(handler.mock.calls[0][0].detail).toEqual({ listId: "list-1" })
+    window.removeEventListener("cogs-navigate-to-list", handler)
+  })
+
+  it("requestNavigateToListAfterPaint waits two frames", () => {
+    const handler = vi.fn()
+    window.addEventListener("cogs-navigate-to-list", handler)
+    const frames: FrameRequestCallback[] = []
+    vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => {
+      frames.push(cb)
+      return frames.length
+    })
+    requestNavigateToListAfterPaint("list-1", [{ id: "folder-1", listIds: ["list-1"] }])
+    expect(handler).not.toHaveBeenCalled()
+    frames[0](0)
+    expect(handler).not.toHaveBeenCalled()
+    frames[1](0)
+    expect(readListsNavigation().openTarget).toEqual({ type: "category", id: "list-1" })
+    expect(handler).toHaveBeenCalledTimes(1)
+    vi.unstubAllGlobals()
     window.removeEventListener("cogs-navigate-to-list", handler)
   })
 

@@ -4,6 +4,7 @@
 import { describe, expect, it } from "vitest"
 import { TaskType, type WeeklyTask } from "@/lib/types"
 import {
+  describeHabitTriggerPreview,
   matchDiscreteEventTrigger,
   matchDiscretePattern,
   matchHabitTextTrigger,
@@ -55,6 +56,47 @@ describe("matchHabitTextTrigger", () => {
       value: 355,
       habitName: "Chess",
     })
+  })
+
+  it("parses a quantity with a filler word, such as studied for 20 min", () => {
+    const study = habit({
+      name: "Study",
+      type: TaskType.GOAL,
+      goal: 60,
+      unit: "min",
+      textTriggers: [{ id: "studied", keyword: "studied", mode: "quantity", unitWords: ["min"] }],
+    })
+    expect(matchHabitTextTrigger("studied for 20 min", [study])).toMatchObject({ value: 20, note: "" })
+  })
+})
+
+describe("describeHabitTriggerPreview", () => {
+  const triggers = [{ id: "studied", keyword: "studied", mode: "quantity" as const, unitWords: ["min"] }]
+
+  it("adds 20 min onto the running total and does not describe a replacement", () => {
+    const preview = describeHabitTriggerPreview("studied for 20 min", triggers, 40)
+    expect(preview.matched).toBe(true)
+    expect(preview.added).toBe(20)
+    expect(preview.text).toMatch(/Adds 20 min/)
+    expect(preview.text).toMatch(/40 min already logged \+ 20 min = 60 min/)
+    expect(preview.text.toLowerCase()).toMatch(/does not replace/)
+  })
+
+  it("says so when the line would not match", () => {
+    const preview = describeHabitTriggerPreview("went for a walk", triggers, 0)
+    expect(preview.matched).toBe(false)
+    expect(preview.text.toLowerCase()).toMatch(/would not match/)
+  })
+
+  it("describes done and score without pretending they add minutes", () => {
+    expect(describeHabitTriggerPreview("hemisync", [{ id: "h", keyword: "hemisync", mode: "done" }]).text).toMatch(
+      /Marks the habit done/,
+    )
+    expect(
+      describeHabitTriggerPreview("chess score 355", [
+        { id: "c", keyword: "chess", mode: "score", connector: "score" },
+      ]).text,
+    ).toMatch(/Sets the score to 355/)
   })
 })
 

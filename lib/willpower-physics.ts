@@ -2,21 +2,22 @@
  * lib/willpower-physics.ts — Willpower gems bouncing-ball lab
  *
  * Habit gems on a slightly concave dish around the pinned willpower crystal.
- * Horizontal: spherical-bowl gravity (κ = g/R), oval wall, glassy sibling
- * bounce. Vertical: real bouncing-ball kinematics — z̈ = −g, bounce
- * v_z⁺ = −e v_z⁻. Visuals stay honest: gems keep their photographed
- * shape (no squash/stretch, no drop-shadow). Airborne gems pass over
- * neighbors so a Sunday handful never fuses into a dead puck. Each stir
- * uses a fresh seed so trajectories differ. Grab/throw: a `held` gem is
- * kinematic (follows the pointer anywhere, including off the plate).
- * Dragging above the dish raises z so drawY stays on the cursor; release
- * keeps that height and velocity so gravity, bounce, and collisions run.
- * Airborne gems skip the oval fence until they land. No extra physics
- * package. The crystal is a solid in XY — gems bounce off and do not
- * tunnel through — and a Y-sort occluder for stones around it. Gems may
- * paint past the rim (outer fence ~1.32×). Optional Physics popup shows
- * live equations, a twin plate, and editable knobs. Persist v18 resets leftover
- * scatter-bomb knobs to the calm default whirl.
+ * One explicit-Euler model shared by the step and the Physics lab (no second
+ * package, no WASM). Accelerations (not forces divided by mass): gravity
+ * z̈ = −g, dish a_dish = −κ r̂_xy · r (harmonic), air drag
+ * a_d = −(b + c |v|) v on the full velocity, grounded Coulomb friction
+ * a_f = −μN v̂_xy, continuous Magnus a_M ∝ ω × v_xy. Floor bounce is
+ * v_z⁺ = −e v_z⁻ except a rest cutoff (restitution falls at low impact
+ * speed — effective e = 0 below FLOOR_REST_VZ). Rim: v_n⁺ = −e_w v_n⁻ with
+ * the same low-speed fade. U = m g z + ½ m κ r²; ΣE also includes sphere
+ * spin K_ω ≈ (1/5) m r² ω². Mass scales K and collision impulses only —
+ * lone gems fall/slide/curve the same. Chaos scales stir jitter and
+ * per-gem mass/e, not a free velocity injection. Stir hop defaults high
+ * enough that a normal plate click lifts ~a gem diameter or more of z.
+ * Held gems are kinematic (pointer). Crowded plate: glassy on a real hit,
+ * quiet position-only rest, dish lets go of a gem already leaning inward.
+ * Crystal is a solid in XY and a Y-sort occluder. Gems may paint past the
+ * rim (~1.32×). Persist v18 resets leftover scatter-bomb knobs.
  */
 
 export type WillpowerBody = {
@@ -53,28 +54,28 @@ export type WillpowerWorld = {
 }
 
 export type WillpowerPhysicsParams = {
-  /** Vertical gravity g (px/s²). z̈ = −g. */
+  /** Vertical gravity g (px/s²). Free-flight z̈ = −g + (a_d)_z. */
   g: number
-  /** Dish curvature κ (1/s²). F_dish = −κ r. */
+  /** Dish curvature κ (1/s²). a_dish = −κ r (vector, harmonic). */
   dishK: number
-  /** Coefficient of restitution e = −v⁺/v⁻. */
+  /** Nominal coefficient of restitution e = −v_z⁺/v_z⁻ (per-gem via chaos). */
   restitution: number
   wallRestitution: number
   /** Rest mass for habit gems (crystal stays pinned and heavy). */
   mass: number
-  /** Linear air drag b (1/s). F_d = −b v − c |v| v. */
+  /** Linear air drag b (1/s). a_d = −(b + c |v|) v. */
   linearDrag: number
   /** Quadratic air drag c (1/px). */
   quadDrag: number
-  /** Coulomb friction on the plate (px/s²), only when grounded. */
+  /** Coulomb friction magnitude μN (px/s²) on the plate when grounded. */
   friction: number
   repulsion: number
-  /** Magnus / spin lift. F_M ∝ ω × v. */
+  /** Magnus / spin lift. a_M ∝ ω × v_xy; spin also damps at SPIN_DAMP. */
   magnus: number
   stirSpeed: number
-  /** Upward impulse on stir (px/s). */
+  /** Upward velocity impulse on stir (px/s). Default clears a gem diameter of z. */
   stirHop: number
-  /** 0–1 mix of per-gem jitter so each stir is a new throw. */
+  /** 0–1: stir jitter + per-gem mass/e spread (not a free v injection). */
   chaos: number
 }
 
@@ -86,7 +87,10 @@ export type WillpowerPhysicsField = {
   min: number
   max: number
   step: number
+  /** Plain-text fallback (legacy / title attrs / KaTeX throw). */
   equation: string
+  /** KaTeX source for the lab / knob equation display. */
+  equationLatex: string
   explain: string
 }
 
@@ -115,35 +119,47 @@ export const DEFAULT_WILLPOWER_PHYSICS: WillpowerPhysicsParams = {
   repulsion: 240,
   magnus: 0.22,
   stirSpeed: 220,
-  stirHop: 160,
+  stirHop: 480,
   chaos: 0.22,
 }
 
 export const WILLPOWER_PHYSICS_FIELDS: WillpowerPhysicsField[] = [
-  { key: "g", label: "Gravity", symbol: "g", unit: "px/s²", min: 120, max: 1600, step: 10, equation: "v_z(t) = v_{z0} − g t", explain: "Downward acceleration. Higher g pulls hops back to the dish faster; lower g makes long floaty arcs." },
-  { key: "restitution", label: "Bounciness", symbol: "e", unit: "", min: 0.15, max: 0.98, step: 0.01, equation: "e = −v_z⁺ / v_z⁻", explain: "Fraction of vertical speed kept after a floor hit. 1 would be a perfect bounce; values near 0.8 feel glassy." },
-  { key: "mass", label: "Mass", symbol: "m", unit: "", min: 0.35, max: 3.2, step: 0.05, equation: "K = ½ m |v|²", explain: "Inertia of each habit gem. Heavier stones store more kinetic energy at the same speed and shove neighbors less." },
-  { key: "dishK", label: "Dish curve", symbol: "κ", unit: "1/s²", min: 0.2, max: 4.5, step: 0.05, equation: "F_dish = −κ r", explain: "How strongly the black-mirror well pulls gems toward the crystal. This is the shallow-bowl spring, κ ≈ g/R." },
-  { key: "friction", label: "Plate friction", symbol: "μN", unit: "px/s²", min: 0, max: 160, step: 1, equation: "F_f = −μN v̂  (z ≈ 0)", explain: "Coulomb drag while a gem is sitting on the lacquer. Zero and they skate; high and they park after a bounce." },
-  { key: "linearDrag", label: "Air drag", symbol: "b", unit: "1/s", min: 0, max: 1.6, step: 0.02, equation: "F_d = −b v − c |v| v", explain: "Speed-proportional air resistance. Tamps wild throws without changing the bounce law." },
-  { key: "quadDrag", label: "Quad drag", symbol: "c", unit: "1/px", min: 0, max: 0.008, step: 0.0001, equation: "F_d = −b v − c |v| v", explain: "Extra drag that grows with |v|². It clips the fastest throws so a stir cannot become a scatter bomb." },
-  { key: "stirHop", label: "Stir hop", symbol: "Δv_z", unit: "px/s", min: 80, max: 900, step: 10, equation: "z(t) = z_0 + v_{z0} t − ½ g t²", explain: "Upward impulse when you press the plate. Keep it modest so gems hop, not leave the room." },
-  { key: "stirSpeed", label: "Stir shove", symbol: "Δv_xy", unit: "px/s", min: 80, max: 900, step: 10, equation: "p = m v", explain: "In-plane whirl from a plate press. Tangential around the crystal, stronger near the click." },
-  { key: "magnus", label: "Spin lift", symbol: "C_M", unit: "", min: 0, max: 0.8, step: 0.01, equation: "F_M ∝ ω × v", explain: "Sideways force from gem spin (Magnus). A little curve on the bounce; too much looks drunk." },
-  { key: "chaos", label: "Chaos", symbol: "ξ", unit: "", min: 0, max: 1, step: 0.01, equation: "v ← v + ξ · U(−1,1)", explain: "Per-gem jitter so two stirs never match. Low = a clean whirl; high = a mess." },
-  { key: "repulsion", label: "Crowd push", symbol: "k", unit: "", min: 40, max: 520, step: 5, equation: "F_rep ∝ (1 − d/d_0)²", explain: "Soft overlap spring between gems (and off the crystal). Stops a Sunday pile from fusing." },
-  { key: "wallRestitution", label: "Rim bounce", symbol: "e_w", unit: "", min: 0.2, max: 0.95, step: 0.01, equation: "v_n⁺ = −e_w v_n⁻", explain: "How lively a hit on the chrome rim is. Softer than the floor so the oval contains the whirl." },
+  { key: "g", label: "Gravity", symbol: "g", unit: "px/s²", min: 120, max: 1600, step: 10, equation: "z̈ = −g + (a_d)_z", equationLatex: "\\ddot{z} = -g + (a_d)_z", explain: "Downward acceleration. Air drag rides on the same velocity; higher g pulls hops back to the dish faster." },
+  { key: "restitution", label: "Bounciness", symbol: "e", unit: "", min: 0.15, max: 0.98, step: 0.01, equation: "v_z⁺ = −e v_z⁻", equationLatex: "v_z^{+} = -e\\, v_z^{-}", explain: "Fraction of vertical speed kept after a floor hit. Below the rest cutoff (~28 px/s rebound) effective e = 0 so the pile can settle — restitution falls at low impact speed." },
+  { key: "mass", label: "Mass", symbol: "m", unit: "", min: 0.35, max: 3.2, step: 0.05, equation: "K = ½ m |v|²", equationLatex: "K = \\tfrac12 m |\\mathbf{v}|^2", explain: "Heavier gems store more K at the same speed. In a collision the impulse uses reduced mass, so a heavy gem moves a light neighbor more and recoils less. Fall, slide, and curve are accelerations — mass does not change them. Stir shove is a velocity impulse and does not scale with m." },
+  { key: "dishK", label: "Dish curve", symbol: "κ", unit: "1/s²", min: 0.2, max: 4.5, step: 0.05, equation: "a_dish = −κ r", equationLatex: "\\mathbf{a}_{\\mathrm{dish}} = -\\kappa\\, \\mathbf{r}", explain: "Harmonic bowl acceleration toward the crystal (κ ≈ g/R). Static friction freezes a gem when κ r ≤ μN, so the dead disk sits at r ≤ μN/κ — not at the crystal because U is smallest there." },
+  { key: "friction", label: "Plate friction", symbol: "μN", unit: "px/s²", min: 0, max: 160, step: 1, equation: "a_f = −μN v̂_xy  (z ≈ 0)", equationLatex: "\\mathbf{a}_f = -\\mu N\\, \\hat{\\mathbf{v}}_{xy}\\ (z \\approx 0)", explain: "Coulomb drag on the horizontal velocity while grounded. Static freeze when dish pull κ r ≤ μN (dead disk ~μN/κ). A hop does not grease the plate." },
+  { key: "linearDrag", label: "Air drag", symbol: "b", unit: "1/s", min: 0, max: 1.6, step: 0.02, equation: "a_d = −(b + c |v|) v", equationLatex: "\\mathbf{a}_d = -(b + c|\\mathbf{v}|)\\,\\mathbf{v}", explain: "Linear part of air resistance on the whole velocity, including v_z. Tamps wild throws without changing the bounce law." },
+  { key: "quadDrag", label: "Quad drag", symbol: "c", unit: "1/px", min: 0, max: 0.008, step: 0.0001, equation: "a_d = −(b + c |v|) v", equationLatex: "\\mathbf{a}_d = -(b + c|\\mathbf{v}|)\\,\\mathbf{v}", explain: "Quadratic part of the same drag law. Clips the fastest throws so a stir cannot become a scatter bomb." },
+  { key: "stirHop", label: "Stir hop", symbol: "Δv_z", unit: "px/s", min: 80, max: 900, step: 10, equation: "Δv_z on plate press", equationLatex: "\\Delta v_z\\ \\text{on plate press}", explain: "Upward velocity impulse when you press the plate. Default clears about a gem diameter or more of z so a normal click arcs and lands glassy; keep it below scatter-bomb territory." },
+  { key: "stirSpeed", label: "Stir shove", symbol: "Δv_xy", unit: "px/s", min: 80, max: 900, step: 10, equation: "Δv_xy on plate press", equationLatex: "\\Delta \\mathbf{v}_{xy}\\ \\text{on plate press}", explain: "In-plane whirl from a plate press — a velocity impulse, not p = m v. Tangential around the crystal, stronger near the click." },
+  { key: "magnus", label: "Spin lift", symbol: "C_M", unit: "", min: 0, max: 0.8, step: 0.01, equation: "a_M ∝ ω × v_xy", equationLatex: "\\mathbf{a}_M \\propto \\boldsymbol{\\omega} \\times \\mathbf{v}_{xy}", explain: "Sideways acceleration from gem spin (Magnus), perpendicular to v_xy so it does not feed translational K. Spin also damps: ω ← ω (1 − 0.55 Δt)." },
+  { key: "chaos", label: "Chaos", symbol: "ξ", unit: "", min: 0, max: 1, step: 0.01, equation: "m,e,stir ← f(ξ)", equationLatex: "m,\\,e,\\,\\mathrm{stir} \\leftarrow f(\\xi)", explain: "Scales stir jitter and the per-gem spread of mass and e. Low = a clean whirl; high = a mess. It does not inject free random velocity after settle." },
+  { key: "repulsion", label: "Crowd push", symbol: "k", unit: "", min: 40, max: 520, step: 5, equation: "a_rep ∝ (1 − d/d_0)² / m", equationLatex: "a_{\\mathrm{rep}} \\propto (1 - d/d_0)^2 / m", explain: "A thin cushion just outside contact. Real overlaps are a hard collision — glassy on a fast hit, quiet at rest — so a full plate settles instead of fusing or buzzing." },
+  { key: "wallRestitution", label: "Rim bounce", symbol: "e_w", unit: "", min: 0.2, max: 0.95, step: 0.01, equation: "v_n⁺ = −e_w v_n⁻", equationLatex: "v_n^{+} = -e_w\\, v_n^{-}", explain: "How lively a hit on the chrome rim is. Below the quiet closing speed the normal component is killed (same low-speed fade as contacts). Softer than the floor so the oval contains the whirl." },
 ]
 
 export const WILLPOWER_PHYSICS_EQUATIONS = [
-  "v_z(t) = v_{z0} − g t",
-  "z(t) = z_0 + v_{z0} t − ½ g t²",
-  "e = −v_z⁺ / v_z⁻",
-  "K = ½ m (v_x² + v_y² + v_z²)",
-  "U = m g z + ½ κ r²",
-  "F_d = −b v − c |v| v",
-  "F_dish = −κ r̂",
-  "F_M ∝ ω × v",
+  "z̈ = −g + (a_d)_z",
+  "a_d = −(b + c |v|) v",
+  "a_dish = −κ r",
+  "a_f = −μN v̂_xy  (grounded)",
+  "v_z⁺ = −e v_z⁻  (else 0 below rest cutoff)",
+  "K = ½ m |v|²",
+  "U = m g z + ½ m κ r²",
+  "a_M ∝ ω × v_xy",
+] as const
+
+/** KaTeX forms of the shared lab laws (drag-aware free flight). */
+export const WILLPOWER_PHYSICS_EQUATIONS_LATEX = [
+  "\\ddot{z} = -g + (a_d)_z",
+  "\\mathbf{a}_d = -(b + c|\\mathbf{v}|)\\,\\mathbf{v}",
+  "\\mathbf{a}_{\\mathrm{dish}} = -\\kappa\\, \\mathbf{r}",
+  "\\mathbf{a}_f = -\\mu N\\, \\hat{\\mathbf{v}}_{xy}\\ (\\text{grounded})",
+  "v_z^{+} = -e\\, v_z^{-}\\ (\\text{else }0\\text{ below rest cutoff})",
+  "K = \\tfrac12 m |\\mathbf{v}|^2",
+  "U = mgz + \\tfrac12 m \\kappa r^2",
+  "\\mathbf{a}_M \\propto \\boldsymbol{\\omega} \\times \\mathbf{v}_{xy}",
 ] as const
 
 /** κ = g/R for a shallow spherical dish. Was a rest-orbit spring of 22. */
@@ -162,11 +178,24 @@ export const WILLPOWER_CRYSTAL_RADIUS = 30
 export const WILLPOWER_GEM_RADIUS = 6
 
 const MAX_DT = 1 / 30
+const MAX_SUBSTEP = 1 / 90
+const MAX_SUBSTEPS = 5
 const MAX_SPEED = 720
 const MAX_VZ = 1400
 const REST_SPEED = 8
 const GROUND_Z = 0.45
-const COLLISION_PASSES = 3
+/** Gap that resting stones may keep. Smaller than a gem, so the pile reads as touching. */
+const CONTACT_SLOP = 0.45
+const POSITION_PASSES = 6
+const POSITION_RELAX = 0.7
+/** Closing speed (px/s) where a contact stops bouncing and simply stops. */
+const IMPACT_QUIET = 48
+/** Closing speed where restitution reaches the glassy coefficient. */
+const IMPACT_GLASS = 190
+/** Floor rebound below this (px/s) is treated as rest — effective e = 0. */
+export const FLOOR_REST_VZ = 28
+/** Spin damping rate γ in ω ← ω (1 − γ Δt). */
+export const SPIN_DAMP = 0.55
 const GOLDEN = Math.PI * (3 - Math.sqrt(5))
 const PERSPECTIVE = 0.26
 
@@ -224,12 +253,33 @@ export function kineticEnergy(bodies: WillpowerBody[]): number {
   }, 0)
 }
 
+/** Sphere spin kinetic energy K_ω ≈ (1/5) m r² ω² (solid sphere about a diameter). */
+export function spinEnergy(bodies: WillpowerBody[]): number {
+  return bodies.reduce((sum, b) => {
+    if (b.pinned) return sum
+    return sum + 0.2 * b.mass * b.r * b.r * b.omega * b.omega
+  }, 0)
+}
+
+/** U = m g z + ½ m κ r² — matches a_dish = −κ r = −∇U/m. */
 export function potentialEnergy(bodies: WillpowerBody[], world: WillpowerWorld, params: WillpowerPhysicsParams): number {
   return bodies.reduce((sum, b) => {
     if (b.pinned) return sum
     const r2 = (b.x - world.cx) ** 2 + (b.y - world.cy) ** 2
-    return sum + b.mass * params.g * Math.max(b.z, 0) + 0.5 * params.dishK * r2
+    return sum + b.mass * params.g * Math.max(b.z, 0) + 0.5 * b.mass * params.dishK * r2
   }, 0)
+}
+
+export function bodyPotentialParts(
+  body: Pick<WillpowerBody, "x" | "y" | "z" | "mass" | "pinned">,
+  world: Pick<WillpowerWorld, "cx" | "cy">,
+  params: WillpowerPhysicsParams,
+): { grav: number; dish: number; total: number } {
+  if (body.pinned) return { grav: 0, dish: 0, total: 0 }
+  const r2 = (body.x - world.cx) ** 2 + (body.y - world.cy) ** 2
+  const grav = body.mass * params.g * Math.max(body.z, 0)
+  const dish = 0.5 * body.mass * params.dishK * r2
+  return { grav, dish, total: grav + dish }
 }
 
 export function willpowerTelemetry(
@@ -240,28 +290,33 @@ export function willpowerTelemetry(
   const gems = bodies.filter((b) => !b.pinned)
   const ke = kineticEnergy(gems)
   const pe = potentialEnergy(gems, world, params)
+  const spin = spinEnergy(gems)
   let maxZ = 0
   let speed = 0
   let airborne = 0
   let omega = 0
-  let momentum = 0
+  let px = 0
+  let py = 0
+  let pz = 0
   for (const b of gems) {
     if (b.z > maxZ) maxZ = b.z
     const sp = Math.hypot(b.vx, b.vy, b.vz)
     speed += sp
     omega += Math.abs(b.omega)
-    momentum += b.mass * sp
+    px += b.mass * b.vx
+    py += b.mass * b.vy
+    pz += b.mass * b.vz
     if (b.z > GROUND_Z) airborne += 1
   }
   const n = gems.length || 1
   return {
     ke,
     pe,
-    energy: ke + pe,
+    energy: ke + pe + spin,
     maxZ,
     meanSpeed: speed / n,
     meanOmega: omega / n,
-    momentum,
+    momentum: Math.hypot(px, py, pz),
     airborne,
     count: gems.length,
     bounces: world.bounces,
@@ -286,6 +341,110 @@ export function stirCrowdFactor(n: number): number {
   return 0.42 + 0.58 * Math.min(1, (14 / Math.max(n, 1)) ** 0.28)
 }
 
+/** One free-flight microstep: gravity + a_d = −(b + c |v|) v. Same vertical law as integrate(). */
+function freeFlightStep(
+  state: { x: number; y: number; z: number; vx: number; vy: number; vz: number },
+  dt: number,
+  params: WillpowerPhysicsParams,
+) {
+  const speed = Math.hypot(state.vx, state.vy, state.vz)
+  const drag = params.linearDrag + params.quadDrag * speed
+  state.vx += -state.vx * drag * dt
+  state.vy += -state.vy * drag * dt
+  state.vz += (-params.g - state.vz * drag) * dt
+  if (state.vz > MAX_VZ) state.vz = MAX_VZ
+  if (state.vz < -MAX_VZ) state.vz = -MAX_VZ
+  state.x += state.vx * dt
+  state.y += state.vy * dt
+  state.z += state.vz * dt
+}
+
+export type BouncePredict = {
+  apex: number
+  tApex: number
+  tFloor: number
+  arc: Array<{ t: number; z: number }>
+}
+
+/**
+ * Predict the next flight with the same free-flight step the integrator uses
+ * (g + full-vector drag). No dish/friction/contacts — those do not change ż from g/drag.
+ */
+export function predictBounceFlight(
+  z0: number,
+  vz0: number,
+  params: WillpowerPhysicsParams,
+  vxy: { vx?: number; vy?: number } = {},
+  samples = 20,
+): BouncePredict {
+  if (vz0 <= 0 && z0 <= GROUND_Z) {
+    return { apex: Math.max(z0, 0), tApex: 0, tFloor: 0, arc: [{ t: 0, z: Math.max(z0, 0) }] }
+  }
+  // Vacuum: closed-form z(t) = z0 + vz0 t − ½ g t² (same as the step when b = c = 0).
+  if (params.linearDrag === 0 && params.quadDrag === 0 && params.g > 0) {
+    const apex = bouncingBallApex(z0, vz0, params.g)
+    const tApex = bouncingBallTimeToApex(vz0, params.g)
+    const tFloor = bouncingBallTimeToFloor(z0, vz0, params.g)
+    const tEnd = Math.max(tFloor > 0 ? tFloor : Math.max(tApex * 2, 0.12), 0.12)
+    const arc: Array<{ t: number; z: number }> = []
+    for (let i = 0; i <= samples; i++) {
+      const t = (tEnd * i) / samples
+      const z = z0 + vz0 * t - 0.5 * params.g * t * t
+      arc.push({ t, z: Math.max(z, 0) })
+    }
+    return { apex, tApex, tFloor, arc }
+  }
+  const dt = MAX_SUBSTEP
+  const state = {
+    x: 0,
+    y: 0,
+    z: Math.max(z0, 0),
+    vx: vxy.vx ?? 0,
+    vy: vxy.vy ?? 0,
+    vz: vz0,
+  }
+  let apex = state.z
+  let tApex = 0
+  let tFloor = 0
+  let t = 0
+  const raw: Array<{ t: number; z: number }> = [{ t: 0, z: state.z }]
+  const maxT = 2.4
+  while (t < maxT) {
+    const prevZ = state.z
+    const prevVz = state.vz
+    freeFlightStep(state, dt, params)
+    t += dt
+    if (state.z > apex) {
+      apex = state.z
+      tApex = t
+    }
+    raw.push({ t, z: Math.max(state.z, 0) })
+    if (prevZ > 0 && state.z <= 0 && prevVz <= 0) {
+      const frac = prevZ / Math.max(prevZ - state.z, 1e-9)
+      tFloor = t - dt + dt * clamp(frac, 0, 1)
+      state.z = 0
+      break
+    }
+    if (state.z <= GROUND_Z && state.vz <= 0 && t > dt) {
+      tFloor = t
+      break
+    }
+  }
+  if (tFloor <= 0 && state.z <= GROUND_Z) tFloor = t
+  const tEnd = Math.max(tFloor > 0 ? tFloor : t, 0.12)
+  const arc: Array<{ t: number; z: number }> = []
+  for (let i = 0; i <= samples; i++) {
+    const want = (tEnd * i) / samples
+    let best = raw[0]!
+    for (const p of raw) {
+      if (Math.abs(p.t - want) < Math.abs(best.t - want)) best = p
+    }
+    arc.push({ t: want, z: best.z })
+  }
+  return { apex, tApex, tFloor, arc }
+}
+
+/** Vacuum apex (drag off). Prefer predictBounceFlight when drag knobs are live. */
 export function bouncingBallApex(z: number, vz: number, g: number): number {
   if (g <= 0) return Math.max(z, 0)
   if (vz <= 0) return Math.max(z, 0)
@@ -297,7 +456,7 @@ export function bouncingBallTimeToApex(vz: number, g: number): number {
   return vz / g
 }
 
-/** First future t where z(t) = z + v_z t − ½ g t² hits the dish. */
+/** Vacuum landing time. Prefer predictBounceFlight when drag knobs are live. */
 export function bouncingBallTimeToFloor(z: number, vz: number, g: number): number {
   if (g <= 0) return 0
   if (z <= GROUND_Z && vz <= 0) return 0
@@ -342,52 +501,79 @@ export function gemVariation(id: string, params: WillpowerPhysicsParams): { mass
   return { mass: Math.max(0.2, mass), e }
 }
 
-function separate(a: WillpowerBody, b: WillpowerBody, params: WillpowerPhysicsParams) {
-  if (a.pinned && b.pinned) return
-  if (a.held && b.held) return
-  const crystal = a.pinned || b.pinned
+/** Glassy when the hit is real; a slow lean just stops. e(v) → 0 is what lets a pile rest. */
+function impactRestitution(e: number, closing: number): number {
+  if (closing <= IMPACT_QUIET) return 0
+  const t = Math.min(1, (closing - IMPACT_QUIET) / (IMPACT_GLASS - IMPACT_QUIET))
+  return e * t * t
+}
+
+function pairCanTouch(a: WillpowerBody, b: WillpowerBody): boolean {
+  if (a.pinned && b.pinned) return false
+  if (a.held && b.held) return false
   // Sibling gems may hop over each other. The crystal is a solid: never tunnel.
-  if (!crystal && Math.abs(b.z - a.z) > (a.r + b.r) * 0.85) return
+  if (!(a.pinned || b.pinned) && Math.abs(b.z - a.z) > (a.r + b.r) * 0.85) return false
+  return true
+}
+
+/** One normal impulse. Resting contact does not bounce, and it never adds hop energy. */
+function contactImpulse(a: WillpowerBody, b: WillpowerBody, params: WillpowerPhysicsParams) {
+  if (!pairCanTouch(a, b) || a.held || b.held) return
   const dx = b.x - a.x
   const dy = b.y - a.y
   const dist = Math.hypot(dx, dy) || 0.0001
   const min = a.r + b.r
-  if (dist >= min) return
+  if (dist > min) return
   const nx = dx / dist
   const ny = dy / dist
-  const overlap = min - dist
+  const vn = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny
+  if (vn >= 0) return
+  const closing = -vn
+  const crystal = a.pinned || b.pinned
+  const e = impactRestitution(
+    crystal ? Math.max(a.e, b.e, params.wallRestitution) : Math.min(a.e, b.e),
+    closing,
+  )
+  const invA = a.pinned ? 0 : 1 / a.mass
+  const invB = b.pinned ? 0 : 1 / b.mass
+  const inv = invA + invB || 1
+  const j = (-(1 + e) * vn) / inv
+  if (!a.pinned) {
+    a.vx -= j * nx * invA
+    a.vy -= j * ny * invA
+  }
+  if (!b.pinned) {
+    b.vx += j * nx * invB
+    b.vy += j * ny * invB
+  }
+  if (closing > IMPACT_QUIET && e > 0) {
+    if (!a.pinned) a.omega += vn * 0.02
+    if (!b.pinned) b.omega -= vn * 0.02
+  }
+}
+
+/** Unpack overlap without changing velocity, so a correction cannot feed the next bounce. */
+function contactSeparate(a: WillpowerBody, b: WillpowerBody) {
+  if (!pairCanTouch(a, b)) return
+  const dx = b.x - a.x
+  const dy = b.y - a.y
+  const dist = Math.hypot(dx, dy) || 0.0001
+  const overlap = a.r + b.r - CONTACT_SLOP - dist
+  if (overlap <= 0) return
+  const nx = dx / dist
+  const ny = dy / dist
   const invA = a.held || a.pinned ? 0 : 1 / a.mass
   const invB = b.held || b.pinned ? 0 : 1 / b.mass
   const inv = invA + invB || 1
-  const corr = overlap / inv
-  if (!a.held && !a.pinned) {
+  const corr = Math.min((overlap * POSITION_RELAX) / inv, Math.max(a.r, b.r))
+  if (invA) {
     a.x -= nx * corr * invA
     a.y -= ny * corr * invA
   }
-  if (!b.held && !b.pinned) {
+  if (invB) {
     b.x += nx * corr * invB
     b.y += ny * corr * invB
   }
-  if (a.held || b.held) return
-  const rvx = b.vx - a.vx
-  const rvy = b.vy - a.vy
-  const vn = rvx * nx + rvy * ny
-  if (vn > 0) return
-  const e = crystal ? Math.max(a.e, b.e, params.wallRestitution) : Math.min(a.e, b.e)
-  const j = (-(1 + e) * vn) / inv
-  if (!a.pinned) {
-    a.vx -= (j * nx) / a.mass
-    a.vy -= (j * ny) / a.mass
-  }
-  if (!b.pinned) {
-    b.vx += (j * nx) / b.mass
-    b.vy += (j * ny) / b.mass
-  }
-  const pop = Math.abs(vn) * 0.18 * (0.45 + params.chaos * 0.7)
-  if (!a.pinned && a.z < GROUND_Z * 2) a.vz += pop
-  if (!b.pinned && b.z < GROUND_Z * 2) b.vz += pop
-  if (!a.pinned) a.omega += vn * 0.02
-  if (!b.pinned) b.omega -= vn * 0.02
 }
 
 function clampOval(b: WillpowerBody, world: WillpowerWorld, params: WillpowerPhysicsParams) {
@@ -411,10 +597,14 @@ function clampOval(b: WillpowerBody, world: WillpowerWorld, params: WillpowerPhy
   const ux = nx / nlen
   const uy = ny / nlen
   const vn = b.vx * ux + b.vy * uy
-  if (vn > 0) {
-    b.vx -= (1 + params.wallRestitution) * vn * ux
-    b.vy -= (1 + params.wallRestitution) * vn * uy
-    b.vz += Math.abs(vn) * 0.12
+  if (vn > IMPACT_QUIET) {
+    // v_n⁺ = −e_w v_n⁻ with the same low-speed fade as contacts (no vz kick).
+    const e = params.wallRestitution * impactRestitution(1, vn)
+    b.vx -= (1 + e) * vn * ux
+    b.vy -= (1 + e) * vn * uy
+  } else if (vn > 0) {
+    b.vx -= vn * ux
+    b.vy -= vn * uy
   }
 }
 
@@ -431,10 +621,13 @@ function addRepulsion(fx: number[], fy: number[], bodies: WillpowerBody[], param
       const dx = b.x - a.x
       const dy = b.y - a.y
       const dist = Math.hypot(dx, dy) || 0.0001
-      const range = (a.r + b.r) * (crystal ? 1.85 : 2.35)
-      if (dist >= range) continue
+      const min = a.r + b.r
+      // Cushion only in the gap just outside contact. Deep overlap belongs to
+      // the position solve — a spring there is what makes a crowd explode.
+      const range = min * (crystal ? 1.32 : 1.22)
+      if (dist >= range || dist <= min * 0.82) continue
       const n = 1 - dist / range
-      const force = params.repulsion * n * n * (crystal ? 1.35 : 1)
+      const force = params.repulsion * n * n * (crystal ? 0.85 : 0.45)
       const nx = dx / dist
       const ny = dy / dist
       if (!a.pinned) {
@@ -449,20 +642,20 @@ function addRepulsion(fx: number[], fy: number[], bodies: WillpowerBody[], param
   }
 }
 
-function bounceFloor(b: WillpowerBody, params: WillpowerPhysicsParams, world?: WillpowerWorld) {
+function bounceFloor(b: WillpowerBody, _params: WillpowerPhysicsParams, world?: WillpowerWorld) {
   if (b.z >= 0) return
   b.z = 0
   if (b.vz < 0) {
     const incoming = b.vz
+    // v_z⁺ = −e v_z⁻. No Magnus floor kick (that would inject energy).
     b.vz = -incoming * b.e
     b.squash = clamp(Math.abs(incoming) / 380, 0, 0.55)
-    if (Math.abs(b.vz) < 28) {
+    if (Math.abs(b.vz) < FLOOR_REST_VZ) {
+      // Rest cutoff: restitution falls at low impact speed → effective e = 0.
       b.vz = 0
       b.z = 0
-    } else {
-      if (world) world.bounces += 1
-      b.vx += b.omega * 4.2 * params.magnus
-      b.vy -= b.omega * 3.1 * params.magnus
+    } else if (world) {
+      world.bounces += 1
     }
   }
 }
@@ -471,6 +664,7 @@ function integrate(b: WillpowerBody, accelX: number, accelY: number, t: number, 
   if (b.held) return
   const grounded = b.z <= GROUND_Z && b.vz <= 12
   const speed = Math.hypot(b.vx, b.vy, b.vz)
+  const speedXY = Math.hypot(b.vx, b.vy)
   if (grounded && speed < REST_SPEED) {
     const f = Math.hypot(accelX, accelY)
     if (f <= params.friction) {
@@ -484,22 +678,26 @@ function integrate(b: WillpowerBody, accelX: number, accelY: number, t: number, 
     const s = (f - params.friction) / f
     b.vx += accelX * s * t
     b.vy += accelY * s * t
+    b.vz = 0
+    b.z = 0
   } else {
-    const inv = 1 / Math.max(speed, 0.0001)
+    // a_d = −(b + c |v|) v on the full velocity; a_f = −μN v̂_xy when sliding.
     const drag = params.linearDrag + params.quadDrag * speed
     let ax = accelX - b.vx * drag
     let ay = accelY - b.vy * drag
-    if (grounded) {
-      ax -= b.vx * inv * params.friction
-      ay -= b.vy * inv * params.friction
+    let az = -params.g - b.vz * drag
+    if (grounded && speedXY > 1e-6) {
+      ax -= (b.vx / speedXY) * params.friction
+      ay -= (b.vy / speedXY) * params.friction
     }
+    // Continuous Magnus a_M ∝ ω × v_xy (perpendicular; does not feed |v|²).
     const lift = params.magnus * b.omega
     ax += -b.vy * lift
     ay += b.vx * lift
     b.vx += ax * t
     b.vy += ay * t
+    b.vz += az * t
   }
-  b.vz += -params.g * t - b.vz * params.linearDrag * 0.55 * t
   const xy = Math.hypot(b.vx, b.vy)
   if (xy > MAX_SPEED) {
     const k = MAX_SPEED / xy
@@ -517,31 +715,45 @@ function integrate(b: WillpowerBody, accelX: number, accelY: number, t: number, 
   }
   bounceFloor(b, params, world)
   b.theta += b.omega * t
-  b.omega *= 1 - 0.55 * t
+  b.omega *= 1 - SPIN_DAMP * t
   const stretch = grounded ? 0 : clamp(Math.abs(b.vz) / 520, 0, 0.38)
   b.squash = b.squash * (1 - 8 * t) + stretch * 0.15
 }
 
-function keepAlive(bodies: WillpowerBody[], world: WillpowerWorld, params: WillpowerPhysicsParams, rng: () => number) {
-  if (world.stirAge > 5.2) return
-  const gems = bodies.filter((b) => !b.pinned)
-  const n = gems.length
-  if (n < 2) return
-  const decay = 1 - world.stirAge / 5.2
-  const ke = kineticEnergy(gems)
-  const meanKe = ke / n
-  const crowded = n > 10
-  if (crowded && meanKe < 90 * decay) {
-    const hops = Math.min(4, 1 + Math.floor(n / 14))
-    for (let k = 0; k < hops; k++) {
-      const b = gems[Math.floor(rng() * n)]
-      if (!b) continue
-      b.vz += (48 + rng() * 90) * decay * (0.32 + params.chaos)
-      b.vx += (rng() - 0.5) * 70 * decay
-      b.vy += (rng() - 0.5) * 70 * decay
-      b.omega += (rng() - 0.5) * 8
-    }
+/**
+ * A gem leaning on something toward the crystal is already held up by that
+ * contact. The dish must not keep squeezing it through the pile — that squeeze,
+ * fought by the contact solve, is the buzz.
+ */
+function inwardSupported(body: WillpowerBody, bodies: WillpowerBody[], world: WillpowerWorld): boolean {
+  const ix = world.cx - body.x
+  const iy = world.cy - body.y
+  const rad = Math.hypot(ix, iy)
+  if (rad < 1) return false
+  const ux = ix / rad
+  const uy = iy / rad
+  for (let i = 0; i < bodies.length; i++) {
+    const other = bodies[i]
+    if (!other || other === body) continue
+    if (!pairCanTouch(body, other)) continue
+    const dx = other.x - body.x
+    const dy = other.y - body.y
+    const dist = Math.hypot(dx, dy) || 0.0001
+    if (dist > body.r + other.r + 1.5) continue
+    if ((dx * ux + dy * uy) / dist > 0.2) return true
   }
+  return false
+}
+
+function substepCount(dt: number, bodies: WillpowerBody[]): number {
+  let maxV = 0
+  for (const b of bodies) {
+    if (b.pinned || b.held) continue
+    const v = Math.abs(b.vx) + Math.abs(b.vy)
+    if (v > maxV) maxV = v
+  }
+  const need = Math.max(Math.ceil(dt / MAX_SUBSTEP), Math.ceil((maxV * dt) / 5))
+  return clamp(need, 1, MAX_SUBSTEPS)
 }
 
 export function worldIsLive(bodies: WillpowerBody[]): boolean {
@@ -562,29 +774,44 @@ export function stepWillpowerWorld(
   const next = bodies.map((b) => ({ ...b }))
   const fx = next.map(() => 0)
   const fy = next.map(() => 0)
-  for (let i = 0; i < next.length; i++) {
-    const b = next[i]
-    if (!b || b.pinned) continue
-    const k = b.z > GROUND_Z ? params.dishK * 0.42 : params.dishK
-    fx[i] = (world.cx - b.x) * k
-    fy[i] = (world.cy - b.y) * k
-  }
-  addRepulsion(fx, fy, next, params)
-  for (let i = 0; i < next.length; i++) {
-    const b = next[i]
-    if (!b || b.pinned) continue
-    integrate(b, fx[i] ?? 0, fy[i] ?? 0, t, params, world)
-  }
-  for (let pass = 0; pass < COLLISION_PASSES; pass++) {
+  const steps = substepCount(t, next)
+  const h = t / steps
+  for (let s = 0; s < steps; s++) {
+    fx.fill(0)
+    fy.fill(0)
+    for (let i = 0; i < next.length; i++) {
+      const b = next[i]
+      if (!b || b.pinned || b.held) continue
+      if (inwardSupported(b, next, world)) continue
+      // a_dish = −κ r (same κ airborne and grounded; matches U = ½ m κ r²).
+      fx[i] = (world.cx - b.x) * params.dishK
+      fy[i] = (world.cy - b.y) * params.dishK
+    }
+    addRepulsion(fx, fy, next, params)
+    for (let i = 0; i < next.length; i++) {
+      const b = next[i]
+      if (!b || b.pinned) continue
+      integrate(b, fx[i] ?? 0, fy[i] ?? 0, h, params, world)
+    }
     for (let i = 0; i < next.length; i++) {
       for (let j = i + 1; j < next.length; j++) {
-        separate(next[i], next[j], params)
+        const a = next[i]
+        const b = next[j]
+        if (a && b) contactImpulse(a, b, params)
       }
     }
+    for (let pass = 0; pass < POSITION_PASSES; pass++) {
+      for (let i = 0; i < next.length; i++) {
+        for (let j = i + 1; j < next.length; j++) {
+          const a = next[i]
+          const b = next[j]
+          if (a && b) contactSeparate(a, b)
+        }
+      }
+    }
+    for (const b of next) clampOval(b, world, params)
   }
-  for (const b of next) clampOval(b, world, params)
   world.stirAge += t
-  keepAlive(next, world, params, mulberry32((world.seed + Math.floor(world.stirAge * 60)) | 0))
   return next
 }
 
@@ -594,10 +821,12 @@ export function resolveWillpowerOverlaps(
   params: WillpowerPhysicsParams = DEFAULT_WILLPOWER_PHYSICS,
 ): WillpowerBody[] {
   const next = bodies.map((b) => ({ ...b }))
-  for (let pass = 0; pass < COLLISION_PASSES * 2; pass++) {
+  for (let pass = 0; pass < POSITION_PASSES * 3; pass++) {
     for (let i = 0; i < next.length; i++) {
       for (let j = i + 1; j < next.length; j++) {
-        separate(next[i], next[j], params)
+        const a = next[i]
+        const b = next[j]
+        if (a && b) contactSeparate(a, b)
       }
     }
   }
@@ -635,7 +864,8 @@ export function stirWillpower(
       (0.78 + rng() * 0.32 * params.chaos)
     const tang = power * WILLPOWER_STIR_TANGENTIAL * swirl
     const kick = 22 * crowd * jitter * (0.18 + params.chaos * 0.7)
-    const hop = params.stirHop * crowd * (0.38 + rng() * (0.22 + params.chaos * 0.28))
+    // Floor ~0.62 so a normal press clears ~a gem diameter of z at default Δv_z.
+    const hop = params.stirHop * crowd * (0.62 + rng() * (0.18 + params.chaos * 0.2))
     const spin = (rng() - 0.5) * 4.2 * params.chaos
     return {
       ...b,
@@ -763,18 +993,15 @@ export function releaseWillpowerGem(
   vy: number,
   vz?: number,
 ): WillpowerBody[] {
-  const speed = Math.hypot(vx, vy)
   return bodies.map((b) => {
     if (b.id !== id) return b
-    const lifted = b.z > WILLPOWER_HELD_Z * 2
-    const hop = lifted ? 0 : Math.min(speed * 0.22, 420)
-    const nextVz = vz ?? b.vz
+    // Release velocity is the pointer velocity — no hidden hop the arc cannot show.
     return {
       ...b,
       held: false,
       vx,
       vy,
-      vz: hop ? Math.max(nextVz, hop) : nextVz,
+      vz: vz ?? b.vz,
     }
   })
 }
@@ -831,23 +1058,15 @@ export function makeWillpowerGem(
   }
 }
 
+/** Drag-aware arc using the integrator’s free-flight step (g + a_d). */
 export function predictedArc(
   z0: number,
   vz0: number,
   g: number,
   samples = 12,
+  params?: WillpowerPhysicsParams,
+  vxy?: { vx?: number; vy?: number },
 ): Array<{ t: number; z: number }> {
-  const pts: Array<{ t: number; z: number }> = []
-  let tEnd = 0.9
-  if (g > 1) {
-    const disc = vz0 * vz0 + 2 * g * Math.max(z0, 0)
-    tEnd = disc > 0 ? (vz0 + Math.sqrt(disc)) / g : 0.4
-    tEnd = clamp(tEnd, 0.12, 1.6)
-  }
-  for (let i = 0; i <= samples; i++) {
-    const t = (tEnd * i) / samples
-    const z = z0 + vz0 * t - 0.5 * g * t * t
-    pts.push({ t, z: Math.max(z, 0) })
-  }
-  return pts
+  const p = params ?? { ...DEFAULT_WILLPOWER_PHYSICS, g }
+  return predictBounceFlight(z0, vz0, { ...p, g }, vxy, samples).arc
 }

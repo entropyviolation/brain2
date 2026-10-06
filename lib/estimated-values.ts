@@ -188,7 +188,10 @@ function observedMinutesOn(task: Task, opts: { skipActualDuration: boolean }): n
   if (opts.skipActualDuration) return []
   const actual = task.actualDuration
   if (actual === undefined || !Number.isFinite(actual) || actual <= 0) return []
-  if (isEstimated(task.estimates, "actualDuration")) return []
+  // Person-marked estimates and explicit unknowns are not observed history.
+  if (task.durationCertainty === "estimated" || task.durationCertainty === "unknown") return []
+  if (task.durationCertainty !== "exact" && task.timeRough) return []
+  if (task.durationCertainty !== "exact" && isEstimated(task.estimates, "actualDuration")) return []
   return [actual]
 }
 

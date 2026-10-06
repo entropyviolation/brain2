@@ -19,9 +19,12 @@ export const APP_NAV_KEYS = {
   homeTodoTab: persistKey("home-todo-tab"),
   homeNeedsAttention: persistKey("home-needs-attention"),
   homeDate: persistKey("home-date"),
+  /** "1" while `homeDate` is still the wall-clock day; "0" after an explicit other day. */
+  homeDateFollowsToday: persistKey("home-date-follows-today"),
   homeHabitsTab: persistKey("home-habits-tab"),
   homeHabitsWeek: persistKey("home-habits-week"),
   homeHabitsMonth: persistKey("home-habits-month"),
+  homeHabitsQuarter: persistKey("home-habits-quarter"),
   homeGoalsPeriod: persistKey("home-goals-period"),
   homeGoalsFilter: persistKey("home-goals-filter"),
   schedulerTab: persistKey("scheduler-tab"),
@@ -54,7 +57,7 @@ export const APP_TABS = [
 ] as const
 export type AppTab = (typeof APP_TABS)[number]
 
-export const HABIT_FREQ_TABS = ["daily", "weekly", "monthly"] as const
+export const HABIT_FREQ_TABS = ["daily", "weekly", "monthly", "quarterly"] as const
 export type HabitFreqTab = (typeof HABIT_FREQ_TABS)[number]
 
 export const SCHEDULER_VIEWS = ["funnel", "gantt", "graph"] as const
@@ -75,6 +78,15 @@ export function writeStoredTab(key: string, value: string): void {
   if (typeof window === "undefined") return
   writeAliasedLocal(key, value)
   publishNavPin(key, value)
+  publishNavPinChanged()
+}
+
+/** Fired after a navigation pin write so screen history can record the visit. */
+export const COGS_NAV_PIN_CHANGED_EVENT = "cogs-nav-pin-changed"
+
+function publishNavPinChanged(): void {
+  if (typeof window === "undefined") return
+  window.dispatchEvent(new Event(COGS_NAV_PIN_CHANGED_EVENT))
 }
 
 /** So a later launch does not seed an older tab from the shared persist file. */
@@ -99,6 +111,7 @@ export function writeStoredId(key: string, id: string | null): void {
   if (typeof window === "undefined") return
   if (!id) removeAliasedLocal(key)
   else writeAliasedLocal(key, id)
+  publishNavPinChanged()
 }
 
 export function readStoredRecord(key: string): Record<string, string> {
@@ -129,6 +142,7 @@ export function writeStoredRecordField(key: string, field: string, value: string
 export function writeStoredRecord(key: string, record: Record<string, string>): void {
   if (typeof window === "undefined") return
   writeAliasedLocal(key, JSON.stringify(record))
+  publishNavPinChanged()
 }
 
 export function readStoredDate(key: string): Date | null {
@@ -205,9 +219,9 @@ function isValidOpenTarget(value: unknown): value is OpenTarget {
     case "category":
       return typeof t.id === "string"
     case "smart":
-      return t.id === "daily" || t.id === "weekly" || t.id === "monthly"
+      return t.id === "daily" || t.id === "weekly" || t.id === "monthly" || t.id === "quarterly"
     case "habits":
-      return t.id === "habits" || t.id === "weekly-habits" || t.id === "monthly-habits"
+      return t.id === "habits" || t.id === "weekly-habits" || t.id === "monthly-habits" || t.id === "season-habits"
     case "objectives":
       return true
     case "folder-all":
@@ -234,6 +248,7 @@ export function readListsNavigation(): ListsNavigationState {
 export function writeListsNavigation(state: ListsNavigationState): void {
   if (typeof window === "undefined") return
   writeAliasedLocal(APP_NAV_KEYS.listsNav, JSON.stringify(state))
+  publishNavPinChanged()
 }
 
 /** Dispatched after Lists navigation is written so a mounted Lists view can sync in place (no remount). */
@@ -284,4 +299,21 @@ export function requestNavigateToList(
     location: parent?.id ?? "home",
     openTarget: { type: "category", id: listId },
   })
+}
+
+/**
+ * Same jump, after the current item has a chance to close and paint.
+ * Opening a large list in the same turn as unmounting detail freezes the
+ * detail view until the list commit finishes.
+ */
+export function requestNavigateToListAfterPaint(
+  listId: string,
+  folders: { id: string; listIds: string[] }[],
+): void {
+  const go = () => requestNavigateToList(listId, folders)
+  if (typeof requestAnimationFrame !== "function") {
+    setTimeout(go, 0)
+    return
+  }
+  requestAnimationFrame(() => requestAnimationFrame(go))
 }

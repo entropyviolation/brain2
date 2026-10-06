@@ -49,5 +49,38 @@ describe("ensureCaptureTarget", () => {
     expect(task.stage).not.toBe("inbox")
     expect(task.lists).toEqual(target.listIds)
     expect(task.description).toBe("Milk")
+    expect(target.list?.scheduleable).toBe(false)
+  })
+
+  it("leaves a new list out of the Scheduler even inside a sent folder", () => {
+    const { addFolder } = useTaskStore.getState()
+    addFolder({
+      id: "folder-work",
+      name: "Work",
+      createdAt: new Date(),
+      listIds: [],
+      scheduleable: true,
+    })
+    const { suggestion } = parseSmartCapture("Work: Groceries: Milk")
+    const target = ensureCaptureTarget(suggestion, mutators)
+    expect(target.folder?.scheduleable).toBe(true)
+    expect(target.list?.name).toBe("Groceries")
+    expect(target.list?.scheduleable).toBe(false)
+    expect(useTaskStore.getState().lists.find((l) => l.id === target.list?.id)?.scheduleable).toBe(false)
+  })
+
+  it("keeps an existing sent list sent when the shorthand names it", () => {
+    const { addList } = useTaskStore.getState()
+    addList({
+      id: "list-todo",
+      name: "to do",
+      color: "#16a34a",
+      createdAt: new Date(),
+      scheduleable: true,
+    })
+    const { suggestion } = parseSmartCapture("to do: call dentist")
+    const target = ensureCaptureTarget(suggestion, mutators)
+    expect(target.list?.id).toBe("list-todo")
+    expect(target.list?.scheduleable).toBe(true)
   })
 })
