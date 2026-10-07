@@ -837,12 +837,12 @@ body.win95-app .hab95 button.hab-willpower-lab-toggle.is-on {
   min-height: 0;
   width: 100%;
   overflow: auto;
-  /* Side air only. Top padding would sit above the sticky header and let
+  /* Left air only. Top padding would sit above the sticky header and let
      scrolled rows show through that strip. Bottom padding would do the same
-     under the sticky totals. The sheet's own wrap keeps the air above the
-     sheet. The wider right inset is the gutter for the 16px vintage bar
-     (it overlays on this platform) so the track does not cover the percent tubes. */
-  padding: 0 20px 0 10px;
+     under the sticky totals. The sheet wrap holds the air above the sheet
+     and the right gutter for the vintage bar, so a sideways scroll cannot
+     slide the percent tubes under the track. */
+  padding: 0 0 0 10px;
   background-color: var(--hab-metal-mid);
   background-image:
     repeating-linear-gradient(
@@ -873,6 +873,11 @@ body.win95-app .hab95 button.hab-willpower-lab-toggle.is-on {
   font-size: 12px;
   color: var(--hab-ink);
   background: var(--chrome-mid, #dfdfdf);
+  /* Right gutter travels with the sheet. A wide grid used to scroll the
+     well's padding away and leave the percent tubes under the vintage bar. */
+  box-sizing: border-box;
+  border-right: 20px solid transparent;
+  background-clip: padding-box;
 }
 
 .hab95 .habit-grid th,
@@ -1001,6 +1006,8 @@ body.win95-app .hab95 button.hab-willpower-lab-toggle.is-on {
 .hab95 .hab-well > .habit-heat {
   min-width: 0;
   max-width: 100%;
+  /* The well's vintage bar overlays this edge. */
+  margin-right: 16px;
 }
 
 .hab95 .habit-heat-head.is-today,
@@ -1130,8 +1137,8 @@ body.win95-app .hab95 button.hab-willpower-lab-toggle.is-on {
 
 /* Vintage Win95 bar — the shell recipe in app/win95.css, scoped to these
    two panes so the rest of the app is not restyled. Textured track, raised
-   thumb, 16px. The right padding on these panes is the inset that keeps the
-   track off the last key and the glass percent tubes. */
+   thumb, 16px. The control stack's right padding keeps the track off the last
+   key. The checklist sheet's transparent end border keeps it off the percent tubes. */
 .hab-control-stack,
 .hab-well {
   scrollbar-width: auto;
