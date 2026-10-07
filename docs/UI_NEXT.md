@@ -2,6 +2,8 @@
 
 Open placement work. Style, including the four failures, is
 [`DESIGN_STYLE.md`](DESIGN_STYLE.md). This file is not a second style law.
+A note here does not override
+[the screen stays pleasing](DESIGN_STYLE.md#the-screen-stays-pleasing).
 
 Shipped placement (the Plan window, the Scheduler frame, Lists toolbar
 groups, the Home top strip, the Tracking pen well) is not reopened here.

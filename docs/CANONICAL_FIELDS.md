@@ -410,7 +410,7 @@ Persisted in `brain2-habits-store` (catalog and persist version in [`lib/README.
 
 ## Tracking (`TimeEntry` / `TrackPen` / `TrackScope`) (`lib/time-entries.ts`, `lib/time-tracking-store.ts`)
 
-Persisted in `brain2-timegrid-store` (Zustand persist **v14**), not `brain2-task-storage`. Time is stored as **minute-resolution intervals**, never slot arrays — `startMin` inclusive, `endMin` exclusive, both minutes past local midnight. Dates are local `YYYY-MM-DD`. Optional fields below need **no persist bump**: omitted means the previous single-pen, unnamed, no-Done-log behavior. v14 copies each `parentId` into `parentIds` and keeps `parentId` as the display parent (`parentIds[0]`). v13 links each detail to the pen it is (`PenVariant.penId`): adding a detail creates (or adopts) a child pen, and a child pen shows up as a detail of its parent. v12 appends **iPhone Screen Time** (`iphone-screentime`), **iPhone Calls** (`iphone-calls`), and **iPhone Texts** (`iphone-texts`) without switching `activeScopeId`. v11 appends the **Screen Time** view (id `screentime`, category roots only) without switching `activeScopeId`. v10 folds infinite day/week into `infiniteScroll`. v9 adds hidden pens, untracked-gap notes, and confirmed Day Log events. Screen Time prefs live on `brain2-screentime-prefs`, not this blob.
+Persisted in `brain2-timegrid-store` (Zustand persist **v15**), not `brain2-task-storage`. Time is stored as **minute-resolution intervals**, never slot arrays — `startMin` inclusive, `endMin` exclusive, both minutes past local midnight. Dates are local `YYYY-MM-DD`. Optional fields below need **no persist bump**: omitted means the previous single-pen, unnamed, no-Done-log behavior. v15 sets `enableCycleTracking` true only when upgrading a blob that omitted the key. A store created at v15 starts false and does not run that branch. v14 copies each `parentId` into `parentIds` and keeps `parentId` as the display parent (`parentIds[0]`). v13 links each detail to the pen it is (`PenVariant.penId`): adding a detail creates (or adopts) a child pen, and a child pen shows up as a detail of its parent. v12 appends **iPhone Screen Time** (`iphone-screentime`), **iPhone Calls** (`iphone-calls`), and **iPhone Texts** (`iphone-texts`) without switching `activeScopeId`. v11 appends the **Screen Time** view (id `screentime`, category roots only) without switching `activeScopeId`. v10 folds infinite day/week into `infiniteScroll`. v9 adds hidden pens, untracked-gap notes, and confirmed Day Log events. Screen Time prefs live on `brain2-screentime-prefs`, not this blob.
 
 | field | type | class | notes |
 |---|---|---|---|
@@ -419,7 +419,10 @@ Persisted in `brain2-timegrid-store` (Zustand persist **v14**), not `brain2-task
 | `TimeEntry.title` | `string?` | canonical | Optional display name for one block ("walk to the beach"). Affects **labels only** — counting still uses pens and tags. Blank/omitted falls back to the pen name via `entryDisplayName`. |
 | `TimeEntry.variantIds` | `string[]?` | canonical | `PenVariant` ids. Several true at once over the same minutes (overlapping labels *inside* one pen). |
 | `TimeEntry.tagIds` | `string[]?` | canonical | Tags on **this block only**, on top of whatever its pens always carry. |
-| `TimeEntry.precision` | `"estimated" \| "definite"?` | canonical | Omitted = certain. `"estimated"` is assumed / reconstructed; Analytics can drop it. Same vocabulary as `HabitTimeEstimate.precision`. Confirm clears this field. |
+| `TimeEntry.precision` | `"estimated" \| "definite"?` | canonical | Omitted = certain. `"estimated"` is assumed / reconstructed; Analytics can drop it. Same vocabulary as `HabitTimeEstimate.precision`. Confirm clears this field. An intake or log line marked estimated also sets this so the existing hatch still draws. |
+| `TimeEntry.eventKind` | `string?` | canonical | Stable slug for grouping counts. Free-form `log:` phrases use `eventKindSlug` (lowercase, trimmed, spaces collapsed, punctuation removed) — `left room` stays `left room`. Intake rows: `intake` when the class is unset, otherwise `intake.food` / `intake.drink` / `intake.drug`. A trailing `loc: home` on `log:` does not change this slug; it paints a separate Location-scope instant, reusing or creating that Location pen. Omitted on older rows. No persist bump. |
+| `TimeEntry.intakeClass` | `"food" \| "drink" \| "drug"?` | canonical | Set by `intake food:` / `intake drink:` / `intake drug:`, and by the existing `ate` / `drank` / `took` triggers (those keep the Text log pen). Bare `intake:` leaves it unset. Food is a subset of intake. Omitted on older rows. |
+| `TimeEntry.clockCertainty` | `"estimated" \| "unknown"?` | canonical | Tracking-log clock firmness. **Not** mood, sleep, or completion `ClockCertainty` — same three words, a separate field (`TrackingClockCertainty`). Omitted = exact; old rows are not migrated. `"estimated"` also stores `precision: "estimated"`. `"unknown"` still stores `startMin` so the grid can place the mark; that minute was not observed. The bot words are `est` / `estimated` / `~` and `unknown` on `log:`, `intake:`, `st:` / `switch task:`, `so:` / `switch objective:` / `switch goal:`, and `note:` / `n`. |
 | `TimeEntry.estimateOf` | `{ kind: "done" \| "import"; id: string }?` | canonical | Where an assumed block was proposed from. **Place as assumed** stamps `kind: "done"`. Confirm leaves the stamp so the same item is not proposed again. `kind: "import"` is in the type; no writer stamps it yet. |
 | `TimeEntry.spanId` | `string?` | canonical | Links the calendar-day slices of one block that crossed midnight. One logical event, two rows. |
 | `TimeEntry.generatedBy` | `{ kind: "sleep" \| "screentime"; id: string }?` | canonical | Set when a record produced the block rather than a brush stroke. `id` is the local calendar day. Sleep sync and Screen Time sync each replace only their own kind+id, so re-deriving never eats hand-painted time. |
@@ -444,8 +447,34 @@ Persisted in `brain2-timegrid-store` (Zustand persist **v14**), not `brain2-task
 | `infiniteScroll` | `boolean` | canonical | One continuous strip (day rows + week bands). Persist v10 migrates `infiniteDay` / `infiniteWeek`. |
 | `untrackedNotes` | `Record<string, string>` | canonical | Notes on Activity Log gaps, keyed `date\|scopeId\|startMin\|endMin`. Persist v9. |
 | `confirmedEventIds` | `string[]` | canonical | Calendar events Day Log has confirmed into tracked blocks. Persist v9. |
+| `enableCycleTracking` | `boolean` | canonical | View settings **Enable cycle tracking**. False on a new store, so the Tracking log shows no cycle section. Persist v15 sets it true only when an older blob had no key, and does not rewrite the rest of the blob or `brain2-cycle-marks`. |
 
 Derived Done rows written from tracking are ordinary `Task`s with deterministic ids (`pen-action-<entry or span id>`, `LOGGED_ACTION_TYPE_ID`), so they are upserted rather than duplicated — see `lib/pen-action-sync.ts`.
+
+---
+
+## Cycle day marks (`lib/cycle-marks.ts`, `lib/cycle-phase.ts`)
+
+Persisted in `brain2-cycle-marks` (Zustand persist **v1**, hub-safe, included in the full backup). One local `YYYY-MM-DD` → the flags set that day. A day with every flag clear is dropped. This is a calendar record, not medical advice. No `TimeEntry` is written for these flags.
+
+| field | type | class | notes |
+|---|---|---|---|
+| `CycleDayMark.date` | `string` | canonical | Local `YYYY-MM-DD`. |
+| `CycleDayMark.bleeding` | `boolean?` | canonical | `true` starts or continues a bleed run. Stored only when true. |
+| `CycleDayMark.spotting` | `boolean?` | canonical | Stored only when true. Does not start, extend, or change phase. |
+| `CycleDayMark.ovulation` | `boolean?` | canonical | Stored only when true. The day is ovulatory unless it is also bleeding. |
+
+`phaseForDate(date, marks)` in `lib/cycle-phase.ts` derives a label and does not store it:
+
+| phase | when |
+|---|---|
+| `menstrual` | The day is inside a bleed run (contiguous `bleeding` days). Wins over ovulation on the same day. |
+| `ovulatory` | That day has `ovulation` and is not menstrual. |
+| `luteal` | From the day after an ovulation mark until the next bleed run starts. If no later bleed, later days stay luteal. An ovulation during a bleed still opens luteal once that bleed has ended. |
+| `follicular` | After a bleed run ends, when no ovulation during or after that bleed is still in effect — including the whole gap to the next bleed when nobody marked ovulation. |
+| `unknown` | No marks, or a day before the first bleed and before any ovulation. |
+
+`useCycleMarksStore` is the hook. `readCycleMarks`, `setCycleFlag`, and `toggleCycleFlag` are the non-React writers (`cycle:` in BIM uses them).
 
 ---
 

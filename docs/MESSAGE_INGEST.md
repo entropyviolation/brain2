@@ -41,7 +41,7 @@ Design: local-first, LLM-free, capture-first.
 | Bulk add, ingest log UI, `help`, simulate | ✅ |
 | Read-back (`read:`, `lists`, `folders`, `info`, search/status) | ✅ |
 | Grocery shortcuts (`groc` / `got` / `pin`) + tracker notes (`n` / `day:`) | ✅ |
-| `needed:`, `get:`, activity spans, `log:` / `intake:` / `st:` / `so:` / `transit:` | ✅ |
+| `needed:`, `get:`, activity spans, `log:` / `intake:` / `intake food\|drink\|drug:` / `cycle:` / `st:` / `so:` / `transit:` | ✅ |
 | Habit keywords behind `dh:` + Settings discrete triggers | ✅ |
 | Telegram dedupe (`update_id` / `message_id`) | ✅ |
 | Analytics **Text events** / **Text spans** | ✅ |
@@ -183,7 +183,7 @@ Text-pipeline tracker rows (`generatedBy.kind === "text"`) feed Analytics → **
 | Forward a **PDF** (caption `pdf: title` optional) | Docs item; extract text with pdfjs / desktop `extractPdfText` |
 | `inv` / `inv oats` / `pantry` | Dump or bump the pantry list |
 | `pin` / `live` / `snapshot` | Refresh the pinned grocery card (+ a one-line now) |
-| `n stuck in aisle 4` / `note:` / `jot:` / `memo:` | Discrete event at send time. Also appended onto the activity block covering that minute. A second line is the note. |
+| `n stuck in aisle 4` / `note: left room at 8:15` / `jot:` / `memo:` | Text log instant, the Tracking log Note row. No clock uses send time. `at 8:15` is that minute. A clock with no word is exact. `est` / `estimated` / `~` is estimated (`clockCertainty` and `precision: "estimated"`). `unknown` keeps that minute for placement. Also appended onto the block covering that minute. A second line is the note. |
 | `n loc: crowded` / `n mood: low` / `n activity: deep work` | Same tick on that Tracking scope, and on the block covering that minute |
 | `day: tired` / `daynote:` / `n day:` | Tracking day jot (append log). Bare `day` → `today` |
 | `pick up milk` / `qa:` / `add:` / `inbox:` / `idea:` / `quick add:` | Capture. Same smart-parse as Quick Add. Inbox on. `-mb` or `-monkey` on the line dumps it in **Monkey brain** (a separate Inbox pile for compulsive thoughts — not the Inbox you mean to revisit). |
@@ -195,10 +195,12 @@ Text-pipeline tracker rows (`generatedBy.kind === "text"`) feed Analytics → **
 | `iphone-notes:` / `inotes:` / `phone notes:` | Park an On My iPhone note dumped by the signed [iOS Shortcut](shortcuts/dump-iphone-notes-to-brain2.md) (`Dump iPhone Notes to Brain2.shortcut`). One note per message; long bodies `iphone-notes 2/3:`. Lands in Lists → **iPhone Notes Store** → **Parked** (header **Phone Notes**). Not the tracker `n` / `note:` jot. Mac **From Notes** is a different folder. |
 | `habit: exercise 30` / `h stretch` / `did: stretch` | Habit for **today** (optional `yesterday`). Fuzzy-matches the habit name. Bare `h` → help. |
 | `dh: hemisync` / `dh: read 12 pages` / `dh: exercise 30 min` / `dh: chess score 1200` | Habit keywords. The colon is required. The same words without `dh:` capture to Inbox. |
-| `smoked weed` / `drank water` / `ate lunch` / `took ibuprofen` | Whole-message **discrete events** (editable in Settings). `generatedBy.kind === "text"`. |
-| `log: left home` / `log: left home at 3:30` / `log: shower 7:30 - 7:45` / `log: shower 10m` / `log: START walk` / `log: END walk 5:00` | Tracking note on Activity. No time → a point at send time. `at 3:30` is a point that day. A clock range is a block. `10m` / `10 min` just finished (end = send time). `START` stays open until `END` of the same name, which becomes the range. A line under the event is the note; the clock stays on the first line. A later block over that minute leaves the point. Pens: **Text log**. |
-| `intake: 1 dab dab pen` / `intake: coffee at 8:15` | Food, drink, medicine, or any intake. Always a point. No time → send time. A trailing clock uses that time on the send date. Duration words stay in the title. A line under the event is the note. Pen: **Intake**. A later block leaves the point. |
-| `st:` / `switch task:` · `so:` / `switch objective:` · `transit:` | From/to flags. `from: … to: …` (colon required). Unlabeled text is `to`. Optional time, else send time. Pens: **Switch**, **Objective**, **Transit**. Example: `st: from: talking to elijah to: cleaning up the living room a bit`. |
+| `smoked weed` / `drank water` / `ate egg salad` / `took 2 adderall` | Whole-message **discrete events** (editable in Settings). `generatedBy.kind === "text"`. `ate` → food, `drank` → drink, `took` → drug (`intakeClass` and `eventKind` `intake.food` / `intake.drink` / `intake.drug`). Pen stays **Text log**. Other triggers, including `smoked weed`, do not set a class. |
+| `log: left room` / `log: left room at 3:30` / `log: left room at 3:30 loc: home` / `log: shower 7:30 - 7:45` / `log: shower 10m` / `log: START walk` / `log: END walk 5:00` | Tracking note on Activity, the Event row. No time → a point at send time. `at 3:30` is a point that day. A clock range is a block. `10m` / `10 min` just finished (end = send time). `START` stays open until `END` of the same name, which becomes the range. A line under the event is the note; the clock stays on the first line. A later block over that minute leaves the point. Pens: **Text log**. The phrase is the title and `eventKind` (lowercase, spaces collapsed, punctuation removed) so `left room` groups with the next `left room`. Trailing `loc: home` reuses or creates that Location pen and paints a Location instant at the same minute. The place is the last suffix. |
+| `log: left room at 3:30 est` / `log: left room ~8:15` / `log: left room unknown` / `log: left room at 3:30 est loc: home` | Clock certainty on log, intake, switch, and note lines. No token, and a plain clock, are exact (`clockCertainty` omitted). `est`, `estimated`, or `~` is estimated and also sets `precision: "estimated"`. `unknown` stores the named minute for placement and does not treat that minute as observed. On a log, the word may sit before or after `loc:`. |
+| `intake: coffee` / `intake food: egg salad` / `intake drink: coffee at 8:15 est` / `intake drug: tablet` | Food, drink, medicine, or any intake. Food is a subset of intake. Always a point. No time → send time. A trailing clock uses that time on the send date. Duration words stay in the title. A line under the event is the note. Pen: **Intake**. Bare `intake:` leaves `intakeClass` unset and sets `eventKind` to `intake`. `intake food:` / `drink:` / `drug:` set `intakeClass` and `eventKind` `intake.food` / `intake.drink` / `intake.drug`. Same clock words as `log:`. A later block leaves the point. |
+| `cycle: bleeding` / `cycle: spotting` / `cycle: ovulation` / `cycle: bleeding off` | Sets or clears that flag on the message's local calendar day (`brain2-cycle-marks`). Spotting is stored and does not change phase. Colon required. A calendar mark, not medical advice. Phase (`menstrual` / `follicular` / `ovulatory` / `luteal` / `unknown`) is derived by `phaseForDate`, not stored. |
+| `st:` / `switch task:` · `so:` / `switch objective:` / `switch goal:` · `transit:` | From/to flags. Colon required, so bare words stay capture. `from: … to: …` (colon required on those labels). Unlabeled text is `to`. Optional time, else send time. Same clock words as `log:` (`est` / `estimated` / `~` estimated, `unknown` placement). Pens: **Switch**, **Objective**, **Transit**. Switch task stores `started …`. Switch goal (the Tracking log label) stores `objective …`. Example: `st: cleaning at 3:30` · `switch goal: read at 8:00 est`. |
 | `currently deep work` / `stopped` / `switched to email` | Open, close, or switch an **activity span** through end of day; Analytics → **Text spans**. |
 | `at: gym` / `w gym` / `@ home` / `location:` / `here:` | Location **now** through tonight. Bare `w` / `@` → `where`. |
 | `gps: Home` / `gps-log:` / a Telegram **Live Location** | Location up to the sample minute, not the rest of the day. Same coordinates keep the current pen. A venue pin (a restaurant card) is not where you are. `at:` stamps the sample. Points stay on Location and off the header ingest log unless you **Show GPS**. AirDrop [`Location to Brain2.shortcut`](shortcuts/Location%20to%20Brain2.shortcut) — it keeps a log on the phone and sends the backlog when Telegram can (see [iPhone location](shortcuts/iphone-location-to-brain2.md)). |
@@ -299,11 +301,14 @@ to send `text: Name body`. Recipe:
 
 ### Tracker notes
 
-`n` / `note:` / `jot:` / `memo:` write a discrete event at send time. The first
-line is the title; lines under it are the note. If a block covers that minute,
-the same text is also appended there. `day:` / `n day:` stay the Tracking day
-jot (`lib/day-notes-persist.ts`) and do not become a tick. A later paint or
-erase of those minutes leaves the point.
+`n` / `note:` / `jot:` / `memo:` write a Text log instant, the Tracking log
+Note row. No clock uses send time. `note: left room at 8:15` uses that minute.
+A clock with no word is exact. `est` / `estimated` / `~` is estimated. `unknown`
+keeps that minute for placement. The first line is the title; lines under it
+are the note. If a block covers that minute, the same text is also appended
+there. `day:` / `n day:` stay the Tracking day jot (`lib/day-notes-persist.ts`)
+and do not become a tick, and do not read a clock. A later paint or erase of
+those minutes leaves the point.
 
 ## Security
 
@@ -398,7 +403,8 @@ pass. Settings → **Simulate a scan** uses the same path without Telegram.
 | `lib/ingest/dedupe.ts` | Telegram `update_id` / `message_id` dedupe at the executor gate |
 | `lib/ingest/text-triggers.ts` | Whole-message habit + discrete trigger patterns (Settings + habit form) |
 | `lib/ingest/apply-needed.ts` | `needed:` / `get:` → list **needed**, notes **sent from text** |
-| `lib/ingest/apply-discrete-event.ts` | `log:` / `intake:` / `st:` / `so:` / `transit:` + discrete trigger instants (`generatedBy.kind === "text"`). A line under the event is the note. Log ranges are blocks. Points stay when a later block covers that minute. |
+| `lib/ingest/apply-discrete-event.ts` | `log:` / `intake:` / `st:` / `so:` / `switch goal:` / `transit:` + discrete trigger instants (`generatedBy.kind === "text"`). A line under the event is the note. Log ranges are blocks. Points stay when a later block covers that minute. `log:` sets `eventKind`. Trailing `loc:` paints a Location instant on that pen. Classed intake and `ate` / `drank` / `took` set `intakeClass`. Estimated clocks also set `precision`. Switch task stores `started …`; switch goal stores `objective …`. |
+| `lib/ingest/apply-cycle.ts` | `cycle:` bleeding / spotting / ovulation (and `off`) on the send date. |
 | `lib/ingest/apply-activity-span.ts` | `currently` / `stopped` / `switched to` activity intervals |
 | `lib/ingest/apply-habit-trigger.ts` | `dh:` habit keyword completions. Bare keywords do not log. |
 | `lib/ingest/apply-phone-screen.ts` | `screen:` / `ios:` → **iPhone Screen Time** only (estimated; no Mac AW stamp). AirDrop `Screen Time to Brain2.shortcut`. |

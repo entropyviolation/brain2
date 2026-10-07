@@ -3,7 +3,8 @@
 This file is how a screen is judged. Product features live in the spec mapping.
 Major redesigns are planned. The three layers below are the order a change is
 read in. Motif pictures are a material in the palette. They are not the first
-screen.
+screen. Inside layout, [the screen stays pleasing](#the-screen-stays-pleasing)
+wins when a local note would make it ugly.
 
 A room may be much more magical, esoteric, and beautiful in how it moves.
 The house already has three of these, and wants more of this kind of thing:
@@ -68,6 +69,49 @@ teaching caption. The note on the count voice is
 Placement, before materials. These rules are how someone lays out a screen.
 They are not a lecture on metal or phosphor.
 
+<a id="the-screen-stays-pleasing"></a>
+
+### The screen stays pleasing
+
+Pleasingness is a requirement. A screen that is ugly is wrong even when a
+room README, a packing comment, or a feature line asked for the cram, the
+clip, or the wrap. That local note loses. Simplicity stays with the
+requirement: do not add chrome to look busy.
+
+**Gestalt.** Related controls sit together (proximity). Peers look like one
+set (similarity). A row or a column is one path (continuity). A group reads
+as finished (closure). One frame holds one job (common region). The simplest
+figure that still tells the truth wins (prägnanz). Peer controls share one
+baseline and one row when the container has room.
+
+**Order.** Gaps inside one group are even. Edges that should match, match.
+A frame and the panels inside it are one color family. Do not put a foreign
+border color on the outside of a panel.
+
+**No orphan wrap.** A row of peer buttons does not wrap as three with one
+left alone underneath when a fourth fits on the first row, or when two and
+two would be even. Tracking did this: Time Grid, Activity Log, and Day Log
+on the first row, Tracking log alone on the second. That wrap is wrong.
+
+**No clipped chrome.** A button bar or a submit control inside a bordered
+panel needs inset padding on all four sides. Overflow must not shave the top
+bevel or the outer buttons. Clipped toolbars have shown up in several
+places. Day notes is one: LIST, BULK, LATEST, COPY, and SUBMIT NOTE. When
+you see a clipped toolbar, fix the padding first.
+
+**Type.** The three sizes below still hold. The smallest hint has to be
+readable at a glance. Do not specify a size so small the hint fails. A 9px
+nameplate is a short engraved word on the mill. It is not a size for a
+sentence.
+
+**Dead instruments.** Hide a control that does not apply to the current
+view. Leaving it up as a dead instrument is the miss. A door that still
+works stays visible (failure 1).
+
+**Clocks and popovers.** A clock and a popover belong to the instrument
+panel: beveled chrome, phosphor for the selection. They are not the
+platform's flat blue picker.
+
 ### One job per region
 
 Name the regions before decorating them. Each region answers one question:
@@ -110,6 +154,9 @@ Sibling wells of one instrument share one height. Leftover width becomes
 another module of that same height, or the row wraps. Do not stretch one pane
 (`fr` plus `align-items: stretch`) so it eats the row. The Home top strip
 already does the equal-height version (`home-overview.tsx`, `--home-tile-h`).
+That wrap is for equal-height wells that do not fit. It is not permission
+for an orphan button
+([no orphan wrap](#the-screen-stays-pleasing)).
 
 ### Related controls in one group
 
@@ -119,7 +166,8 @@ rockers. Previous / next / today sit on the period they move. A destructive
 action stays in that group, separated by space or a rule, still visible.
 
 Do not split one verb across a toolbar, a popover, and a footer. Do not give
-one group two different alignments.
+one group two different alignments. A control that does not apply to this
+view is hidden, not left on the panel as a dead instrument.
 
 Header, when the window is wide: title at the left, period or mode in the
 center, utilities at the right — one strip. Stack that strip only when the
@@ -130,8 +178,9 @@ not a larger control.
 
 Leave empty space where the eye rests between regions: after the header,
 before the document, between two different jobs. Inside one group, pack tight,
-about 4–8px. Do not open a wide gap between every sibling, and do not crush
-two regions into one strip so the pause disappears.
+about 4–8px. Those gaps stay even. The pack is not a reason to drop the
+inset that keeps a bevel intact. Do not open a wide gap between every
+sibling, and do not crush two regions into one strip so the pause disappears.
 
 Reserved empty furniture may stay when it is the place work will land — an
 empty bucket, an empty queue, a column that is today’s and happens to be
@@ -149,7 +198,8 @@ Three sizes are enough.
 
 Sibling labels in one group share one size. Do not set a hint larger than the
 value it explains. Do not give every label the same size and weight and hope
-color will sort them.
+color will sort them. The smallest hint is still readable at a glance. A
+size so small the hint fails is the wrong size.
 
 Precious marks stay small, about 12–16px, so they do not become a second
 caption. A pressable jewel may be a little larger (the Habits row edit stone
@@ -159,12 +209,17 @@ is 18px) and still not a toolbar icon.
 
 1. Name each region and its one job.
 2. Put the regions in one reading order.
-3. Align siblings to one edge and one height.
-4. Put related controls in one group, in hand order.
-5. Put a pause only between regions.
-6. Set the three type sizes.
+3. Align siblings to one edge, one height, and one baseline. Peer buttons
+   stay one row when they fit. If they must break, break even.
+4. Put related controls in one group, in hand order. Hide a control that
+   does not apply to this view.
+5. Put a pause only between regions. Inside a group, keep the gaps even,
+   and inset a button bar on all four sides.
+6. Set the three type sizes. The smallest hint is still readable at a glance.
 7. Then choose materials from the palette, or invent furniture. Invention is
-   allowed when these six hold and the four failures are avoided.
+   allowed when the layout above holds, including
+   [the screen stays pleasing](#the-screen-stays-pleasing), and the four
+   failures are avoided.
 
 ### Placement that already works
 
@@ -308,7 +363,10 @@ the required start for every new tab.
 Padding is part of the material. A nameplate, a CRT, and a label each need
 air inside the bay so type does not touch the ring. A milled group keeps
 horizontal inset so the first and last key are not clipped by the group edge.
-Gaps between sibling bays stay near the header (about 8–14px).
+A button bar or a submit row inside a bordered panel needs that inset on all
+four sides
+([no clipped chrome](#the-screen-stays-pleasing)). Gaps between sibling bays
+stay near the header (about 8–14px).
 
 `app/win95.css` `:root` exposes `--fascia-*` plus the CRT greens. Unskinned
 dialogs, menus, buttons, and nested tabs already inherit that face. Module
@@ -325,7 +383,9 @@ One green for CRT values: `--hab-crt-green: #7dffc4`, glow
 `--hab-crt-glow`. Readable. Overlay off by default (`.hab-crt`). Phosphor on
 a trace is allowed to be the other green, `#3dff8a`, on Analytics line traces
 only — not a dark CRT canvas, and not on metal readout values. Do not use CRT
-grain as a chart that pretends the sample is larger than it is.
+grain as a chart that pretends the sample is larger than it is. A clock or a
+popover uses this instrument for its selection: beveled chrome, phosphor on
+the chosen value. It does not use the platform's flat blue picker.
 
 <a id="depth--spacing"></a>
 
@@ -344,7 +404,9 @@ grid.
 
 Ink on a light surface stays dark (`#111`, or a true muted gray). Do not
 inherit the desktop’s white muted text onto a pearl or gray field. Text-field
-focus is navy `#000080` on every input (`win95.css` / `--ring`).
+focus is navy `#000080` on every input (`win95.css` / `--ring`). A frame and
+the panels inside it stay one color family. A foreign border on the outside
+of a panel is the wrong paint.
 
 The app page’s gutters stay the desktop field (`pcb-backdrop`; teal by
 default). The BRAIN2 title bar spans the window. A room’s own field meets
@@ -569,6 +631,11 @@ orb. It may also be an object that room invented.
       and sourced.
 - [ ] Layout: one job per region, one reading order, shared edges, related
       controls in one group, empty space only as a pause, three type sizes.
+- [ ] [The screen stays pleasing](#the-screen-stays-pleasing): peers share a
+      baseline and one row when they fit, gaps are even, one color family,
+      no orphan wrap, no clipped toolbar (padding first), the hint is
+      readable, a dead control is hidden, clocks and popovers are the
+      instrument. No chrome added to look busy.
 - [ ] If it moves, it is a verb (or one rare gesture on that verb), and
       reduced motion snaps to the end state.
 - [ ] A number the person did not type wears `~` and an **est.** chip.

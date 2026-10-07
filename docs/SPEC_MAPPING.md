@@ -453,7 +453,9 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
 - **TOP strip** (large weekday + Review due + one Points tile + **Today's Progress** + screen pet + Days Until + **Moon**) — ✅
   shared by **all five** Home tabs. Equal-height tiles (caption + CRT + footer)
   flex up to 200px. Optional affirmation / weather / Next / Day lamp /
-  Solar remainder / Tracking now / Night well / Harvest leftover / Inbox mill.
+  Solar remainder / Tracking now / Night well / Harvest leftover / Inbox mill /
+  Already flowing / Plan and lived (both default off). **Widget catalog** on the
+  Widgets menu walks every square.
   **Moon** is an 8-bit moon, the phase name, and days until the sooner of the
   next full moon and the next new moon. Detail adds illumination, the previous
   and next major phase with local time, and a heliocentric chart of the eight
@@ -464,7 +466,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   Perfect output higher than last week).
   × asks Are you sure? before hide. The weekday plate is the clock's date.
   Overview squares follow the selected day unless **Widgets → Follow the clock**
-  is on (`cogs-home-widgets` persist v8, default off). Habits, Plan, To Do,
+  is on (`cogs-home-widgets` persist v9, default off). Habits, Plan, To Do,
   Goals, and Tracking stay on the selected day either way.
   Centered CRT numerals, three Habits tints, shared `--hab-crt-green`.
   All time / today / week / month share one Points tile. **Widgets** sits in
@@ -780,7 +782,31 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   dependents unlock). Solid pen-colored blocks are Tracking; a multi-hour stretch
   in day mode is one continuous slab (title once, still clickable in every hour).
   Amber blocks are task `timeLogs`. Paint strip follows the selected day. Date
-  keys are local calendar days.
+  keys are local calendar days. Agenda cards sit to the right of the time labels.
+- **Tracking log** — ✅ `components/Home/Tracking/tracking-log-view.tsx` on the
+  Home Tracking fascia (persisted with the other view keys). The selected local
+  day. The composer is Event, Switch task, Switch goal, Intake (Food / Drink /
+  Drug), and Note. Food, drink, and drugs are Activity instants with
+  `intakeClass` and `eventKind` `intake.food` / `intake.drink` / `intake.drug`.
+  Bare intake (Intake pen, no class) sits in a short **Intake** group under
+  those three. Events are other log-like instants (Text log pen and/or
+  `eventKind`, no intake class); a new phrase such as left room is an Activity
+  instant whose kind is the slug of the title. A location on an event reuses or
+  creates a Location pen. Switch task and Switch goal store `started …` and
+  `objective …`. Note is a Text log instant. The clock is exact unless
+  Estimated or Unknown; an unknown clock is a badge, and the bot keeps the
+  named minute for placement. The same fields are `log:` (trailing `loc:`),
+  `st:` / `switch task:`, `so:` / `switch objective:` / `switch goal:`,
+  `intake:` / `intake food:` / `intake drink:` / `intake drug:`, and `note:` /
+  `n`. The cycle section is hidden until
+  **Enable cycle tracking** is on (View settings; `enableCycleTracking` on
+  `brain2-timegrid-store`, persist v15; new stores start off; an older blob
+  that omitted the key is set on without clearing other fields or
+  `brain2-cycle-marks`). When on: bleeding, spotting, and ovulation toggles.
+  The phase is labeled from bleed days and ovulation marks, not a medical
+  prediction. Spotting is recorded and does not change the phase. **Cycle
+  detail** reads a recent-month calendar through three lenses: Clinical,
+  Chinese medicine, and Esoteric. Phase is derived, not stored.
 - **Day notes** — ✅ `components/Home/Tracking/tracking-day-notes.tsx`. Append
   log per local calendar day (`components/append-log.tsx`). **Submit note**
   stamps writing time; List / Bulk / Latest; leftover plaintext migrates as one
@@ -789,7 +815,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   in `.append-log-history` (`notesWellExpanded` on `brain2-tracking-view-prefs`).
   Source of truth is `brain2-tracking-day-notes`
   (`lib/day-notes-persist.ts`), written on submit and shown under Time Grid,
-  Activity Log, and Day Log. Mirrored into `cogs-timegrid-store.dayNotes`
+  Activity Log, Day Log, and Tracking log. Mirrored into `cogs-timegrid-store.dayNotes`
   (persist v5). A hub pick of painted intervals cannot wipe the dedicated key;
   persist merge + vault-guard overlay copy that map back onto the timegrid blob.
   Reads union `brain2-` and `cogs-` (immutable, id'd entries), so a pair split by
@@ -1121,7 +1147,9 @@ how a finding stays a living item, not a screenshot.
   Views include **Observatory**, **Circadian**, **Places**, **Mood field**
   (any painted name, plus Same word / The water / Marks from the stretch
   reading — not only four pens — with wellbeing metrics still beside that),
-  **Velocity**, **Cycle** (plus open-item survival),
+  **Velocity**, **Cycle** (plus open-item survival), **Log** (Time group: counts
+  by day and by kind, clock scatter of exact and estimated times, unknown clocks
+  as a count, phase strip from bleed days and ovulation marks),
   **Goals**, **Operations**, **Lists & areas** (size-by-items treemap + HHI),
   **Tags**, **Stages**, **Weight**, **Attributes**, **Diversity** (Shannon entropy
   + Gini + weekday/weekend), **Transitions** (Markov pen matrix + alluvial), **Spectrum**

@@ -113,6 +113,7 @@
 │   │   ├── ItemTypesLibrary.tsx
 │   │   ├── LibraryCuts.tsx
 │   │   ├── ListsAreasView.tsx
+│   │   ├── LogEventsView.tsx
 │   │   ├── MetricsTrends.tsx
 │   │   ├── MoodFieldView.tsx
 │   │   ├── Observatory.tsx
@@ -163,6 +164,8 @@
 │   │   ├── grain-strips.ts
 │   │   ├── hour-day.test.ts
 │   │   ├── hour-day.ts
+│   │   ├── log-event-stats.test.ts
+│   │   ├── log-event-stats.ts
 │   │   ├── observatory-findings.ts
 │   │   ├── observatory.test.ts
 │   │   ├── open-in-lists.test.ts
@@ -367,6 +370,9 @@
 │   │   │   ├── companion-section.tsx
 │   │   │   ├── confirm-planned-dialog.test.tsx
 │   │   │   ├── confirm-planned-dialog.tsx
+│   │   │   ├── cycle-detail-dialog.tsx
+│   │   │   ├── cycle-log-section.test.tsx
+│   │   │   ├── cycle-log-section.tsx
 │   │   │   ├── daylog-week.css
 │   │   │   ├── daylog-week.test.tsx
 │   │   │   ├── daylog-week.tsx
@@ -427,6 +433,10 @@
 │   │   │   ├── tracking-desk.tsx
 │   │   │   ├── tracking-find.test.tsx
 │   │   │   ├── tracking-find.tsx
+│   │   │   ├── tracking-log-model.test.ts
+│   │   │   ├── tracking-log-model.ts
+│   │   │   ├── tracking-log-view.test.tsx
+│   │   │   ├── tracking-log-view.tsx
 │   │   │   ├── tracking-period-nav.tsx
 │   │   │   ├── tracking-tags-panel.test.tsx
 │   │   │   ├── tracking-tags-panel.tsx
@@ -468,11 +478,13 @@
 │   │   ├── home-next-tile.tsx
 │   │   ├── home-overview.test.tsx
 │   │   ├── home-overview.tsx
+│   │   ├── home-reading-tiles.tsx
 │   │   ├── home-review-banner.test.tsx
 │   │   ├── home-review-banner.tsx
 │   │   ├── home-screen-pet.tsx
 │   │   ├── home-solar-tile.tsx
 │   │   ├── home-tracking-tile.tsx
+│   │   ├── home-widget-catalog.tsx
 │   │   ├── home-widget-dialog.tsx
 │   │   ├── home-widgets-menu.tsx
 │   │   ├── planet-skins.ts
@@ -948,17 +960,17 @@
 │   ├── message-ingest.json
 │   ├── mobile-sync.json
 │   ├── recovery-backups
-│   │   ├── auto-brain2-habits-store-2026-10-06-22.json
 │   │   ├── auto-brain2-habits-store-2026-10-06-23.json
 │   │   ├── auto-brain2-task-storage-2026-10-06-22.json
 │   │   ├── auto-brain2-timegrid-store-2026-10-06-23.json
-│   │   ├── auto-cogs-habits-store-2026-10-06-22.json
+│   │   ├── auto-brain2-timegrid-store-2026-10-07-00.json
 │   │   ├── auto-cogs-habits-store-2026-10-06-23.json
-│   │   ├── auto-cogs-task-storage-2026-10-06-22.json
+│   │   ├── auto-cogs-habits-store-2026-10-07-00.json
 │   │   ├── auto-cogs-task-storage-2026-10-06-23.json
+│   │   ├── auto-cogs-task-storage-2026-10-07-00.json
 │   │   ├── auto-cogs-timegrid-store-2026-10-06-22.json
 │   │   ├── auto-cogs-timegrid-store-2026-10-06-23.json
-│   │   ├── auto-points-store-2026-10-06-22.json
+│   │   ├── auto-cogs-timegrid-store-2026-10-07-00.json
 │   │   ├── auto-points-store-2026-10-06-23.json
 │   │   ├── brain2-empty-ls-2026-09-21T07-45-39-912Z.json
 │   │   ├── chrome-ls-2026-09-20T03-12-52-878Z.json
@@ -1954,6 +1966,12 @@
 │   ├── critical-path.ts
 │   ├── csv.test.ts
 │   ├── csv.ts
+│   ├── cycle-lens-copy.test.ts
+│   ├── cycle-lens-copy.ts
+│   ├── cycle-marks.test.ts
+│   ├── cycle-marks.ts
+│   ├── cycle-phase.test.ts
+│   ├── cycle-phase.ts
 │   ├── data
 │   │   ├── backup.test.ts
 │   │   ├── backup.ts
@@ -2071,6 +2089,7 @@
 │   ├── habit-auto-flag.ts
 │   ├── habit-completion-source.test.ts
 │   ├── habit-completion-source.ts
+│   ├── habit-completion-summary.test.ts
 │   ├── habit-completion-summary.ts
 │   ├── habit-completion-trust.test.ts
 │   ├── habit-completion-trust.ts
@@ -2079,6 +2098,7 @@
 │   ├── habit-connections.ts
 │   ├── habit-coverage-sync.test.ts
 │   ├── habit-coverage-sync.ts
+│   ├── habit-daily-completion-average.test.ts
 │   ├── habit-daily-completion-average.ts
 │   ├── habit-done-log.test.ts
 │   ├── habit-done-log.ts
@@ -2160,6 +2180,7 @@
 │   │   ├── apply-activity-span.ts
 │   │   ├── apply-bulk.ts
 │   │   ├── apply-capture.ts
+│   │   ├── apply-cycle.ts
 │   │   ├── apply-discrete-event.ts
 │   │   ├── apply-glossary.test.ts
 │   │   ├── apply-glossary.ts
@@ -2496,6 +2517,7 @@
 │   ├── tide-client.ts
 │   ├── time-entries.test.ts
 │   ├── time-entries.ts
+│   ├── time-tracking-store.cycle-pref.test.ts
 │   ├── time-tracking-store.test.ts
 │   ├── time-tracking-store.ts
 │   ├── todo-commitment.test.ts

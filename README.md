@@ -236,6 +236,7 @@ because correcting it is cheap and nothing pretends to be observed.
 > major folder has a `README.md`. Start with this file, then `docs/SPEC_MAPPING.md`,
 > then the folder README nearest the code you're reading. For look and feel,
 > [`docs/DESIGN_STYLE.md`](docs/DESIGN_STYLE.md) — Lists is the gold standard.
+> [The screen stays pleasing](docs/DESIGN_STYLE.md#the-screen-stays-pleasing) wins when a local note would make the screen ugly.
 > Next work (screens first, mechanics kept): [`docs/PLAN_OF_ACTION.md`](docs/PLAN_OF_ACTION.md).
 > How map, loop, and meaning join: [`docs/MAP_LOOP_MEANING.md`](docs/MAP_LOOP_MEANING.md).
 > Map, orders of abstraction, and the ten-slice build: [`docs/ScienceandSanityBrain2.md`](docs/ScienceandSanityBrain2.md).
@@ -347,9 +348,9 @@ horizontal lines across the hours, like Plan agenda and Day Log (do not
 remove). Week and Infinite label sunrise/sunset from **that row's date** (persisted
 per day), not today's clock on every row. Discrete events stay small vertical ticks at the minute they were
 logged. The week grid draws those ticks and opens the block editor. An empty
-hour on the Day Log week opens the Plan event dialog. **Time Grid / Activity Log / Day Log** use the same inset metal
+hour on the Day Log week opens the Plan event dialog. **Time Grid / Activity Log / Day Log / Tracking log** use the same inset metal
 `.hab-view-changer` keys as Habits Daily / Weekly / Monthly. **Day Log** has a local **Day \| Week** agenda switch (default Day, not persisted): Day overlays those same painted blocks on the planned agenda as **one continuous slab** per stretch; Week is a compact seven-column plan-vs-tracked board for that week (not the Time Grid paint week; click a date heading to open that day). Ghosts are the plan; solid color is tracked time; click Sleep to edit. A plaintext **notes**
-field sits under all three Tracking views for the calendar day — white, not cream; jots like
+field sits under Time Grid, Activity Log, Day Log, and Tracking log for the calendar day — white, not cream; jots like
 "went to the zoo from 4–5" stay with the date while you figure out where they
 belong, and they survive reload (`cogs-tracking-day-notes` / `brain2-tracking-day-notes`, not the timegrid
 hub blob) — both of those keys are read and unioned, and if a full origin keeps a
@@ -450,7 +451,7 @@ Brain2 is **offline-first and stays that way**. Highlights:
   (hydrate persist, optional webhook). Grocery dumps pin in the chat for
   laptop-off reads. Writes reuse capture/habit/tracking paths; `groc` / `read:` /
   `lists` / `info` dump data back as plain text (bare `g` is Inbox only; `-mb` / `-monkey` dumps a capture in Monkey brain). Text-pipeline
-  tracker rows show in Analytics **Text events** / **Text spans**. Token is gitignored `.env.local`
+  tracker rows show in Analytics **Text events** / **Text spans**. Analytics → Time → **Log** counts and plots any repeated event phrase (left room) plus food, drink, and drug instants. Token is gitignored `.env.local`
   or Electron `safeStorage`. See [`docs/MESSAGE_INGEST.md`](docs/MESSAGE_INGEST.md).
 - **Electron main is a thin shell**, not the source of truth. IPC and Mongo
   files under `electron/ipc/` and `lib/data/mongo/` are unwired scaffolding.
@@ -561,7 +562,7 @@ derived Sleep sits on already-painted Work, with
 auto-fill linked daily habits across scopes, per-pen **nesting**, **Recent** sort,
 and **variants**,
 **Working on right now** for a searched pen color (or a Create row when the typed name is new in that view; timer from this second, a block of that color beside Operations **Working on this now**, under the Tracking view switcher in `.trk-now-module`),
-an **Activity Log** where every block is editable (plus **Log activity** on the Time Grid rail with TIME/DIV / view modes, and on Activity Log / Day Log’s plan-style `.trk-period` date bar — optional name, notes, optional **Date** on start/end, **right now** on a focused clock, and discrete events — untracked-gap row as a grid with a 22px `.trk-gap-add` **+**, Done-for-day), a **Day Log** with local **Day \| Week** (default Day) that overlays painted time on the plan as **one continuous slab** per stretch in day mode and a seven-column plan-vs-tracked week board otherwise (click a ghost to confirm it, completing tasks so dependents unlock; click Sleep to edit; week date heading returns to that day), per-day **tracking notes** (metal well collapsed to legend + Expand; Expand opens a tall composer and tall history; white field, cream lace in the bevel only; persist overlay so reload keeps them), **scissors** (split at a minute; same-pen adjacent merge unless cut), clickable **Sleep** (fell asleep / woke up; steel **est.** / certain; dialog opens immediately), optional infinite day/week from the grid toolbar (virtualized, origin-stable) and pen-image mosaic, hide pens per view, selected-pen settings vs view settings, cross-scope
+an **Activity Log** where every block is editable (plus **Log activity** on the Time Grid rail with TIME/DIV / view modes, and on Activity Log / Day Log’s plan-style `.trk-period` date bar — optional name, notes, optional **Date** on start/end, **right now** on a focused clock, and discrete events — untracked-gap row as a grid with a 22px `.trk-gap-add` **+**, Done-for-day), a **Day Log** with local **Day \| Week** (default Day) that overlays painted time on the plan as **one continuous slab** per stretch in day mode and a seven-column plan-vs-tracked week board otherwise (click a ghost to confirm it, completing tasks so dependents unlock; click Sleep to edit; week date heading returns to that day), a **Tracking log** for that day’s food, drink, drugs, and any repeated event phrase (left room) with a clock, Estimated, or Unknown, plus, when Enable cycle tracking is on, bleeding, spotting, and ovulation marks whose phase is labeled from bleed days and ovulation marks, and a cycle detail popup with Clinical, Chinese medicine, and Esoteric lenses, per-day **tracking notes** (metal well collapsed to legend + Expand; Expand opens a tall composer and tall history; white field, cream lace in the bevel only; persist overlay so reload keeps them), **scissors** (split at a minute; same-pen adjacent merge unless cut), clickable **Sleep** (fell asleep / woke up; steel **est.** / certain; dialog opens immediately), optional infinite day/week from the grid toolbar (virtualized, origin-stable) and pen-image mosaic, hide pens per view, selected-pen settings vs view settings, cross-scope
 **attachment** (one click to say the same hours were also *Social*, as a one-off
 or as a standing rule on the pen), and an Analytics Tracking tab with percentage
 views, category depth, an include-assumed switch, plus variant and tag drill-downs; a two-field

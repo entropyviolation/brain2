@@ -10,7 +10,7 @@ is the heart — collection, presentation, and analysis of that mass, and the
 engine for the next tool. A record is a map: dated, incomplete, and kept at
 its own order. Description stays distinct from inference. Look and feel: **Lists** (`Lists/`) is the
 gold-standard combination of Win95 furniture and surreal orb/velvet contents.
-New UI should preserve both halves — [`docs/DESIGN_STYLE.md`](../docs/DESIGN_STYLE.md).
+New UI should preserve both halves — [`docs/DESIGN_STYLE.md`](../docs/DESIGN_STYLE.md). [The screen stays pleasing](../docs/DESIGN_STYLE.md#the-screen-stays-pleasing) overrides a local packing note.
 The build that extends the map is [`docs/ScienceandSanityBrain2.md`](../docs/ScienceandSanityBrain2.md).
 
 ## Public door
@@ -111,7 +111,7 @@ Header **Phone Notes** (`iphone-notes-store.tsx`). On My iPhone notes that never
 
 ## Message ingest (Telegram)
 
-Header **Ingest** (`ingest-log-dialog.tsx`) plus Settings → **Message ingest**. Phone texts with `groc`, `got milk`, `needed:`, `get:`, `plan for rn:`, activity spans, discrete events / `log:` / `intake:` / `st:` / `so:` / `transit:`, `dh:` habit keywords (bare keywords stay Inbox), `n …` (a point at send time), `qa:`, `habit:`, `at:`, `read: grocery list`, `lists`, `info`, `iphone-notes:` (On My iPhone Shortcut dump), and the rest of the phrase list in [`docs/MESSAGE_INGEST.md`](../docs/MESSAGE_INGEST.md) apply through `lib/ingest/` (writes reuse desktop paths; grocery dumps pin in Telegram; bare `g` → Inbox; send time is `message.date`). GPS / Live Location still paints Location; those points stay off this log unless **Show GPS**. `npm run phone:hub` is the always-on executor. Pairing required. Text-pipeline analytics: **Text events** / **Text spans**. Photos / PDFs / receipt OCR: [`docs/MESSAGE_INGEST.md`](../docs/MESSAGE_INGEST.md).
+Header **Ingest** (`ingest-log-dialog.tsx`) plus Settings → **Message ingest**. Phone texts with `groc`, `got milk`, `needed:`, `get:`, `plan for rn:`, activity spans, discrete events / `log:` (trailing `loc:`) / `intake:` / `intake food|drink|drug:` / `st:` / `switch task:` / `so:` / `switch goal:` / `note:` / `transit:`, `dh:` habit keywords (bare keywords stay Inbox), `n …` (a point at send time), `qa:`, `habit:`, `at:`, `read: grocery list`, `lists`, `info`, `iphone-notes:` (On My iPhone Shortcut dump), and the rest of the phrase list in [`docs/MESSAGE_INGEST.md`](../docs/MESSAGE_INGEST.md) apply through `lib/ingest/` (writes reuse desktop paths; grocery dumps pin in Telegram; bare `g` → Inbox; send time is `message.date`). GPS / Live Location still paints Location; those points stay off this log unless **Show GPS**. `npm run phone:hub` is the always-on executor. Pairing required. Text-pipeline analytics: **Text events** / **Text spans**. Photos / PDFs / receipt OCR: [`docs/MESSAGE_INGEST.md`](../docs/MESSAGE_INGEST.md).
 
 ## Data stores (see `lib/`)
 

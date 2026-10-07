@@ -118,7 +118,9 @@ Read these as ancestors, not templates.
   beautiful interaction is wanted. A teaching caption is welcome when the
   line is real and sourced (failure 4 in [`DESIGN_STYLE.md`](DESIGN_STYLE.md)).
   One still pasted on every window is still a costume. That limit is not a
-  ban on magic.
+  ban on magic. It is also not permission to cram, clip, or leave one peer
+  button alone on the next row. Those break
+  [the screen stays pleasing](DESIGN_STYLE.md#the-screen-stays-pleasing).
 
 Stills opened for the gaps and conflicts above, and read as support rather
 than costume: mushroom desk (a living thing wired into the racks,

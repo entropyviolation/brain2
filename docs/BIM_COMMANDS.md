@@ -176,33 +176,33 @@ In chat: `info` · `{prefix} info` · `{prefix} commands` · `all commands`.
 
 ### `log:`
 
-- **Format:** `log: drink water` · `log: left home at 3:30` · `log: shower 7:30 - 7:45` · `log: shower 10m` · `log: START walk` · `log: END walk 5:00`
+- **Format:** `log: left room` · `log: left room at 3:30` · `log: left room at 3:30 loc: home` · `log: shower 7:30 - 7:45` · `log: shower 10m` · `log: START walk` · `log: END walk 5:00`
 - **Forms / aliases:** `log:`, `log-`
-- **Does:** Tracking note on Activity. No time → point at send time. `at 3:30` is a point on the send date. `7:30 - 7:45` is a range. `10m` / `10 min` just finished (end = send time). START/END pair an activity. A line under the event is the note; the clock stays on the first line. A later block over that minute leaves the point. Times use the machine timezone. Labeled from text pipeline. Bare `o` is NOT a log.
+- **Does:** Tracking note on Activity, the Event row of the Tracking log. No time → point at send time. `at 3:30` is a point on the send date. `7:30 - 7:45` is a range. `10m` / `10 min` just finished (end = send time). START/END pair an activity. A line under the event is the note; the clock stays on the first line. A later block over that minute leaves the point. Times use the machine timezone. A clock with no certainty word is exact (`clockCertainty` omitted). `est` / `estimated` / `~` marks the time estimated and also sets `precision: estimated`. `unknown` keeps the named minute for placement and does not treat it as observed. Put the word after the clock, or after the place. Trailing `loc: home` reuses or creates that Location pen and paints a Location instant at the same minute (`log: left room loc: home`, `log: left room at 3:30 loc: home`). The place is the last suffix. The event phrase is stored as the title and as `eventKind`, a lowercase slug with spaces collapsed and punctuation removed, so the same phrase groups (`left room`). Labeled from text pipeline. Bare `o` is NOT a log.
 
 ### `intake:`
 
-- **Format:** `intake: 1 dab dab pen` · `intake: coffee at 8:15`
-- **Forms / aliases:** `intake:`
-- **Does:** Food, drink, medicine, or any intake. Always a point — no duration. No time uses the send time. A following clock uses that time on the send date. A line under the event is the note. Vertical line on the Tracking grid. A later block leaves the point.
+- **Format:** `intake: coffee` · `intake food: egg salad` · `intake drink: coffee at 8:15` · `intake drug: tablet est` · `intake: coffee at 8:15 unknown`
+- **Forms / aliases:** `intake:`, `intake food:`, `intake drink:`, `intake drug:`
+- **Does:** Food, drink, medicine, or any intake — the Intake row of the Tracking log. Food is a subset of intake. Always a point — no duration. Pen: Intake. No time uses the send time. A following clock uses that time on the send date. `intake food:` / `intake drink:` / `intake drug:` set `intakeClass` and `eventKind` `intake.food` / `intake.drink` / `intake.drug`. Bare `intake:` leaves `intakeClass` unset and sets `eventKind` to `intake`. A clock with no certainty word is exact. `est` / `estimated` / `~` is estimated (`clockCertainty` and `precision: estimated`). `unknown` stores the minute for placement only. A line under the event is the note. `ate` / `drank` / `took` keep the Text log pen and set the same class. Vertical line on the Tracking grid. A later block leaves the point.
 
 ### `st:`
 
-- **Format:** `st: from: talking to elijah to: cleaning up the living room`
+- **Format:** `st: cleaning` · `switch task: cleaning at 3:30` · `st: from: talking to elijah to: cleaning up the living room`
 - **Forms / aliases:** `st:`, `switch task:`
-- **Does:** Tracking flag. from: is what you stopped, to: is what you started. Unlabeled text is to. Optional time, else send time.
+- **Does:** Switch task. The verb is `st:` or `switch task:` (colon required). from: is what you stopped, to: is what you started. Unlabeled text is to, stored as `started …` on the Switch pen — the same instant the Tracking log composer writes. Optional clock, else send time. A clock with no certainty word is exact. `est` / `estimated` / `~` is estimated (`clockCertainty` and `precision: estimated`). `unknown` keeps that minute for placement.
 
 ### `so:`
 
-- **Format:** `so: get living room into a decent state`
-- **Forms / aliases:** `so:`, `switch objective:`
-- **Does:** Same from/to rules as switch task. Unlabeled text is the objective you are on now.
+- **Format:** `so: read` · `switch objective: read at 8:00 est` · `switch goal: read`
+- **Forms / aliases:** `so:`, `switch objective:`, `switch goal:`
+- **Does:** Switch goal (the Tracking log label). The verb is `so:`, `switch objective:`, or `switch goal:` (colon required). Same from/to rules as switch task. Unlabeled text is the goal you are on now, stored as `objective …` on the Objective pen. Optional clock, else send time. A clock with no certainty word is exact. `est` / `estimated` / `~` is estimated. `unknown` keeps that minute for placement.
 
 ### `transit:`
 
 - **Format:** `transit: from: home to: the store` · `transit: the store`
 - **Forms / aliases:** `transit:`
-- **Does:** Location change as a tracking note. Unlabeled text is to. Optional time, else send time.
+- **Does:** Location change as a tracking note. Unlabeled text is to. Optional time, else send time. The same clock words as switch task: exact unless `est` / `estimated` / `~` or `unknown`.
 
 ### `smoked weed`
 
@@ -214,19 +214,25 @@ In chat: `info` · `{prefix} info` · `{prefix} commands` · `all commands`.
 
 - **Format:** `drank water` (whole message)
 - **Forms / aliases:** `drank water`
-- **Does:** Default discrete-event trigger.
+- **Does:** Default discrete-event trigger. Sets `intakeClass` drink and `eventKind` `intake.drink`. Pen stays Text log.
 
 ### `ate {item}`
 
 - **Format:** `ate egg salad`
 - **Forms / aliases:** `ate …`
-- **Does:** Default discrete-event trigger with `{item}` slot.
+- **Does:** Default discrete-event trigger with `{item}` slot. Sets `intakeClass` food and `eventKind` `intake.food`. Pen stays Text log.
 
 ### `took {item}`
 
 - **Format:** `took 2 adderall`
 - **Forms / aliases:** `took …`
-- **Does:** Default discrete-event trigger with `{item}` slot.
+- **Does:** Default discrete-event trigger with `{item}` slot. Sets `intakeClass` drug and `eventKind` `intake.drug`. Pen stays Text log.
+
+### `cycle:`
+
+- **Format:** `cycle: bleeding` · `cycle: spotting` · `cycle: ovulation` · `cycle: bleeding off`
+- **Forms / aliases:** `cycle:`
+- **Does:** Set bleeding, spotting, or ovulation on the message's local calendar day. The same flag plus `off` clears it. Spotting is stored and does not change the derived phase. Colon required — bare cycle is not this command. A calendar mark, not medical advice.
 
 ## Activity monitor (currently / stopped / switched)
 
@@ -404,9 +410,9 @@ In chat: `info` · `{prefix} info` · `{prefix} commands` · `all commands`.
 
 ### `n`
 
-- **Format:** `n stuck in aisle 4` · `note: …` · `jot: …` · `memo: …`
+- **Format:** `n stuck in aisle 4` · `note: left room at 8:15` · `note: left room at 8:15 est` · `jot: …` · `memo: …`
 - **Forms / aliases:** `n`, `note`, `jot`, `memo`, `day note`, `daynote`, `dnote`
-- **Does:** A discrete event at send time (first line is the title; lines under it are the note). Also appended onto the block covering that minute, including `n loc:` / `n mood:` / `n activity:`. `day:` stays the day jot.
+- **Does:** The Note row of the Tracking log: a Text log instant. No clock uses send time. `at 8:15` is that minute on the send date. A clock with no certainty word is exact. `est` / `estimated` / `~` is estimated (`clockCertainty` and `precision: estimated`). `unknown` keeps that minute for placement. The first line is the title; lines under it are the note. Also appended onto the block covering that minute, including `n loc:` / `n mood:` / `n activity:` (those `loc:` words pick a scope, not a place on an event). `day:` stays the day jot and does not read a clock.
 
 ### `day:`
 
