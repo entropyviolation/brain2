@@ -537,7 +537,9 @@ picks up the live lists/habits instead of an empty `brain2` profile.
 
 ## Data layer
 
-Zustand stores in `lib/` persist to **localStorage**. Live keys are **`brain2-*`**; historical **`cogs-*`** keys are a lossless alias (`lib/storage-keys.ts`). The catalog, including persist versions, is [`lib/README.md`](lib/README.md). `task-store` is `brain2-task-storage` at persist **v17**. The Moon detail saves view width and time rate in `brain2-sky-motion` (real time through one year per second; **Reset to real time** restores the rate). The paused true-scale sky is [`components/Home/MOON_SKY_MOTION.md`](components/Home/MOON_SKY_MOTION.md).
+Zustand stores in `lib/` persist to **localStorage**. Live keys are **`brain2-*`**; historical **`cogs-*`** keys are a lossless alias (`lib/storage-keys.ts`). The catalog, including persist versions, is [`lib/README.md`](lib/README.md). `task-store` is `brain2-task-storage` at persist **v17**. The Moon detail saves view width and time rate in `brain2-sky-motion` (real time through one year per second; **Reset to real time** restores the rate and leaves the width). A chosen date and the true-scale log camera are not built. The settings-bar contract is [`components/Home/MOON_SKY_MOTION.md`](components/Home/MOON_SKY_MOTION.md).
+
+Files under `data/` are this machine's vault: the persist hub, mobile sync, message ingest, and recovery backups. They are gitignored, along with PDFs and `litrefs/`. Do not commit them. `data/.gitkeep` is the only path in that folder that belongs in git.
 
 The sync that exists is the manual phone hub ([`components/Mobile/README.md`](components/Mobile/README.md)). MongoDB Atlas, `@brain2/core`, and Expo are speculation, not the storage plan ([`docs/SPEC_MAPPING.md`](docs/SPEC_MAPPING.md) §3).
 

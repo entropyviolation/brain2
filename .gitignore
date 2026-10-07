@@ -54,3 +54,16 @@ docs/shortcuts/*.plist
 # local user-data snapshots (never commit)
 /data/recovery-backups/
 /data/chrome-idb-snapshot/
+
+# The whole data/ directory is this machine's vault (persist hub, sync,
+# ingest, recovery). Only the placeholder is allowed in git.
+/data/*
+!/data/.gitkeep
+
+# Books, literature dumps, Playwright leftovers, and local commit drafts.
+# App images under public/ are not PDFs and stay tracked.
+*.pdf
+/litrefs/
+/test-results/
+/docs/sdfh
+/.commit-drafts/

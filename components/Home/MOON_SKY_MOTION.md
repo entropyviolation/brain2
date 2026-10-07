@@ -1,6 +1,8 @@
 # Moon chart motion — handoff
 
-The motion bar under the Moon detail is shipped. The true-scale sky is not.
+The motion bar under the Moon detail is shipped. The date control, Now, and
+the one clock are shipped. The true-scale sky is not: the chart is still √r,
+and view width does not move it yet.
 This note is the contract for the next pass. Do not start that pass from a
 blank chart, and do not paste the reference page’s light paper UI.
 
@@ -14,9 +16,115 @@ second toy beside it.
 
 See how fast familiar motions cross the screen at a chosen zoom and time
 rate. Save that rate and the view width. Reset the rate to real time in one
-action. **Simulate a chosen date** — scrub or pick an instant and see the
-sky at that time. The date control is a first-class next step. It is not
-built.
+action. **Simulate a chosen date** — pick an instant and see the sky then.
+The date control and Now are built. The log camera is not.
+
+## Settings bar
+
+This is the contract for the controls under the chart. The bar is shipped.
+Date simulation is shipped beside it and is not part of the saved store.
+Do not fold the true-scale camera into the date control.
+
+### What is saved
+
+`lib/sky-motion-store.ts`, persist **v1**, key `brain2-sky-motion` (alias
+`cogs-sky-motion`). Two fields only:
+
+| Field | Meaning | Default |
+| --- | --- | --- |
+| `viewWidthLog` | `z` in `W = 10^z` kilometres across a 1,000 px view. Range 3–10, step 0.05. | 3.5 (about 3,162 km) |
+| `rateIndex` | Index into the rate table. `M` is universe seconds per real second. | 0 (real time, `M = 1`) |
+
+There is no per-body speed. There is no second store. Garbage rehydrates
+through `clampViewWidthLog` and `clampRateIndex`. The Settings full backup
+includes this store and labels it **Moon chart motion**. A test reset puts
+the store back to 3.5 and real time so a suite does not leave the chart
+sped up.
+
+`M` by index: 1, 60, 3,600, 86,400, 604,800, 2,629,800, 31,557,600. Labels:
+real time, 1 min / 1 hour / 1 day / 1 week / 1 month / 1 year per second.
+
+### Reset to real time
+
+The key sets `rateIndex` to 0. It does **not**:
+
+- change the view width
+- clear the chosen date
+- jump the chart to the widget's today
+- write elapsed fast-forward into the store
+
+Closing the Moon detail drops elapsed time and the chosen date, because
+both live on the mounted chart. Reopening starts at the widget date, played
+at the saved rate. A reload keeps `z` and `M` and does not keep how far a
+fast rate had run. Defaults stay width 3.5 and real time.
+
+### Date simulation (shipped)
+
+The Date control and the Now key sit in the Moon readout
+(`home-moon-orrery.tsx`, `.home-sky-when`). They are session state. They
+are not fields of `brain2-sky-motion`.
+
+Default anchor is the widget date from `home-moon-tile.tsx`: the live clock
+when that day is today, noon local on any other day. The Date input
+replaces that anchor. Now clears the chosen date so the anchor is the
+widget date again, and clears elapsed. Now does not change `M` or `W`.
+
+When `M` is 1, `useChartDate` shows that anchor and does not run a private
+clock. When `M` is greater than 1, and only while the detail is open:
+
+```text
+dt     = min(frame seconds, 0.1)
+simMs += dt * M * 1000
+scene  = anchor + elapsed × M
+```
+
+Positions come from `planetPlaces(simDate)` in `lib/solar-system.ts`. That
+file stays the only ephemeris. Reduced motion still advances the clock; it
+only slows how often React commits (0.25 s instead of about 1/24 s).
+
+While the chart is following the widget date, a new widget instant (the
+minute tick, or another day) replaces the anchor and clears elapsed. A
+picked date holds until Now or until the detail closes.
+
+`motionReadout` stays the readout of the same `W` and `M`. It is not a
+clock and it is not a second zoom.
+
+### How the bar fits the true-scale sky
+
+Today `W` feeds only `motionReadout`. The chart's orbit radius is
+`√r × 34` with tilt `0.72`. That is not a camera. Leave it until one AU
+scene replaces it. When that scene exists:
+
+```text
+chosen date  ──┐
+time rate M  ──┼──►  planetPlaces(simDate)
+view width W ──┘         log camera: 1,000 px = W km
+                         km per pixel = W / 1000
+                         motionReadout reads the same W and M
+```
+
+- Delete any zoom that is not this slider. The Earth-and-Moon true-size
+  frame may stay as a **mode**. It is not a second view width.
+- Do not draw positions from anywhere but `planetPlaces` / `orbitSamples`
+  in `lib/solar-system.ts`. No second ephemeris.
+- Do not copy the px/s formula into the chart. The bar is the readout.
+- The date anchor and the one clock are in. The log camera is not. Do not
+  add a second zoom while the √r chart remains. When the one-AU scene
+  exists, drive it from this view width: 1,000 px = `W` km.
+- Chrome, then a real star field in place of the 56 hashed dots, then
+  light-time, are still ahead. Leave `STAR_DOTS` until that star pass.
+  Do not add a second ephemeris for light-time.
+- Do not remove the 0.2 light coarsening on the globes. A fast rate must
+  not repaint every photograph every frame. `moonGlance` on every fast
+  frame is already a known cost if the Earth zoom stays.
+
+A compact checklist in the readout (`.home-sky-progress`) names what is in
+and what is still ahead: date control, Now, one clock, then log camera,
+chrome, stars, light-time. It is progress, not a second settings system.
+
+The camera, chrome, stars, and light-time stay separate changes. Each
+change leaves `lib/sky-motion.test.ts` green. The screenshot check is
+`motionReadout(4.4, 0)`.
 
 ## What is in the repo now
 
@@ -31,11 +139,13 @@ built.
 | Motion math | `lib/sky-motion.ts` | Shipped. Formulas below. Tested in `lib/sky-motion.test.ts`. |
 | Saved settings | `lib/sky-motion-store.ts` | Shipped. Persist **v1**, key `brain2-sky-motion`. In the Settings full backup. Pref-only vault `cogs-sky-motion` (no row guard). |
 | Bar | `components/Home/home-sky-motion.tsx`, `.home-sky-motion` in `home-chrome.css` | Shipped, under the chart. |
-| Chart clock | `useChartDate` in the orrery | Shipped, narrow. Real time uses the widget date. A faster rate plays forward only while the detail is open. |
+| Chart clock | `useChartDate` in the orrery | Shipped. `anchor + elapsed × M`, frame cap 0.1 s. Real time shows the anchor. Elapsed is not persisted. |
+| Date and Now | `.home-sky-when` in the orrery | Shipped. Session only, while the detail is mounted. Not in `brain2-sky-motion`. |
+| Checklist | `.home-sky-progress` in the readout | Shipped. Done versus still ahead. Not a settings store. |
 
 Widget date (`home-moon-tile.tsx`): today uses the live clock (minute tick);
-another day uses noon local. That date is the chart’s anchor. There is **no
-date scrubber**.
+another day uses noon local. That date is the default anchor. The Date
+control can replace it until Now, or until the detail closes.
 
 ## Reference behavior (do not loosen this)
 
@@ -157,9 +267,11 @@ The HTML page does not save. The app does.
 - **Reset to real time** sets `rateIndex` to 0 and **keeps** the view width.
 - Garbage rehydrates through `clampViewWidthLog` (3–10, step 0.05, default
   3.5) and `clampRateIndex` (0–6, default 0).
-- Closing the Moon detail does **not** keep elapsed fast-forward time. The
-  rate is what survives. Reopening starts again at the widget date, played
-  at the saved rate.
+- Closing the Moon detail does **not** keep elapsed fast-forward time or the
+  chosen date. The rate and the view width are what survive. Reopening
+  starts again at the widget date, played at the saved rate.
+- **Reset to real time** does not clear a chosen date that is still on an
+  open detail. **Now** does.
 
 ## How the bar meets the next sky
 
@@ -174,12 +286,12 @@ view width W ──┘         log camera: 1000 px = W km
   Kilometres per pixel = `W / 1000`. Today `W` only feeds the bar. The √r
   chart ignores it. When the AU scene lands, drive the camera from `W`. Do
   not keep a second zoom.
-- **Time rate** multiplies the scene clock. `useChartDate` is the seed:
+- **Time rate** multiplies the scene clock. `useChartDate` is that clock:
   while the detail is open and `M > 1`, `simMillis += min(dt, 0.1) * M *
-  1000`, and positions come from `planetPlaces`. At `M = 1` the chart is the
-  widget date and does not run a private clock.
-- **Chosen date** replaces the widget date as the anchor. Not built. See
-  the ordered steps.
+  1000`, and positions come from `planetPlaces`. At `M = 1` the chart shows
+  the anchor and does not run a private clock.
+- **Chosen date** replaces the widget date as the anchor. Shipped, session
+  only. **Now** returns the anchor to the widget date.
 
 ### Which stream owns what
 
@@ -188,7 +300,7 @@ view width W ──┘         log camera: 1000 px = W km
 | Chrome | `home-sky-motion.tsx`, `.home-sky-motion`, the reset key, slider thumbs. Restyle only inside the Moon dialog’s existing glass. | Kepler, camera math, star catalog |
 | Chart drawing | Replace `toScreen` with heliocentric AU coordinates and a log camera fed by `viewWidthKm`. Keep `planetPlaces` / `orbitSamples`. | A second copy of the px/s formulas |
 | Stars | A real star field, if one is wanted, in place of `STAR_DOTS`. | The motion rows |
-| Heavier physics / sky tools | Date scrub, the scene clock (`M` on the Kepler date), and any later light-time. Thin out per-frame `moonGlance` if the Earth zoom stays. | A new physics package. No matter.js, no n-body beside `solar-system.ts` |
+| Heavier physics / sky tools | Light-time, after the one scene. The date anchor and the scene clock (`M` on the Kepler date) are already in the orrery. Thin out per-frame `moonGlance` if the Earth zoom stays. | A new physics package. No matter.js, no n-body beside `solar-system.ts`. No second ephemeris. |
 
 ## Visual language
 
@@ -216,21 +328,20 @@ Do not ship the reference page’s anthropic-sans / light-surface chrome.
 
 ## Ordered next steps
 
-1. **Date anchor.** Add a scrub or a date-time control on the Moon detail.
-   It sets the instant passed to `planetPlaces`. Default remains the widget
-   date (live clock today, noon on another day). Persist it only if a saved
-   “look at this date” is clearly wanted; the first version can be session
-   state. Do not overload **Reset to real time** to mean “jump back to now.”
-   Reset clears `M` to 1 and leaves both the view width and the chosen date.
-   A separate **Now** control, if needed, returns the anchor to the widget
-   date.
-2. **Feed `W` to one camera.** When the AU scene exists, `viewWidthKm` is
-   the width of the view in kilometres. Delete any leftover zoom that is not
-   this slider. The Earth-and-Moon true-scale frame can stay as a mode; it
-   is not a second view-width.
-3. **Keep one clock.** The scene date is `anchor + elapsed * M`, with the
-   0.1 s frame cap. Real time (`M = 1`) shows the anchor and does not spin a
-   private timer. Elapsed time is not persisted.
+1. **Date anchor.** Done. The Date control sets the instant passed to
+   `planetPlaces`. Default remains the widget date (live clock today, noon
+   on another day). The chosen instant is session state on the open detail,
+   not persist v1. **Reset to real time** clears `M` to 1 and leaves the
+   view width and the chosen date. **Now** returns the anchor to the widget
+   date and clears elapsed.
+2. **Feed `W` to one camera.** Not done. The chart is still `√r × 34`.
+   When the AU scene exists, `viewWidthKm` is the width of the view in
+   kilometres (1,000 px = `W` km). Delete any leftover zoom that is not
+   this slider. Do not add that zoom early. The Earth-and-Moon true-scale
+   frame can stay as a mode; it is not a second view-width.
+3. **Keep one clock.** Done. The scene date is `anchor + elapsed * M`, with
+   the 0.1 s frame cap. Real time (`M = 1`) shows the anchor and does not
+   spin a private timer. Elapsed time is not persisted.
 4. **Draw on Kepler elements.** Positions and orbit samples stay
    `planetPlaces` / `orbitSamples`. If an element is wrong, fix it in
    `lib/solar-system.ts`. Do not fork a second ephemeris for the chart.
