@@ -70,12 +70,7 @@ export function MoonTile({
             </ul>
           </div>
         </div>
-        <MoonOrrery
-          date={when}
-          cycle={face.cycle}
-          phaseLabel={face.label}
-          illuminationPct={Math.round(face.illumination * 100)}
-        />
+        <MoonOrrery date={when} />
       </HomeWidgetDialog>
     </>
   )

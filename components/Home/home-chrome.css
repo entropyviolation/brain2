@@ -2533,9 +2533,188 @@ body .home-widget-dialog.home-widget-instrument.home-widget-catalog {
   100% { opacity: 0.25; }
 }
 
+.home-sky-motion {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px 12px;
+  background: #07110c;
+  color: #e7fff4;
+  box-shadow: inset 1px 1px #000, inset -1px -1px #1c3d2c;
+}
+
+.home-sky-motion h3 {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #c8ffe8;
+}
+
+.home-sky-motion-lead {
+  margin: -4px 0 2px;
+  font-size: 13px;
+  line-height: 1.35;
+  color: rgba(200, 255, 232, 0.78);
+}
+
+.home-sky-motion-ctl {
+  display: grid;
+  grid-template-columns: 7.2rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.home-sky-motion-ctl label {
+  font-size: 13px;
+  color: rgba(200, 255, 232, 0.78);
+}
+
+.home-sky-motion-ctl output {
+  min-width: 9.5rem;
+  font-size: 13px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.home-sky-motion input[type="range"] {
+  width: 100%;
+  height: 4px;
+  margin: 0;
+  appearance: none;
+  background: rgba(125, 255, 196, 0.18);
+  border-radius: 2px;
+  accent-color: #c8ffe8;
+}
+
+.home-sky-motion input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 0;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #f4f4f4, #b5b5b5 55%, #8d8d8d);
+  box-shadow: inset 0 1px 0 #fff, 0 1px 0 #000;
+  cursor: pointer;
+}
+
+.home-sky-motion-rate {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  min-width: 9.5rem;
+}
+
+.home-sky-motion-rate .home-review-key {
+  align-self: flex-end;
+}
+
+.home-sky-motion-scale {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  color: rgba(200, 255, 232, 0.72);
+}
+
+.home-sky-motion-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-sky-motion-row {
+  display: grid;
+  grid-template-columns: minmax(0, 9.5rem) minmax(0, 1fr) 7.8rem;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 0;
+  border-top: 1px solid rgba(125, 255, 196, 0.18);
+}
+
+.home-sky-motion-name {
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.home-sky-motion-name small,
+.home-sky-motion-state small {
+  display: block;
+  font-size: 12px;
+  color: rgba(200, 255, 232, 0.55);
+}
+
+.home-sky-motion-track {
+  position: relative;
+  height: 22px;
+  overflow: hidden;
+  background: #050806;
+  border-radius: 4px;
+  box-shadow: inset 1px 1px #000;
+}
+
+.home-sky-motion-dot {
+  position: absolute;
+  top: 6px;
+  left: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.home-sky-motion-state {
+  font-size: 13px;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.home-sky-motion-state small[data-kind="frozen"] {
+  color: rgba(200, 255, 232, 0.45);
+}
+
+.home-sky-motion-state small[data-kind="barely"] {
+  color: rgba(200, 255, 232, 0.72);
+}
+
+.home-sky-motion-state small[data-kind="visible"] {
+  color: #7dffc4;
+}
+
+.home-sky-motion-state small[data-kind="fast"] {
+  color: #e6a23c;
+}
+
+.home-sky-motion-sum {
+  margin: 2px 0 0;
+  font-size: 13px;
+  line-height: 1.35;
+  color: rgba(200, 255, 232, 0.75);
+}
+
 @media (max-width: 720px) {
   .home-sky-lab {
     grid-template-columns: 1fr;
+  }
+
+  .home-sky-motion-ctl,
+  .home-sky-motion-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .home-sky-motion-ctl output,
+  .home-sky-motion-rate,
+  .home-sky-motion-state {
+    text-align: left;
+    align-items: flex-start;
+  }
+
+  .home-sky-motion-scale {
+    flex-direction: column;
   }
 }
 

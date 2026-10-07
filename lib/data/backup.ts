@@ -68,6 +68,7 @@ import { useBabyAnimalsStore } from "@/lib/baby-animals-store"
 import { useHomeWidgetsStore } from "@/lib/home-widgets-store"
 import { useHomeWeatherStore } from "@/lib/home-weather-store"
 import { useHomeDaysUntilStore } from "@/lib/home-days-until-store"
+import { useSkyMotionStore } from "@/lib/sky-motion-store"
 import { useSunTimesStore } from "@/lib/sun-times-store"
 import { useUiNamesStore } from "@/lib/ui-names-store"
 import {
@@ -174,6 +175,7 @@ export const BACKUP_STORES: StoreDescriptor[] = [
   { key: persistKey("home-widgets"), rehydrate: persistRehydrate(useHomeWidgetsStore) },
   { key: persistKey("home-weather"), rehydrate: persistRehydrate(useHomeWeatherStore) },
   { key: persistKey("home-days-until"), rehydrate: persistRehydrate(useHomeDaysUntilStore) },
+  { key: persistKey("sky-motion"), rehydrate: persistRehydrate(useSkyMotionStore) },
   { key: persistKey("sun-times"), rehydrate: persistRehydrate(useSunTimesStore) },
   { key: persistKey("ui-names"), rehydrate: persistRehydrate(useUiNamesStore) },
 ]
@@ -236,6 +238,8 @@ export const BACKUP_STORE_LABELS: Record<string, string> = {
   "cogs-home-weather": "Home weather place",
   [persistKey("home-days-until")]: "Days Until",
   "cogs-home-days-until": "Days Until",
+  [persistKey("sky-motion")]: "Moon chart motion",
+  "cogs-sky-motion": "Moon chart motion",
   [persistKey("sun-times")]: "Sunrise & sunset history",
   "cogs-sun-times": "Sunrise & sunset history",
   [persistKey("ui-names")]: "Names overlay",
@@ -485,6 +489,7 @@ const LIVE_STORES: Record<string, LivePersistStore> = {
   [persistKey("home-widgets")]: asLiveStore(useHomeWidgetsStore),
   [persistKey("home-weather")]: asLiveStore(useHomeWeatherStore),
   [persistKey("home-days-until")]: asLiveStore(useHomeDaysUntilStore),
+  [persistKey("sky-motion")]: asLiveStore(useSkyMotionStore),
   [persistKey("sun-times")]: asLiveStore(useSunTimesStore),
   [persistKey("ui-names")]: asLiveStore(useUiNamesStore),
 }

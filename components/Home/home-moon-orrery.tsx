@@ -4,12 +4,18 @@
  * Heliocentric ecliptic chart of the eight planets. Body sizes share one
  * kilometres-per-pixel scale, so the Moon is smaller than a pixel until
  * Earth is opened. That view places Earth and the Moon at true size and
- * true separation. Photographs are projected globes.
+ * true separation. Photographs are projected globes. A saved time rate
+ * runs that clock faster than the wall; real time leaves the chart on the
+ * date it was given. The motion bar under the chart is the same scale.
+ * True-scale sky handoff: components/Home/MOON_SKY_MOTION.md.
  */
 "use client"
 
-import { useMemo, useState } from "react"
-import { formatMajorWhen } from "@/lib/lunar"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { formatMajorWhen, moonGlance } from "@/lib/lunar"
+import { advanceSimMillis, timeRateAt } from "@/lib/sky-motion"
+import { useSkyMotionStore } from "@/lib/sky-motion-store"
+import { SkyMotionBar } from "@/components/Home/home-sky-motion"
 import {
   BODY_RADIUS_KM,
   SATURN_RING,
@@ -52,32 +58,67 @@ const STAR_DOTS = Array.from({ length: 56 }, (_, i) => ({
   n: i % 7 === 0 ? 1.3 : 0.7,
 }))
 
-export function MoonOrrery({
-  date,
-  cycle,
-  phaseLabel,
-  illuminationPct,
-}: {
-  date: Date
-  cycle: number
-  phaseLabel: string
-  illuminationPct: number
-}) {
+/** Chart instant. Real time follows `anchor`. A faster rate plays forward from it. */
+function useChartDate(anchor: Date): Date {
+  const rateIndex = useSkyMotionStore((s) => s.rateIndex)
+  const multiplier = timeRateAt(rateIndex).seconds
+  const [sim, setSim] = useState(anchor)
+  const simMs = useRef(anchor.getTime())
+
+  useEffect(() => {
+    if (multiplier <= 1) {
+      simMs.current = anchor.getTime()
+      setSim(anchor)
+      return
+    }
+    const frameSec = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0.25 : 1 / 24
+    let raf = 0
+    let last = performance.now()
+    let carry = 0
+    const tick = (now: number) => {
+      const dt = Math.min((now - last) / 1000, 0.1)
+      last = now
+      simMs.current = advanceSimMillis(simMs.current, dt, multiplier)
+      carry += dt
+      if (carry >= frameSec) {
+        carry = 0
+        setSim(new Date(simMs.current))
+      }
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [anchor, multiplier])
+
+  return multiplier <= 1 ? anchor : sim
+}
+
+function coarseLight(light: GlobeLight): GlobeLight {
+  if (light.emissive) return light
+  const q = (n: number) => Math.round(n * 5) / 5
+  return { x: q(light.x), y: q(light.y), z: q(light.z) }
+}
+
+export function MoonOrrery({ date }: { date: Date }) {
+  const shown = useChartDate(date)
+  const rateLabel = useSkyMotionStore((s) => timeRateAt(s.rateIndex).label)
+  const sped = useSkyMotionStore((s) => s.rateIndex > 0)
+  const glance = useMemo(() => moonGlance(shown), [shown])
   const [zoom, setZoom] = useState(false)
   const [picked, setPicked] = useState<PlanetId>("earth")
-  const places = useMemo(() => planetPlaces(date), [date])
+  const places = useMemo(() => planetPlaces(shown), [shown])
   const orbits = useMemo(
     () =>
       places.map((p) => ({
         id: p.id,
-        d: orbitSamples(p.id, date)
+        d: orbitSamples(p.id, shown)
           .map((pt, i) => {
             const s = toScreen(pt.x, pt.y)
             return `${i === 0 ? "M" : "L"}${s.x.toFixed(1)} ${s.y.toFixed(1)}`
           })
           .join(" ") + " Z",
       })),
-    [places, date],
+    [places, shown],
   )
   const earth = places.find((p) => p.id === "earth")!
   const selected = places.find((p) => p.id === picked) ?? earth
@@ -87,7 +128,7 @@ export function MoonOrrery({
   const sunLen = Math.hypot(sunDirX, sunDirY) || 1
   const ux = sunDirX / sunLen
   const uy = sunDirY / sunLen
-  const elong = cycle * Math.PI * 2
+  const elong = glance.cycle * Math.PI * 2
   const mx = ux * Math.cos(elong) - uy * Math.sin(elong)
   const my = ux * Math.sin(elong) + uy * Math.cos(elong)
   const moonScreenLen = Math.hypot(mx, my * 0.72) || 1
@@ -117,7 +158,12 @@ export function MoonOrrery({
     next.moon = sunLight(sunX / sunN, sunY / sunN)
     return next
   }, [places, ux, uy])
-  const skins = usePlanetSkins(lights)
+  const skinLights = useMemo(() => {
+    const next: Record<string, GlobeLight> = {}
+    for (const [id, light] of Object.entries(lights)) next[id] = coarseLight(light)
+    return next
+  }, [lights])
+  const skins = usePlanetSkins(skinLights)
 
   const onPlanet = (id: PlanetId) => {
     setPicked(id)
@@ -125,7 +171,8 @@ export function MoonOrrery({
   }
 
   return (
-    <div className="home-sky-lab" data-zoom={zoom ? "earth" : "system"}>
+    <>
+    <div className="home-sky-lab" data-zoom={zoom ? "earth" : "system"} data-rate={sped ? "fast" : "real"}>
       <div className="home-sky-stage">
         <svg className="home-sky-chart" viewBox={`0 0 ${VB.w} ${VB.h}`} role="img" aria-label="Solar system">
           <rect className="home-sky-glass" width={VB.w} height={VB.h} />
@@ -226,13 +273,16 @@ export function MoonOrrery({
       </div>
       <aside className="home-sky-readout">
         <h3>{zoom ? "Earth and Moon" : "Ecliptic"}</h3>
-        <p className="home-sky-epoch">{formatMajorWhen(date)}</p>
+        <p className="home-sky-epoch">
+          {formatMajorWhen(shown)}
+          {sped ? ` · ${rateLabel}` : ""}
+        </p>
         {zoom ? (
           <EarthCard
             earth={earth}
-            phaseLabel={phaseLabel}
-            illuminationPct={illuminationPct}
-            cycle={cycle}
+            phaseLabel={glance.label}
+            illuminationPct={Math.round(glance.illumination * 100)}
+            cycle={glance.cycle}
           />
         ) : (
           <PlanetCard planet={selected} />
@@ -253,6 +303,8 @@ export function MoonOrrery({
         </ul>
       </aside>
     </div>
+    <SkyMotionBar />
+    </>
   )
 }
 
