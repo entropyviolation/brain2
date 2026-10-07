@@ -2056,6 +2056,73 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
   animation: home-moon-blink 2.4s steps(2, end) infinite;
 }
 
+.home-moon-phase {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.home-moon-phase-disk-wrap {
+  position: relative;
+  height: 100%;
+}
+
+.home-moon-phase-sky {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: #070b16;
+}
+
+.home-moon-phase-disk {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: auto;
+}
+
+.home-moon-phase-tag {
+  position: absolute;
+  z-index: 1;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.home-moon-phase-mark {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 12px;
+  height: 12px;
+  box-sizing: border-box;
+  border: 1.5px solid #8ec8ff;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0 1.6px, transparent 1.9px);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.55);
+}
+
+.home-moon-phase-name {
+  position: absolute;
+  left: 11px;
+  top: 0;
+  font-family: var(--font-karla), Karla, "Segoe UI", sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  color: #f4f1ea;
+  white-space: nowrap;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.9), 0 0 2px #000;
+  user-select: none;
+}
+
+.home-moon-phase-name.is-left {
+  left: auto;
+  right: 11px;
+}
+
 .home95 .home-moon-name {
   margin: 0;
   max-width: 100%;
@@ -2071,6 +2138,7 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
 .home-moon-facts {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 14px;
   padding: 8px 10px;
   background: #070b16;
@@ -2322,24 +2390,130 @@ body .home-widget-dialog.home-widget-instrument.home-widget-catalog {
   fill: #050806;
 }
 
+/* Fill and opacity are set on each star. A fill here would flatten them. */
 .home-sky-star {
-  fill: #cfe8ff;
-  opacity: 0.55;
+  stroke-linecap: round;
 }
 
-.home-sky-world {
-  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+.home-sky-galaxy-band,
+.home-sky-chart .home-sky-galaxy {
+  pointer-events: none;
+}
+
+.home-sky-galaxy-band {
+  opacity: 0.62;
+}
+
+.home-sky-lab[data-zoom="stars"] .home-sky-galaxy-band,
+.home-sky-lab[data-zoom="galaxy"] .home-sky-galaxy-band {
+  opacity: 1;
+}
+
+.home-sky-galaxy-frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #050806;
+}
+
+.home-sky-galaxy-caption,
+body .home-widget-dialog.is-sky .home-sky-galaxy-caption {
+  fill: rgba(201, 255, 228, 0.78);
+  font-size: 7.5px;
+  font-family: var(--w95-font, Tahoma, sans-serif);
+}
+
+.home-sky-star-names,
+.home-sky-star-name {
+  pointer-events: none;
+}
+
+.home-sky-star-name {
+  fill: #d7ffe9;
+  font-size: 7px;
+  font-family: var(--w95-font, Tahoma, sans-serif);
+  letter-spacing: 0.03em;
+}
+
+.home-sky-near {
+  display: grid;
+  gap: 4px;
+}
+
+.home-sky-near-toggle,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout .home-sky-near-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-family: var(--w95-font, "w95fa", Tahoma, "MS Sans Serif", Geneva, sans-serif);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #f4fff9;
+  text-shadow: 0 0 5px rgba(125, 255, 196, 0.65);
+  -webkit-font-smoothing: none;
+}
+
+.home-sky-near-toggle input,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout .home-sky-near-toggle input {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: #7dffc4;
+  color-scheme: dark;
+}
+
+.home-sky-near-title,
+body .home-widget-dialog.is-sky .home-sky-near-title {
+  margin: 0;
+  font-family: var(--sky-figure);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.35;
+  text-transform: none;
+  color: #8fd9b8;
+  -webkit-font-smoothing: antialiased;
+}
+
+.home-sky-near-list {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-sky-near-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px;
+  font-family: var(--sky-figure);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: #f4fff9;
+  -webkit-font-smoothing: antialiased;
+}
+
+.home-sky-near-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .home-sky-orbit {
   fill: none;
   stroke: rgba(125, 255, 196, 0.22);
   stroke-width: 0.6;
+  vector-effect: non-scaling-stroke;
 }
 
 .home-sky-equinox {
   stroke: rgba(125, 255, 196, 0.28);
   stroke-dasharray: 2 3;
+  vector-effect: non-scaling-stroke;
 }
 
 .home-sky-zero {
@@ -2349,8 +2523,10 @@ body .home-widget-dialog.home-widget-instrument.home-widget-catalog {
 }
 
 .home-sky-sun {
-  fill: #f0c14a;
-  opacity: 0.35;
+  fill: #ffd27a;
+  opacity: 1;
+  /* Tight corona. A wider blur would reach Mercury at the system zoom. */
+  filter: drop-shadow(0 0 1.15px rgba(255, 196, 92, 0.72));
 }
 
 .home-sky-sun-core {
@@ -2421,30 +2597,279 @@ body .home-widget-dialog.home-widget-instrument.home-widget-catalog {
   color: #1c140f;
 }
 
+.home-sky-zoom {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.home-sky-scale-key {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 4px;
+}
+
+.home-sky-scale-key button:disabled {
+  opacity: 0.38;
+}
+
+.home-sky-scale {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  background: #050806;
+}
+
+.home-sky-scale svg {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+}
+
+.home-sky-scale p,
+.home-sky-scale-note {
+  margin: 0;
+  padding: 8px 10px 10px;
+  color: rgba(159, 255, 212, 0.92);
+  font-size: 12px;
+  line-height: 1.35;
+  font-family: var(--w95-font, Tahoma, sans-serif);
+}
+
+.home-sky-scale-power {
+  display: block;
+  margin: 0 0 2px;
+  color: #f4f1ea;
+  font-family: var(--font-karla), Karla, sans-serif;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.home-sky-scale-power sup {
+  font-size: 0.72em;
+}
+
+.home-sky-scale-note {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  background: linear-gradient(transparent, rgba(5, 8, 6, 0.92) 36%);
+}
+
+/* Inactive stops stay near-black. The label is phosphor, not engraved ink.
+   body.win95-app replaces a button's background-image, which had left the
+   silver face transparent and the dark ink sitting on this glass. */
+.home-sky-zoom .home-review-key,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout .home-sky-zoom button.home-review-key {
+  min-height: 1.85rem;
+  padding: 5px 4px;
+  border: 0;
+  border-radius: 2px;
+  background-color: #0a100e;
+  background-image:
+    linear-gradient(180deg, rgba(184, 255, 220, 0.16) 0, transparent 34%),
+    repeating-linear-gradient(180deg, rgba(125, 255, 196, 0.08) 0 1px, transparent 1px 3px);
+  box-shadow:
+    inset 0 1px 0 rgba(200, 255, 230, 0.22),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.72),
+    0 0 0 1px #1e4a36;
+  color: #f4fff9;
+  font-family: var(--w95-font, "w95fa", Tahoma, "MS Sans Serif", Geneva, sans-serif);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  text-align: center;
+  text-transform: uppercase;
+  text-shadow: 0 0 6px rgba(125, 255, 196, 0.95);
+  -webkit-font-smoothing: none;
+  cursor: pointer;
+}
+
+.home-sky-zoom .home-review-key:hover,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout .home-sky-zoom button.home-review-key:hover {
+  color: #f4fff9;
+  box-shadow:
+    inset 0 1px 0 rgba(220, 255, 238, 0.35),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.72),
+    0 0 0 1px #2f6d52;
+}
+
+.home-sky-zoom .home-review-key:focus-visible,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout .home-sky-zoom button.home-review-key:focus-visible {
+  outline: 1px dotted #7dffc4;
+  outline-offset: 1px;
+}
+
+.home-sky-zoom .home-review-key.is-on,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout .home-sky-zoom button.home-review-key.is-on {
+  background-color: #082018;
+  background-image:
+    radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.34), transparent 58%),
+    linear-gradient(180deg, #143c2c 0%, #071610 74%);
+  box-shadow:
+    inset 0 0 0 1px #7dffc4,
+    inset 0 1px 0 rgba(244, 255, 249, 0.5),
+    0 0 12px rgba(125, 255, 196, 0.38);
+  color: #ffffff;
+  text-shadow: 0 0 2px #f4fff9, 0 0 8px #7dffc4;
+}
+
+.home-sky-zoom .home-review-key:active,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout .home-sky-zoom button.home-review-key:active {
+  box-shadow:
+    inset 0 2px 5px rgba(0, 0, 0, 0.55),
+    0 0 0 1px #1e4a36;
+}
+
+.home-sky-zoom .home-review-key.is-on:active,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout .home-sky-zoom button.home-review-key.is-on:active {
+  box-shadow:
+    inset 0 0 0 1px #7dffc4,
+    inset 0 2px 6px rgba(0, 0, 0, 0.45);
+}
+
+/* True sizes sits beside the zoom stops, not inside them. The same win95
+   background-image had left its ink black on this glass. */
+.home-sky-readout > .home-review-key,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout > button.home-review-key {
+  align-self: stretch;
+  min-height: 1.85rem;
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 2px;
+  background-color: #0a100e;
+  background-image:
+    linear-gradient(180deg, rgba(184, 255, 220, 0.16) 0, transparent 34%),
+    repeating-linear-gradient(180deg, rgba(125, 255, 196, 0.08) 0 1px, transparent 1px 3px);
+  box-shadow:
+    inset 0 1px 0 rgba(200, 255, 230, 0.22),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.72),
+    0 0 0 1px #1e4a36;
+  color: #f4fff9;
+  font-family: var(--w95-font, "w95fa", Tahoma, "MS Sans Serif", Geneva, sans-serif);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-align: center;
+  text-transform: uppercase;
+  text-shadow: 0 0 6px rgba(125, 255, 196, 0.95);
+  -webkit-font-smoothing: none;
+  cursor: pointer;
+}
+
+.home-sky-readout > .home-review-key:hover,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout > button.home-review-key:hover {
+  color: #f4fff9;
+  box-shadow:
+    inset 0 1px 0 rgba(220, 255, 238, 0.35),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.72),
+    0 0 0 1px #2f6d52;
+}
+
+.home-sky-readout > .home-review-key:focus-visible,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout > button.home-review-key:focus-visible {
+  outline: 1px dotted #7dffc4;
+  outline-offset: 1px;
+}
+
+.home-sky-readout > .home-review-key.is-on,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout > button.home-review-key.is-on {
+  background-color: #082018;
+  background-image:
+    radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.34), transparent 58%),
+    linear-gradient(180deg, #143c2c 0%, #071610 74%);
+  box-shadow:
+    inset 0 0 0 1px #7dffc4,
+    inset 0 1px 0 rgba(244, 255, 249, 0.5),
+    0 0 12px rgba(125, 255, 196, 0.38);
+  color: #ffffff;
+  text-shadow: 0 0 2px #f4fff9, 0 0 8px #7dffc4;
+}
+
+.home-sky-readout > .home-review-key:active,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout > button.home-review-key:active {
+  box-shadow:
+    inset 0 2px 5px rgba(0, 0, 0, 0.55),
+    0 0 0 1px #1e4a36;
+}
+
+.home-sky-readout > .home-review-key.is-on:active,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout > button.home-review-key.is-on:active {
+  box-shadow:
+    inset 0 0 0 1px #7dffc4,
+    inset 0 2px 6px rgba(0, 0, 0, 0.45);
+}
+
+.home-sky-zoom-note,
+body .home-widget-dialog.is-sky .home-sky-zoom-note {
+  margin: 0;
+  font-family: var(--font-karla), Karla, "Segoe UI", sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  line-height: 1.35;
+  text-transform: none;
+  color: #8fd9b8;
+  -webkit-font-smoothing: antialiased;
+}
+
+.home-sky-marker {
+  fill: #e7fff4;
+  stroke: #07110c;
+  stroke-width: 0.4;
+  pointer-events: none;
+}
+
+.home-sky-lab[data-zoom="stars"] .home-sky-star,
+.home-sky-lab[data-zoom="galaxy"] .home-sky-star {
+  opacity: 0.92;
+}
+
 .home-sky-readout {
+  --sky-label: var(--w95-font, "w95fa", Tahoma, "MS Sans Serif", Geneva, sans-serif);
+  --sky-figure: var(--font-karla), Karla, "Segoe UI", sans-serif;
   display: flex;
   flex-direction: column;
   gap: 8px;
   min-width: 0;
   padding: 8px;
   background: #050806;
-  color: #9fffd4;
+  color: #c8ffe8;
   box-shadow: inset 1px 1px #000, inset -1px -1px #1c3d2c;
+  font-family: var(--sky-label);
+  -webkit-font-smoothing: none;
 }
 
-.home-sky-readout h3 {
+.home-sky-readout h3,
+body .home-widget-dialog.is-sky .home-sky-readout h3 {
   margin: 0;
-  font-size: 11px;
+  font-family: var(--sky-label);
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #c8ffe8;
+  color: #e7fff4;
 }
 
-.home-sky-epoch {
+.home-sky-epoch,
+body .home-widget-dialog.is-sky .home-sky-epoch {
   margin: -4px 0 0;
-  font-size: 11px;
-  color: rgba(200, 255, 232, 0.75);
+  font-family: var(--sky-figure);
+  font-size: 13px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  line-height: 1.35;
+  text-transform: none;
+  color: #b7f0d4;
+  -webkit-font-smoothing: antialiased;
 }
 
 .home-sky-when {
@@ -2455,26 +2880,32 @@ body .home-widget-dialog.home-widget-instrument.home-widget-catalog {
 }
 
 .home-sky-when label {
-  font-size: 10px;
-  letter-spacing: 0.08em;
+  font-family: var(--sky-label);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(159, 255, 212, 0.7);
+  color: #6fbfa0;
 }
 
-.home-sky-when input {
+.home-sky-when input,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout .home-sky-when input {
   flex: 1 1 9.5rem;
   min-width: 0;
   width: auto;
   margin: 0;
-  padding: 3px 6px;
+  padding: 4px 6px;
   border: 0;
   border-radius: 0;
   background: #07110c;
-  color: #e7fff4;
+  color: #f4fff9;
   color-scheme: dark;
-  font: inherit;
-  font-size: 12px;
+  font-family: var(--sky-figure, var(--font-karla), Karla, "Segoe UI", sans-serif);
+  font-size: 13px;
+  font-weight: 400;
   font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  -webkit-font-smoothing: antialiased;
   box-shadow: inset 1px 1px #000, inset -1px -1px #14261c;
 }
 
@@ -2483,8 +2914,38 @@ body .home-widget-dialog.home-widget-instrument.home-widget-catalog {
   outline-offset: 1px;
 }
 
-.home-sky-when .home-review-key {
+.home-sky-when .home-review-key,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout .home-sky-when button.home-review-key {
   flex: 0 0 auto;
+  min-height: 1.85rem;
+  padding: 5px 10px;
+  border: 0;
+  border-radius: 2px;
+  background-color: #c8ccd0;
+  background-image: var(--fascia-key-face);
+  box-shadow: var(--fascia-key-ring);
+  color: var(--fascia-nameplate, #1c1e20);
+  font-family: var(--w95-font, "w95fa", Tahoma, "MS Sans Serif", Geneva, sans-serif);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1.2;
+  text-align: center;
+  text-transform: uppercase;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  -webkit-font-smoothing: none;
+  cursor: pointer;
+}
+
+.home-sky-when .home-review-key:focus-visible,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout .home-sky-when button.home-review-key:focus-visible {
+  outline: 1px dotted #000080;
+  outline-offset: 1px;
+}
+
+.home-sky-when .home-review-key:active,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout .home-sky-when button.home-review-key:active {
+  box-shadow: var(--fascia-key-pressed);
 }
 
 .home-sky-progress {
@@ -2496,13 +2957,15 @@ body .home-widget-dialog.home-widget-instrument.home-widget-catalog {
   box-shadow: inset 1px 1px #000, inset -1px -1px #14261c;
 }
 
-.home-sky-progress-label {
+.home-sky-progress-label,
+body .home-widget-dialog.is-sky .home-sky-progress-label {
   margin: 0;
-  font-size: 10px;
+  font-family: var(--sky-label);
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #c8ffe8;
+  color: #e7fff4;
 }
 
 .home-sky-progress ul {
@@ -2515,8 +2978,10 @@ body .home-widget-dialog.home-widget-instrument.home-widget-catalog {
 }
 
 .home-sky-progress li {
-  font-size: 11px;
+  font-family: var(--sky-label);
+  font-size: 12px;
   line-height: 1.35;
+  -webkit-font-smoothing: none;
 }
 
 .home-sky-progress li[data-state="done"] {
@@ -2528,18 +2993,24 @@ body .home-widget-dialog.home-widget-instrument.home-widget-catalog {
 }
 
 .home-sky-progress li[data-state="ahead"] {
-  color: rgba(200, 255, 232, 0.42);
+  color: #7eae98;
 }
 
 .home-sky-progress li[data-state="ahead"]::before {
   content: "· ";
 }
 
-.home-sky-progress-note {
+.home-sky-progress-note,
+body .home-widget-dialog.is-sky .home-sky-progress-note {
   margin: 0;
-  font-size: 10px;
+  font-family: var(--sky-figure);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
   line-height: 1.35;
-  color: rgba(200, 255, 232, 0.55);
+  text-transform: none;
+  color: #8fd9b8;
+  -webkit-font-smoothing: antialiased;
 }
 
 .home-sky-card {
@@ -2550,11 +3021,15 @@ body .home-widget-dialog.home-widget-instrument.home-widget-catalog {
   box-shadow: inset 1px 1px #000, inset -1px -1px #14261c;
 }
 
-.home-sky-card-name {
+.home-sky-card-name,
+body .home-widget-dialog.is-sky .home-sky-card-name {
   margin: 0;
-  font-size: 12px;
+  font-family: var(--sky-label);
+  font-size: 15px;
   font-weight: 700;
-  color: #e7fff4;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  color: #f4fff9;
 }
 
 .home-sky-card dl {
@@ -2572,16 +3047,23 @@ body .home-widget-dialog.home-widget-instrument.home-widget-catalog {
 
 .home-sky-card dt {
   margin: 0;
-  font-size: 10px;
-  letter-spacing: 0.08em;
+  font-family: var(--sky-label);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(159, 255, 212, 0.7);
+  color: #6fbfa0;
 }
 
 .home-sky-card dd {
   margin: 0;
+  font-family: var(--sky-figure);
+  font-size: 15px;
+  font-weight: 400;
   font-variant-numeric: tabular-nums;
-  color: #e7fff4;
+  letter-spacing: 0;
+  color: #f4fff9;
+  -webkit-font-smoothing: antialiased;
 }
 
 .home-sky-roster {
@@ -2593,24 +3075,83 @@ body .home-widget-dialog.home-widget-instrument.home-widget-catalog {
   list-style: none;
 }
 
-.home-sky-roster button {
+.home-sky-roster li {
+  display: flex;
+  gap: 4px;
+  min-width: 0;
+}
+
+.home-sky-roster li > button:first-child,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout .home-sky-roster li > button:first-child {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+}
+
+.home-sky-roster button.is-facts,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout .home-sky-roster button.is-facts {
+  width: auto;
+  flex: 0 0 auto;
+  padding-inline: 5px;
+}
+
+.home-sky-roster button,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout .home-sky-roster button {
   display: flex;
   align-items: center;
   gap: 6px;
   width: 100%;
-  padding: 3px 4px;
+  min-height: 1.7rem;
+  padding: 4px 6px;
   border: 0;
-  background: transparent;
-  color: #c8ffe8;
-  font: inherit;
-  font-size: 11px;
+  border-radius: 2px;
+  background-color: #0a100e;
+  background-image:
+    linear-gradient(180deg, rgba(184, 255, 220, 0.12) 0, transparent 40%),
+    repeating-linear-gradient(180deg, rgba(125, 255, 196, 0.07) 0 1px, transparent 1px 3px);
+  box-shadow:
+    inset 0 1px 0 rgba(200, 255, 230, 0.16),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.65),
+    0 0 0 1px #1e4a36;
+  color: #f4fff9;
+  font-family: var(--w95-font, "w95fa", Tahoma, "MS Sans Serif", Geneva, sans-serif);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  line-height: 1.2;
   text-align: left;
+  text-shadow: 0 0 5px rgba(125, 255, 196, 0.8);
+  -webkit-font-smoothing: none;
   cursor: pointer;
 }
 
-.home-sky-roster button.is-on {
-  background: #0c1c16;
-  box-shadow: inset 1px 1px #000, inset -1px -1px #1c3d2c;
+.home-sky-roster button:hover,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout .home-sky-roster button:hover {
+  color: #f4fff9;
+  box-shadow:
+    inset 0 1px 0 rgba(220, 255, 238, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.65),
+    0 0 0 1px #2f6d52;
+}
+
+.home-sky-roster button:focus-visible,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout .home-sky-roster button:focus-visible {
+  outline: 1px dotted #7dffc4;
+  outline-offset: 1px;
+}
+
+.home-sky-roster button.is-on,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout .home-sky-roster button.is-on {
+  background-color: #082018;
+  background-image:
+    radial-gradient(ellipse at 18% 0%, rgba(125, 255, 196, 0.28), transparent 62%),
+    linear-gradient(180deg, #143c2c 0%, #071610 74%);
+  box-shadow:
+    inset 0 0 0 1px #7dffc4,
+    inset 0 1px 0 rgba(244, 255, 249, 0.4),
+    0 0 10px rgba(125, 255, 196, 0.32);
+  color: #f7fff9;
+  text-shadow: 0 0 6px rgba(125, 255, 196, 0.85);
 }
 
 .home-sky-bead {
@@ -2629,6 +3170,8 @@ body .home-widget-dialog.home-widget-instrument.home-widget-catalog {
 }
 
 .home-sky-motion {
+  --sky-label: var(--w95-font, "w95fa", Tahoma, "MS Sans Serif", Geneva, sans-serif);
+  --sky-figure: var(--font-karla), Karla, "Segoe UI", sans-serif;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -2636,22 +3179,32 @@ body .home-widget-dialog.home-widget-instrument.home-widget-catalog {
   background: #07110c;
   color: #e7fff4;
   box-shadow: inset 1px 1px #000, inset -1px -1px #1c3d2c;
+  font-family: var(--sky-label);
+  -webkit-font-smoothing: none;
 }
 
-.home-sky-motion h3 {
+.home-sky-motion h3,
+body .home-widget-dialog.is-sky .home-sky-motion h3 {
   margin: 0;
-  font-size: 11px;
+  font-family: var(--sky-label);
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #c8ffe8;
+  color: #e7fff4;
 }
 
-.home-sky-motion-lead {
+.home-sky-motion-lead,
+body .home-widget-dialog.is-sky .home-sky-motion-lead {
   margin: -4px 0 2px;
+  font-family: var(--sky-figure);
   font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0;
   line-height: 1.35;
-  color: rgba(200, 255, 232, 0.78);
+  text-transform: none;
+  color: #c8ffe8;
+  -webkit-font-smoothing: antialiased;
 }
 
 .home-sky-motion-ctl {
@@ -2661,17 +3214,25 @@ body .home-widget-dialog.home-widget-instrument.home-widget-catalog {
   gap: 12px;
 }
 
-.home-sky-motion-ctl label {
+.home-sky-motion-ctl label,
+body .home-widget-dialog.is-sky .home-sky-motion-ctl label {
+  font-family: var(--sky-label);
   font-size: 13px;
-  color: rgba(200, 255, 232, 0.78);
+  font-weight: 700;
+  color: #c8ffe8;
 }
 
-.home-sky-motion-ctl output {
+.home-sky-motion-ctl output,
+body .home-widget-dialog.is-sky .home-sky-motion-ctl output {
   min-width: 9.5rem;
+  font-family: var(--sky-figure);
   font-size: 13px;
-  font-weight: 650;
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
   text-align: right;
+  color: #f4fff9;
+  -webkit-font-smoothing: antialiased;
 }
 
 .home-sky-motion input[type="range"] {
@@ -2707,12 +3268,123 @@ body .home-widget-dialog.home-widget-instrument.home-widget-catalog {
   align-self: flex-end;
 }
 
-.home-sky-motion-scale {
+/* Play, Reverse, Pause, and Reset. body.win95-app replaces background-image
+   and .home-widget-dialog .home-review-key leaves the ink near-black, so the
+   label vanished on this glass. Inactive is phosphor on lacquer; held is
+   still a light label, on the CRT well. */
+.home-sky-motion .home-review-key,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-motion button.home-review-key {
+  flex: 0 0 auto;
+  min-height: 1.85rem;
+  padding: 5px 10px;
+  border: 0;
+  border-radius: 2px;
+  background-color: #0a100e;
+  background-image:
+    linear-gradient(180deg, rgba(184, 255, 220, 0.16) 0, transparent 34%),
+    repeating-linear-gradient(180deg, rgba(125, 255, 196, 0.08) 0 1px, transparent 1px 3px);
+  box-shadow:
+    inset 0 1px 0 rgba(200, 255, 230, 0.22),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.72),
+    0 0 0 1px #1e4a36;
+  color: #f4fff9;
+  font-family: var(--w95-font, "w95fa", Tahoma, "MS Sans Serif", Geneva, sans-serif);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-align: center;
+  text-transform: uppercase;
+  text-shadow: 0 0 6px rgba(125, 255, 196, 0.95);
+  -webkit-font-smoothing: none;
+  cursor: pointer;
+}
+
+.home-sky-motion .home-review-key:hover,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-motion button.home-review-key:hover {
+  color: #f4fff9;
+  box-shadow:
+    inset 0 1px 0 rgba(220, 255, 238, 0.35),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.72),
+    0 0 0 1px #2f6d52;
+}
+
+.home-sky-motion .home-review-key:focus-visible,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-motion button.home-review-key:focus-visible {
+  outline: 1px dotted #7dffc4;
+  outline-offset: 1px;
+}
+
+.home-sky-motion .home-review-key.is-on,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-motion button.home-review-key.is-on {
+  background-color: #082018;
+  background-image:
+    radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.34), transparent 58%),
+    linear-gradient(180deg, #143c2c 0%, #071610 74%);
+  box-shadow:
+    inset 0 0 0 1px #7dffc4,
+    inset 0 1px 0 rgba(244, 255, 249, 0.5),
+    0 0 12px rgba(125, 255, 196, 0.38);
+  color: #ffffff;
+  text-shadow: 0 0 2px #f4fff9, 0 0 8px #7dffc4;
+}
+
+.home-sky-motion .home-review-key:active,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-motion button.home-review-key:active {
+  box-shadow:
+    inset 0 2px 5px rgba(0, 0, 0, 0.55),
+    0 0 0 1px #1e4a36;
+}
+
+.home-sky-motion .home-review-key.is-on:active,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-motion button.home-review-key.is-on:active {
+  box-shadow:
+    inset 0 0 0 1px #7dffc4,
+    inset 0 2px 6px rgba(0, 0, 0, 0.45);
+}
+
+.home-sky-motion-clock {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+}
+
+.home-sky-motion-clock > span:first-child,
+body .home-widget-dialog.is-sky .home-sky-motion-clock > span:first-child {
+  font-family: var(--sky-label);
+  font-size: 13px;
+  font-weight: 700;
+  color: #c8ffe8;
+}
+
+.home-sky-motion-clock [role="group"] {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.home-sky-motion-held,
+body .home-widget-dialog.is-sky .home-sky-motion-held {
+  font-family: var(--sky-label);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7dffc4;
+}
+
+.home-sky-motion-scale,
+body .home-widget-dialog.is-sky .home-sky-motion-scale {
   display: flex;
   justify-content: space-between;
   gap: 12px;
+  font-family: var(--sky-figure);
   font-size: 12px;
-  color: rgba(200, 255, 232, 0.72);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  color: #d7ffe9;
+  -webkit-font-smoothing: antialiased;
 }
 
 .home-sky-motion-rows {
@@ -2730,16 +3402,33 @@ body .home-widget-dialog.home-widget-instrument.home-widget-catalog {
   border-top: 1px solid rgba(125, 255, 196, 0.18);
 }
 
-.home-sky-motion-name {
+.home-sky-motion-name,
+body .home-widget-dialog.is-sky .home-sky-motion-name {
+  font-family: var(--sky-label);
   font-size: 13px;
+  font-weight: 700;
   line-height: 1.3;
+  color: #e7fff4;
 }
 
 .home-sky-motion-name small,
+body .home-widget-dialog.is-sky .home-sky-motion-name small {
+  display: block;
+  font-family: var(--sky-figure);
+  font-size: 12px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  color: #b7f0d4;
+  -webkit-font-smoothing: antialiased;
+}
+
 .home-sky-motion-state small {
   display: block;
+  font-family: var(--sky-label);
   font-size: 12px;
-  color: rgba(200, 255, 232, 0.55);
+  font-weight: 700;
+  letter-spacing: 0.04em;
 }
 
 .home-sky-motion-track {
@@ -2760,19 +3449,25 @@ body .home-widget-dialog.home-widget-instrument.home-widget-catalog {
   border-radius: 50%;
 }
 
-.home-sky-motion-state {
+.home-sky-motion-state,
+body .home-widget-dialog.is-sky .home-sky-motion-state {
+  font-family: var(--sky-figure);
   font-size: 13px;
+  font-weight: 500;
   line-height: 1.3;
   font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
   text-align: right;
+  color: #f4fff9;
+  -webkit-font-smoothing: antialiased;
 }
 
 .home-sky-motion-state small[data-kind="frozen"] {
-  color: rgba(200, 255, 232, 0.45);
+  color: #9dccb8;
 }
 
 .home-sky-motion-state small[data-kind="barely"] {
-  color: rgba(200, 255, 232, 0.72);
+  color: #c8ffe8;
 }
 
 .home-sky-motion-state small[data-kind="visible"] {
@@ -2783,11 +3478,16 @@ body .home-widget-dialog.home-widget-instrument.home-widget-catalog {
   color: #e6a23c;
 }
 
-.home-sky-motion-sum {
+.home-sky-motion-sum,
+body .home-widget-dialog.is-sky .home-sky-motion-sum {
   margin: 2px 0 0;
+  font-family: var(--sky-figure);
   font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0;
   line-height: 1.35;
-  color: rgba(200, 255, 232, 0.75);
+  color: #c8ffe8;
+  -webkit-font-smoothing: antialiased;
 }
 
 @media (max-width: 720px) {

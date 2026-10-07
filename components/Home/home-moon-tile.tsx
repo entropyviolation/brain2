@@ -2,8 +2,9 @@
  * components/Home/home-moon-tile.tsx — Moon phase on the Home strip
  *
  * The square is an 8-bit moon, the phase name, and days to the sooner of
- * the next full moon and the next new moon. The detail keeps that sprite,
- * the illumination and the neighboring major phases, then the solar-system chart.
+ * the next full moon and the next new moon. The detail header is a
+ * photographic phase; illumination and the neighboring major phases sit
+ * beside it, then the solar-system chart.
  */
 "use client"
 
@@ -12,6 +13,7 @@ import { formatLocalDateKey } from "@/lib/date-utils"
 import { formatMajorWhen, moonGlance } from "@/lib/lunar"
 import { HomeWidgetDialog, TileHide, TileOpen } from "@/components/Home/home-widget-dialog"
 import { MoonOrrery } from "@/components/Home/home-moon-orrery"
+import { MoonPhaseDisk } from "@/components/Home/home-moon-phase"
 import { PixelMoon } from "@/components/Home/home-moon-sprite"
 
 export function MoonTile({
@@ -56,7 +58,7 @@ export function MoonTile({
       </div>
       <HomeWidgetDialog open={open} onOpenChange={setOpen} title="Moon" className="is-sky">
         <div className="home-moon-facts">
-          <PixelMoon cycle={face.cycle} detail />
+          <MoonPhaseDisk cycle={face.cycle} />
           <div className="home-moon-copy">
             <p className="home-widget-lead">{face.label}</p>
             <ul className="home-moon-lines">

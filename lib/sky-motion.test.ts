@@ -1,12 +1,18 @@
 import { describe, expect, it } from "vitest"
+import { orbitSamples, planetPlaces } from "./solar-system"
 import {
   advanceSimMillis,
+  chartAnchorAfterWidget,
+  chartClockAt,
   clampRateIndex,
   clampViewWidthLog,
+  earthSpinDegrees,
   formatPixelsPerSecond,
   motionKind,
   motionReadout,
   pixelsPerSecond,
+  SIDEREAL_DAY_SEC,
+  stepChartClock,
   TIME_RATES,
   timeRateAt,
   viewWidthKm,
@@ -85,4 +91,114 @@ describe("sky motion", () => {
     expect(advanceSimMillis(start, 2, 1) - start).toBe(100)
     expect(advanceSimMillis(start, -5, 3600)).toBe(start)
   })
+
+  it("moves Jupiter through a long arc at one year per second and does not rewind", () => {
+    const anchor = new Date(2026, 9, 6, 12, 0, 0, 0).getTime()
+    const year = timeRateAt(6).seconds
+    const startLon = longitudeAt(anchor, "jupiter")
+    let clock = chartClockAt(anchor)
+    const seen: number[] = []
+    for (let frame = 0; frame < 40; frame++) {
+      const widgetMs = anchor + frame * 60_000
+      const held = chartAnchorAfterWidget(clock.anchorMs, widgetMs, true)
+      expect(held.restarted).toBe(false)
+      clock = stepChartClock(clock, { dtRealSec: 0.1, multiplier: year })
+      seen.push(longitudeAt(clock.shownMs, "jupiter"))
+    }
+    const mid = seen[19]!
+    const end = seen[39]!
+    expect(separation(startLon, mid)).toBeGreaterThan(20)
+    expect(separation(startLon, end)).toBeGreaterThan(separation(startLon, mid))
+    expect(clock.anchorMs).toBe(anchor)
+    expect(clock.shownMs - anchor).toBeGreaterThan(3 * 365.25 * 86400000)
+    expect(nearestOrbitAu("jupiter", clock.shownMs)).toBeLessThan(0.08)
+    expect(nearestOrbitAu("saturn", clock.shownMs)).toBeLessThan(0.15)
+  })
+
+  it("leaves a same-day widget tick alone, and restarts on a new widget day, Now, or real time", () => {
+    const anchor = new Date(2026, 9, 6, 12, 0, 0, 0).getTime()
+    const year = timeRateAt(6).seconds
+    expect(chartAnchorAfterWidget(anchor, anchor + 60_000, true)).toEqual({ anchorMs: anchor, restarted: false })
+    expect(chartAnchorAfterWidget(anchor, anchor + 60_000, false)).toEqual({ anchorMs: anchor, restarted: false })
+
+    let clock = chartClockAt(anchor)
+    clock = stepChartClock(clock, { dtRealSec: 0.1, multiplier: year })
+    const moved = clock.shownMs
+    const nextDay = new Date(2026, 9, 7, 12, 0, 0, 0).getTime()
+    const day = chartAnchorAfterWidget(clock.anchorMs, nextDay, true)
+    expect(day).toEqual({ anchorMs: nextDay, restarted: true })
+    clock = stepChartClock(clock, { dtRealSec: 0, multiplier: year, restartAnchorMs: day.anchorMs })
+    expect(clock.shownMs).toBe(nextDay)
+
+    clock = stepChartClock(clock, { dtRealSec: 0.1, multiplier: year })
+    const picked = new Date(2001, 0, 1, 0, 0, 0, 0).getTime()
+    clock = stepChartClock(clock, { dtRealSec: 0, multiplier: year, restartAnchorMs: picked })
+    expect(clock.anchorMs).toBe(picked)
+    expect(clock.shownMs).toBe(picked)
+
+    clock = stepChartClock(clock, { dtRealSec: 0.1, multiplier: year })
+    expect(clock.shownMs).toBeGreaterThan(picked)
+    clock = stepChartClock(clock, { dtRealSec: 0.1, multiplier: year, paused: true })
+    const frozen = clock.shownMs
+    expect(frozen).toBeGreaterThan(picked)
+    clock = stepChartClock(clock, { dtRealSec: 0.5, multiplier: year, paused: true })
+    expect(clock.shownMs).toBe(frozen)
+    expect(clock.anchorMs).toBe(picked)
+
+    clock = stepChartClock(clock, { dtRealSec: 0.1, multiplier: 1 })
+    expect(clock.anchorMs).toBe(picked)
+    expect(clock.shownMs).toBe(picked)
+    expect(moved).toBeGreaterThan(anchor)
+  })
+
+  it("runs the same clock backward, and pause holds either direction", () => {
+    const anchor = new Date(2026, 9, 6, 12, 0, 0, 0).getTime()
+    const day = timeRateAt(3).seconds
+    let clock = chartClockAt(anchor)
+    clock = stepChartClock(clock, { dtRealSec: 0.1, multiplier: day, direction: -1 })
+    expect(clock.anchorMs).toBe(anchor)
+    expect(clock.shownMs).toBeLessThan(anchor)
+    const backed = clock.shownMs
+    clock = stepChartClock(clock, { dtRealSec: 0.1, multiplier: day, direction: -1, paused: true })
+    expect(clock.shownMs).toBe(backed)
+    clock = stepChartClock(clock, { dtRealSec: 0.1, multiplier: day, direction: -1 })
+    expect(clock.shownMs).toBeLessThan(backed)
+    const beforeForward = clock.shownMs
+    clock = stepChartClock(clock, { dtRealSec: 0.1, multiplier: day })
+    expect(clock.shownMs).toBeGreaterThan(beforeForward)
+    clock = stepChartClock(clock, { dtRealSec: 0.1, multiplier: 1 })
+    expect(clock.shownMs).toBe(clock.anchorMs)
+  })
+
+  it("turns Earth once per sidereal day, including backward", () => {
+    expect(SIDEREAL_DAY_SEC).toBe(86164.0905)
+    expect(earthSpinDegrees(0)).toBe(0)
+    expect(earthSpinDegrees(SIDEREAL_DAY_SEC * 1000)).toBeCloseTo(0, 6)
+    expect(earthSpinDegrees(SIDEREAL_DAY_SEC * 500)).toBeCloseTo(180, 5)
+    expect(earthSpinDegrees(-SIDEREAL_DAY_SEC * 250)).toBeCloseTo(270, 5)
+    const later = earthSpinDegrees(SIDEREAL_DAY_SEC * 100)
+    const earlier = earthSpinDegrees(SIDEREAL_DAY_SEC * 100 - SIDEREAL_DAY_SEC * 50)
+    expect(later).toBeCloseTo(36, 5)
+    expect(earlier).toBeCloseTo(18, 5)
+  })
 })
+
+function longitudeAt(ms: number, id: "jupiter" | "saturn"): number {
+  return planetPlaces(new Date(ms)).find((planet) => planet.id === id)!.longitude
+}
+
+function separation(a: number, b: number): number {
+  const d = Math.abs(a - b) % 360
+  return d > 180 ? 360 - d : d
+}
+
+function nearestOrbitAu(id: "jupiter" | "saturn", ms: number): number {
+  const place = planetPlaces(new Date(ms)).find((planet) => planet.id === id)!
+  const samples = orbitSamples(id, new Date(ms), 360)
+  let best = Infinity
+  for (const pt of samples) {
+    const d = Math.hypot(pt.x - place.x, pt.y - place.y)
+    if (d < best) best = d
+  }
+  return best
+}

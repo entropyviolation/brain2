@@ -3,7 +3,9 @@
  *
  * Two sliders, the scale of the view, and how fast eight familiar motions
  * would cross a 1,000 px screen. The dots move at that speed. Reset returns
- * the chart to real time. View width and the rate are saved.
+ * the chart to real time and to forward. View width and the rate are saved.
+ * Play, Reverse, and Pause run or freeze the one chart clock. They do not
+ * change the rate, the view width, or this store. Reverse is not saved.
  */
 "use client"
 
@@ -11,7 +13,17 @@ import { memo, useEffect, useMemo, useRef } from "react"
 import { motionReadout, TIME_RATES, VIEW_WIDTH_LOG_MAX, VIEW_WIDTH_LOG_MIN, VIEW_WIDTH_LOG_STEP } from "@/lib/sky-motion"
 import { useSkyMotionStore } from "@/lib/sky-motion-store"
 
-export const SkyMotionBar = memo(function SkyMotionBar() {
+export const SkyMotionBar = memo(function SkyMotionBar({
+  paused = false,
+  reversed = false,
+  onPausedChange,
+  onReversedChange,
+}: {
+  paused?: boolean
+  reversed?: boolean
+  onPausedChange?: (paused: boolean) => void
+  onReversedChange?: (reversed: boolean) => void
+}) {
   const viewWidthLog = useSkyMotionStore((s) => s.viewWidthLog)
   const rateIndex = useSkyMotionStore((s) => s.rateIndex)
   const setViewWidthLog = useSkyMotionStore((s) => s.setViewWidthLog)
@@ -47,7 +59,7 @@ export const SkyMotionBar = memo(function SkyMotionBar() {
   return (
     <section className="home-sky-motion" data-testid="sky-motion-bar" aria-label="Screen motion">
       <h3>On-screen motion</h3>
-      <p className="home-sky-motion-lead">How fast things move on screen at each zoom level and time rate.</p>
+      <p className="home-sky-motion-lead">How fast things move across this 1,000 px view at the chosen width and time rate.</p>
       <div className="home-sky-motion-ctl">
         <label htmlFor="sky-view-width">View width</label>
         <input
@@ -76,10 +88,56 @@ export const SkyMotionBar = memo(function SkyMotionBar() {
         />
         <div className="home-sky-motion-rate">
           <output htmlFor="sky-time-rate">{readout.rateLabel}</output>
-          <button type="button" className="home-review-key" onClick={resetTimeRate}>
+          <button
+            type="button"
+            className="home-review-key"
+            onClick={() => {
+              resetTimeRate()
+              onReversedChange?.(false)
+            }}
+          >
             Reset to real time
           </button>
         </div>
+      </div>
+      <div className="home-sky-motion-clock">
+        <span id="sky-clock-label">Clock</span>
+        <div role="group" aria-labelledby="sky-clock-label">
+          <button
+            type="button"
+            className={!paused && !reversed ? "home-review-key is-on" : "home-review-key"}
+            aria-pressed={!paused && !reversed}
+            title="Play the chart clock forward. Real time follows the anchor."
+            onClick={() => {
+              onReversedChange?.(false)
+              onPausedChange?.(false)
+            }}
+          >
+            Play
+          </button>
+          <button
+            type="button"
+            className={!paused && reversed ? "home-review-key is-on" : "home-review-key"}
+            aria-pressed={!paused && reversed}
+            title="Play the one clock backward. The saved rate and view width stay."
+            onClick={() => {
+              onReversedChange?.(true)
+              onPausedChange?.(false)
+            }}
+          >
+            Reverse
+          </button>
+          <button
+            type="button"
+            className={paused ? "home-review-key is-on" : "home-review-key"}
+            aria-pressed={paused}
+            title="Pause freezes the chart clock. The time rate and view width stay as they are."
+            onClick={() => onPausedChange?.(true)}
+          >
+            Pause
+          </button>
+        </div>
+        {paused ? <span className="home-sky-motion-held">Paused</span> : null}
       </div>
       <div className="home-sky-motion-scale">
         <span>{readout.scaleLabel}</span>

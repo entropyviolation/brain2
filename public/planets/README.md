@@ -1,6 +1,6 @@
 # Planet photographs
 
-Cylindrical surface maps for the Moon detail chart. The chart projects each map onto a globe.
+Cylindrical surface maps for the Moon detail chart. The chart projects each map onto a globe. The detail header projects `moon.jpg` the same way and shades it to the phase.
 
 James Hastings-Trew drew these maps and publishes them at [planetpixelemporium.com](http://planetpixelemporium.com/planets.html). They are free to use, including commercially, with credit. This copy came from the `threex.planets` image set, which uses the same maps.
 

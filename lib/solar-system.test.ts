@@ -4,8 +4,10 @@ import {
   MOON_RADIUS_KM,
   SUN_RADIUS_KM,
   earthMoonRadii,
+  orbitSamples,
   planetPlaces,
   systemBodyRadiusPx,
+  type PlanetId,
 } from "./solar-system"
 
 describe("solar system places", () => {
@@ -42,5 +44,27 @@ describe("solar system places", () => {
     expect(pair.earth / pair.moon).toBeCloseTo(BODY_RADIUS_KM.earth / MOON_RADIUS_KM, 5)
     expect(pair.moon).toBeLessThan(2.1)
     expect(pair.earth).toBeGreaterThan(pair.moon * 3)
+  })
+
+  it("keeps Jupiter and Saturn on the sampled ellipse as the date moves", () => {
+    const dates = [
+      new Date(Date.UTC(2000, 0, 1, 12, 0, 0)),
+      new Date(Date.UTC(2004, 0, 1, 12, 0, 0)),
+      new Date(Date.UTC(2026, 9, 6, 12, 0, 0)),
+    ]
+    for (const date of dates) {
+      for (const id of ["jupiter", "saturn"] as const satisfies readonly PlanetId[]) {
+        const place = planetPlaces(date).find((planet) => planet.id === id)!
+        const samples = orbitSamples(id, date, 360)
+        const nearest = Math.min(...samples.map((pt) => Math.hypot(pt.x - place.x, pt.y - place.y)))
+        expect(nearest).toBeLessThan(id === "jupiter" ? 0.08 : 0.15)
+        expect(place.longitude).toBeGreaterThanOrEqual(0)
+        expect(place.longitude).toBeLessThan(360)
+      }
+    }
+    const early = planetPlaces(dates[0]!).find((planet) => planet.id === "jupiter")!.longitude
+    const later = planetPlaces(dates[1]!).find((planet) => planet.id === "jupiter")!.longitude
+    const turn = Math.abs(later - early) % 360
+    expect(turn > 180 ? 360 - turn : turn).toBeGreaterThan(30)
   })
 })

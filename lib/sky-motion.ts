@@ -93,6 +93,80 @@ export function advanceSimMillis(prevMs: number, dtRealSec: number, multiplier: 
   return prevMs + dt * rate * 1000
 }
 
+/** Mean sidereal day. Earth texture longitude advances one turn per this many simulated seconds. */
+export const SIDEREAL_DAY_SEC = 86164.0905
+
+/**
+ * Earth texture longitude at a simulation instant, degrees in `[0, 360)`.
+ * One full turn per sidereal day. A later instant is a larger angle until it wraps.
+ * Other planets are not spun here.
+ */
+export function earthSpinDegrees(simMs: number): number {
+  if (!Number.isFinite(simMs)) return 0
+  const deg = ((simMs / 1000 / SIDEREAL_DAY_SEC) * 360) % 360
+  return deg < 0 ? deg + 360 : deg
+}
+
+/** Running chart instant. `shownMs = anchorMs + elapsed × M × direction`. Not persisted. */
+export type ChartClock = {
+  anchorMs: number
+  shownMs: number
+}
+
+export function chartClockAt(anchorMs: number): ChartClock {
+  return { anchorMs, shownMs: anchorMs }
+}
+
+export function sameLocalDay(aMs: number, bMs: number): boolean {
+  const a = new Date(aMs)
+  const b = new Date(bMs)
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
+}
+
+/**
+ * Widget instant while the chart is still following that date.
+ * A later clock time on the same local day leaves the anchor alone.
+ * A new local day is a new anchor.
+ */
+export function chartAnchorAfterWidget(
+  anchorMs: number,
+  widgetMs: number,
+  following: boolean,
+): { anchorMs: number; restarted: boolean } {
+  if (!following || sameLocalDay(anchorMs, widgetMs)) return { anchorMs, restarted: false }
+  return { anchorMs: widgetMs, restarted: true }
+}
+
+/**
+ * One frame of the chart clock.
+ * `restartAnchorMs` is Now, a Date edit, a new widget day, or reset-rate:
+ * elapsed returns to zero at that anchor. Omit it and elapsed keeps accumulating.
+ * `paused` holds the shown instant. Real time forward (`multiplier` ≤ 1 and
+ * direction +1) shows the anchor. Direction −1 runs that same elapsed backward
+ * and is not persisted. Pause freezes either direction and does not zero elapsed.
+ */
+export function stepChartClock(
+  clock: ChartClock,
+  frame: {
+    dtRealSec: number
+    multiplier: number
+    restartAnchorMs?: number
+    paused?: boolean
+    /** +1 plays forward. −1 plays the same rate backward. Omitted is forward. */
+    direction?: 1 | -1
+  },
+): ChartClock {
+  const restarted = frame.restartAnchorMs !== undefined
+  const anchorMs = restarted ? frame.restartAnchorMs! : clock.anchorMs
+  const shownMs = restarted ? anchorMs : clock.shownMs
+  if (frame.paused) return { anchorMs, shownMs }
+  const direction = frame.direction === -1 ? -1 : 1
+  if (direction > 0 && !(frame.multiplier > 1)) return { anchorMs, shownMs: anchorMs }
+  const rate = frame.multiplier > 1 ? frame.multiplier : 1
+  const forward = advanceSimMillis(shownMs, frame.dtRealSec, rate)
+  return { anchorMs, shownMs: shownMs + direction * (forward - shownMs) }
+}
+
 export function formatViewWidth(km: number): string {
   if (km < 1e6) return `${Math.round(km).toLocaleString("en-US")} km`
   if (km < 1e9) return `${(km / 1e6).toFixed(1)} million km`

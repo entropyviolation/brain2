@@ -29,7 +29,7 @@ the Needs Attention queue.
 | `harvest` | Harvest leftover | Points still available today. Footer: `N left of M`. |
 | `inbox` | Inbox mill | Unclarified count and the newest title. Click opens Inbox. |
 | `award` | Latest award | Newest positive points and why (completion, high % bonus, grades above yesterday, weekly grades above last week). |
-| `moon` | Moon | 8-bit moon, phase name, and days until the sooner of the next full moon and the next new moon. Detail: illumination, previous and next major phase, photographic planets at true relative size, Earth–Moon zoom at true scale. |
+| `moon` | Moon | 8-bit moon on the tile, phase name, and days until the sooner of the next full moon and the next new moon. Detail header is a photographic phase; illumination, previous and next major phase, photographic planets at true relative size, Earth–Moon zoom at true scale. |
 | `flow` | Already flowing | Quiet / Flowing / Pushed / Mixed from finished daily habits and older to-dos, against to-dos created and finished the same day. Default off. |
 | `paint` | Plan and lived | Open / Planned / Tracked / Short / Close / Over. Planned minutes (scheduled work, events, planned actions) against painted Tracking minutes, each minute once, sleep left out. Default off. This is idea 2. |
 

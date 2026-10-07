@@ -30,4 +30,14 @@ describe("sky motion bar", () => {
     expect(useSkyMotionStore.getState().viewWidthLog).toBe(4.4)
     expect(screen.getByText("25,119 km")).toBeInTheDocument()
   })
+
+  it("does not write pause or reverse into the motion store", () => {
+    render(<SkyMotionBar />)
+    fireEvent.click(screen.getByRole("button", { name: "Pause" }))
+    fireEvent.click(screen.getByRole("button", { name: "Reverse" }))
+    fireEvent.click(screen.getByRole("button", { name: "Play" }))
+    expect(screen.getByRole("button", { name: "Reverse" })).toBeInTheDocument()
+    expect(useSkyMotionStore.getState().rateIndex).toBe(0)
+    expect(useSkyMotionStore.getState().viewWidthLog).toBe(3.5)
+  })
 })
