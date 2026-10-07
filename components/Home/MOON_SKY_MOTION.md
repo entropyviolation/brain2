@@ -111,19 +111,21 @@ view width W ──┘         log camera: 1,000 px = W km
 - The date anchor and the one clock are in. The log camera is not. Do not
   add a second zoom while the √r chart remains. When the one-AU scene
   exists, drive it from this view width: 1,000 px = `W` km.
-- Chrome, then a real star field in place of the 56 hashed dots, then
-  light-time, are still ahead. Leave `STAR_DOTS` until that star pass.
-  Do not add a second ephemeris for light-time.
+- Chrome and light-time are still ahead. The star field is in: 288
+  Hipparcos stars at visual magnitude 3.50 and brighter
+  (`naked-eye-stars.ts`), drawn on this glass. Do not add a second
+  ephemeris for light-time.
 - Do not remove the 0.2 light coarsening on the globes. A fast rate must
   not repaint every photograph every frame. `moonGlance` on every fast
   frame is already a known cost if the Earth zoom stays.
 
 A compact checklist in the readout (`.home-sky-progress`) names what is in
-and what is still ahead: date control, Now, one clock, then log camera,
-chrome, stars, light-time. It is progress, not a second settings system.
+and what is still ahead: date control, Now, one clock, and stars are in;
+log camera, chrome, and light-time are still ahead. It is progress, not a
+second settings system.
 
-The camera, chrome, stars, and light-time stay separate changes. Each
-change leaves `lib/sky-motion.test.ts` green. The screenshot check is
+The camera, chrome, and light-time stay separate changes. Each change
+leaves `lib/sky-motion.test.ts` green. The screenshot check is
 `motionReadout(4.4, 0)`.
 
 ## What is in the repo now
@@ -134,7 +136,7 @@ change leaves `lib/sky-motion.test.ts` green. The screenshot check is
 | Body sizes | `BODY_RADIUS_KM`, `systemBodyRadiusPx`, `earthMoonRadii`, `MOON_DISTANCE_KM` | Shipped. Wide chart shares one km/px so the Moon is under a pixel. Earth zoom is true size and true separation. |
 | Current projection | `toScreen` in `components/Home/home-moon-orrery.tsx` | Shipped, and **not** a linear camera. Orbit radius on screen is `√r × 34`, tilt `0.72`. Mercury and Neptune share the glass. Leave this until the AU scene replaces it. |
 | Photographs | `components/Home/planet-skins.ts`, `public/planets/` | Shipped. `usePlanetSkins` caches a globe by light rounded to 0.01. The orrery also coarsens light to 0.2 before that, so a fast rate does not repaint every frame. |
-| Stars | `STAR_DOTS` in the orrery | 56 hashed dots. Not a catalog. |
+| Stars | `naked-eye-stars.ts`, drawn in the orrery | Shipped. 288 Hipparcos stars, visual magnitude 3.50 and brighter. Directions on the ecliptic glass. |
 | Moon phase | `lib/lunar.ts` `moonGlance` | Shipped for the tile and, while the chart is open, for the Earth zoom. Meeus. Calling it on every fast frame is a known cost. |
 | Motion math | `lib/sky-motion.ts` | Shipped. Formulas below. Tested in `lib/sky-motion.test.ts`. |
 | Saved settings | `lib/sky-motion-store.ts` | Shipped. Persist **v1**, key `brain2-sky-motion`. In the Settings full backup. Pref-only vault `cogs-sky-motion` (no row guard). |
@@ -299,7 +301,7 @@ view width W ──┘         log camera: 1000 px = W km
 | --- | --- | --- |
 | Chrome | `home-sky-motion.tsx`, `.home-sky-motion`, the reset key, slider thumbs. Restyle only inside the Moon dialog’s existing glass. | Kepler, camera math, star catalog |
 | Chart drawing | Replace `toScreen` with heliocentric AU coordinates and a log camera fed by `viewWidthKm`. Keep `planetPlaces` / `orbitSamples`. | A second copy of the px/s formulas |
-| Stars | A real star field, if one is wanted, in place of `STAR_DOTS`. | The motion rows |
+| Stars | `naked-eye-stars.ts` on the ecliptic glass. 288 Hipparcos stars, V ≤ 3.50. | The motion rows |
 | Heavier physics / sky tools | Light-time, after the one scene. The date anchor and the scene clock (`M` on the Kepler date) are already in the orrery. Thin out per-frame `moonGlance` if the Earth zoom stays. | A new physics package. No matter.js, no n-body beside `solar-system.ts`. No second ephemeris. |
 
 ## Visual language
@@ -348,9 +350,11 @@ Do not ship the reference page’s anthropic-sans / light-surface chrome.
 5. **Leave the bar’s math alone.** `motionReadout` is the readout of the
    same `W` and `M`. Extend it only if the reference set changes. Tests in
    `lib/sky-motion.test.ts` lock the screenshot.
-6. **Chrome pass, then stars, then heavier tools.** Order above. Stars do
-   not block the camera. Light-time and anything past Kepler wait until the
-   one scene and the date anchor exist.
+6. **Chrome, then light-time.** Still ahead of this slice. Stars are in:
+   288 Hipparcos stars in place of the hashed dots. Light-time reads the
+   same Kepler places and stays off `motionReadout`. The log camera still
+   waits for the one-AU scene, driven by the saved view width (1,000 px =
+   `W` km).
 
 ## What not to do
 
@@ -359,7 +363,8 @@ Do not ship the reference page’s anthropic-sans / light-surface chrome.
 - Do not add a second physics engine, per-planet speed knobs, or a parallel
   settings store. `brain2-sky-motion` is the store.
 - Do not make view width a decorative number once the log camera exists.
-- Do not persist fast-forward elapsed time across reload. Persist the rate,
-  the view width, and (only if step 1 decides to) the chosen date.
+- Do not persist fast-forward elapsed time across reload. Persist the rate
+  and the view width. The chosen date stays session-only unless a later
+  decision adds it to the store on purpose.
 - Do not treat `docs/UI_NEXT.md` as the home for this work.
 - Do not invent an entry in `docs/BRAIN2_FEATURE_IDEAS.md`.

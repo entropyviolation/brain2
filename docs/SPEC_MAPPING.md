@@ -464,7 +464,9 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   rate show how fast eight familiar motions cross a 1,000 px view (frozen /
   barely moving / visible motion / too fast to follow). The time rate plays
   the planet clock; **Reset to real time** restores it. Both settings persist
-  in `brain2-sky-motion`. A chosen date is not built. The true-scale AU scene
+  in `brain2-sky-motion` (default width 3.5, real time). A Date control on the
+  open detail sets the chart anchor; **Now** returns to the widget day. That
+  date and any fast-forward elapsed time are not saved. The true-scale AU scene
   (log camera fed by that view width, same Kepler elements) is specified in
   [`components/Home/MOON_SKY_MOTION.md`](../components/Home/MOON_SKY_MOTION.md)
   and is not this chart.

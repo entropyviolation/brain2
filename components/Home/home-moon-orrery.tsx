@@ -6,7 +6,10 @@
  * Earth is opened. That view places Earth and the Moon at true size and
  * true separation. Photographs are projected globes. A saved time rate
  * runs that clock faster than the wall; real time leaves the chart on the
- * date it was given. The motion bar under the chart is the same scale.
+ * date it was given. The motion bar under the chart is the same width and
+ * rate. A date control sets the anchor passed to planetPlaces. Now returns
+ * that anchor to the widget date. Elapsed time is not saved. The √r chart
+ * stays; the log camera waits for one AU scene.
  * True-scale sky handoff: components/Home/MOON_SKY_MOTION.md.
  */
 "use client"
@@ -29,6 +32,7 @@ import {
   type PlanetPlace,
 } from "@/lib/solar-system"
 import { sunLight, usePlanetSkins, type GlobeLight } from "@/components/Home/planet-skins"
+import { SKY_STAR_DOTS } from "@/components/Home/naked-eye-stars"
 
 const VB = { w: 520, h: 400 }
 const CX = 260
@@ -52,25 +56,58 @@ const SUN_PX = 8.5
 const EARTH_MOON_SEP = 440
 const RING_ASPECT = 128 / 360
 
-const STAR_DOTS = Array.from({ length: 56 }, (_, i) => ({
-  x: ((i * 97) % 500) + 10,
-  y: ((i * 53) % 380) + 10,
-  n: i % 7 === 0 ? 1.3 : 0.7,
-}))
+/** Progress in the detail. Bright rows are in. Dim rows are still ahead. */
+const SKY_BUILD = [
+  { id: "date", label: "Date control", state: "done" },
+  { id: "now", label: "Now", state: "done" },
+  { id: "clock", label: "One clock", state: "done" },
+  { id: "camera", label: "Log camera", state: "ahead", title: "From view width, once a one-AU scene exists. 1,000 px = W km." },
+  { id: "chrome", label: "Chrome", state: "ahead" },
+  { id: "stars", label: "Stars", state: "done" },
+  { id: "light", label: "Light-time", state: "ahead" },
+] as const
 
-/** Chart instant. Real time follows `anchor`. A faster rate plays forward from it. */
-function useChartDate(anchor: Date): Date {
+function localInputValue(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0")
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
+function dateFromLocalInput(value: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(value)
+  if (!match) return null
+  const year = Number(match[1])
+  const month = Number(match[2])
+  const day = Number(match[3])
+  const hour = Number(match[4])
+  const minute = Number(match[5])
+  const next = new Date(year, month - 1, day, hour, minute, 0, 0)
+  if (
+    next.getFullYear() !== year ||
+    next.getMonth() !== month - 1 ||
+    next.getDate() !== day ||
+    next.getHours() !== hour ||
+    next.getMinutes() !== minute
+  ) {
+    return null
+  }
+  return next
+}
+
+/**
+ * Chart instant. Real time shows `anchor`. A faster rate is anchor + elapsed × M.
+ * `snap` restarts elapsed without changing the saved rate. Elapsed is not stored.
+ */
+function useChartDate(anchor: Date, snap: number): Date {
   const rateIndex = useSkyMotionStore((s) => s.rateIndex)
   const multiplier = timeRateAt(rateIndex).seconds
-  const [sim, setSim] = useState(anchor)
-  const simMs = useRef(anchor.getTime())
+  const anchorMs = anchor.getTime()
+  const [sim, setSim] = useState(() => new Date(anchorMs))
+  const simMs = useRef(anchorMs)
 
   useEffect(() => {
-    if (multiplier <= 1) {
-      simMs.current = anchor.getTime()
-      setSim(anchor)
-      return
-    }
+    simMs.current = anchorMs
+    setSim(new Date(anchorMs))
+    if (multiplier <= 1) return
     const frameSec = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0.25 : 1 / 24
     let raf = 0
     let last = performance.now()
@@ -88,7 +125,7 @@ function useChartDate(anchor: Date): Date {
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [anchor, multiplier])
+  }, [anchorMs, multiplier, snap])
 
   return multiplier <= 1 ? anchor : sim
 }
@@ -100,7 +137,10 @@ function coarseLight(light: GlobeLight): GlobeLight {
 }
 
 export function MoonOrrery({ date }: { date: Date }) {
-  const shown = useChartDate(date)
+  const [chosen, setChosen] = useState<Date | null>(null)
+  const [snap, setSnap] = useState(0)
+  const anchor = chosen ?? date
+  const shown = useChartDate(anchor, snap)
   const rateLabel = useSkyMotionStore((s) => timeRateAt(s.rateIndex).label)
   const sped = useSkyMotionStore((s) => s.rateIndex > 0)
   const glance = useMemo(() => moonGlance(shown), [shown])
@@ -176,8 +216,8 @@ export function MoonOrrery({ date }: { date: Date }) {
       <div className="home-sky-stage">
         <svg className="home-sky-chart" viewBox={`0 0 ${VB.w} ${VB.h}`} role="img" aria-label="Solar system">
           <rect className="home-sky-glass" width={VB.w} height={VB.h} />
-          {STAR_DOTS.map((star, i) => (
-            <circle key={i} className="home-sky-star" cx={star.x} cy={star.y} r={star.n} />
+          {SKY_STAR_DOTS.map((star) => (
+            <circle key={star.hip} className="home-sky-star" cx={star.x} cy={star.y} r={star.r} fill={star.fill} />
           ))}
           {zoom ? (
             <g className="home-sky-world is-earth">
@@ -273,6 +313,32 @@ export function MoonOrrery({ date }: { date: Date }) {
       </div>
       <aside className="home-sky-readout">
         <h3>{zoom ? "Earth and Moon" : "Ecliptic"}</h3>
+        <div className="home-sky-when" data-held={chosen ? "yes" : "no"}>
+          <label htmlFor="sky-chart-date">Date</label>
+          <input
+            id="sky-chart-date"
+            type="datetime-local"
+            value={localInputValue(anchor)}
+            title="Sets the instant. A faster rate plays forward from here."
+            onChange={(event) => {
+              const next = dateFromLocalInput(event.target.value)
+              if (!next) return
+              setChosen(next)
+              setSnap((n) => n + 1)
+            }}
+          />
+          <button
+            type="button"
+            className="home-review-key"
+            title="Return to the widget date"
+            onClick={() => {
+              setChosen(null)
+              setSnap((n) => n + 1)
+            }}
+          >
+            Now
+          </button>
+        </div>
         <p className="home-sky-epoch">
           {formatMajorWhen(shown)}
           {sped ? ` · ${rateLabel}` : ""}
@@ -301,6 +367,17 @@ export function MoonOrrery({ date }: { date: Date }) {
             </li>
           ))}
         </ul>
+        <div className="home-sky-progress">
+          <p className="home-sky-progress-label">This sky</p>
+          <ul aria-label="Sky build">
+            {SKY_BUILD.map((item) => (
+              <li key={item.id} data-state={item.state} title={"title" in item ? item.title : undefined}>
+                {item.label}
+              </li>
+            ))}
+          </ul>
+          <p className="home-sky-progress-note">Bright is in. Dim is still ahead.</p>
+        </div>
       </aside>
     </div>
     <SkyMotionBar />
