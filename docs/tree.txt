@@ -286,6 +286,7 @@
 │   │   │   ├── week-navigation.tsx
 │   │   │   ├── willpower-gems.test.tsx
 │   │   │   └── willpower-gems.tsx
+│   │   ├── MOON_SKY_MOTION.md
 │   │   ├── NeedsAttention.notes.md
 │   │   ├── NeedsAttention.test.tsx
 │   │   ├── NeedsAttention.tsx
@@ -482,6 +483,8 @@
 │   │   ├── home-review-banner.test.tsx
 │   │   ├── home-review-banner.tsx
 │   │   ├── home-screen-pet.tsx
+│   │   ├── home-sky-motion.test.tsx
+│   │   ├── home-sky-motion.tsx
 │   │   ├── home-solar-tile.tsx
 │   │   ├── home-tracking-tile.tsx
 │   │   ├── home-widget-catalog.tsx
@@ -892,6 +895,11 @@
 │   │   ├── button.tsx
 │   │   ├── card.tsx
 │   │   ├── checkbox.tsx
+│   │   ├── clock-picker
+│   │   │   ├── README.md
+│   │   │   ├── clock-picker.css
+│   │   │   ├── clock-picker.test.tsx
+│   │   │   └── clock-picker.tsx
 │   │   ├── collapsible.tsx
 │   │   ├── color-swatch.test.tsx
 │   │   ├── color-swatch.tsx
@@ -2462,6 +2470,10 @@
 │   ├── sheet-a1.ts
 │   ├── sheet-eval.test.ts
 │   ├── sheet-eval.ts
+│   ├── sky-motion-store.test.ts
+│   ├── sky-motion-store.ts
+│   ├── sky-motion.test.ts
+│   ├── sky-motion.ts
 │   ├── sleep-inference.test.ts
 │   ├── sleep-inference.ts
 │   ├── sleep-log.test.ts

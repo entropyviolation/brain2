@@ -111,7 +111,7 @@ meaningful on its own.
 | `TransitionsView.tsx` | Markov matrix of Tracking pen changes + alluvial of switch counts. |
 | `ContextSwitchHeatmap.tsx` | Density calendar + hour-of-day; per-scope; Open in Lists for items with time logs. |
 | `TextPipelineView.tsx` | **Text events** (text-pipeline instants) and **Text spans** (currently/stopped/switched intervals); always labeled from text pipeline. |
-| `LogEventsView.tsx` | **Log** (Time group): day bars, kind counts, clock scatter of exact and estimated times, unknown clocks as a count, phase strip from `phaseForDate`. Filter matches the kind string (`intake.food`, `intake.drink`, `intake.drug`, `intake`, or a slug such as left room). |
+| `LogEventsView.tsx` | **Log** (Time group): day bars, kind counts, clock scatter of exact and estimated times, unknown clocks as a count, phase strip from `phaseForDate` (stored marks; the Tracking log cycle well stays hidden until Enable cycle tracking is on). Filter matches the kind string (`intake.food`, `intake.drink`, `intake.drug`, `intake`, or a slug such as left room). |
 | `log-event-stats.ts` | Pure counts by day and by kind, clock scatter (unknown excluded), phase strip. Tested in `log-event-stats.test.ts`. |
 | `OperationsAnalytics.tsx` | Stage/category mosaic + work/neglect heat. Does not restyle the Operations module. |
 | `PlanVsReality.tsx` | Window ribbon + paired bars; calendar events as planned minutes; capacity vs waking window (`~` when inferred). |
@@ -164,7 +164,7 @@ the selected group sit beneath (`role="tab"`). Default view remains **Habits**.
 | | **Context Switch** | tracking | Switch density + hour-of-day; Open in Lists for time-logged items. |
 | | **Text events** | tracking (`generatedBy.text` instants) | Discrete phone events + switch markers; counts by day; always from text pipeline. |
 | | **Text spans** | tracking (`generatedBy.text` intervals) | currently / stopped / switched durations + switch count; always from text pipeline. |
-| | **Log** | Tracking log instants + cycle marks | Counts by day and by kind (`intake.food`, `intake.drink`, `intake.drug`, bare `intake`, or a slug such as left room). Exact and estimated clocks scatter; unknown clocks are a count, not a plotted minute. Phase strip uses `phaseForDate` over the window — labeled from bleed days and ovulation marks, not a medical prediction. Spotting does not change the phase. The kind filter matches that kind string. |
+| | **Log** | Tracking log instants + cycle marks | Counts by day and by kind (`intake.food`, `intake.drink`, `intake.drug`, bare `intake`, or a slug such as left room). Exact and estimated clocks scatter; unknown clocks are a count, not a plotted minute. Phase strip uses `phaseForDate` over the window — labeled from bleed days and ovulation marks, not a medical prediction. Spotting does not change the phase. The strip reads stored marks; the Tracking log cycle well is the one that stays hidden until Enable cycle tracking is on. The kind filter matches that kind string. |
 | | **Operations** | operation items | Stage/category mosaic + work vs neglect. |
 | **Accuracy** | **Plan vs Reality** | plan, events, capacity, sleep | Ribbon + events as planned minutes + waking capacity. Grain includes Season (`YYYY-Qn`). |
 | | **Calibration** | tasks | Sentence + n; type/list when floor clears; PERT when present. |

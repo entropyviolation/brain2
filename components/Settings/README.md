@@ -74,7 +74,7 @@ the theme store rewrites the pin.
 - `lib/data/backup.ts` — the backup engine `BackupRestore` defers to:
   `createBackup`/`createFullBackup`/`downloadBackup` snapshot every registered
   store (`BACKUP_STORES`, including home layout, weather place, sun history,
-  and Names), free-text plan keys, attachments, docs, and `extras` (every other
+  Moon chart motion, and Names), free-text plan keys, attachments, docs, and `extras` (every other
   durable key). Leftover `friend-pic:` copies fold into attachments.
   `parseBackup` validates with Zod; `previewBackup` lists which parts the file
   contains; `restoreBackup` can still full-replace (one-arg / mobile hub) or

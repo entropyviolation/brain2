@@ -33,6 +33,7 @@ Events (whole message, or log: / intake:)
 • intake: coffee  — point only, no duration. intake food: / drink: / drug: sets the class
 • cycle: bleeding  ·  cycle: spotting  ·  cycle: ovulation  ·  cycle: bleeding off
 • st: / switch task: cleaning  ·  so: / switch objective: / switch goal: read  ·  transit: the store
+• note: left room  ·  n left room  ·  jot:  ·  memo:  — Text log instant. day: stays the day jot
 Activity spans
 • currently deep work  ·  stopped deep work  ·  switched to cooking
 Plan / capture

@@ -412,11 +412,16 @@ export function MessageIngestPanel() {
           <code className="text-foreground">st:</code> /{" "}
           <code className="text-foreground">switch task:</code>,{" "}
           <code className="text-foreground">so:</code> /{" "}
+          <code className="text-foreground">switch objective:</code> /{" "}
           <code className="text-foreground">switch goal:</code>,{" "}
+          <code className="text-foreground">intake:</code> /{" "}
           <code className="text-foreground">intake food:</code> /{" "}
           <code className="text-foreground">drink:</code> /{" "}
           <code className="text-foreground">drug:</code>, and{" "}
-          <code className="text-foreground">note:</code>. A clock is exact unless you
+          <code className="text-foreground">note:</code> /{" "}
+          <code className="text-foreground">n</code> /{" "}
+          <code className="text-foreground">jot:</code> /{" "}
+          <code className="text-foreground">memo:</code>. A clock is exact unless you
           add <code className="text-foreground">est</code>,{" "}
           <code className="text-foreground">estimated</code>,{" "}
           <code className="text-foreground">~</code>, or{" "}

@@ -460,7 +460,14 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   next full moon and the next new moon. Detail adds illumination, the previous
   and next major phase with local time, and a heliocentric chart of the eight
   planets as photographs at true relative size (the Moon shows only in the
-  Earth zoom, at true size and distance).
+  Earth zoom, at true size and distance). Under the chart, view width and time
+  rate show how fast eight familiar motions cross a 1,000 px view (frozen /
+  barely moving / visible motion / too fast to follow). The time rate plays
+  the planet clock; **Reset to real time** restores it. Both settings persist
+  in `brain2-sky-motion`. A chosen date is not built. The true-scale AU scene
+  (log camera fed by that view width, same Kepler elements) is specified in
+  [`components/Home/MOON_SKY_MOTION.md`](../components/Home/MOON_SKY_MOTION.md)
+  and is not this chart.
   **Latest award** shows the newest positive ledger row and why (task completion,
   high-completion bonus, raw daily completion higher than yesterday, Week grade /
   Perfect output higher than last week).

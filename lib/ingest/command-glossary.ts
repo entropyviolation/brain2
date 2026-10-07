@@ -230,7 +230,7 @@ What you can do (families)
 • Grocery — groc (dump/add/pin); got / x / bought / check off
 • Needed — needed: batteries · get: then lines → list "needed"
 • To-do — to do today:, do: / next action:, read to do today
-• Log — log: (loc: place) / intake: / intake food|drink|drug: / cycle: / st: / switch task: / so: / switch goal: / transit:; smoked weed, drank water, ate …, took …
+• Log — log: (loc: place) / intake: / intake food|drink|drug: / cycle: / st: / switch task: / so: / switch objective: / switch goal: / transit:; smoked weed, drank water, ate …, took …
 • Monitor — currently / stopped / switched to
 • Capture / add — plain text, qa:, add:, inbox:, idea:, quick add: (-mb / -monkey → Monkey brain)
 • Bulk — bulk: / bulk add; Name: dumps; before 9/12:

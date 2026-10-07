@@ -1,7 +1,7 @@
 /**
  * components/Home/Tracking/tracking-day-notes.tsx — Per-day notes append log
  *
- * Sits under Time Grid, Activity Log, and Day Log on the Home Tracking tab.
+ * Sits under Time Grid, Activity Log, Day Log, and Tracking log on the Home Tracking tab.
  * An append log (`lib/append-log.ts`): Submit note stamps the writing time;
  * List / Bulk / Latest (Habits `.hab-view-changer` keys); past entries cannot
  * be edited. Jots like "zoo 4–5" stay with that date while you figure out
