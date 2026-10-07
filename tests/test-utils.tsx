@@ -28,6 +28,8 @@ import { useHomeWidgetsStore } from "@/lib/home-widgets-store"
 import { DEFAULT_SKY_MOTION, useSkyMotionStore } from "@/lib/sky-motion-store"
 import { useHomeWeatherStore } from "@/lib/home-weather-store"
 import { useUiNamesStore } from "@/lib/ui-names-store"
+import { useLogKeywordsStore } from "@/lib/log-keywords-store"
+import { useCountStatusesStore } from "@/lib/count-statuses"
 import { resetPersistStatus } from "@/lib/persist-storage"
 import { resetDayNotesPersist } from "@/lib/day-notes-persist"
 import { resetActionHistory } from "@/lib/action-history"
@@ -87,6 +89,9 @@ export function resetAllStores() {
     habitMonthWindow: "yearToDate",
     habitBirthday: { month: 5, day: 5 },
     habitWeekWindow: "sevenWeeks",
+    habitWeekView: false,
+    habitMonthView: false,
+    habitSeasonView: false,
     sortHabitsByPriorityFlag: false,
     willpowerPhysicsHud: false,
     willpowerPhysics: DEFAULT_WILLPOWER_PHYSICS,
@@ -115,6 +120,7 @@ export function resetAllStores() {
     infiniteScroll: false,
     confirmedEventIds: [],
     enableCycleTracking: false,
+    cycleDetailsOpen: false,
     gridSpan: "day",
     // Pens, variants, tags and links are state too: a test that adds "Ian's
     // House" must not leave it behind for the next one.
@@ -151,6 +157,8 @@ export function resetAllStores() {
   useSkyMotionStore.setState({ ...DEFAULT_SKY_MOTION })
   useHomeWeatherStore.getState().resetPlace()
   useUiNamesStore.setState({ mode: "off" })
+  useLogKeywordsStore.setState({ keywords: [] })
+  useCountStatusesStore.setState({ counts: [] })
 }
 
 export function renderWithProviders(ui: ReactElement, options?: RenderOptions) {

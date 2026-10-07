@@ -100,6 +100,21 @@ describe("EnhancedAnalytics", () => {
     expect(screen.getAllByText(/Settings still edits schemas/).length).toBeGreaterThan(0)
   })
 
+  it("shows the concealed cycle sentence once and skips the phase tables", async () => {
+    const user = userEvent.setup()
+    useTimeTrackingStore.setState({ enableCycleTracking: true, cycleDetailsOpen: false })
+    render(<EnhancedAnalytics />)
+
+    await user.click(screen.getByRole("tab", { name: "Time" }))
+    await user.click(screen.getByRole("tab", { name: "Cycle phase" }))
+
+    expect(await screen.findByTestId("cycle-phase-concealed")).toBeInTheDocument()
+    expect(screen.getAllByText("Cycle details are concealed.")).toHaveLength(1)
+    expect(screen.getByRole("button", { name: "Show cycle" })).toBeInTheDocument()
+    expect(screen.queryByTestId("cycle-phase-view")).not.toBeInTheDocument()
+    expect(screen.queryByTestId("cycle-phase-mix-table")).not.toBeInTheDocument()
+  })
+
   it("opens Overcommit under Behavior with an honest empty canvas", async () => {
     const user = userEvent.setup()
     render(<EnhancedAnalytics />)

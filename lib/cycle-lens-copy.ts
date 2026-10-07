@@ -4,8 +4,15 @@
  * Three peer lenses on a phase that `phaseForDate` already derived.
  * The phase is not stored. Spotting is not a phase. This file is education
  * and reflection from the user's own marks. It is not a diagnosis.
+ *
+ * The popup reads `clinicalLensSections`, `chineseLensSections`, and
+ * `esotericLensSections`. `cycleLensParagraphs` flattens those sections.
+ * The paragraph constants below stay as they were written.
  */
 import type { CyclePhase } from "@/lib/cycle-phase"
+import { chineseLensSections } from "@/lib/cycle-lens-chinese"
+import { clinicalLensSections } from "@/lib/cycle-lens-clinical"
+import { esotericLensSections } from "@/lib/cycle-lens-esoteric"
 
 export const CYCLE_PHASES: readonly CyclePhase[] = [
   "menstrual",
@@ -183,6 +190,39 @@ export const CYCLE_LENS_COPY: Record<CyclePhase, Record<CycleLensId, CycleLensBo
   unknown: { clinical: unknownClinical, chinese: unknownChinese, esoteric: unknownEsoteric },
 }
 
+/** Titles for a four-paragraph lens, in the order the paragraphs were written. */
+export const CYCLE_LENS_SECTION_TITLES = [
+  "Physiology",
+  "What's typical",
+  "Worth doing",
+  "Worth not doing",
+] as const
+
+export type CycleLensSection = {
+  /** Omitted when this reading is too short to name. */
+  title?: string
+  paragraphs: readonly string[]
+}
+
+const LENS_SECTIONS = {
+  clinical: clinicalLensSections,
+  chinese: chineseLensSections,
+  esoteric: esotericLensSections,
+} as const
+
+function adoptSections(
+  sections: readonly { title: string; paragraphs: readonly string[] }[],
+): readonly CycleLensSection[] {
+  return sections.map((section) => ({
+    title: section.title,
+    paragraphs: section.paragraphs,
+  }))
+}
+
+export function cycleLensSections(phase: CyclePhase, lens: CycleLensId): readonly CycleLensSection[] {
+  return adoptSections(LENS_SECTIONS[lens][phase])
+}
+
 export function cycleLensParagraphs(phase: CyclePhase, lens: CycleLensId): readonly string[] {
-  return CYCLE_LENS_COPY[phase][lens].paragraphs
+  return cycleLensSections(phase, lens).flatMap((section) => section.paragraphs)
 }

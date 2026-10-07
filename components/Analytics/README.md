@@ -21,7 +21,7 @@ Other rooms do not write it.
 
 The **Analytics** top-level tab is a light instrument studio over the vault
 already captured: tasks, points, habits, tracking scopes, sleep, metrics,
-reviews, operations, goals, and the item library. Charts use **recharts**
+cycle marks, reviews, operations, goals, and the item library. Charts use **recharts**
 (themed, including **pies**) plus shared studio primitives (treemap, density,
 mosaic, hour×day, ribbon, **phosphor traces**). Non-trivial math lives in pure
 `lib/*` helpers plus `cross-section.ts`, `hour-day.ts`, `observatory-findings.ts`,
@@ -69,7 +69,7 @@ meaningful on its own.
 
 | File | Purpose |
 |------|---------|
-| `enhanced-analytics.tsx` | Window: title + studio range/nav/canvas + status. Persists the active view and canvas scroll. `data-ui-name="Analytics"` (docs path this file). Mounts `useScreenTimeSync` while Analytics is open. The open view is a lazy chunk (`analytics-views.tsx`); the shell does not import every chart. |
+| `enhanced-analytics.tsx` | Window: title + studio range/nav/canvas + status. Persists the active view and canvas scroll. `data-ui-name="Analytics"` (docs path this file). Mounts `useScreenTimeSync` while Analytics is open. The open view is a lazy chunk (`analytics-views.tsx`); the shell does not import every chart. Time → Cycle phase stays that chunk when cycle tracking is off. When it is on and `cycleDetailsOpen` is false, the shell shows **Show cycle** and a concealed line (`cycle-phase-concealed.tsx`) and does not mount the phase canvas. |
 | `analytics-views.tsx` | One `React.lazy` chunk per Analytics view. |
 | `AnalyticsNav.tsx` | Left studio index (`data-ui-name="Analytics index"`, one-line `data-ui-help`, `#studio-views`). Groups then views; `role="tab"`; last view per group (persisted). Names attrs are the help — do not add a second `?` button. |
 | `analytics-tabs.ts` | Five groups (behavior, time, accuracy, meta, library), views, `groupForTab` / `tabLabel` / `ANALYTICS_TAB_HELP`. A sixth group, Meaning, is specified in [`docs/JungBrain2.md`](../../docs/JungBrain2.md) and is not in this file yet. |
@@ -113,6 +113,9 @@ meaningful on its own.
 | `TextPipelineView.tsx` | **Text events** (text-pipeline instants) and **Text spans** (currently/stopped/switched intervals); always labeled from text pipeline. |
 | `LogEventsView.tsx` | **Log** (Time group): day bars, kind counts, clock scatter of exact and estimated times, unknown clocks as a count, phase strip from `phaseForDate` (stored marks; the Tracking log cycle well stays hidden until Enable cycle tracking is on). Filter matches the kind string (`intake.food`, `intake.drink`, `intake.drug`, `intake`, or a slug such as left room). |
 | `log-event-stats.ts` | Pure counts by day and by kind, clock scatter (unknown excluded), phase strip. Tested in `log-event-stats.test.ts`. |
+| `CyclePhaseView.tsx` | **Cycle phase** (Time group): phase mix of the shared window from `assessCycleDay` (batched as `assessCycleRange`). Marked days and estimated days are counted apart. Means and medians are on marked days, with n. An estimated split stays labeled, keeps n, and is not a finding. `summarizeCycleEstimates().basisNote` is a quiet line. Unknown is its own bucket. Spotting is not a phase. Empty until a bleed or ovulation mark exists. Not a diagnosis. Accuracy → **Cycle** stays stall and pushes. The shell hides this canvas while Enable cycle tracking is on and `cycleDetailsOpen` is false. |
+| `cycle-phase-concealed.tsx` | Concealed stand-in for Time → Cycle phase. One line and **Show cycle**. Does not import `CyclePhaseView`. The gate is off when cycle tracking itself is off. |
+| `cycle-phase-stats.ts` | Pure phase counts split by marked and estimated, daily means, zero-fill, and phase comparisons on marked days. Tested in `cycle-phase-stats.test.ts`. |
 | `OperationsAnalytics.tsx` | Stage/category mosaic + work/neglect heat. Does not restyle the Operations module. |
 | `PlanVsReality.tsx` | Window ribbon + paired bars; calendar events as planned minutes; capacity vs waking window (`~` when inferred). |
 | `CalibrationView.tsx` | Sentence + n + caveat; scatter; type/list breakdown when n clears the floor; PERT bands when present. |
@@ -165,6 +168,7 @@ the selected group sit beneath (`role="tab"`). Default view remains **Habits**.
 | | **Text events** | tracking (`generatedBy.text` instants) | Discrete phone events + switch markers; counts by day; always from text pipeline. |
 | | **Text spans** | tracking (`generatedBy.text` intervals) | currently / stopped / switched durations + switch count; always from text pipeline. |
 | | **Log** | Tracking log instants + cycle marks | Counts by day and by kind (`intake.food`, `intake.drink`, `intake.drug`, bare `intake`, or a slug such as left room). Exact and estimated clocks scatter; unknown clocks are a count, not a plotted minute. Phase strip uses `phaseForDate` over the window — labeled from bleed days and ovulation marks, not a medical prediction. Spotting does not change the phase. The strip reads stored marks; the Tracking log cycle well is the one that stays hidden until Enable cycle tracking is on. The kind filter matches that kind string. |
+| | **Cycle phase** | cycle marks + dated series | Days in the shared window by the phase `assessCycleDay` shows. A bleed or ovulation mark stays marked. A day with no ovulation in that cycle may be estimated, and that count sits beside the marked count. Means and medians use marked days, with n, for sleep, the five wellbeing metrics, mood marks that were set (energy and the other 1–10 ranks), food / drink / drug / unclassed intake logs, Screen Time and iPhone Screen Time minutes, Activity minutes, tasks completed, habit % on days with a habit log, points, and regret. An estimated split, when the window has one, is labeled estimated and keeps n; a thin estimated sample is not a finding. `basisNote` states what the guess rests on and that it is not a diagnosis. A series with nothing in the window is omitted. Unknown days stay. A silent log day counts as 0 logs; a missing sleep night or metric reading stays out. Spotting does not set a phase. Marks before the window still label days inside it. Accuracy → **Cycle** stays stall and pushes. While Enable cycle tracking is on and `cycleDetailsOpen` is false, this view is a concealed line and **Show cycle**. |
 | | **Operations** | operation items | Stage/category mosaic + work vs neglect. |
 | **Accuracy** | **Plan vs Reality** | plan, events, capacity, sleep | Ribbon + events as planned minutes + waking capacity. Grain includes Season (`YYYY-Qn`). |
 | | **Calibration** | tasks | Sentence + n; type/list when floor clears; PERT when present. |

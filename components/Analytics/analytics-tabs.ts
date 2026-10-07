@@ -36,6 +36,7 @@ export const ANALYTICS_TAB_GROUPS = [
       { id: "text-events", label: "Text events" },
       { id: "text-spans", label: "Text spans" },
       { id: "log", label: "Log" },
+      { id: "cycle-phase", label: "Cycle phase" },
       { id: "operations", label: "Operations" },
     ],
   },
@@ -141,6 +142,8 @@ export const ANALYTICS_TAB_HELP: Record<AnalyticsTab, string> = {
     "currently / stopped / switched Activity intervals stamped by the text pipeline. Shows painted durations and switch-instant counts. Always labeled from text pipeline.",
   log:
     "Activity instants from Tracking log: food, drink, drug, bare intake, and any event phrase (left room). Counts by day and by kind (`intake.food`, `intake.drink`, `intake.drug`, `intake`, or a slug such as left room). Exact and estimated clocks scatter; unknown clocks are a count, not a point on the stored minute. The phase strip is labeled from bleed days and ovulation marks over this window — not a medical prediction. Spotting is recorded and does not change the phase. Filter by that kind string; there is no preset list of events.",
+  "cycle-phase":
+    "Days in this window labeled menstrual, follicular, ovulatory, luteal, or unknown from bleed days and ovulation marks. Spotting is not a phase. Each joined series is a mean and a median by phase, with n. A missing reading stays out; a log count treats a silent day as 0 logs. Unknown days stay in their own bucket. This describes your logs. It is not a diagnosis.",
   operations:
     "Operation items: stage/category mosaic and work vs neglect from timeLogs. Does not restyle the Operations module.",
   plan:

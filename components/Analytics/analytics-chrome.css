@@ -2125,3 +2125,34 @@
   line-height: 1.2;
   color: var(--an-ink);
 }
+
+.fm98.an95 .an-phase-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  background: var(--an-hi);
+  color: var(--an-ink);
+}
+
+.fm98.an95 .an-phase-table th,
+.fm98.an95 .an-phase-table td {
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--an-line);
+  text-align: right;
+  font-weight: 400;
+}
+
+.fm98.an95 .an-phase-table th:first-child,
+.fm98.an95 .an-phase-table td:first-child {
+  text-align: left;
+}
+
+.fm98.an95 .an-phase-table th {
+  font-size: 10px;
+  color: var(--an-muted);
+}
+
+.fm98.an95 .an-phase-table tr:last-child td {
+  border-bottom: none;
+}

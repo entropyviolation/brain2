@@ -83,4 +83,36 @@ describe("enableCycleTracking persist", () => {
       spotting: true,
     })
   })
+
+  it("keeps cycle details closed when the blob omits the key", async () => {
+    expect(TIME_TRACKING_PERSIST_VERSION).toBe(15)
+    expect(useTimeTrackingStore.getInitialState().cycleDetailsOpen).toBe(false)
+    const kept = migrateTimeTrackingState(
+      { gridStep: 10, enableCycleTracking: true, penSort: "alphabetical" },
+      15,
+    )
+    expect(kept.cycleDetailsOpen).toBeUndefined()
+    expect(kept.enableCycleTracking).toBe(true)
+    expect(kept.gridStep).toBe(10)
+    expect(kept.penSort).toBe("alphabetical")
+
+    writeAliasedLocal(
+      TIMEGRID_KEY,
+      JSON.stringify({
+        state: { gridStep: 10, enableCycleTracking: true, penSort: "alphabetical" },
+        version: 15,
+      }),
+    )
+    await useTimeTrackingStore.persist.rehydrate()
+    expect(useTimeTrackingStore.getState().cycleDetailsOpen).toBe(false)
+    expect(useTimeTrackingStore.getState().enableCycleTracking).toBe(true)
+    expect(useTimeTrackingStore.getState().gridStep).toBe(10)
+    expect(useTimeTrackingStore.getState().penSort).toBe("alphabetical")
+
+    useTimeTrackingStore.getState().setCycleDetailsOpen(true)
+    await useTimeTrackingStore.persist.rehydrate()
+    expect(useTimeTrackingStore.getState().cycleDetailsOpen).toBe(true)
+    expect(useTimeTrackingStore.getState().gridStep).toBe(10)
+    expect(useTimeTrackingStore.getState().enableCycleTracking).toBe(true)
+  })
 })

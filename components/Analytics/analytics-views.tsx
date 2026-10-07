@@ -40,6 +40,7 @@ export const ANALYTICS_VIEWS: Record<AnalyticsTab, LazyExoticComponent<Component
   "text-events": view(() => import("./TextPipelineView").then((m) => ({ default: m.TextEventsView }))),
   "text-spans": view(() => import("./TextPipelineView").then((m) => ({ default: m.TextSpansView }))),
   log: view(() => import("./LogEventsView").then((m) => ({ default: m.LogEventsView }))),
+  "cycle-phase": view(() => import("./CyclePhaseView").then((m) => ({ default: m.CyclePhaseView }))),
   regret: view(() => import("./RegretView").then((m) => ({ default: m.RegretView }))),
   overcommit: view(() => import("./OvercommitmentView").then((m) => ({ default: m.OvercommitmentView }))),
   observatory: view(() => import("./Observatory").then((m) => ({ default: m.Observatory }))),

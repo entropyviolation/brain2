@@ -65,6 +65,11 @@ describe("analytics tabs", () => {
     expect(tabLabel("text-spans")).toBe("Text spans")
     expect(groupForTab("log").id).toBe("time")
     expect(tabLabel("log")).toBe("Log")
+    expect(ANALYTICS_TABS).toContain("cycle-phase")
+    expect(groupForTab("cycle-phase").id).toBe("time")
+    expect(tabLabel("cycle-phase")).toBe("Cycle phase")
+    expect(ANALYTICS_TAB_HELP["cycle-phase"]).toMatch(/not a diagnosis/)
+    expect(ANALYTICS_TAB_HELP["cycle-phase"]).toMatch(/Spotting/)
     expect(groupForTab("spectrum").id).toBe("meta")
     expect(groupForTab("velocity").id).toBe("behavior")
     expect(firstTabInGroup("meta")).toBe("observatory")
@@ -94,6 +99,7 @@ describe("analytics tabs", () => {
         "Text events",
         "Text spans",
         "Log",
+        "Cycle phase",
         "Operations",
         "Plan vs Reality",
         "Calibration",

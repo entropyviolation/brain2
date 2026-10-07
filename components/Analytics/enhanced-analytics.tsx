@@ -18,8 +18,10 @@ import { ANALYTICS_VIEWS } from "./analytics-views"
 import { ANALYTICS_TABS, ANALYTICS_TAB_HELP, tabLabel } from "./analytics-tabs"
 import { AnalyticsNav } from "./AnalyticsNav"
 import { useScreenTimeSync } from "@/hooks/use-screentime-sync"
+import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { MachineLoading } from "@/components/machine-loading"
+import { CyclePhaseConcealed, cycleDetailsConcealed } from "./cycle-phase-concealed"
 import "./analytics-chrome.css"
 
 export function EnhancedAnalytics() {
@@ -28,6 +30,10 @@ export function EnhancedAnalytics() {
   const contentRef = useRef<HTMLDivElement>(null)
   usePersistedScroll(analyticsScrollSlot(analyticsTab), contentRef)
   useScreenTimeSync()
+  const enableCycleTracking = useTimeTrackingStore((s) => s.enableCycleTracking)
+  const cycleDetailsOpen = useTimeTrackingStore((s) => s.cycleDetailsOpen)
+  const concealCycle =
+    analyticsTab === "cycle-phase" && cycleDetailsConcealed(enableCycleTracking, cycleDetailsOpen)
   const View = ANALYTICS_VIEWS[analyticsTab]
 
   return (
@@ -152,9 +158,11 @@ export function EnhancedAnalytics() {
         <div className="an-studio">
           <AnalyticsNav tab={analyticsTab} onTabChange={setAnalyticsTab} />
           <div className="an-content" role="tabpanel" ref={contentRef}>
-            <p className="an-view-help">{ANALYTICS_TAB_HELP[analyticsTab]}</p>
+            {concealCycle ? null : (
+              <p className="an-view-help">{ANALYTICS_TAB_HELP[analyticsTab]}</p>
+            )}
             <Suspense fallback={<MachineLoading size="nest" />}>
-              <View />
+              {concealCycle ? <CyclePhaseConcealed /> : <View />}
             </Suspense>
           </div>
         </div>

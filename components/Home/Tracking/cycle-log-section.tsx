@@ -1,13 +1,15 @@
 /**
  * components/Home/Tracking/cycle-log-section.tsx — Cycle on the Tracking log
  *
- * Hidden entirely when Enable cycle tracking is off. Toggles write through
- * `toggleCycleFlag` on `lib/cycle-marks.ts`. The phase line is `phaseForDate`.
- * Cycle detail opens the three-lens reading. Phase is not stored.
+ * Hidden entirely when Enable cycle tracking is off. While that feature is on,
+ * `cycleDetailsOpen` (default closed) still conceals the phase line, mark
+ * toggles, and Cycle detail. Show cycle / Hide cycle is that latch. Toggles
+ * write through `toggleCycleFlag` on `lib/cycle-marks.ts`. The phase line is
+ * `phaseForDate`. Cycle detail opens the three-lens reading. Phase is not stored.
  */
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { CycleDetailDialog } from "@/components/Home/Tracking/cycle-detail-dialog"
 import { toggleCycleFlag, useCycleMarksStore, type CycleFlag } from "@/lib/cycle-marks"
 import { phaseForDate } from "@/lib/cycle-phase"
@@ -22,35 +24,54 @@ const TOGGLES: { flag: CycleFlag; label: string }[] = [
 
 export function CycleLogSection({ date }: { date: string }) {
   const enabled = useTimeTrackingStore((s) => s.enableCycleTracking)
+  const detailsOpen = useTimeTrackingStore((s) => s.cycleDetailsOpen)
+  const setDetailsOpen = useTimeTrackingStore((s) => s.setCycleDetailsOpen)
   const marks = useCycleMarksStore((s) => s.marks)
   const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    if (!detailsOpen) setOpen(false)
+  }, [detailsOpen])
+
   if (!enabled) return null
 
-  const mark = marks[date]
-  const phase = phaseForDate(date, marks)
+  const mark = detailsOpen ? marks[date] : undefined
+  const phase = detailsOpen ? phaseForDate(date, marks) : null
 
   return (
     <section className="trk-aside-well" aria-label="Cycle">
-      <h3 className="trk-logbook-heading">Cycle</h3>
-      <p data-testid="tracking-log-phase">Phase: {phase}</p>
-      <p className="trk-logbook-note">Labeled from bleed days and ovulation marks. Not a medical prediction.</p>
-      <p className="trk-logbook-note">Spotting is recorded and does not change the phase.</p>
-      <div className="trk-span-switch" role="group" aria-label="Cycle marks">
-        {TOGGLES.map((row) => (
-          <button
-            key={row.flag}
-            type="button"
-            aria-pressed={mark?.[row.flag] === true}
-            onClick={() => toggleCycleFlag(date, row.flag)}
-          >
-            {row.label}
-          </button>
-        ))}
-      </div>
-      <button type="button" className="trk-cycle-open" onClick={() => setOpen(true)}>
-        Cycle detail
+      <button
+        type="button"
+        className="trk-cycle-privacy"
+        aria-expanded={detailsOpen}
+        onClick={() => setDetailsOpen(!detailsOpen)}
+      >
+        {detailsOpen ? "Hide cycle" : "Show cycle"}
       </button>
-      {open ? <CycleDetailDialog date={date} onClose={() => setOpen(false)} /> : null}
+      {detailsOpen ? (
+        <>
+          <h3 className="trk-logbook-heading">Cycle</h3>
+          <p data-testid="tracking-log-phase">Phase: {phase}</p>
+          <p className="trk-logbook-note">Labeled from bleed days and ovulation marks. Not a medical prediction.</p>
+          <p className="trk-logbook-note">Spotting is recorded and does not change the phase.</p>
+          <div className="trk-span-switch" role="group" aria-label="Cycle marks">
+            {TOGGLES.map((row) => (
+              <button
+                key={row.flag}
+                type="button"
+                aria-pressed={mark?.[row.flag] === true}
+                onClick={() => toggleCycleFlag(date, row.flag)}
+              >
+                {row.label}
+              </button>
+            ))}
+          </div>
+          <button type="button" className="trk-cycle-open" onClick={() => setOpen(true)}>
+            Cycle detail
+          </button>
+          {open ? <CycleDetailDialog date={date} onClose={() => setOpen(false)} /> : null}
+        </>
+      ) : null}
     </section>
   )
 }
