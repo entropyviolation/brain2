@@ -1,15 +1,16 @@
 /**
  * components/Home/Tracking/now-time-button.tsx — Stamp a clock with this minute
  *
- * A Win95 latch that appears only while its time field is live (focused or
- * open). Click or Enter sets hours and minutes to now; the dialog keeps its
- * own date. Used by Log activity start / end / discrete-event clocks
- * (`OptionalClock` in `log-activity-dialog.tsx`).
+ * A Win95 latch that appears only while its clock is live (focused or the
+ * shared picker is open). Click or Enter sets hours and minutes to now; the
+ * dialog keeps its own date. Used by Log activity start / end / discrete-event
+ * clocks (`OptionalClock` in `log-activity-dialog.tsx`). The clock itself is
+ * `ClockPicker` — not the platform time popup.
  */
 "use client"
 
-import { useState } from "react"
-import { Input } from "@/components/ui/input"
+import { useRef, useState } from "react"
+import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import { minutesToTimeString } from "@/lib/time-entries"
 
 export function nowTimeString(at = new Date()): string {
@@ -49,20 +50,29 @@ export function ClockTime({
   onTime: (value: string) => void
 }) {
   const [live, setLive] = useState(false)
+  const openRef = useRef(false)
   return (
     <div
       className="trk-clock-time"
       onPointerDown={() => setLive(true)}
       onFocusCapture={() => setLive(true)}
       onBlurCapture={(e) => {
+        if (openRef.current) return
         const next = e.relatedTarget as Node | null
-        // Native time pickers often blur with no relatedTarget while still selected.
         if (!next) return
         if (e.currentTarget.contains(next)) return
         setLive(false)
       }}
     >
-      <Input id={id} type="time" value={time} onChange={(e) => onTime(e.target.value)} />
+      <ClockPicker
+        id={id}
+        value={time}
+        onChange={onTime}
+        onOpenChange={(open) => {
+          openRef.current = open
+          if (open) setLive(true)
+        }}
+      />
       {live && <NowTimeButton label={label} onNow={() => onTime(nowTimeString())} />}
     </div>
   )

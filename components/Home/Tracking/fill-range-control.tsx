@@ -4,14 +4,15 @@
  * Start–end clocks plus Fill, extracted from `time-grid.tsx` so date-nav work
  * can land beside it without a merge fight. Defaults to the longest empty
  * (untracked) block of the viewed day; `<` `>` walk remaining gaps in clock
- * order. Double-click a clock to type / native-pick; a single click does
+ * order. Double-click a clock to open the shared picker; a single click does
  * nothing. View-settings Day fill starts/ends are only the fully-untracked
  * fallback. A fully tracked day disables Fill.
  */
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import {
   minutesToLabel,
   minutesToTimeString,
@@ -42,37 +43,25 @@ function FillClock({
   disabled?: boolean
 }) {
   const [editing, setEditing] = useState(false)
-  const ref = useRef<HTMLInputElement>(null)
   const label = which === "start" ? "Fill starts" : "Fill ends"
   const clockMin = minutes % (24 * 60)
   const value = minutesToTimeString(clockMin)
 
-  useEffect(() => {
-    if (!editing) return
-    const el = ref.current
-    if (!el) return
-    el.focus()
-    try {
-      el.showPicker?.()
-    } catch {
-      /* jsdom / unsupported */
-    }
-  }, [editing])
-
   if (editing) {
     return (
-      <input
-        ref={ref}
-        type="time"
+      <ClockPicker
         className="trk-fill-clock-input"
         aria-label={label}
         value={value}
-        onChange={(e) => {
-          const next = timeStringToMinutes(e.target.value)
-          if (next === null) return
-          onMinutes(next)
+        defaultOpen
+        onChange={(next) => {
+          const parsed = timeStringToMinutes(next)
+          if (parsed === null) return
+          onMinutes(parsed)
         }}
-        onBlur={() => setEditing(false)}
+        onOpenChange={(open) => {
+          if (!open) setEditing(false)
+        }}
       />
     )
   }

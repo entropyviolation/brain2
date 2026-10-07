@@ -48,15 +48,15 @@ describe("FillRangeControl", () => {
     expect(screen.getByRole("button", { name: /Fill 12:00 PM–3:00 PM with Work/ })).toBeInTheDocument()
   })
 
-  it("opens a clock picker on double-click, not single click", () => {
+  it("opens the shared clock on double-click, not single click", () => {
     mount([])
     const start = screen.getByRole("button", { name: "Fill starts" })
     fireEvent.click(start)
-    expect(screen.queryByLabelText("Fill starts")).toBe(start)
+    expect(screen.queryByRole("group", { name: "Choose time" })).not.toBeInTheDocument()
     fireEvent.doubleClick(start)
-    const input = screen.getByLabelText("Fill starts") as HTMLInputElement
-    expect(input.tagName).toBe("INPUT")
-    expect(input.type).toBe("time")
+    expect(screen.getByRole("combobox", { name: "Fill starts" })).toBeInTheDocument()
+    expect(screen.getByRole("group", { name: "Choose time" })).toBeInTheDocument()
+    expect(document.querySelector('input[type="time"]')).not.toBeInTheDocument()
   })
 
   it("Fill still paints the selected range", () => {

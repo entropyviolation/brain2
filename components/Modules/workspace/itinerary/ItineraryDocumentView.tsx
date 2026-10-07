@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import { useModulesStore, type ModuleInstance, type ModuleView } from "@/lib/modules-store"
 import {
   applyGlobalCity,
@@ -943,12 +944,12 @@ export function ItineraryDocumentView({
                               ) : (
                                 <span className="itinerary-drag-handle no-print" aria-hidden />
                               )}
-                              <input
-                                type="time"
+                              <ClockPicker
                                 className="itinerary-time-input"
                                 value={chunk.time || ""}
                                 readOnly
                                 title="Re-paste flight to edit legs"
+                                onChange={() => {}}
                               />
                               <span className="itinerary-sched-body">
                                 <div className="itinerary-sched-title">{chunk.text}</div>
@@ -1048,12 +1049,10 @@ export function ItineraryDocumentView({
                         </span>
                       ) : entry.kind === "flight" ? (
                         <>
-                          <input
-                            type="time"
+                          <ClockPicker
                             className="itinerary-time-input"
                             value={entry.time || ""}
-                            onChange={(e) => {
-                              const time = e.target.value
+                            onChange={(time) => {
                               const base = entry.flight || { flightNumber: "" }
                               const depDate = (base.departureTime || `${day.date}T${time}:00`).slice(0, 10)
                               const patched = patchFlightFields(base, {
@@ -1193,11 +1192,10 @@ export function ItineraryDocumentView({
                         </>
                       ) : (
                         <>
-                          <input
-                            type="time"
+                          <ClockPicker
                             className="itinerary-time-input"
                             value={entry.time || ""}
-                            onChange={(e) => updateEntry(day.date, entry.id, { time: e.target.value })}
+                            onChange={(time) => updateEntry(day.date, entry.id, { time })}
                           />
                           <span className="itinerary-sched-body">
                             <AutoGrowTextarea

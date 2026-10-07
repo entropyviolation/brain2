@@ -181,6 +181,7 @@
 .itinerary-ghost:focus,
 .itinerary-inline-input:focus,
 .itinerary-time-input:focus,
+.itinerary-time-input:focus-within,
 .itinerary-autogrow:focus,
 .itinerary-mode-select:focus {
   border-color: #d4cdc2 !important;

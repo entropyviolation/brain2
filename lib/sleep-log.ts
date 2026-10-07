@@ -96,7 +96,7 @@ export const MAX_SLEEP_MINUTES = 20 * 60
 export const DEFAULT_SLEEP_TARGET_MINUTES = 8 * 60
 
 /**
- * Read a bedtime off an `<input type="time">` into a signed offset.
+ * Read a bedtime clock (`HH:MM`, the string the shared picker stores) into a signed offset.
  *
  * Noon is the pivot: a bedtime at or after 12:00 belongs to the evening before
  * (11:30 PM → -30), one before noon to the small hours of the morning itself
@@ -124,7 +124,7 @@ function parseClock(clock: string): number | undefined {
   return hours * 60 + mins
 }
 
-/** A signed offset back to `HH:MM` for an `<input type="time">`. */
+/** A signed offset back to `HH:MM` for the shared clock. */
 export function offsetToClock(offset: number): string {
   const wrapped = ((Math.round(offset) % MINUTES_PER_DAY) + MINUTES_PER_DAY) % MINUTES_PER_DAY
   return `${String(Math.floor(wrapped / 60)).padStart(2, "0")}:${String(wrapped % 60).padStart(2, "0")}`

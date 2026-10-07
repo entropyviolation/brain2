@@ -16,6 +16,7 @@
 import { Component, useEffect, useMemo, useRef, useState, type ErrorInfo, type ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -839,23 +840,13 @@ export function MorningReviewDialog({
                   <Label className="font-semibold text-sm" htmlFor="morning-bedtime">
                     Fell asleep
                   </Label>
-                  <Input
-                    id="morning-bedtime"
-                    type="time"
-                    value={bedTime}
-                    onChange={(e) => setBedTime(e.target.value)}
-                  />
+                  <ClockPicker id="morning-bedtime" value={bedTime} onChange={setBedTime} />
                 </div>
                 <div className="space-y-2">
                   <Label className="font-semibold text-sm" htmlFor="morning-waketime">
                     Wake time
                   </Label>
-                  <Input
-                    id="morning-waketime"
-                    type="time"
-                    value={wakeTime}
-                    onChange={(e) => setWakeTime(e.target.value)}
-                  />
+                  <ClockPicker id="morning-waketime" value={wakeTime} onChange={setWakeTime} />
                 </div>
                 <p className="col-span-2 -mt-1 text-xs text-muted-foreground">{nightSummary}</p>
               </div>

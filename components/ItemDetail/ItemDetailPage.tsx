@@ -20,6 +20,7 @@ import { BodyPanel } from "@/components/ItemDetail/BodyPanel"
 import { HabitLinkedDetail } from "@/components/ItemDetail/HabitLinkedDetail"
 import { ListPicker } from "@/components/Lists/list-picker"
 import { IsolatedInput, IsolatedTextarea } from "@/components/ui/isolated-text-field"
+import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import { SubtaskComposer } from "@/components/ItemDetail/SubtaskComposer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -920,14 +921,13 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
 
                   <div className="space-y-2">
                     <Label htmlFor="scheduled-time">Scheduled Time</Label>
-                    <IsolatedInput
+                    <ClockPicker
                       id="scheduled-time"
-                      type="time"
                       value={task.scheduledTime || ""}
-                      onLiveChange={(scheduledTime) => touchDraft({ scheduledTime })}
-                      onCommit={(scheduledTime) =>
+                      onChange={(scheduledTime) => {
+                        touchDraft({ scheduledTime })
                         setTask((prev) => (prev ? { ...prev, scheduledTime } : prev))
-                      }
+                      }}
                       disabled={!isEditing}
                     />
                   </div>

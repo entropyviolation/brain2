@@ -35,6 +35,7 @@
 "use client"
 
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
+import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import { displayedPen, penCellStyle, useTimeTrackingStore, type TimeEntry, type TrackPen, type TrackScope } from "@/lib/time-tracking-store"
 import { strokeCellStyle } from "@/components/Home/Tracking/grid-stroke"
 import {
@@ -589,21 +590,11 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false }: Wee
       <div className="trk-fill-row">
         <label className="trk-field">
           <span className="trk-field-label">From</span>
-          <input
-            id="week-from"
-            type="time"
-            value={rangeFrom}
-            onChange={(e) => setRangeFrom(e.target.value)}
-          />
+          <ClockPicker id="week-from" value={rangeFrom} onChange={setRangeFrom} />
         </label>
         <label className="trk-field">
           <span className="trk-field-label">To</span>
-          <input
-            id="week-to"
-            type="time"
-            value={rangeTo}
-            onChange={(e) => setRangeTo(e.target.value)}
-          />
+          <ClockPicker id="week-to" value={rangeTo} onChange={setRangeTo} />
         </label>
         <div className="trk-field">
           <span className="trk-field-label">On</span>

@@ -11,6 +11,7 @@ import { useEffect, useMemo, useState } from "react"
 import { format } from "date-fns"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { snapshotsEqual } from "@/lib/unsaved-changes"
@@ -143,11 +144,10 @@ export function PlannedActionDialog({ open, onOpenChange, action, createDate }: 
             <div className="plan95-times">
               <div className="plan95-field">
                 <Label htmlFor="planned-start">Start</Label>
-                <Input
+                <ClockPicker
                   id="planned-start"
-                  type="time"
                   value={draft.startTime}
-                  onChange={(e) => setDraft({ ...draft, startTime: e.target.value })}
+                  onChange={(startTime) => setDraft({ ...draft, startTime })}
                 />
               </div>
               <div className="plan95-field">

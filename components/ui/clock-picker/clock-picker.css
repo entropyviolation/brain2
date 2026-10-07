@@ -1,0 +1,225 @@
+/**
+ * Shared clock. Closed field is a sunken bevel; the open panel is a milled
+ * bay around a CRT well. The lamp on one cell is the cursor. Phosphor is
+ * `--hab-crt-green`. No system blue, no extra typeface.
+ */
+
+.clock-picker {
+  position: relative;
+  display: inline-grid;
+  width: 7.75rem;
+  max-width: 100%;
+  min-height: 22px;
+  vertical-align: middle;
+  color: #1c1e20;
+}
+
+.clock-picker-field {
+  grid-area: 1 / 1;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-height: 22px;
+  margin: 0;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 0;
+  background: #fff;
+  box-shadow: var(--w95-field, inset 1px 1px #808080);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+  caret-color: transparent;
+}
+
+.clock-picker-field:disabled {
+  cursor: default;
+}
+
+.clock-picker::after {
+  content: attr(data-face);
+  grid-area: 1 / 1;
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  pointer-events: none;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.clock-picker[data-empty="true"]::after {
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  opacity: 0.45;
+}
+
+.clock-picker:focus-within {
+  outline: 1px dotted #1c1e20;
+  outline-offset: 1px;
+}
+
+.clock-picker[data-disabled="true"],
+.clock-picker[data-readonly="true"] {
+  opacity: 0.7;
+}
+
+.clock-picker[data-readonly="true"] .clock-picker-field {
+  cursor: default;
+}
+
+/* Itinerary rows stay ghost text until the field is the one being edited. */
+.clock-picker.itinerary-time-input {
+  width: 100%;
+  min-width: 6.75rem;
+  max-width: 7.25rem;
+  font-size: 0.78rem;
+  color: var(--itin-muted, #5c564e);
+}
+
+.clock-picker.itinerary-time-input .clock-picker-field {
+  background: transparent !important;
+  box-shadow: none !important;
+  min-height: 0;
+}
+
+.clock-picker.itinerary-time-input::after {
+  font-size: inherit;
+  font-weight: 600;
+  padding: 0.1rem 0.2rem;
+}
+
+.clock-picker.habit95-input .clock-picker-field {
+  background: transparent;
+  box-shadow: none;
+  min-height: 0;
+}
+
+.clock-picker-panel {
+  position: fixed;
+  z-index: 450;
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  padding: 6px;
+  background: var(--fascia-bay, #c5c8cb);
+  box-shadow: var(--fascia-bay-ring, 0 0 0 1px #4a4e52);
+  color: #1c1e20;
+}
+
+.clock-picker-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.clock-picker-kicker {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-align: center;
+  line-height: 1;
+  color: #1c1e20;
+}
+
+.clock-picker-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 3px;
+  background: var(--fascia-scope, #070c0a);
+  box-shadow: var(--fascia-crt-ring, inset 0 0 0 1px #141816);
+}
+
+.clock-picker-col[data-active="true"] {
+  box-shadow:
+    0 0 0 1px var(--hab-crt-green, #7dffc4),
+    var(--fascia-crt-ring, inset 0 0 0 1px #141816);
+}
+
+.clock-picker-colon {
+  align-self: center;
+  margin-bottom: 22px;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  color: #1c1e20;
+}
+
+.clock-picker-period {
+  align-self: center;
+  margin-bottom: 2px;
+}
+
+.clock-picker-panel button.clock-picker-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  box-sizing: border-box;
+  min-width: 3rem;
+  height: 1.85rem;
+  margin: 0;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 1px;
+  background-color: transparent;
+  background-image: none;
+  box-shadow: none;
+  color: rgba(125, 255, 196, 0.38);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-shadow: none;
+  cursor: pointer;
+}
+
+.clock-picker-panel button.clock-picker-cell::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: none;
+}
+
+.clock-picker-panel button.clock-picker-cell.is-cursor {
+  background-color: var(--fascia-scope, #070c0a);
+  background-image: radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.2), transparent 58%);
+  color: var(--hab-crt-green, #7dffc4);
+  text-shadow: var(--hab-crt-glow, 0 0 3px #7dffc4);
+  box-shadow: var(--fascia-crt-ring, inset 0 0 0 1px #9aa09c);
+}
+
+.clock-picker-panel button.clock-picker-cell.is-caret::before {
+  background: radial-gradient(
+    circle at 35% 30%,
+    #f4fff8 0 16%,
+    var(--hab-crt-green, #7dffc4) 42%,
+    #0b4a32 100%
+  );
+  box-shadow:
+    0 0 0 1px #141816,
+    0 0 4px var(--hab-crt-green, #7dffc4);
+}
+
+.clock-picker-panel button.clock-picker-cell:focus {
+  outline: none;
+}
+
+.clock-picker-panel button.clock-picker-cell:focus-visible {
+  outline: 1px dotted var(--hab-crt-green, #7dffc4);
+  outline-offset: 1px;
+}

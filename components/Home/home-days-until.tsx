@@ -8,6 +8,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import { daysUntilLiveFace, daysUntilRemainingMs } from "@/lib/home-widgets"
 import {
   useHomeDaysUntilStore,
@@ -82,11 +83,7 @@ export function DaysUntilTile({
         </label>
         <label className="home-widget-field">
           Time <span className="home-widget-optional">(optional)</span>
-          <input
-            type="time"
-            value={time}
-            onChange={(event) => setCountdown({ time: event.target.value })}
-          />
+          <ClockPicker value={time} onChange={(next) => setCountdown({ time: next })} />
         </label>
         {time ? (
           <button

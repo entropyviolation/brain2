@@ -27,6 +27,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogPortal, DialogTitle } from "@/components/ui/dialog"
@@ -539,11 +540,10 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
                 <Label htmlFor="entry-split" className="sr-only">
                   Split at
                 </Label>
-                <Input
+                <ClockPicker
                   id="entry-split"
-                  type="time"
                   value={splitAt}
-                  onChange={(e) => setSplitAt(e.target.value)}
+                  onChange={setSplitAt}
                   className="h-9 w-[7.5rem]"
                   title="Minute to split at"
                   aria-label="Split at"

@@ -96,6 +96,7 @@ import { COMPLETION_SOURCE_HINTS } from "@/lib/habit-completion-trust"
 import { useHabitsStore } from "@/lib/habits-store"
 import { DAILY_HABIT_COMPLETION_POINTS } from "@/lib/habit-points"
 import { offsetToClock, parseBedtime, parseWakeTime } from "@/lib/sleep-log"
+import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 
 interface TaskFormProps {
   onSubmit: (task: WeeklyTask) => void
@@ -1459,14 +1460,13 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
               </label>
               <label className="habit95-field">
                 At or before
-                <input
+                <ClockPicker
                   className="habit95-input"
-                  type="time"
                   aria-label="Clock threshold"
                   value={offsetToClock(task.sleepLink.beforeMinutes)}
-                  onChange={(e) => {
+                  onChange={(next) => {
                     setSleepLocked(true)
-                    const parsed = task.sleepLink?.end === "wake" ? parseWakeTime(e.target.value) : parseBedtime(e.target.value)
+                    const parsed = task.sleepLink?.end === "wake" ? parseWakeTime(next) : parseBedtime(next)
                     if (parsed === undefined || !task.sleepLink) return
                     const end = task.sleepLink.end
                     setTask((current) => ({ ...current, sleepLink: { end, beforeMinutes: parsed } }))

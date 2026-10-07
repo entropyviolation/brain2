@@ -9,6 +9,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { Input } from "@/components/ui/input"
+import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import { IsolatedInput, IsolatedTextarea } from "@/components/ui/isolated-text-field"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -394,7 +395,17 @@ export function AttributeValueField({
       )
     case "datetime": {
       const mode = def.datetimeMode || "date"
-      const inputType = mode === "time" ? "time" : mode === "datetime" ? "datetime-local" : "date"
+      if (mode === "time") {
+        return (
+          <ClockPicker
+            aria-label={def.name || "Time"}
+            className="h-9"
+            value={value === undefined || value === null ? "" : String(value)}
+            onChange={(next) => onChange(next === "" ? undefined : next)}
+          />
+        )
+      }
+      const inputType = mode === "datetime" ? "datetime-local" : "date"
       return (
         <Input
           type={inputType}

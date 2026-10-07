@@ -14,6 +14,7 @@
 "use client"
 
 import { useState } from "react"
+import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import { format } from "date-fns"
 import type { Task } from "@/lib/types"
 import type { ConfirmedTimes } from "@/lib/services/completion-time-service"
@@ -77,7 +78,7 @@ export function CompletionTimeLine({
       <div className="todo-time" onClick={(e) => e.stopPropagation()}>
         <label>
           Finished
-          <input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+          <ClockPicker aria-label="Finished" value={time} onChange={setTime} />
         </label>
         <label>
           Took

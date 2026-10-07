@@ -15,6 +15,7 @@
 import { useMemo, useState } from "react"
 import { format } from "date-fns"
 import { Button } from "@/components/ui/button"
+import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import { Label } from "@/components/ui/label"
 import { Check, Wand2 } from "lucide-react"
 import type { ReviewPeriod, Task } from "@/lib/types"
@@ -104,11 +105,11 @@ function AssumedTimeRow({ task, period }: { task: Task; period: ReviewPeriod }) 
       <div className="flex flex-wrap items-center gap-2">
         <label className="text-xs text-muted-foreground">
           Finished
-          <input
-            type="time"
+          <ClockPicker
+            aria-label="Finished"
             value={time}
-            onChange={(e) => setTime(e.target.value)}
-            className="ml-1.5 h-7 rounded-md border bg-background px-1.5 text-xs"
+            onChange={setTime}
+            className="ml-1.5 h-7 text-xs"
           />
         </label>
         <label className="text-xs text-muted-foreground">

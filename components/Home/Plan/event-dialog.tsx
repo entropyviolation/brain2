@@ -14,6 +14,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { format } from "date-fns"
@@ -245,20 +246,18 @@ export function EventDialog({
               <div className="plan95-times">
                 <div className="plan95-field">
                   <Label htmlFor="start-time">Start Time</Label>
-                  <Input
+                  <ClockPicker
                     id="start-time"
-                    type="time"
                     value={newEvent.startTime}
-                    onChange={(e) => setNewEvent({ ...newEvent, startTime: e.target.value })}
+                    onChange={(startTime) => setNewEvent({ ...newEvent, startTime })}
                   />
                 </div>
                 <div className="plan95-field">
                   <Label htmlFor="end-time">End Time</Label>
-                  <Input
+                  <ClockPicker
                     id="end-time"
-                    type="time"
                     value={newEvent.endTime}
-                    onChange={(e) => setNewEvent({ ...newEvent, endTime: e.target.value })}
+                    onChange={(endTime) => setNewEvent({ ...newEvent, endTime })}
                   />
                 </div>
               </div>

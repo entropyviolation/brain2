@@ -16,6 +16,7 @@
 import { Clock, Moon } from "lucide-react"
 import { format } from "date-fns"
 import { Label } from "@/components/ui/label"
+import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import { clampAnchorMinutes, formatAnchorMinutes } from "@/lib/completion-window"
 import { useUserSettingsStore } from "@/lib/user-settings-store"
 import { useSleepStore } from "@/lib/sleep-store"
@@ -75,15 +76,14 @@ export function DayAnchorField() {
 
       <div className="space-y-1.5">
         <Label htmlFor="day-anchor">Assumed finish time</Label>
-        <input
+        <ClockPicker
           id="day-anchor"
-          type="time"
           value={toTimeValue(dayAnchorMinutes)}
-          onChange={(e) => {
-            const [hours, mins] = e.target.value.split(":").map((part) => Number.parseInt(part, 10))
+          onChange={(next) => {
+            const [hours, mins] = next.split(":").map((part) => Number.parseInt(part, 10))
             if (Number.isFinite(hours) && Number.isFinite(mins)) setDayAnchorMinutes(hours * 60 + mins)
           }}
-          className="h-9 rounded-md border bg-background px-2 text-sm"
+          className="h-9"
         />
       </div>
     </div>

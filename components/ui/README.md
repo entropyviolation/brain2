@@ -14,6 +14,7 @@ Only the primitives actively imported by the app are kept. As of the current cod
 | `badge.tsx` | Status badges, counts |
 | `button.tsx` | Buttons (variants: default, outline, ghost, destructive, …) |
 | `color-swatch.tsx` | Win95 beveled `<input type="color">` so the chip fills the control (Tracking new-pen, tags, pen settings) |
+| `clock-picker/` | Shared clock (`ClockPicker`). Sunken field, CRT hour / minute / AM–PM panel. Stores `HH:MM`. Not the platform time popup. |
 | `card.tsx` | Card, CardHeader, CardTitle, CardContent |
 | `checkbox.tsx` | Checkboxes |
 | `collapsible.tsx` | Expand/collapse sections (Scheduler filters) |
@@ -49,7 +50,9 @@ Charts in Analytics import **recharts** directly, not `ui/chart.tsx`.
 - Win98 Lists skin is separate: `components/Lists/filemanager98.css` (not part of `ui/`)
 - Product look: skin primitives as a vintage instrument (quoted bevels are fine;
   glass and default shadcn are not). Do not restyle Brain2 around default
-  shadcn. Gold standard: [`docs/DESIGN_STYLE.md`](../../docs/DESIGN_STYLE.md)
+  shadcn. Gold standard: [`docs/DESIGN_STYLE.md`](../../docs/DESIGN_STYLE.md).
+  [The screen stays pleasing](../../docs/DESIGN_STYLE.md#the-screen-stays-pleasing)
+  overrides a local packing note.
 
 ## Usage pattern
 

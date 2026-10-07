@@ -18,6 +18,7 @@ import { useMemo, useState, type ReactNode } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
@@ -667,12 +668,11 @@ export function CompletionDialog({
                 unknownHint="No start time."
                 estimatedHint="Approximate start. The time stays editable."
                 control={
-                  <Input
+                  <ClockPicker
                     id="completion-start"
-                    type="time"
                     value={startTime}
-                    onChange={(e) => {
-                      setStartTime(e.target.value)
+                    onChange={(next) => {
+                      setStartTime(next)
                       if (startCertainty === "unspecified") setStartCertainty("exact")
                     }}
                     aria-label="Start time"

@@ -20,6 +20,7 @@ import { BodyPanel } from "@/components/ItemDetail/BodyPanel"
 import { ListPicker } from "@/components/Lists/list-picker"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { IsolatedInput, IsolatedTextarea } from "@/components/ui/isolated-text-field"
+import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import { SubtaskComposer } from "@/components/ItemDetail/SubtaskComposer"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -947,14 +948,13 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
                               <Label htmlFor="scheduled-time" className="text-sm font-medium">
                                 Scheduled Time
                               </Label>
-                              <IsolatedInput
+                              <ClockPicker
                                 id="scheduled-time"
-                                type="time"
                                 value={task.scheduledTime || ""}
-                                onLiveChange={(scheduledTime) => touchDraft({ scheduledTime })}
-                                onCommit={(scheduledTime) =>
+                                onChange={(scheduledTime) => {
+                                  touchDraft({ scheduledTime })
                                   setTask((prev) => (prev ? { ...prev, scheduledTime } : prev))
-                                }
+                                }}
                                 className="focus-ring"
                               />
                             </div>

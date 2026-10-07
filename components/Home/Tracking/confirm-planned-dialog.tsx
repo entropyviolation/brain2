@@ -12,6 +12,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { completeTask } from "@/lib/services/completion-service"
@@ -111,11 +112,11 @@ export function ConfirmPlannedDialog({
           <div className="grid grid-cols-2 gap-2">
             <div>
               <Label htmlFor="confirm-from">When</Label>
-              <Input id="confirm-from" type="time" value={from} onChange={(e) => setFrom(e.target.value)} />
+              <ClockPicker id="confirm-from" value={from} onChange={setFrom} />
             </div>
             <div>
               <Label htmlFor="confirm-to">Until</Label>
-              <Input id="confirm-to" type="time" value={to} onChange={(e) => setTo(e.target.value)} />
+              <ClockPicker id="confirm-to" value={to} onChange={setTo} />
             </div>
           </div>
           <div>

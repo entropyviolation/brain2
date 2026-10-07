@@ -103,6 +103,7 @@ import { AttributeSettingsDialog } from "@/components/Lists/attributes/Attribute
 import { AddColumnDialog } from "./AddColumnDialog"
 import "./sheet-chrome.css"
 import { Button } from "@/components/ui/button"
+import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import { Input } from "@/components/ui/input"
 import {
   DropdownMenu,
@@ -1601,6 +1602,8 @@ function InlineEditor({
   const type = normalizeAttributeType(def.type)
   const [draft, setDraft] = useState<AttributeValue>(seed ?? value)
   const cancelled = useRef(false)
+  const draftRef = useRef<AttributeValue>(seed ?? value)
+  draftRef.current = draft
 
   const commit = () => {
     if (!cancelled.current) onCommit(draft)
@@ -1644,8 +1647,28 @@ function InlineEditor({
     )
   }
 
+  if (type === "datetime" && def.datetimeMode === "time") {
+    return (
+      <ClockPicker
+        aria-label={def.name || "Time"}
+        autoFocus
+        defaultOpen
+        value={draft === undefined || draft === null ? "" : String(draft)}
+        onChange={(next) => {
+          const stored = next === "" ? undefined : next
+          draftRef.current = stored
+          setDraft(stored)
+        }}
+        onDismiss={(reason) => {
+          if (reason === "cancel" || cancelled.current) onCancel()
+          else onCommit(draftRef.current)
+        }}
+      />
+    )
+  }
+
   if (type === "datetime") {
-    const dateType = def.datetimeMode === "time" ? "time" : def.datetimeMode === "datetime" ? "datetime-local" : "date"
+    const dateType = def.datetimeMode === "datetime" ? "datetime-local" : "date"
     return (
       <input
         autoFocus
