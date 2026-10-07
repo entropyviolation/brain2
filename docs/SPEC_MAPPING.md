@@ -151,7 +151,8 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   day). **`needed:`** / **`get:`** (colon required) add to list **needed** with notes **sent from text**.
   **`plan for rn:`** stamps plan log entries **from text**. Whole-message habit
   keywords (hemisync, read N pages, …) and Settings **discrete event triggers**
-  (`log:` / `log-`, smoked weed, ate {item}, …) label tracker rows
+  (`log:` / `log` / `log-`, saved keywords such as went outside, smoked weed, ate {item}, …) label tracker rows.
+  Log lines, switch lines, and tracking-note clocks use `parseExpectedWhen` (a bare clock is military). Ordinary inbox text is not parsed this way.
   `generatedBy.kind === "text"`. **Activity spans:** `currently` / `stopped` /
   `switched to`. Dedupe on Telegram `update_id` / `message_id`. Analytics tabs
   **Text events** / **Text spans**. Grocery dumps **pin** in the Telegram chat
@@ -456,8 +457,9 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   Solar remainder / Tracking now / Night well / Harvest leftover / Inbox mill /
   Already flowing / Plan and lived (both default off). **Widget catalog** on the
   Widgets menu walks every square.
-  **Moon** is an 8-bit moon, the phase name, and days until the sooner of the
-  next full moon and the next new moon. Detail adds illumination, the previous
+  **Moon** on the tile is an 8-bit moon, the phase name, and days until the sooner of the
+  next full moon and the next new moon. The detail header is a photographic phase.
+  Detail adds illumination, the previous
   and next major phase with local time, and a heliocentric chart of the eight
   planets as photographs at true relative size (the Moon shows only in the
   Earth zoom, at true size and distance). Under the chart, view width and time
@@ -794,28 +796,60 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   keys are local calendar days. Agenda cards sit to the right of the time labels.
 - **Tracking log** — ✅ `components/Home/Tracking/tracking-log-view.tsx` on the
   Home Tracking fascia (persisted with the other view keys). The selected local
-  day. The composer is Event, Switch task, Switch goal, Intake (Food / Drink /
-  Drug), and Note. Food, drink, and drugs are Activity instants with
+  day. The composer is Event, Switch, Intake (Food / Drink / Drug), Note, and Thought.
+  Under the composer, **Counts** (`brain2-count-statuses`) tallies a name (joints, days happy). Each + stores a time. An optional drug, food, or drink class also paints that intake instant. An optional keyword is saved in `brain2-log-keywords`, and `log:` of that phrase increments the count.
+  Food, drink, and drugs are Activity instants with
   `intakeClass` and `eventKind` `intake.food` / `intake.drink` / `intake.drug`.
   Bare intake (Intake pen, no class) sits in a short **Intake** group under
   those three. Events are other log-like instants (Text log pen and/or
   `eventKind`, no intake class); a new phrase such as left room is an Activity
   instant whose kind is the slug of the title. A location on an event reuses or
-  creates a Location pen. Switch task and Switch goal store `started …` and
-  `objective …`. Note is a Text log instant. The clock is exact unless
+  creates a Location pen. Switch asks for an optional From, a required To, and
+  a View (a real tracking scope; Activity is the default). Activity stores
+  `started …` on the Switch pen plus `switchFrom` / `switchTo`. Another view
+  paints that scope: To is the pen, the tick color is the destination.
+  `so:` / `switch goal:` still store `objective …` on the Objective pen, in the
+  same Switch list. Note is a Text log instant. Thought is that same instant
+  with `eventKind` `thought-process` (a specialized note: the crystallized
+  thought of this moment), shelved under Thought. Every tracking-log instant (intake, event, note, keyword log, and switch, including one painted on Location, Mood, Company, or Activity) is a vertical tick on the Time grid and a row or one-minute slab where Activity Log and Day Log already draw instants (`discrete-log-instants.ts`). A scoped switch stays on that view. Older rows are recognized from the fields they already have. A painted interval stays a block. The clock is exact unless
   Estimated or Unknown; an unknown clock is a badge, and the bot keeps the
-  named minute for placement. The same fields are `log:` (trailing `loc:`),
-  `st:` / `switch task:`, `so:` / `switch objective:` / `switch goal:`,
-  `intake:` / `intake food:` / `intake drink:` / `intake drug:`, and `note:` /
-  `n`. The cycle section is hidden until
+  named minute for placement. Log lines, switch lines, and tracking-note clocks
+  use `parseExpectedWhen` (a bare clock is military; ordinary inbox text is not).
+  The same fields are `log:` (trailing `loc:`), `switch:`
+  (`location from: home to: ralphs`, `to cleaning`, `company Elijah`),
+  `log categories` (a reply, not an event), `st:` / `switch task:`,
+  `so:` / `switch objective:` / `switch goal:`,
+  `intake:` / `intake food:` / `intake drink:` / `intake drug:`, `note:` /
+  `n`, and `tp:` / `thought process:` / `log: tp:` (`eventKind`
+  `thought-process`). The cycle section is hidden until
   **Enable cycle tracking** is on (View settings; `enableCycleTracking` on
   `brain2-timegrid-store`, persist v15; new stores start off; an older blob
   that omitted the key is set on without clearing other fields or
   `brain2-cycle-marks`). When on: bleeding, spotting, and ovulation toggles.
+  `cycleDetailsOpen` on the same store defaults false (persist stays v15).
+  While closed, the well shows only **Show cycle**, and **Hide cycle** on the
+  well and on the open Cycle detail closes the latch and unmounts that dialog;
+  Analytics → Time → Cycle phase, with
+  tracking still on, shows a concealed line and **Show cycle** instead of the
+  phase view.
   The phase is labeled from bleed days and ovulation marks, not a medical
   prediction. Spotting is recorded and does not change the phase. **Cycle
   detail** reads a recent-month calendar through three lenses: Clinical,
-  Chinese medicine, and Esoteric. Phase is derived, not stored.
+  Chinese medicine, and Esoteric, each in headed sections. Clinical then shows
+  a sourced clinical page that does not change with the day; Chinese medicine adds
+  its paper encyclopedia, herbs as traditional roles with no doses; Extra detail
+  stays collapsed until opened; Esoteric stays
+  four short sections. Cmd+F / Ctrl+F finds in the open reading. On every lens
+  the four short sections are a sans overview, and the heading Physiology is
+  not clipped. Extra detail starts collapsed and hides only the long library
+  (**Extra detail** / **Hide extra detail**); Clinical extra detail is a cool
+  sans clinical page with no seal and no five-phases plate, and Chinese
+  medicine extra detail keeps the paper, seal-red accent, serif, and the
+  five-phases figure. The Apple Watch note is not rendered, and the reference
+  is not a diagnosis or a prescription. A marked bleed or
+  ovulation day stays a solid wash of `phaseForDate`. An estimated day
+  (`assessCycleDay`, basis `estimated`) is hatched, and the reading states the
+  reason and confidence. Phase is derived, not stored.
 - **Day notes** — ✅ `components/Home/Tracking/tracking-day-notes.tsx`. Append
   log per local calendar day (`components/append-log.tsx`). **Submit note**
   stamps writing time; List / Bulk / Latest; leftover plaintext migrates as one
@@ -1159,6 +1193,10 @@ how a finding stays a living item, not a screenshot.
   **Velocity**, **Cycle** (plus open-item survival), **Log** (Time group: counts
   by day and by kind, clock scatter of exact and estimated times, unknown clocks
   as a count, phase strip from bleed days and ovulation marks),
+  **Cycle phase** (Time → Cycle phase: days in the shared window by phase. A
+  bleed day or an ovulation mark is marked. A day with no ovulation in that
+  cycle may show an estimate, labeled estimated, and is not counted as a logged
+  phase. Spotting is not a phase. Not a diagnosis.),
   **Goals**, **Operations**, **Lists & areas** (size-by-items treemap + HHI),
   **Tags**, **Stages**, **Weight**, **Attributes**, **Diversity** (Shannon entropy
   + Gini + weekday/weekend), **Transitions** (Markov pen matrix + alluvial), **Spectrum**

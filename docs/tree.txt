@@ -104,6 +104,8 @@
 │   │   ├── ContextSwitchHeatmap.tsx
 │   │   ├── CorrelationExplorer.tsx
 │   │   ├── CrossSection.tsx
+│   │   ├── CyclePhaseView.test.tsx
+│   │   ├── CyclePhaseView.tsx
 │   │   ├── CycleView.tsx
 │   │   ├── DiversityView.tsx
 │   │   ├── GoalsAnalytics.tsx
@@ -158,6 +160,10 @@
 │   │   ├── chart-frame.tsx
 │   │   ├── cross-section.test.ts
 │   │   ├── cross-section.ts
+│   │   ├── cycle-phase-concealed.test.tsx
+│   │   ├── cycle-phase-concealed.tsx
+│   │   ├── cycle-phase-stats.test.ts
+│   │   ├── cycle-phase-stats.ts
 │   │   ├── enhanced-analytics.test.tsx
 │   │   ├── enhanced-analytics.tsx
 │   │   ├── grain-strips.test.ts
@@ -371,13 +377,24 @@
 │   │   │   ├── companion-section.tsx
 │   │   │   ├── confirm-planned-dialog.test.tsx
 │   │   │   ├── confirm-planned-dialog.tsx
+│   │   │   ├── count-statuses-section.test.tsx
+│   │   │   ├── count-statuses-section.tsx
+│   │   │   ├── cycle-detail-dialog.test.tsx
 │   │   │   ├── cycle-detail-dialog.tsx
+│   │   │   ├── cycle-encyclopedia.css
+│   │   │   ├── cycle-encyclopedia.test.tsx
+│   │   │   ├── cycle-encyclopedia.tsx
+│   │   │   ├── cycle-figures
+│   │   │   │   └── five-phases.png
 │   │   │   ├── cycle-log-section.test.tsx
 │   │   │   ├── cycle-log-section.tsx
+│   │   │   ├── cycle-reading-find.tsx
 │   │   │   ├── daylog-week.css
 │   │   │   ├── daylog-week.test.tsx
 │   │   │   ├── daylog-week.tsx
 │   │   │   ├── depth-control.tsx
+│   │   │   ├── discrete-log-instants.test.ts
+│   │   │   ├── discrete-log-instants.ts
 │   │   │   ├── empty-blocks.test.ts
 │   │   │   ├── empty-blocks.ts
 │   │   │   ├── entry-dialog.css
@@ -392,6 +409,8 @@
 │   │   │   ├── infinite-window.test.ts
 │   │   │   ├── infinite-window.ts
 │   │   │   ├── log-activity-dialog.tsx
+│   │   │   ├── log-keywords-settings.test.tsx
+│   │   │   ├── log-keywords-settings.tsx
 │   │   │   ├── mood-stretch-card.tsx
 │   │   │   ├── now-time-button.test.tsx
 │   │   │   ├── now-time-button.tsx
@@ -473,7 +492,10 @@
 │   │   ├── home-day-stats.ts
 │   │   ├── home-days-until.tsx
 │   │   ├── home-glance-tiles.tsx
+│   │   ├── home-moon-orrery.test.tsx
 │   │   ├── home-moon-orrery.tsx
+│   │   ├── home-moon-phase.test.ts
+│   │   ├── home-moon-phase.tsx
 │   │   ├── home-moon-sprite.tsx
 │   │   ├── home-moon-tile.tsx
 │   │   ├── home-next-tile.tsx
@@ -490,9 +512,15 @@
 │   │   ├── home-widget-catalog.tsx
 │   │   ├── home-widget-dialog.tsx
 │   │   ├── home-widgets-menu.tsx
+│   │   ├── naked-eye-stars.test.ts
+│   │   ├── naked-eye-stars.ts
 │   │   ├── planet-skins.ts
 │   │   ├── points-stats.test.tsx
 │   │   ├── points-stats.tsx
+│   │   ├── sky-galaxy.test.tsx
+│   │   ├── sky-galaxy.tsx
+│   │   ├── star-identify.test.tsx
+│   │   ├── star-identify.tsx
 │   │   └── weather-instrument.tsx
 │   ├── Icons
 │   │   ├── Icon.tsx
@@ -968,18 +996,18 @@
 │   ├── message-ingest.json
 │   ├── mobile-sync.json
 │   ├── recovery-backups
-│   │   ├── auto-brain2-habits-store-2026-10-06-23.json
-│   │   ├── auto-brain2-task-storage-2026-10-06-22.json
-│   │   ├── auto-brain2-timegrid-store-2026-10-06-23.json
-│   │   ├── auto-brain2-timegrid-store-2026-10-07-00.json
-│   │   ├── auto-cogs-habits-store-2026-10-06-23.json
-│   │   ├── auto-cogs-habits-store-2026-10-07-00.json
-│   │   ├── auto-cogs-task-storage-2026-10-06-23.json
-│   │   ├── auto-cogs-task-storage-2026-10-07-00.json
-│   │   ├── auto-cogs-timegrid-store-2026-10-06-22.json
-│   │   ├── auto-cogs-timegrid-store-2026-10-06-23.json
-│   │   ├── auto-cogs-timegrid-store-2026-10-07-00.json
-│   │   ├── auto-points-store-2026-10-06-23.json
+│   │   ├── auto-brain2-habits-store-2026-10-07-03.json
+│   │   ├── auto-brain2-habits-store-2026-10-07-04.json
+│   │   ├── auto-brain2-task-storage-2026-10-07-04.json
+│   │   ├── auto-brain2-timegrid-store-2026-10-07-04.json
+│   │   ├── auto-cogs-habits-store-2026-10-07-03.json
+│   │   ├── auto-cogs-habits-store-2026-10-07-04.json
+│   │   ├── auto-cogs-habits-store-2026-10-07-05.json
+│   │   ├── auto-cogs-task-storage-2026-10-07-03.json
+│   │   ├── auto-cogs-task-storage-2026-10-07-04.json
+│   │   ├── auto-cogs-timegrid-store-2026-10-07-03.json
+│   │   ├── auto-cogs-timegrid-store-2026-10-07-04.json
+│   │   ├── auto-points-store-2026-10-07-04.json
 │   │   ├── brain2-empty-ls-2026-09-21T07-45-39-912Z.json
 │   │   ├── chrome-ls-2026-09-20T03-12-52-878Z.json
 │   │   ├── cogs-backup-2026-09-21-user.json
@@ -1970,12 +1998,21 @@
 │   ├── completion-tiers.ts
 │   ├── completion-window.test.ts
 │   ├── completion-window.ts
+│   ├── count-statuses.test.ts
+│   ├── count-statuses.ts
 │   ├── critical-path.test.ts
 │   ├── critical-path.ts
 │   ├── csv.test.ts
 │   ├── csv.ts
+│   ├── cycle-estimate.test.ts
+│   ├── cycle-estimate.ts
+│   ├── cycle-lens-chinese.test.ts
+│   ├── cycle-lens-chinese.ts
+│   ├── cycle-lens-clinical.test.ts
+│   ├── cycle-lens-clinical.ts
 │   ├── cycle-lens-copy.test.ts
 │   ├── cycle-lens-copy.ts
+│   ├── cycle-lens-esoteric.ts
 │   ├── cycle-marks.test.ts
 │   ├── cycle-marks.ts
 │   ├── cycle-phase.test.ts
@@ -2244,6 +2281,8 @@
 │   │   ├── ingest-store.ts
 │   │   ├── jpeg-pdf.test.ts
 │   │   ├── jpeg-pdf.ts
+│   │   ├── log-keywords.test.ts
+│   │   ├── log-line-time.ts
 │   │   ├── media-album.ts
 │   │   ├── message-time.ts
 │   │   ├── name-resolve.test.ts
@@ -2298,6 +2337,9 @@
 │   ├── list-links.ts
 │   ├── list-merge.test.ts
 │   ├── list-merge.ts
+│   ├── list-sent-sync.ts
+│   ├── list-sent.test.ts
+│   ├── list-sent.ts
 │   ├── list-tree.test.ts
 │   ├── list-tree.ts
 │   ├── lists-clipboard.test.ts
@@ -2311,6 +2353,9 @@
 │   ├── lists-task-index.test.ts
 │   ├── lists-task-index.ts
 │   ├── lists-ui-store.ts
+│   ├── log-keywords-store.test.ts
+│   ├── log-keywords-store.ts
+│   ├── log-keywords.ts
 │   ├── lunar.test.ts
 │   ├── lunar.ts
 │   ├── metrics-store.test.ts
@@ -2470,10 +2515,22 @@
 │   ├── sheet-a1.ts
 │   ├── sheet-eval.test.ts
 │   ├── sheet-eval.ts
+│   ├── sky-bodies.test.ts
+│   ├── sky-bodies.ts
+│   ├── sky-galaxy.test.ts
+│   ├── sky-galaxy.ts
+│   ├── sky-moons.test.ts
+│   ├── sky-moons.ts
 │   ├── sky-motion-store.test.ts
 │   ├── sky-motion-store.ts
 │   ├── sky-motion.test.ts
 │   ├── sky-motion.ts
+│   ├── sky-observe.test.ts
+│   ├── sky-observe.ts
+│   ├── sky-scale.test.ts
+│   ├── sky-scale.ts
+│   ├── sky-zoom.test.ts
+│   ├── sky-zoom.ts
 │   ├── sleep-inference.test.ts
 │   ├── sleep-inference.ts
 │   ├── sleep-log.test.ts
