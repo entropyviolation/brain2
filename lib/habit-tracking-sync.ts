@@ -17,9 +17,10 @@
  * days that changed; editing a pen's tags or a scope re-checks every day that has
  * data, since any of them may now match differently.
  *
- * The same mount also starts the tagged-task count sync and the daily
- * completion-average sync. The count source counts Done tasks. The average
- * source fills a weekly, monthly, or season cell from daily row percents.
+ * The same mount also starts the tagged-task count sync, the daily
+ * completion-average sync, and the list-sent sync. The count source counts
+ * Done tasks. The average source fills a weekly, monthly, or season cell from
+ * daily row percents. List sent fills the current period from a list's sent ratio.
  * This file still only pushes painted minutes.
  */
 "use client"
@@ -31,6 +32,7 @@ import { startHabitCoverageSync } from "@/lib/habit-coverage-sync"
 import { startHabitValueSync } from "@/lib/habit-value-sync"
 import { startTaggedTaskSync } from "@/lib/habit-tagged-count"
 import { startDailyCompletionAverageSync } from "@/lib/habit-daily-completion-average"
+import { startListSentSync } from "@/lib/list-sent-sync"
 import { useHabitsStore } from "@/lib/habits-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { periodWindowsForFrequency } from "@/lib/habit-period-windows"
@@ -155,5 +157,6 @@ export function useHabitTrackingSync(): void {
     startHabitValueSync()
     startTaggedTaskSync()
     startDailyCompletionAverageSync()
+    startListSentSync()
   }, [])
 }

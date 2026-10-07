@@ -290,6 +290,7 @@ export function deriveCompletionSources(
     | "textTriggers"
     | "habitValueLink"
     | "taggedTaskTag"
+    | "listSentLink"
   >,
 ): HabitCompletionSourceId[] {
   const linked: HabitCompletionSourceId[] = []
@@ -300,6 +301,7 @@ export function deriveCompletionSources(
   if (effectiveListLink(task)) linked.push("list")
   if (effectiveDailyFloorLink(task)) linked.push("dailyFloor")
   if (task.habitValueLink?.enabled !== false && task.habitValueLink?.habitId) linked.push("habitValue")
+  if (task.listSentLink?.enabled !== false && task.listSentLink?.listId) linked.push("listSent")
   if (triggersForHabit(task as WeeklyTask).length > 0) linked.push("keywords")
   return ["manual", ...linked]
 }

@@ -67,6 +67,7 @@ function foreignAuto(completion: TaskCompletion | undefined): boolean {
     completion.habitSumValue !== undefined ||
     completion.taggedTaskCount !== undefined ||
     completion.keywordLogged === true ||
+    completion.listSentPercent !== undefined ||
     completion.sleepCompleted !== undefined ||
     completion.listCompleted !== undefined ||
     completion.dailyFloorCompleted !== undefined

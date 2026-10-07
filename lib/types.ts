@@ -525,6 +525,12 @@ export interface Task extends Item {
   contributesToObjectiveIds?: string[]
   /** Goals this task contributes to (increments their tracked value). */
   contributesToGoalIds?: string[]
+  /**
+   * When this item was marked sent, keyed by list id (ISO). Missing key means
+   * not sent on that list. Sent is not completion and not deletion.
+   * Absent means the item has never been marked sent.
+   */
+  sentAtByList?: Record<string, string>
 }
 
 /**
@@ -961,6 +967,11 @@ export interface WeeklyTask {
    */
   listLink?: HabitListLink | null
   /**
+   * List whose sent-this-period ratio fills this habit (`lib/list-sent.ts`).
+   * Missing means the source is off. Grace defaults to 100 when omitted.
+   */
+  listSentLink?: HabitListSentLink | null
+  /**
    * Completion sources, most trusted first. When two disagree, the earlier one
    * wins. Absent on old rows: derived from the links already stored.
    */
@@ -997,6 +1008,16 @@ export interface HabitListLink {
 }
 
 /**
+ * A list's sent ratio for this period. `grace` is the raw percent that
+ * reports as 100 (default 100). Missing link means the source is off.
+ */
+export interface HabitListSentLink {
+  listId: string
+  grace?: number
+  enabled?: boolean
+}
+
+/**
  * Where a habit may learn that it is done. Order is trust: index 0 wins when
  * two sources disagree. Missing means "derive from the links already on the habit"
  * (`lib/habit-completion-trust.ts`). An empty list trusts nothing.
@@ -1017,6 +1038,7 @@ export type HabitCompletionSourceId =
   | "dailyFloor"
   | "habitValue"
   | "dailyCompletionAverage"
+  | "listSent"
   | "keywords"
 
 export interface TaskCompletion {
@@ -1045,6 +1067,11 @@ export interface TaskCompletion {
    * owns `value`.
    */
   dailyCompletionAverage?: number
+  /**
+   * Grace-adjusted percent of a linked list marked sent during this period
+   * (`lib/list-sent.ts`). Kept when a hand-typed number owns `value`.
+   */
+  listSentPercent?: number
   /**
    * How many Done tasks carrying `taggedTaskTag` fell on a day of this period
    * that has already happened. 0 is a reading, not a number typed by hand.
@@ -1191,6 +1218,12 @@ export interface List {
    * list: when purchased = true, set owned = true).
    */
   rules?: ItemTypeRule[]
+  /**
+   * Sent this week. Off unless `true`. Items can be marked sent on their
+   * detail; sent rows hide until Show sent. A previous week's sends leave
+   * this list at the week boundary and are not deleted. Missing means off.
+   */
+  sentThisWeek?: boolean
   /** Singular label for items in this list (e.g. book, habit). Next Actions defaults to "task". */
   itemLabel?: string
   /** Tabs shown in item detail view for items in this list (unioned with the type's panels). */

@@ -1,7 +1,7 @@
 /**
  * TaskDetailPopup — compact inline task detail modal.
  */
-import { render, screen, fireEvent, waitFor } from "@testing-library/react"
+import { act, render, screen, fireEvent, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetLocalStorage } from "@/tests/test-utils"
@@ -72,6 +72,22 @@ describe("TaskDetailPopup", () => {
     expect(screen.getByRole("tab", { name: /Scheduling/i })).toBeInTheDocument()
     expect(screen.getByRole("tab", { name: /History/i })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /Complete/i })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Sent" })).not.toBeInTheDocument()
+  })
+
+  it("hides Sent when the list has not opted in, and shows it when Sent this week is on", () => {
+    const { rerender } = render(<TaskDetailPopup taskId="popup-task" open onClose={onClose} />)
+    expect(screen.queryByRole("button", { name: "Sent" })).not.toBeInTheDocument()
+
+    act(() => {
+      useTaskStore.getState().updateList({
+        ...useTaskStore.getState().lists[0],
+        sentThisWeek: true,
+      })
+    })
+    rerender(<TaskDetailPopup taskId="popup-task" open onClose={onClose} />)
+    expect(screen.getByRole("button", { name: "Sent" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /Delete/i })).toBeInTheDocument()
   })
 
   it("shows Send to Scheduler on the Scheduling tab with inherit-on for lists sent there", async () => {

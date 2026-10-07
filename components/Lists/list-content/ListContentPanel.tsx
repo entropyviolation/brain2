@@ -127,6 +127,9 @@ export function ListContentPanel({
   selectedTaskIds,
   onToggleTaskSelect,
   allowAdd = true,
+  sentThisWeek = false,
+  showSent = false,
+  onShowSentChange,
 }: ListContentPanelProps) {
   const hiddenForFolder = currentFolder ? folderAllHiddenListIds[currentFolder.id] ?? [] : []
   const hiddenGlobalFolders = globalAllHiddenFolderIds
@@ -161,6 +164,17 @@ export function ListContentPanel({
     <BulkAddPanel itemLabel={itemLabel} onBulkAdd={onBulkAdd} onCancel={onBulkAddCancel} />
   ) : null
 
+  const showSentControl = sentThisWeek ? (
+    <button
+      type="button"
+      aria-pressed={showSent}
+      onClick={() => onShowSentChange?.(!showSent)}
+      style={{ fontSize: 11, color: "#8a8a8a", background: "none", border: "none", padding: "2px 4px", cursor: "pointer" }}
+    >
+      Show sent
+    </button>
+  ) : null
+
   const addButtons =
     allowAdd && !addingTaskToTarget && !showBulkAdd ? (
       <div className="fm-list-add-row">
@@ -170,8 +184,11 @@ export function ListContentPanel({
         <button className="fm-btn fm-btn-sm" onClick={onShowAddTask}>
           Add {itemLabel}
         </button>
+        {showSentControl}
       </div>
-    ) : null
+    ) : (
+      showSentControl
+    )
 
   const taskHandlers = {
     tasks,

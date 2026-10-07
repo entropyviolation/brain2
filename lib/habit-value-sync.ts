@@ -47,7 +47,7 @@ export function applyHabitSum(
 ): TaskCompletion | null {
   const goal = task.goal ?? completion?.goal
   const handOwned = completion?.handCompleted !== undefined || completion?.manualValue !== undefined
-  if (handOwned) {
+  if (handOwned || completion?.listSentPercent !== undefined) {
     if (completion?.habitSumValue === sum) return null
     return { ...(completion ?? {}), habitSumValue: sum }
   }

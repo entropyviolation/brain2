@@ -78,6 +78,7 @@ import { ItemEstimateField } from "@/components/ItemDetail/ItemEstimateField"
 import { ItemScheduleFlags } from "@/components/ItemDetail/ItemScheduleFlags"
 import { ItemTypeEditor } from "@/components/ItemTypes/ItemTypeEditor"
 import { APP_NAV_KEYS, readStoredRecord, requestNavigateToListAfterPaint, writeStoredRecordField } from "@/lib/app-navigation"
+import { isSentOnList, withSentMark } from "@/lib/list-sent"
 import { snapshotsEqual } from "@/lib/unsaved-changes"
 import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
 import "./item-detail-chrome.css"
@@ -358,6 +359,15 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
     itemTypes,
   )
   const primaryTypeId = task.type ?? (isTask ? BUILTIN_TASK_TYPE_ID : BUILTIN_ITEM_TYPE_ID)
+  const sentListIds = (task.lists ?? []).filter((id) => lists.some((list) => list.id === id && list.sentThisWeek === true))
+  const sentOnThoseLists = sentListIds.length > 0 && sentListIds.every((id) => isSentOnList(task, id))
+  const handleToggleSent = () => {
+    const next = withSentMark(task, sentListIds, !sentOnThoseLists, new Date())
+    recordItemWrite(originalTask ?? task, next, { tasks: allTasks, lists })
+    setTask(next)
+    updateTask(next)
+    setOriginalTask(next)
+  }
 
   return (
     <>
@@ -750,6 +760,25 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
                       </div>
 
                       <Separator />
+
+                      {sentListIds.length > 0 && (
+                        <div className="space-y-2">
+                          <Label className="text-sm font-semibold">Sent</Label>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="id-btn"
+                            aria-pressed={sentOnThoseLists}
+                            onClick={handleToggleSent}
+                          >
+                            Sent
+                          </Button>
+                          <p className="text-xs text-muted-foreground">
+                            Marks this item sent. It stays in the vault and is not deleted. Sent items hide in the list
+                            until Show sent, and leave the list next week.
+                          </p>
+                        </div>
+                      )}
 
                       <div className="space-y-3">
                         <Label className="text-sm font-semibold">Lists</Label>

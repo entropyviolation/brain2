@@ -62,7 +62,7 @@ Scheduler setting: when a day, week, or month ends unfinished, that period stays
 Undone and the task is scheduled on the next one (`scheduledDate` /
 `scheduledWeek` / `scheduledMonth`). It does not mark the item schedulable. Completable items offer **Complete** and **Missed
 opportunity** (too late) side by side; missed files the row on the automatic
-Missed Opportunities list instead of Completed.
+Missed Opportunities list instead of Completed. When one of the item’s lists has **Sent this week** on, Details shows a **Sent** control. Sent is not complete and not delete. Lists that leave the option off have no Sent control.
 
 ## Files
 

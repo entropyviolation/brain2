@@ -94,6 +94,9 @@ import { normalizeTag } from "@/lib/links"
 import { HabitSourcesField } from "@/components/Home/Habits/habit-sources-field"
 import { COMPLETION_SOURCE_HINTS } from "@/lib/habit-completion-trust"
 import { useHabitsStore } from "@/lib/habits-store"
+import { useTaskStore } from "@/lib/task-store"
+import { isFolderAllItemsCategoryId } from "@/lib/folder-all-items"
+import { clampListSentGrace } from "@/lib/list-sent"
 import { DAILY_HABIT_COMPLETION_POINTS } from "@/lib/habit-points"
 import { offsetToClock, parseBedtime, parseWakeTime } from "@/lib/sleep-log"
 import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
@@ -279,11 +282,129 @@ function DailyHabitPicker({
   )
 }
 
+/** Searchable list menu. Same Win95 trigger as the daily-habit picker. */
+function ListSentPicker({
+  lists,
+  listId,
+  onChange,
+}: {
+  lists: { id: string; name: string }[]
+  listId: string
+  onChange: (listId: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState("")
+  const rootRef = useRef<HTMLDivElement>(null)
+  const menuId = useId()
+  const buttonId = useId()
+  const selected = lists.find((list) => list.id === listId)
+  const needle = query.trim().toLowerCase()
+  const matches = needle ? lists.filter((list) => list.name.toLowerCase().includes(needle)) : lists
+
+  const close = () => {
+    setOpen(false)
+    setQuery("")
+  }
+
+  useEffect(() => {
+    if (!open) return
+    const shut = () => {
+      setOpen(false)
+      setQuery("")
+    }
+    const onPointer = (event: MouseEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) shut()
+    }
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return
+      event.stopPropagation()
+      shut()
+    }
+    window.addEventListener("mousedown", onPointer)
+    window.addEventListener("keydown", onKey)
+    return () => {
+      window.removeEventListener("mousedown", onPointer)
+      window.removeEventListener("keydown", onKey)
+    }
+  }, [open])
+
+  return (
+    <div className="habit95-field">
+      <label htmlFor={buttonId}>List</label>
+      <div className="habit95-pick" ref={rootRef}>
+        <button
+          id={buttonId}
+          type="button"
+          className="habit95-select"
+          aria-label="List to read sent items from"
+          aria-expanded={open}
+          aria-haspopup="listbox"
+          aria-controls={menuId}
+          onClick={() => (open ? close() : setOpen(true))}
+        >
+          <span className="habit95-select-label">{selected?.name || "Choose a list"}</span>
+          <span className="habit95-select-arrow" aria-hidden />
+        </button>
+        {open ? (
+          <div className="habit95-select-menu habit95-habit-menu" id={menuId} role="listbox" aria-label="Lists">
+            <input
+              className="habit95-input"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search lists"
+              aria-label="Search lists"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter") e.preventDefault()
+              }}
+            />
+            <div className="habit95-habit-options">
+              {needle ? null : (
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={!listId}
+                  data-active={!listId ? "true" : undefined}
+                  className="habit95-habit-option"
+                  onClick={() => {
+                    onChange("")
+                    close()
+                  }}
+                >
+                  Choose a list
+                </button>
+              )}
+              {matches.map((list) => (
+                <button
+                  key={list.id}
+                  type="button"
+                  role="option"
+                  aria-selected={list.id === listId}
+                  data-active={list.id === listId ? "true" : undefined}
+                  className="habit95-habit-option"
+                  onClick={() => {
+                    onChange(list.id)
+                    close()
+                  }}
+                >
+                  {list.name}
+                </button>
+              ))}
+              {matches.length === 0 ? <p className="habit95-hint">No lists match “{query.trim()}”.</p> : null}
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
 export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFrequency = "daily", onDirtyChange, onLeaveForItem }: TaskFormProps) {
   const colors = useThemeStore((s) => s.colors)
   const trackingTags = useTimeTrackingStore((s) => s.tags)
   const trackingScopes = useTimeTrackingStore((s) => s.scopes)
   const allHabits = useHabitsStore((s) => s.tasks)
+  const vaultLists = useTaskStore((s) => s.lists)
   const initialClimb = initialTask ? normalizeIncrementalData(initialTask.incrementalData) : undefined
   const seededTriggers = seedTextTriggers(initialTask)
   const hadStoredTriggers = Boolean(initialTask?.textTriggers?.length)
@@ -331,6 +452,7 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
     sleepLink: initialTask && initialTask.sleepLink !== undefined ? initialTask.sleepLink : presetSleepLink(seedName),
     listLink: initialTask && initialTask.listLink !== undefined ? initialTask.listLink : presetListLink(seedName),
     habitValueLink: initialTask?.habitValueLink ?? null,
+    listSentLink: initialTask?.listSentLink ?? null,
     showGoalBar: initialTask?.showGoalBar,
   })
   const [baseline] = useState(() => serializeSnapshot({
@@ -364,6 +486,7 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
     listLink: initialTask && initialTask.listLink !== undefined ? initialTask.listLink : presetListLink(seedName),
     completionSources: initialTask?.completionSources,
     habitValueLink: initialTask?.habitValueLink ?? null,
+    listSentLink: initialTask?.listSentLink ?? null,
     showGoalBar: !!initialTask?.showGoalBar,
   }))
 
@@ -394,6 +517,7 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
         listLink: task.listLink ?? null,
         completionSources: task.completionSources,
         habitValueLink: task.habitValueLink ?? null,
+        listSentLink: task.listSentLink ?? null,
         showGoalBar: !!task.showGoalBar,
       }) !== baseline,
     )
@@ -500,10 +624,15 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
     finalTask.habitValueLink = task.habitValueLink?.habitId
       ? { habitId: task.habitValueLink.habitId, enabled: task.habitValueLink.enabled !== false }
       : null
+    finalTask.listSentLink =
+      task.listSentLink?.listId
+        ? { listId: task.listSentLink.listId, grace: clampListSentGrace(task.listSentLink.grace), enabled: task.listSentLink.enabled !== false }
+        : null
     finalTask.completionSources =
       sourcesLocked && Array.isArray(task.completionSources)
         ? task.completionSources
         : deriveCompletionSources(finalTask)
+    if (!finalTask.completionSources?.includes("listSent")) finalTask.listSentLink = null
     const tagged = normalizeTag(task.taggedTaskTag ?? "")
     finalTask.taggedTaskTag =
       finalTask.completionSources?.includes("taggedTasks") && tagged ? tagged : undefined
@@ -632,6 +761,18 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
         next = { ...next, habitValueLink: habitId ? { habitId, enabled: true } : current.habitValueLink ?? null }
       } else {
         next = { ...next, habitValueLink: null }
+      }
+      if (order.includes("listSent")) {
+        const prev = current.listSentLink
+        next = {
+          ...next,
+          listSentLink: {
+            listId: prev?.listId ?? "",
+            grace: clampListSentGrace(prev?.grace),
+          },
+        }
+      } else {
+        next = { ...next, listSentLink: null }
       }
       return next
     })
@@ -1041,6 +1182,50 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
                 onChange={(e) => setTask((current) => ({ ...current, taggedTaskTag: e.target.value }))}
               />
             </div>
+          </div>
+        )}
+        {sourceOrder.includes("listSent") && (
+          <div className="habit95-brick" style={{ marginTop: 8 }}>
+            <ListSentPicker
+              lists={vaultLists
+                .filter((list) => !isFolderAllItemsCategoryId(list.id))
+                .map((list) => ({ id: list.id, name: list.name }))
+                .sort((a, b) => a.name.localeCompare(b.name))}
+              listId={task.listSentLink?.listId || ""}
+              onChange={(listId) => {
+                setSourcesLocked(true)
+                setTask((current) => ({
+                  ...current,
+                  listSentLink: {
+                    listId,
+                    grace: clampListSentGrace(current.listSentLink?.grace),
+                  },
+                }))
+              }}
+            />
+            <label className="habit95-field">
+              Grace
+              <input
+                className="habit95-input"
+                type="number"
+                min={1}
+                max={100}
+                aria-label="Grace"
+                value={clampListSentGrace(task.listSentLink?.grace)}
+                onChange={(e) => {
+                  setSourcesLocked(true)
+                  const grace = clampListSentGrace(Number.parseFloat(e.target.value))
+                  setTask((current) => ({
+                    ...current,
+                    listSentLink: { listId: current.listSentLink?.listId ?? "", grace },
+                  }))
+                }}
+              />
+            </label>
+            <span className="habit95-hint">
+              Sent divided by still-to-send plus sent. Grace 80 turns a raw 80 into 100 and a raw 40 into 50. Grace 100
+              leaves the raw percent. The goal on this habit stays the line.
+            </span>
           </div>
         )}
         {sourceOrder.includes("habitValue") && (

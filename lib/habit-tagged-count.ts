@@ -110,6 +110,7 @@ export function applyTaggedTaskCount(
     completion?.coverageCompleted !== undefined ||
     completion?.habitSumValue !== undefined ||
     completion?.keywordLogged === true ||
+    completion?.listSentPercent !== undefined ||
     completion?.sleepCompleted !== undefined ||
     completion?.listCompleted !== undefined ||
     completion?.dailyFloorCompleted !== undefined

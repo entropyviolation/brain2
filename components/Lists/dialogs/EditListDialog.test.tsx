@@ -52,6 +52,15 @@ describe("EditListDialog", () => {
     return { onSave, onDelete, onEditingCategoryChange }
   }
 
+  it("shows the list id in small type and leaves Sent this week off", () => {
+    renderDialog()
+    const idLine = screen.getByTestId("list-id-line")
+    expect(idLine).toHaveTextContent("dishes")
+    expect(idLine.className).not.toMatch(/banner/)
+    expect(screen.getByRole("button", { name: "Copy list id" })).toBeInTheDocument()
+    expect(screen.getByRole("switch", { name: "Sent this week" })).not.toBeChecked()
+  })
+
   it("is a bit wider than the default settings dialog", () => {
     renderDialog()
     const dialog = screen.getByRole("dialog")

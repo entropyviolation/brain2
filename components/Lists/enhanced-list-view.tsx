@@ -18,6 +18,7 @@ import {
   getItemLabel,
 } from "@/lib/item-utils"
 import { isClearedFromWork } from "@/lib/completion-status"
+import { visibleListItems } from "@/lib/list-sent"
 import { isExplicitlyScheduleable } from "@/lib/scheduling"
 import {
   syncNextActionsSmartLists,
@@ -307,6 +308,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
   const [csvImport, setCsvImport] = useState<CsvImportState | null>(null)
   const [addingTaskToTarget, setAddingTaskToTarget] = useState<string | null>(null)
   const [showBulkAdd, setShowBulkAdd] = useState(false)
+  const [showSentItems, setShowSentItems] = useState(false)
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const [showCategorySettings, setShowCategorySettings] = useState(false)
   const [showNewFolderDialog, setShowNewFolderDialog] = useState(false)
@@ -533,6 +535,9 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
   )
 
   const openCategory = openTarget?.type === "category" ? categories.find((c) => c.id === openTarget.id) || null : null
+  useEffect(() => {
+    setShowSentItems(false)
+  }, [openCategory?.id])
   const openSmart = openTarget?.type === "smart" ? SMART_LISTS.find((s) => s.id === openTarget.id) || null : null
   const openHabits = openTarget?.type === "habits"
   const openObjectives = openTarget?.type === "objectives"
@@ -608,9 +613,14 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
     return []
   }, [openTarget, allTasks, categories, folders, currentFolder, folderAllUncategorizedOnly, folderAllHideUncategorized, folderAllHiddenListIds, globalAllHiddenFolderIds, globalAllUncategorizedOnly, globalAllHideUncategorized, getSmartTasks, getTasksForCategory])
 
+  const listedTasks = useMemo(() => {
+    if (openTarget?.type !== "category" || !openCategory?.sentThisWeek || showSentItems) return openTasks
+    return visibleListItems(openTasks, openCategory.id, false)
+  }, [openTasks, openTarget, openCategory, showSentItems])
+
   const breadcrumb = getBreadcrumb({ searchActive, searchTerm, openTarget, openName, isHome, isAll, currentFolderName: currentFolder?.name })
   const hereCount = openTarget
-    ? `${openTasks.length} item(s)`
+    ? `${listedTasks.length} item(s)`
     : `${entries.filter((e) => e.kind === "folder").length} folder(s), ${entries.filter((e) => e.kind !== "folder").length} list(s)`
   const treeCount = `${folders.length} folder(s), ${categories.length} list(s)`
   const innerCaption = openHabits ? "Habits" : openObjectives ? "Objectives" : listDisplayCaption(currentDisplay)
@@ -1208,8 +1218,8 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
       selectAllTasks(searchResults.tasks.map((t) => t.id))
       return
     }
-    selectAllTasks(openTasks.map((t) => t.id))
-  }, [searchActive, searchResults.tasks, openTasks, selectAllTasks])
+    selectAllTasks(listedTasks.map((t) => t.id))
+  }, [searchActive, searchResults.tasks, listedTasks, selectAllTasks])
 
   const handleSelectAllSearchResults = useCallback(() => {
     selectAll(
@@ -1371,7 +1381,10 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
     if (openTarget) {
       return (
         <ListContentPanel
-          tasks={openTasks}
+          tasks={listedTasks}
+          sentThisWeek={openTarget?.type === "category" && openCategory?.sentThisWeek === true}
+          showSent={showSentItems}
+          onShowSentChange={setShowSentItems}
           currentDisplay={currentDisplay}
           categories={categories}
           folders={folders}
@@ -1660,7 +1673,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
             {openCategory && (
               <div className="fm-sidebar fm-inspector" data-ui-name="List inspector" data-ui-docs="components/Lists/README.md" style={{ width: 168 }}>
                 <InspectorFacts
-                  countLabel={`${openTasks.length} item(s)`}
+                  countLabel={`${listedTasks.length} item(s)`}
                   typeLabel={itemLabelFor(openCategory.id, openCategory)}
                   lastTouched={formatInspectorDate(latestTouch(openCategory.createdAt, openTasks))}
                 />

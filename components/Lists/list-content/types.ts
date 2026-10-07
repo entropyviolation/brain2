@@ -71,4 +71,8 @@ export interface ListContentPanelProps extends ListContentTaskHandlers {
   onIconPickerOpen: (taskId: string) => void
   /** Hide Add / Bulk add on period To Do smart lists. Archive lists are real lists. */
   allowAdd?: boolean
+  /** This list opted into Sent this week. Shows a quiet Show sent control. */
+  sentThisWeek?: boolean
+  showSent?: boolean
+  onShowSentChange?: (show: boolean) => void
 }

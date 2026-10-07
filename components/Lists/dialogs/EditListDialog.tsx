@@ -169,6 +169,41 @@ export function EditListDialog({
                 : "View settings for this folder’s All Items aggregate. They persist on the All Items record and do not turn it into a separate child list."
               : "Update the settings for this list."}
           </DialogDescription>
+          <div className="flex items-center gap-1.5" data-testid="list-id-line">
+            <span style={{ fontSize: 11, color: "#9a9a9a", fontFamily: "ui-monospace, SFMono-Regular, monospace" }}>
+              {editingCategory.id}
+            </span>
+            <button
+              type="button"
+              aria-label="Copy list id"
+              onClick={() => {
+                const id = editingCategory.id
+                const flash = () => {
+                  const button = document.activeElement
+                  if (button instanceof HTMLButtonElement) {
+                    const previous = button.textContent
+                    button.textContent = "Copied"
+                    window.setTimeout(() => {
+                      button.textContent = previous
+                    }, 900)
+                  }
+                }
+                if (navigator.clipboard?.writeText) {
+                  void navigator.clipboard.writeText(id).then(flash).catch(flash)
+                }
+              }}
+              style={{
+                fontSize: 11,
+                color: "#9a9a9a",
+                background: "transparent",
+                border: "none",
+                padding: "0 2px",
+                cursor: "pointer",
+              }}
+            >
+              <Copy className="inline h-3 w-3" aria-hidden /> Copy
+            </button>
+          </div>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto space-y-4 pr-1">
           {!isFolderAll && (
@@ -476,6 +511,23 @@ export function EditListDialog({
               id="edit-category-scheduleable"
               checked={editingCategory.scheduleable === true}
               onCheckedChange={(checked) => onEditingCategoryChange({ ...editingCategory, scheduleable: checked })}
+            />
+          </div>
+          <div className="flex items-center justify-between rounded-lg border p-3">
+            <div className="space-y-0.5">
+              <Label htmlFor="edit-category-sent-this-week">Sent this week</Label>
+              <p className="text-xs text-muted-foreground">
+                Off unless you turn it on. Each item gets a Sent control on its detail. Sent items hide in this list
+                until Show sent. When a new week starts, last week’s sent items leave this list. They are not deleted.
+                Unsent items stay.
+              </p>
+            </div>
+            <Switch
+              id="edit-category-sent-this-week"
+              checked={editingCategory.sentThisWeek === true}
+              onCheckedChange={(checked) =>
+                onEditingCategoryChange({ ...editingCategory, sentThisWeek: checked ? true : undefined })
+              }
             />
           </div>
           <div className="flex items-center justify-between rounded-lg border p-3">
