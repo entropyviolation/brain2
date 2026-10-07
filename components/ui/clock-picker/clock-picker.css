@@ -1,7 +1,8 @@
 /**
  * Shared clock. Closed field is a sunken bevel; the open panel is a milled
- * bay around a CRT well. The lamp on one cell is the cursor. Phosphor is
- * `--hab-crt-green`. No system blue, no extra typeface.
+ * bay around a CRT well, with a console face under the drums. The lamp on
+ * one cell is the cursor. Phosphor is `--hab-crt-green`. No system blue,
+ * no extra typeface.
  */
 
 .clock-picker {
@@ -105,12 +106,21 @@
   position: fixed;
   z-index: 450;
   display: flex;
-  align-items: flex-end;
-  gap: 4px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  width: 13.25rem;
   padding: 6px;
   background: var(--fascia-bay, #c5c8cb);
   box-shadow: var(--fascia-bay-ring, 0 0 0 1px #4a4e52);
   color: #1c1e20;
+}
+
+.clock-picker-drums {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 4px;
 }
 
 .clock-picker-stack {
@@ -222,4 +232,68 @@
 .clock-picker-panel button.clock-picker-cell:focus-visible {
   outline: 1px dotted var(--hab-crt-green, #7dffc4);
   outline-offset: 1px;
+}
+
+.clock-picker-entry {
+  box-sizing: border-box;
+  width: 3rem;
+  height: calc(1.85rem * 3 + 4px);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 1px;
+  background: var(--fascia-scope, #070c0a);
+  color: var(--hab-crt-green, #7dffc4);
+  caret-color: var(--hab-crt-green, #7dffc4);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-align: center;
+  text-shadow: var(--hab-crt-glow, 0 0 3px #7dffc4);
+  outline: none;
+}
+
+.clock-picker-analog {
+  align-self: center;
+  box-sizing: border-box;
+  width: 9.75rem;
+  padding: 5px;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.16), rgba(255, 255, 255, 0.08));
+  box-shadow: var(--w95-sunken, inset 1px 1px #808080, inset -1px -1px #fff);
+}
+
+.clock-picker-analog-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.clock-picker-numeral {
+  fill: var(--hab-crt-green, #7dffc4);
+  font-family: inherit;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.clock-picker-daywin rect {
+  fill: #020605;
+  stroke: rgba(125, 255, 196, 0.45);
+  stroke-width: 0.6;
+}
+
+.clock-picker-daywin text {
+  fill: var(--hab-crt-green, #7dffc4);
+  font-family: inherit;
+  font-size: 6.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-anchor: middle;
+  dominant-baseline: middle;
 }

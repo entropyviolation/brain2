@@ -109,8 +109,10 @@ view. Leaving it up as a dead instrument is the miss. A door that still
 works stays visible (failure 1).
 
 **Clocks and popovers.** A clock and a popover belong to the instrument
-panel: beveled chrome, phosphor for the selection. They are not the
-platform's flat blue picker.
+panel: beveled chrome, phosphor for the selection. An armed hour or minute
+holds the page still so the wheel steps that drum. A console face under the
+drums keeps the same time. The closed field, and a double-clicked drum, take
+a typed time. They are not the platform's flat blue picker.
 
 ### One job per region
 
@@ -385,7 +387,10 @@ a trace is allowed to be the other green, `#3dff8a`, on Analytics line traces
 only — not a dark CRT canvas, and not on metal readout values. Do not use CRT
 grain as a chart that pretends the sample is larger than it is. A clock or a
 popover uses this instrument for its selection: beveled chrome, phosphor on
-the chosen value. It does not use the platform's flat blue picker.
+the chosen value, a console face under the drums, typed entry on the closed
+field and on a double-clicked drum. An armed hour or minute keeps the page
+from scrolling so the wheel steps that drum. It does not use the platform's
+flat blue picker.
 
 <a id="depth--spacing"></a>
 

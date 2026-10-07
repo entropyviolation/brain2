@@ -14,7 +14,7 @@ Only the primitives actively imported by the app are kept. As of the current cod
 | `badge.tsx` | Status badges, counts |
 | `button.tsx` | Buttons (variants: default, outline, ghost, destructive, …) |
 | `color-swatch.tsx` | Win95 beveled `<input type="color">` so the chip fills the control (Tracking new-pen, tags, pen settings) |
-| `clock-picker/` | Shared clock (`ClockPicker`). Sunken field, CRT hour / minute / AM–PM panel. Stores `HH:MM`. Not the platform time popup. |
+| `clock-picker/` | Shared clock (`ClockPicker`). Sunken field, CRT hour / minute / AM–PM drums, console face under them. Stores `HH:MM`. An armed hour or minute holds page scroll; the closed field and a double-clicked drum take a typed time. Not the platform time popup. |
 | `card.tsx` | Card, CardHeader, CardTitle, CardContent |
 | `checkbox.tsx` | Checkboxes |
 | `collapsible.tsx` | Expand/collapse sections (Scheduler filters) |
