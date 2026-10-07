@@ -4,7 +4,7 @@
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { getPlanEntries, getPlanTextViewMode, getStoredPlanText } from "@/lib/plan-text"
+import { getPlanEntries, getPlanTextViewMode, getStoredPlanText, appendPlanEntry } from "@/lib/plan-text"
 import { PlanTextLog } from "./plan-text-log"
 
 function at(year: number, month: number, day: number, hour: number, minute = 0) {
@@ -44,6 +44,13 @@ describe("PlanTextLog", () => {
     expect(items[0]).toHaveTextContent("9/21 7am")
     expect(items[0]).toHaveTextContent("go on a walk")
     expect(items[1]).toHaveTextContent("9/20 9pm")
+  })
+
+  it("shows a day entry written through appendPlanEntry", () => {
+    appendPlanEntry("day", "2026-10-06", "orchard")
+    render(<PlanTextLog period="day" periodKey="2026-10-06" placeholder="Write your day plan" />)
+    expect(screen.getByText("orchard")).toBeInTheDocument()
+    expect(getPlanEntries("day", "2026-10-06").map((entry) => entry.text)).toEqual(["orchard"])
   })
 
   it("switches to bulk copy text and latest-only", async () => {

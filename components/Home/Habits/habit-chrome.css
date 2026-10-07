@@ -1010,6 +1010,20 @@ body.win95-app .hab95 button.hab-willpower-lab-toggle.is-on {
   margin-right: 16px;
 }
 
+.hab-well > .hab-period-plan {
+  margin: 12px 16px 14px 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.hab-period-plan > legend {
+  padding: 0 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
 .hab95 .habit-heat-head.is-today,
 .hab95 .habit-heat-cell.is-today {
   background: #c8d5ce;

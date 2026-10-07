@@ -3,8 +3,8 @@
  *
  * Shared stack inside HabitsControlPanel: two GradeFace tubes, optional Good
  * day / week / month / season wells, optional monthly or weekly window plate,
- * Sort Habits, Exemption wand, view rockers, New habit. Grade numbers and store
- * writes stay at the habit-tracker call site.
+ * Sort Habits, Exemption wand, view rockers (Day / Week / Month / Season View), New habit.
+ * Grade numbers and store writes stay at the habit-tracker call site.
  */
 "use client"
 
@@ -51,6 +51,9 @@ function GradeFace({
 export type HabitsTabToggleId =
   | "heatmap"
   | "dayView"
+  | "weekView"
+  | "monthView"
+  | "seasonView"
   | "hideCompleted"
   | "loadingBar"
   | "smallLeds"
@@ -103,6 +106,15 @@ export interface HabitsTabControlsProps {
   onHeatmap?: (on: boolean) => void
   dayViewOn?: boolean
   onDayView?: (on: boolean) => void
+  /** Weekly sheet: this week only, plus that week's plan log. */
+  weekViewOn?: boolean
+  onWeekView?: (on: boolean) => void
+  /** Monthly sheet: this month only, plus that month's plan log. */
+  monthViewOn?: boolean
+  onMonthView?: (on: boolean) => void
+  /** Season sheet: this season only, plus that season's plan log. */
+  seasonViewOn?: boolean
+  onSeasonView?: (on: boolean) => void
   loadingBarId: string
   loadingBar: boolean
   onLoadingBar: (on: boolean) => void
@@ -150,6 +162,12 @@ export function HabitsTabControls({
   onHeatmap,
   dayViewOn = false,
   onDayView,
+  weekViewOn = false,
+  onWeekView,
+  monthViewOn = false,
+  onMonthView,
+  seasonViewOn = false,
+  onSeasonView,
   loadingBarId,
   loadingBar,
   onLoadingBar,
@@ -180,6 +198,36 @@ export function HabitsTabControls({
           checked={dayViewOn}
           onCheckedChange={onDayView}
           label="Day View"
+        />,
+      )
+    } else if (id === "weekView" && onWeekView) {
+      rockers.push(
+        <CockpitSwitch
+          key="weekView"
+          id="week-view"
+          checked={weekViewOn}
+          onCheckedChange={onWeekView}
+          label="Week View"
+        />,
+      )
+    } else if (id === "monthView" && onMonthView) {
+      rockers.push(
+        <CockpitSwitch
+          key="monthView"
+          id="month-view"
+          checked={monthViewOn}
+          onCheckedChange={onMonthView}
+          label="Month View"
+        />,
+      )
+    } else if (id === "seasonView" && onSeasonView) {
+      rockers.push(
+        <CockpitSwitch
+          key="seasonView"
+          id="season-view"
+          checked={seasonViewOn}
+          onCheckedChange={onSeasonView}
+          label="Season View"
         />,
       )
     } else if (id === "hideCompleted") {

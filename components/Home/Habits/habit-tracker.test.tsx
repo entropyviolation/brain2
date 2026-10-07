@@ -7,6 +7,8 @@ import { localDayKey, useReviewsStore } from "@/lib/reviews-store"
 import { TaskType } from "@/lib/types"
 import { WeeklyTaskTracker } from "./habit-tracker"
 import { plasmaClipWidth } from "./noble-gas-tube"
+import { appendPlanEntry, getPlanEntries } from "@/lib/plan-text"
+import { formatLocalDateKey } from "@/lib/date-utils"
 
 vi.mock("@/components/Home/Habits/task-grid", () => ({
   TaskGrid: () => <div data-testid="task-grid">Task Grid</div>,
@@ -16,7 +18,11 @@ vi.mock("@/components/Home/Habits/period-habit-list", async (importOriginal) => 
   const actual = await importOriginal<typeof import("@/components/Home/Habits/period-habit-list")>()
   return {
     ...actual,
-    PeriodHabitList: () => <div data-testid="period-habit-list">Period Habit List</div>,
+  PeriodHabitList: ({ periods }: { periods?: { key: string }[] }) => (
+    <div data-testid="period-habit-list" data-columns={periods?.length ?? 0}>
+      Period Habit List
+    </div>
+  ),
   }
 })
 
@@ -163,20 +169,24 @@ describe("WeeklyTaskTracker", () => {
     expect(useHabitsStore.getState().habitSortDirection).toBe("asc")
   })
 
-  it("names monthly completion sort for the month, not the week", async () => {
+  it("names period completion on week, month, and season", async () => {
     const user = userEvent.setup()
     render(<WeeklyTaskTracker currentDate={new Date("2026-06-20T12:00:00")} />)
     expect(screen.getByRole("radio", { name: "Weekly completion %" })).toBeInTheDocument()
     await user.click(screen.getByRole("switch", { name: "Day View" }))
     expect(screen.getByRole("radio", { name: "Weekly completion %" })).toBeInTheDocument()
     await user.click(screen.getByRole("tab", { name: /Weekly \(/ }))
-    expect(screen.getByRole("radio", { name: "Weekly completion %" })).toBeInTheDocument()
+    expect(screen.getByRole("radio", { name: "Period completion %" })).toBeInTheDocument()
+    expect(screen.queryByRole("radio", { name: "Monthly completion %" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("radio", { name: "Season completion %" })).not.toBeInTheDocument()
     await user.click(screen.getByRole("tab", { name: /Monthly \(/ }))
-    expect(screen.getByRole("radio", { name: "Monthly completion %" })).toBeInTheDocument()
+    expect(screen.getByRole("radio", { name: "Period completion %" })).toBeInTheDocument()
     expect(screen.getByRole("radio", { name: "Alphabetical" })).toBeInTheDocument()
     expect(screen.queryByRole("radio", { name: "Weekly completion %" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("radio", { name: "Monthly completion %" })).not.toBeInTheDocument()
     await user.click(screen.getByRole("tab", { name: /Season \(/ }))
-    expect(screen.getByRole("radio", { name: "Season completion %" })).toBeInTheDocument()
+    expect(screen.getByRole("radio", { name: "Period completion %" })).toBeInTheDocument()
+    expect(screen.queryByRole("radio", { name: "Season completion %" })).not.toBeInTheDocument()
     expect(screen.queryByRole("radio", { name: /Weekly/ })).not.toBeInTheDocument()
   })
 
@@ -352,5 +362,38 @@ describe("WeeklyTaskTracker", () => {
     await user.click(hideBoth)
     expect(useHabitsStore.getState().hideCompletedAndMissed).toBe(true)
     expect(useHabitsStore.getState().hideCompletedToday).toBe(false)
+  })
+
+  it("opens the shared day plan log from Day View", async () => {
+    const user = userEvent.setup()
+    const day = new Date("2026-06-20T12:00:00")
+    const dayKey = formatLocalDateKey(day)
+    appendPlanEntry("day", dayKey, "orchard")
+    render(<WeeklyTaskTracker currentDate={day} />)
+    expect(screen.queryByRole("button", { name: "Submit plan" })).not.toBeInTheDocument()
+    await user.click(screen.getByRole("switch", { name: "Day View" }))
+    expect(screen.getByRole("button", { name: "Submit plan" })).toBeInTheDocument()
+    expect(screen.getByText("orchard")).toBeInTheDocument()
+    expect(getPlanEntries("day", dayKey).map((entry) => entry.text)).toEqual(["orchard"])
+  })
+
+  it("Week View collapses to one column without changing habitWeekWindow", async () => {
+    const user = userEvent.setup()
+    useHabitsStore.setState({ habitWeekWindow: "fourWeeks" })
+    render(<WeeklyTaskTracker currentDate={new Date("2026-06-20T12:00:00")} />)
+    await user.click(screen.getByRole("tab", { name: /Weekly \(1\)/ }))
+    const sheet = screen.getByTestId("period-habit-list")
+    expect(Number(sheet.getAttribute("data-columns"))).toBeGreaterThan(1)
+    expect(screen.queryByRole("button", { name: "Submit plan" })).not.toBeInTheDocument()
+    await user.click(screen.getByRole("switch", { name: "Week View" }))
+    expect(useHabitsStore.getState().habitWeekView).toBe(true)
+    expect(useHabitsStore.getState().habitWeekWindow).toBe("fourWeeks")
+    expect(screen.getByTestId("period-habit-list")).toHaveAttribute("data-columns", "1")
+    expect(screen.getByRole("button", { name: "Submit plan" })).toBeInTheDocument()
+    await user.click(screen.getByRole("switch", { name: "Week View" }))
+    expect(useHabitsStore.getState().habitWeekView).toBe(false)
+    expect(useHabitsStore.getState().habitWeekWindow).toBe("fourWeeks")
+    expect(Number(screen.getByTestId("period-habit-list").getAttribute("data-columns"))).toBeGreaterThan(1)
+    expect(screen.queryByRole("button", { name: "Submit plan" })).not.toBeInTheDocument()
   })
 })

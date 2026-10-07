@@ -72,6 +72,10 @@
  * those defaults. No persist version bump — same rule as `hideCompletedToday`.
  * `habitWeekWindow` (default `sevenWeeks`) chooses the weekly sheet the same
  * way. A missing value fills `sevenWeeks`. No persist version bump.
+ * `habitWeekView`, `habitMonthView`, and `habitSeasonView` collapse that
+ * sheet to the current period and open its plan log. They do not change
+ * `habitWeekWindow` or `habitMonthWindow`. A missing value fills false.
+ * No persist version bump.
  * `timeEstimateNA`, `doneTaskPhrase`, and `doneTaskUseText` are optional on
  * each habit. A missing key keeps the previous behavior (a stored estimate
  * still counts; the Done line stays the habit name). No persist version bump.
@@ -434,6 +438,9 @@ export function migrateHabitsState(persisted: unknown, version: number): HabitsS
     habitMonthWindow: parseHabitMonthWindowMode(state.habitMonthWindow),
     habitBirthday: sanitizeHabitBirthday(has("habitBirthday") ? state.habitBirthday : DEFAULT_HABIT_BIRTHDAY),
     habitWeekWindow: parseHabitWeekWindowMode(state.habitWeekWindow),
+    habitWeekView: !!state.habitWeekView,
+    habitMonthView: !!state.habitMonthView,
+    habitSeasonView: !!state.habitSeasonView,
     exemptionWand: !!state.exemptionWand,
     missedOpWand: !!state.missedOpWand,
     habitExemptions: sanitizeExemptionBooks(state.habitExemptions),
@@ -808,6 +815,24 @@ interface HabitsState {
    */
   habitWeekWindow: HabitWeekWindowMode
   setHabitWeekWindow: (mode: HabitWeekWindowMode) => void
+  /**
+   * Weekly sheet shows only this week, and that week's plan log.
+   * Does not change `habitWeekWindow`. Default false.
+   */
+  habitWeekView: boolean
+  setHabitWeekView: (value: boolean) => void
+  /**
+   * Monthly sheet shows only this month, and that month's plan log.
+   * Does not change `habitMonthWindow`. Default false.
+   */
+  habitMonthView: boolean
+  setHabitMonthView: (value: boolean) => void
+  /**
+   * Season sheet shows only this season, and that season's plan log.
+   * Default false.
+   */
+  habitSeasonView: boolean
+  setHabitSeasonView: (value: boolean) => void
   /**
    * Exemption wand is on: every cell is a yes/no lamp for “this period is
    * waived”, not for completion. Shared across Daily / Weekly / Monthly.
@@ -1299,6 +1324,12 @@ export const useHabitsStore = create<HabitsState>()(
       setHabitBirthday: (birthday) => set({ habitBirthday: sanitizeHabitBirthday(birthday) }),
       habitWeekWindow: DEFAULT_HABIT_WEEK_WINDOW,
       setHabitWeekWindow: (mode) => set({ habitWeekWindow: parseHabitWeekWindowMode(mode) }),
+      habitWeekView: false,
+      setHabitWeekView: (value) => set({ habitWeekView: !!value }),
+      habitMonthView: false,
+      setHabitMonthView: (value) => set({ habitMonthView: !!value }),
+      habitSeasonView: false,
+      setHabitSeasonView: (value) => set({ habitSeasonView: !!value }),
       exemptionWand: false,
       setExemptionWand: (value) =>
         set(value ? { exemptionWand: true, missedOpWand: false } : { exemptionWand: false }),

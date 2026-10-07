@@ -500,4 +500,19 @@ describe("habit content writes", () => {
     expect(saved.weeklyAverageBeatBonus).toBe(8)
     expect(saved.monthlyAverageBeatBonus).toBe(0)
   })
+
+  it("single-period week view does not change habitWeekWindow", () => {
+    const migrated = migrateHabitsState({ ...v9State(), habitWeekWindow: "thisMoon" }, 26)
+    expect(migrated.habitWeekView).toBe(false)
+    expect(migrated.habitMonthView).toBe(false)
+    expect(migrated.habitSeasonView).toBe(false)
+    expect(migrated.habitWeekWindow).toBe("thisMoon")
+
+    useHabitsStore.setState({ habitWeekWindow: "fourWeeks", habitWeekView: false })
+    useHabitsStore.getState().setHabitWeekView(true)
+    expect(useHabitsStore.getState().habitWeekView).toBe(true)
+    expect(useHabitsStore.getState().habitWeekWindow).toBe("fourWeeks")
+    useHabitsStore.getState().setHabitWeekView(false)
+    expect(useHabitsStore.getState().habitWeekWindow).toBe("fourWeeks")
+  })
 })

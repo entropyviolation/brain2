@@ -194,4 +194,32 @@ describe("plan-text", () => {
     setPlanTextViewMode("latest")
     expect(getPlanTextViewMode()).toBe("latest")
   })
+
+  it("shows a day entry written through appendPlanEntry to every reader of that date", () => {
+    appendPlanEntry("day", "2026-10-06", "orchard")
+    expect(getPlanEntries("day", "2026-10-06").map((entry) => entry.text)).toEqual(["orchard"])
+    expect(getPlanBodies("day", "2026-10-06")).toBe("orchard")
+    expect(getStoredPlanText("day", "2026-10-06")).toContain("orchard")
+  })
+
+  it("keeps week, month, and season keys off the day key", () => {
+    const day = "2026-10-06"
+    appendPlanEntry("day", day, "day line")
+    appendPlanEntry("week", "2026-10-05_2026-10-11", "week line")
+    appendPlanEntry("month", "2026-10", "month line")
+    appendPlanEntry("quarter", "2026-Q4", "season line")
+
+    expect(getPlanBodies("day", day)).toBe("day line")
+    expect(getPlanBodies("week", "2026-10-05_2026-10-11")).toBe("week line")
+    expect(getPlanBodies("month", "2026-10")).toBe("month line")
+    expect(getPlanBodies("quarter", "2026-Q4")).toBe("season line")
+    expect(getPlanEntries("week", day)).toEqual([])
+    expect(getPlanEntries("month", day)).toEqual([])
+    expect(getPlanEntries("quarter", day)).toEqual([])
+    expect(getPlanBodies("day", "2026-10-05_2026-10-11")).toBeNull()
+    expect(localStorage.getItem(`dayPlan-${day}`)).toContain("day line")
+    expect(localStorage.getItem(`weekPlan-${day}`)).toBeNull()
+    expect(localStorage.getItem(`monthPlan-${day}`)).toBeNull()
+    expect(localStorage.getItem(`quarterPlan-${day}`)).toBeNull()
+  })
 })
