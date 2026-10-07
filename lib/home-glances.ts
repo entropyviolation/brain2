@@ -1,11 +1,14 @@
 /**
  * lib/home-glances.ts — Faces for optional Home squares
  *
- * Night well, Harvest leftover, and Inbox mill. Pure. The tiles only
- * supply the night, the point totals, and the inbox titles.
+ * Night well, Harvest leftover, Inbox mill, Already flowing, and Plan and
+ * lived. Pure. The tiles only supply the night, the point totals, the inbox
+ * titles, the finished counts, and the planned and painted minutes.
  */
 
-import { formatLocalDateKey } from "@/lib/date-utils"
+import { dateKeyOf, formatLocalDateKey } from "@/lib/date-utils"
+import { formatDuration, isInstant, isSleepBlock, type TimeEntry } from "@/lib/time-entries"
+import { uniqueMinutes } from "@/lib/tracking-summary"
 import {
   formatSleepDuration,
   offsetToLabel,
@@ -71,4 +74,78 @@ export function inboxMillFace(titles: string[]): GlanceFace {
   const names = titles.map((title) => title.trim()).filter(Boolean)
   if (names.length === 0) return { crt: "0", footer: "Inbox clear" }
   return { crt: String(names.length), footer: names[0]! }
+}
+
+export type FlowWord = "Quiet" | "Flowing" | "Pushed" | "Mixed"
+
+export type FinishedTask = {
+  completed?: boolean
+  createdAt?: Date | string | null
+  completedDate?: Date | string | null
+}
+
+/**
+ * Finished work already in motion, versus work created and finished the same day.
+ * Habit completions are already the day's practice, so they count as flowing.
+ */
+export function flowingCounts(
+  tasks: FinishedTask[],
+  day: Date,
+  habitCompletions: number,
+): { flowing: number; pushed: number } {
+  const dayKey = formatLocalDateKey(day)
+  let flowing = Math.max(0, Math.round(habitCompletions))
+  let pushed = 0
+  for (const task of tasks) {
+    if (!task.completed) continue
+    if (dateKeyOf(task.completedDate) !== dayKey) continue
+    if (dateKeyOf(task.createdAt) === dayKey) pushed += 1
+    else flowing += 1
+  }
+  return { flowing, pushed }
+}
+
+export function alreadyFlowingFace(flowing: number, pushed: number): GlanceFace & { word: FlowWord } {
+  const already = Math.max(0, Math.round(flowing))
+  const fresh = Math.max(0, Math.round(pushed))
+  const footer = already + fresh === 0 ? "Nothing finished" : `${already} already · ${fresh} new`
+  let word: FlowWord = "Quiet"
+  if (already + fresh === 0) word = "Quiet"
+  else if (fresh === 0) word = "Flowing"
+  else if (already === 0) word = "Pushed"
+  else if (already >= fresh * 2) word = "Flowing"
+  else if (fresh >= already * 2) word = "Pushed"
+  else word = "Mixed"
+  return { crt: word, footer, word }
+}
+
+export type PaintWord = "Open" | "Planned" | "Tracked" | "Short" | "Close" | "Over"
+
+/** Painted minutes for one day. Sleep blocks are left out. Each minute counts once. */
+export function livedPaintMinutes(entries: TimeEntry[], dateKey: string): number {
+  const waking = entries.filter((entry) => entry.date === dateKey && !isInstant(entry) && !isSleepBlock(entry))
+  return uniqueMinutes(waking, [dateKey])
+}
+
+export function planAndLivedFace(plannedMinutes: number, livedMinutes: number): GlanceFace & { word: PaintWord } {
+  const planned = Math.max(0, Math.round(plannedMinutes))
+  const lived = Math.max(0, Math.round(livedMinutes))
+  const planBit = formatDuration(planned)
+  const livedBit = formatDuration(lived)
+  let footer = `plan ${planBit} · lived ${livedBit}`
+  if (planned === 0 && lived === 0) footer = "Nothing planned or tracked"
+  else if (lived === 0) footer = `plan ${planBit} · nothing tracked`
+  else if (planned === 0) footer = `nothing planned · lived ${livedBit}`
+
+  let word: PaintWord = "Open"
+  if (planned === 0 && lived === 0) word = "Open"
+  else if (lived === 0) word = "Planned"
+  else if (planned === 0) word = "Tracked"
+  else {
+    const ratio = lived / planned
+    if (ratio < 0.8) word = "Short"
+    else if (ratio > 1.2) word = "Over"
+    else word = "Close"
+  }
+  return { crt: word, footer, word }
 }

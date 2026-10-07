@@ -7,7 +7,7 @@
  * share the row (flex, max 200px) and wrap only when the window is narrow.
  * Points, Latest award, progress, weather, review, the screen pet, Next, Day lamp,
  * Days Until, Moon, Solar remainder, Tracking now, Night well, Harvest leftover,
- * and Inbox mill each use caption + CRT +
+ * Inbox mill, Already flowing, and Plan and lived each use caption + CRT +
  * footer. Click a tile for a closer look. × asks Are you sure? before hide.
  * The Widgets catalog lives on the date bar
  * (`home-widgets-menu.tsx`), not in this row. Weather glance lives in
@@ -34,6 +34,7 @@ import { NextTile } from "@/components/Home/home-next-tile"
 import { ScreenPetTile } from "@/components/Home/home-screen-pet"
 import { AwardTile } from "@/components/Home/home-award-tile"
 import { HarvestTile, InboxMillTile, NightWellTile } from "@/components/Home/home-glance-tiles"
+import { AlreadyFlowingTile, PlanAndLivedTile } from "@/components/Home/home-reading-tiles"
 import { MoonTile } from "@/components/Home/home-moon-tile"
 import { SolarRemainderTile } from "@/components/Home/home-solar-tile"
 import { TrackingNowTile } from "@/components/Home/home-tracking-tile"
@@ -132,6 +133,12 @@ export function HomeOverview({ currentDate, onStartReview, onOpenHomeTab }: Home
         }
         if (id === "inbox") {
           return <InboxMillTile key={id} onHide={() => hideWidget("inbox")} />
+        }
+        if (id === "flow") {
+          return <AlreadyFlowingTile key={id} currentDate={currentDate} onHide={() => hideWidget("flow")} />
+        }
+        if (id === "paint") {
+          return <PlanAndLivedTile key={id} currentDate={currentDate} onHide={() => hideWidget("paint")} />
         }
         if (id === "pet") {
           return <ScreenPetTile key={id} currentDate={currentDate} onHide={() => hideWidget("pet")} />

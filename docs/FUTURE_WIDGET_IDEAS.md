@@ -12,7 +12,8 @@ Product chrome never names those sources.
 The strip is caption + CRT + footer, equal height, hidable from the date-bar
 **Widgets** key. Do not clone Review, Points, Today’s Progress, the screen pet,
 Affirmation, Weather, Next, Day lamp, Days Until, **Moon**, **Latest award**, **Solar remainder**,
-**Tracking now**, **Night well**, **Harvest leftover**, or **Inbox mill**.
+**Tracking now**, **Night well**, **Harvest leftover**, **Inbox mill**, **Already flowing**,
+or **Plan and lived**.
 Do not clone the header **now** well, **today’s friend**, or
 the Needs Attention queue.
 
@@ -29,6 +30,8 @@ the Needs Attention queue.
 | `inbox` | Inbox mill | Unclarified count and the newest title. Click opens Inbox. |
 | `award` | Latest award | Newest positive points and why (completion, high % bonus, grades above yesterday, weekly grades above last week). |
 | `moon` | Moon | 8-bit moon, phase name, and days until the sooner of the next full moon and the next new moon. Detail: illumination, previous and next major phase, photographic planets at true relative size, Earth–Moon zoom at true scale. |
+| `flow` | Already flowing | Quiet / Flowing / Pushed / Mixed from finished daily habits and older to-dos, against to-dos created and finished the same day. Default off. |
+| `paint` | Plan and lived | Open / Planned / Tracked / Short / Close / Over. Planned minutes (scheduled work, events, planned actions) against painted Tracking minutes, each minute once, sleep left out. Default off. This is idea 2. |
 
 ---
 
@@ -36,9 +39,7 @@ the Needs Attention queue.
 
 ### 2. Intention vs paint
 
-CRT: planned minutes vs painted minutes for the selected day. Footer: `plan 5.0h · lived 3.2h`.
-
-The Brain2 law in one instrument. Plan-vs-reality exists in Analytics; Home should feel the mismatch *today*.
+Shipped as **Plan and lived** (`paint`). CRT word plus `plan … · lived …`. Sleep the log filled in is not counted as lived.
 
 ### 3. Still-fits
 
@@ -275,3 +276,18 @@ Slow loop. Seven-day mean. One effector speaks, and only outside the band. Disti
 CRT: `Low` / `Even` / `High` from points and regret over the last 3 days. Footer: which side moved.
 
 CY-11’s header lamp, available as a square. It does not merge the two ledgers and it does not say what the person is. Distinct from Harvest leftover (points still available today).
+
+---
+
+## Quiet readings (considered)
+
+Plain names only. These were weighed against stores that already exist. Two shipped. The rest stay here because a square would repeat a tile that is already on the strip, or because the waking-window reading is already the Plan capacity line.
+
+| Name | Status | Why |
+|------|--------|-----|
+| Already flowing (`flow`) | Shipped, default off | Finished habits and older to-dos versus to-dos made and finished today. |
+| Plan and lived (`paint`) | Shipped, default off | The plan beside what Tracking holds. Also the feedback line (plan versus lived) and the reminder that the schedule is not the painted day. |
+| Day's weight | Potential — same job as **Still-fits** (#3) | Light / Even / Heavy from planned minutes against the waking window. The Plan rail already says this. |
+| This hour | Potential | The current hour and the Activity block covering it, or Quiet. **Tracking now** already answers what is happening. |
+| Since yesterday | Not a new square | **Latest award** already names a completion or grade that beat yesterday. A second delta would repeat that lamp. |
+| Due as a signal | Not a new square | **Rituals** is already the error lamp for a review that is due. |

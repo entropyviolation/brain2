@@ -2,12 +2,15 @@ import { beforeEach, describe, expect, it } from "vitest"
 import { DEFAULT_PERCENT_LED_TINT } from "@/lib/habit-led"
 import { DEFAULT_GRADE_TUBE_COLOR, DEFAULT_OUTPUT_TUBE_COLOR } from "@/lib/habit-tube"
 import { resetAllStores } from "@/tests/test-utils"
+import { alreadyFlowingFace, flowingCounts, livedPaintMinutes, planAndLivedFace } from "@/lib/home-glances"
 import { useHomeWidgetsStore } from "@/lib/home-widgets-store"
 import { writeAliasedLocal } from "@/lib/storage-keys"
 import {
   DEFAULT_HOME_WIDGET_HIDDEN,
   DEFAULT_HOME_WIDGET_ORDER,
+  HOME_WIDGET_CATALOG,
   HOME_WIDGET_IDS,
+  HOME_WIDGET_LABEL,
   affirmationLinesForHome,
   dayLampWord,
   daysUntilCount,
@@ -32,6 +35,7 @@ import {
   weatherNeedleDeg,
   weatherSparkPath,
   weatherTideHint,
+  homeWidgetBlurb,
   sanitizeHomeWidgetHidden,
   sanitizeHomeWidgetOrder,
   visibleHomeWidgets,
@@ -67,6 +71,8 @@ describe("home widget catalog", () => {
       "night",
       "harvest",
       "inbox",
+      "flow",
+      "paint",
     ])
   })
 
@@ -107,7 +113,7 @@ describe("home widget catalog", () => {
 
   it("tucks Next and Day lamp when migrating a v1 blob", () => {
     expect(migrateHomeWidgetPersist({ order: ["today"], hidden: ["affirmation", "weather"] }, 1).hidden).toEqual(
-      ["affirmation", "weather", "next", "daylamp", "solar", "tracking", "night", "harvest", "inbox"],
+      ["affirmation", "weather", "next", "daylamp", "solar", "tracking", "night", "harvest", "inbox", "flow", "paint"],
     )
     expect(migrateHomeWidgetPersist({ hidden: ["next", "pet"] }, 2).hidden).toEqual([
       "pet",
@@ -117,6 +123,8 @@ describe("home widget catalog", () => {
       "night",
       "harvest",
       "inbox",
+      "flow",
+      "paint",
     ])
   })
 
@@ -128,7 +136,7 @@ describe("home widget catalog", () => {
       },
       2,
     )
-    expect(folded.order).toEqual(["review", "points", "award", "progress", "moon"])
+    expect(folded.order).toEqual(["review", "points", "award", "progress", "moon", "flow", "paint"])
     expect(folded.hidden).toContain("points")
     expect(folded.hidden).not.toContain("today")
     const kept = migrateHomeWidgetPersist(
@@ -152,7 +160,24 @@ describe("home widget catalog", () => {
       7,
     )
     expect(next.widgetsFollowClock).toBe(false)
-    expect(next.hidden).toEqual(["solar"])
+    expect(next.hidden).toEqual(["solar", "flow", "paint"])
+  })
+
+  it("tucks Already flowing and Plan and lived when migrating a v8 blob", () => {
+    const next = migrateHomeWidgetPersist(
+      { order: ["review", "points", "moon"], hidden: ["solar"], widgetsFollowClock: true },
+      8,
+    )
+    expect(next.widgetsFollowClock).toBe(true)
+    expect(next.order.slice(-2)).toEqual(["flow", "paint"])
+    expect(next.hidden).toEqual(["solar", "flow", "paint"])
+    const kept = migrateHomeWidgetPersist(
+      { order: ["review", "flow", "paint"], hidden: ["paint"], widgetsFollowClock: false },
+      9,
+    )
+    expect(kept.order).toEqual(["review", "flow", "paint"])
+    expect(kept.hidden).toEqual(["paint"])
+    expect(kept.widgetsFollowClock).toBe(false)
   })
 
   it("places Moon after Days Until and leaves it showing", () => {
@@ -160,7 +185,7 @@ describe("home widget catalog", () => {
       { order: ["review", "points", "award", "daysuntil", "solar"], hidden: ["solar"] },
       6,
     )
-    expect(next.order).toEqual(["review", "points", "award", "daysuntil", "moon", "solar"])
+    expect(next.order).toEqual(["review", "points", "award", "daysuntil", "moon", "solar", "flow", "paint"])
     expect(next.hidden).not.toContain("moon")
   })
 
@@ -283,6 +308,63 @@ describe("home widget catalog", () => {
     expect(pickDailyAffirmation(lines, "2026-09-21")).toBe(pickDailyAffirmation(lines, "2026-09-21"))
     expect(affirmationLinesForHome([], [])).toContain("I am focused and follow through on what matters.")
   })
+
+  it("describes every widget once in the catalog", () => {
+    expect(HOME_WIDGET_CATALOG.map((entry) => entry.id)).toEqual([...HOME_WIDGET_IDS])
+    for (const entry of HOME_WIDGET_CATALOG) {
+      expect(entry.name).toBe(HOME_WIDGET_LABEL[entry.id])
+      expect(homeWidgetBlurb(entry.id).shows.length).toBeGreaterThan(20)
+      expect(entry.useful.length).toBeGreaterThan(10)
+      expect(entry.preview.crt.length).toBeGreaterThan(0)
+      expect(entry.preview.footer.length).toBeGreaterThan(0)
+    }
+  })
+
+  it("reads finished work as already in motion or new today", () => {
+    const day = new Date(2026, 9, 6, 15, 0)
+    const counts = flowingCounts(
+      [
+        { completed: true, createdAt: new Date(2026, 9, 1), completedDate: day },
+        { completed: true, createdAt: day, completedDate: day },
+        { completed: true, createdAt: day, completedDate: new Date(2026, 9, 5) },
+        { completed: false, createdAt: day, completedDate: day },
+      ],
+      day,
+      2,
+    )
+    expect(counts).toEqual({ flowing: 3, pushed: 1 })
+    expect(alreadyFlowingFace(3, 1)).toMatchObject({ crt: "Flowing", footer: "3 already · 1 new" })
+    expect(alreadyFlowingFace(0, 2).crt).toBe("Pushed")
+    expect(alreadyFlowingFace(1, 1).crt).toBe("Mixed")
+    expect(alreadyFlowingFace(0, 0)).toMatchObject({ crt: "Quiet", footer: "Nothing finished" })
+  })
+
+  it("compares planned minutes with painted minutes and skips sleep", () => {
+    expect(planAndLivedFace(0, 0)).toMatchObject({ crt: "Open", footer: "Nothing planned or tracked" })
+    expect(planAndLivedFace(120, 0)).toMatchObject({ crt: "Planned", footer: "plan 2h · nothing tracked" })
+    expect(planAndLivedFace(0, 90)).toMatchObject({ crt: "Tracked", footer: "nothing planned · lived 1h 30m" })
+    expect(planAndLivedFace(300, 180)).toMatchObject({ crt: "Short", footer: "plan 5h · lived 3h" })
+    expect(planAndLivedFace(100, 100).crt).toBe("Close")
+    expect(planAndLivedFace(60, 120).crt).toBe("Over")
+    const lived = livedPaintMinutes(
+      [
+        { id: "a", date: "2026-10-06", scopeId: "activity", penId: "act-work", startMin: 9 * 60, endMin: 10 * 60 },
+        { id: "b", date: "2026-10-06", scopeId: "location", penId: "loc", startMin: 9 * 60, endMin: 10 * 60 },
+        {
+          id: "c",
+          date: "2026-10-06",
+          scopeId: "activity",
+          penId: "act-sleep",
+          startMin: 0,
+          endMin: 7 * 60,
+          generatedBy: { kind: "sleep", id: "2026-10-05" },
+        },
+        { id: "d", date: "2026-10-05", scopeId: "activity", penId: "act-work", startMin: 0, endMin: 60 },
+      ],
+      "2026-10-06",
+    )
+    expect(lived).toBe(60)
+  })
 })
 
 describe("home widgets store persist", () => {
@@ -322,6 +404,8 @@ describe("home widgets store persist", () => {
       "night",
       "harvest",
       "inbox",
+      "flow",
+      "paint",
     ])
   })
 

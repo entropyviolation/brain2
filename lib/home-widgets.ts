@@ -1,7 +1,8 @@
 /**
  * lib/home-widgets.ts — Home overview strip catalog
  *
- * Square modules on the Home header (every sub-tab). Persist v8 adds
+ * Square modules on the Home header (every sub-tab). Persist v9 appends
+ * Already flowing and Plan and lived and leaves them hidden. Persist v8 adds
  * `widgetsFollowClock` (default off: squares stay on the day you are viewing).
  * Persist v7 shows Moon after Days Until. Persist v6 shows Latest award.
  * Persist v5 tucks Night well, Harvest leftover, and Inbox mill.
@@ -46,6 +47,8 @@ export const HOME_WIDGET_IDS = [
   "night",
   "harvest",
   "inbox",
+  "flow",
+  "paint",
 ] as const
 
 /** Points wells that used to be four tiles. Folded into `points` in persist v3. */
@@ -70,6 +73,8 @@ export const HOME_WIDGET_LABEL: Record<HomeWidgetId, string> = {
   night: "Night well",
   harvest: "Harvest leftover",
   inbox: "Inbox mill",
+  flow: "Already flowing",
+  paint: "Plan and lived",
 }
 
 /** Shown until the user hides one. Affirmation, weather, Next, and Day lamp start tucked. */
@@ -85,6 +90,8 @@ export const DEFAULT_HOME_WIDGET_HIDDEN: HomeWidgetId[] = [
   "night",
   "harvest",
   "inbox",
+  "flow",
+  "paint",
 ]
 
 /** Optional tiles introduced in persist version 2 — tuck them on older blobs. */
@@ -95,6 +102,153 @@ export const HOME_WIDGETS_TUCKED_IN_V4: HomeWidgetId[] = ["solar", "tracking"]
 
 /** Optional tiles introduced in persist version 5. */
 export const HOME_WIDGETS_TUCKED_IN_V5: HomeWidgetId[] = ["night", "harvest", "inbox"]
+
+/** Optional tiles introduced in persist version 9. Left hidden so the strip does not move. */
+export const HOME_WIDGETS_TUCKED_IN_V9: HomeWidgetId[] = ["flow", "paint"]
+
+/** One catalog card: what the square is, when it helps, and a static example of its face. */
+export type HomeWidgetBlurb = {
+  id: HomeWidgetId
+  name: string
+  shows: string
+  useful: string
+  preview: { caption: string; crt: string; footer: string }
+}
+
+export const HOME_WIDGET_CATALOG: HomeWidgetBlurb[] = [
+  {
+    id: "review",
+    name: "Rituals",
+    shows: "The count of rituals still due sits in the CRT. The footer names the period. Open and Dismiss sit under the number. Dismiss hides the square until the next session and does not change this catalog.",
+    useful: "Keep it showing when you want a due review to meet you on every Home tab.",
+    preview: { caption: "Rituals due", crt: "2", footer: "Daily" },
+  },
+  {
+    id: "points",
+    name: "Points",
+    shows: "Four CRT lines: all time, today, this week, this month. Click opens the same numbers as navy wells, the Habits gradient meters, and 14- and 30-day sparklines.",
+    useful: "The day-to-day score. Leave it on unless the strip is crowded.",
+    preview: { caption: "Points", crt: "42", footer: "today" },
+  },
+  {
+    id: "award",
+    name: "Latest award",
+    shows: "The newest positive points amount in the CRT, and why in the footer: a completion, a high-percent bonus, or a grade that beat yesterday or last week.",
+    useful: "When you want the last thing that paid, without opening the ledger.",
+    preview: { caption: "Award", crt: "+12", footer: "Above yesterday" },
+  },
+  {
+    id: "progress",
+    name: "Today's Progress",
+    shows: "To-do and habit meters in the CRT, and one footer line of the two fractions. Click lists what is still open. Each list folds.",
+    useful: "The checklist for the day the squares are reading.",
+    preview: { caption: "Progress", crt: "3/5", footer: "To do 1/4 · habits 2/3" },
+  },
+  {
+    id: "affirmation",
+    name: "Affirmation",
+    shows: "One line for the day, chosen steadily from the Affirmations list, or from the built-in set when that list is empty.",
+    useful: "A sentence you already wrote, once a day, not a new task.",
+    preview: { caption: "Affirmation", crt: "I follow through.", footer: "Today's line" },
+  },
+  {
+    id: "weather",
+    name: "Weather",
+    shows: "City in the caption, temperature and a sun, cloud, or rain glyph in the CRT, and a one-line glance at later today. Click opens the city, beach, week, and tide instrument.",
+    useful: "When the day outside should sit next to the day you planned.",
+    preview: { caption: "San Diego", crt: "72°", footer: "Clear · warmer 76° by 3p" },
+  },
+  {
+    id: "pet",
+    name: "Screen pet",
+    shows: "A pixel creature and a clock. Asleep when habits are under 20% or the hour is late, idle through the day, pleased when habits are finished. Pleased wins over night.",
+    useful: "A quiet face for the habit sheet. It is not today's friend.",
+    preview: { caption: "3:42p", crt: "idle", footer: "Habits underway" },
+  },
+  {
+    id: "next",
+    name: "Next",
+    shows: "The next Plan event still ahead on this day, or the first open to-do when the calendar is done. Click opens that hit and can jump to Plan or To Do.",
+    useful: "When you want the next concrete thing, not the whole agenda.",
+    preview: { caption: "Next", crt: "Evening", footer: "18:00" },
+  },
+  {
+    id: "daylamp",
+    name: "Day lamp",
+    shows: "One word — Quiet, Dim, Warm, Bright, or Full — from today's habit and to-do completion. Quiet means nothing was scheduled. Full means both bars are done.",
+    useful: "A single brightness for the day, coarser than the two progress meters.",
+    preview: { caption: "Day lamp", crt: "Warm", footer: "habits 2/4 · to do 1/3" },
+  },
+  {
+    id: "daysuntil",
+    name: "Days Until",
+    shows: "A live countdown in the CRT, in units or as a decimal. The footer names what you are counting toward. Set the date, an optional time, and the format in the detail.",
+    useful: "One date you do not want to do math for.",
+    preview: { caption: "Days Until", crt: "01 day 3 hours", footer: "Until Launch" },
+  },
+  {
+    id: "moon",
+    name: "Moon",
+    shows: "An 8-bit moon for the widget day, the phase name, and how many days until the sooner of the next full moon and the next new moon. Detail adds illumination and a sky chart.",
+    useful: "When the month's light should be visible without opening a calendar.",
+    preview: { caption: "Moon", crt: "Waxing", footer: "6 days until full moon" },
+  },
+  {
+    id: "solar",
+    name: "Solar remainder",
+    shows: "Where the sun is for the pinned city: until sunrise, sunrise, to sunset, sunset, after sunset, then midnight. The CRT is the phase. The footer is the next clock.",
+    useful: "A daylight remainder that does not wait on a weather fetch.",
+    preview: { caption: "Solar", crt: "to sunset", footer: "sets 6:12p" },
+  },
+  {
+    id: "tracking",
+    name: "Tracking now",
+    shows: "The current Activity, Location, Mood, and Company, or the last ones you painted. Update stamps up to now and does not paint through midnight.",
+    useful: "When you want the grid's present tense on the strip, with a way to catch the log up.",
+    preview: { caption: "Now", crt: "Work", footer: "Desk · calm" },
+  },
+  {
+    id: "night",
+    name: "Night well",
+    shows: "Last night's hours in the CRT. The footer is when you fell asleep, when you woke, and how that sat against sunset.",
+    useful: "The morning you woke into, before you open Tracking.",
+    preview: { caption: "Night", crt: "7h 20m", footer: "asleep 11:40p · woke 7:00a" },
+  },
+  {
+    id: "harvest",
+    name: "Harvest leftover",
+    shows: "Points still available today. The footer reads how many are left of the day's possible total. Zero with nothing earned says the day has nothing left to pay.",
+    useful: "When you want the unpaid remainder, not the score you already have.",
+    preview: { caption: "Left", crt: "18", footer: "18 left of 40" },
+  },
+  {
+    id: "inbox",
+    name: "Inbox mill",
+    shows: "How many revisit-Inbox ideas are waiting, and the newest title in the footer. Click can open Inbox. Monkey brain is not in this count.",
+    useful: "The pile's size, on every tab, without opening the mill.",
+    preview: { caption: "Inbox", crt: "4", footer: "Call the dentist" },
+  },
+  {
+    id: "flow",
+    name: "Already flowing",
+    shows: "One word for finished work. Daily habits you completed, and to-dos you finished that were already on the books, count as already in motion. A to-do you created and finished the same day counts as new. Quiet means nothing was finished.",
+    useful: "When you want to see whether the day moved on its own or you pushed new work through.",
+    preview: { caption: "Flowing", crt: "Flowing", footer: "3 already · 1 new" },
+  },
+  {
+    id: "paint",
+    name: "Plan and lived",
+    shows: "One word comparing the plan to what Tracking actually holds. Plan is scheduled work, events, and planned actions. Lived is painted minutes, each minute once, not counting sleep. Open means neither side has anything.",
+    useful: "When you want the written day and the painted day in the same square.",
+    preview: { caption: "Lived", crt: "Short", footer: "plan 5h · lived 3h" },
+  },
+]
+
+export function homeWidgetBlurb(id: HomeWidgetId): HomeWidgetBlurb {
+  const found = HOME_WIDGET_CATALOG.find((entry) => entry.id === id)
+  if (!found) throw new Error(`Missing widget catalog entry: ${id}`)
+  return found
+}
 
 /** Latest award joins the strip in persist version 6. It stays visible. */
 
@@ -455,7 +609,7 @@ function isLegacyPoint(id: string): boolean {
   return (LEGACY_POINTS_WIDGET_IDS as readonly string[]).includes(id)
 }
 
-/** Persist v1 → v2 tucks Next and Day lamp. v2 → v3 folds four points wells into one. v3 → v4 tucks Solar remainder and Tracking now. v4 → v5 tucks Night well, Harvest leftover, and Inbox mill. v5 → v6 places Latest award after Points and leaves it showing. v6 → v7 places Moon after Days Until and leaves it showing. v7 → v8 leaves widgets on the selected day (`widgetsFollowClock` false). */
+/** Persist v1 → v2 tucks Next and Day lamp. v2 → v3 folds four points wells into one. v3 → v4 tucks Solar remainder and Tracking now. v4 → v5 tucks Night well, Harvest leftover, and Inbox mill. v5 → v6 places Latest award after Points and leaves it showing. v6 → v7 places Moon after Days Until and leaves it showing. v7 → v8 leaves widgets on the selected day (`widgetsFollowClock` false). v8 → v9 appends Already flowing and Plan and lived and leaves them hidden. */
 export function migrateHomeWidgetPersist(
   persisted: { order?: unknown; hidden?: unknown; widgetsFollowClock?: unknown } | undefined,
   fromVersion: number,
@@ -500,6 +654,13 @@ export function migrateHomeWidgetPersist(
   if (fromVersion < 7 && !order.includes("moon")) {
     const at = order.indexOf("daysuntil")
     order.splice(at < 0 ? order.length : at + 1, 0, "moon")
+  }
+
+  if (fromVersion < 9) {
+    for (const id of HOME_WIDGETS_TUCKED_IN_V9) {
+      if (!order.includes(id)) order.push(id)
+      if (!hidden.includes(id)) hidden.push(id)
+    }
   }
 
   return {
