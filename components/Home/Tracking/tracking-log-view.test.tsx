@@ -33,7 +33,7 @@ describe("TrackingLogView", () => {
   })
 
   it("reads the phase for the selected day from fixture marks", () => {
-    useTimeTrackingStore.setState({ enableCycleTracking: true })
+    useTimeTrackingStore.setState({ enableCycleTracking: true, cycleDetailsOpen: true })
     writeCycleDayMark("2026-06-18", { bleeding: true })
     writeCycleDayMark(KEY, { ovulation: true })
     renderLog()
@@ -73,25 +73,40 @@ describe("TrackingLogView", () => {
     expect(drink).not.toHaveTextContent("12:00 AM")
   })
 
-  it("keeps the five modes on one row, with the clock always visible", () => {
+  it("keeps the modes on one row, with the clock always visible", () => {
     renderLog()
     const modes = screen.getByRole("toolbar", { name: "What to log" })
     expect(within(modes).getAllByRole("button").map((button) => button.textContent)).toEqual([
       "Event",
-      "Switch task",
-      "Switch goal",
+      "Switch",
       "Intake",
       "Note",
+      "Thought",
     ])
     expect(modes).toHaveClass("trk-logbook-modes")
     expect(screen.queryByRole("button", { name: "Clock" })).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Food" })).not.toBeInTheDocument()
     expect(screen.getByLabelText("Time of day")).toBeInTheDocument()
+    expect(screen.getByRole("combobox", { name: "Location" })).toBeInTheDocument()
+    expect(screen.getByLabelText("Title").tagName).toBe("INPUT")
     expect(screen.queryByRole("toolbar", { name: "Intake" })).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: "Intake" }))
     expect(screen.getByRole("toolbar", { name: "Intake" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Food" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.queryByRole("combobox", { name: "Location" })).not.toBeInTheDocument()
+    expect(screen.getByLabelText("Title").tagName).toBe("INPUT")
+    fireEvent.click(screen.getByRole("button", { name: "Switch" }))
+    expect(screen.getByLabelText("From")).toBeInTheDocument()
+    expect(screen.getByLabelText("To")).toBeInTheDocument()
+    expect(screen.getByLabelText("View")).toHaveValue("activity")
+    expect(screen.queryByRole("combobox", { name: "Location" })).not.toBeInTheDocument()
+    expect(screen.queryByLabelText("Note")).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: "Note" }))
+    expect(screen.getByLabelText("Note").tagName).toBe("TEXTAREA")
+    fireEvent.click(screen.getByRole("button", { name: "Thought" }))
+    expect(screen.getByRole("textbox", { name: "Thought" }).tagName).toBe("TEXTAREA")
+    expect(screen.queryByLabelText("Note")).not.toBeInTheDocument()
+    expect(screen.queryByRole("combobox", { name: "Location" })).not.toBeInTheDocument()
     expect(screen.queryByRole("toolbar", { name: "Location" })).not.toBeInTheDocument()
     expect(screen.queryByRole("toolbar", { name: "Intake" })).not.toBeInTheDocument()
   })
@@ -170,21 +185,27 @@ describe("TrackingLogView", () => {
     })
   })
 
-  it("switches task and goal through the existing pens", () => {
+  it("switches on the chosen view, and a location switch stays off Activity", () => {
     renderLog()
-    fireEvent.click(screen.getByRole("button", { name: "Switch task" }))
-    fireEvent.change(screen.getByLabelText("Task"), { target: { value: "cleaning" } })
+    fireEvent.click(screen.getByRole("button", { name: "Switch" }))
+    fireEvent.change(screen.getByLabelText("To"), { target: { value: "cleaning" } })
     fireEvent.click(screen.getByRole("button", { name: /^Add$/ }))
-    const tasks = screen.getByRole("region", { name: "Switch task" })
-    expect(tasks).toHaveTextContent("started cleaning")
-    expect(tasks).toHaveTextContent("8:00 AM")
+    const list = screen.getByRole("region", { name: "Switch" })
+    expect(list).toHaveTextContent("cleaning")
+    expect(list).toHaveTextContent("Activity")
+    expect(list).toHaveTextContent("8:00 AM")
+    const started = useTimeTrackingStore.getState().entries.find((entry) => entry.switchTo === "cleaning")
+    expect(started).toMatchObject({ scopeId: "activity", title: "started cleaning", kind: "instant" })
 
-    fireEvent.click(screen.getByRole("button", { name: "Switch goal" }))
-    fireEvent.change(screen.getByLabelText("Goal"), { target: { value: "read" } })
+    fireEvent.change(screen.getByLabelText("View"), { target: { value: "location" } })
+    fireEvent.change(screen.getByLabelText("From"), { target: { value: "home" } })
+    fireEvent.change(screen.getByLabelText("To"), { target: { value: "work" } })
     fireEvent.click(screen.getByRole("button", { name: /^Add$/ }))
-    const goals = screen.getByRole("region", { name: "Switch goal" })
-    expect(goals).toHaveTextContent("objective read")
-    expect(goals).toHaveTextContent("8:00 AM")
+    const place = useTimeTrackingStore.getState().entries.find((entry) => entry.switchTo === "work")
+    expect(place).toMatchObject({ scopeId: "location", penId: "loc-work", switchFrom: "home", kind: "instant" })
+    expect(place?.scopeId).not.toBe("activity")
+    expect(list).toHaveTextContent("home → work")
+    expect(list).toHaveTextContent("Location")
   })
 
   it("files a note on the day's log", () => {
@@ -205,18 +226,79 @@ describe("TrackingLogView", () => {
     expect(pen?.name).toBe("Text log")
   })
 
-  it("attaches a location pen and can add one", () => {
+  it("keeps a multiline note on the text log and shows the body", () => {
     renderLog()
-    fireEvent.change(screen.getByLabelText("New location"), { target: { value: "kitchen" } })
-    fireEvent.click(screen.getByRole("button", { name: "Add location" }))
-    expect(screen.getByRole("button", { name: "kitchen" })).toHaveAttribute("aria-pressed", "true")
+    fireEvent.click(screen.getByRole("button", { name: "Note" }))
+    const note = screen.getByLabelText("Note")
+    expect(note.tagName).toBe("TEXTAREA")
+    fireEvent.change(note, { target: { value: "left room\nforgot the list" } })
+    fireEvent.click(screen.getByRole("button", { name: /^Add$/ }))
+    const events = screen.getByRole("region", { name: "Events" })
+    expect(events).toHaveTextContent("left room")
+    expect(events).toHaveTextContent("forgot the list")
+    expect(events).not.toHaveTextContent("from text pipeline")
+    expect(getDayNote(KEY)).toBe("")
+    const saved = useTimeTrackingStore.getState().entries.find((entry) => entry.title === "left room")
+    expect(saved?.kind).toBe("instant")
+    expect(saved?.notes).toContain("forgot the list")
+    expect(saved?.title).not.toContain("\n")
+  })
+
+  it("shows a textarea in Thought mode and files the row under Thought", () => {
+    renderLog()
+    fireEvent.click(screen.getByRole("button", { name: "Thought" }))
+    const field = screen.getByRole("textbox", { name: "Thought" })
+    expect(field.tagName).toBe("TEXTAREA")
+    fireEvent.change(field, { target: { value: "opening the editor to fix the clock\nso the military clock stays" } })
+    fireEvent.click(screen.getByRole("button", { name: /^Add$/ }))
+    const thought = screen.getByRole("region", { name: "Thought" })
+    expect(thought).toHaveTextContent("opening the editor to fix the clock")
+    expect(thought).toHaveTextContent("so the military clock stays")
+    expect(screen.getByRole("region", { name: "Events" })).not.toHaveTextContent("opening the editor to fix the clock")
+    const saved = useTimeTrackingStore.getState().entries.find((entry) => entry.title === "opening the editor to fix the clock")
+    expect(saved?.eventKind).toBe("thought-process")
+    expect(getDayNote(KEY)).toBe("")
+  })
+
+  it("filters location pens, creates one, and still pairs the event", () => {
+    renderLog()
+    const field = screen.getByRole("combobox", { name: "Location" })
+    expect(field).toHaveValue("")
+    expect(field).toHaveAttribute("placeholder", "Location")
+    expect(screen.queryByRole("button", { name: "Add location" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("toolbar", { name: "Location" })).not.toBeInTheDocument()
+
+    fireEvent.focus(field)
+    fireEvent.keyDown(field, { key: "ArrowDown" })
+    fireEvent.keyDown(field, { key: "Enter" })
+    expect(field).toHaveValue("Work")
+    expect(screen.queryByRole("listbox", { name: "Locations" })).not.toBeInTheDocument()
+
+    fireEvent.change(field, { target: { value: "out" } })
+    expect(screen.getByRole("option", { name: "Outside" })).toBeInTheDocument()
+    expect(screen.queryByRole("option", { name: "Home" })).not.toBeInTheDocument()
+    fireEvent.keyDown(field, { key: "Enter" })
+    expect(field).toHaveValue("Outside")
+
+    fireEvent.change(field, { target: { value: "zzz" } })
+    expect(screen.getByRole("option", { name: /Create .*zzz/ })).toBeInTheDocument()
+    fireEvent.keyDown(field, { key: "Escape" })
+    expect(screen.queryByRole("listbox", { name: "Locations" })).not.toBeInTheDocument()
+    expect(field).toHaveValue("Outside")
+
+    fireEvent.change(field, { target: { value: "kitchen" } })
+    fireEvent.keyDown(field, { key: "Enter" })
+    expect(field).toHaveValue("kitchen")
     const kitchen = useTimeTrackingStore
       .getState()
       .scopes.find((scope) => scope.id === "location")
       ?.pens.find((pen) => pen.name === "kitchen")
     expect(kitchen?.id).toBeTruthy()
 
-    fireEvent.click(screen.getByRole("button", { name: "Home" }))
+    fireEvent.focus(field)
+    fireEvent.click(screen.getByRole("option", { name: "Home" }))
+    expect(field).toHaveValue("Home")
+
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "left room" } })
     fireEvent.click(screen.getByRole("button", { name: /^Add$/ }))
     const paired = useTimeTrackingStore
@@ -224,5 +306,15 @@ describe("TrackingLogView", () => {
       .entries.find((entry) => entry.scopeId === "location" && entry.kind === "instant")
     expect(paired).toMatchObject({ penId: "loc-home", startMin: 8 * 60 })
     expect(screen.getByRole("region", { name: "Events" })).toHaveTextContent("left room")
+
+    fireEvent.change(field, { target: { value: "" } })
+    expect(field).toHaveValue("")
+    fireEvent.change(screen.getByLabelText("Title"), { target: { value: "came back" } })
+    fireEvent.click(screen.getByRole("button", { name: /^Add$/ }))
+    const places = useTimeTrackingStore
+      .getState()
+      .entries.filter((entry) => entry.scopeId === "location" && entry.kind === "instant")
+    expect(places).toHaveLength(1)
+    expect(places[0]?.penId).toBe("loc-home")
   })
 })

@@ -65,7 +65,7 @@ export function DayLogWeek({
     return weekDates.map((date) => {
       const planned = tasks.filter((t) => !t.completed && t.scheduledDate && sameCalendarDay(t.scheduledDate, date))
       const dayEvents = events.filter((e) => sameCalendarDay(e.date, date) && !confirmedEventIds.includes(e.id))
-      const tracked = trackedAgendaBlocks(trackingEntries, trackingScope, formatLocalDateKey(date))
+      const tracked = trackedAgendaBlocks(trackingEntries, trackingScope, formatLocalDateKey(date), trackingScopes)
       const logs: { task: Task; log: TimeLogEntry }[] = []
       for (const task of tasks) {
         for (const log of task.timeLogs || []) {
@@ -83,7 +83,7 @@ export function DayLogWeek({
         isToday: sameCalendarDay(date, today),
       }
     })
-  }, [weekDates, tasks, events, confirmedEventIds, trackingEntries, trackingScope, today])
+  }, [weekDates, tasks, events, confirmedEventIds, trackingEntries, trackingScope, trackingScopes, today])
 
   return (
     <div className="daylog-week" data-testid="daylog-week">

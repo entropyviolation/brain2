@@ -23,6 +23,7 @@ import { useMemo, useState } from "react"
 import { addDays, subDays } from "date-fns"
 import { Pencil, Plus } from "lucide-react"
 import { displayedPen, useTimeTrackingStore, type TimeEntry } from "@/lib/time-tracking-store"
+import { discreteLogInstants, penNameById } from "@/components/Home/Tracking/discrete-log-instants"
 import {
   assignedPenIds,
   entriesForDay,
@@ -93,6 +94,16 @@ export function TrackingActivityLog({ currentDate, setCurrentDate, lockDate = fa
     () => (scope ? entriesForDay(entries, dk, scope.id) : []),
     [entries, dk, scope],
   )
+  const penNames = useMemo(() => penNameById(scopes), [scopes])
+  const listedEntries = useMemo(() => {
+    const extra = discreteLogInstants(entries, penNames, dk).filter(
+      (entry) => !dayEntries.some((row) => row.id === entry.id),
+    )
+    if (extra.length === 0) return dayEntries
+    return [...dayEntries, ...extra].sort(
+      (a, b) => a.startMin - b.startMin || a.id.localeCompare(b.id),
+    )
+  }, [dayEntries, entries, dk, penNames])
   const gaps = useMemo(
     () =>
       scope
@@ -173,7 +184,7 @@ export function TrackingActivityLog({ currentDate, setCurrentDate, lockDate = fa
   if (!scope) return <div className="text-sm text-muted-foreground">No tracking scopes.</div>
 
   const rows: ({ kind: "entry"; entry: TimeEntry } | { kind: "gap"; startMin: number; endMin: number })[] = [
-    ...dayEntries.map((entry) => ({ kind: "entry" as const, entry })),
+    ...listedEntries.map((entry) => ({ kind: "entry" as const, entry })),
     ...gaps.map((g) => ({ kind: "gap" as const, ...g })),
   ].sort((a, b) => (a.kind === "entry" ? a.entry.startMin : a.startMin) - (b.kind === "entry" ? b.entry.startMin : b.startMin))
 
@@ -192,7 +203,7 @@ export function TrackingActivityLog({ currentDate, setCurrentDate, lockDate = fa
         onNext={() => setCurrentDate(addDays(currentDate, 1))}
         onToday={() => setCurrentDate(new Date())}
         locked={lockDate}
-        meta={`${dayEntries.length} block${dayEntries.length === 1 ? "" : "s"} · ${formatDuration(totals.tracked)} tracked · ${Math.round(totals.coverage)}% of the day`}
+        meta={`${listedEntries.length} block${listedEntries.length === 1 ? "" : "s"} · ${formatDuration(totals.tracked)} tracked · ${Math.round(totals.coverage)}% of the day`}
         trailing={
           <>
             <TrackingFind
@@ -265,23 +276,24 @@ export function TrackingActivityLog({ currentDate, setCurrentDate, lockDate = fa
             }
 
             const { entry } = row
+            const entryScope = scopes.find((candidate) => candidate.id === entry.scopeId) ?? scope
             const chain = entry.spanId ? entriesForSpan(entries, entry.spanId) : [entry]
             const first = chain[0] ?? entry
             const last = chain[chain.length - 1] ?? entry
             const crossesMidnight = chain.length > 1
             const blockMinutes = entry.spanId ? spanMinutes(entries, entry.spanId) : entry.endMin - entry.startMin
-            const pen = displayedPen(scope, entry.penId)
-            const leaf = scope.pens.find((p) => p.id === entry.penId)
+            const pen = displayedPen(entryScope, entry.penId)
+            const leaf = entryScope.pens.find((p) => p.id === entry.penId)
             const alsoPens = assignedPenIds(entry)
               .slice(1)
-              .map((id) => scope.pens.find((p) => p.id === id))
+              .map((id) => entryScope.pens.find((p) => p.id === id))
               .filter(Boolean)
             const assumed = entry.precision === "estimated"
             const variants = (entry.variantIds ?? [])
               .map((id) => leaf?.variants?.find((v) => v.id === id))
               .filter(Boolean)
             const standingTagIds = new Set(
-              assignedPenIds(entry).flatMap((id) => scope.pens.find((p) => p.id === id)?.tags ?? []),
+              assignedPenIds(entry).flatMap((id) => entryScope.pens.find((p) => p.id === id)?.tags ?? []),
             )
             const blockOnlyTagIds = (entry.tagIds ?? []).filter((id) => !standingTagIds.has(id))
             const entryTags = tags
@@ -311,7 +323,7 @@ export function TrackingActivityLog({ currentDate, setCurrentDate, lockDate = fa
                       ? (event) => {
                           event.preventDefault()
                           event.stopPropagation()
-                          openPenSettings(scope.id, pen.id)
+                          openPenSettings(entry.scopeId, pen.id)
                         }
                       : undefined
                   }

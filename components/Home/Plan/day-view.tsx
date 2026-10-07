@@ -90,6 +90,7 @@ export function DayView({
     return planDayTrackedGhosts({
       entries: trackingEntries,
       scope,
+      scopes: trackingScopes,
       dayKey,
       viewedDay: currentDate,
       now: ghostNow,

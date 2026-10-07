@@ -1,52 +1,68 @@
 /**
- * components/Home/Tracking/entry-dialog.css — Block editor drawer
+ * components/Home/Tracking/entry-dialog.css — Block editor popup
  *
- * The entry editor is a non-modal steel drawer on the right, not a centered
- * dialog. `.trk95.trk-dialog` in tracking-chrome.css still paints the fascia
- * and forces a centered translate; the extra class here wins that translate
- * so the grid stays in view beside the drawer. The wash does not take clicks,
- * so another block can open. Do not move these rules into tracking-chrome.css.
+ * Centered on the screen, same milled fascia as other `.trk95.trk-dialog`
+ * furniture. Click outside or Close dismisses; the unsaved-changes guard
+ * still owns a dirty draft.
+ *
+ * The title blur was the unskinned CRT caption in `app/win95.css`: `text-shadow:
+ * var(--hab-crt-glow)` is `0 0 3px #7dffc4`, and `--fascia-crt-ring` lays
+ * `inset 0 10px 14px` of black over a one-line well. On this long phosphor
+ * line that bloom is the letter. The face stays the CRT well; the glow is off.
+ * Do not move these rules into tracking-chrome.css — they have to beat that
+ * caption without restyling every other dialog.
  */
 
-.trk-entry-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  background: rgba(70, 74, 78, 0.16);
-  pointer-events: none;
-}
-
-.trk95.trk-dialog.trk-entry-drawer {
+.trk95.trk-dialog.trk-entry {
   position: fixed !important;
-  top: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  left: auto !important;
+  top: 50% !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
   z-index: 51;
-  width: clamp(16rem, 40vw, 28rem) !important;
-  max-width: clamp(16rem, 40vw, 28rem) !important;
-  height: 100vh !important;
-  height: 100dvh !important;
-  max-height: none !important;
+  width: min(32rem, calc(100vw - 24px)) !important;
+  max-width: min(32rem, calc(100vw - 24px)) !important;
+  height: auto !important;
+  max-height: min(85vh, 720px) !important;
   margin: 0 !important;
-  transform: none !important;
+  transform: translate(-50%, -50%) !important;
   translate: none !important;
-  border-radius: 3px 0 0 3px !important;
+  border-radius: 3px !important;
   overflow-x: hidden !important;
   overflow-y: auto !important;
   animation: none !important;
   transition: none !important;
-  box-shadow:
-    -12px 0 28px rgba(20, 22, 24, 0.16),
-    0 0 0 1px #5c6064,
-    inset 0 1px 0 rgba(255, 255, 255, 0.75),
-    inset 0 -1px 0 rgba(40, 42, 46, 0.4),
-    inset 0 0 0 2px #b0b4b8,
-    var(--t-raised);
 }
 
-.trk95.trk-dialog.trk-entry-drawer .trk-entry-drawer-head {
+.trk95.trk-dialog.trk-entry .trk-entry-head {
   padding-right: 1.75rem;
+}
+
+/* Crisp phosphor. Specificity beats the unskinned CRT caption. Analytics
+ * `.an-popup` keeps its own ink title. */
+.trk95.trk-dialog.trk-entry:not(.an-popup) .trk-entry-head h2.trk-entry-title {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 2px;
+  background: #070c0a;
+  box-shadow:
+    0 0 0 1px #3a3e42,
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  color: var(--hab-crt-green, #7dffc4) !important;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  line-height: 16px;
+  text-transform: uppercase;
+  text-shadow: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-font-smoothing: auto;
+  transform: none;
+  translate: none;
 }
 
 .trk95 .trk-mood {

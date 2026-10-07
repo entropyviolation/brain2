@@ -107,8 +107,8 @@ export function ActualDayView({
     [paintedEntries, trackingScope, dayKey],
   )
   const trackedBlocks = useMemo(
-    () => trackedAgendaBlocks(trackingEntries, trackingScope, dayKey),
-    [trackingEntries, trackingScope, dayKey],
+    () => trackedAgendaBlocks(trackingEntries, trackingScope, dayKey, trackingScopes),
+    [trackingEntries, trackingScope, dayKey, trackingScopes],
   )
 
   const plannedTasks = useMemo(

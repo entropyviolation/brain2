@@ -10,6 +10,7 @@ import {
   eventKindSlug,
   logClockLabel,
   paintLogInstant,
+  switchLogCopy,
   phaseForDate,
   resetLogCycleMarks,
   submitTrackingLog,
@@ -135,23 +136,40 @@ describe("tracking log model", () => {
     const goal = instant({ id: "g", title: "objective read" })
     expect(classifyLogInstant(task, "Switch")).toBeNull()
     expect(classifyLogInstant(goal, "Objective")).toBeNull()
-    expect(classifyLogBookRow(task, "Switch")?.list).toBe("task")
-    expect(classifyLogBookRow(goal, "Objective")?.list).toBe("goal")
+    expect(classifyLogBookRow(task, "Switch")?.list).toBe("switch")
+    expect(classifyLogBookRow(goal, "Objective")?.list).toBe("switch")
+    expect(switchLogCopy(task, "Switch")).toBe("cleaning")
+    expect(switchLogCopy(goal, "Objective")).toBe("objective read")
+    const moved = instant({
+      id: "loc",
+      scopeId: LOCATION_SCOPE_ID,
+      penId: "loc-work",
+      title: "home → work",
+      switchFrom: "home",
+      switchTo: "work",
+    })
+    expect(classifyLogInstant(moved, "Work")).toBeNull()
+    expect(classifyLogBookRow(moved, "Work")?.list).toBe("switch")
+    expect(switchLogCopy(moved, "Work")).toBe("home → work")
   })
 
-  it("files a switch task, a switch goal, and a note through the existing instant paths", () => {
+  it("files an Activity switch as st:, a location switch on Location, and a note", () => {
     resetAllStores()
     const task = submitTrackingLog({
       date: "2026-06-20",
-      title: "cleaning",
-      mode: "task",
+      title: "",
+      mode: "switch",
+      switchTo: "cleaning",
       clock: "estimated",
       minute: 8 * 60 + 15,
     })
-    const goal = submitTrackingLog({
+    const place = submitTrackingLog({
       date: "2026-06-20",
-      title: "read",
-      mode: "goal",
+      title: "",
+      mode: "switch",
+      switchFrom: "home",
+      switchTo: "work",
+      scopeId: LOCATION_SCOPE_ID,
       clock: "exact",
       minute: 9 * 60,
     })
@@ -179,13 +197,19 @@ describe("tracking log model", () => {
     })
     expect(saved(task)?.eventKind).toBeUndefined()
     expect(saved(task)?.intakeClass).toBeUndefined()
+    expect(saved(task)?.switchTo).toBe("cleaning")
+    expect(saved(task)?.switchFrom).toBeUndefined()
     expect(pen(task ?? undefined)).toBe("Switch")
-    expect(saved(goal)).toMatchObject({
-      title: "objective read",
+    expect(saved(place)).toMatchObject({
+      scopeId: LOCATION_SCOPE_ID,
+      penId: "loc-work",
+      title: "home → work",
+      switchFrom: "home",
+      switchTo: "work",
       startMin: 9 * 60,
     })
-    expect(saved(goal)?.clockCertainty).toBeUndefined()
-    expect(pen(goal ?? undefined)).toBe("Objective")
+    expect(saved(place)?.scopeId).not.toBe(ACTIVITY_SCOPE_ID)
+    expect(pen(place ?? undefined)).toBe("Work")
     expect(saved(note)).toMatchObject({
       title: "left room",
       clockCertainty: "unknown",
@@ -194,6 +218,46 @@ describe("tracking log model", () => {
     expect(pen(note ?? undefined)).toBe("Text log")
     expect(classifyLogInstant(saved(note)!, "Text log")?.list).toBe("event")
     expect(logClockLabel(saved(note)!).time).toBeUndefined()
+  })
+
+  it("keeps a multiline note body in notes and the first line as the title", () => {
+    resetAllStores()
+    const note = submitTrackingLog({
+      date: "2026-06-20",
+      title: "left room\nforgot the list",
+      mode: "note",
+      clock: "exact",
+      minute: 8 * 60,
+    })
+    const saved = useTimeTrackingStore.getState().entries.find((entry) => entry.id === note)
+    expect(saved?.title).toBe("left room")
+    expect(saved?.notes).toContain("forgot the list")
+    expect(saved?.title).not.toContain("\n")
+    const scope = useTimeTrackingStore.getState().scopes.find((row) => row.id === saved?.scopeId)
+    expect(scope?.pens.find((row) => row.id === saved?.penId)?.name).toBe("Text log")
+  })
+
+  it("stores a thought process on the text log with eventKind thought-process", () => {
+    resetAllStores()
+    const id = submitTrackingLog({
+      date: "2026-06-20",
+      title: "opening the editor to fix the clock\nso the military clock stays",
+      mode: "thought",
+      clock: "exact",
+      minute: 13 * 60,
+    })
+    const saved = useTimeTrackingStore.getState().entries.find((entry) => entry.id === id)
+    expect(saved).toMatchObject({
+      kind: "instant",
+      scopeId: ACTIVITY_SCOPE_ID,
+      title: "opening the editor to fix the clock",
+      eventKind: "thought-process",
+      startMin: 13 * 60,
+    })
+    expect(saved?.notes).toContain("so the military clock stays")
+    expect(classifyLogBookRow(saved!, "Text log")?.list).toBe("thought")
+    const scope = useTimeTrackingStore.getState().scopes.find((row) => row.id === saved?.scopeId)
+    expect(scope?.pens.find((row) => row.id === saved?.penId)?.name).toBe("Text log")
   })
 
   it("pairs an event with a Location-scope instant and creates a location pen by name", () => {

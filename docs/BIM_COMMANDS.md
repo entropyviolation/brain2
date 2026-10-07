@@ -176,9 +176,21 @@ In chat: `info` · `{prefix} info` · `{prefix} commands` · `all commands`.
 
 ### `log:`
 
-- **Format:** `log: left room` · `log: left room at 3:30` · `log: left room at 3:30 loc: home` · `log: shower 7:30 - 7:45` · `log: shower 10m` · `log: START walk` · `log: END walk 5:00`
-- **Forms / aliases:** `log:`, `log-`
-- **Does:** Tracking note on Activity, the Event row of the Tracking log. No time → point at send time. `at 3:30` is a point on the send date. `7:30 - 7:45` is a range. `10m` / `10 min` just finished (end = send time). START/END pair an activity. A line under the event is the note; the clock stays on the first line. A later block over that minute leaves the point. Times use the machine timezone. A clock with no certainty word is exact (`clockCertainty` omitted). `est` / `estimated` / `~` marks the time estimated and also sets `precision: estimated`. `unknown` keeps the named minute for placement and does not treat it as observed. Put the word after the clock, or after the place. Trailing `loc: home` reuses or creates that Location pen and paints a Location instant at the same minute (`log: left room loc: home`, `log: left room at 3:30 loc: home`). The place is the last suffix. The event phrase is stored as the title and as `eventKind`, a lowercase slug with spaces collapsed and punctuation removed, so the same phrase groups (`left room`). Labeled from text pipeline. Bare `o` is NOT a log.
+- **Format:** `log: left room` · `log: left room at 3:30` · `log: left room at 3:30 loc: home` · `log: shower 7:30 - 7:45` · `log: shower 10m` · `log: START walk` · `log: END walk 5:00` · `log: went outside 12:04` · `log went outside 7/4/26 1:00`
+- **Forms / aliases:** `log:`, `log-`, `log`
+- **Does:** Tracking note on Activity, the Event row of the Tracking log. The word log works with or without the colon. No time → point at send time. `at 3:30` is a point on the send date. `7:30 - 7:45` is a range. `10m` / `10 min` just finished (end = send time). START/END pair an activity. A line under the event is the note; the clock stays on the first line. A later block over that minute leaves the point. Times use the machine timezone. A clock with no certainty word is exact (`clockCertainty` omitted). `est` / `estimated` / `~` marks the time estimated and also sets `precision: estimated`. `unknown` keeps the named minute for placement and does not treat it as observed. Put the word after the clock, or after the place. Trailing `loc: home` reuses or creates that Location pen and paints a Location instant at the same minute (`log: left room loc: home`, `log: left room at 3:30 loc: home`). The place is the last suffix. The event phrase is stored as the title and as `eventKind`, a lowercase slug with spaces collapsed and punctuation removed, so the same phrase groups (`left room`). Saved keywords, added in Tracking settings (the gear), match the longest phrase (`log: went outside`, `log went outside 12:04`, `log: went outside 7/4/26 1:00`). The remainder is the optional date and time, not part of the title. The title is the saved phrase and `eventKind` is its slug. A bare phrase with no log prefix is not a log. On a log line, a clock with no am/pm is military time: `12:04` is noon, `18:37` is 6:37pm, and `1:00` is 1:00am, not 1pm. `1pm`, `1:00pm`, `1 PM`, `1:00 PM`, and `1:00 p.m.` are 1:00pm. `7/4/26` and `7/4/2026` are July 4, 2026 (month/day/year). Log lines, switch lines, and tracking-note clocks share that reader (`parseExpectedWhen`). Ordinary inbox text is not parsed this way. Labeled from text pipeline. Bare `o` is NOT a log.
+
+### `tp:`
+
+- **Format:** `tp: opening the editor to fix the clock` · `TP: …` · `thought process: …` · `log: tp: …`
+- **Forms / aliases:** `tp:`, `TP:`, `thought process:`, `log: tp:`
+- **Does:** A specialized note: the crystallized thought of this moment, not a general note. Why you are doing something, what you plan to do, the exact current line of thought. Colon required on the verb, so bare `tp` and bare `thought process` stay capture. Activity instant on the Text log pen, `eventKind` `thought-process`. The first line is the title; lines under it are the note. No time uses the send time. Clocks are `parseExpectedWhen`, the same reader as a log line. A bare clock is military (`1:00` is 1:00am, `12:04` is noon). `1pm`, `1:00 PM`, and `1:00 p.m.` are 13:00. `7/4/26` is July 4, 2026. `est` / `estimated` / `~` is estimated (`clockCertainty` and `precision: estimated`). `unknown` keeps the minute for placement. A general note stays `note:` / `n`.
+
+### `log keywords`
+
+- **Format:** `log keywords` · `log: keywords`
+- **Forms / aliases:** `log keywords`, `log: keywords`
+- **Does:** Numbered list of saved log keywords. Does not create a log row. Phrases are added in Tracking settings (the gear) and start empty. A saved phrase is logged with `log: went outside` or `log went outside` (colon optional). A clock or US date after the phrase is the time, not part of the title. Longest saved phrase wins. A bare phrase with no log prefix is not this log. On a log line, a clock with no am/pm is military time (`12:04` noon, `1:00` is 1:00am, `1pm` is 1:00pm). Log lines, switch lines, and tracking-note clocks share that reader (`parseExpectedWhen`). Ordinary inbox text is not parsed this way.
 
 ### `intake:`
 
@@ -186,23 +198,35 @@ In chat: `info` · `{prefix} info` · `{prefix} commands` · `all commands`.
 - **Forms / aliases:** `intake:`, `intake food:`, `intake drink:`, `intake drug:`
 - **Does:** Food, drink, medicine, or any intake — the Intake row of the Tracking log. Food is a subset of intake. Always a point — no duration. Pen: Intake. No time uses the send time. A following clock uses that time on the send date. `intake food:` / `intake drink:` / `intake drug:` set `intakeClass` and `eventKind` `intake.food` / `intake.drink` / `intake.drug`. Bare `intake:` leaves `intakeClass` unset and sets `eventKind` to `intake`. A clock with no certainty word is exact. `est` / `estimated` / `~` is estimated (`clockCertainty` and `precision: estimated`). `unknown` stores the minute for placement only. A line under the event is the note. `ate` / `drank` / `took` keep the Text log pen and set the same class. Vertical line on the Tracking grid. A later block leaves the point.
 
+### `switch:`
+
+- **Format:** `switch: location from: home to: ralphs` · `switch: activity from: working on brain2 to: working on foxtide 6:37pm` · `switch: company Elijah` · `switch: to cleaning` · `switch: from email to cleaning`
+- **Forms / aliases:** `switch:`
+- **Does:** Switch. The colon sits right after `switch`. The next word is the Tracking view when it names one you have (Activity, Location, Mood, Company, …). Omit it and the view is Activity (`switch: to cleaning`, `switch: from email to cleaning`). `from:` is what you left and `to:` is the destination; a bare name after the view is the destination (`switch: company Elijah`). Optional clock, else the send time. The clock and date are `parseExpectedWhen`, the same reader as a log line and a tracking-note clock. A bare clock is military (`18:37` is 6:37pm, `6:37` is 06:37, `1:00` is 1:00am). `6:37pm`, `6:37 PM`, `1pm`, `1:00pm`, `1 PM`, `1:00 PM`, and `1:00 p.m.` are 13:00. A bare integer is not a clock. Optional `7/4/26` or `7/4/2026` is month/day/year on the local calendar; a date with no clock keeps the send clock. `at` marks the clock and is not part of the destination. Ordinary inbox text is not parsed this way. `est` / `estimated` / `~` is estimated. `unknown` keeps the minute for placement. Activity stores the same instant as `st:`: pen Switch, title `started …` or `stopped … · started …`, plus `switchFrom` / `switchTo`. Any other view paints an instant on that scope. `to` is that scope’s pen (existing name, or created the way that view adds a pen). `from` is found or created the same way and stored; the tick’s color is the destination. There is no Goal view.
+
+### `log categories`
+
+- **Format:** `log categories` · `log: categories`
+- **Forms / aliases:** `log categories`, `log: categories`
+- **Does:** Reply only. A numbered list of the tracking views in the store: display name, the id you type after `switch:`, and `depth N` when that view’s display depth is set. Not a logged event.
+
 ### `st:`
 
-- **Format:** `st: cleaning` · `switch task: cleaning at 3:30` · `st: from: talking to elijah to: cleaning up the living room`
+- **Format:** `st: cleaning` · `switch task: cleaning at 3:30` · `st: from: email to: cleaning`
 - **Forms / aliases:** `st:`, `switch task:`
-- **Does:** Switch task. The verb is `st:` or `switch task:` (colon required). from: is what you stopped, to: is what you started. Unlabeled text is to, stored as `started …` on the Switch pen — the same instant the Tracking log composer writes. Optional clock, else send time. A clock with no certainty word is exact. `est` / `estimated` / `~` is estimated (`clockCertainty` and `precision: estimated`). `unknown` keeps that minute for placement.
+- **Does:** Alias of Switch on Activity. `st:` or `switch task:` (colon required). Same stored instant as before: pen Switch, title `started …` (or `stopped … · started …` when from: is present). `switchFrom` / `switchTo` are filled on new rows; older rows omit them. Optional clock, else send time. `est` / `estimated` / `~` is estimated. `unknown` keeps that minute for placement.
 
 ### `so:`
 
 - **Format:** `so: read` · `switch objective: read at 8:00 est` · `switch goal: read`
 - **Forms / aliases:** `so:`, `switch objective:`, `switch goal:`
-- **Does:** Switch goal (the Tracking log label). The verb is `so:`, `switch objective:`, or `switch goal:` (colon required). Same from/to rules as switch task. Unlabeled text is the goal you are on now, stored as `objective …` on the Objective pen. Optional clock, else send time. A clock with no certainty word is exact. `est` / `estimated` / `~` is estimated. `unknown` keeps that minute for placement.
+- **Does:** Alias. There is no Goal view. `so:`, `switch objective:`, or `switch goal:` (colon required) still writes the Objective pen on Activity, title `objective …` (or `left … · objective …`). `switchFrom` / `switchTo` are filled on new rows. Same clock words as `st:`.
 
 ### `transit:`
 
 - **Format:** `transit: from: home to: the store` · `transit: the store`
 - **Forms / aliases:** `transit:`
-- **Does:** Location change as a tracking note. Unlabeled text is to. Optional time, else send time. The same clock words as switch task: exact unless `est` / `estimated` / `~` or `unknown`.
+- **Does:** Location change as a tracking note. Unlabeled text is to. Optional time, else send time. The same clock words as `st:`: exact unless `est` / `estimated` / `~` or `unknown`.
 
 ### `smoked weed`
 

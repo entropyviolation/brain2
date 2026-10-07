@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from "@testing-library/react"
+import { render, screen, fireEvent, act } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
@@ -20,6 +20,16 @@ function paintMood() {
 }
 
 const reload = (id: string) => useTimeTrackingStore.getState().entries.find((e) => e.id === id)
+
+/** Radix attaches the outside-pointer listener on the next tick. */
+async function entryOverlay() {
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0))
+  })
+  const overlay = document.querySelector("div.fixed.inset-0")
+  expect(overlay).toBeTruthy()
+  return overlay as Element
+}
 
 beforeEach(() => {
   resetAllStores()
@@ -254,20 +264,28 @@ describe("EntryDialog", () => {
     expect(saved?.notes).toBeUndefined()
   })
 
-  it("docks on the right instead of centering", () => {
+  it("opens centered, with a sharp phosphor title", () => {
     render(<EntryDialog entry={paint()} onClose={() => {}} />)
     const dialog = screen.getByRole("dialog")
-    expect(dialog).toHaveClass("trk-entry-drawer")
-    expect(dialog).toHaveAttribute("data-presentation", "drawer")
+    expect(dialog).toHaveClass("trk-entry")
+    expect(dialog).not.toHaveClass("trk-entry-drawer")
+    expect(dialog).not.toHaveAttribute("data-presentation", "drawer")
     const style = getComputedStyle(dialog)
     expect(style.position).toBe("fixed")
-    expect(style.right).toBe("0px")
-    expect(style.top).toBe("0px")
-    expect(style.left).not.toBe("50%")
-    expect(style.transform).toBe("none")
-    const overlay = document.querySelector(".trk-entry-overlay")
-    expect(overlay).toBeTruthy()
-    expect(getComputedStyle(overlay as Element).pointerEvents).toBe("none")
+    expect(style.left).toBe("50%")
+    expect(style.top).toBe("50%")
+    expect(style.right).toBe("auto")
+    expect(style.transform).toBe("translate(-50%, -50%)")
+    expect(document.querySelector(".trk-entry-overlay")).toBeNull()
+
+    const title = screen.getByRole("heading", { name: /Work · 9:00 AM – 10:00 AM/ })
+    const titleStyle = getComputedStyle(title)
+    // jsdom reports `text-shadow: none` as a transparent shadow.
+    expect(titleStyle.textShadow === "none" || titleStyle.textShadow === "rgba(0, 0, 0, 0)").toBe(true)
+    expect(titleStyle.filter).toBe("none")
+    expect(titleStyle.letterSpacing).toBe("1px")
+    expect(titleStyle.lineHeight).toBe("16px")
+    expect(titleStyle.boxShadow).not.toMatch(/14px/)
   })
 
   it("replaces the open block when another entry is passed", () => {
@@ -285,20 +303,33 @@ describe("EntryDialog", () => {
     expect(screen.queryByText(/Work · 9:00 AM – 10:00 AM/)).not.toBeInTheDocument()
   })
 
-  it("asks before closing a dirty drawer and ignores outside presses", async () => {
+  it("asks before dismissing a dirty popup from outside or Close", async () => {
     const user = userEvent.setup()
     const onClose = vi.fn()
     render(<EntryDialog entry={paint()} onClose={onClose} />)
     await user.type(screen.getByLabelText("Notes"), "dream")
-    fireEvent.pointerDown(document.body)
+
+    const overlay = await entryOverlay()
+    fireEvent.pointerDown(overlay)
     expect(onClose).not.toHaveBeenCalled()
-    expect(screen.queryByRole("heading", { name: "Unsaved changes" })).not.toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Unsaved changes" })).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: "Cancel" }))
+    expect(screen.getByLabelText("Notes")).toHaveValue("dream")
 
     await user.click(screen.getByRole("button", { name: "Close" }))
     expect(screen.getByRole("heading", { name: "Unsaved changes" })).toBeInTheDocument()
     expect(onClose).not.toHaveBeenCalled()
     await user.click(screen.getByRole("button", { name: "Cancel" }))
     expect(screen.getByLabelText("Notes")).toHaveValue("dream")
+  })
+
+  it("closes a clean popup from the overlay", async () => {
+    const onClose = vi.fn()
+    render(<EntryDialog entry={paint()} onClose={onClose} />)
+    const overlay = await entryOverlay()
+    fireEvent.pointerDown(overlay)
+    expect(onClose).toHaveBeenCalled()
+    expect(screen.queryByRole("heading", { name: "Unsaved changes" })).not.toBeInTheDocument()
   })
 })
 

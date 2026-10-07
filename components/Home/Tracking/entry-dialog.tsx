@@ -8,11 +8,11 @@
  * for all of that, opened from the Time Grid,
  * the Activity Log, or the Day Log, so the views can never drift apart on what
  * a block means. It must open on the click — sleep/pen-action sync stays on
- * the views, not this dialog. It is a non-modal drawer docked to the right
- * (`entry-dialog.css`): a light wash leaves the grid visible, and a click on
- * another block replaces this one. × / Escape still run the unsaved-changes
- * guard. The Pen section shows colors already on the block; **add pen color**
- * unfolds the catalog. Double-click a pen color to open that pen's settings.
+ * the views, not this dialog. It is a centered popup (`entry-dialog.css`).
+ * Click outside, ×, or Escape runs the unsaved-changes guard, so a dirty
+ * draft is not thrown away. The Pen section shows colors already on the
+ * block; **add pen color** unfolds the catalog. Double-click a pen color to
+ * open that pen's settings.
  *
  * Changing the times re-lays the block over the day and clears whatever it lands
  * on, exactly as painting would — so the grid can never end up double-booked.
@@ -30,7 +30,7 @@ import { Input } from "@/components/ui/input"
 import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Dialog, DialogContent, DialogHeader, DialogPortal, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
 import { Scissors, Trash2 } from "lucide-react"
 import { snapshotsEqual } from "@/lib/unsaved-changes"
@@ -277,30 +277,16 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
 
   return (
     <>
-    <Dialog open modal={false} onOpenChange={guard.handleOpenChange}>
-      {/* Radix skips its overlay when the dialog is non-modal, so the wash is our own. */}
-      <DialogPortal>
-        <div className="trk-entry-overlay" aria-hidden="true" />
-      </DialogPortal>
+    <Dialog open onOpenChange={guard.handleOpenChange}>
       <DialogContent
-        className={["trk95 trk-dialog trk-entry-drawer", contentClassName].filter(Boolean).join(" ")}
+        className={["trk95 trk-dialog trk-entry", contentClassName].filter(Boolean).join(" ")}
         aria-describedby={undefined}
-        data-presentation="drawer"
         data-ui-name="Tracking entry"
         data-ui-docs="components/Home/Tracking/README.md"
         {...unsavedDismissProps(guard.requestClose)}
-        onPointerDownOutside={(event) => {
-          event.preventDefault()
-        }}
-        onInteractOutside={(event) => {
-          event.preventDefault()
-        }}
-        onFocusOutside={(event) => {
-          event.preventDefault()
-        }}
       >
-        <DialogHeader className="trk-entry-drawer-head">
-          <DialogTitle style={contentClassName?.includes("an-popup") ? undefined : { color: pen?.color }}>
+        <DialogHeader className="trk-entry-head">
+          <DialogTitle className="trk-entry-title">
             {displayName} · {minutesToLabel(origin.startMin)} – {minutesToLabel(last.endMin)}
             {crossesMidnight ? " (next day)" : ""}
           </DialogTitle>

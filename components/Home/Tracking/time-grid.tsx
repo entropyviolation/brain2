@@ -38,6 +38,7 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { addDays, subDays } from "date-fns"
 import { displayedPen, penCellStyle, useTimeTrackingStore, type TimeEntry, type TrackPen, type TrackScope } from "@/lib/time-tracking-store"
+import { overlayTicksBeside, penNameById, scopeTicksWithDiscreteLogs, tickPen } from "@/components/Home/Tracking/discrete-log-instants"
 import { strokeCellStyle } from "@/components/Home/Tracking/grid-stroke"
 import { focusTrackingPlot } from "@/components/Home/Tracking/tracking-undo"
 import { TrackingFind } from "@/components/Home/Tracking/tracking-find"
@@ -122,6 +123,7 @@ interface DayHourProps {
   sparkLo: number
   sparkHi: number
   scope: TrackScope
+  scopes: readonly TrackScope[]
   overlayScope?: TrackScope
   selectedPenId: string | null
   selectedPen: TrackPen | null
@@ -137,6 +139,7 @@ function dayHourPropsEqual(prev: DayHourProps, next: DayHourProps): boolean {
   if (prev.gridStep !== next.gridStep) return false
   if (prev.entries !== next.entries) return false
   if (prev.scope !== next.scope) return false
+  if (prev.scopes !== next.scopes) return false
   if (prev.overlayScope !== next.overlayScope) return false
   if (prev.selectedPenId !== next.selectedPenId) return false
   if (prev.selectedPen !== next.selectedPen) return false
@@ -160,6 +163,7 @@ const DayHourRow = memo(function DayHourRow({
   sparkLo,
   sparkHi,
   scope,
+  scopes,
   overlayScope,
   selectedPenId,
   selectedPen,
@@ -262,7 +266,7 @@ const DayHourRow = memo(function DayHourRow({
           <TrkBlockLabel key={label.id} name={label.name} color={label.color} left={label.left} width={label.width} />
         ))}
         {entries.overlayInstants.map((event) => {
-          const eventPen = displayedPen(overlayScope, event.penId)
+          const eventPen = tickPen(scopes, overlayScope, event.penId)
           return (
             <span
               key={`super-${event.id}`}
@@ -276,7 +280,7 @@ const DayHourRow = memo(function DayHourRow({
           )
         })}
         {entries.instants.map((event) => {
-          const eventPen = displayedPen(scope, event.penId)
+          const eventPen = tickPen(scopes, scope, event.penId)
           return (
             <button
               key={event.id}
@@ -387,9 +391,10 @@ export function TimeGrid({
     [entries, dk, scope],
   )
 
+  const penNames = useMemo(() => penNameById(scopes), [scopes])
   const dayInstants = useMemo(
-    () => (scope ? instantsForDay(entries, dk, scope.id) : []),
-    [entries, dk, scope],
+    () => (scope ? scopeTicksWithDiscreteLogs(entries, dk, scope.id, penNames) : []),
+    [entries, dk, scope, penNames],
   )
 
   const map = useMemo(
@@ -403,8 +408,8 @@ export function TimeGrid({
     [entries, dk, overlayScope],
   )
   const overlayInstants = useMemo(
-    () => (overlayScope ? instantsForDay(entries, dk, overlayScope.id) : []),
-    [entries, dk, overlayScope],
+    () => (overlayScope ? overlayTicksBeside(instantsForDay(entries, dk, overlayScope.id), dayInstants) : []),
+    [entries, dk, overlayScope, dayInstants],
   )
 
   const hourOccupancy = useMemo(() => {
@@ -822,6 +827,7 @@ export function TimeGrid({
                 sparkLo={spark?.lo ?? 0}
                 sparkHi={spark?.hi ?? 0}
                 scope={scope}
+                scopes={scopes}
                 overlayScope={overlayScope}
                 selectedPenId={selectedPenId}
                 selectedPen={selectedPen}

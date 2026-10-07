@@ -17,6 +17,7 @@ import { getDayNoteEntries } from "@/lib/day-notes-persist"
 import { isInstant } from "@/lib/time-entries"
 import { readCycleMarks } from "@/lib/cycle-marks"
 import { parseIntakePayload, parseLogPayload, parseSwitchPayload } from "./parse-tracking-note"
+import { INGEST_HELP } from "./help"
 import { parseMessage } from "./parse-message"
 import type { IncomingMessage } from "./types"
 
@@ -119,6 +120,43 @@ describe("log intake switch transit", () => {
     if (ended?.shape === "end") expect(ended.at.getHours()).toBe(5)
   })
 
+  it("reads pm, military, and a US date when a log line expects a time", () => {
+    const pm = parseLogPayload("left room at 1:00 p.m.", SENT)
+    expect(pm).toMatchObject({ shape: "point", title: "left room" })
+    if (pm?.shape === "point") {
+      expect(pm.at.getHours()).toBe(13)
+      expect(pm.at.getMinutes()).toBe(0)
+    }
+    const military = parseLogPayload("left room 1:00", SENT)
+    expect(military).toMatchObject({ shape: "point", title: "left room" })
+    if (military?.shape === "point") expect(military.at.getHours()).toBe(1)
+    const noonish = parseLogPayload("left room 12:04", SENT)
+    if (noonish?.shape === "point") {
+      expect(noonish.at.getHours()).toBe(12)
+      expect(noonish.at.getMinutes()).toBe(4)
+    }
+    const dated = parseLogPayload("left room 7/4/26", SENT)
+    expect(dated).toMatchObject({ shape: "point", title: "left room" })
+    if (dated?.shape === "point") {
+      expect(dated.at.getFullYear()).toBe(2026)
+      expect(dated.at.getMonth()).toBe(6)
+      expect(dated.at.getDate()).toBe(4)
+      expect(dated.at.getHours()).toBe(15)
+      expect(dated.at.getMinutes()).toBe(0)
+    }
+    const both = parseLogPayload("left room at 1:00 PM 7/4/2026", SENT)
+    expect(both).toMatchObject({ shape: "point", title: "left room" })
+    if (both?.shape === "point") {
+      expect(both.at.getFullYear()).toBe(2026)
+      expect(both.at.getMonth()).toBe(6)
+      expect(both.at.getDate()).toBe(4)
+      expect(both.at.getHours()).toBe(13)
+    }
+    const intake = parseIntakePayload("coffee at 1:00 p.m.", SENT)
+    expect(intake?.title).toBe("coffee")
+    expect(intake?.at.getHours()).toBe(13)
+  })
+
   it("parses intake as a point and does not invent a duration", () => {
     const dab = parseIntakePayload("1 dab dab pen", SENT)
     expect(dab).toMatchObject({ shape: "point", title: "1 dab dab pen" })
@@ -131,6 +169,9 @@ describe("log intake switch transit", () => {
     const withUnit = parseIntakePayload("tea 10m", SENT)
     expect(withUnit?.title).toBe("tea 10m")
     expect(withUnit?.shape).toBe("point")
+    const bareAt = parseIntakePayload("coffee at 1", SENT)
+    expect(bareAt?.title).toBe("coffee at 1")
+    expect(bareAt?.at.getTime()).toBe(SENT.getTime())
   })
 
   it("parses switch and transit from/to", () => {
@@ -393,6 +434,114 @@ describe("log intake switch transit", () => {
     expect(parseMessage("so: read").kind).toBe("switch-objective")
   })
 
+  it("paints switch: on the named view and keeps military clocks off pm guesses", () => {
+    expect(parseMessage("switch: location from: home to: ralphs")).toMatchObject({
+      kind: "switch",
+      payload: "location from: home to: ralphs",
+    })
+    expect(parseMessage("switch: to cleaning").kind).toBe("switch")
+    expect(parseMessage("st: cleaning").kind).toBe("switch-task")
+    expect(parseMessage("so: read").kind).toBe("switch-objective")
+    expect(parseMessage("switch task: cleaning").kind).toBe("switch-task")
+    expect(parseMessage("switch goal: read").kind).toBe("switch-objective")
+
+    const before = useTimeTrackingStore.getState().entries.length
+    const place = ingestIncoming(sim("switch: location from: home to: ralphs"), PROCESSED)
+    expect(place.status).toBe("ok")
+    const ralphs = useTimeTrackingStore.getState().entries.find((row) => row.switchTo === "ralphs")
+    expect(ralphs).toMatchObject({
+      scopeId: "location",
+      switchFrom: "home",
+      switchTo: "ralphs",
+      title: "home → ralphs",
+      kind: "instant",
+      startMin: 15 * 60,
+    })
+    expect(ralphs?.scopeId).not.toBe("activity")
+    const location = useTimeTrackingStore.getState().scopes.find((row) => row.id === "location")
+    expect(location?.pens.some((pen) => pen.name === "ralphs" && pen.id === ralphs?.penId)).toBe(true)
+    expect(location?.pens.some((pen) => pen.name === "Home")).toBe(true)
+
+    const activity = ingestIncoming(
+      sim("switch: activity from: working on brain2 to: working on foxtide 6:37pm"),
+      PROCESSED,
+    )
+    expect(activity.status).toBe("ok")
+    const foxtide = useTimeTrackingStore.getState().entries.find((row) => row.switchTo === "working on foxtide")
+    expect(foxtide).toMatchObject({
+      scopeId: "activity",
+      switchFrom: "working on brain2",
+      switchTo: "working on foxtide",
+      title: "stopped working on brain2 · started working on foxtide",
+      startMin: 18 * 60 + 37,
+      kind: "instant",
+    })
+    expect(penName(foxtide?.penId)).toBe("Switch")
+
+    const company = ingestIncoming(sim("switch: company Elijah"), PROCESSED)
+    expect(company.status).toBe("ok")
+    const elijah = useTimeTrackingStore.getState().entries.find((row) => row.switchTo === "Elijah")
+    expect(elijah).toMatchObject({
+      scopeId: "company",
+      switchTo: "Elijah",
+      title: "Elijah",
+      startMin: 15 * 60,
+      kind: "instant",
+    })
+    expect(elijah?.switchFrom).toBeUndefined()
+    expect(penName(elijah?.penId)).toBe("Elijah")
+    expect(elijah?.scopeId).not.toBe("activity")
+
+    ingestIncoming(sim("switch: to cleaning 18:37"), PROCESSED)
+    ingestIncoming(sim("switch: to cleaning 6:37"), PROCESSED)
+    ingestIncoming(sim("switch: to cleaning 6:37pm"), PROCESSED)
+    ingestIncoming(sim("switch: to cleaning 6:37 PM"), PROCESSED)
+    ingestIncoming(sim("switch: to cleaning 1pm"), PROCESSED)
+    ingestIncoming(sim("switch: to cleaning 1:00pm"), PROCESSED)
+    ingestIncoming(sim("switch: to cleaning 1 PM"), PROCESSED)
+    ingestIncoming(sim("switch: to cleaning 1:00 PM"), PROCESSED)
+    const cleaning = useTimeTrackingStore.getState().entries.filter((row) => row.switchTo === "cleaning")
+    const at = (min: number) => cleaning.filter((row) => row.startMin === min)
+    expect(at(18 * 60 + 37).length).toBe(3)
+    expect(at(6 * 60 + 37)).toHaveLength(1)
+    expect(at(13 * 60)).toHaveLength(4)
+
+    ingestIncoming(sim("switch: to cleaning at 6:37pm"), PROCESSED)
+    const atForm = useTimeTrackingStore.getState().entries.filter((row) => row.switchTo === "cleaning" && row.startMin === 18 * 60 + 37)
+    expect(atForm).toHaveLength(4)
+    expect(useTimeTrackingStore.getState().entries.some((row) => row.switchTo === "cleaning at")).toBe(false)
+    expect(cleaning.every((row) => row.scopeId === "activity")).toBe(true)
+
+    const dated = ingestIncoming(sim("switch: location to: ralphs 7/4/26"), PROCESSED)
+    expect(dated.status).toBe("ok")
+    const july = useTimeTrackingStore
+      .getState()
+      .entries.find((row) => row.switchTo === "ralphs" && row.date === "2026-07-04")
+    expect(july).toMatchObject({ scopeId: "location", startMin: 15 * 60 })
+
+    const beforeDot = useTimeTrackingStore.getState().entries.filter((row) => row.switchTo === "cleaning" && row.startMin === 13 * 60).length
+    ingestIncoming(sim("switch: to cleaning 1:00 p.m."), PROCESSED)
+    const dotted = useTimeTrackingStore.getState().entries.filter((row) => row.switchTo === "cleaning" && row.startMin === 13 * 60)
+    expect(dotted.length).toBe(beforeDot + 1)
+    const fullYear = ingestIncoming(sim("switch: location to: market 1:00 7/4/2026"), PROCESSED)
+    expect(fullYear.status).toBe("ok")
+    const market = useTimeTrackingStore.getState().entries.find((row) => row.switchTo === "market" && row.date === "2026-07-04")
+    expect(market).toMatchObject({ scopeId: "location", startMin: 60 })
+
+    const listed = ingestIncoming(sim("log categories"), PROCESSED)
+    expect(listed.status).toBe("ok")
+    expect(listed.reply).toMatch(/Activity — activity/)
+    expect(listed.reply).toMatch(/Location — location/)
+    expect(listed.reply).toMatch(/Mood — mood/)
+    expect(listed.reply).toMatch(/Company — company/)
+    const again = ingestIncoming(sim("log: categories"), PROCESSED)
+    expect(again.status).toBe("ok")
+    expect(again.reply).toMatch(/1\. Activity — activity/)
+    expect(useTimeTrackingStore.getState().entries.length).toBeGreaterThan(before)
+    expect(useTimeTrackingStore.getState().entries.some((row) => row.title === "categories")).toBe(false)
+    expect(parseMessage("log: left room").kind).toBe("event-log")
+  })
+
   it("maps ate, drank, and took onto intake class and keeps the text log pen", () => {
     ingestIncoming(sim("ate egg salad"), PROCESSED)
     ingestIncoming(sim("drank water"), PROCESSED)
@@ -425,6 +574,71 @@ describe("log intake switch transit", () => {
     expect(readCycleMarks()[date]).toEqual({ date, spotting: true })
     expect(ingestIncoming(sim("cycle: nope"), PROCESSED).status).toBe("error")
     expect(parseMessage("cycle bleeding").kind).toBe("capture")
+  })
+
+  it("parses tp: and log: tp: as thought-process and mentions it in help", () => {
+    expect(parseMessage("tp: opening the editor to fix the clock")).toMatchObject({
+      kind: "thought-process",
+      payload: "opening the editor to fix the clock",
+    })
+    expect(parseMessage("TP: opening the editor to fix the clock").kind).toBe("thought-process")
+    expect(parseMessage("thought process: opening the editor to fix the clock").kind).toBe("thought-process")
+    expect(parseMessage("log: tp: opening the editor to fix the clock")).toMatchObject({
+      kind: "thought-process",
+      payload: "opening the editor to fix the clock",
+    })
+    expect(parseMessage("tp opening the editor").kind).toBe("capture")
+    expect(parseMessage("thought process opening the editor").kind).toBe("capture")
+    expect(parseMessage("log: left room").kind).toBe("event-log")
+    expect(INGEST_HELP.toLowerCase()).toContain("thought process")
+    expect(ingestIncoming(sim("help"), PROCESSED).reply.toLowerCase()).toContain("thought process")
+    expect(ingestIncoming(sim("info"), PROCESSED).reply.toLowerCase()).toContain("thought process")
+
+    const thought = ingestIncoming(sim("tp: opening the editor to fix the clock\nso the military clock stays"), PROCESSED)
+    expect(thought.status).toBe("ok")
+    const row = useTimeTrackingStore.getState().entries.find((entry) => entry.eventKind === "thought-process")
+    expect(row).toMatchObject({
+      kind: "instant",
+      scopeId: "activity",
+      title: "opening the editor to fix the clock",
+      eventKind: "thought-process",
+      startMin: 15 * 60,
+    })
+    expect(row?.notes).toContain("so the military clock stays")
+    expect(penName(row?.penId)).toBe("Text log")
+
+    const afternoon = ingestIncoming(sim("tp: opening the editor to fix the clock 1pm"), PROCESSED)
+    expect(afternoon.status).toBe("ok")
+    const atOne = useTimeTrackingStore
+      .getState()
+      .entries.find((entry) => entry.eventKind === "thought-process" && entry.startMin === 13 * 60)
+    expect(atOne?.title).toBe("opening the editor to fix the clock")
+
+    const military = ingestIncoming(sim("log: tp: opening the editor to fix the clock 1:00"), PROCESSED)
+    expect(military.status).toBe("ok")
+    expect(
+      useTimeTrackingStore.getState().entries.some(
+        (entry) => entry.eventKind === "thought-process" && entry.title === "opening the editor to fix the clock" && entry.startMin === 60,
+      ),
+    ).toBe(true)
+
+    const dated = ingestIncoming(sim("log: tp: opening the editor to fix the clock 7/4/26 1:00 PM"), PROCESSED)
+    expect(dated.status).toBe("ok")
+    expect(
+      useTimeTrackingStore.getState().entries.some(
+        (entry) =>
+          entry.eventKind === "thought-process" &&
+          entry.date === "2026-07-04" &&
+          entry.startMin === 13 * 60,
+      ),
+    ).toBe(true)
+
+    const estimated = ingestIncoming(sim("thought process: opening the editor to fix the clock 1:00 p.m. est"), PROCESSED)
+    expect(estimated.status).toBe("ok")
+    const est = useTimeTrackingStore
+      .getState()
+      .entries.find((entry) => entry.eventKind === "thought-process" && entry.clockCertainty === "estimated")
+    expect(est).toMatchObject({ startMin: 13 * 60, precision: "estimated" })
   })
 })
 

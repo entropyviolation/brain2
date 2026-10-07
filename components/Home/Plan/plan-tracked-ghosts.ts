@@ -2,8 +2,9 @@
  * components/Home/Plan/plan-tracked-ghosts.ts
  *
  * Past-only ghost outlines for the Plan day agenda. The blocks are Day Log's
- * painted intervals (`trackedAgendaBlocks` / `entriesForDay` on the active
- * scope). Future minutes, and a day that has not started, stay empty.
+ * slabs (`trackedAgendaBlocks`): the active scope’s intervals, plus discrete
+ * log instants from any view. Future minutes, and a day that has not started,
+ * stay empty.
  */
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { MINUTES_PER_DAY, type TimeEntry } from "@/lib/time-entries"
@@ -47,10 +48,11 @@ export function clipTrackedBlocksBefore(
 export function planDayTrackedGhosts(input: {
   entries: TimeEntry[]
   scope: TrackScope | undefined
+  scopes?: readonly TrackScope[]
   dayKey: string
   viewedDay: Date
   now: Date
 }): TrackedAgendaBlock[] {
-  const blocks = trackedAgendaBlocks(input.entries, input.scope, input.dayKey)
+  const blocks = trackedAgendaBlocks(input.entries, input.scope, input.dayKey, input.scopes)
   return clipTrackedBlocksBefore(blocks, pastMinuteCutoff(input.viewedDay, input.now))
 }

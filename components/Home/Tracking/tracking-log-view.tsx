@@ -2,17 +2,24 @@
  * components/Home/Tracking/tracking-log-view.tsx — One calm day of intake, events, cycle
  *
  * Follows the Tracking day cursor. The composer is one row of modes: Event,
- * Switch task, Switch goal, Intake, Note. Food, drink, and drugs are Intake
- * presets on an Intake-pen instant. The clock stays visible. Estimated and
- * Unknown are checkboxes. Cycle marks label a phase from bleed days and
- * ovulation; spotting is recorded and does not change that label.
- * The cycle section renders only when Enable cycle tracking is on.
+ * Switch, Intake, Note, Thought. Event’s location is one field over
+ * the Location pens. Note and Thought are a few-line textarea; the other
+ * modes stay one line. Thought is the crystallized thought of this moment,
+ * stored as `eventKind` `thought-process`, and listed under Thought.
+ * Food, drink, and drugs are Intake presets on an Intake-pen instant.
+ * The clock stays visible. Custom phrases are added in Tracking settings
+ * (the gear), not on this composer. Counts sits under the composer.
+ * Estimated and Unknown are checkboxes. Cycle marks
+ * label a phase from bleed days and ovulation; spotting is recorded and does
+ * not change that label. The cycle section renders only when Enable cycle
+ * tracking is on.
  */
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import { addDays, subDays } from "date-fns"
+import { CountStatusesSection } from "@/components/Home/Tracking/count-statuses-section"
 import { CycleLogSection } from "@/components/Home/Tracking/cycle-log-section"
 import { EntryDialog } from "@/components/Home/Tracking/entry-dialog"
 import { TrackingPeriodNav } from "@/components/Home/Tracking/tracking-period-nav"
@@ -24,6 +31,7 @@ import {
   ensureLocationPen,
   logClockLabel,
   submitTrackingLog,
+  switchLogCopy,
   type IntakeClass,
   type LogBookEntry,
   type LogBookList,
@@ -32,19 +40,16 @@ import {
   type LogList,
 } from "@/components/Home/Tracking/tracking-log-model"
 import { formatLocalDateKey } from "@/lib/date-utils"
-import { useGoalsStore } from "@/lib/goals-store"
-import { isTaskItem, itemTitle } from "@/lib/item-utils"
-import { useTaskStore } from "@/lib/task-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { minutesToTimeString, timeStringToMinutes } from "@/lib/time-entries"
 import "./tracking-chrome.css"
 
 const MODES: { id: LogComposerMode; label: string }[] = [
   { id: "event", label: "Event" },
-  { id: "task", label: "Switch task" },
-  { id: "goal", label: "Switch goal" },
+  { id: "switch", label: "Switch" },
   { id: "intake", label: "Intake" },
   { id: "note", label: "Note" },
+  { id: "thought", label: "Thought" },
 ]
 
 const INTAKE_PRESETS: { id: IntakeClass; label: string; placeholder: string }[] = [
@@ -68,35 +73,230 @@ function defaultClock(day: Date): string {
 }
 
 function fieldLabel(mode: LogComposerMode): string {
-  if (mode === "task") return "Task"
-  if (mode === "goal") return "Goal"
   if (mode === "note") return "Note"
+  if (mode === "thought") return "Thought"
   return "Title"
 }
 
 function fieldPlaceholder(mode: LogComposerMode, intake: IntakeClass): string {
+  if (mode === "thought") return "opening the editor to fix the clock"
   if (mode === "event" || mode === "note") return "left room"
-  if (mode === "task") return "cleaning"
-  if (mode === "goal") return "read"
   return INTAKE_PRESETS.find((row) => row.id === intake)?.placeholder ?? "coffee"
+}
+
+/** The note path stamps a pipeline line under the words the person wrote. */
+function visibleNoteBody(notes: string | undefined): string {
+  if (!notes) return ""
+  return notes
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line && line !== "from text pipeline" && !/^from text message at\b/i.test(line))
+    .join("\n")
+}
+
+function LogCopy({ entry }: { entry: LogBookEntry }) {
+  const title = entry.title?.trim() || "Untitled"
+  const body = visibleNoteBody(entry.notes)
+  return (
+    <span className="trk-log-copy">
+      {title}
+      {body ? <span className="trk-log-body">{body}</span> : null}
+    </span>
+  )
+}
+
+type LocationPen = { id: string; name: string }
+type LocationChoice = { kind: "pen"; id: string; name: string } | { kind: "create"; name: string }
+
+function LocationField({
+  pens,
+  penId,
+  onPenId,
+}: {
+  pens: LocationPen[]
+  penId: string
+  onPenId: (id: string) => void
+}) {
+  const fieldRef = useRef<HTMLInputElement>(null)
+  const [phase, setPhase] = useState<"idle" | "browse" | "filter">("idle")
+  const [query, setQuery] = useState("")
+  const [active, setActive] = useState(0)
+  const selectedName = pens.find((pen) => pen.id === penId)?.name ?? ""
+  const value = phase === "filter" ? query : selectedName
+  const needle = phase === "filter" ? query.trim().toLowerCase() : ""
+  const matches = needle ? pens.filter((pen) => pen.name.toLowerCase().includes(needle)) : pens
+  const createName = phase === "filter" ? query.trim() : ""
+  const showCreate = Boolean(createName) && matches.length === 0
+  const options: LocationChoice[] = [
+    ...matches.map((pen) => ({ kind: "pen" as const, id: pen.id, name: pen.name })),
+    ...(showCreate ? [{ kind: "create" as const, name: createName }] : []),
+  ]
+  const open = phase !== "idle"
+  const safeActive = options.length === 0 ? 0 : Math.min(active, options.length - 1)
+
+  useEffect(() => {
+    if (!open) return
+    document.getElementById(`tracking-log-loc-opt-${safeActive}`)?.scrollIntoView?.({ block: "nearest" })
+  }, [open, safeActive])
+
+  const close = () => {
+    setQuery("")
+    setPhase("idle")
+  }
+
+  const commit = (id: string) => {
+    onPenId(id)
+    setQuery("")
+    setPhase("idle")
+  }
+
+  const choose = (option: LocationChoice) => {
+    if (option.kind === "pen") {
+      commit(option.id)
+      return
+    }
+    const id = ensureLocationPen(option.name)
+    if (id) commit(id)
+  }
+
+  const openBrowse = () => {
+    const index = pens.findIndex((pen) => pen.id === penId)
+    setActive(index < 0 ? 0 : index)
+    setPhase("browse")
+    queueMicrotask(() => fieldRef.current?.select())
+  }
+
+  return (
+    <div className="trk-logbook-location">
+      <input
+        ref={fieldRef}
+        role="combobox"
+        aria-label="Location"
+        aria-expanded={open}
+        aria-controls={open && options.length > 0 ? "tracking-log-location-list" : undefined}
+        aria-autocomplete="list"
+        aria-activedescendant={open && options.length > 0 ? `tracking-log-loc-opt-${safeActive}` : undefined}
+        placeholder="Location"
+        autoComplete="off"
+        value={value}
+        onFocus={() => {
+          if (phase !== "idle") return
+          openBrowse()
+        }}
+        onClick={() => {
+          if (phase === "idle") openBrowse()
+          else if (phase === "browse") fieldRef.current?.select()
+        }}
+        onChange={(event) => {
+          const next = event.target.value
+          setQuery(next)
+          setPhase("filter")
+          setActive(0)
+          if (!next.trim()) onPenId("")
+        }}
+        onBlur={() => {
+          if (phase === "filter") {
+            const typed = query.trim()
+            const exact = pens.find((pen) => pen.name.trim().toLowerCase() === typed.toLowerCase())
+            if (exact) onPenId(exact.id)
+            else if (!typed) onPenId("")
+          }
+          close()
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+            event.preventDefault()
+            if (phase === "idle") {
+              const index = pens.findIndex((pen) => pen.id === penId)
+              const count = pens.length
+              const start = index < 0 ? 0 : index
+              const next =
+                count === 0
+                  ? 0
+                  : event.key === "ArrowDown"
+                    ? Math.min(start + (index < 0 ? 0 : 1), count - 1)
+                    : Math.max(start - 1, 0)
+              setActive(next)
+              setPhase("browse")
+              return
+            }
+            setActive((current) => {
+              if (options.length === 0) return 0
+              return event.key === "ArrowDown"
+                ? Math.min(current + 1, options.length - 1)
+                : Math.max(current - 1, 0)
+            })
+            return
+          }
+          if (event.key === "Enter") {
+            event.preventDefault()
+            if (phase === "idle") {
+              openBrowse()
+              return
+            }
+            const option = options[safeActive]
+            if (option) choose(option)
+            else close()
+            return
+          }
+          if (event.key === "Escape") {
+            event.preventDefault()
+            event.stopPropagation()
+            close()
+          }
+        }}
+      />
+      {open && options.length > 0 ? (
+        <ul
+          id="tracking-log-location-list"
+          className="trk-logbook-location-menu"
+          role="listbox"
+          aria-label="Locations"
+          onMouseDown={(event) => event.preventDefault()}
+        >
+          {options.map((option, index) => (
+            <li key={option.kind === "pen" ? option.id : "create"}>
+              <button
+                type="button"
+                id={`tracking-log-loc-opt-${index}`}
+                role="option"
+                aria-selected={option.kind === "pen" && option.id === penId}
+                data-active={index === safeActive ? "true" : "false"}
+                onMouseEnter={() => setActive(index)}
+                onClick={() => choose(option)}
+              >
+                {option.kind === "pen" ? option.name : `Create “${option.name}”`}
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  )
 }
 
 function LogRow({
   entry,
+  copy,
+  meta,
   onOpen,
   onRemove,
 }: {
   entry: LogBookEntry
+  copy?: string
+  meta?: string
   onOpen: (id: string) => void
   onRemove: (id: string) => void
 }) {
   const clock = logClockLabel(entry)
-  const title = entry.title?.trim() || "Untitled"
+  const shown = copy ? { ...entry, title: copy } : entry
+  const scope = meta ? <span className="trk-log-scope">{meta}</span> : null
   if (clock.badge === "Unknown") {
     return (
       <div className="trk-log-row is-unknown">
         <span className="trk-logbook-badge">Unknown</span>
-        <span className="trk-log-copy">{title}</span>
+        <LogCopy entry={shown} />
+        {scope}
         <button type="button" onClick={() => onRemove(entry.id)}>
           Remove
         </button>
@@ -106,7 +306,8 @@ function LogRow({
   return (
     <button type="button" className="trk-log-row" onClick={() => onOpen(entry.id)}>
       {clock.time ? <span className="trk-log-when">{clock.time}</span> : null}
-      <span className="trk-log-copy">{title}</span>
+      <LogCopy entry={shown} />
+      {scope}
       {clock.badge ? <span className="trk-logbook-badge">{clock.badge}</span> : null}
     </button>
   )
@@ -116,12 +317,16 @@ function LogListWell({
   title,
   note,
   rows,
+  copyFor,
+  metaFor,
   onOpen,
   onRemove,
 }: {
   title: string
   note?: string
   rows: LogBookEntry[]
+  copyFor?: (entry: LogBookEntry) => string
+  metaFor?: (entry: LogBookEntry) => string
   onOpen: (id: string) => void
   onRemove: (id: string) => void
 }) {
@@ -134,7 +339,14 @@ function LogListWell({
       ) : (
         <div className="trk-log">
           {rows.map((entry) => (
-            <LogRow key={entry.id} entry={entry} onOpen={onOpen} onRemove={onRemove} />
+            <LogRow
+              key={entry.id}
+              entry={entry}
+              copy={copyFor?.(entry)}
+              meta={metaFor?.(entry)}
+              onOpen={onOpen}
+              onRemove={onRemove}
+            />
           ))}
         </div>
       )}
@@ -154,20 +366,18 @@ export function TrackingLogView({
   const entries = useTimeTrackingStore((s) => s.entries)
   const scopes = useTimeTrackingStore((s) => s.scopes)
   const removeEntry = useTimeTrackingStore((s) => s.removeEntry)
-  const tasks = useTaskStore((s) => s.tasks)
-  const folders = useTaskStore((s) => s.folders)
-  const objectives = useGoalsStore((s) => s.objectives)
-  const goals = useGoalsStore((s) => s.goals)
   const dateKey = formatLocalDateKey(currentDate)
 
   const [mode, setMode] = useState<LogComposerMode>("event")
   const [intake, setIntake] = useState<IntakeClass>("food")
   const [title, setTitle] = useState("")
+  const [switchFrom, setSwitchFrom] = useState("")
+  const [switchTo, setSwitchTo] = useState("")
+  const [switchScopeId, setSwitchScopeId] = useState("activity")
   const [estimated, setEstimated] = useState(false)
   const [unknown, setUnknown] = useState(false)
   const [timeValue, setTimeValue] = useState(() => defaultClock(currentDate))
   const [locationPenId, setLocationPenId] = useState("")
-  const [locationDraft, setLocationDraft] = useState("")
   const [openEntryId, setOpenEntryId] = useState<string | null>(null)
 
   const penName = useMemo(() => {
@@ -182,29 +392,9 @@ export function TrackingLogView({
     return scopes.find((scope) => scope.id === LOCATION_SCOPE_ID)?.pens ?? []
   }, [scopes])
 
-  const taskNames = useMemo(() => {
-    const names = new Set<string>()
-    for (const task of tasks) {
-      if (!isTaskItem(task, folders)) continue
-      const name = itemTitle(task)
-      if (name) names.add(name)
-    }
-    return [...names].sort((a, b) => a.localeCompare(b))
-  }, [tasks, folders])
-
-  const goalNames = useMemo(() => {
-    const names = new Set<string>()
-    for (const objective of objectives) {
-      if (objective.archived) continue
-      const name = objective.title.trim()
-      if (name) names.add(name)
-    }
-    for (const goal of goals) {
-      const name = goal.title.trim()
-      if (name) names.add(name)
-    }
-    return [...names].sort((a, b) => a.localeCompare(b))
-  }, [objectives, goals])
+  const switchPens = useMemo(() => {
+    return scopes.find((scope) => scope.id === switchScopeId)?.pens ?? []
+  }, [scopes, switchScopeId])
 
   const grouped = useMemo(() => {
     const groups: Record<LogBookList, LogBookEntry[]> = {
@@ -213,8 +403,8 @@ export function TrackingLogView({
       drug: [],
       intake: [],
       event: [],
-      task: [],
-      goal: [],
+      switch: [],
+      thought: [],
     }
     for (const entry of entries) {
       if (entry.date !== dateKey) continue
@@ -228,7 +418,7 @@ export function TrackingLogView({
 
   const clock: LogClockChoice = unknown ? "unknown" : estimated ? "estimated" : "exact"
   const openEntry = openEntryId ? entries.find((entry) => entry.id === openEntryId) : undefined
-  const suggestions = mode === "task" ? taskNames : mode === "goal" ? goalNames : []
+  const scopeName = (scopeId: string) => scopes.find((scope) => scope.id === scopeId)?.name ?? scopeId
 
   const stampNow = () => {
     const now = new Date()
@@ -236,27 +426,27 @@ export function TrackingLogView({
     setUnknown(false)
   }
 
-  const addLocation = () => {
-    const id = ensureLocationPen(locationDraft)
-    if (!id) return
-    setLocationPenId(id)
-    setLocationDraft("")
-  }
-
   const add = () => {
     const minute = timeStringToMinutes(timeValue)
     if (clock !== "unknown" && minute == null) return
     const id = submitTrackingLog({
       date: dateKey,
-      title,
+      title: mode === "switch" ? switchTo : title,
       mode,
       intakeClass: intake,
       clock,
       minute: minute ?? 0,
       locationPenId: mode === "event" ? locationPenId || undefined : undefined,
+      switchFrom: mode === "switch" ? switchFrom : undefined,
+      switchTo: mode === "switch" ? switchTo : undefined,
+      scopeId: mode === "switch" ? switchScopeId : undefined,
     })
     if (!id) return
     setTitle("")
+    if (mode === "switch") {
+      setSwitchFrom("")
+      setSwitchTo("")
+    }
   }
 
   return (
@@ -303,25 +493,78 @@ export function TrackingLogView({
         ) : null}
 
         <div className="trk-logbook-add trk-logbook-fields">
-          <input
-            aria-label={fieldLabel(mode)}
-            placeholder={fieldPlaceholder(mode, intake)}
-            value={title}
-            list={suggestions.length > 0 ? "tracking-log-names" : undefined}
-            onChange={(event) => setTitle(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault()
-                add()
-              }
-            }}
-          />
-          {suggestions.length > 0 ? (
-            <datalist id="tracking-log-names">
-              {suggestions.map((name) => (
-                <option key={name} value={name} />
-              ))}
-            </datalist>
+          {mode === "note" || mode === "thought" ? (
+            <textarea
+              aria-label={fieldLabel(mode)}
+              placeholder={fieldPlaceholder(mode, intake)}
+              rows={4}
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+            />
+          ) : mode === "switch" ? (
+            <>
+              <input
+                aria-label="From"
+                placeholder="email"
+                value={switchFrom}
+                list="tracking-log-switch-pens"
+                onChange={(event) => setSwitchFrom(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault()
+                    add()
+                  }
+                }}
+              />
+              <input
+                aria-label="To"
+                placeholder="cleaning"
+                value={switchTo}
+                list="tracking-log-switch-pens"
+                onChange={(event) => setSwitchTo(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault()
+                    add()
+                  }
+                }}
+              />
+              <label className="trk-logbook-view">
+                View
+                <select
+                  aria-label="View"
+                  value={switchScopeId}
+                  onChange={(event) => setSwitchScopeId(event.target.value)}
+                >
+                  {scopes.map((scope) => (
+                    <option key={scope.id} value={scope.id}>
+                      {scope.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <datalist id="tracking-log-switch-pens">
+                {switchPens.map((pen) => (
+                  <option key={pen.id} value={pen.name} />
+                ))}
+              </datalist>
+            </>
+          ) : (
+            <input
+              aria-label={fieldLabel(mode)}
+              placeholder={fieldPlaceholder(mode, intake)}
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault()
+                  add()
+                }
+              }}
+            />
+          )}
+          {mode === "event" ? (
+            <LocationField pens={locationPens} penId={locationPenId} onPenId={setLocationPenId} />
           ) : null}
           <ClockPicker aria-label="Time of day" value={timeValue} onChange={setTimeValue} />
           <button type="button" onClick={stampNow}>
@@ -353,45 +596,13 @@ export function TrackingLogView({
             />
             Unknown
           </label>
-          <button type="button" onClick={add} disabled={!title.trim()}>
+          <button type="button" onClick={add} disabled={mode === "switch" ? !switchTo.trim() : !title.trim()}>
             Add
           </button>
         </div>
-
-        {mode === "event" ? (
-          <div className="trk-logbook-sub">
-            <div className="trk-span-switch" role="toolbar" aria-label="Location">
-              {locationPens.map((pen) => (
-                <button
-                  key={pen.id}
-                  type="button"
-                  aria-pressed={locationPenId === pen.id}
-                  onClick={() => setLocationPenId((current) => (current === pen.id ? "" : pen.id))}
-                >
-                  {pen.name}
-                </button>
-              ))}
-            </div>
-            <div className="trk-logbook-add">
-              <input
-                aria-label="New location"
-                placeholder="kitchen"
-                value={locationDraft}
-                onChange={(event) => setLocationDraft(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault()
-                    addLocation()
-                  }
-                }}
-              />
-              <button type="button" onClick={addLocation} disabled={!locationDraft.trim()}>
-                Add location
-              </button>
-            </div>
-          </div>
-        ) : null}
       </section>
+
+      <CountStatusesSection />
 
       {INTAKE_LISTS.map((list) => (
         <LogListWell
@@ -421,12 +632,23 @@ export function TrackingLogView({
         onRemove={removeEntry}
       />
 
-      {grouped.task.length > 0 ? (
-        <LogListWell title="Switch task" rows={grouped.task} onOpen={setOpenEntryId} onRemove={removeEntry} />
-      ) : null}
+      <LogListWell
+        title="Thought"
+        note="The crystallized thought of this moment."
+        rows={grouped.thought}
+        onOpen={setOpenEntryId}
+        onRemove={removeEntry}
+      />
 
-      {grouped.goal.length > 0 ? (
-        <LogListWell title="Switch goal" rows={grouped.goal} onOpen={setOpenEntryId} onRemove={removeEntry} />
+      {grouped.switch.length > 0 ? (
+        <LogListWell
+          title="Switch"
+          rows={grouped.switch}
+          copyFor={(entry) => switchLogCopy(entry, penName.get(entry.penId))}
+          metaFor={(entry) => scopeName(entry.scopeId)}
+          onOpen={setOpenEntryId}
+          onRemove={removeEntry}
+        />
       ) : null}
 
       <CycleLogSection date={dateKey} />

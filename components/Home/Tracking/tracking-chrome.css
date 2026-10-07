@@ -13,7 +13,9 @@
  *
  * Sibling view keys live in `.trk-fascia` / `.hab-view-changer` (one row of
  * four when the bay has room, otherwise two and two; active = CRT black
- * glass + round power lamp — same language as Habits / Plan). Way I hybrid: Show/Sort/Expand/New pen are labeled wells on the palette
+ * glass + round power lamp — same language as Habits / Plan). A beveled gear
+ * (`.trk-settings-gear`) sits at the end of that row, outside the key grid.
+ * Way I hybrid: Show/Sort/Expand/New pen are labeled wells on the palette
  * rail; Hide / View / Tags sit beside them in `.trk-latches-well` (Look);
  * views sit in `.trk-mode-bar` under the pen tray; Time Grid adds
  * `.trk-super-bar` under that bar and above the plot;
@@ -174,11 +176,12 @@
 
 /* Four peer keys in one bay, aligned to the fascia beside the title.
    Wide bay: one row of four equal columns. Narrow bay: two and two.
-   Never three-plus-one. The habit changer is three columns; these selectors
-   outrank `body.win95-app .trk95 .hab-view-changer` so the fourth key is
-   not orphaned. Labels stay the milled 11px key (nowrap). Four-up starts
-   at 40rem — about 155px a key, past the widest label ("TRACKING LOG"
-   plus its power lamp, ~134px) — so the type is not scrunched to fit. */
+   Never three-plus-one. The gear sits outside that grid, at the end of
+   the same row, one key tall. The habit changer is three columns; these
+   selectors outrank `body.win95-app .trk95 .hab-view-changer` so the fourth
+   key is not orphaned. Labels stay the milled 11px key (nowrap). Four-up
+   starts at 40rem of the key bay — about 155px a key, past the widest label
+   ("TRACKING LOG" plus its power lamp, ~134px) — so the type is not scrunched. */
 .trk95 .trk-fascia .hab-view-changer.trk-view-keys,
 .trk95 .trk-fascia .trk-view-keys {
   flex: 1 1 auto;
@@ -211,6 +214,59 @@ body.win95-app .trk95 .trk-fascia .trk-view-keys [role="tab"] {
   body.win95-app .trk95 .trk-fascia .trk-view-keys [role="tablist"] {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
+}
+
+/* Gear is a sibling of the key bay, not a fifth grid cell. */
+.trk95 .trk-fascia .trk-view-bay {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 6px;
+  min-width: min(100%, 22rem);
+  align-self: center;
+}
+
+.trk95 .trk-fascia .trk-view-bay > .trk-view-keys {
+  flex: 1 1 auto;
+  min-width: 0;
+  align-self: center;
+}
+
+.trk95 .trk-settings-gear,
+body.win95-app .trk95 .trk-settings-gear {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  color: #1c1e20;
+  cursor: pointer;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 28%),
+    linear-gradient(165deg, #eceef0, #c0c4c8);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1px #4a4e52;
+}
+
+.trk95 .trk-settings-gear:active,
+body.win95-app .trk95 .trk-settings-gear:active {
+  box-shadow:
+    inset 0 2px 3px rgba(0, 0, 0, 0.28),
+    0 0 0 1px #4a4e52;
+}
+
+.trk95 .trk-settings-gear-icon {
+  display: block;
+  width: 14px;
+  height: 14px;
 }
 
 .trk95 .trk-panel {
@@ -1517,7 +1573,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  width: min(calc(100vw - 24px), 28rem);
+  width: min(calc(100vw - 24px), 36rem);
   max-height: min(90vh, 720px);
   overflow: hidden;
 }
@@ -1610,6 +1666,23 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   font-size: 11px;
   line-height: 1.35;
   color: #222;
+}
+
+.trk95 .trk-command-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.trk95 .trk-command-notes p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #111;
+}
+
+.trk95 .trk-command-notes code {
+  font-size: 11px;
 }
 
 .trk95 .trk-chain {
@@ -3731,12 +3804,16 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
 
 .trk95 .trk-logbook-modes {
   flex-wrap: nowrap;
+  gap: 2px;
   max-width: 100%;
   overflow-x: auto;
 }
 
 .trk95 .trk-logbook-modes > button {
   flex: 0 0 auto;
+  padding-left: 8px;
+  padding-right: 8px;
+  letter-spacing: 0.06em;
   white-space: nowrap;
 }
 
@@ -3744,9 +3821,83 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   width: 100%;
 }
 
-.trk95 .trk-logbook-fields > input:not([type="checkbox"]) {
+.trk95 .trk-logbook-fields > input:not([type="checkbox"]),
+.trk95 .trk-logbook-fields > textarea {
   flex: 1 1 8rem;
   min-width: 8rem;
+}
+
+.trk95 .trk-logbook-fields > textarea {
+  min-height: 4.75rem;
+  padding: 4px 6px;
+  line-height: 1.35;
+  resize: vertical;
+}
+
+.trk95 .trk-logbook-fields:has(textarea) {
+  align-items: flex-start;
+}
+
+.trk95 .trk-logbook-fields > .trk-logbook-location {
+  flex: 1 1 14rem;
+  min-width: 10rem;
+  max-width: 22rem;
+}
+
+.trk95 .trk-logbook-location {
+  position: relative;
+}
+
+.trk95 .trk-logbook-location > input {
+  width: 100%;
+  min-height: 22px;
+  padding: 1px 6px;
+  border: 0;
+  border-radius: 0;
+  background: #fff;
+  color: #111;
+  box-shadow: var(--t-sunken);
+  font: inherit;
+  font-size: 12px;
+}
+
+.trk95 .trk-logbook-location-menu {
+  position: absolute;
+  z-index: 6;
+  top: calc(100% + 1px);
+  left: 0;
+  min-width: 100%;
+  width: max-content;
+  max-width: 22rem;
+  max-height: 11rem;
+  margin: 0;
+  padding: 2px;
+  overflow: auto;
+  list-style: none;
+  background: #fff;
+  box-shadow: var(--t-raised);
+}
+
+.trk95 .trk-logbook-location-menu button {
+  display: block;
+  width: 100%;
+  min-height: 22px;
+  padding: 1px 6px;
+  border: 0;
+  background: transparent;
+  color: #111;
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.trk95 .trk-logbook-location-menu button[data-active="true"] {
+  background: #000080;
+  color: #fff;
 }
 
 .trk95 .trk-logbook-fields > .clock-picker {
@@ -3814,7 +3965,8 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   gap: 6px;
 }
 
-.trk95 .trk-logbook-add input:not([type="checkbox"]) {
+.trk95 .trk-logbook-add input:not([type="checkbox"]),
+.trk95 .trk-logbook-add textarea {
   min-height: 22px;
   padding: 1px 6px;
   border: 0;
@@ -3824,6 +3976,13 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   box-shadow: var(--t-sunken);
   font: inherit;
   font-size: 12px;
+}
+
+.trk95 .trk-logbook-add.trk-logbook-fields > textarea {
+  min-height: 4.75rem;
+  padding: 4px 6px;
+  line-height: 1.35;
+  resize: vertical;
 }
 
 .trk95 .trk-logbook-add > button {
@@ -3843,8 +4002,184 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   cursor: default;
 }
 
+/* Log keywords, in Tracking view settings: one nowrap row so a control is not left alone. */
+.trk95 .trk-log-keywords {
+  width: 100%;
+}
+
+.trk95 .trk-log-keywords-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.trk95 .trk-log-keywords-row > .trk-logbook-heading {
+  flex: 0 0 auto;
+}
+
+.trk95 .trk-log-keywords-row > input {
+  flex: 1 1 8rem;
+  min-width: 8rem;
+  min-height: 22px;
+  padding: 1px 6px;
+  border: 0;
+  border-radius: 0;
+  background: #fff;
+  color: #111;
+  box-shadow: var(--t-sunken);
+  font: inherit;
+  font-size: 12px;
+}
+
+.trk95 .trk-log-keywords-row > button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  min-height: 22px;
+  padding: 1px 8px;
+  border: 0;
+  background: var(--t-surface);
+  color: #111;
+  font: inherit;
+  font-size: 11px;
+  box-shadow: var(--t-raised);
+  cursor: pointer;
+}
+
+.trk95 .trk-log-keywords-row > button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* Counts: one column of rows under the composer. Not the fascia four-up. */
+.trk95 .trk-count-statuses .trk-count-create select {
+  min-height: 22px;
+  padding: 1px 4px;
+  border: 0;
+  background: #fff;
+  color: #111;
+  box-shadow: var(--t-sunken);
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.trk95 .trk-count-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trk95 .trk-count-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.trk95 .trk-count-name {
+  flex: 1 1 8rem;
+  min-width: 6rem;
+  max-width: 16rem;
+  min-height: 22px;
+  padding: 1px 6px;
+  border: 0;
+  border-radius: 0;
+  background: #fff;
+  color: #111;
+  box-shadow: var(--t-sunken);
+  font: inherit;
+  font-size: 12px;
+}
+
+.trk95 .trk-count-total {
+  min-width: 1.25rem;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.trk95 .trk-count-times {
+  display: flex;
+  flex: 1 1 8rem;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  font-size: 11px;
+}
+
+.trk95 .trk-count-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.trk95 .trk-count-row > button {
+  flex: 0 0 auto;
+  min-height: 22px;
+  padding: 1px 8px;
+  border: 0;
+  background: var(--t-surface);
+  color: #111;
+  font: inherit;
+  font-size: 11px;
+  box-shadow: var(--t-raised);
+  cursor: pointer;
+}
+
 .trk95 .trk-logbook .trk-log {
   max-height: 16rem;
+}
+
+.trk95 .trk-logbook .trk-log-row {
+  align-items: flex-start;
+}
+
+.trk95 .trk-logbook .trk-log-copy {
+  white-space: pre-wrap;
+}
+
+.trk95 .trk-logbook .trk-log-body {
+  display: block;
+  margin-top: 1px;
+  white-space: pre-wrap;
+}
+
+.trk95 .trk-log-scope {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.trk95 .trk-logbook-view {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 22px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #111;
+}
+
+.trk95 .trk-logbook-view select {
+  min-height: 22px;
+  padding: 1px 4px;
+  border: 0;
+  background: #fff;
+  color: #111;
+  box-shadow: var(--t-sunken);
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .trk95 .trk-logbook .trk-log-row.is-unknown {
@@ -3870,7 +4205,8 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   color: #111;
 }
 
-.trk95 .trk-cycle-open {
+.trk95 .trk-cycle-open,
+.trk95 .trk-cycle-privacy {
   align-self: flex-start;
   min-height: 22px;
   margin-top: 6px;
@@ -3884,13 +4220,149 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   cursor: pointer;
 }
 
+.trk95 .trk-cycle-privacy {
+  margin-top: 0;
+}
+
 .trk95.trk-dialog.trk-cycle-detail {
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  box-sizing: border-box;
   width: min(calc(100vw - 24px), 52rem);
+  min-width: 0;
   max-height: min(92vh, 880px);
-  overflow: hidden;
+  overflow-wrap: anywhere;
+  /* The body scrolls. Hidden overflow here was shaving the first letters. */
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.trk95.trk-dialog.trk-cycle-detail .trk-dialog-body {
+  box-sizing: border-box;
+  min-width: 0;
+  padding-left: 12px;
+  padding-right: 12px;
+  overflow-wrap: anywhere;
+  overflow-x: auto;
+  overflow-y: auto;
+}
+
+.trk95.trk-dialog.trk-cycle-detail .trk-dialog-head {
+  flex: 0 0 auto;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-right: 28px;
+}
+
+.trk95.trk-dialog.trk-cycle-detail .trk-dialog-head > * + * {
+  margin-top: 0;
+}
+
+.trk95.trk-dialog.trk-cycle-detail .trk-dialog-head .trk-cycle-privacy {
+  align-self: center;
+}
+
+.trk95.trk-dialog.trk-cycle-detail .trk-cycle-head-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.trk95.trk-dialog.trk-cycle-detail .trk-cycle-head-actions .trk-cycle-privacy {
+  margin-top: 0;
+}
+
+.trk95 .trk-cycle-find-toggle[aria-pressed="true"] {
+  color: var(--t-crt);
+  text-shadow: var(--t-crt-glow);
+  background: #070c0a;
+  box-shadow: var(--t-sunken);
+}
+
+.trk95.trk-dialog.trk-cycle-detail .trk-cycle-find {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  padding: 4px 6px;
+  background: var(--t-surface);
+  box-shadow: var(--t-sunken);
+}
+
+.trk95 .trk-cycle-find-label {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  font-size: 11px;
+  color: #222;
+}
+
+.trk95 .trk-cycle-find input {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  height: 22px;
+  margin: 0;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 0;
+  background: #fff;
+  color: #111;
+  font: inherit;
+  font-size: 12px;
+  box-shadow: var(--t-field);
+}
+
+.trk95 .trk-cycle-find input:focus {
+  outline: 1px solid #000080;
+  outline-offset: 0;
+}
+
+.trk95 .trk-cycle-find-count {
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: #222;
+}
+
+.trk95 .trk-cycle-find-step {
+  flex: 0 0 auto;
+  min-height: 22px;
+  padding: 1px 8px;
+  border: 0;
+  background: var(--t-surface);
+  color: #111;
+  font: inherit;
+  font-size: 11px;
+  box-shadow: var(--t-raised);
+  cursor: pointer;
+}
+
+.trk95 .trk-cycle-find-mark,
+.cycle-encyclopedia .trk-cycle-find-mark {
+  background: #f3e08a;
+  color: #1c1916;
+  padding: 0;
+  border-radius: 1px;
+  scroll-margin: 8px;
+}
+
+.trk95 .trk-cycle-find-mark[data-current="true"],
+.cycle-encyclopedia .trk-cycle-find-mark[data-current="true"] {
+  background: #e08a2a;
+  color: #1a1008;
+  box-shadow: 0 0 0 1px #8a5210;
 }
 
 .trk95 .trk-cycle-lenses {
@@ -3921,11 +4393,11 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
 
 .trk95 .trk-cycle-lens-line {
   margin: 0;
-  padding: 6px 8px;
+  padding: 8px 10px;
   background: #fff;
   box-shadow: var(--t-sunken);
-  font-size: 12px;
-  line-height: 1.4;
+  font-size: 13px;
+  line-height: 1.45;
   color: #111;
 }
 
@@ -3959,7 +4431,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   min-height: 1.55rem;
   padding: 2px 0 4px;
   border: 0;
-  background: #e4e4e4;
+  background-color: #e4e4e4;
   color: #111;
   font: inherit;
   font-size: 10px;
@@ -3968,11 +4440,36 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   cursor: pointer;
 }
 
-.trk95 .trk-cycle-day[data-phase="menstrual"] { background: #e7b7b0; }
-.trk95 .trk-cycle-day[data-phase="follicular"] { background: #c9ddc4; }
-.trk95 .trk-cycle-day[data-phase="ovulatory"] { background: #ecd59a; }
-.trk95 .trk-cycle-day[data-phase="luteal"] { background: #cfc6e4; }
-.trk95 .trk-cycle-day[data-phase="unknown"] { background: #e6e6e6; }
+.trk95 .trk-cycle-day[data-phase="menstrual"] { background-color: #e4ada4; }
+.trk95 .trk-cycle-day[data-phase="follicular"] { background-color: #bdd8b6; }
+.trk95 .trk-cycle-day[data-phase="ovulatory"] { background-color: #e8cf88; }
+.trk95 .trk-cycle-day[data-phase="luteal"] { background-color: #c8badd; }
+.trk95 .trk-cycle-day[data-phase="unknown"] { background-color: #e6e6e6; }
+
+/* Hatch sits on the phase color. Marked days stay a solid wash.
+   The global metal key image is more specific than this class pair, so the
+   day button repeats the hatch where that image would otherwise win. */
+.trk95 .trk-cycle-day[data-basis="estimated"],
+body.win95-app .trk95.trk-dialog button.trk-cycle-day[data-basis="estimated"] {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 255, 255, 0.2) 0 3px,
+    rgba(255, 255, 255, 0.62) 3px 4px
+  );
+}
+
+.trk95 .trk-cycle-day[data-today="true"]::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #111;
+  box-shadow: 0 0 0 1px #fff;
+  pointer-events: none;
+}
 
 .trk95 .trk-cycle-day[data-bleeding="true"]::after {
   content: "";
@@ -3993,60 +4490,213 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
 .trk95 .trk-cycle-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 10px;
+  gap: 8px 12px;
   margin: 0;
-  font-size: 10px;
+  font-size: 11px;
   color: #111;
 }
 
 .trk95 .trk-cycle-legend span {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
 }
 
 .trk95 .trk-cycle-legend span::before {
   content: "";
-  width: 10px;
-  height: 10px;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
   box-shadow: var(--t-sunken);
-  background: #e6e6e6;
+  background-color: #e6e6e6;
 }
 
-.trk95 .trk-cycle-legend span[data-phase="menstrual"]::before { background: #e7b7b0; }
-.trk95 .trk-cycle-legend span[data-phase="follicular"]::before { background: #c9ddc4; }
-.trk95 .trk-cycle-legend span[data-phase="ovulatory"]::before { background: #ecd59a; }
-.trk95 .trk-cycle-legend span[data-phase="luteal"]::before { background: #cfc6e4; }
+.trk95 .trk-cycle-legend span[data-phase="menstrual"]::before { background-color: #e4ada4; }
+.trk95 .trk-cycle-legend span[data-phase="follicular"]::before { background-color: #bdd8b6; }
+.trk95 .trk-cycle-legend span[data-phase="ovulatory"]::before { background-color: #e8cf88; }
+.trk95 .trk-cycle-legend span[data-phase="luteal"]::before { background-color: #c8badd; }
+.trk95 .trk-cycle-legend span[data-phase="unknown"]::before { background-color: #e6e6e6; }
 .trk95 .trk-cycle-legend span[data-bleeding="true"]::before {
-  background: #e6e6e6;
+  background-color: #e6e6e6;
   box-shadow: inset 0 -3px #7a2420, var(--t-sunken);
 }
 
-.trk95 .trk-cycle-phase {
+.trk95 .trk-cycle-legend span[data-basis="estimated"]::before {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 255, 255, 0.2) 0 3px,
+    rgba(255, 255, 255, 0.62) 3px 4px
+  );
+}
+
+.trk95 .trk-cycle-dayhead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.trk95 .trk-cycle-date {
   margin: 0;
   font-size: 15px;
   font-weight: 650;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.01em;
   color: #111;
+}
+
+.trk95 .trk-cycle-phase {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  padding: 1px 8px 2px;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #111;
+  background-color: #e6e6e6;
+  box-shadow: var(--t-sunken);
+}
+
+.trk95 .trk-cycle-phase[data-phase="menstrual"] { background-color: #e4ada4; }
+.trk95 .trk-cycle-phase[data-phase="follicular"] { background-color: #bdd8b6; }
+.trk95 .trk-cycle-phase[data-phase="ovulatory"] { background-color: #e8cf88; }
+.trk95 .trk-cycle-phase[data-phase="luteal"] { background-color: #c8badd; }
+.trk95 .trk-cycle-phase[data-phase="unknown"] { background-color: #e6e6e6; }
+
+.trk95 .trk-cycle-reading {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-sizing: border-box;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .trk95 .trk-cycle-reading p {
   margin: 0;
   font-size: 13px;
-  line-height: 1.5;
+  line-height: 1.55;
   color: #161616;
 }
 
-.trk95 .trk-cycle-reading .trk-logbook-note,
-.trk95 .trk-cycle-reading .trk-cycle-phase {
-  margin-bottom: 4px;
+.trk95 .trk-cycle-reading .trk-logbook-note {
+  font-size: 12px;
+  line-height: 1.45;
+  color: #222;
 }
 
-.trk95 .trk-cycle-reading [data-testid="cycle-lens-body"] {
+.trk95 .trk-cycle-reading [data-testid="cycle-lens-body"],
+.trk95 .trk-cycle-overview {
   display: flex;
   flex-direction: column;
-  gap: 0.85em;
-  margin-top: 8px;
+  gap: 1.05em;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: calc(68ch + 32px);
+  min-width: 0;
+  margin: 0;
+  padding-inline: 16px;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  text-indent: 0;
+  transform: none;
+  text-align: start;
+  font-family: "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.55;
+  color: #1a1e24;
+}
+
+.trk95 .trk-cycle-overview p {
+  margin: 0;
+  min-width: 0;
+  overflow: visible;
+  text-indent: 0;
+  transform: none;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.55;
+  color: #1a1e24;
+}
+
+.trk95 .trk-cycle-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  overflow: visible;
+}
+
+.trk95 .trk-cycle-section-title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #111;
+}
+
+.trk95 .trk-cycle-overview .trk-cycle-section,
+.trk95 .trk-cycle-overview .trk-cycle-section-title {
+  min-width: 0;
+  margin-inline: 0;
+  overflow: visible;
+  text-indent: 0;
+  transform: none;
+}
+
+.trk95 .trk-cycle-overview .trk-cycle-section-title {
+  padding: 0;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant: normal;
+  letter-spacing: 0.01em;
+  line-height: 1.35;
+  text-align: start;
+  text-transform: none;
+  color: #12161c;
+}
+
+.trk95 .trk-cycle-extra {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.trk95 .trk-cycle-extra-toggle {
+  align-self: flex-start;
+  min-height: 22px;
+  padding: 1px 8px;
+  border: 0;
+  background: var(--t-surface);
+  color: #111;
+  font: inherit;
+  font-size: 11px;
+  box-shadow: var(--t-raised);
+  cursor: pointer;
+}
+
+.trk95 .trk-cycle-quiet {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #3a3a3a;
+}
+
+.trk95 .trk-cycle-estimate {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #222;
 }
 
 @media (max-width: 720px) {

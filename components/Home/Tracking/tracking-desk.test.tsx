@@ -130,4 +130,38 @@ describe("TrackingDesk", () => {
     expect(screen.getByRole("toolbar", { name: "Tracking view modes" })).toBeInTheDocument()
     expect(screen.getByRole("group", { name: "Paint tools" })).toBeInTheDocument()
   })
+
+  it("opens Tracking settings from the gear beside the view keys", () => {
+    renderDesk(today)
+    const keys = document.querySelector(".trk-view-keys") as HTMLElement
+    const gear = screen.getByRole("button", { name: "Tracking settings" })
+    expect(keys.nextElementSibling).toBe(gear)
+    expect(keys.contains(gear)).toBe(false)
+    expect(within(keys).queryByRole("button", { name: "Tracking settings" })).not.toBeInTheDocument()
+
+    fireEvent.click(gear)
+    const dialog = screen.getByRole("dialog")
+    const notes = within(dialog).getByTestId("tracking-command-notes").textContent ?? ""
+    expect(notes).toMatch(/went outside/)
+    expect(notes).toMatch(/ralphs/)
+    expect(notes).toMatch(/cleaning/)
+    expect(notes).toMatch(/1:00 p\.m\./)
+    expect(notes).toMatch(/July 4, 2026/)
+    expect(notes).toMatch(/log keywords/)
+    expect(notes).toMatch(/log categories/)
+    expect(notes).toMatch(/intake food/)
+    expect(notes).toMatch(/thought process/)
+    expect(notes).toMatch(/tp:/)
+    expect(within(dialog).getByLabelText("New log keyword")).toBeInTheDocument()
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }))
+
+    const logTab = within(keys).getByRole("tab", { name: "Tracking log" })
+    fireEvent.mouseDown(logTab, { button: 0, ctrlKey: false })
+    const gearAgain = screen.getByRole("button", { name: "Tracking settings" })
+    expect(keys.nextElementSibling).toBe(gearAgain)
+    expect(screen.queryByTestId("log-keywords")).not.toBeInTheDocument()
+    expect(screen.queryByLabelText("New log keyword")).not.toBeInTheDocument()
+    fireEvent.click(gearAgain)
+    expect(within(screen.getByRole("dialog")).getByLabelText("New log keyword")).toBeInTheDocument()
+  })
 })

@@ -2,6 +2,8 @@
  * lib/ingest/times.ts — Clock / duration / sleep-range parsing for ingest phrases
  *
  * Deterministic, LLM-free. `now` is injectable for tests.
+ * `parseExpectedWhen` is the clock or US date for a log or switch line that
+ * already expects one. Sleep, track windows, and inbox text do not use it.
  */
 const MINUTES_PER_DAY = 1440
 
@@ -22,8 +24,19 @@ export function sleepMorningKey(now: Date): Date {
 const CLOCK_RE =
   /\b(?:noon|midnight|(\d{1,2})(?::(\d{2}))?\s*(am|pm)?|(\d{3,4}))\b/i
 
+/** Collapse dotted or spaced `a.m.` / `p.m.` so the clock regex can read the token. */
+function normalizeClockToken(raw: string): string {
+  return raw
+    .trim()
+    .toLowerCase()
+    .replace(/([ap])\s*\.?\s*m\s*\.?$/i, "$1m")
+    .replace(/\s*:\s*/g, ":")
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
 export function parseClockToken(raw: string, assume?: "am" | "pm"): number | null {
-  const text = raw.trim().toLowerCase()
+  const text = normalizeClockToken(raw)
   if (!text) return null
   if (text === "noon") return 12 * 60
   if (text === "midnight") return 0
@@ -62,6 +75,72 @@ export function parseClockToken(raw: string, assume?: "am" | "pm"): number | nul
 
   if (hour > 23) return null
   return hour * 60 + minute
+}
+
+/**
+ * Clock token a log line, a switch line, or a tracking-note clock may peel.
+ * A bare 1–2 digit hour is not a token, so `route 12` stays in the title.
+ * `parseExpectedWhen` reads a token this pattern already isolated.
+ * A bare clock (`1:00`, `18:37`) is military. `1pm` and `1:00 p.m.` are twelve-hour.
+ */
+export const EXPECTED_CLOCK_PATTERN =
+  String.raw`(?:\d{1,2}(?:\s*:\s*\d{2})?\s*[ap]\s*\.?\s*m\s*\.?|\d{1,2}\s*:\s*\d{2}|\d{3,4}|noon|midnight)`
+
+export interface ExpectedWhen {
+  /** Local minute of day. Null when the text named a date and no clock. */
+  minutes: number | null
+  /** Local `YYYY-MM-DD` when the text named a US month/day/year. */
+  date?: string
+}
+
+const US_DATE_TOKEN = /^(\d{1,2})\/(\d{1,2})\/(\d{4}|\d{2})$/
+
+/** Two-digit years match switch lines: 00–69 → 2000s, 70–99 → 1900s. `26` is 2026. */
+function parseLocalUsDate(raw: string): string | null {
+  const match = US_DATE_TOKEN.exec(raw.trim())
+  if (!match) return null
+  const month = Number(match[1])
+  const day = Number(match[2])
+  const yearText = match[3]!
+  const year =
+    yearText.length === 4 ? Number(yearText) : Number(yearText) >= 70 ? 1900 + Number(yearText) : 2000 + Number(yearText)
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null
+  const probe = new Date(year, month - 1, day)
+  if (probe.getFullYear() !== year || probe.getMonth() !== month - 1 || probe.getDate() !== day) return null
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`
+}
+
+function clockBesideDate(text: string): { minutes: number; date: string } | null {
+  const dateFirst = /^(\d{1,2}\/\d{1,2}\/(?:\d{4}|\d{2}))\s+(.+)$/.exec(text)
+  const clockFirst = dateFirst ? null : /^(.+?)\s+(\d{1,2}\/\d{1,2}\/(?:\d{4}|\d{2}))$/.exec(text)
+  const dateToken = dateFirst?.[1] ?? clockFirst?.[2]
+  const clockToken = (dateFirst?.[2] ?? clockFirst?.[1] ?? "").trim()
+  if (!dateToken || !clockToken) return null
+  const date = parseLocalUsDate(dateToken)
+  const minutes = parseClockToken(clockToken)
+  if (!date || minutes == null) return null
+  return { minutes, date }
+}
+
+/**
+ * Log lines, switch lines, and tracking-note clocks that already expect a clock or a
+ * date should call `parseExpectedWhen`. A bare clock is military (`1:00` is 01:00).
+ * A date alone does not invent a clock (`minutes` stays null). Ordinary sentences
+ * return null — call this only on a token a log, switch, or tracking-note line already peeled.
+ * A bare integer is not peeled, so this function is not how `route 12` becomes a clock.
+ */
+export function parseExpectedWhen(raw: string): ExpectedWhen | null {
+  const text = raw.trim().replace(/\s+/g, " ")
+  if (!text) return null
+  const dateOnly = parseLocalUsDate(text)
+  if (dateOnly) return { minutes: null, date: dateOnly }
+  if (!text.includes("/")) {
+    const minutes = parseClockToken(text)
+    return minutes == null ? null : { minutes }
+  }
+  const both = clockBesideDate(text)
+  if (!both) return null
+  return { minutes: both.minutes, date: both.date }
 }
 
 /**

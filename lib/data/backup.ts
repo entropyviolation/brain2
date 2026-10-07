@@ -71,6 +71,8 @@ import { useHomeDaysUntilStore } from "@/lib/home-days-until-store"
 import { useSkyMotionStore } from "@/lib/sky-motion-store"
 import { useSunTimesStore } from "@/lib/sun-times-store"
 import { useUiNamesStore } from "@/lib/ui-names-store"
+import { useLogKeywordsStore } from "@/lib/log-keywords-store"
+import { useCountStatusesStore } from "@/lib/count-statuses"
 import {
   exportAllAttachments,
   importAttachments,
@@ -178,6 +180,8 @@ export const BACKUP_STORES: StoreDescriptor[] = [
   { key: persistKey("sky-motion"), rehydrate: persistRehydrate(useSkyMotionStore) },
   { key: persistKey("sun-times"), rehydrate: persistRehydrate(useSunTimesStore) },
   { key: persistKey("ui-names"), rehydrate: persistRehydrate(useUiNamesStore) },
+  { key: persistKey("log-keywords"), rehydrate: persistRehydrate(useLogKeywordsStore) },
+  { key: persistKey("count-statuses"), rehydrate: persistRehydrate(useCountStatusesStore) },
 ]
 
 /** Human labels for Settings restore preview (same keys as BACKUP_STORES, plus cogs-* aliases). */
@@ -244,6 +248,10 @@ export const BACKUP_STORE_LABELS: Record<string, string> = {
   "cogs-sun-times": "Sunrise & sunset history",
   [persistKey("ui-names")]: "Names overlay",
   "cogs-ui-names": "Names overlay",
+  [persistKey("log-keywords")]: "Log keywords",
+  "cogs-log-keywords": "Log keywords",
+  [persistKey("count-statuses")]: "Counts",
+  "cogs-count-statuses": "Counts",
 }
 
 export function backupStoreLabel(key: string): string {
@@ -492,6 +500,8 @@ const LIVE_STORES: Record<string, LivePersistStore> = {
   [persistKey("sky-motion")]: asLiveStore(useSkyMotionStore),
   [persistKey("sun-times")]: asLiveStore(useSunTimesStore),
   [persistKey("ui-names")]: asLiveStore(useUiNamesStore),
+  [persistKey("log-keywords")]: asLiveStore(useLogKeywordsStore),
+  [persistKey("count-statuses")]: asLiveStore(useCountStatusesStore),
 }
 
 /**

@@ -63,6 +63,8 @@ const PREF_ONLY_VAULTS: Record<string, string> = {
   "cogs-sky-motion": "Moon chart view width and time rate; reset restores real time",
   "cogs-sun-times": "astronomy cache; a reset is allowed to empty it, and backup still keeps the history",
   "cogs-ui-names": "overlay mode string",
+  "cogs-log-keywords": "saved log phrases the person can empty; not tracker rows",
+  "cogs-count-statuses": "named tallies the person can delete; ticks ride on the definition, not tracker rows",
 }
 
 /** Live default state, shaped like the persisted blob the guard reads. */

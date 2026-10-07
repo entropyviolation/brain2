@@ -5,18 +5,25 @@
  * end). `intake:` is always a point. Switch and transit are point flags.
  * A line under the event is the note; the clock stays on the first line.
  * Whole-message trigger phrases (smoked weed, ate …) stay instants.
- * `logDiscreteNote` is the `n` / `note:` tick. Points sit on a scope and
- * open in the block editor. A later block paint does not remove them.
+ * `logDiscreteNote` is the `n` / `note:` tick. `applyThoughtProcess` is the
+ * `tp:` / `thought process:` / `log: tp:` tick: the same paint, with
+ * `eventKind` `thought-process`. Points sit on a scope and open in the block
+ * editor. A later block paint does not remove them.
  * `log: … loc: home` paints a Location-scope instant at that minute.
  */
 import { formatLocalDateKey } from "@/lib/date-utils"
+import { recordCountForKeyword } from "@/lib/count-statuses"
+import { formatLogKeywordList, isLogKeywordListQuery } from "@/lib/log-keywords"
+import { savedLogKeywordPhrases } from "@/lib/log-keywords-store"
 import { eventKindSlug, type IntakeClass, type TimeEntry } from "@/lib/time-entries"
 import { PEN_PALETTE, useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { minutesPastMidnight } from "./times"
 import {
   parseIntakePayload,
   parseLogPayload,
+  parseSwitchCommand,
   parseSwitchPayload,
+  parseThoughtPayload,
   type LogNote,
   type NoteClockCertainty,
   type SwitchNote,
@@ -33,6 +40,8 @@ const ACTIVITY = "activity"
 const LOCATION = "location"
 const DEFAULT_PEN = "Text log"
 const TEXT_LABEL = "from text pipeline"
+/** Crystallized thought of this moment. A specialized note, not a general note. */
+export const THOUGHT_PROCESS_KIND = "thought-process"
 
 interface OpenStart {
   at: string
@@ -51,7 +60,15 @@ function startKey(title: string): string {
 }
 
 export function applyDiscreteLog(payload: string, now = new Date()): ApplyResult {
-  const parsed = parseLogPayload(payload, now)
+  const phrases = savedLogKeywordPhrases()
+  if (isLogKeywordListQuery(payload)) {
+    return {
+      status: "ok",
+      kind: "event-log",
+      reply: formatLogKeywordList(phrases),
+    }
+  }
+  const parsed = parseLogPayload(payload, now, phrases)
   if (!parsed) {
     return {
       status: "error",
@@ -90,12 +107,67 @@ export function applyDiscreteLog(payload: string, now = new Date()): ApplyResult
     logMeta(parsed.title, parsed.clockCertainty),
   )
   const placeId = pairLocation(parsed, parsed.at)
+  tallySavedKeyword(parsed.title, parsed.at, phrases, parsed.clockCertainty)
   return {
     status: "ok",
     kind: "event-log",
     reply: `Logged: ${parsed.title} · ${clockLabel(parsed.at)}${placeSuffix(parsed.location)}`,
     summary: `Event → ${parsed.title}`,
     itemIds: loggedIds(id, placeId),
+  }
+}
+
+/** A saved `log` / `log:` phrase increments a bound count. No binding is a no-op. */
+function tallySavedKeyword(
+  title: string,
+  at: Date,
+  phrases: readonly string[],
+  clockCertainty?: NoteClockCertainty,
+): void {
+  const key = title.trim().toLowerCase()
+  if (!key || !phrases.some((phrase) => phrase.trim().toLowerCase() === key)) return
+  recordCountForKeyword(title, {
+    date: formatLocalDateKey(at),
+    startMin: minutesPastMidnight(at),
+    clockCertainty: clockCertainty ?? "exact",
+  })
+}
+
+/**
+ * `tp:` / `thought process:` / `log: tp:`. Same Activity instant as a note,
+ * pen Text log, with `eventKind` `thought-process`. The first line is the
+ * title. Later lines are `notes`. A general note stays `note:`.
+ */
+export function applyThoughtProcess(payload: string, now = new Date()): ApplyResult {
+  const parsed = parseThoughtPayload(payload, now)
+  if (!parsed?.title.trim()) {
+    return {
+      status: "error",
+      kind: "thought-process",
+      reply: "Thought process what? Example: tp: opening the editor to fix the clock",
+    }
+  }
+  const id = paintInstant(
+    parsed.title,
+    parsed.at,
+    "thought-process",
+    DEFAULT_PEN,
+    parsed.note,
+    ACTIVITY,
+    {
+      eventKind: THOUGHT_PROCESS_KIND,
+      ...(parsed.clockCertainty ? { clockCertainty: parsed.clockCertainty } : {}),
+    },
+  )
+  if (!id) {
+    return { status: "error", kind: "thought-process", reply: "Could not save that thought process." }
+  }
+  return {
+    status: "ok",
+    kind: "thought-process",
+    reply: `Thought: ${parsed.title} · ${clockLabel(parsed.at)}`,
+    summary: `Thought → ${parsed.title}`,
+    itemIds: [id],
   }
 }
 
@@ -124,6 +196,83 @@ export function applyIntake(payload: string, now = new Date(), intakeClass?: Int
 
 export function applySwitchTask(payload: string, now = new Date()): ApplyResult {
   return applySwitchFlag(payload, now, "switch-task", "Switch", "task")
+}
+
+/**
+ * `switch:` — colon, then an optional scope word, then from/to.
+ * Activity (omitted, or activity) is the `st:` instant: Switch pen, `started …`.
+ * Any other real scope paints on that scope. `to` is the pen (found or created
+ * with `addPen`). `from` is found or created the same way and stored; the
+ * tick’s color is the destination. There is no Goal scope — `so:` stays
+ * `applySwitchObjective`.
+ */
+export function applyScopeSwitch(payload: string, scopeLabel?: string, now = new Date()): ApplyResult {
+  const parsed = parseSwitchCommand(payload, now)
+  if (!parsed?.to.trim()) {
+    return { status: "error", kind: "switch", reply: "Switch to what? Example: switch: to cleaning" }
+  }
+  const scope = findTrackingScope(scopeLabel?.trim() || parsed.scope)
+  if (!scope) {
+    const name = (scopeLabel?.trim() || parsed.scope || "that view").trim()
+    return { status: "error", kind: "switch", reply: `No tracking view named "${name}".` }
+  }
+  if (scope.id === ACTIVITY) {
+    const rebuilt = parsed.from ? `from: ${parsed.from} to: ${parsed.to}` : parsed.to
+    const result = applySwitchTask(rebuilt, parsed.at)
+    if (result.status !== "ok") return { ...result, kind: "switch" }
+    const id = result.itemIds?.[0]
+    if (id && parsed.clockCertainty) {
+      useTimeTrackingStore.getState().updateEntry(id, { clockCertainty: parsed.clockCertainty })
+    }
+    return {
+      ...result,
+      kind: "switch",
+      reply: `${scopeReply(scope.name, parsed)} · ${clockLabel(parsed.at)}`,
+      summary: `Switch ${scope.name} → ${parsed.to}`,
+    }
+  }
+  if (parsed.from) ensurePen(parsed.from, scope.id)
+  const title = parsed.from ? `${parsed.from} → ${parsed.to}` : parsed.to
+  const id = paintInstant(title, parsed.at, "switch", parsed.to, parsed.note, scope.id, {
+    eventKind: "switch",
+    ...(parsed.clockCertainty ? { clockCertainty: parsed.clockCertainty } : {}),
+  })
+  if (id) stampSwitchEnds(id, parsed)
+  return {
+    status: "ok",
+    kind: "switch",
+    reply: `${scopeReply(scope.name, parsed)} · ${clockLabel(parsed.at)}`,
+    summary: `Switch ${scope.name} → ${parsed.to}`,
+    itemIds: id ? [id] : undefined,
+  }
+}
+
+/** Numbered tracking views for `log categories`. Not a logged event. */
+export function applyLogCategories(): ApplyResult {
+  const lines = useTimeTrackingStore.getState().scopes.map((scope, index) => {
+    const depth = typeof scope.displayDepth === "number" ? ` — depth ${scope.displayDepth}` : ""
+    return `${index + 1}. ${scope.name} — ${scope.id}${depth}`
+  })
+  return {
+    status: "ok",
+    kind: "log-categories",
+    reply: lines.length ? `Tracking views\n${lines.join("\n")}` : "No tracking views.",
+    summary: "Tracking views",
+  }
+}
+
+/** A store scope by id or name. Empty and "activity" are the Activity view. */
+export function findTrackingScope(label: string | undefined): { id: string; name: string } | null {
+  const scopes = useTimeTrackingStore.getState().scopes
+  const raw = (label ?? "").trim().toLowerCase()
+  if (!raw || raw === "activity") {
+    const activity =
+      scopes.find((row) => row.id === ACTIVITY) ?? scopes.find((row) => row.name.trim().toLowerCase() === "activity")
+    if (activity) return { id: activity.id, name: activity.name }
+    return { id: ACTIVITY, name: "Activity" }
+  }
+  const hit = scopes.find((row) => row.id.toLowerCase() === raw || row.name.trim().toLowerCase() === raw)
+  return hit ? { id: hit.id, name: hit.name } : null
 }
 
 export function applySwitchObjective(payload: string, now = new Date()): ApplyResult {
@@ -155,6 +304,7 @@ function applySwitchFlag(
     ACTIVITY,
     parsed.clockCertainty ? { clockCertainty: parsed.clockCertainty } : undefined,
   )
+  if (id && noun !== "transit") stampSwitchEnds(id, parsed)
   return {
     status: "ok",
     kind,
@@ -162,6 +312,20 @@ function applySwitchFlag(
     summary: `${flagReply(noun)} → ${title}`,
     itemIds: id ? [id] : undefined,
   }
+}
+
+function scopeReply(scopeName: string, parsed: SwitchNote): string {
+  const arrow = parsed.from ? `${parsed.from} → ${parsed.to}` : parsed.to
+  return `Switched ${scopeName}: ${arrow}`
+}
+
+function stampSwitchEnds(id: string, parsed: SwitchNote): void {
+  const from = parsed.from?.trim()
+  const to = parsed.to?.trim()
+  const patch: Partial<Omit<TimeEntry, "id">> = {}
+  if (from) patch.switchFrom = from
+  if (to) patch.switchTo = to
+  if (from || to) useTimeTrackingStore.getState().updateEntry(id, patch)
 }
 
 function flagReply(noun: "task" | "objective" | "transit"): string {
@@ -463,6 +627,7 @@ function paintEntry(
   meta?: EntryMeta,
 ): string | undefined {
   const precision = meta?.clockCertainty === "estimated" ? "estimated" : undefined
+  const before = new Set(useTimeTrackingStore.getState().entries.map((entry) => entry.id))
   useTimeTrackingStore.getState().paintMinutes(date, scopeId, startMin, endMin, penId, undefined, undefined, precision, {
     kind,
     title,
@@ -477,6 +642,7 @@ function paintEntry(
     .getState()
     .entries.filter(
       (e) =>
+        !before.has(e.id) &&
         e.date === date &&
         e.scopeId === scopeId &&
         e.penId === penId &&

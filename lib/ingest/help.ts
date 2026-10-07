@@ -30,10 +30,19 @@ Events (whole message, or log: / intake:)
 • log: left room  ·  log: left room at 3:30 loc: home  ·  log: shower 10m  ·  log: START walk
   A line under the event is the note. The clock stays on the first line.
   est / estimated / ~ is estimated. unknown keeps the minute. loc: names a Location pen.
+• log: went outside  ·  log went outside 12:04  ·  log: went outside 7/4/26 1:00
+  Saved phrases are added in Tracking settings (the gear). Longest phrase wins. log keywords lists them and does not log a row.
+  A bare phrase with no log prefix is not a log.
+  On a log line, no am/pm means military time: 12:04 is noon, 18:37 is 6:37pm, 1:00 is 1:00am.
+  1pm, 1:00pm, 1 PM, 1:00 PM, and 1:00 p.m. are 1:00pm. 7/4/26 is July 4, 2026.
+  Log lines, switch lines, and tracking-note clocks share that reader. Ordinary inbox text is not parsed this way.
 • intake: coffee  — point only, no duration. intake food: / drink: / drug: sets the class
 • cycle: bleeding  ·  cycle: spotting  ·  cycle: ovulation  ·  cycle: bleeding off
+• switch: location from: home to: ralphs  ·  switch: to cleaning  ·  switch: company Elijah
+• log categories  — numbered tracking views (a reply, not an event)
 • st: / switch task: cleaning  ·  so: / switch objective: / switch goal: read  ·  transit: the store
 • note: left room  ·  n left room  ·  jot:  ·  memo:  — Text log instant. day: stays the day jot
+• tp: opening the editor to fix the clock  ·  thought process:  ·  log: tp:  — a specialized note: the crystallized thought of this moment, not a general note. Colon required. Same clocks as a log line.
 Activity spans
 • currently deep work  ·  stopped deep work  ·  switched to cooking
 Plan / capture
@@ -94,19 +103,42 @@ Presets:
 • drank water
 • ate {item}     →  ate egg salad
 • took {item}    →  took 2 adderall
-• log: left room  |  log- left room  |  log: left room at 3:30 est  |  log: left room unknown
+• log: left room  |  log- left room  |  log went outside  |  log: left room at 3:30 est  |  log: left room unknown
   |  log: left room at 3:30 loc: home
-  Whatever follows is the event title. A line under it is the note.
+  Whatever follows is the event title, unless it is a saved keyword. A line under it is the note.
   The phrase is also an eventKind slug so repeats group. A clock with no word is exact.
   est / estimated / ~ is estimated. unknown keeps the minute for placement.
   loc: at the end reuses or creates that Location pen and paints a Location instant.
+  Saved keywords (added in Tracking settings, the gear; empty until you add them): log: went outside, log went outside 12:04,
+  log: went outside 7/4/26 1:00. The word log works with or without the colon. Longest phrase wins.
+  The remainder is the optional date and time, not part of the title. log keywords and log: keywords
+  list the phrases and do not create a row. A bare phrase with no log prefix is not a log.
+  On a log line, a clock with no am/pm is military time: 12:04 is noon, 18:37 is 6:37pm, and 1:00 is
+  1:00am, not 1pm. 1pm, 1:00pm, 1 PM, 1:00 PM, and 1:00 p.m. are 1:00pm. 7/4/26 and 7/4/2026 are
+  July 4, 2026 (month/day/year). at 3:30 still marks that minute. Log lines, switch lines, and
+  tracking-note clocks share that reader. Ordinary inbox text is not parsed this way.
   Bare “o” is NOT a log unless you send log: o or set “o” as a trigger.
 • intake: coffee  |  intake food: egg salad  |  intake drink: coffee at 8:15 est  |  intake drug: tablet
   Bare intake: leaves the class unset and sets eventKind intake. Classed lines set intake.food / intake.drink / intake.drug. Pen stays Intake.
-• st: cleaning  |  switch task: cleaning at 3:30 est  — title “started …”, pen Switch
-• so: read  |  switch objective: read  |  switch goal: read at 8:00 unknown  — title “objective …”, pen Objective
-  Same clock words as log. A clock with no word is exact.
+• switch: location from: home to: ralphs
+  |  switch: activity from: working on brain2 to: working on foxtide 6:37pm
+  |  switch: company Elijah  |  switch: to cleaning  |  switch: from email to cleaning
+  Colon right after switch. The next word is the view; omit it and the view is Activity.
+  from: / to: are labeled. A bare name after the view is the destination.
+  The clock and date are the same reader as a log line. A bare integer is not a clock.
+  at marks the clock and is not part of the destination.
+  Activity stores started … on the Switch pen. Another view paints that scope.
+• log categories  |  log: categories  — numbered views from the store. Not an event.
+• st: cleaning  |  switch task: cleaning at 3:30 est  — alias of Switch on Activity
+• so: read  |  switch objective: read  |  switch goal: read at 8:00 unknown  — Objective pen, title “objective …”
+  est / estimated / ~ / unknown still mark the clock. A tracking-note clock with no am/pm is military.
 • note: left room at 8:15  |  n left room at 8:15 est  — Text log instant. day: stays the day jot.
+• tp: opening the editor to fix the clock  |  TP:  |  thought process:  |  log: tp:
+  A specialized note: the crystallized thought of this moment, not a general note.
+  Colon required on the verb, so bare tp and bare thought process stay capture.
+  Activity instant, pen Text log, eventKind thought-process. First line is the title; lines under it are the note.
+  Clocks are the same reader as a log line (parseExpectedWhen): bare clock is military, 1pm / 1:00 PM / 1:00 p.m. are 13:00, 7/4/26 is July 4, 2026.
+  est / estimated / ~ is estimated. unknown keeps the minute for placement.
 • cycle: bleeding  |  cycle: spotting  |  cycle: ovulation  |  cycle: bleeding off
   That flag on the send date. Spotting does not change phase.
 
@@ -138,6 +170,7 @@ CAPTURE / LISTS
 TRACK / LOCATION / NOTES
 • n stuck in aisle 4 — a point at send time; also on the block covering that minute
 • note: left room at 8:15 est — same clock words as log (exact unless est / estimated / ~ / unknown)
+• tp: opening the editor to fix the clock  ·  thought process:  ·  log: tp: — specialized note, the crystallized thought of this moment, not a general note. Colon required. eventKind thought-process.
 • day: tired — day jot, not a tick, and not a clock
 • at: gym  ·  tt work  ·  track: exercise 30m
 • start: write paper  ·  stop (working-now / pause)

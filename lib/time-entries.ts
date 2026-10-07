@@ -227,6 +227,16 @@ export interface TimeEntry {
    */
   clockCertainty?: TrackingClockCertainty
   /**
+   * Optional ends of one Switch. Omitted on older rows — no migration.
+   * Activity `st:` / `switch:` still uses the Switch pen and a `started …`
+   * title; these strings are what the Tracking log prints (`from → to`).
+   * A non-Activity view stores the destination as that scope’s pen.
+   * `so:` still uses the Objective pen; there is no Goal scope.
+   */
+  switchFrom?: string
+  /** Destination. Required on a new Switch row. Omitted on older rows. */
+  switchTo?: string
+  /**
    * Mood scope only. The three-part reading on this stretch. Omitted when
    * empty. A blank mark is not stored as zero. The derived sentence is not
    * copied into `notes`. Different readings do not merge; a split keeps the
@@ -396,7 +406,9 @@ function sameDetails(a: TimeEntry, b: TimeEntry): boolean {
     }) &&
     (a.eventKind ?? undefined) === (b.eventKind ?? undefined) &&
     (a.intakeClass ?? undefined) === (b.intakeClass ?? undefined) &&
-    (a.clockCertainty ?? undefined) === (b.clockCertainty ?? undefined)
+    (a.clockCertainty ?? undefined) === (b.clockCertainty ?? undefined) &&
+    (a.switchFrom ?? undefined) === (b.switchFrom ?? undefined) &&
+    (a.switchTo ?? undefined) === (b.switchTo ?? undefined)
   )
 }
 

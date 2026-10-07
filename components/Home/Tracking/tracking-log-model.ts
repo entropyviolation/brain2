@@ -6,9 +6,12 @@
  * (`eventKind` `intake`, or the Intake pen with no class) sits in a short
  * Intake group under those three. Other log-like instants — Text log pen
  * and/or a phrase `eventKind`, and no intake class — are the event list.
- * Switch-task and switch-objective instants use the Switch and Objective pens
- * (`st:` / `so:`). A note is a Text log instant (`note:`), so it stays on the
- * event list. A chosen location is a Location-scope instant at the same minute.
+ * Switch rows are Activity instants on the Switch pen (`st:` / `switch:`) or
+ * the Objective pen (`so:`), plus an instant on whatever other scope the
+ * person picked. A note is a Text log instant (`note:`), so it stays on the
+ * event list. A thought process is that same Text log instant with
+ * `eventKind` `thought-process`, and the Tracking log shelves it under Thought.
+ * A chosen location is a Location-scope instant at the same minute.
  *
  * Cycle marks and phase come from `lib/cycle-marks.ts` and `lib/cycle-phase.ts`.
  * `writeCycleDayMark` calls `setCycleFlag`. Spotting is stored and does not
@@ -18,7 +21,7 @@ import { runAsAction } from "@/lib/action-history"
 import { setCycleFlag, useCycleMarksStore, type CycleDayMark, type CycleFlag } from "@/lib/cycle-marks"
 import type { CyclePhase } from "@/lib/cycle-phase"
 import { applyNote } from "@/lib/ingest/apply-note"
-import { applySwitchObjective, applySwitchTask, ensureLocationPen } from "@/lib/ingest/apply-discrete-event"
+import { applyScopeSwitch, applyThoughtProcess, ensureLocationPen, THOUGHT_PROCESS_KIND } from "@/lib/ingest/apply-discrete-event"
 import { stablePenColor, useTimeTrackingStore, type TimeEntry } from "@/lib/time-tracking-store"
 import {
   entryClockCertainty,
@@ -32,6 +35,7 @@ export { phaseForDate } from "@/lib/cycle-phase"
 export { readCycleMarks } from "@/lib/cycle-marks"
 export { eventKindSlug }
 export { ensureLocationPen }
+export { THOUGHT_PROCESS_KIND }
 
 export const ACTIVITY_SCOPE_ID = "activity"
 export const LOCATION_SCOPE_ID = "location"
@@ -48,12 +52,12 @@ export type { CycleDayMark, CyclePhase, IntakeClass }
 export type ClockCertainty = TrackingClockCertainty
 export type LogList = IntakeClass | "intake" | "event"
 /** Composer modes. Intake still stores food / drink / drug; it is not a fifth list. */
-export type LogComposerMode = "event" | "task" | "goal" | "intake" | "note"
+export type LogComposerMode = "event" | "switch" | "intake" | "note" | "thought"
 export type LogAddTarget = IntakeClass | "event"
 export type LogClockChoice = ClockCertainty
 export type LogTimeEntry = TimeEntry
-/** Event list plus the switch pens. Notes stay on `event` because they use Text log. */
-export type LogBookList = LogList | "task" | "goal"
+/** Event list plus Switch and Thought. Notes stay on `event` because they use Text log. */
+export type LogBookList = LogList | "switch" | "thought"
 
 export type ClassifiedLogEntry = LogTimeEntry & {
   list: LogList
@@ -125,21 +129,58 @@ export function classifyLogInstant(entry: LogTimeEntry, penName?: string): Class
 
 /**
  * Tracking-log shelves. Food, drink, drug, bare intake, and events stay on
- * `classifyLogInstant` (analytics uses that). Switch pens are extra shelves.
+ * `classifyLogInstant` (analytics uses that). Switch is one extra shelf:
+ * the Switch pen, the Objective pen, and a `switchTo` instant on another scope.
  * A Text log note is already an event there, so it is not listed twice.
+ * A thought process (`eventKind` `thought-process`) is its own shelf.
  */
 export function classifyLogBookRow(entry: LogTimeEntry, penName?: string): LogBookEntry | null {
+  if (
+    entry.kind === "instant" &&
+    entry.scopeId === ACTIVITY_SCOPE_ID &&
+    entry.eventKind?.trim() === THOUGHT_PROCESS_KIND
+  ) {
+    return { ...entry, list: "thought", kindKey: THOUGHT_PROCESS_KIND }
+  }
   const listed = classifyLogInstant(entry, penName)
   if (listed) return listed
-  if (entry.kind !== "instant" || entry.scopeId !== ACTIVITY_SCOPE_ID) return null
+  if (entry.kind !== "instant") return null
   const pen = (penName ?? "").trim().toLowerCase()
-  if (pen === SWITCH_PEN_NAME.toLowerCase()) {
-    return { ...entry, list: "task", kindKey: entry.eventKind?.trim() || "switch-task" }
+  if (entry.scopeId === ACTIVITY_SCOPE_ID && pen === SWITCH_PEN_NAME.toLowerCase()) {
+    return { ...entry, list: "switch", kindKey: entry.eventKind?.trim() || "switch-task" }
   }
-  if (pen === OBJECTIVE_PEN_NAME.toLowerCase()) {
-    return { ...entry, list: "goal", kindKey: entry.eventKind?.trim() || "switch-objective" }
+  if (entry.scopeId === ACTIVITY_SCOPE_ID && pen === OBJECTIVE_PEN_NAME.toLowerCase()) {
+    return { ...entry, list: "switch", kindKey: entry.eventKind?.trim() || "switch-objective" }
+  }
+  if (entry.switchTo?.trim()) {
+    return { ...entry, list: "switch", kindKey: entry.eventKind?.trim() || "switch" }
   }
   return null
+}
+
+/** Log line for a switch: `from → to`, or the destination. Objective rows keep that word. */
+export function switchLogCopy(entry: Pick<LogTimeEntry, "title" | "switchFrom" | "switchTo">, penName?: string): string {
+  const from = entry.switchFrom?.trim()
+  const to = entry.switchTo?.trim()
+  const objective = (penName ?? "").trim().toLowerCase() === OBJECTIVE_PEN_NAME.toLowerCase()
+  if (objective) {
+    if (from && to) return `${from} → objective ${to}`
+    if (to) return `objective ${to}`
+    const title = entry.title?.trim()
+    if (title) return title
+  }
+  if (from && to) return `${from} → ${to}`
+  if (to) return to
+  const title = entry.title?.trim() ?? ""
+  const stopped = /^stopped (.+) · started (.+)$/.exec(title)
+  if (stopped) return `${stopped[1]} → ${stopped[2]}`
+  const started = /^started (.+)$/.exec(title)
+  if (started) return started[1]!
+  const left = /^left (.+) · objective (.+)$/.exec(title)
+  if (left) return `${left[1]} → objective ${left[2]}`
+  const objectiveTitle = /^objective (.+)$/.exec(title)
+  if (objectiveTitle) return `objective ${objectiveTitle[1]}`
+  return title || "Untitled"
 }
 
 export function compareLogRows(a: LogTimeEntry, b: LogTimeEntry): number {
@@ -262,9 +303,11 @@ function paintPairedLocation(date: string, minute: number, penId: string, clock:
 
 /**
  * One composer submit. Event and intake stay on `paintLogInstant`.
- * Task and goal call `applySwitchTask` / `applySwitchObjective`.
- * Note calls `applyNote` (Text log instant, not the day jot, unless the
- * phrase is already a `day:` note).
+ * Switch calls `applyScopeSwitch`: Activity is the `st:` instant; any other
+ * view is an instant on that scope’s pens. Note calls `applyNote` (Text log
+ * instant, not the day jot, unless the phrase is already a `day:` note).
+ * Thought calls `applyThoughtProcess` on that same paint path, with
+ * `eventKind` `thought-process`.
  */
 export function submitTrackingLog(input: {
   date: string
@@ -274,9 +317,16 @@ export function submitTrackingLog(input: {
   clock: LogClockChoice
   minute: number
   locationPenId?: string
+  switchFrom?: string
+  switchTo?: string
+  /** Tracking scope id. Omitted on Switch means Activity. */
+  scopeId?: string
 }): string | null {
   const title = input.title.trim()
-  if (!title) return null
+  const switchTo = (input.switchTo ?? "").trim()
+  if (input.mode === "switch") {
+    if (!switchTo && !title) return null
+  } else if (!title) return null
   if (input.clock !== "unknown" && !Number.isFinite(input.minute)) return null
   return runAsAction("tracking log", () => {
     if (input.mode === "event" || input.mode === "intake") {
@@ -294,11 +344,14 @@ export function submitTrackingLog(input: {
     }
     const at = dateAtMinute(input.date, input.clock === "unknown" ? UNKNOWN_CLOCK_MINUTE : input.minute)
     const before = new Set(useTimeTrackingStore.getState().entries.map((entry) => entry.id))
-    if (input.mode === "task") {
-      const result = applySwitchTask(title, at)
+    if (input.mode === "switch") {
+      const to = switchTo || title
+      const from = input.switchFrom?.trim()
+      const payload = from ? `from: ${from} to: ${to}` : to
+      const result = applyScopeSwitch(payload, input.scopeId || ACTIVITY_SCOPE_ID, at)
       if (result.status !== "ok") return null
-    } else if (input.mode === "goal") {
-      const result = applySwitchObjective(title, at)
+    } else if (input.mode === "thought") {
+      const result = applyThoughtProcess(title, at)
       if (result.status !== "ok") return null
     } else {
       const result = applyNote(title, at)

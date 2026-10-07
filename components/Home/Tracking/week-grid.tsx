@@ -37,13 +37,13 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import { displayedPen, penCellStyle, useTimeTrackingStore, type TimeEntry, type TrackPen, type TrackScope } from "@/lib/time-tracking-store"
+import { penNameById, scopeTicksWithDiscreteLogs, tickPen } from "@/components/Home/Tracking/discrete-log-instants"
 import { strokeCellStyle } from "@/components/Home/Tracking/grid-stroke"
 import {
   MINUTES_PER_DAY,
   WEEK_STEPS,
   dominantEntry,
   formatDuration,
-  instantsForDay,
   minuteMap,
   minutesToLabel,
   timeStringToMinutes,
@@ -123,6 +123,7 @@ interface WeekMinuteProps {
   strokeHi: number
   strokeDay: string
   scope: TrackScope
+  scopes: readonly TrackScope[]
   overlayScope?: TrackScope
   selectedPenId: string | null
   selectedPen: TrackPen | null
@@ -141,6 +142,7 @@ function weekMinutePropsEqual(prev: WeekMinuteProps, next: WeekMinuteProps): boo
   if (prev.dateKeys !== next.dateKeys) return false
   if (prev.slot !== next.slot) return false
   if (prev.scope !== next.scope) return false
+  if (prev.scopes !== next.scopes) return false
   if (prev.overlayScope !== next.overlayScope) return false
   if (prev.selectedPenId !== next.selectedPenId) return false
   if (prev.selectedPen !== next.selectedPen) return false
@@ -170,6 +172,7 @@ const WeekMinuteRow = memo(function WeekMinuteRow({
   strokeHi,
   strokeDay,
   scope,
+  scopes,
   overlayScope,
   selectedPenId,
   selectedPen,
@@ -241,7 +244,7 @@ const WeekMinuteRow = memo(function WeekMinuteRow({
             {(instants[key] ?? [])
               .filter((event) => event.startMin >= minute && event.startMin < minute + weekStep)
               .map((event) => {
-                const eventPen = displayedPen(scope, event.penId)
+                const eventPen = tickPen(scopes, scope, event.penId)
                 return (
                   <button
                     key={event.id}
@@ -356,11 +359,14 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false }: Wee
     [entries, dateKeys, scope],
   )
 
+  const penNames = useMemo(() => penNameById(scopes), [scopes])
   const instants = useMemo(() => {
     const byDay: Record<string, TimeEntry[]> = {}
-    for (const key of dateKeys) byDay[key] = scope ? instantsForDay(entries, key, scope.id) : []
+    for (const key of dateKeys) {
+      byDay[key] = scope ? scopeTicksWithDiscreteLogs(entries, key, scope.id, penNames) : []
+    }
     return byDay
-  }, [dateKeys, entries, scope])
+  }, [dateKeys, entries, scope, penNames])
 
   const maps = useMemo(() => {
     const byDay: Record<string, (TimeEntry | null)[]> = {}
@@ -741,6 +747,7 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false }: Wee
                 strokeHi={dragHi}
                 strokeDay={drag?.day ?? ""}
                 scope={scope}
+                scopes={scopes}
                 overlayScope={overlayScope}
                 selectedPenId={selectedPenId}
                 selectedPen={selectedPen}

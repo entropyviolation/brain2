@@ -45,7 +45,9 @@
  * Persisted to localStorage under `brain2-timegrid-store`. Persist **v15**
  * turns on `enableCycleTracking` only when an older blob omitted the key.
  * A new store is created at v15 with the flag false and does not take that
- * branch. Persist **v14**
+ * branch. `cycleDetailsOpen` is the privacy latch on that same blob (default
+ * closed). A missing key stays closed, so it does not take a persist version.
+ * Persist **v14**
  * copies each `parentId` into `parentIds` and keeps `parentId` as the display
  * parent. Persist **v13**
  * links each detail to the pen that counts as its parent (`PenVariant.penId`),
@@ -316,6 +318,14 @@ interface TimeTrackingState {
    */
   enableCycleTracking: boolean
   setEnableCycleTracking: (value: boolean) => void
+  /**
+   * Privacy open for cycle details. False (concealed) on a new store and when
+   * an older blob omitted the key. Independent of `enableCycleTracking`: the
+   * feature can stay on while the phase line, marks, and reading stay hidden.
+   * No persist bump — omitted means closed. Does not read `brain2-cycle-marks`.
+   */
+  cycleDetailsOpen: boolean
+  setCycleDetailsOpen: (value: boolean) => void
 
   /** Paint `[startMin, endMin)`. A null pen erases. `endMin` earlier than `startMin` continues onto the next day. */
   paintMinutes: (
@@ -982,6 +992,7 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
       infiniteScroll: false,
       confirmedEventIds: [],
       enableCycleTracking: false,
+      cycleDetailsOpen: false,
       gridStep: DEFAULT_GRID_STEP,
       gridSpan: "day",
       weekStep: DEFAULT_WEEK_STEP,
@@ -1586,6 +1597,7 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
 
       setInfiniteScroll: (value) => set({ infiniteScroll: value }),
       setEnableCycleTracking: (value) => set({ enableCycleTracking: value }),
+      setCycleDetailsOpen: (value) => set({ cycleDetailsOpen: value }),
       confirmEventId: (id) =>
         set((state) =>
           state.confirmedEventIds.includes(id) ? state : { confirmedEventIds: [...state.confirmedEventIds, id] },

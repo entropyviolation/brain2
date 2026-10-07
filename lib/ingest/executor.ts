@@ -26,6 +26,9 @@ import {
   applyDiscreteLog,
   applyDiscreteTriggerLine,
   applyIntake,
+  applyLogCategories,
+  applyThoughtProcess,
+  applyScopeSwitch,
   applySwitchObjective,
   applySwitchTask,
   applyTransit,
@@ -89,9 +92,12 @@ const PRIORITY_EXPLICIT = new Set<IngestIntent["kind"]>([
   "stopped-activity",
   "switched-to",
   "event-log",
+  "thought-process",
+  "log-categories",
   "habit-trigger",
   "intake",
   "cycle",
+  "switch",
   "switch-task",
   "switch-objective",
   "transit",
@@ -336,6 +342,10 @@ function dispatch(intent: IngestIntent, now: Date): ApplyResult {
       return applyIntake(intent.payload, now, intakeClassFromMessage(intent.raw))
     case "cycle":
       return applyCycle(intent.payload, now)
+    case "log-categories":
+      return applyLogCategories()
+    case "switch":
+      return applyScopeSwitch(intent.payload, intent.scope, now)
     case "switch-task":
       return applySwitchTask(intent.payload, now)
     case "switch-objective":
@@ -368,6 +378,8 @@ function dispatch(intent: IngestIntent, now: Date): ApplyResult {
       return applySwitchedTo(intent.payload, now)
     case "event-log":
       return applyDiscreteLog(intent.payload, now)
+    case "thought-process":
+      return applyThoughtProcess(intent.payload, now)
     case "info":
       return applyInfo()
     case "read":

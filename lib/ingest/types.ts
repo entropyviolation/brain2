@@ -59,9 +59,12 @@ export type IngestIntentKind =
   | "inventory"
   | "pair"
   | "event-log"
+  | "thought-process"
+  | "log-categories"
   | "event-trigger"
   | "intake"
   | "cycle"
+  | "switch"
   | "switch-task"
   | "switch-objective"
   | "transit"
@@ -77,6 +80,11 @@ export interface IngestIntent {
   payload: string
   /** Original message (trimmed). */
   raw: string
+  /**
+   * `switch location:` — the view name before the colon.
+   * Omitted on `switch:` means Activity. Not set on `st:` / `so:`.
+   */
+  scope?: string
 }
 
 export interface IngestSource {

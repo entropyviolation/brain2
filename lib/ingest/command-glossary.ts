@@ -230,12 +230,13 @@ What you can do (families)
 • Grocery — groc (dump/add/pin); got / x / bought / check off
 • Needed — needed: batteries · get: then lines → list "needed"
 • To-do — to do today:, do: / next action:, read to do today
-• Log — log: (loc: place) / intake: / intake food|drink|drug: / cycle: / st: / switch task: / so: / switch objective: / switch goal: / transit:; smoked weed, drank water, ate …, took …
+• Log — switch: (view, from:, to:) / log categories / log: or log (colon optional; loc: place) / tp: / thought process: / log: tp: (specialized note: the crystallized thought of this moment, not a general note) / intake: / intake food|drink|drug: / cycle: / st: / switch task: / so: / switch objective: / switch goal: / transit:; saved keywords (log: went outside, log keywords); smoked weed, drank water, ate …, took …
+  On a log line, a switch line, or a tracking-note clock, no am/pm means military time (12:04 is noon, 1:00 is 1:00am, 1pm is 1:00pm). Ordinary inbox text is not parsed this way.
 • Monitor — currently / stopped / switched to
 • Capture / add — plain text, qa:, add:, inbox:, idea:, quick add: (-mb / -monkey → Monkey brain)
 • Bulk — bulk: / bulk add; Name: dumps; before 9/12:
 • Track — at:, track:, mood:, sleep:, start:/stop, gps:, screen:/call:/text:
-• Notes — n / note: (optional clock, est or unknown), day:, memo:, jot:
+• Notes — n / note: (optional clock, est or unknown), day:, memo:, jot:. Thought process is tp: / thought process: / log: tp: — a specialized note, the crystallized thought of this moment, not this general note
 • Read — read: / show: / dump: / peek:, lists, folders, search, today, count, tags, ops
 • Scan — receipt photo, journal/PDF → Docs, inv pantry
 • iPhone Notes — iphone-notes: park from Shortcut
@@ -323,13 +324,29 @@ How to use it
 • log: shower 10m  — just finished (end is send time)
 • log: START walk  |  log: END walk 5:00
 • log: left room at 3:30 est  ·  log: left room unknown  — estimated or unknown clock
+• log: went outside  |  log went outside 12:04  |  log: went outside 7/4/26 1:00
+  Added in Tracking settings (the gear). Longest phrase wins. The remainder is the date and time, not the title.
+  log keywords and log: keywords list them and do not create a row. A bare phrase is not a log.
+• On a log line, no am/pm means military time: 12:04 is noon, 18:37 is 6:37pm, 1:00 is 1:00am.
+  1pm, 1:00pm, 1 PM, 1:00 PM, and 1:00 p.m. are 1:00pm. 7/4/26 and 7/4/2026 are July 4, 2026.
+  at 3:30 still works. Log lines, switch lines, and tracking-note clocks share that reader. Ordinary inbox text is not parsed this way.
 • loc: home on a log reuses or creates that Location pen (the place is last)
 • intake: coffee  — point only, no duration. Bare intake leaves the class unset
 • intake food: egg salad  ·  intake drink: coffee at 8:15 est  ·  intake drug: tablet
 • cycle: bleeding  ·  cycle: spotting  ·  cycle: ovulation  ·  cycle: bleeding off
-• st: cleaning  ·  switch task: cleaning at 3:30  — Switch task, title “started …”
-• so: read  ·  switch objective: read  ·  switch goal: read  — Switch goal, title “objective …”
+• switch: location from: home to: ralphs  ·  switch: activity from: working on brain2 to: working on foxtide 6:37pm
+• switch: company Elijah  — destination Elijah on Company, at the message’s local time
+• switch: to cleaning  ·  switch: from email to cleaning  — Activity when the view word is omitted
+  The clock and date are the same reader as a log line. A bare integer is not a clock.
+  Activity stores started … on the Switch pen. Another view paints that scope.
+• log categories  ·  log: categories  — numbered tracking views. A reply, not an event.
+• st: cleaning  ·  switch task: cleaning at 3:30  — alias of Switch on Activity, title “started …”
+• so: read  ·  switch objective: read  ·  switch goal: read  — alias, Objective pen, title “objective …”
 • transit: the store  — same clock words (est / estimated / ~ / unknown)
+• tp: opening the editor to fix the clock  |  TP:  |  thought process:  |  log: tp:
+  A specialized note: the crystallized thought of this moment, not a general note.
+  Colon required, so bare tp and bare thought process are not this. Pen Text log. eventKind thought-process.
+  First line is the title; a line under it is the note. Same clocks as a log line.
 • Presets (Settings → Discrete event triggers):
   smoked weed · drank water · ate {item} · took {item}
 
@@ -438,6 +455,8 @@ Send "track commands" for the glossary.`,
   A clock with no word is exact. est / estimated / ~ is estimated. unknown keeps the minute.
   Also appended to the block covering that minute. A second line is the note.
 • day: tired  ·  daynote:  ·  dnote:  ·  n day: — day jot, not a tick, and not a clock
+• tp: opening the editor to fix the clock  ·  thought process:  ·  log: tp:
+  A specialized note: the crystallized thought of this moment, not a general note. Colon required. eventKind thought-process.
 • day alone → today
 
 Send "note commands".`,

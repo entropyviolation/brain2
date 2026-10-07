@@ -7,10 +7,18 @@
  * a log means that duration just finished. Intake never grows a duration.
  * A trailing `loc: name` on a log is a Location pen. `est` / `estimated` / `~`
  * and `unknown` mark the clock on log, intake, and switch lines.
+ * Log lines, switch lines, thought-process lines, and tracking-note clocks peel
+ * one clock token and read it with `parseExpectedWhen`. A bare integer is not
+ * a clock. A bare clock is military. `1:00 p.m.` is 13:00. Log, switch, and
+ * thought-process lines also take a US date (`7/4/26`). Ordinary inbox text
+ * does not.
  */
-import { parseClockToken } from "./times"
+import { matchSavedLogKeyword } from "@/lib/log-keywords"
+import { LOG_CLOCK_SRC, parseLogWhen, peelLogLineWhen, peelLogRange } from "./log-line-time"
+import { useTimeTrackingStore } from "@/lib/time-tracking-store"
+import { parseExpectedWhen } from "./times"
 
-const CLOCK = String.raw`(?:\d{1,2}(?::\d{2})?\s*(?:am|pm)?|\d{3,4}|noon|midnight)`
+const CLOCK = LOG_CLOCK_SRC
 
 /** Set only when the line said the clock was estimated or unknown. Omitted = exact. */
 export type NoteClockCertainty = "estimated" | "unknown"
@@ -154,7 +162,9 @@ export function atClockOnDay(sent: Date, minutes: number): Date {
 }
 
 function clockMinutes(raw: string): number | null {
-  return parseClockToken(raw.trim())
+  const when = parseExpectedWhen(raw.trim())
+  if (!when || when.minutes == null || when.date) return null
+  return when.minutes
 }
 
 /** Trailing clock. A bare integer is not a clock (`route 12` stays in the title). */
@@ -180,17 +190,6 @@ function peelAtClock(text: string): { title: string; minutes: number } | null {
   return { title, minutes }
 }
 
-function peelRange(text: string): { title: string; startMin: number; endMin: number } | null {
-  const match = text.match(new RegExp(String.raw`^(.*\S)\s+(${CLOCK})\s*[-–—]\s*(${CLOCK})\s*$`, "i"))
-  if (!match) return null
-  const startMin = clockMinutes(match[2]!)
-  const endMin = clockMinutes(match[3]!)
-  if (startMin == null || endMin == null) return null
-  const title = match[1]!.trim()
-  if (!title) return null
-  return { title, startMin, endMin }
-}
-
 function peelDuration(text: string): { title: string; minutes: number } | null {
   const match = text.match(/^(.*\S)\s+(\d+(?:\.\d+)?)\s*(minutes?|mins?|m)\s*$/i)
   if (!match) return null
@@ -208,8 +207,12 @@ function rangeOnSendDate(sent: Date, startMin: number, endMin: number): { start:
   return { start, end }
 }
 
-/** `log:` payload. Empty text is an error for the caller. */
-export function parseLogPayload(payload: string, sent: Date): LogNote | null {
+/**
+ * `log:` / `log` payload. Empty text is an error for the caller.
+ * `keywords` is the saved list. Longest phrase wins when the remainder is a
+ * log-line date/time or empty. No match keeps the free-form title.
+ */
+export function parseLogPayload(payload: string, sent: Date, keywords: readonly string[] = []): LogNote | null {
   const split = splitEventLine(payload)
   const rawLine = split.line
   if (!rawLine) return null
@@ -223,18 +226,29 @@ export function parseLogPayload(payload: string, sent: Date): LogNote | null {
   const location = located.location
   if (!text) return null
 
+  const saved = matchSavedLogKeyword(text, keywords, (rest) => parseLogWhen(rest, sent) != null)
+  if (saved) {
+    const at = parseLogWhen(saved.rest, sent)
+    if (at) {
+      return withLocation(
+        withCertainty(withNote({ shape: "point", title: saved.phrase, at }, note), clockCertainty),
+        location,
+      )
+    }
+  }
+
   const bound = /^(start|end)\s+(.+)$/i.exec(text)
   if (bound) {
     const shape = bound[1]!.toLowerCase() === "start" ? "start" : "end"
     const rest = bound[2]!.trim()
-    const timed = peelAtClock(rest) ?? peelTrailingClock(rest)
+    const timed = peelLogLineWhen(rest, sent)
     return withLocation(
       withCertainty(
         withNote(
           {
             shape,
             title: timed?.title ?? rest,
-            at: timed ? atClockOnDay(sent, timed.minutes) : sent,
+            at: timed ? timed.at : sent,
           },
           note,
         ),
@@ -244,7 +258,7 @@ export function parseLogPayload(payload: string, sent: Date): LogNote | null {
     )
   }
 
-  const range = peelRange(text)
+  const range = peelLogRange(text)
   if (range) {
     const clocks = rangeOnSendDate(sent, range.startMin, range.endMin)
     return withLocation(
@@ -263,13 +277,10 @@ export function parseLogPayload(payload: string, sent: Date): LogNote | null {
     )
   }
 
-  const at = peelAtClock(text) ?? peelTrailingClock(text)
-  if (at) {
+  const when = peelLogLineWhen(text, sent)
+  if (when) {
     return withLocation(
-      withCertainty(
-        withNote({ shape: "point", title: at.title, at: atClockOnDay(sent, at.minutes) }, note),
-        clockCertainty,
-      ),
+      withCertainty(withNote({ shape: "point", title: when.title, at: when.at }, note), clockCertainty),
       location,
     )
   }
@@ -299,6 +310,29 @@ export function parseIntakePayload(payload: string, sent: Date): PointNote | nul
       withNote({ shape: "point", title: at.title, at: atClockOnDay(sent, at.minutes) }, split.note),
       clockCertainty,
     )
+  }
+  return withCertainty(withNote({ shape: "point", title: text, at: sent }, split.note), clockCertainty)
+}
+
+/**
+ * A thought process is one point. The first line is the crystallized thought.
+ * Later lines are the note. Clocks are the log-line peel (`parseExpectedWhen`):
+ * send time when no clock is named, military when the clock is bare, `1pm` /
+ * `1:00 PM` / `1:00 p.m.` at 13:00, and `7/4/26` as July 4, 2026. No range,
+ * no saved keyword, no `loc:`.
+ */
+export function parseThoughtPayload(payload: string, sent: Date): PointNote | null {
+  const split = splitEventLine(payload)
+  const rawLine = split.line
+  if (!rawLine) return null
+  const word = peelClockCertainty(rawLine)
+  const tildes = peelTildeClocks(word.text)
+  const text = tildes.text.trim()
+  const clockCertainty = combineCertainty(word.clockCertainty, tildes.estimated)
+  if (!text) return null
+  const when = peelLogLineWhen(text, sent)
+  if (when) {
+    return withCertainty(withNote({ shape: "point", title: when.title, at: when.at }, split.note), clockCertainty)
   }
   return withCertainty(withNote({ shape: "point", title: text, at: sent }, split.note), clockCertainty)
 }
@@ -335,5 +369,117 @@ export function parseSwitchPayload(payload: string, sent: Date): SwitchNote | nu
     if (!to) return null
     return withCertainty(withNote({ to, at }, note), clockCertainty)
   }
+  const fromToWords = text.match(/^\s*from\s+(.+?)\s+to\s+(.+)$/i)
+  if (fromToWords) {
+    const from = fromToWords[1]!.trim()
+    const to = fromToWords[2]!.trim()
+    if (!to) return null
+    return withCertainty(withNote({ from: from || undefined, to, at }, note), clockCertainty)
+  }
+  const toWord = text.match(/^\s*to\s+(.+)$/i)
+  if (toWord) {
+    const to = toWord[1]!.trim()
+    if (!to) return null
+    return withCertainty(withNote({ to, at }, note), clockCertainty)
+  }
   return withCertainty(withNote({ to: text, at }, note), clockCertainty)
+}
+
+export interface SwitchCommand extends SwitchNote {
+  /** Scope id when the line named a real view. Omitted means Activity. */
+  scope?: string
+}
+
+/**
+ * `switch:` payload. Scope word, then labeled `from:` / `to:`, or a bare
+ * destination after the scope. The clock and date peel is the log-line peel:
+ * `parseExpectedWhen` reads the token. A bare integer is not a clock.
+ * Optional `7/4/26` or `7/4/2026` is month/day/year. This reader is only for
+ * switch lines.
+ */
+export function parseSwitchCommand(payload: string, sent: Date): SwitchCommand | null {
+  const split = splitEventLine(payload)
+  let text = split.line
+  if (!text) return null
+  const word = peelClockCertainty(text)
+  const tildes = peelTildeClocks(word.text)
+  text = tildes.text
+  const clockCertainty = combineCertainty(word.clockCertainty, tildes.estimated)
+  if (!text) return null
+  const when = peelSwitchWhen(text, sent)
+  text = when.text.trim()
+  if (!text) return null
+  let scope: string | undefined
+  let endsText = text
+  if (!/^(?:from|to)(?=\s|:)/i.test(text)) {
+    const peeled = peelScopePrefix(text)
+    if (peeled) {
+      scope = peeled.scopeId
+      endsText = peeled.rest
+    }
+  }
+  const ends = parseSwitchEnds(endsText)
+  if (!ends) return null
+  return withCertainty(
+    withNote({ ...ends, at: when.at, ...(scope ? { scope } : {}) }, split.note),
+    clockCertainty,
+  )
+}
+
+function peelSwitchWhen(text: string, sent: Date): { text: string; at: Date } {
+  const peeled = peelLogLineWhen(text, sent)
+  if (!peeled) return { text, at: sent }
+  return { text: peeled.title, at: peeled.at }
+}
+
+function peelScopePrefix(text: string): { scopeId: string; rest: string } | null {
+  const labels: { id: string; label: string }[] = []
+  for (const scope of useTimeTrackingStore.getState().scopes) {
+    const name = scope.name.trim()
+    if (name) labels.push({ id: scope.id, label: name })
+    if (scope.id && scope.id.toLowerCase() !== name.toLowerCase()) labels.push({ id: scope.id, label: scope.id })
+  }
+  labels.sort((a, b) => b.label.length - a.label.length)
+  for (const row of labels) {
+    const match = new RegExp(`^${escapeRegExp(row.label)}(?:\\s+|$)`, "i").exec(text)
+    if (!match) continue
+    return { scopeId: row.id, rest: text.slice(match[0].length).trim() }
+  }
+  return null
+}
+
+function parseSwitchEnds(text: string): { from?: string; to: string } | null {
+  const labeled = text.match(/^\s*from\s*:\s*([\s\S]*?)\s+to\s*:\s*([\s\S]+)$/i)
+  if (labeled) {
+    const to = labeled[2]!.trim()
+    if (!to) return null
+    const from = labeled[1]!.trim()
+    return { from: from || undefined, to }
+  }
+  const toLabeled = text.match(/^\s*to\s*:\s*([\s\S]+)$/i)
+  if (toLabeled) {
+    const to = toLabeled[1]!.trim()
+    if (!to) return null
+    return { to }
+  }
+  const words = text.match(/^\s*from\s+(.+?)\s+to\s+(.+)$/i)
+  if (words) {
+    const to = words[2]!.trim()
+    if (!to) return null
+    const from = words[1]!.trim()
+    return { from: from || undefined, to }
+  }
+  const toWord = text.match(/^\s*to\s+(.+)$/i)
+  if (toWord) {
+    const to = toWord[1]!.trim()
+    if (!to) return null
+    return { to }
+  }
+  const bare = text.trim()
+  if (!bare) return null
+  return { to: bare }
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 }

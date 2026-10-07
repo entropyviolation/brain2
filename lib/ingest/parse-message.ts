@@ -7,9 +7,11 @@
  * required) is the needed-list form of that dump pattern. `now` rolls
  * `before 9/12:` onto the next matching day. Telegram slash commands
  * (`/start`, `/help`, `/stop`, `/info`) are recognized.
- * Colon headers matched before the alias loop include `log:`, `intake food:`,
- * `intake:`, `st:` / `switch task:`, `so:` / `switch objective:` / `switch goal:`,
- * and `cycle:`. Bare words are not stolen.
+ * Colon headers matched before the alias loop include `log:` / `log` (colon optional), `log categories`,
+ * `tp:` / `thought process:` / `log: tp:` (colon required on the thought verb),
+ * `intake food:`, `intake:`, `switch:` (colon immediately after switch),
+ * `st:` / `switch task:`, `so:` / `switch objective:` / `switch goal:`, and
+ * `cycle:`. Bare words are not stolen.
  */
 import { looksLikeListDump, parseDueBeforeHeader } from "./parse-bulk"
 import { parsePathHeader } from "@/lib/smart-parse"
@@ -103,9 +105,28 @@ function matchVerb(text: string, now: Date): IngestIntent | null {
   const firstLine = (firstLineEnd === -1 ? text : text.slice(0, firstLineEnd)).trim()
   const restLines = firstLineEnd === -1 ? "" : text.slice(firstLineEnd + 1)
 
-  // `log:` / `log-` (with or without a space) — tracking note, not a habit.
-  const logHeader = /^(log)\s*[:\-]\s*([\s\S]*)$/i.exec(firstLine)
+  // Bot info: the views you can switch. Not a logged event. Before `log:`.
+  if (/^log\s*[:：]?\s*categories\s*$/i.test(firstLine)) {
+    return { kind: "log-categories", payload: "", raw: text }
+  }
+
+  // Thought process. Colon required on `tp` / `thought process`, so bare words stay capture.
+  // `log: tp:` is the same verb. Checked before the general log header.
+  const thought = thoughtProcessPayload(firstLine)
+  if (thought != null) {
+    const payload = [thought, restLines].filter((s) => s.length > 0).join("\n")
+    return { kind: "thought-process", payload, raw: text }
+  }
+
+  // `log:` / `log-` / `log ` (colon optional) — tracking note, not a habit.
+  // `log categories` already returned above. A bare keyword with no log prefix is not this.
+  const logHeader = /^(log)(?:\s*[:\-]\s*|\s+)([\s\S]*)$/i.exec(firstLine)
   if (logHeader) {
+    const nested = thoughtProcessPayload(logHeader[2].trim())
+    if (nested != null) {
+      const payload = [nested, restLines].filter((s) => s.length > 0).join("\n")
+      return { kind: "thought-process", payload, raw: text }
+    }
     const payload = [logHeader[2].trim(), restLines].filter((s) => s.length > 0).join("\n")
     return { kind: "event-log", payload, raw: text }
   }
@@ -141,6 +162,13 @@ function matchVerb(text: string, now: Date): IngestIntent | null {
   if (switchObjective) {
     const payload = [switchObjective[1].trim(), restLines].filter((s) => s.length > 0).join("\n")
     return { kind: "switch-objective", payload, raw: text }
+  }
+
+  // `switch:` — colon right after the verb. Scope is the next word in the payload.
+  const switchHeader = /^switch\s*[:：]\s*([\s\S]*)$/i.exec(firstLine)
+  if (switchHeader) {
+    const payload = [switchHeader[1].trim(), restLines].filter((s) => s.length > 0).join("\n")
+    return { kind: "switch", payload, raw: text }
   }
 
   const transitHeader = /^(transit)\s*[:：]\s*([\s\S]*)$/i.exec(firstLine)
@@ -213,6 +241,16 @@ export function intakeClassFromMessage(raw: string): IntakeClass | undefined {
   const word = match[1]!.toLowerCase()
   if (word === "food" || word === "drink" || word === "drug") return word
   return undefined
+}
+
+/**
+ * `tp:` / `TP:` / `thought process:` and the same verb after `log:`.
+ * Colon required. Returns the rest, which may be empty. Null when this is not that verb.
+ */
+function thoughtProcessPayload(line: string): string | null {
+  const match = /^(?:log\s*[:：]\s*)?(?:thought\s+process|tp)\s*[:：]\s*([\s\S]*)$/i.exec(line.trim())
+  if (!match) return null
+  return match[1]!.trim()
 }
 
 function isListHeader(line: string, now: Date): boolean {

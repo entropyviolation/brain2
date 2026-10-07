@@ -409,6 +409,9 @@ export function MessageIngestPanel() {
           <code className="text-foreground">took {"{item}"}</code>. The Tracking log
           composer is the same store:{" "}
           <code className="text-foreground">log: left room loc: home</code>,{" "}
+          <code className="text-foreground">switch: location from: home to: ralphs</code>,{" "}
+          <code className="text-foreground">switch: to cleaning</code>,{" "}
+          <code className="text-foreground">log categories</code>,{" "}
           <code className="text-foreground">st:</code> /{" "}
           <code className="text-foreground">switch task:</code>,{" "}
           <code className="text-foreground">so:</code> /{" "}
@@ -421,11 +424,24 @@ export function MessageIngestPanel() {
           <code className="text-foreground">note:</code> /{" "}
           <code className="text-foreground">n</code> /{" "}
           <code className="text-foreground">jot:</code> /{" "}
-          <code className="text-foreground">memo:</code>. A clock is exact unless you
+          <code className="text-foreground">memo:</code>, and{" "}
+          <code className="text-foreground">tp:</code> /{" "}
+          <code className="text-foreground">thought process:</code> /{" "}
+          <code className="text-foreground">log: tp:</code> (a specialized note: the crystallized thought of this
+          moment, not a general note; colon required; <code className="text-foreground">eventKind</code>{" "}
+          <code className="text-foreground">thought-process</code>). A clock is exact unless you
           add <code className="text-foreground">est</code>,{" "}
           <code className="text-foreground">estimated</code>,{" "}
           <code className="text-foreground">~</code>, or{" "}
-          <code className="text-foreground">unknown</code>.
+          <code className="text-foreground">unknown</code>. On a log line, a
+          clock with no am/pm is military time: <code className="text-foreground">12:04</code> is
+          noon, <code className="text-foreground">1:00</code> is 1:00am, and{" "}
+          <code className="text-foreground">1pm</code> /{" "}
+          <code className="text-foreground">1:00 PM</code> are 1:00pm.{" "}
+          <code className="text-foreground">7/4/26</code> is July 4, 2026. Log lines,
+          switch lines, and tracking-note clocks share that reader. Ordinary inbox text is not
+          parsed this way. Saved phrases are added in Tracking settings (the gear) (<code className="text-foreground">log: went outside</code>,{" "}
+          <code className="text-foreground">log keywords</code>).
         </p>
         <div className="flex gap-2">
           <Input

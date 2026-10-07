@@ -87,7 +87,7 @@ export function TrackingViewLatches({
       <ToolKey
         bank="latch"
         onClick={onOpenViewSettings}
-        title="View settings — cell size, fill range, hidden pens"
+        title="Tracking settings — commands, cell size, fill range, hidden pens"
         label="View"
       />
       <ToolKey

@@ -14,7 +14,7 @@
  * **+ New pen** sits at the bottom of the well whenever it is expanded.
  * Collapsed, **Create new pen** appears only when a search matches nothing,
  * with that query already the name. The well is plain steel — no photograph.
- * View settings (cell size, fill range, hidden pens) is a separate dialog so
+ * View settings (commands, log keywords, cell size, fill range, hidden pens) is a separate dialog so
  * it cannot be mistaken for pen settings. Infinite scroll toggles next to
  * Day/Week on the grid, not in that dialog.
  */

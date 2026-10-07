@@ -22,6 +22,7 @@
 
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react"
 import { displayedPen, penCellStyle, useTimeTrackingStore, type TimeEntry, type TrackPen, type TrackScope } from "@/lib/time-tracking-store"
+import { discreteLogInstants, overlayTicksBeside, penNameById, tickPen } from "@/components/Home/Tracking/discrete-log-instants"
 import { penAtDepth } from "@/lib/pen-tree"
 import {
   MINUTES_PER_DAY,
@@ -111,7 +112,9 @@ interface InfiniteDayProps {
   strokeHi: number
   strokeDate: string
   scope: TrackScope
+  scopes: readonly TrackScope[]
   overlayScope?: TrackScope
+  logTicks: TimeEntry[]
   selectedPenId: string | null
   selectedPen: TrackPen | null
   isToday: boolean
@@ -140,7 +143,9 @@ function infiniteDayPropsEqual(prev: InfiniteDayProps, next: InfiniteDayProps): 
   if (prev.dayList !== next.dayList) return false
   if (prev.overlayList !== next.overlayList) return false
   if (prev.scope !== next.scope) return false
+  if (prev.scopes !== next.scopes) return false
   if (prev.overlayScope !== next.overlayScope) return false
+  if (prev.logTicks !== next.logTicks) return false
   if (prev.selectedPenId !== next.selectedPenId) return false
   if (prev.selectedPen !== next.selectedPen) return false
   if (prev.isToday !== next.isToday) return false
@@ -176,7 +181,9 @@ const InfiniteDayRow = memo(function InfiniteDayRow({
   strokeHi,
   strokeDate,
   scope,
+  scopes,
   overlayScope,
+  logTicks,
   selectedPenId,
   selectedPen,
   isToday,
@@ -219,8 +226,17 @@ const InfiniteDayRow = memo(function InfiniteDayRow({
       })
     }
   }
-  const instants = instantsForDay(dayList, dayKey, scope.id)
-  const overlayInstants = overlayScope ? instantsForDay(overlayList, dayKey, overlayScope.id) : []
+  const ownInstants = instantsForDay(dayList, dayKey, scope.id)
+  const instants = (() => {
+    if (logTicks.length === 0) return ownInstants
+    const seen = new Set(ownInstants.map((entry) => entry.id))
+    const extra = logTicks.filter((entry) => !seen.has(entry.id))
+    if (extra.length === 0) return ownInstants
+    return [...ownInstants, ...extra].sort((a, b) => a.startMin - b.startMin || a.id.localeCompare(b.id))
+  })()
+  const overlayInstants = overlayScope
+    ? overlayTicksBeside(instantsForDay(overlayList, dayKey, overlayScope.id), instants)
+    : []
   return (
     <div
       className="trk-day-strip"
@@ -317,7 +333,7 @@ const InfiniteDayRow = memo(function InfiniteDayRow({
           )
         })}
         {instants.map((event) => {
-          const pen = showPen(scope, event.penId)
+          const pen = showPen(scope, event.penId) ?? tickPen(scopes, scope, event.penId)
           return (
             <button
               key={event.id}
@@ -432,6 +448,16 @@ export function InfiniteStrip({
     () => (scope ? indexScopeEntriesByDate(entries, scope.id) : new Map()),
     [entries, scope],
   )
+  const penNames = useMemo(() => penNameById(scopes), [scopes])
+  const logByDate = useMemo(() => {
+    const map = new Map<string, TimeEntry[]>()
+    for (const entry of discreteLogInstants(entries, penNames)) {
+      const list = map.get(entry.date)
+      if (list) list.push(entry)
+      else map.set(entry.date, [entry])
+    }
+    return map
+  }, [entries, penNames])
 
   const maps = useMemo(() => {
     const out: Record<string, ReturnType<typeof minuteMap>> = {}
@@ -675,7 +701,9 @@ export function InfiniteStrip({
               strokeHi={strokeHi}
               strokeDate={strokeDate}
               scope={scope}
+              scopes={scopes}
               overlayScope={overlayScope}
+              logTicks={logByDate.get(item.key) ?? NO_ENTRIES}
               selectedPenId={selectedPenId}
               selectedPen={selectedPen}
               isToday={item.key === todayKey}
