@@ -10,7 +10,7 @@
 "use client"
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
+import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import { Label } from "@/components/ui/label"
 import { GRID_STEPS, WEEK_STEPS, type GridStep, type WeekStep } from "@/lib/time-entries"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
@@ -83,6 +83,8 @@ export function TrackingViewSettingsDialog({
   const setGridStep = useTimeTrackingStore((s) => s.setGridStep)
   const setWeekStep = useTimeTrackingStore((s) => s.setWeekStep)
   const prefs = useTrackingViewPrefs()
+  const enableCycleTracking = useTimeTrackingStore((s) => s.enableCycleTracking)
+  const setEnableCycleTracking = useTimeTrackingStore((s) => s.setEnableCycleTracking)
 
   const scope = scopes.find((s) => s.id === scopeId)
   const hidden = new Set(hiddenPenIds[scopeId] ?? [])
@@ -104,6 +106,21 @@ export function TrackingViewSettingsDialog({
         </DialogHeader>
         <div className="trk-dialog-body">
           <p className="trk-help">How this view looks. Pens stay in the well.</p>
+
+          <div className="trk-section space-y-2">
+            <Label className="trk-section-title">Cycle</Label>
+            <label className="trk-cycle-enable">
+              <input
+                type="checkbox"
+                checked={enableCycleTracking}
+                onChange={(event) => setEnableCycleTracking(event.target.checked)}
+              />
+              Enable cycle tracking
+            </label>
+            <p className="trk-help">
+              Off hides the cycle section on the Tracking log. Bleed, spotting, and ovulation marks stay stored.
+            </p>
+          </div>
 
           <div className="trk-section space-y-2">
             <Label className="trk-section-title">Cell size</Label>
@@ -139,21 +156,19 @@ export function TrackingViewSettingsDialog({
                 <p className="trk-section-title">Day grid</p>
                 <div className="trk-field">
                   <Label htmlFor="trk-day-fill-starts">{TRACKING_FILL_CLOCK_LABELS.fillFrom}</Label>
-                  <Input
+                  <ClockPicker
                     id="trk-day-fill-starts"
-                    type="time"
                     value={prefs.fillFrom}
-                    onChange={(e) => setTrackingViewPrefs({ fillFrom: e.target.value })}
+                    onChange={(fillFrom) => setTrackingViewPrefs({ fillFrom })}
                     className="h-8 w-[7.5rem]"
                   />
                 </div>
                 <div className="trk-field">
                   <Label htmlFor="trk-day-fill-ends">{TRACKING_FILL_CLOCK_LABELS.fillTo}</Label>
-                  <Input
+                  <ClockPicker
                     id="trk-day-fill-ends"
-                    type="time"
                     value={prefs.fillTo}
-                    onChange={(e) => setTrackingViewPrefs({ fillTo: e.target.value })}
+                    onChange={(fillTo) => setTrackingViewPrefs({ fillTo })}
                     className="h-8 w-[7.5rem]"
                   />
                 </div>
@@ -162,21 +177,19 @@ export function TrackingViewSettingsDialog({
                 <p className="trk-section-title">Week grid</p>
                 <div className="trk-field">
                   <Label htmlFor="trk-week-fill-starts">{TRACKING_FILL_CLOCK_LABELS.weekFillFrom}</Label>
-                  <Input
+                  <ClockPicker
                     id="trk-week-fill-starts"
-                    type="time"
                     value={prefs.weekFillFrom}
-                    onChange={(e) => setTrackingViewPrefs({ weekFillFrom: e.target.value })}
+                    onChange={(weekFillFrom) => setTrackingViewPrefs({ weekFillFrom })}
                     className="h-8 w-[7.5rem]"
                   />
                 </div>
                 <div className="trk-field">
                   <Label htmlFor="trk-week-fill-ends">{TRACKING_FILL_CLOCK_LABELS.weekFillTo}</Label>
-                  <Input
+                  <ClockPicker
                     id="trk-week-fill-ends"
-                    type="time"
                     value={prefs.weekFillTo}
-                    onChange={(e) => setTrackingViewPrefs({ weekFillTo: e.target.value })}
+                    onChange={(weekFillTo) => setTrackingViewPrefs({ weekFillTo })}
                     className="h-8 w-[7.5rem]"
                   />
                 </div>

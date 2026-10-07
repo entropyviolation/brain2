@@ -6,8 +6,8 @@
  * List / Bulk / Latest (Habits `.hab-view-changer` keys); past entries cannot
  * be edited. Jots like "zoo 4–5" stay with that date while you figure out
  * which pen they belong on. Not a second activity log — the grid remains the
- * record of what happened. Looks: metal well (`.trk-notes`), white field,
- * cream lace only inside the bevel. Collapsed is only the **Day notes**
+ * record of what happened. Looks: metal well (`.trk-notes`) in the fascia
+ * mill, white field, toolbar padded so key bevels stay whole. Collapsed is only the **Day notes**
  * legend and Expand. Expand opens a tall composer and a tall history pane;
  * `notesWellExpanded` persists on tracking-view-prefs.
  *

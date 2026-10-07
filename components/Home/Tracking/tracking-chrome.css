@@ -1,7 +1,7 @@
 /**
  * components/Home/Tracking/tracking-chrome.css — milled fascia for Tracking
  *
- * Title, Time Grid / Activity Log / Day Log keys, period nameplate, now-strip,
+ * Title, Time Grid / Activity Log / Day Log / Tracking log keys, period nameplate, now-strip,
  * and dialog chrome share the house milled fascia (docs/DESIGN_STYLE.md#milled-fascia).
  * The well is a photographed plate; beads sit on it. Search, new-pen, selected
  * name, and detail copy sit on small steel plates so type never washes out.
@@ -11,9 +11,9 @@
  * reveals `.trk-new-pen`; that row stays hidden until the key is pressed.
  * Scoped under `.trk95`. Portaled dialogs keep `.trk-dialog` (they leave the window).
  *
- * Sibling view keys live in `.trk-fascia` / `.hab-view-changer` (equal-fill bay;
- * active = CRT black glass + round power lamp — same language as Habits /
- * Plan). Way I hybrid: Show/Sort/Expand/New pen are labeled wells on the palette
+ * Sibling view keys live in `.trk-fascia` / `.hab-view-changer` (one row of
+ * four when the bay has room, otherwise two and two; active = CRT black
+ * glass + round power lamp — same language as Habits / Plan). Way I hybrid: Show/Sort/Expand/New pen are labeled wells on the palette
  * rail; Hide / View / Tags sit beside them in `.trk-latches-well` (Look);
  * views sit in `.trk-mode-bar` under the pen tray; Time Grid adds
  * `.trk-super-bar` under that bar and above the plot;
@@ -24,9 +24,10 @@
  * how-to under the paint throws; Log activity is a gray latch on
  * `.trk-grid-rail`. A focused clock shows `.trk-now-time` (**right now**)
  * beside the picker, not over it. `.trk-now-module` sits under the fascia as a
- * milled status bay (shared by Time Grid, Activity Log, and Day Log): the
- * Operations clock and `.trk-pen-now` share one row when the desk is wide
- * (they stack on a narrow one). Each hint stays one line and ellipsizes.
+ * milled status bay. Time Grid, Activity Log, and Day Log share the Operations
+ * clock and `.trk-pen-now` on one row when the desk is wide (they stack on a
+ * narrow one). Tracking log keeps the Operations clock and hides `.trk-pen-now`
+ * with the rest of the pen desk. Each hint stays one line and ellipsizes.
  * Cell size is one milled rotary knob (`.trk-cell-knob`); the indicator
  * turns with the step, and the minutes sit beside it. Fill (`.trk-plot-fill` / `.trk-fill-range`) defaults
  * to the longest empty gap; double-click a clock. The plot is white with gray **hairline** ticks
@@ -41,9 +42,10 @@
  * `width: fit-content` wells. Plot stays white; hour bezels are milled steel.
  * Notes, Activity Log CRT rows, untracked gaps stay white/gray — no cream or yellow fills.
  * Day Log paint/sheet/caption type is black on gunmetal; agenda picture white.
- * Day notes (`.trk-notes`) are a metal well: white composer, cream lace
- * only inside the bevel (Needs Attention ring language), List / Bulk / Latest
- * as `.hab-view-changer` keys. Collapsed is only the legend and Expand.
+ * Day notes (`.trk-notes`) are a metal well in the same mill as the fascia
+ * (no cream lace). White composer. List / Bulk / Latest are `.hab-view-changer`
+ * keys. The toolbar and Submit sit in padding so overflow cannot shave their
+ * bevels. Collapsed is only the legend and Expand.
  * Expand (`.trk-notes-open`) opens a tall composer and a tall history pane.
  * `.trk-dialog` opens without a zoom/slide twitch.
  * View settings (`.trk-view-settings`) caps height at the viewport; `.trk-dialog-body`
@@ -170,26 +172,44 @@
   image-rendering: auto;
 }
 
-/* View keys share one bay inside the fascia; fill evenly (habit-chrome.h…). */
+/* Four peer keys in one bay, aligned to the fascia beside the title.
+   Wide bay: one row of four equal columns. Narrow bay: two and two.
+   Never three-plus-one. The habit changer is three columns; these selectors
+   outrank `body.win95-app .trk95 .hab-view-changer` so the fourth key is
+   not orphaned. Labels stay the milled 11px key (nowrap). Four-up starts
+   at 40rem — about 155px a key, past the widest label ("TRACKING LOG"
+   plus its power lamp, ~134px) — so the type is not scrunched to fit. */
 .trk95 .trk-fascia .hab-view-changer.trk-view-keys,
 .trk95 .trk-fascia .trk-view-keys {
-  flex: 1 1 14rem;
-  min-width: min(100%, 12rem);
-  max-width: 28rem;
+  flex: 1 1 auto;
+  align-self: center;
+  min-width: min(100%, 22rem);
+  max-width: none;
   margin: 0;
+  container-type: inline-size;
+  container-name: trk-view-keys;
 }
 
-/* Narrow fascia: Time Grid / Activity Log / Day Log wrap to a second line
-   instead of squeezing the last key off the lip. */
-@media (max-width: 1100px) {
-  .trk95 .trk-fascia .hab-view-changer.trk-view-keys,
-  .trk95 .trk-fascia .trk-view-keys {
-    flex: 1 1 100%;
-    max-width: none;
-  }
+.trk95 .trk-fascia .hab-view-changer.trk-view-keys [role="tablist"],
+.trk95 .trk-fascia .trk-view-keys [role="tablist"],
+body.win95-app .trk95 .trk-fascia .hab-view-changer.trk-view-keys [role="tablist"],
+body.win95-app .trk95 .trk-fascia .trk-view-keys [role="tablist"] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+}
 
-  .trk95 .trk-fascia .trk-view-keys [role="tablist"] {
-    grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+.trk95 .trk-fascia .trk-view-keys [role="tab"],
+body.win95-app .trk95 .trk-fascia .trk-view-keys [role="tab"] {
+  min-width: max-content;
+  white-space: nowrap;
+}
+
+@container trk-view-keys (min-width: 40rem) {
+  .trk95 .trk-fascia .hab-view-changer.trk-view-keys [role="tablist"],
+  .trk95 .trk-fascia .trk-view-keys [role="tablist"],
+  body.win95-app .trk95 .trk-fascia .hab-view-changer.trk-view-keys [role="tablist"],
+  body.win95-app .trk95 .trk-fascia .trk-view-keys [role="tablist"] {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
@@ -1211,9 +1231,13 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   margin-left: 0;
 }
 
-.trk95 .trk-fill-row input[type="time"] {
+.trk95 .trk-fill-row .clock-picker {
   height: 22px;
   width: 7.5rem;
+  font-size: 11px;
+}
+
+.trk95 .trk-fill-row .clock-picker-field {
   border: 0;
   border-radius: 0;
   font: inherit;
@@ -1918,10 +1942,9 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   gap: 4px;
 }
 
-.trk95 .trk-field-controls input[type="time"] {
+.trk95 .trk-field-controls .clock-picker {
   height: 28px;
   width: 7.5rem;
-  border-radius: 0;
 }
 
 .trk95 .trk-tilde {
@@ -2854,20 +2877,19 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   flex-direction: column;
   gap: 3px;
   min-height: 0;
-  padding: 8px 10px 7px;
+  min-width: 0;
+  padding: 10px 12px;
   overflow: hidden;
   border-radius: 3px;
   color: #111;
   background:
-    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
     linear-gradient(165deg, #d4d8dc 0%, var(--t-surface) 48%, #969a9e 100%);
   box-shadow:
     0 0 0 1px #5c6064,
-    inset 0 1px 0 rgba(255, 255, 255, 0.7),
-    inset 0 0 0 2px #b0b4b8,
-    inset 0 0 0 4px #ebe4d4,
-    inset 0 0 0 6px var(--t-surface),
-    inset 0 0 0 7px #d4cbb8;
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -1px 0 rgba(40, 42, 46, 0.4),
+    inset 0 0 0 2px #b0b4b8;
 }
 
 .trk95 .trk-notes:not(.trk-notes-open) {
@@ -2965,13 +2987,19 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   flex-direction: column;
   gap: 4px;
   min-height: 0;
+  min-width: 0;
   flex: 1 1 auto;
-  overflow: hidden;
+  /* History scrolls itself. Hidden here shaved List / Copy / Submit bevels. */
+  overflow: visible;
 }
 
 .trk95 .trk-notes .append-log-toolbar,
 .trk95 .trk-notes .append-log-compose {
   flex-shrink: 0;
+  min-width: 0;
+  overflow: visible;
+  /* Key rings sit outside the button. This inset keeps them inside the well. */
+  padding: 4px;
 }
 
 .trk95 .trk-notes .append-log-toolbar {
@@ -2979,7 +3007,9 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
 }
 
 .trk95 .trk-notes .hab-view-changer {
-  padding: 3px;
+  min-width: 0;
+  overflow: visible;
+  padding: 4px;
 }
 
 .trk95 .trk-notes .hab-view-changer .append-log-views {
@@ -2990,6 +3020,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
 
 .trk95 .trk-notes .append-log-copy,
 .trk95 .trk-notes .append-log-submit {
+  flex-shrink: 0;
   min-height: 24px;
   padding: 3px 10px;
   font-size: 11px;
@@ -3010,8 +3041,8 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
 
 .trk95 .trk-notes .append-log-hint {
   margin: 2px 2px 0;
-  font-size: 10px;
-  line-height: 1.3;
+  font-size: 11px;
+  line-height: 1.35;
   color: #404040;
 }
 
@@ -3021,6 +3052,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
 
 .trk95 .trk-notes .append-log-compose .append-log-hint strong,
 .trk95 .trk-notes .append-log-stamp {
+  font-size: 11px;
   color: var(--t-blue);
 }
 
@@ -3377,9 +3409,10 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   min-width: 0;
 }
 
-.trk95 .trk-clock-time input[type="time"] {
+.trk95 .trk-clock-time .clock-picker {
   flex: 1 1 auto;
   min-width: 0;
+  width: auto;
   height: 22px;
 }
 
@@ -3532,6 +3565,12 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   z-index: 12;
 }
 
+/* Continuous slabs are absolute on .agenda-hours. .agenda-block's later
+   left: 8px paints them over the gutter; keep them beside the labels. */
+.trk95 .trk-daylog .agenda95 .agenda-span {
+  left: calc(4.25rem + 8px);
+}
+
 .trk95 .trk-daylog .agenda95 .agenda-block-planned,
 .trk95 .trk-daylog .agenda95 .agenda-block[data-kind="planned"] {
   color: #1a1a28;
@@ -3673,4 +3712,345 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
 .trk95 .trk-detail-bead {
   display: inline-flex;
   cursor: pointer;
+}
+
+/* Tracking log: one mode row, then the fields for that mode. Same wells and CRT rows. */
+.trk95 .trk-logbook {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+.trk95 .trk-logbook-compose {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.trk95 .trk-logbook-modes {
+  flex-wrap: nowrap;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.trk95 .trk-logbook-modes > button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.trk95 .trk-logbook-fields {
+  width: 100%;
+}
+
+.trk95 .trk-logbook-fields > input:not([type="checkbox"]) {
+  flex: 1 1 8rem;
+  min-width: 8rem;
+}
+
+.trk95 .trk-logbook-fields > .clock-picker {
+  flex: 0 0 auto;
+  width: 7.5rem;
+  min-width: 7.5rem;
+  font-size: 12px;
+}
+
+.trk95 .trk-logbook-sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  margin-left: 10px;
+  padding-left: 8px;
+  box-shadow: inset 2px 0 #6e7276;
+}
+
+.trk95 .trk-logbook-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 22px;
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #111;
+  cursor: pointer;
+  user-select: none;
+}
+
+.trk95 .trk-logbook-check input {
+  width: 13px;
+  height: 13px;
+  margin: 0;
+  accent-color: #14532d;
+  box-shadow: none;
+  background: #fff;
+}
+
+.trk95 .trk-logbook-heading {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #111;
+}
+
+.trk95 .trk-aside-well .trk-logbook-note {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.35;
+  color: #404040;
+}
+
+.trk95 .trk-logbook-add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.trk95 .trk-logbook-add input:not([type="checkbox"]) {
+  min-height: 22px;
+  padding: 1px 6px;
+  border: 0;
+  border-radius: 0;
+  background: #fff;
+  color: #111;
+  box-shadow: var(--t-sunken);
+  font: inherit;
+  font-size: 12px;
+}
+
+.trk95 .trk-logbook-add > button {
+  min-height: 22px;
+  padding: 1px 8px;
+  border: 0;
+  background: var(--t-surface);
+  color: #111;
+  font: inherit;
+  font-size: 11px;
+  box-shadow: var(--t-raised);
+  cursor: pointer;
+}
+
+.trk95 .trk-logbook-add > button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.trk95 .trk-logbook .trk-log {
+  max-height: 16rem;
+}
+
+.trk95 .trk-logbook .trk-log-row.is-unknown {
+  cursor: default;
+}
+
+.trk95 .trk-logbook-badge {
+  flex-shrink: 0;
+  padding: 0 4px;
+  background: #fff;
+  box-shadow: var(--t-sunken);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #111;
+}
+
+.trk95 .trk-cycle-enable {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #111;
+}
+
+.trk95 .trk-cycle-open {
+  align-self: flex-start;
+  min-height: 22px;
+  margin-top: 6px;
+  padding: 1px 8px;
+  border: 0;
+  background: var(--t-surface);
+  color: #111;
+  font: inherit;
+  font-size: 11px;
+  box-shadow: var(--t-raised);
+  cursor: pointer;
+}
+
+.trk95.trk-dialog.trk-cycle-detail {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: min(calc(100vw - 24px), 52rem);
+  max-height: min(92vh, 880px);
+  overflow: hidden;
+}
+
+.trk95 .trk-cycle-lenses {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 4px;
+}
+
+.trk95 .trk-cycle-lenses > button {
+  flex: 1 1 0;
+  min-height: 22px;
+  padding: 2px 6px;
+  border: 0;
+  background: var(--t-surface);
+  color: #111;
+  font: inherit;
+  font-size: 11px;
+  box-shadow: var(--t-raised);
+  cursor: pointer;
+}
+
+.trk95 .trk-cycle-lenses > button[aria-pressed="true"] {
+  color: var(--t-crt);
+  text-shadow: var(--t-crt-glow);
+  background: #070c0a;
+  box-shadow: var(--t-sunken);
+}
+
+.trk95 .trk-cycle-lens-line {
+  margin: 0;
+  padding: 6px 8px;
+  background: #fff;
+  box-shadow: var(--t-sunken);
+  font-size: 12px;
+  line-height: 1.4;
+  color: #111;
+}
+
+.trk95 .trk-cycle-months {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 14px;
+}
+
+.trk95 .trk-cycle-month {
+  min-width: 0;
+}
+
+.trk95 .trk-cycle-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+}
+
+.trk95 .trk-cycle-weekday,
+.trk95 .trk-cycle-empty {
+  min-height: 1.1rem;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  text-align: center;
+  color: #404040;
+}
+
+.trk95 .trk-cycle-day {
+  position: relative;
+  min-height: 1.55rem;
+  padding: 2px 0 4px;
+  border: 0;
+  background: #e4e4e4;
+  color: #111;
+  font: inherit;
+  font-size: 10px;
+  line-height: 1;
+  box-shadow: var(--t-sunken);
+  cursor: pointer;
+}
+
+.trk95 .trk-cycle-day[data-phase="menstrual"] { background: #e7b7b0; }
+.trk95 .trk-cycle-day[data-phase="follicular"] { background: #c9ddc4; }
+.trk95 .trk-cycle-day[data-phase="ovulatory"] { background: #ecd59a; }
+.trk95 .trk-cycle-day[data-phase="luteal"] { background: #cfc6e4; }
+.trk95 .trk-cycle-day[data-phase="unknown"] { background: #e6e6e6; }
+
+.trk95 .trk-cycle-day[data-bleeding="true"]::after {
+  content: "";
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  left: 2px;
+  height: 3px;
+  background: #7a2420;
+}
+
+.trk95 .trk-cycle-day[aria-pressed="true"] {
+  outline: 1px solid #111;
+  outline-offset: -1px;
+  box-shadow: inset 0 0 0 1px #fff, var(--t-field);
+}
+
+.trk95 .trk-cycle-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin: 0;
+  font-size: 10px;
+  color: #111;
+}
+
+.trk95 .trk-cycle-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.trk95 .trk-cycle-legend span::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  box-shadow: var(--t-sunken);
+  background: #e6e6e6;
+}
+
+.trk95 .trk-cycle-legend span[data-phase="menstrual"]::before { background: #e7b7b0; }
+.trk95 .trk-cycle-legend span[data-phase="follicular"]::before { background: #c9ddc4; }
+.trk95 .trk-cycle-legend span[data-phase="ovulatory"]::before { background: #ecd59a; }
+.trk95 .trk-cycle-legend span[data-phase="luteal"]::before { background: #cfc6e4; }
+.trk95 .trk-cycle-legend span[data-bleeding="true"]::before {
+  background: #e6e6e6;
+  box-shadow: inset 0 -3px #7a2420, var(--t-sunken);
+}
+
+.trk95 .trk-cycle-phase {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  color: #111;
+}
+
+.trk95 .trk-cycle-reading p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #161616;
+}
+
+.trk95 .trk-cycle-reading .trk-logbook-note,
+.trk95 .trk-cycle-reading .trk-cycle-phase {
+  margin-bottom: 4px;
+}
+
+.trk95 .trk-cycle-reading [data-testid="cycle-lens-body"] {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85em;
+  margin-top: 8px;
+}
+
+@media (max-width: 720px) {
+  .trk95 .trk-cycle-months {
+    grid-template-columns: 1fr;
+  }
 }

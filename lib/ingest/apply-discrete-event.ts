@@ -7,15 +7,18 @@
  * Whole-message trigger phrases (smoked weed, ate …) stay instants.
  * `logDiscreteNote` is the `n` / `note:` tick. Points sit on a scope and
  * open in the block editor. A later block paint does not remove them.
+ * `log: … loc: home` paints a Location-scope instant at that minute.
  */
 import { formatLocalDateKey } from "@/lib/date-utils"
-import { PEN_PALETTE, useTimeTrackingStore, type TimeEntry } from "@/lib/time-tracking-store"
+import { eventKindSlug, type IntakeClass, type TimeEntry } from "@/lib/time-entries"
+import { PEN_PALETTE, useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { minutesPastMidnight } from "./times"
 import {
   parseIntakePayload,
   parseLogPayload,
   parseSwitchPayload,
   type LogNote,
+  type NoteClockCertainty,
   type SwitchNote,
 } from "./parse-tracking-note"
 import {
@@ -27,6 +30,7 @@ import {
 import type { ApplyResult, IngestIntentKind } from "./types"
 
 const ACTIVITY = "activity"
+const LOCATION = "location"
 const DEFAULT_PEN = "Text log"
 const TEXT_LABEL = "from text pipeline"
 
@@ -58,31 +62,57 @@ export function applyDiscreteLog(payload: string, now = new Date()): ApplyResult
   if (parsed.shape === "start") return paintLogStart(parsed, now)
   if (parsed.shape === "end") return paintLogEnd(parsed, now)
   if (parsed.shape === "range") {
-    const id = paintSpan(parsed.title, parsed.start, parsed.end, DEFAULT_PEN, "event-log", parsed.note)
+    const id = paintSpan(
+    parsed.title,
+    parsed.start,
+    parsed.end,
+    DEFAULT_PEN,
+    "event-log",
+    parsed.note,
+    logMeta(parsed.title, parsed.clockCertainty),
+  )
+    const placeId = pairLocation(parsed, parsed.start)
     return {
       status: "ok",
       kind: "event-log",
-      reply: `Logged: ${parsed.title} · ${clockLabel(parsed.start)}–${clockLabel(parsed.end)}`,
+      reply: `Logged: ${parsed.title} · ${clockLabel(parsed.start)}–${clockLabel(parsed.end)}${placeSuffix(parsed.location)}`,
       summary: `Event → ${parsed.title}`,
-      itemIds: id ? [id] : undefined,
+      itemIds: loggedIds(id, placeId),
     }
   }
-  const id = paintInstant(parsed.title, parsed.at, "event-log", DEFAULT_PEN, parsed.note)
+  const id = paintInstant(
+    parsed.title,
+    parsed.at,
+    "event-log",
+    DEFAULT_PEN,
+    parsed.note,
+    ACTIVITY,
+    logMeta(parsed.title, parsed.clockCertainty),
+  )
+  const placeId = pairLocation(parsed, parsed.at)
   return {
     status: "ok",
     kind: "event-log",
-    reply: `Logged: ${parsed.title} · ${clockLabel(parsed.at)}`,
+    reply: `Logged: ${parsed.title} · ${clockLabel(parsed.at)}${placeSuffix(parsed.location)}`,
     summary: `Event → ${parsed.title}`,
-    itemIds: id ? [id] : undefined,
+    itemIds: loggedIds(id, placeId),
   }
 }
 
-export function applyIntake(payload: string, now = new Date()): ApplyResult {
+export function applyIntake(payload: string, now = new Date(), intakeClass?: IntakeClass): ApplyResult {
   const parsed = parseIntakePayload(payload, now)
   if (!parsed) {
     return { status: "error", kind: "intake", reply: "Intake what? Example: intake: coffee" }
   }
-  const id = paintInstant(parsed.title, parsed.at, "intake", "Intake", parsed.note)
+  const id = paintInstant(
+    parsed.title,
+    parsed.at,
+    "intake",
+    "Intake",
+    parsed.note,
+    ACTIVITY,
+    intakeMeta(intakeClass, parsed.clockCertainty),
+  )
   return {
     status: "ok",
     kind: "intake",
@@ -116,7 +146,15 @@ function applySwitchFlag(
     return { status: "error", kind, reply: `Say what you switched ${noun === "transit" ? "to" : noun}.` }
   }
   const title = flagTitle(parsed, noun)
-  const id = paintInstant(title, parsed.at, kind, pen, parsed.note)
+  const id = paintInstant(
+    title,
+    parsed.at,
+    kind,
+    pen,
+    parsed.note,
+    ACTIVITY,
+    parsed.clockCertainty ? { clockCertainty: parsed.clockCertainty } : undefined,
+  )
   return {
     status: "ok",
     kind,
@@ -144,15 +182,24 @@ function flagTitle(parsed: SwitchNote, noun: "task" | "objective" | "transit"): 
 
 function paintLogStart(parsed: Extract<LogNote, { shape: "start" }>, now: Date): ApplyResult {
   const title = `START ${parsed.title}`
-  const id = paintInstant(title, parsed.at, "event-log", DEFAULT_PEN, parsed.note)
+  const id = paintInstant(
+    title,
+    parsed.at,
+    "event-log",
+    DEFAULT_PEN,
+    parsed.note,
+    ACTIVITY,
+    logMeta(parsed.title, parsed.clockCertainty),
+  )
   if (id) openStarts.set(startKey(parsed.title), { at: parsed.at.toISOString(), entryId: id, note: parsed.note })
+  const placeId = pairLocation(parsed, parsed.at)
   void now
   return {
     status: "ok",
     kind: "event-log",
-    reply: `Started: ${parsed.title} · ${clockLabel(parsed.at)}`,
+    reply: `Started: ${parsed.title} · ${clockLabel(parsed.at)}${placeSuffix(parsed.location)}`,
     summary: `Start → ${parsed.title}`,
-    itemIds: id ? [id] : undefined,
+    itemIds: loggedIds(id, placeId),
   }
 }
 
@@ -162,24 +209,42 @@ function paintLogEnd(parsed: Extract<LogNote, { shape: "end" }>, now: Date): App
   const carried = joinUserNotes(open?.note, parsed.note)
   const start = open ? new Date(open.at) : null
   if (!start || Number.isNaN(start.getTime())) {
-    const id = paintInstant(`END ${parsed.title}`, parsed.at, "event-log", DEFAULT_PEN, carried)
+    const id = paintInstant(
+      `END ${parsed.title}`,
+      parsed.at,
+      "event-log",
+      DEFAULT_PEN,
+      carried,
+      ACTIVITY,
+      logMeta(parsed.title, parsed.clockCertainty),
+    )
+    const placeId = pairLocation(parsed, parsed.at)
     void now
     return {
       status: "ok",
       kind: "event-log",
-      reply: `No open start for ${parsed.title}. Logged the end · ${clockLabel(parsed.at)}`,
+      reply: `No open start for ${parsed.title}. Logged the end · ${clockLabel(parsed.at)}${placeSuffix(parsed.location)}`,
       summary: `End → ${parsed.title}`,
-      itemIds: id ? [id] : undefined,
+      itemIds: loggedIds(id, placeId),
     }
   }
   if (open?.entryId) useTimeTrackingStore.getState().removeEntry(open.entryId)
-  const id = paintSpan(parsed.title, start, parsed.at, DEFAULT_PEN, "event-log", carried)
+  const id = paintSpan(
+    parsed.title,
+    start,
+    parsed.at,
+    DEFAULT_PEN,
+    "event-log",
+    carried,
+    logMeta(parsed.title, parsed.clockCertainty),
+  )
+  const placeId = pairLocation(parsed, start)
   return {
     status: "ok",
     kind: "event-log",
-    reply: `Logged: ${parsed.title} · ${clockLabel(start)}–${clockLabel(parsed.at)}`,
+    reply: `Logged: ${parsed.title} · ${clockLabel(start)}–${clockLabel(parsed.at)}${placeSuffix(parsed.location)}`,
     summary: `Event → ${parsed.title}`,
-    itemIds: id ? [id] : undefined,
+    itemIds: loggedIds(id, placeId),
   }
 }
 
@@ -199,7 +264,16 @@ export function applyDiscreteTriggerLine(
   const list = triggers.length > 0 ? triggers : DEFAULT_DISCRETE_EVENT_TRIGGERS
   const hit = matchDiscreteEventTrigger(raw, list)
   if (!hit) return null
-  const id = paintInstant(hit.title, now, "event-trigger", DEFAULT_PEN)
+  const intakeClass = intakeClassForTriggerPattern(hit.trigger.pattern)
+  const id = paintInstant(
+    hit.title,
+    now,
+    "event-trigger",
+    DEFAULT_PEN,
+    undefined,
+    ACTIVITY,
+    intakeClass ? intakeMeta(intakeClass) : undefined,
+  )
   return {
     status: "ok",
     kind: "event-trigger",
@@ -215,10 +289,77 @@ export function logDiscreteNote(
   title: string,
   when: Date,
   userNote?: string,
+  clockCertainty?: NoteClockCertainty,
 ): string | undefined {
   const text = title.trim()
   if (!text) return undefined
-  return paintInstant(text, when, "note", DEFAULT_PEN, userNote, scopeId)
+  return paintInstant(
+    text,
+    when,
+    "note",
+    DEFAULT_PEN,
+    userNote,
+    scopeId,
+    clockCertainty ? { clockCertainty } : undefined,
+  )
+}
+
+/** Find or create a Location-scope pen. Same `addPen` the location view uses. */
+export function ensureLocationPen(name: string): string {
+  const trimmed = name.trim()
+  if (!trimmed) return ""
+  const store = useTimeTrackingStore.getState()
+  const scope = store.scopes.find((row) => row.id === LOCATION)
+  if (!scope) return ""
+  const existing = scope.pens.find((pen) => pen.name.trim().toLowerCase() === trimmed.toLowerCase())
+  if (existing) return existing.id
+  return store.addPen(LOCATION, {
+    name: trimmed,
+    color: PEN_PALETTE[scope.pens.length % PEN_PALETTE.length] ?? PEN_PALETTE[0],
+  })
+}
+
+function pairLocation(parsed: { location?: string; clockCertainty?: NoteClockCertainty }, when: Date): string | undefined {
+  const name = parsed.location?.trim()
+  if (!name) return undefined
+  const penId = ensureLocationPen(name)
+  if (!penId) return undefined
+  return paintPairedLocationInstant(when, penId, parsed.clockCertainty)
+}
+
+function placeSuffix(location?: string): string {
+  const name = location?.trim()
+  return name ? ` · ${name}` : ""
+}
+
+function loggedIds(eventId: string | undefined, placeId: string | undefined): string[] | undefined {
+  const ids = [eventId, placeId].filter((id): id is string => Boolean(id))
+  return ids.length ? ids : undefined
+}
+
+/** Location attached to one log: a Location-scope instant at that minute. */
+function paintPairedLocationInstant(
+  when: Date,
+  penId: string,
+  clockCertainty?: NoteClockCertainty,
+): string | undefined {
+  const date = formatLocalDateKey(when)
+  const minute = minutesPastMidnight(when)
+  const precision = clockCertainty === "estimated" ? "estimated" : undefined
+  const before = new Set(useTimeTrackingStore.getState().entries.map((entry) => entry.id))
+  useTimeTrackingStore.getState().paintMinutes(date, LOCATION, minute, minute, penId, undefined, undefined, precision, {
+    kind: "instant",
+    ...(clockCertainty ? { clockCertainty } : {}),
+  })
+  const created = useTimeTrackingStore
+    .getState()
+    .entries.find((entry) => !before.has(entry.id) && entry.kind === "instant" && entry.scopeId === LOCATION && entry.date === date)
+  if (!created) return undefined
+  useTimeTrackingStore.getState().updateEntry(created.id, {
+    generatedBy: { kind: "text", id: date },
+    ...(clockCertainty ? { clockCertainty } : {}),
+  })
+  return created.id
 }
 
 function eventNotes(userNote: string | undefined, when: Date): string {
@@ -240,6 +381,37 @@ function joinUserNotes(...parts: (string | undefined)[]): string | undefined {
   return lines.length ? lines.join("\n") : undefined
 }
 
+interface EntryMeta {
+  eventKind?: string
+  intakeClass?: IntakeClass
+  clockCertainty?: NoteClockCertainty
+}
+
+function logMeta(phrase: string, clockCertainty?: NoteClockCertainty): EntryMeta {
+  const eventKind = eventKindSlug(phrase)
+  return {
+    ...(eventKind ? { eventKind } : {}),
+    ...(clockCertainty ? { clockCertainty } : {}),
+  }
+}
+
+function intakeMeta(intakeClass: IntakeClass | undefined, clockCertainty?: NoteClockCertainty): EntryMeta {
+  return {
+    eventKind: intakeClass ? `intake.${intakeClass}` : "intake",
+    ...(intakeClass ? { intakeClass } : {}),
+    ...(clockCertainty ? { clockCertainty } : {}),
+  }
+}
+
+/** `ate` / `drank` / `took` keep today's pen. The class is only set when that word already matched. */
+function intakeClassForTriggerPattern(pattern: string): IntakeClass | undefined {
+  const head = pattern.trim().toLowerCase().split(/\s+/)[0] ?? ""
+  if (head === "ate") return "food"
+  if (head === "drank") return "drink"
+  if (head === "took") return "drug"
+  return undefined
+}
+
 function paintInstant(
   title: string,
   when: Date,
@@ -247,11 +419,12 @@ function paintInstant(
   penName: string,
   userNote?: string,
   scopeId = ACTIVITY,
+  meta?: EntryMeta,
 ): string | undefined {
   const penId = ensurePen(penName, scopeId)
   const date = formatLocalDateKey(when)
   const minute = minutesPastMidnight(when)
-  return paintEntry(date, minute, minute, penId, title, eventNotes(userNote, when), "instant", undefined, scopeId)
+  return paintEntry(date, minute, minute, penId, title, eventNotes(userNote, when), "instant", undefined, scopeId, meta)
 }
 
 function paintSpan(
@@ -261,6 +434,7 @@ function paintSpan(
   penName: string,
   _kind: IngestIntentKind,
   userNote?: string,
+  meta?: EntryMeta,
 ): string | undefined {
   const penId = ensurePen(penName)
   const date = formatLocalDateKey(start)
@@ -273,7 +447,7 @@ function paintSpan(
     if (endKey === next && endMin === 0) endMin = 1440
     else if (!(endKey === next && endMin < startMin)) endDate = endKey
   }
-  return paintEntry(date, startMin, endMin, penId, title, eventNotes(userNote, start), undefined, endDate)
+  return paintEntry(date, startMin, endMin, penId, title, eventNotes(userNote, start), undefined, endDate, ACTIVITY, meta)
 }
 
 function paintEntry(
@@ -286,12 +460,17 @@ function paintEntry(
   kind: TimeEntry["kind"],
   endDate?: string,
   scopeId = ACTIVITY,
+  meta?: EntryMeta,
 ): string | undefined {
-  useTimeTrackingStore.getState().paintMinutes(date, scopeId, startMin, endMin, penId, undefined, undefined, undefined, {
+  const precision = meta?.clockCertainty === "estimated" ? "estimated" : undefined
+  useTimeTrackingStore.getState().paintMinutes(date, scopeId, startMin, endMin, penId, undefined, undefined, precision, {
     kind,
     title,
     notes,
     endDate,
+    eventKind: meta?.eventKind,
+    intakeClass: meta?.intakeClass,
+    clockCertainty: meta?.clockCertainty,
   })
   const wantInstant = kind === "instant"
   const just = useTimeTrackingStore
@@ -310,6 +489,10 @@ function paintEntry(
   useTimeTrackingStore.getState().updateEntry(just.id, {
     notes,
     generatedBy: { kind: "text", id: date },
+    ...(meta?.eventKind ? { eventKind: meta.eventKind } : {}),
+    ...(meta?.intakeClass ? { intakeClass: meta.intakeClass } : {}),
+    ...(meta?.clockCertainty ? { clockCertainty: meta.clockCertainty } : {}),
+    ...(meta?.clockCertainty === "estimated" ? { precision: "estimated" as const } : {}),
   })
   return just.id
 }

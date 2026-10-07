@@ -230,12 +230,12 @@ What you can do (families)
 • Grocery — groc (dump/add/pin); got / x / bought / check off
 • Needed — needed: batteries · get: then lines → list "needed"
 • To-do — to do today:, do: / next action:, read to do today
-• Log — log: / intake: / st: / so: / transit:; smoked weed, drank water, ate …, took …
+• Log — log: (loc: place) / intake: / intake food|drink|drug: / cycle: / st: / switch task: / so: / switch goal: / transit:; smoked weed, drank water, ate …, took …
 • Monitor — currently / stopped / switched to
 • Capture / add — plain text, qa:, add:, inbox:, idea:, quick add: (-mb / -monkey → Monkey brain)
 • Bulk — bulk: / bulk add; Name: dumps; before 9/12:
 • Track — at:, track:, mood:, sleep:, start:/stop, gps:, screen:/call:/text:
-• Notes — n …, day:, memo:, jot:
+• Notes — n / note: (optional clock, est or unknown), day:, memo:, jot:
 • Read — read: / show: / dump: / peek:, lists, folders, search, today, count, tags, ops
 • Scan — receipt photo, journal/PDF → Docs, inv pantry
 • iPhone Notes — iphone-notes: park from Shortcut
@@ -319,11 +319,17 @@ What it is
   Clocks use the machine's timezone on the send date.
 
 How to use it
-• log: drink water  |  log: left home at 3:30  |  log: shower 7:30 - 7:45
+• log: left room  |  log: left room at 3:30  |  log: left room at 3:30 loc: home
 • log: shower 10m  — just finished (end is send time)
 • log: START walk  |  log: END walk 5:00
-• intake: 1 dab dab pen  — point only, no duration
-• st: from: talking to elijah to: cleaning  |  so: tidy the room  |  transit: the store
+• log: left room at 3:30 est  ·  log: left room unknown  — estimated or unknown clock
+• loc: home on a log reuses or creates that Location pen (the place is last)
+• intake: coffee  — point only, no duration. Bare intake leaves the class unset
+• intake food: egg salad  ·  intake drink: coffee at 8:15 est  ·  intake drug: tablet
+• cycle: bleeding  ·  cycle: spotting  ·  cycle: ovulation  ·  cycle: bleeding off
+• st: cleaning  ·  switch task: cleaning at 3:30  — Switch task, title “started …”
+• so: read  ·  switch objective: read  ·  switch goal: read  — Switch goal, title “objective …”
+• transit: the store  — same clock words (est / estimated / ~ / unknown)
 • Presets (Settings → Discrete event triggers):
   smoked weed · drank water · ate {item} · took {item}
 
@@ -428,9 +434,10 @@ How to use it
 Send "track commands" for the glossary.`,
 
   note: `${BIM_SHORT} · Notes
-• n stuck in aisle 4  ·  note:  ·  memo:  ·  jot: — a point at send time
+• n stuck in aisle 4  ·  note: left room at 8:15  ·  note: left room at 8:15 est
+  A clock with no word is exact. est / estimated / ~ is estimated. unknown keeps the minute.
   Also appended to the block covering that minute. A second line is the note.
-• day: tired  ·  daynote:  ·  dnote:  ·  n day: — day jot, not a tick
+• day: tired  ·  daynote:  ·  dnote:  ·  n day: — day jot, not a tick, and not a clock
 • day alone → today
 
 Send "note commands".`,

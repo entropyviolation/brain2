@@ -29,6 +29,7 @@ import { useItemTypeStore } from "@/lib/item-type-store"
 import { useMetricsStore } from "@/lib/metrics-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { useSleepStore } from "@/lib/sleep-store"
+import { useCycleMarksStore } from "@/lib/cycle-marks"
 import { useRegretStore } from "@/lib/regret-store"
 import { useBabyAnimalsStore } from "@/lib/baby-animals-store"
 
@@ -79,6 +80,7 @@ const GUARDED_STORE_STATE: Record<string, () => unknown> = {
   "cogs-metrics-store": () => useMetricsStore.getState(),
   "cogs-timegrid-store": () => useTimeTrackingStore.getState(),
   "cogs-sleep-store": () => useSleepStore.getState(),
+  "cogs-cycle-marks": () => useCycleMarksStore.getState(),
   "cogs-baby-animals-store": () => useBabyAnimalsStore.getState(),
   "points-store": () => usePointsStore.getState(),
   "regret-store": () => useRegretStore.getState(),

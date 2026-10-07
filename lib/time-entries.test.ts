@@ -25,6 +25,8 @@ import {
   normalizeSecondaryPenIds,
   isInstant,
   instantsForDay,
+  entryClockCertainty,
+  eventKindSlug,
   type TimeEntry,
 } from "./time-entries"
 
@@ -427,5 +429,90 @@ describe("discrete instants", () => {
     expect(tick && isInstant(tick)).toBe(true)
     expect(tick).toMatchObject({ startMin: 570, endMin: 570 })
     expect(result.filter((entry) => !isInstant(entry))).toHaveLength(1)
+  })
+})
+
+describe("event kind and clock certainty", () => {
+  it("slugs a phrase without inventing a special case", () => {
+    expect(eventKindSlug("  Left   Room! ")).toBe("left room")
+    expect(eventKindSlug("coffee")).toBe("coffee")
+    expect(eventKindSlug("...")).toBe("")
+  })
+
+  it("stores intake class and clock certainty on a painted instant", () => {
+    const result = paintRange(
+      [],
+      {
+        date: DATE,
+        scopeId: "activity",
+        penId: "work",
+        startMin: 480,
+        endMin: 480,
+        kind: "instant",
+        title: "coffee",
+        eventKind: "intake.drink",
+        intakeClass: "drink",
+        clockCertainty: "unknown",
+      },
+      makeId,
+    )
+    expect(result[0]).toMatchObject({
+      eventKind: "intake.drink",
+      intakeClass: "drink",
+      clockCertainty: "unknown",
+      startMin: 480,
+    })
+    expect(result[0].precision).toBeUndefined()
+    expect(entryClockCertainty(result[0])).toBe("unknown")
+  })
+
+  it("omits exact certainty and sets precision when the clock is estimated", () => {
+    const exact = paintRange(
+      [],
+      {
+        date: DATE,
+        scopeId: "activity",
+        penId: "work",
+        startMin: 500,
+        endMin: 500,
+        kind: "instant",
+        title: "coffee",
+        clockCertainty: "exact",
+      },
+      makeId,
+    )
+    expect(exact[0].clockCertainty).toBeUndefined()
+    expect(entryClockCertainty(exact[0])).toBe("exact")
+    expect(exact[0].precision).toBeUndefined()
+
+    const estimated = paintRange(
+      [],
+      {
+        date: DATE,
+        scopeId: "activity",
+        penId: "work",
+        startMin: 500,
+        endMin: 560,
+        title: "left room",
+        eventKind: "left room",
+        clockCertainty: "estimated",
+      },
+      makeId,
+    )
+    expect(estimated[0]).toMatchObject({ clockCertainty: "estimated", precision: "estimated", eventKind: "left room" })
+  })
+
+  it("does not merge adjacent blocks that differ only in event kind", () => {
+    let result = paint([], { startMin: 540, endMin: 600, eventKind: "left room" })
+    result = paint(result, { startMin: 600, endMin: 660, eventKind: "coffee" })
+    expect(result).toHaveLength(2)
+  })
+
+  it("still merges identical blocks that omit the new fields", () => {
+    let result = paint([], { startMin: 540, endMin: 600 })
+    result = paint(result, { startMin: 600, endMin: 660 })
+    expect(result).toHaveLength(1)
+    expect(result[0].eventKind).toBeUndefined()
+    expect(result[0].clockCertainty).toBeUndefined()
   })
 })

@@ -7,9 +7,13 @@
  * required) is the needed-list form of that dump pattern. `now` rolls
  * `before 9/12:` onto the next matching day. Telegram slash commands
  * (`/start`, `/help`, `/stop`, `/info`) are recognized.
+ * Colon headers matched before the alias loop include `log:`, `intake food:`,
+ * `intake:`, `st:` / `switch task:`, `so:` / `switch objective:` / `switch goal:`,
+ * and `cycle:`. Bare words are not stolen.
  */
 import { looksLikeListDump, parseDueBeforeHeader } from "./parse-bulk"
 import { parsePathHeader } from "@/lib/smart-parse"
+import type { IntakeClass } from "@/lib/time-entries"
 import type { IngestIntent, IngestIntentKind } from "./types"
 
 interface VerbSpec {
@@ -113,6 +117,14 @@ function matchVerb(text: string, now: Date): IngestIntent | null {
     return { kind: "habit-trigger", payload, raw: text }
   }
 
+  // `intake food:` / `intake drink:` / `intake drug:` — class sits before the colon.
+  // Bare `intake food coffee` stays capture. Bare `intake:` is the header below.
+  const intakeClassHeader = /^(intake)\s+(food|drink|drug)\s*[:：]\s*([\s\S]*)$/i.exec(firstLine)
+  if (intakeClassHeader) {
+    const payload = [intakeClassHeader[3].trim(), restLines].filter((s) => s.length > 0).join("\n")
+    return { kind: "intake", payload, raw: text }
+  }
+
   const intakeHeader = /^(intake)\s*[:：]\s*([\s\S]*)$/i.exec(firstLine)
   if (intakeHeader) {
     const payload = [intakeHeader[2].trim(), restLines].filter((s) => s.length > 0).join("\n")
@@ -125,7 +137,7 @@ function matchVerb(text: string, now: Date): IngestIntent | null {
     return { kind: "switch-task", payload, raw: text }
   }
 
-  const switchObjective = /^(?:switch\s+objective|so)\s*[:：]\s*([\s\S]*)$/i.exec(firstLine)
+  const switchObjective = /^(?:switch\s+objective|switch\s+goal|so)\s*[:：]\s*([\s\S]*)$/i.exec(firstLine)
   if (switchObjective) {
     const payload = [switchObjective[1].trim(), restLines].filter((s) => s.length > 0).join("\n")
     return { kind: "switch-objective", payload, raw: text }
@@ -135,6 +147,13 @@ function matchVerb(text: string, now: Date): IngestIntent | null {
   if (transitHeader) {
     const payload = [transitHeader[2].trim(), restLines].filter((s) => s.length > 0).join("\n")
     return { kind: "transit", payload, raw: text }
+  }
+
+  // `cycle: bleeding` / `cycle: spotting off`. Colon required so bare "cycle" is not stolen.
+  const cycleHeader = /^(cycle)\s*[:：]\s*([\s\S]*)$/i.exec(firstLine)
+  if (cycleHeader) {
+    const payload = [cycleHeader[2].trim(), restLines].filter((s) => s.length > 0).join("\n")
+    return { kind: "cycle", payload, raw: text }
   }
 
   // `get:` (colon required) — same writer as `needed:` (list "needed").
@@ -182,6 +201,18 @@ function matchVerb(text: string, now: Date): IngestIntent | null {
     return { kind, payload, raw: text }
   }
   return null
+}
+
+/** Class named by `intake food:` / `intake drink:` / `intake drug:`. Bare `intake:` is unset. */
+export function intakeClassFromMessage(raw: string): IntakeClass | undefined {
+  const text = String(raw ?? "").replace(/^\uFEFF/, "").trim()
+  const firstLineEnd = text.indexOf("\n")
+  const firstLine = (firstLineEnd === -1 ? text : text.slice(0, firstLineEnd)).trim()
+  const match = /^intake\s+(food|drink|drug)\s*[:：]/i.exec(firstLine)
+  if (!match) return undefined
+  const word = match[1]!.toLowerCase()
+  if (word === "food" || word === "drink" || word === "drug") return word
+  return undefined
 }
 
 function isListHeader(line: string, now: Date): boolean {

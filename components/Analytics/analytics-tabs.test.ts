@@ -48,6 +48,7 @@ describe("analytics tabs", () => {
     expect(ANALYTICS_TABS).toContain("transitions")
     expect(ANALYTICS_TABS).toContain("text-events")
     expect(ANALYTICS_TABS).toContain("text-spans")
+    expect(ANALYTICS_TABS).toContain("log")
     expect(ANALYTICS_TABS).toContain("spectrum")
     expect(ANALYTICS_TABS).toContain("todo-pulse")
     expect(groupForTab("todo-pulse").id).toBe("behavior")
@@ -62,6 +63,8 @@ describe("analytics tabs", () => {
     expect(groupForTab("text-spans").id).toBe("time")
     expect(tabLabel("text-events")).toBe("Text events")
     expect(tabLabel("text-spans")).toBe("Text spans")
+    expect(groupForTab("log").id).toBe("time")
+    expect(tabLabel("log")).toBe("Log")
     expect(groupForTab("spectrum").id).toBe("meta")
     expect(groupForTab("velocity").id).toBe("behavior")
     expect(firstTabInGroup("meta")).toBe("observatory")
@@ -90,6 +93,7 @@ describe("analytics tabs", () => {
         "Context Switch",
         "Text events",
         "Text spans",
+        "Log",
         "Operations",
         "Plan vs Reality",
         "Calibration",

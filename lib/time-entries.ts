@@ -56,6 +56,41 @@ export const DEFAULT_WEEK_STEP: WeekStep = 30
 /** Observed vs reconstructed time. Same vocabulary as the sleep log. */
 export type TrackingPrecision = "estimated" | "definite"
 
+/**
+ * Food, drink, or drug on an intake instant. Omitted on older rows and on a
+ * bare `intake:` that did not name a class.
+ */
+export type IntakeClass = "food" | "drink" | "drug"
+
+/**
+ * How firmly this block's clock was observed.
+ *
+ * The words match completion and sleep certainty, but this is a tracking-log
+ * field of its own — not mood, sleep, or completion `ClockCertainty`.
+ * Omitted means exact. Old rows stay omitted; nothing rewrites them.
+ * `"unknown"` still keeps `startMin` so the grid has a place to draw the
+ * mark. That minute was not observed.
+ */
+export type TrackingClockCertainty = "exact" | "estimated" | "unknown"
+
+/** Omitted `clockCertainty` is exact. `"unknown"` is a placement, not an observation. */
+export function entryClockCertainty(entry: { clockCertainty?: TrackingClockCertainty }): TrackingClockCertainty {
+  return entry.clockCertainty ?? "exact"
+}
+
+/**
+ * Stable slug for grouping the same free-form phrase.
+ * Lowercase, trimmed, spaces collapsed, punctuation removed.
+ * An empty result means there is nothing to group.
+ */
+export function eventKindSlug(phrase: string): string {
+  return phrase
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]+/gu, "")
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
 export function isSpeculative(entry: { precision?: TrackingPrecision }): boolean {
   return entry.precision === "estimated"
 }
@@ -176,6 +211,21 @@ export interface TimeEntry {
   pages?: number
   /** Omitted = certain. `"estimated"` is assumed / speculative. */
   precision?: TrackingPrecision
+  /**
+   * Stable slug for grouping counts. Free-form log phrases use
+   * `eventKindSlug` of the phrase (`"left room"`). Intake rows use
+   * `intake`, `intake.food`, `intake.drink`, or `intake.drug`.
+   * Omitted on older rows and on blocks that are not events.
+   */
+  eventKind?: string
+  /** Set when the instant is food, drink, or a drug. Omitted when the class was not named. */
+  intakeClass?: IntakeClass
+  /**
+   * Omitted = exact. `"estimated"` is also stored as `precision: "estimated"`
+   * so the existing hatch still draws. `"unknown"` keeps `startMin` for
+   * placement and does not mean that minute was observed.
+   */
+  clockCertainty?: TrackingClockCertainty
   /**
    * Mood scope only. The three-part reading on this stretch. Omitted when
    * empty. A blank mark is not stored as zero. The derived sentence is not
@@ -339,10 +389,15 @@ export function entryDisplayName(entry: Pick<TimeEntry, "title">, penName?: stri
 }
 
 function sameDetails(a: TimeEntry, b: TimeEntry): boolean {
-  return DETAIL_KEYS.every((key) => {
-    if (key === "moodReading") return sameMoodReading(a.moodReading, b.moodReading)
-    return (a[key] ?? undefined) === (b[key] ?? undefined)
-  })
+  return (
+    DETAIL_KEYS.every((key) => {
+      if (key === "moodReading") return sameMoodReading(a.moodReading, b.moodReading)
+      return (a[key] ?? undefined) === (b[key] ?? undefined)
+    }) &&
+    (a.eventKind ?? undefined) === (b.eventKind ?? undefined) &&
+    (a.intakeClass ?? undefined) === (b.intakeClass ?? undefined) &&
+    (a.clockCertainty ?? undefined) === (b.clockCertainty ?? undefined)
+  )
 }
 
 export function hasDetails(entry: Partial<TimeEntry>): boolean {
@@ -509,6 +564,10 @@ export interface PaintRangeInput {
   kind?: TimeEntryKind
   startEventId?: string
   endEventId?: string
+  eventKind?: string
+  intakeClass?: IntakeClass
+  /** `"exact"` is not stored — omission means exact. */
+  clockCertainty?: TrackingClockCertainty
   /** Mood reading. Omitted from the block when empty. */
   moodReading?: MoodReading
   /** Later calendar day for an explicit wrap. Not stored — slices carry `date`. */
@@ -534,12 +593,26 @@ function entryFromPaint(input: PaintRangeInput, lo: number, hi: number, id: stri
     books: input.books,
     pages: input.pages,
     spanId: input.spanId,
-    precision: input.precision,
+    precision: input.clockCertainty === "estimated" ? "estimated" : input.precision,
     startEventId: input.startEventId,
     endEventId: input.endEventId,
     estimateOf: input.estimateOf,
+    ...eventFields(input),
     ...moodReadingField(input.moodReading),
   }
+}
+
+function eventFields(
+  input: Pick<PaintRangeInput, "eventKind" | "intakeClass" | "clockCertainty">,
+): Partial<Pick<TimeEntry, "eventKind" | "intakeClass" | "clockCertainty">> {
+  const fields: Partial<Pick<TimeEntry, "eventKind" | "intakeClass" | "clockCertainty">> = {}
+  const eventKind = input.eventKind?.trim()
+  if (eventKind) fields.eventKind = eventKind
+  if (input.intakeClass) fields.intakeClass = input.intakeClass
+  if (input.clockCertainty === "estimated" || input.clockCertainty === "unknown") {
+    fields.clockCertainty = input.clockCertainty
+  }
+  return fields
 }
 
 function moodReadingField(reading: MoodReading | undefined): { moodReading: MoodReading } | Record<string, never> {
@@ -701,7 +774,7 @@ export function timeStringToMinutes(value: string): number | null {
   return h * 60 + m
 }
 
-/** 810 → "13:30", for `<input type="time">`. */
+/** 810 → "13:30", the shared clock's stored HH:MM. */
 export function minutesToTimeString(minute: number): string {
   const m = clampMinute(minute) % MINUTES_PER_DAY
   return `${Math.floor(m / 60).toString().padStart(2, "0")}:${(m % 60).toString().padStart(2, "0")}`

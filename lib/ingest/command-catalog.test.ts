@@ -62,6 +62,7 @@ const EXPECTED_KIND_MARKERS: Array<{ kind: string; mustMention: string }> = [
   { kind: "capture", mustMention: "add" },
   { kind: "event-log", mustMention: "log:" },
   { kind: "intake", mustMention: "intake:" },
+  { kind: "cycle", mustMention: "cycle:" },
   { kind: "switch-task", mustMention: "st:" },
   { kind: "switch-objective", mustMention: "so:" },
   { kind: "transit", mustMention: "transit:" },

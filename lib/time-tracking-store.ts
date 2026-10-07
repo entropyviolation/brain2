@@ -42,7 +42,10 @@
  * Analytics can drop assumed time. Done items and imports that are already
  * estimated confirm into a normal block; the hatch is the assumption.
  *
- * Persisted to localStorage under `brain2-timegrid-store`. Persist **v14**
+ * Persisted to localStorage under `brain2-timegrid-store`. Persist **v15**
+ * turns on `enableCycleTracking` only when an older blob omitted the key.
+ * A new store is created at v15 with the flag false and does not take that
+ * branch. Persist **v14**
  * copies each `parentId` into `parentIds` and keeps `parentId` as the display
  * parent. Persist **v13**
  * links each detail to the pen that counts as its parent (`PenVariant.penId`),
@@ -306,6 +309,13 @@ interface TimeTrackingState {
   /** Calendar events the Day Log has confirmed into tracked blocks. */
   confirmedEventIds: string[]
   confirmEventId: (id: string) => void
+  /**
+   * Tracking log cycle section. False on a new store. Persist v15 sets it
+   * true only when an older blob had no such key. Marks stay in
+   * `brain2-cycle-marks`; this flag does not read or write them.
+   */
+  enableCycleTracking: boolean
+  setEnableCycleTracking: (value: boolean) => void
 
   /** Paint `[startMin, endMin)`. A null pen erases. `endMin` earlier than `startMin` continues onto the next day. */
   paintMinutes: (
@@ -330,6 +340,9 @@ interface TimeTrackingState {
         | "endDate"
         | "estimateOf"
         | "moodReading"
+        | "eventKind"
+        | "intakeClass"
+        | "clockCertainty"
       >
     >,
   ) => void
@@ -643,7 +656,18 @@ interface LegacyState {
   activeScopeId?: string
   selectedPenId?: string | null
   penSort?: PenSortMode
+  enableCycleTracking?: boolean
 }
+
+/** Current `brain2-timegrid-store` persist version. */
+export const TIME_TRACKING_PERSIST_VERSION = 15
+
+/**
+ * Version that introduced `enableCycleTracking`. Do not raise this when the
+ * store version moves on. Only blobs older than this fill a missing flag
+ * with true. A store created at v15 or later starts false and skips the fill.
+ */
+const ENABLE_CYCLE_TRACKING_INTRODUCED_AT = 15
 
 /**
  * v3 introduced the tag library. Stores written before it get the default tags
@@ -869,7 +893,22 @@ function migrate(persisted: unknown, version: number): LegacyState {
     state = { ...state, scopes }
   }
   if (version < 14) state = migrateParentLists(state)
+  if (version < ENABLE_CYCLE_TRACKING_INTRODUCED_AT) state = fillEnableCycleTracking(state)
   return state
+}
+
+/**
+ * v15 only, and only when the key was absent. Leaves every other field as it
+ * was. Does not touch `brain2-cycle-marks`. An explicit true or false stays.
+ */
+function fillEnableCycleTracking(state: LegacyState): LegacyState {
+  if (typeof state.enableCycleTracking === "boolean") return state
+  return { ...state, enableCycleTracking: true }
+}
+
+/** Test seam for the persist migrate. Same function the store runs. */
+export function migrateTimeTrackingState(persisted: unknown, version: number): LegacyState {
+  return migrate(persisted, version)
 }
 
 /** Copy a lone `parentId` into `parentIds`. The display parent stays `parentId`. */
@@ -942,6 +981,7 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
       hiddenPenIds: {},
       infiniteScroll: false,
       confirmedEventIds: [],
+      enableCycleTracking: false,
       gridStep: DEFAULT_GRID_STEP,
       gridSpan: "day",
       weekStep: DEFAULT_WEEK_STEP,
@@ -1326,6 +1366,9 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
               endDate: extras?.endDate,
               estimateOf: extras?.estimateOf,
               moodReading: extras?.moodReading,
+              eventKind: extras?.eventKind,
+              intakeClass: extras?.intakeClass,
+              clockCertainty: extras?.clockCertainty,
             },
             () => rid("te"),
           )
@@ -1369,6 +1412,28 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
           if (!target) return state
           const next = { ...target, ...patch, id: target.id }
           if ("precision" in patch && patch.precision !== "estimated") delete next.precision
+          if ("eventKind" in patch) {
+            const slug = typeof patch.eventKind === "string" ? patch.eventKind.trim() : ""
+            if (slug) next.eventKind = slug
+            else delete next.eventKind
+          }
+          if ("intakeClass" in patch) {
+            if (patch.intakeClass === "food" || patch.intakeClass === "drink" || patch.intakeClass === "drug") {
+              next.intakeClass = patch.intakeClass
+            } else delete next.intakeClass
+          }
+          if ("clockCertainty" in patch) {
+            if (patch.clockCertainty === "estimated") {
+              next.clockCertainty = "estimated"
+              next.precision = "estimated"
+            } else if (patch.clockCertainty === "unknown") {
+              next.clockCertainty = "unknown"
+              if (!("precision" in patch)) delete next.precision
+            } else {
+              delete next.clockCertainty
+              if (!("precision" in patch)) delete next.precision
+            }
+          }
           if ("moodReading" in patch) {
             const packed = compactMoodReading(patch.moodReading)
             if (packed) next.moodReading = packed
@@ -1414,6 +1479,9 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
                     spanId: target.spanId,
                     precision: next.precision,
                     moodReading: next.moodReading,
+                    eventKind: next.eventKind,
+                    intakeClass: next.intakeClass,
+                    clockCertainty: next.clockCertainty,
                   },
                   () => rid("te"),
                 ),
@@ -1517,6 +1585,7 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
       },
 
       setInfiniteScroll: (value) => set({ infiniteScroll: value }),
+      setEnableCycleTracking: (value) => set({ enableCycleTracking: value }),
       confirmEventId: (id) =>
         set((state) =>
           state.confirmedEventIds.includes(id) ? state : { confirmedEventIds: [...state.confirmedEventIds, id] },
@@ -1526,7 +1595,7 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
     }),
     {
       name: persistKey("timegrid-store"),
-      version: 14,
+      version: TIME_TRACKING_PERSIST_VERSION,
       storage: createCogsJSONStorage(),
       migrate: (persisted, version) => migrate(persisted, version) as TimeTrackingState,
       merge: (persistedState, currentState) => {

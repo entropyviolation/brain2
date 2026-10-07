@@ -39,6 +39,7 @@ export const ANALYTICS_VIEWS: Record<AnalyticsTab, LazyExoticComponent<Component
   "context-switch": view(() => import("./ContextSwitchHeatmap").then((m) => ({ default: m.ContextSwitchHeatmap }))),
   "text-events": view(() => import("./TextPipelineView").then((m) => ({ default: m.TextEventsView }))),
   "text-spans": view(() => import("./TextPipelineView").then((m) => ({ default: m.TextSpansView }))),
+  log: view(() => import("./LogEventsView").then((m) => ({ default: m.LogEventsView }))),
   regret: view(() => import("./RegretView").then((m) => ({ default: m.RegretView }))),
   overcommit: view(() => import("./OvercommitmentView").then((m) => ({ default: m.OvercommitmentView }))),
   observatory: view(() => import("./Observatory").then((m) => ({ default: m.Observatory }))),

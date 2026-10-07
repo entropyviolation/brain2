@@ -15,6 +15,7 @@ import { isIndexListLine, parseIndexListLine } from "./index-list"
 import { compareSentOrder, messageSentAt } from "./message-time"
 import { getDayNoteEntries } from "@/lib/day-notes-persist"
 import { isInstant } from "@/lib/time-entries"
+import { readCycleMarks } from "@/lib/cycle-marks"
 import { parseIntakePayload, parseLogPayload, parseSwitchPayload } from "./parse-tracking-note"
 import { parseMessage } from "./parse-message"
 import type { IncomingMessage } from "./types"
@@ -266,4 +267,172 @@ describe("log intake switch transit", () => {
     expect(useTimeTrackingStore.getState().entries.some((row) => /shower/i.test(row.title || ""))).toBe(false)
     expect(answer.reply ?? "").not.toMatch(/^Logged:/)
   })
+
+  it("stores intake class, event kind, and clock certainty without changing pens", () => {
+    const bare = ingestIncoming(sim("intake: coffee"), PROCESSED)
+    expect(bare.status).toBe("ok")
+    const coffee = useTimeTrackingStore.getState().entries.find((row) => row.title === "coffee")
+    expect(coffee?.eventKind).toBe("intake")
+    expect(coffee?.intakeClass).toBeUndefined()
+    expect(coffee?.clockCertainty).toBeUndefined()
+    expect(penName(coffee?.penId)).toBe("Intake")
+
+    const drink = ingestIncoming(sim("intake drink: coffee at 8:15 est"), PROCESSED)
+    expect(drink.status).toBe("ok")
+    const timed = useTimeTrackingStore.getState().entries.find((row) => row.title === "coffee" && row.startMin === 8 * 60 + 15)
+    expect(timed).toMatchObject({
+      intakeClass: "drink",
+      eventKind: "intake.drink",
+      clockCertainty: "estimated",
+      precision: "estimated",
+      kind: "instant",
+    })
+    expect(penName(timed?.penId)).toBe("Intake")
+
+    const unknown = ingestIncoming(sim("intake food: egg salad unknown"), PROCESSED)
+    expect(unknown.status).toBe("ok")
+    const eggs = useTimeTrackingStore.getState().entries.find((row) => row.title === "egg salad")
+    expect(eggs).toMatchObject({
+      intakeClass: "food",
+      eventKind: "intake.food",
+      clockCertainty: "unknown",
+      startMin: 15 * 60,
+    })
+    expect(eggs?.precision).toBeUndefined()
+
+    const logged = ingestIncoming(sim("log: Left  Room! at ~3:30"), PROCESSED)
+    expect(logged.status).toBe("ok")
+    const left = useTimeTrackingStore.getState().entries.find((row) => row.title === "Left  Room!")
+    expect(left).toMatchObject({
+      eventKind: "left room",
+      clockCertainty: "estimated",
+      precision: "estimated",
+      startMin: 3 * 60 + 30,
+      kind: "instant",
+    })
+    expect(penName(left?.penId)).toBe("Text log")
+
+    const placed = ingestIncoming(sim("log: left room at 4:00 unknown"), PROCESSED)
+    expect(placed.status).toBe("ok")
+    const unknownLog = useTimeTrackingStore.getState().entries.find((row) => row.title === "left room")
+    expect(unknownLog).toMatchObject({ eventKind: "left room", clockCertainty: "unknown", startMin: 4 * 60 })
+    expect(unknownLog?.precision).toBeUndefined()
+  })
+
+  it("round-trips each composer mode onto the same stored fields", () => {
+    expect(parseLogPayload("left room at 3:30 est loc: home", SENT)).toMatchObject({
+      shape: "point",
+      title: "left room",
+      location: "home",
+      clockCertainty: "estimated",
+    })
+    expect(parseLogPayload("left room at 3:30 loc: home est", SENT)).toMatchObject({
+      title: "left room",
+      location: "home",
+      clockCertainty: "estimated",
+    })
+    expect(parseSwitchPayload("cleaning at 4:00 est", SENT)).toMatchObject({
+      to: "cleaning",
+      clockCertainty: "estimated",
+    })
+
+    const logged = ingestIncoming(sim("log: left room at 3:30 est loc: home"), PROCESSED)
+    expect(logged.status).toBe("ok")
+    const left = useTimeTrackingStore.getState().entries.find((row) => row.title === "left room" && row.startMin === 3 * 60 + 30)
+    expect(left).toMatchObject({
+      eventKind: "left room",
+      clockCertainty: "estimated",
+      precision: "estimated",
+      kind: "instant",
+    })
+    expect(penName(left?.penId)).toBe("Text log")
+    const place = useTimeTrackingStore
+      .getState()
+      .entries.find((row) => row.scopeId === "location" && row.kind === "instant" && row.penId === "loc-home" && row.startMin === 3 * 60 + 30)
+    expect(place).toMatchObject({ clockCertainty: "estimated", precision: "estimated" })
+
+    const named = ingestIncoming(sim("log: left room loc: kitchen"), PROCESSED)
+    expect(named.status).toBe("ok")
+    const location = useTimeTrackingStore.getState().scopes.find((row) => row.id === "location")
+    const kitchen = location?.pens.find((pen) => pen.name === "kitchen")
+    expect(kitchen).toBeTruthy()
+    const kitchenTick = useTimeTrackingStore
+      .getState()
+      .entries.find((row) => row.scopeId === "location" && row.penId === kitchen?.id && row.kind === "instant")
+    expect(kitchenTick?.startMin).toBe(15 * 60)
+
+    const task = ingestIncoming(sim("switch task: cleaning at 4:00 est"), PROCESSED)
+    expect(task.status).toBe("ok")
+    const started = useTimeTrackingStore.getState().entries.find((row) => row.title === "started cleaning")
+    expect(started).toMatchObject({
+      clockCertainty: "estimated",
+      precision: "estimated",
+      startMin: 4 * 60,
+      kind: "instant",
+    })
+    expect(started?.eventKind).toBeUndefined()
+    expect(penName(started?.penId)).toBe("Switch")
+
+    const goal = ingestIncoming(sim("switch goal: read at 8:00 unknown"), PROCESSED)
+    expect(goal.status).toBe("ok")
+    const objective = useTimeTrackingStore.getState().entries.find((row) => row.title === "objective read")
+    expect(objective).toMatchObject({ clockCertainty: "unknown", startMin: 8 * 60, kind: "instant" })
+    expect(objective?.precision).toBeUndefined()
+    expect(objective?.eventKind).toBeUndefined()
+    expect(penName(objective?.penId)).toBe("Objective")
+
+    const noted = ingestIncoming(sim("note: left room at 8:15 est"), PROCESSED)
+    expect(noted.status).toBe("ok")
+    const note = useTimeTrackingStore.getState().entries.find((row) => row.title === "left room" && row.startMin === 8 * 60 + 15)
+    expect(note).toMatchObject({ clockCertainty: "estimated", precision: "estimated", kind: "instant" })
+    expect(note?.eventKind).toBeUndefined()
+    expect(penName(note?.penId)).toBe("Text log")
+    expect(getDayNoteEntries(formatLocalDateKey(SENT))).toEqual([])
+
+    expect(parseMessage("switch goal read").kind).toBe("capture")
+    expect(parseMessage("so: read").kind).toBe("switch-objective")
+  })
+
+  it("maps ate, drank, and took onto intake class and keeps the text log pen", () => {
+    ingestIncoming(sim("ate egg salad"), PROCESSED)
+    ingestIncoming(sim("drank water"), PROCESSED)
+    ingestIncoming(sim("took tablet"), PROCESSED)
+    ingestIncoming(sim("smoked weed"), PROCESSED)
+    const rows = useTimeTrackingStore.getState().entries
+    const ate = rows.find((row) => row.title === "ate egg salad")
+    const drank = rows.find((row) => row.title === "drank water")
+    const took = rows.find((row) => row.title === "took tablet")
+    const smoked = rows.find((row) => row.title === "smoked weed")
+    expect(ate).toMatchObject({ intakeClass: "food", eventKind: "intake.food" })
+    expect(drank).toMatchObject({ intakeClass: "drink", eventKind: "intake.drink" })
+    expect(took).toMatchObject({ intakeClass: "drug", eventKind: "intake.drug" })
+    expect(penName(ate?.penId)).toBe("Text log")
+    expect(penName(drank?.penId)).toBe("Text log")
+    expect(penName(took?.penId)).toBe("Text log")
+    expect(smoked?.intakeClass).toBeUndefined()
+    expect(penName(smoked?.penId)).toBe("Text log")
+  })
+
+  it("sets and clears a cycle flag on the send date", () => {
+    const on = ingestIncoming(sim("cycle: bleeding"), PROCESSED)
+    expect(on.status).toBe("ok")
+    const date = formatLocalDateKey(SENT)
+    expect(readCycleMarks()[date]).toEqual({ date, bleeding: true })
+    const off = ingestIncoming(sim("cycle: bleeding off"), PROCESSED)
+    expect(off.status).toBe("ok")
+    expect(readCycleMarks()[date]).toBeUndefined()
+    expect(ingestIncoming(sim("cycle: spotting"), PROCESSED).status).toBe("ok")
+    expect(readCycleMarks()[date]).toEqual({ date, spotting: true })
+    expect(ingestIncoming(sim("cycle: nope"), PROCESSED).status).toBe("error")
+    expect(parseMessage("cycle bleeding").kind).toBe("capture")
+  })
 })
+
+function penName(penId: string | undefined): string | undefined {
+  if (!penId) return undefined
+  for (const scope of useTimeTrackingStore.getState().scopes) {
+    const pen = scope.pens.find((row) => row.id === penId)
+    if (pen) return pen.name
+  }
+  return undefined
+}

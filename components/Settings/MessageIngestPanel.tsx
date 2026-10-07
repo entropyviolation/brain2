@@ -406,8 +406,21 @@ export function MessageIngestPanel() {
           <code className="text-foreground">smoked weed</code>,{" "}
           <code className="text-foreground">drank water</code>,{" "}
           <code className="text-foreground">ate {"{item}"}</code>,{" "}
-          <code className="text-foreground">took {"{item}"}</code>.{" "}
-          <code className="text-foreground">log:</code> still works separately.
+          <code className="text-foreground">took {"{item}"}</code>. The Tracking log
+          composer is the same store:{" "}
+          <code className="text-foreground">log: left room loc: home</code>,{" "}
+          <code className="text-foreground">st:</code> /{" "}
+          <code className="text-foreground">switch task:</code>,{" "}
+          <code className="text-foreground">so:</code> /{" "}
+          <code className="text-foreground">switch goal:</code>,{" "}
+          <code className="text-foreground">intake food:</code> /{" "}
+          <code className="text-foreground">drink:</code> /{" "}
+          <code className="text-foreground">drug:</code>, and{" "}
+          <code className="text-foreground">note:</code>. A clock is exact unless you
+          add <code className="text-foreground">est</code>,{" "}
+          <code className="text-foreground">estimated</code>,{" "}
+          <code className="text-foreground">~</code>, or{" "}
+          <code className="text-foreground">unknown</code>.
         </p>
         <div className="flex gap-2">
           <Input

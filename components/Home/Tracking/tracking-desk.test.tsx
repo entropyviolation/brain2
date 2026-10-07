@@ -2,6 +2,8 @@ import { fireEvent, render, screen, within } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { formatLocalDateKey } from "@/lib/date-utils"
+import { OPERATION_ATTR, OPERATION_TYPE_ID } from "@/lib/operation-types"
+import { useTaskStore } from "@/lib/task-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { resetTrackingViewPrefs } from "./tracking-view-prefs"
 import { TrackingDesk } from "./tracking-desk"
@@ -58,5 +60,74 @@ describe("TrackingDesk", () => {
 
     fireEvent.click(screen.getByRole("tab", { name: "Activity Log" }))
     expect(screen.getAllByRole("button", { name: "Log activity" })).toHaveLength(1)
+  })
+
+  it("keeps four view keys together and hides the pen desk on Tracking log", () => {
+    useTaskStore.getState().addTask({
+      id: "op-clean",
+      description: "clean house",
+      type: OPERATION_TYPE_ID,
+      stage: "clarified",
+      createdAt: today,
+      completed: false,
+      lists: [],
+      attributes: { [OPERATION_ATTR.stage]: "active" },
+      links: [],
+    })
+    renderDesk(today)
+    const keys = document.querySelector(".trk-view-keys")
+    expect(keys).toBeTruthy()
+    const tabs = within(keys as HTMLElement).getAllByRole("tab")
+    expect(tabs.map((tab) => tab.textContent)).toEqual([
+      "Time Grid",
+      "Activity Log",
+      "Day Log",
+      "Tracking log",
+    ])
+
+    expect(document.querySelector("[data-ui-name='Tracking control panel']")).toBeTruthy()
+    expect(screen.getByLabelText("Search pen colors")).toBeInTheDocument()
+    expect(screen.getByLabelText("Search pens")).toBeInTheDocument()
+    expect(screen.getByRole("group", { name: "Sort pens" })).toBeInTheDocument()
+    expect(screen.getByRole("toolbar", { name: "Tracking view modes" })).toBeInTheDocument()
+    expect(screen.getByRole("group", { name: "Paint tools" })).toBeInTheDocument()
+    expect(screen.getByText("Day notes")).toBeInTheDocument()
+    expect(screen.getByLabelText("Operation to work on")).toBeInTheDocument()
+
+    const logTab = within(keys as HTMLElement).getByRole("tab", { name: "Tracking log" })
+    fireEvent.mouseDown(logTab, { button: 0, ctrlKey: false })
+    expect(logTab).toHaveAttribute("aria-selected", "true")
+    expect(screen.getByTestId("tracking-log-view")).toBeInTheDocument()
+    expect(document.querySelector("[data-ui-name='Tracking control panel']")).toBeNull()
+    expect(screen.queryByLabelText("Search pen colors")).not.toBeInTheDocument()
+    expect(screen.queryByLabelText("Search pens")).not.toBeInTheDocument()
+    expect(screen.queryByRole("group", { name: "Sort pens" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("toolbar", { name: "Tracking view modes" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("group", { name: "Paint tools" })).not.toBeInTheDocument()
+    expect(screen.getByText("Day notes")).toBeInTheDocument()
+    expect(screen.getByLabelText("Operation to work on")).toBeInTheDocument()
+    expect(within(keys as HTMLElement).getByRole("tab", { name: "Time Grid" })).toBeInTheDocument()
+
+    fireEvent.mouseDown(within(keys as HTMLElement).getByRole("tab", { name: "Activity Log" }), {
+      button: 0,
+      ctrlKey: false,
+    })
+    expect(document.querySelector("[data-ui-name='Tracking control panel']")).toBeTruthy()
+    expect(screen.getByLabelText("Search pens")).toBeInTheDocument()
+
+    fireEvent.mouseDown(within(keys as HTMLElement).getByRole("tab", { name: "Day Log" }), {
+      button: 0,
+      ctrlKey: false,
+    })
+    expect(document.querySelector("[data-ui-name='Tracking control panel']")).toBeTruthy()
+    expect(screen.getByLabelText("Search pen colors")).toBeInTheDocument()
+
+    fireEvent.mouseDown(within(keys as HTMLElement).getByRole("tab", { name: "Time Grid" }), {
+      button: 0,
+      ctrlKey: false,
+    })
+    expect(document.querySelector("[data-ui-name='Tracking control panel']")).toBeTruthy()
+    expect(screen.getByRole("toolbar", { name: "Tracking view modes" })).toBeInTheDocument()
+    expect(screen.getByRole("group", { name: "Paint tools" })).toBeInTheDocument()
   })
 })

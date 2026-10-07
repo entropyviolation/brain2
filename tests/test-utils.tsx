@@ -15,6 +15,7 @@ import { DEFAULT_CHROME_FACE, DEFAULT_THEME, useThemeStore } from "@/lib/theme-s
 import { DEFAULT_PCB_MODE } from "@/lib/pcb-backdrop"
 import { defaultScopes, defaultTags, useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { useSleepStore } from "@/lib/sleep-store"
+import { useCycleMarksStore } from "@/lib/cycle-marks"
 import { useSunTimesStore } from "@/lib/sun-times-store"
 import { useUserSettingsStore } from "@/lib/user-settings-store"
 import { useIngestStore } from "@/lib/ingest/ingest-store"
@@ -112,6 +113,7 @@ export function resetAllStores() {
     hiddenPenIds: {},
     infiniteScroll: false,
     confirmedEventIds: [],
+    enableCycleTracking: false,
     gridSpan: "day",
     // Pens, variants, tags and links are state too: a test that adds "Ian's
     // House" must not leave it behind for the next one.
@@ -123,6 +125,7 @@ export function resetAllStores() {
     penSort: "recent",
   })
   useSleepStore.setState({ nights: {} })
+  useCycleMarksStore.setState({ marks: {} })
   useSunTimesStore.getState().resetSunTimes()
   useWorkSessionStore.setState({ session: null })
   usePenColorSessionStore.setState({ session: null })

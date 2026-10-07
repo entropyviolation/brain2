@@ -61,6 +61,7 @@ export type IngestIntentKind =
   | "event-log"
   | "event-trigger"
   | "intake"
+  | "cycle"
   | "switch-task"
   | "switch-objective"
   | "transit"

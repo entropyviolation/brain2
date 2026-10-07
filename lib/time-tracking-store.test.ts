@@ -431,6 +431,44 @@ describe("company, parents, precision", () => {
     expect(useTimeTrackingStore.getState().entriesFor(DAY, "activity")[1].precision).toBe("estimated")
   })
 
+  it("passes event kind, intake class, and clock certainty through paint and update", () => {
+    useTimeTrackingStore.getState().paintMinutes(DAY, "activity", 480, 480, "act-rest", undefined, undefined, undefined, {
+      kind: "instant",
+      title: "coffee",
+      eventKind: "intake.drink",
+      intakeClass: "drink",
+      clockCertainty: "unknown",
+    })
+    const painted = useTimeTrackingStore.getState().entriesFor(DAY, "activity")[0]
+    expect(painted).toMatchObject({
+      kind: "instant",
+      title: "coffee",
+      eventKind: "intake.drink",
+      intakeClass: "drink",
+      clockCertainty: "unknown",
+      startMin: 480,
+    })
+    expect(painted.precision).toBeUndefined()
+
+    useTimeTrackingStore.getState().updateEntry(painted.id, { notes: "oat milk" })
+    const noted = useTimeTrackingStore.getState().entriesFor(DAY, "activity")[0]
+    expect(noted.notes).toBe("oat milk")
+    expect(noted.eventKind).toBe("intake.drink")
+    expect(noted.intakeClass).toBe("drink")
+    expect(noted.clockCertainty).toBe("unknown")
+
+    useTimeTrackingStore.getState().updateEntry(painted.id, { clockCertainty: "estimated" })
+    const estimated = useTimeTrackingStore.getState().entriesFor(DAY, "activity")[0]
+    expect(estimated.clockCertainty).toBe("estimated")
+    expect(estimated.precision).toBe("estimated")
+
+    useTimeTrackingStore.getState().updateEntry(painted.id, { clockCertainty: "exact" })
+    const cleared = useTimeTrackingStore.getState().entriesFor(DAY, "activity")[0]
+    expect(cleared.clockCertainty).toBeUndefined()
+    expect(cleared.precision).toBeUndefined()
+    expect(cleared.eventKind).toBe("intake.drink")
+  })
+
   it("stamps lastUsedAt when a pen is painted so Recent sort can float it", () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date("2026-09-19T12:00:00"))

@@ -43,6 +43,7 @@ import { useModulesStore } from "@/lib/modules-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { getDayNotesPersist, hydrateDayNotesFromStorage } from "@/lib/day-notes-persist"
 import { useSleepStore } from "@/lib/sleep-store"
+import { useCycleMarksStore } from "@/lib/cycle-marks"
 import { useWorkSessionStore } from "@/lib/work-session-store"
 import { usePenColorSessionStore } from "@/lib/pen-color-session-store"
 import { useListsUiStore } from "@/lib/lists-ui-store"
@@ -157,6 +158,7 @@ export const BACKUP_STORES: StoreDescriptor[] = [
   { key: persistKey("tracking-day-notes"), rehydrate: () => hydrateDayNotesFromStorage() },
   { key: persistKey("screentime-prefs"), rehydrate: () => undefined },
   { key: persistKey("sleep-store"), rehydrate: persistRehydrate(useSleepStore) },
+  { key: persistKey("cycle-marks"), rehydrate: persistRehydrate(useCycleMarksStore) },
   { key: persistKey("work-session"), rehydrate: persistRehydrate(useWorkSessionStore) },
   { key: persistKey("pen-color-session"), rehydrate: persistRehydrate(usePenColorSessionStore) },
   { key: persistKey("lists-ui"), rehydrate: persistRehydrate(useListsUiStore) },
@@ -203,6 +205,8 @@ export const BACKUP_STORE_LABELS: Record<string, string> = {
   "cogs-screentime-prefs": "Screen Time prefs",
   [persistKey("sleep-store")]: "Sleep",
   "cogs-sleep-store": "Sleep",
+  [persistKey("cycle-marks")]: "Cycle day marks",
+  "cogs-cycle-marks": "Cycle day marks",
   [persistKey("work-session")]: "Work session",
   "cogs-work-session": "Work session",
   [persistKey("pen-color-session")]: "Pen color session",
@@ -465,6 +469,7 @@ const LIVE_STORES: Record<string, LivePersistStore> = {
   [persistKey("modules-store")]: asLiveStore(useModulesStore),
   [persistKey("timegrid-store")]: asLiveStore(useTimeTrackingStore),
   [persistKey("sleep-store")]: asLiveStore(useSleepStore),
+  [persistKey("cycle-marks")]: asLiveStore(useCycleMarksStore),
   [persistKey("work-session")]: asLiveStore(useWorkSessionStore),
   [persistKey("pen-color-session")]: asLiveStore(usePenColorSessionStore),
   [persistKey("lists-ui")]: asLiveStore(useListsUiStore),

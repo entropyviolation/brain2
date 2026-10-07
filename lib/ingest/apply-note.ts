@@ -2,15 +2,16 @@
  * lib/ingest/apply-note.ts — Tracker notes from a text phrase
  *
  * A moment note (`n` / `note:` / `jot:` / `memo:`) is a discrete event at send
- * time. If a block covers that minute, the text is also appended there.
- * `n loc:` / `n mood:` use those scopes. `day:` / `n day:` stay the day jot
- * and do not become a tick.
+ * time, or at a clock on that line. If a block covers that minute, the text
+ * is also appended there. `est` / `estimated` / `~` and `unknown` set
+ * `clockCertainty` the same way a log line does. `n loc:` / `n mood:` use
+ * those scopes. `day:` / `n day:` stay the day jot and do not become a tick.
  */
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { appendDayNote, getDayNote } from "@/lib/day-notes-persist"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { logDiscreteNote } from "./apply-discrete-event"
-import { splitEventLine } from "./parse-tracking-note"
+import { parseIntakePayload, splitEventLine } from "./parse-tracking-note"
 import { minutesPastMidnight } from "./times"
 import type { ApplyResult } from "./types"
 
@@ -26,8 +27,8 @@ export function applyNote(payload: string, now = new Date()): ApplyResult {
     }
   }
 
-  const date = formatLocalDateKey(now)
   if (peeled.target === "day") {
+    const date = formatLocalDateKey(now)
     const entry = appendDayNote(date, peeled.text, now)
     if (!entry) return { status: "error", kind: "note", reply: "Could not save that day note." }
     useTimeTrackingStore.getState().setDayNotes(date, getDayNote(date))
@@ -39,11 +40,16 @@ export function applyNote(payload: string, now = new Date()): ApplyResult {
     }
   }
 
+  const parsed = parseIntakePayload(peeled.text, now)
   const split = splitEventLine(peeled.text)
-  const nowMin = minutesPastMidnight(now)
+  const title = parsed?.title || split.line
+  const when = parsed?.at ?? now
+  const userNote = parsed?.note ?? split.note
+  const date = formatLocalDateKey(when)
+  const nowMin = minutesPastMidnight(when)
   const store = useTimeTrackingStore.getState()
   const covering = coveringEntry(store.entries, date, peeled.target, nowMin)
-  const instantId = logDiscreteNote(peeled.target, split.line, now, split.note)
+  const instantId = logDiscreteNote(peeled.target, title, when, userNote, parsed?.clockCertainty)
   if (covering) {
     const next = covering.notes ? `${covering.notes}\n${peeled.text}` : peeled.text
     store.updateEntry(covering.id, { notes: next })
@@ -74,7 +80,7 @@ export function applyNote(payload: string, now = new Date()): ApplyResult {
   return {
     status: "ok",
     kind: "note",
-    reply: `Logged: ${split.line}`,
+    reply: `Logged: ${title}`,
     summary: `Note → ${peeled.target}`,
     itemIds: [instantId],
   }

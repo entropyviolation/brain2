@@ -14,7 +14,8 @@ import { BIM_PAIR_OK } from "./bim"
 import { tryApplyGlossary } from "./apply-glossary"
 import { holdMorningReview, isMorningVoiceAdvance, isTelegramLocationPin } from "./apply-morning-gm"
 import { UNPAIRED_SUMMARY, pairingCodeValid } from "./pairing"
-import { parseMessage, looksLikeVerb } from "./parse-message"
+import { intakeClassFromMessage, looksLikeVerb, parseMessage } from "./parse-message"
+import { applyCycle } from "./apply-cycle"
 import { expandIngestText } from "./expand"
 import { claimIngestDedupe, ingestDedupeKey } from "./dedupe"
 import { applyCapture } from "./apply-capture"
@@ -90,6 +91,7 @@ const PRIORITY_EXPLICIT = new Set<IngestIntent["kind"]>([
   "event-log",
   "habit-trigger",
   "intake",
+  "cycle",
   "switch-task",
   "switch-objective",
   "transit",
@@ -331,7 +333,9 @@ function dispatch(intent: IngestIntent, now: Date): ApplyResult {
         }
       )
     case "intake":
-      return applyIntake(intent.payload, now)
+      return applyIntake(intent.payload, now, intakeClassFromMessage(intent.raw))
+    case "cycle":
+      return applyCycle(intent.payload, now)
     case "switch-task":
       return applySwitchTask(intent.payload, now)
     case "switch-objective":

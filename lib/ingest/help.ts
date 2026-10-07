@@ -27,10 +27,12 @@ Habits (dh: then the keyword)
 • A bare keyword is not a habit log
 Events (whole message, or log: / intake:)
 • smoked weed  ·  drank water  ·  ate egg salad  ·  took 2 adderall
-• log: drink water  ·  log: left home at 3:30  ·  log: shower 10m  ·  log: START walk
+• log: left room  ·  log: left room at 3:30 loc: home  ·  log: shower 10m  ·  log: START walk
   A line under the event is the note. The clock stays on the first line.
-• intake: coffee  — point only, no duration
-• st: from: … to: …  ·  so: objective  ·  transit: to the store
+  est / estimated / ~ is estimated. unknown keeps the minute. loc: names a Location pen.
+• intake: coffee  — point only, no duration. intake food: / drink: / drug: sets the class
+• cycle: bleeding  ·  cycle: spotting  ·  cycle: ovulation  ·  cycle: bleeding off
+• st: / switch task: cleaning  ·  so: / switch objective: / switch goal: read  ·  transit: the store
 Activity spans
 • currently deep work  ·  stopped deep work  ·  switched to cooking
 Plan / capture
@@ -91,9 +93,21 @@ Presets:
 • drank water
 • ate {item}     →  ate egg salad
 • took {item}    →  took 2 adderall
-• log: drink water  |  log-drink water
+• log: left room  |  log- left room  |  log: left room at 3:30 est  |  log: left room unknown
+  |  log: left room at 3:30 loc: home
   Whatever follows is the event title. A line under it is the note.
+  The phrase is also an eventKind slug so repeats group. A clock with no word is exact.
+  est / estimated / ~ is estimated. unknown keeps the minute for placement.
+  loc: at the end reuses or creates that Location pen and paints a Location instant.
   Bare “o” is NOT a log unless you send log: o or set “o” as a trigger.
+• intake: coffee  |  intake food: egg salad  |  intake drink: coffee at 8:15 est  |  intake drug: tablet
+  Bare intake: leaves the class unset and sets eventKind intake. Classed lines set intake.food / intake.drink / intake.drug. Pen stays Intake.
+• st: cleaning  |  switch task: cleaning at 3:30 est  — title “started …”, pen Switch
+• so: read  |  switch objective: read  |  switch goal: read at 8:00 unknown  — title “objective …”, pen Objective
+  Same clock words as log. A clock with no word is exact.
+• note: left room at 8:15  |  n left room at 8:15 est  — Text log instant. day: stays the day jot.
+• cycle: bleeding  |  cycle: spotting  |  cycle: ovulation  |  cycle: bleeding off
+  That flag on the send date. Spotting does not change phase.
 
 ACTIVITY SPANS  (Activity scope, labeled from text pipeline)
 • currently deep work — start this activity now (open until end of day)
@@ -122,7 +136,8 @@ CAPTURE / LISTS
 
 TRACK / LOCATION / NOTES
 • n stuck in aisle 4 — a point at send time; also on the block covering that minute
-• day: tired — day jot, not a tick
+• note: left room at 8:15 est — same clock words as log (exact unless est / estimated / ~ / unknown)
+• day: tired — day jot, not a tick, and not a clock
 • at: gym  ·  tt work  ·  track: exercise 30m
 • start: write paper  ·  stop (working-now / pause)
 • mood: good  ·  sleep: 11:30-7:00

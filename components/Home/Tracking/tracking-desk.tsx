@@ -2,8 +2,10 @@
  * components/Home/Tracking/tracking-desk.tsx — Tracking window
  *
  * Loaded only when Home → Tracking is the open section, so Habits does not
- * parse the time grid. Fascia, working-now strips, pen tray, and the three
- * views (Time Grid / Activity Log / Day Log) stay one instrument.
+ * parse the time grid. Fascia, working-now strips, pen tray, and the four
+ * views (Time Grid / Activity Log / Day Log / Tracking log) stay one instrument.
+ * The four fascia keys share one row when the bay has room. Tracking log
+ * hides the pen desk; the other three views keep it.
  */
 "use client"
 
@@ -11,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TimeGrid } from "@/components/Home/Tracking/time-grid"
 import { ActualDayView } from "@/components/Home/Tracking/actual-day-view"
 import { TrackingActivityLog } from "@/components/Home/Tracking/tracking-activity-log"
+import { TrackingLogView } from "@/components/Home/Tracking/tracking-log-view"
 import { WorkingNowStrip } from "@/components/Home/Tracking/working-now-strip"
 import { PenColorNowStrip } from "@/components/Home/Tracking/pen-color-now-strip"
 import { TrackingDayNotes } from "@/components/Home/Tracking/tracking-day-notes"
@@ -23,8 +26,8 @@ import { formatLocalDateKey } from "@/lib/date-utils"
 import { usePersistedTab } from "@/lib/use-persisted-tab"
 import { orbFor } from "@/components/Icons"
 
-type TrackingTab = "grid" | "activity" | "daylog"
-const TRACKING_TABS: TrackingTab[] = ["grid", "activity", "daylog"]
+type TrackingTab = "grid" | "activity" | "daylog" | "log"
+const TRACKING_TABS: TrackingTab[] = ["grid", "activity", "daylog", "log"]
 
 export function TrackingDesk({
   currentDate,
@@ -34,6 +37,7 @@ export function TrackingDesk({
   setCurrentDate: (date: Date) => void
 }) {
   const [trackingTab, setTrackingTab] = usePersistedTab(APP_NAV_KEYS.homeTrackingTab, TRACKING_TABS, "grid")
+  const showPenDesk = trackingTab !== "log"
 
   return (
     <div className="trk95" data-ui-name="Tracking" data-ui-docs="components/Home/Tracking/README.md">
@@ -50,18 +54,23 @@ export function TrackingDesk({
                   <TabsTrigger value="grid">Time Grid</TabsTrigger>
                   <TabsTrigger value="activity">Activity Log</TabsTrigger>
                   <TabsTrigger value="daylog">Day Log</TabsTrigger>
+                  <TabsTrigger value="log">Tracking log</TabsTrigger>
                 </TabsList>
               </div>
             </div>
           </div>
           <div className="trk-now-module">
             <WorkingNowStrip />
-            <PenColorNowStrip />
+            {showPenDesk ? <PenColorNowStrip /> : null}
           </div>
           <TrkChromeStack
-            pens={<PenPalette embedded />}
-            modeBar={<PenModeBar />}
-            gridAction={trackingTab === "activity" ? undefined : <LogActivityLatch dateKey={formatLocalDateKey(currentDate)} />}
+            pens={showPenDesk ? <PenPalette embedded /> : null}
+            modeBar={showPenDesk ? <PenModeBar /> : null}
+            gridAction={
+              trackingTab === "activity" || trackingTab === "log" ? undefined : (
+                <LogActivityLatch dateKey={formatLocalDateKey(currentDate)} />
+              )
+            }
           >
             <div className="trk-desktop">
               <TabsContent value="grid" className="mt-0">
@@ -72,6 +81,9 @@ export function TrackingDesk({
               </TabsContent>
               <TabsContent value="daylog" className="mt-0">
                 <ActualDayView currentDate={currentDate} setCurrentDate={setCurrentDate} />
+              </TabsContent>
+              <TabsContent value="log" className="mt-0">
+                <TrackingLogView currentDate={currentDate} setCurrentDate={setCurrentDate} />
               </TabsContent>
             </div>
             <TrackingDayNotes currentDate={currentDate} />
