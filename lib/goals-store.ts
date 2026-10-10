@@ -16,8 +16,9 @@ import { persistKey } from "@/lib/storage-keys"
 import type { Goal, Objective, ObjectivePriority, PriorityPeriod } from "@/lib/types"
 import { usePointsStore } from "@/lib/points-store"
 import { periodKeyFor } from "@/lib/objectives"
+import { pointsRuleValue } from "@/lib/points-rules-live"
 
-/** Default points multiplier for actions serving any (non-prioritized) objective. */
+/** Default points multiplier for actions serving any (non-prioritized) objective. Live awards read the catalog. */
 export const DEFAULT_OBJECTIVE_MULTIPLIER = 1.5
 
 interface GoalsState {
@@ -305,7 +306,7 @@ export const useGoalsStore = create<GoalsState>()(
  */
 export function objectiveMultiplierFor(objective: Objective, date = new Date()): number {
   const active = (objective.priorities ?? []).filter((p) => p.periodKey === periodKeyFor(p.period, date))
-  if (active.length === 0) return DEFAULT_OBJECTIVE_MULTIPLIER
+  if (active.length === 0) return pointsRuleValue("objective.defaultMultiplier")
   return Math.max(...active.map((p) => p.multiplier))
 }
 

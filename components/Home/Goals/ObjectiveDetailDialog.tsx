@@ -9,6 +9,7 @@
 import { useMemo, useState } from "react"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { useGoalsStore } from "@/lib/goals-store"
+import { pointsRuleValue } from "@/lib/points-rules-live"
 import { useTaskStore } from "@/lib/task-store"
 import {
   periodKeyFor,
@@ -96,7 +97,7 @@ export function ObjectiveDetailDialog({
       alert(`You can prioritize at most ${MAX_PRIORITIES_PER_PERIOD[period]} objectives per ${period}.`)
       return
     }
-    setObjectivePriority(objective.id, { period, periodKey: key, multiplier: 2 })
+    setObjectivePriority(objective.id, { period, periodKey: key, multiplier: pointsRuleValue("objective.prioritySeedMultiplier") })
   }
 
   const setMultiplier = (period: PriorityPeriod, multiplier: number) => {

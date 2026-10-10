@@ -11,7 +11,18 @@ module live here:
   views. This is the platform behind user-built tools like an **Itinerary
   Creator**, **House Cleaning App** (Tidy), and **Budget Tracker**.
 - **Widgets** — single dashboard cards (list explorer, writing prompt, random
-  task, analytics stat, cause→effect rules) shown in a grid.
+  task, analytics stat, cause→effect rules) shown in a grid. The type catalog
+  is `WIDGET_MODULE_CATALOG` in `module-helpers.ts`, the same decisions as
+  [`docs/widget-improvement/plan/modules.md`](../../docs/widget-improvement/plan/modules.md).
+  List Explorer shows title, author, and genre; the blurb opens on that card.
+  Analytics Stat opens the total onto the days that make it. Random Task
+  draws this month's open items on the chosen list and says that pool — a
+  uniform draw of every open to-do is not what to do now. Writing Generator,
+  List Summary, and Rules have no saved card. A new writing card keeps its
+  sentence and names the built-in topics. A new summary does not paint `0/0`
+  for a missing or empty list. A blank rule does not match as `> 0`. Saved
+  cards keep their bindings. The gray field stays. Phosphor stays on the
+  analytics stat.
 
 ## Public door
 
@@ -67,8 +78,8 @@ Full contract, install ladder, manifest shape, and migration plan:
 | File | Purpose |
 |------|---------|
 | `modules-panel.tsx` | **Orchestrator**: lists workspaces + widgets, opens a workspace full-screen, hosts the build/config dialogs. Last open workspace survives refresh / tab switch. Catalog chrome is `.mod95` in `modules-chrome.css` (miniature windows + gadget wells; interiors keep their own skins). |
-| `modules-chrome.css` | Catalog (`.mod95`) + opened workspace window (`.mod95-ws`) so generic views/toolbars are not glass on the PCB. Imported from `app/layout.tsx`. |
-| `module-helpers.ts` | **Pure helpers + constants**: random pickers, writing word banks, `MODULE_META`, `WIDGET_MODULE_TYPES`, `ruleMatches`, `tasksInList`, stat/rule-operator options. Unit-tested in `module-helpers.test.ts` |
+| `modules-chrome.css` | Catalog (`.mod95`) + opened workspace window (`.mod95-ws`) so generic views/toolbars are not glass on the PCB. Imported from `app/layout.tsx`. Catalog cards (workspace windows and dashboard widgets) take the Home overview face from `home-chrome.css`: Karla, titles 14px, descriptions and view counts 13px, widget body sentences one step up (`text-sm` 16px, `text-xs` 13px, `text-[10px]` 12px). The opened workspace stays on the pixel face. |
+| `module-helpers.ts` | **Pure helpers + constants**: random pickers, writing word banks, `MODULE_META`, `WIDGET_MODULE_TYPES`, `WIDGET_MODULE_CATALOG` (what each card should tell), `ruleMatches`, `tasksInList`, stat/rule-operator options. Unit-tested in `module-helpers.test.ts` |
 | `module-bodies.tsx` | `ModuleCard` + per-widget render bodies (analytics stat, list summary, writing prompt, list explorer, random task, rules). Exports `AnalyticsStat` (reused by workspace `stat` views) |
 | `module-helpers.test.ts` | Unit tests for the pure helpers (`ruleMatches`, `tasksInList`, `randN`) |
 | `ModuleConfigDialog.tsx` | Add/configure a **widget** |

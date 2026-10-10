@@ -1,22 +1,25 @@
 /**
  * components/shell-chrome.css — Pinned mill title bar
  *
- * Full-width fascia: navy BRAIN2 caption, Friend / Rituals / System / optional
- * now well / Capture as milled silver key-wells (Y2K handheld / TENO chunky
- * keys). Quoted Win95 bevels may sit underneath; the fascia reads as brushed
- * metal rings + raised keys, not a flat dialog strip.
+ * Full-width fascia: navy BRAIN2 caption, Friend / Rituals / System / Capture
+ * as milled silver key-wells (Y2K handheld / TENO chunky keys). The optional
+ * now well lives in Capture. Quoted Win95 bevels may sit underneath; the
+ * fascia reads as brushed metal rings + raised keys, not a flat dialog strip.
  *
- * Reflow: clusters share one flex line (the rail is `display: contents`).
- * Free width widens Rituals, System, and Capture, and the keys share each
- * well, up to a cap. The clusters stay packed — leftover past the cap is
- * mill at the end of the row, not a gap torn between Friend and Rituals.
- * A wide shell is one row. Narrower than the caps, whole clusters wrap onto
- * the full shell; a cluster wider than the shell scrolls inside its bay.
- * Keys do not flex-shrink. Counts stay on the keys.
+ * Reflow: Nav is the left anchor. Friend, Rituals, System, and Capture sit
+ * in `.b2-shell-stage`, one group centered in the space to the right of Nav
+ * (the rail is `display: contents`, so a wrapped cluster still uses the
+ * full shell). The column gap between clusters stays tight — leftover mill
+ * is equal on both sides of the group, not a hole between Friend and
+ * Rituals. Capture’s word keys are content-wide and share one gap; the
+ * live now well is a content-sized peer beside them. A wide shell is one
+ * row. Narrower than the group, whole clusters wrap onto the full shell;
+ * a cluster wider than the shell scrolls inside its bay. Keys do not
+ * flex-shrink. Counts stay on the keys.
  *
- * The now well (`header-now-box.tsx`) sits between System and Capture; absent
- * when idle. Sticky pin + shelf so the desk scrolls under it. Do not restyle
- * module interiors or the tab strip from here.
+ * The now well (`header-now-box.tsx`) lives in Capture, as a peer of the
+ * Capture keys; absent when idle. Sticky pin + shelf so the desk scrolls
+ * under it. Do not restyle module interiors or the tab strip from here.
  */
 
 .b2-shell {
@@ -188,14 +191,35 @@ html[data-pcb-ink="light"] .b2-shell-caption .brain2-mark {
   display: flex;
   flex-wrap: wrap;
   align-items: stretch;
-  /* Row gap clears the engraved legends when a cluster wraps under another.
-     Column gap tracks the shell: a floor so clusters never jam, a ceiling
-     so a wide window does not string them across empty mill. */
-  column-gap: clamp(8px, 1.5cqi, 14px);
+  /* Row gap clears the engraved legends when the centered group wraps
+     under Nav. The stage's own gap separates clusters; auto margins on
+     the stage are the equal mill, so the body does not add a second gap. */
+  column-gap: 0;
   row-gap: 16px;
   justify-content: flex-start;
   padding: 11px 8px 8px;
   overflow: visible;
+}
+
+/* Nav stays put. This bay is the Friend + Rituals + System + Capture group.
+   Auto margins split the leftover after Nav, so the group is centered in
+   that space and the gap inside the group stays the column gap. When the
+   group is wider than the space beside Nav, min-width drops it to the next
+   line at full shell width and the clusters pack from the start. */
+.b2-shell-stage {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  flex: 0 0 auto;
+  justify-content: flex-start;
+  column-gap: clamp(8px, 1.5cqi, 14px);
+  row-gap: 16px;
+  box-sizing: border-box;
+  width: max-content;
+  min-width: min(100%, max-content);
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .b2-shell-brand,
@@ -384,19 +408,19 @@ html[data-pcb-ink="light"] .b2-shell-brand .baby-nest-name {
   display: block;
 }
 
-/* Rituals and System grow into leftover rail width, then stop so one key
-   does not sit in an empty tray. */
+/* Clusters stay content-wide. The stage centers the group; growing a well
+   would spend the leftover mill inside the group. */
 .b2-shell-rituals {
-  flex: 1 0 auto;
-  width: auto;
-  min-width: max-content;
+  flex: 0 0 auto;
+  width: max-content;
+  min-width: 0;
   max-width: min(100%, 9.5rem);
 }
 
 .b2-shell-system {
-  flex: 2 0 auto;
-  width: auto;
-  min-width: min(100%, 18rem, max-content);
+  flex: 0 0 auto;
+  width: max-content;
+  min-width: 0;
   max-width: min(100%, 18rem);
 }
 
@@ -429,31 +453,45 @@ html[data-pcb-ink="light"] .b2-shell-brand .baby-nest-name {
 }
 
 .b2-shell-capture {
-  /* Grows with the row, then stops at the compact key density. A medium
-     shell does not string the keys apart across an empty well. */
-  flex: 4 0 auto;
-  width: auto;
-  /* min() includes the cap so a wide max-content cannot beat max-width
-     and stretch the well (min-width wins that fight). */
-  min-width: min(100%, 25rem, max-content);
-  max-width: min(100%, 25rem);
-}
-
-.b2-shell-capture .b2-shell-keys {
-  width: 100%;
+  /* Content-wide: Now, Inbox, and Quick Add share one gap at label width.
+     The live now well is a content-sized peer beside the keys, not a reason
+     to stretch them. Narrower than the shell, the keys bay scrolls. */
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: center;
+  column-gap: clamp(6px, 0.6cqi, 10px);
+  flex: 0 0 auto;
+  width: max-content;
   min-width: 0;
   max-width: 100%;
 }
 
-.b2-shell-now {
-  flex: 0 0 auto;
+.b2-shell-capture .b2-shell-keys {
+  flex: 0 1 auto;
   width: max-content;
-  max-width: min(22rem, 100%);
+  min-width: 0;
+  max-width: 100%;
+  justify-content: flex-start;
+}
+
+.b2-shell-now {
+  flex: 0 1 auto;
+  width: max-content;
+  min-width: 0;
+  max-width: min(28rem, 100%);
 }
 
 .b2-shell-now-row > button {
   flex: 0 0 auto;
   min-width: max-content;
+}
+
+.b2-shell-now-swatch {
+  flex: 0 0 12px;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.45);
 }
 
 .b2-shell-now-body {
@@ -552,6 +590,16 @@ body.win95-app .b2-shell-nav button {
   gap: 5px;
 }
 
+/* Capture word keys stay label-wide. The rule above grows a key up to
+   7.5rem; that stretch opened a runway between Now, Inbox, and Quick Add. */
+body.win95-app .b2-shell-capture .b2-shell-keys > button,
+.b2-shell-capture .b2-shell-keys > * {
+  flex: 0 0 auto;
+  width: max-content;
+  min-width: max-content;
+  max-width: max-content;
+}
+
 /* Word keys hide their Lucide marks. Icon keys (gear, question, search) show
    an engraved glyph on the same milled face. Nav chevrons stay visible too. */
 body.win95-app .b2-shell-rail button svg {
@@ -588,10 +636,22 @@ body.win95-app .b2-shell-nav button {
   padding-inline: 0.35rem;
 }
 
-body.win95-app .b2-shell-now-row > button {
-  flex: 0 0 auto;
-  max-width: none;
-  width: auto;
+body.win95-app .b2-shell-now-row > button.b2-shell-now-icon {
+  flex: 0 0 26px;
+  width: 26px;
+  min-width: 26px;
+  max-width: 26px;
+  height: 26px;
+  min-height: 26px;
+  padding: 0;
+}
+
+body.win95-app .b2-shell-now-row > button.b2-shell-now-icon svg {
+  display: block;
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.25;
+  color: #1a1c1e;
 }
 
 body.win95-app .b2-shell-nav button svg {
@@ -687,6 +747,91 @@ body.win95-app .b2-shell-rail button.b2-shell-go:not(:disabled):active {
 
 body.win95-app .b2-shell-rail button.b2-shell-go svg {
   color: #111;
+}
+
+/* Reminder bell: icon key, orange count banner tucked in the corner.
+   Hidden at zero. Not the Inbox CRT count. */
+body.win95-app .b2-shell-rail button.b2-reminder-bell {
+  overflow: visible;
+}
+
+body.win95-app .b2-shell-rail button.b2-reminder-bell .b2-reminder-count {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 14px;
+  height: 12px;
+  padding: 0 3px;
+  border-radius: 2px;
+  background: #c2410c;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  line-height: 12px;
+  text-shadow: none;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+
+.b2-reminder-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  overflow: auto;
+}
+
+.b2-reminder-empty {
+  margin: 0;
+  font-size: 12px;
+}
+
+.b2-reminder-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--r-2, 2px);
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
+    var(--hpp-surface, #c0c0c0);
+  box-shadow:
+    0 0 0 1px var(--chrome-lip, #808080),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.b2-reminder-copy {
+  min-width: 0;
+}
+
+.b2-reminder-name {
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.b2-reminder-when,
+.b2-reminder-source {
+  margin-top: 2px;
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.b2-reminder-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 6px;
+}
+
+.b2-reminder-actions button {
+  padding: 4px 8px;
+  font-size: 11px;
 }
 
 body.win95-app .b2-shell-rail .b2-shell-count {

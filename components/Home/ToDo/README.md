@@ -48,7 +48,7 @@ build/filter logic is unit-testable.
 | `MissedTodoSection.tsx` | Collapsible Missed opportunities list (`data-ui-name="Missed"`, Sony-editor red well) for the focused period |
 | `UndoneTodoSection.tsx` | Collapsible **Undone** list (`data-ui-name="Undone"`) on a past day / week / month: cool lace well, push plasma tube, Assimilate / Push / Discard |
 | `AddDoneDialog.tsx` | "Log done" (`data-ui-name="Log done"`) — retroactive capture of unplanned work |
-| `CompletionTimeLine.tsx` | The per-row time line: clock window, duration, the **est.** chip that confirms or corrects an assumed time in place, a quiet **Est.** when the person marked `timeRough`, and a read-only **usually ~N** glance from peer `actualDuration` / `timeLogs` (`usualDurationMinutes`; does not rewrite `estimatedDuration`) |
+| `CompletionTimeLine.tsx` | The per-row time line: clock window, duration, the **est.** chip that confirms or corrects an assumed time in place, a quiet **Est.** when the person marked `timeRough` (including an estimated finish, which also wears `~` on the clock), and a read-only **usually ~N** glance from peer `actualDuration` / `timeLogs` (`usualDurationMinutes`; does not rewrite `estimatedDuration`) |
 
 ## Instrument layout
 
@@ -118,15 +118,15 @@ A push from anywhere else records the period being left the same way, so it show
 
 | Push | What it writes |
 |------|----------------|
-| Open-list **Push** | `pushTaskOnePeriod` — next day, week, or month from the live period, plus that period on `schedulePlacements` |
-| Undone **Push** | Next period of that grain that is still open |
+| Open-list **Push** | `pushTaskOnePeriod` — next day, week, or month from the live period, plus that period on `schedulePlacements`. An optional why can sit on that placement as `missReason`. Skip still pushes |
+| Undone **Push** | Next period of that grain that is still open. Same optional why. Assimilate and Discard do not ask |
 | Review carry-over / review **Push** | `pushFieldsForReviewPeriod` (day / week / month go through `pushTaskOnePeriod`) |
 | Message ingest ritual push | `pushTaskOnePeriod` |
 | **Auto-push** | When the period ends, if item detail **Auto-push** is on (default off). Same grain: week 1 unfinished becomes Undone for week 1 and scheduled (`scheduledWeek`) for week 2. Each missed day or week on the way is recorded, and the push counter increments. Off: the unfinished period rolls to the coarser list instead, still Undone for the period that ended, and the push counter does not increment. |
 
 Missed, cancelled, hidden, and discarded placements stay out of Undone. The status bar adds `N undone` on a past period. Those rows are not repeated in that period's open table.
 
-**Add Task** creates a real task via `createScheduledTodoTask()` + `addTask()`, scheduled to the active tab at the currently-focused date: day → `scheduledDate` (the focused day), week → `scheduledWeek`, month → `scheduledMonth` (local `YYYY-MM` via `getMonthKey`, the same key the month filter uses). Week/month tasks are assigned to that period's list only — no specific day is pinned. The chosen **tier** maps to `urgency`/`importance` via `tierToUrgencyImportance`. Plan's day sidebar uses the same factory, so items added there show up here unchanged. The Assigned foot composer writes the same path; matching an existing name offers that row instead of a duplicate.
+**Add Task** creates a real task via `createScheduledTodoTask()` + `addTask()`. The id is `todo-<time>-<counter>` so several lines in one turn each land. It is scheduled to the active tab at the currently-focused date: day → `scheduledDate` (the focused day), week → `scheduledWeek`, month → `scheduledMonth` (local `YYYY-MM` via `getMonthKey`, the same key the month filter uses). Week/month tasks are assigned to that period's list only — no specific day is pinned. The chosen **tier** maps to `urgency`/`importance` via `tierToUrgencyImportance`. Plan's day sidebar uses the same factory, so items added there show up here unchanged. The Assigned foot composer writes the same path; matching an existing name offers that row instead of a duplicate.
 
 The header **today's friend** does **not** only read this day's To Do slice. Species that lean To Do (puppy, foal, kitten, …) prefer it; others still can pick it when that pool is what is open. Hedgehogs lean daily habits; crows lean the whole **Next Actions** folder tree (`lib/friend-suggestion.ts`). Completed **and missed-opportunity** rows stay out. Click the friend again for a different suggestion; Escape, the bubble ×, or a click outside closes it. Plan: [`docs/FRIEND_COMPANION.md`](../../../docs/FRIEND_COMPANION.md).
 
@@ -155,9 +155,10 @@ Assumed values are marked with a leading `~` and an **est.** chip
 (`lib/estimated-values.ts` holds the flag; `CompletionTimeLine` renders it). The
 chip's tooltip spells out the basis — "4 pages × 10 min each" — and clicking it opens an
 inline editor for the finish time and duration. A separate **Est.** mark
-(`Task.timeRough`, set in the ritual's assumed-times row) means the person treats
-the duration or the start as a rough estimate even after the app's guess is
-confirmed. The check button next to the chip accepts
+(`Task.timeRough`, set in the ritual's assumed-times row or the completion
+reflection's **Done at → Est.**) means the person treats the duration, the
+start, or the finish as a rough estimate even after the app's guess is
+confirmed. A finish marked estimated wears `~` on the clock. The check button next to the chip accepts
 the derived values as-is. Either way the fields are stamped confirmed, which stops
 the habit sync from re-deriving over the user's number
 (`lib/services/completion-time-service.ts`). When two or more observed sessions

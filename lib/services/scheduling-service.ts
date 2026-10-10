@@ -11,7 +11,7 @@
  *
  * Spec: §7 (Scheduler period funnel).
  */
-import type { Task, SchedulePeriod, SchedulePlacementPeriod } from "@/lib/types"
+import type { Task, SchedulePeriod, SchedulePlacementPeriod, StoredBlockedReason } from "@/lib/types"
 import { taskRepository, type TaskRepository } from "@/lib/data/task-repository"
 import {
   scheduleFieldsForPeriod,
@@ -153,8 +153,9 @@ export function pushTask(
   period: "day" | "week" | "month",
   repo: TaskRepository = taskRepository,
   refDate: Date = new Date(),
+  missReason?: StoredBlockedReason,
 ): Task | undefined {
   const task = repo.getById(id)
   if (!task) return undefined
-  return repo.update({ ...task, ...pushTaskOnePeriod(task, period, refDate) })
+  return repo.update({ ...task, ...pushTaskOnePeriod(task, period, refDate, missReason) })
 }

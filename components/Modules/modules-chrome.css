@@ -2,7 +2,8 @@
  * components/Modules/modules-chrome.css — Modules catalog + workspace window
  *
  * `.mod95` — catalog on the PCB (mini-windows + gadget wells).
- * `.mod95-ws` — opened workspace chrome so generic views are not glass on the plate.
+ * Catalog card copy uses the Home overview face (Karla, one step up) from
+ * `home-chrome.css`. `.mod95-ws` — opened workspace chrome, still the pixel face.
  * Feral interiors (Tidy, Film DNA, itinerary paper) still paint themselves
  * inside the client well.
  */
@@ -211,7 +212,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   color: #fff;
   text-shadow: 1px 1px 0 #000;
@@ -248,7 +249,7 @@
 
 .mod95 .mod-ws-desc {
   margin: 0;
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.35;
   color: var(--mod-muted);
 }
@@ -290,7 +291,7 @@
 
 .mod95 .mod-ws-count {
   flex-shrink: 0;
-  font-size: 11px;
+  font-size: 13px;
   font-variant-numeric: tabular-nums;
   color: var(--mod-ink);
 }
@@ -320,7 +321,7 @@
 
 .mod95 .mod-widget-bar > * {
   width: 100%;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: 0;
 }
@@ -346,6 +347,20 @@
 
 .mod95 .mod-widget-body .text-muted-foreground {
   color: var(--mod-muted) !important;
+}
+
+/* Body copy on the catalog card follows the same step as the caption.
+   Opened workspaces are `.mod95-ws` and do not match. */
+.mod95 .mod-widget .text-sm {
+  font-size: 16px;
+}
+
+.mod95 .mod-widget .text-xs {
+  font-size: 13px;
+}
+
+.mod95 .mod-widget .text-\[10px\] {
+  font-size: 12px;
 }
 
 .mod95 .mod-widget[data-mod-type="analytics-stat"] .mod-widget-body {

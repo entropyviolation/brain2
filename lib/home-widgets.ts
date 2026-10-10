@@ -12,6 +12,13 @@
  * Glance + tide hint for the square; hourly strip / sparkline / analog
  * needle feed the click-open instrument. Widget city/beach persist is
  * `cogs-home-weather` (`lib/home-weather-store.ts`).
+ *
+ * `HOME_WIDGET_CATALOG` records the readings in `docs/widget-improvement/plan/`.
+ * The sample caption is `HOME_WIDGET_LABEL` (Weather keeps an example city;
+ * the pet keeps an example time). A square the user hid stays hidden. The
+ * milled face and phosphor green stay. Overview type is already being made
+ * slightly larger; a long plate may tighten tracking so the name fits, and
+ * this catalog does not schedule another size change.
  */
 
 import { formatLocalDateKey } from "@/lib/date-utils"
@@ -106,7 +113,12 @@ export const HOME_WIDGETS_TUCKED_IN_V5: HomeWidgetId[] = ["night", "harvest", "i
 /** Optional tiles introduced in persist version 9. Left hidden so the strip does not move. */
 export const HOME_WIDGETS_TUCKED_IN_V9: HomeWidgetId[] = ["flow", "paint"]
 
-/** One catalog card: what the square is, when it helps, and a static example of its face. */
+/**
+ * One catalog card: what the square is for, the reading it should tell, and a
+ * static example of that face. Score tiles share one today: habits split into
+ * done, miss, and blank; the to-do fraction; points split into habit pay,
+ * bonuses, and the rest; habit points still unpaid. A mixed day is not finished.
+ */
 export type HomeWidgetBlurb = {
   id: HomeWidgetId
   name: string
@@ -119,128 +131,128 @@ export const HOME_WIDGET_CATALOG: HomeWidgetBlurb[] = [
   {
     id: "review",
     name: "Rituals",
-    shows: "The count of rituals still due sits in the CRT. The footer names the period. Open and Dismiss sit under the number. Dismiss hides the square until the next session and does not change this catalog.",
-    useful: "Keep it showing when you want a due review to meet you on every Home tab.",
-    preview: { caption: "Rituals due", crt: "2", footer: "Daily" },
+    shows: "The CRT counts rites due for this day: today's morning and today's night, not the older backlog. The footer names the next of those and its state. Open resumes that rite. A clear day stays on the strip at 0, so an empty reading is not a hidden square. Dismiss hides the square until the next session and does not change this catalog.",
+    useful: "Keep it showing when you want today's due rite to meet you on every Home tab.",
+    preview: { caption: "Rituals", crt: "2", footer: "Morning · in progress" },
   },
   {
     id: "points",
     name: "Points",
-    shows: "Four CRT lines: all time, today, this week, this month. Click opens the same numbers as navy wells, the Habits gradient meters, and 14- and 30-day sparklines.",
-    useful: "The day-to-day score. Leave it on unless the strip is crowded.",
-    preview: { caption: "Points", crt: "42", footer: "today" },
+    shows: "Four CRT lines: all time, today, this week, this month. Today's footer splits that sum into habit pay, bonuses, and everything else. The today meter is habit points paid over the habit ceiling, the same reading as Harvest and Progress. A mixed habit day does not fill the meter. Click opens the wells and the sparklines.",
+    useful: "The day's score, split, so a mixed habit day does not look finished.",
+    preview: { caption: "Points", crt: "42", footer: "30 habits · 12 bonuses" },
   },
   {
     id: "award",
     name: "Latest award",
-    shows: "The newest positive points amount in the CRT, and why in the footer: a completion, a high-percent bonus, or a grade that beat yesterday or last week.",
-    useful: "When you want the last thing that paid, without opening the ledger.",
-    preview: { caption: "Award", crt: "+12", footer: "Above yesterday" },
+    shows: "A habit completion or a bonus on this day, the larger one in the CRT and why in the footer. A later inbox +1 does not take the face when a +50 is already on that day. Click lists recent awards under that split.",
+    useful: "The last real payment on this day, not the latest inbox handle.",
+    preview: { caption: "Latest award", crt: "+50", footer: "Higher habit grades" },
   },
   {
     id: "progress",
     name: "Today's Progress",
-    shows: "To-do and habit meters in the CRT, and one footer line of the two fractions. Click lists what is still open. Each list folds.",
-    useful: "The checklist for the day the squares are reading.",
-    preview: { caption: "Progress", crt: "3/5", footer: "To do 1/4 · habits 2/3" },
+    shows: "Habits for this day, split into done, miss, and blank, and the to-do fraction. The habit line is those three piles, not one leftover. The footer keeps both fractions. A miss is not a blank, and a mixed day is not finished. Click lists what is still open. Each list folds.",
+    useful: "Done, miss, and blank for the day the squares are reading.",
+    preview: { caption: "Today's Progress", crt: "2 done · 1 miss", footer: "1 blank · to do 1/4" },
   },
   {
     id: "affirmation",
     name: "Affirmation",
-    shows: "One line for the day, chosen steadily from the Affirmations list, or from the built-in set when that list is empty.",
-    useful: "A sentence you already wrote, once a day, not a new task.",
-    preview: { caption: "Affirmation", crt: "I follow through.", footer: "Today's line" },
+    shows: "Today's line from the Affirmations list, the sentence this date already picks, or a built-in line when that list is empty. The footer is its place in the pool. The handheld repeats the line, the place, and the date.",
+    useful: "A sentence already on the list, and which one it is.",
+    preview: { caption: "Affirmation", crt: "I follow through.", footer: "9 of 57" },
   },
   {
     id: "weather",
     name: "Weather",
-    shows: "City in the caption, temperature and a sun, cloud, or rain glyph in the CRT, and a one-line glance at later today. Click opens the city, beach, week, and tide instrument.",
-    useful: "When the day outside should sit next to the day you planned.",
-    preview: { caption: "San Diego", crt: "72°", footer: "Clear · warmer 76° by 3p" },
+    shows: "City in the caption, temperature and a sun, cloud, or rain glyph in the CRT, and a glance at the next change still ahead. A high that has already passed is not the glance. Click opens the city, beach, week, and tide instrument.",
+    useful: "When the sky still ahead should sit next to the day you planned.",
+    preview: { caption: "San Diego", crt: "72°", footer: "Clear · rain Saturday" },
   },
   {
     id: "pet",
     name: "Screen pet",
-    shows: "A pixel creature and a clock. Asleep when habits are under 20% or the hour is late, idle through the day, pleased when habits are finished. Pleased wins over night.",
-    useful: "A quiet face for the habit sheet. It is not today's friend.",
-    preview: { caption: "3:42p", crt: "idle", footer: "Habits underway" },
+    shows: "A pixel creature, a clock, and the day's habit progress: done, miss, and blank. At night, a sheet that is underway keeps that progress on the face. Asleep is for under 20% or a blank sheet. Pleased stays a finished sheet, including at night.",
+    useful: "The day's habit progress, including at night. It is not today's friend.",
+    preview: { caption: "11:14p", crt: "7/28", footer: "1 miss · 20 blank" },
   },
   {
     id: "next",
     name: "Next",
-    shows: "The next Plan event still ahead on this day, or the first open to-do when the calendar is done. Click opens that hit and can jump to Plan or To Do.",
-    useful: "When you want the next concrete thing, not the whole agenda.",
+    shows: "The next timed thing still ahead: a Plan event or a planned action, including one on a later day. An all-day event says All day and the date. An untimed row, including an inbox cue, is not the hit. Click opens that hit and can jump to Plan or To Do.",
+    useful: "When you want the next timed thing, not an untimed cue.",
     preview: { caption: "Next", crt: "Evening", footer: "18:00" },
   },
   {
     id: "daylamp",
     name: "Day lamp",
-    shows: "One word — Quiet, Dim, Warm, Bright, or Full — from today's habit and to-do completion. Quiet means nothing was scheduled. Full means both bars are done.",
-    useful: "A single brightness for the day, coarser than the two progress meters.",
-    preview: { caption: "Day lamp", crt: "Warm", footer: "habits 2/4 · to do 1/3" },
+    shows: "One word — Quiet, Dim, Warm, Bright, or Full — from today's habit and to-do bars, the same reading as Progress. When both bars exist, the word follows the lower one. Full means every present bar is finished. Quiet means nothing was scheduled. A cleared to-do list does not call a partly done habit sheet Bright.",
+    useful: "A single brightness. The lower bar keeps a mixed day from reading finished.",
+    preview: { caption: "Day lamp", crt: "Warm", footer: "habits 1/4 · to do 3/3" },
   },
   {
     id: "daysuntil",
     name: "Days Until",
-    shows: "A live countdown in the CRT, in units or as a decimal. The footer names what you are counting toward. Set the date, an optional time, and the format in the detail.",
-    useful: "One date you do not want to do math for.",
+    shows: "A live count in the CRT, in units or as a decimal. Before the date it counts down. Once the date is past, the caption reads Since and the CRT is time since. A date with no clock starts at local midnight. The footer names what you are counting. Set the date, an optional time, and the format in the detail.",
+    useful: "One date you do not want to do math for. A past date reads as time since.",
     preview: { caption: "Days Until", crt: "01 day 3 hours", footer: "Until Launch" },
   },
   {
     id: "moon",
     name: "Moon",
-    shows: "An 8-bit moon for the widget day, the phase name, and how many days until the sooner of the next full moon and the next new moon. Detail adds illumination and a sky chart.",
-    useful: "When the month's light should be visible without opening a calendar.",
-    preview: { caption: "Moon", crt: "Waxing", footer: "6 days until full moon" },
+    shows: "An 8-bit moon for the widget day, and one phase voice. The name uses the same local day as the countdown, so the glass does not call the phase new while the footer still counts toward it. On the local day of the new moon the name and the footer agree. Detail adds illumination and a sky chart.",
+    useful: "When the month's light should be one voice, the name and the countdown together.",
+    preview: { caption: "Moon", crt: "Waning crescent", footer: "1 day until new moon" },
   },
   {
     id: "solar",
     name: "Solar remainder",
-    shows: "Where the sun is for the pinned city: until sunrise, sunrise, to sunset, sunset, after sunset, then midnight. The CRT is the phase. The footer is the next clock.",
-    useful: "A daylight remainder that does not wait on a weather fetch.",
-    preview: { caption: "Solar", crt: "to sunset", footer: "sets 6:12p" },
+    shows: "Time left in the sun's day for the pinned city. Before sunset the CRT counts down to today's sunset and the footer is that clock. After sunset the CRT counts forward to the next sunrise and the footer is that clock. It is not minutes already past sunset.",
+    useful: "The sun's remainder. After sunset it counts toward the next sunrise.",
+    preview: { caption: "Solar remainder", crt: "7h 40m", footer: "6:50 AM" },
   },
   {
     id: "tracking",
     name: "Tracking now",
-    shows: "The current Activity, Location, Mood, and Company, or the last ones you painted. Update stamps up to now and does not paint through midnight.",
-    useful: "When you want the grid's present tense on the strip, with a way to catch the log up.",
-    preview: { caption: "Now", crt: "Work", footer: "Desk · calm" },
+    shows: "The current Activity, Location, Mood, and Company, or the last ones you painted. The footer is the age of that last stamp: the clock it was last true, and how long the grid has been open since. Update stamps up to now and does not paint through midnight.",
+    useful: "The grid's last stamp, and how old it is.",
+    preview: { caption: "Tracking now", crt: "Work", footer: "9:55p · 1h open" },
   },
   {
     id: "night",
     name: "Night well",
-    shows: "Last night's hours in the CRT. The footer is when you fell asleep, when you woke, and how that sat against sunset.",
-    useful: "The morning you woke into, before you open Tracking.",
-    preview: { caption: "Night", crt: "7h 20m", footer: "asleep 11:40p · woke 7:00a" },
+    shows: "When this morning has a night, its hours are in the CRT. When tonight and the morning before are blank, the face is the last real night, an all-nighter or a duration, and the footer names that morning. It does not say no night was logged.",
+    useful: "The last real night, including when tonight is still blank.",
+    preview: { caption: "Night well", crt: "5h 59m", footer: "Oct 4 · last real night" },
   },
   {
     id: "harvest",
     name: "Harvest leftover",
-    shows: "Points still available today. The footer reads how many are left of the day's possible total. Zero with nothing earned says the day has nothing left to pay.",
-    useful: "When you want the unpaid remainder, not the score you already have.",
-    preview: { caption: "Left", crt: "18", footer: "18 left of 40" },
+    shows: "Habit points still unpaid today, from the same reading as Points. The CRT is that remainder. The footer is how many are left of the habit ceiling. A to-do reward is not this number.",
+    useful: "Habit points still unpaid, not the score you already have.",
+    preview: { caption: "Harvest leftover", crt: "18", footer: "18 left of 40" },
   },
   {
     id: "inbox",
     name: "Inbox mill",
-    shows: "How many revisit-Inbox ideas are waiting, and the newest title in the footer. Click can open Inbox. Monkey brain is not in this count.",
-    useful: "The pile's size, on every tab, without opening the mill.",
-    preview: { caption: "Inbox", crt: "4", footer: "Call the dentist" },
+    shows: "How many revisit-Inbox ideas are waiting. The footer is the newest title and the age of the oldest. The handheld is that count, how many titles are bare, and that oldest age. It is not a second list of the pile. Monkey brain is not in this count. Click can open Inbox.",
+    useful: "The pile's size, its newest capture, how many titles are bare, and how old the oldest one is.",
+    preview: { caption: "Inbox mill", crt: "4", footer: "Call the dentist · 6d" },
   },
   {
     id: "flow",
     name: "Already flowing",
-    shows: "One word for finished work. Daily habits you completed, and to-dos you finished that were already on the books, count as already in motion. A to-do you created and finished the same day counts as new. Quiet means nothing was finished.",
-    useful: "When you want to see whether the day moved on its own or you pushed new work through.",
-    preview: { caption: "Flowing", crt: "Flowing", footer: "3 already · 1 new" },
+    shows: "One word for finished work on the shared today. Daily habits you completed, and to-dos you finished that were already on the books, count as already in motion. A to-do you created and finished the same day counts as new. A generated Done row, a habit mirror or a tracking copy, does not. Quiet means nothing was finished.",
+    useful: "Whether finished work was already on the books. Generated Done rows are not new.",
+    preview: { caption: "Already flowing", crt: "Flowing", footer: "3 already · 1 new" },
   },
   {
     id: "paint",
     name: "Plan and lived",
-    shows: "One word comparing the plan to what Tracking actually holds. Plan is scheduled work, events, and planned actions. Lived is painted minutes, each minute once, not counting sleep. Open means neither side has anything.",
-    useful: "When you want the written day and the painted day in the same square.",
-    preview: { caption: "Lived", crt: "Short", footer: "plan 5h · lived 3h" },
+    shows: "Forward plan against waking paint. Plan is scheduled minutes still ahead, not duration copied onto done rows. Lived is painted minutes, each minute once, with sleep left out. Open means neither side has anything.",
+    useful: "The forward plan and the waking painted day, in the same square.",
+    preview: { caption: "Plan and lived", crt: "Short", footer: "plan 5h · lived 3h" },
   },
 ]
 

@@ -221,6 +221,22 @@ describe("undone triage", () => {
     expect(next.schedulePlacements).toEqual([{ period: "day", value: "2026-09-21", resolved: "pushed" }])
   })
 
+  it("push can leave an optional reason on the day it is leaving", () => {
+    const open = task({
+      id: "push",
+      schedulePlacements: [{ period: "day", value: "2026-09-21" }],
+    })
+    const next = {
+      ...open,
+      ...pushUndoneFields(open, "day", "2026-09-21", new Date(2026, 8, 21), tuesday, {
+        reason: "other",
+        note: "the rain",
+      }),
+    }
+    expect(next.schedulePlacements?.[0]?.missReason).toEqual({ reason: "other", note: "the rain" })
+    expect(next.daysPushed).toBe(1)
+  })
+
   it("discard cancels the task and clears the live schedule", () => {
     const open = task({
       id: "drop",

@@ -42,6 +42,8 @@ import {
   migrateUtcMidnightScheduleDates,
 } from "@/lib/migrations"
 import { dispatchItemMutation } from "@/lib/workflow-hooks"
+import { formatLocalDateKey } from "@/lib/date-utils"
+import { reviewPointsTaskId } from "@/lib/completion-review"
 import { usePointsStore } from "@/lib/points-store"
 import {
   resolveCompletionPoints,
@@ -65,6 +67,8 @@ import {
   stripListLinksForDeletedList,
 } from "@/lib/list-links"
 import { withArchiveListMembership } from "@/lib/archive-lists"
+import { keptCreatedAt } from "@/lib/date-utils"
+import { keptCaptureOrigin } from "@/lib/capture-origin"
 
 // Date-typed fields on persisted Task / List objects. The persist reviver
 // only resurrects Dates for these keys so it never converts unrelated strings
@@ -261,6 +265,44 @@ export const TASK_STORE_PERSIST_VERSION = 17
 /** False until persist finishes reading disk so mount-time list sync cannot persist seed tasks over the vault. Tests persist immediately. */
 let taskPersistHydrated = typeof process !== "undefined" && !!process.env.VITEST
 
+/**
+ * Ids whose delete tombstones this tab just cleared (Transfer to log undo,
+ * or a failed log write putting the row back). The vault union keeps every
+ * tombstone it has ever seen, so a restore would otherwise be stripped on
+ * the way to disk. Baked into the next persist payloads as `restoredTaskIds`
+ * and not kept on the stored snapshot. A later write that tombstones the
+ * same id again still wins.
+ */
+const clearedTaskTombstones = new Set<string>()
+
+export function noteClearedTaskTombstones(ids: readonly string[]): void {
+  for (const id of ids) {
+    if (id) clearedTaskTombstones.add(id)
+  }
+  const extra = clearedTaskTombstones.size - TOMBSTONE_CAP
+  if (extra > 0) {
+    const iter = clearedTaskTombstones.values()
+    for (let i = 0; i < extra; i++) {
+      const next = iter.next().value
+      if (next) clearedTaskTombstones.delete(next)
+    }
+  }
+}
+
+export function resetClearedTaskTombstones(): void {
+  clearedTaskTombstones.clear()
+}
+
+function withRestoredTaskTombstones<T>(value: T): T {
+  if (clearedTaskTombstones.size === 0 || !value || typeof value !== "object" || !("state" in value)) return value
+  const state = (value as { state?: unknown }).state
+  if (!state || typeof state !== "object") return value
+  return {
+    ...(value as object),
+    state: { ...(state as object), restoredTaskIds: [...clearedTaskTombstones] },
+  } as T
+}
+
 // Create the store with persistence
 export const useTaskStore = create<TaskState>()(
   persist(
@@ -350,13 +392,7 @@ export const useTaskStore = create<TaskState>()(
             const justCompleted = !prev.completed && updatedTask.completed
             const justReopened = prev.completed && !updatedTask.completed
             if (justCompleted) {
-              const points = resolveCompletionPoints(updatedTask, state.lists, state.folders)
-              basePoints = points
-              if (points > 0) {
-                usePointsStore
-                  .getState()
-                  .addPoints(updatedTask.id, points, itemTitleOrUntitled(updatedTask, "Task"), new Date())
-              }
+              basePoints = resolveCompletionPoints(updatedTask, state.lists, state.folders)
             }
             // Central completion-date stamp: every completion path goes through
             // updateTask, so bucketing "done today/this week/this month" by when
@@ -374,11 +410,31 @@ export const useTaskStore = create<TaskState>()(
               }
               return new Date()
             }
+            const completedDate = justReopened ? undefined : resolveCompletedDate()
+            if (justCompleted && basePoints > 0) {
+              usePointsStore
+                .getState()
+                .addPoints(updatedTask.id, basePoints, itemTitleOrUntitled(updatedTask, "Task"), completedDate ?? new Date())
+            } else if (prev.completed && updatedTask.completed && prev.completedDate && completedDate) {
+              const previousFinish =
+                prev.completedDate instanceof Date ? prev.completedDate : new Date(prev.completedDate)
+              if (formatLocalDateKey(previousFinish) !== formatLocalDateKey(completedDate)) {
+                const points = usePointsStore.getState()
+                points.redatePoints(updatedTask.id, previousFinish, completedDate)
+                points.redatePoints(reviewPointsTaskId(updatedTask.id), previousFinish, completedDate)
+              }
+            }
             // Ensure dates are proper Date objects
             const taskWithDates = {
               ...updatedTask,
+              // Arrival / add time does not move forward. A missing clock is
+              // left missing rather than stamped with this save.
               createdAt:
-                updatedTask.createdAt instanceof Date ? updatedTask.createdAt : new Date(updatedTask.createdAt),
+                keptCreatedAt(prev.createdAt, updatedTask.createdAt) ??
+                (updatedTask.createdAt instanceof Date
+                  ? updatedTask.createdAt
+                  : new Date(updatedTask.createdAt)),
+              captureOrigin: keptCaptureOrigin(prev.captureOrigin, updatedTask.captureOrigin),
               deadline: updatedTask.deadline
                 ? updatedTask.deadline instanceof Date
                   ? updatedTask.deadline
@@ -389,7 +445,7 @@ export const useTaskStore = create<TaskState>()(
                   ? updatedTask.scheduledDate
                   : new Date(updatedTask.scheduledDate)
                 : undefined,
-              completedDate: justReopened ? undefined : resolveCompletedDate(),
+              completedDate,
               // The work window belongs to the completion, so re-opening drops it.
               startedAt:
                 justReopened || !updatedTask.startedAt
@@ -473,6 +529,13 @@ export const useTaskStore = create<TaskState>()(
       deleteList: (id) =>
         set((state) => {
           const deleted = state.lists.find((c) => c.id === id)
+          // Built-in Reminders list (`lib/reminders.ts` REMINDERS_LIST_ID). Not imported: that module uses this store.
+          if (deleted?.id === "reminders" || deleted?.reminderList) return state
+          // Built-in People I Know list (`lib/people-i-know.ts`). Not imported: that module uses this store.
+          if (deleted?.id === "people-i-know" || deleted?.peopleList) return state
+          // Built-in Instagram lists (`lib/instagram-lists.ts`). Not imported: that module uses this store.
+          if (deleted?.id === "people-i-follow-on-instagram" || deleted?.instagramFollowingList) return state
+          if (deleted?.id === "people-who-follow-me-on-instagram" || deleted?.instagramFollowersList) return state
           // Re-parent any sublists onto the deleted category's parent (or root)
           // so deleting a mid-tree category never orphans its descendants.
           const newParentId = deleted?.parentListId
@@ -632,7 +695,7 @@ export const useTaskStore = create<TaskState>()(
         },
         setItem: (name, value) => {
           if (!taskPersistHydrated) return
-          return taskPersistStorage.setItem(name, value)
+          return taskPersistStorage.setItem(name, withRestoredTaskTombstones(value))
         },
         removeItem: (name) => taskPersistStorage.removeItem(name),
       },

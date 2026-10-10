@@ -26,7 +26,7 @@ import type React from "react"
 import { useState, useCallback, useMemo, useEffect } from "react"
 import { useTaskStore } from "@/lib/task-store"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import type { Task, SchedulePeriod, SchedulePlacementPeriod } from "@/lib/types"
+import type { Task, SchedulePeriod, SchedulePlacementPeriod, StoredBlockedReason } from "@/lib/types"
 import { TaskDetailPopup } from "@/components/ItemDetail/ItemDetailPopup"
 import { APP_NAV_KEYS, SCHEDULER_VIEWS, type SchedulerViewMode, readStoredDate, writeStoredDate } from "@/lib/app-navigation"
 import { openPeriodTodoList, periodTodoListName } from "@/lib/scheduled-lists-sync"
@@ -53,7 +53,8 @@ import {
 import { completeTask } from "@/lib/services/completion-service"
 import { runWithoutCompletionPopup } from "@/lib/completion-events"
 import { creditSchedulePlacement, earnsSchedulePoint } from "@/lib/schedule-credit"
-import { itemTitle } from "@/lib/item-utils"
+import { itemTitle, itemTitleOrUntitled } from "@/lib/item-utils"
+import { MissReasonDialog } from "@/components/Reviews/MissReasonDialog"
 import {
   getScheduleableCategoryIds,
   getAvailableTasks,
@@ -305,8 +306,10 @@ export function EnhancedScheduler() {
     return partitionCardDetail(allTasks, detail.period, detail.value, wallClock)
   }, [detail, allTasks, eventuallyListId, wallClock])
 
+  const [pushAsk, setPushAsk] = useState<{ taskId: string; subject: string } | null>(null)
+
   const applyDetailAction = useCallback(
-    (taskId: string, kind: "push" | "dismiss" | "done" | "unschedule") => {
+    (taskId: string, kind: "push" | "dismiss" | "done" | "unschedule", missReason?: StoredBlockedReason) => {
       if (!detail || detail.period === "eventually") return
       const task = useTaskStore.getState().tasks.find((row) => row.id === taskId)
       if (!task) return
@@ -314,7 +317,7 @@ export function EnhancedScheduler() {
         kind === "done"
           ? finishCardInPeriod(task, detail.period, detail.value)
           : kind === "push"
-            ? pushCardWorkingQueue(task, detail.period, detail.value, wallClock)
+            ? pushCardWorkingQueue(task, detail.period, detail.value, wallClock, missReason)
             : kind === "unschedule"
               ? unscheduleCardWorkingQueue(task, detail.period, detail.value, wallClock)
               : dismissCardWorkingQueue(task, detail.period, detail.value, wallClock)
@@ -405,7 +408,10 @@ export function EnhancedScheduler() {
         }
         renderTaskItem={renderTaskItem}
         grain={detail.period === "eventually" ? undefined : detail.period}
-        onPush={(taskId) => applyDetailAction(taskId, "push")}
+        onPush={(taskId) => {
+          const task = useTaskStore.getState().tasks.find((row) => row.id === taskId)
+          setPushAsk({ taskId, subject: task ? itemTitleOrUntitled(task) : "Task" })
+        }}
         onDismiss={(taskId) => applyDetailAction(taskId, "dismiss")}
         onDone={(taskId) => applyDetailAction(taskId, "done")}
         onUnschedule={(taskId) => applyDetailAction(taskId, "unschedule")}
@@ -742,6 +748,15 @@ export function EnhancedScheduler() {
       </div>
 
       <TaskDetailPopup taskId={selectedTaskId} open={!!selectedTaskId} onClose={() => setSelectedTaskId(null)} />
+      <MissReasonDialog
+        open={pushAsk !== null}
+        subject={pushAsk?.subject ?? ""}
+        onResolve={(reason) => {
+          const taskId = pushAsk?.taskId
+          setPushAsk(null)
+          if (taskId) applyDetailAction(taskId, "push", reason)
+        }}
+      />
     </div>
   )
 }

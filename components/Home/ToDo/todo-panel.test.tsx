@@ -108,6 +108,7 @@ describe("TodoPanel", () => {
     expect(screen.getByText("Leftover draft")).toBeInTheDocument()
     expect(screen.getByText("Now on this week")).toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: "Push" }))
+    fireEvent.click(screen.getByRole("button", { name: "Skip" }))
     expect(screen.getByText("Leftover draft")).toBeInTheDocument()
     const kept = useTaskStore.getState().tasks.find((t) => t.id === "slid")
     expect(kept?.schedulePlacements).toEqual([{ period: "day", value: "2026-06-19", resolved: "pushed" }])
@@ -276,7 +277,8 @@ describe("TodoPanel", () => {
   it("files a task as a missed opportunity instead of completing it", () => {
     render(<TodoPanel />)
     fireEvent.click(screen.getByRole("button", { name: "Finish slides" }))
-    screen.getByTitle("Missed opportunity — too late").click()
+    fireEvent.click(screen.getByTitle("Missed opportunity — too late"))
+    fireEvent.click(screen.getByRole("button", { name: "Skip" }))
     const updated = useTaskStore.getState().tasks[0]
     expect(updated.completed).toBe(false)
     expect(updated.status).toBe("missed")

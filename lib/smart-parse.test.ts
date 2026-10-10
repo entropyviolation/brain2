@@ -147,6 +147,20 @@ describe("parseSmartCapture — categories", () => {
     expect(highlights.map((h) => h.type)).toEqual(["folder", "category"])
   })
 
+  it("parses folder: all: item as a folder plus the all keyword", () => {
+    const { suggestion } = parse("next actions: all: buy milk")
+    expect(suggestion.folderPath).toEqual(["next actions"])
+    expect(suggestion.category).toBe("all")
+    expect(suggestion.description).toBe("buy milk")
+  })
+
+  it("parses folder: all items: item as one list slot", () => {
+    const { suggestion } = parse("Kitchen: all items: oats")
+    expect(suggestion.folderPath).toEqual(["Kitchen"])
+    expect(suggestion.category).toBe("all items")
+    expect(suggestion.description).toBe("oats")
+  })
+
   it("parses nested folder: folder: list: item", () => {
     const { suggestion } = parse("life: writing: memoir: draft chapter two")
     expect(suggestion.folderPath).toEqual(["life", "writing"])
@@ -169,6 +183,59 @@ describe("parseSmartCapture — categories", () => {
     const { suggestion } = parse("3:30pm standup")
     expect(suggestion.category).toBeUndefined()
     expect(suggestion.scheduledTime).toBe("15:30")
+  })
+
+  it("keeps a list name that ends in digits", () => {
+    const { suggestion } = parse("brain2: finish the report")
+    expect(suggestion.category).toBe("brain2")
+    expect(suggestion.description).toBe("finish the report")
+  })
+
+  it("keeps digits inside a list name", () => {
+    const { suggestion } = parse("plan2b: ship it")
+    expect(suggestion.category).toBe("plan2b")
+    expect(suggestion.description).toBe("ship it")
+  })
+
+  it("parses a folder and a digit-ending list", () => {
+    const { suggestion } = parse("life: brain2: draft chapter two")
+    expect(suggestion.folderPath).toEqual(["life"])
+    expect(suggestion.category).toBe("brain2")
+    expect(suggestion.description).toBe("draft chapter two")
+  })
+
+  it("allows a trailing number after a space in the list name", () => {
+    const { suggestion } = parse("Home 2: paint the door")
+    expect(suggestion.category).toBe("Home 2")
+    expect(suggestion.description).toBe("paint the door")
+  })
+
+  it("reads cat: names that end in digits", () => {
+    expect(parse("finish the report cat:brain2").suggestion).toMatchObject({
+      category: "brain2",
+      description: "finish the report",
+    })
+  })
+
+  it("does not let a digit-ending list eat a date, time, or duration", () => {
+    const dated = parse("brain2: call dentist tomorrow at 3pm for 30m !!")
+    expect(dated.suggestion.category).toBe("brain2")
+    expect(dated.suggestion.description).toBe("call dentist tomorrow at 3pm for 30m !!")
+    expectDate(dated.suggestion.scheduledDate, 2026, 5, 25)
+    expect(dated.suggestion.scheduledTime).toBe("15:00")
+    expect(dated.suggestion.estimatedDuration).toBe(30)
+    expect(dated.suggestion.importance).toBe(5)
+
+    expect(parse("in 3 days: buy milk").suggestion.category).toBeUndefined()
+    expectDate(parse("in 3 days: buy milk").suggestion.scheduledDate, 2026, 5, 27)
+    expect(parse("at 3: call mom").suggestion.category).toBeUndefined()
+    expect(parse("at 3: call mom").suggestion.scheduledTime).toBe("03:00")
+    expect(parse("Jan 5: lunch").suggestion.category).toBeUndefined()
+    expectDate(parse("Jan 5: lunch").suggestion.scheduledDate, 2027, 0, 5)
+    expect(parse("for 30m: workout").suggestion.category).toBeUndefined()
+    expect(parse("for 30m: workout").suggestion.estimatedDuration).toBe(30)
+    expect(parse("write for 30m").suggestion.category).toBeUndefined()
+    expect(parse("write for 30m").suggestion.estimatedDuration).toBe(30)
   })
 })
 
@@ -345,6 +412,11 @@ describe("parsePathHeader", () => {
       folderPath: ["Next Actions"],
       listName: "Eventually",
     })
+  })
+
+  it("keeps a header whose name ends in digits", () => {
+    expect(parsePathHeader("brain2:")).toEqual({ folderPath: [], listName: "brain2" })
+    expect(parsePathHeader("life: brain2:")).toEqual({ folderPath: ["life"], listName: "brain2" })
   })
 })
 

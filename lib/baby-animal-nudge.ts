@@ -10,7 +10,7 @@ import { taskServesFocusGoals } from "@/lib/goal-focus"
 import { nightCarryForMorning } from "@/lib/ritual-carry"
 import { useGoalsStore } from "@/lib/goals-store"
 import { useReviewsStore } from "@/lib/reviews-store"
-import { useUserSettingsStore } from "@/lib/user-settings-store"
+import { pointsRuleValue } from "@/lib/points-rules-live"
 import type { Folder, Task } from "@/lib/types"
 
 function focusContext(tasks: Task[], now = new Date()): Pick<FriendSuggestionContext, "focusTaskIds" | "focusMultiplier"> {
@@ -20,7 +20,7 @@ function focusContext(tasks: Task[], now = new Date()): Pick<FriendSuggestionCon
   for (const task of tasks) {
     if (taskServesFocusGoals(task, goals, carry.focusGoalIds)) ids.add(task.id)
   }
-  return { focusTaskIds: ids, focusMultiplier: useUserSettingsStore.getState().goalFocusMultiplier ?? 1.5 }
+  return { focusTaskIds: ids, focusMultiplier: pointsRuleValue("goalFocus.multiplier") }
 }
 
 export type FriendNudge = FriendSuggestion

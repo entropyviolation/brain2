@@ -6,6 +6,7 @@ import userEvent from "@testing-library/user-event"
 import { format } from "date-fns"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { resetLocalStorage } from "@/tests/test-utils"
+import { setTrackingViewPrefs } from "@/components/Home/Tracking/tracking-view-prefs"
 import { HomeDashboard } from "./home-dashboard"
 import { useHomeWidgetsStore } from "@/lib/home-widgets-store"
 import { msUntilLocalMidnight, pinHomeCursor } from "@/lib/use-current-date"
@@ -59,6 +60,7 @@ describe("HomeDashboard", () => {
 
   beforeEach(() => {
     resetLocalStorage()
+    setTrackingViewPrefs({ notesWellExpanded: false })
     overviewSpy.mockClear()
     useHomeWidgetsStore.setState({ widgetsFollowClock: false })
   })
@@ -190,7 +192,7 @@ describe("HomeDashboard", () => {
         { label: "Habits", testId: "panel-habits" },
       ]) {
         await user.click(screen.getByRole("tab", { name: label }))
-        expect(screen.getByTestId(testId)).toBeVisible()
+        expect(await screen.findByTestId(testId)).toBeVisible()
       }
     })
 
@@ -221,6 +223,7 @@ describe("HomeDashboard", () => {
       const user = userEvent.setup()
       render(<HomeDashboard />)
       await user.click(screen.getByRole("tab", { name: "Tracking" }))
+      await screen.findByRole("tablist", { name: "Tracking view" })
       await user.click(screen.getByRole("tab", { name: "Day Log" }))
       expect(localStorage.getItem("cogs-home-tracking-tab")).toBe("daylog")
     })
@@ -229,7 +232,7 @@ describe("HomeDashboard", () => {
       localStorage.setItem("cogs-home-tab", "tracking")
       localStorage.setItem("cogs-home-tracking-tab", "daylog")
       render(<HomeDashboard />)
-      expect(screen.getByRole("tab", { name: "Day Log" })).toHaveAttribute("data-state", "active")
+      expect(await screen.findByRole("tab", { name: "Day Log" })).toHaveAttribute("data-state", "active")
       expect(screen.getByTestId("panel-day-log")).toBeVisible()
     })
 
@@ -237,18 +240,19 @@ describe("HomeDashboard", () => {
       const user = userEvent.setup()
       render(<HomeDashboard />)
       await user.click(screen.getByRole("tab", { name: "Tracking" }))
-      const changer = document.querySelector(".trk95 .hab-view-changer")
+      const tablist = await screen.findByRole("tablist", { name: "Tracking view" })
+      const changer = tablist.closest(".hab-view-changer") as HTMLElement
       expect(changer).toBeTruthy()
-      expect(within(changer as HTMLElement).getByRole("tablist", { name: "Tracking view" })).toBeInTheDocument()
-      expect(within(changer as HTMLElement).getByRole("tab", { name: "Time Grid" })).toBeInTheDocument()
-      expect(within(changer as HTMLElement).getByRole("tab", { name: "Activity Log" })).toBeInTheDocument()
-      expect(within(changer as HTMLElement).getByRole("tab", { name: "Day Log" })).toBeInTheDocument()
+      expect(within(changer).getByRole("tab", { name: "Time Grid" })).toBeInTheDocument()
+      expect(within(changer).getByRole("tab", { name: "Activity Log" })).toBeInTheDocument()
+      expect(within(changer).getByRole("tab", { name: "Day Log" })).toBeInTheDocument()
     })
 
     it("stacks view modes under the pen tray and above the time grid", async () => {
       const user = userEvent.setup()
       render(<HomeDashboard />)
       await user.click(screen.getByRole("tab", { name: "Tracking" }))
+      await screen.findByRole("tablist", { name: "Tracking view" })
       const stack = document.querySelector(".trk-chrome-stack")
       const tray = stack?.querySelector(".trk-pen-tools-row")
       const mode = stack?.querySelector(".trk-mode-bar")
@@ -283,6 +287,7 @@ describe("HomeDashboard", () => {
       const user = userEvent.setup()
       render(<HomeDashboard />)
       await user.click(screen.getByRole("tab", { name: "Tracking" }))
+      await screen.findByRole("tablist", { name: "Tracking view" })
       await user.click(screen.getByRole("tab", { name: "Activity Log" }))
       expect(screen.getAllByRole("button", { name: "Log activity" })).toHaveLength(1)
       const stack = document.querySelector(".trk-chrome-stack")
@@ -295,6 +300,7 @@ describe("HomeDashboard", () => {
       const user = userEvent.setup()
       render(<HomeDashboard />)
       await user.click(screen.getByRole("tab", { name: "Tracking" }))
+      await screen.findByRole("tablist", { name: "Tracking view" })
       await user.click(screen.getByRole("tab", { name: "Day Log" }))
       const stack = document.querySelector(".trk-chrome-stack")
       const rail = stack?.querySelector(".trk-grid-rail")
@@ -302,27 +308,29 @@ describe("HomeDashboard", () => {
       expect(within(rail as HTMLElement).getAllByRole("button", { name: "Log activity" })).toHaveLength(1)
     })
 
-    it("keeps day notes under every tracking view (legend always; textbox after Expand)", async () => {
+    it("keeps the day summary under every tracking view (legend always; editor after Expand)", async () => {
       const user = userEvent.setup()
       render(<HomeDashboard />)
       await user.click(screen.getByRole("tab", { name: "Tracking" }))
-      expect(screen.getByText("Day notes")).toBeInTheDocument()
-      expect(screen.queryByRole("textbox", { name: /Notes for / })).not.toBeInTheDocument()
+      await screen.findByRole("tablist", { name: "Tracking view" })
+      expect(screen.getByText("Day summary")).toBeInTheDocument()
+      expect(screen.queryByRole("textbox", { name: /Day summary ·/ })).not.toBeInTheDocument()
       const notes = document.querySelector("#trk-day-notes") as HTMLElement
       await user.click(within(notes).getByRole("button", { name: "Expand" }))
-      expect(screen.getByRole("textbox", { name: /Notes for / })).toBeVisible()
+      expect(screen.getByRole("textbox", { name: /Day summary ·/ })).toBeVisible()
       await user.click(screen.getByRole("tab", { name: "Activity Log" }))
-      expect(screen.getByText("Day notes")).toBeInTheDocument()
-      expect(screen.getByRole("textbox", { name: /Notes for / })).toBeVisible()
+      expect(document.querySelector("#trk-day-notes")).toHaveTextContent(/Day summary/)
+      expect(screen.getByRole("textbox", { name: /Day summary ·/ })).toBeVisible()
       await user.click(screen.getByRole("tab", { name: "Day Log" }))
-      expect(screen.getByText("Day notes")).toBeInTheDocument()
-      expect(screen.getByRole("textbox", { name: /Notes for / })).toBeVisible()
+      expect(document.querySelector("#trk-day-notes")).toHaveTextContent(/Day summary/)
+      expect(screen.getByRole("textbox", { name: /Day summary ·/ })).toBeVisible()
     })
 
     it("places the working-now module under the view changer and before the chrome stack", async () => {
       const user = userEvent.setup()
       render(<HomeDashboard />)
       await user.click(screen.getByRole("tab", { name: "Tracking" }))
+      await screen.findByRole("tablist", { name: "Tracking view" })
       const stack = document.querySelector(".trk-chrome-stack")
       const now = document.querySelector(".trk95 .trk-now-module")
       const notes = stack?.querySelector(".trk-notes")

@@ -3,8 +3,9 @@
  * Clusters share one flex line. Free width widens Rituals, System, and
  * Capture up to a cap; the clusters stay packed. Narrower than the caps,
  * clusters wrap. A cluster wider than the shell scrolls inside its bay.
- * Keys do not flex-shrink. System icon keys are the gear, question mark, and
- * search glass. Capture is Inbox and Quick Add. Metrics is on Current moment.
+ * Keys do not flex-shrink. System icon keys are the gear, question mark,
+ * search glass, and reminder bell. Capture is Now, Inbox, and Quick Add. The live now well is a peer
+ * of those keys, inside Capture, and absent when idle. Metrics is on Current moment.
  */
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
@@ -16,6 +17,11 @@ import { rollBabyAnimalFriend } from "@/lib/baby-animal-friend"
 import { useUiNamesStore } from "@/lib/ui-names-store"
 import { AppHeader } from "./AppHeader"
 import { resetScreenHistoryForTests } from "@/lib/screen-history-controller"
+import { OPERATION_ATTR, OPERATION_TYPE_ID } from "@/lib/operation-types"
+import {
+  startWorkingOnOperation,
+  stopWorkingOnOperation,
+} from "@/lib/operation-work-session"
 import type { Task } from "@/lib/types"
 
 vi.mock("@/lib/baby-animal-friend", () => ({
@@ -93,7 +99,7 @@ describe("AppHeader", () => {
     expect(screen.getByRole("group", { name: "System" })).toBeInTheDocument()
     expect(screen.getByRole("group", { name: "Capture" })).toBeInTheDocument()
 
-    for (const name of [/^Rituals/, "Settings", "Names help mode", "Search", "Now", /^Inbox/, /^Quick Add/]) {
+    for (const name of [/^Rituals/, "Settings", "Names help mode", "Search", "Reminders", "Now", /^Inbox/, /^Quick Add/]) {
       expect(screen.getByRole("button", { name })).toBeInTheDocument()
     }
 
@@ -116,6 +122,47 @@ describe("AppHeader", () => {
     expect(screen.getByTestId("app-header")).toHaveAttribute("data-ui-docs", "components/README.md")
     expect(screen.getByRole("group", { name: "Capture" })).toHaveAttribute("data-ui-name", "Capture")
     expect(screen.getByRole("group", { name: "Capture" })).toHaveAttribute("data-ui-docs", "components/README.md")
+    expect(screen.queryByTestId("header-now-box")).not.toBeInTheDocument()
+    expect(screen.getByRole("group", { name: "System" }).querySelector(".b2-shell-now")).toBeNull()
+    const nowKey = screen.getByRole("button", { name: "Now" })
+    expect(screen.getByRole("group", { name: "Capture" })).toContainElement(nowKey)
+    expect(screen.getByRole("group", { name: "System" })).not.toContainElement(nowKey)
+  })
+
+  it("places a live now well inside Capture, not System", () => {
+    useTaskStore.getState().addTask({
+      id: "op_1",
+      description: "Foxtide rebuild",
+      type: OPERATION_TYPE_ID,
+      stage: "clarified",
+      createdAt: new Date("2026-01-01"),
+      completed: false,
+      lists: [],
+      attributes: { [OPERATION_ATTR.stage]: "active" },
+      links: [],
+    })
+    startWorkingOnOperation("op_1")
+
+    const { unmount } = render(<AppHeader onTaskSelect={() => {}} />)
+    try {
+      const system = screen.getByRole("group", { name: "System" })
+      const capture = screen.getByRole("group", { name: "Capture" })
+      const now = screen.getByTestId("header-now-box")
+      const keys = capture.querySelector(".b2-shell-keys")
+
+      expect(capture).toContainElement(now)
+      expect(now.parentElement).toBe(capture)
+      expect(system).not.toContainElement(now)
+      expect(system.nextElementSibling).not.toBe(now)
+      expect(keys).toBeTruthy()
+      expect(now.compareDocumentPosition(keys as Node) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      expect(screen.getByText("Foxtide rebuild")).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: /Stop Foxtide rebuild/i })).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: /Pause Foxtide rebuild/i })).toBeInTheDocument()
+    } finally {
+      unmount()
+      stopWorkingOnOperation()
+    }
   })
 
   it("wraps clusters at label width instead of shrinking their keys", () => {
@@ -128,11 +175,18 @@ describe("AppHeader", () => {
     const inbox = screen.getByRole("button", { name: /^Inbox/ })
     const quickAdd = screen.getByRole("button", { name: /Quick Add/i })
 
+    const stage = header.querySelector(".b2-shell-stage") as HTMLElement
+
     expect(getComputedStyle(body).flexWrap).toBe("wrap")
     expect(getComputedStyle(body).justifyContent).toBe("flex-start")
+    expect(getComputedStyle(stage).justifyContent).toBe("flex-start")
+    expect(getComputedStyle(stage).marginLeft).toBe("auto")
+    expect(getComputedStyle(stage).marginRight).toBe("auto")
+    expect(getComputedStyle(stage).maxWidth).toContain("100%")
     expect(getComputedStyle(rail).display).toBe("contents")
     expect(getComputedStyle(capture).flexShrink).toBe("0")
-    expect(getComputedStyle(capture).maxWidth).toContain("25rem")
+    expect(getComputedStyle(capture).maxWidth).toContain("100%")
+    expect(getComputedStyle(inbox).maxWidth).toContain("max-content")
     expect(getComputedStyle(keys).flexWrap).toBe("nowrap")
     expect(getComputedStyle(keys).overflowX).toBe("auto")
     expect(getComputedStyle(keys).justifyContent).toBe("flex-start")

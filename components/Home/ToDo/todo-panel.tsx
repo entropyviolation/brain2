@@ -41,7 +41,8 @@ import { formatLocalDateKey } from "@/lib/date-utils"
 import { makeEstimate } from "@/lib/estimated-values"
 import { confirmTaskTimes, type ConfirmedTimes } from "@/lib/services/completion-time-service"
 import { useUserSettingsStore } from "@/lib/user-settings-store"
-import type { TodoItem, Task, PriorityWeights, CompletionStatus, Subtask } from "@/lib/types"
+import type { TodoItem, Task, PriorityWeights, CompletionStatus, Subtask, StoredBlockedReason } from "@/lib/types"
+import { MissReasonDialog } from "@/components/Reviews/MissReasonDialog"
 import { TaskDetailPopup } from "@/components/ItemDetail/ItemDetailPopup"
 import JustStartMode from "@/components/Focus/JustStartMode"
 import { APP_NAV_KEYS } from "@/lib/app-navigation"
@@ -381,13 +382,22 @@ export function TodoPanel({
     updateTask({ ...task, description })
   }
 
+  const [reasonAsk, setReasonAsk] = useState<{ subject: string; apply: (reason: StoredBlockedReason | undefined) => void } | null>(null)
+
   const handleMissed = (todoId: string) => {
-    setTodoItems((items) => items.filter((item) => item.id !== todoId))
     const todo = todoItems.find((item) => item.id === todoId)
-    markMissedOpportunity(todo?.taskId ?? todoId)
-    if (activeTodoTab !== "quarter") {
-      setMissedSectionsOpen((prev) => ({ ...prev, [activeTodoTab]: true }))
-    }
+    const taskId = todo?.taskId ?? todoId
+    const task = tasks.find((row) => row.id === taskId)
+    setReasonAsk({
+      subject: itemTitleOrUntitled(task ?? todo),
+      apply: (reason) => {
+        setTodoItems((items) => items.filter((item) => item.id !== todoId))
+        markMissedOpportunity(taskId, undefined, reason)
+        if (activeTodoTab !== "quarter") {
+          setMissedSectionsOpen((prev) => ({ ...prev, [activeTodoTab]: true }))
+        }
+      },
+    })
   }
 
   const handleTierChange = (todoId: string, tier: TodoItem["tier"]) => {
@@ -398,7 +408,11 @@ export function TodoPanel({
   }
 
   const handlePush = (todoId: string, period: TodoPeriod) => {
-    pushTask(todoId, period)
+    const task = tasks.find((row) => row.id === todoId)
+    setReasonAsk({
+      subject: itemTitleOrUntitled(task),
+      apply: (reason) => pushTask(todoId, period, undefined, new Date(), reason),
+    })
   }
 
   const handleDelete = (todoId: string) => {
@@ -421,12 +435,20 @@ export function TodoPanel({
     const task = tasks.find((t) => t.id === taskId)
     if (!task) return
     const value = todoPeriodValue(period, focusedDate)
+    if (action === "push") {
+      setReasonAsk({
+        subject: itemTitleOrUntitled(task),
+        apply: (reason) => {
+          const patch = pushUndoneFields(task, period, value, focusedDate, new Date(), reason)
+          updateTask({ ...task, ...patch })
+        },
+      })
+      return
+    }
     const patch =
       action === "assimilate"
         ? assimilateUndoneFields(task, period, value)
-        : action === "push"
-          ? pushUndoneFields(task, period, value, focusedDate)
-          : discardUndoneFields(task, period, value)
+        : discardUndoneFields(task, period, value)
     updateTask({ ...task, ...patch })
   }
 
@@ -1199,6 +1221,15 @@ export function TodoPanel({
       </div>
 
       <TaskDetailPopup taskId={selectedTaskId} open={!!selectedTaskId} onClose={() => setSelectedTaskId(null)} />
+      <MissReasonDialog
+        open={reasonAsk !== null}
+        subject={reasonAsk?.subject ?? ""}
+        onResolve={(reason) => {
+          const apply = reasonAsk?.apply
+          setReasonAsk(null)
+          apply?.(reason)
+        }}
+      />
 
       {justStartTaskId && (
         <JustStartMode taskId={justStartTaskId} onClose={() => setJustStartTaskId(null)} />

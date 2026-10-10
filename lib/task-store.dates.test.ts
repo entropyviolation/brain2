@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
+import { keptCreatedAt } from "@/lib/date-utils"
 import { useTaskStore } from "@/lib/task-store"
 import type { Task } from "@/lib/types"
 
@@ -96,5 +97,38 @@ describe("task-store date rehydration", () => {
     const restored = useTaskStore.getState().tasks.find((t) => t.id === "b")
     expect(restored!.scheduledTime).toBe("14:30")
     expect(restored!.scheduledWeek).toBe("2026-W25")
+  })
+
+  it("does not move createdAt forward, including an item that never entered the inbox", () => {
+    const added = new Date("2026-06-01T08:30:00.000Z")
+    useTaskStore.getState().addTask(task({ id: "plain", stage: "list", createdAt: added, lists: ["work"] }))
+    const current = useTaskStore.getState().tasks.find((t) => t.id === "plain")!
+    useTaskStore.getState().updateTask({
+      ...current,
+      description: "renamed",
+      createdAt: new Date("2026-10-09T12:00:00.000Z"),
+    })
+    const saved = useTaskStore.getState().tasks.find((t) => t.id === "plain")!
+    expect(saved.description).toBe("renamed")
+    expect(saved.stage).toBe("list")
+    expect(saved.createdAt.toISOString()).toBe(added.toISOString())
+  })
+
+  it("still accepts an earlier createdAt", () => {
+    const added = new Date("2026-10-01T12:00:00.000Z")
+    const earlier = new Date("2020-01-01T00:00:00.000Z")
+    useTaskStore.getState().addTask(task({ id: "back", createdAt: added }))
+    const current = useTaskStore.getState().tasks.find((t) => t.id === "back")!
+    useTaskStore.getState().updateTask({ ...current, createdAt: earlier })
+    expect(useTaskStore.getState().tasks.find((t) => t.id === "back")!.createdAt.toISOString()).toBe(
+      earlier.toISOString(),
+    )
+  })
+
+  it("does not invent now when both clocks are missing", () => {
+    const arrived = new Date("2026-09-24T09:29:00.000Z")
+    expect(keptCreatedAt(undefined, undefined)).toBeUndefined()
+    expect(keptCreatedAt(new Date(Number.NaN), new Date(Number.NaN))).toBeUndefined()
+    expect(keptCreatedAt(arrived, new Date("2026-10-09T12:00:00.000Z"))?.toISOString()).toBe(arrived.toISOString())
   })
 })

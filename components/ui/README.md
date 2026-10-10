@@ -25,11 +25,12 @@ Only the primitives actively imported by the app are kept. As of the current cod
 | `window-sand-close.css` | `.window-sand-source` hides the live window while the canvas plays. `.window-sand-host[data-state=closed]` is opacity 0, visibility hidden, animation none. `.window-sand-skip` is the small × (top right) that closes immediately. Imported from the root layout so the skip control stays clickable. |
 | `unsaved-changes-guard.tsx` | House dirty-close confirm: Save changes / Cancel / Exit without saving. Milled fascia look via `unsaved-changes.css`. Pair with `lib/unsaved-changes.ts`. |
 | `unsaved-changes.css` | `.w95-confirm` milled fascia confirm (~24.5rem): CRT title, brushed bay, metal keys |
-| `dropdown-menu.tsx` | Menus (Reviews header, etc.) |
+| `menu-layer.ts` | Shared menu layer. Select and dropdown lists portal to `document.body` on this z-index so a sheet, frozen header, bar, or dialog cannot cover them |
+| `dropdown-menu.tsx` | Menus (Reviews header, etc.). Same menu layer as select |
 | `input.tsx` | Text and number inputs |
 | `label.tsx` | Form labels |
 | `progress.tsx` | Progress bars (supports `indicatorClassName`) |
-| `select.tsx` | Select dropdowns |
+| `select.tsx` | Select dropdowns. The list portals to `document.body` on the shared menu layer |
 | `separator.tsx` | Visual dividers |
 | `switch.tsx` | Toggle switches |
 | `table.tsx` | Table layout (Lists details view) |

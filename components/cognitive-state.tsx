@@ -1,7 +1,7 @@
 /**
  * components/cognitive-state.tsx — Header Now door
  *
- * The global-header word key opens the Now popup
+ * The Capture-cluster word key opens the Now popup
  * (`components/header-tracking/`). That popup is the edge of the current
  * moment: recent tracking and the short plan ahead. Current moment, including
  * Working on, Events, Thought process, and Update state, stays above the

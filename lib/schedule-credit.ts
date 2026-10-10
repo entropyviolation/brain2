@@ -7,9 +7,11 @@
  */
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { itemTitle } from "@/lib/item-utils"
+import { pointsRuleValue } from "@/lib/points-rules-live"
 import { usePointsStore } from "@/lib/points-store"
 import type { SchedulePeriod, Task } from "@/lib/types"
 
+/** Default. Live awards read `pointsRuleValue("schedule.placementPoints")`. */
 export const SCHEDULE_POINTS = 1
 
 type PeriodFields = Pick<Task, "scheduledYear" | "scheduledMonth" | "scheduledWeek" | "scheduledDate">
@@ -49,5 +51,5 @@ export function scheduleCreditLabel(task: Pick<Task, "title" | "description"> | 
 }
 
 export function creditSchedulePlacement(taskId: string, title: string): void {
-  usePointsStore.getState().addPoints(taskId, SCHEDULE_POINTS, scheduleCreditLabel(title))
+  usePointsStore.getState().addPoints(taskId, pointsRuleValue("schedule.placementPoints"), scheduleCreditLabel(title))
 }

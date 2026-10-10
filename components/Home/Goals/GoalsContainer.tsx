@@ -9,6 +9,7 @@
 import { useMemo, useState } from "react"
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { useGoalsStore, taskObjectiveMultiplier } from "@/lib/goals-store"
+import { pointsRuleValue } from "@/lib/points-rules-live"
 import { usePointsStore } from "@/lib/points-store"
 import { useTaskStore } from "@/lib/task-store"
 import { goalProgressPercent } from "@/lib/objectives"
@@ -51,7 +52,7 @@ const emptyDraft = (): GoalDraft => ({
   periodKind: "year",
   periodLabel: "",
   objectiveIds: [],
-  points: 20,
+  points: pointsRuleValue("goal.defaultPoints"),
 })
 
 function GoalPips({ percent }: { percent: number }) {
@@ -177,7 +178,7 @@ export function GoalsContainer() {
     addTask(task)
     setGoalProgress(goal.id, goal.current + 1)
     const multiplier = taskObjectiveMultiplier(objectives, goal.objectiveIds, now)
-    const points = Math.round(1 * multiplier * 100) / 100
+    const points = Math.round(pointsRuleValue("goal.actionBasePoints") * multiplier * 100) / 100
     if (points > 0) addPoints(id, points, `Goal action: ${goal.title}`, now)
   }
 

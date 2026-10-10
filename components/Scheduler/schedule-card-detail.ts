@@ -22,8 +22,15 @@ import {
   markSchedulePlacementResolved,
   pushUndoneFields,
   pushYearUndoneFields,
+  stampPlacementMissReason,
 } from "@/lib/scheduling"
-import type { SchedulePeriod, SchedulePlacement, SchedulePlacementPeriod, Task } from "@/lib/types"
+import type {
+  SchedulePeriod,
+  SchedulePlacement,
+  SchedulePlacementPeriod,
+  StoredBlockedReason,
+  Task,
+} from "@/lib/types"
 import { getTasksForPeriod } from "./scheduler-utils"
 
 const RANK: Record<SchedulePlacementPeriod, number> = { year: 1, month: 2, week: 3, day: 4 }
@@ -248,14 +255,17 @@ export function pushCardWorkingQueue(
   card: SchedulePlacementPeriod,
   value: string,
   now: Date = new Date(),
+  missReason?: StoredBlockedReason,
 ): Partial<Task> {
   const stepped =
     card === "year"
       ? pushYearUndoneFields(task, value)
       : pushUndoneFields(task, card, value, periodRefDate(card, value), now)
+  let schedulePlacements = markOpenPlacementsInCard(stepped.schedulePlacements, card, value, "pushed", now)
+  if (missReason) schedulePlacements = stampPlacementMissReason(schedulePlacements, card, value, missReason)
   return {
     ...stepped,
-    schedulePlacements: markOpenPlacementsInCard(stepped.schedulePlacements, card, value, "pushed", now),
+    schedulePlacements,
   }
 }
 

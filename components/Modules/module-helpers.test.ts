@@ -3,8 +3,11 @@ import {
   ruleMatches,
   tasksInList,
   randN,
+  MODULE_META,
   MODULE_VIEW_KINDS,
   MODULE_VIEW_KIND_META,
+  WIDGET_MODULE_CATALOG,
+  WIDGET_MODULE_TYPES,
 } from "./module-helpers"
 import type { AttrRule, ModuleViewKind } from "@/lib/modules-store"
 import type { Task } from "@/lib/types"
@@ -104,6 +107,16 @@ describe("MODULE_VIEW_KINDS", () => {
     expect(MODULE_VIEW_KIND_META.matcher.needsList).toBe(true)
     expect(MODULE_VIEW_KIND_META["house-cleaning"].needsList).toBe(false)
     expect(MODULE_VIEW_KIND_META["grad-search"].needsList).toBe(false)
+  })
+})
+
+describe("widget module catalog", () => {
+  it("describes every dashboard widget once", () => {
+    expect(WIDGET_MODULE_CATALOG.map((entry) => entry.id)).toEqual([...WIDGET_MODULE_TYPES])
+    for (const entry of WIDGET_MODULE_CATALOG) {
+      expect(entry.name).toBe(MODULE_META[entry.id].label)
+      expect(entry.shows.length).toBeGreaterThan(20)
+    }
   })
 })
 

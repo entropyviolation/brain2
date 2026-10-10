@@ -313,6 +313,9 @@ describe("home widget catalog", () => {
     expect(HOME_WIDGET_CATALOG.map((entry) => entry.id)).toEqual([...HOME_WIDGET_IDS])
     for (const entry of HOME_WIDGET_CATALOG) {
       expect(entry.name).toBe(HOME_WIDGET_LABEL[entry.id])
+      if (entry.id !== "weather" && entry.id !== "pet") {
+        expect(entry.preview.caption).toBe(HOME_WIDGET_LABEL[entry.id])
+      }
       expect(homeWidgetBlurb(entry.id).shows.length).toBeGreaterThan(20)
       expect(entry.useful.length).toBeGreaterThan(10)
       expect(entry.preview.crt.length).toBeGreaterThan(0)

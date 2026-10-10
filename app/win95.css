@@ -616,6 +616,24 @@ body.win95-app [data-ui-name="App tabs"] [role="tab"][data-state="active"]::befo
 }
 
 /*
+ * DialogContent carries Tailwind `duration-200`. That utility sets
+ * transition-duration and leaves transition-property at its initial value,
+ * `all`. The dialog then eases background-color whenever `--chrome-face`
+ * changes, including the frame it mounts — a slow drift looks like a fast
+ * catch-up. Drift is sampled by the clock. Popups do not interpolate the gray.
+ * Enter/exit still use animation-duration from that same utility.
+ * A timed Settings preview opts back in with `.set95-drift-preview` only.
+ */
+body.win95-app :is([role="dialog"], [role="alertdialog"]) {
+  transition-property: none;
+}
+body.win95-app .set95-dialog.set95-drift-preview {
+  transition-property: background-color, background-image, border-color, color, box-shadow;
+  transition-duration: 180ms;
+  transition-timing-function: linear;
+}
+
+/*
  * Unskinned dialogs → brushed bay with a desk foot. Portaled custom skins keep
  * their own face (excluded here; also win via later module CSS). No !important.
  * Exclusions: .set95 / .inbox-dialog / .id95 / .hab-grade-sheet / .ops95-dialog /
@@ -739,6 +757,17 @@ body.win95-app *::-webkit-scrollbar-thumb {
 }
 body.win95-app *::-webkit-scrollbar-corner {
   background: var(--w95-surface);
+}
+
+/* Firefox has no ::-webkit-scrollbar. Keep scrollbar-width / scrollbar-color
+   inside this query only. In Chromium, setting either property (even
+   scrollbar-width: auto) replaces these vintage bars with the native bar. */
+@supports (-moz-appearance: none) {
+  body.win95-app,
+  body.win95-app * {
+    scrollbar-width: auto;
+    scrollbar-color: var(--w95-surface, #c0c0c0) var(--chrome-face, #c0c0c0);
+  }
 }
 
 /* Color picker: native chips collapse inside UA padding. `.cogs-color-swatch`

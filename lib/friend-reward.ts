@@ -5,11 +5,14 @@
  * `rewardScale` (0–100). Trinkets / nest furniture stay later.
  */
 
+import { pointsRuleValue } from "@/lib/points-rules-live"
 import { usePointsStore } from "@/lib/points-store"
 
 export function friendRewardPoints(rewardScale: number): number {
   const scale = Number.isFinite(rewardScale) ? rewardScale : 40
-  return Math.max(1, Math.round(2 + Math.max(0, Math.min(100, scale)) / 12))
+  const base = pointsRuleValue("friend.rewardBase")
+  const divisor = pointsRuleValue("friend.rewardScaleDivisor")
+  return Math.max(1, Math.round(base + Math.max(0, Math.min(100, scale)) / divisor))
 }
 
 export function grantFriendReward(ledgerId: string, points: number, title: string, date = new Date()): void {

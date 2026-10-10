@@ -52,6 +52,16 @@ export const MAX_ACTION_HISTORY = 40
 export interface HistoryAction {
   label: string
   restore: () => void
+  /** Snapshot this step restores. Deferred log writes may append to it. */
+  world?: WorldSnap
+  seq: number
+  onUndo?: () => void
+  onRedo?: () => void
+  /**
+   * Entry ids this snapshot must not gain. A transfer's before-image shares
+   * one set with the undo/redo copies of that same step.
+   */
+  omitEntryIds?: Set<string>
 }
 
 let undoStack: HistoryAction[] = []
@@ -66,6 +76,7 @@ let settling = false
 let silenced = 0
 let batchDepth = 0
 let recordedThisBatch = false
+let nextSeq = 1
 
 const REMOVED_ENTRY_CAP = 4000
 
@@ -163,7 +174,7 @@ function scheduleBookkeeping(book: () => void): void {
   }, 0)
 }
 
-function captureWorld(): () => void {
+function captureWorld(): { restore: () => void; world: WorldSnap } {
   const tracking = useTimeTrackingStore.getState()
   const habits = useHabitsStore.getState()
   const snap: WorldSnap = {
@@ -182,11 +193,30 @@ function captureWorld(): () => void {
     tasks: useTaskStore.getState().tasks,
   }
 
-  return () => {
-    applyTracking(snap)
-    const book = () => applyBookkeeping(snap)
-    if (deferBookkeeping()) scheduleBookkeeping(book)
-    else book()
+  return {
+    world: snap,
+    restore: () => {
+      applyTracking(snap)
+      const book = () => applyBookkeeping(snap)
+      if (deferBookkeeping()) scheduleBookkeeping(book)
+      else book()
+    },
+  }
+}
+
+function pushUndo(action: Omit<HistoryAction, "seq">): HistoryAction {
+  const stored: HistoryAction = { ...action, seq: nextSeq++ }
+  undoStack.push(stored)
+  if (undoStack.length > MAX_ACTION_HISTORY) undoStack.shift()
+  redoStack = []
+  return stored
+}
+
+function carryHooks(action: HistoryAction): Pick<HistoryAction, "onUndo" | "onRedo" | "omitEntryIds"> {
+  return {
+    onUndo: action.onUndo,
+    onRedo: action.onRedo,
+    omitEntryIds: action.omitEntryIds,
   }
 }
 
@@ -208,10 +238,40 @@ export function rememberWorld(label: string): void {
   if (applying || settling || silenced > 0) return
   if (batchDepth > 0 && recordedThisBatch) return
 
-  undoStack.push({ label, restore: captureWorld() })
-  if (undoStack.length > MAX_ACTION_HISTORY) undoStack.shift()
-  redoStack = []
+  const captured = captureWorld()
+  pushUndo({ label, restore: captured.restore, world: captured.world })
   if (batchDepth > 0) recordedThisBatch = true
+}
+
+/**
+ * Hooks for the undo step just pushed. `omitEntryIds` is shared by later
+ * undo/redo copies of that same step so a deferred log write is not spliced
+ * back into the before-image.
+ */
+export function attachLatestUndoHooks(hooks: {
+  onUndo?: () => void
+  onRedo?: () => void
+  omitEntryIds?: Set<string>
+}): number | undefined {
+  const action = undoStack[undoStack.length - 1]
+  if (!action) return undefined
+  if (hooks.onUndo) action.onUndo = hooks.onUndo
+  if (hooks.onRedo) action.onRedo = hooks.onRedo
+  if (hooks.omitEntryIds) action.omitEntryIds = hooks.omitEntryIds
+  return action.seq
+}
+
+/** Mutate world snapshots taken after `seq`. The step at `seq` stays as it was. */
+export function patchWorldsAfter(
+  seq: number,
+  patch: (world: WorldSnap, action: HistoryAction) => void,
+): void {
+  for (const action of undoStack) {
+    if (action.world && action.seq > seq) patch(action.world, action)
+  }
+  for (const action of redoStack) {
+    if (action.world && action.seq > seq) patch(action.world, action)
+  }
 }
 
 /**
@@ -246,14 +306,21 @@ export function undoLastAction(): boolean {
   flushDeferred()
   const action = undoStack.pop()
   if (!action) return false
-  const redoRestore = captureWorld()
+  const captured = captureWorld()
+  action.onUndo?.()
   applying = true
   try {
     action.restore()
   } finally {
     applying = false
   }
-  redoStack.push({ label: action.label, restore: redoRestore })
+  redoStack.push({
+    label: action.label,
+    restore: captured.restore,
+    world: captured.world,
+    seq: nextSeq++,
+    ...carryHooks(action),
+  })
   return true
 }
 
@@ -262,14 +329,22 @@ export function redoLastAction(): boolean {
   flushDeferred()
   const action = redoStack.pop()
   if (!action) return false
-  const undoRestore = captureWorld()
+  const captured = captureWorld()
   applying = true
   try {
     action.restore()
   } finally {
     applying = false
   }
-  undoStack.push({ label: action.label, restore: undoRestore })
+  action.onRedo?.()
+  undoStack.push({
+    label: action.label,
+    restore: captured.restore,
+    world: captured.world,
+    seq: nextSeq++,
+    ...carryHooks(action),
+  })
+  if (undoStack.length > MAX_ACTION_HISTORY) undoStack.shift()
   return true
 }
 
@@ -301,4 +376,5 @@ export function resetActionHistory(): void {
   silenced = 0
   batchDepth = 0
   recordedThisBatch = false
+  nextSeq = 1
 }

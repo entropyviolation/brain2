@@ -16,7 +16,13 @@
  * Cmd/Ctrl-K search, Cmd/Ctrl-Shift-A Quick Add, Cmd/Ctrl-Z undo last
  * Home/Tracking action. On mount, `useDayScheduleRollover` settles past
  * periods and `useProcessInboxTodo` adds today's "process inbox information"
- * To Do when the revisit Inbox has more than 100 open ideas.
+ * To Do when the revisit Inbox has more than 100 open ideas. `useReminderTick`
+ * delivers due Reminders to the Inbox and Telegram while this window is open.
+ * `useSystemHomeListPins` keeps the built-in singleton lists on Lists Home.
+ * `useInstagramFollowingList` and `useInstagramFollowersList` sit beside
+ * `usePeopleIKnowList` and create or adopt the two Instagram lists after hydrate.
+ * `useCloseGiftIdeas` sits there too: people already marked Close get a Gift
+ * ideas list, and a later save that turns Close on or renames the person updates it.
  *
  * Spec: §2.2 (module hosting) and §8.2 (dashboard top bar / global quick actions).
  */
@@ -38,6 +44,11 @@ import { useQuickCaptureHotkey } from "@/hooks/useQuickCaptureHotkey"
 import { useUndoHotkey } from "@/hooks/useUndoHotkey"
 import { useDayScheduleRollover } from "@/hooks/use-day-rollover"
 import { useProcessInboxTodo } from "@/hooks/use-inbox-process-todo"
+import { useReminderTick } from "@/hooks/use-reminder-tick"
+import { useSystemHomeListPins } from "@/lib/home-system-lists"
+import { usePeopleIKnowList } from "@/hooks/use-people-i-know"
+import { useCloseGiftIdeas } from "@/hooks/use-close-gift-ideas"
+import { useInstagramFollowersList, useInstagramFollowingList } from "@/hooks/use-instagram-lists"
 import { PersistStatusBanner } from "@/components/PersistStatusBanner"
 import { MachineLoading } from "@/components/machine-loading"
 import { PenSettingsHost } from "@/components/Home/Tracking/pen-settings-host"
@@ -127,6 +138,12 @@ export default function Home() {
   useMessageIngest()
   useDayScheduleRollover()
   useProcessInboxTodo()
+  useReminderTick()
+  useSystemHomeListPins()
+  usePeopleIKnowList()
+  useCloseGiftIdeas()
+  useInstagramFollowingList()
+  useInstagramFollowersList()
   const [popoutModuleId, setPopoutModuleId] = useState<string | null>(null)
   const [popoutSheetCategoryId, setPopoutSheetCategoryId] = useState<string | null>(null)
   const selectedMissing = useTaskStore((s) => {

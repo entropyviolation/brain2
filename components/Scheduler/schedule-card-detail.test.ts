@@ -75,6 +75,20 @@ describe("partitionCardDetail", () => {
 })
 
 describe("card working queue", () => {
+  it("push can store a miss reason on the card placement only", () => {
+    const week = "2026-08-03_2026-08-09"
+    const open = task({
+      id: "w",
+      scheduledYear: "2026",
+      schedulePlacements: [{ period: "month", value: "2026-08" }],
+    })
+    const next = { ...open, ...pushCardWorkingQueue(open, "week", week, september, "no-energy") }
+    expect(next.schedulePlacements).toEqual([
+      { period: "month", value: "2026-08", resolved: "pushed" },
+      { period: "week", value: week, resolved: "pushed", missReason: "no-energy" },
+    ])
+  })
+
   it("push marks the period pushed and schedules the next open one", () => {
     const open = task({ id: "m", schedulePlacements: [{ period: "month", value: "2026-08" }] })
     const next = { ...open, ...pushCardWorkingQueue(open, "month", "2026-08", september) }

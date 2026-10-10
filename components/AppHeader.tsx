@@ -4,16 +4,18 @@
  * Full-width fascia at the top of the viewport: navy **BRAIN2** caption with a
  * Tek POWER lamp, leading **Nav** Back/Forward mill keys (in-app screen
  * history), today's-friend jewel in a Friend key-well (click for a Stardew
- * Next Action bubble), and Rituals / System / now / Capture as milled silver
+ * Next Action bubble), and Rituals / System / Capture as milled silver
  * key-wells of chunky press keys (Y2K handheld / TENO). Clusters share one
- * flex line. Free width widens Rituals, System, and Capture, and the keys
- * share each well up to a cap. The clusters stay packed — leftover past the
- * cap is mill at the end of the row, not a gap between Friend and Rituals.
- * Narrower than those caps, whole clusters wrap; a cluster wider than the
- * shell scrolls inside its bay. Keys do not flex-shrink, and phosphor counts
- * stay on them. The **now** well appears only while an Operations or
- * pen-color work timer is live. System is a gear (Settings), a question mark
- * (Names help mode), a magnifying glass (Search), then the Now word key.
+ * flex line. **Nav** stays the left anchor. Friend, Rituals, System, and
+ * Capture are one group centered in the space to the right of Nav — the
+ * column gap between those clusters stays tight, and leftover mill is equal
+ * on both sides of the group. Capture’s Now, Inbox, and Quick Add keys are
+ * content-wide and share one gap; the live **now** well sits beside them
+ * only while an Operations or pen-color work timer is live. Narrower than
+ * the group, whole clusters wrap onto the full shell; a cluster wider than
+ * the shell scrolls inside its bay. Keys do not flex-shrink, and phosphor
+ * counts stay on them. System is a gear (Settings), a question mark (Names
+ * help mode), a magnifying glass (Search), and a bell (current reminders).
  * The question mark latches (`aria-pressed`) and gains a diagonal strike while
  * Names is on. Icon keys show engraved glyphs; word keys stay words.
  * Nested bevels from IRIX/TENO — not a cockpit restyle and not a SaaS navbar.
@@ -31,6 +33,7 @@ import { BabyAnimalNest } from "@/components/baby-animal-nest"
 import { SettingsDialog } from "@/components/Settings/SettingsDialog"
 import { HeaderNowBox } from "@/components/header-now-box"
 import { HeaderNavButtons } from "@/components/header-nav-buttons"
+import { HeaderReminderBell } from "@/components/header-reminder-bell"
 import { Button } from "@/components/ui/button"
 import { useUiNamesStore } from "@/lib/ui-names-store"
 import { Search } from "lucide-react"
@@ -122,6 +125,7 @@ export function AppHeader({
       </div>
       <div className="b2-shell-body">
         <HeaderNavButtons />
+        <div className="b2-shell-stage">
         <fieldset className="b2-shell-brand">
           <legend>Friend</legend>
           <BabyAnimalNest />
@@ -140,23 +144,25 @@ export function AppHeader({
               <SettingsDialog />
               <NamesModeButton />
               <SearchKey onOpen={onOpenSearch} />
-              <CognitiveState />
+              <HeaderReminderBell onTaskSelect={onTaskSelect} />
             </div>
           </fieldset>
           <div className="b2-shell-sep" role="separator" />
-          <HeaderNowBox />
           <fieldset
             className="b2-shell-group b2-shell-capture"
             data-ui-name="Capture"
-            data-ui-help="Inbox and Quick Add. Metrics is on Current moment in Now. Ingest, From Notes, and Phone Notes live in Settings and Lists settings."
+            data-ui-help="Now, Inbox, and Quick Add. Metrics is on Current moment in Now. Ingest, From Notes, and Phone Notes live in Settings and Lists settings."
             data-ui-docs="components/README.md"
           >
             <legend>Capture</legend>
+            <HeaderNowBox />
             <div className="b2-shell-keys">
+              <CognitiveState />
               <Inbox onTaskSelect={onTaskSelect} />
               <QuickAdd open={captureOpen} onOpenChange={onCaptureOpenChange} seed={captureSeed} />
             </div>
           </fieldset>
+        </div>
         </div>
       </div>
       <div className="b2-shell-shelf" aria-hidden="true" />

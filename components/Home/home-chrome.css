@@ -11,6 +11,8 @@
  * bay: weekday in a CRT, calendar date on a nameplate with a power lamp,
  * Widgets as a raised key. CRT numerals use `--hab-crt-green` (`#7dffc4`) +
  * `--hab-crt-glow`. Each tile is nameplate + CRT + full-width silver footer.
+ * Tile copy (and Modules catalog cards) is Karla, one step above the pixel
+ * plate — see the overview-type rule below. Detail handhelds stay on w95fa.
  * Detail handhelds use vibrant navy LED numbers and the same Habits 3-stop
  * gradient meters as the compact wells. The strip wraps into one equal-height
  * row (tiles flex up to 200px). Weather click opens the day-strip + tide
@@ -222,6 +224,102 @@
       rgba(0, 0, 0, 0.14) calc(100% - 8px)
     );
   box-shadow: var(--h-raised);
+}
+
+/* Overview type. One face for every collapsed Home tile and every Modules
+   catalog card (workspace window + dashboard widget). Karla is already loaded
+   (`--font-karla`). Sizes are about 2px above the pixel plate that was
+   actually painting: footers and labels 9px → 11px, nameplates 11px → 13px,
+   CRT values the habit sheet had pinned at 18px → 20px. Award stays 22px
+   (that sheet was drawing it at 18). Weather’s degree is 24px. Colors, bevels, and
+   phosphor stay. Detail dialogs, the date plate, and Home panels are outside
+   these selectors, so they keep w95fa. The .hab95 prefix beats habit-chrome
+   score rules, which load later and were shrinking this strip. */
+.home95 .home-overview,
+.mod95 .mod-ws-window,
+.mod95 .mod-widget {
+  font-family: var(--font-karla), Karla, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.hab95 .home95 .home-overview .hab-score-caption,
+.home95 .home-overview .hab-score-caption {
+  align-items: flex-start;
+  font-size: 13px;
+  white-space: normal;
+  line-height: 1.15;
+  text-overflow: clip;
+  overflow: visible;
+}
+
+.home95 .home-overview .hab-score-caption > span {
+  min-width: 0;
+  white-space: normal;
+}
+
+.home95 .home-overview .home-points-line,
+.home95 .home-overview .hab-meter-row,
+.home95 .home-overview .hab-progress-title,
+.home95 .home-overview .home-review-copy,
+.home95 .home-overview .home-affirmation-line,
+.home95 .home-overview .home-presence-meta {
+  font-size: 13px;
+}
+
+.home95 .home-overview .home-next-title {
+  font-size: 14px;
+}
+
+.hab95 .home95 .home-overview .hab-score-sub,
+.home95 .home-overview .hab-score-sub {
+  font-size: 11px;
+  -webkit-line-clamp: 3;
+  line-height: 1.15;
+}
+
+.home95 .home-overview .home-tile-foot {
+  max-height: 54px;
+}
+
+.home95 .home-overview .home-points-line span:first-child,
+.home95 .home-overview .hab-meter-stat,
+.home95 .home-overview .hab-meter-of,
+.home95 .home-overview .hab-spark-caption,
+.home95 .home-overview .home-presence-update,
+.home95 .home-overview .home-weather-city,
+.home95 .home-overview .home-weather-tide-hint,
+.home95 .home-overview .home-weather-sun {
+  font-size: 11px;
+}
+
+.home95 .home-overview .home-moon-name,
+.home95 .home-overview .home-review-key,
+.home95 .home-overview .home-presence-company,
+.home95 .home-overview .home-presence-line,
+.home95 .home-overview .home-weather-line,
+.home95 .home-overview .home-weather-chip-temp,
+.home95 .home-overview .home-weather-tide-station,
+.home95 .home-overview .home-weather-tide-empty {
+  font-size: 12px;
+}
+
+.home95 .home-overview .home-weather-chip-hour {
+  font-size: 10px;
+}
+
+.hab95 .home95 .home-overview .hab-score-readout,
+.home95 .home-overview .hab-score-readout {
+  font-size: 20px;
+}
+
+.home95 .home-overview .home-daylamp-word,
+.hab95 .home95 .home-overview .home-award-readout,
+.home95 .home-overview .home-award-readout {
+  font-size: 22px;
+}
+
+.home95 .home-overview .home-presence-activity {
+  font-size: 17px;
 }
 
 /* Same wrap on Habits — do not lock a nowrap scroller / empty gray band. */
@@ -1331,7 +1429,7 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
 .home95 .home-tile.is-weather .home-weather-readout {
   min-height: 36px;
   padding: 6px 8px;
-  font-size: 22px;
+  font-size: 24px;
   box-shadow:
     var(--h-field),
     inset 0 0 0 1px rgba(125, 255, 196, 0.12);
@@ -2916,16 +3014,6 @@ body .home-widget-dialog.is-sky .home-sky-zoom-note {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  scrollbar-width: thin;
-  scrollbar-color: #1e4a36 transparent;
-}
-
-.home-sky-body-scroll::-webkit-scrollbar {
-  width: 8px;
-}
-
-.home-sky-body-scroll::-webkit-scrollbar-thumb {
-  background: #1e4a36;
 }
 
 .home-sky-readout h3,
@@ -4322,6 +4410,14 @@ body.win95-app .home-pane {
   margin-top: 0;
 }
 
+/* Habits: the switcher is the top of the instrument. Square its lower edge
+   so the date bar meets it. Air stays the margin above this bay. */
+.hab95 .home-tabs[role="tablist"] {
+  margin-bottom: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
 body.win95-app [data-ui-name="Home tabs"][role="tablist"],
 body.win95-app .home-tabs[role="tablist"] {
   display: flex;
@@ -4414,4 +4510,62 @@ body.win95-app .home-tabs [role="tab"][data-state="active"]::before {
     0 0 0 2px #9aa09c,
     inset 0 1px 1px rgba(255, 255, 255, 0.55),
     0 0 4px #7dffc4;
+}
+
+/* Day / week / month / season plan log on Habits. Sibling of `.hab-desk`,
+   not a region of the sheet. The desk stays the joined face (period strip
+   above it, sheet + 196px rail inside it). The gap is the desktop, so the
+   plan's own milled edge is a second container. */
+.hab-pane:has(> .hab-plan-frame) {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: auto;
+  min-height: 0;
+  background: var(--pcb-desk, #008080);
+}
+
+.hab-pane:has(> .hab-plan-frame) > .hab-desk {
+  flex: 1 1 auto;
+  height: calc(100dvh - 18rem);
+  max-height: calc(100dvh - 18rem);
+  min-height: 14rem;
+}
+
+.hab-plan-frame {
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 8px 12px 12px;
+  border: 0;
+  border-radius: var(--r-3, 3px);
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0 1px, transparent 1px 2px),
+    linear-gradient(180deg, var(--chrome-mill-hi, #d8dce0), var(--chrome-face, #c0c0c0) 40%, var(--chrome-stone, #a8acb0));
+  box-shadow:
+    0 0 0 1px var(--chrome-ring, #404040),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    var(--w95-sunken);
+}
+
+.hab95 .hab-plan-frame > legend {
+  float: left;
+  width: 100%;
+  margin: 0 0 8px;
+  padding: 6px 8px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  line-height: 1.35;
+  color: #2a2c2e;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  background: transparent;
+  box-shadow: inset 0 -1px var(--chrome-lo, #808080), inset 0 -2px rgba(255, 255, 255, 0.7);
+}
+
+.hab95 .hab-plan-frame > legend + * {
+  clear: both;
 }

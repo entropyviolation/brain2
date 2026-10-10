@@ -7,7 +7,12 @@
  *
  * It recognizes, using regex + `date-fns` date math only:
  *   - a leading path of `list: item`, `folder: list: item`, or
- *     `folder: folder: list: item` (colons; last prefix is the list)
+ *     `folder: folder: list: item` (colons; last prefix is the list).
+ *     The list slot `all` or `all items` after a folder is still parsed as
+ *     that name; `ensureCaptureTarget` files it on the folder's All Items.
+ *     A name may contain digits (`brain2`, `Home 2`). It still has to start
+ *     with a letter, and a name that is itself a date, time, or duration
+ *     (`3:30`, `in 3 days`, `at 3`, `for 30m`, `Jan 5`) stays that.
  *   - inline `cat:` / `category:` list hints
  *   - relative + absolute dates (today/tomorrow, weekdays, "in N days",
  *     "next week/month/year", ISO/`M/D[/Y]`, and month-name dates)
@@ -103,8 +108,16 @@ interface Candidate {
   duration?: number
 }
 
-/** A folder or list name: letters/spaces, no digits (so `3:30` is not a path). */
-const PATH_NAME = "([A-Za-z][A-Za-z &/_-]*?)"
+/**
+ * A folder or list name. The first word starts with a letter, so `3:30` is
+ * not a path. Later words may start with a letter (`brain2`, `plan2b`) or
+ * with digits that continue into a letter (`2b`). One trailing number is
+ * allowed (`Home 2`). A name that itself contains a date, time, or duration
+ * is refused in `consumeLeadingPath`.
+ */
+const PATH_WORD = "[A-Za-z][A-Za-z0-9&/_-]*"
+const PATH_MORE = "(?:[A-Za-z][A-Za-z0-9&/_-]*|\\d+[A-Za-z][A-Za-z0-9&/_-]*)"
+const PATH_NAME = `(${PATH_WORD}(?:\\s+${PATH_MORE})*(?:\\s+\\d+)?)`
 
 /**
  * Leading `Name: ` prefixes (space after the colon, same as `list: item`).
@@ -274,6 +287,17 @@ function titleFromCuts(
   return out
 }
 
+/**
+ * True when a digit-containing name is a date, time, or duration
+ * (`at 3`, `Jan 5`, `for 30m`). Letter-only names stay lists even when they
+ * are also day words (`tomorrow:`), which is the existing path contract.
+ */
+function nameContainsSchedule(name: string): boolean {
+  if (!/\d/.test(name)) return false
+  const { suggestion } = parseSmartCapture(name)
+  return Boolean(suggestion.scheduledDate || suggestion.scheduledTime || suggestion.estimatedDuration)
+}
+
 /** Consume `folder: folder: list:` prefixes at the start of a capture line. */
 function consumeLeadingPath(input: string): { start: number; end: number; name: string }[] {
   const segments: { start: number; end: number; name: string }[] = []
@@ -283,7 +307,7 @@ function consumeLeadingPath(input: string): { start: number; end: number; name: 
     const m = LEADING_PATH_RE.exec(slice)
     if (!m) break
     const name = m[2].trim()
-    if (!name || isInlineCatKeyword(name)) break
+    if (!name || isInlineCatKeyword(name) || nameContainsSchedule(name)) break
     const absStart = pos + (m[1]?.length ?? 0)
     const absEnd = pos + m[0].length
     segments.push({ start: absStart, end: absEnd, name })

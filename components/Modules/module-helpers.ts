@@ -134,6 +134,52 @@ export const WIDGET_MODULE_TYPES: ModuleType[] = [
   "rules",
 ]
 
+/**
+ * What each dashboard card is for, and the reading it should tell.
+ * Labels stay `MODULE_META`. No type is added or removed. The three saved
+ * cards keep their bindings. Writing Generator, List Summary, and Rules have
+ * no saved card: a new one must not lie, and that is the whole change.
+ * The gray field stays. Phosphor stays on the analytics stat.
+ */
+export type WidgetModuleBlurb = {
+  id: (typeof WIDGET_MODULE_TYPES)[number]
+  name: string
+  shows: string
+}
+
+export const WIDGET_MODULE_CATALOG: WidgetModuleBlurb[] = [
+  {
+    id: "list-explorer",
+    name: "List Explorer",
+    shows: "Each pick is the title, then author and genre. Unlabeled blurbs stay off this face. Opening one pick shows that blurb on the same card. The card names the list and how many were drawn.",
+  },
+  {
+    id: "writing-prompt",
+    name: "Writing Generator",
+    shows: "A writing assignment. No card of this type is saved. A new card keeps the sentence across reload and says when the topics are the built-in list. It does not look configured when nothing was chosen.",
+  },
+  {
+    id: "list-summary",
+    name: "List Summary",
+    shows: "A list's completion ratio. No card of this type is saved. A missing list and an empty list are not a 0/0 ratio. Unbound still asks for a list.",
+  },
+  {
+    id: "analytics-stat",
+    name: "Analytics Stat",
+    shows: "One stat. Opening the total shows the days that make it. The phosphor figure stays; the days sit under it.",
+  },
+  {
+    id: "random-task",
+    name: "Random Task",
+    shows: "One open item from the chosen list. The draw defaults to this month's open items and the card says that pool. A uniform draw of every open to-do is not what to do now, and the card must not pretend that it is.",
+  },
+  {
+    id: "rules",
+    name: "Rules / Cause→Effect",
+    shows: "Cause and effect on one list. No card of this type is saved. A blank comparison must not match: an empty value on > is not greater than zero, and an empty contains does not match every row.",
+  },
+]
+
 export const RULE_OPERATORS: RuleOperator[] = [">", ">=", "<", "<=", "=", "contains", "is empty", "is set"]
 
 export const rid = () => `rule-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`

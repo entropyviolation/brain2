@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useGoalsStore } from "@/lib/goals-store"
+import { pointsRuleValue } from "@/lib/points-rules-live"
 import {
   periodKeyFor,
   isObjectivePrioritized,
@@ -102,7 +103,7 @@ export function ObjectivesPanel() {
       alert(`You can prioritize at most ${MAX_PRIORITIES_PER_PERIOD[period]} objectives per ${period}.`)
       return
     }
-    setObjectivePriority(objective.id, { period, periodKey: key, multiplier: 2 })
+    setObjectivePriority(objective.id, { period, periodKey: key, multiplier: pointsRuleValue("objective.prioritySeedMultiplier") })
   }
 
   const priorityBadges = (o: Objective) => (

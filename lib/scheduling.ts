@@ -30,6 +30,7 @@ import type {
   SchedulePlacement,
   SchedulePlacementPeriod,
   SchedulePlacementResolution,
+  StoredBlockedReason,
 } from "@/lib/types"
 
 /**
@@ -459,13 +460,31 @@ export function recordPushedPlacement(
   existing: SchedulePlacement[] | undefined,
   period: SchedulePlacementPeriod,
   value: string,
+  missReason?: StoredBlockedReason,
 ): SchedulePlacement[] {
-  return markSchedulePlacementResolved(
+  const marked = markSchedulePlacementResolved(
     appendSchedulePlacement(existing, { period, value }),
     period,
     value,
     "pushed",
   )
+  if (!missReason) return marked
+  return stampPlacementMissReason(marked, period, value, missReason)
+}
+
+/** Write an optional why onto one placement. Other history stays. */
+export function stampPlacementMissReason(
+  existing: SchedulePlacement[] | undefined,
+  period: SchedulePlacementPeriod,
+  value: string,
+  missReason: StoredBlockedReason,
+): SchedulePlacement[] {
+  const list = existing ?? []
+  const index = list.findIndex((p) => p.period === period && placementValuesMatch(period, p.value, value))
+  if (index === -1) return list
+  const next = list.slice()
+  next[index] = { ...next[index], missReason }
+  return next
 }
 
 /**
@@ -561,6 +580,7 @@ export function pushUndoneFields(
   value: string,
   refDate: Date,
   now: Date = new Date(),
+  missReason?: StoredBlockedReason,
 ): Partial<Task> {
   const destination = nextOpenPeriodValue(period, refDate, now)
   const counters: Partial<Task> =
@@ -573,7 +593,7 @@ export function pushUndoneFields(
     ...scheduleFieldsForPeriod(period, destination),
     ...counters,
     hiddenFromTodo: false,
-    schedulePlacements: recordPushedPlacement(task.schedulePlacements, period, value),
+    schedulePlacements: recordPushedPlacement(task.schedulePlacements, period, value, missReason),
   }
 }
 

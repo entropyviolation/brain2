@@ -2,7 +2,7 @@
  * lib/date-utils.ts — Date helpers (app-wide)
  *
  * Pure date utilities used throughout the app: safe parsing/formatting
- * (`safe*`), YYYY-MM-DD keys (`formatDateKey` / `formatLocalDateKey` /
+ * (`safe*`, `keptCreatedAt`), YYYY-MM-DD keys (`formatDateKey` / `formatLocalDateKey` /
  * `dateKeyOf` / `dateInputValue`), local midnight (`startOfLocalDay` /
  * `toLocalCalendarDate` / `localMidnightFromUtcDateOnly` /
  * `startOfLocalToday` / `endOfLocalDay`), week math
@@ -49,6 +49,24 @@ export function safeToDate(date: Date | string | undefined): Date | null {
   } catch {
     return null
   }
+}
+
+/**
+ * `createdAt` is stamped once, when the record is added. A later write cannot
+ * move that instant forward — clarify, file, edit, and a second save included.
+ * An earlier instant replaces it (a correction, or the older of two merged
+ * ideas). Undefined when neither side is a real time, so the caller does not
+ * invent "now".
+ */
+export function keptCreatedAt(
+  previous: Date | string | undefined,
+  incoming: Date | string | undefined,
+): Date | undefined {
+  const prev = safeToDate(previous)
+  const next = safeToDate(incoming)
+  if (prev && (!next || next.getTime() >= prev.getTime())) return prev
+  if (next) return next
+  return undefined
 }
 
 export function formatWeekRange(startDate: Date): string {

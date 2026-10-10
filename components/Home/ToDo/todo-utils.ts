@@ -456,7 +456,14 @@ export function getMonthKey(date: Date): string {
 /**
  * Canonical Home/To-Do item. Plan's day sidebar and the To-Do "Add Task"
  * dialog both call this so a new item is the same record in both views.
+ * The id includes a counter so several lines added in one turn do not collide.
  */
+let todoSeq = 0
+function todoIdSeq(): number {
+  todoSeq += 1
+  return todoSeq
+}
+
 export function createScheduledTodoTask(opts: {
   description: string
   period: TodoPeriod
@@ -466,7 +473,7 @@ export function createScheduledTodoTask(opts: {
   const refDate = toLocalCalendarDate(opts.date)
   const { urgency, importance } = tierToUrgencyImportance(opts.tier ?? "A")
   const task: Task = {
-    id: `todo-${Date.now()}`,
+    id: `todo-${Date.now()}-${todoIdSeq()}`,
     description: opts.description.trim(),
     type: "task",
     stage: "clarified",
