@@ -18,6 +18,8 @@ import { useSleepStore } from "@/lib/sleep-store"
 import { useCycleMarksStore } from "@/lib/cycle-marks"
 import { useSunTimesStore } from "@/lib/sun-times-store"
 import { useUserSettingsStore } from "@/lib/user-settings-store"
+import { DEFAULT_GOAL_FOCUS_MULTIPLIER } from "@/lib/goal-focus"
+import { DEFAULT_RITUAL_COMPLETION_BONUS, DEFAULT_RITUAL_SECTION_POINTS } from "@/lib/ritual-points"
 import { useIngestStore } from "@/lib/ingest/ingest-store"
 import { useBabyAnimalsStore } from "@/lib/baby-animals-store"
 import { useWorkSessionStore } from "@/lib/work-session-store"
@@ -33,6 +35,7 @@ import { useCountStatusesStore } from "@/lib/count-statuses"
 import { resetPersistStatus } from "@/lib/persist-storage"
 import { resetDayNotesPersist } from "@/lib/day-notes-persist"
 import { resetActionHistory } from "@/lib/action-history"
+import { resetInboxLogTransferQueue } from "@/lib/inbox-transfer-queue"
 import { clearAllAttachments } from "@/lib/attachments"
 import {
   DEFAULT_ACCOMPLISHMENT_BONUS,
@@ -58,6 +61,7 @@ export function resetAllStores() {
   resetLocalStorage()
   resetDayNotesPersist()
   resetActionHistory()
+  resetInboxLogTransferQueue()
   void clearAllAttachments()
   useHabitsStore.getState().resetData()
   useHabitsStore.setState({
@@ -112,6 +116,12 @@ export function resetAllStores() {
     appearanceRev: 0,
   })
   useUserSettingsStore.getState().resetHomeLocation()
+  useUserSettingsStore.setState({
+    pointsRules: {},
+    ritualSectionPoints: DEFAULT_RITUAL_SECTION_POINTS,
+    ritualCompletionBonus: DEFAULT_RITUAL_COMPLETION_BONUS,
+    goalFocusMultiplier: DEFAULT_GOAL_FOCUS_MULTIPLIER,
+  })
   useTimeTrackingStore.setState({
     entries: [],
     removedEntryIds: [],
