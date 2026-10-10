@@ -2,13 +2,15 @@
  * components/friend-mission-sheet.tsx — Mission from today's friend
  *
  * The task row opens item detail over this sheet (the sheet drops its modal
- * lock so the item popup can cover the page). Accept starts a same-day
- * point window. Decline asks to break the task down, then to do only the
- * first step, then for a written reason. Each answer is logged on the mission.
+ * lock so the item popup can cover the page). That popup loads when an item
+ * id is opened, so a refresh does not parse the item-detail module with this
+ * sheet. Accept starts a same-day point window. Decline asks to break the
+ * task down, then to do only the first step, then for a written reason.
+ * Each answer is logged on the mission.
  */
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, type ComponentType } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import type { FriendNudge } from "@/lib/baby-animal-nudge"
@@ -17,9 +19,32 @@ import { friendSourceLabel } from "@/lib/friend-copy"
 import { friendMissionItemId, isActionableFriendKind } from "@/lib/friend-mission"
 import { ensureFriendFirstStep, splitFriendTask } from "@/lib/friend-mission-steps"
 import { useBabyAnimalsStore } from "@/lib/baby-animals-store"
-import { TaskDetailPopup } from "@/components/ItemDetail/ItemDetailPopup"
 
 type Phase = "offer" | "breakdown" | "first" | "why" | "accepted"
+
+type ItemPopup = ComponentType<{
+  taskId: string | null
+  open: boolean
+  onClose: () => void
+  stackAbove?: boolean
+}>
+
+function useItemDetailPopup(itemId: string | null) {
+  const [Popup, setPopup] = useState<ItemPopup | null>(null)
+
+  useEffect(() => {
+    if (!itemId) return
+    let live = true
+    void import("@/components/ItemDetail/ItemDetailPopup").then((mod) => {
+      if (live) setPopup(() => mod.TaskDetailPopup)
+    })
+    return () => {
+      live = false
+    }
+  }, [itemId])
+
+  return Popup
+}
 
 export function FriendMissionSheet({
   open,
@@ -40,6 +65,7 @@ export function FriendMissionSheet({
   const [splitNote, setSplitNote] = useState("")
   const [why, setWhy] = useState("")
   const [openItemId, setOpenItemId] = useState<string | null>(null)
+  const ItemPopup = useItemDetailPopup(openItemId)
 
   const taskKey = nudge?.taskId ?? ""
   const stored = missions.find((row) => row.taskId === taskKey && (row.status === "offered" || row.status === "accepted"))
@@ -223,12 +249,14 @@ export function FriendMissionSheet({
             <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
           </div>
         ) : null}
-        <TaskDetailPopup
-          taskId={openItemId}
-          open={!!openItemId}
-          onClose={() => setOpenItemId(null)}
-          stackAbove
-        />
+        {ItemPopup ? (
+          <ItemPopup
+            taskId={openItemId}
+            open={!!openItemId}
+            onClose={() => setOpenItemId(null)}
+            stackAbove
+          />
+        ) : null}
       </DialogContent>
     </Dialog>
   )

@@ -6,26 +6,43 @@
  * moment: recent tracking and the short plan ahead. Current moment, including
  * Working on, Events, Thought process, and Update state, stays above the
  * Tracking / Plan switch. Home → Tracking stays the full desk. The export
- * name stays `CognitiveState` so the header wiring is unchanged. While the
- * dialog is open, `useTrackingUndoHotkey` arms Cmd/Ctrl-Z on the grid inside
- * the Tracking pane.
+ * name stays `CognitiveState` so the header wiring is unchanged. The popup
+ * module loads when Now opens, not on first paint. While the dialog is open,
+ * `useTrackingUndoHotkey` arms Cmd/Ctrl-Z on the grid inside the Tracking pane.
  *
  * Spec: §8.2 (dashboard top bar), §12 (Tracking).
  * Dialog frame is milled fascia (`.hpp95-shell-only`).
  */
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState, type ComponentType } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Brain } from "lucide-react"
-import { HeaderTrackingPopup } from "@/components/header-tracking/header-tracking-popup"
+import { MachineLoading } from "@/components/machine-loading"
 import { useTrackingUndoHotkey } from "@/components/Home/Tracking/tracking-undo"
+
+type NowPopupProps = {
+  pane?: "tracking" | "plan"
+  onPane?: (pane: "tracking" | "plan") => void
+}
 
 export function CognitiveState() {
   const [open, setOpen] = useState(false)
   const [pane, setPane] = useState<"tracking" | "plan">("tracking")
+  const [Popup, setPopup] = useState<ComponentType<NowPopupProps> | null>(null)
   useTrackingUndoHotkey(open)
+
+  useEffect(() => {
+    if (!open || Popup) return
+    let cancelled = false
+    void import("@/components/header-tracking/header-tracking-popup").then((mod) => {
+      if (!cancelled) setPopup(() => mod.HeaderTrackingPopup)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [open, Popup])
 
   return (
     <Dialog
@@ -52,7 +69,7 @@ export function CognitiveState() {
             is true now, and adjusts the short plan ahead, so filling the moment is quick.
           </DialogDescription>
         </DialogHeader>
-        <HeaderTrackingPopup pane={pane} onPane={setPane} />
+        {Popup ? <Popup pane={pane} onPane={setPane} /> : open ? <MachineLoading size="pip" decorative /> : null}
       </DialogContent>
     </Dialog>
   )

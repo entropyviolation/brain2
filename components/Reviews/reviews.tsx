@@ -112,6 +112,7 @@ function ReviewDialog({
   const [blockedReasons, setBlockedReasons] = useState<Record<string, StoredBlockedReason>>(
     existing?.blockedReasons || {},
   )
+  const [sharedBlockedReason, setSharedBlockedReason] = useState<StoredBlockedReason | undefined>(undefined)
   const [pushError, setPushError] = useState<string | null>(null)
   const [reflectTask, setReflectTask] = useState<Task | null>(null)
   const accrueRegret = useRegretStore((s) => s.addRegret)
@@ -309,6 +310,11 @@ function ReviewDialog({
               <p className="text-sm text-muted-foreground">Nothing left unfinished. Nice work!</p>
             ) : (
               <div className="space-y-2">
+                <WhyBlockedControl
+                  taskTitle="unfinished items"
+                  value={sharedBlockedReason}
+                  onChange={setSharedBlockedReason}
+                />
                 {visibleUnfinished.map((task) => (
                   <div key={task.id} className="border rounded-md p-2 space-y-2">
                     <div className="flex items-center justify-between gap-2">
@@ -329,20 +335,21 @@ function ReviewDialog({
                             <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
                             Done
                           </Button>
-                          <Button size="sm" variant="outline" className="h-7" onClick={() => pushToNext(task)}>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7"
+                            onClick={() => {
+                              if (sharedBlockedReason) setReason(task.id, sharedBlockedReason)
+                              pushToNext(task)
+                            }}
+                          >
                             <ArrowRight className="h-3.5 w-3.5 mr-1" />
                             Push to {nextLabel}
                           </Button>
                         </>
                       )}
                     </div>
-                    {!resolved.includes(task.id) && (
-                      <WhyBlockedControl
-                        taskTitle={itemTitle(task)}
-                        value={blockedReasons[task.id]}
-                        onChange={(reason) => setReason(task.id, reason)}
-                      />
-                    )}
                   </div>
                 ))}
               </div>
@@ -503,12 +510,12 @@ function ReviewDialog({
         </div>
 
         <div className="hpp-actions">
-          <Button variant="outline" onClick={dismiss}>
-            Close
-          </Button>
           <Button className="hpp-key-go" onClick={handleSave}>
-            {period === "day" ? "Save Night ritual" : "Save Review ritual"}
+            Save
           </Button>
+          <button type="button" className="hpp-link-close" onClick={dismiss}>
+            Close
+          </button>
         </div>
       </DialogContent>
 

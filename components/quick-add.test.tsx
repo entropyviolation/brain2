@@ -1,6 +1,7 @@
 /**
  * QuickAdd — fast inbox capture dialog.
  */
+import { type ReactElement } from "react"
 import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
@@ -8,22 +9,41 @@ import { resetLocalStorage } from "@/tests/test-utils"
 import { useTaskStore } from "@/lib/task-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import * as quickAddLog from "@/lib/quick-add-log"
-import { QuickAdd } from "./quick-add"
+import {
+  QUICK_ADD_WROTE_MS,
+  QuickAdd,
+  QuickAddWroteHost,
+  dismissQuickAddWrote,
+} from "./quick-add"
+
+function renderQuickAdd(ui: ReactElement = <QuickAdd />, wroteMs?: number) {
+  return render(
+    <>
+      {ui}
+      <QuickAddWroteHost wroteMs={wroteMs} />
+    </>,
+  )
+}
 
 describe("QuickAdd", () => {
   beforeEach(() => {
     resetLocalStorage()
     useTaskStore.getState().clearAllData()
+    dismissQuickAddWrote()
   })
 
   it("renders the Quick Add trigger", () => {
-    render(<QuickAdd />)
+    renderQuickAdd()
     expect(screen.getByRole("button", { name: /Quick Add/i })).toBeInTheDocument()
+  })
+
+  it("keeps the added confirmation at one minute by default", () => {
+    expect(QUICK_ADD_WROTE_MS).toBe(60_000)
   })
 
   it("adds a captured idea to the inbox store", async () => {
     const user = userEvent.setup()
-    render(<QuickAdd />)
+    renderQuickAdd()
     await user.click(screen.getByRole("button", { name: /Quick Add/i }))
     await user.type(screen.getByLabelText("Idea"), "Buy more coffee filters")
     await user.click(screen.getByRole("button", { name: /Add to Inbox/i }))
@@ -36,9 +56,33 @@ describe("QuickAdd", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Item added to Inbox from Quick Add")
   })
 
+  it("keeps the added confirmation after the dialog closes", async () => {
+    const user = userEvent.setup()
+    const onOpenChange = vi.fn()
+    const { rerender } = render(
+      <>
+        <QuickAdd open onOpenChange={onOpenChange} />
+        <QuickAddWroteHost />
+      </>,
+    )
+    await user.type(screen.getByLabelText("Idea"), "Survive close probe")
+    await user.click(screen.getByRole("button", { name: /Add to Inbox/i }))
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+    rerender(
+      <>
+        <QuickAdd open={false} onOpenChange={onOpenChange} />
+        <QuickAddWroteHost />
+      </>,
+    )
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+    expect(screen.getByRole("status")).toHaveTextContent("Item added to Inbox from Quick Add")
+    expect(screen.getByRole("status")).toHaveClass("qa-wrote")
+    expect(screen.getByRole("button", { name: "Dismiss" })).toBeInTheDocument()
+  })
+
   it("files a path capture onto a folder list when inbox is skipped", async () => {
     const user = userEvent.setup()
-    render(<QuickAdd />)
+    renderQuickAdd()
     await user.click(screen.getByRole("button", { name: /Quick Add/i }))
     await user.click(screen.getByLabelText(/Send to Inbox for clarification/i))
     const idea = screen.getByLabelText("Idea")
@@ -63,7 +107,7 @@ describe("QuickAdd", () => {
 
   it("files folder: all: item on the folder All Items chip, not a new list named all", async () => {
     const user = userEvent.setup()
-    render(<QuickAdd />)
+    renderQuickAdd()
     await user.click(screen.getByRole("button", { name: /Quick Add/i }))
     await user.type(screen.getByLabelText("Idea"), "next actions: all: buy milk")
     expect(screen.getByText("All Items")).toBeInTheDocument()
@@ -79,7 +123,7 @@ describe("QuickAdd", () => {
 
   it("writes bulk lines through the same capture path when Bulk is on", async () => {
     const user = userEvent.setup()
-    render(<QuickAdd />)
+    renderQuickAdd()
     await user.click(screen.getByRole("button", { name: /Quick Add/i }))
     const dialog = screen.getByRole("dialog", { name: /Add Idea/i })
     expect(screen.getByLabelText("Idea")).toBeInTheDocument()
@@ -105,7 +149,7 @@ describe("QuickAdd", () => {
   })
 
   it("prefills a multiline selection in Bulk", () => {
-    render(<QuickAdd open seed={"Groceries:\nMilk"} />)
+    renderQuickAdd(<QuickAdd open seed={"Groceries:\nMilk"} />)
     expect(screen.getByLabelText("Bulk")).toBeChecked()
     expect(screen.getByLabelText("Tasks and Lists")).toHaveValue("Groceries:\nMilk")
   })
@@ -118,7 +162,7 @@ describe("QuickAdd", () => {
       createdAt: new Date(),
     })
     const user = userEvent.setup()
-    render(<QuickAdd />)
+    renderQuickAdd()
     await user.click(screen.getByRole("button", { name: /Quick Add/i }))
     await user.type(screen.getByLabelText("Idea"), "brain2: finish the report")
     expect(screen.getByText("brain2")).toBeInTheDocument()
@@ -133,7 +177,7 @@ describe("QuickAdd", () => {
 
   it("keeps a detected day and clock in the title", async () => {
     const user = userEvent.setup()
-    render(<QuickAdd />)
+    renderQuickAdd()
     await user.click(screen.getByRole("button", { name: /Quick Add/i }))
     await user.type(screen.getByLabelText("Idea"), "go home tomorrow at 3pm")
     expect(screen.getByText("15:00")).toBeInTheDocument()
@@ -149,7 +193,7 @@ describe("QuickAdd", () => {
   it("logs log: as a tracking log with a LOG mark, not a list or the inbox", async () => {
     useTimeTrackingStore.setState({ entries: [] })
     const user = userEvent.setup()
-    render(<QuickAdd />)
+    renderQuickAdd()
     await user.click(screen.getByRole("button", { name: /Quick Add/i }))
     await user.type(screen.getByLabelText("Idea"), "log: left room")
     const logMark = screen.getByText("LOG", { selector: "[data-log-flag]" })
@@ -170,7 +214,7 @@ describe("QuickAdd", () => {
 
   it("stores a -p line as written and does not create a list", async () => {
     const user = userEvent.setup()
-    render(<QuickAdd />)
+    renderQuickAdd()
     await user.click(screen.getByRole("button", { name: /Quick Add/i }))
     await user.type(screen.getByLabelText("Idea"), "-p next actions: wash the dog at 3pm")
     expect(screen.getAllByText("Plain").length).toBeGreaterThan(1)
@@ -188,7 +232,7 @@ describe("QuickAdd", () => {
 
   it("stores bulk lines as written when Plain is checked", async () => {
     const user = userEvent.setup()
-    render(<QuickAdd />)
+    renderQuickAdd()
     await user.click(screen.getByRole("button", { name: /Quick Add/i }))
     await user.click(screen.getByLabelText("Bulk"))
     await user.click(screen.getByLabelText("Plain"))
@@ -206,7 +250,7 @@ describe("QuickAdd", () => {
 
   it("stores the line as written when Plain is checked", async () => {
     const user = userEvent.setup()
-    render(<QuickAdd />)
+    renderQuickAdd()
     await user.click(screen.getByRole("button", { name: /Quick Add/i }))
     await user.click(screen.getByLabelText("Plain"))
     await user.type(screen.getByLabelText("Idea"), "next actions: wash the dog at 3pm")
@@ -221,7 +265,7 @@ describe("QuickAdd", () => {
 
   it("names All Items, with the folder, when the write skips Inbox", async () => {
     const user = userEvent.setup()
-    render(<QuickAdd />)
+    renderQuickAdd()
     await user.click(screen.getByRole("button", { name: /Quick Add/i }))
     await user.click(screen.getByLabelText(/Send to Inbox for clarification/i))
     await user.type(screen.getByLabelText("Idea"), "next actions: all: buy milk")
@@ -234,7 +278,7 @@ describe("QuickAdd", () => {
 
   it("names Monkey brain when the line is a monkey-brain dump", async () => {
     const user = userEvent.setup()
-    render(<QuickAdd />)
+    renderQuickAdd()
     await user.click(screen.getByRole("button", { name: /Quick Add/i }))
     await user.type(screen.getByLabelText("Idea"), "wash the dog -mb")
     await user.click(screen.getByRole("button", { name: /Add to Monkey brain/i }))
@@ -245,7 +289,7 @@ describe("QuickAdd", () => {
 
   it("counts a bulk write that shares one destination", async () => {
     const user = userEvent.setup()
-    render(<QuickAdd />)
+    renderQuickAdd()
     await user.click(screen.getByRole("button", { name: /Quick Add/i }))
     await user.click(screen.getByLabelText("Bulk"))
     await user.click(screen.getByLabelText(/Send to Inbox for clarification/i))
@@ -258,7 +302,7 @@ describe("QuickAdd", () => {
 
   it("counts a bulk write that lands in more than one place", async () => {
     const user = userEvent.setup()
-    render(<QuickAdd />)
+    renderQuickAdd()
     await user.click(screen.getByRole("button", { name: /Quick Add/i }))
     await user.click(screen.getByLabelText("Bulk"))
     await user.click(screen.getByLabelText(/Send to Inbox for clarification/i))
@@ -270,7 +314,7 @@ describe("QuickAdd", () => {
 
   it("does not confirm an empty submit or a bulk write of nothing", async () => {
     const user = userEvent.setup()
-    render(<QuickAdd />)
+    renderQuickAdd()
     await user.click(screen.getByRole("button", { name: /Quick Add/i }))
     await user.click(screen.getByRole("button", { name: /Add to Inbox/i }))
     expect(screen.queryByRole("status")).not.toBeInTheDocument()
@@ -291,7 +335,7 @@ describe("QuickAdd", () => {
     })
     const user = userEvent.setup()
     try {
-      render(<QuickAdd />)
+      renderQuickAdd()
       await user.click(screen.getByRole("button", { name: /Quick Add/i }))
       await user.type(screen.getByLabelText("Idea"), "log: left room")
       await user.click(screen.getByRole("button", { name: "Log" }))
@@ -306,7 +350,7 @@ describe("QuickAdd", () => {
 
   it("dismisses the confirmation from the flag and from its close control", async () => {
     const user = userEvent.setup()
-    render(<QuickAdd />)
+    renderQuickAdd()
     await user.click(screen.getByRole("button", { name: /Quick Add/i }))
     await user.type(screen.getByLabelText("Idea"), "Buy more coffee filters")
     await user.click(screen.getByRole("button", { name: /Add to Inbox/i }))
@@ -322,7 +366,7 @@ describe("QuickAdd", () => {
 
   it("replaces the previous confirmation when another write succeeds", async () => {
     const user = userEvent.setup()
-    render(<QuickAdd />)
+    renderQuickAdd()
     await user.click(screen.getByRole("button", { name: /Quick Add/i }))
     await user.type(screen.getByLabelText("Idea"), "Buy more coffee filters")
     await user.click(screen.getByRole("button", { name: /Add to Inbox/i }))
@@ -337,9 +381,9 @@ describe("QuickAdd", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Item added to errands from Quick Add")
   })
 
-  it("hides the confirmation after a few seconds", async () => {
+  it("hides the confirmation after the configured wait (default one minute)", async () => {
     const user = userEvent.setup()
-    render(<QuickAdd wroteMs={30} />)
+    renderQuickAdd(<QuickAdd />, 30)
     await user.click(screen.getByRole("button", { name: /Quick Add/i }))
     await user.type(screen.getByLabelText("Idea"), "Probe flag")
     await user.click(screen.getByRole("button", { name: /Add to Inbox/i }))

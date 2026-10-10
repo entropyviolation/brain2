@@ -52,7 +52,7 @@ describe("ReviewDialog drafts and date scope", () => {
   it("awards section points only when the night is submitted", () => {
     render(<ReviewDialog open period="day" periodKey="2026-10-04" onClose={() => {}} />)
     fireEvent.change(screen.getByPlaceholderText("A short recap…"), { target: { value: "done for the night" } })
-    fireEvent.click(screen.getByRole("button", { name: /Save Night ritual/i }))
+    fireEvent.click(screen.getByRole("button", { name: /^Save$/i }))
     const saved = useReviewsStore.getState().getReview("day", "2026-10-04")
     expect(saved?.endCompleted).toBe(true)
     const row = usePointsStore.getState().pointsHistory.find((entry) => entry.taskId === "ritual:day:2026-10-04")
@@ -105,9 +105,9 @@ describe("ReviewDialog drafts and date scope", () => {
       task({ id: "clothes", description: "sort my clothes", scheduledWeek: week }),
     )
     const view = render(<ReviewDialog open period="week" periodKey={week} onClose={() => {}} />)
-    fireEvent.click(screen.getByRole("combobox", { name: "Why blocked? sort my clothes" }))
+    fireEvent.click(screen.getByRole("combobox", { name: "Why blocked? unfinished items" }))
     fireEvent.click(screen.getByRole("option", { name: "Other" }))
-    fireEvent.change(screen.getByLabelText("Other reason for sort my clothes"), {
+    fireEvent.change(screen.getByLabelText("Other reason for unfinished items"), {
       target: { value: "the rain" },
     })
     fireEvent.click(screen.getByRole("button", { name: "Push to next week" }))
@@ -135,7 +135,7 @@ describe("ReviewDialog drafts and date scope", () => {
     view.unmount()
     render(<ReviewDialog open period="week" periodKey={week} onClose={() => {}} />)
     expect(screen.getByLabelText(/best thing that happened this past week/i)).toHaveValue("the letter")
-    fireEvent.click(screen.getByRole("button", { name: "Save Review ritual" }))
+    fireEvent.click(screen.getByRole("button", { name: /^Save$/i }))
     const awarded = usePointsStore.getState().pointsHistory
     expect(awarded).toHaveLength(1)
     expect(awarded[0]?.points).toBeGreaterThanOrEqual(40)

@@ -35,7 +35,7 @@ describe("Settings dialog body", () => {
 
     fireEvent.change(screen.getByRole("searchbox"), { target: { value: "inbox" } })
     expect(bayIds()).toEqual(["settings-points"])
-    expect(screen.getByRole("button", { name: "Points rules" })).toBeInTheDocument()
+    expect(await screen.findByRole("button", { name: "Points rules" })).toBeInTheDocument()
     expect(document.getElementById("settings-birthday")).toBeNull()
 
     fireEvent.change(screen.getByRole("searchbox"), { target: { value: "" } })

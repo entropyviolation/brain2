@@ -9,7 +9,8 @@
  * Looks only — same verbs, fields, and accessible names.
  * Title-bar close is `.b2-close-key` (opaque 22px, centered ×), placed with
  * `--b2-close-top` / `--b2-close-right` on `.hpp95-dialog`.
- * `.qa-wrote` is the Quick Add success flag: fixed, one line, off the page flow.
+ * `.qa-wrote` is the Quick Add added confirmation: fixed floating bottom-right
+ * (16px inset from bottom and right), one line, off the page flow, X to dismiss.
  * docs/DESIGN_STYLE.md#milled-fascia
  */
 
@@ -502,7 +503,22 @@
   box-shadow: var(--hpp-crt-ring) !important;
 }
 
-/* Quick Add success. Fixed so the page does not move. Only the flag takes clicks. */
+.hpp95-dialog > .hpp-actions .hpp-link-close,
+.hpp95 .hpp-actions .hpp-link-close {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--chrome-ink-soft, #3a3c3e) !important;
+  text-shadow: none !important;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  padding: 4px 6px;
+}
+
+/* Quick Add added confirmation. Floating inset bottom-right; page does not move. */
 .qa-wrote {
   position: fixed;
   right: 16px;

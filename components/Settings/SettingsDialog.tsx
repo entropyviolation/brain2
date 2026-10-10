@@ -4,6 +4,8 @@
  * A header-launched dialog for cross-cutting utilities. Bays sit in six
  * groups (You, Appearance, Points, Data, Imports, Library). The index
  * selection is the only bay in the body. The well scrolls inside that bay.
+ * Each bay's field loads when that bay is selected, so opening Settings does
+ * not parse every bay. The pin bar may own the gear (`hideTrigger`).
  * Fields still auto-save (`isDirty: false`).
  *
  * Points stays `<PointAllocationField />` — that bay is the door to the
@@ -11,7 +13,7 @@
  */
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { lazy, Suspense, useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -22,22 +24,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Settings as SettingsIcon, BrainCircuit, CheckCircle2, Shapes } from "lucide-react"
-import { CaptureDoorButtons } from "@/components/capture-doors"
-import { DataProfileField } from "@/components/Settings/DataProfileField"
-import { BackupRestore } from "@/components/Settings/BackupRestore"
-import { BoubaKikiField } from "@/components/Settings/BoubaKikiField"
-import { ChromeFaceField } from "@/components/Settings/ChromeFaceField"
-import { PcbBackdropField } from "@/components/Settings/PcbBackdropField"
-import { BabyAnimalFriendField } from "@/components/Settings/BabyAnimalFriendField"
-import { HomeLocationField } from "@/components/Settings/HomeLocationField"
-import { BirthdayField } from "@/components/Settings/BirthdayField"
-import { DayAnchorField } from "@/components/Settings/DayAnchorField"
-import { PointAllocationField } from "@/components/Settings/PointAllocationField"
-import { MobileSyncPanel } from "@/components/Settings/MobileSyncPanel"
-import { MessageIngestPanel } from "@/components/Settings/MessageIngestPanel"
-import { ScreenTimePanel } from "@/components/Settings/ScreenTimePanel"
-import { InstagramImportPanel } from "@/components/Settings/InstagramImportPanel"
-import { ItemTypeList } from "@/components/ItemTypes/ItemTypeList"
+import { MachineLoading } from "@/components/machine-loading"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
 import {
@@ -59,12 +46,76 @@ function groupById(id: (typeof SETTINGS_GROUPS)[number]["id"]) {
   return SETTINGS_GROUPS.find((group) => group.id === id) ?? SETTINGS_GROUPS[0]
 }
 
-export function SettingsDialog() {
+const BabyAnimalFriendField = lazy(() =>
+  import("@/components/Settings/BabyAnimalFriendField").then((m) => ({ default: m.BabyAnimalFriendField })),
+)
+const HomeLocationField = lazy(() =>
+  import("@/components/Settings/HomeLocationField").then((m) => ({ default: m.HomeLocationField })),
+)
+const BirthdayField = lazy(() =>
+  import("@/components/Settings/BirthdayField").then((m) => ({ default: m.BirthdayField })),
+)
+const DayAnchorField = lazy(() =>
+  import("@/components/Settings/DayAnchorField").then((m) => ({ default: m.DayAnchorField })),
+)
+const ChromeFaceField = lazy(() =>
+  import("@/components/Settings/ChromeFaceField").then((m) => ({ default: m.ChromeFaceField })),
+)
+const PcbBackdropField = lazy(() =>
+  import("@/components/Settings/PcbBackdropField").then((m) => ({ default: m.PcbBackdropField })),
+)
+const BoubaKikiField = lazy(() =>
+  import("@/components/Settings/BoubaKikiField").then((m) => ({ default: m.BoubaKikiField })),
+)
+const PointAllocationField = lazy(() =>
+  import("@/components/Settings/PointAllocationField").then((m) => ({ default: m.PointAllocationField })),
+)
+const DataProfileField = lazy(() =>
+  import("@/components/Settings/DataProfileField").then((m) => ({ default: m.DataProfileField })),
+)
+const BackupRestore = lazy(() =>
+  import("@/components/Settings/BackupRestore").then((m) => ({ default: m.BackupRestore })),
+)
+const MobileSyncPanel = lazy(() =>
+  import("@/components/Settings/MobileSyncPanel").then((m) => ({ default: m.MobileSyncPanel })),
+)
+const CaptureDoorButtons = lazy(() =>
+  import("@/components/capture-doors").then((m) => ({ default: m.CaptureDoorButtons })),
+)
+const MessageIngestPanel = lazy(() =>
+  import("@/components/Settings/MessageIngestPanel").then((m) => ({ default: m.MessageIngestPanel })),
+)
+const ScreenTimePanel = lazy(() =>
+  import("@/components/Settings/ScreenTimePanel").then((m) => ({ default: m.ScreenTimePanel })),
+)
+const InstagramImportPanel = lazy(() =>
+  import("@/components/Settings/InstagramImportPanel").then((m) => ({ default: m.InstagramImportPanel })),
+)
+const ItemTypeList = lazy(() =>
+  import("@/components/ItemTypes/ItemTypeList").then((m) => ({ default: m.ItemTypeList })),
+)
+
+function BayWait() {
+  return <MachineLoading size="pip" decorative />
+}
+
+export function SettingsDialog({
+  open: openProp,
+  onOpenChange,
+  hideTrigger = false,
+}: {
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  /** Omit the gear. The pin bar renders it and owns `open`. */
+  hideTrigger?: boolean
+} = {}) {
   const seedSecondBrainTypes = useItemTypeStore((s) => s.seedSecondBrainTypes)
   const types = useItemTypeStore((s) => s.types)
   const [seeded, setSeeded] = useState(false)
   const [typesOpen, setTypesOpen] = useState(false)
-  const [open, setOpen] = useState(false)
+  const [openState, setOpenState] = useState(false)
+  const open = openProp ?? openState
+  const setOpen = onOpenChange ?? setOpenState
   const [query, setQuery] = useState("")
   const [activeId, setActiveId] = useState<string | null>(SETTINGS_SECTIONS[0]?.id ?? null)
   const guard = useUnsavedGuard({
@@ -125,11 +176,13 @@ export function SettingsDialog() {
   return (
     <>
     <Dialog open={open} onOpenChange={guard.handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="b2-shell-icon" title="Settings" aria-label="Settings">
-          <SettingsIcon />
-        </Button>
-      </DialogTrigger>
+      {hideTrigger ? null : (
+        <DialogTrigger asChild>
+          <Button variant="outline" size="sm" className="b2-shell-icon" title="Settings" aria-label="Settings">
+            <SettingsIcon />
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent
         className="set95 set95-dialog set95-settings !flex h-[90vh] max-h-[90vh] w-[calc(100vw-1.5rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[940px]"
         data-ui-name="Settings"
@@ -159,7 +212,7 @@ export function SettingsDialog() {
             <span className="set-power-lamp" aria-hidden />
             <DialogTitle>Settings</DialogTitle>
           </div>
-          <DialogDescription className="set-caption-lead">
+          <DialogDescription className="sr-only">
             Find a bay, or choose it from the index.
           </DialogDescription>
         </DialogHeader>
@@ -181,6 +234,7 @@ export function SettingsDialog() {
             {selected ? (
               <SettingsGroupBlock group={groupById(selected.groupId)} hidden={false}>
                 <SettingsSectionBlock id={selected.id} hidden={false}>
+                  <Suspense fallback={<BayWait />}>
                   {selected.id === "settings-friend" ? <BabyAnimalFriendField /> : null}
                   {selected.id === "settings-home" ? <HomeLocationField /> : null}
                   {selected.id === "settings-birthday" ? <BirthdayField /> : null}
@@ -226,7 +280,9 @@ export function SettingsDialog() {
                             <DialogDescription className="set-caption-lead">Create, edit, and delete the item types in your workspace.</DialogDescription>
                           </DialogHeader>
                           <div className="set-body min-h-0 flex-1 overflow-y-auto pr-1">
-                            <ItemTypeList />
+                            <Suspense fallback={<BayWait />}>
+                              <ItemTypeList />
+                            </Suspense>
                           </div>
                         </DialogContent>
                       </Dialog>
@@ -263,6 +319,7 @@ export function SettingsDialog() {
                       </Button>
                     </div>
                   ) : null}
+                  </Suspense>
                 </SettingsSectionBlock>
               </SettingsGroupBlock>
             ) : (

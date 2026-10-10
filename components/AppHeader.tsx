@@ -11,8 +11,11 @@
  * column gap between those clusters stays tight, and leftover mill is equal
  * on both sides of the group. Capture’s Now, Inbox, and Quick Add keys are
  * content-wide and share one gap; the live **now** well sits beside them
- * only while an Operations or pen-color work timer is live. Narrower than
- * the group, whole clusters wrap onto the full shell; a cluster wider than
+ * only while an Operations or pen-color work timer is live. Inbox, Quick Add,
+ * Rituals, and Settings are thin keys (`header-doors.tsx`). Their rooms load
+ * the first time they open, so a refresh does not download a closed door.
+ * The Now popup loads when that key opens. Narrower than the group, whole
+ * clusters wrap onto the full shell; a cluster wider than
  * the shell scrolls inside its bay. Keys do not flex-shrink, and phosphor
  * counts stay on them. System is a gear (Settings), a question mark (Names
  * help mode), a magnifying glass (Search), and a bell (current reminders).
@@ -24,13 +27,11 @@
  */
 "use client"
 
+import { useEffect } from "react"
 import { APP_NAME } from "@/lib/app-brand"
-import { QuickAdd } from "@/components/quick-add"
 import { CognitiveState } from "@/components/cognitive-state"
-import { Inbox } from "@/components/inbox"
-import { Reviews } from "@/components/Reviews/reviews"
 import { BabyAnimalNest } from "@/components/baby-animal-nest"
-import { SettingsDialog } from "@/components/Settings/SettingsDialog"
+import { InboxKey, QuickAddKey, RitualsKey, SettingsKey } from "@/components/header-doors"
 import { HeaderNowBox } from "@/components/header-now-box"
 import { HeaderNavButtons } from "@/components/header-nav-buttons"
 import { HeaderReminderBell } from "@/components/header-reminder-bell"
@@ -109,6 +110,10 @@ export function AppHeader({
   /** Opens the existing Cmd/Ctrl-K search palette. */
   onOpenSearch?: () => void
 }) {
+  useEffect(() => {
+    performance.mark("brain2-shell-ready")
+  }, [])
+
   return (
     <header
       className="b2-shell"
@@ -134,14 +139,14 @@ export function AppHeader({
           <fieldset className="b2-shell-group b2-shell-rituals">
             <legend>Rituals</legend>
             <div className="b2-shell-keys">
-              <Reviews />
+              <RitualsKey />
             </div>
           </fieldset>
           <div className="b2-shell-sep" role="separator" />
           <fieldset className="b2-shell-group b2-shell-system">
             <legend>System</legend>
             <div className="b2-shell-keys">
-              <SettingsDialog />
+              <SettingsKey />
               <NamesModeButton />
               <SearchKey onOpen={onOpenSearch} />
               <HeaderReminderBell onTaskSelect={onTaskSelect} />
@@ -158,8 +163,8 @@ export function AppHeader({
             <HeaderNowBox />
             <div className="b2-shell-keys">
               <CognitiveState />
-              <Inbox onTaskSelect={onTaskSelect} />
-              <QuickAdd open={captureOpen} onOpenChange={onCaptureOpenChange} seed={captureSeed} />
+              <InboxKey onTaskSelect={onTaskSelect} />
+              <QuickAddKey open={captureOpen} onOpenChange={onCaptureOpenChange} seed={captureSeed} />
             </div>
           </fieldset>
         </div>

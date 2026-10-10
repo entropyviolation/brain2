@@ -5,7 +5,8 @@
  * Lists the open partition newest first. The header trigger counts the revisit
  * pile only: `stage: "inbox"` and `monkeyBrain` not set. Monkey brain does not
  * add to that well, and an empty revisit pile shows no count. Each dialog tab
- * keeps its own count.
+ * keeps its own count. `hideTrigger` leaves that button to the pin bar, which
+ * owns `open`. Omitting it keeps this button and this file's own open state.
  * At rest the foot is Walk plus Select all / Select N / Select unsorted / a Dated-or-Bare slice.
  * A search field is pinned on the idea well; Select all and the other foot actions use that view.
  * L opens Apply list for the current selection (same as the foot button), including
@@ -117,6 +118,11 @@ import "./inbox.css"
 
 interface InboxProps {
   onTaskSelect: (taskId: string) => void
+  /** Controlled open state. The pin bar owns this when `hideTrigger` is set. */
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  /** Omit the header button. The parent renders the key and owns `open`. */
+  hideTrigger?: boolean
 }
 
 function asDate(value: Date | string | undefined): Date | null {
@@ -649,13 +655,20 @@ function inboxCaretAfterRemoval(
   return { id: fallback, stayed: false }
 }
 
-export function Inbox({ onTaskSelect: _onTaskSelect }: InboxProps) {
+export function Inbox({
+  onTaskSelect: _onTaskSelect,
+  open: openProp,
+  onOpenChange,
+  hideTrigger = false,
+}: InboxProps) {
   const allTasks = useTaskStore((state) => state.tasks)
   const lists = useTaskStore((state) => state.lists)
   const deleteTask = useTaskStore((state) => state.deleteTask)
   const updateTask = useTaskStore((state) => state.updateTask)
   const setTasks = useTaskStore((state) => state.setTasks)
-  const [open, setOpen] = useState(false)
+  const [openState, setOpenState] = useState(false)
+  const open = openProp ?? openState
+  const setOpen = onOpenChange ?? setOpenState
   const [clarificationTask, setClarificationTask] = useState<Task | null>(null)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [focusId, setFocusId] = useState<string | null>(null)
@@ -1216,29 +1229,31 @@ export function Inbox({ onTaskSelect: _onTaskSelect }: InboxProps) {
           if (!next) resetSession()
         }}
       >
-        <DialogTrigger asChild>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2"
-            data-inbox-entry=""
-            title={
-              revisitTasks.length > 0
-                ? `${revisitTasks.length} to revisit${monkeyTasks.length ? ` · ${monkeyTasks.length} in monkey brain` : ""}`
-                : monkeyTasks.length > 0
-                  ? `Inbox — nothing to revisit · ${monkeyTasks.length} in monkey brain`
-                  : "Inbox — nothing to revisit"
-            }
-          >
-            <InboxIcon className="h-4 w-4" />
-            Inbox
-            {revisitTasks.length > 0 && (
-              <Badge variant="secondary" className="b2-shell-count">
-                {revisitTasks.length}
-              </Badge>
-            )}
-          </Button>
-        </DialogTrigger>
+        {hideTrigger ? null : (
+          <DialogTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              data-inbox-entry=""
+              title={
+                revisitTasks.length > 0
+                  ? `${revisitTasks.length} to revisit${monkeyTasks.length ? ` · ${monkeyTasks.length} in monkey brain` : ""}`
+                  : monkeyTasks.length > 0
+                    ? `Inbox — nothing to revisit · ${monkeyTasks.length} in monkey brain`
+                    : "Inbox — nothing to revisit"
+              }
+            >
+              <InboxIcon className="h-4 w-4" />
+              Inbox
+              {revisitTasks.length > 0 && (
+                <Badge variant="secondary" className="b2-shell-count">
+                  {revisitTasks.length}
+                </Badge>
+              )}
+            </Button>
+          </DialogTrigger>
+        )}
         <DialogContent className="inbox-dialog fm98-dialog sm:max-w-4xl max-h-[80vh] overflow-hidden flex flex-col" data-ui-name="Inbox" data-ui-docs="components/README.md">
           <DialogHeader className="inbox-mast">
             <DialogTitle className="flex items-center gap-2">
@@ -1440,7 +1455,7 @@ export function Inbox({ onTaskSelect: _onTaskSelect }: InboxProps) {
           </div>
 
           {pileTasks.length > 0 && (
-            <div className="inbox-foot">
+            <div className={`inbox-foot${inboxTasks.length === 0 ? " inbox-foot-empty" : ""}`}>
               <p className="inbox-foot-meta">
                 <span>
                   {sitting.handled > 0
@@ -1450,6 +1465,7 @@ export function Inbox({ onTaskSelect: _onTaskSelect }: InboxProps) {
                   {selectedIds.length > 0 ? ` · ${selectedIds.length} selected` : ""}
                 </span>
               </p>
+              {inboxTasks.length === 0 ? null : (
               <div className="inbox-foot-actions">
                 {!allSelected && inboxIdList.length > 0 && (
                   <Button variant="outline" onClick={() => setSelectedIds(inboxIdList)} title="Select every visible idea (A)">
@@ -1537,6 +1553,7 @@ export function Inbox({ onTaskSelect: _onTaskSelect }: InboxProps) {
                   </Button>
                 )}
               </div>
+              )}
             </div>
           )}
         </DialogContent>

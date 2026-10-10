@@ -3,19 +3,20 @@
  *
  * Click the photograph for this friend's details (the same page as Gallery
  * Details). The chat button beside the name asks them to speak. Click the
- * bubble for the mission sheet: the task opens item detail on top, Accept
- * starts a same-day point window, Decline walks through a smaller task, a
- * first step, and a reason. Escape, ×, or outside click dismisses the bubble
- * without declining. Finishing an accepted mission opens a small cheer.
+ * bubble for the mission sheet, which loads then. The friend jewel itself
+ * stays eager. A refresh does not parse the sheet until that open. The task
+ * opens item detail on top, Accept starts a same-day point window, Decline walks
+ * through a smaller task, a first step, and a reason. Escape, ×, or outside
+ * click dismisses the bubble without declining. Finishing an accepted
+ * mission opens a small cheer.
  */
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, type ComponentType } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { BabyAnimalFriendGallery } from "@/components/baby-animal-gallery"
 import { FriendDetailsPanel } from "@/components/friend-details"
 import { FriendSpeechBubble } from "@/components/friend-details/FriendSpeechBubble"
-import { FriendMissionSheet } from "@/components/friend-mission-sheet"
 import { pickFriendTodoNudge, type FriendNudge } from "@/lib/baby-animal-nudge"
 import { personalityFor } from "@/lib/baby-animal-personality"
 import { ensureWeeklyFriend } from "@/lib/baby-animal-friend"
@@ -34,6 +35,31 @@ import { isClearedFromWork } from "@/lib/completion-status"
 
 /** CRT bezel power-on length (ms) — one short gesture, not a loop. */
 const CRT_POWER_ON_MS = 560
+
+type MissionSheet = ComponentType<{
+  open: boolean
+  nudge: FriendNudge | null
+  friendName: string
+  onOpenChange: (open: boolean) => void
+  onFinished: (done: FriendMission | null) => void
+}>
+
+function useFriendMissionSheet(missionOpen: boolean) {
+  const [Sheet, setSheet] = useState<MissionSheet | null>(null)
+
+  useEffect(() => {
+    if (!missionOpen || Sheet) return
+    let live = true
+    void import("@/components/friend-mission-sheet").then((mod) => {
+      if (live) setSheet(() => mod.FriendMissionSheet)
+    })
+    return () => {
+      live = false
+    }
+  }, [missionOpen, Sheet])
+
+  return Sheet
+}
 
 function reunionNudge(line: string): FriendNudge {
   return {
@@ -75,6 +101,7 @@ export function BabyAnimalNest() {
   const [detailsCover, setDetailsCover] = useState(false)
   const [galleryCover, setGalleryCover] = useState(false)
   const [missionOpen, setMissionOpen] = useState(false)
+  const MissionSheet = useFriendMissionSheet(missionOpen)
   const [nudge, setNudge] = useState<FriendNudge | null>(null)
   const [cheer, setCheer] = useState<FriendMission | null>(null)
   const [crtPowerOn, setCrtPowerOn] = useState(false)
@@ -318,13 +345,15 @@ export function BabyAnimalNest() {
           />
         </DialogContent>
       </Dialog>
-      <FriendMissionSheet
-        open={missionOpen && !!nudge}
-        nudge={nudge}
-        friendName={who}
-        onOpenChange={setMissionOpen}
-        onFinished={finishSheet}
-      />
+      {MissionSheet ? (
+        <MissionSheet
+          open={missionOpen && !!nudge}
+          nudge={nudge}
+          friendName={who}
+          onOpenChange={setMissionOpen}
+          onFinished={finishSheet}
+        />
+      ) : null}
       <Dialog open={!!cheer} onOpenChange={(next) => { if (!next) setCheer(null) }}>
         <DialogContent className="baby-friend-cheer fm98-dialog z-[90] max-w-none gap-0 p-0" overlayClassName="z-[90]" hideClose>
           <DialogHeader className="baby-friend-cheer-head">

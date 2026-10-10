@@ -10,19 +10,23 @@
  * lazy-loads below that stack. Item detail fills the desk *below* the pin —
  * the header stays mounted, the tab keys hide, and the tab desk stays mounted
  * (hidden) so Lists can jump back in place without rebuilding its task index.
- * `CaptureDoorHost`
- * keeps Ingest, From Notes, and Phone Notes mounted so the Settings and Lists
- * settings buttons open that one popup. Global hotkeys:
- * Cmd/Ctrl-K search, Cmd/Ctrl-Shift-A Quick Add, Cmd/Ctrl-Z undo last
- * Home/Tracking action. On mount, `useDayScheduleRollover` settles past
- * periods and `useProcessInboxTodo` adds today's "process inbox information"
- * To Do when the revisit Inbox has more than 100 open ideas. `useReminderTick`
- * delivers due Reminders to the Inbox and Telegram while this window is open.
- * `useSystemHomeListPins` keeps the built-in singleton lists on Lists Home.
- * `useInstagramFollowingList` and `useInstagramFollowersList` sit beside
- * `usePeopleIKnowList` and create or adopt the two Instagram lists after hydrate.
- * `useCloseGiftIdeas` sits there too: people already marked Close get a Gift
- * ideas list, and a later save that turns Close on or renames the person updates it.
+ * `CaptureDoorHost` mounts Ingest, From Notes, and Phone Notes the first time
+ * that door is opened; once mounted, a listing survives closing the popup.
+ * Global hotkeys: Cmd/Ctrl-K search, Cmd/Ctrl-Shift-A Quick Add, Cmd/Ctrl-Z
+ * undo last Home/Tracking action. On mount, `useDayScheduleRollover` settles
+ * past periods and `useProcessInboxTodo` adds today's "process inbox
+ * information" To Do when the revisit Inbox has more than 100 open ideas.
+ * `useReminderTick` delivers due Reminders to the Inbox and Telegram while
+ * this window is open. `useSystemHomeListPins`, `usePeopleIKnowList`,
+ * `useCloseGiftIdeas`, `useInstagramFollowingList`, and
+ * `useInstagramFollowersList` start on idle after the desk nav mark
+ * (`brain2-nav-ready`), not during first paint: the pins keep the built-in
+ * singleton lists on Lists Home, People I Know and the two Instagram lists
+ * are created or adopted after hydrate, and people already marked Close get
+ * a Gift ideas list (a later save that turns Close on or renames the person
+ * updates it). The layout effect marks `brain2-nav-ready` and sets
+ * `data-nav-ready`; `brain2-desk-ready` marks when the active tab's Suspense
+ * child has mounted.
  *
  * Spec: §2.2 (module hosting) and §8.2 (dashboard top bar / global quick actions).
  */
@@ -52,6 +56,7 @@ import { useInstagramFollowersList, useInstagramFollowingList } from "@/hooks/us
 import { PersistStatusBanner } from "@/components/PersistStatusBanner"
 import { MachineLoading } from "@/components/machine-loading"
 import { PenSettingsHost } from "@/components/Home/Tracking/pen-settings-host"
+import { TagSettingsHost } from "@/components/Home/Tracking/tag-settings-host"
 import { parseModulePopoutModuleId } from "@/components/Modules/workspace/module-popout"
 import { parseSheetPopoutCategoryId } from "@/components/spreadsheet/sheet-popout"
 import { initWorkflowEngine, createTaskRepositoryAdapter } from "@/lib/services/item-mutation-service"
@@ -97,6 +102,24 @@ function rememberWarm(prev: AppTab[], next: AppTab): AppTab[] {
   return [next, ...prev.filter((tab) => tab !== next)].slice(0, 2)
 }
 
+/** Sibling of the lazy panel inside the same Suspense, so this commits only after that panel resolves — not while the fallback is showing. */
+function DeskReadyMark() {
+  useEffect(() => {
+    performance.mark("brain2-desk-ready")
+  }, [])
+  return null
+}
+
+/** Built-in list seeds. Mounted after idle so these effects do not write the vault during first paint. */
+function IdleVaultSeeds() {
+  useSystemHomeListPins()
+  usePeopleIKnowList()
+  useCloseGiftIdeas()
+  useInstagramFollowingList()
+  useInstagramFollowersList()
+  return null
+}
+
 function DeskTab({
   tab,
   active,
@@ -114,7 +137,10 @@ function DeskTab({
       hidden={active ? undefined : true}
       aria-hidden={active ? undefined : true}
     >
-      <Suspense fallback={active ? <LoadingFallback /> : null}>{children}</Suspense>
+      <Suspense fallback={active ? <LoadingFallback /> : null}>
+        {children}
+        {active ? <DeskReadyMark /> : null}
+      </Suspense>
     </TabsContent>
   )
 }
@@ -123,6 +149,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = usePersistedTab(APP_NAV_KEYS.appTab, APP_TABS, "home", "hydrate")
   const [warm, setWarm] = useState<AppTab[]>([])
   const opened = useRef(false)
+  const [vaultSeedsReady, setVaultSeedsReady] = useState(false)
   useLayoutEffect(() => {
     const stored = readStoredTab(APP_NAV_KEYS.appTab, APP_TABS, "home")
     setWarm((prev) => rememberWarm(prev, opened.current ? activeTab : stored))
@@ -130,6 +157,16 @@ export default function Home() {
     document.documentElement.dataset.navReady = "1"
     performance.mark("brain2-nav-ready")
   }, [activeTab])
+  // Nav-ready is a layout effect, so it has already run before this schedules idle.
+  useEffect(() => {
+    const run = () => setVaultSeedsReady(true)
+    if (typeof requestIdleCallback === "function") {
+      const id = requestIdleCallback(run, { timeout: 1500 })
+      return () => cancelIdleCallback(id)
+    }
+    const id = window.setTimeout(run, 1)
+    return () => window.clearTimeout(id)
+  }, [])
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(() => readStoredId(APP_NAV_KEYS.appItemId))
   const [searchSelectedId, setSearchSelectedId] = useState<string | null>(null)
   const { open: searchOpen, setOpen: setSearchOpen } = useGlobalSearchHotkey()
@@ -139,11 +176,6 @@ export default function Home() {
   useDayScheduleRollover()
   useProcessInboxTodo()
   useReminderTick()
-  useSystemHomeListPins()
-  usePeopleIKnowList()
-  useCloseGiftIdeas()
-  useInstagramFollowingList()
-  useInstagramFollowersList()
   const [popoutModuleId, setPopoutModuleId] = useState<string | null>(null)
   const [popoutSheetCategoryId, setPopoutSheetCategoryId] = useState<string | null>(null)
   const selectedMissing = useTaskStore((s) => {
@@ -243,27 +275,37 @@ export default function Home() {
     [],
   )
 
+  const vaultSeeds = vaultSeedsReady ? <IdleVaultSeeds /> : null
+
   // Pop-out window (legacy hash on `/`): render only the standalone module.
   if (popoutModuleId) {
     return (
-      <Suspense fallback={<LoadingFallback />}>
-        <ModulePopoutView moduleId={popoutModuleId} />
-      </Suspense>
+      <>
+        {vaultSeeds}
+        <Suspense fallback={<LoadingFallback />}>
+          <ModulePopoutView moduleId={popoutModuleId} />
+        </Suspense>
+      </>
     )
   }
 
   // Pop-out window: render only a list's standalone spreadsheet (no app shell).
   if (popoutSheetCategoryId) {
     return (
-      <Suspense fallback={<LoadingFallback />}>
-        <SheetPopoutView categoryId={popoutSheetCategoryId} />
-      </Suspense>
+      <>
+        {vaultSeeds}
+        <Suspense fallback={<LoadingFallback />}>
+          <SheetPopoutView categoryId={popoutSheetCategoryId} />
+        </Suspense>
+      </>
     )
   }
 
   return (
     <>
+    {vaultSeeds}
     <PenSettingsHost />
+    <TagSettingsHost />
     <main className="min-h-screen bg-background">
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         {/* Header and the tab bay share one sticky stack. The bay uses the

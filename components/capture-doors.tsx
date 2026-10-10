@@ -1,27 +1,72 @@
 /**
  * components/capture-doors.tsx — Ingest, From Notes, and Phone Notes
  *
- * The dialogs stay mounted (`CaptureDoorHost`) so a From Notes listing survives
- * closing the popup. Settings and global Lists settings render the same
- * labeled buttons (`CaptureDoorButtons`); both open that one popup.
+ * `CaptureDoorHost` mounts each dialog the first time that door is opened,
+ * then leaves it mounted so a From Notes listing survives closing the popup.
+ * The three dialogs are dynamic imports: a refresh should not parse
+ * notes-ingest, Phone Notes, or the ingest log until the button is clicked.
+ * Settings and global Lists settings render the same labeled buttons
+ * (`CaptureDoorButtons`); both open that one popup.
  */
 "use client"
 
+import { useEffect, useState, type ComponentType } from "react"
 import { Loader2, MessageSquare, Notebook, StickyNote } from "lucide-react"
-import { openCaptureDoor, useNotesTriggerLabel } from "@/components/capture-door-bus"
-import { IngestLogDialog } from "@/components/ingest-log-dialog"
-import { IphoneNotesStore } from "@/components/iphone-notes-store"
-import { NotesIngest } from "@/components/notes-ingest"
+import {
+  openCaptureDoor,
+  subscribeCaptureDoor,
+  useNotesTriggerLabel,
+  type CaptureDoor,
+} from "@/components/capture-door-bus"
 import { Button } from "@/components/ui/button"
 import { useIngestStore } from "@/lib/ingest/ingest-store"
 
-/** Always mounted from the page. Triggers stay off; the dialogs portal when asked. */
+type DoorDialog = ComponentType<{ hideTrigger?: boolean }>
+
+function loadCaptureDoor(door: CaptureDoor): Promise<DoorDialog> {
+  if (door === "ingest") {
+    return import("@/components/ingest-log-dialog").then((mod) => mod.IngestLogDialog)
+  }
+  if (door === "notes") {
+    return import("@/components/notes-ingest").then((mod) => mod.NotesIngest)
+  }
+  return import("@/components/iphone-notes-store").then((mod) => mod.IphoneNotesStore)
+}
+
+function CaptureDoorSlot({ door }: { door: CaptureDoor }) {
+  const [Dialog, setDialog] = useState<DoorDialog | null>(null)
+
+  useEffect(() => {
+    let live = true
+    void loadCaptureDoor(door).then((Loaded) => {
+      if (live) setDialog(() => Loaded)
+    })
+    return () => {
+      live = false
+    }
+  }, [door])
+
+  if (!Dialog) return null
+  return <Dialog hideTrigger />
+}
+
+/** Mounted from the page. Each door's dialog loads on first request and stays. */
 export function CaptureDoorHost() {
+  const [doors, setDoors] = useState<CaptureDoor[]>([])
+
+  useEffect(
+    () =>
+      subscribeCaptureDoor((door) => {
+        setDoors((prev) => (prev.includes(door) ? prev : [...prev, door]))
+      }),
+    [],
+  )
+
   return (
     <>
-      <IngestLogDialog hideTrigger />
-      <NotesIngest hideTrigger />
-      <IphoneNotesStore hideTrigger />
+      {doors.map((door) => (
+        <CaptureDoorSlot key={door} door={door} />
+      ))}
     </>
   )
 }

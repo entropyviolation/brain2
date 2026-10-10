@@ -18,21 +18,21 @@
  *
  * The dialog is optionally controlled (so Cmd/Ctrl-Shift-A in `app/page.tsx`
  * can open it and prefill a page selection); uncontrolled with its own trigger
- * otherwise. Header trigger uses `.b2-shell-go` so it reads as the default
- * (bold, framed) press key. Dialog shell is milled fascia
- * (`.hpp95` / `header-popup-chrome.css`).
+ * otherwise. `hideTrigger` omits that button when the pin bar owns the key.
+ * Header trigger uses `.b2-shell-go` so it reads as the default (bold, framed)
+ * press key. Dialog shell is milled fascia (`.hpp95` / `header-popup-chrome.css`).
  *
- * A successful write raises one fixed flag (`.qa-wrote`): where the item went,
- * then it leaves. Click the flag or its ×, or wait a few seconds. A newer
- * success replaces it. An empty submit, a bulk write of nothing, or a log
- * error does not raise it.
+ * A successful write raises a floating added confirmation (`.qa-wrote` via
+ * `quick-add-wrote.tsx` / `QuickAddWroteHost` on the pin bar): where the item
+ * went. Bottom-right with a comfortable inset, X to dismiss, auto-dismiss after
+ * one minute. The host outlives the dialog. A newer success replaces it. An
+ * empty submit, a bulk write of nothing, or a log error does not raise it.
  */
 "use client"
 
 import type React from "react"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import { createPortal } from "react-dom"
 import { Plus, CalendarDays, Clock, Tag, Flag, Timer, Folder } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -61,12 +61,15 @@ import { bulkReadyCount, writeBulkCapture } from "@/components/enhanced-bulk-add
 import { applyQuickAddLog, quickAddLogIntent } from "@/lib/quick-add-log"
 import { FOLDER_ALL_PREFIX, GLOBAL_ALL_ITEMS_KEY, isFolderAllItemsCategoryId } from "@/lib/folder-all-items"
 import type { Folder as FolderRecord, List, Task } from "@/lib/types"
+import { QUICK_ADD_LOG_WROTE, raiseQuickAddWrote } from "@/components/quick-add-wrote"
 
-/** How long the wrote-flag stays if nobody dismisses it. */
-const QUICK_ADD_WROTE_MS = 4000
-
-/** Successful `log:` / `log-` / `log ` write. Not Inbox. */
-export const QUICK_ADD_LOG_WROTE = "Item added to the tracking log from Quick Add"
+export {
+  QUICK_ADD_LOG_WROTE,
+  QUICK_ADD_WROTE_MS,
+  QuickAddWroteHost,
+  dismissQuickAddWrote,
+  raiseQuickAddWrote,
+} from "@/components/quick-add-wrote"
 
 /** Where one captured task actually landed. */
 export function quickAddWroteLabel(task: Task, lists: List[], folders: FolderRecord[]): string {
@@ -94,31 +97,6 @@ export function quickAddWroteMessage(labels: string[]): string | null {
   return `${labels.length} items added from Quick Add`
 }
 
-function QuickAddWroteFlag({ text, onDismiss }: { text: string; onDismiss: () => void }) {
-  if (typeof document === "undefined") return null
-  return createPortal(
-    <div className="qa-wrote" role="status" data-quick-add-notice="" onClick={onDismiss}>
-      <span className="qa-wrote-lamp" aria-hidden />
-      <span className="qa-wrote-text" title={text}>
-        {text}
-      </span>
-      <button
-        type="button"
-        className="qa-wrote-x"
-        data-no95=""
-        aria-label="Dismiss"
-        onClick={(event) => {
-          event.stopPropagation()
-          onDismiss()
-        }}
-      >
-        ×
-      </button>
-    </div>,
-    document.body,
-  )
-}
-
 interface QuickAddProps {
   /** Controlled open state (e.g. driven by the quick-capture hotkey). */
   open?: boolean
@@ -128,8 +106,8 @@ interface QuickAddProps {
    * A selection that contains a newline opens in Bulk.
    */
   seed?: string
-  /** How long the success flag stays. Tests pass a shorter wait. */
-  wroteMs?: number
+  /** Omit the header button. The pin bar renders the key and owns `open`. */
+  hideTrigger?: boolean
 }
 
 /** Dark blue mark: this line is a tracking log, not a list. */
@@ -192,7 +170,12 @@ export function SuggestionChips({ suggestion }: { suggestion: SmartSuggestion })
   )
 }
 
-export function QuickAdd({ open: openProp, onOpenChange, seed = "", wroteMs = QUICK_ADD_WROTE_MS }: QuickAddProps = {}) {
+export function QuickAdd({
+  open: openProp,
+  onOpenChange,
+  seed = "",
+  hideTrigger = false,
+}: QuickAddProps = {}) {
   const [openState, setOpenState] = useState(false)
   const open = openProp ?? openState
   const setOpen = onOpenChange ?? setOpenState
@@ -203,22 +186,6 @@ export function QuickAdd({ open: openProp, onOpenChange, seed = "", wroteMs = QU
   const [plain, setPlain] = useState(false)
   const addTask = useTaskStore((state) => state.addTask)
   const seeded = useRef<string | null>(null)
-  const wroteSeq = useRef(0)
-  const [wrote, setWrote] = useState<{ id: number; text: string } | null>(null)
-
-  const showWrote = (text: string) => {
-    wroteSeq.current += 1
-    setWrote({ id: wroteSeq.current, text })
-  }
-
-  useEffect(() => {
-    if (!wrote) return
-    const id = wrote.id
-    const timer = window.setTimeout(() => {
-      setWrote((current) => (current?.id === id ? null : current))
-    }, wroteMs)
-    return () => window.clearTimeout(timer)
-  }, [wrote, wroteMs])
 
   useEffect(() => {
     if (!open) {
@@ -264,7 +231,7 @@ export function QuickAdd({ open: openProp, onOpenChange, seed = "", wroteMs = QU
       const created = writeBulkCapture(ideaText, sendToInbox, { plain, originKind: "quick-add" })
       const state = useTaskStore.getState()
       const message = quickAddWroteMessage(created.map((task) => quickAddWroteLabel(task, state.lists, state.folders)))
-      if (message) showWrote(message)
+      if (message) raiseQuickAddWrote(message)
       closeFresh()
       return
     }
@@ -272,7 +239,7 @@ export function QuickAdd({ open: openProp, onOpenChange, seed = "", wroteMs = QU
     if (logIntent) {
       const logged = applyQuickAddLog(logIntent)
       if (logged.status === "error") return
-      if (logged.status === "ok") showWrote(QUICK_ADD_LOG_WROTE)
+      if (logged.status === "ok") raiseQuickAddWrote(QUICK_ADD_LOG_WROTE)
       closeFresh()
       return
     }
@@ -301,20 +268,20 @@ export function QuickAdd({ open: openProp, onOpenChange, seed = "", wroteMs = QU
     addTask(task)
     const state = useTaskStore.getState()
     const message = quickAddWroteMessage([quickAddWroteLabel(task, state.lists, state.folders)])
-    if (message) showWrote(message)
+    if (message) raiseQuickAddWrote(message)
     closeFresh()
   }
 
   return (
-    <>
-    {wrote ? <QuickAddWroteFlag text={wrote.text} onDismiss={() => setWrote(null)} /> : null}
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button size="sm" className="b2-shell-go gap-1">
-          <Plus className="h-4 w-4" />
-          <span>Quick Add</span>
-        </Button>
-      </DialogTrigger>
+      {hideTrigger ? null : (
+        <DialogTrigger asChild>
+          <Button size="sm" className="b2-shell-go gap-1">
+            <Plus className="h-4 w-4" />
+            <span>Quick Add</span>
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="hpp95 hpp95-dialog sm:max-w-lg max-h-[90vh] overflow-hidden flex flex-col" data-ui-name="Quick Add" data-ui-docs="components/README.md">
         <DialogHeader className="hpp-caption">
           <div className="hpp-caption-mark">
@@ -347,30 +314,10 @@ export function QuickAdd({ open: openProp, onOpenChange, seed = "", wroteMs = QU
         </DialogHeader>
         <div className="hpp-body">
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="flex flex-wrap items-start gap-x-6 gap-y-2">
-              <input
-                id="quick-add-bulk"
-                type="checkbox"
-                className="mt-0.5 h-4 w-4 rounded border border-primary"
-                checked={bulk}
-                onChange={(e) => setBulk(e.target.checked)}
-              />
-              <Label htmlFor="quick-add-bulk" className="font-normal cursor-pointer">
-                Bulk
-              </Label>
-              <input
-                id="quick-add-plain"
-                type="checkbox"
-                className="mt-0.5 h-4 w-4 rounded border border-primary"
-                checked={plain}
-                onChange={(e) => setPlain(e.target.checked)}
-              />
-              <Label htmlFor="quick-add-plain" className="font-normal cursor-pointer">
-                Plain
-              </Label>
-            </div>
             <div className="space-y-2">
-              <Label htmlFor="idea">{bulk ? "Tasks and Lists" : "Idea"}</Label>
+              <Label htmlFor="idea" className="text-base font-semibold">
+                {bulk ? "Tasks and Lists" : "Idea"}
+              </Label>
               {!bulk && logIntent ? <LogFlag /> : null}
               {!bulk && !logIntent && ideaText.trim() ? <SuggestionChips suggestion={parsed.suggestion} /> : null}
               {bulk ? (
@@ -379,7 +326,7 @@ export function QuickAdd({ open: openProp, onOpenChange, seed = "", wroteMs = QU
                   placeholder={"Writing:\nDraft chapter 1\nEdit outline\n\nNext Actions: Eventually:\nGo through old pages"}
                   value={ideaText}
                   onChange={(e) => setIdeaText(e.target.value)}
-                  className="hpp-bulk-box resize-none font-mono text-sm"
+                  className="hpp-bulk-box resize-none font-mono text-sm min-h-[10rem]"
                   autoFocus
                 />
               ) : (
@@ -388,6 +335,7 @@ export function QuickAdd({ open: openProp, onOpenChange, seed = "", wroteMs = QU
                   placeholder="next actions: eventually: write the memoir"
                   value={ideaText}
                   onChange={(e) => setIdeaText(e.target.value)}
+                  className="h-11 text-base"
                   autoFocus
                 />
               )}
@@ -399,7 +347,34 @@ export function QuickAdd({ open: openProp, onOpenChange, seed = "", wroteMs = QU
               note={logIntent ? "This line is a tracking log. It does not go to Inbox." : undefined}
               onCheckedChange={setSendToInbox}
             />
-            <CaptureShorthandHelp variant={bulk ? "bulk" : "quick"} />
+            <details className="hpp-qa-more">
+              <summary className="cursor-pointer text-sm text-muted-foreground">Bulk &amp; shorthand</summary>
+              <div className="mt-3 space-y-3">
+                <div className="flex flex-wrap items-start gap-x-6 gap-y-2">
+                  <input
+                    id="quick-add-bulk"
+                    type="checkbox"
+                    className="mt-0.5 h-4 w-4 rounded border border-primary"
+                    checked={bulk}
+                    onChange={(e) => setBulk(e.target.checked)}
+                  />
+                  <Label htmlFor="quick-add-bulk" className="font-normal cursor-pointer">
+                    Bulk
+                  </Label>
+                  <input
+                    id="quick-add-plain"
+                    type="checkbox"
+                    className="mt-0.5 h-4 w-4 rounded border border-primary"
+                    checked={plain}
+                    onChange={(e) => setPlain(e.target.checked)}
+                  />
+                  <Label htmlFor="quick-add-plain" className="font-normal cursor-pointer">
+                    Plain
+                  </Label>
+                </div>
+                <CaptureShorthandHelp variant={bulk ? "bulk" : "quick"} />
+              </div>
+            </details>
             <div className={bulk ? "flex items-center justify-between" : "flex justify-end"}>
               {bulk ? <div className="text-sm text-muted-foreground">{readyCount} tasks ready</div> : null}
               <Button
@@ -421,6 +396,5 @@ export function QuickAdd({ open: openProp, onOpenChange, seed = "", wroteMs = QU
         </div>
       </DialogContent>
     </Dialog>
-    </>
   )
 }

@@ -498,6 +498,15 @@ body.win95-app .inbox-dialog {
   justify-content: flex-end;
 }
 
+/* Visible pile empty (slice / filter): keep sitting meta; hide keycap legend. */
+.inbox-foot.inbox-foot-empty {
+  justify-content: flex-start;
+}
+
+.inbox-foot.inbox-foot-empty .inbox-foot-actions {
+  display: none;
+}
+
 .inbox-undo {
   display: flex;
   align-items: center;

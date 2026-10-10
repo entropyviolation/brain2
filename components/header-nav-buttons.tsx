@@ -28,9 +28,9 @@ export function HeaderNavButtons() {
           type="button"
           variant="outline"
           size="sm"
-          className="b2-shell-nav-btn"
+          className={canBack ? "b2-shell-nav-btn" : "b2-shell-nav-btn is-dead"}
           aria-label="Back"
-          title="Back"
+          title={canBack ? "Back" : "No earlier screen"}
           disabled={!canBack}
           onClick={back}
           data-testid="header-nav-back"
@@ -41,9 +41,9 @@ export function HeaderNavButtons() {
           type="button"
           variant="outline"
           size="sm"
-          className="b2-shell-nav-btn"
+          className={canForward ? "b2-shell-nav-btn" : "b2-shell-nav-btn is-dead"}
           aria-label="Forward"
-          title="Forward"
+          title={canForward ? "Forward" : "No later screen"}
           disabled={!canForward}
           onClick={forward}
           data-testid="header-nav-forward"

@@ -129,7 +129,7 @@ describe("AppHeader", () => {
     expect(screen.getByRole("group", { name: "System" })).not.toContainElement(nowKey)
   })
 
-  it("places a live now well inside Capture, not System", () => {
+  it("places a live now well inside Capture, not System", async () => {
     useTaskStore.getState().addTask({
       id: "op_1",
       description: "Foxtide rebuild",
@@ -147,7 +147,7 @@ describe("AppHeader", () => {
     try {
       const system = screen.getByRole("group", { name: "System" })
       const capture = screen.getByRole("group", { name: "Capture" })
-      const now = screen.getByTestId("header-now-box")
+      const now = await screen.findByTestId("header-now-box")
       const keys = capture.querySelector(".b2-shell-keys")
 
       expect(capture).toContainElement(now)
