@@ -45,7 +45,8 @@ Identity and scoring configuration. One row per habit, all time. Goal changes ar
 | `gem` | catalog path or data URL | The row jewel and each willpower stone. Assigned once; not a type default. |
 | `priorityPinned` | boolean? | +1 effective weight until turned off. |
 | `priorityMuted` | boolean? | Drops the missed-period auto weight. A pin still counts. |
-| `priorityLog` | string[]? | Append-only lines, oldest first. The only real event log on the habit (“Priority set Oct 9.”, “Selected from day ritual …”, “Permanent priority removed …”). |
+| `priorityLog` | string[]? | Append-only display lines, oldest first (“Priority set Oct 9.”, “Selected from day ritual …”, “Permanent priority removed …”). Grades do not parse these strings. |
+| `priorityEvents` | `HabitPriorityEvent[]?` | Structured presses, oldest first. Missing means none. Every press writes one, including when there is no why. `reasoning` is optional prose on a manual press only. A ritual selection does not store why. Permanent on and off do not store why. Intention, not shipped: these why lines are meant later as a language corpus for natural-language processing and machine-learning experiments, and for knowledge-graph traversals that join prioritize events to habits and outcomes. No model or graph reading ships with this change. Grades and priority weight do not read the prose. |
 | `priorityRefreshedOn` | `YYYY-MM-DD?` | Day the star was last set or refreshed. |
 | `priorityPermanent` | boolean? | Star and green wash stay at 100 until turned off. |
 | `timeEstimate` | `{ minutesPerUnit?, minutes?, precision?: "estimated" \| "definite" }` | Assumed clock length for the Done row. |
@@ -53,7 +54,7 @@ Identity and scoring configuration. One row per habit, all time. Goal changes ar
 | `doneTaskPhrase` | string? | Next Done line. `{value}` is the number logged. Already-written Done rows stay as they were. |
 | `doneTaskUseText` | boolean? | Text habits: the Done line is the cell text. |
 | `showGoalBar` | boolean? | Draws a tube in the cell. Does not change math. |
-| `taggedTaskTag` | string? | Each Done task (and each tagged tracking block’s Done line) in the period counts as 1. Not the minute-tag link. |
+| `taggedTaskTag` | string? | Each Done task (and each tagged tracking block’s Done line) in the period counts as 1. Not the minute-tag link. When the name is a Tracking catalog tag, a rename of that tag follows this field (`lib/catalog-tag.ts`). A typed name that is not in the catalog still counts. Minute auto-fill stays `trackingLink.tagIds`. |
 | `textTriggers` | `{ id, keyword, mode: "done" \| "quantity" \| "score", unitWords?, connector? }[]` | Phrases for a BIM keyword source. The whole message must equal the phrase. |
 | `trackingLink` | see §1.6 | Tag minutes into a Goal or Yes/No cell. |
 | `coverageLink` | `{ threshold? = 75, enabled? } \| null` | Period paint %. `undefined` may still mean a name preset; `null` is off. |
@@ -113,7 +114,7 @@ One cell is one habit × one period key. Absence of a cell is not a stored zero.
 
 **Yes/No (`BOOLEAN`).** Met when `completed` is true. There is no partial. An explicit false and a missing cell are the same input to the day average: neither adds 100, and neither increments the “tasks with data” counter. Points ratio is 1 or 0. Trust can still call the cell met from sleep, a list, coverage, tags, or a keyword while `completed` is what the grade actually reads — auto writers are supposed to set `completed` when they win, but the grade function itself does not call `isHabitGoalMet`.
 
-**Goal (`GOAL`).** Cell percent is `min(100, value / task.goal × 100)` when `value` is present and `goal` is set. No goal → 0. Overshoot is stored (`value` may be 40 on a goal of 10) and then **thrown away by the cap**. A logged `0` counts as data. A missing cell does not increment “with data,” but once any sibling habit has data the missing habit still sits in the denominator of the day average, so both pull the day down the same way. Met (`isHabitGoalMet`) is `value >= goal`, unless an ordered `completionSources` list says otherwise.
+**Goal (`GOAL`).** Cell percent is `min(100, value / task.goal × 100)` when `value` is present and `goal` is set. No goal → 0. Overshoot is stored (`value` may be 40 on a goal of 10). The cell and the day average throw that extra away. The far-right span keeps it: 40 against a goal of 10 is four days of a week, and seven times the goal on one day is 100% for the week when the other days are empty. The span still stops at 100. A logged `0` counts as data. A missing cell does not increment “with data,” but once any sibling habit has data the missing habit still sits in the denominator of the day average, so both pull the day down the same way. Met (`isHabitGoalMet`) is `value >= goal`, unless an ordered `completionSources` list says otherwise.
 
 **Text (`TEXT`).** A truthy `text` is 100 in the grade (`calculateDayPercentageAV`). Blank is not data. No partial, no intensity. Reader B (`isHabitGoalMet`) requires a trimmed string, so whitespace alone can count on the ribbon and still be unmet for streaks and stones.
 
@@ -124,7 +125,7 @@ One cell is one habit × one period key. Absence of a cell is not a stored zero.
 | `weekly` | An amount, like a goal | `weeklyGoalOn`: starts at `startValue` | `min(100, value / goal × 100)`. Goal ≤ 0 and value > 0 → 100 | Next Monday, `goal += increment` only if the previous week had **≥ 4** days at or above that week’s target (`WEEKLY_INCREMENT_MIN_DAYS`). How far over the target a day went does not matter. |
 | `daily` | A running score (chess rating) | Last logged score before today + `increment`. A day with no log does not move the base. A lower log **does** move it. | If value ≤ committed base → 0. Else `min(100, (value − committed) / increment × 100)`. Increment ≤ 0 and value above the base → 100 | Every log, including a drop. |
 
-Week percent for a daily-cadence climb is **not** the mean of the seven day percents. It is the week’s gain (`score at next Monday’s base − score at this Monday’s base`, floored at 0) divided by `increment × number of days`, capped at 100. A waived day uses a different path: sum of day percents over the days that remain.
+Week percent for a daily-cadence climb is **not** the mean of the seven capped day percents. It is the week’s gain (`score at next Monday’s base − score at this Monday’s base`, floored at 0) divided by `increment × number of days`, capped at 100. One day that gains `increment × 7` fills the week. A waived day uses a different path: the mean of each remaining day’s multiple (allowed to exceed 1), then capped at 100, so overflow still fills the days that remain.
 
 `startedOn` fixes week-0 Monday for the weekly cadence. If it is missing, week 0 is the Monday of the first logged value.
 
@@ -277,7 +278,7 @@ Meeting a habit upserts a `loggedAction` task (`habitDoneLogId`) so Done-today c
 
 `precision: "definite"` means the assumed length does not need confirmation. Anything else is estimated.
 
-Morning review stores `priorityHabitIds` for the day. Choosing a habit there refreshes `priorityRefreshedOn` and appends a ritual line to `priorityLog`. That is the join between the ritual and the star. It does not multiply the 50-point ratio.
+Morning review stores `priorityHabitIds` for the day. Choosing a habit there refreshes `priorityRefreshedOn`, appends a ritual line to `priorityLog`, and appends a `priorityEvents` row with `source: "ritual"` and no `reasoning`. The ritual path does not ask for a why. That is the join between the ritual and the star. It does not multiply the 50-point ratio.
 
 ### 1.11 Goals do not feed this store
 
@@ -294,7 +295,7 @@ Objectives and goals live in `lib/goals-store.ts`. That store does not reference
 | `handCompleted` vs auto flags | When did the person override the machine? |
 | `missedOpportunity` | Which misses were named, as opposed to left blank? |
 | `createdAt` + exemptions | Is a zero week “before the habit” or “after the habit started”? |
-| `priorityLog` + weights | When was attention put on this habit, and did the next period move? |
+| `priorityLog` + `priorityEvents` + weights | When was attention put on this habit, and did the next period move? `reasoning`, when a manual press has it, is prose. It is not a blend input. |
 | `goal` / `increment` / `threshold` / `grace` | How hard was the line, and what happened to follow-through when it moved? (Only if you snapshot the line yourself; the store does not.) |
 | Ledger ids | How many points did the day pay, and which rule paid them? |
 | `timeEstimate` + tracked minutes | What did the habit cost in clock time versus what it was assumed to cost? |
@@ -320,7 +321,7 @@ Name every metric in the app’s own words, then say the formula in one sentence
 
 **Span grade** — `calculatePeriodGrade` over the active week or month window.
 
-**Row percent** — `calculateTaskPercentage` over the window (7 days, or the sheet’s periods). This is the rightmost column of the grid.
+**Row percent** — `calculateTaskPercentage` over the window (7 days, or the sheet’s periods). This is the rightmost column of the grid. Amounts over the target fill the other periods. The column still stops at 100. A climb span uses `incrementalSpanPercentage` (mean of uncapped period multiples, then the same stop). The day average and each cell still cap at 100 before they are averaged.
 
 **Paced row percent** — the same formulas over elapsed days only (`calculateElapsedTaskPercentage`). This is what perfect output averages.
 
@@ -379,7 +380,7 @@ Plot, per day, the unblended raw day %, the curved day %, and the shown week-to-
 
 **Blend contribution** — `shown − overall` when the toggle is on. Positive means the prioritized subset outran the field and the floor lifted the grade.
 
-**Attention yield** — over the 14 days after a `priorityLog` line, the habit’s met rate minus its met rate in the 14 days before. Split lines by kind (set, refreshed, ritual, permanent on, permanent off) because they are different acts.
+**Attention yield** — over the 14 days after a prioritize press, the habit’s met rate minus its met rate in the 14 days before. Split by kind (set, refreshed, ritual, permanent on, permanent off) because they are different acts. The dated line is `priorityLog`; the same press is a `priorityEvents` row. Optional `reasoning` on a manual press is prose, not a weight and not a blend input. A ritual event does not store why.
 
 **Neglect load** — sum of auto weights across habits, and the count of habits with auto weight ≥ 2. This is the compounding the mute button exists to stop.
 
@@ -421,7 +422,7 @@ In this app a **habit** is a `WeeklyTask`. A **task** is a `Task` in the task st
 | Join | Grain | Analytic |
 |---|---|---|
 | Done row written when a habit becomes met | one logged action per habit per period | Did the Done line’s duration match `timeEstimate`? How often was it `estimated` vs observed? |
-| `taggedTaskTag` | each tagged Done task = 1 toward `goal` | Count vs minutes. A cooking habit of 2 is two events, not two hours. |
+| `taggedTaskTag` | each tagged Done task = 1 toward `goal` | Count vs minutes. A cooking habit of 2 is two events, not two hours. The name can be the shared Tracking catalog; a rename follows it. Minute ids stay on `trackingLink`. |
 | `listLink` | N next actions completed that day | The habit is a quota on a list, not a behavior of its own. |
 | `rewardValue` | one shot on the met edge | Separate from the 50 × ratio, which pays partial credit every day even when the goal is not met. |
 
@@ -588,7 +589,7 @@ The store’s real events:
 | Event | Where it is | What to align |
 |---|---|---|
 | Habit added | `createdAt` or `task-{ms}` | Cell ratios after the first required day. Days before are `auto` exempt, not failures. |
-| Priority set, refreshed, ritual, permanent | `priorityLog` + `priorityRefreshedOn` | Met rate and ratio in the next 14 required days. |
+| Priority set, refreshed, ritual, permanent | `priorityLog` + `priorityEvents` + `priorityRefreshedOn` | Met rate and ratio in the next 14 required days. `reasoning`, when a manual press has it, is prose for a later language reading. It does not move the grade or the weight. |
 | All-nighter | the sleep log’s morning key, joined through `logExemptions` | Which habits went `logged` exempt that day. The grade should rise because the denominator shrank, not because the habit was done. Show the counterfactual grade **with** those habits still required, so the exemption is visible as an effect. |
 | Window change | `habitWeekWindow`, `habitMonthWindow`, birthday | These change span grade without any cell changing. A chart of “span grade over time” must freeze the window or it will jump when the person picks “4 weeks.” |
 | Tolerance change | `gradeTolerance`, `outputGradeTolerance` | Same warning. Plot raw underneath, always. |
@@ -758,7 +759,7 @@ Do not put physics controls in this area.
 
 **Skipped versus failed.** The grade cannot tell them apart. A missing cell and an explicit unmet Yes/No both contribute 0 once any habit has data. `missedOpportunity` is the only “this was a failure I name” bit, and scorers ignore it. Analytics should show three counts: blank, named miss, met. Never relabel a blank as failed.
 
-**Partial credit.** Goal and climb percents and the 50-point ratio use it, capped at 100% / 50 points. Yes/No and text do not. Overshoot survives in `value` and nowhere in the grade. Week grade’s AV mean gives a 50% day half a vote, not a miss and not a hit. Good day uses the day mean against a threshold, so a day of partials can be “good” without any single habit being met, and a day of a few perfect habits can fail the threshold because empty siblings sit in the denominator.
+**Partial credit.** Goal and climb cell percents and the 50-point ratio use it, capped at 100% / 50 points. Yes/No and text do not. Overshoot survives in `value`. The day average and the week grade throw it away. The far-right span keeps it until the span reaches 100%. Week grade’s AV mean gives a 50% day half a vote, not a miss and not a hit. Good day uses the day mean against a threshold, so a day of partials can be “good” without any single habit being met, and a day of a few perfect habits can fail the threshold because empty siblings sit in the denominator.
 
 **Zero stays zero.** No tolerance, blend, or bonus curve lifts a 0. A vacant (all-exempt) day is omitted, which is kinder than a zero. Do not draw those the same.
 

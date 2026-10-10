@@ -434,7 +434,10 @@ after Dismiss. There is still no cron for a sleeping laptop: reminders wait
 until the app is open again, then catch up once. **Persistent** defaults on:
 that occurrence stays in the header bell until dismissed. Off still inboxes
 and, when Text me is on, still texts — it just does not nag. Dismiss is not
-delete. Once is gone from the bell; daily and weekly return on the next cycle.
+delete. Once is gone from the bell; daily, weekly, and lunar (new moon / full moon)
+return on the next cycle. The app seeds **new moon tonight** and **full moon
+tonight** on the calendar day of that phase: the header bell from local midnight,
+Inbox and Text me at 18:00 local.
 
 ## When the app is closed
 

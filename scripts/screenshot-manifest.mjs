@@ -913,10 +913,11 @@ Importance, cognitive load, and entropy already on items. Missing stays missing.
     view: "Item detail popup (from Lists)",
     sources: [
       "components/ItemDetail/ItemDetailPopup.tsx",
+      "components/ItemDetail/ItemSaveFlag.tsx",
       "components/ItemDetail/useItemDetailDraft.ts",
       "components/ItemDetail/ItemAttributesSection.tsx",
     ],
-    description: `Item detail, Details tab. Title Photograph the headlands. Delete / Complete / Save Changes. Detailed description, duration, reward, urgency/importance, Show in Scheduler, Type, Lists, Tags. Other tabs: Scheduling, Dependencies, Subtasks, Analysis, Time, Body.`,
+    description: `Item detail, Details tab. Title Photograph the headlands. Delete / Complete / save lamp (Saved green, or Unsaved changes pink) / Save Changes. Detailed description, duration, reward, urgency/importance, Show in Scheduler, Type, Lists, Tags. Other tabs: Scheduling, Dependencies, Subtasks, Analysis, Time, Body.`,
   },
   {
     file: "21-item-detail-scheduling.png",

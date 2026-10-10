@@ -16,6 +16,7 @@ Frame, contents, and cabinet law live in [`DESIGN_STYLE.md`](DESIGN_STYLE.md). H
 - **Feral module interiors** — Tidy, Film DNA, Trip map. Unique look, shared Items. They stay out of `components/ui/`.
 - **Lists and Habits** — examples of rooms that turned out well (Lists orbs, velvet, Explorer furniture; Habits console, analog furniture, Willpower gems, CRT phosphor). Refine packing on those rooms. Leave the Habits console a console. Leave the Lists title bar an Explorer title bar. Do not clone `.hab95` or Lists chrome onto other rooms.
 - **Tracking** — paint, scissors, occupancy at most 24h, ghosts to confirm, sleep that agrees with the grid. The pen well stays plain steel. Paint math, the counts-as model, and pen nesting stay ([`COUNTS_AS.md`](COUNTS_AS.md), [`PEN_ACTION_FORMATS.md`](PEN_ACTION_FORMATS.md)).
+- **Temporal polarity** — Prospective (plan writings, schedule, estimated length) beside Retrospective (paint, task actuals, day-summary prose). Overlay in docs, help, and `data-temporal` only. **Do not** rename persist keys or fields (`estimatedDuration`, `actualDuration`, `trackedValue`, …). Catalog: [`TEMPORAL_POLARITY.md`](TEMPORAL_POLARITY.md). Heavier chrome stays in [`UI_NEXT.md`](UI_NEXT.md).
 - **Working Now** — one gesture writes the Done row, `timeLogs`, the Tracking block, and habits. Stop stays one click. On an operation it outranks Settings and stays a Win95 control (Wave 6).
 - **Cmd-K** over the current screen, colon-path capture, and undo of real writes (`lib/action-history.ts`, wired in `app/page.tsx`).
 - **Win95 safety** — confirmation plus undo. Grade destructiveness from the running app. Delete stays quieter than the primary action, and smaller than a same-row ⚙.
@@ -43,7 +44,7 @@ These are closed. [`UI_CRITIQUE.md`](UI_CRITIQUE.md) is an unranked observation 
 - **Out of Analytics:** CSV export, predictive or ML analytics, a custom Metrics chart builder. Sleep in Analytics does not switch the Home night; that would require `app/page.tsx`, and it stays out.
 - **Out of the idea-bank ten** (Wave 11 is done; these stay out): velocity chart, PERT capture UI, ghost row, named weeks, definition-of-done field UI, Bayesian estimator, review-history charts, capacity score, idea flags, priority override log, procedure chains, summary auto-complete, Kanban back on Lists, auto-picking 52:17 from cognitive load, and a nanny that reschedules the day.
 - **“Usually ~N”** does not rewrite `estimatedDuration` and does not grow `beatTheClockMultiplier`.
-- **Whole-store IndexedDB, WAL, `PersistStatusBanner` as a verified write, and an append-only per-field log** wait until parked-note naming in Wave 10 is closed. They are not screen work.
+- **Whole-store IndexedDB, WAL, `PersistStatusBanner` as a verified write, and an append-only per-field log** were gated on parked-note naming; that Wave 10 piece is closed. They are not screen work — claim when ready.
 
 ---
 
@@ -66,12 +67,12 @@ These are closed. [`UI_CRITIQUE.md`](UI_CRITIQUE.md) is an unranked observation 
 | 0 | Screenshots | **open** |
 | 1 | Analytics correctness | **done** |
 | 2 | Plan and Scheduler chrome | **done** |
-| 3 | Period as data | **open** |
-| 4 | Est. marks | **open** |
+| 3 | Period as data | **partial** |
+| 4 | Est. marks | **partial** |
 | 5 | Lists | **done** |
 | 6 | Tracking diet and Working Now | **open** |
-| 7 | House chrome | **open** |
-| 8 | Operations, Docs, Modules | **open** |
+| 7 | House chrome | **partial** |
+| 8 | Operations, Docs, Modules | **partial** |
 | 9 | History, restore, workflows | **open** |
 | 10 | Ontology | **open** |
 | 11 | Idea-bank top 10 | **done** |
@@ -100,23 +101,23 @@ Plan (`components/Home/Plan/**`) is a Win95 window (`.plan95`): gray calendar, e
 
 Scheduler (`components/Scheduler/**`) is the same family (`.sch95`): a human title-bar caption; Funnel / Gantt / Dependencies as view modes; Always→Day as periods; empty buckets as one-line furniture; orbs on task cards. Drag into buckets stays the mechanic.
 
-### Wave 3 — Period as data — **open**
+### Wave 3 — Period as data — **partial**
 
 Period is one fact. Chevrons stay local. There is no shared `PeriodNavigator`.
 
-**Landed.** To Do’s day lens uses the Home header date. The dashboard passes `currentDate` / `setCurrentDate` into `todo-panel.tsx`. Week, month, and season nameplates stay local.
+**Landed.** To Do’s day lens uses the Home header date. The dashboard passes `currentDate` / `setCurrentDate` into `todo-panel.tsx`. Week, month, and season nameplates stay a local **lens offset**, not a second shell day.
 
-**Open.** Habits has its own cursor (`components/Home/Habits/habits-period-cursor.ts`). That cursor is the same fact as the header date. The milled Habits keys stay Habits’.
+**Landed.** Habits week / month / season anchors derive from the shared Home day (`periodAnchorsFromDay` in `lib/use-current-date.ts`; `habits-period-cursor.ts` is the adapter). Milled Habits keys stay Habits’ and may page a lens; This week / month / season clears the lens.
 
 **Open.** Goals’ two controls are still unlabeled, and they stay two controls. Label one “priority this period” (objectives: Day / Week / Month / Year / All) and the other “goals of this kind” (the period-kind filter).
 
-### Wave 4 — Est. marks — **open**
+### Wave 4 — Est. marks — **partial**
 
 One chip: `~`, dashed amber, **est.**, basis in the tooltip, click to correct (`lib/estimated-values.ts`). Audit, then mark. A second chip language is a bug.
 
-**Already marked.** To Do Done, Analytics sleep, and Reviews assumed times.
+**Already marked.** To Do Done, Analytics sleep, Reviews assumed times, Morning Review sleep clocks, and the block-editor sleep clocks.
 
-**Open.** Morning Review, Day Log, Goals, Settings sleep copy, and Scheduler durations. Settings copy that *is* the estimate belongs in the chip tooltip.
+**Open.** Day Log, Goals, Settings sleep copy, and Scheduler durations. Settings copy that *is* the estimate belongs in the chip tooltip.
 
 ### Wave 5 — Lists — **done**
 
@@ -132,21 +133,19 @@ Shipped: Explorer toolbar separators; labels on the two status counts (both kept
 
 **Open.** On an operation, Working Now sits after Settings (`components/Operations/OperationWorkspace.tsx` menubar). It comes before Settings, and it stays a Win95 control.
 
-### Wave 7 — House chrome — **open**
+### Wave 7 — House chrome — **partial**
 
-**Landed.** Header groups: Friend, Rituals, System, and Capture, with the now well inside Capture while a session is live. Quick Add stays in Capture. Doors stay on the bar. The Home strip — date, Review, points, Today’s Progress — is one instrument on Habits, Plan, To Do, Goals, and Tracking. The Habits console landed, including the WILLPOWER rail. Those are examples of rooms that turned out well. Detail is in [`DESIGN_STYLE.md`](DESIGN_STYLE.md) and [`DESIGN_REFS.md`](DESIGN_REFS.md). Do not clone that CSS onto other rooms, and do not restyle the console or the rail from this file.
-
-**Open.** The review ritual “not now, ask tomorrow,” so Dismiss is not the only way past a real deadline. Peek stays the full-width `HomeReviewBanner`.
+**Landed.** Header groups: Friend, Rituals, System, and Capture, with the now well inside Capture while a session is live. Quick Add stays in Capture. Doors stay on the bar. Fascia height tightened; Rituals/Inbox share one phosphor count grammar; Nav dims when the stack has nowhere to go. The Home strip — Progress + Rituals as hero instruments, Points as one primary CRT, Moon / Days Until quieter — is one instrument on Habits, Plan, To Do, Goals, and Tracking. Needs Attention opens when count > 0 and nothing is stored. Ritual banner: Not now (ask tomorrow) beside Start/Dismiss. The Habits console landed, including a quieter WILLPOWER reward plate. Detail is in [`DESIGN_STYLE.md`](DESIGN_STYLE.md) and [`DESIGN_REFS.md`](DESIGN_REFS.md). Do not clone that CSS onto other rooms, and do not restyle the console or the rail from this file.
 
 **Do not start.** A shared S/M/L dialog ladder. It would freeze every room to three widths.
 
-### Wave 8 — Operations, Docs, Modules — **open**
+### Wave 8 — Operations, Docs, Modules — **partial**
 
-**Landed.** Creating an operation from a preset. The empty Queue stays docked; empty is information.
+**Landed.** Creating an operation from a preset; empty board shows pickable preset objects. Docs title plate is **Brain2 Docs**; Blank/Upload are milled keys; Recent rows show orb identity. Modules board paints orbs (not Lucide fallbacks). Chrome only for module board — not Tidy, Film DNA, or Trip interiors. The empty Queue stays docked; empty is information.
 
 **Open (Docs).** No saved-time status (the status bar should read `Saved 12:07`, not paste tips). The `12-docs` capture is Wave 0 and is on disk.
 
-**Open (Modules board).** Orb identity, and an explanation of workspace versus widget. Chrome only: `components/Modules/` board, not Tidy, Film DNA, or Trip. The title bar is a caption, not a bordered input. Installing a room should feel like putting a cabinet in the house.
+**Open (Modules board).** An explanation of workspace versus widget. The title bar is a caption, not a bordered input. Installing a room should feel like putting a cabinet in the house.
 
 ### Wave 9 — History, restore, workflows — **open**
 
@@ -154,20 +153,25 @@ Shipped: Explorer toolbar separators; labels on the two status counts (both kept
 
 **Open.** Workflow dry-run (the engine can omit the adapter) and a run log in the UI, inspectable before the run is trusted. Files: `lib/workflow-engine.ts` and the workflow UI.
 
-**Do not start** beside this wave: whole-store IndexedDB, WAL, `PersistStatusBanner` as a verified write, and an append-only per-field log. They wait until Wave 10’s parked-note naming is closed.
+**Do not start** beside this wave: whole-store IndexedDB, WAL, `PersistStatusBanner` as a verified write, and an append-only per-field log. Parked-note naming (Wave 10) is closed; those persist upgrades can proceed when claimed.
 
-### Wave 10 — Ontology — **open**
-
-Not started. Files: `lib/types.ts`, `lib/task-store.ts`, `lib/migrations.ts`, `lib/item-utils.ts`, `lib/search.ts`, [`CANONICAL_FIELDS.md`](CANONICAL_FIELDS.md).
+### Wave 10 — Ontology — **partial**
 
 `Item.title` is already the field of record. Do not restart collapsing `Task` into `Item`.
 
-1. Parked-note body still lives in `description`, because search indexes `description` and not `body`. Index `body`, move the note text there, then make `description` a title mirror. Write the migration. Keep a read shim for a release.
-2. UI and ingest call `useTaskStore` directly. `taskRepository` is the validating seam for services and sync. New code uses `commitItemEdit`. Existing `useTaskStore` calls stay. Name the cross-store transaction that habit-tracking-sync, sleep-sync, work-session, points, and action-history already form.
-3. `module.config.houseCleaning` and `module.config.tripItinerary` are still private records. Port them onto Items. Leave stylesheets untouched. Tidy subareas and trip stops then show up in Cmd-K, Scheduler, ingest, and Analytics.
-4. Habits, sleep, minutes, and plan prose stay fast projections of Items.
-5. Module rungs 2–4, as [`MODULE_PLATFORM.md`](MODULE_PLATFORM.md): manifest and grants the user approves once, visibly; an install wizard with a dry-run; LLM mapping assist at install time only.
-6. Every `habit-tracking-sync.ts` auto-fill carries a `FieldEstimate` and **est.**, with a derived-versus-ticked glyph. Same chip as Wave 4.
+**Landed.**
+
+1. Search indexes `body`. Parked notes (`noteToParkedItem`) store prose in `body`; `description` mirrors `title`. Persist **v18** migrates older vaults; `itemBody()` is the one-release read shim. Files: `lib/search.ts`, `lib/apple-notes.ts`, `lib/migrations.ts`, `lib/item-utils.ts`, [`CANONICAL_FIELDS.md`](CANONICAL_FIELDS.md).
+2. Tidy / Trip write records to Items (`lib/house-cleaning-items.ts`, `lib/trip-itinerary-items.ts`) and dual-write `module.config.*` for one release as a shim. Stylesheets untouched. Module Lists import remains the projection. Full two-way Lists→module edit sync is not in this slice.
+
+**Landed (write door naming).** Cross-store ownership is documented (`task-store` persists Items; `action-history.rememberWorld` is the undo boundary; `applyLinkedEffects` is the named ripple door). Ingest finish sites call `applyLinkedEffects`. ItemDetail save goes through `commitItemEdit`. Existing `useTaskStore` callers stay.
+
+**Open.**
+
+1. Drop the Tidy/Trip config record trees after the shim release; finish two-way Lists sync so a Lists edit is not overwritten.
+2. Habits, sleep, minutes, and plan prose stay fast projections of Items.
+3. Module rungs 2–4, as [`MODULE_PLATFORM.md`](MODULE_PLATFORM.md): manifest and grants the user approves once, visibly; an install wizard with a dry-run; LLM mapping assist at install time only. **Do not start** beside this wave’s landed pieces.
+4. Every `habit-tracking-sync.ts` auto-fill carries a `FieldEstimate` and **est.**, with a derived-versus-ticked glyph. Same chip as Wave 4.
 
 ### Wave 11 — Idea-bank top 10 — **done**
 

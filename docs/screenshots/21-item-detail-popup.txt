@@ -4,6 +4,7 @@ VIEW: Item detail popup (from Lists)
 AREA: Item detail popup
 SOURCE FILES:
   - components/ItemDetail/ItemDetailPopup.tsx
+  - components/ItemDetail/ItemSaveFlag.tsx
   - components/ItemDetail/useItemDetailDraft.ts
   - components/ItemDetail/ItemAttributesSection.tsx
 ================================================================================
@@ -14,4 +15,4 @@ GLOBAL CHROME (all screens)
   Shortcuts: Cmd/Ctrl+K search · capture hotkey → Quick Add.
 
 VIEW-SPECIFIC
-Item detail, Details tab. Title Photograph the headlands. Delete / Complete / Save Changes. Detailed description, duration, reward, urgency/importance, Show in Scheduler, Type, Lists, Tags. Other tabs: Scheduling, Dependencies, Subtasks, Analysis, Time, Body.
+Item detail, Details tab. Title Photograph the headlands. Delete / Complete / save lamp (Saved green, or Unsaved changes pink) / Save Changes. Detailed description, duration, reward, urgency/importance, Show in Scheduler, Type, Lists, Tags. Other tabs: Scheduling, Dependencies, Subtasks, Analysis, Time, Body.

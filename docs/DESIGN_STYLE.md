@@ -274,6 +274,25 @@ mark anywhere a derived value shows. Implementation:
 `lib/estimated-values.ts`,
 `components/Home/ToDo/CompletionTimeLine.tsx`.
 
+### Tag chips
+
+One chip language for Tags (not mood, context, op categories, or keywords):
+
+- **Tracking catalog tag** — color bead + name everywhere it is shown
+  (Tags library, pen settings, block editor, Habits catalog, working-now,
+  Activity Log “counts as”, Day Log block beads).
+- **Item tag** — plain chip of the string name; when
+  `normalizeTag(name)` matches a catalog tag, add that tag’s bead (the value
+  stays a string, not an id).
+- **Double-click** opens tag settings (`openTagSettings` /
+  `openTagSettingsFromName`), the same gesture as double-clicking a pen color
+  for pen settings. Single-click on a toggle chip still selects. Analytics
+  chart rectangles drill; they do not open tag settings.
+- Mood tone / mood-pen chips use `.trk-mood-chip`, not `.trk-tag`.
+
+Implementation: `catalog-tag-chip.tsx`, `ItemTagChip.tsx`,
+`open-tag-settings.ts`.
+
 The packing half of the old depth notes — one instrument, tight gaps inside a
 group, equal-height siblings, one header strip — is this section. Nested
 metal, hairlines, and phosphor are [Depth](#depth--spacing), below.
@@ -390,6 +409,25 @@ title bar uses this key (`.b2-close-key` in `app/win95.css`). It sits in the
 title bar. It is not a transparent pip, and it is not a smaller off-center
 mark. The generic button hairline is only a lip — it must not be the close
 key’s only paint, or the title bar shows through.
+
+### Transport keys
+
+This is the Pause, Play, and Stop the house likes. Reuse it whenever a clock
+or a player needs those three. `DvdTransportKey` in
+`components/dvd-transport-keys.tsx` brings its own face
+(`dvd-transport-keys.css`). Do not draw a new one: not a Lucide stroke, not a
+square key, not a word button that says Pause.
+
+A 28px circle in the same shallow mill as the header fascia, not a chunky
+separate housing. The disc is lightly smoked glass so the metal shows
+through, with a thin specular lip and about a 1px press (the disc sinks, the
+highlight flips, the mark nudges down). The marks are filled and stamped: two
+pause bars, a play triangle whose weight sits just right of center, and a
+solid stop square. Near-black ink with a one-pixel lower highlight.
+
+Call it with `mark` (`pause` | `play` | `stop`), `label` (the accessible
+name), and `onClick`. `pressed` and `disabled` are optional. The header now
+well and the Tracking pen clock already use it.
 
 Home overview tiles (`home-chrome.css`, one rule shared with `.mod95` catalog
 cards) paint that copy in Karla (`--font-karla` from `app/layout.tsx`), not
@@ -584,6 +622,7 @@ next room. Do not extract its chrome into `components/ui/`.
 |---------------|--------|
 | Control panel: gauges, sort, rockers, willpower plate in one column | `habits-control-panel.tsx`, `.hab-desk` |
 | Cockpit rockers, metal sort plate, panel lamps, glass percent tube, noble-gas tubes | `cockpit-switch.tsx`, `habit-sort-control.tsx`, `habit-led-lamp.tsx`, `percent-led-bar.tsx`, `noble-gas-tube.tsx` |
+| Small bar rocker (15px plate) for a short caption. Not the cockpit rocker | `habit-led-switch.tsx` `HabitBarRocker`, `.hab-bar-rocker` |
 | Willpower gems | [above](#willpower-gems--example-of-perfect-design) |
 | CRT phosphor | `habit-chrome.css` |
 | Period keys Daily / Weekly / Monthly above the sheet; active key is CRT plus a power lamp | `habit-chrome.css` |
@@ -591,7 +630,10 @@ next room. Do not extract its chrome into `components/ui/`.
 | Sand close on Add/Edit Habit | `daily-task-form-dialog.tsx` |
 
 Yes/No cells are the panel lamps. **Small LEDs** default on (15px); off lets
-the lamp fill the cell. The loading bar defaults on (a thin glass tube plus a `%`). A background click, Escape, or the skip × leaves the Add/Edit Habit sand close immediately.
+the lamp fill the cell. The loading bar defaults on (a thin glass tube plus a `%`). A background click, Escape, or the skip × leaves the Add/Edit Habit sand close immediately. Add/Edit Habit keeps one scrolling page. A milled section-jump strip — raised keys, the active key sunken navy — sits above that well and scrolls only the well. It is not a set of tabbed panes.
+Habit **Tags** and **Auto-fill** chips are one catalog: pressed chips wear a quiet
+**counts** / **minutes** role mark; **Edit** and double-click open the same tag
+settings dialog as the Tracking Tags library (not an inline rename field).
 Sort sits on the control bar above the grid. Grade plasma hues are set
 on each grade’s sheet (`.hab-grade-sheet`). Defaults: week-grade green
 `#508b51`, perfect-output navy `#25366a`, percent LED `#7e14ff`. Today’s
@@ -609,9 +651,35 @@ Habits console.
   Lists are orbs. Folders are photographed cut-outs (`folderFor` in
   `lib/folders-manifest.ts`). Labels stay utilitarian. The objects carry the
   beauty.
-- **Auto-organize** sweeps icons into a grid (`FolderViewIcons.tsx`,
-  `lib/lists-icon-grid.ts`). Freeform drag, an orb gallery, and uploads with
+- **Auto-organize** sweeps folder icons into a grid (`FolderViewIcons.tsx`,
+  velvet pack in `lib/velvet-icon-grid.ts`; the older `lib/lists-icon-grid.ts`
+  helper is not the live pack). Freeform drag, an orb gallery, and uploads with
   knocked-out backgrounds (`lib/remove-background.ts`) are the same family.
+  The folder sweep may leave a fading trace of snowflakes or cursor-pixels.
+- **List Icons desktop.** The inspector **Desktop** control is the small bar
+  rocker (`HabitBarRocker`, 15px plate), not `CockpitSwitch` and not a shadcn
+  `Switch`. Off, list Icons stays a wrapping grid. On, the same velvet canvas
+  free-drags item orbs. **PILE UP** is live rectangular-container physics
+  (`list-icon-pile.ts`, willpower gems on a flat floor — not sand grains, not
+  a morph into a static pile). A single flight-layer camera
+  (`list-icon-pile-camera.ts`: translate3d then scale) eases with the fall —
+  overview, follow the pile centroid, settle to native icon size — so orb CSS
+  size never pops. Fixed-timestep accumulator (1/60, max 6/frame); collision
+  radius matches the velvet orb; floor restitution + rest cutoff + ground
+  friction. DOM paints every frame during flight; one React commit at end with
+  `motionPos` cleared so freeform drag works. Late in the fall (and while
+  settling) grab/throw is live — the heap responds. Playfield metrics freeze
+  after start (reshape only on real width change). After settle the freeform
+  heap **sticks**: drag, scroll, persist; a fast fling briefly re-awakens
+  physics then re-commits — until Auto-organize or Desktop off. Reduced motion / huge lists skip the long bounce. (DOM camera,
+  not Three.js.) **Gravity** is the interactive connection-field on the same
+  Display toolbar (`listIconsGravity`, default off; `list-icon-gravity.ts`):
+  weighted springs, soft collisions, mild orbital swirl — icons suspended by
+  information weight. Grab / throw one orb while others keep simulating; empty
+  canvas stirs the field. Soft force cords (`list-icon-force-links`) and heavy
+  hub glow read the graph. **Reset** restores the pre-Gravity freeform snapshot
+  and turns forces off. Mutually exclusive with PILE UP / Auto-organize at
+  runtime. Reduced motion snaps without long thrash.
 - Inside a list, Default and Icons use the same contract: personal orbs on a
   working surface. A checklist still shows its checkbox.
 - Frame skin: `components/Lists/filemanager98.css` (`.fm98`). Toolbar keys
@@ -636,7 +704,9 @@ match, and does not sand them into one shared kit.
   leave someone guessing.
 - **Tracking.** Milled frame, plain steel pen well, white plot. The red now
   line and the gray sunrise / sunset lines stay (`trk-time-markers.tsx`).
-  Block editors open on the click.
+  Block editors open on the click. Tag library keys stay steel chips with a
+  color bead; **Edit** and double-click open tag settings (create-from-name
+  for an item-only string), the same dialog habit chips use.
 - **Installed modules.** Tidy, Film DNA, and the other rooms may keep their
   own stylesheets, overlays, and motion. Failure 3. Shared components are for
   a shared verb (a period, a stroke, a confirm), not to make two rooms match.
@@ -689,8 +759,11 @@ instrument and Needs Attention are already on a machine face.
 - **App tabs (shipped).** One brushed bay, equal keys, the active key a CRT
   with a round power lamp (`win95.css`). Home’s five sub-tabs use the same
   bay (`data-ui-name="Home tabs"`).
-- **Lists auto-organize.** The sweep may leave a fading trace of snowflakes
-  or cursor-pixels. Same grid tool (`FolderViewIcons.tsx`).
+- **Lists auto-organize.** Folder Icons may leave a fading trace of snowflakes
+  or cursor-pixels (`FolderViewIcons.tsx`). List Icons desktop uses the same
+  velvet pack without that trail. **PILE UP** is the separate live container
+  bounce with a camera-follows-pile flight layer; after settle freeform sticks
+  (drag/scroll) until Auto-organize.
 - **Today’s friend.** Opening the bubble may give that well a short power-on.
   Contained to the well.
 - **Header keys.** The Friend / Review / System / Capture strip may become
@@ -706,6 +779,7 @@ instrument and Needs Attention are already on a machine face.
 | Global furniture and pixel font | `app/win95.css`; `public/fonts/w95fa.woff`; `--chrome-face`, `--fascia-*`, `--hab-crt-*` |
 | Chrome warmth and Bouba/Kiki | `lib/chrome-patina.ts`, `lib/drift-clock.ts`, `lib/corner-mix.ts`, `app/chrome-patina.css`, Settings → Window gray / Bouba/Kiki |
 | Sand close | `components/ui/window-sand-close.tsx`, `components/ui/window-sand-sim.ts`; wired from `daily-task-form-dialog.tsx` |
+| Pause / Play / Stop | `components/dvd-transport-keys.tsx` (`DvdTransportKey`) and `dvd-transport-keys.css`. The glassy 28px disc. Reuse it; do not invent another transport icon. |
 | Willpower gems | `willpower-gems.tsx`, `lib/willpower-physics.ts`, `lib/willpower-stones.ts`, `habits-control-panel.tsx` |
 | Habits lamps and tubes | `habit-led-lamp.tsx`, `percent-led-bar.tsx`, `percent-led.tsx`, `noble-gas-tube.tsx`, `cockpit-switch.tsx` |
 | Lists orbs | `FolderViewIcons.tsx`, `lib/orbs-manifest.ts`, `lib/lists-icon-grid.ts`, `components/Icons/OrbPicker.tsx`, `public/orbs-removebackground/` |

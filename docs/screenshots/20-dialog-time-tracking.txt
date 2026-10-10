@@ -14,4 +14,4 @@ GLOBAL CHROME (all screens)
   Shortcuts: Cmd/Ctrl+K search · capture hotkey → Quick Add.
 
 VIEW-SPECIFIC
-Now dialog — wide header popup, not the Home Tracking desk. Caption is Recent now on Tracking and Upcoming now on Plan. Current moment (Activity, Location, Mood, Company, and when each was last true) sits on both panes. Tracking: now or a recent sequence (est. wears ~ and a dashed chip), the real day grid, Events, Thought process, and the day notes log. Plan: a short sequence, the agenda, the day plan log, and a return to Tracking to mark followed, skipped, or an unplanned insert.
+Now dialog — wide header popup, not the Home Tracking desk. Caption is Recent now on Tracking and Upcoming now on Plan. Current moment (Activity, Location, Mood, Company, and when each was last true) sits on both panes. Tracking: now or a recent sequence (est. wears ~ and a dashed chip), the real day grid, Events, Thought process, and the day summary. Plan: a short sequence, the agenda, the day plan log, and a return to Tracking to mark followed, skipped, or an unplanned insert. PNGs were not recaptured.

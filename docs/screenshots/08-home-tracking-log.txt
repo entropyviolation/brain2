@@ -19,7 +19,7 @@ GLOBAL CHROME (all screens)
   Home sub-tabs: Habits · Plan · To Do · Goals · Tracking.
 
 VIEW-SPECIFIC
-Tracking log hides the pen desk. The fascia keys are Time Grid · Activity Log · Day Log · Tracking log, with the settings gear at the end of that row. Day notes stay under the log.
+Tracking log hides the pen desk. The fascia keys are Time Grid · Activity Log · Day Log · Tracking log, with the settings gear at the end of that row. Day summary stays under the log.
 
 Add a line. Mode keys on one row: Event · Switch · Intake · Spent · Note · Thought process. The clock stays visible. Estimated and Unknown are mutually exclusive checkboxes. Add is the raised key at the end of the field row.
 

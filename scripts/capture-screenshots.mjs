@@ -404,7 +404,7 @@ async function captureOperations(page) {
 
 async function captureDocs(page) {
   await clickTopTab(page, "Docs")
-  await page.getByRole("heading", { name: "Brainclip Docs — Document Editor" }).waitFor({ timeout: 30_000 })
+  await page.getByRole("heading", { name: /Brain2 Docs/ }).waitFor({ timeout: 30_000 })
   await page.getByRole("button", { name: /Coast weekend plan/ }).first().waitFor({ timeout: 15_000 })
   await wait(400)
   await screenshot(page, "12-docs.png")
@@ -524,13 +524,10 @@ async function captureDialogs(page) {
   if (wantShot("20-dialog-settings.png")) {
     await page.locator('[data-ui-name="App header"]').getByRole("button", { name: "Settings", exact: true }).click()
     await wait(500)
-    // The city field autofocuses and drops its suggestion list over the dialog.
-    // Scroll Window gray to the top of the dialog body so warmth and Bouba/Kiki
-    // sit in the frame, and the city list is scrolled out.
-    await page.getByRole("heading", { name: "Window gray" }).evaluate((el) => {
-      el.scrollIntoView({ block: "start" })
-    })
+    // Grouped index: open Appearance → Window gray so the bay (not the essay) is the frame.
+    await page.getByRole("button", { name: "Window gray", exact: true }).click()
     await wait(400)
+    await page.getByRole("heading", { name: "Window gray" }).waitFor({ timeout: 10_000 })
     await screenshot(page, "20-dialog-settings.png")
     await page.keyboard.press("Escape")
     await wait(300)

@@ -199,7 +199,7 @@ table uses.
 | `21-item-detail-analysis.png` | 2026-10-09 | fresh | Item detail → Analysis |
 | `21-item-detail-body.png` | 2026-10-09 | fresh | Item detail → Body |
 | `21-item-detail-dependencies.png` | 2026-10-09 | fresh | Item detail → Dependencies |
-| `21-item-detail-popup.png` | 2026-10-09 | fresh | Item detail → Details |
+| `21-item-detail-popup.png` | 2026-10-10 | fresh | Item detail → Details. Save lamp beside Save Changes (Saved / Unsaved changes). |
 | `21-item-detail-scheduling.png` | 2026-10-09 | fresh | Item detail → Scheduling |
 | `21-item-detail-subtasks.png` | 2026-10-09 | fresh | Item detail → Subtasks |
 | `21-item-detail-time.png` | 2026-10-09 | fresh | Item detail → Time |
@@ -258,7 +258,7 @@ Rendered by `app/page.tsx`:
 | `08-home-tracking-week.png` | Tracking → Time Grid, week span |
 | `08-home-tracking-activity.png` | Tracking → Activity Log (Log activity with search-or-create pen, gaps, Done this day) |
 | `08-home-tracking-block.png` | Block editor with **Also happening** — what the other scopes say about the same minutes, the usual-pairing suggestion, one-click attach, and "Make it always" |
-| `08-home-tracking-daylog.png` | Tracking → Day Log (Day \| Week plan vs painted Tracking time; day notes under the agenda) |
+| `08-home-tracking-daylog.png` | Tracking → Day Log (Day \| Week plan vs painted Tracking time; day summary under the agenda; week nests day summaries) |
 
 Also visible on Home shots: `NeedsAttention`, review banner, points stats, today's progress.
 
@@ -388,7 +388,7 @@ Tracking and Habits; Screen Time still depends on a local ActivityWatch watcher.
 | `20-dialog-time-tracking.png` | Header Now dialog |
 | `20-dialog-metrics.png` | Now → Current moment → Metrics |
 | `20-dialog-completion.png` | Completion dialog (Undo reopens the task so the run can continue) |
-| `21-item-detail-popup.png` | Item detail → Details |
+| `21-item-detail-popup.png` | Item detail → Details (save lamp beside Save Changes) |
 | `21-item-detail-scheduling.png` | Item detail → Scheduling |
 | `21-item-detail-dependencies.png` | Item detail → Dependencies |
 | `21-item-detail-subtasks.png` | Item detail → Subtasks |
