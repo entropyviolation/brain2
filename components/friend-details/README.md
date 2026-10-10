@@ -12,7 +12,7 @@ friend-details/
   FriendDetailsReadouts.tsx                bond tubes, points gem, streak
   FriendDetailsVoice.tsx                   tone dial, effect swatches, whim windows
   FriendDetailsEqualizer.tsx               silver-cap faders, phosphor curve, beads, presets
-  FriendMissionDetail.tsx                  mission card over the instrument
+  FriendMissionDetail.tsx                  mission card over the instrument; item detail loads when the task opens
   FriendDetailsJournal.tsx                 playlist rows, opens the card
   FriendDetailsKeepsakes.tsx               cameo badges counted from the log
   FriendSpeechBubble.tsx                   shared with the header nest
@@ -23,12 +23,14 @@ friend-details/
 
 Pure counts live in `lib/friend-stats.ts`. Smaller-task writes shared with the mission sheet live in `lib/friend-mission-steps.ts`.
 
+The mission card loads the item detail popup when its task is opened. The header mission sheet (`components/friend-mission-sheet.tsx`) loads when the bubble opens a mission, then stays available. The friend jewel itself stays eager. A refresh should not parse those modules until they are opened.
+
 ## What you see
 
 - **Portrait.** Lace frames every friend. Plain and Bounce use an arch, Heart a heart, Stamp an oval, Whisper a round medallion, Sparkle a chrome tribal window. Jewel-case nubs sit on the glass. Sparkle washes iridescent. The bond halo brightens with each level. Thin green leaders read met date and times worn. Opening the page plays the same ~560ms CRT power-on, skipped when reduced motion is on.
 - **Bond.** Lifetime friend points (finished missions) plus times worn. 20 points per level. Twenty tubes light one per point inside the level. Crossing a level flashes the name plate. A line under the panel names the next window.
 - **Chat.** A round silver key under the portrait. A short bloom plays, then the preview bubble. Nothing is logged. With no preview, the well says “tap me ✦”. The header chat button is the one that logs an offer.
-- **Today’s mission.** A dark strip. The title is a play row and opens the mission card. The countdown is red 7-segment digits. **Accept** and **I did it** sit on the strip. Finishing sends a few gems toward the points numeral. The card still walks through a smaller task, the first step, and a reason, and opens the item on top.
+- **Today’s mission.** A dark strip. The title is a play row and opens the mission card. The countdown is red 7-segment digits. **Accept** and **I did it** sit on the strip. Finishing sends a few gems toward the points numeral. The card still walks through a smaller task, the first step, and a reason. Opening the task loads item detail on top; that module stays out of the first parse.
 - **A click.** Tone is a four-detent dial. Bubble effects are small swatches. Whims sit in a two-column grid. Hovering or choosing one previews the line in the portrait bubble.
 - **On their own.** Cadence and pushiness are recessed, with an unlit **saved** lamp. They are stored and do not change a click. **Celebrate** may glow: finishing already adds the extra warm line.
 - **Tabs.** Today holds the newest journal rows. Personality holds voice and the equalizer. Keepsakes and Journal are their own tabs. The choice is stored per friend. Today is the default.

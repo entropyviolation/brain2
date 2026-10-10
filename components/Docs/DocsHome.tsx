@@ -6,7 +6,8 @@
 "use client"
 
 import { useRef } from "react"
-import { FileText, FileUp, Search, X } from "lucide-react"
+import { FileUp, Search, X } from "lucide-react"
+import { orbFor } from "@/components/Icons"
 import { documentPreviewText, htmlToPlainText } from "@/lib/doc-html"
 import { docsHomeScrollSlot } from "@/lib/app-navigation"
 import { usePersistedScroll } from "@/lib/use-persisted-scroll"
@@ -72,18 +73,13 @@ export function DocsHome({
         <div className="docs-home-start-head">
           <h3>Start a new document</h3>
         </div>
-        <div className="docs-home-templates">
-          <button type="button" className="docs-home-blank" onClick={onCreate}>
-            <span className="docs-home-blank-plus" aria-hidden>
-              +
-            </span>
-            <span className="docs-home-card-label">Blank document</span>
+        <div className="docs-home-templates docs-home-keys" role="group" aria-label="New document">
+          <button type="button" className="docs-milled-key" onClick={onCreate}>
+            Blank
           </button>
-          <button type="button" className="docs-home-blank docs-home-upload-card" onClick={onUpload}>
-            <span className="docs-home-blank-plus" aria-hidden>
-              <FileUp className="h-8 w-8" />
-            </span>
-            <span className="docs-home-card-label">Upload PDF</span>
+          <button type="button" className="docs-milled-key" onClick={onUpload}>
+            <FileUp className="h-3.5 w-3.5" aria-hidden />
+            Upload PDF
           </button>
         </div>
       </div>
@@ -136,7 +132,15 @@ export function DocsHome({
                       />
                     </div>
                     <div className="docs-home-card-meta">
-                      <FileText className="h-3.5 w-3.5 docs-home-card-icon" aria-hidden />
+                      <img
+                        src={orbFor(d.id)}
+                        alt=""
+                        className="docs-home-card-orb"
+                        width={18}
+                        height={18}
+                        loading="lazy"
+                        decoding="async"
+                      />
                       <div className="docs-home-card-text">
                         <span className="docs-home-card-title">{d.description || "Untitled"}</span>
                         <span className="docs-home-card-sub">

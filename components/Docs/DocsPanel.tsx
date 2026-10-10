@@ -1,5 +1,5 @@
 /**
- * components/Docs/DocsPanel.tsx — Top-level Docs tab (Brainclip document editor)
+ * components/Docs/DocsPanel.tsx — Top-level Docs tab (Brain2 document editor)
  *
  * Windows 95–skinned document workspace: folder sidebar, Google Docs-style
  * folder homepage, and a single-pane WYSIWYG editor. Document HTML is stored
@@ -9,6 +9,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { ArrowLeft, FileText, FileUp, Folder, Plus, Trash2, Download } from "lucide-react"
+import { orbFor } from "@/components/Icons"
 import { useTaskStore } from "@/lib/task-store"
 import { APP_NAV_KEYS, writeStoredTab, writeStoredId, readStoredId, DOCS_SIDEBAR_SCROLL_SLOT } from "@/lib/app-navigation"
 import { subscribeNavRestore } from "@/lib/screen-location"
@@ -310,7 +311,7 @@ export function DocsPanel() {
         <div className="docs-title-bar">
           <div className="docs-title-bar-text">
             <FileText className="docs-title-icon" aria-hidden />
-            <h2>Brainclip Docs — Document Editor</h2>
+            <h2>Brain2 Docs</h2>
           </div>
           <div className="docs-title-bar-controls" aria-hidden="true">
             <span className="docs-title-btn">_</span>
@@ -424,7 +425,15 @@ export function DocsPanel() {
                         setSelectedId(d.id)
                       }}
                     >
-                      <FileText className="h-3.5 w-3.5" aria-hidden />
+                      <img
+                        src={orbFor(d.id)}
+                        alt=""
+                        className="docs-doc-orb"
+                        width={14}
+                        height={14}
+                        loading="lazy"
+                        decoding="async"
+                      />
                       <span className="truncate">{itemTitleOrUntitled(d)}</span>
                       <span className="docs-doc-meta">{documentStatus(d)}</span>
                     </button>

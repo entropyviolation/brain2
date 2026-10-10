@@ -34,7 +34,8 @@ Interiors: `DocumentEditor` and `LinkDialog`.
 
 | File | Purpose |
 |------|---------|
-| `DocsPanel.tsx` | Tab orchestrator: folder sidebar, document list, title/folder fields, auto-save, archive/delete. `data-ui-name="Docs"` — this tab is **user notes**, not the repo manual Help/Inspect would load. |
+| `DocsPanel.tsx` | Tab orchestrator: folder sidebar, document list, title/folder fields, auto-save, archive/delete. Caption **Brain2 Docs**. Recent rows show orb/thumbnail identity (`orbFor` / `.docs-doc-orb`). `data-ui-name="Docs"` — this tab is **user notes**, not the repo manual Help/Inspect would load. |
+| `DocsHome.tsx` | Empty / home face: **Blank** and **Upload** as milled keys (`.docs-milled-key`). |
 | `DocumentEditor.tsx` | contenteditable surface + formatting toolbar (fonts, sizes, lists, images, PDF ingest, links) |
 | `LinkDialog.tsx` | Ctrl/Cmd+K hyperlink dialog (optional display text + URL) |
 | `doc-actions.ts` | Create / rename / folder / font / body / status / delete helpers over `note` tasks |

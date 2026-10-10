@@ -5,13 +5,16 @@ Owner: **Worker A**.
 
 ## `JustStartMode`
 
-A distraction-free, full-screen overlay (`data-ui-name="Just Start"`, z-[100]; Names plate still paints above it) for **one** stalled task. It shows only:
+A distraction-free, full-screen overlay (`data-ui-name="Just Start"`,
+`.just-start` / `just-start.css`, z-[100]; Names plate still paints above it)
+for **one** stalled task. The dark focus room keeps one mill cue (pixel eyebrow
++ phosphor Done key). Step and timer are separate instruments. It shows:
 
 - the task's **single smallest next molecular step** (`nextMolecularStep` from
   `lib/molecular.ts`) and that step's self-contained `context`,
 - a **2-minute countdown** (the classic ADHD "you only have to start" trick),
   with pause / resume / reset,
-- a **"Done with this step"** button that marks the surfaced subtask complete
+- a phosphor **"Done"** key that marks the surfaced subtask complete
   (via `useTaskStore.updateTask`) and advances to the next step.
 
 When every step is complete (or there are none) it shows a closing state.

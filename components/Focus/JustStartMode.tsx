@@ -3,9 +3,8 @@
  *
  * An anti-paralysis focus mode for one stalled task (Brain2 #59/#128). It strips
  * the screen down to a single thing: the task's *smallest next molecular step*
- * (see lib/molecular.ts) plus a 2-minute countdown and one button — "Done with
- * this step". The 2-minute timer is the classic ADHD task-initiation trick: you
- * only have to start, and starting is usually enough.
+ * (see lib/molecular.ts) plus a 2-minute countdown and one phosphor Done key.
+ * The dark room keeps one mill cue so it still feels like Brain2.
  *
  * Default export: `JustStartMode({ taskId, onClose })`. Reads + writes the task
  * via useTaskStore (marks the surfaced subtask complete, then advances to the
@@ -22,6 +21,7 @@ import { Check, X, Play, Pause, RotateCcw, Sparkles } from "lucide-react"
 import { useTaskStore } from "@/lib/task-store"
 import { completeSubtask, nextMolecularStep, subtaskProgress } from "@/lib/molecular"
 import { itemTitle } from "@/lib/item-utils"
+import "./just-start.css"
 
 const FOCUS_SECONDS = 120
 
@@ -42,7 +42,6 @@ export default function JustStartMode({ taskId, onClose }: { taskId: string; onC
   const [secondsLeft, setSecondsLeft] = useState(FOCUS_SECONDS)
   const [running, setRunning] = useState(true)
 
-  // Reset the timer whenever we move to a new step.
   useEffect(() => {
     setSecondsLeft(FOCUS_SECONDS)
     setRunning(true)
@@ -54,7 +53,6 @@ export default function JustStartMode({ taskId, onClose }: { taskId: string; onC
     return () => clearInterval(id)
   }, [running, secondsLeft])
 
-  // Close on Escape.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose()
@@ -72,54 +70,47 @@ export default function JustStartMode({ taskId, onClose }: { taskId: string; onC
   const pct = Math.round(((FOCUS_SECONDS - secondsLeft) / FOCUS_SECONDS) * 100)
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-neutral-950 text-neutral-50 p-6" data-ui-name="Just Start" data-ui-docs="components/Focus/README.md">
+    <div className="just-start" data-ui-name="Just Start" data-ui-docs="components/Focus/README.md">
       <Button
         variant="ghost"
         size="icon"
         onClick={onClose}
-        className="absolute top-5 right-5 text-neutral-400 hover:text-neutral-50 hover:bg-neutral-800"
+        className="just-start-exit"
         aria-label="Exit focus mode"
       >
         <X className="h-5 w-5" />
       </Button>
 
-      <div className="w-full max-w-xl text-center space-y-10">
+      <div className="just-start-stage">
         {task ? (
           step ? (
             <>
-              <div className="space-y-2">
-                <p className="text-xs uppercase tracking-[0.3em] text-neutral-500">Just start — one step</p>
-                <p className="text-sm text-neutral-400 truncate">{itemTitle(task)}</p>
+              <div>
+                <p className="just-start-eyebrow">Just start — one step</p>
+                <p className="just-start-task">{itemTitle(task)}</p>
               </div>
 
-              <div className="space-y-4">
-                <h1 className="text-3xl md:text-4xl font-semibold leading-snug">{step.description}</h1>
-                {step.context && (
-                  <p className="text-base text-neutral-400 max-w-prose mx-auto whitespace-pre-wrap">{step.context}</p>
-                )}
-                {step.isMolecular && (
-                  <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-400">
-                    <Sparkles className="h-3.5 w-3.5" /> atomic step
+              <div className="just-start-step">
+                <h1>{step.description}</h1>
+                {step.context ? <p className="just-start-step-context">{step.context}</p> : null}
+                {step.isMolecular ? (
+                  <span className="just-start-atomic">
+                    <Sparkles className="h-3.5 w-3.5" aria-hidden /> atomic step
                   </span>
-                )}
+                ) : null}
               </div>
 
-              <div className="space-y-3">
-                <div className={`text-6xl font-mono tabular-nums ${timeUp ? "text-emerald-400" : ""}`}>
-                  {formatClock(secondsLeft)}
+              <div className="just-start-timer">
+                <div className={timeUp ? "just-start-clock is-up" : "just-start-clock"}>{formatClock(secondsLeft)}</div>
+                <div className={timeUp ? "just-start-meter is-up" : "just-start-meter"} aria-hidden>
+                  <span style={{ width: `${pct}%` }} />
                 </div>
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-800">
-                  <div
-                    className={`h-full rounded-full transition-all duration-1000 ${timeUp ? "bg-emerald-500" : "bg-neutral-300"}`}
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-                <p className="text-sm text-neutral-500">
+                <p className="just-start-timer-hint">
                   {timeUp ? "Time's up — but keep going if you're in flow." : "Just two minutes. You only have to start."}
                 </p>
               </div>
 
-              <div className="flex items-center justify-center gap-3">
+              <div className="just-start-controls">
                 <Button
                   variant="outline"
                   size="icon"
@@ -141,43 +132,43 @@ export default function JustStartMode({ taskId, onClose }: { taskId: string; onC
                 >
                   <RotateCcw className="h-4 w-4" />
                 </Button>
-                <Button
-                  size="lg"
-                  onClick={handleDoneWithStep}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white"
-                >
-                  <Check className="h-5 w-5 mr-2" /> Done with this step
+                <Button type="button" size="lg" onClick={handleDoneWithStep} className="just-start-done">
+                  <Check className="h-5 w-5 mr-2" aria-hidden /> Done
                 </Button>
               </div>
 
-              {progress.total > 0 && (
-                <p className="text-xs text-neutral-600">
+              {progress.total > 0 ? (
+                <p className="just-start-progress">
                   {progress.completed} of {progress.total} steps done
                 </p>
-              )}
+              ) : null}
             </>
           ) : (
-            <div className="space-y-6">
-              <Sparkles className="h-10 w-10 mx-auto text-emerald-400" />
-              <h1 className="text-3xl font-semibold">
+            <div className="just-start-step">
+              <Sparkles className="h-10 w-10 mx-auto text-[var(--js-crt)]" aria-hidden />
+              <h1 style={{ marginTop: "1rem" }}>
                 {progress.total > 0 ? "Every step is done." : "No steps to start yet."}
               </h1>
-              <p className="text-neutral-400">
+              <p className="just-start-step-context">
                 {progress.total > 0
                   ? "Nice work — you cleared this task's molecular steps."
                   : "Break this task into steps first, then come back to just start."}
               </p>
-              <Button size="lg" onClick={onClose} className="bg-neutral-100 text-neutral-900 hover:bg-white">
-                Done
-              </Button>
+              <div className="just-start-controls" style={{ marginTop: "1.25rem" }}>
+                <Button type="button" size="lg" onClick={onClose} className="just-start-done">
+                  Done
+                </Button>
+              </div>
             </div>
           )
         ) : (
-          <div className="space-y-6">
-            <h1 className="text-2xl font-semibold">Task not found</h1>
-            <Button size="lg" onClick={onClose} variant="outline" className="border-neutral-700 bg-transparent">
-              Close
-            </Button>
+          <div className="just-start-step">
+            <h1>Task not found</h1>
+            <div className="just-start-controls" style={{ marginTop: "1.25rem" }}>
+              <Button size="lg" onClick={onClose} variant="outline" className="border-neutral-700 bg-transparent">
+                Close
+              </Button>
+            </div>
           </div>
         )}
       </div>

@@ -3,14 +3,10 @@
  */
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { isOperation } from "@/lib/operations"
-import {
-  startWorkingOnOperation,
-  stopWorkingOnOperation,
-} from "@/lib/operation-work-session"
+import { applyLinkedEffects } from "@/lib/commit-item-edit"
+import { startWorkingOnOperation } from "@/lib/operation-work-session"
 import { useWorkSessionStore } from "@/lib/work-session-store"
 import { useSleepStore } from "@/lib/sleep-store"
-import { syncSleepNight } from "@/lib/sleep-sync"
-import { syncTrackedHabits } from "@/lib/habit-tracking-sync"
 import { PEN_PALETTE, useTimeTrackingStore, type TrackPen } from "@/lib/time-tracking-store"
 import { useTaskStore } from "@/lib/task-store"
 import { resolveName, splitNameAndRest, type Named } from "./name-resolve"
@@ -110,7 +106,7 @@ function applyResolvedPen(
     } else {
       switchScopePen(date, "activity", nowMin, penId)
     }
-    syncTrackedHabits()
+    applyLinkedEffects({ kind: "habit" })
     const when = window
       ? `${formatClock(window.startMin)}–${formatClock(window.previousDay ? nowMin : window.endMin)}`
       : `from ${formatClock(nowMin)}`
@@ -123,7 +119,7 @@ function applyResolvedPen(
   }
 
   switchScopePen(date, scopeId, nowMin, penId)
-  syncTrackedHabits()
+  applyLinkedEffects({ kind: "habit" })
   const label = kind === "mood" ? "Mood" : kind === "start" ? "Activity" : "Location"
   return {
     status: "ok",
@@ -176,7 +172,7 @@ export function applySleep(payload: string, now = new Date()): ApplyResult {
   const sleep = useSleepStore.getState()
   sleep.setBedtime(date, range.sleptMin, "estimated")
   sleep.setWakeTime(date, range.wokeMin, "estimated")
-  syncSleepNight(date, now)
+  applyLinkedEffects({ kind: "night", date, now })
   return {
     status: "ok",
     kind: "sleep",
@@ -225,7 +221,7 @@ export function applyStart(payload: string, now = new Date()): ApplyResult {
 export function applyStop(now = new Date()): ApplyResult {
   const current = useWorkSessionStore.getState().session
   if (current) {
-    stopWorkingOnOperation(now)
+    applyLinkedEffects({ kind: "session", now })
     return {
       status: "ok",
       kind: "stop",

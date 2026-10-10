@@ -1,0 +1,183 @@
+/**
+ * components/Focus/just-start.css — Just Start focus room
+ *
+ * Dark focus shell with one mill cue: pixel eyebrow + phosphor Done key.
+ * Step and timer stay separate instruments so they do not blur together.
+ */
+
+.just-start {
+  --js-crt: #7dffc4;
+  --js-mill: #c0c0c0;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.08), transparent 45%),
+    #0a0c0e;
+  color: #f5f5f5;
+  font-family: var(--font-w95fa, "W95FA", ui-monospace, monospace);
+}
+
+.just-start-exit {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  color: #9ca3af;
+}
+
+.just-start-stage {
+  width: 100%;
+  max-width: 36rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.just-start-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--js-mill);
+  text-shadow: 0 0 6px rgba(125, 255, 196, 0.35);
+}
+
+.just-start-task {
+  margin-top: 0.35rem;
+  font-size: 13px;
+  color: #9ca3af;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.just-start-step {
+  padding: 1rem 1.1rem 1.15rem;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow:
+    inset 0 0 0 1px rgba(192, 192, 192, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.just-start-step h1 {
+  margin: 0;
+  font-size: clamp(1.6rem, 3vw, 2.15rem);
+  font-weight: 700;
+  line-height: 1.25;
+  color: #f8fafc;
+}
+
+.just-start-step-context {
+  margin: 0.75rem auto 0;
+  max-width: 34rem;
+  font-size: 0.95rem;
+  color: #a3a3a3;
+  white-space: pre-wrap;
+}
+
+.just-start-atomic {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.75rem;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--js-crt);
+}
+
+.just-start-timer {
+  padding: 0.85rem 1rem 1rem;
+  border-radius: 3px;
+  background: #040a08;
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.75),
+    0 0 0 1px #1a1e1c;
+}
+
+.just-start-clock {
+  font-size: 3.5rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  color: #e5e5e5;
+  line-height: 1;
+}
+
+.just-start-clock.is-up {
+  color: var(--js-crt);
+  text-shadow: 0 0 8px var(--js-crt);
+}
+
+.just-start-meter {
+  margin-top: 0.75rem;
+  height: 6px;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 1px;
+  background: #1a1e1c;
+}
+
+.just-start-meter > span {
+  display: block;
+  height: 100%;
+  background: #d4d4d4;
+  transition: width 1s linear;
+}
+
+.just-start-meter.is-up > span {
+  background: var(--js-crt);
+  box-shadow: 0 0 6px var(--js-crt);
+}
+
+.just-start-timer-hint {
+  margin: 0.65rem 0 0;
+  font-size: 12px;
+  color: #737373;
+}
+
+.just-start-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.just-start-done {
+  min-height: 2.75rem;
+  padding: 0.55rem 1.25rem !important;
+  border: none !important;
+  border-radius: 2px !important;
+  background:
+    radial-gradient(ellipse at 40% 28%, #1a2a22 0%, #040a08 70%) !important;
+  color: var(--js-crt) !important;
+  font-family: inherit !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  text-shadow: 0 0 6px var(--js-crt) !important;
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.75),
+    inset 0 -1px 0 rgba(125, 255, 196, 0.18),
+    0 0 0 1px #1a1e1c,
+    0 0 10px rgba(125, 255, 196, 0.22) !important;
+}
+
+.just-start-done:hover {
+  filter: brightness(1.08);
+}
+
+.just-start-progress {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: #525252;
+}
