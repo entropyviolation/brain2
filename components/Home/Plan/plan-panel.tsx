@@ -154,7 +154,8 @@ export function PlanPanel({
       className="plan95"
       data-plan-dark={planDark ? "true" : "false"}
       data-ui-name="Plan"
-      data-ui-help="Calendar window: Season, Month, Week, and Day plus written plan logs."
+      data-ui-help="Prospective calendar: Season, Month, Week, and Day plus written intentions — not what was lived."
+      data-temporal="prospective"
       data-ui-docs="components/Home/Plan/README.md"
     >
       <div className="plan-window">

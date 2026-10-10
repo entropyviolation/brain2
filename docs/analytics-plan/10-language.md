@@ -135,7 +135,7 @@ Each field is its own corpus. The view is a picker of those corpora, not one ble
 
 | Corpus | Where it lives | Unit | First picture |
 | --- | --- | --- | --- |
-| Day notes | `brain2-tracking-day-notes` | One append entry’s `text`, with `createdAt` against the day key | Volume, and the delay between writing stamp and day key. Then the prose tools, including a cloud. |
+| Day summary | `brain2-tracking-day-notes` | The day’s prose, plus `week:` / `month:` / `quarter:` / `year:` texts | The paragraph. Old append logs are already flattened, so there is no writing-stamp delay to chart. |
 | Thought process | Activity instant, `eventKind: "thought-process"` | The title and the note | Clock order. A strand through a minute (what you are doing, what you expect next, how it lands). A cloud is not the first picture. Sentiment and neighbors may sit beside the list, labeled. |
 | Review summary | `PeriodReview.summary` | One paragraph for that period | The paragraph, then the prose tools. |
 | Plan reflection | `PeriodReview.planReflection` | One paragraph | Own corpus. Not the plan log. |
@@ -148,8 +148,11 @@ Each field is its own corpus. The view is a picker of those corpora, not one ble
 | Must not / excited | `morning.mustNotDo`, `morning.excitedAbout` | One field each | Short field. Empty stays empty. |
 | Wake reminder, what matters, time note | `wakeReminder`, `tomorrowMatters`, `timeReflection` | One short field each | Short field. Empty stays empty. |
 | Start priorities and must-do | `start.priorities`, `start.mustDo`, `start.undoneNotes` | Planning prose for the coming period | Not the plan log. |
+| Habit prioritize-why | `WeeklyTask.priorityEvents[].reasoning` | Optional why on a manual prioritize press. Ritual and permanent presses have no reasoning. | Dated lines, oldest first. Further reading is intention, unbuilt. |
 
 `bestDayWhy` (`PeriodReview.morning.bestDayWhy`) is one prose field, not a list. It belongs on this view as its own corpus (why a best day would be a best day), not inside gratitude.
+
+Habit prioritize-why is its own corpus on this view: the optional `reasoning` on a manual `priorityEvents` row. Ritual and permanent presses are not sentences. Classical dated lines come first. Intention, not shipped: these why lines are meant later as a language corpus for natural-language processing and machine-learning experiments, and for knowledge-graph traversals that join prioritize events to habits and outcomes. No model or graph reading ships with this change. Grades and priority weight do not read the prose.
 
 ## Implementation notes
 

@@ -29,7 +29,10 @@ The work orders stay the work orders. Do not re-sequence them from this brief.
 claim about a life, never the life. Claims leave things out. They carry a date.
 They sit at an order: what happened, what was written down, what was computed,
 what was guessed. Description comes before inference. A plan is drawn beside
-what happened and is never merged into it. The next period starts where the
+what happened and is never merged into it — prospective intention beside
+retrospective record
+([`TEMPORAL_POLARITY.md`](TEMPORAL_POLARITY.md); definition in
+[`CANONICAL_FIELDS.md`](CANONICAL_FIELDS.md)). The next period starts where the
 last one stopped.
 
 Without this, the loop steers on a lie, and Analytics writes “you typically”

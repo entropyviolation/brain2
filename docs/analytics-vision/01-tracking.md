@@ -204,13 +204,11 @@ Already-defined summaries, which analytics should reuse rather than reinvent:
 - Water plate: distinct vibe phrases with their dates, plus means of cast, sociability, initiative.
 - Marks plate: means of the six marks, tone counts that actually occurred, and grasping split by whether `about` was filled.
 
-### 2.7 Day notes and gap notes
+### 2.7 Day summary and gap notes
 
-**Day notes** (`brain2-tracking-day-notes`, mirrored on the timegrid blob). Grain: one local date → one append log.
+**Day summary** (`brain2-tracking-day-notes`, mirrored on the timegrid blob). Grain: one local date → one prose string, retrospective *prose* of what actually happened (the polarity umbrella is wider — painted time and task actuals are retrospective too; see [`TEMPORAL_POLARITY.md`](../TEMPORAL_POLARITY.md)). Week, month, season (`quarter:`), and year summaries share that map. They are not plan text and not the painted blocks.
 
-Each `AppendLogEntry`: `{ id, createdAt: ISO string | null, text, stampSuffix? }`. Submit stamps the **writing** time. Entries are immutable. Legacy plaintext becomes one entry with `id: "legacy"` and `createdAt: null`. A draft can sit beside entries and is not a submitted note. List / Bulk / Latest is a view, not data.
-
-The day’s key is the Tracking day the person was looking at. `createdAt` is when they pressed submit, which may be another day. Analytics must not treat the stamp as the time the day happened.
+This used to be an append log (`AppendLogEntry` with `createdAt`). Those envelopes flatten to joined prose. There is no per-entry writing stamp anymore, so a chart of “delay between submit and the day key” no longer has a stamp to read. `day:` from text appends a paragraph onto the day’s summary.
 
 **Untracked notes** (`untrackedNotes`). Grain: one gap. Key `date|scopeId|startMin|endMin`, value a string. Empty text drops the key. The gap is not a `TimeEntry`. If the person later paints that range, the key no longer matches a live gap; the note can dangle.
 

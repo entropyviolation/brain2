@@ -343,6 +343,35 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
   flex: 1;
 }
 
+/* Week / month / season inherit Day's rail + period-plate voice. */
+.plan95 .plan-split:not(.plan-split-day) .plan-rail {
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
+    linear-gradient(180deg, var(--chrome-mill-hi, #d8d8d8), var(--p-face, #c0c0c0) 48%, var(--chrome-inset, #a0a0a0));
+  box-shadow:
+    0 0 0 1px var(--chrome-lip, #9a9ea2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 2px 3px rgba(0, 0, 0, 0.08);
+}
+
+.plan95 .plan-split:not(.plan-split-day) .plan-desktop {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Primary write (schedule / placing today) leads; log / sunrise stay secondary. */
+.plan95 .plan-group-schedule {
+  position: relative;
+  z-index: 1;
+}
+
+.plan95 .plan-desktop-day > .plan-group:not(.plan-group-schedule) {
+  opacity: 0.88;
+}
+
 /*
  * Day split: agenda column stays viewport-tall while a long rail scrolls.
  * Fieldset flex-grow is unreliable, so `.plan-schedule-well` (a div) takes

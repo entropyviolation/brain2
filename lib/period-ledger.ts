@@ -1,13 +1,14 @@
 /**
  * lib/period-ledger.ts — The three lists of one period
  *
- * To do is what is scheduled for the period now (prospective). Once the period
- * has ended, those still-incomplete rows move to Undone and are not repeated
- * on To do.
- * Done is what was completed during the period.
+ * To do is what is scheduled for the period now (prospective — narrow: open
+ * scheduled work, not every intention in the house). Once the period has ended,
+ * those still-incomplete rows move to Undone and are not repeated on To do.
+ * Done is what was completed during the period (retrospective).
  * Undone, for a period that has already ended, is what was assigned then and
  * was still incomplete when the next period started. Finishing it later does
  * not remove it. Home → To Do uses these same sets.
+ * Polarity catalog: docs/TEMPORAL_POLARITY.md.
  */
 import type { Folder, SchedulePlacementPeriod, Task } from "@/lib/types"
 import {

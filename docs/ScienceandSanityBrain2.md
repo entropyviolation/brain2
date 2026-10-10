@@ -58,7 +58,7 @@ B. Function: what the rooms do
     ◦ In Brain2: capture is separated from classification, so nothing has to be judged on reflex. The Inbox is the unclarified stage (stage === "inbox"). A text that names no list "parks" in Phone Notes "rather than answering with a picker of near-misses." Day notes wait "while you figure out where they belong."
 16. Plan and outcome are never identified.
     ◦ The book: non-identity applies to our own statements too. A plan is a higher-order abstraction and is "static while the world is dynamic" (p. 294).
-    ◦ In Brain2: the Day Log draws the plan as ghosts and tracked time as solid color, side by side, and never merges them. The usually ~N glance "never rewrites estimatedDuration." The plan stays a plan, and reality is recorded next to it.
+    ◦ In Brain2: the Day Log draws the plan as ghosts and tracked time as solid color, side by side, and never merges them. The usually ~N glance "never rewrites estimatedDuration." The plan stays a plan, and reality is recorded next to it. That split is temporal polarity — prospective beside retrospective — in [`TEMPORAL_POLARITY.md`](TEMPORAL_POLARITY.md) (not a fifth order of abstraction).
 C. Process: the loops
 17. Consciousness of abstracting.
     ◦ The book: "Animals... abstract; but... they do not know that they abstract" (p. xvi). Consciousness of abstracting is "remembering that we abstract in different orders with omission of characteristics" (p. 417).

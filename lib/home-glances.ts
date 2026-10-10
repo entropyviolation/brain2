@@ -4,6 +4,9 @@
  * Night well, Harvest leftover, Inbox mill, Already flowing, and Plan and
  * lived. Pure. The tiles only supply the night, the point totals, the inbox
  * titles, the finished counts, and the planned and painted minutes.
+ * Plan and lived compares prospective forward minutes with retrospective waking
+ * paint — a comparison face, not a third polarity. Catalog:
+ * docs/TEMPORAL_POLARITY.md.
  */
 
 import { dateKeyOf, formatLocalDateKey } from "@/lib/date-utils"

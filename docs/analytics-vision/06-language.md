@@ -20,6 +20,7 @@ These fields exist. The tools below read them. They do not invent a second copy.
 | Why a push left | `SchedulePlacement.missReason` | The same preset or `{ reason, note }` on the placement being left. Dismiss does not write it. |
 | Why a task was missed | `Task.missReason` | The same shape, beside `missedAt`. Not `Task.why`. |
 | Why a habit cell was missed | `TaskCompletion.missReason` | A free string (typed note, or the preset label). Grades do not read it. |
+| Why a habit was prioritized | `WeeklyTask.priorityEvents[].reasoning` | Optional free text on a manual prioritize press. Absent when the note was skipped. Ritual and permanent presses do not store it. |
 | Why an operation was missed | `OperationReview.blockedReasons` | Operation id → the same preset or `{ reason, note }`. The after-action sentences stay on `summary`, `whatWorked`, `whatFailed`, and `lessons`. |
 | Regret token | `RegretEntry.reason` | The same preset, copied onto the regret ledger when a night records a block. The free-text note stays on the review. |
 | Evening gratitude | `PeriodReview.gratitude` | A list of lines. |
@@ -163,8 +164,15 @@ The same two layers — classical counts first, further reading beside them — 
 | Must not / excited | `morning.mustNotDo`, `morning.excitedAbout` | One field each. |
 | Wake reminder, what matters, time note | `wakeReminder`, `tomorrowMatters`, `timeReflection` | One short field each. |
 | Start priorities and must-do | `start.priorities`, `start.mustDo`, `start.undoneNotes` | Planning prose for the coming period. Not the plan log. |
+| Habit prioritize-why | `WeeklyTask.priorityEvents[].reasoning` | Optional why on a manual prioritize press. One line per press that has text. Ritual and permanent presses are events with no sentence. |
 
 A neighbor search defaults to the same field: other month-plan entries, other “went well” answers, other day notes. Crossing fields is an explicit comparison, captioned with both names.
+
+**Habit prioritize-why.** Unit: one `priorityEvents` row that has `reasoning`, joined to the habit, the press instant (`at`), the local day (`dayKey`), and `kind` (`set` or `refreshed`). Presses with no reasoning are not sentences. Do not invent a why from the habit name, the star, or the `priorityLog` line.
+
+The classical picture is first: the dated lines, oldest first, each still tied to that press and that habit. Empty reasoning is empty.
+
+The further reading is unbuilt. Intention, not shipped: these why lines are meant later as a language corpus for natural-language processing and machine-learning experiments, and for knowledge-graph traversals that join prioritize events to habits and outcomes. No model or graph reading ships with this change. Grades and priority weight do not read the prose.
 
 ---
 

@@ -2,9 +2,9 @@
 
 What an Analytics view of **Plan** should be able to say, using the records Plan actually keeps.
 
-Plan is a calendar of intentions at several grains, plus a written log for the day, week, month, and season. It is not a record of what was lived. The hour grid can outline tracked time, and a header “followed / skipped” path can stamp a task, but those outcomes are not fields on a calendar event or a planned-action block. This document stays inside Plan’s own entities, names the formulas in plain language, and marks every place a true “what happened” number would need a later join.
+Plan is a calendar of **prospective** intentions at several grains, plus a written log for the day, week, month, and season. It is not a record of what was lived. Lived / tracked numbers are **retrospective** and need an outside join ([`TEMPORAL_POLARITY.md`](../TEMPORAL_POLARITY.md)). The hour grid can outline tracked time, and a header “followed / skipped” path can stamp a task, but those outcomes are not fields on a calendar event or a planned-action block. This document stays inside Plan’s own entities, names the formulas in plain language, and marks every place a true “what happened” number would need a later join.
 
-Four writings make up the domain:
+Four **prospective** writings make up the domain:
 
 | Writing | Store | What one row is |
 |---|---|---|

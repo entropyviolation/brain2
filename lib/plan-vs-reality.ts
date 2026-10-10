@@ -1,9 +1,11 @@
 /**
  * lib/plan-vs-reality.ts — Plan-vs-reality comparison (Brain2 #33)
  *
- * Pure helpers that compare what was *planned* for a period against what
- * actually *happened*, across three measurable dimensions, and roll the gap up
- * into a single "intention → outcome variance score" (0-100).
+ * Pure helpers that compare what was *planned* for a period (prospective)
+ * against what actually *happened* (retrospective task actuals — not Time Grid
+ * occupancy), across three measurable dimensions, and roll the gap up into a
+ * single "intention → outcome variance score" (0-100). Bridge / comparison
+ * surface — not a third polarity. Catalog: docs/TEMPORAL_POLARITY.md.
  *
  * Inputs (all derivable from existing data, no new types needed):
  *  - plan-entry log the user submitted (lib/plan-text.ts: dayPlan / weekPlan / monthPlan keys)
