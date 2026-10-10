@@ -99,7 +99,7 @@ describe("TaskDetailPopup", () => {
     expect(toggle).toBeChecked()
     await user.click(toggle)
     expect(toggle).not.toBeChecked()
-    await user.click(screen.getByRole("button", { name: /Save Changes/i }))
+    await user.click(screen.getByRole("button", { name: /^Save$/i }))
     expect(useTaskStore.getState().tasks.find((t) => t.id === "popup-task")?.scheduleable).toBe(false)
   })
 
@@ -110,23 +110,43 @@ describe("TaskDetailPopup", () => {
     const auto = screen.getByRole("switch", { name: "Auto-push" })
     expect(auto).not.toBeChecked()
     await user.click(auto)
-    await user.click(screen.getByRole("button", { name: /Save Changes/i }))
+    await user.click(screen.getByRole("button", { name: /^Save$/i }))
     const saved = useTaskStore.getState().tasks.find((t) => t.id === "popup-task")
     expect(saved?.autoPush).toBe(true)
     expect(saved?.scheduleable).toBeUndefined()
   })
 
-  it("shows Save Changes after editing description and persists to store", async () => {
+  it("shows Save after editing description and persists to store", async () => {
     const user = userEvent.setup({ delay: null })
     render(<TaskDetailPopup taskId="popup-task" open onClose={onClose} />)
+    expect(screen.getByRole("status")).toHaveTextContent("Saved")
     const nameInput = screen.getByDisplayValue("Plan sprint demo")
     fireEvent.change(nameInput, { target: { value: "Plan team demo" } })
-    await user.click(screen.getByRole("button", { name: /Save Changes/i }))
+    expect(screen.getByRole("status")).toHaveTextContent("Unsaved changes")
+    await user.click(screen.getByRole("button", { name: /^Save$/i }))
+    expect(screen.getByRole("status")).toHaveTextContent("Saved")
     expect(useTaskStore.getState().tasks[0].description).toBe("Plan team demo")
     const rows = listItemActivity("popup-task")
     expect(rows[0]?.changes.some((c) => c.field === "title" && c.to === "Plan team demo")).toBe(true)
     await user.click(screen.getByRole("tab", { name: /History/i }))
     expect(screen.getByText(/Plan team demo/)).toBeInTheDocument()
+  })
+
+  it("saves unsaved changes with Cmd+S", async () => {
+    render(<TaskDetailPopup taskId="popup-task" open onClose={onClose} />)
+    fireEvent.change(screen.getByDisplayValue("Plan sprint demo"), { target: { value: "Plan team demo" } })
+    expect(screen.getByRole("status")).toHaveTextContent("Unsaved changes")
+    const saveAs = new KeyboardEvent("keydown", { key: "s", metaKey: true, shiftKey: true, bubbles: true, cancelable: true })
+    window.dispatchEvent(saveAs)
+    expect(saveAs.defaultPrevented).toBe(false)
+    expect(useTaskStore.getState().tasks[0].description).toBe("Plan sprint demo")
+    const event = new KeyboardEvent("keydown", { key: "s", metaKey: true, bubbles: true, cancelable: true })
+    await act(async () => {
+      window.dispatchEvent(event)
+    })
+    expect(event.defaultPrevented).toBe(true)
+    expect(useTaskStore.getState().tasks[0].description).toBe("Plan team demo")
+    expect(screen.getByRole("status")).toHaveTextContent("Saved")
   })
 
   it("opens the item type editor when a type badge is double-clicked", async () => {

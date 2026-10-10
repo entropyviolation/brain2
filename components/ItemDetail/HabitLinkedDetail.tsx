@@ -3,7 +3,8 @@
  *
  * Shown in the Details main pane when the item's `sourceHabitId` attribute
  * points at a habit. Notes are the item's existing `notes` field. The
- * completion read is display-only.
+ * completion read is display-only. Tag wiring (Counts / Minutes) is the same
+ * summary as source detail — names only, no second editor.
  */
 "use client"
 
@@ -12,7 +13,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { IsolatedTextarea } from "@/components/ui/isolated-text-field"
 import { summarizeHabitCompletions } from "@/lib/habit-completion-summary"
+import { habitTagWiringSummary } from "@/lib/habit-source-square"
 import { useHabitsStore } from "@/lib/habits-store"
+import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 
 interface HabitLinkedDetailProps {
   habitId: string
@@ -34,9 +37,11 @@ export function HabitLinkedDetail({
   const weeklyHabitData = useHabitsStore((state) => state.weeklyHabitData)
   const monthlyHabitData = useHabitsStore((state) => state.monthlyHabitData)
   const quarterlyHabitData = useHabitsStore((state) => state.quarterlyHabitData)
+  const trackingTags = useTimeTrackingStore((state) => state.tags)
   const summary = habit
     ? summarizeHabitCompletions(habit, { weeklyData, weeklyHabitData, monthlyHabitData, quarterlyHabitData })
     : null
+  const wiring = habit ? habitTagWiringSummary(habit, trackingTags) : null
 
   return (
     <div className="id-habit-body">
@@ -56,6 +61,8 @@ export function HabitLinkedDetail({
               <p>
                 {summary.periodLabel}: {summary.standing}
               </p>
+              {wiring?.counts ? <p>Counts: {wiring.counts}</p> : null}
+              {wiring?.minutes ? <p>Minutes: {wiring.minutes}</p> : null}
               <p className="id-habit-recent-label">Recent completions</p>
               {summary.recent.length === 0 ? (
                 <p>No completions yet</p>

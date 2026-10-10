@@ -2,8 +2,9 @@
  * components/ItemDetail/item-detail-chrome.css — milled fascia for Item detail
  *
  * Brushed silver bays, engraved nameplates, CRT title readout, raised metal
- * keys, equal-fill detail tabs (active = CRT + round power lamp). Looks only —
- * same fields / save / complete / delete / tab meaning / persistence.
+ * keys, equal-fill detail tabs (active = CRT + round power lamp), and the
+ * save lamp (green Saved / pink Unsaved changes). Looks for the lamp live in
+ * `.id-save-flag`. Fields / save / complete / delete / tab meaning stay.
  * docs/DESIGN_STYLE.md#milled-fascia. Do not flatten velvet/orb contents.
  */
 
@@ -192,6 +193,65 @@
   padding-left: 2px;
 }
 
+/* Save lamp — always beside Save Changes / Edit. The cluster does not split. */
+.id95 .id-save-cluster,
+.id95-dialog .id-save-cluster {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+
+.id95 .id-save-flag,
+.id95-dialog .id-save-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 2px 10px 2px 8px;
+  border-radius: var(--r-2, 2px);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--id-nameplate);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  background: linear-gradient(180deg, var(--chrome-mist), #c8cccf);
+  box-shadow: var(--id-field);
+  white-space: nowrap;
+}
+
+.id95 .id-save-flag-lamp,
+.id95-dialog .id-save-flag-lamp {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 30%, var(--chrome-lip), #2a2c2e 55%, var(--chrome-frame));
+  box-shadow:
+    0 0 0 1px #1a1c1e,
+    inset 0 1px 1px rgba(255, 255, 255, 0.25);
+}
+
+.id95 .id-save-flag.is-saved .id-save-flag-lamp,
+.id95-dialog .id-save-flag.is-saved .id-save-flag-lamp {
+  background:
+    radial-gradient(circle at 35% 30%, #e8fff4, var(--id-crt) 42%, #0a3a28 78%);
+  box-shadow:
+    0 0 0 1px #1a3a2a,
+    0 0 6px rgba(125, 255, 196, 0.65);
+}
+
+.id95 .id-save-flag.is-unsaved .id-save-flag-lamp,
+.id95-dialog .id-save-flag.is-unsaved .id-save-flag-lamp {
+  background:
+    radial-gradient(circle at 35% 30%, #ead0c8, #c56e74 42%, #4c2226 78%);
+  box-shadow:
+    0 0 0 1px #3a181c,
+    0 0 6px rgba(197, 110, 116, 0.5);
+}
+
 .id95 .id-chip,
 .id95-dialog .id-chip {
   display: inline-flex;
@@ -210,6 +270,26 @@
   box-shadow:
     0 0 0 1px var(--chrome-lip),
     inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+/* Item tags: plain chip; catalog match adds a Tracking color bead. */
+.id95 .id-tag-chip,
+.id95-dialog .id-tag-chip,
+.id-tag-chip {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+}
+
+.id95 .id-tag-bead,
+.id95-dialog .id-tag-bead,
+.id-tag-bead {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  box-shadow: inset -1px -1px 2px rgba(0, 0, 0, 0.35), inset 1px 1px 1px rgba(255, 255, 255, 0.5);
 }
 
 /* ---- Raised metal keys ------------------------------------------------- */
@@ -279,9 +359,33 @@
   padding: 0;
 }
 
+.id95 .id-btn-primary,
+.id95-dialog .id-btn-primary {
+  font-weight: 700 !important;
+}
+
+.id95 .id-btn-secondary,
+.id95-dialog .id-btn-secondary {
+  opacity: 0.88;
+}
+
 .id95 .id-btn-danger,
 .id95-dialog .id-btn-danger {
   color: #800000 !important;
+}
+
+.id95 .id-btn-danger.id-btn-quiet,
+.id95-dialog .id-btn-danger.id-btn-quiet {
+  opacity: 0.72;
+  order: 20;
+}
+
+.id95 .id-view-keys [role="tab"].id-tab-secondary,
+.id95-dialog .id-view-keys [role="tab"].id-tab-secondary {
+  flex: 0 1 auto;
+  min-width: 3.5rem;
+  opacity: 0.82;
+  letter-spacing: 0.06em;
 }
 
 .id95 .id-duration,
@@ -401,6 +505,37 @@ body.win95-app .id95 .id-view-keys [role="tab"][data-state="active"],
   min-height: 0;
   flex: 1;
   padding: 0 4px 4px;
+}
+
+.id95 .id-body-mode,
+.id95-dialog .id-body-mode {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.id95 .id-body-prose,
+.id95-dialog .id-body-prose {
+  min-height: 8rem;
+  padding: 8px 10px;
+  white-space: pre-wrap;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #111;
+  background: #fff;
+  box-shadow: inset 1px 1px var(--chrome-lo), inset -1px -1px #fff;
+}
+
+.id95 .id-body-source,
+.id95-dialog .id-body-source {
+  width: 100%;
+  min-height: 12rem;
+  padding: 8px 10px;
+  font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #111;
+  background: #fff;
+  border: 0;
+  box-shadow: inset 1px 1px var(--chrome-lo), inset -1px -1px #fff;
+  resize: vertical;
 }
 
 /* ---- Content bays (Cards / section panels) — keep fields intact -------- */

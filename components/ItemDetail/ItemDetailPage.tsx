@@ -14,6 +14,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react"
 import { useItemDetailDraft } from "@/components/ItemDetail/useItemDetailDraft"
 import { TagInput } from "@/components/ItemDetail/TagInput"
+import { ItemTagChip } from "@/components/ItemDetail/ItemTagChip"
 import { LinkPicker } from "@/components/ItemDetail/LinkPicker"
 import { RelatedItemsPanel } from "@/components/ItemDetail/RelatedItemsPanel"
 import { BodyPanel } from "@/components/ItemDetail/BodyPanel"
@@ -44,7 +45,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
@@ -71,8 +71,9 @@ import {
   TimerOff,
 } from "lucide-react"
 import { ItemActivityPanel } from "@/components/ItemDetail/ItemActivityPanel"
+import { ItemSaveFlag } from "@/components/ItemDetail/ItemSaveFlag"
+import { useItemDetailSaveHotkey } from "@/components/ItemDetail/useItemDetailSaveHotkey"
 import { CycleConfirmDialog } from "@/components/ItemDetail/CycleConfirmDialog"
-import { recordItemWrite } from "@/lib/item-activity"
 import { upgradeTaskToOperation, OPERATION_TYPE_ID } from "@/components/Operations"
 import { ItemAttributesSection } from "@/components/ItemDetail/ItemAttributesSection"
 import { useItemTypeStore } from "@/lib/item-type-store"
@@ -110,6 +111,7 @@ interface EnhancedTaskDetailProps {
 }
 
 export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) {
+  const detailRef = useRef<HTMLDivElement>(null)
   const [overrideId, setOverrideId] = useState<string | null>(null)
   const [missAsk, setMissAsk] = useState(false)
   const effectiveId = overrideId ?? taskId
@@ -122,12 +124,14 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
     task,
     setTask,
     getDraft,
+    subscribeDraft,
     touchDraft,
     originalTask,
     setOriginalTask,
     allTasks,
     lists,
     updateTask,
+    commitDraft,
     addTask,
     deleteTask,
     removeFromCategory,
@@ -212,22 +216,20 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
       setTask((prev) => (prev ? { ...prev, ...patch } : prev))
       const next = getDraft()
       if (!next) return
-      recordItemWrite(originalTask ?? next, next, { tasks: allTasks, lists })
-      updateTask(next)
-      setOriginalTask(next)
+      commitDraft(next)
     },
-    [touchDraft, setTask, getDraft, originalTask, allTasks, lists, updateTask, setOriginalTask],
+    [touchDraft, setTask, getDraft, commitDraft],
   )
 
   const handleSave = useCallback(() => {
     const draft = getDraft()
     if (draft) {
-      recordItemWrite(originalTask, draft, { tasks: allTasks, lists })
-      updateTask(draft)
-      setOriginalTask(draft)
+      commitDraft(draft)
       setIsEditing(false)
     }
-  }, [getDraft, updateTask, originalTask, setOriginalTask, allTasks, lists])
+  }, [getDraft, commitDraft])
+
+  useItemDetailSaveHotkey(detailRef, handleSave, Boolean(task))
 
   const handleDelete = useCallback(() => {
     if (!task) return
@@ -242,15 +244,13 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
     if (draft) {
       const raw = actualDurationRef.current
       const actualDuration = raw ? Number.parseInt(raw) : undefined
-      const next = {
+      commitDraft({
         ...draft,
         completed: true,
         actualDuration: actualDuration,
-      }
-      recordItemWrite(originalTask ?? draft, next, { tasks: allTasks, lists })
-      updateTask(next)
+      })
     }
-  }, [getDraft, updateTask, originalTask, allTasks, lists])
+  }, [getDraft, commitDraft])
 
   const handleMissed = useCallback(() => {
     if (!task) return
@@ -424,12 +424,9 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
       if (isEditing) return
       const base = getDraft()
       if (!base) return
-      const next = { ...base, notes }
-      recordItemWrite(originalTask ?? base, next, { tasks: allTasks, lists })
-      updateTask(next)
-      setOriginalTask(next)
+      commitDraft({ ...base, notes })
     },
-    [touchDraft, setTask, isEditing, getDraft, originalTask, allTasks, lists, updateTask, setOriginalTask],
+    [touchDraft, setTask, isEditing, getDraft, commitDraft],
   )
 
   const openHabitSettings = useCallback(() => {
@@ -462,7 +459,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
 
   return (
     <>
-    <div className="id95" data-ui-name="Item detail" data-ui-docs="components/ItemDetail/README.md">
+    <div ref={detailRef} className="id95" data-ui-name="Item detail" data-ui-docs="components/ItemDetail/README.md">
       <div className="id-window">
       <div className="id-fascia">
         <div className="id-fascia-row">
@@ -488,6 +485,22 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
             </h1>
           </div>
           <div className="id-key-row">
+            <div className="id-save-cluster">
+              <ItemSaveFlag originalTask={originalTask} getDraft={getDraft} subscribeDraft={subscribeDraft} />
+              {isEditing ? (
+                <>
+                  <Button variant="outline" className="id-btn id-btn-secondary" onClick={() => setIsEditing(false)}>
+                    Cancel
+                  </Button>
+                  <Button className="id-btn id-btn-primary" onClick={handleSave} title="Cmd/Ctrl+S">
+                    <Save className="h-4 w-4" />
+                    Save
+                  </Button>
+                </>
+              ) : (
+                <Button className="id-btn id-btn-primary" onClick={() => setIsEditing(true)}>Edit</Button>
+              )}
+            </div>
             {!isClearedFromWork(task) && caps.completable && (
               <>
                 {caps.duration && (
@@ -504,29 +517,29 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
                   className="id-duration"
                 />
                 )}
-                <Button variant="outline" className="id-btn" onClick={handleComplete}>
+                <Button variant="outline" className="id-btn id-btn-primary" onClick={handleComplete}>
                   <CheckCircle className="h-4 w-4" />
                   Complete
                 </Button>
-                <Button variant="outline" className="id-btn" onClick={handleMissed} title="Too late — file as a missed opportunity">
+                <Button
+                  variant="outline"
+                  className="id-btn id-btn-secondary"
+                  onClick={handleMissed}
+                  title="Too late — file as a missed opportunity"
+                >
                   <TimerOff className="h-4 w-4" />
-                  Missed opportunity
+                  Missed
                 </Button>
               </>
             )}
-            {isEditing ? (
-              <>
-                <Button variant="outline" className="id-btn" onClick={() => setIsEditing(false)}>
-                  Cancel
-                </Button>
-                <Button className="id-btn" onClick={handleSave}>
-                  <Save className="h-4 w-4" />
-                  Save Changes
-                </Button>
-              </>
-            ) : (
-              <Button className="id-btn" onClick={() => setIsEditing(true)}>Edit</Button>
-            )}
+            <Button
+              variant="outline"
+              onClick={handleDelete}
+              className="id-btn id-btn-danger id-btn-quiet"
+            >
+              <Trash className="h-4 w-4" />
+              Delete
+            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="icon" className="id-btn id-btn-icon" aria-label="More actions">
@@ -540,14 +553,6 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
                 >
                   <Rocket className="h-4 w-4 mr-2" />
                   {task.type === OPERATION_TYPE_ID ? "Already an Operation" : "Upgrade to Operation"}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-destructive focus:text-destructive"
-                  onClick={handleDelete}
-                >
-                  <Trash className="h-4 w-4 mr-2" />
-                  Delete Item
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -571,13 +576,15 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
           className="id-view-keys"
           style={{ gridTemplateColumns: `repeat(${tabCount}, minmax(0, 1fr))` }}
         >
+          {visiblePanels.includes("body") && <TabsTrigger value="body">Body</TabsTrigger>}
           <TabsTrigger value="details">Details</TabsTrigger>
           {visiblePanels.includes("scheduling") && <TabsTrigger value="scheduling">Scheduling</TabsTrigger>}
           {visiblePanels.includes("dependencies") && <TabsTrigger value="dependencies">Dependencies</TabsTrigger>}
           {visiblePanels.includes("subtasks") && <TabsTrigger value="subtasks">Subtasks</TabsTrigger>}
-          {visiblePanels.includes("analysis") && <TabsTrigger value="analysis">Analysis</TabsTrigger>}
-          {visiblePanels.includes("body") && <TabsTrigger value="body">Body</TabsTrigger>}
-          <TabsTrigger value="history">
+          {visiblePanels.includes("analysis") && (
+            <TabsTrigger value="analysis" className="id-tab-secondary">Analysis</TabsTrigger>
+          )}
+          <TabsTrigger value="history" className="id-tab-secondary">
             <History className="h-4 w-4" />
             History
           </TabsTrigger>
@@ -868,9 +875,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
                   ) : (task.tags?.length ?? 0) > 0 ? (
                     <div className="flex flex-wrap gap-2">
                       {task.tags!.map((tag) => (
-                        <Badge key={tag} variant="secondary">
-                          {tag}
-                        </Badge>
+                        <ItemTagChip key={tag} name={tag} />
                       ))}
                     </div>
                   ) : (

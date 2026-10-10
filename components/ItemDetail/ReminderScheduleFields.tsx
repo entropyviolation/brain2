@@ -53,6 +53,8 @@ export function ReminderScheduleFields({
           <option value="once">Once</option>
           <option value="daily">Every day</option>
           <option value="weekly">Every week</option>
+          <option value="new-moon">Each new moon</option>
+          <option value="full-moon">Each full moon</option>
         </select>
       </div>
       <div className="flex items-center justify-between gap-3">

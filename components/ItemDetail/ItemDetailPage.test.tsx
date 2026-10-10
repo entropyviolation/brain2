@@ -1,7 +1,7 @@
 /**
  * EnhancedTaskDetail — full-screen task editor.
  */
-import { render, screen, waitFor } from "@testing-library/react"
+import { act, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetLocalStorage } from "@/tests/test-utils"
@@ -48,6 +48,7 @@ describe("EnhancedTaskDetail", () => {
   it("renders the task title and tabs", () => {
     render(<EnhancedTaskDetail taskId="task-detail-1" onBack={onBack} />)
     expect(screen.getByRole("heading", { name: "Write release notes" })).toBeInTheDocument()
+    expect(screen.getByRole("status")).toHaveTextContent("Saved")
     expect(screen.getByRole("tab", { name: "Details" })).toBeInTheDocument()
     expect(screen.getByRole("tab", { name: "Scheduling" })).toBeInTheDocument()
     expect(screen.getByRole("tab", { name: "History" })).toBeInTheDocument()
@@ -65,7 +66,9 @@ describe("EnhancedTaskDetail", () => {
     const durationInput = screen.getByLabelText(/Estimated Duration/i)
     await user.clear(durationInput)
     await user.type(durationInput, "90")
-    await user.click(screen.getByRole("button", { name: /Save Changes/i }))
+    expect(screen.getByRole("status")).toHaveTextContent("Unsaved changes")
+    await user.click(screen.getByRole("button", { name: /^Save$/i }))
+    expect(screen.getByRole("status")).toHaveTextContent("Saved")
     expect(useTaskStore.getState().tasks[0].estimatedDuration).toBe(90)
     const rows = listItemActivity("task-detail-1")
     expect(rows).toHaveLength(1)
@@ -74,13 +77,30 @@ describe("EnhancedTaskDetail", () => {
     expect(screen.getByText(/Estimated duration/)).toBeInTheDocument()
   })
 
-  it("deletes the item from the more-actions menu", async () => {
+  it("saves unsaved edits with Ctrl+S", async () => {
+    const user = userEvent.setup()
+    render(<EnhancedTaskDetail taskId="task-detail-1" onBack={onBack} />)
+    await user.click(screen.getByRole("button", { name: /^Edit$/i }))
+    const durationInput = screen.getByLabelText(/Estimated Duration/i)
+    await user.clear(durationInput)
+    await user.type(durationInput, "90")
+    expect(screen.getByRole("status")).toHaveTextContent("Unsaved changes")
+    const event = new KeyboardEvent("keydown", { key: "s", ctrlKey: true, bubbles: true, cancelable: true })
+    await act(async () => {
+      window.dispatchEvent(event)
+    })
+    expect(event.defaultPrevented).toBe(true)
+    expect(useTaskStore.getState().tasks[0].estimatedDuration).toBe(90)
+    expect(screen.getByRole("status")).toHaveTextContent("Saved")
+    expect(screen.getByRole("button", { name: /^Edit$/i })).toBeInTheDocument()
+  })
+
+  it("deletes the item from the danger-quiet Delete key", async () => {
     const user = userEvent.setup()
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true)
     render(<EnhancedTaskDetail taskId="task-detail-1" onBack={onBack} />)
 
-    await user.click(screen.getByRole("button", { name: "More actions" }))
-    await user.click(screen.getByRole("menuitem", { name: /Delete Item/i }))
+    await user.click(screen.getByRole("button", { name: /^Delete$/i }))
 
     expect(confirmSpy).toHaveBeenCalledWith('Delete "Write release notes"? This cannot be undone.')
     expect(useTaskStore.getState().tasks).toHaveLength(0)
@@ -119,6 +139,8 @@ describe("EnhancedTaskDetail", () => {
           type: TaskType.BOOLEAN,
           frequency: "weekly",
           rewardValue: 10,
+          taggedTaskTag: "tiktok",
+          trackingLink: { tagIds: ["tag-work"], unit: "minutes", mode: "add", enabled: true },
         },
       ],
       weeklyHabitData: {
@@ -145,6 +167,8 @@ describe("EnhancedTaskDetail", () => {
     expect(panel).toHaveTextContent("Goal: Yes / No")
     expect(panel).toHaveTextContent("This week: Not done")
     expect(panel).toHaveTextContent(pastWeek.split("_")[0])
+    expect(panel).toHaveTextContent("Counts: tiktok")
+    expect(panel).toHaveTextContent("Minutes: Work")
     expect(screen.getByRole("button", { name: "Habit settings" })).toBeInTheDocument()
 
     await user.click(screen.getByRole("button", { name: "Habit settings" }))

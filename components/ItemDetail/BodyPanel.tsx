@@ -16,6 +16,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useTaskStore } from "@/lib/task-store"
 import { RichTextEditor } from "@/components/Editor/RichTextEditor"
+import { htmlToPlainText } from "@/lib/doc-html"
 
 interface BodyPanelProps {
   /** Id of the task/item whose `body` is edited. */
@@ -33,6 +34,7 @@ export function BodyPanel({ taskId, readOnly = false, debounceMs = 500 }: BodyPa
   // Local draft so typing is responsive; synced from the store when the
   // underlying item (or its body) changes from elsewhere.
   const [draft, setDraft] = useState(task?.body ?? "")
+  const [showSource, setShowSource] = useState(false)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pending = useRef<string | null>(null)
 
@@ -71,15 +73,45 @@ export function BodyPanel({ taskId, readOnly = false, debounceMs = 500 }: BodyPa
     return <p className="text-sm text-muted-foreground italic">Item not found.</p>
   }
 
+  const looksLikeHtml = /<\/?[a-z][\s\S]*>/i.test(draft)
+  const prose = looksLikeHtml ? htmlToPlainText(draft) : draft
+
   return (
-    <div className="space-y-2">
-      <RichTextEditor
-        value={draft}
-        onChange={handleChange}
-        onBlur={flush}
-        readOnly={readOnly}
-        placeholder="Write your note in markdown…"
-      />
+    <div className="space-y-2 id-body-panel">
+      <div className="id-body-mode">
+        <button
+          type="button"
+          className="id-btn id-btn-sm"
+          aria-pressed={showSource}
+          onClick={() => setShowSource((on) => !on)}
+        >
+          {showSource ? "Rendered" : "Source"}
+        </button>
+      </div>
+      {showSource ? (
+        <textarea
+          className="id-body-source"
+          value={draft}
+          readOnly={readOnly}
+          onChange={(e) => handleChange(e.target.value)}
+          onBlur={flush}
+          rows={12}
+          spellCheck={false}
+          aria-label="Body source"
+        />
+      ) : readOnly || looksLikeHtml ? (
+        <div className="id-body-prose" data-testid="body-prose">
+          {prose.trim() ? prose : <span className="text-muted-foreground italic">No body yet.</span>}
+        </div>
+      ) : (
+        <RichTextEditor
+          value={draft}
+          onChange={handleChange}
+          onBlur={flush}
+          readOnly={readOnly}
+          placeholder="Write your note in markdown…"
+        />
+      )}
     </div>
   )
 }

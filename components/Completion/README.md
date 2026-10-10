@@ -16,7 +16,7 @@ is credited. The checkbox stays.
 
 | File | Purpose |
 |------|---------|
-| `CompletionPopupHost.tsx` | `CompletionPopupHost`: mounted once at the app root (`app/layout.tsx`) next to `UiNamesHost`. Subscribes to the completion event bus and **queues** rapid completions so none are missed, rendering one `CompletionDialog` at a time. |
+| `CompletionPopupHost.tsx` | `CompletionPopupHost`: mounted once at the app root (`app/layout.tsx`) next to `UiNamesHost`. Subscribes to the completion event bus and **queues** rapid completions so none are missed, rendering one `CompletionDialog` at a time. The dialog chunk loads on the first completion event, not on first paint, so a refresh does not parse it. Events that arrive while the chunk loads stay queued. |
 | `CompletionDialog.tsx` | The "Task completed" dialog (`data-ui-name="Completion"` on the dialog content; Names plate portals above the overlay): **Contributes to objective(s)** and **counts toward goal(s)** with in-list search, plus **Add** to create a real objective or goal without leaving (a new goal is a year count of 1 and serves the objectives selected above). Live points preview (base × stacking multiplier). Optional **quick reflection**: **Done at** is a date plus the clock, **Exact** or **Est.** (any day and time, not only another clock on the stamp's day). Length and start each use **Exact / Est. / Unknown** (unknown stores no minutes and no start time; Exact and Est. keep an editable value). Optional 1–10 scores (expected difficulty, actual difficulty, enjoyment, resistance, energy, focus, meaning) and notes. Agreeing awards **3 points + 0.1 per word** in the notes (a word is a stretch of text between spaces), shown live and written to the points ledger as `review:${taskId}`. Display-only **Usually takes you ~N min** hint from `usualDurationMinutes` (dashed amber **est.**; never writes `estimatedDuration`). Footer: **Undo** (reopen the task), **Skip**, **Save**. Checklist ticks open this with `pending` so Undo / overlay cancel leave the item incomplete. Dirty contribution draft uses the house unsaved-changes guard. |
 
 ## How it fires
@@ -27,9 +27,11 @@ is credited. The checkbox stays.
 3. Checklist ticks call **`requestTaskCompletion`** first (`pending: true`) so the
    dialog appears **before** the box sticks. Undo / overlay cancel leave the item
    open; Skip / Save apply `completeTask`.
-4. `CompletionPopupHost` (subscribed via `onTaskCompleted`) enqueues the event and
-   shows `CompletionDialog` (deduping the same `taskId` so a later complete emit
-   does not open a second dialog).
+4. `CompletionPopupHost` (subscribed via `onTaskCompleted`) enqueues the event.
+   The first event loads `CompletionDialog`; later events that arrive during
+   that load stay in the queue. The host shows one dialog at a time (deduping
+   the same `taskId` so a later complete emit does not open a second dialog).
+   The dialog is not part of the first paint, so a refresh does not parse it.
 
 ## On save
 

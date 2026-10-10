@@ -1,12 +1,14 @@
-import { render, screen } from "@testing-library/react"
+import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { useTaskStore } from "@/lib/task-store"
+import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import type { Task } from "@/lib/types"
 import { TagInput } from "./TagInput"
 import { LinkPicker } from "./LinkPicker"
 import { RelatedItemsPanel } from "./RelatedItemsPanel"
+import { TagSettingsHost } from "@/components/Home/Tracking/tag-settings-host"
 
 function makeTask(overrides: Partial<Task> & Pick<Task, "id" | "description">): Task {
   return {
@@ -47,6 +49,48 @@ describe("TagInput", () => {
 
     await user.click(screen.getByLabelText("Remove tag alpha"))
     expect(onRemove).toHaveBeenCalledWith("alpha")
+  })
+
+  it("shows a catalog bead when the item tag name matches a Tracking tag", () => {
+    const work = useTimeTrackingStore.getState().tags.find((t) => t.name === "Work")!
+    render(<TagInput tags={["Work"]} onAdd={vi.fn()} onRemove={vi.fn()} />)
+    const bead = document.querySelector(".id-tag-bead") as HTMLElement | null
+    expect(bead).toBeTruthy()
+    expect(bead?.style.backgroundColor || bead?.style.background).toBeTruthy()
+    expect(work.color).toBeTruthy()
+  })
+
+  it("keeps a plain chip when the item tag is not in the catalog", () => {
+    render(<TagInput tags={["only-on-item"]} onAdd={vi.fn()} onRemove={vi.fn()} />)
+    expect(document.querySelector(".id-tag-bead")).toBeNull()
+    expect(screen.getByText("only-on-item")).toBeInTheDocument()
+  })
+
+  it("opens tag settings on double-click for a catalog match", async () => {
+    render(
+      <>
+        <TagSettingsHost />
+        <TagInput tags={["Work"]} onAdd={vi.fn()} onRemove={vi.fn()} />
+      </>,
+    )
+    const chip = screen.getByText("Work").closest(".id-tag-chip") ?? screen.getByText("Work")
+    fireEvent.doubleClick(chip)
+    await waitFor(() => {
+      expect(screen.getByText(/Tag · Work/)).toBeInTheDocument()
+    })
+  })
+
+  it("opens create-from-name settings when the item tag is not in the catalog", async () => {
+    render(
+      <>
+        <TagSettingsHost />
+        <TagInput tags={["only-on-item"]} onAdd={vi.fn()} onRemove={vi.fn()} />
+      </>,
+    )
+    fireEvent.doubleClick(screen.getByText("only-on-item"))
+    await waitFor(() => {
+      expect(screen.getByText("Item tag only")).toBeInTheDocument()
+    })
   })
 })
 

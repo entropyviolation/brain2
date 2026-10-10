@@ -11,7 +11,7 @@
  */
 "use client"
 
-import { useState, useCallback, useMemo, useEffect } from "react"
+import { useState, useCallback, useMemo, useEffect, useRef } from "react"
 import { ReminderScheduleFields } from "@/components/ItemDetail/ReminderScheduleFields"
 import { PersonDetail } from "@/components/People/person-detail"
 import { PersonPipelinesEditor } from "@/components/People/person-pipelines"
@@ -60,7 +60,6 @@ import {
 } from "lucide-react"
 import { ItemActivityPanel } from "@/components/ItemDetail/ItemActivityPanel"
 import { CycleConfirmDialog } from "@/components/ItemDetail/CycleConfirmDialog"
-import { recordItemWrite } from "@/lib/item-activity"
 import type { Task, TaskCompletionReview, ItemDetailPanel, TimeLogEntry, CompletionStatus } from "@/lib/types"
 import { dateInputValue, getWeekString, parseLocalDate, safeDateFormat } from "@/lib/date-utils"
 import {
@@ -86,6 +85,8 @@ import { ItemScheduleFlags } from "@/components/ItemDetail/ItemScheduleFlags"
 import { ItemTypeEditor } from "@/components/ItemTypes/ItemTypeEditor"
 import { APP_NAV_KEYS, readStoredRecord, requestNavigateToListAfterPaint, writeStoredRecordField } from "@/lib/app-navigation"
 import { isSentOnList, withSentMark } from "@/lib/list-sent"
+import { ItemSaveFlag } from "@/components/ItemDetail/ItemSaveFlag"
+import { useItemDetailSaveHotkey } from "@/components/ItemDetail/useItemDetailSaveHotkey"
 import { snapshotsEqual } from "@/lib/unsaved-changes"
 import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
 import "./item-detail-chrome.css"
@@ -101,6 +102,7 @@ interface TaskDetailPopupProps {
 }
 
 export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, container = null }: TaskDetailPopupProps) {
+  const detailRef = useRef<HTMLDivElement>(null)
   const [overrideId, setOverrideId] = useState<string | null>(null)
   const [missAsk, setMissAsk] = useState(false)
   const effectiveId = overrideId ?? taskId
@@ -114,6 +116,7 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
     task,
     setTask,
     getDraft,
+    subscribeDraft,
     touchDraft,
     originalTask,
     setOriginalTask,
@@ -121,6 +124,7 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
     lists,
     folders,
     updateTask,
+    commitDraft,
     deleteTask,
     removeFromCategory,
     setLists,
@@ -180,21 +184,17 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
       setTask((prev) => (prev ? { ...prev, ...patch } : prev))
       const next = getDraft()
       if (!next) return
-      recordItemWrite(originalTask ?? next, next, { tasks: allTasks, lists })
-      updateTask(next)
-      setOriginalTask(next)
+      commitDraft(next)
     },
-    [touchDraft, setTask, getDraft, originalTask, allTasks, lists, updateTask, setOriginalTask],
+    [touchDraft, setTask, getDraft, commitDraft],
   )
 
   const handleSave = useCallback(() => {
     const draft = getDraft()
-    if (draft) {
-      recordItemWrite(originalTask, draft, { tasks: allTasks, lists })
-      updateTask(draft)
-      setOriginalTask(draft)
-    }
-  }, [getDraft, updateTask, setOriginalTask, originalTask, allTasks, lists])
+    if (draft) commitDraft(draft)
+  }, [getDraft, commitDraft])
+
+  useItemDetailSaveHotkey(detailRef, handleSave, open && Boolean(task))
 
   const handleDelete = useCallback(() => {
     if (!task) return
@@ -209,12 +209,10 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
   const handleComplete = useCallback(() => {
     const draft = getDraft()
     if (draft) {
-      const next = { ...draft, completed: true }
-      recordItemWrite(originalTask ?? draft, next, { tasks: allTasks, lists })
-      updateTask(next)
+      commitDraft({ ...draft, completed: true })
       onClose()
     }
-  }, [getDraft, updateTask, onClose, originalTask, allTasks, lists])
+  }, [getDraft, commitDraft, onClose])
 
   const handleMissed = useCallback(() => {
     if (!task) return
@@ -226,13 +224,9 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
   const handleStatusChange = useCallback(
     (status: CompletionStatus) => {
       if (!task) return
-      const updated = withStatus(task, status)
-      recordItemWrite(originalTask ?? task, updated, { tasks: allTasks, lists })
-      setTask(updated)
-      updateTask(updated)
-      setOriginalTask(updated)
+      commitDraft(withStatus(task, status))
     },
-    [task, setTask, updateTask, setOriginalTask, originalTask, allTasks, lists],
+    [task, commitDraft],
   )
 
   const handleScheduleToWeek = useCallback(
@@ -382,17 +376,14 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
   const sentListIds = (task.lists ?? []).filter((id) => lists.some((list) => list.id === id && list.sentThisWeek === true))
   const sentOnThoseLists = sentListIds.length > 0 && sentListIds.every((id) => isSentOnList(task, id))
   const handleToggleSent = () => {
-    const next = withSentMark(task, sentListIds, !sentOnThoseLists, new Date())
-    recordItemWrite(originalTask ?? task, next, { tasks: allTasks, lists })
-    setTask(next)
-    updateTask(next)
-    setOriginalTask(next)
+    commitDraft(withSentMark(task, sentListIds, !sentOnThoseLists, new Date()))
   }
 
   return (
     <>
       <Dialog open={open} onOpenChange={guard.handleOpenChange}>
         <DialogContent
+          ref={detailRef}
           className={`id95-dialog id95 sm:max-w-5xl max-h-[90vh] overflow-hidden !flex flex-col${stackAbove ? " z-[80]" : ""}`}
           overlayClassName={stackAbove ? "z-[80]" : undefined}
           container={container}
@@ -429,38 +420,41 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
             </div>
             <div className="id-fascia-row">
               <div className="id-key-row" style={{ marginLeft: 0 }}>
-                <Button
-                  variant="outline"
-                  onClick={handleDelete}
-                  className="id-btn id-btn-danger"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Delete
-                </Button>
+                <div className="id-save-cluster">
+                  <ItemSaveFlag originalTask={originalTask} getDraft={getDraft} subscribeDraft={subscribeDraft} />
+                  <Button onClick={handleSave} className="id-btn id-btn-primary" title="Cmd/Ctrl+S">
+                    <Save className="h-4 w-4" />
+                    Save
+                  </Button>
+                </div>
                 {!isClearedFromWork(task) && caps.completable && (
-                  <>
                   <Button
                     variant="outline"
                     onClick={handleComplete}
-                    className="id-btn"
+                    className="id-btn id-btn-primary"
                   >
                     <CheckCircle className="h-4 w-4" />
                     Complete
                   </Button>
+                )}
+                {!isClearedFromWork(task) && caps.completable && (
                   <Button
                     variant="outline"
                     onClick={handleMissed}
-                    className="id-btn"
+                    className="id-btn id-btn-secondary"
                     title="Too late — file as a missed opportunity"
                   >
                     <TimerOff className="h-4 w-4" />
-                    Missed opportunity
+                    Missed
                   </Button>
-                  </>
                 )}
-                <Button onClick={handleSave} className="id-btn">
-                  <Save className="h-4 w-4" />
-                  Save Changes
+                <Button
+                  variant="outline"
+                  onClick={handleDelete}
+                  className="id-btn id-btn-danger id-btn-quiet"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete
                 </Button>
               </div>
             </div>
@@ -468,7 +462,13 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
 
           <div className="id-dialog-scroll">
             <Tabs value={activeDetailTab} onValueChange={setDetailTab} className="flex-1 min-h-0 flex flex-col">
-              <TabsList className="id-view-keys" style={{ gridTemplateColumns: `repeat(${visiblePanels.length + 1}, minmax(0, 1fr))` }}>
+              <TabsList className="id-view-keys">
+                {visiblePanels.includes("body") && (
+                <TabsTrigger value="body" className="flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Body
+                </TabsTrigger>
+                )}
                 {visiblePanels.includes("details") && (
                 <TabsTrigger value="details" className="flex items-center gap-2">
                   <FileText className="h-4 w-4" />
@@ -494,24 +494,18 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
                 </TabsTrigger>
                 )}
                 {visiblePanels.includes("analysis") && (
-                <TabsTrigger value="analysis" className="flex items-center gap-2">
+                <TabsTrigger value="analysis" className="flex items-center gap-2 id-tab-secondary">
                   <Brain className="h-4 w-4" />
                   Analysis
                 </TabsTrigger>
                 )}
                 {visiblePanels.includes("time") && (
-                <TabsTrigger value="time" className="flex items-center gap-2">
+                <TabsTrigger value="time" className="flex items-center gap-2 id-tab-secondary">
                   <Timer className="h-4 w-4" />
                   Time
                 </TabsTrigger>
                 )}
-                {visiblePanels.includes("body") && (
-                <TabsTrigger value="body" className="flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  Body
-                </TabsTrigger>
-                )}
-                <TabsTrigger value="history" className="flex items-center gap-2">
+                <TabsTrigger value="history" className="flex items-center gap-2 id-tab-secondary">
                   <History className="h-4 w-4" />
                   History
                 </TabsTrigger>

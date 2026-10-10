@@ -4,6 +4,10 @@
  * The logic both detail variants (popup + page) share: subscribe to the task
  * store, load the selected task into local draft state, and the
  * category/dependency mutators that are byte-identical across both.
+ * `subscribeDraft` fires when the draft ref changes so the save lamp can
+ * follow keystrokes without re-rendering the detail tree. `setTask` applies
+ * functional updates to that ref, so a later field write keeps uncommitted
+ * keystrokes.
  * `addDependency` refuses a graph loop (`findCyclePath`) and returns the cycle
  * label for a Win95 confirm — it does not write `Task.dependencies` on refuse.
  * Variant-
@@ -15,6 +19,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef, type Dispatch, type SetStateAction } from "react"
+import { commitItemDraft } from "@/lib/commit-item-edit"
 import { useTaskStore } from "@/lib/task-store"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { withListMembership } from "@/lib/item-utils"
@@ -37,6 +42,8 @@ export interface ItemDetailDraft {
   setTask: Dispatch<SetStateAction<Task | null>>
   /** Latest draft including isolated-field keystrokes that have not re-rendered yet. */
   getDraft: () => Task | null
+  /** Fires when `touchDraft` writes the ref. The save lamp listens; the detail tree does not. */
+  subscribeDraft: (listener: () => void) => () => void
   /** Write fields onto the draft ref without re-rendering the detail tree. */
   touchDraft: (patch: Partial<Task>) => void
   originalTask: Task | null
@@ -45,6 +52,11 @@ export interface ItemDetailDraft {
   lists: ReturnType<typeof useTaskStore.getState>["lists"]
   folders: ReturnType<typeof useTaskStore.getState>["folders"]
   updateTask: (task: Task) => void
+  /**
+   * Persist a draft through `commitItemEdit` (patch + activity line).
+   * Prefer this over `recordItemWrite` + `updateTask` for detail saves.
+   */
+  commitDraft: (next: Task, source?: string) => Task
   addTask: (task: Task) => void
   deleteTask: (id: string) => void
   addToCategory: (categoryId: string) => void
@@ -71,13 +83,13 @@ export function useItemDetailDraft(taskId: string | null): ItemDetailDraft {
   const [task, setTaskState] = useState<Task | null>(null)
   const [originalTask, setOriginalTask] = useState<Task | null>(null)
   const taskRef = useRef<Task | null>(null)
+  const draftListenersRef = useRef(new Set<() => void>())
 
   const setTask = useCallback<Dispatch<SetStateAction<Task | null>>>((next) => {
-    setTaskState((prev) => {
-      const resolved = typeof next === "function" ? next(prev) : next
-      taskRef.current = resolved
-      return resolved
-    })
+    const resolved = typeof next === "function" ? next(taskRef.current) : next
+    taskRef.current = resolved
+    setTaskState(resolved)
+    for (const listener of draftListenersRef.current) listener()
   }, [])
 
   const getDraft = useCallback(() => taskRef.current, [])
@@ -85,6 +97,14 @@ export function useItemDetailDraft(taskId: string | null): ItemDetailDraft {
   const touchDraft = useCallback((patch: Partial<Task>) => {
     if (!taskRef.current) return
     taskRef.current = { ...taskRef.current, ...patch }
+    for (const listener of draftListenersRef.current) listener()
+  }, [])
+
+  const subscribeDraft = useCallback((listener: () => void) => {
+    draftListenersRef.current.add(listener)
+    return () => {
+      draftListenersRef.current.delete(listener)
+    }
   }, [])
 
   useEffect(() => {
@@ -180,10 +200,28 @@ export function useItemDetailDraft(taskId: string | null): ItemDetailDraft {
     setTask((prev) => (prev ? { ...prev, links: removeLinkFromList(prev.links, linkId) } : prev))
   }, [])
 
+  const commitDraft = useCallback(
+    (next: Task, source = "item-detail") => {
+      const before = originalTask ?? useTaskStore.getState().tasks.find((t) => t.id === next.id)
+      if (!before) {
+        updateTask(next)
+        setOriginalTask(next)
+        setTask(next)
+        return next
+      }
+      const saved = commitItemDraft(before, next, source)
+      setOriginalTask(saved)
+      setTask(saved)
+      return saved
+    },
+    [originalTask, updateTask, setTask],
+  )
+
   return {
     task,
     setTask,
     getDraft,
+    subscribeDraft,
     touchDraft,
     originalTask,
     setOriginalTask,
@@ -191,6 +229,7 @@ export function useItemDetailDraft(taskId: string | null): ItemDetailDraft {
     lists,
     folders,
     updateTask,
+    commitDraft,
     addTask,
     deleteTask,
     addToCategory,
