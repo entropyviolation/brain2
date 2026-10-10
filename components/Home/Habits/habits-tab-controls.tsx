@@ -230,7 +230,7 @@ export function HabitsTabControls({
           {monthWindow}
           {weekWindow}
           <div className="hab-control-toggles">
-            <ControlPlate legend="Tools">
+            <ControlPlate legend="Sheet lamps">
               <ExemptionWandButton on={exemptionWand} onToggle={onExemptionWand} />
               <MissedOpWandButton on={missedOpWand} onToggle={onMissedOpWand} />
             </ControlPlate>

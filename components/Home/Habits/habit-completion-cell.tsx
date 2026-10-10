@@ -9,7 +9,9 @@
  * A pipeline with no By hand source does not open an editor. Double-click
  * opens a read-only account of that square and writes nothing. A goal fed
  * by a list opens that same account on double-click even when By hand is
- * also on; a click still edits the number.
+ * also on; a click still edits the number. Tracked minutes keep the clock,
+ * blue border, and hover split; a tagged-tasks count adds a quiet ·N hint
+ * beside them without replacing that treatment.
  */
 "use client"
 
@@ -75,6 +77,27 @@ function trackedCellHint(
   const manual = completion?.manualValue ?? 0
   const manualPart = manual > 0 ? ` + ${manual} logged by hand` : ""
   return `${tracked} ${unit} from Tracking${manualPart}`
+}
+
+/** Quiet hover line when tagged Done tasks filled the cell. Does not replace minutes. */
+function taggedTasksCellHint(task: Task, completion: TaskCompletion | undefined): string | undefined {
+  if (completion?.taggedTaskCount == null) return undefined
+  const tag = task.taggedTaskTag?.trim()
+  const n = completion.taggedTaskCount
+  return tag ? `${n} Done tagged ${tag}` : `${n} tagged Done`
+}
+
+function goalCellTitle(
+  task: Task,
+  completion: TaskCompletion | undefined,
+  variant: HabitCompletionVariant,
+  tracked: number,
+): string | undefined {
+  const parts: string[] = []
+  if (tracked > 0) parts.push(trackedCellHint(task, completion, variant))
+  const tagged = taggedTasksCellHint(task, completion)
+  if (tagged) parts.push(tagged)
+  return parts.length ? parts.join(" · ") : undefined
 }
 
 export interface HabitCompletionCellProps {
@@ -344,7 +367,7 @@ export function HabitCompletionCell({
       return (
         <>
         <div className="habit-cell-stack" onDoubleClick={listDetail ? openSourceDetail : undefined}>
-          <div className="habit-cell-num" title={tracked > 0 ? trackedCellHint(task, completion, variant) : undefined}>
+          <div className="habit-cell-num" title={goalCellTitle(task, completion, variant, tracked)}>
             <HabitNumberField
               value={shownValue}
               onValue={onGoalChange}
@@ -353,6 +376,11 @@ export function HabitCompletionCell({
               ariaLabel={`${task.name} ${periodLabel}`}
             />
             {tracked > 0 && <Clock className="habit-tracked-mark" aria-label="includes tracked time" />}
+            {completion?.taggedTaskCount != null ? (
+              <span className="habit-goal" aria-label={taggedTasksCellHint(task, completion)}>
+                ·{completion.taggedTaskCount}
+              </span>
+            ) : null}
             <span className="habit-goal">
               <span className="habit-goal-den">/{printed.goal}</span>
             </span>

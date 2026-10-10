@@ -5,6 +5,10 @@
  * period, each source that was asked, the numbers it pulled, and the result.
  * A previous-period compare adds the pairs, which side won, and how many
  * were higher. Nothing here writes a completion.
+ *
+ * Tracking-tag and tagged-task lines resolve catalog names from a catalog
+ * passed in (or omitted → ids only). Pure helpers stay free of the Tracking
+ * store so habits-store never cycles through this file.
  */
 import type { HabitExemptFn } from "./calculations"
 import { formatLocalDateKey, getWeekStartDate } from "./date-utils"
@@ -25,15 +29,86 @@ import {
   type HabitStatContext,
   type StatReading,
 } from "./habit-stat-points"
+import { trackingUnitLabel } from "./habit-tracking"
 import type {
   HabitCompletionSourceId,
   HabitFrequency,
   HabitStatSet,
   HabitStatsConfig,
+  HabitTrackingMode,
   TaskCompletion,
   WeeklyData,
   WeeklyTask,
 } from "./types"
+
+/** Catalog slice needed to turn `trackingLink.tagIds` into display names. */
+export type CatalogTagName = { id: string; name: string }
+
+/** Resolve minute-link ids to catalog names (id fallback when the tag is gone). */
+export function resolveTrackingTagNames(
+  tagIds: readonly string[] | undefined,
+  catalog: readonly CatalogTagName[],
+): string[] {
+  if (!tagIds?.length) return []
+  const byId = new Map(catalog.map((tag) => [tag.id, tag.name]))
+  return tagIds.map((id) => {
+    const name = byId.get(id)?.trim()
+    return name || id
+  })
+}
+
+/** Same labels as Auto-fill's Combine with manual entries control. */
+export function trackingCombineModeLabel(mode: HabitTrackingMode | undefined): string {
+  if (mode === "max") return "Higher of the two"
+  if (mode === "replace") return "Tracking only"
+  return "Add"
+}
+
+/**
+ * Display-only wiring: Counts is the done-count name; Minutes is the
+ * auto-fill catalog names. Null when that side is not wired.
+ */
+export function habitTagWiringSummary(
+  task: Pick<WeeklyTask, "taggedTaskTag" | "trackingLink">,
+  catalog: readonly CatalogTagName[],
+): { counts: string | null; minutes: string | null } {
+  const counts = task.taggedTaskTag?.trim() || null
+  const names = resolveTrackingTagNames(task.trackingLink?.tagIds, catalog)
+  return { counts, minutes: names.length ? names.join(", ") : null }
+}
+
+function tagsSourceLines(
+  task: WeeklyTask,
+  completion: TaskCompletion | undefined,
+  catalog: readonly CatalogTagName[],
+): SourceSquareLine[] {
+  const link = task.trackingLink
+  const names = resolveTrackingTagNames(link?.tagIds, catalog)
+  return [
+    { name: "Tags", value: names.length ? names.join(", ") : "—" },
+    { name: "Unit", value: trackingUnitLabel(link?.unit) },
+    { name: "Combine", value: trackingCombineModeLabel(link?.mode) },
+    { name: "Auto-fill", value: link && link.enabled !== false ? "On" : "Off" },
+    { name: "Minutes", value: completion?.trackedValue != null ? String(completion.trackedValue) : "—" },
+  ]
+}
+
+function taggedTasksSourceLines(
+  task: WeeklyTask,
+  completion: TaskCompletion | undefined,
+): SourceSquareLine[] {
+  const tag = task.taggedTaskTag?.trim() || "—"
+  const goal = task.goal
+  const rule =
+    goal != null && Number.isFinite(goal)
+      ? `each Done counts as 1 toward the goal (${goal})`
+      : "each Done counts as 1 toward the goal"
+  return [
+    { name: "Tag", value: tag },
+    { name: "Rule", value: rule },
+    { name: "Count", value: completion?.taggedTaskCount != null ? String(completion.taggedTaskCount) : "—" },
+  ]
+}
 
 export function cellOpensSourceDetail(task: WeeklyTask): boolean {
   return !effectiveCompletionSources(task).includes("manual")
@@ -82,6 +157,8 @@ export interface SourceSquareInput {
   outputGradeTolerance: number
   isExempt?: HabitExemptFn
   today?: Date
+  /** Tracking catalog for resolving `trackingLink.tagIds` to names. */
+  trackingTags?: readonly CatalogTagName[]
 }
 
 function sideNames(frequency: HabitFrequency | undefined): { this: string; previous: string } {
@@ -146,16 +223,13 @@ function engineLines(
   task: WeeklyTask,
   completion: TaskCompletion | undefined,
   ctx: HabitStatContext,
+  catalog: readonly CatalogTagName[],
 ): SourceSquareLine[] {
   if (id === "dailyFloor") return linesFromReading(readStatPoint({ kind: "dailyFloor" }, ctx))
   if (id === "habitValue") return linesFromReading(readStatPoint({ kind: "habitValue" }, ctx))
   if (id === "dailyCompletionAverage") return linesFromReading(readStatPoint({ kind: "dailyCompletionAverage" }, ctx))
-  if (id === "tags") {
-    return [{ name: "Minutes", value: completion?.trackedValue != null ? String(completion.trackedValue) : "—" }]
-  }
-  if (id === "taggedTasks") {
-    return [{ name: "Tagged tasks", value: completion?.taggedTaskCount != null ? String(completion.taggedTaskCount) : "—" }]
-  }
+  if (id === "tags") return tagsSourceLines(task, completion, catalog)
+  if (id === "taggedTasks") return taggedTasksSourceLines(task, completion)
   if (id === "coverage") {
     const amount = completion?.value
     const threshold = task.coverageLink?.threshold
@@ -235,13 +309,14 @@ export function describeSourceSquare(input: SourceSquareInput): SourceSquare {
   const stats = statsOn(input.task)
   const ctx = statContextForSquare(input, stats?.set ?? "daily")
   const order = effectiveCompletionSources(input.task)
+  const catalog = input.trackingTags ?? []
   const covered = new Set<string>()
   const sources: SourceSquareSource[] = order.map((id) => {
     if (id === "dailyFloor" || id === "habitValue" || id === "dailyCompletionAverage") covered.add(id)
     return {
       id,
       label: COMPLETION_SOURCE_LABELS[id],
-      lines: engineLines(id, input.task, input.completion, ctx),
+      lines: engineLines(id, input.task, input.completion, ctx, catalog),
     }
   })
   for (const point of stats?.points ?? []) {

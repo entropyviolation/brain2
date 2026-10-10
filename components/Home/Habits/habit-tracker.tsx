@@ -30,10 +30,11 @@
 import { useState, useEffect, useLayoutEffect, useMemo } from "react"
 import { usePersistHydrated } from "@/lib/use-persist-hydrated"
 import {
+  habitsCalendarKey,
+  habitsLensFromStored,
   habitsViewedMonth,
   habitsViewedQuarter,
   habitsViewedWeekStart,
-  retainHabitsCursorDate,
   retainHabitsWeekDates,
 } from "@/components/Home/Habits/habits-period-cursor"
 import { HabitControlBar, type HabitControlToggle } from "@/components/Home/Habits/habit-priority-bar"
@@ -70,7 +71,6 @@ import {
   type WeekGradeResult,
 } from "@/lib/calculations"
 import {
-  getWeekStartDate,
   getWeekDates,
   formatLocalDateKey,
   parseLocalDate,
@@ -94,9 +94,10 @@ import { exemptionKind, isHabitPeriodExempt } from "@/lib/habit-exemption"
 import { useExemptionContext } from "@/lib/sleep-store"
 import { format } from "date-fns"
 import { APP_NAV_KEYS, HABIT_FREQ_TABS, readStoredDate, writeStoredDate } from "@/lib/app-navigation"
+import { resolveHomeCursor } from "@/lib/use-current-date"
 import { clearHabitSettingsReturn, habitSettingsReturnReady, peekHabitSettingsReturn, takeHabitDraft } from "@/lib/habit-list-item"
 import { subscribeNavRestore } from "@/lib/screen-location"
-import { quarterKey, quarterLabel, quarterStartDate, seasonOfDate, seasonSlug, shiftQuarter } from "@/lib/seasons"
+import { quarterKey, quarterLabel, seasonOfDate, seasonSlug, shiftQuarter } from "@/lib/seasons"
 import { usePersistedTab } from "@/lib/use-persisted-tab"
 import "./habit-grid.css"
 import "./habit-chrome.css"
@@ -303,23 +304,24 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
   const [habitTab, setHabitTab] = usePersistedTab(APP_NAV_KEYS.homeHabitsTab, HABIT_FREQ_TABS, "daily")
   const [defaultFrequency, setDefaultFrequency] = useState<"daily" | "weekly" | "monthly" | "quarterly">("daily")
 
+  // Coarser periods follow Home `currentDate` until milled nav pages a lens.
   // First paint matches SSR: ignore localStorage (same rule as usePersistedTab).
-  // Wall clock, not Home `currentDate` — Plan can sit on another day while Habits shows this week.
-  const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => habitsViewedWeekStart(new Date()))
-  const [weekDates, setWeekDates] = useState<Date[]>(() => getWeekDates(habitsViewedWeekStart(new Date())))
-  const [currentMonth, setCurrentMonth] = useState(() => habitsViewedMonth(new Date()))
-  const [currentQuarter, setCurrentQuarter] = useState(() => habitsViewedQuarter(new Date()))
+  // After mount, a stored cursor that is not Home day's period becomes the lens.
+  const [weekLens, setWeekLens] = useState<Date | null>(null)
+  const [monthLens, setMonthLens] = useState<Date | null>(null)
+  const [quarterLens, setQuarterLens] = useState<Date | null>(null)
+  const [weekDates, setWeekDates] = useState<Date[]>(() => getWeekDates(habitsViewedWeekStart(currentDate)))
   const [periodCursorReady, setPeriodCursorReady] = useState(false)
 
+  const currentWeekStart = weekLens ?? habitsViewedWeekStart(currentDate)
+  const currentMonth = monthLens ?? habitsViewedMonth(currentDate)
+  const currentQuarter = quarterLens ?? habitsViewedQuarter(currentDate)
+
   useLayoutEffect(() => {
-    const asOf = new Date()
-    const week = habitsViewedWeekStart(asOf, readStoredDate(APP_NAV_KEYS.homeHabitsWeek))
-    const month = habitsViewedMonth(asOf, readStoredDate(APP_NAV_KEYS.homeHabitsMonth))
-    const quarter = habitsViewedQuarter(asOf, readStoredDate(APP_NAV_KEYS.homeHabitsQuarter))
-    setCurrentWeekStart((prev) => retainHabitsCursorDate(prev, week))
-    setWeekDates((prev) => retainHabitsWeekDates(prev, week))
-    setCurrentMonth((prev) => retainHabitsCursorDate(prev, month))
-    setCurrentQuarter((prev) => retainHabitsCursorDate(prev, quarter))
+    const asOf = resolveHomeCursor(new Date())
+    setWeekLens(habitsLensFromStored(asOf, readStoredDate(APP_NAV_KEYS.homeHabitsWeek), "week"))
+    setMonthLens(habitsLensFromStored(asOf, readStoredDate(APP_NAV_KEYS.homeHabitsMonth), "month"))
+    setQuarterLens(habitsLensFromStored(asOf, readStoredDate(APP_NAV_KEYS.homeHabitsQuarter), "quarter"))
     setPeriodCursorReady(true)
   }, [])
 
@@ -1020,8 +1022,8 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
   const viewingCurrentPeriod =
     habitTab === "quarterly"
       ? quarterKey(currentQuarter) === quarterKey(currentDate)
-      : habitTab === "monthly" || habitTab === "weekly"
-        ? true
+      : habitTab === "monthly"
+        ? habitsCalendarKey(currentMonth) === habitsCalendarKey(habitsViewedMonth(currentDate))
         : isSameLocalWeek(currentWeekStart, currentDate)
 
   const weekWindowRange =
@@ -1052,9 +1054,9 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
                 previousAriaLabel="Previous season"
                 nextAriaLabel="Next season"
                 isCurrentPeriod={viewingCurrentPeriod}
-                onPreviousWeek={() => setCurrentQuarter((q) => shiftQuarter(q, -1))}
-                onNextWeek={() => setCurrentQuarter((q) => shiftQuarter(q, 1))}
-                onCurrentWeek={() => setCurrentQuarter(quarterStartDate(new Date()))}
+                onPreviousWeek={() => setQuarterLens(shiftQuarter(currentQuarter, -1))}
+                onNextWeek={() => setQuarterLens(shiftQuarter(currentQuarter, 1))}
+                onCurrentWeek={() => setQuarterLens(null)}
               />
             ) : habitTab === "weekly" ? (
               <WeekNavigation
@@ -1069,9 +1071,9 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
                 previousAriaLabel="Previous Week"
                 nextAriaLabel="Next Week"
                 isCurrentPeriod={viewingCurrentPeriod}
-                onPreviousWeek={() => setCurrentWeekStart(addCalendarDays(currentWeekStart, -7))}
-                onNextWeek={() => setCurrentWeekStart(addCalendarDays(currentWeekStart, 7))}
-                onCurrentWeek={() => setCurrentWeekStart(getWeekStartDate(new Date()))}
+                onPreviousWeek={() => setWeekLens(addCalendarDays(currentWeekStart, -7))}
+                onNextWeek={() => setWeekLens(addCalendarDays(currentWeekStart, 7))}
+                onCurrentWeek={() => setWeekLens(null)}
               />
             ) : habitTab === "monthly" ? (
               <WeekNavigation
@@ -1089,22 +1091,21 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
                 nextAriaLabel="Next Month"
                 isCurrentPeriod={viewingCurrentPeriod}
                 onPreviousWeek={() =>
-                  setCurrentMonth((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1))
+                  setMonthLens(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))
                 }
-                onNextWeek={() => setCurrentMonth((m) => new Date(m.getFullYear(), m.getMonth() + 1, 1))}
-                onCurrentWeek={() => {
-                  const now = new Date()
-                  setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1))
-                }}
+                onNextWeek={() =>
+                  setMonthLens(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))
+                }
+                onCurrentWeek={() => setMonthLens(null)}
               />
             ) : (
               <WeekNavigation
                 currentWeekStart={currentWeekStart}
                 weekEndDate={weekEndDate}
                 isCurrentPeriod={viewingCurrentPeriod}
-                onPreviousWeek={() => setCurrentWeekStart(addCalendarDays(currentWeekStart, -7))}
-                onNextWeek={() => setCurrentWeekStart(addCalendarDays(currentWeekStart, 7))}
-                onCurrentWeek={() => setCurrentWeekStart(getWeekStartDate(new Date()))}
+                onPreviousWeek={() => setWeekLens(addCalendarDays(currentWeekStart, -7))}
+                onNextWeek={() => setWeekLens(addCalendarDays(currentWeekStart, 7))}
+                onCurrentWeek={() => setWeekLens(null)}
               />
             )}
           </div>

@@ -10,6 +10,8 @@
  * account with three rows from `listPeriodMeasure`: list length, how many
  * were counted in the opened span, and how many are left. The length is not
  * an input. Once the period has ended it is frozen. A real zero prints 0.
+ * Tracking tags lists catalog names (plus unit, combine, on/off); Tagged
+ * tasks shows the count-tag name and that each Done is 1 toward the goal.
  * Close writes nothing.
  */
 "use client"
@@ -22,6 +24,7 @@ import { isGoalType } from "@/lib/habit-utils"
 import { describeSourceSquare } from "@/lib/habit-source-square"
 import { useHabitsStore } from "@/lib/habits-store"
 import { useTaskStore } from "@/lib/task-store"
+import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import type { HabitFrequency, HabitListMeasure, TaskCompletion, WeeklyTask } from "@/lib/types"
 import "./habit-form-dialog.css"
 
@@ -102,6 +105,7 @@ export function HabitSourceDetail({
   const habitExemptions = useHabitsStore((s) => s.habitExemptions)
   const items = useTaskStore((s) => s.tasks)
   const lists = useTaskStore((s) => s.lists)
+  const trackingTags = useTimeTrackingStore((s) => s.tags)
   const now = useMemo(() => clock ?? new Date(), [clock])
   const spanLines = useMemo(() => {
     if (!isGoalType(task.type)) return null
@@ -132,6 +136,7 @@ export function HabitSourceDetail({
       monthlyHabitData,
       gradeTolerance,
       outputGradeTolerance,
+      trackingTags,
       isExempt: (habit, key) =>
         isHabitPeriodExempt(habit, key, (habit.frequency || "daily") as HabitFrequency, habitExemptions, exemptionContext),
     })
@@ -147,6 +152,7 @@ export function HabitSourceDetail({
     gradeTolerance,
     outputGradeTolerance,
     habitExemptions,
+    trackingTags,
   ])
 
   return (

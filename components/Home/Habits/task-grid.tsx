@@ -14,10 +14,18 @@
  */
 "use client"
 
-import { useCallback, useRef, useState, type CSSProperties } from "react"
+import { useCallback, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react"
 import { type WeeklyTask as Task, TaskType, type TaskCompletion, type WeeklyData } from "@/lib/types"
 import { formatLocalDateKey, getDayOfWeek, isToday, startOfLocalDay } from "@/lib/date-utils"
-import { isGoalType, isHabitGoalMet } from "@/lib/habit-utils"
+import { isGoalType, isHabitGoalMet, normalizeTaskType } from "@/lib/habit-utils"
+
+const HABIT_KIND_ORDER = [TaskType.BOOLEAN, TaskType.GOAL, TaskType.INCREMENTAL, TaskType.TEXT] as const
+const HABIT_KIND_LABEL: Record<(typeof HABIT_KIND_ORDER)[number], string> = {
+  [TaskType.BOOLEAN]: "Lamps",
+  [TaskType.GOAL]: "Goals",
+  [TaskType.INCREMENTAL]: "Climb",
+  [TaskType.TEXT]: "Text",
+}
 import { completionCellShowsHatch, isMissedOpportunity, missedOpportunityWrite, printedGoalAmounts } from "@/lib/habit-missed-opportunity"
 import { habitHiddenWhenComplete } from "@/lib/habit-completion-source"
 import { incrementalCompletionPayload } from "@/lib/incremental-habits"
@@ -104,20 +112,44 @@ export function TaskGrid({
   )
   const sheetDates = dayView ? [focusDate] : weekDates
 
-  let filteredTasks = tasks
-
-  if (hideCompleted && viewMode === "day" && selectedDate) {
-    const dateKey = formatLocalDateKey(selectedDate)
-    filteredTasks = filteredTasks.filter((task) => {
-      const kind = exemptionKindFor?.(task, dateKey)
-      return !habitHiddenWhenComplete(task, weeklyData[dateKey]?.[task.id], {
-        date: selectedDate,
-        weeklyData,
-        exempt: isExemptKind(kind),
-        periodPercent: calculateTaskPercentage(task.id),
+  const filteredTasks = useMemo(() => {
+    let next = tasks
+    if (hideCompleted && viewMode === "day" && selectedDate) {
+      const dateKey = formatLocalDateKey(selectedDate)
+      next = next.filter((task) => {
+        const kind = exemptionKindFor?.(task, dateKey)
+        return !habitHiddenWhenComplete(task, weeklyData[dateKey]?.[task.id], {
+          date: selectedDate,
+          weeklyData,
+          exempt: isExemptKind(kind),
+          periodPercent: calculateTaskPercentage(task.id),
+        })
       })
-    })
-  }
+    }
+    return next
+  }, [
+    tasks,
+    hideCompleted,
+    viewMode,
+    selectedDate,
+    exemptionKindFor,
+    weeklyData,
+    calculateTaskPercentage,
+  ])
+
+  const habitKindGroups = useMemo(() => {
+    const buckets = new Map<(typeof HABIT_KIND_ORDER)[number], Task[]>()
+    for (const kind of HABIT_KIND_ORDER) buckets.set(kind, [])
+    for (const task of filteredTasks) {
+      const kind = normalizeTaskType(task.type)
+      const bucket = buckets.get(kind as (typeof HABIT_KIND_ORDER)[number])
+      if (bucket) bucket.push(task)
+      else buckets.get(TaskType.BOOLEAN)!.push(task)
+    }
+    return HABIT_KIND_ORDER.map((kind) => ({ kind, label: HABIT_KIND_LABEL[kind], tasks: buckets.get(kind)! })).filter(
+      (group) => group.tasks.length > 0,
+    )
+  }, [filteredTasks])
 
   const handleBooleanChange = useCallback((taskId: string, date: Date, checked: boolean) => {
     onUpdateTaskCompletion(taskId, date, { completed: checked })
@@ -136,7 +168,7 @@ export function TaskGrid({
   const dragRef = useRef<{ id: string; y: number } | null>(null)
   const [breakdownPeriod, setBreakdownPeriod] = useState<{ key: string; date: Date; title: string } | null>(null)
   const [spanTaskId, setSpanTaskId] = useState<string | null>(null)
-  const visibleIds = filteredTasks.map((task) => task.id)
+  const visibleIds = habitKindGroups.flatMap((group) => group.tasks.map((task) => task.id))
 
   const handleIncrementalChange = useCallback((taskId: string, date: Date, value: number | undefined) => {
     const task = tasks.find((t) => t.id === taskId)
@@ -203,7 +235,17 @@ export function TaskGrid({
               </td>
             </tr>
           ) : (
-            filteredTasks.map((task) => {
+            habitKindGroups.flatMap((group) => {
+              const showKindBand = habitKindGroups.length > 1
+              const rows: ReactNode[] = []
+              if (showKindBand) {
+                rows.push(
+                  <tr key={`kind-${group.kind}`} className="habit-kind-band" data-habit-kind={group.kind}>
+                    <td colSpan={sheetDates.length + (dayView ? 4 : 3)}>{group.label}</td>
+                  </tr>,
+                )
+              }
+              for (const task of group.tasks) {
               const percentage = calculateTaskPercentage(task.id)
               const weekStreak = habitWeekStreakSummary(task, weeklyData, weekStart, asOf, (key) => {
                 const kind = exemptionKindFor?.(task, key)
@@ -225,11 +267,12 @@ export function TaskGrid({
               ]
                 .filter(Boolean)
                 .join(". ")
-              return (
+              rows.push(
                 <tr
                   key={task.id}
                   className="group"
                   data-habit-id={task.id}
+                  data-habit-kind={group.kind}
                   onPointerDown={
                     onReorder
                       ? (event) => {
@@ -356,8 +399,10 @@ export function TaskGrid({
                   >
                     <HabitPercentReadout value={percentage} label={`${task.name} week`} />
                   </td>
-                </tr>
+                </tr>,
               )
+              }
+              return rows
             })
           )}
 

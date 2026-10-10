@@ -66,6 +66,21 @@
    The row is the sticky box — sticking the cells misses in this scrollport.
    Solid chrome so a row cannot show through. Overflow stays the cell default
    (visible) so the glass percent tubes are not clipped. */
+.habit-grid tbody tr.habit-kind-band td {
+  padding: 6px 8px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #3a3e42;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, transparent 100%),
+    #b8bcc0;
+  border-top: 1px solid rgba(255, 255, 255, 0.55);
+  border-bottom: 1px solid rgba(70, 76, 86, 0.28);
+}
+
 .habit-grid tbody tr.habit-grid-foot {
   position: sticky;
   bottom: 0;

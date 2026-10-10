@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 import { useTaskStore } from "@/lib/task-store"
+import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { TaskType, type WeeklyTask } from "@/lib/types"
 import { HabitCompletionCell } from "./habit-completion-cell"
 import { HabitSourceDetail } from "./habit-source-detail"
@@ -48,6 +49,74 @@ describe("habit source detail", () => {
     await user.dblClick(screen.getByLabelText("Stretch Oct 5"))
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
     expect(onGoalChange).not.toHaveBeenCalled()
+  })
+
+  it("names Tracking tags and the tagged-task rule in source detail", () => {
+    const previousTags = useTimeTrackingStore.getState().tags
+    useTimeTrackingStore.setState({
+      tags: [
+        ...previousTags.filter((tag) => tag.id !== "tag-cleaning"),
+        { id: "tag-cleaning", name: "Cleaning", color: "#8b5cf6" },
+      ],
+    })
+    const habit = task(["tags", "taggedTasks"], {
+      taggedTaskTag: "cooking",
+      trackingLink: { tagIds: ["tag-cleaning"], unit: "hours", mode: "max", enabled: true },
+    })
+    const view = render(
+      <HabitSourceDetail
+        open
+        onOpenChange={vi.fn()}
+        task={habit}
+        periodLabel="Oct 5"
+        date={date}
+        completion={{ trackedValue: 1.5, taggedTaskCount: 2, value: 2 }}
+      />,
+    )
+    try {
+      const dialog = screen.getByRole("dialog")
+      expect(dialog).toHaveTextContent("Tracking tags")
+      expect(dialog).toHaveTextContent("Cleaning")
+      expect(dialog).toHaveTextContent("hours")
+      expect(dialog).toHaveTextContent("Higher of the two")
+      expect(dialog).toHaveTextContent("On")
+      expect(dialog).toHaveTextContent("Tagged tasks")
+      expect(dialog).toHaveTextContent("cooking")
+      expect(dialog).toHaveTextContent("each Done counts as 1 toward the goal (10)")
+      expect(dialog).toHaveTextContent("2")
+    } finally {
+      view.unmount()
+      useTimeTrackingStore.setState({ tags: previousTags })
+    }
+  })
+
+  it("shows a quiet tagged-tasks hint on the goal cell without dropping the minutes clock", () => {
+    render(
+      <HabitCompletionCell
+        task={task(["manual", "taggedTasks", "tags"], {
+          taggedTaskTag: "cooking",
+          trackingLink: { tagIds: ["tag-cleaning"], unit: "minutes", mode: "add", enabled: true },
+        })}
+        date={date}
+        periodKey="2026-10-05_2026-10-11"
+        periodLabel="Oct 5"
+        completion={{ value: 5, trackedValue: 3, manualValue: 2, taggedTaskCount: 2 }}
+        weeklyData={{}}
+        variant="period"
+        frequency="weekly"
+        exemptionNoun="week"
+        onBooleanChange={vi.fn()}
+        onGoalChange={vi.fn()}
+        onTextChange={vi.fn()}
+        onIncrementalChange={vi.fn()}
+      />,
+    )
+    expect(screen.getByLabelText("includes tracked time")).toBeInTheDocument()
+    expect(screen.getByLabelText("2 Done tagged cooking")).toBeInTheDocument()
+    const cell = screen.getByLabelText("Stretch Oct 5").closest(".habit-cell-num")
+    const title = cell?.getAttribute("title") ?? ""
+    expect(title).toContain("from Tracking")
+    expect(title).toContain("2 Done tagged cooking")
   })
 
   it("opens a read-only detail for a habit without By hand and closes without writing", async () => {

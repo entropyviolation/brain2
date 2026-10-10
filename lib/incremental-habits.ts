@@ -11,7 +11,10 @@
  * Daily (chess rating): the user logs their current score. That log becomes the
  * committed score for the next day, even if it is a drop. The day's target is
  * last logged score + increment. A skipped day (no log) keeps the previous
- * committed score. Week % is (gain during the week) / (increment × 7).
+ * committed score. Week % is (gain during the week) / (increment × 7), so one
+ * day that gains the whole week's increment fills the week. A cell still
+ * stops at 100%. A span of periods (`incrementalSpanPercentage`) keeps the
+ * extra above each period's target and stops at 100% only after the mean.
  *
  * Completions persist as `TaskCompletion.value` (same as GOAL). Legacy
  * `incrementalValues` maps are still read.
@@ -173,7 +176,13 @@ export function isIncrementalCompleteOn(
   return value >= committed + data.increment
 }
 
-export function incrementalDayPercentage(
+/**
+ * How many of that period's targets this log covered.
+ * Above 1 is overflow. A cell percent stops at 1; a span percent does not,
+ * so one period far above its target can fill the periods that were empty.
+ * Null when nothing was logged.
+ */
+export function incrementalDayMultiple(
   task: WeeklyTask,
   completion: TaskCompletion | undefined,
   weeklyData: WeeklyData,
@@ -185,13 +194,42 @@ export function incrementalDayPercentage(
   if (value === undefined) return null
   if (data.cadence === "weekly") {
     const goal = weeklyGoalOn(task, weeklyData, date)
-    if (goal <= 0) return value > 0 ? 100 : 0
-    return Math.min(100, (value / goal) * 100)
+    if (goal <= 0) return value > 0 ? 1 : 0
+    return Math.max(0, value / goal)
   }
   const committed = dailyCommittedBefore(task, weeklyData, date)
   if (value <= committed) return 0
-  if (data.increment <= 0) return 100
-  return Math.min(100, ((value - committed) / data.increment) * 100)
+  if (data.increment <= 0) return 1
+  return Math.max(0, (value - committed) / data.increment)
+}
+
+export function incrementalDayPercentage(
+  task: WeeklyTask,
+  completion: TaskCompletion | undefined,
+  weeklyData: WeeklyData,
+  date: Date,
+): number | null {
+  const multiple = incrementalDayMultiple(task, completion, weeklyData, date)
+  if (multiple === null) return null
+  return Math.min(100, multiple * 100)
+}
+
+/**
+ * Span percent for a climb: mean of each period's multiple, then stop at 100.
+ * A period at 7× its target and six empty periods is 100% of a 7-period span.
+ */
+export function incrementalSpanPercentage(
+  task: WeeklyTask,
+  weeklyData: WeeklyData,
+  periods: { key: string; date: Date }[],
+): number {
+  const n = periods.length
+  if (n === 0) return 0
+  let covered = 0
+  for (const period of periods) {
+    covered += incrementalDayMultiple(task, weeklyData[period.key]?.[task.id], weeklyData, period.date) ?? 0
+  }
+  return Math.min(100, (covered / n) * 100)
 }
 
 export function incrementalWeekPercentage(task: WeeklyTask, weeklyData: WeeklyData, weekDates: Date[]): number {

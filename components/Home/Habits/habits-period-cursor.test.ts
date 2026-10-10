@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest"
 import { formatLocalDateKey, getWeekDates } from "@/lib/date-utils"
+import { monthAnchorFromDay, quarterAnchorFromDay, weekAnchorFromDay } from "@/lib/use-current-date"
 import {
+  habitsLensFromStored,
   habitsViewedMonth,
   habitsViewedQuarter,
   habitsViewedWeekStart,
@@ -73,5 +75,28 @@ describe("habitsViewedMonth / habitsViewedQuarter", () => {
   it("restores stored month and season after mount", () => {
     expect(formatLocalDateKey(habitsViewedMonth(asOf, new Date(2026, 7, 15)))).toBe("2026-08-01")
     expect(formatLocalDateKey(habitsViewedQuarter(asOf, new Date(2026, 3, 1)))).toBe("2026-04-01")
+  })
+
+  it("adapts shared Home-day anchors (not a second truth)", () => {
+    expect(formatLocalDateKey(habitsViewedWeekStart(asOf))).toBe(formatLocalDateKey(weekAnchorFromDay(asOf)))
+    expect(formatLocalDateKey(habitsViewedMonth(asOf))).toBe(formatLocalDateKey(monthAnchorFromDay(asOf)))
+    expect(formatLocalDateKey(habitsViewedQuarter(asOf))).toBe(formatLocalDateKey(quarterAnchorFromDay(asOf)))
+  })
+})
+
+describe("habitsLensFromStored", () => {
+  const asOf = new Date(2026, 8, 27)
+
+  it("returns null when stored is Home day's period", () => {
+    expect(habitsLensFromStored(asOf, habitsViewedWeekStart(asOf), "week")).toBeNull()
+    expect(habitsLensFromStored(asOf, habitsViewedMonth(asOf), "month")).toBeNull()
+    expect(habitsLensFromStored(asOf, habitsViewedQuarter(asOf), "quarter")).toBeNull()
+  })
+
+  it("returns the offset when stored is another period", () => {
+    const priorWeek = new Date(2026, 8, 14)
+    const lens = habitsLensFromStored(asOf, priorWeek, "week")
+    expect(lens).not.toBeNull()
+    expect(formatLocalDateKey(lens!)).toBe("2026-09-14")
   })
 })

@@ -1269,6 +1269,24 @@ body.win95-app .hab95 button.hab-willpower-lab-toggle.is-on {
   min-width: 0;
 }
 
+/* Tubes are the instrument; sheet / lamps stay a quieter bay. */
+.hab-control-band[data-band="meters"] {
+  position: relative;
+  z-index: 1;
+}
+
+.hab-control-band[data-band="sheet"],
+.hab-control-band[data-band="lamps"] {
+  opacity: 0.86;
+  filter: saturate(0.92);
+}
+
+.hab-control-band[data-band="sheet"] .hab-control-plate,
+.hab-control-band[data-band="lamps"] .hab-control-plate {
+  transform: scale(0.97);
+  transform-origin: top center;
+}
+
 .hab-control-stack {
   display: flex;
   flex-direction: column;
@@ -1903,12 +1921,16 @@ body.win95-app .hab95 .hab-control-stack > button.hab-control-new,
 }
 
 .hab-control-panel > .hab-willpower-gems {
-  width: min(100%, 220px);
-  max-width: 220px;
+  --hab-willpower-scale: 0.86;
+  width: min(100%, 190px);
+  max-width: 190px;
   margin-top: auto;
   margin-left: auto;
   margin-right: auto;
   align-self: center;
+  opacity: 0.9;
+  /* Reward plate — magic stays, but the grid % column wins first glance. */
+  z-index: 1;
 }
 
 .hab-control-panel > .hab-control-new + .hab-willpower-gems {

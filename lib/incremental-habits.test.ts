@@ -5,6 +5,7 @@ import {
   WEEKLY_INCREMENT_MIN_DAYS,
   dailyCommittedBefore,
   dailyGoalOn,
+  incrementalDayMultiple,
   incrementalDayPercentage,
   incrementalLoggedValue,
   incrementalWeekPercentage,
@@ -135,6 +136,12 @@ describe("daily cadence (chess score)", () => {
     const weeklyData = data([[week[1], 250]])
     const pct = incrementalWeekPercentage(task, weeklyData, week)
     expect(pct).toBeCloseTo((50 / 70) * 100, 5)
+  })
+
+  it("keeps the cell at 100 while the multiple keeps the overflow", () => {
+    const weeklyData = data([[week[0], 270]])
+    expect(incrementalDayPercentage(task, { value: 270 }, weeklyData, week[0])).toBe(100)
+    expect(incrementalDayMultiple(task, { value: 270 }, weeklyData, week[0])).toBe(7)
   })
 
   it("treats a day that does not beat last score + increment as 0% when at or below last score", () => {

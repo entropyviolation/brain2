@@ -12,7 +12,9 @@
  *
  * A habit that prints a current/target on the cell lists that same pair on
  * each period (`printedGoalAmounts`, or the climb log and that day's target).
- * The numerator is not clamped to the target. A yes/no lamp stays a name.
+ * The numerator is not clamped to the target. Extra above the target fills
+ * the other periods in Total and Running; those figures still stop at 100.
+ * A yes/no lamp stays a name.
  */
 import {
   calculateElapsedPeriodTaskPercentage,

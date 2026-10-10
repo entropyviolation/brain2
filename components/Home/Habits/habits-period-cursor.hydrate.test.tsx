@@ -8,22 +8,25 @@ import { useLayoutEffect, useState } from "react"
 import { beforeEach, describe, expect, it } from "vitest"
 import { APP_NAV_KEYS, readStoredDate, writeStoredDate } from "@/lib/app-navigation"
 import { formatDateRange } from "@/lib/date-utils"
+import { pinHomeCursor } from "@/lib/use-current-date"
 import { resetLocalStorage } from "@/tests/test-utils"
-import { habitsViewedWeekStart, retainHabitsCursorDate } from "./habits-period-cursor"
+import {
+  habitsLensFromStored,
+  habitsViewedWeekStart,
+  retainHabitsCursorDate,
+} from "./habits-period-cursor"
 import { WeekNavigation } from "./week-navigation"
 
 /** Minimal stand-in for the tracker’s week cursor (same init + layout restore rule). */
 function HabitsWeekCursorProbe({ asOf }: { asOf: Date }) {
-  const [weekStart, setWeekStart] = useState(() => habitsViewedWeekStart(asOf))
+  const [weekLens, setWeekLens] = useState<Date | null>(null)
   useLayoutEffect(() => {
-    setWeekStart((prev) =>
-      retainHabitsCursorDate(prev, habitsViewedWeekStart(asOf, readStoredDate(APP_NAV_KEYS.homeHabitsWeek))),
-    )
+    setWeekLens(habitsLensFromStored(asOf, readStoredDate(APP_NAV_KEYS.homeHabitsWeek), "week"))
   }, [asOf])
+  const weekStart = weekLens ?? habitsViewedWeekStart(asOf)
   const weekEnd = new Date(weekStart)
   weekEnd.setDate(weekEnd.getDate() + 6)
-  const isCurrent =
-    habitsViewedWeekStart(asOf).getTime() === weekStart.getTime()
+  const isCurrent = habitsViewedWeekStart(asOf).getTime() === weekStart.getTime()
   return (
     <WeekNavigation
       currentWeekStart={weekStart}
@@ -31,7 +34,7 @@ function HabitsWeekCursorProbe({ asOf }: { asOf: Date }) {
       isCurrentPeriod={isCurrent}
       onPreviousWeek={() => {}}
       onNextWeek={() => {}}
-      onCurrentWeek={() => setWeekStart(habitsViewedWeekStart(asOf))}
+      onCurrentWeek={() => setWeekLens(null)}
     />
   )
 }
@@ -42,9 +45,10 @@ describe("Habits week cursor hydration", () => {
 
   beforeEach(() => {
     resetLocalStorage()
+    pinHomeCursor(asOf, false)
   })
 
-  it("SSR HTML uses the current week even when a prior week is stored", () => {
+  it("SSR HTML uses the Home-day week even when a prior week is stored", () => {
     writeStoredDate(APP_NAV_KEYS.homeHabitsWeek, priorWeek)
     const html = renderToString(<HabitsWeekCursorProbe asOf={asOf} />)
     expect(html).toContain("Sep 21 - Sep 27, 2026")
@@ -52,7 +56,7 @@ describe("Habits week cursor hydration", () => {
     expect(html).toContain('aria-pressed="true"')
   })
 
-  it("hydrates without mismatch, then restores the persisted prior week", async () => {
+  it("hydrates without mismatch, then restores the persisted prior week lens", async () => {
     writeStoredDate(APP_NAV_KEYS.homeHabitsWeek, priorWeek)
     const html = renderToString(<HabitsWeekCursorProbe asOf={asOf} />)
     const container = document.createElement("div")
@@ -64,7 +68,7 @@ describe("Habits week cursor hydration", () => {
       root = hydrateRoot(container, <HabitsWeekCursorProbe asOf={asOf} />)
     })
 
-    // After layout restore: prior week, Today not pressed
+    // After layout restore: prior week lens, Today not pressed
     expect(screen.getByText("Sep 14 - Sep 20, 2026")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /Today/ })).toHaveAttribute("aria-pressed", "false")
 
@@ -74,9 +78,16 @@ describe("Habits week cursor hydration", () => {
     container.remove()
   })
 
-  it("keeps current week when nothing is stored", () => {
+  it("keeps Home-day week when nothing is stored", () => {
     render(<HabitsWeekCursorProbe asOf={asOf} />)
     expect(screen.getByText(formatDateRange(habitsViewedWeekStart(asOf), new Date(2026, 8, 27)))).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /Today/ })).toHaveAttribute("aria-pressed", "true")
+  })
+
+  it("does not keep a stored lens when it is the same week as Home day", () => {
+    writeStoredDate(APP_NAV_KEYS.homeHabitsWeek, habitsViewedWeekStart(asOf))
+    const lens = habitsLensFromStored(asOf, readStoredDate(APP_NAV_KEYS.homeHabitsWeek), "week")
+    expect(lens).toBeNull()
+    expect(retainHabitsCursorDate(asOf, asOf)).toBe(asOf)
   })
 })

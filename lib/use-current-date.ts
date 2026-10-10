@@ -10,13 +10,49 @@
  * becomes visible, or on the next launch — including after more than one
  * missed night. A saved day from before that choice was recorded is treated
  * as the last session's today and catches up once.
+ *
+ * Coarser period anchors (`weekAnchorFromDay`, `monthAnchorFromDay`,
+ * `quarterAnchorFromDay`, `periodAnchorsFromDay`) are pure facts derived from
+ * that day. Habits / To Do chrome may keep a local lens offset; they must not
+ * invent a second shell day.
  */
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
 import { APP_NAV_KEYS, readStoredDate, writeStoredDate } from "@/lib/app-navigation"
-import { formatLocalDateKey } from "@/lib/date-utils"
+import { formatLocalDateKey, getWeekStartDate } from "@/lib/date-utils"
+import { quarterStartDate } from "@/lib/seasons"
 import { readAliasedLocal, writeAliasedLocal } from "@/lib/storage-keys"
+
+/** Monday that opens the week containing `day`. */
+export function weekAnchorFromDay(day: Date): Date {
+  return getWeekStartDate(day)
+}
+
+/** First-of-month for the month containing `day`. */
+export function monthAnchorFromDay(day: Date): Date {
+  return new Date(day.getFullYear(), day.getMonth(), 1)
+}
+
+/** Season (quarter) start for the quarter containing `day`. */
+export function quarterAnchorFromDay(day: Date): Date {
+  return quarterStartDate(day)
+}
+
+/** Week / month / season anchors derived from one Home day. */
+export function periodAnchorsFromDay(day: Date): {
+  day: Date
+  weekStart: Date
+  monthStart: Date
+  quarterStart: Date
+} {
+  return {
+    day,
+    weekStart: weekAnchorFromDay(day),
+    monthStart: monthAnchorFromDay(day),
+    quarterStart: quarterAnchorFromDay(day),
+  }
+}
 
 export function msUntilLocalMidnight(from = new Date()): number {
   const next = new Date(from.getFullYear(), from.getMonth(), from.getDate() + 1)

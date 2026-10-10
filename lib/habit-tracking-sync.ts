@@ -13,9 +13,11 @@
  * the other.
  *
  * The subscription is a process-wide singleton started by `useHabitTrackingSync`,
- * which both `TimeGrid` and the Habits tab mount. Painting recomputes only the
- * days that changed; editing a pen's tags or a scope re-checks every day that has
- * data, since any of them may now match differently.
+ * which both `TimeGrid` and the Habits tab mount. The first ready pass writes
+ * today's Monday-start week so the desk can paint. The rest of the painted
+ * history runs on idle. Later paints are not deferred: a brush stroke
+ * recomputes only the days that changed, and editing a pen's tags or a scope
+ * re-checks every day that has data, since any of them may now match differently.
  *
  * The same mount also starts the tagged-task count sync, the daily
  * completion-average sync, the list-sent sync, and the BIM keyword sync.
@@ -37,6 +39,7 @@ import { startListSentSync } from "@/lib/list-sent-sync"
 import { startKeywordSync } from "@/lib/habit-keyword-sync"
 import { useHabitsStore } from "@/lib/habits-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
+import { formatLocalDateKey, getWeekDates, getWeekStartDate } from "@/lib/date-utils"
 import { periodWindowsForFrequency } from "@/lib/habit-period-windows"
 import { startHydratedStoreSync, type HydratedStoreSyncSlot } from "@/lib/start-hydrated-store-sync"
 import { activeTrackingLink, convertTrackedMinutes } from "@/lib/habit-tracking"
@@ -119,6 +122,24 @@ export function syncTrackedHabitsForTask(taskId: string): void {
 
 const trackingSyncSlot: HydratedStoreSyncSlot = { stopper: null }
 
+/** Monday-start week that contains today, seven local date keys. */
+function openWeekDateKeys(now = new Date()): string[] {
+  return getWeekDates(getWeekStartDate(now)).map(formatLocalDateKey)
+}
+
+/**
+ * Run after the desk can paint. `requestIdleCallback` when the browser has it,
+ * otherwise the next macrotask. Returns a cancel for teardown.
+ */
+function scheduleIdle(work: () => void): () => void {
+  if (typeof requestIdleCallback === "function") {
+    const id = requestIdleCallback(() => work())
+    return () => cancelIdleCallback(id)
+  }
+  const id = setTimeout(work, 0)
+  return () => clearTimeout(id)
+}
+
 /**
  * Idempotent: repeated calls reuse the one subscription. Returns a stopper used
  * by tests; components rely on the singleton and never tear it down.
@@ -144,8 +165,12 @@ export function startHabitTrackingSync(): () => void {
         if (paletteChanged) syncTrackedHabits()
         else if (changedDays.length > 0) syncTrackedHabits(changedDays)
       })
-      syncTrackedHabits()
-      return stop
+      syncTrackedHabits(openWeekDateKeys())
+      const cancelIdle = scheduleIdle(() => syncTrackedHabits())
+      return () => {
+        cancelIdle()
+        stop()
+      }
     },
   })
 }

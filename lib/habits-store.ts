@@ -15,7 +15,9 @@
  * Perfect output beat last week, and two average bonuses (default 5 each)
  * when that day's raw completion is above the prior 7-day average and above
  * the prior 30-day average, via `lib/habit-points.ts` /
- * `lib/habit-accomplishment.ts`.
+ * `lib/habit-accomplishment.ts`. Rehydrate writes the open week on the
+ * hydrate microtask and walks the rest of history on idle so the desk can
+ * paint. A settings change still walks every week immediately.
  * Completing a habit also writes a
  * Done-list `loggedAction` (`lib/habit-done-log.ts`).
  *
@@ -1223,6 +1225,12 @@ function resyncAllNighterMornings(mornings: Iterable<string>) {
   }
 }
 
+/** History that can wait until the desk has painted. */
+function scheduleIdle(work: () => void): void {
+  if (typeof requestIdleCallback === "function") requestIdleCallback(() => work())
+  else setTimeout(work, 0)
+}
+
 function syncGradeBonusesFromState(state: HabitsState, extraAnchor?: Date) {
   const seen = new Set<string>()
   const anchors: Date[] = [new Date()]
@@ -1987,7 +1995,8 @@ export const useHabitsStore = create<HabitsState>()(
           const syncAwards = () => {
             const live = useHabitsStore.getState()
             if (!live.tasks?.length) return
-            syncGradeBonusesFromState(live)
+            syncGradeBonusesFromState(live, new Date())
+            scheduleIdle(() => syncGradeBonusesFromState(useHabitsStore.getState()))
           }
           if (usePointsStore.persist.hasHydrated()) queueMicrotask(syncAwards)
           else {
