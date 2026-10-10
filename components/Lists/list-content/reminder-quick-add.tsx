@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { addReminder, parseReminderWhen, type ReminderRepeat } from "@/lib/reminders"
 
-/** Add row for the built-in Reminders list: a name, a time, once / daily / weekly, Text me, and Persistent. */
+/** Add row for the built-in Reminders list: a name, a time, repeat, Text me, and Persistent. */
 export function ReminderQuickAdd({ onCancel }: { onCancel: () => void }) {
   const [text, setText] = useState("")
   const [when, setWhen] = useState("")
@@ -56,6 +56,8 @@ export function ReminderQuickAdd({ onCancel }: { onCancel: () => void }) {
           <option value="once">Once</option>
           <option value="daily">Every day</option>
           <option value="weekly">Every week</option>
+          <option value="new-moon">Each new moon</option>
+          <option value="full-moon">Each full moon</option>
         </select>
       </div>
       <div className="flex gap-4" style={{ marginTop: 6 }}>

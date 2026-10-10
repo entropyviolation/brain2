@@ -2,8 +2,8 @@
  * lib/reminders.ts — Built-in Reminders list and timed delivery
  *
  * Items on the Reminders list fire at `scheduledDate` + `scheduledTime`.
- * `reminder.repeat` is once, every day, or every week. That clock is not
- * `repeatSettings` (count / frequency completions).
+ * `reminder.repeat` is once, every day, every week, each new moon, or each
+ * full moon. That clock is not `repeatSettings` (count / frequency completions).
  *
  * A due occurrence is copied into the existing Inbox. When Text me is on
  * (the default), it is also texted to the paired Telegram chat through the
@@ -16,25 +16,43 @@
  *
  * Persistent (the default) keeps a due, undismissed occurrence in the header
  * bell until Dismiss. Dismiss is not delete: a one-time reminder leaves the
- * bell for good; a daily or weekly reminder leaves until the next cycle.
- * That occurrence is not inboxed or texted again.
+ * bell for good; a daily, weekly, or lunar reminder leaves until the next
+ * cycle. That occurrence is not inboxed or texted again.
+ *
+ * Two seeded rows — `new moon tonight` and `full moon tonight` — inbox and
+ * text at 18:00 local on the calendar day that contains that phase
+ * (`lib/lunar.ts`, Meeus ch. 49). The header bell nags from local midnight of
+ * that same day so the night is visible before evening. After deliver or
+ * dismiss they advance to the next lunation.
  *
  * The tick lives in `hooks/use-reminder-tick.ts` and only runs while the app
  * is open.
  */
 import { reminderCaptureOrigin } from "@/lib/capture-origin"
-import { formatLocalDateKey, parseLocalDate, safeDateFormat } from "@/lib/date-utils"
+import { formatLocalDateKey, parseLocalDate, safeDateFormat, startOfLocalDay } from "@/lib/date-utils"
 import { isClearedFromWork } from "@/lib/completion-status"
 import { createListItem, itemTitle } from "@/lib/item-utils"
 import { getTelegramDesktop } from "@/lib/ingest/telegram-bridge"
 import { useIngestStore } from "@/lib/ingest/ingest-store"
+import {
+  MOON_REMINDER_HOUR,
+  MOON_REMINDER_MINUTE,
+  nextMoonReminderEvening,
+  type LunarKind,
+} from "@/lib/lunar"
 import { useTaskStore } from "@/lib/task-store"
 import type { List, Task } from "@/lib/types"
 
 export const REMINDERS_LIST_ID = "reminders"
 export const REMINDERS_LIST_NAME = "Reminders"
 
-export type ReminderRepeat = "once" | "daily" | "weekly"
+export const NEW_MOON_TONIGHT_NAME = "new moon tonight"
+export const FULL_MOON_TONIGHT_NAME = "full moon tonight"
+export const NEW_MOON_REMINDER_ID = "reminder-new-moon-tonight"
+export const FULL_MOON_REMINDER_ID = "reminder-full-moon-tonight"
+
+export type ReminderRepeat = "once" | "daily" | "weekly" | "new-moon" | "full-moon"
+export type RecurringReminderRepeat = Exclude<ReminderRepeat, "once">
 
 export const REMINDER_SKIP_NO_CHAT = "No paired Telegram chat"
 export const REMINDER_SKIP_NO_TOKEN = "No bot token stored"
@@ -69,7 +87,8 @@ export interface DeliverRemindersOptions {
   chatId?: string
 }
 
-const REPEAT: ReminderRepeat[] = ["once", "daily", "weekly"]
+const REPEAT: ReminderRepeat[] = ["once", "daily", "weekly", "new-moon", "full-moon"]
+const RECURRING: RecurringReminderRepeat[] = ["daily", "weekly", "new-moon", "full-moon"]
 
 let delivering = false
 
@@ -79,6 +98,26 @@ function pad(n: number): string {
 
 export function isReminderRepeat(value: unknown): value is ReminderRepeat {
   return typeof value === "string" && (REPEAT as string[]).includes(value)
+}
+
+export function isRecurringReminderRepeat(value: unknown): value is RecurringReminderRepeat {
+  return typeof value === "string" && (RECURRING as string[]).includes(value)
+}
+
+function lunarKindForRepeat(repeat: "new-moon" | "full-moon"): LunarKind {
+  return repeat === "new-moon" ? "new" : "full"
+}
+
+function moonReminderTitle(task: Task): string {
+  return itemTitle(task).trim()
+}
+
+function findSeededMoonReminder(tasks: Task[], listId: string, id: string, name: string): Task | undefined {
+  const onList = (task: Task) => (task.lists ?? []).includes(listId)
+  return (
+    tasks.find((task) => onList(task) && task.id === id) ??
+    tasks.find((task) => onList(task) && moonReminderTitle(task) === name)
+  )
 }
 
 function remindersName(name: string | undefined): boolean {
@@ -137,6 +176,22 @@ export function ensureRemindersList(): string {
     description: "Timed reminders. When one is due it lands in the Inbox and, when Text me is on, is texted through Telegram.",
   })
   return REMINDERS_LIST_ID
+}
+
+/**
+ * Idempotent seed of `new moon tonight` and `full moon tonight` on the
+ * Reminders list. Match by stable id or exact title. Text me and Persistent
+ * default on. Next fire is 18:00 local on the next applicable phase day.
+ */
+export function ensureMoonNightReminders(now: Date = new Date()): {
+  newMoonId: string
+  fullMoonId: string
+} {
+  const listId = ensureRemindersList()
+  return {
+    newMoonId: seedOneMoonReminder(listId, NEW_MOON_REMINDER_ID, NEW_MOON_TONIGHT_NAME, "new-moon", now),
+    fullMoonId: seedOneMoonReminder(listId, FULL_MOON_REMINDER_ID, FULL_MOON_TONIGHT_NAME, "full-moon", now),
+  }
 }
 
 function parseClock(value: string | undefined): { hours: number; minutes: number } | null {
@@ -265,7 +320,15 @@ export function reminderRowCaption(task: Task): string {
   if (!task.reminder || !task.scheduledTime) return ""
   const day = task.scheduledDate ? safeDateFormat(task.scheduledDate) : ""
   const repeat =
-    task.reminder.repeat === "daily" ? "every day" : task.reminder.repeat === "weekly" ? "every week" : "once"
+    task.reminder.repeat === "daily"
+      ? "every day"
+      : task.reminder.repeat === "weekly"
+        ? "every week"
+        : task.reminder.repeat === "new-moon"
+          ? "each new moon"
+          : task.reminder.repeat === "full-moon"
+            ? "each full moon"
+            : "once"
   const sent = task.reminder.repeat === "once" && task.reminder.deliveredKey ? "sent" : ""
   return [day && day !== "Not set" && day !== "Invalid date" ? day : "", task.scheduledTime, repeat, sent]
     .filter(Boolean)
@@ -277,8 +340,16 @@ export function reminderTelegramText(task: Task): string {
   return `Reminder: ${title}`
 }
 
-/** Next local midnight strictly after `now` for a daily or weekly clock. */
-export function nextReminderDate(repeat: "daily" | "weekly", sentAt: Date, now: Date): Date {
+/**
+ * Next local calendar day for a recurring reminder after an occurrence.
+ * Daily / weekly step from `sentAt`'s clock. New / full moon use the next
+ * 18:00 local on that phase's day after `now` (`nextMoonReminderEvening`).
+ */
+export function nextReminderDate(repeat: RecurringReminderRepeat, sentAt: Date, now: Date): Date {
+  if (repeat === "new-moon" || repeat === "full-moon") {
+    const evening = nextMoonReminderEvening(lunarKindForRepeat(repeat), now)
+    return new Date(evening.getFullYear(), evening.getMonth(), evening.getDate())
+  }
   const step = repeat === "weekly" ? 7 : 1
   const cursor = new Date(sentAt.getFullYear(), sentAt.getMonth(), sentAt.getDate())
   for (let i = 0; i < 366 * 5; i++) {
@@ -297,6 +368,14 @@ export function nextReminderDate(repeat: "daily" | "weekly", sentAt: Date, now: 
     }
   }
   return new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate())
+}
+
+/** Keep lunar rows on 18:00 when advancing, in case the stored clock drifted. */
+function nextScheduledTime(task: Task, repeat: ReminderRepeat): string | undefined {
+  if (repeat === "new-moon" || repeat === "full-moon") {
+    return `${pad(MOON_REMINDER_HOUR)}:${pad(MOON_REMINDER_MINUTE)}`
+  }
+  return task.scheduledTime
 }
 
 function pairedChatId(): string | undefined {
@@ -349,11 +428,17 @@ export function formatReminderWhen(at: Date): string {
   return `${WHEN_MONTHS[at.getMonth()]} ${at.getDate()} · ${h12}:${pad(at.getMinutes())} ${ampm}`
 }
 
+/** Lunar rows nag on the whole local phase day; inbox/Telegram still wait for 18:00. */
+function lunarBellOpen(at: Date, now: Date): boolean {
+  return formatLocalDateKey(at) === formatLocalDateKey(now) && now.getTime() >= startOfLocalDay(at).getTime()
+}
+
 /**
  * The occurrence the header bell is nagging about.
- * A clock still sitting on a due time uses that time. After a recurring
- * reminder has moved on, the occurrence just sent stays until dismissed.
- * Persistent off never nags. A dismissed occurrence never nags.
+ * A clock still sitting on a due time uses that time. New-moon and full-moon
+ * rows also nag from local midnight of their scheduled day (before 18:00).
+ * After a recurring reminder has moved on, the occurrence just sent stays
+ * until dismissed. Persistent off never nags. A dismissed occurrence never nags.
  */
 export function nagOccurrence(task: Task, listId: string, now: Date): { key: string; at: Date } | null {
   if (isClearedFromWork(task)) return null
@@ -362,7 +447,8 @@ export function nagOccurrence(task: Task, listId: string, now: Date): { key: str
   if (!reminderPersists(task.reminder)) return null
 
   const at = reminderInstant(task)
-  if (at && at.getTime() <= now.getTime()) {
+  const lunar = task.reminder.repeat === "new-moon" || task.reminder.repeat === "full-moon"
+  if (at && (at.getTime() <= now.getTime() || (lunar && lunarBellOpen(at, now)))) {
     const key = reminderOccurrenceKey(at)
     if (task.reminder.dismissedKey === key) return null
     return { key, at }
@@ -409,7 +495,7 @@ export function currentReminders(tasks: Task[], lists: List[], now: Date): Curre
 /**
  * Dismiss the current occurrence. The item stays on the Reminders list.
  * One-time: it does not return to the bell or fire again.
- * Daily / weekly: hidden until the next cycle, which is a new occurrence.
+ * Daily / weekly / lunar: hidden until the next cycle, which is a new occurrence.
  * A not-yet-sent occurrence is consumed here so it is not inboxed or texted.
  */
 export function dismissReminder(taskId: string, now: Date = new Date()): boolean {
@@ -422,14 +508,20 @@ export function dismissReminder(taskId: string, now: Date = new Date()): boolean
 
   const sitting = reminderInstant(task)
   const sittingKey = sitting ? reminderOccurrenceKey(sitting) : null
+  const recurring = isRecurringReminderRepeat(task.reminder.repeat)
   const scheduledDate =
-    sittingKey === occurrence.key && task.reminder.repeat !== "once"
+    sittingKey === occurrence.key && recurring
       ? nextReminderDate(task.reminder.repeat, occurrence.at, now)
       : task.scheduledDate
+  const scheduledTime =
+    sittingKey === occurrence.key && recurring
+      ? nextScheduledTime(task, task.reminder.repeat)
+      : task.scheduledTime
 
   store.updateTask({
     ...task,
     scheduledDate,
+    scheduledTime,
     reminder: {
       ...task.reminder,
       deliveredKey: occurrence.key,
@@ -505,14 +597,16 @@ export async function deliverDueReminders(
         }
       }
 
-      const scheduledDate =
-        fresh.reminder.repeat === "once"
-          ? fresh.scheduledDate
-          : nextReminderDate(fresh.reminder.repeat, slot.at, now)
+      const recurring = isRecurringReminderRepeat(fresh.reminder.repeat)
+      const scheduledDate = recurring
+        ? nextReminderDate(fresh.reminder.repeat, slot.at, now)
+        : fresh.scheduledDate
+      const scheduledTime = recurring ? nextScheduledTime(fresh, fresh.reminder.repeat) : fresh.scheduledTime
 
       useTaskStore.getState().updateTask({
         ...fresh,
         scheduledDate,
+        scheduledTime,
         reminder: {
           ...fresh.reminder,
           deliveredKey: slot.key,
@@ -549,4 +643,43 @@ export function addReminder(
   }
   useTaskStore.getState().addTask(item)
   return item.id
+}
+
+function seedOneMoonReminder(
+  listId: string,
+  id: string,
+  name: string,
+  repeat: "new-moon" | "full-moon",
+  now: Date,
+): string {
+  const store = useTaskStore.getState()
+  const existing = findSeededMoonReminder(store.tasks, listId, id, name)
+  const when = nextMoonReminderEvening(lunarKindForRepeat(repeat), now)
+  if (existing) {
+    const repeatOk = existing.reminder?.repeat === repeat
+    const clockOk = Boolean(existing.scheduledDate && existing.scheduledTime)
+    if (repeatOk && clockOk) return existing.id
+    const schedule = reminderScheduleFields(when, repeat, {
+      textMe: reminderTexts(existing.reminder),
+      persistent: reminderPersists(existing.reminder),
+    })
+    store.updateTask({
+      ...existing,
+      ...schedule,
+      reminder: {
+        ...schedule.reminder!,
+        deliveredKey: existing.reminder?.deliveredKey,
+        dismissedKey: existing.reminder?.dismissedKey,
+        telegramNote: existing.reminder?.telegramNote,
+      },
+    })
+    return existing.id
+  }
+  const item: Task = {
+    ...createListItem(name, [listId]),
+    id,
+    ...reminderScheduleFields(when, repeat),
+  }
+  store.addTask(item)
+  return id
 }

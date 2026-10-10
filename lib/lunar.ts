@@ -12,6 +12,10 @@
  *
  * `moonGlance` names the eight familiar phases and counts calendar days to
  * the sooner of the next full moon and the next new moon.
+ *
+ * Moon-night reminders (`lib/reminders.ts`) fire at 18:00 local on that same
+ * report day. The date is the local calendar day of the Meeus instant — not
+ * a rounded civil 1st or 15th, and not a short hardcoded table.
  */
 
 const DEG = Math.PI / 180
@@ -257,6 +261,42 @@ function nextPhaseAfter(date: Date, kind: LunarKind): Date {
     if (instant.getTime() > t) return instant
   }
   return lunarPhaseInstant(k + 3)
+}
+
+/** Astronomical instant of the next new or full moon strictly after `date`. */
+export function nextLunarPhaseInstant(date: Date, kind: LunarKind): Date {
+  return nextPhaseAfter(date, kind)
+}
+
+/** Local evening used by "new/full moon tonight" reminders (18:00). */
+export const MOON_REMINDER_HOUR = 18
+export const MOON_REMINDER_MINUTE = 0
+
+/** 18:00 local on the calendar day that contains `instant`. */
+export function moonReminderEvening(instant: Date): Date {
+  return new Date(
+    instant.getFullYear(),
+    instant.getMonth(),
+    instant.getDate(),
+    MOON_REMINDER_HOUR,
+    MOON_REMINDER_MINUTE,
+    0,
+    0,
+  )
+}
+
+/**
+ * Next 18:00 local on a new-moon or full-moon day, strictly after `after`.
+ * The day is the local day of the Meeus phase instant (same rule as
+ * `lunarOccasion`). Walks successive lunations — no fixed date table.
+ */
+export function nextMoonReminderEvening(kind: LunarKind, after: Date): Date {
+  const k0 = nearestK(after, kind)
+  for (let i = -1; i <= 48; i++) {
+    const evening = moonReminderEvening(lunarPhaseInstant(k0 + i))
+    if (evening.getTime() > after.getTime()) return evening
+  }
+  return moonReminderEvening(lunarPhaseInstant(k0 + 49))
 }
 
 function phaseAtOrBefore(date: Date, kind: LunarKind): Date {

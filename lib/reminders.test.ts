@@ -2,16 +2,22 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { useTaskStore } from "@/lib/task-store"
 import {
+  FULL_MOON_REMINDER_ID,
+  FULL_MOON_TONIGHT_NAME,
+  NEW_MOON_REMINDER_ID,
+  NEW_MOON_TONIGHT_NAME,
   REMINDER_SKIP_NO_CHAT,
   REMINDER_SKIP_TEXT_OFF,
   addReminder,
   currentReminders,
   deliverDueReminders,
   dismissReminder,
+  ensureMoonNightReminders,
   ensureRemindersList,
   findRemindersList,
   reminderOccurrenceKey,
 } from "@/lib/reminders"
+import { lunarPhaseInstant, nextMoonReminderEvening } from "@/lib/lunar"
 
 const NOW = new Date(2026, 9, 9, 15, 30, 0, 0)
 
@@ -279,5 +285,152 @@ describe("timed reminders", () => {
     expect(inboxCopies()).toHaveLength(2)
     expect(send).toHaveBeenCalledTimes(2)
     expect(bell().map((row) => row.name)).toEqual(["Nag"])
+  })
+})
+
+describe("moon-night reminders", () => {
+  beforeEach(() => {
+    resetAllStores()
+  })
+
+  it("puts a new-moon reminder on the bell from local midnight of the phase day", async () => {
+    const morning = new Date(2026, 9, 10, 5, 43, 0, 0)
+    ensureMoonNightReminders(morning)
+    expect(bell(morning).some((row) => row.id === NEW_MOON_REMINDER_ID)).toBe(true)
+    expect(bell(new Date(2026, 9, 9, 23, 0, 0, 0)).some((row) => row.id === NEW_MOON_REMINDER_ID)).toBe(
+      false,
+    )
+
+    const send = vi.fn(async () => ({ ok: true }))
+    const early = await deliverDueReminders(morning, { send, chatId: "42" })
+    expect(early.some((row) => row.reminderId === NEW_MOON_REMINDER_ID)).toBe(false)
+    expect(send).not.toHaveBeenCalled()
+  })
+
+  it("seeds both moon reminders once and keeps the next evenings", () => {
+    const asOf = new Date(2026, 9, 10, 12, 0, 0, 0)
+    const first = ensureMoonNightReminders(asOf)
+    const second = ensureMoonNightReminders(asOf)
+    expect(first).toEqual(second)
+
+    const tasks = useTaskStore.getState().tasks.filter((task) =>
+      [NEW_MOON_REMINDER_ID, FULL_MOON_REMINDER_ID].includes(task.id),
+    )
+    expect(tasks).toHaveLength(2)
+    expect(tasks.map((task) => task.title).sort()).toEqual([FULL_MOON_TONIGHT_NAME, NEW_MOON_TONIGHT_NAME].sort())
+
+    const newMoon = tasks.find((task) => task.id === NEW_MOON_REMINDER_ID)!
+    const fullMoon = tasks.find((task) => task.id === FULL_MOON_REMINDER_ID)!
+    expect(newMoon.reminder?.repeat).toBe("new-moon")
+    expect(fullMoon.reminder?.repeat).toBe("full-moon")
+    expect(newMoon.scheduledTime).toBe("18:00")
+    expect(fullMoon.scheduledTime).toBe("18:00")
+    expect(newMoon.reminder?.textMe).not.toBe(false)
+    expect(newMoon.reminder?.persistent).not.toBe(false)
+
+    const expectedNew = nextMoonReminderEvening("new", asOf)
+    const expectedFull = nextMoonReminderEvening("full", asOf)
+    expect(newMoon.scheduledDate?.getFullYear()).toBe(expectedNew.getFullYear())
+    expect(newMoon.scheduledDate?.getMonth()).toBe(expectedNew.getMonth())
+    expect(newMoon.scheduledDate?.getDate()).toBe(expectedNew.getDate())
+    expect(fullMoon.scheduledDate?.getDate()).toBe(expectedFull.getDate())
+  })
+
+  it("places a known new-moon evening within a day of the published UTC date", () => {
+    // New moon 8 April 2024 ~18:21 UTC (NASA eclipse bulletin / USNO).
+    const asOf = new Date(2024, 3, 1, 12, 0, 0, 0)
+    const evening = nextMoonReminderEvening("new", asOf)
+    expect(evening.getFullYear()).toBe(2024)
+    expect(evening.getMonth()).toBe(3)
+    expect(Math.abs(evening.getDate() - 8)).toBeLessThanOrEqual(1)
+    expect(evening.getHours()).toBe(18)
+
+    const instant = lunarPhaseInstant(Math.round((2024 + 3 / 12 - 2000) * 12.3685))
+    expect(Math.abs(evening.getTime() - instant.getTime())).toBeLessThan(2 * 86_400_000)
+  })
+
+  it("advances a new-moon reminder after deliver", async () => {
+    const send = vi.fn(async () => ({ ok: true }))
+    const asOf = new Date(2026, 9, 10, 12, 0, 0, 0)
+    ensureMoonNightReminders(asOf)
+    const reminder = useTaskStore.getState().tasks.find((task) => task.id === NEW_MOON_REMINDER_ID)!
+    const fireAt = new Date(
+      reminder.scheduledDate!.getFullYear(),
+      reminder.scheduledDate!.getMonth(),
+      reminder.scheduledDate!.getDate(),
+      18,
+      0,
+      0,
+      0,
+    )
+    const beforeNext = nextMoonReminderEvening("new", fireAt)
+
+    const delivered = await deliverDueReminders(fireAt, { send, chatId: "42" })
+    expect(delivered.some((row) => row.reminderId === NEW_MOON_REMINDER_ID)).toBe(true)
+
+    const moved = useTaskStore.getState().tasks.find((task) => task.id === NEW_MOON_REMINDER_ID)!
+    expect(moved.scheduledDate?.getTime()).toBe(
+      new Date(beforeNext.getFullYear(), beforeNext.getMonth(), beforeNext.getDate()).getTime(),
+    )
+    expect(moved.scheduledTime).toBe("18:00")
+    expect(moved.reminder?.repeat).toBe("new-moon")
+  })
+
+  it("advances a full-moon reminder on dismiss", () => {
+    const asOf = new Date(2026, 9, 10, 12, 0, 0, 0)
+    ensureMoonNightReminders(asOf)
+    const reminder = useTaskStore.getState().tasks.find((task) => task.id === FULL_MOON_REMINDER_ID)!
+    const fireAt = new Date(
+      reminder.scheduledDate!.getFullYear(),
+      reminder.scheduledDate!.getMonth(),
+      reminder.scheduledDate!.getDate(),
+      18,
+      0,
+      0,
+      0,
+    )
+
+    expect(dismissReminder(FULL_MOON_REMINDER_ID, fireAt)).toBe(true)
+    const afterDismiss = useTaskStore.getState().tasks.find((task) => task.id === FULL_MOON_REMINDER_ID)!
+    const expected = nextMoonReminderEvening("full", fireAt)
+    expect(afterDismiss.scheduledDate?.getFullYear()).toBe(expected.getFullYear())
+    expect(afterDismiss.scheduledDate?.getMonth()).toBe(expected.getMonth())
+    expect(afterDismiss.scheduledDate?.getDate()).toBe(expected.getDate())
+    expect(afterDismiss.scheduledTime).toBe("18:00")
+    expect(bell(fireAt).some((row) => row.id === FULL_MOON_REMINDER_ID)).toBe(false)
+  })
+
+  it("does not text a moon reminder when Text me is off", async () => {
+    const send = vi.fn(async () => ({ ok: true }))
+    const asOf = new Date(2026, 9, 10, 12, 0, 0, 0)
+    ensureMoonNightReminders(asOf)
+    const reminder = useTaskStore.getState().tasks.find((task) => task.id === FULL_MOON_REMINDER_ID)!
+    useTaskStore.getState().updateTask({
+      ...reminder,
+      reminder: { ...reminder.reminder!, textMe: false },
+    })
+    const due = new Date(
+      reminder.scheduledDate!.getFullYear(),
+      reminder.scheduledDate!.getMonth(),
+      reminder.scheduledDate!.getDate(),
+      18,
+      0,
+      0,
+      0,
+    )
+    // Keep the sibling new-moon row from texting in this assertion.
+    useTaskStore.getState().updateTask({
+      ...useTaskStore.getState().tasks.find((task) => task.id === NEW_MOON_REMINDER_ID)!,
+      reminder: {
+        ...useTaskStore.getState().tasks.find((task) => task.id === NEW_MOON_REMINDER_ID)!.reminder!,
+        textMe: false,
+      },
+    })
+
+    const sent = await deliverDueReminders(due, { send, chatId: "42" })
+    const moonRow = sent.find((row) => row.reminderId === FULL_MOON_REMINDER_ID)
+    expect(moonRow?.telegramNote).toBe(REMINDER_SKIP_TEXT_OFF)
+    expect(send).not.toHaveBeenCalled()
+    expect(inboxCopies().some((task) => task.description.includes(FULL_MOON_TONIGHT_NAME))).toBe(true)
   })
 })

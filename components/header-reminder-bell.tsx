@@ -1,8 +1,9 @@
 /**
  * components/header-reminder-bell.tsx — Header bell for current reminders
  *
- * Icon key on the System cluster. The orange count is undismissed persistent
- * reminders that are due now. Zero hides the banner; the bell stays.
+ * Icon key on the System cluster. A small CRT digit under the bell is the
+ * undismissed persistent count that is due now. Zero hides the plate; the
+ * bell stays.
  * The dialog lists name, when, and source (the Reminders list), opens the
  * existing item detail view, and Dismiss. Dismiss is not delete.
  */
@@ -48,6 +49,7 @@ export function HeaderReminderBell({ onTaskSelect }: { onTaskSelect: (taskId: st
           size="sm"
           className="b2-shell-icon b2-reminder-bell"
           data-testid="reminder-bell"
+          data-has-count={count > 0 ? "true" : undefined}
           aria-label={label}
           title={count > 0 ? `${count} current reminder${count === 1 ? "" : "s"}` : "Reminders"}
         >
@@ -70,7 +72,8 @@ export function HeaderReminderBell({ onTaskSelect }: { onTaskSelect: (taskId: st
             <DialogTitle>Reminders</DialogTitle>
           </div>
           <DialogDescription className="hpp-caption-lead">
-            Due now and still on the bell. Dismiss hides this time. The reminder stays on the list.
+            Due now and still on the bell. Moon nights show from the start of that day. Dismiss
+            hides this time. The reminder stays on the list.
           </DialogDescription>
         </DialogHeader>
         <div className="hpp-body b2-reminder-list">

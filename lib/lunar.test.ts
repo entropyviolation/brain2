@@ -8,8 +8,10 @@ import {
   moonGlance,
   moonIlluminationLine,
   moonLitPath,
+  moonReminderEvening,
   moonUntilPhrase,
   neighboringMajorPhases,
+  nextMoonReminderEvening,
 } from "./lunar"
 
 describe("lunar phases", () => {
@@ -104,5 +106,30 @@ describe("lunar phases", () => {
     expect(moonLitPath(0.25).startsWith("M 50 22 A 28 28 0 0 1")).toBe(true)
     expect(moonLitPath(0.5)).toBe("M 50 22 A 28 28 0 0 1 50 78 A 28 28 0 0 1 50 22")
     expect(moonLitPath(0.8).startsWith("M 50 22 A 28 28 0 0 0")).toBe(true)
+  })
+
+  it("places the reminder evening on the local day of a published new moon", () => {
+    // Total solar eclipse: new moon 8 April 2024, about 18:21 UTC (NASA / USNO).
+    const instant = lunarPhaseInstant(Math.round((2024 + 3 / 12 - 2000) * 12.3685))
+    let hit = instant
+    for (let delta = -4; delta <= 4; delta++) {
+      const candidate = lunarPhaseInstant(Math.round((2024 + 3 / 12 - 2000) * 12.3685) + delta)
+      if (candidate.toISOString().startsWith("2024-04-08")) hit = candidate
+    }
+    const evening = moonReminderEvening(hit)
+    expect(evening.getFullYear()).toBe(2024)
+    expect(evening.getMonth()).toBe(3)
+    expect(Math.abs(evening.getDate() - 8)).toBeLessThanOrEqual(1)
+    expect(evening.getHours()).toBe(18)
+    expect(evening.getMinutes()).toBe(0)
+  })
+
+  it("advances the next moon evening past a just-fired night", () => {
+    const before = new Date(2024, 3, 8, 12, 0, 0, 0)
+    const first = nextMoonReminderEvening("new", before)
+    const afterFire = new Date(first.getTime() + 1000)
+    const second = nextMoonReminderEvening("new", afterFire)
+    expect(second.getTime()).toBeGreaterThan(first.getTime())
+    expect(second.getTime() - first.getTime()).toBeGreaterThan(25 * 86_400_000)
   })
 })
