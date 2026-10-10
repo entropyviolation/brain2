@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
+import { MENU_LAYER_Z } from "@/components/ui/menu-layer"
 import type { HabitFrequency } from "@/lib/types"
 import { HabitSortControl, habitCompletionSortLabel, habitSortDirectionLabels } from "./habit-sort-control"
 
@@ -23,6 +24,17 @@ describe("HabitSortControl", () => {
     expect(face.tagName).not.toBe("SELECT")
     expect(face).toHaveTextContent("Default")
     await user.click(face)
+    const listbox = screen.getByRole("listbox", { name: "Sort" })
+    const layer = listbox.closest("[data-menu-layer]") as HTMLElement
+    const frozenHeader = document.createElement("div")
+    frozenHeader.style.zIndex = "5"
+    document.body.append(frozenHeader)
+    expect(layer.parentElement).toBe(document.body)
+    expect(document.getElementById("habit-sort")!.contains(listbox)).toBe(false)
+    expect(layer.style.position).toBe("fixed")
+    expect(Number(layer.style.zIndex)).toBe(MENU_LAYER_Z)
+    expect(Number(layer.style.zIndex)).toBeGreaterThan(Number(frozenHeader.style.zIndex))
+    frozenHeader.remove()
     expect(screen.getByRole("option", { name: "Alphabetical" })).toBeInTheDocument()
     expect(screen.getByRole("option", { name: "Date created" })).toBeInTheDocument()
     expect(screen.getByRole("option", { name: "Priority" })).toBeInTheDocument()

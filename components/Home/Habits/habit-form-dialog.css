@@ -112,6 +112,7 @@
 }
 
 /* Visual reading order of the habit settings page. */
+.habit95-fields > .habit95-sec-neglect { order: 0; }
 .habit95-fields > .habit95-sec-name { order: 10; }
 .habit95-fields > .habit95-sec-freq { order: 12; }
 .habit95-fields > .habit95-sec-type { order: 14; }
@@ -165,6 +166,14 @@ label.habit95-field > .habit95-input {
   min-width: 0;
   box-sizing: border-box;
   font-weight: normal;
+}
+
+.habit95-neglect-line {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: bold;
+  line-height: 1.35;
+  color: var(--h95-ink);
 }
 
 .habit95-hint {
@@ -355,6 +364,90 @@ label.habit95-field > .habit95-input {
   margin-bottom: 1px;
 }
 
+.habit95-stat-builder {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.habit95-stat-modules {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.habit95-stat-module {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  background: var(--h95-field);
+  box-shadow: var(--h95-field-bevel);
+}
+
+.habit95-stat-name-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.habit95-stat-name-row > .habit95-field {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+}
+
+.habit95-stat-live {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  margin: 0 0 2px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.habit95-stat-live[data-empty="true"] {
+  opacity: 0.45;
+}
+
+.habit95-stat-var {
+  font-size: 11px;
+}
+
+.habit95-stat-nested {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-left: 10px;
+}
+
+.habit95-stat-module-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.habit95-stat-text {
+  align-self: flex-start;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.habit95-stat-text:focus-visible {
+  outline: 1px dotted #000;
+  outline-offset: 2px;
+}
+
 .habit95-stat-readout {
   margin: 2px 0 6px;
   padding: 2px 6px;
@@ -367,6 +460,42 @@ label.habit95-field > .habit95-input {
   display: flex;
   justify-content: space-between;
   gap: 8px;
+}
+
+/* Three quiet facts for a list-fed goal. Numbers share one column. The frozen length is ink, not a field. */
+.habit95-span-facts {
+  margin: 10px 0 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.habit95-span-facts li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 4px 0;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.habit95-span-facts li + li {
+  box-shadow: inset 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.habit95-span-facts-num {
+  flex: 0 0 3ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.habit95-span-facts li[data-frozen="true"] .habit95-span-facts-num {
+  background: none;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+  min-height: 0;
 }
 
 .habit95-list-popup {
@@ -417,6 +546,16 @@ label.habit95-field > .habit95-input {
 .habit95-list-names li {
   padding: 3px 0;
   color: #000;
+}
+
+.habit-span-names li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.habit-span-amount {
+  font-variant-numeric: tabular-nums;
 }
 
 .habit95-list-empty {

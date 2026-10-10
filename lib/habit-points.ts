@@ -17,6 +17,7 @@
  *
  * Spec: §9, §14.
  */
+import { pointsRuleValue } from "@/lib/points-rules-live"
 import { TaskType, type TaskCompletion, type WeeklyData, type WeeklyTask } from "./types"
 import { incrementalDayPercentage } from "./incremental-habits"
 import {
@@ -114,22 +115,34 @@ export function dailyHabitDayPoints(
   weeklyData: WeeklyData,
   date: Date,
 ): number {
-  const raw = dailyHabitCompletionRatio(task, completion, weeklyData, date) * DAILY_HABIT_COMPLETION_POINTS
+  const full = pointsRuleValue("habit.dailyFullMark")
+  const raw = dailyHabitCompletionRatio(task, completion, weeklyData, date) * full
   return Math.round(raw * 10) / 10
 }
 
-/** 300 if both grades are 75%+, else 100 if either is, else 0. */
+/** Both-rails bonus if both grades clear the threshold, else the one-rail bonus, else 0. */
 export function gradeBonusPoints(weekGrade: number, outputGrade: number): number {
-  const weekOk = weekGrade >= GRADE_BONUS_THRESHOLD
-  const outputOk = outputGrade >= GRADE_BONUS_THRESHOLD
-  if (weekOk && outputOk) return GRADE_BONUS_BOTH
-  if (weekOk || outputOk) return GRADE_BONUS_EITHER
+  const threshold = pointsRuleValue("habit.gradeBonusThreshold")
+  const weekOk = weekGrade >= threshold
+  const outputOk = outputGrade >= threshold
+  if (weekOk && outputOk) return pointsRuleValue("habit.gradeBonusBoth")
+  if (weekOk || outputOk) return pointsRuleValue("habit.gradeBonusEither")
   return 0
 }
 
-export function gradeBonusDescription(points: number): string {
-  if (points === GRADE_BONUS_BOTH) return "Grade bonus (both 75%+)"
-  if (points === GRADE_BONUS_EITHER) return "Grade bonus (either 75%+)"
+export function gradeBonusDescription(points: number, weekGrade?: number, outputGrade?: number): string {
+  const threshold = pointsRuleValue("habit.gradeBonusThreshold")
+  if (typeof weekGrade === "number" && typeof outputGrade === "number") {
+    const weekOk = weekGrade >= threshold
+    const outputOk = outputGrade >= threshold
+    if (weekOk && outputOk) return `Grade bonus (both ${threshold}%+)`
+    if (weekOk || outputOk) return `Grade bonus (either ${threshold}%+)`
+    return "Grade bonus"
+  }
+  const both = pointsRuleValue("habit.gradeBonusBoth")
+  const either = pointsRuleValue("habit.gradeBonusEither")
+  if (points > 0 && points === both) return `Grade bonus (both ${threshold}%+)`
+  if (points > 0 && points === either) return `Grade bonus (either ${threshold}%+)`
   return "Grade bonus"
 }
 
@@ -180,6 +193,52 @@ export function formatGradeLiftLastWeekCaption(prior: GradePair | null | undefin
   const week = Math.round(Number.isFinite(prior.week) ? prior.week : 0)
   const output = Math.round(Number.isFinite(prior.output) ? prior.output : 0)
   return `Last week — week grade ${week}% · perfect output ${output}%`
+}
+
+/** "Prior 7 days — 42% average", or a quiet empty line when that window has no days yet. */
+export function formatGradeLiftAverageCaption(
+  label: string,
+  average: number | null | undefined,
+): string {
+  if (average === null || average === undefined || !Number.isFinite(average)) return `No ${label.toLowerCase()} yet`
+  return `${label} — ${Math.round(average)}% average`
+}
+
+/** Completion points a new habit starts with, per period. Existing habits keep their own `rewardValue`. */
+export const DEFAULT_HABIT_PERIOD_POINTS = 10
+
+export type HabitPeriodPointDefaults = {
+  daily: number
+  weekly: number
+  monthly: number
+  seasonal: number
+}
+
+export function defaultHabitPeriodPoints(): HabitPeriodPointDefaults {
+  const n = DEFAULT_HABIT_PERIOD_POINTS
+  return { daily: n, weekly: n, monthly: n, seasonal: n }
+}
+
+export function clampHabitPeriodPoints(value: number): number {
+  if (!Number.isFinite(value)) return DEFAULT_HABIT_PERIOD_POINTS
+  return Math.min(10_000, Math.max(0, Math.round(value)))
+}
+
+export function sanitizeHabitPeriodPoints(value: unknown): HabitPeriodPointDefaults {
+  const base = defaultHabitPeriodPoints()
+  if (!value || typeof value !== "object") return base
+  const row = value as Record<string, unknown>
+  for (const key of ["daily", "weekly", "monthly", "seasonal"] as const) {
+    if (typeof row[key] === "number") base[key] = clampHabitPeriodPoints(row[key])
+  }
+  return base
+}
+
+/** Store key for a habit frequency. Season habits are stored as `quarterly`. */
+export function habitPeriodPointsKey(frequency: string | undefined): keyof HabitPeriodPointDefaults {
+  if (frequency === "weekly" || frequency === "monthly") return frequency
+  if (frequency === "quarterly" || frequency === "seasonal") return "seasonal"
+  return "daily"
 }
 
 /**

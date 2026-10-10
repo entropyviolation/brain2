@@ -4,6 +4,7 @@
 import { describe, expect, it } from "vitest"
 import { readingsFromCell, trustedOutcome } from "./habit-completion-trust"
 import {
+  applyListLengthCount,
   applyListSentPercent,
   currentPeriodRange,
   listSentCompletion,
@@ -120,5 +121,22 @@ describe("applyListSentPercent", () => {
 
     const readings = readingsFromCell(habit.completionSources!, handed!, 100)
     expect(trustedOutcome(habit.completionSources!, readings).winner).toBe("manual")
+  })
+
+  it("stores the list count and the list length, and grace stays a percent", () => {
+    const written = applyListLengthCount(undefined, 1, 5, reportedListSentPercent(20, 100))
+    expect(written).toEqual({ value: 1, goal: 5, listSentPercent: 20 })
+    const kept = applyListLengthCount(
+      { value: 3, manualValue: 3, handCompleted: false },
+      1,
+      5,
+      20,
+    )
+    expect(kept?.value).toBe(3)
+    expect(kept?.manualValue).toBe(3)
+    expect(kept?.goal).toBe(5)
+    expect(kept?.listSentPercent).toBe(20)
+    const readings = readingsFromCell(habit.completionSources!, written!, habit.goal, 100)
+    expect(readings.listSent?.state).toBe("unmet")
   })
 })

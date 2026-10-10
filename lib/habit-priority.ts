@@ -175,7 +175,7 @@ export function clampMorningRitualPointMultiplier(value: unknown): number {
 }
 
 /**
- * The period the neglect rule counts.
+ * The period `autoPriorityWeight` counts.
  * Daily and weekly count fully empty weeks. Monthly counts months. Season counts seasons.
  */
 export function neglectEmptyUnit(frequency: HabitFrequency): "week" | "month" | "season" {
@@ -184,11 +184,65 @@ export function neglectEmptyUnit(frequency: HabitFrequency): "week" | "month" | 
   return "week"
 }
 
+/**
+ * A period is neglected when its completion ratio is 0.
+ * Any progress ends the run, so the threshold is 1, not 2.
+ */
+export const NEGLECT_COMPLETION_THRESHOLD = 1
+
 /** "3 empty weeks" — the count the neglect rule actually uses. */
 export function neglectCountLabel(frequency: HabitFrequency, count: number): string {
   const unit = neglectEmptyUnit(frequency)
   const noun = count === 1 ? unit : `${unit}s`
   return `${count} empty ${noun}`
+}
+
+function countedSpan(count: number, unit: string): string {
+  return `${count} ${count === 1 ? unit : `${unit}s`}`
+}
+
+/** Same emptiness as the neglect rule: a ratio above 0 is progress. */
+function consecutiveNeglectedDays(task: WeeklyTask, data: WeeklyData, asOf: Date): number {
+  const cap = MAX_AUTO_PRIORITY * 7
+  let n = 0
+  for (let i = 0; i < cap; i++) {
+    const date = new Date(asOf.getFullYear(), asOf.getMonth(), asOf.getDate() - i)
+    const key = formatLocalDateKey(date)
+    if (habitCellRatio(task, data[key]?.[task.id], data, date) > 0) break
+    n++
+  }
+  return n
+}
+
+function neglectThresholdPhrase(): string {
+  const n = NEGLECT_COMPLETION_THRESHOLD
+  return `(completed less than ${n} ${n === 1 ? "time" : "times"})`
+}
+
+/**
+ * Plain sentence for the top of the habit detail, only when neglect is why
+ * the habit is prioritized (`autoPriorityWeight` above 0). Pin, ritual, and
+ * permanent priority do not produce it. Mute drops the weight, so it is absent.
+ *
+ * Daily states the consecutive days with no progress, today included, using
+ * that same ratio. Weekly, monthly, and season state the weight's own count.
+ * The parenthetical is the real threshold: any progress ends the run.
+ */
+export function neglectPrioritySentence(
+  task: WeeklyTask,
+  data: WeeklyData,
+  asOf: Date,
+  frequency: HabitFrequency = task.frequency || "daily",
+): string | null {
+  const weight = autoPriorityWeight(task, data, asOf, frequency)
+  if (weight <= 0) return null
+  if (frequency === "daily") {
+    const days = consecutiveNeglectedDays(task, data, asOf)
+    if (days <= 0) return null
+    return `neglected for past ${countedSpan(days, "day")}`
+  }
+  const unit = neglectEmptyUnit(frequency)
+  return `neglected for past ${countedSpan(weight, unit)} ${neglectThresholdPhrase()}`
 }
 
 /**

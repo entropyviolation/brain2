@@ -10,9 +10,14 @@ import type { HabitExemptFn } from "./calculations"
 import { formatLocalDateKey, getWeekStartDate } from "./date-utils"
 import { datesForCompletionAverage } from "./habit-daily-completion-average"
 import { effectiveCompletionSources } from "./habit-completion-source"
+import { listSentTrustGoal } from "./habit-completion-pipeline"
+import { isAmountSlot } from "./habit-keyword-source"
 import { COMPLETION_SOURCE_LABELS, readingsFromCell, trustedOutcome } from "./habit-completion-trust"
 import { periodWindowsForFrequency } from "./habit-period-windows"
 import { compareHigherThanPrevious, type PeriodComparePair } from "./habit-period-compare"
+import { currentExemptionContext, isHabitPeriodExempt } from "./habit-exemption"
+import { useHabitsStore } from "./habits-store"
+import { bindingForStatsRow, evaluateHabitStatBinding, formatStatDisplay } from "./habit-stat-pipeline"
 import {
   previousPoint,
   previousStatContext,
@@ -167,8 +172,18 @@ function engineLines(
     return [{ name: "Sent", value: completion?.listSentPercent != null ? `${Math.round(completion.listSentPercent)}%` : "—" }]
   }
   if (id === "keywords") {
-    const amount = completion?.keywordValue ?? completion?.value
-    return [{ name: "Keyword", value: completion?.keywordLogged ? (amount != null ? String(amount) : "Done") : "—" }]
+    const amount = completion?.keywordValue ?? (completion?.keywordUse ? undefined : completion?.value)
+    const named = Object.entries(completion?.keywordSlots ?? {})
+      .filter(([key]) => !isAmountSlot(key))
+      .map(([, value]) => value)
+      .filter(Boolean)
+      .join(", ")
+    const shown = [amount != null ? String(amount) : null, named || null].filter(Boolean).join(" · ")
+    if (completion?.keywordLogged) {
+      return [{ name: "Keyword", value: shown || "Done" }]
+    }
+    if (completion?.keywordHitCount) return [{ name: "Keyword", value: String(completion.keywordHitCount) }]
+    return [{ name: "Keyword", value: "—" }]
   }
   if (id === "manual") {
     const typed = completion?.manualValue ?? completion?.value
@@ -177,8 +192,12 @@ function engineLines(
   return [{ name: COMPLETION_SOURCE_LABELS[id], value: "—" }]
 }
 
+function statsRow(task: WeeklyTask) {
+  return task.completionPipelines?.find((row) => row.kind === "habitsStats")
+}
+
 function statsOn(task: WeeklyTask): HabitStatsConfig | undefined {
-  return task.completionPipelines?.find((row) => row.kind === "habitsStats")?.stats
+  return statsRow(task)?.stats
 }
 
 function compareBlock(task: WeeklyTask, ctx: HabitStatContext) {
@@ -237,16 +256,66 @@ export function describeSourceSquare(input: SourceSquareInput): SourceSquare {
     sources.push({ id: reading.key, label: reading.label, lines: linesFromReading(reading) })
   }
   const compare = compareBlock(input.task, ctx)
-  const outcome = trustedOutcome(order, readingsFromCell(order, input.completion, input.task.goal))
+  const statsRowOnTask = statsRow(input.task)
+  const binding = bindingForStatsRow(statsRowOnTask)
+  const evaluation = binding ? evaluateHabitStatBinding(binding, ctx) : null
+  const outcome = trustedOutcome(
+    order,
+    readingsFromCell(order, input.completion, input.task.goal, listSentTrustGoal(input.task)),
+  )
   const trust =
     outcome.winner == null
       ? "No reading"
       : `${COMPLETION_SOURCE_LABELS[outcome.winner]} — ${outcome.met ? "complete" : "not complete"}`
+  const statResult =
+    statsRowOnTask?.statBinding && evaluation && !stats?.comparePrevious
+      ? evaluation.error
+        ? evaluation.error
+        : evaluation.value == null
+          ? "No reading"
+          : `${evaluation.label} — ${formatStatDisplay(evaluation.value)}`
+      : null
   return {
     habitName: input.task.name || "Habit",
     periodLabel: input.periodLabel,
     sources,
-    result: compare ? compare.summary : trust,
+    result: compare ? compare.summary : (statResult ?? trust),
     compare,
   }
+}
+
+/**
+ * Live reading for one habit, as of `now`, from the same evaluator the
+ * settings preview uses. Null when this habit has no stats binding, or the
+ * row compares to the previous period. Does not read a stored number.
+ */
+export function liveHabitStatEvaluation(task: WeeklyTask, now: Date = new Date()) {
+  const row = statsRow(task)
+  if (!row || row.stats?.comparePrevious) return null
+  const binding = bindingForStatsRow(row)
+  if (!binding?.pipelines.length) return null
+  const state = useHabitsStore.getState()
+  const set = (row.stats?.set ??
+    binding.pipelines.find((item) => item.id === binding.pipelineId)?.sourceId ??
+    binding.pipelines[0]?.sourceId ??
+    "daily") as HabitStatSet
+  const ctx = statContextForSquare(
+    {
+      task,
+      periodLabel: "",
+      date: now,
+      completion: undefined,
+      tasks: state.tasks,
+      weeklyData: state.weeklyData,
+      weeklyHabitData: state.weeklyHabitData,
+      monthlyHabitData: state.monthlyHabitData,
+      gradeTolerance: state.gradeTolerance,
+      outputGradeTolerance: state.outputGradeTolerance,
+      today: now,
+      isExempt: (habit, key) =>
+        isHabitPeriodExempt(habit, key, habit.frequency || "daily", state.habitExemptions, currentExemptionContext()),
+    },
+    set,
+  )
+  return evaluateHabitStatBinding(binding, { ...ctx, accomplishmentThreshold: state.accomplishmentThreshold })
 }

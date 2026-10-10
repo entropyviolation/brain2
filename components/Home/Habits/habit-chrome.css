@@ -411,6 +411,23 @@ body.win95-app main:has(.hab95) [role="tabpanel"]:has(.hab95) {
   /* Air for the Home tabs bay lives as margin-top on the strip (home-chrome.css), not gap below it. */
   gap: 0;
   min-width: 0;
+  background: transparent;
+}
+
+/* One instrument under the Home switcher. The desktop may show above that
+   bay; it must not show between the date bar, period keys, priority bar,
+   sheet, and control rail. */
+.hab-frame,
+.hab-frame-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+  width: 100%;
+}
+
+.hab-frame {
+  background: var(--hab-metal, var(--chrome-face, #c0c0c0));
 }
 
 .hab95 .hab-body > [role="tablist"] {
@@ -427,7 +444,7 @@ body.win95-app main:has(.hab95) [role="tabpanel"]:has(.hab95) {
   padding: 8px 10px;
   overflow-x: auto;
   overflow-y: hidden;
-  border-radius: var(--r-3, 3px);
+  border-radius: 0;
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
     linear-gradient(165deg, var(--chrome-sheen) 0%, var(--hab-metal, var(--chrome-face, #c0c0c0)) 48%, var(--chrome-shade) 100%);
@@ -575,7 +592,8 @@ body.win95-app .hab95 .hab-view-changer,
 body.win95-app .trk95 .hab-view-changer {
   display: block;
   padding: 4px;
-  border-radius: var(--r-3, 3px);
+  margin: 0;
+  border-radius: 0;
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
     var(--chrome-nickel);
@@ -765,45 +783,120 @@ body.win95-app .hab95 button.hab-willpower-lab-toggle.is-on {
   letter-spacing: 0.12em;
 }
 
-.hab-pane {
+.hab95 .hab-pane {
   margin: 0;
   min-height: 0;
+  min-width: 0;
+  width: 100%;
   height: 100%;
 }
 
-/* Sheet sizes to the grid, capped beside a fixed control panel
-   (--hab-control-panel-width, 196px on every period view). Never stack
-   the panel under the grid — the well scrolls. fit-content caps the pane
-   so a long heatmap or a wide month scrolls inside it and cannot cover
-   the gems. The desk is the viewport tall: a shorter max-height left the
-   mint desktop (--pcb-desk) as a flat slab under the sheet once the
-   header scrolled away. */
+/* Sheet takes the leftover width. The control panel is always column 2
+   at --hab-control-panel-width (196px) on every period view, so a wider
+   week or month cannot push it. The well scrolls. Never stack the panel
+   under the grid. The desk is the viewport tall: a shorter max-height
+   left the mint desktop (--pcb-desk) as a flat slab under the sheet once
+   the header scrolled away. */
 .hab-desk {
   display: grid;
-  grid-template-columns: fit-content(calc(100% - var(--hab-control-panel-width, 196px) - 6px)) var(--hab-control-panel-width, 196px);
+  grid-template-columns: minmax(0, 1fr) var(--hab-control-panel-width, 196px);
   grid-template-rows: auto minmax(0, 1fr);
-  gap: 6px;
+  gap: 0;
   align-items: stretch;
-  justify-content: start;
+  justify-content: stretch;
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
   height: 100dvh;
   min-height: 0;
   max-height: 100dvh;
-  overflow: hidden;
-  background: transparent;
+  /* Visible so Willpower gems may paint past the desk's right edge.
+     The checklist still scrolls inside `.hab-well`. */
+  overflow: visible;
+  background: var(--hab-metal, var(--chrome-face, #c0c0c0));
 }
 
-/* contents: the bar and the well are desk-grid items, same sticky
-   scrollport the checklist had when the well was the grid cell. */
+/* Control bar. The rocker cluster (.hab-bar-rockers) wraps onto as many
+   rows as it needs. The one-line nowrap is gone: it cramped the rockers.
+   The rocker face stays; the row count is what changes. SORT: and Edit
+   default order sit in .hab-bar-tools, beside that cluster, not inside it.
+   The select menu is unchanged. */
+.hab95 .hab-priority {
+  margin: 0;
+  border-radius: 0;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 2px 8px;
+  padding: 2px 4px;
+}
+
+.hab95 .hab-bar-tools {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 2px 4px;
+  max-width: 100%;
+}
+
+.hab95 .hab-priority-text {
+  flex: 0 0 auto;
+  padding: 1px 3px;
+  font-size: 8px;
+  letter-spacing: 0;
+}
+
+.hab95 .hab-priority-sort-legend {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+.hab95 .hab-priority-dir {
+  width: 20px;
+  height: 20px;
+  font-size: 12px;
+}
+
+.hab95 .hab-priority-sort {
+  flex: 0 1 auto;
+  min-width: 6.5rem;
+  max-width: 11rem;
+  gap: 3px;
+}
+
+.hab95 .hab-priority .habit95-pick {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+}
+
+.hab95 .hab-priority .habit95-select {
+  min-width: 0;
+  width: 100%;
+}
+
+/* contents: the mast and the well are desk-grid items, same sticky
+   scrollport the checklist had when the well was the grid cell.
+   The mast is row 1: priority bar, then the wand banner flush under
+   it. An empty mount takes no height, so the well stays on the sheet. */
 .hab-desk > .hab-sheet {
   display: contents;
 }
 
-.hab-sheet > .hab-priority {
+.hab-sheet > .hab-sheet-mast {
   grid-column: 1;
   grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  padding: 0;
   min-width: 0;
   max-width: 100%;
+}
+
+.hab-wand-mount:empty {
+  display: none;
 }
 
 .hab-sheet > .hab-well {
@@ -859,10 +952,20 @@ body.win95-app .hab95 button.hab-willpower-lab-toggle.is-on {
   min-height: 0;
   width: 100%;
   overflow: auto;
-  /* Flush to the grid. Top or bottom padding would sit outside the sticky
-     header and totals and let a scrolled row show through that strip.
-     The sheet's transparent end border is the gutter for the vintage bar. */
-  padding: 0;
+  /* Vintage track on the left. rtl only moves the scrollbar; every content
+     child is forced back to ltr so columns and text stay left to right.
+     Do not set scrollbar-width or scrollbar-color — Chromium replaces the
+     Win95 bars when either property is set. Top and bottom padding stay 0
+     so the sticky header and totals sit on the well. The 10px right pad
+     keeps the percent tubes off the rail. It is not the old ~20px scrollbar
+     gutter: the bar stays on the left, and the rail stays 196px. The
+     flush-to-the-rail edge was dropped because the tubes sat against the
+     rail. --hab-colhead is the column-name row (3px pad + 12px×1.15 line +
+     10px×1.15 date + 3px pad + 1px rule) so the vertical track can start on
+     the first task row. */
+  direction: rtl;
+  padding: 0 10px 0 0;
+  --hab-colhead: calc(3px + (12px * 1.15) + (10px * 1.15) + 3px + 1px);
   background-color: var(--hab-metal-mid);
   background-image:
     repeating-linear-gradient(
@@ -876,6 +979,17 @@ body.win95-app .hab95 button.hab-willpower-lab-toggle.is-on {
       transparent 1px 6px
     );
   box-shadow: var(--hab-sunken, inset 1px 1px var(--chrome-lo), inset -1px -1px #fff);
+}
+
+.hab-well > * {
+  direction: ltr;
+}
+
+/* An rtl scrollport opens on its inline end. Where the engine supports
+   scroll-initial-target, the first column is that target so a wide sheet
+   still opens on Task, then the days. */
+.hab-well .habit-grid th.col-act {
+  scroll-initial-target: nearest;
 }
 
 .hab-well .overflow-hidden,
@@ -893,11 +1007,6 @@ body.win95-app .hab95 button.hab-willpower-lab-toggle.is-on {
   font-size: 12px;
   color: var(--hab-ink);
   background: var(--chrome-mid, #dfdfdf);
-  /* Right gutter travels with the sheet. A wide grid used to scroll the
-     well's padding away and leave the percent tubes under the vintage bar. */
-  box-sizing: border-box;
-  border-right: 20px solid transparent;
-  background-clip: padding-box;
 }
 
 .hab95 .habit-grid th,
@@ -949,21 +1058,16 @@ body.win95-app .hab95 button.hab-willpower-lab-toggle.is-on {
   overflow: visible;
 }
 
-.hab95 .habit-grid.is-day-view .col-name {
-  width: 16rem;
-  min-width: 16rem;
+.hab95 .habit-grid .col-detail {
+  overflow: hidden;
 }
 
-.hab95 .habit-grid.is-day-view .col-day {
-  width: 12rem;
-  min-width: 12rem;
-  max-width: 12rem;
+.hab95 .habit-detail-amount {
+  color: var(--hab-ink);
 }
 
-.hab95 .habit-grid.is-day-view .col-pct {
-  width: 7rem;
-  min-width: 7rem;
-  max-width: 7rem;
+.hab95 .habit-detail-source {
+  color: #3a3a3a;
 }
 
 .hab95 .habit-grid.is-day-view .habit-name-title {
@@ -1028,8 +1132,7 @@ body.win95-app .hab95 button.hab-willpower-lab-toggle.is-on {
 .hab95 .hab-well > .habit-heat {
   min-width: 0;
   max-width: 100%;
-  /* The well's vintage bar overlays this edge. */
-  margin-right: 16px;
+  margin-right: 0;
 }
 
 .hab-well > .hab-period-plan {
@@ -1138,9 +1241,9 @@ body.win95-app .hab95 button.hab-willpower-lab-toggle.is-on {
   min-width: 0;
   overflow: visible;
   box-sizing: border-box;
-  /* Left inset keeps gauges and the gem oval inside the desk clip. */
+  /* Left inset keeps the gauges off the sheet. Gems may paint past the right edge. */
   padding: 8px 8px 8px 12px;
-  border-radius: var(--r-3, 3px);
+  border-radius: 0;
   --hab-willpower-scale: 1;
   background-color: var(--hab-metal, var(--chrome-face, #c0c0c0));
   background-image:
@@ -1183,16 +1286,12 @@ body.win95-app .hab95 button.hab-willpower-lab-toggle.is-on {
   overflow-y: auto;
 }
 
-/* Vintage Win95 bar — the shell recipe in app/win95.css, scoped to these
-   two panes so the rest of the app is not restyled. Textured track, raised
-   thumb, 16px. The control stack's right padding keeps the track off the last
-   key. The checklist sheet's transparent end border keeps it off the percent tubes. */
-.hab-control-stack,
-.hab-well {
-  scrollbar-width: auto;
-  scrollbar-color: var(--chrome-face, #c0c0c0) var(--chrome-brush, #acacac);
-}
-
+/* These panes use the app-wide vintage bar in app/win95.css (16px textured
+   track, raised thumb). Do not set scrollbar-width or scrollbar-color here —
+   Chromium treats those as a native replacement and drops ::-webkit-scrollbar.
+   The control stack's right padding keeps its track off the last key. The
+   checklist well's track is on the left. A 10px pad, not a scrollbar gutter,
+   sits to the right of the percent column. */
 body.win95-app .hab-control-stack::-webkit-scrollbar,
 body.win95-app .hab-well::-webkit-scrollbar {
   width: 16px;
@@ -1233,6 +1332,25 @@ body.win95-app .hab-well::-webkit-scrollbar-thumb {
 body.win95-app .hab-control-stack::-webkit-scrollbar-corner,
 body.win95-app .hab-well::-webkit-scrollbar-corner {
   background: var(--w95-surface);
+}
+
+/* The column-name row is sticky inside this same scrollport, so the bar
+   would otherwise run through it. Inset the track by that row: its top is
+   the first task, and it does not paint through or above the header. The
+   inset face matches the header chrome. :vertical is not used — this
+   Chromium drops scrollbar pseudos that carry it. Heatmap and the other
+   wells have no grid thead, so their bars stay full height. */
+body.win95-app .hab-well:has(.habit-grid thead)::-webkit-scrollbar {
+  background-color: var(--hab-metal, var(--chrome-face, #c0c0c0));
+  background-image: repeating-linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.32) 0 1px,
+    transparent 1px 2px
+  );
+}
+
+body.win95-app .hab-well:has(.habit-grid thead)::-webkit-scrollbar-track {
+  margin-top: var(--hab-colhead, 32.3px);
 }
 
 .hab-control-gauges {

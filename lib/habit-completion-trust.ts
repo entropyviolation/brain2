@@ -51,7 +51,8 @@ export const COMPLETION_SOURCE_HINTS: Record<HabitCompletionSourceId, string> = 
     "Raw average of daily-habit completion for this week, month, or season. The goal is the percent that completes it.",
   listSent:
     "Sent items over still-to-send plus sent, for this week, month, or season. Grace scales that percent.",
-  keywords: "A whole-message line from your phone.",
+  keywords:
+    "Exact BIM messages in this period. True if one arrives, true after a set number, or a logged phrase that writes the amount. A minutes or hours phrase also logs the prior stretch on the habit’s tracking activity.",
 }
 
 export type SourceState = "met" | "unmet" | "empty"
@@ -125,6 +126,7 @@ export function manualReading(cell: TaskCompletion | undefined, goal = 0): Sourc
   if (cell.taggedTaskCount !== undefined && cell.manualValue === undefined) return { state: "empty" }
   if (cell.dailyCompletionAverage !== undefined && cell.manualValue === undefined) return { state: "empty" }
   if (cell.listSentPercent !== undefined && cell.manualValue === undefined) return { state: "empty" }
+  if (cell.keywordUse && cell.handCompleted === undefined && cell.manualValue === undefined) return { state: "empty" }
   if (cell.value !== undefined) return { state: meets(cell.value, goal), value: cell.value }
   if (cell.completed && !cell.keywordLogged) return { state: "met" }
   return { state: "empty" }
@@ -144,6 +146,8 @@ export function readingsFromCell(
   order: readonly HabitCompletionSourceId[],
   cell: TaskCompletion | undefined,
   goal = 0,
+  /** List-sent percent is 0–100. List length keeps that meet-line at 100. */
+  listSentGoal = goal,
 ): Partial<Record<HabitCompletionSourceId, SourceReading>> {
   const enabled = new Set(order)
   const out: Partial<Record<HabitCompletionSourceId, SourceReading>> = {}
@@ -185,10 +189,29 @@ export function readingsFromCell(
     out.listSent =
       cell?.listSentPercent === undefined
         ? { state: "empty" }
-        : { state: meets(cell.listSentPercent, goal), value: cell.listSentPercent }
+        : { state: meets(cell.listSentPercent, listSentGoal), value: cell.listSentPercent }
   }
   if (enabled.has("keywords")) {
-    if (!cell?.keywordLogged) out.keywords = { state: "empty" }
+    if (cell?.keywordUse) {
+      const count = cell.keywordHitCount
+      if (count == null) out.keywords = { state: "empty" }
+      else if (cell.keywordUse === "logged") {
+        const named = cell.keywordSlots && Object.keys(cell.keywordSlots).length > 0
+        if (cell.keywordValue == null && !named) out.keywords = { state: "empty" }
+        else if (goal && cell.keywordValue != null) {
+          out.keywords = { state: meets(cell.keywordValue, goal), value: cell.keywordValue }
+        } else {
+          out.keywords = { state: "met", value: cell.keywordValue }
+        }
+      } else if (count <= 0) {
+        out.keywords = { state: "empty" }
+      } else if (cell.keywordUse === "after") {
+        const needed = cell.keywordAfter && cell.keywordAfter > 0 ? Math.floor(cell.keywordAfter) : 2
+        out.keywords = { state: count >= needed ? "met" : "unmet", value: count }
+      } else {
+        out.keywords = { state: "met", value: count }
+      }
+    } else if (!cell?.keywordLogged) out.keywords = { state: "empty" }
     else if (goal && (cell.keywordValue !== undefined || cell.value !== undefined)) {
       const amount = cell.value ?? cell.keywordValue
       out.keywords = { state: meets(amount, goal), value: cell.keywordValue }

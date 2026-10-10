@@ -80,4 +80,39 @@ describe("HabitListPopup", () => {
       useTaskStore.setState({ lists: previous.lists, tasks: previous.tasks })
     }
   })
+
+  it("browse lists every name and leaves the sent ticks off", () => {
+    const previous = { lists: useTaskStore.getState().lists, tasks: useTaskStore.getState().tasks }
+    useTaskStore.setState({
+      lists: [
+        ...previous.lists.filter((list) => list.id !== LIST),
+        {
+          id: LIST,
+          name: "TEXTS I NEED TO SEND",
+          color: "#224466",
+          createdAt: new Date("2026-10-01T12:00:00"),
+        },
+      ],
+      tasks: [...previous.tasks.filter((item) => !(item.lists ?? []).includes(LIST)), ...NAMES.map(textItem)],
+    })
+
+    try {
+      render(
+        <HabitListPopup
+          listId={LIST}
+          link={null}
+          frequency={undefined}
+          container={null}
+          browse
+          onClose={() => {}}
+        />,
+      )
+      for (const name of NAMES) expect(screen.getByText(name)).toBeInTheDocument()
+      expect(screen.queryByRole("button", { name: "Show sent" })).not.toBeInTheDocument()
+      expect(screen.queryByTestId("habit-list-target")).not.toBeInTheDocument()
+      expect(screen.getByRole("button", { name: "Close list" })).toBeInTheDocument()
+    } finally {
+      useTaskStore.setState({ lists: previous.lists, tasks: previous.tasks })
+    }
+  })
 })

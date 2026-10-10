@@ -52,8 +52,11 @@ describe("TaskGrid", () => {
     expect(document.querySelector(".habit-name-title")?.textContent).toBe("Drink water")
     const wrap = container.querySelector(".habit-grid-wrap") as HTMLElement
     expect(window.getComputedStyle(wrap).overflowY).toBe("visible")
+    const headerRow = document.querySelector("thead tr") as HTMLElement
     const header = document.querySelector("th.col-name") as HTMLElement
     const dayHeader = document.querySelector("th.col-day") as HTMLElement
+    expect(window.getComputedStyle(headerRow).position).toBe("sticky")
+    expect(window.getComputedStyle(headerRow).top).toBe("0px")
     expect(window.getComputedStyle(header).position).toBe("sticky")
     expect(window.getComputedStyle(header).top).toBe("0px")
     expect(window.getComputedStyle(dayHeader).position).toBe("sticky")
@@ -253,6 +256,13 @@ describe("TaskGrid", () => {
     expect(screen.getByRole("meter", { name: /Drink water week 20%/ })).toBeInTheDocument()
     expect(screen.getAllByRole("meter", { name: /daily 40%/ })).toHaveLength(1)
     expect(document.querySelector(".habit-grid")?.classList.contains("is-day-view")).toBe(true)
+    const lampCell = document.querySelector(".habit-lamp-cell") as HTMLElement
+    const lampStyle = window.getComputedStyle(lampCell)
+    expect(lampStyle.display).toBe("flex")
+    expect(lampStyle.alignItems).toBe("center")
+    expect(lampStyle.justifyContent).toBe("center")
+    expect(lampStyle.padding).toBe("0px")
+    expect(lampStyle.height === "22px" || lampStyle.height === "100%").toBe(true)
     const title = document.querySelector(".habit-name-title") as HTMLElement
     expect(window.getComputedStyle(title).fontWeight).toMatch(/700|bold/)
     expect(window.getComputedStyle(title).fontSize).toBe("15px")
@@ -261,7 +271,32 @@ describe("TaskGrid", () => {
     expect((daily.querySelector(".hab-pled-bar-mercury") as HTMLElement).style.width).toBe("40%")
     expect(screen.getByRole("meter", { name: /Drink water week 20%/ })).toHaveAttribute("data-density", "compact")
     expect((screen.getByRole("meter", { name: /Drink water week 20%/ }).querySelector(".hab-pled-bar-mercury") as HTMLElement).style.width).toBe("20%")
-    expect(window.getComputedStyle(document.querySelector("th.col-day") as Element).minWidth).toBe("12rem")
+    expect(document.querySelector("th.col-detail")).toBeTruthy()
+    expect(document.querySelector(".habit-detail-amount")?.textContent).toBe("0 / 1")
+    const detail = document.querySelector(".habit-detail") as HTMLElement
+    expect(detail).toBeTruthy()
+    expect(window.getComputedStyle(detail).display).toBe("flex")
+    expect(window.getComputedStyle(detail).height).toBe("22px")
+    expect(document.querySelector(".habit-detail-source")?.textContent).toBeTruthy()
+    expect(window.getComputedStyle(document.querySelector("col.col-detail") as Element).width).toBe("auto")
+    expect(window.getComputedStyle(document.querySelector("th.col-day") as Element).minWidth).toBe("5.375rem")
+  })
+
+  it("leaves the detail column off the multi-day sheet", () => {
+    render(
+      <TaskGrid
+        tasks={tasks}
+        weeklyData={{}}
+        weekDates={weekDates}
+        onUpdateTaskCompletion={vi.fn()}
+        onEditTask={vi.fn()}
+        calculateTaskPercentage={() => 0}
+        calculateDayPercentage={() => 0}
+      />,
+    )
+    expect(document.querySelectorAll("th.col-day")).toHaveLength(7)
+    expect(document.querySelector(".col-detail")).toBeNull()
+    expect(document.querySelector(".habit-grid")?.classList.contains("is-period-detail")).toBe(false)
   })
 
   it("keeps day columns at a fixed tap width and does not nest a Y scroller on the wrap", () => {
@@ -281,7 +316,9 @@ describe("TaskGrid", () => {
     const day = container.querySelector("th.col-day") as HTMLElement
     expect(window.getComputedStyle(wrap).overflowY).toBe("visible")
     expect(window.getComputedStyle(wrap).overflowX).toBe("visible")
-    expect(window.getComputedStyle(name).width).toBe("12.5rem")
+    expect(window.getComputedStyle(wrap).width).toBe("100%")
+    expect(window.getComputedStyle(name).minWidth).toBe("12.5rem")
+    expect(document.querySelector("col.col-detail")).toBeNull()
     expect(window.getComputedStyle(day).minWidth).toBe("5.375rem")
     expect(window.getComputedStyle(day).width).toBe("5.375rem")
     const title = container.querySelector(".habit-name-title") as HTMLElement
@@ -393,9 +430,10 @@ describe("TaskGrid", () => {
     const slotBox = cssBox(pctSlot)
     const footerBox = cssBox(footerSlot)
 
-    expect(lampCellBox.height).toBe("22px")
+    expect(window.getComputedStyle(dayTd).padding).toBe("0px")
+    expect(lampCellBox.height === "22px" || lampCellBox.height === "100%").toBe(true)
     expect(lampCellBox.minHeight).toBe("22px")
-    expect(lampCellBox.maxHeight).toBe("22px")
+    expect(lampCellBox.maxHeight === "none" || lampCellBox.maxHeight === "22px").toBe(true)
     expect(lamp).not.toHaveAttribute("data-fill")
     expect(pctBox.width).toBe("6.25rem")
     expect(pctBox.minWidth).toBe("6.25rem")
@@ -747,6 +785,10 @@ describe("TaskGrid", () => {
     await user.click(screen.getByRole("img", { name: "Drink water 2026-06-16 already done" }))
     expect(onUpdateTaskCompletion).not.toHaveBeenCalled()
     await user.click(screen.getByRole("checkbox", { name: "Drink water 2026-06-18 missed opportunity" }))
-    expect(onUpdateTaskCompletion).toHaveBeenCalledWith(tasks[0].id, weekDates[2], { missedOpportunity: true })
+    await user.click(screen.getByRole("button", { name: "Skip" }))
+    expect(onUpdateTaskCompletion).toHaveBeenCalledWith(tasks[0].id, weekDates[2], {
+      missedOpportunity: true,
+      missReason: "",
+    })
   })
 })

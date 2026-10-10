@@ -1,14 +1,18 @@
 /**
  * components/Home/Habits/habit-sort-control.tsx — Sort on the Priority bar
  *
- * A milled `habit95-select` (not a native OS popup) plus one direction key.
+ * A visible SORT: label, a milled `habit95-select` (not a native OS popup),
+ * and one direction key. The list portals to the document on the shared menu
+ * layer, so the sheet, its frozen header, and the lamps cannot cover it.
  * Daily names the completion key Weekly completion %. Weekly, monthly, and
  * season name it Period completion %. The key stores asc / desc. Its mark
  * shows which of those is active.
  */
 "use client"
 
-import { useEffect, useId, useRef, useState } from "react"
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react"
+import { createPortal } from "react-dom"
+import { MENU_LAYER_Z } from "@/components/ui/menu-layer"
 import {
   effectiveSortDescending,
   HABIT_SORT_LABELS,
@@ -72,17 +76,61 @@ export function HabitSortControl({
 }) {
   const menuId = useId()
   const rootRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState(false)
+  const [box, setBox] = useState<{ top: number; left: number; width: number } | null>(null)
   const descending = effectiveSortDescending(value, direction)
   const completionLabel = habitCompletionSortLabel(frequencyOnPlate(frequency, id))
   const directionLabels = habitSortDirectionLabels(value)
   const valueLabel = value === "weeklyCompletion" ? completionLabel : HABIT_SORT_LABELS[value]
   const activeName = descending ? directionLabels.desc : directionLabels.asc
+  const optionLabels = useMemo(
+    () =>
+      HABIT_SORT_MODES.map((mode) => (mode === "weeklyCompletion" ? completionLabel : HABIT_SORT_LABELS[mode])),
+    [completionLabel],
+  )
+
+  useLayoutEffect(() => {
+    if (!open) return
+    const place = () => {
+      const button = buttonRef.current
+      if (!button) return
+      const rect = button.getBoundingClientRect()
+      const probe = document.createElement("span")
+      const font = getComputedStyle(button).font
+      probe.style.cssText =
+        "position:fixed;left:0;top:0;visibility:hidden;white-space:nowrap;padding:3px 6px"
+      probe.style.font = font
+      document.body.append(probe)
+      let width = rect.width
+      for (const label of optionLabels) {
+        probe.textContent = label
+        width = Math.max(width, probe.offsetWidth)
+      }
+      probe.remove()
+      const next = { top: rect.bottom, left: rect.left, width: Math.ceil(width + 8) }
+      setBox((current) =>
+        current && current.top === next.top && current.left === next.left && current.width === next.width
+          ? current
+          : next,
+      )
+    }
+    place()
+    window.addEventListener("resize", place)
+    window.addEventListener("scroll", place, true)
+    return () => {
+      window.removeEventListener("resize", place)
+      window.removeEventListener("scroll", place, true)
+    }
+  }, [open, optionLabels])
 
   useEffect(() => {
     if (!open) return
     const onPointer = (event: MouseEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false)
+      const target = event.target as Node
+      if (rootRef.current?.contains(target) || menuRef.current?.contains(target)) return
+      setOpen(false)
     }
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false)
@@ -97,8 +145,10 @@ export function HabitSortControl({
 
   return (
     <div className="hab-priority-sort" id={id}>
+      <span className="hab-priority-sort-legend">SORT:</span>
       <div className="habit95-pick" ref={rootRef}>
         <button
+          ref={buttonRef}
           type="button"
           className="habit95-select"
           aria-label="Sort"
@@ -110,29 +160,61 @@ export function HabitSortControl({
           <span className="habit95-select-label">{valueLabel}</span>
           <span className="habit95-select-arrow" aria-hidden />
         </button>
-        {open ? (
-          <div className="habit95-select-menu" id={menuId} role="listbox" aria-label="Sort">
-            {HABIT_SORT_MODES.map((mode) => {
-              const label = mode === "weeklyCompletion" ? completionLabel : HABIT_SORT_LABELS[mode]
-              const selected = mode === value
-              return (
-                <button
-                  key={mode}
-                  type="button"
-                  role="option"
-                  aria-selected={selected}
-                  className="habit95-habit-option"
-                  onClick={() => {
-                    onChange(mode)
-                    setOpen(false)
-                  }}
+        {open && box
+          ? createPortal(
+              <div
+                className="hab-priority"
+                data-menu-layer=""
+                style={{
+                  position: "fixed",
+                  top: box.top,
+                  left: box.left,
+                  width: box.width,
+                  height: 0,
+                  margin: 0,
+                  padding: 0,
+                  gap: 0,
+                  display: "block",
+                  border: 0,
+                  background: "transparent",
+                  boxShadow: "none",
+                  overflow: "visible",
+                  zIndex: MENU_LAYER_Z,
+                  pointerEvents: "none",
+                }}
+              >
+                <div
+                  ref={menuRef}
+                  className="habit95-select-menu"
+                  id={menuId}
+                  role="listbox"
+                  aria-label="Sort"
+                  style={{ pointerEvents: "auto", zIndex: MENU_LAYER_Z, whiteSpace: "nowrap" }}
                 >
-                  {label}
-                </button>
-              )
-            })}
-          </div>
-        ) : null}
+                  {HABIT_SORT_MODES.map((mode) => {
+                    const label = mode === "weeklyCompletion" ? completionLabel : HABIT_SORT_LABELS[mode]
+                    const selected = mode === value
+                    return (
+                      <button
+                        key={mode}
+                        type="button"
+                        role="option"
+                        aria-selected={selected}
+                        className="habit95-habit-option"
+                        onClick={() => {
+                          onChange(mode)
+                          setOpen(false)
+                        }}
+                      >
+                        {label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>,
+              document.body,
+            )
+          : null}
       </div>
       <button
         type="button"

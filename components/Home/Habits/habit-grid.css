@@ -1,8 +1,10 @@
 /* Compact spreadsheet. Columns keep their widths. The control panel is a
-   fixed 196px; this sheet does not leave a padded frame inside the well. */
+   fixed 196px. This wrap is not a padded frame; the well's 10px right pad
+   (habit-chrome.css) sits past the percent column so the tubes clear the
+   rail. That pad is not a scrollbar gutter. */
 
 .habit-grid-wrap {
-  width: max-content;
+  width: 100%;
   max-width: 100%;
   min-width: 0;
   /* The Habits Tab Control Panel pins Willpower gems at the bottom; the sheet scrolls in `.hab-well`.
@@ -15,9 +17,9 @@
 }
 
 .habit-grid {
-  width: max-content;
+  width: 100%;
   margin-left: 0;
-  margin-right: auto;
+  margin-right: 0;
   table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
@@ -27,10 +29,26 @@
 
 .habit-grid th,
 .habit-grid td {
-  padding: 2px 3px;
+  padding: 0;
   vertical-align: middle;
   overflow: visible;
   border-bottom: 1px solid hsl(var(--border) / 0.6);
+}
+
+/* The lamp sits on the cell edge. Padding was a transparent ring of the
+   page around the checkbox. height: 1px lets the lamp fill a taller row. */
+.habit-grid td.col-day:has(.habit-lamp-cell) {
+  height: 1px;
+  padding: 0;
+}
+
+/* The row is the sticky box. Sticking only the header cells misses in this
+   scrollport, the same way the totals row has to stick as a row. The cells
+   stay sticky too so a browser that honors them still pins the same edge. */
+.habit-grid thead tr {
+  position: sticky;
+  top: 0;
+  z-index: 5;
 }
 
 .habit-grid thead th {
@@ -38,7 +56,7 @@
   top: 0;
   z-index: 5;
   height: auto;
-  padding: 3px 2px;
+  padding: 3px 0;
   font-weight: 600;
   text-align: center;
   background-color: var(--chrome-mid, #dfdfdf);
@@ -67,6 +85,30 @@
     inset -1px 0 0 #8a9a90;
 }
 
+.habit-grid col.col-act {
+  width: 28px;
+}
+
+.habit-grid col.col-day {
+  width: 5.375rem;
+}
+
+.habit-grid col.col-pct {
+  width: 6.25rem;
+}
+
+.habit-grid col.col-name {
+  width: auto;
+}
+
+.habit-grid.is-period-detail col.col-name {
+  width: 12.5rem;
+}
+
+.habit-grid.is-period-detail col.col-detail {
+  width: auto;
+}
+
 .habit-grid .col-act {
   width: 28px;
   min-width: 28px;
@@ -75,8 +117,9 @@
 }
 
 .habit-grid .col-name {
-  width: 12.5rem;
-  min-width: 10rem;
+  width: auto;
+  min-width: 12.5rem;
+  padding: 1px 4px;
   text-align: left;
   overflow: visible;
 }
@@ -98,21 +141,54 @@
   overflow: hidden;
 }
 
-.habit-grid.is-day-view .col-name {
-  width: 16rem;
-  min-width: 16rem;
+/* Single-period sheet: name, period, and % stay the compact widths.
+   The detail column is the only one that grows, and it stays one row
+   with the habit — amount, then the source, no card inside the cell. */
+.habit-grid.is-period-detail .col-name {
+  width: 12.5rem;
+  max-width: 12.5rem;
 }
 
-.habit-grid.is-day-view .col-day {
-  width: 12rem;
-  min-width: 12rem;
-  max-width: 12rem;
+.habit-grid .col-detail {
+  width: auto;
+  min-width: 8rem;
+  padding: 0 8px;
+  text-align: left;
+  overflow: hidden;
+  background: transparent;
 }
 
-.habit-grid.is-day-view .col-pct {
-  width: 7rem;
-  min-width: 7rem;
-  max-width: 7rem;
+.habit-detail {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  height: 22px;
+  min-height: 22px;
+  max-height: 22px;
+  background: transparent;
+}
+
+.habit-detail-amount {
+  flex: 0 0 5.5rem;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 22px;
+  white-space: nowrap;
+}
+
+.habit-detail-source {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 22px;
+  color: hsl(var(--muted-foreground));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Fixed % slot: Loading Bar and numeric LED swap graphics, not geometry.
@@ -191,9 +267,12 @@
   line-height: 1.2;
 }
 
+/* Day view: center the lamp in the period cell. No inset — padding was a
+   transparent ring around the checkbox. Number and text fields stay start-aligned. */
 .habit-grid.is-day-view .habit-lamp-cell {
-  justify-content: flex-start;
-  padding-left: 6px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
 }
 
 .habit-grid .habit-name-meta {
@@ -216,6 +295,11 @@
   min-height: 22px;
   max-height: 22px;
   padding: 0;
+}
+
+.habit-grid td.col-day:has(.habit-lamp-cell) .habit-lamp-cell {
+  height: 100%;
+  max-height: none;
 }
 
 .habit-week-streak {
@@ -1064,17 +1148,19 @@ button.habit-heat-cell {
   color: #8b2e2e;
 }
 
-/* Priority bar — pinned above the scrolling well, still in the grid pane. */
+/* Priority band — same chrome as the column header, flush to it.
+   The bar is rendered above the well in habit-tracker; this only skins it. */
 .hab-priority {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px 10px;
-  margin: 0 0 6px;
-  padding: 5px 6px;
-  border-radius: var(--r-3, 3px);
-  background: var(--hab-metal-mid, var(--chrome-key-mid));
-  box-shadow: var(--hab-sunken, inset 1px 1px var(--chrome-lo), inset -1px -1px #fff);
+  gap: 4px 8px;
+  margin: 0;
+  padding: 3px 6px;
+  border-radius: 0;
+  background: var(--chrome-mid, #dfdfdf);
+  box-shadow: none;
+  border-bottom: 1px solid hsl(var(--border) / 0.6);
 }
 
 .hab-priority-legend {
@@ -1104,9 +1190,33 @@ button.habit-heat-cell {
   display: flex;
   align-items: center;
   gap: 4px;
-  min-width: 12rem;
+  min-width: 0;
+  flex: 1 1 16rem;
+  max-width: 22rem;
   position: relative;
   z-index: 4;
+}
+
+.hab-priority-sort-legend {
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #2a2c2e;
+}
+
+/* One tight tray of sheet LEDs, after SORT:, still on this strip. */
+.hab-priority-leds {
+  display: inline-flex;
+  align-items: stretch;
+  flex: 0 0 auto;
+  gap: 0;
+  margin-left: auto;
+  padding: 1px;
+  background: var(--hab-metal, var(--chrome-face, #c0c0c0));
+  box-shadow:
+    inset 1px 1px 0 rgba(0, 0, 0, 0.22),
+    inset -1px -1px 0 rgba(255, 255, 255, 0.75);
 }
 
 .hab-priority .habit95-pick {

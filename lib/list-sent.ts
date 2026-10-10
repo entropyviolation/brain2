@@ -204,6 +204,32 @@ export function applyListSentPercent(
   return { ...(completion ?? {}), listSentPercent: reported, value: reported, goal }
 }
 
+/**
+ * List length stores the count and the list size, not the percent.
+ * `reported` is still the grace-scaled percent, kept on `listSentPercent`.
+ * A hand-typed cell, or another auto source, keeps its number.
+ */
+export function applyListLengthCount(
+  completion: TaskCompletion | undefined,
+  current: number,
+  target: number,
+  reported: number,
+): TaskCompletion | null {
+  const handOwned = completion?.handCompleted !== undefined || completion?.manualValue !== undefined
+  if (handOwned || otherAutoOwnsValue(completion)) {
+    if (completion?.listSentPercent === reported && completion?.goal === target) return null
+    return { ...(completion ?? {}), listSentPercent: reported, goal: target }
+  }
+  if (
+    completion?.listSentPercent === reported &&
+    completion?.value === current &&
+    completion?.goal === target
+  ) {
+    return null
+  }
+  return { ...(completion ?? {}), listSentPercent: reported, value: current, goal: target }
+}
+
 export function listOptsIntoSent(list: { sentThisWeek?: boolean } | null | undefined): boolean {
   return list?.sentThisWeek === true
 }

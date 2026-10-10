@@ -7,7 +7,8 @@
  * The first source with something to say wins. A hand-typed cell still wins.
  *
  * Names are display-only. A Habits stats row may also store `stats`: the set,
- * the points, and an optional previous-period compare. Old habits have no
+ * the points, and an optional previous-period compare. A saved `statBinding`
+ * is kept beside that (`lib/habit-stat-pipeline.ts`). Old habits have no
  * `completionPipelines`; the form builds one row per stored source id
  * (adjacent occupancy and sleep share a row, and so do adjacent habit stats).
  * No persist version bump.
@@ -21,11 +22,14 @@ import type {
   HabitListSentLink,
   HabitListTarget,
   HabitPipelineKind,
+  TaskCompletion,
   WeeklyTask,
 } from "./types"
+import { sanitizeKeywordSource } from "./habit-keyword-source"
 import { HABIT_COMPLETION_SOURCE_ORDER } from "./habit-completion-trust"
+import { migrateHabitStatsSource } from "./habit-stat-pipeline"
 import { sanitizeHabitStats } from "./habit-stat-points"
-import { clampListSentGrace, currentPeriodRange, isSentOnList, listSentCompletion } from "./list-sent"
+import { clampListSentGrace, currentPeriodRange, isSentOnList, listSentCompletion, sentInstant } from "./list-sent"
 
 export const PIPELINE_KIND_ORDER: readonly HabitPipelineKind[] = [
   "manual",
@@ -163,8 +167,19 @@ export function sanitizePipelines(value: unknown): HabitCompletionPipeline[] | u
       seen.add(id as HabitCompletionSourceId)
     }
     const name = typeof row.name === "string" ? row.name.trim() : ""
+    const keyword = kind === "keywords" ? sanitizeKeywordSource(row.keyword) ?? undefined : undefined
     const stats = kind === "habitsStats" ? sanitizeHabitStats(row.stats) : undefined
-    rows.push({ id: row.id, kind, sources, ...(name ? { name } : {}), ...(stats ? { stats } : {}) })
+    const statBinding =
+      kind === "habitsStats" && row.statBinding != null ? migrateHabitStatsSource(row.statBinding) ?? undefined : undefined
+    rows.push({
+      id: row.id,
+      kind,
+      sources,
+      ...(name ? { name } : {}),
+      ...(keyword ? { keyword } : {}),
+      ...(stats ? { stats } : {}),
+      ...(statBinding ? { statBinding } : {}),
+    })
   }
   return rows
 }
@@ -284,6 +299,8 @@ export interface ListPipelinePreviewItem {
 export interface ListPipelinePreview {
   summary: string
   names: string[]
+  counted: number
+  target: number
 }
 
 function itemName(item: ListPipelinePreviewItem): string {
@@ -303,7 +320,12 @@ function instantOf(value: Date | string | null | undefined): number | null {
   return Number.isFinite(at) ? at : null
 }
 
-/** Read-only counted/target for a list routing. Does not mark anything sent. */
+/**
+ * Read-only counted/target for a list routing at `now`. Does not mark anything sent.
+ * List length and this period's set use `listPeriodMeasure` for the period that
+ * contains `now`, with the clock at that same instant, so the preview follows
+ * the live list. A fixed target of 1 stays 1.
+ */
 export function describeListRoutingPreview(
   items: readonly ListPipelinePreviewItem[],
   listId: string,
@@ -311,14 +333,13 @@ export function describeListRoutingPreview(
   frequency: HabitFrequency | undefined,
   now: Date,
 ): ListPipelinePreview {
-  if (!listId) return { summary: "", names: [] }
+  if (!listId) return { summary: "", names: [], counted: 0, target: 0 }
   const range = currentPeriodRange(frequency, now)
   const start = range.start.getTime()
   const end = range.end.getTime()
   const members = items.filter((item) => onList(item, listId))
-  const sentCounts = routing.measure === "sent" || routing.target === "periodSet"
-    ? listSentCompletion(items, listId, range)
-    : null
+  const periodSplit = routing.target === "listLength" || routing.target === "periodSet"
+  const sentCounts = routing.measure === "sent" ? listSentCompletion(items, listId, range) : null
 
   let counted = 0
   let names: string[] = []
@@ -332,25 +353,194 @@ export function describeListRoutingPreview(
     })
     counted = added.length
     names = added.map(itemName)
+  } else if (periodSplit) {
+    const tripped = items.filter((item) => {
+      if (item.completed !== true) return false
+      const at = instantOf(item.completedDate)
+      return at !== null && at >= start && at < end
+    })
+    counted = tripped.length
+    names = members.filter((item) => item.completed !== true).map(itemName)
   } else {
     counted = members.filter((item) => item.completed === true).length
     names = members.filter((item) => item.completed !== true).map(itemName)
   }
 
   let target = 1
-  if (routing.target === "listLength") target = members.length
-  else if (routing.target === "periodSet") {
-    if (routing.measure === "sent") target = sentCounts?.total ?? 0
-    else if (routing.measure === "completed") {
-      const tripped = items.filter((item) => {
-        const at = instantOf(item.completedDate)
-        return at !== null && at >= start && at < end
-      }).length
-      const waiting = members.filter((item) => item.completed !== true).length
-      target = waiting + tripped
-    } else target = counted
+  if (periodSplit) {
+    const measure = measureListSpan(items, listId, routing, frequency, now, now)
+    counted = measure.sentInSpan
+    target = measure.listLength
   }
-  return { summary: `${counted} of ${target}`, names }
+  return { summary: `${counted} of ${target}`, names, counted, target }
+}
+
+export interface ListPeriodMeasure {
+  /** Live length while the period is open; length at the period's end once it has closed. */
+  listLength: number
+  /** Items whose counted moment falls inside this period only. */
+  sentInSpan: number
+  /** `max(0, listLength - sentInSpan)`. */
+  leftToSend: number
+  /** True after the period ends. Later edits to the list do not change `listLength`. */
+  frozen: boolean
+}
+
+/**
+ * Fraction for one period of a goal habit fed by a list.
+ * The grid prints `sentInSpan / listLength`. The detail window reads the same
+ * object for list length, sent in the span, and left to send.
+ * A fixed target of 1 does not use this. Null when the list source is off.
+ *
+ * `period` is any instant inside the day, week, month, or season.
+ * `now` is the clock. The length freezes once `now` is at or past the period end.
+ */
+export function listPeriodMeasure(
+  task: Pick<WeeklyTask, "frequency" | "listSentLink">,
+  items: readonly ListPipelinePreviewItem[],
+  period: Date,
+  now: Date = new Date(),
+): ListPeriodMeasure | null {
+  const link = task.listSentLink
+  if (!link?.listId || link.enabled === false) return null
+  const routing = listRoutingFromLink(link)
+  if (routing.target !== "listLength" && routing.target !== "periodSet") return null
+  return measureListSpan(items, link.listId, routing, task.frequency, period, now)
+}
+
+/**
+ * End-of-period length is reconstructed. Nothing else is stored.
+ *
+ * Arrival is `createdAt`. An item created at or after the period end is not
+ * in that period's length, so an item added later does not change a finished
+ * period.
+ *
+ * While the period is still open, length is the live membership (`lists`).
+ *
+ * After it closes, an item still on the list counts when it had already been
+ * created. An item that has left counts only when `sentAt` for this list falls
+ * in this period or a later one: the weekly clear drops that membership after
+ * the period that contains the send, so the item was still on the list at the
+ * end of every period from its creation through that send. A send from an
+ * earlier period does not stay in this length. A counted flag with no moment
+ * is not given a send in any period, and it is not treated as a departure.
+ * `completedDate` is the counted moment for Completed. It does not remove the
+ * item. Added uses `createdAt` as the counted moment and only for items still
+ * on the list, because a removed item no longer says which list it joined.
+ */
+function measureListSpan(
+  items: readonly ListPipelinePreviewItem[],
+  listId: string,
+  routing: ListRouting,
+  frequency: HabitFrequency | undefined,
+  period: Date,
+  now: Date,
+): ListPeriodMeasure {
+  const range = currentPeriodRange(frequency, period)
+  const start = range.start.getTime()
+  const end = range.end.getTime()
+  const frozen = now.getTime() >= end
+  const sentInSpan = items.filter((item) => countedInSpan(item, listId, routing.measure, start, end)).length
+  const listLength = frozen
+    ? items.filter((item) => memberAtPeriodEnd(item, listId, start, end)).length
+    : items.filter((item) => onList(item, listId)).length
+  return {
+    listLength,
+    sentInSpan,
+    leftToSend: Math.max(0, listLength - sentInSpan),
+    frozen,
+  }
+}
+
+function countedInSpan(
+  item: ListPipelinePreviewItem,
+  listId: string,
+  measure: ListRouting["measure"],
+  start: number,
+  end: number,
+): boolean {
+  if (measure === "sent") {
+    const at = sentInstant(item, listId)
+    return at !== null && at >= start && at < end
+  }
+  if (measure === "added") {
+    if (!onList(item, listId)) return false
+    const at = instantOf(item.createdAt)
+    return at !== null && at >= start && at < end
+  }
+  if (!onList(item, listId) || item.completed !== true) return false
+  const at = instantOf(item.completedDate)
+  return at !== null && at >= start && at < end
+}
+
+function memberAtPeriodEnd(item: ListPipelinePreviewItem, listId: string, start: number, end: number): boolean {
+  const sentAt = sentInstant(item, listId)
+  const created = instantOf(item.createdAt)
+  const existed = created !== null ? created < end : sentAt !== null && sentAt < end
+  if (!existed) return false
+  if (onList(item, listId)) return true
+  return sentAt !== null && sentAt >= start
+}
+
+export interface EffectiveHabitCount {
+  /** Items that match what is counted, unless a typed cell still owns the number. */
+  current: number
+  /** This period's ratio when the target is list length; otherwise the stored goal. */
+  target: number
+  /** True when save and the list sync should write this period's list-length ratio onto `goal`. */
+  derived: boolean
+}
+
+/**
+ * Effective target and current count for the open period `now` falls in.
+ * List length follows the live list here, because save and the list sync call
+ * this with the clock. Finished periods freeze in `listPeriodMeasure`; this
+ * does not write those. A typed number keeps the cell's current value.
+ * Grace is not this number.
+ */
+export function effectiveHabitCount(
+  task: Pick<WeeklyTask, "goal" | "frequency" | "listSentLink">,
+  completion: Pick<TaskCompletion, "value" | "manualValue" | "handCompleted" | "trackedValue" | "trackedCompleted" | "coverageCompleted" | "habitSumValue" | "taggedTaskCount" | "dailyCompletionAverage" | "keywordLogged" | "sleepCompleted" | "listCompleted" | "dailyFloorCompleted"> | undefined,
+  items: readonly ListPipelinePreviewItem[],
+  now: Date,
+): EffectiveHabitCount {
+  const link = task.listSentLink
+  if (!link?.listId || link.enabled === false) {
+    return { current: completion?.value ?? 0, target: task.goal || 0, derived: false }
+  }
+  const routing = listRoutingFromLink(link)
+  if (routing.target !== "listLength") {
+    return { current: completion?.value ?? 0, target: task.goal || 0, derived: false }
+  }
+  const preview = describeListRoutingPreview(items, link.listId, routing, task.frequency, now)
+  const handOwns =
+    completion?.manualValue !== undefined ||
+    completion?.handCompleted !== undefined ||
+    completion?.trackedValue !== undefined ||
+    completion?.trackedCompleted !== undefined ||
+    completion?.coverageCompleted !== undefined ||
+    completion?.habitSumValue !== undefined ||
+    completion?.taggedTaskCount !== undefined ||
+    completion?.dailyCompletionAverage !== undefined ||
+    completion?.keywordLogged === true ||
+    completion?.sleepCompleted !== undefined ||
+    completion?.listCompleted !== undefined ||
+    completion?.dailyFloorCompleted !== undefined
+  return {
+    current: handOwns ? (completion?.value ?? 0) : preview.counted,
+    target: preview.target,
+    derived: true,
+  }
+}
+
+/**
+ * Goal the list-sent percent is compared with. That percent is 0–100 after grace.
+ * List length stores its size on `goal`, so the percent still meets at 100.
+ */
+export function listSentTrustGoal(task: Pick<WeeklyTask, "goal" | "listSentLink">): number {
+  const link = task.listSentLink
+  if (link?.listId && link.enabled !== false && listRoutingFromLink(link).target === "listLength") return 100
+  return task.goal || 0
 }
 
 /** Read-only names and count for a stored list mode. Does not mark anything sent. */

@@ -7,7 +7,9 @@
  * lamp paints on the click; this cell hands it the saved completion (or
  * exemption kind) so the glass matches that record once the write lands.
  * A pipeline with no By hand source does not open an editor. Double-click
- * opens a read-only account of that square and writes nothing.
+ * opens a read-only account of that square and writes nothing. A goal fed
+ * by a list opens that same account on double-click even when By hand is
+ * also on; a click still edits the number.
  */
 "use client"
 
@@ -15,13 +17,16 @@ import { useState, type CSSProperties, type ReactNode } from "react"
 import { Clock } from "lucide-react"
 import { type WeeklyTask as Task, TaskType, type TaskCompletion, type WeeklyData, type HabitFrequency } from "@/lib/types"
 import { formatLocalDateKey } from "@/lib/date-utils"
-import { isHabitGoalMet } from "@/lib/habit-utils"
+import { listRoutingFromLink } from "@/lib/habit-completion-pipeline"
+import { isGoalType, isHabitGoalMet } from "@/lib/habit-utils"
 import {
   completionCellShowsHatch,
   isMissedOpportunity,
   missedOpportunityEligible,
   printedGoalAmounts,
 } from "@/lib/habit-missed-opportunity"
+import { missReasonAsText } from "@/lib/blocked-reason"
+import { MissReasonDialog } from "@/components/Reviews/MissReasonDialog"
 import { effectiveCoverageLink } from "@/lib/habit-completion-source"
 import { isCurrentHabitPeriod, loggedShareOfElapsed, periodElapsedFraction } from "@/lib/habit-period-pace"
 import {
@@ -31,6 +36,7 @@ import {
 } from "@/lib/incremental-habits"
 import { trackingUnitLabel } from "@/lib/habit-tracking"
 import { useHabitsStore } from "@/lib/habits-store"
+import { useTaskStore } from "@/lib/task-store"
 import { useThemeStore } from "@/lib/theme-store"
 import { HabitExemptCell, HabitLedLamp } from "@/components/Home/Habits/habit-led-lamp"
 import { HabitSourceDetail } from "@/components/Home/Habits/habit-source-detail"
@@ -44,6 +50,14 @@ import {
   type ExemptionKind,
 } from "@/lib/habit-exemption"
 import { autoCheckHint } from "@/lib/habit-connections"
+
+function listGoalOpensDetail(task: Task): boolean {
+  if (!isGoalType(task.type)) return false
+  const link = task.listSentLink
+  if (!link?.listId || link.enabled === false) return false
+  const target = listRoutingFromLink(link).target
+  return target === "listLength" || target === "periodSet"
+}
 
 export type HabitCompletionVariant = "daily" | "period"
 
@@ -83,7 +97,7 @@ export interface HabitCompletionCellProps {
   onSetExempt?: (exempt: boolean) => void
   /** Missed op wand: eligible cells toggle `missedOpportunity`. */
   missedOpWand?: boolean
-  onToggleMissedOpportunity?: (missed: boolean) => void
+  onToggleMissedOpportunity?: (missed: boolean, missReason?: string) => void
   /** Paint completed and missed-op cells with the exemption hatch. */
   hideCompletedAndMissed?: boolean
   onBooleanChange: (checked: boolean) => void
@@ -115,14 +129,18 @@ export function HabitCompletionCell({
 }: HabitCompletionCellProps) {
   const colors = useThemeStore((s) => s.colors)
   const ledTint = useHabitsStore((s) => s.percentLedTint)
+  const vaultItems = useTaskStore((s) => s.tasks)
   const [detailOpen, setDetailOpen] = useState(false)
+  const [askMiss, setAskMiss] = useState(false)
   const sourceDetail = cellOpensSourceDetail(task) && !exemptionWand && !missedOpWand
+  const listDetail = listGoalOpensDetail(task) && !exemptionWand && !missedOpWand
+  const showDetail = sourceDetail || listDetail
   const openSourceDetail = (event: { preventDefault: () => void; stopPropagation: () => void }) => {
     event.preventDefault()
     event.stopPropagation()
     setDetailOpen(true)
   }
-  const detailDialog = sourceDetail ? (
+  const detailDialog = showDetail ? (
     <HabitSourceDetail
       open={detailOpen}
       onOpenChange={setDetailOpen}
@@ -154,7 +172,7 @@ export function HabitCompletionCell({
 
   const met = isHabitGoalMet(task, completion, { date, weeklyData })
   const missed = isMissedOpportunity(completion)
-  const printed = printedGoalAmounts(task, completion)
+  const printed = printedGoalAmounts(task, completion, vaultItems, date)
   const showHatch = completionCellShowsHatch({
     exempt,
     met,
@@ -168,14 +186,30 @@ export function HabitCompletionCell({
 
   if (missedOpWand && onToggleMissedOpportunity && missedOpportunityEligible(exempt, met)) {
     return (
-      <div className="habit-lamp-cell" title="Click to mark this period definitely not done.">
-        <HabitLedLamp
-          checked={missed}
-          saved={missed}
-          onCheckedChange={onToggleMissedOpportunity}
-          label={`${task.name} ${periodLabel} missed opportunity`}
+      <>
+        <div className="habit-lamp-cell" title="Click to mark this period definitely not done.">
+          <HabitLedLamp
+            checked={missed}
+            saved={missed}
+            onCheckedChange={(checked) => {
+              if (!checked) {
+                onToggleMissedOpportunity(false)
+                return
+              }
+              setAskMiss(true)
+            }}
+            label={`${task.name} ${periodLabel} missed opportunity`}
+          />
+        </div>
+        <MissReasonDialog
+          open={askMiss}
+          subject={task.name}
+          onResolve={(reason) => {
+            setAskMiss(false)
+            onToggleMissedOpportunity(true, missReasonAsText(reason))
+          }}
         />
-      </div>
+      </>
     )
   }
 
@@ -194,7 +228,7 @@ export function HabitCompletionCell({
           : `${task.name} ${periodLabel} missed opportunity`
     return (
       <>
-        <div className="habit-lamp-cell" onDoubleClick={sourceDetail ? openSourceDetail : undefined}>
+        <div className="habit-lamp-cell" onDoubleClick={showDetail ? openSourceDetail : undefined}>
           <HabitExemptCell label={label} />
         </div>
         {detailDialog}
@@ -253,7 +287,7 @@ export function HabitCompletionCell({
             tabIndex={-1}
           />
           <span className="habit-goal">
-            <span className="habit-goal-den">/{task.goal}</span>
+            <span className="habit-goal-den">/{printed.goal}</span>
           </span>
         </div>
       )
@@ -302,13 +336,14 @@ export function HabitCompletionCell({
         coverage && isCurrentHabitPeriod(frequency, date, now) && typeof completion?.value === "number"
           ? loggedShareOfElapsed(completion.value, periodElapsedFraction(frequency, date, now))
           : null
-      const goal = task.goal || 0
+      const goal = printed.goal || 0
       const barPct =
         goal > 0 && typeof shownValue === "number"
           ? Math.min(100, Math.max(0, (shownValue / goal) * 100))
           : 0
       return (
-        <div className="habit-cell-stack">
+        <>
+        <div className="habit-cell-stack" onDoubleClick={listDetail ? openSourceDetail : undefined}>
           <div className="habit-cell-num" title={tracked > 0 ? trackedCellHint(task, completion, variant) : undefined}>
             <HabitNumberField
               value={shownValue}
@@ -319,7 +354,7 @@ export function HabitCompletionCell({
             />
             {tracked > 0 && <Clock className="habit-tracked-mark" aria-label="includes tracked time" />}
             <span className="habit-goal">
-              <span className="habit-goal-den">/{task.goal}</span>
+              <span className="habit-goal-den">/{printed.goal}</span>
             </span>
             {pace != null && (
               <span
@@ -342,6 +377,8 @@ export function HabitCompletionCell({
             </span>
           )}
         </div>
+        {detailDialog}
+        </>
       )
     }
 

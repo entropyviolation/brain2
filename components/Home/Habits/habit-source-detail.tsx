@@ -4,17 +4,76 @@
  * Opens from a double-click on a cell whose pipeline has no By hand source.
  * Shows the habit, that period, each source that was asked, the numbers it
  * pulled, and the result. A previous-period compare also shows each pair,
- * which side won, and how many were higher. Close writes nothing.
+ * which side won, and how many were higher.
+ *
+ * A goal fed by a list (list length or this period's set) replaces that
+ * account with three rows from `listPeriodMeasure`: list length, how many
+ * were counted in the opened span, and how many are left. The length is not
+ * an input. Once the period has ended it is frozen. A real zero prints 0.
+ * Close writes nothing.
  */
 "use client"
 
 import { useMemo } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { listPeriodMeasure, listRoutingFromLink } from "@/lib/habit-completion-pipeline"
 import { currentExemptionContext, isHabitPeriodExempt } from "@/lib/habit-exemption"
+import { isGoalType } from "@/lib/habit-utils"
 import { describeSourceSquare } from "@/lib/habit-source-square"
 import { useHabitsStore } from "@/lib/habits-store"
-import type { HabitFrequency, TaskCompletion, WeeklyTask } from "@/lib/types"
+import { useTaskStore } from "@/lib/task-store"
+import type { HabitFrequency, HabitListMeasure, TaskCompletion, WeeklyTask } from "@/lib/types"
 import "./habit-form-dialog.css"
+
+export interface ListSpanDetailLine {
+  name: string
+  value: string
+  /** The frozen list length. It is recorded ink, not a field. */
+  frozen: boolean
+}
+
+/** First word of the list name, so "texts to send" reads as texts. */
+function countedName(listName: string | undefined): string {
+  const word = listName?.trim().split(/\s+/)[0]?.toLowerCase()
+  return word || "items"
+}
+
+function periodWord(frequency: HabitFrequency | undefined): string {
+  if (frequency === "daily") return "day"
+  if (frequency === "monthly") return "month"
+  if (frequency === "quarterly") return "season"
+  return "week"
+}
+
+function measureWords(measure: HabitListMeasure): { past: string; left: string } {
+  if (measure === "completed") return { past: "completed", left: "complete" }
+  if (measure === "added") return { past: "added", left: "add" }
+  return { past: "sent", left: "send" }
+}
+
+/**
+ * Three labels for one period. The counted name and the period name follow
+ * the list and the habit, so a texts week and a chores month do not share a sentence.
+ */
+export function listSpanDetailLines(input: {
+  listName: string | undefined
+  measure: HabitListMeasure
+  frequency: HabitFrequency | undefined
+  listLength: number
+  sentInSpan: number
+  leftToSend: number
+  frozen: boolean
+}): ListSpanDetailLine[] {
+  const name = countedName(input.listName)
+  const period = periodWord(input.frequency)
+  const words = measureWords(input.measure)
+  const count = (value: number) => (Number.isFinite(value) ? String(value) : "0")
+  return [
+    { name: "List length", value: count(input.listLength), frozen: input.frozen },
+    { name: `${name} ${words.past} this ${period}`, value: count(input.sentInSpan), frozen: false },
+    { name: `${name} left to ${words.left}`, value: count(input.leftToSend), frozen: false },
+  ]
+}
 
 export function HabitSourceDetail({
   open,
@@ -23,6 +82,7 @@ export function HabitSourceDetail({
   periodLabel,
   date,
   completion,
+  now: clock,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -30,6 +90,8 @@ export function HabitSourceDetail({
   periodLabel: string
   date: Date
   completion: TaskCompletion | undefined
+  /** Clock for whether the list length has frozen. Defaults to now. */
+  now?: Date
 }) {
   const tasks = useHabitsStore((s) => s.tasks)
   const weeklyData = useHabitsStore((s) => s.weeklyData)
@@ -38,6 +100,25 @@ export function HabitSourceDetail({
   const gradeTolerance = useHabitsStore((s) => s.gradeTolerance)
   const outputGradeTolerance = useHabitsStore((s) => s.outputGradeTolerance)
   const habitExemptions = useHabitsStore((s) => s.habitExemptions)
+  const items = useTaskStore((s) => s.tasks)
+  const lists = useTaskStore((s) => s.lists)
+  const now = useMemo(() => clock ?? new Date(), [clock])
+  const spanLines = useMemo(() => {
+    if (!isGoalType(task.type)) return null
+    const measure = listPeriodMeasure(task, items, date, now)
+    if (!measure) return null
+    const link = task.listSentLink
+    const listName = lists.find((list) => list.id === link?.listId)?.name
+    return listSpanDetailLines({
+      listName,
+      measure: listRoutingFromLink(link).measure,
+      frequency: task.frequency,
+      listLength: measure.listLength,
+      sentInSpan: measure.sentInSpan,
+      leftToSend: measure.leftToSend,
+      frozen: measure.frozen,
+    })
+  }, [task, items, lists, date, now])
   const square = useMemo(() => {
     const exemptionContext = currentExemptionContext()
     return describeSourceSquare({
@@ -82,32 +163,45 @@ export function HabitSourceDetail({
         </DialogHeader>
         <div className="habit95-body">
           <p className="habit95-hint">{square.periodLabel}</p>
-          {square.sources.map((source) => (
-            <div key={source.id}>
-              <p className="habit95-hint">{source.label}</p>
-              <ul className="habit95-stat-readout" aria-label={source.label}>
-                {source.lines.map((line) => (
-                  <li key={`${source.id}-${line.name}`}>
-                    <span>{line.name}</span>
-                    <span>{line.value}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-          {square.compare ? (
-            <ul className="habit95-stat-readout" aria-label="Compared with the previous period">
-              {square.compare.pairs.map((pair) => (
-                <li key={pair.label}>
-                  <span>
-                    {pair.label}: {pair.thisSide} vs {pair.previousSide}
-                  </span>
-                  <span>{pair.winner}</span>
+          {spanLines ? (
+            <ul className="habit95-span-facts" aria-label="List for this period">
+              {spanLines.map((line) => (
+                <li key={line.name} data-frozen={line.frozen ? "true" : "false"}>
+                  <span>{line.name}</span>
+                  <span className="habit95-span-facts-num">{line.value}</span>
                 </li>
               ))}
             </ul>
-          ) : null}
-          <p className="habit95-hint">Result: {square.result}</p>
+          ) : (
+            <>
+              {square.sources.map((source) => (
+                <div key={source.id}>
+                  <p className="habit95-hint">{source.label}</p>
+                  <ul className="habit95-stat-readout" aria-label={source.label}>
+                    {source.lines.map((line) => (
+                      <li key={`${source.id}-${line.name}`}>
+                        <span>{line.name}</span>
+                        <span>{line.value}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+              {square.compare ? (
+                <ul className="habit95-stat-readout" aria-label="Compared with the previous period">
+                  {square.compare.pairs.map((pair) => (
+                    <li key={pair.label}>
+                      <span>
+                        {pair.label}: {pair.thisSide} vs {pair.previousSide}
+                      </span>
+                      <span>{pair.winner}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              <p className="habit95-hint">Result: {square.result}</p>
+            </>
+          )}
           <button type="button" className="habit95-btn" aria-label="Close source detail" onClick={() => onOpenChange(false)}>
             Close
           </button>

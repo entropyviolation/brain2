@@ -33,6 +33,8 @@ import {
 } from "@/lib/habit-priority"
 import { isHabitGoalMet } from "@/lib/habit-utils"
 import { isMissedOpportunity, missedOpportunityEligible } from "@/lib/habit-missed-opportunity"
+import { missReasonAsText } from "@/lib/blocked-reason"
+import { MissReasonDialog } from "@/components/Reviews/MissReasonDialog"
 import { habitHiddenWhenComplete } from "@/lib/habit-completion-source"
 import { exemptionHeatTitle, isExemptKind, loggedExemptionDay, type ExemptionKind } from "@/lib/habit-exemption"
 import { format } from "date-fns"
@@ -165,7 +167,7 @@ interface HabitHeatmapProps {
   onToggleExempt?: (taskId: string, periodKey: string, exempt: boolean) => void
   missedOpWand?: boolean
   hideCompletedAndMissed?: boolean
-  onToggleMissed?: (taskId: string, periodKey: string, missed: boolean) => void
+  onToggleMissed?: (taskId: string, periodKey: string, missed: boolean, missReason?: string) => void
   /** Row percent the sheet paints. 100 hides a row the focus cell has not met. */
   periodPercentFor?: (taskId: string) => number | null
   highlightPriorities?: boolean
@@ -407,11 +409,12 @@ function HeatmapRow({
   onToggleExempt?: (taskId: string, periodKey: string, exempt: boolean) => void
   missedOpWand?: boolean
   hideCompletedAndMissed?: boolean
-  onToggleMissed?: (taskId: string, periodKey: string, missed: boolean) => void
+  onToggleMissed?: (taskId: string, periodKey: string, missed: boolean, missReason?: string) => void
   frequency: HabitFrequency
   padBefore?: number
   padAfter?: number
 }) {
+  const [askKey, setAskKey] = useState<string | null>(null)
   return (
     <>
       <button
@@ -474,7 +477,13 @@ function HeatmapRow({
               title={title}
               aria-pressed={missed}
               aria-label={title}
-              onClick={() => onToggleMissed(task.id, col.key, !missed)}
+              onClick={() => {
+                if (missed) {
+                  onToggleMissed(task.id, col.key, false)
+                  return
+                }
+                setAskKey(col.key)
+              }}
             />
           )
         }
@@ -509,6 +518,16 @@ function HeatmapRow({
         )
       })}
       {padAfter > 0 ? <div style={{ gridColumn: `span ${padAfter}` }} /> : null}
+      <MissReasonDialog
+        open={askKey !== null}
+        subject={task.name}
+        onResolve={(reason) => {
+          const key = askKey
+          setAskKey(null)
+          if (!key) return
+          onToggleMissed?.(task.id, key, true, missReasonAsText(reason))
+        }}
+      />
     </>
   )
 }

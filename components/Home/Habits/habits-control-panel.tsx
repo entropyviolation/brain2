@@ -35,7 +35,7 @@ export function HabitsControlPanel({
 
   return (
     <aside
-      className="hab-control-panel"
+      className="hab-control-panel hab-control-rail"
       aria-label={children ? HABITS_CONTROL_PANEL_NAME : "Willpower gems"}
       data-control-panel="habits"
       data-ui-name="Habits control panel"

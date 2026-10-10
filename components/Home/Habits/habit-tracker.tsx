@@ -3,17 +3,21 @@
  *
  * Header: CRT Habits title, milled period nav, raised Settings key. Daily /
  * Weekly / Monthly / Season keys sit in a milled bay above the sheet (active = CRT +
- * power lamp; persist). Daily rail rockers: Heatmap View,
- * Day View (today + week %), Hide Done (persisted), Loading Bar (thin glass tubes;
- * the same tube in the Day View daily footer),
- * Small LEDs (15px Yes/No lamps vs fill the cell). Missed op wand sits under
- * Exemption wand. Hide Done and Missed hatches those cells and does not
- * remove rows.
- * The Priority bar sits above each sheet. Sort lives there. New habit and
- * grades stay on the Habits Tab Control Panel.
- * Heatmap and Day View are Daily-only. Day View opens that day's plan log.
- * Week View, Month View, and Season View collapse that sheet to the current
- * period and open its plan log — the same `PlanTextLog` as the Plan tab.
+ * power lamp; persist). The control bar holds one wrapping rocker cluster:
+ * Highlight priorities, streaks, then that sheet's view rockers, Hide Done,
+ * and Mask done and missed (stored `hideCompletedAndMissed`; the hatch is
+ * unchanged). SORT: and Edit default order sit beside the cluster. Every
+ * binary toggle there is one horizontal rocker. Loading Bar and Small LEDs
+ * stay on the rail. Missed op wand sits under Exemption wand. Mask done and
+ * missed hatches those cells and does not remove rows. The control bar
+ * sits above each sheet, with the wand banner flush under the whole bar.
+ * New habit and grades stay on the Habits Tab Control Panel.
+ * Heatmap and Day View are Daily-only. Day View opens that day's plan log
+ * as its own frame below the habit desk, not inside the sheet.
+ * Week View, Month View, and Season View are the same kind of rocker, pinned
+ * on that sheet's control bar only. Each collapses that sheet to the current
+ * period and opens that period's plan log in the same kind of frame — the
+ * same `PlanTextLog` as the Plan tab.
  * Turning one off restores the multi-column window. Those rockers do not
  * change `habitWeekWindow` or `habitMonthWindow`. Weekly columns and the span
  * grade share `habitWeekWindowStarts` (default: seven Monday-weeks). Monthly
@@ -32,7 +36,8 @@ import {
   retainHabitsCursorDate,
   retainHabitsWeekDates,
 } from "@/components/Home/Habits/habits-period-cursor"
-import { HabitPriorityBar } from "@/components/Home/Habits/habit-priority-bar"
+import { HabitControlBar, type HabitControlToggle } from "@/components/Home/Habits/habit-priority-bar"
+import { HabitWandBanner } from "@/components/Home/Habits/habit-wand-banner"
 import { TaskGrid } from "@/components/Home/Habits/task-grid"
 import { PeriodHabitList, filterHabitsByFrequency, weekPeriodColumns, monthPeriodColumns, seasonPeriodColumns, type PeriodColumn } from "@/components/Home/Habits/period-habit-list"
 import { PlanTextLog, planPeriodStampProps } from "@/components/Home/Plan/plan-text-log"
@@ -120,7 +125,7 @@ function HabitPlanLog({
   size?: "day" | "period"
 }) {
   return (
-    <fieldset className="hab-period-plan" {...planPeriodStampProps(period)}>
+    <fieldset className="hab-period-plan hab-plan-frame" {...planPeriodStampProps(period)}>
       <legend>{legend}</legend>
       <PlanTextLog period={period} periodKey={periodKey} placeholder={placeholder} size={size} />
     </fieldset>
@@ -806,24 +811,94 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
       return { frequency, ids: mergeVisibleOrder(prev.ids, visibleIds) }
     })
   }
-  const priorityBar = (frequency: HabitFrequency, rows: Task[], sortId: string) => (
-    <HabitPriorityBar
-      frequency={frequency}
-      sortId={sortId}
-      highlight={highlightHabitPriorities}
-      onHighlight={setHighlightHabitPriorities}
-      showMarks={showStreakMarks}
-      onShowMarks={setShowStreakMarks}
-      sortMode={habitSortMode}
-      sortDirection={habitSortDirection}
-      onSortMode={setHabitSortMode}
-      onSortDirection={setHabitSortDirection}
-      editing={editingFrequency === frequency}
-      onEditOrder={() => beginOrder(rows, frequency)}
-      onSaveOrder={saveOrder}
-      onCancelOrder={() => setOrderDraft(null)}
-    />
-  )
+  const priorityBar = (frequency: HabitFrequency, rows: Task[], sortId: string) => {
+    const suffix =
+      frequency === "weekly"
+        ? "-weekly"
+        : frequency === "monthly"
+          ? "-monthly"
+          : frequency === "quarterly"
+            ? "-season"
+            : ""
+    const toggles: HabitControlToggle[] = []
+    if (frequency === "daily") {
+      toggles.push(
+        {
+          id: "heatmap-view",
+          label: "Heatmap View",
+          checked: habitViewMode === "heatmap",
+          onCheckedChange: (on) => setHabitViewMode(on ? "heatmap" : "grid"),
+        },
+        {
+          id: "day-view",
+          label: "Day View",
+          checked: habitDayView,
+          onCheckedChange: setHabitDayView,
+        },
+      )
+    } else if (frequency === "weekly") {
+      toggles.push({
+        id: "week-view",
+        label: "Week View",
+        checked: habitWeekView,
+        onCheckedChange: setHabitWeekView,
+      })
+    } else if (frequency === "monthly") {
+      toggles.push({
+        id: "month-view",
+        label: "Month View",
+        checked: habitMonthView,
+        onCheckedChange: setHabitMonthView,
+      })
+    } else {
+      toggles.push({
+        id: "season-view",
+        label: "Season View",
+        checked: habitSeasonView,
+        onCheckedChange: setHabitSeasonView,
+      })
+    }
+    toggles.push(
+      {
+        id: `hide-done${suffix}`,
+        label: "Hide Done",
+        checked: hideCompletedToday,
+        onCheckedChange: setHideCompletedToday,
+      },
+      {
+        id: `hide-completed-and-missed${suffix}`,
+        label: "Mask done and missed",
+        checked: hideCompletedAndMissed,
+        onCheckedChange: setHideCompletedAndMissed,
+      },
+    )
+    return (
+      <div className="hab-sheet-mast">
+        <HabitControlBar
+          frequency={frequency}
+          sortId={sortId}
+          highlight={highlightHabitPriorities}
+          onHighlight={setHighlightHabitPriorities}
+          showMarks={showStreakMarks}
+          onShowMarks={setShowStreakMarks}
+          sortMode={habitSortMode}
+          sortDirection={habitSortDirection}
+          onSortMode={setHabitSortMode}
+          onSortDirection={setHabitSortDirection}
+          editing={editingFrequency === frequency}
+          onEditOrder={() => beginOrder(rows, frequency)}
+          onSaveOrder={saveOrder}
+          onCancelOrder={() => setOrderDraft(null)}
+          toggles={toggles}
+        />
+        <div className="hab-wand-mount" data-testid="habit-wand-banner-mount">
+          <HabitWandBanner
+            view={exemptionWand ? "exemption" : missedOpWand ? "missed" : null}
+          />
+        </div>
+      </div>
+    )
+  }
   const priorityProps = {
     highlightPriorities: highlightHabitPriorities,
     ritualIds: morningHabitPriorities,
@@ -963,8 +1038,8 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
   const dayPlanKey = formatLocalDateKey(currentDate)
 
   return (
-    <div data-ui-name="Habits" data-ui-docs="components/Home/Habits/README.md">
-      <Tabs value={habitTab} onValueChange={(v) => setHabitTab(v as typeof habitTab)}>
+    <div className="hab-frame" data-ui-name="Habits" data-ui-docs="components/Home/Habits/README.md">
+      <Tabs className="hab-frame-tabs" value={habitTab} onValueChange={(v) => setHabitTab(v as typeof habitTab)}>
         <div className="hab-head">
           <h3 className="hab-head-title">Habits</h3>
           <div className="hab-head-center">
@@ -1076,9 +1151,11 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
                   onToggleExempt={(taskId, periodKey, exempt) => setHabitExemption("daily", periodKey, taskId, exempt)}
                   missedOpWand={missedOpWand}
                   hideCompletedAndMissed={hideCompletedAndMissed}
-                  onToggleMissed={(taskId, periodKey, missed) => {
+                  onToggleMissed={(taskId, periodKey, missed, missReason) => {
                     const date = parseLocalDate(periodKey)
-                    if (date) updateCompletion(taskId, date, { missedOpportunity: missed })
+                    if (!date) return
+                    const text = missed ? (missReason?.trim() ?? "") : ""
+                    updateCompletion(taskId, date, { missedOpportunity: missed, missReason: text })
                   }}
                   {...priorityProps}
                 />
@@ -1117,15 +1194,6 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
                   onReorder={editingFrequency === "daily" ? (ids) => reorderVisible("daily", ids) : undefined}
                 />
               )}
-              {hydrated && habitDayView && (
-                <HabitPlanLog
-                  period="day"
-                  periodKey={dayPlanKey}
-                  legend={`Day Plan — ${format(currentDate, "MMMM dd, yyyy")}`}
-                  placeholder="Write your day plan, goals, and objectives..."
-                  size="day"
-                />
-              )}
             </div>
             </div>
             <HabitsControlPanel stones={willpowerStones}>
@@ -1149,18 +1217,7 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
                 onExemptionWand={setExemptionWand}
                 missedOpWand={missedOpWand}
                 onMissedOpWand={setMissedOpWand}
-                toggles={["heatmap", "dayView", "hideCompleted", "loadingBar", "smallLeds"]}
-                hideCompletedLabel="Hide Done"
-                hideCompletedId="hide-done"
-                hideCompleted={hideCompletedToday}
-                onHideCompleted={setHideCompletedToday}
-                hideCompletedAndMissedId="hide-completed-and-missed"
-                hideCompletedAndMissed={hideCompletedAndMissed}
-                onHideCompletedAndMissed={setHideCompletedAndMissed}
-                heatmapOn={habitViewMode === "heatmap"}
-                onHeatmap={(on) => setHabitViewMode(on ? "heatmap" : "grid")}
-                dayViewOn={habitDayView}
-                onDayView={setHabitDayView}
+                toggles={["loadingBar", "smallLeds"]}
                 loadingBarId="loading-bar"
                 loadingBar={percentLoadingBar}
                 onLoadingBar={setPercentLoadingBar}
@@ -1175,6 +1232,15 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
               />
             </HabitsControlPanel>
           </div>
+          {hydrated && habitDayView && (
+            <HabitPlanLog
+              period="day"
+              periodKey={dayPlanKey}
+              legend={`Day Plan — ${format(currentDate, "MMMM dd, yyyy")}`}
+              placeholder="Write your day plan, goals, and objectives..."
+              size="day"
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="weekly" className="hab-pane">
@@ -1217,17 +1283,10 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
                 emptyLabel="No weekly habits yet. Add one to get started."
                 asOf={currentDate}
                 frequency="weekly"
+                detailColumn={habitWeekView}
                 {...priorityProps}
                 onReorder={editingFrequency === "weekly" ? (ids) => reorderVisible("weekly", ids) : undefined}
               />
-              )}
-              {hydrated && weekPlanColumn && (
-                <HabitPlanLog
-                  period="week"
-                  periodKey={weekPlanColumn.key}
-                  legend={weekPlanLegend(weekPlanColumn)}
-                  placeholder="Write your week plan, priorities, and focus areas..."
-                />
               )}
             </div>
             </div>
@@ -1251,16 +1310,7 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
                 onExemptionWand={setExemptionWand}
                 missedOpWand={missedOpWand}
                 onMissedOpWand={setMissedOpWand}
-                toggles={["weekView", "hideCompleted", "loadingBar", "smallLeds"]}
-                weekViewOn={habitWeekView}
-                onWeekView={setHabitWeekView}
-                hideCompletedLabel="Hide Done"
-                hideCompletedId="hide-done-weekly"
-                hideCompleted={hideCompletedToday}
-                onHideCompleted={setHideCompletedToday}
-                hideCompletedAndMissedId="hide-completed-and-missed-weekly"
-                hideCompletedAndMissed={hideCompletedAndMissed}
-                onHideCompletedAndMissed={setHideCompletedAndMissed}
+                toggles={["loadingBar", "smallLeds"]}
                 loadingBarId="loading-bar-weekly"
                 loadingBar={percentLoadingBar}
                 onLoadingBar={setPercentLoadingBar}
@@ -1275,6 +1325,14 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
               />
             </HabitsControlPanel>
           </div>
+          {hydrated && weekPlanColumn && (
+            <HabitPlanLog
+              period="week"
+              periodKey={weekPlanColumn.key}
+              legend={weekPlanLegend(weekPlanColumn)}
+              placeholder="Write your week plan, priorities, and focus areas..."
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="monthly" className="hab-pane">
@@ -1317,17 +1375,10 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
                 emptyLabel="No monthly habits yet. Add one to get started."
                 asOf={currentDate}
                 frequency="monthly"
+                detailColumn={habitMonthView}
                 {...priorityProps}
                 onReorder={editingFrequency === "monthly" ? (ids) => reorderVisible("monthly", ids) : undefined}
               />
-              )}
-              {hydrated && monthPlanColumn && (
-                <HabitPlanLog
-                  period="month"
-                  periodKey={monthPlanColumn.key}
-                  legend={`Month Plan — ${format(monthPlanColumn.date, "MMMM yyyy")}`}
-                  placeholder="Write your month plan, goals, and objectives..."
-                />
               )}
             </div>
             </div>
@@ -1356,16 +1407,7 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
                 onExemptionWand={setExemptionWand}
                 missedOpWand={missedOpWand}
                 onMissedOpWand={setMissedOpWand}
-                toggles={["monthView", "hideCompleted", "loadingBar", "smallLeds"]}
-                monthViewOn={habitMonthView}
-                onMonthView={setHabitMonthView}
-                hideCompletedLabel="Hide Done"
-                hideCompletedId="hide-done-monthly"
-                hideCompleted={hideCompletedToday}
-                onHideCompleted={setHideCompletedToday}
-                hideCompletedAndMissedId="hide-completed-and-missed-monthly"
-                hideCompletedAndMissed={hideCompletedAndMissed}
-                onHideCompletedAndMissed={setHideCompletedAndMissed}
+                toggles={["loadingBar", "smallLeds"]}
                 loadingBarId="loading-bar-monthly"
                 loadingBar={percentLoadingBar}
                 onLoadingBar={setPercentLoadingBar}
@@ -1380,6 +1422,14 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
               />
             </HabitsControlPanel>
           </div>
+          {hydrated && monthPlanColumn && (
+            <HabitPlanLog
+              period="month"
+              periodKey={monthPlanColumn.key}
+              legend={`Month Plan — ${format(monthPlanColumn.date, "MMMM yyyy")}`}
+              placeholder="Write your month plan, goals, and objectives..."
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="quarterly" className="hab-pane" data-season={seasonSlug(seasonOfDate(currentQuarter))}>
@@ -1426,16 +1476,9 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
                   emptyLabel="No season habits yet. Add one to get started."
                   asOf={currentDate}
                   frequency="quarterly"
+                  detailColumn={habitSeasonView}
                   {...priorityProps}
                   onReorder={editingFrequency === "quarterly" ? (ids) => reorderVisible("quarterly", ids) : undefined}
-                />
-              )}
-              {hydrated && seasonPlanColumn && (
-                <HabitPlanLog
-                  period="quarter"
-                  periodKey={seasonPlanColumn.key}
-                  legend={`Season plan — ${quarterLabel(seasonPlanColumn.key)}`}
-                  placeholder="Write this season's plan — what the quarter is for..."
                 />
               )}
             </div>
@@ -1457,16 +1500,7 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
                 onExemptionWand={setExemptionWand}
                 missedOpWand={missedOpWand}
                 onMissedOpWand={setMissedOpWand}
-                toggles={["seasonView", "hideCompleted", "loadingBar", "smallLeds"]}
-                seasonViewOn={habitSeasonView}
-                onSeasonView={setHabitSeasonView}
-                hideCompletedLabel="Hide Done"
-                hideCompletedId="hide-done-season"
-                hideCompleted={hideCompletedToday}
-                onHideCompleted={setHideCompletedToday}
-                hideCompletedAndMissedId="hide-completed-and-missed-season"
-                hideCompletedAndMissed={hideCompletedAndMissed}
-                onHideCompletedAndMissed={setHideCompletedAndMissed}
+                toggles={["loadingBar", "smallLeds"]}
                 loadingBarId="loading-bar-season"
                 loadingBar={percentLoadingBar}
                 onLoadingBar={setPercentLoadingBar}
@@ -1481,6 +1515,14 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
               />
             </HabitsControlPanel>
           </div>
+          {hydrated && seasonPlanColumn && (
+            <HabitPlanLog
+              period="quarter"
+              periodKey={seasonPlanColumn.key}
+              legend={`Season plan — ${quarterLabel(seasonPlanColumn.key)}`}
+              placeholder="Write this season's plan — what the quarter is for..."
+            />
+          )}
         </TabsContent>
       </Tabs>
 

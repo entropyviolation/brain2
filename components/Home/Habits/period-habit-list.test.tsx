@@ -47,6 +47,40 @@ describe("PeriodHabitList", () => {
     expect(document.querySelector(".habit-name img")).toBeNull()
     expect(document.querySelector(".habit-name-title")?.textContent).toBe("Weekly review")
     expect(document.querySelector(".habit-gem-socket")).toBeTruthy()
+    expect(document.querySelector(".col-detail")).toBeNull()
+  })
+
+  it("adds a detail column only on the single-period sheet", () => {
+    const { rerender } = render(
+      <PeriodHabitList
+        tasks={tasks}
+        periods={periods}
+        data={{}}
+        onUpdate={vi.fn()}
+        onEdit={vi.fn()}
+        calculateTaskPercentage={() => 0}
+        calculatePeriodPercentage={() => 0}
+        detailColumn
+      />,
+    )
+    expect(document.querySelector("th.col-detail")).toBeTruthy()
+    expect(document.querySelector(".habit-grid")?.classList.contains("is-period-detail")).toBe(true)
+    expect(document.querySelector(".habit-detail-amount")?.textContent).toBe("0 / 1")
+    const day = document.querySelector("th.col-day")
+    const detail = document.querySelector("th.col-detail")
+    expect(day && detail && (day.compareDocumentPosition(detail) & Node.DOCUMENT_POSITION_FOLLOWING)).toBeTruthy()
+    rerender(
+      <PeriodHabitList
+        tasks={tasks}
+        periods={[...periods, { ...periods[0], key: "other", label: "6/22", isCurrent: false }]}
+        data={{}}
+        onUpdate={vi.fn()}
+        onEdit={vi.fn()}
+        calculateTaskPercentage={() => 0}
+        calculatePeriodPercentage={() => 0}
+      />,
+    )
+    expect(document.querySelector(".col-detail")).toBeNull()
   })
 
   it("calls onUpdate when a boolean lamp is checked", async () => {

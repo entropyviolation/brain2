@@ -5,6 +5,9 @@
  * checklist row, `.fm-checkbox`), Undone only, and Show sent. Sent rows stay
  * hidden until Show sent. A Target line (`0 of 5`) appears when the target is
  * the list length or this period’s set. No list photograph. Closing leaves the draft.
+ *
+ * `browse` is the same window with names only (no ticks, no target). Clarify
+ * idea uses it so a double-clicked list can be checked without leaving the draft.
  */
 "use client"
 
@@ -25,6 +28,8 @@ export interface HabitListPopupProps {
   frequency: HabitFrequency | undefined
   container: HTMLElement | null
   onClose: () => void
+  /** Names only, in this same window. Ticks and the target stay off. */
+  browse?: boolean
 }
 
 function markedForMeasure(item: Task, listId: string, measure: string): boolean {
@@ -33,7 +38,7 @@ function markedForMeasure(item: Task, listId: string, measure: string): boolean 
   return false
 }
 
-export function HabitListPopup({ listId, link, frequency, container, onClose }: HabitListPopupProps) {
+export function HabitListPopup({ listId, link, frequency, container, onClose, browse = false }: HabitListPopupProps) {
   const vaultItems = useTaskStore((s) => s.tasks)
   const vaultLists = useTaskStore((s) => s.lists)
   const updateTask = useTaskStore((s) => s.updateTask)
@@ -51,12 +56,14 @@ export function HabitListPopup({ listId, link, frequency, container, onClose }: 
   const markLabel = measure === "sent" ? "Sent" : measure === "completed" ? "Completed" : ""
   const members = listId ? vaultItems.filter((item) => (item.lists ?? []).includes(listId)) : []
   const visible = listId
-    ? members.filter((item) => {
-        const marked = markedForMeasure(item, listId, measure)
-        if (measure === "sent" && marked && !showSent) return false
-        if (undoneOnly && marked) return false
-        return true
-      })
+    ? browse
+      ? members
+      : members.filter((item) => {
+          const marked = markedForMeasure(item, listId, measure)
+          if (measure === "sent" && marked && !showSent) return false
+          if (undoneOnly && marked) return false
+          return true
+        })
     : []
   const showTarget = routing.target === "listLength" || routing.target === "periodSet"
   const preview =
@@ -84,13 +91,16 @@ export function HabitListPopup({ listId, link, frequency, container, onClose }: 
         <DialogHeader className="habit95-title-bar flex-row items-center space-y-0 text-left">
           <DialogTitle className="habit95-title-text">{list?.name || "List"}</DialogTitle>
           <DialogDescription className="sr-only">
-            The list checklist, above the habit form. Closing it leaves the draft.
+            {browse
+              ? "Items on this list. Closing it leaves the form underneath."
+              : "The list checklist, above the habit form. Closing it leaves the draft."}
           </DialogDescription>
           <button type="button" className="habit95-title-btn b2-close-key" aria-label="Close list" onClick={onClose}>
             ×
           </button>
         </DialogHeader>
         <div className="habit95-list-popup-body" data-testid="habit-list-popup">
+          {browse ? null : (
           <div className="habit95-list-popup-tools">
             <button
               type="button"
@@ -111,13 +121,14 @@ export function HabitListPopup({ listId, link, frequency, container, onClose }: 
               </button>
             ) : null}
           </div>
-          {preview ? (
+          )}
+          {!browse && preview ? (
             <p className="habit95-list-target" data-testid="habit-list-target">
               Target {preview.summary}
             </p>
           ) : null}
           <div className="fm98 habit95-list-rows">
-            {markLabel ? (
+            {!browse && markLabel ? (
               <div className="fm-linklist fm-checklist">
                 <div
                   className="fm-link-row fm-check-head"
@@ -162,7 +173,7 @@ export function HabitListPopup({ listId, link, frequency, container, onClose }: 
               </ul>
             )}
             {visible.length === 0 ? (
-              <p className="habit95-list-empty">{members.length === 0 ? "No items on this list." : "Nothing undone."}</p>
+              <p className="habit95-list-empty">{members.length === 0 || browse ? "No items on this list." : "Nothing undone."}</p>
             ) : null}
           </div>
         </div>

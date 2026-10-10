@@ -15,6 +15,8 @@ import {
 import { format } from "date-fns"
 import { blendPriorityScore } from "@/lib/habit-priority"
 import { useHabitsStore } from "@/lib/habits-store"
+import { pointsRuleValue } from "@/lib/points-rules-live"
+import { useUserSettingsStore } from "@/lib/user-settings-store"
 import { usePersistHydrated } from "@/lib/use-persist-hydrated"
 
 type PeriodUnit = "day" | "week" | "month" | "season"
@@ -71,6 +73,11 @@ export function GradeBreakdownDialog({
   const weekLift = useHabitsStore((s) => s.weeklyGradeLiftBonus)
   const weekAvgBeat = useHabitsStore((s) => s.weeklyAverageBeatBonus)
   const monthAvgBeat = useHabitsStore((s) => s.monthlyAverageBeatBonus)
+  const pointsRules = useUserSettingsStore((s) => s.pointsRules)
+  const dailyFullMark = pointsRules?.["habit.dailyFullMark"] ?? pointsRuleValue("habit.dailyFullMark")
+  const gradeEither = pointsRules?.["habit.gradeBonusEither"] ?? pointsRuleValue("habit.gradeBonusEither")
+  const gradeBoth = pointsRules?.["habit.gradeBonusBoth"] ?? pointsRuleValue("habit.gradeBonusBoth")
+  const gradeThreshold = pointsRules?.["habit.gradeBonusThreshold"] ?? pointsRuleValue("habit.gradeBonusThreshold")
   const hydrated = usePersistHydrated(useHabitsStore.persist)
   const nameHeader =
     periodUnit === "season" ? "Season" : periodUnit === "day" ? "Day" : periodUnit === "week" ? "Week of" : "Month"
@@ -103,11 +110,11 @@ export function GradeBreakdownDialog({
       )}
       {periodUnit === "day" && (
         <p className="hab-grade-sheet-note">
-          Points: each daily habit is worth 50 (partial completion counts, e.g. 5/10 pages = 25).
+          Points: each daily habit is worth {dailyFullMark} (partial completion counts, e.g. half of a goal earns half).
           Each day: +{accomplishmentBonus} if that day’s raw score is at or above {accomplishmentThreshold}%
-          (Good day, set in Settings); +100 if either Week grade or Perfect
-          output is 75%+ after its curve; +300 if both grades are. +{dayLift} for each of
-          those grades that is higher than yesterday (Settings). +{weekAvgBeat} when raw completion is above the prior 7-day average, and +{monthAvgBeat} when it is above the prior 30-day average (Settings).
+          (Good day, set in Settings); +{gradeEither} if either Week grade or Perfect
+          output is {gradeThreshold}%+ after its curve; +{gradeBoth} if both grades are. +{dayLift} when raw
+          completion is higher than yesterday (Settings). +{weekAvgBeat} when raw completion is above the prior 7-day average, and +{monthAvgBeat} when it is above the prior 30-day average (Settings).
         </p>
       )}
     </>

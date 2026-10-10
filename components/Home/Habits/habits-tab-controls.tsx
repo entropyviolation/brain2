@@ -3,8 +3,9 @@
  *
  * Three bands inside HabitsControlPanel. Meters report the sheet (grade tubes,
  * one shared through line, good-period plate). Sheet changes the sheet (window,
- * Tools wands, view rocker). Sort lives on the Priority bar above the grid.
- * Lamps change how a row is drawn.
+ * Tools wands). Heatmap View, Day View, Week View, Month View, Season View,
+ * Hide Done, and Mask done and missed live once on the control bar. Lamps are
+ * Loading Bar and Small LEDs.
  * New habit sits in the foot, above the gem oval. Grade numbers and store
  * writes stay at the habit-tracker call site.
  */
@@ -72,15 +73,7 @@ function ControlPlate({ legend, children }: { legend: string; children: ReactNod
   )
 }
 
-export type HabitsTabToggleId =
-  | "heatmap"
-  | "dayView"
-  | "weekView"
-  | "monthView"
-  | "seasonView"
-  | "hideCompleted"
-  | "loadingBar"
-  | "smallLeds"
+export type HabitsTabToggleId = "loadingBar" | "smallLeds"
 
 export interface HabitsTabControlsProps {
   gradeLabel: string
@@ -110,28 +103,8 @@ export interface HabitsTabControlsProps {
   onExemptionWand: (on: boolean) => void
   missedOpWand: boolean
   onMissedOpWand: (on: boolean) => void
-  /** Which rockers to show, in panel order. */
+  /** Lamp rockers to show, in panel order. View rockers live on the control bar. */
   toggles: HabitsTabToggleId[]
-  hideCompletedLabel: string
-  hideCompletedId: string
-  hideCompleted: boolean
-  onHideCompleted: (on: boolean) => void
-  hideCompletedAndMissedId: string
-  hideCompletedAndMissed: boolean
-  onHideCompletedAndMissed: (on: boolean) => void
-  heatmapOn?: boolean
-  onHeatmap?: (on: boolean) => void
-  dayViewOn?: boolean
-  onDayView?: (on: boolean) => void
-  /** Weekly sheet: this week only, plus that week's plan log. */
-  weekViewOn?: boolean
-  onWeekView?: (on: boolean) => void
-  /** Monthly sheet: this month only, plus that month's plan log. */
-  monthViewOn?: boolean
-  onMonthView?: (on: boolean) => void
-  /** Season sheet: this season only, plus that season's plan log. */
-  seasonViewOn?: boolean
-  onSeasonView?: (on: boolean) => void
   loadingBarId: string
   loadingBar: boolean
   onLoadingBar: (on: boolean) => void
@@ -162,23 +135,6 @@ export function HabitsTabControls({
   missedOpWand,
   onMissedOpWand,
   toggles,
-  hideCompletedLabel,
-  hideCompletedId,
-  hideCompleted,
-  onHideCompleted,
-  hideCompletedAndMissedId,
-  hideCompletedAndMissed,
-  onHideCompletedAndMissed,
-  heatmapOn = false,
-  onHeatmap,
-  dayViewOn = false,
-  onDayView,
-  weekViewOn = false,
-  onWeekView,
-  monthViewOn = false,
-  onMonthView,
-  seasonViewOn = false,
-  onSeasonView,
   loadingBarId,
   loadingBar,
   onLoadingBar,
@@ -189,82 +145,10 @@ export function HabitsTabControls({
   monthWindow,
   weekWindow,
 }: HabitsTabControlsProps) {
-  const sheetRockers: ReactNode[] = []
   const lampRockers: ReactNode[] = []
   for (const id of toggles) {
-    const lane =
-      id === "hideCompleted" || id === "loadingBar" || id === "smallLeds" ? lampRockers : sheetRockers
-    if (id === "heatmap" && onHeatmap) {
-      lane.push(
-        <CockpitSwitch
-          key="heatmap"
-          id="heatmap-view"
-          checked={heatmapOn}
-          onCheckedChange={(on) => onHeatmap(on)}
-          label="Heatmap View"
-        />,
-      )
-    } else if (id === "dayView" && onDayView) {
-      lane.push(
-        <CockpitSwitch
-          key="dayView"
-          id="day-view"
-          checked={dayViewOn}
-          onCheckedChange={onDayView}
-          label="Day View"
-        />,
-      )
-    } else if (id === "weekView" && onWeekView) {
-      lane.push(
-        <CockpitSwitch
-          key="weekView"
-          id="week-view"
-          checked={weekViewOn}
-          onCheckedChange={onWeekView}
-          label="Week View"
-        />,
-      )
-    } else if (id === "monthView" && onMonthView) {
-      lane.push(
-        <CockpitSwitch
-          key="monthView"
-          id="month-view"
-          checked={monthViewOn}
-          onCheckedChange={onMonthView}
-          label="Month View"
-        />,
-      )
-    } else if (id === "seasonView" && onSeasonView) {
-      lane.push(
-        <CockpitSwitch
-          key="seasonView"
-          id="season-view"
-          checked={seasonViewOn}
-          onCheckedChange={onSeasonView}
-          label="Season View"
-        />,
-      )
-    } else if (id === "hideCompleted") {
-      lane.push(
-        <CockpitSwitch
-          key="hideCompleted"
-          id={hideCompletedId}
-          checked={hideCompleted}
-          onCheckedChange={onHideCompleted}
-          label={hideCompletedLabel}
-        />,
-      )
-      lane.push(
-        <CockpitSwitch
-          key="hideCompletedAndMissed"
-          id={hideCompletedAndMissedId}
-          checked={hideCompletedAndMissed}
-          onCheckedChange={onHideCompletedAndMissed}
-          label="Hide Done and Missed"
-        />,
-      )
-    } else if (id === "loadingBar") {
-      lane.push(
+    if (id === "loadingBar") {
+      lampRockers.push(
         <CockpitSwitch
           key="loadingBar"
           id={loadingBarId}
@@ -274,7 +158,7 @@ export function HabitsTabControls({
         />,
       )
     } else if (id === "smallLeds") {
-      lane.push(
+      lampRockers.push(
         <CockpitSwitch
           key="smallLeds"
           id={smallLedsId}
@@ -350,7 +234,6 @@ export function HabitsTabControls({
               <ExemptionWandButton on={exemptionWand} onToggle={onExemptionWand} />
               <MissedOpWandButton on={missedOpWand} onToggle={onMissedOpWand} />
             </ControlPlate>
-            {sheetRockers.length > 0 && <ControlPlate legend="Sheet">{sheetRockers}</ControlPlate>}
           </div>
         </div>
         <div className="hab-control-band" data-band="lamps">

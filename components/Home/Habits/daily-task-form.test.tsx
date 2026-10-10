@@ -131,9 +131,10 @@ describe("TaskForm", () => {
         initialTask={{ id: "stretch", name: "Stretch", type: TaskType.BOOLEAN, rewardValue: 10, frequency: "daily" }}
       />,
     )
-    expect(screen.getByText("NEGLECT")).toBeInTheDocument()
+    const line = screen.getByText(/^neglected for past \d+ days$/)
+    expect(document.querySelector(".habit95-fields")?.firstElementChild).toBe(line)
     await user.click(screen.getByLabelText("Ignore neglect"))
-    expect(screen.queryByText("NEGLECT")).not.toBeInTheDocument()
+    expect(screen.queryByText(/^neglected for past \d+ days$/)).not.toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: "Update Habit" }))
     expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ priorityMuted: true }))
   })
@@ -501,7 +502,7 @@ describe("TaskForm", () => {
 
     await user.click(screen.getByRole("button", { name: "Add source" }))
     await user.click(screen.getByRole("button", { name: "Habits stats" }))
-    await user.click(screen.getByRole("button", { name: "Habit stats point" }))
+    await user.click(screen.getByRole("button", { name: "Output" }))
     await user.click(screen.getByRole("option", { name: "Daily completion average" }))
     expect(screen.getAllByText(/uncurved mean of each active daily habit/).length).toBeGreaterThan(0)
     expect(screen.queryByLabelText("Tagged task tag")).not.toBeInTheDocument()
@@ -570,6 +571,7 @@ describe("TaskForm", () => {
       await user.click(screen.getByRole("button", { name: "BIM Keywords" }))
       expect(document.querySelectorAll(".habit95-pipeline-row").length).toBe(before + 1)
       expect(screen.getByText("BIM Keywords")).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: "How the count is used" })).toHaveTextContent("True if received")
 
       await user.click(screen.getByRole("button", { name: "Update Habit" }))
       expect(onSubmit).toHaveBeenCalledWith(
@@ -581,6 +583,51 @@ describe("TaskForm", () => {
     } finally {
       useTaskStore.setState({ lists: previousLists, tasks: previousTasks })
     }
+  })
+
+  it("edits the three BIM keyword modes and a logged phrase on the source row", async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    render(
+      <TaskForm
+        onSubmit={onSubmit}
+        onCancel={vi.fn()}
+        initialTask={{
+          id: "water",
+          name: "Drink water",
+          type: TaskType.BOOLEAN,
+          frequency: "daily",
+          completionSources: ["manual", "keywords"],
+          completionPipelines: [
+            { id: "pipe-manual", kind: "manual", sources: ["manual"] },
+            { id: "pipe-keywords", kind: "keywords", name: "drank water", sources: ["keywords"] },
+          ],
+          textTriggers: [{ id: "ht-water", keyword: "drank water", mode: "done" }],
+        }}
+      />,
+    )
+    const mode = screen.getByRole("button", { name: "How the count is used" })
+    expect(mode).toHaveTextContent("True if received")
+    await user.click(mode)
+    expect(screen.getByRole("option", { name: "True if received" })).toBeInTheDocument()
+    expect(screen.getByRole("option", { name: "True after a set number" })).toBeInTheDocument()
+    expect(screen.getByRole("option", { name: "Logged phrase" })).toBeInTheDocument()
+    await user.click(screen.getByRole("option", { name: "Logged phrase" }))
+    const pattern = screen.getByLabelText("Logged phrase pattern")
+    fireEvent.change(pattern, { target: { value: "read {n} pages of {bookname}" } })
+    await user.click(screen.getByRole("button", { name: "Update Habit" }))
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        textTriggers: [expect.objectContaining({ keyword: "drank water" })],
+        completionPipelines: expect.arrayContaining([
+          expect.objectContaining({
+            kind: "keywords",
+            name: "drank water",
+            keyword: expect.objectContaining({ use: "logged", pattern: "read {n} pages of {bookname}" }),
+          }),
+        ]),
+      }),
+    )
   })
 
   it("submits a new list source with its list and grace", async () => {
@@ -650,6 +697,83 @@ describe("TaskForm", () => {
     }
   })
 
+  it("puts completion sources above the target and saves list length as the amount", async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    const previousLists = useTaskStore.getState().lists
+    const previousTasks = useTaskStore.getState().tasks
+    const sentAt = new Date().toISOString()
+    useTaskStore.getState().addList({
+      id: "texts-send",
+      name: "texts I need to send",
+      color: "#224466",
+      createdAt: new Date("2026-10-01T12:00:00"),
+    })
+    for (const [id, title, sent] of [
+      ["t1", "Ruggles", true],
+      ["t2", "Rebecca", false],
+      ["t3", "Cammy", false],
+      ["t4", "An", false],
+      ["t5", "Fifth", false],
+    ] as const) {
+      useTaskStore.getState().addTask({
+        id,
+        title,
+        description: title,
+        type: "item",
+        stage: "list",
+        lists: ["texts-send"],
+        createdAt: new Date("2026-10-01T12:00:00"),
+        completed: false,
+        tags: [],
+        links: [],
+        ...(sent ? { sentAtByList: { "texts-send": sentAt } } : {}),
+      })
+    }
+    const initial = {
+      id: "texts-habit",
+      name: "respond to all missing texts",
+      type: TaskType.GOAL,
+      goal: 100,
+      rewardValue: 10,
+      frequency: "weekly" as const,
+      completionSources: ["manual" as const, "listSent" as const],
+      listSentLink: {
+        listId: "texts-send",
+        grace: 100,
+        measure: "sent" as const,
+        target: "listLength" as const,
+      },
+    }
+    try {
+      const { unmount } = render(<TaskForm onSubmit={onSubmit} onCancel={vi.fn()} initialTask={initial} />)
+      const legends = [...document.querySelectorAll("legend")].map((el) => el.textContent)
+      const typeAt = legends.indexOf("Habit Type")
+      const sourcesAt = legends.indexOf("Completion sources")
+      const targetAt = legends.indexOf("Target")
+      expect(typeAt).toBeGreaterThanOrEqual(0)
+      expect(typeAt).toBeLessThan(sourcesAt)
+      expect(sourcesAt).toBeLessThan(targetAt)
+      expect(screen.getByLabelText("Amount")).toHaveValue(5)
+      expect(screen.getByLabelText("Grace")).toHaveValue(100)
+      expect(screen.getByTestId("list-pipeline-preview")).toHaveTextContent("1 of 5")
+      await user.click(screen.getByRole("button", { name: "Update Habit" }))
+      expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ goal: 5 }))
+      unmount()
+      render(
+        <TaskForm
+          onSubmit={vi.fn()}
+          onCancel={vi.fn()}
+          initialTask={{ ...onSubmit.mock.calls[0][0], goal: 5 }}
+        />,
+      )
+      expect(screen.getByLabelText("Amount")).toHaveValue(5)
+      expect(screen.getByRole("button", { name: "What the target is" })).toHaveTextContent("List length")
+    } finally {
+      useTaskStore.setState({ lists: previousLists, tasks: previousTasks })
+    }
+  })
+
   it("submits a better-than-last-week stats rule on the habits pipeline", async () => {
     const user = userEvent.setup()
     const onSubmit = vi.fn()
@@ -669,24 +793,20 @@ describe("TaskForm", () => {
     )
     await user.click(screen.getByRole("button", { name: "Add source" }))
     await user.click(screen.getByRole("button", { name: "Habits stats" }))
-    await user.click(screen.getByRole("button", { name: "Habit stats point" }))
-    await user.click(screen.getByRole("option", { name: "Better than last week" }))
+    expect(screen.getByRole("button", { name: "Source" })).toHaveTextContent("Daily habits")
+    expect(screen.getByRole("button", { name: "Period" })).toHaveTextContent("This week")
+    expect(screen.getByRole("button", { name: "Output" })).toHaveTextContent("Week grade")
+    expect(screen.queryByLabelText("Statement")).not.toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: "Update Habit" }))
     const submitted = onSubmit.mock.calls[0][0]
     const statsRow = submitted.completionPipelines?.find((row: { kind: string }) => row.kind === "habitsStats")
-    expect(statsRow?.stats).toEqual(
+    expect(statsRow?.statBinding).toEqual(
       expect.objectContaining({
-        set: "daily",
-        comparePrevious: true,
-        mustBeHigher: 2,
+        mode: "simple",
+        pipelines: [
+          expect.objectContaining({ sourceId: "daily", periodId: "thisWeek", outputId: "weekGrade" }),
+        ],
       }),
-    )
-    expect(statsRow?.stats.points).toEqual(
-      expect.arrayContaining([
-        { kind: "dailyCompletionAverage" },
-        { kind: "weekGrade" },
-        { kind: "perfectOutput" },
-      ]),
     )
     const previousHabits = useHabitsStore.getState().tasks
     useHabitsStore.getState().setTasks([
@@ -701,8 +821,8 @@ describe("TaskForm", () => {
     ])
     useHabitsStore.getState().updateTask(submitted)
     const saved = useHabitsStore.getState().tasks.find((row) => row.id === "better-week")
-    expect(saved?.completionPipelines?.find((row) => row.kind === "habitsStats")?.stats).toEqual(
-      expect.objectContaining({ comparePrevious: true, mustBeHigher: 2, set: "daily" }),
+    expect(saved?.completionPipelines?.find((row) => row.kind === "habitsStats")?.statBinding).toEqual(
+      expect.objectContaining({ mode: "simple" }),
     )
     useHabitsStore.setState({ tasks: previousHabits })
   })
@@ -744,9 +864,15 @@ describe("TaskForm", () => {
       />,
     )
     expect(screen.getByLabelText("How many must be higher")).toHaveValue(2)
+    expect(screen.getByRole("button", { name: "Source" })).toBeInTheDocument()
+    expect(screen.queryByLabelText("Statement")).not.toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: "Update Habit" }))
     const submitted = onSubmit.mock.calls[0][0]
-    expect(submitted.completionPipelines).toEqual(pipelines)
+    expect(submitted.completionPipelines?.[1]?.stats).toEqual(pipelines[1].stats)
+    expect(submitted.completionPipelines?.[1]?.statBinding?.mode).toBe("simple")
+    expect(submitted.completionPipelines?.[1]?.statBinding?.pipelines?.[0]).toEqual(
+      expect.objectContaining({ sourceId: "daily", outputId: "dailyCompletionAverage" }),
+    )
     expect(submitted.completionSources).toEqual(["manual"])
   })
 })

@@ -6,7 +6,11 @@ import { beforeEach, describe, expect, it } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { getGradeLiftComparisonTargets, useHabitsStore } from "@/lib/habits-store"
 import { TaskType } from "@/lib/types"
-import { formatGradeLiftDelta, formatGradeLiftYesterdayCaption } from "@/lib/habit-points"
+import {
+  formatGradeLiftAverageCaption,
+  formatGradeLiftDelta,
+  formatGradeLiftYesterdayCaption,
+} from "@/lib/habit-points"
 import { rawDayCompletionPercent } from "@/lib/habit-accomplishment"
 
 describe("getGradeLiftComparisonTargets", () => {
@@ -73,5 +77,37 @@ describe("getGradeLiftComparisonTargets", () => {
     expect(targets.todayRaw).toBe(60)
     expect(targets.yesterdayDelta).toBe(20)
     expect(formatGradeLiftDelta(targets.yesterdayDelta)).toBe("+20")
+  })
+
+  it("prior 7 and prior 30 expose today, the average, and the signed gap", () => {
+    // Seven days at 40% (2 of 5), then today at 60% (3 of 5). The other 23 days in the 30 count as 0.
+    for (let d = 20; d <= 26; d++) {
+      const day = new Date(2026, 8, d)
+      useHabitsStore.getState().updateCompletion("a", day, { completed: true })
+      useHabitsStore.getState().updateCompletion("c", day, { completed: true })
+    }
+    useHabitsStore.getState().updateCompletion("a", today, { completed: true })
+    useHabitsStore.getState().updateCompletion("b", today, { value: 10 })
+    useHabitsStore.getState().updateCompletion("c", today, { completed: true })
+
+    const targets = getGradeLiftComparisonTargets(today)
+    expect(targets.todayRaw).toBe(60)
+    expect(targets.prior7Average).toBe(40)
+    expect(targets.prior7Delta).toBe(20)
+    expect(formatGradeLiftAverageCaption("Prior 7 days", targets.prior7Average)).toBe("Prior 7 days — 40% average")
+    expect(formatGradeLiftDelta(targets.prior7Delta)).toBe("+20")
+    expect(targets.prior30Average).toBeCloseTo((7 * 40) / 30)
+    expect(targets.prior30Delta).toBe(60 - Math.round((7 * 40) / 30))
+    expect(formatGradeLiftAverageCaption("Prior 30 days", targets.prior30Average)).toMatch(/^Prior 30 days — \d+% average$/)
+  })
+
+  it("leaves the prior windows empty when no earlier day is logged", () => {
+    const targets = getGradeLiftComparisonTargets(today)
+    expect(targets.prior7Average).toBeNull()
+    expect(targets.prior30Average).toBeNull()
+    expect(targets.prior7Delta).toBeNull()
+    expect(targets.prior30Delta).toBeNull()
+    expect(formatGradeLiftAverageCaption("Prior 7 days", null)).toBe("No prior 7 days yet")
+    expect(formatGradeLiftDelta(targets.prior7Delta)).toBe("—")
   })
 })

@@ -2,8 +2,10 @@
  * components/Home/Habits/settings-dialog.tsx — Habits & theme settings
  *
  * Portaled milled sheet (same fascia language as Week grade / Perfect output).
- * Grade-lift fields show yesterday's raw daily completion and last week's
- * Week grade + Perfect output, with signed deltas vs today / this week.
+ * Grade-lift fields show yesterday's raw daily completion, last week's
+ * Week grade + Perfect output, and today's raw completion against the prior
+ * 7-day and 30-day averages, with signed deltas. Default points are the
+ * completion-points number a new habit of that period starts with.
  */
 "use client"
 
@@ -20,9 +22,11 @@ import { HabitGemSettingsField } from "@/components/Home/Habits/gem-picker"
 import { getGradeLiftComparisonTargets, useHabitsStore } from "@/lib/habits-store"
 import { MAX_ACCOMPLISHMENT_BONUS } from "@/lib/habit-accomplishment"
 import {
+  formatGradeLiftAverageCaption,
   formatGradeLiftDelta,
   formatGradeLiftLastWeekCaption,
   formatGradeLiftYesterdayCaption,
+  type HabitPeriodPointDefaults,
 } from "@/lib/habit-points"
 import { usePersistHydrated } from "@/lib/use-persist-hydrated"
 import { ColorSwatch } from "@/components/ui/color-swatch"
@@ -78,9 +82,13 @@ function GradeLiftFields() {
   const targets = getGradeLiftComparisonTargets()
   const yesterdayCaption = formatGradeLiftYesterdayCaption(targets.yesterdayRaw)
   const lastWeekCaption = formatGradeLiftLastWeekCaption(targets.lastWeek)
+  const prior7Caption = formatGradeLiftAverageCaption("Prior 7 days", targets.prior7Average)
+  const prior30Caption = formatGradeLiftAverageCaption("Prior 30 days", targets.prior30Average)
   const yesterdayDelta = formatGradeLiftDelta(targets.yesterdayDelta)
   const weekDelta = formatGradeLiftDelta(targets.lastWeekDeltas?.week)
   const outputDelta = formatGradeLiftDelta(targets.lastWeekDeltas?.output)
+  const prior7Delta = formatGradeLiftDelta(targets.prior7Delta)
+  const prior30Delta = formatGradeLiftDelta(targets.prior30Delta)
 
   return (
     <div className="hab-settings-bay">
@@ -172,9 +180,16 @@ function GradeLiftFields() {
               className="hab-settings-input"
             />
             <span className="hab-settings-unit">pts</span>
+            <span
+              className={`hab-settings-delta is-${deltaTone(targets.prior7Delta)}`}
+              data-testid="grade-lift-prior-7-delta"
+              title="Today vs the prior 7-day average (percentage points)"
+            >
+              {prior7Delta}
+            </span>
           </div>
-          <p className="hab-settings-prior">
-            When today&apos;s raw completion is higher than the prior 7-day average.
+          <p className="hab-settings-prior" data-testid="grade-lift-prior-7">
+            {prior7Caption}
           </p>
         </div>
         <div className="hab-settings-lift-row">
@@ -193,9 +208,16 @@ function GradeLiftFields() {
               className="hab-settings-input"
             />
             <span className="hab-settings-unit">pts</span>
+            <span
+              className={`hab-settings-delta is-${deltaTone(targets.prior30Delta)}`}
+              data-testid="grade-lift-prior-30-delta"
+              title="Today vs the prior 30-day average (percentage points)"
+            >
+              {prior30Delta}
+            </span>
           </div>
-          <p className="hab-settings-prior">
-            When today&apos;s raw completion is higher than the prior 30-day average.
+          <p className="hab-settings-prior" data-testid="grade-lift-prior-30">
+            {prior30Caption}
           </p>
         </div>
         <div className="hab-settings-lift-row">
@@ -218,6 +240,80 @@ function GradeLiftFields() {
           <p className="hab-settings-prior">
             Shown on a habit that today&apos;s morning review prioritized. Default ×5.
           </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const PERIOD_POINT_ROWS: { key: keyof HabitPeriodPointDefaults; label: string }[] = [
+  { key: "daily", label: "Daily" },
+  { key: "weekly", label: "Weekly" },
+  { key: "monthly", label: "Monthly" },
+  { key: "seasonal", label: "Season" },
+]
+
+function DefaultHabitPointsFields() {
+  const defaults = useHabitsStore((s) => s.defaultHabitPoints)
+  const setOne = useHabitsStore((s) => s.setDefaultHabitPoints)
+  const setAll = useHabitsStore((s) => s.setAllDefaultHabitPoints)
+  const [allValue, setAllValue] = useState("")
+
+  return (
+    <div className="hab-settings-bay">
+      <span className="hab-settings-bay-legend">Default points</span>
+      <p className="hab-settings-hint">
+        New habits start with this completion-points number. A habit you already set keeps its own.
+      </p>
+      <div className="hab-settings-lift-grid">
+        {PERIOD_POINT_ROWS.map(({ key, label }) => (
+          <div className="hab-settings-lift-row" key={key}>
+            <Label htmlFor={`settings-default-points-${key}`} className="hab-settings-label">
+              {label}
+            </Label>
+            <div className="hab-settings-row">
+              <Input
+                id={`settings-default-points-${key}`}
+                type="number"
+                min={0}
+                max={MAX_ACCOMPLISHMENT_BONUS}
+                step={1}
+                value={defaults[key]}
+                aria-label={`${label} default points`}
+                onChange={(e) => setOne(key, Number(e.target.value))}
+                className="hab-settings-input"
+              />
+              <span className="hab-settings-unit">pts</span>
+            </div>
+          </div>
+        ))}
+        <div className="hab-settings-lift-row">
+          <Label htmlFor="settings-default-points-all" className="hab-settings-label">
+            All periods
+          </Label>
+          <div className="hab-settings-row">
+            <Input
+              id="settings-default-points-all"
+              type="number"
+              min={0}
+              max={MAX_ACCOMPLISHMENT_BONUS}
+              step={1}
+              value={allValue}
+              aria-label="Default points for all periods"
+              onChange={(e) => setAllValue(e.target.value)}
+              className="hab-settings-input"
+            />
+            <span className="hab-settings-unit">pts</span>
+            <Button
+              type="button"
+              size="sm"
+              className="hab-settings-btn"
+              disabled={allValue.trim() === "" || !Number.isFinite(Number(allValue))}
+              onClick={() => setAll(Number(allValue))}
+            >
+              Apply
+            </Button>
+          </div>
         </div>
       </div>
     </div>
@@ -375,6 +471,7 @@ export function SettingsDialog({
           </div>
 
           <GradeLiftFields />
+          <DefaultHabitPointsFields />
 
           <div className="hab-settings-bay">
             <span className="hab-settings-bay-legend">Willpower gems</span>

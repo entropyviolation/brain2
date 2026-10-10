@@ -6,7 +6,6 @@ import { TaskType, type WeeklyTask } from "./types"
 import {
   applyLinkedFlag,
   clampCoverageThreshold,
-  coverageDisplayAmount,
   coverageMeetsThreshold,
   dailyHabitsClearFloor,
   effectiveCoverageLink,
@@ -46,15 +45,6 @@ describe("coverage link", () => {
       goal: 75,
     })
     expect(applyLinkedFlag(next!, "coverageCompleted", true, { value: 82, goal: 75 })).toBeNull()
-  })
-
-  it("caps the coverage cell label at the threshold", () => {
-    expect(coverageDisplayAmount(0, 75)).toBe(0)
-    expect(coverageDisplayAmount(40, 75)).toBe(40)
-    expect(coverageDisplayAmount(75, 75)).toBe(75)
-    expect(coverageDisplayAmount(100, 75)).toBe(75)
-    expect(coverageDisplayAmount(100, 50)).toBe(50)
-    expect(coverageDisplayAmount(undefined, 75)).toBeUndefined()
   })
 })
 

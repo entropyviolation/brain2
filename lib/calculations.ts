@@ -18,6 +18,7 @@
  *  - Period (weekly/monthly) analogs: `calculatePeriodTaskPercentage`,
  *    `calculatePeriodColumnPercentage`, `calculatePeriodGrade`,
  *    `calculatePeriodOutputGrade` — same formulas over week/month keys.
+ *  - `periodCellPercentage`: the one cell those column averages add.
  *
  * Optional `isExempt` lifts a period out of both sides of the fraction
  * (`lib/habit-exemption.ts`). Omit it and every denominator stays the full
@@ -450,7 +451,8 @@ export function elapsedHabitPeriods(periods: HabitPeriod[], asOf: Date): HabitPe
   return periods.filter((period) => formatLocalDateKey(period.date) <= asOfKey)
 }
 
-function periodCellPercentage(
+/** One habit's share of a column. `calculatePeriodColumnPercentage` adds this same cell. */
+export function periodCellPercentage(
   task: Task,
   completion: TaskCompletion | undefined,
   period: HabitPeriod,

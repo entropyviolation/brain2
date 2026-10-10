@@ -30,6 +30,10 @@
  * A missing value migrates to 5. 0 turns that rule off. Editing the amount
  * rewrites the ledger row for that day; dropping back to or below the average
  * removes it, the same way the other habit bonuses do.
+ * `defaultHabitPoints` (daily / weekly / monthly / seasonal, default 10) is
+ * stamped onto a new habit once, when `rewardValue` is missing. Later edits
+ * to the default do not rewrite a habit that already has its own number.
+ * A missing blob fills 10. No persist version bump.
  * Persist version 21 adds `dayGradeLiftBonus` / `weeklyGradeLiftBonus`
  * (points when raw daily completion beats yesterday, and per rail grade that
  * beats last week's Week grade / Perfect output). 0 turns a lift off.
@@ -64,9 +68,10 @@
  * other UI prefs — no persist version bump.
  * `missedOpportunity` on a completion cell is optional. Absence means not
  * marked. Readers of grades, percents, streaks, gems, and points do not
- * look at it. `missedOpWand` and `hideCompletedAndMissed` are control-panel
+ * look at it. `missReason` on that cell is an optional string and is ignored
+ * the same way. `missedOpWand` and `hideCompletedAndMissed` are control-panel
  * prefs (default false). `migrateHabitsState` fills a missing key; no
- * persist version bump.
+ * persist version bump. A blank `missReason` is deleted on write.
  * `habitMonthWindow` (default `yearToDate`) and `habitBirthday`
  * (`{ month: 5, day: 5 }`) choose the monthly sheet. A missing value fills
  * those defaults. No persist version bump — same rule as `hideCompletedToday`.
@@ -196,7 +201,11 @@ import {
   weeklyGradeLiftTaskId,
   DEFAULT_MONTHLY_AVERAGE_BEAT_BONUS,
   DEFAULT_WEEKLY_AVERAGE_BEAT_BONUS,
+  habitPeriodPointsKey,
+  sanitizeHabitPeriodPoints,
+  type HabitPeriodPointDefaults,
 } from "@/lib/habit-points"
+import { bindHabitPointsRules } from "@/lib/points-rules-live"
 import {
   clampAccomplishmentBonus,
   clampAccomplishmentThreshold,
@@ -204,6 +213,7 @@ import {
   DEFAULT_ACCOMPLISHMENT_THRESHOLD,
   GOOD_DAYS_LOOKBACK,
   PRIOR_WEEK_DAYS,
+  priorCalendarDays,
   priorRawAverage,
   rawDayCompletionPercent,
 } from "@/lib/habit-accomplishment"
@@ -411,6 +421,7 @@ export function migrateHabitsState(persisted: unknown, version: number): HabitsS
     monthlyAverageBeatBonus: clampAccomplishmentBonus(
       (state.monthlyAverageBeatBonus as number) ?? DEFAULT_MONTHLY_AVERAGE_BEAT_BONUS,
     ),
+    defaultHabitPoints: sanitizeHabitPeriodPoints(state.defaultHabitPoints),
     gradeUsePriority: !!state.gradeUsePriority,
     outputUsePriority: !!state.outputUsePriority,
     goodDaysUsePriority: !!state.goodDaysUsePriority,
@@ -726,6 +737,15 @@ interface HabitsState {
    */
   monthlyAverageBeatBonus: number
   setMonthlyAverageBeatBonus: (bonus: number) => void
+  /**
+   * Completion points a new habit of that period starts with.
+   * Stamped once in `addTask` when `rewardValue` is missing.
+   * Changing these does not rewrite a habit that already has its own number.
+   * A missing blob fills 10 on every period. No persist version bump.
+   */
+  defaultHabitPoints: HabitPeriodPointDefaults
+  setDefaultHabitPoints: (period: keyof HabitPeriodPointDefaults, points: number) => void
+  setAllDefaultHabitPoints: (points: number) => void
   /** Blend prioritized habits into Week / Span grade (50% floor). */
   gradeUsePriority: boolean
   setGradeUsePriority: (value: boolean) => void
@@ -928,6 +948,17 @@ function stampCompletion<T extends TaskCompletion>(cell: T): T {
   return { ...cell, updatedAt: Date.now() }
 }
 
+/** Merge a cell patch. A blank `missReason` is removed so old cells stay unchanged. */
+function mergeCompletionPatch(previous: TaskCompletion | undefined, patch: TaskCompletion): TaskCompletion {
+  const next: TaskCompletion = { ...previous, ...patch }
+  if ("missReason" in patch) {
+    const text = typeof next.missReason === "string" ? next.missReason.trim() : ""
+    if (!text) delete next.missReason
+    else next.missReason = text
+  }
+  return next
+}
+
 function syncDailyHabitDayPoints(task: WeeklyTask, date: Date, weeklyData: WeeklyData) {
   const dateKey = formatLocalDateKey(date)
   const books = useHabitsStore.getState().habitExemptions ?? emptyExemptionBooks()
@@ -1002,6 +1033,12 @@ function dailyShownGrades(state: GradeSyncState, day: Date): { week: number; out
  * Yesterday = raw daily-habit completion % (partial credit). Last week = rail
  * Week grade + Perfect output for the prior full calendar week (Sunday end).
  */
+function priorWindowHasHistory(weeklyData: WeeklyData, days: Date[]): boolean {
+  if (days.length === 0) return false
+  const keys = new Set(days.map((day) => formatLocalDateKey(day)))
+  return Object.keys(weeklyData || {}).some((key) => keys.has(key))
+}
+
 export function getGradeLiftComparisonTargets(asOf: Date = new Date()): {
   yesterdayRaw: number | null
   todayRaw: number | null
@@ -1009,6 +1046,12 @@ export function getGradeLiftComparisonTargets(asOf: Date = new Date()): {
   lastWeek: { week: number; output: number } | null
   thisWeek: { week: number; output: number } | null
   lastWeekDeltas: { week: number; output: number } | null
+  /** Mean raw daily completion over the prior 7 days. Null when that window has no logged days. */
+  prior7Average: number | null
+  /** Mean raw daily completion over the prior 30 days. Null when that window has no logged days. */
+  prior30Average: number | null
+  prior7Delta: number | null
+  prior30Delta: number | null
 } {
   const state = useHabitsStore.getState()
   const today = new Date(asOf.getFullYear(), asOf.getMonth(), asOf.getDate())
@@ -1028,6 +1071,16 @@ export function getGradeLiftComparisonTargets(asOf: Date = new Date()): {
   const hasWeekHistory = Object.keys(state.weeklyData || {}).some((key) => key <= lastWeekEndKey)
   const weekPrior = hasWeekHistory ? dailyShownGrades(state, lastWeekEnd) : null
   const weekCurrent = dailyShownGrades(state, today)
+  const prior7Days = priorCalendarDays(today, PRIOR_WEEK_DAYS)
+  const prior30Days = priorCalendarDays(today, GOOD_DAYS_LOOKBACK)
+  const prior7Average = priorWindowHasHistory(state.weeklyData, prior7Days)
+    ? priorRawAverage(daily, state.weeklyData, today, PRIOR_WEEK_DAYS, isExempt)
+    : null
+  const prior30Average = priorWindowHasHistory(state.weeklyData, prior30Days)
+    ? priorRawAverage(daily, state.weeklyData, today, GOOD_DAYS_LOOKBACK, isExempt)
+    : null
+  const signedGap = (average: number | null) =>
+    average === null ? null : Math.round(todayRaw) - Math.round(average)
   return {
     yesterdayRaw,
     todayRaw,
@@ -1041,6 +1094,10 @@ export function getGradeLiftComparisonTargets(asOf: Date = new Date()): {
           output: Math.round(weekCurrent.output) - Math.round(weekPrior.output),
         }
       : null,
+    prior7Average,
+    prior30Average,
+    prior7Delta: signedGap(prior7Average),
+    prior30Delta: signedGap(prior30Average),
   }
 }
 
@@ -1070,7 +1127,7 @@ function syncGradeBonusesForWeek(
     const shown = shownFor(day)
     const bonus = gradeBonusPoints(shown.week, shown.output)
     const dateKey = formatLocalDateKey(day)
-    upsert(gradeBonusTaskId(dateKey), bonus, gradeBonusDescription(bonus), day)
+    upsert(gradeBonusTaskId(dateKey), bonus, gradeBonusDescription(bonus, shown.week, shown.output), day)
     const rawBonus = rawDayBonusPoints(
       shown.dayScore,
       state.accomplishmentThreshold ?? DEFAULT_ACCOMPLISHMENT_THRESHOLD,
@@ -1271,6 +1328,21 @@ export const useHabitsStore = create<HabitsState>()(
         set({ monthlyAverageBeatBonus: clampAccomplishmentBonus(bonus) })
         syncGradeBonusesFromState(get())
       },
+      defaultHabitPoints: sanitizeHabitPeriodPoints(undefined),
+      setDefaultHabitPoints: (period, points) => {
+        set((state) => ({
+          defaultHabitPoints: {
+            ...sanitizeHabitPeriodPoints(state.defaultHabitPoints),
+            [period]: clampAccomplishmentBonus(points),
+          },
+        }))
+      },
+      setAllDefaultHabitPoints: (points) => {
+        const n = clampAccomplishmentBonus(points)
+        set({
+          defaultHabitPoints: { daily: n, weekly: n, monthly: n, seasonal: n },
+        })
+      },
       gradeUsePriority: false,
       setGradeUsePriority: (value) => {
         set({ gradeUsePriority: value })
@@ -1406,20 +1478,29 @@ export const useHabitsStore = create<HabitsState>()(
       },
 
       addTask: (task) =>
-        set((state) => ({
-          contentRev: nextContentRev(state.contentRev),
-          tasks: [
-            ...state.tasks,
-            ensureTaskGem(
-              migrateIncrementalTask({
-                ...task,
-                type: normalizeTaskType(task.type),
-                frequency: task.frequency || "daily",
-                createdAt: task.createdAt || new Date().toISOString(),
-              }),
-            ),
-          ],
-        })),
+        set((state) => {
+          const frequency = task.frequency || "daily"
+          const points = sanitizeHabitPeriodPoints(state.defaultHabitPoints)
+          const rewardValue =
+            task.rewardValue !== undefined && task.rewardValue !== null
+              ? task.rewardValue
+              : points[habitPeriodPointsKey(frequency)]
+          return {
+            contentRev: nextContentRev(state.contentRev),
+            tasks: [
+              ...state.tasks,
+              ensureTaskGem(
+                migrateIncrementalTask({
+                  ...task,
+                  type: normalizeTaskType(task.type),
+                  frequency,
+                  rewardValue,
+                  createdAt: task.createdAt || new Date().toISOString(),
+                }),
+              ),
+            ],
+          }
+        }),
       updateTask: (task) => {
         const prev = get().tasks.find((row) => row.id === task.id)
         const linksChanged = JSON.stringify(prev?.logExemptions ?? null) !== JSON.stringify(task.logExemptions ?? null)
@@ -1521,7 +1602,7 @@ export const useHabitsStore = create<HabitsState>()(
           const weeklyData = { ...state.weeklyData }
           const day = { ...(weeklyData[dateKey] || {}) }
           const previous = day[taskId]
-          const reconciled = reconcileManualEntry(task, previous, { ...previous, ...completion })
+          const reconciled = reconcileManualEntry(task, previous, mergeCompletionPatch(previous, completion))
           const marked = withHandMark(task, completion, reconciled)
           const finalCompletion = completionWithGoalFlag(task, marked, { date, weeklyData: state.weeklyData })
           day[taskId] = stampCompletion(finalCompletion)
@@ -1675,7 +1756,7 @@ export const useHabitsStore = create<HabitsState>()(
           const weeklyHabitData = { ...state.weeklyHabitData }
           const bucket = { ...(weeklyHabitData[weekKey] || {}) }
           const previous = bucket[taskId]
-          const reconciled = reconcileManualEntry(task, previous, { ...previous, ...completion })
+          const reconciled = reconcileManualEntry(task, previous, mergeCompletionPatch(previous, completion))
           const marked = withHandMark(task, completion, reconciled)
           const finalCompletion = completionWithGoalFlag(task, marked, { date: weekStart, weeklyData: state.weeklyHabitData })
           bucket[taskId] = stampCompletion(finalCompletion)
@@ -1706,7 +1787,7 @@ export const useHabitsStore = create<HabitsState>()(
           const monthlyHabitData = { ...state.monthlyHabitData }
           const bucket = { ...(monthlyHabitData[monthKey] || {}) }
           const previous = bucket[taskId]
-          const reconciled = reconcileManualEntry(task, previous, { ...previous, ...completion })
+          const reconciled = reconcileManualEntry(task, previous, mergeCompletionPatch(previous, completion))
           const marked = withHandMark(task, completion, reconciled)
           const finalCompletion = completionWithGoalFlag(task, marked, { date: monthDate, weeklyData: state.monthlyHabitData })
           bucket[taskId] = stampCompletion(finalCompletion)
@@ -1738,7 +1819,7 @@ export const useHabitsStore = create<HabitsState>()(
           const quarterlyHabitData = { ...state.quarterlyHabitData }
           const bucket = { ...(quarterlyHabitData[seasonKey] || {}) }
           const previous = bucket[taskId]
-          const reconciled = reconcileManualEntry(task, previous, { ...previous, ...completion })
+          const reconciled = reconcileManualEntry(task, previous, mergeCompletionPatch(previous, completion))
           const marked = withHandMark(task, completion, reconciled)
           const finalCompletion = completionWithGoalFlag(task, marked, {
             date: quarterStartDate(quarterStart),
@@ -1786,6 +1867,7 @@ export const useHabitsStore = create<HabitsState>()(
           weeklyGradeLiftBonus: state.weeklyGradeLiftBonus,
           weeklyAverageBeatBonus: state.weeklyAverageBeatBonus,
           monthlyAverageBeatBonus: state.monthlyAverageBeatBonus,
+          defaultHabitPoints: state.defaultHabitPoints,
           gradeUsePriority: state.gradeUsePriority,
           outputUsePriority: state.outputUsePriority,
           goodDaysUsePriority: state.goodDaysUsePriority,
@@ -1921,6 +2003,18 @@ export const useHabitsStore = create<HabitsState>()(
     },
   ),
 )
+
+bindHabitPointsRules({
+  get: () => useHabitsStore.getState(),
+  setAccomplishmentThreshold: (value) => useHabitsStore.getState().setAccomplishmentThreshold(value),
+  setAccomplishmentBonus: (value) => useHabitsStore.getState().setAccomplishmentBonus(value),
+  setDayGradeLiftBonus: (value) => useHabitsStore.getState().setDayGradeLiftBonus(value),
+  setWeeklyGradeLiftBonus: (value) => useHabitsStore.getState().setWeeklyGradeLiftBonus(value),
+  setWeeklyAverageBeatBonus: (value) => useHabitsStore.getState().setWeeklyAverageBeatBonus(value),
+  setMonthlyAverageBeatBonus: (value) => useHabitsStore.getState().setMonthlyAverageBeatBonus(value),
+  setMorningRitualPointMultiplier: (value) => useHabitsStore.getState().setMorningRitualPointMultiplier(value),
+  setDefaultHabitPoints: (period, value) => useHabitsStore.getState().setDefaultHabitPoints(period, value),
+})
 
 registerPersistRehydrator(persistKey("habits-store"), () => useHabitsStore.persist.rehydrate())
 

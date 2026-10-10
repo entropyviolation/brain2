@@ -1,0 +1,62 @@
+/**
+ * habit-wand-banner.css — pinned wand-view status lamp.
+ * Imported only by habit-wand-banner.tsx.
+ * Exemption is amber; missed opportunity is rose. Different hues.
+ */
+
+.hab-wand-banner {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 22px;
+  margin: 0;
+  padding: 0 10px;
+  font-family: var(--w95-font, Tahoma, "MS Sans Serif", Geneva, sans-serif);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 22px;
+  white-space: nowrap;
+}
+
+.hab-wand-banner.is-exemption {
+  color: #1c1406;
+  background-color: #e6b422;
+  background-image: linear-gradient(180deg, #f0cb5c 0%, #e6b422 46%, #c49212 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 244, 210, 0.75),
+    inset 0 -1px 0 #8a6410,
+    0 1px 0 rgba(0, 0, 0, 0.28);
+}
+
+.hab-wand-banner.is-missed {
+  color: #fff6f8;
+  background-color: #9c2d4a;
+  background-image: linear-gradient(180deg, #c44b68 0%, #9c2d4a 48%, #6e1c34 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 214, 224, 0.45),
+    inset 0 -1px 0 #3e1020,
+    0 1px 0 rgba(0, 0, 0, 0.28);
+}
+
+.hab-wand-banner-lamp {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  background: radial-gradient(circle at 35% 32%, #fff 0 18%, currentColor 46%, rgba(0, 0, 0, 0.45) 100%);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.35),
+    0 0 4px currentColor;
+}
+
+.hab-wand-banner.is-exemption .hab-wand-banner-lamp {
+  color: #fff1b0;
+}
+
+.hab-wand-banner.is-missed .hab-wand-banner-lamp {
+  color: #ffd0dc;
+}

@@ -9,6 +9,7 @@
  */
 import { TaskType, type TaskCompletion, type WeeklyData, type WeeklyTask } from "./types"
 import { incrementalDataForTask, incrementalLoggedValue, isIncrementalCompleteOn } from "./incremental-habits"
+import { listSentTrustGoal } from "./habit-completion-pipeline"
 import { readingsFromCell, trustedOutcome } from "./habit-completion-trust"
 
 /** TIME and COUNT are legacy aliases for GOAL. */
@@ -34,7 +35,10 @@ export function isHabitGoalMet(
   if (!completion) return false
   if (Array.isArray(task.completionSources) && task.type !== TaskType.INCREMENTAL) {
     const order = task.completionSources
-    const outcome = trustedOutcome(order, readingsFromCell(order, completion, task.goal))
+    const outcome = trustedOutcome(
+      order,
+      readingsFromCell(order, completion, task.goal, listSentTrustGoal(task)),
+    )
     return outcome.met
   }
   switch (task.type) {

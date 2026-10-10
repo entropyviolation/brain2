@@ -18,8 +18,8 @@ vi.mock("@/components/Home/Habits/period-habit-list", async (importOriginal) => 
   const actual = await importOriginal<typeof import("@/components/Home/Habits/period-habit-list")>()
   return {
     ...actual,
-  PeriodHabitList: ({ periods }: { periods?: { key: string }[] }) => (
-    <div data-testid="period-habit-list" data-columns={periods?.length ?? 0}>
+  PeriodHabitList: ({ periods, detailColumn }: { periods?: { key: string }[]; detailColumn?: boolean }) => (
+    <div data-testid="period-habit-list" data-columns={periods?.length ?? 0} data-detail={detailColumn ? "1" : "0"}>
       Period Habit List
     </div>
   ),
@@ -61,7 +61,35 @@ describe("WeeklyTaskTracker", () => {
     expect(screen.getByText("Last 30")).toBeInTheDocument()
     expect(screen.getByText("Willpower gems")).toBeInTheDocument()
     const desk = document.querySelector(".hab-desk")
-    expect(desk?.querySelector(":scope > .hab-sheet > .hab-well")).toBeTruthy()
+    expect(window.getComputedStyle(desk as Element).overflow).toBe("visible")
+    const well = desk?.querySelector(":scope > .hab-sheet > .hab-well") as HTMLElement | null
+    expect(well).toBeTruthy()
+    const wellStyle = window.getComputedStyle(well as Element)
+    expect(wellStyle.direction).toBe("rtl")
+    expect(wellStyle.scrollbarWidth).toBe("auto")
+    expect(wellStyle.paddingTop).toBe("0px")
+    expect(wellStyle.paddingBottom).toBe("0px")
+    expect(wellStyle.paddingLeft).toBe("0px")
+    expect(wellStyle.paddingRight).toBe("10px")
+    expect(wellStyle.getPropertyValue("--hab-colhead").replace(/\s/g, "")).toBe(
+      "calc(3px+(12px*1.15)+(10px*1.15)+3px+1px)",
+    )
+    const trackCapsHeader = [...document.styleSheets].some((sheet) => {
+      let rules: CSSRuleList
+      try {
+        rules = sheet.cssRules
+      } catch {
+        return false
+      }
+      return [...rules].some(
+        (rule) =>
+          rule.cssText.includes(".hab-well:has(.habit-grid thead)::-webkit-scrollbar-track") &&
+          !rule.cssText.includes(":vertical") &&
+          rule.cssText.includes("margin-top"),
+      )
+    })
+    expect(trackCapsHeader).toBe(true)
+    expect(window.getComputedStyle(well?.firstElementChild as Element).direction).toBe("ltr")
     expect(desk?.querySelector(":scope > .hab-control-panel")).toBeTruthy()
     expect(desk?.querySelector(".hab-well .hab-control-panel")).toBeNull()
     const rail = document.querySelector(".hab-control-panel")
@@ -85,7 +113,7 @@ describe("WeeklyTaskTracker", () => {
     expect(rail?.querySelector('[role="switch"]')).toBeTruthy()
     expect(screen.queryByText("Sort Habits")).not.toBeInTheDocument()
     expect(document.querySelector(".hab-control-panel")?.textContent).not.toMatch(/Sort/)
-    expect(document.querySelector(".hab-sheet > .hab-priority")).toBeTruthy()
+    expect(document.querySelector(".hab-sheet > .hab-sheet-mast > .hab-priority")).toBeTruthy()
     expect(document.querySelector(".hab-well .hab-priority")).toBeNull()
     expect(screen.getByRole("button", { name: "Sort" })).toBeInTheDocument()
     expect(screen.getByRole("switch", { name: "Highlight priorities" })).toHaveAttribute("aria-checked", "false")
@@ -116,17 +144,79 @@ describe("WeeklyTaskTracker", () => {
     expect(changer?.textContent).toMatch(/Monthly/)
   })
 
-  it("puts the priority bar in the grid pane and drops the morning prose list", () => {
+  it("puts the control bar in the grid pane and drops the morning prose list", async () => {
+    const user = userEvent.setup()
     const day = localDayKey(new Date("2026-06-20T12:00:00"))
     useReviewsStore.getState().saveMorningReview(day, { priorityHabitIds: ["d1"] })
     render(<WeeklyTaskTracker currentDate={new Date("2026-06-20T12:00:00")} />)
     expect(screen.queryByText("Morning habit priorities")).not.toBeInTheDocument()
     const desk = document.querySelector(".hab-desk")
     expect(desk?.children).toHaveLength(2)
-    expect(desk?.querySelector(":scope > .hab-sheet > .hab-priority")).toBeTruthy()
+    const mast = desk?.querySelector(":scope > .hab-sheet > .hab-sheet-mast")
+    const bar = mast?.querySelector(":scope > .hab-priority")
+    const mount = mast?.querySelector(":scope > .hab-wand-mount")
+    expect(bar).toBeTruthy()
+    expect(bar).toHaveAttribute("aria-label", "Control bar")
+    expect(bar?.querySelector(".hab-priority-legend")).toBeNull()
+    expect(screen.queryByText("Priority")).not.toBeInTheDocument()
     expect(desk?.querySelector(":scope > .hab-sheet > .hab-well .hab-priority")).toBeNull()
     expect(desk?.querySelector(":scope > .hab-control-panel")).toBeTruthy()
-    expect(screen.getByText("Priority")).toBeInTheDocument()
+    expect(screen.getByText("SORT:")).toBeInTheDocument()
+    expect(screen.getByRole("switch", { name: "Highlight priorities" })).toHaveClass("hab-bar-rocker")
+    expect(document.querySelector(".hab-led-switch")).toBeNull()
+    expect(screen.getAllByRole("switch", { name: "Heatmap View" })).toHaveLength(1)
+    expect(screen.getAllByRole("switch", { name: "Day View" })).toHaveLength(1)
+    expect(screen.getAllByRole("switch", { name: "Hide Done" })).toHaveLength(1)
+    expect(screen.getAllByRole("switch", { name: "Mask done and missed" })).toHaveLength(1)
+    const cluster = bar?.querySelector(":scope > .hab-bar-rockers")
+    const tools = bar?.querySelector(":scope > .hab-bar-tools")
+    expect(cluster).toBeTruthy()
+    expect(tools).toBeTruthy()
+    expect(tools?.textContent).toMatch(/SORT:/)
+    expect(tools?.textContent).toMatch(/Edit default order/)
+    expect(cluster?.textContent).not.toMatch(/SORT:/)
+    expect(cluster?.querySelector(".hab-bar-rocker")).toBeTruthy()
+    expect(tools?.querySelector(".hab-bar-rocker")).toBeNull()
+    const rail = desk?.querySelector(".hab-control-panel")
+    for (const name of [
+      "Highlight priorities",
+      "Streaks and multipliers",
+      "Heatmap View",
+      "Day View",
+      "Hide Done",
+      "Mask done and missed",
+    ]) {
+      const rocker = cluster?.querySelector(`[aria-label="${name}"]`)
+      expect(rocker).toBeTruthy()
+      expect(rocker).toHaveClass("hab-bar-rocker")
+      expect(rail?.querySelector(`[aria-label="${name}"]`)).toBeNull()
+    }
+    for (const rocker of bar?.querySelectorAll(".hab-bar-rocker") ?? []) {
+      expect(rocker.parentElement).toBe(cluster)
+    }
+    expect(screen.queryByRole("switch", { name: "Week View" })).not.toBeInTheDocument()
+    expect(mount).toBeTruthy()
+    expect(bar?.nextElementSibling).toBe(mount)
+    expect(mount?.closest(".hab-well")).toBeNull()
+    expect(mount?.closest(".hab-control-panel")).toBeNull()
+    expect(mount?.textContent).not.toMatch(/WAND VIEW ON/)
+
+    await user.click(screen.getByRole("tab", { name: /Weekly \(/ }))
+    const weekBar = document.querySelector(".hab-sheet > .hab-sheet-mast > .hab-priority")
+    const weekCluster = weekBar?.querySelector(":scope > .hab-bar-rockers")
+    const week = screen.getByRole("switch", { name: "Week View" })
+    expect(screen.getAllByRole("switch", { name: "Week View" })).toHaveLength(1)
+    expect(week).toHaveClass("hab-bar-rocker")
+    expect(week).toHaveAttribute("aria-checked", "false")
+    expect(weekCluster?.contains(week)).toBe(true)
+    expect(document.querySelector(".hab-control-panel")?.querySelector('[aria-label="Week View"]')).toBeNull()
+    expect(screen.queryByRole("switch", { name: "Day View" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("switch", { name: "Month View" })).not.toBeInTheDocument()
+    await user.click(week)
+    expect(week).toHaveAttribute("aria-checked", "true")
+    await user.click(week)
+    expect(week).toHaveAttribute("aria-checked", "false")
+    expect(useHabitsStore.getState().habitWeekView).toBe(false)
   })
 
   it("switches the checklist to heatmap view from the sidebar rocker", async () => {
@@ -228,13 +318,13 @@ describe("WeeklyTaskTracker", () => {
     expect(screen.getByRole("switch", { name: "Loading Bar" })).toBeInTheDocument()
     expect(screen.getByRole("switch", { name: "Small LEDs" })).toBeInTheDocument()
     expect(screen.queryByText("Sort Habits")).not.toBeInTheDocument()
-    expect(document.querySelector(".hab-sheet > .hab-priority")).toBeTruthy()
+    expect(document.querySelector(".hab-sheet > .hab-sheet-mast > .hab-priority")).toBeTruthy()
     expect(document.querySelector(".hab-well .hab-priority")).toBeNull()
     expect(document.querySelector(".hab-control-panel")?.textContent).not.toMatch(/Sort/)
     expect(screen.getByRole("switch", { name: "Hide Done" })).toBeInTheDocument()
-    expect(screen.getByRole("switch", { name: "Hide Done and Missed" })).toHaveAttribute(
+    expect(screen.getByRole("switch", { name: "Mask done and missed" })).toHaveAttribute(
       "aria-label",
-      "Hide Done and Missed",
+      "Mask done and missed",
     )
     expect(document.querySelector(".hab-head-utils")?.textContent).not.toMatch(/New habit/)
     expect(document.querySelector(".hab-control-panel .hab-control-stack")).toBeTruthy()
@@ -378,15 +468,21 @@ describe("WeeklyTaskTracker", () => {
     expect(wands[0]).toHaveAttribute("data-ui-name", "Exemption wand")
     expect(wands[1]).toHaveAttribute("data-ui-name", "Missed op wand")
     const hideToday = screen.getByRole("switch", { name: "Hide Done" })
-    const hideBoth = screen.getByRole("switch", { name: "Hide Done and Missed" })
-    expect(hideBoth).toHaveClass("hab-rocker")
+    const hideBoth = screen.getByRole("switch", { name: "Mask done and missed" })
+    expect(hideBoth).toHaveClass("hab-bar-rocker")
     expect(hideBoth).toHaveAttribute("aria-checked", "false")
     expect(hideToday.compareDocumentPosition(hideBoth) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     await user.click(screen.getByRole("button", { name: "Missed op wand" }))
     expect(screen.getByRole("button", { name: "Missed op wand on" })).toHaveAttribute("aria-pressed", "true")
+    const missedBanner = screen.getByText("MISSED OPPORTUNITY WAND VIEW ON")
+    expect(missedBanner.closest(".hab-wand-mount")?.previousElementSibling).toHaveClass("hab-priority")
+    expect(missedBanner.closest(".hab-well")).toBeNull()
+    expect(missedBanner.closest(".hab-control-panel")).toBeNull()
     expect(screen.getByRole("button", { name: "Exemption wand" })).toHaveAttribute("aria-pressed", "false")
     await user.click(screen.getByRole("button", { name: "Exemption wand" }))
     expect(screen.getByRole("button", { name: "Exemption wand on" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByText("EXEMPTION WAND VIEW ON").closest(".hab-wand-mount")).toBeTruthy()
+    expect(screen.queryByText("MISSED OPPORTUNITY WAND VIEW ON")).not.toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Missed op wand" })).toHaveAttribute("aria-pressed", "false")
     await user.click(hideBoth)
     expect(useHabitsStore.getState().hideCompletedAndMissed).toBe(true)
@@ -404,6 +500,14 @@ describe("WeeklyTaskTracker", () => {
     expect(screen.getByRole("button", { name: "Submit plan" })).toBeInTheDocument()
     expect(screen.getByText("orchard")).toBeInTheDocument()
     expect(getPlanEntries("day", dayKey).map((entry) => entry.text)).toEqual(["orchard"])
+    const plan = document.querySelector(".hab-plan-frame")
+    expect(plan).toBeTruthy()
+    expect(plan?.closest(".hab-well")).toBeNull()
+    expect(plan?.closest(".hab-sheet")).toBeNull()
+    expect(plan?.closest(".hab-desk")).toBeNull()
+    expect(plan?.parentElement).toHaveClass("hab-pane")
+    expect(plan?.previousElementSibling).toHaveClass("hab-desk")
+    expect(document.querySelector(".hab-desk")?.children).toHaveLength(2)
   })
 
   it("Week View collapses to one column without changing habitWeekWindow", async () => {
@@ -413,12 +517,21 @@ describe("WeeklyTaskTracker", () => {
     await user.click(screen.getByRole("tab", { name: /Weekly \(1\)/ }))
     const sheet = screen.getByTestId("period-habit-list")
     expect(Number(sheet.getAttribute("data-columns"))).toBeGreaterThan(1)
+    expect(sheet).toHaveAttribute("data-detail", "0")
+    const rail = document.querySelector(".hab-control-panel")
+    expect(rail?.classList.contains("hab-control-rail")).toBe(true)
+    expect((rail as HTMLElement).style.width).toBe("196px")
     expect(screen.queryByRole("button", { name: "Submit plan" })).not.toBeInTheDocument()
     await user.click(screen.getByRole("switch", { name: "Week View" }))
     expect(useHabitsStore.getState().habitWeekView).toBe(true)
     expect(useHabitsStore.getState().habitWeekWindow).toBe("fourWeeks")
     expect(screen.getByTestId("period-habit-list")).toHaveAttribute("data-columns", "1")
+    expect(screen.getByTestId("period-habit-list")).toHaveAttribute("data-detail", "1")
+    expect(document.querySelector(".hab-control-panel")?.classList.contains("hab-control-rail")).toBe(true)
+    expect((document.querySelector(".hab-control-panel") as HTMLElement).style.width).toBe("196px")
     expect(screen.getByRole("button", { name: "Submit plan" })).toBeInTheDocument()
+    expect(document.querySelector(".hab-well .hab-plan-frame")).toBeNull()
+    expect(document.querySelector(".hab-pane > .hab-plan-frame")).toBeTruthy()
     await user.click(screen.getByRole("switch", { name: "Week View" }))
     expect(useHabitsStore.getState().habitWeekView).toBe(false)
     expect(useHabitsStore.getState().habitWeekWindow).toBe("fourWeeks")

@@ -11,6 +11,7 @@ import {
   clampMorningRitualPointMultiplier,
   effectivePriorityWeight,
   neglectCountLabel,
+  neglectPrioritySentence,
   PRIORITY_GRADE_FLOOR,
   priorityMarkPercent,
   priorityStarFade,
@@ -163,5 +164,37 @@ describe("weekly / monthly auto weight", () => {
     expect(
       autoPriorityWeight(monthly, { [formatLocalMonthKey(august)]: { tax: { completed: true } } }, asOf, "monthly"),
     ).toBe(0)
+  })
+})
+
+describe("neglectPrioritySentence", () => {
+  it("a daily habit neglected 4 days says so", () => {
+    const asOf = day(2026, 9, 9)
+    const monday = day(2026, 9, 5)
+    const data = { [formatLocalDateKey(monday)]: { stretch: { completed: true } } }
+    expect(autoPriorityWeight(stretch, data, asOf, "daily")).toBeGreaterThan(0)
+    expect(neglectPrioritySentence(stretch, data, asOf, "daily")).toBe("neglected for past 4 days")
+  })
+
+  it("a weekly habit neglected 3 weeks names the real threshold", () => {
+    const asOf = day(2026, 8, 16)
+    const weekly: WeeklyTask = { id: "review", name: "Review", type: TaskType.BOOLEAN, frequency: "weekly" }
+    const fourBack = getWeekStartDate(asOf)
+    fourBack.setDate(fourBack.getDate() - 28)
+    const data = { [getWeekString(fourBack)]: { review: { completed: true } } }
+    expect(autoPriorityWeight(weekly, data, asOf, "weekly")).toBe(3)
+    expect(neglectPrioritySentence(weekly, data, asOf, "weekly")).toBe(
+      "neglected for past 3 weeks (completed less than 1 time)",
+    )
+  })
+
+  it("a habit prioritized only by a pin does not get the neglect sentence", () => {
+    const asOf = day(2026, 9, 9)
+    const pinned: WeeklyTask = { ...stretch, priorityPinned: true }
+    const prior = getWeekStartDate(asOf)
+    prior.setDate(prior.getDate() - 7)
+    const data = { [formatLocalDateKey(prior)]: { stretch: { completed: true } } }
+    expect(effectivePriorityWeight(pinned, data, asOf, "daily")).toBe(1)
+    expect(neglectPrioritySentence(pinned, data, asOf, "daily")).toBeNull()
   })
 })

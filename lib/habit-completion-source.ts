@@ -19,6 +19,7 @@
 import { TaskType, type HabitCompletionSourceId, type HabitCoverageLink, type HabitDailyFloorLink, type TaskCompletion, type WeeklyData, type WeeklyTask } from "./types"
 import { effectiveListLink, effectiveSleepLink } from "./habit-connections"
 import { triggersForHabit } from "./ingest/text-triggers"
+import { listSentTrustGoal } from "./habit-completion-pipeline"
 import { readingsFromCell, sanitizeCompletionSources, trustedOutcome } from "./habit-completion-trust"
 import { applyHabitAutoFlag } from "./habit-auto-flag"
 import { isHabitGoalMet, isGoalType } from "./habit-utils"
@@ -118,21 +119,6 @@ export function effectiveDailyFloorLink(
 
 export function coverageMeetsThreshold(coveragePercent: number, threshold: number): boolean {
   return coveragePercent + 1e-9 >= clampCoverageThreshold(threshold)
-}
-
-/**
- * Cell readout for coverage-linked goals: show progress against the bar, not
- * raw Tracking %. Overshoot still stores the real percent for grades; the
- * label caps at threshold so 100% tracked against 75 reads 75/75, not 100/75.
- */
-export function coverageDisplayAmount(
-  actualPercent: number | undefined,
-  threshold: number,
-): number | undefined {
-  if (actualPercent === undefined) return undefined
-  const t = clampCoverageThreshold(threshold)
-  const n = Number.isFinite(actualPercent) ? actualPercent : 0
-  return Math.min(n, t)
 }
 
 /**
@@ -356,7 +342,7 @@ export function effectiveCompletionSources(task: WeeklyTask): HabitCompletionSou
 export function applyCompletionTrust(task: WeeklyTask, cell: TaskCompletion): TaskCompletion {
   if (!Array.isArray(task.completionSources)) return cell
   const order = effectiveCompletionSources(task)
-  const outcome = trustedOutcome(order, readingsFromCell(order, cell, task.goal))
+  const outcome = trustedOutcome(order, readingsFromCell(order, cell, task.goal, listSentTrustGoal(task)))
   if (!!cell.completed === outcome.met) return cell
   return { ...cell, completed: outcome.met }
 }

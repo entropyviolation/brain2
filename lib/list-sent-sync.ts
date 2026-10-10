@@ -15,7 +15,9 @@ import { useEffect } from "react"
 import { isRestoring, withoutUndo } from "@/lib/action-history"
 import { formatLocalDateKey, formatLocalMonthKey, getWeekString } from "@/lib/date-utils"
 import { habitWriteIsQuiet, useHabitsStore } from "@/lib/habits-store"
+import { effectiveHabitCount, listRoutingFromLink } from "@/lib/habit-completion-pipeline"
 import {
+  applyListLengthCount,
   applyListSentPercent,
   currentPeriodRange,
   listSentCompletion,
@@ -81,10 +83,22 @@ export function syncListSentHabits(now = new Date()): void {
         const listId = parent.listSentLink?.listId
         if (!listId) continue
         const range = currentPeriodRange(parent.frequency, now)
-        const counts = listSentCompletion(items, listId, range)
-        const reported = reportedListSentPercent(counts.rawPercent, parent.listSentLink?.grace)
         const key = periodKeyFor(parent, range.start)
         const previous = bucketFor(parent, useHabitsStore.getState())[key]?.[parent.id]
+        const length = listRoutingFromLink(parent.listSentLink).target === "listLength"
+        if (length) {
+          const measure = effectiveHabitCount(parent, undefined, items, now)
+          const raw = measure.target === 0 ? 0 : (measure.current / measure.target) * 100
+          const reported = reportedListSentPercent(raw, parent.listSentLink?.grace)
+          const next = applyListLengthCount(previous, measure.current, measure.target, reported)
+          if (next) writePeriod(parent, range.start, next)
+          if ((parent.goal || 0) !== measure.target) {
+            useHabitsStore.getState().updateTask({ ...parent, goal: measure.target })
+          }
+          continue
+        }
+        const counts = listSentCompletion(items, listId, range)
+        const reported = reportedListSentPercent(counts.rawPercent, parent.listSentLink?.grace)
         const next = applyListSentPercent(parent, previous, reported)
         if (!next) continue
         writePeriod(parent, range.start, next)
