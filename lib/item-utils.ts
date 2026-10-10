@@ -71,36 +71,61 @@ export function itemTitleOrUntitled(
 }
 
 /**
- * The write-side twin of {@link itemTitle}: keep `title` filled in and current
- * without ever touching `description`.
+ * Keep `title` and `description` as a pure name mirror.
  *
- * Two things are true at once. Readers now prefer `title`, and several callers
- * still rename an item by writing `description` alone (`renameDocument` is the
- * plainest). Left as-is, a rename would show the old name. But `description` is
- * not always a mirror — a parked Apple Note keeps its whole body there — so
- * blindly following it would turn a note's name into its body.
+ * `Item.title` is the field of record. `Task.description` is the v1 name kept
+ * on disk for vaults and backups — it must stay identical to `title` for
+ * ordinary items. Parked-note prose lives in `body` (persist v18); search indexes
+ * `body`, so this helper no longer has to leave drifted pairs alone.
  *
- * The test that separates those two cases is whether the pair *was* in lockstep
- * before the write. If it was, `description` was the name and the edit is a
- * rename. If it was not, this record is using the two fields for two different
- * things and neither is ours to rewrite.
+ * Callers that rename through `description` alone (`renameDocument`) still work:
+ * when the pair was already in lockstep, a description-only edit updates `title`.
+ * When `title` alone changes, `description` follows.
  */
 export function syncTitleFromDescription<T extends TitledRecord>(
   next: T,
   previous?: TitledRecord | null,
 ): T {
   const description = typeof next.description === "string" ? next.description.trim() : ""
-  if (!description) return next
-
   const title = typeof next.title === "string" ? next.title.trim() : ""
-  if (!title) return { ...next, title: description }
-  if (!previous) return next
+
+  if (!previous) {
+    const resolved = title || description
+    if (!resolved) return next
+    if (title === resolved && description === resolved) return next
+    return { ...next, title: resolved, description: resolved }
+  }
 
   const wasTitle = typeof previous.title === "string" ? previous.title.trim() : ""
   const wasDescription = typeof previous.description === "string" ? previous.description.trim() : ""
   const renamedThroughTheMirror =
     wasTitle === wasDescription && title === wasTitle && description !== wasDescription
-  return renamedThroughTheMirror ? { ...next, title: description } : next
+  if (renamedThroughTheMirror) {
+    return { ...next, title: description, description }
+  }
+
+  const resolved = title || description
+  if (!resolved) return next
+  if (title === resolved && description === resolved) return next
+  return { ...next, title: resolved, description: resolved }
+}
+
+/**
+ * Prose / document body for an item. Prefer `body`. One-release read shim: when
+ * `body` is empty and `description` still holds pre-v18 parked-note text (it
+ * differs from `title`), return that description so bulk-add and search callers
+ * do not lose the note until the vault has migrated.
+ */
+export function itemBody(
+  item: { body?: string; description?: string; title?: string } | null | undefined,
+): string {
+  if (!item) return ""
+  const body = typeof item.body === "string" ? item.body.trim() : ""
+  if (body) return body
+  const title = typeof item.title === "string" ? item.title.trim() : ""
+  const description = typeof item.description === "string" ? item.description.trim() : ""
+  if (description && description !== title) return description
+  return ""
 }
 
 const NEXT_ACTIONS_RE = /next\s*actions?/i

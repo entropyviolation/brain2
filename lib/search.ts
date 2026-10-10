@@ -8,9 +8,9 @@
  * full-text fallbacks, etc.).
  *
  * Ranking model (high → low):
- *   1. Title / description match  (the canonical display label)
+ *   1. Title match  (the canonical display label; `description` is only a title mirror)
  *   2. Tag match
- *   3. Attribute / notes / other free-text match
+ *   3. Attribute / notes / body / other free-text match
  *
  * Queries are case-insensitive and split on whitespace into terms that are
  * combined with AND semantics: every term must match *somewhere* on an item for
@@ -41,7 +41,7 @@ export interface SearchOptions {
   /** Cap the number of results returned (after ranking). Default: unlimited. */
   limit?: number
   /**
-   * When true, only the title/description field is searched (tags, notes, and
+   * When true, only the title field is searched (tags, notes, body, and
    * other free-text attributes are ignored). Default: false (search all text).
    */
   titleOnly?: boolean
@@ -95,13 +95,14 @@ function stringifyAttributeValue(value: AttributeValue): string {
 
 /**
  * Collect the searchable text of an item, grouped by field category. Works for
- * the generic `Item` and the richer built-in `Task` (description, notes, etc.).
+ * the generic `Item` and the richer built-in `Task` (body, notes, etc.).
+ * `description` is only consulted as a title fallback via {@link itemTitle}.
  */
 function collectFields(item: Item, titleOnly = false): FieldText[] {
   const task = item as Partial<Task>
   const fields: FieldText[] = []
 
-  const titleText = [item.title, task.description].filter(Boolean).join(" ")
+  const titleText = itemTitle(item as Partial<Task>)
   if (titleText) fields.push({ field: "title", text: normalize(titleText) })
 
   if (titleOnly) return fields
@@ -114,6 +115,7 @@ function collectFields(item: Item, titleOnly = false): FieldText[] {
   }
 
   const attrTexts: string[] = []
+  if (task.body) attrTexts.push(task.body)
   if (task.notes) attrTexts.push(task.notes)
   if (task.taskDescription) attrTexts.push(task.taskDescription)
   if (task.why) attrTexts.push(task.why)

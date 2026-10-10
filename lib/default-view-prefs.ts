@@ -41,7 +41,7 @@ export const DEFAULT_VIEW_CHROME_LABELS: Record<DefaultViewChromeKey, string> = 
   type: "Item type",
   priority: "Urgency / importance",
   date: "Date",
-  tags: "Tags",
+  tags: "Tags (item names)",
   listNames: "List names",
   estimate: "Estimate",
   description: "Description snippet",

@@ -43,7 +43,7 @@ import {
 import { notesCaptureOrigin } from "@/lib/capture-origin"
 import { ensureCaptureTarget } from "@/lib/capture-target"
 import { taskStoreMutators } from "@/lib/ingest/apply-capture"
-import { createListItem, itemTitleOrUntitled, withCategoryDefaults } from "@/lib/item-utils"
+import { createListItem, itemBody, itemTitleOrUntitled, withCategoryDefaults } from "@/lib/item-utils"
 import { parseSmartCapture } from "@/lib/smart-parse"
 import { useTaskStore } from "@/lib/task-store"
 import type { Task } from "@/lib/types"
@@ -51,7 +51,7 @@ import type { Task } from "@/lib/types"
 function asAppleNote(task: Task): { title: string; body: string } {
   return {
     title: String(task.title || "").trim(),
-    body: String(task.body || task.description || "").trim(),
+    body: itemBody(task),
   }
 }
 

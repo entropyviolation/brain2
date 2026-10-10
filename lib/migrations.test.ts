@@ -6,6 +6,7 @@ import {
   migrateTitleAsFieldOfRecord,
   migrateHonestItemTypes,
   migrateLegacyStageStatus,
+  migrateParkedNoteBodyToField,
   inferMissingItemType,
 } from "@/lib/migrations"
 
@@ -201,6 +202,61 @@ describe("migrateHonestItemTypes (v12)", () => {
     })
     expect(result.tasks[0].type).toBe("item")
     expect(result.tasks[0].description).toBe("Rug")
+  })
+})
+
+describe("migrateParkedNoteBodyToField (v18)", () => {
+  it("moves parked-note prose from description into body and mirrors the title", () => {
+    const parked = {
+      id: "n1",
+      title: "Milk",
+      description: "Milk\nbuy oat milk\ncall dentist",
+      body: "buy oat milk",
+      attributes: { source: "apple-notes", ingestStatus: "parked" },
+    }
+    const ordinary = {
+      id: "t1",
+      title: "Buy milk",
+      description: "Buy milk",
+    }
+    const result = migrateParkedNoteBodyToField({ tasks: [parked, ordinary] })
+    expect(result.tasks[0]).toMatchObject({
+      id: "n1",
+      title: "Milk",
+      description: "Milk",
+      body: "Milk\nbuy oat milk\ncall dentist",
+    })
+    expect(result.tasks[1]).toBe(ordinary)
+  })
+
+  it("preserves drifted ordinary description prose into an empty body", () => {
+    const drifted = {
+      id: "d1",
+      title: "Short",
+      description: "Short\nlonger detail that was never a name",
+    }
+    const result = migrateParkedNoteBodyToField({ tasks: [drifted] })
+    expect(result.tasks[0]).toMatchObject({
+      title: "Short",
+      description: "Short",
+      body: "Short\nlonger detail that was never a name",
+    })
+  })
+
+  it("does not wipe an existing longer body", () => {
+    const note = {
+      id: "n2",
+      title: "Weekend",
+      description: "Weekend\nMilk",
+      body: "Weekend\nMilk\nEggs\nBread",
+      attributes: { source: "iphone-notes" },
+    }
+    const result = migrateParkedNoteBodyToField({ tasks: [note] })
+    expect(result.tasks[0]).toMatchObject({
+      title: "Weekend",
+      description: "Weekend",
+      body: "Weekend\nMilk\nEggs\nBread",
+    })
   })
 })
 

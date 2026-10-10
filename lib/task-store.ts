@@ -40,6 +40,7 @@ import {
   migrateModuleListsOutOfScheduler,
   migratePastAssignmentsToUndone,
   migrateUtcMidnightScheduleDates,
+  migrateParkedNoteBodyToField,
 } from "@/lib/migrations"
 import { dispatchItemMutation } from "@/lib/workflow-hooks"
 import { formatLocalDateKey } from "@/lib/date-utils"
@@ -259,8 +260,8 @@ export function appendTombstoneIds(
   return next.slice(-cap)
 }
 
-/** Persist blob version. v17 repairs UTC-midnight schedule dates. v16 records past assignments as Undone. */
-export const TASK_STORE_PERSIST_VERSION = 17
+/** Persist blob version. v18 parks note prose in `body` and mirrors `description` to `title`. v17 repairs UTC-midnight schedule dates. v16 records past assignments as Undone. */
+export const TASK_STORE_PERSIST_VERSION = 18
 
 /** False until persist finishes reading disk so mount-time list sync cannot persist seed tasks over the vault. Tests persist immediately. */
 let taskPersistHydrated = typeof process !== "undefined" && !!process.env.VITEST
@@ -857,6 +858,11 @@ export const useTaskStore = create<TaskState>()(
           // Date inputs stored as UTC midnight move to local midnight of that
           // UTC date. Only the four schedule fields. Nothing is deleted.
           persistedState = migrateUtcMidnightScheduleDates(persistedState)
+        }
+        if (version < 18) {
+          // Parked-note prose moves from description → body. description
+          // becomes a pure title mirror. Search indexes body.
+          persistedState = migrateParkedNoteBodyToField(persistedState)
         }
         if (!Array.isArray(persistedState.removedTaskIds)) {
           persistedState.removedTaskIds = []

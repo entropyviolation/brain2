@@ -12,7 +12,7 @@ import { syncSleepNight } from "@/lib/sleep-sync"
 import { stopWorkingOnOperation } from "@/lib/operation-work-session"
 import * as actionHistory from "@/lib/action-history"
 import { usePointsStore } from "@/lib/points-store"
-import { applyLinkedEffects, commitItemEdit } from "@/lib/commit-item-edit"
+import { applyLinkedEffects, commitItemDraft, commitItemEdit, itemEditPatchBetween } from "@/lib/commit-item-edit"
 import type { Task } from "@/lib/types"
 
 vi.mock("@/lib/habit-tracking-sync", () => ({
@@ -143,5 +143,22 @@ describe("commitItemEdit", () => {
     const [line] = listItemActivity("a")
     expect(line.order).toBe("observed")
     expect(line.changes[0]).toMatchObject({ field: "notes", to: "from the grid" })
+  })
+
+  it("itemEditPatchBetween and commitItemDraft persist a draft without a parallel updateTask", () => {
+    const before = task()
+    taskRepository.add(before)
+    const after = { ...before, title: "Renamed", description: "Renamed", estimatedDuration: 40 }
+    expect(itemEditPatchBetween(before, after)).toMatchObject({
+      title: "Renamed",
+      description: "Renamed",
+      estimatedDuration: 40,
+    })
+    const saved = commitItemDraft(before, after, "item-detail")
+    expect(saved.estimatedDuration).toBe(40)
+    expect(taskRepository.getById("a")?.title).toBe("Renamed")
+    const [line] = listItemActivity("a")
+    expect(line.source).toBe("item-detail")
+    expect(line.changes.some((c) => c.field === "estimatedDuration" && c.label === "Estimated duration")).toBe(true)
   })
 })

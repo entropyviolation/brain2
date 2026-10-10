@@ -14,6 +14,7 @@ import {
   itemTitle,
   itemTitleOrUntitled,
   syncTitleFromDescription,
+  itemBody,
   pushTaskOnePeriod,
 } from "./item-utils"
 import type { Folder, ItemTypeDefinition, Task, List } from "@/lib/types"
@@ -85,32 +86,56 @@ describe("syncTitleFromDescription", () => {
     })
   })
 
-  it("keeps an existing title when there is no previous record to compare", () => {
+  it("mirrors description to title when there is no previous record", () => {
     const next = { title: "Draft", description: "Final" }
-    expect(syncTitleFromDescription(next)).toBe(next)
+    expect(syncTitleFromDescription(next)).toEqual({
+      title: "Draft",
+      description: "Draft",
+    })
   })
 
-  it("leaves a parked note's name alone when its body changes", () => {
-    // Title and description were never in lockstep here, so description is
-    // body text, not a name.
-    const previous = { title: "Weekend", description: "Weekend\nMilk" }
-    const next = { title: "Weekend", description: "Weekend\nMilk\nEggs" }
-    expect(syncTitleFromDescription(next, previous)).toBe(next)
+  it("mirrors description when title alone changes", () => {
+    const previous = { title: "Draft", description: "Draft" }
+    const next = { title: "Final", description: "Draft" }
+    expect(syncTitleFromDescription(next, previous)).toEqual({
+      title: "Final",
+      description: "Final",
+    })
   })
 
   it("lets an explicit title win when both fields change", () => {
     const previous = { title: "Draft", description: "Draft" }
     const next = { title: "Final", description: "Something else" }
-    expect(syncTitleFromDescription(next, previous)).toBe(next)
+    expect(syncTitleFromDescription(next, previous)).toEqual({
+      title: "Final",
+      description: "Final",
+    })
   })
 
-  it("never writes description", () => {
+  it("mirrors an empty description up to the title", () => {
     const next = { title: "Kept", description: "" }
-    expect(syncTitleFromDescription(next)).toBe(next)
+    expect(syncTitleFromDescription(next)).toEqual({
+      title: "Kept",
+      description: "Kept",
+    })
     expect(syncTitleFromDescription({ title: "", description: "" })).toEqual({
       title: "",
       description: "",
     })
+  })
+})
+
+describe("itemBody", () => {
+  it("prefers body", () => {
+    expect(itemBody({ title: "Milk", description: "Milk", body: "2 percent" })).toBe("2 percent")
+  })
+
+  it("falls back to drifted description for one release", () => {
+    expect(itemBody({ title: "Milk", description: "Milk\n2 percent" })).toBe("Milk\n2 percent")
+  })
+
+  it("returns empty when description only mirrors title", () => {
+    expect(itemBody({ title: "Milk", description: "Milk" })).toBe("")
   })
 })
 

@@ -136,6 +136,20 @@ describe("searchItems — tags and attributes", () => {
     expect(ids(searchItems("home", items))).toEqual(["ctx"])
     expect(ids(searchItems("tolkien", items))).toEqual(["attr"])
   })
+
+  it("matches parked-note prose in body, not as the title", () => {
+    const items = [
+      task({
+        id: "note",
+        title: "Milk",
+        description: "Milk",
+        body: "buy oat milk\ncall dentist",
+      }),
+    ]
+    expect(ids(searchItems("oat milk", items))).toEqual(["note"])
+    expect(ids(searchItems("dentist", items))).toEqual(["note"])
+    expect(searchItems("oat", items)[0]?.matchedOn).toEqual(["attribute"])
+  })
 })
 
 describe("searchItems — determinism & options", () => {

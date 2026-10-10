@@ -59,7 +59,7 @@ const PREF_ONLY_VAULTS: Record<string, string> = {
   "cogs-ingest-store": "trimmed event log; pendingByChat drains as clarifications are answered",
   "cogs-home-widgets": "overview tile order; reset is allowed to restore the default set",
   "cogs-home-weather": "one place object for the Home weather instrument",
-  "cogs-home-days-until": "one countdown date, optional time, label, and unit/decimal format for the Days Until tile",
+  "cogs-home-days-until": "countdown / count-up tiles: label, date, optional time, format, mode, optional Plan event link and all-day schedule",
   "cogs-sky-motion": "Moon chart view width and time rate; reset restores real time",
   "cogs-sun-times": "astronomy cache; a reset is allowed to empty it, and backup still keeps the history",
   "cogs-ui-names": "overlay mode string",

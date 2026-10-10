@@ -1,14 +1,13 @@
 /**
  * lib/module-list-import.ts — Project workspace module records into Module Lists
  *
- * Tidy (and Trip Itinerary) still write a shadow tree on `module.config.*`.
- * This module is the citizenship seam: every useful field becomes a real List
- * item under `{ModuleName} Lists`, nested the way Lists already knows how to
- * open (area/day sublists, parentTaskId children). Re-import is idempotent —
- * stable ids, in-place updates, user notes/extra lists/tags kept.
- *
- * Tidy remains the write source for mapped fields until two-way sync lands.
- * See `components/Lists/MODULE_LISTS.md`.
+ * Wave 10: Tidy / Trip write records to Items first (`house-cleaning-items.ts`,
+ * `trip-itinerary-items.ts`) and dual-write `module.config.*` for one release as
+ * a read shim. This module remains the Lists citizenship seam (and the helper
+ * those writers call): every useful field becomes a real List item under
+ * `{ModuleName} Lists`. Re-import is idempotent — stable ids, in-place updates,
+ * user notes/extra lists/tags kept. Full two-way Lists→Tidy edit sync is still
+ * deferred. See `components/Lists/MODULE_LISTS.md`.
  */
 import type { List, Task } from "@/lib/types"
 import type { ModuleInstance } from "@/lib/modules-store"

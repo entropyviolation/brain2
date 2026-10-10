@@ -4,14 +4,17 @@
  * `commitItemEdit` validates through `taskRepository`, persists with that
  * repository's existing `updateTask` path, and lets that path emit
  * `dispatchItemMutation` with the same open patch. It then appends one line
- * to `lib/item-activity.ts`.
+ * to `lib/item-activity.ts`. ItemDetail save uses `commitItemDraft` (patch
+ * from two snapshots) instead of `recordItemWrite` + `updateTask`.
  *
  * It does not call `applyLinkedEffects`. A rename stays a rename: habit sync,
  * sleep, work-session stop, points, and undo run only when a caller asks for
- * them. Existing `useTaskStore` call sites stay where they are.
+ * them. Ingest finish sites call `applyLinkedEffects`; create stays on
+ * `useTaskStore`.
  */
 import { taskRepository } from "@/lib/data/task-repository"
 import {
+  activityFieldLabel,
   appendItemActivity,
   type ItemActivityChange,
   type ItemActivityOrder,
@@ -19,6 +22,8 @@ import {
 import { syncTrackedHabits } from "@/lib/habit-tracking-sync"
 import { syncSleepNight } from "@/lib/sleep-sync"
 import { stopWorkingOnOperation } from "@/lib/operation-work-session"
+import { itemTitle } from "@/lib/item-utils"
+import { serializeSnapshot } from "@/lib/unsaved-changes"
 import type { AttributeValue, ItemRecord, Task } from "@/lib/types"
 
 export type { ItemActivityOrder }
@@ -142,7 +147,12 @@ function displayValue(value: unknown): string {
 }
 
 function changeFor(field: string, previous: unknown, next: unknown): ItemActivityChange {
-  return { field, label: field, from: displayValue(previous), to: displayValue(next) }
+  return {
+    field,
+    label: activityFieldLabel(field),
+    from: displayValue(previous),
+    to: displayValue(next),
+  }
 }
 
 /** Place known fields on the item. Anything else joins `attributes`. */
@@ -181,6 +191,7 @@ export function applyItemEditPatch(item: Task, patch: ItemEditPatch): Task {
 
 function activityChanges(before: Task, patch: ItemEditPatch): ItemActivityChange[] {
   const changes: ItemActivityChange[] = []
+  let sawName = false
   for (const [key, value] of Object.entries(patch)) {
     if (key === "id") continue
     if (key === "attributes") {
@@ -188,6 +199,18 @@ function activityChanges(before: Task, patch: ItemEditPatch): ItemActivityChange
       for (const [attrKey, attrValue] of Object.entries(value)) {
         changes.push(changeFor(attrKey, before.attributes?.[attrKey], attrValue))
       }
+      continue
+    }
+    if (key === "title" || key === "description") {
+      if (sawName) continue
+      sawName = true
+      const next =
+        typeof patch.title === "string"
+          ? patch.title
+          : typeof patch.description === "string"
+            ? patch.description
+            : value
+      changes.push(changeFor("title", itemTitle(before), next))
       continue
     }
     if (isTaskField(key)) {
@@ -217,6 +240,24 @@ function summarize(source: string, changes: ItemActivityChange[], order?: ItemAc
  * A second dispatch would run workflows twice, so this function does not emit
  * another event.
  */
+/**
+ * Patch of keys that differ between two item snapshots. Used by ItemDetail
+ * save so the draft becomes one `commitItemEdit` instead of
+ * `recordItemWrite` + `updateTask`.
+ */
+export function itemEditPatchBetween(before: Task, after: Task): ItemEditPatch {
+  const patch: ItemEditPatch = {}
+  const beforeRec = before as unknown as Record<string, unknown>
+  const afterRec = after as unknown as Record<string, unknown>
+  const keys = new Set([...Object.keys(beforeRec), ...Object.keys(afterRec)])
+  for (const key of keys) {
+    if (key === "id") continue
+    if (serializeSnapshot(beforeRec[key]) === serializeSnapshot(afterRec[key])) continue
+    patch[key] = afterRec[key]
+  }
+  return patch
+}
+
 export function commitItemEdit(
   itemId: string,
   patch: ItemEditPatch,
@@ -241,6 +282,16 @@ export function commitItemEdit(
   })
 
   return taskRepository.getById(itemId) ?? merged
+}
+
+/**
+ * Persist a full draft through `commitItemEdit`. No-op when nothing changed.
+ * Returns the stored item (or `after` when the patch was empty).
+ */
+export function commitItemDraft(before: Task, after: Task, source: string, order?: ItemActivityOrder): ItemRecord {
+  const patch = itemEditPatchBetween(before, after)
+  if (Object.keys(patch).length === 0) return after
+  return commitItemEdit(after.id, patch, source, order)
 }
 
 export type LinkedEffectsRequest =

@@ -127,8 +127,8 @@ describe("noteToListItem", () => {
     const item = noteToListItem(note(), list)
     expect(item.lists).toEqual(["g"])
     expect(item.title).toBe("Milk")
-    expect(item.description).toContain("2 percent")
-    expect(item.body).toBe("2 percent")
+    expect(item.description).toBe("Milk")
+    expect(item.body).toContain("2 percent")
     expect(item.attributes?.appleNoteId).toBe("n1")
     expect(item.attributes?.source).toBe("apple-notes")
     expect(item.captureOrigin).toEqual({ kind: "notes", detail: "Milk · Groceries" })
@@ -178,12 +178,13 @@ describe("noteToBulkAddDraft / parseBulkAddText", () => {
 })
 
 describe("noteToParkedItem", () => {
-  it("stores the full note text, not just the title", () => {
+  it("stores the full note text in body; description mirrors title", () => {
     const list: List = { id: "park", name: "notes to ingest", color: "#111", createdAt: new Date() }
     const item = noteToParkedItem(note({ body: "buy oat milk\ncall dentist" }), list)
-    expect(item.description).toContain("buy oat milk")
-    expect(item.description).toContain("call dentist")
+    expect(item.title).toBe("Milk")
+    expect(item.description).toBe("Milk")
     expect(item.body).toContain("buy oat milk")
+    expect(item.body).toContain("call dentist")
     expect(item.attributes?.ingestStatus).toBe("parked")
   })
 })

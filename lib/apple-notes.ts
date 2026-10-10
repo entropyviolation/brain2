@@ -429,17 +429,17 @@ export function newListFromName(name: string, colorIndex = 0): List {
   }
 }
 
-/** Build a parked note for later ingest — full text in description + body, not title-only. */
+/** Build a parked note for later ingest — full text in `body`; `description` mirrors `title`. */
 export function noteToParkedItem(note: AppleNote, list: List, source = APPLE_NOTES_SOURCE): Task {
   const title = noteDisplayTitle(note)
   const full = noteFullText(note)
   const createdAt = note.createdAt ? new Date(note.createdAt) : new Date()
-  const base = withCategoryDefaults(createListItem(full, [list.id]), list)
+  const base = withCategoryDefaults(createListItem(title, [list.id]), list)
   return {
     ...base,
     title,
-    description: full,
-    body: stripNoteHtml(note.body) || full,
+    description: title,
+    body: full,
     createdAt: Number.isNaN(createdAt.getTime()) ? base.createdAt : createdAt,
     tags: note.folder && !isGenericNotesFolder(note.folder) ? [note.folder] : [],
     attributes: {

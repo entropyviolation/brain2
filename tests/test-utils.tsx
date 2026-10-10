@@ -27,6 +27,10 @@ import { usePenColorSessionStore } from "@/lib/pen-color-session-store"
 import { useMetricsStore } from "@/lib/metrics-store"
 import { useRegretStore } from "@/lib/regret-store"
 import { useHomeWidgetsStore } from "@/lib/home-widgets-store"
+import {
+  DEFAULT_HOME_DAYS_UNTIL_ITEM,
+  useHomeDaysUntilStore,
+} from "@/lib/home-days-until-store"
 import { DEFAULT_SKY_MOTION, useSkyMotionStore } from "@/lib/sky-motion-store"
 import { useHomeWeatherStore } from "@/lib/home-weather-store"
 import { useUiNamesStore } from "@/lib/ui-names-store"
@@ -165,6 +169,7 @@ export function resetAllStores() {
   })
   useBabyAnimalsStore.getState().resetGallery()
   useHomeWidgetsStore.getState().resetWidgets()
+  useHomeDaysUntilStore.setState({ items: [{ ...DEFAULT_HOME_DAYS_UNTIL_ITEM }] })
   useSkyMotionStore.setState({ ...DEFAULT_SKY_MOTION })
   useHomeWeatherStore.getState().resetPlace()
   useUiNamesStore.setState({ mode: "off" })

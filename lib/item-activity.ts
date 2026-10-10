@@ -70,6 +70,11 @@ const FIELD_LABELS: Record<string, string> = {
   todoMarks: "Required / prioritized",
 }
 
+/** Human label for a History / activity field key. */
+export function activityFieldLabel(field: string): string {
+  return FIELD_LABELS[field] ?? field
+}
+
 const WATCHED_FIELDS = Object.keys(FIELD_LABELS)
 
 function empty(): Record<string, ItemActivityEntry[]> {

@@ -213,7 +213,10 @@ export interface ModuleConfig {
   placesCategoryId?: string
   /** filmrecs: Films list id for Film DNA Lab. */
   filmsCategoryId?: string
-  /** Self-contained printable itinerary (days/schedule/flights) — not list-backed. */
+  /**
+   * Trip itinerary day shell + schedule. Wave 10: schedule rows write to Items;
+   * this blob is dual-written for one release (day meta + read shim).
+   */
   tripItinerary?: TripItineraryData
   /** Activities: custom filter list names (restaurants, favorites, …). */
   activityListNames?: string[]
@@ -228,7 +231,10 @@ export interface ModuleConfig {
    * Operations (Itinerary / Activities tabs) rather than the Modules list.
    */
   operationId?: string
-  /** Tidy house-cleaning mini-app state (not list-backed). */
+  /**
+   * Tidy mini-app state. Wave 10: chores/needed write to Items; this blob is
+   * dual-written for one release (session chrome + read shim).
+   */
   houseCleaning?: HouseCleaningState
 }
 

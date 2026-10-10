@@ -20,8 +20,9 @@
  * ended, and leaves those schedule fields in place. v17 moves a schedule date
  * that was stored as UTC midnight onto local midnight of that same UTC date
  * (`scheduledDate`, `deadline`, `mustBeDoneAfter`, `mustBeDoneBefore` only).
- * Every other field, including `createdAt`, stays. Pure functions so they're
- * unit-testable.
+ * Every other field, including `createdAt`, stays. v18 moves parked-note prose
+ * out of `description` into `body` and mirrors `description` to `title`, so
+ * `description` is only a title mirror. Pure functions so they're unit-testable.
  *
  * No migration here removes a field. Everything is a backfill, because the data
  * is user-owned and a vault or a backup may be older than any assumption made
@@ -79,13 +80,8 @@ export function migrateModulePlatform<T extends Record<string, unknown>>(state: 
  * in and **does nothing else**.
  *
  * In particular it does *not* reconcile records where the two have drifted
- * apart, tempting as that is. `description` turns out to have a second job:
- * `noteToParkedItem` (`lib/apple-notes.ts`) deliberately stores a short `title`
- * and the note's full text in `description`, because `lib/search.ts` indexes
- * `description` and does not index `body`. Overwriting either side there would
- * silently make parked notes unfindable or give them a multi-line name. Until
- * search reads `body`, "`description` is only a mirror of `title`" is not true
- * of every record, and a migration must not pretend otherwise.
+ * apart. That reconciliation is v18 (`migrateParkedNoteBodyToField`), after
+ * search indexes `body`.
  *
  * Nothing here is ever cleared or overwritten — only absent values are filled.
  */
@@ -344,6 +340,84 @@ export function migrateUtcMidnightScheduleDates<
       }
     }
     return next ?? raw
+  })
+  if (!changed) return state
+  return { ...state, tasks }
+}
+
+const PARKED_NOTE_SOURCES = new Set(["apple-notes", "iphone-notes"])
+
+function isParkedNoteRecord(task: Record<string, unknown>): boolean {
+  const attrs = task.attributes
+  if (!attrs || typeof attrs !== "object") return false
+  const a = attrs as Record<string, unknown>
+  if (a.ingestStatus === "parked") return true
+  const source = typeof a.source === "string" ? a.source : ""
+  return PARKED_NOTE_SOURCES.has(source)
+}
+
+/**
+ * v18 — parked-note prose lives in `body`; `description` mirrors `title`.
+ *
+ * Pre-v18 `noteToParkedItem` stored a short `title` and the full note in
+ * `description` so search (which indexed `description`, not `body`) could find
+ * it. Search now indexes `body`. This step:
+ *   1. Copies drifted `description` text into `body` when `body` is empty or
+ *      clearly shorter (never deletes an existing longer body).
+ *   2. Sets `description` to `title` (or to description when title was empty).
+ *
+ * Ordinary items whose description already matched title are untouched.
+ * Drifted non-note pairs also get `description := title` after any unique
+ * description prose is preserved into an empty `body`. Nothing is deleted.
+ */
+export function migrateParkedNoteBodyToField<
+  T extends { tasks?: unknown[] } & Record<string, unknown>,
+>(state: T): T {
+  if (!state || typeof state !== "object" || !Array.isArray(state.tasks)) return state
+  let changed = false
+  const tasks = state.tasks.map((raw) => {
+    if (!raw || typeof raw !== "object") return raw
+    const task = raw as Record<string, unknown>
+    const title = typeof task.title === "string" ? task.title.trim() : ""
+    const description = typeof task.description === "string" ? task.description.trim() : ""
+    const body = typeof task.body === "string" ? task.body.trim() : ""
+
+    if (!description && !title) return raw
+    if (description && title && description === title && body) return raw
+    if (description && title && description === title && !body && !isParkedNoteRecord(task)) {
+      return raw
+    }
+
+    let nextBody = body
+    let nextTitle = title
+    let nextDescription = description
+
+    if (description && description !== title) {
+      if (!nextBody) {
+        nextBody = description
+      } else if (
+        description.length > nextBody.length &&
+        !nextBody.includes(description.slice(0, Math.min(40, description.length)))
+      ) {
+        nextBody = description
+      }
+      if (!nextTitle) {
+        nextTitle = description.split("\n").map((l) => l.trim()).find(Boolean) || description
+      }
+      nextDescription = nextTitle
+    } else if (!title && description) {
+      nextTitle = description
+      nextDescription = description
+    }
+
+    if (nextTitle === title && nextDescription === description && nextBody === body) return raw
+    changed = true
+    return {
+      ...task,
+      ...(nextTitle ? { title: nextTitle } : {}),
+      description: nextDescription,
+      ...(nextBody ? { body: nextBody } : body ? { body } : {}),
+    }
   })
   if (!changed) return state
   return { ...state, tasks }

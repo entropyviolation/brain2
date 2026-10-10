@@ -2,8 +2,8 @@
  * lib/append-log.ts — Timestamped append-only writing log
  *
  * One kind of record: an immutable entry stamped with the writing time
- * (`9/20 9pm - …`). Used by Plan (day/week/month) and Tracking day notes;
- * other dated notes can join later. List / Bulk / Latest is the shared view.
+ * (`9/20 9pm - …`). Used by Plan (day/week/month/season). Tracking summaries are
+ * prose in `lib/day-notes-persist.ts`, not this log. Other dated notes can join later.
  *
  * A stored value is either a versioned JSON envelope or a legacy plaintext
  * blob (migrated on read as one "earlier" entry).
