@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { GEM_PATHS } from "@/lib/gems-manifest"
@@ -6,8 +6,11 @@ import { defaultHabitGem } from "@/lib/habit-gems"
 import { useHabitsStore } from "@/lib/habits-store"
 import { localDayKey, useReviewsStore } from "@/lib/reviews-store"
 import { useTaskStore } from "@/lib/task-store"
+import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { TaskType } from "@/lib/types"
-import { TaskForm } from "./daily-task-form"
+import { resetAllStores } from "@/tests/test-utils"
+import { TagSettingsHost } from "@/components/Home/Tracking/tag-settings-host"
+import { resolveHabitSectionNavActive, TaskForm } from "./daily-task-form"
 
 describe("TaskForm", () => {
   afterEach(() => {
@@ -65,6 +68,11 @@ describe("TaskForm", () => {
     expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ name: "Language B", gem: before, type: TaskType.GOAL }))
   })
 
+  async function skipPriorityReason(user: ReturnType<typeof userEvent.setup>) {
+    const dialog = screen.getByRole("dialog", { name: "Why prioritize this?" })
+    await user.click(within(dialog).getByRole("button", { name: "Skip" }))
+  }
+
   it("a second press logs Priority refreshed", async () => {
     const user = userEvent.setup()
     const onSubmit = vi.fn()
@@ -72,7 +80,9 @@ describe("TaskForm", () => {
 
     await user.type(screen.getByLabelText("Habit Name"), "Water")
     await user.click(screen.getByRole("button", { name: "Prioritize habit" }))
+    await skipPriorityReason(user)
     await user.click(screen.getByRole("button", { name: "Prioritize habit" }))
+    await skipPriorityReason(user)
     expect(screen.getByText(/Priority refreshed/)).toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: "Add Habit" }))
 
@@ -80,6 +90,196 @@ describe("TaskForm", () => {
     expect(log[0]).toMatch(/^Priority set /)
     expect(log[1]).toMatch(/^Priority refreshed /)
     expect(log).toHaveLength(2)
+  })
+
+  it("puts Priority before Name in the document", () => {
+    render(
+      <TaskForm
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+        initialTask={{ id: "stretch", name: "Stretch", type: TaskType.BOOLEAN, rewardValue: 10, frequency: "daily" }}
+      />,
+    )
+    const priority = document.getElementById("habit95-sec-priority")
+    const name = document.getElementById("habit95-sec-name")
+    expect(priority).toBeTruthy()
+    expect(name).toBeTruthy()
+    expect(priority!.compareDocumentPosition(name!) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    )
+    const neglect = document.querySelector(".habit95-sec-neglect")
+    if (neglect) {
+      expect(neglect.compareDocumentPosition(priority!) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+        Node.DOCUMENT_POSITION_FOLLOWING,
+      )
+    }
+  })
+
+  it("jumps to a section and omits keys for sections that are not mounted", async () => {
+    const user = userEvent.setup()
+    render(<TaskForm onSubmit={vi.fn()} onCancel={vi.fn()} />)
+    const nav = screen.getByRole("navigation", { name: "Habit sections" })
+    for (const label of ["Priority", "Name", "Frequency", "Type", "Gem", "Sources", "Lift", "Connections", "Points", "Time", "Wording"]) {
+      expect(within(nav).getByRole("button", { name: label })).toBeInTheDocument()
+    }
+    expect(within(nav).queryByRole("button", { name: "Target" })).not.toBeInTheDocument()
+    expect(within(nav).queryByRole("button", { name: "Climb" })).not.toBeInTheDocument()
+    expect(within(nav).queryByRole("button", { name: "Auto-fill" })).not.toBeInTheDocument()
+    expect(within(nav).queryByRole("button", { name: "BIM Keywords" })).not.toBeInTheDocument()
+
+    const name = document.getElementById("habit95-sec-name")
+    const fields = document.querySelector(".habit95-fields") as HTMLElement
+    expect(name).toBeTruthy()
+    expect(fields).toBeTruthy()
+    const rect = (top: number): DOMRect =>
+      ({
+        top,
+        bottom: top + 40,
+        left: 0,
+        right: 100,
+        width: 100,
+        height: 40,
+        x: 0,
+        y: top,
+        toJSON: () => ({}),
+      }) as DOMRect
+    vi.spyOn(name!, "getBoundingClientRect").mockReturnValue(rect(420))
+    vi.spyOn(fields, "getBoundingClientRect").mockReturnValue(rect(120))
+    const intoView = vi.fn()
+    name!.scrollIntoView = intoView
+    fields.scrollTop = 10
+    await user.click(within(nav).getByRole("button", { name: "Name" }))
+    expect(intoView).not.toHaveBeenCalled()
+    expect(fields.scrollTop).toBe(10 + (420 - 120) - 8)
+    expect(name).toHaveFocus()
+    expect(within(nav).getByRole("button", { name: "Name" })).toHaveAttribute("aria-current", "true")
+
+    await user.click(within(nav).getByRole("button", { name: "Time" }))
+    expect(within(nav).getByRole("button", { name: "Time" })).toHaveAttribute("aria-current", "true")
+    await user.click(within(nav).getByRole("button", { name: "Wording" }))
+    expect(within(nav).getByRole("button", { name: "Wording" })).toHaveAttribute("aria-current", "true")
+
+    await user.click(screen.getByRole("radio", { name: /Climb/ }))
+    expect(within(nav).getByRole("button", { name: "Climb" })).toBeInTheDocument()
+    expect(within(nav).queryByRole("button", { name: "Target" })).not.toBeInTheDocument()
+    expect(within(nav).queryByRole("button", { name: "Connections" })).not.toBeInTheDocument()
+  })
+
+  it("picks the last intersecting section when the fields well is scrolled to the end", () => {
+    expect(
+      resolveHabitSectionNavActive(400, 500, 100, 0, [
+        { id: "habit95-sec-points", top: 10 },
+        { id: "habit95-sec-time", top: 40 },
+        { id: "habit95-sec-wording", top: 80 },
+      ]),
+    ).toBe("habit95-sec-wording")
+    expect(
+      resolveHabitSectionNavActive(50, 500, 100, 0, [
+        { id: "habit95-sec-points", top: 10 },
+        { id: "habit95-sec-time", top: 40 },
+        { id: "habit95-sec-wording", top: 80 },
+      ]),
+    ).toBe("habit95-sec-points")
+  })
+
+  it("omits lift, connections, and target keys on a weekly text habit", () => {
+    render(
+      <TaskForm
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+        initialTask={{
+          id: "notes",
+          name: "Notes",
+          type: TaskType.TEXT,
+          rewardValue: 10,
+          frequency: "weekly",
+          completionSources: ["manual"],
+        }}
+      />,
+    )
+    const nav = screen.getByRole("navigation", { name: "Habit sections" })
+    expect(within(nav).queryByRole("button", { name: "Lift" })).not.toBeInTheDocument()
+    expect(within(nav).queryByRole("button", { name: "Connections" })).not.toBeInTheDocument()
+    expect(within(nav).queryByRole("button", { name: "Target" })).not.toBeInTheDocument()
+    expect(within(nav).queryByRole("button", { name: "Climb" })).not.toBeInTheDocument()
+    expect(within(nav).queryByRole("button", { name: "Auto-fill" })).not.toBeInTheDocument()
+    expect(within(nav).queryByRole("button", { name: "BIM Keywords" })).not.toBeInTheDocument()
+    expect(document.getElementById("habit95-sec-lift")).not.toBeInTheDocument()
+  })
+
+  it("prioritize then skip stores no reasoning", async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    render(<TaskForm onSubmit={onSubmit} onCancel={vi.fn()} />)
+    await user.type(screen.getByLabelText("Habit Name"), "Water")
+    await user.click(screen.getByRole("button", { name: "Prioritize habit" }))
+    expect(screen.getByText(/Priority set /)).toBeInTheDocument()
+    expect(screen.getByRole("dialog", { name: "Why prioritize this?" })).toBeInTheDocument()
+    await skipPriorityReason(user)
+    expect(screen.queryByRole("dialog", { name: "Why prioritize this?" })).not.toBeInTheDocument()
+    expect(screen.queryByText("the week slipped")).not.toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: "Add Habit" }))
+    const events = onSubmit.mock.calls[0][0].priorityEvents as { reasoning?: string }[]
+    expect(events.length).toBeGreaterThan(0)
+    expect(events[events.length - 1]).not.toHaveProperty("reasoning")
+  })
+
+  it("prioritize then save stores the why on the last event and under the log line", async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    render(<TaskForm onSubmit={onSubmit} onCancel={vi.fn()} />)
+    await user.type(screen.getByLabelText("Habit Name"), "Water")
+    await user.click(screen.getByRole("button", { name: "Prioritize habit" }))
+    const note = screen.getByRole("textbox", { name: "Note" })
+    await user.type(note, "the week slipped")
+    await user.click(screen.getByRole("button", { name: "Save" }))
+    expect(screen.queryByRole("dialog", { name: "Why prioritize this?" })).not.toBeInTheDocument()
+    const log = screen.getByText(/Priority set /).closest("li")
+    expect(log).toHaveTextContent("the week slipped")
+    await user.click(screen.getByRole("button", { name: "Add Habit" }))
+    const events = onSubmit.mock.calls[0][0].priorityEvents as { reasoning?: string }[]
+    expect(events[events.length - 1]?.reasoning).toBe("the week slipped")
+  })
+
+  it("an empty save and the close key leave the press without reasoning", async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    const { unmount } = render(<TaskForm onSubmit={onSubmit} onCancel={vi.fn()} />)
+    await user.type(screen.getByLabelText("Habit Name"), "Water")
+    await user.click(screen.getByRole("button", { name: "Prioritize habit" }))
+    await user.type(screen.getByRole("textbox", { name: "Note" }), "   ")
+    await user.click(screen.getByRole("button", { name: "Save" }))
+    await user.click(screen.getByRole("button", { name: "Add Habit" }))
+    const blank = onSubmit.mock.calls[0][0].priorityEvents as { reasoning?: string }[]
+    expect(blank[blank.length - 1]).not.toHaveProperty("reasoning")
+
+    unmount()
+    const onSubmitClose = vi.fn()
+    render(<TaskForm onSubmit={onSubmitClose} onCancel={vi.fn()} />)
+    await user.type(screen.getByLabelText("Habit Name"), "Water")
+    await user.click(screen.getByRole("button", { name: "Prioritize habit" }))
+    await user.click(screen.getByRole("button", { name: "Close" }))
+    expect(screen.queryByRole("dialog", { name: "Why prioritize this?" })).not.toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: "Add Habit" }))
+    const closed = onSubmitClose.mock.calls[0][0].priorityEvents as { reasoning?: string }[]
+    expect(closed[closed.length - 1]).not.toHaveProperty("reasoning")
+  })
+
+  it("morning ritual and permanent priority do not ask why", async () => {
+    const user = userEvent.setup()
+    render(
+      <TaskForm
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+        initialTask={{ id: "water", name: "Drink water", type: TaskType.BOOLEAN, rewardValue: 10, frequency: "daily" }}
+      />,
+    )
+    await user.click(screen.getByLabelText("Morning ritual"))
+    expect(screen.queryByRole("dialog", { name: "Why prioritize this?" })).not.toBeInTheDocument()
+    expect(screen.getByText(/Selected from day ritual/)).toBeInTheDocument()
+    await user.click(screen.getByLabelText("Permanent priority"))
+    expect(screen.queryByRole("dialog", { name: "Why prioritize this?" })).not.toBeInTheDocument()
+    expect(screen.getByText(/Permanent priority set/)).toBeInTheDocument()
   })
 
   it("a ritual toggle logs Selected from day ritual", async () => {
@@ -213,15 +413,22 @@ describe("TaskForm", () => {
 
     await user.click(screen.getByRole("radio", { name: /Goal/ }))
     expect(screen.queryByText("Auto-fill from Tracking")).not.toBeInTheDocument()
+    expect(screen.queryByText(/Counts Done = Tags/)).not.toBeInTheDocument()
 
     await user.click(screen.getByRole("button", { name: "Add source" }))
     await user.click(screen.getByRole("button", { name: "Tracking tags" }))
     expect(screen.getByText("Auto-fill from Tracking")).toBeInTheDocument()
     expect(screen.getByText(/counts toward this habit that week/)).toBeInTheDocument()
+    expect(screen.getByText(/Minutes painted with the tags chosen below/)).toBeInTheDocument()
+    expect(screen.getByText("Tags and options are in Auto-fill from Tracking below.")).toBeInTheDocument()
+    expect(screen.getByText(/Counts Done = Tags/)).toBeInTheDocument()
+    expect(screen.getByText(/Fills minutes = Tracking tags/)).toBeInTheDocument()
+    expect(screen.getByText("Same catalog, separate picks.")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Create tag" })).toBeInTheDocument()
 
     await user.click(screen.getByRole("button", { name: "Remove Tracking tags" }))
     expect(screen.queryByText("Auto-fill from Tracking")).not.toBeInTheDocument()
+    expect(screen.queryByText(/Counts Done = Tags/)).not.toBeInTheDocument()
   })
 
   it("keeps saved tracking tags when that section is hidden and shown again", async () => {
@@ -458,14 +665,24 @@ describe("TaskForm", () => {
     )
     expect(screen.queryByLabelText("Tagged task tag")).not.toBeInTheDocument()
     expect(screen.queryByText("Auto-fill from Tracking")).not.toBeInTheDocument()
+    expect(screen.queryByText(/Counts Done = Tags/)).not.toBeInTheDocument()
 
     await user.click(screen.getByRole("button", { name: "Add source" }))
     await user.click(screen.getByRole("button", { name: "Tags", exact: true }))
     expect(screen.getByLabelText("Tagged task tag")).toBeInTheDocument()
     expect(screen.queryByText("Auto-fill from Tracking")).not.toBeInTheDocument()
+    expect(screen.getByText(/Counts Done = Tags/)).toBeInTheDocument()
+    expect(screen.getByText(/Fills minutes = Tracking tags/)).toBeInTheDocument()
+    expect(screen.getByText("Same catalog, separate picks.")).toBeInTheDocument()
+    expect(screen.getByText("One tag name. Goal amount is Target → Amount.")).toBeInTheDocument()
+    expect(
+      screen.getByText("May be a name not in the catalog; chips pick from the catalog. Same string either way."),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/Counts Done:/)).not.toBeInTheDocument()
 
     await user.click(screen.getByRole("button", { name: "Remove Tags", exact: true }))
     expect(screen.queryByLabelText("Tagged task tag")).not.toBeInTheDocument()
+    expect(screen.queryByText(/Counts Done = Tags/)).not.toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: "Add source" }))
     await user.click(screen.getByRole("button", { name: "Tags", exact: true }))
 
@@ -570,7 +787,7 @@ describe("TaskForm", () => {
       await user.click(screen.getByRole("button", { name: "Add source" }))
       await user.click(screen.getByRole("button", { name: "BIM Keywords" }))
       expect(document.querySelectorAll(".habit95-pipeline-row").length).toBe(before + 1)
-      expect(screen.getByText("BIM Keywords")).toBeInTheDocument()
+      expect(screen.getByRole("group", { name: "BIM Keywords" })).toBeInTheDocument()
       expect(screen.getByRole("button", { name: "How the count is used" })).toHaveTextContent("True if received")
 
       await user.click(screen.getByRole("button", { name: "Update Habit" }))
@@ -874,5 +1091,196 @@ describe("TaskForm", () => {
       expect.objectContaining({ sourceId: "daily", outputId: "dailyCompletionAverage" }),
     )
     expect(submitted.completionSources).toEqual(["manual"])
+  })
+
+  it("keeps one catalog across the count row and auto-fill, and keeps both selections", async () => {
+    resetAllStores()
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    try {
+      render(
+        <>
+          <TagSettingsHost />
+          <TaskForm
+            onSubmit={onSubmit}
+            onCancel={vi.fn()}
+            initialTask={{
+              id: "study",
+              name: "Study",
+              type: TaskType.GOAL,
+              goal: 3,
+              unit: "times",
+              rewardValue: 10,
+              frequency: "daily",
+              taggedTaskTag: "studying",
+              trackingLink: { tagIds: ["tag-work"], unit: "minutes", mode: "add", enabled: true },
+              completionSources: ["manual", "taggedTasks", "tags"],
+            }}
+          />
+        </>,
+      )
+
+      expect(screen.getByText(/Done tasks and tracked activities with this tag each count as 1/)).toBeInTheDocument()
+      expect(screen.getByText("Auto-fill from Tracking")).toBeInTheDocument()
+      expect(screen.getByText(/does not change which single tag counts as a done task/)).toBeInTheDocument()
+      expect(screen.getByText(/Counts Done = Tags/)).toBeInTheDocument()
+      expect(screen.getByText(/Fills minutes = Tracking tags/)).toBeInTheDocument()
+      expect(screen.getByText("Same catalog, separate picks.")).toBeInTheDocument()
+      expect(screen.getByText("Tags and options are in Auto-fill from Tracking below.")).toBeInTheDocument()
+      expect(screen.getByText("One tag name. Goal amount is Target → Amount.")).toBeInTheDocument()
+      expect(
+        screen.getByText("May be a name not in the catalog; chips pick from the catalog. Same string either way."),
+      ).toBeInTheDocument()
+      expect(screen.getByText(/Counts Done: studying · Fills minutes: Work/)).toBeInTheDocument()
+      expect(screen.getByLabelText("Count tracked time as")).toHaveValue("minutes")
+      expect(screen.getByLabelText("Combine with manual entries")).toHaveValue("add")
+      expect(screen.getByText("Tracked time tops up what you log by hand.")).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: "Remove Tags", exact: true })).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: "Remove Tracking tags" })).toBeInTheDocument()
+      expect(screen.getByLabelText("Tagged task tag")).toHaveValue("studying")
+
+      const count = screen.getByRole("group", { name: "Tags, shared with Auto-fill from Tracking" })
+      const minutes = screen.getByRole("group", { name: "Tracking tags, shared with Tags" })
+      expect(within(minutes).getByRole("button", { name: "Work, minutes" })).toHaveAttribute("aria-pressed", "true")
+      expect(within(count).getByRole("button", { name: "Work", exact: true })).toHaveAttribute("aria-pressed", "false")
+      expect(within(minutes).getByRole("button", { name: "Work, minutes" }).textContent).toMatch(/minutes/)
+      expect(within(count).queryByText("counts")).not.toBeInTheDocument()
+
+      fireEvent.change(within(count).getByLabelText("New tag"), { target: { value: "Deep work" } })
+      await user.click(within(count).getByRole("button", { name: "Create tag" }))
+      expect(within(count).getByRole("button", { name: "Deep work, counts" })).toHaveAttribute("aria-pressed", "true")
+      expect(within(minutes).getByRole("button", { name: "Deep work", exact: true })).toHaveAttribute("aria-pressed", "false")
+      expect(screen.getByText(/Counts Done: deep work · Fills minutes: Work/)).toBeInTheDocument()
+
+      await user.click(within(count).getByRole("button", { name: "Edit tag Deep work" }))
+      await waitFor(() => {
+        expect(screen.getByLabelText("Tag name")).toHaveValue("Deep work")
+      })
+      fireEvent.change(screen.getByLabelText("Tag name"), { target: { value: "Focus" } })
+      fireEvent.change(screen.getByLabelText("Tag color"), { target: { value: "#112233" } })
+      await user.click(screen.getByRole("button", { name: "Save" }))
+      await waitFor(() => {
+        expect(useTimeTrackingStore.getState().tags.find((tag) => tag.name === "Focus")?.color).toBe("#112233")
+        expect(within(count).queryByRole("button", { name: /Deep work/ })).not.toBeInTheDocument()
+      })
+      // Tag settings writes the catalog; an unsaved form draft may not follow the name.
+      // Re-pick Focus on the count row so both catalogs still share that chip.
+      const focusOnCount = within(count).getByRole("button", { name: /^Focus/ })
+      if (focusOnCount.getAttribute("aria-pressed") !== "true") {
+        await user.click(focusOnCount)
+      }
+      expect(within(count).getByRole("button", { name: "Focus, counts" })).toHaveAttribute("aria-pressed", "true")
+      expect(within(minutes).getByRole("button", { name: "Focus", exact: true })).toHaveAttribute("aria-pressed", "false")
+      const focus = useTimeTrackingStore.getState().tags.find((tag) => tag.name === "Focus")
+      expect(within(minutes).getByRole("button", { name: "Focus", exact: true }).querySelector(".habit95-tag-dot")?.getAttribute("style")).toMatch(/17,\s*34,\s*51/)
+
+      await user.click(within(minutes).getByRole("button", { name: "Edit tag Focus" }))
+      await waitFor(() => {
+        expect(screen.getByLabelText("Tag color")).toBeInTheDocument()
+      })
+      fireEvent.change(screen.getByLabelText("Tag color"), { target: { value: "#abcdef" } })
+      await user.click(screen.getByRole("button", { name: "Save" }))
+      await waitFor(() => {
+        expect(useTimeTrackingStore.getState().tags.find((tag) => tag.id === focus?.id)?.color).toBe("#abcdef")
+      })
+      const countDot = within(count).getByRole("button", { name: "Focus, counts" }).querySelector(".habit95-tag-dot")?.getAttribute("style")
+      const minuteDot = within(minutes).getByRole("button", { name: "Focus", exact: true }).querySelector(".habit95-tag-dot")?.getAttribute("style")
+      expect(countDot).toBe(minuteDot)
+
+      await user.click(within(minutes).getByRole("button", { name: "Exercise", exact: true }))
+      expect(screen.getByLabelText("Tagged task tag")).toHaveValue("focus")
+      expect(screen.getByText(/Counts Done: focus · Fills minutes: Work, Exercise/)).toBeInTheDocument()
+      await user.click(screen.getByRole("button", { name: "Update Habit" }))
+      expect(onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          taggedTaskTag: "focus",
+          trackingLink: expect.objectContaining({
+            tagIds: ["tag-work", "tag-exercise"],
+            unit: "minutes",
+            mode: "add",
+            enabled: true,
+          }),
+        }),
+      )
+      expect(onSubmit.mock.calls[0][0].trackingLink.tagIds).not.toContain(focus?.id)
+    } finally {
+      resetAllStores()
+    }
+  })
+
+  it("keeps a free-text count name that is not in the catalog", async () => {
+    resetAllStores()
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    try {
+      render(
+        <TaskForm
+          onSubmit={onSubmit}
+          onCancel={vi.fn()}
+          initialTask={{
+            id: "cook-week",
+            name: "Cook",
+            type: TaskType.GOAL,
+            goal: 2,
+            unit: "times",
+            rewardValue: 10,
+            frequency: "weekly",
+            completionSources: ["manual", "taggedTasks"],
+          }}
+        />,
+      )
+      await user.type(screen.getByLabelText("Tagged task tag"), "picnic")
+      await user.click(screen.getByRole("button", { name: "Update Habit" }))
+      expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ taggedTaskTag: "picnic" }))
+      expect(useTimeTrackingStore.getState().tags.some((tag) => tag.name.toLowerCase() === "picnic")).toBe(false)
+    } finally {
+      resetAllStores()
+    }
+  })
+
+  it("loads an old count name and old minute ids without dropping either", async () => {
+    resetAllStores()
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    try {
+      render(
+        <TaskForm
+          onSubmit={onSubmit}
+          onCancel={vi.fn()}
+          initialTask={{
+            id: "cook-week",
+            name: "Cook",
+            type: TaskType.GOAL,
+            goal: 2,
+            rewardValue: 10,
+            frequency: "weekly",
+            taggedTaskTag: "cooking",
+            trackingLink: { tagIds: ["tag-cleaning"], unit: "hours", mode: "max", enabled: false },
+            completionSources: ["manual", "taggedTasks", "tags"],
+          }}
+        />,
+      )
+      expect(screen.getByLabelText("Tagged task tag")).toHaveValue("cooking")
+      const minutes = screen.getByRole("group", { name: "Tracking tags, shared with Tags" })
+      expect(within(minutes).getByRole("button", { name: "Cleaning, minutes" })).toHaveAttribute("aria-pressed", "true")
+      expect(screen.getByText(/Counts Done: cooking · Fills minutes: Cleaning/)).toBeInTheDocument()
+      expect(screen.getByLabelText("Count tracked time as")).toHaveValue("hours")
+      expect(screen.getByLabelText("Combine with manual entries")).toHaveValue("max")
+      expect(screen.getByRole("checkbox", { name: "Auto-fill is on" })).not.toBeChecked()
+      await user.click(screen.getByRole("button", { name: "Update Habit" }))
+      expect(onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          taggedTaskTag: "cooking",
+          trackingLink: expect.objectContaining({
+            tagIds: ["tag-cleaning"],
+            unit: "hours",
+            mode: "max",
+            enabled: false,
+          }),
+        }),
+      )
+    } finally {
+      resetAllStores()
+    }
   })
 })

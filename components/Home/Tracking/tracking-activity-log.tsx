@@ -40,6 +40,7 @@ import {
 import { penTotals, tagTotals as tagTotalsOf, totalsFor } from "@/lib/tracking-summary"
 import { EntryDialog } from "@/components/Home/Tracking/entry-dialog"
 import { openPenSettings } from "@/components/Home/Tracking/open-pen-settings"
+import { CatalogTagLabel } from "@/components/Home/Tracking/catalog-tag-chip"
 import { LogActivityDialog } from "@/components/Home/Tracking/log-activity-dialog"
 import { ScreenTimeEmptyHint } from "@/components/Home/Tracking/screentime-empty-hint"
 import { TrackingPeriodNav } from "@/components/Home/Tracking/tracking-period-nav"
@@ -374,11 +375,15 @@ export function TrackingActivityLog({ currentDate, setCurrentDate, lockDate = fa
                       {entry.project && <span>{entry.project}</span>}
                       {entry.notes && <span className="truncate">{entry.notes}</span>}
                       {entryTags.length > 0 && (
-                        <span>
+                        <span className="trk-log-tags">
                           counts as{" "}
-                          {entryTags
-                            .map((t) => (t.blockOnly ? `${t.name} (this block)` : t.name))
-                            .join(", ")}
+                          {entryTags.map((t) => (
+                            <CatalogTagLabel
+                              key={t.id}
+                              tag={t}
+                              suffix={t.blockOnly ? "(this block)" : undefined}
+                            />
+                          ))}
                         </span>
                       )}
                       {overlaps.map((o, i) => (

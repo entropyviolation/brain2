@@ -23,7 +23,7 @@ import { ColorSwatch } from "@/components/ui/color-swatch"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Check, Plus, Trash2 } from "lucide-react"
+import { Plus, Trash2 } from "lucide-react"
 import { useTimeTrackingStore, type PenActionFormat, type TrackPen } from "@/lib/time-tracking-store"
 import { validParents } from "@/lib/pen-tree"
 import { useHabitsStore } from "@/lib/habits-store"
@@ -37,6 +37,8 @@ import { usePenActionSync } from "@/lib/pen-action-sync"
 import { OrbPickerDialog } from "@/components/Icons/OrbPicker"
 import { snapshotsEqual } from "@/lib/unsaved-changes"
 import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
+import { CatalogTagChip } from "@/components/Home/Tracking/catalog-tag-chip"
+import { TAG_OPEN_TITLE } from "@/components/Home/Tracking/open-tag-settings"
 import "./tracking-chrome.css"
 
 interface PenSettingsDialogProps {
@@ -233,21 +235,14 @@ export function PenSettingsDialog({ scopeId, pen: openedPen, onClose, onDeleted 
               {tags.map((tag) => {
                 const on = selected.has(tag.id)
                 return (
-                  <button
+                  <CatalogTagChip
                     key={tag.id}
-                    type="button"
+                    tag={tag}
+                    pressed={on}
+                    aria-label={tag.name}
+                    title={TAG_OPEN_TITLE}
                     onClick={() => toggleTag(tag.id)}
-                    aria-pressed={on}
-                    className="trk-tag"
-                    style={on ? { background: tag.color, borderColor: tag.color, color: "#fff" } : undefined}
-                  >
-                    {on ? (
-                      <Check className="h-3 w-3" />
-                    ) : (
-                      <span className="inline-block w-2.5 h-2.5" style={{ background: tag.color }} />
-                    )}
-                    {tag.name}
-                  </button>
+                  />
                 )
               })}
             </div>

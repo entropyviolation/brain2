@@ -338,14 +338,11 @@ export interface Task extends Item {
   id: string
   /**
    * The v1 name for the task's text, kept because every persisted vault and
-   * backup carries it. `Item.title` is the field of record now — read a name
-   * with `itemTitle()` / `itemTitleOrUntitled()` (`lib/item-utils.ts`), never
-   * this field directly.
-   *
-   * It is *mostly* a mirror of `title`, but not always: parked Apple Notes
-   * (`noteToParkedItem`) store their full body here so `lib/search.ts`, which
-   * indexes `description` and not `body`, can find them. See the open question
-   * in `docs/CANONICAL_FIELDS.md` before making the two fields agree by force.
+   * backup carries it. `Item.title` is the field of record — read a name with
+   * `itemTitle()` / `itemTitleOrUntitled()` (`lib/item-utils.ts`), never this
+   * field directly. Persist v18 makes this a **pure mirror of `title`**.
+   * Parked Apple Note prose lives in `body` (search indexes `body`). Detailed
+   * user prose that is not the name is `taskDescription` or `body`.
    */
   description: string
   // Built-in task lifecycle bucket (inbox → clarified → scheduled → completed,
@@ -478,7 +475,8 @@ export interface Task extends Item {
    * reminder already in the vault still texts and still nags until turned off.
    */
   reminder?: {
-    repeat: "once" | "daily" | "weekly"
+    /** once / daily / weekly, or each new / full moon night (bell from midnight; fire 18:00). */
+    repeat: "once" | "daily" | "weekly" | "new-moon" | "full-moon"
     deliveredKey?: string
     dismissedKey?: string
     telegramNote?: string
@@ -974,6 +972,32 @@ export interface HabitTextTrigger {
   connector?: string
 }
 
+export type HabitPriorityEventKind = "set" | "refreshed" | "ritual" | "permanent-on" | "permanent-off"
+
+export type HabitPriorityEventSource = "manual" | "ritual" | "permanent"
+
+/**
+ * One prioritize press. Oldest first on `WeeklyTask.priorityEvents`.
+ * Display lines stay on `priorityLog`. Grades and priority weight do not read this.
+ * `reasoning` is optional free text on a manual press; omit when blank.
+ * Ritual and permanent events do not carry it.
+ */
+export interface HabitPriorityEvent {
+  id: string
+  /** ISO instant. */
+  at: string
+  /** Local calendar day (`YYYY-MM-DD`). */
+  dayKey: string
+  kind: HabitPriorityEventKind
+  source: HabitPriorityEventSource
+  /** Why this habit is being prioritized. Omitted when empty. Manual presses only. */
+  reasoning?: string
+  weightBefore?: number
+  weightAfter?: number
+  /** Star strength (0–100) before this press. */
+  starBefore?: number
+}
+
 export interface WeeklyTask {
   id: string
   name: string
@@ -1053,6 +1077,13 @@ export interface WeeklyTask {
    * No persist version bump.
    */
   priorityLog?: string[]
+  /**
+   * Structured prioritize presses, oldest first. Missing means none.
+   * Appended and never dropped. Not parsed from `priorityLog`.
+   * Grades, the star fade, and priority weight ignore this list.
+   * No persist version bump.
+   */
+  priorityEvents?: HabitPriorityEvent[]
   /**
    * Local calendar day (`YYYY-MM-DD`) the star was last refreshed.
    * Missing means it has never been refreshed. The fade counts from this day.

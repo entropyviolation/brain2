@@ -22,14 +22,19 @@ import { useTaskStore } from "@/lib/task-store"
 import { tasksForDayLog } from "@/lib/item-slices"
 import { useEventStore } from "@/lib/event-store"
 import { trackedAgendaBlocks } from "@/components/Home/Tracking/tracked-agenda-blocks"
+import { CatalogTagLabel } from "@/components/Home/Tracking/catalog-tag-chip"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
-import { timeStringToMinutes } from "@/lib/time-entries"
+import { formatDuration, timeStringToMinutes } from "@/lib/time-entries"
+import { tagTotals } from "@/lib/tracking-summary"
+import { SLEEP_TAG_ID } from "@/lib/sleep-log"
 import { useLiveToday } from "@/lib/use-current-date"
 import { WeekSummaryNest } from "@/components/Home/Tracking/tracking-summaries"
 import "./daylog-week.css"
 
 const HOUR_H = 28
 const HOURS = Array.from({ length: 24 }, (_, hour) => hour)
+const WORK_TAG_ID = "tag-work"
+const MAJOR_HOURS = new Set([0, 6, 12, 18])
 
 function logMatchesDay(logDate: string, day: Date): boolean {
   return logDate === formatLocalDateKey(day) || logDate === formatDateKey(day)
@@ -58,6 +63,7 @@ export function DayLogWeek({
   const events = useEventStore((s) => s.events)
   const trackingScopes = useTimeTrackingStore((s) => s.scopes)
   const trackingEntries = useTimeTrackingStore((s) => s.entries)
+  const trackingTags = useTimeTrackingStore((s) => s.tags)
   const activeScopeId = useTimeTrackingStore((s) => s.activeScopeId)
   const confirmedEventIds = useTimeTrackingStore((s) => s.confirmedEventIds)
   const trackingScope = trackingScopes.find((s) => s.id === activeScopeId) ?? trackingScopes[0]
@@ -66,7 +72,13 @@ export function DayLogWeek({
     return weekDates.map((date) => {
       const planned = tasks.filter((t) => !t.completed && t.scheduledDate && sameCalendarDay(t.scheduledDate, date))
       const dayEvents = events.filter((e) => sameCalendarDay(e.date, date) && !confirmedEventIds.includes(e.id))
-      const tracked = trackedAgendaBlocks(trackingEntries, trackingScope, formatLocalDateKey(date), trackingScopes)
+      const tracked = trackedAgendaBlocks(
+        trackingEntries,
+        trackingScope,
+        formatLocalDateKey(date),
+        trackingScopes,
+        trackingTags,
+      )
       const logs: { task: Task; log: TimeLogEntry }[] = []
       for (const task of tasks) {
         for (const log of task.timeLogs || []) {
@@ -84,10 +96,33 @@ export function DayLogWeek({
         isToday: sameCalendarDay(date, today),
       }
     })
-  }, [weekDates, tasks, events, confirmedEventIds, trackingEntries, trackingScope, trackingScopes, today])
+  }, [weekDates, tasks, events, confirmedEventIds, trackingEntries, trackingScope, trackingScopes, trackingTags, today])
+
+  const weekKeys = useMemo(() => weekDates.map((d) => formatLocalDateKey(d)), [weekDates])
+  const sleepWork = useMemo(() => {
+    const slices = tagTotals(trackingEntries, trackingScopes, trackingTags, weekKeys)
+    const sleep = slices.find((s) => s.id === SLEEP_TAG_ID)
+    const work = slices.find((s) => s.id === WORK_TAG_ID)
+    return {
+      sleepMin: sleep?.minutes ?? 0,
+      sleepColor: sleep?.color ?? "#1e293b",
+      workMin: work?.minutes ?? 0,
+      workColor: work?.color ?? "#2563eb",
+    }
+  }, [trackingEntries, trackingScopes, trackingTags, weekKeys])
 
   return (
     <div className="daylog-week" data-testid="daylog-week">
+      <div className="daylog-sw-strip" aria-label="Sleep and Work summary">
+        <span>
+          <span className="daylog-sw-bead" style={{ background: sleepWork.sleepColor }} aria-hidden />
+          Sleep <span className="daylog-sw-mins">{formatDuration(sleepWork.sleepMin)}</span>
+        </span>
+        <span>
+          <span className="daylog-sw-bead" style={{ background: sleepWork.workColor }} aria-hidden />
+          Work <span className="daylog-sw-mins">{formatDuration(sleepWork.workMin)}</span>
+        </span>
+      </div>
       <div className="daylog-week-head-row">
         <div className="daylog-week-corner" aria-hidden />
         {columns.map((col) => (
@@ -128,7 +163,12 @@ export function DayLogWeek({
       <div className="daylog-week-body">
         <div className="daylog-week-hours" aria-hidden>
           {HOURS.map((hour) => (
-            <div key={hour} className="daylog-week-gutter" style={{ height: HOUR_H }}>
+            <div
+              key={hour}
+              className="daylog-week-gutter"
+              data-major={MAJOR_HOURS.has(hour) ? "true" : undefined}
+              style={{ height: HOUR_H }}
+            >
               {hour.toString().padStart(2, "0")}:00
             </div>
           ))}
@@ -148,12 +188,19 @@ export function DayLogWeek({
                   key={hour}
                   type="button"
                   className="daylog-week-hour"
+                  data-major={MAJOR_HOURS.has(hour) ? "true" : undefined}
                   style={{ height: HOUR_H }}
                   aria-label={`New event ${format(col.date, "EEE d")} ${hour.toString().padStart(2, "0")}:00`}
                   onClick={() => onCreateEvent(col.date, hour)}
                 />
               ) : (
-                <div key={hour} className="daylog-week-hour" style={{ height: HOUR_H }} aria-hidden />
+                <div
+                  key={hour}
+                  className="daylog-week-hour"
+                  data-major={MAJOR_HOURS.has(hour) ? "true" : undefined}
+                  style={{ height: HOUR_H }}
+                  aria-hidden
+                />
               ),
             )}
 
@@ -171,6 +218,13 @@ export function DayLogWeek({
                 onClick={() => onTrackedBlockClick(block.id)}
               >
                 <span className="daylog-week-block-title">{block.label}</span>
+                {block.tags && block.tags.length > 0 ? (
+                  <span className="daylog-week-block-tags">
+                    {block.tags.map((tag) => (
+                      <CatalogTagLabel key={tag.id} tag={tag} />
+                    ))}
+                  </span>
+                ) : null}
                 {block.sublabel ? <span className="daylog-week-block-sub">{block.sublabel}</span> : null}
               </button>
             ))}

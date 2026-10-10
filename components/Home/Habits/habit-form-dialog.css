@@ -125,8 +125,44 @@
 .habit95-fields > .habit95-sec-lift { order: 38; }
 .habit95-fields > .habit95-sec-points { order: 40; }
 .habit95-fields > .habit95-sec-time { order: 50; }
-.habit95-fields > .habit95-sec-priority { order: 60; }
+.habit95-fields > .habit95-sec-priority { order: 5; }
 .habit95-fields > .habit95-sec-wording { order: 70; }
+
+.habit95-fields > [id^="habit95-sec-"] {
+  scroll-margin-top: 8px;
+}
+
+.habit95-fields > :focus {
+  outline: 1px dotted var(--h95-blue);
+  outline-offset: 2px;
+}
+
+/* Pinned above the scroll well. Keys scroll only this well; they do not hide sections. */
+.habit95-section-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  flex-shrink: 0;
+  margin: 0 0 6px;
+  padding: 4px;
+  background: var(--h95-surface);
+  box-shadow: var(--h95-sunken);
+}
+
+.habit95-section-nav .habit95-section-key {
+  min-width: 0;
+  min-height: 22px;
+  padding: 1px 7px;
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.habit95-section-nav .habit95-section-key[aria-current="true"],
+.habit95-section-nav .habit95-section-key[aria-current="true"]:hover {
+  color: #fff !important;
+  background: var(--h95-blue) !important;
+  box-shadow: var(--h95-sunken);
+}
 
 .habit95-field {
   display: grid;
@@ -783,6 +819,22 @@ label.habit95-field > .habit95-input {
   box-shadow: var(--h95-field-bevel);
 }
 
+.habit95-tag-line {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 2px;
+}
+
+.habit95-tag-edit {
+  font-weight: normal;
+}
+
+.habit95-tag-mark {
+  font-size: 10px;
+  font-weight: normal;
+  opacity: 0.65;
+}
+
 .habit95-check {
   display: flex;
   align-items: center;
@@ -816,6 +868,62 @@ label.habit95-field > .habit95-input {
   letter-spacing: 0;
   line-height: 1.35;
   color: #1c1e20;
+}
+
+.habit-priority-why {
+  display: block;
+  margin: 1px 0 3px;
+  font-size: 10px;
+  font-weight: normal;
+  line-height: 1.35;
+  color: var(--chrome-ink-soft);
+  white-space: pre-wrap;
+}
+
+.habit95-reason-dialog.habit95-dialog {
+  max-width: min(22rem, calc(100vw - 1.5rem)) !important;
+  gap: 0 !important;
+}
+
+.habit95-reason-subject {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: bold;
+  line-height: 1.35;
+}
+
+.habit95-reason-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.habit95-reason-note {
+  width: 100%;
+  min-height: 7.5rem;
+  max-height: 10rem;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 4px 6px;
+  border: none;
+  border-radius: var(--r-0, 0px);
+  resize: vertical;
+  overflow-y: auto;
+  background: var(--h95-field);
+  color: var(--h95-ink);
+  box-shadow: var(--h95-field-bevel);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: normal;
+  line-height: 1.35;
+}
+
+.habit95-reason-note:focus {
+  outline: 1px dotted #000;
+  outline-offset: -3px;
 }
 
 .habit-priority-mark {

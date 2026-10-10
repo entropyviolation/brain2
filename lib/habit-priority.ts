@@ -9,10 +9,13 @@
  * math read `effectivePriorityWeight`.
  *
  * The Priority button is a separate mark. `priorityLog` is an optional list of
- * lines (oldest first; missing means none). `priorityRefreshedOn` is the local
- * calendar day of the last refresh. The star and the green sheet wash use
- * `priorityStarFade`: day 0 is 100, then −10 points per calendar day, and day
- * 10 is 0. `priorityPermanent` holds both at 100 until it is turned off.
+ * lines (oldest first; missing means none). Each press also appends a
+ * `priorityEvents` record (oldest first; missing means none). A manual press
+ * may carry optional `reasoning`; ritual and permanent events do not.
+ * Grades and weight ignore that prose and the event list. `priorityRefreshedOn`
+ * is the local calendar day of the last refresh. The star and the green sheet
+ * wash use `priorityStarFade`: day 0 is 100, then −10 points per calendar day,
+ * and day 10 is 0. `priorityPermanent` holds both at 100 until it is turned off.
  * Neglect red still follows the empty-period count and does not use this fade.
  *
  * Grade blend (default floor 50): displayed = floor% × prioritized + rest% × overall.
@@ -30,7 +33,15 @@ import {
   getWeekString,
 } from "./date-utils"
 import { precedingQuarterStarts, quarterKey } from "./seasons"
-import type { HabitFrequency, TaskCompletion, WeeklyData, WeeklyTask } from "./types"
+import type {
+  HabitFrequency,
+  HabitPriorityEvent,
+  HabitPriorityEventKind,
+  HabitPriorityEventSource,
+  TaskCompletion,
+  WeeklyData,
+  WeeklyTask,
+} from "./types"
 
 /** Points multiplier a morning-ritual habit displays. Missing store value is ×5. */
 export const DEFAULT_MORNING_RITUAL_POINT_MULTIPLIER = 5
@@ -325,27 +336,145 @@ function appendPriorityLine(log: string[] | undefined, line: string): string[] {
   return [...(log ?? []), line]
 }
 
-/** First press is "Priority set". A later press is "Priority refreshed". */
-export function applyPriorityPress(task: WeeklyTask, asOf: Date = new Date()): WeeklyTask {
+function appendPriorityEvent(events: HabitPriorityEvent[] | undefined, event: HabitPriorityEvent): HabitPriorityEvent[] {
+  return [...(events ?? []), event]
+}
+
+/** `hp_` plus a uuid, same fallback shape as `newAppendLogId`. */
+function newHabitPriorityEventId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return `hp_${crypto.randomUUID()}`
+  }
+  return `hp_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`
+}
+
+function trimmedReasoning(text: string | undefined): string | undefined {
+  const trimmed = text?.trim()
+  return trimmed ? trimmed : undefined
+}
+
+/** Optional context for a manual Priority press. A bare `Date` is `asOf`. */
+export interface PriorityPressOptions {
+  /** When the press happened. Defaults to now. */
+  asOf?: Date
+  /** Why this habit is being prioritized. Trimmed; blank is omitted. */
+  reasoning?: string
+  /** Completions used to snapshot effective weight. Weights are omitted when this is absent. */
+  data?: WeeklyData
+  frequency?: HabitFrequency
+  /** Star snapshot treats today's ritual selection as full strength. */
+  inRitualToday?: boolean
+}
+
+function pressContext(asOfOrOpts?: Date | PriorityPressOptions): PriorityPressOptions & { asOf: Date } {
+  if (asOfOrOpts instanceof Date) return { asOf: asOfOrOpts }
+  return { ...asOfOrOpts, asOf: asOfOrOpts?.asOf ?? new Date() }
+}
+
+function makePriorityEvent(input: {
+  asOf: Date
+  kind: HabitPriorityEventKind
+  source: HabitPriorityEventSource
+  reasoning?: string
+  weightBefore?: number
+  weightAfter?: number
+  starBefore?: number
+}): HabitPriorityEvent {
+  const reasoning = trimmedReasoning(input.reasoning)
+  const event: HabitPriorityEvent = {
+    id: newHabitPriorityEventId(),
+    at: input.asOf.toISOString(),
+    dayKey: formatLocalDateKey(input.asOf),
+    kind: input.kind,
+    source: input.source,
+  }
+  if (reasoning) event.reasoning = reasoning
+  if (input.weightBefore !== undefined) event.weightBefore = input.weightBefore
+  if (input.weightAfter !== undefined) event.weightAfter = input.weightAfter
+  if (input.starBefore !== undefined) event.starBefore = input.starBefore
+  return event
+}
+
+/**
+ * First press is "Priority set". A later press is "Priority refreshed".
+ * Always appends that display line and a `priorityEvents` row (`source: "manual"`).
+ * The second argument may be a `Date` (`asOf`) or {@link PriorityPressOptions}.
+ * A blank `reasoning` is omitted. One-argument calls keep today's log line and star day.
+ * The new event is the last item in `priorityEvents`.
+ */
+export function applyPriorityPress(task: WeeklyTask, asOfOrOpts?: Date | PriorityPressOptions): WeeklyTask {
+  const { asOf, reasoning, data, frequency, inRitualToday } = pressContext(asOfOrOpts)
   const day = formatPriorityDay(asOf)
-  const line = task.priorityRefreshedOn ? `Priority refreshed ${day}.` : `Priority set ${day}.`
-  return {
+  const kind: HabitPriorityEventKind = task.priorityRefreshedOn ? "refreshed" : "set"
+  const line = kind === "refreshed" ? `Priority refreshed ${day}.` : `Priority set ${day}.`
+  const freq = frequency ?? task.frequency ?? "daily"
+  const next: WeeklyTask = {
     ...task,
     priorityRefreshedOn: formatLocalDateKey(asOf),
     priorityLog: appendPriorityLine(task.priorityLog, line),
   }
+  const event = makePriorityEvent({
+    asOf,
+    kind,
+    source: "manual",
+    reasoning,
+    starBefore: priorityMarkPercent(task, asOf, inRitualToday ?? false),
+    ...(data
+      ? {
+          weightBefore: effectivePriorityWeight(task, data, asOf, freq),
+          weightAfter: effectivePriorityWeight(next, data, asOf, freq),
+        }
+      : {}),
+  })
+  return {
+    ...next,
+    priorityEvents: appendPriorityEvent(task.priorityEvents, event),
+  }
+}
+
+/**
+ * Sets `reasoning` on an existing press. Trimmed; a blank note omits the field.
+ * No-op when `eventId` is missing. Used when the note is saved after the press.
+ */
+export function attachPriorityReasoning(task: WeeklyTask, eventId: string, text: string): WeeklyTask {
+  const events = task.priorityEvents
+  if (!events?.length) return task
+  const index = events.findIndex((event) => event.id === eventId)
+  if (index < 0) return task
+  const event = events[index]
+  const reasoning = trimmedReasoning(text)
+  if (!reasoning) {
+    if (event.reasoning === undefined) return task
+    const next = events.slice()
+    const cleared = { ...event }
+    delete cleared.reasoning
+    next[index] = cleared
+    return { ...task, priorityEvents: next }
+  }
+  if (event.reasoning === reasoning) return task
+  const next = events.slice()
+  next[index] = { ...event, reasoning }
+  return { ...task, priorityEvents: next }
 }
 
 /**
  * Choosing the habit in a ritual refreshes it.
  * `ritual` is the ritual's name: day, week, or moon.
+ * Appends a `priorityEvents` row with `source: "ritual"` and no reasoning.
  */
 export function applyRitualPriority(task: WeeklyTask, ritual: string, asOf: Date = new Date()): WeeklyTask {
   const line = `Selected from ${ritual} ritual ${formatPriorityDay(asOf)}`
+  const event = makePriorityEvent({
+    asOf,
+    kind: "ritual",
+    source: "ritual",
+    starBefore: priorityMarkPercent(task, asOf),
+  })
   return {
     ...task,
     priorityRefreshedOn: formatLocalDateKey(asOf),
     priorityLog: appendPriorityLine(task.priorityLog, line),
+    priorityEvents: appendPriorityEvent(task.priorityEvents, event),
   }
 }
 
@@ -363,15 +492,26 @@ export function ritualPriorityUpdates(
   return tasks.filter((task) => added.has(task.id)).map((task) => applyRitualPriority(task, ritual, asOf))
 }
 
-/** On holds the star at 100. Off returns to the fade from the last refresh. */
+/**
+ * On holds the star at 100. Off returns to the fade from the last refresh.
+ * Appends a `priorityEvents` row with `source: "permanent"` and no reasoning.
+ * A press that does not change the flag appends nothing.
+ */
 export function applyPermanentPriority(task: WeeklyTask, on: boolean, asOf: Date = new Date()): WeeklyTask {
   if (Boolean(task.priorityPermanent) === on) return task
   const day = formatPriorityDay(asOf)
   const line = on ? `Permanent priority set ${day}.` : `Permanent priority removed ${day}.`
+  const event = makePriorityEvent({
+    asOf,
+    kind: on ? "permanent-on" : "permanent-off",
+    source: "permanent",
+    starBefore: priorityMarkPercent(task, asOf),
+  })
   return {
     ...task,
     priorityPermanent: on ? true : undefined,
     priorityLog: appendPriorityLine(task.priorityLog, line),
+    priorityEvents: appendPriorityEvent(task.priorityEvents, event),
   }
 }
 

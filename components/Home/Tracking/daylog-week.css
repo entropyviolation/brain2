@@ -117,12 +117,52 @@
 }
 
 .trk95 .daylog-week-gutter {
-  padding: 2px 4px 0;
+  padding: 1px 3px 0;
   font-size: 9px;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
   color: var(--chrome-ink-soft);
   box-sizing: border-box;
-  border-bottom: 1px solid color-mix(in srgb, var(--t-shadow, var(--chrome-lo)) 35%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--t-shadow, var(--chrome-lo)) 28%, transparent);
+}
+
+.trk95 .daylog-week-gutter[data-major="true"] {
+  color: #1c1e20;
+  font-weight: 700;
+  border-bottom-color: color-mix(in srgb, var(--t-shadow, var(--chrome-lo)) 72%, transparent);
+}
+
+.trk95 .daylog-sw-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin: 0 0 4px;
+  padding: 4px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #1c1e20;
+  background: var(--t-surface, var(--chrome-face));
+  box-shadow: var(--t-sunken, inset 1px 1px var(--chrome-lo), inset -1px -1px #fff);
+}
+
+.trk95 .daylog-sw-strip span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.trk95 .daylog-sw-bead {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+.trk95 .daylog-sw-mins {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--chrome-ink-soft, #3a3c3e);
 }
 
 .trk95 .daylog-week-plot {
@@ -143,8 +183,12 @@
   padding: 0;
   background: transparent;
   border: 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--t-shadow, var(--chrome-lo)) 28%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--t-shadow, var(--chrome-lo)) 22%, transparent);
   cursor: pointer;
+}
+
+.trk95 .daylog-week-hour[data-major="true"] {
+  border-bottom-color: color-mix(in srgb, var(--t-shadow, var(--chrome-lo)) 55%, transparent);
 }
 
 .trk95 .daylog-week-block {
@@ -202,6 +246,20 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.trk95 .daylog-week-block-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 4px;
+  margin-top: 1px;
+}
+
+.trk95 .daylog-week-block-tags .trk-tag-name {
+  font-size: 9px;
+  font-weight: 600;
+  color: inherit;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
 }
 
 .trk95 .daylog-week-block-sub {

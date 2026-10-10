@@ -3,8 +3,9 @@
  *
  * Shown under the pen tray when **Tags** is latched. Tags live above scopes:
  * one tag can sit on an Activity pen and a Location pen at once, and daily
- * habits link tags rather than pens, so renaming or recoloring here keeps
- * every link intact.
+ * habits link tags rather than pens. Edit and double-click open the shared
+ * tag settings dialog (`openTagSettings`); rename, recolor, and delete live
+ * there and write through `lib/catalog-tag.ts` / `removeTag`.
  *
  * The well is the same steel plate language as DETAIL / SHOW AS — raised
  * keys, a color bead, name, pen count — not pastel islands on the tray photo.
@@ -12,12 +13,12 @@
 "use client"
 
 import { useState } from "react"
-import { ColorSwatch } from "@/components/ui/color-swatch"
 import { Link2, Pencil, Plus, Trash2 } from "lucide-react"
-import { useTimeTrackingStore, type TrackTag } from "@/lib/time-tracking-store"
+import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { useHabitsStore } from "@/lib/habits-store"
 import { activeTrackingLink } from "@/lib/habit-tracking"
 import { penIdsForTags } from "@/lib/tracked-time"
+import { openTagSettings, TAG_OPEN_TITLE, tagColorDoubleClick } from "@/components/Home/Tracking/open-tag-settings"
 import "./tracking-chrome.css"
 import "./tracking-tags-well.css"
 
@@ -25,12 +26,10 @@ export function TrackingTagsPanel() {
   const scopes = useTimeTrackingStore((s) => s.scopes)
   const tags = useTimeTrackingStore((s) => s.tags)
   const addTag = useTimeTrackingStore((s) => s.addTag)
-  const updateTag = useTimeTrackingStore((s) => s.updateTag)
   const removeTag = useTimeTrackingStore((s) => s.removeTag)
   const habits = useHabitsStore((s) => s.tasks)
 
   const [newTag, setNewTag] = useState("")
-  const [editing, setEditing] = useState<TrackTag | null>(null)
 
   const habitsForTag = (tagId: string) =>
     habits.filter((habit) => activeTrackingLink(habit)?.tagIds.includes(tagId)).map((h) => h.name)
@@ -60,11 +59,18 @@ export function TrackingTagsPanel() {
           const penCount = penIdsForTags(scopes, [tag.id]).size
           const linked = habitsForTag(tag.id)
           const title = [
+            TAG_OPEN_TITLE,
             `${penCount} pen${penCount === 1 ? "" : "s"}`,
             linked.length ? `feeds ${linked.join(", ")}` : "no habit linked",
           ].join(" · ")
           return (
-            <span key={tag.id} role="listitem" title={title} className="trk-tag-key">
+            <span
+              key={tag.id}
+              role="listitem"
+              title={title}
+              className="trk-tag-key"
+              onDoubleClick={tagColorDoubleClick(tag.id)}
+            >
               <span className="trk-tag-bead" style={{ background: tag.color }} aria-hidden />
               <span className="trk-tag-name">{tag.name}</span>
               <span className="trk-tag-meta">
@@ -73,7 +79,7 @@ export function TrackingTagsPanel() {
               {linked.length > 0 && <Link2 className="trk-tag-link" aria-hidden />}
               <button
                 type="button"
-                onClick={() => setEditing({ ...tag })}
+                onClick={() => openTagSettings(tag.id)}
                 className="trk-micro"
                 aria-label={`Edit tag ${tag.name}`}
               >
@@ -97,51 +103,23 @@ export function TrackingTagsPanel() {
         })}
       </div>
 
-      {editing ? (
-        <div className="trk-tag-add">
-          <input
-            value={editing.name}
-            onChange={(e) => setEditing({ ...editing, name: e.target.value })}
-            aria-label="Tag name"
-          />
-          <ColorSwatch
-            value={editing.color}
-            onChange={(color) => setEditing({ ...editing, color })}
-            aria-label="Tag color"
-            size="sm"
-          />
-          <button
-            type="button"
-            onClick={() => {
-              if (editing.name.trim()) updateTag({ ...editing, name: editing.name.trim() })
-              setEditing(null)
-            }}
-          >
-            Save tag
-          </button>
-          <button type="button" onClick={() => setEditing(null)}>
-            Cancel
-          </button>
-        </div>
-      ) : (
-        <div className="trk-tag-add">
-          <input
-            value={newTag}
-            onChange={(e) => setNewTag(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault()
-                submitNew()
-              }
-            }}
-            placeholder="New tag"
-            aria-label="New tag name"
-          />
-          <button type="button" disabled={!newTag.trim()} onClick={submitNew}>
-            <Plus /> Add tag
-          </button>
-        </div>
-      )}
+      <div className="trk-tag-add">
+        <input
+          value={newTag}
+          onChange={(e) => setNewTag(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault()
+              submitNew()
+            }
+          }}
+          placeholder="New tag"
+          aria-label="New tag name"
+        />
+        <button type="button" disabled={!newTag.trim()} onClick={submitNew}>
+          <Plus /> Add tag
+        </button>
+      </div>
     </div>
   )
 }

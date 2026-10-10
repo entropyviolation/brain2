@@ -1,10 +1,18 @@
 /**
  * components/Home/Habits/daily-task-form.tsx — Habit form
  *
- * The form for creating/editing a habit: name, period frequency, type tiles
- * (Yes/No, Goal, Text, Climb), then completion sources, then the target.
- * When neglect is why the habit is prioritized, that sentence is the first
- * line of the body (`neglectPrioritySentence`).
+ * The form for creating/editing a habit. When neglect is why the habit is
+ * prioritized, that sentence is the first line of the body
+ * (`neglectPrioritySentence`). Priority is next (Prioritize habit, star, log,
+ * permanent, morning ritual, ignore neglect). A milled strip above the scroll
+ * well jumps to the sections that are on the page by scrolling that well only;
+ * it does not hide them or move the dialog. The active key follows the
+ * intersecting section nearest the well top, or the last one when scroll is maxed.
+ * Then name, frequency, type tiles (Yes/No, Goal, Text, Climb), gem,
+ * completion sources, and the target. Visual order is also set with flex
+ * `order` in `habit-form-dialog.css`.
+ * Prioritize habit refreshes the star immediately, then asks for an optional
+ * why (`PriorityReasonDialog`). Skip or a blank note stores no reasoning.
  * Climb adds cadence (Weekly + / Daily +),
  * starting value, increment, and optional unit.
  *
@@ -22,9 +30,15 @@
  *
  * **Auto-fill from Tracking** (tags and Create tag) is shown only while the
  * Tracking tags pipeline is on. Hiding it keeps the saved tags.
- * That row is the minute source. **Tags** is a different pipeline:
- * one tag, counted as Done tasks (a tracked block with the tag files one Done
- * line). The habit's own Done line carries that tag too.
+ * That row is the minute source: many tag ids. **Tags** is a different pipeline:
+ * one normalized name, counted as Done tasks (a tracked block with the tag
+ * files one Done line). The habit's own Done line carries that tag too.
+ * Both rows use the same Tracking catalog (`HabitTagCatalog`). Create and
+ * Edit on either row write that tag. The count name and the minute ids stay
+ * separate selections. When either source is on, Completion sources shows a
+ * Counts Done / Fills minutes legend; when both are on, a status line lists
+ * the current name versus the minute tags. Pressed chips mark `counts` or
+ * `minutes`.
  * **Habits stats** picks a set (daily, weekly, or monthly habits) and then
  * points. Engine points still turn on the floor, the total, and the daily
  * completion average. **Better than last week** stores a compare on that row.
@@ -88,6 +102,7 @@ import { normalizeIncrementalData } from "@/lib/incremental-habits"
 import { supportsTrackingLink } from "@/lib/habit-tracking"
 import { defaultTriggersForHabit, describeHabitTriggerPreview, makeHabitTriggerId } from "@/lib/ingest/text-triggers"
 import { KEYWORD_USE_OPTIONS, keywordForSubmit } from "@/lib/habit-keyword-source"
+import { retargetTagIds, retargetTaggedTaskTag, type CatalogTagEdit } from "@/lib/catalog-tag"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { penIdsForTags } from "@/lib/tracked-time"
 import { useThemeStore } from "@/lib/theme-store"
@@ -108,6 +123,7 @@ import {
 } from "@/lib/habit-completion-source"
 import { openHabitInLists } from "@/lib/habit-list-item"
 import { normalizeTag } from "@/lib/links"
+import { HabitTagCatalog } from "@/components/Home/Habits/habit-tag-catalog"
 import { Habit95Select, HabitPipelineEditor } from "@/components/Home/Habits/habit-sources-field"
 import { StatSourceBuilder, openedStatBinding } from "@/components/Home/Habits/stat-source-builder"
 import { COMPLETION_SOURCE_HINTS, COMPLETION_SOURCE_LABELS } from "@/lib/habit-completion-trust"
@@ -134,9 +150,11 @@ import {
   applyPermanentPriority,
   applyPriorityPress,
   applyRitualPriority,
+  attachPriorityReasoning,
   neglectPrioritySentence,
   priorityMarkPercent,
 } from "@/lib/habit-priority"
+import { PriorityReasonDialog } from "@/components/Home/Habits/PriorityReasonDialog"
 import { useTaskStore } from "@/lib/task-store"
 import { isFolderAllItemsCategoryId } from "@/lib/folder-all-items"
 import { habitPeriodPointsKey } from "@/lib/habit-points"
@@ -224,6 +242,15 @@ const TRIGGER_MODES: { value: HabitTextTrigger["mode"]; label: string }[] = [
 function seedTextTriggers(task: Pick<WeeklyTask, "name" | "textTriggers"> | null | undefined): HabitTextTrigger[] {
   if (task?.textTriggers && task.textTriggers.length > 0) return task.textTriggers.map((t) => ({ ...t }))
   return defaultTriggersForHabit({ name: task?.name || "", textTriggers: undefined })
+}
+
+/** Events line up with the tail of `priorityLog`. Older lines can predate events. */
+function reasoningUnderLogLine(task: WeeklyTask, logIndex: number): string | undefined {
+  const log = task.priorityLog ?? []
+  const events = task.priorityEvents ?? []
+  const event = events[logIndex - (log.length - events.length)]
+  const text = event?.reasoning?.trim()
+  return text || undefined
 }
 
 function emptyClimb(): IncrementalHabitData {
@@ -604,6 +631,34 @@ function KeywordSourceFields({
   )
 }
 
+/**
+ * Active key for the milled section strip: nearest intersecting top to the
+ * well top; when scroll is maxed, the last intersecting mounted section.
+ */
+export function resolveHabitSectionNavActive(
+  scrollTop: number,
+  scrollHeight: number,
+  clientHeight: number,
+  wellTop: number,
+  intersecting: { id: string; top: number }[],
+): string | null {
+  if (!intersecting.length) return null
+  const maxScroll = Math.max(0, scrollHeight - clientHeight)
+  if (maxScroll <= 0 || scrollTop >= maxScroll - 1) {
+    return intersecting[intersecting.length - 1]!.id
+  }
+  let bestId = intersecting[0]!.id
+  let bestDist = Math.abs(intersecting[0]!.top - wellTop)
+  for (let i = 1; i < intersecting.length; i++) {
+    const dist = Math.abs(intersecting[i]!.top - wellTop)
+    if (dist < bestDist) {
+      bestDist = dist
+      bestId = intersecting[i]!.id
+    }
+  }
+  return bestId
+}
+
 export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFrequency = "daily", onDirtyChange, onLeaveForItem }: TaskFormProps) {
   const colors = useThemeStore((s) => s.colors)
   const trackingTags = useTimeTrackingStore((s) => s.tags)
@@ -631,6 +686,13 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
   const vaultItems = useTaskStore((s) => s.tasks)
   const [openListId, setOpenListId] = useState<string | null>(null)
   const listPopupHost = useRef<HTMLElement | null>(null)
+  const [fieldsEl, setFieldsEl] = useState<HTMLDivElement | null>(null)
+  const [activeSection, setActiveSection] = useState("habit95-sec-priority")
+  const [priorityReasonOpen, setPriorityReasonOpen] = useState(false)
+  const sectionNavRef = useRef<{ id: string; label: string }[]>([])
+  /** Clicked section key; held until the user scrolls the well by hand. */
+  const pinnedSectionRef = useRef<string | null>(null)
+  const jumpScrollingRef = useRef(false)
   const initialClimb = initialTask ? normalizeIncrementalData(initialTask.incrementalData) : undefined
   const seededTriggers = seedTextTriggers(initialTask)
   const hadStoredTriggers = Boolean(initialTask?.textTriggers?.length)
@@ -651,7 +713,6 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
     ? (initialTask.rewardValue ?? 10)
     : defaultHabitPoints[habitPeriodPointsKey(defaultFrequency)]
   const [phrase, setPhrase] = useState("")
-  const [newTagName, setNewTagName] = useState("")
   const addTrackingTag = useTimeTrackingStore((s) => s.addTag)
   const [task, setTask] = useState<WeeklyTask>({
     id: initialTask?.id || "",
@@ -681,6 +742,7 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
     priorityPinned: initialTask?.priorityPinned,
     priorityMuted: initialTask?.priorityMuted,
     priorityLog: initialTask?.priorityLog,
+    priorityEvents: initialTask?.priorityEvents,
     priorityRefreshedOn: initialTask?.priorityRefreshedOn,
     priorityPermanent: initialTask?.priorityPermanent,
     gem: initialTask?.gem || pickRandomCatalogGem(),
@@ -719,6 +781,7 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
     priorityPinned: initialTask?.priorityPinned,
     priorityMuted: initialTask?.priorityMuted,
     priorityLog: initialTask?.priorityLog,
+    priorityEvents: initialTask?.priorityEvents,
     priorityRefreshedOn: initialTask?.priorityRefreshedOn,
     priorityPermanent: initialTask?.priorityPermanent,
     logExemptions: initialTask?.logExemptions ?? presetLogExemptions(seedName),
@@ -754,6 +817,7 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
         priorityPinned: task.priorityPinned,
         priorityMuted: task.priorityMuted,
         priorityLog: task.priorityLog,
+        priorityEvents: task.priorityEvents,
         priorityRefreshedOn: task.priorityRefreshedOn,
         priorityPermanent: task.priorityPermanent,
         logExemptions: task.logExemptions ?? [],
@@ -986,6 +1050,17 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
       : deriveCompletionSources(task)
   const displayPipelines = task.completionPipelines ?? pipelinesFromSources(sourceOrder)
   const showTracking = supportsTrackingLink(task) && sourceOrder.includes("tags")
+  const showTagsPipeline =
+    displayPipelines.some((row) => row.kind === "tags") || sourceOrder.includes("taggedTasks")
+  const showTagRolesLegend =
+    showTagsPipeline ||
+    showTracking ||
+    displayPipelines.some((row) => row.kind === "trackingTags")
+  const showBothTagRoles = showTagsPipeline && showTracking
+  const doneCountName = (task.taggedTaskTag ?? "").trim()
+  const minuteTagNames = link.tagIds
+    .map((id) => trackingTags.find((tag) => tag.id === id)?.name)
+    .filter((name): name is string => Boolean(name))
   const listChoices = vaultLists
     .filter((list) => !isFolderAllItemsCategoryId(list.id))
     .map((list) => ({ id: list.id, name: list.name }))
@@ -1069,12 +1144,24 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
     }
   }
 
-  const createTrackingTag = () => {
-    const name = newTagName.trim()
-    if (!name) return
+  const noteCatalogEdit = (result: CatalogTagEdit) => {
+    setTask((current) => {
+      const taggedTaskTag = retargetTaggedTaskTag(current.taggedTaskTag, result.fromName, result.toName)
+      const link = current.trackingLink
+      const tagIds =
+        result.replacedId && link ? retargetTagIds(link.tagIds, result.replacedId, result.tag.id) : link?.tagIds
+      if (taggedTaskTag === current.taggedTaskTag && tagIds === link?.tagIds) return current
+      return {
+        ...current,
+        taggedTaskTag,
+        ...(link && tagIds && tagIds !== link.tagIds ? { trackingLink: { ...link, tagIds } } : {}),
+      }
+    })
+  }
+
+  const createTrackingTag = (name: string) => {
     const id = addTrackingTag(name)
     if (!id) return
-    setNewTagName("")
     setSourcesLocked(true)
     setTask((current) => {
       const linkNow = current.trackingLink ?? { tagIds: [] }
@@ -1089,6 +1176,13 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
         trackingLink: { ...linkNow, tagIds, enabled: true },
       }
     })
+  }
+
+  const createCountTag = (name: string) => {
+    const id = addTrackingTag(name)
+    if (!id) return
+    const created = useTimeTrackingStore.getState().tags.find((tag) => tag.id === id)
+    setTask((current) => ({ ...current, taggedTaskTag: normalizeTag(created?.name ?? name) }))
   }
 
   const loggedNow = (() => {
@@ -1159,52 +1253,157 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
     ? neglectPrioritySentence({ ...task, id: initialTask.id }, neglectBook, new Date(), neglectFrequency)
     : null
 
+  const sectionNav = [
+    { id: "habit95-sec-priority", label: "Priority" },
+    { id: "habit95-sec-name", label: "Name" },
+    { id: "habit95-sec-freq", label: "Frequency" },
+    { id: "habit95-sec-type", label: "Type" },
+    { id: "habit95-sec-gem", label: "Gem" },
+    ...(task.type === TaskType.GOAL || task.type === TaskType.INCREMENTAL
+      ? [{ id: "habit95-sec-target", label: task.type === TaskType.INCREMENTAL ? "Climb" : "Target" }]
+      : []),
+    { id: "habit95-sec-sources", label: "Sources" },
+    ...(showTracking ? [{ id: "habit95-sec-fill", label: "Auto-fill" }] : []),
+    ...(sourceOrder.includes("keywords") ? [{ id: "habit95-sec-keywords", label: "BIM Keywords" }] : []),
+    ...(task.frequency === "daily" && task.type === TaskType.BOOLEAN
+      ? [{ id: "habit95-sec-links", label: "Connections" }]
+      : []),
+    ...(task.frequency === "daily" ? [{ id: "habit95-sec-lift", label: "Lift" }] : []),
+    { id: "habit95-sec-points", label: "Points" },
+    { id: "habit95-sec-time", label: "Time" },
+    { id: "habit95-sec-wording", label: "Wording" },
+  ]
+  const sectionNavKey = sectionNav.map((section) => `${section.id}:${section.label}`).join("|")
+  sectionNavRef.current = sectionNav
+
+  useEffect(() => {
+    if (!sectionNavRef.current.some((section) => section.id === activeSection)) {
+      setActiveSection(sectionNavRef.current[0]?.id ?? "habit95-sec-priority")
+    }
+  }, [sectionNavKey, activeSection])
+
+  useEffect(() => {
+    const root = fieldsEl
+    if (!root || typeof IntersectionObserver !== "function") return
+    const nodes = sectionNavRef.current
+      .map((section) => document.getElementById(section.id))
+      .filter((node): node is HTMLElement => node instanceof HTMLElement)
+    if (!nodes.length) return
+
+    const visible = new Map<Element, boolean>()
+    const pickActive = () => {
+      const pinned = pinnedSectionRef.current
+      if (pinned) {
+        setActiveSection(pinned)
+        return
+      }
+      const intersecting = nodes.filter((node) => visible.get(node))
+      if (!intersecting.length) return
+      const id = resolveHabitSectionNavActive(
+        root.scrollTop,
+        root.scrollHeight,
+        root.clientHeight,
+        root.getBoundingClientRect().top,
+        intersecting.map((node) => ({
+          id: node.id,
+          top: node.getBoundingClientRect().top,
+        })),
+      )
+      if (id) setActiveSection(id)
+    }
+
+    const onScroll = () => {
+      if (!jumpScrollingRef.current) pinnedSectionRef.current = null
+      pickActive()
+    }
+    const releaseJumpScroll = () => {
+      jumpScrollingRef.current = false
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          visible.set(entry.target, entry.isIntersecting)
+        }
+        pickActive()
+      },
+      // Full well: bottom sections must count when scroll is maxed.
+      { root, rootMargin: "0px", threshold: [0, 0.01, 0.1, 0.5, 1] },
+    )
+    for (const node of nodes) observer.observe(node)
+    root.addEventListener("scroll", onScroll, { passive: true })
+    return () => {
+      observer.disconnect()
+      root.removeEventListener("scroll", onScroll)
+      releaseJumpScroll()
+    }
+  }, [fieldsEl, sectionNavKey])
+
+  const jumpToSection = (id: string) => {
+    // Paint the clicked key before the observer catches up; hold it through
+    // the programmatic scroll so a maxed well does not steal the key for a
+    // lower neighbor that also intersects.
+    pinnedSectionRef.current = id
+    jumpScrollingRef.current = true
+    setActiveSection(id)
+    const node = document.getElementById(id)
+    if (!(node instanceof HTMLElement)) {
+      jumpScrollingRef.current = false
+      return
+    }
+    const scroller = node.closest(".habit95-fields")
+    if (scroller instanceof HTMLElement) {
+      // scrollIntoView also scrolls the dialog (overflow:hidden still moves)
+      // and the page, which carries the key strip off the window.
+      const delta = node.getBoundingClientRect().top - scroller.getBoundingClientRect().top
+      scroller.scrollTop += delta - 8
+    }
+    node.focus({ preventScroll: true })
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        jumpScrollingRef.current = false
+      })
+    })
+  }
+
+  const prioritizeHabit = () => {
+    setTask((current) => applyPriorityPress(current))
+    setPriorityReasonOpen(true)
+  }
+
+  const resolvePriorityReason = (text: string | undefined) => {
+    setPriorityReasonOpen(false)
+    const trimmed = text?.trim()
+    if (!trimmed) return
+    setTask((current) => {
+      const eventId = current.priorityEvents?.at(-1)?.id
+      if (!eventId || current.priorityEvents?.at(-1)?.source !== "manual") return current
+      return attachPriorityReasoning(current, eventId, trimmed)
+    })
+  }
+
   return (
     <>
     <form id="habit95-form" onSubmit={handleSubmit} className="habit95-form">
-      <div className="habit95-fields">
+      <nav className="habit95-section-nav" aria-label="Habit sections">
+        {sectionNav.map((section) => (
+          <button
+            key={`${section.id}:${section.label}`}
+            type="button"
+            className="habit95-btn habit95-section-key"
+            aria-current={activeSection === section.id ? "true" : undefined}
+            aria-controls={section.id}
+            onClick={() => jumpToSection(section.id)}
+          >
+            {section.label}
+          </button>
+        ))}
+      </nav>
+      <div className="habit95-fields" ref={setFieldsEl}>
       {neglectSentence ? (
         <p className="habit95-neglect-line habit95-sec-neglect">{neglectSentence}</p>
       ) : null}
-      <div className="habit95-field habit95-sec-name">
-        <label htmlFor="task-name">Habit Name</label>
-        <input
-          id="task-name"
-          className="habit95-input"
-          value={task.name}
-          onChange={(e) => setTask({ ...task, name: e.target.value })}
-          placeholder="e.g. Stretch, 10 pages, no phone after 10"
-          required
-          autoFocus
-        />
-        {initialTask ? (
-          <button
-            type="button"
-            className="habit95-btn"
-            style={{ marginTop: 6, alignSelf: "flex-start" }}
-            onClick={() => {
-              const habit = { ...task, id: initialTask.id }
-              openHabitInLists(habit)
-              onLeaveForItem?.()
-            }}
-          >
-            Open item in Lists
-          </button>
-        ) : null}
-      </div>
-
-      <fieldset className="habit95-group habit95-sec-gem">
-        <legend>Gem</legend>
-        <p className="habit95-hint">Jewel on the row edit button. A random catalog stone is assigned; pick or upload to keep your own.</p>
-        <HabitGemChooser
-          value={task.gem}
-          fallback={resolveTaskGem(task)}
-          onChange={(gem) => setTask({ ...task, gem: gem || pickRandomCatalogGem() })}
-          label="Habit gem"
-        />
-      </fieldset>
-
-      <fieldset className="habit95-group habit95-sec-priority">
+      <fieldset id="habit95-sec-priority" tabIndex={-1} className="habit95-group habit95-sec-priority">
         <legend>Priority</legend>
         <p className="habit95-hint">
           Prioritize habit refreshes a green star. It is bright the day it is refreshed and loses a
@@ -1212,11 +1411,7 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
           strength. A fully empty week (or week/month) still auto-prioritizes the next period and compounds.
         </p>
         <div className="habit-priority-actions">
-          <button
-            type="button"
-            className="habit95-btn"
-            onClick={() => setTask((current) => applyPriorityPress(current))}
-          >
+          <button type="button" className="habit95-btn" onClick={prioritizeHabit}>
             Prioritize habit
           </button>
           <Star
@@ -1229,9 +1424,15 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
         </div>
         {(task.priorityLog?.length ?? 0) > 0 ? (
           <ol className="habit-priority-log">
-            {[...(task.priorityLog ?? [])].reverse().map((line, index) => (
-              <li key={`${task.priorityLog?.length ?? 0}-${index}`}>{line}</li>
-            ))}
+            {(task.priorityLog ?? []).map((line, index) => ({ line, index })).reverse().map(({ line, index }) => {
+              const why = reasoningUnderLogLine(task, index)
+              return (
+                <li key={`${task.priorityLog?.length ?? 0}-${index}`}>
+                  {line}
+                  {why ? <span className="habit-priority-why">{why}</span> : null}
+                </li>
+              )
+            })}
           </ol>
         ) : null}
         <label className="habit95-check">
@@ -1271,8 +1472,45 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
           Ignore neglect
         </label>
       </fieldset>
+      <div id="habit95-sec-name" tabIndex={-1} className="habit95-field habit95-sec-name">
+        <label htmlFor="task-name">Habit Name</label>
+        <input
+          id="task-name"
+          className="habit95-input"
+          value={task.name}
+          onChange={(e) => setTask({ ...task, name: e.target.value })}
+          placeholder="e.g. Stretch, 10 pages, no phone after 10"
+          required
+          autoFocus
+        />
+        {initialTask ? (
+          <button
+            type="button"
+            className="habit95-btn"
+            style={{ marginTop: 6, alignSelf: "flex-start" }}
+            onClick={() => {
+              const habit = { ...task, id: initialTask.id }
+              openHabitInLists(habit)
+              onLeaveForItem?.()
+            }}
+          >
+            Open item in Lists
+          </button>
+        ) : null}
+      </div>
 
-      <fieldset className="habit95-group habit95-sec-freq">
+      <fieldset id="habit95-sec-gem" tabIndex={-1} className="habit95-group habit95-sec-gem">
+        <legend>Gem</legend>
+        <p className="habit95-hint">Jewel on the row edit button. A random catalog stone is assigned; pick or upload to keep your own.</p>
+        <HabitGemChooser
+          value={task.gem}
+          fallback={resolveTaskGem(task)}
+          onChange={(gem) => setTask({ ...task, gem: gem || pickRandomCatalogGem() })}
+          label="Habit gem"
+        />
+      </fieldset>
+
+      <fieldset id="habit95-sec-freq" tabIndex={-1} className="habit95-group habit95-sec-freq">
         <legend>Frequency</legend>
         <div className="habit95-freq" role="radiogroup" aria-label="Frequency">
           {FREQUENCIES.map(({ value, label }) => (
@@ -1299,7 +1537,7 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
         </div>
       </fieldset>
 
-      <fieldset className="habit95-group habit95-sec-type">
+      <fieldset id="habit95-sec-type" tabIndex={-1} className="habit95-group habit95-sec-type">
         <legend>Habit Type</legend>
         <p className="habit95-hint">How you will mark it done.</p>
         <div className="habit95-types" role="radiogroup" aria-label="Habit Type">
@@ -1322,12 +1560,23 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
         </div>
       </fieldset>
 
-      <fieldset className="habit95-group habit95-sec-sources">
+      <fieldset id="habit95-sec-sources" tabIndex={-1} className="habit95-group habit95-sec-sources">
         <legend>Completion sources</legend>
         <p className="habit95-hint">
           A habit can listen to more than one place. The list is trust order: the first source that has something to
           say wins when they disagree. A source with no observation is skipped. A number or tick you type still wins.
         </p>
+        {showTagRolesLegend ? (
+          <div role="note" aria-label="Tag source roles">
+            <p className="habit95-hint">
+              Counts Done = Tags / one tag name / each Done is 1 / goal is Target → Amount.
+            </p>
+            <p className="habit95-hint">
+              Fills minutes = Tracking tags / Auto-fill / many catalog tags.
+            </p>
+            <p className="habit95-hint">Same catalog, separate picks.</p>
+          </div>
+        ) : null}
         <HabitPipelineEditor
           pipelines={displayPipelines}
           onChange={commitPipelines}
@@ -1340,30 +1589,27 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
                     period. The habit’s Done line carries the tag. A tracking block that already has it still files one
                     Done line.
                   </p>
-                  {trackingTags.length > 0 ? (
-                    <div className="habit95-tags" role="group" aria-label="Tagged tasks tag">
-                      {trackingTags.map((tag) => {
-                        const on = normalizeTag(tag.name) === normalizeTag(task.taggedTaskTag ?? "")
-                        return (
-                          <button
-                            key={tag.id}
-                            type="button"
-                            className="habit95-tag"
-                            aria-pressed={on}
-                            onClick={() =>
-                              setTask((current) => ({
-                                ...current,
-                                taggedTaskTag: on ? "" : normalizeTag(tag.name),
-                              }))
-                            }
-                          >
-                            <span className="habit95-tag-dot" style={{ background: tag.color }} />
-                            {tag.name}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  ) : null}
+                  <p className="habit95-hint">
+                    These chips are the Tracking tags. A new tag, a new name, or a new color here is the same tag on
+                    Auto-fill from Tracking.
+                  </p>
+                  <HabitTagCatalog
+                    tags={trackingTags}
+                    groupLabel="Tags, shared with Auto-fill from Tracking"
+                    newTagAriaLabel="New tag"
+                    pressedMark="counts"
+                    pressed={(tag) => normalizeTag(tag.name) === normalizeTag(task.taggedTaskTag ?? "")}
+                    onToggle={(tag) => {
+                      const on = normalizeTag(tag.name) === normalizeTag(task.taggedTaskTag ?? "")
+                      setTask((current) => ({
+                        ...current,
+                        taggedTaskTag: on ? "" : normalizeTag(tag.name),
+                      }))
+                    }}
+                    onCreate={createCountTag}
+                    onEdited={noteCatalogEdit}
+                  />
+                  <p className="habit95-hint">One tag name. Goal amount is Target → Amount.</p>
                   <div className="habit95-field">
                     <label htmlFor="tagged-task-tag">Tag</label>
                     <input
@@ -1374,6 +1620,9 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
                       placeholder="cooking"
                       onChange={(e) => setTask((current) => ({ ...current, taggedTaskTag: e.target.value }))}
                     />
+                    <p className="habit95-hint">
+                      May be a name not in the catalog; chips pick from the catalog. Same string either way.
+                    </p>
                   </div>
                 </>
               )
@@ -1716,15 +1965,26 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
               )
             }
             if (row.kind === "trackingTags") {
-              return <p className="habit95-hint">{COMPLETION_SOURCE_HINTS.tags}</p>
+              return (
+                <>
+                  <p className="habit95-hint">{COMPLETION_SOURCE_HINTS.tags}</p>
+                  <p className="habit95-hint">Tags and options are in Auto-fill from Tracking below.</p>
+                </>
+              )
             }
             return <p className="habit95-hint">{COMPLETION_SOURCE_HINTS.manual}</p>
           }}
         />
+        {showBothTagRoles ? (
+          <p className="habit95-hint" role="status">
+            Counts Done: {doneCountName || "none"} · Fills minutes:{" "}
+            {minuteTagNames.length > 0 ? minuteTagNames.join(", ") : "none"}
+          </p>
+        ) : null}
       </fieldset>
 
       {(task.type === TaskType.GOAL || task.type === TaskType.TIME || task.type === TaskType.COUNT) && (
-        <fieldset className="habit95-group habit95-sec-target">
+        <fieldset id="habit95-sec-target" tabIndex={-1} className="habit95-group habit95-sec-target">
           <legend>Target</legend>
           <div className="habit95-goal-grid">
             <div className="habit95-field">
@@ -1786,7 +2046,7 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
       )}
 
       {task.type === TaskType.INCREMENTAL && (
-        <fieldset className="habit95-group habit95-sec-target">
+        <fieldset id="habit95-sec-target" tabIndex={-1} className="habit95-group habit95-sec-target">
           <legend>Climb</legend>
           <div className="habit95-types" role="radiogroup" aria-label="Climb cadence">
             <button
@@ -1854,7 +2114,7 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
         </fieldset>
       )}
 
-      <fieldset className="habit95-group habit95-sec-points">
+      <fieldset id="habit95-sec-points" tabIndex={-1} className="habit95-group habit95-sec-points">
         <legend>Points &amp; bonus</legend>
         <p className="habit95-hint">
           The number below is this habit&apos;s own points. A weekly, monthly, or season habit pays that number
@@ -1899,7 +2159,7 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
       </fieldset>
 
 
-      <fieldset className="habit95-group habit95-sec-time">
+      <fieldset id="habit95-sec-time" tabIndex={-1} className="habit95-group habit95-sec-time">
         <legend>Time estimate</legend>
         <p className="habit95-hint">
           Marking this habit done writes a row on your To&nbsp;Do list. Give it a length and that row carries a real
@@ -1971,7 +2231,7 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
         )}
       </fieldset>
 
-      <details className="habit95-group habit95-details habit95-sec-wording">
+      <details id="habit95-sec-wording" tabIndex={-1} className="habit95-group habit95-details habit95-sec-wording">
         <summary>Done task wording</summary>
         <p className="habit95-hint">
           Optional. “read {"{value}"} pages” with 7 logged becomes “read 7 pages”, even when the goal is 3. Leave this
@@ -2000,61 +2260,28 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
       </details>
 
       {showTracking && (
-        <fieldset className="habit95-group habit95-sec-fill">
+        <fieldset id="habit95-sec-fill" tabIndex={-1} className="habit95-group habit95-sec-fill">
           <legend>Auto-fill from Tracking</legend>
           <p className="habit95-hint">
             Pick tags from the Tracking tab. Every minute you paint with a pen carrying one of them counts toward this
             habit {periodWord} — no typing.
           </p>
+          <p className="habit95-hint">
+            These chips are those same Tracking tags. Picking one here counts its minutes. It does not change which
+            single tag counts as a done task.
+          </p>
 
-          {trackingTags.length > 0 ? (
-            <div className="habit95-tags" role="group" aria-label="Tracking tags">
-              {trackingTags.map((tag) => {
-                const on = link.tagIds.includes(tag.id)
-                return (
-                  <button
-                    key={tag.id}
-                    type="button"
-                    className="habit95-tag"
-                    aria-pressed={on}
-                    onClick={() => toggleLinkTag(tag.id)}
-                  >
-                    <span className="habit95-tag-dot" style={{ background: tag.color }} />
-                    {tag.name}
-                  </button>
-                )
-              })}
-            </div>
-          ) : (
-            <p className="habit95-hint">No tracking tags yet. Name one here and it shows up in Tracking too.</p>
-          )}
-          <div className="habit95-goal-grid" style={{ marginTop: 8 }}>
-            <div className="habit95-field">
-              <label htmlFor="new-tracking-tag">New tag</label>
-              <input
-                id="new-tracking-tag"
-                className="habit95-input"
-                value={newTagName}
-                placeholder="Deep work"
-                aria-label="New tracking tag"
-                onChange={(e) => setNewTagName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault()
-                    createTrackingTag()
-                  }
-                }}
-              />
-            </div>
-            <div className="habit95-field">
-              <label htmlFor="create-tracking-tag" className="sr-only">
-                Create tag
-              </label>
-              <button id="create-tracking-tag" type="button" className="habit95-btn" onClick={createTrackingTag} disabled={!newTagName.trim()}>
-                Create tag
-              </button>
-            </div>
-          </div>
+          <HabitTagCatalog
+            tags={trackingTags}
+            groupLabel="Tracking tags, shared with Tags"
+            newTagAriaLabel="New tracking tag"
+            emptyHint="No tracking tags yet. Name one here and it shows up in Tracking too."
+            pressedMark="minutes"
+            pressed={(tag) => link.tagIds.includes(tag.id)}
+            onToggle={(tag) => toggleLinkTag(tag.id)}
+            onCreate={createTrackingTag}
+            onEdited={noteCatalogEdit}
+          />
 
           {link.tagIds.length > 0 && (
             <>
@@ -2131,7 +2358,7 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
       )}
 
       {task.frequency === "daily" && (
-        <fieldset className="habit95-group habit95-sec-lift">
+        <fieldset id="habit95-sec-lift" tabIndex={-1} className="habit95-group habit95-sec-lift">
           <legend>Lift when a log says</legend>
           <p className="habit95-hint">
             An all-nighter is the morning of the night you stayed up. The evening before is the day that led into it.
@@ -2207,7 +2434,7 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
       )}
 
       {task.frequency === "daily" && task.type === TaskType.BOOLEAN && (
-        <fieldset className="habit95-group habit95-sec-links">
+        <fieldset id="habit95-sec-links" tabIndex={-1} className="habit95-group habit95-sec-links">
           <legend>Connections</legend>
           <p className="habit95-hint">
             A connection checks this habit from something you already logged. You can still tick the cell yourself.
@@ -2339,7 +2566,7 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
       )}
 
       {sourceOrder.includes("keywords") && (
-      <fieldset className="habit95-group habit95-sec-keywords">
+      <fieldset id="habit95-sec-keywords" tabIndex={-1} className="habit95-group habit95-sec-keywords">
         <legend>BIM Keywords</legend>
         <p className="habit95-hint">
           Each phrase is a whole BIM message. “drank water” counts only when that is the entire message, not when
@@ -2481,6 +2708,11 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
       frequency={task.frequency}
       container={listPopupHost.current}
       onClose={() => setOpenListId(null)}
+    />
+    <PriorityReasonDialog
+      open={priorityReasonOpen}
+      subject={task.name.trim() || "This habit"}
+      onResolve={resolvePriorityReason}
     />
     </>
   )

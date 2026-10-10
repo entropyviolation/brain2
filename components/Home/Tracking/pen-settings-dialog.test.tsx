@@ -22,10 +22,17 @@ describe("PenSettingsDialog", () => {
   it("assigns a tag to the pen and saves it", () => {
     render(<PenSettingsDialog scopeId="activity" pen={activityPen("act-work")} onClose={() => {}} />)
 
-    fireEvent.click(screen.getByRole("button", { name: /Exercise/ }))
+    fireEvent.click(screen.getByRole("button", { name: "Exercise" }))
     fireEvent.click(screen.getByRole("button", { name: "Save pen" }))
 
     expect(activityPen("act-work").tags).toEqual(["tag-work", "tag-exercise"])
+  })
+
+  it("names each tag toggle for accessibility and keeps a bead", () => {
+    render(<PenSettingsDialog scopeId="activity" pen={activityPen("act-work")} onClose={() => {}} />)
+    const exercise = screen.getByRole("button", { name: "Exercise" })
+    expect(exercise).toHaveAttribute("aria-label", "Exercise")
+    expect(exercise.querySelector(".trk-tag-bead")).toBeTruthy()
   })
 
   it("creates a new tag and attaches it in one step", () => {

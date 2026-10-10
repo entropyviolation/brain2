@@ -25,6 +25,8 @@ import { DEFAULT_HOME_CITY, useUserSettingsStore } from "@/lib/user-settings-sto
 import type { CalendarEvent, Task, TimeLogEntry } from "@/lib/types"
 import { readPlanDrag, writePlanDrag, type PlanDragPayload } from "@/lib/plan-drag"
 import type { TrackedAgendaBlock } from "@/components/Home/Tracking/tracked-agenda-blocks"
+import { CatalogTagLabel } from "@/components/Home/Tracking/catalog-tag-chip"
+import { temporalAttr } from "@/lib/temporal-polarity"
 import { usePlanPointerDrop } from "./use-plan-rail-drag"
 import {
   hhmmToMinutes,
@@ -187,6 +189,7 @@ interface GridItem {
   isGhost?: boolean
   location?: string
   sublabel?: string
+  tags?: TrackedAgendaBlock["tags"]
   /** Event-linked prerequisite deadline (HM1) — renders a "must be done before" badge. */
   mustBeDoneBefore?: Date
 }
@@ -384,6 +387,7 @@ export function AgendaGrid({
           durationMinutes: block.durationMinutes,
           color: block.color,
           sublabel: block.sublabel,
+          tags: block.tags,
         })
       }
     }
@@ -608,6 +612,13 @@ export function AgendaGrid({
               const chipColor = isTracked || (isEvent && !item.isGhost) ? item.color : undefined
               const isOpal = mode === "plan" && !isLog && !isTracked && !isPlanned && !item.isGhost
 
+              const polarity =
+                isTracked || isLog
+                  ? temporalAttr("retrospective")
+                  : isPlanned || item.isGhost || isEvent || mode === "plan"
+                    ? temporalAttr("prospective")
+                    : undefined
+
               return (
                 <div
                   key={`${item.id}-${hour}`}
@@ -619,6 +630,7 @@ export function AgendaGrid({
                         : "agenda-block"
                   }
                   data-kind={item.kind}
+                  data-temporal={polarity}
                   style={{
                     top: topOffset,
                     height,
@@ -688,6 +700,7 @@ export function AgendaGrid({
               key={block.id}
               className="agenda-span agenda-tracked-ghost"
               data-kind="tracked-ghost"
+              data-temporal={temporalAttr("retrospective")}
               style={{
                 top,
                 height,
@@ -711,6 +724,8 @@ export function AgendaGrid({
               key={item.id}
               type="button"
               className="agenda-block agenda-span"
+              data-kind="tracked"
+              data-temporal={temporalAttr("retrospective")}
               style={{
                 top,
                 height,
@@ -722,6 +737,13 @@ export function AgendaGrid({
               onClick={() => onTrackedBlockClick?.(item.id)}
             >
               <div className="agenda-block-title">{item.label}</div>
+              {item.tags && item.tags.length > 0 ? (
+                <div className="agenda-block-tags">
+                  {item.tags.map((tag) => (
+                    <CatalogTagLabel key={tag.id} tag={tag} />
+                  ))}
+                </div>
+              ) : null}
               {item.sublabel && <div className="agenda-block-sub">{item.sublabel}</div>}
             </button>
           )

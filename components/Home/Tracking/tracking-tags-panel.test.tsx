@@ -1,8 +1,10 @@
-import { fireEvent, render, screen } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { TrackingTagsPanel } from "./tracking-tags-panel"
+import { TagSettingsHost } from "./tag-settings-host"
+import { openTagSettings } from "./open-tag-settings"
 
 beforeEach(() => {
   resetAllStores()
@@ -11,6 +13,7 @@ beforeEach(() => {
 function renderWell() {
   return render(
     <div className="trk95">
+      <TagSettingsHost />
       <TrackingTagsPanel />
     </div>,
   )
@@ -49,14 +52,27 @@ describe("TrackingTagsPanel", () => {
     expect(screen.getByLabelText("New tag name")).toHaveValue("")
   })
 
-  it("renames a tag from the steel edit row", () => {
+  it("opens tag settings from Edit and renames there", async () => {
     renderWell()
     fireEvent.click(screen.getByRole("button", { name: "Edit tag Sleep" }))
-    const name = screen.getByLabelText("Tag name")
-    fireEvent.change(name, { target: { value: "Night" } })
-    fireEvent.click(screen.getByRole("button", { name: "Save tag" }))
-    expect(useTimeTrackingStore.getState().tags.some((t) => t.name === "Night")).toBe(true)
+    await waitFor(() => {
+      expect(screen.getByLabelText("Tag name")).toHaveValue("Sleep")
+    })
+    fireEvent.change(screen.getByLabelText("Tag name"), { target: { value: "Night" } })
+    fireEvent.click(screen.getByRole("button", { name: "Save" }))
+    await waitFor(() => {
+      expect(useTimeTrackingStore.getState().tags.some((t) => t.name === "Night")).toBe(true)
+    })
     expect(screen.getByText("Night")).toBeInTheDocument()
+  })
+
+  it("opens tag settings when openTagSettings is called for a key", async () => {
+    renderWell()
+    const sleep = useTimeTrackingStore.getState().tags.find((t) => t.name === "Sleep")!
+    openTagSettings(sleep.id)
+    await waitFor(() => {
+      expect(screen.getByLabelText("Tag name")).toHaveValue("Sleep")
+    })
   })
 
   it("deletes a tag after confirm", () => {

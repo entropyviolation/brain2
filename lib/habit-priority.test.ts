@@ -6,6 +6,7 @@ import {
   applyPermanentPriority,
   applyPriorityPress,
   applyRitualPriority,
+  attachPriorityReasoning,
   autoPriorityWeight,
   blendPriorityScore,
   clampMorningRitualPointMultiplier,
@@ -119,6 +120,119 @@ describe("priority star fade", () => {
     expect(next.priorityLog?.[0]).toContain("Selected from day ritual")
     expect(next.priorityLog?.[0]).toContain("Oct 9")
     expect(next.priorityRefreshedOn).toBe(key)
+  })
+})
+
+describe("priority events", () => {
+  const refreshed = day(2026, 9, 9)
+  const key = formatLocalDateKey(refreshed)
+
+  it("a manual press writes set, then refreshed, and omits blank reasoning", () => {
+    const set = applyPriorityPress(stretch, refreshed)
+    const first = set.priorityEvents?.at(-1)
+    expect(set.priorityLog).toEqual(["Priority set Oct 9."])
+    expect(first?.kind).toBe("set")
+    expect(first?.source).toBe("manual")
+    expect(first?.dayKey).toBe(key)
+    expect(first?.at).toBe(refreshed.toISOString())
+    expect(first?.id.startsWith("hp_")).toBe(true)
+    expect(first).not.toHaveProperty("reasoning")
+    expect(first).not.toHaveProperty("weightBefore")
+    expect(set.priorityRefreshedOn).toBe(key)
+
+    const blank = applyPriorityPress(stretch, { asOf: refreshed, reasoning: "   \n  " })
+    expect(blank.priorityLog).toEqual(["Priority set Oct 9."])
+    expect(blank.priorityEvents?.at(-1)).not.toHaveProperty("reasoning")
+    expect(blank.priorityEvents?.at(-1)?.id).not.toBe(first?.id)
+
+    const again = applyPriorityPress(set, day(2026, 9, 10))
+    expect(again.priorityLog).toEqual(["Priority set Oct 9.", "Priority refreshed Oct 10."])
+    expect(again.priorityEvents?.map((event) => event.kind)).toEqual(["set", "refreshed"])
+    expect(again.priorityEvents?.at(-1)?.source).toBe("manual")
+    expect(again.priorityEvents?.at(-1)?.dayKey).toBe("2026-10-10")
+    expect(again.priorityEvents?.at(-1)).not.toHaveProperty("reasoning")
+    expect(again.priorityRefreshedOn).toBe("2026-10-10")
+  })
+
+  it("stores trimmed reasoning on a manual press and leaves the log line unchanged", () => {
+    const set = applyPriorityPress(stretch, { asOf: refreshed, reasoning: "  sleep is thin  " })
+    expect(set.priorityLog).toEqual(["Priority set Oct 9."])
+    expect(set.priorityEvents?.at(-1)?.reasoning).toBe("sleep is thin")
+    expect(set.priorityEvents?.at(-1)?.kind).toBe("set")
+    expect(effectivePriorityWeight(set, {}, refreshed, "daily")).toBe(effectivePriorityWeight(stretch, {}, refreshed, "daily"))
+    expect(priorityStarFade(set.priorityRefreshedOn, refreshed)).toBe(100)
+  })
+
+  it("a one-argument press still appends the set line and a manual event", () => {
+    const set = applyPriorityPress(stretch)
+    expect(set.priorityLog?.[0]).toMatch(/^Priority set /)
+    expect(set.priorityEvents?.at(-1)?.source).toBe("manual")
+    expect(set.priorityEvents?.at(-1)?.kind).toBe("set")
+    expect(set.priorityEvents?.at(-1)).not.toHaveProperty("reasoning")
+  })
+
+  it("attachPriorityReasoning sets text, and a blank note omits the field", () => {
+    const set = applyPriorityPress(stretch, refreshed)
+    const id = set.priorityEvents?.at(-1)?.id
+    expect(id).toBeTruthy()
+    const noted = attachPriorityReasoning(set, id!, "  because the week slipped ")
+    expect(noted.priorityEvents?.at(-1)?.reasoning).toBe("because the week slipped")
+    expect(noted.priorityLog).toEqual(["Priority set Oct 9."])
+    expect(noted.priorityRefreshedOn).toBe(key)
+    const cleared = attachPriorityReasoning(noted, id!, "  ")
+    expect(cleared.priorityEvents?.at(-1)).not.toHaveProperty("reasoning")
+    expect(cleared.priorityEvents?.at(-1)?.id).toBe(id)
+    expect(attachPriorityReasoning(set, "missing", "nope")).toBe(set)
+    expect(attachPriorityReasoning(stretch, id!, "late")).toBe(stretch)
+  })
+
+  it("snapshots weight and the star when context is passed", () => {
+    const pinned: WeeklyTask = { ...stretch, priorityPinned: true }
+    const set = applyPriorityPress(pinned, {
+      asOf: refreshed,
+      data: {},
+      frequency: "daily",
+      inRitualToday: true,
+      reasoning: "keep it",
+    })
+    const event = set.priorityEvents?.at(-1)
+    const weight = effectivePriorityWeight(pinned, {}, refreshed, "daily")
+    expect(event?.starBefore).toBe(100)
+    expect(event?.weightBefore).toBe(weight)
+    expect(event?.weightAfter).toBe(weight)
+    expect(event?.reasoning).toBe("keep it")
+    expect(priorityMarkPercent(set, refreshed)).toBe(100)
+  })
+
+  it("a ritual event is source ritual and has no reasoning", () => {
+    const next = applyRitualPriority(stretch, "day", refreshed)
+    const event = next.priorityEvents?.at(-1)
+    expect(next.priorityLog?.[0]).toContain("Selected from day ritual")
+    expect(next.priorityLog?.[0]).toContain("Oct 9")
+    expect(event?.kind).toBe("ritual")
+    expect(event?.source).toBe("ritual")
+    expect(event?.dayKey).toBe(key)
+    expect(event).not.toHaveProperty("reasoning")
+    expect(next.priorityRefreshedOn).toBe(key)
+  })
+
+  it("permanent on and off append events without reasoning", () => {
+    const held = applyPermanentPriority(stretch, true, refreshed)
+    expect(held.priorityLog?.at(-1)).toBe("Permanent priority set Oct 9.")
+    expect(held.priorityEvents?.at(-1)?.kind).toBe("permanent-on")
+    expect(held.priorityEvents?.at(-1)?.source).toBe("permanent")
+    expect(held.priorityEvents?.at(-1)).not.toHaveProperty("reasoning")
+    expect(held.priorityPermanent).toBe(true)
+    const same = applyPermanentPriority(held, true, day(2026, 9, 10))
+    expect(same).toBe(held)
+    expect(same.priorityEvents).toHaveLength(1)
+    const released = applyPermanentPriority(held, false, day(2026, 9, 12))
+    expect(released.priorityLog?.at(-1)).toBe("Permanent priority removed Oct 12.")
+    expect(released.priorityEvents?.map((event) => event.kind)).toEqual(["permanent-on", "permanent-off"])
+    expect(released.priorityEvents?.at(-1)?.source).toBe("permanent")
+    expect(released.priorityEvents?.at(-1)).not.toHaveProperty("reasoning")
+    expect(released.priorityPermanent).toBeUndefined()
+    expect(priorityMarkPercent(released, day(2026, 9, 12))).toBe(0)
   })
 })
 
