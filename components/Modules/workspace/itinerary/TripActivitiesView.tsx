@@ -14,6 +14,7 @@ import { useTaskStore } from "@/lib/task-store"
 import { useModulesStore } from "@/lib/modules-store"
 import { createListItem, withCategoryDefaults } from "@/lib/item-utils"
 import { citiesFromTripItinerary, itineraryShowsSleep } from "@/lib/trip-itinerary"
+import { persistTripItineraryItems } from "@/lib/trip-itinerary-items"
 import {
   cityChipKey,
   dedupeCityLabels,
@@ -475,9 +476,11 @@ export function TripActivitiesView({
         return { ...d, sleepName: nextName, sleepAddress: nextAddress }
       })
       if (!changed) return
-      updateModule(module.id, { config: { tripItinerary: { ...data, days } } })
+      const next = { ...data, days }
+      persistTripItineraryItems(module, next)
+      updateModule(module.id, { config: { tripItinerary: next } })
     },
-    [module?.id, module?.config?.tripItinerary, city, updateModule],
+    [module, city, updateModule],
   )
 
   const persistListNames = useCallback(

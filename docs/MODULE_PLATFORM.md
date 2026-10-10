@@ -90,24 +90,23 @@ are not Items. That is the debt, not a style of module to imitate.
 
 ---
 
-## Debt: the two shadow databases
+## Debt: the two shadow databases — **partially retired (Wave 10)**
 
-Two shipped modules predate these laws and currently break Law 2. This is stated
-plainly so no future module copies the pattern:
+Tidy and Trip **write records to Items** first (`lib/house-cleaning-items.ts`,
+`lib/trip-itinerary-items.ts`). Module Lists import is the same projection those
+writers call. Stylesheets (`tidy.css`, itinerary CSS) are untouched.
 
-- **House Cleaning / Tidy** (`lib/house-cleaning.ts`) keeps areas, hierarchical
-  chores, subareas, needed items, stuck sessions, and plan tiers on
-  `module.config.houseCleaning`.
-- **Trip Itinerary** (`lib/trip-itinerary.ts`) keeps days, plans, notes, and
-  flights on `module.config.tripItinerary`.
+**One-release compatibility shim:** `module.config.houseCleaning` and
+`module.config.tripItinerary` are still **dual-written** and still read when no
+Items exist yet (or for day meta / session chrome that is not on Items —
+Tidy timer/filters/stuck/plan runs; Trip city/weather/sunrise). Do not copy a
+private record tree for a new module. After this release window, drop the
+config record trees and keep only prefs/session slices on `module.config`.
 
-The cost is exactly the citizenship list above: a stuck session is not ingestible,
-and Tidy/Trip still *write* a private tree. **One-way Module Lists import** now
-projects Tidy chores (Whole house → area sublists, with priority, estimates,
-actuals, completed, nested subtasks) and Trip days into ordinary lists so Lists
-and search can see them (`lib/module-list-import.ts`,
-[`components/Lists/MODULE_LISTS.md`](../components/Lists/MODULE_LISTS.md)). They
-are still rooms with a side door until two-way sync makes Items the write path.
+**Still deferred:** full two-way sync (a Lists-tab edit of a chore that Tidy
+must not overwrite on next open). Module Lists import remains one-way for
+mapped fields until that lands
+([`components/Lists/MODULE_LISTS.md`](../components/Lists/MODULE_LISTS.md)).
 
 **GradSearch** is a different exception: the research catalog ships as
 `components/Modules/workspace/gradsearch/data.json` (the standalone `data.js`
@@ -116,17 +115,15 @@ edits, hidden programs — stay in the same `gs-*` localStorage keys as that app
 It does not write `module.config` and it does not create Items. That is so the
 explorer can stay the same screen, not a pattern for new user data.
 
-**Target shape** — the model already proven by Operations, where an operation is
-a `Task` with `categories` / `panels` / `trackingTagIds` attributes rather than a
-bespoke record:
+**Shape now (Operations pattern):**
 
-- A cleaning area → a list (or an Item with children).
-- A chore → an Item with `importance`, `estimateMinutes`, `actualMinutes`, `area`.
-- A trip day → a dated Item; a flight → a `flight`-type Item (that type exists).
-- Stuck mode, sidequests, plan tiers, the DNA blender → **behavior and skin**,
-  computed from Items on the fly.
+- A cleaning area → a nested list under Whole house.
+- A chore / needed row → an Item with `importance`, estimates, actuals, area.
+- A trip day → a nested list; a schedule row → an Item (`flight` type when a flight).
+- Stuck mode, sidequests, plan tiers, the DNA blender → **behavior and skin**
+  (session on config for now).
 
-Tidy keeps its stylesheet and its genius. It loses its pocket.
+Tidy keeps its stylesheet and its genius. The pocket is the shim, not the home.
 
 ---
 
@@ -228,8 +225,8 @@ the refactor order that makes that step honest.
    manifests. If Itinerary and Budget cannot be stated as manifests, the manifest
    is wrong.
 6. **Migrate the shadow databases** onto Items, keeping both stylesheets
-   untouched. Tidy is the proof that a 2k-line mini-app can be a first-class
-   citizen.
+   untouched. **Partial (Wave 10):** Items are the write path; config dual-write
+   shim for one release; drop the shim and finish two-way Lists sync next.
 7. **Then** harvest shared chrome, if it still seems worth it — `usePaintStroke`,
    `confirm()`, and one `ItemDetail` with a density mode. Doing this before the
    manifest exists would freeze today's chrome as the platform's API.

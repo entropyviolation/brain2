@@ -2,13 +2,12 @@
  * lib/house-cleaning.ts — Tidy house-cleaning app model
  *
  * Port of `/Users/otherworld/house-cleaning` (vanilla Tidy) onto the Modules
- * platform. State lives on `module.config.houseCleaning` (same self-contained
- * pattern as `tripItinerary`) so the mini-app can keep its own tree of areas,
- * hierarchical tasks, needed items, stuck sessions, per-area subareas, and plans
- * without flattening them onto Lists/Items. `lib/module-list-import-tidy.ts`
- * projects that tree into Module Lists (Whole house → area sublists → chores)
- * so Lists, search, and Analytics can see the same records. Tidy remains the
- * write source until two-way sync.
+ * platform. Wave 10: chores (areas, chores, needed) write to Items via
+ * `lib/house-cleaning-items.ts`. `module.config.houseCleaning` is dual-written
+ * for one release as a read shim and still holds session chrome (timer, filters,
+ * stuck/plan/sidequest runs, theme). `lib/module-list-import-tidy.ts` remains
+ * the Lists projection used by that writer. Full two-way Lists→Tidy edit sync
+ * is deferred. Stylesheet (`tidy.css`) untouched.
  *
  * Pure + unit-testable. The React shell is
  * `components/Modules/workspace/housecleaning/TidyView.tsx`.

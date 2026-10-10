@@ -1,14 +1,18 @@
 /**
  * TidyView — House Cleaning App (port of /Users/otherworld/house-cleaning)
  *
- * Self-contained mini-app stored on `module.config.houseCleaning`. Internal
- * navigation (home / area / whole house / needed / stuck / plan) lives here so
- * it does not collide with the app hash pop-out route.
+ * Chores / needed / areas write to Items first (`persistHouseCleaningItems`).
+ * `module.config.houseCleaning` is dual-written for one release as a read shim
+ * (session chrome + unmigrated vaults). Internal navigation (home / area /
+ * whole house / needed / stuck / plan) lives here so it does not collide with
+ * the app hash pop-out route.
  */
 "use client"
 
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react"
 import { useModulesStore, type ModuleInstance } from "@/lib/modules-store"
+import { persistHouseCleaningItems, resolveHouseCleaning } from "@/lib/house-cleaning-items"
+import { useTaskStore } from "@/lib/task-store"
 import {
   IMPORTANCE,
   PLAN_TIERS,
@@ -54,7 +58,6 @@ import {
   listSummary,
   liveSec,
   mono,
-  normalizeHouseCleaning,
   openSidequests,
   normalizeStuck,
   parseEst,
@@ -177,13 +180,19 @@ function ImpSelect({ value }: { value: Importance }) {
   )
 }
 
+function initialHouseState(module?: ModuleInstance): HouseCleaningState {
+  if (!module) return seedHouseCleaning()
+  const { tasks, lists } = useTaskStore.getState()
+  return resolveHouseCleaning(module, tasks, lists)
+}
+
 export function TidyView({ module }: { module?: ModuleInstance }) {
   const updateModule = useModulesStore((s) => s.updateModule)
   const moduleId = module?.id
+  const moduleRef = useRef(module)
+  moduleRef.current = module
   const storeReadyRef = useRef(false)
-  const stateRef = useRef<HouseCleaningState>(
-    module?.config?.houseCleaning ? normalizeHouseCleaning(module.config.houseCleaning) : seedHouseCleaning(),
-  )
+  const stateRef = useRef<HouseCleaningState>(initialHouseState(module))
   const [state, setState] = useState<HouseCleaningState>(stateRef.current)
   const [now, setNow] = useState(() => Date.now())
   const [route, setRoute] = useState<Route>({ view: "home" })
@@ -222,14 +231,21 @@ export function TidyView({ module }: { module?: ModuleInstance }) {
   useEffect(() => {
     storeReadyRef.current = true
     if (!moduleId) return
-    if (!module?.config?.houseCleaning) {
+    const m = moduleRef.current
+    if (!m) return
+    // Seed Items + config shim when this workspace has never persisted Tidy.
+    if (!m.config?.houseCleaning) {
+      persistHouseCleaningItems(m, stateRef.current)
       updateModule(moduleId, { config: { houseCleaning: stateRef.current } })
+    } else {
+      persistHouseCleaningItems(m, stateRef.current)
     }
-  }, [moduleId, module?.config?.houseCleaning, updateModule])
+  }, [moduleId, updateModule])
 
   useEffect(() => {
-    if (!module?.config?.houseCleaning) return
-    const next = normalizeHouseCleaning(module.config.houseCleaning)
+    if (!module) return
+    const { tasks, lists } = useTaskStore.getState()
+    const next = resolveHouseCleaning(module, tasks, lists)
     stateRef.current = next
     setState(next)
   }, [module?.id]) // eslint-disable-line react-hooks/exhaustive-deps -- hydrate once per module
@@ -239,6 +255,10 @@ export function TidyView({ module }: { module?: ModuleInstance }) {
       stateRef.current = next
       setState(next)
       if (!moduleId || !storeReadyRef.current) return
+      const m = moduleRef.current
+      if (m) persistHouseCleaningItems(m, next)
+      // One-release dual-write: config remains a read shim for session chrome
+      // and vaults that have not projected Items yet.
       updateModule(moduleId, { config: { houseCleaning: next } })
     },
     [moduleId, updateModule],
@@ -295,6 +315,8 @@ export function TidyView({ module }: { module?: ModuleInstance }) {
     return () => {
       const frozen = freezeClocks(stateRef.current)
       if (moduleId && storeReadyRef.current) {
+        const m = moduleRef.current
+        if (m) persistHouseCleaningItems(m, frozen)
         updateModule(moduleId, { config: { houseCleaning: frozen } })
       }
     }

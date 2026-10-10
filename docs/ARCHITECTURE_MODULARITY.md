@@ -22,10 +22,10 @@ adaptable, alive, beautiful, cutting-edge, infinite. What exists for modules
 is rung 0 (compose a workspace from lists and view kinds) and rung 1 (a
 `ModuleDefinition` you can save, re-instantiate, and export as JSON). The
 rule that matters now: a new module does not get a private database.
-`module.config` holds bindings, layout, and preferences. House Cleaning
-(`lib/house-cleaning.ts`, `module.config.houseCleaning`) and Trip Itinerary
-(`lib/trip-itinerary.ts`, `module.config.tripItinerary`) are the two
-existing violations, kept as debt, not the pattern to copy. See
+`module.config` holds bindings, layout, and preferences. House Cleaning and
+Trip Itinerary write records to Items (`lib/house-cleaning-items.ts`,
+`lib/trip-itinerary-items.ts`) and dual-write `module.config.*` for one
+release as a read shim — not the pattern to copy. See
 [`MODULE_PLATFORM.md`](MODULE_PLATFORM.md). That rule decides what is worth
 refactoring. A generic component library would make this ordinary. A dense
 Item graph with feral rooms is the new thing. Structure is the content:
@@ -40,17 +40,15 @@ never overwrites it
 
 1. The **Item graph** — Lists, Docs, Scheduler, search, ingest, implied actions,
    Analytics. This is the brain, and it is good.
-2. **Shadow databases (debt)** — `module.config.houseCleaning`
-   (`lib/house-cleaning.ts`) and `module.config.tripItinerary`
-   (`lib/trip-itinerary.ts`) keep their own record trees. A new module does
-   not get one. These two sit beside the Item graph until their records move
-   onto Items. Their skins can stay.
+2. **Shadow databases (Wave 10 — shim only)** — Tidy / Trip records live on
+   Items; `module.config.houseCleaning` / `tripItinerary` are dual-written for
+   one release (session chrome + day meta + unmigrated vaults). A new module
+   does not get a private record tree. Their skins stay.
 3. **Field aliases** — `title` vs `description`
-   ([`CANONICAL_FIELDS.md`](CANONICAL_FIELDS.md)), so "what is this called" has
-   two answers before any module is written. This is the only remaining one:
-   the old `category` / `categories` collision was resolved by renaming the
-   fields to `Task.stage` (lifecycle bucket) and `Task.lists` (list
-   membership), which are two real axes and stay two fields.
+   ([`CANONICAL_FIELDS.md`](CANONICAL_FIELDS.md)): persist v18 makes
+   `description` a pure title mirror; parked-note prose is in `body`. The old
+   `category` / `categories` collision was already resolved as `Task.stage` /
+   `Task.lists`.
 
 **UI reuse is uneven, and only some of that is a problem.** Lists' Win95 chrome
 and Tidy's overlays *should* differ — that is the gold standard. Habits speaks
@@ -63,12 +61,21 @@ to protect that chrome. Do not restyle it.
 The right end-state is not a generic component library. It is:
 
 - One **world write** path that undo, persist, workflows, and future sync all
-  observe. Today there are five doors: store actions, `taskRepository`,
-  `dispatchItemMutation`, implied actions, workflows. Note that
-  `lib/services/item-mutation-service.ts` is workflow *wiring* — it does not own
-  writes, so "one path through `lib/services/`" is not the end-state.
+  observe. Ownership today (named, not rewritten):
+  - **`task-store`** persists Items (lists, folders). UI create/ingest stay on
+    `useTaskStore`; new edits of an existing item go through `commitItemEdit`.
+  - **`action-history.rememberWorld`** is the undo boundary — one snapshot of
+    the Home/Tracking cluster before a cross-store finish.
+  - **`applyLinkedEffects`** is the named ripple door for habit / night /
+    session finish (`syncTrackedHabits`, `syncSleepNight`,
+    `stopWorkingOnOperation`). A rename does not call it.
+  Note that `lib/services/item-mutation-service.ts` is workflow *wiring* — it
+  does not own writes, so "one path through `lib/services/`" is not the end-state.
 - One **period cursor** as shared *data*, so Habits / To Do / Plan / Tracking /
   Reviews agree on "the day." Shared time is leverage; shared chevrons are not.
+  The shell day is `useCurrentDate` / `periodAnchorsFromDay` in
+  `lib/use-current-date.ts`. Habits milled keys and To Do week/month/season
+  nameplates may keep a local **lens offset**; they do not invent a second day.
 - One **persist** adapter (`lib/persist-storage.ts`) — already true.
 - One **ingest** pipeline (`lib/ingest/`) — already true.
 - **Modules as lenses on Items** with feral skins and declared bridges.
@@ -83,10 +90,9 @@ view *is* a spreadsheet or a schema editor is ordinary reuse.
 
 What a module may **not** have is its own ontology. `module.config` is for
 bindings, layout, and preferences. The moment a module stores *records* there, it
-leaves the graph: Lists cannot show a Tidy subarea, ingest cannot start a stuck
-session, Analytics cannot reason about an itinerary day. `lib/house-cleaning.ts`
-and `lib/trip-itinerary.ts` are the two current violations, and they are tracked
-as debt in [`MODULE_PLATFORM.md`](MODULE_PLATFORM.md), not as the pattern.
+leaves the graph. Tidy / Trip records are on Items (Wave 10); the config dual-write
+is a one-release shim documented in [`MODULE_PLATFORM.md`](MODULE_PLATFORM.md),
+not the pattern to copy.
 
 **Operations is the model to copy:** an operation is a `Task` whose shape lives
 in `categories` / `panels` / `trackingTagIds` attributes. Same composition idea,
@@ -116,11 +122,11 @@ ItemDetail** — the shared brain UI — not to every module view.
 **Persisted Zustand stores** use `createCogsJSONStorage()` (historical
 helper name; the product is **Brain2**). The catalog is
 [`lib/README.md`](../lib/README.md). That
-consistency is real, and merging stores is not the win. The missing piece is
-naming the **transaction**: `habit-tracking-sync`, `sleep-sync`,
-`work-session-store`, `points-store`, and `action-history`'s multi-vault
-snapshots already form a cross-store graph that no layer owns. That graph is the
-architecture; slicing a store file is not.
+consistency is real, and merging stores is not the win. The **transaction** is
+named: `task-store` persists Items; `rememberWorld` is the undo boundary;
+`applyLinkedEffects` is the ripple door into `habit-tracking-sync`,
+`sleep-sync`, and work-session stop (points and done rows ride those paths).
+That graph is the architecture; slicing a store file is not.
 
 ## Extractable components
 
@@ -132,7 +138,7 @@ not — see the deferred list under the sequenced plan.
 
 | Candidate | Priority | Pull from | Consumers |
 |-----------|----------|-----------|-----------|
-| `usePeriodCursor` (period as **data**, chrome stays local) | High | `WeekNavigation`, `TodoPeriodNav`, inline chevrons, Tracking/Plan dates | Habits, To Do, Tracking day/week/log, Plan day/week/month, Scheduler, Reviews |
+| Period as **data** (`useCurrentDate` + `periodAnchorsFromDay`; chrome stays local) | High (partially landed) | `WeekNavigation`, `TodoPeriodNav`, inline chevrons, Tracking/Plan dates | Habits adapts via `habits-period-cursor.ts`; To Do day shares Home day; week/month/season stay lens offsets |
 | `usePaintStroke` (gesture math only, not `PaintGridChrome`) | High | Shared stroke/selection logic | `time-grid.tsx`, `week-grid.tsx` |
 | `confirm()` as a **function**, skinned per surface | Medium | Repeated Dialog + footer | Lists merge confirms, destructive actions |
 | `ItemDetail` density mode (`page` \| `popover`) | Medium | Popup/page chrome delta | `ItemDetailPage`, `ItemDetailPopup` |
@@ -211,13 +217,18 @@ appendix in [`MODULE_PLATFORM.md`](MODULE_PLATFORM.md), not the next edit.
    deliberate distinctions the owner has ruled **keep**. Migration-sensitive, so
    it is careful work — not later work.
 2. **One write door.** Implementation is `task-store`. UI and ingest call
-   `useTaskStore` directly. `taskRepository` is the validating seam for
-   services and sync (completion, scheduling, habit-done, sleep, pen actions,
-   work sessions, implied actions). It is not what most screens call.
+   `useTaskStore` directly for create paths. `taskRepository` is the validating
+   seam for services and sync (completion, scheduling, habit-done, sleep, pen
+   actions, work sessions, implied actions). It is not what most screens call.
    Workflows and implied actions keep subscribing through
    `dispatchItemMutation`.
-   Name the cross-store transaction that `habit-tracking-sync`, `sleep-sync`,
-   `work-session`, `points`, and `action-history` already form implicitly.
+
+   **World transaction (named ownership).** `task-store` persists Items.
+   `action-history.rememberWorld` is the undo boundary for a cross-store
+   finish. `applyLinkedEffects` is the named ripple door — kind `habit` |
+   `night` | `session` — that ingest finish sites call instead of raw
+   `syncTrackedHabits` / `syncSleepNight` / `stopWorkingOnOperation`. Those
+   helpers still own the ripple work; the door only names the entry.
 
    **New writes.** `commitItemEdit` and `applyLinkedEffects`
    (`lib/commit-item-edit.ts`) are the door for new code. `commitItemEdit`
@@ -225,14 +236,15 @@ appendix in [`MODULE_PLATFORM.md`](MODULE_PLATFORM.md), not the next edit.
    and that update dispatches the same patch through `dispatchItemMutation`
    (known fields and unknown attribute keys, previous and next on one
    `item-activity` line, optional order `observed` | `recorded` | `derived` |
-   `inferred`). Existing `useTaskStore` calls stay. `applyLinkedEffects` is
-   opt-in — kind `habit` | `night` | `session` calls the ripple that already
-   exists (`syncTrackedHabits`, `syncSleepNight`, `stopWorkingOnOperation`).
-   It is not part of a rename, and `commitItemEdit` does not call it.
-3. **Period as data** — one `usePeriodCursor` (or a shell-level date) that
-   Habits / To Do / Plan / Tracking / Reviews read. Chrome stays local: do **not**
-   unify the navs into one shared control. Habits' milled `habit-chrome-btn`
-   keys stay Habits chrome.
+   `inferred`). ItemDetail save goes through `commitItemEdit`. Existing
+   `useTaskStore` create/ingest calls stay. `applyLinkedEffects` is opt-in and
+   is not part of a rename; `commitItemEdit` does not call it.
+3. **Period as data** — the shell day is `useCurrentDate`; coarser anchors are
+   `periodAnchorsFromDay` / `weekAnchorFromDay` / `monthAnchorFromDay` /
+   `quarterAnchorFromDay` in `lib/use-current-date.ts`. Habits adapts those
+   via `habits-period-cursor.ts` (lens offset for milled paging). Chrome stays
+   local: do **not** unify the navs into one shared control. Habits' milled
+   `habit-chrome-btn` keys stay Habits chrome.
 4. **Bridges as data** — `ModuleBridgeGrant`, with the bridges that already
    exist informally (tracking tags, habit increments, points on completion,
    plan sync, ingest phrase claims) routed through it. Serializable,
@@ -240,8 +252,10 @@ appendix in [`MODULE_PLATFORM.md`](MODULE_PLATFORM.md), not the next edit.
 5. **The manifest** (rung 2), then **re-express the existing templates as
    manifests**. If Itinerary and Budget cannot be stated as manifests, the
    manifest is wrong — fix the manifest, not the template.
-6. **Migrate the shadow databases** onto Items, stylesheets untouched. Tidy
-   first; `tidy.css` changes by zero lines.
+6. **Migrate the shadow databases** onto Items, stylesheets untouched. **Partial
+   (Wave 10):** Tidy then Trip write Items first; config dual-write shim for one
+   release; `tidy.css` / itinerary CSS unchanged. Full two-way Lists sync and
+   dropping the config record trees remain.
 7. **Then** the small shared verbs, and only these: `usePaintStroke` (gesture
    math shared by the day and week Tracking grids, Tracking's look stays in
    Tracking), `confirm({ title, body, danger })` as a function skinned per
@@ -272,8 +286,10 @@ is the point. Extracting chrome does not appear here because it does not move
 any of them.
 
 - **One world write** that can undo / persist / sync as a single transaction
-  (plan step 2). Undo already snapshots several vaults; persist already no-ops
-  identical payloads. The gap is that nobody owns the boundary.
+  (plan step 2). Ownership is named: `task-store` persists Items,
+  `rememberWorld` is the undo boundary, `applyLinkedEffects` is the ripple
+  door. Persist already no-ops identical payloads. The remaining gap is a
+  single atomic commit across vaults — not a missing name.
 - **Selectors**, so a workspace tab does not subscribe to every task.
 - **Do not remount** Tidy (or any mini-app) when switching chrome tabs.
 - Fewer **god-components** re-rendering entire workspaces.

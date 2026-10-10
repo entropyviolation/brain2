@@ -1,9 +1,11 @@
 /**
- * lib/trip-itinerary.ts — Self-contained trip itinerary (shadow database)
+ * lib/trip-itinerary.ts — Trip itinerary day shell + schedule helpers
  *
- * Days are generated from start/end dates and stored on the module config.
- * Schedule rows (plans, notes, flights) live on each day. Module Lists import
- * (`lib/module-list-import-trip.ts`) projects days and rows into nested lists.
+ * Wave 10: schedule rows write to Items via `lib/trip-itinerary-items.ts`.
+ * `module.config.tripItinerary` is dual-written for one release (day meta —
+ * city, weather, sunrise — plus a read shim). Module Lists import
+ * (`lib/module-list-import-trip.ts`) remains the Lists projection. Stylesheets
+ * untouched.
  */
 import { formatItineraryDateLabel, flightDurationLabel } from "@/lib/itinerary-assemble"
 import { dayPlanKey, getPlanEntries, appendPlanEntry } from "@/lib/plan-text"

@@ -18,23 +18,11 @@
  */
 "use client"
 
-import { useState, useEffect, type ComponentType } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import {
-  Plus,
-  LayoutGrid,
-  ExternalLink,
-  Gauge,
-  Plane,
-  Home,
-  Wallet,
-  BookOpen,
-  Clapperboard,
-  FilePlus2,
-  GraduationCap,
-} from "lucide-react"
+import { Plus, LayoutGrid, ExternalLink, Gauge } from "lucide-react"
+import { orbFor } from "@/components/Icons"
 import { useModulesStore, type ModuleInstance } from "@/lib/modules-store"
-import type { ModuleTemplateId } from "@/lib/module-templates"
 import { MODULE_VIEW_KIND_META } from "./module-helpers"
 import { ModuleCard } from "./module-bodies"
 import { ModuleConfigDialog } from "./ModuleConfigDialog"
@@ -44,27 +32,15 @@ import { APP_NAV_KEYS, readStoredId, writeStoredId } from "@/lib/app-navigation"
 import { subscribeNavRestore } from "@/lib/screen-location"
 import { usePersistHydrated } from "@/lib/use-persist-hydrated"
 
-const WORKSPACE_GLYPHS: Partial<Record<ModuleTemplateId, ComponentType<{ className?: string }>>> = {
-  itinerary: Plane,
-  "house-cleaning": Home,
-  budget: Wallet,
-  "book-tasting": BookOpen,
-  filmrecs: Clapperboard,
-  gradsearch: GraduationCap,
-  blank: FilePlus2,
-}
-
 function isJewelSrc(icon?: string) {
   if (!icon) return false
   return /^(data:|blob:|\/|https?:)/.test(icon) || /\.(png|jpe?g|gif|webp|svg|avif)(\?|$)/i.test(icon)
 }
 
+/** Board face is always an orb (or a stored photograph). No Lucide fallbacks. */
 function WorkspaceGlyph({ module }: { module: ModuleInstance }) {
-  if (isJewelSrc(module.icon)) {
-    return <img src={module.icon} alt="" className="mod-ws-jewel" />
-  }
-  const Icon = (module.templateId && WORKSPACE_GLYPHS[module.templateId as ModuleTemplateId]) || LayoutGrid
-  return <Icon className="mod-ws-glyph" aria-hidden />
+  const src = isJewelSrc(module.icon) ? module.icon! : orbFor(module.id)
+  return <img src={src} alt="" className="mod-ws-jewel" />
 }
 
 interface ModulesPanelProps {

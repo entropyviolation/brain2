@@ -1,6 +1,8 @@
 /**
- * Self-contained printable itinerary — start/end dates, cities, weather API,
- * day plans/notes/flights (not list-backed).
+ * Printable itinerary — start/end dates, cities, weather API, day plans/notes/
+ * flights. Schedule rows write to Items first (`persistTripItineraryItems`).
+ * `module.config.tripItinerary` is dual-written for one release (day meta +
+ * read shim). Stylesheet untouched.
  */
 "use client"
 
@@ -9,6 +11,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import { useModulesStore, type ModuleInstance, type ModuleView } from "@/lib/modules-store"
+import { persistTripItineraryItems, resolveTripItinerary } from "@/lib/trip-itinerary-items"
+import { useTaskStore } from "@/lib/task-store"
 import {
   applyGlobalCity,
   cityLabel,
@@ -119,7 +123,13 @@ export function ItineraryDocumentView({
   }, [])
 
   const initial = useMemo(() => {
-    if (module?.config?.tripItinerary?.days?.length) return module.config.tripItinerary
+    if (!module) {
+      const { start, end } = defaultRange()
+      return emptyTripItinerary(start, end)
+    }
+    const { tasks, lists } = useTaskStore.getState()
+    const resolved = resolveTripItinerary(module, tasks, lists)
+    if (resolved.days.length) return resolved
     const { start, end } = defaultRange()
     return emptyTripItinerary(start, end)
   }, [module?.config?.tripItinerary, module?.id])
@@ -143,13 +153,15 @@ export function ItineraryDocumentView({
   storeReadyRef.current = storeReady
 
   useEffect(() => {
-    if (module?.config?.tripItinerary?.days?.length) {
-      setData(module.config.tripItinerary)
-      setStartDraft(module.config.tripItinerary.startDate)
-      setEndDraft(module.config.tripItinerary.endDate)
-      setGlobalCityDraft(module.config.tripItinerary.globalCity || "")
-    }
-  }, [module?.config?.tripItinerary])
+    if (!module) return
+    const { tasks, lists } = useTaskStore.getState()
+    const next = resolveTripItinerary(module, tasks, lists)
+    if (!next.days.length) return
+    setData(next)
+    setStartDraft(next.startDate)
+    setEndDraft(next.endDate)
+    setGlobalCityDraft(next.globalCity || "")
+  }, [module?.id, module?.config?.tripItinerary])
 
   const persist = useCallback(
     (next: TripItineraryData) => {
@@ -159,6 +171,8 @@ export function ItineraryDocumentView({
       if (!moduleId || !m) return
       // Avoid writing over persisted trip data before zustand rehydrates.
       if (!storeReadyRef.current) return
+      persistTripItineraryItems(m, next)
+      // One-release dual-write: day meta + read shim on module.config.
       updateModule(moduleId, {
         config: { tripItinerary: next, itineraryUiVersion: 3 },
       })
