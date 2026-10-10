@@ -22,6 +22,14 @@ The house already has three of these, and wants more of this kind of thing:
   (`components/ui/window-sand-close.tsx`). The grains are
   `components/ui/window-sand-sim.ts`.
 
+Person birthday cakes join that family later. The plaque on a person
+(`components/People/person-detail.tsx`) ships now as a drawn pixel cake:
+milled silver, a phosphor candle, the same machine as the fascia. The cake
+will later be a photograph chosen from a folder of cute PNGs, the same idea
+as willpower gemstones (`public/gems-removebackground/`) and list orbs
+(`public/orbs-removebackground/`). That folder is not built in this step,
+and the plaque does not load images.
+
 The feel to add, through the whole house, is an old Nintendo DSi: pixel type,
 hard pixel edges, and small glowing indicator lights. The retrofuturistic,
 esoteric-technology vibe is the direction of the redesigns. These docs should
@@ -96,13 +104,16 @@ on the first row, Tracking log alone on the second. That wrap is wrong.
 **No clipped chrome.** A button bar or a submit control inside a bordered
 panel needs inset padding on all four sides. Overflow must not shave the top
 bevel or the outer buttons. Clipped toolbars have shown up in several
-places. Day notes is one: LIST, BULK, LATEST, COPY, and SUBMIT NOTE. When
+places. The day summary well used to be one: LIST, BULK, LATEST, COPY, and SUBMIT NOTE. That log is now a single retrospective textarea, so those keys are gone. When
 you see a clipped toolbar, fix the padding first.
 
 **Type.** The three sizes below still hold. The smallest hint has to be
 readable at a glance. Do not specify a size so small the hint fails. A 9px
 nameplate is a short engraved word on the mill. It is not a size for a
-sentence.
+sentence. Collapsed overview cards left that size: Home tiles and Modules
+catalog cards set their words in Karla, about 2px larger (plates 13px,
+footers 11px). The date plate, Home panels, and opened instruments stay on
+the pixel face.
 
 **Dead instruments.** Hide a control that does not apply to the current
 view. Leaving it up as a dead instrument is the miss. A door that still
@@ -364,7 +375,7 @@ the required start for every new tab.
 | Piece | What it is |
 |-------|------------|
 | **Bay** | Brushed mill (1px horizontal hairlines) on cool silver. Outer `#5c6064` stroke, white top lip, inset pewter, a soft inner shadow. Radius 2–3px. |
-| **Nameplate** | 9–12px, weight 700, tracking ~0.14em, uppercase, ink `#2a2c2e`, engraved highlight `0 1px 0 rgba(255,255,255,0.78)`. A round power lamp may lead the label. |
+| **Nameplate** | 9–12px, weight 700, tracking ~0.14em, uppercase, ink `#2a2c2e`, engraved highlight `0 1px 0 rgba(255,255,255,0.78)`. A round power lamp may lead the label. Home overview plates and Modules catalog cards are the exception: Karla at 13px, because the 9px pixel plate was too small to read. |
 | **CRT** | The value in black glass (`#040a08`–`#070c0a`), a faint phosphor bloom at the top, a gunmetal ring. One green: `--hab-crt-green` (`#7dffc4`) and `--hab-crt-glow`. Pad the glyphs (about 8px 14px). Do not paint phosphor straight on the mill. |
 | **Label** | A padded silver chip (about 6px 9px), two lines at most. Sibling labels share one height. |
 | **Key** | Raised metal: specular top lip, mill, pressed foot. Sibling keys share the bay equally. Active mode is the CRT plus the power lamp. |
@@ -379,6 +390,14 @@ title bar uses this key (`.b2-close-key` in `app/win95.css`). It sits in the
 title bar. It is not a transparent pip, and it is not a smaller off-center
 mark. The generic button hairline is only a lip — it must not be the close
 key’s only paint, or the title bar shows through.
+
+Home overview tiles (`home-chrome.css`, one rule shared with `.mod95` catalog
+cards) paint that copy in Karla (`--font-karla` from `app/layout.tsx`), not
+`w95fa`. Nameplates are 13px, footers and the old 9px labels are 11px, secondary
+lines that were 10px are 12px, and CRT values the Habits sheet had pinned at
+18px are 20px. Award stays 22px. The weather degree is 24px. Colors, bevels,
+and phosphor stay. Detail handhelds, the date plate, and Home panels stay on
+the pixel face.
 
 Padding is part of the material. A nameplate, a CRT, and a label each need
 air inside the bay so type does not touch the ring. A milled group keeps
@@ -439,6 +458,15 @@ or corners until that interval ends, then takes the new state and the drift
 speed resumes. Instant applies to the whole app immediately. Pause holds.
 `prefers-reduced-motion` finishes a timed shift at once, and that end state
 is the whole app, because there is no in-between to preview.
+
+Opening another popup does not change that speed, does not start a shift,
+and does not ease the gray. Dialogs use `duration-200` for their enter/exit
+animation. That utility also sets a transition duration, and the initial
+transition property is `all`, so a dialog would fade `--chrome-face` on
+mount and on every later token write. `app/win95.css` sets
+`transition-property: none` on dialogs. Drift stays on the clock. Only the
+Settings dialog, and only while a timed preview is running
+(`.set95-drift-preview`), eases its own face between samples.
 
 ### Phosphor
 
@@ -564,7 +592,7 @@ next room. Do not extract its chrome into `components/ui/`.
 
 Yes/No cells are the panel lamps. **Small LEDs** default on (15px); off lets
 the lamp fill the cell. The loading bar defaults on (a thin glass tube plus a `%`). A background click, Escape, or the skip × leaves the Add/Edit Habit sand close immediately.
-Sort sits on the Priority bar above the grid. Grade plasma hues are set
+Sort sits on the control bar above the grid. Grade plasma hues are set
 on each grade’s sheet (`.hab-grade-sheet`). Defaults: week-grade green
 `#508b51`, perfect-output navy `#25366a`, percent LED `#7e14ff`. Today’s
 column is a solid mint fill. Furniture metal is `--chrome-face` /
@@ -681,6 +709,7 @@ instrument and Needs Attention are already on a machine face.
 | Willpower gems | `willpower-gems.tsx`, `lib/willpower-physics.ts`, `lib/willpower-stones.ts`, `habits-control-panel.tsx` |
 | Habits lamps and tubes | `habit-led-lamp.tsx`, `percent-led-bar.tsx`, `percent-led.tsx`, `noble-gas-tube.tsx`, `cockpit-switch.tsx` |
 | Lists orbs | `FolderViewIcons.tsx`, `lib/orbs-manifest.ts`, `lib/lists-icon-grid.ts`, `components/Icons/OrbPicker.tsx`, `public/orbs-removebackground/` |
+| Person birthday cake | Drawn pixel SVG on `components/People/person-detail.tsx` (milled plaque, phosphor candle). A later folder of cute cake PNGs will work the same way as willpower gemstones and list orbs. That folder is not in the repo, and the plaque does not load images. |
 | Velvet | `public/newvelv.jpg`, `.fm-desktop.velvet` |
 | Folders | `public/folders-removebackground/`, `lib/folders-manifest.ts` |
 | Gem photographs | `public/gems-removebackground/`, `lib/gems-manifest.ts` |

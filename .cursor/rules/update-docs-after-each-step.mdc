@@ -23,9 +23,13 @@ Skip docs that are unrelated. Do not invent entries in `docs/BRAIN2_FEATURE_IDEA
 
 Match the existing README style (purpose sentence, file tree, short behavior notes). Fully rewrite stale sections; do not leave old names, paths, or “coming soon” that are now shipped.
 
+When the work departs from what was asked, or from the plan already written in the docs — a new idea, a renamed concept, a dropped piece of scope, a different default, a metric that was not in the catalog, a layout decision that contradicts an earlier note — update the docs that describe that feature **in the same step**. Say what was decided and why, not only which files changed. Do not leave the old plan stating the abandoned behavior.
+
 ```text
 ❌ BAD: land the Lists checkbox filter, then “docs at the end”
 ✅ GOOD: ship the filter, then in the same step update
    components/Lists/README.md (tree + behavior) and any screenshot write-up
    for the Lists content view
+❌ BAD: ship a new default and leave the plan describing the old one
+✅ GOOD: rewrite that note in the same step — the decision, and why
 ```

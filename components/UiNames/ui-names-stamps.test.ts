@@ -6,6 +6,7 @@ const ROOT = process.cwd()
 /** First-wave named roots must point at a living README, not a parallel blurb. */
 const STAMPS: [string, string, string][] = [
   ["components/AppHeader.tsx", 'data-ui-name="App header"', 'data-ui-docs="components/README.md"'],
+  ["components/header-reminder-bell.tsx", 'data-ui-name="Reminders"', 'data-ui-docs="components/README.md"'],
   ["components/AppHeader.tsx", 'data-ui-name="Capture"', 'data-ui-docs="components/README.md"'],
   ["components/baby-animal-nest.tsx", 'data-ui-name="Today\'s friend"', 'data-ui-docs="docs/FRIEND_COMPANION.md"'],
   ["components/Home/home-overview.tsx", 'data-ui-name="Home overview"', 'data-ui-docs="components/Home/README.md"'],

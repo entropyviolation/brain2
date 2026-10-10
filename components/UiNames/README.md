@@ -51,6 +51,6 @@ Deepest `[data-ui-name]` wins (`Element.closest`), so stamp inner roots (Month P
 
 Store: `lib/ui-names-store.ts` (`{ mode: "off" \| "names" }`, `setMode`, `toggle("names")`, persist `brain2-ui-names`). Included in the Settings full backup.
 
-Header **Names** sits in the System group after Settings and Tracking so a later Help / Inspect key can sit beside it. The caption stays **Names**; it latches sunken (`aria-pressed`) while on, and the tooltip reads **Stop naming**. Mobile chrome is skipped in v1.
+Header **Names** sits in the System group after Settings. Search follows it. The key is a question mark; it latches (`aria-pressed`) while on, with a diagonal strike, and the tooltip reads **Names help mode**. Mobile chrome is skipped in v1.
 
 This is not Lists `fm-inspector`.

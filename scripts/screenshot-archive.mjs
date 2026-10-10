@@ -10,8 +10,9 @@
  * the next free `-2`, `-3`, … suffix is used.
  *
  * `writeReelIndex(outDir)` scans live `*.png` files and `history/<basename>/*.png`,
- * writes `<outDir>/reel.js`, and fills any missing fields in `feature-notes.json`.
- * History frames of one basename share that one record.
+ * writes `<outDir>/reel.js`, and fills any missing fields in `feature-notes.json`
+ * (`features` and `globalNotes` included). History frames of one basename share
+ * that one record. An existing `features` array is not replaced.
  */
 import {
   closeSync,
@@ -28,6 +29,7 @@ import {
   writeFileSync,
 } from "node:fs"
 import path from "node:path"
+import { SHOTS } from "./screenshot-manifest.mjs"
 
 /** Feature names for the numeric prefixes in docs/screenshots. */
 const PREFIX_AREAS = {
@@ -304,6 +306,7 @@ function readHead(file) {
 const FEATURE_NOTES = "feature-notes.json"
 const NOTE_FIELDS = ["name", "description", "styleNotes", "docPath"]
 const IMAGE_EXTS = [".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"]
+const manifestByFile = new Map(SHOTS.map((shot) => [shot.file, shot.description || ""]))
 
 /**
  * Keep a markdown path inside the repo. Empty or escaping paths return null.
@@ -356,7 +359,8 @@ export function resolveRepoAsset(repoRoot, docPath, src) {
 
 /**
  * Fill absent feature-note fields. Saved name, description, style notes, and
- * doc path are left alone. One record per screenshot basename.
+ * doc path are left alone. `features` is seeded only when that array is
+ * missing. One record per screenshot basename.
  *
  * @param {string} outDir
  * @param {string} [repoRoot]
@@ -372,6 +376,13 @@ export function seedFeatureNotes(outDir, repoRoot = path.resolve(outDir, "..", "
     for (const key of NOTE_FIELDS) {
       next[key] = Object.prototype.hasOwnProperty.call(base, key) ? asText(base[key]) : proposal[key]
     }
+    const descriptionFallback = Object.prototype.hasOwnProperty.call(base, "description")
+      ? asText(base.description)
+      : proposal.description
+    next.features = Array.isArray(base.features)
+      ? normalizeFeatures(base.features)
+      : proposeFeatures(outDir, file, descriptionFallback)
+    next.globalNotes = Array.isArray(base.globalNotes) ? normalizeGlobalNotes(base.globalNotes) : []
     notes[file] = next
   }
   writeFeatureNotes(outDir, notes)
@@ -424,15 +435,20 @@ export function saveFeatureNotes(outDir, repoRoot, body) {
 function writeFeatureNotes(outDir, notes) {
   const ordered = {}
   for (const file of Object.keys(notes).sort()) {
-    const rec = notes[file]
-    ordered[file] = {
-      name: asText(rec.name),
-      description: asText(rec.description),
-      styleNotes: asText(rec.styleNotes),
-      docPath: asText(rec.docPath),
-    }
+    ordered[file] = shapeRecord(notes[file])
   }
   writeFileSync(path.join(outDir, FEATURE_NOTES), `${JSON.stringify(ordered, null, 2)}\n`)
+}
+
+function shapeRecord(rec) {
+  return {
+    name: asText(rec.name),
+    description: asText(rec.description),
+    styleNotes: asText(rec.styleNotes),
+    docPath: asText(rec.docPath),
+    features: normalizeFeatures(rec.features),
+    globalNotes: normalizeGlobalNotes(rec.globalNotes),
+  }
 }
 
 function normalizeMap(map, repoRoot) {
@@ -459,7 +475,100 @@ function normalizeRecord(record, repoRoot) {
     description: asText(record.description),
     styleNotes: asText(record.styleNotes),
     docPath: stored,
+    features: normalizeFeatures(record.features),
+    globalNotes: normalizeGlobalNotes(record.globalNotes),
   }
+}
+
+function normalizeFeatures(list) {
+  if (!Array.isArray(list)) return []
+  return list.map((feature, index) => {
+    const item = feature && typeof feature === "object" ? feature : {}
+    const next = {
+      id: asId(item.id, `seed-${index + 1}`),
+      name: asText(item.name),
+      description: asText(item.description),
+      styleNotes: asText(item.styleNotes),
+      improvements: asText(item.improvements),
+    }
+    const box = normalizeBox(item.box)
+    if (box) next.box = box
+    return next
+  })
+}
+
+function normalizeGlobalNotes(list) {
+  if (!Array.isArray(list)) return []
+  return list.map((note, index) => {
+    const item = note && typeof note === "object" ? note : {}
+    return {
+      id: asId(item.id, `note-${index + 1}`),
+      text: asText(item.text),
+      markup: normalizeMarkup(item.markup),
+    }
+  })
+}
+
+function normalizeMarkup(list) {
+  if (!Array.isArray(list)) return []
+  const marks = []
+  for (const item of list) {
+    if (!item || typeof item !== "object") continue
+    if (item.type === "ellipse" || item.type === "rect") {
+      const box = normalizeBox(item)
+      if (box) marks.push(withMarkupColor({ type: item.type, ...box }, item.color))
+      continue
+    }
+    if (item.type !== "stroke" || !Array.isArray(item.points)) continue
+    const points = []
+    for (const point of item.points.slice(0, 5000)) {
+      if (!Array.isArray(point) || point.length < 2) continue
+      const x = unit(point[0])
+      const y = unit(point[1])
+      if (x == null || y == null) continue
+      points.push([x, y])
+    }
+    if (points.length >= 2) marks.push(withMarkupColor({ type: "stroke", points }, item.color))
+  }
+  return marks
+}
+
+function withMarkupColor(mark, color) {
+  const hex = markupColor(color)
+  if (hex) mark.color = hex
+  return mark
+}
+
+function markupColor(value) {
+  const text = asText(value).trim()
+  const full = /^#([0-9a-fA-F]{6})$/.exec(text)
+  if (full) return "#" + full[1].toLowerCase()
+  const short = /^#([0-9a-fA-F]{3})$/.exec(text)
+  if (!short) return ""
+  const hex = short[1]
+  return ("#" + hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2]).toLowerCase()
+}
+
+function normalizeBox(box) {
+  if (!box || typeof box !== "object" || Array.isArray(box)) return null
+  const x = unit(box.x)
+  const y = unit(box.y)
+  const w = unit(box.w)
+  const h = unit(box.h)
+  if (x == null || y == null || w == null || h == null) return null
+  return { x, y, w, h }
+}
+
+function unit(value) {
+  const number = typeof value === "number" ? value : typeof value === "string" && value.trim() ? Number(value) : NaN
+  if (!Number.isFinite(number)) return null
+  return Math.round(Math.min(1, Math.max(0, number)) * 10000) / 10000
+}
+
+function asId(value, fallback) {
+  const text = asText(value).trim().replace(/\s+/g, "-").slice(0, 80)
+  if (text && !text.includes("\0")) return text
+  return fallback
 }
 
 function shotKey(file) {
@@ -505,6 +614,58 @@ function proposeFeature(outDir, repoRoot, file, views) {
   }
 }
 
+/**
+ * One row per visible region. Sidecar first (global chrome is a single row),
+ * then the manifest description, then the saved overview description.
+ *
+ * @param {string} outDir
+ * @param {string} file
+ * @param {string} descriptionFallback
+ */
+function proposeFeatures(outDir, file, descriptionFallback) {
+  const text = readOptional(path.join(outDir, file.replace(/\.png$/i, ".txt")))
+  const meta = parseSidecarDocument(text)
+  const fromSidecar = []
+  if (meta.globalChrome.trim()) {
+    fromSidecar.push(makeFeature("seed-chrome", "Global chrome", meta.globalChrome.trim()))
+  }
+  for (const [index, clause] of splitClauses(meta.viewSpecific).entries()) {
+    fromSidecar.push(makeFeature(`seed-${index + 1}`, clauseName(clause), clause))
+  }
+  if (fromSidecar.length) return fromSidecar
+
+  const manifest = manifestByFile.get(file) || ""
+  const source = manifest.trim() || String(descriptionFallback || "").trim()
+  return splitClauses(source).map((clause, index) => makeFeature(`seed-${index + 1}`, clauseName(clause), clause))
+}
+
+function makeFeature(id, name, description) {
+  return { id, name, description, styleNotes: "", improvements: "" }
+}
+
+function splitClauses(text) {
+  if (!text || !String(text).trim()) return []
+  const clauses = []
+  for (const paragraph of String(text).split(/\n+/)) {
+    const trimmed = paragraph.trim()
+    if (!trimmed) continue
+    const parts = trimmed.split(/(?<=[.!?])\s+(?=[A-Z0-9"`])/).map((part) => part.trim()).filter(Boolean)
+    clauses.push(...(parts.length ? parts : [trimmed]))
+  }
+  return clauses
+}
+
+function clauseName(text) {
+  const clean = text.replace(/\s+/g, " ").trim()
+  const colon = clean.indexOf(":")
+  if (colon > 0 && colon <= 48) return clean.slice(0, colon).trim()
+  const sentence = clean.replace(/[.]+$/, "")
+  if (sentence.length <= 56) return sentence
+  const cut = sentence.slice(0, 56)
+  const word = cut.replace(/\s+\S*$/, "").trim()
+  return word || cut.trim()
+}
+
 function docPathForSources(sources, text, repoRoot) {
   for (const source of sources) {
     const mapped = readmeForSource(repoRoot, source)
@@ -543,13 +704,15 @@ function docsPageInText(text, repoRoot) {
 }
 
 function parseSidecarDocument(text) {
-  const meta = { VIEW: "", AREA: "", sources: [], viewSpecific: "" }
+  const meta = { VIEW: "", AREA: "", sources: [], viewSpecific: "", globalChrome: "" }
   if (!text) return meta
   let inSources = false
+  let inChrome = false
   let inSpecific = false
   const specific = []
+  const chrome = []
   for (const line of text.split("\n")) {
-    if (!inSpecific) {
+    if (!inSpecific && !inChrome) {
       const field = /^(SCREENSHOT|VIEW|AREA):\s*(.*)$/.exec(line)
       if (field) {
         inSources = false
@@ -569,13 +732,29 @@ function parseSidecarDocument(text) {
         if (!line.trim() || line.startsWith("=")) inSources = false
       }
     }
+    if (/^GLOBAL CHROME\b/.test(line)) {
+      inChrome = true
+      inSources = false
+      inSpecific = false
+      continue
+    }
     if (/^VIEW-SPECIFIC\s*$/.test(line)) {
       inSpecific = true
+      inChrome = false
       inSources = false
+      continue
+    }
+    if (inChrome) {
+      if (line.startsWith("====")) {
+        inChrome = false
+        continue
+      }
+      chrome.push(line)
       continue
     }
     if (inSpecific) specific.push(line)
   }
   meta.viewSpecific = specific.join("\n").trim()
+  meta.globalChrome = chrome.join("\n").replace(/[ \t]+\n/g, "\n").trim()
   return meta
 }

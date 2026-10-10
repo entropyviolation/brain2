@@ -8,7 +8,7 @@ product is meant to feel like a vintage machine that is also a painting —
 motif (brain, light bulb, and graph-node connections used as much as
 possible), luminous contents, and room for one impossible motion. Rooms can
 keep arriving. The global header is a pinned full-width mill title bar:
-navy **BRAIN2** caption, today’s-friend jewel (click for a Stardew Next Action bubble; Esc / × / outside to close), Friend / Review / System / optional **now** well / Capture groupboxes. The **now** well sits between System and Capture only while a Working session is live (name, elapsed, Stop, Pause↔Resume; idle → hidden). **Names** latches in place; tooltip **Stop naming** while on.
+navy **BRAIN2** caption, today’s-friend jewel (click for a Stardew Next Action bubble; Esc / × / outside to close), Friend / Review / System / Capture groupboxes. The **Now** word key sits in Capture with Inbox and Quick Add. The **now** well lives in Capture only while a Working session is live (name, elapsed, Stop, Pause↔Resume; idle → hidden). **Names** is the System question mark and latches in place; tooltip **Names help mode** while on.
 
 **Re-capture:** with `npm run dev` (or `electron:dev`) running on port 3000:
 
@@ -45,21 +45,41 @@ frame. Dated frames of one screen share one feature record.
 npm run screenshot-reel
 ```
 
-That refreshes `reel.js`, fills any missing fields in `feature-notes.json`,
-and serves this folder. Open the printed URL. A `file://` page can still show
-the pictures, but it cannot save notes.
+That refreshes `reel.js`, fills any missing fields in `feature-notes.json`
+(including a `features` list when that array is absent), and serves this
+folder. Open the printed URL. A `file://` page can still show the pictures,
+but it cannot save notes.
 
 Pick a screen. `<` / `>` and the left and right arrow keys step through older
 and newer pictures of that view. Home and End jump to the ends. The page does
 not play by itself. The sidecar `.txt` sits under the picture when the browser
-can read it.
+can read it. History frames of one live PNG share one record.
 
-The right side is that screen’s record: feature name, feature description,
-style notes, and a documentation path (`docPath`). **Preview documentation**
-renders that markdown under the fields. Save, or leave a field, and the edit
-is written to `docs/screenshots/feature-notes.json`. Switching frames does not
-clear the record. A saved field is not replaced the next time the index is
-built.
+The right side is that screen’s record. The screenshot keeps a name, an
+overview description, an overview style note, and a documentation path
+(`docPath`). The path is shown as text; **Change** is what edits it. Each
+visible region is its own feature: name, description, style suggestions,
+improvement suggestions, and an optional box. Click a feature to edit it and
+to show its box. Drag on the picture while that feature is selected and has
+no box yet; **Redraw box** replaces one. Boxes are fractions of the image,
+so they stay put when the window or the history frame changes. **Whole
+screenshot** holds global notes. Open a note to edit its text and, with
+Circle, Rectangle, or Stroke, to draw markup on a clear overlay. Ink defaults
+to bright red. While one of those tools is active, a color picker beside them
+sets the color of the next circle, rectangle, or stroke, and that color is
+saved on the mark. Close the note and the ink hides. It is not written into
+the PNG. Save, or leave a
+field, and the edit is written to `docs/screenshots/feature-notes.json`.
+Switching frames does not clear the record. A saved name, description, style
+note, doc path, or feature list is not replaced the next time the index is
+built. Seeding reads the sidecar (global chrome as one row, then
+view-specific sentences), then the manifest description, then the overview
+description.
+
+**Show documentation** opens a GitHub-flavored preview in its own column
+(headings, tables, lists, code, and repo images). **Hide** closes it.
+Switching shots starts with the preview closed. The preview scrolls on its
+own when a table is wide.
 
 ---
 
@@ -75,11 +95,12 @@ table uses.
 
 **How a row was marked.**
 
-- **fresh** — written by `npm run capture-screenshots` on 9 October 2026 against the throwaway seed (headless Chrome, not a personal vault). Settings frames Window gray and Bouba/Kiki. Bulk Add is Quick Add with Bulk checked. Metrics opens from Now → Current moment. Screen Time is the empty ActivityWatch state (no watcher on the capture machine).
+- **fresh** — written by `npm run capture-screenshots` on 9 October 2026 against the throwaway seed (headless Chrome, not a personal vault). The Settings PNG still frames the old stack (Window gray and Bouba/Kiki); its sidecar was rewritten later. Bulk Add is Quick Add with Bulk checked. Plain is the other checkbox in that dialog, default off. Metrics opens from Now → Current moment. Screen Time is the empty ActivityWatch state (no watcher on the capture machine).
+- **stale** — `20-dialog-settings.png` is the 9 October capture. The sidecar was rewritten 10 October 2026 for the grouped index (find well, six groups, one selected bay) and the PNG was not recaptured, because a dev session was already running.
 - **unknown** — `habits-noble-gas-rail.png` is a Habits control-panel crop from 20 September 2026. It has no sidecar and was not part of this capture. The Daily Habits frame shows the updated control panel.
 - **missing** — none. Screen Time and Docs both have PNGs.
 
-**Counts (9 October 2026).** 97 PNG files. 96 `.txt` sidecars. 96 PNGs have a sidecar. 1 PNG has no sidecar (`habits-noble-gas-rail.png`). 0 sidecars without a PNG. Rows: 96 fresh, 0 stale, 1 unknown, 0 missing.
+**Counts (10 October 2026).** 97 PNG files. 96 `.txt` sidecars. 96 PNGs have a sidecar. 1 PNG has no sidecar (`habits-noble-gas-rail.png`). 0 sidecars without a PNG. Rows: 95 fresh, 1 stale, 1 unknown, 0 missing.
 
 **Reading note.** These frames show the throwaway seed, not a personal vault. Tracking still includes the zoo and Ian’s examples. Screen Time shows ActivityWatch only when a watcher is already running on the capture machine; the script does not invent that data.
 
@@ -148,6 +169,7 @@ table uses.
 | `08-home-tracking-daylog.png` | 2026-10-09 | fresh | Home → Tracking → Day Log |
 | `08-home-tracking-week.png` | 2026-10-09 | fresh | Home → Tracking → week span |
 | `08-home-tracking.png` | 2026-10-09 | fresh | Home → Tracking → Time Grid |
+| `08-home-tracking-log.txt` | 2026-10-09 | sidecar | Home → Tracking → Tracking log (Spent: amount, what, source). PNG not recaptured this pass. |
 | `09-modules-workspace.png` | 2026-10-09 | fresh | Modules → Itinerary Creator workspace |
 | `09-modules.png` | 2026-10-09 | fresh | Modules → dashboard |
 | `10-operations-locations.png` | 2026-10-09 | fresh | Operations → Locations |
@@ -172,7 +194,7 @@ table uses.
 | `20-dialog-morning-review.png` | 2026-10-09 | fresh | Morning review dialog |
 | `20-dialog-quick-add.png` | 2026-10-09 | fresh | Quick Add dialog |
 | `20-dialog-reviews.png` | 2026-10-09 | fresh | Day review dialog |
-| `20-dialog-settings.png` | 2026-10-09 | fresh | Settings dialog. Window gray and Bouba/Kiki: timed shift previews in the panel; Default chip sits on its own row. |
+| `20-dialog-settings.png` | 2026-10-09 | stale | Settings dialog. PNG is the 9 October stack. Sidecar describes the grouped index (find well; You, Appearance, Points, Data, Imports, Library) and was not recaptured. |
 | `20-dialog-time-tracking.png` | 2026-10-09 | fresh | Header Now dialog (Recent now / Upcoming now) |
 | `21-item-detail-analysis.png` | 2026-10-09 | fresh | Item detail → Analysis |
 | `21-item-detail-body.png` | 2026-10-09 | fresh | Item detail → Body |
@@ -194,7 +216,7 @@ Rendered by `app/page.tsx`:
 | Nav | `components/header-nav-buttons.tsx` | Back / Forward through in-app screens (tabs, Lists folders, full-page item detail). Disabled at stack edges. |
 | Today's friend | `components/baby-animal-nest.tsx` | Photograph in a chrome + black-mirror jewel on the pin bar. Persists until Monday or a manual change (`brain2-friend-worn`; reads prefer `brain2-*`). Returning friends may say Hi again. Click the photograph for details. The chat button above Gallery asks for a Stardew line (daily habit / today's To Do / Next Action, species bias). Click the **line** (no bevel) for the mission sheet: the task opens item detail on top; Accept until the end of the day; Decline asks for smaller tasks, then a first step, then a reason. **Escape**, ×, or a click outside closes the bubble. **Gallery** holds the preapproved `animalsrcs/` pack (unnamed until you name them) — the only picture sources are that pack and your own uploads. Name field, equal cards, confirm-before-delete (dismissed stay gone); **navy** text-field focus (never orange). Pictures in IndexedDB `idb:friend_<id>` (gallery JSON holds `friend:<id>`) or `/friend-pack/`. Plan: [`docs/FRIEND_COMPANION.md`](../FRIEND_COMPANION.md). |
 | Names | `components/AppHeader.tsx` | System-group latch. Caption stays **Names**; sunken + `aria-pressed` while on (tooltip **Stop naming**). |
-| now | `components/header-now-box.tsx` | Optional groupbox between System and Capture. Live Operations / pen-color Working sessions (name, tabular elapsed, Stop, Pause↔Resume); absent when idle. |
+| now | `components/header-now-box.tsx` | Optional groupbox inside Capture. Live Operations / pen-color Working sessions (name, tabular elapsed, Stop, Pause↔Resume); absent when idle. |
 | Review (badge) | `components/Reviews/reviews.tsx` | Rituals menu (day sun/moon; week–year Start / Review) |
 | Morning | `components/Reviews/MorningReview.tsx` | Day morning ritual (wake, dream, intentions, affirmations, postpone) |
 | Settings | `components/Settings/SettingsDialog.tsx` | Home city, assumed finish time, backup, sync, **message ingest** (grocery pin, always-on hub, shortcuts, iPhone Notes / Screen Time / Call / Text Shortcut AirDrop), **Screen Time** (ActivityWatch), item types, Second Brain |
@@ -202,10 +224,10 @@ Rendered by `app/page.tsx`:
 | Inbox | `components/inbox.tsx` | Unclarified captures |
 | Ingest | `components/ingest-log-dialog.tsx` | Phone-message ingest log. GPS tracking points hidden unless **Show GPS** |
 | Metrics | `components/Tracking/MetricLogger.tsx` | Wellbeing datapoint logger. Opens from Now → Current moment (both panes), not the header Capture cluster. |
-| Bulk Add | `components/quick-add.tsx` | Header Quick Add with **Bulk** checked (taller box, `list:` / `folder: list:` headers). Inbox Bulk edit and the mobile shell still open `enhanced-bulk-add.tsx`. |
+| Bulk Add | `components/quick-add.tsx` | Header Quick Add with **Bulk** checked (taller box, `list:` / `folder: list:` / `folder: all:` headers). **Plain** is the checkbox beside it. Inbox Bulk edit and the mobile shell still open `enhanced-bulk-add.tsx`. |
 | From Notes | `components/notes-ingest.tsx` | Apple Notes ingest (this Mac: Electron or localhost `/api/notes`; iCloud / iPhone + On My Mac); bulk-add takes `list:` / `folder: list:` headers |
 | Phone Notes | `components/iphone-notes-store.tsx` | On My iPhone notes dumped via Telegram Shortcut → iPhone Notes Store / Parked; same bulk-add headers |
-| Quick Add | `components/quick-add.tsx` | Colon paths, live chips (new list), Plain / `-p`, optional skip Inbox |
+| Quick Add | `components/quick-add.tsx` | Colon paths (a name may end in a number, `brain2`), live chips (new list), Plain / `-p`, optional skip Inbox |
 
 **Top-level tabs (7):** milled fascia — brushed bay, raised silver keys, the active key a CRT with a round power lamp ([`DESIGN_STYLE.md`](../DESIGN_STYLE.md#milled-fascia)). Home · Lists · Docs · Scheduler · Operations · Modules · Analytics. The Home date plate uses the same language: weekday in a CRT, calendar date on a nameplate, Widgets as a raised key.
 
@@ -231,7 +253,8 @@ Rendered by `app/page.tsx`:
 | `03-home-todo-month.png` | To Do → Month |
 | `03-home-todo-just-start.png` | To Do row → Start (Just Start focus mode) |
 | `04-home-goals.png` | Goals → objectives & direction report |
-| `08-home-tracking.png` | Tracking → Time Grid in a Win95 window (plain steel pen well, Sort Recent / A–Z / Tree / Expand↔Conceal, + New pen under the beads, occupancy) |
+| `08-home-tracking.png` | Tracking → Time Grid in a Win95 window (plain steel pen well, Sort Recent / A–Z / Tree / Expand↔Conceal, + New pen under the beads, occupancy). Fascia keys include Tracking log. |
+| `08-home-tracking-log.txt` | Tracking → Tracking log. Composer Event, Switch, Intake, Spent, Note, Thought process. Spent records amount, what, and source, and the shelf totals the day. |
 | `08-home-tracking-week.png` | Tracking → Time Grid, week span |
 | `08-home-tracking-activity.png` | Tracking → Activity Log (Log activity with search-or-create pen, gaps, Done this day) |
 | `08-home-tracking-block.png` | Block editor with **Also happening** — what the other scopes say about the same minutes, the usual-pairing suggestion, one-click attach, and "Make it always" |

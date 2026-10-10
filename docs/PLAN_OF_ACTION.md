@@ -134,7 +134,7 @@ Shipped: Explorer toolbar separators; labels on the two status counts (both kept
 
 ### Wave 7 — House chrome — **open**
 
-**Landed.** Header groups: Friend, Rituals, System, and Capture, with the now well between System and Capture while a session is live. Quick Add stays in Capture. Doors stay on the bar. The Home strip — date, Review, points, Today’s Progress — is one instrument on Habits, Plan, To Do, Goals, and Tracking. The Habits console landed, including the WILLPOWER rail. Those are examples of rooms that turned out well. Detail is in [`DESIGN_STYLE.md`](DESIGN_STYLE.md) and [`DESIGN_REFS.md`](DESIGN_REFS.md). Do not clone that CSS onto other rooms, and do not restyle the console or the rail from this file.
+**Landed.** Header groups: Friend, Rituals, System, and Capture, with the now well inside Capture while a session is live. Quick Add stays in Capture. Doors stay on the bar. The Home strip — date, Review, points, Today’s Progress — is one instrument on Habits, Plan, To Do, Goals, and Tracking. The Habits console landed, including the WILLPOWER rail. Those are examples of rooms that turned out well. Detail is in [`DESIGN_STYLE.md`](DESIGN_STYLE.md) and [`DESIGN_REFS.md`](DESIGN_REFS.md). Do not clone that CSS onto other rooms, and do not restyle the console or the rail from this file.
 
 **Open.** The review ritual “not now, ask tomorrow,” so Dismiss is not the only way past a real deadline. Peek stays the full-width `HomeReviewBanner`.
 

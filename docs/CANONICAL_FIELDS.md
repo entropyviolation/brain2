@@ -28,8 +28,10 @@
 [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md) gives every shown value
 an order: observed, recorded, derived, inferred, stored on the existing
 `FieldEstimate` rather than a new provenance type. Until that lands,
-`FieldEstimate` on time fields is the only stored provenance. Do not add a
-parallel `order` field in a drive-by. GS-5 adds one item type, `formulation`,
+`FieldEstimate` on time fields is the only stored order of abstraction. Do not add a
+parallel `order` field in a drive-by. How a record was captured is
+`Task.captureOrigin`, set once at that door. That is not an order, and it is not
+`createdAt`. GS-5 adds one item type, `formulation`,
 with a role. Do not add `concept`.
 
 Primary sources read: `lib/types.ts`, `lib/data/schemas.ts`, `lib/task-store.ts`
@@ -67,10 +69,10 @@ not invent `type`. Persist v12 fills a missing `type` only.
 | `id` | `string` | canonical | yes | yes (`taskSchema`) | Primary key. An `id` → `_id` note in `lib/data/mongo/collections.ts` is speculation, not the storage plan. |
 | `type` | `ItemType` | canonical | yes | yes (optional) | Discriminator. Persist **v12** fills a **missing** type only: Next Actions membership or inbox lifecycle → `"task"`, else `"item"`. Explicit `"operation"` / `"note"` / catalog / already-written `"task"` are never overwritten. **New list items** use `"item"`. Next Actions / To-Do create `"task"`. |
 | `title` | `string?` | canonical | yes | yes (optional) | **The field of record for "what is this called."** `Task.description` is still written as a mirror during the transition. Read through `itemTitle()` / `itemTitleOrUntitled()` (`lib/item-utils.ts`) rather than either field — before that seam existed, call sites disagreed about which one wins (`item-merge` / `calibration` / `ingest/apply-tracking` preferred `description`; `search` / `affirmations` / `implied-actions` / `NeedsAttention` preferred `title`). |
-| `createdAt` | `Date` | canonical | yes (Date-revived) | yes | In `DATE_KEYS`; rehydrated to `Date`. |
+| `createdAt` | `Date` | canonical | yes (Date-revived) | yes | In `DATE_KEYS`; rehydrated to `Date`. **When the record was added, set once.** An inbox idea (revisit or Monkey brain — Quick Add, bulk add, `qa:` / `inbox:` / `idea:` / message ingest) stamps this at arrival: Telegram `message.date` when the capture carries a send time, otherwise the click. Clarify, file, a later edit, and Transfer to log do not move it forward (`keptCreatedAt` in `updateTask`). A missing or invalid clock is not filled in with the clarify time. Merge keeps the earliest instant. Bulk edit copies that instant onto the rewritten line (same order as the selection). An item that never entered the inbox is stamped when it was actually created, and a later edit does not move that forward either. Due dates, `scheduledTime` chips (`15:00`), and durations (`60m`) are different fields. How it arrived is `captureOrigin`, not this clock. |
 | `tags` | `string[]?` | canonical | yes | yes (optional) | Free-form, normalized via `normalizeTag` (`lib/links.ts`). Backfilled to `[]`. |
 | `links` | `ItemLink[]?` | canonical | yes | yes (optional) | Typed relations; see `ItemLink` table. Backfilled to `[]`. |
-| `attributes` | `Record<string, AttributeValue>?` | canonical | yes | yes (optional) | Flexible schema-driven values keyed by `AttributeDefinition.id`. |
+| `attributes` | `Record<string, AttributeValue>?` | canonical | yes | yes (optional) | Flexible schema-driven values keyed by `AttributeDefinition.id`. Instagram rows use `ig-username`, `ig-follower-count`, `ig-follows-me-back` (Follows me back), and `ig-i-follow-back` (I follow them back). A missing boolean means that side of the download was never loaded. Follower count stays absent until a number is present. |
 
 ---
 
@@ -111,10 +113,12 @@ future cleanup does not collapse them.
 | `completed` | `boolean` | canonical | yes | yes | Completion gate; triggers points award in `updateTask`. Invariant: `status === "done"` ⇔ `completed === true`. |
 | `status` | `CompletionStatus?` (`active` / `partial` / `deferred` / `cancelled` / `missed` / `done`) | canonical | yes | yes | Feature 9 richer completion. `"missed"` is too late — leaves To Do / Next Actions like done, files on Missed Opportunities instead of Completed. Helpers: `lib/completion-status.ts`. Persist **v13** drops leftover lifecycle words (`inbox` / `clarified` / `scheduled` / `list`) that used to live on this field, and rewrites the word `completed` to `"done"`. `stage` stays the lifecycle bucket. |
 | `missedAt` | `Date?` | canonical | yes (Date-revived) | yes | Stamped when `status` becomes `"missed"`; cleared on reopen. |
+| `missReason` | `StoredBlockedReason?` | canonical | yes | no (passthrough) | Why a missed opportunity was not done. Optional preset token, or `{ reason, note }`. Written by `markMissedOpportunity` only when the prompt returns one. Cleared when the task leaves missed. Not `Task.why`. |
 | `loggedAction` | `boolean?` | canonical | yes | no | Implied-action Done log (`type: "action"`); included in Done-today even when not a Task. |
 | `icon` | `string?` | canonical | yes | no (passthrough) | Orb path or data URL for Lists "File Manager". |
 | `notes` | `string?` | canonical | yes | no | Free text; indexed by `lib/search.ts`. |
 | `taskDescription` | `string?` | canonical | yes | no | "Detailed description" distinct from `description`; edited in ItemDetail, read by search/LinkPicker. Naming is confusing but in active use. |
+| `captureOrigin` | `{ kind, detail? }` | canonical | yes | no (passthrough) | How this record was captured. Set once at that door. Clarify, file, a later edit, bulk edit, and Transfer to log do not replace it (`keptCaptureOrigin` in `updateTask`). Absent on older rows — the walk sheet then says nothing, rather than guessing. Not `createdAt`. Kinds that exist: `telegram` (BIM; detail is `@name` or `chat id`, `message id`, and the raw line when Telegram sent them), `quick-add` (the Quick Add line, including Bulk inside that dialog), `bulk-add` (the Bulk Add dialog line), `notes` (Mac From Notes; detail is the note title and folder), `iphone-notes` (Phone Notes), `reminder` (a due reminder copied into Inbox; the walk sheet says Scheduled). A note parked before this field still shows From notes or Phone Notes from `attributes.source` plus folder/account. A reminder copy from before this field still shows Scheduled from its `notes` line. Helpers: `lib/capture-origin.ts`. |
 
 > **Open question for the owner — `description` is doing two jobs.** Step 1
 > assumed `description` was only an older name for `title`, so the write path
@@ -143,7 +147,7 @@ future cleanup does not collapse them.
 | `importance` | `number?` (1–5) | canonical | yes | yes | Priority numerator. |
 | `estimatedDuration` | `number?` (min) | canonical | yes | yes | Priority denominator; PERT coexists. |
 | `actualDuration` | `number?` (min) | derived | yes | no | Set on completion / from `timeLogs` (`actual-day-view.tsx`). Feeds calibration + beat-the-clock. |
-| `timeRough` | `boolean?` | canonical | yes | no | Person marked the completion's duration and/or start as a rough estimate (ritual Assumed times → Est.). Distinct from autogenerated `estimates`. |
+| `timeRough` | `boolean?` | canonical | yes | no | Person marked the completion's duration, start, or finish as a rough estimate. Distinct from autogenerated `estimates`. |
 | `rewardValue` | `number?` | canonical | yes | yes | Points for non-next-action completion; default 50 in v2 migration. |
 | `context` | `string?` (e.g. `@work`) | canonical | yes | no | GTD context. Active (inbox defaults, sidebar, search). NOT yet merged into `tags` (spec §5 future). |
 
@@ -153,12 +157,13 @@ future cleanup does not collapse them.
 |---|---|---|---|---|---|
 | `scheduledDate` | `Date?` | canonical | yes (Date-revived) | yes | In `DATE_KEYS`. Finest granularity. |
 | `scheduledTime` | `string?` (`"14:30"`) | canonical | yes (string) | yes | Deliberately excluded from `DATE_KEYS` so it stays a string. |
+| `reminder` | `{ repeat: "once" \| "daily" \| "weekly"; deliveredKey?; dismissedKey?; telegramNote?; textMe?; persistent? }?` | canonical | yes | no (passthrough) | Timed reminder on the built-in Reminders list (`lib/reminders.ts`). The fire instant is this row's `scheduledDate` (local day) plus `scheduledTime`. `deliveredKey` is the local occurrence already sent (`YYYY-MM-DDTHH:mm`). `dismissedKey` is the occurrence dismissed from the header bell; a recurring reminder only hides that one. `telegramNote` is why that send's text was skipped or failed; absent when the text went out. `textMe` and `persistent` omit to yes, so a reminder saved before the switches still texts and still sits in the bell until the person turns one off. This is not `repeatSettings`. |
 | `scheduledWeek` | `string?` (`"YYYY-..._..."`) | canonical | yes (string) | yes | Coarse schedule level. |
 | `scheduledMonth` | `string?` (`"YYYY-MM"`) | canonical | yes (string) | yes | Coarse schedule level. |
 | `scheduledYear` | `string?` (`"YYYY"`) | canonical | yes (string) | yes | Coarse schedule level. |
 | `autoPush` | `boolean?` | canonical | yes | yes | Item detail **Auto-push**. Only `true` pushes an unfinished day/week/month onto the next one when the period ends and records the ended period as Undone. Omitted and `false` roll up to the coarser To Do list instead. Not the Scheduler (`scheduleable`). |
 | `deadline` | `Date?` | canonical | yes (Date-revived) | yes | In `DATE_KEYS`. |
-| `schedulePlacements` | `{ period, value, resolved? }[]?` | canonical | yes | yes | Every period the task was on and did not finish. Periods are independent (Monday and Tuesday can both be Undone). A past Scheduler cell shows the unfinished queue for that period. A past week also shows an unresolved month or year that contains it, and Push, Dismiss, or Unschedule on that week settles the coarser placement too. `resolved: "pushed"` (an explicit push or auto-push) and `resolved: "clarified"` (Dismiss or Unschedule on a past card) drop that period from the Scheduler queue and leave it on the Undone list. `resolved: "discarded"` (To Do Discard) drops it from the Undone list too and does not delete the row. Mark done on a past card stamps `completedDate` inside that period, which is what takes the row off Undone. Roll-up and Assimilate leave `resolved` unset. Roll-up does not increment push counters; a push and auto-push do. Persist v16 appends an unresolved placement for a live assignment whose period has ended and does not clear the schedule fields. `priorityDateOf` (`lib/scheduling.ts`) is the earlier of the live scheduled day and the earliest non-discarded start, and To Do overdue counts measure from it (or an earlier deadline). |
+| `schedulePlacements` | `{ period, value, resolved?, missReason? }[]?` | canonical | yes | yes (array rides on passthrough) | Every period the task was on and did not finish. `missReason` is an optional `StoredBlockedReason` on a placement Push left behind. Dismiss and Unschedule do not write it. Auto-push and roll-up do not ask. Periods are independent (Monday and Tuesday can both be Undone). A past Scheduler cell shows the unfinished queue for that period. A past week also shows an unresolved month or year that contains it, and Push, Dismiss, or Unschedule on that week settles the coarser placement too. `resolved: "pushed"` (an explicit push or auto-push) and `resolved: "clarified"` (Dismiss or Unschedule on a past card) drop that period from the Scheduler queue and leave it on the Undone list. `resolved: "discarded"` (To Do Discard) drops it from the Undone list too and does not delete the row. Mark done on a past card stamps `completedDate` inside that period, which is what takes the row off Undone. Roll-up and Assimilate leave `resolved` unset. Roll-up does not increment push counters; a push and auto-push do. Persist v16 appends an unresolved placement for a live assignment whose period has ended and does not clear the schedule fields. `priorityDateOf` (`lib/scheduling.ts`) is the earlier of the live scheduled day and the earliest non-discarded start, and To Do overdue counts measure from it (or an earlier deadline). |
 | `scheduleable` | `boolean?` | canonical | yes | no | **Send to Scheduler.** Per-item override; resolved by `isTaskScheduleable`. `true` forces the item into the Scheduler; `false` hides it; omitted inherits from lists. Dates, a deadline, a trip itinerary, and auto-push do not set this. The item-type capability of the same name is scheduling fields, not this switch. |
 | `dependencies` | `string[]?` (task ids) | canonical | yes | yes | Critical-path / Gantt / project network. |
 | `schedulingConstraints` | object | canonical | yes (`mustBeDoneAfter/Before` Date-revived) | no | Nested constraints; only the two `mustBeDone*` keys are in `DATE_KEYS`. §7.6 auto-scheduling deferred but fields retained. |
@@ -195,7 +200,8 @@ future cleanup does not collapse them.
 |---|---|---|---|---|---|
 | `why` | `string?` | canonical | yes | no | "Why this needs doing"; edited in ItemDetail, indexed by search. |
 | `consequences` | `string?` | canonical | yes | no | "What happens if not done"; edited in ItemDetail. |
-| `completionReview` | `TaskCompletionReview?` | canonical | yes (`completedAt` Date-revived) | no | Post-mortem; written by `completion-service.ts`, read by Analytics/calibration. The reviver matches key names at any depth, so the nested `completedAt` was always a `Date`. |
+| `completedCertainty` | `"exact" \| "estimated"?` | canonical | yes | no | How firmly `completedDate` is known. Set from the completion reflection's **Done at** (any local day and time). `estimated` also sets `timeRough`. Omitted when the person has not marked the finish. Never `unknown` — a finish always has a stamp. |
+| `completionReview` | `TaskCompletionReview?` | canonical | yes (`completedAt` Date-revived) | no | Post-mortem; written by the completion reflection and `completion-service.ts`, read by Analytics/calibration. The reviver matches key names at any depth, so the nested `completedAt` was always a `Date`. `completedCertainty` on the review mirrors the task. |
 
 ### Recurrence
 
@@ -213,6 +219,13 @@ future cleanup does not collapse them.
 | `parallelGroup` | `string?` | **placeholder** | yes | no | Concurrency grouping. **No reads/writes found.** Cleanup candidate. |
 | `riskFlag` | `boolean?` | **placeholder** | yes | no | "Tricky step" flag. **No reads/writes found.** Cleanup candidate. |
 | `definitionOfDone` | `string?` | **placeholder** | yes | no | Perfectionism guardrail. **No reads/writes found**. Cleanup candidate. |
+
+### People I Know
+
+| field | type | class | persisted? | Zod? | notes |
+|---|---|---|---|---|---|
+| `personProfile` | `PersonProfile?` (`lib/person-profile.ts`) | canonical | yes | no (passthrough) | Biography on a person: full name, nicknames, optional relation (free text; empty stays absent), date met and whether that day is estimated, Instagram handle, address text plus precision (mailing, neighborhood, state, or country), dated notes, interactions (a row may be marked saw), gift notes (`giftIdeas`), and Close (`close`, only `true` is stored). Birthday and standing notes stay on `attributes` (`birthday`, `notes`). How long known, time since last seen, and days until the next birthday are derived when the person is open. Relation, Close, and the rest of this object live on the task because a catalog Person type already saved keeps the attributes it was seeded with. Close creates the Gift ideas list (`lib/gift-ideas.ts`). Turning Close off does not delete that list and does not clear `giftIdeas`. |
+| `personPipelines` | `PersonPipeline[]?` | canonical | yes | no (passthrough) | Visible joins from this person. `company-pen` is the association: Company time is every Company block painted with that pen, even without a per-block row. `company-timeblock` is still read so an older row is not erased; it does not decide which blocks count. A later kind keeps `id` and `kind`. Attach a person on the pen. A block shows the people on its pen. See `lib/people-i-know.ts`. |
 
 ---
 
@@ -287,6 +300,11 @@ includes `fileValueSchema` and `fileValueSchema[]`). `AttributeType` adds
 | `detailsColumns` | `string[]?` | canonical | yes | no | Ordered Details-table column ids. Independent of `sheetConfig.columnIds`. `[]` = Name only. |
 | `sheetConfig` | `SheetViewConfig?` | canonical | yes | no | Spreadsheet layout including `columnIds`. Independent of Details. |
 | `itemLabel` | `string?` | canonical | yes | no | Singular item label. |
+| `reminderList` | `boolean?` | canonical | yes | no | Built-in Reminders list. Set when that list is created or adopted by name. Rename keeps the flag. `deleteList` refuses it. |
+| `peopleList` | `boolean?` | canonical | yes | no (passthrough) | Built-in People I Know list. Set when that list is created or adopted by name. Rename keeps the flag. `deleteList` refuses it. A duplicate does not copy the flag. |
+| `instagramFollowingList` | `boolean?` | canonical | yes | no (passthrough) | Built-in People I follow on Instagram. Set when that list is created or adopted by name. Rename keeps the flag. `deleteList` refuses it. A duplicate does not copy the flag. |
+| `instagramFollowersList` | `boolean?` | canonical | yes | no (passthrough) | Built-in People who follow me on Instagram. Same protection. One username is one item and may sit on both Instagram lists. |
+| `giftIdeasPersonId` | `string?` | canonical | yes | no (passthrough) | Gift ideas list for one person. Set when Close creates the list (`lib/gift-ideas.ts`). Identity is this id, not the title, so a rename updates `name` and two people with the same title stay two lists. A duplicate does not copy it. Delete is allowed. Turning Close off does not delete the list. |
 | `itemTypeId` | `string?` | canonical | yes | no | Default type for new rows (`withListMembership`). |
 | `detailPanels` | `ItemDetailPanel[]?` | canonical | yes | no | Extra tabs unioned onto the type's panels. |
 | `hiddenDetailPanels` | `ItemDetailPanel[]?` | canonical | yes | no | Hide tabs even if the type would show them. |
@@ -299,7 +317,11 @@ Fully covered by `categoryFolderSchema` for the strict fields (`id`, `name`,
 `scheduleable`, `icon`); `.passthrough()` allows the rest. `scheduleable`
 is **Send to Scheduler** for lists created in the folder: v4 turned it on, v14 turns
 folder defaults off so new lists are not sent. Dates on a list do not turn it on.
-`categoryIds` deduped in v6.
+`categoryIds` deduped in v6. `giftIdeasFolder` marks the one Gift ideas folder
+(created or adopted by the name Gift ideas). Rename keeps the flag. Delete is
+allowed: it is an ordinary folder, not a protected singleton, so a folder the
+person already named Gift ideas can still be removed. A person who is still
+Close gets a missing list back the next time the vault hydrates.
 
 ## `PeriodReview` (`lib/types.ts`) — persisted by `reviews-store` (separate store)
 
@@ -318,13 +340,21 @@ folder defaults off so new lists are not sent. Dates on a list do not turn it on
 | `timeReflection` | `string?` | canonical | yes | no | Night note on how the day's time went. |
 | `tomorrowFocusGoalIds` | `string[]?` | canonical | yes | no | Goals to focus the day after this night. |
 | `arc` | `PeriodArcReflection?` | canonical | yes | no | Week / month / season / year reflection. Text fields plus `inspiredPhotos` (`FileValue[]`, attachment `idb:` uris). Night does not ask these. Empty is omitted. |
-| `blockedReasons` | `Record<string, StoredBlockedReason>?` | canonical | yes | no | Task id → preset token, or `{ reason: "other", note }` when Other has text. Blank Other is the token `"other"`. |
+| `blockedReasons` | `Record<string, StoredBlockedReason>?` | canonical | yes | no | Task id → preset token, or `{ reason, note }` when the person wrote words. Blank Other is the token `"other"`. Ritual carry-over only. Push, missed tasks, and habit cells store their own fields. |
 | `reflections` | `Record<string, string>` | canonical | yes | no | question id → answer (went well / improve / learned). Separate from `arc`. |
 | `resolvedTaskIds` | `string[]` | derived | yes | no | Snapshot of carry-over resolution. |
 | `pushedTaskIds` | `string[]` | derived | yes | no | Snapshot of carry-over resolution. |
 | `endCompleted` | `boolean?` | canonical | yes | no | End/night/review ritual done. |
 | `morning` | object? | canonical | yes | no | Day start (sun) ritual slice. |
 | `start` | `PeriodStartRitual?` | canonical | yes | no | Week–year start/planning slice. |
+
+## `OperationReview` (`lib/reviews-store.ts`) — same store as period rituals
+
+One row per operation (`id` defaults to `operation:${operationId}`). The after-action report writes `summary`, `whatWorked`, `whatFailed`, `lessons`, `ratings` (`execution` / `planning` / `morale`, integers 1–10), and `hoursLogged` (that operation’s total hours when the report was filed). Analytics → Operations reads those for the shared window.
+
+| field | type | class | persisted? | notes |
+|---|---|---|---|---|
+| `blockedReasons` | `Record<string, StoredBlockedReason>?` | canonical | yes | Why the operation was missed or abandoned, keyed by operation id. Written by the slim **Why missed** dialog (`OperationMissReasonDialog`), including when the stage becomes abandoned. The after-action report does not write it. A later after-action save merges so a miss note stays. |
 
 ## `ItemTypeDefinition` (`lib/types.ts`) — the type-extensibility seam
 
@@ -383,7 +413,10 @@ Persisted in `brain2-habits-store` (catalog and persist version in [`lib/README.
 | `WeeklyTask.type` | `TaskType` | canonical | BOOLEAN, GOAL, TEXT, INCREMENTAL (climb). TIME/COUNT normalize to GOAL. |
 | `WeeklyTask.frequency` | `"daily" \| "weekly" \| "monthly"` | canonical | Which Habits tab the habit appears on. Independent of climb cadence. |
 | `WeeklyTask.trackingLink` | `HabitTrackingLink` | canonical | Auto-fill from Tracking tags for Goal / Yes-No habits (daily, weekly, or monthly). Weekly/monthly sum tagged minutes across the period. |
-| `WeeklyTask.goal` / `unit` | number / string | canonical | Fixed target for GOAL habits. `unit` also used on climb. |
+| `WeeklyTask.goal` / `unit` | number / string | canonical | Target for GOAL habits. `unit` also used on climb. When a goal is fed by a list (list length or this period’s set), each period shows sends inside that period over the list length (`listPeriodMeasure`). A finished period freezes that length at the size reconstructed from `createdAt` and `sentAt`. An open period follows the live list. Save and the list sync write the open period’s live length here. Grace stays a separate percent. |
+| `WeeklyTask.listSentLink` | `{ listId, grace?, enabled?, mode?, measure?, target? } \| null` | canonical | Lists completion source. `listId` is the list. Measure is sent, completed, or added. Target is this period’s set, list length, or 1. Missing or `enabled: false` means off. |
+| `WeeklyTask.listLink` | `{ listName, count } \| null` | canonical | Next actions on a named list. `null` is off. `undefined` may still mean a name preset. |
+| List habit routes | — | derived | Not a field on `List`. `listHabitRoutes` (`lib/list-habit-routes.ts`) reads the two links above. List settings shows one row per habit (title and role). A Habits stats pipeline does not name a list, so it is not a row. Changing the habit source changes this list. No second copy is stored. |
 | `WeeklyTask.incrementalData` | `IncrementalHabitPersisted` | canonical (`IncrementalHabitData`) | `cadence`, `startValue`, `increment`, `unit?`, `startedOn?`. Source of truth after v3. |
 | `IncrementalHabitLegacy.currentValues` / `weeklyIncrement` | `Record<string, number>` | legacy | Pre-cadence multi-metric maps. Migrated in persist v3 via `lib/incremental-habits.ts`. |
 | `WeeklyTask.timeEstimate` | `HabitTimeEstimate?` | canonical | Minutes per unit or per completion for Done-row duration. |
@@ -393,9 +426,16 @@ Persisted in `brain2-habits-store` (catalog and persist version in [`lib/README.
 | `WeeklyTask.priorityRefreshedOn` | `string?` (`YYYY-MM-DD`) | canonical | Local calendar day of the last star refresh. Missing means never. No persist bump. |
 | `WeeklyTask.priorityPermanent` | `boolean?` | canonical | Star and green sheet highlight stay at 100% until turned off. No persist bump. |
 | `WeeklyTask.createdAt` | `string?` (ISO) | canonical | Stamped when a habit is added. Sort by date created. Persist v10. |
+| `HabitCompletionPipeline.keyword` | `{ use: "received" \| "after" \| "logged", count?, pattern? }` | canonical | BIM Keywords row. The whole message must be the phrase. `received` is done after one exact message in the period. `after` is done after `count` (N). `logged` parses `pattern` (`read {n} pages of {bookname}` or `cleaned for {x} minutes` writes the amount; `{n}`, `{x}`, and `{minutes}` are that number). A minutes or hours pattern also paints the prior tracking span (`lib/habit-logged-span.ts`). No clock is estimated. A trailing clock is the end. Phrases stay on `textTriggers`. A hit with no timestamp is not copied onto every period. No persist bump. |
+| `WeeklyTask.keywordReceipts` | `{ text, at }[]?` | canonical | Dated exact messages kept after the ingest log rotates. No `at` means the hit is not stored. No persist bump. |
+| `TaskCompletion.keywordUse` / `keywordAfter` / `keywordHitCount` / `keywordSlots` | mixed | canonical | Period reading for a saved keyword mode. `keywordHitCount` is dated hits in that period. `keywordSlots` holds names from a logged phrase (`bookname`). `keywordValue` holds `{n}` / `{x}` / `{minutes}`. Amount slots are not copied into `keywordSlots`. Absent `keywordUse` keeps the older `keywordLogged` reading. No persist bump. |
+| `HabitCompletionPipeline.stats` | `{ set, points, comparePrevious?, mustBeHigher? }` | canonical | Habits stats row. `set` is `daily` / `weekly` / `monthly`. Each point is a kind plus an optional day key or habit id. No persist bump. |
+| `HabitCompletionPipeline.statBinding` | `{ mode, pipelines, pipelineId? \| expression? }` | canonical | Optional. `mode: "simple"` reads `pipelineId`. `mode: "statement"` reads `expression`. Each pipeline is `id`, `name`, `outputName`, `sourceId`, `periodId`, `outputId`, and for a specific habit `habitId` + `valueId` (`weekPercent`, `completion`, or `loggedAmount`), and for one day `dayKey`. `loggedAmount` is the sum of that habit’s numeric cell logs in the period, read when the binding is evaluated. The Value menu calls it Page total when the unit is pages, Minute total for minutes, and Logged amount when there is no unit. Yes/no and text habits do not offer it. Week grade, month grade, and perfect output may also store `scale`: `"raw"` or `"curved"`. Absent means curved, which is the control panel tube (`grade` after `curveDayPercentage`, not `rawGrade`). The saved pipeline stores that choice, not a frozen number. `evaluateHabitStatBinding` reads it live. Unknown fields on the binding are kept. Absent when the row has no saved binding. `migrateHabitStatsSource` can build a simple binding from `stats` without writing it back. No persist bump. |
 | `TaskCompletion.value` | `number?` | canonical | Numeric log for GOAL **and** climb (same cell shape: value vs target). |
 | `TaskCompletion.incrementalValues` | `Record<string, number>?` | legacy | Old per-metric logs. Still **read** as fallback; new writes omit it. |
 | `TaskCompletion.completed` / `text` / `goal` | mixed | canonical | Boolean / text / snapshot of goal. |
+| `TaskCompletion.missedOpportunity` | `boolean?` | canonical | This period was definitely not done. Absence is not marked. Grades, percents, streaks, gems, and points do not read it. |
+| `TaskCompletion.missReason` | `string?` | canonical | Optional words when the missed-opportunity wand turns on. The typed note, or the preset label when the note is blank. Grades ignore it. No persist bump. |
 | `HabitsState.gradeTolerance` | `number` (1–100) | canonical | Raw day % that counts as 100 on the Week grade curve. Default 100 (no curve). |
 | `HabitsState.outputGradeTolerance` | `number` (1–100) | canonical | Raw elapsed row % that counts as 100 on the Perfect output curve. Default 100. Independent of `gradeTolerance`. |
 | `HabitsState.accomplishmentThreshold` | `number` (1–100) | canonical | Raw day % that counts as a Good day (“completion to feel accomplished”). Default 80. Independent of grade curves. Persist v6. |
@@ -404,6 +444,7 @@ Persisted in `brain2-habits-store` (catalog and persist version in [`lib/README.
 | `HabitsState.weeklyGradeLiftBonus` | `number` (≥0) | canonical | Points paid once for this week’s weekly-habit grade and once for weekly output when that grade is higher than last week. Default 25. 0 turns it off. Persist v21. |
 | `HabitsState.weeklyAverageBeatBonus` | `number` (≥0) | canonical | Points paid once when that day’s raw completion is above the prior 7-day average. Default 5. 0 turns it off. Persist v26. |
 | `HabitsState.monthlyAverageBeatBonus` | `number` (≥0) | canonical | Points paid once when that day’s raw completion is above the prior 30-day average. Default 5. 0 turns it off. Independent of the weekly rule. Persist v26. |
+| `HabitsState.defaultHabitPoints` | `{ daily, weekly, monthly, seasonal }` numbers (≥0) | canonical | Completion points a new habit of that period starts with. Default 10 each. Copied onto `WeeklyTask.rewardValue` once at add when that field is missing. Later changes do not rewrite a habit that already has its own number. A missing blob fills 10. No persist version bump. |
 | `HabitsState.gradeUsePriority` / `outputUsePriority` / `goodDaysUsePriority` | `boolean` | canonical | Optional 50% floor blend of prioritized habits into grades / Good days. Persist v7. |
 | `HabitsState.habitViewMode` | `"grid" \| "heatmap"` | canonical | Daily spreadsheet vs month-of-cells mosaic. Persist v7. |
 | `HabitsState.habitSortMode` | `"default" \| "alphabetical" \| "created" \| "priority" \| "weeklyCompletion"` | canonical | Sidebar sort plate. Persist v10. |
@@ -423,11 +464,14 @@ Persisted in `brain2-timegrid-store` (Zustand persist **v15**), not `brain2-task
 | `TimeEntry.variantIds` | `string[]?` | canonical | `PenVariant` ids. Several true at once over the same minutes (overlapping labels *inside* one pen). |
 | `TimeEntry.tagIds` | `string[]?` | canonical | Tags on **this block only**, on top of whatever its pens always carry. |
 | `TimeEntry.precision` | `"estimated" \| "definite"?` | canonical | Omitted = certain. `"estimated"` is assumed / reconstructed; Analytics can drop it. Same vocabulary as `HabitTimeEstimate.precision`. Confirm clears this field. An intake or log line marked estimated also sets this so the existing hatch still draws. |
-| `TimeEntry.eventKind` | `string?` | canonical | Stable slug for grouping counts. Free-form `log:` phrases use `eventKindSlug` (lowercase, trimmed, spaces collapsed, punctuation removed) — `left room` stays `left room`. Intake rows: `intake` when the class is unset, otherwise `intake.food` / `intake.drink` / `intake.drug`. A thought process (`tp:` / `thought process:` / `log: tp:`, or the Tracking log Thought process composer) stores `thought-process`. A trailing `loc: home` on `log:` does not change this slug; it paints a separate Location-scope instant, reusing or creating that Location pen. Omitted on older rows. No persist bump. |
+| `TimeEntry.eventKind` | `string?` | canonical | Stable slug for grouping counts. Free-form `log:` phrases use `eventKindSlug` (lowercase, trimmed, spaces collapsed, punctuation removed) — `left room` stays `left room`. Intake rows: `intake` when the class is unset, otherwise `intake.food` / `intake.drink` / `intake.drug`. A thought process (`tp:` / `thought process:` / `log: tp:`, or the Tracking log Thought process composer) stores `thought-process`. A Tracking log spend stores `spend`. A trailing `loc: home` on `log:` does not change this slug; it paints a separate Location-scope instant, reusing or creating that Location pen. Omitted on older rows. No persist bump. |
 | `TimeEntry.intakeClass` | `"food" \| "drink" \| "drug"?` | canonical | Set by `intake food:` / `intake drink:` / `intake drug:`, and by the existing `ate` / `drank` / `took` triggers (those keep the Text log pen). Bare `intake:` leaves it unset. Food is a subset of intake. Omitted on older rows. |
 | `TimeEntry.clockCertainty` | `"estimated" \| "unknown"?` | canonical | Tracking-log clock firmness. **Not** mood, sleep, or completion `ClockCertainty` — same three words, a separate field (`TrackingClockCertainty`). Omitted = exact; old rows are not migrated. `"estimated"` also stores `precision: "estimated"`. `"unknown"` still stores `startMin` so the grid can place the mark; that minute was not observed. The bot words are `est` / `estimated` / `~` and `unknown` on `log:`, `intake:`, `switch:`, `st:` / `switch task:`, `so:` / `switch objective:` / `switch goal:`, and `note:` / `n`. Log lines, switch lines, and those tracking-note clocks use `parseExpectedWhen`: a bare clock is military and is stored as `startMin` (`18:37` is 6:37pm, `6:37` is 06:37, `1:00` is 01:00). `1pm` and `1:00 p.m.` are 13:00. Ordinary inbox text is not parsed this way. |
 | `TimeEntry.switchFrom` | `string?` | canonical | What a switch left. Set on new `switch:` / `st:` / `so:` rows. Omitted on older rows and on a bare destination (`switch: company Elijah`). No persist bump. |
 | `TimeEntry.switchTo` | `string?` | canonical | The destination. Same writers. Activity still paints the Switch pen (Objective for `so:` / `switch goal:`). Another view uses this text as that scope’s pen. No persist bump. |
+| `TimeEntry.spendAmount` | `number?` | canonical | Money spent, in integer cents. Set with `spendOn` and `spendSource` by the Tracking log **Spent** composer (`lib/spend.ts`, `paintSpendInstant`). Empty, zero, negative, and non-numeric amounts are not stored. Omitted on every other row. No persist bump. |
+| `TimeEntry.spendOn` | `string?` | canonical | What the money was spent on. Also copied to `title` so existing labels keep a name. Omitted when this instant is not a spend. |
+| `TimeEntry.spendSource` | `string?` | canonical | Where the money came from: cash, card, account, person, or any short name. Free text. The composer suggests sources already used, then Cash, Card, and Account. Omitted when this instant is not a spend. |
 | `TimeEntry.estimateOf` | `{ kind: "done" \| "import"; id: string }?` | canonical | Where an assumed block was proposed from. **Place as assumed** stamps `kind: "done"`. Confirm leaves the stamp so the same item is not proposed again. `kind: "import"` is in the type; no writer stamps it yet. |
 | `TimeEntry.spanId` | `string?` | canonical | Links the calendar-day slices of one block that crossed midnight. One logical event, two rows. |
 | `TimeEntry.generatedBy` | `{ kind: "sleep" \| "screentime"; id: string }?` | canonical | Set when a record produced the block rather than a brush stroke. `id` is the local calendar day. Sleep sync and Screen Time sync each replace only their own kind+id, so re-deriving never eats hand-painted time. |

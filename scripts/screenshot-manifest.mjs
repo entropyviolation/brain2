@@ -3,7 +3,7 @@
  * generate-screenshot-docs.mjs.
  */
 export const GLOBAL_HEADER = `
-Pinned full-width mill title bar (\`AppHeader\`, sticky top, z-40): navy BRAIN2 caption with Tek POWER lamp + today's-friend jewel (64px chrome + black-mirror well; click for a Stardew Next Action bubble; Esc / × / outside to close) and Friend / Review / System / optional now / Capture as Win95 groupboxes of milled press keys. Names stays Names and latches (sunken, aria-pressed); tooltip Stop naming while on. Phosphor counts on Review and Inbox. Capture is Inbox and Quick Add; Bulk is a checkbox inside Quick Add. Metrics opens from Now → Current moment. Ingest, From Notes, and Phone Notes live in Settings.
+Pinned full-width mill title bar (\`AppHeader\`, sticky top, z-40): navy BRAIN2 caption with Tek POWER lamp + today's-friend jewel (64px chrome + black-mirror well; click for a Stardew Next Action bubble; Esc / × / outside to close) and Friend / Review / System / Capture as Win95 groupboxes of milled press keys. Names is the question mark in System and latches (sunken, aria-pressed); tooltip Names help mode while on. Phosphor counts on Review and Inbox. Capture is Now, Inbox, and Quick Add; Bulk is a checkbox inside Quick Add. Metrics opens from Now → Current moment. Ingest, From Notes, and Phone Notes live in Settings.
 Tabs: milled fascia (brushed bay, raised silver keys, active key a CRT with a round power lamp) — Home · Lists · Docs · Scheduler · Operations · Modules · Analytics.
 Shortcuts: Cmd/Ctrl+K search · capture hotkey → Quick Add.
 `.trim()
@@ -713,7 +713,7 @@ Hour × day occupancy atlas. Instants stay off the heat. Missing hours are empty
     view: "Analytics tab → Time → Places",
     sources: ["components/Analytics/PlacesView.tsx"],
     description: `${ANALYTICS_CHROME}
-Location scope as a time-at-pen mosaic (country → park via displayDepth). Not a geo map.`,
+Location scope as a time-at-pen mosaic (country → park via displayDepth). Repeated coordinates (a place seen more than once, within 80 m) can be named on this view; the next pin there is that Location pen. Not a geo map.`,
   },
   {
     file: "07-analytics-mood-field.png",
@@ -859,7 +859,7 @@ Importance, cognitive load, and entropy already on items. Missing stays missing.
     area: "Inbox dialog",
     view: "Header → Inbox",
     sources: ["components/inbox.tsx"],
-    description: `Inbox — Clarify Your Ideas. Per capture: title, added time, chips, Clarify, Delete. Clarify All Ideas. Clarify Idea form: description, duration, reward, urgency/importance, Lists, attributes, Save & Clarify.`,
+    description: `Inbox — Clarify Your Ideas. Inbox and Monkey brain partitions. Search ideas is pinned at the top of the list; the list scrolls and the foot stays in view. Each row: check, title, time, age chip. Pencil and trash appear on hover and on the caret row. Foot: Select all, Select N, Select unsorted, Deselect, All/Dated/Bare, Apply list, Due, File, Monkey brain, Bulk edit, Delete, Merge, Walk or Walk selected. Day plates. Undo banner.`,
   },
   {
     file: "20-dialog-bulk-add.png",

@@ -91,6 +91,24 @@
 │   │   └── page.tsx
 │   └── win95.css
 ├── capacitor.config.ts
+├── clockbgssrc
+│   ├── 032e94c0f744cb19057dae62d812b103.jpg
+│   ├── 168317943f8f9f48c961a185c2f4b0ab.jpg
+│   ├── 2ab03eae94dee499b1347c48c2f3d65a.jpg
+│   ├── 2cb50bd2071b053964840a261e8533dd.jpg
+│   ├── 3534e80cc0ce36530448519bc658b7b5.jpg
+│   ├── 3752aca7de4f346173932af698e8881e.jpg
+│   ├── 3810b1bf281955384503b77452d1c531.jpg
+│   ├── 41f10ea1a1fd7db808d8cd0e593a597a.jpg
+│   ├── 5a0423b10fb5eabee436e5a9eda7ec2c.jpg
+│   ├── 68af5d34ccbe19d4c3e3ae1a1566430a.jpg
+│   ├── 7c39b7297bbbd22267faa8c618479d4e.jpg
+│   ├── 82e617d2955244c2dac645992c8148ce.jpg
+│   ├── 89481ce55a72904917b15cde111db5fb.jpg
+│   ├── affbfc742f05e66650ab16e7582cb70b.jpg
+│   ├── bd9c9729bc884055aece44a7c0a58285.jpg
+│   ├── c3d304ddadb948a64bb84db1aaf069b2.jpg
+│   └── e82ba65fa49c121a23c42b8a26503210.jpg
 ├── components
 │   ├── Analytics
 │   │   ├── AnalyticsNav.tsx
@@ -131,6 +149,7 @@
 │   │   ├── README.md
 │   │   ├── ReflectionView.tsx
 │   │   ├── RegretView.tsx
+│   │   ├── ResearchReportView.tsx
 │   │   ├── ReviewsView.tsx
 │   │   ├── ScreenTimeView.test.tsx
 │   │   ├── ScreenTimeView.tsx
@@ -176,10 +195,14 @@
 │   │   ├── observatory.test.ts
 │   │   ├── open-in-lists.test.ts
 │   │   ├── open-in-lists.ts
+│   │   ├── operation-debrief.test.tsx
+│   │   ├── operation-debrief.ts
 │   │   ├── period-delta.test.ts
 │   │   ├── period-delta.ts
 │   │   ├── period-filmstrip.test.ts
 │   │   ├── period-filmstrip.ts
+│   │   ├── research-report.test.ts
+│   │   ├── research-report.ts
 │   │   ├── signal-stats.test.ts
 │   │   ├── signal-stats.ts
 │   │   ├── studio-kit.tsx
@@ -244,6 +267,7 @@
 │   │   │   ├── hab-grade-sheet.tsx
 │   │   │   ├── habit-chrome.css
 │   │   │   ├── habit-completion-cell.tsx
+│   │   │   ├── habit-completion-detail.tsx
 │   │   │   ├── habit-form-dialog.css
 │   │   │   ├── habit-gems.test.tsx
 │   │   │   ├── habit-gems.tsx
@@ -253,16 +277,29 @@
 │   │   │   ├── habit-led-lamp.css
 │   │   │   ├── habit-led-lamp.test.tsx
 │   │   │   ├── habit-led-lamp.tsx
+│   │   │   ├── habit-led-switch.css
+│   │   │   ├── habit-led-switch.tsx
+│   │   │   ├── habit-list-popup.test.tsx
+│   │   │   ├── habit-list-popup.tsx
 │   │   │   ├── habit-month-window-control.tsx
 │   │   │   ├── habit-percent-readout.tsx
+│   │   │   ├── habit-period-breakdown.tsx
+│   │   │   ├── habit-priority-bar.tsx
+│   │   │   ├── habit-priority-sheet.test.tsx
 │   │   │   ├── habit-row-name.tsx
 │   │   │   ├── habit-sort-control.test.tsx
 │   │   │   ├── habit-sort-control.tsx
+│   │   │   ├── habit-source-detail.test.tsx
+│   │   │   ├── habit-source-detail.tsx
 │   │   │   ├── habit-sources-field.tsx
+│   │   │   ├── habit-span-breakdown.tsx
 │   │   │   ├── habit-tracker.test.tsx
 │   │   │   ├── habit-tracker.tsx
 │   │   │   ├── habit-value-field.test.tsx
 │   │   │   ├── habit-value-field.tsx
+│   │   │   ├── habit-wand-banner.css
+│   │   │   ├── habit-wand-banner.test.tsx
+│   │   │   ├── habit-wand-banner.tsx
 │   │   │   ├── habit-week-window-control.tsx
 │   │   │   ├── habits-control-panel.test.tsx
 │   │   │   ├── habits-control-panel.tsx
@@ -286,6 +323,8 @@
 │   │   │   ├── priority-math.tsx
 │   │   │   ├── settings-dialog.test.tsx
 │   │   │   ├── settings-dialog.tsx
+│   │   │   ├── stat-source-builder.test.tsx
+│   │   │   ├── stat-source-builder.tsx
 │   │   │   ├── task-grid.test.tsx
 │   │   │   ├── task-grid.tsx
 │   │   │   ├── week-navigation.test.tsx
@@ -507,6 +546,8 @@
 │   │   ├── home-screen-pet.tsx
 │   │   ├── home-sky-motion.test.tsx
 │   │   ├── home-sky-motion.tsx
+│   │   ├── home-sky-scale.test.tsx
+│   │   ├── home-sky-scale.tsx
 │   │   ├── home-solar-tile.tsx
 │   │   ├── home-tracking-tile.tsx
 │   │   ├── home-widget-catalog.tsx
@@ -546,6 +587,8 @@
 │   │   ├── LinkPicker.tsx
 │   │   ├── README.md
 │   │   ├── RelatedItemsPanel.tsx
+│   │   ├── ReminderScheduleFields.test.tsx
+│   │   ├── ReminderScheduleFields.tsx
 │   │   ├── SubtaskComposer.tsx
 │   │   ├── TagInput.tsx
 │   │   ├── TodoCommitmentFields.tsx
@@ -604,7 +647,9 @@
 │   │   │   ├── FolderRelationsEditor.tsx
 │   │   │   ├── InFoldersEditor.test.tsx
 │   │   │   ├── InFoldersEditor.tsx
+│   │   │   ├── InstagramListsSettings.tsx
 │   │   │   ├── ListChildrenEditor.tsx
+│   │   │   ├── ListHabitRoutes.tsx
 │   │   │   ├── ListRulesEditor.tsx
 │   │   │   ├── MergeConfirmDialog.tsx
 │   │   │   ├── MergeFieldGroup.tsx
@@ -663,6 +708,8 @@
 │   │   │   ├── kanban-utils.test.ts
 │   │   │   ├── kanban-utils.ts
 │   │   │   ├── kanban.README.md
+│   │   │   ├── reminder-quick-add.test.tsx
+│   │   │   ├── reminder-quick-add.tsx
 │   │   │   ├── sheet-fullscreen.css
 │   │   │   ├── sheet-fullscreen.test.ts
 │   │   │   ├── sheet-fullscreen.ts
@@ -671,6 +718,8 @@
 │   │   ├── list-picker.css
 │   │   ├── list-picker.test.tsx
 │   │   ├── list-picker.tsx
+│   │   ├── lists-settings-nav.tsx
+│   │   ├── lists-settings.css
 │   │   ├── navigation
 │   │   │   ├── BreadcrumbNav.tsx
 │   │   │   ├── FolderTree.tsx
@@ -764,6 +813,7 @@
 │   │   ├── OperationFieldPlanPanels.tsx
 │   │   ├── OperationHome.tsx
 │   │   ├── OperationLogFeed.tsx
+│   │   ├── OperationMissReasonDialog.tsx
 │   │   ├── OperationPostMortemDialog.tsx
 │   │   ├── OperationSettingsDialog.tsx
 │   │   ├── OperationTasksPanel.tsx
@@ -780,7 +830,16 @@
 │   │   ├── WorkingNowControl.tsx
 │   │   ├── index.ts
 │   │   ├── operation-actions.ts
+│   │   ├── operation-miss-reason.test.ts
 │   │   └── operations-chrome.css
+│   ├── People
+│   │   ├── README.md
+│   │   ├── person-detail.css
+│   │   ├── person-detail.test.tsx
+│   │   ├── person-detail.tsx
+│   │   ├── person-pipelines.css
+│   │   ├── person-pipelines.test.tsx
+│   │   └── person-pipelines.tsx
 │   ├── PersistStatusBanner.test.tsx
 │   ├── PersistStatusBanner.tsx
 │   ├── README.md
@@ -791,6 +850,8 @@
 │   │   ├── CommitmentMarkList.tsx
 │   │   ├── DayReviewTomorrowSection.test.tsx
 │   │   ├── DayReviewTomorrowSection.tsx
+│   │   ├── MissReasonDialog.test.tsx
+│   │   ├── MissReasonDialog.tsx
 │   │   ├── MorningReview.test.tsx
 │   │   ├── MorningReview.tsx
 │   │   ├── NightTimeGlance.tsx
@@ -835,23 +896,36 @@
 │   │   ├── BabyAnimalFriendField.tsx
 │   │   ├── BackupRestore.tsx
 │   │   ├── BirthdayField.tsx
+│   │   ├── BoubaKikiField.test.tsx
+│   │   ├── BoubaKikiField.tsx
 │   │   ├── ChromeFaceField.test.tsx
 │   │   ├── ChromeFaceField.tsx
 │   │   ├── DataProfileField.tsx
 │   │   ├── DayAnchorField.tsx
+│   │   ├── DriftAxisControls.tsx
 │   │   ├── HomeLocationField.test.tsx
 │   │   ├── HomeLocationField.tsx
+│   │   ├── InstagramImportPanel.test.tsx
+│   │   ├── InstagramImportPanel.tsx
 │   │   ├── MessageIngestPanel.test.tsx
 │   │   ├── MessageIngestPanel.tsx
 │   │   ├── MobileSyncPanel.tsx
 │   │   ├── PcbBackdropField.test.tsx
 │   │   ├── PcbBackdropField.tsx
 │   │   ├── PointAllocationField.tsx
+│   │   ├── PointsRulesDialog.test.tsx
+│   │   ├── PointsRulesDialog.tsx
 │   │   ├── README.md
 │   │   ├── ScreenTimePanel.test.tsx
 │   │   ├── ScreenTimePanel.tsx
+│   │   ├── SettingsDialog.test.tsx
 │   │   ├── SettingsDialog.tsx
-│   │   └── settings-chrome.css
+│   │   ├── panel-preview.ts
+│   │   ├── settings-chrome.css
+│   │   ├── settings-index.test.ts
+│   │   ├── settings-index.ts
+│   │   ├── settings-nav.test.tsx
+│   │   └── settings-nav.tsx
 │   ├── Tracking
 │   │   └── MetricLogger.tsx
 │   ├── UiNames
@@ -866,6 +940,8 @@
 │   ├── baby-animal-nest.css
 │   ├── baby-animal-nest.test.tsx
 │   ├── baby-animal-nest.tsx
+│   ├── capture-door-bus.ts
+│   ├── capture-doors.tsx
 │   ├── capture-shorthand.tsx
 │   ├── cognitive-state.test.tsx
 │   ├── cognitive-state.tsx
@@ -891,6 +967,20 @@
 │   ├── header-now-box.test.tsx
 │   ├── header-now-box.tsx
 │   ├── header-popup-chrome.css
+│   ├── header-reminder-bell.test.tsx
+│   ├── header-reminder-bell.tsx
+│   ├── header-tracking
+│   │   ├── README.md
+│   │   ├── current-moment.tsx
+│   │   ├── est-mark.tsx
+│   │   ├── header-tracking-popup.test.tsx
+│   │   ├── header-tracking-popup.tsx
+│   │   ├── header-tracking.css
+│   │   ├── now-log-lists.tsx
+│   │   ├── pen-search-select.tsx
+│   │   ├── plan-pane.tsx
+│   │   ├── tracking-pane.tsx
+│   │   └── update-state.tsx
 │   ├── inbox.css
 │   ├── inbox.test.tsx
 │   ├── inbox.tsx
@@ -925,6 +1015,27 @@
 │   │   ├── checkbox.tsx
 │   │   ├── clock-picker
 │   │   │   ├── README.md
+│   │   │   ├── backgrounds
+│   │   │   │   ├── cherub-twins.png
+│   │   │   │   ├── lattice-rabbit.png
+│   │   │   │   ├── love-trip-kitty.png
+│   │   │   │   ├── manifest.json
+│   │   │   │   ├── mother-of-pearl.png
+│   │   │   │   ├── opalescent-birds.png
+│   │   │   │   ├── pearl-blossom.png
+│   │   │   │   ├── pearl-flower.png
+│   │   │   │   ├── pearl-star-button.png
+│   │   │   │   ├── rabbit-portrait.png
+│   │   │   │   ├── silver-bat.png
+│   │   │   │   ├── silver-floral-locket.png
+│   │   │   │   ├── silver-sphere.png
+│   │   │   │   ├── silver-spiral.png
+│   │   │   │   ├── teal-pearl.png
+│   │   │   │   ├── umbrella-cats.png
+│   │   │   │   ├── winged-cherub.png
+│   │   │   │   └── winged-kitten.png
+│   │   │   ├── ceramic-face.png
+│   │   │   ├── clock-dials.ts
 │   │   │   ├── clock-picker.css
 │   │   │   ├── clock-picker.test.tsx
 │   │   │   └── clock-picker.tsx
@@ -937,6 +1048,7 @@
 │   │   ├── isolated-text-field.test.tsx
 │   │   ├── isolated-text-field.tsx
 │   │   ├── label.tsx
+│   │   ├── menu-layer.ts
 │   │   ├── progress.tsx
 │   │   ├── select.tsx
 │   │   ├── separator.tsx
@@ -996,18 +1108,18 @@
 │   ├── message-ingest.json
 │   ├── mobile-sync.json
 │   ├── recovery-backups
-│   │   ├── auto-brain2-habits-store-2026-10-07-03.json
-│   │   ├── auto-brain2-habits-store-2026-10-07-04.json
-│   │   ├── auto-brain2-task-storage-2026-10-07-04.json
-│   │   ├── auto-brain2-timegrid-store-2026-10-07-04.json
-│   │   ├── auto-cogs-habits-store-2026-10-07-03.json
-│   │   ├── auto-cogs-habits-store-2026-10-07-04.json
-│   │   ├── auto-cogs-habits-store-2026-10-07-05.json
-│   │   ├── auto-cogs-task-storage-2026-10-07-03.json
-│   │   ├── auto-cogs-task-storage-2026-10-07-04.json
-│   │   ├── auto-cogs-timegrid-store-2026-10-07-03.json
-│   │   ├── auto-cogs-timegrid-store-2026-10-07-04.json
-│   │   ├── auto-points-store-2026-10-07-04.json
+│   │   ├── auto-brain2-habits-store-2026-10-10-09.json
+│   │   ├── auto-brain2-task-storage-2026-10-10-08.json
+│   │   ├── auto-brain2-timegrid-store-2026-10-10-08.json
+│   │   ├── auto-brain2-timegrid-store-2026-10-10-09.json
+│   │   ├── auto-cogs-habits-store-2026-10-10-08.json
+│   │   ├── auto-cogs-habits-store-2026-10-10-09.json
+│   │   ├── auto-cogs-task-storage-2026-10-10-08.json
+│   │   ├── auto-cogs-task-storage-2026-10-10-09.json
+│   │   ├── auto-cogs-timegrid-store-2026-10-10-08.json
+│   │   ├── auto-cogs-timegrid-store-2026-10-10-09.json
+│   │   ├── auto-points-store-2026-10-10-08.json
+│   │   ├── auto-points-store-2026-10-10-09.json
 │   │   ├── brain2-empty-ls-2026-09-21T07-45-39-912Z.json
 │   │   ├── chrome-ls-2026-09-20T03-12-52-878Z.json
 │   │   ├── cogs-backup-2026-09-21-user.json
@@ -1099,8 +1211,33 @@
 │   ├── README.md
 │   ├── SPEC_MAPPING.md
 │   ├── ScienceandSanityBrain2.md
+│   ├── TELEGRAM_BOT_RESEARCH.md
 │   ├── UI_CRITIQUE.md
 │   ├── UI_NEXT.md
+│   ├── analytics-plan
+│   │   ├── 00-charter.md
+│   │   ├── 01-preserve.md
+│   │   ├── 02-shell.md
+│   │   ├── 03-tracking.md
+│   │   ├── 04-habits.md
+│   │   ├── 05-plan.md
+│   │   ├── 06-presence.md
+│   │   ├── 07-phone.md
+│   │   ├── 08-cross.md
+│   │   ├── 09-day-shape-clock.md
+│   │   ├── 10-language.md
+│   │   ├── 11-viz.md
+│   │   ├── 12-waves.md
+│   │   └── README.md
+│   ├── analytics-vision
+│   │   ├── 01-tracking.md
+│   │   ├── 02-habits.md
+│   │   ├── 03-plan.md
+│   │   ├── 04-now.md
+│   │   ├── 05-telegram.md
+│   │   ├── 06-language.md
+│   │   ├── ANALYTICS_VISION.md
+│   │   └── README.md
 │   ├── brain2taoism.md
 │   ├── cyberneticsbrain2.md
 │   ├── jungideas.md
@@ -1228,6 +1365,7 @@
 │   │   ├── 08-home-tracking-block.txt
 │   │   ├── 08-home-tracking-daylog.png
 │   │   ├── 08-home-tracking-daylog.txt
+│   │   ├── 08-home-tracking-log.txt
 │   │   ├── 08-home-tracking-week.png
 │   │   ├── 08-home-tracking-week.txt
 │   │   ├── 08-home-tracking.png
@@ -1305,357 +1443,459 @@
 │   │   │   ├── 01-home-daily-habits
 │   │   │   │   ├── 2026-10-06T00-33-32.png
 │   │   │   │   ├── 2026-10-06T00-42-00.png
-│   │   │   │   └── 2026-10-06T00-45-58.png
+│   │   │   │   ├── 2026-10-06T00-45-58.png
+│   │   │   │   └── 2026-10-09T19-38-34.png
 │   │   │   ├── 01-home-habits-monthly
 │   │   │   │   ├── 2026-10-06T00-33-34.png
 │   │   │   │   ├── 2026-10-06T00-42-01.png
-│   │   │   │   └── 2026-10-06T00-45-59.png
+│   │   │   │   ├── 2026-10-06T00-45-59.png
+│   │   │   │   └── 2026-10-09T19-38-36.png
 │   │   │   ├── 01-home-habits-weekly
 │   │   │   │   ├── 2026-10-06T00-33-33.png
 │   │   │   │   ├── 2026-10-06T00-42-01.png
-│   │   │   │   └── 2026-10-06T00-45-58.png
+│   │   │   │   ├── 2026-10-06T00-45-58.png
+│   │   │   │   └── 2026-10-09T19-38-35.png
 │   │   │   ├── 02-home-plan
 │   │   │   │   ├── 2026-10-06T00-33-36.png
 │   │   │   │   ├── 2026-10-06T00-42-03.png
-│   │   │   │   └── 2026-10-06T00-46-01.png
+│   │   │   │   ├── 2026-10-06T00-46-01.png
+│   │   │   │   └── 2026-10-09T19-38-38.png
 │   │   │   ├── 02-home-plan-day
 │   │   │   │   ├── 2026-10-06T00-33-38.png
 │   │   │   │   ├── 2026-10-06T00-42-05.png
-│   │   │   │   └── 2026-10-06T00-46-03.png
+│   │   │   │   ├── 2026-10-06T00-46-03.png
+│   │   │   │   └── 2026-10-09T19-38-39.png
 │   │   │   ├── 02-home-plan-season
 │   │   │   │   ├── 2026-10-06T00-42-06.png
-│   │   │   │   └── 2026-10-06T00-46-03.png
+│   │   │   │   ├── 2026-10-06T00-46-03.png
+│   │   │   │   └── 2026-10-09T19-38-40.png
 │   │   │   ├── 02-home-plan-week
 │   │   │   │   ├── 2026-10-06T00-33-37.png
 │   │   │   │   ├── 2026-10-06T00-42-04.png
-│   │   │   │   └── 2026-10-06T00-46-02.png
+│   │   │   │   ├── 2026-10-06T00-46-02.png
+│   │   │   │   └── 2026-10-09T19-38-38.png
 │   │   │   ├── 03-home-todo
 │   │   │   │   ├── 2026-10-06T00-33-41.png
 │   │   │   │   ├── 2026-10-06T00-42-07.png
-│   │   │   │   └── 2026-10-06T00-46-05.png
+│   │   │   │   ├── 2026-10-06T00-46-05.png
+│   │   │   │   └── 2026-10-09T19-38-42.png
 │   │   │   ├── 03-home-todo-just-start
 │   │   │   │   ├── 2026-10-06T00-42-27.png
-│   │   │   │   └── 2026-10-06T00-46-24.png
+│   │   │   │   ├── 2026-10-06T00-46-24.png
+│   │   │   │   └── 2026-10-09T19-39-03.png
 │   │   │   ├── 03-home-todo-month
 │   │   │   │   ├── 2026-10-06T00-33-42.png
 │   │   │   │   ├── 2026-10-06T00-42-09.png
-│   │   │   │   └── 2026-10-06T00-46-07.png
+│   │   │   │   ├── 2026-10-06T00-46-07.png
+│   │   │   │   └── 2026-10-09T19-38-43.png
 │   │   │   ├── 03-home-todo-week
 │   │   │   │   ├── 2026-10-06T00-33-42.png
 │   │   │   │   ├── 2026-10-06T00-42-08.png
-│   │   │   │   └── 2026-10-06T00-46-06.png
+│   │   │   │   ├── 2026-10-06T00-46-06.png
+│   │   │   │   └── 2026-10-09T19-38-43.png
 │   │   │   ├── 04-home-goals
 │   │   │   │   ├── 2026-10-06T00-33-45.png
 │   │   │   │   ├── 2026-10-06T00-42-11.png
-│   │   │   │   └── 2026-10-06T00-46-09.png
+│   │   │   │   ├── 2026-10-06T00-46-09.png
+│   │   │   │   └── 2026-10-09T19-38-45.png
 │   │   │   ├── 05-lists
 │   │   │   │   ├── 2026-10-06T00-34-03.png
 │   │   │   │   ├── 2026-10-06T00-42-30.png
-│   │   │   │   └── 2026-10-06T00-46-27.png
+│   │   │   │   ├── 2026-10-06T00-46-27.png
+│   │   │   │   └── 2026-10-09T19-39-06.png
 │   │   │   ├── 05-lists-cards
 │   │   │   │   ├── 2026-10-06T00-34-05.png
 │   │   │   │   ├── 2026-10-06T00-42-32.png
-│   │   │   │   └── 2026-10-06T00-46-29.png
+│   │   │   │   ├── 2026-10-06T00-46-29.png
+│   │   │   │   └── 2026-10-09T19-39-07.png
 │   │   │   ├── 05-lists-content-checklist
 │   │   │   │   ├── 2026-10-06T00-34-09.png
 │   │   │   │   ├── 2026-10-06T00-42-36.png
-│   │   │   │   └── 2026-10-06T00-46-34.png
+│   │   │   │   ├── 2026-10-06T00-46-34.png
+│   │   │   │   └── 2026-10-09T19-39-12.png
 │   │   │   ├── 05-lists-content-default
 │   │   │   │   ├── 2026-10-06T00-34-08.png
 │   │   │   │   ├── 2026-10-06T00-42-36.png
-│   │   │   │   └── 2026-10-06T00-46-33.png
+│   │   │   │   ├── 2026-10-06T00-46-33.png
+│   │   │   │   └── 2026-10-09T19-39-11.png
 │   │   │   ├── 05-lists-content-spreadsheet
 │   │   │   │   ├── 2026-10-06T00-34-10.png
 │   │   │   │   ├── 2026-10-06T00-42-37.png
-│   │   │   │   └── 2026-10-06T00-46-34.png
+│   │   │   │   ├── 2026-10-06T00-46-34.png
+│   │   │   │   └── 2026-10-09T19-39-13.png
 │   │   │   ├── 05-lists-details
 │   │   │   │   ├── 2026-10-06T00-34-04.png
 │   │   │   │   ├── 2026-10-06T00-42-31.png
-│   │   │   │   └── 2026-10-06T00-46-28.png
+│   │   │   │   ├── 2026-10-06T00-46-28.png
+│   │   │   │   └── 2026-10-09T19-39-07.png
 │   │   │   ├── 05-lists-list
 │   │   │   │   ├── 2026-10-06T00-34-03.png
 │   │   │   │   ├── 2026-10-06T00-42-31.png
-│   │   │   │   └── 2026-10-06T00-46-28.png
+│   │   │   │   ├── 2026-10-06T00-46-28.png
+│   │   │   │   └── 2026-10-09T19-39-06.png
 │   │   │   ├── 06-scheduler
 │   │   │   │   ├── 2026-10-06T00-34-20.png
 │   │   │   │   ├── 2026-10-06T00-42-55.png
-│   │   │   │   └── 2026-10-06T00-49-51.png
+│   │   │   │   ├── 2026-10-06T00-49-51.png
+│   │   │   │   └── 2026-10-09T19-39-22.png
 │   │   │   ├── 06-scheduler-day
 │   │   │   │   ├── 2026-10-06T00-34-21.png
 │   │   │   │   ├── 2026-10-06T00-42-55.png
-│   │   │   │   └── 2026-10-06T00-49-51.png
+│   │   │   │   ├── 2026-10-06T00-49-51.png
+│   │   │   │   └── 2026-10-09T19-39-22.png
 │   │   │   ├── 06-scheduler-dependencies
 │   │   │   │   ├── 2026-10-06T00-34-22.png
 │   │   │   │   ├── 2026-10-06T00-42-57.png
-│   │   │   │   └── 2026-10-06T00-49-53.png
+│   │   │   │   ├── 2026-10-06T00-49-53.png
+│   │   │   │   └── 2026-10-09T19-39-24.png
 │   │   │   ├── 06-scheduler-gantt
 │   │   │   │   ├── 2026-10-06T00-34-21.png
 │   │   │   │   ├── 2026-10-06T00-42-56.png
-│   │   │   │   └── 2026-10-06T00-49-52.png
+│   │   │   │   ├── 2026-10-06T00-49-52.png
+│   │   │   │   └── 2026-10-09T19-39-23.png
 │   │   │   ├── 07-analytics
 │   │   │   │   ├── 2026-10-06T00-34-39.png
 │   │   │   │   ├── 2026-10-06T00-43-14.png
-│   │   │   │   └── 2026-10-06T00-47-32.png
+│   │   │   │   ├── 2026-10-06T00-47-32.png
+│   │   │   │   └── 2026-10-09T19-39-41.png
 │   │   │   ├── 07-analytics-attributes
 │   │   │   │   ├── 2026-10-06T00-35-02.png
 │   │   │   │   ├── 2026-10-06T00-43-37.png
-│   │   │   │   └── 2026-10-06T00-47-55.png
+│   │   │   │   ├── 2026-10-06T00-47-55.png
+│   │   │   │   └── 2026-10-09T19-40-03.png
 │   │   │   ├── 07-analytics-calibration
 │   │   │   │   ├── 2026-10-06T00-34-50.png
 │   │   │   │   ├── 2026-10-06T00-43-25.png
-│   │   │   │   └── 2026-10-06T00-47-43.png
+│   │   │   │   ├── 2026-10-06T00-47-43.png
+│   │   │   │   └── 2026-10-09T19-39-52.png
 │   │   │   ├── 07-analytics-circadian
 │   │   │   │   ├── 2026-10-06T00-34-44.png
 │   │   │   │   ├── 2026-10-06T00-43-19.png
-│   │   │   │   └── 2026-10-06T00-47-37.png
+│   │   │   │   ├── 2026-10-06T00-47-37.png
+│   │   │   │   └── 2026-10-09T19-39-46.png
 │   │   │   ├── 07-analytics-context-switch
 │   │   │   │   ├── 2026-10-06T00-34-48.png
 │   │   │   │   ├── 2026-10-06T00-43-23.png
-│   │   │   │   └── 2026-10-06T00-47-41.png
+│   │   │   │   ├── 2026-10-06T00-47-41.png
+│   │   │   │   └── 2026-10-09T19-39-50.png
 │   │   │   ├── 07-analytics-correlation
 │   │   │   │   ├── 2026-10-06T00-34-58.png
 │   │   │   │   ├── 2026-10-06T00-43-33.png
-│   │   │   │   └── 2026-10-06T00-47-51.png
+│   │   │   │   ├── 2026-10-06T00-47-51.png
+│   │   │   │   └── 2026-10-09T19-39-59.png
 │   │   │   ├── 07-analytics-cross-section
 │   │   │   │   ├── 2026-10-06T00-34-59.png
 │   │   │   │   ├── 2026-10-06T00-43-35.png
-│   │   │   │   └── 2026-10-06T00-47-52.png
+│   │   │   │   ├── 2026-10-06T00-47-52.png
+│   │   │   │   └── 2026-10-09T19-40-01.png
 │   │   │   ├── 07-analytics-cycle
 │   │   │   │   ├── 2026-10-06T00-34-51.png
 │   │   │   │   ├── 2026-10-06T00-43-26.png
-│   │   │   │   └── 2026-10-06T00-47-44.png
+│   │   │   │   ├── 2026-10-06T00-47-44.png
+│   │   │   │   └── 2026-10-09T19-39-53.png
 │   │   │   ├── 07-analytics-diversity
 │   │   │   │   ├── 2026-10-06T00-43-21.png
-│   │   │   │   └── 2026-10-06T00-47-39.png
+│   │   │   │   ├── 2026-10-06T00-47-39.png
+│   │   │   │   └── 2026-10-09T19-39-48.png
 │   │   │   ├── 07-analytics-goals
 │   │   │   │   ├── 2026-10-06T00-34-52.png
 │   │   │   │   ├── 2026-10-06T00-43-28.png
-│   │   │   │   └── 2026-10-06T00-47-45.png
+│   │   │   │   ├── 2026-10-06T00-47-45.png
+│   │   │   │   └── 2026-10-09T19-39-54.png
 │   │   │   ├── 07-analytics-item-types
 │   │   │   │   ├── 2026-10-06T00-35-00.png
 │   │   │   │   ├── 2026-10-06T00-43-35.png
-│   │   │   │   └── 2026-10-06T00-47-53.png
+│   │   │   │   ├── 2026-10-06T00-47-53.png
+│   │   │   │   └── 2026-10-09T19-40-02.png
 │   │   │   ├── 07-analytics-lists-areas
 │   │   │   │   ├── 2026-10-06T00-35-01.png
 │   │   │   │   ├── 2026-10-06T00-43-36.png
-│   │   │   │   └── 2026-10-06T00-47-54.png
+│   │   │   │   ├── 2026-10-06T00-47-54.png
+│   │   │   │   └── 2026-10-09T19-40-02.png
 │   │   │   ├── 07-analytics-metrics
 │   │   │   │   ├── 2026-10-06T00-34-57.png
 │   │   │   │   ├── 2026-10-06T00-43-32.png
-│   │   │   │   └── 2026-10-06T00-47-50.png
+│   │   │   │   ├── 2026-10-06T00-47-50.png
+│   │   │   │   └── 2026-10-09T19-39-59.png
 │   │   │   ├── 07-analytics-mood-field
 │   │   │   │   ├── 2026-10-06T00-34-45.png
 │   │   │   │   ├── 2026-10-06T00-43-20.png
 │   │   │   │   ├── 2026-10-06T00-47-38.png
-│   │   │   │   └── 2026-10-06T05-56-18.png
+│   │   │   │   ├── 2026-10-06T05-56-18.png
+│   │   │   │   └── 2026-10-09T19-39-47.png
 │   │   │   ├── 07-analytics-observatory
 │   │   │   │   ├── 2026-10-06T00-34-56.png
 │   │   │   │   ├── 2026-10-06T00-43-31.png
-│   │   │   │   └── 2026-10-06T00-47-49.png
+│   │   │   │   ├── 2026-10-06T00-47-49.png
+│   │   │   │   └── 2026-10-09T19-39-58.png
 │   │   │   ├── 07-analytics-operations
 │   │   │   │   ├── 2026-10-06T00-34-48.png
 │   │   │   │   ├── 2026-10-06T00-43-24.png
-│   │   │   │   └── 2026-10-06T00-47-42.png
+│   │   │   │   ├── 2026-10-06T00-47-42.png
+│   │   │   │   └── 2026-10-09T19-39-50.png
 │   │   │   ├── 07-analytics-overcommit
 │   │   │   │   ├── 2026-10-06T00-34-55.png
 │   │   │   │   ├── 2026-10-06T00-43-31.png
-│   │   │   │   └── 2026-10-06T00-47-48.png
+│   │   │   │   ├── 2026-10-06T00-47-48.png
+│   │   │   │   └── 2026-10-09T19-39-57.png
 │   │   │   ├── 07-analytics-places
 │   │   │   │   ├── 2026-10-06T00-34-45.png
 │   │   │   │   ├── 2026-10-06T00-43-20.png
-│   │   │   │   └── 2026-10-06T00-47-38.png
+│   │   │   │   ├── 2026-10-06T00-47-38.png
+│   │   │   │   ├── 2026-10-09T19-39-46.png
+│   │   │   │   └── 2026-10-09T21-06-22.png
 │   │   │   ├── 07-analytics-plan-vs-reality
 │   │   │   │   ├── 2026-10-06T00-34-49.png
 │   │   │   │   ├── 2026-10-06T00-43-25.png
-│   │   │   │   └── 2026-10-06T00-47-42.png
+│   │   │   │   ├── 2026-10-06T00-47-42.png
+│   │   │   │   └── 2026-10-09T19-39-51.png
 │   │   │   ├── 07-analytics-points
 │   │   │   │   ├── 2026-10-06T00-34-40.png
 │   │   │   │   ├── 2026-10-06T00-43-15.png
-│   │   │   │   └── 2026-10-06T00-47-33.png
+│   │   │   │   ├── 2026-10-06T00-47-33.png
+│   │   │   │   └── 2026-10-09T19-39-41.png
 │   │   │   ├── 07-analytics-reflection
 │   │   │   │   ├── 2026-10-06T00-34-54.png
 │   │   │   │   ├── 2026-10-06T00-43-29.png
-│   │   │   │   └── 2026-10-06T00-47-47.png
+│   │   │   │   ├── 2026-10-06T00-47-47.png
+│   │   │   │   └── 2026-10-09T19-39-56.png
 │   │   │   ├── 07-analytics-regret
 │   │   │   │   ├── 2026-10-06T00-34-52.png
 │   │   │   │   ├── 2026-10-06T00-43-27.png
-│   │   │   │   └── 2026-10-06T00-47-45.png
+│   │   │   │   ├── 2026-10-06T00-47-45.png
+│   │   │   │   └── 2026-10-09T19-39-53.png
 │   │   │   ├── 07-analytics-reviews
 │   │   │   │   ├── 2026-10-06T00-34-55.png
 │   │   │   │   ├── 2026-10-06T00-43-30.png
-│   │   │   │   └── 2026-10-06T00-47-48.png
+│   │   │   │   ├── 2026-10-06T00-47-48.png
+│   │   │   │   └── 2026-10-09T19-39-56.png
 │   │   │   ├── 07-analytics-screentime
 │   │   │   │   ├── 2026-10-06T00-43-18.png
-│   │   │   │   └── 2026-10-06T00-47-36.png
+│   │   │   │   ├── 2026-10-06T00-47-36.png
+│   │   │   │   └── 2026-10-09T19-39-45.png
 │   │   │   ├── 07-analytics-sleep
 │   │   │   │   ├── 2026-10-06T00-34-42.png
 │   │   │   │   ├── 2026-10-06T00-43-17.png
-│   │   │   │   └── 2026-10-06T00-47-35.png
+│   │   │   │   ├── 2026-10-06T00-47-35.png
+│   │   │   │   └── 2026-10-09T19-39-44.png
 │   │   │   ├── 07-analytics-spectrum
 │   │   │   │   ├── 2026-10-06T00-43-34.png
-│   │   │   │   └── 2026-10-06T00-47-52.png
+│   │   │   │   ├── 2026-10-06T00-47-52.png
+│   │   │   │   └── 2026-10-09T19-40-00.png
 │   │   │   ├── 07-analytics-stages
 │   │   │   │   ├── 2026-10-06T00-43-38.png
-│   │   │   │   └── 2026-10-06T00-47-57.png
+│   │   │   │   ├── 2026-10-06T00-47-57.png
+│   │   │   │   └── 2026-10-09T19-40-05.png
 │   │   │   ├── 07-analytics-streaks
 │   │   │   │   ├── 2026-10-06T00-34-53.png
 │   │   │   │   ├── 2026-10-06T00-43-28.png
-│   │   │   │   └── 2026-10-06T00-47-46.png
+│   │   │   │   ├── 2026-10-06T00-47-46.png
+│   │   │   │   └── 2026-10-09T19-39-55.png
 │   │   │   ├── 07-analytics-tags
 │   │   │   │   ├── 2026-10-06T00-43-38.png
-│   │   │   │   └── 2026-10-06T00-47-56.png
+│   │   │   │   ├── 2026-10-06T00-47-56.png
+│   │   │   │   └── 2026-10-09T19-40-04.png
 │   │   │   ├── 07-analytics-tracking
 │   │   │   │   ├── 2026-10-06T00-34-42.png
 │   │   │   │   ├── 2026-10-06T00-43-16.png
-│   │   │   │   └── 2026-10-06T00-47-34.png
+│   │   │   │   ├── 2026-10-06T00-47-34.png
+│   │   │   │   └── 2026-10-09T19-39-43.png
 │   │   │   ├── 07-analytics-tracking-breakdown
 │   │   │   │   ├── 2026-10-06T00-35-06.png
 │   │   │   │   ├── 2026-10-06T00-43-41.png
-│   │   │   │   └── 2026-10-06T00-47-59.png
+│   │   │   │   ├── 2026-10-06T00-47-59.png
+│   │   │   │   └── 2026-10-09T19-40-07.png
 │   │   │   ├── 07-analytics-tracking-tag
 │   │   │   │   ├── 2026-10-06T00-35-07.png
 │   │   │   │   ├── 2026-10-06T00-43-42.png
-│   │   │   │   └── 2026-10-06T00-48-01.png
+│   │   │   │   ├── 2026-10-06T00-48-01.png
+│   │   │   │   └── 2026-10-09T19-40-08.png
 │   │   │   ├── 07-analytics-transitions
 │   │   │   │   ├── 2026-10-06T00-43-22.png
-│   │   │   │   └── 2026-10-06T00-47-40.png
+│   │   │   │   ├── 2026-10-06T00-47-40.png
+│   │   │   │   └── 2026-10-09T19-39-49.png
 │   │   │   ├── 07-analytics-velocity
 │   │   │   │   ├── 2026-10-06T00-34-41.png
 │   │   │   │   ├── 2026-10-06T00-43-16.png
-│   │   │   │   └── 2026-10-06T00-47-34.png
+│   │   │   │   ├── 2026-10-06T00-47-34.png
+│   │   │   │   └── 2026-10-09T19-39-42.png
 │   │   │   ├── 07-analytics-weight
 │   │   │   │   ├── 2026-10-06T00-43-39.png
-│   │   │   │   └── 2026-10-06T00-47-57.png
+│   │   │   │   ├── 2026-10-06T00-47-57.png
+│   │   │   │   └── 2026-10-09T19-40-05.png
 │   │   │   ├── 08-home-tracking
 │   │   │   │   ├── 2026-10-06T00-33-47.png
 │   │   │   │   ├── 2026-10-06T00-42-14.png
-│   │   │   │   └── 2026-10-06T00-46-11.png
+│   │   │   │   ├── 2026-10-06T00-46-11.png
+│   │   │   │   └── 2026-10-09T19-38-50.png
 │   │   │   ├── 08-home-tracking-activity
 │   │   │   │   ├── 2026-10-06T00-33-49.png
 │   │   │   │   ├── 2026-10-06T00-42-16.png
-│   │   │   │   └── 2026-10-06T00-46-14.png
+│   │   │   │   ├── 2026-10-06T00-46-14.png
+│   │   │   │   └── 2026-10-09T19-38-52.png
 │   │   │   ├── 08-home-tracking-block
 │   │   │   │   ├── 2026-10-06T00-33-56.png
 │   │   │   │   ├── 2026-10-06T00-42-23.png
-│   │   │   │   └── 2026-10-06T00-46-20.png
+│   │   │   │   ├── 2026-10-06T00-46-20.png
+│   │   │   │   └── 2026-10-09T19-38-59.png
 │   │   │   ├── 08-home-tracking-daylog
 │   │   │   │   ├── 2026-10-06T00-33-57.png
 │   │   │   │   ├── 2026-10-06T00-42-24.png
-│   │   │   │   └── 2026-10-06T00-46-22.png
+│   │   │   │   ├── 2026-10-06T00-46-22.png
+│   │   │   │   └── 2026-10-09T19-39-00.png
 │   │   │   ├── 08-home-tracking-week
 │   │   │   │   ├── 2026-10-06T00-33-48.png
 │   │   │   │   ├── 2026-10-06T00-42-15.png
-│   │   │   │   └── 2026-10-06T00-46-13.png
+│   │   │   │   ├── 2026-10-06T00-46-13.png
+│   │   │   │   └── 2026-10-09T19-38-51.png
 │   │   │   ├── 09-modules
 │   │   │   │   ├── 2026-10-06T00-34-35.png
 │   │   │   │   ├── 2026-10-06T00-43-10.png
-│   │   │   │   └── 2026-10-06T00-47-28.png
+│   │   │   │   ├── 2026-10-06T00-47-28.png
+│   │   │   │   └── 2026-10-09T19-39-37.png
 │   │   │   ├── 09-modules-workspace
 │   │   │   │   ├── 2026-10-06T00-34-37.png
 │   │   │   │   ├── 2026-10-06T00-43-12.png
-│   │   │   │   └── 2026-10-06T00-47-30.png
+│   │   │   │   ├── 2026-10-06T00-47-30.png
+│   │   │   │   └── 2026-10-09T19-39-39.png
 │   │   │   ├── 10-operations
 │   │   │   │   ├── 2026-10-06T00-34-24.png
 │   │   │   │   ├── 2026-10-06T00-42-58.png
-│   │   │   │   └── 2026-10-06T00-47-16.png
+│   │   │   │   ├── 2026-10-06T00-47-16.png
+│   │   │   │   └── 2026-10-09T19-39-25.png
 │   │   │   ├── 10-operations-locations
 │   │   │   │   ├── 2026-10-06T00-43-04.png
-│   │   │   │   └── 2026-10-06T00-47-22.png
+│   │   │   │   ├── 2026-10-06T00-47-22.png
+│   │   │   │   └── 2026-10-09T19-39-31.png
 │   │   │   ├── 10-operations-log
 │   │   │   │   ├── 2026-10-06T00-43-06.png
-│   │   │   │   └── 2026-10-06T00-47-24.png
+│   │   │   │   ├── 2026-10-06T00-47-24.png
+│   │   │   │   └── 2026-10-09T19-39-33.png
 │   │   │   ├── 10-operations-parts
 │   │   │   │   ├── 2026-10-06T00-43-01.png
-│   │   │   │   └── 2026-10-06T00-47-19.png
+│   │   │   │   ├── 2026-10-06T00-47-19.png
+│   │   │   │   └── 2026-10-09T19-39-28.png
 │   │   │   ├── 10-operations-phases
 │   │   │   │   ├── 2026-10-06T00-43-01.png
-│   │   │   │   └── 2026-10-06T00-47-18.png
+│   │   │   │   ├── 2026-10-06T00-47-18.png
+│   │   │   │   └── 2026-10-09T19-39-28.png
 │   │   │   ├── 10-operations-plan
 │   │   │   │   ├── 2026-10-06T00-43-05.png
-│   │   │   │   └── 2026-10-06T00-47-23.png
+│   │   │   │   ├── 2026-10-06T00-47-23.png
+│   │   │   │   └── 2026-10-09T19-39-32.png
 │   │   │   ├── 10-operations-postmortem
 │   │   │   │   ├── 2026-10-06T00-43-08.png
-│   │   │   │   └── 2026-10-06T00-47-26.png
+│   │   │   │   ├── 2026-10-06T00-47-26.png
+│   │   │   │   └── 2026-10-09T19-39-35.png
 │   │   │   ├── 10-operations-resources
 │   │   │   │   ├── 2026-10-06T00-43-06.png
-│   │   │   │   └── 2026-10-06T00-47-23.png
+│   │   │   │   ├── 2026-10-06T00-47-23.png
+│   │   │   │   └── 2026-10-09T19-39-32.png
 │   │   │   ├── 10-operations-settings
 │   │   │   │   ├── 2026-10-06T00-43-07.png
-│   │   │   │   └── 2026-10-06T00-47-25.png
+│   │   │   │   ├── 2026-10-06T00-47-25.png
+│   │   │   │   └── 2026-10-09T19-39-34.png
 │   │   │   ├── 10-operations-timeline
 │   │   │   │   ├── 2026-10-06T00-43-03.png
-│   │   │   │   └── 2026-10-06T00-47-20.png
+│   │   │   │   ├── 2026-10-06T00-47-20.png
+│   │   │   │   └── 2026-10-09T19-39-29.png
 │   │   │   ├── 10-operations-todo
 │   │   │   │   ├── 2026-10-06T00-43-00.png
-│   │   │   │   └── 2026-10-06T00-47-18.png
+│   │   │   │   ├── 2026-10-06T00-47-18.png
+│   │   │   │   └── 2026-10-09T19-39-27.png
 │   │   │   ├── 10-operations-workspace
 │   │   │   │   ├── 2026-10-06T00-34-25.png
 │   │   │   │   ├── 2026-10-06T00-42-59.png
-│   │   │   │   └── 2026-10-06T00-47-17.png
+│   │   │   │   ├── 2026-10-06T00-47-17.png
+│   │   │   │   └── 2026-10-09T19-39-26.png
 │   │   │   ├── 12-docs
 │   │   │   │   ├── 2026-10-06T00-42-44.png
-│   │   │   │   └── 2026-10-06T00-46-42.png
+│   │   │   │   ├── 2026-10-06T00-46-42.png
+│   │   │   │   └── 2026-10-09T19-39-19.png
 │   │   │   ├── 12-docs-reading
-│   │   │   │   └── 2026-10-06T00-46-43.png
+│   │   │   │   ├── 2026-10-06T00-46-43.png
+│   │   │   │   └── 2026-10-09T19-39-20.png
 │   │   │   ├── 20-dialog-bulk-add
 │   │   │   │   ├── 2026-10-06T00-39-41.png
 │   │   │   │   ├── 2026-10-06T00-43-52.png
-│   │   │   │   └── 2026-10-06T00-48-13.png
+│   │   │   │   ├── 2026-10-06T00-48-13.png
+│   │   │   │   └── 2026-10-09T19-42-26.png
 │   │   │   ├── 20-dialog-completion
-│   │   │   │   └── 2026-10-06T00-48-22.png
+│   │   │   │   ├── 2026-10-06T00-48-22.png
+│   │   │   │   └── 2026-10-09T19-42-36.png
 │   │   │   ├── 20-dialog-global-search
 │   │   │   │   ├── 2026-10-06T00-39-43.png
 │   │   │   │   ├── 2026-10-06T00-43-55.png
-│   │   │   │   └── 2026-10-06T00-48-16.png
+│   │   │   │   ├── 2026-10-06T00-48-16.png
+│   │   │   │   └── 2026-10-09T19-42-27.png
 │   │   │   ├── 20-dialog-inbox
 │   │   │   │   ├── 2026-10-06T00-39-40.png
 │   │   │   │   ├── 2026-10-06T00-43-51.png
-│   │   │   │   └── 2026-10-06T00-48-12.png
+│   │   │   │   ├── 2026-10-06T00-48-12.png
+│   │   │   │   ├── 2026-10-09T19-40-16.png
+│   │   │   │   └── 2026-10-09T22-09-31.png
 │   │   │   ├── 20-dialog-metrics
 │   │   │   │   ├── 2026-10-06T00-39-46.png
-│   │   │   │   └── 2026-10-06T00-48-18.png
+│   │   │   │   ├── 2026-10-06T00-48-18.png
+│   │   │   │   └── 2026-10-09T19-42-32.png
 │   │   │   ├── 20-dialog-morning-review
 │   │   │   │   ├── 2026-10-06T00-39-35.png
 │   │   │   │   ├── 2026-10-06T00-43-47.png
-│   │   │   │   └── 2026-10-06T00-48-07.png
+│   │   │   │   ├── 2026-10-06T00-48-07.png
+│   │   │   │   └── 2026-10-09T19-40-13.png
 │   │   │   ├── 20-dialog-quick-add
 │   │   │   │   ├── 2026-10-06T00-39-42.png
 │   │   │   │   ├── 2026-10-06T00-43-53.png
-│   │   │   │   └── 2026-10-06T00-48-14.png
+│   │   │   │   ├── 2026-10-06T00-48-14.png
+│   │   │   │   └── 2026-10-09T19-42-25.png
 │   │   │   ├── 20-dialog-reviews
 │   │   │   │   ├── 2026-10-06T00-38-26.png
 │   │   │   │   ├── 2026-10-06T00-39-32.png
 │   │   │   │   ├── 2026-10-06T00-43-45.png
-│   │   │   │   └── 2026-10-06T00-48-03.png
+│   │   │   │   ├── 2026-10-06T00-48-03.png
+│   │   │   │   └── 2026-10-09T19-40-11.png
 │   │   │   ├── 20-dialog-settings
 │   │   │   │   ├── 2026-10-06T00-39-39.png
 │   │   │   │   ├── 2026-10-06T00-43-50.png
-│   │   │   │   └── 2026-10-06T00-48-10.png
+│   │   │   │   ├── 2026-10-06T00-48-10.png
+│   │   │   │   ├── 2026-10-09T18-20-36.png
+│   │   │   │   ├── 2026-10-09T18-22-59.png
+│   │   │   │   ├── 2026-10-09T18-57-18.png
+│   │   │   │   ├── 2026-10-09T19-08-08.png
+│   │   │   │   └── 2026-10-09T19-40-15.png
 │   │   │   ├── 20-dialog-time-tracking
 │   │   │   │   ├── 2026-10-06T00-39-45.png
-│   │   │   │   └── 2026-10-06T00-48-17.png
+│   │   │   │   ├── 2026-10-06T00-48-17.png
+│   │   │   │   └── 2026-10-09T19-42-29.png
 │   │   │   ├── 21-item-detail-analysis
 │   │   │   │   ├── 2026-10-06T00-42-41.png
-│   │   │   │   └── 2026-10-06T00-46-38.png
+│   │   │   │   ├── 2026-10-06T00-46-38.png
+│   │   │   │   └── 2026-10-09T19-39-16.png
 │   │   │   ├── 21-item-detail-body
 │   │   │   │   ├── 2026-10-06T00-42-42.png
-│   │   │   │   └── 2026-10-06T00-46-39.png
+│   │   │   │   ├── 2026-10-06T00-46-39.png
+│   │   │   │   └── 2026-10-09T19-39-17.png
 │   │   │   ├── 21-item-detail-dependencies
 │   │   │   │   ├── 2026-10-06T00-42-40.png
-│   │   │   │   └── 2026-10-06T00-46-37.png
+│   │   │   │   ├── 2026-10-06T00-46-37.png
+│   │   │   │   └── 2026-10-09T19-39-15.png
 │   │   │   ├── 21-item-detail-popup
 │   │   │   │   ├── 2026-10-06T00-34-11.png
 │   │   │   │   ├── 2026-10-06T00-42-38.png
-│   │   │   │   └── 2026-10-06T00-46-36.png
+│   │   │   │   ├── 2026-10-06T00-46-36.png
+│   │   │   │   └── 2026-10-09T19-39-14.png
 │   │   │   ├── 21-item-detail-scheduling
 │   │   │   │   ├── 2026-10-06T00-42-39.png
-│   │   │   │   └── 2026-10-06T00-46-36.png
+│   │   │   │   ├── 2026-10-06T00-46-36.png
+│   │   │   │   └── 2026-10-09T19-39-15.png
 │   │   │   ├── 21-item-detail-subtasks
 │   │   │   │   ├── 2026-10-06T00-42-40.png
-│   │   │   │   └── 2026-10-06T00-46-37.png
+│   │   │   │   ├── 2026-10-06T00-46-37.png
+│   │   │   │   └── 2026-10-09T19-39-16.png
 │   │   │   └── 21-item-detail-time
 │   │   │       ├── 2026-10-06T00-42-41.png
-│   │   │       └── 2026-10-06T00-46-38.png
+│   │   │       ├── 2026-10-06T00-46-38.png
+│   │   │       └── 2026-10-09T19-39-17.png
 │   │   ├── reel.js
 │   │   └── viewer.html
 │   ├── sdfh
@@ -1675,7 +1915,40 @@
 │   │   └── screen-time-to-brain2.md
 │   ├── time-context-vision.md
 │   ├── tree.md
-│   └── tree.txt
+│   ├── tree.txt
+│   └── widget-improvement
+│       ├── README.md
+│       ├── home-widget-affirmation.md
+│       ├── home-widget-award.md
+│       ├── home-widget-daylamp.md
+│       ├── home-widget-daysuntil.md
+│       ├── home-widget-flow.md
+│       ├── home-widget-harvest.md
+│       ├── home-widget-inbox.md
+│       ├── home-widget-moon.md
+│       ├── home-widget-next.md
+│       ├── home-widget-night.md
+│       ├── home-widget-paint.md
+│       ├── home-widget-pet.md
+│       ├── home-widget-points.md
+│       ├── home-widget-progress.md
+│       ├── home-widget-review.md
+│       ├── home-widget-solar.md
+│       ├── home-widget-tracking.md
+│       ├── home-widget-weather.md
+│       ├── modules-widget-analytics-stat.md
+│       ├── modules-widget-list-explorer.md
+│       ├── modules-widget-list-summary.md
+│       ├── modules-widget-random-task.md
+│       ├── modules-widget-rules.md
+│       ├── modules-widget-writing-prompt.md
+│       └── plan
+│           ├── README.md
+│           ├── capture-rites.md
+│           ├── clock-sky.md
+│           ├── day-score.md
+│           ├── modules.md
+│           └── shared-chrome.md
 ├── e2e
 │   ├── item-types-detail.spec.ts
 │   └── lists.spec.ts
@@ -1745,12 +2018,17 @@
 ├── hooks
 │   ├── README.md
 │   ├── use-attachment-src.ts
+│   ├── use-close-gift-ideas.ts
 │   ├── use-day-rollover.ts
 │   ├── use-inbox-process-todo.test.tsx
 │   ├── use-inbox-process-todo.ts
+│   ├── use-instagram-lists.ts
+│   ├── use-people-i-know.ts
+│   ├── use-reminder-tick.ts
 │   ├── use-screentime-sync.test.ts
 │   ├── use-screentime-sync.ts
 │   ├── useMessageIngest.ts
+│   ├── useQuickCaptureHotkey.test.tsx
 │   ├── useQuickCaptureHotkey.ts
 │   ├── useUndoHotkey.test.tsx
 │   ├── useUndoHotkey.ts
@@ -1978,6 +2256,8 @@
 │   ├── calculations.ts
 │   ├── calibration.test.ts
 │   ├── calibration.ts
+│   ├── capture-origin.test.ts
+│   ├── capture-origin.ts
 │   ├── capture-target.test.ts
 │   ├── capture-target.ts
 │   ├── catalog-types.test.ts
@@ -1998,6 +2278,8 @@
 │   ├── completion-tiers.ts
 │   ├── completion-window.test.ts
 │   ├── completion-window.ts
+│   ├── corner-mix.test.ts
+│   ├── corner-mix.ts
 │   ├── count-statuses.test.ts
 │   ├── count-statuses.ts
 │   ├── critical-path.test.ts
@@ -2042,6 +2324,7 @@
 │   ├── daylight.test.ts
 │   ├── decision-matrix.test.ts
 │   ├── decision-matrix.ts
+│   ├── default-habit-points.test.ts
 │   ├── default-view-prefs.test.ts
 │   ├── default-view-prefs.ts
 │   ├── demo-corpus
@@ -2065,6 +2348,8 @@
 │   ├── doc-links.ts
 │   ├── doc-persist.test.ts
 │   ├── doc-persist.ts
+│   ├── drift-clock.test.ts
+│   ├── drift-clock.ts
 │   ├── entry-links.test.ts
 │   ├── entry-links.ts
 │   ├── estimate-proposals.test.ts
@@ -2091,6 +2376,8 @@
 │   ├── focus-timer-log.ts
 │   ├── folder-all-items.test.ts
 │   ├── folder-all-items.ts
+│   ├── folder-all-query.test.ts
+│   ├── folder-all-query.ts
 │   ├── folder-membership.test.ts
 │   ├── folder-membership.ts
 │   ├── folder-selection.test.ts
@@ -2121,6 +2408,8 @@
 │   ├── friend-whims.ts
 │   ├── gems-manifest.ts
 │   ├── geocode.ts
+│   ├── gift-ideas.test.ts
+│   ├── gift-ideas.ts
 │   ├── goal-focus.test.ts
 │   ├── goal-focus.ts
 │   ├── goals-store.ts
@@ -2132,6 +2421,9 @@
 │   ├── habit-accomplishment.ts
 │   ├── habit-auto-flag.test.ts
 │   ├── habit-auto-flag.ts
+│   ├── habit-completion-detail.ts
+│   ├── habit-completion-pipeline.test.ts
+│   ├── habit-completion-pipeline.ts
 │   ├── habit-completion-source.test.ts
 │   ├── habit-completion-source.ts
 │   ├── habit-completion-summary.test.ts
@@ -2152,14 +2444,25 @@
 │   ├── habit-gems.test.ts
 │   ├── habit-gems.ts
 │   ├── habit-grade-lift.test.ts
+│   ├── habit-keyword-source.test.ts
+│   ├── habit-keyword-source.ts
+│   ├── habit-keyword-sync.test.ts
+│   ├── habit-keyword-sync.ts
 │   ├── habit-led.test.ts
 │   ├── habit-led.ts
 │   ├── habit-list-item.test.ts
 │   ├── habit-list-item.ts
+│   ├── habit-logged-span.ts
 │   ├── habit-missed-opportunity.test.ts
 │   ├── habit-missed-opportunity.ts
 │   ├── habit-month-window.test.ts
 │   ├── habit-month-window.ts
+│   ├── habit-order.test.ts
+│   ├── habit-order.ts
+│   ├── habit-period-breakdown.test.ts
+│   ├── habit-period-breakdown.ts
+│   ├── habit-period-compare.test.ts
+│   ├── habit-period-compare.ts
 │   ├── habit-period-pace.test.ts
 │   ├── habit-period-pace.ts
 │   ├── habit-period-windows.test.ts
@@ -2171,6 +2474,12 @@
 │   ├── habit-priority.ts
 │   ├── habit-sort.test.ts
 │   ├── habit-sort.ts
+│   ├── habit-source-square.ts
+│   ├── habit-span-breakdown.test.ts
+│   ├── habit-span-breakdown.ts
+│   ├── habit-stat-pipeline.test.ts
+│   ├── habit-stat-pipeline.ts
+│   ├── habit-stat-points.ts
 │   ├── habit-tagged-count.test.ts
 │   ├── habit-tagged-count.ts
 │   ├── habit-time-estimate.test.ts
@@ -2194,9 +2503,13 @@
 │   ├── habits-store.gems.test.ts
 │   ├── habits-store.migrate.test.ts
 │   ├── habits-store.ts
+│   ├── header-tracking-plan.test.ts
+│   ├── header-tracking-plan.ts
 │   ├── home-days-until-store.ts
 │   ├── home-glances.test.ts
 │   ├── home-glances.ts
+│   ├── home-system-lists.test.ts
+│   ├── home-system-lists.ts
 │   ├── home-weather-store.test.ts
 │   ├── home-weather-store.ts
 │   ├── home-weather.test.ts
@@ -2218,6 +2531,10 @@
 │   ├── inbox-process-todo.ts
 │   ├── inbox-recent-lists.test.ts
 │   ├── inbox-recent-lists.ts
+│   ├── inbox-transfer-log.test.ts
+│   ├── inbox-transfer-log.ts
+│   ├── inbox-transfer-queue.test.ts
+│   ├── inbox-transfer-queue.ts
 │   ├── incremental-habits.test.ts
 │   ├── incremental-habits.ts
 │   ├── ingest
@@ -2244,6 +2561,7 @@
 │   │   ├── apply-morning-gm.walk.test.ts
 │   │   ├── apply-needed.ts
 │   │   ├── apply-note.ts
+│   │   ├── apply-now.ts
 │   │   ├── apply-phone-life.test.ts
 │   │   ├── apply-phone-life.ts
 │   │   ├── apply-phone-screen.test.ts
@@ -2251,6 +2569,7 @@
 │   │   ├── apply-pin.ts
 │   │   ├── apply-plan-text.test.ts
 │   │   ├── apply-plan-text.ts
+│   │   ├── apply-quicklists.ts
 │   │   ├── apply-read.ts
 │   │   ├── apply-receipt.ts
 │   │   ├── apply-ritual.test.ts
@@ -2261,12 +2580,17 @@
 │   │   ├── apply-tracking.ts
 │   │   ├── bim.ts
 │   │   ├── bytes.ts
+│   │   ├── chat-queue.ts
 │   │   ├── chunk-text.test.ts
 │   │   ├── chunk-text.ts
 │   │   ├── command-catalog.test.ts
 │   │   ├── command-catalog.ts
 │   │   ├── command-glossary.ts
+│   │   ├── confirm-updates.test.ts
+│   │   ├── confirm-updates.ts
 │   │   ├── dedupe.ts
+│   │   ├── deferred-album.ts
+│   │   ├── deliver-reply.test.ts
 │   │   ├── deliver-reply.ts
 │   │   ├── executor.test.ts
 │   │   ├── executor.ts
@@ -2274,6 +2598,9 @@
 │   │   ├── expand.ts
 │   │   ├── gps-log.test.ts
 │   │   ├── gps-log.ts
+│   │   ├── gps-places.test.ts
+│   │   ├── gps-places.ts
+│   │   ├── grocery-pin.test.ts
 │   │   ├── help.ts
 │   │   ├── index-list.ts
 │   │   ├── index.ts
@@ -2295,6 +2622,7 @@
 │   │   ├── parse-message.test.ts
 │   │   ├── parse-message.ts
 │   │   ├── parse-tracking-note.ts
+│   │   ├── phone-undo.ts
 │   │   ├── receipt-parse.test.ts
 │   │   ├── receipt-parse.ts
 │   │   ├── ritual-skip.ts
@@ -2302,6 +2630,8 @@
 │   │   ├── shortcut-remap.ts
 │   │   ├── switch-scope.ts
 │   │   ├── telegram-bridge.ts
+│   │   ├── telegram-ui.mjs
+│   │   ├── telegram-ui.test.ts
 │   │   ├── text-commands.test.ts
 │   │   ├── text-triggers.test.ts
 │   │   ├── text-triggers.ts
@@ -2310,6 +2640,10 @@
 │   │   ├── types.ts
 │   │   ├── vault-push.ts
 │   │   └── write-bim-commands-doc.test.ts
+│   ├── instagram-export.test.ts
+│   ├── instagram-export.ts
+│   ├── instagram-lists.test.ts
+│   ├── instagram-lists.ts
 │   ├── item-activity.test.ts
 │   ├── item-activity.ts
 │   ├── item-merge.test.ts
@@ -2333,6 +2667,8 @@
 │   ├── letterboxd-parse.ts
 │   ├── links.test.ts
 │   ├── links.ts
+│   ├── list-habit-routes.test.ts
+│   ├── list-habit-routes.ts
 │   ├── list-links.test.ts
 │   ├── list-links.ts
 │   ├── list-merge.test.ts
@@ -2350,6 +2686,8 @@
 │   ├── lists-folder-search.ts
 │   ├── lists-grid-entries.ts
 │   ├── lists-icon-grid.ts
+│   ├── lists-navigator.test.ts
+│   ├── lists-navigator.ts
 │   ├── lists-task-index.test.ts
 │   ├── lists-task-index.ts
 │   ├── lists-ui-store.ts
@@ -2364,6 +2702,8 @@
 │   ├── metrics.ts
 │   ├── migrations.test.ts
 │   ├── migrations.ts
+│   ├── miss-reason-corpus.test.ts
+│   ├── miss-reason-corpus.ts
 │   ├── mobile-auth.test.ts
 │   ├── mobile-auth.ts
 │   ├── mobile-sync.test.ts
@@ -2434,6 +2774,8 @@
 │   ├── pen-tree.ts
 │   ├── pending-reviews.test.ts
 │   ├── pending-reviews.ts
+│   ├── people-i-know.test.ts
+│   ├── people-i-know.ts
 │   ├── period-arc.ts
 │   ├── period-keys.ts
 │   ├── period-ledger.ts
@@ -2441,6 +2783,9 @@
 │   ├── period-ritual-stats.ts
 │   ├── persist-storage.test.ts
 │   ├── persist-storage.ts
+│   ├── person-profile.test.ts
+│   ├── person-profile.ts
+│   ├── person-types.ts
 │   ├── places-search.test.ts
 │   ├── places-search.ts
 │   ├── plan-drag.test.ts
@@ -2455,11 +2800,18 @@
 │   ├── planned-action-store.ts
 │   ├── planned-actions.test.ts
 │   ├── planned-actions.ts
+│   ├── points-rules-live.ts
+│   ├── points-rules.test.ts
+│   ├── points-rules.ts
 │   ├── points-store.ts
 │   ├── priority.test.ts
 │   ├── priority.ts
+│   ├── quick-add-log.test.ts
+│   ├── quick-add-log.ts
 │   ├── regret-store.test.ts
 │   ├── regret-store.ts
+│   ├── reminders.test.ts
+│   ├── reminders.ts
 │   ├── remove-background.test.ts
 │   ├── remove-background.ts
 │   ├── reviews-store.ts
@@ -2546,6 +2898,8 @@
 │   ├── solar-remainder.ts
 │   ├── solar-system.test.ts
 │   ├── solar-system.ts
+│   ├── spend.test.ts
+│   ├── spend.ts
 │   ├── spreadsheet-catalog.test.ts
 │   ├── spreadsheet-catalog.ts
 │   ├── spreadsheet-contract.test.ts

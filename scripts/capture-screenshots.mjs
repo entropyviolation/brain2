@@ -570,7 +570,7 @@ async function captureDialogs(page) {
 
   // Metrics is on Current moment inside Now, not a header Capture key.
   if (wantShot("20-dialog-time-tracking.png") || wantShot("20-dialog-metrics.png")) {
-    await page.locator("fieldset").filter({ hasText: "System" }).getByRole("button", { name: "Now", exact: true }).click()
+    await page.locator("fieldset").filter({ hasText: "Capture" }).getByRole("button", { name: "Now", exact: true }).click()
     await wait(600)
     if (wantShot("20-dialog-time-tracking.png")) {
       await screenshot(page, "20-dialog-time-tracking.png")

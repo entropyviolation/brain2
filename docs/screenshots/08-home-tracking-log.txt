@@ -1,0 +1,30 @@
+================================================================================
+SCREENSHOT: 08-home-tracking-log.png
+VIEW: Home tab → Tracking → Tracking log
+AREA: Home → Tracking → Tracking log
+SOURCE FILES:
+  - components/Home/Tracking/tracking-log-view.tsx
+  - components/Home/Tracking/tracking-log-model.ts
+  - components/Home/Tracking/count-statuses-section.tsx
+  - components/Home/Tracking/cycle-log-section.tsx
+  - components/Home/Tracking/entry-dialog.tsx
+  - components/Home/Tracking/tracking-chrome.css
+  - lib/spend.ts
+  - lib/time-entries.ts
+NOTE: PNG not recaptured in this pass. This sidecar matches the Tracking log UI.
+================================================================================
+
+GLOBAL CHROME (all screens)
+  Pinned full-width mill title bar. Tabs: Home · Lists · Docs · Scheduler · Operations · Modules · Analytics.
+  Home sub-tabs: Habits · Plan · To Do · Goals · Tracking.
+
+VIEW-SPECIFIC
+Tracking log hides the pen desk. The fascia keys are Time Grid · Activity Log · Day Log · Tracking log, with the settings gear at the end of that row. Day notes stay under the log.
+
+Add a line. Mode keys on one row: Event · Switch · Intake · Spent · Note · Thought process. The clock stays visible. Estimated and Unknown are mutually exclusive checkboxes. Add is the raised key at the end of the field row.
+
+Spent: Amount (dollars and cents, a $ in the sunken field), On (what it was spent on), Source (cash, card, account, person, or a name already used). An amount that is empty, zero, or other text leaves Add disabled. A typed non-amount says the field wants dollars and cents, such as 4.50.
+
+The Spent shelf is the first list. A sunken ledger shows the day’s total, then each source, and each thing when more than one thing was bought. A row is the clock, the amount, what, and the source. A known clock opens the block editor, which edits amount, spent on, and source. An unknown clock has Edit and Remove.
+
+Food, Drink, and Drugs stay their own shelves. An empty shelf says what is quiet (Nothing eaten this day, and the same voice for the others). A filled shelf shows its count. Events, Thought process, and Switch follow. Counts sits under the composer. Cycle stays hidden until Enable cycle tracking is on.

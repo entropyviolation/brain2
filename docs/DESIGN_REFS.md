@@ -34,6 +34,44 @@ Every still is tagged as one or more of:
 > still onto every window is a costume. Being magical, pixel, or esoteric is
 > the direction, not a defect.
 
+## Vintage scrollbars (hard rule)
+
+App chrome scrollbars stay the Win95 bars in `app/win95.css`. Do not replace
+them with the native bar, an overlay bar, or a thinner style.
+
+WebKit / Chromium:
+
+```css
+body.win95-app *::-webkit-scrollbar { width: 16px; height: 16px; }
+body.win95-app *::-webkit-scrollbar-track { /* 2px diagonal hatch on --chrome-face */ }
+body.win95-app *::-webkit-scrollbar-thumb { background-color: var(--w95-surface); box-shadow: var(--w95-raised); }
+body.win95-app *::-webkit-scrollbar-corner { background: var(--w95-surface); }
+```
+
+Firefox only, because Chromium treats `scrollbar-width` or `scrollbar-color`
+as a replacement and ignores the rules above:
+
+```css
+@supports (-moz-appearance: none) {
+  body.win95-app, body.win95-app * {
+    scrollbar-width: auto;
+    scrollbar-color: var(--w95-surface, #c0c0c0) var(--chrome-face, #c0c0c0);
+  }
+}
+```
+
+A global reset, a utility class, or a pane-local `scrollbar-color` must not
+win over this. `.custom-scrollbar` is not a second style.
+
+## Dropdown and select menus (hard rule)
+
+Dropdown and select menus render above all other UI. Portal the list to
+`document.body` (`components/ui/menu-layer.ts`). A grid, a frozen header, a
+bar, or a dialog must not cover it, and overflow on a well must not clip it.
+A local z-index inside a scrolled well is not enough: that number stays in
+the well's stacking context, and the sheet paints over the list. Do not
+"fix" a covered menu by leaving it in the document flow under the sheet.
+
 ## How to read every still
 
 Each file is a frozen picture. Read it as one or more of these, then add the
@@ -143,7 +181,7 @@ not a DSi photograph.
 | **Now (shipped)** | Daily Habits interior — one room that turned out well, not a template | Fawn | Jewel PCB, TENO console, gadget wall, Tek scope, silver book, iridescent bloom, crystal-ball cat, EQ sliders. Lightning-seraph *gesture* on 100% bars only — not a seraph logo. **Willpower gems shipped** (satellites, invert, pin, stir, PNG occlusion, Settings-only crystal; **Small LEDs** rocker) |
 | **Parallel (shipped)** | App-wide gunmetal gray (slow slider on the swatch path) | Colt | IRIX olive, TENO, Pocket PC silver, gadget wall, flower CRTs, Display Properties `#c0c0c0` — those hexes, not a red/blue filter |
 | **Later** | Home TOP leftover **square widgets** (review, affirmation, **weather instrument**, user add/hide) | Home lane | IRIX cattle + gadget wall: **equal-height modules**; analog meters as weather, not a forecast card. See [Visual language to APPLY](#visual-language-to-apply) |
-| **Shipped, and in bounds** | Global header cabinet (BRAIN2 caption + friend well + Friend / Review / System / optional **now** well / Capture groupboxes) | Shell | Home window + **Tek POWER lamp**, fieldset legends, TENO milled keys, phosphor counts. Optional **now** well between System and Capture for live Working sessions. The caption stays readable type, not a Lucide set and not one pasted cockpit. The fascia may still become silver key-wells and may dissolve — [easy alignments](DESIGN_STYLE.md#easy-alignments-not-started). Today's friend sits in the Friend groupbox. Top tabs still later. |
+| **Shipped, and in bounds** | Global header cabinet (BRAIN2 caption + friend well + Friend / Review / System / Capture groupboxes) | Shell | Home window + **Tek POWER lamp**, fieldset legends, TENO milled keys, phosphor counts. Optional **now** well inside Capture for live Working sessions. The caption stays readable type, not a Lucide set and not one pasted cockpit. The fascia may still become silver key-wells and may dissolve — [easy alignments](DESIGN_STYLE.md#easy-alignments-not-started). Today's friend sits in the Friend groupbox. Top tabs still later. |
 | **Later** | Top tabs | not this wave | Quoted folder tabs may become pixel-game lamps (TENO mode keys). Labels stay. Do not hide them in a modern tab bar, and do not reskin the whole shell as one console screenshot. |
 | **Allowed** | Lists / Plan / Scheduler *frames*, and any new room | — | Machine, art, pixel, small lights, one dissolve. See [Do not costume](#do-not-costume-the-whole-app). Lists orbs, Plan chips, and Habits gems stay their own objects. |
 
@@ -483,11 +521,11 @@ stay visible (failure 1).
 | Habits surface | Steal | How (smallest true shape) | Status |
 |----------------|-------|---------------------------|--------|
 | **Table / grid** | TENO console, gadget wall, IRIX cattle | Nested bevels already exist — pack cells as instrument wells. Hairline traces like Bare FR4 / Cat traces as *engraved rules*, not a PCB background image pasted on the grid. | **Shipped** — packed wells + FR4 hairlines |
-| **Willpower gems** | Jewel PCB, crystal-ball cat, silver-book oval | Keep the small user crystal (`willpowerImage`). Seat it in a photoreal **chrome + black-mirror** oval (milled silver rim, black-lacquer well, photograph in the cavity). This interaction is the one to make more of. It is not a plate to stamp on every control. Default compact; open **Physics** to enlarge the same handful on a larger oval still centered on the crystal. Do not replace the photo with Lucide. Pin the oval plate to the **control panel foot**, centered in the well. Plate click = bouncing-ball stir (a short whirl, not a scatter bomb); a gem grab must not also press or stir the well. Photograph change is Settings-only. Each weekday completion adds **one small copy** of that habit’s gem around the plate; gems bounce off the crystal (no tunneling); the row gem **inverts** while any hit this week remains; the crystal PNG occludes stones that pass behind it. Press stirs; grab/lift throws (works off the plate and in the lab; equations follow z). Gems paint past the rim. **Physics** opens a Win95 popup lab with a mapped twin plate, CRT wells, and live sliders (no idle 60fps). | **Shipped** — control panel, photoreal chrome oval button, black-mirror well, week satellites, invert, pin, stir, grab/lift (no ghost stir), crystal solid, overflow, PNG occlusion, Settings field, Physics popup (mapped twin, CRT wells, memo knobs). Canonical: [`DESIGN_STYLE.md`](DESIGN_STYLE.md#willpower-gems--example-of-perfect-design) + [chrome and black mirror](DESIGN_STYLE.md#chrome-and-black-mirror) |
+| **Willpower gems** | Jewel PCB, crystal-ball cat, silver-book oval | Keep the small user crystal (`willpowerImage`). Seat it in a photoreal **chrome + black-mirror** oval (milled silver rim, black-lacquer well, photograph in the cavity). This interaction is the one to make more of. It is not a plate to stamp on every control. Default compact; open **Physics** to enlarge the same handful on a larger oval still centered on the crystal. Do not replace the photo with Lucide. Pin the oval plate to the **control panel foot**, centered in the well. Plate click = bouncing-ball stir (a short whirl, not a scatter bomb); a gem grab must not also press or stir the well. Photograph change is Settings-only. Each weekday completion adds **one small copy** of that habit’s gem around the plate; gems bounce off the crystal (no tunneling); the row gem **inverts** while any hit this week remains; the crystal PNG occludes stones that pass behind it. Press stirs; grab/lift throws (works off the plate and in the lab; equations follow z). Gems paint past the rim. `.hab-desk` stays `overflow: visible` so stones that extend right are not clipped (they may paint past the window). **Physics** opens a Win95 popup lab with a mapped twin plate, CRT wells, and live sliders (no idle 60fps). | **Shipped** — control panel, photoreal chrome oval button, black-mirror well, week satellites, invert, pin, stir, grab/lift (no ghost stir), crystal solid, overflow, PNG occlusion, Settings field, Physics popup (mapped twin, CRT wells, memo knobs). Canonical: [`DESIGN_STYLE.md`](DESIGN_STYLE.md#willpower-gems--example-of-perfect-design) + [chrome and black mirror](DESIGN_STYLE.md#chrome-and-black-mirror) |
 | **Progress** | Tek 465B POWER LED, TENO tiny LED strips, FR4 / x-ray / ceramic via rows, snowflake-circuitry pads. Grade tubes: noble-gas ampoule rack + **fan of tubes** (rounded dome). Overview sliders: OSD AMP + iridescent bloom. | **Grade meters** (Week / Span grade + Perfect output): photoreal glass **finger-tubes** (hemispherical dome, not a pointed ampoule) — plasma column clipped to percent (`noble-gas-tube.tsx`); plasma hue from `gradeTubeColor` / `outputGradeTubeColor` (defaults week-grade green `#508b51` / perfect-output navy `#25366a`). Spreadsheet **row/col %** default to a **thin glass thermometer** (`percent-led-bar.tsx`, Loading bar ON) plus a text %; OFF is the smaller numeric LED. Same tube for rows and column totals. Not a toy equalizer (do **not** steal OSD AMP’s EQ), not pastel bars, not Yes/No cell lamps reused as percents. Home overview strip keeps analog OSD bloom + vertical Tek spark. Interlace, if any, is a CSS overlay on the bezel, toggleable. | **Shipped** — noble-gas grade tubes (still photo, per-grade hue); quiet 10-pip loading channel default; table OSD bloom; overview 2×2 + vertical Tek well. CRT overlay (`.hab-crt`) is off by default |
 | **Needs Attention** | Paper lace (one), viscera collage (density), CRT kitten (urgency glow) | A lace *lining* or filigree rule around the well — cream on metal, not a holy-card skin on the Home window. A teaching caption is welcome when it is real and sourced. Expand when count > 0 is still open layout ([`UI_NEXT.md`](UI_NEXT.md)). | **Shipped** — lace lining (`.hab-na`). Home `#fff` cards killed |
 
-Cockpit rockers stay (Heatmap View, **Day View** = today column + week % only, Hide Completed Today, **Loading Bar**, and **Small LEDs** — not a rename of Loading Bar). Sort stays on the Priority bar above the grid. Type/score gems stay 12–16px; row **edit jewels** are 18px set stones (36 cutouts), far-left, no dark disc — no gem before the title. Streak / × under the wrapping title. Week satellites around WILLPOWER stay **smaller** than the row jewel. Yes/No cells stay recessed panel lamps (on-color = `percentLedTint`, dim/warm, not blast-white; **Small LEDs** ON = 15px, OFF = fill the cell). Ink stays dark on pearl/metal. Furniture metal is `--chrome-face` / `--hab-metal`, never `#c5c3bc`.
+**Loading Bar** and **Small LEDs** stay cockpit rockers (Small LEDs is not a rename of Loading Bar). **Heatmap View**, **Day View** (today column + week % only), **Hide Done**, and **Mask done and missed** are LEDs on the Priority bar, after the **SORT:** label. Type/score gems stay 12–16px; row **edit jewels** are 18px set stones (36 cutouts), far-left, no dark disc — no gem before the title. Streak / × under the wrapping title. Week satellites around WILLPOWER stay **smaller** than the row jewel. Yes/No cells stay recessed panel lamps (on-color = `percentLedTint`, dim/warm, not blast-white; **Small LEDs** ON = 15px, OFF = fill the cell). Ink stays dark on pearl/metal. Furniture metal is `--chrome-face` / `--hab-metal`, never `#c5c3bc`.
 
 **Still deferred (not this wave):** seraph-wing *logo*, ruby Quick Add, beetle-wing photo, ribbon-cable table edges, barrel-distortion CRT. The global header may become a held machine (silver keys, pixel lamps, one dissolve) — see [Easy alignments](DESIGN_STYLE.md#easy-alignments-not-started). Do not freeze it as a Windows toolbar. Home leftover **weather instrument** + **equal-height square modules** are later (Home lane), not a Habits-only trick.
 

@@ -7,13 +7,15 @@
   <style>
     :root {
       color-scheme: dark;
-      --bg: #100e0c;
-      --panel: #171512;
-      --ink: #f3ecdf;
-      --muted: #a89b8a;
-      --line: #3a342c;
-      --gold: #d7c4a3;
-      --pick: #241f1a;
+      --bg: #16181b;
+      --panel: #1e2226;
+      --ink: #e7eaed;
+      --muted: #9aa3ab;
+      --line: #3c434a;
+      --accent: #9bb5a6;
+      --accent-2: #9aafc0;
+      --pick: #2a3036;
+      --bad: #c5b4b6;
     }
 
     * { box-sizing: border-box; }
@@ -26,12 +28,16 @@
     }
 
     body {
-      font-family: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif;
+      font-family: ui-sans-serif, system-ui, sans-serif;
       display: grid;
-      grid-template-columns: 15.5rem minmax(0, 1fr) 22.5rem;
+      grid-template-columns: 15.5rem minmax(0, 1fr) minmax(17rem, 24rem);
       grid-template-rows: auto minmax(0, 1fr);
       height: 100vh;
       height: 100dvh;
+    }
+
+    body.docs-open {
+      grid-template-columns: 14rem minmax(0, 1fr) minmax(16rem, 22rem) minmax(0, 26rem);
     }
 
     header {
@@ -45,8 +51,8 @@
 
     h1 {
       margin: 0;
-      font-size: 1.2rem;
-      font-weight: 500;
+      font-size: 1.15rem;
+      font-weight: 560;
       letter-spacing: 0.01em;
     }
 
@@ -58,6 +64,7 @@
 
     nav {
       overflow: auto;
+      min-width: 0;
       background: var(--panel);
       border-right: 1px solid var(--line);
       padding-bottom: 1.5rem;
@@ -67,7 +74,7 @@
       margin: 1.05rem 0.9rem 0.2rem;
       font-size: 0.78rem;
       font-weight: 600;
-      color: var(--gold);
+      color: var(--accent);
     }
 
     button.shot {
@@ -75,7 +82,7 @@
       width: 100%;
       text-align: left;
       font: inherit;
-      font-size: 0.95rem;
+      font-size: 0.92rem;
       line-height: 1.35;
       color: var(--muted);
       background: transparent;
@@ -91,6 +98,7 @@
       font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
       font-size: 0.68rem;
       letter-spacing: 0;
+      overflow-wrap: anywhere;
     }
 
     button.shot:hover { color: var(--ink); }
@@ -98,7 +106,7 @@
     button.shot[aria-current="true"] {
       color: var(--ink);
       background: var(--pick);
-      border-left-color: var(--gold);
+      border-left-color: var(--accent);
     }
 
     main {
@@ -116,7 +124,15 @@
       padding: 1.15rem 1.4rem 0.4rem;
     }
 
-    .stage img {
+    .frame-wrap {
+      position: relative;
+      display: inline-block;
+      max-width: 100%;
+      line-height: 0;
+    }
+
+    .frame-wrap img {
+      display: block;
       max-width: 100%;
       max-height: calc(100vh - 15rem);
       max-height: calc(100dvh - 15rem);
@@ -124,7 +140,53 @@
       background: transparent;
     }
 
-    .stage img:not([src]) { visibility: hidden; }
+    .frame-wrap img:not([src]) { visibility: hidden; }
+
+    #overlay {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    #overlay.armed { pointer-events: auto; cursor: crosshair; }
+
+    #overlay .box {
+      fill: rgba(155, 181, 166, 0.18);
+      stroke: #c5ddd0;
+      stroke-width: 1.75;
+      vector-effect: non-scaling-stroke;
+    }
+
+    #overlay .ink {
+      fill: rgba(255, 42, 42, 0.16);
+      stroke: #ff2a2a;
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      vector-effect: non-scaling-stroke;
+    }
+
+    #overlay polyline.ink { fill: none; }
+
+    .ink-color {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin: 0;
+      color: var(--accent);
+      font-size: 0.78rem;
+    }
+
+    .ink-color input {
+      width: 2rem;
+      height: 1.35rem;
+      padding: 0;
+      border: 1px solid var(--line);
+      background: transparent;
+      cursor: pointer;
+    }
 
     .transport {
       display: flex;
@@ -134,7 +196,7 @@
       padding: 0.35rem 1.4rem 0.2rem;
     }
 
-    .transport button {
+    .transport button, .note-actions button, .row-actions button, .tool button {
       font: inherit;
       color: var(--ink);
       background: transparent;
@@ -144,11 +206,18 @@
       cursor: pointer;
     }
 
-    .transport button:hover { border-color: var(--gold); }
+    .transport button:hover, .note-actions button:hover, .row-actions button:hover, .tool button:hover {
+      border-color: var(--accent-2);
+    }
 
     .transport button:disabled {
       opacity: 0.35;
       cursor: default;
+    }
+
+    .tool button[aria-pressed="true"] {
+      border-color: var(--accent-2);
+      background: var(--pick);
     }
 
     #count {
@@ -159,7 +228,7 @@
     #when { color: var(--muted); }
 
     .kind {
-      color: var(--gold);
+      color: var(--accent);
       font-size: 0.82rem;
     }
 
@@ -184,36 +253,47 @@
     }
 
     #empty {
-      font-family: "Iowan Old Style", Palatino, Georgia, serif;
+      font-family: inherit;
       font-size: 1rem;
       color: var(--ink);
     }
 
-    aside.notes {
-      overflow: auto;
+    aside.notes, #doc-column {
+      min-width: 0;
       background: var(--panel);
       border-left: 1px solid var(--line);
-      padding: 0.85rem 1rem 1.5rem;
     }
 
-    aside.notes h2 {
-      margin: 0.2rem 0 0.6rem;
+    aside.notes {
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding: 0.85rem 1rem 1.5rem;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    aside.notes h2, #doc-column h2 {
+      margin: 0.85rem 0 0.45rem;
       font-size: 0.95rem;
       font-weight: 600;
     }
 
+    aside.notes h2:first-child { margin-top: 0.2rem; }
+
     aside.notes label {
       display: block;
-      margin: 0.75rem 0 0.25rem;
-      color: var(--gold);
+      margin: 0.7rem 0 0.25rem;
+      color: var(--accent);
       font-size: 0.78rem;
     }
 
     aside.notes input,
     aside.notes textarea {
       width: 100%;
+      max-width: 100%;
+      min-width: 0;
       font: inherit;
-      font-size: 0.92rem;
+      font-size: 0.9rem;
       color: var(--ink);
       background: var(--bg);
       border: 1px solid var(--line);
@@ -221,41 +301,75 @@
       padding: 0.35rem 0.45rem;
     }
 
-    aside.notes textarea { min-height: 6.5rem; resize: vertical; }
-    #feature-style { min-height: 4.5rem; }
+    aside.notes textarea { min-height: 4.5rem; resize: vertical; }
 
-    .note-actions {
+    #doc-shown {
+      display: block;
+      margin: 0.2rem 0 0.35rem;
+      color: var(--muted);
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 0.75rem;
+      overflow-wrap: anywhere;
+    }
+
+    button.feature-row, button.note-row {
+      display: block;
+      width: 100%;
+      text-align: left;
+      font: inherit;
+      font-size: 0.88rem;
+      line-height: 1.35;
+      color: var(--ink);
+      background: transparent;
+      border: 0;
+      border-left: 2px solid transparent;
+      padding: 0.32rem 0.4rem;
+      cursor: pointer;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+
+    button.feature-row[aria-current="true"], button.note-row[aria-current="true"] {
+      background: var(--pick);
+      border-left-color: var(--accent);
+    }
+
+    button.note-row[aria-current="true"] { border-left-color: var(--accent-2); }
+
+    .row-actions, .note-actions, .tool {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: 0.45rem;
-      margin-top: 0.75rem;
+      gap: 0.4rem;
+      margin-top: 0.55rem;
     }
 
-    .note-actions button {
-      font: inherit;
-      color: var(--ink);
-      background: transparent;
-      border: 1px solid var(--line);
-      border-radius: 2px;
-      padding: 0.22rem 0.6rem;
-      cursor: pointer;
+    #draw-hint {
+      margin: 0.35rem 0 0;
+      color: var(--muted);
+      font-size: 0.78rem;
     }
-
-    .note-actions button:hover { border-color: var(--gold); }
 
     #save-state {
       color: var(--muted);
       font-size: 0.82rem;
     }
 
-    #save-state.bad { color: #c9a59a; }
+    #save-state.bad { color: var(--bad); }
+
+    details.overview { margin-top: 0.8rem; }
+    details.overview summary { cursor: pointer; color: var(--accent); font-size: 0.82rem; }
+
+    #doc-column {
+      overflow: auto;
+      padding: 0.85rem 1rem 1.5rem;
+    }
 
     #doc-preview {
-      margin-top: 0.9rem;
       color: var(--ink);
       font-size: 0.9rem;
       line-height: 1.45;
+      min-width: 0;
     }
 
     #doc-preview:empty { display: none; }
@@ -270,7 +384,7 @@
     }
 
     #doc-preview p { margin: 0.35rem 0; }
-    #doc-preview ul { margin: 0.35rem 0; padding-left: 1.1rem; }
+    #doc-preview ul, #doc-preview ol { margin: 0.35rem 0; padding-left: 1.15rem; }
     #doc-preview img { max-width: 100%; height: auto; }
     #doc-preview pre {
       overflow: auto;
@@ -283,10 +397,23 @@
       font-size: 0.84em;
     }
 
+    #doc-preview table {
+      border-collapse: collapse;
+      margin: 0.5rem 0;
+    }
+
+    #doc-preview th, #doc-preview td {
+      border: 1px solid var(--line);
+      padding: 0.25rem 0.45rem;
+      vertical-align: top;
+    }
+
+    #doc-preview a { color: var(--accent-2); }
+
     @media (max-width: 1100px) {
-      body {
+      body, body.docs-open {
         grid-template-columns: 1fr;
-        grid-template-rows: auto auto auto auto;
+        grid-template-rows: auto auto auto auto auto;
         height: auto;
         min-height: 100vh;
       }
@@ -297,7 +424,7 @@
         border-bottom: 1px solid var(--line);
       }
 
-      aside.notes {
+      aside.notes, #doc-column {
         border-left: 0;
         border-top: 1px solid var(--line);
       }
@@ -314,7 +441,10 @@
   <nav id="picker" aria-label="Screens"></nav>
   <main>
     <div class="stage">
-      <img id="frame" alt="">
+      <div class="frame-wrap" id="frame-wrap">
+        <img id="frame" alt="">
+        <svg id="overlay" viewBox="0 0 1 1" preserveAspectRatio="none" aria-hidden="true"></svg>
+      </div>
     </div>
     <div class="transport">
       <button type="button" id="prev" aria-label="Older frame">&lt;</button>
@@ -331,27 +461,93 @@
     <p id="empty" hidden></p>
   </main>
   <aside class="notes" aria-label="Feature notes">
-    <h2>Feature</h2>
-    <label for="feature-name">Feature name</label>
-    <input id="feature-name" type="text" autocomplete="off">
-    <label for="feature-description">Feature description</label>
-    <textarea id="feature-description"></textarea>
-    <label for="feature-style">Style notes</label>
-    <textarea id="feature-style"></textarea>
-    <label for="feature-doc">Documentation</label>
-    <input id="feature-doc" type="text" autocomplete="off" spellcheck="false" placeholder="repo-relative .md">
+    <h2>Screenshot</h2>
+    <label for="shot-name">Name</label>
+    <input id="shot-name" type="text" autocomplete="off">
+    <label>Documentation</label>
+    <span id="doc-shown"></span>
+    <input id="feature-doc" type="text" autocomplete="off" spellcheck="false" placeholder="repo-relative .md" hidden>
+    <div class="row-actions">
+      <button type="button" id="doc-change">Change</button>
+    </div>
+    <details class="overview">
+      <summary>Overview</summary>
+      <label for="feature-description">Description</label>
+      <textarea id="feature-description"></textarea>
+      <label for="feature-style">Overview style note</label>
+      <textarea id="feature-style"></textarea>
+    </details>
+
+    <h2>Features</h2>
+    <div id="feature-list"></div>
+    <div class="row-actions">
+      <button type="button" id="add-feature">Add feature</button>
+    </div>
+    <div id="feature-editor">
+      <label for="feat-name">Feature name</label>
+      <input id="feat-name" type="text" autocomplete="off">
+      <label for="feat-description">Description</label>
+      <textarea id="feat-description"></textarea>
+      <label for="feat-style">Style suggestions</label>
+      <textarea id="feat-style"></textarea>
+      <label for="feat-improve">Improvement suggestions</label>
+      <textarea id="feat-improve"></textarea>
+      <p id="draw-hint"></p>
+      <div class="row-actions">
+        <button type="button" id="redraw-box">Redraw box</button>
+        <button type="button" id="clear-box">Clear box</button>
+        <button type="button" id="remove-feature">Remove feature</button>
+      </div>
+    </div>
+
+    <h2>Whole screenshot</h2>
+    <div id="global-list"></div>
+    <div class="row-actions">
+      <button type="button" id="add-global">Add note</button>
+    </div>
+    <div id="global-editor" hidden>
+      <label for="global-text">Style and improvement</label>
+      <textarea id="global-text"></textarea>
+      <div class="tool" role="group" aria-label="Markup">
+        <button type="button" id="tool-ellipse" data-tool="ellipse">Circle</button>
+        <button type="button" id="tool-rect" data-tool="rect">Rectangle</button>
+        <button type="button" id="tool-stroke" data-tool="stroke">Stroke</button>
+        <label class="ink-color" id="ink-color-label" hidden>
+          Color
+          <input id="ink-color" type="color" value="#ff2a2a" aria-label="Markup color">
+        </label>
+      </div>
+      <p id="ink-hint">Markup shows only while this note is open.</p>
+      <div class="row-actions">
+        <button type="button" id="clear-ink">Clear markup</button>
+        <button type="button" id="close-global">Close</button>
+        <button type="button" id="remove-global">Remove note</button>
+      </div>
+    </div>
+
     <div class="note-actions">
-      <button type="button" id="preview-doc">Preview documentation</button>
+      <button type="button" id="preview-doc">Show documentation</button>
       <button type="button" id="save-notes">Save</button>
       <span id="save-state"></span>
+    </div>
+  </aside>
+  <aside id="doc-column" aria-label="Documentation preview" hidden>
+    <div class="note-actions">
+      <h2 style="margin:0">Documentation</h2>
+      <button type="button" id="hide-preview">Hide</button>
     </div>
     <div id="doc-preview"></div>
   </aside>
   <script src="./reel.js"></script>
-  <script>
+  <script type="module">
+    import { marked } from "/vendor/marked.esm.js"
+
+    const svgNS = "http://www.w3.org/2000/svg"
+    const DEFAULT_INK = "#ff2a2a"
     const reel = window.SCREENSHOT_REEL
     const picker = document.getElementById("picker")
     const frameEl = document.getElementById("frame")
+    const overlay = document.getElementById("overlay")
     const viewLine = document.getElementById("view-line")
     const countEl = document.getElementById("count")
     const whenEl = document.getElementById("when")
@@ -363,11 +559,46 @@
     const nextBtn = document.getElementById("next")
     const oldestBtn = document.getElementById("oldest")
     const newestBtn = document.getElementById("newest")
+    const shotName = document.getElementById("shot-name")
+    const featureDescription = document.getElementById("feature-description")
+    const featureStyle = document.getElementById("feature-style")
+    const featureDoc = document.getElementById("feature-doc")
+    const docShown = document.getElementById("doc-shown")
+    const featureList = document.getElementById("feature-list")
+    const featureEditor = document.getElementById("feature-editor")
+    const featName = document.getElementById("feat-name")
+    const featDescription = document.getElementById("feat-description")
+    const featStyle = document.getElementById("feat-style")
+    const featImprove = document.getElementById("feat-improve")
+    const drawHint = document.getElementById("draw-hint")
+    const globalList = document.getElementById("global-list")
+    const globalEditor = document.getElementById("global-editor")
+    const globalText = document.getElementById("global-text")
+    const previewEl = document.getElementById("doc-preview")
+    const docColumn = document.getElementById("doc-column")
+    const saveState = document.getElementById("save-state")
 
     const shots = new Map()
     let current = null
     let index = 0
     let captionToken = 0
+    let notes = {}
+    let working = null
+    let selectedFeatureId = null
+    let openGlobalId = null
+    let tool = null
+    let redraw = false
+    let drag = null
+
+    const ALLOW = new Set(["A","P","BR","HR","H1","H2","H3","H4","H5","H6","UL","OL","LI","TABLE","THEAD","TBODY","TFOOT","TR","TH","TD","CODE","PRE","BLOCKQUOTE","STRONG","EM","DEL","IMG","SPAN","INPUT"])
+    const DROP = new Set(["SCRIPT","STYLE","IFRAME","OBJECT","EMBED","LINK","META","FORM","BASE"])
+    const ATTRS = {
+      A: ["href", "title"],
+      IMG: ["src", "alt", "title"],
+      TD: ["align"],
+      TH: ["align"],
+      INPUT: ["type", "disabled", "checked"],
+    }
 
     function srcUrl(src) {
       return src.split("/").map(encodeURIComponent).join("/")
@@ -375,6 +606,40 @@
 
     function sidecarName(file) {
       return file.replace(/\.png$/i, ".txt")
+    }
+
+    function newId(prefix) {
+      return prefix + "-" + Math.random().toString(36).slice(2, 10)
+    }
+
+    function blankRecord() {
+      return { name: "", description: "", styleNotes: "", docPath: "", features: [], globalNotes: [] }
+    }
+
+    function storedRecord(file) {
+      const rec = notes[file]
+      if (!rec || typeof rec !== "object" || Array.isArray(rec)) return blankRecord()
+      return {
+        name: rec.name || "",
+        description: rec.description || "",
+        styleNotes: rec.styleNotes || "",
+        docPath: rec.docPath || "",
+        features: Array.isArray(rec.features) ? rec.features.map((item) => ({ ...item })) : [],
+        globalNotes: Array.isArray(rec.globalNotes) ? rec.globalNotes.map((item) => ({
+          ...item,
+          markup: Array.isArray(item.markup) ? item.markup.map((mark) => ({ ...mark, points: mark.points ? mark.points.map((pt) => pt.slice()) : undefined })) : [],
+        })) : [],
+      }
+    }
+
+    function currentFeature() {
+      if (!working) return null
+      return working.features.find((item) => item.id === selectedFeatureId) || null
+    }
+
+    function currentNote() {
+      if (!working) return null
+      return working.globalNotes.find((item) => item.id === openGlobalId) || null
     }
 
     function select(file, frameIndex) {
@@ -386,11 +651,7 @@
       index = Math.max(0, Math.min(last, frameIndex == null ? last : frameIndex))
       const nextHash = "#" + encodeURIComponent(file)
       if (location.hash !== nextHash) {
-        try {
-          history.replaceState(null, "", nextHash)
-        } catch {
-          location.hash = encodeURIComponent(file)
-        }
+        try { history.replaceState(null, "", nextHash) } catch { location.hash = encodeURIComponent(file) }
       }
       for (const button of picker.querySelectorAll("button.shot")) {
         if (button.dataset.file === file) button.setAttribute("aria-current", "true")
@@ -402,6 +663,8 @@
       if (previous !== shot.file) {
         loadCaption(shot.file)
         showFeature(shot.file)
+      } else {
+        paint()
       }
     }
 
@@ -419,6 +682,7 @@
       frameEl.onload = () => {
         if (frameEl.dataset.token !== String(token)) return
         if (captionNote.textContent === "This frame file is missing.") captionNote.hidden = true
+        paint()
       }
       frameEl.onerror = () => {
         if (frameEl.dataset.token !== String(token)) return
@@ -470,9 +734,7 @@
       const groups = Array.isArray(reel.groups) && reel.groups.length
         ? reel.groups
         : [{ area: "Screens", files: reel.shots.map((shot) => shot.file) }]
-
       for (const shot of reel.shots) shots.set(shot.file, shot)
-
       for (const group of groups) {
         const files = (group.files || []).filter((file) => shots.has(file))
         if (!files.length) continue
@@ -495,121 +757,159 @@
       }
     }
 
-    const featureName = document.getElementById("feature-name")
-    const featureDescription = document.getElementById("feature-description")
-    const featureStyle = document.getElementById("feature-style")
-    const featureDoc = document.getElementById("feature-doc")
-    const previewEl = document.getElementById("doc-preview")
-    const saveState = document.getElementById("save-state")
-    const noteFields = [featureName, featureDescription, featureStyle, featureDoc]
-    let notes = {}
-
-    function escapeHtml(value) {
-      return String(value)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-    }
-
-    function imageTag(alt, src, docPath) {
-      const safeAlt = escapeHtml(alt)
-      if (/^https?:\/\//i.test(src)) {
-        return '<img alt="' + safeAlt + '" src="' + escapeHtml(src) + '">'
-      }
-      const query = new URLSearchParams({ doc: docPath || "", src: src })
-      return '<img alt="' + safeAlt + '" src="/api/asset?' + query.toString() + '">'
-    }
-
-    function renderInline(raw, docPath) {
-      const re = /!\[([^\]]*)\]\(([^)\s]+)\)|\[([^\]]+)\]\(([^)\s]+)\)|`([^`]+)`|\*\*([^*]+)\*\*|\*([^*]+)\*/g
-      let last = 0
-      let match
-      let html = ""
-      while ((match = re.exec(raw))) {
-        html += escapeHtml(raw.slice(last, match.index))
-        if (match[0].charAt(0) === "!") html += imageTag(match[1], match[2], docPath)
-        else if (match[3] != null) html += escapeHtml(match[3] + " (" + match[4] + ")")
-        else if (match[5] != null) html += "<code>" + escapeHtml(match[5]) + "</code>"
-        else if (match[6] != null) html += "<strong>" + escapeHtml(match[6]) + "</strong>"
-        else if (match[7] != null) html += "<em>" + escapeHtml(match[7]) + "</em>"
-        last = match.index + match[0].length
-      }
-      return html + escapeHtml(raw.slice(last))
-    }
-
-    function renderMarkdown(md, docPath) {
-      const fences = []
-      const text = String(md).replace(/```[^\n]*\n([\s\S]*?)```/g, function (_, code) {
-        fences.push("<pre><code>" + escapeHtml(code.replace(/\n$/, "")) + "</code></pre>")
-        return "\n\n@@F" + (fences.length - 1) + "@@\n\n"
-      })
-      return text.split(/\n{2,}/).map(function (block) {
-        const fence = /^@@F(\d+)@@$/.exec(block.trim())
-        if (fence) return fences[Number(fence[1])] || ""
-        const lines = block.split("\n")
-        if (lines.every(function (line) { return /^#{1,6}\s+/.test(line) })) {
-          return lines.map(function (line) {
-            const heading = /^(#{1,6})\s+(.*)$/.exec(line)
-            const level = Math.min(heading[1].length, 4)
-            return "<h" + level + ">" + renderInline(heading[2], docPath) + "</h" + level + ">"
-          }).join("")
-        }
-        if (lines.filter(function (line) { return line.trim() }).every(function (line) { return /^\s*[-*]\s+/.test(line) })) {
-          const items = lines.filter(function (line) { return line.trim() }).map(function (line) {
-            return "<li>" + renderInline(line.replace(/^\s*[-*]\s+/, ""), docPath) + "</li>"
-          })
-          return "<ul>" + items.join("") + "</ul>"
-        }
-        return "<p>" + lines.map(function (line) { return renderInline(line, docPath) }).join("<br>") + "</p>"
-      }).join("")
-    }
-
-    function recordFromFields() {
-      return {
-        name: featureName.value,
-        description: featureDescription.value,
-        styleNotes: featureStyle.value,
-        docPath: featureDoc.value.trim(),
-      }
-    }
-
-    function storedRecord(file) {
-      const rec = notes[file]
-      if (!rec || typeof rec !== "object") {
-        return { name: "", description: "", styleNotes: "", docPath: "" }
-      }
-      return {
-        name: rec.name || "",
-        description: rec.description || "",
-        styleNotes: rec.styleNotes || "",
-        docPath: rec.docPath || "",
-      }
-    }
-
     function setStatus(text, bad) {
       saveState.textContent = text || ""
       saveState.classList.toggle("bad", !!bad)
     }
 
+    function showDocPath() {
+      docShown.textContent = featureDoc.value.trim() || "No documentation linked."
+    }
+
+    function hidePreview() {
+      docColumn.hidden = true
+      document.body.classList.remove("docs-open")
+      previewEl.replaceChildren()
+    }
+
+    function flushEditors() {
+      if (!working) return
+      working.name = shotName.value
+      working.description = featureDescription.value
+      working.styleNotes = featureStyle.value
+      working.docPath = featureDoc.value.trim()
+      const feature = currentFeature()
+      if (feature) {
+        feature.name = featName.value
+        feature.description = featDescription.value
+        feature.styleNotes = featStyle.value
+        feature.improvements = featImprove.value
+      }
+      const note = currentNote()
+      if (note) note.text = globalText.value
+    }
+
+    function fillFeatureEditor() {
+      const feature = currentFeature()
+      featureEditor.hidden = !feature
+      if (!feature) {
+        drawHint.textContent = working && working.features.length
+          ? "Select a feature to edit it. Drag on the picture if it has no box yet."
+          : "Add feature to mark a region in this shot."
+        return
+      }
+      featName.value = feature.name || ""
+      featDescription.value = feature.description || ""
+      featStyle.value = feature.styleNotes || ""
+      featImprove.value = feature.improvements || ""
+      if (redraw) drawHint.textContent = "Drag on the picture to replace this box."
+      else if (!feature.box) drawHint.textContent = "Drag on the picture to draw this feature’s box."
+      else drawHint.textContent = "This box is saved with the feature. Redraw replaces it."
+    }
+
+    function renderLists() {
+      featureList.replaceChildren()
+      for (const feature of working.features) {
+        const button = document.createElement("button")
+        button.type = "button"
+        button.className = "feature-row"
+        button.textContent = feature.name || "Untitled feature"
+        if (feature.id === selectedFeatureId) button.setAttribute("aria-current", "true")
+        button.addEventListener("click", () => selectFeature(feature.id))
+        featureList.appendChild(button)
+      }
+      globalList.replaceChildren()
+      for (const note of working.globalNotes) {
+        const button = document.createElement("button")
+        button.type = "button"
+        button.className = "note-row"
+        button.textContent = note.text || "Untitled note"
+        if (note.id === openGlobalId) button.setAttribute("aria-current", "true")
+        button.addEventListener("click", () => openNote(note.id))
+        globalList.appendChild(button)
+      }
+    }
+
+    function selectFeature(id) {
+      flushEditors()
+      selectedFeatureId = id
+      redraw = false
+      renderLists()
+      fillFeatureEditor()
+      syncArm()
+      paint()
+    }
+
+    function openNote(id) {
+      flushEditors()
+      openGlobalId = id
+      tool = null
+      const note = currentNote()
+      globalEditor.hidden = !note
+      globalText.value = note ? note.text || "" : ""
+      for (const button of document.querySelectorAll(".tool button")) button.setAttribute("aria-pressed", "false")
+      syncInkPicker()
+      renderLists()
+      syncArm()
+      paint()
+    }
+
+    function closeNote() {
+      flushEditors()
+      openGlobalId = null
+      tool = null
+      globalEditor.hidden = true
+      for (const button of document.querySelectorAll(".tool button")) button.setAttribute("aria-pressed", "false")
+      syncInkPicker()
+      renderLists()
+      syncArm()
+      paint()
+    }
+
     function showFeature(file) {
-      const rec = storedRecord(file)
-      featureName.value = rec.name
-      featureDescription.value = rec.description
-      featureStyle.value = rec.styleNotes
-      featureDoc.value = rec.docPath
-      previewEl.textContent = ""
+      working = storedRecord(file)
+      shotName.value = working.name
+      featureDescription.value = working.description
+      featureStyle.value = working.styleNotes
+      featureDoc.value = working.docPath
+      featureDoc.hidden = true
+      showDocPath()
+      selectedFeatureId = null
+      openGlobalId = null
+      tool = null
+      redraw = false
+      globalEditor.hidden = true
+      for (const button of document.querySelectorAll(".tool button")) button.setAttribute("aria-pressed", "false")
+      syncInkPicker()
+      hidePreview()
+      renderLists()
+      fillFeatureEditor()
+      syncArm()
+      paint()
       setStatus("")
+    }
+
+    function snapshot() {
+      flushEditors()
+      return {
+        name: working.name,
+        description: working.description,
+        styleNotes: working.styleNotes,
+        docPath: working.docPath,
+        features: working.features,
+        globalNotes: working.globalNotes,
+      }
     }
 
     let saveChain = Promise.resolve()
 
     function saveNotes() {
-      if (!current) return saveChain
+      if (!current || !working) return saveChain
       const file = current.file
-      const record = recordFromFields()
-      if (JSON.stringify(record) === JSON.stringify(storedRecord(file))) return saveChain
-      saveChain = saveChain.then(function () { return postRecord(file, record) })
+      const record = snapshot()
+      const prior = storedRecord(file)
+      if (JSON.stringify(record) === JSON.stringify(prior)) return saveChain
+      saveChain = saveChain.then(() => postRecord(file, record))
       return saveChain
     }
 
@@ -618,33 +918,94 @@
       return fetch("/api/notes", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ file: file, record: record }),
-      }).then(function (res) {
-        if (!res.ok) return res.text().then(function (text) { throw new Error(text || "Could not save") })
-        notes[file] = record
+        body: JSON.stringify({ file, record }),
+      }).then((res) => {
+        if (!res.ok) return res.text().then((text) => { throw new Error(text || "Could not save") })
+        return res.json()
+      }).then((data) => {
+        if (data && data[file]) notes[file] = data[file]
+        else notes[file] = record
         if (current && current.file === file) setStatus("Saved")
-      }).catch(function (error) {
+      }).catch((error) => {
         if (current && current.file === file) setStatus(error.message || "Could not save", true)
       })
     }
 
+    function sanitize(root) {
+      let child = root.firstChild
+      while (child) {
+        const next = child.nextSibling
+        if (child.nodeType === Node.COMMENT_NODE) {
+          child.remove()
+          child = next
+          continue
+        }
+        if (child.nodeType !== Node.ELEMENT_NODE) {
+          child = next
+          continue
+        }
+        if (DROP.has(child.tagName)) {
+          child.remove()
+          child = next
+          continue
+        }
+        if (!ALLOW.has(child.tagName)) {
+          const first = child.firstChild
+          while (child.firstChild) root.insertBefore(child.firstChild, child)
+          child.remove()
+          child = first || next
+          continue
+        }
+        const allowed = ATTRS[child.tagName] || []
+        for (const attr of [...child.attributes]) {
+          if (!allowed.includes(attr.name)) child.removeAttribute(attr.name)
+        }
+        if (child.tagName === "A") {
+          const href = child.getAttribute("href") || ""
+          if (/^\s*javascript:/i.test(href)) child.removeAttribute("href")
+          child.setAttribute("rel", "noreferrer")
+        }
+        if (child.tagName === "IMG") {
+          const src = child.getAttribute("src") || ""
+          if (/^\s*javascript:/i.test(src) || src.startsWith("data:")) child.removeAttribute("src")
+        }
+        sanitize(child)
+        child = next
+      }
+    }
+
+    function renderMarkdown(md, docPath) {
+      const html = marked.parse(String(md), { gfm: true, breaks: false })
+      const parsed = new DOMParser().parseFromString(html, "text/html")
+      sanitize(parsed.body)
+      for (const img of parsed.body.querySelectorAll("img")) {
+        const src = img.getAttribute("src") || ""
+        if (!src || /^https?:\/\//i.test(src)) continue
+        const query = new URLSearchParams({ doc: docPath || "", src })
+        img.setAttribute("src", "/api/asset?" + query.toString())
+      }
+      return parsed.body.innerHTML
+    }
+
     function previewDoc() {
       const docPath = featureDoc.value.trim()
-      previewEl.textContent = ""
+      previewEl.replaceChildren()
+      docColumn.hidden = false
+      document.body.classList.add("docs-open")
       if (!docPath) {
         previewEl.textContent = "No documentation path."
         return
       }
       fetch("/api/doc?path=" + encodeURIComponent(docPath))
-        .then(function (res) {
+        .then((res) => {
           if (res.status === 404) throw new Error("missing")
-          if (!res.ok) return res.text().then(function (text) { throw new Error(text || "Could not read that file.") })
+          if (!res.ok) return res.text().then((text) => { throw new Error(text || "Could not read that file.") })
           return res.text()
         })
-        .then(function (text) {
+        .then((text) => {
           previewEl.innerHTML = renderMarkdown(text, docPath)
         })
-        .catch(function (error) {
+        .catch((error) => {
           previewEl.textContent = error.message === "missing"
             ? "No file at " + docPath + "."
             : (error.message || "Could not read that file.")
@@ -653,21 +1014,263 @@
 
     function loadNotesFile() {
       return fetch("/api/notes")
-        .then(function (res) { if (!res.ok) throw new Error("notes") ; return res.json() })
-        .catch(function () {
-          return fetch("./feature-notes.json").then(function (res) {
-            if (!res.ok) throw new Error("notes")
-            return res.json()
-          })
-        })
-        .catch(function () { return {} })
+        .then((res) => { if (!res.ok) throw new Error("notes"); return res.json() })
+        .catch(() => fetch("./feature-notes.json").then((res) => {
+          if (!res.ok) throw new Error("notes")
+          return res.json()
+        }))
+        .catch(() => ({}))
     }
 
-    for (const field of noteFields) {
-      field.addEventListener("blur", function () { saveNotes() })
+    function normPoint(event) {
+      const rect = frameEl.getBoundingClientRect()
+      const x = rect.width ? (event.clientX - rect.left) / rect.width : 0
+      const y = rect.height ? (event.clientY - rect.top) / rect.height : 0
+      return {
+        x: Math.min(1, Math.max(0, x)),
+        y: Math.min(1, Math.max(0, y)),
+      }
     }
-    document.getElementById("save-notes").addEventListener("click", function () { saveNotes() })
-    document.getElementById("preview-doc").addEventListener("click", function () { previewDoc() })
+
+    function syncArm() {
+      const feature = currentFeature()
+      const canBox = feature && (redraw || !feature.box)
+      const canInk = currentNote() && tool
+      overlay.classList.toggle("armed", !!(canBox || canInk))
+    }
+
+    function paint() {
+      overlay.replaceChildren()
+      const feature = currentFeature()
+      if (feature && feature.box && !(drag && drag.kind === "box")) addShape("box", feature.box)
+      const note = currentNote()
+      if (note && Array.isArray(note.markup)) {
+        for (const mark of note.markup) addShape("ink", mark)
+      }
+      if (drag && drag.kind === "box") addShape("box", dragBox(drag))
+      else if (drag && drag.mark) addShape("ink", drag.mark)
+    }
+
+    function inkHex(value) {
+      return /^#[0-9a-fA-F]{6}$/.test(value || "") ? value.toLowerCase() : DEFAULT_INK
+    }
+
+    function inkFill(hex) {
+      const n = Number.parseInt(hex.slice(1), 16)
+      const r = (n >> 16) & 255
+      const g = (n >> 8) & 255
+      const b = n & 255
+      return "rgba(" + r + "," + g + "," + b + ",0.18)"
+    }
+
+    function chosenInk() {
+      return inkHex(document.getElementById("ink-color").value)
+    }
+
+    function syncInkPicker() {
+      document.getElementById("ink-color-label").hidden = !tool
+    }
+
+    function paintInk(el, mark) {
+      if (!el.classList.contains("ink")) return
+      const hex = inkHex(mark && mark.color)
+      el.setAttribute("stroke", hex)
+      if (el.tagName.toLowerCase() !== "polyline") el.setAttribute("fill", inkFill(hex))
+    }
+
+    function addShape(cls, mark) {
+      if (mark.type === "stroke" && Array.isArray(mark.points)) {
+        const line = document.createElementNS(svgNS, "polyline")
+        line.setAttribute("class", cls)
+        line.setAttribute("points", mark.points.map((pt) => pt[0] + "," + pt[1]).join(" "))
+        paintInk(line, mark)
+        overlay.appendChild(line)
+        return
+      }
+      const box = mark.box || mark
+      if (mark.type === "ellipse") {
+        const ellipse = document.createElementNS(svgNS, "ellipse")
+        ellipse.setAttribute("class", cls)
+        ellipse.setAttribute("cx", String(box.x + box.w / 2))
+        ellipse.setAttribute("cy", String(box.y + box.h / 2))
+        ellipse.setAttribute("rx", String(Math.abs(box.w) / 2))
+        ellipse.setAttribute("ry", String(Math.abs(box.h) / 2))
+        paintInk(ellipse, mark)
+        overlay.appendChild(ellipse)
+        return
+      }
+      const rect = document.createElementNS(svgNS, "rect")
+      rect.setAttribute("class", cls)
+      rect.setAttribute("x", String(box.x))
+      rect.setAttribute("y", String(box.y))
+      rect.setAttribute("width", String(box.w))
+      rect.setAttribute("height", String(box.h))
+      paintInk(rect, mark)
+      overlay.appendChild(rect)
+    }
+
+    function dragBox(state) {
+      const x = Math.min(state.x0, state.x1)
+      const y = Math.min(state.y0, state.y1)
+      return { x, y, w: Math.abs(state.x1 - state.x0), h: Math.abs(state.y1 - state.y0) }
+    }
+
+    overlay.addEventListener("pointerdown", (event) => {
+      if (!overlay.classList.contains("armed") || !frameEl.getBoundingClientRect().width) return
+      const point = normPoint(event)
+      const note = currentNote()
+      const feature = currentFeature()
+      if (note && tool) {
+        const color = chosenInk()
+        drag = {
+          kind: "ink",
+          mark: tool === "stroke"
+            ? { type: "stroke", color, points: [[point.x, point.y], [point.x, point.y]] }
+            : { type: tool, color, x: point.x, y: point.y, w: 0, h: 0 },
+          x0: point.x,
+          y0: point.y,
+          x1: point.x,
+          y1: point.y,
+        }
+      } else if (feature && (redraw || !feature.box)) {
+        drag = { kind: "box", x0: point.x, y0: point.y, x1: point.x, y1: point.y }
+      } else return
+      overlay.setPointerCapture(event.pointerId)
+      paint()
+    })
+
+    overlay.addEventListener("pointermove", (event) => {
+      if (!drag) return
+      const point = normPoint(event)
+      drag.x1 = point.x
+      drag.y1 = point.y
+      if (drag.kind === "ink" && drag.mark.type === "stroke") drag.mark.points.push([point.x, point.y])
+      else if (drag.kind === "ink") Object.assign(drag.mark, dragBox(drag))
+      paint()
+    })
+
+    function endDrag() {
+      if (!drag) return
+      const done = drag
+      drag = null
+      if (done.kind === "box") {
+        const box = dragBox(done)
+        const feature = currentFeature()
+        if (feature && box.w > 0.004 && box.h > 0.004) {
+          feature.box = box
+          redraw = false
+          fillFeatureEditor()
+          saveNotes()
+        }
+      } else if (done.kind === "ink") {
+        const note = currentNote()
+        const mark = done.mark
+        const useful = mark.type === "stroke"
+          ? mark.points.length >= 2
+          : mark.w > 0.004 && mark.h > 0.004
+        if (note && useful) {
+          if (!Array.isArray(note.markup)) note.markup = []
+          const color = inkHex(mark.color)
+          note.markup.push(mark.type === "stroke"
+            ? { type: "stroke", color, points: mark.points }
+            : { type: mark.type, color, x: mark.x, y: mark.y, w: mark.w, h: mark.h })
+          saveNotes()
+        }
+      }
+      syncArm()
+      paint()
+    }
+
+    overlay.addEventListener("pointerup", endDrag)
+    overlay.addEventListener("pointercancel", endDrag)
+
+    const blurFields = [shotName, featureDescription, featureStyle, featureDoc, featName, featDescription, featStyle, featImprove, globalText]
+    for (const field of blurFields) field.addEventListener("blur", () => saveNotes())
+    for (const field of [featName, globalText]) {
+      field.addEventListener("input", () => {
+        flushEditors()
+        renderLists()
+      })
+    }
+
+    document.getElementById("save-notes").addEventListener("click", () => saveNotes())
+    document.getElementById("preview-doc").addEventListener("click", () => previewDoc())
+    document.getElementById("hide-preview").addEventListener("click", () => hidePreview())
+    document.getElementById("doc-change").addEventListener("click", () => {
+      featureDoc.hidden = !featureDoc.hidden
+      if (!featureDoc.hidden) featureDoc.focus()
+    })
+    featureDoc.addEventListener("blur", () => {
+      featureDoc.hidden = true
+      showDocPath()
+    })
+    document.getElementById("add-feature").addEventListener("click", () => {
+      flushEditors()
+      const id = newId("feat")
+      working.features.push({ id, name: "", description: "", styleNotes: "", improvements: "" })
+      selectFeature(id)
+      featName.focus()
+      saveNotes()
+    })
+    document.getElementById("redraw-box").addEventListener("click", () => {
+      redraw = true
+      fillFeatureEditor()
+      syncArm()
+    })
+    document.getElementById("clear-box").addEventListener("click", () => {
+      const feature = currentFeature()
+      if (!feature) return
+      delete feature.box
+      redraw = true
+      fillFeatureEditor()
+      syncArm()
+      paint()
+      saveNotes()
+    })
+    document.getElementById("remove-feature").addEventListener("click", () => {
+      const feature = currentFeature()
+      if (!feature) return
+      working.features = working.features.filter((item) => item.id !== feature.id)
+      selectedFeatureId = working.features[0] ? working.features[0].id : null
+      renderLists()
+      fillFeatureEditor()
+      syncArm()
+      paint()
+      saveNotes()
+    })
+    document.getElementById("add-global").addEventListener("click", () => {
+      flushEditors()
+      const id = newId("note")
+      working.globalNotes.push({ id, text: "", markup: [] })
+      openNote(id)
+      globalText.focus()
+      saveNotes()
+    })
+    document.getElementById("close-global").addEventListener("click", () => closeNote())
+    document.getElementById("clear-ink").addEventListener("click", () => {
+      const note = currentNote()
+      if (!note) return
+      note.markup = []
+      paint()
+      saveNotes()
+    })
+    document.getElementById("remove-global").addEventListener("click", () => {
+      const note = currentNote()
+      if (!note) return
+      working.globalNotes = working.globalNotes.filter((item) => item.id !== note.id)
+      closeNote()
+      saveNotes()
+    })
+    for (const button of document.querySelectorAll(".tool button")) {
+      button.addEventListener("click", () => {
+        tool = button.dataset.tool
+        for (const other of document.querySelectorAll(".tool button")) {
+          other.setAttribute("aria-pressed", other === button ? "true" : "false")
+        }
+        syncInkPicker()
+        syncArm()
+      })
+    }
 
     prevBtn.addEventListener("click", () => step(-1))
     nextBtn.addEventListener("click", () => step(1))
@@ -701,7 +1304,7 @@
       buildPicker()
       const fromHash = decodeURIComponent((location.hash || "").replace(/^#/, ""))
       const first = reel.shots[0].file
-      loadNotesFile().then(function (data) {
+      loadNotesFile().then((data) => {
         notes = data && typeof data === "object" ? data : {}
         select(shots.has(fromHash) ? fromHash : first)
       })

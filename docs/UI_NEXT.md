@@ -96,3 +96,29 @@ place the object shows.
 
 Leave Trip, Tidy, and Film DNA interiors alone. That limit is failure 3 in
 [`DESIGN_STYLE.md`](DESIGN_STYLE.md).
+
+## Person birthday cakes
+
+The person plaque (`components/People/person-detail.tsx`) shows days until the next birthday beside a pixel cake that matches the milled fascia and the phosphor candle. That drawing is what ships, so the plaque matches the house now.
+
+Later, the cake comes from a folder of cute PNGs, the same idea as willpower gemstones (`public/gems-removebackground/`) and list orbs (`public/orbs-removebackground/`). The folder is not created in this step. The plaque stays the drawn cake.
+
+## Shipped — Now capture and Quadruple Inbox
+
+These are on the phone ingest path (`lib/ingest/`), not a new screen.
+
+**Now with a payload.** Bare `now`, `status`, and `where` stay a status readout.
+`now <text>` and `/now <text>` are Now capture, split on `|`:
+
+1. Doing now — Activity through this minute, the rest of the day cleared.
+2. Just did — a Tracking log event.
+3. About to do — a 30-minute header plan.
+
+Empty segments are skipped. One segment keeps the prose as doing-now, so
+`Now been putting laundry away…` is that capture and the words stay.
+`/now` alone replies with the template and the current lanes. `currently`
+still paints an activity span through midnight.
+
+**Quadruple Inbox.** A Telegram update with neither `update_id` nor
+`message_id` is logged with a null dedupe key and is not applied. When a
+message id is present it is stored on the ingest event and a repeat is deduped.

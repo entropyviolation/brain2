@@ -186,6 +186,16 @@ describe("feature notes", () => {
       description: "The workspace paragraph.",
       styleNotes: "",
       docPath: "",
+      features: [
+        {
+          id: "seed-1",
+          name: "The workspace paragraph",
+          description: "The workspace paragraph.",
+          styleNotes: "",
+          improvements: "",
+        },
+      ],
+      globalNotes: [],
     })
 
     seedFeatureNotes(shots, repo)
@@ -243,6 +253,98 @@ describe("feature notes", () => {
       description: "D",
       styleNotes: "quiet",
       docPath: "components/Operations/README.md",
+      features: [],
+      globalNotes: [],
+    })
+  })
+
+  it("round-trips features and global markup without clobbering a saved feature name", () => {
+    const { repo, shots } = repoWithOps()
+    writeFileSync(
+      path.join(shots, "feature-notes.json"),
+      JSON.stringify(
+        {
+          "10-operations-workspace.png": {
+            name: "Kept name",
+            description: "The workspace paragraph.",
+            styleNotes: "",
+            docPath: "components/Operations/README.md",
+            features: [
+              {
+                id: "keep",
+                name: "User named this",
+                description: "Hand written",
+                styleNotes: "pale",
+                improvements: "quieter",
+              },
+            ],
+          },
+        },
+        null,
+        2,
+      ),
+    )
+
+    seedFeatureNotes(shots, repo)
+    const seeded = readFeatureNotes(shots)["10-operations-workspace.png"]
+    expect(seeded.styleNotes).toBe("")
+    expect(seeded.features).toEqual([
+      {
+        id: "keep",
+        name: "User named this",
+        description: "Hand written",
+        styleNotes: "pale",
+        improvements: "quieter",
+      },
+    ])
+
+    saveFeatureNotes(shots, repo, {
+      file: "10-operations-workspace.png",
+      record: {
+        ...seeded,
+        features: [
+          {
+            ...seeded.features[0],
+            box: { x: 0.1, y: 0.2, w: 0.3, h: 0.4 },
+          },
+        ],
+        globalNotes: [
+          {
+            id: "ink-1",
+            text: "Soften the rail",
+            markup: [
+              { type: "ellipse", x: 0.2, y: 0.3, w: 0.1, h: 0.15, color: "#2266FF" },
+              { type: "rect", x: 0, y: 0, w: 1, h: 0.05, color: "not-a-color" },
+              { type: "stroke", points: [[0.1, 0.1], [0.4, 0.6]] },
+            ],
+          },
+        ],
+      },
+    })
+    const saved = readFeatureNotes(shots)["10-operations-workspace.png"]
+    expect(saved.globalNotes[0].markup[1]).not.toHaveProperty("color")
+    expect(saved.globalNotes[0].markup[2]).not.toHaveProperty("color")
+    expect(saved).toMatchObject({
+      name: "Kept name",
+      styleNotes: "",
+      features: [
+        {
+          id: "keep",
+          name: "User named this",
+          box: { x: 0.1, y: 0.2, w: 0.3, h: 0.4 },
+        },
+      ],
+      globalNotes: [
+        {
+          id: "ink-1",
+          text: "Soften the rail",
+          markup: [
+            { type: "ellipse", x: 0.2, y: 0.3, w: 0.1, h: 0.15, color: "#2266ff" },
+            { type: "rect", x: 0, y: 0, w: 1, h: 0.05 },
+            { type: "stroke", points: [[0.1, 0.1], [0.4, 0.6]] },
+          ],
+        },
+      ],
     })
   })
 

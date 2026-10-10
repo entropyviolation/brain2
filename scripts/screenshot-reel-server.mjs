@@ -91,6 +91,15 @@ async function dispatch(req, res, ctx) {
     sendDoc(res, ctx.repoRoot, url.searchParams.get("path") || "")
     return
   }
+  if (req.method === "GET" && url.pathname === "/vendor/marked.esm.js") {
+    const file = path.join(ctx.repoRoot, "node_modules", "marked", "lib", "marked.esm.js")
+    if (!existsSync(file)) {
+      sendText(res, 404, "missing")
+      return
+    }
+    sendBytes(res, 200, readFileSync(file), "text/javascript; charset=utf-8")
+    return
+  }
   if (req.method === "GET" && url.pathname === "/api/asset") {
     sendAsset(res, ctx.repoRoot, url.searchParams.get("doc") || "", url.searchParams.get("src") || "")
     return

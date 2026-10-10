@@ -23,15 +23,15 @@ the Needs Attention queue.
 
 | Id | Name | What it does |
 |----|------|----------------|
-| `solar` | Solar remainder | Live sun phase: until sunrise → sunrise → to sunset → sunset → after sunset → midnight, then the next day. |
-| `tracking` | Tracking now | Current or last-known Activity / Location / Mood / Company, plus **Update**. |
-| `night` | Night well | Last night’s hours, asleep / woke clocks, and one vs-sunset phrase. |
-| `harvest` | Harvest leftover | Points still available today. Footer: `N left of M`. |
-| `inbox` | Inbox mill | Unclarified count and the newest title. Click opens Inbox. |
-| `award` | Latest award | Newest positive points and why (completion, high % bonus, grades above yesterday, weekly grades above last week). |
-| `moon` | Moon | 8-bit moon on the tile, phase name, and days until the sooner of the next full moon and the next new moon. Detail header is a photographic phase; illumination, previous and next major phase, photographic planets at true relative size, Earth–Moon zoom at true scale. |
-| `flow` | Already flowing | Quiet / Flowing / Pushed / Mixed from finished daily habits and older to-dos, against to-dos created and finished the same day. Default off. |
-| `paint` | Plan and lived | Open / Planned / Tracked / Short / Close / Over. Planned minutes (scheduled work, events, planned actions) against painted Tracking minutes, each minute once, sleep left out. Default off. This is idea 2. |
+| `solar` | Solar remainder | Before sunset, time until today's sunset. After sunset, time until the next sunrise. |
+| `tracking` | Tracking now | Current or last-known Activity / Location / Mood / Company, the age of that last stamp, plus **Update**. |
+| `night` | Night well | When tonight is blank, the last real night, and the footer names that morning. |
+| `harvest` | Harvest leftover | Habit points still unpaid. Footer: `N left of M` of the habit ceiling. |
+| `inbox` | Inbox mill | Waiting count, newest title, oldest age. The handheld adds how many titles are bare. Click opens Inbox. |
+| `award` | Latest award | A habit completion or a bonus, the larger one. A later inbox +1 does not take the face when a +50 is already on that day. |
+| `moon` | Moon | 8-bit moon and one phase voice: the name and the countdown share the same local day. Detail header is a photographic phase; illumination, previous and next major phase, photographic planets at true relative size, Earth–Moon zoom at true scale. |
+| `flow` | Already flowing | Quiet / Flowing / Pushed / Mixed from finished daily habits and older to-dos, against to-dos created and finished the same day. A generated Done row is not new. Default off, and it stays hidden. |
+| `paint` | Plan and lived | Open / Planned / Tracked / Short / Close / Over. Forward scheduled minutes against waking painted minutes, each minute once. Duration copied onto done rows, and sleep, stay out. Default off, and it stays hidden. This is idea 2. |
 
 ---
 
@@ -39,7 +39,7 @@ the Needs Attention queue.
 
 ### 2. Intention vs paint
 
-Shipped as **Plan and lived** (`paint`). CRT word plus `plan … · lived …`. Sleep the log filled in is not counted as lived.
+Shipped as **Plan and lived** (`paint`). CRT word plus `plan … · lived …`. Plan is forward scheduled minutes, not duration copied onto done rows. Sleep, and that copied paint, are not lived.
 
 ### 3. Still-fits
 
