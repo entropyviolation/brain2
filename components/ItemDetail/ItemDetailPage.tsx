@@ -28,7 +28,13 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
+import { ReminderScheduleFields } from "@/components/ItemDetail/ReminderScheduleFields"
+import { PersonDetail } from "@/components/People/person-detail"
+import { PersonPipelinesEditor } from "@/components/People/person-pipelines"
+import { itemShowsPersonPipelines } from "@/lib/people-i-know"
+import { PERSON_ATTR } from "@/lib/person-types"
 import { TodoCommitmentFields } from "@/components/ItemDetail/TodoCommitmentFields"
+import { isReminderTask } from "@/lib/reminders"
 import { ItemEstimateField } from "@/components/ItemDetail/ItemEstimateField"
 import { ItemScheduleFlags } from "@/components/ItemDetail/ItemScheduleFlags"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -77,9 +83,10 @@ import {
   resolveDetailView,
   type DetailViewResolution,
 } from "@/lib/item-types"
-import { isTaskItem } from "@/lib/item-utils"
+import { isTaskItem, itemTitleOrUntitled } from "@/lib/item-utils"
 import { isClearedFromWork } from "@/lib/completion-status"
 import { markMissedOpportunity } from "@/lib/services/completion-service"
+import { MissReasonDialog } from "@/components/Reviews/MissReasonDialog"
 import { getScheduleableCategoryIds } from "@/components/Scheduler/scheduler-utils"
 import { useTaskStore } from "@/lib/task-store"
 import type { AttributeDefinition, AttributeValue, ItemTypeDefinition, Subtask, Task } from "@/lib/types"
@@ -104,6 +111,7 @@ interface EnhancedTaskDetailProps {
 
 export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) {
   const [overrideId, setOverrideId] = useState<string | null>(null)
+  const [missAsk, setMissAsk] = useState(false)
   const effectiveId = overrideId ?? taskId
 
   useEffect(() => {
@@ -198,6 +206,19 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
     [task, lists, updateList, setTask],
   )
 
+  const commitReminder = useCallback(
+    (patch: Pick<Task, "scheduledDate" | "scheduledTime" | "reminder">) => {
+      touchDraft(patch)
+      setTask((prev) => (prev ? { ...prev, ...patch } : prev))
+      const next = getDraft()
+      if (!next) return
+      recordItemWrite(originalTask ?? next, next, { tasks: allTasks, lists })
+      updateTask(next)
+      setOriginalTask(next)
+    },
+    [touchDraft, setTask, getDraft, originalTask, allTasks, lists, updateTask, setOriginalTask],
+  )
+
   const handleSave = useCallback(() => {
     const draft = getDraft()
     if (draft) {
@@ -233,7 +254,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
 
   const handleMissed = useCallback(() => {
     if (!task) return
-    markMissedOpportunity(task.id)
+    setMissAsk(true)
   }, [task])
 
   const handleSchedule = useCallback(
@@ -565,6 +586,32 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
         <TabsContent value="details" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className={sourceHabitId ? "id-detail-main lg:col-span-2" : "lg:col-span-2 space-y-6"}>
+              {task && isReminderTask(task, lists) ? (
+                        <ReminderScheduleFields
+                          task={task}
+                          onChange={(patch) => commitReminder(patch)}
+                        />
+              ) : null}
+              {task && itemShowsPersonPipelines(task, lists) ? (
+                <>
+                  <PersonDetail
+                    person={task}
+                    onChange={(patch) => {
+                      touchDraft(patch)
+                      setTask((prev) => (prev ? { ...prev, ...patch } : prev))
+                    }}
+                  />
+                  <PersonPipelinesEditor
+                    mode="person"
+                    person={task}
+                    onChange={(personPipelines) => {
+                      const next = personPipelines.length > 0 ? personPipelines : undefined
+                      touchDraft({ personPipelines: next })
+                      setTask((prev) => (prev ? { ...prev, personPipelines: next } : prev))
+                    }}
+                  />
+                </>
+              ) : null}
               {sourceHabitId ? (
                 <HabitLinkedDetail
                   habitId={sourceHabitId}
@@ -844,6 +891,11 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
                     itemAttributeDefinitions={task.itemAttributeDefinitions}
                     itemType={task.type}
                     layout={detailView.layout}
+                    omitAttributeIds={
+                      itemShowsPersonPipelines(task, lists)
+                        ? [PERSON_ATTR.birthday, PERSON_ATTR.notes]
+                        : undefined
+                    }
                     onChangeValues={(attributes) => {
                       touchDraft({ attributes })
                       setTask((prev) => (prev ? { ...prev, attributes } : prev))
@@ -1362,6 +1414,14 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
       onOpenItem={(id) => {
         setEditingItemType(null)
         setOverrideId(id)
+      }}
+    />
+    <MissReasonDialog
+      open={missAsk}
+      subject={itemTitleOrUntitled(task)}
+      onResolve={(reason) => {
+        setMissAsk(false)
+        if (task) markMissedOpportunity(task.id, undefined, reason)
       }}
     />
     </>

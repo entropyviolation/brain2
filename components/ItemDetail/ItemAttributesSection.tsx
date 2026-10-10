@@ -39,6 +39,8 @@ export interface ItemAttributesSectionProps {
   itemType?: ItemType
   /** Type-owned layout: hero cover + featured attributes. */
   layout?: ItemDetailLayout
+  /** Ids edited on another panel of this same view. They stay on the item and stay out of this one. */
+  omitAttributeIds?: readonly string[]
   onChangeValues: (values: Record<string, AttributeValue>) => void
   onChangeItemAttributeDefinitions?: (defs: AttributeDefinition[]) => void
   onCreateAttribute: (def: AttributeDefinition, value: AttributeValue, listId: string | null) => void
@@ -51,6 +53,7 @@ export function ItemAttributesSection({
   itemAttributeDefinitions = [],
   itemType,
   layout,
+  omitAttributeIds,
   onChangeValues,
   onChangeItemAttributeDefinitions,
   onCreateAttribute,
@@ -74,11 +77,15 @@ export function ItemAttributesSection({
     [schemaDefs, itemOnlyDefs, attributes],
   )
 
+  const omitted = new Set(omitAttributeIds ?? [])
+  const visibleSchema = schemaDefs.filter((d) => !omitted.has(d.id))
   const featuredIds = layout?.featuredAttributeIds ?? []
   const heroId = layout?.heroImageAttrId
-  const featuredDefs = schemaDefs.filter((d) => featuredIds.includes(d.id) && d.id !== heroId)
-  const restDefs = schemaDefs.filter((d) => d.id !== heroId && !featuredIds.includes(d.id))
-  const heroDef = heroId ? schemaDefs.find((d) => d.id === heroId) : undefined
+  const featuredDefs = visibleSchema.filter((d) => featuredIds.includes(d.id) && d.id !== heroId)
+  const restDefs = visibleSchema.filter((d) => d.id !== heroId && !featuredIds.includes(d.id))
+  const heroDef = heroId && !omitted.has(heroId) ? visibleSchema.find((d) => d.id === heroId) : undefined
+  const visibleItemOnly = itemOnlyDefs.filter((d) => !omitted.has(d.id))
+  const visibleOrphans = orphanIds.filter((id) => !omitted.has(id))
   const heroValue = heroId ? attributes?.[heroId] : undefined
   const heroUri =
     typeof heroValue === "string"
@@ -134,16 +141,16 @@ export function ItemAttributesSection({
 
       <AttributeValuesEditor definitions={restDefs} values={attributes || {}} onChange={onChangeValues} />
 
-      {itemOnlyDefs.length > 0 && (
+      {visibleItemOnly.length > 0 && (
         <div className="space-y-2">
           <Label className="text-xs text-muted-foreground">This item only</Label>
           <AttributeValuesEditor
-            definitions={itemOnlyDefs}
+            definitions={visibleItemOnly}
             values={attributes || {}}
             onChange={onChangeValues}
           />
           <div className="flex flex-wrap gap-1">
-            {itemOnlyDefs.map((def) => (
+            {visibleItemOnly.map((def) => (
               <Button
                 key={def.id}
                 variant="ghost"
@@ -159,11 +166,11 @@ export function ItemAttributesSection({
         </div>
       )}
 
-      {orphanIds.length > 0 && (
+      {visibleOrphans.length > 0 && (
         <div className="space-y-2">
           <Label className="text-xs text-muted-foreground">Other attributes</Label>
           <div className="space-y-2">
-            {orphanIds.map((id) => (
+            {visibleOrphans.map((id) => (
               <div key={id} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
                 <span className="text-sm font-medium truncate" title={humanizeId(id)}>
                   {humanizeId(id)}

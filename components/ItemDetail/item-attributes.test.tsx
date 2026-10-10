@@ -61,6 +61,32 @@ describe("ItemAttributesSection", () => {
     expect(screen.getByRole("button", { name: /remove isbn/i })).toBeInTheDocument()
     expect(screen.getByDisplayValue("978-0")).toBeInTheDocument()
   })
+
+  it("hides attribute ids edited on another panel of the same view", () => {
+    const itemOnly: AttributeDefinition[] = [
+      { id: "birthday", name: "Birthday", type: "datetime", datetimeMode: "date" },
+      { id: "notes", name: "Notes", type: "string" },
+      { id: "city", name: "City", type: "string" },
+    ]
+    render(
+      <ItemAttributesSection
+        attributes={{ birthday: "1990-10-12", notes: "Soup", city: "London" }}
+        itemCategoryIds={[]}
+        categories={[]}
+        itemAttributeDefinitions={itemOnly}
+        omitAttributeIds={["birthday", "notes"]}
+        onChangeValues={vi.fn()}
+        onChangeItemAttributeDefinitions={vi.fn()}
+        onCreateAttribute={vi.fn()}
+      />,
+    )
+
+    expect(screen.queryByDisplayValue("1990-10-12")).not.toBeInTheDocument()
+    expect(screen.queryByDisplayValue("Soup")).not.toBeInTheDocument()
+    expect(screen.getByDisplayValue("London")).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /remove birthday/i })).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /remove city/i })).toBeInTheDocument()
+  })
 })
 
 describe("AttributeCreator", () => {

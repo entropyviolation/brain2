@@ -12,7 +12,13 @@
 "use client"
 
 import { useState, useCallback, useMemo, useEffect } from "react"
+import { ReminderScheduleFields } from "@/components/ItemDetail/ReminderScheduleFields"
+import { PersonDetail } from "@/components/People/person-detail"
+import { PersonPipelinesEditor } from "@/components/People/person-pipelines"
+import { itemShowsPersonPipelines } from "@/lib/people-i-know"
+import { PERSON_ATTR } from "@/lib/person-types"
 import { useItemDetailDraft } from "@/components/ItemDetail/useItemDetailDraft"
+import { isReminderTask } from "@/lib/reminders"
 import { TagInput } from "@/components/ItemDetail/TagInput"
 import { LinkPicker } from "@/components/ItemDetail/LinkPicker"
 import { RelatedItemsPanel } from "@/components/ItemDetail/RelatedItemsPanel"
@@ -66,8 +72,9 @@ import {
   isClearedFromWork,
 } from "@/lib/completion-status"
 import { ItemAttributesSection } from "@/components/ItemDetail/ItemAttributesSection"
-import { isTaskItem } from "@/lib/item-utils"
+import { isTaskItem, itemTitleOrUntitled } from "@/lib/item-utils"
 import { markMissedOpportunity } from "@/lib/services/completion-service"
+import { MissReasonDialog } from "@/components/Reviews/MissReasonDialog"
 import { getScheduleableCategoryIds } from "@/components/Scheduler/scheduler-utils"
 import { assignedItemTypes, BUILTIN_ITEM_TYPE_ID, BUILTIN_TASK_TYPE_ID, resolveDetailView } from "@/lib/item-types"
 import { useItemTypeStore } from "@/lib/item-type-store"
@@ -95,6 +102,7 @@ interface TaskDetailPopupProps {
 
 export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, container = null }: TaskDetailPopupProps) {
   const [overrideId, setOverrideId] = useState<string | null>(null)
+  const [missAsk, setMissAsk] = useState(false)
   const effectiveId = overrideId ?? taskId
 
   // Reset the in-popup navigation override whenever the host opens a new item.
@@ -166,6 +174,19 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
 
   const activeDetailTab = popupTabs.includes(detailTab) ? detailTab : "details"
 
+  const commitReminder = useCallback(
+    (patch: Pick<Task, "scheduledDate" | "scheduledTime" | "reminder">) => {
+      touchDraft(patch)
+      setTask((prev) => (prev ? { ...prev, ...patch } : prev))
+      const next = getDraft()
+      if (!next) return
+      recordItemWrite(originalTask ?? next, next, { tasks: allTasks, lists })
+      updateTask(next)
+      setOriginalTask(next)
+    },
+    [touchDraft, setTask, getDraft, originalTask, allTasks, lists, updateTask, setOriginalTask],
+  )
+
   const handleSave = useCallback(() => {
     const draft = getDraft()
     if (draft) {
@@ -197,9 +218,8 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
 
   const handleMissed = useCallback(() => {
     if (!task) return
-    markMissedOpportunity(task.id)
-    onClose()
-  }, [task, onClose])
+    setMissAsk(true)
+  }, [task])
 
   // Persist a richer completion status immediately, keeping the legacy
   // `completed` flag in sync (invariant: status "done" ⇔ completed true).
@@ -501,6 +521,32 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
                 <TabsContent value="details" className="space-y-6 mt-0">
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div className="space-y-6">
+                      {isReminderTask(task, lists) ? (
+                        <ReminderScheduleFields
+                          task={task}
+                          onChange={(patch) => commitReminder(patch)}
+                        />
+                      ) : null}
+                      {itemShowsPersonPipelines(task, lists) ? (
+                        <>
+                          <PersonDetail
+                            person={task}
+                            onChange={(patch) => {
+                              touchDraft(patch)
+                              setTask((prev) => (prev ? { ...prev, ...patch } : prev))
+                            }}
+                          />
+                          <PersonPipelinesEditor
+                            mode="person"
+                            person={task}
+                            onChange={(personPipelines) => {
+                              const next = personPipelines.length > 0 ? personPipelines : undefined
+                              touchDraft({ personPipelines: next })
+                              setTask((prev) => (prev ? { ...prev, personPipelines: next } : prev))
+                            }}
+                          />
+                        </>
+                      ) : null}
                       <div className="space-y-3">
                         <Label htmlFor="task-description" className="text-sm font-semibold flex items-center gap-2">
                           <FileText className="h-4 w-4" />
@@ -853,6 +899,11 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
                           itemAttributeDefinitions={task.itemAttributeDefinitions}
                           itemType={task.type}
                           layout={detailView.layout}
+                          omitAttributeIds={
+                            itemShowsPersonPipelines(task, lists)
+                              ? [PERSON_ATTR.birthday, PERSON_ATTR.notes]
+                              : undefined
+                          }
                           onChangeValues={(attributes) => {
                             touchDraft({ attributes })
                             setTask((prev) => (prev ? { ...prev, attributes } : prev))
@@ -1508,6 +1559,15 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
         onOpenItem={(id) => {
           setEditingItemType(null)
           setOverrideId(id)
+        }}
+      />
+      <MissReasonDialog
+        open={missAsk}
+        subject={task ? itemTitleOrUntitled(task) : ""}
+        onResolve={(reason) => {
+          setMissAsk(false)
+          if (task) markMissedOpportunity(task.id, undefined, reason)
+          onClose()
         }}
       />
     </>
