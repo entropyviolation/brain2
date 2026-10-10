@@ -210,11 +210,17 @@ function syncDailyFloorHabits(dateKeys?: string[]): void {
     const link = effectiveDailyFloorLink(task)
     if (!link) continue
     const floor = link.floorPercent ?? 0
+    const allowAtZero = link.allowAtZero ?? 0
     for (const weekKey of weekKeys) {
       const dates = weekDatesForKey(weekKey)
       if (!dates) continue
-      const met = dailyHabitsClearFloor(dailyTasks, habits.weeklyData, dates, floor, (daily, dateKey) =>
-        isExemptKind(exemptionKind(daily, dateKey, "daily", habits.habitExemptions, ctx)),
+      const met = dailyHabitsClearFloor(
+        dailyTasks,
+        habits.weeklyData,
+        dates,
+        floor,
+        (daily, dateKey) => isExemptKind(exemptionKind(daily, dateKey, "daily", habits.habitExemptions, ctx)),
+        allowAtZero,
       )
       const previous = habits.weeklyHabitData[weekKey]?.[task.id]
       const next = applyLinkedFlag(previous, "dailyFloorCompleted", met)

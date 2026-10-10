@@ -22,14 +22,14 @@
   --w95c-mill: var(
     --fascia-mill,
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
-    linear-gradient(165deg, #d4d8dc 0%, var(--w95c-surface) 48%, #969a9e 100%)
+    linear-gradient(165deg, var(--chrome-sheen) 0%, var(--w95c-surface) 48%, var(--chrome-shade) 100%)
   );
   --w95c-bay-ring: var(
     --fascia-bay-ring,
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.7),
     inset 0 -1px 0 rgba(40, 42, 46, 0.45),
-    inset 0 0 0 2px #b0b4b8,
+    inset 0 0 0 2px var(--chrome-inset),
     inset 0 2px 3px rgba(0, 0, 0, 0.22)
   );
   --w95c-dialog-face: var(
@@ -40,7 +40,7 @@
   );
   --w95c-dialog-ring: var(
     --fascia-dialog-ring,
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.78),
     inset 0 2px 3px rgba(0, 0, 0, 0.12),
     0 8px 0 rgba(74, 78, 82, 0.55)
@@ -49,19 +49,19 @@
     --fascia-key-face,
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
-    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--w95c-surface) 70%, #9a9ea2 100%)
+    linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 36%, var(--w95c-surface) 70%, var(--chrome-key-shade) 100%)
   );
   --w95c-key-ring: var(
     --fascia-key-ring,
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     inset 0 -1px 0 rgba(55, 58, 62, 0.45),
-    0 0 0 1px #4a4e52,
-    0 1px 0 #6a6e72
+    0 0 0 1px var(--chrome-ring-deep),
+    0 1px 0 var(--chrome-lip)
   );
   --w95c-key-pressed: var(
     --fascia-key-pressed,
     inset 0 1px 2px rgba(0, 0, 0, 0.4),
-    0 0 0 1px #3a3e42
+    0 0 0 1px var(--chrome-pressed)
   );
   --w95c-crt-glass: var(
     --fascia-crt-glass,
@@ -70,11 +70,14 @@
   );
   --w95c-crt-ring: var(
     --fascia-crt-ring,
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     inset 0 1px 0 rgba(255, 255, 255, 0.14),
     inset 0 10px 14px rgba(0, 0, 0, 0.4)
   );
 
+  /* Caption bay starts after 10px pad; key sits on that bay. */
+  --b2-close-top: 20px;
+  --b2-close-right: 16px;
   z-index: 60;
   display: flex !important;
   flex-direction: column;
@@ -83,7 +86,7 @@
   gap: 10px !important;
   padding: 10px 10px 12px !important;
   border: none !important;
-  border-radius: 3px !important;
+  border-radius: var(--r-3, 3px) !important;
   background-color: var(--w95c-surface) !important;
   background-image: var(--w95c-dialog-face) !important;
   color: var(--w95c-ink);
@@ -93,35 +96,8 @@
   -webkit-font-smoothing: none;
 }
 
-/* Close × — small metal key when present (default path uses hideClose). */
-.w95-confirm > button.absolute,
-body.win95-app .w95-confirm > button.absolute {
-  top: 8px;
-  right: 8px;
-  width: 22px;
-  height: 22px;
-  border-radius: 2px;
-  opacity: 1;
-  color: var(--w95c-nameplate);
-  background: var(--w95c-key-face);
-  box-shadow: var(--w95c-key-ring);
-}
-
-.w95-confirm > button.absolute:hover,
-body.win95-app .w95-confirm > button.absolute:hover {
-  opacity: 1;
-  filter: brightness(1.04);
-}
-
-.w95-confirm > button.absolute:active,
-body.win95-app .w95-confirm > button.absolute:active {
-  box-shadow: var(--w95c-key-pressed);
-}
-
-.w95-confirm > button.absolute svg {
-  width: 12px;
-  height: 12px;
-}
+/* Close key is `.b2-close-key` (win95.css). Default confirm uses hideClose.
+   Placement, if the pip is shown: --b2-close-* on `.w95-confirm`. */
 
 /* Milled header — CRT title centered in the bay (no navy gradient). */
 .w95-confirm-caption {
@@ -132,7 +108,7 @@ body.win95-app .w95-confirm > button.absolute:active {
   margin: 0;
   padding: 10px 12px;
   border: none;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background: var(--w95c-mill);
   box-shadow: var(--w95c-bay-ring);
   text-align: center;
@@ -148,7 +124,7 @@ body.win95-app .w95-confirm > button.absolute:active {
   max-width: 100%;
   margin: 0;
   padding: 8px 14px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: var(--w95c-crt-glass) !important;
   box-shadow: var(--w95c-crt-ring) !important;
   color: var(--w95c-crt) !important;
@@ -173,7 +149,7 @@ body.win95-app .w95-confirm > button.absolute:active {
 .w95-confirm-body [data-radix-dialog-description] {
   margin: 0;
   padding: 8px 10px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   line-height: 1.45;
   font-size: 12px;
   font-weight: 600;
@@ -191,7 +167,7 @@ body.win95-app .w95-confirm > button.absolute:active {
   flex-shrink: 0;
   margin: 0;
   padding: 10px 10px 4px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background: var(--w95c-mill);
   box-shadow: var(--w95c-bay-ring);
 }
@@ -201,7 +177,7 @@ body.win95-app .w95-confirm > button.absolute:active {
   min-width: 5.5rem;
   padding: 5px 12px;
   border: none;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: var(--w95c-key-face);
   color: #1c1e20;
   font: inherit;
@@ -215,7 +191,7 @@ body.win95-app .w95-confirm > button.absolute:active {
 
 .w95-confirm-actions button[data-default="true"] {
   box-shadow:
-    inset 0 0 0 1px #3a3e42,
+    inset 0 0 0 1px var(--chrome-pressed),
     var(--w95c-key-ring);
 }
 

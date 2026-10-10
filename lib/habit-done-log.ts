@@ -37,6 +37,7 @@ import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { useUserSettingsStore } from "@/lib/user-settings-store"
 import { awakeWindowFor } from "@/lib/sleep-sync"
 import { canRegenerate, makeEstimate, mergeEstimates } from "@/lib/estimated-values"
+import { addTag, normalizeTag } from "@/lib/links"
 
 export function habitDoneLogId(habitId: string, date: Date): string {
   return `habit-done-${habitId}-${formatLocalDateKey(date)}`
@@ -73,6 +74,29 @@ export function habitDoneLogLine(habit: WeeklyTask, completion: TaskCompletion |
  * would have produced. A row written before any phrase, or a title someone
  * edited by hand, stays put.
  */
+/**
+ * Tags written on this habit's Done line. The Tags pipeline (`taggedTasks`)
+ * adds its one tag beside `habit`. A tracking block that already carries that
+ * tag still files its own Done line in `lib/habit-tagged-count.ts`.
+ */
+export function habitDoneLineTags(habit: WeeklyTask): string[] {
+  const tags = ["habit"]
+  if (!habit.completionSources?.includes("taggedTasks")) return tags
+  const tag = normalizeTag(habit.taggedTaskTag ?? "")
+  return tag ? addTag(tags, tag) : tags
+}
+
+function mergeDoneLineTags(existing: string[] | undefined, habit: WeeklyTask): string[] | null {
+  let tags = existing ?? []
+  let changed = false
+  for (const tag of habitDoneLineTags(habit)) {
+    const next = addTag(tags, tag)
+    if (next !== tags) changed = true
+    tags = next
+  }
+  return changed ? tags : null
+}
+
 function wordingPatch(
   existing: Task,
   habit: WeeklyTask,
@@ -195,7 +219,9 @@ export function syncHabitDoneLog(
     if (!existing) return
     const patch = refreshPatch(existing, deriveHabitCompletion(habit, date, completion, now), now)
     const words = wordingPatch(existing, habit, previous, completion)
-    if (patch || words) taskRepository.update({ ...existing, ...patch, ...words })
+    const tags = mergeDoneLineTags(existing.tags, habit)
+    const tagPatch = tags ? { tags } : null
+    if (patch || words || tagPatch) taskRepository.update({ ...existing, ...patch, ...words, ...tagPatch })
     return
   }
 
@@ -224,7 +250,7 @@ export function syncHabitDoneLog(
         : {}),
       ...(derived.estimates.length ? { estimates: derived.estimates } : {}),
       lists: [],
-      tags: ["habit"],
+      tags: habitDoneLineTags(habit),
       links: [],
       rewardValue: 0,
       attributes: { sourceHabitId: habit.id },

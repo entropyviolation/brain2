@@ -7,11 +7,13 @@
  * it off.
  *
  * Opt in per window via `useWindowSandClose`. This file is the sim and the
- * pixel painter. Grains stay a couple of pixels across — sand, not rocks.
+ * pixel painter. Loose grains are a single pixel — fine sand, not a 2px brick.
+ * A few specks share each sampled pixel (its color, a slight jitter). The sim
+ * stays one body per sample, inside MAX_GRAINS.
  */
 
 export const WINDOW_SAND_FRONT_MS = 900
-/** Earliest moment a click / Escape may blow the dune away. */
+/** Earliest moment a hurried wind (Enter) may start. */
 export const WINDOW_SAND_PILE_AT = 2000
 /** When the wind starts on its own if nothing dismissed the dune. */
 export const WINDOW_SAND_WIND_AT = 3100
@@ -28,6 +30,8 @@ export const SAND_SETTLED = 3
 const GRAVITY = 3200
 const BANDS = 32
 const MAX_GRAINS = 80000
+/** Painted size of a loose grain. The sample cell stays coarser so the dune does not change. */
+const GRAIN_PX = 1
 
 export type WindowSandGeom = {
   left: number
@@ -196,6 +200,8 @@ export function createSandWorld(
 ): SandWorld {
   const width = Math.max(1, geom.width)
   const height = Math.max(1, geom.height)
+  // Sample cell. Loose grains paint at GRAIN_PX; one body per sample
+  // keeps the dune, the wind, and the MAX_GRAINS ceiling.
   let grain = opts.grain ?? 2
   while ((width / grain) * (height / grain) > MAX_GRAINS) grain += 1
 
@@ -547,6 +553,32 @@ function plot(
   data[o + 3] = outA * 255
 }
 
+const speckPos = { x: 0, y: 0 }
+
+/**
+ * 1px specks that share one sample. Two is enough that a pour is not a single
+ * dot; more would rebuild the old brick or multiply the sim.
+ */
+function speckCount(grain: number) {
+  if (grain <= GRAIN_PX) return 1
+  return 2
+}
+
+/** Two 1px grains in the sample, slightly jittered. One reused point — no allocation. */
+function placeSpeck(i: number, k: number, grain: number) {
+  if (grain <= GRAIN_PX) {
+    speckPos.x = 0
+    speckPos.y = 0
+    return
+  }
+  const jx = (hash(i + k * 17 + 3) - 0.5) * 0.4
+  const jy = (hash(i + k * 29 + 8) - 0.5) * 0.4
+  const ox = k === 0 ? 0.2 : grain - 0.8
+  const oy = k === 0 ? 0.25 : 1.1
+  speckPos.x = ox + jx
+  speckPos.y = oy + jy
+}
+
 function fillGrain(
   data: Uint8ClampedArray,
   W: number,
@@ -558,6 +590,7 @@ function fillGrain(
   sun: number,
   flat: boolean,
   tumble: number,
+  i: number,
 ) {
   if (flat) {
     shade(rgb, 1, 0)
@@ -568,22 +601,22 @@ function fillGrain(
     }
     return
   }
-  const denom = grain > 1 ? grain - 1 : 1
+  const span = grain > 1 ? grain - 1 : 1
   const spin = ((tumble % 4) + 4) % 4
   const lx = spin < 1 || spin >= 3 ? -1 : 1
   const ly = spin < 2 ? -1 : 1
-  for (let py = 0; py < grain; py++) {
-    for (let px = 0; px < grain; px++) {
-      const nx = grain === 1 ? 0 : (px / denom) * 2 - 1
-      const ny = grain === 1 ? 0 : (py / denom) * 2 - 1
-      const ndot = nx * lx + ny * ly
-      let light = 1 - ndot * 0.2
-      if (light < 0.7) light = 0.7
-      if (light > 1.14) light = 1.14
-      const scale = sun * light
-      shade(rgb, scale, light > 1.05 ? 12 : 0)
-      plot(data, W, H, sx + px, sy + py, shadeRgb.r, shadeRgb.g, shadeRgb.b, 255)
-    }
+  const count = speckCount(grain)
+  for (let k = 0; k < count; k++) {
+    placeSpeck(i, k, grain)
+    const nx = grain <= 1 ? 0 : (speckPos.x / span) * 2 - 1
+    const ny = grain <= 1 ? 0 : (speckPos.y / span) * 2 - 1
+    const ndot = nx * lx + ny * ly
+    let light = 1 - ndot * 0.2
+    if (light < 0.7) light = 0.7
+    if (light > 1.14) light = 1.14
+    const scale = sun * light
+    shade(rgb, scale, light > 1.05 ? 12 : 0)
+    plot(data, W, H, sx + speckPos.x, sy + speckPos.y, shadeRgb.r, shadeRgb.g, shadeRgb.b, 255)
   }
 }
 
@@ -600,7 +633,7 @@ export function paintSand(
   const { n, grain, state, color, homeX, homeY, x, y, z, tumble, fade, vx } = world
   for (let i = 0; i < n; i++) {
     if (state[i] !== SAND_SOLID) continue
-    fillGrain(pixels, viewW, viewH, padX + homeX[i], padTop + homeY[i], grain, color[i], 1, true, 0)
+    fillGrain(pixels, viewW, viewH, padX + homeX[i], padTop + homeY[i], grain, color[i], 1, true, 0, i)
   }
 
   const bandCount = world.bandCount
@@ -640,7 +673,7 @@ export function paintSand(
       s === SAND_SETTLED
     const rgb = color[i]
     if (!separated) {
-      fillGrain(pixels, viewW, viewH, padX + homeX[i], padTop + homeY[i], grain, rgb, 1, true, 0)
+      fillGrain(pixels, viewW, viewH, padX + homeX[i], padTop + homeY[i], grain, rgb, 1, true, 0, i)
       continue
     }
     const col = colOf(world, x[i], zz)
@@ -650,15 +683,25 @@ export function paintSand(
     const sr = ((rgb >> 16) & 255) * 0.28
     const sg = ((rgb >> 8) & 255) * 0.28
     const sb = (rgb & 255) * 0.28
-    for (let py = 0; py < grain; py++) {
-      for (let px = 0; px < grain; px++) {
-        plot(pixels, viewW, viewH, sx + px + grain, sy + py + drop, sr, sg, sb, shadowA)
-      }
+    const specks = speckCount(grain)
+    for (let s = 0; s < specks; s++) {
+      placeSpeck(i, s, grain)
+      plot(
+        pixels,
+        viewW,
+        viewH,
+        sx + speckPos.x + grain,
+        sy + speckPos.y + drop,
+        sr,
+        sg,
+        sb,
+        shadowA,
+      )
     }
     const crest = Math.max(0, Math.min(1, (world.floorY - y[i]) / (grain * 24)))
     const ao = s === SAND_SETTLED ? 0.84 + 0.16 * crest : 1
     const near = 1 + Math.max(-20, Math.min(70, zz)) * 0.0025
-    fillGrain(pixels, viewW, viewH, sx, sy, grain, rgb, ao * near, !separated, tumble[i])
+    fillGrain(pixels, viewW, viewH, sx, sy, grain, rgb, ao * near, !separated, tumble[i], i)
     if (s === SAND_LOOSE && vx[i] > 140 && fade[i] > 0.25) {
       shade(rgb, 0.8, 0)
       const a = (90 * fade[i]) | 0

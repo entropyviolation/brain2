@@ -19,7 +19,7 @@
   background: var(--fd-bg);
   color: var(--fd-ink);
   font-family: var(--fd-sans);
-  border-radius: 12px;
+  border-radius: var(--r-12, 12px);
   overflow: hidden;
   min-height: 520px;
   position: relative;
@@ -126,7 +126,7 @@
 .film-dna .fd-stat {
   background: var(--fd-panel);
   border: 1px solid var(--fd-line);
-  border-radius: 12px;
+  border-radius: var(--r-12, 12px);
   padding: 14px;
   position: relative;
   overflow: hidden;
@@ -161,7 +161,7 @@
 .film-dna .fd-card {
   background: var(--fd-panel);
   border: 1px solid var(--fd-line);
-  border-radius: 14px;
+  border-radius: var(--r-14, 14px);
   padding: 16px;
   margin-bottom: 10px;
 }
@@ -200,7 +200,7 @@
 
 .film-dna .fd-dec .bar {
   width: 100%;
-  border-radius: 5px 5px 2px 2px;
+  border-radius: var(--r-5, 5px) var(--r-5, 5px) var(--r-2, 2px) var(--r-2, 2px);
   min-height: 4px;
 }
 
@@ -220,7 +220,7 @@
 .film-dna .fd-pcard {
   position: relative;
   aspect-ratio: 2 / 3;
-  border-radius: 10px;
+  border-radius: var(--r-10, 10px);
   overflow: hidden;
   background: var(--fd-panel2);
   border: 1px solid var(--fd-line);
@@ -334,7 +334,7 @@
   left: 6px;
   background: rgba(0, 0, 0, 0.55);
   padding: 2px 5px;
-  border-radius: 4px;
+  border-radius: var(--r-4, 4px);
 }
 
 .film-dna .fd-pcard .badge {
@@ -394,7 +394,7 @@
 
 .film-dna .fd-drop {
   border: 1.5px dashed var(--fd-line);
-  border-radius: 14px;
+  border-radius: var(--r-14, 14px);
   padding: 36px 20px;
   text-align: center;
   cursor: pointer;
@@ -475,7 +475,7 @@
 
 .film-dna .fd-cmp .b {
   height: 5px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   min-width: 2px;
 }
 
@@ -493,7 +493,7 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   padding: 8px 12px;
-  border-radius: 8px;
+  border-radius: var(--r-8, 8px);
   border: 1px solid var(--fd-line);
   background: var(--fd-panel2);
   color: var(--fd-ink);
@@ -515,7 +515,7 @@
 .film-dna .fd-scatter {
   width: 100%;
   height: 280px;
-  border-radius: 10px;
+  border-radius: var(--r-10, 10px);
   background: var(--fd-panel2);
   border: 1px solid var(--fd-line);
   cursor: crosshair;

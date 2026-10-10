@@ -78,6 +78,7 @@ list fields (name, color, type, …).
 |---------|----------|
 | Sidebar tree / Quick Access | A list appears under every folder that lists it |
 | Drag list onto a folder | **Move** — unlinks every current folder, then files into the drop target (existing `fileCategoryIntoFolder`) |
+| Lists settings → Lists | Same filing, with a difference: dragging from one folder to another leaves other memberships. Dragging to **Library** takes the list out of every folder. Order inside a folder is `contentsOrder` (and `listIds`). See `lib/lists-navigator.ts`. |
 | New folder from a selection | Keep vs move (`lib/folder-selection.ts`) |
 | Home pin | Independent of folder membership |
 

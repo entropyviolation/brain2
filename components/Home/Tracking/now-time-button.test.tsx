@@ -28,6 +28,10 @@ function renderLog() {
   )
 }
 
+function openClock(index: number) {
+  fireEvent.click(screen.getAllByRole("button", { name: "Open clock" })[index])
+}
+
 describe("nowTimeString", () => {
   it("formats hours and minutes from the given clock", () => {
     expect(nowTimeString(new Date("2026-06-20T15:47:00"))).toBe("15:47")
@@ -36,16 +40,17 @@ describe("nowTimeString", () => {
 })
 
 describe("ClockTime", () => {
-  it("hides right now until the time field is live", () => {
+  it("keeps Now inside the open clock", () => {
     render(
       <div className="trk95">
         <label htmlFor="t">Start</label>
         <ClockTime id="t" label="Start" time="09:00" onTime={() => {}} />
       </div>,
     )
-    expect(screen.queryByRole("button", { name: /right now/i })).not.toBeInTheDocument()
-    fireEvent.focus(screen.getByLabelText("Start"))
-    expect(screen.getByRole("button", { name: "Set start to right now" })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Now" })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Open clock" }))
+    const panel = screen.getByRole("group", { name: "Choose time" })
+    expect(panel).toContainElement(screen.getByRole("button", { name: "Now" }))
   })
 })
 
@@ -56,12 +61,13 @@ describe("LogActivityDialog right now", () => {
     fireEvent.click(screen.getAllByRole("button", { name: "Date" })[0])
     const startDate = screen.getByLabelText("Start date")
 
-    fireEvent.focus(screen.getByLabelText("Start"))
-    fireEvent.click(screen.getByRole("button", { name: "Set start to right now" }))
+    openClock(0)
+    fireEvent.click(screen.getByRole("button", { name: "Now" }))
+    fireEvent.keyDown(screen.getByLabelText("Start"), { key: "Enter" })
     expect(screen.getByLabelText("Start")).toHaveValue("15:47")
 
-    fireEvent.focus(screen.getByLabelText("End"))
-    fireEvent.click(screen.getByRole("button", { name: "Set end to right now" }))
+    openClock(1)
+    fireEvent.click(screen.getByRole("button", { name: "Now" }))
     expect(screen.getByLabelText("End")).toHaveValue("15:47")
     expect(startDate).toHaveValue("2026-06-20")
     expect(dialog).toBeInTheDocument()
@@ -70,14 +76,14 @@ describe("LogActivityDialog right now", () => {
   it("stamps the discrete-event time to right now", () => {
     renderLog()
     fireEvent.click(screen.getByRole("switch", { name: "Discrete event" }))
-    fireEvent.focus(screen.getByLabelText("When"))
-    fireEvent.click(screen.getByRole("button", { name: "Set when to right now" }))
+    openClock(0)
+    fireEvent.click(screen.getByRole("button", { name: "Now" }))
     expect(screen.getByLabelText("When")).toHaveValue("15:47")
   })
 
-  it("does not clutter idle clocks", () => {
+  it("does not put Now beside an idle clock", () => {
     renderLog()
-    expect(screen.queryByRole("button", { name: /right now/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Now" })).not.toBeInTheDocument()
   })
 
   it("opens from the grid latch", () => {
@@ -92,15 +98,30 @@ describe("LogActivityDialog right now", () => {
     expect(screen.getByLabelText("Start")).toBeInTheDocument()
   })
 
-  it("hides the latch after the clock loses focus", () => {
+  it("a minute click sets the start time and does not fall through the dialog", () => {
     renderLog()
-    const start = screen.getByLabelText("Start")
-    const end = screen.getByLabelText("End")
-    fireEvent.focus(start)
-    expect(screen.getByRole("button", { name: "Set start to right now" })).toBeInTheDocument()
-    fireEvent.blur(start, { relatedTarget: end })
-    fireEvent.focus(end)
-    expect(screen.queryByRole("button", { name: "Set start to right now" })).not.toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Set end to right now" })).toBeInTheDocument()
+    const dialog = screen.getByRole("dialog")
+    openClock(0)
+    const layer = screen.getByTestId("clock-picker-layer")
+    const panel = screen.getByRole("group", { name: "Choose time" })
+    expect(layer.style.pointerEvents).not.toBe("none")
+    expect(panel.style.pointerEvents).not.toBe("none")
+    expect(Number(panel.style.zIndex)).toBeGreaterThan(51)
+    expect(Number(layer.style.zIndex)).toBeGreaterThan(51)
+    fireEvent.click(screen.getByRole("button", { name: "Minute 01" }))
+    fireEvent.click(screen.getByRole("button", { name: "Confirm" }))
+    expect(screen.getByLabelText("Start")).toHaveValue("09:01")
+    expect(screen.getByRole("dialog")).toBe(dialog)
+  })
+
+  it("a click outside the clock leaves the start time and the dialog", () => {
+    renderLog()
+    const dialog = screen.getByRole("dialog")
+    openClock(0)
+    fireEvent.click(screen.getByRole("button", { name: "Minute 01" }))
+    fireEvent.pointerDown(screen.getByTestId("clock-picker-backdrop"))
+    expect(screen.queryByRole("group", { name: "Choose time" })).not.toBeInTheDocument()
+    expect(screen.getByLabelText("Start")).toHaveValue("09:00")
+    expect(screen.getByRole("dialog")).toBe(dialog)
   })
 })

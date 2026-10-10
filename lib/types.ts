@@ -848,12 +848,15 @@ export interface HabitCoverageLink {
 }
 
 /**
- * Weekly yes/no: complete when every daily habit ends the week above `floorPercent`
- * (default 0 = at least one attempt, no daily habit still at 0%).
+ * Weekly yes/no: complete when every daily habit ends the period above `floorPercent`
+ * (default 0 = above 0). `allowAtZero` is how many daily habits may sit at 0
+ * and the habit still counts as met. Missing means 0.
  */
 export interface HabitDailyFloorLink {
-  /** Min week-% each daily habit must clear. Default 0. */
+  /** Min period-% each daily habit must clear. Default 0. */
   floorPercent?: number
+  /** How many daily habits may be at 0. Default 0 (every one must be above 0). */
+  allowAtZero?: number
   /** Default true. */
   enabled?: boolean
 }
@@ -945,6 +948,22 @@ export interface WeeklyTask {
   priorityPinned?: boolean
   /** Drop missed-period auto-priority (manual deprioritize). Pin still applies. */
   priorityMuted?: boolean
+  /**
+   * Priority refresh lines, oldest first. Missing means none.
+   * Shown newest first. Lines are appended and never dropped.
+   * No persist version bump.
+   */
+  priorityLog?: string[]
+  /**
+   * Local calendar day (`YYYY-MM-DD`) the star was last refreshed.
+   * Missing means it has never been refreshed. The fade counts from this day.
+   */
+  priorityRefreshedOn?: string
+  /**
+   * Holds the star and the sheet highlight at full strength.
+   * Turning it off returns to the fade from `priorityRefreshedOn`.
+   */
+  priorityPermanent?: boolean
   /** When the habit was created (ISO). Sort by date created; stamped on add. */
   createdAt?: string
   /** Row gem (catalog path or uploaded data URL). Assigned at create / one-time migrate; never a type or category default. */
@@ -974,8 +993,16 @@ export interface WeeklyTask {
   /**
    * Completion sources, most trusted first. When two disagree, the earlier one
    * wins. Absent on old rows: derived from the links already stored.
+   * This is the flat engine list. Pipeline rows live on `completionPipelines`.
    */
   completionSources?: HabitCompletionSourceId[]
+  /**
+   * The completion-sources form: ordered rows the person added.
+   * Each row's `sources` flatten into `completionSources`.
+   * `name` is display-only. Absent on old rows: one row per stored source id.
+   * No persist version bump.
+   */
+  completionPipelines?: HabitCompletionPipeline[]
 }
 
 /** A logged fact that can lift a daily habit. All-nighter is the morning date. */
@@ -1008,13 +1035,40 @@ export interface HabitListLink {
 }
 
 /**
+ * How a Lists pipeline reads the attached list.
+ * Missing means sent-this-week when `listSent` is one of the habit's sources.
+ */
+export type HabitListPipelineMode = "allComplete" | "oneComplete" | "oneAdded" | "sentThisWeek"
+
+/**
+ * What a Lists pipeline counts.
+ * `sent` / `completed` — items whose yes/no of that name is true.
+ * `added` — items added during the period.
+ */
+export type HabitListMeasure = "sent" | "completed" | "added"
+
+/**
+ * What the counted number is compared with.
+ * `periodSet` — still on the list without the yes/no, plus items that tripped it this period.
+ * `listLength` — how many items are on the list.
+ * `one` — a fixed 1 (one complete, one added).
+ */
+export type HabitListTarget = "periodSet" | "listLength" | "one"
+
+/**
  * A list's sent ratio for this period. `grace` is the raw percent that
  * reports as 100 (default 100). Missing link means the source is off.
+ * `mode` is the old Lists pipeline. Omit it for sent-this-week.
+ * Sent this week is measure `sent` and target `periodSet` (8 sent and 5 unsent is 8/13).
+ * `measure` and `target` are stored when the routing is not one of the four old modes.
  */
 export interface HabitListSentLink {
   listId: string
   grace?: number
   enabled?: boolean
+  mode?: HabitListPipelineMode
+  measure?: HabitListMeasure
+  target?: HabitListTarget
 }
 
 /**
@@ -1040,6 +1094,69 @@ export type HabitCompletionSourceId =
   | "dailyCompletionAverage"
   | "listSent"
   | "keywords"
+
+/**
+ * A row in the completion-sources pipeline. Trust is still the flattened
+ * `sources` list on the habit. `name` is shown in place of the type label.
+ */
+export type HabitPipelineKind =
+  | "manual"
+  | "tags"
+  | "trackingTags"
+  | "trackingStats"
+  | "habitsStats"
+  | "lists"
+  | "keywords"
+
+/** Which habit sheet a Habits stats row is reading. */
+export type HabitStatSet = "daily" | "weekly" | "monthly"
+
+/**
+ * One reading on a Habits stats row.
+ * `ref` is a day key (`YYYY-MM-DD`) or a habit id when the point is one member of a set.
+ */
+export type HabitStatPointKind =
+  | "weekGrade"
+  | "perfectOutput"
+  | "dayPercent"
+  | "dayPercents"
+  | "habitWeekPercent"
+  | "habitWeekPercents"
+  | "dailyFloor"
+  | "habitValue"
+  | "dailyCompletionAverage"
+  | "periodGrade"
+  | "periodOutput"
+  | "habitCompletion"
+  | "habitCompletions"
+
+export interface HabitStatPoint {
+  kind: HabitStatPointKind
+  ref?: string
+}
+
+/**
+ * Configuration on a Habits stats pipeline row.
+ * `comparePrevious` with `mustBeHigher` is the “better than last week” rule:
+ * that many of `points` must be strictly higher than the previous period.
+ */
+export interface HabitStatsConfig {
+  set: HabitStatSet
+  points: HabitStatPoint[]
+  comparePrevious?: boolean
+  mustBeHigher?: number
+}
+
+export interface HabitCompletionPipeline {
+  id: string
+  kind: HabitPipelineKind
+  /** Display-only. Blank uses the type label. */
+  name?: string
+  /** Engine ids this row turns on, in the order they join the trust list. */
+  sources: HabitCompletionSourceId[]
+  /** Habits stats: which set, which points, and an optional previous-period compare. */
+  stats?: HabitStatsConfig
+}
 
 export interface TaskCompletion {
   completed?: boolean
@@ -1507,6 +1624,19 @@ export interface Folder {
   listIds: string[] // ids of the lists in this folder
   /** Nested folder support (subfolder of another folder). */
   parentFolderId?: string
+  /**
+   * Sibling order among folders that share a parent, including root folders.
+   * Lower comes first. Omitted keeps the built-in sort (scheduled chronology,
+   * Next Actions, Module Lists, then name). Lists settings writes this when
+   * you arrange the library.
+   */
+  order?: number
+  /**
+   * Visual order of this folder's child folders and filed lists, mixed.
+   * Tokens are `folder:<id>` and `list:<id>`. Omitted = child folders, then
+   * lists in `listIds` order. See `lib/lists-navigator.ts`.
+   */
+  contentsOrder?: string[]
   color?: string
   description?: string
   /**

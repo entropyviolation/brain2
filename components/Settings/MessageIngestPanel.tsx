@@ -427,8 +427,10 @@ export function MessageIngestPanel() {
           <code className="text-foreground">memo:</code>, and{" "}
           <code className="text-foreground">tp:</code> /{" "}
           <code className="text-foreground">thought process:</code> /{" "}
-          <code className="text-foreground">log: tp:</code> (a specialized note: the crystallized thought of this
-          moment, not a general note; colon required; <code className="text-foreground">eventKind</code>{" "}
+          <code className="text-foreground">log: tp:</code> (Thought process: a guiding strand of this
+          moment — why you are doing something, what you expect next, and how it lands; not a general note, a
+          one-word mood, or a short activity log such as brushed teeth; colon required;{" "}
+          <code className="text-foreground">eventKind</code>{" "}
           <code className="text-foreground">thought-process</code>). A clock is exact unless you
           add <code className="text-foreground">est</code>,{" "}
           <code className="text-foreground">estimated</code>,{" "}

@@ -141,7 +141,7 @@ not a DSi photograph.
 |------|---------|-----|------------------------------|
 | **Now (shipped)** | App-wide desktop field | — | Default **teal** (classic Win95). Optional photoreal PCB plates: ceramic, mint snowflake, ice, x-ray, FR4. Settings → **Desktop**. Copies in `public/pcb/`. Saved plates are never migrated onto teal. |
 | **Now (shipped)** | Daily Habits interior — one room that turned out well, not a template | Fawn | Jewel PCB, TENO console, gadget wall, Tek scope, silver book, iridescent bloom, crystal-ball cat, EQ sliders. Lightning-seraph *gesture* on 100% bars only — not a seraph logo. **Willpower gems shipped** (satellites, invert, pin, stir, PNG occlusion, Settings-only crystal; **Small LEDs** rocker) |
-| **Parallel (shipped)** | App-wide gunmetal gray (slow slider on the existing patina) | Colt | Gadget wall, TENO, IRIX workstation, Display Properties (cool face, not yellow-gray) |
+| **Parallel (shipped)** | App-wide gunmetal gray (slow slider on the swatch path) | Colt | IRIX olive, TENO, Pocket PC silver, gadget wall, flower CRTs, Display Properties `#c0c0c0` — those hexes, not a red/blue filter |
 | **Later** | Home TOP leftover **square widgets** (review, affirmation, **weather instrument**, user add/hide) | Home lane | IRIX cattle + gadget wall: **equal-height modules**; analog meters as weather, not a forecast card. See [Visual language to APPLY](#visual-language-to-apply) |
 | **Shipped, and in bounds** | Global header cabinet (BRAIN2 caption + friend well + Friend / Review / System / optional **now** well / Capture groupboxes) | Shell | Home window + **Tek POWER lamp**, fieldset legends, TENO milled keys, phosphor counts. Optional **now** well between System and Capture for live Working sessions. The caption stays readable type, not a Lucide set and not one pasted cockpit. The fascia may still become silver key-wells and may dissolve — [easy alignments](DESIGN_STYLE.md#easy-alignments-not-started). Today's friend sits in the Friend groupbox. Top tabs still later. |
 | **Later** | Top tabs | not this wave | Quoted folder tabs may become pixel-game lamps (TENO mode keys). Labels stay. Do not hide them in a modern tab bar, and do not reskin the whole shell as one console screenshot. |
@@ -268,7 +268,7 @@ Rebuild in furniture. Copy materials and packing, not screenshots.
 |----------|------|----------|
 | Nacre / pearl / oil-slick | Jewel PCB, iridescent bloom, sky jewel-case | Habits console field, Plan chip wash, WILLPOWER plate |
 | FR4 / ceramic / ice / x-ray solder mask | Five desktop plates + bare FR4 + cat traces | Desktop estate; **hairline traces** as engraved rules on grids — not a PCB pasted on the table |
-| Pewter / gunmetal / olive enamel | Silver book, TENO, gadget wall, IRIX | `--chrome-face` cool bias; WILLPOWER oval cartouche; Habits metal (`--hab-metal`, never `#c5c3bc`) |
+| Pewter / gunmetal / olive enamel | Silver book, TENO, gadget wall, IRIX, Pocket PC, flower CRTs, Display Properties | `--chrome-face` walks those stills’ own grays (`#999683` IRIX, `#9a9889` TENO, `#c0c1b9` / `#c0bfba` Pocket PC, `#c0c0c0` Display Properties, `#b7bcbf` / `#b8bbc0` cool silver). Mix 50 is the stored classic default. Not a red/blue filter. WILLPOWER oval cartouche; Habits metal (`--hab-metal`, never a frozen `#c5c3bc`) |
 | Aqua plastic / mylar | Sky jewel-case, CRT kitten | Cabinet objects; CRT nest lining |
 | Cream paper-lace | Holy cards | Needs Attention *lining* (shipped `.hab-na`) — cream on metal |
 | Glass / plasma | Noble-gas rack, ampoule grid, fan of tubes | Grade finger-tubes (shipped) |
@@ -487,7 +487,7 @@ stay visible (failure 1).
 | **Progress** | Tek 465B POWER LED, TENO tiny LED strips, FR4 / x-ray / ceramic via rows, snowflake-circuitry pads. Grade tubes: noble-gas ampoule rack + **fan of tubes** (rounded dome). Overview sliders: OSD AMP + iridescent bloom. | **Grade meters** (Week / Span grade + Perfect output): photoreal glass **finger-tubes** (hemispherical dome, not a pointed ampoule) — plasma column clipped to percent (`noble-gas-tube.tsx`); plasma hue from `gradeTubeColor` / `outputGradeTubeColor` (defaults week-grade green `#508b51` / perfect-output navy `#25366a`). Spreadsheet **row/col %** default to a **thin glass thermometer** (`percent-led-bar.tsx`, Loading bar ON) plus a text %; OFF is the smaller numeric LED. Same tube for rows and column totals. Not a toy equalizer (do **not** steal OSD AMP’s EQ), not pastel bars, not Yes/No cell lamps reused as percents. Home overview strip keeps analog OSD bloom + vertical Tek spark. Interlace, if any, is a CSS overlay on the bezel, toggleable. | **Shipped** — noble-gas grade tubes (still photo, per-grade hue); quiet 10-pip loading channel default; table OSD bloom; overview 2×2 + vertical Tek well. CRT overlay (`.hab-crt`) is off by default |
 | **Needs Attention** | Paper lace (one), viscera collage (density), CRT kitten (urgency glow) | A lace *lining* or filigree rule around the well — cream on metal, not a holy-card skin on the Home window. A teaching caption is welcome when it is real and sourced. Expand when count > 0 is still open layout ([`UI_NEXT.md`](UI_NEXT.md)). | **Shipped** — lace lining (`.hab-na`). Home `#fff` cards killed |
 
-Cockpit rockers stay (Heatmap View, **Day View** = today column + week % only, Hide Completed Today, **Loading Bar**, and **Small LEDs** — not a rename of Loading Bar). **Sort Habits** stays **above** that group. Type/score gems stay 12–16px; row **edit jewels** are 18px set stones (36 cutouts), far-left, no dark disc — no gem before the title. Streak / × under the wrapping title. Week satellites around WILLPOWER stay **smaller** than the row jewel. Yes/No cells stay recessed panel lamps (on-color = `percentLedTint`, dim/warm, not blast-white; **Small LEDs** ON = 15px, OFF = fill the cell). Ink stays dark on pearl/metal. Furniture metal is `--chrome-face` / `--hab-metal`, never `#c5c3bc`.
+Cockpit rockers stay (Heatmap View, **Day View** = today column + week % only, Hide Completed Today, **Loading Bar**, and **Small LEDs** — not a rename of Loading Bar). Sort stays on the Priority bar above the grid. Type/score gems stay 12–16px; row **edit jewels** are 18px set stones (36 cutouts), far-left, no dark disc — no gem before the title. Streak / × under the wrapping title. Week satellites around WILLPOWER stay **smaller** than the row jewel. Yes/No cells stay recessed panel lamps (on-color = `percentLedTint`, dim/warm, not blast-white; **Small LEDs** ON = 15px, OFF = fill the cell). Ink stays dark on pearl/metal. Furniture metal is `--chrome-face` / `--hab-metal`, never `#c5c3bc`.
 
 **Still deferred (not this wave):** seraph-wing *logo*, ruby Quick Add, beetle-wing photo, ribbon-cable table edges, barrel-distortion CRT. The global header may become a held machine (silver keys, pixel lamps, one dissolve) — see [Easy alignments](DESIGN_STYLE.md#easy-alignments-not-started). Do not freeze it as a Windows toolbar. Home leftover **weather instrument** + **equal-height square modules** are later (Home lane), not a Habits-only trick.
 
@@ -506,10 +506,14 @@ allowed when the layout holds. Do not hide the doors.
 
 ### App-wide gunmetal (Colt)
 
-Bias `lib/chrome-patina.ts` toward the cool faces in TENO / gadget wall / IRIX
-(not Habits yellow-gray, not SaaS slate). **Slow slider.** One mix for the
-house. Lists furniture stays honest `#c0c0c0`-family; it may patina cooler.
-Do not paint Lists velvet or Plan chips gunmetal.
+`lib/chrome-patina.ts` walks the house face through the computer-chrome grays
+in these stills: IRIX olive `#999683`, TENO `#9a9889`, Pocket PC `#c0c1b9` and
+`#c0bfba`, Display Properties `#c0c0c0`, cooler `#b7bcbf` and flower-CRT
+`#b8bbc0`. Piecewise between those hexes. Not a red/blue filter on a random
+gray, and not Habits yellow-gray `#c5c3bc`. **Slow slider.** One mix for the
+house. Mix 50 restores the stored classic tokens and can sit paused. Lists
+furniture uses that same family. Do not paint Lists velvet or Plan chips
+gunmetal.
 
 ### Other rooms
 
@@ -549,7 +553,7 @@ fill; heatmap is a light Daily sidebar mosaic. **Landed (working tree):**
 disc; no gem before the title; streak/× under the name); WILLPOWER crystal
 scaled inside the same oval plate; Habits Settings already has
 `WillpowerGemsSettingsField`;
-Delete-in-settings; jewelry heatmap cells; **Sort Habits** above grouped
+Delete-in-settings; jewelry heatmap cells; Sort on the Priority bar above the grid; grouped
 rockers. **Landed:** **Small LEDs** rocker (default ON = 15px Yes/No lamps;
 OFF = fill the cell); week-complete gems collect small around WILLPOWER; row
 gem inverts when contributing; plate pinned to the rail foot; plate click
@@ -561,9 +565,13 @@ completion math. Colocated file list stays with
 **Deferred:** seraph-wing logo, ruby Quick Add, beetle-wing photo, ribbon-cable
 table edges, barrel-distortion CRT. No PNG recapture this pass.
 
-**Phase B — Gunmetal slider (parallel).** Colt. Cool-bias the existing
-`--chrome-*` family. One mix for the current face. Do not retint orbs. A
-later redesign may leave this slider; it is not a freeze.
+**Phase B — Gunmetal slider (parallel).** Colt. One mix for the current face.
+Do not retint orbs. Settings → Window gray walks the design-ref grays
+(`#999683`, `#999686`, `#9a9889`, `#c0c1b9`, `#c0bfba`, `#c0c0c0`, `#b7bcbf`,
+`#b8bbc0`). Mix 50 is the stored classic default (`#c0c0c0` and its companion
+tokens), and Default pauses there. It is not a red/blue filter. Habits metal
+still must not freeze on `#c5c3bc`. A later redesign may leave this slider; it
+is not a freeze.
 
 **Phase C — After A+B survive Lists.** Header/tabs/Quick Add density only.
 Optional CRT overlay token (off by default) for Habits bezels and Operations

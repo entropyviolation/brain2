@@ -1,6 +1,8 @@
 /**
  * components/notes-ingest.tsx — From Notes (Notes.app on this Mac)
  *
+ * The button lives in Settings and Lists settings (**Notes and ingest**).
+ *
  * Date range → swipe Parse/Skip (title + content preview) → for each parsed note,
  * freely edit bulk-add syntax or park the full note on "notes to ingest" in the
  * auto-created Mac Notes folder. Already-ingested Apple Note ids are skipped.
@@ -12,6 +14,7 @@
 
 import type React from "react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { publishNotesTriggerLabel, useCaptureDoorRequest } from "@/components/capture-door-bus"
 import { format } from "date-fns"
 import { Check, Loader2, StickyNote, Undo2, X } from "lucide-react"
 import { MachineLoading } from "@/components/machine-loading"
@@ -80,7 +83,7 @@ function afterPaint(): Promise<void> {
   })
 }
 
-export function NotesIngest() {
+export function NotesIngest({ hideTrigger = false }: { hideTrigger?: boolean } = {}) {
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState<Step>("period")
   const [preset, setPreset] = useState<NotesPeriodPreset>("24h")
@@ -128,9 +131,10 @@ export function NotesIngest() {
     if (!next && step === "empty") reset()
   }
 
-  const openDialog = () => {
+  const openDialog = useCallback(() => {
     setOpen(true)
-  }
+  }, [])
+  useCaptureDoorRequest("notes", openDialog)
 
   const mergeFetched = useCallback((incoming: AppleNote[], asFull: boolean) => {
     setNotes((prev) => {
@@ -354,8 +358,13 @@ export function NotesIngest() {
         ? "Resume Notes"
         : "From Notes"
 
+  useEffect(() => {
+    publishNotesTriggerLabel(triggerLabel)
+  }, [triggerLabel])
+
   return (
     <>
+      {!hideTrigger ? (
       <Button
         type="button"
         size="sm"
@@ -369,6 +378,7 @@ export function NotesIngest() {
         {triggerBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <StickyNote className="h-4 w-4" />}
         <span>{triggerLabel}</span>
       </Button>
+      ) : null}
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className="hpp95 hpp95-dialog sm:max-w-xl max-h-[90vh] overflow-hidden flex flex-col z-[200]" data-ui-name="From Notes" data-ui-docs="components/README.md">
           <DialogHeader className="hpp-caption">

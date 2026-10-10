@@ -155,5 +155,5 @@ reply **Already stored**. Keep each message under **3900** characters.
 ## What this will not do
 
 - Text the bot `notes:` and have the locked iPhone dump Notes by itself.
-- Read iCloud notes that already sync to the Mac — use header **From Notes**.
+- Read iCloud notes that already sync to the Mac — use **From Notes** (Settings or Lists settings).
 - Send a file/photo instead of `message.text`.

@@ -81,7 +81,7 @@ describe("TrackingLogView", () => {
       "Switch",
       "Intake",
       "Note",
-      "Thought",
+      "Thought process",
     ])
     expect(modes).toHaveClass("trk-logbook-modes")
     expect(screen.queryByRole("button", { name: "Clock" })).not.toBeInTheDocument()
@@ -103,8 +103,12 @@ describe("TrackingLogView", () => {
     expect(screen.queryByLabelText("Note")).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: "Note" }))
     expect(screen.getByLabelText("Note").tagName).toBe("TEXTAREA")
-    fireEvent.click(screen.getByRole("button", { name: "Thought" }))
-    expect(screen.getByRole("textbox", { name: "Thought" }).tagName).toBe("TEXTAREA")
+    fireEvent.click(screen.getByRole("button", { name: "Thought process" }))
+    expect(screen.getByRole("textbox", { name: "Thought process" }).tagName).toBe("TEXTAREA")
+    expect(screen.getByRole("textbox", { name: "Thought process" })).toHaveAttribute(
+      "placeholder",
+      "A strand from what you are doing, to what it leads to, to how it feels.",
+    )
     expect(screen.queryByLabelText("Note")).not.toBeInTheDocument()
     expect(screen.queryByRole("combobox", { name: "Location" })).not.toBeInTheDocument()
     expect(screen.queryByRole("toolbar", { name: "Location" })).not.toBeInTheDocument()
@@ -129,12 +133,13 @@ describe("TrackingLogView", () => {
     expect(unknown).not.toBeChecked()
   })
 
-  it("stamps Now into the clock and clears Unknown", () => {
+  it("stamps Now from inside the clock popup", () => {
     renderLog()
     fireEvent.change(screen.getByLabelText("Time of day"), { target: { value: "09:15" } })
     fireEvent.click(screen.getByRole("checkbox", { name: "Unknown" }))
+    expect(screen.queryByRole("button", { name: "Now" })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Open Time of day clock" }))
     fireEvent.click(screen.getByRole("button", { name: "Now" }))
-    expect(screen.getByRole("checkbox", { name: "Unknown" })).not.toBeChecked()
     const now = new Date()
     const minute = now.getHours() * 60 + now.getMinutes()
     const values = new Set([minutesToTimeString(minute), minutesToTimeString((minute + 1439) % 1440)])
@@ -244,14 +249,14 @@ describe("TrackingLogView", () => {
     expect(saved?.title).not.toContain("\n")
   })
 
-  it("shows a textarea in Thought mode and files the row under Thought", () => {
+  it("shows a textarea in Thought process mode and files the row under Thought process", () => {
     renderLog()
-    fireEvent.click(screen.getByRole("button", { name: "Thought" }))
-    const field = screen.getByRole("textbox", { name: "Thought" })
+    fireEvent.click(screen.getByRole("button", { name: "Thought process" }))
+    const field = screen.getByRole("textbox", { name: "Thought process" })
     expect(field.tagName).toBe("TEXTAREA")
     fireEvent.change(field, { target: { value: "opening the editor to fix the clock\nso the military clock stays" } })
     fireEvent.click(screen.getByRole("button", { name: /^Add$/ }))
-    const thought = screen.getByRole("region", { name: "Thought" })
+    const thought = screen.getByRole("region", { name: "Thought process" })
     expect(thought).toHaveTextContent("opening the editor to fix the clock")
     expect(thought).toHaveTextContent("so the military clock stays")
     expect(screen.getByRole("region", { name: "Events" })).not.toHaveTextContent("opening the editor to fix the clock")

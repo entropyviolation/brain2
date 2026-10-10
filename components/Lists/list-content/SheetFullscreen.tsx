@@ -72,7 +72,7 @@ function SheetFullscreenWindow({
             <button type="button" className="fm-title-btn" aria-label="Restore down" title="Exit fullscreen" onClick={onExit}>
               ❐
             </button>
-            <button type="button" className="fm-title-btn" aria-label="Close" title="Exit fullscreen" onClick={onExit}>
+            <button type="button" className="fm-title-btn b2-close-key" aria-label="Close" title="Exit fullscreen" onClick={onExit}>
               ×
             </button>
           </div>

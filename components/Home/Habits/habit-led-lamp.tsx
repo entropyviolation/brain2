@@ -80,6 +80,7 @@ export function HabitLedLamp({
   unavailable = false,
   unavailableFollowsCheck = false,
   saved,
+  readOnly = false,
 }: {
   checked: boolean
   onCheckedChange: (checked: boolean) => void
@@ -93,13 +94,46 @@ export function HabitLedLamp({
   unavailableFollowsCheck?: boolean
   /** Identity of the saved cell or exemption. A new value drops the optimistic check. */
   saved?: unknown
+  /** Show the stored check. Click does not write. */
+  readOnly?: boolean
 }) {
   const storedTint = useHabitsStore((s) => s.percentLedTint)
   const smallLeds = useHabitsStore((s) => s.habitSmallLeds)
   const { shown, toggle } = usePaintFirstToggle(checked, saved, onCheckedChange)
-  const state: HabitLampState = booleanLampState(shown, ratio)
+  const state: HabitLampState = booleanLampState(readOnly ? checked : shown, ratio)
   const color = tint || storedTint
-  const paintUnavailable = unavailableFollowsCheck ? shown : unavailable
+  const paintUnavailable = unavailableFollowsCheck ? (readOnly ? checked : shown) : unavailable
+  const glass = (
+    <span className="hab-lamp-socket" aria-hidden="true">
+      <span className="hab-lamp-bezel">
+        <span className="hab-lamp-glass">
+          <span className="hab-lamp-die" />
+          <span className="hab-lamp-core" />
+          <span className="hab-lamp-bloom" />
+          <span className="hab-lamp-spec" />
+          <span className="hab-lamp-spec hab-lamp-spec-low" />
+        </span>
+      </span>
+    </span>
+  )
+
+  if (readOnly) {
+    return (
+      <span
+        role="img"
+        aria-label={label}
+        title={label}
+        data-state={paintUnavailable ? "unavailable" : state}
+        data-tracked={tracked ? "true" : undefined}
+        data-fill={smallLeds ? undefined : "true"}
+        data-no95=""
+        className="hab-lamp"
+        style={{ "--hab-lamp-tint": color } as CSSProperties}
+      >
+        {glass}
+      </span>
+    )
+  }
 
   return (
     <button
@@ -116,17 +150,7 @@ export function HabitLedLamp({
       style={{ "--hab-lamp-tint": color } as CSSProperties}
       onClick={toggle}
     >
-      <span className="hab-lamp-socket" aria-hidden="true">
-        <span className="hab-lamp-bezel">
-          <span className="hab-lamp-glass">
-            <span className="hab-lamp-die" />
-            <span className="hab-lamp-core" />
-            <span className="hab-lamp-bloom" />
-            <span className="hab-lamp-spec" />
-            <span className="hab-lamp-spec hab-lamp-spec-low" />
-          </span>
-        </span>
-      </span>
+      {glass}
     </button>
   )
 }

@@ -53,25 +53,25 @@
   /* Milled fascia tokens (shared with Plan / Ops / To Do language) */
   --fm-mill:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
-    linear-gradient(165deg, #d4d8dc 0%, var(--fm-surface) 48%, #969a9e 100%);
+    linear-gradient(165deg, var(--chrome-sheen) 0%, var(--fm-surface) 48%, var(--chrome-shade) 100%);
   --fm-bay-ring:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.75),
     inset 0 -1px 0 rgba(40, 42, 46, 0.4),
-    inset 0 0 0 2px #b0b4b8;
+    inset 0 0 0 2px var(--chrome-inset);
   --fm-key-face:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
-    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--fm-surface) 70%, #9a9ea2 100%);
+    linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 36%, var(--fm-surface) 70%, var(--chrome-key-shade) 100%);
   --fm-key-ring:
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     inset 0 -1px 0 rgba(55, 58, 62, 0.45),
-    0 0 0 1px #4a4e52,
-    0 1px 0 #6a6e72;
+    0 0 0 1px var(--chrome-ring-deep),
+    0 1px 0 var(--chrome-lip);
   --fm-crt-glass:
     radial-gradient(ellipse at 18% 0%, rgba(125, 255, 196, 0.16), transparent 48%),
     #070c0a;
   --fm-crt-ring:
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     inset 0 1px 0 rgba(255, 255, 255, 0.14),
     inset 0 10px 14px rgba(0, 0, 0, 0.4);
 
@@ -114,7 +114,7 @@
   align-items: center;
   gap: 8px;
   padding: 6px 8px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background: var(--fm-mill);
   box-shadow: var(--fm-bay-ring);
   user-select: none;
@@ -133,7 +133,7 @@
   gap: 8px;
   min-height: 28px;
   padding: 4px 12px 4px 8px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-weight: 700;
   font-size: 12px;
   letter-spacing: 0.12em;
@@ -161,7 +161,7 @@
   flex-shrink: 0;
 }
 
-.fm98 .fm-title-btn {
+.fm98 .fm-title-btn:not(.b2-close-key) {
   box-sizing: border-box;
   width: 22px;
   height: 22px;
@@ -174,7 +174,7 @@
   font-weight: 700;
   line-height: 1;
   border: none;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   color: #1c1e20;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
   background: var(--fm-key-face);
@@ -182,14 +182,14 @@
   cursor: pointer;
 }
 
-.fm98 .fm-title-btn:hover:not(:disabled) {
+.fm98 .fm-title-btn:not(.b2-close-key):hover:not(:disabled) {
   filter: brightness(1.04);
 }
 
-.fm98 .fm-title-btn:active {
+.fm98 .fm-title-btn:not(.b2-close-key):active {
   box-shadow:
     inset 0 1px 2px rgba(0, 0, 0, 0.35),
-    0 0 0 1px #3a3e42;
+    0 0 0 1px var(--chrome-pressed);
   filter: none;
 }
 
@@ -197,7 +197,7 @@
 .fm98 .fm-btn {
   box-sizing: border-box;
   border: none;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   color: #1c1e20;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
   background: var(--fm-key-face);
@@ -234,7 +234,7 @@
 .fm98 .fm-btn.active {
   box-shadow:
     inset 0 1px 2px rgba(0, 0, 0, 0.35),
-    0 0 0 1px #3a3e42;
+    0 0 0 1px var(--chrome-pressed);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
   filter: none;
 }
@@ -245,7 +245,7 @@
 }
 
 .fm98 .fm-btn:disabled {
-  color: #808080;
+  color: var(--chrome-lo);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
   cursor: default;
   filter: none;
@@ -268,13 +268,13 @@
   gap: 6px;
   flex-wrap: wrap;
   padding: 8px 10px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     linear-gradient(180deg, rgba(0, 0, 0, 0.06), transparent 28%),
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
-    #c4c8cc;
+    var(--chrome-grade-sheen);
   box-shadow:
-    0 0 0 1px #6a6e72,
+    0 0 0 1px var(--chrome-lip),
     inset 0 1px 0 rgba(255, 255, 255, 0.65),
     inset 0 2px 3px rgba(0, 0, 0, 0.12);
 }
@@ -310,7 +310,7 @@
   align-items: center;
   gap: 6px;
   padding: 4px 9px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.14em;
@@ -319,9 +319,9 @@
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.45) 0, transparent 40%),
-    #c8ccd0;
+    var(--chrome-pewter);
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.7),
     inset 0 -1px 0 rgba(40, 42, 46, 0.28);
   white-space: nowrap;
@@ -360,12 +360,12 @@
   flex: 1 1 auto;
   min-width: 0;
   padding: 4px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
-    #b4b8bc;
+    var(--chrome-nickel);
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 2px 3px rgba(0, 0, 0, 0.18);
   container-type: inline-size;
   container-name: fm-view-keys;
@@ -447,7 +447,7 @@
     radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.2), transparent 55%),
     #070c0a;
   box-shadow:
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     inset 0 8px 10px rgba(0, 0, 0, 0.4);
   filter: none;
 }
@@ -467,7 +467,7 @@
   align-items: center;
   min-height: 22px;
   padding: 2px 10px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -547,7 +547,7 @@
   overflow-y: auto;
   padding: 4px;
   background: var(--fm-button-highlight, #fff);
-  box-shadow: var(--fm-border-field, inset 1px 1px 0 #808080, inset -1px -1px 0 #fff);
+  box-shadow: var(--fm-border-field, inset 1px 1px 0 var(--chrome-lo), inset -1px -1px 0 #fff);
 }
 
 .fm98 .fm-folder-dest-btn {
@@ -558,7 +558,7 @@
   margin: 0;
   padding: 6px 4px;
   font-size: 11px;
-  color: var(--fm-button-shadow, #808080);
+  color: var(--fm-button-shadow, var(--chrome-lo));
 }
 
 .fm98 .fm-list-picker {
@@ -727,7 +727,7 @@
   box-sizing: border-box;
   appearance: none;
   -webkit-appearance: none;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   font-family: inherit;
   font-size: 11px;
 }
@@ -775,12 +775,12 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0 1px, transparent 1px 2px),
-    #b8bcbf;
+    var(--chrome-ash);
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.55),
     inset 0 2px 3px rgba(0, 0, 0, 0.14);
 }
@@ -792,7 +792,7 @@
 .fm98 .fm-status-label {
   flex-shrink: 0;
   padding: 2px 7px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.14em;
@@ -987,15 +987,15 @@
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
   padding: 6px 8px 5px;
   margin: 4px 3px 3px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   border-bottom: none;
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.7),
     inset 0 -1px 0 rgba(40, 42, 46, 0.28);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.4) 0, transparent 42%),
-    #c8ccd0;
+    var(--chrome-pewter);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -1025,17 +1025,17 @@
   margin: 0 0 10px;
   padding: 6px 8px;
   font-size: 11px;
-  background: var(--fm-button-face, #c0c0c0);
-  border: 1px solid var(--fm-button-shadow, #808080);
-  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 var(--fm-button-dark, #404040);
+  background: var(--fm-button-face, var(--chrome-face));
+  border: 1px solid var(--fm-button-shadow, var(--chrome-lo));
+  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 var(--fm-button-dark, var(--chrome-ink-soft));
 }
 
 .fm98 .fm-card-skeleton {
   min-height: 190px;
   padding: 16px;
-  background: var(--fm-button-face, #c0c0c0);
+  background: var(--fm-button-face, var(--chrome-face));
   border: 2px solid;
-  border-color: #fff var(--fm-button-dark, #404040) var(--fm-button-dark, #404040) #fff;
+  border-color: #fff var(--fm-button-dark, var(--chrome-ink-soft)) var(--fm-button-dark, var(--chrome-ink-soft)) #fff;
 }
 
 .fm98 .fm-card-skeleton-line {
@@ -1082,8 +1082,8 @@
   font-size: 11px;
   line-height: 1.4;
   padding: 0 5px;
-  background: var(--fm-button-face, #c0c0c0);
-  border: 1px solid var(--fm-button-shadow, #808080);
+  background: var(--fm-button-face, var(--chrome-face));
+  border: 1px solid var(--fm-button-shadow, var(--chrome-lo));
   color: #000;
   white-space: nowrap;
 }
@@ -1100,14 +1100,14 @@
 .fm98 .fm-sidebar {
   width: 214px;
   flex-shrink: 0;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.55),
     inset 0 2px 4px rgba(0, 0, 0, 0.12);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0 1px, transparent 1px 2px),
-    #d4d6d8;
+    var(--chrome-key-mid);
   overflow: auto;
   padding: 4px 2px 6px;
   -webkit-font-smoothing: antialiased;
@@ -1456,7 +1456,7 @@
   border-radius: 50%;
   overflow: hidden;
   background: var(--fm-surface);
-  border: 1px solid #404040;
+  border: 1px solid var(--chrome-ink-soft);
   box-shadow: inset 1px 1px 0 #ffffff99;
 }
 
@@ -1687,7 +1687,7 @@
 
 /* ===== Inspector (right rail) — milled bay ===== */
 .fm98 .fm-inspector {
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: var(--fm-mill);
   box-shadow: var(--fm-bay-ring);
 }
@@ -1740,11 +1740,11 @@
 /* ===== Group box / fieldset (engraved legend) ===== */
 .fm98 .fm-groupbox {
   border: none;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   box-shadow: var(--fm-bay-ring);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0 1px, transparent 1px 2px),
-    #c8ccd0;
+    var(--chrome-pewter);
   padding: 14px 10px 10px;
   margin: 0;
   position: relative;
@@ -1755,16 +1755,16 @@
   top: -8px;
   left: 8px;
   padding: 1px 7px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--fm-nameplate);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
-  background: #c8ccd0;
+  background: var(--chrome-pewter);
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
@@ -1872,31 +1872,31 @@
   --fm-crt-glow: var(--hab-crt-glow, 0 0 3px #7dffc4);
   --fm-mill:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
-    linear-gradient(165deg, #d4d8dc 0%, var(--fm-surface) 48%, #969a9e 100%);
+    linear-gradient(165deg, var(--chrome-sheen) 0%, var(--fm-surface) 48%, var(--chrome-shade) 100%);
   --fm-bay-ring:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.75),
     inset 0 -1px 0 rgba(40, 42, 46, 0.4),
-    inset 0 0 0 2px #b0b4b8;
+    inset 0 0 0 2px var(--chrome-inset);
   --fm-key-face:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
-    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--fm-surface) 70%, #9a9ea2 100%);
+    linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 36%, var(--fm-surface) 70%, var(--chrome-key-shade) 100%);
   --fm-key-ring:
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     inset 0 -1px 0 rgba(55, 58, 62, 0.45),
-    0 0 0 1px #4a4e52,
-    0 1px 0 #6a6e72;
+    0 0 0 1px var(--chrome-ring-deep),
+    0 1px 0 var(--chrome-lip);
   --fm-crt-glass:
     radial-gradient(ellipse at 18% 0%, rgba(125, 255, 196, 0.16), transparent 48%),
     #070c0a;
   --fm-crt-ring:
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     inset 0 1px 0 rgba(255, 255, 255, 0.14),
     inset 0 10px 14px rgba(0, 0, 0, 0.4);
 
   font-family: var(--w95-font, Tahoma, "MS Sans Serif", Geneva, Arial, sans-serif) !important;
   border: none !important;
-  border-radius: 0 !important;
+  border-radius: var(--r-0, 0px) !important;
   background: var(--fm-surface) !important;
   color: #111 !important;
   box-shadow:
@@ -1906,6 +1906,9 @@
     inset 2px 2px var(--chrome-mid, #dfdfdf),
     4px 4px 0 rgba(0, 0, 0, 0.35) !important;
   padding: 10px 12px 12px !important;
+  /* h2 min-height 32 starts after the 10px pad. */
+  --b2-close-top: 15px;
+  --b2-close-right: 12px;
 }
 
 .fm98-dialog h2 {
@@ -1914,7 +1917,7 @@
   min-height: 32px;
   margin: 0 0 8px !important;
   padding: 6px 12px !important;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-size: 13px !important;
   font-weight: 700 !important;
   letter-spacing: 0.14em;
@@ -1925,36 +1928,13 @@
   box-shadow: var(--fm-crt-ring);
 }
 
-.fm98-dialog > button.absolute {
-  top: 10px !important;
-  right: 10px !important;
-  width: 22px;
-  height: 22px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 2px !important;
-  opacity: 1 !important;
-  color: #1c1e20 !important;
-  background: var(--fm-key-face) !important;
-  box-shadow: var(--fm-key-ring);
-}
-
-.fm98-dialog > button.absolute:hover {
-  filter: brightness(1.04);
-  opacity: 1 !important;
-}
-
-.fm98-dialog > button.absolute:active {
-  box-shadow:
-    inset 0 1px 2px rgba(0, 0, 0, 0.35),
-    0 0 0 1px #3a3e42;
-  filter: none;
-}
+/* Dialog close and the list-frame × are `.b2-close-key` (win95.css) — a 22px
+   square, so `.fm-title-btn` does not restyle that key. Minimize / maximize stay
+   `.fm-title-btn`. Placement of the portaled dialog ×: --b2-close-* above. */
 
 /* Action keys (Cancel / Create / Save) — leave Switch / close alone */
 .fm98-dialog button[class*="inline-flex"]:not([role="switch"]):not(.absolute) {
-  border-radius: 2px !important;
+  border-radius: var(--r-2, 2px) !important;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1972,23 +1952,23 @@
 .fm98-dialog button[class*="inline-flex"]:not([role="switch"]):not(.absolute):active {
   box-shadow:
     inset 0 1px 2px rgba(0, 0, 0, 0.35),
-    0 0 0 1px #3a3e42 !important;
+    0 0 0 1px var(--chrome-pressed) !important;
   filter: none;
 }
 
 .fm98-dialog .fm-list-danger {
-  background: var(--fm-surface, #c0c0c0);
+  background: var(--fm-surface, var(--chrome-face));
   box-shadow: var(--fm-bay-ring);
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
 }
 
 .fm98-dialog fieldset,
 .fm98-dialog .fm-groupbox {
   border: none;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0 1px, transparent 1px 2px),
-    #c8ccd0;
+    var(--chrome-pewter);
   box-shadow: var(--fm-bay-ring);
 }
 
@@ -2009,12 +1989,12 @@
   min-width: 132px;
   padding: 2px;
   margin: 0;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0 1px, transparent 1px 2px),
-    #c4c8cc;
+    var(--chrome-grade-sheen);
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.55),
     2px 2px 0 rgba(0, 0, 0, 0.22);
 }

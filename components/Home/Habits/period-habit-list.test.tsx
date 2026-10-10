@@ -86,4 +86,68 @@ describe("PeriodHabitList", () => {
     expect(screen.getByRole("checkbox", { name: "Weekly review 6/15" })).toHaveAttribute("aria-checked", "false")
     expect(screen.queryByRole("img", { name: /missed opportunity/i })).not.toBeInTheDocument()
   })
+
+  it("keeps a partial value visible and hides a row at 100%", () => {
+    const key = periods[0].key
+    const partial = {
+      id: "pages",
+      name: "Read 30 pages",
+      type: TaskType.GOAL,
+      goal: 30,
+      frequency: "weekly" as const,
+    }
+    const inProgress = {
+      id: "coverage",
+      name: "log 75% of the week",
+      type: TaskType.GOAL,
+      goal: 75,
+      frequency: "weekly" as const,
+    }
+    const note = {
+      id: "social",
+      name: "Something social",
+      type: TaskType.TEXT,
+      frequency: "weekly" as const,
+    }
+    const met = {
+      id: "cook",
+      name: "cook at least 2 times per week",
+      type: TaskType.GOAL,
+      goal: 2,
+      frequency: "weekly" as const,
+    }
+    const fullRow = {
+      id: "friend",
+      name: "Make a new friend",
+      type: TaskType.TEXT,
+      frequency: "weekly" as const,
+    }
+    render(
+      <PeriodHabitList
+        tasks={[partial, inProgress, note, met, fullRow]}
+        periods={periods}
+        data={{
+          [key]: {
+            pages: { value: 2, goal: 30 },
+            coverage: { value: 30, goal: 75 },
+            social: { text: "elijah comin home" },
+            cook: { value: 2, goal: 2, completed: true },
+            friend: { text: "Margot" },
+          },
+        }}
+        onUpdate={vi.fn()}
+        onEdit={vi.fn()}
+        hideCompleted
+        calculateTaskPercentage={(id) =>
+          id === "pages" ? 7 : id === "coverage" ? 61 : id === "social" ? 67 : 100
+        }
+        calculatePeriodPercentage={() => 0}
+      />,
+    )
+    expect(screen.getByText("Read 30 pages")).toBeInTheDocument()
+    expect(screen.getByText("log 75% of the week")).toBeInTheDocument()
+    expect(screen.getByText("Something social")).toBeInTheDocument()
+    expect(screen.queryByText("cook at least 2 times per week")).not.toBeInTheDocument()
+    expect(screen.queryByText("Make a new friend")).not.toBeInTheDocument()
+  })
 })

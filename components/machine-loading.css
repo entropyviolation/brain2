@@ -31,8 +31,8 @@
   align-items: center;
   gap: 8px;
   padding: 7px 8px 7px 7px;
-  background: var(--fascia-bay, #c0c0c0);
-  box-shadow: var(--fascia-bay-ring, inset -1px -1px #fff, inset 1px 1px #404040);
+  background: var(--fascia-bay, var(--chrome-face));
+  box-shadow: var(--fascia-bay-ring, inset -1px -1px #fff, inset 1px 1px var(--chrome-ink-soft));
 }
 
 .ml-load[data-size="pip"] .ml-chassis {
@@ -91,7 +91,7 @@
   overflow: hidden;
   flex: none;
   background: var(--fascia-crt-glass, #070c0a);
-  box-shadow: var(--fascia-crt-ring, inset 0 0 0 1px #3a3e42);
+  box-shadow: var(--fascia-crt-ring, inset 0 0 0 1px var(--chrome-pressed));
 }
 
 .ml-load[data-size="nest"] .ml-glass {
@@ -246,7 +246,7 @@
   letter-spacing: 0.04em;
   color: var(--ml-phosphor);
   background: var(--fascia-scope, #070c0a);
-  box-shadow: var(--w95-field, inset 1px 1px #404040, inset -1px -1px #fff);
+  box-shadow: var(--w95-field, inset 1px 1px var(--chrome-ink-soft), inset -1px -1px #fff);
   text-shadow: 0 0 4px rgba(125, 255, 196, 0.9);
 }
 

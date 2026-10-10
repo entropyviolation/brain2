@@ -13,12 +13,15 @@ export function PriorityMathPanel({
   overall,
   priority,
   label = "Prioritized habits",
+  /** Grade sheet uses a milled control. Good days keeps the ledger link. */
+  explainLabel,
 }: {
   enabled: boolean
   onEnabledChange: (value: boolean) => void
   overall: number
   priority: number | null
   label?: string
+  explainLabel?: string
 }) {
   const [open, setOpen] = useState(false)
   const blended =
@@ -34,8 +37,13 @@ export function PriorityMathPanel({
         onCheckedChange={onEnabledChange}
         label={`Count ${label.toLowerCase()} at a 50% floor`}
       />
-      <button type="button" className="habit-priority-math-toggle" onClick={() => setOpen((v) => !v)}>
-        {open ? "Hide" : "Show"} the ledger
+      <button
+        type="button"
+        className="habit-priority-math-toggle"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+      >
+        {explainLabel ?? `${open ? "Hide" : "Show"} the ledger`}
       </button>
       {open && (
         <div className="habit-priority-ledger">

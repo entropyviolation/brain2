@@ -116,13 +116,21 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   `lib/capture-target.ts`. Colon paths (`list: item`, `folder: list: item`,
   nested `folder: folder: list: item`), live destination chips, optional
   **Send to Inbox for clarification** (on by default; uncheck to file on the
-  target list or All Items). `-mb` / `-monkey` files the line in **Monkey brain**.
+  target list or All Items). A date, time, duration, or priority is applied and
+  left in the title. **Plain** (checkbox, default off) or `-p` / `-plain` stores
+  the line as written and detects none of that. `-mb` / `-monkey` files the line
+  in **Monkey brain** unless Plain is on.
   Shorthand help in-dialog
-  (`components/capture-shorthand.tsx`). A list this shorthand creates is not
+  (`components/capture-shorthand.tsx`). **Bulk** in the same dialog writes
+  through `writeBulkCapture`. **Cmd/Ctrl-Shift-A** opens Quick Add and prefills
+  a highlighted selection. A list this shorthand creates is not
   sent to the Scheduler, even when its folder is.
-- §4.3 Bulk Add — ✅ `components/enhanced-bulk-add.tsx`. Header lines ending in
-  `:` (`list:` or `folder: list:`), same path + smart-parse on item lines,
-  auto-creates folders/lists. Inbox checkbox off by default (files onto lists).
+- §4.3 Bulk Add — ✅ `components/enhanced-bulk-add.tsx` `writeBulkCapture`,
+  reached from Quick Add’s **Bulk** checkbox (same dialog) and from Inbox bulk
+  edit. Header lines ending in `:` (`list:` or `folder: list:`), same path +
+  smart-parse on item lines, auto-creates folders/lists. The Quick Add inbox
+  checkbox stays as the user left it (on when the dialog opens). The standalone
+  Bulk Add dialog (Inbox edit, mobile) still defaults the inbox checkbox off.
 - Apple Notes ingest — ✅ This Mac: `components/notes-ingest.tsx` +
   `lib/apple-notes.ts` + `electron/apple-notes.js` / `apple-notes.jxa`. Electron
   IPC **or** localhost `/api/notes` (`scripts/notes-api.mjs`, loopback only) so
@@ -132,14 +140,15 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   or park the **full note** on Lists → **Mac Notes** → **notes to ingest**.
   The dialog session survives close/reopen so a slow first listing can finish in
   the background. Already-ingested Apple Note ids are skipped.
-  **On My iPhone notes that do not sync:** signed iOS Shortcut
-  [`Dump iPhone Notes to Brain2.shortcut`](shortcuts/Dump%20iPhone%20Notes%20to%20Brain2.shortcut)
-  (AirDrop; [`docs/shortcuts/dump-iphone-notes-to-brain2.md`](shortcuts/dump-iphone-notes-to-brain2.md);
+  **On My iPhone notes that do not sync:** recipe
+  [`dump-iphone-notes-to-brain2.md`](shortcuts/dump-iphone-notes-to-brain2.md)
+  and `npm run shortcut:iphone-notes` (the signed `.shortcut` is not in the repo;
+  `Dump iPhone Notes to Brain2.wflow.json` will not import;
   Find Notes “is in the last” + Pick a note / Shortcut Input; composite
   `id: Name|Folder|Modified` — not `properties.notes` / Identifier);
   `lib/ingest/apply-iphone-notes.ts` parks on Lists → **iPhone Notes Store** →
-  **Parked**; header **Phone Notes** (`components/iphone-notes-store.tsx`) is the
-  queue. Separate from Mac From Notes.
+  **Parked**; **Phone Notes** (`components/iphone-notes-store.tsx`, Settings and
+  Lists settings → **Notes and ingest**) is the queue. Separate from Mac From Notes.
 - **Message ingest (Telegram first)** — ✅ **BIM** (Brain2 Ingestion Messenger).
   Phone texts with short key phrases apply through the same capture / habit /
   tracking writes as the desktop UI, and **read back** lists, folders, inbox,
@@ -160,8 +169,9 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   `npm run phone:hub` (hydrate persist, own Telegram, webhook optional).
   Shortcuts: `got milk`, `n …` (a discrete tick at send time, also on the covering
   block; `day:` stays the day jot), custom first-word aliases (e.g. `store`
-  → `groc`). **On My iPhone Notes:** AirDrop `Dump iPhone Notes to Brain2.shortcut`
-  → `iphone-notes:` → iPhone Notes
+  → `groc`). **On My iPhone Notes:** generate the signed shortcut with
+  `npm run shortcut:iphone-notes` ([recipe](shortcuts/dump-iphone-notes-to-brain2.md)),
+  AirDrop that file, then `iphone-notes:` → iPhone Notes
   Store. **iPhone Screen Time / Calls / Texts:** typed Telegram verbs
   (`screen:`, `call:`, `text:`, `plan for rn:`, `do:`, `to do today:`, `gm`, `review`, `gps:`) or AirDrop
   [`Screen Time to Brain2.shortcut`](shortcuts/Screen%20Time%20to%20Brain2.shortcut),
@@ -444,9 +454,9 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   photograph) is the friend instrument: lace portrait, bond tubes, voice dial,
   equalizer, tabs (Today, Personality, Keepsakes, Journal), mission card, and
   list-bias beads. The **worn friend persists across refresh**
-  (`cogs-friend-worn` pin) and auto-changes only on **Monday**
-  or when the user changes it. Returning friends may say **Hi again**. Cutouts
-  persist in `cogs-friend-pic:<id>`. A **preapproved pack** (`animalsrcs/` →
+  (`brain2-friend-worn`; reads prefer `brain2-*`) and auto-changes only on **Monday**
+  or when the user changes it. Returning friends may say **Hi again**. Cutout
+  bytes live in IndexedDB `idb:friend_<id>`; gallery JSON holds `friend:<id>`. A **preapproved pack** (`animalsrcs/` →
   `public/friend-pack/`) seeds unnamed gallery cards you name yourself; shuffle
   picks among those cards. Gallery text fields use navy focus.
   Gallery **Remove** confirms; dismissed friends stay gone. Plan + remaining
@@ -477,7 +487,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   Perfect output higher than last week).
   × asks Are you sure? before hide. The weekday plate is the clock's date.
   Overview squares follow the selected day unless **Widgets → Follow the clock**
-  is on (`cogs-home-widgets` persist v9, default off). Habits, Plan, To Do,
+  is on (`brain2-home-widgets` persist v9, default off). Habits, Plan, To Do,
   Goals, and Tracking stay on the selected day either way.
   Centered CRT numerals, three Habits tints, shared `--hab-crt-green`.
   All time / today / week / month share one Points tile. **Widgets** sits in
@@ -540,7 +550,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   (mean of the weeks or months on that sheet — seven weeks, this civil month, this app quarter, four weeks, or this synodic month; year so far, 12 months ending this month, or since the stored birthday, default 5 May) and **Perfect output**. Daily **New habit** is on
   the Habits Tab Control Panel on every tab. Optional Daily **heatmap** (sidebar Heatmap View rocker)
   with infinite scroll into the past, jewelry cells in the **same light metal well**
-  as the checklist, a **Sort Habits** milled bay (CRT selected keys) above grouped Heatmap View /
+  as the checklist, a Priority bar (sort select, highlight, streaks) above the grid, and grouped Heatmap View /
   **Day View** / **Hide Completed Today** (persisted) / **Hide completed and missed** (persisted, default off; hatches completed and missed-op cells, does not remove rows) / **Loading Bar** / **Small LEDs** rockers, **Missed op wand** under **Exemption wand**, today as a **solid** mint fill, and noble-gas tubes for Week/Span
   grade and Perfect output (Willpower gems stay a crystal, plate pinned to the control panel
   foot with a solid **Physics** key; **New habit** matches that raised metal). Daily/Weekly/Monthly/Season sit in one **four-up** period bay. One inset gem/edit sits far left;
@@ -589,11 +599,31 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   the goal. Weekly, monthly, and season habits can also add up one daily habit across the
   days so far (`habitValueLink`, `lib/habit-value-sync.ts`). Weekly habits can also link
   **No daily habit at 0%**
-  (`lib/habit-completion-source.ts`, `lib/habit-coverage-sync.ts`). **Completion sources**
-  are an ordered trust list on the habit (`WeeklyTask.completionSources`,
-  `lib/habit-completion-trust.ts`): the first source with an observation wins.
-  Sources: by hand, tracking tags, tagged tasks, activity occupancy, sleep clock, next actions,
-  daily habits floor, daily habit total, daily completion average, phone keywords.
+  (`lib/habit-completion-source.ts`, `lib/habit-coverage-sync.ts`). Every daily habit’s
+  completion for the period is above 0, or the habit is unmet. **Allow this many at 0**
+  (`dailyFloorLink.allowAtZero`, optional, default 0) lets that many daily habits sit at 0.
+  A missing number is 0, so an old habit still needs every daily habit above 0. Persist stays
+  at 26. **Completion sources**
+  are a pipeline on the habit form (`WeeklyTask.completionPipelines`, flattened to
+  `WeeklyTask.completionSources`, `lib/habit-completion-trust.ts`,
+  `lib/habit-completion-pipeline.ts`): the first source with an observation wins.
+  An empty source is skipped. A hand-typed cell still wins. Broad types: By hand,
+  Tags (the tagged-task count), Tracking tags (minutes), Tracking stats (activity
+  occupancy and sleep clock), Habits stats (a set of daily, weekly, or monthly
+  habits, then points: week grade, perfect output, a day’s percent or the set of
+  days, a habit’s completion or the set of habits, plus the engines daily habits
+  floor, daily habit total, and daily completion average — each included engine
+  has a plain sentence and a live readout; a set previews names and percents.
+  **Better than last week** stores which points, a previous-period compare, and
+  how many must be strictly higher — default those three week points and 2 of 3 —
+  on the pipeline row, `lib/habit-period-compare.ts`. A tie is not higher. It does
+  not create a habit and it does not rewrite completion cells. A cell with no By
+  hand source opens a read-only detail of that square instead of an editor),
+  Lists (what is counted: Sent, Completed, or added this period; what the target is: this
+  period’s set, the list length, or 1). The old list modes still load: all complete,
+  one complete, one added, sent this week. Sent this week is measure Sent and target this
+  period’s set (8 sent and 5 unsent is 8/13). Phone whole-message keywords stay the
+  **BIM Keywords** pipeline. The stored id for BIM Keywords stays `keywords`.
   **Daily completion average** (`dailyCompletionAverage`, `lib/habit-daily-completion-average.ts`)
   is the raw mean of each daily habit’s row percent for a Monday week (the week % column),
   or for the days of a month or season that have already happened. The habit’s goal is the
@@ -714,7 +744,15 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
 ## §12 Tracking / Activity Log — 🟡
 - TimeGrid minute painter — ✅ `lib/time-entries.ts` (interval model) +
   `lib/time-tracking-store.ts` + `components/Home/Tracking/time-grid.tsx`; header
-  **Tracking** button opens the same grid in a dialog (`cognitive-state.tsx`).
+  **Now** opens a wide popup (`cognitive-state.tsx` → `components/header-tracking/`).
+  The caption is **Recent now** or **Upcoming now**. **Current moment** (Activity,
+  Location, Mood, Company, with when each was last true, plus Working on, Events,
+  and Thought process) sits above the Tracking / Plan switch and is shared.
+  **Update state** can extend one block through now or start a separate block
+  at this minute. Tracking adds the day grid and day notes. Plan adds tasks,
+  planned actions, and the day plan log. Home → Tracking stays the full desk.
+  Later, Current moment may stack tracked past and planned future as rows of
+  colored cards. Not built.
   Time is stored as minute-resolution intervals; **cell size** (1/5/10/15/30 min) is
   a rendering choice that never regroups stored time. Persist v4 migrates the old
   15-minute slot arrays. Cell size **1m / 5m / 10m / 15m / 30m** sits on the Time
@@ -769,7 +807,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
 - **Activity Log** — ✅ `components/Home/Tracking/tracking-activity-log.tsx`
   lists every block of the day with its times, duration, variants, title and the
   tags it feeds, shows untracked gaps as one aligned row (time, Untracked · duration,
-  white note, Fill, 22px `.trk-gap-add` **+**), **Log activity** once on this tab’s `.trk-period` (Time Grid / Day Log keep the grid-rail latch next to TIME/DIV / view modes; optional name, notes, optional **Date** on start/end, **right now** on a focused clock, and **discrete events** with one clock time that can
+  white note, Fill, 22px `.trk-gap-add` **+**), **Log activity** once on this tab’s `.trk-period` (Time Grid / Day Log keep the grid-rail latch next to TIME/DIV / view modes; optional name, notes, optional **Date** on start/end, **Now** inside the clock popup, and **discrete events** with one clock time that can
   start or end a state block), and **Done this day** (To Do items finished on this
   calendar day). **Place as assumed** writes a hatched block into an open gap
   (`precision: "estimated"`, `estimateOf: { kind: "done", id }`). **Confirm**
@@ -796,7 +834,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   keys are local calendar days. Agenda cards sit to the right of the time labels.
 - **Tracking log** — ✅ `components/Home/Tracking/tracking-log-view.tsx` on the
   Home Tracking fascia (persisted with the other view keys). The selected local
-  day. The composer is Event, Switch, Intake (Food / Drink / Drug), Note, and Thought.
+  day. The composer is Event, Switch, Intake (Food / Drink / Drug), Note, and Thought process.
   Under the composer, **Counts** (`brain2-count-statuses`) tallies a name (joints, days happy). Each + stores a time. An optional drug, food, or drink class also paints that intake instant. An optional keyword is saved in `brain2-log-keywords`, and `log:` of that phrase increments the count.
   Food, drink, and drugs are Activity instants with
   `intakeClass` and `eventKind` `intake.food` / `intake.drink` / `intake.drug`.
@@ -809,9 +847,8 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   `started …` on the Switch pen plus `switchFrom` / `switchTo`. Another view
   paints that scope: To is the pen, the tick color is the destination.
   `so:` / `switch goal:` still store `objective …` on the Objective pen, in the
-  same Switch list. Note is a Text log instant. Thought is that same instant
-  with `eventKind` `thought-process` (a specialized note: the crystallized
-  thought of this moment), shelved under Thought. Every tracking-log instant (intake, event, note, keyword log, and switch, including one painted on Location, Mood, Company, or Activity) is a vertical tick on the Time grid and a row or one-minute slab where Activity Log and Day Log already draw instants (`discrete-log-instants.ts`). A scoped switch stays on that view. Older rows are recognized from the fields they already have. A painted interval stays a block. The clock is exact unless
+  same Switch list. Note is a Text log instant. Thought process is that same instant
+  with `eventKind` `thought-process` (a guiding strand of this moment: why you are doing something, what you expect to do next, and how it lands — not a general note, a one-word mood, or a short activity log such as brushed teeth), shelved under Thought process. Every tracking-log instant (intake, event, note, keyword log, and switch, including one painted on Location, Mood, Company, or Activity) is a vertical tick on the Time grid and a row or one-minute slab where Activity Log and Day Log already draw instants (`discrete-log-instants.ts`). A scoped switch stays on that view. Older rows are recognized from the fields they already have. A painted interval stays a block. The clock is exact unless
   Estimated or Unknown; an unknown clock is a badge, and the bot keeps the
   named minute for placement. Log lines, switch lines, and tracking-note clocks
   use `parseExpectedWhen` (a bare clock is military; ordinary inbox text is not).
@@ -858,8 +895,9 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   in `.append-log-history` (`notesWellExpanded` on `brain2-tracking-view-prefs`).
   Source of truth is `brain2-tracking-day-notes`
   (`lib/day-notes-persist.ts`), written on submit and shown under Time Grid,
-  Activity Log, Day Log, and Tracking log. Mirrored into `cogs-timegrid-store.dayNotes`
-  (persist v5). A hub pick of painted intervals cannot wipe the dedicated key;
+  Activity Log, Day Log, and Tracking log. Persist **v5** added `dayNotes` on
+  the timegrid blob; that blob does not rewrite the field on submit. The
+  current timegrid persist version is **v15**. A hub pick of painted intervals cannot wipe the dedicated key;
   persist merge + vault-guard overlay copy that map back onto the timegrid blob.
   Reads union `brain2-` and `cogs-` (immutable, id'd entries), so a pair split by
   a quota-failed write heals instead of hiding the newest note; a failed write
@@ -992,7 +1030,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   Tracked and manual contributions live in separate fields on `TaskCompletion`,
   so the sync is idempotent and reversible. See §9.
 - **Operations → Tracking** — ✅ **Working on this now** on an operation (also
-  Home → Tracking and the header Tracking dialog) paints a minute-accurate
+  Home → Tracking and the header Now dialog) paints a minute-accurate
   Activity block for the live session and, on stop, writes `worked on {name}`
   into To Do Done plus `timeLogs` on the operation. The block stays editable.
   Operation Settings tags are the same library habits link. See

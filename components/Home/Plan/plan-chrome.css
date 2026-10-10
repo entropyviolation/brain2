@@ -67,15 +67,15 @@
   flex-direction: column;
   gap: 8px;
   padding: 10px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
-    linear-gradient(165deg, #d4d8dc 0%, var(--p-surface) 48%, #969a9e 100%);
+    linear-gradient(165deg, var(--chrome-sheen) 0%, var(--p-surface) 48%, var(--chrome-shade) 100%);
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.75),
     inset 0 -1px 0 rgba(40, 42, 46, 0.4),
-    inset 0 0 0 2px #b0b4b8;
+    inset 0 0 0 2px var(--chrome-inset);
 }
 
 .plan95 .plan-fascia-row {
@@ -91,12 +91,12 @@
   gap: 8px;
   min-height: 40px;
   padding: 4px 10px 4px 6px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background:
     radial-gradient(ellipse at 18% 0%, rgba(125, 255, 196, 0.14), transparent 46%),
     #070c0a;
   box-shadow:
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     inset 0 1px 0 rgba(255, 255, 255, 0.14),
     inset 0 10px 14px rgba(0, 0, 0, 0.4);
 }
@@ -114,7 +114,7 @@
 .plan95 .plan-mark-note {
   margin: 0;
   padding: 2px 6px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.14em;
@@ -151,7 +151,7 @@
   min-height: 30px;
   padding: 5px 12px 6px;
   border: 0;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font: inherit;
   font-size: 11px;
   font-weight: 700;
@@ -161,12 +161,12 @@
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
-    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--p-surface) 70%, #9a9ea2 100%);
+    linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 36%, var(--p-surface) 70%, var(--chrome-key-shade) 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     inset 0 -1px 0 rgba(55, 58, 62, 0.45),
-    0 0 0 1px #4a4e52,
-    0 1px 0 #6a6e72;
+    0 0 0 1px var(--chrome-ring-deep),
+    0 1px 0 var(--chrome-lip);
   cursor: pointer;
   white-space: nowrap;
 }
@@ -193,7 +193,7 @@
 .plan95 .append-log-submit:not(:disabled):active {
   box-shadow:
     inset 0 1px 2px rgba(0, 0, 0, 0.35),
-    0 0 0 1px #3a3e42;
+    0 0 0 1px var(--chrome-pressed);
   filter: none;
 }
 
@@ -206,7 +206,7 @@
     radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.18), transparent 55%),
     #070c0a;
   box-shadow:
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     inset 0 8px 10px rgba(0, 0, 0, 0.4);
 }
 
@@ -214,7 +214,7 @@
 .plan95 .plan-period-today:disabled,
 .plan95 .append-log-copy:disabled,
 .plan95 .append-log-submit:disabled {
-  color: #808080;
+  color: var(--chrome-lo);
   cursor: default;
   filter: none;
 }
@@ -236,12 +236,12 @@ body.win95-app .plan95 .plan-view-keys[role="tablist"] {
   max-width: 28rem;
   margin: 0;
   padding: 4px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
-    #b4b8bc;
+    var(--chrome-nickel);
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 2px 3px rgba(0, 0, 0, 0.18);
 }
 
@@ -255,7 +255,7 @@ body.win95-app .plan95 .plan-view-keys [role="tab"] {
   min-width: 0;
   min-height: 28px;
   padding: 4px 10px 5px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -264,10 +264,10 @@ body.win95-app .plan95 .plan-view-keys [role="tab"] {
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 28%),
-    linear-gradient(165deg, #eceef0, #c0c4c8);
+    linear-gradient(165deg, var(--chrome-key-sheen), var(--chrome-mill-soft));
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 0 0 1px #4a4e52;
+    0 0 0 1px var(--chrome-ring-deep);
 }
 
 body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"] {
@@ -278,7 +278,7 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"] {
     radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.2), transparent 55%),
     #070c0a;
   box-shadow:
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     inset 0 8px 10px rgba(0, 0, 0, 0.4);
 }
 
@@ -321,7 +321,7 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
   gap: 10px;
   min-height: 24px;
   padding: 4px 10px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
     var(--p-surface);
@@ -374,12 +374,12 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
   flex-shrink: 0;
   min-height: 280px;
   padding: 8px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
-    linear-gradient(180deg, #d8dce0, var(--p-surface) 42%, #a8acb0);
+    linear-gradient(180deg, var(--chrome-mill-hi), var(--p-surface) 42%, var(--chrome-stone));
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.7),
     inset 0 2px 3px rgba(0, 0, 0, 0.1),
     var(--p-sunken);
@@ -402,7 +402,7 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
 .plan95 .plan-rail-count {
   margin-left: auto;
   padding: 2px 8px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-weight: 700;
   letter-spacing: 0.08em;
   color: var(--p-crt);
@@ -411,7 +411,7 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
     radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.16), transparent 55%),
     #070c0a;
   box-shadow:
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     inset 0 4px 6px rgba(0, 0, 0, 0.35);
 }
 
@@ -421,13 +421,13 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
   gap: 6px;
   margin: 0 0 2px;
   padding: 8px 10px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-size: 11px;
   line-height: 1.4;
   color: #222;
   background: #fff;
   box-shadow:
-    0 0 0 1px #6a6e72,
+    0 0 0 1px var(--chrome-lip),
     var(--p-field);
 }
 
@@ -459,7 +459,7 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
   margin: 0 6px 4px;
   font-size: 11px;
   line-height: 1.4;
-  color: #404040;
+  color: var(--chrome-ink-soft);
 }
 
 .plan95 .plan-rail-list {
@@ -532,13 +532,13 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
 .plan95 .plan-rail-meta {
   display: block;
   font-size: 10px;
-  color: #404040;
+  color: var(--chrome-ink-soft);
 }
 
 .plan95 .plan-rail-mins {
   flex-shrink: 0;
   font-size: 10px;
-  color: #404040;
+  color: var(--chrome-ink-soft);
 }
 
 .plan95 .plan-rail-tools {
@@ -547,7 +547,7 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
   gap: 4px;
   margin: 0 0 2px;
   padding: 6px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0 1px, transparent 1px 2px),
     var(--p-face);
@@ -560,7 +560,7 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
   height: 24px;
   padding: 2px 6px;
   border: 0;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   background: #fff;
   color: #000;
   font: inherit;
@@ -574,12 +574,12 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
   gap: 4px;
   margin: 0 0 2px;
   padding: 4px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
-    #b4b8bc;
+    var(--chrome-nickel);
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 2px 3px rgba(0, 0, 0, 0.16);
 }
 
@@ -604,7 +604,7 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
   height: 30px;
   padding: 4px 8px;
   border: 0;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: #fff;
   box-shadow: var(--p-field);
   font: inherit;
@@ -629,13 +629,13 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
   min-width: 0;
   flex: 1;
   padding: 10px 12px 12px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   color: #111;
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0 1px, transparent 1px 2px),
-    linear-gradient(180deg, #d8dce0, var(--p-surface) 40%, #a8acb0);
+    linear-gradient(180deg, var(--chrome-mill-hi), var(--p-surface) 40%, var(--chrome-stone));
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.65),
     var(--p-sunken);
   --muted-foreground: 215.4 16.3% 46.9%;
@@ -709,10 +709,10 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
 
 .plan95 .plan-cal {
   overflow-x: auto;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: var(--p-surface);
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     var(--p-raised);
 }
 
@@ -769,7 +769,7 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
 }
 
 .plan95 .plan-day[data-outside="true"] {
-  color: #808080;
+  color: var(--chrome-lo);
   background: #efefef;
 }
 
@@ -822,9 +822,9 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
   background: #070c0a;
   padding: 1px 4px;
   line-height: 1.35;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   box-shadow:
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     inset 0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
@@ -860,12 +860,12 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
   min-width: 0;
   padding: 8px 12px 12px;
   border: 0;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0 1px, transparent 1px 2px),
-    linear-gradient(180deg, #d8dce0, var(--p-surface) 40%, #a8acb0);
+    linear-gradient(180deg, var(--chrome-mill-hi), var(--p-surface) 40%, var(--chrome-stone));
   box-shadow:
-    0 0 0 1px #6a6e72,
+    0 0 0 1px var(--chrome-lip),
     inset 0 1px 0 rgba(255, 255, 255, 0.65),
     var(--p-sunken);
 }
@@ -899,7 +899,7 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
   margin: 0;
   padding: 10px 12px 18px;
   border: 0;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   resize: vertical;
   background: #fff;
   color: #000;
@@ -924,7 +924,7 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
   margin: 4px 2px 0;
   font-size: 11px;
   line-height: 1.4;
-  color: #404040;
+  color: var(--chrome-ink-soft);
 }
 
 .append-log {
@@ -950,12 +950,12 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
   flex: 1;
   gap: 4px;
   padding: 4px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
-    #b4b8bc;
+    var(--chrome-nickel);
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 2px 3px rgba(0, 0, 0, 0.16);
 }
 
@@ -964,7 +964,7 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
   min-height: 26px;
   padding: 4px 10px;
   border: 0;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font: inherit;
   font-size: 11px;
   font-weight: 700;
@@ -974,10 +974,10 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 28%),
-    linear-gradient(165deg, #eceef0, #c0c4c8);
+    linear-gradient(165deg, var(--chrome-key-sheen), var(--chrome-mill-soft));
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 0 0 1px #4a4e52;
+    0 0 0 1px var(--chrome-ring-deep);
   cursor: pointer;
 }
 
@@ -988,7 +988,7 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
     radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.18), transparent 55%),
     #070c0a;
   box-shadow:
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     inset 0 8px 10px rgba(0, 0, 0, 0.4);
 }
 
@@ -997,7 +997,7 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
   min-height: 28px;
   padding: 4px 14px;
   border: 0;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font: inherit;
   font-size: 11px;
   font-weight: 700;
@@ -1007,12 +1007,12 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
-    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--p-surface, #c0c0c0) 70%, #9a9ea2 100%);
+    linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 36%, var(--p-surface, var(--chrome-face)) 70%, var(--chrome-key-shade) 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     inset 0 -1px 0 rgba(55, 58, 62, 0.45),
-    0 0 0 1px #4a4e52,
-    0 1px 0 #6a6e72;
+    0 0 0 1px var(--chrome-ring-deep),
+    0 1px 0 var(--chrome-lip);
   cursor: pointer;
 }
 
@@ -1022,7 +1022,7 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
     inset 0 0 0 1px #000,
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     inset 0 -1px 0 rgba(55, 58, 62, 0.45),
-    0 0 0 1px #4a4e52;
+    0 0 0 1px var(--chrome-ring-deep);
 }
 
 .append-log-copy:disabled,
@@ -1036,7 +1036,7 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
 .append-log-views button:not([aria-pressed="true"]):active {
   box-shadow:
     inset 0 1px 2px rgba(0, 0, 0, 0.35),
-    0 0 0 1px #3a3e42;
+    0 0 0 1px var(--chrome-pressed);
 }
 
 .append-log-compose {
@@ -1050,7 +1050,7 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
   margin: 4px 2px 0;
   font-size: 11px;
   line-height: 1.4;
-  color: #404040;
+  color: var(--chrome-ink-soft);
 }
 
 .append-log-compose .append-log-hint {
@@ -1068,11 +1068,11 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
   margin: 0;
   padding: 10px 12px 18px;
   border: 0;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   resize: vertical;
   background: #fff;
   color: #000;
-  box-shadow: var(--p-field, inset -1px -1px #fff, inset 1px 1px #808080, inset -2px -2px #dfdfdf, inset 2px 2px #0a0a0a);
+  box-shadow: var(--p-field, inset -1px -1px #fff, inset 1px 1px var(--chrome-lo), inset -2px -2px var(--chrome-mid), inset 2px 2px var(--chrome-frame));
   font: inherit;
   font-size: 12px;
   line-height: 1.5;
@@ -1095,7 +1095,7 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
   flex-shrink: 0;
   padding: 8px 10px 10px;
   background: #fff;
-  box-shadow: var(--p-field, inset -1px -1px #fff, inset 1px 1px #808080, inset -2px -2px #dfdfdf, inset 2px 2px #0a0a0a);
+  box-shadow: var(--p-field, inset -1px -1px #fff, inset 1px 1px var(--chrome-lo), inset -2px -2px var(--chrome-mid), inset 2px 2px var(--chrome-frame));
 }
 
 .append-log-stamp {
@@ -1129,10 +1129,10 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
 .plan95 .plan-week {
   overflow: auto;
   max-height: min(78vh, 780px);
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: #fff;
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     var(--p-field);
 }
 
@@ -1176,7 +1176,7 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
 .plan95 .plan-week-gutter {
   padding: 10px 8px;
   font-size: 11px;
-  color: #404040;
+  color: var(--chrome-ink-soft);
   background: var(--p-face);
   border-right: 1px solid var(--p-shadow);
   border-bottom: 1px solid var(--p-surface);
@@ -1293,11 +1293,11 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
 .agenda95 {
   position: relative;
   overflow-y: auto;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   color: #111;
   background: #fff;
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset -1px -1px var(--chrome-hi, #fff), inset 1px 1px var(--chrome-lo, #808080),
     inset -2px -2px var(--chrome-mid, #dfdfdf), inset 2px 2px var(--chrome-frame, #0a0a0a);
   --muted-foreground: 215.4 16.3% 46.9%;
@@ -1334,13 +1334,13 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
 .agenda95 .agenda-banner-when {
   flex-shrink: 0;
   font-size: 10px;
-  color: #404040;
+  color: var(--chrome-ink-soft);
 }
 
 .agenda95 .agenda-hour {
   display: flex;
   border-bottom: 1px solid var(--p-surface);
-  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--p-shadow, #808080) 18%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--p-shadow, var(--chrome-lo)) 18%, transparent);
 }
 
 .agenda95 .agenda-hour:hover {
@@ -1351,9 +1351,9 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
   width: 4.25rem;
   flex-shrink: 0;
   padding: 14px 10px;
-  border-right: 1px solid var(--p-shadow, #808080);
+  border-right: 1px solid var(--p-shadow, var(--chrome-lo));
   font-size: 12px;
-  color: #404040;
+  color: var(--chrome-ink-soft);
   background: var(--p-face);
 }
 
@@ -1376,9 +1376,9 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
   padding: 4px 8px;
   pointer-events: none;
   cursor: default;
-  color: color-mix(in srgb, var(--ghost-ink, #3a3a3a) 82%, #1a1a1a);
-  background: color-mix(in srgb, var(--ghost-ink, #5c6064) 7%, transparent);
-  border: 1px dashed color-mix(in srgb, var(--ghost-ink, #5c6064) 72%, #404040);
+  color: color-mix(in srgb, var(--ghost-ink, var(--chrome-ink-deep)) 82%, #1a1a1a);
+  background: color-mix(in srgb, var(--ghost-ink, var(--chrome-ring)) 7%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--ghost-ink, var(--chrome-ring)) 72%, var(--chrome-ink-soft));
   box-shadow: none;
   font-size: 12px;
   line-height: 1.3;
@@ -1567,7 +1567,7 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
   padding: 3px !important;
   gap: 0 !important;
   border: none !important;
-  border-radius: 0 !important;
+  border-radius: var(--r-0, 0px) !important;
   background: var(--p-surface) !important;
   color: #000;
   box-shadow: var(--p-raised), 4px 4px 0 rgba(0, 0, 0, 0.35) !important;
@@ -1615,32 +1615,14 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
   line-height: 1.2;
 }
 
+/* Face, size, and the centered × live on `.b2-close-key` (win95.css). */
 .plan95-title-btn {
-  box-sizing: border-box;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   flex-shrink: 0;
-  width: 16px;
-  height: 14px;
-  min-width: 16px;
-  min-height: 14px;
-  max-width: 16px;
-  max-height: 14px;
   margin-left: auto;
-  padding: 0;
-  border: none;
-  line-height: 1;
-  font-size: 11px;
-  font-weight: bold;
-  color: #000;
-  background: var(--p-surface);
-  box-shadow: var(--p-raised);
   cursor: pointer;
-  overflow: hidden;
 }
 
-.plan95-title-btn:active {
+.plan95-title-btn:not(.b2-close-key):active {
   box-shadow: var(--p-sunken);
 }
 
@@ -1700,10 +1682,10 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
   min-height: 28px;
   padding: 5px 16px 6px;
   border: 0;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
-    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--p-surface) 70%, #9a9ea2 100%);
+    linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 36%, var(--p-surface) 70%, var(--chrome-key-shade) 100%);
   color: #1c1e20;
   font: inherit;
   font-size: 11px;
@@ -1714,8 +1696,8 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     inset 0 -1px 0 rgba(55, 58, 62, 0.45),
-    0 0 0 1px #4a4e52,
-    0 1px 0 #6a6e72;
+    0 0 0 1px var(--chrome-ring-deep),
+    0 1px 0 var(--chrome-lip);
   cursor: pointer;
 }
 
@@ -1726,19 +1708,19 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
     inset 0 0 0 1px #000,
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     inset 0 -1px 0 rgba(55, 58, 62, 0.45),
-    0 0 0 1px #4a4e52;
+    0 0 0 1px var(--chrome-ring-deep);
 }
 
 .plan95-dialog-actions button:active,
 .plan95-dialog .plan95-btn:active {
   box-shadow:
     inset 0 1px 2px rgba(0, 0, 0, 0.35),
-    0 0 0 1px #3a3e42;
+    0 0 0 1px var(--chrome-pressed);
 }
 
 .plan95-dialog-actions button:disabled,
 .plan95-dialog .plan95-btn:disabled {
-  color: #808080;
+  color: var(--chrome-lo);
   cursor: default;
 }
 
@@ -1758,7 +1740,7 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
 .plan95-dialog input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),
 .plan95-dialog textarea,
 .plan95-dialog select {
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   background: #fff;
   color: #000;
   box-shadow: var(--p-field);
@@ -1772,12 +1754,6 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
 }
 
 .plan95-dialog button.plan95-title-btn {
-  width: 16px;
-  height: 14px;
-  min-width: 16px;
-  min-height: 14px;
-  max-width: 16px;
-  max-height: 14px;
   padding: 0;
 }
 
@@ -1790,10 +1766,10 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
 .plan95-dialog .plan-stat {
   padding: 6px 8px;
   text-align: center;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: #070c0a;
   box-shadow:
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     inset 0 8px 10px rgba(0, 0, 0, 0.4);
 }
 
@@ -1948,7 +1924,7 @@ body.win95-app .plan95[data-plan-dark="true"] .plan-view-keys [role="tab"][data-
     radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.18), transparent 55%),
     #070c0a;
   box-shadow:
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     inset 0 8px 10px rgba(0, 0, 0, 0.5);
 }
 
@@ -2079,7 +2055,7 @@ body.win95-app .plan95[data-plan-dark="true"] .plan-view-keys [role="tab"][data-
   text-shadow: 0 0 3px var(--p-crt);
   background: #070c0a;
   box-shadow:
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     inset 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
@@ -2280,7 +2256,7 @@ body.win95-app .plan95[data-plan-dark="true"] .plan-view-keys [role="tab"][data-
 
 .plan95 .season-month {
   background: var(--season-wash, #ececec);
-  border: 1px solid #8a8e92;
+  border: 1px solid var(--chrome-slate);
   padding: 6px;
   min-width: 0;
 }

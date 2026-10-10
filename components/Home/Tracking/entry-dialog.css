@@ -27,7 +27,7 @@
   margin: 0 !important;
   transform: translate(-50%, -50%) !important;
   translate: none !important;
-  border-radius: 3px !important;
+  border-radius: var(--r-3, 3px) !important;
   overflow-x: hidden !important;
   overflow-y: auto !important;
   animation: none !important;
@@ -46,10 +46,10 @@
   max-width: 100%;
   margin: 0;
   padding: 6px 10px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: #070c0a;
   box-shadow:
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     inset 0 1px 0 rgba(255, 255, 255, 0.22);
   color: var(--hab-crt-green, #7dffc4) !important;
   font-size: 12px;

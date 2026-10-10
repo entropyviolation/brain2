@@ -1,16 +1,17 @@
 ================================================================================
 SCREENSHOT: 20-dialog-time-tracking.png
-VIEW: Header → Tracking
-AREA: Time Tracking dialog
+VIEW: Header → Now
+AREA: Now dialog (Recent now / Upcoming now)
 SOURCE FILES:
   - components/cognitive-state.tsx
+  - components/header-tracking/
   - components/Home/Tracking/time-grid.tsx
 ================================================================================
 
 GLOBAL CHROME (all screens)
-  Pinned full-width mill title bar (`AppHeader`, sticky top, z-40): navy BRAIN2 caption with Tek POWER lamp + today's-friend jewel (64px chrome + black-mirror well; click for a Stardew Next Action bubble; Esc / × / outside to close) and Friend / Review / System / Capture as Win95 groupboxes of milled press keys. Names stays Names and latches (sunken, aria-pressed); tooltip Stop naming while on. Phosphor counts on Review and Inbox. Quick Add is the default framed key, docked at the right of Capture. Same doors as before — grouped furniture, not a menu bar.
+  Pinned full-width mill title bar (`AppHeader`, sticky top, z-40): navy BRAIN2 caption with Tek POWER lamp + today's-friend jewel (64px chrome + black-mirror well; click for a Stardew Next Action bubble; Esc / × / outside to close) and Friend / Review / System / optional now / Capture as Win95 groupboxes of milled press keys. Names stays Names and latches (sunken, aria-pressed); tooltip Stop naming while on. Phosphor counts on Review and Inbox. Capture is Inbox and Quick Add; Bulk is a checkbox inside Quick Add. Metrics opens from Now → Current moment. Ingest, From Notes, and Phone Notes live in Settings.
   Tabs: milled fascia (brushed bay, raised silver keys, active key a CRT with a round power lamp) — Home · Lists · Docs · Scheduler · Operations · Modules · Analytics.
   Shortcuts: Cmd/Ctrl+K search · capture hotkey → Quick Add.
 
 VIEW-SPECIFIC
-Time Tracking dialog — same stack as Home Time Grid: Working now (if ops); pen tray; view-mode bar (Activity / Location / Mood / Company / Screen Time / iPhone Screen Time / iPhone Calls / iPhone Texts / …); TIME/DIV + Cell + Fill; grid; Untracked.
+Now dialog — wide header popup, not the Home Tracking desk. Caption is Recent now on Tracking and Upcoming now on Plan. Current moment (Activity, Location, Mood, Company, and when each was last true) sits on both panes. Tracking: now or a recent sequence (est. wears ~ and a dashed chip), the real day grid, Events, Thought process, and the day notes log. Plan: a short sequence, the agenda, the day plan log, and a return to Tracking to mark followed, skipped, or an unplanned insert.

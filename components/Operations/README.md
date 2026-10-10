@@ -134,7 +134,7 @@ joins Operations to the Home dashboard's Tracking pens and linked habits.
 
 ## Working on this now
 
-The workspace menubar (and Home → Tracking, and the header Tracking dialog)
+The workspace menubar (and Home → Tracking, and the header Now dialog)
 share one live clock (`lib/operation-work-session.ts` + `lib/work-session-store.ts`):
 
 1. **Working on this now** starts a session. A phosphor lamp and elapsed clock

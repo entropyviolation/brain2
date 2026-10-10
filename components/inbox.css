@@ -31,33 +31,36 @@ body.win95-app .inbox-dialog {
     inset -2px -2px var(--inbox-face), inset 2px 2px var(--inbox-frame);
   --inbox-mill:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
-    linear-gradient(165deg, #d4d8dc 0%, var(--inbox-surface) 48%, #969a9e 100%);
+    linear-gradient(165deg, var(--chrome-sheen) 0%, var(--inbox-surface) 48%, var(--chrome-shade) 100%);
   --inbox-bay-ring:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.75),
     inset 0 -1px 0 rgba(40, 42, 46, 0.4),
-    inset 0 0 0 2px #b0b4b8;
+    inset 0 0 0 2px var(--chrome-inset);
   --inbox-key-face:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
-    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--inbox-surface) 70%, #9a9ea2 100%);
+    linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 36%, var(--inbox-surface) 70%, var(--chrome-key-shade) 100%);
   --inbox-key-ring:
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     inset 0 -1px 0 rgba(55, 58, 62, 0.45),
-    0 0 0 1px #4a4e52,
-    0 1px 0 #6a6e72;
+    0 0 0 1px var(--chrome-ring-deep),
+    0 1px 0 var(--chrome-lip);
   --inbox-crt-glass:
     radial-gradient(ellipse at 18% 0%, rgba(125, 255, 196, 0.16), transparent 48%),
     #070c0a;
   --inbox-crt-ring:
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     inset 0 1px 0 rgba(255, 255, 255, 0.14),
     inset 0 10px 14px rgba(0, 0, 0, 0.4);
 
+  /* Nameplate is ~28px starting after the 10px dialog pad. */
+  --b2-close-top: 13px;
+  --b2-close-right: 13px;
   accent-color: var(--inbox-blue);
   gap: 10px !important;
   padding: 10px 10px 12px !important;
   border: 0 !important;
-  border-radius: 3px !important;
+  border-radius: var(--r-3, 3px) !important;
   color: var(--inbox-ink);
   background-color: var(--inbox-surface) !important;
   background-image:
@@ -65,7 +68,7 @@ body.win95-app .inbox-dialog {
     repeating-linear-gradient(90deg, transparent 0 2px, rgba(255, 255, 255, 0.05) 2px 3px),
     var(--inbox-mill) !important;
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.78),
     inset 0 2px 3px rgba(0, 0, 0, 0.12),
     0 8px 0 rgba(74, 78, 82, 0.55) !important;
@@ -74,37 +77,7 @@ body.win95-app .inbox-dialog {
   -webkit-font-smoothing: none;
 }
 
-/* Close key on the milled face */
-.inbox-dialog > button.absolute,
-body.win95-app .inbox-dialog > button.absolute {
-  top: 8px;
-  right: 8px;
-  width: 22px;
-  height: 22px;
-  border-radius: 2px;
-  opacity: 1;
-  color: var(--inbox-nameplate);
-  background: var(--inbox-key-face);
-  box-shadow: var(--inbox-key-ring);
-}
-
-.inbox-dialog > button.absolute:hover,
-body.win95-app .inbox-dialog > button.absolute:hover {
-  opacity: 1;
-  filter: brightness(1.04);
-}
-
-.inbox-dialog > button.absolute:active,
-body.win95-app .inbox-dialog > button.absolute:active {
-  box-shadow:
-    inset 0 1px 2px rgba(0, 0, 0, 0.35),
-    0 0 0 1px #3a3e42;
-}
-
-.inbox-dialog > button.absolute svg {
-  width: 12px;
-  height: 12px;
-}
+/* Close key is `.b2-close-key` (win95.css). Placement: --b2-close-* on `.inbox-dialog`. */
 
 /* ---- Caption / nameplate ----------------------------------------------- */
 
@@ -117,7 +90,7 @@ body.win95-app .inbox-dialog > button.absolute:active {
   min-height: 28px;
   padding: 6px 12px 7px;
   padding-right: 28px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-size: 11px !important;
   font-weight: 700 !important;
   letter-spacing: 0.14em;
@@ -127,10 +100,10 @@ body.win95-app .inbox-dialog > button.absolute:active {
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0 1px, transparent 1px 2px),
-    linear-gradient(180deg, #eef0f2 0%, var(--inbox-surface) 48%, #a4a8ac 100%);
+    linear-gradient(180deg, var(--chrome-mist) 0%, var(--inbox-surface) 48%, var(--chrome-foot) 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 0 0 1px #6a6e72;
+    0 0 0 1px var(--chrome-lip);
 }
 
 .inbox-dialog [data-radix-dialog-title] svg,
@@ -146,7 +119,7 @@ body.win95-app .inbox-dialog > button.absolute:active {
 .inbox-dialog p[class*="text-muted"],
 .inbox-dialog .text-muted-foreground {
   margin: 0;
-  color: #404040 !important;
+  color: var(--chrome-ink-soft) !important;
   font-size: 11px;
   line-height: 1.45;
 }
@@ -160,12 +133,12 @@ body.win95-app .inbox-dialog > button.absolute:active {
   margin: 0;
   padding: 4px;
   border: 0;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
-    #b4b8bc;
+    var(--chrome-nickel);
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 2px 3px rgba(0, 0, 0, 0.18);
 }
 
@@ -177,7 +150,7 @@ body.win95-app .inbox-dialog > button.absolute:active {
   min-height: 36px;
   padding: 6px 10px 7px;
   border: 0;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   color: #1c1e20;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
   background: var(--inbox-key-face);
@@ -197,7 +170,7 @@ body.win95-app .inbox-dialog > button.absolute:active {
 .inbox-partition:active {
   box-shadow:
     inset 0 1px 2px rgba(0, 0, 0, 0.35),
-    0 0 0 1px #3a3e42;
+    0 0 0 1px var(--chrome-pressed);
 }
 
 .inbox-power-lamp {
@@ -206,7 +179,7 @@ body.win95-app .inbox-dialog > button.absolute:active {
   flex-shrink: 0;
   border-radius: 50%;
   background:
-    radial-gradient(circle at 35% 30%, #6a6e72, #2a2c2e 55%, #0a0a0a);
+    radial-gradient(circle at 35% 30%, var(--chrome-lip), #2a2c2e 55%, var(--chrome-frame));
   box-shadow:
     0 0 0 1px #1a1c1e,
     inset 0 1px 1px rgba(255, 255, 255, 0.25),
@@ -236,7 +209,7 @@ body.win95-app .inbox-dialog > button.absolute:active {
   min-width: 1.75rem;
   min-height: 1.5rem;
   padding: 2px 8px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-style: normal;
   font-variant-numeric: tabular-nums;
   font-size: 12px;
@@ -304,7 +277,7 @@ body.win95-app .inbox-dialog > button.absolute:active {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--inbox-nameplate);
-  background: #c4c8cc;
+  background: var(--chrome-grade-sheen);
   box-shadow: inset 0 -1px rgba(80, 84, 88, 0.35);
 }
 
@@ -318,7 +291,7 @@ body.win95-app .inbox-dialog > button.absolute:active {
   padding: 2px 6px 2px 10px;
   outline: none;
   border: 0 !important;
-  border-radius: 0 !important;
+  border-radius: var(--r-0, 0px) !important;
   background: transparent !important;
   box-shadow: inset 0 -1px rgba(0, 0, 0, 0.12) !important;
 }
@@ -347,7 +320,7 @@ body.win95-app .inbox-dialog > button.absolute:active {
   min-height: 0;
   padding: 0 !important;
   border: 0 !important;
-  border-radius: 0 !important;
+  border-radius: var(--r-0, 0px) !important;
   background: transparent !important;
   box-shadow: none !important;
   color: var(--inbox-ink) !important;
@@ -373,7 +346,7 @@ body.win95-app .inbox-dialog > button.absolute:active {
 .inbox-row-aside {
   display: block;
   font-size: 11px;
-  color: #404040;
+  color: var(--chrome-ink-soft);
 }
 
 .inbox-row-when {
@@ -382,7 +355,7 @@ body.win95-app .inbox-dialog > button.absolute:active {
   gap: 6px;
   font-size: 11px;
   font-variant-numeric: tabular-nums;
-  color: #404040;
+  color: var(--chrome-ink-soft);
   white-space: nowrap;
 }
 
@@ -393,7 +366,7 @@ body.win95-app .inbox-dialog > button.absolute:active {
   color: #1c1e20;
   background: #e4c96a;
   padding: 0 4px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
 }
 
 .inbox-row-tools {
@@ -414,7 +387,7 @@ body.win95-app .inbox-dialog > button.absolute:active {
   font-style: normal;
   font-weight: 700;
   letter-spacing: 0;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: rgba(255, 255, 255, 0.45);
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
 }
@@ -423,7 +396,7 @@ body.win95-app .inbox-dialog > button.absolute:active {
   margin: 0 0 6px;
   font-size: 11px;
   line-height: 1.4;
-  color: #404040;
+  color: var(--chrome-ink-soft);
 }
 
 /* ---- Raised metal action keys ------------------------------------------ */
@@ -431,7 +404,7 @@ body.win95-app .inbox-dialog > button.absolute:active {
 .inbox-dialog button:not(.inbox-partition):not(.absolute):not(.inbox-row-title):not([role="checkbox"]),
 .inbox-dialog [data-slot="button"] {
   border: 0 !important;
-  border-radius: 2px !important;
+  border-radius: var(--r-2, 2px) !important;
   min-height: 28px;
   padding: 4px 12px 5px !important;
   color: #1c1e20 !important;
@@ -452,11 +425,11 @@ body.win95-app .inbox-dialog > button.absolute:active {
 .inbox-dialog button:not(.inbox-partition):not(.absolute):not(.inbox-row-title):active:not(:disabled) {
   box-shadow:
     inset 0 1px 2px rgba(0, 0, 0, 0.35),
-    0 0 0 1px #3a3e42 !important;
+    0 0 0 1px var(--chrome-pressed) !important;
 }
 
 .inbox-dialog button:not(.inbox-partition):not(.absolute):not(.inbox-row-title):disabled {
-  color: #808080 !important;
+  color: var(--chrome-lo) !important;
   text-shadow: none;
   cursor: default;
   filter: none;
@@ -488,7 +461,7 @@ body.win95-app .inbox-dialog > button.absolute:active {
   gap: 8px;
   margin: 0;
   font-size: 11px;
-  color: #404040;
+  color: var(--chrome-ink-soft);
 }
 
 .inbox-foot-meta .inbox-crt-count {
@@ -509,13 +482,13 @@ body.win95-app .inbox-dialog > button.absolute:active {
   gap: 8px;
   padding: 6px 9px;
   border: 0;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-size: 11px;
   color: var(--inbox-nameplate);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0 1px, transparent 1px 2px),
-    #c8ccd0;
+    var(--chrome-pewter);
   box-shadow: var(--inbox-bay-ring);
 }
 
@@ -524,8 +497,8 @@ body.win95-app .inbox-dialog > button.absolute:active {
   min-height: 360px;
   overflow-y: auto;
   padding: 0;
-  border-radius: 2px;
-  background: #b8bcbf;
+  border-radius: var(--r-2, 2px);
+  background: var(--chrome-ash);
   box-shadow: var(--inbox-sunken);
 }
 
@@ -544,7 +517,7 @@ body.win95-app .inbox-dialog > button.absolute:active {
 .inbox-walk-progress {
   height: 8px;
   margin-top: 8px;
-  background: #808080;
+  background: var(--chrome-lo);
   box-shadow: inset 1px 1px 0 #000, inset -1px -1px 0 #fff;
 }
 
@@ -612,7 +585,7 @@ body.win95-app .inbox-dialog > button.absolute:active {
 .inbox-dialog textarea,
 .inbox-dialog select {
   border: 0 !important;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   box-shadow: var(--inbox-field) !important;
   background: #fff !important;
 }

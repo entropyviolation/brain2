@@ -1,7 +1,8 @@
 import type { Folder, Task, List } from "@/lib/types"
-import { isFolderAllItemsCategoryId, folderListCategoryIds, getTasksForFolderAllView } from "@/lib/folder-all-items"
+import { isFolderAllItemsCategoryId, getTasksForFolderAllView } from "@/lib/folder-all-items"
 import { isPeriodLedgerListId, isScheduledFolderId, getTasksForScheduledFolder } from "@/lib/scheduled-lists-sync"
-import { getRootFolders, getFolderChildren } from "@/lib/folder-tree"
+import { getRootFolders } from "@/lib/folder-tree"
+import { navContainer } from "@/lib/lists-navigator"
 import { ROOT_ALL_FOLDER_ID, SMART_LISTS, OBJECTIVES_LIST_ID } from "@/components/Lists/constants"
 import { isFolderHiddenFromGlobalAll, isListHiddenFromGlobalAll, filterTasksHiddenFromGlobalAll } from "@/lib/module-lists"
 import { isClearedFromWork } from "@/lib/completion-status"
@@ -110,26 +111,46 @@ export function buildGridEntries(params: BuildGridEntriesParams): GridEntry[] {
         add({ kind: "list", id: c.id, name: c.name, color: c.color, icon: c.icon, count: getTasksForCategory(c.id).length }),
       )
   } else if (currentFolder) {
-    getFolderChildren(folders, currentFolder.id).forEach((f) =>
-      add({ kind: "folder", id: f.id, name: f.name, color: f.color, icon: f.icon, count: countForFolder(f) }),
-    )
-    const folderListIds = folderListCategoryIds(currentFolder)
+    const ordered = navContainer(categories, folders, { kind: "folder", id: currentFolder.id })
+    const folderById = new Map(folders.map((folder) => [folder.id, folder]))
+    const listById = new Map(categories.map((list) => [list.id, list]))
+    const addOrdered = (ref: (typeof ordered)[number]) => {
+      if (ref.kind === "folder") {
+        const folder = folderById.get(ref.id)
+        if (!folder) return
+        add({ kind: "folder", id: folder.id, name: folder.name, color: folder.color, icon: folder.icon, count: countForFolder(folder) })
+        return
+      }
+      const list = listById.get(ref.id)
+      if (!list) return
+      add({
+        kind: "list",
+        id: list.id,
+        name: list.name,
+        color: list.color,
+        icon: list.icon,
+        count: getTasksForCategory(list.id).length,
+      })
+    }
     const allCount = isScheduledFolderId(currentFolder.id)
       ? getTasksForScheduledFolder(allTasks, currentFolder.id).length
       : getTasksForFolderAllView(allTasks, currentFolder).length
-    add({
-      kind: "folder-all",
+    const allEntry = {
+      kind: "folder-all" as const,
       id: `all-${currentFolder.id}`,
       name: "All Items",
       color: currentFolder.color,
       icon: currentFolder.icon,
       count: allCount,
-    })
-    categories
-      .filter((c) => folderListIds.includes(c.id))
-      .forEach((c) =>
-        add({ kind: "list", id: c.id, name: c.name, color: c.color, icon: c.icon, count: getTasksForCategory(c.id).length }),
-      )
+    }
+    if (!currentFolder.contentsOrder?.length) {
+      ordered.filter((ref) => ref.kind === "folder").forEach(addOrdered)
+      add(allEntry)
+      ordered.filter((ref) => ref.kind === "list").forEach(addOrdered)
+    } else {
+      add(allEntry)
+      ordered.forEach(addOrdered)
+    }
   }
 
   return Array.from(byKey.values())

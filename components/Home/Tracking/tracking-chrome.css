@@ -24,8 +24,8 @@
  * milled jewel keys in `.trk-tools-tray` (pressed = inset + lamp, never a
  * growing banner, never Lucide) with compact `.trk-tool-detail` jewel +
  * how-to under the paint throws; Log activity is a gray latch on
- * `.trk-grid-rail`. A focused clock shows `.trk-now-time` (**right now**)
- * beside the picker, not over it. `.trk-now-module` sits under the fascia as a
+ * `.trk-grid-rail`. Now lives inside the shared clock popup, not beside the
+ * field. `.trk-now-module` sits under the fascia as a
  * milled status bay. Time Grid, Activity Log, and Day Log share the Operations
  * clock and `.trk-pen-now` on one row when the desk is wide (they stack on a
  * narrow one). Tracking log keeps the Operations clock and hides `.trk-pen-now`
@@ -79,7 +79,7 @@
   --t-field: inset -1px -1px var(--t-highlight), inset 1px 1px var(--t-shadow),
     inset -2px -2px var(--t-face), inset 2px 2px var(--t-frame);
   --t-pour: #ffffff;
-  --t-copper: #808080;
+  --t-copper: var(--chrome-lo);
   --t-phosphor: var(--hab-crt-green, #7dffc4);
   --t-crt: var(--hab-crt-green, #7dffc4);
   --t-crt-glow: var(--hab-crt-glow, 0 0 3px #7dffc4);
@@ -122,15 +122,15 @@
   gap: 8px;
   margin: 0 0 2px;
   padding: 10px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
-    linear-gradient(165deg, #d4d8dc 0%, var(--t-surface) 48%, #969a9e 100%);
+    linear-gradient(165deg, var(--chrome-sheen) 0%, var(--t-surface) 48%, var(--chrome-shade) 100%);
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.75),
     inset 0 -1px 0 rgba(40, 42, 46, 0.4),
-    inset 0 0 0 2px #b0b4b8;
+    inset 0 0 0 2px var(--chrome-inset);
 }
 
 .trk95 .trk-fascia-row {
@@ -146,12 +146,12 @@
   gap: 8px;
   min-height: 40px;
   padding: 4px 10px 4px 6px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background:
     radial-gradient(ellipse at 18% 0%, rgba(125, 255, 196, 0.14), transparent 46%),
     #070c0a;
   box-shadow:
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     inset 0 1px 0 rgba(255, 255, 255, 0.14),
     inset 0 10px 14px rgba(0, 0, 0, 0.4);
 }
@@ -245,22 +245,22 @@ body.win95-app .trk95 .trk-settings-gear {
   min-height: 28px;
   padding: 0;
   border: 0;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   color: #1c1e20;
   cursor: pointer;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 28%),
-    linear-gradient(165deg, #eceef0, #c0c4c8);
+    linear-gradient(165deg, var(--chrome-key-sheen), var(--chrome-mill-soft));
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 0 0 1px #4a4e52;
+    0 0 0 1px var(--chrome-ring-deep);
 }
 
 .trk95 .trk-settings-gear:active,
 body.win95-app .trk95 .trk-settings-gear:active {
   box-shadow:
     inset 0 2px 3px rgba(0, 0, 0, 0.28),
-    0 0 0 1px #4a4e52;
+    0 0 0 1px var(--chrome-ring-deep);
 }
 
 .trk95 .trk-settings-gear-icon {
@@ -300,12 +300,12 @@ body.win95-app .trk95 .trk-settings-gear:active {
   padding: 4px;
   overflow-x: auto;
   overflow-y: hidden;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
-    #b8bcbf;
+    var(--chrome-ash);
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.65),
     inset 0 2px 3px rgba(0, 0, 0, 0.14);
 }
@@ -318,7 +318,7 @@ body.win95-app .trk95 .trk-settings-gear:active {
   min-height: 22px;
   padding: 2px 9px;
   border: 0;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   color: #1c1e20;
   font: inherit;
   font-size: 11px;
@@ -329,10 +329,10 @@ body.win95-app .trk95 .trk-settings-gear:active {
   white-space: nowrap;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 28%),
-    linear-gradient(165deg, #eceef0, #c0c4c8);
+    linear-gradient(165deg, var(--chrome-key-sheen), var(--chrome-mill-soft));
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 0 0 1px #4a4e52;
+    0 0 0 1px var(--chrome-ring-deep);
   cursor: pointer;
 }
 
@@ -360,7 +360,7 @@ body.win95-app .trk95 .trk-settings-gear:active {
     radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.2), transparent 55%),
     #070c0a;
   box-shadow:
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     inset 0 8px 10px rgba(0, 0, 0, 0.4);
 }
 
@@ -418,8 +418,8 @@ body.win95-app .trk95 .trk-super-bar button {
   height: 18px;
   min-height: 18px;
   padding: 0 7px;
-  border: 1px dashed #5c6064;
-  border-radius: 2px;
+  border: 1px dashed var(--chrome-ring);
+  border-radius: var(--r-2, 2px);
   color: #333;
   font: inherit;
   font-size: 10px;
@@ -442,7 +442,7 @@ body.win95-app .trk95 .trk-super-bar button {
 body.win95-app .trk95 .trk-super-bar button[aria-pressed="true"] {
   color: #111;
   text-shadow: none;
-  background: #e4e6e8;
+  background: var(--chrome-pearl);
   border-style: solid;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.28);
 }
@@ -490,7 +490,7 @@ body.win95-app .trk95 .trk-super-bar button[aria-pressed="true"] {
   padding: 1px 8px;
   background: var(--t-surface);
   border: 0;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   color: #000;
   font: inherit;
   font-size: 11px;
@@ -543,13 +543,13 @@ body.win95-app .trk95 .trk-super-bar button[aria-pressed="true"] {
   gap: 2px;
   flex-shrink: 0;
   padding: 5px 6px 4px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background:
     linear-gradient(180deg, rgba(0, 0, 0, 0.06), transparent 28%),
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
-    #c4c8cc;
+    var(--chrome-grade-sheen);
   box-shadow:
-    0 0 0 1px #6a6e72,
+    0 0 0 1px var(--chrome-lip),
     inset 0 1px 0 rgba(255, 255, 255, 0.65),
     inset 0 2px 3px rgba(0, 0, 0, 0.1);
 }
@@ -572,7 +572,7 @@ body.win95-app .trk95 .trk-super-bar button[aria-pressed="true"] {
   min-height: var(--trk-key-h);
   padding: 2px 9px;
   border: 0;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   color: #1c1e20;
   font: inherit;
   font-size: 11px;
@@ -581,12 +581,12 @@ body.win95-app .trk95 .trk-super-bar button[aria-pressed="true"] {
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
-    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--t-surface) 70%, #9a9ea2 100%);
+    linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 36%, var(--t-surface) 70%, var(--chrome-key-shade) 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     inset 0 -1px 0 rgba(55, 58, 62, 0.45),
-    0 0 0 1px #4a4e52,
-    0 1px 0 #6a6e72;
+    0 0 0 1px var(--chrome-ring-deep),
+    0 1px 0 var(--chrome-lip);
   cursor: pointer;
 }
 
@@ -681,7 +681,7 @@ body.win95-app .trk95 .trk-sort-readout {
   height: 6px;
   margin-right: 3px;
   flex-shrink: 0;
-  background: #3a3a3a;
+  background: var(--chrome-ink-deep);
   box-shadow: inset 1px 1px #000;
 }
 
@@ -742,14 +742,14 @@ body.win95-app .trk95 .trk-sort-readout {
   align-self: stretch;
   gap: var(--trk-gap);
   padding: 5px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
-    linear-gradient(165deg, #d4d8dc 0%, var(--t-surface) 48%, #9a9ea2 100%);
+    linear-gradient(165deg, var(--chrome-sheen) 0%, var(--t-surface) 48%, var(--chrome-key-shade) 100%);
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.7),
-    inset 0 0 0 2px #b0b4b8;
+    inset 0 0 0 2px var(--chrome-inset);
 }
 
 .trk95 .trk-tools-tray .trk-tools {
@@ -902,7 +902,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   left: 18%;
   width: 42%;
   height: 28%;
-  border-radius: 1px;
+  border-radius: var(--r-1, 1px);
   background: rgba(255, 255, 255, 0.28);
 }
 
@@ -948,7 +948,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   width: 8rem;
   padding: 0 4px;
   border: 0;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   font: inherit;
   font-size: 11px;
   background: #fff;
@@ -961,12 +961,12 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   gap: 2px;
   margin: 0 0 2px;
   padding: 3px 4px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
-    linear-gradient(180deg, #d8dce0, var(--t-face) 48%, #b0b4b8);
+    linear-gradient(180deg, var(--chrome-mill-hi), var(--t-face) 48%, var(--chrome-inset));
   box-shadow:
-    0 0 0 1px #6a6e72,
+    0 0 0 1px var(--chrome-lip),
     inset 0 1px 0 rgba(255, 255, 255, 0.7),
     inset 0 2px 3px rgba(0, 0, 0, 0.08);
 }
@@ -978,7 +978,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   padding: 2px 6px;
   border: 0;
   background: #fff;
-  box-shadow: var(--o-field, inset 1px 1px #808080);
+  box-shadow: var(--o-field, inset 1px 1px var(--chrome-lo));
   font: inherit;
   font-size: 12px;
   color: #000;
@@ -998,7 +998,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
 .trk95 .trk-pen-now-pop {
   flex: 1 1 100%;
   background: #fff;
-  box-shadow: var(--o-field, inset 1px 1px #808080);
+  box-shadow: var(--o-field, inset 1px 1px var(--chrome-lo));
 }
 
 .trk95 .trk-pen-now-list {
@@ -1016,7 +1016,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   align-items: center;
   gap: 6px;
   padding: 4px;
-  border-top: 1px solid #c0c0c0;
+  border-top: 1px solid var(--chrome-face);
   background: var(--t-face);
 }
 
@@ -1027,7 +1027,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   padding: 1px 4px;
   border: 0;
   background: #fff;
-  box-shadow: var(--o-field, inset 1px 1px #808080);
+  box-shadow: var(--o-field, inset 1px 1px var(--chrome-lo));
   font: inherit;
   font-size: 11px;
 }
@@ -1056,7 +1056,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
 .trk95 .trk-pen-now-empty {
   padding: 2px 4px;
   font-size: 11px;
-  color: #404040;
+  color: var(--chrome-ink-soft);
 }
 
 .trk95 .trk-now-module .ops-now-bar {
@@ -1102,12 +1102,12 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   gap: 4px;
   width: fit-content;
   padding: 4px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
-    #b4b8bc;
+    var(--chrome-nickel);
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 2px 3px rgba(0, 0, 0, 0.18);
 }
 
@@ -1119,7 +1119,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   min-height: 28px;
   padding: 4px 12px 5px;
   border: 0;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   color: #1c1e20;
   font: inherit;
   font-size: 11px;
@@ -1129,10 +1129,10 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 28%),
-    linear-gradient(165deg, #eceef0, #c0c4c8);
+    linear-gradient(165deg, var(--chrome-key-sheen), var(--chrome-mill-soft));
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 0 0 1px #4a4e52;
+    0 0 0 1px var(--chrome-ring-deep);
   cursor: pointer;
 }
 
@@ -1144,7 +1144,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
     radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.2), transparent 55%),
     #070c0a;
   box-shadow:
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     inset 0 8px 10px rgba(0, 0, 0, 0.4);
 }
 
@@ -1153,7 +1153,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   align-self: stretch;
   margin: 2px 6px;
   background: transparent;
-  box-shadow: inset 1px 0 #808080, inset -1px 0 #fff;
+  box-shadow: inset 1px 0 var(--chrome-lo), inset -1px 0 #fff;
 }
 
 .trk95 .trk-label,
@@ -1295,7 +1295,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
 
 .trk95 .trk-fill-row .clock-picker-field {
   border: 0;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   font: inherit;
   font-size: 11px;
   background: #fff;
@@ -1335,7 +1335,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   height: 22px;
   padding: 0 4px;
   border: 0;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   font: inherit;
   font-size: 11px;
   color: #000;
@@ -1389,7 +1389,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   padding: 0 7px;
   overflow: hidden;
   border: 0;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-size: 11px;
   line-height: 22px;
   box-shadow: none;
@@ -1444,7 +1444,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   min-width: 14px;
   height: 14px;
   padding: 0 3px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-size: 10px;
   font-weight: 700;
   line-height: 14px;
@@ -1488,7 +1488,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   flex: 1;
   padding: 0 4px;
   border: 0;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   font: inherit;
   font-size: 11px;
   color: #000;
@@ -1550,15 +1550,15 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   gap: 10px;
   padding: 10px;
   border: 0;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
-    linear-gradient(165deg, #d4d8dc 0%, var(--t-surface) 48%, #969a9e 100%);
+    linear-gradient(165deg, var(--chrome-sheen) 0%, var(--t-surface) 48%, var(--chrome-shade) 100%);
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.75),
     inset 0 -1px 0 rgba(40, 42, 46, 0.4),
-    inset 0 0 0 2px #b0b4b8,
+    inset 0 0 0 2px var(--chrome-inset),
     var(--t-raised);
   font-family: var(--w95-font, Tahoma, "MS Sans Serif", Geneva, sans-serif);
   color: var(--t-ink);
@@ -1589,7 +1589,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   padding: 4px 10px;
   display: inline-flex;
   align-items: center;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   color: var(--t-crt) !important;
   font-size: 13px;
   font-weight: 700;
@@ -1600,7 +1600,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
     radial-gradient(ellipse at 18% 0%, rgba(125, 255, 196, 0.14), transparent 46%),
     #070c0a;
   box-shadow:
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     inset 0 1px 0 rgba(255, 255, 255, 0.14),
     inset 0 8px 12px rgba(0, 0, 0, 0.4);
 }
@@ -1625,7 +1625,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   overscroll-behavior: contain;
   padding-right: 2px;
   scrollbar-width: thin;
-  scrollbar-color: #808080 var(--t-face);
+  scrollbar-color: var(--chrome-lo) var(--t-face);
 }
 
 .trk95.trk-dialog.trk-view-settings .trk-dialog-actions {
@@ -1640,13 +1640,13 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   flex-direction: column;
   gap: 6px;
   padding: 10px 10px 8px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     linear-gradient(180deg, rgba(0, 0, 0, 0.06), transparent 28%),
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
-    #c4c8cc;
+    var(--chrome-grade-sheen);
   box-shadow:
-    0 0 0 1px #6a6e72,
+    0 0 0 1px var(--chrome-lip),
     inset 0 1px 0 rgba(255, 255, 255, 0.65),
     inset 0 2px 3px rgba(0, 0, 0, 0.1);
 }
@@ -1729,7 +1729,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
 .trk95 .trk-chain-branch {
   margin: 2px 0 2px 14px;
   padding-left: 8px;
-  border-left: 1px dotted #808080;
+  border-left: 1px dotted var(--chrome-lo);
 }
 
 .trk95 .trk-parent-menu {
@@ -1808,7 +1808,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   gap: 4px;
   margin-top: 2px;
   padding-top: 4px;
-  border-top: 1px solid #808080;
+  border-top: 1px solid var(--chrome-lo);
 }
 
 .trk95 .trk-parent-create input:not([type="color"]) {
@@ -1819,8 +1819,8 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   width: auto;
   margin: 0;
   padding: 2px 6px;
-  border: 1px solid #3a3e42;
-  border-radius: 0;
+  border: 1px solid var(--chrome-pressed);
+  border-radius: var(--r-0, 0px);
   font: inherit;
   font-size: 12px;
   line-height: 16px;
@@ -1891,11 +1891,11 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
 
 .trk95.trk-dialog input,
 .trk95.trk-dialog textarea {
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
 }
 
 .trk95.trk-dialog button[class*="rounded"] {
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
 }
 
 .trk95 .trk-secondary-row {
@@ -1961,7 +1961,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
 .trk95 .trk-find input {
   height: 22px;
   width: 11rem;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   font-size: 12px;
 }
 
@@ -1974,9 +1974,9 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   margin: 0;
   padding: 2px;
   list-style: none;
-  background: #c0c0c0;
+  background: var(--chrome-face);
   border: 2px solid;
-  border-color: #fff #404040 #404040 #fff;
+  border-color: #fff var(--chrome-ink-soft) var(--chrome-ink-soft) #fff;
   max-height: 220px;
   overflow: auto;
 }
@@ -2061,7 +2061,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   height: 28px;
   padding: 0 7px;
   border: 0;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -2122,24 +2122,24 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   min-height: min(70dvh, calc(100dvh - 22rem));
   width: 100%;
   padding: 5px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
-    linear-gradient(165deg, #d0d4d8 0%, #b8bcbf 48%, #8e9296 100%);
+    linear-gradient(165deg, var(--chrome-haze) 0%, var(--chrome-ash) 48%, #8e9296 100%);
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.72),
     inset 0 -1px 0 rgba(40, 42, 46, 0.35),
-    inset 0 0 0 2px #a8acb0,
+    inset 0 0 0 2px var(--chrome-stone),
     var(--t-raised);
 }
 
 /* CRT lip: white paper sits one mill deeper than the steel bezel face. */
 .trk95 .trk-plot-bezel > .trk-plot-region {
   background: var(--t-pour);
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   box-shadow:
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     var(--t-sunken);
 }
 
@@ -2172,12 +2172,12 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   padding: 5px;
   overflow-x: auto;
   overflow-y: hidden;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
-    linear-gradient(180deg, #d8dce0, #c4c8cc 48%, #a8acb0);
+    linear-gradient(180deg, var(--chrome-mill-hi), var(--chrome-grade-sheen) 48%, var(--chrome-stone));
   box-shadow:
-    0 0 0 1px #6a6e72,
+    0 0 0 1px var(--chrome-lip),
     inset 0 1px 0 rgba(255, 255, 255, 0.7),
     inset 0 2px 2px rgba(0, 0, 0, 0.08);
 }
@@ -2229,7 +2229,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   width: 7.5rem;
   padding: 0 4px;
   border: 0;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   background: #fff;
   box-shadow: var(--t-sunken);
   font: inherit;
@@ -2347,7 +2347,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
 .trk95 .trk-grid-full-day,
 .trk95 .trk-infinite,
 .trk95 .trk-week-plot {
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   border: 0;
 }
 
@@ -2359,7 +2359,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   color: var(--t-nameplate);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0 1px, transparent 1px 2px),
-    linear-gradient(180deg, #e4e6e8 0%, #c8cacd 45%, #b0b4b8 100%);
+    linear-gradient(180deg, var(--chrome-pearl) 0%, var(--chrome-tin) 45%, var(--chrome-inset) 100%);
   border-right: 1px solid #6e6e6e;
   box-shadow: inset 1px 0 0 #fff, inset -1px 0 0 #8a8a8a;
   font-size: 10px;
@@ -2488,7 +2488,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   line-height: 12px;
   white-space: nowrap;
   background: #fff;
-  box-shadow: inset 0 0 0 1px #808080;
+  box-shadow: inset 0 0 0 1px var(--chrome-lo);
   color: #222;
 }
 
@@ -2634,10 +2634,10 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   user-select: none;
   background:
     conic-gradient(from -135deg, #1c1e20 0 2.5deg, transparent 2.5deg 267.5deg, #1c1e20 267.5deg 270deg, transparent 270deg),
-    radial-gradient(circle, transparent 58%, #b4b8bc 60%, #6e7276 100%);
+    radial-gradient(circle, transparent 58%, var(--chrome-nickel) 60%, #6e7276 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.45),
-    0 0 0 1px #4a4e52;
+    0 0 0 1px var(--chrome-ring-deep);
 }
 
 .trk95 .trk-cell-knob:active {
@@ -2655,11 +2655,11 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   border-radius: 50%;
   background:
     radial-gradient(circle at 50% 50%, #1c1e20 0 1.5px, transparent 2px),
-    radial-gradient(circle at 38% 32%, #f4f5f6 0%, #c8ccd0 34%, #8a8e92 72%, #5c6064 100%);
+    radial-gradient(circle at 38% 32%, var(--chrome-fog) 0%, var(--chrome-pewter) 34%, var(--chrome-slate) 72%, var(--chrome-ring) 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.85),
     inset 0 -2px 3px rgba(0, 0, 0, 0.38),
-    0 0 0 1px #4a4e52;
+    0 0 0 1px var(--chrome-ring-deep);
 }
 
 .trk95 .trk-cell-knob-mark {
@@ -2669,7 +2669,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   width: 2px;
   height: 8px;
   transform: translateX(-50%);
-  border-radius: 1px;
+  border-radius: var(--r-1, 1px);
   background: #1c1e20;
   box-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.45);
 }
@@ -2787,7 +2787,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   min-height: 30px;
   padding: 5px 12px 6px;
   border: 0;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   color: #1c1e20;
   font: inherit;
   font-size: 11px;
@@ -2797,12 +2797,12 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
-    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--t-surface) 70%, #9a9ea2 100%);
+    linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 36%, var(--t-surface) 70%, var(--chrome-key-shade) 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     inset 0 -1px 0 rgba(55, 58, 62, 0.45),
-    0 0 0 1px #4a4e52,
-    0 1px 0 #6a6e72;
+    0 0 0 1px var(--chrome-ring-deep),
+    0 1px 0 var(--chrome-lip);
   cursor: pointer;
 }
 
@@ -2813,7 +2813,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
 .trk95 .trk-dialog-actions button:not(:disabled):active {
   box-shadow:
     inset 0 1px 2px rgba(0, 0, 0, 0.35),
-    0 0 0 1px #3a3e42;
+    0 0 0 1px var(--chrome-pressed);
   filter: none;
 }
 
@@ -2848,7 +2848,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   align-items: center;
   column-gap: 8px;
   min-height: 24px;
-  color: #404040;
+  color: var(--chrome-ink-soft);
   background: #fff;
   box-shadow: inset 0 -1px 0 #e8e8e8;
   border-bottom: 0;
@@ -2953,16 +2953,16 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   min-width: 0;
   padding: 10px 12px;
   overflow: hidden;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   color: #111;
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
-    linear-gradient(165deg, #d4d8dc 0%, var(--t-surface) 48%, #969a9e 100%);
+    linear-gradient(165deg, var(--chrome-sheen) 0%, var(--t-surface) 48%, var(--chrome-shade) 100%);
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.75),
     inset 0 -1px 0 rgba(40, 42, 46, 0.4),
-    inset 0 0 0 2px #b0b4b8;
+    inset 0 0 0 2px var(--chrome-inset);
 }
 
 .trk95 .trk-notes:not(.trk-notes-open) {
@@ -2998,7 +2998,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   min-height: 28px;
   padding: 4px 12px 5px;
   border: 0;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font: inherit;
   font-size: 11px;
   font-weight: 700;
@@ -3008,25 +3008,25 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
-    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--t-surface) 70%, #9a9ea2 100%);
+    linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 36%, var(--t-surface) 70%, var(--chrome-key-shade) 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     inset 0 -1px 0 rgba(55, 58, 62, 0.45),
-    0 0 0 1px #4a4e52,
-    0 1px 0 #6a6e72;
+    0 0 0 1px var(--chrome-ring-deep),
+    0 1px 0 var(--chrome-lip);
   cursor: pointer;
 }
 
 .trk95 .trk-notes-fold[aria-expanded="true"] {
   box-shadow:
     inset 0 1px 2px rgba(0, 0, 0, 0.35),
-    0 0 0 1px #3a3e42;
+    0 0 0 1px var(--chrome-pressed);
 }
 
 .trk95 .trk-notes-fold:active {
   box-shadow:
     inset 0 1px 2px rgba(0, 0, 0, 0.35),
-    0 0 0 1px #3a3e42;
+    0 0 0 1px var(--chrome-pressed);
 }
 
 .trk95 .trk-notes-file {
@@ -3116,7 +3116,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   margin: 2px 2px 0;
   font-size: 11px;
   line-height: 1.35;
-  color: #404040;
+  color: var(--chrome-ink-soft);
 }
 
 .trk95 .trk-notes .append-log-compose {
@@ -3187,7 +3187,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   min-height: 10rem;
   max-height: none;
   padding: 4px 8px 8px;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   color: #111;
   -webkit-text-fill-color: #111;
   caret-color: #111;
@@ -3222,14 +3222,14 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
 .trk95 .trk-hide-plate {
   display: flex;
   min-width: 0;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   color: #000;
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0 1px, transparent 1px 2px),
-    linear-gradient(165deg, #eceef0 0%, var(--t-surface) 55%, #a8acb0 100%);
+    linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--t-surface) 55%, var(--chrome-stone) 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 -1px 0 rgba(55, 58, 62, 0.35);
 }
 
@@ -3268,7 +3268,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   min-height: 18px;
   padding: 0 6px;
   border: 0;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   color: #000;
   background: var(--t-surface);
   font: inherit;
@@ -3288,7 +3288,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   width: 8rem;
   padding: 0 4px;
   border: 0;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   font: inherit;
   font-size: 11px;
   color: #000;
@@ -3333,7 +3333,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   bottom: 3px;
   width: 8px;
   margin-left: -4px;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.45), inset -1px -1px 0 rgba(0, 0, 0, 0.55),
     0 0 0 1px #1a1a1a;
   z-index: 4;
@@ -3358,7 +3358,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   z-index: 6;
   display: flex;
   background: var(--t-face);
-  border-bottom: 1px solid #808080;
+  border-bottom: 1px solid var(--chrome-lo);
   font-size: 9px;
   color: #222;
 }
@@ -3368,7 +3368,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   align-items: stretch;
   min-height: 36px;
   background: var(--t-pour);
-  border-bottom: 1px solid #808080;
+  border-bottom: 1px solid var(--chrome-lo);
 }
 
 .trk95 .trk-day-strip[data-today="true"] {
@@ -3388,7 +3388,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   width: 72px;
   flex-shrink: 0;
   padding: 2px 6px 2px 4px;
-  border-right: 1px solid #808080;
+  border-right: 1px solid var(--chrome-lo);
   font-size: 10px;
   line-height: 1.2;
   color: #222;
@@ -3489,55 +3489,6 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   height: 22px;
 }
 
-.trk95 .trk-now-time {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  flex-shrink: 0;
-  min-height: 28px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: 2px;
-  color: #1c1e20;
-  font: inherit;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
-  white-space: nowrap;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
-    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--t-surface) 70%, #9a9ea2 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.92),
-    inset 0 -1px 0 rgba(55, 58, 62, 0.45),
-    0 0 0 1px #4a4e52,
-    0 1px 0 #6a6e72;
-  cursor: pointer;
-}
-
-.trk95 .trk-now-time .trk-led {
-  background: var(--t-phosphor);
-  box-shadow: inset 0 0 0 1px #1a3a2a;
-}
-
-.trk95 .trk-now-time:focus-visible {
-  outline: 0;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.92),
-    0 0 0 1px #4a4e52,
-    inset 1px 1px 0 #000,
-    inset -1px -1px 0 #000;
-}
-
-.trk95 .trk-now-time:active {
-  box-shadow:
-    inset 0 1px 2px rgba(0, 0, 0, 0.35),
-    0 0 0 1px #3a3e42;
-}
-
 /* Day Log sheet + Activity Log aside wells — steel/sunken, black type on gunmetal. */
 .trk95 .trk-desktop > .trk-canvas {
   flex: 1 1 auto;
@@ -3560,12 +3511,12 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   flex: 0 0 auto;
   min-height: 28px;
   padding: 5px 9px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
-    linear-gradient(180deg, #d8dce0, var(--t-face) 48%, #b0b4b8);
+    linear-gradient(180deg, var(--chrome-mill-hi), var(--t-face) 48%, var(--chrome-inset));
   box-shadow:
-    0 0 0 1px #6a6e72,
+    0 0 0 1px var(--chrome-lip),
     inset 0 1px 0 rgba(255, 255, 255, 0.7),
     inset 0 2px 3px rgba(0, 0, 0, 0.08);
   color: #111;
@@ -3596,14 +3547,14 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   min-width: 0;
   min-height: 0;
   padding: 7px 9px 9px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
-    linear-gradient(165deg, #d4d8dc 0%, var(--t-surface) 48%, #969a9e 100%);
+    linear-gradient(165deg, var(--chrome-sheen) 0%, var(--t-surface) 48%, var(--chrome-shade) 100%);
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.7),
-    inset 0 0 0 2px #b0b4b8;
+    inset 0 0 0 2px var(--chrome-inset);
   color: #111;
 }
 
@@ -3694,7 +3645,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
 
 .trk95 .trk-daylog-tasklog-meta {
   font-size: 11px;
-  color: #404040;
+  color: var(--chrome-ink-soft);
 }
 
 .trk95 .trk-aside-well {
@@ -3704,14 +3655,14 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   flex: 0 0 auto;
   margin-top: 4px;
   padding: 8px 10px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
-    linear-gradient(165deg, #d4d8dc 0%, var(--t-surface) 48%, #969a9e 100%);
+    linear-gradient(165deg, var(--chrome-sheen) 0%, var(--t-surface) 48%, var(--chrome-shade) 100%);
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.7),
-    inset 0 0 0 2px #b0b4b8;
+    inset 0 0 0 2px var(--chrome-inset);
   color: #111;
 }
 
@@ -3722,20 +3673,20 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
 }
 
 .trk95 .trk-aside-well .text-muted-foreground {
-  color: #404040;
+  color: var(--chrome-ink-soft);
 }
 
 .trk95 .trk-aside-empty {
   margin: 4px 0 0;
   padding: 8px 10px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
-    linear-gradient(165deg, #d4d8dc 0%, var(--t-surface) 48%, #969a9e 100%);
+    linear-gradient(165deg, var(--chrome-sheen) 0%, var(--t-surface) 48%, var(--chrome-shade) 100%);
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.7),
-    inset 0 0 0 2px #b0b4b8;
+    inset 0 0 0 2px var(--chrome-inset);
   color: #111;
   font-size: 12px;
   line-height: 1.4;
@@ -3752,12 +3703,12 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   gap: 12px;
   align-items: end;
   padding: 12px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     radial-gradient(ellipse at 18% 0%, rgba(125, 255, 196, 0.16), transparent 52%),
     #070c0a;
   box-shadow:
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     inset 0 1px 0 rgba(255, 255, 255, 0.16),
     inset 0 10px 16px rgba(0, 0, 0, 0.45);
 }
@@ -3769,7 +3720,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
 .trk95 .trk-pen-mast input {
   background: #121816;
   color: #f4f7f5;
-  border-color: #3a3e42;
+  border-color: var(--chrome-pressed);
 }
 
 .trk95 .trk-detail-row {
@@ -3777,7 +3728,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   align-items: center;
   gap: 8px;
   padding: 4px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: rgba(255, 255, 255, 0.28);
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
 }
@@ -3800,21 +3751,29 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   flex-direction: column;
   align-items: flex-start;
   gap: 6px;
+  width: 100%;
+  min-width: 0;
 }
 
 .trk95 .trk-logbook-modes {
   flex-wrap: nowrap;
   gap: 2px;
+  width: max-content;
   max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   overflow-x: auto;
 }
 
 .trk95 .trk-logbook-modes > button {
   flex: 0 0 auto;
+  max-width: none;
   padding-left: 8px;
   padding-right: 8px;
   letter-spacing: 0.06em;
   white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
 }
 
 .trk95 .trk-logbook-fields {
@@ -3853,7 +3812,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   min-height: 22px;
   padding: 1px 6px;
   border: 0;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   background: #fff;
   color: #111;
   box-shadow: var(--t-sunken);
@@ -3955,7 +3914,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   margin: 0;
   font-size: 11px;
   line-height: 1.35;
-  color: #404040;
+  color: var(--chrome-ink-soft);
 }
 
 .trk95 .trk-logbook-add {
@@ -3970,7 +3929,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   min-height: 22px;
   padding: 1px 6px;
   border: 0;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   background: #fff;
   color: #111;
   box-shadow: var(--t-sunken);
@@ -4026,7 +3985,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   min-height: 22px;
   padding: 1px 6px;
   border: 0;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   background: #fff;
   color: #111;
   box-shadow: var(--t-sunken);
@@ -4090,7 +4049,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   min-height: 22px;
   padding: 1px 6px;
   border: 0;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   background: #fff;
   color: #111;
   box-shadow: var(--t-sunken);
@@ -4316,7 +4275,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   margin: 0;
   padding: 0 6px;
   border: 0;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   background: #fff;
   color: #111;
   font: inherit;
@@ -4354,7 +4313,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   background: #f3e08a;
   color: #1c1916;
   padding: 0;
-  border-radius: 1px;
+  border-radius: var(--r-1, 1px);
   scroll-margin: 8px;
 }
 
@@ -4423,7 +4382,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   font-size: 9px;
   letter-spacing: 0.04em;
   text-align: center;
-  color: #404040;
+  color: var(--chrome-ink-soft);
 }
 
 .trk95 .trk-cycle-day {
@@ -4689,7 +4648,7 @@ body.win95-app .trk95.trk-dialog button.trk-cycle-day[data-basis="estimated"] {
   margin: 0;
   font-size: 11px;
   line-height: 1.4;
-  color: #3a3a3a;
+  color: var(--chrome-ink-deep);
 }
 
 .trk95 .trk-cycle-estimate {

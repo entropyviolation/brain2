@@ -5,24 +5,24 @@
  * is house milled fascia — brushed bays, engraved nameplates, equal metal keys,
  * active key = CRT `#070c0a` + round power lamp, phosphor label `#7dffc4` only.
  * Studio canvases stay a light instrument interior (Karla, ink on face-gray
- * `#c0c0c0`, white plot wells, phosphor traces `#3dff8a` only — not a dark CRT
+ * `var(--chrome-face)`, white plot wells, phosphor traces `#3dff8a` only — not a dark CRT
  * theme, not cream). Empty / thin frames stay honest.
  * docs/DESIGN_STYLE.md#milled-fascia
  */
 
 .fm98.an95 {
-  --an-paper: #c0c0c0;
+  --an-paper: var(--chrome-face);
   --an-ink: #000000;
   --an-muted: #1a1a1a;
-  --an-line: #808080;
-  --an-panel: #c0c0c0;
+  --an-line: var(--chrome-lo);
+  --an-panel: var(--chrome-face);
   --an-recess: #a8a8a8;
   --an-hover: #d4d4d4;
   --an-accent: #000080;
   --an-fill: #1a6b5c;
   --an-empty: #b0b0b0;
   --an-hi: #ffffff;
-  --an-lo: #808080;
+  --an-lo: var(--chrome-lo);
   --an-phosphor: #3dff8a;
   --an-scope: #1a2a1e;
   --an-nameplate: var(--fascia-nameplate, #2a2c2e);
@@ -32,20 +32,20 @@
     radial-gradient(ellipse at 18% 0%, rgba(125, 255, 196, 0.16), transparent 48%),
     #070c0a;
   --an-crt-ring:
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     inset 0 1px 0 rgba(255, 255, 255, 0.14),
     inset 0 10px 14px rgba(0, 0, 0, 0.4);
   --an-key-face:
     linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 28%),
-    linear-gradient(165deg, #eceef0, #c0c4c8);
+    linear-gradient(165deg, var(--chrome-key-sheen), var(--chrome-mill-soft));
   --an-key-ring:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 0 0 1px #4a4e52;
+    0 0 0 1px var(--chrome-ring-deep);
   --an-bay:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
-    #b4b8bc;
+    var(--chrome-nickel);
   --an-bay-ring:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 2px 3px rgba(0, 0, 0, 0.18);
   display: flex;
   flex-direction: column;
@@ -62,7 +62,7 @@
   align-items: center;
   gap: 6px;
   padding: 4px 9px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.14em;
@@ -71,9 +71,9 @@
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.45) 0, transparent 40%),
-    #c8ccd0;
+    var(--chrome-pewter);
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.7),
     inset 0 -1px 0 rgba(40, 42, 46, 0.28);
   white-space: nowrap;
@@ -87,15 +87,15 @@
   gap: 8px;
   padding: 8px 10px;
   margin: 3px 3px 0;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   border-bottom: none;
   color: var(--an-ink);
   background:
     linear-gradient(180deg, rgba(0, 0, 0, 0.06), transparent 28%),
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
-    #c4c8cc;
+    var(--chrome-grade-sheen);
   box-shadow:
-    0 0 0 1px #6a6e72,
+    0 0 0 1px var(--chrome-lip),
     inset 0 1px 0 rgba(255, 255, 255, 0.65),
     inset 0 2px 3px rgba(0, 0, 0, 0.12);
 }
@@ -108,7 +108,7 @@
   min-width: 12rem;
   max-width: 32rem;
   padding: 4px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background: var(--an-bay);
   box-shadow: var(--an-bay-ring);
 }
@@ -132,7 +132,7 @@
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
   border: none;
   cursor: pointer;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   box-shadow: var(--an-key-ring);
 }
 
@@ -146,7 +146,7 @@
   margin-top: -4px;
   border-radius: 50%;
   background:
-    radial-gradient(circle at 35% 30%, #6a6e72, #2a2c2e 55%, #0a0a0a);
+    radial-gradient(circle at 35% 30%, var(--chrome-lip), #2a2c2e 55%, var(--chrome-frame));
   box-shadow:
     0 0 0 1px #1a1c1e,
     inset 0 1px 1px rgba(255, 255, 255, 0.25);
@@ -174,15 +174,15 @@
   font-weight: 700;
   letter-spacing: 0.06em;
   padding: 4px 9px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   color: var(--an-nameplate);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
   font-variant-numeric: tabular-nums;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.45) 0, transparent 40%),
-    #c8ccd0;
+    var(--chrome-pewter);
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.7),
     inset 0 -1px 0 rgba(40, 42, 46, 0.28);
 }
@@ -192,7 +192,7 @@
   align-items: center;
   gap: 4px;
   padding: 4px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background: var(--an-bay);
   box-shadow: var(--an-bay-ring);
 }
@@ -209,11 +209,11 @@
   background: var(--an-panel);
   color: var(--an-ink);
   border: none;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   padding: 4px 6px;
   box-shadow:
     inset 1px 1px 2px rgba(0, 0, 0, 0.28),
-    0 0 0 1px #5c6064;
+    0 0 0 1px var(--chrome-ring);
 }
 
 .fm98.an95 .an-studio {
@@ -233,12 +233,12 @@
   margin: 0;
   padding: 8px 6px 10px;
   border-right: none;
-  border-radius: 0 0 0 2px;
+  border-radius: var(--r-0, 0px) var(--r-0, 0px) var(--r-0, 0px) var(--r-2, 2px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
-    linear-gradient(165deg, #d0d4d8 0%, #b8bcbf 48%, #9a9ea2 100%);
+    linear-gradient(165deg, var(--chrome-haze) 0%, var(--chrome-ash) 48%, var(--chrome-key-shade) 100%);
   box-shadow:
-    inset -1px 0 0 #5c6064,
+    inset -1px 0 0 var(--chrome-ring),
     inset 1px 0 0 rgba(255, 255, 255, 0.45);
 }
 
@@ -253,7 +253,7 @@
   flex-direction: column;
   gap: 4px;
   padding: 4px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background: var(--an-bay);
   box-shadow: var(--an-bay-ring);
   border-top: none;
@@ -281,7 +281,7 @@
   padding: 5px 10px 6px 22px;
   background: var(--an-key-face);
   border: none;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   box-shadow: var(--an-key-ring);
   color: #1c1e20;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
@@ -301,7 +301,7 @@
   margin-top: -4px;
   border-radius: 50%;
   background:
-    radial-gradient(circle at 35% 30%, #6a6e72, #2a2c2e 55%, #0a0a0a);
+    radial-gradient(circle at 35% 30%, var(--chrome-lip), #2a2c2e 55%, var(--chrome-frame));
   box-shadow:
     0 0 0 1px #1a1c1e,
     inset 0 1px 1px rgba(255, 255, 255, 0.25);
@@ -509,7 +509,7 @@
   flex-shrink: 0;
   background: #fff;
   border: none;
-  box-shadow: inset 1px 1px 0 var(--an-lo), inset -1px -1px 0 var(--an-hi), inset 1px 1px 2px #404040;
+  box-shadow: inset 1px 1px 0 var(--an-lo), inset -1px -1px 0 var(--an-hi), inset 1px 1px 2px var(--chrome-ink-soft);
   cursor: pointer;
   display: grid;
   place-items: center;
@@ -1489,7 +1489,7 @@
   .fm98.an95 .an-nav {
     width: 100%;
     box-shadow:
-      inset 0 -1px 0 #5c6064,
+      inset 0 -1px 0 var(--chrome-ring),
       inset 0 1px 0 rgba(255, 255, 255, 0.45);
   }
 
@@ -1508,9 +1508,9 @@
 }
 
 .an-tip {
-  background: #c0c0c0 !important;
+  background: var(--chrome-face) !important;
   color: #000 !important;
-  border: 1px solid #808080 !important;
+  border: 1px solid var(--chrome-lo) !important;
   font-size: 12px !important;
   max-width: 22rem;
   line-height: 1.4;
@@ -1518,13 +1518,16 @@
 
 .an-drill,
 .an-popup {
-  font-family: var(--font-karla), Karla, "Segoe UI", sans-serif;
+  font-family: var(--font-karla), Karla, "Segoe UI", sans-serif);
+  /* Title chip sits in the dialog's 24px pad. */
+  --b2-close-top: 27px;
+  --b2-close-right: 18px;
 }
 
 .an-drill {
-  background: #c0c0c0 !important;
+  background: var(--chrome-face) !important;
   color: #000;
-  border: 2px solid #808080;
+  border: 2px solid var(--chrome-lo);
   gap: 12px;
 }
 
@@ -1536,12 +1539,12 @@
   max-width: calc(100% - 2.5rem);
   margin: 0;
   padding: 6px 10px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0, transparent 42%),
-    #d0d4d8;
+    var(--chrome-haze);
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.75),
     inset 0 -1px 0 rgba(40, 42, 46, 0.28);
   color: #0a4a3c !important;
@@ -1556,26 +1559,7 @@
   -webkit-font-smoothing: antialiased;
 }
 
-.an-drill > button.absolute,
-.an-popup > button.absolute {
-  border-radius: 2px;
-  opacity: 1;
-  color: #2a2c2e;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
-    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, #c0c0c0 70%, #9a9ea2 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.92),
-    inset 0 -1px 0 rgba(55, 58, 62, 0.45),
-    0 0 0 1px #4a4e52,
-    0 1px 0 #6a6e72;
-}
-
-.an-drill > button.absolute:hover,
-.an-popup > button.absolute:hover {
-  opacity: 1;
-  filter: brightness(1.04);
-}
+/* Close key is `.b2-close-key` (win95.css). Placement: --b2-close-* on `.an-drill` / `.an-popup`. */
 
 .an-drill .an-pie {
   height: 300px;
@@ -1625,7 +1609,7 @@
   font-size: 13px;
   color: #1a1a1a;
   background: #ffffff;
-  box-shadow: inset 1px 1px 2px #808080, inset -1px -1px 0 #fff;
+  box-shadow: inset 1px 1px 2px var(--chrome-lo), inset -1px -1px 0 #fff;
 }
 
 .an-drill-modes {
@@ -1636,7 +1620,7 @@
 .an-drill-mode {
   height: 28px;
   padding: 0 14px;
-  border: 1px solid #808080;
+  border: 1px solid var(--chrome-lo);
   background: #ffffff;
   color: #000;
   font: inherit;
@@ -1646,11 +1630,11 @@
 }
 
 .an-drill-mode:first-child {
-  border-radius: 2px 0 0 2px;
+  border-radius: var(--r-2, 2px) var(--r-0, 0px) var(--r-0, 0px) var(--r-2, 2px);
 }
 
 .an-drill-mode:last-child {
-  border-radius: 0 2px 2px 0;
+  border-radius: var(--r-0, 0px) var(--r-2, 2px) var(--r-2, 2px) var(--r-0, 0px);
   margin-left: -1px;
 }
 
@@ -1723,7 +1707,7 @@
   max-height: 280px;
   overflow: auto;
   background: #a8a8a8;
-  box-shadow: inset 1px 1px 2px #808080;
+  box-shadow: inset 1px 1px 2px var(--chrome-lo);
 }
 
 .an-drill-block {
@@ -1734,7 +1718,7 @@
   width: 100%;
   padding: 8px 10px;
   border: none;
-  border-bottom: 1px solid #808080;
+  border-bottom: 1px solid var(--chrome-lo);
   background: #ffffff;
   color: #000;
   font: inherit;
@@ -1767,9 +1751,9 @@
   overflow: hidden;
   background: #ffffff;
   box-shadow:
-    inset 1px 1px 2px #808080,
+    inset 1px 1px 2px var(--chrome-lo),
     inset -1px -1px 0 #fff,
-    0 0 0 1px #808080;
+    0 0 0 1px var(--chrome-lo);
 }
 
 .an-split-seg {
@@ -1819,7 +1803,7 @@
   max-height: 420px;
   background: var(--an-recess, #a8a8a8);
   padding: 4px;
-  box-shadow: inset 1px 1px 2px #808080;
+  box-shadow: inset 1px 1px 2px var(--chrome-lo);
 }
 
 .fm98.an95 .an-chart-frame {
@@ -2066,7 +2050,7 @@
 }
 
 .fm98.an95 .season-card {
-  border: 1px solid #808080;
+  border: 1px solid var(--chrome-lo);
   padding: 8px;
   background: #f4f4f4;
 }
@@ -2089,7 +2073,7 @@
   align-items: center;
   gap: 4px;
   padding: 4px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background: var(--an-bay);
   box-shadow: var(--an-bay-ring);
 }
@@ -2120,7 +2104,7 @@
   min-width: 3.4rem;
   padding: 2px 4px;
   background: var(--an-hi);
-  box-shadow: inset 0 0 0 1px var(--an-line, #808080);
+  box-shadow: inset 0 0 0 1px var(--an-line, var(--chrome-lo));
   font-size: 10px;
   line-height: 1.2;
   color: var(--an-ink);

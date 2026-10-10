@@ -24,6 +24,72 @@ function expectDate(d: Date | undefined, year: number, monthIndex: number, day: 
   expect(d!.getMinutes()).toBe(0)
 }
 
+describe("parseSmartCapture — title keeps schedule words", () => {
+  it("detects a clock and a day without deleting them", () => {
+    const { suggestion } = parse("go home tomorrow at 3")
+    expect(suggestion.description).toBe("go home tomorrow at 3")
+    expectDate(suggestion.scheduledDate, 2026, 5, 25)
+    expect(suggestion.scheduledTime).toBe("03:00")
+  })
+
+  it("keeps priority and duration in the title", () => {
+    const { suggestion } = parse("go home tomorrow at 3pm for 30m !!")
+    expect(suggestion.description).toBe("go home tomorrow at 3pm for 30m !!")
+    expect(suggestion.scheduledTime).toBe("15:00")
+    expect(suggestion.estimatedDuration).toBe(30)
+    expect(suggestion.importance).toBe(5)
+  })
+
+  it("strips schedule words only when a caller asks", () => {
+    const { suggestion } = parseSmartCapture("9/12", { now: NOW, stripScheduleWords: true })
+    expect(suggestion.description).toBe("")
+    expect(suggestion.scheduledDate).toBeInstanceOf(Date)
+  })
+})
+
+describe("parseSmartCapture — plain", () => {
+  it("stores -p and -plain as written and detects nothing", () => {
+    const flagged = parse("-p next actions: blah at 3pm !!")
+    expect(flagged.suggestion).toMatchObject({
+      plain: true,
+      description: "next actions: blah at 3pm !!",
+    })
+    expect(flagged.suggestion.category).toBeUndefined()
+    expect(flagged.suggestion.folderPath).toBeUndefined()
+    expect(flagged.suggestion.scheduledTime).toBeUndefined()
+    expect(flagged.suggestion.scheduledDate).toBeUndefined()
+    expect(flagged.suggestion.importance).toBeUndefined()
+    expect(flagged.suggestion.monkeyBrain).toBeUndefined()
+    expect(flagged.highlights).toHaveLength(0)
+
+    expect(parse("wash the dog -plain").suggestion).toMatchObject({
+      plain: true,
+      description: "wash the dog",
+    })
+    expect(parse("-PLAIN next actions: eventually: keep the colon").suggestion.description).toBe(
+      "next actions: eventually: keep the colon",
+    )
+    expect(parse("email -please").suggestion.plain).toBeUndefined()
+  })
+
+  it("honors an explicit plain option with no flag in the text", () => {
+    const { suggestion } = parseSmartCapture("next actions: blah at 3pm", { now: NOW, plain: true })
+    expect(suggestion).toMatchObject({
+      plain: true,
+      description: "next actions: blah at 3pm",
+    })
+    expect(suggestion.category).toBeUndefined()
+    expect(suggestion.scheduledTime).toBeUndefined()
+  })
+
+  it("does not let -p also mean monkey brain", () => {
+    const { suggestion } = parse("-p looping thought -monkey")
+    expect(suggestion.plain).toBe(true)
+    expect(suggestion.monkeyBrain).toBeUndefined()
+    expect(suggestion.description).toBe("looping thought -monkey")
+  })
+})
+
 describe("parseSmartCapture — monkey brain flag", () => {
   it("strips -mb and -monkey and marks the suggestion", () => {
     expect(parse("call dentist -mb").suggestion).toMatchObject({
@@ -89,8 +155,14 @@ describe("parseSmartCapture — categories", () => {
   })
 
   it("supports inline cat:/category: hints", () => {
-    expect(parse("do pushups cat:Health").suggestion.category).toBe("Health")
-    expect(parse("read paper category:Research").suggestion.category).toBe("Research")
+    expect(parse("do pushups cat:Health").suggestion).toMatchObject({
+      category: "Health",
+      description: "do pushups",
+    })
+    expect(parse("read paper category:Research").suggestion).toMatchObject({
+      category: "Research",
+      description: "read paper",
+    })
   })
 
   it("does NOT treat a leading time as a category", () => {
@@ -106,8 +178,10 @@ describe("parseSmartCapture — relative dates", () => {
     expectDate(parse("call tonight").suggestion.scheduledDate, 2026, 5, 24)
   })
 
-  it("parses tomorrow", () => {
-    expectDate(parse("submit tomorrow").suggestion.scheduledDate, 2026, 5, 25)
+  it("parses tomorrow and leaves the word in the title", () => {
+    const { suggestion } = parse("submit tomorrow")
+    expectDate(suggestion.scheduledDate, 2026, 5, 25)
+    expect(suggestion.description).toBe("submit tomorrow")
   })
 
   it("parses yesterday", () => {
@@ -223,7 +297,7 @@ describe("parseSmartCapture — combined + highlights", () => {
   it("parses a rich multi-token capture", () => {
     const { suggestion, highlights } = parse("Work: call dentist tomorrow at 3pm for 30m !!")
     expect(suggestion.category).toBe("Work")
-    expect(suggestion.description).toBe("call dentist")
+    expect(suggestion.description).toBe("call dentist tomorrow at 3pm for 30m !!")
     expectDate(suggestion.scheduledDate, 2026, 5, 25)
     expect(suggestion.scheduledTime).toBe("15:00")
     expect(suggestion.estimatedDuration).toBe(30)

@@ -24,7 +24,7 @@
   gap: 0.4rem;
   padding: 0.5rem 0.65rem;
   padding-top: calc(0.5rem + env(safe-area-inset-top, 0px));
-  border-bottom: 1px solid #808080;
+  border-bottom: 1px solid var(--chrome-lo);
   background: var(--chrome-face, #c0c0c0);
 }
 
@@ -62,7 +62,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0;
-  border-bottom: 2px solid #808080;
+  border-bottom: 2px solid var(--chrome-lo);
   background: #d4d0c8;
 }
 
@@ -72,7 +72,7 @@
   font-size: 0.95rem;
   border: none;
   background: transparent;
-  border-right: 1px solid #808080;
+  border-right: 1px solid var(--chrome-lo);
 }
 
 .cogs-mobile-main-tabs button:last-child {
@@ -111,14 +111,14 @@
   padding: 1.25rem;
   background:
     radial-gradient(circle at 20% 10%, rgba(255, 255, 255, 0.55), transparent 45%),
-    linear-gradient(160deg, #9aa4b2 0%, var(--chrome-face, #c0c0c0) 45%, #8a9099 100%);
+    linear-gradient(160deg, var(--chrome-blue-stone) 0%, var(--chrome-face, #c0c0c0) 45%, var(--chrome-blue-shade) 100%);
 }
 
 .cogs-mobile-login-card {
   width: min(100%, 22rem);
   padding: 1.25rem;
-  border: 2px solid #808080;
-  box-shadow: inset 1px 1px 0 #fff, 2px 2px 0 #404040;
+  border: 2px solid var(--chrome-lo);
+  box-shadow: inset 1px 1px 0 #fff, 2px 2px 0 var(--chrome-ink-soft);
   background: var(--chrome-face, #c0c0c0);
 }
 
@@ -144,7 +144,7 @@
   width: 100%;
   margin-bottom: 0.75rem;
   padding: 0.55rem 0.65rem;
-  border: 2px solid #808080;
+  border: 2px solid var(--chrome-lo);
   background: #fff;
   font-size: 1rem;
 }
@@ -162,7 +162,7 @@
   gap: 0.4rem;
   margin-bottom: 0.65rem;
   padding: 0.55rem 0.65rem;
-  border: 2px solid #808080;
+  border: 2px solid var(--chrome-lo);
   background: #d4d0c8;
   font-size: 0.78rem;
 }
@@ -180,7 +180,7 @@
 
 .cogs-mobile-syncbar-toggle {
   margin-left: auto;
-  border: 1px solid #808080;
+  border: 1px solid var(--chrome-lo);
   background: #eee;
   padding: 0.15rem 0.45rem;
   font-size: 0.72rem;
@@ -191,7 +191,7 @@
   min-width: 0;
   width: 100%;
   padding: 0.45rem 0.5rem;
-  border: 2px solid #808080;
+  border: 2px solid var(--chrome-lo);
   background: #fff;
   font-size: 0.85rem;
 }
@@ -387,7 +387,7 @@
 .cogs-mobile-pullcard {
   margin-bottom: 0.65rem;
   padding: 0.6rem 0.7rem;
-  border: 2px solid #808080;
+  border: 2px solid var(--chrome-lo);
   background: #dce8f5;
   display: flex;
   flex-direction: column;
@@ -455,7 +455,7 @@
   width: 100% !important;
   max-height: 9.5rem;
   flex-shrink: 0;
-  border-bottom: 2px solid #808080;
+  border-bottom: 2px solid var(--chrome-lo);
 }
 
 .cogs-mobile-lists .fm-split > .fm-sidebar:not(:first-child) {

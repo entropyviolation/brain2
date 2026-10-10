@@ -464,7 +464,7 @@
   overflow-y: auto;
   padding: 4px 6px;
   scrollbar-width: thin;
-  scrollbar-color: #808080 var(--an-hi);
+  scrollbar-color: var(--chrome-lo) var(--an-hi);
 }
 
 .fm98.an95 .an-delta-rows {

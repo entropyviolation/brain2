@@ -109,10 +109,10 @@ Phone (Telegram)
 
 Apple Notes ingest is the sibling pattern (external source → apply in the
 client; this Mac via Electron IPC or localhost `/api/notes`). **On My iPhone**
-notes that never sync here use the signed [iOS Shortcut](shortcuts/dump-iphone-notes-to-brain2.md)
-(`Dump iPhone Notes to Brain2.shortcut` — AirDrop; delete any old copy first,
-then `npm run shortcut:iphone-notes` if the signed file is missing)
-→ `iphone-notes:` → Lists **iPhone Notes Store** (header **Phone Notes**).
+notes that never sync here use the signed [iOS Shortcut recipe](shortcuts/dump-iphone-notes-to-brain2.md)
+(`npm run shortcut:iphone-notes` writes `Dump iPhone Notes to Brain2.shortcut`;
+that signed file is not in the repo, and `.wflow.json` will not import)
+→ `iphone-notes:` → Lists **iPhone Notes Store** (**Phone Notes** in Settings and Lists settings).
 Use **Pick a note** when running from Shortcuts; **Shortcut Input** only after
 Share from Notes. Date ranges use Find Notes “is in the last”, not Adjust Date.
 Each note is sent as plain `iphone-notes:` text (never raw Notes share / %%lld).
@@ -152,7 +152,7 @@ item per line), which files onto that list. Ambiguous names get a one-step clari
 instead of a silent wrong write, but only among names that genuinely resemble
 the query: a shared stopword (`to`, `my`, `the`, …) is not a match, so prose no
 longer ties a handful of unrelated lists. A read that resembles **nothing**
-is parked on **iPhone Notes Store** to sort in the app (header **Phone Notes**),
+is parked on **iPhone Notes Store** to sort in the app (**Phone Notes** in Settings and Lists settings),
 the same way Mac From Notes parks. Custom first-word aliases live in Settings
 (e.g. `store` → `groc`). Bare **`g`** is retired — it captures to Inbox like
 any other prefix-less line, not grocery.
@@ -184,16 +184,16 @@ Text-pipeline tracker rows (`generatedBy.kind === "text"`) feed Analytics → **
 | `inv` / `inv oats` / `pantry` | Dump or bump the pantry list |
 | `pin` / `live` / `snapshot` | Refresh the pinned grocery card (+ a one-line now) |
 | `n stuck in aisle 4` / `note: left room at 8:15` / `jot:` / `memo:` | Text log instant, the Tracking log Note row. No clock uses send time. `at 8:15` is that minute. A clock with no word is exact. `est` / `estimated` / `~` is estimated (`clockCertainty` and `precision: "estimated"`). `unknown` keeps that minute for placement. Also appended onto the block covering that minute. A second line is the note. |
-| `tp: opening the editor to fix the clock` / `TP:` / `thought process:` / `log: tp:` | A specialized note: the crystallized thought of this moment, not a general note. Colon required, so bare `tp` and bare `thought process` stay capture. Activity instant, pen **Text log**, `eventKind` `thought-process`. The first line is the title; lines under it are the note. No time uses send time. Clocks are `parseExpectedWhen`, the same reader as a log line: a bare clock is military, `1pm` / `1:00 PM` / `1:00 p.m.` are 13:00, `7/4/26` is July 4, 2026. `est` / `unknown` still work. |
+| `tp: Opening the editor to fix the clock, then the dishes, relieved it is a small fix` / `TP:` / `thought process:` / `log: tp:` | Thought process: a guiding strand of this moment, from what you are doing, to what it leads to, to how it feels. Why you are doing something, what you expect to do next, and how it lands. Not a general note, a one-word mood, or a short activity log such as brushed teeth. Colon required, so bare `tp` and bare `thought process` stay capture. Activity instant, pen **Text log**, `eventKind` `thought-process`. The first line is the title; lines under it are the note. No time uses send time. Clocks are `parseExpectedWhen`, the same reader as a log line: a bare clock is military, `1pm` / `1:00 PM` / `1:00 p.m.` are 13:00, `7/4/26` is July 4, 2026. `est` / `unknown` still work. |
 | `n loc: crowded` / `n mood: low` / `n activity: deep work` | Same tick on that Tracking scope, and on the block covering that minute |
 | `day: tired` / `daynote:` / `n day:` | Tracking day jot (append log). Bare `day` → `today` |
-| `pick up milk` / `qa:` / `add:` / `inbox:` / `idea:` / `quick add:` | Capture. Same smart-parse as Quick Add. Inbox on. `-mb` or `-monkey` on the line dumps it in **Monkey brain** (a separate Inbox pile for compulsive thoughts — not the Inbox you mean to revisit). |
+| `pick up milk` / `qa:` / `add:` / `inbox:` / `idea:` / `quick add:` | Capture. Same smart-parse as Quick Add. Inbox on. `list: item` and `folder: list: item` create the list if needed. A date, time, duration, or priority is applied and **left in the title**. `-mb` or `-monkey` on the line dumps it in **Monkey brain** (a separate Inbox pile for compulsive thoughts — not the Inbox you mean to revisit). `-p` or `-plain` stores the line as written: no list, folder, date, time, duration, priority, or Monkey brain. |
 | `Chores: milk` | One line: capture with a list path (still Inbox unless you use Bulk / `groc`). A list created by this stays out of the Scheduler until List Settings → **Send to Scheduler** |
 | `Grocery list:` then `eggs` / `rice` / `butter`, or `Grocery list: grocery list:` | Files onto the grocery **store** list (`groc` uses the same one). Does not create a second folder. Identical open lines are skipped |
 | `before elijah gets home:` then the lines | That list, found or created, one item per line. A new list is not sent to the Scheduler |
 | `before 9/12:` / `before Friday:` / `before Sept 12:` | Following lines are **due that day** (`deadline` and `mustBeDoneBefore`). A past `M/D` rolls forward a year. Words after `before` stay a list name |
 | `bulk:` then one item per line | Bulk Add. Header lines `list:` / `folder: list:` work. Files onto lists (Inbox off). `Home: Groceries:` keeps that folder. A grocery name with no other folder uses the store list. A list created here is not sent to the Scheduler, even when the folder is |
-| `iphone-notes:` / `inotes:` / `phone notes:` | Park an On My iPhone note dumped by the signed [iOS Shortcut](shortcuts/dump-iphone-notes-to-brain2.md) (`Dump iPhone Notes to Brain2.shortcut`). One note per message; long bodies `iphone-notes 2/3:`. Lands in Lists → **iPhone Notes Store** → **Parked** (header **Phone Notes**). Not the tracker `n` / `note:` jot. Mac **From Notes** is a different folder. |
+| `iphone-notes:` / `inotes:` / `phone notes:` | Park an On My iPhone note dumped by the signed [iOS Shortcut](shortcuts/dump-iphone-notes-to-brain2.md) (generate with `npm run shortcut:iphone-notes`; the `.shortcut` is not in the repo). One note per message; long bodies `iphone-notes 2/3:`. Lands in Lists → **iPhone Notes Store** → **Parked** (**Phone Notes** in Settings and Lists settings). Not the tracker `n` / `note:` jot. Mac **From Notes** is a different folder. |
 | `habit: exercise 30` / `h stretch` / `did: stretch` | Habit for **today** (optional `yesterday`). Fuzzy-matches the habit name. Bare `h` → help. |
 | `dh: hemisync` / `dh: read 12 pages` / `dh: exercise 30 min` / `dh: chess score 1200` | Habit keywords. The colon is required. The same words without `dh:` capture to Inbox. |
 | `smoked weed` / `drank water` / `ate egg salad` / `took 2 adderall` | Whole-message **discrete events** (editable in Settings). `generatedBy.kind === "text"`. `ate` → food, `drank` → drink, `took` → drug (`intakeClass` and `eventKind` `intake.food` / `intake.drink` / `intake.drug`). Pen stays **Text log**. Other triggers, including `smoked weed`, do not set a class. |
@@ -313,12 +313,15 @@ there. `day:` / `n day:` stay the Tracking day jot (`lib/day-notes-persist.ts`)
 and do not become a tick, and do not read a clock. A later paint or erase of
 those minutes leaves the point.
 
-`tp:` / `TP:` / `thought process:` / `log: tp:` are a specialized note: the
-crystallized thought of this moment, not a general note. Colon required.
+`tp:` / `TP:` / `thought process:` / `log: tp:` are a Thought process: a guiding
+strand of this moment, from what you are doing, to what it leads to, to how it
+feels. It is why you are doing something, what you expect to do next, and how
+it lands. It is not a general note, not a one-word mood, and not a short
+activity log such as brushed teeth. Colon required.
 They paint the same Text log instant with `eventKind` `thought-process`.
 The first line is the title; lines under it are the note. Clocks use
 `parseExpectedWhen`, the same reader as a log line. Example:
-`tp: opening the editor to fix the clock`.
+`tp: Opening the editor to fix the clock, then the dishes, relieved it is a small fix`.
 
 ## Security
 
@@ -413,7 +416,7 @@ pass. Settings → **Simulate a scan** uses the same path without Telegram.
 | `lib/ingest/dedupe.ts` | Telegram `update_id` / `message_id` dedupe at the executor gate |
 | `lib/ingest/text-triggers.ts` | Whole-message habit + discrete trigger patterns (Settings + habit form) |
 | `lib/ingest/apply-needed.ts` | `needed:` / `get:` → list **needed**, notes **sent from text** |
-| `lib/ingest/apply-discrete-event.ts` | `log:` / `intake:` / `switch:` / `log categories` / `st:` / `so:` / `switch goal:` / `transit:` + discrete trigger instants (`generatedBy.kind === "text"`). A line under the event is the note. Log ranges are blocks. Points stay when a later block covers that minute. `log:` sets `eventKind`. Trailing `loc:` paints a Location instant on that pen. Classed intake and `ate` / `drank` / `took` set `intakeClass`. Estimated clocks also set `precision`. `switch:` is the labeled form (view, then `from:` / `to:`, or a bare destination). Activity stays the Switch pen (`started …`). Other views paint on that scope. `so:` / `switch goal:` still store `objective …`. `log categories` replies with the store’s views and writes no event. `tp:` / `thought process:` / `log: tp:` paint a Text log instant with `eventKind` `thought-process` (a specialized note: the crystallized thought of this moment, not a general note). |
+| `lib/ingest/apply-discrete-event.ts` | `log:` / `intake:` / `switch:` / `log categories` / `st:` / `so:` / `switch goal:` / `transit:` + discrete trigger instants (`generatedBy.kind === "text"`). A line under the event is the note. Log ranges are blocks. Points stay when a later block covers that minute. `log:` sets `eventKind`. Trailing `loc:` paints a Location instant on that pen. Classed intake and `ate` / `drank` / `took` set `intakeClass`. Estimated clocks also set `precision`. `switch:` is the labeled form (view, then `from:` / `to:`, or a bare destination). Activity stays the Switch pen (`started …`). Other views paint on that scope. `so:` / `switch goal:` still store `objective …`. `log categories` replies with the store’s views and writes no event. `tp:` / `thought process:` / `log: tp:` paint a Text log instant with `eventKind` `thought-process` (Thought process: a guiding strand of this moment — why you are doing something, what you expect next, and how it lands; not a general note, a one-word mood, or a short activity log such as brushed teeth). |
 | `lib/ingest/apply-cycle.ts` | `cycle:` bleeding / spotting / ovulation (and `off`) on the send date. |
 | `lib/ingest/apply-activity-span.ts` | `currently` / `stopped` / `switched to` activity intervals |
 | `lib/ingest/apply-habit-trigger.ts` | `dh:` habit keyword completions. Bare keywords do not log. |
@@ -429,9 +432,9 @@ pass. Settings → **Simulate a scan** uses the same path without Telegram.
 | `hooks/useMessageIngest.ts` | Renderer drain (Electron IPC or `/api/ingest`); album buffer; yields to phone hub; vault push |
 | `lib/ingest/pairing.ts` | Codes + `unpairedSenders` (one-click pairing of a logged refusal) |
 | `components/Settings/MessageIngestPanel.tsx` | Token, pairing (code **or** Texted but not paired), hub URL, shortcuts, iPhone Notes / Screen Time / Call / Text / Location Shortcut AirDrop steps, cheat-sheet, simulate message + scan |
-| `components/iphone-notes-store.tsx` | Header **Phone Notes** queue over the Parked list |
-| `components/ingest-log-dialog.tsx` | Header **Ingest** log. GPS tracking points hidden unless **Show GPS**. |
-| `docs/shortcuts/Dump iPhone Notes to Brain2.shortcut` | Signed Shortcut (`--mode anyone`) — AirDrop onto the iPhone |
+| `components/iphone-notes-store.tsx` | **Phone Notes** queue over the Parked list (Settings and Lists settings) |
+| `components/ingest-log-dialog.tsx` | **Ingest** log (Settings and Lists settings). GPS tracking points hidden unless **Show GPS**. |
+| `docs/shortcuts/dump-iphone-notes-to-brain2.md` | Recipe. `npm run shortcut:iphone-notes` writes the signed shortcut. The `.shortcut` is not in the repo. `Dump iPhone Notes to Brain2.wflow.json` will not import. |
 | `docs/shortcuts/Screen Time to Brain2.shortcut` | Signed Ask-for-app `screen:` ping (`--mode anyone`) — AirDrop; attach a duplicate to App Is Opened |
 | `docs/shortcuts/iPhone Call to Brain2.shortcut` | Signed Ask who + duration `call:` ping (`--mode anyone`) — AirDrop |
 | `docs/shortcuts/iPhone Text to Brain2.shortcut` | Signed `text:` ping (`--mode anyone`) — AirDrop |

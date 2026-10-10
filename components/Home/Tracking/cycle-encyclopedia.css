@@ -325,7 +325,7 @@ body.win95-app .cycle-encyclopedia h5 {
   background: #f3e08a;
   color: #1c1916;
   padding: 0;
-  border-radius: 1px;
+  border-radius: var(--r-1, 1px);
 }
 
 .cycle-encyclopedia .trk-cycle-find-mark[data-current="true"] {

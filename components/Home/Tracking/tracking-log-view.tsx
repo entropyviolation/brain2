@@ -2,10 +2,10 @@
  * components/Home/Tracking/tracking-log-view.tsx — One calm day of intake, events, cycle
  *
  * Follows the Tracking day cursor. The composer is one row of modes: Event,
- * Switch, Intake, Note, Thought. Event’s location is one field over
- * the Location pens. Note and Thought are a few-line textarea; the other
- * modes stay one line. Thought is the crystallized thought of this moment,
- * stored as `eventKind` `thought-process`, and listed under Thought.
+ * Switch, Intake, Note, Thought process. Event’s location is one field over
+ * the Location pens. Note and Thought process are a few-line textarea; the other
+ * modes stay one line. A thought process is a guiding strand of this moment,
+ * stored as `eventKind` `thought-process`, and listed under Thought process.
  * Food, drink, and drugs are Intake presets on an Intake-pen instant.
  * The clock stays visible. Custom phrases are added in Tracking settings
  * (the gear), not on this composer. Counts sits under the composer.
@@ -49,7 +49,7 @@ const MODES: { id: LogComposerMode; label: string }[] = [
   { id: "switch", label: "Switch" },
   { id: "intake", label: "Intake" },
   { id: "note", label: "Note" },
-  { id: "thought", label: "Thought" },
+  { id: "thought", label: "Thought process" },
 ]
 
 const INTAKE_PRESETS: { id: IntakeClass; label: string; placeholder: string }[] = [
@@ -74,12 +74,12 @@ function defaultClock(day: Date): string {
 
 function fieldLabel(mode: LogComposerMode): string {
   if (mode === "note") return "Note"
-  if (mode === "thought") return "Thought"
+  if (mode === "thought") return "Thought process"
   return "Title"
 }
 
 function fieldPlaceholder(mode: LogComposerMode, intake: IntakeClass): string {
-  if (mode === "thought") return "opening the editor to fix the clock"
+  if (mode === "thought") return "A strand from what you are doing, to what it leads to, to how it feels."
   if (mode === "event" || mode === "note") return "left room"
   return INTAKE_PRESETS.find((row) => row.id === intake)?.placeholder ?? "coffee"
 }
@@ -420,12 +420,6 @@ export function TrackingLogView({
   const openEntry = openEntryId ? entries.find((entry) => entry.id === openEntryId) : undefined
   const scopeName = (scopeId: string) => scopes.find((scope) => scope.id === scopeId)?.name ?? scopeId
 
-  const stampNow = () => {
-    const now = new Date()
-    setTimeValue(minutesToTimeString(now.getHours() * 60 + now.getMinutes()))
-    setUnknown(false)
-  }
-
   const add = () => {
     const minute = timeStringToMinutes(timeValue)
     if (clock !== "unknown" && minute == null) return
@@ -567,9 +561,6 @@ export function TrackingLogView({
             <LocationField pens={locationPens} penId={locationPenId} onPenId={setLocationPenId} />
           ) : null}
           <ClockPicker aria-label="Time of day" value={timeValue} onChange={setTimeValue} />
-          <button type="button" onClick={stampNow}>
-            Now
-          </button>
           <label className="trk-logbook-check">
             <input
               type="checkbox"
@@ -633,8 +624,8 @@ export function TrackingLogView({
       />
 
       <LogListWell
-        title="Thought"
-        note="The crystallized thought of this moment."
+        title="Thought process"
+        note="A strand from what you are doing, to what it leads to, to how it feels."
         rows={grouped.thought}
         onOpen={setOpenEntryId}
         onRemove={removeEntry}

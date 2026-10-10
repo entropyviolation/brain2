@@ -1,28 +1,27 @@
 /**
  * components/Home/Habits/habits-tab-controls.tsx — Per-tab control stack
  *
- * Shared stack inside HabitsControlPanel: two GradeFace tubes, optional Good
- * day / week / month / season wells, optional monthly or weekly window plate,
- * Sort Habits, Exemption wand, view rockers (Day / Week / Month / Season View), New habit.
- * Grade numbers and store writes stay at the habit-tracker call site.
+ * Three bands inside HabitsControlPanel. Meters report the sheet (grade tubes,
+ * one shared through line, good-period plate). Sheet changes the sheet (window,
+ * Tools wands, view rocker). Sort lives on the Priority bar above the grid.
+ * Lamps change how a row is drawn.
+ * New habit sits in the foot, above the gem oval. Grade numbers and store
+ * writes stay at the habit-tracker call site.
  */
 "use client"
 
 import type { ReactNode } from "react"
 import { Plus } from "lucide-react"
 import { CockpitSwitch } from "@/components/Home/Habits/cockpit-switch"
-import { HabitSortControl } from "@/components/Home/Habits/habit-sort-control"
 import { ExemptionWandButton } from "@/components/Home/Habits/exemption-wand-button"
 import { MissedOpWandButton } from "@/components/Home/Habits/missed-op-wand-button"
 import { NobleGasTube } from "@/components/Home/Habits/noble-gas-tube"
 import { GOOD_DAYS_LOOKBACK } from "@/lib/habit-accomplishment"
-import type { HabitSortMode } from "@/lib/habit-sort"
 
 function GradeFace({
   label,
   title,
   valueText,
-  through,
   barValue,
   hue,
   onClick,
@@ -30,7 +29,6 @@ function GradeFace({
   label: string
   title: string
   valueText: string
-  through: string | null
   barValue: number | null
   hue: string
   onClick: () => void
@@ -40,11 +38,37 @@ function GradeFace({
     <button type="button" className="habit-week-grade" title={title} onClick={onClick}>
       <span className="text-muted-foreground">{label}</span>
       <strong>{valueText}</strong>
-      {through && <span className="text-muted-foreground text-[11px]">{through}</span>}
       {barValue !== null && (
         <NobleGasTube value={Math.min(100, barValue)} gas={gas} hue={hue} label={label} />
       )}
     </button>
+  )
+}
+
+/** One nameplate over both wells. The glass still shows the figures. */
+function goodPeriodChrome(goodDays: NonNullable<HabitsTabControlsProps["goodDays"]>): {
+  plate: string
+  countWell: string
+} {
+  const of = goodDays.countOf ?? GOOD_DAYS_LOOKBACK
+  switch (goodDays.streakLabel) {
+    case "Good week streak":
+      return { plate: "Good weeks", countWell: "Last 12" }
+    case "Good month streak":
+      return { plate: "Good months", countWell: `Last ${of}` }
+    case "Good season streak":
+      return { plate: "Good seasons", countWell: `Last ${of}` }
+    default:
+      return { plate: "Good days", countWell: `Last ${of}` }
+  }
+}
+
+function ControlPlate({ legend, children }: { legend: string; children: ReactNode }) {
+  return (
+    <div className="hab-control-plate">
+      <span className="hab-sort-legend">{legend}</span>
+      <div className="hab-sort-bay">{children}</div>
+    </div>
   )
 }
 
@@ -82,13 +106,6 @@ export interface HabitsTabControlsProps {
     countOf?: number
     title?: string
   }
-  sortId?: string
-  /** Completion-% key. Day and week: Weekly. Month: Monthly. Season: Season. */
-  sortCompletionLabel?: string
-  habitSortMode: HabitSortMode
-  habitSortDirection: "asc" | "desc" | null
-  onHabitSortMode: (mode: HabitSortMode) => void
-  onHabitSortDirection: (direction: "asc" | "desc") => void
   exemptionWand: boolean
   onExemptionWand: (on: boolean) => void
   missedOpWand: boolean
@@ -140,12 +157,6 @@ export function HabitsTabControls({
   outputHue,
   onOutputClick,
   goodDays,
-  sortId,
-  sortCompletionLabel,
-  habitSortMode,
-  habitSortDirection,
-  onHabitSortMode,
-  onHabitSortDirection,
   exemptionWand,
   onExemptionWand,
   missedOpWand,
@@ -178,10 +189,13 @@ export function HabitsTabControls({
   monthWindow,
   weekWindow,
 }: HabitsTabControlsProps) {
-  const rockers: ReactNode[] = []
+  const sheetRockers: ReactNode[] = []
+  const lampRockers: ReactNode[] = []
   for (const id of toggles) {
+    const lane =
+      id === "hideCompleted" || id === "loadingBar" || id === "smallLeds" ? lampRockers : sheetRockers
     if (id === "heatmap" && onHeatmap) {
-      rockers.push(
+      lane.push(
         <CockpitSwitch
           key="heatmap"
           id="heatmap-view"
@@ -191,7 +205,7 @@ export function HabitsTabControls({
         />,
       )
     } else if (id === "dayView" && onDayView) {
-      rockers.push(
+      lane.push(
         <CockpitSwitch
           key="dayView"
           id="day-view"
@@ -201,7 +215,7 @@ export function HabitsTabControls({
         />,
       )
     } else if (id === "weekView" && onWeekView) {
-      rockers.push(
+      lane.push(
         <CockpitSwitch
           key="weekView"
           id="week-view"
@@ -211,7 +225,7 @@ export function HabitsTabControls({
         />,
       )
     } else if (id === "monthView" && onMonthView) {
-      rockers.push(
+      lane.push(
         <CockpitSwitch
           key="monthView"
           id="month-view"
@@ -221,7 +235,7 @@ export function HabitsTabControls({
         />,
       )
     } else if (id === "seasonView" && onSeasonView) {
-      rockers.push(
+      lane.push(
         <CockpitSwitch
           key="seasonView"
           id="season-view"
@@ -231,7 +245,7 @@ export function HabitsTabControls({
         />,
       )
     } else if (id === "hideCompleted") {
-      rockers.push(
+      lane.push(
         <CockpitSwitch
           key="hideCompleted"
           id={hideCompletedId}
@@ -240,17 +254,17 @@ export function HabitsTabControls({
           label={hideCompletedLabel}
         />,
       )
-      rockers.push(
+      lane.push(
         <CockpitSwitch
           key="hideCompletedAndMissed"
           id={hideCompletedAndMissedId}
           checked={hideCompletedAndMissed}
           onCheckedChange={onHideCompletedAndMissed}
-          label="Hide completed and missed"
+          label="Hide Done and Missed"
         />,
       )
     } else if (id === "loadingBar") {
-      rockers.push(
+      lane.push(
         <CockpitSwitch
           key="loadingBar"
           id={loadingBarId}
@@ -260,7 +274,7 @@ export function HabitsTabControls({
         />,
       )
     } else if (id === "smallLeds") {
-      rockers.push(
+      lane.push(
         <CockpitSwitch
           key="smallLeds"
           id={smallLedsId}
@@ -272,71 +286,76 @@ export function HabitsTabControls({
     }
   }
 
+  const period = goodDays ? goodPeriodChrome(goodDays) : null
+
   return (
-    <div className="hab-control-stack">
-      <div className="hab-control-gauges">
-        <GradeFace
-          label={gradeLabel}
-          title="Click for raw vs curved breakdown"
-          valueText={gradeValueText}
-          through={gradeThrough}
-          barValue={gradeBarValue}
-          hue={gradeHue}
-          onClick={onGradeClick}
-        />
-        <GradeFace
-          label="Perfect output"
-          title="Click for elapsed row completion breakdown"
-          valueText={outputValueText}
-          through={gradeThrough}
-          barValue={outputBarValue}
-          hue={outputHue}
-          onClick={onOutputClick}
-        />
-      </div>
-      {goodDays && (
-        <div className="hab-control-streak">
-          <button
-            type="button"
-            className="habit-good-days"
-            title={goodDays.title ?? "Click for Good day streak, last 30 days, and accomplishment settings"}
-            onClick={goodDays.onClick}
-          >
-            <span className="habit-good-days-stat">
-              <span className="text-muted-foreground">{goodDays.streakLabel ?? "Good day streak"}</span>
-              <strong>{goodDays.streak}</strong>
-            </span>
-          </button>
-          <button
-            type="button"
-            className="habit-good-days"
-            title={goodDays.title ?? "Click for Good day streak, last 30 days, and accomplishment settings"}
-            onClick={goodDays.onClick}
-          >
-            <span className="habit-good-days-stat">
-              <span className="text-muted-foreground">{goodDays.countLabel ?? "Good days in the last month"}</span>
-              <strong>
-                {goodDays.last30Count}
-                <span className="habit-good-days-of">/{goodDays.countOf ?? GOOD_DAYS_LOOKBACK}</span>
-              </strong>
-            </span>
-          </button>
+    <>
+      <div className="hab-control-stack">
+        <div className="hab-control-band" data-band="meters">
+          <div className="hab-control-gauges">
+            <GradeFace
+              label={gradeLabel}
+              title="Click for raw vs curved breakdown"
+              valueText={gradeValueText}
+              barValue={gradeBarValue}
+              hue={gradeHue}
+              onClick={onGradeClick}
+            />
+            <GradeFace
+              label="Perfect output"
+              title="Click for elapsed row completion breakdown"
+              valueText={outputValueText}
+              barValue={outputBarValue}
+              hue={outputHue}
+              onClick={onOutputClick}
+            />
+            {gradeThrough && <p className="hab-control-through">{gradeThrough}</p>}
+          </div>
+          {goodDays && period && (
+            <div className="hab-control-streak">
+              <span className="hab-control-streak-plate">{period.plate}</span>
+              <button
+                type="button"
+                className="habit-good-days"
+                title={goodDays.title ?? "Click for Good day streak, last 30 days, and accomplishment settings"}
+                onClick={goodDays.onClick}
+              >
+                <span className="habit-good-days-stat">
+                  <span className="text-muted-foreground">Streak</span>
+                  <strong>{goodDays.streak}</strong>
+                </span>
+              </button>
+              <button
+                type="button"
+                className="habit-good-days"
+                title={goodDays.title ?? "Click for Good day streak, last 30 days, and accomplishment settings"}
+                onClick={goodDays.onClick}
+              >
+                <span className="habit-good-days-stat">
+                  <span className="text-muted-foreground">{period.countWell}</span>
+                  <strong>
+                    {goodDays.last30Count}
+                    <span className="habit-good-days-of">/{goodDays.countOf ?? GOOD_DAYS_LOOKBACK}</span>
+                  </strong>
+                </span>
+              </button>
+            </div>
+          )}
         </div>
-      )}
-      {monthWindow}
-      {weekWindow}
-      <HabitSortControl
-        id={sortId}
-        value={habitSortMode}
-        direction={habitSortDirection}
-        completionLabel={sortCompletionLabel}
-        onChange={onHabitSortMode}
-        onDirection={onHabitSortDirection}
-      />
-      <div className="hab-control-toggles">
-        <ExemptionWandButton on={exemptionWand} onToggle={onExemptionWand} />
-        <MissedOpWandButton on={missedOpWand} onToggle={onMissedOpWand} />
-        {rockers}
+        <div className="hab-control-band" data-band="sheet">
+          {monthWindow}
+          {weekWindow}
+          <div className="hab-control-toggles">
+            <ControlPlate legend="Tools">
+              <ExemptionWandButton on={exemptionWand} onToggle={onExemptionWand} />
+              <MissedOpWandButton on={missedOpWand} onToggle={onMissedOpWand} />
+            </ControlPlate>
+            {sheetRockers.length > 0 && <ControlPlate legend="Sheet">{sheetRockers}</ControlPlate>}
+          </div>
+        </div>
+        <div className="hab-control-band" data-band="lamps">
+          <ControlPlate legend="Lamps">{lampRockers}</ControlPlate>
+        </div>
       </div>
       <button
         type="button"
@@ -346,6 +365,6 @@ export function HabitsTabControls({
         <Plus className="inline h-3 w-3" />
         New habit
       </button>
-    </div>
+    </>
   )
 }

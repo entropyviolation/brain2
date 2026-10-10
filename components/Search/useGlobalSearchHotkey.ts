@@ -4,8 +4,8 @@
  * components/Search/useGlobalSearchHotkey.ts
  *
  * A self-contained hook that owns the open/closed state of the global search
- * palette and toggles it on Cmd/Ctrl-K. Shift and Alt stay free (Cmd/Ctrl-Shift-K
- * is quick capture). Key repeat does not toggle. It only attaches a single
+ * palette and toggles it on Cmd/Ctrl-K. Shift and Alt stay free (Cmd/Ctrl-Shift-A
+ * is Quick Add). Key repeat does not toggle. It only attaches a single
  * `keydown` listener while mounted — it does NOT render or mount anything
  * globally, so the caller stays in control of where `<GlobalSearch>` lives.
  *
@@ -27,7 +27,7 @@ export function useGlobalSearchHotkey(): UseGlobalSearchHotkey {
     function onKeyDown(e: KeyboardEvent) {
       // Hold-repeat must not flap the palette open and shut.
       if (e.repeat) return
-      // Leave Shift (quick capture) and Alt chords alone.
+      // Leave Shift (Quick Add is Cmd/Ctrl-Shift-A) and Alt chords alone.
       if (e.shiftKey || e.altKey) return
       // Cmd-K (mac) / Ctrl-K (win/linux) toggles the palette.
       if ((e.metaKey || e.ctrlKey) && (e.key === "k" || e.key === "K")) {

@@ -4,9 +4,10 @@
  * Available from Time Grid, Activity Log and Day Log. An optional name, a when,
  * optional notes. Start and End are times on the selected calendar day; a small
  * **Date** latch reveals an optional date so a block can start 11 PM one day and
- * end 1 AM the next without forcing a date pick every time. Focusing a time
- * field reveals **right now** beside that picker (`now-time-button.tsx`) — it
- * stamps hours and minutes, and leaves the dialog's date alone. Toggle
+ * end 1 AM the next without forcing a date pick every time. Now sits inside
+ * the clock popup (`ClockPicker`) and stamps hours and minutes at once, leaving
+ * the dialog's date alone. Confirm writes a time assembled on the drums.
+ * Cancel, Escape, and a click outside leave the field. Toggle
  * **Discrete event** for a single clock time — smoked weed, fell asleep, sunrise
  * — which can also start or end a state block ("being high") of another pen.
  */

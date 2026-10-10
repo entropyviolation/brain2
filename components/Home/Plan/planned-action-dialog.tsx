@@ -122,7 +122,7 @@ export function PlannedActionDialog({ open, onOpenChange, action, createDate }: 
         >
           <DialogHeader className="plan95-dialog-caption flex-row items-center space-y-0 text-left">
             <DialogTitle>{sourceLabel}</DialogTitle>
-            <button type="button" className="plan95-title-btn" aria-label="Close" onClick={guard.requestClose}>
+            <button type="button" className="plan95-title-btn b2-close-key" aria-label="Close" onClick={guard.requestClose}>
               ×
             </button>
           </DialogHeader>

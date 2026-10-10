@@ -3,7 +3,7 @@
  * generate-screenshot-docs.mjs.
  */
 export const GLOBAL_HEADER = `
-Pinned full-width mill title bar (\`AppHeader\`, sticky top, z-40): navy BRAIN2 caption with Tek POWER lamp + today's-friend jewel (64px chrome + black-mirror well; click for a Stardew Next Action bubble; Esc / × / outside to close) and Friend / Review / System / Capture as Win95 groupboxes of milled press keys. Names stays Names and latches (sunken, aria-pressed); tooltip Stop naming while on. Phosphor counts on Review and Inbox. Quick Add is the default framed key, docked at the right of Capture. Same doors as before — grouped furniture, not a menu bar.
+Pinned full-width mill title bar (\`AppHeader\`, sticky top, z-40): navy BRAIN2 caption with Tek POWER lamp + today's-friend jewel (64px chrome + black-mirror well; click for a Stardew Next Action bubble; Esc / × / outside to close) and Friend / Review / System / optional now / Capture as Win95 groupboxes of milled press keys. Names stays Names and latches (sunken, aria-pressed); tooltip Stop naming while on. Phosphor counts on Review and Inbox. Capture is Inbox and Quick Add; Bulk is a checkbox inside Quick Add. Metrics opens from Now → Current moment. Ingest, From Notes, and Phone Notes live in Settings.
 Tabs: milled fascia (brushed bay, raised silver keys, active key a CRT with a round power lamp) — Home · Lists · Docs · Scheduler · Operations · Modules · Analytics.
 Shortcuts: Cmd/Ctrl+K search · capture hotkey → Quick Add.
 `.trim()
@@ -841,6 +841,10 @@ Importance, cognitive load, and entropy already on items. Missing stays missing.
     view: "Header → Settings",
     sources: [
       "components/Settings/SettingsDialog.tsx",
+      "components/Settings/ChromeFaceField.tsx",
+      "components/Settings/BoubaKikiField.tsx",
+      "components/Settings/DriftAxisControls.tsx",
+      "components/Settings/panel-preview.ts",
       "components/Settings/HomeLocationField.tsx",
       "components/Settings/BirthdayField.tsx",
       "components/Settings/DayAnchorField.tsx",
@@ -848,7 +852,7 @@ Importance, cognitive load, and entropy already on items. Missing stays missing.
       "components/Settings/MessageIngestPanel.tsx",
       "components/Settings/ScreenTimePanel.tsx",
     ],
-    description: `Settings. Home location (City). Birthday: the Star Lord Report opens on this day (new moon and full moon open on their own). Default time of day: what is assumed when work is ticked off after the day has ended and there is no tracked time to read a real finish from. Once a few nights are logged this reports that the sleep log is answering it instead — your usual bedtime, less half an hour — and the Assumed finish time field below it is the fallback for days with no sleep data at all. Full App Backup: Export Full Backup / Restore From Backup. Phone↔Desktop Live Sync: Check hub / Force push now / Force pull now. Message ingest: enable, Telegram token (desktop), pairing code, cheat-sheet, simulate a phrase. **Screen Time**: ActivityWatch URL, connection lamp, lookback, Sync now. Item Types → Manage Item Types. Second Brain seed. PNG may need scroll.`,
+    description: `Settings. Window gray and Bouba/Kiki share one stack: body copy with air under the nameplate, a label row with the “now” readout inset from the bay edge, the swatch (warmth) gapped from the track, pole labels under the track, and the center chip (Default) on its own row so it does not cover the thumb. Drift speed, pause, the manual-shift heading, and Instant / Timed radios are spaced apart. Timed shows duration, then Start. A timed shift previews only in this panel; when the interval ends the whole app takes the new state and drift resumes. Instant applies to the whole app immediately. Window gray walks the design-ref grays; Default restores the stored classic metal and pauses. Bouba/Kiki: corners from rounded to pointy; Default restores today’s radii and pauses. Desktop PCB. Home location (City). Birthday: the Star Lord Report opens on this day (new moon and full moon open on their own). Default time of day: what is assumed when work is ticked off after the day has ended and there is no tracked time to read a real finish from. Once a few nights are logged this reports that the sleep log is answering it instead — your usual bedtime, less half an hour — and the Assumed finish time field below it is the fallback for days with no sleep data at all. Full App Backup: Export Full Backup / Restore From Backup. Phone↔Desktop Live Sync: Check hub / Force push now / Force pull now. Message ingest: enable, Telegram token (desktop), pairing code, cheat-sheet, simulate a phrase. **Screen Time**: ActivityWatch URL, connection lamp, lookback, Sync now. Item Types → Manage Item Types. Second Brain seed. PNG frames Window gray and Bouba/Kiki; the rest needs scroll.`,
   },
   {
     file: "20-dialog-inbox.png",
@@ -860,9 +864,9 @@ Importance, cognitive load, and entropy already on items. Missing stays missing.
   {
     file: "20-dialog-bulk-add.png",
     area: "Bulk Add dialog",
-    view: "Header → Bulk Add",
-    sources: ["components/enhanced-bulk-add.tsx", "lib/smart-parse.ts", "lib/capture-target.ts"],
-    description: `Bulk Add Tasks with Lists. Multi-line textarea (one item/line; headers list: or folder: list:). Send to Inbox checkbox. Shorthand & where items go. Ready count. Add Tasks. ×.`,
+    view: "Header → Quick Add → Bulk",
+    sources: ["components/quick-add.tsx", "components/enhanced-bulk-add.tsx", "lib/smart-parse.ts", "lib/capture-target.ts"],
+    description: `Quick Add with Bulk checked. Taller Tasks and Lists box (one item/line; headers list: or folder: list:; before 9/12: stamps a due day). Placeholder lines only. Send to Inbox checkbox. Shorthand & where items go. Ready count. Add Tasks. ×. Inbox Bulk edit and the mobile shell still open the separate Bulk Add dialog.`,
   },
   {
     file: "20-dialog-quick-add.png",
@@ -880,15 +884,19 @@ Importance, cognitive load, and entropy already on items. Missing stays missing.
   },
   {
     file: "20-dialog-time-tracking.png",
-    area: "Time Tracking dialog",
-    view: "Header → Tracking",
-    sources: ["components/cognitive-state.tsx", "components/Home/Tracking/time-grid.tsx"],
-    description: `Time Tracking dialog — same stack as Home Time Grid: Working now (if ops); pen tray; view-mode bar (Activity / Location / Mood / Company / Screen Time / iPhone Screen Time / iPhone Calls / iPhone Texts / …); TIME/DIV + Cell + Fill; grid; Untracked.`,
+    area: "Now dialog (Recent now / Upcoming now)",
+    view: "Header → Now",
+    sources: [
+      "components/cognitive-state.tsx",
+      "components/header-tracking/",
+      "components/Home/Tracking/time-grid.tsx",
+    ],
+    description: `Now dialog — wide header popup, not the Home Tracking desk. Caption is Recent now on Tracking and Upcoming now on Plan. Current moment (Activity, Location, Mood, Company, and when each was last true) sits on both panes. Tracking: now or a recent sequence (est. wears ~ and a dashed chip), the real day grid, Events, Thought process, and the day notes log. Plan: a short sequence, the agenda, the day plan log, and a return to Tracking to mark followed, skipped, or an unplanned insert.`,
   },
   {
     file: "20-dialog-metrics.png",
     area: "Metrics dialog",
-    view: "Header → Metrics",
+    view: "Header → Now → Metrics",
     sources: ["components/Tracking/MetricLogger.tsx", "lib/metrics-store.ts"],
     description: `Wellbeing metrics. Log a datapoint: Joy / Suffering / Alignment / Self satisfaction / Situational satisfaction (/100 + color). When, Context, Details. Log datapoint. Recent datapoints (+ delete).`,
   },

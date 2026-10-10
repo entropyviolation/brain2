@@ -12,6 +12,8 @@ export function HabitRowName({
   thisWeekDays = 0,
   thisWeekHit = false,
   currentWeeks = 0,
+  showMarks = true,
+  ritualMultiplier = 0,
 }: {
   name: string
   prio?: number
@@ -19,16 +21,27 @@ export function HabitRowName({
   thisWeekDays?: number
   thisWeekHit?: boolean
   currentWeeks?: number
+  /** Streaks and multipliers. Off hides the marks; the numbers stay computed. */
+  showMarks?: boolean
+  /** Morning-ritual points multiplier. 0 means this habit is not in today's ritual. */
+  ritualMultiplier?: number
 }) {
-  const showStreak = Boolean(streakTitle) && (thisWeekDays > 0 || currentWeeks > 0)
-  const showMeta = prio > 0 || showStreak
+  const showStreak = showMarks && Boolean(streakTitle) && (thisWeekDays > 0 || currentWeeks > 0)
+  const showPrio = showMarks && prio > 0
+  const showRitual = showMarks && ritualMultiplier > 0
+  const showMeta = showPrio || showStreak || showRitual
 
   return (
     <div className="habit-name">
       <span className="habit-name-title">{name}</span>
       {showMeta && (
         <span className="habit-name-meta">
-          {prio > 0 && (
+          {showRitual && (
+            <span className="habit-prio-chip habit-ritual-chip" title="Morning ritual points">
+              ×{ritualMultiplier}
+            </span>
+          )}
+          {showPrio && (
             <span className="habit-prio-chip" title="Priority weight (pin + missed periods)">
               ×{prio}
             </span>

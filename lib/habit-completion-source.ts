@@ -10,7 +10,8 @@
  *   percent reaches an editable threshold (default 75). No Activity minutes
  *   leaves the reading empty.
  * - **Daily habits floor** — weekly boolean: complete when every daily habit
- *   has some week completion (>% floor, default 0 = any attempt).
+ *   is above the floor (default 0). `allowAtZero` (default 0) is how many
+ *   may sit at 0 and the habit still counts as met.
  *
  * `undefined` on the habit means "use the name preset". `null` means the user
  * turned that link off. Manual ticks still win the same way as sleep / list.
@@ -51,7 +52,14 @@ export function sanitizeDailyFloorLink(value: unknown): HabitDailyFloorLink | nu
   const floor = typeof row.floorPercent === "number" && Number.isFinite(row.floorPercent)
     ? Math.min(100, Math.max(0, Math.round(row.floorPercent)))
     : 0
-  return { floorPercent: floor, enabled: row.enabled !== false }
+  const allow = typeof row.allowAtZero === "number" && Number.isFinite(row.allowAtZero)
+    ? Math.max(0, Math.round(row.allowAtZero))
+    : 0
+  return {
+    floorPercent: floor,
+    enabled: row.enabled !== false,
+    ...(allow > 0 ? { allowAtZero: allow } : {}),
+  }
 }
 
 /** Name presets for "log 75% of the …" habits. */
@@ -128,9 +136,10 @@ export function coverageDisplayAmount(
 }
 
 /**
- * Every daily habit's week completion is above `floorPercent` (default 0).
- * Exempt days are left to the caller via `isExempt`. Habits with a vacant
- * week (null %) are treated as not attempted.
+ * Every daily habit's period completion is above `floorPercent` (default 0),
+ * except up to `allowAtZero` habits that are at 0. Missing allowance is 0:
+ * any daily habit at 0 fails the floor. Exempt days are left to the caller
+ * via `isExempt`. A vacant percent counts as 0.
  */
 export function dailyHabitsClearFloor(
   dailyTasks: WeeklyTask[],
@@ -138,12 +147,21 @@ export function dailyHabitsClearFloor(
   weekDates: Date[],
   floorPercent = 0,
   isExempt?: (task: WeeklyTask, dateKey: string) => boolean,
+  allowAtZero = 0,
 ): boolean {
   if (dailyTasks.length === 0) return false
   const floor = Math.min(100, Math.max(0, floorPercent))
+  const allowance = Number.isFinite(allowAtZero) ? Math.max(0, Math.floor(allowAtZero)) : 0
+  let atZero = 0
   for (const task of dailyTasks) {
     const pct = calculateTaskPercentage(task.id, dailyTasks, weeklyData, weekDates, isExempt)
-    if (pct === null || !(pct > floor)) return false
+    const value = pct === null ? 0 : pct
+    if (!(value > 0)) {
+      atZero += 1
+      if (atZero > allowance) return false
+      continue
+    }
+    if (!(value > floor)) return false
   }
   return true
 }
@@ -207,9 +225,11 @@ export function clearCoverageObservation(completion: TaskCompletion | undefined)
 }
 
 /**
- * Hide-completed: a row leaves when it is exempt or fully met for the focus
- * period. Auto flags (sleep / list / tracked / coverage / floor) count the
- * same as a hand tick — including threshold clocks like wake-before-9.
+ * Hide-completed: a row leaves only when the period on screen is fully met,
+ * or the sheet’s row percent rounds to 100. A partial number stays. A text
+ * note stays — a non-empty cell is not a completion. Exempt periods still
+ * leave. Auto flags (sleep / list / tracked / coverage / floor) count when
+ * they mean the goal is met, including threshold clocks like wake-before-9.
  */
 export function habitHiddenWhenComplete(
   task: WeeklyTask,
@@ -218,9 +238,19 @@ export function habitHiddenWhenComplete(
     date?: Date
     weeklyData?: WeeklyData
     exempt?: boolean
+    /** Row percent the sheet paints. 100 hides even when this cell is not met. */
+    periodPercent?: number | null
   } = {},
 ): boolean {
   if (opts.exempt) return true
+  if (
+    typeof opts.periodPercent === "number" &&
+    Number.isFinite(opts.periodPercent) &&
+    Math.round(opts.periodPercent) >= 100
+  ) {
+    return true
+  }
+  if (task.type === TaskType.TEXT) return false
   if (isHabitGoalMet(task, completion, { date: opts.date, weeklyData: opts.weeklyData })) return true
   if (!completion) return false
   if (completion.sleepCompleted || completion.listCompleted || completion.trackedCompleted) return true
@@ -301,7 +331,13 @@ export function deriveCompletionSources(
   if (effectiveListLink(task)) linked.push("list")
   if (effectiveDailyFloorLink(task)) linked.push("dailyFloor")
   if (task.habitValueLink?.enabled !== false && task.habitValueLink?.habitId) linked.push("habitValue")
-  if (task.listSentLink?.enabled !== false && task.listSentLink?.listId) linked.push("listSent")
+  if (
+    task.listSentLink?.enabled !== false &&
+    task.listSentLink?.listId &&
+    (task.listSentLink.mode == null || task.listSentLink.mode === "sentThisWeek")
+  ) {
+    linked.push("listSent")
+  }
   if (triggersForHabit(task as WeeklyTask).length > 0) linked.push("keywords")
   return ["manual", ...linked]
 }

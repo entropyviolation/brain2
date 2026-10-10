@@ -11,7 +11,7 @@ import { useHabitsStore } from "@/lib/habits-store"
 import { usePointsStore } from "@/lib/points-store"
 import { useReviewsStore } from "@/lib/reviews-store"
 import { useTaskStore } from "@/lib/task-store"
-import { DEFAULT_CHROME_FACE, DEFAULT_THEME, useThemeStore } from "@/lib/theme-store"
+import { DEFAULT_CORNER_DRIFT, DEFAULT_THEME, DEFAULT_WARMTH_DRIFT, useThemeStore } from "@/lib/theme-store"
 import { DEFAULT_PCB_MODE } from "@/lib/pcb-backdrop"
 import { defaultScopes, defaultTags, useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { useSleepStore } from "@/lib/sleep-store"
@@ -106,7 +106,8 @@ export function resetAllStores() {
   useReviewsStore.setState({ reviews: [] })
   useThemeStore.setState({
     colors: DEFAULT_THEME,
-    chromeFace: DEFAULT_CHROME_FACE,
+    ...DEFAULT_WARMTH_DRIFT,
+    ...DEFAULT_CORNER_DRIFT,
     pcbMode: DEFAULT_PCB_MODE,
     appearanceRev: 0,
   })

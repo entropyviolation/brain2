@@ -105,7 +105,16 @@ export function CaptureShorthandHelp({ variant }: { variant: "quick" | "bulk" })
             <code className="text-foreground">-monkey</code> — dump it in Monkey brain
             instead of the Inbox you mean to revisit
           </li>
+          <li>
+            Plain: <code className="text-foreground">-p</code> or{" "}
+            <code className="text-foreground">-plain</code>, or the Plain checkbox.
+            The line is stored as written. No list, folder, date, time, duration, priority, or Monkey brain.
+          </li>
         </ul>
+        <p>
+          A date, time, duration, or priority is still applied, and those words stay in the title.
+          Folder and list names are the part that comes off the front.
+        </p>
       </div>
     </details>
   )

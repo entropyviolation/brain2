@@ -76,9 +76,18 @@
  * sheet to the current period and open its plan log. They do not change
  * `habitWeekWindow` or `habitMonthWindow`. A missing value fills false.
  * No persist version bump.
+ * `highlightHabitPriorities` (default false) and `showStreakMarks` (default true)
+ * are Priority-bar prefs. A missing highlight flag stays off. A missing streak
+ * flag stays on, so the × and streak marks under a name keep showing.
+ * `morningRitualPointMultiplier` (default 5) is the × a morning-ritual habit
+ * shows. A missing value migrates to 5. 0 hides that extra ×. No persist
+ * version bump — same rule as `hideCompletedToday`.
  * `timeEstimateNA`, `doneTaskPhrase`, and `doneTaskUseText` are optional on
  * each habit. A missing key keeps the previous behavior (a stored estimate
  * still counts; the Done line stays the habit name). No persist version bump.
+ * `completionPipelines` is an optional ordered form of the same completion
+ * source ids (a display name does not change trust). A missing array is one
+ * row per stored source. No persist version bump.
  * Persist version 11 adds `percentLedTint` (hex for row/column completion lamps and Yes/No cells)
  * and keeps per-habit `WeeklyTask.gem`. Persist version 10 adds `habitSortMode`
  * (default / A–Z / created / priority / weekly completion %). The old
@@ -118,6 +127,8 @@ import { persist } from "zustand/middleware"
 import { createCogsJSONStorage, registerPersistRehydrator } from "@/lib/persist-storage"
 import { persistKey, readAliasedLocal, writeAliasedLocal } from "@/lib/storage-keys"
 import { migrateHabitSortMode, type HabitSortMode } from "@/lib/habit-sort"
+import { applyHabitOrder } from "@/lib/habit-order"
+import { clampMorningRitualPointMultiplier, DEFAULT_MORNING_RITUAL_POINT_MULTIPLIER } from "@/lib/habit-priority"
 import {
   DEFAULT_HABIT_BIRTHDAY,
   DEFAULT_HABIT_MONTH_WINDOW,
@@ -443,6 +454,11 @@ export function migrateHabitsState(persisted: unknown, version: number): HabitsS
     habitSeasonView: !!state.habitSeasonView,
     exemptionWand: !!state.exemptionWand,
     missedOpWand: !!state.missedOpWand,
+    highlightHabitPriorities: !!state.highlightHabitPriorities,
+    showStreakMarks: state.showStreakMarks !== false,
+    morningRitualPointMultiplier: clampMorningRitualPointMultiplier(
+      has("morningRitualPointMultiplier") ? state.morningRitualPointMultiplier : DEFAULT_MORNING_RITUAL_POINT_MULTIPLIER,
+    ),
     habitExemptions: sanitizeExemptionBooks(state.habitExemptions),
     habitsControlPanelWidth: HABITS_CONTROL_PANEL_DEFAULT_WIDTH,
     willpowerPhysicsHud: !!state.willpowerPhysicsHud,
@@ -731,6 +747,22 @@ interface HabitsState {
    */
   habitSortDirection: "asc" | "desc" | null
   setHabitSortDirection: (direction: "asc" | "desc") => void
+  /** Priority bar: green / red name wash. Default off. */
+  highlightHabitPriorities: boolean
+  setHighlightHabitPriorities: (value: boolean) => void
+  /** Priority bar: streak and × marks under the name. Default on. */
+  showStreakMarks: boolean
+  setShowStreakMarks: (value: boolean) => void
+  /**
+   * × a habit in today's morning ritual shows on the row and in the form.
+   * Default 5. Edited in Habits Settings with the other point rules.
+   */
+  morningRitualPointMultiplier: number
+  setMorningRitualPointMultiplier: (value: number) => void
+  /**
+   * Rewrite one frequency's place in the task array. Completion maps stay.
+   */
+  reorderHabits: (frequency: HabitFrequency, orderedIds: readonly string[]) => void
   /** Sleep-log and next-action checks. Does not push an undo step. */
   applyAutoChecks: (
     updates: { taskId: string; dateKey: string; flag: "sleepCompleted" | "listCompleted"; met: boolean }[],
@@ -1261,6 +1293,18 @@ export const useHabitsStore = create<HabitsState>()(
       setHabitSortMode: (mode) =>
         set({ habitSortMode: mode, sortHabitsByPriorityFlag: mode === "priority" }),
       setHabitSortDirection: (direction) => set({ habitSortDirection: direction }),
+      highlightHabitPriorities: false,
+      setHighlightHabitPriorities: (value) => set({ highlightHabitPriorities: !!value }),
+      showStreakMarks: true,
+      setShowStreakMarks: (value) => set({ showStreakMarks: !!value }),
+      morningRitualPointMultiplier: DEFAULT_MORNING_RITUAL_POINT_MULTIPLIER,
+      setMorningRitualPointMultiplier: (value) =>
+        set({ morningRitualPointMultiplier: clampMorningRitualPointMultiplier(value) }),
+      reorderHabits: (frequency, orderedIds) =>
+        set((state) => ({
+          contentRev: nextContentRev(state.contentRev),
+          tasks: applyHabitOrder(state.tasks, frequency, orderedIds),
+        })),
       sortHabitsByPriorityFlag: false,
       setSortHabitsByPriorityFlag: (value) =>
         set({ sortHabitsByPriorityFlag: value, habitSortMode: value ? "priority" : "default" }),
@@ -1747,6 +1791,10 @@ export const useHabitsStore = create<HabitsState>()(
           goodDaysUsePriority: state.goodDaysUsePriority,
           habitViewMode: state.habitViewMode,
           habitSortMode: state.habitSortMode,
+          habitSortDirection: state.habitSortDirection,
+          highlightHabitPriorities: state.highlightHabitPriorities,
+          showStreakMarks: state.showStreakMarks,
+          morningRitualPointMultiplier: state.morningRitualPointMultiplier,
           sortHabitsByPriorityFlag: state.sortHabitsByPriorityFlag,
           willpowerImage: state.willpowerImage,
           habitsControlPanelWidth: state.habitsControlPanelWidth,

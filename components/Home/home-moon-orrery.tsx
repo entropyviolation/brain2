@@ -26,7 +26,8 @@
  * real time clears elapsed and leaves the anchor. Elapsed time, direction,
  * and zoom are not saved. Earth texture longitude follows the simulation
  * instant, one turn per sidereal day. The √r chart stays; the log camera
- * waits for one AU scene.
+ * waits for one AU scene. The readout is three bands: View (zoom grid and
+ * one Scale key), Transport only while that tour is open, and Body.
  * True-scale sky handoff: components/Home/MOON_SKY_MOTION.md.
  */
 "use client"
@@ -59,15 +60,13 @@ import {
   SCALE_TOUR_MS,
   scaleCaptionFrame,
   scaleExponent,
-  scaleGlyph,
   scaleOnChart,
   scaleStopName,
   tourCaption,
   tourChartFactor,
   tourPlace,
-  type ScaleGlyph,
-  type ScaleStop,
 } from "@/lib/sky-scale"
+import { ScaleField, ScalePower } from "@/components/Home/home-sky-scale"
 import { SkyMotionBar } from "@/components/Home/home-sky-motion"
 import { displayBodyRadiusPx, kmPerPxForOrbit, trueBodyRadiusPx } from "@/lib/sky-bodies"
 import { moonAngle, moonsOf, planetFacts } from "@/lib/sky-moons"
@@ -737,10 +736,17 @@ export function MoonOrrery({ date }: { date: Date }) {
     for (const [id, light] of Object.entries(lights)) next[id] = coarseLight(light)
     return next
   }, [lights])
+  const scaleGlobeStop = scaleT == null ? null : tourPlace(scaleT).stop
+  const scaleGlobes =
+    scaleGlobeStop === "south-coast" || scaleGlobeStop === "moon" || scaleGlobeStop === "earth"
+      ? { earth: CLOSE_GLOBE, moon: CLOSE_GLOBE }
+      : null
+  const closeGlobeId =
+    glass.kind === "facts" || (glass.kind === "moons" && glass.id !== "earth") ? glass.id : null
   const skins = usePlanetSkins(
     skinLights,
-    glass.kind === "facts" || (glass.kind === "moons" && glass.id !== "earth")
-      ? { [glass.id]: CLOSE_GLOBE }
+    closeGlobeId || scaleGlobes
+      ? { ...(closeGlobeId ? { [closeGlobeId]: CLOSE_GLOBE } : {}), ...(scaleGlobes ?? {}) }
       : undefined,
   )
 
@@ -1213,7 +1219,9 @@ export function MoonOrrery({ date }: { date: Date }) {
             </text>
           ) : null}
         </svg>
-        {scaleT != null && tourStop && scaleCaptionFrame(tourStop) ? <ScaleField stop={tourStop} /> : null}
+        {scaleT != null && tourStop && scaleCaptionFrame(tourStop) ? (
+          <ScaleField stop={tourStop} blend={tourPlace(scaleT).blend} earth={skins.earth} moon={skins.moon} />
+        ) : null}
         {scaleT != null && tourStop && !scaleCaptionFrame(tourStop) ? (
           <p className="home-sky-scale-note">
             <ScalePower n={scaleExponent(tourStop)} />
@@ -1222,38 +1230,41 @@ export function MoonOrrery({ date }: { date: Date }) {
         ) : null}
       </div>
       <aside className="home-sky-readout">
-        <h3>{title}</h3>
-        <div className="home-sky-zoom" role="group" aria-label="Chart zoom">
-          {ZOOM_STOPS.map((stop) => (
+        <div className="home-sky-readout-fit">
+          <h3>{title}</h3>
+          <section className="home-sky-band home-sky-view" aria-label="View">
+            <div className="home-sky-zoom" role="group" aria-label="Chart zoom">
+              {ZOOM_STOPS.map((stop) => (
+                <button
+                  key={stop}
+                  type="button"
+                  className={active === stop ? "home-review-key is-on" : "home-review-key"}
+                  aria-pressed={active === stop}
+                  aria-label={stop === "earth" ? "Earth zoom" : STOP_LABEL[stop]}
+                  title={
+                    stop === "system"
+                      ? "Reset chart zoom. Does not change the time rate or the view width."
+                      : stopCaption(stop)
+                  }
+                  onClick={() => selectStop(stop)}
+                >
+                  {STOP_LABEL[stop]}
+                </button>
+              ))}
+            </div>
             <button
-              key={stop}
               type="button"
-              className={active === stop ? "home-review-key is-on" : "home-review-key"}
-              aria-pressed={active === stop}
-              aria-label={stop === "earth" ? "Earth zoom" : STOP_LABEL[stop]}
-              title={
-                stop === "system"
-                  ? "Reset chart zoom. Does not change the time rate or the view width."
-                  : stopCaption(stop)
-              }
-              onClick={() => selectStop(stop)}
+              className={scaleT != null ? "home-review-key home-sky-scale-key is-on" : "home-review-key home-sky-scale-key"}
+              aria-pressed={scaleT != null}
+              title="Powers of ten, from a proton to the observable universe. Session only. Does not change the clock, the time rate, or the view width."
+              onClick={openScale}
             >
-              {STOP_LABEL[stop]}
+              Scale
             </button>
-          ))}
-        </div>
-        <div className="home-sky-zoom home-sky-scale-key" role="group" aria-label="Powers of ten">
-          <button
-            type="button"
-            className={scaleT != null ? "home-review-key is-on" : "home-review-key"}
-            aria-pressed={scaleT != null}
-            title="Powers of ten, from a proton to the observable universe. Session only. Does not change the clock, the time rate, or the view width."
-            onClick={openScale}
-          >
-            Scale
-          </button>
-          {scaleT != null
-            ? SCALE_CONTROLS.map((label) => {
+          </section>
+          {scaleT != null ? (
+            <div className="home-sky-band home-sky-transport" role="group" aria-label="Transport">
+              {SCALE_CONTROLS.map((label) => {
                 const index = tourPlace(scaleT).index
                 const last = tourPlace(1).index
                 const pressed = label === "Play" ? scalePlaying : label === "Pause" ? !scalePlaying : false
@@ -1272,103 +1283,110 @@ export function MoonOrrery({ date }: { date: Date }) {
                     {label}
                   </button>
                 )
-              })
-            : null}
-        </div>
-        <button
-          type="button"
-          className={trueSizes ? "home-review-key is-on" : "home-review-key"}
-          aria-pressed={trueSizes}
-          title="Orbits may still be the √r layout. Only the disks are true kilometres."
-          onClick={() => setTrueSizes((on) => !on)}
-        >
-          True sizes
-        </button>
-        {trueMarked ? <p className="home-sky-zoom-note">true size, marked</p> : null}
-        {active === "galaxy" ? <p className="home-sky-zoom-note">Milky Way radius · 50,000 ly</p> : null}
-        <div className="home-sky-when" data-held={chosen ? "yes" : "no"}>
-          <label htmlFor="sky-chart-date">Date</label>
-          <input
-            id="sky-chart-date"
-            type="datetime-local"
-            value={localInputValue(anchor)}
-            title="Sets the instant. A faster rate plays forward from here."
-            onChange={(event) => {
-              const next = dateFromLocalInput(event.target.value)
-              if (!next) return
-              setChosen(next)
-              setSnap((n) => n + 1)
-            }}
-          />
-          <button
-            type="button"
-            className="home-review-key"
-            title="Return to the widget date"
-            onClick={() => {
-              setChosen(null)
-              setFollowMs(date.getTime())
-              setSnap((n) => n + 1)
-            }}
-          >
-            Now
-          </button>
-        </div>
-        <p className="home-sky-epoch">
-          {formatMajorWhen(shown)}
-          {sped ? ` · ${rateLabel}` : ""}
-          {reversed && !paused ? " · reverse" : ""}
-          {paused ? " · paused" : ""}
-        </p>
-        {pairFrame ? (
-          <EarthCard
-            earth={earth}
-            phaseLabel={glance.label}
-            illuminationPct={Math.round(glance.illumination * 100)}
-            cycle={glance.cycle}
-            facts={planetFacts("earth")}
-          />
-        ) : (
-          <PlanetCard planet={factPlanet} facts={facts} />
-        )}
-        <StarIdentifyPanel planetName={factPlanet.name} longitude={factPlanet.longitude} />
-        <ul className="home-sky-roster">
-          {places.map((planet) => (
-            <li key={planet.id}>
-              <button
-                type="button"
-                className={picked === planet.id ? "is-on" : undefined}
-                title="Show this orbit. Double-click for the moons."
-                onClick={() => onRosterClick(planet)}
-                onDoubleClick={(event) => {
-                  event.preventDefault()
-                  onRosterDouble(planet)
-                }}
-              >
-                <span className="home-sky-bead" style={{ background: planet.color }} />
-                {planet.name}
-              </button>
-              <button
-                type="button"
-                className={intent?.kind === "facts" && intent.id === planet.id ? "is-facts is-on" : "is-facts"}
-                aria-label={`${planet.name} facts`}
-                title="Zoom closer so the globe fills the glass."
-                onClick={() => zoomFacts(planet)}
-              >
-                Facts
-              </button>
-            </li>
-          ))}
-        </ul>
-        <div className="home-sky-progress">
-          <p className="home-sky-progress-label">This sky</p>
-          <ul aria-label="Sky build">
-            {SKY_BUILD.map((item) => (
-              <li key={item.id} data-state={item.state} title={"title" in item ? item.title : undefined}>
-                {item.label}
-              </li>
-            ))}
-          </ul>
-          <p className="home-sky-progress-note">Bright is in. Dim is still ahead.</p>
+              })}
+            </div>
+          ) : null}
+          <section className="home-sky-band home-sky-body" aria-label="Body">
+            <div className="home-sky-body-scroll">
+              <div className="home-sky-when" data-held={chosen ? "yes" : "no"}>
+                <div className="home-sky-when-line">
+                  <label htmlFor="sky-chart-date">Date</label>
+                  <input
+                    id="sky-chart-date"
+                    type="datetime-local"
+                    value={localInputValue(anchor)}
+                    title="Sets the instant. A faster rate plays forward from here."
+                    onChange={(event) => {
+                      const next = dateFromLocalInput(event.target.value)
+                      if (!next) return
+                      setChosen(next)
+                      setSnap((n) => n + 1)
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="home-review-key home-sky-now"
+                    title="Return to the widget date"
+                    onClick={() => {
+                      setChosen(null)
+                      setFollowMs(date.getTime())
+                      setSnap((n) => n + 1)
+                    }}
+                  >
+                    Now
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  className={trueSizes ? "home-review-key home-sky-sizes is-on" : "home-review-key home-sky-sizes"}
+                  aria-pressed={trueSizes}
+                  title="Orbits may still be the √r layout. Only the disks are true kilometres."
+                  onClick={() => setTrueSizes((on) => !on)}
+                >
+                  True sizes
+                </button>
+              </div>
+              {trueMarked ? <p className="home-sky-zoom-note">true size, marked</p> : null}
+              {active === "galaxy" ? <p className="home-sky-zoom-note">Milky Way radius · 50,000 ly</p> : null}
+              <p className="home-sky-epoch">
+                {formatMajorWhen(shown)}
+                {sped ? ` · ${rateLabel}` : ""}
+                {reversed && !paused ? " · reverse" : ""}
+                {paused ? " · paused" : ""}
+              </p>
+              {pairFrame ? (
+                <EarthCard
+                  earth={earth}
+                  phaseLabel={glance.label}
+                  illuminationPct={Math.round(glance.illumination * 100)}
+                  cycle={glance.cycle}
+                  facts={planetFacts("earth")}
+                />
+              ) : (
+                <PlanetCard planet={factPlanet} facts={facts} />
+              )}
+              <StarIdentifyPanel planetName={factPlanet.name} longitude={factPlanet.longitude} />
+              <ul className="home-sky-roster">
+                {places.map((planet) => (
+                  <li key={planet.id}>
+                    <button
+                      type="button"
+                      className={picked === planet.id ? "is-on" : undefined}
+                      title="Show this orbit. Double-click for the moons."
+                      onClick={() => onRosterClick(planet)}
+                      onDoubleClick={(event) => {
+                        event.preventDefault()
+                        onRosterDouble(planet)
+                      }}
+                    >
+                      <span className="home-sky-bead" style={{ background: planet.color }} />
+                      {planet.name}
+                    </button>
+                    <button
+                      type="button"
+                      className={intent?.kind === "facts" && intent.id === planet.id ? "is-facts is-on" : "is-facts"}
+                      aria-label={`${planet.name} facts`}
+                      title="Zoom closer so the globe fills the glass."
+                      onClick={() => zoomFacts(planet)}
+                    >
+                      Facts
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="home-sky-progress">
+              <p className="home-sky-progress-label">This sky</p>
+              <ul aria-label="Sky build">
+                {SKY_BUILD.map((item) => (
+                  <li key={item.id} data-state={item.state} title={"title" in item ? item.title : undefined}>
+                    {item.label}
+                  </li>
+                ))}
+              </ul>
+              <p className="home-sky-progress-note">Bright is in. Dim is still ahead.</p>
+            </div>
+          </section>
         </div>
       </aside>
     </div>
@@ -1379,8 +1397,6 @@ export function MoonOrrery({ date }: { date: Date }) {
 
 const MOON_REACH = Math.min(VB.w, VB.h) / 2 - 28
 
-const SCALE_INK = "#e8e4da"
-
 const SCALE_CONTROL_TITLE = {
   Pause: "Pause the tour. The chart clock keeps running.",
   Play: "Play the tour. Does not change the chart clock.",
@@ -1389,281 +1405,6 @@ const SCALE_CONTROL_TITLE = {
   Previous: "Previous decade.",
   Next: "Next decade.",
 } as const
-
-function ScalePower({ n }: { n: number }) {
-  return (
-    <span className="home-sky-scale-power" aria-label={`10^${n} m`}>
-      10<sup aria-hidden="true">{n}</sup> m
-    </span>
-  )
-}
-
-function ScaleField({ stop }: { stop: ScaleStop }) {
-  const glyph = scaleGlyph(stop)
-  const caption = tourCaption(stop)
-  const power = `10^${scaleExponent(stop)} m`
-  return (
-    <div className="home-sky-scale" role="img" aria-label={`${power}. ${caption}`} data-scale-stop={stop}>
-      <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
-        <rect width="100" height="100" fill="#050806" />
-        {glyph ? <ScalePicture glyph={glyph} /> : null}
-      </svg>
-      <p>
-        <ScalePower n={scaleExponent(stop)} />
-        {caption}
-      </p>
-    </div>
-  )
-}
-
-function helixStrand(sign: number): string {
-  let d = ""
-  for (let i = 0; i <= 36; i++) {
-    const t = i / 36
-    const y = 16 + t * 68
-    const x = 50 + sign * Math.sin(t * Math.PI * 4) * 16
-    d += `${i === 0 ? "M" : "L"}${x.toFixed(1)} ${y.toFixed(1)}`
-  }
-  return d
-}
-
-function ScalePicture({ glyph }: { glyph: ScaleGlyph }) {
-  const ink = SCALE_INK
-  switch (glyph) {
-    case "proton":
-      return <circle cx="50" cy="50" r="16" fill={ink} />
-    case "nucleus":
-      return (
-        <g fill={ink}>
-          {[
-            [50, 42],
-            [44, 52],
-            [56, 52],
-            [50, 60],
-            [38, 46],
-            [62, 46],
-          ].map(([x, y], i) => (
-            <circle key={i} cx={x} cy={y} r="5" />
-          ))}
-        </g>
-      )
-    case "nucleus-dense":
-      return (
-        <g fill={ink}>
-          {Array.from({ length: 12 }, (_, i) => {
-            const ang = (i / 12) * Math.PI * 2
-            const ring = i < 6 ? 8 : 16
-            return <circle key={i} cx={50 + Math.cos(ang) * ring} cy={50 + Math.sin(ang) * ring} r="4.2" />
-          })}
-        </g>
-      )
-    case "shell":
-      return (
-        <g fill="none" stroke={ink} strokeWidth="1.6">
-          <ellipse cx="50" cy="50" rx="28" ry="16" />
-          <circle cx="76" cy="50" r="3.2" fill={ink} stroke="none" />
-          <circle cx="50" cy="50" r="3" fill={ink} stroke="none" />
-        </g>
-      )
-    case "electron":
-      return <circle cx="50" cy="50" r="22" fill="none" stroke={ink} strokeWidth="1.4" />
-    case "atom":
-      return (
-        <g fill="none" stroke={ink} strokeWidth="1.5">
-          <circle cx="50" cy="50" r="26" />
-          <circle cx="50" cy="50" r="3.5" fill={ink} stroke="none" />
-          <circle cx="74" cy="50" r="3" fill={ink} stroke="none" />
-        </g>
-      )
-    case "molecule":
-      return (
-        <g fill={ink}>
-          <circle cx="46" cy="54" r="14" />
-          <circle cx="64" cy="38" r="8" />
-          <circle cx="68" cy="64" r="8" />
-        </g>
-      )
-    case "helix":
-      return (
-        <g fill="none" stroke={ink} strokeWidth="1.8" strokeLinecap="round">
-          <path d={helixStrand(1)} />
-          <path d={helixStrand(-1)} />
-          {[0.2, 0.4, 0.6, 0.8].map((t) => (
-            <line key={t} x1={50 - 16} y1={16 + t * 68} x2={50 + 16} y2={16 + t * 68} strokeWidth="1.2" />
-          ))}
-        </g>
-      )
-    case "virus":
-      return (
-        <g fill={ink}>
-          <circle cx="50" cy="50" r="16" />
-          {Array.from({ length: 10 }, (_, i) => {
-            const ang = (i / 10) * Math.PI * 2
-            return <circle key={i} cx={50 + Math.cos(ang) * 24} cy={50 + Math.sin(ang) * 24} r="3.2" />
-          })}
-        </g>
-      )
-    case "bacterium":
-      return <ellipse cx="50" cy="50" rx="30" ry="16" fill={ink} />
-    case "cell":
-      return (
-        <g>
-          <circle cx="50" cy="50" r="30" fill="none" stroke={ink} strokeWidth="2" />
-          <circle cx="54" cy="48" r="10" fill={ink} />
-        </g>
-      )
-    case "hair":
-      return <rect x="46" y="10" width="8" height="80" rx="4" fill={ink} />
-    case "sand":
-      return <path d="M38 58c2-16 10-22 20-18 8 2 14 8 12 18-2 10-12 16-22 12-8-2-12-6-10-12z" fill={ink} />
-    case "ant":
-      return (
-        <g fill={ink} stroke={ink} strokeWidth="1.3" strokeLinecap="round">
-          <ellipse cx="38" cy="52" rx="8" ry="6" />
-          <ellipse cx="52" cy="50" rx="6" ry="5" />
-          <circle cx="64" cy="48" r="4.5" />
-          <path d="M46 46 L38 34 M52 44 L58 32 M40 56 L30 68 M48 56 L44 70 M56 54 L64 66" fill="none" />
-        </g>
-      )
-    case "dollar":
-      return (
-        <g fill="none" stroke={ink} strokeWidth="1.7">
-          <circle cx="50" cy="50" r="28" />
-          <circle cx="50" cy="50" r="5" fill={ink} stroke="none" />
-          {[0, 72, 144, 216, 288].map((deg) => {
-            const rad = (deg * Math.PI) / 180
-            return <line key={deg} x1="50" y1="50" x2={50 + Math.sin(rad) * 20} y2={50 - Math.cos(rad) * 20} />
-          })}
-        </g>
-      )
-    case "mouse":
-      return (
-        <g fill={ink}>
-          <path d="M28 62 C14 76 8 54 24 56" fill="none" stroke={ink} strokeWidth="2.2" strokeLinecap="round" />
-          <ellipse cx="46" cy="58" rx="20" ry="11" />
-          <circle cx="66" cy="52" r="8" />
-          <circle cx="72" cy="42" r="5.5" />
-          <circle cx="70" cy="41" r="1.4" fill="#050806" />
-        </g>
-      )
-    case "person":
-      return (
-        <g fill="none" stroke={ink} strokeWidth="2.4" strokeLinecap="round">
-          <circle cx="50" cy="24" r="7" fill={ink} stroke="none" />
-          <path d="M50 32 L50 62 M34 44 L66 44 M50 62 L38 84 M50 62 L62 84" />
-        </g>
-      )
-    case "gull":
-      return (
-        <g fill={ink}>
-          <path d="M14 60c16-8 30-8 42 0 6-16 20-30 36-36 1 7-8 16-16 20 12-1 22 3 26 8-14 3-26 8-36 16-16 8-34 6-52-8z" />
-          <path d="M78 44c8-1 14 0 16 3-8 1-13 2-16 5z" />
-          <path d="M48 74c1 7 0 11-2 13M56 74c1 7 0 11-2 13" fill="none" stroke={ink} strokeWidth="1.5" />
-        </g>
-      )
-    case "park":
-      return (
-        <g fill={ink}>
-          <rect x="18" y="78" width="64" height="2" />
-          <rect x="32" y="58" width="3" height="20" />
-          <circle cx="33" cy="50" r="12" />
-          <rect x="62" y="52" width="3" height="26" />
-          <circle cx="63" cy="44" r="14" />
-        </g>
-      )
-    case "blocks":
-      return (
-        <g fill={ink}>
-          <rect x="16" y="58" width="14" height="22" />
-          <rect x="32" y="46" width="16" height="34" />
-          <rect x="50" y="54" width="12" height="26" />
-          <rect x="64" y="40" width="18" height="40" />
-        </g>
-      )
-    case "skyline":
-      return (
-        <g fill={ink}>
-          <rect x="10" y="48" width="10" height="34" />
-          <rect x="22" y="28" width="12" height="54" />
-          <rect x="36" y="40" width="14" height="42" />
-          <rect x="52" y="22" width="8" height="60" />
-          <rect x="62" y="36" width="16" height="46" />
-          <rect x="80" y="50" width="10" height="32" />
-        </g>
-      )
-    case "span":
-      return (
-        <g fill="none" stroke={ink} strokeWidth="1.8" strokeLinecap="round">
-          <line x1="16" y1="58" x2="84" y2="58" />
-          <circle cx="18" cy="58" r="4" fill={ink} stroke="none" />
-          <circle cx="82" cy="58" r="4" fill={ink} stroke="none" />
-        </g>
-      )
-    case "moon":
-      return (
-        <g>
-          <circle cx="50" cy="50" r="28" fill="#c8c2b4" />
-          <circle cx="40" cy="42" r="5" fill="#b3ab9c" />
-          <circle cx="58" cy="56" r="3.4" fill="#b3ab9c" />
-          <circle cx="46" cy="60" r="2.2" fill="#b3ab9c" />
-        </g>
-      )
-    case "earth":
-      return (
-        <g>
-          <circle cx="50" cy="50" r="28" fill="#7ec8e3" />
-          <path d="M34 42c8-8 18-6 24 2 4 6 2 12-4 16-8 4-16 2-20-6-2-6-2-8 0-12z" fill="#3f7d58" />
-          <path d="M58 58c6 2 10 8 6 12-6 2-12-2-12-8 0-2 2-4 6-4z" fill="#3f7d58" />
-        </g>
-      )
-    case "andromeda":
-      return (
-        <g>
-          <ellipse cx="50" cy="50" rx="36" ry="10" transform="rotate(-24 50 50)" fill="#d5efe4" opacity="0.85" />
-          <circle cx="50" cy="50" r="6" fill="#f4fff8" />
-        </g>
-      )
-    case "group":
-      return (
-        <g fill="#d5efe4">
-          <ellipse cx="36" cy="54" rx="16" ry="6" transform="rotate(-18 36 54)" />
-          <ellipse cx="62" cy="46" rx="18" ry="7" transform="rotate(16 62 46)" />
-          <ellipse cx="54" cy="64" rx="8" ry="3" />
-        </g>
-      )
-    case "cluster":
-      return (
-        <g fill={ink}>
-          {Array.from({ length: 18 }, (_, i) => {
-            const ang = i * 2.4
-            const rad = 8 + (i % 5) * 4
-            return <circle key={i} cx={50 + Math.cos(ang) * rad} cy={50 + Math.sin(ang) * rad * 0.72} r={i % 4 === 0 ? 2.4 : 1.5} />
-          })}
-        </g>
-      )
-    case "wall":
-      return (
-        <g fill={ink}>
-          {Array.from({ length: 22 }, (_, i) => (
-            <circle key={i} cx={8 + i * 4} cy={46 + Math.sin(i * 0.9) * 10} r={i % 3 === 0 ? 2 : 1.3} />
-          ))}
-        </g>
-      )
-    case "cosmos":
-      return (
-        <g fill={ink}>
-          <circle cx="50" cy="50" r="34" fill="none" stroke={ink} strokeWidth="1.2" />
-          {Array.from({ length: 24 }, (_, i) => {
-            const ang = i * 1.7
-            const rad = 6 + (i % 7) * 3.6
-            return <circle key={i} cx={50 + Math.cos(ang) * rad} cy={50 + Math.sin(ang) * rad} r={i % 5 === 0 ? 1.8 : 1} />
-          })}
-        </g>
-      )
-    default:
-      return null
-  }
-}
 
 /** Moon close-up. Orbits are orbitKm / planet radius. Mercury and Venus are the globe alone. */
 function MoonSystem({

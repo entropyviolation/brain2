@@ -13,7 +13,7 @@
   padding: 0;
   margin: 0;
   border: 0;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: transparent;
   box-shadow: none;
   overflow: visible;
@@ -26,7 +26,7 @@
 
 body.win95-app .hab-lamp,
 body.win95-app .hab-lamp:active {
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: transparent;
   box-shadow: none;
 }
@@ -42,7 +42,7 @@ body.win95-app .hab-lamp:active {
   place-items: center;
   width: 100%;
   height: 100%;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   overflow: hidden;
   background:
     linear-gradient(180deg, #e8e8e8 0%, #c4c4c4 42%, #9a9a9a 100%);
@@ -101,7 +101,7 @@ body.win95-app .hab-lamp:active {
 .hab-lamp-bloom {
   position: absolute;
   inset: 0;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   pointer-events: none;
   opacity: 0;
   z-index: 1;
@@ -114,7 +114,7 @@ body.win95-app .hab-lamp:active {
   left: 16%;
   width: 58%;
   height: 22%;
-  border-radius: 1px;
+  border-radius: var(--r-1, 1px);
   background: linear-gradient(
     180deg,
     rgba(255, 255, 255, 0.22) 0%,
@@ -223,18 +223,18 @@ body.win95-app .hab-lamp:active {
   max-height: 100%;
   align-self: stretch;
   flex: 1 1 auto;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
 }
 
 .hab-lamp[data-fill="true"] .hab-lamp-socket {
   padding: 1px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
 }
 
 .hab-lamp[data-fill="true"] .hab-lamp-bezel {
   width: 100%;
   height: 100%;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background:
     linear-gradient(180deg, #6e6e6e 0%, #3d3d3d 42%, #262626 100%);
   box-shadow:
@@ -247,7 +247,7 @@ body.win95-app .hab-lamp:active {
 .hab-lamp[data-fill="true"] .hab-lamp-glass {
   width: calc(100% - 2px);
   height: calc(100% - 2px);
-  border-radius: 1px;
+  border-radius: var(--r-1, 1px);
   background:
     linear-gradient(180deg, #222422 0%, #0c0e0c 52%, #060806 100%);
   box-shadow:
@@ -258,11 +258,11 @@ body.win95-app .hab-lamp:active {
 .hab-lamp[data-fill="true"] .hab-lamp-die {
   width: 70%;
   height: 36%;
-  border-radius: 1px;
+  border-radius: var(--r-1, 1px);
 }
 
 .hab-lamp[data-fill="true"] .hab-lamp-bloom {
-  border-radius: 1px;
+  border-radius: var(--r-1, 1px);
 }
 
 .hab-lamp[data-fill="true"] .hab-lamp-spec {
@@ -270,7 +270,7 @@ body.win95-app .hab-lamp:active {
   left: 8%;
   width: 84%;
   height: 30%;
-  border-radius: 1px;
+  border-radius: var(--r-1, 1px);
 }
 
 .hab-lamp[data-fill="true"][data-state="on"] .hab-lamp-glass {
@@ -347,7 +347,7 @@ body.win95-app .hab-lamp:active {
   box-sizing: border-box;
   width: 100%;
   height: 22px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background:
     repeating-linear-gradient(
       -45deg,
@@ -371,7 +371,7 @@ body.win95-app .hab-lamp:active {
 .hab-lamp:not([data-fill="true"]) .hab-lamp-socket {
   border-radius: 50%;
   background:
-    radial-gradient(circle at 32% 28%, #f4f6f8 0 12%, transparent 38%),
+    radial-gradient(circle at 32% 28%, var(--chrome-paper) 0 12%, transparent 38%),
     linear-gradient(155deg, #e8eaee 0%, #b8bcc2 38%, #8a9098 68%, #c8ccd2 100%);
   box-shadow:
     0 0 0 0.5px #5a6068,

@@ -3,8 +3,14 @@
  *
  * Multi-line capture: a line ending in ":" is a folder/list header; following
  * lines become items. Inline `folder: list: item` paths work on a single line.
- * Unknown folders/lists are auto-created. Optionally send items to Inbox.
- * Dialog shell is milled fascia (`.hpp95` / `header-popup-chrome.css`).
+ * `before 9/12:` stamps due that day. Unknown folders/lists are auto-created.
+ * Date, time, duration, and priority stay in the item title. `plain` stores
+ * every line as written. Optionally send items to Inbox.
+ *
+ * The header no longer mounts this dialog. Quick Add's **Bulk** toggle calls
+ * `writeBulkCapture` (same task store, no second capture path). Inbox bulk
+ * edit and the mobile shell still open this dialog. Shell is milled fascia
+ * (`.hpp95` / `header-popup-chrome.css`).
  */
 "use client"
 
@@ -59,6 +65,86 @@ function storeMutators() {
   }
 }
 
+/** Lines that become items. Header lines ending in ":" are not items, unless Plain is on. */
+export function bulkReadyCount(tasksText: string, plain = false): number {
+  return tasksText.split("\n").filter((line) => {
+    const trimmed = line.trim()
+    if (!trimmed) return false
+    if (plain) return true
+    return !parsePathHeader(trimmed)
+  }).length
+}
+
+/**
+ * Write a bulk-add draft through the same capture target as Quick Add.
+ * One undo step when `actionLabel` is set. Returns the tasks just added.
+ */
+export function writeBulkCapture(
+  tasksText: string,
+  sendToInbox: boolean,
+  options?: {
+    actionLabel?: string
+    /** Store every line as written. Headers, dates, and list paths are not read. */
+    plain?: boolean
+    afterAdd?: (info: { sendToInbox: boolean; tasks: Task[] }) => void
+  },
+): Task[] {
+  const created: Task[] = []
+  const write = () => {
+    const addTask = useTaskStore.getState().addTask
+    if (options?.plain) {
+      for (const raw of tasksText.split(/\r\n|\r|\n/)) {
+        const line = raw.trim()
+        if (!line) continue
+        const { suggestion } = parseSmartCapture(line, { plain: true })
+        const target = ensureCaptureTarget(suggestion, storeMutators)
+        const task = buildCapturedTask({
+          suggestion,
+          fallbackText: line,
+          sendToInbox,
+          target,
+          folders: useTaskStore.getState().folders,
+        })
+        created.push(task)
+        addTask(task)
+      }
+      options?.afterAdd?.({ sendToInbox, tasks: created })
+      return
+    }
+    const buckets = parseBulkBuckets(tasksText)
+    for (const bucket of buckets) {
+      for (const line of bucket.lines) {
+        const { suggestion } = parseSmartCapture(line)
+        const folderPath = suggestion.folderPath?.length ? suggestion.folderPath : bucket.folderPath
+        const listName = suggestion.category || bucket.listName
+        const merged = {
+          ...suggestion,
+          folderPath: folderPath.length ? folderPath : undefined,
+          category: listName,
+        }
+        const target = ensureCaptureTarget(merged, storeMutators)
+        const task = stampMustBeDoneBefore(
+          buildCapturedTask({
+            suggestion: { ...suggestion, description: suggestion.description || line },
+            fallbackText: line,
+            sendToInbox,
+            target,
+            folders: useTaskStore.getState().folders,
+          }),
+          bucket.dueBefore,
+        )
+        created.push(task)
+        addTask(task)
+      }
+    }
+    options?.afterAdd?.({ sendToInbox, tasks: created })
+  }
+
+  if (options?.actionLabel) runAsAction(options.actionLabel, write)
+  else write()
+  return created
+}
+
 export function EnhancedBulkAdd({
   initialText,
   open: openProp,
@@ -78,7 +164,6 @@ export function EnhancedBulkAdd({
   }
   const [tasksText, setTasksText] = useState("")
   const [sendToInbox, setSendToInbox] = useState(false)
-  const addTask = useTaskStore((state) => state.addTask)
   const seeded = useRef<string | null>(null)
 
   useEffect(() => {
@@ -96,46 +181,13 @@ export function EnhancedBulkAdd({
     e.preventDefault()
     if (!tasksText.trim()) return
 
-    const write = () => {
-      const created: Task[] = []
-      const buckets = parseBulkBuckets(tasksText)
-      for (const bucket of buckets) {
-        for (const line of bucket.lines) {
-          const { suggestion } = parseSmartCapture(line)
-          const folderPath = suggestion.folderPath?.length
-            ? suggestion.folderPath
-            : bucket.folderPath
-          const listName = suggestion.category || bucket.listName
-          const merged = { ...suggestion, folderPath: folderPath.length ? folderPath : undefined, category: listName }
-          const target = ensureCaptureTarget(merged, storeMutators)
-          const task = stampMustBeDoneBefore(
-            buildCapturedTask({
-              suggestion: { ...suggestion, description: suggestion.description || line },
-              fallbackText: line,
-              sendToInbox,
-              target,
-              folders: useTaskStore.getState().folders,
-            }),
-            bucket.dueBefore,
-          )
-          created.push(task)
-          addTask(task)
-        }
-      }
-      afterAdd?.({ sendToInbox, tasks: created })
-    }
-
-    if (actionLabel) runAsAction(actionLabel, write)
-    else write()
+    writeBulkCapture(tasksText, sendToInbox, { actionLabel, afterAdd })
 
     setTasksText("")
     setOpen(false)
   }
 
-  const itemCount = tasksText
-    .split("\n")
-    .filter((line) => line.trim() && !parsePathHeader(line.trim()))
-    .length
+  const itemCount = bulkReadyCount(tasksText)
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

@@ -109,10 +109,17 @@ view. Leaving it up as a dead instrument is the miss. A door that still
 works stays visible (failure 1).
 
 **Clocks and popovers.** A clock and a popover belong to the instrument
-panel: beveled chrome, phosphor for the selection. An armed hour or minute
-holds the page still so the wheel steps that drum. A console face under the
-drums keeps the same time. The closed field, and a double-clicked drum, take
-a typed time. They are not the platform's flat blue picker.
+panel: beveled chrome, phosphor for the selection. The closed field accepts
+a typed time (`8:00 AM`, `16:02`, `1pm`); blur or Enter stores `HH:MM`. A
+clock mark opens the panel. Now lives inside that panel. The popup receives
+its own clicks inside a dialog, above the dialog and its backdrop. An armed
+hour or minute holds the page still so the wheel steps that drum. The analog
+face is the cream ceramic clock — rim and metal 12, 3, 6, and 9 — with ornate
+silver hands on a small brass cap. Ceramic is the default dial. A small
+control switches center paintings, shuffles them, or hides and restores one
+for this browser. Confirm writes the drums. Cancel, Escape, and a click
+outside close without changing the field. A double-clicked drum takes a typed
+part. They are not the platform's flat blue picker.
 
 ### One job per region
 
@@ -362,6 +369,17 @@ the required start for every new tab.
 | **Label** | A padded silver chip (about 6px 9px), two lines at most. Sibling labels share one height. |
 | **Key** | Raised metal: specular top lip, mill, pressed foot. Sibling keys share the bay equally. Active mode is the CRT plus the power lamp. |
 
+A title-bar close key is an opaque raised metal key: solid `--chrome-face`
+under the fascia key face, specular top lip, inset pressed foot. The painted
+face and the hit target are the same 22px square (the ring is the border, so
+a shadow foot cannot hang off the bottom and make the key taller than it is
+wide). The × is a geometric 10px mark centered on that square — a font glyph’s
+side bearings sit off the optical center. Every dialog that uses the house
+title bar uses this key (`.b2-close-key` in `app/win95.css`). It sits in the
+title bar. It is not a transparent pip, and it is not a smaller off-center
+mark. The generic button hairline is only a lip — it must not be the close
+key’s only paint, or the title bar shows through.
+
 Padding is part of the material. A nameplate, a CRT, and a label each need
 air inside the bay so type does not touch the ring. A milled group keeps
 horizontal inset so the first and last key are not clipped by the group edge.
@@ -374,10 +392,53 @@ stay near the header (about 8–14px).
 dialogs, menus, buttons, and nested tabs already inherit that face. Module
 CSS imported after `win95.css` still wins. Portaled private skins (`.set95`,
 `.inbox-dialog`, `.id95`, `.hab-grade-sheet`, `.hpp95`, `.ops95-dialog`, …)
-stay on their own faces. The current face token is cool gray `--chrome-face`
-(`#c0c0c0` family, chroma 0). Settings → Window gray is the set-point; the
-live value may drift (`lib/chrome-patina.ts`). A new room is not required to
-stay inside that gray.
+stay on their own faces. The face token is `--chrome-face`. Settings →
+Window gray walks that face along specific computer-chrome grays from the
+design refs (`lib/chrome-patina.ts`). It is a piecewise path through those
+hexes. It is not a red/blue filter on an arbitrary gray.
+
+Warmth, mix 0 → 100:
+
+| Mix | Face | Where it was found |
+|----:|------|--------------------|
+| 0 | `#999683` | IRIX cattle, `designrefs/designref1.jpg` (3718 px). Warmest olive furniture. |
+| 8 | `#999686` | Warmer olive on that same walk. |
+| 16 | `#9a9889` | TENO console, `designrefs/5d58e7b46cf9bd493eb09f761340fb17.jpg` (2827 px). |
+| 32 | `#c0c1b9` | Pocket PC silver, `designrefs/36bc1715c629f42e163d54abe8741ac6.jpg` (3641 px). |
+| 40 | `#c0bfba` | Same Pocket PC (492 px) and Tek 465B `a898e04c534aeed3017938c701efdb2f.jpg` (39 px). |
+| 50 | `#c0c0c0` | Display Properties `60d7202cb958e11734ce0567eb382868.jpg` (716520 px), Win95 MDI, and `app/win95.css`. Classic. |
+| 75 | `#b7bcbf` | Cooler gray in the flower-CRT / gadget-wall family. |
+| 100 | `#b8bbc0` | Flower CRTs `9d225800a3f631bc7559c83d11f1aaa2.jpg` (435 px). Cooler pole. |
+
+Mix 50 is the **default** preset: the chrome colors measured in the app
+before this path replaced the old warmth endpoints. **Default** writes those
+tokens back and pauses, the same way Bouba/Kiki Default restores today’s
+radii. Sheen, shadow, and highlight at each knot are the companions sampled
+with that gray (IRIX and TENO olive ladders, the Pocket PC silver ladder, the
+flower-CRT / gadget-wall cool ladder). Between knots the family interpolates
+only from one of those palettes to the next. Ink `#404040` / `#3a3a3a` stays
+the stored ink. A new room is not required to stay inside that gray. Habits
+metal still must not freeze on `#c5c3bc`.
+
+Settings → Bouba/Kiki is an experimental corner mix on shared radius tokens
+(`lib/corner-mix.ts`). The **default** preset is the radii measured before
+the mix (`--radius` `0.75rem`, fascia `2px` / `3px`, square `0`, the other
+literals counted there, and the later GradSearch `11px` / `20px`). Mix 50
+restores them and can sit paused. Fields, buttons, selects, windows,
+dialogs, list / habit / plan / tracking / settings / header chrome, Tidy,
+and the GradSearch shadow root follow those tokens. Tailwind `rounded-none`
+is square chrome via `--r-0`. Circles, pills, elliptical lamps, and
+non-chrome art (clock paintings, SVG animals, the noble-gas tube drawing)
+stay put. CRT green stays put. Bay copy that says “Radius 2–3px” is that
+snapshot, not a ban on the mix.
+
+A timed manual shift, on warmth or on corners, previews only inside the
+Settings panel. The panel’s own faces, fields, buttons, and edges move
+through the in-between values. The rest of the app keeps the previous gray
+or corners until that interval ends, then takes the new state and the drift
+speed resumes. Instant applies to the whole app immediately. Pause holds.
+`prefers-reduced-motion` finishes a timed shift at once, and that end state
+is the whole app, because there is no in-between to preview.
 
 ### Phosphor
 
@@ -387,10 +448,14 @@ a trace is allowed to be the other green, `#3dff8a`, on Analytics line traces
 only — not a dark CRT canvas, and not on metal readout values. Do not use CRT
 grain as a chart that pretends the sample is larger than it is. A clock or a
 popover uses this instrument for its selection: beveled chrome, phosphor on
-the chosen value, a console face under the drums, typed entry on the closed
-field and on a double-clicked drum. An armed hour or minute keeps the page
-from scrolling so the wheel steps that drum. It does not use the platform's
-flat blue picker.
+the chosen drum. The closed field takes a typed time. Now is inside the
+popup, and the popup receives its own clicks inside a dialog. The analog
+face is the cream ceramic clock with ornate silver hands. Ceramic is the
+default dial; other paintings switch in the center. Confirm writes the drums.
+Cancel, Escape, and a click outside leave the field. A double-clicked
+drum takes a typed part. An armed hour or minute keeps the page from
+scrolling so the wheel steps that drum. It does not use the platform's flat
+blue picker.
 
 <a id="depth--spacing"></a>
 
@@ -498,8 +563,8 @@ next room. Do not extract its chrome into `components/ui/`.
 | Sand close on Add/Edit Habit | `daily-task-form-dialog.tsx` |
 
 Yes/No cells are the panel lamps. **Small LEDs** default on (15px); off lets
-the lamp fill the cell. The loading bar defaults on (a thin glass tube plus a `%`). Escape or the skip × leaves the Add/Edit Habit sand close immediately.
-**Sort Habits** sits above the grouped rockers. Grade plasma hues are set
+the lamp fill the cell. The loading bar defaults on (a thin glass tube plus a `%`). A background click, Escape, or the skip × leaves the Add/Edit Habit sand close immediately.
+Sort sits on the Priority bar above the grid. Grade plasma hues are set
 on each grade’s sheet (`.hab-grade-sheet`). Defaults: week-grade green
 `#508b51`, perfect-output navy `#25366a`, percent LED `#7e14ff`. Today’s
 column is a solid mint fill. Furniture metal is `--chrome-face` /
@@ -568,6 +633,7 @@ A surface that is still flat may take the mill or invent furniture.
 | Home → Habits frame | `components/Home/Habits/habit-chrome.css` |
 | Operations | `components/Operations/operations-chrome.css` |
 | Settings | `components/Settings/settings-chrome.css` (`.set95`) |
+| Lists settings | Same `.set95` fascia; navigator well in `components/Lists/lists-settings.css` |
 | Inbox | `components/inbox.css` (`.inbox-dialog`) |
 | Header pin-bar popups | `components/header-popup-chrome.css` (`.hpp95`) |
 | Item detail | `components/ItemDetail/item-detail-chrome.css` |
@@ -610,7 +676,7 @@ instrument and Needs Attention are already on a machine face.
 | Concern | Where it lives |
 |---------|----------------|
 | Global furniture and pixel font | `app/win95.css`; `public/fonts/w95fa.woff`; `--chrome-face`, `--fascia-*`, `--hab-crt-*` |
-| Chrome drift | `lib/chrome-patina.ts`, `app/chrome-patina.css` |
+| Chrome warmth and Bouba/Kiki | `lib/chrome-patina.ts`, `lib/drift-clock.ts`, `lib/corner-mix.ts`, `app/chrome-patina.css`, Settings → Window gray / Bouba/Kiki |
 | Sand close | `components/ui/window-sand-close.tsx`, `components/ui/window-sand-sim.ts`; wired from `daily-task-form-dialog.tsx` |
 | Willpower gems | `willpower-gems.tsx`, `lib/willpower-physics.ts`, `lib/willpower-stones.ts`, `habits-control-panel.tsx` |
 | Habits lamps and tubes | `habit-led-lamp.tsx`, `percent-led-bar.tsx`, `percent-led.tsx`, `noble-gas-tube.tsx`, `cockpit-switch.tsx` |

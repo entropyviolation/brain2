@@ -4,9 +4,9 @@
  */
 
 .hab-rocker {
-  --hab-rocker-face: var(--chrome-face, var(--hab-metal, #c0c0c0));
+  --hab-rocker-face: var(--chrome-face, var(--hab-metal, var(--chrome-face)));
   --hab-rocker-hi: var(--chrome-hi, var(--hab-metal-hi, #ffffff));
-  --hab-rocker-lo: var(--chrome-lo, var(--hab-metal-lo, #808080));
+  --hab-rocker-lo: var(--chrome-lo, var(--hab-metal-lo, var(--chrome-lo)));
   --hab-rocker-ink: #111111;
 
   display: inline-flex;
@@ -43,10 +43,10 @@
     transparent 1px 2px
   );
   box-shadow:
-    inset -1px -1px #0a0a0a,
+    inset -1px -1px var(--chrome-frame),
     inset 1px 1px #fff,
-    inset -2px -2px #808080,
-    inset 2px 2px #dfdfdf;
+    inset -2px -2px var(--chrome-lo),
+    inset 2px 2px var(--chrome-mid);
 }
 
 .hab-rocker-plate::before,
@@ -55,7 +55,7 @@
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--hab-muted, #3a3a3a);
+  color: var(--hab-muted, var(--chrome-ink-deep));
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
@@ -108,9 +108,10 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: radial-gradient(circle at 32% 28%, #6a3030, #220808 70%);
+  background: radial-gradient(circle at 32% 28%, var(--chrome-pressed), #121416 72%);
   box-shadow:
-    inset 0 0 0 1px #140404,
+    inset 0 1px 1px rgba(255, 255, 255, 0.08),
+    inset 0 0 0 1px #0c0e10,
     0 0 0 1px var(--chrome-lo, #808080);
 }
 
@@ -128,4 +129,5 @@
   text-transform: none;
   font-weight: 600;
   letter-spacing: 0;
+  white-space: nowrap;
 }

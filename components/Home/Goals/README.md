@@ -59,7 +59,7 @@ multiplier — multipliers **stack**).
 ## Data
 
 All objective **and** goal data persists in **`lib/goals-store.ts`**
-(`cogs-goals-store` in localStorage; `objectives` + `goals` slices; persist v3).
+(`brain2-goals-store` in localStorage; `objectives` + `goals` slices; persist v3).
 
 Each `Objective` (`lib/types.ts`):
 - `title`, `description?`, `icon?`, `color?`, `archived?`

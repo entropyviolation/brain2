@@ -1,5 +1,8 @@
 /**
- * components/iphone-notes-store.tsx — Header Phone Notes store
+ * components/iphone-notes-store.tsx — Phone Notes store
+ *
+ * The button lives in Settings and Lists settings (**Notes and ingest**). The
+ * mobile shell still mounts this door on its own top bar.
  *
  * Queue of On My iPhone notes dumped via the signed iOS Shortcut → Telegram bot
  * onto Lists → iPhone Notes Store → Parked. AirDrop
@@ -9,7 +12,8 @@
  */
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCaptureDoorRequest } from "@/components/capture-door-bus"
 import { Notebook } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -49,7 +53,7 @@ function asAppleNote(task: Task): { title: string; body: string } {
   }
 }
 
-export function IphoneNotesStore() {
+export function IphoneNotesStore({ hideTrigger = false }: { hideTrigger?: boolean } = {}) {
   const [open, setOpen] = useState(false)
   const [index, setIndex] = useState(0)
   const [draftText, setDraftText] = useState("")
@@ -168,12 +172,20 @@ export function IphoneNotesStore() {
       setSkippedCount(0)
     }
   }
+  const openDoor = useCallback(() => {
+    setOpen(true)
+    setIndex(0)
+    setAddedCount(0)
+    setSkippedCount(0)
+  }, [])
+  useCaptureDoorRequest("phone", openDoor)
 
   const preview =
     currentNote && (notePreviewSnippet(currentNote, 600) || currentNote.body || "Empty note.")
 
   return (
     <>
+      {!hideTrigger ? (
       <Button
         type="button"
         size="sm"
@@ -185,6 +197,7 @@ export function IphoneNotesStore() {
         <Notebook className="h-4 w-4" />
         <span>Phone Notes</span>
       </Button>
+      ) : null}
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent
           className="hpp95 hpp95-dialog sm:max-w-xl max-h-[90vh] overflow-hidden flex flex-col z-[200]"

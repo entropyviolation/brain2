@@ -22,12 +22,13 @@ that exists is the manual phone hub (`lib/mobile-sync.ts`). Atlas, a shared
 
 Speculation only. Nothing below is wired, and none of it is the storage plan.
 
-One collection per entity family (`tasks`, `categories`, `folders`, `reviews`,
-`points`, `plans`). Brain2 entities are already document-shaped (flexible
+One collection per entity family (`tasks`, lists, `folders`, `reviews`,
+`points`, `plans`). List documents use `Task.lists` (`lib/types.ts`). The
+unwired collection key in `collections.ts` is still `categories`. Brain2 entities are already document-shaped (flexible
 `attributes`, embedded `links`/`subtasks`), so the Mongo document is essentially
 the domain object with the app's existing **string `id` promoted to `_id`**. We
 do **not** use `ObjectId`: ids already appear in `links.targetId`,
-`dependencies`, `parentTaskId`, and `categories[]`, so reusing them keeps every
+`dependencies`, `parentTaskId`, and `lists`, so reusing them keeps every
 cross-reference valid with no translation table.
 
 - `plans` unifies the discrete localStorage plan keys (`dayPlan-*`, `weekPlan-*`,
@@ -46,15 +47,17 @@ before it hits a collection — the same schemas the renderer and backup/restore
 already use. `dateLike` coercion means ISO strings or `Date`s both validate, so
 BSON dates and JSON-over-IPC payloads are handled uniformly.
 
-## Index plan (see `INDEXES` in `collections.ts`)
+## Index plan
+
+The unwired `INDEXES` in `collections.ts` still spell the old field names. The fields that match `Task` in `lib/types.ts` are `stage` and `lists`. Speculation only.
 
 - **tasks**: `tags` (multikey, powers `byTag`); `links.targetId + links.relation`
-  (backlinks / linked items); `category + completed` (lifecycle); `categories`
+  (backlinks / linked items); `stage` + `completed` (lifecycle); `lists`
   (list membership); `scheduledDate` and coarse `scheduledWeek/Month/Year`
   (Scheduler); `deadline`; `dependencies`; plus a **text index** on
   `description/title/notes` for global fuzzy search (spec §3).
 - **reviews** & **plans**: unique `{ period, periodKey }`.
-- **points**: `date`, `taskId`. **folders**: `parentFolderId`, `categoryIds`.
+- **points**: `date`, `taskId`. **folders**: `parentFolderId`, `listIds`.
 
 ## Transaction plan
 
@@ -69,7 +72,7 @@ it (also flagged in `mongo-data-source.ts`):
 3. **review carry-over** — persist the review doc and apply its
    `resolvedTaskIds`/`pushedTaskIds` mutations atomically.
 4. **module instantiation** — create a module's items and their links together.
-5. **cascading deletes** — removing a task/category strips inbound
+5. **cascading deletes** — removing a task or a list strips inbound
    links/dependencies/membership in the same transaction.
 
 > Note: transactions require a replica set (or `mongod` started as a single-node

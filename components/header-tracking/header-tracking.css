@@ -1,0 +1,456 @@
+/**
+ * Header Tracking popup layout. The Home Tracking desk is not restyled from here.
+ * Plot-strip wrap applies only under `.htk-grid`.
+ * The frame is a small step in from 70rem, still wide enough for the day grid.
+ */
+
+.hpp95-dialog.htk-popup {
+  width: min(94vw, 66rem);
+  max-width: min(94vw, 66rem);
+  overflow: auto;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.htk-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  min-height: 0;
+  overflow: visible;
+}
+
+.htk-scroll {
+  min-height: 16rem;
+  flex: none;
+  overflow: visible;
+  isolation: isolate;
+  position: relative;
+  z-index: 0;
+}
+
+.htk-panes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.htk-panes button {
+  min-height: 28px;
+  padding: 4px 14px;
+  border: 0;
+  border-radius: var(--r-2, 2px);
+  color: #111;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 32%),
+    linear-gradient(165deg, var(--chrome-key-sheen), var(--chrome-mill-soft));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1px var(--chrome-ring-deep);
+}
+
+.htk-panes button[aria-selected="true"] {
+  color: #7dffc4;
+  background:
+    radial-gradient(ellipse at 18% 0%, rgba(125, 255, 196, 0.16), transparent 46%),
+    #070c0a;
+  box-shadow:
+    0 0 6px rgba(125, 255, 196, 0.35),
+    inset 0 0 0 1px #1c3d32;
+}
+
+.htk-moment {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: none;
+  min-height: min-content;
+  padding: 8px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
+    linear-gradient(165deg, var(--chrome-sheen) 0%, var(--chrome-face) 48%, var(--chrome-shade) 100%);
+  box-shadow:
+    0 0 0 1px var(--chrome-ring),
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    inset 0 0 0 2px var(--chrome-inset);
+}
+
+.htk-moment-title {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #2a2c2e;
+}
+
+.htk-moment-band {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 0;
+}
+
+.htk-moment-lanes {
+  display: flex;
+  flex: 1 1 auto;
+  gap: 4px;
+  min-width: 0;
+  min-height: min-content;
+  overflow-x: auto;
+  padding: 6px;
+  background: var(--chrome-mill-soft, #c0c4c8);
+  box-shadow:
+    inset -1px -1px #fff,
+    inset 1px 1px var(--chrome-frame),
+    inset -2px -2px var(--chrome-mid),
+    inset 2px 2px var(--chrome-lo);
+}
+
+.htk-lane {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  min-width: 7.5rem;
+  max-width: 12rem;
+  min-height: min-content;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: var(--r-2, 2px);
+  color: #111;
+  text-align: left;
+  cursor: default;
+  background: var(--chrome-mill-hi);
+  box-shadow:
+    inset -1px -1px #fff,
+    inset 1px 1px var(--chrome-frame),
+    inset -2px -2px var(--chrome-mid),
+    inset 2px 2px var(--chrome-lo);
+}
+
+button.htk-lane {
+  cursor: pointer;
+}
+
+.htk-lane[aria-pressed="true"] {
+  box-shadow:
+    inset -1px -1px var(--chrome-frame),
+    inset 1px 1px #fff,
+    inset 2px 2px var(--chrome-lo);
+}
+
+.htk-lane-scope,
+.htk-lane-kind,
+.htk-hint,
+.htk-kicker {
+  font-size: 11px;
+  line-height: 1.3;
+  color: #2a2c2e;
+}
+
+.htk-lane-scope {
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.htk-lane-name {
+  font-size: 13px;
+  font-weight: 650;
+  color: #111;
+}
+
+/* Metrics sits beside the four lanes. Same logger, milled like the other popup keys. */
+.htk-moment button.htk-metrics {
+  flex: 0 0 auto;
+  align-self: stretch;
+  height: auto;
+  min-width: 6.5rem;
+  min-height: 4.25rem;
+  margin: 0;
+  padding: 8px 12px;
+  text-transform: uppercase;
+  cursor: pointer;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, transparent 34%),
+    linear-gradient(165deg, var(--chrome-key-sheen, #eceef0), var(--chrome-mill-soft, #c0c4c8));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1px var(--chrome-ring-deep, #4a4e52);
+}
+
+.htk-moment button.htk-metrics svg {
+  margin: 0;
+}
+
+.htk-tools,
+.htk-plan-form,
+.htk-compare {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.htk-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.htk-tools input:not([type="checkbox"]):not([type="radio"]),
+.htk-plan-form input:not([type="checkbox"]):not([type="radio"]),
+.htk-compare input:not([type="checkbox"]):not([type="radio"]),
+.htk-search input,
+.htk-log-add input,
+.htk-menu-pop input {
+  min-height: 26px;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: var(--r-2, 2px);
+  color: #111;
+  background: #fff;
+  box-shadow:
+    inset -1px -1px #fff,
+    inset 1px 1px var(--chrome-lo),
+    inset 2px 2px var(--chrome-frame);
+}
+
+.htk-search {
+  position: relative;
+  min-width: min(100%, 10rem);
+}
+
+.htk-value {
+  min-width: 8.5rem;
+  text-align: left;
+}
+
+.htk-keys {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.hpp95-dialog .hpp-body .htk-keys > button,
+.hpp95-dialog .hpp-body .htk-value,
+.htk-keys > button,
+.htk-value {
+  min-height: 32px;
+  padding: 6px 16px;
+  line-height: 1.2;
+}
+
+.htk-update-now {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hpp95-dialog .hpp-body label.htk-exact,
+.htk-exact {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  align-self: center;
+  justify-content: flex-start;
+  gap: 6px;
+  width: max-content;
+  max-width: 100%;
+  height: auto;
+  min-height: 28px;
+  margin: 0;
+  padding: 4px 10px;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  overflow: visible;
+  box-sizing: border-box;
+  border-radius: var(--r-2, 2px);
+  text-transform: uppercase;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 32%),
+    linear-gradient(165deg, var(--chrome-key-sheen, #eceef0), var(--chrome-mill-soft, #c0c4c8));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1px var(--chrome-ring-deep, #4a4e52);
+}
+
+.htk-exact-word {
+  display: inline-block;
+  overflow: visible;
+  line-height: 1.2;
+}
+
+.htk-exact input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  min-width: 14px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  flex: 0 0 14px;
+  appearance: auto;
+  background: #fff;
+  box-shadow: inset 1px 1px var(--chrome-lo, #808080), inset -1px -1px #fff;
+}
+
+.htk-menu-pop {
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-sizing: border-box;
+  padding: 6px;
+  overflow: hidden;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0 1px, transparent 1px 2px),
+    linear-gradient(165deg, var(--chrome-sheen, #e4e6e8), var(--chrome-face, #c8ccd0));
+  box-shadow:
+    0 0 0 1px var(--chrome-ring-deep, #4a4e52),
+    inset 0 1px 0 #fff;
+}
+
+.htk-menu-pop input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.htk-menu {
+  position: static;
+  z-index: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  margin: 0;
+  padding: 2px;
+  overflow: auto;
+  list-style: none;
+  background: #fff;
+  box-shadow:
+    inset 1px 1px var(--chrome-lo, #808080),
+    inset -1px -1px #fff;
+}
+
+.htk-menu button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 28px;
+  padding: 4px 8px;
+  border: 0;
+  background: transparent;
+  color: #111;
+  font: inherit;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-align: left;
+  text-transform: none;
+  text-shadow: none;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.htk-menu button:hover,
+.htk-menu button[aria-selected="true"] {
+  background: var(--chrome-mill-hi, #d8dce0);
+}
+
+.htk-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 8px;
+  flex: 0 0 12px;
+  border-radius: var(--r-1, 1px);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+.htk-est {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 4px;
+  border-radius: var(--r-2, 2px);
+}
+
+.htk-grid .trk95 .trk-plot-strip,
+.htk-grid .trk95 .trk-mode-bar {
+  flex-wrap: wrap;
+  overflow: visible;
+  height: auto;
+}
+
+.htk-grid .trk95 .trk-plot-bezel {
+  min-height: 280px;
+  max-height: 520px;
+}
+
+.htk-grid .trk95 .trk-grid.trk-grid-full-day {
+  max-height: 400px;
+}
+
+.htk-agenda {
+  min-height: 220px;
+  max-height: 360px;
+  overflow: auto;
+}
+
+.htk-plan-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.htk-plan-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.htk-logs,
+.htk-plan-log {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.htk-moment .htk-logs.trk95 {
+  flex: none;
+}
+
+.htk-moment .trk95.trk-logbook .trk-log {
+  max-height: 7.5rem;
+}
+
+.htk-moment .ops-now-bar {
+  margin: 0;
+}
+
+.htk-log-add input {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.htk-log-add > button {
+  min-height: 28px;
+  padding: 4px 14px;
+  border: 0;
+  border-radius: var(--r-2, 2px);
+  color: #111;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 32%),
+    linear-gradient(165deg, var(--chrome-key-sheen), var(--chrome-mill-soft));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1px var(--chrome-ring-deep);
+}

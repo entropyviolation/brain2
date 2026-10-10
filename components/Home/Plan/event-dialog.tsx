@@ -189,7 +189,7 @@ export function EventDialog({
         <DialogContent className="plan95-dialog max-h-[90vh]" hideClose data-ui-name="Plan event" data-ui-docs="components/Home/Plan/README.md" {...unsavedDismissProps(guard.requestClose)}>
           <DialogHeader className="plan95-dialog-caption flex-row items-center space-y-0 text-left">
             <DialogTitle>{editingEvent ? "Edit Event" : "Create New Event"}</DialogTitle>
-            <button type="button" className="plan95-title-btn" aria-label="Close" onClick={guard.requestClose}>
+            <button type="button" className="plan95-title-btn b2-close-key" aria-label="Close" onClick={guard.requestClose}>
               ×
             </button>
           </DialogHeader>

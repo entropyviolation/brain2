@@ -44,7 +44,7 @@ export function parseDueBeforeHeader(line: string, now = new Date()): Date | nul
   if (!match) return null
   const rest = match[1].trim()
   if (!rest) return null
-  const { suggestion } = parseSmartCapture(rest, { now })
+  const { suggestion } = parseSmartCapture(rest, { now, stripScheduleWords: true })
   if (!suggestion.scheduledDate || suggestion.description) return null
   return suggestion.scheduledDate
 }

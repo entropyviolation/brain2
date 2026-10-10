@@ -1,5 +1,8 @@
 /**
  * lib/ingest/apply-capture.ts — Inbox / Quick Add via the existing capture pipeline
+ *
+ * Same shorthand as desktop Quick Add: colon paths create the list, schedule
+ * words stay in the title, and `-p` / `-plain` stores the line as written.
  */
 import { parseSmartCapture } from "@/lib/smart-parse"
 import { buildCapturedTask, ensureCaptureTarget, type CaptureMutators } from "@/lib/capture-target"

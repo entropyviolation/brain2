@@ -43,7 +43,7 @@ adds watch ignores; it must not replace that cache object.
 
 DevTools do not open on launch. Set `COGS_DEVTOOLS=1` to detach them, or use Cmd-Opt-I. A detached inspector on this vault is enough to make the window feel frozen.
 
-The renderer UI is `components/notes-ingest.tsx` (header **From Notes**). In local `npm run dev` / `electron:dev`, Chrome at `http://localhost:3000` can use the same reader through `/api/notes` (loopback only; phones on the LAN are refused).
+The renderer UI is `components/notes-ingest.tsx` (**From Notes** in Settings and Lists settings). In local `npm run dev` / `electron:dev`, Chrome at `http://localhost:3000` can use the same reader through `/api/notes` (loopback only; phones on the LAN are refused).
 
 ## ActivityWatch screen time
 

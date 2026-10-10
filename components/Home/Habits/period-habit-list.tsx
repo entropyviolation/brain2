@@ -8,6 +8,7 @@
  */
 "use client"
 
+import { useRef, type CSSProperties } from "react"
 import { Target } from "lucide-react"
 import { HabitEditGemButton } from "@/components/Home/Habits/habit-gems"
 import { HabitCompletionCell } from "@/components/Home/Habits/habit-completion-cell"
@@ -18,7 +19,8 @@ import { isGoalType, isHabitGoalMet } from "@/lib/habit-utils"
 import { completionCellShowsHatch, isMissedOpportunity, printedGoalAmounts } from "@/lib/habit-missed-opportunity"
 import { habitHiddenWhenComplete } from "@/lib/habit-completion-source"
 import { incrementalCompletionPayload } from "@/lib/incremental-habits"
-import { effectivePriorityWeight } from "@/lib/habit-priority"
+import { autoPriorityWeight, effectivePriorityWeight, priorityMarkPercent, priorityWash, priorityWashVars } from "@/lib/habit-priority"
+import { pointerBeforeId, reorderIdList } from "@/lib/habit-order"
 import { isExemptKind, type ExemptionKind } from "@/lib/habit-exemption"
 import type { HabitPeriod } from "@/lib/calculations"
 import {
@@ -120,6 +122,11 @@ interface PeriodHabitListProps {
   emptyLabel?: string
   asOf?: Date
   frequency?: HabitFrequency
+  highlightPriorities?: boolean
+  ritualIds?: readonly string[]
+  ritualMultiplier?: number
+  showStreakMarks?: boolean
+  onReorder?: (visibleIds: string[]) => void
 }
 
 export function PeriodHabitList({
@@ -140,7 +147,13 @@ export function PeriodHabitList({
   emptyLabel = "No habits yet. Add one to get started.",
   asOf = new Date(),
   frequency = "weekly",
+  highlightPriorities = false,
+  ritualIds = [],
+  ritualMultiplier = 0,
+  showStreakMarks = true,
+  onReorder,
 }: PeriodHabitListProps) {
+  const dragRef = useRef<{ id: string; y: number } | null>(null)
   const current = periods.find((p) => p.isCurrent) ?? periods[periods.length - 1]
   const noun = frequency === "quarterly" ? "season" : frequency === "monthly" ? "month" : "week"
 
@@ -152,6 +165,7 @@ export function PeriodHabitList({
         date: current.date,
         weeklyData: data,
         exempt: isExemptKind(kind),
+        periodPercent: calculateTaskPercentage(task.id),
       })
     })
   }
@@ -167,7 +181,7 @@ export function PeriodHabitList({
 
   return (
     <div className="habit-grid-wrap">
-      <table className="habit-grid">
+      <table className={`habit-grid${onReorder ? " is-reordering" : ""}`}>
         <thead>
           <tr>
             <th className="col-act" />
@@ -192,13 +206,61 @@ export function PeriodHabitList({
             visible.map((task) => {
               const percentage = calculateTaskPercentage(task.id)
               const prio = effectivePriorityWeight(task, data, asOf, frequency)
+              const neglect = autoPriorityWeight(task, data, asOf, frequency)
+              const ritual = ritualIds.includes(task.id)
+              const wash = priorityWash({
+                highlight: highlightPriorities,
+                ritual,
+                neglect,
+                selected: priorityMarkPercent(task, asOf, ritual),
+              })
+              const visibleIds = visible.map((row) => row.id)
               return (
-                <tr key={task.id} className="group">
+                <tr
+                  key={task.id}
+                  className="group"
+                  data-habit-id={task.id}
+                  onPointerDown={
+                    onReorder
+                      ? (event) => {
+                          if ((event.target as HTMLElement).closest("button, input, textarea, a")) return
+                          dragRef.current = { id: task.id, y: event.clientY }
+                          event.currentTarget.setPointerCapture?.(event.pointerId)
+                        }
+                      : undefined
+                  }
+                  onPointerUp={
+                    onReorder
+                      ? (event) => {
+                          const drag = dragRef.current
+                          dragRef.current = null
+                          if (!drag || drag.id !== task.id || Math.abs(event.clientY - drag.y) < 4) return
+                          const tbody = event.currentTarget.parentElement
+                          if (!tbody) return
+                          const rows = [...tbody.querySelectorAll<HTMLElement>("tr[data-habit-id]")].map((row) => {
+                            const box = row.getBoundingClientRect()
+                            return { id: row.dataset.habitId || "", top: box.top, height: box.height }
+                          })
+                          const next = reorderIdList(visibleIds, task.id, pointerBeforeId(rows, task.id, event.clientY))
+                          if (next.some((id, index) => id !== visibleIds[index])) onReorder(next)
+                        }
+                      : undefined
+                  }
+                >
                   <td className="col-act">
                     <HabitEditGemButton task={task} onEdit={onEdit} />
                   </td>
-                  <td className="col-name font-medium" title={task.name}>
-                    <HabitRowName name={task.name} prio={prio} />
+                  <td
+                    className={`col-name font-medium${wash.className ? ` ${wash.className}` : ""}`}
+                    title={task.name}
+                    style={priorityWashVars(wash) as CSSProperties | undefined}
+                  >
+                    <HabitRowName
+                      name={task.name}
+                      prio={prio}
+                      showMarks={showStreakMarks}
+                      ritualMultiplier={ritual ? ritualMultiplier : 0}
+                    />
                   </td>
                   {periods.map((period) => {
                     const kind = exemptionKindFor?.(task, period.key) ?? "required"

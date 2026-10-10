@@ -5,7 +5,7 @@
  * day with a "pen"; pens are grouped into independent *scopes* (Activity,
  * Location, Mood) so the same minute can be labeled along several dimensions,
  * each viewed and edited separately. This is the primary capture surface — what
- * the header "Tracking" button and the Home → Tracking tab render.
+ * the header Now popup and the Home → Tracking tab render.
  *
  * Writes that change time, pens, or tags push onto `lib/action-history.ts` so
  * Cmd/Ctrl-Z can reverse a stroke. Selection and cell-size changes do not.

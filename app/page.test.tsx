@@ -83,7 +83,8 @@ describe("app page shell", () => {
     render(<Home />)
 
     expect(screen.getByTestId("app-header")).toHaveClass("b2-shell")
-    expect(screen.getByRole("tab", { name: "Home" })).toBeInTheDocument()
+    const homeTab = screen.getByRole("tab", { name: "Home" })
+    expect(homeTab.closest(".b2-app-pin")).toBe(screen.getByTestId("app-header").parentElement)
     expect(await screen.findByTestId("home-desk")).toBeInTheDocument()
   })
 

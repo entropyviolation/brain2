@@ -10,7 +10,7 @@
  * the Objective pen (`so:`), plus an instant on whatever other scope the
  * person picked. A note is a Text log instant (`note:`), so it stays on the
  * event list. A thought process is that same Text log instant with
- * `eventKind` `thought-process`, and the Tracking log shelves it under Thought.
+ * `eventKind` `thought-process`, and the Tracking log shelves it under Thought process.
  * A chosen location is a Location-scope instant at the same minute.
  *
  * Cycle marks and phase come from `lib/cycle-marks.ts` and `lib/cycle-phase.ts`.
@@ -56,7 +56,7 @@ export type LogComposerMode = "event" | "switch" | "intake" | "note" | "thought"
 export type LogAddTarget = IntakeClass | "event"
 export type LogClockChoice = ClockCertainty
 export type LogTimeEntry = TimeEntry
-/** Event list plus Switch and Thought. Notes stay on `event` because they use Text log. */
+/** Event list plus Switch and Thought process. Notes stay on `event` because they use Text log. */
 export type LogBookList = LogList | "switch" | "thought"
 
 export type ClassifiedLogEntry = LogTimeEntry & {
@@ -306,7 +306,7 @@ function paintPairedLocation(date: string, minute: number, penId: string, clock:
  * Switch calls `applyScopeSwitch`: Activity is the `st:` instant; any other
  * view is an instant on that scope’s pens. Note calls `applyNote` (Text log
  * instant, not the day jot, unless the phrase is already a `day:` note).
- * Thought calls `applyThoughtProcess` on that same paint path, with
+ * Thought process calls `applyThoughtProcess` on that same paint path, with
  * `eventKind` `thought-process`.
  */
 export function submitTrackingLog(input: {

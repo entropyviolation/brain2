@@ -15,8 +15,7 @@ Shipped now (keep these; extend them):
   card; the Gallery name field names the next unnamed pack card. Storage is **per card id**: names do not
   hop between pictures; deleted pack photos stay gone (id + URL dismiss, no
   re-seed on roll/hydrate). Persist **v7**.
-- Worn friend until **Monday** or a manual change (`cogs-friend-worn` /
-  `brain2-friend-worn`)
+- Worn friend until **Monday** or a manual change (`brain2-friend-worn`; reads prefer `brain2-*`. Historical alias `cogs-friend-worn`)
 - Removed friends stay gone (union-only dismiss by **card id** / catalog species + confirm delete; pack names do not dismiss other species)
 - Click the **photograph** → this friend’s **instrument** (same page as Gallery
   Details: portrait, bond, mission, voice keys, equalizer, journal).
@@ -278,7 +277,7 @@ different item.
 
 ## Persistence & identity (shipped constraints)
 
-- Gallery JSON is metadata. Bytes live in `friend:<id>` / `cogs-friend-pic:<id>`.
+- Gallery JSON is metadata and holds `friend:<id>`. Cutout bytes live in IndexedDB `idb:friend_<id>`. `brain2-friend-pic:` copies are stripped on boot.
   Pack bytes are static files under `/friend-pack/*.png` (`via: "pack"`).
 - Dismiss is **union-only**. Identity keys include catalog species tokens
   (`foal` from “small foal”).

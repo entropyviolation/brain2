@@ -52,7 +52,7 @@ export function EnhancedAnalytics() {
             <button type="button" className="fm-title-btn" aria-label="Maximize">
               □
             </button>
-            <button type="button" className="fm-title-btn" aria-label="Close">
+            <button type="button" className="fm-title-btn b2-close-key" aria-label="Close">
               ×
             </button>
           </div>

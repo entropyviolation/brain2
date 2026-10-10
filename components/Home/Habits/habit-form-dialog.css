@@ -6,11 +6,11 @@
  */
 
 .habit95-dialog {
-  --h95-surface: #c0c0c0;
-  --h95-face: #dfdfdf;
+  --h95-surface: var(--chrome-face);
+  --h95-face: var(--chrome-mid);
   --h95-highlight: #ffffff;
-  --h95-shadow: #808080;
-  --h95-frame: #0a0a0a;
+  --h95-shadow: var(--chrome-lo);
+  --h95-frame: var(--chrome-frame);
   --h95-blue: #000080;
   --h95-blue-light: #1084d0;
   --h95-ink: #000000;
@@ -27,10 +27,10 @@
   flex-direction: column;
   padding: 3px !important;
   gap: 0 !important;
-  max-width: 30rem !important;
-  max-height: min(90vh, 720px) !important;
+  max-width: min(36rem, calc(100vw - 1.5rem)) !important;
+  max-height: min(90vh, 800px) !important;
   border: none !important;
-  border-radius: 0 !important;
+  border-radius: var(--r-0, 0px) !important;
   background: var(--h95-surface) !important;
   color: var(--h95-ink);
   box-shadow: var(--h95-raised), 4px 4px 0 rgba(0, 0, 0, 0.35) !important;
@@ -70,22 +70,14 @@
   line-height: 1.2;
 }
 
+/* Face, size, and the centered × live on `.b2-close-key` (win95.css). */
 .habit95-title-btn {
-  box-sizing: border-box;
-  width: 16px;
-  height: 14px;
-  padding: 0;
-  border: none;
-  line-height: 1;
-  font-size: 12px;
-  font-weight: bold;
-  color: #000;
-  background: var(--h95-surface);
-  box-shadow: var(--h95-raised);
+  flex-shrink: 0;
+  margin-left: auto;
   cursor: pointer;
 }
 
-.habit95-title-btn:active {
+.habit95-title-btn:not(.b2-close-key):active {
   box-shadow: var(--h95-sunken);
 }
 
@@ -109,49 +101,103 @@
 .habit95-fields {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0;
   min-height: 0;
   flex: 1;
   overflow: auto;
-  padding-bottom: 4px;
+  overscroll-behavior: contain;
+  padding: 8px 10px 12px;
+  background: var(--h95-face);
+  box-shadow: var(--h95-sunken);
 }
 
+/* Visual reading order of the habit settings page. */
+.habit95-fields > .habit95-sec-name { order: 10; }
+.habit95-fields > .habit95-sec-freq { order: 12; }
+.habit95-fields > .habit95-sec-type { order: 14; }
+.habit95-fields > .habit95-sec-gem { order: 16; }
+.habit95-fields > .habit95-sec-target { order: 20; }
+.habit95-fields > .habit95-sec-sources { order: 30; }
+.habit95-fields > .habit95-sec-fill { order: 32; }
+.habit95-fields > .habit95-sec-keywords { order: 34; }
+.habit95-fields > .habit95-sec-links { order: 36; }
+.habit95-fields > .habit95-sec-lift { order: 38; }
+.habit95-fields > .habit95-sec-points { order: 40; }
+.habit95-fields > .habit95-sec-time { order: 50; }
+.habit95-fields > .habit95-sec-priority { order: 60; }
+.habit95-fields > .habit95-sec-wording { order: 70; }
+
 .habit95-field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  display: grid;
+  grid-template-columns: minmax(8.5rem, 11.5rem) minmax(0, 1fr);
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 3px;
+  margin: 0;
 }
 
 .habit95-field > label,
+label.habit95-field,
 .habit95-legend {
   font-size: 11px;
   font-weight: bold;
   color: var(--h95-ink);
 }
 
+.habit95-field > .habit95-hint,
+.habit95-field > .habit95-btn {
+  grid-column: 2;
+}
+
+.habit95-field > .habit95-btn {
+  justify-self: start;
+  margin-top: 2px;
+}
+
+.habit95-field > input,
+.habit95-field > select,
+.habit95-field > .habit95-input,
+.habit95-field > .habit95-pick,
+label.habit95-field > input,
+label.habit95-field > select,
+label.habit95-field > .habit95-input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  font-weight: normal;
+}
+
 .habit95-hint {
   margin: 0;
+  max-width: 62ch;
   font-size: 10px;
-  color: #404040;
+  font-weight: normal;
+  line-height: 1.35;
+  color: var(--chrome-ink-soft);
+}
+
+.habit95-group > .habit95-hint {
+  margin: 0 0 6px;
 }
 
 .habit95-brick {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
+  flex-direction: column;
+  align-items: stretch;
   gap: 6px;
   margin-top: 6px;
-  padding: 4px;
-  background: var(--h95-face, #c0c0c0);
-  box-shadow: var(--h95-field-bevel, inset 1px 1px 0 #fff, inset -1px -1px 0 #808080);
+  padding: 6px;
+  background: var(--h95-surface);
+  box-shadow: var(--h95-field-bevel, inset 1px 1px 0 #fff, inset -1px -1px 0 var(--chrome-lo));
 }
 
 .habit95-brick .habit95-field {
-  flex: 1 1 8rem;
+  flex: none;
   min-width: 0;
 }
 
 .habit95-brick .habit95-btn {
+  align-self: flex-start;
   flex: 0 0 auto;
   margin-bottom: 1px;
 }
@@ -164,7 +210,7 @@
   height: 24px;
   padding: 2px 6px;
   border: none;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   background: var(--h95-field);
   color: var(--h95-ink);
   box-shadow: var(--h95-field-bevel);
@@ -242,6 +288,143 @@
   font-variant-numeric: tabular-nums;
 }
 
+.habit95-pipeline {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.habit95-pipeline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.habit95-pipeline-row {
+  padding: 6px;
+  background: var(--h95-surface);
+  box-shadow: var(--h95-field-bevel);
+}
+
+.habit95-pipeline-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.habit95-pipeline-head .habit95-field {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+}
+
+.habit95-pipeline-moves {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 3px;
+}
+
+.habit95-pipeline-types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.habit95-pipeline-config {
+  margin-top: 6px;
+}
+
+.habit95-list-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.habit95-list-row > .habit95-field {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+}
+
+.habit95-list-open {
+  flex: 0 0 auto;
+  margin-bottom: 1px;
+}
+
+.habit95-stat-readout {
+  margin: 2px 0 6px;
+  padding: 2px 6px;
+  list-style: none;
+  background: var(--h95-field);
+  box-shadow: var(--h95-field-bevel);
+}
+
+.habit95-stat-readout li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.habit95-list-popup {
+  z-index: 80;
+  width: min(28rem, 92vw) !important;
+  max-height: min(70vh, 520px) !important;
+}
+
+.habit95-list-popup-body {
+  max-height: 360px;
+  overflow: auto;
+  background: var(--h95-field);
+  box-shadow: var(--h95-field-bevel);
+}
+
+.habit95-list-popup-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 6px 2px;
+}
+
+.habit95-list-popup-tools .habit95-btn {
+  min-width: 0;
+}
+
+.habit95-list-popup-tools .habit95-btn[aria-pressed="true"] {
+  box-shadow: var(--h95-sunken);
+}
+
+.habit95-list-target {
+  margin: 0;
+  padding: 2px 8px 6px;
+  font-size: 12px;
+  color: #000;
+}
+
+.habit95-list-rows.fm98 {
+  height: auto;
+}
+
+.habit95-list-names {
+  margin: 0;
+  padding: 4px 8px 8px;
+  list-style: none;
+}
+
+.habit95-list-names li {
+  padding: 3px 0;
+  color: #000;
+}
+
+.habit95-list-empty {
+  margin: 0;
+  padding: 8px;
+  color: #000;
+}
+
 /* Daily-habit picker: same Win95 menu as completion sources, with a search
    well and navy option highlight (the pen-parent menu, in this dialog's skin). */
 .habit95-pick {
@@ -308,35 +491,38 @@
 
 .habit95-group {
   margin: 0;
-  padding: 10px 8px 8px;
+  padding: 8px 0 4px;
   border: none;
-  background: var(--h95-surface);
-  box-shadow: var(--h95-sunken);
+  background: transparent;
+  box-shadow: none;
 }
 
 .habit95-group > legend {
-  float: left;
+  float: none;
+  display: block;
   width: 100%;
   margin: 0 0 6px;
-  padding: 0;
+  padding: 0 0 3px;
   font-size: 11px;
   font-weight: bold;
   color: var(--h95-blue);
+  box-shadow: inset 0 -1px var(--h95-shadow), inset 0 -2px var(--h95-highlight);
 }
 
 .habit95-group > legend + * {
-  clear: both;
+  clear: none;
 }
 
 .habit95-details > summary {
   display: block;
   margin: 0;
-  padding: 0;
+  padding: 0 0 3px;
   font-size: 11px;
   font-weight: bold;
   color: var(--h95-blue);
   cursor: pointer;
   list-style: none;
+  box-shadow: inset 0 -1px var(--h95-shadow), inset 0 -2px var(--h95-highlight);
 }
 
 .habit95-details > summary::-webkit-details-marker {
@@ -357,7 +543,7 @@
 
 .habit95-freq {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 4px;
 }
 
@@ -375,7 +561,7 @@
   min-height: 40px;
   padding: 6px 8px;
   border: none;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   text-align: left;
   color: var(--h95-ink);
   background: var(--h95-surface);
@@ -409,14 +595,14 @@
 
 .habit95-choice-desc {
   font-size: 10px;
-  color: #404040;
+  color: var(--chrome-ink-soft);
   line-height: 1.25;
 }
 
 .habit95-goal-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 /* Tracking tag chips — pressed state mirrors .habit95-choice[aria-checked]. */
@@ -432,7 +618,7 @@
   gap: 5px;
   padding: 3px 7px;
   border: none;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   color: var(--h95-ink);
   background: var(--h95-surface);
   box-shadow: var(--h95-raised);
@@ -466,6 +652,48 @@
   font-size: 11px;
   font-weight: bold;
   cursor: pointer;
+}
+
+.habit-priority-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.habit-priority-star {
+  width: 16px;
+  height: 16px;
+  color: #2f9d4a;
+  flex: none;
+}
+
+.habit-priority-log {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.35;
+  color: #1c1e20;
+}
+
+.habit-priority-mark {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin: 4px 0 0;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  color: #5c6166;
+}
+
+.habit-priority-mult {
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
 }
 
 .habit95-metric {
@@ -514,7 +742,7 @@
   min-height: 26px;
   padding: 3px 14px;
   border: none;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   color: #000 !important;
   background: var(--h95-surface) !important;
   box-shadow: var(--h95-raised);
@@ -537,7 +765,7 @@
 }
 
 .habit95-btn:disabled {
-  color: #808080 !important;
+  color: var(--chrome-lo) !important;
   text-shadow: 1px 1px 0 #fff;
   cursor: default;
 }
@@ -580,10 +808,10 @@ body.win95-app .hab-willpower-lab-play button.hab-willpower-gems-hit,
   width: min(22.5rem, 86%);
   max-width: 400px;
   --hab-willpower-scale: 2.12;
-  --hab-raised: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px #808080,
-    inset 2px 2px #dfdfdf;
-  --hab-sunken: inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf,
-    inset 2px 2px #808080;
+  --hab-raised: inset -1px -1px var(--chrome-frame), inset 1px 1px #fff, inset -2px -2px var(--chrome-lo),
+    inset 2px 2px var(--chrome-mid);
+  --hab-sunken: inset -1px -1px #fff, inset 1px 1px var(--chrome-frame), inset -2px -2px var(--chrome-mid),
+    inset 2px 2px var(--chrome-lo);
 }
 
 .hab-willpower-lab-play .hab-willpower-stage {
@@ -959,14 +1187,14 @@ body.win95-app .hab-willpower-lab-play button.hab-willpower-gems-hit,
   font-size: 9px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #404040;
+  color: var(--chrome-ink-soft);
 }
 
 .hab-willpower-slider {
   position: relative;
   display: block;
   height: 22px;
-  background: #c0c0c0;
+  background: var(--chrome-face);
   box-shadow: var(--h95-sunken);
 }
 
@@ -976,9 +1204,9 @@ body.win95-app .hab-willpower-lab-play button.hab-willpower-gems-hit,
   right: 8px;
   top: 9px;
   height: 4px;
-  background: #808080;
+  background: var(--chrome-lo);
   border: 1px solid #000;
-  box-shadow: inset 1px 1px #404040, inset -1px -1px #fff;
+  box-shadow: inset 1px 1px var(--chrome-ink-soft), inset -1px -1px #fff;
   pointer-events: none;
 }
 
@@ -987,10 +1215,10 @@ body.win95-app .hab-willpower-lab-play button.hab-willpower-gems-hit,
   top: 1px;
   width: 11px;
   height: 20px;
-  background: #c0c0c0;
+  background: var(--chrome-face);
   border: 1px solid #000;
-  border-radius: 0;
-  box-shadow: inset 1px 1px #fff, inset -1px -1px #808080, inset -2px -2px #000;
+  border-radius: var(--r-0, 0px);
+  box-shadow: inset 1px 1px #fff, inset -1px -1px var(--chrome-lo), inset -2px -2px #000;
   transform: translateX(-50%);
   pointer-events: none;
   z-index: 2;
@@ -1044,7 +1272,7 @@ body.win95-app .hab-willpower-lab-play button.hab-willpower-gems-hit,
   padding: 10px 4px 2px;
   margin-top: 2px;
   background: var(--h95-face);
-  border-top: 1px solid #808080;
+  border-top: 1px solid var(--chrome-lo);
   box-shadow: inset 0 1px 0 #fff;
 }
 
@@ -1061,6 +1289,23 @@ body.win95-app .hab-willpower-lab-play button.hab-willpower-gems-hit,
   flex: 0 0 auto;
   margin: 0;
   position: static;
+}
+
+@media (max-width: 560px) {
+  .habit95-field,
+  label.habit95-field {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .habit95-field > .habit95-hint,
+  .habit95-field > .habit95-btn {
+    grid-column: 1;
+  }
+
+  .habit95-freq,
+  .habit95-types {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 @media (max-width: 720px) {

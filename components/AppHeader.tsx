@@ -5,15 +5,18 @@
  * Tek POWER lamp, leading **Nav** Back/Forward mill keys (in-app screen
  * history), today's-friend jewel in a Friend key-well (click for a Stardew
  * Next Action bubble), and Rituals / System / now / Capture as milled silver
- * key-wells of chunky press keys (Y2K handheld / TENO). Wide shell: one row.
- * Narrower than the clusters' label widths: whole clusters wrap onto further
- * rows; a cluster wider than the shell scrolls inside its bay. Keys do not
- * flex-shrink, and phosphor counts stay on them. The **now** well
- * appears only while an Operations or pen-color work timer is live. System is
- * Settings | Tracking | Names so a later Help / Inspect key can sit beside
- * Names. The Names key stays **Names** and latches (`aria-pressed`); the
- * tooltip reads **Stop naming** while on. Nested bevels from IRIX/TENO — not a
- * cockpit restyle and not a SaaS navbar.
+ * key-wells of chunky press keys (Y2K handheld / TENO). Clusters share one
+ * flex line. Free width widens Rituals, System, and Capture, and the keys
+ * share each well up to a cap. The clusters stay packed — leftover past the
+ * cap is mill at the end of the row, not a gap between Friend and Rituals.
+ * Narrower than those caps, whole clusters wrap; a cluster wider than the
+ * shell scrolls inside its bay. Keys do not flex-shrink, and phosphor counts
+ * stay on them. The **now** well appears only while an Operations or
+ * pen-color work timer is live. System is a gear (Settings), a question mark
+ * (Names help mode), a magnifying glass (Search), then the Now word key.
+ * The question mark latches (`aria-pressed`) and gains a diagonal strike while
+ * Names is on. Icon keys show engraved glyphs; word keys stay words.
+ * Nested bevels from IRIX/TENO — not a cockpit restyle and not a SaaS navbar.
  *
  * Spec: §8.2 (dashboard top bar / global quick actions).
  */
@@ -21,20 +24,16 @@
 
 import { APP_NAME } from "@/lib/app-brand"
 import { QuickAdd } from "@/components/quick-add"
-import { EnhancedBulkAdd } from "@/components/enhanced-bulk-add"
-import { NotesIngest } from "@/components/notes-ingest"
-import { IphoneNotesStore } from "@/components/iphone-notes-store"
 import { CognitiveState } from "@/components/cognitive-state"
 import { Inbox } from "@/components/inbox"
-import { IngestLogDialog } from "@/components/ingest-log-dialog"
 import { Reviews } from "@/components/Reviews/reviews"
-import { MetricLoggerButton } from "@/components/Tracking/MetricLogger"
 import { BabyAnimalNest } from "@/components/baby-animal-nest"
 import { SettingsDialog } from "@/components/Settings/SettingsDialog"
 import { HeaderNowBox } from "@/components/header-now-box"
 import { HeaderNavButtons } from "@/components/header-nav-buttons"
 import { Button } from "@/components/ui/button"
 import { useUiNamesStore } from "@/lib/ui-names-store"
+import { Search } from "lucide-react"
 import "./shell-chrome.css"
 
 function NamesModeButton() {
@@ -45,12 +44,49 @@ function NamesModeButton() {
     <Button
       variant="outline"
       size="sm"
+      className="b2-shell-icon"
       aria-pressed={on}
-      aria-label="Names"
-      title={on ? "Stop naming" : "Show names of UI"}
+      aria-label="Names help mode"
+      title="Names help mode"
       onClick={() => toggle("names")}
     >
-      Names
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          d="M9.1 9a3 3 0 1 1 5.8 1c0 2-3 2.4-3 4.2"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.25"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <circle cx="12" cy="17.6" r="1" fill="currentColor" stroke="none" />
+        {on ? (
+          <path
+            className="b2-shell-glyph-strike"
+            d="M5.5 18.5 L18.5 5.5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.25"
+            strokeLinecap="round"
+          />
+        ) : null}
+      </svg>
+    </Button>
+  )
+}
+
+function SearchKey({ onOpen }: { onOpen?: () => void }) {
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      className="b2-shell-icon"
+      aria-label="Search"
+      title="Search"
+      onClick={() => onOpen?.()}
+    >
+      <Search />
     </Button>
   )
 }
@@ -59,10 +95,16 @@ export function AppHeader({
   onTaskSelect,
   captureOpen,
   onCaptureOpenChange,
+  captureSeed,
+  onOpenSearch,
 }: {
   onTaskSelect: (taskId: string) => void
   captureOpen?: boolean
   onCaptureOpenChange?: (open: boolean) => void
+  /** Highlighted text from Cmd/Ctrl-Shift-A, applied when Quick Add opens. */
+  captureSeed?: string
+  /** Opens the existing Cmd/Ctrl-K search palette. */
+  onOpenSearch?: () => void
 }) {
   return (
     <header
@@ -85,19 +127,20 @@ export function AppHeader({
           <BabyAnimalNest />
         </fieldset>
         <div className="b2-shell-rail" role="toolbar" aria-label="Global actions">
-          <fieldset className="b2-shell-group">
+          <fieldset className="b2-shell-group b2-shell-rituals">
             <legend>Rituals</legend>
             <div className="b2-shell-keys">
               <Reviews />
             </div>
           </fieldset>
           <div className="b2-shell-sep" role="separator" />
-          <fieldset className="b2-shell-group">
+          <fieldset className="b2-shell-group b2-shell-system">
             <legend>System</legend>
             <div className="b2-shell-keys">
               <SettingsDialog />
-              <CognitiveState />
               <NamesModeButton />
+              <SearchKey onOpen={onOpenSearch} />
+              <CognitiveState />
             </div>
           </fieldset>
           <div className="b2-shell-sep" role="separator" />
@@ -105,18 +148,13 @@ export function AppHeader({
           <fieldset
             className="b2-shell-group b2-shell-capture"
             data-ui-name="Capture"
-            data-ui-help="Inbox, ingest, metrics, From Notes, Phone Notes, and quick capture doors."
+            data-ui-help="Inbox and Quick Add. Metrics is on Current moment in Now. Ingest, From Notes, and Phone Notes live in Settings and Lists settings."
             data-ui-docs="components/README.md"
           >
             <legend>Capture</legend>
             <div className="b2-shell-keys">
               <Inbox onTaskSelect={onTaskSelect} />
-              <IngestLogDialog />
-              <MetricLoggerButton />
-              <EnhancedBulkAdd />
-              <NotesIngest />
-              <IphoneNotesStore />
-              <QuickAdd open={captureOpen} onOpenChange={onCaptureOpenChange} />
+              <QuickAdd open={captureOpen} onOpenChange={onCaptureOpenChange} seed={captureSeed} />
             </div>
           </fieldset>
         </div>

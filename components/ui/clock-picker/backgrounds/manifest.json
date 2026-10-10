@@ -1,0 +1,20 @@
+[
+  { "id": "ceramic", "file": "../ceramic-face.png", "label": "Ceramic" },
+  { "id": "cherub-twins", "file": "cherub-twins.png", "label": "Cherub twins" },
+  { "id": "lattice-rabbit", "file": "lattice-rabbit.png", "label": "Lattice rabbit" },
+  { "id": "love-trip-kitty", "file": "love-trip-kitty.png", "label": "Love Trip" },
+  { "id": "mother-of-pearl", "file": "mother-of-pearl.png", "label": "Mother of pearl" },
+  { "id": "opalescent-birds", "file": "opalescent-birds.png", "label": "Opalescent birds" },
+  { "id": "pearl-blossom", "file": "pearl-blossom.png", "label": "Pearl blossom" },
+  { "id": "pearl-flower", "file": "pearl-flower.png", "label": "Pearl flower" },
+  { "id": "pearl-star-button", "file": "pearl-star-button.png", "label": "Pearl star button" },
+  { "id": "rabbit-portrait", "file": "rabbit-portrait.png", "label": "Rabbit portrait" },
+  { "id": "silver-bat", "file": "silver-bat.png", "label": "Silver bat" },
+  { "id": "silver-floral-locket", "file": "silver-floral-locket.png", "label": "Silver locket" },
+  { "id": "silver-sphere", "file": "silver-sphere.png", "label": "Silver sphere" },
+  { "id": "silver-spiral", "file": "silver-spiral.png", "label": "Silver spiral" },
+  { "id": "teal-pearl", "file": "teal-pearl.png", "label": "Teal pearl" },
+  { "id": "umbrella-cats", "file": "umbrella-cats.png", "label": "Umbrella cats" },
+  { "id": "winged-cherub", "file": "winged-cherub.png", "label": "Winged cherub" },
+  { "id": "winged-kitten", "file": "winged-kitten.png", "label": "Winged kitten" }
+]

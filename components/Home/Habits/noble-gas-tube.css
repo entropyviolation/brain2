@@ -22,7 +22,7 @@
   height: 38px;
   overflow: visible;
   background: transparent;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   box-shadow: none;
   pointer-events: none;
   filter: none;

@@ -810,7 +810,7 @@ function seedDemoVault(): void {
     }),
   )
   put(persistKey("user-settings"), wrap(2, { homeCity: "Portland, Oregon", dayAnchorMinutes: 21 * 60 }))
-  put(persistKey("theme-store"), wrap(4, { pcbMode: "ice", chromeFace: 50, appearanceRev: 1 }))
+  put(persistKey("theme-store"), wrap(5, { pcbMode: "ice", chromeFace: 50, chromePaused: false, cornerMix: 50, cornerPaused: true, appearanceRev: 1 }))
   put(persistKey("pcb-mode"), "ice")
 
   for (const [key, value] of Object.entries(seed.plans)) put(key, value)

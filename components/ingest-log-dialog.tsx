@@ -1,5 +1,7 @@
 /**
- * components/ingest-log-dialog.tsx — Header log of applied / failed / pending ingest
+ * components/ingest-log-dialog.tsx — Log of applied / failed / pending ingest
+ *
+ * Opened from Settings and Lists settings (**Notes and ingest**), not the pin bar.
  *
  * Pending chat count is a CRT well on the Ingest key (tooltip names the count).
  * GPS tracking points stay off this list unless Show GPS is on. Location still
@@ -7,7 +9,8 @@
  */
 "use client"
 
-import { useState } from "react"
+import { useCallback, useState } from "react"
+import { useCaptureDoorRequest } from "@/components/capture-door-bus"
 import { MessageSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -21,8 +24,10 @@ import {
 import { hiddenGpsCount, useGpsIngestLog, visibleIngestEvents } from "@/lib/ingest/gps-log"
 import { useIngestStore } from "@/lib/ingest/ingest-store"
 
-export function IngestLogDialog() {
+export function IngestLogDialog({ hideTrigger = false }: { hideTrigger?: boolean } = {}) {
   const [open, setOpen] = useState(false)
+  const openDoor = useCallback(() => setOpen(true), [])
+  useCaptureDoorRequest("ingest", openDoor)
   const [showGps, setShowGps] = useState(false)
   const events = useIngestStore((s) => s.events)
   const gpsEvents = useGpsIngestLog((s) => s.events)
@@ -34,6 +39,7 @@ export function IngestLogDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
+      {!hideTrigger ? (
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="gap-1">
           <MessageSquare className="h-4 w-4" />
@@ -45,6 +51,7 @@ export function IngestLogDialog() {
           ) : null}
         </Button>
       </DialogTrigger>
+      ) : null}
       <DialogContent className="hpp95 hpp95-dialog sm:max-w-lg max-h-[90vh] overflow-hidden flex flex-col" data-ui-name="Ingest" data-ui-docs="components/README.md">
         <DialogHeader className="hpp-caption">
           <div className="hpp-caption-mark">

@@ -44,6 +44,7 @@ import { useSleepStore } from "@/lib/sleep-store"
 import { taskServesFocusGoals } from "@/lib/goal-focus"
 import { useGoalsStore } from "@/lib/goals-store"
 import { useHabitsStore } from "@/lib/habits-store"
+import { ritualPriorityUpdates } from "@/lib/habit-priority"
 import { nightCarryForMorning } from "@/lib/ritual-carry"
 import { useTaskStore } from "@/lib/task-store"
 import { patchTodoCommitment, taskIsRequired } from "@/lib/todo-commitment"
@@ -519,6 +520,19 @@ function persistMorning(ritual: MorningGmDraft, now: Date, finish = false) {
     useSleepStore.getState().setAllNighter(dayKey, false)
     if (d.bedTime) useSleepStore.getState().setBedtime(dayKey, parseBedtime(d.bedTime))
     if (d.wakeTime) useSleepStore.getState().setWakeTime(dayKey, parseWakeTime(d.wakeTime))
+  }
+
+  const previousIds = useReviewsStore.getState().getMorningReview(dayKey)?.priorityHabitIds
+  const [year, month, dayOfMonth] = dayKey.split("-").map(Number)
+  const ritualDay = new Date(year || 1970, (month || 1) - 1, dayOfMonth || 1)
+  for (const task of ritualPriorityUpdates(
+    useHabitsStore.getState().tasks,
+    morning.priorityHabitIds,
+    previousIds,
+    "day",
+    ritualDay,
+  )) {
+    useHabitsStore.getState().updateTask(task)
   }
 
   useReviewsStore.getState().replaceMorningReview(dayKey, morning)

@@ -3,19 +3,28 @@
  *
  * Captures a single free-text idea and runs it through `lib/smart-parse` to pull
  * out a folder/list path, date/time, priority and duration — shown live as chips
- * while you type. Optionally lands in the Inbox for clarification, or files
- * straight onto the target list (All Items if none).
+ * while you type. The date, time, priority, and duration stay in the title.
+ * A missing list or folder is created. Optionally lands in the Inbox for
+ * clarification, or files straight onto the target list (All Items if none).
  *
- * The dialog is optionally controlled (so the quick-capture hotkey in
- * `app/page.tsx` can open it); uncontrolled with its own trigger otherwise.
- * Header trigger uses `.b2-shell-go` so it reads as the default (bold, framed) press key.
- * Dialog shell is milled fascia (`.hpp95` / `header-popup-chrome.css`).
+ * **Plain** (checkbox, default off) or `-p` / `-plain` on the line stores the
+ * text as written: no list, folder, date, time, priority, duration, or Monkey brain.
+ *
+ * **Bulk** (checkbox in this same dialog) switches the field to a taller box and
+ * writes through `writeBulkCapture` — header lines, `folder: list: item`,
+ * `before` dates, and the inbox checkbox. One dialog, one task store.
+ *
+ * The dialog is optionally controlled (so Cmd/Ctrl-Shift-A in `app/page.tsx`
+ * can open it and prefill a page selection); uncontrolled with its own trigger
+ * otherwise. Header trigger uses `.b2-shell-go` so it reads as the default
+ * (bold, framed) press key. Dialog shell is milled fascia
+ * (`.hpp95` / `header-popup-chrome.css`).
  */
 "use client"
 
 import type React from "react"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Plus, CalendarDays, Clock, Tag, Flag, Timer, Folder } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -27,6 +36,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { format } from "date-fns"
@@ -38,11 +48,17 @@ import {
   previewCapturePath,
 } from "@/lib/capture-target"
 import { CaptureShorthandHelp, SendToInboxField } from "@/components/capture-shorthand"
+import { bulkReadyCount, writeBulkCapture } from "@/components/enhanced-bulk-add"
 
 interface QuickAddProps {
   /** Controlled open state (e.g. driven by the quick-capture hotkey). */
   open?: boolean
   onOpenChange?: (open: boolean) => void
+  /**
+   * Highlighted page text from Cmd/Ctrl-Shift-A. Applied once per open.
+   * A selection that contains a newline opens in Bulk.
+   */
+  seed?: string
 }
 
 /** Render the parsed fields of a suggestion as inline chips. */
@@ -80,6 +96,8 @@ export function SuggestionChips({ suggestion }: { suggestion: SmartSuggestion })
     chips.push({ key: "imp", icon: <Flag className="h-3 w-3" />, label: `importance ${suggestion.importance}` })
   if (suggestion.monkeyBrain)
     chips.push({ key: "monkey", icon: <Flag className="h-3 w-3" />, label: "Monkey brain" })
+  if (suggestion.plain)
+    chips.push({ key: "plain", icon: null, label: "Plain" })
 
   if (chips.length === 0) return null
   return (
@@ -94,20 +112,59 @@ export function SuggestionChips({ suggestion }: { suggestion: SmartSuggestion })
   )
 }
 
-export function QuickAdd({ open: openProp, onOpenChange }: QuickAddProps = {}) {
+export function QuickAdd({ open: openProp, onOpenChange, seed = "" }: QuickAddProps = {}) {
   const [openState, setOpenState] = useState(false)
   const open = openProp ?? openState
   const setOpen = onOpenChange ?? setOpenState
 
   const [ideaText, setIdeaText] = useState("")
   const [sendToInbox, setSendToInbox] = useState(true)
+  const [bulk, setBulk] = useState(false)
+  const [plain, setPlain] = useState(false)
   const addTask = useTaskStore((state) => state.addTask)
+  const seeded = useRef<string | null>(null)
 
-  const parsed = useMemo(() => parseSmartCapture(ideaText), [ideaText])
+  useEffect(() => {
+    if (!open) {
+      seeded.current = null
+      return
+    }
+    if (!seed || seeded.current === seed) return
+    seeded.current = seed
+    setIdeaText(seed)
+    if (seed.includes("\n")) setBulk(true)
+  }, [open, seed])
+
+  const parsed = useMemo(() => parseSmartCapture(ideaText, { plain }), [ideaText, plain])
+  const readyCount = bulk ? bulkReadyCount(ideaText, plain) : 0
+
+  const closeFresh = () => {
+    setIdeaText("")
+    setBulk(false)
+    setPlain(false)
+    setSendToInbox(true)
+    setOpen(false)
+  }
+
+  const handleOpenChange = (next: boolean) => {
+    if (!next) {
+      setIdeaText("")
+      setBulk(false)
+      setPlain(false)
+      setSendToInbox(true)
+    }
+    setOpen(next)
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!ideaText.trim()) return
+
+    if (bulk) {
+      writeBulkCapture(ideaText, sendToInbox, { plain })
+      closeFresh()
+      return
+    }
 
     const { suggestion } = parsed
     const target = ensureCaptureTarget(suggestion, () => {
@@ -131,12 +188,11 @@ export function QuickAdd({ open: openProp, onOpenChange }: QuickAddProps = {}) {
         folders: useTaskStore.getState().folders,
       }),
     )
-    setIdeaText("")
-    setOpen(false)
+    closeFresh()
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button size="sm" className="b2-shell-go gap-1">
           <Plus className="h-4 w-4" />
@@ -150,32 +206,88 @@ export function QuickAdd({ open: openProp, onOpenChange }: QuickAddProps = {}) {
             <DialogTitle>Add Idea</DialogTitle>
           </div>
           <DialogDescription className="hpp-caption-lead">
-            Capture one item. Use colons for folder and list:{" "}
-            <span className="text-foreground">folder: list: the item</span>.
+            {plain ? (
+              <>
+                Plain is on. {bulk ? "Each line is" : "This line is"} stored as written — no list, folder, date, time, or priority.
+              </>
+            ) : bulk ? (
+              <>
+                One item per line. A line that ends with <span className="text-foreground">:</span> is a
+                header — <span className="text-foreground">list:</span> or{" "}
+                <span className="text-foreground">folder: list:</span>.{" "}
+                <span className="text-foreground">before 9/12:</span> stamps that due day on the lines under it.
+              </>
+            ) : (
+              <>
+                Capture one item. Use colons for folder and list:{" "}
+                <span className="text-foreground">folder: list: the item</span>.
+                A new list is created when that name is new.
+              </>
+            )}
           </DialogDescription>
         </DialogHeader>
         <div className="hpp-body">
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="idea">Idea</Label>
-              {ideaText.trim() && <SuggestionChips suggestion={parsed.suggestion} />}
-              <Input
-                id="idea"
-                placeholder="next actions: eventually: write the memoir"
-                value={ideaText}
-                onChange={(e) => setIdeaText(e.target.value)}
-                autoFocus
+            <div className="flex flex-wrap items-start gap-x-6 gap-y-2">
+              <input
+                id="quick-add-bulk"
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 rounded border border-primary"
+                checked={bulk}
+                onChange={(e) => setBulk(e.target.checked)}
               />
+              <Label htmlFor="quick-add-bulk" className="font-normal cursor-pointer">
+                Bulk
+              </Label>
+              <input
+                id="quick-add-plain"
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 rounded border border-primary"
+                checked={plain}
+                onChange={(e) => setPlain(e.target.checked)}
+              />
+              <Label htmlFor="quick-add-plain" className="font-normal cursor-pointer">
+                Plain
+              </Label>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="idea">{bulk ? "Tasks and Lists" : "Idea"}</Label>
+              {!bulk && ideaText.trim() ? <SuggestionChips suggestion={parsed.suggestion} /> : null}
+              {bulk ? (
+                <Textarea
+                  id="idea"
+                  placeholder={"Writing:\nDraft chapter 1\nEdit outline\n\nNext Actions: Eventually:\nGo through old pages"}
+                  value={ideaText}
+                  onChange={(e) => setIdeaText(e.target.value)}
+                  className="hpp-bulk-box resize-none font-mono text-sm"
+                  autoFocus
+                />
+              ) : (
+                <Input
+                  id="idea"
+                  placeholder="next actions: eventually: write the memoir"
+                  value={ideaText}
+                  onChange={(e) => setIdeaText(e.target.value)}
+                  autoFocus
+                />
+              )}
             </div>
             <SendToInboxField
               id="quick-add-inbox"
               checked={sendToInbox}
               onCheckedChange={setSendToInbox}
             />
-            <CaptureShorthandHelp variant="quick" />
-            <div className="flex justify-end">
-              <Button type="submit">
-                {parsed.suggestion.monkeyBrain ? "Add to Monkey brain" : sendToInbox ? "Add to Inbox" : "Add item"}
+            <CaptureShorthandHelp variant={bulk ? "bulk" : "quick"} />
+            <div className={bulk ? "flex items-center justify-between" : "flex justify-end"}>
+              {bulk ? <div className="text-sm text-muted-foreground">{readyCount} tasks ready</div> : null}
+              <Button type="submit" disabled={bulk && !ideaText.trim()}>
+                {bulk
+                  ? "Add Tasks"
+                  : parsed.suggestion.monkeyBrain
+                    ? "Add to Monkey brain"
+                    : sendToInbox
+                      ? "Add to Inbox"
+                      : "Add item"}
               </Button>
             </div>
           </form>

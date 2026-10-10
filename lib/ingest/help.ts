@@ -42,12 +42,12 @@ Events (whole message, or log: / intake:)
 • log categories  — numbered tracking views (a reply, not an event)
 • st: / switch task: cleaning  ·  so: / switch objective: / switch goal: read  ·  transit: the store
 • note: left room  ·  n left room  ·  jot:  ·  memo:  — Text log instant. day: stays the day jot
-• tp: opening the editor to fix the clock  ·  thought process:  ·  log: tp:  — a specialized note: the crystallized thought of this moment, not a general note. Colon required. Same clocks as a log line.
+• tp: Opening the editor to fix the clock, then the dishes, relieved it is a small fix  ·  thought process:  ·  log: tp:  — Thought process: a guiding strand of this moment, from what you are doing, to what it leads to, to how it feels. Not a general note, a one-word mood, or a short activity log such as brushed teeth. Colon required. Same clocks as a log line.
 Activity spans
 • currently deep work  ·  stopped deep work  ·  switched to cooking
 Plan / capture
 • plan for rn:  lines…  — today's plan log (stamped “from text”)
-• plain text → Inbox  ·  -mb / -monkey → Monkey brain
+• plain text → Inbox  ·  -mb / -monkey → Monkey brain  ·  -p / -plain → as written
 • gm — morning review · help  ·  info  ·  all commands
 Pair: pair: 123456  ·  Settings → Message ingest`
 
@@ -133,8 +133,9 @@ Presets:
 • so: read  |  switch objective: read  |  switch goal: read at 8:00 unknown  — Objective pen, title “objective …”
   est / estimated / ~ / unknown still mark the clock. A tracking-note clock with no am/pm is military.
 • note: left room at 8:15  |  n left room at 8:15 est  — Text log instant. day: stays the day jot.
-• tp: opening the editor to fix the clock  |  TP:  |  thought process:  |  log: tp:
-  A specialized note: the crystallized thought of this moment, not a general note.
+• tp: Opening the editor to fix the clock, then the dishes, relieved it is a small fix  |  TP:  |  thought process:  |  log: tp:
+  Thought process: a guiding strand of this moment, from what you are doing, to what it leads to, to how it feels.
+  Why you are doing something, what you expect to do next, and how it lands. Not a general note, a one-word mood, or a short activity log such as brushed teeth.
   Colon required on the verb, so bare tp and bare thought process stay capture.
   Activity instant, pen Text log, eventKind thought-process. First line is the title; lines under it are the note.
   Clocks are the same reader as a log line (parseExpectedWhen): bare clock is military, 1pm / 1:00 PM / 1:00 p.m. are 13:00, 7/4/26 is July 4, 2026.
@@ -162,6 +163,8 @@ PLAN / TO-DO / MORNING
 CAPTURE / LISTS
 • plain text or qa: → Inbox
 • -mb or -monkey on the line → Monkey brain (dump; less than Inbox)
+• -p or -plain on the line → stored as written (no list, date, time, or priority)
+• Dates, times, duration, and priority stay in the title. list: item still creates the list.
 • Name: then lines — that list. Grocery list: lands on the store list.
 • before 9/12: — following lines due that day
 • bulk: same headers, one item per line
@@ -170,7 +173,7 @@ CAPTURE / LISTS
 TRACK / LOCATION / NOTES
 • n stuck in aisle 4 — a point at send time; also on the block covering that minute
 • note: left room at 8:15 est — same clock words as log (exact unless est / estimated / ~ / unknown)
-• tp: opening the editor to fix the clock  ·  thought process:  ·  log: tp: — specialized note, the crystallized thought of this moment, not a general note. Colon required. eventKind thought-process.
+• tp: Opening the editor to fix the clock, then the dishes, relieved it is a small fix  ·  thought process:  ·  log: tp: — Thought process: a guiding strand of this moment, from what you are doing to what it leads to and how it feels. Not a general note, a one-word mood, or a short activity log such as brushed teeth. Colon required. eventKind thought-process.
 • day: tired — day jot, not a tick, and not a clock
 • at: gym  ·  tt work  ·  track: exercise 30m
 • start: write paper  ·  stop (working-now / pause)

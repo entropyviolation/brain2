@@ -136,7 +136,9 @@ function tallySavedKeyword(
 /**
  * `tp:` / `thought process:` / `log: tp:`. Same Activity instant as a note,
  * pen Text log, with `eventKind` `thought-process`. The first line is the
- * title. Later lines are `notes`. A general note stays `note:`.
+ * title: why you are doing something, what you expect next, and how it lands.
+ * Later lines are `notes`. A general note stays `note:`. A one-word mood and
+ * a short activity log stay off this verb.
  */
 export function applyThoughtProcess(payload: string, now = new Date()): ApplyResult {
   const parsed = parseThoughtPayload(payload, now)
@@ -144,7 +146,7 @@ export function applyThoughtProcess(payload: string, now = new Date()): ApplyRes
     return {
       status: "error",
       kind: "thought-process",
-      reply: "Thought process what? Example: tp: opening the editor to fix the clock",
+      reply: "Thought process what? Example: tp: Opening the editor to fix the clock, then the dishes, relieved it is a small fix.",
     }
   }
   const id = paintInstant(
@@ -165,8 +167,8 @@ export function applyThoughtProcess(payload: string, now = new Date()): ApplyRes
   return {
     status: "ok",
     kind: "thought-process",
-    reply: `Thought: ${parsed.title} · ${clockLabel(parsed.at)}`,
-    summary: `Thought → ${parsed.title}`,
+    reply: `Thought process: ${parsed.title} · ${clockLabel(parsed.at)}`,
+    summary: `Thought process → ${parsed.title}`,
     itemIds: [id],
   }
 }

@@ -66,6 +66,8 @@ function GradeLiftFields() {
   const setWeekAvg = useHabitsStore((s) => s.setWeeklyAverageBeatBonus)
   const monthAvg = useHabitsStore((s) => s.monthlyAverageBeatBonus)
   const setMonthAvg = useHabitsStore((s) => s.setMonthlyAverageBeatBonus)
+  const ritualMult = useHabitsStore((s) => s.morningRitualPointMultiplier)
+  const setRitualMult = useHabitsStore((s) => s.setMorningRitualPointMultiplier)
   useHabitsStore((s) => s.weeklyData)
   useHabitsStore((s) => s.weeklyHabitData)
   useHabitsStore((s) => s.tasks)
@@ -86,8 +88,9 @@ function GradeLiftFields() {
       <p className="hab-settings-hint">
         Yesterday pays once when today&apos;s raw daily-habit completion (partial credit) is higher.
         Last week pays once for Week grade and once for Perfect output when that rail grade beats the
-        prior full calendar week. The prior 7 days and the prior 30 days each pay once when today&apos;s
-        raw completion is above that average. 0 turns a rule off.
+        prior full calendar week.         The prior 7 days and the prior 30 days each pay once when today&apos;s
+        raw completion is above that average. Morning ritual is the × a habit
+        prioritized in today&apos;s morning review shows on its row. 0 turns a rule off.
       </p>
       <div className="hab-settings-lift-grid">
         <div className="hab-settings-lift-row">
@@ -193,6 +196,27 @@ function GradeLiftFields() {
           </div>
           <p className="hab-settings-prior">
             When today&apos;s raw completion is higher than the prior 30-day average.
+          </p>
+        </div>
+        <div className="hab-settings-lift-row">
+          <Label htmlFor="settings-morning-ritual-multiplier" className="hab-settings-label">
+            Morning ritual
+          </Label>
+          <div className="hab-settings-row">
+            <Input
+              id="settings-morning-ritual-multiplier"
+              type="number"
+              min={0}
+              max={99}
+              step={1}
+              value={ritualMult}
+              onChange={(e) => setRitualMult(Number(e.target.value))}
+              className="hab-settings-input"
+            />
+            <span className="hab-settings-unit">×</span>
+          </div>
+          <p className="hab-settings-prior">
+            Shown on a habit that today&apos;s morning review prioritized. Default ×5.
           </p>
         </div>
       </div>

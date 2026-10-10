@@ -18,7 +18,7 @@
   padding: 8px 8px 6px !important;
   overflow: hidden;
   border: none !important;
-  border-radius: 3px !important;
+  border-radius: var(--r-3, 3px) !important;
   background-color: var(--chrome-face, #c0c0c0) !important;
   background-image: var(--fascia-dialog-face) !important;
   box-shadow: var(--fascia-dialog-ring) !important;
@@ -55,7 +55,7 @@
   flex-direction: column;
   gap: 0;
   padding: 6px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: var(--chrome-face, #c0c0c0);
   box-shadow: var(--w95-sunken);
 }
@@ -63,7 +63,7 @@
 .b2-search .b2-search-field {
   height: 32px;
   border: none !important;
-  border-radius: 2px !important;
+  border-radius: var(--r-2, 2px) !important;
   background: #fff !important;
   color: #111 !important;
   box-shadow: var(--w95-field);
@@ -73,7 +73,7 @@
 }
 
 .b2-search .b2-search-field::placeholder {
-  color: #5c6064;
+  color: var(--chrome-ring);
 }
 
 .b2-search .b2-search-field:focus,
@@ -91,7 +91,7 @@
   margin-top: 6px;
   padding: 3px 8px;
   border: none;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: var(--fascia-key-face);
   box-shadow: var(--fascia-key-ring);
   color: var(--fascia-nameplate, #2a2c2e);
@@ -155,7 +155,7 @@
   max-height: 22rem;
   overflow: auto;
   overscroll-behavior: contain;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background:
     radial-gradient(ellipse at 18% 0%, rgba(125, 255, 196, 0.05), transparent 42%),
     #f3f4f5;
@@ -174,7 +174,7 @@
 .b2-search [role="listbox"] {
   background: transparent;
   box-shadow: none;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
 }
 
 .b2-search-row {
@@ -185,7 +185,7 @@
   min-height: 32px;
   margin: 0;
   padding: 4px 8px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   color: #111;
   cursor: pointer;
   transition: background-color 80ms linear, color 80ms linear;
@@ -195,7 +195,7 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #3a3e42;
+  background: var(--chrome-pressed);
   box-shadow:
     0 0 0 1px #142016,
     0 0 0 2px #9aa09c,

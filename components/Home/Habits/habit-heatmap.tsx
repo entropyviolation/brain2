@@ -11,7 +11,7 @@
  */
 "use client"
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react"
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react"
 import { type HabitFrequency, type WeeklyData, type WeeklyTask } from "@/lib/types"
 import {
   addCalendarDays,
@@ -23,7 +23,14 @@ import {
   getWeekString,
   isToday,
 } from "@/lib/date-utils"
-import { effectivePriorityWeight, habitCellRatio } from "@/lib/habit-priority"
+import {
+  autoPriorityWeight,
+  effectivePriorityWeight,
+  habitCellRatio,
+  priorityMarkPercent,
+  priorityWash,
+  priorityWashVars,
+} from "@/lib/habit-priority"
 import { isHabitGoalMet } from "@/lib/habit-utils"
 import { isMissedOpportunity, missedOpportunityEligible } from "@/lib/habit-missed-opportunity"
 import { habitHiddenWhenComplete } from "@/lib/habit-completion-source"
@@ -159,6 +166,12 @@ interface HabitHeatmapProps {
   missedOpWand?: boolean
   hideCompletedAndMissed?: boolean
   onToggleMissed?: (taskId: string, periodKey: string, missed: boolean) => void
+  /** Row percent the sheet paints. 100 hides a row the focus cell has not met. */
+  periodPercentFor?: (taskId: string) => number | null
+  highlightPriorities?: boolean
+  ritualIds?: readonly string[]
+  ritualMultiplier?: number
+  showStreakMarks?: boolean
 }
 
 export function HabitHeatmap({
@@ -175,6 +188,11 @@ export function HabitHeatmap({
   missedOpWand = false,
   hideCompletedAndMissed = false,
   onToggleMissed,
+  periodPercentFor,
+  highlightPriorities = false,
+  ritualIds = [],
+  ritualMultiplier = 0,
+  showStreakMarks = true,
 }: HabitHeatmapProps) {
   const [span, setSpan] = useState(frequency === "daily" ? 42 : 16)
   const [band, setBand] = useState({ start: 0, end: 48 })
@@ -274,6 +292,7 @@ export function HabitHeatmap({
             date: column?.date ?? asOf,
             weeklyData: data,
             exempt: isExemptKind(kind),
+            periodPercent: periodPercentFor?.(task.id),
           })
         })
       : tasks
@@ -309,6 +328,14 @@ export function HabitHeatmap({
           {padAfter > 0 ? <div style={{ gridColumn: `span ${padAfter}` }} /> : null}
           {shown.map((task) => {
             const weight = effectivePriorityWeight(task, data, asOf, frequency)
+            const neglect = autoPriorityWeight(task, data, asOf, frequency)
+            const ritual = ritualIds.includes(task.id)
+            const wash = priorityWash({
+              highlight: highlightPriorities,
+              ritual,
+              neglect,
+              selected: priorityMarkPercent(task, asOf, ritual),
+            })
             return (
               <HeatmapRow
                 key={task.id}
@@ -318,6 +345,10 @@ export function HabitHeatmap({
                 padAfter={padAfter}
                 data={data}
                 weight={weight}
+                washClass={wash.className}
+                washStyle={priorityWashVars(wash) as CSSProperties | undefined}
+                ritualMultiplier={ritual ? ritualMultiplier : 0}
+                showStreakMarks={showStreakMarks}
                 onEdit={() => onEditTask(task)}
                 exemptionWand={exemptionWand}
                 exemptionKindFor={exemptionKindFor}
@@ -347,6 +378,10 @@ function HeatmapRow({
   columns,
   data,
   weight,
+  washClass = "",
+  washStyle,
+  ritualMultiplier = 0,
+  showStreakMarks = true,
   onEdit,
   exemptionWand = false,
   exemptionKindFor,
@@ -362,6 +397,10 @@ function HeatmapRow({
   columns: HeatmapColumn[]
   data: WeeklyData
   weight: number
+  washClass?: string
+  washStyle?: CSSProperties
+  ritualMultiplier?: number
+  showStreakMarks?: boolean
   onEdit: () => void
   exemptionWand?: boolean
   exemptionKindFor?: (task: WeeklyTask, periodKey: string) => ExemptionKind
@@ -375,9 +414,16 @@ function HeatmapRow({
 }) {
   return (
     <>
-      <button type="button" className="habit-heat-name" onClick={onEdit} title="Edit habit">
+      <button
+        type="button"
+        className={`habit-heat-name${washClass ? ` ${washClass}` : ""}`}
+        style={washStyle}
+        onClick={onEdit}
+        title="Edit habit"
+      >
         <span>{task.name}</span>
-        {weight > 0 && <em>×{weight}</em>}
+        {showStreakMarks && ritualMultiplier > 0 && <em>×{ritualMultiplier}</em>}
+        {showStreakMarks && weight > 0 && <em>×{weight}</em>}
       </button>
       {padBefore > 0 ? <div style={{ gridColumn: `span ${padBefore}` }} /> : null}
       {columns.map((col) => {

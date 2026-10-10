@@ -85,7 +85,7 @@
   inset: 4px;
   z-index: 2;
   pointer-events: none;
-  border-radius: 1px;
+  border-radius: var(--r-1, 1px);
   opacity: 0;
   box-shadow:
     inset 0 0 0 1px color-mix(in srgb, #7dffc4 0%, transparent),
@@ -100,7 +100,7 @@
   inset: 5px;
   z-index: 1;
   pointer-events: none;
-  border-radius: 1px;
+  border-radius: var(--r-1, 1px);
   background: radial-gradient(
     ellipse 70% 65% at 48% 42%,
     color-mix(in srgb, #7dffc4 42%, transparent) 0%,
@@ -216,7 +216,7 @@
   padding: 2px 8px;
   min-height: 22px;
   border: 0;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background: linear-gradient(180deg, #f4f4f4, #c8c8c8 55%, #a4a4a4);
   color: #1a1c1e;
   font-size: 11px;
@@ -368,14 +368,14 @@
 }
 
 .baby-friend-grid-scroll::-webkit-scrollbar-track {
-  background: #808080;
+  background: var(--chrome-lo);
   box-shadow: inset 1px 1px 0 #000, inset -1px -1px 0 #fff;
 }
 
 .baby-friend-grid-scroll::-webkit-scrollbar-thumb {
   background: var(--chrome-face, #c0c0c0);
   box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #000;
-  border: 1px solid #808080;
+  border: 1px solid var(--chrome-lo);
 }
 
 .baby-friend-grid {
@@ -470,7 +470,7 @@
   background: #fffef2;
   color: #3c2817;
   border: 3px solid #3c2817;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   box-shadow: 3px 3px 0 #1a120c;
   font-size: 11px;
   font-weight: 700;

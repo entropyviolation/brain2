@@ -76,6 +76,41 @@ describe("ingestIncoming", () => {
     expect(task?.monkeyBrain).toBeUndefined()
   })
 
+  it("files a bulk line on its list and keeps the clock in the title", () => {
+    const result = ingestIncoming(sim("Chores:\ngo home tomorrow at 3pm"), NOW)
+    expect(result.status).toBe("ok")
+    const task = useTaskStore.getState().tasks.find((row) => row.description === "go home tomorrow at 3pm")
+    expect(task?.scheduledTime).toBe("15:00")
+    const list = useTaskStore.getState().lists.find((row) => row.name.toLowerCase() === "chores")
+    expect(list).toBeTruthy()
+    expect(task?.lists).toContain(list!.id)
+  })
+
+  it("keeps a detected day and clock in the captured title", () => {
+    const result = ingestIncoming(sim("go home tomorrow at 3pm"), NOW)
+    expect(result.status).toBe("ok")
+    const task = useTaskStore.getState().tasks.find((row) => row.description === "go home tomorrow at 3pm")
+    expect(task?.stage).toBe("inbox")
+    expect(task?.scheduledTime).toBe("15:00")
+    expect(task?.scheduledDate).toBeInstanceOf(Date)
+  })
+
+  it("stores -p and -plain as written with no list or clock", () => {
+    const flagged = ingestIncoming(sim("-p next actions: blah at 3pm"), NOW)
+    expect(flagged.status).toBe("ok")
+    if (flagged.status !== "ok") return
+    expect(flagged.reply).toMatch(/Inbox: next actions: blah at 3pm/)
+    const task = useTaskStore.getState().tasks.find((row) => row.description === "next actions: blah at 3pm")
+    expect(task?.scheduledTime).toBeUndefined()
+    expect(task?.lists ?? []).toHaveLength(0)
+    expect(useTaskStore.getState().lists.some((list) => /next actions/i.test(list.name))).toBe(false)
+
+    const checked = ingestIncoming(sim("wash the dog tomorrow -plain"), NOW)
+    expect(checked.status).toBe("ok")
+    const literal = useTaskStore.getState().tasks.find((row) => row.description === "wash the dog tomorrow")
+    expect(literal?.scheduledDate).toBeUndefined()
+  })
+
   it("sends -mb and -monkey captures to monkey brain", () => {
     const result = ingestIncoming(sim("looping thought -monkey"), NOW)
     expect(result.status).toBe("ok")

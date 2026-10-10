@@ -2,6 +2,7 @@
  * components/Home/Tracking/tracking-day-notes.tsx — Per-day notes append log
  *
  * Sits under Time Grid, Activity Log, Day Log, and Tracking log on the Home Tracking tab.
+ * The header Now popup opens the same log (`forceOpen`) without flipping Expand.
  * An append log (`lib/append-log.ts`): Submit note stamps the writing time;
  * List / Bulk / Latest (Habits `.hab-view-changer` keys); past entries cannot
  * be edited. Jots like "zoo 4–5" stay with that date while you figure out
@@ -38,13 +39,22 @@ import { setTrackingViewPrefs, useTrackingViewPrefs } from "./tracking-view-pref
 
 const notesUnsaved = () => persistKeyFailed(DAY_NOTES_PERSIST_KEY)
 
-export function TrackingDayNotes({ currentDate }: { currentDate: Date }) {
+export function TrackingDayNotes({
+  currentDate,
+  forceOpen = false,
+}: {
+  currentDate: Date
+  /** Show the composer without changing the desk's Expand preference. */
+  forceOpen?: boolean
+}) {
   const unsaved = useSyncExternalStore(subscribePersistStatus, notesUnsaved, () => false)
   const dayKey = formatLocalDateKey(currentDate)
   const setDayNotes = useTimeTrackingStore((s) => s.setDayNotes)
-  const notesOpen = useTrackingViewPrefs().notesWellExpanded
+  const notesPrefOpen = useTrackingViewPrefs().notesWellExpanded
+  const notesOpen = forceOpen || notesPrefOpen
   const [entries, setEntries] = useState<AppendLogEntry[]>(() => getDayNoteEntries(dayKey))
   const label = `Notes for ${format(currentDate, "EEEE, MMM d")}`
+  const logId = forceOpen ? "htk-day-notes-log" : "trk-day-notes-log"
 
   const reload = useCallback(() => {
     seedDayNotesPersist(useTimeTrackingStore.getState().dayNotes)
@@ -64,18 +74,20 @@ export function TrackingDayNotes({ currentDate }: { currentDate: Date }) {
   useEffect(() => subscribeDayNotesPersist(reload), [reload])
 
   return (
-    <div id="trk-day-notes" className={notesOpen ? "trk-notes trk-notes-open" : "trk-notes"}>
+    <div id={forceOpen ? undefined : "trk-day-notes"} className={notesOpen ? "trk-notes trk-notes-open" : "trk-notes"}>
       <div className="trk-notes-head">
         <p className="trk-silk trk-notes-legend">Day notes</p>
-        <button
-          type="button"
-          className="trk-notes-fold"
-          aria-expanded={notesOpen}
-          aria-controls={notesOpen ? "trk-day-notes-log" : undefined}
-          onClick={() => setTrackingViewPrefs({ notesWellExpanded: !notesOpen })}
-        >
-          {notesOpen ? "Collapse" : "Expand"}
-        </button>
+        {forceOpen ? null : (
+          <button
+            type="button"
+            className="trk-notes-fold"
+            aria-expanded={notesOpen}
+            aria-controls={notesOpen ? logId : undefined}
+            onClick={() => setTrackingViewPrefs({ notesWellExpanded: !notesOpen })}
+          >
+            {notesOpen ? "Collapse" : "Expand"}
+          </button>
+        )}
       </div>
       {unsaved && (
         <p className="trk-notes-unsaved" role="alert">
@@ -85,7 +97,7 @@ export function TrackingDayNotes({ currentDate }: { currentDate: Date }) {
       {notesOpen && (
         <>
           <p className="trk-notes-file">{label}</p>
-          <div id="trk-day-notes-log">
+          <div id={logId}>
             <AppendLog
               logKey={dayKey}
               entries={entries}

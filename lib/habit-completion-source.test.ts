@@ -104,6 +104,17 @@ describe("daily floor link", () => {
       ),
     ).toBe(false)
   })
+
+  it("treats a missing allowance as 0 and lets one daily habit sit at 0 when the allowance is 1", () => {
+    const a: WeeklyTask = { id: "a", name: "A", type: TaskType.BOOLEAN, frequency: "daily" }
+    const b: WeeklyTask = { id: "b", name: "B", type: TaskType.BOOLEAN, frequency: "daily" }
+    const mon = formatLocalDateKey(weekDates[0])
+    const oneZero = { [mon]: { a: { completed: true } } }
+    expect(dailyHabitsClearFloor([a, b], oneZero, weekDates, 0, undefined, 0)).toBe(false)
+    expect(dailyHabitsClearFloor([a, b], oneZero, weekDates, 0)).toBe(false)
+    expect(dailyHabitsClearFloor([a, b], oneZero, weekDates, 0, undefined, 1)).toBe(true)
+    expect(dailyHabitsClearFloor([a, b], {}, weekDates, 0, undefined, 1)).toBe(false)
+  })
 })
 
 describe("hide completed", () => {
@@ -129,5 +140,32 @@ describe("hide completed", () => {
     expect(habitHiddenWhenComplete(pages, { value: 10, goal: 10 }, {})).toBe(true)
     expect(habitHiddenWhenComplete(pages, { value: 9, goal: 10 }, {})).toBe(false)
     expect(habitHiddenWhenComplete(wake, undefined, { exempt: true })).toBe(true)
+  })
+
+  it("keeps a partial value and a text note, and hides a met goal or a 100% row", () => {
+    const pages: WeeklyTask = {
+      id: "pages",
+      name: "Read 30 pages",
+      type: TaskType.GOAL,
+      goal: 30,
+      frequency: "weekly",
+    }
+    expect(habitHiddenWhenComplete(pages, { value: 2, goal: 30 }, { periodPercent: 7 })).toBe(false)
+    expect(habitHiddenWhenComplete(pages, { value: 30, goal: 30 }, { periodPercent: 7 })).toBe(true)
+    const coverage: WeeklyTask = {
+      id: "coverage",
+      name: "log 75% of the week",
+      type: TaskType.GOAL,
+      goal: 75,
+      frequency: "weekly",
+    }
+    expect(habitHiddenWhenComplete(coverage, { value: 30, goal: 75 }, { periodPercent: 61 })).toBe(false)
+    expect(habitHiddenWhenComplete(coverage, { value: 75, goal: 75 }, { periodPercent: 61 })).toBe(true)
+    const note: WeeklyTask = { id: "social", name: "Something social", type: TaskType.TEXT, frequency: "weekly" }
+    expect(habitHiddenWhenComplete(note, { text: "elijah comin home" }, { periodPercent: 67 })).toBe(false)
+    expect(habitHiddenWhenComplete(note, { text: "Margot" }, { periodPercent: 100 })).toBe(true)
+    const done: WeeklyTask = { id: "laundry", name: "laundry", type: TaskType.BOOLEAN, frequency: "weekly" }
+    expect(habitHiddenWhenComplete(done, { completed: true }, { periodPercent: 33 })).toBe(true)
+    expect(habitHiddenWhenComplete(done, { completed: false }, { periodPercent: 33 })).toBe(false)
   })
 })

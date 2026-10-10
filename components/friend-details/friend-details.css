@@ -29,7 +29,7 @@
   background:
     radial-gradient(circle at 18% 0%, rgba(255, 255, 255, 0.7), transparent 28%),
     linear-gradient(180deg, #e6e6e6 0%, var(--friend-silver) 42%, #9a9a9a 100%);
-  border-radius: 18px;
+  border-radius: var(--r-18, 18px);
   box-shadow:
     inset 0 1px 0 #fff,
     inset 0 -1px 0 rgba(0, 0, 0, 0.35),
@@ -109,20 +109,20 @@
   height: 220px;
   min-height: 220px;
   padding: 6px;
-  border-radius: 14px;
+  border-radius: var(--r-14, 14px);
   background:
     radial-gradient(circle at 30% 18%, rgba(255, 255, 255, 0.85) 0 8%, transparent 22%),
     linear-gradient(165deg, #f6f6f6 0%, #c8c8c8 38%, #8c8c8c 72%, #d8d8d8 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
     inset 0 -1px 0 rgba(0, 0, 0, 0.35),
-    0 0 0 1px #0a0a0a;
+    0 0 0 1px var(--chrome-frame);
 }
 
 .friend-portrait-glow {
   position: absolute;
   inset: 8px;
-  border-radius: 8px;
+  border-radius: var(--r-8, 8px);
   pointer-events: none;
   opacity: var(--bond-glow);
   background: radial-gradient(circle at 50% 42%, rgba(125, 255, 196, 0.55), transparent 68%);
@@ -137,7 +137,7 @@
   height: calc(100% - 16px);
   object-fit: cover;
   object-position: center;
-  border-radius: 8px;
+  border-radius: var(--r-8, 8px);
   background: #c8c8c8;
 }
 
@@ -150,7 +150,7 @@
   box-shadow:
     inset 0 0 0 7px var(--friend-lace),
     inset 0 0 0 8px rgba(120, 72, 48, 0.35),
-    0 0 0 1px #0a0a0a;
+    0 0 0 1px var(--chrome-frame);
 }
 
 .friend-lace {
@@ -158,7 +158,7 @@
   inset: 8px;
   z-index: 2;
   pointer-events: none;
-  border-radius: 8px;
+  border-radius: var(--r-8, 8px);
   box-shadow: inset 0 0 0 7px var(--friend-lace);
   background:
     radial-gradient(circle, rgba(90, 52, 32, 0.45) 1px, transparent 1.6px) 0 0 / 9px 9px;
@@ -180,7 +180,7 @@
   inset: 8px;
   z-index: 2;
   pointer-events: none;
-  border-radius: 8px;
+  border-radius: var(--r-8, 8px);
   background: linear-gradient(115deg, transparent 32%, rgba(255, 255, 255, 0.55) 48%, rgba(186, 230, 255, 0.4) 54%, transparent 70%);
   background-size: 220% 100%;
   animation: friend-nacre 60s linear infinite;
@@ -190,7 +190,7 @@
 .friend-portrait.is-stamp .friend-portrait-glass {
   box-shadow:
     inset 0 0 0 2px #c4a15a,
-    0 0 0 1px #0a0a0a;
+    0 0 0 1px var(--chrome-frame);
 }
 
 .friend-portrait.is-powering .friend-portrait-photo {
@@ -279,7 +279,7 @@
 
 .friend-nixie.is-tiny {
   padding: 1px 4px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background: #1a0d00;
   font-size: 10px;
 }
@@ -329,7 +329,7 @@
   align-items: center;
   gap: 0 6px;
   padding: 4px 8px;
-  border-radius: 6px;
+  border-radius: var(--r-6, 6px);
   background: var(--friend-lcd);
   color: var(--friend-glow);
   box-shadow: inset 0 0 0 1px #1d3a2c, 0 1px 0 rgba(255, 255, 255, 0.4);
@@ -383,7 +383,7 @@
   flex-direction: column;
   gap: 6px;
   padding: 8px;
-  border-radius: 10px;
+  border-radius: var(--r-10, 10px);
   background: rgba(255, 255, 255, 0.35);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.7), inset 0 0 0 2px rgba(0, 0, 0, 0.12);
 }
@@ -428,7 +428,7 @@
 .friend-due {
   margin-left: auto;
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--r-4, 4px);
   background: #0a1c33;
   color: var(--friend-nixie);
   font-family: ui-monospace, Menlo, Consolas, monospace;
@@ -444,7 +444,7 @@
 
 .friend-key {
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--r-6, 6px);
   padding: 4px 8px;
   background: linear-gradient(180deg, #f3f3f3, #b5b5b5 55%, #8f8f8f);
   color: var(--friend-ink);
@@ -486,7 +486,7 @@
   justify-content: space-between;
   width: 100%;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--r-8, 8px);
   padding: 6px 8px;
   background: linear-gradient(180deg, #f7f7f7, #cfcfcf 55%, #b0b0b0);
   box-shadow: inset 0 1px 0 #fff, 0 1px 0 #6a6a6a;
@@ -520,7 +520,7 @@
   gap: 8px;
   overflow: auto;
   padding: 14px;
-  border-radius: 14px;
+  border-radius: var(--r-14, 14px);
   color: #d7ffe9;
   background:
     radial-gradient(circle at 20% 0%, rgba(159, 212, 255, 0.14), transparent 36%),
@@ -573,7 +573,7 @@
 .friend-mission-pop-task {
   align-self: flex-start;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--r-6, 6px);
   padding: 6px 8px;
   background: #f4f4f4;
   color: #1c140f;
@@ -597,7 +597,7 @@
   margin: 0;
   padding: 4px 8px 4px;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--r-10, 10px);
   background: rgba(255, 255, 255, 0.28);
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.65);
 }
@@ -687,7 +687,7 @@
   flex-direction: column;
   gap: 2px;
   padding: 4px 6px 6px;
-  border-radius: 8px;
+  border-radius: var(--r-8, 8px);
   background: rgba(0, 0, 0, 0.08);
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.22);
 }
@@ -735,7 +735,7 @@
 .friend-fader-lcd {
   min-width: 1.8rem;
   padding: 0 3px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: #0a1c33;
   color: #9fd4ff;
   font-family: ui-monospace, Menlo, Consolas, monospace;
@@ -752,7 +752,7 @@
   position: relative;
   width: 22px;
   height: 96px;
-  border-radius: 4px;
+  border-radius: var(--r-4, 4px);
   background:
     repeating-linear-gradient(180deg, transparent 0 7px, rgba(255, 255, 255, 0.08) 7px 8px),
     linear-gradient(180deg, #1c1c1c, #070707);
@@ -767,7 +767,7 @@
   right: 9px;
   bottom: 4px;
   height: calc((100% - 16px) * var(--fader, 0) / 100);
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: linear-gradient(180deg, #e8fff4, #3ecf8e 42%, #146b45);
 }
 
@@ -781,7 +781,7 @@
   right: 1px;
   height: 12px;
   bottom: calc((100% - 16px) * var(--fader, 0) / 100);
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: linear-gradient(180deg, #fff 0%, #d4d4d4 40%, #8e8e8e 100%);
   box-shadow: inset 0 1px 0 #fff, 0 1px 0 #000, 0 2px 2px rgba(0, 0, 0, 0.35);
   pointer-events: none;
@@ -891,10 +891,10 @@
 .friend-bead-input,
 .friend-tray select {
   border: 0;
-  border-radius: 4px;
+  border-radius: var(--r-4, 4px);
   padding: 3px 6px;
   background: #fff;
-  box-shadow: inset 1px 1px 0 #808080;
+  box-shadow: inset 1px 1px 0 var(--chrome-lo);
   color: var(--friend-ink);
   font-size: 12px;
 }
@@ -928,7 +928,7 @@
 
 .friend-keeps li.is-earned {
   background: linear-gradient(180deg, #f7f7f7, #d0d0d0);
-  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #808080, 1px 1px 0 #000;
+  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 var(--chrome-lo), 1px 1px 0 #000;
 }
 
 .friend-keeps li.is-trace {
@@ -946,7 +946,7 @@
   min-height: 0;
   overflow: visible;
   padding: 6px 8px;
-  border-radius: 8px;
+  border-radius: var(--r-8, 8px);
   background: var(--friend-lcd);
   color: var(--friend-glow);
   box-shadow: inset 0 0 0 1px #1d3a2c;
@@ -1033,14 +1033,14 @@
 }
 
 .friend-lamp.is-expired {
-  background: #3a3a3a;
+  background: var(--chrome-ink-deep);
   box-shadow: none;
 }
 
 .friend-lamp.is-done {
   width: 7px;
   height: 7px;
-  border-radius: 1px;
+  border-radius: var(--r-1, 1px);
   background: linear-gradient(135deg, #eafff6, #3ecf8e 46%, #0c5a3c);
   transform: rotate(45deg);
   box-shadow: 0 0 4px var(--friend-glow);
@@ -1177,7 +1177,7 @@
   pointer-events: none;
   border-top: 2px solid rgba(255, 255, 255, 0.85);
   border-left: 2px solid rgba(255, 255, 255, 0.85);
-  border-radius: 14px 0 0 0;
+  border-radius: var(--r-14, 14px) var(--r-0, 0px) var(--r-0, 0px) var(--r-0, 0px);
   box-shadow: inset 6px 6px 0 rgba(255, 255, 255, 0.28);
 }
 
@@ -1225,7 +1225,7 @@
   z-index: 3;
   width: 10px;
   height: 10px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: linear-gradient(145deg, #fff, #b9b9b9 55%, #6e6e6e);
   box-shadow: inset 0 1px 0 #fff, 0 1px 0 #333;
 }
@@ -1317,7 +1317,7 @@
   flex-direction: column;
   gap: 6px;
   padding: 8px;
-  border-radius: 10px;
+  border-radius: var(--r-10, 10px);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.45), rgba(0, 0, 0, 0.05));
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
 }
@@ -1340,7 +1340,7 @@
   width: 7px;
   height: 16px;
   border-radius: 99px;
-  background: linear-gradient(90deg, #1a1a1a, #3a3a3a 40%, #111);
+  background: linear-gradient(90deg, #1a1a1a, var(--chrome-ink-deep) 40%, #111);
   box-shadow: inset 0 0 0 1px #000, inset 2px 0 1px rgba(255, 255, 255, 0.2);
 }
 
@@ -1380,7 +1380,7 @@
 
 .friend-tabs button {
   border: 0;
-  border-radius: 6px 6px 0 0;
+  border-radius: var(--r-6, 6px) var(--r-6, 6px) var(--r-0, 0px) var(--r-0, 0px);
   padding: 4px 8px;
   background: linear-gradient(180deg, #efefef, #bdbdbd);
   box-shadow: inset 0 1px 0 #fff;
@@ -1489,13 +1489,13 @@
     linear-gradient(rgba(125, 255, 196, 0.18) 1px, transparent 1px) 0 0 / 100% 8px,
     linear-gradient(90deg, rgba(125, 255, 196, 0.18) 1px, transparent 1px) 0 0 / 12px 100%,
     #07140f;
-  border-radius: 4px;
+  border-radius: var(--r-4, 4px);
 }
 
 .friend-journal.is-playlist {
   background: #07140f;
   color: #d7ffe9;
-  border-radius: 8px;
+  border-radius: var(--r-8, 8px);
   padding: 6px;
 }
 
@@ -1503,7 +1503,7 @@
 .friend-journal.is-playlist h4 {
   margin: 0;
   padding: 2px 6px;
-  background: repeating-linear-gradient(90deg, #2a2a2a 0 2px, #3a3a3a 2px 4px);
+  background: repeating-linear-gradient(90deg, #2a2a2a 0 2px, var(--chrome-ink-deep) 2px 4px);
   color: #d7ffe9;
   font-size: 10px;
 }
@@ -1550,7 +1550,7 @@
   background:
     repeating-linear-gradient(90deg, transparent 0 6px, rgba(62, 207, 142, 0.35) 6px 7px),
     repeating-linear-gradient(0deg, transparent 0 6px, rgba(62, 207, 142, 0.35) 6px 7px);
-  color: #3a3a3a;
+  color: var(--chrome-ink-deep);
 }
 
 .friend-cameo {
@@ -1581,7 +1581,7 @@
   bottom: 10px;
   width: 8px;
   height: 8px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: #3ecf8e;
   box-shadow: 0 0 6px #7dffc4;
   pointer-events: none;

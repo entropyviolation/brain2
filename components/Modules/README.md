@@ -96,11 +96,11 @@ Full contract, install ladder, manifest shape, and migration plan:
 | `workspace/filmrecs/PosterCard.tsx` | Poster card with iTunes lazy fallback |
 | `workspace/filmrecs/film-dna.css` | Letterboxd-adjacent Film DNA styles |
 | `workspace/housecleaning/TidyView.tsx` | **Tidy** house-cleaning mini-app (areas, stuck mode, plans) |
-| `workspace/housecleaning/tidy.css` | Scoped port of the Tidy stylesheet |
+| `workspace/housecleaning/tidy.css` | Scoped port of the Tidy stylesheet. Card, field, and button corners follow Bouba/Kiki (`--r-10` where the local `--r` was `10px`) |
 | `workspace/gradsearch/GradSearchView.tsx` | **GradSearch** program explorer (shadow-DOM port of the standalone app) |
 | `workspace/gradsearch/engine.ts` | Search, filter, sort, score, compare, verify, favorites, hide |
 | `workspace/gradsearch/data.json` | Bundled catalog (the gradsearch `data.js` store) |
-| `workspace/gradsearch/shell.ts` / `styles.ts` | Original markup and stylesheet, mounted in the shadow root |
+| `workspace/gradsearch/shell.ts` / `styles.ts` | Original markup and stylesheet, mounted in the shadow root. Control and window corners inherit the Bouba/Kiki tokens (`--r-14` where a local `--radius` was `14px`; `--r-11` and `--r-20px` are the radii the first census missed). Dots stay `50%` |
 | `lib/itinerary-migrate.ts` *(lib)* | Best-effort upgrade of older Itinerary workspaces to the v2 view set |
 
 ## Data

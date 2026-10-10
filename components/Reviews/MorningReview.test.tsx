@@ -1,7 +1,9 @@
 import { render, screen, fireEvent } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
+import { useHabitsStore } from "@/lib/habits-store"
 import { useReviewsStore } from "@/lib/reviews-store"
+import { TaskType } from "@/lib/types"
 import { useSleepStore } from "@/lib/sleep-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { MorningReviewDialog } from "./MorningReview"
@@ -119,6 +121,17 @@ describe("MorningReviewDialog", () => {
     expect(morning?.bestDayWhy).toBeUndefined()
     expect(morning?.gratitude).toBeUndefined()
     expect(screen.getByText(/Unanswered questions stay open/)).toBeTruthy()
+  })
+
+  it("a ritual toggle logs Selected from day ritual", () => {
+    useHabitsStore.getState().setTasks([
+      { id: "water", name: "Drink water", type: TaskType.BOOLEAN, frequency: "daily", rewardValue: 10 },
+    ])
+    render(<MorningReviewDialog open onClose={() => {}} date={TODAY} />)
+    fireEvent.click(screen.getByRole("checkbox", { name: "Drink water" }))
+    const habit = useHabitsStore.getState().tasks.find((task) => task.id === "water")
+    expect(habit?.priorityLog?.[0]).toContain("Selected from day ritual")
+    expect(habit?.priorityLog?.[0]).toContain("Sep 17")
   })
 
   it("opens another day and shows that day's saved review", () => {

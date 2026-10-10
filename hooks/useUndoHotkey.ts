@@ -6,7 +6,7 @@
  * redo. Typing targets keep the browser's native undo — reversing a painted
  * block must not steal Cmd+Z from a time field or a notes box.
  *
- * Mounted once from `app/page.tsx` so Home, the header Tracking dialog, and
+ * Mounted once from `app/page.tsx` so Home, the header Now dialog, and
  * every other tab share the same stack. While Tracking is the active Home tab
  * (or the header dialog is open), `components/Home/Tracking/tracking-undo.ts`
  * also listens in the capture phase so a focused timegrid still pops this

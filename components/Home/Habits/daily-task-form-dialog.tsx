@@ -67,7 +67,7 @@ export function TaskFormDialog({
           <button
             ref={sand.originRef}
             type="button"
-            className="habit95-title-btn"
+            className="habit95-title-btn b2-close-key"
             aria-label="Close"
             onClick={guard.requestClose}
           >

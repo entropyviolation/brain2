@@ -4,11 +4,16 @@
  * The single page of the app. Renders the pinned full-width mill title bar
  * (`AppHeader`: BRAIN2 caption + Nav Back/Forward + today's-friend jewel +
  * grouped press keys) and the top-level tab bar (`data-ui-name="App tabs"`:
- * Home, Lists, Docs, Scheduler, Operations, Modules, Analytics), lazy-loading
- * each module panel. Item detail fills the desk *below* the pin bar — the
- * header stays mounted, and the tab desk stays mounted (hidden) so Lists can
- * jump back in place without rebuilding its task index. Global hotkeys:
- * Cmd/Ctrl-K search, Cmd/Ctrl-Shift-K quick capture, Cmd/Ctrl-Z undo last
+ * Home, Lists, Docs, Scheduler, Operations, Modules, Analytics) as one stuck
+ * stack (`.b2-app-pin`): the bay sits flush under the fascia and keeps the
+ * desk container's width, so the keys do not grow. Each module panel
+ * lazy-loads below that stack. Item detail fills the desk *below* the pin —
+ * the header stays mounted, the tab keys hide, and the tab desk stays mounted
+ * (hidden) so Lists can jump back in place without rebuilding its task index.
+ * `CaptureDoorHost`
+ * keeps Ingest, From Notes, and Phone Notes mounted so the Settings and Lists
+ * settings buttons open that one popup. Global hotkeys:
+ * Cmd/Ctrl-K search, Cmd/Ctrl-Shift-A Quick Add, Cmd/Ctrl-Z undo last
  * Home/Tracking action. On mount, `useDayScheduleRollover` settles past
  * periods and `useProcessInboxTodo` adds today's "process inbox information"
  * To Do when the revisit Inbox has more than 100 open ideas.
@@ -26,6 +31,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useMessageIngest } from "@/hooks/useMessageIngest"
 import { AppHeader } from "@/components/AppHeader"
 import type { SearchSelection } from "@/components/Search/GlobalSearch"
+import { CaptureDoorHost } from "@/components/capture-doors"
 import { useGlobalSearchHotkey } from "@/components/Search/useGlobalSearchHotkey"
 import { useTaskStore } from "@/lib/task-store"
 import { useQuickCaptureHotkey } from "@/hooks/useQuickCaptureHotkey"
@@ -242,27 +248,23 @@ export default function Home() {
     <>
     <PenSettingsHost />
     <main className="min-h-screen bg-background">
-      <AppHeader
-        onTaskSelect={handleTaskSelect}
-        captureOpen={capture.open}
-        onCaptureOpenChange={capture.setOpen}
-      />
-      <div className="container mx-auto px-6 py-6 sm:px-8 lg:px-12">
-        <PersistStatusBanner />
-        {/* Keep the desk mounted under full-page item detail so Lists (and its
-            task index) stay warm — jumping to a list from a chip must not rebuild
-            the vault from a cold remount. */}
-        {selectedTaskId ? (
-          <Suspense fallback={<LoadingFallback />}>
-            <EnhancedTaskDetail taskId={selectedTaskId} onBack={handleBackToList} />
-          </Suspense>
-        ) : null}
-        <div
-          className={selectedTaskId ? "hidden" : undefined}
-          aria-hidden={selectedTaskId ? true : undefined}
-          data-testid="app-desk"
-        >
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+        {/* Header and the tab bay share one sticky stack. The bay uses the
+            same container inset as the desk, so the keys stay the width they
+            already are. Item detail hides the bay; the header stays. */}
+        <div className="b2-app-pin">
+          <AppHeader
+            onTaskSelect={handleTaskSelect}
+            captureOpen={capture.open}
+            onCaptureOpenChange={capture.setOpen}
+            captureSeed={capture.seed}
+            onOpenSearch={() => setSearchOpen(true)}
+          />
+          <div
+            className={selectedTaskId ? "hidden" : "container mx-auto px-6 sm:px-8 lg:px-12"}
+            hidden={selectedTaskId ? true : undefined}
+            aria-hidden={selectedTaskId ? true : undefined}
+          >
             <TabsList
               className="flex w-full"
               data-ui-name="App tabs"
@@ -277,7 +279,23 @@ export default function Home() {
               <TabsTrigger value="modules" data-tab="modules">Modules</TabsTrigger>
               <TabsTrigger value="analytics" data-tab="analytics">Analytics</TabsTrigger>
             </TabsList>
-
+          </div>
+        </div>
+      <div className={`container mx-auto px-6 sm:px-8 lg:px-12 ${selectedTaskId ? "py-6" : "pb-6"}`}>
+        <PersistStatusBanner />
+        {/* Keep the desk mounted under full-page item detail so Lists (and its
+            task index) stay warm — jumping to a list from a chip must not rebuild
+            the vault from a cold remount. */}
+        {selectedTaskId ? (
+          <Suspense fallback={<LoadingFallback />}>
+            <EnhancedTaskDetail taskId={selectedTaskId} onBack={handleBackToList} />
+          </Suspense>
+        ) : null}
+        <div
+          className={selectedTaskId ? "hidden" : undefined}
+          aria-hidden={selectedTaskId ? true : undefined}
+          data-testid="app-desk"
+        >
             {warm.includes("home") && (
               <DeskTab tab="home" active={activeTab === "home"}>
                 <HomeDashboard />
@@ -313,10 +331,11 @@ export default function Home() {
                 <EnhancedAnalytics />
               </DeskTab>
             )}
-          </Tabs>
         </div>
       </div>
+      </Tabs>
     </main>
+    <CaptureDoorHost />
     {searchOpen ? (
       <Suspense fallback={null}>
         <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} onSelect={handleSearchSelect} />

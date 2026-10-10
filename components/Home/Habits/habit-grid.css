@@ -1,19 +1,23 @@
-/* Compact Daily habit spreadsheet — name is capped; leftover width feeds day columns. */
+/* Compact spreadsheet. Columns keep their widths. The control panel is a
+   fixed 196px; this sheet does not leave a padded frame inside the well. */
 
 .habit-grid-wrap {
-  width: 100%;
+  width: max-content;
+  max-width: 100%;
   min-width: 0;
   /* The Habits Tab Control Panel pins Willpower gems at the bottom; the sheet scrolls in `.hab-well`.
      Wrap overflow stays visible so the well, not a nested inner scroller, is the pane.
      A nested overflow would also stop the header and totals rows from sticking to that well.
-     Air sits above the sheet only. Padding under the table, or on the bottom of the well,
+     No padding: the header sits flush on the well, and padding under the table
      would leave a strip where a scrolled row shows through beneath the sticky totals. */
   overflow: visible;
-  padding: 4px 0 0;
+  padding: 0;
 }
 
 .habit-grid {
-  width: 100%;
+  width: max-content;
+  margin-left: 0;
+  margin-right: auto;
   table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
@@ -41,12 +45,16 @@
 }
 
 /* Totals stick to the bottom of `.hab-well` the way the header sticks to the top.
+   The row is the sticky box — sticking the cells misses in this scrollport.
    Solid chrome so a row cannot show through. Overflow stays the cell default
    (visible) so the glass percent tubes are not clipped. */
-.habit-grid tbody tr.habit-grid-foot td {
+.habit-grid tbody tr.habit-grid-foot {
   position: sticky;
   bottom: 0;
   z-index: 4;
+}
+
+.habit-grid tbody tr.habit-grid-foot td {
   background-color: var(--chrome-mid, #dfdfdf);
   box-shadow: 0 -1px 0 var(--chrome-mid, #dfdfdf);
 }
@@ -74,8 +82,9 @@
 }
 
 .habit-grid .col-day {
-  width: auto;
-  min-width: 7.5rem;
+  width: 5.375rem;
+  min-width: 5.375rem;
+  max-width: 5.375rem;
   text-align: center;
   overflow: visible;
 }
@@ -90,13 +99,14 @@
 }
 
 .habit-grid.is-day-view .col-name {
-  width: auto;
+  width: 16rem;
   min-width: 16rem;
 }
 
 .habit-grid.is-day-view .col-day {
-  width: auto;
+  width: 12rem;
   min-width: 12rem;
+  max-width: 12rem;
 }
 
 .habit-grid.is-day-view .col-pct {
@@ -231,21 +241,44 @@
 }
 
 .habit-cell-stack {
+  position: relative;
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 1px;
+  align-items: center;
   width: 100%;
+  height: 22px;
   min-width: 0;
   max-width: 100%;
-  /* PROG shares this cell with the number. Containing the inline size stops
-     that label from becoming the column's min-content and shoving the row tube. */
+  /* PROG shares the value line. Containing the inline size stops that label
+     from becoming the column's min-content and shoving the row percent tube. */
   contain: inline-size;
 }
 
+/* Tube row is one height. The value line stays a normal 22px field; a 4px band
+   and the 6px tube sit under it (32px). The stack fills the cell so tubes share
+   one bottom edge when the name wraps taller. */
+.habit-grid tbody tr:has(.habit-cell-tube) > td {
+  height: 1px;
+}
+
+.habit-cell-stack:has(.habit-cell-tube) {
+  align-items: flex-start;
+  height: 100%;
+  min-height: 32px;
+  max-height: none;
+}
+
+.habit-cell-stack:has(.habit-cell-tube) .habit-cell-num {
+  align-self: flex-start;
+  flex: 0 0 auto;
+  height: 22px;
+  min-height: 22px;
+  max-height: 22px;
+}
+
 .habit-cell-pace {
-  display: block;
-  max-width: 100%;
+  flex: 0 1 auto;
+  min-width: 0;
+  margin-left: auto;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -258,24 +291,37 @@
 }
 
 .habit-cell-tube {
-  position: relative;
+  --hab-led-tint: #7e14ff;
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 0;
+  z-index: 1;
   display: block;
-  width: 3.4rem;
-  height: 4px;
+  box-sizing: border-box;
+  width: auto;
+  height: 6px;
+  pointer-events: none;
   border-radius: 999px;
   overflow: hidden;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(198, 210, 214, 0.5));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(176, 168, 188, 0.38));
   box-shadow:
-    inset 0 1px 1px rgba(255, 255, 255, 0.95),
-    inset 0 -1px 1px rgba(60, 80, 96, 0.28),
-    0 0 0 1px rgba(80, 96, 104, 0.4);
+    inset 0 1px 1px rgba(255, 255, 255, 0.9),
+    inset 0 -1px 1px color-mix(in srgb, var(--hab-led-tint) 35%, rgba(40, 24, 48, 0.35)),
+    0 0 0 1px color-mix(in srgb, var(--hab-led-tint) 42%, rgba(48, 36, 64, 0.55));
 }
 
 .habit-cell-mercury {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(180deg, #e7fff6, #3d9a86 55%, #1c6d5e);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--hab-led-tint) 78%, #fff) 0%,
+    var(--hab-led-tint) 42%,
+    color-mix(in srgb, var(--hab-led-tint) 82%, #140818) 100%
+  );
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--hab-led-tint) 28%, #fff);
 }
 
 .habit-cell-num {
@@ -288,6 +334,14 @@
   box-sizing: border-box;
 }
 
+.habit-cell-num:has(.habit-cell-pace) {
+  overflow: hidden;
+}
+
+.habit-cell-num:has(.habit-cell-pace) .habit-goal {
+  flex: 0 0 auto;
+}
+
 /* One hardware slot for every tracked/ratio cell — size does not follow the suffix. */
 .habit-grid .habit-cell-num input.habit-cell-slot,
 .habit-grid input.habit-cell-slot {
@@ -297,13 +351,58 @@
   min-width: 3.4rem;
   max-width: 3.4rem;
   height: 22px;
+  min-height: 22px;
+  max-height: 22px;
   margin: 0;
   padding: 0 5px;
   font-size: 12px;
   line-height: 20px;
   font-variant-numeric: tabular-nums;
   text-align: right;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
+}
+
+/* Same slight corner as a filled note. Beats the Win95 square on `.rounded-md`.
+   The sunken field shadow stays — only the point softens. */
+body.win95-app .habit-grid input.habit-cell-slot,
+body.win95-app .habit-grid button.habit-cell-text-preview {
+  border-radius: var(--r-2, 2px);
+}
+
+/* Hatch, lamp slot, and note fields grow with the tube row. The number stays 22px. */
+.habit-grid tbody tr:has(.habit-cell-tube) .habit-lamp-cell {
+  height: 100%;
+  min-height: 32px;
+  max-height: none;
+}
+
+.habit-grid tbody tr:has(.habit-cell-tube) td.col-day.is-exempt,
+.habit-grid tbody tr:has(.habit-cell-tube) td.col-day.is-exempt.habit-day-today {
+  padding: 0;
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      #c8c8c8,
+      #c8c8c8 3px,
+      #b0b0b0 3px,
+      #b0b0b0 6px
+    );
+}
+
+.habit-grid tbody tr:has(.habit-cell-tube) .habit-exempt {
+  height: 100%;
+  min-height: 100%;
+  border-radius: var(--r-0, 0px);
+}
+
+.habit-grid tbody tr:has(.habit-cell-tube) input.habit-cell-slot.habit-cell-slot-text,
+.habit-grid tbody tr:has(.habit-cell-tube) button.habit-cell-text-preview,
+body.win95-app .habit-grid tbody tr:has(.habit-cell-tube) input.habit-cell-slot.habit-cell-slot-text {
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 32px;
+  max-height: none;
+  max-width: none;
 }
 
 .habit-grid input.habit-cell-slot.habit-cell-slot-text,
@@ -324,14 +423,14 @@
   white-space: nowrap;
   text-overflow: ellipsis;
   border: none;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: #fff;
   color: #000;
   font: inherit;
   font-size: 12px;
   line-height: 20px;
   cursor: text;
-  box-shadow: inset 1px 1px 0 #808080, inset -1px -1px 0 #fff;
+  box-shadow: inset 1px 1px 0 var(--chrome-lo), inset -1px -1px 0 #fff;
 }
 
 .habit-text-editor-layer {
@@ -358,10 +457,10 @@
   flex-direction: column;
   gap: 6px;
   padding: 8px;
-  background: #c0c0c0;
+  background: var(--chrome-face);
   color: #000;
   font-family: var(--w95-font, Tahoma, "MS Sans Serif", Geneva, Verdana, sans-serif);
-  box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px #808080, inset 2px 2px #dfdfdf,
+  box-shadow: inset -1px -1px var(--chrome-frame), inset 1px 1px #fff, inset -2px -2px var(--chrome-lo), inset 2px 2px var(--chrome-mid),
     3px 3px 0 rgba(0, 0, 0, 0.28);
 }
 
@@ -373,13 +472,13 @@
   margin: 0;
   padding: 6px 8px;
   border: none;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   background: #fff;
   color: #000;
   font: inherit;
   font-size: 13px;
   line-height: 1.35;
-  box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px #808080;
+  box-shadow: inset -1px -1px #fff, inset 1px 1px var(--chrome-frame), inset -2px -2px var(--chrome-mid), inset 2px 2px var(--chrome-lo);
 }
 
 .habit-text-editor-bar {
@@ -392,11 +491,11 @@
   height: 22px;
   padding: 0 10px;
   border: none;
-  background: #c0c0c0;
+  background: var(--chrome-face);
   color: #000;
   font: inherit;
   font-size: 12px;
-  box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px #808080, inset 2px 2px #dfdfdf;
+  box-shadow: inset -1px -1px var(--chrome-frame), inset 1px 1px #fff, inset -2px -2px var(--chrome-lo), inset 2px 2px var(--chrome-mid);
   cursor: pointer;
 }
 
@@ -466,7 +565,7 @@
 .habit-grid thead .habit-day-today {
   background: #c8d5ce;
   color: #111;
-  box-shadow: inset 1px 1px #808080, inset -1px -1px #fff;
+  box-shadow: inset 1px 1px var(--chrome-lo), inset -1px -1px #fff;
 }
 
 .habit-grid thead .habit-day-today .habit-day-sub {
@@ -497,8 +596,8 @@
   min-width: 0;
   padding: 4px 8px;
   border: none;
-  background: #c0c0c0;
-  box-shadow: inset 1px 1px 0 #808080, inset -1px -1px 0 #fff;
+  background: var(--chrome-face);
+  box-shadow: inset 1px 1px 0 var(--chrome-lo), inset -1px -1px 0 #fff;
   font-size: 11px;
   cursor: pointer;
   appearance: none;
@@ -527,13 +626,13 @@
 .habit-good-days-of {
   font-size: 11px;
   font-weight: 500;
-  color: #404040;
+  color: var(--chrome-ink-soft);
 }
 
 .habit-good-days-divider {
   width: 1px;
   align-self: stretch;
-  background: #808080;
+  background: var(--chrome-lo);
   box-shadow: 1px 0 0 #fff;
 }
 
@@ -585,9 +684,9 @@
   align-items: center;
   gap: 6px;
   padding: 6px 8px;
-  border-radius: 3px;
-  background: #c0c0c0;
-  box-shadow: inset 1px 1px #808080, inset -1px -1px #fff;
+  border-radius: var(--r-3, 3px);
+  background: var(--chrome-face);
+  box-shadow: inset 1px 1px var(--chrome-lo), inset -1px -1px #fff;
 }
 
 .habit-week-nav-range {
@@ -628,7 +727,7 @@ body.win95-app .habit-gem-socket:active,
   height: 20px;
   padding: 0;
   border: none;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: transparent;
   box-shadow: none;
   cursor: pointer;
@@ -644,7 +743,7 @@ body.win95-app .habit-gem-socket:active,
 }
 
 .habit-gem-socket:active {
-  box-shadow: inset 1px 1px 0 #808080, inset -1px -1px 0 #fff;
+  box-shadow: inset 1px 1px 0 var(--chrome-lo), inset -1px -1px 0 #fff;
 }
 
 .habit-gem-socket:active .habit-gem-press {
@@ -672,20 +771,20 @@ body.win95-app .habit-gem-socket:active,
   text-transform: uppercase;
   padding: 5px 12px 6px;
   color: #1c1e20;
-  background: #c0c0c0;
+  background: var(--chrome-face);
   border: none;
-  border-radius: 2px;
-  box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px #808080, inset 2px 2px #dfdfdf;
+  border-radius: var(--r-2, 2px);
+  box-shadow: inset -1px -1px var(--chrome-frame), inset 1px 1px #fff, inset -2px -2px var(--chrome-lo), inset 2px 2px var(--chrome-mid);
   cursor: pointer;
 }
 
 .habit-chrome-btn:active {
-  box-shadow: inset 1px 1px #0a0a0a, inset -1px -1px #fff, inset 2px 2px #808080, inset -2px -2px #dfdfdf;
+  box-shadow: inset 1px 1px var(--chrome-frame), inset -1px -1px #fff, inset 2px 2px var(--chrome-lo), inset -2px -2px var(--chrome-mid);
 }
 
 .habit-chrome-btn.is-on {
   background: #d4d4d4;
-  box-shadow: inset 1px 1px #808080, inset -1px -1px #fff;
+  box-shadow: inset 1px 1px var(--chrome-lo), inset -1px -1px #fff;
 }
 
 .habit-prio-chip {
@@ -703,8 +802,8 @@ body.win95-app .habit-gem-socket:active,
   flex-direction: column;
   gap: 6px;
   padding: 8px;
-  background: #c0c0c0;
-  box-shadow: inset 1px 1px #808080, inset -1px -1px #fff;
+  background: var(--chrome-face);
+  box-shadow: inset 1px 1px var(--chrome-lo), inset -1px -1px #fff;
 }
 
 .habit-priority-math-toggle {
@@ -730,7 +829,7 @@ body.win95-app .habit-gem-socket:active,
   font-size: 11px;
   padding: 6px;
   background: #fff;
-  box-shadow: inset 1px 1px #808080, inset -1px -1px #fff;
+  box-shadow: inset 1px 1px var(--chrome-lo), inset -1px -1px #fff;
 }
 
 /* Heatmap: a small handheld screen set into the metal well.
@@ -739,8 +838,9 @@ body.win95-app .habit-gem-socket:active,
 .habit-heat {
   min-width: 0;
   max-width: 100%;
+  /* The pane bounds this screen. The mosaic scrolls in `.habit-heat-scroll`. */
   padding: 7px 7px 6px;
-  border-radius: 4px;
+  border-radius: var(--r-4, 4px);
   background:
     linear-gradient(180deg, #f4f6f3 0%, #e3e6e2 46%, #d0d3cf 100%);
   box-shadow:
@@ -756,7 +856,7 @@ body.win95-app .habit-gem-socket:active,
   overflow-y: hidden;
   overscroll-behavior-x: contain;
   padding: 7px 6px 6px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     linear-gradient(180deg, #e8f1e4 0%, #d5e4d1 42%, #c9d9c5 100%);
   box-shadow:
@@ -778,7 +878,7 @@ body.win95-app .habit-gem-socket:active,
   z-index: 2;
   background: #e7ebe4;
   min-height: 28px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   box-shadow:
     inset 0 1px 0 #ffffff,
     inset 0 -1px 0 #b7bdb4;
@@ -796,7 +896,7 @@ body.win95-app .habit-gem-socket:active,
   transform-origin: center;
   height: 28px;
   background: #e7ebe4;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   box-shadow:
     inset 0 1px 0 #ffffff,
     inset 0 -1px 0 #b7bdb4;
@@ -822,7 +922,7 @@ body.win95-app .habit-gem-socket:active,
   min-height: 22px;
   padding: 2px 8px;
   border: none;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background: #e7ebe4;
   color: #142018;
   font: inherit;
@@ -850,7 +950,7 @@ body.win95-app .habit-gem-socket:active,
 .habit-heat-cell {
   width: 14px;
   height: 14px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background-color: #e4ebe8;
   box-shadow: inset 0 0 0 1px rgba(70, 96, 94, 0.22);
 }
@@ -898,15 +998,15 @@ button.habit-heat-cell {
   display: grid;
   gap: 8px;
   padding: 8px 10px;
-  background: #c0c0c0;
-  box-shadow: inset 1px 1px 0 #808080, inset -1px -1px 0 #fff;
+  background: var(--chrome-face);
+  box-shadow: inset 1px 1px 0 var(--chrome-lo), inset -1px -1px 0 #fff;
 }
 
 .good-days-averages-note {
   margin: 0;
   font-size: 11px;
   line-height: 1.35;
-  color: #3a3a3a;
+  color: var(--chrome-ink-deep);
 }
 
 .good-days-averages-grid {
@@ -962,4 +1062,170 @@ button.habit-heat-cell {
 
 .good-days-average-vs[data-comparison="higher"] {
   color: #8b2e2e;
+}
+
+/* Priority bar — pinned above the scrolling well, still in the grid pane. */
+.hab-priority {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin: 0 0 6px;
+  padding: 5px 6px;
+  border-radius: var(--r-3, 3px);
+  background: var(--hab-metal-mid, var(--chrome-key-mid));
+  box-shadow: var(--hab-sunken, inset 1px 1px var(--chrome-lo), inset -1px -1px #fff);
+}
+
+.hab-priority-legend {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #2a2c2e;
+}
+
+.hab-priority-text {
+  margin: 0;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: var(--r-2, 2px);
+  background: transparent;
+  box-shadow: var(--hab-raised, inset 1px 1px #fff, inset -1px -1px var(--chrome-lo));
+  font: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #1c1e20;
+  cursor: pointer;
+}
+
+.hab-priority-sort {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 12rem;
+  position: relative;
+  z-index: 4;
+}
+
+.hab-priority .habit95-pick {
+  position: relative;
+  flex: 1 1 9rem;
+  min-width: 9rem;
+}
+
+.hab-priority .habit95-select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-height: 24px;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: var(--r-2, 2px);
+  color: #1c1e20;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0 1px, transparent 1px 2px),
+    #d8dadd;
+  box-shadow: var(--hab-sunken, inset 1px 1px var(--chrome-lo), inset -1px -1px #fff);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.hab-priority .habit95-select-label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.hab-priority .habit95-select-arrow {
+  flex: 0 0 auto;
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid #000;
+}
+
+.hab-priority .habit95-select-menu {
+  position: absolute;
+  z-index: 8;
+  left: 0;
+  right: 0;
+  margin-top: 2px;
+  padding: 3px;
+  background: var(--hab-metal, var(--chrome-face));
+  box-shadow:
+    0 0 0 1px var(--chrome-ring),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    2px 3px 0 rgba(0, 0, 0, 0.28);
+}
+
+.hab-priority .habit95-habit-option {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 3px 6px;
+  border: 0;
+  text-align: left;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  color: #1c1e20;
+  background: transparent;
+  cursor: pointer;
+}
+
+.hab-priority .habit95-habit-option:hover,
+.hab-priority .habit95-habit-option[aria-selected="true"] {
+  background: #000080;
+  color: #fff;
+}
+
+.hab-priority-dir {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-2, 2px);
+  background: var(--hab-metal, var(--chrome-face));
+  box-shadow: var(--hab-raised, inset 1px 1px #fff, inset -1px -1px var(--chrome-lo));
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.habit-grid td.col-name.is-priority-selected,
+.habit-grid td.col-name.is-priority-ritual,
+.habit-heat-name.is-priority-selected,
+.habit-heat-name.is-priority-ritual {
+  background-color: rgba(72, 156, 96, calc(0.28 * var(--priority-star, 1)));
+}
+
+.habit-grid td.col-name.is-priority-neglect,
+.habit-heat-name.is-priority-neglect {
+  background-color: rgba(176, 48, 48, var(--neglect-alpha, 0.2));
+}
+
+/* Selected green and neglect red together: green edge at the star's strength, red wash. */
+.habit-grid td.col-name.is-priority-selected.is-priority-neglect,
+.habit-grid td.col-name.is-priority-ritual.is-priority-neglect,
+.habit-heat-name.is-priority-selected.is-priority-neglect,
+.habit-heat-name.is-priority-ritual.is-priority-neglect {
+  background-color: rgba(176, 48, 48, var(--neglect-alpha, 0.2));
+  box-shadow: inset 3px 0 0 rgba(47, 125, 69, var(--priority-star, 1));
+}
+
+.habit-grid.is-reordering tbody tr {
+  cursor: grab;
 }

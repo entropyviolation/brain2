@@ -3,7 +3,7 @@
  *
  * A habit may listen to several places (a hand tick, Tracking tags, a count of
  * tagged Done tasks, occupancy, a sleep clock, a list, the daily-habit floor,
- * a summed daily habit, the raw daily-completion average, a list's sent ratio, a phone keyword). They are an
+ * a summed daily habit, the raw daily-completion average, a list's sent ratio, a BIM keyword). They are an
  * ordered list. The first source that actually has something to say wins.
  * A source with no observation is skipped. Logged flags and numbers stay on
  * the cell either way — trust only decides whether the habit is met.
@@ -35,7 +35,7 @@ export const COMPLETION_SOURCE_LABELS: Record<HabitCompletionSourceId, string> =
   habitValue: "Daily habit total",
   dailyCompletionAverage: "Daily completion average",
   listSent: "List sent",
-  keywords: "Phone keywords",
+  keywords: "BIM Keywords",
 }
 
 export const COMPLETION_SOURCE_HINTS: Record<HabitCompletionSourceId, string> = {

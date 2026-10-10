@@ -75,9 +75,12 @@ function TrackingCommandNotes() {
       <p>
         <strong>Thought process.</strong> <code>tp:</code>, <code>TP:</code>, <code>thought process:</code>, and{" "}
         <code>log: tp:</code> write a Text log instant with <code>eventKind</code> <code>thought-process</code>. A
-        thought process is a specialized note: the crystallized thought of this moment, not a general note. The
-        colon is required, so a bare <code>tp</code> or <code>thought process</code> is not this. The first line is
-        the title; lines under it are the note. Example: <code>tp: opening the editor to fix the clock</code>.
+        thought process is a guiding strand of this moment: from action to action, to the semantic reaction, to the
+        feeling. It is why you are doing something, what you expect to do next, and how it lands. It is not a general
+        note, not a one-word mood, and not a short activity log such as brushed teeth. The colon is required, so a
+        bare <code>tp</code> or <code>thought process</code> is not this. The first line is the title; lines under it
+        are the note. Example:{" "}
+        <code>tp: Opening the editor to fix the clock, then the dishes, relieved it is a small fix</code>.
       </p>
       <p>
         <strong>Clocks.</strong> <code>1pm</code>, <code>1:00 PM</code>, and <code>1:00 p.m.</code> are 13:00. A

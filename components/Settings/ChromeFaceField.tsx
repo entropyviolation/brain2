@@ -1,99 +1,179 @@
 /**
- * components/Settings/ChromeFaceField.tsx — App-wide gunmetal set-point
+ * components/Settings/ChromeFaceField.tsx — App-wide gunmetal warmth
  *
- * One slider for the Win95 face gray. The thumb is the persisted set-point;
- * a ghost tick is the live metal (minutes-scale drift around that set-point).
- * Default 50 is classic `#c0c0c0`. Hue is locked in `lib/chrome-patina.ts`.
+ * One slider for the Win95 face. Warmth walks the design-ref grays in
+ * `lib/chrome-patina.ts`. Mix 50 is the stored classic default. Drift walks
+ * that path and back; pause holds it. Default restores the stored palette
+ * and pauses. Instant applies the slider to the whole app. Timed previews
+ * in this panel only; when the interval ends the app takes the new gray
+ * and the drift speed takes over.
  */
 "use client"
 
-import { useEffect, useId, useState } from "react"
+import { useEffect, useId, useRef, useState } from "react"
 import { Layers } from "lucide-react"
 import { Label } from "@/components/ui/label"
-import { useThemeStore } from "@/lib/theme-store"
-import {
-  CHROME_COOL,
-  chromeFaceDisplayedLevel,
-  chromeLevelToPercent,
-  chromePatinaTokens,
-} from "@/lib/chrome-patina"
+import { DriftAxisControls } from "@/components/Settings/DriftAxisControls"
+import { useWarmthPanelPreview } from "@/components/Settings/panel-preview"
+import { useThemeStore, warmthClock } from "@/lib/theme-store"
+import { chromePatinaTokens } from "@/lib/chrome-patina"
+import { DRIFT_PRESET_MS, driftPosition } from "@/lib/drift-clock"
 
-function livePercent(setpoint: number, now: number): number {
-  return chromeLevelToPercent(chromeFaceDisplayedLevel(setpoint, now))
+function prefersReducedMotion(): boolean {
+  return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
 }
 
 export function ChromeFaceField() {
-  const setpoint = useThemeStore((s) => s.chromeFace)
+  const chromeFace = useThemeStore((s) => s.chromeFace)
+  const chromePhase = useThemeStore((s) => s.chromePhase)
+  const chromeEpochMs = useThemeStore((s) => s.chromeEpochMs)
+  const chromePeriodMs = useThemeStore((s) => s.chromePeriodMs)
+  const chromePaused = useThemeStore((s) => s.chromePaused)
+  const chromeTransition = useThemeStore((s) => s.chromeTransition)
   const setChromeFace = useThemeStore((s) => s.setChromeFace)
+  const setChromePeriod = useThemeStore((s) => s.setChromePeriod)
+  const setChromePaused = useThemeStore((s) => s.setChromePaused)
+  const startChromeTransition = useThemeStore((s) => s.startChromeTransition)
   const resetChromeFace = useThemeStore((s) => s.resetChromeFace)
+
   const sliderId = useId()
   const [now, setNow] = useState(() => Date.now())
+  const [applyMode, setApplyMode] = useState<"instant" | "timed">("instant")
+  const [draft, setDraft] = useState<number | null>(null)
+  const [held, setHeld] = useState<number | null>(null)
+  const holding = useRef(false)
+  const [manualPeriodMs, setManualPeriodMs] = useState<number>(DRIFT_PRESET_MS["30s"])
 
   useEffect(() => {
-    const id = window.setInterval(() => setNow(Date.now()), 1000)
+    const id = window.setInterval(() => setNow(Date.now()), chromePaused && !chromeTransition ? 1000 : 200)
     return () => window.clearInterval(id)
-  }, [])
+  }, [chromePaused, chromeTransition])
 
-  const tokens = chromePatinaTokens(setpoint, now)
-  const ghost = livePercent(setpoint, now)
+  const clock = warmthClock({
+    chromeFace,
+    chromePhase,
+    chromeEpochMs,
+    chromePeriodMs,
+    chromePaused,
+    chromeTransition,
+  })
+  const live = driftPosition(clock, now)
+  const previewRef = useWarmthPanelPreview(chromeTransition != null, live)
+  const thumb = held ?? draft ?? Math.round(live)
+  const tokens = chromePatinaTokens(live)
+  const showGhost = draft != null && Math.abs(draft - live) >= 1
+
+  function onSlider(value: number) {
+    if (applyMode === "instant") {
+      setDraft(null)
+      if (holding.current) setHeld(value)
+      setChromeFace(value)
+      return
+    }
+    setDraft(value)
+  }
+
+  function onApplyMode(mode: "instant" | "timed") {
+    setApplyMode(mode)
+    if (mode === "instant" && draft != null) {
+      setChromeFace(draft)
+      setDraft(null)
+    }
+  }
+
+  function onStart() {
+    const target = draft ?? Math.round(live)
+    startChromeTransition(target, manualPeriodMs, prefersReducedMotion())
+    setDraft(null)
+  }
 
   return (
-    <div className="space-y-3 rounded-lg border border-dashed p-4">
-      <div className="flex items-center gap-2">
+    <div ref={previewRef} className="set-drift rounded-lg border border-dashed">
+      <div className="set-drift-title flex items-center gap-2">
         <Layers className="h-4 w-4" />
         <h3 className="font-semibold">Window gray</h3>
       </div>
-      <p className="text-sm text-muted-foreground">
-        One gunmetal for every beveled face — Lists, Plan, Scheduler, Operations, Habits chrome.
-        Classic Windows 95 sits at the center mark. The metal breathes over minutes: the hollow tick
-        is where it is now; the thumb is your set-point.
+      <p className="set-drift-copy text-sm text-muted-foreground">
+        One metal for every beveled face — Lists, Plan, Scheduler, Operations, Habits chrome.
+        It drifts along the computer grays from the design refs — olive, warm silver, classic
+        Windows 95, cool silver — and back. Default restores that stored classic metal and pauses.
+        Instant applies the slider to the whole app. Timed previews the shift in this panel only;
+        when that interval ends, the app takes the new gray and the drift speed takes over again.
       </p>
 
-      <div className="flex items-center gap-3">
-        <span
-          className="chrome-face-swatch"
-          style={{ background: tokens["--chrome-face"] }}
-          title="Live face"
-          aria-hidden
-        />
-        <div className="min-w-0 flex-1 space-y-1.5">
-          <div className="flex items-baseline justify-between gap-2">
-            <Label htmlFor={sliderId}>Face gray</Label>
-            <span className="text-xs text-muted-foreground">
-              set {Math.round(setpoint)} · now {Math.round(ghost)}
-            </span>
-          </div>
+      <div className="set-drift-scale">
+        <div className="set-drift-labelrow">
+          <Label htmlFor={sliderId}>Warmth</Label>
+          <span className="set-drift-now text-xs text-muted-foreground">now {Math.round(live)}</span>
+        </div>
+        <div className="set-drift-track">
+          <span
+            className="chrome-face-swatch"
+            style={{ background: tokens["--chrome-face"] }}
+            title="Live face"
+            aria-hidden
+          />
           <div className="chrome-face-slider">
             <span className="chrome-face-slider-classic" title="Classic Win95" />
-            <span
-              className="chrome-face-slider-ghost"
-              style={{ left: `${Math.min(100, Math.max(0, ghost))}%` }}
-              data-live-percent={ghost.toFixed(1)}
-              title="Living metal now"
-            />
+            {showGhost ? (
+              <span
+                className="chrome-face-slider-ghost"
+                style={{ left: `${Math.min(100, Math.max(0, live))}%` }}
+                data-live-percent={live.toFixed(1)}
+                title="Living metal now"
+              />
+            ) : null}
             <input
               id={sliderId}
               type="range"
               min={0}
               max={100}
               step={1}
-              value={setpoint}
-              onChange={(e) => setChromeFace(Number(e.target.value))}
+              value={thumb}
+              onPointerDown={() => {
+                holding.current = true
+              }}
+              onPointerUp={() => {
+                holding.current = false
+                setHeld(null)
+              }}
+              onPointerCancel={() => {
+                holding.current = false
+                setHeld(null)
+              }}
+              onChange={(e) => onSlider(Number(e.target.value))}
               aria-valuemin={0}
               aria-valuemax={100}
-              aria-valuenow={setpoint}
-              aria-valuetext={`Set-point ${Math.round(setpoint)}, live ${Math.round(ghost)}`}
+              aria-valuenow={thumb}
+              aria-valuetext={`Warmth ${thumb}, live ${Math.round(live)}`}
             />
           </div>
-          <div className="flex justify-between text-[11px] text-muted-foreground">
-            <span>Darker</span>
-            <button type="button" className="underline-offset-2 hover:underline" onClick={resetChromeFace}>
-              Classic {CHROME_COOL.face}
-            </button>
-            <span>Lighter</span>
-          </div>
+        </div>
+        <div className="set-drift-poles text-[11px] text-muted-foreground">
+          <span>Warm</span>
+          <span>Cool</span>
+        </div>
+        <div className="set-drift-center">
+          <button type="button" onClick={resetChromeFace}>
+            Default
+          </button>
         </div>
       </div>
+
+      <DriftAxisControls
+        axis="Warmth"
+        paused={chromePaused}
+        periodMs={chromePeriodMs}
+        onPeriod={setChromePeriod}
+        onPaused={setChromePaused}
+        applyMode={applyMode}
+        onApplyMode={onApplyMode}
+        manualPeriodMs={manualPeriodMs}
+        onManualPeriod={setManualPeriodMs}
+        onStart={onStart}
+        startDisabled={draft == null || Math.abs(draft - live) < 1}
+        shifting={chromeTransition != null}
+      />
     </div>
   )
 }

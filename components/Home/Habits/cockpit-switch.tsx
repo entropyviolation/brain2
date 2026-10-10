@@ -29,6 +29,7 @@ export function CockpitSwitch({
       id={id}
       role="switch"
       aria-checked={checked}
+      aria-label={typeof label === "string" ? label : undefined}
       className={`hab-rocker${className ? ` ${className}` : ""}`}
       onClick={() => onCheckedChange(!checked)}
     >

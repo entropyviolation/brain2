@@ -39,12 +39,12 @@
 .trk95 .trk-period {
   min-height: 40px;
   padding: 6px 8px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
-    linear-gradient(180deg, #d8dce0, var(--period-face) 48%, #b0b4b8);
+    linear-gradient(180deg, var(--chrome-mill-hi), var(--period-face) 48%, var(--chrome-inset));
   box-shadow:
-    0 0 0 1px #6a6e72,
+    0 0 0 1px var(--chrome-lip),
     inset 0 1px 0 rgba(255, 255, 255, 0.7),
     inset 0 2px 3px rgba(0, 0, 0, 0.08);
 }
@@ -59,7 +59,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   text-align: center;
   font-size: var(--period-nameplate-size);
   font-weight: 700;
@@ -70,10 +70,10 @@
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
   background-image:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0 1px, transparent 1px 2px),
-    linear-gradient(180deg, #eef0f2 0%, var(--period-surface) 48%, #a4a8ac 100%);
+    linear-gradient(180deg, var(--chrome-mist) 0%, var(--period-surface) 48%, var(--chrome-foot) 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 0 0 1px #6a6e72;
+    0 0 0 1px var(--chrome-lip);
 }
 
 /* Metal period keys — Plan/Tracking only; To Do buttons stay local. */
@@ -87,7 +87,7 @@
   justify-content: center;
   min-height: 30px;
   border: 0;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   color: #1c1e20;
   font: inherit;
   font-size: 11px;
@@ -98,12 +98,12 @@
   line-height: 1;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
-    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--period-surface) 70%, #9a9ea2 100%);
+    linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 36%, var(--period-surface) 70%, var(--chrome-key-shade) 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     inset 0 -1px 0 rgba(55, 58, 62, 0.45),
-    0 0 0 1px #4a4e52,
-    0 1px 0 #6a6e72;
+    0 0 0 1px var(--chrome-ring-deep),
+    0 1px 0 var(--chrome-lip);
   cursor: pointer;
   white-space: nowrap;
 }
@@ -138,6 +138,6 @@
 .trk95 .trk-period-aux:not(:disabled):active {
   box-shadow:
     inset 0 1px 2px rgba(0, 0, 0, 0.35),
-    0 0 0 1px #3a3e42;
+    0 0 0 1px var(--chrome-pressed);
   filter: none;
 }

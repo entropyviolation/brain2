@@ -218,7 +218,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       <DialogContent className="plan95-dialog plan95-dialog-lg max-h-[90vh]" hideClose {...unsavedDismissProps(guard.requestClose)}>
         <DialogHeader className="plan95-dialog-caption">
           <DialogTitle>Settings & Data Management</DialogTitle>
-          <button type="button" className="plan95-title-btn" aria-label="Close" onClick={guard.requestClose}>
+          <button type="button" className="plan95-title-btn b2-close-key" aria-label="Close" onClick={guard.requestClose}>
             ×
           </button>
         </DialogHeader>

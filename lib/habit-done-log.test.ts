@@ -131,6 +131,17 @@ describe("habit Done log", () => {
     expect(logged?.attributes).toMatchObject({ sourceHabitId: "h2" })
   })
 
+  it("writes the Tags source onto the habit Done line", () => {
+    const cook: WeeklyTask = {
+      ...water,
+      taggedTaskTag: "cooking",
+      completionSources: ["manual", "taggedTasks"],
+    }
+    useHabitsStore.setState({ tasks: [cook, writing] })
+    useHabitsStore.getState().updateCompletion("h1", day, { completed: true })
+    expect(loggedRow("h1", day)?.tags).toEqual(["habit", "cooking"])
+  })
+
   it("uses a fixed phrase for a yes/no habit", () => {
     const sip: WeeklyTask = { ...water, doneTaskPhrase: "drank water" }
     expect(habitDoneLogLine(sip, { completed: true })).toBe("drank water")

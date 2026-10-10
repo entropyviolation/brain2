@@ -161,7 +161,7 @@ export const ANALYTICS_TAB_HELP: Record<AnalyticsTab, string> = {
   "cross-section":
     "Linked density: hover or pin a day to highlight the same column in every series. Missing nights stay blank.",
   metrics:
-    "All five wellbeing series as small multiples. Pick one for the detail chart. Log {name} writes into the same store as header Metrics.",
+    "All five wellbeing series as small multiples. Pick one for the detail chart. Log {name} writes into the same store as the Metrics key on Current moment.",
   correlation:
     "Pairwise Pearson matrix. Click a cell for the scatter and sentence. Not a chart builder.",
   spectrum:

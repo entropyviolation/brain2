@@ -1,17 +1,18 @@
 ================================================================================
 SCREENSHOT: 20-dialog-bulk-add.png
-VIEW: Header → Bulk Add
+VIEW: Header → Quick Add → Bulk
 AREA: Bulk Add dialog
 SOURCE FILES:
+  - components/quick-add.tsx
   - components/enhanced-bulk-add.tsx
   - lib/smart-parse.ts
   - lib/capture-target.ts
 ================================================================================
 
 GLOBAL CHROME (all screens)
-  Pinned full-width mill title bar (`AppHeader`, sticky top, z-40): navy BRAIN2 caption with Tek POWER lamp + today's-friend jewel (64px chrome + black-mirror well; click for a Stardew Next Action bubble; Esc / × / outside to close) and Friend / Review / System / Capture as Win95 groupboxes of milled press keys. Names stays Names and latches (sunken, aria-pressed); tooltip Stop naming while on. Phosphor counts on Review and Inbox. Quick Add is the default framed key, docked at the right of Capture. Same doors as before — grouped furniture, not a menu bar.
+  Pinned full-width mill title bar (`AppHeader`, sticky top, z-40): navy BRAIN2 caption with Tek POWER lamp + today's-friend jewel (64px chrome + black-mirror well; click for a Stardew Next Action bubble; Esc / × / outside to close) and Friend / Review / System / optional now / Capture as Win95 groupboxes of milled press keys. Names stays Names and latches (sunken, aria-pressed); tooltip Stop naming while on. Phosphor counts on Review and Inbox. Capture is Inbox and Quick Add; Bulk is a checkbox inside Quick Add. Metrics opens from Now → Current moment. Ingest, From Notes, and Phone Notes live in Settings.
   Tabs: milled fascia (brushed bay, raised silver keys, active key a CRT with a round power lamp) — Home · Lists · Docs · Scheduler · Operations · Modules · Analytics.
   Shortcuts: Cmd/Ctrl+K search · capture hotkey → Quick Add.
 
 VIEW-SPECIFIC
-Bulk Add Tasks with Lists. Multi-line textarea (one item/line; headers list: or folder: list:). Send to Inbox checkbox. Shorthand & where items go. Ready count. Add Tasks. ×.
+Quick Add with Bulk checked. Taller Tasks and Lists box (one item/line; headers list: or folder: list:; before 9/12: stamps a due day). Placeholder lines only. Send to Inbox checkbox. Shorthand & where items go. Ready count. Add Tasks. ×. Inbox Bulk edit and the mobile shell still open the separate Bulk Add dialog.

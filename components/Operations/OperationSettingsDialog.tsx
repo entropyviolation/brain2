@@ -128,7 +128,7 @@ export function OperationSettingsDialog({
       <DialogContent className="ops95-dialog sm:max-w-2xl">
         <DialogHeader className="ops-title-bar flex-row items-center space-y-0 text-left">
           <DialogTitle className="ops-title-text">Operation settings</DialogTitle>
-          <button type="button" className="ops-title-btn" aria-label="Close" onClick={onClose}>
+          <button type="button" className="ops-title-btn b2-close-key" aria-label="Close" onClick={onClose}>
             ×
           </button>
         </DialogHeader>
@@ -382,7 +382,7 @@ export function OperationSettingsDialog({
         <DialogContent className="ops95-dialog sm:max-w-md">
           <DialogHeader className="ops-title-bar flex-row items-center space-y-0 text-left">
             <DialogTitle className="ops-title-text">Are you sure?</DialogTitle>
-            <button type="button" className="ops-title-btn" aria-label="Close" onClick={() => setConfirmDelete(false)}>
+            <button type="button" className="ops-title-btn b2-close-key" aria-label="Close" onClick={() => setConfirmDelete(false)}>
               ×
             </button>
           </DialogHeader>

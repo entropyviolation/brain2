@@ -3,14 +3,15 @@
 /**
  * components/Home/Habits/hab-grade-sheet.tsx — Shared grade sheet chrome
  *
- * Presentational CRT hero + Curve bay + Plasma bay + optional priority.
- * The hero figure shares its line with a stock triangle and the whole-point gap.
+ * One path: CRT figure, proof (rows + pinned average), Curve and the priority
+ * switch, then Plasma in its own bay. The glass holds only the grade.
  * Tube color / tolerance / priority store keys stay in the thin dialog wrappers.
  */
 
 /**
  * Gap between two grades already rounded the way the sheet prints them.
  * Up when current is above the reference, down when below, no mark when equal.
+ * `ordinary` is the priority blend against the pre-blend figure.
  */
 export function gradeHeroDelta(
   currentWhole: number,
@@ -24,7 +25,7 @@ export function gradeHeroDelta(
       phrase:
         reference === "weeks"
           ? `same as avg ${referenceWhole}% across weeks`
-          : `same as ordinary ${referenceWhole}%`,
+          : `Priority blend, same ${referenceWhole}%`,
     }
   }
   const points = Math.abs(gap)
@@ -33,7 +34,7 @@ export function gradeHeroDelta(
     phrase:
       reference === "weeks"
         ? `${points} from avg ${referenceWhole}% across weeks`
-        : `${points} from ordinary ${referenceWhole}%`,
+        : `Priority blend, from ${referenceWhole}%`,
   }
 }
 
@@ -43,6 +44,108 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ColorSwatch } from "@/components/ui/color-swatch"
 import { PriorityMathPanel } from "@/components/Home/Habits/priority-math"
+
+export interface HabGradeProofRow {
+  key: string
+  name: string
+  /** Ink on the metal row. Exempt weeks pass "exempt". */
+  rawText: string
+  /** Phosphor chip. Exempt weeks pass "—". */
+  curvedText: string
+  /** Curved score in the equation. Null leaves the row out of the sum. */
+  curvedValue: number | null
+  mute?: boolean
+}
+
+export function HabGradeProof({
+  ariaLabel,
+  nameHeader,
+  rows,
+  averageRaw,
+  averageCurved,
+  equationNote,
+}: {
+  ariaLabel: string
+  nameHeader: string
+  rows: HabGradeProofRow[]
+  averageRaw: string
+  averageCurved: string
+  equationNote?: string
+}) {
+  const scored = rows.filter((row) => row.curvedValue != null)
+  const sum = scored.reduce((acc, row) => acc + (row.curvedValue as number), 0)
+
+  return (
+    <div className="hab-grade-sheet-proof" role="table" aria-label={ariaLabel}>
+      <div className="hab-grade-sheet-proof-head" role="row">
+        <span role="columnheader">{nameHeader}</span>
+        <span role="columnheader">Raw</span>
+        <span aria-hidden="true" />
+        <span role="columnheader">Curved</span>
+      </div>
+      <div className="hab-grade-sheet-proof-scroll">
+        {rows.map((row) => (
+          <div key={row.key} className="hab-grade-sheet-row" role="row">
+            <span className="hab-grade-sheet-row-name" role="cell">
+              {row.name}
+            </span>
+            <span
+              className={`hab-grade-sheet-row-readout is-raw${row.mute ? " is-mute" : ""}`}
+              role="cell"
+            >
+              {row.rawText}
+            </span>
+            <span className="hab-grade-sheet-row-tick" aria-hidden="true">
+              {row.mute ? "" : "→"}
+            </span>
+            <span
+              className={`hab-grade-sheet-row-readout is-curved${row.mute ? " is-mute" : ""}`}
+              role="cell"
+            >
+              {row.curvedText}
+            </span>
+          </div>
+        ))}
+      </div>
+      <div className="hab-grade-sheet-row is-avg" role="row">
+        <span className="hab-grade-sheet-row-name" role="cell">
+          Average
+        </span>
+        <span className="hab-grade-sheet-row-readout is-raw" role="cell">
+          {averageRaw}
+        </span>
+        <span className="hab-grade-sheet-row-tick" aria-hidden="true">
+          →
+        </span>
+        <span className="hab-grade-sheet-row-readout is-curved" role="cell">
+          {averageCurved}
+        </span>
+      </div>
+      {scored.length > 0 && (
+        <div className="hab-grade-sheet-eq">
+          <span className="hab-grade-sheet-bay-legend">Curved</span>
+          <p>
+            {scored.map((row, index) => (
+              <span key={row.key}>
+                {index > 0 ? " + " : null}
+                <span className="hab-grade-sheet-eq-term">
+                  {row.name} {(row.curvedValue as number).toFixed(0)}
+                </span>
+              </span>
+            ))}
+            {" = "}
+            {sum.toFixed(0)}
+            {" / "}
+            {scored.length}
+            {" = "}
+            {averageCurved}
+            {equationNote ? ` ${equationNote}` : ""}
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
 
 export interface HabGradeSheetProps {
   open: boolean
@@ -57,13 +160,11 @@ export interface HabGradeSheetProps {
   tubeColorAriaLabel: string
   tubeColorDisabled?: boolean
   hero: string
-  showOrdinary?: boolean
-  ordinaryText?: string
-  /** Stock tick beside the hero. Omitted when the grade matches the reference. */
-  ordinaryMark?: "up" | "down" | null
-  /** Hover note for the small CRT figure (for example the all-weeks average). */
-  ordinaryTitle?: string
-  equation?: ReactNode
+  /** One line under the glass. */
+  heroLine?: ReactNode
+  heroLineTitle?: string
+  /** Priority blend, under the hero line. Omitted while the switch is off. */
+  blendText?: string | null
   toleranceId: string
   toleranceLabel: string
   tolerance: number
@@ -76,7 +177,7 @@ export interface HabGradeSheetProps {
     priority: number | null
     label: string
   }
-  /** Day/week lift notes, accomplishment blurb — wrapper-specific. */
+  /** Day/week lift notes — settings, not a caption of the proof. */
   notes?: ReactNode
   children: ReactNode
 }
@@ -93,11 +194,9 @@ export function HabGradeSheet({
   tubeColorAriaLabel,
   tubeColorDisabled = false,
   hero,
-  showOrdinary = false,
-  ordinaryText,
-  ordinaryMark = null,
-  ordinaryTitle,
-  equation,
+  heroLine,
+  heroLineTitle,
+  blendText,
   toleranceId,
   toleranceLabel,
   tolerance,
@@ -124,18 +223,18 @@ export function HabGradeSheet({
         </DialogHeader>
 
         <div className="hab-grade-sheet-hero">
-          <span className="hab-grade-sheet-hero-label">Current grade</span>
           <div className="hab-grade-sheet-crt">
             <span className="hab-grade-sheet-crt-value">{hero}</span>
-            {showOrdinary && ordinaryText != null && (
-              <span className="hab-grade-sheet-crt-ordinary" title={ordinaryTitle}>
-                {ordinaryMark === "up" ? "▲ " : ordinaryMark === "down" ? "▼ " : ""}
-                {ordinaryText}
-              </span>
-            )}
           </div>
-          {equation != null && <p className="hab-grade-sheet-eq">{equation}</p>}
+          {heroLine != null && (
+            <p className="hab-grade-sheet-hero-line" title={heroLineTitle}>
+              {heroLine}
+            </p>
+          )}
+          {blendText ? <p className="hab-grade-sheet-blend">{blendText}</p> : null}
         </div>
+
+        {children}
 
         <div className="hab-grade-sheet-bay">
           <span className="hab-grade-sheet-bay-legend">Curve</span>
@@ -154,11 +253,26 @@ export function HabGradeSheet({
                 onChange={(e) => onToleranceChange(Number(e.target.value))}
                 className="hab-grade-sheet-field w-24"
               />
-              <span className="hab-grade-sheet-hint is-inline">% raw = 100% on the curve</span>
+              <span className="hab-grade-sheet-hint is-inline">{tolerance} → 100% on the curve</span>
             </div>
             <p className="hab-grade-sheet-hint">{curveHint}</p>
           </div>
 
+          {notes}
+
+          {priority && (
+            <PriorityMathPanel
+              enabled={priority.enabled}
+              onEnabledChange={priority.onEnabledChange}
+              overall={priority.overall}
+              priority={priority.priority}
+              label={priority.label}
+              explainLabel="How the 50% floor works"
+            />
+          )}
+        </div>
+
+        <div className="hab-grade-sheet-bay">
           <span className="hab-grade-sheet-bay-legend">Plasma</span>
           <div className="hab-grade-sheet-control">
             <Label htmlFor={tubeColorId} className="hab-grade-sheet-field-label">
@@ -177,21 +291,7 @@ export function HabGradeSheet({
             </div>
             <p className="hab-grade-sheet-hint">Hue of the plasma column. Glass and vacuum stay clear.</p>
           </div>
-
-          {priority && (
-            <PriorityMathPanel
-              enabled={priority.enabled}
-              onEnabledChange={priority.onEnabledChange}
-              overall={priority.overall}
-              priority={priority.priority}
-              label={priority.label}
-            />
-          )}
         </div>
-
-        {notes}
-
-        {children}
       </DialogContent>
     </Dialog>
   )

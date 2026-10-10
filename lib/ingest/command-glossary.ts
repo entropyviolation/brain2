@@ -230,13 +230,13 @@ What you can do (families)
 • Grocery — groc (dump/add/pin); got / x / bought / check off
 • Needed — needed: batteries · get: then lines → list "needed"
 • To-do — to do today:, do: / next action:, read to do today
-• Log — switch: (view, from:, to:) / log categories / log: or log (colon optional; loc: place) / tp: / thought process: / log: tp: (specialized note: the crystallized thought of this moment, not a general note) / intake: / intake food|drink|drug: / cycle: / st: / switch task: / so: / switch objective: / switch goal: / transit:; saved keywords (log: went outside, log keywords); smoked weed, drank water, ate …, took …
+• Log — switch: (view, from:, to:) / log categories / log: or log (colon optional; loc: place) / tp: / thought process: / log: tp: (Thought process: a guiding strand of this moment — why you are doing something, what you expect next, and how it lands; not a general note, a one-word mood, or a short activity log such as brushed teeth) / intake: / intake food|drink|drug: / cycle: / st: / switch task: / so: / switch objective: / switch goal: / transit:; saved keywords (log: went outside, log keywords); smoked weed, drank water, ate …, took …
   On a log line, a switch line, or a tracking-note clock, no am/pm means military time (12:04 is noon, 1:00 is 1:00am, 1pm is 1:00pm). Ordinary inbox text is not parsed this way.
 • Monitor — currently / stopped / switched to
-• Capture / add — plain text, qa:, add:, inbox:, idea:, quick add: (-mb / -monkey → Monkey brain)
+• Capture / add — plain text, qa:, add:, inbox:, idea:, quick add: (-mb / -monkey → Monkey brain; -p / -plain → as written)
 • Bulk — bulk: / bulk add; Name: dumps; before 9/12:
 • Track — at:, track:, mood:, sleep:, start:/stop, gps:, screen:/call:/text:
-• Notes — n / note: (optional clock, est or unknown), day:, memo:, jot:. Thought process is tp: / thought process: / log: tp: — a specialized note, the crystallized thought of this moment, not this general note
+• Notes — n / note: (optional clock, est or unknown), day:, memo:, jot:. Thought process is tp: / thought process: / log: tp: — a guiding strand of this moment: why you are doing something, what you expect next, and how it lands. Not this general note, not a one-word mood, and not a short activity log such as brushed teeth
 • Read — read: / show: / dump: / peek:, lists, folders, search, today, count, tags, ops
 • Scan — receipt photo, journal/PDF → Docs, inv pantry
 • iPhone Notes — iphone-notes: park from Shortcut
@@ -343,8 +343,9 @@ How to use it
 • st: cleaning  ·  switch task: cleaning at 3:30  — alias of Switch on Activity, title “started …”
 • so: read  ·  switch objective: read  ·  switch goal: read  — alias, Objective pen, title “objective …”
 • transit: the store  — same clock words (est / estimated / ~ / unknown)
-• tp: opening the editor to fix the clock  |  TP:  |  thought process:  |  log: tp:
-  A specialized note: the crystallized thought of this moment, not a general note.
+• tp: Opening the editor to fix the clock, then the dishes, relieved it is a small fix  |  TP:  |  thought process:  |  log: tp:
+  Thought process: a guiding strand of this moment, from what you are doing, to what it leads to, to how it feels.
+  Why you are doing something, what you expect next, and how it lands. Not a general note, a one-word mood, or a short activity log such as brushed teeth.
   Colon required, so bare tp and bare thought process are not this. Pen Text log. eventKind thought-process.
   First line is the title; a line under it is the note. Same clocks as a log line.
 • Presets (Settings → Discrete event triggers):
@@ -384,6 +385,8 @@ What it is
 How to use it
 • plain text or qa: / add: / inbox: / idea: / quick add: / capture: → Inbox
 • -mb or -monkey on that line → Monkey brain (a dump, not the Inbox you revisit)
+• -p or -plain → stored as written (no list, folder, date, time, duration, or priority)
+• list: item and folder: list: item create the list. Dates, times, duration, and priority stay in the title
 • bulk: / bulk add — headers and one item per line
 • Name: then lines — that list (grocery headers → store list)
 • before 9/12: — following lines due that day
@@ -455,8 +458,8 @@ Send "track commands" for the glossary.`,
   A clock with no word is exact. est / estimated / ~ is estimated. unknown keeps the minute.
   Also appended to the block covering that minute. A second line is the note.
 • day: tired  ·  daynote:  ·  dnote:  ·  n day: — day jot, not a tick, and not a clock
-• tp: opening the editor to fix the clock  ·  thought process:  ·  log: tp:
-  A specialized note: the crystallized thought of this moment, not a general note. Colon required. eventKind thought-process.
+• tp: Opening the editor to fix the clock, then the dishes, relieved it is a small fix  ·  thought process:  ·  log: tp:
+  Thought process: a guiding strand of this moment, from what you are doing to what it leads to and how it feels. Not a general note, a one-word mood, or a short activity log such as brushed teeth. Colon required. eventKind thought-process.
 • day alone → today
 
 Send "note commands".`,

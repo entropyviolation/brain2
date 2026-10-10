@@ -1533,7 +1533,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
           <div className="fm-title-bar-controls">
             <button className="fm-title-btn" aria-label="Minimize">_</button>
             <button className="fm-title-btn" aria-label="Maximize">□</button>
-            <button className="fm-title-btn" aria-label="Close" onClick={closeTarget}>×</button>
+            <button className="fm-title-btn b2-close-key" aria-label="Close" onClick={closeTarget}>×</button>
           </div>
         </div>
 
@@ -1663,7 +1663,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
                     {canEditFolderAllSettings && (
                       <button className="fm-title-btn" title="List settings" onClick={openFolderAllSettings}>⚙</button>
                     )}
-                    <button className="fm-title-btn" aria-label="Close" onClick={closeTarget}>×</button>
+                    <button className="fm-title-btn b2-close-key" aria-label="Close" onClick={closeTarget}>×</button>
                   </div>
                 </div>
               )}

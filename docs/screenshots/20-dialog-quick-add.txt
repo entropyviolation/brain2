@@ -9,9 +9,9 @@ SOURCE FILES:
 ================================================================================
 
 GLOBAL CHROME (all screens)
-  Pinned full-width mill title bar (`AppHeader`, sticky top, z-40): navy BRAIN2 caption with Tek POWER lamp + today's-friend jewel (64px chrome + black-mirror well; click for a Stardew Next Action bubble; Esc / × / outside to close) and Friend / Review / System / Capture as Win95 groupboxes of milled press keys. Names stays Names and latches (sunken, aria-pressed); tooltip Stop naming while on. Phosphor counts on Review and Inbox. Quick Add is the default framed key, docked at the right of Capture. Same doors as before — grouped furniture, not a menu bar.
+  Pinned full-width mill title bar (`AppHeader`, sticky top, z-40): navy BRAIN2 caption with Tek POWER lamp + today's-friend jewel (64px chrome + black-mirror well; click for a Stardew Next Action bubble; Esc / × / outside to close) and Friend / Review / System / optional now / Capture as Win95 groupboxes of milled press keys. Names stays Names and latches (sunken, aria-pressed); tooltip Stop naming while on. Phosphor counts on Review and Inbox. Capture is Inbox and Quick Add; Bulk is a checkbox inside Quick Add. Metrics opens from Now → Current moment. Ingest, From Notes, and Phone Notes live in Settings.
   Tabs: milled fascia (brushed bay, raised silver keys, active key a CRT with a round power lamp) — Home · Lists · Docs · Scheduler · Operations · Modules · Analytics.
   Shortcuts: Cmd/Ctrl+K search · capture hotkey → Quick Add.
 
 VIEW-SPECIFIC
-Add Idea. Single-line Idea (colon paths folder: list: item). Send to Inbox checkbox. Shorthand help. Live destination chips. Add to Inbox (or Add if skip Inbox). ×.
+Add Idea. Bulk and Plain checkboxes (Plain default off). Single-line Idea (colon paths folder: list: item; new list / new folder chips). Plain, or -p / -plain, stores the line as written. Date, time, duration, and priority stay in the title. Send to Inbox checkbox. Shorthand help. Live destination chips. Add to Inbox (or Add if skip Inbox). ×.

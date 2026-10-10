@@ -16,7 +16,7 @@
   padding: 2px 6px 2px 4px;
   font-size: 12px;
   line-height: 1.2;
-  background: var(--w95-surface, #c0c0c0);
+  background: var(--w95-surface, var(--chrome-face));
   box-shadow: var(--w95-raised);
 }
 

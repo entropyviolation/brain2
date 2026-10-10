@@ -27,25 +27,25 @@
     inset -2px -2px var(--s-face), inset 2px 2px var(--s-frame);
   --s-mill:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
-    linear-gradient(165deg, #d4d8dc 0%, var(--s-surface) 48%, #969a9e 100%);
+    linear-gradient(165deg, var(--chrome-sheen) 0%, var(--s-surface) 48%, var(--chrome-shade) 100%);
   --s-bay-ring:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.75),
     inset 0 -1px 0 rgba(40, 42, 46, 0.4),
-    inset 0 0 0 2px #b0b4b8;
+    inset 0 0 0 2px var(--chrome-inset);
   --s-key-face:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
-    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--s-surface) 70%, #9a9ea2 100%);
+    linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 36%, var(--s-surface) 70%, var(--chrome-key-shade) 100%);
   --s-key-ring:
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     inset 0 -1px 0 rgba(55, 58, 62, 0.45),
-    0 0 0 1px #4a4e52,
-    0 1px 0 #6a6e72;
+    0 0 0 1px var(--chrome-ring-deep),
+    0 1px 0 var(--chrome-lip);
   --s-crt-glass:
     radial-gradient(ellipse at 18% 0%, rgba(125, 255, 196, 0.16), transparent 48%),
     #070c0a;
   --s-crt-ring:
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     inset 0 1px 0 rgba(255, 255, 255, 0.14),
     inset 0 10px 14px rgba(0, 0, 0, 0.4);
 
@@ -58,45 +58,21 @@
 }
 
 .set95-dialog {
+  /* 22px key centered on the CRT mark (dialog pad 3 + caption pad 10, mark 40). */
+  --b2-close-top: 22px;
+  --b2-close-right: 12px;
   display: flex !important;
   flex-direction: column;
   gap: 0 !important;
   padding: 3px !important;
   border: none !important;
-  border-radius: 0 !important;
+  border-radius: var(--r-0, 0px) !important;
   background: var(--s-surface) !important;
   box-shadow: var(--s-raised), 4px 4px 0 rgba(0, 0, 0, 0.28) !important;
 }
 
-/* Beat shadcn white card + close pip on the milled face. */
-.set95-dialog > button.absolute,
-body.win95-app .set95-dialog > button.absolute {
-  top: 8px;
-  right: 8px;
-  width: 22px;
-  height: 22px;
-  border-radius: 2px;
-  opacity: 1;
-  color: var(--s-nameplate);
-  background: var(--s-key-face);
-  box-shadow: var(--s-key-ring);
-}
-
-.set95-dialog > button.absolute:hover,
-body.win95-app .set95-dialog > button.absolute:hover {
-  opacity: 1;
-  background: var(--s-highlight);
-}
-
-.set95-dialog > button.absolute:active,
-body.win95-app .set95-dialog > button.absolute:active {
-  box-shadow: var(--s-sunken);
-}
-
-.set95-dialog > button.absolute svg {
-  width: 12px;
-  height: 12px;
-}
+/* Close key is `.b2-close-key` in win95.css. Hover used to flatten the face
+   to --s-highlight; that wash is gone. Placement is --b2-close-* above. */
 
 /* ---- Caption: CRT hero for Settings title -------------------------------- */
 
@@ -110,7 +86,7 @@ body.win95-app .set95-dialog > button.absolute:active {
   padding: 10px 12px 10px;
   padding-right: 2.5rem;
   border: none;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background: var(--s-mill);
   box-shadow: var(--s-bay-ring);
   text-align: left;
@@ -124,7 +100,7 @@ body.win95-app .set95-dialog > button.absolute:active {
   min-height: 40px;
   min-width: 0;
   padding: 4px 14px 4px 8px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: var(--s-crt-glass);
   box-shadow: var(--s-crt-ring);
 }
@@ -167,7 +143,7 @@ body.win95-app .set95-dialog > button.absolute:active {
 .set95-dialog .set-caption-lead {
   margin: 0;
   padding: 6px 9px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-size: 11px !important;
   font-weight: 600;
   line-height: 1.4;
@@ -175,10 +151,10 @@ body.win95-app .set95-dialog > button.absolute:active {
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0 1px, transparent 1px 2px),
-    #c8ccd0;
+    var(--chrome-pewter);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.55),
-    0 0 0 1px #8a8e92;
+    0 0 0 1px var(--chrome-slate);
 }
 
 /* ---- Body scroll well ---------------------------------------------------- */
@@ -218,7 +194,7 @@ body.win95-app .set95-dialog > button.absolute:active {
   margin: 0;
   padding: 10px 12px 12px;
   border: none !important;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background: var(--s-mill);
   box-shadow: var(--s-bay-ring);
 }
@@ -231,13 +207,13 @@ body.win95-app .set95-dialog > button.absolute:active {
 .set95 .border.border-dashed:not(.rounded-lg),
 .set95-dialog .border.border-dashed:not(.rounded-lg) {
   border: none !important;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   padding: 8px 10px;
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
     var(--s-surface);
   box-shadow:
-    0 0 0 1px #6a6e72,
+    0 0 0 1px var(--chrome-lip),
     inset 0 1px 0 rgba(255, 255, 255, 0.55),
     inset 0 2px 3px rgba(0, 0, 0, 0.08);
 }
@@ -289,7 +265,7 @@ body.win95-app .set95-dialog > button.absolute:active {
 .set95 button:not(.absolute):not([role="checkbox"]):not([role="switch"]),
 .set95-dialog button:not(.absolute):not([role="checkbox"]):not([role="switch"]) {
   border: none !important;
-  border-radius: 2px !important;
+  border-radius: var(--r-2, 2px) !important;
   color: #1c1e20 !important;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
   background: var(--s-key-face) !important;
@@ -338,7 +314,7 @@ body.win95-app .set95-dialog > button.absolute:active {
 .set95-dialog textarea,
 .set95-dialog select {
   border: none !important;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: #fff !important;
   box-shadow: var(--s-field);
   color: var(--s-ink);
@@ -360,7 +336,7 @@ body.win95-app .set95-dialog > button.absolute:active {
 .set95-dialog .chrome-face-slider {
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0 1px, transparent 1px 2px),
-    #b8bcbf;
+    var(--chrome-ash);
   box-shadow: var(--s-sunken);
 }
 
@@ -373,7 +349,7 @@ body.win95-app .set95-dialog > button.absolute:active {
   justify-content: center;
   min-height: 40px;
   padding: 8px 14px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-family: ui-monospace, "Cascadia Code", "Courier New", monospace;
   font-size: 22px;
   font-weight: 700;
@@ -388,7 +364,7 @@ body.win95-app .set95-dialog > button.absolute:active {
 .set95 code,
 .set95-dialog code {
   padding: 1px 4px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: rgba(255, 255, 255, 0.45);
   box-shadow: inset 0 0 0 1px rgba(90, 94, 98, 0.35);
   color: var(--s-ink);
@@ -408,8 +384,172 @@ body.win95-app .set95-dialog > button.absolute:active {
 .set95 pre,
 .set95-dialog pre {
   padding: 8px 10px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: #fff;
   box-shadow: var(--s-field);
   color: var(--s-ink);
+}
+
+/* ---- Window gray and Bouba/Kiki ------------------------------------------ */
+/* Same stack in both bays. The center chip sits on its own row so it cannot
+   cover the thumb. Readouts stay inset from the bay edge. */
+
+.set95 .set-drift.rounded-lg.border,
+.set95-dialog .set-drift.rounded-lg.border {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 18px 22px 20px !important;
+}
+
+.set95 .set-drift-title,
+.set95-dialog .set-drift-title {
+  padding: 0 4px;
+}
+
+.set95 .set-drift-copy,
+.set95-dialog .set-drift-copy {
+  margin: 0;
+  padding: 0 6px;
+  line-height: 1.5;
+}
+
+.set95 .set-drift-scale,
+.set95-dialog .set-drift-scale {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 2px 4px 0;
+}
+
+.set95 .set-drift-labelrow,
+.set95-dialog .set-drift-labelrow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 0 8px 2px;
+}
+
+.set95 .set-drift-now,
+.set95-dialog .set-drift-now,
+.set95 .set-drift-poles,
+.set95-dialog .set-drift-poles,
+.set95 .set-drift-hint,
+.set95-dialog .set-drift-hint {
+  color: #3a3c3e;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.set95 .set-drift-now,
+.set95-dialog .set-drift-now {
+  flex-shrink: 0;
+  padding-left: 12px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+
+.set95 .set-drift-track,
+.set95-dialog .set-drift-track {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 2px 6px;
+}
+
+.set95 .set-drift-track .chrome-face-swatch,
+.set95-dialog .set-drift-track .chrome-face-swatch {
+  width: 34px;
+  height: 34px;
+}
+
+.set95 .set-drift .chrome-face-slider,
+.set95-dialog .set-drift .chrome-face-slider {
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+}
+
+.set95 .set-drift-poles,
+.set95-dialog .set-drift-poles {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 8px 0;
+  font-size: 11px;
+}
+
+.set95 .set-drift-center,
+.set95-dialog .set-drift-center {
+  display: flex;
+  justify-content: center;
+  padding: 4px 8px 2px;
+}
+
+.set95 .set-drift button,
+.set95-dialog .set-drift button {
+  width: auto;
+  padding: 4px 12px;
+  line-height: 1.35;
+}
+
+.set95 .set-drift-controls,
+.set95-dialog .set-drift-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 4px 4px 0;
+}
+
+.set95 .set-drift-hint,
+.set95-dialog .set-drift-hint {
+  margin: 0;
+  padding: 0 2px;
+  line-height: 1.45;
+}
+
+.set95 .set-drift-shift,
+.set95-dialog .set-drift-shift {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+  padding: 2px 0 0;
+  border: 0;
+}
+
+.set95 .set-drift-shift legend,
+.set95-dialog .set-drift-shift legend {
+  float: none;
+  width: 100%;
+  margin: 0;
+  padding: 0 2px 2px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--s-nameplate);
+}
+
+.set95 .set-drift-modes,
+.set95-dialog .set-drift-modes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 32px;
+  padding: 4px 2px;
+}
+
+.set95 .set-drift-modes label,
+.set95-dialog .set-drift-modes label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.set95 .set-drift-start,
+.set95-dialog .set-drift-start {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 14px 18px;
+  padding: 0 2px;
 }

@@ -10,7 +10,7 @@
 
   background: var(--tc-paper);
   color: var(--tc-ink);
-  border-radius: 0.5rem;
+  border-radius: var(--r-half, 0.5rem);
   padding: 1.25rem 1.35rem 1.5rem;
   max-width: 40rem;
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
@@ -30,7 +30,7 @@
 .trip-checklist-paper .tc-card {
   background: #fff;
   border: 1px solid var(--tc-line);
-  border-radius: 0.5rem;
+  border-radius: var(--r-half, 0.5rem);
   padding: 0.9rem 1rem;
 }
 
@@ -59,7 +59,7 @@
   background: #fff !important;
   color: var(--tc-ink) !important;
   border: 1px solid #cfc8bc !important;
-  border-radius: 0.375rem;
+  border-radius: var(--r-375, 0.375rem);
 }
 
 .trip-checklist-paper .tc-add-row input::placeholder,
@@ -71,7 +71,7 @@
 .trip-checklist-paper .tc-bulk {
   background: var(--tc-wash);
   border: none;
-  border-radius: 0.5rem;
+  border-radius: var(--r-half, 0.5rem);
   padding: 0.75rem 0.9rem;
   font-size: 0.875rem;
 }
@@ -99,7 +99,7 @@
 .trip-checklist-paper .tc-list {
   background: transparent;
   border: none;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   overflow: visible;
   list-style: none;
   margin: 0;
@@ -138,7 +138,7 @@
 .trip-checklist-paper .tc-section {
   background: #fff;
   border: 1px solid var(--tc-line);
-  border-radius: 0.5rem;
+  border-radius: var(--r-half, 0.5rem);
   overflow: hidden;
 }
 

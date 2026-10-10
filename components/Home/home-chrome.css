@@ -80,17 +80,17 @@
   gap: 12px;
   padding: 12px 10px 12px 12px;
   color: #1c1e20;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     linear-gradient(180deg, rgba(0, 0, 0, 0.12) 0, transparent 22%, transparent 78%, rgba(255, 255, 255, 0.08) 100%),
     repeating-linear-gradient(90deg, transparent 0 2px, rgba(255, 255, 255, 0.05) 2px 3px),
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
-    linear-gradient(165deg, #c4c8cc 0%, var(--h-surface) 42%, #969a9e 100%);
+    linear-gradient(165deg, var(--chrome-grade-sheen) 0%, var(--h-surface) 42%, var(--chrome-shade) 100%);
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.75),
     inset 0 -1px 0 rgba(40, 42, 46, 0.45),
-    inset 0 0 0 2px #b0b4b8,
+    inset 0 0 0 2px var(--chrome-inset),
     inset 0 2px 3px rgba(0, 0, 0, 0.2);
 }
 
@@ -109,7 +109,7 @@
   justify-content: center;
   min-height: 40px;
   padding: 8px 16px 9px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-size: 22px;
   line-height: 1;
   letter-spacing: 0.18em;
@@ -120,7 +120,7 @@
     radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.18), transparent 52%),
     #040a08;
   box-shadow:
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     inset 0 1px 0 rgba(255, 255, 255, 0.16),
     inset 0 10px 14px rgba(0, 0, 0, 0.45);
 }
@@ -131,7 +131,7 @@
   gap: 8px;
   min-height: 28px;
   padding: 6px 10px 7px 8px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.14em;
@@ -140,11 +140,11 @@
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
   background-image:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0 1px, transparent 1px 2px),
-    linear-gradient(180deg, #eef0f2 0%, var(--h-surface) 48%, #a4a8ac 100%);
+    linear-gradient(180deg, var(--chrome-mist) 0%, var(--h-surface) 48%, var(--chrome-foot) 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
     inset 0 -1px 0 rgba(60, 64, 68, 0.35),
-    0 0 0 1px #6a6e72;
+    0 0 0 1px var(--chrome-lip);
 }
 
 .home95 .home-date-rest::before {
@@ -258,7 +258,7 @@
   flex-direction: column;
   gap: 6px;
   padding: 16px 8px 8px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     linear-gradient(
       180deg,
@@ -272,15 +272,15 @@
       transparent 0 2px,
       rgba(255, 255, 255, 0.05) 2px 3px
     ),
-    linear-gradient(165deg, #c4c8cc 0%, var(--hab-metal-mid, #acacac) 38%, #969a9e 72%, #84888c 100%);
+    linear-gradient(165deg, var(--chrome-grade-sheen) 0%, var(--hab-metal-mid, var(--chrome-brush)) 38%, var(--chrome-shade) 72%, var(--chrome-slate-dim) 100%);
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.75),
     inset 0 -1px 0 rgba(40, 42, 46, 0.5),
     inset 1px 0 0 rgba(255, 255, 255, 0.22),
     inset -1px 0 0 rgba(50, 52, 56, 0.35),
-    inset 0 0 0 2px var(--hab-metal-mid, #acacac),
-    inset 0 0 0 3px #969a9e,
+    inset 0 0 0 2px var(--hab-metal-mid, var(--chrome-brush)),
+    inset 0 0 0 3px var(--chrome-shade),
     inset 0 2px 3px rgba(0, 0, 0, 0.28);
 }
 
@@ -324,18 +324,18 @@
   z-index: 2;
   max-width: calc(100% - 28px);
   transform: translateY(-50%);
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background-image:
     repeating-linear-gradient(
       180deg,
       rgba(255, 255, 255, 0.28) 0 1px,
       transparent 1px 2px
     ),
-    linear-gradient(180deg, #eef0f2 0%, var(--hab-metal, #c0c0c0) 46%, #a4a8ac 100%);
+    linear-gradient(180deg, var(--chrome-mist) 0%, var(--hab-metal, var(--chrome-face)) 46%, var(--chrome-foot) 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
     inset 0 -1px 0 rgba(60, 64, 68, 0.38),
-    0 0 0 1px #6a6e72;
+    0 0 0 1px var(--chrome-lip);
 }
 
 .home95 .hab-score-caption::before {
@@ -403,14 +403,14 @@
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
   overflow: hidden;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   color: var(--hab-crt-green);
   text-shadow: var(--hab-crt-glow);
   background:
     radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.16), transparent 46%),
     var(--home-crt-glass, #040a08);
   box-shadow:
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     inset 0 1px 0 rgba(255, 255, 255, 0.16),
     inset 0 10px 16px rgba(0, 0, 0, 0.45),
     var(--h-field);
@@ -449,7 +449,7 @@
   margin-bottom: -8px;
   padding: 6px 17px 7px;
   overflow: hidden;
-  border-radius: 0 0 2px 2px;
+  border-radius: var(--r-0, 0px) var(--r-0, 0px) var(--r-2, 2px) var(--r-2, 2px);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.08) 42%, rgba(0, 0, 0, 0.06) 100%);
   box-shadow:
@@ -525,14 +525,14 @@
   width: 100%;
   box-sizing: border-box;
   overflow: hidden;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   color: var(--hab-crt-green);
   text-shadow: var(--hab-crt-glow);
   background:
     radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.14), transparent 42%),
     var(--home-crt-glass, #040a08);
   box-shadow:
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     inset 0 1px 0 rgba(255, 255, 255, 0.16),
     inset 0 10px 16px rgba(0, 0, 0, 0.45),
     var(--h-field);
@@ -591,7 +591,7 @@
   justify-content: space-between;
   gap: 6px;
   font-size: 11px;
-  color: #3a3a3a;
+  color: var(--chrome-ink-deep);
 }
 
 .home95 .hab-meter-name {
@@ -602,19 +602,19 @@
 .home95 .hab-meter-of {
   margin: 0;
   font-size: 9px;
-  color: #3a3a3a;
+  color: var(--chrome-ink-deep);
 }
 
 .home95 .home-overview .hab-well-fill[role="progressbar"] {
   height: 7px;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   overflow: hidden;
   background: #1a0a22;
   box-shadow: inset 1px 1px #000, inset -1px -1px #4a4a52;
 }
 
 .home95 .home-overview .hab-well-fill[role="progressbar"] > * {
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   background-color: transparent !important;
   background-image: linear-gradient(
     90deg,
@@ -644,7 +644,7 @@
   margin: 1px 0 0;
   font-size: 9px;
   letter-spacing: 0.12em;
-  color: #3a3a3a;
+  color: var(--chrome-ink-deep);
   text-align: center;
 }
 
@@ -801,7 +801,7 @@
 .home95 .home-presence-update {
   flex: 0 0 auto;
   padding: 2px 8px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   border: 0;
   font-size: 9px;
   font-weight: 700;
@@ -876,7 +876,7 @@ body .home-widget-dialog.home-widget-instrument {
     radial-gradient(circle at 18% 0%, rgba(255, 255, 255, 0.7), transparent 28%),
     linear-gradient(180deg, #e6e6e6 0%, var(--friend-silver) 42%, #9a9a9a 100%);
   border: 0;
-  border-radius: 18px;
+  border-radius: var(--r-18, 18px);
   box-shadow:
     inset 0 1px 0 #fff,
     inset 0 -1px 0 rgba(0, 0, 0, 0.35),
@@ -891,22 +891,12 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
   max-height: none;
 }
 
+/* Square metal × is `.b2-close-key`. This only places it on the caption. */
 .home-widget-dismiss {
   position: absolute;
-  top: 8px;
+  top: 10px;
   right: 10px;
   z-index: 2;
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: linear-gradient(180deg, #f7f7f7, #b0b0b0);
-  color: var(--friend-ink, #1c140f);
-  font-weight: 800;
-  line-height: 1;
-  cursor: pointer;
-  box-shadow: inset 0 1px 0 #fff, 0 1px 0 #666;
 }
 
 .home-widget-caption {
@@ -957,7 +947,7 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
 .home-widget-dialog .home-widget-lead {
   margin: 0;
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: var(--r-8, 8px);
   background: var(--friend-lcd, #07140f);
   color: var(--friend-glow, #7dffc4);
   font-size: 18px;
@@ -985,7 +975,7 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
   gap: 2px;
   min-height: 52px;
   padding: 6px 8px;
-  border-radius: 6px;
+  border-radius: var(--r-6, 6px);
   background: var(--friend-lcd, #07140f);
   box-shadow: inset 0 0 0 1px #1d3a2c, 0 1px 0 rgba(255, 255, 255, 0.45);
 }
@@ -1036,7 +1026,7 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
   gap: 8px;
   margin: 0;
   padding: 6px 8px;
-  border-radius: 6px;
+  border-radius: var(--r-6, 6px);
   background: var(--friend-lcd, #07140f);
   color: #d7ffe9;
   font-size: 12px;
@@ -1071,7 +1061,7 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
   color: var(--friend-ink, #1c140f);
   background: #fff;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--r-6, 6px);
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
@@ -1083,7 +1073,7 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
 .home-widget-dialog .home-review-key {
   align-self: flex-start;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--r-6, 6px);
   padding: 5px 10px;
   background: linear-gradient(180deg, #f3f3f3, #b5b5b5 55%, #8f8f8f);
   color: var(--friend-ink, #1c140f);
@@ -1104,7 +1094,7 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
   display: block;
   height: 6px;
   margin-top: 4px;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   background: #1a0a22;
   box-shadow: inset 1px 1px #000, inset -1px -1px #4a4a52;
   overflow: hidden;
@@ -1137,8 +1127,8 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
 .home-widget-fieldset {
   margin: 8px 0 0;
   padding: 8px 10px;
-  border: 1px solid #808080;
-  border-radius: 6px;
+  border: 1px solid var(--chrome-lo);
+  border-radius: var(--r-6, 6px);
   background: rgba(255, 255, 255, 0.28);
 }
 
@@ -1176,7 +1166,7 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
 .home-widget-chart {
   margin-top: 8px;
   padding: 8px;
-  border-radius: 6px;
+  border-radius: var(--r-6, 6px);
   background: var(--friend-lcd, #07140f);
   box-shadow: inset 0 0 0 1px #1d3a2c, 0 1px 0 rgba(255, 255, 255, 0.45);
 }
@@ -1223,7 +1213,7 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
 .home-widget-remain details {
   margin-top: 6px;
   padding: 6px 8px;
-  border-radius: 6px;
+  border-radius: var(--r-6, 6px);
   background: var(--friend-lcd, #07140f);
   box-shadow: inset 0 0 0 1px #1d3a2c;
   color: #d7ffe9;
@@ -1325,7 +1315,7 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
   font-size: 9px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #3a3a3a;
+  color: var(--chrome-ink-deep);
   text-align: center;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1376,7 +1366,7 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
   flex-shrink: 0;
   font-size: 9px;
   letter-spacing: 0.08em;
-  color: #3a3a3a;
+  color: var(--chrome-ink-deep);
   text-align: center;
 }
 
@@ -1424,7 +1414,7 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
 .home95 .home-weather-chip-hour {
   font-size: 8px;
   letter-spacing: 0.04em;
-  color: #3a3a3a;
+  color: var(--chrome-ink-deep);
 }
 
 .home95 .home-weather-chip-icon {
@@ -1452,7 +1442,7 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
   margin: 0;
   flex-shrink: 0;
   font-size: 9px;
-  color: #3a3a3a;
+  color: var(--chrome-ink-deep);
   text-align: center;
 }
 
@@ -1463,8 +1453,8 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
   padding: 6px 6px 10px;
   gap: 0;
   border: none;
-  border-radius: 0;
-  background: var(--h-surface, #c0c0c0);
+  border-radius: var(--r-0, 0px);
+  background: var(--h-surface, var(--chrome-face));
   box-shadow: var(--h-raised);
   font-family: var(--w95-font, Tahoma, "MS Sans Serif", Geneva, sans-serif);
   color: #000;
@@ -1599,7 +1589,7 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
   font-size: 9px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #3a3a3a;
+  color: var(--chrome-ink-deep);
 }
 
 .home95.home-weather-dialog .home-weather-search input {
@@ -1735,7 +1725,7 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
 .home95.home-weather-dialog .home-weather-week-rain {
   font-size: 8px;
   letter-spacing: 0.04em;
-  color: #3a3a3a;
+  color: var(--chrome-ink-deep);
 }
 
 .home95.home-weather-dialog .home-weather-week-hl {
@@ -1752,7 +1742,7 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
   font-size: 9px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #3a3a3a;
+  color: var(--chrome-ink-deep);
 }
 
 .home95.home-weather-dialog .home-weather-spark {
@@ -1786,7 +1776,7 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
   flex-direction: column;
   gap: 6px;
   padding: 8px 10px;
-  background: var(--hab-metal, #c0c0c0);
+  background: var(--hab-metal, var(--chrome-face));
   box-shadow: var(--h-sunken);
 }
 
@@ -1797,7 +1787,7 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
   font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #3a3a3a;
+  color: var(--chrome-ink-deep);
 }
 
 .home95 .home-weather-tide-readouts {
@@ -1817,7 +1807,7 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
   margin: 0;
   padding: 4px 2px;
   font-size: 10px;
-  color: #3a3a3a;
+  color: var(--chrome-ink-deep);
 }
 
 .home95 .home-review-actions {
@@ -1874,17 +1864,17 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
 
 .home95 .home-widgets-key {
   border: none;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   height: 28px;
   padding: 0 12px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, rgba(255, 255, 255, 0.12) 14%, transparent 30%),
-    linear-gradient(165deg, #eceef0 0%, #d4d6d8 34%, var(--h-surface) 68%, #9a9ea2 100%);
+    linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 34%, var(--h-surface) 68%, var(--chrome-key-shade) 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     inset 0 -1px 0 rgba(55, 58, 62, 0.45),
-    0 0 0 1px #4a4e52,
-    0 1px 0 #6a6e72;
+    0 0 0 1px var(--chrome-ring-deep),
+    0 1px 0 var(--chrome-lip);
   color: #1c1e20;
   font: inherit;
   font-size: 11px;
@@ -2212,8 +2202,8 @@ body .home-widget-dialog.home-widget-instrument.home-widget-catalog {
   flex-direction: column;
   gap: 3px;
   padding: 4px;
-  background: #b4b8bc;
-  box-shadow: inset 1px 1px #808080, inset -1px -1px #fff;
+  background: var(--chrome-nickel);
+  box-shadow: inset 1px 1px var(--chrome-lo), inset -1px -1px #fff;
 }
 
 .home-catalog-pick {
@@ -2222,8 +2212,8 @@ body .home-widget-dialog.home-widget-instrument.home-widget-catalog {
   gap: 6px;
   width: 100%;
   border: none;
-  background: #eceef0;
-  box-shadow: inset 0 1px 0 #fff, 0 0 0 1px #8a8e92;
+  background: var(--chrome-key-sheen);
+  box-shadow: inset 0 1px 0 #fff, 0 0 0 1px var(--chrome-slate);
   font: inherit;
   font-size: 11px;
   line-height: 1.25;
@@ -2280,20 +2270,20 @@ body .home-widget-dialog.home-widget-instrument.home-widget-catalog {
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #3a3e42;
+  color: var(--chrome-pressed);
 }
 
 .home-catalog-sample {
   width: min(168px, 100%);
   display: flex;
   flex-direction: column;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   overflow: hidden;
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
-    linear-gradient(180deg, #d8dce0, #b8bcbe);
+    linear-gradient(180deg, var(--chrome-mill-hi), var(--chrome-ash-2));
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.75);
 }
 
@@ -2336,7 +2326,7 @@ body .home-widget-dialog.home-widget-instrument.home-widget-catalog {
   flex: none;
   border-radius: 50%;
   background: radial-gradient(circle at 32% 28%, #6a3030, #220808 70%);
-  box-shadow: inset 0 0 0 1px #140404, 0 0 0 1px #808080;
+  box-shadow: inset 0 0 0 1px #140404, 0 0 0 1px var(--chrome-lo);
 }
 
 .home-widget-catalog .home-widgets-lamp[data-on="true"] {
@@ -2597,19 +2587,25 @@ body .home-widget-dialog.is-sky .home-sky-near-title {
   color: #1c140f;
 }
 
-.home-sky-zoom {
+.home-sky-zoom,
+.home-sky-view,
+.home-sky-transport {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 4px;
 }
 
-.home-sky-scale-key {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  margin-top: 4px;
+.home-sky-view > .home-sky-zoom {
+  grid-column: 1 / -1;
 }
 
-.home-sky-scale-key button:disabled {
+.home-sky-view > .home-sky-scale-key {
+  grid-column: 1;
+}
+
+.home-sky-transport button:disabled {
   opacity: 0.38;
+  cursor: default;
 }
 
 .home-sky-scale {
@@ -2621,10 +2617,113 @@ body .home-widget-dialog.is-sky .home-sky-near-title {
   background: #050806;
 }
 
-.home-sky-scale svg {
+.home-sky-scale-viewport {
+  position: relative;
   flex: 1;
-  width: 100%;
   min-height: 0;
+  overflow: hidden;
+  container-type: size;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #050806;
+}
+
+.home-sky-scale-flight {
+  position: relative;
+  width: min(100cqw, 100cqh);
+  height: min(100cqw, 100cqh);
+  flex: none;
+  transform-origin: center;
+  will-change: transform;
+}
+
+.home-sky-scale-object {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 0 1px #050806) drop-shadow(0 0 2px #050806);
+}
+
+.home-sky-scale-object svg,
+.home-sky-scale-disk,
+.home-sky-scale-disk img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.home-sky-scale-disk {
+  border-radius: 50%;
+  overflow: hidden;
+  position: relative;
+}
+
+.home-sky-scale-disk img {
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.home-sky-scale-disk.is-globe img {
+  object-fit: contain;
+}
+
+.home-sky-scale-disk:not(.is-globe)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 42% 38%, transparent 46%, rgba(0, 0, 0, 0.55) 100%);
+  pointer-events: none;
+}
+
+.home-sky-scale-universe {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.home-sky-scale-universe svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.home-sky-scale-speck {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  width: 22px;
+  height: 16px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow:
+    0 0 8px 3px rgba(244, 255, 248, 0.95),
+    0 0 22px 8px rgba(159, 255, 212, 0.45);
+}
+
+.home-sky-scale-speck .home-sky-galaxy-frame {
+  width: 22px;
+  height: 16px;
+}
+
+.home-sky-scale-speck .home-sky-galaxy-caption {
+  display: none;
+}
+
+.home-sky-scale-speck::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: 3px;
+  height: 3px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: #f7fff9;
+  box-shadow: 0 0 6px 2px rgba(244, 255, 248, 0.95);
 }
 
 .home-sky-scale p,
@@ -2660,15 +2759,16 @@ body .home-widget-dialog.is-sky .home-sky-near-title {
   background: linear-gradient(transparent, rgba(5, 8, 6, 0.92) 36%);
 }
 
-/* Inactive stops stay near-black. The label is phosphor, not engraved ink.
-   body.win95-app replaces a button's background-image, which had left the
-   silver face transparent and the dark ink sitting on this glass. */
-.home-sky-zoom .home-review-key,
-body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout .home-sky-zoom button.home-review-key {
+/* View, Transport, and True sizes stay phosphor on near-black.
+   body.win95-app replaces a button's background-image, and
+   .home-widget-dialog .home-review-key sets dark ink. Now is the metal key
+   and is excluded here. */
+.home-sky-readout button.home-review-key:not(.home-sky-now),
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout button.home-review-key:not(.home-sky-now) {
   min-height: 1.85rem;
   padding: 5px 4px;
   border: 0;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background-color: #0a100e;
   background-image:
     linear-gradient(180deg, rgba(184, 255, 220, 0.16) 0, transparent 34%),
@@ -2686,12 +2786,13 @@ body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-reado
   text-align: center;
   text-transform: uppercase;
   text-shadow: 0 0 6px rgba(125, 255, 196, 0.95);
+  white-space: nowrap;
   -webkit-font-smoothing: none;
   cursor: pointer;
 }
 
-.home-sky-zoom .home-review-key:hover,
-body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout .home-sky-zoom button.home-review-key:hover {
+.home-sky-readout button.home-review-key:not(.home-sky-now):hover,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout button.home-review-key:not(.home-sky-now):hover {
   color: #f4fff9;
   box-shadow:
     inset 0 1px 0 rgba(220, 255, 238, 0.35),
@@ -2699,14 +2800,14 @@ body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-reado
     0 0 0 1px #2f6d52;
 }
 
-.home-sky-zoom .home-review-key:focus-visible,
-body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout .home-sky-zoom button.home-review-key:focus-visible {
+.home-sky-readout button.home-review-key:not(.home-sky-now):focus-visible,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout button.home-review-key:not(.home-sky-now):focus-visible {
   outline: 1px dotted #7dffc4;
   outline-offset: 1px;
 }
 
-.home-sky-zoom .home-review-key.is-on,
-body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout .home-sky-zoom button.home-review-key.is-on {
+.home-sky-readout button.home-review-key:not(.home-sky-now).is-on,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout button.home-review-key:not(.home-sky-now).is-on {
   background-color: #082018;
   background-image:
     radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.34), transparent 58%),
@@ -2719,91 +2820,28 @@ body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-reado
   text-shadow: 0 0 2px #f4fff9, 0 0 8px #7dffc4;
 }
 
-.home-sky-zoom .home-review-key:active,
-body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout .home-sky-zoom button.home-review-key:active {
+.home-sky-readout button.home-review-key:not(.home-sky-now):active,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout button.home-review-key:not(.home-sky-now):active {
   box-shadow:
     inset 0 2px 5px rgba(0, 0, 0, 0.55),
     0 0 0 1px #1e4a36;
 }
 
-.home-sky-zoom .home-review-key.is-on:active,
-body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout .home-sky-zoom button.home-review-key.is-on:active {
+.home-sky-readout button.home-review-key:not(.home-sky-now).is-on:active,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout button.home-review-key:not(.home-sky-now).is-on:active {
   box-shadow:
     inset 0 0 0 1px #7dffc4,
     inset 0 2px 6px rgba(0, 0, 0, 0.45);
 }
 
-/* True sizes sits beside the zoom stops, not inside them. The same win95
-   background-image had left its ink black on this glass. */
-.home-sky-readout > .home-review-key,
-body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout > button.home-review-key {
-  align-self: stretch;
-  min-height: 1.85rem;
-  padding: 5px 8px;
-  border: 0;
-  border-radius: 2px;
-  background-color: #0a100e;
-  background-image:
-    linear-gradient(180deg, rgba(184, 255, 220, 0.16) 0, transparent 34%),
-    repeating-linear-gradient(180deg, rgba(125, 255, 196, 0.08) 0 1px, transparent 1px 3px);
-  box-shadow:
-    inset 0 1px 0 rgba(200, 255, 230, 0.22),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.72),
-    0 0 0 1px #1e4a36;
-  color: #f4fff9;
-  font-family: var(--w95-font, "w95fa", Tahoma, "MS Sans Serif", Geneva, sans-serif);
+/* True sizes is a compact switch in the body band, one key wide, not a bar. */
+.home-sky-readout button.home-review-key.home-sky-sizes,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout button.home-review-key.home-sky-sizes {
+  justify-self: start;
+  width: auto;
+  padding: 4px 8px;
   font-size: 12px;
-  font-weight: 700;
   letter-spacing: 0.06em;
-  line-height: 1.2;
-  text-align: center;
-  text-transform: uppercase;
-  text-shadow: 0 0 6px rgba(125, 255, 196, 0.95);
-  -webkit-font-smoothing: none;
-  cursor: pointer;
-}
-
-.home-sky-readout > .home-review-key:hover,
-body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout > button.home-review-key:hover {
-  color: #f4fff9;
-  box-shadow:
-    inset 0 1px 0 rgba(220, 255, 238, 0.35),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.72),
-    0 0 0 1px #2f6d52;
-}
-
-.home-sky-readout > .home-review-key:focus-visible,
-body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout > button.home-review-key:focus-visible {
-  outline: 1px dotted #7dffc4;
-  outline-offset: 1px;
-}
-
-.home-sky-readout > .home-review-key.is-on,
-body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout > button.home-review-key.is-on {
-  background-color: #082018;
-  background-image:
-    radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.34), transparent 58%),
-    linear-gradient(180deg, #143c2c 0%, #071610 74%);
-  box-shadow:
-    inset 0 0 0 1px #7dffc4,
-    inset 0 1px 0 rgba(244, 255, 249, 0.5),
-    0 0 12px rgba(125, 255, 196, 0.38);
-  color: #ffffff;
-  text-shadow: 0 0 2px #f4fff9, 0 0 8px #7dffc4;
-}
-
-.home-sky-readout > .home-review-key:active,
-body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout > button.home-review-key:active {
-  box-shadow:
-    inset 0 2px 5px rgba(0, 0, 0, 0.55),
-    0 0 0 1px #1e4a36;
-}
-
-.home-sky-readout > .home-review-key.is-on:active,
-body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout > button.home-review-key.is-on:active {
-  box-shadow:
-    inset 0 0 0 1px #7dffc4,
-    inset 0 2px 6px rgba(0, 0, 0, 0.45);
 }
 
 .home-sky-zoom-note,
@@ -2835,16 +2873,59 @@ body .home-widget-dialog.is-sky .home-sky-zoom-note {
 .home-sky-readout {
   --sky-label: var(--w95-font, "w95fa", Tahoma, "MS Sans Serif", Geneva, sans-serif);
   --sky-figure: var(--font-karla), Karla, "Segoe UI", sans-serif;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  position: relative;
   min-width: 0;
-  padding: 8px;
+  min-height: 240px;
+  overflow: hidden;
   background: #050806;
   color: #c8ffe8;
   box-shadow: inset 1px 1px #000, inset -1px -1px #1c3d2c;
   font-family: var(--sky-label);
   -webkit-font-smoothing: none;
+}
+
+.home-sky-readout-fit {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  padding: 8px;
+  overflow: hidden;
+}
+
+.home-sky-readout-fit > h3,
+.home-sky-view,
+.home-sky-transport {
+  flex: 0 0 auto;
+}
+
+.home-sky-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.home-sky-body-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: #1e4a36 transparent;
+}
+
+.home-sky-body-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.home-sky-body-scroll::-webkit-scrollbar-thumb {
+  background: #1e4a36;
 }
 
 .home-sky-readout h3,
@@ -2860,7 +2941,7 @@ body .home-widget-dialog.is-sky .home-sky-readout h3 {
 
 .home-sky-epoch,
 body .home-widget-dialog.is-sky .home-sky-epoch {
-  margin: -4px 0 0;
+  margin: 0;
   font-family: var(--sky-figure);
   font-size: 13px;
   font-weight: 400;
@@ -2874,9 +2955,17 @@ body .home-widget-dialog.is-sky .home-sky-epoch {
 
 .home-sky-when {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.home-sky-when-line {
+  display: flex;
   align-items: center;
-  gap: 6px 8px;
+  align-self: stretch;
+  gap: 6px;
+  min-width: 0;
 }
 
 .home-sky-when label {
@@ -2890,13 +2979,13 @@ body .home-widget-dialog.is-sky .home-sky-epoch {
 
 .home-sky-when input,
 body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout .home-sky-when input {
-  flex: 1 1 9.5rem;
+  flex: 1 1 0;
   min-width: 0;
   width: auto;
   margin: 0;
   padding: 4px 6px;
   border: 0;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   background: #07110c;
   color: #f4fff9;
   color-scheme: dark;
@@ -2914,14 +3003,14 @@ body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-reado
   outline-offset: 1px;
 }
 
-.home-sky-when .home-review-key,
-body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout .home-sky-when button.home-review-key {
+.home-sky-when .home-sky-now,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout .home-sky-when button.home-sky-now {
   flex: 0 0 auto;
   min-height: 1.85rem;
   padding: 5px 10px;
   border: 0;
-  border-radius: 2px;
-  background-color: #c8ccd0;
+  border-radius: var(--r-2, 2px);
+  background-color: var(--chrome-pewter);
   background-image: var(--fascia-key-face);
   box-shadow: var(--fascia-key-ring);
   color: var(--fascia-nameplate, #1c1e20);
@@ -2937,22 +3026,23 @@ body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-reado
   cursor: pointer;
 }
 
-.home-sky-when .home-review-key:focus-visible,
-body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout .home-sky-when button.home-review-key:focus-visible {
+.home-sky-when .home-sky-now:focus-visible,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout .home-sky-when button.home-sky-now:focus-visible {
   outline: 1px dotted #000080;
   outline-offset: 1px;
 }
 
-.home-sky-when .home-review-key:active,
-body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout .home-sky-when button.home-review-key:active {
+.home-sky-when .home-sky-now:active,
+body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-readout .home-sky-when button.home-sky-now:active {
   box-shadow: var(--fascia-key-pressed);
 }
 
 .home-sky-progress {
   display: grid;
-  gap: 4px;
+  flex: 0 0 auto;
+  gap: 3px;
   margin: 0;
-  padding: 6px 8px;
+  padding: 5px 6px;
   background: #07110c;
   box-shadow: inset 1px 1px #000, inset -1px -1px #14261c;
 }
@@ -2971,7 +3061,7 @@ body .home-widget-dialog.is-sky .home-sky-progress-label {
 .home-sky-progress ul {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 2px 10px;
+  gap: 1px 8px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -2980,7 +3070,7 @@ body .home-widget-dialog.is-sky .home-sky-progress-label {
 .home-sky-progress li {
   font-family: var(--sky-label);
   font-size: 12px;
-  line-height: 1.35;
+  line-height: 1.25;
   -webkit-font-smoothing: none;
 }
 
@@ -3104,7 +3194,7 @@ body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-reado
   min-height: 1.7rem;
   padding: 4px 6px;
   border: 0;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background-color: #0a100e;
   background-image:
     linear-gradient(180deg, rgba(184, 255, 220, 0.12) 0, transparent 40%),
@@ -3241,7 +3331,7 @@ body .home-widget-dialog.is-sky .home-sky-motion-ctl output {
   margin: 0;
   appearance: none;
   background: rgba(125, 255, 196, 0.18);
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   accent-color: #c8ffe8;
 }
 
@@ -3278,7 +3368,7 @@ body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-motio
   min-height: 1.85rem;
   padding: 5px 10px;
   border: 0;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background-color: #0a100e;
   background-image:
     linear-gradient(180deg, rgba(184, 255, 220, 0.16) 0, transparent 34%),
@@ -3436,7 +3526,7 @@ body .home-widget-dialog.is-sky .home-sky-motion-name small {
   height: 22px;
   overflow: hidden;
   background: #050806;
-  border-radius: 4px;
+  border-radius: var(--r-4, 4px);
   box-shadow: inset 1px 1px #000;
 }
 
@@ -3493,6 +3583,23 @@ body .home-widget-dialog.is-sky .home-sky-motion-sum {
 @media (max-width: 720px) {
   .home-sky-lab {
     grid-template-columns: 1fr;
+  }
+
+  .home-sky-readout {
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .home-sky-readout-fit {
+    position: static;
+    overflow: visible;
+  }
+
+  .home-sky-body,
+  .home-sky-body-scroll,
+  .home-sky-progress {
+    overflow: visible;
+    min-height: 0;
   }
 
   .home-sky-motion-ctl,
@@ -3557,7 +3664,7 @@ body .home-widget-dialog.is-sky .home-sky-motion-sum {
   border: none;
   background: transparent;
   font: inherit;
-  color: #3a3a3a;
+  color: var(--chrome-ink-deep);
   cursor: default;
 }
 
@@ -3579,12 +3686,12 @@ body .home-widget-dialog.is-sky .home-sky-motion-sum {
   max-height: min(72vh, 520px);
   padding: 8px;
   overflow: hidden;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
-    linear-gradient(180deg, #e4e7ea 0%, #c4c8cc 48%, #a8acb0 100%);
+    linear-gradient(180deg, var(--chrome-pearl-2) 0%, var(--chrome-grade-sheen) 48%, var(--chrome-stone) 100%);
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.85),
     inset 0 -1px 0 rgba(40, 42, 46, 0.4),
     0 10px 18px rgba(0, 0, 0, 0.28);
@@ -3596,13 +3703,13 @@ body .home-widget-dialog.is-sky .home-sky-motion-sum {
   flex-direction: column;
   gap: 6px;
   padding: 8px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     linear-gradient(180deg, rgba(0, 0, 0, 0.06), transparent 36%),
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0 1px, transparent 1px 2px),
-    #c8ccd0;
+    var(--chrome-pewter);
   box-shadow:
-    0 0 0 1px #6a6e72,
+    0 0 0 1px var(--chrome-lip),
     inset 0 1px 0 rgba(255, 255, 255, 0.7),
     inset 0 2px 3px rgba(0, 0, 0, 0.1);
 }
@@ -3643,23 +3750,23 @@ body .home-widget-dialog.is-sky .home-sky-motion-sum {
   color: #1c1e20;
   background: #d5d8dc;
   box-shadow:
-    inset 1px 1px #808080,
+    inset 1px 1px var(--chrome-lo),
     inset -1px -1px #fff;
 }
 
 .home95 .home-widgets-catalog-key {
   flex: none;
   border: none;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   min-height: 28px;
   padding: 6px 10px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, rgba(255, 255, 255, 0.12) 14%, transparent 30%),
-    linear-gradient(165deg, #eceef0 0%, #d4d6d8 34%, var(--h-surface, #c0c0c0) 68%, #9a9ea2 100%);
+    linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 34%, var(--h-surface, var(--chrome-face)) 68%, var(--chrome-key-shade) 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     inset 0 -1px 0 rgba(55, 58, 62, 0.45),
-    0 0 0 1px #4a4e52;
+    0 0 0 1px var(--chrome-ring-deep);
   color: #1c1e20;
   font: inherit;
   font-size: 11px;
@@ -3681,9 +3788,9 @@ body .home-widget-dialog.is-sky .home-sky-motion-sum {
   flex-direction: column;
   gap: 3px;
   padding: 4px;
-  background: #b4b8bc;
+  background: var(--chrome-nickel);
   box-shadow:
-    inset 1px 1px #808080,
+    inset 1px 1px var(--chrome-lo),
     inset -1px -1px #fff;
 }
 
@@ -3695,7 +3802,7 @@ body .home-widget-dialog.is-sky .home-sky-motion-sum {
   background: radial-gradient(circle at 32% 28%, #6a3030, #220808 70%);
   box-shadow:
     inset 0 0 0 1px #140404,
-    0 0 0 1px #808080;
+    0 0 0 1px var(--chrome-lo);
 }
 
 .home95 .home-widgets-lamp[data-on="true"] {
@@ -3783,7 +3890,7 @@ body .home-widget-dialog.is-sky .home-sky-motion-sum {
 }
 
 .home95 [role="progressbar"] {
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   background: #fff;
   box-shadow: var(--h-field);
 }
@@ -3805,7 +3912,7 @@ body .home-widget-dialog.is-sky .home-sky-motion-sum {
   background:
     radial-gradient(circle at 18% 0%, rgba(255, 255, 255, 0.7), transparent 28%),
     linear-gradient(180deg, #e6e6e6 0%, var(--friend-silver) 42%, #9a9a9a 100%);
-  border-radius: 18px;
+  border-radius: var(--r-18, 18px);
   box-shadow:
     inset 0 1px 0 #fff,
     inset 0 -1px 0 rgba(0, 0, 0, 0.35),
@@ -3814,12 +3921,8 @@ body .home-widget-dialog.is-sky .home-sky-motion-sum {
 }
 
 .home95.home-weather-dialog.home-widget-instrument > .home-widget-dismiss {
-  top: 8px;
+  top: 10px;
   right: 10px;
-  color: var(--friend-ink);
-  opacity: 1;
-  background: linear-gradient(180deg, #f7f7f7, #b0b0b0);
-  box-shadow: inset 0 1px 0 #fff, 0 1px 0 #666;
 }
 
 .home95.home-weather-dialog.home-widget-instrument .home-weather-dialog-title {
@@ -3850,7 +3953,7 @@ body .home-widget-dialog.is-sky .home-sky-motion-sum {
 .home95.home-weather-dialog.home-widget-instrument .home-weather-tide-empty {
   margin: 0;
   padding: 8px 10px;
-  border-radius: 6px;
+  border-radius: var(--r-6, 6px);
   background: var(--friend-lcd);
   color: #d7ffe9;
   letter-spacing: 0.04em;
@@ -3873,14 +3976,14 @@ body .home-widget-dialog.is-sky .home-sky-motion-sum {
 }
 
 .home95.home-weather-dialog.home-widget-instrument .home-weather-readout.is-dialog {
-  border-radius: 8px;
+  border-radius: var(--r-8, 8px);
   background: var(--friend-lcd);
   box-shadow: inset 0 0 0 1px #1d3a2c, 0 0 12px rgba(125, 255, 196, 0.12);
 }
 
 .home95.home-weather-dialog.home-widget-instrument .home-weather-beach,
 .home95.home-weather-dialog.home-widget-instrument .home-weather-pane {
-  border-radius: 6px;
+  border-radius: var(--r-6, 6px);
   padding: 5px 10px;
   background: linear-gradient(180deg, #f3f3f3, #b5b5b5 55%, #8f8f8f);
   color: var(--friend-ink);
@@ -3898,12 +4001,12 @@ body .home-widget-dialog.is-sky .home-sky-motion-sum {
 
 .home95.home-weather-dialog.home-widget-instrument .home-weather-search input,
 .home95.home-weather-dialog.home-widget-instrument .home-weather-hits {
-  border-radius: 6px;
+  border-radius: var(--r-6, 6px);
 }
 
 .home95.home-weather-dialog.home-widget-instrument .home-weather-week-day,
 .home95.home-weather-dialog.home-widget-instrument .home-weather-tide {
-  border-radius: 6px;
+  border-radius: var(--r-6, 6px);
   background: var(--friend-lcd);
   color: #d7ffe9;
   box-shadow: inset 0 0 0 1px #1d3a2c;
@@ -3916,7 +4019,7 @@ body .home-widget-dialog.is-sky .home-sky-motion-sum {
 }
 
 .home95.home-weather-dialog.home-widget-instrument .home-weather-alerts {
-  border-radius: 6px;
+  border-radius: var(--r-6, 6px);
   background: var(--friend-lcd);
   color: var(--friend-nixie);
   border-left: 3px solid var(--friend-nixie);
@@ -3961,16 +4064,16 @@ body .home-widget-dialog.is-sky .home-sky-motion-sum {
 
 /* Needs Attention — milled fascia. Category keys hide a queue without deleting it. */
 .home95 .home-na {
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   color: #1c1e20;
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
-    linear-gradient(165deg, #d8dce0 0%, var(--h-surface) 46%, #9a9ea2 100%);
+    linear-gradient(165deg, var(--chrome-mill-hi) 0%, var(--h-surface) 46%, var(--chrome-key-shade) 100%);
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.75),
     inset 0 -1px 0 rgba(40, 42, 46, 0.4),
-    inset 0 0 0 2px #b0b4b8;
+    inset 0 0 0 2px var(--chrome-inset);
 }
 
 .home95 .home-na-bar {
@@ -3986,7 +4089,7 @@ body .home-widget-dialog.is-sky .home-sky-motion-sum {
   min-height: 36px;
   padding: 4px 12px 5px 8px;
   border: 0;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: transparent;
   color: #1c1e20;
   font: inherit;
@@ -3996,7 +4099,7 @@ body .home-widget-dialog.is-sky .home-sky-motion-sum {
 .home95 .home-na-chevron {
   width: 16px;
   height: 16px;
-  color: #3a3e42;
+  color: var(--chrome-pressed);
 }
 
 .home95 .home-na-chevron.is-shut {
@@ -4018,7 +4121,7 @@ body .home-widget-dialog.is-sky .home-sky-motion-sum {
   min-width: 52px;
   min-height: 28px;
   padding: 2px 10px 3px 6px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   color: var(--hab-crt-green, #7dffc4);
   font-size: 16px;
   font-weight: 700;
@@ -4028,7 +4131,7 @@ body .home-widget-dialog.is-sky .home-sky-motion-sum {
     radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.16), transparent 55%),
     #070c0a;
   box-shadow:
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     inset 0 8px 10px rgba(0, 0, 0, 0.4);
 }
 
@@ -4059,14 +4162,14 @@ body .home-widget-dialog.is-sky .home-sky-motion-sum {
   min-height: 28px;
   padding: 4px 10px 5px;
   border: 0;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.12) 16%, transparent 32%),
-    linear-gradient(165deg, #eceef0 0%, #d4d6d8 40%, var(--h-surface) 100%);
+    linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 40%, var(--h-surface) 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     inset 0 -1px 0 rgba(55, 58, 62, 0.4),
-    0 0 0 1px #4a4e52;
+    0 0 0 1px var(--chrome-ring-deep);
   color: #1c1e20;
   font: inherit;
   font-size: 11px;
@@ -4086,27 +4189,27 @@ body .home-widget-dialog.is-sky .home-sky-motion-sum {
 }
 
 .home95 .home-na-reason-count {
-  color: #3a3e42;
+  color: var(--chrome-pressed);
   letter-spacing: 0.04em;
 }
 
 .home95 .home-na-reason.is-hidden {
-  color: #6a6e72;
+  color: var(--chrome-lip);
   text-shadow: none;
   box-shadow:
     inset 0 1px 2px rgba(0, 0, 0, 0.28),
-    0 0 0 1px #6a6e72;
+    0 0 0 1px var(--chrome-lip);
 }
 
 .home95 .home-na-reason.is-hidden .home-na-reason-lamp {
-  background: radial-gradient(circle at 35% 30%, #d0d4d8 0 20%, #6a6e72 70%);
-  box-shadow: 0 0 0 1px #3a3e42;
+  background: radial-gradient(circle at 35% 30%, var(--chrome-haze) 0 20%, var(--chrome-lip) 70%);
+  box-shadow: 0 0 0 1px var(--chrome-pressed);
 }
 
 .home95 .home-na-empty {
   margin: 0;
   padding: 10px 12px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-size: 12px;
   letter-spacing: 0.04em;
   color: #2a2c2e;
@@ -4127,7 +4230,7 @@ body .home-widget-dialog.is-sky .home-sky-motion-sum {
 .home95 .home-na-group p {
   margin: 2px 0 6px;
   font-size: 11px;
-  color: #3a3e42;
+  color: var(--chrome-pressed);
 }
 
 .home95 .home-na-group ul {
@@ -4145,11 +4248,11 @@ body .home-widget-dialog.is-sky .home-sky-motion-sum {
   gap: 8px;
   min-height: 36px;
   padding: 4px 6px 4px 10px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0.12));
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.8),
-    0 0 0 1px #8a8e92;
+    0 0 0 1px var(--chrome-slate);
 }
 
 .home95 .home-na-open {
@@ -4179,13 +4282,13 @@ body .home-widget-dialog.is-sky .home-sky-motion-sum {
   min-height: 26px;
   padding: 3px 8px 4px;
   border: 0;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 30%),
-    linear-gradient(165deg, #eceef0, #b4b8bc);
+    linear-gradient(165deg, var(--chrome-key-sheen), var(--chrome-nickel));
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 0 0 1px #4a4e52;
+    0 0 0 1px var(--chrome-ring-deep);
   color: #1c1e20;
   font: inherit;
   font-size: 10px;
@@ -4232,16 +4335,16 @@ body.win95-app .home-tabs[role="tablist"] {
   padding: 6px;
   margin-top: 1.5rem;
   margin-bottom: 0;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0 1px, transparent 1px 2px),
     linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0, transparent 28%, rgba(0, 0, 0, 0.08) 100%),
     var(--chrome-brush, #acacac);
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.7),
     inset 0 -1px 0 rgba(40, 42, 46, 0.45),
-    inset 0 0 0 2px #b0b4b8,
+    inset 0 0 0 2px var(--chrome-inset),
     inset 0 2px 3px rgba(0, 0, 0, 0.22);
 }
 
@@ -4257,11 +4360,11 @@ body.win95-app .home-tabs [role="tab"] {
   height: auto;
   min-height: 36px;
   padding: 8px 8px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.16) 12%, transparent 28%),
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
-    linear-gradient(165deg, #eceef0 0%, #d4d6d8 30%, var(--chrome-face, #c0c0c0) 62%, #9a9ea2 100%);
+    linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 30%, var(--chrome-face, #c0c0c0) 62%, var(--chrome-key-shade) 100%);
   color: #1c1e20;
   font-size: 12px;
   font-weight: 700;
@@ -4271,15 +4374,15 @@ body.win95-app .home-tabs [role="tab"] {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     inset 0 -1px 0 rgba(55, 58, 62, 0.45),
-    0 0 0 1px #4a4e52,
-    0 1px 0 #6a6e72;
+    0 0 0 1px var(--chrome-ring-deep),
+    0 1px 0 var(--chrome-lip);
 }
 
 body.win95-app [data-ui-name="Home tabs"] [role="tab"]:active,
 body.win95-app .home-tabs [role="tab"]:active {
   box-shadow:
     inset 0 1px 2px rgba(0, 0, 0, 0.4),
-    0 0 0 1px #3a3e42;
+    0 0 0 1px var(--chrome-pressed);
 }
 
 body.win95-app [data-ui-name="Home tabs"] [role="tab"][data-state="active"],
@@ -4292,7 +4395,7 @@ body.win95-app .home-tabs [role="tab"][data-state="active"] {
   letter-spacing: 0.12em;
   text-shadow: 0 0 3px #7dffc4;
   box-shadow:
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     inset 0 1px 0 rgba(255, 255, 255, 0.16),
     inset 0 8px 12px rgba(0, 0, 0, 0.45);
 }

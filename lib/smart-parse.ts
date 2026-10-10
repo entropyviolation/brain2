@@ -16,6 +16,11 @@
  *   - durations (`for 30m`, `2h`, `1.5 hours`)
  *   - a Monkey brain flag (`-mb` or `-monkey`) that files the capture in the
  *     dump partition of Inbox instead of the revisit pile
+ *   - a plain flag (`-p` or `-plain`) that stores the line as written
+ *
+ * Folder, list, and flag tokens leave the title. A recognized date, time,
+ * priority, or duration is still applied, and those words stay in the title.
+ * Plain mode detects none of the above.
  *
  * Nothing here mutates state or talks to a store — callers map the returned
  * `SmartSuggestion` onto a `Task`. `now` is injectable so tests stay
@@ -38,7 +43,11 @@ export interface SmartHighlight {
 
 /** Structured fields extracted from the capture text. */
 export interface SmartSuggestion {
-  /** The input with all recognized tokens stripped + whitespace collapsed. */
+  /**
+   * Title text. Folder, list, `cat:` / `category:`, and `-mb` / `-monkey`
+   * leave this string. Date, time, priority, and duration stay in it.
+   * Plain mode (`-p` / `-plain`) keeps every other word, including colons.
+   */
   description: string
   /** Folder names from a leading path (all prefixes except the last). */
   folderPath?: string[]
@@ -56,6 +65,8 @@ export interface SmartSuggestion {
   estimatedDuration?: number
   /** `-mb` / `-monkey` — dump into Monkey brain rather than the revisit Inbox. */
   monkeyBrain?: boolean
+  /** `-p` / `-plain`, or an explicit plain option — no shorthand was read. */
+  plain?: boolean
 }
 
 export interface SmartParseResult {
@@ -67,6 +78,16 @@ export interface SmartParseResult {
 export interface SmartParseOptions {
   /** Reference "now" for relative dates. Defaults to `new Date()`. */
   now?: Date
+  /**
+   * Store the line as written. Also turns on when the text has `-p` / `-plain`.
+   * Lists, folders, dates, times, priority, duration, and Monkey brain are skipped.
+   */
+  plain?: boolean
+  /**
+   * Also drop date, time, priority, and duration from the title.
+   * Capture keeps those words. `before 9/12:` uses this to test a date-only phrase.
+   */
+  stripScheduleWords?: boolean
 }
 
 interface Candidate {
@@ -215,6 +236,44 @@ export function parseListBulkAddText(text: string): ListBulkAddItem[] {
   return items
 }
 
+/** `-plain` before `-p`, so the short flag does not eat the long one. */
+const PLAIN_FLAG_RE = /(^|[\s])(-plain|-p)(?=$|[\s.,;:!?])/gi
+
+function flagSpans(input: string, re: RegExp): { start: number; end: number }[] {
+  const spans: { start: number; end: number }[] = []
+  const copy = new RegExp(re.source, re.flags.includes("g") ? re.flags : `${re.flags}g`)
+  for (const m of input.matchAll(copy)) {
+    const lead = m[1].length
+    const start = m.index! + lead
+    spans.push({ start, end: start + m[2].length })
+  }
+  return spans
+}
+
+/**
+ * Drop recognized spans from a title. `trimEdges` clears leftover colon
+ * punctuation after a path is removed. Plain mode keeps colons.
+ */
+function titleFromCuts(
+  input: string,
+  cuts: { start: number; end: number }[],
+  trimEdges: boolean,
+): string {
+  const ordered = [...cuts].sort((a, b) => a.start - b.start)
+  let kept = ""
+  let cursor = 0
+  for (const cut of ordered) {
+    if (cut.start < cursor) continue
+    kept += input.slice(cursor, cut.start)
+    kept += " "
+    cursor = cut.end
+  }
+  kept += input.slice(cursor)
+  let out = kept.replace(/\s+/g, " ").trim()
+  if (trimEdges) out = out.replace(/^[\s:,\-]+|[\s:,\-]+$/g, "").trim()
+  return out
+}
+
 /** Consume `folder: folder: list:` prefixes at the start of a capture line. */
 function consumeLeadingPath(input: string): { start: number; end: number; name: string }[] {
   const segments: { start: number; end: number; name: string }[] = []
@@ -266,6 +325,18 @@ function rollForwardIfPast(date: Date, ref: Date): Date {
  * Pure and deterministic for a fixed `options.now`.
  */
 export function parseSmartCapture(input: string, options: SmartParseOptions = {}): SmartParseResult {
+  const plainFlags = flagSpans(input, PLAIN_FLAG_RE)
+  if (options.plain || plainFlags.length > 0) {
+    return {
+      input,
+      suggestion: {
+        description: titleFromCuts(input, plainFlags, false),
+        plain: true,
+      },
+      highlights: [],
+    }
+  }
+
   const now = options.now ?? new Date()
   const today0 = startOfDay(now)
   const candidates: Candidate[] = []
@@ -496,19 +567,20 @@ export function parseSmartCapture(input: string, options: SmartParseOptions = {}
   }
   if (folders.length) suggestion.folderPath = folders
 
-  // --- Build cleaned description by excising selected ranges ---
-  let kept = ""
-  let cursor = 0
-  for (const c of selected) {
-    kept += input.slice(cursor, c.start)
-    kept += " "
-    cursor = c.end
+  // Folder, list, and flags leave the title. Date, time, priority, and
+  // duration stay unless a caller is testing a date-only phrase.
+  const strip = new Set<SmartTokenType>(["folder", "category", "flag"])
+  if (options.stripScheduleWords) {
+    strip.add("date")
+    strip.add("time")
+    strip.add("priority")
+    strip.add("duration")
   }
-  kept += input.slice(cursor)
-  suggestion.description = kept
-    .replace(/\s+/g, " ")
-    .replace(/^[\s:,\-]+|[\s:,\-]+$/g, "")
-    .trim()
+  suggestion.description = titleFromCuts(
+    input,
+    selected.filter((c) => strip.has(c.type)),
+    true,
+  )
 
   const highlights: SmartHighlight[] = selected.map((c) => ({
     start: c.start,

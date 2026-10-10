@@ -12,7 +12,7 @@
  */
 "use client"
 
-import { useCallback } from "react"
+import { useCallback, useRef, type CSSProperties } from "react"
 import { type WeeklyTask as Task, TaskType, type TaskCompletion, type WeeklyData } from "@/lib/types"
 import { formatLocalDateKey, getDayOfWeek, isToday, startOfLocalDay } from "@/lib/date-utils"
 import { isGoalType, isHabitGoalMet } from "@/lib/habit-utils"
@@ -20,7 +20,8 @@ import { completionCellShowsHatch, isMissedOpportunity, printedGoalAmounts } fro
 import { habitHiddenWhenComplete } from "@/lib/habit-completion-source"
 import { incrementalCompletionPayload } from "@/lib/incremental-habits"
 import { habitWeekStreakSummary } from "@/lib/habit-week-streaks"
-import { effectivePriorityWeight } from "@/lib/habit-priority"
+import { autoPriorityWeight, effectivePriorityWeight, priorityMarkPercent, priorityWash, priorityWashVars } from "@/lib/habit-priority"
+import { pointerBeforeId, reorderIdList } from "@/lib/habit-order"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { HabitEditGemButton } from "@/components/Home/Habits/habit-gems"
 import { HabitCompletionCell } from "@/components/Home/Habits/habit-completion-cell"
@@ -52,6 +53,15 @@ interface TaskGridProps {
   dayView?: boolean
   selectedDate?: Date
   onDateSelect?: (date: Date) => void
+  /** Green / red name wash. Off leaves the name cell uncolored. */
+  highlightPriorities?: boolean
+  ritualIds?: readonly string[]
+  /** Morning-ritual × shown under the name when that habit is in today's ritual. */
+  ritualMultiplier?: number
+  /** Streaks and × under the name. Off hides them. */
+  showStreakMarks?: boolean
+  /** While set, pointer-dragging a row reorders the visible ids. */
+  onReorder?: (visibleIds: string[]) => void
 }
 
 export function TaskGrid({
@@ -72,6 +82,11 @@ export function TaskGrid({
   dayView = false,
   selectedDate,
   onDateSelect,
+  highlightPriorities = false,
+  ritualIds = [],
+  ritualMultiplier = 0,
+  showStreakMarks = true,
+  onReorder,
 }: TaskGridProps) {
   const weekStart = weekDates[0] ?? new Date()
   const asOf = selectedDate ?? new Date()
@@ -90,6 +105,7 @@ export function TaskGrid({
         date: selectedDate,
         weeklyData,
         exempt: isExemptKind(kind),
+        periodPercent: calculateTaskPercentage(task.id),
       })
     })
   }
@@ -108,6 +124,9 @@ export function TaskGrid({
     onUpdateTaskCompletion(taskId, date, { text })
   }, [onUpdateTaskCompletion])
 
+  const dragRef = useRef<{ id: string; y: number } | null>(null)
+  const visibleIds = filteredTasks.map((task) => task.id)
+
   const handleIncrementalChange = useCallback((taskId: string, date: Date, value: number | undefined) => {
     const task = tasks.find((t) => t.id === taskId)
     if (!task || task.type !== TaskType.INCREMENTAL) return
@@ -117,7 +136,7 @@ export function TaskGrid({
   return (
     <div className="habit-grid-wrap">
       <TooltipProvider>
-      <table className={`habit-grid${dayView ? " is-day-view" : ""}`}>
+      <table className={`habit-grid${dayView ? " is-day-view" : ""}${onReorder ? " is-reordering" : ""}`}>
         <thead>
           <tr>
             <th className="col-act" />
@@ -152,6 +171,14 @@ export function TaskGrid({
                 return isExemptKind(kind)
               })
               const prio = effectivePriorityWeight(task, weeklyData, asOf, "daily")
+              const neglect = autoPriorityWeight(task, weeklyData, asOf, "daily")
+              const ritual = ritualIds.includes(task.id)
+              const wash = priorityWash({
+                highlight: highlightPriorities,
+                ritual,
+                neglect,
+                selected: priorityMarkPercent(task, asOf, ritual),
+              })
               const streakTitle = [
                 `${weekStreak.thisWeekDays} day${weekStreak.thisWeekDays === 1 ? "" : "s"} done this week`,
                 weekStreak.current > 0 ? `${weekStreak.current} week streak of 4+ days` : "no 4+ day week streak",
@@ -160,7 +187,37 @@ export function TaskGrid({
                 .filter(Boolean)
                 .join(". ")
               return (
-                <tr key={task.id} className="group">
+                <tr
+                  key={task.id}
+                  className="group"
+                  data-habit-id={task.id}
+                  onPointerDown={
+                    onReorder
+                      ? (event) => {
+                          if ((event.target as HTMLElement).closest("button, input, textarea, a")) return
+                          dragRef.current = { id: task.id, y: event.clientY }
+                          event.currentTarget.setPointerCapture?.(event.pointerId)
+                        }
+                      : undefined
+                  }
+                  onPointerUp={
+                    onReorder
+                      ? (event) => {
+                          const drag = dragRef.current
+                          dragRef.current = null
+                          if (!drag || drag.id !== task.id || Math.abs(event.clientY - drag.y) < 4) return
+                          const tbody = event.currentTarget.parentElement
+                          if (!tbody) return
+                          const rows = [...tbody.querySelectorAll<HTMLElement>("tr[data-habit-id]")].map((row) => {
+                            const box = row.getBoundingClientRect()
+                            return { id: row.dataset.habitId || "", top: box.top, height: box.height }
+                          })
+                          const next = reorderIdList(visibleIds, task.id, pointerBeforeId(rows, task.id, event.clientY))
+                          if (next.some((id, index) => id !== visibleIds[index])) onReorder(next)
+                        }
+                      : undefined
+                  }
+                >
                   <td className="col-act">
                     <HabitEditGemButton
                       task={task}
@@ -168,7 +225,11 @@ export function TaskGrid({
                       inverted={habitContributesWillpowerStone(task, weeklyData, weekDates)}
                     />
                   </td>
-                  <td className="col-name font-medium" title={`${task.name}. ${streakTitle}`}>
+                  <td
+                    className={`col-name font-medium${wash.className ? ` ${wash.className}` : ""}`}
+                    title={`${task.name}. ${streakTitle}`}
+                    style={priorityWashVars(wash) as CSSProperties | undefined}
+                  >
                     <HabitRowName
                       name={task.name}
                       prio={prio}
@@ -176,6 +237,8 @@ export function TaskGrid({
                       thisWeekDays={weekStreak.thisWeekDays}
                       thisWeekHit={weekStreak.thisWeekHit}
                       currentWeeks={weekStreak.current}
+                      showMarks={showStreakMarks}
+                      ritualMultiplier={ritual ? ritualMultiplier : 0}
                     />
                   </td>
 

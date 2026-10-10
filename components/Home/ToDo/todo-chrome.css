@@ -56,14 +56,14 @@
   flex-shrink: 0;
   gap: 8px;
   padding: 8px 10px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
-    linear-gradient(165deg, #d8dce0 0%, var(--td-surface) 48%, #969a9e 100%);
+    linear-gradient(165deg, var(--chrome-mill-hi) 0%, var(--td-surface) 48%, var(--chrome-shade) 100%);
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.75),
     inset 0 -1px 0 rgba(40, 42, 46, 0.4),
-    inset 0 0 0 2px #b0b4b8;
+    inset 0 0 0 2px var(--chrome-inset);
 }
 
 .todo95 .todo-fascia-row {
@@ -80,12 +80,12 @@
   gap: 8px;
   min-height: 40px;
   padding: 4px 8px 4px 6px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background:
     radial-gradient(ellipse at 18% 0%, rgba(125, 255, 196, 0.14), transparent 46%),
     #070c0a;
   box-shadow:
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     inset 0 1px 0 rgba(255, 255, 255, 0.14),
     inset 0 10px 14px rgba(0, 0, 0, 0.4);
 }
@@ -103,7 +103,7 @@
 .todo95 .todo-mark-count {
   min-width: 1.6em;
   padding: 2px 6px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   color: #d8fff0;
   font-size: 12px;
   font-weight: 700;
@@ -133,7 +133,7 @@
   min-height: 30px;
   padding: 5px 12px 6px;
   border: 0;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font: inherit;
   font-size: 11px;
   font-weight: 700;
@@ -143,12 +143,12 @@
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
-    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--td-surface) 70%, #9a9ea2 100%);
+    linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 36%, var(--td-surface) 70%, var(--chrome-key-shade) 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     inset 0 -1px 0 rgba(55, 58, 62, 0.45),
-    0 0 0 1px #4a4e52,
-    0 1px 0 #6a6e72;
+    0 0 0 1px var(--chrome-ring-deep),
+    0 1px 0 var(--chrome-lip);
   cursor: pointer;
   white-space: nowrap;
 }
@@ -162,11 +162,11 @@
 .todo95 .todo-btn[aria-pressed="true"] {
   box-shadow:
     inset 0 1px 2px rgba(0, 0, 0, 0.35),
-    0 0 0 1px #3a3e42;
+    0 0 0 1px var(--chrome-pressed);
 }
 
 .todo95 .todo-btn:disabled {
-  color: #808080;
+  color: var(--chrome-lo);
   cursor: default;
 }
 
@@ -194,14 +194,14 @@
   margin: 0;
   padding: 4px 6px;
   border: 0;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   min-width: 0;
   min-height: 32px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.35), transparent 40%),
-    #c4c8cc;
+    var(--chrome-grade-sheen);
   box-shadow:
-    0 0 0 1px #6a6e72,
+    0 0 0 1px var(--chrome-lip),
     inset 0 1px 0 rgba(255, 255, 255, 0.65),
     inset 0 2px 3px rgba(0, 0, 0, 0.12);
 }
@@ -218,7 +218,7 @@
   text-transform: uppercase;
   color: #2a2c2e;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
-  background: linear-gradient(180deg, #eef0f2, #c8cccf);
+  background: linear-gradient(180deg, var(--chrome-mist), #c8cccf);
 }
 
 .todo95 .todo-key-check {
@@ -227,17 +227,17 @@
   gap: 4px;
   min-height: 28px;
   padding: 2px 8px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 28%),
-    linear-gradient(165deg, #eceef0, #c0c4c8);
+    linear-gradient(165deg, var(--chrome-key-sheen), var(--chrome-mill-soft));
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 0 0 1px #4a4e52;
+    0 0 0 1px var(--chrome-ring-deep);
   cursor: pointer;
 }
 
@@ -267,7 +267,7 @@
 .todo95 .todo-hint {
   margin: 0;
   font-size: 10px;
-  color: #404040;
+  color: var(--chrome-ink-soft);
   max-width: 16rem;
 }
 
@@ -289,9 +289,9 @@
 .todo95 .todo-bay select,
 .todo95 .todo-bay input[type="number"] {
   width: 100%;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background:
-    linear-gradient(180deg, #f4f6f8, #e4e6e8);
+    linear-gradient(180deg, var(--chrome-paper), var(--chrome-pearl));
 }
 
 .todo95 .todo-filter-field {
@@ -307,22 +307,22 @@
 .todo95 .todo-wip {
   margin: 4px 4px 0;
   padding: 4px 8px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #243044;
   text-shadow: none;
-  background: #e4eaf2;
+  background: var(--chrome-ice);
   box-shadow:
-    inset 0 0 0 6px #e4eaf2,
-    0 0 0 1px #3a3e42,
+    inset 0 0 0 6px var(--chrome-ice),
+    0 0 0 1px var(--chrome-pressed),
     inset 0 0 0 7px transparent;
   background-image:
     radial-gradient(circle, rgba(58, 77, 115, 0.28) 1px, transparent 1.6px);
   background-size: 9px 9px;
-  background-color: #e4eaf2;
+  background-color: var(--chrome-ice);
 }
 
 .todo95 .todo-formula {
@@ -418,17 +418,17 @@ body.win95-app .todo95 .todo-view-keys[role="tablist"] {
   gap: 4px;
   margin-left: auto;
   padding: 4px;
-  border-radius: 3px;
-  background: #b4b8bc;
+  border-radius: var(--r-3, 3px);
+  background: var(--chrome-nickel);
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 2px 3px rgba(0, 0, 0, 0.18);
 }
 
 body.win95-app .todo95 .todo-view-keys [role="tab"] {
   min-height: 30px;
   padding: 5px 14px 6px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -437,12 +437,12 @@ body.win95-app .todo95 .todo-view-keys [role="tab"] {
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 28%),
-    linear-gradient(165deg, #eceef0, #c0c4c8);
+    linear-gradient(165deg, var(--chrome-key-sheen), var(--chrome-mill-soft));
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
     inset 0 -1px 0 rgba(55, 58, 62, 0.35),
-    0 0 0 1px #4a4e52,
-    0 1px 0 #6a6e72;
+    0 0 0 1px var(--chrome-ring-deep),
+    0 1px 0 var(--chrome-lip);
 }
 
 body.win95-app .todo95 .todo-view-keys [role="tab"][data-state="active"] {
@@ -453,7 +453,7 @@ body.win95-app .todo95 .todo-view-keys [role="tab"][data-state="active"] {
     radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.2), transparent 55%),
     #070c0a;
   box-shadow:
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     inset 0 8px 10px rgba(0, 0, 0, 0.4);
 }
 
@@ -484,7 +484,7 @@ body.win95-app .todo95 .todo-view-keys [role="tab"][data-state="active"] {
   min-width: 9.75rem;
   min-height: 4.75rem;
   padding: 6px 8px;
-  border-radius: 8px;
+  border-radius: var(--r-8, 8px);
   background: #d5d8dc;
   box-shadow: var(--td-sunken);
 }
@@ -506,7 +506,7 @@ body.win95-app .todo95 .todo-view-keys [role="tab"][data-state="active"] {
 .todo95 .todo-casio {
   min-height: 1.85rem;
   padding: 4px 8px;
-  border-radius: 6px;
+  border-radius: var(--r-6, 6px);
   color: var(--td-crt);
   font-size: 13px;
   font-weight: 700;
@@ -515,7 +515,7 @@ body.win95-app .todo95 .todo-view-keys [role="tab"][data-state="active"] {
   text-shadow: 0 0 3px var(--td-crt);
   background: #070c0a;
   box-shadow:
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     inset 0 6px 10px rgba(0, 0, 0, 0.45);
 }
 
@@ -620,7 +620,7 @@ body.win95-app .todo95 button.todo-scope-lamp {
   max-width: 100%;
   padding: 3px 10px 4px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--r-8, 8px);
   font: inherit;
   font-size: 11px;
   font-weight: 700;
@@ -631,12 +631,12 @@ body.win95-app .todo95 button.todo-scope-lamp {
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
-    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--td-surface) 70%, #9a9ea2 100%);
+    linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 36%, var(--td-surface) 70%, var(--chrome-key-shade) 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     inset 0 -1px 0 rgba(55, 58, 62, 0.45),
-    0 0 0 1px #4a4e52,
-    0 1px 0 #6a6e72;
+    0 0 0 1px var(--chrome-ring-deep),
+    0 1px 0 var(--chrome-lip);
   cursor: pointer;
   text-align: left;
   white-space: normal;
@@ -655,7 +655,7 @@ body.win95-app .todo95 button.todo-scope-lamp {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #8a8e92 0 30%, #2a2c2e 100%);
+  background: radial-gradient(circle at 35% 30%, var(--chrome-slate) 0 30%, #2a2c2e 100%);
   box-shadow: inset 0 0 2px rgba(0, 0, 0, 0.5);
 }
 
@@ -677,8 +677,8 @@ body.win95-app .todo95 button.todo-scope-lamp {
   height: 14px;
   flex-shrink: 0;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #6a6e72 0 20%, #1a1c1e 100%);
-  box-shadow: inset 0 0 3px rgba(0, 0, 0, 0.6), 0 0 0 1px #3a3e42;
+  background: radial-gradient(circle at 35% 30%, var(--chrome-lip) 0 20%, #1a1c1e 100%);
+  box-shadow: inset 0 0 3px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--chrome-pressed);
 }
 
 .todo95 .todo-power-lamp.is-warm,
@@ -690,7 +690,7 @@ body.win95-app .todo95 button.todo-scope-lamp {
 .todo95 .todo-load-sub {
   font-size: 10px;
   font-weight: 400;
-  color: #404040;
+  color: var(--chrome-ink-soft);
 }
 
 .todo95 .todo-load-filters {
@@ -714,8 +714,8 @@ body.win95-app .todo95 button.todo-scope-lamp {
   flex-direction: column;
   gap: 0;
   min-height: 0;
-  border-radius: 10px;
-  background: #c8ccd0;
+  border-radius: var(--r-10, 10px);
+  background: var(--chrome-pewter);
   box-shadow: var(--td-sunken);
 }
 
@@ -828,7 +828,7 @@ body.win95-app .todo95 button.todo-scope-lamp {
   gap: 0;
   padding: 0;
   border-bottom: 0;
-  border-radius: 8px;
+  border-radius: var(--r-8, 8px);
   overflow: hidden;
   background: #e6e8eb;
   box-shadow:
@@ -905,7 +905,7 @@ body.win95-app .todo95 button.todo-row-name,
   min-width: 0;
   margin: 0;
   border: 0;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   background: none;
   background-image: none;
   box-shadow: none;
@@ -940,13 +940,13 @@ body.win95-app .todo95 button.todo-row-name,
 .todo95 .todo-row-meta {
   margin-top: 2px;
   font-size: 10px;
-  color: #404040;
+  color: var(--chrome-ink-soft);
 }
 
 .todo95 .todo-push-tube {
   min-width: 1.1em;
   padding: 0 3px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-size: 10px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -963,7 +963,7 @@ body.win95-app .todo95 button.todo-row-name,
   min-height: 20px;
   padding: 0 14px 0 6px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--r-8, 8px);
   font: inherit;
   font-size: 11px;
   font-weight: 700;
@@ -997,8 +997,8 @@ body.win95-app .todo95 button.todo-row-name,
   padding: 0;
   border: 0;
   border-radius: 50%;
-  background: linear-gradient(165deg, #d0d4d8, #8a8e92);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 0 0 1px #3a3e42;
+  background: linear-gradient(165deg, var(--chrome-haze), var(--chrome-slate));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 0 0 1px var(--chrome-pressed);
   cursor: pointer;
 }
 
@@ -1088,16 +1088,16 @@ body.win95-app .todo95 button.todo-row-name,
   min-height: 22px;
   padding: 2px 8px 3px 6px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--r-8, 8px);
   font: inherit;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
-    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--td-surface) 70%, #9a9ea2 100%);
+    linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 36%, var(--td-surface) 70%, var(--chrome-key-shade) 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     inset 0 -1px 0 rgba(55, 58, 62, 0.45),
-    0 0 0 1px #4a4e52,
-    0 1px 0 #6a6e72;
+    0 0 0 1px var(--chrome-ring-deep),
+    0 1px 0 var(--chrome-lip);
   cursor: pointer;
   overflow: visible;
 }
@@ -1112,7 +1112,7 @@ body.win95-app .todo95 button.todo-row-name,
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.35),
     inset 0 -1px 0 rgba(0, 0, 0, 0.6),
-    0 0 0 1px #6a6e72;
+    0 0 0 1px var(--chrome-lip);
 }
 
 .todo95 .todo-jewel.is-required .todo-jewel-glass {
@@ -1267,13 +1267,13 @@ body.win95-app .todo95 button.todo-row-name,
   width: max-content;
   max-width: 100%;
   align-items: stretch;
-  border-radius: 8px;
+  border-radius: var(--r-8, 8px);
   overflow: hidden;
-  box-shadow: 0 0 0 1px #4a4e52;
+  box-shadow: 0 0 0 1px var(--chrome-ring-deep);
 }
 
 .todo95 .todo-segment .todo-chiclet {
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     inset -1px 0 0 rgba(55, 58, 62, 0.35);
@@ -1294,7 +1294,7 @@ body.win95-app .todo95 button.todo-row-name,
   min-height: 26px;
   margin-left: 18px;
   padding: 4px 8px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: #070c0a;
   box-shadow:
     0 0 0 1px #1a3d30,
@@ -1311,7 +1311,7 @@ body.win95-app .todo95 button.todo-verb {
   min-height: 22px;
   padding: 2px 8px 3px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--r-8, 8px);
   font: inherit;
   font-size: 10px;
   font-weight: 700;
@@ -1322,12 +1322,12 @@ body.win95-app .todo95 button.todo-verb {
   background-color: var(--td-surface, var(--chrome-face, #c0c0c0));
   background-image:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
-    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--td-surface, var(--chrome-face, #c0c0c0)) 70%, #9a9ea2 100%);
+    linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 36%, var(--td-surface, var(--chrome-face, #c0c0c0)) 70%, var(--chrome-key-shade) 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     inset 0 -1px 0 rgba(55, 58, 62, 0.45),
-    0 0 0 1px #4a4e52,
-    0 1px 0 #6a6e72;
+    0 0 0 1px var(--chrome-ring-deep),
+    0 1px 0 var(--chrome-lip);
   cursor: pointer;
   white-space: nowrap;
 }
@@ -1342,7 +1342,7 @@ body.win95-app .todo95 .todo-verb:active:not(:disabled) {
   filter: none;
   box-shadow:
     inset 0 1px 2px rgba(0, 0, 0, 0.35),
-    0 0 0 1px #3a3e42;
+    0 0 0 1px var(--chrome-pressed);
 }
 
 .todo95 .todo-verb.is-complete {
@@ -1352,7 +1352,7 @@ body.win95-app .todo95 .todo-verb:active:not(:disabled) {
     inset 0 -1px 0 rgba(55, 58, 62, 0.45),
     0 0 0 1px #1a6b48,
     0 0 0 3px rgba(125, 255, 196, 0.22),
-    0 1px 0 #6a6e72;
+    0 1px 0 var(--chrome-lip);
 }
 
 .todo95 .todo-verb.is-complete::before {
@@ -1372,7 +1372,7 @@ body.win95-app .todo95 .todo-verb:active:not(:disabled) {
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     inset 0 -1px 0 rgba(55, 58, 62, 0.45),
     0 0 0 1px #9a3048,
-    0 1px 0 #6a6e72;
+    0 1px 0 var(--chrome-lip);
 }
 
 .todo95 .todo-verb.is-missed::before {
@@ -1523,7 +1523,7 @@ body.win95-app .todo95 button.todo-chiclet {
   min-width: 2rem;
   padding: 2px 8px 3px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--r-8, 8px);
   font: inherit;
   font-size: 11px;
   font-weight: 700;
@@ -1532,17 +1532,17 @@ body.win95-app .todo95 button.todo-chiclet {
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
-    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--td-surface) 70%, #9a9ea2 100%);
+    linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 36%, var(--td-surface) 70%, var(--chrome-key-shade) 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     inset 0 -1px 0 rgba(55, 58, 62, 0.45),
-    0 0 0 1px #4a4e52,
-    0 1px 0 #6a6e72;
+    0 0 0 1px var(--chrome-ring-deep),
+    0 1px 0 var(--chrome-lip);
   cursor: pointer;
 }
 
 body.win95-app .todo95 .todo-segment button.todo-chiclet {
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   min-height: 22px;
   padding: 2px 8px 3px;
 }
@@ -1608,7 +1608,7 @@ body.win95-app .todo95 .todo-segment button.todo-chiclet {
   font-variant-numeric: tabular-nums;
   background: #070c0a;
   padding: 0 4px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
 }
 
 .todo95 .todo-steps {
@@ -1629,8 +1629,8 @@ body.win95-app .todo95 .todo-segment button.todo-chiclet {
   position: relative;
   margin: 0;
   padding: 0;
-  border-radius: 8px;
-  background: #f4f6f8;
+  border-radius: var(--r-8, 8px);
+  background: var(--chrome-paper);
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.85),
     0 1px 2px rgba(50, 58, 72, 0.12);
@@ -1648,7 +1648,7 @@ body.win95-app .todo95 .todo-segment button.todo-chiclet {
   height: 18px;
   padding: 0 5px;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--r-6, 6px);
   background: transparent;
   color: #3a4d73;
   font: inherit;
@@ -1667,7 +1667,7 @@ body.win95-app .todo95 .todo-segment button.todo-chiclet {
   height: 7px;
   flex-shrink: 0;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #c8ccd0 0 40%, #4a4e52 100%);
+  background: radial-gradient(circle at 35% 30%, var(--chrome-pewter) 0 40%, var(--chrome-ring-deep) 100%);
   box-shadow: 0 0 0 1px #2a2c2e;
 }
 
@@ -1675,10 +1675,10 @@ body.win95-app .todo95 .todo-segment button.todo-chiclet {
   width: 11px;
   height: 11px;
   background:
-    radial-gradient(circle at 50% 50%, #d8dce0 0 22%, transparent 24%),
+    radial-gradient(circle at 50% 50%, var(--chrome-mill-hi) 0 22%, transparent 24%),
     conic-gradient(from 0deg, #6a9080, #3a5048, #6a9080, #3a5048, #6a9080);
   clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
 }
 
 .todo95 .todo-via.is-leaf {
@@ -1702,7 +1702,7 @@ body.win95-app .todo95 .todo-segment button.todo-chiclet {
   gap: 6px;
   margin: 4px 0;
   padding: 4px 6px;
-  background: #6a6e72;
+  background: var(--chrome-lip);
   box-shadow: var(--td-sunken);
   border: 0;
   font: inherit;
@@ -1738,7 +1738,7 @@ body.win95-app .todo95 .todo-segment button.todo-chiclet {
 .todo95 .todo-empty {
   padding: 8px 6px;
   text-align: center;
-  color: #404040;
+  color: var(--chrome-ink-soft);
 }
 
 .todo95 .todo-more {
@@ -1867,7 +1867,7 @@ body.win95-app .todo95 .todo-segment button.todo-chiclet {
   width: calc(var(--todo-push, 1) * 12px);
   max-width: 100%;
   margin-top: 4px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: linear-gradient(90deg, #7dffc4, #2080ff);
   box-shadow: 0 0 4px rgba(125, 255, 196, 0.5);
 }
@@ -1932,7 +1932,7 @@ body.win95-app .todo95 .todo-segment button.todo-chiclet {
   color: #e8eef8;
   background: rgba(18, 24, 38, 0.55);
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--r-8, 8px);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.12),
     0 0 0 1px rgba(142, 175, 212, 0.55);
@@ -1955,15 +1955,15 @@ body.win95-app .todo95 .todo-section.is-done button.todo-log-done {
   text-transform: uppercase;
   color: #1c1e20;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
-  background-color: var(--td-surface, #c0c0c0);
+  background-color: var(--td-surface, var(--chrome-face));
   background-image:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
-    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--td-surface, #c0c0c0) 70%, #9a9ea2 100%);
+    linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 36%, var(--td-surface, var(--chrome-face)) 70%, var(--chrome-key-shade) 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     inset 0 -1px 0 rgba(55, 58, 62, 0.45),
-    0 0 0 1px #4a4e52,
-    0 1px 0 #6a6e72;
+    0 0 0 1px var(--chrome-ring-deep),
+    0 1px 0 var(--chrome-lip);
 }
 
 .todo95 .todo-done-row,
@@ -2055,7 +2055,7 @@ body.win95-app .todo95 .todo-section.is-done button.todo-log-done {
   align-items: center;
   gap: 6px;
   font-size: 10px;
-  color: #404040;
+  color: var(--chrome-ink-soft);
 }
 
 .todo95 button:focus,
@@ -2087,12 +2087,12 @@ body.win95-app .todo95 .todo-section.is-done button.todo-log-done {
   padding: 3px;
   gap: 0;
   border: 0;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   background: var(--chrome-face, #c0c0c0);
   color: #000;
   font-family: var(--w95-font, Tahoma, "MS Sans Serif", Geneva, sans-serif);
-  box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px #808080,
-    inset 2px 2px #dfdfdf;
+  box-shadow: inset -1px -1px var(--chrome-frame), inset 1px 1px #fff, inset -2px -2px var(--chrome-lo),
+    inset 2px 2px var(--chrome-mid);
   accent-color: #000080;
 }
 
@@ -2141,8 +2141,8 @@ body.win95-app .todo95 .todo-section.is-done button.todo-log-done {
   font-size: 12px;
   background: #fff;
   border: 0;
-  box-shadow: inset -1px -1px #fff, inset 1px 1px #808080, inset -2px -2px #dfdfdf,
-    inset 2px 2px #0a0a0a;
+  box-shadow: inset -1px -1px #fff, inset 1px 1px var(--chrome-lo), inset -2px -2px var(--chrome-mid),
+    inset 2px 2px var(--chrome-frame);
 }
 
 .todo95-dialog input:focus,
@@ -2167,8 +2167,8 @@ body.win95-app .todo95 .todo-section.is-done button.todo-log-done {
   color: #000;
   background: var(--chrome-face, #c0c0c0);
   border: 0;
-  box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px #808080,
-    inset 2px 2px #dfdfdf;
+  box-shadow: inset -1px -1px var(--chrome-frame), inset 1px 1px #fff, inset -2px -2px var(--chrome-lo),
+    inset 2px 2px var(--chrome-mid);
 }
 
 /* Desk plate — title jewel at photograph size under the window on the page scroll. */
@@ -2249,7 +2249,7 @@ body.win95-app .todo95 .todo-section.is-done button.todo-log-done {
   flex-direction: column;
   gap: 0;
   border-bottom: 0;
-  border-radius: 8px;
+  border-radius: var(--r-8, 8px);
   overflow: hidden;
   background: #e6e8eb;
   box-shadow:
@@ -2275,7 +2275,7 @@ body.win95-app .todo95 button.todo-verb[type="button"]:not([hidden]),
 body.win95-app .todo95 button.todo-jewel[type="button"]:not([hidden]),
 body.win95-app .todo95 button.todo-scope-lamp[type="button"]:not([hidden]),
 body.win95-app .todo95 button.todo-chiclet.is-usual[type="button"]:not([hidden]) {
-  border-radius: 8px;
+  border-radius: var(--r-8, 8px);
   background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0, rgba(255, 255, 255, 0.1) 14%, transparent 32%);
 }
 
@@ -2285,10 +2285,10 @@ body.win95-app .todo95 button.todo-verb.is-missed[type="button"]:not([hidden]) {
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     inset 0 -1px 0 rgba(55, 58, 62, 0.45),
     0 0 0 1px #9a3048,
-    0 1px 0 #6a6e72;
+    0 1px 0 var(--chrome-lip);
 }
 
 body.win95-app .todo95 .todo-segment[role="group"] button.todo-chiclet[type="button"]:not([hidden]) {
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0, rgba(255, 255, 255, 0.1) 14%, transparent 32%);
 }

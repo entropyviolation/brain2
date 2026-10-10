@@ -118,6 +118,8 @@ components/Lists/
 │   └── ViewModeControls.tsx       # Display/View mode deck (LED keys; captions via listDisplayCaption)
 ├── __tests__/                     # Integration + open-target reducer tests
 ├── filemanager98.css              # Scoped Lists Explorer skin (`.fm98`): milled fascia frame; velvet/orbs untouched; type floor 10px, reading chrome 11–13px
+├── lists-settings-nav.tsx         # Library navigator inside global Lists settings
+├── lists-settings.css             # Navigator well: search, breadcrumb, drag rows
 └── …                              # attribute-editor, settings-dialog, list-picker (+ css), daily-habits-list
 ```
 
@@ -125,8 +127,9 @@ Related pure helpers in `lib/`:
 
 | File | Purpose |
 |------|---------|
-| `lib/lists-grid-entries.ts` | `buildGridEntries()` — folder/list grid entries (Map-keyed, no duplicate entries) |
-| `lib/folder-tree.ts` | Nested folder sidebar tree (`buildFolderTree` / `flattenFolderTree`), editable-folder guards, scheduled-folder sort |
+| `lib/lists-grid-entries.ts` | `buildGridEntries()` — folder/list grid entries (Map-keyed, no duplicate entries). A folder with `contentsOrder` paints that mix after All Items. |
+| `lib/lists-navigator.ts` | Lists settings library: place order, search, drag into/out of folders and sublists. Writes `Folder.order`, `Folder.contentsOrder`, and `List.order`. |
+| `lib/folder-tree.ts` | Nested folder sidebar tree (`buildFolderTree` / `flattenFolderTree`), editable-folder guards, scheduled-folder sort. `order` on both folders beats the name sort. |
 | `lib/folder-membership.ts` | Direct `Folder.listIds` (a list may be in many folders) + inherited ancestors for **Show nested** |
 | `lib/string-utils.ts` | `hashString`, `hashIconSlot` — stable orb/slot indexing |
 | `lib/folder-all-items.ts` | Per-folder **All Items** category sync |
@@ -166,7 +169,8 @@ Each display mounts a different slice of the open folder or list. **Select All**
 | `attributes/AttributeSettingsDialog.tsx` | One-attribute popup titled **Attribute settings**; spreadsheet column menu reuses `AttributeSchemaEditor` |
 | `attributes/AttributeValueField.tsx` | Per-type single-value input (string, boolean, color, datetime, list, item, selection, image, link, goal, number). A picked `image` / `multiimage` file goes to the attachments IndexedDB (`lib/attachments.ts`) and the cell keeps `idb:<id>`; thumbnails resolve it through `useAttachmentSrcList`. It used to keep the whole data URL, which put picture bytes in the Lists vault and filled the origin for every other store. |
 | `attributes/AttributeValuesEditor.tsx` | Schema-driven `AttributeValuesEditor` + ad-hoc `AdHocAttributesEditor` |
-| `settings-dialog.tsx` | Global Lists settings (`data-ui-name="Lists settings"`): reorder lists, import/export JSON (`NextActionsSettingsDialog`). Dirty order / staged import uses the house unsaved-changes guard. |
+| `settings-dialog.tsx` | Global Lists settings (`data-ui-name="Lists settings"`): milled fascia (`.set95`), **Notes and ingest** buttons (same doors as Settings), library navigator, import/export JSON (`NextActionsSettingsDialog`). Import/Export scrolls inside the dialog. Dirty arrangement / staged import uses the house unsaved-changes guard. |
+| `lists-settings-nav.tsx` | The Lists tab. Search the library, filter All / Folders / Lists, double-click into a folder or list, ⌘/Ctrl-click and Shift-click to select, drag to reorder or drop into a folder or list. Breadcrumb accepts a drop (move out). **Open in Lists** jumps the file manager. Order is the order you save, not A–Z. |
 | `list-picker.tsx` | Searchable list selector (Inbox **in lists**, item detail, Connected lists, attribute fields). One name per row with folder-colored glyphs; optional selected chips (`showSelectedChips`); optional `suggestedIds` pin a **Recent** strip at the top (Inbox walk). Multi-select rows are a `<label>` + checkbox (not a `<button>` wrapping Checkbox — invalid nested buttons / hydration). Single-select rows stay plain buttons. Whole-row click still toggles. **New list** copies the search text into the name when no list already has that exact name (still editable). `list-picker.css` keeps rows full-width so names never wrap as a chip soup. |
 | `daily-habits-list.tsx` | Daily / weekly / monthly / season habit views embedded in Lists (uses `lib/habits-store.ts`). Season Habits is `season-habits`. The sheet waits until that vault has hydrated so a seed grid is not edited and then thrown away. Climb habits log a number vs the derived daily/weekly target; goal and text cells keep the typed draft (`habit-value-field.tsx`). Completing a habit also writes a To-Do Done log. Habits auto-filled from Tracking tags stay in sync here too (`useHabitTrackingSync`), including weekly/monthly Goal / Yes-No habits whose minutes are summed across the period. Daily Settings edits the same **completion to feel accomplished** / **accomplishment bonus** as Home Habits. Weekly/monthly lists show a done count for the current period. Exempt periods leave that fraction (the row reads “exempt”) and stay out of Home’s remaining-habit lists. |
 
@@ -176,7 +180,7 @@ Each display mounts a different slice of the open folder or list. **Select All**
 |----------|----------|
 | **Home** | Pinned folders/lists + smart to-do lists + habit shortcuts |
 | **All** | Every folder and list |
-| **Folder** | Nested subfolders (sidebar tree via `FolderTree` + `lib/folder-tree.ts`), **All Items**, and lists in that folder |
+| **Folder** | Nested subfolders (sidebar tree via `FolderTree` + `lib/folder-tree.ts`), **All Items**, and lists in that folder. After you arrange that folder in Lists settings, All Items stays first and the rest follow `contentsOrder`. Until then: child folders, All Items, then `listIds`. Sidebar folder order uses `Folder.order` when both siblings have it. |
 
 ### Folder views (when browsing, not inside a list)
 
@@ -304,7 +308,7 @@ Run unit/integration tests: `npm test`. E2E requires dev server (started automat
 
 `lib/scheduled-lists-sync.ts` keeps Next Actions period To Do smart lists, the Scheduled folder hierarchy, and each period's To do, Done, and Undone lists in sync. `lib/archive-lists.ts` keeps **Completed** / **Missed Opportunities** membership on `Task.lists`. Details: [`CHECKLIST.md`](CHECKLIST.md).
 
-Header **From Notes** can auto-create folder **Mac Notes** and list **notes to ingest** (`lib/apple-notes.ts` `ensureIphoneNotesIngestDestination`) when a note is parked for later bulk-add. Parked items store the full note body. Listing talks to Notes.app on this Mac (Electron IPC or localhost `/api/notes`), walking folders instead of one library-wide query. The ingest dialog can be closed while that first listing is still running; reopen **From Notes** to return to the same session.
+**From Notes** (Settings and Lists settings) can auto-create folder **Mac Notes** and list **notes to ingest** (`lib/apple-notes.ts` `ensureIphoneNotesIngestDestination`) when a note is parked for later bulk-add. Parked items store the full note body. Listing talks to Notes.app on this Mac (Electron IPC or localhost `/api/notes`), walking folders instead of one library-wide query. The ingest dialog can be closed while that first listing is still running; reopen **From Notes** to return to the same session.
 
 <!-- MODULE LISTS IMPORT (data lane — merge-friendly; UI workers: do not rewrite this block) -->
 

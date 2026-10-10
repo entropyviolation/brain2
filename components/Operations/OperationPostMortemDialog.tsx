@@ -89,7 +89,7 @@ export function OperationPostMortemDialog({
       <DialogContent className="ops95-dialog sm:max-w-lg">
         <DialogHeader className="ops-title-bar flex-row items-center space-y-0 text-left">
           <DialogTitle className="ops-title-text">After-action report</DialogTitle>
-          <button type="button" className="ops-title-btn" aria-label="Close" onClick={dismiss}>
+          <button type="button" className="ops-title-btn b2-close-key" aria-label="Close" onClick={dismiss}>
             ×
           </button>
         </DialogHeader>

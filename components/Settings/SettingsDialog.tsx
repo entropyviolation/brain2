@@ -4,7 +4,8 @@
  * A header-launched dialog that hosts cross-cutting app utilities that don't
  * belong to a single tab:
  *  - **Data profile** (Live vs Demo stock vault) — first control, reloads on switch.
- *  - Window gray (`ChromeFaceField`) — gunmetal set-point for every Win95 face.
+ *  - Window gray (`ChromeFaceField`) — design-ref gray swatches for every Win95 face.
+ *  - Bouba/Kiki (`BoubaKikiField`) — experimental corner mix.
  *  - Desktop (`PcbBackdropField`) — teal field or a photographed plate behind the UI.
  *  - Baby animal friend gallery (photographs + cute names on the CRT nest).
  *  - Home location (city) for Plan day sunrise/sunset lines (default San Diego).
@@ -18,6 +19,8 @@
  *    parked until a dedicated semi-mobile live sync component lands.
  *  - Message ingest (`MessageIngestPanel`) — Telegram pairing, cheat-sheet,
  *    simulate. See docs/MESSAGE_INGEST.md.
+ *  - **Notes and ingest** (`CaptureDoorButtons`) — the Ingest, From Notes, and
+ *    Phone Notes doors (same buttons as Lists settings; one mounted popup).
  *  - Screen Time (`ScreenTimePanel`) — ActivityWatch URL, lookback, Sync now.
  *  - "Set up Second Brain" — seeds the Source + Belief item types
  *    (Brain2 research→source→belief model).
@@ -40,8 +43,10 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Settings as SettingsIcon, BrainCircuit, CheckCircle2, Shapes } from "lucide-react"
+import { CaptureDoorButtons } from "@/components/capture-doors"
 import { DataProfileField } from "@/components/Settings/DataProfileField"
 import { BackupRestore } from "@/components/Settings/BackupRestore"
+import { BoubaKikiField } from "@/components/Settings/BoubaKikiField"
 import { ChromeFaceField } from "@/components/Settings/ChromeFaceField"
 import { PcbBackdropField } from "@/components/Settings/PcbBackdropField"
 import { BabyAnimalFriendField } from "@/components/Settings/BabyAnimalFriendField"
@@ -79,9 +84,8 @@ export function SettingsDialog() {
     <>
     <Dialog open={open} onOpenChange={guard.handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2">
-          <SettingsIcon className="h-4 w-4" />
-          Settings
+        <Button variant="outline" size="sm" className="b2-shell-icon" title="Settings" aria-label="Settings">
+          <SettingsIcon />
         </Button>
       </DialogTrigger>
       <DialogContent className="set95 set95-dialog !flex h-[90vh] max-h-[90vh] w-[calc(100vw-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl" data-ui-name="Settings" data-ui-docs="components/Settings/README.md" {...unsavedDismissProps(guard.requestClose)}>
@@ -91,7 +95,7 @@ export function SettingsDialog() {
             <DialogTitle>Settings</DialogTitle>
           </div>
           <DialogDescription className="set-caption-lead">
-            Window gray, desktop PCB, data profile (Live vs Demo), baby animal friend, home location, assumed time of day, automatic point allocation, data backup, phone ingest, Screen Time
+            Window gray, Bouba/Kiki corners, desktop PCB, data profile (Live vs Demo), notes and ingest (Ingest, From Notes, Phone Notes), baby animal friend, home location, assumed time of day, automatic point allocation, data backup, phone ingest, Screen Time
             (ActivityWatch), and optional knowledge-base setup.
           </DialogDescription>
         </DialogHeader>
@@ -100,7 +104,13 @@ export function SettingsDialog() {
           <div className="space-y-6">
             <DataProfileField />
 
+            <div className="space-y-3 rounded-lg border border-dashed p-4">
+              <CaptureDoorButtons />
+            </div>
+
             <ChromeFaceField />
+
+            <BoubaKikiField />
 
             <PcbBackdropField />
 

@@ -54,15 +54,15 @@
   gap: 8px;
   flex-shrink: 0;
   padding: 6px 8px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
-    linear-gradient(165deg, #d4d8dc 0%, var(--s-surface) 48%, #969a9e 100%);
+    linear-gradient(165deg, var(--chrome-sheen) 0%, var(--s-surface) 48%, var(--chrome-shade) 100%);
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.75),
     inset 0 -1px 0 rgba(40, 42, 46, 0.4),
-    inset 0 0 0 2px #b0b4b8;
+    inset 0 0 0 2px var(--chrome-inset);
   user-select: none;
 }
 
@@ -74,12 +74,12 @@
   min-width: 0;
   min-height: 36px;
   padding: 4px 12px 4px 8px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background:
     radial-gradient(ellipse at 18% 0%, rgba(125, 255, 196, 0.14), transparent 46%),
     #070c0a;
   box-shadow:
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     inset 0 1px 0 rgba(255, 255, 255, 0.14),
     inset 0 10px 14px rgba(0, 0, 0, 0.4);
 }
@@ -126,17 +126,17 @@
   font-weight: 700;
   line-height: 1;
   border: 0;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   color: #1c1e20;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
-    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--s-surface) 70%, #9a9ea2 100%);
+    linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 36%, var(--s-surface) 70%, var(--chrome-key-shade) 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     inset 0 -1px 0 rgba(55, 58, 62, 0.45),
-    0 0 0 1px #4a4e52,
-    0 1px 0 #6a6e72;
+    0 0 0 1px var(--chrome-ring-deep),
+    0 1px 0 var(--chrome-lip);
   cursor: default;
 }
 
@@ -148,13 +148,13 @@
   gap: 8px;
   flex-shrink: 0;
   padding: 8px 10px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     linear-gradient(180deg, rgba(0, 0, 0, 0.06), transparent 28%),
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
-    #c4c8cc;
+    var(--chrome-grade-sheen);
   box-shadow:
-    0 0 0 1px #6a6e72,
+    0 0 0 1px var(--chrome-lip),
     inset 0 1px 0 rgba(255, 255, 255, 0.65),
     inset 0 2px 3px rgba(0, 0, 0, 0.12);
 }
@@ -175,7 +175,7 @@
   align-items: center;
   margin: 0;
   padding: 4px 9px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.14em;
@@ -184,9 +184,9 @@
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.45) 0, transparent 40%),
-    #c8ccd0;
+    var(--chrome-pewter);
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.7),
     inset 0 -1px 0 rgba(40, 42, 46, 0.28);
   white-space: nowrap;
@@ -208,7 +208,7 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.1em;
@@ -217,10 +217,10 @@
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
   background-image:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0 1px, transparent 1px 2px),
-    linear-gradient(180deg, #eef0f2 0%, var(--s-surface) 48%, #a4a8ac 100%);
+    linear-gradient(180deg, var(--chrome-mist) 0%, var(--s-surface) 48%, var(--chrome-foot) 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 0 0 1px #6a6e72;
+    0 0 0 1px var(--chrome-lip);
 }
 
 .sch95 .sch-btn {
@@ -232,7 +232,7 @@
   min-height: 28px;
   padding: 4px 12px 5px;
   border: none;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-family: inherit;
   font-size: 11px;
   font-weight: 700;
@@ -242,12 +242,12 @@
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
-    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--s-surface) 70%, #9a9ea2 100%);
+    linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 36%, var(--s-surface) 70%, var(--chrome-key-shade) 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     inset 0 -1px 0 rgba(55, 58, 62, 0.45),
-    0 0 0 1px #4a4e52,
-    0 1px 0 #6a6e72;
+    0 0 0 1px var(--chrome-ring-deep),
+    0 1px 0 var(--chrome-lip);
   cursor: pointer;
   white-space: nowrap;
 }
@@ -259,12 +259,12 @@
 .sch95 .sch-btn:not(:disabled):active {
   box-shadow:
     inset 0 1px 2px rgba(0, 0, 0, 0.35),
-    0 0 0 1px #3a3e42;
+    0 0 0 1px var(--chrome-pressed);
   filter: none;
 }
 
 .sch95 .sch-btn:disabled {
-  color: #808080;
+  color: var(--chrome-lo);
   text-shadow: 1px 1px 0 #fff;
   cursor: default;
   filter: none;
@@ -295,12 +295,12 @@
   min-width: 12rem;
   max-width: 26rem;
   padding: 4px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
-    #b4b8bc;
+    var(--chrome-nickel);
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 2px 3px rgba(0, 0, 0, 0.18);
 }
 
@@ -314,10 +314,10 @@
   letter-spacing: 0.12em;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 28%),
-    linear-gradient(165deg, #eceef0, #c0c4c8);
+    linear-gradient(165deg, var(--chrome-key-sheen), var(--chrome-mill-soft));
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 0 0 1px #4a4e52;
+    0 0 0 1px var(--chrome-ring-deep);
 }
 
 .sch95 .sch-view-keys .sch-btn[aria-pressed="true"] {
@@ -327,7 +327,7 @@
     radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.2), transparent 55%),
     #070c0a;
   box-shadow:
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     inset 0 8px 10px rgba(0, 0, 0, 0.4);
   filter: none;
 }
@@ -353,12 +353,12 @@
   gap: 8px;
   flex-shrink: 0;
   padding: 6px 10px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
-    linear-gradient(180deg, #d8dce0, var(--s-surface) 48%, #b0b4b8);
+    linear-gradient(180deg, var(--chrome-mill-hi), var(--s-surface) 48%, var(--chrome-inset));
   box-shadow:
-    0 0 0 1px #6a6e72,
+    0 0 0 1px var(--chrome-lip),
     inset 0 1px 0 rgba(255, 255, 255, 0.65),
     inset 0 2px 3px rgba(0, 0, 0, 0.08);
 }
@@ -367,7 +367,7 @@
   flex: 1;
   min-width: 0;
   padding: 5px 10px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: #fff;
   box-shadow: var(--s-field);
   font-size: 11px;
@@ -390,12 +390,12 @@ body.win95-app .sch95 .sch-period-tabs[role="tablist"],
   flex-shrink: 0;
   margin: 0;
   padding: 4px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
-    #b4b8bc;
+    var(--chrome-nickel);
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 2px 3px rgba(0, 0, 0, 0.18) !important;
 }
 
@@ -412,7 +412,7 @@ body.win95-app .sch95 .sch-period-tabs [role="tab"],
   min-height: 28px;
   margin: 0;
   padding: 4px 10px 5px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -421,10 +421,10 @@ body.win95-app .sch95 .sch-period-tabs [role="tab"],
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 28%),
-    linear-gradient(165deg, #eceef0, #c0c4c8);
+    linear-gradient(165deg, var(--chrome-key-sheen), var(--chrome-mill-soft));
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 0 0 1px #4a4e52;
+    0 0 0 1px var(--chrome-ring-deep);
   z-index: auto;
 }
 
@@ -439,7 +439,7 @@ body.win95-app .sch95 .sch-period-tabs [role="tab"][data-state="active"],
     radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.2), transparent 55%),
     #070c0a;
   box-shadow:
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     inset 0 8px 10px rgba(0, 0, 0, 0.4);
   z-index: 1;
 }
@@ -467,7 +467,7 @@ body.win95-app .sch95 .sch-period-tabs [role="tab"][data-state="active"]::before
   flex-direction: column;
   padding: 6px;
   overflow: hidden;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: var(--s-face);
   box-shadow: var(--s-sunken);
 }
@@ -500,7 +500,7 @@ body.win95-app .sch95 .sch-period-tabs [role="tab"][data-state="active"]::before
   flex-shrink: 0;
   min-height: 24px;
   padding: 4px 10px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -577,7 +577,7 @@ body.win95-app .sch95 .sch-period-tabs [role="tab"][data-state="active"]::before
   margin: 0 0 4px;
   padding: 2px 4px;
   font-size: 10px;
-  color: #404040;
+  color: var(--chrome-ink-soft);
 }
 
 .sch95 .sch-bucket-list {
@@ -760,7 +760,7 @@ body.win95-app .sch95 .sch-period-tabs [role="tab"][data-state="active"]::before
 
 .sch95 .sch-card-section-title span {
   font-weight: normal;
-  color: #404040;
+  color: var(--chrome-ink-soft);
 }
 
 .sch95 .sch-card-detail-row {
@@ -786,7 +786,7 @@ body.win95-app .sch95 .sch-period-tabs [role="tab"][data-state="active"]::before
 .sch95 .sch-bucket-sub {
   font-size: 10px;
   font-weight: normal;
-  color: #404040;
+  color: var(--chrome-ink-soft);
 }
 
 .sch95 .sch-bucket-card .sch-bucket-count {
@@ -864,7 +864,7 @@ body.win95-app .sch95 .sch-period-tabs [role="tab"][data-state="active"]::before
   flex-wrap: wrap;
   gap: 6px;
   font-size: 10px;
-  color: #404040;
+  color: var(--chrome-ink-soft);
 }
 
 .sch95 .sch-task-x {
@@ -902,7 +902,7 @@ body.win95-app .sch95 .sch-period-tabs [role="tab"][data-state="active"]::before
   width: 10px;
   height: 10px;
   flex-shrink: 0;
-  box-shadow: inset 1px 1px #fff, inset -1px -1px #404040;
+  box-shadow: inset 1px 1px #fff, inset -1px -1px var(--chrome-ink-soft);
 }
 
 .sch95 .sch-doc {
@@ -922,7 +922,7 @@ body.win95-app .sch95 .sch-period-tabs [role="tab"][data-state="active"]::before
   gap: 10px;
   padding: 4px 8px;
   font-size: 11px;
-  color: #404040;
+  color: var(--chrome-ink-soft);
   background: var(--s-face);
   box-shadow: inset 0 -1px var(--s-shadow);
 }
@@ -947,7 +947,7 @@ body.win95-app .sch95 .sch-period-tabs [role="tab"][data-state="active"]::before
   margin: 0;
   padding: 16px 14px;
   font-size: 12px;
-  color: #404040;
+  color: var(--chrome-ink-soft);
 }
 
 .sch95 .sch-gantt-row {
@@ -992,7 +992,7 @@ body.win95-app .sch95 .sch-period-tabs [role="tab"][data-state="active"]::before
   flex-shrink: 0;
   padding: 3px 6px;
   font-size: 10px;
-  color: #404040;
+  color: var(--chrome-ink-soft);
   background: var(--s-face);
   box-shadow: inset -1px 0 var(--s-shadow);
 }
@@ -1019,5 +1019,5 @@ body.win95-app .sch95 .sch-period-tabs [role="tab"][data-state="active"]::before
   margin: 0;
   padding: 8px 6px;
   font-size: 11px;
-  color: #404040;
+  color: var(--chrome-ink-soft);
 }

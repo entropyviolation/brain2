@@ -18,13 +18,13 @@
  * for confirmation in the review unless it is marked as a known ("definite") length.
  *
  * **Auto-fill from Tracking** (tags and Create tag) is shown only while the
- * Tracking tags completion source is checked. Hiding it keeps the saved tags.
- * That section is the minute source. **Tagged tasks** is a different source:
- * while it is checked, a tag field is shown and the goal is a count of Done
- * tasks (and tracked activities that file one Done line) with that tag.
- * **Daily completion average** is one checkbox for a weekly, monthly, or season
- * habit. The hint under the list is the whole setting: the raw mean of
- * daily-habit completion, and the goal is the percent that completes it. No tag.
+ * Tracking tags pipeline is on. Hiding it keeps the saved tags.
+ * That row is the minute source. **Tags** is a different pipeline:
+ * one tag, counted as Done tasks (a tracked block with the tag files one Done
+ * line). The habit's own Done line carries that tag too.
+ * **Habits stats** picks a set (daily, weekly, or monthly habits) and then
+ * points. Engine points still turn on the floor, the total, and the daily
+ * completion average. **Better than last week** stores a compare on that row.
  *
  * **Done task wording** is optional and collapsed. `{value}` is the number
  * logged. Blank keeps the habit name on the Done line (`lib/habit-done-log.ts`).
@@ -33,12 +33,15 @@
  * all-nighter exemption, a sleep clock (bedtime / wake at or before a threshold),
  * and a done next-action list. The to-do connection is the template for another habit.
  *
- * **Completion sources** are an ordered trust list (rows sit most trusted first).
- * **Daily habit total** picks its habit with the same Win95 menu, and you can type to filter.
- * **Text keywords (phone)** are whole-message Telegram triggers
+ * **Completion sources** are a pipeline (most trusted row first). Add source
+ * asks for a broad type, then that row's config. An optional name is display-only.
+ * **Daily habit total** sits inside Habits stats and picks its habit with the
+ * same Win95 menu.
+ * **BIM Keywords** are whole-message Telegram triggers
  * (`WeeklyTask.textTriggers` / `lib/ingest/text-triggers.ts`). **Try a phrase**
  * previews the parser. Quantity adds. Empty habits get name-matched presets
- * (hemisync, read, exercise, chess) as an editable preview.
+ * (hemisync, read, exercise, chess) as an editable preview. The stored source
+ * id stays `keywords`.
  * **Open item in Lists** uses the standing habit item and the existing item-detail Back.
  *
  * Spec: §9.4 (habit data model).
@@ -60,8 +63,13 @@ import {
   type HabitLogExemption,
   type HabitSleepLink,
   type HabitCompletionSourceId,
+  type HabitCompletionPipeline,
+  type HabitStatPointKind,
+  type HabitStatSet,
+  type HabitListMeasure,
+  type HabitListPipelineMode,
+  type HabitListTarget,
   type HabitCoverageLink,
-  type HabitDailyFloorLink,
   type HabitTextTrigger,
   type IncrementalHabitData,
 } from "@/lib/types"
@@ -74,11 +82,11 @@ import { defaultTriggersForHabit, describeHabitTriggerPreview, makeHabitTriggerI
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { penIdsForTags } from "@/lib/tracked-time"
 import { useThemeStore } from "@/lib/theme-store"
-import { CheckCircle2, AlignLeft, TrendingUp, Target } from "lucide-react"
+import { CheckCircle2, AlignLeft, TrendingUp, Target, Star } from "lucide-react"
 import { HabitGemChooser } from "@/components/Home/Habits/gem-picker"
 import { pickRandomCatalogGem, resolveTaskGem } from "@/lib/habit-gems"
 import { serializeSnapshot } from "@/lib/unsaved-changes"
-import { presetLogExemptions, sanitizeLogExemptions } from "@/lib/habit-exemption"
+import { currentExemptionContext, isHabitPeriodExempt, presetLogExemptions, sanitizeLogExemptions } from "@/lib/habit-exemption"
 import { effectiveListLink, effectiveSleepLink, presetListLink, presetSleepLink } from "@/lib/habit-connections"
 import {
   clampCoverageThreshold,
@@ -91,12 +99,47 @@ import {
 } from "@/lib/habit-completion-source"
 import { openHabitInLists } from "@/lib/habit-list-item"
 import { normalizeTag } from "@/lib/links"
-import { HabitSourcesField } from "@/components/Home/Habits/habit-sources-field"
-import { COMPLETION_SOURCE_HINTS } from "@/lib/habit-completion-trust"
+import { Habit95Select, HabitPipelineEditor, HabitStatsPoints } from "@/components/Home/Habits/habit-sources-field"
+import { COMPLETION_SOURCE_HINTS, COMPLETION_SOURCE_LABELS } from "@/lib/habit-completion-trust"
+import {
+  describeListRoutingPreview,
+  flattenPipelines,
+  legacyModeForRouting,
+  listRoutingFromLink,
+  pipelinesFromSources,
+  storedListSentFields,
+  togglePipelineSource,
+} from "@/lib/habit-completion-pipeline"
+import { clampListSentGrace } from "@/lib/list-sent"
+import { calculateTaskPercentage } from "@/lib/calculations"
+import { datesForCompletionAverage } from "@/lib/habit-daily-completion-average"
+import { periodWindowsForFrequency } from "@/lib/habit-period-windows"
+import { sumHabitValuesOverDays } from "@/lib/habit-value-sync"
+import {
+  BETTER_THAN_LAST_WEEK_CHOICE,
+  engineSourceForPoint,
+  habitStatChoices,
+  listedStatPoints,
+  pointFitsSet,
+  pointKindForEngine,
+  readStatPoint,
+  statPointKey,
+  withBetterThanLastWeek,
+  type HabitStatContext,
+} from "@/lib/habit-stat-points"
+import { HabitListPopup } from "@/components/Home/Habits/habit-list-popup"
 import { useHabitsStore } from "@/lib/habits-store"
+import { localDayKey, useReviewsStore } from "@/lib/reviews-store"
+import {
+  applyPermanentPriority,
+  applyPriorityPress,
+  applyRitualPriority,
+  autoPriorityWeight,
+  neglectCountLabel,
+  priorityMarkPercent,
+} from "@/lib/habit-priority"
 import { useTaskStore } from "@/lib/task-store"
 import { isFolderAllItemsCategoryId } from "@/lib/folder-all-items"
-import { clampListSentGrace } from "@/lib/list-sent"
 import { DAILY_HABIT_COMPLETION_POINTS } from "@/lib/habit-points"
 import { offsetToClock, parseBedtime, parseWakeTime } from "@/lib/sleep-log"
 import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
@@ -143,6 +186,33 @@ const TRACKING_MODES: { value: HabitTrackingMode; label: string; desc: string }[
   { value: "max", label: "Higher of the two", desc: "Counts your log or tracked time, whichever is more." },
   { value: "replace", label: "Tracking only", desc: "The tracker is the only source for this habit." },
 ]
+
+const LIST_MEASURES: { id: HabitListMeasure; label: string; hint: string }[] = [
+  { id: "sent", label: "Sent", hint: "Items where Sent is true." },
+  { id: "completed", label: "Completed", hint: "Items where Completed is true." },
+  { id: "added", label: "Added this period", hint: "Items added in this period." },
+]
+
+const LIST_TARGETS: { id: HabitListTarget; label: string; hint: string }[] = [
+  {
+    id: "periodSet",
+    label: "This period's set",
+    hint: "Still on the list without that yes/no, plus items that tripped it this period.",
+  },
+  { id: "listLength", label: "List length", hint: "How many items are on the list." },
+  { id: "one", label: "One", hint: "A fixed 1." },
+]
+
+const GRACE_SENTENCE =
+  "Grace 100 leaves the raw percent. Grace 80 means a raw 80 counts as 100, and a raw 40 counts as 50 (raw / grace × 100, capped at 100)."
+
+function sourcesForListRouting(routing: { measure: HabitListMeasure; target: HabitListTarget }): HabitCompletionSourceId[] {
+  const legacy = legacyModeForRouting(routing)
+  if (legacy === "oneComplete") return ["list"]
+  if (legacy === "allComplete" || legacy === "oneAdded") return []
+  if (legacy === "sentThisWeek" || routing.measure === "sent") return ["listSent"]
+  return []
+}
 
 const TRIGGER_MODES: { value: HabitTextTrigger["mode"]; label: string }[] = [
   { value: "done", label: "Done (bare keyword)" },
@@ -399,12 +469,92 @@ function ListSentPicker({
   )
 }
 
+function withSourceOrder(current: WeeklyTask, order: HabitCompletionSourceId[]): WeeklyTask {
+  let next: WeeklyTask = { ...current, completionSources: order }
+  if (order.includes("coverage")) {
+    const threshold = clampCoverageThreshold(
+      (effectiveCoverageLink(current)?.threshold ?? current.goal) || DEFAULT_COVERAGE_THRESHOLD,
+    )
+    next = { ...next, coverageLink: { threshold, enabled: true }, goal: current.goal || threshold, unit: current.unit || "%" }
+  } else {
+    next = { ...next, coverageLink: null }
+  }
+  if (order.includes("dailyFloor")) {
+    next = {
+      ...next,
+      frequency: "weekly",
+      type: current.type === TaskType.GOAL ? current.type : TaskType.BOOLEAN,
+      dailyFloorLink: effectiveDailyFloorLink({ ...current, frequency: "weekly", type: TaskType.BOOLEAN }) ?? {
+        floorPercent: 0,
+        enabled: true,
+      },
+    }
+  } else {
+    next = { ...next, dailyFloorLink: null }
+  }
+  if (order.includes("sleep")) {
+    next = { ...next, sleepLink: effectiveSleepLink(current) ?? { end: "wake", beforeMinutes: 9 * 60 } }
+  } else {
+    next = { ...next, sleepLink: null }
+  }
+  if (order.includes("list")) {
+    next = { ...next, listLink: effectiveListLink(current) ?? { listName: "to do", count: 1 } }
+  } else {
+    next = { ...next, listLink: null }
+  }
+  if (order.includes("tags")) {
+    next = { ...next, trackingLink: { ...(current.trackingLink ?? { tagIds: [] }), enabled: true } }
+  } else if (current.trackingLink) {
+    next = { ...next, trackingLink: { ...current.trackingLink, enabled: false } }
+  }
+  if (order.includes("habitValue")) {
+    const habitId = current.habitValueLink?.habitId || ""
+    next = { ...next, habitValueLink: habitId ? { habitId, enabled: true } : current.habitValueLink ?? null }
+  } else {
+    next = { ...next, habitValueLink: null }
+  }
+  if (order.includes("listSent")) {
+    const prev = current.listSentLink
+    next = {
+      ...next,
+      listSentLink: {
+        listId: prev?.listId ?? "",
+        grace: clampListSentGrace(prev?.grace),
+        ...storedListSentFields(prev),
+      },
+    }
+  } else if (current.listSentLink?.listId && current.listSentLink.mode && current.listSentLink.mode !== "sentThisWeek") {
+    next = { ...next, listSentLink: current.listSentLink }
+  } else {
+    next = { ...next, listSentLink: null }
+  }
+  return next
+}
+
+const EMPTY_RITUAL_IDS: string[] = []
+
 export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFrequency = "daily", onDirtyChange, onLeaveForItem }: TaskFormProps) {
   const colors = useThemeStore((s) => s.colors)
   const trackingTags = useTimeTrackingStore((s) => s.tags)
   const trackingScopes = useTimeTrackingStore((s) => s.scopes)
   const allHabits = useHabitsStore((s) => s.tasks)
+  const weeklyData = useHabitsStore((s) => s.weeklyData)
+  const weeklyHabitData = useHabitsStore((s) => s.weeklyHabitData)
+  const monthlyHabitData = useHabitsStore((s) => s.monthlyHabitData)
+  const quarterlyHabitData = useHabitsStore((s) => s.quarterlyHabitData)
+  const ritualMultiplier = useHabitsStore((s) => s.morningRitualPointMultiplier)
+  const habitExemptions = useHabitsStore((s) => s.habitExemptions)
+  const gradeTolerance = useHabitsStore((s) => s.gradeTolerance)
+  const outputGradeTolerance = useHabitsStore((s) => s.outputGradeTolerance)
+  const ritualDayKey = localDayKey(new Date())
+  const storedRitualIds =
+    useReviewsStore((s) => s.getMorningReview(ritualDayKey)?.priorityHabitIds) ?? EMPTY_RITUAL_IDS
+  const [ritualOverride, setRitualOverride] = useState<boolean | null>(null)
+  const ritualOn = ritualOverride ?? (initialTask ? storedRitualIds.includes(initialTask.id) : false)
   const vaultLists = useTaskStore((s) => s.lists)
+  const vaultItems = useTaskStore((s) => s.tasks)
+  const [openListId, setOpenListId] = useState<string | null>(null)
+  const listPopupHost = useRef<HTMLElement | null>(null)
   const initialClimb = initialTask ? normalizeIncrementalData(initialTask.incrementalData) : undefined
   const seededTriggers = seedTextTriggers(initialTask)
   const hadStoredTriggers = Boolean(initialTask?.textTriggers?.length)
@@ -415,7 +565,9 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
   const [listLocked, setListLocked] = useState(!!initialTask && initialTask.listLink !== undefined)
   const [coverageLocked, setCoverageLocked] = useState(!!initialTask && initialTask.coverageLink !== undefined)
   const [floorLocked, setFloorLocked] = useState(!!initialTask && initialTask.dailyFloorLink !== undefined)
-  const [sourcesLocked, setSourcesLocked] = useState(Array.isArray(initialTask?.completionSources))
+  const [sourcesLocked, setSourcesLocked] = useState(
+    Array.isArray(initialTask?.completionSources) || Array.isArray(initialTask?.completionPipelines),
+  )
   const estimateHold = useRef<HabitTimeEstimate | undefined>(initialTask?.timeEstimate)
   const [phrase, setPhrase] = useState("")
   const [newTagName, setNewTagName] = useState("")
@@ -447,12 +599,16 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
     textTriggers: seededTriggers,
     priorityPinned: initialTask?.priorityPinned,
     priorityMuted: initialTask?.priorityMuted,
+    priorityLog: initialTask?.priorityLog,
+    priorityRefreshedOn: initialTask?.priorityRefreshedOn,
+    priorityPermanent: initialTask?.priorityPermanent,
     gem: initialTask?.gem || pickRandomCatalogGem(),
     logExemptions: initialTask?.logExemptions ?? presetLogExemptions(seedName),
     sleepLink: initialTask && initialTask.sleepLink !== undefined ? initialTask.sleepLink : presetSleepLink(seedName),
     listLink: initialTask && initialTask.listLink !== undefined ? initialTask.listLink : presetListLink(seedName),
     habitValueLink: initialTask?.habitValueLink ?? null,
     listSentLink: initialTask?.listSentLink ?? null,
+    completionPipelines: initialTask?.completionPipelines,
     showGoalBar: initialTask?.showGoalBar,
   })
   const [baseline] = useState(() => serializeSnapshot({
@@ -481,10 +637,14 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
     gem: task.gem,
     priorityPinned: initialTask?.priorityPinned,
     priorityMuted: initialTask?.priorityMuted,
+    priorityLog: initialTask?.priorityLog,
+    priorityRefreshedOn: initialTask?.priorityRefreshedOn,
+    priorityPermanent: initialTask?.priorityPermanent,
     logExemptions: initialTask?.logExemptions ?? presetLogExemptions(seedName),
     sleepLink: initialTask && initialTask.sleepLink !== undefined ? initialTask.sleepLink : presetSleepLink(seedName),
     listLink: initialTask && initialTask.listLink !== undefined ? initialTask.listLink : presetListLink(seedName),
     completionSources: initialTask?.completionSources,
+    completionPipelines: initialTask?.completionPipelines,
     habitValueLink: initialTask?.habitValueLink ?? null,
     listSentLink: initialTask?.listSentLink ?? null,
     showGoalBar: !!initialTask?.showGoalBar,
@@ -512,10 +672,14 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
         gem: task.gem,
         priorityPinned: task.priorityPinned,
         priorityMuted: task.priorityMuted,
+        priorityLog: task.priorityLog,
+        priorityRefreshedOn: task.priorityRefreshedOn,
+        priorityPermanent: task.priorityPermanent,
         logExemptions: task.logExemptions ?? [],
         sleepLink: task.sleepLink ?? null,
         listLink: task.listLink ?? null,
         completionSources: task.completionSources,
+        completionPipelines: task.completionPipelines,
         habitValueLink: task.habitValueLink ?? null,
         listSentLink: task.listSentLink ?? null,
         showGoalBar: !!task.showGoalBar,
@@ -552,7 +716,10 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
         coverageLink: coverageLocked ? current.coverageLink : presetCoverageLink(current),
         dailyFloorLink: floorLocked ? current.dailyFloorLink : presetDailyFloorLink(current),
       }
-      if (!sourcesLocked) next.completionSources = deriveCompletionSources(next)
+      if (!sourcesLocked) {
+        next.completionSources = deriveCompletionSources(next)
+        next.completionPipelines = undefined
+      }
       return next
     })
   }, [task.name, task.frequency, task.type, logsLocked, sleepLocked, listLocked, coverageLocked, floorLocked, sourcesLocked])
@@ -588,6 +755,9 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
           ? {
               floorPercent: Math.min(100, Math.max(0, Math.round(task.dailyFloorLink.floorPercent ?? 0))),
               enabled: task.dailyFloorLink.enabled !== false,
+              ...((task.dailyFloorLink.allowAtZero ?? 0) > 0
+                ? { allowAtZero: Math.max(0, Math.round(task.dailyFloorLink.allowAtZero ?? 0)) }
+                : {}),
             }
           : null
     // N/A stores the flag and no minutes. Otherwise drop an empty estimate object.
@@ -624,18 +794,39 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
     finalTask.habitValueLink = task.habitValueLink?.habitId
       ? { habitId: task.habitValueLink.habitId, enabled: task.habitValueLink.enabled !== false }
       : null
+    const draftedRows =
+      task.completionPipelines ??
+      pipelinesFromSources(
+        sourcesLocked && Array.isArray(task.completionSources)
+          ? task.completionSources
+          : deriveCompletionSources(finalTask),
+      )
+    finalTask.completionPipelines = draftedRows
+    finalTask.completionSources = flattenPipelines(draftedRows)
+    const listRow = draftedRows.some((row) => row.kind === "lists")
     finalTask.listSentLink =
-      task.listSentLink?.listId
-        ? { listId: task.listSentLink.listId, grace: clampListSentGrace(task.listSentLink.grace), enabled: task.listSentLink.enabled !== false }
+      task.listSentLink?.listId && (listRow || finalTask.completionSources.includes("listSent"))
+        ? {
+            listId: task.listSentLink.listId,
+            grace: clampListSentGrace(task.listSentLink.grace),
+            enabled: task.listSentLink.enabled !== false,
+            ...storedListSentFields(task.listSentLink),
+          }
         : null
-    finalTask.completionSources =
-      sourcesLocked && Array.isArray(task.completionSources)
-        ? task.completionSources
-        : deriveCompletionSources(finalTask)
-    if (!finalTask.completionSources?.includes("listSent")) finalTask.listSentLink = null
+    if (!finalTask.completionSources.includes("listSent") && !listRow) finalTask.listSentLink = null
     const tagged = normalizeTag(task.taggedTaskTag ?? "")
     finalTask.taggedTaskTag =
       finalTask.completionSources?.includes("taggedTasks") && tagged ? tagged : undefined
+    if (initialTask && ritualOverride === true && !storedRitualIds.includes(initialTask.id)) {
+      useReviewsStore.getState().saveMorningReview(ritualDayKey, {
+        priorityHabitIds: [...storedRitualIds, initialTask.id],
+      })
+    }
+    if (initialTask && ritualOverride === false) {
+      useReviewsStore.getState().saveMorningReview(ritualDayKey, {
+        priorityHabitIds: storedRitualIds.filter((id) => id !== initialTask.id),
+      })
+    }
     onSubmit(finalTask)
   }
 
@@ -704,77 +895,132 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
     sourcesLocked && Array.isArray(task.completionSources)
       ? task.completionSources
       : deriveCompletionSources(task)
+  const displayPipelines = task.completionPipelines ?? pipelinesFromSources(sourceOrder)
   const showTracking = supportsTrackingLink(task) && sourceOrder.includes("tags")
+  const listChoices = vaultLists
+    .filter((list) => !isFolderAllItemsCategoryId(list.id))
+    .map((list) => ({ id: list.id, name: list.name }))
+    .sort((a, b) => a.name.localeCompare(b.name))
+  const setRowSources = (row: HabitCompletionPipeline, sources: HabitCompletionSourceId[]) => {
+    commitPipelines(
+      displayPipelines.map((item) => (item.id === row.id ? { ...item, sources } : item)),
+      "structure",
+    )
+  }
   const dailyValueSources = allHabits.filter(
     (habit) =>
       (habit.frequency || "daily") === "daily" &&
       habit.id !== task.id &&
       habit.type !== TaskType.TEXT,
   )
+  const todayKey = formatLocalDateKey(new Date())
+  const periodWindow = periodWindowsForFrequency(task.frequency, [todayKey])[0]
+  const periodDates = periodWindow ? datesForCompletionAverage(task.frequency, periodWindow, todayKey) : []
+  const dailyHabits = allHabits.filter((habit) => (habit.frequency || "daily") === "daily")
+  const weeklyHabits = allHabits.filter((habit) => habit.frequency === "weekly" && habit.id !== task.id)
+  const monthlyHabits = allHabits.filter((habit) => habit.frequency === "monthly" && habit.id !== task.id)
+  const exemptionContext = currentExemptionContext()
+  const dailyExempt = (habit: WeeklyTask, dateKey: string) =>
+    isHabitPeriodExempt(habit, dateKey, "daily", habitExemptions, exemptionContext)
+  const dailyPercents = dailyHabits.map((habit) => ({
+    id: habit.id,
+    name: habit.name || "Untitled",
+    pct: periodDates.length
+      ? calculateTaskPercentage(habit.id, dailyHabits, weeklyData, periodDates, dailyExempt)
+      : 0,
+    active: periodDates.some((date) => !dailyExempt(habit, formatLocalDateKey(date))),
+  }))
+  const averageRows = dailyPercents.filter((row) => row.active)
+  const averageMean =
+    averageRows.length > 0 ? averageRows.reduce((sum, row) => sum + row.pct, 0) / averageRows.length : null
+  const sumKeys = periodDates.map((date) => formatLocalDateKey(date)).filter((key) => key <= todayKey)
 
-  const applySources = (order: HabitCompletionSourceId[]) => {
+  const commitPipelines = (rows: HabitCompletionPipeline[], reason: "rename" | "structure") => {
     setSourcesLocked(true)
+    if (reason === "rename") {
+      setTask((current) => ({ ...current, completionPipelines: rows }))
+      return
+    }
     setCoverageLocked(true)
     setFloorLocked(true)
     setSleepLocked(true)
     setListLocked(true)
-    setTask((current) => {
-      let next: WeeklyTask = { ...current, completionSources: order }
-      if (order.includes("coverage")) {
-        const threshold = clampCoverageThreshold(
-          (effectiveCoverageLink(current)?.threshold ?? current.goal) || DEFAULT_COVERAGE_THRESHOLD,
-        )
-        next = { ...next, coverageLink: { threshold, enabled: true }, goal: current.goal || threshold, unit: current.unit || "%" }
-      } else {
-        next = { ...next, coverageLink: null }
-      }
-      if (order.includes("dailyFloor")) {
-        next = {
-          ...next,
-          frequency: "weekly",
-          type: current.type === TaskType.GOAL ? current.type : TaskType.BOOLEAN,
-          dailyFloorLink: effectiveDailyFloorLink({ ...current, frequency: "weekly", type: TaskType.BOOLEAN }) ?? {
-            floorPercent: 0,
-            enabled: true,
-          },
-        }
-      } else {
-        next = { ...next, dailyFloorLink: null }
-      }
-      if (order.includes("sleep")) {
-        next = { ...next, sleepLink: effectiveSleepLink(current) ?? { end: "wake", beforeMinutes: 9 * 60 } }
-      } else {
-        next = { ...next, sleepLink: null }
-      }
-      if (order.includes("list")) {
-        next = { ...next, listLink: effectiveListLink(current) ?? { listName: "to do", count: 1 } }
-      } else {
-        next = { ...next, listLink: null }
-      }
-      if (order.includes("tags")) {
-        next = { ...next, trackingLink: { ...(current.trackingLink ?? { tagIds: [] }), enabled: true } }
-      } else if (current.trackingLink) {
-        next = { ...next, trackingLink: { ...current.trackingLink, enabled: false } }
-      }
-      if (order.includes("habitValue")) {
-        const habitId = current.habitValueLink?.habitId || ""
-        next = { ...next, habitValueLink: habitId ? { habitId, enabled: true } : current.habitValueLink ?? null }
-      } else {
-        next = { ...next, habitValueLink: null }
-      }
-      if (order.includes("listSent")) {
-        const prev = current.listSentLink
-        next = {
-          ...next,
-          listSentLink: {
-            listId: prev?.listId ?? "",
-            grace: clampListSentGrace(prev?.grace),
-          },
-        }
-      } else {
-        next = { ...next, listSentLink: null }
-      }
-      return next
+    const order = flattenPipelines(rows)
+    setTask((current) => ({ ...withSourceOrder(current, order), completionPipelines: rows }))
+  }
+
+  const patchStatsRow = (row: HabitCompletionPipeline, next: HabitCompletionPipeline) => {
+    commitPipelines(
+      displayPipelines.map((item) => (item.id === row.id ? next : item)),
+      "structure",
+    )
+  }
+
+  const habitsForSet = (set: HabitStatSet) =>
+    set === "weekly" ? weeklyHabits : set === "monthly" ? monthlyHabits : dailyHabits
+
+  const statContext = (set: HabitStatSet): HabitStatContext => {
+    const now = new Date()
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+    monthStart.setHours(0, 0, 0, 0)
+    return {
+      today: now,
+      weekStart: getWeekStartDate(now),
+      monthStart,
+      periodDays: periodDates,
+      set,
+      subject: task,
+      dailyTasks: dailyHabits,
+      weeklyTasks: weeklyHabits,
+      monthlyTasks: monthlyHabits,
+      weeklyData,
+      weeklyHabitData,
+      monthlyHabitData,
+      gradeTolerance,
+      outputGradeTolerance,
+      isExempt: (habit, key) =>
+        isHabitPeriodExempt(habit, key, habit.frequency || "daily", habitExemptions, exemptionContext),
+    }
+  }
+
+  const onStatSet = (row: HabitCompletionPipeline, set: HabitStatSet) => {
+    const stats = row.stats ?? { set: "daily" as const, points: [] }
+    const points = stats.points.filter((point) => pointFitsSet(point.kind, set))
+    const sources =
+      set === "daily"
+        ? row.sources.filter((id) => {
+            const kind = pointKindForEngine(id)
+            if (!kind) return true
+            const stored = stats.points.some((point) => point.kind === kind)
+            return !stored || points.some((point) => point.kind === kind)
+          })
+        : row.sources.filter((id) => !pointKindForEngine(id))
+    patchStatsRow(row, { ...row, sources, stats: { ...stats, set, points } })
+  }
+
+  const onPickPoint = (row: HabitCompletionPipeline, id: string) => {
+    if (id === BETTER_THAN_LAST_WEEK_CHOICE) {
+      patchStatsRow(row, withBetterThanLastWeek(row))
+      return
+    }
+    const set = row.stats?.set ?? "daily"
+    const choice = habitStatChoices(set, periodDates, habitsForSet(set)).find((item) => item.id === id)
+    if (!choice?.point) return
+    if (listedStatPoints(row).some((point) => statPointKey(point) === statPointKey(choice.point!))) return
+    const stats = row.stats ?? { set, points: [] }
+    const engine = engineSourceForPoint(choice.point.kind)
+    const sources = engine && !row.sources.includes(engine) ? togglePipelineSource(row, engine) : row.sources
+    patchStatsRow(row, { ...row, sources, stats: { ...stats, set, points: [...stats.points, choice.point] } })
+  }
+
+  const onRemovePoint = (row: HabitCompletionPipeline, key: string) => {
+    const stats = row.stats ?? { set: "daily" as const, points: [] }
+    const kind = key.split(":")[0] as HabitStatPointKind
+    const engine = engineSourceForPoint(kind)
+    patchStatsRow(row, {
+      ...row,
+      sources: engine ? row.sources.filter((id) => id !== engine) : row.sources,
+      stats: { ...stats, points: stats.points.filter((point) => statPointKey(point) !== key) },
     })
   }
 
@@ -855,9 +1101,10 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
     Boolean(task.name.trim()) && (task.type !== TaskType.INCREMENTAL || climb.increment > 0)
 
   return (
+    <>
     <form id="habit95-form" onSubmit={handleSubmit} className="habit95-form">
       <div className="habit95-fields">
-      <div className="habit95-field">
+      <div className="habit95-field habit95-sec-name">
         <label htmlFor="task-name">Habit Name</label>
         <input
           id="task-name"
@@ -884,7 +1131,7 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
         ) : null}
       </div>
 
-      <fieldset className="habit95-group">
+      <fieldset className="habit95-group habit95-sec-gem">
         <legend>Gem</legend>
         <p className="habit95-hint">Jewel on the row edit button. A random catalog stone is assigned; pick or upload to keep your own.</p>
         <HabitGemChooser
@@ -895,31 +1142,97 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
         />
       </fieldset>
 
-      <fieldset className="habit95-group">
+      <fieldset className="habit95-group habit95-sec-priority">
         <legend>Priority</legend>
         <p className="habit95-hint">
-          A pin stays until you remove it. A fully empty week (or week/month) auto-prioritizes
-          the next period and compounds. Mute to drop the auto term.
+          Prioritize habit refreshes a green star. It is bright the day it is refreshed and loses a
+          tenth of its strength each calendar day after that. Permanent priority holds it at full
+          strength. A fully empty week (or week/month) still auto-prioritizes the next period and compounds.
         </p>
+        <div className="habit-priority-actions">
+          <button
+            type="button"
+            className="habit95-btn"
+            onClick={() => setTask((current) => applyPriorityPress(current))}
+          >
+            Prioritize habit
+          </button>
+          <Star
+            className="habit-priority-star"
+            aria-label={`Priority star ${priorityMarkPercent(task, new Date(), ritualOn)}%`}
+            style={{ opacity: priorityMarkPercent(task, new Date(), ritualOn) / 100 }}
+            fill="currentColor"
+            stroke="currentColor"
+          />
+        </div>
+        {(task.priorityLog?.length ?? 0) > 0 ? (
+          <ol className="habit-priority-log">
+            {[...(task.priorityLog ?? [])].reverse().map((line, index) => (
+              <li key={`${task.priorityLog?.length ?? 0}-${index}`}>{line}</li>
+            ))}
+          </ol>
+        ) : null}
         <label className="habit95-check">
           <input
             type="checkbox"
-            checked={!!task.priorityPinned}
-            onChange={(e) => setTask({ ...task, priorityPinned: e.target.checked })}
+            checked={!!task.priorityPermanent}
+            onChange={(e) => setTask((current) => applyPermanentPriority(current, e.target.checked))}
           />
-          Prioritize this habit
+          Permanent priority
         </label>
+        {initialTask ? (
+          <label className="habit95-check">
+            <input
+              type="checkbox"
+              checked={ritualOn}
+              onChange={(e) => {
+                const on = e.target.checked
+                setRitualOverride(on)
+                if (on) setTask((current) => applyRitualPriority(current, "day"))
+              }}
+            />
+            Morning ritual
+          </label>
+        ) : null}
+        {ritualOn ? (
+          <p className="habit-priority-mark">
+            MORNING RITUAL
+            <span className="habit-priority-mult">×{ritualMultiplier}</span>
+          </p>
+        ) : null}
+        {initialTask && !task.priorityMuted
+          ? (() => {
+              const freq = task.frequency || "daily"
+              const book =
+                freq === "weekly"
+                  ? weeklyHabitData
+                  : freq === "monthly"
+                    ? monthlyHabitData
+                    : freq === "quarterly"
+                      ? quarterlyHabitData
+                      : weeklyData
+              const neglect = autoPriorityWeight({ ...task, id: initialTask.id }, book, new Date(), freq)
+              if (neglect <= 0) return null
+              return (
+                <p className="habit-priority-mark">
+                  NEGLECT
+                  <span>{neglectCountLabel(freq, neglect)}</span>
+                  <span className="habit-priority-mult">×{neglect}</span>
+                </p>
+              )
+            })()
+          : null}
         <label className="habit95-check">
           <input
             type="checkbox"
             checked={!!task.priorityMuted}
-            onChange={(e) => setTask({ ...task, priorityMuted: e.target.checked })}
+            onChange={(e) => setTask({ ...task, priorityMuted: e.target.checked || undefined })}
           />
-          Ignore missed-period auto-priority
+          Ignore neglect
         </label>
       </fieldset>
 
-      <fieldset className="habit95-group">
+      <fieldset className="habit95-group habit95-sec-freq">
         <legend>Frequency</legend>
         <div className="habit95-freq" role="radiogroup" aria-label="Frequency">
           {FREQUENCIES.map(({ value, label }) => (
@@ -937,7 +1250,7 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
         </div>
       </fieldset>
 
-      <fieldset className="habit95-group">
+      <fieldset className="habit95-group habit95-sec-type">
         <legend>Habit Type</legend>
         <p className="habit95-hint">How you will mark it done.</p>
         <div className="habit95-types" role="radiogroup" aria-label="Habit Type">
@@ -961,7 +1274,7 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
       </fieldset>
 
       {(task.type === TaskType.GOAL || task.type === TaskType.TIME || task.type === TaskType.COUNT) && (
-        <fieldset className="habit95-group">
+        <fieldset className="habit95-group habit95-sec-target">
           <legend>Target</legend>
           <div className="habit95-goal-grid">
             <div className="habit95-field">
@@ -1018,7 +1331,7 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
       )}
 
       {task.type === TaskType.INCREMENTAL && (
-        <fieldset className="habit95-group">
+        <fieldset className="habit95-group habit95-sec-target">
           <legend>Climb</legend>
           <div className="habit95-types" role="radiogroup" aria-label="Climb cadence">
             <button
@@ -1086,7 +1399,7 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
         </fieldset>
       )}
 
-      <fieldset className="habit95-group">
+      <fieldset className="habit95-group habit95-sec-points">
         <legend>Points &amp; bonus</legend>
         <p className="habit95-hint">
           Completing this habit awards the points below (full mark). Daily habits also earn a scaled ledger line of{" "}
@@ -1129,187 +1442,388 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
         </div>
       </fieldset>
 
-      <fieldset className="habit95-group">
+      <fieldset className="habit95-group habit95-sec-sources">
         <legend>Completion sources</legend>
         <p className="habit95-hint">
           A habit can listen to more than one place. The list is trust order: the first source that has something to
-          say wins when they disagree. A source with no observation is skipped. What you already logged stays in the
-          cell.
+          say wins when they disagree. A source with no observation is skipped. A number or tick you type still wins.
         </p>
-        <HabitSourcesField order={sourceOrder} onChange={applySources} />
-        {sourceOrder.includes("dailyCompletionAverage") && (
-          <p className="habit95-hint" style={{ marginTop: 8 }}>
-            {COMPLETION_SOURCE_HINTS.dailyCompletionAverage}
-          </p>
-        )}
-        {sourceOrder.includes("taggedTasks") && (
-          <div className="habit95-brick" style={{ marginTop: 8 }}>
-            <p className="habit95-hint">
-              Done tasks and tracked activities with this tag each count as 1. The goal is how many complete the period.
-            </p>
-            {trackingTags.length > 0 ? (
-              <div className="habit95-tags" role="group" aria-label="Tagged tasks tag">
-                {trackingTags.map((tag) => {
-                  const on = normalizeTag(tag.name) === normalizeTag(task.taggedTaskTag ?? "")
-                  return (
-                    <button
-                      key={tag.id}
-                      type="button"
-                      className="habit95-tag"
-                      aria-pressed={on}
-                      onClick={() =>
-                        setTask((current) => ({
-                          ...current,
-                          taggedTaskTag: on ? "" : normalizeTag(tag.name),
-                        }))
-                      }
-                    >
-                      <span className="habit95-tag-dot" style={{ background: tag.color }} />
-                      {tag.name}
-                    </button>
-                  )
-                })}
-              </div>
-            ) : null}
-            <div className="habit95-field">
-              <label htmlFor="tagged-task-tag">Tag</label>
-              <input
-                id="tagged-task-tag"
-                className="habit95-input"
-                aria-label="Tagged task tag"
-                value={task.taggedTaskTag ?? ""}
-                placeholder="cooking"
-                onChange={(e) => setTask((current) => ({ ...current, taggedTaskTag: e.target.value }))}
-              />
-            </div>
-          </div>
-        )}
-        {sourceOrder.includes("listSent") && (
-          <div className="habit95-brick" style={{ marginTop: 8 }}>
-            <ListSentPicker
-              lists={vaultLists
-                .filter((list) => !isFolderAllItemsCategoryId(list.id))
-                .map((list) => ({ id: list.id, name: list.name }))
-                .sort((a, b) => a.name.localeCompare(b.name))}
-              listId={task.listSentLink?.listId || ""}
-              onChange={(listId) => {
+        <HabitPipelineEditor
+          pipelines={displayPipelines}
+          onChange={commitPipelines}
+          renderConfig={(row) => {
+            if (row.kind === "tags") {
+              return (
+                <>
+                  <p className="habit95-hint">
+                    Done tasks and tracked activities with this tag each count as 1. The goal is how many complete the
+                    period. The habit’s Done line carries the tag. A tracking block that already has it still files one
+                    Done line.
+                  </p>
+                  {trackingTags.length > 0 ? (
+                    <div className="habit95-tags" role="group" aria-label="Tagged tasks tag">
+                      {trackingTags.map((tag) => {
+                        const on = normalizeTag(tag.name) === normalizeTag(task.taggedTaskTag ?? "")
+                        return (
+                          <button
+                            key={tag.id}
+                            type="button"
+                            className="habit95-tag"
+                            aria-pressed={on}
+                            onClick={() =>
+                              setTask((current) => ({
+                                ...current,
+                                taggedTaskTag: on ? "" : normalizeTag(tag.name),
+                              }))
+                            }
+                          >
+                            <span className="habit95-tag-dot" style={{ background: tag.color }} />
+                            {tag.name}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  ) : null}
+                  <div className="habit95-field">
+                    <label htmlFor="tagged-task-tag">Tag</label>
+                    <input
+                      id="tagged-task-tag"
+                      className="habit95-input"
+                      aria-label="Tagged task tag"
+                      value={task.taggedTaskTag ?? ""}
+                      placeholder="cooking"
+                      onChange={(e) => setTask((current) => ({ ...current, taggedTaskTag: e.target.value }))}
+                    />
+                  </div>
+                </>
+              )
+            }
+            if (row.kind === "trackingStats") {
+              return (
+                <>
+                  {(["coverage", "sleep"] as const).map((id) => (
+                    <label key={id} className="habit95-check">
+                      <input
+                        type="checkbox"
+                        checked={row.sources.includes(id)}
+                        onChange={() => setRowSources(row, togglePipelineSource(row, id))}
+                      />
+                      {COMPLETION_SOURCE_LABELS[id]}
+                    </label>
+                  ))}
+                  {row.sources.includes("coverage") ? (
+                    <label className="habit95-field">
+                      Complete at or above
+                      <input
+                        className="habit95-input"
+                        type="number"
+                        min={1}
+                        max={100}
+                        aria-label="Coverage threshold percent"
+                        value={effectiveCoverageLink(task)?.threshold ?? DEFAULT_COVERAGE_THRESHOLD}
+                        onChange={(e) => {
+                          setCoverageLocked(true)
+                          const threshold = clampCoverageThreshold(Number.parseFloat(e.target.value))
+                          setTask((current) => ({
+                            ...current,
+                            goal: threshold,
+                            unit: "%",
+                            coverageLink: { threshold, enabled: true },
+                          }))
+                        }}
+                      />
+                    </label>
+                  ) : null}
+                </>
+              )
+            }
+            if (row.kind === "habitsStats") {
+              const statSet = row.stats?.set ?? "daily"
+              const chosen = listedStatPoints(row)
+              const chosenKeys = new Set(chosen.map((point) => statPointKey(point)))
+              const pointOptions = habitStatChoices(statSet, periodDates, habitsForSet(statSet))
+                .filter((choice) => !choice.point || !chosenKeys.has(statPointKey(choice.point)))
+                .map((choice) => ({ id: choice.id, label: choice.label }))
+              const selected = chosen.map((point) => {
+                const reading = readStatPoint(point, statContext(statSet))
+                return {
+                  key: reading.key,
+                  label: reading.label,
+                  valueText: reading.valueText,
+                  members: reading.members,
+                }
+              })
+              return (
+                <>
+                  <HabitStatsPoints
+                    set={statSet}
+                    onSet={(set) => onStatSet(row, set)}
+                    pointOptions={pointOptions}
+                    onPick={(id) => onPickPoint(row, id)}
+                    selected={selected}
+                    onRemove={(key) => onRemovePoint(row, key)}
+                    comparePrevious={!!row.stats?.comparePrevious}
+                    mustBeHigher={row.stats?.mustBeHigher ?? 2}
+                    onMustBeHigher={(value) =>
+                      patchStatsRow(row, {
+                        ...row,
+                        stats: {
+                          set: statSet,
+                          points: row.stats?.points ?? [],
+                          comparePrevious: true,
+                          mustBeHigher: value,
+                        },
+                      })
+                    }
+                  />
+                  {row.sources.includes("dailyCompletionAverage") ? (
+                    <>
+                      <p className="habit95-hint">
+                        The uncurved mean of each active daily habit’s row percent for this period.
+                      </p>
+                      <ul className="habit95-stat-readout" aria-label="Daily completion average inputs">
+                        {averageRows.map((rowPercent) => (
+                          <li key={rowPercent.id}>
+                            <span>{rowPercent.name}</span>
+                            <span>{Math.round(rowPercent.pct)}%</span>
+                          </li>
+                        ))}
+                        <li>
+                          <span>Mean</span>
+                          <span>{averageMean === null ? "—" : `${Math.round(averageMean)}%`}</span>
+                        </li>
+                      </ul>
+                    </>
+                  ) : null}
+                  {row.sources.includes("habitValue") ? (
+                    <>
+                      <p className="habit95-hint">
+                        Adds one daily habit’s logged numbers across the days of this week, month, or season.
+                      </p>
+                      <DailyHabitPicker
+                        habits={dailyValueSources}
+                        habitId={task.habitValueLink?.habitId || ""}
+                        onChange={(habitId) => {
+                          setSourcesLocked(true)
+                          setTask((current) => ({
+                            ...current,
+                            habitValueLink: habitId ? { habitId, enabled: true } : null,
+                          }))
+                        }}
+                      />
+                      <ul className="habit95-stat-readout" aria-label="Daily habit total">
+                        <li>
+                          <span>
+                            {dailyValueSources.find((habit) => habit.id === task.habitValueLink?.habitId)?.name ||
+                              "Choose a daily habit"}
+                          </span>
+                          <span>
+                            {task.habitValueLink?.habitId
+                              ? sumHabitValuesOverDays(weeklyData, task.habitValueLink.habitId, sumKeys)
+                              : "—"}
+                          </span>
+                        </li>
+                      </ul>
+                    </>
+                  ) : null}
+                  {row.sources.includes("dailyFloor") ? (
+                    <>
+                      <p className="habit95-hint">
+                        Every daily habit’s completion for this period is above 0. The habit is met only when that is true.
+                      </p>
+                      <ul className="habit95-stat-readout" aria-label="Daily habit percents">
+                        {dailyPercents.map((rowPercent) => (
+                          <li key={rowPercent.id}>
+                            <span>{rowPercent.name}</span>
+                            <span>{Math.round(rowPercent.pct)}%</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <label className="habit95-field">
+                        Allow this many at 0
+                        <input
+                          className="habit95-input"
+                          type="number"
+                          min={0}
+                          step={1}
+                          aria-label="Allow this many at 0"
+                          value={effectiveDailyFloorLink(task)?.allowAtZero ?? 0}
+                          onChange={(e) => {
+                            setFloorLocked(true)
+                            const allowAtZero = Math.max(0, Math.round(Number.parseFloat(e.target.value) || 0))
+                            const floorPercent = effectiveDailyFloorLink(task)?.floorPercent ?? 0
+                            setTask((current) => ({
+                              ...current,
+                              dailyFloorLink: {
+                                floorPercent,
+                                enabled: true,
+                                ...(allowAtZero > 0 ? { allowAtZero } : {}),
+                              },
+                            }))
+                          }}
+                        />
+                      </label>
+                      <label className="habit95-field">
+                        Each daily habit above
+                        <input
+                          className="habit95-input"
+                          type="number"
+                          min={0}
+                          max={100}
+                          aria-label="Daily habit floor percent"
+                          value={effectiveDailyFloorLink(task)?.floorPercent ?? 0}
+                          onChange={(e) => {
+                            setFloorLocked(true)
+                            const floorPercent = Math.min(100, Math.max(0, Math.round(Number.parseFloat(e.target.value) || 0)))
+                            const allowAtZero = effectiveDailyFloorLink(task)?.allowAtZero ?? 0
+                            setTask((current) => ({
+                              ...current,
+                              dailyFloorLink: {
+                                floorPercent,
+                                enabled: true,
+                                ...(allowAtZero > 0 ? { allowAtZero } : {}),
+                              },
+                            }))
+                          }}
+                        />
+                      </label>
+                    </>
+                  ) : null}
+                </>
+              )
+            }
+            if (row.kind === "lists") {
+              const fallback: HabitListPipelineMode = row.sources.includes("listSent")
+                ? "sentThisWeek"
+                : row.sources.includes("list")
+                  ? "oneComplete"
+                  : "sentThisWeek"
+              const routing = listRoutingFromLink(task.listSentLink, fallback)
+              const listId = task.listSentLink?.listId || ""
+              const known = listChoices.find((list) => list.id === listId)
+              const listName = known?.name || (listId ? `List ${listId}` : "")
+              const pickerLists = listId && !known ? [...listChoices, { id: listId, name: listName }] : listChoices
+              const preview = describeListRoutingPreview(vaultItems, listId, routing, task.frequency, new Date())
+              const measureHint = LIST_MEASURES.find((option) => option.id === routing.measure)?.hint
+              const targetHint = LIST_TARGETS.find((option) => option.id === routing.target)?.hint
+              const applyRouting = (nextRouting: { measure: HabitListMeasure; target: HabitListTarget }) => {
+                const sources = sourcesForListRouting(nextRouting)
+                const rows = displayPipelines.map((item) => (item.id === row.id ? { ...item, sources } : item))
+                setSourcesLocked(true)
+                setListLocked(true)
+                setTask((current) => {
+                  const picked = pickerLists.find((list) => list.id === (current.listSentLink?.listId || ""))
+                  let next: WeeklyTask = {
+                    ...current,
+                    listSentLink: {
+                      listId: current.listSentLink?.listId ?? "",
+                      grace: clampListSentGrace(current.listSentLink?.grace),
+                      ...storedListSentFields(nextRouting),
+                    },
+                  }
+                  if (legacyModeForRouting(nextRouting) === "oneComplete") {
+                    next = {
+                      ...next,
+                      listLink: { listName: picked?.name || current.listLink?.listName || "to do", count: 1 },
+                    }
+                  }
+                  return { ...withSourceOrder(next, flattenPipelines(rows)), completionPipelines: rows }
+                })
+              }
+              const keepRouting = (patch: { listId?: string; grace?: number | null }) => {
                 setSourcesLocked(true)
                 setTask((current) => ({
                   ...current,
                   listSentLink: {
-                    listId,
-                    grace: clampListSentGrace(current.listSentLink?.grace),
+                    listId: patch.listId ?? current.listSentLink?.listId ?? "",
+                    grace:
+                      patch.grace === null
+                        ? undefined
+                        : typeof patch.grace === "number"
+                          ? patch.grace
+                          : clampListSentGrace(current.listSentLink?.grace),
+                    ...storedListSentFields(current.listSentLink),
                   },
                 }))
-              }}
-            />
-            <label className="habit95-field">
-              Grace
-              <input
-                className="habit95-input"
-                type="number"
-                min={1}
-                max={100}
-                aria-label="Grace"
-                value={clampListSentGrace(task.listSentLink?.grace)}
-                onChange={(e) => {
-                  setSourcesLocked(true)
-                  const grace = clampListSentGrace(Number.parseFloat(e.target.value))
-                  setTask((current) => ({
-                    ...current,
-                    listSentLink: { listId: current.listSentLink?.listId ?? "", grace },
-                  }))
-                }}
-              />
-            </label>
-            <span className="habit95-hint">
-              Sent divided by still-to-send plus sent. Grace 80 turns a raw 80 into 100 and a raw 40 into 50. Grace 100
-              leaves the raw percent. The goal on this habit stays the line.
-            </span>
-          </div>
-        )}
-        {sourceOrder.includes("habitValue") && (
-          <div className="habit95-brick" style={{ marginTop: 8 }}>
-            <DailyHabitPicker
-              habits={dailyValueSources}
-              habitId={task.habitValueLink?.habitId || ""}
-              onChange={(habitId) => {
-                setSourcesLocked(true)
-                setTask((current) => ({
-                  ...current,
-                  habitValueLink: habitId ? { habitId, enabled: true } : null,
-                }))
-              }}
-            />
-            <span className="habit95-hint">
-              Each cell of this week, month, or season is the sum of that daily habit on the days that have already
-              happened.
-            </span>
-          </div>
-        )}
-        {effectiveCoverageLink(task) && (
-          <div className="habit95-brick" style={{ marginTop: 8 }}>
-            <label className="habit95-field">
-              Complete at or above
-              <input
-                className="habit95-input"
-                type="number"
-                min={1}
-                max={100}
-                aria-label="Coverage threshold percent"
-                value={effectiveCoverageLink(task)?.threshold ?? DEFAULT_COVERAGE_THRESHOLD}
-                onChange={(e) => {
-                  setCoverageLocked(true)
-                  const threshold = clampCoverageThreshold(Number.parseFloat(e.target.value))
-                  setTask((current) => ({
-                    ...current,
-                    goal: threshold,
-                    unit: "%",
-                    coverageLink: { threshold, enabled: true },
-                  }))
-                }}
-              />
-            </label>
-            <span className="habit95-hint">
-              Activity Occupancy — the same “% of the{" "}
-              {task.frequency === "weekly"
-                ? "week"
-                : task.frequency === "monthly"
-                  ? "month"
-                  : task.frequency === "quarterly"
-                    ? "season"
-                    : "day"}” Tracking shows on the Activity Time Grid / Week
-              (`activityOccupancyCoverage`). Cell label caps at the threshold; stored % stays real.
-            </span>
-          </div>
-        )}
-        {effectiveDailyFloorLink(task) && (
-          <div className="habit95-brick" style={{ marginTop: 8 }}>
-            <label className="habit95-field">
-              Each daily habit above
-              <input
-                className="habit95-input"
-                type="number"
-                min={0}
-                max={100}
-                aria-label="Daily habit floor percent"
-                value={effectiveDailyFloorLink(task)?.floorPercent ?? 0}
-                onChange={(e) => {
-                  setFloorLocked(true)
-                  const floorPercent = Math.min(100, Math.max(0, Math.round(Number.parseFloat(e.target.value) || 0)))
-                  setTask((current) => ({
-                    ...current,
-                    dailyFloorLink: { floorPercent, enabled: true },
-                  }))
-                }}
-              />
-            </label>
-            <span className="habit95-hint">% week completion. 0 means every daily habit was attempted at least once.</span>
-          </div>
-        )}
+              }
+              return (
+                <>
+                  <div className="habit95-list-row">
+                    <ListSentPicker
+                      lists={pickerLists}
+                      listId={listId}
+                      onChange={(nextId) => keepRouting({ listId: nextId })}
+                    />
+                    <button
+                      type="button"
+                      className="habit95-btn habit95-list-open"
+                      disabled={!listId}
+                      aria-label="Open list"
+                      onClick={(event) => {
+                        listPopupHost.current = (event.currentTarget as HTMLElement).closest(
+                          "[data-ui-name='Habit form']",
+                        )
+                        setOpenListId(listId)
+                      }}
+                    >
+                      Open list
+                    </button>
+                  </div>
+                  <Habit95Select
+                    label="What is counted"
+                    ariaLabel="What is counted"
+                    valueLabel={LIST_MEASURES.find((option) => option.id === routing.measure)?.label || "Sent"}
+                    options={LIST_MEASURES.map((option) => ({ id: option.id, label: option.label }))}
+                    hint={measureHint}
+                    onChange={(id) => applyRouting({ measure: id as HabitListMeasure, target: routing.target })}
+                  />
+                  <Habit95Select
+                    label="What the target is"
+                    ariaLabel="What the target is"
+                    valueLabel={LIST_TARGETS.find((option) => option.id === routing.target)?.label || "This period's set"}
+                    options={LIST_TARGETS.map((option) => ({ id: option.id, label: option.label }))}
+                    hint={targetHint}
+                    onChange={(id) => applyRouting({ measure: routing.measure, target: id as HabitListTarget })}
+                  />
+                  <label className="habit95-field">
+                    Grace
+                    <input
+                      className="habit95-input"
+                      type="number"
+                      min={1}
+                      max={100}
+                      aria-label="Grace"
+                      value={task.listSentLink?.grace ?? ""}
+                      onChange={(e) => {
+                        if (e.target.value === "") {
+                          keepRouting({ grace: null })
+                          return
+                        }
+                        const grace = Number.parseFloat(e.target.value)
+                        if (!Number.isFinite(grace)) return
+                        keepRouting({ grace: clampListSentGrace(grace) })
+                      }}
+                    />
+                  </label>
+                  <p className="habit95-hint">{GRACE_SENTENCE}</p>
+                  <p className="habit95-hint" data-testid="list-pipeline-preview">
+                    {listId ? `${preview.summary}${preview.names.length ? ` — ${preview.names.slice(0, 8).join(", ")}` : ""}` : "Choose a list to see what counts."}
+                  </p>
+                </>
+              )
+            }
+            if (row.kind === "keywords") {
+              return <p className="habit95-hint">Whole-message lines from BIM. Edit them under BIM Keywords.</p>
+            }
+            if (row.kind === "trackingTags") {
+              return <p className="habit95-hint">{COMPLETION_SOURCE_HINTS.tags}</p>
+            }
+            return <p className="habit95-hint">{COMPLETION_SOURCE_HINTS.manual}</p>
+          }}
+        />
       </fieldset>
 
-      <fieldset className="habit95-group">
+      <fieldset className="habit95-group habit95-sec-time">
         <legend>Time estimate</legend>
         <p className="habit95-hint">
           Marking this habit done writes a row on your To&nbsp;Do list. Give it a length and that row carries a real
@@ -1381,7 +1895,7 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
         )}
       </fieldset>
 
-      <details className="habit95-group habit95-details">
+      <details className="habit95-group habit95-details habit95-sec-wording">
         <summary>Done task wording</summary>
         <p className="habit95-hint">
           Optional. “read {"{value}"} pages” with 7 logged becomes “read 7 pages”, even when the goal is 3. Leave this
@@ -1410,7 +1924,7 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
       </details>
 
       {showTracking && (
-        <fieldset className="habit95-group">
+        <fieldset className="habit95-group habit95-sec-fill">
           <legend>Auto-fill from Tracking</legend>
           <p className="habit95-hint">
             Pick tags from the Tracking tab. Every minute you paint with a pen carrying one of them counts toward this
@@ -1541,7 +2055,7 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
       )}
 
       {task.frequency === "daily" && (
-        <fieldset className="habit95-group">
+        <fieldset className="habit95-group habit95-sec-lift">
           <legend>Lift when a log says</legend>
           <p className="habit95-hint">
             An all-nighter is the morning of the night you stayed up. The evening before is the day that led into it.
@@ -1617,7 +2131,7 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
       )}
 
       {task.frequency === "daily" && task.type === TaskType.BOOLEAN && (
-        <fieldset className="habit95-group">
+        <fieldset className="habit95-group habit95-sec-links">
           <legend>Connections</legend>
           <p className="habit95-hint">
             A connection checks this habit from something you already logged. You can still tick the cell yourself.
@@ -1748,10 +2262,11 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
         </fieldset>
       )}
 
-      <fieldset className="habit95-group">
-        <legend>Text keywords (phone)</legend>
+      {sourceOrder.includes("keywords") && (
+      <fieldset className="habit95-group habit95-sec-keywords">
+        <legend>BIM Keywords</legend>
         <p className="habit95-hint">
-          Whole-message only — the phone line must be just the command (optional trailing note). Examples:{" "}
+          Whole-message only — the BIM line must be just the command (optional trailing note). Examples:{" "}
           <code>hemisync</code>, <code>read 30 pages</code>, <code>exercise 15 min</code>,{" "}
           <code>chess score 355</code>.
           {!hadStoredTriggers && triggers.length > 0 ? " Presets for this name are shown; save to keep them editable." : null}
@@ -1858,6 +2373,7 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
           </p>
         </div>
       </fieldset>
+      )}
       </div>
 
       <div className="habit95-actions">
@@ -1880,5 +2396,13 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
         </button>
       </div>
     </form>
+    <HabitListPopup
+      listId={openListId}
+      link={task.listSentLink}
+      frequency={task.frequency}
+      container={listPopupHost.current}
+      onClose={() => setOpenListId(null)}
+    />
+    </>
   )
 }

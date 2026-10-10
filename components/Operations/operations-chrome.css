@@ -30,25 +30,25 @@
     inset -2px -2px var(--o-face), inset 2px 2px var(--o-frame);
   --o-mill:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
-    linear-gradient(165deg, #d4d8dc 0%, var(--o-surface) 48%, #969a9e 100%);
+    linear-gradient(165deg, var(--chrome-sheen) 0%, var(--o-surface) 48%, var(--chrome-shade) 100%);
   --o-bay-ring:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.75),
     inset 0 -1px 0 rgba(40, 42, 46, 0.4),
-    inset 0 0 0 2px #b0b4b8;
+    inset 0 0 0 2px var(--chrome-inset);
   --o-key-face:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
-    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--o-surface) 70%, #9a9ea2 100%);
+    linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 36%, var(--o-surface) 70%, var(--chrome-key-shade) 100%);
   --o-key-ring:
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     inset 0 -1px 0 rgba(55, 58, 62, 0.45),
-    0 0 0 1px #4a4e52,
-    0 1px 0 #6a6e72;
+    0 0 0 1px var(--chrome-ring-deep),
+    0 1px 0 var(--chrome-lip);
   --o-crt-glass:
     radial-gradient(ellipse at 18% 0%, rgba(125, 255, 196, 0.16), transparent 48%),
     #070c0a;
   --o-crt-ring:
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     inset 0 1px 0 rgba(255, 255, 255, 0.14),
     inset 0 10px 14px rgba(0, 0, 0, 0.4);
 
@@ -80,7 +80,7 @@
   gap: 8px;
   flex-shrink: 0;
   padding: 10px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background: var(--o-mill);
   box-shadow: var(--o-bay-ring);
 }
@@ -100,7 +100,7 @@
   min-width: 0;
   flex: 1 1 auto;
   padding: 4px 14px 4px 8px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: var(--o-crt-glass);
   box-shadow: var(--o-crt-ring);
 }
@@ -126,7 +126,7 @@
   flex-shrink: 0;
   border-radius: 50%;
   background:
-    radial-gradient(circle at 35% 30%, #6a6e72, #2a2c2e 55%, #0a0a0a);
+    radial-gradient(circle at 35% 30%, var(--chrome-lip), #2a2c2e 55%, var(--chrome-frame));
   box-shadow:
     0 0 0 1px #1a1c1e,
     inset 0 1px 1px rgba(255, 255, 255, 0.25),
@@ -191,7 +191,7 @@
   flex-shrink: 0;
   min-height: 36px;
   padding: 4px 8px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   color: var(--o-crt);
   background: var(--o-crt-glass);
   box-shadow: var(--o-crt-ring);
@@ -214,13 +214,13 @@
 
 /* ---- Raised metal keys ------------------------------------------------- */
 
-.ops95 .ops-title-btn,
+.ops95 .ops-title-btn:not(.b2-close-key),
 .ops95 .ops-btn {
   box-sizing: border-box;
   min-height: 28px;
   padding: 4px 12px 5px;
   border: none;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   color: #1c1e20 !important;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
   background: var(--o-key-face) !important;
@@ -242,7 +242,7 @@
   color: #800000 !important;
 }
 
-.ops95 .ops-title-btn {
+.ops95 .ops-title-btn:not(.b2-close-key) {
   min-width: 28px;
   min-height: 28px;
   height: 28px;
@@ -253,21 +253,21 @@
 }
 
 .ops95 .ops-btn:hover:not(:disabled),
-.ops95 .ops-title-btn:hover:not(:disabled) {
+.ops95 .ops-title-btn:not(.b2-close-key):hover:not(:disabled) {
   filter: brightness(1.04);
 }
 
 .ops95 .ops-btn:not(:disabled):active,
-.ops95 .ops-title-btn:not(:disabled):active,
+.ops95 .ops-title-btn:not(.b2-close-key):not(:disabled):active,
 .ops95 .ops-btn.active,
 .ops95 .ops-btn[aria-pressed="true"] {
   box-shadow:
     inset 0 1px 2px rgba(0, 0, 0, 0.35),
-    0 0 0 1px #3a3e42;
+    0 0 0 1px var(--chrome-pressed);
 }
 
 .ops95 .ops-btn:disabled {
-  color: #808080 !important;
+  color: var(--chrome-lo) !important;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
   cursor: default;
   filter: none;
@@ -277,9 +277,9 @@
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.95),
     inset 0 -1px 0 rgba(55, 58, 62, 0.5),
-    0 0 0 1px #3a3e42,
-    0 0 0 2px #9a9ea2,
-    0 1px 0 #6a6e72;
+    0 0 0 1px var(--chrome-pressed),
+    0 0 0 2px var(--chrome-key-shade),
+    0 1px 0 var(--chrome-lip);
 }
 
 .ops95 .ops-icon-btn {
@@ -297,13 +297,13 @@
   gap: 8px;
   flex-shrink: 0;
   padding: 8px 10px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     linear-gradient(180deg, rgba(0, 0, 0, 0.08), transparent 30%),
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
-    #c4c8cc;
+    var(--chrome-grade-sheen);
   box-shadow:
-    0 0 0 1px #6a6e72,
+    0 0 0 1px var(--chrome-lip),
     inset 0 1px 0 rgba(255, 255, 255, 0.65),
     inset 0 2px 3px rgba(0, 0, 0, 0.12);
 }
@@ -322,7 +322,7 @@
   min-height: 32px;
   padding: 6px 12px;
   border: none;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: #fff;
   color: #000;
   box-shadow: var(--o-field);
@@ -345,7 +345,7 @@
   margin: 0;
   padding: 12px 14px;
   border: none;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: #fff;
   color: #000;
   box-shadow: var(--o-field);
@@ -392,7 +392,7 @@
   flex-shrink: 0;
   margin: 0 3px 3px;
   padding: 6px 10px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -403,7 +403,7 @@
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
     #b8bcc0;
   box-shadow:
-    0 0 0 1px #6a6e72,
+    0 0 0 1px var(--chrome-lip),
     inset 0 1px 0 rgba(255, 255, 255, 0.65),
     inset 0 2px 3px rgba(0, 0, 0, 0.12);
 }
@@ -440,7 +440,7 @@
   max-width: none;
   padding: 24px 18px;
   text-align: center;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: var(--o-crt-glass);
   color: var(--o-phosphor);
   box-shadow: var(--o-crt-ring);
@@ -478,7 +478,7 @@
   min-height: 108px;
   padding: 2px;
   border: none;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background: var(--o-mill);
   box-shadow: var(--o-bay-ring);
   cursor: pointer;
@@ -494,7 +494,7 @@
 .ops95 .ops-card:active {
   box-shadow:
     inset 0 1px 2px rgba(0, 0, 0, 0.28),
-    0 0 0 1px #5c6064;
+    0 0 0 1px var(--chrome-ring);
 }
 
 .ops95 .ops-card-head {
@@ -502,11 +502,11 @@
   align-items: center;
   gap: 6px;
   padding: 6px 8px;
-  border-radius: 2px 2px 0 0;
+  border-radius: var(--r-2, 2px) var(--r-2, 2px) var(--r-0, 0px) var(--r-0, 0px);
   color: var(--o-nameplate);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0 1px, transparent 1px 2px),
-    linear-gradient(180deg, #e8eaec, #c4c8cc);
+    linear-gradient(180deg, var(--chrome-mist-2), var(--chrome-grade-sheen));
   box-shadow: inset 0 -1px 0 rgba(80, 84, 88, 0.35);
 }
 
@@ -543,7 +543,7 @@
   justify-content: space-between;
   gap: 6px;
   padding: 4px 6px;
-  border-radius: 0 0 2px 2px;
+  border-radius: var(--r-0, 0px) var(--r-0, 0px) var(--r-2, 2px) var(--r-2, 2px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
     var(--o-surface);
@@ -556,7 +556,7 @@
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #404040;
+  color: var(--chrome-ink-soft);
 }
 
 /* Stage = round power lamp + engraved chip */
@@ -565,13 +565,13 @@
   align-items: center;
   gap: 6px;
   padding: 3px 8px 3px 6px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.55), transparent 40%),
     #c8cccf;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.8),
-    0 0 0 1px #6a6e72;
+    0 0 0 1px var(--chrome-lip);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -586,14 +586,14 @@
   height: 9px;
   border-radius: 50%;
   background:
-    radial-gradient(circle at 35% 30%, #6a6e72, #2a2c2e 55%, #0a0a0a);
+    radial-gradient(circle at 35% 30%, var(--chrome-lip), #2a2c2e 55%, var(--chrome-frame));
   box-shadow:
     0 0 0 1px #1a1c1e,
     inset 0 1px 1px rgba(255, 255, 255, 0.25);
 }
 
 .ops95 .ops-stage-planning::before {
-  background: radial-gradient(circle at 35% 30%, #d0d4d8, #6a6e72 55%, #2a2c2e);
+  background: radial-gradient(circle at 35% 30%, var(--chrome-haze), var(--chrome-lip) 55%, #2a2c2e);
 }
 
 .ops95 .ops-stage-active::before {
@@ -639,12 +639,12 @@
 
 .ops95 .ops-rail {
   padding: 8px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
     #b8bcc0;
   box-shadow:
-    0 0 0 1px #6a6e72,
+    0 0 0 1px var(--chrome-lip),
     inset 0 2px 3px rgba(0, 0, 0, 0.14);
 }
 
@@ -685,12 +685,12 @@
   gap: 10px;
   min-width: 0;
   padding: 12px 12px 12px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
-    linear-gradient(180deg, #d8dce0, var(--o-surface) 40%, #a8acb0);
+    linear-gradient(180deg, var(--chrome-mill-hi), var(--o-surface) 40%, var(--chrome-stone));
   box-shadow:
-    0 0 0 1px #6a6e72,
+    0 0 0 1px var(--chrome-lip),
     inset 0 1px 0 rgba(255, 255, 255, 0.7),
     inset 0 2px 3px rgba(0, 0, 0, 0.08);
 }
@@ -714,7 +714,7 @@
   font-weight: normal;
   letter-spacing: 0;
   text-transform: none;
-  color: #404040;
+  color: var(--chrome-ink-soft);
   text-shadow: none;
 }
 
@@ -733,7 +733,7 @@
   margin: 0;
   padding: 12px 14px;
   border: none;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   box-shadow: var(--o-field);
   background: #fff;
   line-height: 1.5;
@@ -746,12 +746,12 @@
   margin: 0;
   padding: 12px 12px 12px;
   border: none;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
     var(--o-surface);
   box-shadow:
-    0 0 0 1px #6a6e72,
+    0 0 0 1px var(--chrome-lip),
     inset 0 1px 0 rgba(255, 255, 255, 0.65),
     inset 0 2px 3px rgba(0, 0, 0, 0.1);
 }
@@ -784,7 +784,7 @@
 
 .ops95 .ops-progress {
   height: 14px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: #fff;
   box-shadow: var(--o-field);
 }
@@ -802,7 +802,7 @@
 /* CRT black-glass well for heatmap / hero readouts */
 .ops95 .ops-scope {
   padding: 10px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: var(--o-crt-glass);
   color: var(--o-phosphor);
   box-shadow: var(--o-crt-ring);
@@ -830,7 +830,7 @@
 .ops95 .ops-heat-cell {
   width: 12px;
   height: 12px;
-  border-radius: 1px;
+  border-radius: var(--r-1, 1px);
   box-shadow: inset 1px 1px rgba(255, 255, 255, 0.12), inset -1px -1px #000;
 }
 
@@ -849,13 +849,13 @@
   align-items: center;
   gap: 8px;
   padding: 7px 10px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: #fff;
   box-shadow: var(--o-field);
 }
 
 .ops95 .ops-phase {
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background: var(--o-mill);
   box-shadow: var(--o-bay-ring);
 }
@@ -872,13 +872,13 @@
 .ops95 .ops-hint {
   margin: 0;
   font-size: 11px;
-  color: #404040;
+  color: var(--chrome-ink-soft);
 }
 
 .ops95 .ops-log {
   background: #fff;
   box-shadow: var(--o-field);
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-family: ui-monospace, "Cascadia Mono", "Lucida Console", monospace;
 }
 
@@ -892,7 +892,7 @@
 }
 
 .ops95 .ops-log li:nth-child(even) {
-  background: #f0f2f4;
+  background: var(--chrome-cloud);
 }
 
 /* ---- View keys (equal-fill bay; active = CRT) -------------------------- */
@@ -907,12 +907,12 @@ body.win95-app .ops95 .ops-view-keys[role="tablist"],
   width: 100%;
   height: auto;
   padding: 4px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
-    #b4b8bc;
+    var(--chrome-nickel);
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 2px 3px rgba(0, 0, 0, 0.18);
 }
 
@@ -924,7 +924,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"],
   min-width: 4.5rem;
   min-height: 28px;
   padding: 5px 12px 6px 22px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -933,10 +933,10 @@ body.win95-app .ops95 .ops-view-keys [role="tab"],
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 28%),
-    linear-gradient(165deg, #eceef0, #c0c4c8);
+    linear-gradient(165deg, var(--chrome-key-sheen), var(--chrome-mill-soft));
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 0 0 1px #4a4e52;
+    0 0 0 1px var(--chrome-ring-deep);
 }
 
 .ops95 [role="tab"]::before {
@@ -949,7 +949,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"],
   margin-top: -4px;
   border-radius: 50%;
   background:
-    radial-gradient(circle at 35% 30%, #6a6e72, #2a2c2e 55%, #0a0a0a);
+    radial-gradient(circle at 35% 30%, var(--chrome-lip), #2a2c2e 55%, var(--chrome-frame));
   box-shadow:
     0 0 0 1px #1a1c1e,
     inset 0 1px 1px rgba(255, 255, 255, 0.25);
@@ -976,7 +976,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
 .ops95 .ops-field-plan {
   min-height: 28rem;
   padding: 8px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: #fff;
   box-shadow: var(--o-field);
 }
@@ -1000,7 +1000,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   min-height: 26px;
   padding: 2px 24px 2px 8px;
   font-size: 11px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
 }
 
 .ops95 .ops-check {
@@ -1024,7 +1024,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
 
 .ops95 .ops-check em {
   font-style: normal;
-  color: #404040;
+  color: var(--chrome-ink-soft);
   font-size: 10px;
 }
 
@@ -1034,7 +1034,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   align-items: center;
   gap: 4px 10px;
   padding: 5px 8px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: #fff;
   box-shadow: var(--o-field);
 }
@@ -1059,12 +1059,12 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   flex-direction: column;
   gap: 8px;
   padding: 10px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
-    linear-gradient(180deg, #d8dce0, var(--o-surface) 40%, #a8acb0);
+    linear-gradient(180deg, var(--chrome-mill-hi), var(--o-surface) 40%, var(--chrome-stone));
   box-shadow:
-    0 0 0 1px #6a6e72,
+    0 0 0 1px var(--chrome-lip),
     inset 0 1px 0 rgba(255, 255, 255, 0.7),
     inset 0 2px 3px rgba(0, 0, 0, 0.08);
 }
@@ -1076,7 +1076,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   gap: 8px;
   margin: 0;
   padding: 4px 8px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.14em;
@@ -1085,10 +1085,10 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0 1px, transparent 1px 2px),
-    linear-gradient(180deg, #eef0f2 0%, var(--o-surface) 48%, #a4a8ac 100%);
+    linear-gradient(180deg, var(--chrome-mist) 0%, var(--o-surface) 48%, var(--chrome-foot) 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 0 0 1px #6a6e72;
+    0 0 0 1px var(--chrome-lip);
 }
 
 .ops95 .ops-category-head > span:first-child::before {
@@ -1108,7 +1108,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
 
 .ops95 .ops-category-count {
   padding: 1px 7px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   color: var(--o-nameplate);
   background: var(--o-key-face);
   box-shadow: var(--o-key-ring);
@@ -1130,7 +1130,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   align-items: center;
   gap: 3px;
   padding: 2px 6px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -1140,7 +1140,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   background: var(--o-key-face);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.85),
-    0 0 0 1px #6a6e72;
+    0 0 0 1px var(--chrome-lip);
 }
 
 .ops95 .ops-chip-muted {
@@ -1187,7 +1187,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   align-items: baseline;
   gap: 4px;
   padding: 4px 8px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-size: 11px;
   color: var(--o-nameplate);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
@@ -1269,7 +1269,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   min-width: 0;
   padding: 6px 10px;
   border: none;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   text-align: left;
   color: #1c1e20;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
@@ -1283,13 +1283,13 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
 .ops95 .ops-part-open:active {
   box-shadow:
     inset 0 1px 2px rgba(0, 0, 0, 0.3),
-    0 0 0 1px #3a3e42;
+    0 0 0 1px var(--chrome-pressed);
 }
 
 .ops95 .ops-part-open span {
   font-size: 10px;
   font-weight: normal;
-  color: #404040;
+  color: var(--chrome-ink-soft);
   text-shadow: none;
 }
 
@@ -1306,7 +1306,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
 
 .ops95 .ops-listhost {
   min-height: 12rem;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: var(--o-surface);
   box-shadow: var(--o-sunken);
 }
@@ -1327,17 +1327,17 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
     radial-gradient(ellipse at 18% 0%, rgba(125, 255, 196, 0.16), transparent 48%),
     #070c0a;
   --o-crt-ring:
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     inset 0 1px 0 rgba(255, 255, 255, 0.14),
     inset 0 10px 14px rgba(0, 0, 0, 0.4);
   --o-key-face:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
-    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--o-surface) 70%, #9a9ea2 100%);
+    linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 36%, var(--o-surface) 70%, var(--chrome-key-shade) 100%);
   --o-key-ring:
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     inset 0 -1px 0 rgba(55, 58, 62, 0.45),
-    0 0 0 1px #4a4e52,
-    0 1px 0 #6a6e72;
+    0 0 0 1px var(--chrome-ring-deep),
+    0 1px 0 var(--chrome-lip);
   --o-raised: inset -1px -1px var(--o-frame), inset 1px 1px var(--o-highlight),
     inset -2px -2px var(--o-shadow), inset 2px 2px var(--o-face);
   --o-sunken: inset -1px -1px var(--o-highlight), inset 1px 1px var(--o-frame),
@@ -1352,7 +1352,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   max-width: 32rem !important;
   max-height: min(90vh, 720px) !important;
   border: none !important;
-  border-radius: 0 !important;
+  border-radius: var(--r-0, 0px) !important;
   background: var(--o-surface) !important;
   color: #000;
   box-shadow: var(--o-raised), 4px 4px 0 rgba(0, 0, 0, 0.35) !important;
@@ -1364,16 +1364,9 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   display: none !important;
 }
 
-.ops95-dialog .ops-title-btn {
-  min-width: 22px;
-  height: 22px;
-  padding: 0;
-  border: none;
-  border-radius: 2px;
-  background: var(--o-key-face);
-  color: #1c1e20;
-  box-shadow: var(--o-key-ring);
-  font-weight: 700;
+/* Dialog × is `.b2-close-key`. Workspace Back stays `.ops-title-btn` without that class. */
+.ops95-dialog .ops-title-btn.b2-close-key {
+  margin-left: auto;
   cursor: pointer;
 }
 
@@ -1390,7 +1383,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
 .ops95-dialog .ops-hint {
   margin: 0;
   font-size: 11px;
-  color: #404040;
+  color: var(--chrome-ink-soft);
 }
 
 .ops95-dialog label {
@@ -1410,7 +1403,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   box-sizing: border-box;
   padding: 8px 10px;
   border: none;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   box-shadow: var(--o-field);
   background: #fff;
   line-height: 1.45;
@@ -1430,7 +1423,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   min-height: 26px;
   padding: 4px 12px;
   border: none;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   color: #1c1e20 !important;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
   background: var(--o-key-face) !important;
@@ -1448,8 +1441,8 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.95),
     inset 0 -1px 0 rgba(55, 58, 62, 0.5),
-    0 0 0 1px #3a3e42,
-    0 0 0 2px #9a9ea2;
+    0 0 0 1px var(--chrome-pressed),
+    0 0 0 2px var(--chrome-key-shade);
 }
 
 .ops95-dialog .ops-btn.ops-btn-danger {
@@ -1463,12 +1456,12 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   margin: 0;
   padding: 10px 12px 12px;
   border: none;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
     var(--o-surface);
   box-shadow:
-    0 0 0 1px #6a6e72,
+    0 0 0 1px var(--chrome-lip),
     inset 0 1px 0 rgba(255, 255, 255, 0.65),
     inset 0 2px 3px rgba(0, 0, 0, 0.1);
 }
@@ -1493,7 +1486,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   height: 30px;
   padding: 4px 24px 4px 10px;
   border: none;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: #fff;
   color: #000;
   box-shadow: var(--o-field);
@@ -1524,7 +1517,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   align-items: center;
   gap: 3px;
   padding: 2px 6px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -1533,7 +1526,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   background: var(--o-key-face);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.85),
-    0 0 0 1px #6a6e72;
+    0 0 0 1px var(--chrome-lip);
 }
 
 .ops95-dialog .ops-chip-add {
@@ -1587,7 +1580,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
 .ops95-dialog .ops-check em {
   font-style: normal;
   font-size: 10px;
-  color: #404040;
+  color: var(--chrome-ink-soft);
 }
 
 .ops95-dialog .ops-preset-row {
@@ -1602,7 +1595,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   gap: 2px;
   padding: 6px 8px;
   border: none;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   text-align: left;
   color: #1c1e20;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
@@ -1615,7 +1608,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
 .ops95-dialog .ops-preset:active {
   box-shadow:
     inset 0 1px 2px rgba(0, 0, 0, 0.3),
-    0 0 0 1px #3a3e42;
+    0 0 0 1px var(--chrome-pressed);
 }
 
 .ops95-dialog .ops-preset strong {
@@ -1627,7 +1620,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
 .ops95-dialog .ops-preset em {
   font-style: normal;
   font-size: 10px;
-  color: #404040;
+  color: var(--chrome-ink-soft);
   text-shadow: none;
 }
 
@@ -1648,7 +1641,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
     radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.18), transparent 55%),
     #070c0a !important;
   box-shadow:
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     inset 0 8px 10px rgba(0, 0, 0, 0.4);
   font-weight: 700;
 }
@@ -1657,7 +1650,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
 .ops-now-bar .ops-now-elapsed {
   min-width: 3.5em;
   padding: 3px 8px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.08em;
   font-weight: 700;
@@ -1667,7 +1660,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
     radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.14), transparent 55%),
     #070c0a;
   box-shadow:
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     inset 0 6px 8px rgba(0, 0, 0, 0.4);
 }
 
@@ -1679,12 +1672,12 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   --o-frame: var(--chrome-frame, #0a0a0a);
   --o-key-face:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
-    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--o-surface) 70%, #9a9ea2 100%);
+    linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 36%, var(--o-surface) 70%, var(--chrome-key-shade) 100%);
   --o-key-ring:
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     inset 0 -1px 0 rgba(55, 58, 62, 0.45),
-    0 0 0 1px #4a4e52,
-    0 1px 0 #6a6e72;
+    0 0 0 1px var(--chrome-ring-deep),
+    0 1px 0 var(--chrome-lip);
   --o-raised: inset -1px -1px var(--o-frame), inset 1px 1px var(--o-highlight),
     inset -2px -2px var(--o-shadow), inset 2px 2px var(--o-face);
   --o-sunken: inset -1px -1px var(--o-highlight), inset 1px 1px var(--o-frame),
@@ -1697,18 +1690,18 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   align-items: center;
   gap: 8px;
   padding: 8px 10px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   font-family: var(--w95-font, Tahoma, "MS Sans Serif", Geneva, sans-serif);
   font-size: 12px;
   color: #000;
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
-    linear-gradient(165deg, #d4d8dc 0%, var(--o-surface) 48%, #969a9e 100%);
+    linear-gradient(165deg, var(--chrome-sheen) 0%, var(--o-surface) 48%, var(--chrome-shade) 100%);
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.75),
     inset 0 -1px 0 rgba(40, 42, 46, 0.4),
-    inset 0 0 0 2px #b0b4b8;
+    inset 0 0 0 2px var(--chrome-inset);
   -webkit-font-smoothing: none;
 }
 
@@ -1718,7 +1711,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   flex-shrink: 0;
   border-radius: 50%;
   background:
-    radial-gradient(circle at 35% 30%, #6a6e72, #2a2c2e 55%, #0a0a0a);
+    radial-gradient(circle at 35% 30%, var(--chrome-lip), #2a2c2e 55%, var(--chrome-frame));
   box-shadow:
     0 0 0 1px #1a1c1e,
     inset 0 1px 1px rgba(255, 255, 255, 0.25);
@@ -1752,7 +1745,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   max-width: 20rem;
   padding: 2px 8px;
   border: none;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: #fff;
   box-shadow: var(--o-field);
   font-family: inherit;
@@ -1765,7 +1758,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   min-height: 26px;
   padding: 4px 12px;
   border: none;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   color: #1c1e20;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
   background: var(--o-key-face);
@@ -1782,11 +1775,11 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
 .ops-now-bar button.ops-btn-now:not(:disabled):active {
   box-shadow:
     inset 0 1px 2px rgba(0, 0, 0, 0.35),
-    0 0 0 1px #3a3e42;
+    0 0 0 1px var(--chrome-pressed);
 }
 
 .ops-now-bar .ops-btn:disabled {
-  color: #808080;
+  color: var(--chrome-lo);
   cursor: default;
 }
 
@@ -1794,7 +1787,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   flex: 1 1 12rem;
   min-width: 0;
   font-size: 10px;
-  color: #404040;
+  color: var(--chrome-ink-soft);
 }
 
 .ops95-dialog .ops-tag-dot {

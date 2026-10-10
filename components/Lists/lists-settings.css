@@ -1,0 +1,341 @@
+/**
+ * components/Lists/lists-settings.css — Lists settings library
+ *
+ * Milled fascia comes from settings-chrome.css (`.set95`). This file is the
+ * file-navigator well: search, breadcrumb, and the reorder rows.
+ */
+
+.lst-set {
+  --lst-select: #000080;
+}
+
+.lst-set-main {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  flex: 1;
+  padding: 8px;
+}
+
+.lst-capture {
+  flex-shrink: 0;
+}
+
+.lst-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  flex: 1;
+}
+
+.lst-set [role="tablist"] {
+  display: grid;
+  flex-shrink: 0;
+  grid-template-columns: 1fr 1fr;
+  height: auto;
+  gap: 3px;
+  padding: 3px;
+  border-radius: var(--r-2, 2px);
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
+    var(--s-surface, var(--chrome-face));
+  box-shadow: var(--s-sunken);
+}
+
+.lst-set [role="tab"] {
+  height: 26px;
+  padding: 0 8px;
+}
+
+.lst-set [role="tab"][data-state="active"] {
+  box-shadow: var(--s-sunken) !important;
+}
+
+.lst-set [role="tabpanel"][data-state="active"] {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  flex: 1 1 0%;
+  margin: 0;
+  overflow: hidden;
+  outline: none;
+}
+
+.lst-set [role="tabpanel"][data-state="inactive"] {
+  display: none;
+}
+
+.lst-set [role="tabpanel"][data-state="active"].lst-tab-scroll {
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 2px;
+}
+
+.lst-import {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 8px;
+}
+
+.lst-stat {
+  padding: 8px 6px;
+  border-radius: var(--r-2, 2px);
+  text-align: center;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
+    var(--s-surface, var(--chrome-face));
+  box-shadow: var(--s-bay-ring, 0 0 0 1px var(--chrome-ring));
+}
+
+.lst-stat b {
+  display: block;
+  font-family: ui-monospace, "Cascadia Code", "Courier New", monospace;
+  font-size: 20px;
+  letter-spacing: 0.08em;
+  color: var(--s-crt, #7dffc4);
+  text-shadow: var(--s-crt-glow, 0 0 3px #7dffc4);
+}
+
+.lst-stat span {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--s-nameplate, #2a2c2e);
+}
+
+.lst-note {
+  padding: 8px 10px;
+  border-radius: var(--r-2, 2px);
+  background: #fff8dc;
+  box-shadow: var(--s-field);
+  color: #3a2a00;
+  font-size: 12px;
+}
+
+.lst-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+  flex: 1 1 0%;
+  overflow: hidden;
+}
+
+.lst-nav-tools {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.lst-nav-tools input {
+  flex: 1 1 12rem;
+  min-width: 0;
+  height: 26px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+
+.lst-nav-filters {
+  display: flex;
+  flex-shrink: 0;
+  gap: 3px;
+}
+
+.lst-nav-filters button {
+  height: 24px;
+  padding: 0 8px;
+  font-size: 10px;
+}
+
+.lst-nav-help,
+.lst-nav-count {
+  flex-shrink: 0;
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.35;
+  color: #3a3c3e;
+}
+
+.lst-nav-help {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lst-nav-crumb {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 2px;
+  align-items: center;
+  min-height: 26px;
+  padding: 3px;
+  border-radius: var(--r-2, 2px);
+  background: #fff;
+  box-shadow: var(--s-field);
+}
+
+.lst-nav-crumb button {
+  height: 20px;
+  max-width: 160px;
+  padding: 0 6px;
+  overflow: hidden;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lst-nav-crumb button[aria-current="page"] {
+  box-shadow: var(--s-sunken) !important;
+}
+
+.lst-nav-sep {
+  color: var(--chrome-ring);
+  font-size: 11px;
+}
+
+.lst-nav-well {
+  min-height: 0;
+  flex: 1 1 0%;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 2px;
+  border-radius: var(--r-2, 2px);
+  background: #fff;
+  box-shadow: var(--s-field);
+}
+
+.lst-nav-empty {
+  margin: 0;
+  padding: 18px 10px;
+  color: var(--chrome-ring);
+  font-size: 12px;
+  text-align: center;
+}
+
+.lst-nav-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  min-height: 32px;
+  padding: 3px 4px 3px 6px;
+  border-radius: var(--r-2, 2px);
+  color: #111;
+  cursor: default;
+  user-select: none;
+}
+
+.lst-nav-row:hover {
+  background: rgba(0, 0, 128, 0.06);
+}
+
+.lst-nav-row.is-selected {
+  background: var(--lst-select);
+  color: #fff;
+}
+
+.lst-nav-row.is-selected .lst-nav-meta {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.lst-nav-row.is-drop-before {
+  box-shadow: inset 0 2px 0 var(--lst-select);
+}
+
+.lst-nav-row.is-drop-after {
+  box-shadow: inset 0 -2px 0 var(--lst-select);
+}
+
+.lst-nav-row.is-drop-into {
+  outline: 1px dotted var(--lst-select);
+  outline-offset: -2px;
+  background: rgba(0, 0, 128, 0.14);
+}
+
+.lst-nav-row.is-dragging {
+  opacity: 0.45;
+}
+
+.lst-nav-grip {
+  flex-shrink: 0;
+  width: 12px;
+  color: #808488;
+}
+
+.lst-nav-row.is-selected .lst-nav-grip {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.lst-nav-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  object-fit: contain;
+  image-rendering: auto;
+}
+
+.lst-nav-swatch {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+.lst-nav-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.lst-nav-name,
+.lst-nav-meta,
+.lst-nav-path {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lst-nav-name {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.lst-nav-meta,
+.lst-nav-path {
+  font-size: 10px;
+  color: var(--chrome-ring);
+}
+
+.lst-nav-row.is-selected .lst-nav-path {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.lst-nav-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 3px;
+}
+
+.lst-nav-actions button {
+  height: 22px;
+  padding: 0 6px;
+  font-size: 10px;
+}
+
+.lst-nav-foot {
+  display: flex;
+  flex-shrink: 0;
+  gap: 8px;
+  justify-content: flex-end;
+  padding-top: 4px;
+}

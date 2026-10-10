@@ -6,9 +6,12 @@
  * GOAL|TIME|COUNT / TEXT / INCREMENTAL. Grids stay layout shells. A boolean
  * lamp paints on the click; this cell hands it the saved completion (or
  * exemption kind) so the glass matches that record once the write lands.
+ * A pipeline with no By hand source does not open an editor. Double-click
+ * opens a read-only account of that square and writes nothing.
  */
 "use client"
 
+import { useState, type CSSProperties, type ReactNode } from "react"
 import { Clock } from "lucide-react"
 import { type WeeklyTask as Task, TaskType, type TaskCompletion, type WeeklyData, type HabitFrequency } from "@/lib/types"
 import { formatLocalDateKey } from "@/lib/date-utils"
@@ -27,9 +30,12 @@ import {
   incrementalLoggedValue,
 } from "@/lib/incremental-habits"
 import { trackingUnitLabel } from "@/lib/habit-tracking"
+import { useHabitsStore } from "@/lib/habits-store"
 import { useThemeStore } from "@/lib/theme-store"
 import { HabitExemptCell, HabitLedLamp } from "@/components/Home/Habits/habit-led-lamp"
+import { HabitSourceDetail } from "@/components/Home/Habits/habit-source-detail"
 import { HabitNumberField, HabitTextField } from "@/components/Home/Habits/habit-value-field"
+import { cellOpensSourceDetail } from "@/lib/habit-source-square"
 import {
   exemptionRestLabel,
   exemptionWandTitle,
@@ -108,6 +114,24 @@ export function HabitCompletionCell({
   onIncrementalChange,
 }: HabitCompletionCellProps) {
   const colors = useThemeStore((s) => s.colors)
+  const ledTint = useHabitsStore((s) => s.percentLedTint)
+  const [detailOpen, setDetailOpen] = useState(false)
+  const sourceDetail = cellOpensSourceDetail(task) && !exemptionWand && !missedOpWand
+  const openSourceDetail = (event: { preventDefault: () => void; stopPropagation: () => void }) => {
+    event.preventDefault()
+    event.stopPropagation()
+    setDetailOpen(true)
+  }
+  const detailDialog = sourceDetail ? (
+    <HabitSourceDetail
+      open={detailOpen}
+      onOpenChange={setDetailOpen}
+      task={task}
+      periodLabel={periodLabel}
+      date={date}
+      completion={completion}
+    />
+  ) : null
   const kind = exemptionKind
   const exempt = isExemptKind(kind)
   const logDay = kind === "logged" ? loggedExemptionDay(task, periodKey, frequency) : null
@@ -169,9 +193,76 @@ export function HabitCompletionCell({
           ? `${task.name} ${periodLabel} completed`
           : `${task.name} ${periodLabel} missed opportunity`
     return (
-      <div className="habit-lamp-cell">
-        <HabitExemptCell label={label} />
-      </div>
+      <>
+        <div className="habit-lamp-cell" onDoubleClick={sourceDetail ? openSourceDetail : undefined}>
+          <HabitExemptCell label={label} />
+        </div>
+        {detailDialog}
+      </>
+    )
+  }
+
+  if (sourceDetail) {
+    const label = `Details for ${task.name} ${periodLabel}`
+    let face: ReactNode = null
+    if (task.type === TaskType.BOOLEAN) {
+      face = (
+        <HabitLedLamp
+          checked={!!completion?.completed}
+          saved={completion}
+          onCheckedChange={onBooleanChange}
+          label={label}
+          readOnly
+        />
+      )
+    } else if (task.type === TaskType.TEXT) {
+      face = (
+        <input
+          readOnly
+          className="habit-cell-slot habit-cell-slot-text"
+          value={completion?.text || ""}
+          aria-label={label}
+          tabIndex={-1}
+        />
+      )
+    } else if (task.type === TaskType.INCREMENTAL) {
+      const climb = incrementalDataForTask(task)
+      const goal = climb ? incrementalGoalOn(task, weeklyData, date) : 0
+      face = (
+        <div className="habit-cell-num">
+          <input
+            readOnly
+            className="habit-cell-slot"
+            value={incrementalLoggedValue(completion) ?? ""}
+            aria-label={label}
+            tabIndex={-1}
+          />
+          <span className="habit-goal">
+            <span className="habit-goal-den">/{goal}</span>
+          </span>
+        </div>
+      )
+    } else {
+      face = (
+        <div className="habit-cell-num">
+          <input
+            readOnly
+            className="habit-cell-slot"
+            value={printed.shown ?? ""}
+            aria-label={label}
+            tabIndex={-1}
+          />
+          <span className="habit-goal">
+            <span className="habit-goal-den">/{task.goal}</span>
+          </span>
+        </div>
+      )
+    }
+    return (
+      <>
+        <div onDoubleClick={openSourceDetail}>{face}</div>
+        {detailDialog}
+      </>
     )
   }
 
@@ -230,18 +321,23 @@ export function HabitCompletionCell({
             <span className="habit-goal">
               <span className="habit-goal-den">/{task.goal}</span>
             </span>
+            {pace != null && (
+              <span
+                className="habit-cell-pace"
+                data-testid="habit-cell-pace"
+                title="Logged share of the time that has already passed"
+              >
+                PROG: {Math.round(pace)}%
+              </span>
+            )}
           </div>
-          {pace != null && (
-            <span
-              className="habit-cell-pace"
-              data-testid="habit-cell-pace"
-              title="Logged share of the time that has already passed"
-            >
-              PROG: {Math.round(pace)}%
-            </span>
-          )}
           {task.showGoalBar && goal > 0 && (
-            <span className="habit-cell-tube" aria-hidden="true" title={`${Math.round(barPct)}% of ${goal}`}>
+            <span
+              className="habit-cell-tube"
+              style={{ "--hab-led-tint": ledTint } as CSSProperties}
+              aria-hidden="true"
+              title={`${Math.round(barPct)}% of ${goal}`}
+            >
               <span className="habit-cell-mercury" style={{ width: `${barPct}%` }} />
             </span>
           )}

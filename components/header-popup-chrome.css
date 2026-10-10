@@ -1,11 +1,14 @@
 /**
  * components/header-popup-chrome.css — milled fascia for pin-bar dialogs
  *
- * Shared shell for Quick Add, Bulk Add, Ingest, From Notes, Phone Notes,
- * Metrics, Reviews / Morning, Affirmations, Post-mortem, and the Tracking
- * compact dialog frame. Kin of settings-chrome / inbox / item-detail.
+ * Shared shell for Quick Add (including its Bulk field), Bulk Add, Ingest,
+ * From Notes, Phone Notes,
+ * Metrics, Reviews / Morning, Affirmations, Post-mortem, and the header
+ * Tracking dialog frame. Kin of settings-chrome / inbox / item-detail.
  * Phosphor #7dffc4. No LED #7e14ff / grade #508b51 / output #25366a.
  * Looks only — same verbs, fields, and accessible names.
+ * Title-bar close is `.b2-close-key` (opaque 22px, centered ×), placed with
+ * `--b2-close-top` / `--b2-close-right` on `.hpp95-dialog`.
  * docs/DESIGN_STYLE.md#milled-fascia
  */
 
@@ -29,25 +32,25 @@
     inset -2px -2px var(--hpp-face), inset 2px 2px var(--hpp-frame);
   --hpp-mill:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
-    linear-gradient(165deg, #d4d8dc 0%, var(--hpp-surface) 48%, #969a9e 100%);
+    linear-gradient(165deg, var(--chrome-sheen) 0%, var(--hpp-surface) 48%, var(--chrome-shade) 100%);
   --hpp-bay-ring:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.75),
     inset 0 -1px 0 rgba(40, 42, 46, 0.4),
-    inset 0 0 0 2px #b0b4b8;
+    inset 0 0 0 2px var(--chrome-inset);
   --hpp-key-face:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
-    linear-gradient(165deg, #eceef0 0%, #d4d6d8 36%, var(--hpp-surface) 70%, #9a9ea2 100%);
+    linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 36%, var(--hpp-surface) 70%, var(--chrome-key-shade) 100%);
   --hpp-key-ring:
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     inset 0 -1px 0 rgba(55, 58, 62, 0.45),
-    0 0 0 1px #4a4e52,
-    0 1px 0 #6a6e72;
+    0 0 0 1px var(--chrome-ring-deep),
+    0 1px 0 var(--chrome-lip);
   --hpp-crt-glass:
     radial-gradient(ellipse at 18% 0%, rgba(125, 255, 196, 0.16), transparent 48%),
     #070c0a;
   --hpp-crt-ring:
-    0 0 0 1px #3a3e42,
+    0 0 0 1px var(--chrome-pressed),
     inset 0 1px 0 rgba(255, 255, 255, 0.14),
     inset 0 10px 14px rgba(0, 0, 0, 0.4);
 
@@ -60,55 +63,29 @@
 }
 
 .hpp95-dialog {
+  /* 22px key centered on the 40px CRT mark (dialog pad 10 + caption pad 10). */
+  --b2-close-top: 29px;
+  --b2-close-right: 18px;
   display: flex !important;
   flex-direction: column;
   gap: 10px !important;
   padding: 10px 10px 12px !important;
   border: none !important;
-  border-radius: 3px !important;
+  border-radius: var(--r-3, 3px) !important;
   background-color: var(--hpp-surface) !important;
   background-image:
     linear-gradient(180deg, rgba(0, 0, 0, 0.1) 0, transparent 22%, transparent 78%, rgba(255, 255, 255, 0.06) 100%),
     repeating-linear-gradient(90deg, transparent 0 2px, rgba(255, 255, 255, 0.05) 2px 3px),
     var(--hpp-mill) !important;
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.78),
     inset 0 2px 3px rgba(0, 0, 0, 0.12),
     0 8px 0 rgba(74, 78, 82, 0.55) !important;
 }
 
-/* Close key — raised metal */
-.hpp95-dialog > button.absolute,
-body.win95-app .hpp95-dialog > button.absolute {
-  top: 8px;
-  right: 8px;
-  width: 22px;
-  height: 22px;
-  border-radius: 2px;
-  opacity: 1;
-  color: var(--hpp-nameplate);
-  background: var(--hpp-key-face);
-  box-shadow: var(--hpp-key-ring);
-}
-
-.hpp95-dialog > button.absolute:hover,
-body.win95-app .hpp95-dialog > button.absolute:hover {
-  opacity: 1;
-  filter: brightness(1.04);
-}
-
-.hpp95-dialog > button.absolute:active,
-body.win95-app .hpp95-dialog > button.absolute:active {
-  box-shadow:
-    inset 0 1px 2px rgba(0, 0, 0, 0.35),
-    0 0 0 1px #3a3e42;
-}
-
-.hpp95-dialog > button.absolute svg {
-  width: 12px;
-  height: 12px;
-}
+/* Close key is `.b2-close-key` in win95.css (opaque 22px metal, centered ×).
+   Placement: --b2-close-top / --b2-close-right on `.hpp95-dialog`. */
 
 /* ---- CRT caption --------------------------------------------------------- */
 
@@ -122,7 +99,7 @@ body.win95-app .hpp95-dialog > button.absolute:active {
   padding: 10px 12px 10px;
   padding-right: 2.5rem;
   border: none;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background: var(--hpp-mill);
   box-shadow: var(--hpp-bay-ring);
   text-align: left;
@@ -136,7 +113,7 @@ body.win95-app .hpp95-dialog > button.absolute:active {
   min-height: 40px;
   min-width: 0;
   padding: 4px 14px 4px 8px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: var(--hpp-crt-glass);
   box-shadow: var(--hpp-crt-ring);
 }
@@ -197,7 +174,7 @@ body.win95-app .hpp95-dialog > button.absolute:active {
 .hpp95-dialog .hpp-caption [data-radix-dialog-description] {
   margin: 0;
   padding: 6px 9px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   font-size: 11px !important;
   font-weight: 600;
   line-height: 1.4;
@@ -205,10 +182,10 @@ body.win95-app .hpp95-dialog > button.absolute:active {
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0 1px, transparent 1px 2px),
-    #c8ccd0;
+    var(--chrome-pewter);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.55),
-    0 0 0 1px #8a8e92;
+    0 0 0 1px var(--chrome-slate);
 }
 
 /* ---- Body well (omit with .hpp95-shell-only) ------------------------------ */
@@ -227,7 +204,7 @@ body.win95-app .hpp95-dialog > button.absolute:active {
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0 1px, transparent 1px 3px),
     var(--hpp-surface);
   box-shadow: var(--hpp-sunken);
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
 }
 
 .hpp95 .hpp-body > .space-y-4,
@@ -306,7 +283,7 @@ body.win95-app .hpp95-dialog > button.absolute:active {
   margin: 0;
   padding: 10px 12px 12px;
   border: none !important;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background: var(--hpp-mill);
   box-shadow: var(--hpp-bay-ring);
 }
@@ -316,26 +293,26 @@ body.win95-app .hpp95-dialog > button.absolute:active {
 .hpp95-dialog .hpp-body .border.rounded-md,
 .hpp95-dialog .hpp-body li.rounded.border {
   border: none !important;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
     var(--hpp-surface);
   box-shadow:
-    0 0 0 1px #6a6e72,
+    0 0 0 1px var(--chrome-lip),
     inset 0 1px 0 rgba(255, 255, 255, 0.55),
     inset 0 2px 3px rgba(0, 0, 0, 0.08);
 }
 
 .hpp95 .hpp-body .border-t,
 .hpp95-dialog .hpp-body .border-t {
-  border-color: #8a8e92 !important;
+  border-color: var(--chrome-slate) !important;
 }
 
 /* Raised metal keys. Day-log slabs keep their pen color (inline background). */
 .hpp95 .hpp-body button:not(.absolute):not([role="checkbox"]):not([role="switch"]):not(.agenda-span),
 .hpp95-dialog .hpp-body button:not(.absolute):not([role="checkbox"]):not([role="switch"]):not(.agenda-span) {
   border: none !important;
-  border-radius: 2px !important;
+  border-radius: var(--r-2, 2px) !important;
   color: #1c1e20 !important;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
   background: var(--hpp-key-face) !important;
@@ -388,7 +365,14 @@ body.win95-app .hpp95-dialog > button.absolute:active {
 .hpp95-dialog .hpp-body button.hpp-key-go:active:not(:disabled) {
   box-shadow:
     inset 0 2px 6px rgba(0, 0, 0, 0.55),
-    0 0 0 1px #3a3e42 !important;
+    0 0 0 1px var(--chrome-pressed) !important;
+}
+
+/* Quick Add → Bulk: the same recessed field, tall enough for a list of lines. */
+.hpp95 .hpp-body textarea.hpp-bulk-box,
+.hpp95-dialog .hpp-body textarea.hpp-bulk-box {
+  min-height: 14rem;
+  max-height: min(50vh, 22rem);
 }
 
 /* Recessed fields */
@@ -399,7 +383,7 @@ body.win95-app .hpp95-dialog > button.absolute:active {
 .hpp95-dialog .hpp-body textarea,
 .hpp95-dialog .hpp-body select {
   border: none !important;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: #fff !important;
   box-shadow: var(--hpp-field);
   color: var(--hpp-ink);
@@ -419,7 +403,7 @@ body.win95-app .hpp95-dialog > button.absolute:active {
 .hpp95 .hpp-body code,
 .hpp95-dialog .hpp-body code {
   padding: 1px 4px;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background: rgba(255, 255, 255, 0.45);
   box-shadow: inset 0 0 0 1px rgba(90, 94, 98, 0.35);
   color: var(--hpp-ink);
@@ -431,12 +415,12 @@ body.win95-app .hpp95-dialog > button.absolute:active {
 .hpp95 .hpp-body .badge,
 .hpp95-dialog .hpp-body [data-slot="badge"] {
   border: none !important;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   color: var(--hpp-nameplate) !important;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0 1px, transparent 1px 2px),
-    #c8ccd0 !important;
+    var(--chrome-pewter) !important;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.85),
     0 0 0 1px #7a7e82;
@@ -459,7 +443,7 @@ body.win95-app .hpp95-dialog > button.absolute:active {
 /* Affirmations progress pips */
 .hpp95 .hpp-body .hpp-aff-dot,
 .hpp95-dialog .hpp-body .hpp-aff-dot {
-  background: #8a8e92;
+  background: var(--chrome-slate);
   box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.35);
 }
 
@@ -475,7 +459,7 @@ body.win95-app .hpp95-dialog > button.absolute:active {
 .hpp95 .hpp-body .bg-amber-50,
 .hpp95-dialog .hpp-body .bg-amber-50 {
   border: none !important;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   color: #3a3c3e !important;
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
@@ -498,7 +482,7 @@ body.win95-app .hpp95-dialog > button.absolute:active {
 .hpp95-dialog > .hpp-actions button,
 .hpp95 .hpp-actions button {
   border: none !important;
-  border-radius: 2px !important;
+  border-radius: var(--r-2, 2px) !important;
   color: #1c1e20 !important;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
   background: var(--hpp-key-face) !important;

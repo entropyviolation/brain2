@@ -225,7 +225,7 @@ export const BIM_COMMAND_CATALOG: CatalogEntry[] = [
     forms: ["add", "qa", "quick add", "quickadd", "capture", "inbox", "idea"],
     format: "`add: pick up milk` · `qa: idea` · `inbox: …` · `idea: …` · `capture: …` · `quick add: …`",
     explanation:
-      "Smart-capture into Inbox (same path as desktop Quick Add). End with -mb or -monkey to dump it in Monkey brain instead of the Inbox you mean to revisit.",
+      "Smart-capture into Inbox (same path as desktop Quick Add). `list: item` and `folder: list: item` create the list if needed. Dates, times, duration, and priority are read and left in the title. End with -mb or -monkey to dump it in Monkey brain. -p or -plain stores the line as written and detects none of that.",
     status: "active",
   },
   {
@@ -235,7 +235,7 @@ export const BIM_COMMAND_CATALOG: CatalogEntry[] = [
     forms: ["(any message with no verb)"],
     format: "`pick up milk`",
     explanation:
-      "Prefix-less text that is not a list dump becomes an Inbox capture. -mb or -monkey on the line sends it to Monkey brain.",
+      "Prefix-less text that is not a list dump becomes an Inbox capture. Colon paths create the list. Dates, times, duration, and priority stay in the title. -mb or -monkey on the line sends it to Monkey brain. -p or -plain stores the line as written.",
     status: "active",
   },
 
@@ -247,7 +247,7 @@ export const BIM_COMMAND_CATALOG: CatalogEntry[] = [
     forms: ["bulk", "bulk add", "bulkadd"],
     format: "`bulk:` then headers and one item per line",
     explanation:
-      "Bulk Add pipeline (Inbox off). Headers `list:` / `folder: list:` / `Home: Groceries:` work. Grocery names with no other folder use the store list.",
+      "Bulk Add pipeline (Inbox off). Headers `list:` / `folder: list:` / `Home: Groceries:` work. Grocery names with no other folder use the store list. Dates, times, duration, and priority on an item line stay in the title. -p or -plain on a line stores that line as written.",
     status: "active",
   },
   {
@@ -356,9 +356,9 @@ export const BIM_COMMAND_CATALOG: CatalogEntry[] = [
     primary: "tp:",
     forms: ["tp:", "TP:", "thought process:", "log: tp:"],
     format:
-      "`tp: opening the editor to fix the clock` · `TP: …` · `thought process: …` · `log: tp: …`",
+      "`tp: Opening the editor to fix the clock, then the dishes, relieved it is a small fix` · `TP: …` · `thought process: …` · `log: tp: …`",
     explanation:
-      "A specialized note: the crystallized thought of this moment, not a general note. Why you are doing something, what you plan to do, the exact current line of thought. Colon required on the verb, so bare `tp` and bare `thought process` stay capture. Activity instant on the Text log pen, `eventKind` `thought-process`. The first line is the title; lines under it are the note. No time uses the send time. Clocks are `parseExpectedWhen`, the same reader as a log line. A bare clock is military (`1:00` is 1:00am, `12:04` is noon). `1pm`, `1:00 PM`, and `1:00 p.m.` are 13:00. `7/4/26` is July 4, 2026. `est` / `estimated` / `~` is estimated (`clockCertainty` and `precision: estimated`). `unknown` keeps the minute for placement. A general note stays `note:` / `n`.",
+      "Thought process: a guiding strand of this moment, from what you are doing, to what it leads to, to how it feels. Why you are doing something, what you expect to do next, and how it lands. Not a general note, a one-word mood, or a short activity log such as brushed teeth. Colon required on the verb, so bare `tp` and bare `thought process` stay capture. Activity instant on the Text log pen, `eventKind` `thought-process`. The first line is the title; lines under it are the note. No time uses the send time. Clocks are `parseExpectedWhen`, the same reader as a log line. A bare clock is military (`1:00` is 1:00am, `12:04` is noon). `1pm`, `1:00 PM`, and `1:00 p.m.` are 13:00. `7/4/26` is July 4, 2026. `est` / `estimated` / `~` is estimated (`clockCertainty` and `precision: estimated`). `unknown` keeps the minute for placement. A general note stays `note:` / `n`.",
     status: "active",
   },
   {

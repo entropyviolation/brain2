@@ -4,7 +4,7 @@
  * Any captioned window can use this. On a real close (after unsaved-changes,
  * if that guard exists), call `start()`. The live window hides and a canvas
  * shows the same rectangle breaking into tiny lit grains from the ×. They
- * tumble, bounce, and heap into a dune. A click blows the dune away; Escape
+ * tumble, bounce, and heap into a dune. A click on the background, Escape,
  * or the skip × leaves immediately. If it is left alone the wind takes it.
  * Then the dialog unmounts.
  *
@@ -177,8 +177,13 @@ export function WindowSandClose({ geom, capture, onDone }: CanvasProps) {
 
     endTimer = window.setTimeout(finish, WINDOW_SAND_MS)
 
-    const onDismiss = () => {
-      wantWind = true
+    const onDismiss = (event: PointerEvent) => {
+      const raw = event.target
+      const el = raw instanceof Element ? raw : raw instanceof Node ? raw.parentElement : null
+      if (el?.closest(".window-sand-skip")) return
+      event.preventDefault()
+      event.stopPropagation()
+      finish()
     }
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {

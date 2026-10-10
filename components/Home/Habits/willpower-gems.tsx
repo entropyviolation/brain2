@@ -1486,7 +1486,7 @@ function WillpowerGemsStage({
         <DialogContent className="habit95-dialog hab-willpower-lab-dialog">
           <DialogHeader className="habit95-title-bar flex-row items-center space-y-0 text-left">
             <DialogTitle className="habit95-title-text">Willpower gems physics</DialogTitle>
-            <button type="button" className="habit95-title-btn" aria-label="Close physics" onClick={() => setHud(false)}>
+            <button type="button" className="habit95-title-btn b2-close-key" aria-label="Close physics" onClick={() => setHud(false)}>
               ×
             </button>
           </DialogHeader>

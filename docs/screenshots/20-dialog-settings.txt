@@ -4,6 +4,10 @@ VIEW: Header → Settings
 AREA: Settings dialog
 SOURCE FILES:
   - components/Settings/SettingsDialog.tsx
+  - components/Settings/ChromeFaceField.tsx
+  - components/Settings/BoubaKikiField.tsx
+  - components/Settings/DriftAxisControls.tsx
+  - components/Settings/panel-preview.ts
   - components/Settings/HomeLocationField.tsx
   - components/Settings/BirthdayField.tsx
   - components/Settings/DayAnchorField.tsx
@@ -13,9 +17,9 @@ SOURCE FILES:
 ================================================================================
 
 GLOBAL CHROME (all screens)
-  Pinned full-width mill title bar (`AppHeader`, sticky top, z-40): navy BRAIN2 caption with Tek POWER lamp + today's-friend jewel (64px chrome + black-mirror well; click for a Stardew Next Action bubble; Esc / × / outside to close) and Friend / Review / System / Capture as Win95 groupboxes of milled press keys. Names stays Names and latches (sunken, aria-pressed); tooltip Stop naming while on. Phosphor counts on Review and Inbox. Quick Add is the default framed key, docked at the right of Capture. Same doors as before — grouped furniture, not a menu bar.
+  Pinned full-width mill title bar (`AppHeader`, sticky top, z-40): navy BRAIN2 caption with Tek POWER lamp + today's-friend jewel (64px chrome + black-mirror well; click for a Stardew Next Action bubble; Esc / × / outside to close) and Friend / Review / System / optional now / Capture as Win95 groupboxes of milled press keys. Names stays Names and latches (sunken, aria-pressed); tooltip Stop naming while on. Phosphor counts on Review and Inbox. Capture is Inbox and Quick Add; Bulk is a checkbox inside Quick Add. Metrics opens from Now → Current moment. Ingest, From Notes, and Phone Notes live in Settings.
   Tabs: milled fascia (brushed bay, raised silver keys, active key a CRT with a round power lamp) — Home · Lists · Docs · Scheduler · Operations · Modules · Analytics.
   Shortcuts: Cmd/Ctrl+K search · capture hotkey → Quick Add.
 
 VIEW-SPECIFIC
-Settings. Home location (City). Birthday: the Star Lord Report opens on this day (new moon and full moon open on their own). Default time of day: what is assumed when work is ticked off after the day has ended and there is no tracked time to read a real finish from. Once a few nights are logged this reports that the sleep log is answering it instead — your usual bedtime, less half an hour — and the Assumed finish time field below it is the fallback for days with no sleep data at all. Full App Backup: Export Full Backup / Restore From Backup. Phone↔Desktop Live Sync: Check hub / Force push now / Force pull now. Message ingest: enable, Telegram token (desktop), pairing code, cheat-sheet, simulate a phrase. **Screen Time**: ActivityWatch URL, connection lamp, lookback, Sync now. Item Types → Manage Item Types. Second Brain seed. PNG may need scroll.
+Settings. Window gray and Bouba/Kiki share one stack: body copy with air under the nameplate, a label row with the “now” readout inset from the bay edge, the swatch (warmth) gapped from the track, pole labels under the track, and the center chip (Default) on its own row so it does not cover the thumb. Drift speed, pause, the manual-shift heading, and Instant / Timed radios are spaced apart. Timed shows duration, then Start. A timed shift previews only in this panel; when the interval ends the whole app takes the new state and drift resumes. Instant applies to the whole app immediately. Window gray walks the design-ref grays; Default restores the stored classic metal and pauses. Bouba/Kiki: corners from rounded to pointy; Default restores today’s radii and pauses. Desktop PCB. Home location (City). Birthday: the Star Lord Report opens on this day (new moon and full moon open on their own). Default time of day: what is assumed when work is ticked off after the day has ended and there is no tracked time to read a real finish from. Once a few nights are logged this reports that the sleep log is answering it instead — your usual bedtime, less half an hour — and the Assumed finish time field below it is the fallback for days with no sleep data at all. Full App Backup: Export Full Backup / Restore From Backup. Phone↔Desktop Live Sync: Check hub / Force push now / Force pull now. Message ingest: enable, Telegram token (desktop), pairing code, cheat-sheet, simulate a phrase. **Screen Time**: ActivityWatch URL, connection lamp, lookback, Sync now. Item Types → Manage Item Types. Second Brain seed. PNG frames Window gray and Bouba/Kiki; the rest needs scroll.

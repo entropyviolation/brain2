@@ -1,14 +1,14 @@
 /**
  * components/ui/clock-picker/clock-picker.tsx — House clock
  *
- * One control for every place a clock is chosen. The closed field is a sunken
- * bevel that paints 12-hour time; the value it stores and reports is still
- * `HH:MM` (minute precision), the same string `<input type="time">` used.
- * Opening it shows hour, minute, and AM/PM in a CRT well, and a console face
- * under those drums that keeps the same time. The lamp is the cursor. While
- * the hour or minute lamp is on, the page stays still and the wheel steps
- * that drum. Enter and a click outside confirm; Escape restores the time from
- * when the panel opened.
+ * One control for every place a clock is chosen. The closed field is a real
+ * text field: the face it paints is 12-hour (`08:00 AM`), and what it stores
+ * is still `HH:MM`. Typing stays in the field. A clock mark opens the panel.
+ * The panel is hour, minute, and AM/PM in a CRT well, Now, and the cream
+ * ceramic face with ornate silver hands. Confirm writes that time. Cancel,
+ * Escape, and a click outside leave the field as it was. While the hour or
+ * minute lamp is on, the page stays still and the wheel steps that drum.
+ * The panel is its own hit target above a dialog, including the dialog backdrop.
  */
 "use client"
 
@@ -22,8 +22,18 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react"
 import { createPortal } from "react-dom"
+import { DismissableLayer, DismissableLayerBranch } from "@radix-ui/react-dismissable-layer"
 import { cn } from "@/lib/utils"
 import { timeStringToMinutes } from "@/lib/time-entries"
+import {
+  DEFAULT_DIAL_ID,
+  clockDials,
+  readHiddenDialIds,
+  readSelectedDialId,
+  visibleDials,
+  writeHiddenDialIds,
+  writeSelectedDialId,
+} from "./clock-dials"
 import "./clock-picker.css"
 
 type Period = "AM" | "PM"
@@ -31,11 +41,11 @@ type Column = "hour" | "minute" | "period"
 type Drum = "hour" | "minute"
 
 const COLUMNS: Column[] = ["hour", "minute", "period"]
-const PANEL_WIDTH = 212
-const PANEL_HEIGHT = 328
+const PANEL_WIDTH = 224
+const PANEL_HEIGHT = 520
 const WHEEL_NOTCH = 100
-
-const FACE_TICKS = Array.from({ length: 60 }, (_, index) => index)
+/** Above `.trk-entry` (51) and the dialog overlay (`z-50`). */
+const LAYER_Z = 80
 
 type ScrollSnapshot = {
   bodyOverflow: string
@@ -90,7 +100,7 @@ export function formatClockFace(value: string): string {
   return `${pad(hour)}:${pad(minute)} ${period}`
 }
 
-/** Typed text → stored `HH:MM`. Accepts `4:02 AM`, `04:02`, `16:02`, `4.02pm`, `9:15p`, `0915`. */
+/** Typed text → stored `HH:MM`. Accepts `8:00 AM`, `08:00`, `16:02`, `4.02pm`, `1pm`, `1:00 PM`, `0915`. */
 export function parseTypedClock(raw: string): string | null {
   const text = raw.trim().replace(/\s+/g, "")
   if (!text) return null
@@ -107,6 +117,11 @@ export function parseTypedClock(raw: string): string | null {
     }
     if (hour < 1 || hour > 12) return null
     return joinClock(hour, minute, ampm[1].toLowerCase() === "p" ? "PM" : "AM")
+  }
+  if (ampm && /^\d{1,2}$/.test(clock)) {
+    const hour = Number(clock)
+    if (hour < 1 || hour > 12) return null
+    return joinClock(hour, 0, ampm[1].toLowerCase() === "p" ? "PM" : "AM")
   }
   const digits = clock.replace(/\D/g, "")
   if (ampm && (digits.length === 3 || digits.length === 4)) {
@@ -153,11 +168,6 @@ function wrapMinute(minute: number, delta: number): number {
   return (minute + delta + 60) % 60
 }
 
-function polar(deg: number, radius: number): { cx: number; cy: number } {
-  const rad = (deg * Math.PI) / 180
-  return { cx: 60 + Math.sin(rad) * radius, cy: 60 - Math.cos(rad) * radius }
-}
-
 export function ClockPicker({
   id,
   value,
@@ -189,7 +199,7 @@ export function ClockPicker({
   defaultOpen?: boolean
   placeholder?: string
   onOpenChange?: (open: boolean) => void
-  /** Fires when the panel closes. Escape is cancel; Enter and a click outside commit. */
+  /** Fires when the panel closes. Enter and Confirm commit. Escape, Cancel, and a click outside cancel. */
   onDismiss?: (reason: "commit" | "cancel") => void
 }) {
   const panelId = useId()
@@ -197,15 +207,17 @@ export function ClockPicker({
   const inputRef = useRef<HTMLInputElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const entryRef = useRef<HTMLInputElement>(null)
-  const buffer = useRef("")
   const hourBuf = useRef("")
   const minuteBuf = useRef("")
-  const originRef = useRef(value)
   const valueRef = useRef(value)
   const onChangeRef = useRef(onChange)
   const onOpenChangeRef = useRef(onOpenChange)
   const onDismissRef = useRef(onDismiss)
-  valueRef.current = value
+  const seenValue = useRef(value)
+  if (value !== seenValue.current) {
+    seenValue.current = value
+    valueRef.current = value
+  }
   onChangeRef.current = onChange
   onOpenChangeRef.current = onOpenChange
   onDismissRef.current = onDismiss
@@ -214,7 +226,11 @@ export function ClockPicker({
   const [draft, setDraft] = useState(value || "08:00")
   const [column, setColumn] = useState<Column>("hour")
   const [segment, setSegment] = useState<Drum | null>(null)
+  const [text, setText] = useState<string | null>(null)
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null)
+  const [dialId, setDialId] = useState(DEFAULT_DIAL_ID)
+  const [hiddenDialIds, setHiddenDialIds] = useState<string[]>([])
+  const [dialsEditing, setDialsEditing] = useState(false)
   const draftRef = useRef(draft)
   draftRef.current = draft
   const openRef = useRef(open)
@@ -223,11 +239,34 @@ export function ClockPicker({
   columnRef.current = column
   const segmentRef = useRef(segment)
   segmentRef.current = segment
+  const textRef = useRef<string | null>(null)
 
-  const publish = (next: string) => {
+  /** In-popup time. Confirm is what writes it, except Now, which commits at once. */
+  const setDraftTime = (next: string) => {
     draftRef.current = next
     setDraft(next)
+  }
+
+  const publish = (next: string) => {
+    setDraftTime(next)
     if (next !== valueRef.current) onChangeRef.current(next)
+    valueRef.current = next
+  }
+
+  const commitTyped = (raw: string) => {
+    const trimmed = raw.trim()
+    textRef.current = null
+    setText(null)
+    if (!trimmed) {
+      if (valueRef.current !== "") onChangeRef.current("")
+      valueRef.current = ""
+      return ""
+    }
+    const parsed = parseTypedClock(trimmed)
+    if (!parsed) return valueRef.current
+    if (parsed !== valueRef.current) onChangeRef.current(parsed)
+    valueRef.current = parsed
+    return parsed
   }
 
   const applySegment = () => {
@@ -243,30 +282,31 @@ export function ClockPicker({
     const current = splitClock(draftRef.current || "08:00")
     if (which === "hour") {
       if (n < 1 || n > 12) return
-      publish(joinClock(n, current.minute, current.period))
+      setDraftTime(joinClock(n, current.minute, current.period))
       return
     }
     if (n < 0 || n > 59) return
-    publish(joinClock(current.hour, n, current.period))
+    setDraftTime(joinClock(current.hour, n, current.period))
   }
 
   const close = (reason: "commit" | "cancel") => {
-    if (reason === "commit") applySegment()
-    else {
+    if (!openRef.current) return
+    openRef.current = false
+    if (reason === "commit") {
+      applySegment()
+      const next = draftRef.current
+      if (next !== valueRef.current) onChangeRef.current(next)
+      valueRef.current = next
+    } else {
       segmentRef.current = null
       setSegment(null)
+      const shown = valueRef.current || "08:00"
+      draftRef.current = shown
+      setDraft(shown)
     }
-    if (reason === "cancel") {
-      const origin = originRef.current
-      if (draftRef.current !== origin || valueRef.current !== origin) onChangeRef.current(origin)
-      setDraft(origin || "08:00")
-      draftRef.current = origin || "08:00"
-    } else if (draftRef.current !== valueRef.current) {
-      onChangeRef.current(draftRef.current)
-    }
-    buffer.current = ""
     hourBuf.current = ""
     minuteBuf.current = ""
+    setDialsEditing(false)
     setOpen(false)
     onOpenChangeRef.current?.(false)
     onDismissRef.current?.(reason)
@@ -274,7 +314,6 @@ export function ClockPicker({
 
   const openPanel = () => {
     if (disabled || readOnly || openRef.current) return
-    originRef.current = valueRef.current
     const next = valueRef.current || "08:00"
     setDraft(next)
     draftRef.current = next
@@ -284,14 +323,27 @@ export function ClockPicker({
     segmentRef.current = null
     hourBuf.current = ""
     minuteBuf.current = ""
-    buffer.current = ""
     setOpen(true)
+    openRef.current = true
     onOpenChangeRef.current?.(true)
   }
 
+  const applyNow = () => {
+    const now = new Date()
+    publish(stamp(now.getHours(), now.getMinutes()))
+  }
+
   useEffect(() => {
+    if (openRef.current) return
     if (value) setDraft(value)
   }, [value])
+
+  useEffect(() => {
+    const hiddenIds = readHiddenDialIds()
+    const visible = visibleDials(clockDials(), hiddenIds).map((dial) => dial.id)
+    setHiddenDialIds(hiddenIds)
+    setDialId(readSelectedDialId(visible))
+  }, [])
 
   useEffect(() => {
     if (!defaultOpen) return
@@ -324,19 +376,6 @@ export function ClockPicker({
     }
   }, [open])
 
-  useEffect(() => {
-    if (!open) return
-    const onDoc = (event: PointerEvent) => {
-      const target = event.target as Node | null
-      if (!target) return
-      if (rootRef.current?.contains(target)) return
-      if (panelRef.current?.contains(target)) return
-      close("commit")
-    }
-    document.addEventListener("pointerdown", onDoc, true)
-    return () => document.removeEventListener("pointerdown", onDoc, true)
-  }, [open])
-
   const armed = open && (column === "hour" || column === "minute")
   const stepArmedRef = useRef<(delta: number) => void>(() => {})
   stepArmedRef.current = (delta: number) => {
@@ -350,7 +389,7 @@ export function ClockPicker({
         : joinClock(current.hour, wrapMinute(current.minute, delta), current.period)
     if (col === "hour") hourBuf.current = ""
     else minuteBuf.current = ""
-    publish(next)
+    setDraftTime(next)
   }
 
   useEffect(() => {
@@ -400,16 +439,16 @@ export function ClockPicker({
   const parts = splitClock(open ? draft : value || draft)
   const nudge = (delta: number) => {
     if (segmentRef.current) return
-    if (column === "hour") publish(joinClock(wrapHour(parts.hour, delta), parts.minute, parts.period))
-    else if (column === "minute") publish(joinClock(parts.hour, wrapMinute(parts.minute, delta), parts.period))
-    else publish(joinClock(parts.hour, parts.minute, parts.period === "AM" ? "PM" : "AM"))
+    if (column === "hour") setDraftTime(joinClock(wrapHour(parts.hour, delta), parts.minute, parts.period))
+    else if (column === "minute") setDraftTime(joinClock(parts.hour, wrapMinute(parts.minute, delta), parts.period))
+    else setDraftTime(joinClock(parts.hour, parts.minute, parts.period === "AM" ? "PM" : "AM"))
   }
 
   const typeOpen = (key: string) => {
     if (segmentRef.current) return
     const lower = key.toLowerCase()
     if (lower === "a" || lower === "p") {
-      publish(joinClock(parts.hour, parts.minute, lower === "p" ? "PM" : "AM"))
+      setDraftTime(joinClock(parts.hour, parts.minute, lower === "p" ? "PM" : "AM"))
       setColumn("period")
       return
     }
@@ -423,7 +462,7 @@ export function ClockPicker({
     if (column === "hour") {
       if (hourBuf.current === "") {
         if (digit >= 2) {
-          publish(joinClock(digit, parts.minute, parts.period))
+          setDraftTime(joinClock(digit, parts.minute, parts.period))
           setColumn("minute")
         } else hourBuf.current = key
         return
@@ -432,10 +471,10 @@ export function ClockPicker({
       const combined = Number(first + key)
       hourBuf.current = ""
       if (combined >= 1 && combined <= 12) {
-        publish(joinClock(combined, parts.minute, parts.period))
+        setDraftTime(joinClock(combined, parts.minute, parts.period))
         setColumn("minute")
       } else {
-        publish(joinClock(Number(first), parts.minute, parts.period))
+        setDraftTime(joinClock(Number(first), parts.minute, parts.period))
         setColumn("minute")
         minuteBuf.current = key
       }
@@ -443,7 +482,7 @@ export function ClockPicker({
     }
     if (minuteBuf.current === "") {
       if (digit >= 6) {
-        publish(joinClock(parts.hour, digit, parts.period))
+        setDraftTime(joinClock(parts.hour, digit, parts.period))
         minuteBuf.current = ""
         setColumn("period")
       } else minuteBuf.current = key
@@ -451,20 +490,8 @@ export function ClockPicker({
     }
     const minute = Number(minuteBuf.current + key)
     minuteBuf.current = ""
-    if (minute <= 59) publish(joinClock(parts.hour, minute, parts.period))
+    if (minute <= 59) setDraftTime(joinClock(parts.hour, minute, parts.period))
     setColumn("period")
-  }
-
-  const pushClosedBuffer = (key: string) => {
-    const prior = buffer.current
-    let next = (prior + key).slice(-16)
-    let parsed = parseTypedClock(next)
-    if (!parsed && prior && parseTypedClock(prior) && /\d/.test(key)) {
-      next = key
-      parsed = parseTypedClock(next)
-    }
-    buffer.current = next
-    if (parsed) publish(parsed)
   }
 
   const onEntryKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
@@ -477,23 +504,30 @@ export function ClockPicker({
     }
     if (event.key === "Escape") {
       event.preventDefault()
-      segmentRef.current = null
-      setSegment(null)
-      inputRef.current?.focus()
+      close("cancel")
     }
   }
 
   const onKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
     if (disabled || readOnly) return
+    if (!openRef.current) {
+      if (event.key === "Enter") {
+        event.preventDefault()
+        commitTyped(event.currentTarget.value)
+      } else if (event.key === "Escape" && textRef.current !== null) {
+        event.preventDefault()
+        textRef.current = null
+        setText(null)
+      }
+      return
+    }
     if (event.key === "Escape") {
-      if (!openRef.current) return
       event.preventDefault()
       event.stopPropagation()
       close("cancel")
       return
     }
     if (event.key === "Enter") {
-      if (!openRef.current) return
       event.preventDefault()
       event.stopPropagation()
       close("commit")
@@ -501,10 +535,6 @@ export function ClockPicker({
     }
     if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
       event.preventDefault()
-      if (!openRef.current) {
-        openPanel()
-        return
-      }
       if (segmentRef.current) return
       setColumn((current) => {
         const index = COLUMNS.indexOf(current)
@@ -517,31 +547,46 @@ export function ClockPicker({
     }
     if (event.key === "ArrowUp" || event.key === "ArrowDown") {
       event.preventDefault()
-      if (!openRef.current) {
-        openPanel()
-        return
-      }
       nudge(event.key === "ArrowDown" ? 1 : -1)
-      return
-    }
-    if (event.key === "Backspace" && !openRef.current) {
-      event.preventDefault()
-      buffer.current = buffer.current.slice(0, -1)
-      const parsed = parseTypedClock(buffer.current)
-      if (parsed) publish(parsed)
       return
     }
     if (event.key.length === 1 && /[0-9:.apm ]/i.test(event.key)) {
       event.preventDefault()
-      if (openRef.current) typeOpen(event.key)
-      else pushClosedBuffer(event.key)
+      typeOpen(event.key)
     }
   }
 
-  const face = formatClockFace(open ? draft : value)
+  const face = formatClockFace(open ? draft : value) || (value ? "" : placeholder)
+  const dials = clockDials()
+  const shownDials = visibleDials(dials, hiddenDialIds)
+  const dial = shownDials.find((item) => item.id === dialId) ?? shownDials[0]
+  const ceramicSrc = (dials.find((item) => item.id === DEFAULT_DIAL_ID) ?? dials[0]).src
+
+  const chooseDial = (id: string) => {
+    setDialId(id)
+    writeSelectedDialId(id)
+  }
+
+  const shuffleDial = () => {
+    const pool = shownDials.filter((item) => item.id !== dial.id)
+    if (pool.length === 0) return
+    chooseDial(pool[Math.floor(Math.random() * pool.length)].id)
+  }
+
+  const setDialShown = (id: string, shown: boolean) => {
+    if (id === DEFAULT_DIAL_ID) return
+    const next = shown ? hiddenDialIds.filter((item) => item !== id) : [...hiddenDialIds, id]
+    setHiddenDialIds(next)
+    writeHiddenDialIds(next)
+    if (!shown && dialId === id) chooseDial(DEFAULT_DIAL_ID)
+  }
+
   const holdFocus = (event: ReactPointerEvent) => {
     const target = event.target as HTMLElement | null
-    if (target?.closest(".clock-picker-entry")) return
+    if (target?.closest("button, input, select, label, .clock-picker-analog, .clock-picker-dials, .clock-picker-dial-edit")) {
+      event.stopPropagation()
+      return
+    }
     if (segmentRef.current) applySegment()
     event.preventDefault()
     event.stopPropagation()
@@ -555,86 +600,189 @@ export function ClockPicker({
     setSegment(which)
   }
 
+  const openLabel = ariaLabel ? `Open ${ariaLabel} clock` : "Open clock"
+
   const panel =
     open && pos
       ? createPortal(
-          <div
-            ref={panelRef}
-            id={panelId}
-            className="clock-picker-panel"
-            style={{ top: pos.top, left: pos.left }}
-            role="group"
-            aria-label="Choose time"
-            onPointerDown={holdFocus}
+          <DismissableLayerBranch
+            className="clock-picker-layer"
+            data-testid="clock-picker-layer"
+            style={{ zIndex: LAYER_Z, pointerEvents: "auto" }}
           >
-            <div className="clock-picker-drums">
-              <Wheel
-                kicker="Hour"
-                active={column === "hour"}
-                editing={segment === "hour"}
-                entryRef={segment === "hour" ? entryRef : undefined}
-                current={parts.hour}
-                previous={wrapHour(parts.hour, -1)}
-                next={wrapHour(parts.hour, 1)}
-                onPick={(hour) => {
-                  setColumn("hour")
-                  const current = splitClock(draftRef.current || "08:00")
-                  publish(joinClock(hour, current.minute, current.period))
-                }}
-                onActivate={() => setColumn("hour")}
-                onEdit={() => beginSegment("hour")}
-                onEntryKeyDown={onEntryKeyDown}
-                onEntryBlur={applySegment}
-              />
-              <span className="clock-picker-colon" aria-hidden>
-                :
-              </span>
-              <Wheel
-                kicker="Min"
-                active={column === "minute"}
-                editing={segment === "minute"}
-                entryRef={segment === "minute" ? entryRef : undefined}
-                current={parts.minute}
-                previous={wrapMinute(parts.minute, -1)}
-                next={wrapMinute(parts.minute, 1)}
-                onPick={(minute) => {
-                  setColumn("minute")
-                  const current = splitClock(draftRef.current || "08:00")
-                  publish(joinClock(current.hour, minute, current.period))
-                }}
-                onActivate={() => setColumn("minute")}
-                onEdit={() => beginSegment("minute")}
-                onEntryKeyDown={onEntryKeyDown}
-                onEntryBlur={applySegment}
-              />
-              <div className="clock-picker-stack clock-picker-period">
-                <span className="clock-picker-kicker">Day</span>
-                <div className="clock-picker-col" data-active={column === "period" ? "true" : "false"}>
-                  {(["AM", "PM"] as const).map((period) => (
-                    <button
-                      key={period}
-                      type="button"
-                      tabIndex={-1}
-                      className={cn(
-                        "clock-picker-cell",
-                        parts.period === period && "is-cursor",
-                        column === "period" && parts.period === period && "is-caret",
-                      )}
-                      aria-pressed={parts.period === period}
-                      onClick={() => {
-                        setColumn("period")
-                        const current = splitClock(draftRef.current || "08:00")
-                        publish(joinClock(current.hour, current.minute, period))
-                      }}
-                    >
-                      {period}
-                    </button>
-                  ))}
+            <div
+              className="clock-picker-backdrop"
+              data-testid="clock-picker-backdrop"
+              style={{ pointerEvents: "auto" }}
+              onPointerDown={(event) => {
+                event.preventDefault()
+                event.stopPropagation()
+                close("cancel")
+              }}
+              onClick={(event) => {
+                event.preventDefault()
+                event.stopPropagation()
+              }}
+            />
+            <DismissableLayer
+              ref={panelRef}
+              id={panelId}
+              className="clock-picker-panel"
+              style={{ top: pos.top, left: pos.left, zIndex: LAYER_Z + 1, pointerEvents: "auto" }}
+              role="group"
+              aria-label="Choose time"
+              onPointerDown={holdFocus}
+              onEscapeKeyDown={(event) => {
+                event.preventDefault()
+                close("cancel")
+              }}
+              onPointerDownOutside={(event) => {
+                const target = event.target as Node | null
+                if (target && rootRef.current?.contains(target)) return
+                event.preventDefault()
+                close("cancel")
+              }}
+              onInteractOutside={(event) => {
+                event.preventDefault()
+              }}
+            >
+              <div className="clock-picker-drums">
+                <Wheel
+                  kicker="Hour"
+                  active={column === "hour"}
+                  editing={segment === "hour"}
+                  entryRef={segment === "hour" ? entryRef : undefined}
+                  current={parts.hour}
+                  previous={wrapHour(parts.hour, -1)}
+                  next={wrapHour(parts.hour, 1)}
+                  onPick={(hour) => {
+                    setColumn("hour")
+                    const current = splitClock(draftRef.current || "08:00")
+                    setDraftTime(joinClock(hour, current.minute, current.period))
+                  }}
+                  onActivate={() => setColumn("hour")}
+                  onEdit={() => beginSegment("hour")}
+                  onEntryKeyDown={onEntryKeyDown}
+                  onEntryBlur={applySegment}
+                />
+                <span className="clock-picker-colon" aria-hidden>
+                  :
+                </span>
+                <Wheel
+                  kicker="Min"
+                  active={column === "minute"}
+                  editing={segment === "minute"}
+                  entryRef={segment === "minute" ? entryRef : undefined}
+                  current={parts.minute}
+                  previous={wrapMinute(parts.minute, -1)}
+                  next={wrapMinute(parts.minute, 1)}
+                  onPick={(minute) => {
+                    setColumn("minute")
+                    const current = splitClock(draftRef.current || "08:00")
+                    setDraftTime(joinClock(current.hour, minute, current.period))
+                  }}
+                  onActivate={() => setColumn("minute")}
+                  onEdit={() => beginSegment("minute")}
+                  onEntryKeyDown={onEntryKeyDown}
+                  onEntryBlur={applySegment}
+                />
+                <div className="clock-picker-stack clock-picker-period">
+                  <span className="clock-picker-kicker">Day</span>
+                  <div className="clock-picker-col" data-active={column === "period" ? "true" : "false"}>
+                    {(["AM", "PM"] as const).map((period) => (
+                      <button
+                        key={period}
+                        type="button"
+                        data-no95
+                        tabIndex={-1}
+                        className={cn(
+                          "clock-picker-cell",
+                          parts.period === period && "is-cursor",
+                          column === "period" && parts.period === period && "is-caret",
+                        )}
+                        aria-pressed={parts.period === period}
+                        onClick={() => {
+                          setColumn("period")
+                          const current = splitClock(draftRef.current || "08:00")
+                          setDraftTime(joinClock(current.hour, current.minute, period))
+                        }}
+                      >
+                        {period}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-            <AnalogFace hour={parts.hour} minute={parts.minute} period={parts.period} />
-          </div>,
+              <button type="button" className="clock-picker-now" data-no95 aria-label="Now" onClick={applyNow}>
+                <span className="clock-picker-lamp" aria-hidden />
+                Now
+              </button>
+              <AnalogFace
+                hour={parts.hour}
+                minute={parts.minute}
+                period={parts.period}
+                dialId={dial.id}
+                ceramicSrc={ceramicSrc}
+                painting={dial.placement === "center" ? dial.src : null}
+              />
+              <div className="clock-picker-dials">
+                <select
+                  className="clock-picker-dial"
+                  aria-label="Dial"
+                  value={dial.id}
+                  onChange={(event) => chooseDial(event.target.value)}
+                >
+                  {shownDials.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="clock-picker-mini"
+                  data-no95
+                  aria-label="Shuffle"
+                  disabled={shownDials.length < 2}
+                  onClick={shuffleDial}
+                >
+                  Shuffle
+                </button>
+                <button
+                  type="button"
+                  className="clock-picker-mini"
+                  data-no95
+                  aria-expanded={dialsEditing}
+                  onClick={() => setDialsEditing((current) => !current)}
+                >
+                  Edit
+                </button>
+              </div>
+              {dialsEditing ? (
+                <div className="clock-picker-dial-edit" role="group" aria-label="Paintings">
+                  {dials.map((item) => (
+                    <label key={item.id} className="clock-picker-dial-line">
+                      <input
+                        type="checkbox"
+                        checked={item.id === DEFAULT_DIAL_ID || !hiddenDialIds.includes(item.id)}
+                        disabled={item.id === DEFAULT_DIAL_ID}
+                        onChange={(event) => setDialShown(item.id, event.target.checked)}
+                      />
+                      {item.label}
+                    </label>
+                  ))}
+                </div>
+              ) : null}
+              <div className="clock-picker-actions">
+                <button type="button" className="clock-picker-confirm" data-no95 onClick={() => close("commit")}>
+                  Confirm
+                </button>
+                <button type="button" className="clock-picker-cancel" data-no95 onClick={() => close("cancel")}>
+                  Cancel
+                </button>
+              </div>
+            </DismissableLayer>
+          </DismissableLayerBranch>,
           document.body,
         )
       : null
@@ -646,9 +794,10 @@ export function ClockPicker({
       data-disabled={disabled ? "true" : undefined}
       data-readonly={readOnly ? "true" : undefined}
       data-open={open ? "true" : "false"}
+      data-editing={text !== null ? "true" : undefined}
       data-armed={armed ? column : undefined}
-      data-face={face || placeholder}
-      data-empty={face ? undefined : "true"}
+      data-face={face}
+      data-empty={formatClockFace(open ? draft : value) ? undefined : "true"}
     >
       <input
         ref={inputRef}
@@ -656,7 +805,7 @@ export function ClockPicker({
         name={name}
         className="clock-picker-field"
         type="text"
-        inputMode="numeric"
+        inputMode="text"
         role="combobox"
         autoComplete="off"
         autoCorrect="off"
@@ -664,46 +813,76 @@ export function ClockPicker({
         autoFocus={autoFocus}
         disabled={disabled}
         readOnly={readOnly}
-        title={title ?? (face || undefined)}
+        title={title ?? (formatClockFace(open ? draft : value) || undefined)}
         placeholder={placeholder}
         aria-label={ariaLabel}
-        aria-haspopup="true"
+        aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
         aria-autocomplete="none"
-        value={value}
+        value={text !== null ? text : value}
+        onFocus={() => {
+          if (disabled || readOnly || openRef.current || textRef.current !== null) return
+          const next = formatClockFace(valueRef.current) || valueRef.current
+          textRef.current = next
+          setText(next)
+        }}
         onChange={(event) => {
           const next = event.target.value
-          if (next === "") {
-            buffer.current = ""
-            onChange("")
+          const editing = textRef.current !== null || document.activeElement === inputRef.current
+          if (!editing) {
+            if (next === "") {
+              onChangeRef.current("")
+              valueRef.current = ""
+              return
+            }
+            const parsed = parseTypedClock(next)
+            if (parsed) {
+              onChangeRef.current(parsed)
+              valueRef.current = parsed
+            }
             return
           }
-          const parsed = parseTypedClock(next)
-          if (parsed) {
-            buffer.current = ""
-            onChange(parsed)
-          }
-        }}
-        onClick={() => {
-          if (disabled || readOnly) return
-          if (openRef.current) close("commit")
-          else openPanel()
+          textRef.current = next
+          setText(next)
         }}
         onKeyDown={onKeyDown}
         onBlur={() => {
-          if (!openRef.current) buffer.current = ""
-        }}
-        onPaste={(event) => {
-          const parsed = parseTypedClock(event.clipboardData.getData("text"))
-          if (!parsed) return
-          event.preventDefault()
-          buffer.current = ""
-          publish(parsed)
+          if (openRef.current) return
+          if (textRef.current === null) return
+          commitTyped(textRef.current)
         }}
       />
+      <button
+        type="button"
+        className="clock-picker-open"
+        data-no95
+        tabIndex={-1}
+        aria-label={openLabel}
+        aria-expanded={open}
+        disabled={disabled || readOnly}
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={() => {
+          if (disabled || readOnly) return
+          if (textRef.current !== null) commitTyped(inputRef.current?.value ?? textRef.current)
+          if (openRef.current) close("cancel")
+          else openPanel()
+        }}
+      >
+        <ClockMark />
+      </button>
       {panel}
     </span>
+  )
+}
+
+function ClockMark() {
+  return (
+    <svg className="clock-picker-mark" viewBox="0 0 16 16" aria-hidden="true">
+      <circle cx="8" cy="8" r="5.4" fill="none" stroke="currentColor" strokeWidth="1.25" />
+      <path d="M8 8.2 V4.7" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
+      <path d="M8 8.2 L10.5 9.6" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
+    </svg>
   )
 }
 
@@ -760,6 +939,7 @@ function Wheel({
             <button
               key={`${noun}-${row.ghost ? "g" : "c"}-${row.value}`}
               type="button"
+              data-no95
               tabIndex={-1}
               className={cn("clock-picker-cell", !row.ghost && "is-cursor", !row.ghost && active && "is-caret")}
               aria-label={`${noun} ${pad(row.value)}`}
@@ -784,10 +964,35 @@ function Wheel({
   )
 }
 
-function AnalogFace({ hour, minute, period }: { hour: number; minute: number; period: Period }) {
-  const gid = `face${useId().replace(/[^a-zA-Z0-9]/g, "")}`
+/** Minute hand: slim pierced stem, pointed tip, short tail. Drawn pointing at 12. */
+const MINUTE_HAND =
+  "M60 11 L61.15 19 L60.95 34 L63.4 39 C67.6 43.5 68.2 52.5 64.4 56.8 C62.6 58.8 61.7 57.4 61.45 55.4 L61.2 64 L60.65 74.5 L59.35 74.5 L58.8 64 L58.55 55.4 C58.3 57.4 57.4 58.8 55.6 56.8 C51.8 52.5 52.4 43.5 56.6 39 L59.05 34 L58.85 19 Z M60 48.6 m-1.25 0 a1.25 2.05 0 1 0 2.5 0 a1.25 2.05 0 1 0 -2.5 0 Z M55.7 52.6 m-1.45 0 a1.45 1.7 0 1 0 2.9 0 a1.45 1.7 0 1 0 -2.9 0 Z M64.3 52.6 m-1.45 0 a1.45 1.7 0 1 0 2.9 0 a1.45 1.7 0 1 0 -2.9 0 Z"
+
+/** Hour hand: shorter neck, openwork club near the tip. Drawn pointing at 12. */
+const HOUR_HAND =
+  "M60 24.5 L62.6 31.5 C68.2 32.2 71.4 38.2 67.8 43.2 C65.4 46.4 62.4 44.6 61.35 41.4 L61.15 58 L58.85 58 L58.65 41.4 C57.6 44.6 54.6 46.4 52.2 43.2 C48.6 38.2 51.8 32.2 57.4 31.5 Z M60 33.4 m-1.55 0 a1.55 1.55 0 1 0 3.1 0 a1.55 1.55 0 1 0 -3.1 0 Z M55.15 39.1 m-1.4 0 a1.4 1.4 0 1 0 2.8 0 a1.4 1.4 0 1 0 -2.8 0 Z M64.85 39.1 m-1.4 0 a1.4 1.4 0 1 0 2.8 0 a1.4 1.4 0 1 0 -2.8 0 Z"
+
+function AnalogFace({
+  hour,
+  minute,
+  period,
+  dialId,
+  ceramicSrc,
+  painting,
+}: {
+  hour: number
+  minute: number
+  period: Period
+  dialId: string
+  ceramicSrc: string
+  painting: string | null
+}) {
   const minuteAngle = minute * 6
   const hourAngle = (hour % 12) * 30 + minute * 0.5
+  const uid = useId().replace(/:/g, "")
+  const silver = `silver-${uid}`
+  const brass = `brass-${uid}`
+  const shade = `shade-${uid}`
   const label = `${pad(hour)}:${pad(minute)} ${period}`
   return (
     <div
@@ -797,96 +1002,46 @@ function AnalogFace({ hour, minute, period }: { hour: number; minute: number; pe
       data-hour={hour}
       data-minute={minute}
       data-period={period}
+      data-dial={dialId}
     >
-      <svg className="clock-picker-analog-svg" viewBox="0 0 120 120" aria-hidden="true">
+      <img className="clock-picker-face" src={ceramicSrc} alt="" draggable={false} />
+      {painting ? (
+        <div className="clock-picker-well">
+          <img className="clock-picker-painting" src={painting} alt="" draggable={false} />
+        </div>
+      ) : null}
+      <svg
+        className="clock-picker-hands"
+        viewBox="0 0 120 120"
+        aria-hidden="true"
+        data-hour-angle={hourAngle}
+        data-minute-angle={minuteAngle}
+      >
         <defs>
-          <radialGradient id={`${gid}-bezel`} cx="36%" cy="28%" r="72%">
-            <stop offset="0%" stopColor="#f4f6f8" />
-            <stop offset="22%" stopColor="#c8ccd0" />
-            <stop offset="58%" stopColor="#8a8e92" />
-            <stop offset="100%" stopColor="#3a3e42" />
+          <linearGradient id={silver} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#fbfcfd" />
+            <stop offset="42%" stopColor="#d5d9de" />
+            <stop offset="100%" stopColor="#8e959c" />
+          </linearGradient>
+          <radialGradient id={brass} cx="35%" cy="30%" r="75%">
+            <stop offset="0%" stopColor="#fff1c9" />
+            <stop offset="45%" stopColor="#e0b85a" />
+            <stop offset="100%" stopColor="#7a5a22" />
           </radialGradient>
-          <radialGradient id={`${gid}-glass`} cx="50%" cy="36%" r="70%">
-            <stop offset="0%" stopColor="#1a3830" />
-            <stop offset="42%" stopColor="#071410" />
-            <stop offset="100%" stopColor="#040a08" />
-          </radialGradient>
-          <radialGradient id={`${gid}-hub`} cx="35%" cy="30%" r="75%">
-            <stop offset="0%" stopColor="#f4fff8" />
-            <stop offset="40%" stopColor="#7dffc4" />
-            <stop offset="100%" stopColor="#0b4a32" />
-          </radialGradient>
+          <filter id={shade} x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="0.4" stdDeviation="0.45" floodColor="#2c261c" floodOpacity="0.4" />
+          </filter>
         </defs>
-        <circle cx="60" cy="60" r="58" fill="#9a9ea2" />
-        <circle cx="60" cy="60" r="58" fill={`url(#${gid}-bezel)`} />
-        <circle cx="60" cy="60" r="50" fill="#141618" />
-        <circle cx="60" cy="60" r="47.4" fill="#07090a" />
-        <circle cx="60" cy="60" r="46" fill="#071410" />
-        <circle cx="60" cy="60" r="46" fill={`url(#${gid}-glass)`} />
-        {([45, 135, 225, 315] as const).map((deg) => {
-          const { cx, cy } = polar(deg, 54)
-          return (
-            <g key={deg} transform={`rotate(${deg} ${cx} ${cy})`}>
-              <circle cx={cx} cy={cy} r="1.85" fill="#2a2e32" stroke="#e6e8ea" strokeWidth="0.35" />
-              <path d={`M ${cx - 1.05} ${cy} H ${cx + 1.05}`} stroke="#0c0e10" strokeWidth="0.45" />
-            </g>
-          )
-        })}
-        <circle cx="60" cy="60" r="43.2" fill="none" stroke="rgba(125, 255, 196, 0.16)" strokeWidth="0.6" />
-        {FACE_TICKS.map((index) => {
-          const cardinal = index % 15 === 0
-          const major = index % 5 === 0
-          const width = cardinal ? 2.6 : major ? 1.8 : 1.15
-          const height = cardinal ? 7.2 : major ? 4.8 : 2.6
-          const tone = cardinal ? "#7dffc4" : major ? "rgba(125, 255, 196, 0.72)" : "rgba(125, 255, 196, 0.32)"
-          return (
-            <rect
-              key={index}
-              x={60 - width / 2}
-              y={15.2}
-              width={width}
-              height={height}
-              fill={tone}
-              transform={`rotate(${index * 6} 60 60)`}
-            />
-          )
-        })}
-        <text className="clock-picker-numeral" x="60" y="33">
-          12
-        </text>
-        <text className="clock-picker-numeral" x="87" y="61.5">
-          3
-        </text>
-        <text className="clock-picker-numeral" x="60" y="90">
-          6
-        </text>
-        <text className="clock-picker-numeral" x="33" y="61.5">
-          9
-        </text>
-        <g className="clock-picker-daywin">
-          <rect x="48.5" y="72" width="23" height="10" />
-          <text x="60" y="77.2">
-            {period}
-          </text>
+        <g data-hand="minute" data-angle={minuteAngle} transform={`rotate(${minuteAngle} 60 60)`} filter={`url(#${shade})`}>
+          <path d={MINUTE_HAND} fill={`url(#${silver})`} fillRule="evenodd" stroke="#6a7076" strokeWidth="0.45" />
         </g>
-        <Hand angle={hourAngle} length={22} tail={6} width={7} />
-        <Hand angle={minuteAngle} length={34} tail={8} width={3.3} />
-        <circle cx="60" cy="60" r="4.3" fill="#04110c" />
-        <circle cx="60" cy="60" r="3.15" fill={`url(#${gid}-hub)`} />
-        <ellipse cx="46" cy="36" rx="16" ry="8" fill="rgba(255, 255, 255, 0.13)" />
-        <circle cx="60" cy="7.2" r="1.35" fill="#7dffc4" />
+        <g data-hand="hour" data-angle={hourAngle} transform={`rotate(${hourAngle} 60 60)`} filter={`url(#${shade})`}>
+          <path d={HOUR_HAND} fill={`url(#${silver})`} fillRule="evenodd" stroke="#6a7076" strokeWidth="0.45" />
+        </g>
+        <circle cx="60" cy="60" r="4.15" fill="#5c4318" />
+        <circle cx="60" cy="60" r="3.35" fill={`url(#${brass})`} />
+        <circle cx="58.9" cy="58.7" r="0.9" fill="#fff6d8" opacity="0.9" />
       </svg>
     </div>
-  )
-}
-
-function Hand({ angle, length, tail, width }: { angle: number; length: number; tail: number; width: number }) {
-  const y = 60 - length
-  const height = length + tail
-  return (
-    <g transform={`rotate(${angle} 60 60)`}>
-      <rect x={60 - width / 2 + 0.45} y={y + 0.7} width={width} height={height} fill="#02140e" />
-      <rect x={60 - width / 2} y={y} width={width} height={height} fill="#7dffc4" />
-    </g>
   )
 }

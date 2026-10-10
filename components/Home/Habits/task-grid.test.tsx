@@ -57,7 +57,7 @@ describe("TaskGrid", () => {
     expect(window.getComputedStyle(header).position).toBe("sticky")
     expect(window.getComputedStyle(header).top).toBe("0px")
     expect(window.getComputedStyle(dayHeader).position).toBe("sticky")
-    const foot = document.querySelector("tr.habit-grid-foot td.col-name") as HTMLElement
+    const foot = document.querySelector("tr.habit-grid-foot") as HTMLElement
     const footDay = document.querySelector("tr.habit-grid-foot td.col-day") as HTMLElement
     expect(window.getComputedStyle(foot).position).toBe("sticky")
     expect(window.getComputedStyle(foot).bottom).toBe("0px")
@@ -264,7 +264,7 @@ describe("TaskGrid", () => {
     expect(window.getComputedStyle(document.querySelector("th.col-day") as Element).minWidth).toBe("12rem")
   })
 
-  it("lets leftover width go to day columns and does not nest a Y scroller on a wide wrap", () => {
+  it("keeps day columns at a fixed tap width and does not nest a Y scroller on the wrap", () => {
     const { container } = render(
       <TaskGrid
         tasks={tasks}
@@ -282,8 +282,8 @@ describe("TaskGrid", () => {
     expect(window.getComputedStyle(wrap).overflowY).toBe("visible")
     expect(window.getComputedStyle(wrap).overflowX).toBe("visible")
     expect(window.getComputedStyle(name).width).toBe("12.5rem")
-    expect(window.getComputedStyle(day).minWidth).toBe("7.5rem")
-    expect(window.getComputedStyle(day).width).toBe("auto")
+    expect(window.getComputedStyle(day).minWidth).toBe("5.375rem")
+    expect(window.getComputedStyle(day).width).toBe("5.375rem")
     const title = container.querySelector(".habit-name-title") as HTMLElement
     expect(window.getComputedStyle(title).fontWeight).toBe("600")
     expect(window.getComputedStyle(title).fontSize).not.toBe("15px")

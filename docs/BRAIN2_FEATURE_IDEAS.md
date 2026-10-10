@@ -88,7 +88,7 @@ or a dead field.
 | 234 | Per-list default values | shipped | `createListItem` + Edit List defaults |
 | 238 | Burnout early-warning | shipped | `lib/overcommitment.ts` + Analytics → Overcommit |
 | 239 | Neglect in Needs Attention | not shipped | Stale tasks yes; neglected *goals/ops* live on Direction / Operation heatmaps only |
-| 241 | Global hotkey capture | shipped | `Cmd/Ctrl+Shift+K` + Electron `CommandOrControl+Alt+Space` |
+| 241 | Global hotkey capture | shipped | `Cmd/Ctrl+Shift+A` (was Shift+K) + Electron `CommandOrControl+Alt+Space` |
 | 242 | Smart-parse dates | shipped | `lib/smart-parse.ts` + Quick Add |
 | 243 | Inbox multi-select batch | shipped | Inbox checkboxes → list / deadline / merge / delete |
 | 244 | Clarify-all step-through | shipped | Walk selected + rename / discard / recent lists |

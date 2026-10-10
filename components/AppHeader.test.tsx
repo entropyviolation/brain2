@@ -1,7 +1,10 @@
 /**
  * AppHeader — pinned mill title bar (Nav + friend jewel + milled silver key-wells).
- * Wide shell: one row. Narrower than label width: clusters wrap; a cluster
- * wider than the shell scrolls inside its bay. Keys do not flex-shrink.
+ * Clusters share one flex line. Free width widens Rituals, System, and
+ * Capture up to a cap; the clusters stay packed. Narrower than the caps,
+ * clusters wrap. A cluster wider than the shell scrolls inside its bay.
+ * Keys do not flex-shrink. System icon keys are the gear, question mark, and
+ * search glass. Capture is Inbox and Quick Add. Metrics is on Current moment.
  */
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
@@ -90,21 +93,18 @@ describe("AppHeader", () => {
     expect(screen.getByRole("group", { name: "System" })).toBeInTheDocument()
     expect(screen.getByRole("group", { name: "Capture" })).toBeInTheDocument()
 
-    for (const name of [
-      /^Rituals/,
-      /^Settings/,
-      /^Tracking/,
-      /^Names/,
-      /^Inbox/,
-      /^Ingest/,
-      /^Metrics/,
-      /^Bulk Add/,
-      /^From Notes/,
-      /^Phone Notes/,
-      /^Quick Add/,
-    ]) {
+    for (const name of [/^Rituals/, "Settings", "Names help mode", "Search", "Now", /^Inbox/, /^Quick Add/]) {
       expect(screen.getByRole("button", { name })).toBeInTheDocument()
     }
+
+    for (const name of [/^Metrics/, /^Ingest/, /^Bulk Add/, /^From Notes/, /^Phone Notes/]) {
+      expect(screen.queryByRole("button", { name })).not.toBeInTheDocument()
+    }
+
+    expect(screen.getByRole("button", { name: "Settings" })).toHaveClass("b2-shell-icon")
+    expect(screen.getByRole("button", { name: "Settings" })).toHaveAttribute("title", "Settings")
+    expect(screen.getByRole("button", { name: "Search" })).toHaveClass("b2-shell-icon")
+    expect(screen.getByRole("button", { name: "Search" })).toHaveAttribute("title", "Search")
 
     expect(screen.getByRole("button", { name: /^Rituals/ })).toHaveAttribute(
       "title",
@@ -126,38 +126,47 @@ describe("AppHeader", () => {
     const capture = screen.getByRole("group", { name: "Capture" })
     const keys = capture.querySelector(".b2-shell-keys") as HTMLElement
     const inbox = screen.getByRole("button", { name: /^Inbox/ })
+    const quickAdd = screen.getByRole("button", { name: /Quick Add/i })
 
     expect(getComputedStyle(body).flexWrap).toBe("wrap")
-    expect(getComputedStyle(rail).flexWrap).toBe("wrap")
-    expect(getComputedStyle(rail).flexShrink).toBe("0")
-    expect(getComputedStyle(rail).maxWidth).toBe("100%")
+    expect(getComputedStyle(body).justifyContent).toBe("flex-start")
+    expect(getComputedStyle(rail).display).toBe("contents")
     expect(getComputedStyle(capture).flexShrink).toBe("0")
-    expect(getComputedStyle(capture).maxWidth).toBe("100%")
+    expect(getComputedStyle(capture).maxWidth).toContain("25rem")
     expect(getComputedStyle(keys).flexWrap).toBe("nowrap")
     expect(getComputedStyle(keys).overflowX).toBe("auto")
+    expect(getComputedStyle(keys).justifyContent).toBe("flex-start")
     expect(getComputedStyle(inbox).flexShrink).toBe("0")
     expect(getComputedStyle(inbox).minWidth).toContain("max-content")
     expect(getComputedStyle(inbox).whiteSpace).toBe("nowrap")
+    expect(getComputedStyle(quickAdd).marginLeft).toBe("0px")
   })
 
-  it("presses Names to set the overlay mode and html flag via the store", async () => {
+  it("presses the question mark to set names mode and strikes the mark while on", async () => {
     const user = userEvent.setup()
     render(<AppHeader onTaskSelect={() => {}} />)
-    const names = screen.getByRole("button", { name: /^Names$/ })
+    const names = screen.getByRole("button", { name: "Names help mode" })
     expect(names).toHaveAttribute("aria-pressed", "false")
-    expect(names).toHaveTextContent("Names")
-    expect(names).toHaveAttribute("title", "Show names of UI")
+    expect(names).toHaveAttribute("title", "Names help mode")
+    expect(names.querySelector(".b2-shell-glyph-strike")).toBeNull()
 
     await user.click(names)
     expect(names).toHaveAttribute("aria-pressed", "true")
-    expect(names).toHaveTextContent("Names")
-    expect(names).toHaveAttribute("title", "Stop naming")
-    expect(screen.getByRole("button", { name: /^Names$/ })).toBe(names)
+    expect(names).toHaveAttribute("title", "Names help mode")
+    expect(names.querySelector(".b2-shell-glyph-strike")).toBeTruthy()
     expect(useUiNamesStore.getState().mode).toBe("names")
 
     await user.click(names)
     expect(names).toHaveAttribute("aria-pressed", "false")
-    expect(names).toHaveTextContent("Names")
+    expect(names.querySelector(".b2-shell-glyph-strike")).toBeNull()
     expect(useUiNamesStore.getState().mode).toBe("off")
+  })
+
+  it("opens search from the magnifying-glass key", async () => {
+    const user = userEvent.setup()
+    const onOpenSearch = vi.fn()
+    render(<AppHeader onTaskSelect={() => {}} onOpenSearch={onOpenSearch} />)
+    await user.click(screen.getByRole("button", { name: "Search" }))
+    expect(onOpenSearch).toHaveBeenCalledOnce()
   })
 })

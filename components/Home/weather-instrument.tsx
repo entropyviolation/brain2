@@ -471,7 +471,7 @@ function WeatherDetailDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="home95 home-weather-dialog home-widget-dialog home-widget-instrument" aria-describedby={undefined} hideClose>
-        <button type="button" className="home-widget-dismiss" aria-label="Close" onClick={() => onOpenChange(false)}>
+        <button type="button" className="home-widget-dismiss b2-close-key" aria-label="Close" onClick={() => onOpenChange(false)}>
           ×
         </button>
         <DialogHeader className="home-weather-dialog-title home-widget-caption">

@@ -9,9 +9,15 @@ import {
   SCALE_TOUR_MS,
   scaleCaptionFrame,
   scaleExponent,
+  scaleFlightZoom,
+  scaleFrameCast,
+  scaleFrameMetres,
   scaleGlyph,
+  scaleImageKey,
+  scaleMarkAnchor,
   scaleMetres,
   scaleOnChart,
+  scalePictureKind,
   scaleStopName,
   scaleZoomFactor,
   tourCaption,
@@ -91,7 +97,23 @@ describe("powers of ten", () => {
     expect(scaleGlyph("seagull")).toBe("gull")
     expect(scaleGlyph("mouse")).toBe("mouse")
     expect(scaleGlyph("galaxy")).toBeNull()
-    expect(scaleGlyph("universe")).toBe("cosmos")
+    expect(scaleGlyph("universe")).toBeNull()
+    expect(scaleImageKey("moon")).toBe("moon")
+    expect(scaleImageKey("earth")).toBe("earth")
+    expect(scaleImageKey("person")).toBe("person")
+    expect(scaleImageKey("seagull")).toBe("gull")
+    expect(scaleImageKey("city")).toBe("city")
+    expect(scaleImageKey("universe")).toBeNull()
+    expect(scaleImageKey("galaxy")).toBeNull()
+    expect(scaleImageKey("proton")).toBeNull()
+    expect(scalePictureKind("moon")).toBe("photo")
+    expect(scalePictureKind("earth")).toBe("photo")
+    expect(scalePictureKind("person")).toBe("scene")
+    expect(scalePictureKind("seagull")).toBe("scene")
+    expect(scalePictureKind("city")).toBe("scene")
+    expect(scalePictureKind("universe")).toBe("schematic")
+    expect(scalePictureKind("galaxy")).toBe("schematic")
+    expect(scalePictureKind("proton")).toBe("schematic")
   })
 
   it("writes one original sentence per decade", () => {
@@ -110,6 +132,7 @@ describe("powers of ten", () => {
     expect(tourCaption("galaxy")).toContain("schematic")
     expect(tourCaption("local-group")).toContain("10 million light years")
     expect(tourCaption("universe")).toContain("46 billion light years")
+    expect(tourCaption("universe")).toContain("schematic")
     for (const stop of SCALE_STOPS) {
       const caption = tourCaption(stop)
       expect(caption.endsWith(".")).toBe(true)
@@ -152,5 +175,26 @@ describe("scale tour", () => {
     expect(tourChartFactor(at("neptune", 0.5))).toBeCloseTo(approachZoom(1, scaleZoomFactor("heliopause"), 0.5), 8)
     expect(tourChartFactor(at("proxima"))).toBe(zoomFactor("stars"))
     expect(tourChartFactor(at("galaxy", 0.5))).toBeCloseTo(zoomFactor("galaxy"), 8)
+  })
+
+  it("zooms one photograph onto the next by pulling a single frame back tenfold", () => {
+    expect(scaleFlightZoom(0)).toBe(1)
+    expect(scaleFlightZoom(1)).toBeCloseTo(0.1)
+    expect(scaleFlightZoom(0.5)).toBeCloseTo(10 ** -0.5)
+    expect(scaleFrameMetres("earth")).toBe(scaleFrameMetres("moon") * 10)
+    expect(scaleFrameMetres("seagull")).toBe(scaleFrameMetres("person") * 10)
+    expect(scaleFrameCast("moon")).toEqual(["earth", "moon", "south-coast"])
+    expect(scaleFrameCast("earth")).toEqual(["earth", "moon"])
+    expect(scaleFrameCast("person")).toEqual(["person", "seagull", "mouse"])
+    expect(scaleFrameCast("seagull")).toEqual(["person", "seagull"])
+    expect(scaleFrameCast("city")).toEqual(["city", "downtown"])
+    expect(scaleFrameCast("universe")).toEqual([])
+    expect(scaleMarkAnchor("moon", "earth")).toEqual({ x: 0, y: 0 })
+    expect(scaleMarkAnchor("earth", "moon")).toEqual({ x: 0, y: 0 })
+    expect(scaleMarkAnchor("seagull", "person")).toEqual({ x: 2.6, y: -0.15 })
+    expect(scaleMarkAnchor("person", "seagull")).toEqual({ x: 0, y: 0 })
+    const moonEnd = scaleFrameMetres("moon") * 10
+    expect(scaleMetres("moon") / moonEnd).toBeCloseTo(scaleMetres("moon") / scaleFrameMetres("earth"))
+    expect(scaleMetres("earth") / moonEnd).toBeCloseTo(scaleMetres("earth") / scaleFrameMetres("earth"))
   })
 })

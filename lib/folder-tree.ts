@@ -35,13 +35,20 @@ export function scheduledFolderSortKey(id: string): string | null {
   return null
 }
 
-/** Compare two folders for sidebar / grid ordering. */
+/**
+ * Compare two folders for sidebar / grid ordering.
+ * Scheduled folders stay chronological. Once both sides have `order`
+ * (Lists settings), that order wins over Next Actions / name.
+ */
 export function compareFolders(a: Folder, b: Folder, allFolders?: Folder[]): number {
   const aSched = scheduledFolderSortKey(a.id)
   const bSched = scheduledFolderSortKey(b.id)
   if (aSched && bSched) return aSched.localeCompare(bSched)
   if (aSched) return 1
   if (bSched) return -1
+  if (typeof a.order === "number" && typeof b.order === "number" && a.order !== b.order) {
+    return a.order - b.order
+  }
   if (allFolders) {
     if (isNextActionsFolder(a.id, allFolders)) return -1
     if (isNextActionsFolder(b.id, allFolders)) return 1

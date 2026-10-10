@@ -105,6 +105,32 @@ describe("TaskFormDialog", () => {
     })
   })
 
+  it("closes immediately on a background pointerdown", async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const onOpenChange = vi.fn()
+    render(
+      <TaskFormDialog
+        open
+        onOpenChange={onOpenChange}
+        onSubmit={vi.fn()}
+        initialTask={null}
+      />,
+    )
+
+    await user.click(screen.getByRole("button", { name: "Close" }))
+    expect(screen.getByTestId("window-sand-canvas")).toBeInTheDocument()
+    expect(onOpenChange).not.toHaveBeenCalled()
+
+    act(() => {
+      window.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, cancelable: true }))
+    })
+
+    await waitFor(() => {
+      expect(onOpenChange).toHaveBeenCalledWith(false)
+    })
+    expect(onOpenChange).toHaveBeenCalledTimes(1)
+  })
+
   it("skips the sand immediately on Escape", async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     const onOpenChange = vi.fn()

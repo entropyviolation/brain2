@@ -38,18 +38,18 @@
   padding: 0;
   font: 700 13px/16px "MS Sans Serif", "Segoe UI", sans-serif;
   color: #111;
-  background: #c0c0c0;
+  background: var(--chrome-face);
   border-top: 2px solid #fff;
   border-left: 2px solid #fff;
-  border-right: 2px solid #404040;
-  border-bottom: 2px solid #404040;
+  border-right: 2px solid var(--chrome-ink-soft);
+  border-bottom: 2px solid var(--chrome-ink-soft);
   cursor: pointer;
   pointer-events: auto !important;
 }
 
 .window-sand-skip:active {
-  border-top-color: #404040;
-  border-left-color: #404040;
+  border-top-color: var(--chrome-ink-soft);
+  border-left-color: var(--chrome-ink-soft);
   border-right-color: #fff;
   border-bottom-color: #fff;
 }

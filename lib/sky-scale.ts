@@ -5,7 +5,7 @@
  * (the observable universe). The Florida State optical-microscopy primer
  * is a factual checklist for that reach: protons and electrons, DNA, a
  * cell, then orders of magnitude out to a galaxy seen from about ten
- * million light years. Captions and silhouettes are original.
+ * million light years. Captions are original. Moon and Earth are photographs.
  *
  * Inspiration only: Powers of Ten (Charles and Ray Eames, 1977), that
  * primer, and Scale of the Universe.
@@ -15,8 +15,13 @@
  *
  * Decades the heliocentric chart can hold (Earth–Moon through the Milky
  * Way) ease with `approachZoom`. Smaller and larger decades are a
- * full-frame card. The 10^21 m stop is the Milky Way, and the chart mounts
- * `GalaxySchematic` for it.
+ * full-frame card. Moon and Earth use the photographs in `public/planets`.
+ * A person, a western gull, and the city are original drawings: the repo
+ * has no photograph of them. The other cards are schematics. The flight
+ * across a decade is one CSS scale, from 1 to 0.1, so a photograph hands
+ * off to the next photograph without a cut. The 10^21 m stop is the Milky
+ * Way, and the chart mounts `GalaxySchematic` for it. The 10^26 m card is
+ * a labeled circle and one speck, and it says it is a schematic.
  *
  * Session only. Nothing here writes `brain2-sky-motion` or changes the
  * saved time rate or the view width. Opening the tour does not pause the
@@ -122,7 +127,6 @@ export type ScaleGlyph =
   | "group"
   | "cluster"
   | "wall"
-  | "cosmos"
 
 /** Ocean Beach, San Diego. The 10^0 and 10^1 place, not a chart of the shore. */
 export const OCEAN_BEACH = { latDeg: 32.75, lonDeg: -117.25 } as const
@@ -439,8 +443,8 @@ const ROWS: { [K in ScaleStop]: ScaleRow } = {
     exponent: 26,
     metres: 46.5e9 * LIGHT_YEAR_M,
     name: "Observable universe",
-    caption: "The observable universe has a radius of about 46 billion light years.",
-    glyph: "cosmos",
+    caption: "The observable universe, a schematic, has a radius of about 46 billion light years.",
+    glyph: null,
   },
 }
 
@@ -473,6 +477,98 @@ export function tourCaption(stop: ScaleStop): string {
  */
 export function scaleGlyph(stop: ScaleStop): ScaleGlyph | null {
   return row(stop).glyph
+}
+
+export type ScaleImageKey = "moon" | "earth" | "person" | "gull" | "city"
+
+const SCALE_IMAGE: Partial<Record<ScaleStop, ScaleImageKey>> = {
+  person: "person",
+  seagull: "gull",
+  city: "city",
+  moon: "moon",
+  earth: "earth",
+}
+
+/**
+ * Picture for a full-frame card. Moon and Earth are photographs.
+ * Person, gull, and city are original drawings. Null is a schematic.
+ */
+export function scaleImageKey(stop: ScaleStop): ScaleImageKey | null {
+  return SCALE_IMAGE[stop] ?? null
+}
+
+export type ScalePictureKind = "photo" | "scene" | "schematic"
+
+/** Photo, original drawing, or schematic. Galaxy and the 10^26 m card are schematics. */
+export function scalePictureKind(stop: ScaleStop): ScalePictureKind {
+  if (stop === "moon" || stop === "earth") return "photo"
+  if (stop === "person" || stop === "seagull" || stop === "city") return "scene"
+  return "schematic"
+}
+
+/** Maps already in the repo. The card prefers a projected globe when one is painted. */
+export const SCALE_PHOTO_SRC = {
+  moon: "/planets/moon.jpg",
+  earth: "/planets/earth.jpg",
+} as const
+
+/**
+ * Width of the card at the start of this decade, in metres.
+ * `scaleFlightZoom` then pulls that frame back by ten.
+ */
+export function scaleFrameMetres(stop: ScaleStop): number {
+  return 10 ** scaleExponent(stop)
+}
+
+/** CSS scale for the one flight element. 1 at the open of the decade, 0.1 at the handoff. */
+export function scaleFlightZoom(blend: number): number {
+  return 10 ** -clamp01(blend)
+}
+
+/**
+ * Where `mark` sits while `focus` is the decade on screen, in metres.
+ * The gull stands a few metres from the person. The Moon and Earth share
+ * a center so the disks compare. Any other earlier object sits just beside
+ * the one in focus.
+ */
+export function scaleMarkAnchor(mark: ScaleStop, focus: ScaleStop): { x: number; y: number } {
+  const beach = focus === "person" || focus === "seagull"
+  if (beach && mark === "person") return { x: 0, y: 0 }
+  if (beach && mark === "seagull") return { x: 2.6, y: -0.15 }
+  const worlds = focus === "moon" || focus === "earth"
+  if (worlds && (mark === "moon" || mark === "earth")) return { x: 0, y: 0 }
+  if (mark === focus) return { x: 0, y: 0 }
+  return { x: -(scaleMetres(focus) + scaleMetres(mark)) * 0.56, y: 0 }
+}
+
+/**
+ * Objects on this full-frame card, largest first.
+ * The beach pair and the Moon–Earth pair stay in both decades, so the
+ * zoom across that boundary is the same picture.
+ */
+export function scaleFrameCast(stop: ScaleStop): ScaleStop[] {
+  if (stop === "universe") return []
+  const i = SCALE_STOPS.indexOf(stop)
+  const want = new Set<ScaleStop>([stop])
+  const prev = i > 0 ? SCALE_STOPS[i - 1] : null
+  if (prev && scaleCaptionFrame(prev)) want.add(prev)
+  if (stop === "person" || stop === "seagull") {
+    want.add("person")
+    want.add("seagull")
+  }
+  if (stop === "moon" || stop === "earth") {
+    want.add("moon")
+    want.add("earth")
+  }
+  const view = scaleFrameMetres(stop)
+  const cast = [...want].filter((item) => {
+    if (!scaleCaptionFrame(item)) return false
+    if (item === stop) return true
+    const visual = scaleMetres(item) / view
+    return visual >= 0.012 && visual <= 20
+  })
+  cast.sort((a, b) => scaleMetres(b) - scaleMetres(a))
+  return cast
 }
 
 /**

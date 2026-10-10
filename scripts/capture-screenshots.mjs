@@ -499,70 +499,92 @@ async function captureDialogs(page) {
   await wait(400)
 
   // End-of-day review. The rituals menu labels it Night (today), not "day review".
-  await page.locator("[data-home-review-entry]").click()
-  await wait(300)
-  await page.locator("[data-ritual-slot=day-night]").click()
-  await wait(600)
-  await screenshot(page, "20-dialog-reviews.png")
-  await page.keyboard.press("Escape")
-  await wait(300)
+  if (wantShot("20-dialog-reviews.png")) {
+    await page.locator("[data-home-review-entry]").click()
+    await wait(300)
+    await page.locator("[data-ritual-slot=day-night]").click()
+    await wait(600)
+    await screenshot(page, "20-dialog-reviews.png")
+    await page.keyboard.press("Escape")
+    await wait(300)
+  }
 
   // Morning review lives in the same Rituals menu (Morning), not a header key.
-  await page.locator("[data-home-review-entry]").click()
-  await wait(300)
-  await page.locator("[data-ritual-slot=day-morning]").click()
-  await wait(600)
-  await screenshot(page, "20-dialog-morning-review.png")
-  await page.keyboard.press("Escape")
-  await wait(300)
+  if (wantShot("20-dialog-morning-review.png")) {
+    await page.locator("[data-home-review-entry]").click()
+    await wait(300)
+    await page.locator("[data-ritual-slot=day-morning]").click()
+    await wait(600)
+    await screenshot(page, "20-dialog-morning-review.png")
+    await page.keyboard.press("Escape")
+    await wait(300)
+  }
 
-  // Leave Tracking / Habits first — both have their own Settings buttons.
-  await clickHomeSubTab(page, "Goals")
-  await page.getByRole("button", { name: "Settings", exact: true }).click()
-  await wait(500)
-  // The city field autofocuses and drops its suggestion list over everything
-  // below it; blur it so the rest of the dialog is actually in the picture.
-  await page.getByText("Full App Backup").click()
-  await wait(400)
-  await screenshot(page, "20-dialog-settings.png")
-  await page.keyboard.press("Escape")
-  await wait(300)
+  // The header gear, not Habits' or Tracking's own Settings button.
+  if (wantShot("20-dialog-settings.png")) {
+    await page.locator('[data-ui-name="App header"]').getByRole("button", { name: "Settings", exact: true }).click()
+    await wait(500)
+    // The city field autofocuses and drops its suggestion list over the dialog.
+    // Scroll Window gray to the top of the dialog body so warmth and Bouba/Kiki
+    // sit in the frame, and the city list is scrolled out.
+    await page.getByRole("heading", { name: "Window gray" }).evaluate((el) => {
+      el.scrollIntoView({ block: "start" })
+    })
+    await wait(400)
+    await screenshot(page, "20-dialog-settings.png")
+    await page.keyboard.press("Escape")
+    await wait(300)
+  }
 
-  await page.getByRole("button", { name: "Inbox" }).click()
-  await wait(500)
-  await screenshot(page, "20-dialog-inbox.png")
-  await page.keyboard.press("Escape")
-  await wait(300)
+  if (wantShot("20-dialog-inbox.png")) {
+    await page.getByRole("button", { name: "Inbox" }).click()
+    await wait(500)
+    await screenshot(page, "20-dialog-inbox.png")
+    await page.keyboard.press("Escape")
+    await wait(300)
+  }
 
-  await page.getByRole("button", { name: "Bulk Add" }).click()
-  await wait(500)
-  await screenshot(page, "20-dialog-bulk-add.png")
-  await page.keyboard.press("Escape")
-  await wait(300)
+  // Bulk lives inside Quick Add now (checkbox). The header no longer has a Bulk Add key.
+  if (wantShot("20-dialog-quick-add.png") || wantShot("20-dialog-bulk-add.png")) {
+    await page.getByRole("button", { name: "Quick Add" }).click()
+    await wait(500)
+    if (wantShot("20-dialog-quick-add.png")) {
+      await screenshot(page, "20-dialog-quick-add.png")
+    }
+    if (wantShot("20-dialog-bulk-add.png")) {
+      await page.getByRole("checkbox", { name: "Bulk" }).click()
+      await wait(400)
+      await screenshot(page, "20-dialog-bulk-add.png")
+    }
+    await page.keyboard.press("Escape")
+    await wait(300)
+  }
 
-  await page.getByRole("button", { name: "Quick Add" }).click()
-  await wait(500)
-  await screenshot(page, "20-dialog-quick-add.png")
-  await page.keyboard.press("Escape")
-  await wait(300)
+  if (wantShot("20-dialog-global-search.png")) {
+    await page.keyboard.press("Meta+k")
+    await wait(600)
+    await screenshot(page, "20-dialog-global-search.png")
+    await dismissDialogs(page)
+    await wait(300)
+  }
 
-  await page.keyboard.press("Meta+k")
-  await wait(600)
-  await screenshot(page, "20-dialog-global-search.png")
-  await dismissDialogs(page)
-  await wait(300)
-
-  await page.locator("fieldset").filter({ hasText: "System" }).getByRole("button", { name: "Tracking", exact: true }).click()
-  await wait(600)
-  await screenshot(page, "20-dialog-time-tracking.png")
-  await page.keyboard.press("Escape")
-  await wait(300)
-
-  await page.getByRole("button", { name: "Metrics" }).click()
-  await wait(600)
-  await screenshot(page, "20-dialog-metrics.png")
-  await page.keyboard.press("Escape")
-  await wait(300)
+  // Metrics is on Current moment inside Now, not a header Capture key.
+  if (wantShot("20-dialog-time-tracking.png") || wantShot("20-dialog-metrics.png")) {
+    await page.locator("fieldset").filter({ hasText: "System" }).getByRole("button", { name: "Now", exact: true }).click()
+    await wait(600)
+    if (wantShot("20-dialog-time-tracking.png")) {
+      await screenshot(page, "20-dialog-time-tracking.png")
+    }
+    if (wantShot("20-dialog-metrics.png")) {
+      await page.getByRole("dialog").getByRole("button", { name: "Metrics", exact: true }).click()
+      await wait(600)
+      await screenshot(page, "20-dialog-metrics.png")
+      await page.keyboard.press("Escape")
+      await wait(300)
+    }
+    await dismissDialogs(page)
+    await wait(300)
+  }
 
   if (wantShot("20-dialog-completion.png")) {
     await clickHomeSubTab(page, "To Do")
@@ -1418,6 +1440,19 @@ function seedVault() {
 
 async function main() {
   await mkdir(OUT, { recursive: true })
+
+  // Rewrite sidecars and the reel from the manifest without opening a browser.
+  if (process.env.COGS_TEXT_ONLY === "1") {
+    await writeDescriptions()
+    try {
+      const reel = writeReelIndex(OUT)
+      console.log(`Reel index — ${reel.shotCount} shots, ${reel.frameCount} frames`)
+    } catch (error) {
+      console.warn(`  ! reel index skipped: ${error.message.split("\n")[0]}`)
+    }
+    console.log("\nDone —", OUT)
+    return
+  }
 
   const browser = await chromium.launch({
     channel: process.env.PW_CHANNEL ?? "chrome",

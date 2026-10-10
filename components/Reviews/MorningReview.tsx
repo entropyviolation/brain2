@@ -23,6 +23,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Sun, Plus, X, Moon, Mic, Sparkles, ChevronLeft, ChevronRight } from "lucide-react"
 import { useTaskStore } from "@/lib/task-store"
 import { useHabitsStore } from "@/lib/habits-store"
+import { applyRitualPriority } from "@/lib/habit-priority"
 import { describeAllNighterLifts, isHabitPeriodExempt } from "@/lib/habit-exemption"
 import { useReviewsStore, localDayKey, morningReviewPhase, periodLabel } from "@/lib/reviews-store"
 import { useGoalsStore } from "@/lib/goals-store"
@@ -562,6 +563,8 @@ export function MorningReviewDialog({
     setPriorityHabitIds((p) => {
       if (p.includes(id)) return p.filter((x) => x !== id)
       if (p.length >= 3) return p
+      const task = useHabitsStore.getState().tasks.find((row) => row.id === id)
+      if (task) useHabitsStore.getState().updateTask(applyRitualPriority(task, "day", activeDate))
       return [...p, id]
     })
 

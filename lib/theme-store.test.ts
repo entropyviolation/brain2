@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
 import { DEFAULT_PCB_MODE, LEGACY_DEFAULT_PCB_MODE, PCB_MODE_SESSION_KEY } from "./pcb-backdrop"
 import { removeAliasedLocal, writeAliasedLocal } from "./storage-keys"
-import { DEFAULT_CHROME_FACE, DEFAULT_THEME, useThemeStore } from "./theme-store"
+import { DEFAULT_DRIFT_PERIOD_MS, DRIFT_PRESET_MS } from "./drift-clock"
+import { DEFAULT_CHROME_FACE, DEFAULT_CORNER_DRIFT, DEFAULT_THEME, DEFAULT_WARMTH_DRIFT, useThemeStore } from "./theme-store"
 
 describe("theme-store chromeFace", () => {
   beforeEach(() => {
@@ -9,7 +10,8 @@ describe("theme-store chromeFace", () => {
     sessionStorage.clear()
     useThemeStore.setState({
       colors: DEFAULT_THEME,
-      chromeFace: DEFAULT_CHROME_FACE,
+      ...DEFAULT_WARMTH_DRIFT,
+      ...DEFAULT_CORNER_DRIFT,
       pcbMode: DEFAULT_PCB_MODE,
       appearanceRev: 0,
     })
@@ -17,7 +19,8 @@ describe("theme-store chromeFace", () => {
 
   afterEach(() => {
     useThemeStore.setState({
-      chromeFace: DEFAULT_CHROME_FACE,
+      ...DEFAULT_WARMTH_DRIFT,
+      ...DEFAULT_CORNER_DRIFT,
       pcbMode: DEFAULT_PCB_MODE,
       appearanceRev: 0,
     })
@@ -39,10 +42,10 @@ describe("theme-store chromeFace", () => {
     expect(raw).toBeTruthy()
     const parsed = JSON.parse(raw ?? "{}") as { state?: { chromeFace?: number }; version?: number }
     expect(parsed.state?.chromeFace).toBe(100)
-    expect(parsed.version).toBe(4)
+    expect(parsed.version).toBe(5)
   })
 
-  it("rehydrates a saved set-point", async () => {
+  it("parks a pre-v5 lightness thumb at classic warmth", async () => {
     writeAliasedLocal(
       "cogs-theme-store",
       JSON.stringify({
@@ -51,7 +54,42 @@ describe("theme-store chromeFace", () => {
       }),
     )
     await useThemeStore.persist.rehydrate()
-    expect(useThemeStore.getState().chromeFace).toBe(18)
+    expect(useThemeStore.getState().chromeFace).toBe(DEFAULT_CHROME_FACE)
+    expect(useThemeStore.getState().chromePeriodMs).toBe(DEFAULT_DRIFT_PERIOD_MS)
+    expect(useThemeStore.getState().cornerPaused).toBe(true)
+  })
+
+  it("rehydrates a v5 warmth anchor and corner pause", async () => {
+    writeAliasedLocal(
+      "cogs-theme-store",
+      JSON.stringify({
+        state: {
+          colors: DEFAULT_THEME,
+          chromeFace: 33,
+          chromePhase: 0.2,
+          chromeEpochMs: 50,
+          chromePeriodMs: DRIFT_PRESET_MS["30s"],
+          chromePaused: true,
+          cornerMix: 12,
+          cornerPaused: false,
+        },
+        version: 5,
+      }),
+    )
+    await useThemeStore.persist.rehydrate()
+    expect(useThemeStore.getState().chromeFace).toBe(33)
+    expect(useThemeStore.getState().chromePaused).toBe(true)
+    expect(useThemeStore.getState().chromePeriodMs).toBe(DRIFT_PRESET_MS["30s"])
+    expect(useThemeStore.getState().cornerMix).toBe(12)
+    expect(useThemeStore.getState().cornerPaused).toBe(false)
+  })
+
+  it("manual shift does not replace the drift period", () => {
+    useThemeStore.getState().setChromePeriod(DRIFT_PRESET_MS["1w"])
+    useThemeStore.getState().startChromeTransition(80, DRIFT_PRESET_MS["30s"], false)
+    expect(useThemeStore.getState().chromePeriodMs).toBe(DRIFT_PRESET_MS["1w"])
+    expect(useThemeStore.getState().chromeTransition?.to).toBe(80)
+    expect(useThemeStore.getState().chromeTransition?.durationMs).toBe(DRIFT_PRESET_MS["30s"])
   })
 
   it("migrates v1 snapshots to classic gray without dropping colors", async () => {
@@ -85,7 +123,7 @@ describe("theme-store pcbMode", () => {
     const raw = localStorage.getItem("cogs-theme-store")
     const parsed = JSON.parse(raw ?? "{}") as { state?: { pcbMode?: string }; version?: number }
     expect(parsed.state?.pcbMode).toBe("xray")
-    expect(parsed.version).toBe(4)
+    expect(parsed.version).toBe(5)
     expect(localStorage.getItem("cogs-pcb-mode")).toBe("xray")
   })
 
@@ -100,7 +138,7 @@ describe("theme-store pcbMode", () => {
     removeAliasedLocal("cogs-pcb-mode")
     await useThemeStore.persist.rehydrate()
     expect(useThemeStore.getState().pcbMode).toBe("ice")
-    expect(useThemeStore.getState().chromeFace).toBe(40)
+    expect(useThemeStore.getState().chromeFace).toBe(DEFAULT_CHROME_FACE)
 
     writeAliasedLocal(
       "cogs-theme-store",
@@ -112,7 +150,7 @@ describe("theme-store pcbMode", () => {
     removeAliasedLocal("cogs-pcb-mode")
     await useThemeStore.persist.rehydrate()
     expect(useThemeStore.getState().pcbMode).toBe("fr4")
-    expect(useThemeStore.getState().chromeFace).toBe(22)
+    expect(useThemeStore.getState().chromeFace).toBe(DEFAULT_CHROME_FACE)
 
     writeAliasedLocal(
       "cogs-theme-store",
@@ -124,7 +162,7 @@ describe("theme-store pcbMode", () => {
     removeAliasedLocal("cogs-pcb-mode")
     await useThemeStore.persist.rehydrate()
     expect(useThemeStore.getState().pcbMode).toBe(LEGACY_DEFAULT_PCB_MODE)
-    expect(useThemeStore.getState().chromeFace).toBe(22)
+    expect(useThemeStore.getState().chromeFace).toBe(DEFAULT_CHROME_FACE)
   })
 
   it("does not roll a live plate back when a staler snapshot rehydrates", async () => {

@@ -17,7 +17,7 @@
   --mod-blue: #000080;
   --mod-blue-light: #1084d0;
   --mod-ink: #000000;
-  --mod-muted: #404040;
+  --mod-muted: var(--chrome-ink-soft);
   --mod-scope: #0b1a12;
   --mod-phosphor: #3dff8a;
   --mod-raised: inset -1px -1px var(--mod-frame), inset 1px 1px var(--mod-hi),
@@ -73,7 +73,7 @@
   font-weight: 700;
   color: var(--mod-ink) !important;
   background: var(--mod-surface) !important;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   box-shadow: inset -1px -1px var(--mod-frame), inset 1px 1px var(--mod-frame),
     inset -2px -2px var(--mod-lo), inset 2px 2px var(--mod-hi),
     inset -3px -3px var(--mod-frame), inset 3px 3px var(--mod-face);
@@ -156,7 +156,7 @@
   color: var(--mod-ink);
   background: var(--mod-surface) !important;
   border: none;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   box-shadow: var(--mod-raised);
 }
 
@@ -224,7 +224,7 @@
   padding: 0 !important;
   color: #000 !important;
   background: var(--mod-surface) !important;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   box-shadow: var(--mod-raised);
 }
 
@@ -305,7 +305,7 @@
   color: var(--mod-ink);
   background: var(--mod-surface) !important;
   border: none;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   box-shadow: var(--mod-raised);
 }
 
@@ -370,7 +370,7 @@
 }
 
 .mod95 .mod-widget-body .rounded-full {
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
 }
 
 .mod95 .mod-widget-body .bg-muted {
@@ -462,7 +462,7 @@
   font-weight: 400;
   color: var(--mod-ink) !important;
   background: var(--mod-surface) !important;
-  border-radius: 0;
+  border-radius: var(--r-0, 0px);
   box-shadow: var(--mod-raised);
 }
 

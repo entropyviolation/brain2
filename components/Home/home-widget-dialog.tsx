@@ -36,7 +36,7 @@ export function HomeWidgetDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={cn("home-widget-dialog home-widget-instrument", className)} aria-describedby={undefined} hideClose>
-        <button type="button" className="home-widget-dismiss" aria-label="Close" onClick={() => onOpenChange(false)}>
+        <button type="button" className="home-widget-dismiss b2-close-key" aria-label="Close" onClick={() => onOpenChange(false)}>
           ×
         </button>
         <DialogHeader className="home-widget-caption">
@@ -84,7 +84,7 @@ export function HideWidgetConfirm({
   return (
     <Dialog open={open} onOpenChange={(next) => { if (!next) onCancel() }}>
       <DialogContent className="home-widget-dialog home-widget-instrument home-widget-hide-dialog" aria-describedby={undefined} hideClose>
-        <button type="button" className="home-widget-dismiss" aria-label="Close" onClick={onCancel}>
+        <button type="button" className="home-widget-dismiss b2-close-key" aria-label="Close" onClick={onCancel}>
           ×
         </button>
         <DialogHeader className="home-widget-caption">

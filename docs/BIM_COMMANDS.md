@@ -93,13 +93,13 @@ In chat: `info` · `{prefix} info` · `{prefix} commands` · `all commands`.
 
 - **Format:** `add: pick up milk` · `qa: idea` · `inbox: …` · `idea: …` · `capture: …` · `quick add: …`
 - **Forms / aliases:** `add`, `qa`, `quick add`, `quickadd`, `capture`, `inbox`, `idea`
-- **Does:** Smart-capture into Inbox (same path as desktop Quick Add). End with -mb or -monkey to dump it in Monkey brain instead of the Inbox you mean to revisit.
+- **Does:** Smart-capture into Inbox (same path as desktop Quick Add). `list: item` and `folder: list: item` create the list if needed. Dates, times, duration, and priority are read and left in the title. End with -mb or -monkey to dump it in Monkey brain. -p or -plain stores the line as written and detects none of that.
 
 ### `(plain text)`
 
 - **Format:** `pick up milk`
 - **Forms / aliases:** `(any message with no verb)`
-- **Does:** Prefix-less text that is not a list dump becomes an Inbox capture. -mb or -monkey on the line sends it to Monkey brain.
+- **Does:** Prefix-less text that is not a list dump becomes an Inbox capture. Colon paths create the list. Dates, times, duration, and priority stay in the title. -mb or -monkey on the line sends it to Monkey brain. -p or -plain stores the line as written.
 
 ## Bulk add & list dumps
 
@@ -107,7 +107,7 @@ In chat: `info` · `{prefix} info` · `{prefix} commands` · `all commands`.
 
 - **Format:** `bulk:` then headers and one item per line
 - **Forms / aliases:** `bulk`, `bulk add`, `bulkadd`
-- **Does:** Bulk Add pipeline (Inbox off). Headers `list:` / `folder: list:` / `Home: Groceries:` work. Grocery names with no other folder use the store list.
+- **Does:** Bulk Add pipeline (Inbox off). Headers `list:` / `folder: list:` / `Home: Groceries:` work. Grocery names with no other folder use the store list. Dates, times, duration, and priority on an item line stay in the title. -p or -plain on a line stores that line as written.
 
 ### `{List name}:`
 
@@ -182,9 +182,9 @@ In chat: `info` · `{prefix} info` · `{prefix} commands` · `all commands`.
 
 ### `tp:`
 
-- **Format:** `tp: opening the editor to fix the clock` · `TP: …` · `thought process: …` · `log: tp: …`
+- **Format:** `tp: Opening the editor to fix the clock, then the dishes, relieved it is a small fix` · `TP: …` · `thought process: …` · `log: tp: …`
 - **Forms / aliases:** `tp:`, `TP:`, `thought process:`, `log: tp:`
-- **Does:** A specialized note: the crystallized thought of this moment, not a general note. Why you are doing something, what you plan to do, the exact current line of thought. Colon required on the verb, so bare `tp` and bare `thought process` stay capture. Activity instant on the Text log pen, `eventKind` `thought-process`. The first line is the title; lines under it are the note. No time uses the send time. Clocks are `parseExpectedWhen`, the same reader as a log line. A bare clock is military (`1:00` is 1:00am, `12:04` is noon). `1pm`, `1:00 PM`, and `1:00 p.m.` are 13:00. `7/4/26` is July 4, 2026. `est` / `estimated` / `~` is estimated (`clockCertainty` and `precision: estimated`). `unknown` keeps the minute for placement. A general note stays `note:` / `n`.
+- **Does:** Thought process: a guiding strand of this moment, from what you are doing, to what it leads to, to how it feels. Why you are doing something, what you expect to do next, and how it lands. Not a general note, a one-word mood, or a short activity log such as brushed teeth. Colon required on the verb, so bare `tp` and bare `thought process` stay capture. Activity instant on the Text log pen, `eventKind` `thought-process`. The first line is the title; lines under it are the note. No time uses the send time. Clocks are `parseExpectedWhen`, the same reader as a log line. A bare clock is military (`1:00` is 1:00am, `12:04` is noon). `1pm`, `1:00 PM`, and `1:00 p.m.` are 13:00. `7/4/26` is July 4, 2026. `est` / `estimated` / `~` is estimated (`clockCertainty` and `precision: estimated`). `unknown` keeps the minute for placement. A general note stays `note:` / `n`.
 
 ### `log keywords`
 

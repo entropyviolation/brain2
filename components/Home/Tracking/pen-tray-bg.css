@@ -12,17 +12,17 @@
 
 .trk95[data-pen-tray] .trk-pen-tray {
   padding: 4px;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background-color: var(--pen-tray-fallback, #0b1c36);
   background-image: var(--pen-tray-photo);
   background-size: cover;
   background-position: center;
   background-clip: padding-box;
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.55),
     inset 0 -1px 0 rgba(40, 42, 46, 0.45),
-    inset 0 0 0 2px #b0b4b8,
+    inset 0 0 0 2px var(--chrome-inset),
     inset 0 0 0 3px rgba(20, 22, 24, 0.35),
     var(--t-sunken);
 }
@@ -47,7 +47,7 @@
   overflow: hidden;
   padding: 5px 6px;
   border: 0;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background-color: var(--pen-tray-fallback, #888);
   background-image: var(--pen-tray-photo);
   background-size: cover;
@@ -55,9 +55,9 @@
   cursor: pointer;
   text-align: left;
   box-shadow:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.55),
-    inset 0 0 0 2px #b0b4b8,
+    inset 0 0 0 2px var(--chrome-inset),
     var(--t-raised);
 }
 

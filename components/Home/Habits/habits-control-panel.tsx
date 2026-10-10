@@ -2,7 +2,7 @@
  * components/Home/Habits/habits-control-panel.tsx
  *
  * Home Dashboard Habits Tab Control Panel — the right-hand column on
- * every Habits frequency tab: grades, streaks, Sort Habits, cockpit
+ * every Habits frequency tab: grades, streaks, cockpit
  * rockers, New habit, then Willpower gems pinned at the foot. Width is
  * the compact default; Physics enlarges the Willpower gems display.
  */

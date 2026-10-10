@@ -6,11 +6,13 @@
  * keys). Quoted Win95 bevels may sit underneath; the fascia reads as brushed
  * metal rings + raised keys, not a flat dialog strip.
  *
- * Reflow: a wide shell is one instrument row (Nav + Friend left, keys across,
- * Quick Add at the right of Capture). Clusters do not flex-shrink. When the
- * row is narrower than those label widths, whole clusters wrap onto further
- * rows. A cluster that is itself wider than the shell keeps full labels and
- * scrolls inside its bay. Counts stay on the keys.
+ * Reflow: clusters share one flex line (the rail is `display: contents`).
+ * Free width widens Rituals, System, and Capture, and the keys share each
+ * well, up to a cap. The clusters stay packed — leftover past the cap is
+ * mill at the end of the row, not a gap torn between Friend and Rituals.
+ * A wide shell is one row. Narrower than the caps, whole clusters wrap onto
+ * the full shell; a cluster wider than the shell scrolls inside its bay.
+ * Keys do not flex-shrink. Counts stay on the keys.
  *
  * The now well (`header-now-box.tsx`) sits between System and Capture; absent
  * when idle. Sticky pin + shelf so the desk scrolls under it. Do not restyle
@@ -27,8 +29,8 @@
   --b2-shell-blue: #000080;
   --b2-shell-blue-light: #1084d0;
   --b2-shell-crt: #7dffc4;
-  --b2-shell-pewter: #8a8e92;
-  --b2-shell-silver: #d4d6d8;
+  --b2-shell-pewter: var(--chrome-slate);
+  --b2-shell-silver: var(--chrome-key-mid);
   --b2-shell-raised: inset -1px -1px var(--b2-shell-frame), inset 1px 1px var(--b2-shell-hi),
     inset -2px -2px var(--b2-shell-lo), inset 2px 2px var(--b2-shell-mid);
   --b2-shell-sunken: inset -1px -1px var(--b2-shell-hi), inset 1px 1px var(--b2-shell-frame),
@@ -37,13 +39,13 @@
     inset -2px -2px var(--b2-shell-mid), inset 2px 2px var(--b2-shell-frame);
   /* Stacked silver rings around a recessed key bay (TENO / hiptop well). */
   --b2-shell-well-ring:
-    0 0 0 1px #5c6064,
+    0 0 0 1px var(--chrome-ring),
     inset 0 1px 0 rgba(255, 255, 255, 0.72),
     inset 0 -1px 0 rgba(40, 42, 46, 0.55),
     inset 1px 0 0 rgba(255, 255, 255, 0.28),
     inset -1px 0 0 rgba(50, 52, 56, 0.4),
     inset 0 0 0 2px var(--b2-shell-brush),
-    inset 0 0 0 3px #969a9e,
+    inset 0 0 0 3px var(--chrome-shade),
     inset 0 2px 3px rgba(0, 0, 0, 0.28),
     inset 0 -1px 0 rgba(255, 255, 255, 0.18);
   /* Raised metal key: specular top lip, milled face, pressed foot. */
@@ -63,32 +65,34 @@
     ),
     linear-gradient(
       165deg,
-      #eceef0 0%,
+      var(--chrome-key-sheen) 0%,
       var(--b2-shell-silver) 28%,
       var(--b2-shell-face) 58%,
       var(--b2-shell-brush) 86%,
-      #9a9ea2 100%
+      var(--chrome-key-shade) 100%
     );
   --b2-shell-key-raised:
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     inset 0 -1px 0 rgba(55, 58, 62, 0.55),
     inset 1px 0 0 rgba(255, 255, 255, 0.35),
     inset -1px 0 0 rgba(70, 74, 78, 0.35),
-    0 0 0 1px #4a4e52,
-    0 1px 0 #6a6e72,
-    0 2px 0 #3a3e42;
+    0 0 0 1px var(--chrome-ring-deep),
+    0 1px 0 var(--chrome-lip),
+    0 2px 0 var(--chrome-pressed);
   --b2-shell-key-pressed:
     inset 0 1px 2px rgba(0, 0, 0, 0.45),
     inset 0 -1px 0 rgba(255, 255, 255, 0.2),
     inset 1px 0 0 rgba(0, 0, 0, 0.18),
     inset -1px 0 0 rgba(255, 255, 255, 0.12),
-    0 0 0 1px #3a3e42;
+    0 0 0 1px var(--chrome-pressed);
   --b2-shell-mill: repeating-linear-gradient(
     180deg,
     rgba(255, 255, 255, 0.22) 0 1px,
     transparent 1px 2px
   );
 
+  container-type: inline-size;
+  container-name: b2shell;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -184,8 +188,12 @@ html[data-pcb-ink="light"] .b2-shell-caption .brain2-mark {
   display: flex;
   flex-wrap: wrap;
   align-items: stretch;
-  /* Row gap clears the engraved legends when a cluster wraps under another. */
-  gap: 16px 10px;
+  /* Row gap clears the engraved legends when a cluster wraps under another.
+     Column gap tracks the shell: a floor so clusters never jam, a ceiling
+     so a wide window does not string them across empty mill. */
+  column-gap: clamp(8px, 1.5cqi, 14px);
+  row-gap: 16px;
+  justify-content: flex-start;
   padding: 11px 8px 8px;
   overflow: visible;
 }
@@ -195,10 +203,11 @@ html[data-pcb-ink="light"] .b2-shell-caption .brain2-mark {
   position: relative;
   box-sizing: border-box;
   margin: 0;
-  /* Label width (flex-shrink 0 + max-content). min-width 0 lets max-width
+  /* Label width is the floor (flex-shrink 0). min-width 0 lets max-width
      cap a cluster that is wider than the shell — the fieldset's own
      min-content floor would otherwise beat that cap and widen the page.
-     The keys inside keep their words and scroll. */
+     The keys inside keep their words and scroll. Growth is opt-in per
+     cluster, and each growth has a cap. */
   flex: 0 0 auto;
   width: max-content;
   max-width: 100%;
@@ -206,7 +215,7 @@ html[data-pcb-ink="light"] .b2-shell-caption .brain2-mark {
   min-inline-size: 0;
   padding: 13px 9px 8px;
   border: 0;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background:
     linear-gradient(
       180deg,
@@ -224,7 +233,7 @@ html[data-pcb-ink="light"] .b2-shell-caption .brain2-mark {
       165deg,
       #b8bcc0 0%,
       var(--b2-shell-brush) 35%,
-      #9a9ea2 70%,
+      var(--chrome-key-shade) 70%,
       #868a8e 100%
     );
   box-shadow: var(--b2-shell-well-ring), var(--b2-shell-sunken);
@@ -240,11 +249,11 @@ html[data-pcb-ink="light"] .b2-shell-caption .brain2-mark {
   float: none;
   padding: 1px 6px 2px;
   margin: 0;
-  border-radius: 2px;
+  border-radius: var(--r-2, 2px);
   background:
-    linear-gradient(180deg, #e8eaec 0%, var(--b2-shell-face) 45%, var(--b2-shell-brush) 100%);
+    linear-gradient(180deg, var(--chrome-mist-2) 0%, var(--b2-shell-face) 45%, var(--b2-shell-brush) 100%);
   background-image: var(--b2-shell-mill),
-    linear-gradient(180deg, #e8eaec 0%, var(--b2-shell-face) 45%, var(--b2-shell-brush) 100%);
+    linear-gradient(180deg, var(--chrome-mist-2) 0%, var(--b2-shell-face) 45%, var(--b2-shell-brush) 100%);
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.14em;
@@ -255,11 +264,13 @@ html[data-pcb-ink="light"] .b2-shell-caption .brain2-mark {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.85),
     inset 0 -1px 0 rgba(60, 64, 68, 0.35),
-    0 0 0 1px #6a6e72;
+    0 0 0 1px var(--chrome-lip);
 }
 
 .b2-shell-nav {
   flex: 0 0 auto;
+  width: max-content;
+  max-width: 100%;
   padding-inline: 7px;
 }
 
@@ -280,6 +291,8 @@ html[data-pcb-ink="light"] .b2-shell-caption .brain2-mark {
   display: flex;
   align-items: center;
   flex: 0 0 auto;
+  width: max-content;
+  max-width: 100%;
   /* Same horizontal inset as a key row: photograph and Gallery clear the well ring. */
   padding: 12px 14px 8px;
   overflow: visible;
@@ -338,7 +351,7 @@ html[data-pcb-ink="light"] .b2-shell-brand .baby-nest-name {
   padding: 2px 8px;
   min-height: 22px;
   border: 0;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background: var(--b2-shell-key-face);
   color: #1a1c1e;
   font-size: 11px;
@@ -362,35 +375,40 @@ html[data-pcb-ink="light"] .b2-shell-brand .baby-nest-name {
 }
 
 .b2-shell-rail {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: stretch;
-  align-content: flex-start;
-  justify-content: flex-start;
-  /* Grow beside Friend when every cluster fits. flex-shrink 0 keeps the
-     bays from compressing; max-width stops the rail from widening the page
-     once a cluster has wrapped. */
-  flex: 1 0 auto;
-  gap: 16px 8px;
-  width: auto;
-  max-width: 100%;
-  min-width: 0;
-  padding: 0;
-  background: none;
-  box-shadow: none;
+  /* The clusters join the body flex line, so a wrapped cluster uses the
+     full shell — not a side column beside Nav and Friend. */
+  display: contents;
 }
 
 .b2-shell-group {
   display: block;
 }
 
+/* Rituals and System grow into leftover rail width, then stop so one key
+   does not sit in an empty tray. */
+.b2-shell-rituals {
+  flex: 1 0 auto;
+  width: auto;
+  min-width: max-content;
+  max-width: min(100%, 9.5rem);
+}
+
+.b2-shell-system {
+  flex: 2 0 auto;
+  width: auto;
+  min-width: min(100%, 18rem, max-content);
+  max-width: min(100%, 18rem);
+}
+
 .b2-shell-keys {
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
-  gap: 4px;
+  justify-content: flex-start;
+  gap: clamp(4px, 0.45cqi, 8px);
   min-height: 64px;
-  width: max-content;
+  width: 100%;
+  min-width: 0;
   max-width: 100%;
   box-sizing: border-box;
   /* Raised key ring is ink, not width. A flush scrollport clips the end bevels. */
@@ -400,23 +418,30 @@ html[data-pcb-ink="light"] .b2-shell-brand .baby-nest-name {
   overscroll-behavior-x: contain;
 }
 
-/* Keys keep their words. The bay scrolls; the button does not squash. */
+/* Keys keep their words. They may share a wider well up to a cap.
+   The bay scrolls; the button does not squash. */
 .b2-shell-rail .b2-shell-keys > * {
-  flex: 0 0 auto;
+  flex: 1 0 auto;
   min-width: max-content;
+  max-width: 7.5rem;
+  justify-content: center;
   white-space: nowrap;
 }
 
 .b2-shell-capture {
-  /* Fill the rest of a wide row so Quick Add can dock at the right edge.
-     min-width still refuses to shrink below the key labels. */
-  flex: 1 0 auto;
+  /* Grows with the row, then stops at the compact key density. A medium
+     shell does not string the keys apart across an empty well. */
+  flex: 4 0 auto;
   width: auto;
+  /* min() includes the cap so a wide max-content cannot beat max-width
+     and stretch the well (min-width wins that fight). */
+  min-width: min(100%, 25rem, max-content);
+  max-width: min(100%, 25rem);
 }
 
 .b2-shell-capture .b2-shell-keys {
-  width: max-content;
-  min-width: 100%;
+  width: 100%;
+  min-width: 0;
   max-width: 100%;
 }
 
@@ -473,7 +498,7 @@ html[data-pcb-ink="light"] .b2-shell-brand .baby-nest-name {
   white-space: nowrap;
   text-shadow: 0 0 3px var(--b2-shell-crt);
   padding: 1px 5px;
-  border-radius: 1px;
+  border-radius: var(--r-1, 1px);
   background: radial-gradient(ellipse at 40% 28%, #1a2a22 0%, #040a08 70%);
   box-shadow:
     inset 0 1px 2px rgba(0, 0, 0, 0.75),
@@ -481,26 +506,13 @@ html[data-pcb-ink="light"] .b2-shell-brand .baby-nest-name {
 }
 
 .b2-shell-capture .b2-shell-go {
-  margin-left: auto;
+  margin-left: 0;
 }
 
+/* The rule used to be its own flex item, so a wrap left it dangling at the
+   end of the row above. The well rings plus the fluid gap are the separation. */
 .b2-shell-sep {
-  width: 3px;
-  align-self: stretch;
-  min-height: 28px;
-  margin: 6px 2px;
-  border-radius: 1px;
-  background: linear-gradient(
-    90deg,
-    rgba(0, 0, 0, 0.35) 0,
-    rgba(255, 255, 255, 0.45) 45%,
-    rgba(0, 0, 0, 0.28) 100%
-  );
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.25),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
-  flex-shrink: 0;
-  border: 0;
+  display: none;
 }
 
 .b2-shell-shelf {
@@ -519,12 +531,14 @@ html[data-pcb-ink="light"] .b2-shell-brand .baby-nest-name {
 body.win95-app .b2-shell-rail button,
 body.win95-app .b2-shell-nav button {
   position: relative;
-  flex: 0 0 auto;
+  flex: 1 0 auto;
+  justify-content: center;
   height: 30px;
   min-height: 30px;
-  padding: 4px 11px 5px;
+  max-width: 7.5rem;
+  padding: 4px clamp(8px, 0.85cqi, 14px) 5px;
   border: none;
-  border-radius: 3px;
+  border-radius: var(--r-3, 3px);
   background: var(--b2-shell-key-face);
   color: #1a1c1e;
   font-family: inherit;
@@ -538,9 +552,46 @@ body.win95-app .b2-shell-nav button {
   gap: 5px;
 }
 
-/* Rail keys are word labels; Lucide icons stay hidden there. Nav shows chevrons. */
+/* Word keys hide their Lucide marks. Icon keys (gear, question, search) show
+   an engraved glyph on the same milled face. Nav chevrons stay visible too. */
 body.win95-app .b2-shell-rail button svg {
   display: none;
+}
+
+body.win95-app .b2-shell-rail button.b2-shell-icon {
+  flex: 0 0 auto;
+  width: 2.65rem;
+  min-width: 2.65rem;
+  max-width: 2.65rem;
+  padding-inline: 0;
+}
+
+body.win95-app .b2-shell-rail button.b2-shell-icon svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+  stroke-width: 2.25;
+  color: #1a1c1e;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.65));
+}
+
+.b2-shell-rail .b2-shell-keys > button.b2-shell-icon,
+.b2-shell-rail .b2-shell-keys > *:has(button.b2-shell-icon) {
+  flex: 0 0 auto;
+  min-width: 2.65rem;
+  max-width: 2.65rem;
+}
+
+body.win95-app .b2-shell-nav button {
+  max-width: 2.65rem;
+  min-width: 2rem;
+  padding-inline: 0.35rem;
+}
+
+body.win95-app .b2-shell-now-row > button {
+  flex: 0 0 auto;
+  max-width: none;
+  width: auto;
 }
 
 body.win95-app .b2-shell-nav button svg {
@@ -572,7 +623,7 @@ body.win95-app .b2-shell-nav button:hover:not(:disabled) {
       #e0e2e4 28%,
       var(--b2-shell-silver) 58%,
       var(--b2-shell-face) 86%,
-      #a8acb0 100%
+      var(--chrome-stone) 100%
     );
   color: #111;
 }
@@ -595,9 +646,9 @@ body.win95-app .b2-shell-nav button:not(:disabled):active {
     ),
     linear-gradient(
       165deg,
-      #9a9ea2 0%,
+      var(--chrome-key-shade) 0%,
       var(--b2-shell-brush) 40%,
-      #b0b4b8 100%
+      var(--chrome-inset) 100%
     );
   box-shadow: var(--b2-shell-key-pressed);
   transform: translate(0, 1px);
@@ -647,7 +698,7 @@ body.win95-app .b2-shell-rail .b2-shell-count {
   padding: 0 3px;
   margin: 0 0 0 2px;
   border: none;
-  border-radius: 1px;
+  border-radius: var(--r-1, 1px);
   background:
     radial-gradient(ellipse at 40% 28%, #1a2a22 0%, #040a08 70%);
   color: var(--b2-shell-crt);

@@ -315,7 +315,8 @@ export function parseIntakePayload(payload: string, sent: Date): PointNote | nul
 }
 
 /**
- * A thought process is one point. The first line is the crystallized thought.
+ * A thought process is one point: why you are doing something, what you expect
+ * next, and how it lands. The first line is that strand.
  * Later lines are the note. Clocks are the log-line peel (`parseExpectedWhen`):
  * send time when no clock is named, military when the clock is bare, `1pm` /
  * `1:00 PM` / `1:00 p.m.` at 13:00, and `7/4/26` as July 4, 2026. No range,

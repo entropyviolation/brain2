@@ -28,7 +28,7 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 240 100% 25%; /* Win95 navy #000080 — never orange focus rings */
-    --radius: 0.75rem;
+    --radius: 0.75rem; /* Bouba/Kiki default. Mix 50 keeps this literal. */
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
@@ -81,12 +81,12 @@
 
   .custom-scrollbar::-webkit-scrollbar-track {
     background: hsl(var(--muted));
-    border-radius: 3px;
+    border-radius: var(--r-3, 3px);
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
     background: hsl(var(--muted-foreground) / 0.3);
-    border-radius: 3px;
+    border-radius: var(--r-3, 3px);
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {

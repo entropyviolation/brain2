@@ -12,8 +12,9 @@
  *
  * Two entry points are exported:
  *  - `MetricLogger` — the full panel (drop into a Tracking tab / page),
- *  - `MetricLoggerButton` — a header button that opens the panel in a dialog
- *    (milled fascia shell via `.hpp95` / `header-popup-chrome.css`).
+ *  - `MetricLoggerButton` — the Metrics key on Current moment (Now dialog,
+ *    both panes). Same dialog and the same metrics-store write. Milled fascia
+ *    shell via `.hpp95` / `header-popup-chrome.css`.
  */
 "use client"
 
@@ -256,7 +257,7 @@ export function MetricLogger() {
   )
 }
 
-/** Header / Tracking entry: a button that opens the logger in a dialog. */
+/** Current-moment key: opens this logger in a dialog. Same write path as before. */
 export function MetricLoggerButton({ className }: { className?: string }) {
   const [open, setOpen] = useState(false)
   return (
