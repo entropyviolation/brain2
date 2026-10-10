@@ -9,18 +9,24 @@ export function SendToInboxField({
   checked,
   onCheckedChange,
   id,
+  disabled = false,
+  note,
 }: {
   checked: boolean
   onCheckedChange: (checked: boolean) => void
   id: string
+  disabled?: boolean
+  /** Replaces the default Inbox hint when this line cannot go there. */
+  note?: string
 }) {
   return (
     <div className="flex items-start gap-2">
       <input
         id={id}
         type="checkbox"
-        className="mt-0.5 h-4 w-4 rounded border border-primary"
+        className="mt-0.5 h-4 w-4 rounded border border-primary disabled:opacity-50"
         checked={checked}
+        disabled={disabled}
         onChange={(e) => onCheckedChange(e.target.checked)}
       />
       <div className="grid gap-1 leading-snug">
@@ -28,7 +34,7 @@ export function SendToInboxField({
           Send to Inbox for clarification
         </Label>
         <p className="text-xs text-muted-foreground">
-          Uncheck to skip Inbox and file on the target list, or All Items if none is specified.
+          {note ?? "Uncheck to skip Inbox and file on the target list, or All Items if none is specified."}
         </p>
       </div>
     </div>
@@ -46,10 +52,16 @@ export function CaptureShorthandHelp({ variant }: { variant: "quick" | "bulk" })
             <code className="text-foreground">just the item</code> — no list; Inbox or All Items
           </li>
           <li>
-            <code className="text-foreground">list: item</code> — that list (created if needed)
+            <code className="text-foreground">list: item</code> — that list (created if needed). A name may include digits (
+            <code className="text-foreground">brain2: item</code>
+            ).
           </li>
           <li>
             <code className="text-foreground">folder: list: item</code> — folder, then list
+          </li>
+          <li>
+            <code className="text-foreground">folder: all: item</code> — that folder&apos;s All Items (
+            <code className="text-foreground">all items</code> works too). Not a list named all.
           </li>
           <li>
             <code className="text-foreground">folder: folder: list: item</code> — nested folders, then list
@@ -67,8 +79,9 @@ export function CaptureShorthandHelp({ variant }: { variant: "quick" | "bulk" })
             <p className="font-medium text-foreground">Bulk headers</p>
             <p>
               A line that <em>ends</em> with <code className="text-foreground">:</code> is a header
-              for the following lines: <code className="text-foreground">Groceries:</code> or{" "}
-              <code className="text-foreground">Next Actions: Eventually:</code>.{" "}
+              for the following lines: <code className="text-foreground">Groceries:</code>,{" "}
+              <code className="text-foreground">Next Actions: Eventually:</code>, or{" "}
+              <code className="text-foreground">Next Actions: all:</code> for that folder&apos;s All Items.{" "}
               <code className="text-foreground">before 9/12:</code> is a due day for the lines
               under it. <code className="text-foreground">before elijah gets home:</code> is a
               list name.
@@ -99,6 +112,11 @@ export function CaptureShorthandHelp({ variant }: { variant: "quick" | "bulk" })
           <li>
             List hint: <code className="text-foreground">cat:Health</code> or{" "}
             <code className="text-foreground">category:Research</code>
+          </li>
+          <li>
+            Tracking log: <code className="text-foreground">log: left room</code> — the same write as the
+            Telegram bot. A dark blue <span className="text-foreground">LOG</span> mark. Not a list, and
+            not Inbox.
           </li>
           <li>
             Monkey brain: <code className="text-foreground">-mb</code> or{" "}

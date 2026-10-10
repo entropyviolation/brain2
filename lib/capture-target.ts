@@ -2,12 +2,16 @@
  * lib/capture-target.ts — Resolve Quick Add / Bulk Add folder+list paths
  *
  * Turns a parsed `folder: … : list:` path into real folder/list ids, creating
- * missing ones. Callers then attach those list ids on the captured task.
+ * missing ones. `folder: all: item` (also `all items`) files on that folder's
+ * All Items pool (`__all-items__{folderId}`), not a list named "all". A bare
+ * `all: item` is still a list named all. Callers then attach those list ids
+ * on the captured task.
  */
-import type { Folder, List, Task } from "@/lib/types"
+import type { CaptureOrigin, Folder, List, Task } from "@/lib/types"
 import {
   folderAllItemsCategoryId,
   isFolderAllItemsCategoryId,
+  isFolderAllItemsKeyword,
   syncFolderAllItemsCategories,
 } from "@/lib/folder-all-items"
 import { createListItem, createNextActionItem, listIsNextActions, withCategoryDefaults } from "@/lib/item-utils"
@@ -105,6 +109,9 @@ export function previewCapturePath(
     currentFolders = folders
   }
   if (!listName) return { folders: foldersOut }
+  if ((folderPath?.length ?? 0) > 0 && isFolderAllItemsKeyword(listName)) {
+    return { folders: foldersOut, list: { name: "All Items", exists: true } }
+  }
   const leaf = parentId ? folders.find((f) => f.id === parentId) : undefined
   const listExists = leaf
     ? Boolean(listInFolder(lists, leaf, listName))
@@ -176,6 +183,12 @@ export function ensureCaptureTarget(
     parent = getMut().folders.find((f) => f.id === parent!.id) ?? parent
   }
 
+  if (parent && suggestion.category && isFolderAllItemsKeyword(suggestion.category)) {
+    const allId = folderAllItemsCategoryId(parent.id)
+    const allList = getMut().lists.find((list) => list.id === allId)
+    return { folder: parent, list: allList, listIds: [allId] }
+  }
+
   if (!suggestion.category) {
     if (parent) {
       const allId = folderAllItemsCategoryId(parent.id)
@@ -210,6 +223,8 @@ export function buildCapturedTask(opts: {
   folders: Folder[]
   /** When the person sent the capture. Desktop clicks omit this and use now. */
   now?: Date
+  /** Door that created this line. Omitted on a rewrite that must keep the old one. */
+  origin?: CaptureOrigin
 }): Task {
   const description = opts.suggestion.description || opts.fallbackText.trim()
   const listIds = opts.target.listIds
@@ -220,6 +235,7 @@ export function buildCapturedTask(opts: {
   task = withCategoryDefaults(task, opts.target.list)
   task = applySuggestionFields(task, opts.suggestion)
   if (opts.now) task = { ...task, createdAt: opts.now }
+  if (opts.origin) task = { ...task, captureOrigin: opts.origin }
 
   if (!opts.target.list && opts.suggestion.category) {
     task = { ...task, tags: [...(task.tags ?? []), opts.suggestion.category] }
