@@ -1,0 +1,71 @@
+/* Pipelines on a person, a company pen, and a company timeblock. */
+.person-pipelines {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.person-pipelines-help {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.person-pipelines-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.person-pipelines-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.person-pipelines-swatch {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  border: 1px solid #000;
+}
+
+.person-pipelines-label {
+  min-width: 0;
+  flex: 1;
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.person-pipelines-kind {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.person-pipelines-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: end;
+}
+
+.person-pipelines-add label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 8rem;
+  flex: 1;
+  font-size: 11px;
+}
+
+.person-pipelines select,
+.person-pipelines input[type="text"] {
+  height: 28px;
+  width: 100%;
+  font-size: 13px;
+}

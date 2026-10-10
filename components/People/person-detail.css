@@ -1,0 +1,182 @@
+/* Biography on a person. Sits in item detail beside the pipelines. */
+.person-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: var(--id-ink, #111);
+  font-size: 12px;
+}
+
+.person-detail-help {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.person-birthday {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  background: var(--id-mill, linear-gradient(165deg, #f4f4f4 0%, #c0c0c0 48%, #9a9a9a 100%));
+  box-shadow: var(--id-sunken, inset 1px 1px #808080, inset -1px -1px #fff);
+}
+
+.person-cake {
+  flex: none;
+  image-rendering: pixelated;
+  shape-rendering: crispEdges;
+}
+
+.person-birthday-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.person-birthday-count {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--id-nameplate, #2a2c2e);
+}
+
+.person-readout {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.person-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 8px;
+}
+
+.person-detail label,
+.person-log-add label,
+.person-address {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: 11px;
+}
+
+.person-detail input[type="text"],
+.person-detail input[type="date"],
+.person-detail select,
+.person-detail textarea,
+.person-log-add input[type="text"],
+.person-log-add input[type="date"] {
+  height: 28px;
+  width: 100%;
+  font-size: 13px;
+}
+
+.person-detail textarea {
+  height: auto;
+  min-height: 4.5rem;
+  resize: vertical;
+}
+
+.person-date-met {
+  display: flex;
+  gap: 8px;
+  align-items: end;
+}
+
+.person-date-met label {
+  flex: 1;
+}
+
+.person-est {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.person-nicknames {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+}
+
+.person-nickname {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 4px;
+  border: 1px solid #000;
+  background: var(--id-highlight, #fff);
+  font-size: 12px;
+}
+
+.person-log {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.person-log h3 {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--id-nameplate, #2a2c2e);
+}
+
+.person-log-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.person-log-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.person-log-date {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.person-log-text {
+  min-width: 0;
+  flex: 1;
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.person-log-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: end;
+}
+
+.person-check {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  font-size: 12px;
+}
