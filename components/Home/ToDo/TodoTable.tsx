@@ -68,6 +68,7 @@ export function TodoTable({
   dense,
   emptyLabel,
   flockingId,
+  isWalkRow,
 }: {
   todos: TodoItem[]
   period: TodoPeriod
@@ -98,9 +99,13 @@ export function TodoTable({
   dense?: boolean
   emptyLabel?: string
   flockingId?: string | null
+  /** A derived ritual row. Open the rite; do not push, delete, or retier it. */
+  isWalkRow?: (todoId: string) => boolean
 }) {
   const pushedKey = pushedKeyForPeriod(period)
   const pushLabel = period === "day" ? "next day" : period === "week" ? "next week" : "next month"
+  const pushPeriodNoun = period === "day" ? "days" : period === "week" ? "weeks" : "months"
+  const pushLegend = `Pushes — times moved to the next open ${period}. Counts ${pushPeriodNoun}.`
   const listRef = useRef<HTMLDivElement>(null)
 
   const visibleTodos = isExpanded ? todos : todos.slice(0, COLLAPSE_THRESHOLD)
@@ -139,6 +144,10 @@ export function TodoTable({
     }
     if (event.key === "Enter") {
       event.preventDefault()
+      if (isWalkRow?.(todo.id)) {
+        onTaskClick(todo.id)
+        return
+      }
       onOpenRowIdChange(openRowId === todo.id ? null : todo.id)
       onSelectedRowIdChange(todo.id)
       return
@@ -146,6 +155,11 @@ export function TodoTable({
     if (event.key === "Escape") {
       event.preventDefault()
       onOpenRowIdChange(null)
+      return
+    }
+    if (isWalkRow?.(todo.id) && ["d", "D", "m", "M", "p", "P", "r", "R"].includes(event.key)) {
+      event.preventDefault()
+      if (event.key === "d" || event.key === "D") onTaskClick(todo.id)
       return
     }
     if (event.key === "d" || event.key === "D") {
@@ -176,6 +190,14 @@ export function TodoTable({
       className={`todo-table${dense ? " is-dense" : ""}`}
       role="list"
     >
+      <div className="todo-table-head" role="row">
+        <span className="todo-table-head-name">Task</span>
+        <span className="todo-table-head-push" title={pushLegend}>
+          Pushes
+          <em>{pushPeriodNoun}</em>
+        </span>
+        <span className="todo-table-head-verbs">Actions</span>
+      </div>
       {visibleTodos.map((todo) => {
         const status = getStatus(todo.id)
         const pushed = todo[pushedKey]
@@ -190,6 +212,7 @@ export function TodoTable({
         const minutes = effectiveDurationMinutes(estimate, steps)
         const progress = formatInternalProgress(steps)
         const completePct = todoCompletionPercent(steps)
+        const walk = isWalkRow?.(todo.id) ?? false
         const open = openRowId === todo.id
         const selected = selectedRowId === todo.id
         const flocking = flockingId === todo.id
@@ -201,8 +224,9 @@ export function TodoTable({
         return (
           <div
             key={todo.id}
-            className={`todo-row${open ? " is-open" : ""}${selected ? " is-selected" : ""}${flocking ? " is-flocking" : ""}`}
+            className={`todo-row${open ? " is-open" : ""}${selected ? " is-selected" : ""}${flocking ? " is-flocking" : ""}${walk ? " is-ritual" : ""}`}
             data-todo-row={todo.id}
+            data-ritual-todo={walk ? todo.id : undefined}
             role="listitem"
             tabIndex={0}
             aria-expanded={open}
@@ -247,9 +271,13 @@ export function TodoTable({
                     type="button"
                     className="todo-row-name"
                     data-no95
-                    title={name}
+                    title={walk ? `Open ${name}` : name}
                     onClick={(e) => {
                       e.stopPropagation()
+                      if (walk) {
+                        onTaskClick(todo.id)
+                        return
+                      }
                       toggleOpen()
                     }}
                   >
@@ -257,13 +285,13 @@ export function TodoTable({
                   </button>
                 )}
                 {pushed > 0 ? (
-                  <span className="todo-push-tube is-hot" title={`${pushed} pushes`}>
+                  <span className="todo-push-tube is-hot" title={`${pushed} ${pushLegend}`}>
                     {pushed}
                   </span>
                 ) : null}
               </div>
 
-              <select
+              {walk ? null : <select
                 className="todo-nixie"
                 aria-label="Tier"
                 title={`Tier ${todo.tier} — ${TIER_HINT[todo.tier]}`}
@@ -279,9 +307,9 @@ export function TodoTable({
                     {tier}
                   </option>
                 ))}
-              </select>
+              </select>}
 
-              <button
+              {walk ? null : <button
                 type="button"
                 className={`todo-status-lamp ${statusLampClass(status)}`}
                 data-no95
@@ -301,9 +329,9 @@ export function TodoTable({
                 }}
               >
                 <span className="todo-status-pip" aria-hidden />
-              </button>
+              </button>}
 
-              <span
+              {walk ? null : <span
                 className="todo-row-mins"
                 title={
                   minutes > 0
@@ -313,7 +341,7 @@ export function TodoTable({
               >
                 <PercentLedBar value={completePct} label="Complete" density="compact" />
                 {minutes > 0 ? <span className="todo-mins-read">{minutes}m</span> : null}
-              </span>
+              </span>}
 
               {stepCount > 0 ? (
                 <span className="todo-step-chip" title={progress ?? `${stepCount} steps`}>
@@ -328,9 +356,20 @@ export function TodoTable({
                 aria-label="Task actions"
                 onClick={(e) => e.stopPropagation()}
               >
+                {walk ? (
+                  <button
+                    type="button"
+                    className="todo-verb"
+                    title="Open this ritual"
+                    onClick={() => onTaskClick(todo.id)}
+                  >
+                    Open
+                  </button>
+                ) : (
+                  <>
                 <button
                   type="button"
-                  className="todo-verb is-complete"
+                  className="todo-verb is-complete is-primary"
                   title="Mark complete"
                   onClick={() => onComplete(todo.id)}
                 >
@@ -338,7 +377,7 @@ export function TodoTable({
                 </button>
                 <button
                   type="button"
-                  className="todo-verb"
+                  className="todo-verb is-quiet"
                   title="Just start — focus on the smallest next step"
                   onClick={() => onJustStart(todo.taskId || todo.id)}
                 >
@@ -346,24 +385,28 @@ export function TodoTable({
                 </button>
                 <button
                   type="button"
-                  className="todo-verb is-push"
+                  className="todo-verb is-push is-quiet"
                   title={`Push to ${pushLabel}`}
                   onClick={() => onPush(todo.id, period)}
                 >
                   Push
                 </button>
-                <TodoDeleteButton
-                  prompt={
-                    stepCount > 0
-                      ? `Delete "${name}" and its ${stepCount} steps?`
-                      : `Delete "${name}"?`
-                  }
-                  onDelete={() => onDelete(todo.id)}
-                />
+                <span className="todo-verb-delete-slot">
+                  <TodoDeleteButton
+                    prompt={
+                      stepCount > 0
+                        ? `Delete "${name}" and its ${stepCount} steps?`
+                        : `Delete "${name}"?`
+                    }
+                    onDelete={() => onDelete(todo.id)}
+                  />
+                </span>
+                  </>
+                )}
               </div>
             </div>
 
-            {open ? (
+            {open && !walk ? (
               <div className="todo-lid" onClick={(e) => e.stopPropagation()}>
                 <div className="todo-lid-meta">
                   {getScheduleLabel(todo)}

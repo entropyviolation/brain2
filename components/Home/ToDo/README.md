@@ -2,9 +2,9 @@
 
 The Home **To Do** sub-tab in **Brain2**. Day / week / month scoped task lists, plus a **Season** lens, under a milled fascia (CRT title, period nameplate, Day/Week/Month/Season keys, **Open list** on day/week/month, Show / Sort / Pace bays — Habits brushed metal, CRT glass, milled keys with room to breathe) and a readable instrument strip.
 
-The **day** lens is Home’s selected day (`currentDate` / `setCurrentDate` from the dashboard). Previous day, next day, and Today on that nameplate call `setCurrentDate`, so the overview, Plan, and Tracking move with it. Week, month, and season nameplates keep a local date inside To Do. Previous, next, and Today on those nameplates do not call `setCurrentDate` and do not move Plan or Tracking. Until a coarse nameplate is used, that lens shows the period that contains the shared day. Leaving To Do forgets a paged week, month, or season; the shared day stays with Home.
+The **day** lens is Home’s selected day (`currentDate` / `setCurrentDate` from the dashboard). Previous day, next day, and Today on that nameplate call `setCurrentDate`, so the overview, Plan, and Tracking move with it. Week, month, and season nameplates keep a **lens offset** inside To Do — local state that pages the sheet, not a second shell day. Previous, next, and Today on those nameplates do not call `setCurrentDate` and do not move Plan or Tracking. Until a coarse nameplate is used, that lens shows the period that contains the shared Home day (`lib/use-current-date.ts`). Leaving To Do forgets a paged week, month, or season; the shared day stays with Home.
 
-**Open list** opens that period's To do list in Lists (`To do 8/31`, `To do 8/31-9/6`, `To do September 2026`). Season lists open tasks (active or partial) whose day, week, or month already falls in the quarter (`lib/seasons.ts`); missed, cancelled, deferred, and done stay off that list. Adding a task there schedules the first month of the quarter. There is no quarter placement on the period ledger. The same folder also holds **Done** and, once the period has ended, **Undone** — the same rows as this panel. Default sort is **priority**; prioritized Assigned rows always lead. Language: [`docs/DESIGN_STYLE.md`](../../../docs/DESIGN_STYLE.md#milled-fascia).
+**Open list** opens that period's To do list in Lists (`To do 8/31`, `To do 8/31-9/6`, `To do September 2026`). Season lists open tasks (active or partial) whose day, week, or month already falls in the quarter (`lib/seasons.ts`); missed, cancelled, deferred, and done stay off that list. Adding a task there schedules the first month of the quarter. There is no quarter placement on the period ledger. The same folder also holds **Done** and, once the period has ended, **Undone** — the same rows as this panel. **To do** here is the period ledger’s narrow **prospective** set (`tasksProspectiveForPeriod` — open scheduled work); **Done** is retrospective completion during the period ([`docs/TEMPORAL_POLARITY.md`](../../../docs/TEMPORAL_POLARITY.md)). Default sort is **priority**; prioritized Assigned rows always lead. Language: [`docs/DESIGN_STYLE.md`](../../../docs/DESIGN_STYLE.md#milled-fascia).
 
 ## Public door
 
@@ -40,7 +40,7 @@ build/filter logic is unit-testable.
 | `todo-prefs.ts` | Persisted To Do prefs (live key `brain2-todo-prefs`, legacy alias `cogs-todo-prefs`): `availableNow` (default off), `wipLimit` (default 3), `lidCollapsed` (flags / time / steps, default all open) |
 | `todo-chrome.css` | `.todo95` cool silver fascia (a whisper of grain), wrapping load strip (Casio / comfort needle / scope lamps / POWER lamp / via channel), one cool ledger well, short rounded task cards, padded names, clamshell lids, rounded step cards, Done/Missed/Undone aftermath wells, `.todo-desk-plate`, status bar, `.todo95-dialog` |
 | `todo-utils.ts` | **Pure helpers**: `getTierFromTask`, `tierToUrgencyImportance`, `createScheduledTodoTask`, `getScheduleLabel`, `buildTodoItems` (drops done **and** missed), `buildDoneTodoItems` (`countsInDone`: Tasks **or** implied-action logs), `buildMissedTodoItems` (too-late rows by `missedAt`), `buildUndoneTodoItems` (past periods: each missed period on its own, including after a later push), `filterAndSortTodos`, `filterTodosByStatus`, `filterTodosAvailableNow` (`lib/available-tasks` unmet-dep predicate), `toggleTodoActiveLamp` (active ↔ partial; both stay on Open), `countInProgress` / `formatWipWarning`, overdue from `priorityDateOf`, `pinPrioritizedFirst`, plus the `priority` sort path (`computePriorityScore` from `lib/priority.ts`) and `TodoSortMode` (`"tier"` \| `"priority"`). Unit-tested in `todo-utils.test.ts` |
-| `TodoTable.tsx` | Closed rows: padded name, nixie tier **menu** (A+…D, not a cycle), active lamp (toggles active ↔ partial), completion percent (`todoCompletionPercent`, 0 when nothing is finished), step chip, engraved **Done / Start / Push / Delete**. Click / Enter opens one clamshell lid. The header name is the only edit field. **Flags** (Required / Prioritized / Missed / View, right-aligned), **Time**, and **Steps** each fold; the choice persists in `lidCollapsed`. Keyboard: arrows, D/M/P/R, Enter, Esc (ignored while focus is in an input or select). |
+| `TodoTable.tsx` | Table-head legend for **Pushes** (what a push is + which period the tube counts). Closed rows: padded name, nixie tier **menu** (A+…D, not a cycle), active lamp (toggles active ↔ partial), completion percent (`todoCompletionPercent`, 0 when nothing is finished), step chip, engraved verbs — **Done** primary, Start/Push quieter, Delete hover-reveal. Click / Enter opens one clamshell lid. The header name is the only edit field. **Flags** (Required / Prioritized / Missed / View, right-aligned), **Time**, and **Steps** each fold; the choice persists in `lidCollapsed`. Keyboard: arrows, D/M/P/R, Enter, Esc (ignored while focus is in an input or select). |
 | `TodoBreakdown.tsx` | Inside the open lid (`data-ui-name="Steps"`): **Time** is one segmented control (+15, −5, 5, 15, 30, 60) with the minutes field beside it; **counts** and **0/n · n%** sit on their own readout row. **Steps** are a separate fold of rounded cards (via pad still marks parent / leaf). A step with children has a chevron that hides those cards and its nested stylus; the fold is local and starts open. Minutes that count = greater of typed estimate and nested sum. Empty Enter / Shift+Enter / paste-lines for sibling depth. Optional "Ask the glass" local first-step prompt (no network). `TodoLidSection` is the shared fold. |
 | `TodoLoadPanel.tsx` | Period load strip (`data-ui-name="Period load"`): Casio LCDs (days left on week / month / season only, working hours, **Est hours of work remaining**), Hofstadter comfort needle, scope latch lamps, in-progress POWER lamp, Habits `PercentLedBar` for estimate vs working hours. Unestimated count scrolls the first bare task open. |
 | `AddTodoDialog.tsx` | "Add Task" dialog (`data-ui-name="Add Task"`; description, tier) — kept; Assigned also has a foot composer that uses the same `createScheduledTodoTask` factory |
@@ -60,10 +60,36 @@ All tasks come from **`lib/task-store.ts`**. The panel derives display rows from
 
 | Tab | Filter |
 |-----|--------|
-| Day | `taskScheduledOnDay` on Home’s selected day |
+| Day | `taskScheduledOnDay` on Home’s selected day, plus that day's rites (`lib/ritual-todo.ts`) |
 | Week | `taskScheduledInWeek` for the local week, or the week that contains the selected day until that nameplate is used |
 | Month | `taskScheduledInMonth` for the local month, or the month that contains the selected day until that nameplate is used |
 | Season | Open tasks (active or partial) whose day, week, or month falls in the quarter (`taskTouchesQuarter`). Missed, cancelled, deferred, and done stay off the list and out of the season estimate. |
+
+## Rituals on this day
+
+The day lens lists each calendar-anchored rite on the day it belongs to. The rows are derived (`lib/ritual-todo.ts`). They are not stored tasks, so they stay off the week, month, and season lenses, off **Open list**, and off Push, Delete, and Missed. **Open** (or the name) opens the same walk as Header → Rituals (`RitualWalkDialog`). Submitting the rite moves the row to **Done** for that day. A draft stays on the open list.
+
+They sit at the top of **Assigned**, after any prioritized tasks, in this order: Morning, Night, then the period anchors, then Star Lord. The week is Monday–Sunday, the same week `getWeekString` already uses.
+
+| Rite | Day |
+|------|-----|
+| Morning ritual | Every calendar day |
+| Night ritual | Every calendar day |
+| Start of week ritual | Monday |
+| End of week ritual | Sunday |
+| Start of month ritual | The 1st |
+| End of month ritual | The last civil day (28, 29, 30, or 31) |
+| Start of season ritual | 1 Jan, 1 Apr, 1 Jul, 1 Oct |
+| End of season ritual | 31 Mar, 30 Jun, 30 Sep, 31 Dec |
+| Start of year ritual | 1 January |
+| End of year ritual | 31 December |
+| Star Lord ritual · New moon | The local day that contains the new moon |
+| Star Lord ritual · Full moon | The local day that contains the full moon (the mid-month rite; not the civil 15th) |
+| Star Lord ritual · Birthday | The birthday in Settings. A Feb 29 birthday falls on 1 March in a common year |
+
+A day can carry more than one. 1 January is morning, night, start of month, start of season, and start of year. A birthday on a moon day is two Star Lord rows. There is no separate weekday schedule beyond Monday and Sunday, and no civil mid-month rite.
+
+The Rituals menu is a different list. It keeps the current period's start available all period, the just-ended review after the period closes, and one extra day for yesterday's night and an undone Star Lord report. To Do does not repeat a rite on those later days.
 
 ## Inbox over 100
 

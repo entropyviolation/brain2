@@ -45,6 +45,7 @@ import {
   parseWakeTime,
   sleepMinutes,
 } from "@/lib/sleep-log"
+import { sleepClockEstimateBasis, type SleepClockSource } from "@/lib/estimated-values"
 import { itemTitle } from "@/lib/item-utils"
 import { createScheduledTodoTask, getTierFromTask } from "@/components/Home/ToDo/todo-utils"
 import { taskIsPrioritized, taskIsRequired, tasksWithCommitment } from "@/lib/todo-commitment"
@@ -379,6 +380,23 @@ export function MorningReviewDialog({
     paintedNight?.wokeMin
   const knownBedtime = loggedNight?.sleptMin ?? paintedNight?.sleptMin
 
+  const bedSource: SleepClockSource | null =
+    loggedNight?.sleptMin !== undefined
+      ? (loggedNight.sleptPrecision ?? "estimated") === "estimated"
+        ? "remembered"
+        : null
+      : paintedNight?.sleptMin !== undefined
+        ? "painted"
+        : null
+  const wakeSource: SleepClockSource | null =
+    loggedNight?.wokeMin !== undefined
+      ? (loggedNight.wokePrecision ?? "estimated") === "estimated"
+        ? "remembered"
+        : null
+      : paintedNight?.wokeMin !== undefined
+        ? "painted"
+        : null
+
   // Finished review wins; else same-day session draft; else clean. Live sleep
   // clocks always layer on top so a stale draft cannot mask the sleep log / grid.
   const seed = useMemo(() => {
@@ -394,6 +412,8 @@ export function MorningReviewDialog({
   const [allNighter, setAllNighterLocal] = useState(seed.allNighter)
   const [wakeTime, setWakeTime] = useState(seed.wakeTime)
   const [bedTime, setBedTime] = useState(seed.bedTime)
+  const [bedEstSource, setBedEstSource] = useState<SleepClockSource | null>(bedSource)
+  const [wakeEstSource, setWakeEstSource] = useState<SleepClockSource | null>(wakeSource)
   const [dream, setDream] = useState(seed.dream)
   const [affirmations, setAffirmations] = useState<string[]>(seed.affirmations)
   const [newTodoLines, setNewTodoLines] = useState<string[]>(seed.newTodoLines)
@@ -441,6 +461,8 @@ export function MorningReviewDialog({
     setAllNighterLocal(next.allNighter)
     setWakeTime(next.wakeTime)
     setBedTime(next.bedTime)
+    setBedEstSource(bedSource)
+    setWakeEstSource(wakeSource)
     setDream(next.dream)
     setAffirmations(next.affirmations)
     setNewTodoLines(next.newTodoLines)
@@ -635,8 +657,16 @@ export function MorningReviewDialog({
         setAllNighter(dayKey, true, { at: now.toISOString(), source: "desktop" })
       } else {
         setAllNighter(dayKey, false)
-        setStoreWakeTime(dayKey, wakeTime.trim() ? parseWakeTime(wakeTime) : undefined)
-        setStoreBedtime(dayKey, bedTime.trim() ? parseBedtime(bedTime) : undefined)
+        setStoreWakeTime(
+          dayKey,
+          wakeTime.trim() ? parseWakeTime(wakeTime) : undefined,
+          wakeTime.trim() ? (wakeEstSource ? "estimated" : "definite") : undefined,
+        )
+        setStoreBedtime(
+          dayKey,
+          bedTime.trim() ? parseBedtime(bedTime) : undefined,
+          bedTime.trim() ? (bedEstSource ? "estimated" : "definite") : undefined,
+        )
       }
 
       const allPriority = priorityIds.filter((id, i, arr) => arr.indexOf(id) === i)
@@ -840,16 +870,56 @@ export function MorningReviewDialog({
             <>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label className="font-semibold text-sm" htmlFor="morning-bedtime">
-                    Fell asleep
-                  </Label>
-                  <ClockPicker id="morning-bedtime" value={bedTime} onChange={setBedTime} />
+                  <div className="flex items-center justify-between gap-2">
+                    <Label className="font-semibold text-sm" htmlFor="morning-bedtime">
+                      Fell asleep
+                    </Label>
+                    {bedEstSource ? (
+                      <span
+                        className="trk-est inline-flex items-center rounded px-1.5 py-px text-[10px] font-medium uppercase tracking-wide"
+                        title={sleepClockEstimateBasis(bedEstSource, "asleep")}
+                      >
+                        est.
+                      </span>
+                    ) : null}
+                  </div>
+                  <div className={bedEstSource ? "flex items-center gap-1.5" : undefined}>
+                    {bedEstSource ? <span className="text-sm font-bold text-slate-600" aria-hidden>~</span> : null}
+                    <ClockPicker
+                      id="morning-bedtime"
+                      value={bedTime}
+                      onChange={(v) => {
+                        setBedEstSource(null)
+                        setBedTime(v)
+                      }}
+                    />
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="font-semibold text-sm" htmlFor="morning-waketime">
-                    Wake time
-                  </Label>
-                  <ClockPicker id="morning-waketime" value={wakeTime} onChange={setWakeTime} />
+                  <div className="flex items-center justify-between gap-2">
+                    <Label className="font-semibold text-sm" htmlFor="morning-waketime">
+                      Wake time
+                    </Label>
+                    {wakeEstSource ? (
+                      <span
+                        className="trk-est inline-flex items-center rounded px-1.5 py-px text-[10px] font-medium uppercase tracking-wide"
+                        title={sleepClockEstimateBasis(wakeEstSource, "awake")}
+                      >
+                        est.
+                      </span>
+                    ) : null}
+                  </div>
+                  <div className={wakeEstSource ? "flex items-center gap-1.5" : undefined}>
+                    {wakeEstSource ? <span className="text-sm font-bold text-slate-600" aria-hidden>~</span> : null}
+                    <ClockPicker
+                      id="morning-waketime"
+                      value={wakeTime}
+                      onChange={(v) => {
+                        setWakeEstSource(null)
+                        setWakeTime(v)
+                      }}
+                    />
+                  </div>
                 </div>
                 <p className="col-span-2 -mt-1 text-xs text-muted-foreground">{nightSummary}</p>
               </div>

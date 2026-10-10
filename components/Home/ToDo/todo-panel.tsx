@@ -50,6 +50,10 @@ import { openPeriodTodoList, periodTodoListName } from "@/lib/scheduled-lists-sy
 import { usePersistedTab } from "@/lib/use-persisted-tab"
 import { effectiveStatus, isOpen, withStatus } from "@/lib/completion-status"
 import { localDayKey, useReviewsStore } from "@/lib/reviews-store"
+import { useStarLordStore } from "@/lib/star-lord-store"
+import { isRitualTodoId, ritualDayBoard } from "@/lib/ritual-todo"
+import type { RitualTodoPlacement } from "@/lib/ritual-todo"
+import { RitualWalkDialog } from "@/components/Reviews/RitualWalkDialog"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
 import {
   buildTodoItems,
@@ -135,6 +139,9 @@ export function TodoPanel({
 } = {}) {
   usePenActionSync()
   const tasks = useTaskStore((s) => s.tasks)
+  const reviews = useReviewsStore((s) => s.reviews)
+  const starReports = useStarLordStore((s) => s.reports)
+  const birthday = useUserSettingsStore((s) => s.birthday)
   const updateTask = useTaskStore((s) => s.updateTask)
   const deleteTask = useTaskStore((s) => s.deleteTask)
   const addTask = useTaskStore((s) => s.addTask)
@@ -144,6 +151,7 @@ export function TodoPanel({
   const updatePriorityWeights = useTaskStore((s) => s.updatePriorityWeights)
   const [todoItems, setTodoItems] = useState<TodoItem[]>([])
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
+  const [ritualWalk, setRitualWalk] = useState<RitualTodoPlacement | null>(null)
   const [justStartTaskId, setJustStartTaskId] = useState<string | null>(null)
   const [activeTodoTab, setActiveTodoTab] = usePersistedTab(APP_NAV_KEYS.homeTodoTab, TODO_TABS, "day")
   // Uncontrolled fallback for unit tests. The day sheet reads the prop itself
@@ -203,6 +211,10 @@ export function TodoPanel({
   const sheetScrollRef = useRef<HTMLDivElement | null>(null)
 
   const focusedDayKey = localDayKey(focusedDate)
+  const ritualBoard = useMemo(
+    () => ritualDayBoard(focusedDate, reviews, starReports, birthday),
+    [focusedDate, reviews, starReports, birthday],
+  )
   const morningPriorities = useReviewsStore(
     (s) => s.getMorningReview(focusedDayKey)?.priorityTaskIds ?? EMPTY_PRIORITY_IDS,
   )
@@ -224,22 +236,41 @@ export function TodoPanel({
         weights: priorityWeights,
       })
     }
+    const riteItems = buildTodoItems(ritualBoard.tasks, true, focusedDate)
+    const riteScheduled = filterAndSortTodos(riteItems, "day", true, focusedDate)
+    const riteById = new Map(riteScheduled.map((item) => [item.id, item]))
+    const riteView = [...tasks, ...ritualBoard.tasks]
+    const dayRites = filterTodosAvailableNow(
+      filterTodosByStatus(
+        ritualBoard.tasks.flatMap((task) => {
+          const item = riteById.get(task.id)
+          return item ? [item] : []
+        }),
+        riteView,
+        statusFilter,
+      ),
+      riteView,
+      availableNow,
+    )
     return {
-      day: order("day"),
+      day: [...dayRites, ...order("day")],
       week: order("week"),
       month: order("month"),
     } satisfies Record<TodoPeriod, TodoItem[]>
-  }, [todoItems, showAllTasks, statusFilter, availableNow, sortMode, sortOrder, tasks, priorityWeights, focusedDate])
+  }, [todoItems, showAllTasks, statusFilter, availableNow, sortMode, sortOrder, tasks, priorityWeights, focusedDate, ritualBoard])
 
   const wipWarning = formatWipWarning(countInProgress(tasks), wipLimit)
 
   const doneByPeriod = useMemo(
     () => ({
-      day: buildDoneTodoItems(tasks, "day", focusedDate, folders),
+      day: [
+        ...buildDoneTodoItems(ritualBoard.tasks, "day", focusedDate, folders),
+        ...buildDoneTodoItems(tasks, "day", focusedDate, folders),
+      ],
       week: buildDoneTodoItems(tasks, "week", focusedDate, folders),
       month: buildDoneTodoItems(tasks, "month", focusedDate, folders),
     }),
-    [tasks, focusedDate, folders],
+    [tasks, focusedDate, folders, ritualBoard],
   )
 
   const missedByPeriod = useMemo(
@@ -358,7 +389,17 @@ export function TodoPanel({
     return window.matchMedia("(prefers-reduced-motion: reduce)").matches
   }, [])
 
+  const openRitual = (todoId: string): boolean => {
+    if (!isRitualTodoId(todoId)) return false
+    const placement = ritualBoard.byId.get(todoId)
+    if (!placement) return false
+    setRitualWalk(placement)
+    setOpenRowId((id) => (id === todoId ? null : id))
+    return true
+  }
+
   const handleComplete = (todoId: string) => {
+    if (openRitual(todoId)) return
     const finish = () => {
       setTodoItems((items) => items.map((item) => (item.id === todoId ? { ...item, completed: true } : item)))
       const todo = todoItems.find((item) => item.id === todoId)
@@ -377,6 +418,7 @@ export function TodoPanel({
   }
 
   const handleRename = (todoId: string, description: string) => {
+    if (isRitualTodoId(todoId)) return
     const task = tasks.find((t) => t.id === todoId)
     if (!task) return
     updateTask({ ...task, description })
@@ -385,6 +427,7 @@ export function TodoPanel({
   const [reasonAsk, setReasonAsk] = useState<{ subject: string; apply: (reason: StoredBlockedReason | undefined) => void } | null>(null)
 
   const handleMissed = (todoId: string) => {
+    if (isRitualTodoId(todoId)) return
     const todo = todoItems.find((item) => item.id === todoId)
     const taskId = todo?.taskId ?? todoId
     const task = tasks.find((row) => row.id === taskId)
@@ -401,6 +444,7 @@ export function TodoPanel({
   }
 
   const handleTierChange = (todoId: string, tier: TodoItem["tier"]) => {
+    if (isRitualTodoId(todoId)) return
     setTodoItems((items) => items.map((item) => (item.id === todoId ? { ...item, tier } : item)))
     const todo = todoItems.find((item) => item.id === todoId)
     const task = tasks.find((t) => t.id === (todo?.taskId ?? todoId))
@@ -408,6 +452,7 @@ export function TodoPanel({
   }
 
   const handlePush = (todoId: string, period: TodoPeriod) => {
+    if (isRitualTodoId(todoId)) return
     const task = tasks.find((row) => row.id === todoId)
     setReasonAsk({
       subject: itemTitleOrUntitled(task),
@@ -416,6 +461,7 @@ export function TodoPanel({
   }
 
   const handleDelete = (todoId: string) => {
+    if (isRitualTodoId(todoId)) return
     deleteTask(todoId)
   }
 
@@ -453,8 +499,13 @@ export function TodoPanel({
   }
 
   const getStatus = (todoId: string): CompletionStatus => {
-    const task = tasks.find((t) => t.id === todoId)
+    const task = tasks.find((t) => t.id === todoId) ?? ritualBoard.tasks.find((t) => t.id === todoId)
     return task ? effectiveStatus(task) : "active"
+  }
+
+  const openTask = (todoId: string) => {
+    if (openRitual(todoId)) return
+    setSelectedTaskId(todoId)
   }
 
   // Persist a richer completion status, keeping `completed` in sync via the
@@ -478,6 +529,7 @@ export function TodoPanel({
   }
 
   const handleStatusChange = (todoId: string, status: CompletionStatus) => {
+    if (isRitualTodoId(todoId)) return
     const task = tasks.find((t) => t.id === todoId)
     if (!task) return
     // `withStatus` flips `completed`; the store stamps/clears `completedDate`.
@@ -522,9 +574,13 @@ export function TodoPanel({
       onStepsChange: handleSteps,
       stepsOf: (todoId: string) => taskFor(todoId)?.subtasks,
       estimateOf: (todoId: string) => taskFor(todoId)?.estimatedDuration,
-      onTaskClick: setSelectedTaskId,
+      onTaskClick: openTask,
       onTierChange: handleTierChange,
-      onJustStart: setJustStartTaskId,
+      onJustStart: (taskId: string) => {
+        if (openRitual(taskId)) return
+        setJustStartTaskId(taskId)
+      },
+      isWalkRow: isRitualTodoId,
       getStatus,
       onStatusChange: handleStatusChange,
       isRequired: requiredOf,
@@ -770,7 +826,7 @@ export function TodoPanel({
           pushTitle={undonePushTitle(period, focusedDate)}
           open={undoneSectionsOpen[period]}
           onOpenChange={(open) => setUndoneSectionsOpen((prev) => ({ ...prev, [period]: open }))}
-          onTaskClick={setSelectedTaskId}
+          onTaskClick={openTask}
           onAssimilate={(taskId) => resolveUndone(taskId, period, "assimilate")}
           onPush={(taskId) => resolveUndone(taskId, period, "push")}
           onDiscard={(taskId) => resolveUndone(taskId, period, "discard")}
@@ -783,7 +839,7 @@ export function TodoPanel({
         period={period}
         open={doneSectionsOpen[period]}
         onOpenChange={(open) => setDoneSectionsOpen((prev) => ({ ...prev, [period]: open }))}
-        onTaskClick={setSelectedTaskId}
+        onTaskClick={openTask}
         onAddDone={handleAddDone}
         onConfirmTimes={handleConfirmTimes}
       />
@@ -794,7 +850,7 @@ export function TodoPanel({
         period={period}
         open={missedSectionsOpen[period]}
         onOpenChange={(open) => setMissedSectionsOpen((prev) => ({ ...prev, [period]: open }))}
-        onTaskClick={setSelectedTaskId}
+        onTaskClick={openTask}
       />
       </div>
     </div>
@@ -1221,6 +1277,7 @@ export function TodoPanel({
       </div>
 
       <TaskDetailPopup taskId={selectedTaskId} open={!!selectedTaskId} onClose={() => setSelectedTaskId(null)} />
+      <RitualWalkDialog placement={ritualWalk} onClose={() => setRitualWalk(null)} />
       <MissReasonDialog
         open={reasonAsk !== null}
         subject={reasonAsk?.subject ?? ""}

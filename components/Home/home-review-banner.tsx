@@ -3,6 +3,7 @@
  *
  * Compact square on the Home overview strip. Lists available/undone rituals
  * and opens the matching end ritual (or points at Header → Rituals).
+ * Start / Dismiss / Not now (ask tomorrow) share one key group.
  */
 "use client"
 
@@ -14,6 +15,19 @@ import { useStarLordStore } from "@/lib/star-lord-store"
 import { useUserSettingsStore } from "@/lib/user-settings-store"
 import { HomeWidgetDialog, TileHide, TileOpen } from "@/components/Home/home-widget-dialog"
 import type { ReviewPeriod } from "@/lib/types"
+import { addCalendarDays, formatLocalDateKey } from "@/lib/date-utils"
+import { persistKey, readAliasedLocal, writeAliasedLocal } from "@/lib/storage-keys"
+
+const RITUAL_SNOOZE_KEY = persistKey("rituals-snooze-until")
+
+function readRitualSnoozeUntil(): string | null {
+  if (typeof window === "undefined") return null
+  return readAliasedLocal(RITUAL_SNOOZE_KEY)
+}
+
+function writeRitualSnoozeUntil(dateKey: string): void {
+  writeAliasedLocal(RITUAL_SNOOZE_KEY, dateKey)
+}
 
 type HomeReviewBannerProps = {
   currentDate: Date
@@ -33,6 +47,7 @@ export function HomeReviewBanner({
   const starReports = useStarLordStore((s) => s.reports)
   const birthday = useUserSettingsStore((s) => s.birthday)
   const [dismissed, setDismissed] = useState(false)
+  const [snoozedUntil, setSnoozedUntil] = useState<string | null>(() => readRitualSnoozeUntil())
   const [open, setOpen] = useState(false)
 
   const available = useMemo(
@@ -48,8 +63,16 @@ export function HomeReviewBanner({
     [reviews, currentDate, starDue.length],
   )
   const first = available[0]
+  const dayKey = formatLocalDateKey(currentDate)
+  const snoozedForToday = Boolean(snoozedUntil && dayKey < snoozedUntil)
 
-  if (dismissed || pendingCount === 0) return null
+  const snoozeUntilTomorrow = () => {
+    const until = formatLocalDateKey(addCalendarDays(currentDate, 1))
+    writeRitualSnoozeUntil(until)
+    setSnoozedUntil(until)
+  }
+
+  if (dismissed || snoozedForToday || pendingCount === 0) return null
 
   const period = first?.periodTitle ?? starDue[0]?.title ?? ""
 
@@ -81,6 +104,14 @@ export function HomeReviewBanner({
           <button type="button" className="home-review-key" onClick={openFirst}>
             Open ritual
           </button>
+          <button
+            type="button"
+            className="home-review-key"
+            title="Hide until tomorrow"
+            onClick={snoozeUntilTomorrow}
+          >
+            Not now
+          </button>
           <button type="button" className="home-review-key" onClick={() => setDismissed(true)}>
             Dismiss
           </button>
@@ -91,11 +122,11 @@ export function HomeReviewBanner({
 
   return (
     <>
-      <div className="home-tile is-review home-review-banner" data-widget="review">
+      <div className="home-tile is-review is-hero home-review-banner" data-widget="review">
         {onHide && <TileHide id="review" onHide={onHide} />}
         <TileOpen label="Rituals" onOpen={() => setOpen(true)}>
           <div className="hab-score-caption">
-            <span>Rituals due</span>
+            <span>Rituals</span>
           </div>
           <div className="hab-score-readout" data-centered="true">
             {pendingCount}
@@ -104,6 +135,14 @@ export function HomeReviewBanner({
         <div className="home-review-actions">
           <button type="button" className="home-review-key" onClick={openFirst}>
             Open
+          </button>
+          <button
+            type="button"
+            className="home-review-key"
+            title="Ask tomorrow"
+            onClick={snoozeUntilTomorrow}
+          >
+            Not now
           </button>
           <button type="button" className="home-review-key" onClick={() => setDismissed(true)}>
             Dismiss

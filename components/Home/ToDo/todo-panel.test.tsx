@@ -702,4 +702,36 @@ describe("TodoPanel", () => {
     }
     expect(document.querySelector(".todo-period-nav span")).toHaveTextContent("Quarter 2026 Q3 (Fall)")
   })
+
+  it("shows the week's rites on Sunday and Monday, and the month's rites on the first and last day", () => {
+    const sunday = new Date(2026, 9, 11, 12, 0, 0)
+    const { rerender } = render(<TodoPanel currentDate={sunday} setCurrentDate={vi.fn()} />)
+    const assigned = () => screen.getByRole("region", { name: "Assigned" })
+    expect(within(assigned()).getByText("End of week ritual")).toBeInTheDocument()
+    expect(within(assigned()).queryByText("Start of week ritual")).not.toBeInTheDocument()
+    expect(within(assigned()).getByText("Morning ritual")).toBeInTheDocument()
+    expect(within(assigned()).getByText("Night ritual")).toBeInTheDocument()
+
+    const monday = new Date(2026, 9, 12, 12, 0, 0)
+    rerender(<TodoPanel currentDate={monday} setCurrentDate={vi.fn()} />)
+    expect(within(assigned()).getByText("Start of week ritual")).toBeInTheDocument()
+    expect(within(assigned()).queryByText("End of week ritual")).not.toBeInTheDocument()
+
+    rerender(<TodoPanel currentDate={new Date(2026, 9, 1, 12)} setCurrentDate={vi.fn()} />)
+    expect(within(assigned()).getByText("Start of month ritual")).toBeInTheDocument()
+    expect(within(assigned()).getByText("Start of season ritual")).toBeInTheDocument()
+    expect(within(assigned()).queryByText("End of month ritual")).not.toBeInTheDocument()
+
+    rerender(<TodoPanel currentDate={new Date(2026, 9, 31, 12)} setCurrentDate={vi.fn()} />)
+    expect(within(assigned()).getByText("End of month ritual")).toBeInTheDocument()
+    expect(within(assigned()).queryByText("Start of month ritual")).not.toBeInTheDocument()
+
+    rerender(<TodoPanel currentDate={new Date(2026, 9, 10, 12)} setCurrentDate={vi.fn()} />)
+    expect(within(assigned()).getByText("Star Lord ritual · New moon")).toBeInTheDocument()
+    expect(within(assigned()).queryByText("End of week ritual")).not.toBeInTheDocument()
+
+    const row = screen.getByText("Star Lord ritual · New moon").closest(".todo-row") as HTMLElement
+    fireEvent.click(within(row).getByRole("button", { name: "Open" }))
+    expect(screen.getByRole("dialog")).toHaveAttribute("data-ui-name", "Star Lord Report")
+  })
 })

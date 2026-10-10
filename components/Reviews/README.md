@@ -13,8 +13,9 @@ data opens unchanged. User-facing copy is Rituals.
 
 Other rooms may import:
 
-- `Reviews` from `reviews.tsx` — header Rituals control (`Rituals` is the same component). The pin bar mounts it (`components/AppHeader.tsx`). The mobile shell mounts it (`components/Mobile/MobileApp.tsx`).
+- `Reviews` from `reviews.tsx` — header Rituals control (`Rituals` is the same component). The pin bar keeps a thin key (`components/header-doors.tsx`) and loads this room the first time that key is pressed; the next press opens the menu. The mobile shell mounts it (`components/Mobile/MobileApp.tsx`).
 - `PostMortemDialog` from `PostMortemDialog.tsx` — Analytics opens a task reflection (`components/Analytics/ReflectionView.tsx`).
+- `RitualWalkDialog` from `RitualWalkDialog.tsx` — Home → To Do opens the rite for that calendar day.
 
 This room writes **`lib/reviews-store.ts`** (`useReviewsStore`: `saveReview`, `replaceMorningReview`, `replaceStartRitual`). `PostMortemDialog` saves the task reflection through `saveCompletionReview` in `lib/services/completion-service.ts`.
 
@@ -27,6 +28,7 @@ This room also writes **`lib/star-lord-store.ts`** for the three Star Lord Repor
 | File | Purpose |
 |------|---------|
 | `reviews.tsx` | `Rituals` header button (`Reviews` alias) — day sun/moon + **prior-day night** + period Start/Review; **Star Lord Report** on the local new moon, full moon, and birthday; `ReviewDialog` (`data-ui-name="Period review"`) for night/end; `.hpp95` shell |
+| `RitualWalkDialog.tsx` | Opens the same morning, start, end, or Star Lord dialog from a Home → To Do row |
 | `StarLordReportDialog.tsx` | Star Lord Report (`data-ui-name="Star Lord Report"`). Preparation, three ledger questions, three inner-alchemy questions, closing. New moon is at home, facing north. Close saves a draft. Save awards section points plus the whole-ritual bonus |
 | `StartRitualDialog.tsx` | Start / planning ritual for week–year (`data-ui-name="Start ritual"`): undone from last period, priorities, must-dos, **mark assigned tasks** required / prioritized, intentions, plan, gratitude |
 | `MorningReview.tsx` | `MorningReviewDialog` (`data-ui-name="Morning review"`) — day morning (sun) ritual (HM2); same answers as text `gm` |
@@ -42,8 +44,9 @@ This room also writes **`lib/star-lord-store.ts`** for the three Star Lord Repor
 
 ## Entry point
 
-Rendered in the `AppHeader` pin bar (`app/page.tsx`) in the **Rituals** group,
-beside System and Capture.
+The pin-bar Rituals key (`header-doors.tsx`) loads this room the first time it
+is pressed. The next press opens the menu. The key sits in the **Rituals** group,
+beside System and Capture. The mobile shell still mounts `Reviews` directly.
 
 - **Rituals** opens a menu of every period. Badge = count of available/undone
   slots (`lib/rituals.ts` → `countAvailableRituals`), plus an open Star Lord Report.
@@ -65,6 +68,30 @@ Legacy rows without `endCompleted` still count as end-done when they have end
 body content, or when they are empty shells with no morning/start (old Save
 Review). A morning-only or start-only shell does **not** mark the end ritual done.
 
+## To Do day
+
+Home → To Do, on the **day** lens, lists each rite on its calendar day
+(`lib/ritual-todo.ts`). Monday is start of week. Sunday is end of week. That
+is the Monday–Sunday week the rest of the app already stores (`getWeekString`),
+chosen again here because the day of the rite should be the day you can point
+at. End of month is the last civil day of that month, including 29 February.
+Start of month is the 1st. Season start is the first day of the quarter
+(1 Jan, 1 Apr, 1 Jul, 1 Oct). Season end is the last day (31 Mar, 30 Jun,
+30 Sep, 31 Dec). Year start is 1 January. Year end is 31 December. Morning
+and Night are every day.
+
+**Star Lord ritual** is the named rite. It lands on the local day of the new
+moon, the local day of the full moon, and the birthday. The full moon is the
+mid-month rite. There is no separate civil 15th. A Feb 29 birthday falls on
+1 March in a common year, the same rule as the menu. There is no other
+weekday schedule.
+
+The menu above stays what it is: the current start all period, the just-ended
+review after the period closes, and one extra day for yesterday's night and
+an undone Star Lord report. To Do does not show those on the wrong day. A
+submitted rite is **Done** for its day. Opening the row opens this room's
+dialog (`RitualWalkDialog`). The row is not a stored task.
+
 ## Morning ritual (HM2)
 
 Same flow as before — see historical morning steps in this README's morning
@@ -83,7 +110,7 @@ section below. Desktop and text `gm` share `replaceMorningReview`.
 
 ## Night / Review (end) flow (`ReviewDialog`)
 
-1. **Unfinished items** — the ritual's own period, not "today". A past day uses the Undone ledger (`lib/ritual-unfinished.ts`), so work that rolled onto the next day still appears. Done completes in place. **Push** uses the Scheduler's `pushCardWorkingQueue` (`lib/ritual-push.ts`): the task is reassigned to the next open period and the row leaves this ritual. A failed push leaves the row. **Why blocked?** is optional. Presets stay the token. **Other** opens a text field; the words are stored with the token (`{ reason: "other", note }`). Spaces stay while typing; the saved note is trimmed. A blank Other stays the token `"other"`.
+1. **Unfinished items** — the ritual's own period, not "today". A past day uses the Undone ledger (`lib/ritual-unfinished.ts`), so work that rolled onto the next day still appears. Done completes in place. **Push** uses the Scheduler's `pushCardWorkingQueue` (`lib/ritual-push.ts`): the task is reassigned to the next open period and the row leaves this ritual. A failed push leaves the row. One shared **Why blocked?** (`WhyBlockedControl`) sits above the unfinished list and is applied on Push. Presets stay the token. **Other** opens a text field; the words are stored with the token (`{ reason: "other", note }`). Spaces stay while typing; the saved note is trimmed. A blank Other stays the token `"other"`.
 2. **Assumed times** — correct or confirm. Optional **Est.** (`Task.timeRough`) means the duration or the start (or both) is a rough estimate. It stays on the task and shows on Done rows.
 3. **This period** (week, month, season, year — not night) — missed points, points vs last period, the habit grade for that span vs the previous one (weeks listed inside a month or season; months inside a year), daily habits never done in the span, and a tracking breakdown by the scopes already on the desk (activity, location, and the rest). Then the longer reflection (`PeriodReview.arc`).
 4. **How the day was spent** (night only) — time grid, day log, and activity log for that date, plus a short note (`timeReflection`). Day-log colors are the pen colors.
@@ -93,7 +120,7 @@ section below. Desktop and text `gm` share `replaceMorningReview`.
 8. **Goals to focus on tomorrow** (night only) — `tomorrowFocusGoalIds`. Tasks that serve those goals (or their objectives) are listed first in the next morning and are more likely to be suggested. Points use the goal-focus multiplier (Settings → Points → Points rules, default 1.5×). If an objective multiplier already boosts the task, the larger one is kept — they are not multiplied together. Beat-the-clock stays inside the base.
 9. **Tomorrow's plan** — the prompt is "make a plan for tomorrow". The plan log and tomorrow's to-dos stay.
 
-**Close** (X or Close) saves a draft (`endCompleted: false` unless the ritual was already submitted) and awards no points. The longer answers restore on reopen. **Save Night ritual** / **Save Review ritual** submits it as done and awards points.
+**Close** is a text link (`.hpp-link-close`); it saves a draft (`endCompleted: false` unless the ritual was already submitted) and awards no points. The longer answers restore on reopen. Primary **Save** submits it as done and awards points.
 
 Points (`lib/ritual-points.ts`, edited in Settings → **Points** → **Points rules**): **10** per section actually filled or confirmed, plus **30** for submitting the whole ritual. Vacuous sections (nothing unfinished, nothing assumed) count. Optional blanks do not. Each answered reflection question counts on its own, including each filled arc question on a week, month, season, or year. A photo with no caption counts as the inspiration question. Fear and its reframe are one question. The stats panel is not a question. Night does not score `arc`. Re-saving replaces that ritual's ledger row (`ritual:{period}:{key}`) instead of stacking.
 
