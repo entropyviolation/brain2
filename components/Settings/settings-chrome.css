@@ -553,3 +553,281 @@
   gap: 14px 18px;
   padding: 0 2px;
 }
+
+/* ---- Settings instrument: find + index + grouped body -------------------- */
+/* Scoped to the main Settings dialog so nested Item Types keeps a plain well. */
+
+.set95-settings .set-find {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin: 8px 0 0;
+  padding: 7px 10px;
+  border-radius: var(--r-3, 3px);
+  background: var(--s-mill);
+  box-shadow: var(--s-bay-ring);
+}
+
+.set95-settings .set-find input {
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  padding: 0 8px;
+  font-size: 13px;
+  letter-spacing: 0.01em;
+}
+
+.set95-settings .set-find-key {
+  flex-shrink: 0;
+  min-width: 18px;
+  padding: 2px 6px;
+  border-radius: var(--r-2, 2px);
+  font-family: ui-monospace, "Cascadia Code", "Courier New", monospace;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  color: var(--s-nameplate);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  background: var(--s-key-face);
+  box-shadow: var(--s-key-ring);
+  pointer-events: none;
+}
+
+.set95-settings .set-find:focus-within .set-find-key {
+  color: var(--s-crt);
+  text-shadow: var(--s-crt-glow);
+  background: var(--s-crt-glass);
+  box-shadow: var(--s-crt-ring);
+}
+
+.set95-settings .set-deck {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 8px;
+  min-height: 0;
+  margin-top: 8px;
+}
+
+.set95-settings .set-rail {
+  display: flex;
+  flex: 0 0 196px;
+  flex-direction: column;
+  gap: 6px;
+  width: 196px;
+  min-height: 0;
+  padding: 6px;
+  border-radius: var(--r-3, 3px);
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
+    var(--s-surface);
+  box-shadow: var(--s-sunken);
+}
+
+.set95-settings .set-group-select {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 2px;
+}
+
+.set95-settings .set-group-select select {
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  padding: 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.set95-settings .set-rail-list {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.set95-settings .set-rail-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.set95-settings .set-rail-group + .set-rail-group {
+  margin-top: 6px;
+}
+
+/* Beat the fascia key face (.set95 button:not(...), !important). */
+.set95.set95-settings .set-rail button.set-rail-groupname,
+.set95.set95-settings .set-rail button.set-rail-section {
+  width: 100%;
+  padding: 4px 8px;
+  text-align: left;
+  line-height: 1.35;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  font-weight: 700;
+  background: transparent !important;
+  box-shadow: none !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+.set95.set95-settings .set-rail button.set-rail-groupname:hover,
+.set95.set95-settings .set-rail button.set-rail-section:hover {
+  background: rgba(255, 255, 255, 0.38) !important;
+}
+
+.set95.set95-settings .set-rail button:focus-visible {
+  outline: 1px dotted #000080;
+  outline-offset: -2px;
+}
+
+.set95.set95-settings .set-rail button.set-rail-groupname {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 6px 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--s-nameplate) !important;
+}
+
+.set95.set95-settings .set-rail button.set-rail-groupname[data-current="true"]::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 30%, #e8fff4, var(--s-crt) 46%, #0a3a28 78%);
+  box-shadow:
+    0 0 0 1px #1a3a2a,
+    0 0 5px rgba(125, 255, 196, 0.75);
+}
+
+.set95.set95-settings .set-rail button.set-rail-section {
+  width: calc(100% - 8px);
+  margin-left: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #1c1e20 !important;
+}
+
+.set95.set95-settings .set-rail button.set-rail-section[aria-current="location"],
+.set95.set95-settings .set-rail button.set-rail-section[aria-current="location"]:hover {
+  color: var(--s-crt) !important;
+  text-shadow: var(--s-crt-glow);
+  background: var(--s-crt-glass) !important;
+  box-shadow: var(--s-crt-ring) !important;
+}
+
+.set95-settings .set-body {
+  gap: 16px;
+  min-width: 0;
+}
+
+.set95-settings .set-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.set95-settings .set-group-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 2px 2px 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--s-nameplate);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.set95-settings .set-group-title::after {
+  content: "";
+  flex: 1;
+  height: 0;
+  border-top: 1px solid rgba(40, 42, 46, 0.35);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+.set95-settings .set-section {
+  min-width: 0;
+}
+
+.set95-settings .set-section[hidden],
+.set95-settings .set-group[hidden] {
+  display: none !important;
+}
+
+.set95-settings .set-empty {
+  margin: 12px 4px;
+  padding: 16px 12px;
+  border-radius: var(--r-3, 3px);
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--s-nameplate);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
+  background: var(--s-mill);
+  box-shadow: var(--s-bay-ring);
+}
+
+@media (max-width: 719px) {
+  .set95-settings .set-deck {
+    flex-direction: column;
+  }
+
+  .set95-settings .set-rail {
+    flex: 0 0 auto;
+    width: auto;
+    overflow: visible;
+  }
+
+  .set95-settings .set-group-select {
+    display: flex;
+  }
+
+  .set95-settings .set-rail-list {
+    flex: 0 0 auto;
+    flex-direction: row;
+    gap: 4px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 2px;
+  }
+
+  .set95-settings .set-rail-group {
+    flex-direction: row;
+    flex-shrink: 0;
+    gap: 4px;
+  }
+
+  .set95-settings .set-rail-group + .set-rail-group {
+    margin-top: 0;
+  }
+
+  .set95.set95-settings .set-rail button.set-rail-groupname {
+    display: none !important;
+  }
+
+  .set95.set95-settings .set-rail button.set-rail-section {
+    width: auto;
+    margin-left: 0;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+}

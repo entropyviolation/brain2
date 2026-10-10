@@ -1,9 +1,13 @@
 /**
  * components/Settings/panel-preview.ts — Timed-shift preview on the settings dialog
  *
- * A timed shift lerps only inside `.set95-dialog`. Root tokens stay on the
- * previous chrome until the interval ends (`appDriftPosition` in the painter).
- * Clearing the inline properties hands the dialog back to `:root`.
+ * A timed shift lerps only inside the settings `.set95-dialog` that contains
+ * the field (`closest`, so a list-settings dialog does not receive it). Root
+ * tokens stay on the previous chrome until the interval ends
+ * (`appDriftPosition` in the painter). `.set95-drift-preview` lets that one
+ * panel ease between samples. Other dialogs do not ease chrome colors
+ * (`transition-property: none` in `app/win95.css`). Clearing the inline
+ * properties hands the dialog back to `:root`.
  */
 "use client"
 
@@ -22,6 +26,14 @@ function settingsDialog(node: HTMLElement | null): HTMLElement | null {
   return node?.closest<HTMLElement>(".set95-dialog") ?? null
 }
 
+/** Mark only this settings dialog so its own face may ease between preview samples. */
+function setDriftPreview(dialog: HTMLElement, key: "warmth" | "corner", on: boolean) {
+  dialog.toggleAttribute(key === "warmth" ? "data-warmth-preview" : "data-corner-preview", on)
+  const previewing =
+    dialog.hasAttribute("data-warmth-preview") || dialog.hasAttribute("data-corner-preview")
+  dialog.classList.toggle("set95-drift-preview", previewing)
+}
+
 /** Write the in-between warmth onto the settings dialog while `active`. */
 export function useWarmthPanelPreview(active: boolean, position: number) {
   const ref = useRef<HTMLDivElement>(null)
@@ -30,10 +42,15 @@ export function useWarmthPanelPreview(active: boolean, position: number) {
     if (!dialog) return
     if (!active) {
       clearProps(dialog, WARMTH_PROPS)
+      setDriftPreview(dialog, "warmth", false)
       return
     }
+    setDriftPreview(dialog, "warmth", true)
     applyChromePatina(dialog, position)
-    return () => clearProps(dialog, WARMTH_PROPS)
+    return () => {
+      clearProps(dialog, WARMTH_PROPS)
+      setDriftPreview(dialog, "warmth", false)
+    }
   }, [active, position])
   return ref
 }
@@ -46,10 +63,15 @@ export function useCornerPanelPreview(active: boolean, position: number) {
     if (!dialog) return
     if (!active) {
       clearProps(dialog, CORNER_PROPS)
+      setDriftPreview(dialog, "corner", false)
       return
     }
+    setDriftPreview(dialog, "corner", true)
     applyCornerMix(dialog, position)
-    return () => clearProps(dialog, CORNER_PROPS)
+    return () => {
+      clearProps(dialog, CORNER_PROPS)
+      setDriftPreview(dialog, "corner", false)
+    }
   }, [active, position])
   return ref
 }

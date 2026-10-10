@@ -1,28 +1,22 @@
 /**
  * components/Settings/PointAllocationField.tsx — Automatic point allocation
  *
- * Ritual section points, the whole-ritual bonus, and the tomorrow goal-focus
- * multiplier. Habit bonuses stay in Habits → Settings. Inbox (+1 / +50) and
- * schedule (+1) stay their own constants. Objective stacking stays on the
- * goal layer (default 1.5×, or a period priority). This bay is where the
- * ritual award and the focus multiplier are edited.
+ * A short bay and a button. The catalog itself is `PointsRulesDialog`:
+ * every global points rule, with the explanation of when it fires.
+ * Habit rows write the Habits → Settings fields. Ritual points and the
+ * goal-focus multiplier write the fields they already had.
  */
 "use client"
 
+import { useState } from "react"
 import { Trophy } from "lucide-react"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { useUserSettingsStore } from "@/lib/user-settings-store"
-import { DEFAULT_GOAL_FOCUS_MULTIPLIER } from "@/lib/goal-focus"
-import { DEFAULT_RITUAL_COMPLETION_BONUS, DEFAULT_RITUAL_SECTION_POINTS } from "@/lib/ritual-points"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogTrigger } from "@/components/ui/dialog"
+import { PointsRulesDialog } from "@/components/Settings/PointsRulesDialog"
 
 export function PointAllocationField() {
-  const sectionPoints = useUserSettingsStore((s) => s.ritualSectionPoints)
-  const setSectionPoints = useUserSettingsStore((s) => s.setRitualSectionPoints)
-  const bonus = useUserSettingsStore((s) => s.ritualCompletionBonus)
-  const setBonus = useUserSettingsStore((s) => s.setRitualCompletionBonus)
-  const focus = useUserSettingsStore((s) => s.goalFocusMultiplier)
-  const setFocus = useUserSettingsStore((s) => s.setGoalFocusMultiplier)
+  const [open, setOpen] = useState(false)
+  const [container, setContainer] = useState<HTMLElement | null>(null)
 
   return (
     <div className="space-y-3 rounded-lg border border-dashed p-4" data-ui-name="Automatic point allocation">
@@ -31,50 +25,27 @@ export function PointAllocationField() {
         <h3 className="font-semibold">Automatic point allocation</h3>
       </div>
       <p className="text-sm text-muted-foreground">
-        Submitting a ritual as done awards points for each section you actually filled or confirmed, plus a bonus
-        for finishing the whole ritual. Closing it saves a draft and awards nothing. Tasks that serve goals you
-        focus for tomorrow earn the focus multiplier — if an objective multiplier is already boosting that task,
-        the larger one is kept.
+        Every global point rule is in one list: when it fires, how the number is used, and whether saving it
+        rewrites points you already earned. Habit bonuses are in that list and still in Habits → Settings. Both
+        edit the same numbers.
       </p>
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div className="space-y-1.5">
-          <Label htmlFor="ritual-section-points">Per section</Label>
-          <Input
-            id="ritual-section-points"
-            type="number"
-            min={0}
-            step={1}
-            value={sectionPoints ?? DEFAULT_RITUAL_SECTION_POINTS}
-            onChange={(e) => setSectionPoints(Number(e.target.value))}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="ritual-completion-bonus">Whole ritual</Label>
-          <Input
-            id="ritual-completion-bonus"
-            type="number"
-            min={0}
-            step={1}
-            value={bonus ?? DEFAULT_RITUAL_COMPLETION_BONUS}
-            onChange={(e) => setBonus(Number(e.target.value))}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="goal-focus-multiplier">Goal focus</Label>
-          <Input
-            id="goal-focus-multiplier"
-            type="number"
-            min={1}
-            step={0.1}
-            value={focus ?? DEFAULT_GOAL_FOCUS_MULTIPLIER}
-            onChange={(e) => setFocus(Number(e.target.value))}
-          />
-        </div>
-      </div>
-      <p className="text-xs text-muted-foreground">
-        Defaults: {DEFAULT_RITUAL_SECTION_POINTS} per section, {DEFAULT_RITUAL_COMPLETION_BONUS} for the whole
-        ritual, {DEFAULT_GOAL_FOCUS_MULTIPLIER}× for tomorrow&apos;s focused goals.
-      </p>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={(event) => {
+              const host = event.currentTarget.closest(".set95-dialog")
+              setContainer(host instanceof HTMLElement ? host : null)
+            }}
+          >
+            <Trophy className="mr-2 h-4 w-4" />
+            Points rules
+          </Button>
+        </DialogTrigger>
+        <PointsRulesDialog container={container} />
+      </Dialog>
     </div>
   )
 }

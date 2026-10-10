@@ -1,7 +1,9 @@
 import { act, fireEvent, render, screen } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { ChromePatina } from "@/app/chrome-patina"
-import { DEFAULT_DRIFT_PERIOD_MS, DRIFT_PRESET_MS, phaseForPosition } from "@/lib/drift-clock"
+import { readFileSync } from "node:fs"
+import { resolve } from "node:path"
+import { appDriftPosition, DEFAULT_DRIFT_PERIOD_MS, DRIFT_PRESET_MS, phaseForPosition } from "@/lib/drift-clock"
 import { chromePatinaTokens } from "@/lib/chrome-patina"
 import { DEFAULT_CHROME_FACE, DEFAULT_CORNER_DRIFT, DEFAULT_WARMTH_DRIFT, useThemeStore } from "@/lib/theme-store"
 import { ChromeFaceField } from "./ChromeFaceField"
@@ -143,5 +145,80 @@ describe("ChromeFaceField", () => {
     expect(useThemeStore.getState().chromeFace).toBe(70)
     expect(document.documentElement.style.getPropertyValue("--chrome-face")).toBe(chromePatinaTokens(70)["--chrome-face"])
     expect(screen.getByTestId("settings-panel").style.getPropertyValue("--chrome-face")).toBe("")
+  })
+
+  it("mounting another popup leaves drift speed, pause, and the painted face alone", async () => {
+    vi.useFakeTimers()
+    let now = 1_000
+    vi.spyOn(Date, "now").mockImplementation(() => now)
+    const period = DRIFT_PRESET_MS["1d"]
+    useThemeStore.setState({
+      chromeFace: 50,
+      chromePhase: phaseForPosition(50, "towardHigh"),
+      chromeEpochMs: 1_000,
+      chromePeriodMs: period,
+      chromePaused: false,
+      chromeTransition: null,
+    })
+    render(
+      <div>
+        <div className="set95-dialog" data-testid="settings-panel">
+          <ChromeFaceField />
+          <ChromePatina />
+        </div>
+        <div className="set95-dialog" role="dialog" data-testid="other-popup" />
+      </div>,
+    )
+    const before = appDriftPosition(
+      {
+        anchor: 50,
+        phase: phaseForPosition(50, "towardHigh"),
+        epochMs: 1_000,
+        periodMs: period,
+        paused: false,
+        transition: null,
+      },
+      now,
+    )
+    now = 1_000 + 5_000
+    await act(async () => {
+      vi.advanceTimersByTime(1_000)
+    })
+    const state = useThemeStore.getState()
+    expect(state.chromePeriodMs).toBe(period)
+    expect(state.chromePaused).toBe(false)
+    expect(state.chromeTransition).toBeNull()
+    expect(appDriftPosition(
+      {
+        anchor: state.chromeFace,
+        phase: state.chromePhase,
+        epochMs: state.chromeEpochMs,
+        periodMs: state.chromePeriodMs,
+        paused: state.chromePaused,
+        transition: state.chromeTransition,
+      },
+      now,
+    )).toBeCloseTo(before, 1)
+    const other = screen.getByTestId("other-popup")
+    expect(other.style.getPropertyValue("--chrome-face")).toBe("")
+    expect(other.classList.contains("set95-drift-preview")).toBe(false)
+
+    fireEvent.click(screen.getByRole("radio", { name: "Timed" }))
+    fireEvent.change(screen.getByLabelText("Warmth"), { target: { value: "80" } })
+    fireEvent.click(screen.getByRole("button", { name: "Start warmth shift" }))
+    expect(useThemeStore.getState().chromePeriodMs).toBe(period)
+    expect(screen.getByTestId("settings-panel").classList.contains("set95-drift-preview")).toBe(true)
+    expect(other.classList.contains("set95-drift-preview")).toBe(false)
+    expect(other.style.getPropertyValue("--chrome-face")).toBe("")
+  })
+})
+
+describe("dialog chrome motion", () => {
+  it("turns off color transitions on dialogs so a popup cannot fade the face", () => {
+    const css = readFileSync(resolve(process.cwd(), "app/win95.css"), "utf8")
+    expect(css).toMatch(
+      /body\.win95-app :is\(\[role="dialog"\], \[role="alertdialog"\]\) \{\s*transition-property: none;/,
+    )
+    expect(css).toContain(".set95-dialog.set95-drift-preview")
   })
 })

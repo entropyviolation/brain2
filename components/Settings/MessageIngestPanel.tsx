@@ -3,7 +3,8 @@
  *
  * Token is stored in Electron safeStorage (never in localStorage). Pairing
  * allowlists a Telegram user. Simulate applies a phrase without Telegram.
- * Shortcuts expand first-word aliases (`store` → `groc`). Discrete event
+ * Shortcuts expand first-word aliases. Built-in `store` already dumps the live
+ * grocery list when the shortcut map is empty. Discrete event
  * triggers (smoked weed, ate {item}, …) are editable here. iPhone Notes /
  * Screen Time / Call / Text Shortcuts: AirDrop the signed
  * docs/shortcuts/*.shortcut files. See docs/MESSAGE_INGEST.md.
@@ -22,6 +23,8 @@ import { generatePairingCode, unpairedSenders } from "@/lib/ingest/pairing"
 import { sanitizeShortcutAlias } from "@/lib/ingest/expand"
 import { ingestIncoming, ingestIncomingAsync } from "@/lib/ingest/executor"
 import { useIngestStore } from "@/lib/ingest/ingest-store"
+import { isFolderAllItemsCategoryId } from "@/lib/folder-all-items"
+import { useTaskStore } from "@/lib/task-store"
 import { getTelegramDesktop } from "@/lib/ingest/telegram-bridge"
 import { normalizeHubUrl, pushVaultToHub } from "@/lib/ingest/vault-push"
 
@@ -42,6 +45,9 @@ export function MessageIngestPanel() {
   const shortcuts = useIngestStore((s) => s.shortcuts)
   const setShortcut = useIngestStore((s) => s.setShortcut)
   const removeShortcut = useIngestStore((s) => s.removeShortcut)
+  const groceryListId = useIngestStore((s) => s.groceryListId)
+  const setGroceryListId = useIngestStore((s) => s.setGroceryListId)
+  const lists = useTaskStore((s) => s.lists)
   const discreteEventTriggers = useIngestStore((s) => s.discreteEventTriggers)
   const upsertDiscreteEventTrigger = useIngestStore((s) => s.upsertDiscreteEventTrigger)
   const removeDiscreteEventTrigger = useIngestStore((s) => s.removeDiscreteEventTrigger)
@@ -197,7 +203,7 @@ export function MessageIngestPanel() {
         <code className="text-foreground">{"{prefix} commands"}</code> for one family, or{" "}
         <code className="text-foreground">all commands</code> for every keyword. Grocery dump is{" "}
         <code className="text-foreground">groc</code>; check-off is{" "}
-        <code className="text-foreground">got milk</code>; tracker notes are{" "}
+        <code className="text-foreground">got: milk</code> or a real open line; tracker notes are{" "}
         <code className="text-foreground">n …</code>. On My iPhone Notes use the iOS Shortcut →{" "}
         <code className="text-foreground">iphone-notes:</code> (header{" "}
         <span className="text-foreground">Phone Notes</span>). Every grocery dump pins a card in the chat so you
@@ -364,11 +370,35 @@ export function MessageIngestPanel() {
       </div>
 
       <div className="space-y-2">
+        <Label htmlFor="live-grocery-list">Live grocery list</Label>
+        <p className="text-xs text-muted-foreground">
+          <code className="text-foreground">groc</code> and bare <code className="text-foreground">store</code>{" "}
+          dump this list and pin it. Automatic picks a Grocery / Groceries / Shopping name. The shortcut
+          example <code className="text-foreground">store</code> → <code className="text-foreground">groc</code>{" "}
+          is optional — an empty shortcut map still understands <code className="text-foreground">store</code>.
+        </p>
+        <select
+          id="live-grocery-list"
+          aria-label="Live grocery list"
+          value={groceryListId ?? ""}
+          onChange={(e) => setGroceryListId(e.target.value || null)}
+        >
+          <option value="">Automatic (Grocery / Groceries / Shopping)</option>
+          {lists
+            .filter((list) => !isFolderAllItemsCategoryId(list.id))
+            .map((list) => (
+              <option key={list.id} value={list.id}>
+                {list.name}
+              </option>
+            ))}
+        </select>
+      </div>
+
+      <div className="space-y-2">
         <Label>Shortcuts</Label>
         <p className="text-xs text-muted-foreground">
-          First-word aliases. Example: <code className="text-foreground">store</code> →{" "}
-          <code className="text-foreground">groc</code> (bare <code className="text-foreground">g</code> is
-          retired).
+          First-word aliases you add yourself. Bare <code className="text-foreground">g</code> is retired.
+          Built-in <code className="text-foreground">store</code> already dumps the live grocery list.
         </p>
         <div className="flex gap-2">
           <Input

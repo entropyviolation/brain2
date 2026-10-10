@@ -6,6 +6,8 @@
  * `points-store`. Habit day scores use `upsertPoints` (replace by taskId+date)
  * so partial completion can be revised. `removePointsForTask` drops a task's
  * rows for one local day (used when the completion popup undoes a mark-done).
+ * `redatePoints` moves that task's rows from one local day to another when a
+ * finish is placed on a different date.
  * Dates are local `YYYY-MM-DD`.
  * "possible points" projections from not-yet-completed scheduled tasks (used by
  * the Home dashboard's Points Stats).
@@ -36,6 +38,8 @@ interface PointsStore {
   upsertPoints: (taskId: string, points: number, taskDescription: string, date?: Date) => void
   /** Drop ledger rows for a task on a given day (today when `date` is omitted). */
   removePointsForTask: (taskId: string, date?: Date) => void
+  /** Move one task's rows from one local day onto another. Same day is a no-op. */
+  redatePoints: (taskId: string, from: Date, to: Date) => void
   getTotalPoints: () => number
   getDayPoints: (date: Date) => number
   getWeekPoints: (date: Date) => number
@@ -81,6 +85,17 @@ export const usePointsStore = create<PointsStore>()(
         const dateKey = formatLocalDateKey(date)
         set((state) => ({
           pointsHistory: state.pointsHistory.filter((e) => !(e.taskId === taskId && e.date === dateKey)),
+        }))
+      },
+
+      redatePoints: (taskId, from, to) => {
+        const fromKey = formatLocalDateKey(from)
+        const toKey = formatLocalDateKey(to)
+        if (fromKey === toKey) return
+        set((state) => ({
+          pointsHistory: state.pointsHistory.map((entry) =>
+            entry.taskId === taskId && entry.date === fromKey ? { ...entry, date: toKey } : entry,
+          ),
         }))
       },
 
