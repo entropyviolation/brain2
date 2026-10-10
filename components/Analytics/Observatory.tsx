@@ -25,7 +25,7 @@ import { dateKeyOf } from "./analytics-range"
 import { ChartFrame } from "./chart-frame"
 import { useAnalyticsRange } from "./analytics-range-store"
 import { CrossSection } from "./CrossSection"
-import { FindingBlock } from "./studio-kit"
+import { FindingBlock, StudioHelp } from "./studio-kit"
 import { dailySeries, observatoryFindings, OBSERVATORY_FLOOR, type ObservatoryPair } from "./observatory-findings"
 
 function weekdayIndex(key: string): number {
@@ -166,13 +166,16 @@ export function Observatory() {
     >
       <header className="an-canvas-head">
         <div>
-          <p className="an-canvas-title">Observatory</p>
-          <p className="an-canvas-kicker">
-            {label} · classical links across habits, tracking, sleep, points, and joy · n floor {OBSERVATORY_FLOOR}
+          <p className="an-canvas-title an-canvas-title-row">
+            Observatory
+            <StudioHelp
+              text={`${label}. Classical Pearson links across habits, tracking, sleep, points, and joy (n floor ${OBSERVATORY_FLOOR}). ${completed} completions in the window. Correlation is not causation.`}
+            />
           </p>
         </div>
-        <p className="an-canvas-hint">{completed} completions in the window. Correlation is not causation.</p>
       </header>
+
+      <CrossSection />
 
       {findings.length === 0 ? (
         <ChartFrame empty emptySentence={`Nothing recorded in the ${label} to connect yet.`} />
@@ -191,8 +194,6 @@ export function Observatory() {
           ))}
         </>
       )}
-
-      <CrossSection />
     </div>
   )
 }

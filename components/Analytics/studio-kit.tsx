@@ -11,6 +11,7 @@ import { memo, type CSSProperties, type KeyboardEvent, type ReactNode } from "re
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts"
 import { Tooltip as UiTooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { contrastRatio, relativeLuminance } from "@/lib/chrome-patina"
+import { formatCrtNumber } from "@/lib/crt-number"
 import { hourLabel, type HourDayGrid } from "./hour-day"
 
 export const STUDIO_GRID = "#808080"
@@ -87,10 +88,12 @@ export function StudioReadout({
   note?: string
   tip?: string
 }) {
+  const shown =
+    typeof value === "number" ? formatCrtNumber(value) : value
   return (
     <div className="an-readout" title={tip ?? note}>
       <p className="an-readout-label">{label}</p>
-      <p className="an-readout-value">{value}</p>
+      <p className="an-readout-value">{shown}</p>
       {note ? <p className="an-readout-note">{note}</p> : null}
     </div>
   )
@@ -348,7 +351,7 @@ export function StudioBars({
             <span className="an-bar-fill" style={{ width: `${Math.min(100, (row.value / domain) * 100)}%` }} />
           </span>
           <span className="an-bar-val">
-            {row.value}
+            {formatCrtNumber(row.value)}
             {unit}
           </span>
         </div>

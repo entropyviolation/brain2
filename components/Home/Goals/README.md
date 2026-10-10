@@ -40,7 +40,7 @@ Stay in this room: `ObjectivesPanel`, `GoalsContainer`, `DirectionReport`, and `
 | `goals-chrome.css` | `.gol95` milled fascia + recessed wells + metal keys + 10-pip progress + `.gol95-dialog`. `.gol-desk-plate` is the title jewel at photograph height, centered on the desktop under the window (no frame). |
 | `ObjectivesPanel.tsx` | Period keys (**Day/Week/Month/Season/Year/All**, persisted): **Prioritized** packed well, collapsible **All objectives** list with mill stars, **Add Objective** dialog (unsaved-changes guard). Rows open detail. |
 | `ObjectiveDetailDialog.tsx` | Edit one objective (`data-ui-name="Objective detail"`): title/description, **prioritize per period** (with a custom multiplier, capped), linked goals + their progress, the **contributing completed actions** list, a per-period **review** (success analysis), and archive/delete. Dirty close uses the house unsaved-changes guard. |
-| `GoalsContainer.tsx` | Packed goal rows, filterable by period kind (persists). 10-pip progress, linked chips, ±1 / boolean-complete, **Log**. Add/edit dialog requires ≥1 objective. Unsaved-changes guard. |
+| `GoalsContainer.tsx` | Packed goal rows, filterable by period kind (persists). 10-pip progress, linked chips, larger ±1 steppers, quieter **Log**, boolean-complete. CRT values via `formatCrtNumber`. Add/edit dialog requires ≥1 objective. Unsaved-changes guard. |
 | `DirectionReport.tsx` | Direction well: CRT coverage + 10-pip channel, 30-day lamp tape (served mint / drift pewter / idle gray), mill **drift dates**, packed neglected list. Same math as before. |
 
 ## Logic (pure helpers)

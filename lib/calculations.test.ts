@@ -211,6 +211,85 @@ describe("calculateWeekToDateOutputGrade", () => {
   })
 })
 
+describe("span overflow", () => {
+  it("lets one day at seven times a daily goal fill the week", () => {
+    const goal: WeeklyTask[] = [
+      { id: "g", name: "Clean", type: TaskType.GOAL, goal: 15, frequency: "daily" },
+    ]
+    const weeklyData = { "2026-09-14": { g: { value: 15 * 7 } } }
+    expect(calculateTaskPercentage("g", goal, weeklyData, weekDates)).toBe(100)
+  })
+
+  it("keeps a smaller overflow as extra days instead of one capped day", () => {
+    const goal: WeeklyTask[] = [
+      { id: "g", name: "Pages", type: TaskType.GOAL, goal: 10, frequency: "daily" },
+    ]
+    const weeklyData = { "2026-09-14": { g: { value: 30 } } }
+    expect(calculateTaskPercentage("g", goal, weeklyData, weekDates)).toBeCloseTo((30 / 70) * 100)
+  })
+
+  it("lets one day of climb gain fill the week when the gain covers every day", () => {
+    const chess: WeeklyTask = {
+      id: "c",
+      name: "Chess",
+      type: TaskType.INCREMENTAL,
+      frequency: "daily",
+      incrementalData: { cadence: "daily", startValue: 200, increment: 10, startedOn: "2026-09-14" },
+    }
+    const weeklyData = { "2026-09-14": { c: { value: 270 } } }
+    expect(calculateTaskPercentage("c", [chess], weeklyData, weekDates)).toBe(100)
+  })
+
+  it("lets climb overflow fill the days that remain after a waiver", () => {
+    const chess: WeeklyTask = {
+      id: "c",
+      name: "Chess",
+      type: TaskType.INCREMENTAL,
+      frequency: "daily",
+      incrementalData: { cadence: "daily", startValue: 200, increment: 10, startedOn: "2026-09-14" },
+    }
+    const weeklyData = { "2026-09-14": { c: { value: 260 } } }
+    const waiveSunday = (_task: WeeklyTask, key: string) => key === "2026-09-20"
+    expect(calculateTaskPercentage("c", [chess], weeklyData, weekDates, waiveSunday)).toBe(100)
+  })
+
+  it("lets one period far above a weekly goal fill the span", () => {
+    const cook: WeeklyTask[] = [
+      { id: "cook", name: "Cook", type: TaskType.GOAL, goal: 2, frequency: "weekly" },
+    ]
+    const weekA = new Date(2026, 8, 7)
+    const weekB = new Date(2026, 8, 14)
+    const periods = [
+      { key: getWeekString(weekA), date: weekA },
+      { key: getWeekString(weekB), date: weekB },
+    ]
+    const data = { [periods[0].key]: { cook: { value: 4 } } }
+    expect(calculatePeriodTaskPercentage("cook", cook, data, periods)).toBe(100)
+  })
+
+  it("lets one climb period above its target fill the span, and keeps a smaller overflow", () => {
+    const meditate: WeeklyTask = {
+      id: "m",
+      name: "Meditate",
+      type: TaskType.INCREMENTAL,
+      frequency: "weekly",
+      incrementalData: { cadence: "weekly", startValue: 2, increment: 1, unit: "minutes" },
+    }
+    const weekA = new Date(2026, 8, 7)
+    const weekB = new Date(2026, 8, 14)
+    const periods = [
+      { key: getWeekString(weekA), date: weekA },
+      { key: getWeekString(weekB), date: weekB },
+    ]
+    expect(
+      calculatePeriodTaskPercentage("m", [meditate], { [periods[0].key]: { m: { value: 4 } } }, periods),
+    ).toBe(100)
+    expect(
+      calculatePeriodTaskPercentage("m", [meditate], { [periods[0].key]: { m: { value: 3 } } }, periods),
+    ).toBe(75)
+  })
+})
+
 describe("weekly/monthly period scores", () => {
   const weekA = new Date(2026, 8, 7)
   const weekB = new Date(2026, 8, 14)

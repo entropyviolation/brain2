@@ -55,9 +55,9 @@ export function TagsView() {
         <div>
           <CanvasTitle
             title="Tags"
-            help="Free-form tags on items (spec §5). Area follows how many items carry the tag. Click a tile to open those items in Lists."
+            help="Item tags — free-form names on items (spec §5), not tracked-minute tags from Time → Tracking. Area follows how many items carry the name. Click a tile to open those items in Lists."
           />
-          <p className="an-canvas-kicker">All items · area ∝ tagged count</p>
+          <p className="an-canvas-kicker">Item tags · area ∝ how many items carry the name</p>
         </div>
       </header>
       {rows.length === 0 ? (

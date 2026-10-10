@@ -247,7 +247,19 @@
   margin: 0 2px;
 }
 
-.fm98.an95 .an-group-bar,
+/* Groups = short segment control; Views keep the tall scroll bay. */
+.fm98.an95 .an-group-bar {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--r-3, 3px);
+  background: var(--an-bay);
+  box-shadow: var(--an-bay-ring);
+  border-top: none;
+}
+
 .fm98.an95 .an-view-bar {
   display: flex;
   flex-direction: column;
@@ -257,12 +269,32 @@
   background: var(--an-bay);
   box-shadow: var(--an-bay-ring);
   border-top: none;
-}
-
-.fm98.an95 .an-view-bar {
   flex: 1;
   min-height: 0;
   overflow: auto;
+}
+
+.fm98.an95 .an-group-btn {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 22px !important;
+  padding: 3px 4px 3px 16px !important;
+  font-size: 9px !important;
+  letter-spacing: 0.04em !important;
+  justify-content: center;
+}
+
+.fm98.an95 .an-group-btn::before {
+  left: 4px !important;
+  width: 6px !important;
+  height: 6px !important;
+  margin-top: -3px !important;
+}
+
+.fm98.an95 .an-canvas-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .fm98.an95 .an-group-btn,

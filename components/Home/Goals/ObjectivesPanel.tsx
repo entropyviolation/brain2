@@ -124,10 +124,10 @@ export function ObjectivesPanel() {
       : `${prioritizedObjectives(active, mode).length}/${MAX_PRIORITIES_PER_PERIOD[mode]} this ${mode}`
 
   return (
-    <div className="gol-section">
+    <div className="gol-section is-objectives">
       <div className="gol-section-head">
         <div>
-          <h3 className="gol-legend">Objectives</h3>
+          <h3 className="gol-legend gol-legend-plate">Objectives</h3>
           <p className="gol-hint">Your all-time directions. Prioritize a few per period to multiply points.</p>
         </div>
         <Dialog open={showAdd} onOpenChange={addGuard.handleOpenChange}>

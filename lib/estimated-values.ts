@@ -243,3 +243,18 @@ export function usualDurationMinutes(
 export function formatUsualDuration(usual: UsualDuration): string {
   return `usually ~${formatDurationMinutes(usual.minutes)}`
 }
+
+/** How a sleep clock got its value when the person has not typed it yet. */
+export type SleepClockSource = "painted" | "remembered"
+
+/**
+ * Tooltip / chip basis for Morning Review and the block-editor sleep clocks.
+ * Not written onto `Task.estimates` — those clocks are not Done-list rows.
+ */
+export function sleepClockEstimateBasis(source: SleepClockSource, end: "asleep" | "awake"): string {
+  const noun = end === "asleep" ? "Fell asleep" : "Wake"
+  if (source === "painted") {
+    return `${noun} read from painted Sleep on the Time Grid. Confirm or correct the clock.`
+  }
+  return `${noun} was remembered, not read from a clock. Confirm or correct it.`
+}

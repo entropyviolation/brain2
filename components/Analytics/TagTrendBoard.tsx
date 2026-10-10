@@ -68,11 +68,12 @@ export const TagTrendBoard = memo(function TagTrendBoard({
   if (!showWeeks && !showMonths) return null
   return (
     <div data-testid="tag-trend-board">
-      {showWeeks && <Board title="Tag trend · weeks in this window" rows={weeks} unit="by week" />}
-      {showMonths && <Board title="Tag trend · months in this window" rows={months} unit="by month" />}
+      {showWeeks && <Board title="Tracked-minute tags · weeks in this window" rows={weeks} unit="by week" />}
+      {showMonths && <Board title="Tracked-minute tags · months in this window" rows={months} unit="by month" />}
       <p className="an-canvas-hint">
-        Bar height is that tag’s minutes in the bucket. A minute tagged in two scopes counts once. Empty buckets stay
-        in line at zero. The bars read every scope; the charts above stay on the scope selected in the header.
+        Bar height is that Tracking tag’s minutes in the bucket (not Library → Tags item names). A minute tagged in two
+        scopes counts once. Empty buckets stay in line at zero. The bars read every scope; the charts above stay on the
+        scope selected in the header. Chart tiles drill; they do not open tag settings.
       </p>
     </div>
   )

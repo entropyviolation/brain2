@@ -496,7 +496,7 @@ function TrackingComposition({
           {matchNote && <p className="an-canvas-hint">{matchNote}</p>}
           {tagRows.length > 0 && (
             <>
-              <p className="an-canvas-kicker">By tag · all scopes</p>
+              <p className="an-canvas-kicker">Tracked minutes by tag · all scopes</p>
               <SliceRows slices={tagRows} basis={basis} onSelect={onSelectTag} />
             </>
           )}

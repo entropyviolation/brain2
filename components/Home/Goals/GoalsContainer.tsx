@@ -13,6 +13,7 @@ import { pointsRuleValue } from "@/lib/points-rules-live"
 import { usePointsStore } from "@/lib/points-store"
 import { useTaskStore } from "@/lib/task-store"
 import { goalProgressPercent } from "@/lib/objectives"
+import { formatCrtNumber } from "@/lib/crt-number"
 import type { Goal, GoalPeriodKind, Task } from "@/lib/types"
 import { APP_NAV_KEYS } from "@/lib/app-navigation"
 import { usePersistedTab } from "@/lib/use-persisted-tab"
@@ -319,30 +320,30 @@ export function GoalsContainer() {
             </div>
             <div>
               <div className="gol-meta">
-                {goal.current} / {goal.target}
+                {formatCrtNumber(goal.current)} / {formatCrtNumber(goal.target)}
                 {goal.unit ? ` ${goal.unit}` : ""}
               </div>
               <GoalPips percent={goalProgressPercent(goal)} />
             </div>
             <div className="gol-actions">
-              <button type="button" className="gol-btn" onClick={() => { setEditing(goal); setEditBaseline(goal) }}>
+              <button type="button" className="gol-btn is-quiet" onClick={() => { setEditing(goal); setEditBaseline(goal) }}>
                 Edit
               </button>
               {goal.completed ? (
-                <span className="gol-ok">Completed — {goal.points} pts</span>
+                <span className="gol-ok">Completed — {formatCrtNumber(goal.points)} pts</span>
               ) : goal.type === "boolean" ? (
-                <button type="button" className="gol-btn" onClick={() => setGoalProgress(goal.id, 1)}>
-                  Mark complete (+{goal.points} pts)
+                <button type="button" className="gol-btn is-primary" onClick={() => setGoalProgress(goal.id, 1)}>
+                  Mark complete (+{formatCrtNumber(goal.points)} pts)
                 </button>
               ) : (
                 <>
-                  <button type="button" className="gol-btn" onClick={() => setGoalProgress(goal.id, Math.max(0, goal.current - 1))}>
+                  <button type="button" className="gol-btn is-stepper" onClick={() => setGoalProgress(goal.id, Math.max(0, goal.current - 1))}>
                     -1
                   </button>
-                  <button type="button" className="gol-btn" onClick={() => setGoalProgress(goal.id, goal.current + 1)}>
+                  <button type="button" className="gol-btn is-stepper" onClick={() => setGoalProgress(goal.id, goal.current + 1)}>
                     +1
                   </button>
-                  <button type="button" className="gol-btn" onClick={() => logAction(goal)} title="Record a completed action + earn objective points">
+                  <button type="button" className="gol-btn is-quiet" onClick={() => logAction(goal)} title="Record a completed action + earn objective points">
                     Log
                   </button>
                 </>

@@ -18,7 +18,8 @@ import { activeTrackingLink } from "@/lib/habit-tracking"
 import { ChartFrame, OpenInListsButton } from "./chart-frame"
 import { useAnalyticsRange } from "./analytics-range-store"
 import { inRange } from "./analytics-range"
-import { DensityCalendar, PhosphorTrace, StudioBars, StudioReadout } from "./studio-kit"
+import { formatCrtNumber } from "@/lib/crt-number"
+import { DensityCalendar, PhosphorTrace, StudioBars, StudioHelp, StudioReadout } from "./studio-kit"
 import { HorizonChart, Slopegraph } from "./studio-plots"
 import { weekdayWeekendRates } from "./studio-plot-stats"
 import { autocorrelation } from "@/lib/metrics"
@@ -168,6 +169,27 @@ export function HabitsView() {
 
   return (
     <div className="an-canvas an-stack">
+      <div>
+        <p className="an-canvas-title an-canvas-title-row">
+          Daily habit completion
+          <StudioHelp text="Density calendar of daily habit % in this window. Gray is out of range or empty. Lead instrument — readouts and rates sit under it." />
+        </p>
+        {habitTasks.length === 0 ? (
+          <ChartFrame empty emptySentence="No habits yet — the heatmap stays blank until there is a series." />
+        ) : (
+          <>
+            <DensityCalendar weeks={heatmap} color={heatColor} />
+            <div className="an-legend">
+              <span>Less</span>
+              {[0, 20, 40, 70, 100].map((p) => (
+                <i key={p} style={{ background: heatColor(p) }} />
+              ))}
+              <span>More</span>
+            </div>
+          </>
+        )}
+      </div>
+
       {!hasHeadline ? (
         <ChartFrame empty emptySentence={`Nothing in the ${range.label} to total yet.`} />
       ) : (
@@ -187,8 +209,8 @@ export function HabitsView() {
         <div className="an-readouts">
           <StudioReadout
             label="Week grade"
-            value={`${Math.round(weekGrade.grade)}%`}
-            note={`raw ${Math.round(weekGrade.rawGrade)}% · ${weekGrade.daysIncluded} days`}
+            value={`${formatCrtNumber(weekGrade.grade)}%`}
+            note={`raw ${formatCrtNumber(weekGrade.rawGrade)}% · ${weekGrade.daysIncluded} days`}
           />
           <StudioReadout
             label="Good days"
@@ -197,8 +219,8 @@ export function HabitsView() {
           />
           <StudioReadout
             label="Month grade"
-            value={`${Math.round(monthGrade.grade)}%`}
-            note={`raw ${Math.round(monthGrade.rawGrade)}% · ${monthGrade.daysIncluded} days`}
+            value={`${formatCrtNumber(monthGrade.grade)}%`}
+            note={`raw ${formatCrtNumber(monthGrade.rawGrade)}% · ${monthGrade.daysIncluded} days`}
           />
           <StudioReadout
             label="Tracking-linked"
@@ -213,24 +235,6 @@ export function HabitsView() {
           <StudioBars rows={climbs.map((c) => ({ name: c.name, value: c.value }))} max={Math.max(...climbs.map((c) => c.value), 1)} unit={climbs[0]?.unit ?? ""} />
         </div>
       )}
-
-      <div>
-        <p className="an-canvas-title">Daily habit completion heatmap</p>
-        {habitTasks.length === 0 ? (
-          <ChartFrame empty emptySentence="No habits yet — the heatmap stays blank until there is a series." />
-        ) : (
-          <>
-            <DensityCalendar weeks={heatmap} color={heatColor} />
-            <div className="an-legend">
-              <span>Less</span>
-              {[0, 20, 40, 70, 100].map((p) => (
-                <i key={p} style={{ background: heatColor(p) }} />
-              ))}
-              <span>More</span>
-            </div>
-          </>
-        )}
-      </div>
 
       <div>
         <p className="an-canvas-title">Habit completion ({range.label})</p>

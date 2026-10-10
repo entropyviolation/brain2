@@ -39,7 +39,11 @@ Habits, Plan, Tracking, or Scheduler to match.
 
 **Always create as many tooltips and provide as many clear instructions as
 possible if applicable and needed.** Each view has `ANALYTICS_TAB_HELP` under the
-nav, `?` help on titled canvases, and native `title` on controls.
+nav; instructional copy sits behind `StudioHelp` (`?`) on titled canvases, plus
+native `title` on controls. KPI readouts use `formatCrtNumber` (`lib/crt-number.ts`)
+so Points and siblings do not float-print. Groups in the left index are a short
+segment control (Views keep their row height). Habits / Observatory lead with
+heatmap or cross-section plates before denser tables.
 
 One remembered date range is labeled once (`last 30 days`, 7 / 14 / 90, **or**
 an inclusive custom window labeled as `2026-08-01 – 2026-09-21`). **Prev** /
@@ -79,7 +83,7 @@ meaningful on its own.
 | `CompletionReviewPlates.tsx` | Plates shared by Reflection and Goals, reading the completion popup and the later Reflect save (not period rituals): exact / est. / unknown time, and the same three marks for starts (an unknown start is a count, not a time), expected vs actual difficulty, optional feelings (satisfaction and distraction included), later `reflectNotes`, where hard or joyful work went, and quick-review points. |
 | `open-in-lists.ts` | Chart → Lists jump. |
 | `analytics-chrome.css` | Milled range/index chrome + light instrument interior (`.an-plate`, white `.an-plot-well`, pie, treemap, density, mosaic, hour×day, phosphor `.an-scope`, horizon/violin/alluvial). Plate hover dims rows/mosaic at 0.35; pie dims per `.recharts-sector` at 0.72 (not the pie `<g>` wrapper). One body scroll on `.an-content`. Title/status stay Lists. Drill / popup titles (`.an-drill`, `.an-popup`) are crisp Karla ink-green — opted out of the global CRT glow caption in `app/win95.css`. |
-| `studio-kit.tsx` | FindingBlock, StudioReadout, StudioHelp, StudioCheck, CanvasTitle, SlicePie (no Recharts Legend; white 2px slice gaps; hole label; pen fills stay opaque — hover/active dims other sectors to 0.72 and strokes the active path 2px ink; never opacity on the whole pie SVG), SliceTreemap, SliceMosaic (full chroma; luminance text), SplitBar (one segment row: name · duration · percent; clickable; narrow segments keep full text in title/aria), HourDayHeatmap (opaque empty cells; first/month/last day labels), DensityCalendar, StudioBars, PhosphorTrace. |
+| `studio-kit.tsx` | FindingBlock, StudioReadout (`formatCrtNumber` for numeric values), StudioHelp (`?`), StudioCheck, CanvasTitle, SlicePie (no Recharts Legend; white 2px slice gaps; hole label; pen fills stay opaque — hover/active dims other sectors to 0.72 and strokes the active path 2px ink; never opacity on the whole pie SVG), SliceTreemap, SliceMosaic (full chroma; luminance text), SplitBar (one segment row: name · duration · percent; clickable; narrow segments keep full text in title/aria), HourDayHeatmap (opaque empty cells; first/month/last day labels), DensityCalendar, StudioBars (`formatCrtNumber`), PhosphorTrace. |
 | `studio-plots.tsx` / `studio-plot-stats.ts` | Horizon, ridgeline, violin+histogram, alluvial, beeswarm, slopegraph, UpSet, hour×pen small multiples (shared white frame), Cleveland cycle, StudioSpark (phosphor on `.an-scope`). |
 | `hour-day.ts` | Hour × day occupancy. Instants off the heat; missing hours stay 0. Overlapping blocks on one minute count once, so an hour stays ≤ 60. Hour×pen small multiples + weekday cycle. |
 | `observatory-findings.ts` | Pearson-r findings for Observatory. Named apart from `Observatory.tsx` (macOS case-fold). |

@@ -5,6 +5,8 @@
  * (boolean/goal/text/climb; TIME/COUNT treated as GOAL):
  *  - `calculateTaskPercentage`: a habit's completion % across the week
  *    (climb uses `incrementalWeekPercentage`; denominator is always 7).
+ *    Amounts above the goal fill the other days. The result still stops at 100,
+ *    so one day at 7× the goal is a full week.
  *  - `calculateElapsedTaskPercentage`: same row formulas paced to elapsed days.
  *  - `calculateDayPercentage` / `calculateDayPercentageAV`: a day's overall %
  *    (the AV variant averages over all habits, not just those with data).
@@ -18,6 +20,7 @@
  *  - Period (weekly/monthly) analogs: `calculatePeriodTaskPercentage`,
  *    `calculatePeriodColumnPercentage`, `calculatePeriodGrade`,
  *    `calculatePeriodOutputGrade` — same formulas over week/month keys.
+ *    A climb span uses `incrementalSpanPercentage` (overflow fills other periods).
  *  - `periodCellPercentage`: the one cell those column averages add.
  *
  * Optional `isExempt` lifts a period out of both sides of the fraction
@@ -32,6 +35,7 @@ import {
   incrementalDataForTask,
   incrementalDayPercentage,
   incrementalLoggedValue,
+  incrementalSpanPercentage,
   incrementalWeekPercentage,
   weeklyGoalOn,
 } from "./incremental-habits"
@@ -83,12 +87,11 @@ function incrementalOverActiveDates(task: Task, weeklyData: WeeklyData, dates: D
     }
     return Math.min(100, (total / (goal * dates.length)) * 100)
   }
-  let sum = 0
-  for (const date of dates) {
-    const pct = incrementalDayPercentage(task, weeklyData[formatLocalDateKey(date)]?.[task.id], weeklyData, date)
-    sum += pct ?? 0
-  }
-  return sum / dates.length
+  return incrementalSpanPercentage(
+    task,
+    weeklyData,
+    dates.map((date) => ({ key: formatLocalDateKey(date), date })),
+  )
 }
 
 function percentageOverDates(
@@ -122,6 +125,7 @@ function percentageOverDates(
         const completion = weeklyData[formatLocalDateKey(date)]?.[task.id]
         if (completion?.value !== undefined) totalCompleted += completion.value
       }
+      // Extra above a day's goal fills the other days. The span still stops at 100.
       return Math.min(100, (totalCompleted / (task.goal * n)) * 100)
     }
     case TaskType.INCREMENTAL:
@@ -517,16 +521,11 @@ export function calculatePeriodTaskPercentage(
         const completion = data[period.key]?.[taskId]
         if (completion?.value !== undefined) total += completion.value
       }
+      // Extra above a period's goal fills the other periods. The span still stops at 100.
       return Math.min(100, (total / (task.goal * n)) * 100)
     }
-    case TaskType.INCREMENTAL: {
-      let total = 0
-      for (const period of required) {
-        const pct = incrementalDayPercentage(task, data[period.key]?.[taskId], data, period.date)
-        total += pct ?? 0
-      }
-      return total / n
-    }
+    case TaskType.INCREMENTAL:
+      return incrementalSpanPercentage(task, data, required)
     default:
       return 0
   }
