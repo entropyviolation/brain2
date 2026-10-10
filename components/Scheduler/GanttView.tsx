@@ -14,6 +14,7 @@ import { itemTitle } from "@/lib/item-utils"
 
 const ROW_HEIGHT = 40
 const BAR_HEIGHT = 22
+const CRIT_BAR_HEIGHT = 28
 const LABEL_WIDTH = 220
 const CHART_MIN_WIDTH = 640
 const PADDING_X = 24
@@ -25,6 +26,20 @@ function formatDuration(minutes: number): string {
   if (h && m) return `${h}h ${m}m`
   if (h) return `${h}h`
   return `${m}m`
+}
+
+/** Slack labels stay short so a long float does not dominate the row. */
+function formatSlack(minutes: number): string {
+  if (minutes <= 0) return ""
+  if (minutes >= 24 * 60) {
+    const days = Math.round(minutes / (24 * 60))
+    return `${days}d`
+  }
+  if (minutes >= 60) {
+    const h = Math.round(minutes / 60)
+    return `${h}h`
+  }
+  return `${Math.round(minutes)}m`
 }
 
 export function GanttView({
@@ -74,16 +89,25 @@ export function GanttView({
 
   if (rows.length === 0) {
     return (
-      <div className="sch-doc">
-        <p className="sch-doc-empty">
-          No project tasks to chart yet. Link dependencies and a duration estimate to see the critical path.
-        </p>
+      <div className="sch-doc sch-doc-frame">
+        <div className="sch-doc-legend">
+          <span>Project length: —</span>
+          <span>
+            <span className="sch-swatch-crit" /> Critical path
+          </span>
+          <span>
+            <span className="sch-swatch-slack" /> Has slack
+          </span>
+        </div>
+        <div className="sch-path-empty" role="status">
+          Nothing on the path yet. Link dependencies and a duration estimate.
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="sch-doc">
+    <div className="sch-doc sch-doc-frame">
       <div className="sch-doc-legend">
         <span>Project length: {formatDuration(projectDuration)}</span>
         <span>
@@ -94,6 +118,11 @@ export function GanttView({
         </span>
         {cpm.hasCycle && <span>Dependency cycle detected</span>}
       </div>
+      {criticalCount === 0 ? (
+        <div className="sch-path-empty sch-path-empty-sparse" role="status">
+          Nothing on the path yet — no zero-slack chain in this set.
+        </div>
+      ) : null}
       <div className="flex" style={{ minHeight: 0, overflow: "auto" }}>
         <div className="shrink-0" style={{ width: LABEL_WIDTH }}>
           <div style={{ height: 32 }} />
@@ -116,7 +145,7 @@ export function GanttView({
                   </span>
                   <span className="sch-task-meta">
                     {formatDuration(node.duration)}
-                    {node.slack > 0 ? ` · slack ${formatDuration(node.slack)}` : ""}
+                    {node.slack > 0 ? ` · slack ${formatSlack(node.slack)}` : ""}
                     {task.scheduledDate ? ` · ${new Date(task.scheduledDate).toLocaleDateString()}` : ""}
                   </span>
                 </span>
@@ -182,15 +211,16 @@ export function GanttView({
             {rows.map((task, i) => {
               const node = cpm.nodes[task.id]
               const critical = node.isOnCriticalPath
+              const barH = critical ? CRIT_BAR_HEIGHT : BAR_HEIGHT
               const barX = xFor(node.earliestStart)
-              const barW = Math.max(node.duration * scale, 3)
-              const barY = 32 + i * ROW_HEIGHT + (ROW_HEIGHT - BAR_HEIGHT) / 2
+              const barW = Math.max(node.duration * scale, critical ? 5 : 3)
+              const barY = 32 + i * ROW_HEIGHT + (ROW_HEIGHT - barH) / 2
               return (
                 <g key={task.id} className="cursor-pointer" onClick={() => onSelectTask?.(task.id)}>
                   {node.slack > 0 && (
                     <rect
                       x={barX}
-                      y={barY + BAR_HEIGHT / 2 - 1}
+                      y={barY + barH / 2 - 1}
                       width={Math.max((node.duration + node.slack) * scale, 3)}
                       height={2}
                       fill="#c0c0c0"
@@ -200,12 +230,17 @@ export function GanttView({
                     x={barX}
                     y={barY}
                     width={barW}
-                    height={BAR_HEIGHT}
-                    fill={critical ? "#800000" : "#000080"}
+                    height={barH}
+                    fill={critical ? "#b00000" : "#000080"}
+                    stroke={critical ? "#3a0000" : "none"}
+                    strokeWidth={critical ? 1.5 : 0}
                   />
+                  {critical ? (
+                    <rect x={barX} y={barY} width={barW} height={3} fill="#ff6a6a" opacity={0.85} />
+                  ) : null}
                   <title>
                     {itemTitle(task)} — start {formatDuration(node.earliestStart)}, {formatDuration(node.duration)}
-                    {node.slack > 0 ? `, slack ${formatDuration(node.slack)}` : " (critical)"}
+                    {node.slack > 0 ? `, slack ${formatSlack(node.slack)}` : " (critical)"}
                   </title>
                 </g>
               )

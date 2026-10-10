@@ -464,6 +464,62 @@
   opacity: 0.85;
 }
 
+.ops95 .ops-empty.ops-empty-presets {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: stretch;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px;
+  text-align: left;
+}
+
+.ops95 .ops-preset-object {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: min(11.5rem, 100%);
+  min-height: 4.5rem;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--r-2, 2px);
+  text-align: left;
+  cursor: pointer;
+  color: #1c1e20;
+  text-shadow: none;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.65) 0, transparent 32%),
+    linear-gradient(165deg, var(--chrome-key-sheen, #e8e8e8), var(--chrome-mill-soft, #b8b8b8));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1px var(--chrome-ring-deep, #606060);
+}
+
+.ops95 .ops-preset-object.is-on {
+  color: var(--o-phosphor, #7dffc4);
+  text-shadow: var(--o-crt-glow);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.18), transparent 55%),
+    #070c0a;
+  box-shadow:
+    0 0 0 1px var(--chrome-pressed, #404040),
+    inset 0 6px 8px rgba(0, 0, 0, 0.35);
+}
+
+.ops95 .ops-preset-name {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ops95 .ops-preset-desc {
+  font-size: 10px;
+  line-height: 1.25;
+  opacity: 0.85;
+}
+
 /* ---- Board cards / category groups ----------------------------------- */
 
 .ops95 .ops-board {
@@ -914,6 +970,35 @@ body.win95-app .ops95 .ops-view-keys[role="tablist"],
   box-shadow:
     0 0 0 1px var(--chrome-ring),
     inset 0 2px 3px rgba(0, 0, 0, 0.18);
+}
+
+.ops95 .ops-view-keys.ops-view-clusters {
+  gap: 8px;
+}
+
+.ops95 .ops-tab-cluster {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 4px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ops95 .ops-tab-cluster[data-cluster="reference"] {
+  padding-left: 6px;
+  border-left: 1px solid var(--chrome-ring);
+  opacity: 0.96;
+}
+
+.ops95 .ops-home-instrument {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ops95 .ops-heat-cell.is-cold {
+  box-shadow: inset 0 0 0 1px rgba(180, 40, 60, 0.85), 0 0 4px rgba(160, 20, 40, 0.45);
 }
 
 body.win95-app .ops95 .ops-view-keys [role="tab"],

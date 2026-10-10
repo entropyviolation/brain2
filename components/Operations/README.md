@@ -35,7 +35,7 @@ Resolution reads **both** link directions (`getRelatedChildren` in
 
 Other rooms may import:
 
-- `useWorkSessionClock` from `WorkingNowControl.tsx` — the shared live clock. The header (`components/header-now-box.tsx`) and Tracking's `WorkingNowStrip` (`components/Home/Tracking/working-now-strip.tsx`) already use it. The hook reads `lib/work-session-store.ts` and calls `tickWorkSession`, which writes that store (`setSession`) and grows the live block on `lib/time-tracking-store.ts`.
+- `useWorkSessionClock` from `WorkingNowControl.tsx` — the shared live clock. Tracking's `WorkingNowStrip` (`components/Home/Tracking/working-now-strip.tsx`) uses it, and so do the header now rows (`components/header-now-rows.tsx`) once a session is live. The idle header shell (`components/header-now-box.tsx`) reads only the session flag in `lib/work-session-store.ts`, so a refresh does not import the timegrid. The hook reads `lib/work-session-store.ts` and calls `tickWorkSession`, which writes that store (`setSession`) and grows the live block on `lib/time-tracking-store.ts`.
 - `OperationsView` from `OperationsView.tsx` — the shell lazy-loads the tab (`app/page.tsx`).
 - `upgradeTaskToOperation` and `OPERATION_TYPE_ID` from the barrel (`index.ts`) — item detail's menu (`components/ItemDetail/ItemDetailPage.tsx`).
 - `operations-chrome.css` — the shell (`app/layout.tsx`) and Tracking's working-now and pen-color strips.
@@ -162,11 +162,11 @@ those minutes. One session at a time; starting another stops the current one.
 | `lib/operation-work-session.ts` *(lib)* | live "working on this now" clock: day slices, Tracking paint, Done row, timeLogs, habit sync |
 | `lib/work-session-store.ts` *(lib)* | persisted pointer to the open session (`cogs-work-session`) |
 | `operations-chrome.css` | Milled fascia (CRT title, engraved nameplates, raised metal keys, equal-fill view keys, stage power lamps, CRT heatmap well, working-now lamp) |
-| `OperationsView.tsx` | home board: category groups, category filter, sort, **Show archived**, preset-aware inline create. Last open operation survives refresh / tab switch. |
-| `OperationWorkspace.tsx` | full-screen mini-app; tab strip built from the operation's enabled panels. Last panel per operation is restored, plus that panel's scroll. |
+| `OperationsView.tsx` | home board: category groups, category filter, sort, **Show archived**, preset-aware inline create. Empty board offers pickable preset objects (`.ops-empty-presets`). Last open operation survives refresh / tab switch. |
+| `OperationWorkspace.tsx` | full-screen mini-app; tab strip clusters **Plan/Do** vs **Reference** (`.ops-view-clusters`). Last panel per operation is restored, plus that panel's scroll. |
 | `WorkingNowControl.tsx` | menubar **Working on this now** / **Stop working on {name}** toggle |
 | `OperationSettingsDialog.tsx` | per-operation settings: identity, categories, tracking tags, panels, presets, **Delete operation** |
-| `OperationHome.tsx` | Home: mission, stage, progress, notes, work/neglect heatmap |
+| `OperationHome.tsx` | Home: mission / progress / notes as a vertical instrument; work/neglect heatmap — cold (neglected) days read hotter (`.ops-heat-cell.is-cold`) |
 | `OperationTasksPanel.tsx` | To do: embeds the Lists content panel, including phase steps and part tasks |
 | `PhasesPanel.tsx` | phases + their steps, inline add/complete/detach |
 | `PartsPanel.tsx` | kinds, part pages, ideas, glance metrics |
@@ -197,8 +197,10 @@ categories (the same affordance as the Lists All view). Opening an operation
 keeps the fascia: CRT title (click the name to rename), **Board** / **Settings**
 / **After-action report** / **Why missed** metal keys with the operation's category chips, a
 **Working on this now** toggle (phosphor lamp + CRT elapsed clock while live),
-equal-fill panel keys (Home, To do, Phases, Parts, Log, and whatever else
-Settings switched on), the Queue rail, and a CRT phosphor heatmap on Home.
+equal-fill panel keys clustered Plan/Do vs Reference (Home, To do, Phases,
+Parts, Log, and whatever else Settings switched on), the Queue rail, and a CRT
+phosphor heatmap on Home (neglect hotter on cold days). An empty board shows
+pickable preset shapes instead of only a blank create field.
 Settings and After-action dialogs share the same milled chrome. Settings can
 delete the operation after **Are you sure?**.
 

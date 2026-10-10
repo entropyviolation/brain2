@@ -47,10 +47,16 @@ export function DependencyGraph({
 
   if (network.tasks.length === 0) {
     return (
-      <div className="sch-doc">
-        <p className="sch-doc-empty">
-          No dependencies to graph yet. Link tasks with dependencies to see the precedence network and its critical path.
-        </p>
+      <div className="sch-doc sch-doc-frame">
+        <div className="sch-doc-legend">
+          <span>0 tasks</span>
+          <span>
+            <span className="sch-swatch-crit" /> Critical
+          </span>
+        </div>
+        <div className="sch-path-empty" role="status">
+          Nothing on the path yet. Link tasks with dependencies.
+        </div>
       </div>
     )
   }

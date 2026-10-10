@@ -27,8 +27,9 @@ import {
 import type { Task } from "@/lib/types"
 import { setHomeNotes, setMission, setStage } from "./operation-actions"
 
+/** Cold days read hotter (neglect signal); worked days stay phosphor green. */
 const HEAT_COLORS: Record<number, string> = {
-  0: "#132418",
+  0: "#6b1020",
   1: "#1f5c2c",
   2: "#2f9a3a",
   3: "#5ee05e",
@@ -41,8 +42,8 @@ function HeatGrid({ cells }: { cells: HeatCell[] }) {
       {cells.map((cell) => (
         <div
           key={cell.date}
-          title={`${cell.date}: ${cell.minutes} min`}
-          className="ops-heat-cell"
+          title={`${cell.date}: ${cell.minutes} min${cell.level === 0 ? " · neglected" : ""}`}
+          className={`ops-heat-cell${cell.level === 0 ? " is-cold" : ""}`}
           style={{ backgroundColor: HEAT_COLORS[cell.level] }}
         />
       ))}
@@ -80,7 +81,7 @@ export function OperationHome({ operation }: { operation: Task }) {
   }, [operation, allTasks])
 
   return (
-    <div className="ops-panel">
+    <div className="ops-panel ops-home-instrument">
       <div className="ops-brief">
         <div className="ops-field">
           <label className="ops-label" htmlFor="op-mission">

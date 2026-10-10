@@ -286,11 +286,20 @@ export function OperationsView({ onTaskSelect }: OperationsViewProps) {
 
         <div className="ops-body">
           {operations.length === 0 ? (
-            <div className="ops-empty">
-              <p>
-                No operations yet. Name one above, pick the shape it should start as, or upgrade an
-                existing task from its detail view.
-              </p>
+            <div className="ops-empty ops-empty-presets" role="group" aria-label="Operation shapes">
+              {OPERATION_PRESETS.map((preset) => (
+                <button
+                  key={preset.id}
+                  type="button"
+                  className={`ops-preset-object${presetId === preset.id ? " is-on" : ""}`}
+                  aria-pressed={presetId === preset.id}
+                  title={preset.description}
+                  onClick={() => setPresetId(preset.id)}
+                >
+                  <span className="ops-preset-name">{preset.name}</span>
+                  <span className="ops-preset-desc">{preset.description}</span>
+                </button>
+              ))}
             </div>
           ) : shown === 0 ? (
             <div className="ops-empty">

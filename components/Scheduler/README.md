@@ -50,14 +50,15 @@ A **toolbar** (not a second instrument) switches the main area between three vie
 | View | Component | Shows |
 |------|-----------|-------|
 | **Funnel** (default) | period keys | Always / Year / **Season** / Month / Week / Day buckets. Season is a lens of the quarter's three months (`lib/seasons.ts`); it is not a `SchedulePeriod` and does not write a quarter placement. |
-| **Gantt** | `GanttView` | Timeline document with bars + critical path |
-| **Dependencies** | `DependencyGraph` | Task precedence network + critical path |
+| **Gantt** | `GanttView` | Timeline document with hotter/heavier critical-path bars; slack labels compressed (`formatSlack`) |
+| **Dependencies** | `DependencyGraph` | Task precedence network + critical path; sparse path keeps a short “nothing on the path yet” object inside the reserved `.sch-path-empty` / `.sch-doc-frame` |
 
-The Gantt and Graph views are driven by **`project-network.ts`**, which runs the
-**Critical Path Method** solver in `lib/critical-path.ts` (forward/backward pass,
-slack, zero-slack critical chain; duration from a task's PERT estimate when
-present, else `estimatedDuration`). Node positions for the graph come from the
-layered layout in `lib/graph-layout.ts`.
+Funnel and Gantt share the same address/filter chrome voice (milled doc frame,
+shared filter strip classes). The Gantt and Graph views are driven by
+**`project-network.ts`**, which runs the **Critical Path Method** solver in
+`lib/critical-path.ts` (forward/backward pass, slack, zero-slack critical chain;
+duration from a task's PERT estimate when present, else `estimatedDuration`).
+Node positions for the graph come from the layered layout in `lib/graph-layout.ts`.
 
 ## Data
 

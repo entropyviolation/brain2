@@ -274,12 +274,41 @@ export function OperationWorkspace({
             onValueChange={(next) => setTab(next as OperationPanelId)}
             className="ops-main min-w-0 flex min-h-0 flex-col"
           >
-            <TabsList className="ops-view-keys flex h-auto w-full flex-wrap justify-start rounded-none">
-              {tabPanels.map((id) => (
-                <TabsTrigger key={id} value={id}>
-                  {getOperationPanel(id)?.label ?? id}
-                </TabsTrigger>
-              ))}
+            <TabsList className="ops-view-keys ops-view-clusters flex h-auto w-full flex-wrap justify-start rounded-none">
+              {(() => {
+                const planDo = new Set<OperationPanelId>([
+                  "home",
+                  "tasks",
+                  "phases",
+                  "parts",
+                  "timeline",
+                  "plan",
+                ])
+                const doTabs = tabPanels.filter((id) => planDo.has(id))
+                const refTabs = tabPanels.filter((id) => !planDo.has(id))
+                return (
+                  <>
+                    {doTabs.length > 0 ? (
+                      <span className="ops-tab-cluster" role="presentation" data-cluster="plan-do">
+                        {doTabs.map((id) => (
+                          <TabsTrigger key={id} value={id}>
+                            {getOperationPanel(id)?.label ?? id}
+                          </TabsTrigger>
+                        ))}
+                      </span>
+                    ) : null}
+                    {refTabs.length > 0 ? (
+                      <span className="ops-tab-cluster" role="presentation" data-cluster="reference">
+                        {refTabs.map((id) => (
+                          <TabsTrigger key={id} value={id}>
+                            {getOperationPanel(id)?.label ?? id}
+                          </TabsTrigger>
+                        ))}
+                      </span>
+                    ) : null}
+                  </>
+                )
+              })()}
             </TabsList>
             {tabPanels.map((id) => (
               <TabsContent key={id} value={id} className="ops-tab-pane mt-2 min-h-0 flex-1 overflow-hidden">

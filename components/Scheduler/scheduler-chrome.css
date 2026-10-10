@@ -929,10 +929,10 @@ body.win95-app .sch95 .sch-period-tabs [role="tab"][data-state="active"]::before
 
 .sch95 .sch-swatch-crit {
   display: inline-block;
-  width: 10px;
-  height: 10px;
-  background: #800000;
-  box-shadow: inset 1px 1px #fff, inset -1px -1px #000;
+  width: 12px;
+  height: 12px;
+  background: linear-gradient(180deg, #ff6a6a 0%, #b00000 55%, #5a0000 100%);
+  box-shadow: inset 1px 1px #fff, inset -1px -1px #000, 0 0 0 1px #3a0000;
 }
 
 .sch95 .sch-swatch-slack {
@@ -948,6 +948,38 @@ body.win95-app .sch95 .sch-period-tabs [role="tab"][data-state="active"]::before
   padding: 16px 14px;
   font-size: 12px;
   color: var(--chrome-ink-soft);
+}
+
+/* Gantt/Dependencies share Funnel address chrome: milled frame, not a browser sheet. */
+.sch95 .sch-doc.sch-doc-frame {
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0 1px, transparent 1px 2px),
+    linear-gradient(180deg, var(--chrome-mill-hi, #d8d8d8), var(--s-surface, #c0c0c0) 48%, var(--chrome-inset, #a8a8a8));
+  box-shadow:
+    0 0 0 1px var(--chrome-lip, #808080),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    inset 0 2px 3px rgba(0, 0, 0, 0.08);
+}
+
+.sch95 .sch-doc.sch-doc-frame > .flex {
+  margin: 0 6px 6px;
+  background: #fff;
+  box-shadow: var(--s-field);
+}
+
+.sch95 .sch-path-empty {
+  margin: 10px 12px;
+  padding: 10px 12px;
+  max-width: 22rem;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1c1e20;
+  background: var(--s-face, var(--chrome-face));
+  box-shadow: var(--s-sunken);
+}
+
+.sch95 .sch-path-empty-sparse {
+  margin-bottom: 4px;
 }
 
 .sch95 .sch-gantt-row {
