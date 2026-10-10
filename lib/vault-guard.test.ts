@@ -511,6 +511,55 @@ describe("vault-guard", () => {
     expect(merged.state.removedTaskIds).toContain("gone")
   })
 
+  it("drops a tombstone when this write restored that task", () => {
+    const disk = JSON.stringify({
+      state: {
+        tasks: [{ id: "keep", stage: "inbox" }],
+        removedTaskIds: ["back"],
+      },
+    })
+    const undo = JSON.stringify({
+      state: {
+        tasks: [
+          { id: "keep", stage: "inbox" },
+          { id: "back", stage: "inbox", description: "idea" },
+        ],
+        removedTaskIds: [],
+        restoredTaskIds: ["back"],
+      },
+    })
+    const merged = JSON.parse(mergePersistSnapshots(disk, undo, "brain2-task-storage") ?? "{}") as {
+      state: { tasks: { id: string }[]; removedTaskIds?: string[]; restoredTaskIds?: string[] }
+    }
+    expect(merged.state.tasks.map((task) => task.id).sort()).toEqual(["back", "keep"])
+    expect(merged.state.removedTaskIds ?? []).not.toContain("back")
+    expect(merged.state.restoredTaskIds).toBeUndefined()
+  })
+
+  it("keeps a tombstone the same write still lists, even with a restore hint", () => {
+    const disk = JSON.stringify({
+      state: {
+        tasks: [{ id: "keep", stage: "inbox" }],
+        removedTaskIds: ["back"],
+      },
+    })
+    const again = JSON.stringify({
+      state: {
+        tasks: [
+          { id: "keep", stage: "inbox" },
+          { id: "back", stage: "inbox" },
+        ],
+        removedTaskIds: ["back"],
+        restoredTaskIds: ["back"],
+      },
+    })
+    const merged = JSON.parse(mergePersistSnapshots(disk, again, "brain2-task-storage") ?? "{}") as {
+      state: { tasks: { id: string }[]; removedTaskIds: string[] }
+    }
+    expect(merged.state.tasks.map((task) => task.id)).toEqual(["keep"])
+    expect(merged.state.removedTaskIds).toContain("back")
+  })
+
   it("honors removedListIds so a list merge discard is not resurrected by union", () => {
     const hub = JSON.stringify({
       state: {

@@ -13,7 +13,13 @@
  * month and day (the year is kept for the date field). February 29 is read
  * on March 1 in a common year.
  *
- * Storage: localStorage today. Persist v4.
+ * `pointsRules` is the global points catalog for rules that did not already
+ * have a field (`lib/points-rules.ts`). A missing key means that rule's
+ * default, so older installs stay on today's numbers until a row is edited.
+ * Ritual points and the goal-focus multiplier stay their own fields and are
+ * not copied into the map.
+ *
+ * Storage: localStorage today. Persist v5.
  */
 "use client"
 
@@ -29,6 +35,14 @@ import {
   DEFAULT_RITUAL_COMPLETION_BONUS,
   DEFAULT_RITUAL_SECTION_POINTS,
 } from "@/lib/ritual-points"
+import {
+  clampPointsRule,
+  isPointsRuleId,
+  pointsRuleDef,
+  sanitizePointsRules,
+  type PointsRuleId,
+} from "@/lib/points-rules"
+import { bindUserPointsRules } from "@/lib/points-rules-live"
 
 export const DEFAULT_HOME_CITY = "San Diego, California"
 
@@ -50,6 +64,13 @@ interface UserSettingsState {
   /** `YYYY-MM-DD`, or empty when unset. Month and day open the birthday rite. */
   birthday: string
   setBirthday: (value: string) => void
+  /**
+   * Overrides for catalog rules that have no older field. Missing keys mean
+   * the catalog default.
+   */
+  pointsRules: Partial<Record<PointsRuleId, number>>
+  setPointsRule: (id: PointsRuleId, value: number) => void
+  clearPointsRule: (id: PointsRuleId) => void
 }
 
 export const useUserSettingsStore = create<UserSettingsState>()(
@@ -69,6 +90,26 @@ export const useUserSettingsStore = create<UserSettingsState>()(
       goalFocusMultiplier: DEFAULT_GOAL_FOCUS_MULTIPLIER,
       setGoalFocusMultiplier: (multiplier) => set({ goalFocusMultiplier: clampFocusMultiplier(multiplier) }),
       birthday: "",
+      pointsRules: {},
+      setPointsRule: (id, value) => {
+        if (!isPointsRuleId(id) || pointsRuleDef(id).home !== "pointsRules") return
+        const next = clampPointsRule(id, value)
+        set((state) => {
+          const pointsRules = { ...(state.pointsRules ?? {}) }
+          if (next === pointsRuleDef(id).defaultValue) delete pointsRules[id]
+          else pointsRules[id] = next
+          return { pointsRules }
+        })
+      },
+      clearPointsRule: (id) => {
+        if (!isPointsRuleId(id)) return
+        set((state) => {
+          if (!state.pointsRules || state.pointsRules[id] === undefined) return state
+          const pointsRules = { ...state.pointsRules }
+          delete pointsRules[id]
+          return { pointsRules }
+        })
+      },
       setBirthday: (value) => {
         const trimmed = value.trim()
         if (!trimmed) {
@@ -85,7 +126,7 @@ export const useUserSettingsStore = create<UserSettingsState>()(
     }),
     {
       name: persistKey("user-settings"),
-      version: 4,
+      version: 5,
       storage: createCogsJSONStorage(),
       migrate: (state, version) => {
         const prev = (state ?? {}) as Partial<UserSettingsState>
@@ -100,11 +141,24 @@ export const useUserSettingsStore = create<UserSettingsState>()(
                 goalFocusMultiplier: DEFAULT_GOAL_FOCUS_MULTIPLIER,
               }
             : withAnchor
-        if (version < 4) {
-          return { ...withPoints, birthday: "" } as UserSettingsState
+        const withBirthday = version < 4 ? { ...withPoints, birthday: "" } : withPoints
+        if (version < 5) {
+          return { ...withBirthday, pointsRules: {} } as UserSettingsState
         }
-        return withPoints as UserSettingsState
+        return {
+          ...withBirthday,
+          pointsRules: sanitizePointsRules((withBirthday as UserSettingsState).pointsRules),
+        } as UserSettingsState
       },
     },
   ),
 )
+
+bindUserPointsRules({
+  get: () => useUserSettingsStore.getState(),
+  setMap: (id, value) => useUserSettingsStore.getState().setPointsRule(id, value),
+  clearMap: (id) => useUserSettingsStore.getState().clearPointsRule(id),
+  setRitualSectionPoints: (value) => useUserSettingsStore.getState().setRitualSectionPoints(value),
+  setRitualCompletionBonus: (value) => useUserSettingsStore.getState().setRitualCompletionBonus(value),
+  setGoalFocusMultiplier: (value) => useUserSettingsStore.getState().setGoalFocusMultiplier(value),
+})
