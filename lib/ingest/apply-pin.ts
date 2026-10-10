@@ -2,14 +2,18 @@
  * lib/ingest/apply-pin.ts — Refresh the pinned grocery card
  *
  * The pin is how grocery reads survive a closed laptop: Telegram keeps the
- * last dump at the top of the chat even when nothing is polling.
+ * last card at the top of the chat even when nothing is polling. That card
+ * is the same text as the reply, including other open shopping-list counts.
+ * `pin todo` pins today's Home → To Do list instead, as its own card.
  */
 import { applyStatus } from "./apply-read"
-import { groceryDumpText } from "./apply-grocery"
+import { groceryCardText } from "./apply-grocery"
+import { applyTodoPin } from "./apply-todos"
 import type { ApplyResult } from "./types"
 
-export function applyPin(now = new Date()): ApplyResult {
-  const grocery = groceryDumpText()
+export function applyPin(now = new Date(), payload = ""): ApplyResult {
+  if (/^(todo|to-do|to do|today|to do today)$/i.test(payload.trim())) return applyTodoPin(now)
+  const grocery = groceryCardText()
   const status = applyStatus(now)
   const statusLine = status.status === "ok" ? firstLine(status.reply) : null
   if (!grocery) {
@@ -31,7 +35,7 @@ export function applyPin(now = new Date()): ApplyResult {
     kind: "pin",
     reply,
     summary: "Pinned grocery",
-    pinText: grocery,
+    pinText: reply,
   }
 }
 

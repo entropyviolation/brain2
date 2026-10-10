@@ -118,7 +118,10 @@ export async function handleIngestApi(req, res, pathname) {
     const store = readIngestStore()
     writeIngestStore({
       ...store,
-      replies: [...store.replies, { chatId: String(body.chatId), text: String(body.text) }],
+      replies: [
+        ...store.replies,
+        { chatId: String(body.chatId), text: String(body.text), markup: body.markup },
+      ],
     })
     sendJson(res, 200, { ok: true })
     return true

@@ -9,14 +9,14 @@ import { useTaskStore } from "@/lib/task-store"
 import type { List } from "@/lib/types"
 import type { ApplyResult } from "./types"
 
-const NEEDED_NAME = "needed"
+export const NEEDED_LIST_NAME = "needed"
 const SENT_FROM_TEXT = "sent from text"
 
 export function findNeededList(): List | null {
   const lists = useTaskStore
     .getState()
     .lists.filter((list) => !isFolderAllItemsCategoryId(list.id))
-  const exact = lists.find((list) => list.name.trim().toLowerCase() === NEEDED_NAME)
+  const exact = lists.find((list) => list.name.trim().toLowerCase() === NEEDED_LIST_NAME)
   return exact ?? null
 }
 
@@ -25,7 +25,7 @@ function ensureNeededList(): List {
   if (existing) return existing
   const list: List = {
     id: `list-needed-${Date.now().toString(36)}`,
-    name: NEEDED_NAME,
+    name: NEEDED_LIST_NAME,
     color: "#78716c",
     description: "Things needed — from phone text",
     createdAt: new Date(),

@@ -17,8 +17,18 @@ import { UNPAIRED_SUMMARY, pairingCodeValid } from "./pairing"
 import { intakeClassFromMessage, looksLikeVerb, parseMessage } from "./parse-message"
 import { applyCycle } from "./apply-cycle"
 import { expandIngestText } from "./expand"
-import { claimIngestDedupe, ingestDedupeKey } from "./dedupe"
+import { applyNowCapture } from "./apply-now"
+import { applyQuicklists } from "./apply-quicklists"
+import { claimIngestDedupeKeys, ingestDedupeKey, ingestDedupeKeys } from "./dedupe"
+import { peekUndoLabel, runAsAction, undoLastAction } from "@/lib/action-history"
+import {
+  isReplayableWrite,
+  isUndoCommand,
+  notePhoneWrite,
+  undoNamedPhoneWrite,
+} from "./phone-undo"
 import { applyCapture } from "./apply-capture"
+import { telegramCaptureOrigin } from "@/lib/capture-origin"
 import { applyBulk, isDuplicateFollowup, resolveDuplicateClarify } from "./apply-bulk"
 import { applyHabit, writeHabit } from "./apply-habit"
 import { tryApplyHabitTrigger } from "./apply-habit-trigger"
@@ -65,11 +75,11 @@ import {
   applyToday,
   dumpReadCandidate,
 } from "./apply-read"
-import { applyBought, applyBoughtCandidate, applyGrocery, groceryDumpText } from "./apply-grocery"
+import { applyBought, applyBoughtCandidate, applyGrocery, groceryCardText, matchesOpenGroceryLines } from "./apply-grocery"
 import { applyNote } from "./apply-note"
 import { applyIphoneNotes } from "./apply-iphone-notes"
 import { applyPlanForNow, applyReadPlanToday } from "./apply-plan-text"
-import { applyDoNext, applyReadTodoToday, applyTodoToday } from "./apply-todos"
+import { applyDoNext, applyReadTodoToday, applyTodoPinReply, applyTodoToday } from "./apply-todos"
 import { applyGps } from "./apply-gps"
 import { advanceRitual, startMorningReview, startNightRitual, startPeriodReview, startReviewsBoard } from "./apply-ritual"
 import { applyPin } from "./apply-pin"
@@ -79,7 +89,7 @@ import { applyJournalText, applyMedia } from "./apply-media"
 import { isGpsTrackingLogEvent, useGpsIngestLog } from "./gps-log"
 import { makeIngestEventId, useIngestStore } from "./ingest-store"
 import { useHabitsStore } from "@/lib/habits-store"
-import type { ApplyResult, IncomingMessage, IngestIntent, PendingClarify } from "./types"
+import type { ApplyResult, IncomingMessage, IngestEvent, IngestIntent, PendingClarify } from "./types"
 
 const PRIORITY_EXPLICIT = new Set<IngestIntent["kind"]>([
   "help",
@@ -147,6 +157,8 @@ export function ingestIncoming(message: IncomingMessage, now = new Date()): Appl
   const when = messageSentAt(message, now)
   const blocked = authorizeIncoming(message, when)
   if (blocked) return blocked
+  const undo = refuseOrUndo(message)
+  if (undo) return finishIngest(message, undo)
   const waiting = holdMorningNoise(message, when)
   if (waiting) return waiting
   return finishIngest(message, applyTextIntent(message, when))
@@ -156,6 +168,8 @@ export async function ingestIncomingAsync(message: IncomingMessage, now = new Da
   const when = messageSentAt(message, now)
   const blocked = authorizeIncoming(message, when)
   if (blocked) return blocked
+  const undo = refuseOrUndo(message)
+  if (undo) return finishIngest(message, undo)
 
   // Morning review swallows every message until STOP. Photos wait; voice counts as a reply.
   const waiting = holdMorningNoise(message, when)
@@ -195,10 +209,17 @@ function authorizeIncoming(message: IncomingMessage, now: Date): ApplyResult | n
   const { source } = message
   const text = expandIngestText(message.text)
 
-  const dedupeKey = ingestDedupeKey(message)
+  const dedupeKeys = ingestDedupeKeys(message)
+  if (source.channel !== "simulate" && dedupeKeys.length === 0) {
+    return logAndReturn(message, {
+      status: "ignored",
+      kind: "unknown",
+      summary: "Null dedupe key",
+    })
+  }
   if (
-    !claimIngestDedupe(
-      dedupeKey,
+    !claimIngestDedupeKeys(
+      dedupeKeys,
       (k) => store.hasSeenIngestKey(k),
       (k) => store.rememberIngestKey(k),
     )
@@ -238,6 +259,51 @@ function authorizeIncoming(message: IncomingMessage, now: Date): ApplyResult | n
   return null
 }
 
+function replyTargetsLivePin(message: IncomingMessage, kind: string): boolean {
+  const replyId = message.replyToMessageId
+  if (typeof replyId !== "number") return false
+  const pin = useIngestStore.getState().livePins[kind]
+  return !!pin && pin.messageId === replyId && pin.chatId === message.source.chatId
+}
+
+/** A reply to the live grocery pin checks that text off. Any other reply stays ordinary text. */
+function groceryPinReplyPayload(message: IncomingMessage, text: string, now: Date): string | null {
+  if (!replyTargetsLivePin(message, "grocery")) return null
+  if (looksLikeVerb(text, now)) return null
+  const trimmed = text.trim()
+  const loose = /^(got|bought)\s+([\s\S]+)$/i.exec(trimmed)
+  return loose ? loose[2]!.trim() : trimmed
+}
+
+function refuseOrUndo(message: IncomingMessage): ApplyResult | null {
+  const raw = String(message.text ?? "").replace(/^\uFEFF/, "").trim()
+  if (!isUndoCommand(raw)) return null
+  const pending = useIngestStore.getState().getPending(message.source.channel, message.source.chatId)
+  if (pending?.kind === "ritual") {
+    return {
+      status: "ok",
+      kind: "unknown",
+      reply: "A ritual is open, so I left it where it is.",
+      summary: "Undo refused during ritual",
+    }
+  }
+  return undoNamedPhoneWrite(message.source.channel, message.source.chatId)
+}
+
+function rememberNamedWrite(
+  source: IncomingMessage["source"],
+  label: string,
+  apply: () => ApplyResult,
+): ApplyResult {
+  const result = runAsAction(label, apply)
+  if (!isReplayableWrite(result)) {
+    if (peekUndoLabel() === label) undoLastAction()
+    return result
+  }
+  if (peekUndoLabel() === label) notePhoneWrite(source.channel, source.chatId, label)
+  return result
+}
+
 function applyTextIntent(message: IncomingMessage, now: Date): ApplyResult {
   const store = useIngestStore.getState()
   const { source } = message
@@ -254,6 +320,14 @@ function applyTextIntent(message: IncomingMessage, now: Date): ApplyResult {
     return advanceRitual(pending, raw, now)
   }
   const text = expandIngestText(message.text)
+  const label = text.trim().slice(0, 80) || "text"
+  return rememberNamedWrite(source, label, () => applyNamedText(message, now, text))
+}
+
+function applyNamedText(message: IncomingMessage, now: Date, text: string): ApplyResult {
+  const store = useIngestStore.getState()
+  const { source } = message
+  const pending = store.getPending(source.channel, source.chatId)
   if (pending && !message.attachments?.length) {
     if (pending.kind === "duplicate" && isDuplicateFollowup(text)) {
       return resolveDuplicateClarify(pending, text, now)
@@ -266,6 +340,16 @@ function applyTextIntent(message: IncomingMessage, now: Date): ApplyResult {
     }
   }
 
+  const trimmed = text.trim()
+  const pinCheckout = groceryPinReplyPayload(message, text, now)
+  if (pinCheckout != null) return applyBought(pinCheckout, now)
+
+  if (replyTargetsLivePin(message, "todo") && !looksLikeVerb(text, now)) {
+    return applyTodoPinReply(text, now)
+  }
+
+  if (/^\d+$/.test(trimmed)) return applyQuicklists(trimmed, now)
+
   const intent = parseMessage(text, now)
 
   const glossary = tryApplyGlossary(text)
@@ -277,6 +361,11 @@ function applyTextIntent(message: IncomingMessage, now: Date): ApplyResult {
     return dispatchIntent(message, intent, now)
   }
 
+  const looseBought = /^(got|bought)\s+([\s\S]+)$/i.exec(trimmed)
+  if (intent.kind === "capture" && looseBought && matchesOpenGroceryLines(looseBought[2]!)) {
+    return applyBought(looseBought[2]!.trim(), now)
+  }
+
   const discreteHit = applyDiscreteTriggerLine(text, store.discreteEventTriggers, now)
   if (discreteHit) return discreteHit
 
@@ -284,18 +373,41 @@ function applyTextIntent(message: IncomingMessage, now: Date): ApplyResult {
 }
 
 /** `now` is the send time (`message.date`), so a backlog is not stamped when the poller woke up. */
-function dispatchIntent(_message: IncomingMessage, intent: IngestIntent, now: Date): ApplyResult {
+function dispatchIntent(message: IncomingMessage, intent: IngestIntent, now: Date): ApplyResult {
+  if (intent.kind === "capture") {
+    const raw = intent.raw || intent.payload
+    return applyCapture(intent.payload || intent.raw, {
+      sendToInbox: true,
+      now,
+      origin: telegramCaptureOrigin(message, raw),
+    })
+  }
   return dispatch(intent, now)
 }
 
 function finishIngest(message: IncomingMessage, result: ApplyResult): ApplyResult {
   const store = useIngestStore.getState()
-  if (result.status === "needs_clarify") {
-    store.setPending(message.source.channel, message.source.chatId, result.pending)
+  const prev = store.getPending(message.source.channel, message.source.chatId)
+  const cardId = prev?.kind === "ritual" ? prev.ritualCardMessageId : undefined
+  let next = result
+  if (cardId != null) {
+    next = { ...result, ritualCardMessageId: cardId }
+    if (next.status === "needs_clarify" && next.pending.kind === "ritual") {
+      next = {
+        ...next,
+        pending: { ...next.pending, ritualCardMessageId: next.pending.ritualCardMessageId ?? cardId },
+      }
+    }
+  }
+  const keepRitual = prev?.kind === "ritual" && result.summary === "Undo refused during ritual"
+  if (next.status === "needs_clarify") {
+    store.setPending(message.source.channel, message.source.chatId, next.pending)
+  } else if (keepRitual) {
+    store.setPending(message.source.channel, message.source.chatId, prev)
   } else {
     store.setPending(message.source.channel, message.source.chatId, null)
   }
-  return logAndReturn(message, result)
+  return logAndReturn(message, next)
 }
 
 function handlePair(message: IncomingMessage, intent: IngestIntent, now: Date): ApplyResult {
@@ -310,7 +422,7 @@ function handlePair(message: IncomingMessage, intent: IngestIntent, now: Date): 
     username: message.source.username,
     pairedAt: now.toISOString(),
   })
-  const pinText = groceryDumpText() ?? undefined
+  const pinText = groceryCardText() ?? undefined
   return logAndReturn(message, {
     status: "ok",
     kind: "pair",
@@ -324,8 +436,6 @@ function dispatch(intent: IngestIntent, now: Date): ApplyResult {
   switch (intent.kind) {
     case "help":
       return { status: "ok", kind: "help", reply: INGEST_HELP, summary: "Help" }
-    case "capture":
-      return applyCapture(intent.payload || intent.raw, { sendToInbox: true, now })
     case "bulk":
       return applyBulk(intent.payload, { sendToInbox: false, now })
     case "habit":
@@ -398,6 +508,10 @@ function dispatch(intent: IngestIntent, now: Date): ApplyResult {
       return applyHabitsDump(now)
     case "status":
       return applyStatus(now)
+    case "now-capture":
+      return applyNowCapture(intent.payload, now)
+    case "quicklists":
+      return applyQuicklists(intent.payload, now)
     case "ops":
       return applyOps()
     case "count":
@@ -439,7 +553,7 @@ function dispatch(intent: IngestIntent, now: Date): ApplyResult {
     case "iphone-notes":
       return applyIphoneNotes(intent.payload, now)
     case "pin":
-      return applyPin(now)
+      return applyPin(now, intent.payload)
     case "receipt":
       return applyReceiptText(intent.payload, now)
     case "journal":
@@ -572,7 +686,7 @@ function logAndReturn(message: IncomingMessage, result: ApplyResult): ApplyResul
           ? result.summary || "Ignored"
           : result.reply
 
-  const event = {
+  const event: IngestEvent = {
     id: makeIngestEventId(),
     at: message.receivedAt || new Date().toISOString(),
     channel: message.source.channel,
@@ -584,6 +698,8 @@ function logAndReturn(message: IncomingMessage, result: ApplyResult): ApplyResul
     status,
     summary,
     itemIds: result.status === "ok" ? result.itemIds : undefined,
+    ...(message.telegramMessageId != null ? { telegramMessageId: message.telegramMessageId } : {}),
+    ...(message.source.channel !== "simulate" ? { dedupeKey: ingestDedupeKey(message) } : {}),
   }
   // Location still paints. Tracking points must not fill the 200-line log
   // or rewrite the persist hub on every Live Location tick.

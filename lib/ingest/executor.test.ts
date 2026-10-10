@@ -18,6 +18,8 @@ import { taskIsRequired } from "@/lib/todo-commitment"
 import { TaskType } from "@/lib/types"
 import { DEFAULT_DISCRETE_EVENT_TRIGGERS } from "./text-triggers"
 import { resetIngestDedupeForTests } from "./dedupe"
+import { resetActionHistory } from "@/lib/action-history"
+import { resetPhoneUndoForTests, UNNAMED_UNDO } from "./phone-undo"
 import { resetGpsIngestLogForTests, useGpsIngestLog } from "./gps-log"
 import type { IncomingMessage } from "./types"
 
@@ -31,11 +33,16 @@ function sim(text: string): IncomingMessage {
   }
 }
 
+let telegramSeq = 100
+
 function tg(text: string, chatId = "99"): IncomingMessage {
+  telegramSeq += 1
   return {
     source: { channel: "telegram", chatId, userId: chatId },
     text,
     receivedAt: NOW.toISOString(),
+    telegramMessageId: telegramSeq,
+    telegramUpdateId: telegramSeq,
   }
 }
 
@@ -45,6 +52,9 @@ describe("ingestIncoming", () => {
     resetIphoneNoteContinuations()
     resetIngestDedupeForTests()
     resetGpsIngestLogForTests()
+    resetActionHistory()
+    resetPhoneUndoForTests()
+    telegramSeq = 100
     useHabitsStore.setState({ tasks: getDefaultHabits(), weeklyData: {} })
     useIngestStore.setState({
       enabled: true,
@@ -59,6 +69,7 @@ describe("ingestIncoming", () => {
       lastPollError: null,
       lastPollSource: null,
       shortcuts: {},
+      groceryListId: null,
       discreteEventTriggers: DEFAULT_DISCRETE_EVENT_TRIGGERS.map((t) => ({ ...t })),
       seenIngestKeys: [],
       phoneHubUrl: "",
@@ -74,6 +85,45 @@ describe("ingestIncoming", () => {
     const task = useTaskStore.getState().tasks.find((t) => t.description === "pick up milk")
     expect(task?.stage).toBe("inbox")
     expect(task?.monkeyBrain).toBeUndefined()
+    expect(task?.captureOrigin).toEqual({ kind: "telegram", detail: "pick up milk" })
+  })
+
+  it("records the Telegram chat and message on a BIM capture", () => {
+    useIngestStore.getState().allowChat({ chatId: "99", username: "ada", pairedAt: NOW.toISOString() })
+    const message = {
+      ...tg("pick up milk"),
+      source: { channel: "telegram" as const, chatId: "99", username: "ada" },
+    }
+    const result = ingestIncoming(message, NOW)
+    expect(result.status).toBe("ok")
+    const task = useTaskStore.getState().tasks.find((t) => t.description === "pick up milk")
+    expect(task?.captureOrigin).toEqual({
+      kind: "telegram",
+      detail: `@ada · message ${message.telegramMessageId} · pick up milk`,
+    })
+    expect(task?.createdAt).toEqual(NOW)
+  })
+
+  it("files folder: all: item on that folder's All Items list", () => {
+    const result = ingestIncoming(sim("next actions: all: buy milk"), NOW)
+    expect(result.status).toBe("ok")
+    const task = useTaskStore.getState().tasks.find((row) => row.description === "buy milk")
+    const folder = useTaskStore.getState().folders.find((row) => /next actions/i.test(row.name))
+    expect(folder).toBeTruthy()
+    expect(task?.lists).toEqual([`__all-items__${folder!.id}`])
+    expect(task?.stage).toBe("inbox")
+    expect(useTaskStore.getState().lists.some((list) => list.name.toLowerCase() === "all" && !isFolderAllItemsCategoryId(list.id))).toBe(false)
+  })
+
+  it("files a bulk folder: all: header onto that folder's All Items list", () => {
+    const result = ingestIncoming(sim("Next Actions: all:\nbuy milk"), NOW)
+    expect(result.status).toBe("ok")
+    const task = useTaskStore.getState().tasks.find((row) => row.description === "buy milk")
+    const folder = useTaskStore.getState().folders.find((row) => /next actions/i.test(row.name))
+    expect(folder).toBeTruthy()
+    expect(task?.lists).toContain(`__all-items__${folder!.id}`)
+    expect(task?.stage).not.toBe("inbox")
+    expect(useTaskStore.getState().lists.some((list) => list.name.toLowerCase() === "all" && !isFolderAllItemsCategoryId(list.id))).toBe(false)
   })
 
   it("files a bulk line on its list and keeps the clock in the title", () => {
@@ -441,6 +491,87 @@ describe("ingestIncoming", () => {
     expect(second.summary).toMatch(/Duplicate/i)
     const tapes = useTaskStore.getState().tasks.filter((t) => t.description === "tape")
     expect(tapes).toHaveLength(1)
+    const applied = useIngestStore.getState().events.find((event) => event.status === "applied")
+    expect(applied?.telegramMessageId).toBe(42)
+  })
+
+  it("logs a null dedupe key and does not apply a telegram message with no ids", () => {
+    useIngestStore.getState().allowChat({ chatId: "99", userId: "99", pairedAt: NOW.toISOString() })
+    const bare = {
+      source: { channel: "telegram" as const, chatId: "99", userId: "99" },
+      text: "Damn 1 o carried away",
+      receivedAt: NOW.toISOString(),
+    }
+    for (let i = 0; i < 4; i += 1) ingestIncoming(bare, NOW)
+    expect(useTaskStore.getState().tasks.filter((t) => /carried away/i.test(t.description ?? ""))).toHaveLength(0)
+    const events = useIngestStore.getState().events
+    expect(events).toHaveLength(4)
+    expect(events.every((event) => event.summary === "Null dedupe key" && event.dedupeKey === null)).toBe(true)
+  })
+
+  it("undoes the last named text write and refuses when it cannot name one", () => {
+    const wrote = ingestIncoming(sim("needed: tape"), NOW)
+    expect(wrote.status).toBe("ok")
+    expect(useTaskStore.getState().tasks.some((t) => t.description === "tape")).toBe(true)
+    const undone = ingestIncoming(sim("undo"), NOW)
+    expect(undone.status).toBe("ok")
+    expect(undone.reply).toMatch(/Undid needed: tape/)
+    expect(useTaskStore.getState().tasks.some((t) => t.description === "tape")).toBe(false)
+    const again = ingestIncoming(sim("undo"), NOW)
+    expect(again.reply).toBe(UNNAMED_UNDO)
+    const prose = ingestIncoming(sim("undo the laundry"), NOW)
+    expect(prose.kind).toBe("capture")
+  })
+
+  it("does not rewind an open ritual with undo", () => {
+    ingestIncoming(sim("needed: tape"), NOW)
+    const opened = ingestIncoming(sim("gm"), NOW)
+    expect(opened.status).toBe("needs_clarify")
+    const undone = ingestIncoming(sim("undo"), NOW)
+    expect(undone.reply).toMatch(/ritual is open/i)
+    expect(useTaskStore.getState().tasks.some((t) => t.description === "tape")).toBe(true)
+    expect(useIngestStore.getState().getPending("simulate", "sim")?.kind).toBe("ritual")
+  })
+
+  it("treats a text edit as the same message", () => {
+    useIngestStore.getState().allowChat({ chatId: "99", userId: "99", pairedAt: NOW.toISOString() })
+    const first = ingestIncoming(
+      { ...tg("needed: tape"), telegramMessageId: 42, telegramUpdateId: 1001 },
+      NOW,
+    )
+    const edited = ingestIncoming(
+      { ...tg("needed: tape two"), telegramMessageId: 42, telegramUpdateId: 1002 },
+      NOW,
+    )
+    expect(first.status).toBe("ok")
+    expect(edited.status).toBe("ignored")
+    expect(edited.summary).toMatch(/Duplicate/i)
+    expect(useTaskStore.getState().tasks.filter((t) => t.description === "tape")).toHaveLength(1)
+    expect(useTaskStore.getState().tasks.filter((t) => t.description === "tape two")).toHaveLength(0)
+  })
+
+  it("re-applies a Live Location edit on the same message", () => {
+    useIngestStore.getState().allowChat({ chatId: "99", userId: "99", pairedAt: NOW.toISOString() })
+    const first = ingestIncoming(
+      { ...tg("gps: Home\n37.77,-122.42"), telegramMessageId: 9, telegramUpdateId: 501, locationUpdate: true },
+      NOW,
+    )
+    const moved = ingestIncoming(
+      { ...tg("gps: Park\n37.80,-122.50"), telegramMessageId: 9, telegramUpdateId: 502, locationUpdate: true },
+      NOW,
+    )
+    expect(first.status).toBe("ok")
+    expect(moved.status).toBe("ok")
+  })
+
+  it("dedupes a repeat that only has a telegram message id", () => {
+    useIngestStore.getState().allowChat({ chatId: "99", userId: "99", pairedAt: NOW.toISOString() })
+    const first = ingestIncoming({ ...tg("needed: tape"), telegramUpdateId: undefined, telegramMessageId: 77 }, NOW)
+    const second = ingestIncoming({ ...tg("needed: tape"), telegramUpdateId: undefined, telegramMessageId: 77 }, NOW)
+    expect(first.status).toBe("ok")
+    expect(second.status).toBe("ignored")
+    expect(useTaskStore.getState().tasks.filter((t) => t.description === "tape")).toHaveLength(1)
+    expect(useIngestStore.getState().events.find((event) => event.status === "applied")?.telegramMessageId).toBe(77)
   })
 
   it("logs discrete events and habit keywords", () => {
@@ -620,6 +751,18 @@ describe("ingestIncoming", () => {
     expect(again.reply).toMatch(/jump/)
   })
 
+  it("keeps the bot ritual card id across a morning step", () => {
+    const opened = ingestIncoming(sim("gm"), NOW)
+    expect(opened.status).toBe("needs_clarify")
+    const pending = useIngestStore.getState().getPending("simulate", "sim")
+    expect(pending?.kind).toBe("ritual")
+    if (!pending) return
+    useIngestStore.getState().setPending("simulate", "sim", { ...pending, ritualCardMessageId: 15 })
+    const next = ingestIncoming(sim("skip"), NOW)
+    expect(next.ritualCardMessageId).toBe(15)
+    expect(useIngestStore.getState().getPending("simulate", "sim")?.ritualCardMessageId).toBe(15)
+  })
+
   it("does not advance morning review on a live location pin or a blank message", () => {
     const step = ingestIncoming(sim("gm"), NOW)
     expect(step.status).toBe("needs_clarify")
@@ -763,6 +906,187 @@ describe("ingestIncoming", () => {
     expect(useIngestStore.getState().events[0]?.kind).toBe("gps")
     expect(useIngestStore.getState().events[0]?.status).toBe("error")
     expect(useGpsIngestLog.getState().events).toHaveLength(0)
+  })
+
+  it("keeps Now prose as Now capture and leaves bare now as status", () => {
+    const prose = ingestIncoming(sim("Now been putting laundry away…"), NOW)
+    expect(prose.kind).toBe("now-capture")
+    expect(prose.status).toBe("ok")
+    if (prose.status === "ok") expect(prose.reply).toMatch(/been putting laundry away/)
+    const pen = useTimeTrackingStore
+      .getState()
+      .scopes.find((scope) => scope.id === "activity")
+      ?.pens.find((row) => /laundry/i.test(row.name))
+    expect(pen).toBeTruthy()
+    const bare = ingestIncoming(sim("now"), NOW)
+    expect(bare.kind).toBe("status")
+    expect(ingestIncoming(sim("status"), NOW).kind).toBe("status")
+    expect(ingestIncoming(sim("where"), NOW).kind).toBe("status")
+  })
+
+  it("does not log Start outfit store as the grocery store activity", () => {
+    useTimeTrackingStore.getState().addPen("activity", { name: "grocery store", color: "#888888" })
+    const result = ingestIncoming(sim("Start outfit store?"), NOW)
+    expect(result.status).toBe("needs_clarify")
+    expect(result.reply ?? "").not.toMatch(/Started|Working on grocery store/i)
+    const painted = useTimeTrackingStore.getState().entries.some((entry) => {
+      const pen = useTimeTrackingStore
+        .getState()
+        .scopes.find((scope) => scope.id === entry.scopeId)
+        ?.pens.find((row) => row.id === entry.penId)
+      return pen?.name === "grocery store" && entry.date === formatLocalDateKey(NOW)
+    })
+    expect(painted).toBe(false)
+  })
+
+  it("leaves Got back from walk alone and still checks off a real line", () => {
+    const prose = ingestIncoming(sim("Got back from walk"), NOW)
+    expect(prose.kind).toBe("capture")
+    expect(prose.status).toBe("ok")
+    if (prose.status === "ok") {
+      expect(prose.reply).toMatch(/Got back from walk/)
+      expect(prose.summary).not.toMatch(/Missed/)
+    }
+    ingestIncoming(sim("groc milk"), NOW)
+    const colon = ingestIncoming(sim("got: milk"), NOW)
+    expect(colon.kind).toBe("bought")
+    expect(useTaskStore.getState().tasks.find((t) => t.description === "milk")?.completed).toBe(true)
+    ingestIncoming(sim("groc oats"), NOW)
+    const loose = ingestIncoming(sim("got oats"), NOW)
+    expect(loose.kind).toBe("bought")
+    expect(useTaskStore.getState().tasks.find((t) => t.description === "oats")?.completed).toBe(true)
+    const bought = ingestIncoming(sim("bought: eggs"), NOW)
+    expect(bought.kind).toBe("bought")
+  })
+
+  it("uses the Settings grocery list, counts other shopping lists, and dumps store", () => {
+    useIngestStore.setState({ shortcuts: {} })
+    ingestIncoming(sim("bulk:\nGrocery list:\nmilk"), NOW)
+    ingestIncoming(sim("bulk:\nShopping list:\napples\npears"), NOW)
+    const grocery = useTaskStore.getState().lists.find((list) => list.name === "Grocery list")
+    const shopping = useTaskStore.getState().lists.find((list) => list.name === "Shopping list")
+    expect(grocery?.id).toBeTruthy()
+    useIngestStore.getState().setGroceryListId(grocery!.id)
+    const dumped = ingestIncoming(sim("groc"), NOW)
+    expect(dumped.status).toBe("ok")
+    if (dumped.status === "ok") {
+      expect(dumped.reply).toMatch(/milk/)
+      expect(dumped.reply).toMatch(/Shopping list/)
+      expect(dumped.pinText).toBe(dumped.reply)
+    }
+    const viaStore = ingestIncoming(sim("store"), NOW)
+    expect(viaStore.kind).toBe("grocery")
+    expect(viaStore.status).toBe("ok")
+    if (viaStore.status === "ok") {
+      expect(viaStore.pinText).toBe(viaStore.reply)
+      expect(viaStore.pinText).toMatch(/milk/)
+    }
+    useIngestStore.getState().setGroceryListId(shopping!.id)
+    const switched = ingestIncoming(sim("groc"), NOW)
+    expect(switched.status).toBe("ok")
+    if (switched.status === "ok") expect(switched.reply).toMatch(/apples/)
+  })
+
+  it("checks off a reply to the grocery pin and leaves other replies as inbox", () => {
+    ingestIncoming(sim("groc milk"), NOW)
+    ingestIncoming(sim("groc oats"), NOW)
+    useIngestStore.getState().setLivePin("grocery", {
+      chatId: "sim",
+      messageId: 42,
+      kind: "grocery",
+      at: NOW.toISOString(),
+    })
+    const checked = ingestIncoming({ ...sim("milk"), replyToMessageId: 42 }, NOW)
+    expect(checked.kind).toBe("bought")
+    expect(useTaskStore.getState().tasks.find((task) => task.description === "milk")?.completed).toBe(true)
+    const other = ingestIncoming({ ...sim("oats"), replyToMessageId: 7 }, NOW)
+    expect(other.kind).toBe("capture")
+    expect(useTaskStore.getState().tasks.find((task) => task.description === "oats")?.completed).toBeFalsy()
+    const sentence = ingestIncoming(sim("Got back from walk"), NOW)
+    expect(sentence.kind).toBe("capture")
+    const verb = ingestIncoming({ ...sim("help"), replyToMessageId: 42 }, NOW)
+    expect(verb.kind).toBe("help")
+  })
+
+  it("routes a reply to the to-do pin and leaves other sentences alone", () => {
+    const pinned = ingestIncoming(sim("pin todo"), NOW)
+    expect(pinned.kind).toBe("pin")
+    if (pinned.status === "ok") {
+      expect(pinned.pinKind).toBe("todo")
+      expect(pinned.pinText).toBe(pinned.reply)
+    }
+    ingestIncoming(sim("to do today: mail the form"), NOW)
+    useIngestStore.getState().setLivePin("todo", {
+      chatId: "sim",
+      messageId: 77,
+      kind: "todo",
+      at: NOW.toISOString(),
+    })
+    const added = ingestIncoming({ ...sim("file taxes"), replyToMessageId: 77 }, NOW)
+    expect(added.kind).toBe("todo-today")
+    expect(useTaskStore.getState().tasks.some((task) => task.description === "file taxes")).toBe(true)
+    const sentence = ingestIncoming(sim("file taxes later"), NOW)
+    expect(sentence.kind).toBe("capture")
+    const otherPin = ingestIncoming({ ...sim("call the bank"), replyToMessageId: 42 }, NOW)
+    expect(otherPin.kind).toBe("capture")
+    const bank = useTaskStore.getState().tasks.find((task) => task.description === "call the bank")
+    expect(bank?.stage).toBe("inbox")
+    expect(bank?.completed).toBeFalsy()
+    const bareNumber = ingestIncoming(sim("2"), NOW)
+    expect(bareNumber.kind).toBe("quicklists")
+  })
+
+  it("opens quicklists and a bare number, and does not steal list phrases", () => {
+    ingestIncoming(sim("groc milk"), NOW)
+    const menu = ingestIncoming(sim("/quicklists"), NOW)
+    expect(menu.kind).toBe("quicklists")
+    expect(menu.status).toBe("ok")
+    if (menu.status === "ok") {
+      expect(menu.reply).toMatch(/1\. To do today/)
+      expect(menu.reply).toMatch(/2\. To do this week/)
+      expect(menu.reply).toMatch(/3\. To do this month/)
+      expect(menu.reply).toMatch(/4\. Next actions/)
+      expect(menu.reply).toMatch(/5\. Grocery/)
+      expect(menu.reply).toMatch(/7\. ISO/)
+      expect(menu.reply).toMatch(/8\. Undone habits/)
+    }
+    const today = ingestIncoming(sim("1"), NOW)
+    expect(today.kind).toBe("quicklists")
+    if (today.status === "ok") expect(today.reply).toMatch(/To do today/)
+    const grocery = ingestIncoming(sim("5"), NOW)
+    expect(grocery.status).toBe("ok")
+    if (grocery.status === "ok") expect(grocery.reply).toMatch(/milk/)
+    const habits = ingestIncoming(sim("8"), NOW)
+    expect(habits.status).toBe("ok")
+    if (habits.status === "ok") expect(habits.reply).toMatch(/Drink water/)
+    for (const phrase of ["grocery list", "grocery store", "to do list", "to-do list"]) {
+      const result = ingestIncoming(sim(phrase), NOW)
+      expect(result.kind).toBe("capture")
+      if (result.status === "ok") expect(result.reply).toMatch(new RegExp(phrase.replace("-", "\\-"), "i"))
+    }
+  })
+
+  it("leaves bare text, call, did, and add as inbox and keeps the colon forms", () => {
+    const text = ingestIncoming(sim("Text shelby back"), NOW)
+    expect(text.kind).toBe("capture")
+    if (text.status === "ok") expect(text.reply).toMatch(/Text shelby back/)
+    const call = ingestIncoming(sim("call gran points-100"), NOW)
+    expect(call.kind).toBe("capture")
+    if (call.status === "ok") expect(call.reply).toMatch(/call gran points-100/)
+    const did = ingestIncoming(sim("did finally get into colder room (took 30 min)"), NOW)
+    expect(did.kind).toBe("capture")
+    expect(did.status).not.toBe("needs_clarify")
+    const add = ingestIncoming(sim("Add more backslash cmds?…"), NOW)
+    expect(add.kind).toBe("capture")
+    if (add.status === "ok") expect(add.reply).toMatch(/Add more backslash cmds/)
+    expect(ingestIncoming(sim("text: Jane on my way"), NOW).kind).toBe("iphone-text")
+    expect(ingestIncoming(sim("call: Jane 12m"), NOW).kind).toBe("iphone-call")
+    expect(ingestIncoming(sim("sent: Jane hi"), NOW).kind).toBe("iphone-text")
+    expect(ingestIncoming(sim("called: Mom 3m"), NOW).kind).toBe("iphone-call")
+    expect(ingestIncoming(sim("did: Drink water"), NOW).kind).toBe("habit")
+    expect(ingestIncoming(sim("add: pick up milk"), NOW).kind).toBe("capture")
+    const added = useTaskStore.getState().tasks.find((t) => t.description === "pick up milk")
+    expect(added?.description).toBe("pick up milk")
   })
 
   it("keeps an unpaired gps refusal on the ingest log", () => {

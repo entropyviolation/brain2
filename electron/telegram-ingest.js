@@ -3,10 +3,12 @@
  *
  * Token: userData via safeStorage, or gitignored `.env.local` /
  * `COGS_TELEGRAM_BOT_TOKEN`. The poller never touches Zustand; it forwards
- * private messages to the renderer over IPC. Replies go back through
- * sendMessage. See docs/MESSAGE_INGEST.md.
+ * private messages to the renderer over IPC. The poll offset advances when the
+ * renderer acks, after apply and flush — not when the IPC send returns.
+ * Replies go back through sendMessage. See docs/MESSAGE_INGEST.md.
  */
 const { app, ipcMain, safeStorage } = require("electron")
+const { pathToFileURL } = require("url")
 const { extractTelegramMessage, hydrateTelegramUpdate } = require("./telegram-file")
 const fs = require("fs")
 const path = require("path")
@@ -19,8 +21,37 @@ const STOP = "cogs:telegram:stop"
 const STATUS = "cogs:telegram:status"
 const SEND = "cogs:telegram:send"
 const PIN = "cogs:telegram:pin"
+const EDIT = "cogs:telegram:edit"
 const MESSAGE = "cogs:telegram:message"
 const POLL_STATUS = "cogs:telegram:pollStatus"
+const ACK = "cogs:telegram:ack"
+const ACK_WAIT_MS = 120000
+
+/** Same rule as lib/ingest/confirm-updates.ts — prefix of finished writes only. */
+function advanceConfirmedOffset(startOffset, orderedUpdateIds, confirmed) {
+  let offset = startOffset
+  for (const id of orderedUpdateIds) {
+    if (!confirmed.has(id)) break
+    offset = Math.max(offset, id + 1)
+  }
+  return offset
+}
+
+const ackWaiters = new Map()
+
+function waitForUpdateAck(updateId) {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      ackWaiters.delete(updateId)
+      resolve(false)
+    }, ACK_WAIT_MS)
+    ackWaiters.set(updateId, () => {
+      clearTimeout(timer)
+      ackWaiters.delete(updateId)
+      resolve(true)
+    })
+  })
+}
 
 function hubStatusPath() {
   return path.join(process.cwd(), "data", "phone-hub-status.json")
@@ -120,6 +151,49 @@ function writeOffset(offset) {
 
 let polling = false
 let pollAbort = false
+let menuRegistered = false
+let telegramUiPromise = null
+
+function telegramUi() {
+  if (!telegramUiPromise) {
+    telegramUiPromise = import(pathToFileURL(path.join(__dirname, "../lib/ingest/telegram-ui.mjs")).href)
+  }
+  return telegramUiPromise
+}
+
+async function ensureCommandMenu(token) {
+  if (menuRegistered) return
+  const ui = await telegramUi()
+  for (const call of ui.commandMenuRegistration()) {
+    await telegramApi(token, call.method, call.params)
+  }
+  menuRegistered = true
+}
+
+async function payloadFromUpdate(update, token) {
+  const payload = await hydrateTelegramUpdate(update, token, (method, params) =>
+    telegramApi(token, method, params),
+  )
+  if (payload) return payload
+  const query = update && update.callback_query
+  if (!query || !query.id) return null
+  await telegramApi(token, "answerCallbackQuery", { callback_query_id: query.id })
+  const ui = await telegramUi()
+  const tapped = ui.callbackQueryToIncoming(update)
+  if (!tapped) return null
+  if (tapped.clearMarkup && tapped.clearMarkup.messageId != null) {
+    try {
+      await telegramApi(token, "editMessageReplyMarkup", {
+        chat_id: tapped.clearMarkup.chatId,
+        message_id: tapped.clearMarkup.messageId,
+        reply_markup: JSON.stringify({ inline_keyboard: [] }),
+      })
+    } catch {
+      /* the question markup is already gone */
+    }
+  }
+  return tapped.payload
+}
 /** @type {((channel: string, payload: unknown) => void) | null} */
 let sendToRenderer = null
 
@@ -158,29 +232,59 @@ async function pollLoop() {
       break
     }
     try {
+      try {
+        await ensureCommandMenu(token)
+      } catch (err) {
+        console.error("[telegram] commands", err && err.message ? err.message : err)
+      }
+      const ui = await telegramUi()
       const updates = await telegramApi(token, "getUpdates", {
         timeout: 25,
         offset,
-        allowed_updates: JSON.stringify(["message", "edited_message"]),
+        allowed_updates: ui.allowedUpdatesParam(),
       })
-      const batch = []
+      const rows = []
       for (const update of updates || []) {
-        offset = Math.max(offset, (update.update_id || 0) + 1)
-        const payload = await hydrateTelegramUpdate(update, token, (method, params) =>
-          telegramApi(token, method, params),
-        )
-        if (payload) batch.push(payload)
+        const id = Number(update && update.update_id) || 0
+        let payload = null
+        let failed = false
+        try {
+          payload = await payloadFromUpdate(update, token)
+        } catch {
+          failed = true
+        }
+        const ack = payload && sendToRenderer ? waitForUpdateAck(id) : null
+        rows.push({ id, payload, failed, ack })
       }
-      batch.sort((a, b) => {
-        const at = Date.parse(a.receivedAt || "") || 0
-        const bt = Date.parse(b.receivedAt || "") || 0
+      const sendable = rows.filter((row) => row.payload)
+      sendable.sort((a, b) => {
+        const at = Date.parse(a.payload.receivedAt || "") || 0
+        const bt = Date.parse(b.payload.receivedAt || "") || 0
         if (at !== bt) return at - bt
-        return (a.telegramMessageId || 0) - (b.telegramMessageId || 0)
+        return (a.payload.telegramMessageId || 0) - (b.payload.telegramMessageId || 0)
       })
-      for (const payload of batch) {
-        if (sendToRenderer) sendToRenderer(MESSAGE, payload)
+      for (const row of sendable) {
+        if (sendToRenderer) sendToRenderer(MESSAGE, row.payload)
       }
-      writeOffset(offset)
+      const confirmed = new Set()
+      const orderedIds = []
+      for (const row of rows) {
+        orderedIds.push(row.id)
+        if (row.failed) break
+        if (!row.payload) {
+          confirmed.add(row.id)
+          continue
+        }
+        if (!row.ack) break
+        if (await row.ack) confirmed.add(row.id)
+        else break
+      }
+      const next = advanceConfirmedOffset(offset, orderedIds, confirmed)
+      if (next !== offset) writeOffset(next)
+      offset = next
+      if (orderedIds.length > 0 && confirmed.size < orderedIds.length) {
+        await new Promise((r) => setTimeout(r, 1000))
+      }
     } catch (err) {
       if (sendToRenderer) {
         sendToRenderer(POLL_STATUS, { ok: false, error: err && err.message ? err.message : "poll failed" })
@@ -244,24 +348,51 @@ function registerTelegramIpc(getMainWindow) {
   ipcMain.handle(HAS_TOKEN, () => ({ ok: true, hasToken: Boolean(readToken()) }))
   ipcMain.handle(START, () => startPolling())
   ipcMain.handle(STOP, () => stopPolling())
+  ipcMain.on(ACK, (_event, ids) => {
+    const list = Array.isArray(ids) ? ids : []
+    for (const id of list) {
+      const wake = ackWaiters.get(Number(id))
+      if (wake) wake()
+    }
+  })
   ipcMain.handle(STATUS, () => ({
     ok: true,
     polling,
     hasToken: Boolean(readToken()),
     hub: phoneHubOwnsTelegram(),
   }))
-  ipcMain.handle(SEND, async (_e, chatId, text) => {
+  ipcMain.handle(SEND, async (_e, chatId, text, markup) => {
     const token = readToken()
     if (!token) return { ok: false, error: "No bot token stored" }
     try {
       const messageIds = []
-      for (const part of chunkTelegramText(text)) {
-        const result = await telegramApi(token, "sendMessage", { chat_id: chatId, text: part })
+      const parts = chunkTelegramText(text)
+      for (let i = 0; i < parts.length; i++) {
+        const params = { chat_id: chatId, text: parts[i] }
+        if (markup && i === parts.length - 1) {
+          params.reply_markup = typeof markup === "string" ? markup : JSON.stringify(markup)
+        }
+        const result = await telegramApi(token, "sendMessage", params)
         if (result && result.message_id != null) messageIds.push(result.message_id)
       }
       return { ok: true, messageIds, messageId: messageIds[0] }
     } catch (err) {
       return { ok: false, error: err && err.message ? err.message : "send failed" }
+    }
+  })
+  ipcMain.handle(EDIT, async (_e, chatId, messageId, text, markup) => {
+    const token = readToken()
+    if (!token) return { ok: false, error: "No bot token stored" }
+    try {
+      await telegramApi(token, "editMessageText", {
+        chat_id: chatId,
+        message_id: messageId,
+        text,
+        reply_markup: JSON.stringify(markup || { inline_keyboard: [] }),
+      })
+      return { ok: true }
+    } catch (err) {
+      return { ok: false, error: err && err.message ? err.message : "edit failed" }
     }
   })
   ipcMain.handle(PIN, async (_e, chatId, messageId, previousId) => {

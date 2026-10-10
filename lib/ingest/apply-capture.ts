@@ -1,12 +1,14 @@
 /**
  * lib/ingest/apply-capture.ts — Inbox / Quick Add via the existing capture pipeline
  *
- * Same shorthand as desktop Quick Add: colon paths create the list, schedule
+ * Same shorthand as desktop Quick Add: colon paths create the list,
+ * `folder: all: item` files on that folder's All Items, schedule
  * words stay in the title, and `-p` / `-plain` stores the line as written.
  */
 import { parseSmartCapture } from "@/lib/smart-parse"
 import { buildCapturedTask, ensureCaptureTarget, type CaptureMutators } from "@/lib/capture-target"
 import { useTaskStore } from "@/lib/task-store"
+import type { CaptureOrigin } from "@/lib/types"
 import type { ApplyResult } from "./types"
 
 export function taskStoreMutators(): CaptureMutators {
@@ -22,7 +24,10 @@ export function taskStoreMutators(): CaptureMutators {
   }
 }
 
-export function applyCapture(text: string, opts?: { sendToInbox?: boolean; now?: Date }): ApplyResult {
+export function applyCapture(
+  text: string,
+  opts?: { sendToInbox?: boolean; now?: Date; origin?: CaptureOrigin },
+): ApplyResult {
   const trimmed = text.trim()
   if (!trimmed) {
     return { status: "error", kind: "capture", reply: "Nothing to capture." }
@@ -38,6 +43,7 @@ export function applyCapture(text: string, opts?: { sendToInbox?: boolean; now?:
     target,
     folders: useTaskStore.getState().folders,
     now: opts?.now,
+    origin: opts?.origin,
   })
   useTaskStore.getState().addTask(task)
   const title = task.description.trim() || trimmed

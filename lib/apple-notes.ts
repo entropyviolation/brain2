@@ -11,6 +11,7 @@
  */
 import { addDays } from "date-fns"
 import { endOfLocalDay, formatLocalDateKey, startOfLocalDay } from "@/lib/date-utils"
+import { notesCaptureOrigin } from "@/lib/capture-origin"
 import { createListItem, withCategoryDefaults } from "@/lib/item-utils"
 import { parsePathHeader } from "@/lib/smart-parse"
 import type { Folder, List, Task } from "@/lib/types"
@@ -449,6 +450,11 @@ export function noteToParkedItem(note: AppleNote, list: List, source = APPLE_NOT
       ...(note.folder ? { [APPLE_NOTE_ATTR.folder]: note.folder } : {}),
       ...(note.account ? { [APPLE_NOTE_ATTR.account]: note.account } : {}),
     },
+    captureOrigin: notesCaptureOrigin({
+      kind: source === IPHONE_NOTES_STORE_SOURCE ? "iphone-notes" : "notes",
+      title: noteDisplayTitle(note),
+      folder: note.folder && !isGenericNotesFolder(note.folder) ? note.folder : undefined,
+    }),
   }
 }
 

@@ -49,4 +49,25 @@ describe("name resolve", () => {
   it("still matches when a real word lands beside the stopword", () => {
     expect(scoreName("flights to tokyo", "flights to book")).toBeGreaterThan(0.55)
   })
+
+  it("does not let store carry a unique fuzzy match", () => {
+    expect(scoreName("outfit store", "grocery store")).toBe(0)
+    expect(resolveName("outfit store", [{ id: "pen", name: "grocery store" }]).status).toBe("none")
+  })
+
+  it("refuses a unique fuzzy match when both sides have exclusive content words", () => {
+    expect(scoreName("flights to tokyo", "flights to book")).toBeGreaterThan(0.55)
+    expect(resolveName("flights to tokyo", [{ id: "l", name: "flights to book" }]).status).toBe("none")
+    expect(resolveName("red boots", [{ id: "b", name: "blue boots" }]).status).toBe("none")
+  })
+
+  it("still matches a longer line that contains the name", () => {
+    const hit = resolveName("milk 2 gal", [{ id: "m", name: "milk" }])
+    expect(hit.status).toBe("match")
+  })
+
+  it("still matches an exact name that contains a glue word", () => {
+    const hit = resolveName("grocery store", [{ id: "pen", name: "grocery store" }])
+    expect(hit.status).toBe("match")
+  })
 })

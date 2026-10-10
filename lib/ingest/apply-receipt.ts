@@ -7,7 +7,7 @@
 import { completeTask } from "@/lib/services/completion-service"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
 import { useTaskStore } from "@/lib/task-store"
-import { applyBoughtCandidate, findGroceryList, groceryDumpText } from "./apply-grocery"
+import { applyBoughtCandidate, findGroceryList, groceryCardText } from "./apply-grocery"
 import { bumpInventory } from "./apply-inventory"
 import { resolveName } from "./name-resolve"
 import { parseReceiptLines, type ReceiptLine } from "./receipt-parse"
@@ -184,7 +184,7 @@ function finishReceipt(session: ReceiptSession): ApplyResult {
       ? `Receipt got ${session.checked.join(", ")}`
       : `Receipt pantry ${session.pantry.join(", ")}`,
     itemIds: [],
-    pinText: groceryDumpText() ?? undefined,
+    pinText: groceryCardText() ?? undefined,
   }
 }
 

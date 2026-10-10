@@ -66,6 +66,8 @@ interface IngestState {
   lastPollSource: string | null
   /** User aliases: `shop` → `groc`. First token only; letters/digits/_/-. */
   shortcuts: Record<string, string>
+  /** List id `groc` / `store` dump. Empty means the grocery-ish name still wins. */
+  groceryListId: string | null
   /** Editable discrete-event trigger patterns (smoked weed, ate {item}, …). */
   discreteEventTriggers: DiscreteTriggerDef[]
   /** Recently processed Telegram update/message keys (dedupe). */
@@ -87,6 +89,7 @@ interface IngestState {
   setPollStatus: (ok: boolean, source: string, error?: string | null) => void
   setShortcut: (alias: string, expansion: string) => void
   removeShortcut: (alias: string) => void
+  setGroceryListId: (listId: string | null) => void
   setDiscreteEventTriggers: (triggers: DiscreteTriggerDef[]) => void
   upsertDiscreteEventTrigger: (trigger: DiscreteTriggerDef) => void
   removeDiscreteEventTrigger: (id: string) => void
@@ -119,6 +122,7 @@ export const useIngestStore = create<IngestState>()(
       lastPollError: null,
       lastPollSource: null,
       shortcuts: {},
+      groceryListId: null,
       discreteEventTriggers: DEFAULT_DISCRETE_EVENT_TRIGGERS.map((t) => ({ ...t })),
       seenIngestKeys: [],
       phoneHubUrl: "",
@@ -189,6 +193,7 @@ export const useIngestStore = create<IngestState>()(
           delete shortcuts[alias.trim().toLowerCase()]
           return { shortcuts }
         }),
+      setGroceryListId: (listId) => set({ groceryListId: listId?.trim() || null }),
       setDiscreteEventTriggers: (triggers) =>
         set({
           discreteEventTriggers: triggers
@@ -230,7 +235,7 @@ export const useIngestStore = create<IngestState>()(
     }),
     {
       name: persistKey("ingest-store"),
-      version: 5,
+      version: 6,
       storage: createCogsJSONStorage(),
       migrate: (persisted) => {
         const p = (persisted ?? {}) as Record<string, unknown>
@@ -250,6 +255,7 @@ export const useIngestStore = create<IngestState>()(
           allowlistRev: typeof p.allowlistRev === "number" ? p.allowlistRev : 0,
           discreteEventTriggers: triggers.length ? triggers : DEFAULT_DISCRETE_EVENT_TRIGGERS.map((t) => ({ ...t })),
           seenIngestKeys: Array.isArray(p.seenIngestKeys) ? (p.seenIngestKeys as string[]) : [],
+          groceryListId: typeof p.groceryListId === "string" && p.groceryListId.trim() ? p.groceryListId : null,
         }
       },
       merge: (persisted, current) => {
@@ -276,6 +282,10 @@ export const useIngestStore = create<IngestState>()(
               ? saved.discreteEventTriggers
               : live.discreteEventTriggers,
           seenIngestKeys: saved.seenIngestKeys ?? live.seenIngestKeys,
+          groceryListId:
+            typeof saved.groceryListId === "string" && saved.groceryListId.trim()
+              ? saved.groceryListId
+              : live.groceryListId,
         }
       },
       // Poll ticks every 3s. Persisting `lastPollAt` rewrote the hub file on
@@ -291,6 +301,7 @@ export const useIngestStore = create<IngestState>()(
         pendingByChat: state.pendingByChat,
         events: state.events,
         shortcuts: state.shortcuts,
+        groceryListId: state.groceryListId,
         discreteEventTriggers: state.discreteEventTriggers,
         seenIngestKeys: state.seenIngestKeys,
         phoneHubUrl: state.phoneHubUrl,

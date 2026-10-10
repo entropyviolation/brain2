@@ -56,21 +56,21 @@ In chat: `info` · `{prefix} info` · `{prefix} commands` · `all commands`.
 
 ### `groc`
 
-- **Format:** `groc` · `grocery` · `shop`
-- **Forms / aliases:** `groc`, `grocery`, `groceries`, `shop`, `shopping`
-- **Does:** Dump the grocery-ish list (Grocery / Groceries / Shopping) as plain text and pin it in the chat.
+- **Format:** `groc` · `store` · `grocery` · `shop`
+- **Forms / aliases:** `groc`, `grocery`, `groceries`, `shop`, `shopping`, `store`
+- **Does:** Dump the live grocery list (Settings → Message ingest picker; otherwise Grocery / Groceries / Shopping) and pin that card. Other open shopping-list counts are on the card once; the dump reply is the same card. Bare `store` is that dump. `grocery list` and `grocery store` as prose stay inbox.
 
 ### `groc {item}`
 
-- **Format:** `groc milk` · `grocery: eggs` · multi-line under `groc`
-- **Forms / aliases:** `groc …`, `grocery: …`, `groceries: …`, `shop: …`, `shopping: …`
-- **Does:** Add item(s) onto the grocery store list (Inbox off). Several lines = bulk. Identical open titles ask see / again / dismiss.
+- **Format:** `groc milk` · `store milk` · `grocery: eggs` · multi-line under `groc`
+- **Forms / aliases:** `groc …`, `store …`, `grocery: …`, `groceries: …`, `shop: …`, `shopping: …`
+- **Does:** Add item(s) onto the live grocery list (Inbox off). Several lines = bulk. Identical open titles ask see / again / dismiss. `grocery`, `groceries`, `shop`, and `shopping` need a colon before an item so those words do not eat a sentence. `groc` and `store` still take a space.
 
 ### `got`
 
-- **Format:** `got milk` · `x bread, eggs` · `bought: oats` · `check off milk`
-- **Forms / aliases:** `got`, `bought`, `x`, `check off`, `checkoff`, `checkout`
-- **Does:** Complete matching open grocery lines and refresh the pin.
+- **Format:** `got: milk` · `bought: oats` · `x bread, eggs` · `check off milk`
+- **Forms / aliases:** `got:`, `bought:`, `x`, `check off`, `checkoff:`, `checkout:`
+- **Does:** Complete matching open grocery lines and refresh the pin. `got` and `bought` need a colon, unless the words after them already match an open grocery line (`got milk` when milk is open). Otherwise the sentence stays inbox. `Got back from walk` is not a checkoff. Replying to the grocery pin checks that text off; a reply to any other message does not.
 
 ### `g` *(retired)*
 
@@ -92,14 +92,14 @@ In chat: `info` · `{prefix} info` · `{prefix} commands` · `all commands`.
 ### `add`
 
 - **Format:** `add: pick up milk` · `qa: idea` · `inbox: …` · `idea: …` · `capture: …` · `quick add: …`
-- **Forms / aliases:** `add`, `qa`, `quick add`, `quickadd`, `capture`, `inbox`, `idea`
-- **Does:** Smart-capture into Inbox (same path as desktop Quick Add). `list: item` and `folder: list: item` create the list if needed. Dates, times, duration, and priority are read and left in the title. End with -mb or -monkey to dump it in Monkey brain. -p or -plain stores the line as written and detects none of that.
+- **Forms / aliases:** `add:`, `qa`, `quick add`, `quickadd`, `capture`, `inbox`, `idea`
+- **Does:** Smart-capture into Inbox (same path as desktop Quick Add). Only `add:` strips the verb; bare `add` stays inbox with the full sentence. `list: item` and `folder: list: item` create the list if needed. `folder: all: item` (also `all items`) files on that folder's All Items, not a list named all. A name may contain digits (`brain2: item` is the list brain2). Dates, times, duration, and priority are read and left in the title. End with -mb or -monkey to dump it in Monkey brain. -p or -plain stores the line as written and detects none of that.
 
 ### `(plain text)`
 
 - **Format:** `pick up milk`
 - **Forms / aliases:** `(any message with no verb)`
-- **Does:** Prefix-less text that is not a list dump becomes an Inbox capture. Colon paths create the list. Dates, times, duration, and priority stay in the title. -mb or -monkey on the line sends it to Monkey brain. -p or -plain stores the line as written.
+- **Does:** Prefix-less text that is not a list dump becomes an Inbox capture. Colon paths create the list. `folder: all: item` files on that folder's All Items. A name may contain digits (`brain2: item` is the list brain2). Dates, times, duration, and priority stay in the title. -mb or -monkey on the line sends it to Monkey brain. -p or -plain stores the line as written.
 
 ## Bulk add & list dumps
 
@@ -107,13 +107,13 @@ In chat: `info` · `{prefix} info` · `{prefix} commands` · `all commands`.
 
 - **Format:** `bulk:` then headers and one item per line
 - **Forms / aliases:** `bulk`, `bulk add`, `bulkadd`
-- **Does:** Bulk Add pipeline (Inbox off). Headers `list:` / `folder: list:` / `Home: Groceries:` work. Grocery names with no other folder use the store list. Dates, times, duration, and priority on an item line stay in the title. -p or -plain on a line stores that line as written.
+- **Does:** Bulk Add pipeline (Inbox off). Headers `list:` / `folder: list:` / `folder: all:` / `Home: Groceries:` work. `folder: all:` files following lines on that folder's All Items. Grocery names with no other folder use the store list. Dates, times, duration, and priority on an item line stay in the title. -p or -plain on a line stores that line as written.
 
 ### `{List name}:`
 
 - **Format:** `Chores:` then lines · `Grocery list:` then lines · `before elijah gets home:` then lines
 - **Forms / aliases:** `{Name}: then lines`
-- **Does:** Multi-line `Name:` dump files onto that list (found or created). Grocery headers land on the store list. Identical open titles ask see / again / dismiss.
+- **Does:** Multi-line `Name:` dump files onto that list (found or created). `Folder: all:` files onto that folder's All Items. Grocery headers land on the store list. Identical open titles ask see / again / dismiss.
 
 ### `before M/D:`
 
@@ -126,8 +126,8 @@ In chat: `info` · `{prefix} info` · `{prefix} commands` · `all commands`.
 ### `habit:`
 
 - **Format:** `habit: exercise 30` · `did: stretch` · optional `yesterday`
-- **Forms / aliases:** `habit`, `did`
-- **Does:** Write a habit by name. GOAL → number; BOOLEAN → done/yes/no/undo; TEXT → rest of line. Fuzzy-matches habit name.
+- **Forms / aliases:** `habit`, `did:`
+- **Does:** Write a habit by name. `did` needs a colon; bare `did` stays inbox. GOAL → number; BOOLEAN → done/yes/no/undo; TEXT → rest of line. Fuzzy-matches habit name.
 
 ### `h`
 
@@ -170,7 +170,7 @@ In chat: `info` · `{prefix} info` · `{prefix} commands` · `all commands`.
 
 - **Format:** `dh: hemisync` · `dh: read 30 pages` · `dh: chess score 355`
 - **Forms / aliases:** `dh:`
-- **Does:** Habit keyword. The phrase after dh: is the existing whole-message keyword. Bare keywords are not logged.
+- **Does:** Habit keyword. The whole message must be the phrase. “drank water” counts only when that is the entire message, not when those words sit inside a longer line. A BIM keyword source counts how many of those messages arrived in the habit’s period. The source row chooses true if one message arrives, true after a set number N, or a logged phrase such as `read {n} pages of {bookname}` or `cleaned for {x} minutes`. `{n}`, `{x}`, and `{minutes}` are the amount (3 pages, or 9 minutes). `{hours}` is hours. A name in braces is kept (`bookname` Dune). When the pattern’s unit is minutes or hours, the message also paints that prior span on the activity linked from the habit’s tracking tags — or a pen named for the habit when it has none. No clock ends the span at the message time and marks the block estimated (`precision` and `clockCertainty`). A trailing clock such as `1:11` is the end; the span runs backward. A bare clock is military, the same as a log line, and stays on the message’s date even when that clock is still ahead. A tracking link turns those minutes into the habit’s number, so the phrase is not added a second time. With no tracking link, the summed amount is written on the cell. The same message in the same minute counts once. The phrase can still sit in the habit’s BIM Keywords list. The mode and the pattern are set on the source row. `dh:` still runs the phrase after the colon through the older trigger. A keyword hit with no timestamp is not copied onto every period.
 
 ## Discrete event log
 
@@ -178,7 +178,7 @@ In chat: `info` · `{prefix} info` · `{prefix} commands` · `all commands`.
 
 - **Format:** `log: left room` · `log: left room at 3:30` · `log: left room at 3:30 loc: home` · `log: shower 7:30 - 7:45` · `log: shower 10m` · `log: START walk` · `log: END walk 5:00` · `log: went outside 12:04` · `log went outside 7/4/26 1:00`
 - **Forms / aliases:** `log:`, `log-`, `log`
-- **Does:** Tracking note on Activity, the Event row of the Tracking log. The word log works with or without the colon. No time → point at send time. `at 3:30` is a point on the send date. `7:30 - 7:45` is a range. `10m` / `10 min` just finished (end = send time). START/END pair an activity. A line under the event is the note; the clock stays on the first line. A later block over that minute leaves the point. Times use the machine timezone. A clock with no certainty word is exact (`clockCertainty` omitted). `est` / `estimated` / `~` marks the time estimated and also sets `precision: estimated`. `unknown` keeps the named minute for placement and does not treat it as observed. Put the word after the clock, or after the place. Trailing `loc: home` reuses or creates that Location pen and paints a Location instant at the same minute (`log: left room loc: home`, `log: left room at 3:30 loc: home`). The place is the last suffix. The event phrase is stored as the title and as `eventKind`, a lowercase slug with spaces collapsed and punctuation removed, so the same phrase groups (`left room`). Saved keywords, added in Tracking settings (the gear), match the longest phrase (`log: went outside`, `log went outside 12:04`, `log: went outside 7/4/26 1:00`). The remainder is the optional date and time, not part of the title. The title is the saved phrase and `eventKind` is its slug. A bare phrase with no log prefix is not a log. On a log line, a clock with no am/pm is military time: `12:04` is noon, `18:37` is 6:37pm, and `1:00` is 1:00am, not 1pm. `1pm`, `1:00pm`, `1 PM`, `1:00 PM`, and `1:00 p.m.` are 1:00pm. `7/4/26` and `7/4/2026` are July 4, 2026 (month/day/year). Log lines, switch lines, and tracking-note clocks share that reader (`parseExpectedWhen`). Ordinary inbox text is not parsed this way. Labeled from text pipeline. Bare `o` is NOT a log.
+- **Does:** Tracking note on Activity, the Event row of the Tracking log. The word log works with or without the colon. No time → point at send time. `at 3:30` is a point on the send date. `7:30 - 7:45` is a range. `10m` / `10 min` just finished (end = send time). START/END pair an activity. A line under the event is the note; the clock stays on the first line. A later block over that minute leaves the point. Times use the machine timezone. A clock with no certainty word is exact (`clockCertainty` omitted). `est` / `estimated` / `~` marks the time estimated and also sets `precision: estimated`. `unknown` keeps the named minute for placement and does not treat it as observed. Put the word after the clock, or after the place. Trailing `loc: home` reuses or creates that Location pen and paints a Location instant at the same minute (`log: left room loc: home`, `log: left room at 3:30 loc: home`). The place is the last suffix. The event phrase is stored as the title and as `eventKind`, a lowercase slug with spaces collapsed and punctuation removed, so the same phrase groups (`left room`). Saved keywords, added in Tracking settings (the gear), match the longest phrase (`log: went outside`, `log went outside 12:04`, `log: went outside 7/4/26 1:00`). The remainder is the optional date and time, not part of the title. The title is the saved phrase and `eventKind` is its slug. A bare phrase with no log prefix is not a log. On a log line, a clock with no am/pm is military time: `12:04` is noon, `18:37` is 6:37pm, and `1:00` is 1:00am, not 1pm. `1pm`, `1:00pm`, `1 PM`, `1:00 PM`, and `1:00 p.m.` are 1:00pm. `7/4/26` and `7/4/2026` are July 4, 2026 (month/day/year). Log lines, switch lines, and tracking-note clocks share that reader (`parseExpectedWhen`). Ordinary inbox text is not parsed this way. Labeled from text pipeline. Bare `o` is NOT a log. Desktop Quick Add uses this same write: a leading `log:` shows a dark blue LOG mark and does not go to Inbox.
 
 ### `tp:`
 
@@ -322,7 +322,13 @@ In chat: `info` · `{prefix} info` · `{prefix} commands` · `all commands`.
 
 - **Format:** `read to do today`
 - **Forms / aliases:** `read to do today`, `read todo today`, `read todays list`
-- **Does:** Numbered dump of open to-do items for today.
+- **Does:** Numbered dump of open Home → To Do items for today, and that pin. The reply is the same card. `to do list` as prose stays inbox. A reply to the pin adds a line, or checks off `2` / `1. 3 pm` / `5. 4pm`. `-est` / `-e` marks that finish estimated. Next Actions is `do:`, not this pin.
+
+### `/quicklists`
+
+- **Format:** `/quicklists` · `/quicklists 5` · a bare number
+- **Forms / aliases:** `/quicklists`, `quicklists`, `1`, `2`, `3`, `4`, `5`, `6`, `7`, `8`
+- **Does:** Numbered menu. 1 to do today, 2 this week, 3 this month, 4 open next actions, 5 the live grocery list, 6 a shopping list when it is a different list (otherwise the next grocery-scored list, then needed, then another list), 7 the list named ISO, 8 undone habits. A bare number dumps that slot. `grocery list`, `grocery store`, and `to do list` are not this command.
 
 ## Rituals (GM / night / start / end)
 
@@ -430,6 +436,12 @@ In chat: `info` · `{prefix} info` · `{prefix} commands` · `all commands`.
 - **Forms / aliases:** `pause`
 - **Does:** Built-in expansion → `stop`.
 
+### `now`
+
+- **Format:** `now putting laundry away | smoked | outfit store` · `/now`
+- **Forms / aliases:** `now …`, `/now`, `/now …`
+- **Does:** Now capture. Segments split on `|`: doing now (Activity, future cleared), just did (Tracking log event), about to do (a 30-minute header plan). Empty segments are skipped. One segment keeps that prose as doing-now. `/now` alone replies with the template and the current lanes. Bare `now` with no payload stays the status readout. Distinct from `currently`, which paints an activity span through midnight.
+
 ## Notes
 
 ### `n`
@@ -474,16 +486,16 @@ In chat: `info` · `{prefix} info` · `{prefix} commands` · `all commands`.
 ### `call:`
 
 - **Format:** `call: Jane 12m` · `called: Mom 3:02-3:17` · `phone-call: …`
-- **Forms / aliases:** `call`, `called`, `phone-call`
-- **Does:** iPhone Calls interval (who + duration or clock window). Estimated.
+- **Forms / aliases:** `call:`, `called:`, `phone-call:`
+- **Does:** iPhone Calls interval (who + duration or clock window). Estimated. Colon required. Bare `call` and `called` stay inbox with the full sentence.
 
 ## iPhone Texts
 
 ### `text:`
 
 - **Format:** `text: Jane on my way` · `sms: …` · `imessage: …` · `sent: …`
-- **Forms / aliases:** `text`, `sms`, `imessage`, `sent`
-- **Does:** iPhone Texts instant. First word is who; the rest is the body.
+- **Forms / aliases:** `text:`, `sms:`, `imessage:`, `sent:`
+- **Does:** iPhone Texts instant. First word is who; the rest is the body. Colon required. Bare `text` and `sent` stay inbox with the full sentence.
 
 ## iPhone Notes park
 
@@ -499,7 +511,7 @@ In chat: `info` · `{prefix} info` · `{prefix} commands` · `all commands`.
 
 - **Format:** `pin` · `live` · `snapshot`
 - **Forms / aliases:** `pin`, `live`, `snapshot`
-- **Does:** Refresh the pinned grocery card (and a one-line now) without changing items.
+- **Does:** Refresh the pinned grocery card (and a one-line now) without changing items. `pin todo` / `pin to do` / `pin today` pins today's Home → To Do list instead, as its own card.
 
 ## Pantry / inventory
 
@@ -537,7 +549,7 @@ In chat: `info` · `{prefix} info` · `{prefix} commands` · `all commands`.
 
 - **Format:** `where` · `status` · `now` · `working now`
 - **Forms / aliases:** `where`, `status`, `now`, `working now`
-- **Does:** Snapshot: location, activity, mood, working now, last night's sleep, inbox count.
+- **Does:** Snapshot when the message is only that word: location, activity, mood, working now, last night's sleep, inbox count. `now` with any payload is Now capture, not this readout.
 
 ### `read:`
 
@@ -604,9 +616,9 @@ In chat: `info` · `{prefix} info` · `{prefix} commands` · `all commands`.
 
 ### `(custom first-word shortcuts)`
 
-- **Format:** e.g. `store` → `groc` (first token only; letters/digits/_/-)
+- **Format:** e.g. `shop` → `groc` (first token only; letters/digits/_/-)
 - **Forms / aliases:** `Settings → Message ingest shortcuts`
-- **Does:** User-defined first-word expansions run before the verb parser. Expansions that still point at bare `g` are remapped to `groc`.
+- **Does:** User-defined first-word expansions run before the verb parser. The Settings example `store` → `groc` is one of these; it does nothing while the shortcut map is empty. Built-in `store` already dumps the live grocery list. Expansions that still point at bare `g` are remapped to `groc`.
 
 ## Media (photos / voice)
 

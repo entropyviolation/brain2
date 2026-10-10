@@ -30,6 +30,8 @@ export type IngestIntentKind =
   | "today"
   | "habits"
   | "status"
+  | "now-capture"
+  | "quicklists"
   | "ops"
   | "count"
   | "tags"
@@ -112,6 +114,13 @@ export interface IngestEvent {
   status: IngestEventStatus
   summary: string
   itemIds?: string[]
+  /** Telegram message_id when the update carried one. Always copied onto the log. */
+  telegramMessageId?: number
+  /**
+   * Dedupe key for this Telegram update. `null` means both ids were missing
+   * and the message was logged instead of applied.
+   */
+  dedupeKey?: string | null
 }
 
 export interface NameCandidate {
@@ -154,6 +163,8 @@ export interface PendingClarify {
     /** Period / start reviews — which bucket is in progress. */
     period?: "day" | "week" | "month" | "quarter" | "year"
   }
+  /** Bot message edited in place for this open ritual. Never a person's message id. */
+  ritualCardMessageId?: number
   /**
    * Open lines the phone just skipped because an identical item is already
    * on the list. `see` peeks, `again` adds another, `dismiss` leaves them.
@@ -181,10 +192,14 @@ export interface ApplyOk {
   summary: string
   itemIds?: string[]
   /**
-   * Plain-text card to pin in the Telegram chat (grocery dump). Survives a
-   * closed laptop so a store trip can read the last snapshot.
+   * Plain-text card to pin in the Telegram chat. Survives a closed laptop.
+   * Grocery and to-do today are separate pins.
    */
   pinText?: string
+  /** Which live pin this card replaces. Omitted means grocery. */
+  pinKind?: "grocery" | "todo"
+  /** Bot ritual card to edit instead of sending a new bubble. */
+  ritualCardMessageId?: number
 }
 
 export interface ApplyClarify {
@@ -192,8 +207,12 @@ export interface ApplyClarify {
   reply: string
   kind: IngestIntentKind
   pending: PendingClarify
-  /** Grocery card to pin even while a duplicate question is open. */
+  /** Card to pin even while a duplicate question is open. */
   pinText?: string
+  /** Which live pin this card replaces. Omitted means grocery. */
+  pinKind?: "grocery" | "todo"
+  /** Bot ritual card to edit instead of sending a new bubble. */
+  ritualCardMessageId?: number
 }
 
 export interface ApplyIgnored {
@@ -201,12 +220,14 @@ export interface ApplyIgnored {
   reply?: string
   kind: IngestIntentKind
   summary?: string
+  ritualCardMessageId?: number
 }
 
 export interface ApplyError {
   status: "error"
   reply: string
   kind: IngestIntentKind
+  ritualCardMessageId?: number
 }
 
 export type ApplyResult = ApplyOk | ApplyClarify | ApplyIgnored | ApplyError
@@ -224,8 +245,12 @@ export interface IncomingMessage {
   text: string
   receivedAt: string
   telegramMessageId?: number
-  /** Telegram update_id — preferred dedupe key for webhook retries. */
+  /** Telegram update_id. Retry key for the first delivery. Live Location re-applies per update. */
   telegramUpdateId?: number
+  /** Live Location sample. Text edits stay on the original message id. */
+  locationUpdate?: boolean
+  /** `reply_to_message.message_id` when this text answers a specific chat message. */
+  replyToMessageId?: number
   attachments?: IncomingAttachment[]
   /** Test / simulate seam: skip Tesseract and use this OCR blob. */
   ocrText?: string

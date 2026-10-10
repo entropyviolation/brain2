@@ -10,8 +10,12 @@
  * Colon headers matched before the alias loop include `log:` / `log` (colon optional), `log categories`,
  * `tp:` / `thought process:` / `log: tp:` (colon required on the thought verb),
  * `intake food:`, `intake:`, `switch:` (colon immediately after switch),
- * `st:` / `switch task:`, `so:` / `switch objective:` / `switch goal:`, and
- * `cycle:`. Bare words are not stolen.
+ * `st:` / `switch task:`, `so:` / `switch objective:` / `switch goal:`,
+ * `cycle:`, and `/now` / `/quicklists`.
+ * Bare `now` / `status` / `where` are a status readout. `now` with a payload is Now capture.
+ * `text` / `sent` / `call` / `called` / `did` / `add` / `got` / `bought` need a colon
+ * (a real open grocery line can still check off `got` / `bought` without one).
+ * Bare words are not stolen.
  */
 import { looksLikeListDump, parseDueBeforeHeader } from "./parse-bulk"
 import { parsePathHeader } from "@/lib/smart-parse"
@@ -66,7 +70,7 @@ const VERBS: VerbSpec[] = [
   { kind: "gps", aliases: ["gps-log", "geo", "gps"] },
   { kind: "plan", aliases: ["calendar", "agenda"] },
   { kind: "ping", aliases: ["ping", "pong"] },
-  { kind: "grocery", aliases: ["groceries", "grocery", "groc", "shop", "shopping"] },
+  { kind: "grocery", aliases: ["groceries", "grocery", "groc", "shop", "shopping", "store"] },
   { kind: "needed", aliases: ["needed"] },
   { kind: "bought", aliases: ["check off", "checkoff", "checkout", "bought", "got", "x"] },
   { kind: "note", aliases: ["day note", "daynote", "dnote", "memo", "note", "jot", "n"] },
@@ -184,6 +188,20 @@ function matchVerb(text: string, now: Date): IngestIntent | null {
     return { kind: "cycle", payload, raw: text }
   }
 
+  // `/now` with or without a payload. Bare `now` stays the status alias below.
+  const slashNow = /^\/now(?:\s*[:：]\s*|\s+)?([\s\S]*)$/i.exec(firstLine)
+  if (slashNow) {
+    const payload = [slashNow[1]!.trim(), restLines].filter((s) => s.length > 0).join("\n")
+    return { kind: "now-capture", payload, raw: text }
+  }
+
+  // `/quicklists` or `quicklists`, optional slot number. Other trailing words are not this command.
+  const quick = /^(?:\/quicklists|quicklists)(?:\s*[:：]\s*|\s+)(\d+)\s*$/i.exec(firstLine)
+  if (quick) return { kind: "quicklists", payload: quick[1]!, raw: text }
+  if (/^(?:\/quicklists|quicklists)\s*$/i.test(firstLine)) {
+    return { kind: "quicklists", payload: "", raw: text }
+  }
+
   // `get:` (colon required) — same writer as `needed:` (list "needed").
   // Bare `get` / `get milk` stay capture so normal notes are not stolen.
   const getHeader = /^(get)\s*[:：]\s*([\s\S]*)$/i.exec(firstLine)
@@ -206,6 +224,10 @@ function matchVerb(text: string, now: Date): IngestIntent | null {
       continue
     }
     const restOfFirst = hit.rest
+    if (kind === "status" && alias === "now" && restOfFirst.length > 0) {
+      const payload = [restOfFirst, restLines].filter((s) => s.length > 0).join("\n")
+      return { kind: "now-capture", payload, raw: text }
+    }
     const payload =
       kind === "bulk" ||
       kind === "grocery" ||
@@ -223,7 +245,9 @@ function matchVerb(text: string, now: Date): IngestIntent | null {
       kind === "note" ||
       kind === "currently" ||
       kind === "stopped-activity" ||
-      kind === "switched-to"
+      kind === "switched-to" ||
+      kind === "now-capture" ||
+      kind === "quicklists"
         ? [restOfFirst, restLines].filter((s) => s.length > 0).join("\n")
         : restOfFirst
     return { kind, payload, raw: text }
@@ -262,13 +286,49 @@ function isBareAlias(line: string, alias: string): boolean {
   return name === alias
 }
 
+/**
+ * Colon only: the verb is not the command unless `:` follows.
+ * Ordinary sentences that merely start with the word stay inbox.
+ */
+const COLON_ONLY = new Set([
+  "text",
+  "sent",
+  "sms",
+  "imessage",
+  "call",
+  "called",
+  "phone-call",
+  "did",
+  "add",
+  "got",
+  "bought",
+  "checkoff",
+  "checkout",
+])
+
+/**
+ * Bare word dumps. A colon carries a payload. A following space is not the command,
+ * so "grocery list" and "grocery store" stay prose.
+ */
+const BARE_OR_COLON = new Set(["grocery", "groceries", "shop", "shopping"])
+
 function matchAlias(line: string, alias: string): { rest: string } | null {
   const lower = line.toLowerCase()
   if (!lower.startsWith(alias)) return null
   const after = line.slice(alias.length)
-  if (after.length === 0) return { rest: "" }
+  const colonOnly = COLON_ONLY.has(alias)
+  const bareOrColon = BARE_OR_COLON.has(alias)
+  if (after.length === 0) {
+    if (colonOnly) return null
+    return { rest: "" }
+  }
   const ch = after[0]
-  if (ch === ":" || ch === "：" || /\s/.test(ch)) {
+  const colon = ch === ":" || ch === "："
+  if (colonOnly || bareOrColon) {
+    if (!colon) return null
+    return { rest: after.replace(/^[:：]\s*/, "").trim() }
+  }
+  if (colon || /\s/.test(ch!)) {
     return { rest: after.replace(/^[:：]\s*/, "").trim() }
   }
   // Telegram `/start123456` without a space still counts for pair.

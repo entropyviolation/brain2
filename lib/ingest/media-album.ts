@@ -9,6 +9,9 @@ export interface Albumish {
   text: string
   mediaGroupId?: string
   attachments?: unknown[]
+  telegramUpdateId?: number
+  /** Update ids in this album. The poller confirms them after the merged write. */
+  confirmUpdateIds?: number[]
 }
 
 export class MediaAlbumBuffer<T extends Albumish> {
@@ -49,5 +52,14 @@ export function mergeAlbum<T extends Albumish>(items: T[]): T {
   if (!first || items.length === 1) return first
   const text = items.map((row) => row.text).find((value) => String(value || "").trim()) || first.text
   const attachments = items.flatMap((row) => row.attachments || [])
-  return { ...first, text, attachments }
+  const confirmUpdateIds = items.flatMap((row) => {
+    if (row.confirmUpdateIds?.length) return row.confirmUpdateIds
+    return row.telegramUpdateId != null ? [row.telegramUpdateId] : []
+  })
+  return {
+    ...first,
+    text,
+    attachments,
+    ...(confirmUpdateIds.length ? { confirmUpdateIds } : {}),
+  }
 }

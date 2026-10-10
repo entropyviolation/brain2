@@ -5,7 +5,8 @@
  * time, or at a clock on that line. If a block covers that minute, the text
  * is also appended there. `est` / `estimated` / `~` and `unknown` set
  * `clockCertainty` the same way a log line does. `n loc:` / `n mood:` use
- * those scopes. `day:` / `n day:` stay the day jot and do not become a tick.
+ * those scopes. `day:` / `n day:` add a paragraph to that day's summary and
+ * do not become a tick.
  */
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { appendDayNote, getDayNote } from "@/lib/day-notes-persist"
@@ -30,13 +31,13 @@ export function applyNote(payload: string, now = new Date()): ApplyResult {
   if (peeled.target === "day") {
     const date = formatLocalDateKey(now)
     const entry = appendDayNote(date, peeled.text, now)
-    if (!entry) return { status: "error", kind: "note", reply: "Could not save that day note." }
+    if (!entry) return { status: "error", kind: "note", reply: "Could not save that day summary." }
     useTimeTrackingStore.getState().setDayNotes(date, getDayNote(date))
     return {
       status: "ok",
       kind: "note",
-      reply: `Day note (${date}): ${peeled.text}`,
-      summary: "Day note",
+      reply: `Day summary (${date}): ${peeled.text}`,
+      summary: "Day summary",
     }
   }
 
@@ -72,7 +73,7 @@ export function applyNote(payload: string, now = new Date()): ApplyResult {
     return {
       status: "ok",
       kind: "note",
-      reply: `No live ${peeled.target} block — saved as a day note.`,
+      reply: `No live ${peeled.target} block — saved on the day summary.`,
       summary: `Note → day (${peeled.target})`,
     }
   }

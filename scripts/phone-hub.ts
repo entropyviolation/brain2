@@ -21,7 +21,15 @@ import { dumpLocalStorage, fillLocalStorage, installPhoneHubGlobals } from "./ph
 import { handlePersistApi, mergeSharedPersistItems, readSharedPersist } from "./persist-api.mjs"
 import { hydrateTelegramUpdate } from "./telegram-file.mjs"
 import { flushScheduledPersist } from "../lib/persist-storage.ts"
+import { createChatQueue } from "../lib/ingest/chat-queue.ts"
+import { advanceConfirmedOffset } from "../lib/ingest/confirm-updates.ts"
+import { createDeferredAlbum } from "../lib/ingest/deferred-album.ts"
 import { compareSentOrder } from "../lib/ingest/message-time.ts"
+import {
+  allowedUpdatesParam,
+  callbackQueryToIncoming,
+  commandMenuRegistration,
+} from "../lib/ingest/telegram-ui.mjs"
 
 installPhoneHubGlobals()
 
@@ -179,8 +187,12 @@ function flushVault() {
 }
 
 const transport = {
-  async send(chatId, text) {
-    const result = await telegramApi("sendMessage", { chat_id: chatId, text })
+  async send(chatId, text, markup) {
+    const result = await telegramApi("sendMessage", {
+      chat_id: chatId,
+      text,
+      reply_markup: markup ? JSON.stringify(markup) : undefined,
+    })
     return { messageId: result && result.message_id }
   },
   async pin(chatId, messageId, previousId) {
@@ -195,6 +207,14 @@ const transport = {
       chat_id: chatId,
       message_id: messageId,
       disable_notification: true,
+    })
+  },
+  async edit(chatId, messageId, text, markup) {
+    await telegramApi("editMessageText", {
+      chat_id: chatId,
+      message_id: messageId,
+      text,
+      reply_markup: JSON.stringify(markup || { inline_keyboard: [] }),
     })
   },
 }
@@ -219,22 +239,73 @@ async function handlePayload(payload, rehydrate = false) {
   flushVault()
 }
 
-const albumWait = new Map()
-function pushAlbum(payload, rehydrate = false) {
-  const gid = payload.mediaGroupId
-  if (!gid) return handlePayload(payload, rehydrate)
-  const row = albumWait.get(gid) || { payloads: [], timer: null, rehydrate }
-  row.payloads.push(payload)
-  row.rehydrate = row.rehydrate || rehydrate
-  if (row.timer) clearTimeout(row.timer)
-  row.timer = setTimeout(() => {
-    albumWait.delete(gid)
-    const first = row.payloads[0]
-    const text = row.payloads.map((p) => p.text).find((value) => String(value || "").trim()) || first.text
-    const attachments = row.payloads.flatMap((p) => p.attachments || [])
-    void handlePayload({ ...first, text, attachments }, row.rehydrate)
-  }, 1100)
-  albumWait.set(gid, row)
+const enqueueChat = createChatQueue()
+const album = createDeferredAlbum((payload) => handlePayload(payload, Boolean(payload.rehydrateHub)))
+
+/**
+ * Vault writes for one poll batch. Text stays in send order. Album parts share
+ * one write. Confirmation follows update id order so a failed write leaves a hole.
+ */
+async function applyHydrated(rows) {
+  const orderedIds = rows.map((row) => Number(row.update && row.update.update_id) || 0)
+  const doneById = new Map()
+  let textChain = Promise.resolve()
+  const writes = rows
+    .filter((row) => row.payload)
+    .sort((a, b) => compareSentOrder(a.payload, b.payload))
+  for (const row of writes) {
+    const id = Number(row.update && row.update.update_id) || 0
+    if (row.payload.mediaGroupId) {
+      doneById.set(id, album.push(row.payload).then(() => true, () => false))
+      continue
+    }
+    const run = textChain.then(() => handlePayload(row.payload, Boolean(row.payload.rehydrateHub)))
+    textChain = run.then(
+      () => undefined,
+      () => undefined,
+    )
+    doneById.set(id, run.then(() => true, () => false))
+  }
+  const confirmed = new Set()
+  for (let i = 0; i < rows.length; i++) {
+    const id = orderedIds[i]
+    if (rows[i].failed) continue
+    if (!rows[i].payload) {
+      confirmed.add(id)
+      continue
+    }
+    if (await doneById.get(id)) confirmed.add(id)
+  }
+  return { orderedIds, confirmed }
+}
+
+async function registerCommandMenu() {
+  for (const call of commandMenuRegistration()) {
+    await telegramApi(call.method, call.params)
+  }
+}
+
+/** Typed messages stay on hydrate. A question-button tap becomes that same text. */
+async function payloadFromUpdate(update) {
+  const payload = await hydrateTelegramUpdate(update, TOKEN, telegramApi)
+  if (payload) return payload
+  const query = update && update.callback_query
+  if (!query || !query.id) return null
+  await telegramApi("answerCallbackQuery", { callback_query_id: query.id })
+  const tapped = callbackQueryToIncoming(update)
+  if (!tapped) return null
+  if (tapped.clearMarkup && tapped.clearMarkup.messageId != null) {
+    try {
+      await telegramApi("editMessageReplyMarkup", {
+        chat_id: tapped.clearMarkup.chatId,
+        message_id: tapped.clearMarkup.messageId,
+        reply_markup: JSON.stringify({ inline_keyboard: [] }),
+      })
+    } catch {
+      /* the question markup is already gone */
+    }
+  }
+  return tapped.payload
 }
 
 async function pollLoop() {
@@ -243,19 +314,27 @@ async function pollLoop() {
       const updates = await telegramApi("getUpdates", {
         timeout: 25,
         offset,
-        allowed_updates: JSON.stringify(["message", "edited_message"]),
+        allowed_updates: allowedUpdatesParam(),
       })
-      const batch = []
+      const rows = []
       for (const update of updates || []) {
-        offset = Math.max(offset, (update.update_id || 0) + 1)
-        const payload = await hydrateTelegramUpdate(update, TOKEN, telegramApi)
-        if (payload) batch.push(payload)
+        try {
+          const payload = await payloadFromUpdate(update)
+          rows.push({ update, payload, failed: false })
+        } catch {
+          rows.push({ update, payload: null, failed: true })
+        }
       }
-      batch.sort(compareSentOrder)
-      if (batch.length) await rehydrateFromDisk()
-      for (const payload of batch) await pushAlbum(payload)
-      mkdirSync(join(ROOT, "data"), { recursive: true })
-      writeFileSync(OFFSET_FILE, JSON.stringify({ offset }), "utf8")
+      if (rows.some((row) => row.payload)) await rehydrateFromDisk()
+      const startOffset = offset
+      const { orderedIds, confirmed } = await applyHydrated(rows)
+      offset = advanceConfirmedOffset(startOffset, orderedIds, confirmed)
+      if (offset !== startOffset) {
+        mkdirSync(join(ROOT, "data"), { recursive: true })
+        writeFileSync(OFFSET_FILE, JSON.stringify({ offset }), "utf8")
+      } else if (orderedIds.length > 0 && confirmed.size < orderedIds.length) {
+        await new Promise((r) => setTimeout(r, 1000))
+      }
       writeStatus()
     } catch (err) {
       console.error("[phone-hub] poll", err instanceof Error ? err.message : err)
@@ -309,13 +388,22 @@ async function onRequest(req, res) {
         return
       }
     }
+    let update
     try {
-      const update = JSON.parse((await readBody(req)) || "{}")
-      const payload = await hydrateTelegramUpdate(update, TOKEN, telegramApi)
-      if (payload) await pushAlbum(payload, true)
-      sendJson(res, 200, { ok: true })
+      update = JSON.parse((await readBody(req)) || "{}")
     } catch (err) {
       sendJson(res, 400, { ok: false, error: err instanceof Error ? err.message : "bad update" })
+      return
+    }
+    try {
+      const payload = await payloadFromUpdate(update)
+      if (payload) {
+        const chatId = String(payload.chatId)
+        await enqueueChat(chatId, () => album.push({ ...payload, rehydrateHub: true }))
+      }
+      sendJson(res, 200, { ok: true })
+    } catch (err) {
+      sendJson(res, 500, { ok: false, error: err instanceof Error ? err.message : "write failed" })
     }
     return
   }
@@ -360,11 +448,17 @@ const server = createServer((req, res) => {
 await new Promise((resolve) => server.listen(PORT, "0.0.0.0", resolve))
 console.log(`[phone-hub] persist + status on http://127.0.0.1:${PORT}`)
 
+try {
+  await registerCommandMenu()
+} catch (err) {
+  console.error("[phone-hub] commands", err instanceof Error ? err.message : err)
+}
+
 if (WEBHOOK) {
   await telegramApi("setWebhook", {
     url: WEBHOOK,
     secret_token: WEBHOOK_SECRET || undefined,
-    allowed_updates: JSON.stringify(["message", "edited_message"]),
+    allowed_updates: allowedUpdatesParam(),
   })
   console.log(`[phone-hub] webhook ${WEBHOOK}`)
 } else {

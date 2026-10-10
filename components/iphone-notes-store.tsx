@@ -28,6 +28,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { requestNavigateToList } from "@/lib/app-navigation"
 import {
   APPLE_NOTE_ATTR,
+  isGenericNotesFolder,
   IPHONE_NOTES_STORE_FOLDER_NAME,
   IPHONE_NOTES_STORE_LIST_NAME,
   IPHONE_NOTES_STORE_SOURCE,
@@ -39,6 +40,7 @@ import {
   persistIphoneNoteIds,
   summarizeBulkAdd,
 } from "@/lib/apple-notes"
+import { notesCaptureOrigin } from "@/lib/capture-origin"
 import { ensureCaptureTarget } from "@/lib/capture-target"
 import { taskStoreMutators } from "@/lib/ingest/apply-capture"
 import { createListItem, itemTitleOrUntitled, withCategoryDefaults } from "@/lib/item-utils"
@@ -105,6 +107,12 @@ export function IphoneNotesStore({ hideTrigger = false }: { hideTrigger?: boolea
     if (blocks.length === 0) return
     let created = 0
     const noteId = current.attributes?.[APPLE_NOTE_ATTR.id]
+    const folderRaw = current.attributes?.[APPLE_NOTE_ATTR.folder]
+    const noteOrigin = notesCaptureOrigin({
+      kind: "iphone-notes",
+      title: itemTitleOrUntitled(current),
+      folder: typeof folderRaw === "string" && !isGenericNotesFolder(folderRaw) ? folderRaw : undefined,
+    })
 
     for (const block of blocks) {
       // Same door as Quick/Bulk Add: creates the folder chain, then the list.
@@ -130,6 +138,7 @@ export function IphoneNotesStore({ hideTrigger = false }: { hideTrigger?: boolea
             source: IPHONE_NOTES_STORE_SOURCE,
             ...(typeof noteId === "string" && noteId ? { appleNoteId: noteId } : {}),
           },
+          captureOrigin: noteOrigin,
         })
         created += 1
       }

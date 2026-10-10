@@ -64,6 +64,7 @@ const COGS_IPC_CHANNELS = {
   telegramPin: "cogs:telegram:pin",
   telegramMessage: "cogs:telegram:message",
   telegramPollStatus: "cogs:telegram:pollStatus",
+  telegramAck: "cogs:telegram:ack",
 }
 
 /** All channel strings (handy for bulk `ipcMain.handle` registration). */

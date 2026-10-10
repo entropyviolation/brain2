@@ -13,6 +13,7 @@
 import { useEffect } from "react"
 import { ingestIncomingAsync, dropLocationDuringRitual } from "@/lib/ingest/executor"
 import { deliverIngestReply } from "@/lib/ingest/deliver-reply"
+import { inlineKeyboardForResult } from "@/lib/ingest/telegram-ui.mjs"
 import { useIngestStore } from "@/lib/ingest/ingest-store"
 import { MediaAlbumBuffer } from "@/lib/ingest/media-album"
 import {
@@ -24,6 +25,7 @@ import {
   type IncomingTelegramPayload,
 } from "@/lib/ingest/telegram-bridge"
 import { fetchPhoneHubStatus, normalizeHubUrl, pushVaultToHub } from "@/lib/ingest/vault-push"
+import { flushScheduledPersist } from "@/lib/persist-storage"
 
 export function useMessageIngest() {
   const enabled = useIngestStore((s) => s.enabled)
@@ -63,6 +65,16 @@ export function useMessageIngest() {
       return remote
     }
 
+    const confirmWrite = (payload: IncomingTelegramPayload) => {
+      const ids =
+        payload.confirmUpdateIds?.length
+          ? payload.confirmUpdateIds
+          : payload.telegramUpdateId != null
+            ? [payload.telegramUpdateId]
+            : []
+      if (ids.length) desktop?.confirm?.(ids)
+    }
+
     const applyPayload = async (payload: IncomingTelegramPayload) => {
       if (
         dropLocationDuringRitual({
@@ -72,13 +84,14 @@ export function useMessageIngest() {
           locationUpdate: payload.locationUpdate,
         })
       ) {
+        confirmWrite(payload)
         return
       }
       const result = await ingestIncomingAsync(incomingFromTelegram(payload))
       if (desktop) {
         await deliverIngestReply(payload.chatId, result, {
-          send: async (chatId, text) => {
-            const sent = await desktop.send(chatId, text)
+          send: async (chatId, text, markup) => {
+            const sent = await desktop.send(chatId, text, markup)
             return { messageId: sent.messageId ?? sent.messageIds?.[0] }
           },
           pin: desktop.pin
@@ -86,11 +99,19 @@ export function useMessageIngest() {
                 await desktop.pin?.(chatId, messageId, previousId)
               }
             : undefined,
+          edit: desktop.edit
+            ? async (chatId, messageId, text, markup) => {
+                const edited = await desktop.edit?.(chatId, messageId, text, markup)
+                if (edited && edited.ok === false) throw new Error(edited.error || "edit failed")
+              }
+            : undefined,
         })
-        return
+      } else {
+        const text = result.status === "ignored" ? result.reply : result.reply
+        if (text) await postHubReply(payload.chatId, text, "", inlineKeyboardForResult(result))
       }
-      const text = result.status === "ignored" ? result.reply : result.reply
-      if (text) await postHubReply(payload.chatId, text)
+      flushScheduledPersist()
+      confirmWrite(payload)
     }
 
     let chain: Promise<void> = Promise.resolve()

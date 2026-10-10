@@ -38,6 +38,7 @@ import {
   ensureIphoneNotesIngestDestination,
   fetchAppleNotes,
   filterNewNotes,
+  isGenericNotesFolder,
   ingestedAppleNoteIds,
   mergeNoteBodies,
   noteDisplayTitle,
@@ -52,6 +53,7 @@ import {
   type AppleNote,
   type NotesPeriodPreset,
 } from "@/lib/apple-notes"
+import { notesCaptureOrigin } from "@/lib/capture-origin"
 import { ensureCaptureTarget } from "@/lib/capture-target"
 import { taskStoreMutators } from "@/lib/ingest/apply-capture"
 import { createListItem, withCategoryDefaults } from "@/lib/item-utils"
@@ -330,6 +332,12 @@ export function NotesIngest({ hideTrigger = false }: { hideTrigger?: boolean } =
             source: "apple-notes",
             ...(processNote.id ? { appleNoteId: processNote.id } : {}),
           },
+          captureOrigin: notesCaptureOrigin({
+            kind: "notes",
+            title: noteDisplayTitle(processNote),
+            folder:
+              processNote.folder && !isGenericNotesFolder(processNote.folder) ? processNote.folder : undefined,
+          }),
         })
         created += 1
       }

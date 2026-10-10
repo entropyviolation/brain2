@@ -14,7 +14,11 @@ describe("parseMessage", () => {
     expect(parseMessage("qa: pick up milk").payload).toBe("pick up milk")
     expect(parseMessage("quick add: call dentist").kind).toBe("capture")
     expect(parseMessage("inbox: random idea").payload).toBe("random idea")
-    expect(parseMessage("add pick up milk").payload).toBe("pick up milk")
+    expect(parseMessage("add: pick up milk").payload).toBe("pick up milk")
+    expect(parseMessage("add pick up milk")).toMatchObject({
+      kind: "capture",
+      payload: "add pick up milk",
+    })
   })
 
   it("parses bulk bodies across lines", () => {
@@ -102,7 +106,34 @@ describe("parseMessage", () => {
       kind: "capture",
       payload: "get milk from the store",
     })
-    expect(parseMessage("got milk")).toMatchObject({ kind: "bought", payload: "milk" })
+    expect(parseMessage("got: milk")).toMatchObject({ kind: "bought", payload: "milk" })
+    expect(parseMessage("got milk")).toMatchObject({ kind: "capture", payload: "got milk" })
+    expect(parseMessage("where")).toMatchObject({ kind: "status", payload: "" })
+    expect(parseMessage("now")).toMatchObject({ kind: "status", payload: "" })
+    expect(parseMessage("status")).toMatchObject({ kind: "status", payload: "" })
+    expect(parseMessage("Now been putting laundry away…")).toMatchObject({
+      kind: "now-capture",
+      payload: "been putting laundry away…",
+    })
+    expect(parseMessage("store")).toMatchObject({ kind: "grocery", payload: "" })
+    expect(parseMessage("grocery list")).toMatchObject({ kind: "capture", payload: "grocery list" })
+    expect(parseMessage("grocery store")).toMatchObject({ kind: "capture", payload: "grocery store" })
+    expect(parseMessage("to do list")).toMatchObject({ kind: "capture", payload: "to do list" })
+    expect(parseMessage("/quicklists")).toMatchObject({ kind: "quicklists", payload: "" })
+    expect(parseMessage("/quicklists 5")).toMatchObject({ kind: "quicklists", payload: "5" })
+    expect(parseMessage("Text shelby back")).toMatchObject({ kind: "capture", payload: "Text shelby back" })
+    expect(parseMessage("text: Jane on my way")).toMatchObject({ kind: "iphone-text", payload: "Jane on my way" })
+    expect(parseMessage("call gran points-100")).toMatchObject({ kind: "capture", payload: "call gran points-100" })
+    expect(parseMessage("call: Jane 12m")).toMatchObject({ kind: "iphone-call", payload: "Jane 12m" })
+    expect(parseMessage("did finally get into colder room (took 30 min)")).toMatchObject({
+      kind: "capture",
+      payload: "did finally get into colder room (took 30 min)",
+    })
+    expect(parseMessage("did: stretch")).toMatchObject({ kind: "habit", payload: "stretch" })
+    expect(parseMessage("Add more backslash cmds?…")).toMatchObject({
+      kind: "capture",
+      payload: "Add more backslash cmds?…",
+    })
     expect(parseMessage("n stuck")).toMatchObject({ kind: "note", payload: "stuck" })
     expect(parseMessage("n stuck\nin aisle 4")).toMatchObject({ kind: "note", payload: "stuck\nin aisle 4" })
     expect(parseMessage("pin")).toMatchObject({ kind: "pin", payload: "" })

@@ -227,7 +227,7 @@ What you can do (families)
 • Plans — plan for rn:, read plan(s) for today, agenda
 • Rituals — gm / gn / rituals / review / ritual start week
 • Habits — dh: keyword, habit: / did: / h (bare keywords do not log)
-• Grocery — groc (dump/add/pin); got / x / bought / check off
+• Grocery — groc / store (dump/add/pin); got: / bought: / x / check off
 • Needed — needed: batteries · get: then lines → list "needed"
 • To-do — to do today:, do: / next action:, read to do today
 • Log — switch: (view, from:, to:) / log categories / log: or log (colon optional; loc: place) / tp: / thought process: / log: tp: (Thought process: a guiding strand of this moment — why you are doing something, what you expect next, and how it lands; not a general note, a one-word mood, or a short activity log such as brushed teeth) / intake: / intake food|drink|drug: / cycle: / st: / switch task: / so: / switch objective: / switch goal: / transit:; saved keywords (log: went outside, log keywords); smoked weed, drank water, ate …, took …
@@ -259,9 +259,10 @@ What it is
   A grocery dump pins a card in the chat so you can read it at the store offline.
 
 How to use it
-• groc  |  grocery  |  groceries  |  shop | shopping — dump and pin
-• groc milk  |  grocery: eggs — add (Inbox off). Several lines = bulk.
-• got milk  |  x bread, eggs  |  bought: milk | check off oats — complete open lines
+• groc  |  store  |  grocery  |  groceries  |  shop | shopping — dump and pin the live list
+• groc milk  |  store milk  |  grocery: eggs — add (Inbox off). Several lines = bulk.
+• got: milk  |  bought: milk  |  x bread, eggs  |  check off oats — complete open lines
+  A got/bought without a colon checks off only when the words match an open line.
 • pin  |  live  |  snapshot — refresh the pin
 
 Format tips
@@ -321,6 +322,7 @@ What it is
 
 How to use it
 • log: left room  |  log: left room at 3:30  |  log: left room at 3:30 loc: home
+• Desktop Quick Add log: is this same log (dark blue LOG mark). It does not go to Inbox.
 • log: shower 10m  — just finished (end is send time)
 • log: START walk  |  log: END walk 5:00
 • log: left room at 3:30 est  ·  log: left room unknown  — estimated or unknown clock
@@ -386,7 +388,7 @@ How to use it
 • plain text or qa: / add: / inbox: / idea: / quick add: / capture: → Inbox
 • -mb or -monkey on that line → Monkey brain (a dump, not the Inbox you revisit)
 • -p or -plain → stored as written (no list, folder, date, time, duration, or priority)
-• list: item and folder: list: item create the list. Dates, times, duration, and priority stay in the title
+• list: item and folder: list: item create the list. folder: all: item files on that folder's All Items (all items works too) — not a list named all. A name may contain digits (brain2: item is the list brain2). Dates, times, duration, and priority stay in the title
 • bulk: / bulk add — headers and one item per line
 • Name: then lines — that list (grocery headers → store list)
 • before 9/12: — following lines due that day
@@ -449,7 +451,8 @@ How to use it
 • mood: good  ·  m good  ·  feeling:  ·  feel:  ·  state:
 • sleep: 11:30-7:00  ·  slept:
 • start: write paper  ·  stop  ·  /stop  ·  pause
-• where  ·  status  ·  now  ·  working now
+• where  ·  status  ·  now  ·  working now  — readout when that is the whole message
+• now putting laundry away | smoked | outfit store  ·  /now  — Now capture (doing | just did | about to)
 
 Send "track commands" for the glossary.`,
 

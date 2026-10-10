@@ -13,8 +13,20 @@ export interface TelegramDesktopBridge {
   start: () => Promise<{ ok: boolean; polling?: boolean; hub?: boolean; error?: string }>
   stop: () => Promise<{ ok: boolean }>
   status: () => Promise<{ ok: boolean; polling?: boolean; hasToken?: boolean; hub?: boolean }>
-  send: (chatId: string, text: string) => Promise<{ ok: boolean; error?: string; messageId?: number; messageIds?: number[] }>
+  send: (
+    chatId: string,
+    text: string,
+    markup?: { inline_keyboard: { text: string; callback_data: string }[][] },
+  ) => Promise<{ ok: boolean; error?: string; messageId?: number; messageIds?: number[] }>
   pin?: (chatId: string, messageId: number, previousId?: number) => Promise<{ ok: boolean; error?: string }>
+  edit?: (
+    chatId: string,
+    messageId: number,
+    text: string,
+    markup?: { inline_keyboard: { text: string; callback_data: string }[][] },
+  ) => Promise<{ ok: boolean; error?: string }>
+  /** Tell the poller the vault write for these update ids finished. */
+  confirm?: (updateIds: number[]) => void
   onMessage: (cb: (msg: IncomingTelegramPayload) => void) => () => void
   onStatus?: (cb: (status: { ok: boolean; error?: string }) => void) => () => void
 }
@@ -27,11 +39,17 @@ export interface IncomingTelegramPayload {
   isGroup?: boolean
   telegramMessageId?: number
   telegramUpdateId?: number
+  /** Set when the person replied to a specific message, including the grocery pin. */
+  replyToMessageId?: number
   receivedAt: string
   attachments?: IncomingAttachment[]
   mediaGroupId?: string
   /** Set when the update is a Telegram location or Live Location edit. */
   locationUpdate?: boolean
+  /** Album merge: every update id in the group. Confirmed after one vault write. */
+  confirmUpdateIds?: number[]
+  /** Phone hub only: reload the vault before this write. */
+  rehydrateHub?: boolean
 }
 
 interface DesktopWithTelegram {
@@ -56,6 +74,8 @@ export function incomingFromTelegram(payload: IncomingTelegramPayload): Incoming
     receivedAt: payload.receivedAt || new Date().toISOString(),
     telegramMessageId: payload.telegramMessageId,
     telegramUpdateId: payload.telegramUpdateId,
+    locationUpdate: payload.locationUpdate,
+    replyToMessageId: payload.replyToMessageId,
     attachments: payload.attachments,
   }
 }
@@ -67,11 +87,16 @@ export async function fetchHubPending(base = ""): Promise<IncomingTelegramPayloa
   return Array.isArray(data.pending) ? data.pending : []
 }
 
-export async function postHubReply(chatId: string, text: string, base = ""): Promise<void> {
+export async function postHubReply(
+  chatId: string,
+  text: string,
+  base = "",
+  markup?: { inline_keyboard: { text: string; callback_data: string }[][] },
+): Promise<void> {
   await fetch(`${base}/api/ingest/reply`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chatId, text }),
+    body: JSON.stringify({ chatId, text, markup }),
   })
 }
 

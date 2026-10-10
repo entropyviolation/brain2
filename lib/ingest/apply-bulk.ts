@@ -11,7 +11,7 @@ import { buildCapturedTask, ensureCaptureTarget } from "@/lib/capture-target"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
 import { useTaskStore } from "@/lib/task-store"
 import type { Task } from "@/lib/types"
-import { findGroceryList, groceryDumpText, isGroceryListName } from "./apply-grocery"
+import { findGroceryList, groceryCardText, isGroceryListName } from "./apply-grocery"
 import { parseBulkBuckets, type BulkBucket } from "./parse-bulk"
 import { taskStoreMutators } from "./apply-capture"
 import type { ApplyResult, DuplicateAddEntry, PendingClarify } from "./types"
@@ -352,7 +352,7 @@ function summarize(count: number, groups: ReplyGroup[]): string {
 function pinGrocery<T extends ApplyResult>(result: T, grocery: boolean): T {
   if (!grocery) return result
   if (result.status !== "ok" && result.status !== "needs_clarify") return result
-  const pinText = groceryDumpText() ?? undefined
+  const pinText = groceryCardText() ?? undefined
   if (!pinText) return result
   return { ...result, pinText }
 }

@@ -15,15 +15,17 @@ export const INGEST_HELP = `${BIM_SHORT} (${BIM_FULL}) — phone commands (short
 You can call me BIM for short. Send info for the basics, {prefix} info / {prefix} commands for one family, or all commands for everything.
 
 Grocery / needed
-• groc  — dump grocery list (pins it). Old g no longer adds groceries.
-• groc milk  /  grocery: eggs  — add
+• groc  /  store  — dump the live grocery list (pins it). Old g no longer adds groceries.
+• groc milk  /  store milk  /  grocery: eggs  — add
 • needed: batteries  /  get: then lines  — list "needed" (notes: sent from text)
-• got milk  /  x bread  — check off grocery
+• got: milk  /  bought: milk  /  x bread  — check off grocery (got milk also, when that line is open)
+• /quicklists  — numbered lists. A bare number opens one.
+• now laundry | smoked | outfit store  — Now capture. Bare now / status / where is the readout.
 • pin  — refresh the pinned grocery card
 Habits (dh: then the keyword)
 • dh: hemisync  — mark that daily habit done
 • dh: read 30 pages  ·  dh: exercise 15 min  ·  dh: chess score 355
-• habit: exercise 30  — by habit name (optional yesterday)
+• habit: exercise 30  /  did: stretch  — by habit name (optional yesterday). Bare did stays inbox.
 • A bare keyword is not a habit log
 Events (whole message, or log: / intake:)
 • smoked weed  ·  drank water  ·  ate egg salad  ·  took 2 adderall
@@ -57,7 +59,7 @@ Live replies use info / {prefix} info / {prefix} commands / all commands
 (from command-glossary + command-catalog). Complete on-disk list:
 docs/BIM_COMMANDS.md
 
-Case-insensitive. A verb may be followed by : or a space.
+Case-insensitive. Many verbs take : or a space. text, sent, call, called, did, add, got, and bought need a colon (got/bought also fire when they match an open grocery line).
 Matching order (first match wins — never also Inbox):
   1. Deduped Telegram updates (retries do not double-write)
   2. help / start / info
@@ -66,14 +68,15 @@ Matching order (first match wins — never also Inbox):
   5. Everything else (other verbs, or Inbox capture)
 
 Ambiguous names get a numbered list — reply with the number or the name.
-Custom first-word shortcuts: Settings → Message ingest (e.g. store → groc).
+Custom first-word shortcuts: Settings → Message ingest. Built-in store dumps the live grocery list even when that map is empty. The store → groc row is only a user shortcut.
 Habit keywords: edit on each habit (Habits → edit). Discrete triggers: same Settings panel.
 
 ────────────────────────────────
 GROCERY  (shortcut is groc — bare g is retired)
-• groc  |  grocery  |  groceries  |  shop  — dump the grocery-ish list and pin it
-• groc milk  |  grocery: eggs — add (Inbox off). Several lines = bulk.
-• got milk  |  x bread, eggs  |  bought: milk  |  check off oats — complete open lines
+• groc  |  store  |  grocery  |  groceries  |  shop  — dump the live grocery list and pin it
+• groc milk  |  store milk  |  grocery: eggs — add (Inbox off). Several lines = bulk.
+• got: milk  |  bought: milk  |  x bread, eggs  |  check off oats — complete open lines
+  got milk checks off only when milk is already open. Got back from walk stays inbox.
 • pin  |  live  |  snapshot — refresh the pin
 Retired: bare “g” no longer means grocery (use groc). Re-map custom shortcuts that still expand to g.
 
@@ -87,6 +90,7 @@ NEEDED
 ────────────────────────────────
 HABIT KEYWORDS  (whole message only)
 One-word keywords do NOT fire inside a longer Inbox note.
+A habit source counts an exact whole message in the period: true if one arrives, true after a set number, or a logged phrase such as read {n} pages of {bookname} or cleaned for {x} minutes, which writes the amount. {x} and {minutes} are the same kind of number as {n}. A minutes or hours phrase also logs the prior stretch on the habit’s tracking activity. No clock ends that stretch at the message time and marks it estimated. A clock at the end, such as 1:11, is when it finished. A line with no timestamp is not copied onto every period.
 Examples that ship as editable presets (Habits → edit that habit):
 • hemisync — marks the Hemisync daily habit done; Done today logs “hemisync”
 • read 30 pages — writes 30 into that daily task’s count
@@ -104,6 +108,7 @@ Presets:
 • ate {item}     →  ate egg salad
 • took {item}    →  took 2 adderall
 • log: left room  |  log- left room  |  log went outside  |  log: left room at 3:30 est  |  log: left room unknown
+  Desktop Quick Add uses this same log: a dark blue LOG mark, and it does not go to Inbox.
   |  log: left room at 3:30 loc: home
   Whatever follows is the event title, unless it is a saved keyword. A line under it is the note.
   The phrase is also an eventKind slug so repeats group. A clock with no word is exact.
@@ -164,7 +169,8 @@ CAPTURE / LISTS
 • plain text or qa: → Inbox
 • -mb or -monkey on the line → Monkey brain (dump; less than Inbox)
 • -p or -plain on the line → stored as written (no list, date, time, or priority)
-• Dates, times, duration, and priority stay in the title. list: item still creates the list.
+• Dates, times, duration, and priority stay in the title. list: item still creates the list. A name may contain digits (brain2: item is the list brain2).
+• folder: all: item — that folder's All Items (all items works too). Not a list named all. Same on a bulk header: Folder: all:
 • Name: then lines — that list. Grocery list: lands on the store list.
 • before 9/12: — following lines due that day
 • bulk: same headers, one item per line

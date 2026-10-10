@@ -131,6 +131,7 @@ describe("noteToListItem", () => {
     expect(item.body).toBe("2 percent")
     expect(item.attributes?.appleNoteId).toBe("n1")
     expect(item.attributes?.source).toBe("apple-notes")
+    expect(item.captureOrigin).toEqual({ kind: "notes", detail: "Milk · Groceries" })
     expect(item.tags).toEqual(["Groceries"])
   })
 

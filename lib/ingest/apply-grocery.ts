@@ -1,8 +1,12 @@
 /**
  * lib/ingest/apply-grocery.ts — Fast grocery dump / add / checkout from the phone
  *
- * `groc` dumps the grocery-ish list and pins it. `groc milk` files onto that list
- * (Inbox off). `got milk` / `x eggs` completes matching open lines.
+ * `groc` dumps the live grocery list and pins it. Settings picks that list;
+ * with no pick, the grocery-ish name still wins. `groc milk` / `store milk`
+ * file onto it (Inbox off). `got:` / `bought:` check off. `got milk` without
+ * a colon checks off only when the words match an open line.
+ * The pinned card is that list. Other open shopping-list counts sit on the
+ * card once, and the dump reply is the same card so the chat is not sent twice.
  */
 import { completeTask } from "@/lib/services/completion-service"
 import { isFolderAllItemsCategoryId } from "@/lib/folder-all-items"
@@ -11,12 +15,13 @@ import { useTaskStore } from "@/lib/task-store"
 import type { List, Task } from "@/lib/types"
 import { applyBulk } from "./apply-bulk"
 import { dumpReadCandidate } from "./apply-read"
+import { useIngestStore } from "./ingest-store"
 import { resolveName } from "./name-resolve"
 import type { ApplyResult, NameCandidate } from "./types"
 
 const GROCERY_FALLBACK_NAME = "Grocery list"
 
-function groceryScore(name: string): number {
+export function groceryScore(name: string): number {
   const n = name.trim().toLowerCase()
   if (n === "grocery list" || n === "grocery" || n === "groceries") return 4
   if (/\bgrocery list\b/.test(n)) return 3
@@ -31,9 +36,12 @@ export function isGroceryListName(name: string): boolean {
 }
 
 export function findGroceryList(): List | null {
-  const lists = useTaskStore
-    .getState()
-    .lists.filter((list) => !isFolderAllItemsCategoryId(list.id))
+  const lists = groceryCandidateLists()
+  const chosenId = useIngestStore.getState().groceryListId
+  if (chosenId) {
+    const chosen = lists.find((list) => list.id === chosenId)
+    if (chosen) return chosen
+  }
   const ranked = lists
     .map((list) => ({ list, score: groceryScore(list.name) }))
     .filter((row) => row.score > 0)
@@ -41,11 +49,47 @@ export function findGroceryList(): List | null {
   return ranked[0]?.list ?? null
 }
 
+export function openCountOnList(listId: string): number {
+  return openItemsOn(listId).length
+}
+
+/** Other grocery/shopping lists and how many lines are still open. */
+export function otherShoppingListCounts(): { name: string; open: number }[] {
+  const live = findGroceryList()
+  return groceryCandidateLists()
+    .filter((list) => list.id !== live?.id && groceryScore(list.name) > 0)
+    .map((list) => ({ name: list.name, open: openCountOnList(list.id) }))
+    .sort((a, b) => a.name.localeCompare(b.name))
+}
+
+/** True when every comma-separated query uniquely matches an open grocery line. */
+export function matchesOpenGroceryLines(payload: string): boolean {
+  const text = payload.trim()
+  if (!text) return false
+  const list = findGroceryList()
+  if (!list) return false
+  const open = openItemsOn(list.id).map((item) => ({ id: item.id, name: itemTitleOrUntitled(item) }))
+  if (open.length === 0) return false
+  const queries = splitBoughtQueries(text)
+  if (queries.length === 0) return false
+  return queries.every((query) => resolveName(query, open).status === "match")
+}
+
 export function groceryDumpText(): string | null {
   const list = findGroceryList()
   if (!list) return null
   const dumped = dumpReadCandidate(`list:${list.id}`)
   return dumped.status === "ok" ? dumped.reply : null
+}
+
+/** Live grocery dump plus other open shopping-list counts, when any exist. */
+export function groceryCardText(): string | null {
+  const dump = groceryDumpText()
+  if (!dump) return null
+  const others = otherShoppingListCounts()
+  if (others.length === 0) return dump
+  const note = `Other open shopping lists: ${others.map((row) => `${row.name} ${row.open}`).join(", ")}`
+  return `${dump}\n\n${note}`
 }
 
 export function applyGrocery(payload: string, now = new Date()): ApplyResult {
@@ -161,14 +205,21 @@ function dumpOrEmpty(): ApplyResult {
   }
   const dumped = dumpReadCandidate(`list:${list.id}`)
   if (dumped.status !== "ok") return dumped
-  return { ...dumped, kind: "grocery", pinText: dumped.reply }
+  const card = groceryCardText() ?? dumped.reply
+  return { ...dumped, kind: "grocery", reply: card, pinText: card }
 }
 
 function withGroceryPin(result: ApplyResult): ApplyResult {
   if (result.status !== "ok" && result.status !== "needs_clarify") return result
-  const pinText = groceryDumpText() ?? undefined
+  const pinText = groceryCardText() ?? undefined
   if (!pinText) return result
-  return { ...result, pinText }
+  const raw = groceryDumpText()
+  const reply = raw && result.reply.trim() === raw.trim() ? pinText : result.reply
+  return { ...result, reply, pinText }
+}
+
+function groceryCandidateLists(): List[] {
+  return useTaskStore.getState().lists.filter((list) => !isFolderAllItemsCategoryId(list.id))
 }
 
 function openItemsOn(listId: string): Task[] {

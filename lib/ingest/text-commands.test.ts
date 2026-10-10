@@ -52,6 +52,20 @@ describe("send time", () => {
     expect(compareSentOrder({ receivedAt: SENT.toISOString(), telegramMessageId: 2 }, { receivedAt: SENT.toISOString(), telegramMessageId: 8 })).toBeLessThan(0)
   })
 
+  it("files an inbox capture onto a list whose name ends in digits", () => {
+    useTaskStore.getState().addList({
+      id: "list-brain2",
+      name: "brain2",
+      color: "#111",
+      createdAt: new Date(),
+    })
+    ingestIncoming(sim("brain2: finish the report"), PROCESSED)
+    const task = useTaskStore.getState().tasks.find((row) => row.description === "finish the report")
+    expect(task?.lists).toEqual(["list-brain2"])
+    expect(task?.stage).toBe("inbox")
+    expect(useTaskStore.getState().lists.some((list) => list.name === "brain")).toBe(false)
+  })
+
   it("stamps an inbox capture and a log with the send time", () => {
     ingestIncoming(sim("buy oats"), PROCESSED)
     const task = useTaskStore.getState().tasks.find((row) => row.description === "buy oats")

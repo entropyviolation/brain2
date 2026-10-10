@@ -70,8 +70,10 @@ const TELEGRAM_STOP = "cogs:telegram:stop"
 const TELEGRAM_STATUS = "cogs:telegram:status"
 const TELEGRAM_SEND = "cogs:telegram:send"
 const TELEGRAM_PIN = "cogs:telegram:pin"
+const TELEGRAM_EDIT = "cogs:telegram:edit"
 const TELEGRAM_MESSAGE = "cogs:telegram:message"
 const TELEGRAM_POLL_STATUS = "cogs:telegram:pollStatus"
+const TELEGRAM_ACK = "cogs:telegram:ack"
 
 // Chrome localhost persist snapshot. MUST match electron/main.js.
 const GET_SHARED_PERSIST_IPC_CHANNEL = "cogs:persist:getShared"
@@ -302,8 +304,10 @@ contextBridge.exposeInMainWorld("desktop", {
     start: () => ipcRenderer.invoke(TELEGRAM_START),
     stop: () => ipcRenderer.invoke(TELEGRAM_STOP),
     status: () => ipcRenderer.invoke(TELEGRAM_STATUS),
-    send: (chatId, text) => ipcRenderer.invoke(TELEGRAM_SEND, chatId, text),
+    send: (chatId, text, markup) => ipcRenderer.invoke(TELEGRAM_SEND, chatId, text, markup),
     pin: (chatId, messageId, previousId) => ipcRenderer.invoke(TELEGRAM_PIN, chatId, messageId, previousId),
+    edit: (chatId, messageId, text, markup) => ipcRenderer.invoke(TELEGRAM_EDIT, chatId, messageId, text, markup),
+    confirm: (updateIds) => ipcRenderer.send(TELEGRAM_ACK, updateIds),
     onMessage: (cb) => {
       const listener = (_event, payload) => cb(payload)
       ipcRenderer.on(TELEGRAM_MESSAGE, listener)

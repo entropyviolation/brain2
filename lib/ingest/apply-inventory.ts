@@ -13,6 +13,8 @@ import { resolveName } from "./name-resolve"
 import type { ApplyResult } from "./types"
 
 const INVENTORY_FALLBACK_NAME = "Inventory"
+/** Id of the Inventory list this module creates when none exists. */
+export const INVENTORY_LIST_ID = "list-inventory"
 export const INVENTORY_QTY_ATTR = "qty"
 
 export function inventoryScore(name: string): number {
@@ -38,7 +40,7 @@ export function ensureInventoryList(): List {
   const existing = findInventoryList()
   if (existing) return existing
   const list: List = {
-    id: "list-inventory",
+    id: INVENTORY_LIST_ID,
     name: INVENTORY_FALLBACK_NAME,
     createdAt: new Date(),
     color: "#84cc16",

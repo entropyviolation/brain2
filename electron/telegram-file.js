@@ -25,6 +25,12 @@ function telegramSentAtIso(msg) {
   return new Date(unix * 1000).toISOString()
 }
 
+function replyTargetId(msg) {
+  const reply = msg && msg.reply_to_message
+  const id = reply && reply.message_id
+  return typeof id === "number" && Number.isFinite(id) ? id : undefined
+}
+
 function extractTelegramMessage(update) {
   const msg = update && (update.message || update.edited_message)
   if (!msg) return null
@@ -41,6 +47,7 @@ function extractTelegramMessage(update) {
     isGroup,
     telegramMessageId: msg.message_id,
     telegramUpdateId: update && update.update_id != null ? update.update_id : undefined,
+    replyToMessageId: replyTargetId(msg),
     receivedAt: telegramSentAtIso(msg),
     mediaGroupId: msg.media_group_id != null ? String(msg.media_group_id) : undefined,
   }

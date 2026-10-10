@@ -2,15 +2,17 @@
  * lib/ingest/apply-gps.ts — Phone GPS → Location blocks that stop at the sample
  *
  * A fix says where the phone was at that minute. It does not paint the rest of
- * the day. The same coordinates keep the current pen, so a reverse-geocoded
- * business name (the restaurant you just ordered from) cannot replace home
- * while you are still there. A Telegram venue pin is a shared place, not
+ * the day. A fix inside a named repeated place (`gps-places.ts`, 80 m) uses
+ * that name. Otherwise the same coordinates keep the current pen, so a
+ * reverse-geocoded business name cannot replace home while you are still
+ * there. A Telegram venue pin is a shared place, not
  * presence. `gps-log:` replays lines the phone saved while it was offline.
  */
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { persistKey, readAliasedLocal, writeAliasedLocal } from "@/lib/storage-keys"
 import { isInstant, type TimeEntry } from "@/lib/time-entries"
 import { PEN_PALETTE, useTimeTrackingStore, type TrackPen } from "@/lib/time-tracking-store"
+import { GPS_CLUSTER_RADIUS_M, lookupGpsPlaceName, recordGpsSample } from "./gps-places"
 import { MINUTES_PER_DAY, minutesPastMidnight } from "./times"
 import type { ApplyResult } from "./types"
 
@@ -227,6 +229,14 @@ function chopProjectedTail(date: string, keepUntil: number): void {
 
 function resolvePen(sample: GpsSample): { penId: string; name: string; coords: { lat: number; lon: number } | null } {
   const coords = coordsOf(sample)
+  if (coords) {
+    const named = lookupGpsPlaceName(coords.lat, coords.lon)
+    if (named) {
+      const existing = findExactPen(named)
+      const penId = existing?.id ?? createLocationPen(named)
+      return { penId, name: existing?.name ?? named, coords }
+    }
+  }
   const last = readLastFix()
   if (coords && last && haversineMeters(coords, last) <= REUSE_METERS) {
     const stillThere = pensInLocation().some((pen) => pen.id === last.penId)
@@ -265,7 +275,7 @@ function applySample(sample: GpsSample): SampleResult {
     if (covering.notes === GPS_NOTE && covering.endMin > end) {
       useTimeTrackingStore.getState().updateEntry(covering.id, { endMin: end })
     }
-    if (coords) writeLastFix({ ...coords, penId, name })
+    if (coords) rememberFix({ ...coords, penId, name })
     return "same"
   }
 
@@ -285,7 +295,7 @@ function applySample(sample: GpsSample): SampleResult {
     if (target > samePen.endMin) {
       useTimeTrackingStore.getState().updateEntry(samePen.id, { endMin: target, notes: GPS_NOTE })
     }
-    if (coords) writeLastFix({ ...coords, penId, name })
+    if (coords) rememberFix({ ...coords, penId, name })
     return "same"
   }
 
@@ -303,15 +313,39 @@ function applySample(sample: GpsSample): SampleResult {
   if (floor > start) start = floor
   if (start >= end) start = min
   if (start >= end) {
-    if (coords) writeLastFix({ ...coords, penId, name })
+    if (coords) rememberFix({ ...coords, penId, name })
     return "same"
   }
 
   useTimeTrackingStore.getState().paintMinutes(date, "location", start, end, penId, undefined, undefined, undefined, {
     notes: GPS_NOTE,
   })
-  if (coords) writeLastFix({ ...coords, penId, name })
+  if (coords) rememberFix({ ...coords, penId, name })
   return "painted"
+}
+
+function rememberFix(fix: LastGpsFix): void {
+  writeLastFix(fix)
+  recordGpsSample(fix.lat, fix.lon)
+}
+
+/** The latest GPS stay inside this named cluster becomes that Location pen. */
+export function adoptGpsPlaceName(name: string, anchor: { lat: number; lon: number }): void {
+  const trimmed = name.trim()
+  if (!trimmed) return
+  const existing = findExactPen(trimmed)
+  const penId = existing?.id ?? createLocationPen(trimmed)
+  const label = existing?.name ?? trimmed
+  const last = readLastFix()
+  if (!last || haversineMeters(last, anchor) > GPS_CLUSTER_RADIUS_M) return
+  writeLastFix({ lat: last.lat, lon: last.lon, penId, name: label })
+  const date = formatLocalDateKey(new Date())
+  const latest = locationEntries(date)
+    .filter((entry) => entry.notes === GPS_NOTE && entry.penId === last.penId)
+    .sort((a, b) => b.endMin - a.endMin)[0]
+  if (latest && latest.penId !== penId) {
+    useTimeTrackingStore.getState().updateEntry(latest.id, { penId })
+  }
 }
 
 function nextOccupancy(date: string, after: number, penId: string): number | null {

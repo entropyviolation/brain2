@@ -16,6 +16,11 @@ import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { readIngestStore, writeIngestStore, ingestDataPath } from "./ingest-api.mjs"
 import { hydrateTelegramUpdate } from "./telegram-file.mjs"
+import {
+  allowedUpdatesParam,
+  callbackQueryToIncoming,
+  commandMenuRegistration,
+} from "../lib/ingest/telegram-ui.mjs"
 
 function tokenFromEnvFiles() {
   const fromEnv = String(process.env.COGS_TELEGRAM_BOT_TOKEN || "").trim()
@@ -87,8 +92,14 @@ async function flushReplies() {
   const leftover = []
   for (const reply of store.replies) {
     try {
-      for (const part of chunkTelegramText(reply.text)) {
-        await api("sendMessage", { chat_id: reply.chatId, text: part })
+      const parts = chunkTelegramText(reply.text)
+      for (let i = 0; i < parts.length; i++) {
+        await api("sendMessage", {
+          chat_id: reply.chatId,
+          text: parts[i],
+          reply_markup:
+            reply.markup && i === parts.length - 1 ? JSON.stringify(reply.markup) : undefined,
+        })
       }
     } catch (err) {
       console.warn("[cogs-ingest] reply failed:", err.message)
@@ -96,6 +107,12 @@ async function flushReplies() {
     }
   }
   writeIngestStore({ ...readIngestStore(), replies: leftover })
+}
+
+try {
+  for (const call of commandMenuRegistration()) await api(call.method, call.params)
+} catch (err) {
+  console.warn("[cogs-ingest] commands", err.message)
 }
 
 console.log(`[cogs-ingest] polling Telegram → ${ingestDataPath()}`)
@@ -111,13 +128,31 @@ while (true) {
     const updates = await api("getUpdates", {
       timeout: 25,
       offset,
-      allowed_updates: JSON.stringify(["message", "edited_message"]),
+      allowed_updates: allowedUpdatesParam(),
     })
     const store = readIngestStore()
     const pending = [...store.pending]
     for (const update of updates || []) {
       offset = Math.max(offset, (update.update_id || 0) + 1)
-      const payload = await hydrateTelegramUpdate(update, TOKEN, api)
+      let payload = await hydrateTelegramUpdate(update, TOKEN, api)
+      if (!payload && update && update.callback_query && update.callback_query.id) {
+        await api("answerCallbackQuery", { callback_query_id: update.callback_query.id })
+        const tapped = callbackQueryToIncoming(update)
+        if (tapped) {
+          if (tapped.clearMarkup && tapped.clearMarkup.messageId != null) {
+            try {
+              await api("editMessageReplyMarkup", {
+                chat_id: tapped.clearMarkup.chatId,
+                message_id: tapped.clearMarkup.messageId,
+                reply_markup: JSON.stringify({ inline_keyboard: [] }),
+              })
+            } catch {
+              /* the question markup is already gone */
+            }
+          }
+          payload = tapped.payload
+        }
+      }
       if (payload) pending.push(payload)
     }
     const { writeFileSync } = await import("node:fs")

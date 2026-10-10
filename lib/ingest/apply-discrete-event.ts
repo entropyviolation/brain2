@@ -10,13 +10,15 @@
  * `eventKind` `thought-process`. Points sit on a scope and open in the block
  * editor. A later block paint does not remove them.
  * `log: … loc: home` paints a Location-scope instant at that minute.
+ * `applyTransferredLogLine` is an inbox transfer: the same Text log instant,
+ * at the time the caller passes, with the line kept whole.
  */
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { recordCountForKeyword } from "@/lib/count-statuses"
 import { formatLogKeywordList, isLogKeywordListQuery } from "@/lib/log-keywords"
 import { savedLogKeywordPhrases } from "@/lib/log-keywords-store"
 import { eventKindSlug, type IntakeClass, type TimeEntry } from "@/lib/time-entries"
-import { PEN_PALETTE, useTimeTrackingStore } from "@/lib/time-tracking-store"
+import { appendTrackingInstants, PEN_PALETTE, useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { minutesPastMidnight } from "./times"
 import {
   parseIntakePayload,
@@ -115,6 +117,81 @@ export function applyDiscreteLog(payload: string, now = new Date()): ApplyResult
     summary: `Event → ${parsed.title}`,
     itemIds: loggedIds(id, placeId),
   }
+}
+
+/**
+ * One Tracking log event from an inbox transfer.
+ * Same Text log instant as a clock-less `log:` line (`eventKind` slug, pen
+ * Text log). Clocks and durations inside `line` stay in the title — they are
+ * not peeled into a range or a different minute. `at` is the instant.
+ */
+export function applyTransferredLogLine(line: string, at: Date): ApplyResult {
+  const title = line.trim()
+  if (!title || Number.isNaN(at.getTime())) {
+    return { status: "error", kind: "event-log", reply: "Nothing to log." }
+  }
+  const applied = applyTransferredLogLines([{ line, at }])
+  if (!applied.ok) {
+    return { status: "error", kind: "event-log", reply: "Could not save that log note." }
+  }
+  const entry = applied.entries[0]
+  if (!entry) {
+    return { status: "error", kind: "event-log", reply: "Could not save that log note." }
+  }
+  return {
+    status: "ok",
+    kind: "event-log",
+    reply: `Logged: ${entry.title} · ${clockLabel(at)}`,
+    summary: `Event → ${entry.title}`,
+    itemIds: [entry.id],
+  }
+}
+
+/**
+ * Text log instants for an inbox transfer, in one tracking-store write.
+ * Same shape as `applyTransferredLogLine`: caller-supplied minute, line kept
+ * whole, `generatedBy.kind === "text"`. An empty batch or a blank line does
+ * not write.
+ */
+export function applyTransferredLogLines(
+  lines: readonly { line: string; at: Date }[],
+): { ok: true; entries: TimeEntry[] } | { ok: false; entries: [] } {
+  const ready: { title: string; at: Date }[] = []
+  for (const item of lines) {
+    const title = item.line.trim()
+    if (!title || Number.isNaN(item.at.getTime())) return { ok: false, entries: [] }
+    ready.push({ title, at: item.at })
+  }
+  if (ready.length === 0) return { ok: false, entries: [] }
+  const penId = ensurePen(DEFAULT_PEN, ACTIVITY)
+  const stamp = Date.now().toString(36)
+  const created: TimeEntry[] = ready.map((item, index) => {
+    const date = formatLocalDateKey(item.at)
+    const minute = minutesPastMidnight(item.at)
+    const eventKind = eventKindSlug(item.title)
+    return {
+      id: `te-${stamp}-${index.toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+      date,
+      scopeId: ACTIVITY,
+      penId,
+      startMin: minute,
+      endMin: minute,
+      kind: "instant",
+      title: item.title,
+      notes: eventNotes(undefined, item.at),
+      generatedBy: { kind: "text", id: date },
+      ...(eventKind ? { eventKind } : {}),
+    }
+  })
+  appendTrackingInstants(created)
+  const live = new Set(useTimeTrackingStore.getState().entries.map((entry) => entry.id))
+  if (!created.every((entry) => live.has(entry.id))) return { ok: false, entries: [] }
+  return { ok: true, entries: created }
+}
+
+/** Text log pen, created once so a later batch does not open its own undo step. */
+export function ensureTransferLogPen(): string {
+  return ensurePen(DEFAULT_PEN, ACTIVITY)
 }
 
 /** A saved `log` / `log:` phrase increments a bound count. No binding is a no-op. */

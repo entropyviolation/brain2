@@ -33,6 +33,8 @@ const EXPECTED_KIND_MARKERS: Array<{ kind: string; mustMention: string }> = [
   { kind: "today", mustMention: "today" },
   { kind: "habits", mustMention: "habits" },
   { kind: "status", mustMention: "where" },
+  { kind: "now-capture", mustMention: "now capture" },
+  { kind: "quicklists", mustMention: "/quicklists" },
   { kind: "ops", mustMention: "ops" },
   { kind: "count", mustMention: "count" },
   { kind: "tags", mustMention: "tags" },
