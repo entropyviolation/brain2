@@ -11,7 +11,7 @@ import {
   startWorkingOnOperation,
   stopWorkingOnOperation,
 } from "@/lib/operation-work-session"
-import { startPenColorSession } from "@/lib/pen-color-session"
+import { addPenColorNowObjective, startPenColorSession } from "@/lib/pen-color-session"
 import { HeaderNowBox } from "./header-now-box"
 
 function seedOperation(id = "op_1", name = "Foxtide rebuild"): void {
@@ -52,13 +52,14 @@ describe("HeaderNowBox", () => {
 
     render(<HeaderNowBox />)
 
-    const box = screen.getByTestId("header-now-box")
+    const box = await screen.findByTestId("header-now-box")
     expect(box).toBeInTheDocument()
-    expect(screen.getByRole("group", { name: /now/i })).toBe(box)
-    expect(screen.getByText("Foxtide rebuild")).toBeInTheDocument()
-    expect(screen.getByText("0:00")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /Stop Foxtide rebuild/i })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /Pause Foxtide rebuild/i })).toBeInTheDocument()
+    expect(await screen.findByRole("group", { name: /now/i })).toBe(box)
+    expect(await screen.findByText("Foxtide rebuild")).toBeInTheDocument()
+    expect(await screen.findByText("0:00")).toBeInTheDocument()
+    expect(await screen.findByRole("button", { name: /Stop Foxtide rebuild/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /Pause Foxtide rebuild/i })).toHaveAttribute("data-dvd-mark", "pause")
+    expect(screen.getByRole("button", { name: /Stop Foxtide rebuild/i })).toHaveAttribute("data-dvd-mark", "stop")
 
     await act(async () => {
       vi.advanceTimersByTime(5_000)
@@ -66,7 +67,7 @@ describe("HeaderNowBox", () => {
     expect(screen.getByText("0:05")).toBeInTheDocument()
 
     await user.click(screen.getByRole("button", { name: /Pause Foxtide rebuild/i }))
-    expect(screen.getByRole("button", { name: /Resume Foxtide rebuild/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /Resume Foxtide rebuild/i })).toHaveAttribute("data-dvd-mark", "play")
 
     await act(async () => {
       vi.advanceTimersByTime(10_000)
@@ -91,16 +92,33 @@ describe("HeaderNowBox", () => {
 
     render(<HeaderNowBox />)
 
-    expect(screen.getByTestId("header-now-box")).toBeInTheDocument()
-    expect(screen.getByText("Foxtide rebuild")).toBeInTheDocument()
-    expect(screen.getByText("Exercise")).toBeInTheDocument()
+    expect(await screen.findByTestId("header-now-box")).toBeInTheDocument()
+    expect(await screen.findByText("Foxtide rebuild")).toBeInTheDocument()
+    expect(await screen.findByText("Exercise · Activity")).toBeInTheDocument()
     expect(screen.getAllByRole("button", { name: /^Stop /i })).toHaveLength(2)
     expect(screen.getAllByRole("button", { name: /^Pause /i })).toHaveLength(2)
 
     await act(async () => {
       stopWorkingOnOperation()
     })
-    expect(screen.getByText("Exercise")).toBeInTheDocument()
+    expect(screen.getByText("Exercise · Activity")).toBeInTheDocument()
     expect(screen.queryByText("Foxtide rebuild")).not.toBeInTheDocument()
+  })
+
+  it("opens objectives popup on a live pen-color row without leaving the now well", async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    startPenColorSession("act-exercise")
+    addPenColorNowObjective("finish the nest")
+
+    render(<HeaderNowBox />)
+
+    expect(await screen.findByTestId("header-now-box")).toBeInTheDocument()
+    const triggers = await screen.findAllByTestId("now-objectives-trigger")
+    expect(triggers.length).toBeGreaterThanOrEqual(1)
+    await user.click(triggers[0])
+    expect(await screen.findByTestId("now-objectives-pop")).toBeInTheDocument()
+    expect(screen.getByDisplayValue("finish the nest")).toBeInTheDocument()
+    expect(screen.getByRole("textbox", { name: "Add objective" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /Mark objective complete: finish the nest/i })).toBeInTheDocument()
   })
 })

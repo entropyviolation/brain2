@@ -32,6 +32,14 @@ import {
 import { syncTrackedHabits } from "@/lib/habit-tracking-sync"
 import { useWorkSessionStore, type WorkSession } from "@/lib/work-session-store"
 import { isRestoring, runAsAction, withoutUndo } from "@/lib/action-history"
+import {
+  addNowObjective,
+  compactNowObjectives,
+  editNowObjectiveText,
+  removeNowObjective,
+  toggleNowObjectiveComplete,
+  type NowObjective,
+} from "@/lib/now-objective"
 
 export const ACTIVITY_SCOPE_ID = "activity"
 export const WORK_SESSION_TICK_MS = 15_000
@@ -264,9 +272,11 @@ function paintSlices(
   penId: string,
   title: string,
   spanId?: string,
+  nowObjectives?: NowObjective[],
 ): string[] {
   const tracking = useTimeTrackingStore.getState()
   const ids: string[] = []
+  const objectives = compactNowObjectives(nowObjectives)
   for (const slice of slices) {
     const previous = tracking.entries.find(
       (entry) =>
@@ -279,11 +289,36 @@ function paintSlices(
     tracking.paintMinutes(slice.date, scopeId, slice.startMin, slice.endMin, penId, undefined, spanId)
     const id = coveringEntryId(slice.date, scopeId, penId, slice.startMin)
     if (id) {
-      tracking.updateEntry(id, { title, notes: previous?.notes })
+      tracking.updateEntry(id, {
+        title,
+        notes: previous?.notes,
+        nowObjectives: objectives ?? previous?.nowObjectives,
+      })
       ids.push(id)
     }
   }
   return ids
+}
+
+function writeWorkObjectivesOnto(ids: string[], nowObjectives: NowObjective[] | undefined): void {
+  const tracking = useTimeTrackingStore.getState()
+  const next = compactNowObjectives(nowObjectives)
+  for (const id of ids) {
+    tracking.updateEntry(id, { nowObjectives: next })
+  }
+}
+
+function patchWorkNowObjectives(
+  mutate: (list: NowObjective[] | undefined) => NowObjective[],
+): WorkSession | null {
+  const session = useWorkSessionStore.getState().session
+  if (!session) return null
+  const mutated = mutate(session.nowObjectives)
+  const nowObjectives = mutated.length ? mutated : undefined
+  const next: WorkSession = { ...session, nowObjectives }
+  useWorkSessionStore.getState().setSession(next)
+  writeWorkObjectivesOnto(session.trackingEntryIds ?? [], nowObjectives)
+  return next
 }
 
 function extendLiveEntry(session: WorkSession, now: Date): string[] {
@@ -310,7 +345,10 @@ function extendLiveEntry(session: WorkSession, now: Date): string[] {
     tracking.paintMinutes(slice.date, session.scopeId, slice.startMin, slice.endMin, session.penId, undefined, `work-${session.startedAt}`)
     const id = coveringEntryId(slice.date, session.scopeId, session.penId, slice.startMin)
     if (id) {
-      tracking.updateEntry(id, { title: session.title })
+      tracking.updateEntry(id, {
+        title: session.title,
+        nowObjectives: compactNowObjectives(session.nowObjectives),
+      })
       ids.push(id)
     }
   }
@@ -401,7 +439,14 @@ export function stopWorkingOnOperation(now = new Date()): WorkSession | null {
   const slices = splitIntoDaySlices(new Date(session.startedAt), end)
 
   if (operation && session.penId) {
-    const ids = paintSlices(slices, session.scopeId, session.penId, session.title, `work-${session.startedAt}`)
+    const ids = paintSlices(
+      slices,
+      session.scopeId,
+      session.penId,
+      session.title,
+      `work-${session.startedAt}`,
+      session.nowObjectives,
+    )
     useWorkSessionStore.getState().setSession({ ...session, trackingEntryIds: ids })
     writeDoneAndTimeLogs(operation, slices, session.startedAt)
     syncTrackedHabits(slices.map((s) => s.date))
@@ -464,4 +509,21 @@ export function toggleWorkingOnOperation(operationId: string, now = new Date()):
     return null
   }
   return startWorkingOnOperation(operationId, now)
+}
+
+/** Add an objective for right now on the live Operations activity block. */
+export function addWorkNowObjective(text: string, now = new Date()): WorkSession | null {
+  return withoutUndo(() => patchWorkNowObjectives((list) => addNowObjective(list, text, now)))
+}
+
+export function editWorkNowObjectiveText(id: string, text: string): WorkSession | null {
+  return withoutUndo(() => patchWorkNowObjectives((list) => editNowObjectiveText(list, id, text)))
+}
+
+export function toggleWorkNowObjectiveComplete(id: string, now = new Date()): WorkSession | null {
+  return withoutUndo(() => patchWorkNowObjectives((list) => toggleNowObjectiveComplete(list, id, now)))
+}
+
+export function removeWorkNowObjective(id: string): WorkSession | null {
+  return withoutUndo(() => patchWorkNowObjectives((list) => removeNowObjective(list, id)))
 }

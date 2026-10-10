@@ -116,34 +116,41 @@ export function CurrentMoment({
   )
 }
 
-/** Lanes, working-now, the two logs, and Update state. Stays mounted across panes. */
+/** Working-now first; paint lanes / Update state behind Paint…. Stays mounted across panes. */
 export function CurrentMomentDeck() {
   const { today, lanes } = useCurrentMomentLanes()
   const [selected, setSelected] = useState<string | null>(null)
   const [nowName, setNowName] = useState("")
+  const [paintOpen, setPaintOpen] = useState(false)
   const lane = lanes.find((item) => item.scopeId === selected) ?? null
 
   function selectLane(scopeId: string) {
     const next = lanes.find((item) => item.scopeId === scopeId)
     setSelected(scopeId)
     setNowName(next && next.kind !== "empty" ? next.name : "")
+    setPaintOpen(true)
   }
 
   return (
     <section className="htk-moment" aria-label="Current moment" data-testid="htk-current-moment">
       <p className="htk-moment-title">Current moment</p>
-      <div className="htk-moment-band">
-        <CurrentMoment selected={selected} onSelect={selectLane} />
-        <MetricLoggerButton className="htk-metrics" />
-      </div>
-      {lane ? (
-        <UpdateState lane={lane} today={today} nowName={nowName} onName={setNowName} />
-      ) : (
-        <p className="htk-hint">Pick a view to add what is true now, or a recent sequence.</p>
-      )}
       <div className="htk-working" data-testid="htk-working-now">
         <WorkingNowStrip />
       </div>
+      <div className="htk-moment-band htk-moment-band-metrics">
+        <MetricLoggerButton className="htk-metrics" />
+      </div>
+      <details className="htk-paint" open={paintOpen} onToggle={(e) => setPaintOpen((e.target as HTMLDetailsElement).open)}>
+        <summary className="htk-paint-sum">Paint…</summary>
+        <div className="htk-paint-body">
+          <CurrentMoment selected={selected} onSelect={selectLane} />
+          {lane ? (
+            <UpdateState lane={lane} today={today} nowName={nowName} onName={setNowName} />
+          ) : (
+            <p className="htk-hint">Pick a view to add what is true now, or a recent sequence.</p>
+          )}
+        </div>
+      </details>
       <NowLogLists dayKey={today} />
     </section>
   )

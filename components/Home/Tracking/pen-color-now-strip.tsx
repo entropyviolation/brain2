@@ -6,25 +6,32 @@
  * Search a pen color, or type a new name and **Create** it in a view, then
  * press **Working on right now**. A timer starts at this second. The pen's
  * view gains a block from the minute that contains that second until you stop.
- * The Operations clock is a separate session.
+ * While live, **Objectives for right now** opens as a popup checklist on the
+ * row (add / mark complete) without growing the strip. The Operations clock is
+ * a separate session.
  */
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { Pause, Play, Square } from "lucide-react"
+import { DvdTransportKey } from "@/components/dvd-transport-keys"
 import { PEN_PALETTE, useTimeTrackingStore, type TrackScope } from "@/lib/time-tracking-store"
 import { ColorSwatch } from "@/components/ui/color-swatch"
 import { ancestorChain } from "@/lib/pen-tree"
 import { formatElapsedClock, isSessionPaused, sessionElapsedMs } from "@/lib/operation-work-session"
 import {
+  addPenColorNowObjective,
+  editPenColorNowObjectiveText,
   pausePenColorSession,
   PEN_COLOR_SESSION_TICK_MS,
+  removePenColorNowObjective,
   resumePenColorSession,
   stopPenColorSession,
   tickPenColorSession,
+  togglePenColorNowObjectiveComplete,
   togglePenColorSession,
 } from "@/lib/pen-color-session"
 import { usePenColorSessionStore } from "@/lib/pen-color-session-store"
+import { NowObjectivesList } from "@/components/Home/Tracking/now-objectives-list"
 import "@/components/Operations/operations-chrome.css"
 import "@/components/Home/Tracking/tracking-chrome.css"
 
@@ -268,22 +275,26 @@ export function PenColorNowStrip() {
           <span className="ops-now-elapsed" aria-live="polite">
             {elapsed}
           </span>
-          <button
-            type="button"
+          <DvdTransportKey
             className="trk-pen-now-icon"
-            aria-label={isSessionPaused(session) ? `Resume ${selected.name}` : `Pause ${selected.name}`}
+            mark={isSessionPaused(session) ? "play" : "pause"}
+            label={isSessionPaused(session) ? `Resume ${selected.name}` : `Pause ${selected.name}`}
             onClick={() => (isSessionPaused(session) ? resumePenColorSession() : pausePenColorSession())}
-          >
-            {isSessionPaused(session) ? <Play aria-hidden /> : <Pause aria-hidden />}
-          </button>
-          <button
-            type="button"
+          />
+          <NowObjectivesList
+            objectives={session.nowObjectives}
+            contextName={selected.name}
+            onAdd={(text) => addPenColorNowObjective(text)}
+            onEditText={(id, text) => editPenColorNowObjectiveText(id, text)}
+            onToggleComplete={(id) => togglePenColorNowObjectiveComplete(id)}
+            onRemove={(id) => removePenColorNowObjective(id)}
+          />
+          <DvdTransportKey
             className="trk-pen-now-icon"
-            aria-label={`Stop working on ${selected.name}`}
+            mark="stop"
+            label={`Stop working on ${selected.name}`}
             onClick={() => stopPenColorSession()}
-          >
-            <Square aria-hidden />
-          </button>
+          />
         </div>
       ) : (
         <button

@@ -1,10 +1,10 @@
 /**
  * components/Home/Tracking/confirm-planned-dialog.tsx — Plan became real
  *
- * Day Log ghosts are the plan. Confirming one paints the same window onto the
- * active Tracking pen (optionally retimed, named, noted) and, when the plan
- * was a task, marks it complete through `completeTask` so dependents unlock
- * the same way To Do does.
+ * Day Log ghosts are the plan (prospective). Confirming one paints the same
+ * window onto the active Tracking pen (retrospective) and, when the plan was a
+ * task, marks it complete through `completeTask` so dependents unlock the same
+ * way To Do does. Bridge surface — docs/TEMPORAL_POLARITY.md.
  */
 "use client"
 
@@ -22,6 +22,7 @@ import { PenSwatches } from "@/components/Home/Tracking/pen-swatches"
 import type { CalendarEvent, Task } from "@/lib/types"
 import { snapshotsEqual } from "@/lib/unsaved-changes"
 import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
+import { TEMPORAL_POLARITY_HELP, temporalAttr } from "@/lib/temporal-polarity"
 import "./tracking-chrome.css"
 
 export function ConfirmPlannedDialog({
@@ -99,7 +100,12 @@ export function ConfirmPlannedDialog({
   return (
     <>
     <Dialog open onOpenChange={guard.handleOpenChange}>
-      <DialogContent className="trk95 trk-dialog sm:max-w-md" {...unsavedDismissProps(guard.requestClose)}>
+      <DialogContent
+        className="trk95 trk-dialog sm:max-w-md"
+        data-temporal={temporalAttr("bridge")}
+        data-ui-help={TEMPORAL_POLARITY_HELP.bridge}
+        {...unsavedDismissProps(guard.requestClose)}
+      >
         <DialogHeader>
           <DialogTitle>Confirm {label}</DialogTitle>
         </DialogHeader>

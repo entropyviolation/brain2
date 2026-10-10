@@ -55,7 +55,8 @@ import { DayLogWeek } from "@/components/Home/Tracking/daylog-week"
 import { trackedAgendaBlocks } from "@/components/Home/Tracking/tracked-agenda-blocks"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { entriesForDay, formatDuration, timeStringToMinutes } from "@/lib/time-entries"
-import { penTotals, totalsFor } from "@/lib/tracking-summary"
+import { penTotals, tagTotals, totalsFor } from "@/lib/tracking-summary"
+import { SLEEP_TAG_ID } from "@/lib/sleep-log"
 import { usePenActionSync } from "@/lib/pen-action-sync"
 import "./tracking-chrome.css"
 import "./daylog-week.css"
@@ -89,6 +90,7 @@ export function ActualDayView({
   const updateEvent = useEventStore((s) => s.updateEvent)
   const trackingScopes = useTimeTrackingStore((s) => s.scopes)
   const trackingEntries = useTimeTrackingStore((s) => s.entries)
+  const trackingTags = useTimeTrackingStore((s) => s.tags)
   const activeScopeId = useTimeTrackingStore((s) => s.activeScopeId)
   const dayKey = formatLocalDateKey(currentDate)
 
@@ -106,9 +108,20 @@ export function ActualDayView({
     () => penTotals(paintedEntries, trackingScope, [dayKey]),
     [paintedEntries, trackingScope, dayKey],
   )
+  const sleepWorkDay = useMemo(() => {
+    const slices = tagTotals(trackingEntries, trackingScopes, trackingTags, [dayKey])
+    const sleep = slices.find((s) => s.id === SLEEP_TAG_ID)
+    const work = slices.find((s) => s.id === "tag-work")
+    return {
+      sleepMin: sleep?.minutes ?? 0,
+      sleepColor: sleep?.color ?? "#1e293b",
+      workMin: work?.minutes ?? 0,
+      workColor: work?.color ?? "#2563eb",
+    }
+  }, [trackingEntries, trackingScopes, trackingTags, dayKey])
   const trackedBlocks = useMemo(
-    () => trackedAgendaBlocks(trackingEntries, trackingScope, dayKey, trackingScopes),
-    [trackingEntries, trackingScope, dayKey, trackingScopes],
+    () => trackedAgendaBlocks(trackingEntries, trackingScope, dayKey, trackingScopes, trackingTags),
+    [trackingEntries, trackingScope, dayKey, trackingScopes, trackingTags],
   )
 
   const plannedTasks = useMemo(
@@ -323,6 +336,18 @@ export function ActualDayView({
           Solid color is tracked. Dashed is planned — click to confirm it happened. Amber is time logged onto a
           planned task.
         </p>
+        {!isWeek ? (
+          <div className="daylog-sw-strip" aria-label="Sleep and Work summary">
+            <span>
+              <span className="daylog-sw-bead" style={{ background: sleepWorkDay.sleepColor }} aria-hidden />
+              Sleep <span className="daylog-sw-mins">{formatDuration(sleepWorkDay.sleepMin)}</span>
+            </span>
+            <span>
+              <span className="daylog-sw-bead" style={{ background: sleepWorkDay.workColor }} aria-hidden />
+              Work <span className="daylog-sw-mins">{formatDuration(sleepWorkDay.workMin)}</span>
+            </span>
+          </div>
+        ) : null}
         {isWeek ? (
           <DayLogWeek
             currentDate={currentDate}

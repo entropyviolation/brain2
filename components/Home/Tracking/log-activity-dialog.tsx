@@ -43,6 +43,7 @@ function OptionalClock({
   onTime,
   onDate,
   onToggleDate,
+  estimateBasis,
 }: {
   id: string
   label: string
@@ -52,14 +53,26 @@ function OptionalClock({
   onTime: (value: string) => void
   onDate: (value: string) => void
   onToggleDate: () => void
+  /** When set, the clock wears ~ and a dashed est. chip (tooltip = basis). */
+  estimateBasis?: string
 }) {
   return (
     <div className="trk-clock-field">
       <div className="trk-clock-head">
         <Label htmlFor={id}>{label}</Label>
-        <button type="button" className="trk-date-toggle" aria-pressed={showDate} onClick={onToggleDate}>
-          {showDate ? "Hide date" : "Date"}
-        </button>
+        <div className="trk-clock-head-trail">
+          {estimateBasis ? (
+            <span
+              className="trk-est inline-flex items-center rounded px-1.5 py-px text-[10px] font-medium uppercase tracking-wide"
+              title={estimateBasis}
+            >
+              est.
+            </span>
+          ) : null}
+          <button type="button" className="trk-date-toggle" aria-pressed={showDate} onClick={onToggleDate}>
+            {showDate ? "Hide date" : "Date"}
+          </button>
+        </div>
       </div>
       {showDate && (
         <Input
@@ -71,7 +84,10 @@ function OptionalClock({
           aria-label={`${label} date`}
         />
       )}
-      <ClockTime id={id} label={label} time={time} onTime={onTime} />
+      <div className={estimateBasis ? "trk-clock-est-wrap" : undefined}>
+        {estimateBasis ? <span className="trk-clock-tilde" aria-hidden>~</span> : null}
+        <ClockTime id={id} label={label} time={time} onTime={onTime} />
+      </div>
     </div>
   )
 }

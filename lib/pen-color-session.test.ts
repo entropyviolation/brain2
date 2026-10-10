@@ -11,11 +11,13 @@ import { OPERATION_ATTR, OPERATION_TYPE_ID } from "@/lib/operation-types"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { sessionElapsedMs, startWorkingOnOperation } from "@/lib/operation-work-session"
 import {
+  addPenColorNowObjective,
   pausePenColorSession,
   resumePenColorSession,
   startPenColorSession,
   stopPenColorSession,
   tickPenColorSession,
+  togglePenColorNowObjectiveComplete,
 } from "./pen-color-session"
 import { usePenColorSessionStore } from "./pen-color-session-store"
 
@@ -140,5 +142,29 @@ describe("pen color session", () => {
     useTimeTrackingStore.getState().removePen("activity", "act-rest")
     expect(tickPenColorSession(new Date(2026, 8, 21, 19, 40, 0))).toBeNull()
     expect(usePenColorSessionStore.getState().session).toBeNull()
+  })
+
+  it("syncs objectives for right now onto the painted block and keeps them after stop", () => {
+    startPenColorSession("act-exercise", AT)
+    addPenColorNowObjective("finish the nest", AT)
+    addPenColorNowObjective("write the test", new Date(AT.getTime() + 1000))
+    const live = usePenColorSessionStore.getState().session
+    expect(live?.nowObjectives).toHaveLength(2)
+    const entryId = live!.trackingEntryIds[0]
+    expect(useTimeTrackingStore.getState().entries.find((e) => e.id === entryId)?.nowObjectives).toHaveLength(2)
+
+    const firstId = live!.nowObjectives![0].id
+    togglePenColorNowObjectiveComplete(firstId, new Date(AT.getTime() + 60_000))
+    expect(usePenColorSessionStore.getState().session?.nowObjectives?.[0].completedAt).toBeTruthy()
+    expect(
+      useTimeTrackingStore.getState().entries.find((e) => e.id === entryId)?.nowObjectives?.[0].completedAt,
+    ).toBeTruthy()
+
+    stopPenColorSession(new Date(AT.getTime() + 120_000))
+    expect(usePenColorSessionStore.getState().session).toBeNull()
+    const kept = useTimeTrackingStore.getState().entries.find((e) => e.penId === "act-exercise")
+    expect(kept?.nowObjectives).toHaveLength(2)
+    expect(kept?.nowObjectives?.[0].text).toBe("finish the nest")
+    expect(kept?.nowObjectives?.[0].completedAt).toBeTruthy()
   })
 })

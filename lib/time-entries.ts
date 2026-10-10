@@ -24,6 +24,9 @@
 
 import { compactMoodReading, sameMoodReading, type MoodReading } from "./mood-reading"
 import { compactSpend } from "./spend"
+import { sameNowObjectives, type NowObjective } from "./now-objective"
+
+export type { NowObjective } from "./now-objective"
 
 export const MINUTES_PER_DAY = 24 * 60
 
@@ -207,6 +210,11 @@ export interface TimeEntry {
    */
   title?: string
   notes?: string
+  /**
+   * Objectives for right now nested in this exact activity block (live timer or
+   * stopped paint). Not Home Goals, not the Tracking Objective pen.
+   */
+  nowObjectives?: NowObjective[]
   project?: string
   books?: string
   pages?: number
@@ -266,6 +274,7 @@ export interface TimeEntry {
 const DETAIL_KEYS = [
   "title",
   "notes",
+  "nowObjectives",
   "project",
   "books",
   "pages",
@@ -413,6 +422,7 @@ function sameDetails(a: TimeEntry, b: TimeEntry): boolean {
   return (
     DETAIL_KEYS.every((key) => {
       if (key === "moodReading") return sameMoodReading(a.moodReading, b.moodReading)
+      if (key === "nowObjectives") return sameNowObjectives(a.nowObjectives, b.nowObjectives)
       return (a[key] ?? undefined) === (b[key] ?? undefined)
     }) &&
     (a.eventKind ?? undefined) === (b.eventKind ?? undefined) &&
@@ -429,6 +439,7 @@ function sameDetails(a: TimeEntry, b: TimeEntry): boolean {
 export function hasDetails(entry: Partial<TimeEntry>): boolean {
   return DETAIL_KEYS.some((key) => {
     if (key === "moodReading") return compactMoodReading(entry.moodReading) !== undefined
+    if (key === "nowObjectives") return (entry.nowObjectives?.length ?? 0) > 0
     const value = entry[key]
     return value !== undefined && value !== "" && value !== null
   })

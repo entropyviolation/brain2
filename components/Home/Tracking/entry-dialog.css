@@ -120,6 +120,25 @@
   gap: 4px;
 }
 
+/* Mood tone / pen chips — not Tracking tags; keep a distinct class from `.trk-tag`. */
+.trk95 .trk-mood-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px;
+  font: inherit;
+  font-size: 11px;
+  color: #000;
+  background: var(--t-surface);
+  border: 0;
+  box-shadow: var(--t-raised);
+  cursor: pointer;
+}
+
+.trk95 .trk-mood-chip[aria-pressed="true"] {
+  box-shadow: var(--t-sunken);
+}
+
 .trk95 .trk-mood-sentence {
   margin: 0;
   font-size: 12px;

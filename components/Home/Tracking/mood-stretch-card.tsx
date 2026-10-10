@@ -247,7 +247,7 @@ export function MoodStretchCard({
             <button
               key={item.tone}
               type="button"
-              className="trk-tag"
+              className="trk-mood-chip"
               aria-pressed={reading.tone === item.tone}
               onClick={() => onChange({ ...reading, tone: reading.tone === item.tone ? undefined : item.tone })}
             >
@@ -280,7 +280,7 @@ export function MoodStretchCard({
                 <button
                   key={pen.id}
                   type="button"
-                  className="trk-tag"
+                  className="trk-mood-chip"
                   aria-pressed={on}
                   style={on ? { background: pen.color, color: inkOnFill(pen.color) } : undefined}
                   onClick={() => {

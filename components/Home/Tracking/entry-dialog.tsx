@@ -54,11 +54,22 @@ import { PersonPipelinesEditor } from "@/components/People/person-pipelines"
 import { COMPANY_SCOPE_ID } from "@/lib/people-i-know"
 import { BlockPenSection } from "@/components/Home/Tracking/block-pen-section"
 import { openPenSettings } from "@/components/Home/Tracking/open-pen-settings"
+import { CatalogTagChip } from "@/components/Home/Tracking/catalog-tag-chip"
+import { TAG_OPEN_TITLE } from "@/components/Home/Tracking/open-tag-settings"
 import { MoodStretchCard } from "@/components/Home/Tracking/mood-stretch-card"
 import { compactMoodReading, moodPenColor, normalizeWord, type MoodReading } from "@/lib/mood-reading"
+import {
+  addNowObjective,
+  editNowObjectiveText,
+  removeNowObjective,
+  toggleNowObjectiveComplete,
+  type NowObjective,
+} from "@/lib/now-objective"
+import { NowObjectivesList } from "@/components/Home/Tracking/now-objectives-list"
 import { isSpendEntry, parseSpendAmount, spendAmountInput, spendSourceOptions } from "@/lib/spend"
 import { parseLocalDate } from "@/lib/date-utils"
 import { OptionalClock } from "@/components/Home/Tracking/log-activity-dialog"
+import { sleepClockEstimateBasis } from "@/lib/estimated-values"
 import "./tracking-chrome.css"
 import "./entry-dialog.css"
 
@@ -126,6 +137,7 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
   const [books, setBooks] = useState(entry.books ?? "")
   const [pages, setPages] = useState(entry.pages?.toString() ?? "")
   const [notes, setNotes] = useState(entry.notes ?? "")
+  const [nowObjectives, setNowObjectives] = useState<NowObjective[] | undefined>(entry.nowObjectives)
   const [reading, setReading] = useState<MoodReading>(entry.moodReading ?? {})
   const [assumed, setAssumed] = useState(entry.precision === "estimated")
   const spendEntry = isSpendEntry(entry)
@@ -143,6 +155,10 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
   useEffect(() => {
     setTagIds(entry.tagIds ?? [])
   }, [entry.tagIds])
+
+  useEffect(() => {
+    setNowObjectives(entry.nowObjectives)
+  }, [entry.nowObjectives])
 
   useEffect(() => {
     setSecondaryPenIds(entry.secondaryPenIds ?? [])
@@ -228,6 +244,7 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
         books: books.trim() || undefined,
         pages: pages.trim() ? Number.parseInt(pages, 10) || undefined : undefined,
         notes: notes.trim() || undefined,
+        nowObjectives,
         precision: assumed ? "estimated" : undefined,
         ...moodPatch,
         ...spendPatch,
@@ -255,6 +272,7 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
         books: books.trim() || undefined,
         pages: pages.trim() ? Number.parseInt(pages, 10) || undefined : undefined,
         notes: notes.trim() || undefined,
+        nowObjectives,
         precision: assumed ? "estimated" : undefined,
         ...moodPatch,
         ...spendPatch,
@@ -289,6 +307,7 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
     books,
     pages,
     notes,
+    nowObjectives,
     reading,
     assumed,
     amountText,
@@ -352,6 +371,14 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
               onTime={setFrom}
               onDate={setFromDate}
               onToggleDate={() => setShowFromDate((open) => !open)}
+              estimateBasis={
+                sleep && assumed
+                  ? sleepClockEstimateBasis(
+                      entry.generatedBy?.kind === "sleep" ? "remembered" : "painted",
+                      "asleep",
+                    )
+                  : undefined
+              }
             />
             {!isInstant(entry) && (
               <OptionalClock
@@ -363,6 +390,14 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
                 onTime={setTo}
                 onDate={setToDate}
                 onToggleDate={() => setShowToDate((open) => !open)}
+                estimateBasis={
+                  sleep && assumed
+                    ? sleepClockEstimateBasis(
+                        entry.generatedBy?.kind === "sleep" ? "remembered" : "painted",
+                        "awake",
+                      )
+                    : undefined
+                }
               />
             )}
           </div>
@@ -513,24 +548,21 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
                 const always = penTagIds.includes(tag.id)
                 const on = always || tagIds.includes(tag.id)
                 return (
-                  <button
+                  <CatalogTagChip
                     key={tag.id}
-                    type="button"
-                    disabled={always}
-                    aria-pressed={on}
+                    tag={tag}
+                    pressed={on}
                     aria-label={`Tag: ${tag.name}`}
-                    title={always ? `Assigned pens always count as ${tag.name}` : undefined}
-                    onClick={() =>
+                    title={always ? `Assigned pens always count as ${tag.name}. ${TAG_OPEN_TITLE}` : TAG_OPEN_TITLE}
+                    className={`trk-tag${always ? " opacity-85" : ""}`}
+                    onClick={() => {
+                      if (always) return
                       setTagIds((current) =>
                         current.includes(tag.id) ? current.filter((t) => t !== tag.id) : [...current, tag.id],
                       )
-                    }
-                    className={`trk-tag${always ? " opacity-85" : ""}`}
-                    style={on ? { background: tag.color, color: "#fff" } : undefined}
-                  >
-                    {tag.name}
-                    {always && <span className="text-[9px]">always</span>}
-                  </button>
+                    }}
+                    mark={always ? <span className="text-[9px]">always</span> : undefined}
+                  />
                 )
               })}
             </div>
@@ -592,6 +624,15 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
           )}
 
           {entry.scopeId === COMPANY_SCOPE_ID ? <PersonPipelinesEditor mode="entry" entryId={entry.id} /> : null}
+
+          <NowObjectivesList
+            mode="inline"
+            objectives={nowObjectives}
+            onAdd={(text) => setNowObjectives((list) => addNowObjective(list, text))}
+            onEditText={(id, text) => setNowObjectives((list) => editNowObjectiveText(list, id, text))}
+            onToggleComplete={(id) => setNowObjectives((list) => toggleNowObjectiveComplete(list, id))}
+            onRemove={(id) => setNowObjectives((list) => removeNowObjective(list, id))}
+          />
 
           <div>
             <Label htmlFor="entry-notes">Notes</Label>

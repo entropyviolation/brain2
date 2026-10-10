@@ -48,7 +48,13 @@ export function TrackingDesk({
   const showPenDesk = trackingTab !== "log"
 
   return (
-    <div className="trk95" data-ui-name="Tracking" data-ui-docs="components/Home/Tracking/README.md">
+    <div
+      className="trk95"
+      data-ui-name="Tracking"
+      data-ui-docs="components/Home/Tracking/README.md"
+      data-ui-help="Retrospective time and day log: painted minutes, actuals, and day-summary prose beside the plan."
+      data-temporal="retrospective"
+    >
       <div className="trk-window">
         <Tabs value={trackingTab} onValueChange={(v) => setTrackingTab(v as TrackingTab)}>
           <div className="trk-fascia">

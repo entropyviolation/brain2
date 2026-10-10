@@ -37,16 +37,32 @@ describe("PenColorNowStrip", () => {
     expect(screen.getByRole("button", { name: "Pause Work" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Stop working on Work" }).querySelector("svg")).toBeTruthy()
     expect(screen.getByRole("button", { name: "Pause Work" }).querySelector("svg")).toBeTruthy()
+    expect(screen.getByRole("button", { name: "Pause Work" })).toHaveAttribute("data-dvd-mark", "pause")
+    expect(screen.getByRole("button", { name: "Stop working on Work" })).toHaveAttribute("data-dvd-mark", "stop")
+    expect(screen.getByRole("button", { name: "Pause Work" }).querySelector(".lucide")).toBeNull()
+    expect(screen.getByRole("button", { name: "Pause Work" }).querySelector("rect")).toBeTruthy()
+    expect(screen.getByRole("button", { name: "Stop working on Work" }).querySelector("polygon")).toBeNull()
     expect(screen.queryByRole("button", { name: "STOP WORKING ON WORK" })).not.toBeInTheDocument()
     expect(screen.getByText(/Location · since /)).toBeInTheDocument()
 
     await user.click(screen.getByRole("button", { name: "Pause Work" }))
     expect(usePenColorSessionStore.getState().session?.pausedAt).toBeTruthy()
-    expect(screen.getByRole("button", { name: "Resume Work" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Resume Work" })).toHaveAttribute("data-dvd-mark", "play")
+    expect(screen.getByRole("button", { name: "Resume Work" }).querySelector("polygon")).toBeTruthy()
+
+    expect(screen.getByTestId("now-objectives-trigger")).toBeInTheDocument()
+    await user.click(screen.getByTestId("now-objectives-trigger"))
+    expect(screen.getByTestId("now-objectives-pop")).toBeInTheDocument()
+    await user.type(screen.getByRole("textbox", { name: "Add objective" }), "ship it")
+    await user.click(screen.getByRole("button", { name: "Add" }))
+    expect(usePenColorSessionStore.getState().session?.nowObjectives?.[0].text).toBe("ship it")
 
     await user.click(screen.getByRole("button", { name: "Stop working on Work" }))
     expect(usePenColorSessionStore.getState().session).toBeNull()
     expect(useTimeTrackingStore.getState().entries.some((e) => e.penId === "loc-work")).toBe(true)
+    expect(
+      useTimeTrackingStore.getState().entries.find((e) => e.penId === "loc-work")?.nowObjectives?.[0].text,
+    ).toBe("ship it")
     expect(screen.getByRole("button", { name: "Start this pen's clock" })).toBeInTheDocument()
   })
 

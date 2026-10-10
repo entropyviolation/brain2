@@ -12,6 +12,7 @@ import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
+import type { NowObjective } from "@/lib/now-objective"
 
 export interface PenColorSession {
   penId: string
@@ -21,6 +22,11 @@ export interface PenColorSession {
   /** ISO timestamp of the second the user pressed "Working on right now". */
   startedAt: string
   trackingEntryIds: string[]
+  /**
+   * Objectives for right now on this pen-color block. Not Home Goals, not the
+   * Tracking Objective pen. Mirrored onto linked TimeEntry rows.
+   */
+  nowObjectives?: NowObjective[]
   /**
    * ISO timestamp of the open pause, if any. While set, elapsed and Tracking
    * paint freeze; resume clears it and folds the gap into `pausedAccumMs`.

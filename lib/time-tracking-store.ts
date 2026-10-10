@@ -108,7 +108,10 @@ import {
   type PenLink,
 } from "@/lib/entry-links"
 import { isRestoring, rememberWorld } from "@/lib/action-history"
+import { scrubDeletedCatalogTag } from "@/lib/catalog-tag-scrub"
+import { normalizeTag } from "@/lib/links"
 import { compactMoodReading } from "@/lib/mood-reading"
+import { compactNowObjectives } from "@/lib/now-objective"
 import { compactSpend } from "@/lib/spend"
 
 export type { PenLink, CompanionTarget } from "@/lib/entry-links"
@@ -1288,9 +1291,11 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
       },
 
       addTag: (name, color) => {
-        const trimmed = name.trim()
+        // Same normalize rule as edit / done-count: trim, collapse spaces, casefold.
+        const trimmed = name.trim().replace(/\s+/g, " ")
         if (!trimmed) return ""
-        const existing = get().tags.find((t) => normalizeName(t.name) === normalizeName(trimmed))
+        const key = normalizeTag(trimmed)
+        const existing = get().tags.find((t) => normalizeTag(t.name) === key)
         if (existing) return existing.id
         rememberWorld("add tag")
         const id = rid("tag")
@@ -1320,6 +1325,8 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
             e.tagIds?.includes(id) ? { ...e, tagIds: normalizeIds(e.tagIds.filter((t) => t !== id)) } : e,
           ),
         }))
+        // Habits + operations: one scrub (lib/catalog-tag-scrub.ts).
+        scrubDeletedCatalogTag(id)
       },
       setPenTags: (scopeId, penId, tagIds) => {
         rememberWorld("set pen tags")
@@ -1456,6 +1463,11 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
             const packed = compactMoodReading(patch.moodReading)
             if (packed) next.moodReading = packed
             else delete next.moodReading
+          }
+          if ("nowObjectives" in patch) {
+            const packed = compactNowObjectives(patch.nowObjectives)
+            if (packed) next.nowObjectives = packed
+            else delete next.nowObjectives
           }
           if ("spendAmount" in patch || "spendOn" in patch || "spendSource" in patch) {
             const packed = compactSpend({

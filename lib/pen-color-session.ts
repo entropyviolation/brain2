@@ -18,6 +18,14 @@ import {
   type WorkDaySlice,
 } from "@/lib/operation-work-session"
 import { usePenColorSessionStore, type PenColorSession } from "@/lib/pen-color-session-store"
+import {
+  addNowObjective,
+  compactNowObjectives,
+  editNowObjectiveText,
+  removeNowObjective,
+  toggleNowObjectiveComplete,
+  type NowObjective,
+} from "@/lib/now-objective"
 
 export { WORK_SESSION_TICK_MS as PEN_COLOR_SESSION_TICK_MS }
 export {
@@ -25,6 +33,27 @@ export {
   sessionElapsedMs,
   sessionActiveEnd,
 } from "@/lib/operation-work-session"
+
+function writeObjectivesOnto(ids: string[], nowObjectives: NowObjective[] | undefined): void {
+  const tracking = useTimeTrackingStore.getState()
+  const next = compactNowObjectives(nowObjectives)
+  for (const id of ids) {
+    tracking.updateEntry(id, { nowObjectives: next })
+  }
+}
+
+function patchPenColorObjectives(
+  mutate: (list: NowObjective[] | undefined) => NowObjective[],
+): PenColorSession | null {
+  const session = usePenColorSessionStore.getState().session
+  if (!session) return null
+  const mutated = mutate(session.nowObjectives)
+  const nowObjectives = mutated.length ? mutated : undefined
+  const next: PenColorSession = { ...session, nowObjectives }
+  usePenColorSessionStore.getState().setSession(next)
+  writeObjectivesOnto(session.trackingEntryIds ?? [], nowObjectives)
+  return next
+}
 
 function locatePen(penId: string): { scopeId: string; pen: TrackPen } | null {
   const { scopes } = useTimeTrackingStore.getState()
@@ -48,15 +77,19 @@ function coveringEntryId(date: string, scopeId: string, penId: string, minute: n
     )?.id
 }
 
-function paintSlices(slices: WorkDaySlice[], session: Pick<PenColorSession, "scopeId" | "penId" | "title" | "startedAt">): string[] {
+function paintSlices(
+  slices: WorkDaySlice[],
+  session: Pick<PenColorSession, "scopeId" | "penId" | "title" | "startedAt" | "nowObjectives">,
+): string[] {
   const tracking = useTimeTrackingStore.getState()
   const spanId = `pen-color-${session.startedAt}`
   const ids: string[] = []
+  const nowObjectives = compactNowObjectives(session.nowObjectives)
   for (const slice of slices) {
     tracking.paintMinutes(slice.date, session.scopeId, slice.startMin, slice.endMin, session.penId, undefined, spanId)
     const id = coveringEntryId(slice.date, session.scopeId, session.penId, slice.startMin)
     if (id) {
-      tracking.updateEntry(id, { title: session.title })
+      tracking.updateEntry(id, { title: session.title, nowObjectives })
       ids.push(id)
     }
   }
@@ -95,7 +128,10 @@ function extendLiveEntry(session: PenColorSession, now: Date): string[] {
     )
     const id = coveringEntryId(slice.date, session.scopeId, session.penId, slice.startMin)
     if (id) {
-      tracking.updateEntry(id, { title: session.title })
+      tracking.updateEntry(id, {
+        title: session.title,
+        nowObjectives: compactNowObjectives(session.nowObjectives),
+      })
       ids.push(id)
     }
   }
@@ -205,4 +241,21 @@ export function togglePenColorSession(penId: string, now = new Date()): PenColor
     return null
   }
   return startPenColorSession(penId, now)
+}
+
+/** Add an objective for right now on the live pen-color block. */
+export function addPenColorNowObjective(text: string, now = new Date()): PenColorSession | null {
+  return withoutUndo(() => patchPenColorObjectives((list) => addNowObjective(list, text, now)))
+}
+
+export function editPenColorNowObjectiveText(id: string, text: string): PenColorSession | null {
+  return withoutUndo(() => patchPenColorObjectives((list) => editNowObjectiveText(list, id, text)))
+}
+
+export function togglePenColorNowObjectiveComplete(id: string, now = new Date()): PenColorSession | null {
+  return withoutUndo(() => patchPenColorObjectives((list) => toggleNowObjectiveComplete(list, id, now)))
+}
+
+export function removePenColorNowObjective(id: string): PenColorSession | null {
+  return withoutUndo(() => patchPenColorObjectives((list) => removeNowObjective(list, id)))
 }

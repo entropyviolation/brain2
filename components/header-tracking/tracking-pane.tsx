@@ -1,5 +1,5 @@
 /**
- * Now → Tracking pane. The day Time Grid and the day notes log.
+ * Now → Tracking pane. The day Time Grid and the day summary.
  * Current moment (Working on, Events, Thought process, Update state)
  * sits above the pane switch and is shared with Plan.
  */

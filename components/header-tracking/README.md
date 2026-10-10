@@ -4,9 +4,27 @@ The header **Now** word key (`components/cognitive-state.tsx`) opens this popup.
 
 The dialog caption is **Recent now** on the Tracking pane and **Upcoming now** on the Plan pane. The frame is the shared milled header dialog (`.hpp95` / `.hpp95-shell-only`), `min(94vw, 66rem)`. That is a small step in from `70rem`, still wide enough for the Time Grid’s pen well, counts-as find, log, day nav, and fill. Those controls are the real grid (`TimeGrid`), with wrap rules only under `.htk-grid` in `header-tracking.css`.
 
-**Current moment** is the top of the dialog, above the Tracking / Plan switch, on both panes. It shows Activity, Location, Mood, and Company, the value, and when that value was last true. A **Metrics** key sits to the right of those lanes. It opens the same wellbeing datapoint logger (`components/Tracking/MetricLogger.tsx`) the header Capture cluster used to open, and it writes the same metrics store. **Working on** (the shared working-now strip), **Events**, and **Thought process** sit in that same block, so a lane edit, a log line, the Metrics key, and the working-now clock are available on the Plan pane too. An estimated fact wears `~` and the dashed est. treatment. Screen Time and the iPhone views stay on the Home desk and in the Time Grid. They are not lanes on Current moment.
+**Current moment** (`CurrentMomentDeck`) is the top of the dialog, above the
+Tracking / Plan switch, on both panes. Default face is **Working on** plus the
+moment band; Activity / Location / Mood / Company lanes and **Update state**
+sit behind a milled **Paint…** disclosure (`.htk-paint`). A **Metrics** key
+still opens the wellbeing datapoint logger (`components/Tracking/MetricLogger.tsx`).
+**Events** and **Thought process** stay in that same block. An estimated fact
+wears `~` and the dashed est. treatment. Screen Time and the iPhone views stay
+on the Home desk and in the Time Grid. They are not lanes on Current moment.
 
-Clicking a lane opens **Update state**. **Now** and **Recent sequence** are milled keys with the same padding family as the other popup keys. The current value opens a searchable list of every pen on that view, portaled onto the dialog so the list sits above the grid. A new name uses `ensureScopePen` / `addPen`. When the chosen value matches the last known one, **Add for now** paints a separate block at this minute and **Update** extends one continuous block from the last known moment through now. A different value keeps a single **Add for now**. Both write through `applyScopeNowUpdate` (`minute` or `open`). **Recent sequence** lists the latest blocks on that view and can still save an exact or estimated sequence (`paintScopeSequence`). The Exact control is a compact key: the box hugs the checkbox and the word.
+Opening **Paint…** and clicking a lane opens **Update state**. **Now** and
+**Recent sequence** are milled keys with the same padding family as the other
+popup keys. The current value opens a searchable list of every pen on that
+view, portaled onto the dialog so the list sits above the grid. A new name
+uses `ensureScopePen` / `addPen`. When the chosen value matches the last known
+one, **Add for now** paints a separate block at this minute and **Update**
+extends one continuous block from the last known moment through now. A
+different value keeps a single **Add for now**. Both write through
+`applyScopeNowUpdate` (`minute` or `open`). **Recent sequence** lists the
+latest blocks on that view and can still save an exact or estimated sequence
+(`paintScopeSequence`). The Exact control is a compact key: the box hugs the
+checkbox and the word.
 
 Day notes stay on the Tracking pane. The day plan log stays on the Plan pane. Plan versus reality stays on Analytics.
 
@@ -15,9 +33,9 @@ Day notes stay on the Tracking pane. The day plan log stays on the Plan pane. Pl
 | File | Purpose |
 |------|---------|
 | `header-tracking-popup.tsx` | Current moment, then the Tracking / Plan switch. Panes load when the dialog opens. |
-| `current-moment.tsx` | Shared Current moment: four lanes, the Metrics key, Working on, Events, Thought process, Update state. |
+| `current-moment.tsx` | Shared Current moment + `CurrentMomentDeck`: Working on first; four lanes / Update state behind **Paint…**; Metrics, Events, Thought process. |
 | `update-state.tsx` | Update state. Now stamp, recent sequence, exact or estimated clocks. |
-| `tracking-pane.tsx` | Day Time Grid and day notes. |
+| `tracking-pane.tsx` | Day Time Grid and the day summary. |
 | `plan-pane.tsx` | Short sequence, plan agenda, and the day plan log. |
 | `now-log-lists.tsx` | Events and Thought process lists, written through `submitTrackingLog`. |
 | `pen-search-select.tsx` | Searchable pen list. A new name uses `ensureScopePen`. |

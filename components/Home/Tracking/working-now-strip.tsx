@@ -8,6 +8,7 @@
  * {name}** and the minutes stay editable like any other block. While a session
  * is live, a dashed steel **usually ~N** chip shows the median of past
  * `timeLogs` / unflagged `actualDuration` for that title or type.
+ * Tracking tags show as catalog beads; double-click opens tag settings.
  */
 "use client"
 
@@ -20,12 +21,18 @@ import { selectOperations } from "@/lib/operations"
 import { getOperationTrackingTagIds } from "@/lib/operation-types"
 import { activeTrackingLink } from "@/lib/habit-tracking"
 import {
+  addWorkNowObjective,
+  editWorkNowObjectiveText,
   formatElapsedClock,
+  removeWorkNowObjective,
   sessionElapsedMs,
+  toggleWorkNowObjectiveComplete,
   toggleWorkingOnOperation,
 } from "@/lib/operation-work-session"
 import { useWorkSessionClock } from "@/components/Operations/WorkingNowControl"
 import { formatUsualDuration, usualDurationMinutes } from "@/lib/estimated-values"
+import { CatalogTagLabel } from "@/components/Home/Tracking/catalog-tag-chip"
+import { NowObjectivesList } from "@/components/Home/Tracking/now-objectives-list"
 import "@/components/Operations/operations-chrome.css"
 import "@/components/Home/Tracking/tracking-chrome.css"
 
@@ -40,7 +47,7 @@ export function WorkingNowStrip() {
   const selectedId = session?.operationId || pickedId || operations[0]?.id || ""
   const selected = operations.find((op) => op.id === selectedId)
   const tagIds = selected ? getOperationTrackingTagIds(selected) : []
-  const tagNames = tags.filter((t) => tagIds.includes(t.id)).map((t) => t.name)
+  const opTags = tags.filter((t) => tagIds.includes(t.id))
   const fedHabits = habits.filter((habit) => {
     const link = activeTrackingLink(habit)
     return link ? link.tagIds.some((id) => tagIds.includes(id)) : false
@@ -71,6 +78,16 @@ export function WorkingNowStrip() {
         </select>
       </label>
       {live && elapsed && <span className="ops-now-elapsed">{elapsed}</span>}
+      {live && session && (
+        <NowObjectivesList
+          objectives={session.nowObjectives}
+          contextName={selected?.description}
+          onAdd={(text) => addWorkNowObjective(text)}
+          onEditText={(id, text) => editWorkNowObjectiveText(id, text)}
+          onToggleComplete={(id) => toggleWorkNowObjectiveComplete(id)}
+          onRemove={(id) => removeWorkNowObjective(id)}
+        />
+      )}
       {usual && (
         <span
           title={usual.basis}
@@ -91,14 +108,21 @@ export function WorkingNowStrip() {
       <span
         className="ops-now-meta"
         title={
-          tagNames.length > 0
-            ? `Tags: ${tagNames.join(", ")}${fedHabits.length > 0 ? ` · feeds ${fedHabits.map((h) => h.name).join(", ")}` : ""}`
+          opTags.length > 0
+            ? `Tags: ${opTags.map((t) => t.name).join(", ")}${fedHabits.length > 0 ? ` · feeds ${fedHabits.map((h) => h.name).join(", ")}` : ""}`
             : "No tracking tags — set them on the operation in Settings."
         }
       >
-        {tagNames.length > 0
-          ? `Tags: ${tagNames.join(", ")}`
-          : "No tracking tags — set them on the operation in Settings."}
+        {opTags.length > 0 ? (
+          <span className="ops-now-tags">
+            Tags:{" "}
+            {opTags.map((tag) => (
+              <CatalogTagLabel key={tag.id} tag={tag} />
+            ))}
+          </span>
+        ) : (
+          "No tracking tags — set them on the operation in Settings."
+        )}
         {fedHabits.length > 0 && ` · feeds ${fedHabits.map((h) => h.name).join(", ")}`}
       </span>
     </div>
