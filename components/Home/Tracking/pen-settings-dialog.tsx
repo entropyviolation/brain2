@@ -13,6 +13,7 @@
  *   Exercise adds Walk to Exercise's detail list. Several can apply at once.
  * - **Tags** — cross-scope, and how a pen feeds the Habits tab.
  * - **Default action format** — Done-today templates, separate from habit links.
+ * - **People** — Company pens only. People I Know pipelines for this pen.
  */
 "use client"
 
@@ -30,6 +31,8 @@ import { activeTrackingLink } from "@/lib/habit-tracking"
 import { PenParentPicker } from "@/components/Home/Tracking/pen-parent-picker"
 import { PenChainVisual } from "@/components/Home/Tracking/pen-chain-visual"
 import { PenActionFormatEditor } from "@/components/Home/Tracking/pen-action-format-editor"
+import { PersonPipelinesEditor } from "@/components/People/person-pipelines"
+import { COMPANY_SCOPE_ID } from "@/lib/people-i-know"
 import { usePenActionSync } from "@/lib/pen-action-sync"
 import { OrbPickerDialog } from "@/components/Icons/OrbPicker"
 import { snapshotsEqual } from "@/lib/unsaved-changes"
@@ -266,6 +269,8 @@ export function PenSettingsDialog({ scopeId, pen: openedPen, onClose, onDeleted 
               </Button>
             </div>
           </div>
+
+          {scopeId === COMPANY_SCOPE_ID ? <PersonPipelinesEditor mode="pen" penId={pen.id} /> : null}
 
           <PenActionFormatEditor
             key={pen.id}

@@ -6,8 +6,11 @@
 
 import { useMemo, useState } from "react"
 import { formatLocalDateKey } from "@/lib/date-utils"
-import { createHeaderPlan, plannedMinutesOf, renameHeaderPlanAction, retimesHeaderPlanAction } from "@/lib/header-tracking-plan"
-import { itemTitle } from "@/lib/item-utils"
+import { createHeaderPlan, plannedMinutesOf, recordPlanSkipped, renameHeaderPlanAction, retimesHeaderPlanAction } from "@/lib/header-tracking-plan"
+import { itemTitle, itemTitleOrUntitled } from "@/lib/item-utils"
+import { isClearedFromWork } from "@/lib/completion-status"
+import { MissReasonDialog } from "@/components/Reviews/MissReasonDialog"
+import type { StoredBlockedReason } from "@/lib/types"
 import { actionsForDay, hhmmToMinutes, minutesToHhmm } from "@/lib/planned-actions"
 import { usePlannedActionStore } from "@/lib/planned-action-store"
 import { useEventStore } from "@/lib/event-store"
@@ -47,6 +50,7 @@ export function PlanPane({ onOpenTracking }: { onOpenTracking: () => void }) {
   const [rows, setRows] = useState<DraftRow[]>(() => [freshDraft(), freshDraft()])
   const [note, setNote] = useState("")
   const [editing, setEditing] = useState<PlannedAction | null>(null)
+  const [skipAsk, setSkipAsk] = useState<{ taskId: string; subject: string } | null>(null)
 
   function save() {
     const created = createHeaderPlan({
@@ -166,6 +170,14 @@ export function PlanPane({ onOpenTracking }: { onOpenTracking: () => void }) {
                 <button type="button" onClick={() => setEditing(action)}>
                   Edit
                 </button>
+                {task && !isClearedFromWork(task) ? (
+                  <button
+                    type="button"
+                    onClick={() => setSkipAsk({ taskId: task.id, subject: itemTitleOrUntitled(task) || action.title })}
+                  >
+                    Skip
+                  </button>
+                ) : null}
               </li>
             )
           })}
@@ -193,6 +205,15 @@ export function PlanPane({ onOpenTracking }: { onOpenTracking: () => void }) {
         />
       </div>
       <PlannedActionDialog open={editing !== null} onOpenChange={(open) => !open && setEditing(null)} action={editing} />
+      <MissReasonDialog
+        open={skipAsk !== null}
+        subject={skipAsk?.subject ?? ""}
+        onResolve={(reason: StoredBlockedReason | undefined) => {
+          const taskId = skipAsk?.taskId
+          setSkipAsk(null)
+          if (taskId) recordPlanSkipped(taskId, new Date(), reason)
+        }}
+      />
       <section className="htk-plan-log" aria-label="Day plan">
         <p className="htk-kicker">Day plan</p>
         <PlanTextLog

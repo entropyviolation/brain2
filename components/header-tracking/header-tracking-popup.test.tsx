@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { HeaderTrackingPopup } from "@/components/header-tracking/header-tracking-popup"
 import { formatLocalDateKey } from "@/lib/date-utils"
-import { getDayNoteEntries } from "@/lib/day-notes-persist"
+import { getDayNote } from "@/lib/day-notes-persist"
 import { minutesToLabel } from "@/lib/time-entries"
 import { usePlannedActionStore } from "@/lib/planned-action-store"
 import { getPlanEntries } from "@/lib/plan-text"
@@ -139,11 +139,10 @@ describe("Header tracking popup", () => {
     await user.click(within(thoughts).getByRole("button", { name: "Add to Thought process" }))
     expect(within(thoughts).getByText("opening the window")).toBeInTheDocument()
 
-    const note = await screen.findByRole("textbox", { name: /Notes for/ })
+    const note = await screen.findByRole("textbox", { name: /Day summary for|Day summary ·/ })
     await user.type(note, "zoo 4-5")
-    await user.click(screen.getByRole("button", { name: "Submit note" }))
-    expect(screen.getByText(/zoo 4-5/)).toBeInTheDocument()
-    expect(getDayNoteEntries(formatLocalDateKey(new Date())).some((entry) => entry.text.includes("zoo 4-5"))).toBe(true)
+    expect(note).toHaveValue("zoo 4-5")
+    expect(getDayNote(formatLocalDateKey(new Date()))).toContain("zoo 4-5")
 
     const stored = useTimeTrackingStore.getState().entries
     expect(stored.some((entry) => entry.title === "left room")).toBe(true)

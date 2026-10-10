@@ -1,88 +1,76 @@
 /**
- * components/Home/Tracking/tracking-day-notes.tsx — Per-day notes append log
+ * components/Home/Tracking/tracking-day-notes.tsx — Day summary well
  *
- * Sits under Time Grid, Activity Log, Day Log, and Tracking log on the Home Tracking tab.
- * The header Now popup opens the same log (`forceOpen`) without flipping Expand.
- * An append log (`lib/append-log.ts`): Submit note stamps the writing time;
- * List / Bulk / Latest (Habits `.hab-view-changer` keys); past entries cannot
- * be edited. Jots like "zoo 4–5" stay with that date while you figure out
- * which pen they belong on. Not a second activity log — the grid remains the
- * record of what happened. Looks: metal well (`.trk-notes`) in the fascia
- * mill, white field, toolbar padded so key bevels stay whole. Collapsed is only the **Day notes**
- * legend and Expand. Expand opens a tall composer and a tall history pane;
- * `notesWellExpanded` persists on tracking-view-prefs.
+ * Sits under Time Grid, Activity Log, Day Log, and Tracking log. The header
+ * Now popup opens the same well (`forceOpen`) without flipping Expand.
  *
- * Source of truth is `brain2-tracking-day-notes` (hub-synced on that small key).
- * A hub pick of painted intervals cannot wipe it. If that key's last write
- * failed (origin quota), the well says so (`.trk-notes-unsaved`) instead of
- * showing a stamped entry that will not come back.
+ * This used to be an append log of stamped jots. It is now the retrospective
+ * summary of what actually happened: one editable day summary, and — when the
+ * well is open — Week, Month, Season, and Year. Those higher periods have no
+ * tracking grid of their own (Tracking’s boards are day and week). Week boards
+ * also show truncated day summaries under each day. Plan text is a different
+ * store and is not shown here.
+ *
+ * Collapsed is the Day summary legend and Expand. Expand
+ * (`notesWellExpanded`) opens the editor. Storage is `brain2-tracking-day-notes`.
  */
 "use client"
 
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react"
+import { useState, useSyncExternalStore } from "react"
 import { format } from "date-fns"
-import { AppendLog } from "@/components/append-log"
-import { formatLocalDateKey } from "@/lib/date-utils"
-import {
-  appendDayNote,
-  DAY_NOTES_PERSIST_KEY,
-  getDayNote,
-  getDayNoteEntries,
-  hydrateDayNotesFromStorage,
-  seedDayNotesPersist,
-  subscribeDayNotesPersist,
-} from "@/lib/day-notes-persist"
+import { DAY_NOTES_PERSIST_KEY } from "@/lib/day-notes-persist"
 import { persistKeyFailed, subscribePersistStatus } from "@/lib/persist-storage"
-import { useTimeTrackingStore } from "@/lib/time-tracking-store"
-import type { AppendLogEntry } from "@/lib/append-log"
+import { formatLocalDateKey } from "@/lib/date-utils"
+import { SUMMARY_PERIODS, type SummaryPeriod } from "@/lib/tracking-summaries"
 import { setTrackingViewPrefs, useTrackingViewPrefs } from "./tracking-view-prefs"
+import {
+  MonthSummaryNest,
+  SeasonSummaryNest,
+  SummaryEditor,
+  WeekSummaryNest,
+  YearSummaryNest,
+} from "./tracking-summaries"
 
 const notesUnsaved = () => persistKeyFailed(DAY_NOTES_PERSIST_KEY)
+
+const PERIOD_WORD: Record<SummaryPeriod, string> = {
+  day: "Day",
+  week: "Week",
+  month: "Month",
+  season: "Season",
+  year: "Year",
+}
 
 export function TrackingDayNotes({
   currentDate,
   forceOpen = false,
 }: {
   currentDate: Date
-  /** Show the composer without changing the desk's Expand preference. */
+  /** Show the summary without changing the desk's Expand preference. */
   forceOpen?: boolean
 }) {
   const unsaved = useSyncExternalStore(subscribePersistStatus, notesUnsaved, () => false)
-  const dayKey = formatLocalDateKey(currentDate)
-  const setDayNotes = useTimeTrackingStore((s) => s.setDayNotes)
   const notesPrefOpen = useTrackingViewPrefs().notesWellExpanded
   const notesOpen = forceOpen || notesPrefOpen
-  const [entries, setEntries] = useState<AppendLogEntry[]>(() => getDayNoteEntries(dayKey))
-  const label = `Notes for ${format(currentDate, "EEEE, MMM d")}`
-  const logId = forceOpen ? "htk-day-notes-log" : "trk-day-notes-log"
-
-  const reload = useCallback(() => {
-    seedDayNotesPersist(useTimeTrackingStore.getState().dayNotes)
-    const storeText = useTimeTrackingStore.getState().dayNotes?.[dayKey]
-    if (storeText && !getDayNote(dayKey)) setDayNotes(dayKey, storeText)
-    setEntries(getDayNoteEntries(dayKey))
-  }, [dayKey, setDayNotes])
-
-  useEffect(() => {
-    void hydrateDayNotesFromStorage()
-  }, [])
-
-  useEffect(() => {
-    reload()
-  }, [reload])
-
-  useEffect(() => subscribeDayNotesPersist(reload), [reload])
+  const [period, setPeriod] = useState<SummaryPeriod>("day")
+  const dayKey = formatLocalDateKey(currentDate)
+  const legend =
+    period === "day" ? `Day summary · ${format(currentDate, "EEE, MMM d")}` : `${PERIOD_WORD[period]} summary`
 
   return (
-    <div id={forceOpen ? undefined : "trk-day-notes"} className={notesOpen ? "trk-notes trk-notes-open" : "trk-notes"}>
+    <div
+      id={forceOpen ? undefined : "trk-day-notes"}
+      className={notesOpen ? "trk-notes trk-notes-open trk-summary" : "trk-notes trk-summary"}
+      data-summary-period={notesOpen ? period : undefined}
+    >
       <div className="trk-notes-head">
-        <p className="trk-silk trk-notes-legend">Day notes</p>
+        <p className="trk-silk trk-notes-legend">{notesOpen ? legend : "Day summary"}</p>
         {forceOpen ? null : (
           <button
             type="button"
             className="trk-notes-fold"
             aria-expanded={notesOpen}
-            aria-controls={notesOpen ? logId : undefined}
+            aria-controls={notesOpen ? "trk-day-summary" : undefined}
             onClick={() => setTrackingViewPrefs({ notesWellExpanded: !notesOpen })}
           >
             {notesOpen ? "Collapse" : "Expand"}
@@ -91,32 +79,35 @@ export function TrackingDayNotes({
       </div>
       {unsaved && (
         <p className="trk-notes-unsaved" role="alert">
-          This note is only in memory — storage is full. Export a backup in Settings, then refresh.
+          This summary is only in memory — storage is full. Export a backup in Settings, then refresh.
         </p>
       )}
       {notesOpen && (
-        <>
-          <p className="trk-notes-file">{label}</p>
-          <div id={logId}>
-            <AppendLog
-              logKey={dayKey}
-              entries={entries}
-              onSubmit={(text, at) => {
-                const entry = appendDayNote(dayKey, text, at)
-                if (!entry) return
-                setDayNotes(dayKey, getDayNote(dayKey))
-              }}
-              placeholder="e.g. zoo 4–5; meal at 1pm"
-              submitLabel="Submit note"
-              emptyHint="Nothing on file. Submit to freeze this writing time."
-              size="day"
-              composerAriaLabel={label}
-              bulkAriaLabel="All day notes, copy only"
-              viewsAriaLabel="How to show day notes"
-              viewsWellClassName="hab-view-changer"
-            />
+        <div id={forceOpen ? "htk-day-summary" : "trk-day-summary"}>
+          <div className="trk-span-switch trk-summary-periods" role="toolbar" aria-label="Summary period">
+            {SUMMARY_PERIODS.map((option) => (
+              <button
+                key={option}
+                type="button"
+                aria-pressed={period === option}
+                onClick={() => setPeriod(option)}
+              >
+                {PERIOD_WORD[option]}
+              </button>
+            ))}
           </div>
-        </>
+          {period === "day" ? (
+            <SummaryEditor storageKey={dayKey} label={legend} period="day" rows={8} />
+          ) : period === "week" ? (
+            <WeekSummaryNest anchor={currentDate} />
+          ) : period === "month" ? (
+            <MonthSummaryNest anchor={currentDate} />
+          ) : period === "season" ? (
+            <SeasonSummaryNest anchor={currentDate} />
+          ) : (
+            <YearSummaryNest year={currentDate.getFullYear()} />
+          )}
+        </div>
       )}
     </div>
   )

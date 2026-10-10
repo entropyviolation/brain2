@@ -61,6 +61,7 @@ import { firstUnpaintedWakingHour } from "@/components/Home/Tracking/waking-scro
 import { cellPaintClass, SuperimposeWash, trackingProbeText, TrkBlockLabel, TrkProbePlate, TrkRibbon, TrkTagStrip, writeTrkProbe } from "@/components/Home/Tracking/trk-instrument"
 import { TrkPlotMarkers, useTrackingSunMap, type TrackingSunTimes } from "@/components/Home/Tracking/trk-time-markers"
 import { awakeWindowFor } from "@/lib/sleep-sync"
+import { WeekSummaryNest } from "@/components/Home/Tracking/tracking-summaries"
 import { runAsAction } from "@/lib/action-history"
 import "./tracking-chrome.css"
 
@@ -778,6 +779,8 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false }: Wee
           )
         })}
       </div>
+
+      <WeekSummaryNest anchor={date} gutter="time" />
 
       <TrkRibbon pens={pens} untracked={totals.untracked} />
 

@@ -11,12 +11,16 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { Pause, Play, Square } from "lucide-react"
 import { PEN_PALETTE, useTimeTrackingStore, type TrackScope } from "@/lib/time-tracking-store"
 import { ColorSwatch } from "@/components/ui/color-swatch"
 import { ancestorChain } from "@/lib/pen-tree"
-import { formatElapsedClock, sessionElapsedMs } from "@/lib/operation-work-session"
+import { formatElapsedClock, isSessionPaused, sessionElapsedMs } from "@/lib/operation-work-session"
 import {
+  pausePenColorSession,
   PEN_COLOR_SESSION_TICK_MS,
+  resumePenColorSession,
+  stopPenColorSession,
   tickPenColorSession,
   togglePenColorSession,
 } from "@/lib/pen-color-session"
@@ -161,9 +165,10 @@ export function PenColorNowStrip() {
       <span className={`ops-now-led${live ? " live" : ""}`} aria-hidden />
       <label>
         Pen color
-        {selected && (
+        {!live && selected ? (
           <span className="trk-pen-now-bead" style={{ background: selected.color }} aria-hidden />
-        )}
+        ) : null}
+        {live ? null : (
         <input
           className="trk-pen-now-field"
           role="combobox"
@@ -172,10 +177,8 @@ export function PenColorNowStrip() {
           aria-controls="pen-color-now-list"
           aria-autocomplete="list"
           value={fieldValue}
-          disabled={live}
           placeholder="Starts this pen's clock"
           onFocus={() => {
-            if (live) return
             setCreateScopeId(activeScopeId || scopes[0]?.id || "")
             setQuery("")
             setOpen(true)
@@ -206,6 +209,7 @@ export function PenColorNowStrip() {
             }
           }}
         />
+        )}
       </label>
       {open && (
         <div className="trk-pen-now-pop">
@@ -255,23 +259,42 @@ export function PenColorNowStrip() {
           )}
         </div>
       )}
-      {live && elapsed && (
-        <span className="ops-now-elapsed" aria-live="polite">
-          {elapsed}
-        </span>
+      {live && selected && session && elapsed ? (
+        <div className="trk-pen-now-live">
+          <span className="trk-pen-now-bead" style={{ background: selected.color }} aria-hidden />
+          <span className="trk-pen-now-live-name" title={choiceLabel(selected)}>
+            {choiceLabel(selected)}
+          </span>
+          <span className="ops-now-elapsed" aria-live="polite">
+            {elapsed}
+          </span>
+          <button
+            type="button"
+            className="trk-pen-now-icon"
+            aria-label={isSessionPaused(session) ? `Resume ${selected.name}` : `Pause ${selected.name}`}
+            onClick={() => (isSessionPaused(session) ? resumePenColorSession() : pausePenColorSession())}
+          >
+            {isSessionPaused(session) ? <Play aria-hidden /> : <Pause aria-hidden />}
+          </button>
+          <button
+            type="button"
+            className="trk-pen-now-icon"
+            aria-label={`Stop working on ${selected.name}`}
+            onClick={() => stopPenColorSession()}
+          >
+            <Square aria-hidden />
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          className="ops-btn ops-btn-now"
+          disabled={!selected}
+          onClick={() => selected && togglePenColorSession(selected.penId)}
+        >
+          {selected ? "Start this pen's clock" : "Choose a pen to start its clock"}
+        </button>
       )}
-      <button
-        type="button"
-        className={`ops-btn ops-btn-now${live ? " live" : ""}`}
-        disabled={!selected}
-        onClick={() => selected && togglePenColorSession(selected.penId)}
-      >
-        {live && selected
-          ? `Stop working on ${selected.name}`
-          : selected
-            ? "Start this pen's clock"
-            : "Choose a pen to start its clock"}
-      </button>
       <span
         className="ops-now-meta"
         title={

@@ -20,7 +20,7 @@ import {
 import { usePlannedActionStore } from "@/lib/planned-action-store"
 import { appendPlanEntry } from "@/lib/plan-text"
 import { useTaskStore } from "@/lib/task-store"
-import type { Task, TimeLogEntry } from "@/lib/types"
+import type { StoredBlockedReason, Task, TimeLogEntry } from "@/lib/types"
 
 export type HeaderPlanStep = {
   title: string
@@ -189,8 +189,11 @@ export function recordPlanFollowed(input: {
   )
 }
 
-/** Planned, not taken. Stays on the day so the plan-vs-reality count still includes it. */
-export function recordPlanSkipped(taskId: string, now = new Date()): void {
+/**
+ * Planned, not taken. Stays on the day so the plan-vs-reality count still includes it.
+ * `missReason` is optional. Omitting it still marks the task missed.
+ */
+export function recordPlanSkipped(taskId: string, now = new Date(), missReason?: StoredBlockedReason): void {
   const task = taskById(taskId)
   if (!task) return
   const stamped = withStatus(task, "missed", now)
@@ -201,6 +204,7 @@ export function recordPlanSkipped(taskId: string, now = new Date()): void {
       completed: false,
       missedAt: stamped.missedAt,
       stage: "list",
+      ...(missReason ? { missReason } : {}),
     },
     "header-tracking",
     "observed",

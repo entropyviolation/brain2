@@ -34,7 +34,15 @@ describe("PenColorNowStrip", () => {
       startMin: started.getHours() * 60 + started.getMinutes(),
     })
     expect(screen.getByRole("button", { name: "Stop working on Work" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Pause Work" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Stop working on Work" }).querySelector("svg")).toBeTruthy()
+    expect(screen.getByRole("button", { name: "Pause Work" }).querySelector("svg")).toBeTruthy()
+    expect(screen.queryByRole("button", { name: "STOP WORKING ON WORK" })).not.toBeInTheDocument()
     expect(screen.getByText(/Location · since /)).toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: "Pause Work" }))
+    expect(usePenColorSessionStore.getState().session?.pausedAt).toBeTruthy()
+    expect(screen.getByRole("button", { name: "Resume Work" })).toBeInTheDocument()
 
     await user.click(screen.getByRole("button", { name: "Stop working on Work" }))
     expect(usePenColorSessionStore.getState().session).toBeNull()

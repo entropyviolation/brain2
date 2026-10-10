@@ -30,7 +30,7 @@ Tracking paint goes through `lib/tracking-presence.ts` (`applyScopeNowUpdate`, `
 
 Events and Thought process use `submitTrackingLog` (`components/Home/Tracking/tracking-log-model.ts`), the same writer as the Home Tracking log. The lists reuse that log’s scroll well. Day notes use `TrackingDayNotes` (`appendDayNote`). The popup opens that well for today, the same day the Time Grid opens on, without changing the desk’s Expand preference or the desk’s selected day.
 
-Plans go through `lib/header-tracking-plan.ts`: a Task (`Item.title`, `scheduledDate`, `estimatedDuration`), a planned-action placement, and a day-plan log line. The day plan composer on this pane is `PlanTextLog` (`appendPlanEntry`), the same log as Home → Plan.
+Plans go through `lib/header-tracking-plan.ts`: a Task (`Item.title`, `scheduledDate`, `estimatedDuration`), a planned-action placement, and a day-plan log line. The day plan composer on this pane is `PlanTextLog` (`appendPlanEntry`), the same log as Home → Plan. A saved plan row with an open task has **Skip**. That opens the optional why, then `recordPlanSkipped`. Skip on the prompt still marks the task missed and writes no `missReason`.
 
 `WorkingNowStrip` lives inside Current moment, on both panes, and uses the same work-session store as the desk. Cmd/Ctrl-Z while the dialog is open still uses `useTrackingUndoHotkey`.
 

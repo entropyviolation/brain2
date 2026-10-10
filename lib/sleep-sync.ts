@@ -342,6 +342,22 @@ function writeBack(change: () => void): void {
   }
 }
 
+/** Same sleep-derived blocks, in order. Appended notes do not count as a night edit. */
+function sleepGeneratedUnchanged(before: TimeEntry[] | undefined, after: TimeEntry[] | undefined): boolean {
+  const left = before ?? []
+  const right = after ?? []
+  let i = 0
+  let j = 0
+  for (;;) {
+    while (i < left.length && left[i]?.generatedBy?.kind !== "sleep") i += 1
+    while (j < right.length && right[j]?.generatedBy?.kind !== "sleep") j += 1
+    if (i >= left.length || j >= right.length) return i >= left.length && j >= right.length
+    if (left[i] !== right[j]) return false
+    i += 1
+    j += 1
+  }
+}
+
 /** Nights that currently have derived blocks on the grid. */
 function generatedNightIds(entries: TimeEntry[]): Set<string> {
   const ids = new Set<string>()
@@ -512,6 +528,9 @@ export function useSleepSync(): void {
 
       useTimeTrackingStore.subscribe((state, previous) => {
         if (deriving || isRestoring() || state.entries === previous.entries) return
+        // A text-log instant does not change any sleep block. Re-reading every
+        // night here is what made a burst of tracking writes stall the click.
+        if (sleepGeneratedUnchanged(previous.entries, state.entries)) return
         // Nights whose blocks existed a moment ago are the ones a user could have
         // just edited or deleted; a night that appears out of nowhere is this
         // module's own work and has nothing to say back.

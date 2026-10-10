@@ -2,7 +2,8 @@
  * components/Home/Tracking/tracking-log-view.tsx — One calm day of intake, events, cycle
  *
  * Follows the Tracking day cursor. The composer is one row of modes: Event,
- * Switch, Intake, Note, Thought process. Event’s location is one field over
+ * Switch, Intake, Spent, Note, Thought process. Spent asks for an amount,
+ * what it was spent on, and the source. Event’s location is one field over
  * the Location pens. Note and Thought process are a few-line textarea; the other
  * modes stay one line. A thought process is a guiding strand of this moment,
  * stored as `eventKind` `thought-process`, and listed under Thought process.
@@ -16,7 +17,7 @@
  */
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import { addDays, subDays } from "date-fns"
 import { CountStatusesSection } from "@/components/Home/Tracking/count-statuses-section"
@@ -40,6 +41,7 @@ import {
   type LogList,
 } from "@/components/Home/Tracking/tracking-log-model"
 import { formatLocalDateKey } from "@/lib/date-utils"
+import { formatSpendAmount, parseSpendAmount, spendSourceOptions, summarizeSpend } from "@/lib/spend"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { minutesToTimeString, timeStringToMinutes } from "@/lib/time-entries"
 import "./tracking-chrome.css"
@@ -48,6 +50,7 @@ const MODES: { id: LogComposerMode; label: string }[] = [
   { id: "event", label: "Event" },
   { id: "switch", label: "Switch" },
   { id: "intake", label: "Intake" },
+  { id: "spend", label: "Spent" },
   { id: "note", label: "Note" },
   { id: "thought", label: "Thought process" },
 ]
@@ -279,12 +282,14 @@ function LogRow({
   entry,
   copy,
   meta,
+  lead,
   onOpen,
   onRemove,
 }: {
   entry: LogBookEntry
   copy?: string
   meta?: string
+  lead?: ReactNode
   onOpen: (id: string) => void
   onRemove: (id: string) => void
 }) {
@@ -295,8 +300,12 @@ function LogRow({
     return (
       <div className="trk-log-row is-unknown">
         <span className="trk-logbook-badge">Unknown</span>
+        {lead}
         <LogCopy entry={shown} />
         {scope}
+        <button type="button" onClick={() => onOpen(entry.id)}>
+          Edit
+        </button>
         <button type="button" onClick={() => onRemove(entry.id)}>
           Remove
         </button>
@@ -306,6 +315,7 @@ function LogRow({
   return (
     <button type="button" className="trk-log-row" onClick={() => onOpen(entry.id)}>
       {clock.time ? <span className="trk-log-when">{clock.time}</span> : null}
+      {lead}
       <LogCopy entry={shown} />
       {scope}
       {clock.badge ? <span className="trk-logbook-badge">{clock.badge}</span> : null}
@@ -313,29 +323,52 @@ function LogRow({
   )
 }
 
+const EMPTY_SHELF: Record<string, string> = {
+  Food: "Nothing eaten this day.",
+  Drink: "Nothing drunk this day.",
+  Drugs: "Nothing taken this day.",
+  Intake: "No other intake this day.",
+  Events: "No events this day.",
+  "Thought process": "No thought process this day.",
+  Switch: "No switches this day.",
+  Spent: "Nothing spent this day.",
+}
+
 function LogListWell({
   title,
   note,
   rows,
+  extra,
   copyFor,
   metaFor,
+  leadFor,
   onOpen,
   onRemove,
 }: {
   title: string
   note?: string
   rows: LogBookEntry[]
+  extra?: ReactNode
   copyFor?: (entry: LogBookEntry) => string
   metaFor?: (entry: LogBookEntry) => string
+  leadFor?: (entry: LogBookEntry) => ReactNode
   onOpen: (id: string) => void
   onRemove: (id: string) => void
 }) {
   return (
-    <section className="trk-aside-well" aria-label={title}>
-      <h3 className="trk-logbook-heading">{title}</h3>
+    <section className="trk-aside-well" aria-label={title} data-empty={rows.length === 0 ? "true" : "false"}>
+      <h3 className="trk-logbook-heading">
+        {title}
+        {rows.length > 0 ? (
+          <span className="trk-logbook-count" aria-hidden="true">
+            {rows.length}
+          </span>
+        ) : null}
+      </h3>
       {note ? <p className="trk-logbook-note">{note}</p> : null}
+      {extra}
       {rows.length === 0 ? (
-        <p className="trk-logbook-note">None</p>
+        <p className="trk-logbook-note trk-logbook-empty">{EMPTY_SHELF[title] ?? "Nothing logged this day."}</p>
       ) : (
         <div className="trk-log">
           {rows.map((entry) => (
@@ -344,6 +377,7 @@ function LogListWell({
               entry={entry}
               copy={copyFor?.(entry)}
               meta={metaFor?.(entry)}
+              lead={leadFor?.(entry)}
               onOpen={onOpen}
               onRemove={onRemove}
             />
@@ -351,6 +385,22 @@ function LogListWell({
         </div>
       )}
     </section>
+  )
+}
+
+function SpendLedger({ rows }: { rows: LogBookEntry[] }) {
+  const summary = summarizeSpend(rows)
+  if (summary.total <= 0) return null
+  return (
+    <div className="trk-logbook-ledger" aria-label="Spent this day">
+      <p>
+        <span className="trk-logbook-spent-total">{formatSpendAmount(summary.total)}</span> spent this day
+      </p>
+      <p>{summary.bySource.map((row) => `${row.label} ${formatSpendAmount(row.amount)}`).join(" · ")}</p>
+      {summary.byWhat.length > 1 ? (
+        <p>{summary.byWhat.map((row) => `${row.label} ${formatSpendAmount(row.amount)}`).join(" · ")}</p>
+      ) : null}
+    </div>
   )
 }
 
@@ -371,6 +421,9 @@ export function TrackingLogView({
   const [mode, setMode] = useState<LogComposerMode>("event")
   const [intake, setIntake] = useState<IntakeClass>("food")
   const [title, setTitle] = useState("")
+  const [spendAmount, setSpendAmount] = useState("")
+  const [spendOn, setSpendOn] = useState("")
+  const [spendSource, setSpendSource] = useState("")
   const [switchFrom, setSwitchFrom] = useState("")
   const [switchTo, setSwitchTo] = useState("")
   const [switchScopeId, setSwitchScopeId] = useState("activity")
@@ -405,6 +458,7 @@ export function TrackingLogView({
       event: [],
       switch: [],
       thought: [],
+      spend: [],
     }
     for (const entry of entries) {
       if (entry.date !== dateKey) continue
@@ -419,13 +473,16 @@ export function TrackingLogView({
   const clock: LogClockChoice = unknown ? "unknown" : estimated ? "estimated" : "exact"
   const openEntry = openEntryId ? entries.find((entry) => entry.id === openEntryId) : undefined
   const scopeName = (scopeId: string) => scopes.find((scope) => scope.id === scopeId)?.name ?? scopeId
+  const parsedSpend = parseSpendAmount(spendAmount)
+  const spendReady = parsedSpend != null && spendOn.trim().length > 0 && spendSource.trim().length > 0
+  const sourceOptions = useMemo(() => spendSourceOptions(entries), [entries])
 
   const add = () => {
     const minute = timeStringToMinutes(timeValue)
     if (clock !== "unknown" && minute == null) return
     const id = submitTrackingLog({
       date: dateKey,
-      title: mode === "switch" ? switchTo : title,
+      title: mode === "switch" ? switchTo : mode === "spend" ? spendOn : title,
       mode,
       intakeClass: intake,
       clock,
@@ -434,6 +491,9 @@ export function TrackingLogView({
       switchFrom: mode === "switch" ? switchFrom : undefined,
       switchTo: mode === "switch" ? switchTo : undefined,
       scopeId: mode === "switch" ? switchScopeId : undefined,
+      spendAmount: mode === "spend" ? (parsedSpend ?? undefined) : undefined,
+      spendOn: mode === "spend" ? spendOn : undefined,
+      spendSource: mode === "spend" ? spendSource : undefined,
     })
     if (!id) return
     setTitle("")
@@ -441,7 +501,14 @@ export function TrackingLogView({
       setSwitchFrom("")
       setSwitchTo("")
     }
+    if (mode === "spend") {
+      setSpendAmount("")
+      setSpendOn("")
+      setSpendSource("")
+    }
   }
+
+  const canAdd = mode === "switch" ? Boolean(switchTo.trim()) : mode === "spend" ? spendReady : Boolean(title.trim())
 
   return (
     <div className="trk95 trk-canvas trk-logbook" data-ui-name="Tracking log" data-testid="tracking-log-view">
@@ -461,6 +528,7 @@ export function TrackingLogView({
       />
 
       <section className="trk-aside-well trk-logbook-compose" aria-label="Add to the tracking log">
+        <h3 className="trk-logbook-heading">Add a line</h3>
         <div className="trk-span-switch trk-logbook-modes" role="toolbar" aria-label="What to log">
           {MODES.map((row) => (
             <button key={row.id} type="button" aria-pressed={mode === row.id} onClick={() => setMode(row.id)}>
@@ -543,6 +611,64 @@ export function TrackingLogView({
                 ))}
               </datalist>
             </>
+          ) : mode === "spend" ? (
+            <div className="trk-logbook-money">
+              <label className="trk-logbook-field">
+                <span>Amount</span>
+                <span className="trk-logbook-amount">
+                  <span aria-hidden="true">$</span>
+                  <input
+                    aria-label="Amount"
+                    inputMode="decimal"
+                    placeholder="4.50"
+                    value={spendAmount}
+                    onChange={(event) => setSpendAmount(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault()
+                        add()
+                      }
+                    }}
+                  />
+                </span>
+              </label>
+              <label className="trk-logbook-field">
+                <span>On</span>
+                <input
+                  aria-label="On"
+                  placeholder="coffee"
+                  value={spendOn}
+                  onChange={(event) => setSpendOn(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault()
+                      add()
+                    }
+                  }}
+                />
+              </label>
+              <label className="trk-logbook-field">
+                <span>Source</span>
+                <input
+                  aria-label="Source"
+                  placeholder="cash, card, account, person"
+                  list="tracking-log-spend-sources"
+                  value={spendSource}
+                  onChange={(event) => setSpendSource(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault()
+                      add()
+                    }
+                  }}
+                />
+              </label>
+              <datalist id="tracking-log-spend-sources">
+                {sourceOptions.map((source) => (
+                  <option key={source} value={source} />
+                ))}
+              </datalist>
+            </div>
           ) : (
             <input
               aria-label={fieldLabel(mode)}
@@ -559,6 +685,9 @@ export function TrackingLogView({
           )}
           {mode === "event" ? (
             <LocationField pens={locationPens} penId={locationPenId} onPenId={setLocationPenId} />
+          ) : null}
+          {mode === "spend" && spendAmount.trim() && parsedSpend == null ? (
+            <p className="trk-logbook-note trk-logbook-hint">Amount is dollars and cents, such as 4.50.</p>
           ) : null}
           <ClockPicker aria-label="Time of day" value={timeValue} onChange={setTimeValue} />
           <label className="trk-logbook-check">
@@ -587,13 +716,29 @@ export function TrackingLogView({
             />
             Unknown
           </label>
-          <button type="button" onClick={add} disabled={mode === "switch" ? !switchTo.trim() : !title.trim()}>
+          <button type="button" onClick={add} disabled={!canAdd}>
             Add
           </button>
         </div>
       </section>
 
       <CountStatusesSection />
+
+      <LogListWell
+        title="Spent"
+        note="Amount, what it was spent on, and the source."
+        rows={grouped.spend}
+        extra={<SpendLedger rows={grouped.spend} />}
+        copyFor={(entry) => entry.spendOn?.trim() || entry.title?.trim() || "Untitled"}
+        metaFor={(entry) => entry.spendSource?.trim() || ""}
+        leadFor={(entry) =>
+          typeof entry.spendAmount === "number" ? (
+            <span className="trk-log-amount">{formatSpendAmount(entry.spendAmount)}</span>
+          ) : null
+        }
+        onOpen={setOpenEntryId}
+        onRemove={removeEntry}
+      />
 
       {INTAKE_LISTS.map((list) => (
         <LogListWell

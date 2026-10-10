@@ -11,6 +11,8 @@
  * person picked. A note is a Text log instant (`note:`), so it stays on the
  * event list. A thought process is that same Text log instant with
  * `eventKind` `thought-process`, and the Tracking log shelves it under Thought process.
+ * A spend is an Activity instant on the Spent pen: integer cents, what it was
+ * spent on, and the source. The Tracking log shelves it under Spent.
  * A chosen location is a Location-scope instant at the same minute.
  *
  * Cycle marks and phase come from `lib/cycle-marks.ts` and `lib/cycle-phase.ts`.
@@ -23,6 +25,7 @@ import type { CyclePhase } from "@/lib/cycle-phase"
 import { applyNote } from "@/lib/ingest/apply-note"
 import { applyScopeSwitch, applyThoughtProcess, ensureLocationPen, THOUGHT_PROCESS_KIND } from "@/lib/ingest/apply-discrete-event"
 import { stablePenColor, useTimeTrackingStore, type TimeEntry } from "@/lib/time-tracking-store"
+import { SPEND_EVENT_KIND, compactSpend, isSpendEntry } from "@/lib/spend"
 import {
   entryClockCertainty,
   eventKindSlug,
@@ -36,6 +39,7 @@ export { readCycleMarks } from "@/lib/cycle-marks"
 export { eventKindSlug }
 export { ensureLocationPen }
 export { THOUGHT_PROCESS_KIND }
+export { SPEND_EVENT_KIND }
 
 export const ACTIVITY_SCOPE_ID = "activity"
 export const LOCATION_SCOPE_ID = "location"
@@ -45,19 +49,21 @@ export const TEXT_LOG_PEN_NAME = "Text log"
 export const SWITCH_PEN_NAME = "Switch"
 /** Same pen `so:` / `applySwitchObjective` paints. */
 export const OBJECTIVE_PEN_NAME = "Objective"
+/** Activity pen for a money-spent instant. */
+export const SPENT_PEN_NAME = "Spent"
 /** Placeholder minute for an unknown clock. The log hides it; it is not an observed time. */
 export const UNKNOWN_CLOCK_MINUTE = 0
 
 export type { CycleDayMark, CyclePhase, IntakeClass }
 export type ClockCertainty = TrackingClockCertainty
 export type LogList = IntakeClass | "intake" | "event"
-/** Composer modes. Intake still stores food / drink / drug; it is not a fifth list. */
-export type LogComposerMode = "event" | "switch" | "intake" | "note" | "thought"
+/** Composer modes. Intake still stores food / drink / drug. Spent is its own shelf. */
+export type LogComposerMode = "event" | "switch" | "intake" | "note" | "thought" | "spend"
 export type LogAddTarget = IntakeClass | "event"
 export type LogClockChoice = ClockCertainty
 export type LogTimeEntry = TimeEntry
-/** Event list plus Switch and Thought process. Notes stay on `event` because they use Text log. */
-export type LogBookList = LogList | "switch" | "thought"
+/** Event list plus Switch, Thought process, and Spent. Notes stay on `event` because they use Text log. */
+export type LogBookList = LogList | "switch" | "thought" | "spend"
 
 export type ClassifiedLogEntry = LogTimeEntry & {
   list: LogList
@@ -105,6 +111,7 @@ function intakeListFromKind(kind: string | undefined): LogList | null {
 
 export function classifyLogInstant(entry: LogTimeEntry, penName?: string): ClassifiedLogEntry | null {
   if (entry.kind !== "instant" || entry.scopeId !== ACTIVITY_SCOPE_ID) return null
+  if (isSpendEntry(entry)) return null
   const pen = (penName ?? "").trim().toLowerCase()
   const kind = entry.eventKind?.trim()
   const fromKind = intakeListFromKind(kind)
@@ -133,8 +140,12 @@ export function classifyLogInstant(entry: LogTimeEntry, penName?: string): Class
  * the Switch pen, the Objective pen, and a `switchTo` instant on another scope.
  * A Text log note is already an event there, so it is not listed twice.
  * A thought process (`eventKind` `thought-process`) is its own shelf.
+ * A spend (`eventKind` `spend`, or a positive `spendAmount`) is its own shelf.
  */
 export function classifyLogBookRow(entry: LogTimeEntry, penName?: string): LogBookEntry | null {
+  if (entry.kind === "instant" && isSpendEntry(entry)) {
+    return { ...entry, list: "spend", kindKey: SPEND_EVENT_KIND }
+  }
   if (
     entry.kind === "instant" &&
     entry.scopeId === ACTIVITY_SCOPE_ID &&
@@ -250,6 +261,50 @@ export function paintLogInstant(input: {
   return created?.id ?? null
 }
 
+/** Paint one Spent instant. Amount is integer cents. What and source are required. */
+export function paintSpendInstant(input: {
+  date: string
+  clock: LogClockChoice
+  minute: number
+  spendAmount: number
+  spendOn: string
+  spendSource: string
+}): string | null {
+  const packed = compactSpend({
+    spendAmount: input.spendAmount,
+    spendOn: input.spendOn,
+    spendSource: input.spendSource,
+  })
+  if (!packed) return null
+  const penId = ensureActivityPen(SPENT_PEN_NAME)
+  if (!penId) return null
+  const minute = input.clock === "unknown" ? UNKNOWN_CLOCK_MINUTE : input.minute
+  const before = new Set(useTimeTrackingStore.getState().entries.map((entry) => entry.id))
+  useTimeTrackingStore.getState().paintMinutes(
+    input.date,
+    ACTIVITY_SCOPE_ID,
+    minute,
+    minute,
+    penId,
+    undefined,
+    undefined,
+    input.clock === "estimated" ? "estimated" : undefined,
+    {
+      kind: "instant",
+      title: packed.spendOn,
+      eventKind: SPEND_EVENT_KIND,
+      spendAmount: packed.spendAmount,
+      spendOn: packed.spendOn,
+      spendSource: packed.spendSource,
+      ...(input.clock === "exact" ? {} : { clockCertainty: input.clock }),
+    },
+  )
+  const created = useTimeTrackingStore
+    .getState()
+    .entries.find((entry) => !before.has(entry.id) && entry.kind === "instant" && entry.date === input.date)
+  return created?.id ?? null
+}
+
 function dateAtMinute(dateKey: string, minute: number): Date {
   const [year, month, day] = dateKey.split("-").map(Number)
   const at = Number.isFinite(minute) ? Math.max(0, Math.floor(minute)) : 0
@@ -307,7 +362,8 @@ function paintPairedLocation(date: string, minute: number, penId: string, clock:
  * view is an instant on that scope’s pens. Note calls `applyNote` (Text log
  * instant, not the day jot, unless the phrase is already a `day:` note).
  * Thought process calls `applyThoughtProcess` on that same paint path, with
- * `eventKind` `thought-process`.
+ * `eventKind` `thought-process`. Spent paints the Spent pen with cents,
+ * what, and source.
  */
 export function submitTrackingLog(input: {
   date: string
@@ -321,14 +377,34 @@ export function submitTrackingLog(input: {
   switchTo?: string
   /** Tracking scope id. Omitted on Switch means Activity. */
   scopeId?: string
+  spendAmount?: number
+  spendOn?: string
+  spendSource?: string
 }): string | null {
   const title = input.title.trim()
   const switchTo = (input.switchTo ?? "").trim()
+  const spend = compactSpend({
+    spendAmount: input.spendAmount,
+    spendOn: input.spendOn ?? title,
+    spendSource: input.spendSource,
+  })
   if (input.mode === "switch") {
     if (!switchTo && !title) return null
+  } else if (input.mode === "spend") {
+    if (!spend) return null
   } else if (!title) return null
   if (input.clock !== "unknown" && !Number.isFinite(input.minute)) return null
   return runAsAction("tracking log", () => {
+    if (input.mode === "spend" && spend) {
+      return paintSpendInstant({
+        date: input.date,
+        clock: input.clock,
+        minute: input.minute,
+        spendAmount: spend.spendAmount,
+        spendOn: spend.spendOn,
+        spendSource: spend.spendSource,
+      })
+    }
     if (input.mode === "event" || input.mode === "intake") {
       const id = paintLogInstant({
         date: input.date,

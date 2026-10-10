@@ -91,7 +91,7 @@ describe("TrackingDesk", () => {
     expect(screen.getByRole("group", { name: "Sort pens" })).toBeInTheDocument()
     expect(screen.getByRole("toolbar", { name: "Tracking view modes" })).toBeInTheDocument()
     expect(screen.getByRole("group", { name: "Paint tools" })).toBeInTheDocument()
-    expect(screen.getByText("Day notes")).toBeInTheDocument()
+    expect(screen.getByText("Day summary")).toBeInTheDocument()
     expect(screen.getByLabelText("Operation to work on")).toBeInTheDocument()
 
     const logTab = within(keys as HTMLElement).getByRole("tab", { name: "Tracking log" })
@@ -104,7 +104,7 @@ describe("TrackingDesk", () => {
     expect(screen.queryByRole("group", { name: "Sort pens" })).not.toBeInTheDocument()
     expect(screen.queryByRole("toolbar", { name: "Tracking view modes" })).not.toBeInTheDocument()
     expect(screen.queryByRole("group", { name: "Paint tools" })).not.toBeInTheDocument()
-    expect(screen.getByText("Day notes")).toBeInTheDocument()
+    expect(screen.getByText("Day summary")).toBeInTheDocument()
     expect(screen.getByLabelText("Operation to work on")).toBeInTheDocument()
     expect(within(keys as HTMLElement).getByRole("tab", { name: "Time Grid" })).toBeInTheDocument()
 

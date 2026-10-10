@@ -2,7 +2,7 @@
  * components/Home/Tracking/discrete-log-instants.ts — Log ticks already in the vault
  *
  * Tracking log rows are TimeEntry instants. This reader collects the point logs
- * (intake, event, note, keyword, switch) so the Time grid's instant layer can
+ * (intake, event, note, keyword, switch, spend) so the Time grid's instant layer can
  * draw them. It does not write, migrate, or copy entries. An ordinary painted
  * interval stays a block even when a text pipeline stamped it.
  *
@@ -12,6 +12,7 @@
  * painted on Location, Mood, Company, or Activity is included when it is that
  * tick, and it also stays on that scope's own grid.
  */
+import { isSpendEntry } from "@/lib/spend"
 import { displayedPen, findPen, type TrackPen, type TrackScope } from "@/lib/time-tracking-store"
 import { instantsForDay, type TimeEntry } from "@/lib/time-entries"
 
@@ -19,6 +20,7 @@ const INTAKE_PEN = "intake"
 const TEXT_LOG_PEN = "text log"
 const SWITCH_PEN = "switch"
 const OBJECTIVE_PEN = "objective"
+const SPENT_PEN = "spent"
 
 export function penNameById(scopes: readonly { pens: readonly { id: string; name: string }[] }[]): (penId: string) => string | undefined {
   const names = new Map<string, string>()
@@ -47,8 +49,13 @@ function kindStarts(eventKind: string | undefined, prefix: string): boolean {
  * True for a point log. Intervals return false, including a text-pipeline span
  * such as Computer Work from 12:00 to 1:40.
  */
-export function isDiscreteLogInstant(entry: Pick<TimeEntry, "kind" | "generatedBy" | "intakeClass" | "eventKind" | "switchFrom" | "switchTo">, penName?: string): boolean {
+export function isDiscreteLogInstant(
+  entry: Pick<TimeEntry, "kind" | "generatedBy" | "intakeClass" | "eventKind" | "switchFrom" | "switchTo" | "spendAmount">,
+  penName?: string,
+): boolean {
   if (entry.kind !== "instant") return false
+  if (isSpendEntry(entry)) return true
+  if (penIs(penName, SPENT_PEN)) return true
   if (entry.generatedBy?.kind === "text") return true
   if (entry.intakeClass === "food" || entry.intakeClass === "drink" || entry.intakeClass === "drug") return true
   if (kindStarts(entry.eventKind, "intake") || kindStarts(entry.eventKind, "switch")) return true

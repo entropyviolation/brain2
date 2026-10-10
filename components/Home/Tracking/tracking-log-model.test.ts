@@ -292,4 +292,70 @@ describe("tracking log model", () => {
     expect(paired?.clockCertainty).toBeUndefined()
     expect(entries.filter((entry) => entry.scopeId === LOCATION_SCOPE_ID && entry.kind !== "instant")).toHaveLength(0)
   })
+
+  it("stores a spend as cents, what, and source, and rejects an empty or invalid amount", () => {
+    resetAllStores()
+    expect(
+      submitTrackingLog({
+        date: "2026-06-20",
+        title: "",
+        mode: "spend",
+        clock: "exact",
+        minute: 8 * 60,
+      }),
+    ).toBeNull()
+    expect(
+      submitTrackingLog({
+        date: "2026-06-20",
+        title: "coffee",
+        mode: "spend",
+        clock: "exact",
+        minute: 8 * 60,
+        spendAmount: 0,
+        spendOn: "coffee",
+        spendSource: "Cash",
+      }),
+    ).toBeNull()
+    const id = submitTrackingLog({
+      date: "2026-06-20",
+      title: "coffee",
+      mode: "spend",
+      clock: "exact",
+      minute: 8 * 60,
+      spendAmount: 450,
+      spendOn: "coffee",
+      spendSource: "Cash",
+    })
+    const saved = useTimeTrackingStore.getState().entries.find((entry) => entry.id === id)
+    expect(saved).toMatchObject({
+      kind: "instant",
+      scopeId: ACTIVITY_SCOPE_ID,
+      eventKind: "spend",
+      title: "coffee",
+      spendAmount: 450,
+      spendOn: "coffee",
+      spendSource: "Cash",
+      startMin: 8 * 60,
+    })
+    expect(classifyLogInstant(saved!, "Spent")).toBeNull()
+    expect(classifyLogBookRow(saved!, "Spent")?.list).toBe("spend")
+    const pen = useTimeTrackingStore
+      .getState()
+      .scopes.find((scope) => scope.id === ACTIVITY_SCOPE_ID)
+      ?.pens.find((row) => row.id === saved?.penId)
+    expect(pen?.name).toBe("Spent")
+
+    useTimeTrackingStore.getState().updateEntry(id!, {
+      spendAmount: 900,
+      spendOn: "tea",
+      spendSource: "Card",
+    })
+    expect(useTimeTrackingStore.getState().entries.find((entry) => entry.id === id)).toMatchObject({
+      spendAmount: 900,
+      spendOn: "tea",
+      spendSource: "Card",
+      title: "tea",
+      eventKind: "spend",
+    })
+  })
 })

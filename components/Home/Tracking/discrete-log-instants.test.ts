@@ -130,4 +130,18 @@ describe("discrete log instants", () => {
     const ticks = scopeTicksWithDiscreteLogs([smoked], "2026-06-20", "activity", pens)
     expect(ticks.map((entry) => entry.id)).toEqual(["smoked"])
   })
+
+  it("includes a money-spent instant", () => {
+    const spent = row({
+      id: "spent",
+      penId: "spent-pen",
+      title: "coffee",
+      eventKind: "spend",
+      spendAmount: 450,
+      spendOn: "coffee",
+      spendSource: "Cash",
+    })
+    expect(isDiscreteLogInstant(spent, "Spent")).toBe(true)
+    expect(discreteLogInstants([spent], pens).map((entry) => entry.id)).toEqual(["spent"])
+  })
 })

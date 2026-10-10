@@ -23,6 +23,7 @@
  */
 
 import { compactMoodReading, sameMoodReading, type MoodReading } from "./mood-reading"
+import { compactSpend } from "./spend"
 
 export const MINUTES_PER_DAY = 24 * 60
 
@@ -237,6 +238,16 @@ export interface TimeEntry {
   /** Destination. Required on a new Switch row. Omitted on older rows. */
   switchTo?: string
   /**
+   * Money spent, in integer cents. Together with `spendOn` and `spendSource`
+   * this instant is a Tracking log spend. Omitted on every other row. No
+   * persist bump — a missing amount is not a spend.
+   */
+  spendAmount?: number
+  /** What the money was spent on. Also stored as `title` so existing labels keep a name. */
+  spendOn?: string
+  /** Where the money came from: cash, card, account, person, or any short name. */
+  spendSource?: string
+  /**
    * Mood scope only. The three-part reading on this stretch. Omitted when
    * empty. A blank mark is not stored as zero. The derived sentence is not
    * copied into `notes`. Different readings do not merge; a split keeps the
@@ -408,7 +419,10 @@ function sameDetails(a: TimeEntry, b: TimeEntry): boolean {
     (a.intakeClass ?? undefined) === (b.intakeClass ?? undefined) &&
     (a.clockCertainty ?? undefined) === (b.clockCertainty ?? undefined) &&
     (a.switchFrom ?? undefined) === (b.switchFrom ?? undefined) &&
-    (a.switchTo ?? undefined) === (b.switchTo ?? undefined)
+    (a.switchTo ?? undefined) === (b.switchTo ?? undefined) &&
+    (a.spendAmount ?? undefined) === (b.spendAmount ?? undefined) &&
+    (a.spendOn ?? undefined) === (b.spendOn ?? undefined) &&
+    (a.spendSource ?? undefined) === (b.spendSource ?? undefined)
   )
 }
 
@@ -580,6 +594,10 @@ export interface PaintRangeInput {
   intakeClass?: IntakeClass
   /** `"exact"` is not stored — omission means exact. */
   clockCertainty?: TrackingClockCertainty
+  /** Integer cents. Omitted unless this paint is a spend. */
+  spendAmount?: number
+  spendOn?: string
+  spendSource?: string
   /** Mood reading. Omitted from the block when empty. */
   moodReading?: MoodReading
   /** Later calendar day for an explicit wrap. Not stored — slices carry `date`. */
@@ -611,7 +629,14 @@ function entryFromPaint(input: PaintRangeInput, lo: number, hi: number, id: stri
     estimateOf: input.estimateOf,
     ...eventFields(input),
     ...moodReadingField(input.moodReading),
+    ...spendPaintFields(input),
   }
+}
+
+function spendPaintFields(
+  input: Pick<PaintRangeInput, "spendAmount" | "spendOn" | "spendSource">,
+): ReturnType<typeof compactSpend> | Record<string, never> {
+  return compactSpend(input) ?? {}
 }
 
 function eventFields(

@@ -109,6 +109,7 @@ import {
 } from "@/lib/entry-links"
 import { isRestoring, rememberWorld } from "@/lib/action-history"
 import { compactMoodReading } from "@/lib/mood-reading"
+import { compactSpend } from "@/lib/spend"
 
 export type { PenLink, CompanionTarget } from "@/lib/entry-links"
 
@@ -353,6 +354,9 @@ interface TimeTrackingState {
         | "eventKind"
         | "intakeClass"
         | "clockCertainty"
+        | "spendAmount"
+        | "spendOn"
+        | "spendSource"
       >
     >,
   ) => void
@@ -1380,6 +1384,9 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
               eventKind: extras?.eventKind,
               intakeClass: extras?.intakeClass,
               clockCertainty: extras?.clockCertainty,
+              spendAmount: extras?.spendAmount,
+              spendOn: extras?.spendOn,
+              spendSource: extras?.spendSource,
             },
             () => rid("te"),
           )
@@ -1449,6 +1456,24 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
             const packed = compactMoodReading(patch.moodReading)
             if (packed) next.moodReading = packed
             else delete next.moodReading
+          }
+          if ("spendAmount" in patch || "spendOn" in patch || "spendSource" in patch) {
+            const packed = compactSpend({
+              spendAmount: "spendAmount" in patch ? patch.spendAmount : next.spendAmount,
+              spendOn: "spendOn" in patch ? patch.spendOn : next.spendOn,
+              spendSource: "spendSource" in patch ? patch.spendSource : next.spendSource,
+            })
+            if (packed) {
+              next.spendAmount = packed.spendAmount
+              next.spendOn = packed.spendOn
+              next.spendSource = packed.spendSource
+              next.eventKind = "spend"
+              next.title = packed.spendOn
+            } else {
+              delete next.spendAmount
+              delete next.spendOn
+              delete next.spendSource
+            }
           }
           if (patch.variantIds !== undefined) next.variantIds = normalizeIds(patch.variantIds)
           if (patch.tagIds !== undefined) next.tagIds = normalizeIds(patch.tagIds)
@@ -1681,6 +1706,25 @@ function stampPenUse(scopes: TrackScope[], scopeId: string, penId: string, at = 
           pens: scope.pens.map((pen) => (pen.id === penId ? { ...pen, lastUsedAt: at } : pen)),
         },
   )
+}
+
+/**
+ * Append instants in one store write and stamp each pen once.
+ * Does not push undo — the caller already has a step, or does not want one.
+ */
+export function appendTrackingInstants(added: readonly TimeEntry[]): void {
+  if (added.length === 0 || isRestoring()) return
+  useTimeTrackingStore.setState((state) => {
+    let scopes = state.scopes
+    const seen = new Set<string>()
+    for (const entry of added) {
+      const key = `${entry.scopeId}:${entry.penId}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      scopes = stampPenUse(scopes, entry.scopeId, entry.penId)
+    }
+    return { ...dropping(state, state.entries.concat(added)), scopes }
+  })
 }
 
 /** The pen behind an entry, wherever it lives. */

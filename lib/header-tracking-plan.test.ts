@@ -86,10 +86,11 @@ describe("header tracking plan", () => {
     expect(isEstimated(estimated?.estimates, "actualDuration")).toBe(true)
     expect(derivedDurationGap(15, estimated?.actualDuration)).toBe(-5)
 
-    recordPlanSkipped(created.taskIds[1])
+    recordPlanSkipped(created.taskIds[1], new Date(), "no-time")
     const skipped = useTaskStore.getState().tasks.find((task) => task.id === created.taskIds[1])
     expect(skipped?.status).toBe("missed")
     expect(skipped?.completed).toBe(false)
+    expect(skipped?.missReason).toBe("no-time")
 
     const extraId = insertUnplanned({ title: "Phone call", date: DAY, minutes: 8, estimated: false })
     const extra = useTaskStore.getState().tasks.find((task) => task.id === extraId)

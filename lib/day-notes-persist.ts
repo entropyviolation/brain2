@@ -9,15 +9,17 @@
  * the shrink guard lets it through) left overlay with nothing to copy.
  *
  * This module is the source of truth: a tiny `brain2-tracking-day-notes` JSON map
- * (legacy `cogs-tracking-day-notes` copied, never deleted),
- * written as an append log (submit-stamped entries) and hub-synced on its own.
- * Both aliases are **read and unioned** — an append log has immutable, id'd
- * entries, so no copy of a day is ever the loser. That heals a pair split by a
- * write that ran out of origin quota, and lets a hub or timegrid copy add
- * entries to a day this profile already has. The
- * timegrid store still mirrors the same stored string in memory so older readers keep
- * working; that jot is not rewritten into the huge timegrid blob on every
- * submit.
+ * (legacy `cogs-tracking-day-notes` copied, never deleted), hub-synced on its own.
+ * Day keys (`YYYY-MM-DD`) hold the **day summary** — one retrospective prose
+ * string. Older values were an append-log envelope; those flatten to prose on
+ * read and when a new paragraph is added, so existing notes become the summary
+ * instead of being dropped. Week, month, season, and year summaries live in the
+ * same map under `week:`, `month:`, `quarter:`, and `year:` keys (see
+ * `lib/tracking-summaries.ts`). Those keys are not plan text.
+ * Both aliases are **read and unioned**. Plain text: this profile wins. An
+ * envelope on either side keeps every paragraph. The timegrid store still
+ * mirrors the same stored string in memory; the huge blob is not rewritten on
+ * every edit.
  */
 "use client"
 
@@ -30,7 +32,7 @@ import {
   emitAppendLogChange,
   makeAppendLogEntry,
   parseAppendLog,
-  serializeAppendLog,
+  parseAppendLogDraft,
 } from "@/lib/append-log"
 
 export const DAY_NOTES_PERSIST_KEY = persistKey("tracking-day-notes")
@@ -55,29 +57,65 @@ function cleanMap(raw: unknown): DayNotesMap {
   return out
 }
 
+/** Old day notes were an append-log envelope. A summary is one prose string. */
+export function isAppendEnvelope(raw: string): boolean {
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return false
+    const envelope = parsed as { v?: unknown; entries?: unknown }
+    return envelope.v === 1 && Array.isArray(envelope.entries)
+  } catch {
+    return false
+  }
+}
+
 /**
- * Entries are immutable, so their id is identity and two copies of one day
- * union cleanly. Nothing here is ever dropped — a merge only adds.
+ * Retrospective text for a stored value. An append-log envelope becomes the
+ * joined entry texts (draft included) so an old day note is not dropped when
+ * the field becomes one summary. Plain prose is returned as stored.
+ */
+export function summaryProse(raw: string | null | undefined): string {
+  if (!raw) return ""
+  if (!isAppendEnvelope(raw)) return raw
+  const parts = parseAppendLog(raw)
+    .map((entry) => entry.text.trim())
+    .filter(Boolean)
+  const draft = parseAppendLogDraft(raw).trim()
+  if (draft && !parts.includes(draft)) parts.push(draft)
+  return parts.join("\n\n")
+}
+
+/** Keep every distinct paragraph. Mine stays first. */
+export function combineSummaryProse(mine: string, theirs: string): string {
+  if (!mine) return theirs
+  if (!theirs) return mine
+  if (mine.includes(theirs)) return mine
+  if (theirs.includes(mine)) return theirs
+  const chunks = mine
+    .split(/\n\n/)
+    .map((part) => part.trim())
+    .filter(Boolean)
+  for (const part of theirs
+    .split(/\n\n/)
+    .map((piece) => piece.trim())
+    .filter(Boolean)) {
+    if (chunks.some((chunk) => chunk === part || chunk.includes(part))) continue
+    chunks.push(part)
+  }
+  return chunks.join("\n\n")
+}
+
+/**
+ * Plain summaries: this profile's text wins, same as the old legacy-id merge.
+ * An append-log envelope on either side flattens to prose and keeps every
+ * paragraph, so migrating day notes into a summary does not drop a line.
  */
 function unionDayLogs(mine: string, theirs: string): string {
   if (mine === theirs) return mine
-  const entries = parseAppendLog(mine)
-  const seen = new Set(entries.map((entry) => entry.id))
-  let added = false
-  for (const entry of parseAppendLog(theirs)) {
-    if (seen.has(entry.id)) continue
-    seen.add(entry.id)
-    entries.push(entry)
-    added = true
+  if (isAppendEnvelope(mine) || isAppendEnvelope(theirs)) {
+    return combineSummaryProse(summaryProse(mine), summaryProse(theirs))
   }
-  if (!added) return mine
-  entries.sort((a, b) => {
-    if (a.createdAt === b.createdAt) return 0
-    if (!a.createdAt) return -1
-    if (!b.createdAt) return 1
-    return a.createdAt.localeCompare(b.createdAt)
-  })
-  return serializeAppendLog(entries)
+  return mine || theirs
 }
 
 /** `mine` wins any conflict; every entry either side holds survives. */
@@ -146,11 +184,15 @@ export function getDayNoteEntries(date: string): AppendLogEntry[] {
   return parseAppendLog(snapshot[date] ?? null)
 }
 
-/** Append a stamped note. Past entries stay. Empty text is ignored. */
+/**
+ * Add a paragraph to the day's summary. Empty text is ignored.
+ * Older append-log envelopes flatten first, so a `day:` line joins the
+ * retrospective text instead of starting a second log.
+ */
 export function appendDayNote(date: string, text: string, createdAt: Date = new Date()): AppendLogEntry | null {
   const entry = makeAppendLogEntry(text, createdAt)
   if (!entry) return null
-  const next = serializeAppendLog([...getDayNoteEntries(date), entry])
+  const next = combineSummaryProse(summaryProse(getDayNote(date)), entry.text)
   setDayNotePersist(date, next)
   return entry
 }

@@ -25,6 +25,7 @@ import { trackedAgendaBlocks } from "@/components/Home/Tracking/tracked-agenda-b
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { timeStringToMinutes } from "@/lib/time-entries"
 import { useLiveToday } from "@/lib/use-current-date"
+import { WeekSummaryNest } from "@/components/Home/Tracking/tracking-summaries"
 import "./daylog-week.css"
 
 const HOUR_H = 28
@@ -247,6 +248,8 @@ export function DayLogWeek({
           </div>
         ))}
       </div>
+
+      <WeekSummaryNest anchor={currentDate} gutter="daylog" />
     </div>
   )
 }

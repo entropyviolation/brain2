@@ -80,6 +80,7 @@ describe("TrackingLogView", () => {
       "Event",
       "Switch",
       "Intake",
+      "Spent",
       "Note",
       "Thought process",
     ])
@@ -321,5 +322,70 @@ describe("TrackingLogView", () => {
       .entries.filter((entry) => entry.scopeId === "location" && entry.kind === "instant")
     expect(places).toHaveLength(1)
     expect(places[0]?.penId).toBe("loc-home")
+  })
+
+  it("logs money spent with an amount, what, and source, and edits it", () => {
+    renderLog()
+    expect(screen.getByRole("region", { name: "Spent" })).toHaveTextContent("Nothing spent this day.")
+    fireEvent.click(screen.getByRole("button", { name: "Spent" }))
+    expect(screen.getByLabelText("Amount")).toBeInTheDocument()
+    expect(screen.getByLabelText("On")).toBeInTheDocument()
+    expect(screen.getByLabelText("Source")).toBeInTheDocument()
+    expect(screen.queryByRole("combobox", { name: "Location" })).not.toBeInTheDocument()
+    expect(screen.getByLabelText("Time of day")).toBeInTheDocument()
+    const add = screen.getByRole("button", { name: /^Add$/ })
+    expect(add).toBeDisabled()
+
+    fireEvent.change(screen.getByLabelText("Amount"), { target: { value: "abc" } })
+    fireEvent.change(screen.getByLabelText("On"), { target: { value: "coffee" } })
+    fireEvent.change(screen.getByLabelText("Source"), { target: { value: "Cash" } })
+    expect(add).toBeDisabled()
+    expect(screen.getByText("Amount is dollars and cents, such as 4.50.")).toBeInTheDocument()
+    expect(useTimeTrackingStore.getState().entries.filter((entry) => entry.eventKind === "spend")).toHaveLength(0)
+
+    fireEvent.change(screen.getByLabelText("Amount"), { target: { value: "" } })
+    expect(add).toBeDisabled()
+    fireEvent.change(screen.getByLabelText("Amount"), { target: { value: "4.50" } })
+    expect(add).toBeEnabled()
+    fireEvent.click(add)
+
+    const spent = screen.getByRole("region", { name: "Spent" })
+    expect(spent).toHaveTextContent("$4.50")
+    expect(spent).toHaveTextContent("coffee")
+    expect(spent).toHaveTextContent("Cash")
+    expect(spent).toHaveTextContent("$4.50 spent this day")
+    expect(spent).toHaveTextContent("8:00 AM")
+    const saved = useTimeTrackingStore.getState().entries.find((entry) => entry.eventKind === "spend")
+    expect(saved).toMatchObject({ spendAmount: 450, spendOn: "coffee", spendSource: "Cash", title: "coffee" })
+
+    fireEvent.click(screen.getByRole("button", { name: /coffee/ }))
+    const dialog = screen.getByRole("dialog")
+    expect(within(dialog).getByLabelText("Amount")).toHaveValue("4.50")
+    fireEvent.change(within(dialog).getByLabelText("Amount"), { target: { value: "nope" } })
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save event" }))
+    expect(screen.getByRole("dialog")).toBeInTheDocument()
+    expect(within(dialog).getByText("Amount is dollars and cents, such as 4.50.")).toBeInTheDocument()
+    expect(useTimeTrackingStore.getState().entries.find((entry) => entry.id === saved?.id)?.spendAmount).toBe(450)
+
+    fireEvent.change(within(dialog).getByLabelText("Amount"), { target: { value: "9" } })
+    fireEvent.change(within(dialog).getByLabelText("Spent on"), { target: { value: "tea" } })
+    fireEvent.change(within(dialog).getByLabelText("Source"), { target: { value: "Card" } })
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save event" }))
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+    expect(spent).toHaveTextContent("$9.00")
+    expect(spent).toHaveTextContent("tea")
+    expect(spent).toHaveTextContent("Card")
+    expect(useTimeTrackingStore.getState().entries.find((entry) => entry.id === saved?.id)).toMatchObject({
+      spendAmount: 900,
+      spendOn: "tea",
+      spendSource: "Card",
+      title: "tea",
+    })
+
+    fireEvent.click(screen.getByRole("button", { name: "Event" }))
+    expect(screen.getByLabelText("Title")).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText("Title"), { target: { value: "left room" } })
+    fireEvent.click(screen.getByRole("button", { name: /^Add$/ }))
+    expect(screen.getByRole("region", { name: "Events" })).toHaveTextContent("left room")
   })
 })

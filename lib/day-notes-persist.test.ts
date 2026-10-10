@@ -1,15 +1,15 @@
 import { beforeEach, describe, expect, it } from "vitest"
-import { parseAppendLog, serializeAppendLog } from "./append-log"
+import { serializeAppendLog } from "./append-log"
 import {
   appendDayNote,
   DAY_NOTES_PERSIST_KEY,
   getDayNote,
-  getDayNoteEntries,
   getDayNotesPersist,
   mergeDayNotes,
   resetDayNotesPersist,
   seedDayNotesPersist,
   setDayNotePersist,
+  summaryProse,
 } from "./day-notes-persist"
 
 beforeEach(() => {
@@ -26,13 +26,11 @@ describe("day-notes-persist", () => {
     expect(localStorage.getItem("cogs-timegrid-store")).toBeNull()
   })
 
-  it("appends a stamped note onto a leftover plaintext jot", () => {
+  it("appends a paragraph onto a leftover plaintext jot as one summary", () => {
     setDayNotePersist("2026-09-21", "ate at 1")
     const entry = appendDayNote("2026-09-21", "zoo 4-5", new Date(2026, 8, 21, 16, 0, 0))
     expect(entry?.text).toBe("zoo 4-5")
-    const entries = getDayNoteEntries("2026-09-21")
-    expect(entries.map((e) => e.text)).toEqual(["ate at 1", "zoo 4-5"])
-    expect(JSON.parse(getDayNote("2026-09-21")).v).toBe(1)
+    expect(getDayNote("2026-09-21")).toBe("ate at 1\n\nzoo 4-5")
   })
 
   it("keeps the dedicated jot when a timegrid blob has empty dayNotes", () => {
@@ -55,15 +53,25 @@ describe("day-notes-persist", () => {
     expect(JSON.parse(localStorage.getItem(DAY_NOTES_PERSIST_KEY) ?? "{}")["2026-09-21"]).toBeUndefined()
   })
 
-  it("unions entries when a seed copy of the same day has one this profile lacks", () => {
+  it("keeps every paragraph when a seed envelope has a line this profile lacks", () => {
     appendDayNote("2026-09-21", "zoo 4-5", new Date(2026, 8, 21, 16, 0, 0))
-    const mine = getDayNote("2026-09-21")
     const theirs = serializeAppendLog([
-      ...parseAppendLog(mine),
+      { id: "legacy", createdAt: null, text: "zoo 4-5" },
       { id: "al_from_chrome", createdAt: "2026-09-21T23:38:48.687Z", text: "stuck in aisle 4" },
     ])
     seedDayNotesPersist({ "2026-09-21": theirs })
-    expect(getDayNoteEntries("2026-09-21").map((e) => e.text)).toEqual(["zoo 4-5", "stuck in aisle 4"])
+    expect(summaryProse(getDayNote("2026-09-21"))).toBe("zoo 4-5\n\nstuck in aisle 4")
+  })
+
+  it("flattens an old append log into one summary without dropping lines", () => {
+    const raw = serializeAppendLog([
+      { id: "a", createdAt: "2026-09-21T17:00:00.000Z", text: "ate at 1" },
+      { id: "b", createdAt: "2026-09-21T23:00:00.000Z", text: "zoo 4-5" },
+    ])
+    expect(summaryProse(raw)).toBe("ate at 1\n\nzoo 4-5")
+    setDayNotePersist("2026-09-21", raw)
+    appendDayNote("2026-09-21", "home by 7", new Date(2026, 8, 21, 19, 0, 0))
+    expect(getDayNote("2026-09-21")).toBe("ate at 1\n\nzoo 4-5\n\nhome by 7")
   })
 
   it("does not resurrect a jot the user cleared this session", () => {

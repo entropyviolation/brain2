@@ -50,10 +50,13 @@ import {
 } from "@/lib/time-entries"
 import { VariantChips } from "@/components/Home/Tracking/variant-chips"
 import { CompanionSection } from "@/components/Home/Tracking/companion-section"
+import { PersonPipelinesEditor } from "@/components/People/person-pipelines"
+import { COMPANY_SCOPE_ID } from "@/lib/people-i-know"
 import { BlockPenSection } from "@/components/Home/Tracking/block-pen-section"
 import { openPenSettings } from "@/components/Home/Tracking/open-pen-settings"
 import { MoodStretchCard } from "@/components/Home/Tracking/mood-stretch-card"
 import { compactMoodReading, moodPenColor, normalizeWord, type MoodReading } from "@/lib/mood-reading"
+import { isSpendEntry, parseSpendAmount, spendAmountInput, spendSourceOptions } from "@/lib/spend"
 import { parseLocalDate } from "@/lib/date-utils"
 import { OptionalClock } from "@/components/Home/Tracking/log-activity-dialog"
 import "./tracking-chrome.css"
@@ -125,6 +128,11 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
   const [notes, setNotes] = useState(entry.notes ?? "")
   const [reading, setReading] = useState<MoodReading>(entry.moodReading ?? {})
   const [assumed, setAssumed] = useState(entry.precision === "estimated")
+  const spendEntry = isSpendEntry(entry)
+  const [amountText, setAmountText] = useState(spendAmountInput(entry.spendAmount))
+  const [spentOn, setSpentOn] = useState(entry.spendOn ?? (spendEntry ? (entry.title ?? "") : ""))
+  const [spentSource, setSpentSource] = useState(entry.spendSource ?? "")
+  const [spendError, setSpendError] = useState("")
 
   // The store may replace this block (a split, or a neighbour merging into it);
   // follow whatever it becomes rather than editing a stale copy.
@@ -183,6 +191,28 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
     if (!isInstant(entry) && timeStringToMinutes(to) === null) return
     const savedPenId = resolvePenId()
     const moodPatch = isMood ? { moodReading: compactMoodReading(reading) } : {}
+    let spendPatch: Partial<Omit<TimeEntry, "id">> = {}
+    if (spendEntry) {
+      const amount = parseSpendAmount(amountText)
+      const on = spentOn.trim()
+      const source = spentSource.trim()
+      if (amount == null || !on || !source) {
+        setSpendError(
+          amount == null
+            ? "Amount is dollars and cents, such as 4.50."
+            : "Amount, what it was spent on, and the source each need a value.",
+        )
+        return
+      }
+      setSpendError("")
+      spendPatch = {
+        spendAmount: amount,
+        spendOn: on,
+        spendSource: source,
+        eventKind: "spend",
+        title: on,
+      }
+    }
     if (isInstant(entry)) {
       updateEntry(origin.id, {
         date: fromDate,
@@ -200,6 +230,7 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
         notes: notes.trim() || undefined,
         precision: assumed ? "estimated" : undefined,
         ...moodPatch,
+        ...spendPatch,
       })
       onClose()
       return
@@ -226,6 +257,7 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
         notes: notes.trim() || undefined,
         precision: assumed ? "estimated" : undefined,
         ...moodPatch,
+        ...spendPatch,
       },
       wrapEndDate,
     )
@@ -259,6 +291,9 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
     notes,
     reading,
     assumed,
+    amountText,
+    spentOn,
+    spentSource,
     variantIds: liveVariantIds,
     tagIds,
   }
@@ -332,6 +367,49 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
             )}
           </div>
 
+          {spendEntry ? (
+            <div className="trk-section trk-spend-edit">
+              <Label htmlFor="entry-spend-amount" className="trk-section-title">
+                Amount
+              </Label>
+              <Input
+                id="entry-spend-amount"
+                aria-label="Amount"
+                inputMode="decimal"
+                value={amountText}
+                onChange={(e) => setAmountText(e.target.value)}
+              />
+              <Label htmlFor="entry-spend-on" className="trk-section-title">
+                Spent on
+              </Label>
+              <Input
+                id="entry-spend-on"
+                aria-label="Spent on"
+                value={spentOn}
+                onChange={(e) => setSpentOn(e.target.value)}
+              />
+              <Label htmlFor="entry-spend-source" className="trk-section-title">
+                Source
+              </Label>
+              <Input
+                id="entry-spend-source"
+                aria-label="Source"
+                list="entry-spend-sources"
+                value={spentSource}
+                onChange={(e) => setSpentSource(e.target.value)}
+              />
+              <datalist id="entry-spend-sources">
+                {spendSourceOptions(allEntries).map((source) => (
+                  <option key={source} value={source} />
+                ))}
+              </datalist>
+              <p className="trk-help">
+                {spendError || "Dollars and cents. The source is where the money came from."}
+              </p>
+            </div>
+          ) : null}
+
+          {spendEntry ? null : (
           <div className="trk-section">
             <Label htmlFor="entry-title" className="trk-section-title">
               Display name
@@ -347,6 +425,7 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
               placeholder={pen?.name ?? "Same as pen"}
             />
           </div>
+          )}
 
           {isMood && scope && (
             <MoodStretchCard
@@ -511,6 +590,8 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
               </div>
             </div>
           )}
+
+          {entry.scopeId === COMPANY_SCOPE_ID ? <PersonPipelinesEditor mode="entry" entryId={entry.id} /> : null}
 
           <div>
             <Label htmlFor="entry-notes">Notes</Label>

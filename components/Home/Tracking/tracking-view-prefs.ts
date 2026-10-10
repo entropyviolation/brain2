@@ -33,7 +33,7 @@ export type TrackingViewPrefs = {
   penTray: PenTrayId
   /** Full wrapped beads. Off (default) is one clipped row under Search. */
   penWellExpanded: boolean
-  /** Day notes fully open (tall composer + history). Off hides the log. */
+  /** Day summary well open (editor). Off hides it. The name stayed when the well was an append log. */
   notesWellExpanded: boolean
   /**
    * Overlay scope id keyed by the view you were standing on.
