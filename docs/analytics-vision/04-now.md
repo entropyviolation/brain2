@@ -638,7 +638,7 @@ Restricted to tasks with `attributes.headerTracking = "plan"`:
 - Planned chain as a column of intended blocks beside the Activity timeline (intention vs occupancy). Overlap minutes are a descriptive intersection, not a score of virtue.
 - Edits in the item-activity ledger plotted as ticks on that chain: a retime moves the block; the `at` of the edit is the moment of correction, which **is** a real timestamp.
 
-The day-plan prose log is the same text the composer appended. Show it as the note beside the chain, not as a second dataset. Do not NLP it into fake states.
+The day-plan prose log is the same text the composer appended. Show it as the note beside the chain, not as a second dataset. Do not turn it into fake tracking states. Reading that prose as language — sentiment, embeddings, a model theme — is the separate intention in [Language](06-language.md), and it still does not paint a lane.
 
 ### 5.6 Estimates against the lanes they sat on
 

@@ -67,7 +67,7 @@ Grain: one row. Identity: `id`. A logical overnight event is the group `spanId`.
 | `pages` | number? | reading amount | Pages read on this block. Integer from the editor (`parseInt`). |
 | `precision` | `"estimated" \| "definite"?` | certainty | Omitted = certain. `"estimated"` is assumed, reconstructed, Screen Time, phone ingest, or an estimated log clock. Confirm clears it. |
 | `clockCertainty` | `"estimated" \| "unknown"?` | clock firmness | Separate from mood, sleep, and completion certainty. Omitted = exact. `"estimated"` also sets `precision: "estimated"`. `"unknown"` still stores `startMin`. |
-| `eventKind` | string? | count key | Stable slug. Free-form phrases: lowercase, punctuation stripped, spaces collapsed (`left room` stays `left room`). Intake: `intake`, `intake.food`, `intake.drink`, `intake.drug`. Thought process: `thought-process`. Switches often `switch` / `switch-task` / `switch-objective`. Omitted on older rows and on ordinary painted blocks. |
+| `eventKind` | string? | count key | Stable slug. Free-form phrases: lowercase, punctuation stripped, spaces collapsed (`left room` stays `left room`). Intake: `intake`, `intake.food`, `intake.drink`, `intake.drug`. Thought process: `thought-process`. Spend: `spend`, with `spendAmount` (integer cents), `spendOn`, and `spendSource`. Switches often `switch` / `switch-task` / `switch-objective`. Omitted on older rows and on ordinary painted blocks. |
 | `intakeClass` | `"food" \| "drink" \| "drug"?` | intake shelf | Set by classed intake and by `ate` / `drank` / `took`. Bare `intake:` leaves it unset. Food is a subset of intake. |
 | `switchFrom` / `switchTo` | string? | transition ends | What a switch left and where it went. Activity still paints the Switch pen; another view uses the destination text as that scope’s pen. `so:` / `switch goal:` uses the Objective pen. There is no Goal scope. |
 | `moodReading` | object? | mood report | Mood scope only. See §2.6. Different readings do not merge. A split copies the reading onto both halves. The derived sentence is **not** written into `notes`. |
@@ -162,6 +162,7 @@ These are still `TimeEntry` rows. The Tracking log classifies **Activity instant
 | Bare intake | Intake pen, or `eventKind: "intake"`, no class | `intake` | 0 |
 | Event | Text log pen and/or a phrase `eventKind`, not intake | slug of the phrase, or the stored kind | 0 |
 | Thought process | `eventKind === "thought-process"` | `thought-process` | 0 |
+| Spent | `eventKind === "spend"`, or a positive `spendAmount` | `spend` | 0. `spendAmount` is integer cents. `spendOn` is what (also `title`). `spendSource` is where the money came from. |
 | Switch | Switch pen, Objective pen, or any instant with `switchTo` | `switch`, `switch-task`, `switch-objective`, or stored kind | 0 |
 | Note | Text log via `note:` / `n` | slug of the title if grouped as an event | 0 |
 
@@ -912,7 +913,7 @@ Drill: a phase → the dates. A word → the stretches that share it, each still
 ### 7.7 Language
 
 - Day notes: volume by writing day vs by day key (the delay).
-- Thought-process list in time order, not a word cloud.
+- Thought-process list in time order. A cloud erases the strand, so it is not this picture. Sentiment and neighbors may sit beside the list later, labeled as readings — see [Language](06-language.md). Gratitude and other bags of lines are where a word cloud belongs.
 - Repeated `eventKind` phrases.
 - Find, using the same fields Tracking search already indexes, then a tiny calendar of hits.
 

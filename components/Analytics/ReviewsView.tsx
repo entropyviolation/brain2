@@ -15,6 +15,7 @@ import { inRange } from "./analytics-range"
 import { SliceMosaic } from "./studio-kit"
 import { PeriodArcReading } from "./PeriodArcReading"
 import { blockedReasonLabel, blockedReasonToken } from "@/lib/blocked-reason"
+import { collectMissReasonCorpus, MISS_SOURCE_LABEL } from "@/lib/miss-reason-corpus"
 
 const REASON_COLOR: Record<string, string> = {
   "no-energy": "#f59e0b",
@@ -167,8 +168,13 @@ function MorningBlock({
 
 export function ReviewsView() {
   const reviews = useReviewsStore((s) => s.reviews)
+  const operationReviews = useReviewsStore((s) => s.operationReviews)
   const tasks = useTaskStore((s) => s.tasks)
   const habits = useHabitsStore((s) => s.tasks)
+  const weeklyData = useHabitsStore((s) => s.weeklyData)
+  const weeklyHabitData = useHabitsStore((s) => s.weeklyHabitData)
+  const monthlyHabitData = useHabitsStore((s) => s.monthlyHabitData)
+  const quarterlyHabitData = useHabitsStore((s) => s.quarterlyHabitData)
   const range = useAnalyticsRange()
   const [openReviewId, setOpenReviewId] = useState<string | null>(null)
 
@@ -194,6 +200,32 @@ export function ReviewsView() {
         .slice()
         .sort((a, b) => b.periodKey.localeCompare(a.periodKey)),
     [reviewsInRange],
+  )
+
+  const corpus = useMemo(
+    () =>
+      collectMissReasonCorpus({
+        tasks,
+        habits,
+        weeklyData,
+        weeklyHabitData,
+        monthlyHabitData,
+        quarterlyHabitData,
+        reviewsInRange,
+        operationReviews,
+        keySet: range.keySet,
+      }),
+    [
+      tasks,
+      habits,
+      weeklyData,
+      weeklyHabitData,
+      monthlyHabitData,
+      quarterlyHabitData,
+      reviewsInRange,
+      operationReviews,
+      range.keySet,
+    ],
   )
 
   const reasons = useMemo(() => {
@@ -347,6 +379,24 @@ export function ReviewsView() {
                 </article>
               )
             })}
+        </>
+      )}
+      {corpus.notes.length > 0 && (
+        <>
+          <p className="an-canvas-title">Why it didn't get done</p>
+          <p className="an-n" data-testid="miss-reason-counts">
+            {corpus.sourceCounts.map((source) => `${source.label} ${source.count}`).join(" · ")}
+            {corpus.tokenCounts.length > 0
+              ? ` · ${corpus.tokenCounts.map((token) => `${token.label} ${token.count}`).join(" · ")}`
+              : ""}
+          </p>
+          <ul data-testid="miss-reason-corpus">
+            {corpus.notes.map((note) => (
+              <li key={note.id}>
+                {note.date} · {MISS_SOURCE_LABEL[note.source]} · {note.subject} · {note.text}
+              </li>
+            ))}
+          </ul>
         </>
       )}
     </div>

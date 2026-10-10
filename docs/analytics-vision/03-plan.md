@@ -171,7 +171,7 @@ Plan settings export walks `dayPlan-` / `weekPlan-` / `monthPlan-` only. It does
 - How far ahead the writing happened (`createdAt` versus the period’s start).
 - Whether the latest writing was a person at the desk or a text (`stampSuffix`).
 - How often a draft is sitting unsubmitted (present, and not already in the log).
-- Rough themes, as text. There is no tag, checklist, or structured intention inside the paragraph.
+- Rough themes, as text. There is no tag, checklist, or structured intention inside the paragraph. The intention to read these paragraphs the way gratitude is read — counts, a word cloud among other pictures, a labeled sentiment, embeddings, a dismissible theme — is [Language §3.4](06-language.md). That reading still does not say the prose was followed.
 
 **Questions it cannot answer**
 
@@ -763,7 +763,7 @@ One section, eight views. The subject is always Plan. Ranges default to the seas
 
 6. **Recurrence.** Count-type progress. Habit placement dots, labeled as placements. Frequency-type rules as sentences with an empty frame. Title patterns for events, labeled as patterns.
 
-7. **Writing.** Lead and volume for day, week, month, and season logs. Drafts. `from text` versus desk submits. Module lines as their own mark. No sentiment score unless it is clearly a guess about prose.
+7. **Writing.** Lead and volume for day, week, month, and season logs. Drafts. `from text` versus desk submits. Module lines as their own mark. A sentiment score belongs only as a labeled guess about the prose, never as adherence. The wider intention for that kind of reading — models, embeddings, and the rest, beside the counts — is [Language](06-language.md).
 
 8. **Forecast and data quality.** Next week’s already-placed bar, the soft habit expectation, and the list of ways Monday’s roll-up will change it. Beside it, the quality list: orphan placements, duplicate `sourceId`s, action/task clock divergence, events unscheduled into all-day, 09:00×30 defaults, paste-batch groups, season logs missing from the settings export, unknown waking windows.
 

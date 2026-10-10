@@ -54,7 +54,7 @@ Identity and scoring configuration. One row per habit, all time. Goal changes ar
 | `doneTaskUseText` | boolean? | Text habits: the Done line is the cell text. |
 | `showGoalBar` | boolean? | Draws a tube in the cell. Does not change math. |
 | `taggedTaskTag` | string? | Each Done task (and each tagged tracking block’s Done line) in the period counts as 1. Not the minute-tag link. |
-| `textTriggers` | `{ id, keyword, mode: "done" \| "quantity" \| "score", unitWords?, connector? }[]` | Whole-message phone lines. |
+| `textTriggers` | `{ id, keyword, mode: "done" \| "quantity" \| "score", unitWords?, connector? }[]` | Phrases for a BIM keyword source. The whole message must equal the phrase. |
 | `trackingLink` | see §1.6 | Tag minutes into a Goal or Yes/No cell. |
 | `coverageLink` | `{ threshold? = 75, enabled? } \| null` | Period paint %. `undefined` may still mean a name preset; `null` is off. |
 | `habitValueLink` | `{ habitId, enabled? } \| null` | Sum one daily habit’s amount into this weekly/monthly/season cell. |
@@ -157,16 +157,27 @@ Trust order, labels the app already uses:
 | `manual` | By hand | `handCompleted`, typed `manualValue` / `value`, non-empty text | The person’s opinion. A source with nothing to say is skipped, so an untouched cell falls through. |
 | `tags` | Tracking tags | Minutes on pens carrying any of `trackingLink.tagIds`, unioned across scopes so the same minute is not double-counted | `add` (default): manual + tracked. `max`: the larger. `replace`: tracked only. Hours are minutes/60, rounded to 2 decimals. Yes/No checks when tracked ≥ `threshold`; missing or ≤ 0 threshold means any positive time. |
 | `taggedTasks` | Tagged tasks | Done tasks whose tag matches `taggedTaskTag`, on days of the period that have already happened. A tracking block with the tag files one Done line, not a pile of minutes. | Count vs `goal`. |
-| `coverage` | Activity occupancy | Percent of the period painted in Tracking | Met at `threshold` (default 75). The sheet prints `min(actual, threshold)` so a complete day reads 75/75, not 100/75. **Stored percent and grades stay on the real percent, uncapped by the threshold.** On the current period only, pace = occupancy ÷ fraction of the period already elapsed. |
+| `coverage` | Activity occupancy | Percent of the period painted in Tracking | Met at `threshold` (default 75). The sheet prints the real occupancy over the target (`printedGoalAmounts`), so 90 against 70 reads 90/70. The old label cap (`min(actual, threshold)`, which printed 75/75) is abandoned because the person needs to see the overage. **Stored percent and grades stay on the real percent.** On the current period only, pace = occupancy ÷ fraction of the period already elapsed. |
 | `sleep` | Sleep clock | Bedtime is the evening into the next morning (`sleptMin`). Wake is that morning (`wokeMin`). | Met when the logged end is at or before `beforeMinutes`. |
 | `list` | Next actions | Done next actions on `listLink.listName` that day | Met at `count`. |
 | `dailyFloor` | Daily habits floor | Each daily habit’s row % over the week | Above `floorPercent` (default 0). Up to `allowAtZero` habits may sit at 0. A vacant percent counts as 0. No daily habits → not met. |
 | `habitValue` | Daily habit total | Sum of one daily habit’s `value` on days so far (today included; the whole period once it is over). A bare check with no number counts as 1. A logged 0 adds 0. | Sum vs this habit’s `goal`. A hand-owned cell keeps the typed total and still stores `habitSumValue`. |
 | `dailyCompletionAverage` | Daily completion average | Uncurved mean of each active daily habit’s row % (`calculateTaskPercentage`). A habit exempt every day of the span is left out. An active empty habit counts as 0. | The habit’s own `goal` is the line (goal 50 is met at 50). This is **not** the curved week grade and **not** Perfect output. A week uses all seven dates, so a future day counts as not met and the number matches the week-% column. A month or season uses only days that have happened. |
 | `listSent` | List sent | `sent / (unsent + sent) × 100` for the period. Sent means `sentAt` inside `[start, end)`. An item sent outside the range is in neither bucket. A send inside the range still counts after it leaves the list. | Reported = `min(100, raw / grace × 100)`. Grace defaults to 100. Grace 80 turns raw 80 into 100 and raw 40 into 50. |
-| `keywords` | BIM keywords | Whole message equals the keyword. `done` marks complete. `quantity` adds a number. `score` sets a number. | Stored as `keywordLogged` / `keywordValue`. |
+| `keywords` | BIM keywords | The whole message equals the phrase. Count those hits in the period. True if one arrives, true after N, or a logged phrase `read {n} pages of {bookname}` / `cleaned for {x} minutes` writes the amount and any name. A minutes or hours phrase also paints the prior tracking span. A hit with no timestamp is not copied onto every period. | `keywordHitCount`, `keywordLogged`, `keywordValue`, `keywordSlots`. The grid’s fraction reads `value`: the tracking link’s minutes, or the phrase sum when the habit has no tracking link. |
 
 TEXT and climb habits are not tag-link targets. Tracking sync will not open an empty cell for a day the tracker has nothing to say, because a stray 0 would become a scored cell.
+
+### List routing
+
+The routes that exist now:
+
+- **Habit source → list.** A Lists completion source stores `listSentLink` (list id, what is counted, what the target is: this period’s set, list length, or 1). A saved next-action link stores `listLink` (list name and count).
+- **List settings shows the reverse role.** `listHabitRoutes` reads those saved links. Each row is the habit title and the role (`sent items, target is list length`). A list with no such habit is one quiet line. The view is derived. The list does not store a copy.
+- **Stat pipelines.** A Habits stats pipeline reads another habit (week grade, a page total, and the other catalog outputs). It does not name a list, so it does not appear on the list.
+- **Period-scoped list goals.** A goal habit with a list source reads each period through `listPeriodMeasure`: sends inside the period over the list length. A finished period freezes that length at the size reconstructed from `createdAt` and `sentAt`. An open period follows the live list. List settings does not recompute it.
+
+Next expansion: more roles visible from either end — a stats pipeline that names this list, a list rule that increments a habit — still read from the saved source, still without a second stored copy.
 
 ### 1.7 Exemptions
 
@@ -761,7 +772,7 @@ Do not put physics controls in this area.
 
 **Retarget.** Current `goal` rewrites history. Say so on every goal chart. `completion.goal` is not the historical target for grades.
 
-**Trust versus the tube.** A cell can be met by trust and still display a number the grade caps differently (coverage prints a capped label; the grade uses the stored value). A cell can show 30/30 and be unmet if a higher-trust source disagrees. Streaks follow met. Ribbons follow the tube. The habit page should show both when they differ.
+**Trust versus the tube.** A cell can be met by trust and still display a number the grade caps differently (coverage prints the real amount over the target; the grade uses the stored value). A cell can show 30/30 and be unmet if a higher-trust source disagrees. Streaks follow met. Ribbons follow the tube. The habit page should show both when they differ.
 
 **In-progress periods.** Week grade excludes future days. Weekly row % includes them as empty in the full-7 denominator (unless exempt). `dailyCompletionAverage` on a week matches that full-7 figure. A month average uses only days so far. Comparing “this week’s average” to “this month’s average” without saying which days are in the denominator is a false precision.
 

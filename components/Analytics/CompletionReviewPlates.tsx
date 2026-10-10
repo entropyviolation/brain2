@@ -1,10 +1,11 @@
 /**
  * components/Analytics/CompletionReviewPlates.tsx — Completion-review readings
  *
- * Plates for the quick review: how sure the clock was, whether the work was
- * harder than expected, how it felt, which goals held the hard or joyful
- * work, and what the review itself earned. Unknown lengths are a count, not
- * a zero added into either minute total.
+ * Plates for the quick review and the later Reflect save: how sure the clock
+ * was, whether the work was harder than expected, how it felt (including
+ * satisfaction and distraction), the later `reflectNotes`, which goals held
+ * the hard or joyful work, and what the review itself earned. Unknown lengths
+ * are a count, not a zero added into either minute total.
  */
 "use client"
 
@@ -66,7 +67,9 @@ function FeelingsPlate({ summary }: { summary: CompletionReviewSummary }) {
   return (
     <section className="an-plate" data-testid="review-feelings">
       <p className="an-canvas-title">How it felt</p>
-      <p className="an-canvas-kicker">Enjoyment, resistance, energy, focus, meaning — and the two difficulties. Optional scores only.</p>
+      <p className="an-canvas-kicker">
+        Enjoyment, resistance, energy, focus, meaning, satisfaction, and distraction — plus the two difficulties. Optional 1–10 scores. A missing score is left out.
+      </p>
       {summary.scoreMeans.length === 0 ? (
         <p className="an-canvas-hint">No reflection scores in this window.</p>
       ) : (
@@ -243,6 +246,41 @@ export function GoalTexturePlate({ summary }: { summary: CompletionReviewSummary
   )
 }
 
+function NotesPlate({ summary }: { summary: CompletionReviewSummary }) {
+  const notes = summary.reflectNotes
+  return (
+    <section className="an-plate" data-testid="review-notes">
+      <p className="an-canvas-title">Later notes</p>
+      <p className="an-canvas-kicker">
+        Written in Reflect (`reflectNotes`). These are not the quick-review notes, and they do not change the review points.
+      </p>
+      {notes.length === 0 ? (
+        <p className="an-canvas-hint">No later notes in this window.</p>
+      ) : (
+        notes.map((note) => {
+          const when = note.completedAt instanceof Date ? note.completedAt : new Date(note.completedAt)
+          const date = Number.isNaN(when.getTime()) ? "" : when.toLocaleDateString()
+          return (
+            <article key={note.taskId} className="an-review-card">
+              <header>
+                <span className="truncate">{note.title}</span>
+                {date ? (
+                  <span className="an-n" style={{ marginLeft: "auto" }}>
+                    {date}
+                  </span>
+                ) : null}
+              </header>
+              <div className="an-review-body">
+                <p>{note.text}</p>
+              </div>
+            </article>
+          )
+        })
+      )}
+    </section>
+  )
+}
+
 function PointsPlate({ summary }: { summary: CompletionReviewSummary }) {
   return (
     <section className="an-plate" data-testid="review-points">
@@ -267,6 +305,7 @@ export function CompletionReviewPlates({ summary }: { summary: CompletionReviewS
       <ClockPlate summary={summary} />
       <DifficultyPlate summary={summary} />
       <FeelingsPlate summary={summary} />
+      <NotesPlate summary={summary} />
       <GoalTexturePlate summary={summary} />
     </>
   )

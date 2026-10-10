@@ -159,6 +159,7 @@ export function ReflectionView() {
               )
               .map((t) => {
                 const r = t.completionReview!
+                const note = r.reflectNotes?.trim()
                 return (
                   <li key={t.id}>
                     <button type="button" onClick={() => setReflectTask(t)}>
@@ -187,6 +188,7 @@ export function ReflectionView() {
                       </span>
                       <span className="an-n">{new Date(r.completedAt).toLocaleDateString()}</span>
                     </button>
+                    {note ? <p className="an-canvas-hint">{note}</p> : null}
                   </li>
                 )
               })}

@@ -60,6 +60,7 @@ export const ANALYTICS_TAB_GROUPS = [
       { id: "metrics", label: "Metrics" },
       { id: "correlation", label: "Correlation" },
       { id: "spectrum", label: "Spectrum" },
+      { id: "research-report", label: "Produce research report" },
     ],
   },
   {
@@ -127,7 +128,7 @@ export const ANALYTICS_TAB_HELP: Record<AnalyticsTab, string> = {
   circadian:
     "Hour × day occupancy. Empty cells are missing hours, not zero work. Instants have no duration and stay off the heat. The weekday cycle plot is Cleveland's mean occupancy by hour, one row per weekday.",
   places:
-    "Location pens as time-at-pen. No coordinates are stored, so this is not a map. Depth uses the same rungs as Tracking.",
+    "Location pens as time-at-pen. Repeated GPS pins (80 m) can be named here. Not a map. Depth uses the same rungs as Tracking.",
   "mood-field":
     "Any painted mood name, plus the stretches you opened: same word, the water, and marks (each with n; blanks left out). A color with no card stays out of the averages. Logged joy / suffering / alignment still sit beside that when n allows.",
   diversity:
@@ -166,6 +167,8 @@ export const ANALYTICS_TAB_HELP: Record<AnalyticsTab, string> = {
     "Pairwise Pearson matrix. Click a cell for the scatter and sentence. Not a chart builder.",
   spectrum:
     "Lag-1 / lag-7 autocorrelation of daily habit % and of sleep duration, a naive DFT periodogram of habit %, and coefficient of variation of sleep. Classical only — not a forecast.",
+  "research-report":
+    "A rundown of this window, chosen from the live vault. A section is included only when a shape clears its floor: a habit day at least 25 points from the window median (n ≥ 5), a current streak of 3 or more fully met habit days, tracking coverage at least 25 points from the median of painted days (n ≥ 5), a sleep night at least 90 minutes from the median (n ≥ 5), one wellbeing series that rose or fell once n clears 7, a week grade at least 8 points from its raw grade, planned minutes and tracked minutes both present, a text-pipeline stamp beside the other rows, the longest gratitude list, or a why / blocked-reason note (a repeat, or a plain count). A thin sample keeps the studio floor sentence and is not captioned as a trend. Counts only — no sentiment score.",
   "item-types":
     "Every item type by count. Settings still edits schemas. Open in Lists jumps to those items.",
   "lists-areas":

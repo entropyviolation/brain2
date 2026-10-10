@@ -9,6 +9,7 @@
 
 import { useMemo } from "react"
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts"
+import { isLoggedSpanStamp } from "@/lib/habit-keyword-source"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import {
   entryMinutes,
@@ -25,6 +26,7 @@ import { CanvasTitle, StudioReadout, STUDIO_AXIS, STUDIO_GRID, STUDIO_TOOLTIP } 
 const PIPELINE_LABEL = "from text pipeline"
 
 function isTextPipeline(entry: TimeEntry): boolean {
+  if (isLoggedSpanStamp(entry.generatedBy?.id)) return false
   return entry.generatedBy?.kind === "text"
 }
 

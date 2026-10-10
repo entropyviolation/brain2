@@ -25,7 +25,7 @@ cycle marks, reviews, operations, goals, and the item library. Charts use **rech
 (themed, including **pies**) plus shared studio primitives (treemap, density,
 mosaic, hour×day, ribbon, **phosphor traces**). Non-trivial math lives in pure
 `lib/*` helpers plus `cross-section.ts`, `hour-day.ts`, `observatory-findings.ts`,
-and `signal-stats.ts` here. No LLM. No new stores.
+and `signal-stats.ts` here. No LLM in this studio today. No new stores. The intention to read task why, why an action was not taken, gratitude, day / week / month plan text, and the other stored prose with sentiment, machine learning, language models, and embeddings — beside the classical counts, and with a word cloud among the pictures — is [`docs/analytics-vision/06-language.md`](../../docs/analytics-vision/06-language.md). That reading is unbuilt. It does not add a store, and it does not write a model sentence back as if the person had typed it. The build that adds it, and that regroups this studio without dropping a view id or its math, is [`docs/analytics-plan/`](../../docs/analytics-plan/README.md). Those briefs are not a change to this tab.
 
 **Product law (this tab only):** keep the `.fm98` **title bar** and **status bar**
 so Analytics still lives in Brain2 next to Lists. Range + left index chrome use the
@@ -76,20 +76,21 @@ meaningful on its own.
 | `analytics-range.ts` | Presets, custom inclusive from–to, named week/month/season, prev/next (`stepAnalyticsWindow` / `previousAnalyticsWindow` / `nextAnalyticsWindow`), labels, `SAMPLE_FLOORS`, thin-window copy, date-key helpers. |
 | `analytics-range-store.ts` | Remembered rolling or custom window (`cogs-analytics-range` / `brain2-analytics-range`); `stepPeriod` for Prev/Next. |
 | `chart-frame.tsx` | Empty / thin furniture + **Open in Lists** (`an-open-lists`). |
-| `CompletionReviewPlates.tsx` | Plates shared by Reflection and Goals, reading the completion popup (not period rituals): exact / est. / unknown time, and the same three marks for starts (an unknown start is a count, not a time), expected vs actual difficulty, optional feelings, where hard or joyful work went, and quick-review points. |
+| `CompletionReviewPlates.tsx` | Plates shared by Reflection and Goals, reading the completion popup and the later Reflect save (not period rituals): exact / est. / unknown time, and the same three marks for starts (an unknown start is a count, not a time), expected vs actual difficulty, optional feelings (satisfaction and distraction included), later `reflectNotes`, where hard or joyful work went, and quick-review points. |
 | `open-in-lists.ts` | Chart → Lists jump. |
 | `analytics-chrome.css` | Milled range/index chrome + light instrument interior (`.an-plate`, white `.an-plot-well`, pie, treemap, density, mosaic, hour×day, phosphor `.an-scope`, horizon/violin/alluvial). Plate hover dims rows/mosaic at 0.35; pie dims per `.recharts-sector` at 0.72 (not the pie `<g>` wrapper). One body scroll on `.an-content`. Title/status stay Lists. Drill / popup titles (`.an-drill`, `.an-popup`) are crisp Karla ink-green — opted out of the global CRT glow caption in `app/win95.css`. |
 | `studio-kit.tsx` | FindingBlock, StudioReadout, StudioHelp, StudioCheck, CanvasTitle, SlicePie (no Recharts Legend; white 2px slice gaps; hole label; pen fills stay opaque — hover/active dims other sectors to 0.72 and strokes the active path 2px ink; never opacity on the whole pie SVG), SliceTreemap, SliceMosaic (full chroma; luminance text), SplitBar (one segment row: name · duration · percent; clickable; narrow segments keep full text in title/aria), HourDayHeatmap (opaque empty cells; first/month/last day labels), DensityCalendar, StudioBars, PhosphorTrace. |
 | `studio-plots.tsx` / `studio-plot-stats.ts` | Horizon, ridgeline, violin+histogram, alluvial, beeswarm, slopegraph, UpSet, hour×pen small multiples (shared white frame), Cleveland cycle, StudioSpark (phosphor on `.an-scope`). |
 | `hour-day.ts` | Hour × day occupancy. Instants off the heat; missing hours stay 0. Overlapping blocks on one minute count once, so an hour stays ≤ 60. Hour×pen small multiples + weekday cycle. |
 | `observatory-findings.ts` | Pearson-r findings for Observatory. Named apart from `Observatory.tsx` (macOS case-fold). |
+| `research-report.ts` / `ResearchReportView.tsx` | Meta view `research-report`: a plain-language rundown of the shared window. Sections appear only when a live series clears a floor (habit-day gap, streak, grade gap, tracking coverage, sleep, one wellbeing move, plan vs tracked minutes, text-pipeline stamps, gratitude, why / blocked-reason counts). Copy rundown is plain text. No model. |
 | `signal-stats.ts` | Shannon entropy of pens/day, Gini, list HHI, Markov transitions, weekday/weekend cut, open-item ages. |
 | `HabitsView.tsx` | Density calendar, sorted bars, week/month grade, Good days, climb, tracking-link split, habit-% lag trace, horizon of daily %, weekday/weekend slopegraph. Day % and rates drop exempt periods from the denominator. |
 | `PointsView.tsx` | Daily stacked source split (habit / bonus / task) + cumulative + top earners. |
 | `StreaksWidget.tsx` | Current + longest (not clipped). Optional week-habit streak. Not merged with Home. |
-| `ReflectionView.tsx` | Legacy score trajectory + queue, plus completion-review plates (`CompletionReviewPlates.tsx`): points, clock certainty, expected vs actual difficulty, feelings, goal/objective texture. |
+| `ReflectionView.tsx` | Legacy score trajectory + queue, plus completion-review plates (`CompletionReviewPlates.tsx`): points, clock certainty, expected vs actual difficulty, feelings (satisfaction and distraction included), later Reflect notes, goal/objective texture. Prompt history shows each task's `reflectNotes`. |
 | `TodoPulseView.tsx` | Morning to-do walkthrough: labeled tier / duration / points / day importance / resistance series / day excitement; BIM mornings tagged. |
-| `ReviewsView.tsx` | Rituals reader: morning (sun), start slices, end/night body, blocked-reason mosaic (Other shows the typed words). Quarter cards show the season label. |
+| `ReviewsView.tsx` | Rituals reader: morning (sun), start slices, end/night body, blocked-reason mosaic (Other shows the typed words). Quarter cards show the season label. Below that, a dated list of why-it-didn't notes (push, missed task, habit, missed op, and the same ritual tokens) with counts by preset and by source. The mosaic stays the ritual chart. |
 | `PeriodArcReading.tsx` | Week, month, season, and year reflections in the analytics range, grouped by the ritual headings. Inspiration photos use the attachment store. |
 | `SeasonsView.tsx` | Calendar-quarter comparison (this year + last year): completions, points, quarter rituals, climate rollup, season goals. |
 | `OvercommitmentView.tsx` | Sentence + n; weeks/months pushed in the finding when present. Does not reschedule. |
@@ -105,18 +106,19 @@ meaningful on its own.
 | `SleepAnalytics.tsx` | Nightly strip on 6pm→noon; `~` estimated, **est.** read off the grid; duration CV + lag-1; weekday ridgelines; **against the sun**; **all-nighters** (count, frequency, time, desktop vs text-pipeline/BIM source). |
 | `ScreenTimeView.tsx` | ActivityWatch-painted Screen Time: active vs untracked, top apps / categories, last-sync, alignment vs Activity occupancy. Empty sentence notes AW only records from when watchers run. `data-testid="screentime-view"`. |
 | `CircadianView.tsx` | Hour × day atlas (Activity default, Mood) + Cleveland weekday cycle plot. |
-| `PlacesView.tsx` | Location time-at-pen mosaic. Not a geo map. |
+| `PlacesView.tsx` | Location time-at-pen mosaic, plus repeated GPS pins (80 m) that can be named. Naming writes the Location pen. Not a geo map. |
 | `MoodFieldView.tsx` | Any painted mood name (mosaic), then **Same word**, **The water**, and **Marks**. **How to read this** sits under the title. A color with no card stays out of the averages. Logged wellbeing metrics stay a separate plate. |
 | `DiversityView.tsx` | Shannon entropy of pens/day + Gini of allocation + weekday vs weekend. |
 | `TransitionsView.tsx` | Markov matrix of Tracking pen changes + alluvial of switch counts. |
 | `ContextSwitchHeatmap.tsx` | Density calendar + hour-of-day; per-scope; Open in Lists for items with time logs. |
-| `TextPipelineView.tsx` | **Text events** (text-pipeline instants) and **Text spans** (currently/stopped/switched intervals); always labeled from text pipeline. |
+| `TextPipelineView.tsx` | **Text events** (text-pipeline instants) and **Text spans** (currently/stopped/switched intervals); always labeled from text pipeline. A habit duration span (`generatedBy.id` starting `kw:`) is an ordinary tracking block, not a text-pipeline row. |
 | `LogEventsView.tsx` | **Log** (Time group): day bars, kind counts, clock scatter of exact and estimated times, unknown clocks as a count, phase strip from `phaseForDate` (stored marks; the Tracking log cycle well stays hidden until Enable cycle tracking is on). Filter matches the kind string (`intake.food`, `intake.drink`, `intake.drug`, `intake`, or a slug such as left room). |
 | `log-event-stats.ts` | Pure counts by day and by kind, clock scatter (unknown excluded), phase strip. Tested in `log-event-stats.test.ts`. |
 | `CyclePhaseView.tsx` | **Cycle phase** (Time group): phase mix of the shared window from `assessCycleDay` (batched as `assessCycleRange`). Marked days and estimated days are counted apart. Means and medians are on marked days, with n. An estimated split stays labeled, keeps n, and is not a finding. `summarizeCycleEstimates().basisNote` is a quiet line. Unknown is its own bucket. Spotting is not a phase. Empty until a bleed or ovulation mark exists. Not a diagnosis. Accuracy → **Cycle** stays stall and pushes. The shell hides this canvas while Enable cycle tracking is on and `cycleDetailsOpen` is false. |
 | `cycle-phase-concealed.tsx` | Concealed stand-in for Time → Cycle phase. One line and **Show cycle**. Does not import `CyclePhaseView`. The gate is off when cycle tracking itself is off. |
 | `cycle-phase-stats.ts` | Pure phase counts split by marked and estimated, daily means, zero-fill, and phase comparisons on marked days. Tested in `cycle-phase-stats.test.ts`. |
-| `OperationsAnalytics.tsx` | Stage/category mosaic + work/neglect heat. Does not restyle the Operations module. |
+| `operation-debrief.ts` | Pure after-action summary for the shared window: mean execution, planning, and morale (integer 1–10 only), sum and mean of stored `hoursLogged`, and the written summary / what worked / what failed / lessons. Tested in `operation-debrief.test.tsx`. |
+| `OperationsAnalytics.tsx` | Stage/category mosaic + work/neglect heat, plus an after-action debrief for reports in the shared window (mean execution, planning, morale; sum and mean of stored `hoursLogged`; summary, what worked, what failed, lessons). Does not restyle the Operations module. |
 | `PlanVsReality.tsx` | Window ribbon + paired bars; calendar events as planned minutes; capacity vs waking window (`~` when inferred). |
 | `CalibrationView.tsx` | Sentence + n + caveat; scatter; type/list breakdown when n clears the floor; PERT bands when present. |
 | `CycleView.tsx` | `daysPushed` distribution, open important items, estimate confirmation, empirical survival of open stock, age beeswarm. |
@@ -152,7 +154,7 @@ the selected group sit beneath (`role="tab"`). Default view remains **Habits**.
 | | **Streaks** | habits, reviews | Current + longest; not clipped. Not merged with Home. |
 | | **Points** | `points-store` | Stacked source split + cumulative; top earners jump to Lists. |
 | | **Velocity** | tasks, points | Completions, median cycle time, reward vs minutes. |
-| | **Reflection** | completion reviews | Legacy 1–10 trajectory (missing scores skipped) + queue. Plates for review points (3 + 0.1 per word), exact vs estimated vs unknown time, and the same three counts for starts (unknown is not a time), expected vs actual difficulty, feelings, and which goals or objectives held the hard or joyful work. |
+| | **Reflection** | completion reviews | Legacy 1–10 trajectory (missing scores skipped) + queue. Plates for review points (3 + 0.1 per word), exact vs estimated vs unknown time, and the same three counts for starts (unknown is not a time), expected vs actual difficulty, feelings (satisfaction and distraction included), later `reflectNotes`, and which goals or objectives held the hard or joyful work. Prompt history shows each note. |
 | | **Reviews** | `reviews-store` | Blocked-reason mosaic + expandable text. Quarter cards use the season label. |
 | | **Seasons** | tasks, points, reviews, goals | This year and last year by calendar quarter (Spring / Summer / Fall / Winter), plus a climate rollup and season goals. Not clipped to the shared window. |
 | | **Overcommit** | `daysPushed` + `timeLogs` | Sentence + n; week/month pushes noted. Not a nanny. |
@@ -166,10 +168,10 @@ the selected group sit beneath (`role="tab"`). Default view remains **Habits**.
 | | **Transitions** | tracking | Markov P(to \| from) among pen switches + alluvial of counts. |
 | | **Context Switch** | tracking | Switch density + hour-of-day; Open in Lists for time-logged items. |
 | | **Text events** | tracking (`generatedBy.text` instants) | Discrete phone events + switch markers; counts by day; always from text pipeline. |
-| | **Text spans** | tracking (`generatedBy.text` intervals) | currently / stopped / switched durations + switch count; always from text pipeline. |
+| | **Text spans** | tracking (`generatedBy.text` intervals) | currently / stopped / switched durations + switch count; always from text pipeline. Habit duration spans (`kw:`) are not included. |
 | | **Log** | Tracking log instants + cycle marks | Counts by day and by kind (`intake.food`, `intake.drink`, `intake.drug`, bare `intake`, or a slug such as left room). Exact and estimated clocks scatter; unknown clocks are a count, not a plotted minute. Phase strip uses `phaseForDate` over the window — labeled from bleed days and ovulation marks, not a medical prediction. Spotting does not change the phase. The strip reads stored marks; the Tracking log cycle well is the one that stays hidden until Enable cycle tracking is on. The kind filter matches that kind string. |
 | | **Cycle phase** | cycle marks + dated series | Days in the shared window by the phase `assessCycleDay` shows. A bleed or ovulation mark stays marked. A day with no ovulation in that cycle may be estimated, and that count sits beside the marked count. Means and medians use marked days, with n, for sleep, the five wellbeing metrics, mood marks that were set (energy and the other 1–10 ranks), food / drink / drug / unclassed intake logs, Screen Time and iPhone Screen Time minutes, Activity minutes, tasks completed, habit % on days with a habit log, points, and regret. An estimated split, when the window has one, is labeled estimated and keeps n; a thin estimated sample is not a finding. `basisNote` states what the guess rests on and that it is not a diagnosis. A series with nothing in the window is omitted. Unknown days stay. A silent log day counts as 0 logs; a missing sleep night or metric reading stays out. Spotting does not set a phase. Marks before the window still label days inside it. Accuracy → **Cycle** stays stall and pushes. While Enable cycle tracking is on and `cycleDetailsOpen` is false, this view is a concealed line and **Show cycle**. |
-| | **Operations** | operation items | Stage/category mosaic + work vs neglect. |
+| | **Operations** | operation items + operation reviews | Stage/category mosaic + work vs neglect, plus an after-action debrief for reports in the shared window: mean execution, planning, and morale; sum and mean of stored `hoursLogged`; summary, what worked, what failed, and lessons. |
 | **Accuracy** | **Plan vs Reality** | plan, events, capacity, sleep | Ribbon + events as planned minutes + waking capacity. Grain includes Season (`YYYY-Qn`). |
 | | **Calibration** | tasks | Sentence + n; type/list when floor clears; PERT when present. |
 | | **Cycle** | pushes, estimates | Stall distribution + confirmation rate + survival + age beeswarm of open important items. |
@@ -180,6 +182,7 @@ the selected group sit beneath (`role="tab"`). Default view remains **Habits**.
 | | **Metrics** | `metrics-store` | All five small-multiples + **Log {name}**. |
 | | **Correlation** | metrics + aligned series | Pairwise matrix; click → scatter. Not a chart builder. |
 | | **Spectrum** | habits + sleep | Autocorr, naive DFT periodogram, sleep CV. |
+| | **Produce research report** | habits, tracking, sleep, metrics, plan, reviews | Rundown of this window. A plate appears only when the live rows show a shape (habit day vs median, streak, raw vs week grade, tracking coverage, sleep, one wellbeing move, planned vs tracked minutes, a text-pipeline stamp, gratitude, why / blocked-reason counts). Empty series stay in “Left out because”. Copy rundown is plain text. |
 | **Library** | **Item Types** | `item-type-store` | Browse / sort / count / drill. |
 | | **Lists & areas** | lists | **Size by items** (area ∝ n) or completion rate. HHI of item counts. |
 | | **Attributes** | type/list schemas | Fixed histograms. |
