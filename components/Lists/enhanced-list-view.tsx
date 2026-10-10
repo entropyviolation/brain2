@@ -48,6 +48,9 @@ import {
   isFolderAllItemsCategoryId,
   GLOBAL_ALL_ITEMS_KEY,
 } from "@/lib/folder-all-items"
+import { isRemindersList } from "@/lib/reminders"
+import { isPeopleIKnowList } from "@/lib/people-i-know"
+import { isInstagramPeopleList } from "@/lib/instagram-lists"
 import { buildGridEntries, ROOT_ALL_FOLDER_ID } from "@/lib/lists-grid-entries"
 import { destinationFoldersForSelection, originFolderIdToUnlink, otherFolderIdsHoldingList, wouldCreateFolderCycle, type ListPlacementMode } from "@/lib/folder-selection"
 import {
@@ -1253,6 +1256,8 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
       return
     }
     selectedCategories.forEach((id) => {
+      const live = useTaskStore.getState().lists.find((list) => list.id === id)
+      if (live && (isRemindersList(live) || isPeopleIKnowList(live) || isInstagramPeopleList(live))) return
       folders.forEach((f) => {
         if (f.listIds.includes(id)) removeListFromFolder(f.id, id)
       })
@@ -1781,7 +1786,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
 
       <NewListDialog open={newCategoryOpen} currentFolder={currentFolder} isHome={isHome} selectedCount={selectedTaskIds.length} placementMode={effectiveItemPlacement} canMove={itemCanMove} onPlacementModeChange={setItemPlacementMode} initialName={newListSeed} onOpenChange={setNewCategoryOpen} onCreate={handleCreateCategory} onBulkCreate={handleBulkCreateLists} />
       {csvImport && <CsvImportDialog csvImport={csvImport} categories={categories} onClose={() => setCsvImport(null)} onImport={performCsvImport} onUpdate={setCsvImport} />}
-      <EditListDialog editingCategory={editingCategory} onEditingCategoryChange={setEditingCategory} folders={folders} homePinned={homePinned} listDisplay={listDisplay} setListDisplay={setListDisplay} toggleHomePin={toggleHomePin} onOpenIconPicker={() => editingCategory && setIconPickerFor({ kind: "category", id: editingCategory.id })} onSave={handleEditCategory} onDelete={() => { if (!editingCategory || isFolderAllItemsCategoryId(editingCategory.id)) return; if (confirm(`Delete list "${editingCategory.name}"?`)) { deleteList(editingCategory.id); if (openTarget?.type === "category" && openTarget.id === editingCategory.id) closeTarget(); setEditingCategory(null) } }} onDuplicate={() => editingCategory && openDuplicateList(editingCategory)} />
+      <EditListDialog editingCategory={editingCategory} onEditingCategoryChange={setEditingCategory} folders={folders} homePinned={homePinned} listDisplay={listDisplay} setListDisplay={setListDisplay} toggleHomePin={toggleHomePin} onOpenIconPicker={() => editingCategory && setIconPickerFor({ kind: "category", id: editingCategory.id })} onSave={handleEditCategory} onDelete={() => { if (!editingCategory || isFolderAllItemsCategoryId(editingCategory.id) || isRemindersList(editingCategory) || isPeopleIKnowList(editingCategory) || isInstagramPeopleList(editingCategory)) return; if (confirm(`Delete list "${editingCategory.name}"?`)) { deleteList(editingCategory.id); if (openTarget?.type === "category" && openTarget.id === editingCategory.id) closeTarget(); setEditingCategory(null) } }} onDuplicate={() => editingCategory && openDuplicateList(editingCategory)} />
       <EditFolderDialog editingFolder={editingFolder} onEditingFolderChange={setEditingFolder} homePinned={homePinned} toggleHomePin={toggleHomePin} onOpenIconPicker={() => editingFolder && setIconPickerFor({ kind: "folder", id: editingFolder.id })} onSave={(folder) => { updateFolder(folder); setEditingFolder(null) }} onDelete={() => { if (editingFolder && confirm("Delete this folder? The lists inside it will not be deleted.")) { deleteFolder(editingFolder.id); if (location === editingFolder.id) handleNavTo("all"); setEditingFolder(null) } }} onDuplicate={() => editingFolder && openDuplicateFolder(editingFolder)} />
       <NewFolderDialog open={showNewFolderDialog} selectedCount={selectedCategories.length + selectedFolderIds.length} placementMode={effectivePlacement} originIsAll={isAll} onPlacementModeChange={setPlacementMode} onOpenChange={setShowNewFolderDialog} onCreate={handleCreateFolder} onBulkCreate={handleBulkCreateFolders} />
       <DuplicateSelectionDialog

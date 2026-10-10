@@ -43,6 +43,7 @@ const TASK_FIELDS: Record<keyof Task, true> = {
   description: true,
   stage: true,
   monkeyBrain: true,
+  captureOrigin: true,
   completed: true,
   completedDate: true,
   startedAt: true,
@@ -50,6 +51,7 @@ const TASK_FIELDS: Record<keyof Task, true> = {
   timeRough: true,
   status: true,
   missedAt: true,
+  missReason: true,
   lists: true,
   listMembershipExclusions: true,
   estimatedDuration: true,
@@ -71,6 +73,7 @@ const TASK_FIELDS: Record<keyof Task, true> = {
   consequences: true,
   scheduledDate: true,
   scheduledTime: true,
+  reminder: true,
   scheduledWeek: true,
   scheduledMonth: true,
   scheduledYear: true,
@@ -102,6 +105,9 @@ const TASK_FIELDS: Record<keyof Task, true> = {
   timeLogs: true,
   contributesToObjectiveIds: true,
   contributesToGoalIds: true,
+  sentAtByList: true,
+  personPipelines: true,
+  personProfile: true,
 }
 
 const ORDERS = new Set<ItemActivityOrder>(["observed", "recorded", "derived", "inferred"])

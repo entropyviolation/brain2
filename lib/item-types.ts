@@ -28,6 +28,7 @@ import { withNoteType } from "@/lib/note-types"
 import { withBookType } from "@/lib/book-types"
 import { withFlightType } from "@/lib/flight-types"
 import { withCatalogTypes } from "@/lib/catalog-types"
+import { withPersonType } from "@/lib/person-types"
 
 export const BUILTIN_TASK_TYPE_ID = "task"
 export const BUILTIN_ITEM_TYPE_ID = "item"
@@ -64,10 +65,12 @@ export interface AttributeSource {
 
 /** The built-in types shipped with the app. */
 export function getBuiltinItemTypes(): ItemTypeDefinition[] {
-  // Item + Task ship first; Operation, Note, Book, Flight, and catalog starters
-  // merge in via idempotent helpers so each module owns its definition.
-  return withCatalogTypes(
-    withFlightType(withBookType(withNoteType(withOperationType(getBaseBuiltinItemTypes())))),
+  // Item + Task ship first; Operation, Note, Book, Person, Flight, and catalog
+  // starters merge in via idempotent helpers so each module owns its definition.
+  return withPersonType(
+    withCatalogTypes(
+      withFlightType(withBookType(withNoteType(withOperationType(getBaseBuiltinItemTypes())))),
+    ),
   )
 }
 

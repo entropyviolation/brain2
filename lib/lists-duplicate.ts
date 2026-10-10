@@ -42,8 +42,22 @@ export function isAutoCreatedFolder(folder: Pick<Folder, "id" | "createdByModule
   )
 }
 
-export function isAutoCreatedList(list: Pick<List, "id" | "createdByModuleId">): boolean {
-  return Boolean(list.createdByModuleId) || isFolderAllItemsCategoryId(list.id)
+export function isAutoCreatedList(
+  list: Pick<
+    List,
+    "id" | "createdByModuleId" | "peopleList" | "instagramFollowingList" | "instagramFollowersList"
+  >,
+): boolean {
+  return (
+    Boolean(list.createdByModuleId) ||
+    isFolderAllItemsCategoryId(list.id) ||
+    list.peopleList === true ||
+    list.id === "people-i-know" ||
+    list.instagramFollowingList === true ||
+    list.instagramFollowersList === true ||
+    list.id === "people-i-follow-on-instagram" ||
+    list.id === "people-who-follow-me-on-instagram"
+  )
 }
 
 function newId(prefix: string): string {
@@ -80,6 +94,10 @@ export function listSettingsClone(
     name: _name,
     createdAt: _createdAt,
     createdByModuleId: _auto,
+    peopleList: _peopleList,
+    instagramFollowingList: _instagramFollowingList,
+    instagramFollowersList: _instagramFollowersList,
+    giftIdeasPersonId: _giftIdeasPersonId,
     linkedTargetListIds: _links,
     parentListId: _parent,
     order: _order,

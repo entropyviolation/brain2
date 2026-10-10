@@ -6,6 +6,11 @@ import type { ListDisplay } from "@/lib/lists-ui-store"
 import { listIsNextActions } from "@/lib/item-utils"
 import { removeTaskFromList } from "@/lib/item-selection"
 import { isFolderAllItemsCategoryId, GLOBAL_ALL_ITEMS_LIST_ID } from "@/lib/folder-all-items"
+import { isRemindersList } from "@/lib/reminders"
+import { isPeopleIKnowList } from "@/lib/people-i-know"
+import { isInstagramPeopleList } from "@/lib/instagram-lists"
+import { PersonPipelinesEditor } from "@/components/People/person-pipelines"
+import { InstagramListsSettings } from "@/components/Lists/dialogs/InstagramListsSettings"
 import { isListHiddenFromGlobalAll } from "@/lib/module-lists"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { useTaskStore } from "@/lib/task-store"
@@ -23,6 +28,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Trash, CalendarClock, Settings, Star, Shapes, Pencil, Eye, Copy } from "lucide-react"
 import { ConnectedListsEditor } from "@/components/Lists/dialogs/ConnectedListsEditor"
+import { ListHabitRoutes } from "@/components/Lists/dialogs/ListHabitRoutes"
 import { InFoldersEditor } from "@/components/Lists/dialogs/InFoldersEditor"
 import { ListChildrenEditor } from "@/components/Lists/dialogs/ListChildrenEditor"
 import { AutoMark } from "@/components/Lists/dialogs/FolderRelationsEditor"
@@ -126,6 +132,9 @@ export function EditListDialog({
   if (!editingCategory) return null
 
   const isFolderAll = isFolderAllItemsCategoryId(editingCategory.id)
+  const isReminders = isRemindersList(editingCategory)
+  const isPeople = isPeopleIKnowList(editingCategory)
+  const isInstagram = isInstagramPeopleList(editingCategory)
   const enabledDisplays = sanitizeEnabledDisplays(editingCategory.enabledDisplays) ?? ALL_DISPLAYS
 
   const toggleDisplay = (d: ListDisplayMode) => {
@@ -206,6 +215,9 @@ export function EditListDialog({
           </div>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+          <ListHabitRoutes listId={editingCategory.id} listName={editingCategory.name} />
+          {isPeople ? <PersonPipelinesEditor mode="list" /> : null}
+          {isInstagram ? <InstagramListsSettings /> : null}
           {!isFolderAll && (
           <>
           <div className="flex items-center gap-3">
@@ -571,10 +583,12 @@ export function EditListDialog({
               <Button type="button" variant="outline" onClick={() => setClearConfirmOpen(true)}>
                 Clear list
               </Button>
-              <Button type="button" variant="destructive" onClick={onDelete}>
-                <Trash className="h-4 w-4 mr-2" />
-                Delete
-              </Button>
+              {isReminders || isPeople || isInstagram ? null : (
+                <Button type="button" variant="destructive" onClick={onDelete}>
+                  <Trash className="h-4 w-4 mr-2" />
+                  Delete
+                </Button>
+              )}
             </div>
           </div>
           </>
@@ -582,7 +596,7 @@ export function EditListDialog({
         </div>
         <div className="flex justify-between gap-2 pt-3 border-t shrink-0 flex-wrap">
           <div>
-            {onDuplicate && !isFolderAll && (
+            {onDuplicate && !isFolderAll && !isReminders && (
               <Button type="button" variant="outline" onClick={onDuplicate}>
                 <Copy className="h-4 w-4 mr-2" />
                 Duplicate list

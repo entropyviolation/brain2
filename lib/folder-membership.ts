@@ -104,6 +104,80 @@ export function foldersContainingEntry(
   return []
 }
 
+const FOLDER_PATH_SEP = " \\ "
+
+/**
+ * Shortest folder path that does not collide with another folder.
+ * A unique name stays the name. A repeated name grows just enough ancestors
+ * (`Life \ Writing`) using the Lists breadcrumb separator.
+ * Returns "" when `folderId` is unknown.
+ */
+export function shortestFolderPath(folders: Folder[], folderId: string): string {
+  const self = folders.find((folder) => folder.id === folderId)
+  if (!self) return ""
+  const chain = (id: string): string[] => {
+    const folder = folders.find((row) => row.id === id)
+    if (!folder) return []
+    const ancestors = getFolderAncestors(folders, id)
+    return [...ancestors.reverse().map((ancestor) => ancestor.name), folder.name]
+  }
+  const mine = chain(folderId)
+  const others = folders.filter((folder) => folder.id !== folderId).map((folder) => chain(folder.id))
+  for (let length = 1; length <= mine.length; length++) {
+    const suffix = mine.slice(-length)
+    const key = suffix.join("\0").toLocaleLowerCase()
+    const clash = others.some((path) => path.slice(-length).join("\0").toLocaleLowerCase() === key)
+    if (!clash) return suffix.join(FOLDER_PATH_SEP)
+  }
+  return mine.join(FOLDER_PATH_SEP)
+}
+
+export interface AssignedListFolderGroup {
+  /** Sorted direct folder ids, or "" when none of these lists are filed. */
+  key: string
+  /** Plate text. Null when the lists sit in no folder — omit the label. */
+  label: string | null
+  listIds: string[]
+}
+
+/**
+ * Group assigned list ids by the exact set of folders they are filed in.
+ * Lists that share a folder set share one plate, so the folder name is not
+ * repeated on every chip. A list filed in several folders is one chip; the
+ * plate joins those paths with " · ". Unfiled lists are one group with no label.
+ */
+export function assignedListFolderGroups(
+  listIds: readonly string[],
+  folders: Folder[],
+): AssignedListFolderGroup[] {
+  const buckets = new Map<string, string[]>()
+  for (const id of listIds) {
+    if (!id || isFolderAllItemsCategoryId(id)) continue
+    const containing = foldersContainingList(folders, id)
+    const key = containing.map((folder) => folder.id).join("\0")
+    const bucket = buckets.get(key)
+    if (bucket) {
+      if (!bucket.includes(id)) bucket.push(id)
+    } else {
+      buckets.set(key, [id])
+    }
+  }
+  const groups: AssignedListFolderGroup[] = []
+  for (const [key, ids] of buckets) {
+    if (!key) continue
+    const label = key
+      .split("\0")
+      .map((folderId) => shortestFolderPath(folders, folderId))
+      .filter(Boolean)
+      .join(" · ")
+    groups.push({ key, label: label || null, listIds: ids })
+  }
+  groups.sort((a, b) => (a.label || "").localeCompare(b.label || "", undefined, { sensitivity: "base" }))
+  const loose = buckets.get("")
+  if (loose) groups.push({ key: "", label: null, listIds: loose })
+  return groups
+}
+
 export function formatWithinValue(containing: Folder[], showNames: boolean): string {
   if (containing.length === 0) return showNames ? "—" : "0"
   if (!showNames) return String(containing.length)

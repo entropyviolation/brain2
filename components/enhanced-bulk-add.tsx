@@ -30,12 +30,13 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { useTaskStore } from "@/lib/task-store"
 import { parsePathHeader, parseSmartCapture } from "@/lib/smart-parse"
+import { lineCaptureOrigin } from "@/lib/capture-origin"
 import { buildCapturedTask, ensureCaptureTarget } from "@/lib/capture-target"
 import { CaptureShorthandHelp, SendToInboxField } from "@/components/capture-shorthand"
 import { stampMustBeDoneBefore } from "@/lib/ingest/apply-bulk"
 import { parseBulkBuckets } from "@/lib/ingest/parse-bulk"
 import { runAsAction } from "@/lib/action-history"
-import type { Task } from "@/lib/types"
+import type { CaptureOriginKind, Task } from "@/lib/types"
 
 export interface EnhancedBulkAddProps {
   /** Prefill when opening (Inbox bulk edit). Seeded once per open. */
@@ -50,6 +51,11 @@ export interface EnhancedBulkAddProps {
   /** One undo step around the write, including `afterAdd`. */
   actionLabel?: string
   afterAdd?: (info: { sendToInbox: boolean; tasks: Task[] }) => void
+  /**
+   * Inbox bulk edit leaves this off and copies each idea's existing origin.
+   * A fresh Bulk Add stamps Bulk Add.
+   */
+  stampOrigin?: boolean
 }
 
 function storeMutators() {
@@ -87,6 +93,8 @@ export function writeBulkCapture(
     /** Store every line as written. Headers, dates, and list paths are not read. */
     plain?: boolean
     afterAdd?: (info: { sendToInbox: boolean; tasks: Task[] }) => void
+    /** Omitted when this write is a rewrite and must not invent a new door. */
+    originKind?: Extract<CaptureOriginKind, "quick-add" | "bulk-add">
   },
 ): Task[] {
   const created: Task[] = []
@@ -104,6 +112,7 @@ export function writeBulkCapture(
           sendToInbox,
           target,
           folders: useTaskStore.getState().folders,
+          origin: options?.originKind ? lineCaptureOrigin(options.originKind, line) : undefined,
         })
         created.push(task)
         addTask(task)
@@ -130,6 +139,7 @@ export function writeBulkCapture(
             sendToInbox,
             target,
             folders: useTaskStore.getState().folders,
+            origin: options?.originKind ? lineCaptureOrigin(options.originKind, line) : undefined,
           }),
           bucket.dueBefore,
         )
@@ -155,6 +165,7 @@ export function EnhancedBulkAdd({
   defaultSendToInbox = false,
   actionLabel,
   afterAdd,
+  stampOrigin = true,
 }: EnhancedBulkAddProps = {}) {
   const [openState, setOpenState] = useState(false)
   const open = openProp ?? openState
@@ -181,7 +192,11 @@ export function EnhancedBulkAdd({
     e.preventDefault()
     if (!tasksText.trim()) return
 
-    writeBulkCapture(tasksText, sendToInbox, { actionLabel, afterAdd })
+    writeBulkCapture(tasksText, sendToInbox, {
+      actionLabel,
+      afterAdd,
+      originKind: stampOrigin ? "bulk-add" : undefined,
+    })
 
     setTasksText("")
     setOpen(false)
@@ -209,8 +224,9 @@ export function EnhancedBulkAdd({
             {description ?? (
               <>
                 One item per line. Header lines end with &apos;:&apos; —{" "}
-                <span className="text-foreground">list:</span> or{" "}
-                <span className="text-foreground">folder: list:</span>.
+                <span className="text-foreground">list:</span>,{" "}
+                <span className="text-foreground">folder: list:</span>, or{" "}
+                <span className="text-foreground">folder: all:</span> for that folder&apos;s All Items.
               </>
             )}
           </DialogDescription>

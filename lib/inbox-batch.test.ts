@@ -24,6 +24,7 @@ import {
   pickRandomInboxIds,
   rangeSelectIds,
   inboxTitleLines,
+  filterInboxByQuery,
 } from "./inbox-batch"
 
 const task = (id: string, extra: Partial<Task> = {}): Task => ({
@@ -84,6 +85,23 @@ describe("firstWalkId / openInboxIds", () => {
     const open = openInboxIds(tasks)
     expect([...open]).toEqual(["a", "d"])
     expect(firstWalkId(["b", "c", "d", "a"], open)).toBe("d")
+  })
+})
+
+describe("filterInboxByQuery", () => {
+  it("keeps every row when the query is blank", () => {
+    const rows = [task("a", { title: "French bangs" }), task("b", { description: "Shoe repair" })]
+    expect(filterInboxByQuery(rows, "  ")).toEqual(rows)
+  })
+
+  it("matches a case-insensitive substring of the title", () => {
+    const rows = [
+      task("a", { title: "French bags" }),
+      task("b", { title: "Sandwich bags" }),
+      task("c", { description: "Shoe repair" }),
+    ]
+    expect(filterInboxByQuery(rows, "BAGS").map((item) => item.id)).toEqual(["a", "b"])
+    expect(filterInboxByQuery(rows, "shoe repair").map((item) => item.id)).toEqual(["c"])
   })
 })
 
@@ -167,10 +185,12 @@ describe("applyListsToInboxItems / applyDeadlineToInboxItems", () => {
 
 describe("clarifyInboxItems / monkey brain partition", () => {
   it("files listed items as clarified and unlisteds onto the list stage", () => {
-    const tasks = [task("a", { lists: ["work"] }), task("b"), task("c", { stage: "clarified" })]
+    const arrived = new Date("2026-09-24T09:29:00.000Z")
+    const tasks = [task("a", { lists: ["work"], createdAt: arrived }), task("b"), task("c", { stage: "clarified" })]
     const next = clarifyInboxItems(tasks, ["a", "b", "c"])
     expect(next[0].stage).toBe("clarified")
     expect(next[0].lists).toEqual(["work"])
+    expect(next[0].createdAt).toEqual(arrived)
     expect(next[1].stage).toBe("list")
     expect(next[2].stage).toBe("clarified")
   })

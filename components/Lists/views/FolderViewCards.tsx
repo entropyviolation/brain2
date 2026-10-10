@@ -24,6 +24,9 @@ import {
 import { MachineLoading } from "@/components/machine-loading"
 import { safeDateFormat } from "@/lib/date-utils"
 import { itemTitle } from "@/lib/item-utils"
+import { isPeopleIKnowList } from "@/lib/people-i-know"
+import { isInstagramPeopleList } from "@/lib/instagram-lists"
+import { useTaskStore } from "@/lib/task-store"
 const TASK_PREVIEW_LIMIT = 8
 const INITIAL_CARD_BATCH = 12
 const CARD_BATCH_STEP = 10
@@ -473,6 +476,8 @@ export function FolderViewCards({
 
   const onDeleteList = useCallback(
     (id: string) => {
+      const live = useTaskStore.getState().lists.find((list) => list.id === id)
+      if (live && (isPeopleIKnowList(live) || isInstagramPeopleList(live))) return
       setPendingDeleteIds((prev) => {
         const next = new Set(prev)
         next.add(id)

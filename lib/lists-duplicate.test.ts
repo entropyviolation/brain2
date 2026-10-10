@@ -56,6 +56,9 @@ describe("auto labels", () => {
     expect(isAutoCreatedList(list({ id: "l1", name: "X", createdByModuleId: "tidy" }))).toBe(true)
     expect(isAutoCreatedList(list({ id: "__all-items__books", name: "All Items" }))).toBe(true)
     expect(isAutoCreatedList(list({ id: "reading", name: "Reading" }))).toBe(false)
+    expect(isAutoCreatedList(list({ id: "people-i-know", name: "People I Know", peopleList: true }))).toBe(true)
+    expect(isAutoCreatedList(list({ id: "people-i-follow-on-instagram", name: "People I follow on Instagram", instagramFollowingList: true }))).toBe(true)
+    expect(isAutoCreatedList(list({ id: "people-who-follow-me-on-instagram", name: "People who follow me on Instagram", instagramFollowersList: true }))).toBe(true)
   })
 })
 
@@ -75,6 +78,26 @@ describe("planDuplicateList", () => {
     expect(plan.list.createdByModuleId).toBeUndefined()
     expect(plan.folderIds).toEqual(["books"])
     expect(plan.tasks).toEqual([])
+  })
+
+  it("does not copy the People I Know flag onto a duplicate", () => {
+    const source = list({ id: "people-i-know", name: "People I Know", peopleList: true })
+    const plan = planDuplicateList(source, { scope: "settings", lists: [source], folders: [], tasks: [] })
+    expect(plan.list.peopleList).toBeUndefined()
+    expect(plan.list.id).not.toBe("people-i-know")
+  })
+
+  it("does not copy the Instagram list flags onto a duplicate", () => {
+    const source = list({
+      id: "people-i-follow-on-instagram",
+      name: "People I follow on Instagram",
+      instagramFollowingList: true,
+      instagramFollowersList: true,
+    })
+    const plan = planDuplicateList(source, { scope: "settings", lists: [source], folders: [], tasks: [] })
+    expect(plan.list.instagramFollowingList).toBeUndefined()
+    expect(plan.list.instagramFollowersList).toBeUndefined()
+    expect(plan.list.id).not.toBe("people-i-follow-on-instagram")
   })
 
   it("settings and contents clones items onto the new list only", () => {

@@ -5,8 +5,9 @@ import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
+import { useHabitsStore } from "@/lib/habits-store"
 import { useTaskStore } from "@/lib/task-store"
-import type { Folder, List } from "@/lib/types"
+import { TaskType, type Folder, type List, type WeeklyTask } from "@/lib/types"
 import { EditListDialog } from "./EditListDialog"
 
 const list = (partial: Partial<List> & Pick<List, "id" | "name">): List => ({
@@ -59,6 +60,23 @@ describe("EditListDialog", () => {
     expect(idLine.className).not.toMatch(/banner/)
     expect(screen.getByRole("button", { name: "Copy list id" })).toBeInTheDocument()
     expect(screen.getByRole("switch", { name: "Sent this week" })).not.toBeChecked()
+    expect(screen.getByTestId("list-habit-routes")).toHaveTextContent("No habit reads this list.")
+  })
+
+  it("names a habit whose list source points here", () => {
+    const previous = useHabitsStore.getState().tasks
+    const linked: WeeklyTask = {
+      id: "wash",
+      name: "wash the dishes",
+      type: TaskType.GOAL,
+      listSentLink: { listId: "dishes", measure: "sent", target: "listLength" },
+    }
+    useHabitsStore.getState().setTasks([...previous, linked])
+    renderDialog()
+    const routes = screen.getByTestId("list-habit-routes")
+    expect(routes).toHaveTextContent("wash the dishes")
+    expect(routes).toHaveTextContent("sent items, target is list length")
+    useHabitsStore.getState().setTasks(previous)
   })
 
   it("is a bit wider than the default settings dialog", () => {

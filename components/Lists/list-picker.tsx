@@ -4,7 +4,8 @@
  * Used in Inbox clarification, item detail, Connected lists, and list
  * select-mode placement. Nested folder navigation, search, optional
  * multi-select, selected chips, optional Recent `suggestedIds`, and
- * creating a new list inline.
+ * creating a new list inline. Inbox Apply list can also offer each folder's
+ * All Items (`offerFolderAll`): a folder plate and All, not a list named All.
  */
 "use client"
 
@@ -12,6 +13,9 @@ import { useMemo, useState, useCallback } from "react"
 import { useTaskStore } from "@/lib/task-store"
 import { isExplicitlyScheduleable } from "@/lib/scheduling"
 import { folderFor, FolderGlyph } from "@/components/Lists/lib/icon-utils"
+import { isFolderAllItemsCategoryId, folderAllItemsCategoryId } from "@/lib/folder-all-items"
+import { folderAllSearchTargets, type FolderAllTarget } from "@/lib/folder-all-query"
+import { isScheduledFolderId } from "@/lib/scheduled-lists-sync"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -38,6 +42,12 @@ export interface ListPickerProps {
   showSelectedChips?: boolean
   /** Pin these list ids at the top as a Recent strip (Inbox walk). */
   suggestedIds?: string[]
+  /**
+   * Offer each folder's All Items pool. Search `folder: all` / `all folder`
+   * (and one unambiguous folder name). The row is a folder plate plus All.
+   * Backing `__all-items__` records are not drawn as ordinary lists.
+   */
+  offerFolderAll?: boolean
 }
 
 function SelectedChips({
@@ -89,6 +99,7 @@ export function ListPicker({
   variant = "default",
   showSelectedChips = false,
   suggestedIds,
+  offerFolderAll = false,
 }: ListPickerProps) {
   const categories = useTaskStore((s) => s.lists)
   const folders = useTaskStore((s) => s.folders)
@@ -105,8 +116,11 @@ export function ListPicker({
   const fm = variant === "fm"
   const excluded = useMemo(() => new Set(excludeIds ?? []), [excludeIds])
   const visibleLists = useMemo(
-    () => categories.filter((c) => !excluded.has(c.id)),
-    [categories, excluded],
+    () =>
+      categories.filter(
+        (c) => !excluded.has(c.id) && !(offerFolderAll && isFolderAllItemsCategoryId(c.id)),
+      ),
+    [categories, excluded, offerFolderAll],
   )
 
   const inFolder = browseFolderId ? folders.find((f) => f.id === browseFolderId) : null
@@ -149,6 +163,11 @@ export function ListPicker({
     )
   }, [visibleLists, q, searchActive])
 
+  const folderAll = useMemo(
+    () => (offerFolderAll && searchActive ? folderAllSearchTargets(search, folders) : { kind: "none" as const, targets: [] }),
+    [offerFolderAll, searchActive, search, folders],
+  )
+
   const toggle = useCallback(
     (id: string) => {
       if (effectiveMulti) {
@@ -189,8 +208,14 @@ export function ListPicker({
   }
 
   const pickFirstSearchHit = () => {
+    const allFirst = folderAll.kind === "all" ? folderAll.targets[0] : undefined
+    if (allFirst) {
+      toggle(allFirst.listId)
+      return
+    }
     const first = searchResults[0]
     if (first) toggle(first.id)
+    else if (folderAll.targets[0]) toggle(folderAll.targets[0].listId)
   }
 
   const renderListRow = (cat: List) => {
@@ -246,6 +271,60 @@ export function ListPicker({
     )
   }
 
+  const renderFolderAllRow = (target: FolderAllTarget) => {
+    const folder = folders.find((item) => item.id === target.folderId)
+    if (!folder) return null
+    const on = selected.includes(target.listId)
+    const label = `Add to ${folder.name} > All`
+    const iconSize = fm ? 14 : 16
+    const plate = (
+      <>
+        <span className="list-picker-folder-all-plate">
+          <img
+            src={folder.icon || folderFor(folder.id)}
+            alt=""
+            width={iconSize}
+            height={iconSize}
+            draggable={false}
+            style={{ width: iconSize, height: iconSize, objectFit: "contain", flexShrink: 0 }}
+          />
+          <span className="list-picker-folder-all-name">{folder.name}</span>
+        </span>
+        <span className="list-picker-folder-all-sep" aria-hidden="true">
+          &gt;
+        </span>
+        <span className="list-picker-folder-all-all">All</span>
+      </>
+    )
+    const rowClass = fm
+      ? `fm-picker-row list-picker-folder-all${on ? " selected" : ""}`
+      : `list-picker-row list-picker-folder-all w-full px-2 py-1.5 text-sm rounded hover:bg-muted/60${on ? " bg-muted" : ""}`
+    if (effectiveMulti) {
+      return (
+        <label key={target.listId} className={rowClass}>
+          {fm ? (
+            <input type="checkbox" checked={on} onChange={() => toggle(target.listId)} aria-label={label} />
+          ) : (
+            <Checkbox checked={on} onCheckedChange={() => toggle(target.listId)} aria-label={label} />
+          )}
+          {plate}
+        </label>
+      )
+    }
+    if (fm) {
+      return (
+        <button key={target.listId} type="button" className={rowClass} aria-label={label} onClick={() => toggle(target.listId)}>
+          {plate}
+        </button>
+      )
+    }
+    return (
+      <button key={target.listId} type="button" className={rowClass} aria-label={label} onClick={() => toggle(target.listId)}>
+        {plate}
+      </button>
+    )
+  }
+
   const renderFolderRow = (f: (typeof folders)[number]) =>
     fm ? (
       <button key={f.id} type="button" className="fm-picker-row" onClick={() => setBrowseFolderId(f.id)}>
@@ -272,19 +351,30 @@ export function ListPicker({
       </div>
     ) : null
 
+  const browseAll: FolderAllTarget | null =
+    offerFolderAll && inFolder && !searchActive && !isScheduledFolderId(inFolder.id)
+      ? { folderId: inFolder.id, folderName: inFolder.name, listId: folderAllItemsCategoryId(inFolder.id) }
+      : null
+
+  const searchNodes =
+    folderAll.kind === "all"
+      ? [...folderAll.targets.map(renderFolderAllRow), ...searchResults.map(renderListRow)]
+      : [...searchResults.map(renderListRow), ...folderAll.targets.map(renderFolderAllRow)]
+
   const body = searchActive ? (
-    searchResults.length === 0 ? (
+    searchNodes.length === 0 ? (
       <p className={fm ? "fm-picker-empty" : "text-xs text-muted-foreground p-2"}>No lists match.</p>
     ) : (
-      searchResults.map(renderListRow)
+      searchNodes
     )
   ) : browseFolderId && inFolder ? (
     <>
       {recentStrip}
       <p className={fm ? "fm-picker-section" : "text-xs font-medium px-2 py-1 text-muted-foreground"}>{inFolder.name}</p>
+      {browseAll ? renderFolderAllRow(browseAll) : null}
       {childFolders.map(renderFolderRow)}
       {listsInFolder.map(renderListRow)}
-      {childFolders.length === 0 && listsInFolder.length === 0 && (
+      {childFolders.length === 0 && listsInFolder.length === 0 && !browseAll && (
         <p className={fm ? "fm-picker-empty" : "text-xs text-muted-foreground p-2"}>Empty folder.</p>
       )}
     </>

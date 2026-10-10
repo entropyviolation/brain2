@@ -7,7 +7,17 @@ import { useState } from "react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetLocalStorage } from "@/tests/test-utils"
 import { useTaskStore } from "@/lib/task-store"
+import type { Folder, List } from "@/lib/types"
+import { folderAllItemsCategoryId } from "@/lib/folder-all-items"
 import { ListPicker } from "./list-picker"
+
+function list(id: string, name: string, description = ""): List {
+  return { id, name, color: "#3366ff", description, createdAt: new Date(), order: 0 }
+}
+
+function folder(id: string, name: string, listIds: string[] = []): Folder {
+  return { id, name, createdAt: new Date(), listIds, color: "#64748b" }
+}
 
 function ControlledPicker(props: { excludeIds?: string[]; mode?: "single" | "multi" }) {
   const [selected, setSelected] = useState<string[]>([])
@@ -151,5 +161,104 @@ describe("ListPicker", () => {
     await user.type(search, "groc")
     await user.keyboard("{Enter}")
     expect(onChange).toHaveBeenCalledWith(["list-1"])
+  })
+})
+
+describe("ListPicker folder All Items", () => {
+  beforeEach(() => {
+    resetLocalStorage()
+    useTaskStore.getState().clearAllData()
+    useTaskStore.getState().setLists([
+      list("mop", "Mop"),
+      list("supplies", "Cleaning supplies"),
+      list("real-all", "All"),
+      list(folderAllItemsCategoryId("clean"), "All Items"),
+      list("real-all-items", "All Items"),
+    ])
+    useTaskStore.getState().setFolders([
+      folder("clean", "Cleaning", [folderAllItemsCategoryId("clean"), "mop"]),
+      folder("pantry", "Pantry", []),
+    ])
+  })
+
+  it("surfaces a folder plate for cleaning: all and all cleaning, distinct from a list named All", async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(<ListPicker selected={[]} onChange={onChange} offerFolderAll />)
+    const search = screen.getByRole("textbox", { name: "Search lists" })
+
+    await user.type(search, "cleaning: all")
+    const colonRow = screen.getByRole("checkbox", { name: "Add to Cleaning > All" }).closest("label")
+    expect(colonRow).toHaveClass("list-picker-folder-all")
+    expect(colonRow?.querySelector(".list-picker-folder-all-name")).toHaveTextContent("Cleaning")
+    expect(colonRow?.querySelector(".list-picker-folder-all-all")).toHaveTextContent("All")
+    expect(colonRow?.querySelector(".list-picker-folder-all-plate")).toBeTruthy()
+    expect(screen.queryByRole("checkbox", { name: "Add to All" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("checkbox", { name: "Add to All Items" })).not.toBeInTheDocument()
+
+    await user.clear(search)
+    await user.type(search, "all cleaning")
+    const leadRow = screen.getByRole("checkbox", { name: "Add to Cleaning > All" }).closest("label")
+    expect(leadRow).toHaveClass("list-picker-folder-all")
+    expect(leadRow).not.toHaveTextContent("All Items")
+    await user.click(screen.getByRole("checkbox", { name: "Add to Cleaning > All" }))
+    expect(onChange).toHaveBeenCalledWith([folderAllItemsCategoryId("clean")])
+  })
+
+  it("accepts a missing space after the colon", async () => {
+    const user = userEvent.setup()
+    render(<ListPicker selected={[]} onChange={vi.fn()} offerFolderAll />)
+    await user.type(screen.getByRole("textbox", { name: "Search lists" }), "cleaning:all")
+    expect(screen.getByRole("checkbox", { name: "Add to Cleaning > All" })).toBeInTheDocument()
+  })
+
+  it("still finds a real list named All, and does not paint an All row for every folder", async () => {
+    const user = userEvent.setup()
+    render(<ListPicker selected={[]} onChange={vi.fn()} offerFolderAll />)
+    expect(screen.queryByRole("checkbox", { name: / > All$/ })).not.toBeInTheDocument()
+    expect(screen.getByRole("checkbox", { name: "Add to All" }).closest("label")).not.toHaveClass("list-picker-folder-all")
+    await user.type(screen.getByRole("textbox", { name: "Search lists" }), "all")
+    const plain = screen.getByRole("checkbox", { name: "Add to All" }).closest("label")
+    expect(plain).not.toHaveClass("list-picker-folder-all")
+    expect(screen.queryByRole("checkbox", { name: "Add to Cleaning > All" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("checkbox", { name: "Add to Pantry > All" })).not.toBeInTheDocument()
+  })
+
+  it("keeps ordinary list hits and adds All when the folder name is unambiguous", async () => {
+    const user = userEvent.setup()
+    render(<ListPicker selected={[]} onChange={vi.fn()} offerFolderAll />)
+    await user.type(screen.getByRole("textbox", { name: "Search lists" }), "cleaning")
+    expect(screen.getByRole("checkbox", { name: "Add to Cleaning supplies" })).toBeInTheDocument()
+    expect(screen.getByRole("checkbox", { name: "Add to Cleaning > All" }).closest("label")).toHaveClass(
+      "list-picker-folder-all",
+    )
+    expect(screen.queryByRole("checkbox", { name: "Add to Mop" })).not.toBeInTheDocument()
+  })
+
+  it("shows both All rows when two folders match, and selects only the one clicked", async () => {
+    useTaskStore.getState().setFolders([
+      folder("east", "Cleaning East"),
+      folder("west", "Cleaning West"),
+    ])
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(<ListPicker selected={[]} onChange={onChange} offerFolderAll />)
+    await user.type(screen.getByRole("textbox", { name: "Search lists" }), "all clean")
+    expect(screen.getByRole("checkbox", { name: "Add to Cleaning East > All" })).toBeInTheDocument()
+    expect(screen.getByRole("checkbox", { name: "Add to Cleaning West > All" })).toBeInTheDocument()
+    await user.click(screen.getByRole("checkbox", { name: "Add to Cleaning East > All" }))
+    expect(onChange).toHaveBeenCalledTimes(1)
+    expect(onChange).toHaveBeenCalledWith([folderAllItemsCategoryId("east")])
+  })
+
+  it("offers the plate inside a folder without listing the backing All Items record", async () => {
+    const user = userEvent.setup()
+    render(<ListPicker selected={[]} onChange={vi.fn()} offerFolderAll />)
+    await user.click(screen.getByRole("button", { name: "Cleaning" }))
+    expect(screen.getByRole("checkbox", { name: "Add to Cleaning > All" }).closest("label")).toHaveClass(
+      "list-picker-folder-all",
+    )
+    expect(screen.getByRole("checkbox", { name: "Add to Mop" })).toBeInTheDocument()
+    expect(screen.queryByRole("checkbox", { name: "Add to All Items" })).not.toBeInTheDocument()
   })
 })

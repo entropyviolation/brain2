@@ -14,6 +14,7 @@ import {
   itemTitle,
   itemTitleOrUntitled,
   syncTitleFromDescription,
+  pushTaskOnePeriod,
 } from "./item-utils"
 import type { Folder, ItemTypeDefinition, Task, List } from "@/lib/types"
 import {
@@ -354,6 +355,29 @@ describe("isTaskItem / createListItem / countsInDone", () => {
     expect(isTaskItem({ ...createListItem("rug"), type: undefined }, folders)).toBe(false)
     expect(isTaskItem({ ...createListItem("Write intro", ["na"]), type: undefined }, folders)).toBe(true)
     expect(countsInDone({ ...createListItem("rug"), type: undefined, completed: true }, folders)).toBe(false)
+  })
+})
+
+describe("pushTaskOnePeriod miss reason", () => {
+  it("stores an optional reason on the day being left and still pushes without one", () => {
+    const day = new Date(2026, 5, 19)
+    const base = {
+      id: "a",
+      description: "Leftover",
+      stage: "scheduled" as const,
+      createdAt: day,
+      completed: false,
+      lists: [],
+      scheduledDate: day,
+    }
+    const quiet = pushTaskOnePeriod(base, "day", day)
+    expect(quiet.schedulePlacements).toEqual([{ period: "day", value: "2026-06-19", resolved: "pushed" }])
+    expect(quiet.daysPushed).toBe(1)
+
+    const noted = pushTaskOnePeriod(base, "day", day, "no-time")
+    expect(noted.schedulePlacements).toEqual([
+      { period: "day", value: "2026-06-19", resolved: "pushed", missReason: "no-time" },
+    ])
   })
 })
 

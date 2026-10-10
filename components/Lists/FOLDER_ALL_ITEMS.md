@@ -7,6 +7,8 @@ Each real folder (not auto scheduled period folders) has an aggregate **All Item
 - Open target: `{ type: "folder-all", folderId }`.
 - Backing list id: `__all-items__{folderId}` (`lib/folder-all-items.ts`). Sync creates this record; it is **not** a child list the user converts or files.
 - Grid / tree label stays **All Items**. Do not rename the backing list to change that.
+- Quick Add and Telegram use the same shorthand: `folder: all: item` (also `all items`, and a bulk header `Folder: all:`). That files the item on this pool. It does not create a list named all. A bare `all: item`, with no folder in front, is still a list named all.
+- Inbox **Apply list** uses the same pool. Search `cleaning: all` or `all cleaning` (missing space after the colon is fine; `all items` too). The row is that folder’s nameplate plus **All**, not a list named All. Applying adds `__all-items__{folderId}` onto the selected ideas and leaves every other list id in place. `lib/folder-all-query.ts` resolves the folder (exact, then unambiguous prefix / contains). A tie shows each close folder. Opening the folder in that picker offers the same row. A blank search does not list an All row for every folder.
 
 **Home / global All** (`folder-all` + `__root__`, Quick Access **All** → All Items) uses the same inspector chrome. Backing list id: `__all-items__root` (`GLOBAL_ALL_ITEMS_LIST_ID`). Sync creates it (`syncGlobalAllItemsList`) and does **not** file it on any folder. Adding items here still leaves them uncategorized (empty `lists`); the backing record is view prefs only. **Module Lists All** is a normal folder All Items view.
 

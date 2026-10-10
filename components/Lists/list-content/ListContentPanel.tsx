@@ -2,7 +2,9 @@
 
 import { useState } from "react"
 import { Textarea } from "@/components/ui/textarea"
+import { listIsReminders } from "@/lib/reminders"
 import { isScheduledFolderId, isNaArchiveCategoryId, NA_SMART_MISSED } from "@/lib/scheduled-lists-sync"
+import { ReminderQuickAdd } from "./reminder-quick-add"
 import { ListContentDefault } from "./ListContentDefault"
 import { ListContentChecklist } from "./ListContentChecklist"
 import { ListContentIcons } from "./ListContentIcons"
@@ -155,12 +157,17 @@ export function ListContentPanel({
     </div>
   ) : null
 
+  const reminders = listIsReminders(openCategory, categories)
   const quickAdd =
     allowAdd && addingTaskToTarget === openTargetKeyValue ? (
-      <QuickAddPanel itemLabel={itemLabel} onAdd={onAddTask} onCancel={onCancelAddTask} />
+      reminders ? (
+        <ReminderQuickAdd onCancel={onCancelAddTask} />
+      ) : (
+        <QuickAddPanel itemLabel={itemLabel} onAdd={onAddTask} onCancel={onCancelAddTask} />
+      )
     ) : null
 
-  const bulkAddPanel = allowAdd && showBulkAdd ? (
+  const bulkAddPanel = allowAdd && showBulkAdd && !reminders ? (
     <BulkAddPanel itemLabel={itemLabel} onBulkAdd={onBulkAdd} onCancel={onBulkAddCancel} />
   ) : null
 
@@ -178,9 +185,11 @@ export function ListContentPanel({
   const addButtons =
     allowAdd && !addingTaskToTarget && !showBulkAdd ? (
       <div className="fm-list-add-row">
-        <button className="fm-btn fm-btn-sm" onClick={() => onShowBulkAdd(true)}>
-          Bulk add {itemLabel.toLowerCase()}s
-        </button>
+        {reminders ? null : (
+          <button className="fm-btn fm-btn-sm" onClick={() => onShowBulkAdd(true)}>
+            Bulk add {itemLabel.toLowerCase()}s
+          </button>
+        )}
         <button className="fm-btn fm-btn-sm" onClick={onShowAddTask}>
           Add {itemLabel}
         </button>

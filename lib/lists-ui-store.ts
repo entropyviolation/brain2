@@ -24,7 +24,11 @@ export type ListDisplay = ListDisplayMode
 export type FolderView = "icons" | "list" | "details" | "cards"
 
 interface ListsUiState {
-  // Folder/list ids the user has pinned to the Home directory.
+  /**
+   * Folder/list ids shown in the Lists Home directory.
+   * Built-in singleton lists are inserted here by `lib/home-system-lists.ts`
+   * and put back if removed. Ordinary pins still toggle.
+   */
   homePinned: string[]
   // Show the auto smart lists (daily/weekly/monthly) in Home.
   showSmartLists: boolean
@@ -69,6 +73,8 @@ interface ListsUiState {
   globalAllHideUncategorized: boolean
 
   toggleHomePin: (id: string) => void
+  /** Add ids that are not already on Home. Does not remove anything. */
+  pinHomeLists: (ids: readonly string[]) => void
   isPinned: (id: string) => boolean
   setShowSmartLists: (v: boolean) => void
   setShowPeriodLedgerListsInAll: (v: boolean) => void
@@ -125,6 +131,12 @@ export const useListsUiStore = create<ListsUiState>()(
             ? state.homePinned.filter((x) => x !== id)
             : [...state.homePinned, id],
         })),
+      pinHomeLists: (ids) =>
+        set((state) => {
+          const missing = ids.filter((id) => id && !state.homePinned.includes(id))
+          if (missing.length === 0) return state
+          return { homePinned: [...state.homePinned, ...missing] }
+        }),
       isPinned: (id) => get().homePinned.includes(id),
       setShowSmartLists: (v) => set({ showSmartLists: v }),
       setShowPeriodLedgerListsInAll: (v) => set({ showPeriodLedgerListsInAll: v }),

@@ -18,6 +18,8 @@
  * - Built-in scalars (priority-ish numbers, dates, context, type, …): prefer
  *   survivor when held, else first held from others; numbers take the max of
  *   held values when keepAllDetails so the stronger signal survives.
+ *   `createdAt` is the earliest real instant across the sources, so an inbox
+ *   arrival is not replaced by a later sibling.
  * - Live schedule stays one period (day, else week, else month, else year —
  *   survivor first). Other periods are kept on `schedulePlacements`.
  * - Links and dependencies that only pointed at a merged sibling are dropped.
@@ -34,7 +36,7 @@ import type {
   Task,
   TimeLogEntry,
 } from "@/lib/types"
-import { canonicalWeekKey, formatLocalDateKey, parseLocalDate } from "@/lib/date-utils"
+import { canonicalWeekKey, formatLocalDateKey, parseLocalDate, safeToDate } from "@/lib/date-utils"
 import { clearedScheduleFields, scheduleFieldsForPeriod } from "@/lib/scheduling"
 import { isFolderAllItemsCategoryId } from "@/lib/folder-all-items"
 import { uniqueNonEmpty, unionById } from "@/lib/list-merge"
@@ -393,6 +395,8 @@ export function buildMergedItem(items: Task[], plan: ItemMergePlan): Task | null
 
   const merged: Task = {
     ...survivor,
+    createdAt:
+      earliestDate(...sources.map((item) => safeToDate(item.createdAt) ?? undefined)) ?? survivor.createdAt,
     description: plan.description,
     title: plan.description,
     notes,

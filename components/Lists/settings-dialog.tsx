@@ -28,6 +28,9 @@ import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/co
 import { CaptureDoorButtons } from "@/components/capture-doors"
 import { ListsSettingsNav } from "@/components/Lists/lists-settings-nav"
 import { navSnapshot, removeNavFolder, removeNavList, type NavRef } from "@/lib/lists-navigator"
+import { isRemindersList } from "@/lib/reminders"
+import { isPeopleIKnowList } from "@/lib/people-i-know"
+import { isInstagramPeopleList } from "@/lib/instagram-lists"
 import { applyListsNavigation, requestNavigateToList } from "@/lib/app-navigation"
 import "@/components/Lists/lists-settings.css"
 
@@ -83,7 +86,9 @@ export function NextActionsSettingsDialog({ open, onClose }: NextActionsSettings
   }, [tasks])
 
   const handleDeleteList = (id: string) => {
-    const name = localLists.find((list) => list.id === id)?.name ?? "this list"
+    const list = localLists.find((row) => row.id === id)
+    if (list && (isRemindersList(list) || isPeopleIKnowList(list) || isInstagramPeopleList(list))) return
+    const name = list?.name ?? "this list"
     if (!confirm(`Delete “${name}”? This cannot be undone.`)) return
     const next = removeNavList(localLists, localFolders, id)
     setLocalLists(next.lists)

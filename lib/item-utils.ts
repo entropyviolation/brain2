@@ -5,7 +5,16 @@
  * folder tree) from plain list items, building minimal vs full task records,
  * and filtering planned-task sidebars in Plan views.
  */
-import type { Task, ItemRecord, List, Folder, AttributeValue, ItemTypeDefinition, ItemTypeRule } from "@/lib/types"
+import type {
+  Task,
+  ItemRecord,
+  List,
+  Folder,
+  AttributeValue,
+  ItemTypeDefinition,
+  ItemTypeRule,
+  StoredBlockedReason,
+} from "@/lib/types"
 import { composeListDefaults, getItemType, gatherItemRules, applyRules, type ItemLike } from "@/lib/item-types"
 import {
   formatLocalDateKey,
@@ -19,6 +28,7 @@ import {
 } from "@/lib/date-utils"
 import { recordPushedPlacement } from "@/lib/scheduling"
 import { normalizeAttributeType } from "@/lib/attribute-utils"
+import { pointsRuleValue } from "@/lib/points-rules-live"
 import type { AttributeDefinition } from "@/lib/types"
 import { computeFormulaValue } from "@/lib/formula"
 import { isClearedFromWork } from "@/lib/completion-status"
@@ -335,6 +345,7 @@ export function withListMembership(
  *   - otherwise 1 + 0.2 · fractionSaved, where fractionSaved = (est-act)/est
  *     clamped to 0..1, so a task done in half the time → 1.10, instant → 1.20.
  */
+/** Default cap. Live awards read `pointsRuleValue("list.beatTheClockMaxBonus")`. */
 export const MAX_BEAT_THE_CLOCK_BONUS = 0.2
 
 export function beatTheClockMultiplier(
@@ -354,7 +365,7 @@ export function beatTheClockMultiplier(
   if (actualDuration >= estimatedDuration) return 1
   const fractionSaved = (estimatedDuration - actualDuration) / estimatedDuration
   const clamped = Math.min(1, Math.max(0, fractionSaved))
-  return 1 + MAX_BEAT_THE_CLOCK_BONUS * clamped
+  return 1 + pointsRuleValue("list.beatTheClockMaxBonus") * clamped
 }
 
 /** Points awarded on completion: default 1, overridable via list "Points" attribute or rewardValue. */
@@ -364,7 +375,7 @@ export function resolveCompletionPoints(
   folders: Folder[],
 ): number {
   const isNextAction = taskIsNextAction(task, folders)
-  let base = 1
+  let base = pointsRuleValue("list.defaultCompletionPoints")
   let resolvedFromPointsAttr = false
 
   const taskCategories = (task.lists ?? [])
@@ -441,11 +452,16 @@ export function capitalizeLabel(label: string): string {
   return label.charAt(0).toUpperCase() + label.slice(1)
 }
 
-/** Push a task forward one day/week/month and increment its pushed counter. */
+/**
+ * Push a task forward one day/week/month and increment its pushed counter.
+ * `missReason` is optional and lands on the placement being left. Omitting it
+ * still pushes.
+ */
 export function pushTaskOnePeriod(
   task: Task,
   period: "day" | "week" | "month",
   refDate: Date = new Date(),
+  missReason?: StoredBlockedReason,
 ): Partial<Task> {
   const cleared = {
     scheduledDate: undefined,
@@ -465,7 +481,12 @@ export function pushTaskOnePeriod(
         scheduledDate: next,
         daysPushed: (task.daysPushed ?? 0) + 1,
         hiddenFromTodo: false,
-        schedulePlacements: recordPushedPlacement(task.schedulePlacements, "day", formatLocalDateKey(base)),
+        schedulePlacements: recordPushedPlacement(
+          task.schedulePlacements,
+          "day",
+          formatLocalDateKey(base),
+          missReason,
+        ),
       }
     }
     case "week": {
@@ -480,7 +501,7 @@ export function pushTaskOnePeriod(
         scheduledWeek: getWeekString(next),
         weeksPushed: (task.weeksPushed ?? 0) + 1,
         hiddenFromTodo: false,
-        schedulePlacements: recordPushedPlacement(task.schedulePlacements, "week", leftWeek),
+        schedulePlacements: recordPushedPlacement(task.schedulePlacements, "week", leftWeek, missReason),
       }
     }
     case "month": {
@@ -494,7 +515,7 @@ export function pushTaskOnePeriod(
         scheduledMonth: `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}`,
         monthsPushed: (task.monthsPushed ?? 0) + 1,
         hiddenFromTodo: false,
-        schedulePlacements: recordPushedPlacement(task.schedulePlacements, "month", leftMonth),
+        schedulePlacements: recordPushedPlacement(task.schedulePlacements, "month", leftMonth, missReason),
       }
     }
   }

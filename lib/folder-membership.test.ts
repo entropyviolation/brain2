@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import type { Folder } from "@/lib/types"
 import {
+  assignedListFolderGroups,
   canFileListInFolder,
   diffListFolderMembership,
   directFolderIdsForList,
@@ -10,6 +11,7 @@ import {
   formatWithinValue,
   inheritedFoldersForList,
   selectableFoldersForList,
+  shortestFolderPath,
   visibleFolderMemberships,
 } from "@/lib/folder-membership"
 
@@ -112,6 +114,64 @@ describe("direct vs inherited membership", () => {
     const visible = visibleFolderMemberships(houseAndKitchen, "dishes", true)
     expect(visible.filter((m) => m.folder.id === "house").map((m) => m.kind)).toEqual(["direct"])
     expect(visible.filter((m) => m.kind === "inherited")).toEqual([])
+  })
+})
+
+describe("shortestFolderPath", () => {
+  const folders = [
+    folder({ id: "life", name: "Life" }),
+    folder({ id: "writing", name: "Writing", parentFolderId: "life" }),
+    folder({ id: "work", name: "Work" }),
+    folder({ id: "work-writing", name: "Writing", parentFolderId: "work" }),
+    folder({ id: "kitchen", name: "Kitchen", parentFolderId: "life" }),
+  ]
+
+  it("keeps a unique name even when the folder is nested", () => {
+    expect(shortestFolderPath(folders, "kitchen")).toBe("Kitchen")
+  })
+
+  it("grows ancestors until a repeated name is unambiguous", () => {
+    expect(shortestFolderPath(folders, "writing")).toBe("Life \\ Writing")
+    expect(shortestFolderPath(folders, "work-writing")).toBe("Work \\ Writing")
+  })
+
+  it("returns an empty string for an unknown folder", () => {
+    expect(shortestFolderPath(folders, "missing")).toBe("")
+  })
+})
+
+describe("assignedListFolderGroups", () => {
+  const folders = [
+    folder({ id: "house", name: "House", listIds: ["tv", "cleaning"] }),
+    folder({ id: "social", name: "Social", listIds: ["tv"] }),
+    folder({ id: "life", name: "Life" }),
+    folder({ id: "writing", name: "Writing", parentFolderId: "life", listIds: ["draft"] }),
+    folder({ id: "work", name: "Work" }),
+    folder({ id: "work-writing", name: "Writing", parentFolderId: "work" }),
+  ]
+
+  it("groups lists that share a folder and leaves unfiled lists unlabeled", () => {
+    const groups = assignedListFolderGroups(["cleaning", "loose", "tv", "draft"], folders)
+    expect(groups.map((group) => [group.label, group.listIds])).toEqual([
+      ["House", ["cleaning"]],
+      ["House · Social", ["tv"]],
+      ["Life \\ Writing", ["draft"]],
+      [null, ["loose"]],
+    ])
+  })
+
+  it("uses the ancestor path when two filed folders share a name", () => {
+    const nested = [
+      ...folders,
+      folder({ id: "notes-life", name: "Notes", parentFolderId: "life", listIds: ["a"] }),
+      folder({ id: "notes-work", name: "Notes", parentFolderId: "work", listIds: ["b"] }),
+    ]
+    const groups = assignedListFolderGroups(["a", "b"], nested)
+    expect(groups.map((group) => group.label).sort()).toEqual(["Life \\ Notes", "Work \\ Notes"])
+  })
+
+  it("returns nothing for an empty selection", () => {
+    expect(assignedListFolderGroups([], folders)).toEqual([])
   })
 })
 

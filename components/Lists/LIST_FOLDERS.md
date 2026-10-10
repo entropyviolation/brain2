@@ -80,7 +80,9 @@ list fields (name, color, type, …).
 | Drag list onto a folder | **Move** — unlinks every current folder, then files into the drop target (existing `fileCategoryIntoFolder`) |
 | Lists settings → Lists | Same filing, with a difference: dragging from one folder to another leaves other memberships. Dragging to **Library** takes the list out of every folder. Order inside a folder is `contentsOrder` (and `listIds`). See `lib/lists-navigator.ts`. |
 | New folder from a selection | Keep vs move (`lib/folder-selection.ts`) |
-| Home pin | Independent of folder membership |
+| Home pin | Independent of folder membership. Built-in singleton lists stay in `homePinned` (`lib/home-system-lists.ts`) |
+| Inbox → Clarify idea | Assigned lists group under the folders they are filed in. A unique folder name is the plate; a repeated name uses the breadcrumb (`Life \ Writing`). Lists that share the same folder set share one plate. A list in several folders is one chip; the plate joins those paths with ` · `. Unfiled lists have no plate. The plate is not a control. |
+| Inbox → Apply list | `cleaning: all` / `all cleaning` adds that folder’s All Items id (`__all-items__{folderId}`) to the selected ideas. Other list ids stay. This does not file the ideas only onto the folder, and it does not move them off the lists they already have. |
 
 ## Future
 

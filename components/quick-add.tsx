@@ -6,6 +6,8 @@
  * while you type. The date, time, priority, and duration stay in the title.
  * A missing list or folder is created. Optionally lands in the Inbox for
  * clarification, or files straight onto the target list (All Items if none).
+ * A leading `log:` is the tracking log (same write as the Telegram bot), shown
+ * as a dark blue LOG mark, and never sent to Inbox.
  *
  * **Plain** (checkbox, default off) or `-p` / `-plain` on the line stores the
  * text as written: no list, folder, date, time, priority, duration, or Monkey brain.
@@ -19,12 +21,18 @@
  * otherwise. Header trigger uses `.b2-shell-go` so it reads as the default
  * (bold, framed) press key. Dialog shell is milled fascia
  * (`.hpp95` / `header-popup-chrome.css`).
+ *
+ * A successful write raises one fixed flag (`.qa-wrote`): where the item went,
+ * then it leaves. Click the flag or its ×, or wait a few seconds. A newer
+ * success replaces it. An empty submit, a bulk write of nothing, or a log
+ * error does not raise it.
  */
 "use client"
 
 import type React from "react"
 
 import { useEffect, useMemo, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 import { Plus, CalendarDays, Clock, Tag, Flag, Timer, Folder } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -42,6 +50,7 @@ import { Badge } from "@/components/ui/badge"
 import { format } from "date-fns"
 import { useTaskStore } from "@/lib/task-store"
 import { parseSmartCapture, type SmartSuggestion } from "@/lib/smart-parse"
+import { lineCaptureOrigin } from "@/lib/capture-origin"
 import {
   buildCapturedTask,
   ensureCaptureTarget,
@@ -49,6 +58,66 @@ import {
 } from "@/lib/capture-target"
 import { CaptureShorthandHelp, SendToInboxField } from "@/components/capture-shorthand"
 import { bulkReadyCount, writeBulkCapture } from "@/components/enhanced-bulk-add"
+import { applyQuickAddLog, quickAddLogIntent } from "@/lib/quick-add-log"
+import { FOLDER_ALL_PREFIX, GLOBAL_ALL_ITEMS_KEY, isFolderAllItemsCategoryId } from "@/lib/folder-all-items"
+import type { Folder as FolderRecord, List, Task } from "@/lib/types"
+
+/** How long the wrote-flag stays if nobody dismisses it. */
+const QUICK_ADD_WROTE_MS = 4000
+
+/** Successful `log:` / `log-` / `log ` write. Not Inbox. */
+export const QUICK_ADD_LOG_WROTE = "Item added to the tracking log from Quick Add"
+
+/** Where one captured task actually landed. */
+export function quickAddWroteLabel(task: Task, lists: List[], folders: FolderRecord[]): string {
+  if (task.monkeyBrain) return "Monkey brain"
+  if (task.stage === "inbox") return "Inbox"
+  const ids = task.lists ?? []
+  const allItems = ids.length === 0 || ids.every((id) => isFolderAllItemsCategoryId(id))
+  if (allItems) {
+    const folderId = ids[0]?.startsWith(FOLDER_ALL_PREFIX) ? ids[0].slice(FOLDER_ALL_PREFIX.length) : ""
+    const folder =
+      folderId && folderId !== GLOBAL_ALL_ITEMS_KEY ? folders.find((row) => row.id === folderId) : undefined
+    return folder?.name ? `${folder.name} All Items` : "All Items"
+  }
+  const list = lists.find((row) => row.id === ids[0])
+  return list?.name?.trim() || "All Items"
+}
+
+/** One line for a successful Quick Add write. Null when nothing was written. */
+export function quickAddWroteMessage(labels: string[]): string | null {
+  if (labels.length === 0) return null
+  const unique = [...new Set(labels)]
+  const destination = unique.length === 1 ? unique[0] : null
+  if (labels.length === 1 && destination) return `Item added to ${destination} from Quick Add`
+  if (destination) return `${labels.length} items added to ${destination} from Quick Add`
+  return `${labels.length} items added from Quick Add`
+}
+
+function QuickAddWroteFlag({ text, onDismiss }: { text: string; onDismiss: () => void }) {
+  if (typeof document === "undefined") return null
+  return createPortal(
+    <div className="qa-wrote" role="status" data-quick-add-notice="" onClick={onDismiss}>
+      <span className="qa-wrote-lamp" aria-hidden />
+      <span className="qa-wrote-text" title={text}>
+        {text}
+      </span>
+      <button
+        type="button"
+        className="qa-wrote-x"
+        data-no95=""
+        aria-label="Dismiss"
+        onClick={(event) => {
+          event.stopPropagation()
+          onDismiss()
+        }}
+      >
+        ×
+      </button>
+    </div>,
+    document.body,
+  )
+}
 
 interface QuickAddProps {
   /** Controlled open state (e.g. driven by the quick-capture hotkey). */
@@ -59,6 +128,17 @@ interface QuickAddProps {
    * A selection that contains a newline opens in Bulk.
    */
   seed?: string
+  /** How long the success flag stays. Tests pass a shorter wait. */
+  wroteMs?: number
+}
+
+/** Dark blue mark: this line is a tracking log, not a list. */
+export function LogFlag() {
+  return (
+    <Badge data-log-flag="" className="border-transparent bg-[#12315c] font-normal text-[#f4f8fc] hover:bg-[#12315c]">
+      LOG
+    </Badge>
+  )
 }
 
 /** Render the parsed fields of a suggestion as inline chips. */
@@ -112,7 +192,7 @@ export function SuggestionChips({ suggestion }: { suggestion: SmartSuggestion })
   )
 }
 
-export function QuickAdd({ open: openProp, onOpenChange, seed = "" }: QuickAddProps = {}) {
+export function QuickAdd({ open: openProp, onOpenChange, seed = "", wroteMs = QUICK_ADD_WROTE_MS }: QuickAddProps = {}) {
   const [openState, setOpenState] = useState(false)
   const open = openProp ?? openState
   const setOpen = onOpenChange ?? setOpenState
@@ -123,6 +203,22 @@ export function QuickAdd({ open: openProp, onOpenChange, seed = "" }: QuickAddPr
   const [plain, setPlain] = useState(false)
   const addTask = useTaskStore((state) => state.addTask)
   const seeded = useRef<string | null>(null)
+  const wroteSeq = useRef(0)
+  const [wrote, setWrote] = useState<{ id: number; text: string } | null>(null)
+
+  const showWrote = (text: string) => {
+    wroteSeq.current += 1
+    setWrote({ id: wroteSeq.current, text })
+  }
+
+  useEffect(() => {
+    if (!wrote) return
+    const id = wrote.id
+    const timer = window.setTimeout(() => {
+      setWrote((current) => (current?.id === id ? null : current))
+    }, wroteMs)
+    return () => window.clearTimeout(timer)
+  }, [wrote, wroteMs])
 
   useEffect(() => {
     if (!open) {
@@ -136,6 +232,10 @@ export function QuickAdd({ open: openProp, onOpenChange, seed = "" }: QuickAddPr
   }, [open, seed])
 
   const parsed = useMemo(() => parseSmartCapture(ideaText, { plain }), [ideaText, plain])
+  const logIntent = useMemo(
+    () => (bulk ? null : quickAddLogIntent(ideaText, plain)),
+    [bulk, ideaText, plain],
+  )
   const readyCount = bulk ? bulkReadyCount(ideaText, plain) : 0
 
   const closeFresh = () => {
@@ -161,7 +261,18 @@ export function QuickAdd({ open: openProp, onOpenChange, seed = "" }: QuickAddPr
     if (!ideaText.trim()) return
 
     if (bulk) {
-      writeBulkCapture(ideaText, sendToInbox, { plain })
+      const created = writeBulkCapture(ideaText, sendToInbox, { plain, originKind: "quick-add" })
+      const state = useTaskStore.getState()
+      const message = quickAddWroteMessage(created.map((task) => quickAddWroteLabel(task, state.lists, state.folders)))
+      if (message) showWrote(message)
+      closeFresh()
+      return
+    }
+
+    if (logIntent) {
+      const logged = applyQuickAddLog(logIntent)
+      if (logged.status === "error") return
+      if (logged.status === "ok") showWrote(QUICK_ADD_LOG_WROTE)
       closeFresh()
       return
     }
@@ -179,19 +290,24 @@ export function QuickAdd({ open: openProp, onOpenChange, seed = "" }: QuickAddPr
         updateFolder: s.updateFolder,
       }
     })
-    addTask(
-      buildCapturedTask({
-        suggestion,
-        fallbackText: ideaText,
-        sendToInbox,
-        target,
-        folders: useTaskStore.getState().folders,
-      }),
-    )
+    const task = buildCapturedTask({
+      suggestion,
+      fallbackText: ideaText,
+      sendToInbox,
+      target,
+      folders: useTaskStore.getState().folders,
+      origin: lineCaptureOrigin("quick-add", ideaText),
+    })
+    addTask(task)
+    const state = useTaskStore.getState()
+    const message = quickAddWroteMessage([quickAddWroteLabel(task, state.lists, state.folders)])
+    if (message) showWrote(message)
     closeFresh()
   }
 
   return (
+    <>
+    {wrote ? <QuickAddWroteFlag text={wrote.text} onDismiss={() => setWrote(null)} /> : null}
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button size="sm" className="b2-shell-go gap-1">
@@ -213,15 +329,18 @@ export function QuickAdd({ open: openProp, onOpenChange, seed = "" }: QuickAddPr
             ) : bulk ? (
               <>
                 One item per line. A line that ends with <span className="text-foreground">:</span> is a
-                header — <span className="text-foreground">list:</span> or{" "}
-                <span className="text-foreground">folder: list:</span>.{" "}
+                header — <span className="text-foreground">list:</span>,{" "}
+                <span className="text-foreground">folder: list:</span>, or{" "}
+                <span className="text-foreground">folder: all:</span> for that folder&apos;s All Items.{" "}
                 <span className="text-foreground">before 9/12:</span> stamps that due day on the lines under it.
               </>
             ) : (
               <>
                 Capture one item. Use colons for folder and list:{" "}
-                <span className="text-foreground">folder: list: the item</span>.
-                A new list is created when that name is new.
+                <span className="text-foreground">folder: list: the item</span>.{" "}
+                <span className="text-foreground">folder: all: the item</span> files on that folder&apos;s All Items.
+                A new list is created when that name is new.{" "}
+                <span className="text-foreground">log: the event</span> is a tracking log, not a list.
               </>
             )}
           </DialogDescription>
@@ -252,7 +371,8 @@ export function QuickAdd({ open: openProp, onOpenChange, seed = "" }: QuickAddPr
             </div>
             <div className="space-y-2">
               <Label htmlFor="idea">{bulk ? "Tasks and Lists" : "Idea"}</Label>
-              {!bulk && ideaText.trim() ? <SuggestionChips suggestion={parsed.suggestion} /> : null}
+              {!bulk && logIntent ? <LogFlag /> : null}
+              {!bulk && !logIntent && ideaText.trim() ? <SuggestionChips suggestion={parsed.suggestion} /> : null}
               {bulk ? (
                 <Textarea
                   id="idea"
@@ -274,25 +394,33 @@ export function QuickAdd({ open: openProp, onOpenChange, seed = "" }: QuickAddPr
             </div>
             <SendToInboxField
               id="quick-add-inbox"
-              checked={sendToInbox}
+              checked={logIntent ? false : sendToInbox}
+              disabled={Boolean(logIntent)}
+              note={logIntent ? "This line is a tracking log. It does not go to Inbox." : undefined}
               onCheckedChange={setSendToInbox}
             />
             <CaptureShorthandHelp variant={bulk ? "bulk" : "quick"} />
             <div className={bulk ? "flex items-center justify-between" : "flex justify-end"}>
               {bulk ? <div className="text-sm text-muted-foreground">{readyCount} tasks ready</div> : null}
-              <Button type="submit" disabled={bulk && !ideaText.trim()}>
+              <Button
+                type="submit"
+                disabled={(bulk && !ideaText.trim()) || (Boolean(logIntent) && !logIntent?.payload.trim() && logIntent?.kind !== "log-categories")}
+              >
                 {bulk
                   ? "Add Tasks"
-                  : parsed.suggestion.monkeyBrain
-                    ? "Add to Monkey brain"
-                    : sendToInbox
-                      ? "Add to Inbox"
-                      : "Add item"}
+                  : logIntent
+                    ? "Log"
+                    : parsed.suggestion.monkeyBrain
+                      ? "Add to Monkey brain"
+                      : sendToInbox
+                        ? "Add to Inbox"
+                        : "Add item"}
               </Button>
             </div>
           </form>
         </div>
       </DialogContent>
     </Dialog>
+    </>
   )
 }

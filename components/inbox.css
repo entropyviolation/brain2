@@ -57,6 +57,11 @@ body.win95-app .inbox-dialog {
   --b2-close-top: 13px;
   --b2-close-right: 13px;
   accent-color: var(--inbox-blue);
+  display: flex !important;
+  flex-direction: column !important;
+  /* Fit the window, including the mill foot. The idea list shrinks; the foot does not. */
+  max-height: calc(100dvh - 24px) !important;
+  overflow: hidden !important;
   gap: 10px !important;
   padding: 10px 10px 12px !important;
   border: 0 !important;
@@ -249,11 +254,6 @@ body.win95-app .inbox-dialog {
   box-shadow: var(--inbox-crt-ring);
 }
 
-.inbox-mb-count {
-  background: #3a4a28;
-  color: #f3f0e4;
-}
-
 .inbox-crt-count[data-heavy="true"] {
   font-size: 15px;
   min-width: 2.4rem;
@@ -374,6 +374,16 @@ body.win95-app .inbox-dialog {
   gap: 4px;
   min-width: 60px;
   justify-content: flex-end;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Hover any row. The caret row stays lit so the keyboard path still has the keys. */
+.inbox-row:hover .inbox-row-tools,
+.inbox-row[data-focused="true"] .inbox-row-tools,
+.inbox-row:focus-within .inbox-row-tools {
+  visibility: visible;
+  pointer-events: auto;
 }
 
 .inbox-row .flex.flex-wrap {
@@ -437,11 +447,23 @@ body.win95-app .inbox-dialog {
 }
 
 .inbox-dialog button[title="Clarify this idea"],
-.inbox-dialog button[title="Delete this idea"] {
+.inbox-dialog button[title="Delete this idea"],
+.inbox-dialog button.inbox-row-tool {
   min-width: 28px;
   width: 28px;
   height: 28px;
+  min-height: 28px;
   padding: 0 !important;
+  letter-spacing: 0;
+}
+
+.inbox-dialog > :first-child,
+.inbox-mast,
+.inbox-partitions,
+.inbox-chord-manual,
+.inbox-undo,
+.inbox-foot {
+  flex-shrink: 0;
 }
 
 .inbox-foot {
@@ -451,6 +473,7 @@ body.win95-app .inbox-dialog {
   align-items: center;
   gap: 8px;
   padding-top: 10px;
+  padding-bottom: 2px;
   border-top: 0;
   box-shadow: inset 0 1px rgba(80, 84, 88, 0.35);
 }
@@ -493,13 +516,47 @@ body.win95-app .inbox-dialog {
 }
 
 .inbox-list-well {
-  flex: 1;
-  min-height: 360px;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
   padding: 0;
   border-radius: var(--r-2, 2px);
   background: var(--chrome-ash);
   box-shadow: var(--inbox-sunken);
+}
+
+.inbox-search {
+  flex: 0 0 auto;
+  padding: 6px 8px;
+  background: var(--chrome-ash);
+  box-shadow: inset 0 -1px rgba(0, 0, 0, 0.18);
+}
+
+.inbox-search input {
+  display: block;
+  width: 100%;
+  height: 26px;
+  margin: 0;
+  padding: 2px 8px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--inbox-ink);
+}
+
+.inbox-rows-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Clarify sheet shares `.inbox-dialog`. Its body is the only flex child that scrolls. */
+.inbox-dialog > .flex-1 {
+  min-height: 0;
 }
 
 .inbox-list-well .space-y-3 {
@@ -533,6 +590,27 @@ body.win95-app .inbox-dialog {
   justify-content: space-between;
   gap: 8px;
   font-size: 12px;
+}
+
+.inbox-walk-origin {
+  margin: 2px 0 0;
+  padding: 1px 2px 0;
+  font-size: 11px;
+  line-height: 1.35;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--inbox-ink);
+  opacity: 0.72;
+}
+
+.inbox-walk-origin-type {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.inbox-walk-origin-detail {
+  overflow-wrap: anywhere;
 }
 
 .inbox-walk-step {
@@ -588,4 +666,288 @@ body.win95-app .inbox-dialog {
   border-radius: var(--r-2, 2px);
   box-shadow: var(--inbox-field) !important;
   background: #fff !important;
+}
+
+/* ---- Clarify idea ------------------------------------------------------ */
+/* One column on the same mill. Assigned lists plate by folder. The list
+   well is a sunken document, not a stack of uppercase keys. */
+
+.inbox-dialog.inbox-clarify {
+  width: min(32rem, calc(100vw - 24px)) !important;
+  max-width: min(32rem, calc(100vw - 24px)) !important;
+  gap: 8px !important;
+  /* The list preview portals into this dialog. Visible lets that window
+     paint past the sheet; the form itself scrolls in `.inbox-clarify-scroll`. */
+  overflow: visible !important;
+}
+
+.inbox-clarify-head {
+  gap: 4px;
+  padding: 0;
+  text-align: left;
+}
+
+.inbox-clarify-head > * {
+  margin-top: 0 !important;
+}
+
+.inbox-clarify-head [data-radix-dialog-description] {
+  padding: 1px 2px 0;
+}
+
+.inbox-clarify-parse {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 2px 0 0;
+}
+
+.inbox-dialog .inbox-clarify-parse-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0 !important;
+  border-radius: var(--r-2, 2px) !important;
+  padding: 1px 6px !important;
+  background: var(--chrome-ash) !important;
+  color: var(--inbox-ink) !important;
+  box-shadow: var(--inbox-sunken);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.inbox-clarify-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.inbox-clarify-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 2px 1px 4px;
+}
+
+.inbox-clarify-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.inbox-clarify-notes-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.inbox-clarify textarea {
+  min-height: 72px;
+}
+
+.inbox-clarify-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.inbox-clarify-assigned {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.inbox-clarify-folder-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.inbox-clarify-folder-group:has(> .inbox-clarify-folder) {
+  padding: 4px 6px 6px;
+  border-radius: var(--r-2, 2px);
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0 1px, transparent 1px 2px),
+    rgba(255, 255, 255, 0.28);
+  box-shadow: var(--inbox-bay-ring);
+}
+
+.inbox-clarify-folder {
+  margin: 0;
+  padding: 0 1px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  line-height: 1.3;
+  color: var(--inbox-nameplate);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  user-select: none;
+}
+
+.inbox-clarify-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.inbox-clarify-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  min-height: 22px;
+  padding: 1px 2px 1px 5px;
+  border-radius: var(--r-2, 2px);
+  color: var(--inbox-ink);
+  background: var(--inbox-key-face);
+  box-shadow: var(--inbox-key-ring);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.2;
+  cursor: default;
+  user-select: none;
+}
+
+.inbox-clarify-chip-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inbox-dialog.inbox-clarify button.inbox-clarify-chip-remove:not(.inbox-partition):not(.absolute) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  min-height: 16px;
+  margin: 0;
+  padding: 0 !important;
+  border-radius: var(--r-2, 2px) !important;
+  color: var(--inbox-ink) !important;
+  text-shadow: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-size: 0 !important;
+  font-weight: 400 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+.inbox-dialog.inbox-clarify button.inbox-clarify-chip-remove:not(.inbox-partition):hover {
+  filter: none !important;
+  background: rgba(0, 0, 0, 0.1) !important;
+  box-shadow: none !important;
+}
+
+.inbox-dialog.inbox-clarify button.inbox-clarify-chip-remove svg {
+  width: 12px;
+  height: 12px;
+}
+
+.inbox-clarify-picker > .border {
+  border: 0 !important;
+  border-radius: var(--r-2, 2px) !important;
+  background: var(--chrome-ash);
+  box-shadow: var(--inbox-sunken);
+  overflow: hidden;
+}
+
+.inbox-clarify-picker .border-b,
+.inbox-clarify-picker .border-t {
+  border-color: transparent !important;
+  background: transparent !important;
+}
+
+.inbox-clarify-picker .border-b {
+  box-shadow: inset 0 -1px rgba(0, 0, 0, 0.18);
+}
+
+.inbox-clarify-picker .list-picker-body {
+  max-height: 168px;
+  margin: 4px 6px;
+  background: #fff;
+  box-shadow: var(--inbox-field);
+}
+
+.inbox-dialog.inbox-clarify .inbox-clarify-picker .list-picker-row,
+.inbox-dialog.inbox-clarify .inbox-clarify-picker button.list-picker-row:not(.inbox-partition) {
+  min-height: 24px;
+  padding: 2px 6px !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #111 !important;
+  text-shadow: none !important;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  filter: none;
+}
+
+.inbox-dialog.inbox-clarify .inbox-clarify-picker .list-picker-row:hover,
+.inbox-dialog.inbox-clarify .inbox-clarify-picker .list-picker-row.bg-muted,
+.inbox-dialog.inbox-clarify .inbox-clarify-picker button.list-picker-row:not(.inbox-partition):hover,
+.inbox-dialog.inbox-clarify .inbox-clarify-picker button.list-picker-row.bg-muted:not(.inbox-partition) {
+  background: var(--inbox-blue) !important;
+  color: #fff !important;
+  filter: none !important;
+  box-shadow: none !important;
+}
+
+.inbox-clarify-advanced-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 8px;
+  border-radius: var(--r-2, 2px);
+  background: var(--chrome-ash);
+  box-shadow: var(--inbox-sunken);
+}
+
+.inbox-clarify .inbox-walk-foot {
+  align-items: center;
+  padding-top: 8px;
+}
+
+.inbox-dialog.inbox-clarify button.inbox-clarify-save:not(.inbox-partition):not(.absolute) {
+  font-weight: 700 !important;
+  box-shadow:
+    inset -1px -1px var(--inbox-frame),
+    inset 1px 1px var(--inbox-frame),
+    inset -2px -2px var(--inbox-shadow),
+    inset 2px 2px var(--inbox-highlight),
+    inset -3px -3px var(--inbox-frame),
+    inset 3px 3px var(--inbox-face) !important;
+}
+
+.inbox-dialog.inbox-clarify .habit95-list-popup button.b2-close-key:not(.inbox-partition) {
+  width: 22px !important;
+  height: 22px !important;
+  min-width: 22px;
+  min-height: 22px;
+  max-width: 22px;
+  padding: 0 !important;
+  font-size: 0 !important;
+  font-weight: 400 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  color: transparent !important;
+  text-shadow: none !important;
+  background-color: var(--chrome-face, #c0c0c0) !important;
+  background-image: var(--fascia-key-face) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 0 rgba(55, 58, 62, 0.55) !important;
+  border-radius: var(--r-2, 2px) !important;
 }

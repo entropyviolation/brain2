@@ -13,6 +13,9 @@ import { ExternalLink, GripVertical, Trash2 } from "lucide-react"
 import type { Folder, List } from "@/lib/types"
 import { folderFor, iconFor } from "@/components/Lists/lib/icon-utils"
 import { isEditableFolder } from "@/lib/folder-tree"
+import { isRemindersList } from "@/lib/reminders"
+import { isPeopleIKnowList } from "@/lib/people-i-know"
+import { isInstagramPeopleList } from "@/lib/instagram-lists"
 import { isScheduledFolderId } from "@/lib/scheduled-lists-sync"
 import {
   filterNavRefs,
@@ -331,6 +334,9 @@ export function ListsSettingsNav({
             const name = record?.name ?? navName(lists, folders, row.ref)
             const selectedRow = selected.has(navRefKey(row.ref))
             const scheduled = row.ref.kind === "folder" && isScheduledFolderId(row.ref.id)
+            const showDelete =
+              !(row.ref.kind === "list" && record && (isRemindersList(record) || isPeopleIKnowList(record) || isInstagramPeopleList(record))) &&
+              (row.ref.kind === "list" || isEditableFolder(row.ref.id))
             const inside = navContainer(lists, folders, placeOf(row.ref)).length
             const extraFolders =
               row.ref.kind === "list"
@@ -410,7 +416,7 @@ export function ListsSettingsNav({
                   >
                     <ExternalLink className="h-3 w-3" />
                   </button>
-                  {row.ref.kind === "list" || isEditableFolder(row.ref.id) ? (
+                  {showDelete ? (
                     <button
                       type="button"
                       data-nav-action="delete"

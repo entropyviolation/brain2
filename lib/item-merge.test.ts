@@ -59,6 +59,19 @@ describe("applyItemMerge", () => {
     expect(next[0].subtasks?.map((s) => s.id)).toEqual(["s1", "s2"])
   })
 
+  it("keeps the earliest createdAt when two ideas merge", () => {
+    const early = new Date("2026-09-24T09:29:00.000Z")
+    const late = new Date("2026-10-09T05:00:00.000Z")
+    const items = [
+      task("a", "Alpha", { createdAt: late }),
+      task("b", "Beta", { createdAt: early }),
+    ]
+    const plan = defaultItemMergePlan(items, [list("work", "Work")])!
+    const next = applyItemMerge(items, plan)
+    expect(next[0].id).toBe("a")
+    expect(next[0].createdAt).toEqual(early)
+  })
+
   it("does not copy discarded subtasks when keepAllDetails is false", () => {
     const items = [
       task("a", "Alpha", { subtasks: [{ id: "s1", description: "keep", completed: false }] }),

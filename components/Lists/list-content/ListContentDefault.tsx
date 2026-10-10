@@ -16,6 +16,7 @@ import {
 import { getItemType } from "@/lib/item-types"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { itemTitle } from "@/lib/item-utils"
+import { reminderRowCaption } from "@/lib/reminders"
 import type { AttributeDefinition, List, Task } from "@/lib/types"
 import { ItemSelectCheckbox, activateListItem } from "./item-select"
 import type { ListContentDefaultProps } from "./types"
@@ -126,7 +127,8 @@ export function ListContentDefault({
         const estimate = show.estimate ? formatEstimateMinutes(task.estimatedDuration) : ""
         const snippet = show.description ? descriptionSnippet(task) : ""
         const type = show.type ? typeLabel(task, openCategory, types) : ""
-        const when = show.date && task.scheduledDate ? safeDateFormat(task.scheduledDate) : ""
+        const reminderWhen = reminderRowCaption(task)
+        const when = reminderWhen || (show.date && task.scheduledDate ? safeDateFormat(task.scheduledDate) : "")
         return (
           <div
             key={task.id}

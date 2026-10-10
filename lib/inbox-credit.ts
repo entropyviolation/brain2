@@ -5,9 +5,11 @@
  * Inbox (0 open ideas) awards a 50-point clear bonus each time it happens.
  */
 import { itemTitle } from "@/lib/item-utils"
+import { pointsRuleValue } from "@/lib/points-rules-live"
 import { usePointsStore } from "@/lib/points-store"
 import type { Task } from "@/lib/types"
 
+/** Defaults. Live awards read `pointsRuleValue`. */
 export const INBOX_HANDLE_POINTS = 1
 export const INBOX_CLEAR_BONUS = 50
 
@@ -27,10 +29,10 @@ export function creditInboxBatchHandling(
 ): void {
   const addPoints = usePointsStore.getState().addPoints
   for (const item of items) {
-    addPoints(item.taskId, INBOX_HANDLE_POINTS, inboxHandleLabel(item.title))
+    addPoints(item.taskId, pointsRuleValue("inbox.handlePoints"), inboxHandleLabel(item.title))
   }
   if (items.length > 0 && shouldAwardInboxClear(openBefore, openAfter)) {
-    addPoints(`inbox-clear:${Date.now()}`, INBOX_CLEAR_BONUS, "Inbox cleared")
+    addPoints(`inbox-clear:${Date.now()}`, pointsRuleValue("inbox.clearBonus"), "Inbox cleared")
   }
 }
 
@@ -41,8 +43,8 @@ export function creditInboxHandling(opts: {
   openAfter: number
 }): void {
   const addPoints = usePointsStore.getState().addPoints
-  addPoints(opts.taskId, INBOX_HANDLE_POINTS, inboxHandleLabel(opts.title))
+  addPoints(opts.taskId, pointsRuleValue("inbox.handlePoints"), inboxHandleLabel(opts.title))
   if (shouldAwardInboxClear(opts.openBefore, opts.openAfter)) {
-    addPoints(`inbox-clear:${Date.now()}`, INBOX_CLEAR_BONUS, "Inbox cleared")
+    addPoints(`inbox-clear:${Date.now()}`, pointsRuleValue("inbox.clearBonus"), "Inbox cleared")
   }
 }

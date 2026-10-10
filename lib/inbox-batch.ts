@@ -3,11 +3,14 @@
  *
  * Pure helpers for the Inbox keyboard step-through and multi-select batch
  * actions. The open list is newest capture first (`sortInboxNewestFirst`).
+ * `filterInboxByQuery` keeps a case-insensitive title substring.
  * Walk queues only the current selection (`walkQueueIds`). Merge
- * still goes through `lib/item-merge.ts`.
+ * still goes through `lib/item-merge.ts`. Transfer to the Tracking log
+ * is `lib/inbox-transfer-log.ts` (`t`).
  */
 import type { Task } from "@/lib/types"
 import { safeToDate } from "@/lib/date-utils"
+import { itemTitle } from "@/lib/item-utils"
 import { uniqueNonEmpty } from "@/lib/list-merge"
 import { clarifyNeedsAttentionItem } from "@/lib/needs-attention"
 
@@ -48,6 +51,7 @@ export const INBOX_CHORDS = {
   toMonkey: ["b"],
   toInbox: ["i"],
   bulkEdit: ["e"],
+  transferLog: ["t"],
   selectN: ["n"],
   selectUnsorted: ["s"],
   slice: ["/"],
@@ -249,6 +253,17 @@ export function pickRandomInboxIds(ids: string[], count: number, random: () => n
     pool[j] = swap!
   }
   return pool.slice(0, n)
+}
+
+/**
+ * Case-insensitive substring on the idea title (the same string the row shows).
+ * A blank query keeps every row. Several words stay one phrase, matching the
+ * rest of the app's `includes` searches.
+ */
+export function filterInboxByQuery(tasks: Task[], query: string): Task[] {
+  const needle = query.trim().toLowerCase()
+  if (!needle) return tasks
+  return tasks.filter((task) => itemTitle(task).toLowerCase().includes(needle))
 }
 
 /** Title, with a trailing parenthetical lifted onto a quieter second line. */

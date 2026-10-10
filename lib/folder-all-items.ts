@@ -26,6 +26,15 @@ export function isFolderAllItemsCategoryId(id: string): boolean {
   return id.startsWith(FOLDER_ALL_PREFIX)
 }
 
+/**
+ * Capture list-slot `all` or `all items` (any case) means the folder's All
+ * Items pool, not a list named "all". Only meaningful after a folder path.
+ */
+export function isFolderAllItemsKeyword(name: string): boolean {
+  const normalized = name.trim().toLowerCase().replace(/\s+/g, " ")
+  return normalized === "all" || normalized === "all items"
+}
+
 /** Backing All Items list for a folder, if sync has created it. */
 export function folderAllItemsList(lists: List[], folderId: string): List | undefined {
   return lists.find((c) => c.id === folderAllItemsCategoryId(folderId))
@@ -229,6 +238,39 @@ export function assignTaskToFolderUncategorized(task: Task, folder: Folder): Tas
   )
   if (!cats.includes(allId)) cats.push(allId)
   return { ...task, lists: cats, stage: "clarified" }
+}
+
+/**
+ * Make sure this folder's backing All Items list exists and is filed on the
+ * folder. Scheduled period folders have no pool. Unknown ids return null.
+ */
+export function ensureFolderAllItemsList(mut: FolderMutators, folderId: string): string | null {
+  if (!folderId || folderId === GLOBAL_ALL_ITEMS_KEY || isScheduledFolderId(folderId)) return null
+  const folder = mut.folders.find((item) => item.id === folderId)
+  if (!folder) return null
+  const allId = folderAllItemsCategoryId(folder.id)
+  if (!mut.lists.some((list) => list.id === allId)) {
+    mut.addList(buildFolderAllItemsList(folder))
+  }
+  if (!folder.listIds.includes(allId)) {
+    mut.updateFolder({
+      ...folder,
+      listIds: [allId, ...folder.listIds.filter((id) => id !== allId)],
+    })
+  }
+  return allId
+}
+
+/**
+ * Ensure a backing list for each folder-All id in `listIds`. Other ids,
+ * including global All, are left alone. `getMut` is read again per id so a
+ * prior ensure is visible to the next one.
+ */
+export function ensureFolderAllListsForIds(getMut: () => FolderMutators, listIds: string[]): void {
+  for (const id of listIds) {
+    if (!isFolderAllItemsCategoryId(id) || id === GLOBAL_ALL_ITEMS_LIST_ID) continue
+    ensureFolderAllItemsList(getMut(), id.slice(FOLDER_ALL_PREFIX.length))
+  }
 }
 
 /** File a task into a specific list, removing uncategorized folder membership. */
