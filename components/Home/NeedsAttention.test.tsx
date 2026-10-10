@@ -179,13 +179,19 @@ describe("NeedsAttention", () => {
     expect(screen.queryByText("Late report")).not.toBeInTheDocument()
   })
 
-  it("starts collapsed by default and hides the queue", () => {
+  it("opens into the reading order when count > 0 and nothing is stored", () => {
     taskRepository.add(task({ id: "overdue", description: "Late report", deadline: daysAgo(2) }))
 
     render(<NeedsAttention onOpenItem={() => {}} options={{ now: NOW }} />)
 
+    expect(screen.getByRole("button", { name: /Needs Attention/ })).toHaveAttribute("aria-expanded", "true")
+    expect(screen.getByText("Late report")).toBeInTheDocument()
+  })
+
+  it("stays collapsed when the queue is empty and nothing is stored", () => {
+    render(<NeedsAttention onOpenItem={() => {}} options={{ now: NOW }} />)
+
     expect(screen.getByRole("button", { name: /Needs Attention/ })).toHaveAttribute("aria-expanded", "false")
-    expect(screen.queryByText("Late report")).not.toBeInTheDocument()
   })
 
   it("persists collapsed and expanded state in localStorage", () => {
@@ -194,15 +200,16 @@ describe("NeedsAttention", () => {
     render(<NeedsAttention onOpenItem={() => {}} options={{ now: NOW }} />)
     const toggle = screen.getByRole("button", { name: /Needs Attention/ })
 
-    fireEvent.click(toggle)
     expect(toggle).toHaveAttribute("aria-expanded", "true")
-    expect(localStorage.getItem("cogs-home-needs-attention")).toBe("expanded")
-    expect(screen.getByText("Late report")).toBeInTheDocument()
-
     fireEvent.click(toggle)
     expect(toggle).toHaveAttribute("aria-expanded", "false")
     expect(localStorage.getItem("cogs-home-needs-attention")).toBe("collapsed")
     expect(screen.queryByText("Late report")).not.toBeInTheDocument()
+
+    fireEvent.click(toggle)
+    expect(toggle).toHaveAttribute("aria-expanded", "true")
+    expect(localStorage.getItem("cogs-home-needs-attention")).toBe("expanded")
+    expect(screen.getByText("Late report")).toBeInTheDocument()
   })
 
   it("restores the stored collapsed state after remount", () => {

@@ -57,22 +57,22 @@ describe("home widget catalog", () => {
 
   it("lists visible widgets in order", () => {
     expect(visibleHomeWidgets(DEFAULT_HOME_WIDGET_ORDER, ["points", "weather"])).toEqual([
+      "progress",
       "review",
       "award",
-      "progress",
-      "affirmation",
       "pet",
+      "affirmation",
       "next",
       "daylamp",
-      "daysuntil",
-      "moon",
-      "solar",
-      "tracking",
-      "night",
       "harvest",
       "inbox",
       "flow",
       "paint",
+      "tracking",
+      "night",
+      "solar",
+      "moon",
+      "daysuntil",
     ])
   })
 
@@ -223,6 +223,27 @@ describe("home widget catalog", () => {
       format: "unit",
       hasTime: true,
     })).toEqual({ crt: "03 hours 30 min", footer: "Until Launch" })
+    expect(daysUntilLiveFace({
+      remainingMs: -(day + 3 * hour),
+      label: "Launch",
+      format: "unit",
+      hasTime: true,
+      mode: "countdown",
+    })).toEqual({ crt: "0", footer: "Launch passed" })
+    expect(daysUntilLiveFace({
+      remainingMs: day,
+      label: "Trip",
+      format: "unit",
+      hasTime: true,
+      mode: "countup",
+    })).toEqual({ crt: "0", footer: "Trip ahead" })
+    expect(daysUntilLiveFace({
+      remainingMs: -(3 * hour),
+      label: "Trip",
+      format: "unit",
+      hasTime: true,
+      mode: "countup",
+    })).toEqual({ crt: "03 hours 00 min", footer: "Since Trip" })
     expect(daysUntilRemainingMs("2026-09-28", "15:00", new Date(2026, 8, 27, 15, 0))).toBe(day)
     expect(daysUntilRemainingMs("2026-09-28", "", new Date(2026, 8, 27, 12, 0))).toBe(12 * hour)
   })

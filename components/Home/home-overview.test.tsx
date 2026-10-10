@@ -501,6 +501,20 @@ describe("HomeOverview", () => {
     await user.click(screen.getByRole("button", { name: "Open Days Until" }))
     expect(screen.getByLabelText(/Time/)).toBeInTheDocument()
     await user.click(screen.getByRole("radio", { name: /Decimal/ }))
-    expect(useHomeDaysUntilStore.getState().format).toBe("decimal")
+    expect(useHomeDaysUntilStore.getState().items[0]?.format).toBe("decimal")
+  })
+
+  it("adds a second Days Until tile from the widgets menu", async () => {
+    const user = userEvent.setup()
+    render(
+      <div className="home95">
+        <HomeWidgetsMenu />
+        <HomeOverview currentDate={currentDate} />
+      </div>,
+    )
+    expect(screen.getAllByTestId("home-daysuntil-tile")).toHaveLength(1)
+    await user.click(screen.getByRole("button", { name: "Widgets" }))
+    await user.click(screen.getByRole("button", { name: "Add another Days Until" }))
+    expect(screen.getAllByTestId("home-daysuntil-tile")).toHaveLength(2)
   })
 })

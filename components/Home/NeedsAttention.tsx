@@ -33,11 +33,18 @@ import {
   HOME_NEEDS_ATTENTION_STATES,
   type HomeNeedsAttentionState,
 } from "@/lib/app-navigation"
+import { readAliasedLocal } from "@/lib/storage-keys"
 import { usePersistedTab } from "@/lib/use-persisted-tab"
 import { usePersistHydrated } from "@/lib/use-persist-hydrated"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
 import { cn } from "@/lib/utils"
 import { IssueGem } from "@/components/Home/Habits/habit-gems"
+
+function needsAttentionHasStoredPreference(): boolean {
+  if (typeof window === "undefined") return false
+  const stored = readAliasedLocal(APP_NAV_KEYS.homeNeedsAttention)
+  return stored === "collapsed" || stored === "expanded"
+}
 
 /** Reasons shown in the Home card. `stale` is kept on the selector but not here. */
 type BoxReason = Exclude<NeedsAttentionReason, "stale">
@@ -94,7 +101,7 @@ export function NeedsAttention({
     HOME_NEEDS_ATTENTION_STATES,
     fallback,
   )
-  const collapsed = panelState === "collapsed"
+  const [hasStoredPreference, setHasStoredPreference] = useState(needsAttentionHasStoredPreference)
   const [hiddenReasons, setHiddenReasons] = useState<BoxReason[]>([])
 
   useLayoutEffect(() => {
@@ -124,6 +131,20 @@ export function NeedsAttention({
   const visibleReasons = BOX_REASONS.filter((reason) => !hiddenReasons.includes(reason))
   const visibleCount = visibleReasons.reduce((sum, reason) => sum + groups[reason].length, 0)
 
+  // First visit with a real queue: open into the reading order. A stored
+  // collapse still wins. Empty counters do not own the fold.
+  const collapsed = hasStoredPreference
+    ? panelState === "collapsed"
+    : !(vaultReady && visibleCount > 0)
+
+  const togglePanel = () => {
+    // Flip the *effective* open state. Before a preference is stored,
+    // `panelState` may still be the fallback while the queue is auto-open.
+    const next: HomeNeedsAttentionState = collapsed ? "expanded" : "collapsed"
+    setHasStoredPreference(true)
+    setPanelState(next)
+  }
+
   const toggleReason = (reason: BoxReason) => {
     setHiddenReasons((prev) => {
       const next = prev.includes(reason) ? prev.filter((item) => item !== reason) : [...prev, reason]
@@ -137,9 +158,7 @@ export function NeedsAttention({
       <div className="home-na-bar">
         <button
           type="button"
-          onClick={() =>
-            setPanelState((s) => (s === "collapsed" ? "expanded" : "collapsed"))
-          }
+          onClick={togglePanel}
           aria-expanded={!collapsed}
           className="home-na-toggle"
         >

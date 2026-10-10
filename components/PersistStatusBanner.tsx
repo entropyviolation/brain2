@@ -4,6 +4,9 @@
  * Shown whenever a Zustand persist write fails (almost always origin quota).
  * In-memory edits keep working; reload would drop them. Offers a one-click
  * full backup download and the timestamp of the last successful save.
+ * `downloadBackup` loads on that click so the backup module (and its
+ * time-tracking store import) stays out of the page chunk. A refresh
+ * should not parse it.
  */
 "use client"
 
@@ -11,7 +14,6 @@ import { useCallback, useState, useSyncExternalStore } from "react"
 import { AlertTriangle } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { downloadBackup } from "@/lib/data/backup"
 import {
   getPersistStatus,
   subscribePersistStatus,
@@ -47,6 +49,7 @@ export function PersistStatusBanner() {
     setExporting(true)
     setExportMessage(null)
     try {
+      const { downloadBackup } = await import("@/lib/data/backup")
       await downloadBackup()
       setExportMessage("Backup downloaded. Keep that file somewhere safe.")
     } catch (e) {

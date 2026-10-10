@@ -134,7 +134,7 @@ describe("HomeDashboard", () => {
   })
 
   describe("Needs Attention", () => {
-    it("is collapsed by default", () => {
+    it("stays collapsed when the queue is empty", () => {
       render(<HomeDashboard />)
       expect(screen.getByRole("button", { name: /Needs Attention/ })).toHaveAttribute("aria-expanded", "false")
     })

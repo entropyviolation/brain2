@@ -14,6 +14,7 @@ import { HomeWidgetCatalog } from "@/components/Home/home-widget-catalog"
 import { HideWidgetConfirm } from "@/components/Home/home-widget-dialog"
 import { CockpitSwitch } from "@/components/Home/Habits/cockpit-switch"
 import { HOME_WIDGET_LABEL, type HomeWidgetId } from "@/lib/home-widgets"
+import { useHomeDaysUntilStore } from "@/lib/home-days-until-store"
 import { useHomeWidgetsStore, selectHiddenHomeWidgets } from "@/lib/home-widgets-store"
 
 export function HomeWidgetsMenu() {
@@ -28,6 +29,8 @@ export function HomeWidgetsMenu() {
   const showWidget = useHomeWidgetsStore((s) => s.showWidget)
   const hideWidget = useHomeWidgetsStore((s) => s.hideWidget)
   const moveWidget = useHomeWidgetsStore((s) => s.moveWidget)
+  const daysUntilCount = useHomeDaysUntilStore((s) => s.items.length)
+  const addDaysUntil = useHomeDaysUntilStore((s) => s.addCountdown)
   const tucked = new Set(selectHiddenHomeWidgets({ order, hidden }))
 
   useEffect(() => {
@@ -89,8 +92,20 @@ export function HomeWidgetsMenu() {
                     <span className="home-widgets-lamp" data-on={showing ? "true" : "false"} aria-hidden="true" />
                     <span>
                       {showing ? "Hide" : "Add"} {label}
+                      {id === "daysuntil" && daysUntilCount > 1 ? ` (${daysUntilCount})` : ""}
                     </span>
                   </button>
+                  {id === "daysuntil" && showing ? (
+                    <button
+                      type="button"
+                      className="home-add-move"
+                      aria-label="Add another Days Until"
+                      title="Add another countdown or count-up"
+                      onClick={() => addDaysUntil()}
+                    >
+                      +
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     className="home-add-move"

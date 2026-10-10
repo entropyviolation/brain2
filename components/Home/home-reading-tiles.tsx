@@ -3,8 +3,8 @@
  *
  * Optional overview squares. Off until the Widgets key shows them.
  * Already flowing counts finished habits and older to-dos against to-dos
- * created and finished the same day. Plan and lived compares scheduled
- * minutes with painted Tracking minutes (sleep left out).
+ * created and finished the same day. Plan and lived compares prospective
+ * scheduled minutes with retrospective painted Tracking minutes (sleep left out).
  */
 "use client"
 
@@ -132,8 +132,9 @@ export function PlanAndLivedTile({
         </WidgetWells>
         <p className="home-widget-note">{PAINT_WHY[face.word]}</p>
         <p className="home-widget-note">
-          Plan is scheduled work, events, and planned actions. Lived is minutes painted on
-          Tracking for this day, each minute once. Sleep the log filled in is not counted.
+          Plan is prospective — scheduled work, events, and planned actions. Lived is
+          retrospective minutes painted on Tracking for this day, each minute once. Sleep
+          the log filled in is not counted.
         </p>
       </HomeWidgetDialog>
     </>

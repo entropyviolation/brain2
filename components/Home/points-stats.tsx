@@ -181,21 +181,22 @@ export function PointsBoard({ currentDate, onHide }: { currentDate: Date; onHide
           <div className="hab-score-caption">
             <span>Points</span>
           </div>
-          <div className="home-crt is-stack home-points-crt">
-            {POINT_ROWS.map((row) => (
-              <div key={row.kind} className="home-points-line" data-kind={row.kind}>
-                <span>{row.short}</span>
-                <span
-                  className={cn(row.kind === "today" && points.todayFlash && "is-flash")}
-                  suppressHydrationWarning
-                >
-                  {points[row.kind].score}
-                </span>
-              </div>
-            ))}
+          <div className="home-crt home-points-crt is-hero-readout">
+            <div
+              className={cn("hab-score-readout", points.todayFlash && "is-flash")}
+              data-centered="true"
+              suppressHydrationWarning
+            >
+              {points.today.score}
+            </div>
           </div>
           <div className="home-tile-foot">
-            <p className="hab-score-sub">{points.today.sub || points.alltime.sub || "\u00a0"}</p>
+            <p className="hab-score-sub" suppressHydrationWarning>
+              Today
+              {points.today.sub ? ` · ${points.today.sub}` : ""}
+              {" · "}
+              all-time {points.alltime.score}
+            </p>
           </div>
         </TileOpen>
       </div>
@@ -203,7 +204,7 @@ export function PointsBoard({ currentDate, onHide }: { currentDate: Date; onHide
         <div style={colorVars as CSSProperties}>
           <WidgetWells>
             {POINT_ROWS.map((row) => (
-              <WidgetWell key={row.kind} label={points[row.kind].caption} tone="nixie">
+              <WidgetWell key={row.kind} label={points[row.kind].caption}>
                 <strong suppressHydrationWarning>{points[row.kind].score}</strong>
                 {points[row.kind].sub ? <em>{points[row.kind].sub}</em> : null}
                 {points[row.kind].fill != null ? (

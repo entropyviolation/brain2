@@ -10,6 +10,7 @@
 import { useEffect, useState } from "react"
 import { HideWidgetConfirm, HomeWidgetDialog } from "@/components/Home/home-widget-dialog"
 import { HOME_WIDGET_CATALOG, HOME_WIDGET_LABEL, type HomeWidgetId } from "@/lib/home-widgets"
+import { useHomeDaysUntilStore } from "@/lib/home-days-until-store"
 import { useHomeWidgetsStore } from "@/lib/home-widgets-store"
 
 export function HomeWidgetCatalog({
@@ -23,6 +24,7 @@ export function HomeWidgetCatalog({
   const hidden = useHomeWidgetsStore((s) => s.hidden)
   const showWidget = useHomeWidgetsStore((s) => s.showWidget)
   const hideWidget = useHomeWidgetsStore((s) => s.hideWidget)
+  const addDaysUntil = useHomeDaysUntilStore((s) => s.addCountdown)
   const [index, setIndex] = useState(0)
   const [pendingHide, setPendingHide] = useState<HomeWidgetId | null>(null)
   const tucked = new Set(hidden)
@@ -126,13 +128,40 @@ export function HomeWidgetCatalog({
                 </div>
                 <p className="home-widget-note">{entry.shows}</p>
                 <p className="home-widget-note">{entry.useful}</p>
-                <button
-                  type="button"
-                  className="home-review-key"
-                  onClick={() => (tucked.has(entry.id) ? showWidget(entry.id) : setPendingHide(entry.id))}
-                >
-                  {tucked.has(entry.id) ? "Add" : "Hide"} {HOME_WIDGET_LABEL[entry.id]}
-                </button>
+                {tucked.has(entry.id) ? (
+                  <button
+                    type="button"
+                    className="home-review-key"
+                    onClick={() => showWidget(entry.id)}
+                  >
+                    Add {HOME_WIDGET_LABEL[entry.id]}
+                  </button>
+                ) : entry.id === "daysuntil" ? (
+                  <div className="home-widget-actions">
+                    <button
+                      type="button"
+                      className="home-review-key"
+                      onClick={() => addDaysUntil()}
+                    >
+                      Add another
+                    </button>
+                    <button
+                      type="button"
+                      className="home-review-key"
+                      onClick={() => setPendingHide(entry.id)}
+                    >
+                      Hide {HOME_WIDGET_LABEL[entry.id]}
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="home-review-key"
+                    onClick={() => setPendingHide(entry.id)}
+                  >
+                    Hide {HOME_WIDGET_LABEL[entry.id]}
+                  </button>
+                )}
               </article>
             ) : null}
           </div>

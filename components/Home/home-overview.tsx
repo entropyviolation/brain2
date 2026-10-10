@@ -27,7 +27,7 @@ import {
 } from "@/lib/home-widgets"
 import { useTaskStore } from "@/lib/task-store"
 import { DailyProgressQuickview } from "@/components/Home/daily-progress-quickview"
-import { DaysUntilTile } from "@/components/Home/home-days-until"
+import { DaysUntilTiles } from "@/components/Home/home-days-until"
 import { DayLampTile } from "@/components/Home/home-day-lamp"
 import { HomeReviewBanner } from "@/components/Home/home-review-banner"
 import { NextTile } from "@/components/Home/home-next-tile"
@@ -97,6 +97,7 @@ export function HomeOverview({ currentDate, onStartReview, onOpenHomeTab }: Home
             <OverviewTile
               key={id}
               id="progress"
+              className="is-hero"
               onHide={() => hideWidget("progress")}
               detail={<ProgressDetail currentDate={currentDate} />}
             >
@@ -114,7 +115,13 @@ export function HomeOverview({ currentDate, onStartReview, onOpenHomeTab }: Home
           )
         }
         if (id === "daysuntil") {
-          return <DaysUntilTile key={id} currentDate={currentDate} onHide={() => hideWidget("daysuntil")} />
+          return (
+            <DaysUntilTiles
+              key={id}
+              currentDate={currentDate}
+              onHideFamily={() => hideWidget("daysuntil")}
+            />
+          )
         }
         if (id === "moon") {
           return <MoonTile key={id} currentDate={currentDate} onHide={() => hideWidget("moon")} />

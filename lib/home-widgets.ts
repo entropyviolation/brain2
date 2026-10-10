@@ -22,7 +22,7 @@
  */
 
 import { formatLocalDateKey } from "@/lib/date-utils"
-import type { DaysUntilFormat } from "@/lib/home-days-until-store"
+import type { DaysUntilFormat, DaysUntilMode } from "@/lib/home-days-until-store"
 import { DEFAULT_PERCENT_LED_TINT, sanitizePercentLedTint } from "@/lib/habit-led"
 import {
   DEFAULT_GRADE_TUBE_COLOR,
@@ -37,6 +37,7 @@ import {
 } from "@/lib/affirmations"
 import type { List, Task } from "@/lib/types"
 
+/** Catalog id set (stable for migrate append). Fresh strip order is `DEFAULT_HOME_WIDGET_ORDER`. */
 export const HOME_WIDGET_IDS = [
   "review",
   "points",
@@ -84,8 +85,30 @@ export const HOME_WIDGET_LABEL: Record<HomeWidgetId, string> = {
   paint: "Plan and lived",
 }
 
-/** Shown until the user hides one. Affirmation, weather, Next, and Day lamp start tucked. */
-export const DEFAULT_HOME_WIDGET_ORDER: HomeWidgetId[] = [...HOME_WIDGET_IDS]
+/**
+ * Fresh-install reading order: Progress + Rituals lead; Moon / Days Until sit
+ * quieter later. Existing vaults keep their stored order.
+ */
+export const DEFAULT_HOME_WIDGET_ORDER: HomeWidgetId[] = [
+  "progress",
+  "review",
+  "points",
+  "award",
+  "pet",
+  "affirmation",
+  "weather",
+  "next",
+  "daylamp",
+  "harvest",
+  "inbox",
+  "flow",
+  "paint",
+  "tracking",
+  "night",
+  "solar",
+  "moon",
+  "daysuntil",
+]
 
 export const DEFAULT_HOME_WIDGET_HIDDEN: HomeWidgetId[] = [
   "affirmation",
@@ -194,8 +217,8 @@ export const HOME_WIDGET_CATALOG: HomeWidgetBlurb[] = [
   {
     id: "daysuntil",
     name: "Days Until",
-    shows: "A live count in the CRT, in units or as a decimal. Before the date it counts down. Once the date is past, the caption reads Since and the CRT is time since. A date with no clock starts at local midnight. The footer names what you are counting. Set the date, an optional time, and the format in the detail.",
-    useful: "One date you do not want to do math for. A past date reads as time since.",
+    shows: "As many countdown-to or count-up-from tiles as you add. Each CRT is a live count in units or as a decimal. Attach a Plan event, and optionally keep that mark as an all-day day on the scheduler. A date with no clock starts at local midnight. Set the mode, date, optional time, and format in the detail.",
+    useful: "Dates you do not want to do math for — ahead or behind, each on its own square.",
     preview: { caption: "Days Until", crt: "01 day 3 hours", footer: "Until Launch" },
   },
   {
@@ -250,8 +273,8 @@ export const HOME_WIDGET_CATALOG: HomeWidgetBlurb[] = [
   {
     id: "paint",
     name: "Plan and lived",
-    shows: "Forward plan against waking paint. Plan is scheduled minutes still ahead, not duration copied onto done rows. Lived is painted minutes, each minute once, with sleep left out. Open means neither side has anything.",
-    useful: "The forward plan and the waking painted day, in the same square.",
+    shows: "Prospective forward plan against retrospective waking paint. Plan is scheduled minutes still ahead, not duration copied onto done rows. Lived is painted minutes, each minute once, with sleep left out. Open means neither side has anything.",
+    useful: "Prospective minutes and retrospective waking paint, in the same square.",
     preview: { caption: "Plan and lived", crt: "Short", footer: "plan 5h · lived 3h" },
   },
 ]
@@ -761,20 +784,51 @@ function unitWord(n: number, singular: string, plural: string): string {
 }
 
 /**
- * Live CRT + footer for the Days Until tile.
+ * Live CRT + footer for a Days Until tile.
  * Unit: `01 day 3 hours` (≥1d) or `03 hours 30 min` (<1d).
  * Decimal: `1.25 days` (≥1d) or `3.5 hours` (<1d). Never shows `0 days`.
+ * `countdown` stays on the mark ahead (and says passed once it is gone).
+ * `countup` stays on time since (and says ahead before the mark).
+ * Omit `mode` for the old auto face: Until while ahead, Since once past.
  */
 export function daysUntilLiveFace(input: {
   remainingMs: number | null
   label: string
   format: DaysUntilFormat
   hasTime: boolean
+  mode?: DaysUntilMode
 }): { crt: string; footer: string } {
   const name = input.label.trim() || "that day"
   if (input.remainingMs == null) return { crt: "—", footer: "Set a date" }
 
   const ms = input.remainingMs
+  const mode = input.mode ?? "auto"
+
+  if (mode === "countdown") {
+    if (ms <= 0) {
+      if (!input.hasTime && ms > -MS_PER_DAY) {
+        return { crt: "0", footer: `${name} is today` }
+      }
+      if (Math.abs(ms) < MS_PER_MIN) return { crt: "now", footer: name }
+      return { crt: "0", footer: `${name} passed` }
+    }
+    return { crt: formatCountdownSpan(ms, input.format), footer: `Until ${name}` }
+  }
+
+  if (mode === "countup") {
+    if (ms > 0) {
+      return { crt: "0", footer: `${name} ahead` }
+    }
+    if (!input.hasTime && ms > -MS_PER_DAY) {
+      return { crt: "0", footer: `${name} is today` }
+    }
+    if (Math.abs(ms) < MS_PER_MIN) return { crt: "now", footer: name }
+    return {
+      crt: formatCountdownSpan(Math.abs(ms), input.format),
+      footer: `Since ${name}`,
+    }
+  }
+
   if (ms <= 0) {
     if (!input.hasTime && ms > -MS_PER_DAY) {
       return { crt: "0", footer: `${name} is today` }
@@ -793,6 +847,14 @@ export function daysUntilLiveFace(input: {
     crt: formatCountdownSpan(ms, input.format),
     footer: `Until ${name}`,
   }
+}
+
+/** Plate label for a countdown or count-up tile. */
+export function daysUntilCaption(mode: DaysUntilMode, remainingMs?: number | null): string {
+  if (mode === "countup") return "Days Since"
+  if (mode === "countdown") return "Days Until"
+  if (remainingMs != null && remainingMs <= 0) return "Days Since"
+  return "Days Until"
 }
 
 export function formatCountdownSpan(ms: number, format: DaysUntilFormat): string {
