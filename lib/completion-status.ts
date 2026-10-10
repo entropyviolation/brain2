@@ -144,10 +144,11 @@ export function withStatus<T extends Pick<Task, "status" | "completed" | "missed
   if (status === "missed") {
     return { ...next, missedAt: task.missedAt ?? now }
   }
-  if ("missedAt" in next || task.missedAt) {
-    return { ...next, missedAt: undefined }
-  }
-  return next
+  const cleared: T = "missedAt" in next || task.missedAt ? { ...next, missedAt: undefined } : next
+  if (!("missReason" in cleared)) return cleared
+  const copy = { ...cleared }
+  delete (copy as { missReason?: unknown }).missReason
+  return copy
 }
 
 /**

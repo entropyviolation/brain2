@@ -40,6 +40,7 @@ import { ResourcesPanel } from "./ResourcesPanel"
 import { OperationLogFeed } from "./OperationLogFeed"
 import { ToDoNextRail } from "./ToDoNextRail"
 import { OperationPostMortemDialog } from "./OperationPostMortemDialog"
+import { OperationMissReasonDialog } from "./OperationMissReasonDialog"
 import { OperationSettingsDialog } from "./OperationSettingsDialog"
 import { WorkingNowControl } from "./WorkingNowControl"
 import {
@@ -107,11 +108,26 @@ export function OperationWorkspace({
   const [renaming, setRenaming] = useState(false)
   const [titleDraft, setTitleDraft] = useState("")
   const [postMortemOpen, setPostMortemOpen] = useState(false)
+  const [whyMissedOpen, setWhyMissedOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [tab, setTab] = useState<OperationPanelId>(() => {
     const stored = readStoredRecord(APP_NAV_KEYS.opsPanel)[operationId]
     return canonicalOperationPanelId(stored) ?? "home"
   })
+
+  const opStage = (operation?.attributes?.[OPERATION_ATTR.stage] as OperationStage | undefined) ?? "planning"
+  const stageSeenFor = useRef<string | null>(null)
+  const stageWas = useRef(opStage)
+  useEffect(() => {
+    if (!operation) return
+    if (stageSeenFor.current !== operation.id) {
+      stageSeenFor.current = operation.id
+      stageWas.current = opStage
+      return
+    }
+    if (stageWas.current !== "abandoned" && opStage === "abandoned") setWhyMissedOpen(true)
+    stageWas.current = opStage
+  }, [operation, opStage])
 
   const panels = useMemo(() => resolveOperationPanels(operation), [operation])
   const tabPanels = useMemo(
@@ -168,7 +184,6 @@ export function OperationWorkspace({
     )
   }
 
-  const stage = (operation.attributes?.[OPERATION_ATTR.stage] as OperationStage) ?? "planning"
   const categories = getOperationCategories(operation)
   const wideTab = isWideOperationPanel(tab)
 
@@ -222,7 +237,7 @@ export function OperationWorkspace({
                 </h2>
               )}
             </div>
-            <span className={`ops-stage ops-stage-${stage}`}>{stage}</span>
+            <span className={`ops-stage ops-stage-${opStage}`}>{opStage}</span>
           </div>
 
           <div className="ops-menubar">
@@ -236,6 +251,9 @@ export function OperationWorkspace({
             </button>
             <button type="button" className="ops-btn" onClick={() => setPostMortemOpen(true)}>
               After-action report
+            </button>
+            <button type="button" className="ops-btn" onClick={() => setWhyMissedOpen(true)}>
+              Why missed
             </button>
             {categories.length > 0 && (
               <span className="ops-chip-row ops-menubar-chips">
@@ -296,6 +314,11 @@ export function OperationWorkspace({
         operation={operation}
         open={postMortemOpen}
         onClose={() => setPostMortemOpen(false)}
+      />
+      <OperationMissReasonDialog
+        operation={operation}
+        open={whyMissedOpen}
+        onClose={() => setWhyMissedOpen(false)}
       />
     </div>
   )

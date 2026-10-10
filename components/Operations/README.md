@@ -42,7 +42,7 @@ Other rooms may import:
 
 Mutations in `operation-actions.ts` write **`lib/task-store.ts`** (`useTaskStore`). Start and stop go through `lib/operation-work-session.ts`, which writes **`lib/work-session-store.ts`** and, on stop, tasks through `taskRepository`.
 
-Stay in this room: the `WorkingNowControl` button, `OperationWorkspace`, and the panels — `OperationHome`, `OperationTasksPanel`, `PhasesPanel`, `PartsPanel`, `OperationFieldPlanPanels`, `ToDoNextRail`, `ResourcesPanel`, `OperationLogFeed`, `OperationSettingsDialog`, `OperationPostMortemDialog`. Nothing outside imports them.
+Stay in this room: the `WorkingNowControl` button, `OperationWorkspace`, and the panels — `OperationHome`, `OperationTasksPanel`, `PhasesPanel`, `PartsPanel`, `OperationFieldPlanPanels`, `ToDoNextRail`, `ResourcesPanel`, `OperationLogFeed`, `OperationSettingsDialog`, `OperationPostMortemDialog`, `OperationMissReasonDialog`. Nothing outside imports them.
 
 ## Panels
 
@@ -174,7 +174,8 @@ those minutes. One session at a time; starting another stops the current one.
 | `ToDoNextRail.tsx` | Queue rail — ranked next-actionable tasks across the tree |
 | `ResourcesPanel.tsx` | attached resource items |
 | `OperationLogFeed.tsx` | time-log feed + quick "log time" form |
-| `OperationPostMortemDialog.tsx` | Win95 after-action report → `addOperationReview` |
+| `OperationPostMortemDialog.tsx` | Win95 after-action report → `addOperationReview`. Does not write `blockedReasons` |
+| `OperationMissReasonDialog.tsx` | Slim why-missed prompt. It is `MissReasonDialog` (reason menu above the window, multiline note). Optional preset and note on `OperationReview.blockedReasons`. Opens from **Why missed**, and when the stage becomes `abandoned`. Skip writes nothing. The after-action form is unchanged |
 | `operation-actions.ts` | imperative store mutations (categories, panels, presets, phases, part kinds/instances/ideas, list items, delete, time) |
 | `index.ts` | integration barrel |
 
@@ -194,7 +195,7 @@ many panels it has on. Completed and inactive operations are omitted until
 category" checkbox, that archive toggle, and a checkbox strip to filter
 categories (the same affordance as the Lists All view). Opening an operation
 keeps the fascia: CRT title (click the name to rename), **Board** / **Settings**
-/ **After-action report** metal keys with the operation's category chips, a
+/ **After-action report** / **Why missed** metal keys with the operation's category chips, a
 **Working on this now** toggle (phosphor lamp + CRT elapsed clock while live),
 equal-fill panel keys (Home, To do, Phases, Parts, Log, and whatever else
 Settings switched on), the Queue rail, and a CRT phosphor heatmap on Home.

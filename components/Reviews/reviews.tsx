@@ -70,6 +70,7 @@ import {
   ritualPointsLabel,
   ritualPointsTaskId,
 } from "@/lib/ritual-points"
+import { currentRitualPointSettings } from "@/lib/points-rules-live"
 import { itemTitle } from "@/lib/item-utils"
 
 const REFLECTIONS: { id: string; q: string }[] = [
@@ -116,8 +117,6 @@ function ReviewDialog({
   const accrueRegret = useRegretStore((s) => s.addRegret)
   const upsertPoints = usePointsStore((s) => s.upsertPoints)
   const goals = useGoalsStore((s) => s.goals)
-  const sectionPoints = useUserSettingsStore((s) => s.ritualSectionPoints)
-  const completionBonus = useUserSettingsStore((s) => s.ritualCompletionBonus)
   const submittedRef = useRef(false)
   const baselineRef = useRef("")
 
@@ -234,10 +233,7 @@ function ReviewDialog({
       focusGoalCount: focusGoalIds.length,
       arc: cleanArc(arc),
     }
-    const settings = {
-      sectionPoints: sectionPoints ?? 10,
-      completionBonus: completionBonus ?? 30,
-    }
+    const settings = currentRitualPointSettings()
     const points = ritualAwardPoints(input, settings, true)
     const sections = completedRitualSections(input).length
     upsertPoints(

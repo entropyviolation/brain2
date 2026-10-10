@@ -1,11 +1,12 @@
 /**
  * lib/completion-review.ts — Completion-review clock, reflections, and points
  *
- * The quick review on a finished task can name a length and a start. Each is
- * exact, estimated, or unknown. Unknown stores no value.
- * Unknown is the absence of a number or a time — not zero, not midnight, and
- * not an estimate. Estimated minutes stay out of exact totals. `timeRough` is
- * set only when the length or the start is estimated. Agreeing to the review
+ * The quick review on a finished task can name a length, a start, and a finish.
+ * Length and start are each exact, estimated, or unknown. Unknown stores no
+ * value — not zero, not midnight, and not an estimate. The finish is a real
+ * day and time (`completedDate`); it can be exact or estimated, and never
+ * unknown. Estimated minutes stay out of exact totals. `timeRough` is set
+ * when the length, the start, or the finish is estimated. Agreeing to the review
  * awards 3 points plus 0.1 per word in
  * the quick-review notes, through the points ledger. A later Reflect note
  * (`reflectNotes`) is not that string and does not change the award.
@@ -13,8 +14,14 @@
  * A word is a whitespace-separated non-empty token. Punctuation stays on the
  * token it touches ("well-known" is one word). Only the quick-review `notes`
  * field counts.
+ *
+ * `summarizeCompletionReviews` also averages the later Reflect scores
+ * (`satisfaction`, `distraction`) and keeps each non-empty `reflectNotes`
+ * string. Those notes are not the quick-review `notes` and do not change
+ * the points.
  */
 import type {
+  CompletedCertainty,
   CompletionReflections,
   DurationCertainty,
   FieldEstimate,
@@ -22,7 +29,9 @@ import type {
   Task,
   TaskCompletionReview,
 } from "@/lib/types"
+import { formatLocalDateKey, parseLocalDate } from "@/lib/date-utils"
 import { isEstimated, confirmEstimates, clearEstimates } from "@/lib/estimated-values"
+import { pointsRuleValue } from "@/lib/points-rules-live"
 import { usePointsStore } from "@/lib/points-store"
 
 /** Awarded for turning the quick review on, before any words. */
@@ -52,6 +61,19 @@ export const REFLECTION_SCALES: { key: ReflectionScoreKey; label: string; hint: 
   { key: "meaning", label: "Meaning", hint: "Whether it was worth it" },
 ]
 
+/**
+ * Later Reflect scores on `TaskCompletionReview`. They are not quick-review
+ * keys, so they stay off `REFLECTION_SCORE_KEYS` and `pickReflectionScores`.
+ */
+export const LATER_FEELING_SCALES: { key: LaterFeelingScoreKey; label: string; hint: string }[] = [
+  { key: "satisfaction", label: "Satisfaction", hint: "How happy you were with the result" },
+  { key: "distraction", label: "Distraction", hint: "How often you were pulled away" },
+]
+
+export type LaterFeelingScoreKey = "satisfaction" | "distraction"
+
+export type FeelingsScoreKey = ReflectionScoreKey | LaterFeelingScoreKey
+
 export function reviewPointsTaskId(taskId: string): string {
   return `review:${taskId}`
 }
@@ -62,10 +84,12 @@ export function reviewWordCount(text: string | undefined | null): number {
   return text.trim().split(/\s+/).filter((token) => token.length > 0).length
 }
 
-/** 3 + 0.1 per word. 0 words is 3. 10 words is 4. Tenths, no float drift. */
+/** Base plus per-word, from the live Points rules. 0 words is the base. Tenths stay exact at the defaults. */
 export function quickReviewPoints(wordCount: number): number {
   const words = Number.isFinite(wordCount) ? Math.max(0, Math.trunc(wordCount)) : 0
-  return (QUICK_REVIEW_BASE_POINTS * 10 + words) / 10
+  const base = pointsRuleValue("review.quickBase")
+  const perWord = pointsRuleValue("review.pointsPerWord")
+  return Math.round((base + words * perWord) * 1000) / 1000
 }
 
 export function formatReviewPoints(points: number): string {
@@ -134,6 +158,12 @@ export interface ClockDraft {
   startCertainty: StartCertainty | "unspecified"
   /** `HH:mm`, or empty. Cleared when the start is unknown. */
   startTime: string
+  /** `unspecified` means the person has not marked the finish yet. */
+  doneCertainty: CompletedCertainty | "unspecified"
+  /** Local `yyyy-MM-dd`. Shown even while the finish is still unspecified. */
+  doneDate: string
+  /** `HH:mm`. Shown even while the finish is still unspecified. */
+  doneTime: string
 }
 
 /** Older reviews stored `"known"` for what is now `exact`. */
@@ -161,9 +191,30 @@ export function applyHm(base: Date, hm: string): Date | undefined {
   return next
 }
 
+/** Local calendar day plus `HH:mm`. An empty or impossible pair is no instant. */
+export function combineLocalDateTime(date: string, hm: string): Date | undefined {
+  const day = parseLocalDate(date)
+  if (!day) return undefined
+  return applyHm(day, hm)
+}
+
+function asDate(value: Date | string | undefined | null): Date | undefined {
+  if (!value) return undefined
+  const date = value instanceof Date ? value : new Date(value)
+  return Number.isNaN(date.getTime()) ? undefined : date
+}
+
 export function clockDraftFromTask(task: Task | undefined | null): ClockDraft {
   if (!task) {
-    return { durationCertainty: "unspecified", durationMinutes: "", startCertainty: "unspecified", startTime: "" }
+    return {
+      durationCertainty: "unspecified",
+      durationMinutes: "",
+      startCertainty: "unspecified",
+      startTime: "",
+      doneCertainty: "unspecified",
+      doneDate: "",
+      doneTime: "",
+    }
   }
   const review = task.completionReview
   const certainty = review?.durationCertainty ?? task.durationCertainty
@@ -184,11 +235,19 @@ export function clockDraftFromTask(task: Task | undefined | null): ClockDraft {
   else if (started && isEstimated(task.estimates, "startedAt")) draftStart = "estimated"
   else if (started) draftStart = "exact"
 
+  const finished = asDate(task.completedDate) ?? new Date()
+  const doneFlag = task.completionReview?.completedCertainty ?? task.completedCertainty
+  const draftDone: ClockDraft["doneCertainty"] =
+    doneFlag === "exact" || doneFlag === "estimated" ? doneFlag : "unspecified"
+
   return {
     durationCertainty,
     durationMinutes: durationCertainty === "unknown" || minutes === undefined ? "" : String(Math.round(minutes)),
     startCertainty: draftStart,
     startTime: draftStart === "unknown" || !started ? "" : formatHm(started),
+    doneCertainty: draftDone,
+    doneDate: formatLocalDateKey(finished),
+    doneTime: formatHm(finished),
   }
 }
 
@@ -197,22 +256,27 @@ export interface ClockWrite {
   durationCertainty?: DurationCertainty
   startedAt?: Date
   startCertainty?: StartCertainty
+  completedDate?: Date
+  completedCertainty?: CompletedCertainty
   timeRough?: boolean
   estimates?: FieldEstimate[]
   /** True when the length fields should replace whatever the task already has. */
   writeDuration: boolean
   /** True when the start fields should replace whatever the task already has. */
   writeStart: boolean
+  /** True when the finish day and time should replace whatever the task already has. */
+  writeDone: boolean
 }
 
 /**
  * Turn the review's clock draft into task fields.
  * Unknown clears the length or the start. Estimated stores the value apart from exact totals.
  * An empty exact/est. field does not invent a number or a time.
- * `timeRough` is set only when the length or the start is estimated.
+ * `timeRough` is set when the length, the start, or the finish is estimated.
+ * An unspecified finish leaves `completedDate` alone, even if the draft still shows that clock.
  */
 export function clockWriteFromDraft(task: Task, draft: ClockDraft): ClockWrite {
-  const write: ClockWrite = { writeDuration: false, writeStart: false }
+  const write: ClockWrite = { writeDuration: false, writeStart: false, writeDone: false }
   let estimates = task.estimates
 
   if (draft.durationCertainty === "unknown") {
@@ -230,13 +294,23 @@ export function clockWriteFromDraft(task: Task, draft: ClockDraft): ClockWrite {
     }
   }
 
+  if (draft.doneCertainty === "exact" || draft.doneCertainty === "estimated") {
+    const completedDate = combineLocalDateTime(draft.doneDate, draft.doneTime)
+    if (completedDate) {
+      write.writeDone = true
+      write.completedDate = completedDate
+      write.completedCertainty = draft.doneCertainty
+      estimates = confirmEstimates(estimates, ["completedDate"])
+    }
+  }
+
   if (draft.startCertainty === "unknown") {
     write.writeStart = true
     write.startedAt = undefined
     write.startCertainty = "unknown"
     estimates = clearEstimates(estimates, ["startedAt"])
   } else if (draft.startCertainty === "exact" || draft.startCertainty === "estimated") {
-    const baseRaw = task.startedAt ?? task.completedDate ?? new Date()
+    const baseRaw = write.completedDate ?? task.startedAt ?? task.completedDate ?? new Date()
     const base = baseRaw instanceof Date ? baseRaw : new Date(baseRaw)
     const startedAt = applyHm(Number.isNaN(base.getTime()) ? new Date() : base, draft.startTime)
     if (startedAt) {
@@ -249,7 +323,9 @@ export function clockWriteFromDraft(task: Task, draft: ClockDraft): ClockWrite {
 
   const nextDuration = write.writeDuration ? write.durationCertainty : task.durationCertainty
   const nextStart = write.writeStart ? write.startCertainty : readStartCertainty(task.startCertainty)
-  write.timeRough = nextDuration === "estimated" || nextStart === "estimated" ? true : undefined
+  const nextDone = write.writeDone ? write.completedCertainty : task.completedCertainty
+  write.timeRough =
+    nextDuration === "estimated" || nextStart === "estimated" || nextDone === "estimated" ? true : undefined
   write.estimates = estimates?.length ? estimates : undefined
   return write
 }
@@ -261,6 +337,9 @@ export function applyClockWrite(task: Task, write: ClockWrite): Task {
       ? { actualDuration: write.actualDuration, durationCertainty: write.durationCertainty }
       : {}),
     ...(write.writeStart ? { startedAt: write.startedAt, startCertainty: write.startCertainty } : {}),
+    ...(write.writeDone
+      ? { completedDate: write.completedDate, completedCertainty: write.completedCertainty }
+      : {}),
     timeRough: write.timeRough,
     estimates: write.estimates,
   }
@@ -306,6 +385,11 @@ export function composeCompletionReview(args: {
   } else if (args.existing?.actualDuration && args.existing.actualDuration > 0) {
     review.actualDuration = args.existing.actualDuration
     if (args.existing.durationCertainty) review.durationCertainty = args.existing.durationCertainty
+  }
+
+  if (args.clock.writeDone && args.clock.completedDate && args.clock.completedCertainty) {
+    review.completedAt = args.clock.completedDate
+    review.completedCertainty = args.clock.completedCertainty
   }
 
   if (args.clock.writeStart && args.clock.startCertainty === "unknown") {
@@ -366,10 +450,18 @@ export interface GoalTexture {
 }
 
 export interface ScoreMean {
-  key: ReflectionScoreKey
+  key: FeelingsScoreKey
   label: string
   n: number
   mean: number
+}
+
+/** A later Reflect note. Quick-review `notes` are not copied here. */
+export interface ReflectNote {
+  taskId: string
+  title: string
+  text: string
+  completedAt: Date
 }
 
 export interface DifficultyPair {
@@ -397,6 +489,8 @@ export interface CompletionReviewSummary {
   reviewPoints: number
   agreedCount: number
   scoreMeans: ScoreMean[]
+  /** Non-empty `reflectNotes` on reviews in the window, newest first. */
+  reflectNotes: ReflectNote[]
   difficultyPairs: DifficultyPair[]
   /** Mean actual minus mean expected, when both exist on the same reviews. */
   difficultyGap?: number
@@ -494,6 +588,10 @@ function textureFor(
  * Unknown lengths add to `unknownCount` only. They do not add 0 to either minute total.
  * Unknown starts add to `startUnknown` only. They are not a time.
  * Estimated minutes stay in `estimatedMinutes`.
+ * Satisfaction and distraction use the same 1–10 rule as the other feelings:
+ * an integer from 1 to 10 counts, and a missing or invalid score is left out.
+ * `reflectNotes` keeps the later Reflect text. Quick-review `notes` stay in
+ * the word count and are not copied into that list.
  */
 export function summarizeCompletionReviews(args: {
   tasks: Task[]
@@ -542,8 +640,9 @@ export function summarizeCompletionReviews(args: {
     }
   }
 
-  const scoreBuckets = new Map<ReflectionScoreKey, number[]>()
+  const scoreBuckets = new Map<FeelingsScoreKey, number[]>()
   const difficultyPairs: DifficultyPair[] = []
+  const reflectNotes: ReflectNote[] = []
   let wordCount = 0
   let reviewPoints = 0
   let agreedCount = 0
@@ -556,6 +655,23 @@ export function summarizeCompletionReviews(args: {
       const bucket = scoreBuckets.get(key) ?? []
       bucket.push(n)
       scoreBuckets.set(key, bucket)
+    }
+    for (const scale of LATER_FEELING_SCALES) {
+      const n = clampReflectionScore(review[scale.key])
+      if (n === undefined) continue
+      const bucket = scoreBuckets.get(scale.key) ?? []
+      bucket.push(n)
+      scoreBuckets.set(scale.key, bucket)
+    }
+    const laterNote = review.reflectNotes?.trim()
+    if (laterNote) {
+      const completedAt = review.completedAt instanceof Date ? review.completedAt : new Date(review.completedAt)
+      reflectNotes.push({
+        taskId: task.id,
+        title: args.titleOf(task),
+        text: laterNote,
+        completedAt,
+      })
     }
     const expected = clampReflectionScore(review.expectedDifficulty)
     const actual = clampReflectionScore(review.actualDifficulty)
@@ -574,11 +690,19 @@ export function summarizeCompletionReviews(args: {
     }
   }
 
-  const scoreMeans: ScoreMean[] = REFLECTION_SCALES.flatMap((scale) => {
+  const scoreMeans: ScoreMean[] = [...REFLECTION_SCALES, ...LATER_FEELING_SCALES].flatMap((scale) => {
     const values = scoreBuckets.get(scale.key) ?? []
     const avg = mean(values)
     if (avg === undefined) return []
     return [{ key: scale.key, label: scale.label, n: values.length, mean: avg }]
+  })
+
+  reflectNotes.sort((a, b) => {
+    const at = a.completedAt.getTime()
+    const bt = b.completedAt.getTime()
+    const aTime = Number.isFinite(at) ? at : 0
+    const bTime = Number.isFinite(bt) ? bt : 0
+    return bTime - aTime || a.title.localeCompare(b.title)
   })
 
   const expectedMean = mean(difficultyPairs.map((pair) => pair.expected))
@@ -602,6 +726,7 @@ export function summarizeCompletionReviews(args: {
     reviewPoints,
     agreedCount,
     scoreMeans,
+    reflectNotes,
     difficultyPairs,
     ...(expectedMean !== undefined && actualMean !== undefined ? { difficultyGap: actualMean - expectedMean } : {}),
     goals: textureFor(args.goals, done, (task) => task.contributesToGoalIds),

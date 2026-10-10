@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Sparkles } from "lucide-react"
 import { RitualMoonIcon } from "@/components/Icons"
 import { usePointsStore } from "@/lib/points-store"
-import { useUserSettingsStore } from "@/lib/user-settings-store"
+import { currentRitualPointSettings } from "@/lib/points-rules-live"
 import { periodLabel } from "@/lib/reviews-store"
 import { useStarLordStore } from "@/lib/star-lord-store"
 import {
@@ -52,8 +52,6 @@ export function StarLordReportDialog({
   const reports = useStarLordStore((s) => s.reports)
   const saveReport = useStarLordStore((s) => s.saveReport)
   const upsertPoints = usePointsStore((s) => s.upsertPoints)
-  const sectionPoints = useUserSettingsStore((s) => s.ritualSectionPoints)
-  const completionBonus = useUserSettingsStore((s) => s.ritualCompletionBonus)
   const existing = reports.find((row) => row.id === starLordReportId(kind, dateKey))
 
   const [answers, setAnswers] = useState<Record<string, string>>({})
@@ -84,10 +82,7 @@ export function StarLordReportDialog({
       completedAt: done ? (existing?.completedAt ?? new Date().toISOString()) : undefined,
     })
     if (!done) return
-    const settings = {
-      sectionPoints: sectionPoints ?? 10,
-      completionBonus: completionBonus ?? 30,
-    }
+    const settings = currentRitualPointSettings()
     const points = starLordAwardPoints(kind, cleaned, settings, true)
     const sections = completedStarLordSections(kind, cleaned).length
     upsertPoints(

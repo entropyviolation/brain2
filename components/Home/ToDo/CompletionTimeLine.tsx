@@ -60,6 +60,8 @@ export function CompletionTimeLine({
   const duration = task.actualDuration
   const durationAssumed = isEstimated(task.estimates, "actualDuration")
   const windowAssumed = isEstimated(task.estimates, "completedDate") || isEstimated(task.estimates, "startedAt")
+  const finishRough = task.completedCertainty === "estimated"
+  const windowMarked = windowAssumed || finishRough
 
   const save = () => {
     const [hours, mins] = time.split(":").map((part) => Number.parseInt(part, 10))
@@ -106,7 +108,7 @@ export function CompletionTimeLine({
     <div className="todo-time">
       <span>
         {showDate && `${format(completedAt, "MMM d")}, `}
-        {windowAssumed && "~"}
+        {windowMarked && "~"}
         {formatCompletionWindow(task.startedAt, completedAt)}
       </span>
       {duration !== undefined && (
@@ -129,7 +131,7 @@ export function CompletionTimeLine({
       {task.timeRough && !assumed && (
         <>
           <span aria-hidden>·</span>
-          <span className="todo-est" title="Duration or start time is a rough estimate">
+          <span className="todo-est" title="Duration, start, or finish is a rough estimate">
             Est.
           </span>
         </>

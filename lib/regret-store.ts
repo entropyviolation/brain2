@@ -24,6 +24,7 @@ import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { formatDateKey, formatLocalDateKey, startOfLocalDay } from "./date-utils"
 import { priorityDateOf } from "@/lib/scheduling"
+import { pointsRuleValue } from "@/lib/points-rules-live"
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns"
 import type { Task, BlockedReason } from "@/lib/types"
 
@@ -85,7 +86,7 @@ export function dailyRegretIncrement(task: Task): number {
   const urgency = task.urgency ?? 0
   const reward = task.rewardValue ?? 0
   const weight = importance + urgency + reward
-  return weight > 0 ? weight : 1
+  return weight > 0 ? weight : pointsRuleValue("regret.minDailyWeight")
 }
 
 /**

@@ -6,8 +6,10 @@
  * morning, or start). Lets
  * the user record which Objectives and Goals the finished task contributed to,
  * or create a new one of either without leaving the popup. An optional quick
- * review records how long the work took and when it started. Each is exact,
- * estimated, or unknown. Unknown stores no minutes and no start time. A few
+ * review records how long the work took, when it started, and when it finished.
+ * Length and start are each exact, estimated, or unknown. Unknown stores no
+ * minutes and no start time. The finish is any day and time, exact or
+ * estimated. A few
  * 1–10 reflections and notes follow. Agreeing to that review
  * awards 3 points plus 0.1 per word. **Undo** reopens the task; **Skip** keeps
  * the completion without a contribution.
@@ -29,9 +31,9 @@ import {
   useGoalsStore,
   objectiveMultiplierFor,
   taskObjectiveMultiplier,
-  DEFAULT_OBJECTIVE_MULTIPLIER,
 } from "@/lib/goals-store"
 import { composePointMultiplier, taskServesFocusGoals } from "@/lib/goal-focus"
+import { pointsRuleValue } from "@/lib/points-rules-live"
 import { nightCarryForMorning } from "@/lib/ritual-carry"
 import { useReviewsStore } from "@/lib/reviews-store"
 import { useUserSettingsStore } from "@/lib/user-settings-store"
@@ -227,6 +229,9 @@ export function CompletionDialog({
   const [actualDuration, setActualDuration] = useState(initialClock.durationMinutes)
   const [startCertainty, setStartCertainty] = useState<ClockDraft["startCertainty"]>(initialClock.startCertainty)
   const [startTime, setStartTime] = useState(initialClock.startTime)
+  const [doneCertainty, setDoneCertainty] = useState<ClockDraft["doneCertainty"]>(initialClock.doneCertainty)
+  const [doneDate, setDoneDate] = useState(initialClock.doneDate)
+  const [doneTime, setDoneTime] = useState(initialClock.doneTime)
   const [notes, setNotes] = useState("")
 
   const activeObjectives = useMemo(() => objectives.filter((o) => !o.archived), [objectives])
@@ -257,10 +262,11 @@ export function CompletionDialog({
       goals,
       carry.focusGoalIds,
     )
-    return composePointMultiplier(objectiveMultiplier, focusMultiplier ?? 1.5, focused)
+    return composePointMultiplier(objectiveMultiplier, pointsRuleValue("goalFocus.multiplier"), focused)
   }, [objectives, objectiveIds, reviews, focusMultiplier, goalIds, goals, task])
   const focusedForBase = multiplier > 1 && objectiveIds.length === 0 && basePoints <= 0
-  const effectiveBase = basePoints > 0 ? basePoints : objectiveIds.length || focusedForBase ? 1 : 0
+  const fallbackBase = pointsRuleValue("list.defaultCompletionPoints")
+  const effectiveBase = basePoints > 0 ? basePoints : objectiveIds.length || focusedForBase ? fallbackBase : 0
   const total = round2(effectiveBase * multiplier)
   const bonus = round2(total - basePoints)
 
@@ -311,11 +317,15 @@ export function CompletionDialog({
       durationMinutes: actualDuration,
       startCertainty,
       startTime,
+      doneCertainty,
+      doneDate,
+      doneTime,
     }
     const clockTouched = !snapshotsEqual(draft, initialClock)
     const clock = clockWriteFromDraft(task, draft)
     const base = clockTouched || showReflection ? applyClockWrite(task, clock) : task
-    const completedAt = task.completedDate instanceof Date ? task.completedDate : task.completedDate ? new Date(task.completedDate) : new Date()
+    const stamped = task.completedDate instanceof Date ? task.completedDate : task.completedDate ? new Date(task.completedDate) : new Date()
+    const completedAt = clock.writeDone && clock.completedDate ? clock.completedDate : stamped
     const review = showReflection
       ? composeCompletionReview({
           taskId: task.id,
@@ -383,6 +393,9 @@ export function CompletionDialog({
     actualDuration: initialClock.durationMinutes,
     startCertainty: initialClock.startCertainty,
     startTime: initialClock.startTime,
+    doneCertainty: initialClock.doneCertainty,
+    doneDate: initialClock.doneDate,
+    doneTime: initialClock.doneTime,
     objectiveDraft: "",
     goalDraft: "",
   }
@@ -399,6 +412,9 @@ export function CompletionDialog({
           actualDuration,
           startCertainty,
           startTime,
+          doneCertainty,
+          doneDate,
+          doneTime,
           objectiveDraft,
           goalDraft,
         },
@@ -426,6 +442,10 @@ export function CompletionDialog({
     { id: "exact", label: "Exact", name: "Exact start" },
     { id: "estimated", label: "Est.", name: "Estimated start" },
     { id: "unknown", label: "Unknown", name: "Unknown start" },
+  ]
+  const doneChoices: { id: ClockCertainty; label: string; name: string }[] = [
+    { id: "exact", label: "Exact", name: "Exact finish" },
+    { id: "estimated", label: "Est.", name: "Estimated finish" },
   ]
 
   return (
@@ -610,7 +630,7 @@ export function CompletionDialog({
           </div>
           {objectiveIds.length === 0 && (
             <p className="text-xs text-muted-foreground -mt-2">
-              Tip: linking an objective earns at least {DEFAULT_OBJECTIVE_MULTIPLIER}× points.
+              Tip: linking an objective earns at least {pointsRuleValue("objective.defaultMultiplier")}× points.
             </p>
           )}
 
@@ -630,6 +650,42 @@ export function CompletionDialog({
           </p>
           {showReflection && (
             <div className="space-y-3 rounded-md border p-3">
+              <ClockCertaintyField
+                legend="Done at"
+                groupLabel="When this was finished"
+                choices={doneChoices}
+                value={doneCertainty}
+                onChange={(id) => {
+                  if (id === "exact" || id === "estimated") setDoneCertainty(id)
+                }}
+                unknownHint=""
+                estimatedHint="Approximate finish. The day and the time stay editable."
+                control={
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Input
+                      type="date"
+                      value={doneDate}
+                      aria-label="Done date"
+                      className="h-8 w-[11rem]"
+                      onChange={(e) => {
+                        setDoneDate(e.target.value)
+                        if (doneCertainty === "unspecified") setDoneCertainty("exact")
+                      }}
+                    />
+                    <ClockPicker
+                      id="completion-done"
+                      value={doneTime}
+                      onChange={(next) => {
+                        setDoneTime(next)
+                        if (doneCertainty === "unspecified") setDoneCertainty("exact")
+                      }}
+                      aria-label="Done time"
+                      className="h-8"
+                    />
+                  </div>
+                }
+              />
+
               <ClockCertaintyField
                 legend="How long"
                 groupLabel="How long this took"

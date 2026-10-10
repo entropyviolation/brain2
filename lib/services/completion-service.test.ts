@@ -64,6 +64,27 @@ describe("completion-service", () => {
     expect(completeTask("nope")).toBeUndefined()
   })
 
+  it("stores an optional miss reason and still misses when it is left off", () => {
+    taskRepository.add(task({ id: "plain" }))
+    markMissedOpportunity("plain")
+    expect(taskRepository.getById("plain")?.status).toBe("missed")
+    expect(taskRepository.getById("plain")?.missReason).toBeUndefined()
+
+    taskRepository.add(task({ id: "noted" }))
+    markMissedOpportunity("noted", undefined, { reason: "other", note: "the rain" })
+    expect(taskRepository.getById("noted")?.status).toBe("missed")
+    expect(taskRepository.getById("noted")?.completed).toBe(false)
+    expect(taskRepository.getById("noted")?.missReason).toEqual({ reason: "other", note: "the rain" })
+  })
+
+  it("clears a miss reason when the task is reopened", () => {
+    taskRepository.add(task({ id: "a", status: "missed", missedAt: new Date(), missReason: "no-time" }))
+    unmarkMissedOpportunity("a")
+    const updated = taskRepository.getById("a")
+    expect(updated?.status).toBe("active")
+    expect(updated?.missReason).toBeUndefined()
+  })
+
   it("marks a task as a missed opportunity without completing it", () => {
     taskRepository.add(task({ id: "a" }))
     const updated = markMissedOpportunity("a")

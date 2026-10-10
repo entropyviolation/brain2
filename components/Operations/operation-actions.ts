@@ -56,7 +56,7 @@ import {
   type PartTaskRole,
 } from "@/lib/operation-parts"
 import { ensureOperationPen } from "@/lib/operation-work-session"
-import type { Task, TimeLogEntry } from "@/lib/types"
+import type { StoredBlockedReason, Task, TimeLogEntry } from "@/lib/types"
 
 function genId(prefix = "op"): string {
   try {
@@ -409,6 +409,26 @@ export function saveOperationPostMortem(
     return null
   }
   return reviews.addOperationReview({ ...input, operationId, hoursLogged })
+}
+
+/**
+ * Store why an operation was missed or abandoned.
+ * Merges onto the existing review so an after-action report is left in place.
+ * A missing review is created with an empty summary. The after-action form
+ * does not call this.
+ */
+export function saveOperationMissReason(operationId: string, reason: StoredBlockedReason): OperationReview | null {
+  const reviews = useReviewsStore.getState() as {
+    addOperationReview?: (r: OperationReviewInput) => OperationReview
+    getOperationReview?: (id: string) => OperationReview | undefined
+  }
+  if (typeof reviews.addOperationReview !== "function") return null
+  const existing = reviews.getOperationReview?.(operationId)
+  return reviews.addOperationReview({
+    operationId,
+    ...(existing?.completedAt ? { completedAt: existing.completedAt } : {}),
+    blockedReasons: { ...(existing?.blockedReasons ?? {}), [operationId]: reason },
+  })
 }
 
 /**

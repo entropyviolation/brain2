@@ -20,7 +20,7 @@ import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
-import type { BlockedReason, PeriodReview, PeriodStartRitual, ReviewPeriod, StoredBlockedReason } from "@/lib/types"
+import type { PeriodReview, PeriodStartRitual, ReviewPeriod, StoredBlockedReason } from "@/lib/types"
 import { getWeekString, parseWeekString } from "@/lib/date-utils"
 import { quarterKey, quarterLabel } from "@/lib/seasons"
 
@@ -48,8 +48,12 @@ export interface OperationReview {
   ratings?: Record<string, number>
   /** Total hours logged across the operation (rolled up by Worker B). */
   hoursLogged?: number
-  /** Why phases/tasks were blocked, keyed by task id (HM3 reasons). */
-  blockedReasons?: Record<string, BlockedReason>
+  /**
+   * Why this operation was missed or abandoned, keyed by id.
+   * A preset is the token. Words are `{ reason, note }`.
+   * The after-action report does not write this.
+   */
+  blockedReasons?: Record<string, StoredBlockedReason>
   /** Follow-up items created from the post-mortem. */
   spawnedItemIds?: string[]
 }
@@ -195,15 +199,22 @@ export const useReviewsStore = create<ReviewsState>()(
       },
 
       addOperationReview: (review) => {
-        const id = review.id ?? `operation:${review.operationId}`
+        const prev =
+          get().operationReviews.find((r) => r.operationId === review.operationId) ??
+          (review.id ? get().operationReviews.find((r) => r.id === review.id) : undefined)
+        const id = review.id ?? prev?.id ?? `operation:${review.operationId}`
         const stored: OperationReview = {
-          summary: "",
+          summary: prev?.summary ?? "",
+          ...prev,
           ...review,
           id,
+          operationId: review.operationId,
           completedAt: review.completedAt ?? new Date(),
         }
+        if (!("summary" in review)) stored.summary = prev?.summary ?? ""
+        if (!("blockedReasons" in review) && prev?.blockedReasons) stored.blockedReasons = prev.blockedReasons
         set((state) => ({
-          operationReviews: [...state.operationReviews.filter((r) => r.id !== id), stored],
+          operationReviews: [...state.operationReviews.filter((r) => r.id !== id && r.operationId !== review.operationId), stored],
         }))
         return stored
       },

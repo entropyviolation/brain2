@@ -2,7 +2,7 @@
  * CompletionDialog — search through objectives and goals after completing a task;
  * Undo reopens the item as still to-do.
  */
-import { render, screen } from "@testing-library/react"
+import { fireEvent, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
@@ -10,6 +10,7 @@ import { useTaskStore } from "@/lib/task-store"
 import { useGoalsStore } from "@/lib/goals-store"
 import { usePointsStore } from "@/lib/points-store"
 import type { Goal, Objective, Task } from "@/lib/types"
+import { formatLocalDateKey } from "@/lib/date-utils"
 import { CompletionDialog } from "./CompletionDialog"
 
 function makeTask(overrides: Partial<Task> & Pick<Task, "id" | "description">): Task {
@@ -313,5 +314,65 @@ describe("CompletionDialog", () => {
     expect(cleared?.completionReview?.startCertainty).toBe("unknown")
     expect(cleared?.completionReview?.startedAt).toBeUndefined()
     expect(cleared?.completionReview?.reviewPoints).toBe(3)
+  })
+
+  it("stores a finish on another day and marks it estimated", async () => {
+    const user = userEvent.setup()
+    const completedDate = new Date(2026, 5, 20, 12, 0, 0, 0)
+    useTaskStore.getState().setTasks([
+      makeTask({ id: "t1", description: "INVOICE NOWWW", completed: false, stage: "list", completedDate }),
+    ])
+
+    render(<CompletionDialog taskId="t1" basePoints={1} pending onClose={vi.fn()} />)
+    await user.click(screen.getByRole("switch", { name: "Add a quick reflection" }))
+    fireEvent.change(screen.getByLabelText("Done date"), { target: { value: "2026-06-18" } })
+    fireEvent.change(screen.getByLabelText("Done time"), { target: { value: "15:40" } })
+    await user.click(screen.getByRole("button", { name: "Estimated finish" }))
+    await user.click(screen.getByRole("button", { name: "Save" }))
+
+    const saved = useTaskStore.getState().tasks.find((t) => t.id === "t1")
+    const finish = new Date(2026, 5, 18, 15, 40, 0, 0)
+    expect(saved?.completed).toBe(true)
+    expect(saved?.completedDate).toEqual(finish)
+    expect(saved?.completedCertainty).toBe("estimated")
+    expect(saved?.timeRough).toBe(true)
+    expect(saved?.completionReview?.completedAt).toEqual(finish)
+    expect(saved?.completionReview?.completedCertainty).toBe("estimated")
+    const ledger = usePointsStore.getState().pointsHistory.filter((entry) => entry.taskId === "t1")
+    expect(ledger.map((entry) => entry.date)).toEqual(["2026-06-18"])
+  })
+
+  it("moves points already awarded onto the new finish day", async () => {
+    const user = userEvent.setup()
+    const completedDate = new Date(2026, 5, 20, 12, 0, 0, 0)
+    useTaskStore.getState().setTasks([makeTask({ id: "t1", description: "INVOICE NOWWW", completedDate })])
+    usePointsStore.getState().addPoints("t1", 5, "INVOICE NOWWW", completedDate)
+
+    render(<CompletionDialog taskId="t1" basePoints={1} onClose={vi.fn()} />)
+    await user.click(screen.getByRole("switch", { name: "Add a quick reflection" }))
+    fireEvent.change(screen.getByLabelText("Done date"), { target: { value: "2026-06-18" } })
+    await user.click(screen.getByRole("button", { name: "Save" }))
+
+    const saved = useTaskStore.getState().tasks.find((t) => t.id === "t1")
+    expect(saved?.completedDate).toEqual(new Date(2026, 5, 18, 12, 0, 0, 0))
+    expect(saved?.completedCertainty).toBe("exact")
+    expect(saved?.timeRough).toBeUndefined()
+    const ledger = usePointsStore.getState().pointsHistory.filter((entry) => entry.taskId === "t1")
+    expect(ledger.map((entry) => entry.date)).toEqual(["2026-06-18"])
+  })
+
+  it("leaves the finish stamp alone until it is marked", async () => {
+    const user = userEvent.setup()
+    const completedDate = new Date(2026, 5, 20, 12, 0, 0, 0)
+    useTaskStore.getState().setTasks([makeTask({ id: "t1", description: "INVOICE NOWWW", completedDate })])
+
+    render(<CompletionDialog taskId="t1" basePoints={1} onClose={vi.fn()} />)
+    await user.click(screen.getByRole("switch", { name: "Add a quick reflection" }))
+    await user.click(screen.getByRole("button", { name: "Save" }))
+
+    const saved = useTaskStore.getState().tasks.find((t) => t.id === "t1")
+    expect(saved?.completedDate).toEqual(completedDate)
+    expect(saved?.completedCertainty).toBeUndefined()
+    expect(formatLocalDateKey(saved!.completedDate!)).toBe("2026-06-20")
   })
 })

@@ -24,6 +24,7 @@
  */
 import type { AttributeDefinition, AttributeValue } from "@/lib/types"
 import { computeFormulaValue } from "@/lib/formula"
+import { pointsRuleValue } from "@/lib/points-rules-live"
 
 /** Stable attribute ids that make up a completion-tier set. */
 export const TIER_ATTR_IDS = {
@@ -37,9 +38,9 @@ export const TIER_ATTR_IDS = {
 } as const
 
 /**
- * Reward values baked into the generated points formula. Kept here (rather than
- * inline in the expression string) so the formula text and the plain-language
- * rule explainer always agree, and so the constants are easy to tweak.
+ * Default reward values baked into a newly generated points formula. The
+ * generator reads the live Points rules (`tiers.*`). A formula already stored
+ * on a list is left alone.
  */
 export const TIER_POINTS = {
   /** Points for clearing the bare-minimum threshold. */
@@ -66,9 +67,44 @@ export const DEFAULT_TIER_THRESHOLDS = {
  * keeps the ladder correct — e.g. with `exceptional = 20` this reduces to the
  * "30 + current" form, but it stays self-consistent if the user retunes it.
  */
-export function buildPointsFormula(): string {
+export type TierPointAmounts = {
+  bareMin: number
+  goal: number
+  exceptional: number
+  bonusPerUnit: number
+}
+
+/** Live tier amounts. Defaults match {@link TIER_POINTS} until a row is edited. */
+export function activeTierPoints(): TierPointAmounts {
+  return {
+    bareMin: pointsRuleValue("tiers.bareMinPoints"),
+    goal: pointsRuleValue("tiers.goalPoints"),
+    exceptional: pointsRuleValue("tiers.exceptionalPoints"),
+    bonusPerUnit: pointsRuleValue("tiers.bonusPerUnit"),
+  }
+}
+
+/**
+ * Pull the point amounts out of a formula this generator wrote, so an existing
+ * list's ladder still describes the formula it stored.
+ */
+export function tierPointsFromFormula(formula: string | undefined): TierPointAmounts | null {
+  if (!formula) return null
+  const match = formula.match(
+    /=IF\(\w+ >= \w+, ([0-9.]+) \+ \(\w+ - \w+\)(?: \* ([0-9.]+))?, IF\(\w+ >= \w+, ([0-9.]+), IF\(\w+ >= \w+, ([0-9.]+), 0\)\)\)/,
+  )
+  if (!match) return null
+  const exceptional = Number(match[1])
+  const bonusPerUnit = match[2] === undefined ? 1 : Number(match[2])
+  const goal = Number(match[3])
+  const bareMin = Number(match[4])
+  if (![exceptional, bonusPerUnit, goal, bareMin].every((n) => Number.isFinite(n))) return null
+  return { bareMin, goal, exceptional, bonusPerUnit }
+}
+
+export function buildPointsFormula(points: TierPointAmounts = activeTierPoints()): string {
   const { bareMin, goal, exceptional, current } = TIER_ATTR_IDS
-  const p = TIER_POINTS
+  const p = points
   const bonus =
     p.bonusPerUnit === 1
       ? `(${current} - ${exceptional})`
@@ -213,9 +249,10 @@ export interface CompletionRuleLine {
 export function describeCompletionRules(
   thresholds: { bareMin: number; goal: number; exceptional: number },
   unit = "",
+  points: TierPointAmounts = activeTierPoints(),
 ): CompletionRuleLine[] {
   const u = unit ? ` ${unit}` : ""
-  const p = TIER_POINTS
+  const p = points
   const bonus =
     p.bonusPerUnit > 0
       ? ` + ${p.bonusPerUnit} pt${p.bonusPerUnit === 1 ? "" : "s"} per extra${unit ? ` ${unit.replace(/s$/, "")}` : " unit"}`

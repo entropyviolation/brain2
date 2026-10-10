@@ -9,7 +9,7 @@
  *
  * Spec: §6 (Next Actions), §9 (habits award separately).
  */
-import type { Task, TaskCompletionReview } from "@/lib/types"
+import type { StoredBlockedReason, Task, TaskCompletionReview } from "@/lib/types"
 import { taskRepository, type TaskRepository } from "@/lib/data/task-repository"
 import { isClearedFromWork, isMissed, withCompleted, withStatus } from "@/lib/completion-status"
 import { rememberWorld } from "@/lib/action-history"
@@ -71,11 +71,17 @@ export function completeTask(
  * Actions the same way complete does, but it lands on Missed Opportunities
  * instead of Completed. No points, no completion popup.
  */
-export function markMissedOpportunity(id: string, repo: TaskRepository = taskRepository): Task | undefined {
+export function markMissedOpportunity(
+  id: string,
+  repo: TaskRepository = taskRepository,
+  missReason?: StoredBlockedReason,
+): Task | undefined {
   const task = repo.getById(id)
   if (!task || isClearedFromWork(task)) return task
   rememberWorld("miss opportunity")
-  return repo.update(withStatus({ ...task }, "missed"))
+  const stamped = withStatus({ ...task }, "missed")
+  if (missReason) stamped.missReason = missReason
+  return repo.update(stamped)
 }
 
 /** Reopen a missed-opportunity task back to active work. */
@@ -191,7 +197,8 @@ function applyReviewClockInput(task: Task, input: CompletionReviewInput): ClockW
     write.startedAt = undefined
     write.startCertainty = "unknown"
     const nextDuration = write.writeDuration ? write.durationCertainty : task.durationCertainty
-    write.timeRough = nextDuration === "estimated" ? true : undefined
+    const nextDone = write.writeDone ? write.completedCertainty : task.completedCertainty
+    write.timeRough = nextDuration === "estimated" || nextDone === "estimated" ? true : undefined
   } else if (input.startedAt && write.writeStart) {
     write.startedAt = input.startedAt
   }

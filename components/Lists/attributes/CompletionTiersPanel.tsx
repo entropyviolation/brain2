@@ -21,6 +21,7 @@ import {
   buildPointsFormula,
   describeCompletionRules,
   resolveTierSnapshot,
+  tierPointsFromFormula,
   type CompletionTierSnapshot,
 } from "@/lib/completion-tiers"
 
@@ -73,11 +74,13 @@ export function CompletionTiersPanel({
   values: Record<string, AttributeValue>
 }) {
   const snap = resolveTierSnapshot(values, definitions)
+  const pointsDef = definitions.find((d) => d.id === TIER_ATTR_IDS.points && d.type === "formula")
+  const baked = tierPointsFromFormula(pointsDef?.formula)
   const rules = describeCompletionRules(
     { bareMin: snap.bareMin, goal: snap.goal, exceptional: snap.exceptional },
     snap.unit,
+    baked ?? undefined,
   )
-  const pointsDef = definitions.find((d) => d.id === TIER_ATTR_IDS.points && d.type === "formula")
   const formula = (pointsDef?.formula || buildPointsFormula()).replace(/^=/, "=").trim()
 
   return (

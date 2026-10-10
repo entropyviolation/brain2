@@ -34,7 +34,8 @@ This room also writes **`lib/star-lord-store.ts`** for the three Star Lord Repor
 | `AffirmationsDialog.tsx` | Spoken-affirmations ritual from the morning dialog |
 | `DayReviewTomorrowSection.tsx` | Night / day end: "make a plan for tomorrow" (plan log + schedule/create tomorrow to-dos) |
 | `NightTimeGlance.tsx` | Night ritual: time grid, day log, and activity log pinned to that ritual's day, plus a short analysis note. Day-log slabs keep their pen colors inside the dialog |
-| `WhyBlockedControl.tsx` | Why blocked? Presets stay tokens. **Other** opens a text field |
+| `WhyBlockedControl.tsx` | Why blocked? Presets stay tokens. **Other** on a ritual row opens a single-line field. The optional prompt passes `noteAlways` so a multiline note sits beside any preset, and `aboveDialog` so pointer events stay on. The list is the shared menu layer, above that window. The field keeps spaces while you type; the saved note is trimmed |
+| `MissReasonDialog.tsx` | Optional why. The reason menu is the shared portaled select (`components/ui/menu-layer.ts`), above this dialog and its scrim (z-120), so the list stays visible and clickable. The note is a textarea about six lines tall (`max-h-40`); longer text scrolls inside the field, and the window itself caps at the viewport. Spaces stay in the field while typing; Save stores the trimmed note. Skip, the close key, and a blank Save resolve with no reason. Callers still push, miss, or mark |
 | `PeriodReviewStudio.tsx` | Week, month, season, and year: period stats, then the shared reflection questions |
 | `PostMortemDialog.tsx` | Later per-task note from **Reflect** on a period ritual, or from Analytics. Satisfaction, resistance, focus, distraction (optional 1–10; clearing a score removes it, and a score this dialog does not show is left as saved) and its own note (`completionReview.reflectNotes`). It does not select goals, award the quick review, or edit length, start, or the quick-review `notes` — those stay on the completion popup (`components/Completion/`). It does not create, revise, or delete the `review:${taskId}` points row. A note saved before this split, and never awarded, still opens here; saving it stores `reflectNotes` and leaves `notes` alone. Close saves a changed note. |
 | `AssumedTimesSection.tsx` | Confirm assumed completion times in the end ritual. Optional **Est.** marks duration or start as a rough estimate (`Task.timeRough`) |
@@ -51,8 +52,7 @@ beside System and Capture.
   Review ritual → end dialog for the **just-ended** period.
 - **Star Lord Report:** shown when today is the local new moon, the local full moon, or the birthday in Settings → **Birthday**. A birthday that falls on a moon keeps both rites. An undone report from yesterday stays in the menu through the next day. The walk is preparation, the ledger, inner alchemy, and a closing toward the north. Answers live in `lib/star-lord-store.ts`. Telegram `rituals` lists an open report and points at Header → Rituals; the questions themselves are the desktop dialog.
 - Menu footer reminds Telegram: `rituals · gm · gn · review week · ritual start week`.
-- Home overview tile **Rituals due** lists available slots with app path + Telegram
-  command, and an open Star Lord Report. Analytics → Reviews reads morning / start / end slices.
+- Home overview tile **Rituals due** counts rites due for this day. Open resumes that rite. The handheld groups today, last night, and longer first-run slots, without the app path or the telegram verb. The header badge can still be the full undone count. Analytics → Reviews reads morning / start / end slices.
 
 ## Model (day vs other periods)
 
@@ -83,19 +83,19 @@ section below. Desktop and text `gm` share `replaceMorningReview`.
 
 ## Night / Review (end) flow (`ReviewDialog`)
 
-1. **Unfinished items** — the ritual's own period, not "today". A past day uses the Undone ledger (`lib/ritual-unfinished.ts`), so work that rolled onto the next day still appears. Done completes in place. **Push** uses the Scheduler's `pushCardWorkingQueue` (`lib/ritual-push.ts`): the task is reassigned to the next open period and the row leaves this ritual. A failed push leaves the row. **Why blocked?** is optional. Presets stay the token. **Other** opens a text field; the words are stored with the token (`{ reason: "other", note }`). A blank Other stays the token `"other"`.
+1. **Unfinished items** — the ritual's own period, not "today". A past day uses the Undone ledger (`lib/ritual-unfinished.ts`), so work that rolled onto the next day still appears. Done completes in place. **Push** uses the Scheduler's `pushCardWorkingQueue` (`lib/ritual-push.ts`): the task is reassigned to the next open period and the row leaves this ritual. A failed push leaves the row. **Why blocked?** is optional. Presets stay the token. **Other** opens a text field; the words are stored with the token (`{ reason: "other", note }`). Spaces stay while typing; the saved note is trimmed. A blank Other stays the token `"other"`.
 2. **Assumed times** — correct or confirm. Optional **Est.** (`Task.timeRough`) means the duration or the start (or both) is a rough estimate. It stays on the task and shows on Done rows.
 3. **This period** (week, month, season, year — not night) — missed points, points vs last period, the habit grade for that span vs the previous one (weeks listed inside a month or season; months inside a year), daily habits never done in the span, and a tracking breakdown by the scopes already on the desk (activity, location, and the rest). Then the longer reflection (`PeriodReview.arc`).
 4. **How the day was spent** (night only) — time grid, day log, and activity log for that date, plus a short note (`timeReflection`). Day-log colors are the pen colors.
 5. **Summary** / **Gratitude** / **Plan reflection** (day/week/month)
 6. **Reflection** — went well / improve / learned (these stay separate from the longer arc questions)
 7. **Wake-up reminder** and **What matters most tomorrow?** (night only). Empty shows nothing. The next morning shows the reminder first, then what matters most.
-8. **Goals to focus on tomorrow** (night only) — `tomorrowFocusGoalIds`. Tasks that serve those goals (or their objectives) are listed first in the next morning and are more likely to be suggested. Points use the goal-focus multiplier (Settings → Automatic point allocation, default 1.5×). If an objective multiplier already boosts the task, the larger one is kept — they are not multiplied together. Beat-the-clock stays inside the base.
+8. **Goals to focus on tomorrow** (night only) — `tomorrowFocusGoalIds`. Tasks that serve those goals (or their objectives) are listed first in the next morning and are more likely to be suggested. Points use the goal-focus multiplier (Settings → Points → Points rules, default 1.5×). If an objective multiplier already boosts the task, the larger one is kept — they are not multiplied together. Beat-the-clock stays inside the base.
 9. **Tomorrow's plan** — the prompt is "make a plan for tomorrow". The plan log and tomorrow's to-dos stay.
 
 **Close** (X or Close) saves a draft (`endCompleted: false` unless the ritual was already submitted) and awards no points. The longer answers restore on reopen. **Save Night ritual** / **Save Review ritual** submits it as done and awards points.
 
-Points (`lib/ritual-points.ts`, edited in Settings → **Automatic point allocation**): **10** per section actually filled or confirmed, plus **30** for submitting the whole ritual. Vacuous sections (nothing unfinished, nothing assumed) count. Optional blanks do not. Each answered reflection question counts on its own, including each filled arc question on a week, month, season, or year. A photo with no caption counts as the inspiration question. Fear and its reframe are one question. The stats panel is not a question. Night does not score `arc`. Re-saving replaces that ritual's ledger row (`ritual:{period}:{key}`) instead of stacking.
+Points (`lib/ritual-points.ts`, edited in Settings → **Points** → **Points rules**): **10** per section actually filled or confirmed, plus **30** for submitting the whole ritual. Vacuous sections (nothing unfinished, nothing assumed) count. Optional blanks do not. Each answered reflection question counts on its own, including each filled arc question on a week, month, season, or year. A photo with no caption counts as the inspiration question. Fear and its reframe are one question. The stats panel is not a question. Night does not score `arc`. Re-saving replaces that ritual's ledger row (`ritual:{period}:{key}`) instead of stacking.
 
 Telegram: `gn` / `good night` (today's night); `review week` / `ritual end week`
 (just-ended period). The text walk follows the same steps, including assumed
@@ -108,7 +108,7 @@ that note. `cancel` leaves the walk. A reply inside the walk is not a `log:`.
 | Surface | How |
 |---------|-----|
 | App — Rituals menu | Due / … / ✓ on each slot; badge on the Rituals key |
-| App — Home tile | **Rituals due** with Open + dialog listing command + path |
+| App — Home tile | **Rituals due**: today's open rites; Open resumes that walk |
 | Telegram | `rituals` or `reviews` → board with every slot, status, command, and app path |
 
 Helpers: `lib/rituals.ts` (`listAvailableRituals`, `formatRitualsBoard`,
@@ -174,6 +174,8 @@ be decimals (`- 90 200 6.5 3.5 9`). A line that fails stays on that same item.
 ## Why-blocked reasons (HM3)
 
 **Why blocked?** on a ritual push saves `blockedReasons`. A preset is the token (`"no-time"`). **Other** with text is `{ reason: "other", note: "the rain" }`. Other left blank is the token `"other"` — it does not pretend a custom reason was written. Analytics → Reviews shows the words. The regret ledger keeps the token only.
+
+`MissReasonDialog` is the same preset control plus a note, for rooms that ask after the fact (Scheduler Push, To Do Push, missed tasks, header plan Skip, habit missed-op wand, operation Why missed). The dialog and its scrim are `z-[120]` so the prompt sits above the room that opened it. The reason list is the one portaled select menu, not a second copy in the page. It was painting underneath because the select's default `z-50` was copied onto the popper wrapper, under this scrim. Every select and dropdown now uses the shared menu layer (`components/ui/menu-layer.ts`), above this window, with pointer events on, so the options stay clickable. The note on this prompt is a textarea (several lines visible, `max-h-40`, scrolling inside the field). The dialog caps at the viewport (`max-h-[calc(100dvh-2rem)]`) and scrolls itself if the window is short. Ritual rows keep the inline control and a single-line Other field — that row is not this popup. A note with no preset is stored as Other. A preset with a note keeps both. Skip writes nothing and does not cancel the action that opened the prompt.
 
 ## Longer reflection (week, month, season, year)
 

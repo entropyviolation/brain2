@@ -88,6 +88,9 @@ describe("start certainty", () => {
       durationMinutes: "30",
       startCertainty: "exact",
       startTime: "09:15",
+      doneCertainty: "unspecified",
+      doneDate: "",
+      doneTime: "",
     })
     expect(exact.startCertainty).toBe("exact")
     expect(exact.startedAt?.getHours()).toBe(9)
@@ -99,6 +102,9 @@ describe("start certainty", () => {
       durationMinutes: "",
       startCertainty: "estimated",
       startTime: "09:15",
+      doneCertainty: "unspecified",
+      doneDate: "",
+      doneTime: "",
     })
     expect(estimated.durationCertainty).toBe("unknown")
     expect(estimated.actualDuration).toBeUndefined()
@@ -113,12 +119,73 @@ describe("start certainty", () => {
         durationMinutes: "",
         startCertainty: "unknown",
         startTime: "09:15",
+        doneCertainty: "unspecified",
+        doneDate: "",
+        doneTime: "",
       },
     )
     expect(unknown.writeStart).toBe(true)
     expect(unknown.startedAt).toBeUndefined()
     expect(unknown.startCertainty).toBe("unknown")
     expect(unknown.timeRough).toBeUndefined()
+  })
+})
+
+describe("finish certainty", () => {
+  const base = task({ id: "t" })
+
+  it("writes any other day and time, and leaves an unspecified finish alone", () => {
+    const exact = clockWriteFromDraft(base, {
+      durationCertainty: "unspecified",
+      durationMinutes: "",
+      startCertainty: "exact",
+      startTime: "07:00",
+      doneCertainty: "exact",
+      doneDate: "2026-06-18",
+      doneTime: "20:00",
+    })
+    expect(exact.writeDone).toBe(true)
+    expect(exact.completedCertainty).toBe("exact")
+    expect(exact.completedDate).toEqual(new Date(2026, 5, 18, 20, 0, 0, 0))
+    expect(exact.startedAt).toEqual(new Date(2026, 5, 18, 7, 0, 0, 0))
+    expect(exact.timeRough).toBeUndefined()
+
+    const untouched = clockWriteFromDraft(base, {
+      durationCertainty: "unspecified",
+      durationMinutes: "",
+      startCertainty: "unspecified",
+      startTime: "",
+      doneCertainty: "unspecified",
+      doneDate: "2026-06-18",
+      doneTime: "20:00",
+    })
+    expect(untouched.writeDone).toBe(false)
+    expect(untouched.completedDate).toBeUndefined()
+  })
+
+  it("marks a finish estimated and keeps that out of an exact claim", () => {
+    const estimated = clockWriteFromDraft(base, {
+      durationCertainty: "unspecified",
+      durationMinutes: "",
+      startCertainty: "unspecified",
+      startTime: "",
+      doneCertainty: "estimated",
+      doneDate: "2026-06-19",
+      doneTime: "15:40",
+    })
+    expect(estimated.completedCertainty).toBe("estimated")
+    expect(estimated.completedDate).toEqual(new Date(2026, 5, 19, 15, 40, 0, 0))
+    expect(estimated.timeRough).toBe(true)
+
+    const roundTrip = clockDraftFromTask({
+      ...base,
+      completedDate: estimated.completedDate,
+      completedCertainty: "estimated",
+      timeRough: true,
+    })
+    expect(roundTrip.doneCertainty).toBe("estimated")
+    expect(roundTrip.doneDate).toBe("2026-06-19")
+    expect(roundTrip.doneTime).toBe("15:40")
   })
 })
 
@@ -251,5 +318,67 @@ describe("summarizeCompletionReviews", () => {
     expect(summary.startUnknown).toBe(1)
     expect(summary.startUnspecified).toBe(1)
     expect(summary.startExact + summary.startEstimated).toBe(2)
+  })
+
+  it("averages satisfaction and distraction with the other feelings and keeps later notes", () => {
+    const older = new Date("2026-06-20T12:00:00")
+    const newer = new Date("2026-06-21T12:00:00")
+    const summary = summarizeCompletionReviews({
+      tasks: [
+        task({
+          id: "a",
+          description: "Letter",
+          completionReview: {
+            taskId: "a",
+            completedAt: older,
+            satisfaction: 8,
+            distraction: 3,
+            enjoyment: 7,
+            reflectNotes: "  ship smaller  ",
+            notes: "quick review words",
+            reviewPoints: 3.3,
+            reviewWordCount: 3,
+          },
+        }),
+        task({
+          id: "b",
+          description: "Stamp",
+          completionReview: {
+            taskId: "b",
+            completedAt: newer,
+            satisfaction: 4,
+            reflectNotes: "   ",
+          },
+        }),
+        task({
+          id: "c",
+          description: "Ink",
+          completionReview: {
+            taskId: "c",
+            completedAt: newer,
+            satisfaction: 0,
+            distraction: 11,
+            resistance: 5,
+            reflectNotes: "stay with the pen",
+          },
+        }),
+      ],
+      goals: [],
+      objectives: [],
+      inWindow,
+      titleOf: (row) => row.description,
+    })
+
+    expect(summary.scoreMeans.find((row) => row.key === "satisfaction")).toMatchObject({ n: 2, mean: 6 })
+    expect(summary.scoreMeans.find((row) => row.key === "distraction")).toMatchObject({ n: 1, mean: 3 })
+    expect(summary.scoreMeans.find((row) => row.key === "enjoyment")).toMatchObject({ n: 1, mean: 7 })
+    expect(summary.scoreMeans.find((row) => row.key === "resistance")).toMatchObject({ n: 1, mean: 5 })
+    const keys = summary.scoreMeans.map((row) => row.key)
+    expect(keys.indexOf("enjoyment")).toBeLessThan(keys.indexOf("satisfaction"))
+    expect(keys.indexOf("satisfaction")).toBeLessThan(keys.indexOf("distraction"))
+    expect(summary.reflectNotes.map((note) => note.taskId)).toEqual(["c", "a"])
+    expect(summary.reflectNotes[1]).toMatchObject({ title: "Letter", text: "ship smaller" })
+    expect(summary.reflectNotes.some((note) => note.text.includes("quick review"))).toBe(false)
+    expect(summary.wordCount).toBe(3)
   })
 })

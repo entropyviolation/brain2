@@ -62,7 +62,7 @@ describe("CompletionTimeLine", () => {
     const onConfirm = vi.fn()
     render(<CompletionTimeLine task={row()} completedAt={FINISH} history={[]} onConfirm={onConfirm} />)
     fireEvent.click(screen.getByRole("button", { name: /est\./i }))
-    fireEvent.change(screen.getByLabelText(/finished/i), { target: { value: "18:15" } })
+    fireEvent.change(screen.getByRole("combobox", { name: "Finished" }), { target: { value: "18:15" } })
     fireEvent.change(screen.getByLabelText(/took/i), { target: { value: "55" } })
     fireEvent.click(screen.getByRole("button", { name: "Confirm" }))
     expect(onConfirm).toHaveBeenCalledWith("row", {
@@ -80,6 +80,18 @@ describe("CompletionTimeLine", () => {
     expect(formatCompletionWindow(undefined, FINISH)).toBe("8:30 PM")
     expect(formatCompletionWindow(FINISH, FINISH)).toBe("8:30 PM")
     expect(formatCompletionWindow(new Date(2026, 8, 17, 11, 30), FINISH)).toBe("11:30 AM – 8:30 PM")
+  })
+
+  it("marks a person-estimated finish with a tilde", () => {
+    render(
+      <CompletionTimeLine
+        task={row({ estimates: undefined, completedCertainty: "estimated", timeRough: true })}
+        completedAt={FINISH}
+        history={[]}
+      />,
+    )
+    expect(screen.getByText("~7:50 – 8:30 PM")).toBeInTheDocument()
+    expect(screen.getByTitle("Duration, start, or finish is a rough estimate")).toHaveTextContent("Est.")
   })
 
   it("shows a read-only usually chip from peer history without rewriting estimates", () => {
