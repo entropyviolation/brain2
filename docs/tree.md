@@ -84,14 +84,19 @@ Most components have a co-located `*.test.tsx`.
 
 | File                       | Purpose                                       |
 | -------------------------- | --------------------------------------------- |
-| `AppHeader.tsx`            | Pinned mill title bar (BRAIN2 caption + **Nav** Back/Forward as the left anchor; Friend, Rituals, System, and Capture centered as one group; System gear, question mark, search, reminders bell; Capture holds content-wide Now / Inbox / Quick Add and mounts optional **now**) |
+| `AppHeader.tsx`            | Pinned mill title bar (BRAIN2 caption + **Nav** Back/Forward as the left anchor; Friend, Rituals, System, and Capture centered as one group; System gear, question mark, search, reminders bell; Capture holds content-wide Now / Inbox / Quick Add and mounts optional **now**). Shell mark `brain2-shell-ready` |
+| `header-doors.tsx`         | Thin Inbox, Quick Add, Rituals, and Settings keys. The keys stay on the pin bar; the rooms load the first time they open, so a refresh does not download a closed door. Quick Add mounts `QuickAddWroteHost` so the added confirmation survives dialog close. The first Rituals press loads the menu; the next press opens it |
 | `header-nav-buttons.tsx`   | Leading Nav well — in-app screen history Back / Forward mill keys |
-| `header-now-box.tsx`       | Optional **now** well inside Capture — live Working session clocks (Stop / Pause↔Resume); absent when idle |
+| `header-now-box.tsx`       | Optional **now** well inside Capture — session flags only while idle; absent when idle |
+| `header-now-rows.tsx`      | Live now rows (clocks, pen color, Pause / Stop). Loaded when a session is on |
+| `dvd-transport-keys.tsx`   | House Pause / Play / Stop — `DvdTransportKey` (`mark`, `label`, `onClick`; optional `pressed`, `disabled`). Face in `dvd-transport-keys.css` |
+| `dvd-transport-keys.css`   | The 28px glassy disc for that key. Imported by the component, so any caller gets it |
 | `header-reminder-bell.tsx` | System reminders bell. Orange count of undismissed persistent due reminders; dialog has name, when, source, Details, Dismiss |
 | `append-log.tsx`           | Shared append-log composer (Submit + List/Bulk/Latest) |
 | `shell-chrome.css`         | Full-width sticky mill fascia for `.b2-shell` (Friend / Review / System / Capture; optional now lives in Capture; reminder bell count banner) |
 | `period-nav-chrome.css`    | Shared period-nav fascia / nameplate / metal keys (`--period-*`); imported by Plan / Tracking / To Do chrome |
-| `quick-add.tsx`            | Quick Add: one line with live chips, or Bulk. Colon paths create the list. `folder: all: item` files on that folder's All Items. A leading `log:` is the tracking log (dark blue LOG mark, never Inbox). Date, time, duration, and priority stay in the title. **Plain** (default off) or `-p` / `-plain` stores the line as written. A successful write shows a brief fixed flag naming Inbox, the list, folder All Items, Monkey brain, or the tracking log (Bulk counts). Click, ×, or a few seconds dismisses it. Cmd/Ctrl-Shift-A prefills a selection |
+| `quick-add-wrote.tsx`      | Floating Quick Add "added" confirmation (`QuickAddWroteHost`). Bottom-right with 16px inset, X, auto-dismiss after 1 minute; outlives the dialog |
+| `quick-add.tsx`            | Quick Add: one line with live chips, or Bulk. Colon paths create the list. `folder: all: item` files on that folder's All Items. A leading `log:` is the tracking log (dark blue LOG mark, never Inbox). Date, time, duration, and priority stay in the title. **Plain** (default off) or `-p` / `-plain` stores the line as written. A successful write raises a floating added confirmation naming Inbox, the list, folder All Items, Monkey brain, or the tracking log (Bulk counts). Bottom-right inset; click, ×, or 1 minute dismisses it. Cmd/Ctrl-Shift-A prefills a selection |
 | `enhanced-bulk-add.tsx`    | Multi-line write (`writeBulkCapture`); Quick Add Bulk, Inbox bulk edit, mobile. `list:` / `folder: list:` / `folder: all:` headers; schedule words stay in the item title; `plain` stores every line as written; optional Inbox |
 | `capture-shorthand.tsx`    | Shared Inbox checkbox + shorthand help (colon paths, `folder: all: item`, schedule words that stay in the title, `-p` / `-plain`) |
 | `notes-ingest.tsx`         | From Notes — date range, parse/skip, bulk-add (`Folder: List:` creates a folder) or park full text on **notes to ingest** |
@@ -99,7 +104,7 @@ Most components have a co-located `*.test.tsx`.
 | `capture-doors.tsx`        | **Notes and ingest** buttons plus `CaptureDoorHost` (one mounted popup). Bus: `capture-door-bus.ts` |
 | `ingest-log-dialog.tsx`    | **Ingest** log (Settings and Lists settings). GPS tracking points hidden unless **Show GPS** |
 | `inbox.tsx`                | Inbox walk (selected only, newest first) + rename/discard + recent lists + points + select/deselect all + delete + pinned title search + hover clarify/delete |
-| `cognitive-state.tsx`      | Header **Now** word key. Popup body is `header-tracking/` |
+| `cognitive-state.tsx`      | Header **Now** word key. The button stays on the pin bar; `header-tracking/` loads when Now opens |
 | `baby-animal-nest.tsx`     | **Today's friend** in the header brand well (photo, chat button, Gallery; details on the photograph) |
 | `machine-loading.tsx`      | Wait instrument: Tek well, green or blue POWER lamp, phosphor sine, readout says loading with three blinking bars; the screen pet sometimes walks the floor (`pip` for status rows) |
 | `machine-loading.css`      | Scope, sine, pet pace, and reduced-motion styles for the wait instrument |
@@ -114,15 +119,19 @@ Most components have a co-located `*.test.tsx`.
 
 The two detail views are consolidated under
 [`ItemDetail/`](../components/ItemDetail/README.md): both share load/draft state
-and the category/dependency/tag/link mutators via `useItemDetailDraft`. Tabs and
+and the category/dependency/tag/link mutators via `useItemDetailDraft`. Item tags
+use `ItemTagChip.tsx` / `TagInput.tsx` (catalog bead when the name matches; double-click
+opens tag settings). Tabs and
 chrome come from `resolveDetailView` (item type + list overlays + capabilities);
 Task chrome is not the default for generic list items. Shared Scheduling pieces:
 `ItemScheduleFlags.tsx` (Send to Scheduler / Auto-push), `ItemEstimateField.tsx`
-(Details-tab estimate), `ReminderScheduleFields.tsx` (Reminders list When / Repeat / Text me / Persistent; the page and popup write that patch through immediately),
+(Details-tab estimate), `ReminderScheduleFields.tsx` (Reminders list When / Repeat including new/full moon / Text me / Persistent; the page and popup write that patch through immediately),
 People I Know biography (`components/People/person-detail.tsx` — `Task.personProfile` above the pipelines; birthday and standing notes edited once there; the plaque draws a pixel cake, and a later PNG folder is not loaded), then **Pipelines** (`components/People/person-pipelines.tsx` — Company
 time follows a joined pen; a stored timeblock row is kept and is not how membership is chosen),
 and `TodoCommitmentFields.tsx` (Required / Prioritized
-per assigned To Do period).
+per assigned To Do period). `ItemSaveFlag.tsx` stays on the fascia: green **Saved**
+while the draft matches the stored item, pink **Unsaved changes** while it does not.
+**Cmd/Ctrl+S** (`useItemDetailSaveHotkey.ts`) saves that draft while the surface is in front.
 
 → [`components/README.md`](../components/README.md)
 
@@ -136,10 +145,10 @@ Default tab — date + hidable overview squares (points, progress, review, optio
 | --------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------ |
 | Root                        | `home-dashboard.tsx`, `home-overview.tsx`, `home-widgets-menu.tsx`, `home-widget-catalog.tsx`, `home-widget-dialog.tsx`, `home-award-tile.tsx`, `home-screen-pet.tsx`, `home-next-tile.tsx`, `home-day-lamp.tsx`, `home-days-until.tsx`, `home-moon-tile.tsx`, `home-moon-sprite.tsx`, `home-moon-phase.tsx`, `home-moon-orrery.tsx`, `naked-eye-stars.ts`, `star-identify.tsx`, `sky-galaxy.tsx`, `home-sky-scale.tsx`, `home-sky-motion.tsx`, `MOON_SKY_MOTION.md`, `home-solar-tile.tsx`, `home-tracking-tile.tsx`, `home-glance-tiles.tsx`, `home-reading-tiles.tsx`, `home-day-stats.ts`, `weather-instrument.tsx`, `points-stats.tsx`, `daily-progress-quickview.tsx`, `home-review-banner.tsx` | points, task, reviews, events, sleep, `home-widgets-store`, `home-weather-store`, `home-days-until-store`, `sky-motion-store`, `sun-times-store`, time-tracking |
 | [Goals/](#homegoals)        | `goals-tracker.tsx`                                                                            | `goals-store`                  |
-| [Habits/](#homehabits)      | `habit-tracker.tsx`, `task-grid.tsx`, `habit-completion-cell.tsx`, `habits-tab-controls.tsx`, `hab-grade-sheet.tsx`, `habit-row-name.tsx`, `habit-heatmap.tsx`, `habit-priority-bar.tsx`, `habit-sort-control.tsx`, `habit-month-window-control.tsx`, `habit-week-window-control.tsx`, `habit-led-lamp.tsx`, `percent-led.tsx`, `percent-led-bar.tsx`, `habit-percent-readout.tsx`, `habit-grid.css`, `habit-chrome.css`, `habit-gems.tsx`, `gem-picker.tsx`, `habits-control-panel.tsx`, `exemption-wand-button.tsx`, `missed-op-wand-button.tsx`, `habit-wand-banner.tsx`, `habit-wand-banner.css`, `willpower-gems.tsx`, `noble-gas-tube.tsx`, `grade-breakdown-dialog.tsx`, `output-grade-breakdown-dialog.tsx`, `good-days-dialog.tsx`, `priority-math.tsx`, `period-habit-list.tsx`, `week-navigation.tsx`, `daily-task-form*.tsx`, `habit-list-popup.tsx`, `habit-sources-field.tsx`, `habit-source-detail.tsx`, `habit-period-breakdown.tsx`, `habit-span-breakdown.tsx`, `habit-completion-detail.tsx`, `habit-value-field.tsx`, `habit-form-dialog.css`, `settings-dialog.tsx` | `habits-store`, `time-tracking-store` (auto-fill tags) |
+| [Habits/](#homehabits)      | `habit-tracker.tsx`, `task-grid.tsx`, `habit-completion-cell.tsx`, `habits-tab-controls.tsx`, `hab-grade-sheet.tsx`, `habit-row-name.tsx`, `habit-heatmap.tsx`, `habit-priority-bar.tsx`, `habit-sort-control.tsx`, `habit-month-window-control.tsx`, `habit-week-window-control.tsx`, `habit-led-lamp.tsx`, `percent-led.tsx`, `percent-led-bar.tsx`, `habit-percent-readout.tsx`, `habit-grid.css`, `habit-chrome.css`, `habit-gems.tsx`, `gem-picker.tsx`, `habits-control-panel.tsx`, `exemption-wand-button.tsx`, `missed-op-wand-button.tsx`, `habit-wand-banner.tsx`, `habit-wand-banner.css`, `willpower-gems.tsx`, `noble-gas-tube.tsx`, `grade-breakdown-dialog.tsx`, `output-grade-breakdown-dialog.tsx`, `good-days-dialog.tsx`, `priority-math.tsx`, `period-habit-list.tsx`, `week-navigation.tsx`, `daily-task-form*.tsx`, `PriorityReasonDialog.tsx`, `habit-tag-catalog.tsx`, `habit-list-popup.tsx`, `habit-sources-field.tsx`, `habit-source-detail.tsx`, `habit-period-breakdown.tsx`, `habit-span-breakdown.tsx`, `habit-completion-detail.tsx`, `habit-value-field.tsx`, `habit-form-dialog.css`, `settings-dialog.tsx` | `habits-store`, `time-tracking-store` (auto-fill tags) |
 | [Plan/](#homeplan)          | `plan-panel.tsx`, `plan-period-nav.tsx`, `plan-chrome.css`, `plan-theme.ts`, `plan-gem-mode.ts`, `plan-gem-mode-toggle.tsx`, `plan-gem-day.ts`, `plan-gem-day-body.tsx`, `plan-chip.tsx`, `plan-capacity.ts`, `plan-text-log.tsx`, `plan-tracked-ghosts.ts`, `season-view.tsx`, `month/week/day-view.tsx`, `agenda-grid.tsx`, `planned-tasks-sidebar.tsx`, `use-plan-rail-drag.ts`, `planned-action-dialog.tsx`, `event-dialog.tsx`, `paste-events-dialog.tsx`, `settings-dialog.tsx` | task, event, planned-action, plan-text, sleep-sync, time-tracking, unsaved-changes |
 | [ToDo/](#hometodo)          | `todo-panel.tsx`, `todo-filters.tsx`, `todo-prefs.ts`, `todo-chrome.css`, `TodoLoadPanel.tsx`, `TodoTable.tsx`, `TodoBreakdown.tsx`, `AddTodoDialog.tsx`, `DoneTodoSection.tsx`, `MissedTodoSection.tsx`, `UndoneTodoSection.tsx`, `AddDoneDialog.tsx`, `CompletionTimeLine.tsx`, `todo-utils.ts` | `task-store`, `todo-prefs` (`cogs-todo-prefs`), `lib/todo-commitment.ts`, `lib/todo-steps.ts` |
-| [Tracking/](#hometracking)  | `tracking-desk.tsx`, `time-grid.tsx`, `cell-size-keys.tsx`, `fill-range-control.tsx`, `empty-blocks.ts`, `week-grid.tsx`, `infinite-strip.tsx`, `infinite-window.ts`, `pen-palette.tsx`, `pen-mode-bar.tsx`, `tracking-tool-mode.ts`, `tracking-tools-tray.tsx`, `tool-detail.tsx`, `pen-swatches.tsx`, `trk-instrument.tsx`, `trk-time-markers.tsx`, `other-scope-hint.tsx`, `screentime-empty-hint.tsx`, `tracking-chrome.css`, `depth-control.tsx`, `tracking-find.tsx`, `tracking-activity-log.tsx`, `tracking-log-view.tsx`, `count-statuses-section.tsx`, `tracking-log-model.ts`, `discrete-log-instants.ts`, `cycle-log-section.tsx`, `cycle-detail-dialog.tsx`, `cycle-reading-find.tsx`, `cycle-encyclopedia.tsx`, `cycle-encyclopedia.css`, `cycle-figures/five-phases.png`, `log-activity-dialog.tsx`, `now-time-button.tsx`, `actual-day-view.tsx`, `tracked-agenda-blocks.ts`, `daylog-week.tsx`, `daylog-week.css`, `confirm-planned-dialog.tsx`, `tracking-view-settings-dialog.tsx`, `tracking-day-notes.tsx`, `tracking-undo.ts`, `pen-settings-dialog.tsx`, `pen-settings-host.tsx`, `open-pen-settings.ts`, `pen-parent-picker.tsx`, `pen-chain-visual.tsx`, `pen-action-format-editor.tsx`, `entry-dialog.tsx`, `mood-stretch-card.tsx`, `block-pen-section.tsx`, `secondary-pens-field.tsx`, `tracking-tags-panel.tsx`, `tracking-tags-well.css` | time-tracking, task, event, `cycle-marks` |
+| [Tracking/](#hometracking)  | `tracking-desk.tsx`, `time-grid.tsx`, `cell-size-keys.tsx`, `fill-range-control.tsx`, `empty-blocks.ts`, `week-grid.tsx`, `infinite-strip.tsx`, `infinite-window.ts`, `pen-palette.tsx`, `pen-mode-bar.tsx`, `tracking-tool-mode.ts`, `tracking-tools-tray.tsx`, `tool-detail.tsx`, `pen-swatches.tsx`, `trk-instrument.tsx`, `trk-time-markers.tsx`, `other-scope-hint.tsx`, `screentime-empty-hint.tsx`, `tracking-chrome.css`, `depth-control.tsx`, `tracking-find.tsx`, `tracking-activity-log.tsx`, `tracking-log-view.tsx`, `tracking-log-week.tsx`, `tracking-log-week.css`, `count-statuses-section.tsx`, `tracking-log-model.ts`, `discrete-log-instants.ts`, `cycle-log-section.tsx`, `cycle-detail-dialog.tsx`, `cycle-reading-find.tsx`, `cycle-encyclopedia.tsx`, `cycle-encyclopedia.css`, `cycle-figures/five-phases.png`, `log-activity-dialog.tsx`, `now-time-button.tsx`, `actual-day-view.tsx`, `tracked-agenda-blocks.ts`, `daylog-week.tsx`, `daylog-week.css`, `confirm-planned-dialog.tsx`, `tracking-view-settings-dialog.tsx`, `tracking-day-notes.tsx`, `tracking-summaries.tsx`, `tracking-undo.ts`, `pen-settings-dialog.tsx`, `pen-settings-host.tsx`, `pen-settings-gate.tsx`, `open-pen-settings.ts`, `tag-settings-dialog.tsx`, `tag-settings-host.tsx`, `tag-settings-gate.tsx`, `open-tag-settings.ts`, `catalog-tag-chip.tsx`, `pen-parent-picker.tsx`, `pen-chain-visual.tsx`, `pen-action-format-editor.tsx`, `entry-dialog.tsx`, `mood-stretch-card.tsx`, `block-pen-section.tsx`, `secondary-pens-field.tsx`, `tracking-tags-panel.tsx`, `tracking-tags-well.css` | time-tracking, task, event, `cycle-marks` |
 
 Shared **selected day** via `lib/use-current-date.ts` — overview, Plan, the To Do day lens, and Tracking (a chosen other day persists across refresh / tab switches; a cursor left on today catches up after missed midnights, including on the next launch). To Do week, month, and season nameplates stay local. The date plate is the wall clock.
 
@@ -161,10 +170,10 @@ seeded on first load. Multiplier/priority math in `lib/goals-store.ts` +
 Five habit types (boolean, goal, text, climb; TIME/COUNT alias GOAL) × daily/weekly/monthly **frequency**.
 Climb **cadence** is independent: **weekly +** (fixed week goal; Monday bump after ≥4 hits) or **daily +** (last log + increment; a drop still lowers tomorrow’s target). Rules in `lib/incremental-habits.ts`; logs on `TaskCompletion.value`.
 Shared `habits-store` persist **v26** with Lists Daily Habits. `migrateHabitsState` keeps tasks across version bumps. 15 default daily habits (chess match + puzzle as Daily +; meditate Weekly +; Book implied actions target **Read at least 10 pages per day**, `task-9`).
-Add/edit uses a Win95 window (`habit-form-dialog.css`) with **Gem**, **Priority** pin/mute, Climb cadence tiles, **Delete habit** on edit, and a readable **Add Habit** button. **New habit** lives in the Habits Tab Control Panel on every tab. Daily **Heatmap View** rocker on the control bar (`habitViewMode`) is a jewelry mosaic in the light sheet; **SORT:** is a milled select on that same bar (`lib/habit-sort.ts`, `lib/habit-order.ts`). Weekly columns and the span grade share `lib/habit-week-window.ts` (7 weeks, this month, this season, 4 weeks, or this moon); the **Weeks** plate is weekly only. Monthly columns and the span grade share `lib/habit-month-window.ts` (year so far, 12 months, or since birthday — default 5 May); the **Months** plate is monthly only. Grade / Good-day dialogs can apply a 50% floor for prioritized habits.
+Add/edit uses a Win95 window (`habit-form-dialog.css`) with **Priority** near the top, an optional why after Prioritize habit, section jumps that scroll the same page, **Gem**, Climb cadence tiles, **Delete habit** on edit, and a readable **Add Habit** button. **New habit** lives in the Habits Tab Control Panel on every tab. Daily **Heatmap View** rocker on the control bar (`habitViewMode`) is a jewelry mosaic in the light sheet; **SORT:** is a milled select on that same bar (`lib/habit-sort.ts`, `lib/habit-order.ts`). Weekly columns and the span grade share `lib/habit-week-window.ts` (7 weeks, this month, this season, 4 weeks, or this moon); the **Weeks** plate is weekly only. Monthly columns and the span grade share `lib/habit-month-window.ts` (year so far, 12 months, or since birthday — default 5 May); the **Months** plate is monthly only. Grade / Good-day dialogs can apply a 50% floor for prioritized habits.
 Daily grid is compact (`habit-grid.css`: far-left inset gem/edit, wrapping title with streak/`×N` under it, recessed panel-lamp Yes/No cells — **Small LEDs** 15px or fill-cell, thin glass percent tube or numeric LED totals, optional **Day View** today+% list, name column capped so day columns grow, current day a **solid** mint fill). Home → Habits Daily wraps in `.hab95` (`habit-chrome.css`): milled fascia console (CRT **Habits** title, Daily/Weekly/Monthly bay with power lamps, period nameplate, metal Settings / New habit), phosphor points, **noble-gas glass tubes** for Week / Span grade and Perfect output (`noble-gas-tube.tsx`; plasma clipped to percent; plasma hue from `gradeTubeColor` / `outputGradeTubeColor`; **Willpower gems** stay a crystal pinned at the control panel foot with collected habit gems), Control-bar horizontal rockers (Highlight priorities, streaks, **SORT:**, then Heatmap View / Day View / Hide Done / **Mask done and missed**) and rail cockpit rockers (Loading Bar / **Small LEDs**), milled Habits Tab Control Panel (Physics enlarges Willpower gems). Clickable **Week grade** and **Perfect output** each open a scrollable raw/curved breakdown with their own **tolerance** and tube color. **Good day streak** and **Good days in the last month** sit side by side in that control panel. The Good days detail shows the prior 7-day and prior 30-day raw completion averages against today. Double-click a bottom period percent (`habit-period-breakdown.tsx`) for the habit titles in that column. Layout: [`components/Home/Habits/README.md`](../components/Home/Habits/README.md#period-breakdown).
 Streaks live on Analytics → Streaks (`lib/streaks.ts` + derived climb targets), not on the Habits grid.
-Daily Goal / Yes-No habits can **auto-fill from Tracking**: link TimeGrid tags in Add/Edit Habit and tagged minutes land on that day (`lib/habit-tracking.ts`; `manualValue` / `trackedValue` stay separate so the sync is idempotent). A **New tag** on the habit is a real Tracking tag. Auto-filled cells show a clock glyph and a blue border. Text cells keep the draft local until the note pauses; a filled cell opens a larger editor. **Completion sources** are a pipeline of the sources that are on (`lib/habit-completion-pipeline.ts`, trust in `lib/habit-completion-trust.ts`). BIM Keywords keeps the stored id `keywords`. The whole message must be the phrase. The source row uses that count as true if one arrives, true after a set number, or a logged phrase such as `read {n} pages of {bookname}` or `cleaned for {x} minutes`, which writes the parsed amount. A minutes or hours phrase also paints the prior tracking span (`lib/habit-logged-span.ts`). A hit with no timestamp is not copied onto every period. **Tagged tasks** counts Done tasks with a tag (two cooking tasks meet a goal of 2; a tracked block files one Done line). The minute tag source is unchanged (`lib/habit-tagged-count.ts`). **Daily completion average** (`dailyCompletionAverage`) fills a weekly, monthly, or season habit with the raw mean of daily-habit row percents (`lib/habit-daily-completion-average.ts`). **List sent** fills a period from a list’s sent ratio, then grace (`lib/list-sent.ts`). The weekly habit respond to all missing texts reads texts I need to send. List settings shows that habit and the role, derived from the saved source (`lib/list-habit-routes.ts`). **Open item in Lists** uses the standing habit item (`lib/habit-list-item.ts`).
+Daily Goal / Yes-No habits can **auto-fill from Tracking**: link TimeGrid tags in Add/Edit Habit and tagged minutes land on that day (`lib/habit-tracking.ts`; `manualValue` / `trackedValue` stay separate so the sync is idempotent). A **New tag** on the Tags row or on Auto-fill from Tracking is a real Tracking tag (`lib/catalog-tag.ts`). The count stays one name; the minutes stay ids. Auto-filled cells show a clock glyph and a blue border. Text cells keep the draft local until the note pauses; a filled cell opens a larger editor. **Completion sources** are a pipeline of the sources that are on (`lib/habit-completion-pipeline.ts`, trust in `lib/habit-completion-trust.ts`). BIM Keywords keeps the stored id `keywords`. The whole message must be the phrase. The source row uses that count as true if one arrives, true after a set number, or a logged phrase such as `read {n} pages of {bookname}` or `cleaned for {x} minutes`, which writes the parsed amount. A minutes or hours phrase also paints the prior tracking span (`lib/habit-logged-span.ts`). A hit with no timestamp is not copied onto every period. **Tagged tasks** counts Done tasks with a tag (two cooking tasks meet a goal of 2; a tracked block files one Done line). The minute tag source is unchanged (`lib/habit-tagged-count.ts`). **Daily completion average** (`dailyCompletionAverage`) fills a weekly, monthly, or season habit with the raw mean of daily-habit row percents (`lib/habit-daily-completion-average.ts`). **List sent** fills a period from a list’s sent ratio, then grace (`lib/list-sent.ts`). The weekly habit respond to all missing texts reads texts I need to send. List settings shows that habit and the role, derived from the saved source (`lib/list-habit-routes.ts`). **Open item in Lists** uses the standing habit item (`lib/habit-list-item.ts`).
 **Could add:** streak chips on the Habits grid, habit trend charts, auto-fill for climb habits.
 
 #### Home/Plan/
@@ -191,6 +200,7 @@ week, month, and season do not.
 
 #### Home/ToDo/
 Day/week/month execution lists — tier sort (A+…D), overdue, push forward.
+The day lens also lists that day's rites (`lib/ritual-todo.ts`): Monday start of week, Sunday end of week, the last civil day for end of month, Star Lord on the new moon, full moon, or birthday. Those rows are derived. Week, month, and season stay stored tasks.
 Orchestrator (`todo-panel.tsx`) + **Show / Sort / Pace** (`todo-filters.tsx`,
 Available now + WIP cap in `todo-prefs.ts`) + pure `todo-utils.ts` +
 `TodoTable`/`AddTodoDialog`/`TodoLoadPanel`. Open rows are assigned;
@@ -237,7 +247,7 @@ Day Log; discrete events stay vertical ticks; do not remove; **Infinite scroll**
 (`tracking-activity-log.tsx`, Log activity — optional name/notes/discrete events —
 untracked-gap **+** and notes + Done this day) + Day Log (`actual-day-view.tsx` +
 `daylog-week.tsx`, local Day \| Week agenda; click a planned ghost to confirm via
-`confirm-planned-dialog.tsx`) + Tracking log (`tracking-log-view.tsx` + `count-statuses-section.tsx` + `tracking-log-model.ts` + `cycle-log-section.tsx`: Event, Switch, Intake, Spent (amount, what, and source), Note, Thought process, and Counts under the composer (joints, days happy); shared `components/ui/clock-picker/` stays visible; Estimated and Unknown are mutually exclusive checkboxes; the cycle well is hidden until Enable cycle tracking is on, then bleeding, spotting, and ovulation marks, phase from `phaseForDate`, three sectioned lenses in `cycle-detail-dialog.tsx` (Clinical and Chinese medicine also mount `cycle-encyclopedia.tsx`, a sourced reference that does not change with the day; herbs are traditional roles with no doses; Esoteric stays four short sections), estimated days hatched beside marked ones) + day-notes **append log**.
+`confirm-planned-dialog.tsx`) + Tracking log (`tracking-log-view.tsx` + local Day | Week via `tracking-log-week.tsx` + `count-statuses-section.tsx` + `tracking-log-model.ts` + `cycle-log-section.tsx`: Event, Switch, Intake, Spent (amount, what, and source), Note, Thought process, and Counts under the composer (joints, days happy); shared `components/ui/clock-picker/` stays visible; Estimated and Unknown are mutually exclusive checkboxes; the cycle well is hidden until Enable cycle tracking is on, then bleeding, spotting, and ovulation marks, phase from `phaseForDate`, three sectioned lenses in `cycle-detail-dialog.tsx` (Clinical and Chinese medicine also mount `cycle-encyclopedia.tsx`, a sourced reference that does not change with the day; herbs are traditional roles with no doses; Esoteric stays four short sections), estimated days hatched beside marked ones) + day-notes **append log**.
 **Cmd/Ctrl-Z** (`tracking-undo.ts`) pops `lib/action-history.ts` while this tab or the header Now dialog is open (a stroke focuses the plot; text fields keep native undo). **Superimpose** (`.trk-super-bar`, under the view-mode bar) remembers a faint second view per active scope on the day, week, and infinite grids; paint still writes the active view. Activity Log, Day Log, and Tracking log do not show the row.
 Win95 Tracking window (`tracking-chrome.css`); the palette is a panel inside that
 frame (Show as / Sort / Expand↔Conceal / New pen on the palette rail, then a two-column `.trk-pen-tools-row`: `.trk-pen-tray`
@@ -267,7 +277,10 @@ it needs (`pen-parent-picker.tsx`) plus a colored, navigable chain diagram
 that same link seen from the parent (`lib/pen-detail-sync.ts`, persist v13):
 Walk under Exercise is both a detail chip and a pen that counts as Exercise.
 Double-click a pen color to open pen settings (`pen-settings-host.tsx` on the
-app page). A pen can also
+app page subscribes to the open bus; `pen-settings-gate.tsx` loads the timegrid
+when a pen is chosen). Double-click a tag chip (or Edit) to open tag settings
+(`tag-settings-host.tsx` next to it; `open-tag-settings.ts` / `tag-settings-dialog.tsx`).
+A pen can also
 carry **default action formats** (`pen-action-format-editor.tsx`) that name a
 Done-today row from a painted block — see
 [`PEN_ACTION_FORMATS.md`](PEN_ACTION_FORMATS.md).
@@ -340,17 +353,17 @@ Explorer frame in `filemanager98.css`):
 | `hooks/`        | `useListsNavigation`, `useListsSearch`, `useListsDragDrop`, `useListsSelection`, `useListsTaskActions` |
 | `navigation/`   | `FolderTree.tsx`, `BreadcrumbNav.tsx`                                     |
 | `views/`        | `FolderViewIcons.tsx` + test, `FolderViewList/Details/Cards.tsx`, `SearchResultsView.tsx` + select-mode test |
-| `list-content/` | `ListContentPanel/Default/Checklist/Icons/Details/Spreadsheet.tsx`, `reminder-quick-add.tsx` (Reminders name, time, Text me, Persistent), `use-windowed-slice.ts` (visible rows only), `SheetFullscreen.tsx`, `AllViewCheckboxFilter.tsx`, `ListMissedButton.tsx` |
-| `dialogs/`      | `New/Edit List & Folder`, `ListHabitRoutes` (derived habit titles and roles), `InstagramListsSettings` (following.json / followers_N.json / HTML import; no zip; login says the official API does not return those lists), `new-dialog-fields.tsx` (`BulkNamesField`, `ScheduleableSwitch`, `PlacementModeRadios`), `MergeConfirmDialog` + item/list wrappers, `MergeFieldGroup`, `ColumnPickerPanel`, `InFoldersEditor`, `ConnectedListsEditor`, `ChecklistViewSettings` (view-mode host), `DefaultViewSettings`, `DetailsViewSettings`, `ListRulesEditor`, `CsvImportDialog`, `OrbPickerDialog` |
+| `list-content/` | `ListContentPanel/Default/Checklist/Icons/Details/Spreadsheet.tsx`, `ListContentIconsDesktop.tsx` (Icons desktop free-drag + PILE UP), `reminder-quick-add.tsx` (Reminders name, time, Text me, Persistent), `use-windowed-slice.ts` (visible rows only), `SheetFullscreen.tsx`, `AllViewCheckboxFilter.tsx`, `ListMissedButton.tsx` |
+| `dialogs/`      | `New/Edit List & Folder`, `ListHabitRoutes` (derived habit titles and roles), `InstagramListsSettings` (following.json / followers_N.json / HTML import; no zip; login says the official API does not return those lists), `new-dialog-fields.tsx` (`BulkNamesField`, `ScheduleableSwitch`, `PlacementModeRadios`), `GravitySettingsDialog` (G + source gains), `MergeConfirmDialog` + item/list wrappers, `MergeFieldGroup`, `ColumnPickerPanel`, `InFoldersEditor`, `ConnectedListsEditor`, `ChecklistViewSettings` (view-mode host), `DefaultViewSettings`, `DetailsViewSettings`, `ListRulesEditor`, `CsvImportDialog`, `OrbPickerDialog` |
 | `attributes/`   | `AttributeSchemaEditor`, `AttributeSettingsDialog`, `AttributeValueField`, `AttributeValuesEditor`, `helpers.ts` |
 | `toolbar/`      | `ListsToolbar.tsx`, `ToolbarSearch.tsx`, `SelectionToolbar.tsx` (select mode control strip + folder-search test), `SelectModeActionChrome.tsx`, `ItemSelectionToolbar.tsx`, `ViewModeControls.tsx` (mode deck; captions via `listDisplayCaption`) |
-| `lib/`          | `icon-utils.tsx` (`entryIconSrc`), `velvet-icon-grid.ts` (pack-to-width, `listDisplayCaption`), `lists-location-choice.ts` (clear search on folder nav) |
+| `lib/`          | `icon-utils.tsx` (`entryIconSrc`), `velvet-icon-grid.ts` (pack-to-width, `listDisplayCaption`), `list-icon-pile.ts` (PILE UP live playfield container + bounce), `list-icon-pile-camera.ts` (flight translate+scale camera), `list-icon-gravity.ts` (+ paint/css: interactive Gravity field, gains/G params, grab/throw/stir), `list-icon-force-links.ts` + overlay/css/tests + `list-icon-physics-juice.tsx` (weighted cords) + `list-icon-fling-juice.ts` (grab/ghost helpers), `lists-location-choice.ts` (clear search on folder nav) |
 
 **Top-level:** `attribute-editor.tsx` (barrel), `settings-dialog.tsx`, `lists-settings-nav.tsx`, `lists-settings.css`, `list-picker.tsx` + `list-picker.css`,
 `daily-habits-list.tsx`, `open-target.ts`, `constants.ts`, `types.ts`, `filemanager98.css`,
 [`FOLDER_ALL_ITEMS.md`](../components/Lists/FOLDER_ALL_ITEMS.md).
 
-**Helpers:** `lib/lists-grid-entries.ts`, `lib/lists-navigator.ts` (Lists settings library order), `lib/string-utils.ts`, `lib/folder-all-items.ts` ([`FOLDER_ALL_ITEMS.md`](../components/Lists/FOLDER_ALL_ITEMS.md)), `lib/folder-all-query.ts` (Apply list `folder: all` / `all folder`), `lib/folder-membership.ts` (list↔folder filing; [`LIST_FOLDERS.md`](../components/Lists/LIST_FOLDERS.md)), `lib/scheduled-lists-sync.ts`, `lib/period-ledger.ts`, `lib/archive-lists.ts` (Completed / Missed Opportunities membership), `lib/reminders.ts` (built-in Reminders list: once / daily / weekly into Inbox, Telegram when Text me is on, header bell when Persistent is on; dismiss hides once for good and a cycle until the next one), `lib/people-i-know.ts` (built-in People I Know list: birthday and standing notes on the Person type, the rest of the biography on `Task.personProfile`, Company time from a joined pen), `lib/gift-ideas.ts` (Close creates one Gift ideas folder and a list per person; turning Close off keeps the list), `lib/instagram-lists.ts` (built-in People I follow on Instagram and People who follow me on Instagram: one item per username, follow-back from the settings download), `lib/instagram-export.ts` (parser for that download), `lib/home-system-lists.ts` (those singleton lists, and the other built-in ones, stay pinned on Lists Home), `lib/checklist-checkbox-vars.ts`, `lib/spreadsheet-catalog.ts` (Spreadsheet columns; [`SPREADSHEET.md`](../components/Lists/SPREADSHEET.md)), `lib/details-columns.ts` (Details table columns; [`DETAILS.md`](../components/Lists/DETAILS.md)), `lib/default-view-prefs.ts` (Default reading-row chrome; [`DEFAULT_VIEW.md`](../components/Lists/DEFAULT_VIEW.md)), `lib/list-links.ts` (connected-list membership; [`LIST_LINKS.md`](../components/Lists/LIST_LINKS.md)), `lib/module-lists.ts`, `lib/module-list-import.ts` (Tidy/Trip → nested Module Lists items; [`MODULE_LISTS.md`](../components/Lists/MODULE_LISTS.md))
+**Helpers:** `lib/lists-grid-entries.ts`, `lib/lists-navigator.ts` (Lists settings library order), `lib/string-utils.ts`, `lib/folder-all-items.ts` ([`FOLDER_ALL_ITEMS.md`](../components/Lists/FOLDER_ALL_ITEMS.md)), `lib/folder-all-query.ts` (Apply list `folder: all` / `all folder`), `lib/folder-membership.ts` (list↔folder filing; [`LIST_FOLDERS.md`](../components/Lists/LIST_FOLDERS.md)), `lib/scheduled-lists-sync.ts`, `lib/period-ledger.ts`, `lib/archive-lists.ts` (Completed / Missed Opportunities membership), `lib/reminders.ts` (built-in Reminders list: once / daily / weekdays / weekly / monthly / yearly / new-moon / full-moon into Inbox, Telegram when Text me is on, header bell when Persistent is on; seeded moon-night rows; dismiss hides once for good and a cycle until the next one), `lib/people-i-know.ts` (built-in People I Know list: birthday and standing notes on the Person type, the rest of the biography on `Task.personProfile`, Company time from a joined pen), `lib/gift-ideas.ts` (Close creates one Gift ideas folder and a list per person; turning Close off keeps the list), `lib/instagram-lists.ts` (built-in People I follow on Instagram and People who follow me on Instagram: one item per username, follow-back from the settings download), `lib/instagram-export.ts` (parser for that download), `lib/home-system-lists.ts` (those singleton lists, and the other built-in ones, stay pinned on Lists Home), `lib/checklist-checkbox-vars.ts`, `lib/spreadsheet-catalog.ts` (Spreadsheet columns; [`SPREADSHEET.md`](../components/Lists/SPREADSHEET.md)), `lib/details-columns.ts` (Details table columns; [`DETAILS.md`](../components/Lists/DETAILS.md)), `lib/default-view-prefs.ts` (Default reading-row chrome; [`DEFAULT_VIEW.md`](../components/Lists/DEFAULT_VIEW.md)), `lib/list-links.ts` (connected-list membership; [`LIST_LINKS.md`](../components/Lists/LIST_LINKS.md)), `lib/module-lists.ts`, `lib/module-list-import.ts` (Tidy/Trip → nested Module Lists items; [`MODULE_LISTS.md`](../components/Lists/MODULE_LISTS.md))
 
 **Stores:** `task-store`, `lists-ui-store`, `habits-store`
 
@@ -556,7 +569,7 @@ completions whose time the app autogenerated — habit rates, painted Tracking m
 "finished just now", that night's bedtime, the day anchor — each with its basis, correctable inline or
 accepted in bulk (`lib/estimated-values.ts` → `lib/services/completion-time-service.ts`).
 **Est.** sets `Task.timeRough` when the duration or start is only a rough estimate.
-Helpers: `lib/rituals.ts`, `lib/pending-reviews.ts`. Shared
+Helpers: `lib/rituals.ts`, `lib/ritual-todo.ts` (Home → To Do day: Monday start of week, Sunday end of week, last civil day for end of month, Star Lord on the moon day or birthday), `lib/pending-reviews.ts`. `RitualWalkDialog.tsx` opens the walk from that To Do row. Shared
 `CommitmentMarkList.tsx` marks assigned tasks Required / Prioritized in morning
 and start-ritual flows. **Post-mortems:** `PostMortemDialog.tsx` +
 `lib/services/completion-service.ts` capture per-task satisfaction, resistance,
@@ -577,9 +590,11 @@ helpers in `lib/affirmations.ts`).
 
 ### Settings / Focus
 
-- `Settings/SettingsDialog.tsx` (header) — one instrument: find well, section
+- `Settings/SettingsDialog.tsx` (header) — the pin-bar gear stays on the first
+  paint; this dialog loads the first time it opens. One instrument: find well, section
   index, six groups (`settings-index.ts`, `settings-nav.tsx`). The body shows
-  the selected bay and scrolls only inside it. **You:** baby
+  the selected bay and scrolls only inside it. That bay's field loads when the
+  bay is selected, so a refresh does not download a closed door. **You:** baby
   animal friend, home location (Plan sunrise/sunset, default San Diego),
   birthday, default time of day (`DayAnchorField.tsx` — finish time assumed
   for work logged against a day that already ended, default 9:00 PM).
@@ -604,7 +619,7 @@ helpers in `lib/affirmations.ts`).
   **item types**: attribute schema, capabilities (gate detail tabs), detail
   panels/layout, implied-action rules, recipe/hint cards. System types locked;
   catalog types (Book, Furniture, …) editable.
-- `Focus/JustStartMode.tsx` — ADHD anti-paralysis overlay: one smallest molecular
+- `Focus/JustStartMode.tsx` + `just-start.css` — ADHD anti-paralysis overlay (mill phosphor Done): one smallest molecular
   step + 2-minute timer; launched from the To-Do panel.
 - `Search/GlobalSearch.tsx` — Cmd/Ctrl-K command palette over `lib/search.ts`, mounted from `app/page.tsx`. `search-chrome.css` (`.b2-search`) is the milled fascia.
 
@@ -668,7 +683,8 @@ Live keys are `brain2-*`. `cogs-*` is the historical alias. Keys and persist ver
 | `goals-store.ts` | Objectives and goals |
 | `points-store.ts` | Points ledger. `redatePoints` moves one task's rows when a finish changes day |
 | `time-tracking-store.ts` | TimeGrid views, pens, and intervals |
-| `day-notes-persist.ts` | Tracking day-notes append log |
+| `day-notes-persist.ts` | Tracking day/period summaries |
+| `tracking-summaries.ts` | Week, month, season, and year summary keys |
 | `pen-tree.ts` | Parent/child rollup and display-depth options for Tracking pens |
 | `pen-detail-sync.ts` | Detail chips and counts-as children are one set (`PenVariant.penId`) |
 | `pen-sort.ts` | Palette order: Recent / A–Z / Tree; last-used from paint |
@@ -681,14 +697,15 @@ Live keys are `brain2-*`. `cogs-*` is the historical alias. Keys and persist ver
 | `module-definitions.ts` | Reusable module blueprints (`ModuleDefinition`) |
 | `workflows-store.ts` | Authored per-module workflows |
 | `item-type-store.ts` | Item type registry |
-| `lists-ui-store.ts` | Lists UI prefs and the orb gallery |
+| `lists-ui-store.ts` | Lists UI prefs, orb gallery, and list Icons desktop (persist v7) |
 | `home-widgets-store.ts` | Home overview square visibility, order, and Follow the clock |
 | `home-weather-store.ts` | Home weather widget city and beach |
-| `home-days-until-store.ts` | Days Until date and label |
+| `home-days-until-store.ts` | Days Until / Days Since marks (`items[]`, mode, optional Plan event) |
+| `home-days-until-event.ts` | Optional all-day Plan event link for a Days Until mark |
 | `sky-motion-store.ts` | Moon chart view width and time rate. Handoff `components/Home/MOON_SKY_MOTION.md` |
 | `home-weather.ts` | Rain copy, advisories, human forecast, place sanitize |
 | `home-widgets.ts` | Catalog, sanitize, Widget catalog blurbs, and the 3-stop Habits gradient |
-| `home-glances.ts` | Night well, Harvest leftover, Inbox mill, Already flowing, and Plan and lived faces |
+| `home-glances.ts` | Night well, Harvest leftover, Inbox mill, Already flowing, and Plan and lived faces (prospective plan vs retrospective waking paint) |
 | `solar-remainder.ts` | Solar remainder phases for the Home sun tile |
 | `tracking-presence.ts` | Current vs last-known lanes; Now popup now-stamp (`open` extends, `minute` starts a second block) and recent sequence |
 | `header-tracking-plan.ts` | Header popup plan → tasks, placements, day plan log |
@@ -727,6 +744,7 @@ Live keys are `brain2-*`. `cogs-*` is the historical alias. Keys and persist ver
 | `baby-animals-store.ts` | Friend gallery persist v7; names on card id; dismissed stay gone |
 | `types.ts` | Shared interfaces — `Task`, `Item`, `ItemTypeDefinition`, events, habits, reviews, attributes |
 | `calculations.ts` | Habit completion math (5 types; climb via incremental-habits; week-to-date + output grades; 0% not curved) |
+| `crt-number.ts` | Integer / 1-decimal CRT readouts (`formatCrtNumber`); kills float trails on Points / Goals / Analytics |
 | `incremental-habits.ts` | Daily vs weekly climb: last-log daily targets (drops count); 4-day weekly bump; persist v3 |
 | `habit-points.ts` | Daily habit 50×ratio points; user accomplishment bonus (default +50 at ≥80% raw); 75% grade bonuses (100 either / 300 both); editable grade-lift bonuses vs yesterday and vs last week; average bonuses (default +5) vs the prior 7-day and prior 30-day raw averages |
 | `habit-accomplishment.ts` | Good day threshold/bonus; streak; last-30; yesterday and week raw averages (independent of grade curves) |
@@ -773,7 +791,7 @@ Live keys are `brain2-*`. `cogs-*` is the historical alias. Keys and persist ver
 | `habit-auto-flag.ts` | Shared manual-vs-auto merge for habit cells (`applyHabitAutoFlag`) |
 | `habit-period-pace.ts` | Elapsed fraction of a habit period, and logged share of that time |
 | `habit-period-breakdown.ts` | Titles behind a footer period percent; completed when that cell’s share is 100 |
-| `habit-span-breakdown.ts` | Far-right span %: period names, cell amounts for a non-binary habit, Running through today, Total for the full span |
+| `habit-span-breakdown.ts` | Far-right span %: period names, cell amounts for a non-binary habit (extra above the target fills the span, which still stops at 100), Running through today, Total for the full span |
 | `habit-period-windows.ts` | Unique period windows for a habit frequency + day keys |
 | `habit-month-window.ts` | Monthly sheet and span grade: month starts for year so far, 12 months, or since birthday (default 5 May) |
 | `habit-week-window.ts` | Weekly sheet and span grade: Monday starts for 7 weeks, this month, this season, 4 weeks, or this moon |
@@ -789,7 +807,7 @@ Live keys are `brain2-*`. `cogs-*` is the historical alias. Keys and persist ver
 | `inbox-transfer-queue.ts` | Drop those inbox rows on the click; write the notes together on a later turn |
 | `inbox-credit.ts` | +1 per handled Inbox idea; +50 when the Inbox hits 0 |
 | `inbox-process-todo.ts` | To Do **process inbox information** when the revisit Inbox has more than 100 open ideas; Auto-push on |
-| `reminders.ts` | Built-in Reminders list. Due rows copy into Inbox and, when Text me is on, text the paired Telegram chat. Persistent rows stay in the header bell until dismissed. Once / daily / weekly. Fires only while the app is open |
+| `reminders.ts` | Built-in Reminders list. Due rows copy into Inbox and, when Text me is on, text the paired Telegram chat. Persistent rows stay in the header bell until dismissed. Once / daily / weekdays / weekly / monthly / yearly / new-moon / full-moon (seeded moon-night rows: bell from local midnight, Inbox/Telegram at 18:00). Fires only while the app is open |
 | `people-i-know.ts` | Built-in People I Know list. Biography is `Task.personProfile`. Company time follows a joined pen. A stored timeblock row is kept. Delete is refused. Pinned on Lists Home |
 | `gift-ideas.ts` | Gift ideas folder and one list per Close person (`giftIdeasPersonId`). Close off does not delete. Delete of the folder or list is allowed. A duplicate drops the person id |
 | `instagram-export.ts` | Parser for the person’s Instagram followers-and-following download. Follow-back stays blank until that side is in the file |
@@ -798,11 +816,14 @@ Live keys are `brain2-*`. `cogs-*` is the historical alias. Keys and persist ver
 | `person-types.ts` | Catalog **Person** (birthday and standing notes) + `withPersonType`. Further biography is `Task.personProfile` |
 | `person-profile.ts` | Person biography on `Task.personProfile`: name, nicknames, optional relation, date met, Instagram, address precision, dated notes, interactions, gift notes, Close. Known-for, last saw, and the birthday countdown are derived. Company time follows pen color |
 | `inbox-recent-lists.ts` | Persist / suggest recently used lists for Inbox walk |
-| `item-types.ts` | Type registry helpers, `resolveDetailView`, `mergeTypeRegistry`, rule evaluation + implied-action effects |
+| `item-types.ts` | Type registry helpers, `resolveDetailView`, `mergeTypeRegistry`, schema composition over list allowlists, rule evaluation + implied-action effects |
+| `list-item-types.ts` | Per-list `itemTypeIds` allowlist + `itemTypeId` default helpers |
+| `list-type-filter.ts` | View-only show/hide by exact item type id (Lists inspector Filter types) |
 | `implied-actions.ts` | Log Done actions + increment habits from type/list rules |
-| `item-type-recipes.ts` | Starter schemas + implied-action hints for the type editor |
+| `item-type-recipes.ts` | Starter schemas + implied-action hints for the type editor (includes Film) |
 | `catalog-types.ts` | Furniture / Resource / Shopping catalog seeds |
 | `book-types.ts` | Catalog **Book** (cover, pages read, implied-action rules) + `withBookType` |
+| `film-types.ts` | Catalog **Film** (poster, year, shelf, rating, …) + `withFilmType` / Films-list ensure |
 | `objectives.ts` | Objectives/Goals helpers — period keys, prioritization + caps, goal progress, direction-in-life coverage |
 | `completion-events.ts` | Completion event bus (`onTaskCompleted`/`emitTaskCompleted`/`requestTaskCompletion`) |
 | `completion-status.ts` | `done ⇔ completed`; `"missed"` is too-late (`isClearedFromWork`); leftover lifecycle words on `status` are repaired |
@@ -830,6 +851,8 @@ Live keys are `brain2-*`. `cogs-*` is the historical alias. Keys and persist ver
 | `habit-value-sync.ts` | Daily habit total: sums one daily habit into a weekly, monthly, or season cell for the days so far |
 | `habit-daily-completion-average.ts` | Daily completion average: raw mean of daily-habit row percents into a weekly, monthly, or season cell |
 | `habit-tagged-count.ts` | Tagged tasks: counts Done tasks with a tag; a tracking block files one Done line |
+| `catalog-tag.ts` | One Tracking catalog for the habit Tags row and Auto-fill. A rename follows the count name. Minute ids stay on that tag; a fold moves them onto the tag that remains. Re-exports delete scrub |
+| `catalog-tag-scrub.ts` | `removeTag` scrub: drop the id from habit minute-links and operation `trackingTagIds`; leave count names alone |
 | `list-sent.ts` | List sent ratio: sent / (unsent still on the list + sent this period), then grace |
 | `list-sent-sync.ts` | Writes that percent onto the current period cell and clears last week’s sends off the list |
 | `habit-utils.ts` | Habit type aliases; `isHabitGoalMet` with date/`weeklyData` for climb; `completionWithGoalFlag` stays checked when an auto flag is set |
@@ -840,7 +863,8 @@ Live keys are `brain2-*`. `cogs-*` is the historical alias. Keys and persist ver
 | `folder-all-query.ts` | Apply-list search: `folder: all` / `all folder` → that folder’s All Items id. Ties stay ties |
 | `list-links.ts` | Connected-list membership (`List.linkedTargetListIds`); exclusions; unlink without mass-delete |
 | `scheduled-lists-sync.ts` | Smart lists ↔ scheduled folders + per-period To do / Done / Undone lists; creates Completed + Missed Opportunities lists |
-| `period-ledger.ts` | Prospective To do, Done during the period, and Undone for a finished period. Home → To Do and the Scheduled lists share it |
+| `period-ledger.ts` | Prospective To do (narrow: open scheduled work), Done during the period, and Undone for a finished period. Home → To Do and the Scheduled lists share it. Wider polarity: [`TEMPORAL_POLARITY.md`](TEMPORAL_POLARITY.md) |
+| `temporal-polarity.ts` | Overlay labels for Prospective / Retrospective / Bridge (`data-temporal`); no persist fields |
 | `archive-lists.ts` | Archive list membership on `Task.lists`; reuse-by-name; exclusions |
 | `checklist-checkbox-vars.ts` | Checklist columns: default Completed only |
 | `details-columns.ts` | Details table column ids (`List.detailsColumns`; not spreadsheet) |
@@ -858,7 +882,8 @@ Live keys are `brain2-*`. `cogs-*` is the historical alias. Keys and persist ver
 | `module-plan-sync.ts` | Push finalized module items into Plan text |
 | `itinerary-assemble.ts` | Pure day-block assembly for printable itineraries |
 | `itinerary-migrate.ts` | Upgrade older Itinerary workspaces to the v2 view set |
-| `trip-itinerary.ts` | Self-contained trip days on module config; projected into Module Lists (`module-list-import-trip.ts`) |
+| `trip-itinerary.ts` | Trip day shell + schedule helpers; Items write via `trip-itinerary-items.ts`; config dual-write shim for one release |
+| `trip-itinerary-items.ts` | Trip schedule on Items (`persistTripItineraryItems`, `resolveTripItinerary`) |
 | `trip-activity-lists.ts` / `trip-directions.ts` | Activities buckets + map distance estimates |
 | `city-search.ts` / `places-search.ts` | City + place autocomplete for itinerary inputs (cached) |
 | `parse-event-text.ts` | Unstructured itinerary text → calendar event drafts (Plan Paste Events) |
@@ -871,8 +896,9 @@ Live keys are `brain2-*`. `cogs-*` is the historical alias. Keys and persist ver
 | `weather-client.ts` | Open-Meteo forecast + sunrise/sunset for itinerary days; Home hourly + 7-day + AQI via `fetchHomeDayWeather` / `fetchHomeAirQuality`. Tracking plot sun is `sun-times.ts` (persisted per day), not this TTL weather cache. |
 | `tide-client.ts` | NOAA CO-OPS tides for the Home weather instrument (Ocean Beach / San Diego → 9410230; beach picker) |
 | `flight-lookup.ts` / `parse-flight-text.ts` | Flight number lookup + airline-paste parser |
-| `filmrecs-types.ts` / `filmrecs-catalog.ts` / `filmrecs-score.ts` | Film DNA Lab catalog + offline scoring |
-| `house-cleaning.ts` | Tidy house-cleaning model on `module.config.houseCleaning` — ⚠ shadow database; projected into Module Lists (`module-list-import-tidy.ts`); two-way Items still the target ([`MODULE_PLATFORM.md`](MODULE_PLATFORM.md)) |
+| `filmrecs-types.ts` / `filmrecs-catalog.ts` / `filmrecs-score.ts` | Film DNA Lab catalog + offline scoring (Films list pairs with catalog Film type) |
+| `house-cleaning.ts` | Tidy model; chores write to Items via `house-cleaning-items.ts`; config dual-write shim for one release ([`MODULE_PLATFORM.md`](MODULE_PLATFORM.md)) |
+| `house-cleaning-items.ts` | Tidy records on Items (`persistHouseCleaningItems`, `resolveHouseCleaning`) |
 | `letterboxd-parse.ts` | Letterboxd export-folder / CSV merge |
 | `doc-html.ts` / `doc-links.ts` | Docs HTML sanitize + hyperlink helpers |
 | `google-fonts.ts` | Allow-listed Google Fonts for Docs |
@@ -888,6 +914,7 @@ Live keys are `brain2-*`. `cogs-*` is the historical alias. Keys and persist ver
 | `commit-item-edit.ts` | New-code write door: `commitItemEdit` (repository validate, store update, mutation patch, one activity line) and opt-in `applyLinkedEffects` |
 | `pending-reviews.ts` | Which just-ended **end** rituals are still due |
 | `rituals.ts` | Ritual slots, available/undone list, Telegram board text, phase helpers |
+| `ritual-todo.ts` | Calendar day for each rite on the Home → To Do day lens. Derived rows, not stored tasks |
 | `lunar.ts` | Local day of the new moon and the full moon; quarters; eight phase names, illumination, neighboring major phases, and the sooner countdown for the Home Moon tile |
 | `solar-system.ts` | Heliocentric ecliptic places and true radii of the eight planets for the Moon detail chart |
 | `sky-motion.ts` | px/s of eight reference motions on a 1,000 px view; time-rate steps; scale and light-crossing lines |
@@ -972,7 +999,7 @@ App-wide shared React hooks. Module-specific hooks live next to their UI (e.g.
 | `useMessageIngest.ts` | Drain Telegram IPC / `/api/ingest` into `lib/ingest`; album buffer; split long read dumps |
 | `useUndoHotkey.ts` | Cmd/Ctrl-Z last-action undo / Cmd/Ctrl-Shift-Z redo for Home and Tracking; Tracking adds capture-phase `tracking-undo.ts` |
 | `use-day-rollover.ts` | Roll unfinished past period schedules up one level; bump `lib/day-clock.ts`. Mounted from `app/page.tsx` |
-| `use-reminder-tick.ts` | Deliver due Reminders to Inbox, and to Telegram when Text me is on, each minute and when the window is shown. Mounted from `app/page.tsx` |
+| `use-reminder-tick.ts` | Ensure moon-night reminders, then deliver due Reminders to Inbox, and to Telegram when Text me is on, each minute and when the window is shown. Mounted from `app/page.tsx` |
 | `use-people-i-know.ts` | Create or adopt the People I Know list after the task vault hydrates. Mounted from `app/page.tsx` |
 | `use-close-gift-ideas.ts` | After hydrate, ensure a Gift ideas list for each person already Close. A later save that turns Close on or renames the person updates it. Mounted from `app/page.tsx` |
 | `use-instagram-lists.ts` | Create or adopt the two Instagram lists after the task vault hydrates. Mounted from `app/page.tsx` beside `usePeopleIKnowList` |
@@ -1021,7 +1048,8 @@ these; Lists / Plan / Scheduler window chrome may not.
 | `widget-improvement/` | Research reports on the Home overview widgets and Module cards, from the live vault on 9 Oct 2026 ([`widget-improvement/README.md`](widget-improvement/README.md)). Implementation plans live in `widget-improvement/plan/`. |
 | `UI_NEXT.md` | Ranked UI executable list (subordinate to the plan) |
 | `UI_CRITIQUE.md` | Unranked per-tab observations — do not execute top to bottom |
-| `CANONICAL_FIELDS.md` | Canonical `Item`/data-model field reference (cleanup is step 1, not last) |
+| `CANONICAL_FIELDS.md` | Canonical `Item`/data-model field reference (cleanup is step 1, not last). Defines temporal polarity beside orders of abstraction |
+| `TEMPORAL_POLARITY.md` | Prospective vs Retrospective catalog (plan writings vs painted time / actuals / day-summary prose); glossary; overlay only |
 | `COUNTS_AS.md` | Tracking pen nesting — what "counts as" means; `parentIds` with `parentId` as the display parent |
 | `time-context-vision.md` | Time-context slices: a predicate over `TimeEntry`. Specified, not shipped |
 | `AstrologyPredictions.md` | Hellenistic timing for the 5 May 2000 Rogers chart, natal sections labeled apart from the dated forecast |
