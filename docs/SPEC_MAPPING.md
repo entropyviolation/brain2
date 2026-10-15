@@ -347,13 +347,17 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   (e.g. Book pages read → “Read at least 10 pages per day”). **Timed reminders**
   are a separate clock, not that model: the built-in Reminders list
   (`lib/reminders.ts`) fires at `scheduledDate` + `scheduledTime`, once, every
-  day, every week, each new moon, or each full moon (`Task.reminder`), into the
-  Inbox and, when Text me is on (the default), a Telegram text. Persistent (the
-  default) keeps the current occurrence in the header bell until Dismiss; off
-  does not nag. Dismiss hides once for good and a recurring reminder until the
-  next cycle. Seeded **new moon tonight** / **full moon tonight** nag on the
-  header bell from local midnight of the Meeus phase day, inbox and text at
-  18:00 local, then advance by lunation. They only fire while the app is open.
+  day, weekdays, every week, every month, every year, each new moon, or each
+  full moon (`Task.reminder`), into the Inbox and, when Text me is on (the
+  default), a Telegram text. Persistent (the default) keeps the current
+  occurrence in the header bell until Dismiss; off does not nag. The header
+  Reminders popup schedules a new row with quick times (in 1 hour, tonight,
+  tomorrow morning, next Monday) and the same repeat / Text me / Persistent
+  options as Lists → Reminders. Dismiss hides once for good and a recurring
+  reminder until the next cycle. Seeded **new moon tonight** / **full moon
+  tonight** nag on the header bell from local midnight of the Meeus phase day,
+  inbox and text at 18:00 local, then advance by lunation. They only fire while
+  the app is open.
 - **Operations as a configured item** — ✅ an Operation is a `Task` with
   `type: "operation"`: a little graphic tool for any project, its ideas, its
   data, and its progress. Shape lives in attributes rather than in code:
@@ -392,11 +396,14 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   is on (per open target, `lists-ui-store.listIconsDesktop`, default off). On,
   that list uses the velvet free-drag canvas (`items:${openTargetKey}`), plus
   toolbar **Auto-organize**, optional **Gravity** (`listIconsGravity`, default
-  off — connection-weight springs; Reset restores the enable-time snapshot), and
-  **PILE UP** (live willpower-style bounce inside the playfield box; DOM
-  flight-layer camera follows the fall — no Three.js; late-sim grab/throw;
-  after settle freeform sticks — drag/scroll/persist, fling wake optional;
-  playfield freezes mid-run and reshapes only on real width change). Gravity and PILE UP are mutually
+  off — connection-weight springs; Reset restores the enable-time snapshot;
+  **Skip to stable** settles under current `listIconsGravityField` knobs via
+  time-sliced steps; **Gravity settings** gear tunes global G + source gains via
+  `listIconsGravityField`, persist v9), and **PILE UP** (live willpower-style
+  bounce inside the playfield box; DOM flight-layer camera follows the fall —
+  no Three.js; late-sim grab/throw; after settle freeform sticks —
+  drag/scroll/persist, fling wake optional; playfield freezes mid-run and
+  reshapes only on real width change). Gravity and PILE UP are mutually
   exclusive at runtime. Folder icon positions are a different key. Not Task x/y.
 - Custom attributes per list (reorderable), CSV import, orb icons + gallery — ✅
   (`attribute-editor.tsx`, `lib/csv.ts`, `lib/orbs-manifest.ts`,
@@ -976,8 +983,12 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   Amber blocks are task `timeLogs`. Paint strip follows the selected day. Date
   keys are local calendar days. Agenda cards sit to the right of the time labels.
 - **Tracking log** — ✅ `components/Home/Tracking/tracking-log-view.tsx` on the
-  Home Tracking fascia (persisted with the other view keys). The selected local
-  day. The composer is Event, Switch, Intake (Food / Drink / Drug), Spent, Note, and Thought process. **Spent** records an amount (integer cents on `spendAmount`; the field accepts dollars and cents such as 4.50), what it was spent on (`spendOn`, also `title`), and the source (`spendSource`: cash, card, account, person, or any short name). Empty, zero, and non-numeric amounts are refused. The Spent shelf totals the day by source and, when more than one thing was bought, by what. A spend is an Activity instant on the Spent pen (`eventKind` `spend`) and a discrete tick with the other log instants. The block editor edits the three fields. Unknown clocks have Edit and Remove.
+  Home Tracking fascia (persisted with the other view keys). Local **Day \| Week**
+  (default Day; not persisted; `lockDate` forces Day). **Day** is the selected
+  local day’s shelves. **Week** (`tracking-log-week.tsx`) is a seven-column board
+  of that week’s log lines (not Day Log agenda week, not Time Grid paint week);
+  period nav steps by week; a column date heading opens that day. Composer still
+  writes the selected day; Counts and Cycle stay. The composer is Event, Switch, Intake (Food / Drink / Drug), Spent, Note, and Thought process. **Spent** records an amount (integer cents on `spendAmount`; the field accepts dollars and cents such as 4.50), what it was spent on (`spendOn`, also `title`), and the source (`spendSource`: cash, card, account, person, or any short name). Empty, zero, and non-numeric amounts are refused. The Spent shelf totals the day by source and, when more than one thing was bought, by what. A spend is an Activity instant on the Spent pen (`eventKind` `spend`) and a discrete tick with the other log instants. The block editor edits the three fields. Unknown clocks have Edit and Remove.
   Under the composer, **Counts** (`brain2-count-statuses`) tallies a name (joints, days happy). Each + stores a time. An optional drug, food, or drink class also paints that intake instant. An optional keyword is saved in `brain2-log-keywords`, and `log:` of that phrase increments the count.
   Food, drink, and drugs are Activity instants with
   `intakeClass` and `eventKind` `intake.food` / `intake.drink` / `intake.drug`.
@@ -1486,12 +1497,15 @@ connected and used in as many ways as possible.** **Analytics is the heart** of
 that mass of personal data. See "What this is trying to be" in
 [`../README.md`](../README.md). Tracked here so it stays connected to the code:
 - **User-defined item types/subtypes as a primary workflow.** Seam + UI exist
-  (`ItemTypeDefinition`, Settings → **Manage Item Types** and Analytics →
-  Library → **Item Types**,
-  `components/ItemTypes/`). New list items default to generic `item`, not Task.
-  Catalog types are user-editable; Task remains the hardcoded work surface.
-  Implied actions (`logAction`, `incrementHabit`) wire attribute deltas into
-  Done / points / habits.
+  (`ItemTypeDefinition`, Settings → **Manage Item Types**, Analytics →
+  Library → **Item Types**, List Settings → **Item types** allowlist + default
+  + **New type…**, `components/ItemTypes/`). New list items default to generic
+  `item` (or `List.itemTypeId`). Catalog types include **Film** (`lib/film-types.ts`);
+  Film DNA Films lists get `itemTypeId` / `itemTypeIds: ["film"]`. Lists inspector
+  **Filter types** show/hides by exact type id (All Items + multi-type lists;
+  `lists-ui-store.hiddenItemTypeIdsByTarget`). Task remains the hardcoded work
+  surface. Implied actions (`logAction`, `incrementHabit`) wire attribute deltas
+  into Done / points / habits.
 - **Dense relational network.** Richer composition of
   type ↔ category ↔ tag ↔ attribute ↔ link than today's mostly
   category-driven model. Primitives (`tags`, `links`, `attributes`) exist; the
