@@ -1,0 +1,681 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>List Properties Mockup</title>
+<!-- Static mockup for docs/LIST_SETTINGS_REDESIGN.md. Not app code. Images load from ../../designrefs and ../../public. -->
+<style>
+@font-face { font-family: "w95fa"; src: url("../../public/fonts/w95fa.woff") format("woff"); }
+:root {
+  --face: #c0c0c0; --sheen: #d4d8dc; --shade: #969a9e; --ring: #5c6064; --ring-deep: #4a4e52;
+  --ink: #2a2c2e; --crt-bg: #050b09; --crt: #7dffc4;
+  --crt-glow: 0 0 3px #7dffc4, 0 0 9px rgba(125,255,196,.35);
+  --ice: #9ad7ff; --violet: #a35cff; --navy: #000080;
+  --pixel: "w95fa", ui-monospace, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  font-family: var(--pixel); font-size: 13px; color: var(--ink); -webkit-font-smoothing: none;
+  background: #7fb5aa url("../../public/pcb/mint.jpg") center / 900px repeat;
+  min-height: 100vh; padding: 24px 16px 48px;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+
+/* ---------- house materials ---------- */
+.mill {
+  background: repeating-linear-gradient(0deg, rgba(255,255,255,.16) 0 1px, transparent 1px 3px), linear-gradient(180deg, var(--sheen), var(--face) 55%, #b4b8bc);
+  border: 1px solid var(--ring); border-radius: 3px;
+  box-shadow: inset 0 1px 0 #fff, inset 0 -1px 0 var(--shade);
+}
+.well { background: linear-gradient(180deg, #a9adb1, #b8bcc0); border: 1px solid var(--ring-deep); border-radius: 3px; box-shadow: inset 1px 1px 0 #7d8185, inset -1px -1px 0 #e3e6e9; }
+.plate { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink); text-shadow: 0 1px 0 rgba(255,255,255,.78); display: flex; align-items: center; gap: 6px; }
+.crt { background: radial-gradient(120% 70% at 50% 0%, rgba(125,255,196,.10), transparent 60%), var(--crt-bg); color: var(--crt); text-shadow: var(--crt-glow); border: 2px solid #2b2f33; border-radius: 3px; padding: 4px 10px; letter-spacing: .06em; }
+.key {
+  appearance: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 7px; white-space: nowrap;
+  background: linear-gradient(180deg, #f2f4f6 0, #d4d6d8 45%, #b9bdc1 100%);
+  border: 1px solid var(--ring); border-radius: 3px;
+  box-shadow: inset 0 1px 0 #fff, inset 0 -2px 0 #9a9ea2, 0 1px 0 rgba(0,0,0,.25);
+  padding: 6px 12px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+}
+.key:active { transform: translateY(1px); }
+.key.on { background: radial-gradient(120% 80% at 50% 0%, rgba(125,255,196,.14), transparent 60%), var(--crt-bg); color: var(--crt); text-shadow: var(--crt-glow); border-color: #1d2124; box-shadow: inset 0 2px 3px #000, 0 1px 0 rgba(255,255,255,.7); }
+.key.primary { border-color: #000; box-shadow: inset 0 1px 0 #fff, inset 0 -2px 0 #9a9ea2, 0 0 0 1px #000; }
+.key.sm { padding: 3px 8px; font-size: 10px; }
+.lamp { width: 8px; height: 8px; border-radius: 50%; flex: none; background: radial-gradient(circle at 35% 30%, #5a5e60, #1b1d1e 70%); box-shadow: 0 0 0 1px #4a4e52, inset 0 0 1px #000; }
+.lamp.green { background: radial-gradient(circle at 35% 30%, #eafff6, #7dffc4 40%, #1f8a5e 90%); box-shadow: 0 0 0 1px #2c3a33, 0 0 6px #7dffc4; }
+.lamp.blue { background: radial-gradient(circle at 35% 30%, #f2fbff, #9ad7ff 42%, #2a6a9a 95%); box-shadow: 0 0 0 1px #22303a, 0 0 7px #9ad7ff; }
+.lamp.purple { background: radial-gradient(circle at 35% 30%, #f1e6ff, #a35cff 42%, #4a0ea0 95%); box-shadow: 0 0 0 1px #2a2036, 0 0 7px #a35cff; }
+.field { background: #fff; border: 1px solid #404040; box-shadow: inset 1px 1px 0 #808080, inset -1px -1px 0 #dfdfdf; padding: 6px 8px; width: 100%; font-size: 13px; border-radius: 0; }
+.field:focus { outline: 1px solid var(--navy); outline-offset: 0; }
+textarea.field { resize: vertical; min-height: 56px; }
+.caption { font-size: 11px; color: #3a3c3e; line-height: 1.4; }
+.lbl { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #2a2c2e; margin-bottom: 4px; display: flex; align-items: baseline; gap: 8px; }
+.lbl .caption { text-transform: none; letter-spacing: 0; }
+
+/* ---------- context: the Lists room behind ---------- */
+.room-behind {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background: rgba(10, 8, 20, .35);
+}
+
+/* ---------- dialog ---------- */
+.dlg {
+  position: relative; z-index: 1; width: min(940px, 100%); margin: 0 auto;
+  background: var(--face); border: 2px solid #0a0a0a; box-shadow: 0 0 0 1px #dfdfdf inset, 6px 8px 0 rgba(0,0,0,.35);
+}
+.titlebar { height: 28px; background: linear-gradient(90deg, #000080, #1084d0); color: #fff; display: flex; align-items: center; gap: 8px; padding: 0 4px 0 6px; font-size: 12px; letter-spacing: .06em; }
+.titlebar img { width: 20px; height: 20px; object-fit: contain; }
+.titlebar .sp { flex: 1; }
+.closekey { width: 22px; height: 22px; display: grid; place-items: center; background: linear-gradient(180deg, #eceef0, #c0c4c8); border: 1px solid #0a0a0a; box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #808080; cursor: pointer; padding: 0; }
+.closekey::before { content: ""; width: 10px; height: 10px; background:
+  linear-gradient(45deg, transparent 43%, #111 43% 57%, transparent 57%), linear-gradient(-45deg, transparent 43%, #111 43% 57%, transparent 57%); }
+
+/* identity strip: Display Properties monitor + nameplate */
+.ident { display: grid; grid-template-columns: 206px 1fr; gap: 14px; padding: 12px 12px 10px; align-items: center; }
+.monitor { display: flex; flex-direction: column; align-items: center; }
+.crtcase {
+  width: 196px; padding: 10px 10px 16px; border-radius: 6px 6px 4px 4px;
+  background: linear-gradient(180deg, #eae7dc, #cfcbbd 70%, #bcb8a9); border: 1px solid #6d6a5e;
+  box-shadow: inset 0 1px 0 #fff, inset 0 -3px 0 rgba(0,0,0,.08), 0 2px 0 rgba(0,0,0,.2); position: relative;
+}
+.crtcase::after { content: ""; position: absolute; right: 14px; bottom: 5px; width: 5px; height: 5px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #eafff6, #7dffc4 40%, #1f8a5e 90%); box-shadow: 0 0 5px #7dffc4; }
+.glass {
+  height: 112px; border-radius: 4px; position: relative; overflow: hidden;
+  background: url("../../public/newvelv.jpg") center / cover;
+  box-shadow: inset 0 0 0 2px #2a2822, inset 0 0 18px rgba(0,0,0,.65);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+}
+.glass::after { content: ""; position: absolute; inset: 0; background: radial-gradient(120% 80% at 30% 10%, rgba(255,255,255,.18), transparent 50%); pointer-events: none; }
+.glass img { width: 62px; height: 62px; object-fit: contain; filter: drop-shadow(0 4px 4px rgba(0,0,0,.6)); }
+.glass .oname { color: #fff; font-size: 12px; background: rgba(0,0,0,.35); padding: 1px 6px; text-shadow: 0 1px 0 #000; }
+.glass .ring { position: absolute; width: 74px; height: 74px; top: 12px; border-radius: 50%; box-shadow: 0 0 0 2px var(--lc), 0 0 14px var(--lc); opacity: .7; }
+.stand { width: 70px; height: 10px; background: linear-gradient(180deg, #cfcbbd, #a9a598); border: 1px solid #6d6a5e; border-top: 0; border-radius: 0 0 6px 6px; }
+
+.nameblock { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.namefield { font-size: 22px; padding: 6px 10px; letter-spacing: .02em; }
+.statusrow { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+.idchip { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; }
+.idchip code { font-family: var(--pixel); background: #fff; border: 1px solid #808080; padding: 1px 5px; }
+
+/* tabs: milled keys, lamp + CRT on the open one */
+.tabs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; padding: 0 12px; }
+.tabs .key { padding: 8px 6px; font-size: 11px; }
+.tabs .key .ct { font-size: 10px; opacity: .8; }
+.body { margin: 8px 12px 0; padding: 12px; min-height: 470px; }
+.pane { display: none; }
+.pane.open { display: block; }
+.sect { margin-bottom: 14px; }
+.sect:last-child { margin-bottom: 0; }
+.row2 { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 14px; }
+.row3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; }
+
+/* color + orb strip */
+.swatches { display: flex; flex-wrap: wrap; gap: 5px; }
+.sw { width: 24px; height: 24px; border: 1px solid #404040; box-shadow: inset 1px 1px 0 rgba(255,255,255,.4); cursor: pointer; position: relative; }
+.sw.cur::after { content: ""; position: absolute; inset: -4px; border: 2px solid #111; }
+.sw.none { background: repeating-linear-gradient(135deg, #fff 0 4px, #e0e0e0 4px 8px); }
+.orbstrip { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; padding: 6px; background: url("../../public/newvelv.jpg") center / cover; box-shadow: inset 0 0 0 1px #000, inset 0 0 10px rgba(0,0,0,.6); }
+.orbstrip button { aspect-ratio: 1; width: 100%; padding: 3px; background: transparent; border: 1px solid transparent; cursor: pointer; border-radius: 4px; }
+.orbstrip button.cur { border-color: #fff; box-shadow: 0 0 0 1px #000, 0 0 8px rgba(255,255,255,.5); }
+.orbstrip img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 2px 2px rgba(0,0,0,.6)); }
+.nounpreview { display: flex; gap: 6px; align-items: center; margin-top: 6px; flex-wrap: wrap; }
+
+/* places: relationship map on a mint board */
+.board {
+  position: relative; height: 252px; border: 1px solid #3e5a50; border-radius: 3px; overflow: hidden;
+  background:
+    repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0 1px, transparent 1px 4px),
+    radial-gradient(120% 90% at 50% 40%, #d8ece4, #b6d4c8);
+  box-shadow: inset 0 0 0 3px #e9f4ef, inset 0 0 0 4px #7a9a8e;
+}
+.board svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.bnode { position: absolute; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; color: #12302a; text-align: center; width: 104px; }
+.bnode img { width: 44px; height: 44px; object-fit: contain; filter: drop-shadow(0 2px 2px rgba(0,0,0,.35)); }
+.bnode.me img { width: 70px; height: 70px; }
+.bnode.me span { background: #12302a; color: #e9f4ef; padding: 1px 6px; }
+.bnode.ghost { opacity: .7; }
+.bnode.ghost .slot { width: 40px; height: 40px; border: 2px dashed #5a7a6e; border-radius: 50%; display: grid; place-items: center; color: #3e5a50; font-size: 18px; background: rgba(255,255,255,.25); }
+.bnode.ghost.folder .slot { border-radius: 4px; }
+.bnode .x { font-size: 10px; color: #3e5a50; }
+.boardlegend { position: absolute; left: 10px; bottom: 8px; display: flex; gap: 12px; font-size: 10px; color: #284a40; }
+.boardlegend span { display: inline-flex; gap: 4px; align-items: center; }
+.tag { position: absolute; font-size: 9px; letter-spacing: .14em; color: #3e5a50; text-transform: uppercase; }
+
+.picker { display: flex; flex-direction: column; gap: 6px; padding: 8px; min-width: 0; }
+.picker h4 { margin: 0; font-weight: normal; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; display: flex; align-items: center; gap: 6px; }
+.picker h4 .ct { margin-left: auto; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; min-height: 26px; align-items: center; }
+.chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 4px 2px 3px; font-size: 11px; background: linear-gradient(#f4f6f8, #d0d4d8); border: 1px solid #6a6e72; border-radius: 2px; box-shadow: inset 0 1px 0 #fff; }
+.chip img { width: 18px; height: 18px; object-fit: contain; }
+.chip button { border: 0; background: none; cursor: pointer; padding: 0 2px; font-size: 12px; color: #444; }
+.chip button:hover { color: #000; }
+.empty { font-size: 11px; color: #5a5c5e; font-style: normal; }
+.results { max-height: 152px; overflow-y: auto; background: #fff; border: 1px solid #404040; box-shadow: inset 1px 1px 0 #808080; }
+.res { display: flex; align-items: center; gap: 6px; padding: 3px 6px; font-size: 12px; cursor: pointer; white-space: nowrap; }
+.res:hover { background: var(--navy); color: #fff; }
+.res .meta { margin-left: auto; font-size: 10px; color: #6a6c6e; }
+.res:hover .meta { color: #cfd6ff; }
+.res.depth1 { padding-left: 20px; }
+.res input { margin: 0; accent-color: #1f8a5e; }
+.res.sel { background: #e7f6ef; }
+.res.sel:hover { background: var(--navy); }
+.dir { display: grid; grid-template-columns: 1fr 1fr; }
+.dir .key { border-radius: 0; font-size: 10px; padding: 5px 4px; white-space: normal; line-height: 1.2; text-transform: none; letter-spacing: .02em; }
+.dir .key:first-child { border-radius: 3px 0 0 3px; }
+.dir .key:last-child { border-radius: 0 3px 3px 0; border-left: 0; }
+
+/* items */
+.types { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 6px; }
+.type { display: flex; align-items: center; gap: 7px; padding: 6px 8px; cursor: pointer; font-size: 12px; position: relative; }
+.type .lamp { margin-left: auto; }
+.type .star { position: absolute; top: -6px; right: -4px; font-size: 9px; background: #12302a; color: var(--crt); padding: 0 4px; letter-spacing: .1em; }
+.tri { width: 100%; border-collapse: collapse; font-size: 12px; }
+.tri td { padding: 4px 6px; border-bottom: 1px solid #a0a4a8; }
+.tri td:first-child { width: 34%; text-transform: capitalize; }
+.seg { display: inline-flex; }
+.seg button { border-radius: 0; padding: 3px 9px; font-size: 10px; }
+.seg button:first-child { border-radius: 3px 0 0 3px; }
+.seg button:last-child { border-radius: 0 3px 3px 0; }
+.seg button + button { border-left: 0; }
+.seg .eff { margin-left: 10px; font-size: 10px; }
+.emptywell { display: flex; align-items: center; gap: 12px; padding: 12px; }
+.emptywell img { width: 44px; height: 44px; object-fit: contain; opacity: .8; }
+
+/* views: thumbnails like Display Properties backgrounds */
+.views { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.vcard { padding: 6px; display: flex; flex-direction: column; gap: 5px; cursor: pointer; position: relative; }
+.vcard.cur { outline: 2px solid #111; outline-offset: 1px; }
+.vcard .thumb { height: 66px; background: #fff; border: 1px solid #404040; box-shadow: inset 1px 1px 0 #808080; position: relative; overflow: hidden; padding: 5px; }
+.vcard .thumb.velvet { background: url("../../public/newvelv.jpg") center / cover; display: grid; grid-template-columns: repeat(3, 1fr); place-items: center; }
+.vcard .thumb.velvet img { width: 22px; height: 22px; object-fit: contain; }
+.ln { height: 5px; background: #c8ccd0; margin: 4px 0; border-radius: 1px; }
+.ln.b { background: #8a8e92; width: 70%; }
+.cbx { display: inline-block; width: 7px; height: 7px; border: 1px solid #404040; margin-right: 3px; vertical-align: 0; background: #fff; }
+.cbx.x { background: #1f8a5e; }
+.tbl { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1px; background: #a0a4a8; }
+.tbl i { height: 7px; background: #fff; }
+.tbl i.h { background: #d4d6d8; }
+.vcard .foot { display: flex; align-items: center; gap: 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
+.vcard .foot .offer { margin-left: auto; display: inline-flex; gap: 5px; align-items: center; font-size: 9px; letter-spacing: .1em; }
+.vset { margin-top: 12px; padding: 10px; }
+.cols { width: 100%; border-collapse: collapse; font-size: 12px; }
+.cols th { text-align: left; font-weight: normal; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; padding: 4px 6px; background: #d4d6d8; border-bottom: 1px solid #808488; position: sticky; top: 0; z-index: 1; }
+.cols th.c, .cols td.c { text-align: center; width: 86px; }
+.cols td { padding: 3px 6px; border-bottom: 1px solid #e0e2e4; }
+.cols tr.grp td { background: #eef0f2; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; cursor: pointer; }
+.cols .ty { color: #6a6c6e; font-size: 10px; }
+.cols td.c input { accent-color: #1f8a5e; width: 14px; height: 14px; }
+.cols td.c.hot { background: rgba(125,255,196,.12); }
+.colwrap { max-height: 250px; overflow-y: auto; border: 1px solid #404040; background: #fff; box-shadow: inset 1px 1px 0 #808080; }
+.chiptoggles { display: flex; flex-wrap: wrap; gap: 5px; }
+.rowpreview { margin-top: 8px; background: #fff; border: 1px solid #404040; padding: 6px 8px; display: flex; gap: 8px; align-items: center; font-size: 12px; }
+.rowpreview img { width: 22px; height: 22px; object-fit: contain; }
+.rowpreview .pip { width: 8px; height: 8px; border-radius: 50%; background: #2a6ad8; }
+.rowpreview .t { font-size: 10px; border: 1px solid #a0a4a8; padding: 0 4px; color: #444; }
+
+/* behavior: bar rockers */
+.beh { display: grid; grid-template-columns: auto 1fr; gap: 12px 14px; align-items: start; }
+.rock { display: inline-flex; align-items: center; gap: 8px; margin-top: 2px; }
+.rocker {
+  width: 46px; height: 22px; position: relative; cursor: pointer; border-radius: 2px; padding: 0; border: 1px solid #2a2c2e;
+  background: #1b1d1e; box-shadow: inset 0 1px 2px #000, 0 1px 0 #fff;
+}
+.rocker::before { /* the bar */
+  content: ""; position: absolute; top: 2px; bottom: 2px; left: 2px; width: 50%; border-radius: 1px;
+  background: linear-gradient(180deg, #f2f4f6, #c4c8cc 60%, #9a9ea2); box-shadow: inset 0 1px 0 #fff, 0 1px 1px rgba(0,0,0,.6);
+  transition: left .1s;
+}
+.rocker::after { content: "OFF"; position: absolute; right: 4px; top: 50%; transform: translateY(-50%); font-size: 8px; color: #6a6e72; letter-spacing: .1em; }
+.rocker.on::before { left: calc(50% - 2px); }
+.rocker.on::after { content: "ON"; left: 5px; right: auto; color: var(--crt); text-shadow: var(--crt-glow); }
+.beh h5 { margin: 0 0 2px; font-weight: normal; font-size: 13px; }
+.beh p { margin: 0; }
+
+/* danger: flip-up safety covers */
+.danger { margin-top: 18px; padding: 12px; border: 1px solid #4a2a2a; border-radius: 3px; background: linear-gradient(180deg, #b9b1b1, #a9a2a2); box-shadow: inset 0 1px 0 #dcd6d6; }
+.danger .plate { color: #3a1414; }
+.guards { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 10px; }
+.guard { display: flex; gap: 12px; align-items: center; }
+.guardbox { position: relative; width: 110px; height: 44px; flex: none; perspective: 300px; }
+.guardbox .key { position: absolute; inset: 4px; width: auto; font-size: 11px; background: linear-gradient(180deg, #ff8a8a, #d42a2a 55%, #8a0a0a); color: #fff; border-color: #3a0a0a; text-shadow: 0 1px 0 #000; box-shadow: inset 0 1px 0 #ffd0d0, inset 0 -2px 0 #6a0a0a; }
+.guardbox .key:disabled { cursor: default; }
+.cover {
+  position: absolute; inset: 0; cursor: pointer; border-radius: 3px; transform-origin: 50% 0; transition: transform .28s cubic-bezier(.3,1.4,.5,1);
+  background: linear-gradient(180deg, rgba(220,235,255,.55), rgba(160,180,210,.35)); border: 1px solid rgba(40,50,70,.8);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.8), inset 0 0 0 3px rgba(255,255,255,.12), 0 2px 3px rgba(0,0,0,.35);
+  display: grid; place-items: end center; padding-bottom: 3px; font-size: 8px; letter-spacing: .14em; color: #1b2230;
+}
+.cover::before { content: ""; position: absolute; left: 10%; right: 10%; top: 0; height: 4px; background: linear-gradient(180deg, #8a9098, #5a6068); border-radius: 0 0 2px 2px; }
+.guardbox.open .cover { transform: rotateX(78deg); }
+@media (prefers-reduced-motion: reduce) { .cover { transition: none; } }
+
+/* footer */
+.foot { display: flex; align-items: center; gap: 8px; padding: 10px 12px 12px; }
+.foot .dirty { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; }
+.foot .sp { flex: 1; }
+
+.note { width: min(940px, 100%); margin: 16px auto 0; padding: 12px; position: relative; z-index: 1; }
+.note h2 { margin: 0 0 6px; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; font-weight: normal; }
+.srcgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.src { background: #fff; border: 1px solid #404040; padding: 5px; font-size: 11px; line-height: 1.35; }
+.src img { width: 100%; height: 86px; object-fit: cover; display: block; margin-bottom: 4px; border: 1px solid #808080; }
+
+@media (max-width: 760px) {
+  .ident { grid-template-columns: 1fr; justify-items: center; }
+  .tabs { grid-template-columns: repeat(3, 1fr); }
+  .row2, .row3, .guards { grid-template-columns: 1fr; }
+  .views { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+<div class="room-behind"></div>
+
+<div class="dlg" role="dialog" aria-label="List settings">
+  <div class="titlebar">
+    <img id="tbOrb" alt="">
+    <span id="tbTitle">brain2 — List Properties</span>
+    <span class="sp"></span>
+    <button class="closekey" aria-label="Close"></button>
+  </div>
+
+  <!-- identity: what this list is, always visible -->
+  <div class="ident">
+    <div class="monitor">
+      <div class="crtcase">
+        <div class="glass" id="glass">
+          <span class="ring" id="ring"></span>
+          <img id="bigOrb" alt="">
+          <span class="oname" id="glassName">brain2</span>
+        </div>
+      </div>
+      <div class="stand"></div>
+    </div>
+    <div class="nameblock">
+      <div>
+        <div class="lbl">List name</div>
+        <input class="field namefield" id="name" value="brain2">
+      </div>
+      <div class="statusrow">
+        <span class="idchip">ID <code>1790192916525</code><button class="key sm" id="copyId">Copy</button></span>
+        <span class="idchip"><span class="lamp"></span>No habit reads this list</span>
+        <span class="idchip"><span class="lamp green"></span><span id="sumPlaces">In 1 folder · 0 nested · 0 connected</span></span>
+        <span class="idchip"><span class="lamp green"></span><span id="sumViews">5 views offered</span></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabs" role="tablist" id="tabs"></div>
+
+  <div class="body mill" id="body">
+
+    <!-- GENERAL -->
+    <section class="pane" data-pane="general">
+      <div class="row2">
+        <div>
+          <div class="sect">
+            <div class="lbl">Icon <span class="caption">Pick an orb, or upload one — the background is removed.</span></div>
+            <div class="orbstrip" id="orbstrip"></div>
+            <div style="display:flex;gap:6px;margin-top:6px"><button class="key sm">Upload…</button><button class="key sm">All orbs…</button></div>
+          </div>
+          <div class="sect">
+            <div class="lbl">Color <span class="caption">The ring on the list's orb and its pip in rows.</span></div>
+            <div class="swatches" id="swatches"></div>
+          </div>
+        </div>
+        <div>
+          <div class="sect">
+            <div class="lbl">Description</div>
+            <textarea class="field" id="desc" placeholder="What goes on this list, in a sentence."></textarea>
+          </div>
+          <div class="sect">
+            <div class="lbl">Item name <span class="caption">singular</span></div>
+            <input class="field" id="noun" value="item" style="max-width:220px">
+            <div class="nounpreview"><span class="caption">Shows as</span><button class="key sm" id="pvAdd">+ Add item</button><span class="caption" id="pvCount">12 items</span></div>
+            <p class="caption" style="margin:6px 0 0">Next Actions lists default to “task”.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PLACES -->
+    <section class="pane" data-pane="places">
+      <div class="board" id="board"></div>
+      <div class="row3" style="margin-top:10px">
+        <div class="picker well">
+          <h4><span class="lamp green"></span>In folders <span class="ct crt" id="ctFolders" style="padding:0 5px;font-size:10px">1</span></h4>
+          <div class="chips" id="chipsFolders"></div>
+          <input class="field" placeholder="Search folders…" data-search="folders">
+          <div class="results" id="resFolders"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center"><label class="caption"><input type="checkbox" id="nested"> show nested</label><button class="key sm">New folder</button></div>
+          <p class="caption" style="margin:0">A list can live in several folders. A parent folder is not the same as putting it there.</p>
+        </div>
+        <div class="picker well">
+          <h4><span class="lamp"></span>Nested lists <span class="ct crt" id="ctKids" style="padding:0 5px;font-size:10px">0</span></h4>
+          <div class="chips" id="chipsKids"></div>
+          <input class="field" placeholder="Nest a list under brain2…" data-search="kids">
+          <div class="results" id="resKids"></div>
+          <p class="caption" style="margin:0">Sublists that sit under this one. Separate from folders and connections.</p>
+        </div>
+        <div class="picker well">
+          <h4><span class="lamp"></span>Connected <span class="ct crt" id="ctConn" style="padding:0 5px;font-size:10px">0</span></h4>
+          <div class="dir" id="dir">
+            <button class="key on" data-dir="out">This list's items also appear there →</button>
+            <button class="key" data-dir="in">← That list's items also appear here</button>
+          </div>
+          <div class="chips" id="chipsConn"></div>
+          <input class="field" placeholder="Search lists…" data-search="conn">
+          <div class="results" id="resConn"></div>
+          <p class="caption" style="margin:0">Same records on both lists. Disconnecting never deletes items.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ITEMS -->
+    <section class="pane" data-pane="items">
+      <div class="sect">
+        <div class="lbl">Item types <span class="caption">Which types this list may hold. Click to allow; double-click to make the default for new items.</span></div>
+        <div class="types" id="types"></div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+          <span class="caption">Default for new items:</span><span class="crt" id="defType" style="font-size:12px">NO TYPE (GENERIC)</span>
+          <button class="key sm" style="margin-left:auto">New type…</button>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="sect">
+          <div class="lbl">Item-detail panels <span class="caption">One switch per panel.</span></div>
+          <div class="well" style="padding:6px;background:#fff">
+            <table class="tri" id="panels"></table>
+          </div>
+          <p class="caption" style="margin:6px 0 0"><b>Type</b> follows the item type. <b>Show</b> adds the tab. <b>Hide</b> removes it (e.g. Scheduling on a wishlist).</p>
+        </div>
+        <div class="sect">
+          <div class="lbl">Item attributes <span class="caption">Fields every item here can fill in.</span></div>
+          <div class="emptywell well">
+            <img src="../../public/orbs-removebackground/2ee2b1eee368da67d3c91a617a521ee6.png" alt="">
+            <div><div style="font-size:12px">No attributes yet.</div><div class="caption">Items on brain2 use only a name.</div></div>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:8px">
+            <button class="key">+ Add attribute</button><button class="key">+ Completion tiers</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEWS -->
+    <section class="pane" data-pane="views">
+      <div class="lbl">Views offered <span class="caption">Lamp = available on the toolbar. Click a view to set it up.</span></div>
+      <div class="views" id="views"></div>
+      <div class="vset well" id="vset"></div>
+    </section>
+
+    <!-- BEHAVIOR -->
+    <section class="pane" data-pane="behavior">
+      <div class="beh" id="beh"></div>
+      <div class="danger">
+        <div class="plate"><span class="lamp" style="background:radial-gradient(circle at 35% 30%,#ffe0e0,#ff4a4a 45%,#7a0a0a 95%);box-shadow:0 0 0 1px #3e2020,0 0 6px #ff4a4a"></span>Dangerous actions</div>
+        <div class="guards">
+          <div class="guard">
+            <div class="guardbox" id="g1"><button class="key" disabled>Clear list</button><div class="cover">LIFT</div></div>
+            <p class="caption" style="margin:0">Removes items from brain2 only. They stay in the universe and on any other lists.</p>
+          </div>
+          <div class="guard">
+            <div class="guardbox" id="g2"><button class="key" disabled>Delete list</button><div class="cover">LIFT</div></div>
+            <p class="caption" style="margin:0">Removes the list itself. Asks once more before it goes.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="foot">
+    <span class="dirty" id="dirty"><span class="lamp"></span><span>No changes</span></span>
+    <span class="sp"></span>
+    <button class="key">Cancel</button>
+    <button class="key primary" id="save">Save changes</button>
+  </div>
+</div>
+
+<section class="note mill">
+  <h2>Where each piece comes from</h2>
+  <div class="srcgrid">
+    <div class="src"><img src="../../designrefs/60d7202cb958e11734ce0567eb382868.jpg" alt="">Display Properties — a properties sheet with tabs and a monitor that previews the result. The identity strip.</div>
+    <div class="src"><img src="../../designrefs/d09ee9b9432fa21ba8db4f1400a533e9.jpg" alt="">Snowflake circuitry — pale board, dark traces, pads. The Places map.</div>
+    <div class="src"><img src="../../designrefs/2a0002d93dfba067de848caec9951b23.jpg" alt="">Win95 MDI thumbnails — the view cards, each a little window of what it shows.</div>
+    <div class="src"><img src="../../designrefs/36bc1715c629f42e163d54abe8741ac6.jpg" alt="">Pocket PC — the silver of the dialog and its keys.</div>
+    <div class="src"><img src="../../designrefs/eb64e7e2716a968c513504e27d963fa2.jpg" alt="">Plant-specimen console — a living object framed by readouts; the orb on velvet in the monitor.</div>
+    <div class="src"><img src="../../designrefs/a898e04c534aeed3017938c701efdb2f.jpg" alt="">Bench gear — the guarded switch idea behind the flip-up covers on Clear and Delete.</div>
+  </div>
+</section>
+
+<script>
+const ORB = (h) => `../../public/orbs-removebackground/${h}.png`;
+const FOLDER = (h) => `../../public/folders-removebackground/${h}.png`;
+const orbs = ["58cd608d65e30bb2805dec7e75258237","2131c2d07eeee8d5ddc38f6e2f68ba0d","107e7775782a6d9ce53f38b426d92eb0","9b758efd79db7dcf5cf3355dbd48645f","a8e4452426d64b85c88be74b1a48d3f4","b7f13af125f8f5570e1783b90bf23f85","c4e4dd109bde4c0fc8e8ca96868c8a43","69815e6b861c9634de0c163725d0f5c6","3c97271fa14c98ef2729e69bbc089f61","4a442fd9598def44533439455cebb7af","2ee2b1eee368da67d3c91a617a521ee6","e4929f56b8ad910b5aafc10e28c4a9ae","d42f2f02185f1457bf84c38aaf394cf8","79d10ac80ef5d9b2a7800378ab4d44a9","00122e5fb5c048f8ecdf43d83357c361","8a182d14faebcbe6d44034de4228ef00"];
+const folderArt = ["5078d95066bf4072734faf9d3bacbad5","33d25fbca5713dadcb3423d29a62b1b0","1c78bbeb2643c5365d67935b897278ca","0caa6b8344e695a983e084d311cce1d5","3c07587abeca6c3c16d82368975487e6","42dee28f7d31836feb3952483677dd05","1fdeaa71d5cad6ca544929339504b99b","501afdf8baa079728cc4c821330a5e98"];
+const hash = (s) => [...s].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
+const orbFor = (n) => ORB(orbs[1 + hash(n) % (orbs.length - 1)]);
+const folderFor = (n) => FOLDER(folderArt[hash(n) % folderArt.length]);
+
+const S = {
+  name: "brain2", orb: orbs[0], color: "#7e14ff", noun: "item",
+  folders: new Set(["brain2"]), kids: new Set(), conn: new Map(), dir: "out",
+  types: new Set(["Item", "Task", "Note"]), defType: null,
+  panels: { details: "type", scheduling: "type", dependencies: "type", subtasks: "type", analysis: "type", time: "type", body: "type" },
+  offered: new Set(["Default", "Checklist", "Icons", "Details", "Spreadsheet"]), view: "Details",
+  rows: { pip: true, icon: true, name: true, type: true, ui: true, date: true, attrs: false }, customRow: false,
+  checks: new Set(["Completed"]),
+  cols: {}, behavior: { scheduler: false, sent: false, home: true, all: true }, tab: "general", dirty: false
+};
+
+/* ---------- data from the current dialog ---------- */
+const folderTree = [
+  ["next actions"], ["Module Lists", ["Baby Animal — Field plan", "baby hacker — Field plan", "before elijah gets back — Field plan", "Book Tasting", "cgfhvbn — Field plan", "clean house — Field plan", "Cleaning", "COGS — Field plan", "cyber insecurity — Field plan", "Film DNA Lab", "Foxtide Work 2026 — Field plan", "GradSearch", "New Workspace", "South America", "South America Trip — Field plan", "Tidy", "Trip Itinerary"]],
+  ["Amex Stuff"], ["Books"], ["brain2"], ["care"], ["cleaning", ["incl"]], ["elijah stuff"], ["Favorites"], ["Gift ideas"],
+  ["House", ["Bathroom", "Bedroom", "General/misc", "Hallway", "Kitchen", "Living Room"]], ["iPhone Notes Store"], ["money stuff"], ["Operations"], ["pure lists"],
+  ["Shorthand log", ["i", "st", "st from"]], ["Switching tasks from"], ["tech/coding/dev"], ["ts"], ["wanted", ["bought"]], ["writing"]
+];
+const autoFolders = new Set(["Module Lists", "iPhone Notes Store", ...folderTree[1][1]]);
+const nestable = ["Writing","100% Human","shopping list","CandyWrapper","Code Projects","Cleaning","to do","furniture to get","videos","foxtide stuff","Social","Reading List","kitchen","living room","bedroom","bathroom","hallway","all","Amazon","facebook marketplace","To Do - Oct 12, 2026","To Do - week of Oct 12, 2026","To Do - October 2026","things other people can get me as gifts","hauls to do","books i want to own","ISO","need from jenny's","Thrift Iso","Flights to book","financial tasks","computer work","stuff that makes money","jewelery","tell elijah","before elijah gets home","facebook marketplace items to really follow up on","things to learn","Trip Plan","language stuff"];
+const connectable = ["wanted","next actions","cleaning","Favorites","Amex Stuff","money stuff","elijah stuff","tech/coding/dev","writing","pure lists","Module Lists","care","Books","Operations","iPhone Notes Store","House","Switching tasks from","Shorthand log","Gift ideas","Cleaning","furniture to get","Social","kitchen","ISO","Flights to book","financial tasks","computer work","things to learn","language stuff","cogs","goals","LEFT TO REDEEM THIS QUARTER FOR AMEX","exercise","mental work","notes/ideas/for later","stuff to plan","practice","notes","REMINDERS","texts to send","house stuff","assistant stuff","appearance stuff","future","need money","wait it out ideas","schemes","need elijah","tiktok ideas","san diego","creative projects","mental health","stuff to research","healthcare needed?","asap","painting ideas","content ideas","Elijah gifts","GROCERY SHOPPING","General","estate sales","Inventory","potential friends","medical","Example List","phone ping","email","people I see myself in","rn","stuff to study","cyber insecurity","creative","experiments","theory","science","later","music","office work","desk work","chess","cook","as plan for rn","avoid","manifest","quick","reminder","tv shows","To do before elijah gets home","Perfumes I want to try","Ysl cinema","essential oils to get","Things to ask the landlord if we can do","Fragrance","mens","intake","To do for cleaning bathroom","Makeup shelf org","thought process","Habits","texts I need to send","Stuff to journal / write about","NEW FEATURE IDEA","change to tracking","log","changes to quick add","fragrance ideas","People I Know","astrology reminders","People I follow on Instagram","People who follow me on Instagram","recipes","gifts to get","thrifting sources","jewelry sources","diy","diy household goods","grocery list","sprouts","whole foods","to order","Plan","feed notes","changes to habits"];
+const typeList = ["Item","Task","Operation","Note","Book","Flight","Film","Furniture","Resource","Shopping item","Person","Source","Belief"];
+const typeOrb = { Item: "2ee2b1eee368da67d3c91a617a521ee6", Task: "79d10ac80ef5d9b2a7800378ab4d44a9", Operation: "d42f2f02185f1457bf84c38aaf394cf8", Note: "107e7775782a6d9ce53f38b426d92eb0", Book: "a8e4452426d64b85c88be74b1a48d3f4", Flight: "69815e6b861c9634de0c163725d0f5c6", Film: "58cd608d65e30bb2805dec7e75258237", Furniture: "00122e5fb5c048f8ecdf43d83357c361", Resource: "9b758efd79db7dcf5cf3355dbd48645f", "Shopping item": "e4929f56b8ad910b5aafc10e28c4a9ae", Person: "b7f13af125f8f5570e1783b90bf23f85", Source: "3c97271fa14c98ef2729e69bbc089f61", Belief: "c4e4dd109bde4c0fc8e8ca96868c8a43" };
+const onList = "Actual (min):number,Cognitive load:number,Completed:boolean,Completed date:datetime,Context:string,Entropy:number,Estimate (min):number,Importance:number,Lists:multistring,Reward:number,Scheduled date:datetime,Scheduled time:string,Stage:selection,Status:selection,Type:string,Urgency:number".split(",").map(s => s.split(":"));
+const vault = "☆:string,Actual:number,Address:string,Airline:string,Akind:string,Arrival:datetime,Arrival Airport:string,Author:string,Birthday:datetime,Booked:boolean,Booking Number:string,Brief Description:string,Categories:multistring,Category:selection,Certainty:number,City:string,Content:string,Cost:number,Cover:image,Cycle:selection,Day:datetime,Departure:datetime,Departure Airport:string,Depth:number,Destination:string,Docs folder:string,Effort:selection,Est:number,Fact-Check Level:number,Favorited:boolean,File:file,Files:multifile,Flight Number:string,Follower count:number,Follows me back:boolean,Font family:string,Frequency:selection,Genre:string,Genres:multistring,Height:number,Home Notes:string,I follow them back:boolean,i own it?:string,ISBN:string,Justification:string,Kind:selection,Latitude:number,Layovers:multistring,Letterboxd:string,Liked:boolean,link:link,List:selection,Location:string,Long Summary:string,Longitude:number,Matched book:string,Mission:string,Notes:string,Origin:string,Overview:string,Page count:number,Pages read:number,Panels:multistring,PDF LINK:link,Photo:image,Poster:image,Presuppositions:multistring,Price:number,Priority:selection,Progress:goal,Purchased:boolean,Quantity:number,Rating:number,Room:string,Shelf:selection,Short Summary:string,Source:selection,Source Type:selection,Statement:string,Store:string,Strength:number,Subgenre:string,Subject Tags:multistring,Summary:string,Tags:multistring,Target Date:datetime,Time:datetime,Title:string,Tracking tags:multistring,Trust:number,URL:link,Usage Hint:string,Username:string,Watched:string,Weather:string,Where to Buy:string,Width:number,Year:number,Body:string,Created:datetime,Deadline:datetime,Why:string".split(",").map(s => s.split(":"));
+onList.forEach(([n]) => S.cols[n] = { d: !["Entropy", "Lists", "Type"].includes(n), s: true });
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+function dirty() { S.dirty = true; $("dirty").innerHTML = `<span class="lamp blue"></span><span>Unsaved changes</span>`; }
+
+/* ---------- identity ---------- */
+function renderIdent() {
+  $("bigOrb").src = ORB(S.orb); $("tbOrb").src = ORB(S.orb);
+  $("glassName").textContent = S.name || "untitled"; $("tbTitle").textContent = `${S.name || "untitled"} — List Properties`;
+  $("ring").style.setProperty("--lc", S.color || "transparent");
+  $("sumPlaces").textContent = `In ${S.folders.size} folder${S.folders.size === 1 ? "" : "s"} · ${S.kids.size} nested · ${S.conn.size} connected`;
+  $("sumViews").textContent = `${S.offered.size} view${S.offered.size === 1 ? "" : "s"} offered`;
+}
+$("name").oninput = (e) => { S.name = e.target.value; renderIdent(); dirty(); };
+$("copyId").onclick = (e) => { e.target.textContent = "Copied"; setTimeout(() => e.target.textContent = "Copy", 900); };
+
+/* ---------- tabs ---------- */
+const tabs = [["general", "General"], ["places", "Places"], ["items", "Items"], ["views", "Views"], ["behavior", "Behavior"]];
+function renderTabs() {
+  const counts = { places: S.folders.size + S.kids.size + S.conn.size, items: S.types.size, views: S.offered.size };
+  $("tabs").innerHTML = tabs.map(([k, l]) => `<button class="key${S.tab === k ? " on" : ""}" role="tab" aria-selected="${S.tab === k}" data-tab="${k}"><span class="lamp${S.tab === k ? " green" : ""}"></span>${l}${counts[k] != null ? ` <span class="ct">${counts[k]}</span>` : ""}</button>`).join("");
+  $("tabs").querySelectorAll("[data-tab]").forEach(b => b.onclick = () => { S.tab = b.dataset.tab; renderTabs(); if (S.tab === "places") renderBoard(); });
+  document.querySelectorAll(".pane").forEach(p => p.classList.toggle("open", p.dataset.pane === S.tab));
+}
+
+/* ---------- general ---------- */
+function renderGeneral() {
+  $("orbstrip").innerHTML = orbs.map(o => `<button class="${o === S.orb ? "cur" : ""}" data-o="${o}"><img src="${ORB(o)}" alt=""></button>`).join("");
+  $("orbstrip").querySelectorAll("button").forEach(b => b.onclick = () => { S.orb = b.dataset.o; renderGeneral(); renderIdent(); renderBoard(); dirty(); });
+  const cols = ["", "#7e14ff", "#a35cff", "#2a6ad8", "#9ad7ff", "#1a8a6a", "#7dffc4", "#3f8a4a", "#c8b860", "#c0392b", "#e86aa8", "#5a5e62", "#111111"];
+  $("swatches").innerHTML = cols.map(c => `<span class="sw${c ? "" : " none"}${c === S.color ? " cur" : ""}" style="${c ? "background:" + c : ""}" data-c="${c}" title="${c || "No color"}"></span>`).join("");
+  $("swatches").querySelectorAll(".sw").forEach(s => s.onclick = () => { S.color = s.dataset.c; renderGeneral(); renderIdent(); dirty(); });
+}
+$("noun").oninput = (e) => { S.noun = e.target.value.trim() || "item"; $("pvAdd").textContent = `+ Add ${S.noun}`; $("pvCount").textContent = `12 ${S.noun}s`; dirty(); };
+$("desc").oninput = dirty;
+
+/* ---------- places ---------- */
+let q = { folders: "", kids: "", conn: "" };
+document.querySelectorAll("[data-search]").forEach(i => i.oninput = () => { q[i.dataset.search] = i.value.toLowerCase(); renderPlaces(); });
+$("nested").onchange = renderPlaces;
+document.querySelectorAll("#dir [data-dir]").forEach(b => b.onclick = () => { S.dir = b.dataset.dir; document.querySelectorAll("#dir .key").forEach(x => x.classList.toggle("on", x === b)); });
+
+function renderPlaces() {
+  // folders: chips + tree results (selected first)
+  $("chipsFolders").innerHTML = [...S.folders].map(f => `<span class="chip"><img src="${folderFor(f)}" alt="">${esc(f)}<button data-rm="${esc(f)}" aria-label="Remove">×</button></span>`).join("") || `<span class="empty">Not in any folder — it shows only in All.</span>`;
+  $("chipsFolders").querySelectorAll("[data-rm]").forEach(b => b.onclick = () => { S.folders.delete(b.dataset.rm); changed(); });
+  const showNested = $("nested").checked || q.folders;
+  let rows = [];
+  folderTree.forEach(([n, kids]) => {
+    if (!q.folders || n.toLowerCase().includes(q.folders)) rows.push([n, 0]);
+    if (kids && showNested) kids.forEach(k => { if (!q.folders || k.toLowerCase().includes(q.folders)) rows.push([k, 1]); });
+  });
+  $("resFolders").innerHTML = rows.map(([n, d]) => `<div class="res${d ? " depth1" : ""}${S.folders.has(n) ? " sel" : ""}" data-f="${esc(n)}"><input type="checkbox" ${S.folders.has(n) ? "checked" : ""} tabindex="-1"><img src="${folderFor(n)}" style="width:16px;height:16px;object-fit:contain" alt="">${esc(n)}${autoFolders.has(n) ? `<span class="meta">auto</span>` : ""}</div>`).join("");
+  $("resFolders").querySelectorAll("[data-f]").forEach(r => r.onclick = () => { const f = r.dataset.f; S.folders.has(f) ? S.folders.delete(f) : S.folders.add(f); changed(); });
+
+  // nested lists
+  $("chipsKids").innerHTML = [...S.kids].map(k => `<span class="chip"><img src="${orbFor(k)}" alt="">${esc(k)}<button data-rm="${esc(k)}" aria-label="Unnest">×</button></span>`).join("") || `<span class="empty">No nested lists.</span>`;
+  $("chipsKids").querySelectorAll("[data-rm]").forEach(b => b.onclick = () => { S.kids.delete(b.dataset.rm); changed(); });
+  $("resKids").innerHTML = nestable.filter(n => !S.kids.has(n) && (!q.kids || n.toLowerCase().includes(q.kids))).map(n => `<div class="res" data-k="${esc(n)}"><img src="${orbFor(n)}" style="width:16px;height:16px;object-fit:contain" alt="">${esc(n)}<span class="meta">nest ↳</span></div>`).join("");
+  $("resKids").querySelectorAll("[data-k]").forEach(r => r.onclick = () => { S.kids.add(r.dataset.k); changed(); });
+
+  // connected
+  $("chipsConn").innerHTML = [...S.conn].map(([k, d]) => `<span class="chip"><img src="${orbFor(k)}" alt="">${d === "out" ? "→" : "←"} ${esc(k)}<button data-rm="${esc(k)}" aria-label="Disconnect">×</button></span>`).join("") || `<span class="empty">Not connected.</span>`;
+  $("chipsConn").querySelectorAll("[data-rm]").forEach(b => b.onclick = () => { S.conn.delete(b.dataset.rm); changed(); });
+  $("resConn").innerHTML = connectable.filter(n => n !== S.name && !S.conn.has(n) && (!q.conn || n.toLowerCase().includes(q.conn))).map(n => `<div class="res" data-c="${esc(n)}"><img src="${orbFor(n)}" style="width:16px;height:16px;object-fit:contain" alt="">${esc(n)}<span class="meta">${S.dir === "out" ? "send →" : "← take"}</span></div>`).join("");
+  $("resConn").querySelectorAll("[data-c]").forEach(r => r.onclick = () => { S.conn.set(r.dataset.c, S.dir); changed(); });
+
+  $("ctFolders").textContent = S.folders.size; $("ctKids").textContent = S.kids.size; $("ctConn").textContent = S.conn.size;
+  document.querySelectorAll(".picker h4 .lamp").forEach((l, i) => l.className = "lamp" + ([S.folders, S.kids, S.conn][i].size ? " green" : ""));
+  renderBoard();
+}
+function changed() { renderPlaces(); renderIdent(); renderTabs(); dirty(); }
+
+/* the map: folders above, this list in the middle, nested below, connections either side */
+function renderBoard() {
+  const b = $("board"); const W = b.clientWidth || 880, H = 252, cx = W / 2, cy = 124;
+  const nodes = [], lines = [];
+  const spread = (arr, y, cls, img, maxW) => {
+    const n = Math.max(arr.length, 1), w = Math.min(maxW, n * 112), x0 = cx - w / 2 + w / n / 2;
+    return arr.map((name, i) => ({ name, x: x0 + i * (w / n), y, cls, img }));
+  };
+  const fol = S.folders.size ? spread([...S.folders].slice(0, 6), 36, "folder", folderFor, W * .7) : [{ name: "+ folder", x: cx, y: 36, cls: "ghost folder" }];
+  const kid = S.kids.size ? spread([...S.kids].slice(0, 6), 214, "", orbFor, W * .7) : [{ name: "+ nest", x: cx, y: 214, cls: "ghost" }];
+  const outs = [...S.conn].filter(([, d]) => d === "out").map(([n]) => n), ins = [...S.conn].filter(([, d]) => d === "in").map(([n]) => n);
+  const side = (arr, x, ghost) => arr.length ? arr.slice(0, 4).map((name, i, a) => ({ name, x, y: cy + (i - (a.length - 1) / 2) * 52, cls: "", img: orbFor })) : [{ name: ghost, x, y: cy, cls: "ghost" }];
+  const R = side(outs, W - 96, "+ connect →"), L = side(ins, 96, "← + connect");
+  const pad = (x, y) => `<circle cx="${x}" cy="${y}" r="4.5" fill="#e9e3c8" stroke="#5a5440" stroke-width="1.2"/><circle cx="${x}" cy="${y}" r="1.6" fill="#5a5440"/>`;
+  const trace = (pts, dash, arrow) => `<polyline points="${pts.map(p => p.join(",")).join(" ")}" fill="none" stroke="#1f3d34" stroke-width="2.4" stroke-linejoin="round" ${dash ? 'stroke-dasharray="5 5" opacity=".45"' : ""} ${arrow ? 'marker-end="url(#ar)"' : ""}/><polyline points="${pts.map(p => p.join(",")).join(" ")}" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="1" transform="translate(0,1.6)" ${dash ? 'stroke-dasharray="5 5" opacity=".3"' : ""}/>`;
+  fol.forEach(f => lines.push(trace([[f.x, f.y + 22], [f.x, 76], [cx, 76], [cx, cy - 36]], f.cls.includes("ghost")) + pad(f.x, f.y + 22)));
+  kid.forEach(k => lines.push(trace([[cx, cy + 40], [cx, 176], [k.x, 176], [k.x, k.y - 22]], k.cls.includes("ghost")) + pad(k.x, k.y - 22)));
+  R.forEach(r => lines.push(trace([[cx + 40, cy], [cx + 120, cy], [cx + 120, r.y], [r.x - 30, r.y]], r.cls.includes("ghost"), !r.cls.includes("ghost"))));
+  L.forEach(l => lines.push(trace([[l.x + 30, l.y], [cx - 120, l.y], [cx - 120, cy], [cx - 42, cy]], l.cls.includes("ghost"), !l.cls.includes("ghost"))));
+  b.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#1f3d34"/></marker></defs>${lines.join("")}${pad(cx, cy - 36)}${pad(cx, cy + 40)}</svg>
+    <span class="tag" style="left:12px;top:10px">Folders</span><span class="tag" style="left:12px;top:${H - 50}px">Nested</span>
+    <span class="tag" style="right:12px;top:10px">Connected →</span><span class="tag" style="left:12px;top:${cy - 40}px">← Connected</span>`;
+  const put = (n) => {
+    const d = document.createElement("div"); d.className = "bnode " + (n.cls || ""); d.style.left = n.x + "px"; d.style.top = n.y + "px";
+    d.innerHTML = n.cls && n.cls.includes("ghost") ? `<span class="slot">+</span><span class="x">${n.name.replace("+ ", "")}</span>` : `<img src="${n.img(n.name)}" alt=""><span>${esc(n.name)}</span>`;
+    b.appendChild(d);
+  };
+  [...fol, ...kid, ...R, ...L].forEach(put);
+  const me = document.createElement("div"); me.className = "bnode me"; me.style.left = cx + "px"; me.style.top = cy + "px";
+  me.innerHTML = `<img src="${ORB(S.orb)}" alt=""><span>${esc(S.name || "untitled")}</span>`; b.appendChild(me);
+}
+
+/* ---------- items ---------- */
+function renderItems() {
+  $("types").innerHTML = typeList.map(t => `<div class="type mill" data-t="${t}" title="Click: allow · Double-click: default"><img src="${ORB(typeOrb[t])}" style="width:22px;height:22px;object-fit:contain" alt="">${t}<span class="lamp${S.types.has(t) ? " green" : ""}"></span>${S.defType === t ? '<span class="star">DEFAULT</span>' : ""}</div>`).join("");
+  $("types").querySelectorAll("[data-t]").forEach(el => {
+    el.onclick = () => { const t = el.dataset.t; if (S.types.has(t)) { S.types.delete(t); if (S.defType === t) S.defType = null; } else S.types.add(t); renderItems(); renderTabs(); dirty(); };
+    el.ondblclick = () => { const t = el.dataset.t; S.types.add(t); S.defType = t; renderItems(); renderTabs(); dirty(); };
+  });
+  $("defType").textContent = S.defType ? S.defType.toUpperCase() : "NO TYPE (GENERIC)";
+  $("panels").innerHTML = Object.entries(S.panels).map(([p, v]) => `<tr><td>${p}</td><td><span class="seg">${["type", "show", "hide"].map(o => `<button class="key${v === o ? " on" : ""}" data-p="${p}" data-v="${o}">${o === "type" ? "Type" : o === "show" ? "Show" : "Hide"}</button>`).join("")}</span></td></tr>`).join("");
+  $("panels").querySelectorAll("[data-p]").forEach(b => b.onclick = () => { S.panels[b.dataset.p] = b.dataset.v; renderItems(); dirty(); });
+}
+
+/* ---------- views ---------- */
+const thumbs = {
+  Default: `<div class="ln b"></div><div class="ln"></div><div class="ln b" style="width:55%"></div><div class="ln"></div>`,
+  Checklist: `<div><span class="cbx x"></span><span class="ln" style="display:inline-block;width:70%;margin:0"></span></div><div style="margin-top:6px"><span class="cbx"></span><span class="ln" style="display:inline-block;width:60%;margin:0"></span></div><div style="margin-top:6px"><span class="cbx x"></span><span class="ln" style="display:inline-block;width:75%;margin:0"></span></div>`,
+  Icons: "velvet",
+  Details: `<div class="tbl"><i class="h"></i><i class="h"></i><i class="h"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>`,
+  Spreadsheet: `<div class="tbl" style="grid-template-columns:repeat(5,1fr)">${'<i class="h"></i>'.repeat(5)}${"<i></i>".repeat(20)}</div>`
+};
+function renderViews() {
+  $("views").innerHTML = Object.keys(thumbs).map(v => `<div class="vcard mill${S.view === v ? " cur" : ""}" data-v="${v}">
+      <div class="thumb${thumbs[v] === "velvet" ? " velvet" : ""}">${thumbs[v] === "velvet" ? orbs.slice(1, 7).map(o => `<img src="${ORB(o)}" alt="">`).join("") : thumbs[v]}</div>
+      <div class="foot">${v}<span class="offer" data-offer="${v}" title="Offer this view on the toolbar"><span class="lamp${S.offered.has(v) ? " green" : ""}"></span>${S.offered.has(v) ? "ON" : "OFF"}</span></div></div>`).join("");
+  $("views").querySelectorAll("[data-v]").forEach(c => c.onclick = () => { S.view = c.dataset.v; renderViews(); });
+  $("views").querySelectorAll("[data-offer]").forEach(o => o.onclick = (e) => { e.stopPropagation(); const v = o.dataset.offer; S.offered.has(v) ? S.offered.delete(v) : S.offered.add(v); renderViews(); renderIdent(); renderTabs(); dirty(); });
+  renderVset();
+}
+let colQ = "", vaultOpen = false;
+function renderVset() {
+  const v = S.view, el = $("vset");
+  if (v === "Default") {
+    const keys = [["pip", "Pip"], ["icon", "Icon"], ["name", "Name"], ["type", "Type"], ["ui", "U·I"], ["date", "Date"], ["attrs", "Attribute chips"]];
+    el.innerHTML = `<div class="plate" style="margin-bottom:8px">Default rows</div>
+      <div class="dir" style="max-width:360px;margin-bottom:8px"><button class="key${S.customRow ? "" : " on"}" data-cr="0">Use built-in layout</button><button class="key${S.customRow ? " on" : ""}" data-cr="1">Customize for brain2</button></div>
+      <div class="chiptoggles">${keys.map(([k, l]) => `<button class="key sm${S.rows[k] ? " on" : ""}" data-r="${k}" ${!S.customRow || k === "name" ? "disabled" : ""}>${l}</button>`).join("")}</div>
+      <div class="rowpreview">${S.rows.pip ? '<span class="pip" style="background:' + (S.color || "#5a5e62") + '"></span>' : ""}${S.rows.icon ? `<img src="${ORB(orbs[4])}" alt="">` : ""}<span>Finish the List Properties mockup</span>${S.rows.type ? '<span class="t">Task</span>' : ""}${S.rows.ui ? '<span class="t">U3 · I4</span>' : ""}${S.rows.date ? '<span class="t">Oct 12</span>' : ""}${S.rows.attrs ? '<span class="t">Context: desk</span>' : ""}</div>
+      <p class="caption" style="margin:6px 0 0">Name always stays. Independent of Details and Spreadsheet columns.</p>`;
+    el.querySelectorAll("[data-cr]").forEach(b => b.onclick = () => { S.customRow = b.dataset.cr === "1"; renderVset(); dirty(); });
+    el.querySelectorAll("[data-r]").forEach(b => b.onclick = () => { S.rows[b.dataset.r] = !S.rows[b.dataset.r]; renderVset(); dirty(); });
+  } else if (v === "Checklist") {
+    el.innerHTML = `<div class="plate" style="margin-bottom:8px">Checklist columns</div>
+      <div class="chiptoggles">${["Completed", "Missed opportunity"].map(c => `<button class="key${S.checks.has(c) ? " on" : ""}" data-ck="${c}"><span class="cbx${S.checks.has(c) ? " x" : ""}"></span>${c}</button>`).join("")}<button class="key">+ Checkbox variable</button></div>
+      <p class="caption" style="margin:8px 0 0">Each checkbox variable is one more tick column. Off until you add it.</p>`;
+    el.querySelectorAll("[data-ck]").forEach(b => b.onclick = () => { const c = b.dataset.ck; S.checks.has(c) ? S.checks.delete(c) : S.checks.add(c); renderVset(); dirty(); });
+  } else if (v === "Icons") {
+    el.innerHTML = `<div class="plate" style="margin-bottom:6px">Icons</div><p class="caption" style="margin:0">Orbs on velvet. Desktop, Pile up, and Gravity live on the list's own toolbar — nothing to set here.</p>`;
+  } else {
+    const hot = v === "Details" ? "d" : "s";
+    const row = ([n, t], on) => { const c = S.cols[n] || (S.cols[n] = { d: false, s: false }); return `<tr><td>${esc(n)} <span class="ty">${on ? "on this list" : "vault"} · ${t}</span></td><td class="c${hot === "d" ? " hot" : ""}"><input type="checkbox" data-col="${esc(n)}" data-k="d" ${c.d ? "checked" : ""}></td><td class="c${hot === "s" ? " hot" : ""}"><input type="checkbox" data-col="${esc(n)}" data-k="s" ${c.s ? "checked" : ""}></td></tr>`; };
+    const m = ([n]) => !colQ || n.toLowerCase().includes(colQ);
+    const a = onList.filter(m), b = vault.filter(m);
+    el.innerHTML = `<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><span class="plate">Columns</span><input class="field" id="colSearch" placeholder="Search ${onList.length + vault.length} attributes…" style="max-width:260px" value="${esc(colQ)}"><span class="caption" style="margin-left:auto">Name stays first. Unchecking hides a column; the attribute stays.</span></div>
+      <div class="colwrap"><table class="cols"><thead><tr><th>Attribute</th><th class="c">Details</th><th class="c">Spreadsheet</th></tr></thead><tbody>
+      <tr class="grp"><td colspan="3">On this list · ${a.length}</td></tr>${a.map(x => row(x, true)).join("")}
+      <tr class="grp" id="vaultGrp"><td colspan="3">${vaultOpen || colQ ? "▾" : "▸"} Vault · ${b.length}</td></tr>${vaultOpen || colQ ? b.map(x => row(x, false)).join("") : ""}
+      </tbody></table></div>`;
+    const s = $("colSearch"); s.oninput = () => { colQ = s.value.toLowerCase(); renderVset(); const n = $("colSearch"); n.focus(); n.setSelectionRange(n.value.length, n.value.length); };
+    $("vaultGrp").onclick = () => { vaultOpen = !vaultOpen; renderVset(); };
+    el.querySelectorAll("[data-col]").forEach(c => c.onchange = () => { S.cols[c.dataset.col][c.dataset.k] = c.checked; dirty(); });
+  }
+}
+
+/* ---------- behavior ---------- */
+const behRows = [
+  ["scheduler", "Send to Scheduler", "Puts brain2 in the Scheduler, which sorts to-do lists into year, month, week, and day. A list can carry dates without being sent there."],
+  ["sent", "Sent this week", "Each item gets a Sent control. Sent items hide until Show sent; when a new week starts they leave this list. They are not deleted."],
+  ["home", "Show in Home", "Pin brain2 to your Home directory."],
+  ["all", "Show in All", "Include brain2 in the global All directory. Module-made lists start hidden."]
+];
+function renderBeh() {
+  $("beh").innerHTML = behRows.map(([k, t, d]) => `<span class="rock"><button class="rocker${S.behavior[k] ? " on" : ""}" data-b="${k}" aria-pressed="${S.behavior[k]}" aria-label="${t}"></button></span><div><h5>${t}</h5><p class="caption">${d}</p></div>`).join("");
+  $("beh").querySelectorAll("[data-b]").forEach(b => b.onclick = () => { S.behavior[b.dataset.b] = !S.behavior[b.dataset.b]; renderBeh(); dirty(); });
+}
+["g1", "g2"].forEach(id => {
+  const g = $(id), btn = g.querySelector(".key");
+  g.querySelector(".cover").onclick = () => { g.classList.add("open"); btn.disabled = false; };
+  btn.onclick = () => { btn.textContent = id === "g1" ? "Cleared (mock)" : "Confirm delete?"; };
+  g.addEventListener("mouseleave", () => { if (g.classList.contains("open")) setTimeout(() => { g.classList.remove("open"); btn.disabled = true; }, 2500); });
+});
+
+$("save").onclick = () => { S.dirty = false; $("dirty").innerHTML = `<span class="lamp green"></span><span>Saved</span>`; };
+addEventListener("resize", renderBoard);
+
+renderIdent(); renderTabs(); renderGeneral(); renderPlaces(); renderItems(); renderViews(); renderBeh();
+const hashTab = location.hash.slice(1); if (tabs.some(([k]) => k === hashTab)) { S.tab = hashTab; renderTabs(); renderBoard(); }
+</script>
+</body>
+</html>

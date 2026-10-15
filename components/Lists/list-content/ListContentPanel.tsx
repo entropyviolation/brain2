@@ -8,8 +8,10 @@ import { ReminderQuickAdd } from "./reminder-quick-add"
 import { ListContentDefault } from "./ListContentDefault"
 import { ListContentChecklist } from "./ListContentChecklist"
 import { ListContentIcons } from "./ListContentIcons"
+import { ListContentIconsDesktop } from "./ListContentIconsDesktop"
 import { ListContentDetails } from "./ListContentDetails"
 import { ListContentSpreadsheet } from "./ListContentSpreadsheet"
+import { ListSortControl } from "./ListSortControl"
 import type { ListContentPanelProps } from "./types"
 
 export type { ListContentPanelProps } from "./types"
@@ -132,6 +134,15 @@ export function ListContentPanel({
   sentThisWeek = false,
   showSent = false,
   onShowSentChange,
+  iconsDesktop = false,
+  listOrganizeEpoch = 0,
+  listPileEpoch = 0,
+  listGravityResetEpoch = 0,
+  listGravitySettleEpoch = 0,
+  sort,
+  sortOptions,
+  onSortChange,
+  searchQuery = "",
 }: ListContentPanelProps) {
   const hiddenForFolder = currentFolder ? folderAllHiddenListIds[currentFolder.id] ?? [] : []
   const hiddenGlobalFolders = globalAllHiddenFolderIds
@@ -182,18 +193,27 @@ export function ListContentPanel({
     </button>
   ) : null
 
+  const sortControl =
+    currentDisplay === "default" && sortOptions && onSortChange && tasks.length > 0 ? (
+      <ListSortControl sort={sort} options={sortOptions} onChange={onSortChange} />
+    ) : null
+
+  const showAdd = allowAdd && !addingTaskToTarget && !showBulkAdd
   const addButtons =
-    allowAdd && !addingTaskToTarget && !showBulkAdd ? (
+    showAdd || sortControl ? (
       <div className="fm-list-add-row">
-        {reminders ? null : (
+        {showAdd && !reminders ? (
           <button className="fm-btn fm-btn-sm" onClick={() => onShowBulkAdd(true)}>
             Bulk add {itemLabel.toLowerCase()}s
           </button>
-        )}
-        <button className="fm-btn fm-btn-sm" onClick={onShowAddTask}>
-          Add {itemLabel}
-        </button>
+        ) : null}
+        {showAdd ? (
+          <button className="fm-btn fm-btn-sm" onClick={onShowAddTask}>
+            Add {itemLabel}
+          </button>
+        ) : null}
         {showSentControl}
+        {sortControl}
       </div>
     ) : (
       showSentControl
@@ -215,7 +235,9 @@ export function ListContentPanel({
     ? globalAllHideUncategorized
     : !!(currentFolder && folderAllHideUncategorized[currentFolder.id])
   const archiveId = openCategory?.id
-  const emptyMessage = uncategorizedOnlyChecked
+  const emptyMessage = searchQuery.trim()
+    ? `Nothing in this list matches “${searchQuery.trim()}”.`
+    : uncategorizedOnlyChecked
     ? isRootAll
       ? "No uncategorized items."
       : "No uncategorized items in this folder."
@@ -257,6 +279,18 @@ export function ListContentPanel({
     )
   } else if (currentDisplay === "checklist") {
     body = <ListContentChecklist {...taskHandlers} checkboxVars={openCategory?.checklistCheckboxVars} />
+  } else if (currentDisplay === "icons" && iconsDesktop) {
+    body = (
+      <ListContentIconsDesktop
+        {...taskHandlers}
+        onIconPickerOpen={onIconPickerOpen}
+        openTargetKey={openTargetKeyValue}
+        organizeEpoch={listOrganizeEpoch}
+        pileEpoch={listPileEpoch}
+        gravityResetEpoch={listGravityResetEpoch}
+        gravitySettleEpoch={listGravitySettleEpoch}
+      />
+    )
   } else if (currentDisplay === "icons") {
     body = <ListContentIcons {...taskHandlers} onIconPickerOpen={onIconPickerOpen} />
   } else if (currentDisplay === "spreadsheet") {
@@ -284,8 +318,9 @@ export function ListContentPanel({
     )
   }
 
+  const iconsDesk = currentDisplay === "icons" && iconsDesktop
   return (
-    <div className="fm-sunken">
+    <div className={`fm-sunken${iconsDesk ? " fm-icons-desk" : ""}`}>
       {uncategorizedOnlyFilter}
       {quickAdd}
       {addButtons}

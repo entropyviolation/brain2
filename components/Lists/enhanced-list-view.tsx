@@ -83,6 +83,14 @@ import {
   taskStoreModuleListsMutators,
 } from "@/lib/module-lists"
 import { syncModuleListContents } from "@/lib/module-list-import"
+import { ensureFilmTypeOnFilmsLists } from "@/lib/film-types"
+import {
+  filterTasksByHiddenItemTypes,
+  shouldShowTypeFilter,
+  typeFilterItems,
+  typesPresentInTasks,
+} from "@/lib/list-type-filter"
+import { listAllowedTypeIds } from "@/lib/list-item-types"
 import { useListsNavigation } from "@/components/Lists/hooks/useListsNavigation"
 import { useListsSearch } from "@/components/Lists/hooks/useListsSearch"
 import { useListsDragDrop } from "@/components/Lists/hooks/useListsDragDrop"
@@ -99,6 +107,7 @@ import { FolderViewDetails } from "@/components/Lists/views/FolderViewDetails"
 import { FolderViewCards } from "@/components/Lists/views/FolderViewCards"
 import { SearchResultsView } from "@/components/Lists/views/SearchResultsView"
 import { ListContentPanel } from "@/components/Lists/list-content/ListContentPanel"
+import { ListIconsDesktopSwitch } from "@/components/Lists/list-content/ListContentIconsDesktop"
 import { AllViewCheckboxFilter } from "@/components/Lists/list-content/AllViewCheckboxFilter"
 import { OrbPickerDialog } from "@/components/Icons/OrbPicker"
 import { CsvImportDialog } from "@/components/Lists/dialogs/CsvImportDialog"
@@ -112,6 +121,7 @@ import { EditListDialog } from "@/components/Lists/dialogs/EditListDialog"
 import { EditFolderDialog } from "@/components/Lists/dialogs/EditFolderDialog"
 import { DuplicateSelectionDialog } from "@/components/Lists/dialogs/DuplicateSelectionDialog"
 import { PasteSelectionDialog } from "@/components/Lists/dialogs/PasteSelectionDialog"
+import { GravitySettingsDialog } from "@/components/Lists/dialogs/GravitySettingsDialog"
 import {
   FolderContextMenu,
   type FolderContextMenuState,
@@ -138,13 +148,17 @@ import { iconFor, orbFor } from "@/components/Lists/lib/icon-utils"
 import {
   formatInspectorDate,
   layoutVelvetIconGrid,
-  listDisplayCaption,
   VELVET_GRID_FALLBACK_WIDTH,
 } from "@/components/Lists/lib/velvet-icon-grid"
 import { chooseListsLocation } from "@/components/Lists/lib/lists-location-choice"
 import { openTargetKey } from "@/components/Lists/open-target"
 import type { CsvImportState, GridEntry, IconPickerTarget, SmartId } from "@/components/Lists/types"
-import { isListDisplayMode, sanitizeEnabledDisplays, type List, type Folder, type Task, type AttributeValue } from "@/lib/types"
+import { isListDisplayMode, sanitizeEnabledDisplays, type List, type Folder, type Task, type AttributeValue, type AttributeDefinition, type ListItemSort } from "@/lib/types"
+import { listAttributeSchema, mergeListAttributes } from "@/components/Lists/attribute-editor"
+import { getItemType } from "@/lib/item-types"
+import { resolveDefaultViewSort, setDefaultViewSort } from "@/lib/default-view-prefs"
+import { filterListItemsBySearch, listItemSortOptions, sortListItems } from "@/lib/list-item-sort"
+import { ListCaptionSearch, CaptionKeyGlyph } from "@/components/Lists/list-content/ListCaptionSearch"
 import "./filemanager98.css"
 
 interface EnhancedCategoryViewProps {
@@ -282,6 +296,9 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
   const commitIconLayout = useListsUiStore((s) => s.commitIconLayout)
   const iconPositions = useListsUiStore((s) => s.iconPositions)
   const iconLayoutMode = useListsUiStore((s) => s.iconLayoutMode)
+  const listIconsDesktop = useListsUiStore((s) => s.listIconsDesktop)
+  const listIconsGravity = useListsUiStore((s) => s.listIconsGravity)
+  const setListIconsGravity = useListsUiStore((s) => s.setListIconsGravity)
   const velvetCanvasWidthRef = useRef(VELVET_GRID_FALLBACK_WIDTH)
   const folderAllUncategorizedOnly = useListsUiStore((s) => s.folderAllUncategorizedOnly)
   const setFolderAllUncategorizedOnly = useListsUiStore((s) => s.setFolderAllUncategorizedOnly)
@@ -297,6 +314,9 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
   const setGlobalAllUncategorizedOnly = useListsUiStore((s) => s.setGlobalAllUncategorizedOnly)
   const globalAllHideUncategorized = useListsUiStore((s) => s.globalAllHideUncategorized)
   const setGlobalAllHideUncategorized = useListsUiStore((s) => s.setGlobalAllHideUncategorized)
+  const hiddenItemTypeIdsByTarget = useListsUiStore((s) => s.hiddenItemTypeIdsByTarget)
+  const setItemTypeHidden = useListsUiStore((s) => s.setItemTypeHidden)
+  const setHiddenItemTypeIds = useListsUiStore((s) => s.setHiddenItemTypeIds)
 
   const nav = useListsNavigation(categories, folders)
   const search = useListsSearch(folders, categories, allTasks)
@@ -326,6 +346,11 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
   const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null)
   const [iconPickerFor, setIconPickerFor] = useState<IconPickerTarget>(null)
   const [organizeEpoch, setOrganizeEpoch] = useState(0)
+  const [listDesktopOrganizeEpoch, setListDesktopOrganizeEpoch] = useState(0)
+  const [listPileEpoch, setListPileEpoch] = useState(0)
+  const [listGravityResetEpoch, setListGravityResetEpoch] = useState(0)
+  const [listGravitySettleEpoch, setListGravitySettleEpoch] = useState(0)
+  const [gravitySettingsOpen, setGravitySettingsOpen] = useState(false)
   const [organizeFromSnapshot, setOrganizeFromSnapshot] = useState<Record<string, { x: number; y: number }> | null>(
     null,
   )
@@ -450,6 +475,12 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
         const moduleMut = taskStoreModuleListsMutators()
         syncModuleListFolders(moduleMut, modules)
         syncModuleListContents(moduleMut, modules)
+        const filmsIds = modules
+          .map((m) => m.config?.filmsCategoryId)
+          .filter((id): id is string => typeof id === "string" && !!id)
+        const afterModules = useTaskStore.getState().lists
+        const withFilm = ensureFilmTypeOnFilmsLists(afterModules, filmsIds)
+        if (withFilm !== afterModules) useTaskStore.setState({ lists: withFilm })
       })
     }
     const idle = typeof requestIdleCallback === "function"
@@ -617,16 +648,119 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
   }, [openTarget, allTasks, categories, folders, currentFolder, folderAllUncategorizedOnly, folderAllHideUncategorized, folderAllHiddenListIds, globalAllHiddenFolderIds, globalAllUncategorizedOnly, globalAllHideUncategorized, getSmartTasks, getTasksForCategory])
 
   const listedTasks = useMemo(() => {
-    if (openTarget?.type !== "category" || !openCategory?.sentThisWeek || showSentItems) return openTasks
-    return visibleListItems(openTasks, openCategory.id, false)
-  }, [openTasks, openTarget, openCategory, showSentItems])
+    let tasks =
+      openTarget?.type === "category" && openCategory?.sentThisWeek && !showSentItems
+        ? visibleListItems(openTasks, openCategory.id, false)
+        : openTasks
+    if (!openTarget || openTarget.type === "habits" || openTarget.type === "objectives") return tasks
+    const targetKey = openTargetKey(openTarget)
+    const hiddenTypes = hiddenItemTypeIdsByTarget?.[targetKey]
+    if (hiddenTypes?.length) {
+      tasks = filterTasksByHiddenItemTypes(tasks, hiddenTypes, openCategory)
+    }
+    return tasks
+  }, [
+    openTasks,
+    openTarget,
+    openCategory,
+    showSentItems,
+    hiddenItemTypeIdsByTarget,
+  ])
+
+  const typeFilterForOpen = useMemo(() => {
+    if (!openTarget || openTarget.type === "habits" || openTarget.type === "objectives") return null
+    const presentIds = typesPresentInTasks(openTasks, openCategory)
+    const allowedCount = openCategory ? listAllowedTypeIds(openCategory).length : 0
+    if (!shouldShowTypeFilter({ presentTypeCount: presentIds.length, allowedTypeCount: allowedCount })) {
+      return null
+    }
+    // Prefer allowlist union present so empty multi-type lists still offer filters.
+    const ids =
+      openCategory && allowedCount >= 2
+        ? [...new Set([...listAllowedTypeIds(openCategory).map(String), ...presentIds])].sort((a, b) =>
+            a.localeCompare(b),
+          )
+        : presentIds
+    return {
+      targetKey: openTargetKey(openTarget),
+      items: typeFilterItems(ids, itemTypes),
+    }
+  }, [openTarget, openTasks, openCategory, itemTypes])
+
+  // ---- One-list caption search + Default sort (DEFAULT_VIEW.md) ----
+  const openKeyForSearch = openTarget ? openTargetKey(openTarget) : ""
+  const [listSearchOpen, setListSearchOpen] = useState(false)
+  const [listSearchQuery, setListSearchQuery] = useState("")
+  const [listSearchAllFields, setListSearchAllFields] = useState(false)
+  useEffect(() => {
+    setListSearchOpen(false)
+    setListSearchQuery("")
+  }, [openKeyForSearch])
+  const closeListSearch = useCallback(() => {
+    setListSearchOpen(false)
+    setListSearchQuery("")
+  }, [])
+  const listSearchable =
+    !!openTarget && openTarget.type !== "habits" && openTarget.type !== "objectives"
+
+  const listSchemaDefs = useMemo<AttributeDefinition[]>(() => {
+    if (!listSearchable) return []
+    const base = openCategory
+      ? listAttributeSchema(openCategory, itemTypes)
+      : mergeListAttributes(categories, [...new Set(listedTasks.flatMap((t) => t.lists ?? []))], itemTypes)
+    const seen = new Set(base.map((d) => d.id))
+    const out = [...base]
+    for (const t of listedTasks) {
+      for (const d of t.itemAttributeDefinitions ?? []) {
+        if (d?.id && !seen.has(d.id)) {
+          seen.add(d.id)
+          out.push(d)
+        }
+      }
+    }
+    return out
+  }, [listSearchable, openCategory, categories, listedTasks, itemTypes])
+
+  // Lists without a List record (smart lists) keep their sort for this session only.
+  const [sessionSorts, setSessionSorts] = useState<Record<string, ListItemSort | undefined>>({})
+  const currentSort: ListItemSort | undefined = viewList
+    ? resolveDefaultViewSort(viewList.defaultView)
+    : openKeyForSearch
+      ? sessionSorts[openKeyForSearch]
+      : undefined
+  const handleSortChange = useCallback(
+    (sort: ListItemSort | undefined) => {
+      if (viewList) {
+        updateList({ ...viewList, defaultView: setDefaultViewSort(viewList.defaultView, sort) })
+        return
+      }
+      if (openKeyForSearch) setSessionSorts((prev) => ({ ...prev, [openKeyForSearch]: sort }))
+    },
+    [viewList, openKeyForSearch, updateList],
+  )
+  const sortOptions = useMemo(() => listItemSortOptions(listSchemaDefs), [listSchemaDefs])
+
+  const shownTasks = useMemo(() => {
+    let tasks = listSearchQuery.trim()
+      ? filterListItemsBySearch(listedTasks, listSearchQuery, { allFields: listSearchAllFields, defs: listSchemaDefs })
+      : listedTasks
+    if (currentDisplay === "default" && currentSort) {
+      tasks = sortListItems(tasks, currentSort, {
+        listId: openCategory?.id ?? null,
+        defs: listSchemaDefs,
+        typeName: (t) => getItemType(itemTypes, t.type ?? openCategory?.itemTypeId).name,
+      })
+    }
+    return tasks
+  }, [listedTasks, listSearchQuery, listSearchAllFields, listSchemaDefs, currentDisplay, currentSort, openCategory, itemTypes])
 
   const breadcrumb = getBreadcrumb({ searchActive, searchTerm, openTarget, openName, isHome, isAll, currentFolderName: currentFolder?.name })
   const hereCount = openTarget
     ? `${listedTasks.length} item(s)`
     : `${entries.filter((e) => e.kind === "folder").length} folder(s), ${entries.filter((e) => e.kind !== "folder").length} list(s)`
   const treeCount = `${folders.length} folder(s), ${categories.length} list(s)`
-  const innerCaption = openHabits ? "Habits" : openObjectives ? "Objectives" : listDisplayCaption(currentDisplay)
+  // The open list's own name (the display mode already lights up in the Display deck).
+  const innerCaption = openName || (openHabits ? "Habits" : openObjectives ? "Objectives" : "List")
 
   const openNewCategoryDialog = useCallback(() => {
     setNewCategoryOpen(true)
@@ -1177,6 +1311,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
     return () => observer.disconnect()
   }, [selectStripOpen])
   const openListKey = openTarget && openTarget.type !== "habits" && openTarget.type !== "objectives" ? openTargetKey(openTarget) : ""
+  const listIconsDesktopOn = currentDisplay === "icons" && !!openListKey && !!listIconsDesktop?.[openListKey]
   useEffect(() => {
     clearTaskSelection()
   }, [openListKey, clearTaskSelection])
@@ -1386,7 +1521,11 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
     if (openTarget) {
       return (
         <ListContentPanel
-          tasks={listedTasks}
+          tasks={shownTasks}
+          sort={currentSort}
+          sortOptions={sortOptions}
+          onSortChange={handleSortChange}
+          searchQuery={listSearchQuery}
           sentThisWeek={openTarget?.type === "category" && openCategory?.sentThisWeek === true}
           showSent={showSentItems}
           onShowSentChange={setShowSentItems}
@@ -1427,6 +1566,11 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
           selectMode={selectMode}
           selectedTaskIds={selectedTaskIds}
           onToggleTaskSelect={toggleTaskSelection}
+          iconsDesktop={listIconsDesktopOn}
+          listOrganizeEpoch={listDesktopOrganizeEpoch}
+          listPileEpoch={listPileEpoch}
+          listGravityResetEpoch={listGravityResetEpoch}
+          listGravitySettleEpoch={listGravitySettleEpoch}
         />
       )
     }
@@ -1566,6 +1710,29 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
             onFolderViewChange={setFolderView}
             onListDisplayChange={setListDisplay}
             onAutoOrganize={handleAutoOrganize}
+            listIconsDesktop={listIconsDesktopOn}
+            onListDesktopOrganize={() => {
+              if (openListKey) setListIconsGravity(openListKey, false)
+              setListDesktopOrganizeEpoch((n) => n + 1)
+            }}
+            listIconsGravity={!!openListKey && !!listIconsGravity?.[openListKey]}
+            onListIconsGravityChange={(on) => {
+              if (!openListKey) return
+              setListIconsGravity(openListKey, on)
+            }}
+            onGravityReset={() => {
+              if (!openListKey) return
+              setListGravityResetEpoch((n) => n + 1)
+            }}
+            onGravitySettle={() => {
+              if (!openListKey) return
+              setListGravitySettleEpoch((n) => n + 1)
+            }}
+            onGravitySettings={() => setGravitySettingsOpen(true)}
+            onPileUp={() => {
+              if (openListKey) setListIconsGravity(openListKey, false)
+              setListPileEpoch((n) => n + 1)
+            }}
           />
           <input
             ref={csvRef}
@@ -1654,21 +1821,62 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
 
             <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: "flex", flexDirection: "column" }}>
               {openTarget && (
-                <div className="fm-title-bar inactive" style={{ marginBottom: 3 }}>
-                  <div className="fm-title-bar-text" data-testid="fm-inner-caption">
-                    {innerCaption}
+                <div className={`fm-title-bar inactive fm-list-caption${listSearchOpen ? " searching" : ""}`}>
+                  <div className="fm-title-bar-text" data-testid="fm-inner-caption" title={innerCaption}>
+                    <span className="fm-list-caption-name">{innerCaption}</span>
                   </div>
-                  <div className="fm-title-bar-controls">
-                    {openTarget.type !== "habits" && openTarget.type !== "objectives" && (
-                      <button className="fm-title-btn" title="Add task" onClick={() => setAddingTaskToTarget(openTargetKey(openTarget))}>+</button>
+                  {listSearchOpen && listSearchable ? (
+                    <ListCaptionSearch
+                      listName={innerCaption}
+                      query={listSearchQuery}
+                      onQueryChange={setListSearchQuery}
+                      allFields={listSearchAllFields}
+                      onAllFieldsChange={setListSearchAllFields}
+                      matchCount={listSearchQuery.trim() ? shownTasks.length : null}
+                      onClose={closeListSearch}
+                    />
+                  ) : null}
+                  <div className="fm-title-bar-controls fm-cap-keys">
+                    {listSearchable && (
+                      <button
+                        type="button"
+                        data-no95
+                        className="fm-cap-key"
+                        title={listSearchOpen ? "Close search" : "Search this list"}
+                        aria-label={listSearchOpen ? "Close list search" : "Search this list"}
+                        aria-pressed={listSearchOpen}
+                        onClick={() => (listSearchOpen ? closeListSearch() : setListSearchOpen(true))}
+                      >
+                        <CaptionKeyGlyph kind="search" />
+                      </button>
                     )}
-                    {openCategory && (
-                      <button className="fm-title-btn" title="List settings" onClick={() => setEditingCategory(openCategory)}>⚙</button>
+                    {listSearchable && (
+                      <button
+                        type="button"
+                        data-no95
+                        className="fm-cap-key"
+                        title="Add item"
+                        aria-label="Add item"
+                        onClick={() => setAddingTaskToTarget(openTargetKey(openTarget))}
+                      >
+                        <CaptionKeyGlyph kind="add" />
+                      </button>
                     )}
-                    {canEditFolderAllSettings && (
-                      <button className="fm-title-btn" title="List settings" onClick={openFolderAllSettings}>⚙</button>
+                    {(openCategory || canEditFolderAllSettings) && (
+                      <button
+                        type="button"
+                        data-no95
+                        className="fm-cap-key"
+                        title="List settings"
+                        aria-label="List settings"
+                        onClick={() => (openCategory ? setEditingCategory(openCategory) : openFolderAllSettings())}
+                      >
+                        <CaptionKeyGlyph kind="settings" />
+                      </button>
                     )}
-                    <button className="fm-title-btn b2-close-key" aria-label="Close" onClick={closeTarget}>×</button>
+                    <button type="button" data-no95 className="fm-cap-key fm-cap-key-close" title="Close list" aria-label="Close" onClick={closeTarget}>
+                      <CaptionKeyGlyph kind="close" />
+                    </button>
                   </div>
                 </div>
               )}
@@ -1684,19 +1892,29 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
                 />
                 <div className="fm-inspector-sep" />
                 <div className="fm-inspector-actions">
-                  <button className="fm-btn fm-btn-sm" onClick={() => setAddingTaskToTarget(openCategory.id)}>Add {itemLabelFor(openCategory.id, openCategory)}</button>
-                  <button className="fm-btn fm-btn-sm" onClick={() => setShowBulkAdd(true)}>Bulk add</button>
+                  <ListIconsDesktopSwitch targetKey={openCategory.id} show={currentDisplay === "icons"} />
                   <button className="fm-btn fm-btn-sm" onClick={() => setEditingCategory(openCategory)}>List Settings</button>
                   <button className="fm-btn fm-btn-sm" onClick={() => setIconPickerFor({ kind: "category", id: openCategory.id })}>Change Icon</button>
                   <button className="fm-btn fm-btn-sm" onClick={() => toggleHomePin(openCategory.id)}>{homePinned.includes(openCategory.id) ? "Unpin Home" : "Pin to Home"}</button>
                 </div>
+                {typeFilterForOpen && (
+                  <>
+                    <div className="fm-inspector-sep" />
+                    <AllViewCheckboxFilter
+                      items={typeFilterForOpen.items}
+                      hiddenIds={hiddenItemTypeIdsByTarget?.[typeFilterForOpen.targetKey] ?? []}
+                      onHiddenChange={(typeId, hidden) => setItemTypeHidden(typeFilterForOpen.targetKey, typeId, hidden)}
+                      onSetHiddenIds={(ids) => setHiddenItemTypeIds(typeFilterForOpen.targetKey, ids)}
+                      ariaLabel="Filter types"
+                    />
+                  </>
+                )}
               </div>
             )}
             {openFolderAll && (isRootAll || currentFolder) && (
               <div className="fm-sidebar fm-inspector" data-ui-name="List inspector" data-ui-docs="components/Lists/README.md" style={{ width: 168 }}>
                 <div style={{ padding: 6, display: "flex", flexDirection: "column", gap: 6 }}>
-                  <button className="fm-btn fm-btn-sm" onClick={() => setAddingTaskToTarget(openTargetKey(openTarget!))}>Add Item</button>
-                  <button className="fm-btn fm-btn-sm" onClick={() => setShowBulkAdd(true)}>Bulk add</button>
+                  <ListIconsDesktopSwitch targetKey={openTargetKey(openTarget!)} show={currentDisplay === "icons"} />
                   {canEditFolderAllSettings && (
                     <button className="fm-btn fm-btn-sm" onClick={openFolderAllSettings}>List Settings</button>
                   )}
@@ -1721,6 +1939,15 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
                       onUncategorizedChange={(checked) => setFolderAllHideUncategorized(currentFolder.id, !checked)}
                     />
                   ) : null}
+                  {typeFilterForOpen && (
+                    <AllViewCheckboxFilter
+                      items={typeFilterForOpen.items}
+                      hiddenIds={hiddenItemTypeIdsByTarget?.[typeFilterForOpen.targetKey] ?? []}
+                      onHiddenChange={(typeId, hidden) => setItemTypeHidden(typeFilterForOpen.targetKey, typeId, hidden)}
+                      onSetHiddenIds={(ids) => setHiddenItemTypeIds(typeFilterForOpen.targetKey, ids)}
+                      ariaLabel="Filter types"
+                    />
+                  )}
                   <p style={{ fontSize: 11, color: "var(--fm-button-shadow)" }}>Items added here stay uncategorized until filed into a list.</p>
                 </div>
               </div>
@@ -1728,6 +1955,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
             {openSmart && (
               <div className="fm-sidebar fm-inspector" data-ui-name="List inspector" data-ui-docs="components/Lists/README.md" style={{ width: 168 }}>
                 <div style={{ padding: 6, display: "flex", flexDirection: "column", gap: 6 }}>
+                  <ListIconsDesktopSwitch targetKey={openSmart.id} show={currentDisplay === "icons"} />
                   <button className="fm-btn fm-btn-sm" onClick={() => setAddingTaskToTarget(openSmart.id)}>Add Task</button>
                   <p style={{ fontSize: 11, color: "var(--fm-button-shadow)" }}>Synced with the dashboard To-Do panel.</p>
                 </div>
@@ -1854,6 +2082,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
       <MergeItemsConfirmDialog open={itemMergeConfirmOpen} itemNames={selectedMergeItems.map(itemMergeLabel)} onCancel={() => setItemMergeConfirmOpen(false)} onContinue={() => { setItemMergeConfirmOpen(false); setItemMergeOpen(true) }} />
       <MergeItemsDialog open={itemMergeOpen} items={selectedMergeItems} lists={categories} onClose={() => setItemMergeOpen(false)} onMerge={handleApplyItemMerge} />
       <NextActionsSettingsDialog open={showCategorySettings} onClose={() => setShowCategorySettings(false)} />
+      <GravitySettingsDialog open={gravitySettingsOpen} onOpenChange={setGravitySettingsOpen} />
       <TaskDetailPopup taskId={selectedTaskId} open={!!selectedTaskId} onClose={() => setSelectedTaskId(null)} />
       <OrbPickerDialog open={!!iconPickerFor} current={iconPickerCurrent} onClose={() => setIconPickerFor(null)} onSelect={applyIcon} />
     </div>

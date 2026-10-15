@@ -6,9 +6,14 @@
  * chosen display type per list, the active folder view, the user's uploaded
  * "orb" icon library (background-removed data URLs), and All Items checkbox
  * filters (per-list / per-folder, including Select all / Deselect all). Persisted to localStorage
- * under `brain2-lists-ui`. None of this affects task/category/folder data, so the
- * rest of the app keeps working unchanged. Target: MongoDB `listsUiPrefs`
- * collection (see docs/SPEC_MAPPING.md §3).
+ * under `brain2-lists-ui`. List Icons **desktop mode** (`listIconsDesktop`, per
+ * open target, default off) and optional **Gravity** (`listIconsGravity`, per
+ * open target, default off) are the same kind of pref. Global Gravity field
+ * knobs (`listIconsGravityField`: G + source gains) are UI-only too. Per-target
+ * **Filter types** prefs (`hiddenItemTypeIdsByTarget`, persist v10) hide items
+ * by exact type id without changing membership. None of this affects
+ * task/category/folder data. Target: MongoDB `listsUiPrefs` collection
+ * (see docs/SPEC_MAPPING.md §3).
  */
 "use client"
 
@@ -18,6 +23,14 @@ import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
 import { computeIconGridPositions } from "@/lib/lists-icon-grid"
 import { isListDisplayMode, type ListDisplayMode } from "@/lib/types"
+import {
+  DEFAULT_GRAVITY_FIELD_PARAMS,
+  mergeGravityFieldParams,
+  sanitizeGravityFieldParams,
+  type GravityFieldParams,
+} from "@/components/Lists/lib/list-icon-gravity"
+
+export type { GravityFieldParams }
 
 /** UI-only "active display" preference; canonical union lives in lib/types.ts. */
 export type ListDisplay = ListDisplayMode
@@ -51,6 +64,23 @@ interface ListsUiState {
    * every saved coordinate after the user has dragged even once.
    */
   iconLayoutMode: Record<string, "auto" | "freeform">
+  /**
+   * List Icons desktop mode, keyed by `openTargetKey` (a list, All Items, or
+   * a smart list). Missing / false keeps the wrapping flex grid. UI-only.
+   */
+  listIconsDesktop: Record<string, boolean>
+  /**
+   * List Icons desktop **Gravity** mode, keyed by `openTargetKey`. Missing /
+   * false keeps free-drag desktop unchanged. Mutually exclusive with PILE UP
+   * at runtime (entering one turns the other off). UI-only; position snapshot
+   * for Reset lives in `list-icon-gravity.ts`, not here.
+   */
+  listIconsGravity: Record<string, boolean>
+  /**
+   * Global Gravity field knobs (G + per-source gains). One blob for all lists;
+   * on/off stays per target. Defaults ≡ shipped GRAVITY_WEIGHT feel.
+   */
+  listIconsGravityField: GravityFieldParams
   /** Orb gallery paths the user has hidden (not deleted from disk). */
   hiddenGalleryOrbs: string[]
   /** Per-folder All Items view: show only uncategorized items. */
@@ -71,6 +101,11 @@ interface ListsUiState {
   globalAllUncategorizedOnly: boolean
   /** Global All Items view: hide uncategorized items. */
   globalAllHideUncategorized: boolean
+  /**
+   * Per open-target show/hide of item types (exact id). Keyed by
+   * `openTargetKey`. Empty / missing = every type visible.
+   */
+  hiddenItemTypeIdsByTarget: Record<string, string[]>
 
   toggleHomePin: (id: string) => void
   /** Add ids that are not already on Home. Does not remove anything. */
@@ -92,6 +127,11 @@ interface ListsUiState {
     mode: "auto" | "freeform",
   ) => void
   setIconLayoutMode: (location: string, mode: "auto" | "freeform") => void
+  setListIconsDesktop: (openTargetKey: string, on: boolean) => void
+  setListIconsGravity: (openTargetKey: string, on: boolean) => void
+  setListIconsGravityField: (patch: Partial<GravityFieldParams> | GravityFieldParams) => void
+  /** Restore field params to defaults; does not change Gravity on/off. */
+  resetListIconsGravityField: () => void
   hideGalleryOrb: (path: string) => void
   restoreGalleryOrb: (path: string) => void
   setFolderAllUncategorizedOnly: (folderId: string, value: boolean) => void
@@ -104,6 +144,52 @@ interface ListsUiState {
   setGlobalAllHiddenFolderIds: (hiddenIds: string[]) => void
   setGlobalAllUncategorizedOnly: (value: boolean) => void
   setGlobalAllHideUncategorized: (hidden: boolean) => void
+  setItemTypeHidden: (openTargetKey: string, typeId: string, hidden: boolean) => void
+  /** Replace which types are hidden for a target (Select all / Deselect all). */
+  setHiddenItemTypeIds: (openTargetKey: string, hiddenIds: string[]) => void
+}
+
+/**
+ * Persist migrate for `brain2-lists-ui`. v7 adds `listIconsDesktop` (default
+ * off) and does not touch `iconPositions` — folder `home:…` keys stay put.
+ * v8 adds `listIconsGravity` (default off) without rewriting positions.
+ * v9 adds `listIconsGravityField` (defaults ≡ current GRAVITY_WEIGHT feel).
+ * v10 adds `hiddenItemTypeIdsByTarget` (empty = show all types).
+ */
+export function migrateListsUiPersisted(persistedState: unknown, version: number): Record<string, unknown> {
+  const state = { ...((persistedState ?? {}) as Record<string, unknown>) }
+  if (version < 4) {
+    delete state.kanbanStatusAttrId
+    const listDisplay = { ...((state.listDisplay as Record<string, unknown>) ?? {}) }
+    for (const [id, mode] of Object.entries(listDisplay)) {
+      if (!isListDisplayMode(mode)) delete listDisplay[id]
+    }
+    state.listDisplay = listDisplay
+  }
+  if (version < 5) {
+    state.iconLayoutMode = (state.iconLayoutMode as Record<string, "auto" | "freeform">) ?? {}
+  }
+  if (version < 6) {
+    state.showPeriodLedgerListsInAll = true
+  }
+  if (version < 7) {
+    const desktop = state.listIconsDesktop
+    state.listIconsDesktop =
+      desktop && typeof desktop === "object" && !Array.isArray(desktop) ? desktop : {}
+  }
+  if (version < 8) {
+    const gravity = state.listIconsGravity
+    state.listIconsGravity =
+      gravity && typeof gravity === "object" && !Array.isArray(gravity) ? gravity : {}
+  }
+  if (version < 10) {
+    const hidden = state.hiddenItemTypeIdsByTarget
+    state.hiddenItemTypeIdsByTarget =
+      hidden && typeof hidden === "object" && !Array.isArray(hidden) ? hidden : {}
+  }
+  // Always sanitize field prefs (v9 introduce + heal partial blobs).
+  state.listIconsGravityField = sanitizeGravityFieldParams(state.listIconsGravityField)
+  return state
 }
 
 export const useListsUiStore = create<ListsUiState>()(
@@ -117,6 +203,13 @@ export const useListsUiStore = create<ListsUiState>()(
       iconLibrary: [],
       iconPositions: {},
       iconLayoutMode: {},
+      listIconsDesktop: {},
+      listIconsGravity: {},
+      listIconsGravityField: {
+        globalG: DEFAULT_GRAVITY_FIELD_PARAMS.globalG,
+        sources: { ...DEFAULT_GRAVITY_FIELD_PARAMS.sources },
+        attributeDrift: DEFAULT_GRAVITY_FIELD_PARAMS.attributeDrift,
+      },
       hiddenGalleryOrbs: [],
       folderAllUncategorizedOnly: {},
       folderAllHideUncategorized: {},
@@ -124,6 +217,7 @@ export const useListsUiStore = create<ListsUiState>()(
       globalAllHiddenFolderIds: [],
       globalAllUncategorizedOnly: false,
       globalAllHideUncategorized: false,
+      hiddenItemTypeIdsByTarget: {},
 
       toggleHomePin: (id) =>
         set((state) => ({
@@ -181,6 +275,38 @@ export const useListsUiStore = create<ListsUiState>()(
         set((state) => ({
           iconLayoutMode: { ...state.iconLayoutMode, [location]: mode },
         })),
+      setListIconsDesktop: (openTargetKey, on) =>
+        set((state) => ({
+          listIconsDesktop: { ...(state.listIconsDesktop ?? {}), [openTargetKey]: on },
+          // Desktop off: drop Gravity so the next Desktop on starts clean.
+          ...(on
+            ? {}
+            : {
+                listIconsGravity: {
+                  ...(state.listIconsGravity ?? {}),
+                  [openTargetKey]: false,
+                },
+              }),
+        })),
+      setListIconsGravity: (openTargetKey, on) =>
+        set((state) => ({
+          listIconsGravity: { ...(state.listIconsGravity ?? {}), [openTargetKey]: on },
+        })),
+      setListIconsGravityField: (patch) =>
+        set((state) => ({
+          listIconsGravityField: mergeGravityFieldParams(
+            sanitizeGravityFieldParams(state.listIconsGravityField),
+            patch,
+          ),
+        })),
+      resetListIconsGravityField: () =>
+        set({
+          listIconsGravityField: {
+            globalG: DEFAULT_GRAVITY_FIELD_PARAMS.globalG,
+            sources: { ...DEFAULT_GRAVITY_FIELD_PARAMS.sources },
+            attributeDrift: DEFAULT_GRAVITY_FIELD_PARAMS.attributeDrift,
+          },
+        }),
       hideGalleryOrb: (path) =>
         set((state) =>
           state.hiddenGalleryOrbs.includes(path)
@@ -231,29 +357,32 @@ export const useListsUiStore = create<ListsUiState>()(
       setGlobalAllHiddenFolderIds: (hiddenIds) => set({ globalAllHiddenFolderIds: hiddenIds }),
       setGlobalAllUncategorizedOnly: (value) => set({ globalAllUncategorizedOnly: value }),
       setGlobalAllHideUncategorized: (hidden) => set({ globalAllHideUncategorized: hidden }),
+      setItemTypeHidden: (openTargetKey, typeId, hidden) =>
+        set((state) => {
+          const current = state.hiddenItemTypeIdsByTarget?.[openTargetKey] ?? []
+          const isHidden = current.includes(typeId)
+          if (hidden === isHidden) return state
+          const nextForTarget = hidden ? [...current, typeId] : current.filter((id) => id !== typeId)
+          return {
+            hiddenItemTypeIdsByTarget: {
+              ...(state.hiddenItemTypeIdsByTarget ?? {}),
+              [openTargetKey]: nextForTarget,
+            },
+          }
+        }),
+      setHiddenItemTypeIds: (openTargetKey, hiddenIds) =>
+        set((state) => ({
+          hiddenItemTypeIdsByTarget: {
+            ...(state.hiddenItemTypeIdsByTarget ?? {}),
+            [openTargetKey]: hiddenIds,
+          },
+        })),
     }),
     {
       name: persistKey("lists-ui"),
-      version: 6,
+      version: 10,
       storage: createCogsJSONStorage(),
-      migrate: (persistedState, version) => {
-        const state = { ...((persistedState ?? {}) as Record<string, unknown>) }
-        if (version < 4) {
-          delete state.kanbanStatusAttrId
-          const listDisplay = { ...((state.listDisplay as Record<string, unknown>) ?? {}) }
-          for (const [id, mode] of Object.entries(listDisplay)) {
-            if (!isListDisplayMode(mode)) delete listDisplay[id]
-          }
-          state.listDisplay = listDisplay
-        }
-        if (version < 5) {
-          state.iconLayoutMode = (state.iconLayoutMode as Record<string, "auto" | "freeform">) ?? {}
-        }
-        if (version < 6) {
-          state.showPeriodLedgerListsInAll = true
-        }
-        return state as unknown as ListsUiState
-      },
+      migrate: (persistedState, version) => migrateListsUiPersisted(persistedState, version) as ListsUiState,
       merge: (persisted, current) => ({
         ...current,
         ...(persisted as Partial<ListsUiState>),

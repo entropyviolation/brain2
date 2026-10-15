@@ -246,6 +246,19 @@ describe("ListContentPanel item select mode", () => {
     expect(screen.getByRole("button", { name: "Open" })).toBeDisabled()
   })
 
+  it("keeps the wrapping icon grid when desktop mode is off", () => {
+    const { container } = renderPanel({
+      currentDisplay: "icons",
+      openFolderAll: false,
+      openCategory: list("list-1", "list 1"),
+      tasks: [task("a", "item a", "list-1")],
+    })
+    expect(container.querySelector(".fm-icon-grid")).toBeTruthy()
+    expect(container.querySelector(".fm-icon-canvas")).toBeNull()
+    expect(container.querySelector(".fm-icon-free")).toBeNull()
+    expect(container.querySelector(".fm-icon")).toHaveAttribute("draggable", "true")
+  })
+
   it("selects icons without opening the item", () => {
     const onToggleTaskSelect = vi.fn()
     const onTaskSelect = vi.fn()
@@ -262,6 +275,21 @@ describe("ListContentPanel item select mode", () => {
     fireEvent.click(screen.getByText("item a"))
     expect(onToggleTaskSelect).toHaveBeenCalledWith("a")
     expect(onTaskSelect).not.toHaveBeenCalled()
+  })
+
+  it("uses the velvet canvas instead of filing drag when desktop mode is on", () => {
+    const { container } = renderPanel({
+      currentDisplay: "icons",
+      iconsDesktop: true,
+      openFolderAll: false,
+      openCategory: list("list-1", "list 1"),
+      openTargetKeyValue: "list-1",
+      tasks: [task("a", "item a", "list-1")],
+    })
+    expect(container.querySelector(".fm-icon-canvas")).toBeTruthy()
+    expect(container.querySelector(".fm-icon-free")).toBeTruthy()
+    expect(container.querySelector("[draggable='true']")).toBeNull()
+    expect(container.querySelector(".fm-icons-desk")).toBeTruthy()
   })
 })
 

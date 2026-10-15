@@ -193,6 +193,239 @@
   filter: none;
 }
 
+/* ===== Open-list caption (name + one-list search + caption keys) =====
+   The keys are one family: rounded gunmetal caps with a specular top lip, a
+   pressed foot, and a stamped 16px mark (ink over a 1px light lip), after the
+   transport discs (docs/DESIGN_STYLE.md#transport-keys). `data-no95` keeps the
+   generic square fascia skin off them. The search key, while open, turns to
+   CRT glass with a phosphor mark — the same "on" language as the Display deck. */
+.fm98 .fm-title-bar.fm-list-caption {
+  margin-bottom: 3px;
+  padding: 5px 6px 5px 8px;
+  gap: 0;
+}
+
+.fm98 .fm-list-caption .fm-title-bar-text {
+  min-height: 30px;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+}
+
+.fm98 .fm-list-caption-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fm98 .fm-list-caption.searching .fm-title-bar-text {
+  flex: 1 1 0;
+}
+
+.fm98 .fm-cap-keys {
+  gap: 5px;
+  align-items: center;
+}
+
+.fm98 .fm-cap-key {
+  box-sizing: border-box;
+  position: relative;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #3b3f43;
+  border-radius: 8px;
+  background:
+    radial-gradient(ellipse 70% 45% at 50% 0%, rgba(255, 255, 255, 0.55), transparent 70%),
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0 1px, transparent 1px 2px),
+    linear-gradient(180deg, #b9bfc5 0%, #9aa1a8 48%, #7d848b 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    inset 0 -2px 0 rgba(30, 33, 36, 0.35),
+    inset 1px 0 0 rgba(255, 255, 255, 0.25),
+    inset -1px 0 0 rgba(30, 33, 36, 0.2),
+    0 1px 0 rgba(255, 255, 255, 0.55),
+    0 2px 3px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  transition: filter 80ms ease;
+}
+
+.fm98 .fm-cap-key:hover {
+  filter: brightness(1.07);
+}
+
+.fm98 .fm-cap-key:active {
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0 1px, transparent 1px 2px),
+    linear-gradient(180deg, #7d848b 0%, #8f969d 55%, #a2a9b0 100%);
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.45),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.25),
+    0 1px 0 rgba(255, 255, 255, 0.55);
+  filter: none;
+}
+
+.fm98 .fm-cap-key:focus-visible {
+  outline: 1px dotted #000;
+  outline-offset: 2px;
+}
+
+.fm98 .fm-cap-glyph {
+  display: block;
+  width: 16px;
+  height: 16px;
+  overflow: visible;
+}
+
+.fm98 .fm-cap-glyph-ink {
+  fill: #141618;
+}
+
+.fm98 .fm-cap-glyph-lip {
+  fill: rgba(255, 255, 255, 0.6);
+}
+
+.fm98 .fm-cap-key:active .fm-cap-glyph {
+  transform: translateY(1px);
+}
+
+.fm98 .fm-cap-key[aria-pressed="true"] {
+  border-color: var(--chrome-pressed, #000);
+  background: var(--fm-crt-glass);
+  box-shadow:
+    inset 0 2px 5px rgba(0, 0, 0, 0.6),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.12),
+    0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.fm98 .fm-cap-key[aria-pressed="true"] .fm-cap-glyph-ink {
+  fill: var(--fm-crt);
+  filter: drop-shadow(0 0 2px var(--fm-crt));
+}
+
+.fm98 .fm-cap-key[aria-pressed="true"] .fm-cap-glyph-lip {
+  fill: transparent;
+}
+
+/* One-list search: right half of the caption, CRT glass like the name. */
+.fm98 .fm-list-search {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  margin-right: 8px;
+  padding: 0 4px 0 10px;
+  border-radius: var(--r-2, 2px);
+  background: var(--fm-crt-glass);
+  box-shadow: var(--fm-crt-ring);
+}
+
+.fm98 .fm-list-search-lens {
+  flex-shrink: 0;
+  fill: var(--fm-crt);
+  opacity: 0.7;
+}
+
+.fm98 .fm-list-search-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--fm-crt);
+  text-shadow: var(--fm-crt-glow);
+  caret-color: var(--fm-crt);
+}
+
+/* The house field skin (sunken white edge, navy focus ring — app/win95.css,
+   !important) is for paper fields. On glass the whole well shows focus. */
+.fm98 .fm-list-search .fm-list-search-input,
+.fm98 .fm-list-search .fm-list-search-input:focus,
+.fm98 .fm-list-search .fm-list-search-input:focus-visible {
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.fm98 .fm-list-search:focus-within {
+  box-shadow:
+    var(--fm-crt-ring),
+    0 0 0 1px color-mix(in srgb, var(--fm-crt) 55%, transparent),
+    0 0 6px color-mix(in srgb, var(--fm-crt) 35%, transparent);
+}
+
+.fm98 .fm-list-search-input::placeholder {
+  color: color-mix(in srgb, var(--fm-crt) 42%, transparent);
+  text-shadow: none;
+}
+
+.fm98 .fm-list-search-input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+}
+
+.fm98 .fm-list-search-count {
+  flex-shrink: 0;
+  min-width: 18px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: #041008;
+  background: var(--fm-crt);
+  box-shadow: 0 0 4px var(--fm-crt);
+}
+
+.fm98 .fm-list-search-scope {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 8px 0 7px;
+  border: 0;
+  border-radius: 11px;
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fm-nameplate);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  background: var(--fm-key-face);
+  box-shadow: var(--fm-key-ring);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.fm98 .fm-list-search-scope:hover {
+  filter: brightness(1.05);
+}
+
+.fm98 .fm-list-search-lamp {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #4b5a52, #142019);
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.6), 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.fm98 .fm-list-search-scope[aria-pressed="true"] .fm-list-search-lamp {
+  background: radial-gradient(circle at 35% 30%, #e8fff4, var(--fm-crt) 55%, #1f8f5c);
+  box-shadow: 0 0 5px var(--fm-crt), 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
 /* ===== Buttons (raised metal keys) ===== */
 .fm98 .fm-btn {
   box-sizing: border-box;
@@ -351,6 +584,20 @@
   align-self: stretch;
 }
 
+/* Icons display: desk keys keep layout width even when Desktop is off. */
+.fm98 .fm-desktop-desk-keys {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.fm98 .fm-desktop-desk-keys[data-desktop-ready="off"] {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 /* Sibling view keys share one bay; active = CRT + power lamp */
 .fm98 .fm-view-keys {
   display: flex;
@@ -459,6 +706,74 @@
     0 0 0 2px #9aa09c,
     inset 0 1px 1px rgba(255, 255, 255, 0.55),
     0 0 4px #7dffc4;
+}
+
+/*
+ * Gravity toolbar toggle — same ModeKey LED language, outside the view-keys bay.
+ * Off: raised metal + dark LED + “Off”. On: pressed CRT face + lit green LED + “On”.
+ */
+.fm98 .fm-btn.fm-gravity-key {
+  justify-content: flex-start;
+  gap: 5px;
+  min-height: 28px;
+  padding: 3px 8px 4px;
+  letter-spacing: 0.06em;
+}
+
+.fm98 .fm-gravity-key-copy {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  min-width: 0;
+}
+
+.fm98 .fm-gravity-key-name {
+  flex-shrink: 0;
+}
+
+.fm98 .fm-gravity-key-state {
+  flex-shrink: 0;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--chrome-lo);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.fm98 .fm-btn.fm-gravity-key.active {
+  color: var(--fm-crt);
+  text-shadow: var(--fm-crt-glow);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.2), transparent 55%),
+    #070c0a;
+  box-shadow:
+    0 0 0 1px var(--chrome-pressed),
+    inset 0 8px 10px rgba(0, 0, 0, 0.4);
+  filter: none;
+}
+
+.fm98 .fm-btn.fm-gravity-key.active .fm-view-key-led {
+  background: radial-gradient(circle at 35% 30%, #f4fff8 0 16%, #7dffc4 42%, #0b4a32 100%);
+  box-shadow:
+    0 0 0 1px #141816,
+    0 0 0 2px #9aa09c,
+    inset 0 1px 1px rgba(255, 255, 255, 0.55),
+    0 0 4px #7dffc4;
+}
+
+.fm98 .fm-btn.fm-gravity-key.active .fm-gravity-key-state {
+  color: var(--fm-crt);
+  text-shadow: var(--fm-crt-glow);
+}
+
+/* Companion gear — opens Gravity settings; never toggles the field. */
+.fm98 .fm-btn.fm-gravity-settings-key {
+  min-width: 28px;
+  padding-left: 6px;
+  padding-right: 6px;
+  font-size: 14px;
+  line-height: 1;
+  letter-spacing: 0;
 }
 
 /* CRT count / hero readout chip */
@@ -712,7 +1027,206 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  margin-top: 8px;
+  /* Inset to the reading rows' 10px gutter (was flush against the well). */
+  padding: 8px 10px 6px;
+  border-bottom: 1px solid #d4d0c8;
+}
+
+/* ===== Default view Sort plate (ListSortControl) ===== */
+.fm98 .fm-sortbar {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  height: 24px;
+  border-radius: 4px;
+  background: var(--fm-mill);
+  box-shadow: var(--fm-bay-ring);
+  padding: 0 2px 0 0;
+}
+
+.fm98 .fm-sortbar-plate {
+  padding: 0 8px 0 9px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fm-nameplate);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  cursor: default;
+  user-select: none;
+}
+
+/* Picker face: the house milled select (Habits Sort), sunken in the plate.
+   [role] beats the generic win95 combobox field ring. */
+.fm98 .fm-sortbar-select[role="combobox"] {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  height: 20px;
+  min-width: 132px;
+  max-width: 200px;
+  margin: 0;
+  padding: 0 7px 0 8px;
+  border: 0;
+  border-radius: var(--r-2, 2px);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: left;
+  color: #1c1e20;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0 1px, transparent 1px 2px),
+    #d8dadd;
+  box-shadow:
+    inset 1px 1px 0 var(--chrome-lo, #808080),
+    inset -1px -1px 0 #fff,
+    inset 2px 2px 0 rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+}
+
+.fm98 .fm-sortbar-select[role="combobox"]:hover {
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.26) 0 1px, transparent 1px 2px),
+    #e1e3e6;
+}
+
+.fm98 .fm-sortbar-select:focus-visible,
+.fm98 .fm-sortbar-select[aria-expanded="true"] {
+  outline: 1px dotted #000;
+  outline-offset: -3px;
+}
+
+.fm98 .fm-sortbar-select-label {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.fm98 .fm-sortbar-select-caret {
+  flex: 0 0 auto;
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid #000;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.7));
+}
+
+/* The list portals to <body> (outside .fm98), on the shared menu layer.
+   Metal plate, hard foot shadow, navy highlight — the folder context menu.
+   Beats the generic win95 [role="listbox"] mill. */
+.fm-sort-menu,
+body.win95-app .fm-sort-menu[role="listbox"] {
+  box-sizing: border-box;
+  max-height: min(340px, 60vh);
+  overflow-y: auto;
+  padding: 3px;
+  border-radius: var(--r-2, 2px);
+  font-family: var(--w95-font, Tahoma, "MS Sans Serif", Geneva, Arial, sans-serif);
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0 1px, transparent 1px 2px),
+    var(--chrome-grade-sheen, var(--chrome-face, #c0c0c0));
+  box-shadow:
+    0 0 0 1px var(--chrome-ring, #5c6064),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    2px 3px 0 rgba(0, 0, 0, 0.28);
+}
+
+.fm-sort-menu-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 14px 3px 5px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: nowrap;
+  color: #1c1e20;
+  cursor: pointer;
+  user-select: none;
+}
+
+.fm-sort-menu-option[data-active] {
+  color: #fff;
+  background: #000080;
+}
+
+/* The chosen key: a small lamp, not an OS check. */
+.fm-sort-menu-tick {
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.fm-sort-menu-option[aria-selected="true"] .fm-sort-menu-tick {
+  background: #1c1e20;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.fm-sort-menu-option[aria-selected="true"][data-active] .fm-sort-menu-tick {
+  background: #fff;
+  box-shadow: none;
+}
+
+.fm-sort-menu-group {
+  margin: 4px 2px 2px;
+  padding: 4px 4px 2px 16px;
+  border-top: 1px solid rgba(0, 0, 0, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fm-nameplate, #2a2c2e);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  cursor: default;
+}
+
+.fm98 .fm-sortbar-dir {
+  box-sizing: border-box;
+  width: 22px;
+  height: 20px;
+  margin-left: 3px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 3px;
+  background: var(--fm-key-face);
+  box-shadow: var(--fm-key-ring);
+  cursor: pointer;
+}
+
+.fm98 .fm-sortbar-dir svg path {
+  fill: rgba(28, 30, 32, 0.28);
+}
+
+.fm98 .fm-sortbar-dir[data-dir="asc"] .fm-sortbar-dir-up,
+.fm98 .fm-sortbar-dir[data-dir="desc"] .fm-sortbar-dir-down {
+  fill: #16181a;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.7));
+}
+
+.fm98 .fm-sortbar-dir:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.fm98 .fm-sortbar-dir:active:not(:disabled) {
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.35),
+    0 0 0 1px var(--chrome-pressed);
+}
+
+.fm98 .fm-sortbar-dir:disabled {
+  cursor: default;
+  opacity: 0.5;
 }
 
 /* ===== Fields / inputs ===== */
@@ -836,6 +1350,63 @@
   overflow: auto;
   position: relative;
   width: 100%;
+}
+
+/* List Icons desktop: the sunken pane is the frame; the canvas is the viewport. */
+.fm98 .fm-icons-desk {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.fm98 .fm-icons-desk .fm-icon-canvas {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+/*
+ * List Icons desktop: flight + free grid fill the velvet viewport from first
+ * paint so the stage bottom is the floor — no short pack box leaving a shelf
+ * mid-canvas when Desktop turns on or PILE UP starts. Content may still grow
+ * taller than the view (scroll); min-height:100% is a floor, not a ceiling.
+ * Override the generic 480px grid floor — that mid-shelf was the rising floor.
+ */
+.fm98 .fm-icons-desk .fm-icon-canvas .fm-icon-flight,
+.fm98 .fm-icons-desk .fm-icon-canvas .fm-icon-grid-free {
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+/*
+ * PILE UP flight layer: translate3d + scale only (camera). Icon CSS size never
+ * changes mid-anim. Do not set overflow:hidden here — the canvas (.fm-icon-canvas)
+ * stays overflow:auto so wheel/trackpad scroll works during and after the pile.
+ */
+.fm98 .fm-icon-flight {
+  transform-origin: top center;
+  width: 100%;
+}
+
+.fm98 .fm-icon-flight.is-piling {
+  will-change: transform;
+}
+
+/* Live grab during PILE UP — cursor says “pick me up”. */
+.fm98 .fm-icon-free.is-pile-held {
+  cursor: grabbing;
+  z-index: 6;
+  filter: brightness(1.06);
+}
+
+/* Playfield box while PILE UP runs — the live physics container, not a morph stage. */
+.fm98 .fm-pile-box {
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.28),
+    inset 0 -18px 36px rgba(0, 0, 0, 0.18);
+  border-radius: 2px;
 }
 
 .fm98 .fm-icon-grid-free {
@@ -999,18 +1570,34 @@
   -webkit-font-smoothing: antialiased;
 }
 
-/* Cards ("classic") view container */
+/* Cards ("classic") view — metadata skim on mill, not white peer slabs.
+   Icons stay the orb desktop. */
 .fm98 .fm-cards {
-  padding: 16px;
+  padding: 10px;
   overflow: auto;
 }
 
-/* Give cards a bit more breathing room so they aren't squished.
-   content-visibility skips painting off-screen cards in All view. */
 .fm98 .fm-cards-grid > * {
-  min-height: 190px;
+  min-height: 148px;
   content-visibility: auto;
-  contain-intrinsic-size: auto 190px;
+  contain-intrinsic-size: auto 148px;
+}
+
+.fm98 .fm-cards-grid > .rounded-lg,
+.fm98 .fm-cards-grid > [class*="card"],
+.fm98 .fm-cards .rounded-lg.border,
+.fm98 .fm-cards [data-slot="card"] {
+  background: var(--fm-button-face, var(--chrome-face)) !important;
+  border: 1px solid var(--fm-button-shadow, var(--chrome-lo)) !important;
+  border-radius: var(--r-2, 2px) !important;
+  box-shadow:
+    inset 1px 1px 0 #fff,
+    inset -1px -1px 0 var(--fm-button-dark, var(--chrome-ink-soft)) !important;
+}
+
+.fm98 .fm-cards .bg-card,
+.fm98 .fm-cards .bg-background {
+  background: transparent !important;
 }
 
 .fm98 .fm-cards-grid .fm-card-tasklist {
@@ -1486,13 +2073,19 @@
 }
 
 .fm98 .fm-read-name {
-  flex: 1 1 auto;
+  /* Zero basis + fixed meta column: the name / meta divider lines up row to row
+     instead of wandering with each name's length. */
+  flex: 1 1 0;
   min-width: 0;
   font-size: 12px;
+  font-weight: 600;
   color: #000;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  padding-right: 10px;
+  margin-right: 2px;
+  border-right: 1px solid color-mix(in srgb, var(--fm-button-shadow, #808080) 40%, transparent);
 }
 
 .fm98 .fm-read-row.done .fm-read-name,
@@ -1513,9 +2106,10 @@
 .fm98 .fm-read-meta {
   display: flex;
   align-items: center;
+  flex-wrap: nowrap;
   gap: 6px;
-  flex-shrink: 0;
-  max-width: 46%;
+  flex: 0 0 min(36%, 340px);
+  min-width: 0;
   overflow: hidden;
   font-size: 11px;
   color: var(--fm-button-shadow);
@@ -1720,6 +2314,12 @@
   margin: 4px 8px;
   border-top: 1px solid rgba(60, 64, 68, 0.4);
   border-bottom: 1px solid rgba(255, 255, 255, 0.55);
+}
+
+.fm98 .fm-inspector-desktop {
+  display: flex;
+  align-items: center;
+  min-height: 22px;
 }
 
 .fm98 .fm-inspector-actions {
@@ -1970,6 +2570,35 @@
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0 1px, transparent 1px 2px),
     var(--chrome-pewter);
   box-shadow: var(--fm-bay-ring);
+}
+
+.fm98-dialog .fm-gravity-settings-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 10px;
+  align-items: baseline;
+}
+
+.fm98-dialog .fm-gravity-settings-row input[type="range"] {
+  grid-column: 1 / -1;
+  width: 100%;
+  margin: 2px 0 0;
+  accent-color: #0b4a32;
+}
+
+.fm98-dialog .fm-gravity-settings-value {
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  color: var(--fm-nameplate);
+}
+
+.fm98-dialog .fm-gravity-settings-hint {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 10px;
+  color: var(--chrome-lo, #808080);
 }
 
 .fm98-dialog legend,
