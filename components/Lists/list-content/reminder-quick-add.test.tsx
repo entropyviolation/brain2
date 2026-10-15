@@ -1,9 +1,9 @@
 import { fireEvent, render, screen } from "@testing-library/react"
-import { beforeEach, describe, expect, it } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { useTaskStore } from "@/lib/task-store"
 import { findRemindersList } from "@/lib/reminders"
-import { ReminderQuickAdd } from "./reminder-quick-add"
+import { ReminderQuickAdd, nextHalfHourWhenInput } from "./reminder-quick-add"
 
 describe("ReminderQuickAdd", () => {
   beforeEach(() => resetAllStores())
@@ -49,5 +49,46 @@ describe("ReminderQuickAdd", () => {
     fireEvent.click(screen.getByRole("button", { name: "Add reminder" }))
     expect(screen.getByText("Name and time are both required.")).toBeInTheDocument()
     expect(useTaskStore.getState().tasks.some((task) => task.reminder)).toBe(false)
+  })
+
+  it("stays open and clears after add when stayOpen", () => {
+    const onCancel = vi.fn()
+    render(
+      <ReminderQuickAdd
+        chrome="shell"
+        stayOpen
+        defaultWhen="2026-10-10T16:00"
+        onCancel={onCancel}
+      />,
+    )
+    fireEvent.change(screen.getByLabelText("New reminder"), { target: { value: "Stretch" } })
+    fireEvent.change(screen.getByLabelText("Reminder time"), { target: { value: "2026-10-10T16:00" } })
+    fireEvent.click(screen.getByRole("button", { name: "Add reminder" }))
+    expect(useTaskStore.getState().tasks.some((task) => task.description === "Stretch")).toBe(true)
+    expect(screen.getByLabelText("New reminder")).toHaveValue("")
+    expect(screen.getByLabelText("Reminder time")).toHaveValue("2026-10-10T16:00")
+    expect(onCancel).not.toHaveBeenCalled()
+  })
+
+  it("rounds default when up to the next half hour", () => {
+    expect(nextHalfHourWhenInput(new Date(2026, 9, 10, 10, 0, 12))).toBe("2026-10-10T10:30")
+    expect(nextHalfHourWhenInput(new Date(2026, 9, 10, 10, 30, 0))).toBe("2026-10-10T11:00")
+    expect(nextHalfHourWhenInput(new Date(2026, 9, 10, 10, 45, 0))).toBe("2026-10-10T11:00")
+  })
+
+  it("offers quick times and the wider repeat menu in the shell compose", () => {
+    render(<ReminderQuickAdd chrome="shell" stayOpen defaultWhen="2026-10-10T16:00" />)
+    expect(screen.getByRole("button", { name: "In 1 hour" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Tonight 6pm" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Tomorrow 9am" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Next Monday" })).toBeInTheDocument()
+    const repeat = screen.getByLabelText("Repeat")
+    expect(repeat).toHaveDisplayValue("Once")
+    fireEvent.change(repeat, { target: { value: "weekdays" } })
+    expect(repeat).toHaveDisplayValue("Weekdays")
+    fireEvent.change(repeat, { target: { value: "monthly" } })
+    expect(repeat).toHaveDisplayValue("Every month")
+    fireEvent.change(repeat, { target: { value: "yearly" } })
+    expect(repeat).toHaveDisplayValue("Every year")
   })
 })

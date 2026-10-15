@@ -3,11 +3,13 @@
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import {
+  REMINDER_REPEAT_OPTIONS,
   applyReminderPrefs,
   applyReminderSchedule,
   parseReminderWhen,
   reminderPersists,
   reminderTexts,
+  reminderWhenForRepeat,
   reminderWhenInputValue,
   type ReminderRepeat,
 } from "@/lib/reminders"
@@ -30,6 +32,15 @@ export function ReminderScheduleFields({
     onChange(applyReminderSchedule(task, at, nextRepeat))
   }
 
+  const applyRepeat = (nextRepeat: ReminderRepeat) => {
+    const lunar = reminderWhenForRepeat(nextRepeat)
+    if (lunar) {
+      onChange(applyReminderSchedule(task, lunar, nextRepeat))
+      return
+    }
+    apply(when, nextRepeat)
+  }
+
   return (
     <div className="space-y-3">
       <div className="space-y-2">
@@ -48,13 +59,13 @@ export function ReminderScheduleFields({
           className="fm-input focus-ring"
           aria-label="Repeat"
           value={repeat}
-          onChange={(e) => apply(when, e.target.value as ReminderRepeat)}
+          onChange={(e) => applyRepeat(e.target.value as ReminderRepeat)}
         >
-          <option value="once">Once</option>
-          <option value="daily">Every day</option>
-          <option value="weekly">Every week</option>
-          <option value="new-moon">Each new moon</option>
-          <option value="full-moon">Each full moon</option>
+          {REMINDER_REPEAT_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
         </select>
       </div>
       <div className="flex items-center justify-between gap-3">

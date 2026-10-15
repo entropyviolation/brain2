@@ -16,6 +16,8 @@ import {
   ensureRemindersList,
   findRemindersList,
   reminderOccurrenceKey,
+  reminderQuickWhen,
+  reminderWhenInputFromDate,
 } from "@/lib/reminders"
 import { lunarPhaseInstant, nextMoonReminderEvening } from "@/lib/lunar"
 
@@ -102,6 +104,31 @@ describe("timed reminders", () => {
     const reminder = useTaskStore.getState().tasks.find((task) => task.reminder?.repeat === "weekly")
     expect(reminder?.scheduledDate?.getDate()).toBe(16)
     expect(reminder?.scheduledDate?.getMonth()).toBe(9)
+  })
+
+  it("advances weekdays across the weekend", async () => {
+    const send = vi.fn(async () => ({ ok: true }))
+    // Friday 9 Oct 2026 → next weekday Monday 12 Oct
+    addReminder("Standup", new Date(2026, 9, 9, 15, 0, 0, 0), "weekdays")
+    await deliverDueReminders(NOW, { send, chatId: "42" })
+    const reminder = useTaskStore.getState().tasks.find((task) => task.reminder?.repeat === "weekdays")
+    expect(reminder?.scheduledDate?.getFullYear()).toBe(2026)
+    expect(reminder?.scheduledDate?.getMonth()).toBe(9)
+    expect(reminder?.scheduledDate?.getDate()).toBe(12)
+  })
+
+  it("advances monthly and yearly by calendar", async () => {
+    const send = vi.fn(async () => ({ ok: true }))
+    addReminder("Rent", new Date(2026, 9, 9, 15, 0, 0, 0), "monthly")
+    addReminder("Birthday note", new Date(2026, 9, 9, 15, 0, 0, 0), "yearly")
+    await deliverDueReminders(NOW, { send, chatId: "42" })
+    const monthly = useTaskStore.getState().tasks.find((task) => task.reminder?.repeat === "monthly")
+    const yearly = useTaskStore.getState().tasks.find((task) => task.reminder?.repeat === "yearly")
+    expect(monthly?.scheduledDate?.getMonth()).toBe(10)
+    expect(monthly?.scheduledDate?.getDate()).toBe(9)
+    expect(yearly?.scheduledDate?.getFullYear()).toBe(2027)
+    expect(yearly?.scheduledDate?.getMonth()).toBe(9)
+    expect(yearly?.scheduledDate?.getDate()).toBe(9)
   })
 
   it("attempts inbox and telegram together", async () => {
@@ -432,5 +459,19 @@ describe("moon-night reminders", () => {
     expect(moonRow?.telegramNote).toBe(REMINDER_SKIP_TEXT_OFF)
     expect(send).not.toHaveBeenCalled()
     expect(inboxCopies().some((task) => task.description.includes(FULL_MOON_TONIGHT_NAME))).toBe(true)
+  })
+})
+
+describe("reminder quick when", () => {
+  it("names tonight, tomorrow morning, and next Monday", () => {
+    const morning = new Date(2026, 9, 10, 6, 0, 0, 0)
+    expect(reminderWhenInputFromDate(reminderQuickWhen("tonight", morning))).toBe("2026-10-10T18:00")
+    expect(reminderWhenInputFromDate(reminderQuickWhen("tomorrow-morning", morning))).toBe(
+      "2026-10-11T09:00",
+    )
+    // Saturday → next Monday 12 Oct
+    expect(reminderWhenInputFromDate(reminderQuickWhen("next-monday", morning))).toBe("2026-10-12T09:00")
+    const late = new Date(2026, 9, 10, 19, 0, 0, 0)
+    expect(reminderWhenInputFromDate(reminderQuickWhen("tonight", late))).toBe("2026-10-11T18:00")
   })
 })

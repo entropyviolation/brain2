@@ -479,9 +479,10 @@ export interface Task extends Item {
   scheduledTime?: string // Time of day if scheduled
   /**
    * Timed reminder clock. The fire instant is `scheduledDate` (local day) plus
-   * `scheduledTime` (`HH:mm`). `repeat` is once, every day, or every week.
-   * `repeatSettings` stays the count/frequency completion model and does not
-   * clock a reminder. `deliveredKey` is the occurrence already sent to Inbox
+   * `scheduledTime` (`HH:mm`). `repeat` is once, every day, weekdays, every
+   * week, every month, every year, or each new / full moon. `repeatSettings`
+   * stays the count/frequency completion model and does not clock a reminder.
+   * `deliveredKey` is the occurrence already sent to Inbox
    * (`YYYY-MM-DDTHH:mm`, local). `dismissedKey` is the occurrence dismissed
    * from the header bell; a recurring reminder only hides that occurrence.
    * `telegramNote` is why the text was skipped or failed for that send; absent
@@ -489,8 +490,8 @@ export interface Task extends Item {
    * reminder already in the vault still texts and still nags until turned off.
    */
   reminder?: {
-    /** once / daily / weekly, or each new / full moon night (bell from midnight; fire 18:00). */
-    repeat: "once" | "daily" | "weekly" | "new-moon" | "full-moon"
+    /** once / daily / weekdays / weekly / monthly / yearly, or each new / full moon night. */
+    repeat: "once" | "daily" | "weekdays" | "weekly" | "monthly" | "yearly" | "new-moon" | "full-moon"
     deliveredKey?: string
     dismissedKey?: string
     telegramNote?: string

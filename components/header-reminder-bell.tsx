@@ -5,7 +5,9 @@
  * undismissed persistent count that is due now. Zero hides the plate; the
  * bell stays.
  * The dialog lists name, when, and source (the Reminders list), opens the
- * existing item detail view, and Dismiss. Dismiss is not delete.
+ * existing item detail view, and Dismiss. Dismiss is not delete. A compose
+ * plate at the top schedules a new reminder on the same list (same form as
+ * Lists → Reminders).
  */
 "use client"
 
@@ -13,15 +15,21 @@ import { useEffect, useMemo, useState } from "react"
 import { Bell } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import {
+  ReminderQuickAdd,
+  nextHalfHourWhenInput,
+} from "@/components/Lists/list-content/reminder-quick-add"
 import { currentReminders, dismissReminder } from "@/lib/reminders"
 import { useTaskStore } from "@/lib/task-store"
 import "./shell-chrome.css"
+import "./header-popup-chrome.css"
 
 export function HeaderReminderBell({ onTaskSelect }: { onTaskSelect: (taskId: string) => void }) {
   const tasks = useTaskStore((state) => state.tasks)
   const lists = useTaskStore((state) => state.lists)
   const [open, setOpen] = useState(false)
   const [now, setNow] = useState(() => new Date())
+  const [composeKey, setComposeKey] = useState(0)
 
   useEffect(() => {
     const tick = () => setNow(new Date())
@@ -41,7 +49,16 @@ export function HeaderReminderBell({ onTaskSelect }: { onTaskSelect: (taskId: st
   const label = count > 0 ? `Reminders, ${count} current` : "Reminders"
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next)
+        if (next) {
+          setNow(new Date())
+          setComposeKey((key) => key + 1)
+        }
+      }}
+    >
       <DialogTrigger asChild>
         <Button
           type="button"
@@ -62,7 +79,7 @@ export function HeaderReminderBell({ onTaskSelect }: { onTaskSelect: (taskId: st
         </Button>
       </DialogTrigger>
       <DialogContent
-        className="hpp95 hpp95-dialog b2-reminder-dialog sm:max-w-md max-h-[80vh] overflow-hidden flex flex-col"
+        className="hpp95 hpp95-dialog b2-reminder-dialog sm:max-w-xl max-h-[85vh] overflow-hidden flex flex-col"
         data-ui-name="Reminders"
         data-ui-docs="components/README.md"
       >
@@ -72,39 +89,47 @@ export function HeaderReminderBell({ onTaskSelect }: { onTaskSelect: (taskId: st
             <DialogTitle>Reminders</DialogTitle>
           </div>
           <DialogDescription className="hpp-caption-lead">
-            Due now and still on the bell. Moon nights show from the start of that day. Dismiss
-            hides this time. The reminder stays on the list.
+            Schedule a new one, or clear what is due now. Moon nights show from the start of that day.
+            Dismiss hides this time; the reminder stays on the list.
           </DialogDescription>
         </DialogHeader>
-        <div className="hpp-body b2-reminder-list">
-          {rows.length === 0 ? (
-            <p className="b2-reminder-empty">No current reminders.</p>
-          ) : (
-            rows.map((row) => (
-              <div key={row.id} className="b2-reminder-row" data-testid="reminder-bell-row">
-                <div className="b2-reminder-copy">
-                  <div className="b2-reminder-name">{row.name}</div>
-                  <div className="b2-reminder-when">{row.whenLabel}</div>
-                  <div className="b2-reminder-source">Source · {row.source}</div>
+        <div className="hpp-body b2-reminder-body">
+          <ReminderQuickAdd
+            key={composeKey}
+            chrome="shell"
+            stayOpen
+            defaultWhen={nextHalfHourWhenInput(now)}
+          />
+          <div className="b2-reminder-list">
+            {rows.length === 0 ? (
+              <p className="b2-reminder-empty">No current reminders.</p>
+            ) : (
+              rows.map((row) => (
+                <div key={row.id} className="b2-reminder-row" data-testid="reminder-bell-row">
+                  <div className="b2-reminder-copy">
+                    <div className="b2-reminder-name">{row.name}</div>
+                    <div className="b2-reminder-when">{row.whenLabel}</div>
+                    <div className="b2-reminder-source">Source · {row.source}</div>
+                  </div>
+                  <div className="b2-reminder-actions">
+                    <button
+                      type="button"
+                      className="hpp-key-go"
+                      onClick={() => {
+                        setOpen(false)
+                        onTaskSelect(row.id)
+                      }}
+                    >
+                      Details
+                    </button>
+                    <button type="button" onClick={() => dismissReminder(row.id)}>
+                      Dismiss
+                    </button>
+                  </div>
                 </div>
-                <div className="b2-reminder-actions">
-                  <button
-                    type="button"
-                    className="hpp-key-go"
-                    onClick={() => {
-                      setOpen(false)
-                      onTaskSelect(row.id)
-                    }}
-                  >
-                    Details
-                  </button>
-                  <button type="button" onClick={() => dismissReminder(row.id)}>
-                    Dismiss
-                  </button>
-                </div>
-              </div>
-            ))
-          )}
+              ))
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>
