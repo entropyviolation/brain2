@@ -1472,6 +1472,20 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
   font-weight: bold;
 }
 
+/* Plan-mode event: one slab across its hours, one gradient, heading that rides
+ * the scroll. `overflow: clip` (not hidden) so the sticky head is not trapped. */
+.agenda95 .agenda-block.agenda-event-span {
+  left: calc(4.25rem + 8px);
+  right: 8px;
+  z-index: 10;
+  overflow: clip;
+}
+
+.agenda95 .agenda-event-head {
+  position: sticky;
+  top: 6px;
+}
+
 .agenda95 .agenda-block-sub {
   font-size: 11px;
   opacity: 0.85;
@@ -1777,7 +1791,7 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
   outline-color: #000080;
 }
 
-.plan95-dialog button:not(.plan-color-preset):not(.plan-chip):not(.plan95-title-btn):not([role="switch"]) {
+.plan95-dialog button:not(.plan-color-preset):not(.plan-chip):not(.plan95-title-btn):not([role="switch"]):not([data-plan-pick]) {
   min-height: 26px;
   padding: 4px 14px;
 }
@@ -1828,6 +1842,259 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
   gap: 8px;
   padding: 6px 8px;
   border-bottom: 1px solid #d0d0d0;
+}
+
+/* ---- Event location: maps-style search (saved places, then map hits) ---- */
+.plan95-dialog .plan-place {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.plan95-dialog ul.plan-place-list[role="listbox"],
+.plan95-dialog ul.plan-prereq-results[role="listbox"] {
+  border-radius: 0;
+  background-color: #fff;
+  background-image: none;
+  box-shadow: var(--p-field);
+}
+
+.plan95-dialog .plan-place-list {
+  max-height: 15rem;
+  margin: 0;
+  padding: 2px;
+  overflow-y: auto;
+  list-style: none;
+  background: #fff;
+  box-shadow: var(--p-field);
+}
+
+.plan95-dialog .plan-place-group,
+.plan95-dialog .plan-prereq-more {
+  padding: 5px 8px 3px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--chrome-ink-soft, #505050);
+}
+
+.plan95-dialog .plan-prereq-more {
+  letter-spacing: 0.04em;
+  text-transform: none;
+  font-weight: 400;
+  font-size: 11px;
+}
+
+.plan95-dialog .plan-place-row,
+.plan95-dialog .plan-prereq-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 0;
+  padding: 5px 8px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #000;
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.plan95-dialog .plan-place-row[data-active="true"],
+.plan95-dialog .plan-prereq-row[data-active="true"] {
+  background: color-mix(in srgb, var(--p-opal-mint, #8cd4a5) 26%, #fff);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--p-blue, #000080) 45%, transparent);
+}
+
+.plan95-dialog .plan-place-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.plan95-dialog .plan-place-name {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plan95-dialog .plan-place-addr {
+  font-size: 11px;
+  color: var(--chrome-ink-soft, #505050);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Diagram-pin: a ring with a center dot. Saved places are filled mint. */
+.plan95-dialog .plan-place-pin {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--p-blue, #000080);
+  background: radial-gradient(circle, var(--p-blue, #000080) 0 1.5px, #fff 2px);
+}
+
+.plan95-dialog .plan-place-pin[data-source="saved"] {
+  background: radial-gradient(circle, var(--p-blue, #000080) 0 1.5px, var(--p-opal-mint, #8cd4a5) 2px);
+}
+
+.plan95-dialog .plan-place-pinned {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 11px;
+  color: #000;
+}
+
+.plan95-dialog .plan-place-pinned-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plan95-dialog .plan-place-coords {
+  font-variant-numeric: tabular-nums;
+  color: var(--chrome-ink-soft, #505050);
+}
+
+.plan95-dialog .plan-place-open {
+  flex-shrink: 0;
+  font-weight: 700;
+  color: var(--p-blue, #000080);
+}
+
+/* ---- Event prerequisite checklist: orb rows + in-flow search well ---- */
+.plan95-dialog .plan-prereq {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.plan95-dialog .plan-prereq-note,
+.plan95-dialog .plan-prereq-empty,
+.plan95-dialog .plan-prereq-count {
+  margin: 0;
+  font-size: 12px;
+}
+
+.plan95-dialog .plan-prereq-count {
+  font-size: 11px;
+  color: var(--chrome-ink-soft, #505050);
+}
+
+.plan95-dialog .plan-prereq-linked {
+  margin: 0;
+  padding: 2px;
+  list-style: none;
+  background: #fff;
+  box-shadow: var(--p-field);
+}
+
+.plan95-dialog .plan-prereq-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  padding: 3px 4px 3px 6px;
+  font-size: 12px;
+}
+
+.plan95-dialog .plan-prereq-item + .plan-prereq-item {
+  border-top: 1px solid color-mix(in srgb, var(--p-shadow, #808080) 35%, transparent);
+}
+
+.plan95-dialog .plan-prereq-item[data-done="true"] .plan-prereq-title {
+  text-decoration: line-through;
+  color: var(--chrome-ink-soft, #505050);
+}
+
+.plan95-dialog .plan-prereq-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 13px;
+  height: 13px;
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 700;
+  background: #fff;
+  box-shadow: var(--p-field);
+}
+
+.plan95-dialog .plan-prereq-orb {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
+.plan95-dialog .plan-prereq-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plan95-dialog .plan-prereq-where {
+  flex-shrink: 1;
+  max-width: 40%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--chrome-ink-soft, #505050);
+}
+
+.plan95-dialog .plan-prereq-remove {
+  flex-shrink: 0;
+}
+
+.plan95-dialog input.plan-prereq-search {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.plan95-dialog .plan-prereq-results {
+  max-height: 14rem;
+  margin: 0;
+  padding: 2px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  list-style: none;
+  background: #fff;
+  box-shadow: var(--p-field);
+}
+
+.plan95-dialog .plan-prereq-plus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  font-weight: 700;
+  color: var(--p-blue, #000080);
+  box-shadow: var(--p-raised);
+  background: var(--p-surface);
+}
+
+.plan95-dialog .plan-prereq-create .plan-prereq-title {
+  font-weight: 700;
 }
 
 .plan95-dialog .plan-color-row {

@@ -23,7 +23,7 @@ import { useEventStore } from "@/lib/event-store"
 import { useTaskStore } from "@/lib/task-store"
 import { parseLocalDate } from "@/lib/date-utils"
 import { attachToEvent, detachFromEvent, eventDeadline, getEventChecklist } from "@/lib/event-links"
-import { itemTitle } from "@/lib/item-utils"
+import { createScheduledTodoTask } from "@/components/Home/ToDo/todo-utils"
 import { ColorSwatch } from "@/components/ui/color-swatch"
 import { snapshotsEqual } from "@/lib/unsaved-changes"
 import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
@@ -32,6 +32,8 @@ import {
   PLAN_DEFAULT_EVENT_COLOR,
   resolvePlanColor,
 } from "./plan-chip"
+import { EventLocationField, type EventPlace } from "./event-location-field"
+import { EventPrereqPicker } from "./event-prereq-picker"
 
 interface EventDialogProps {
   open: boolean
@@ -47,6 +49,9 @@ interface EventDialogProps {
     endDate?: Date
     isAllDay?: boolean
     location?: string
+    locationAddress?: string
+    locationLat?: number
+    locationLng?: number
     description?: string
     color?: string
   }
@@ -54,6 +59,9 @@ interface EventDialogProps {
   events: CalendarEvent[]
   setEvents: (events: CalendarEvent[]) => void
 }
+
+/** Draft the dialog edits; Plan holds it so a click can seed it from an event. */
+export type EventDraft = EventDialogProps["newEvent"]
 
 function eventDraftSnapshot(event: EventDialogProps["newEvent"]) {
   return {
@@ -65,6 +73,8 @@ function eventDraftSnapshot(event: EventDialogProps["newEvent"]) {
     endDate: event.endDate ?? null,
     isAllDay: !!event.isAllDay,
     location: event.location ?? "",
+    locationLat: event.locationLat ?? null,
+    locationLng: event.locationLng ?? null,
     description: event.description ?? "",
     color: resolvePlanColor(event.color),
   }
@@ -99,6 +109,7 @@ export function EventDialog({
 
   const tasks = useTaskStore((s) => s.tasks)
   const updateTask = useTaskStore((s) => s.updateTask)
+  const addTask = useTaskStore((s) => s.addTask)
 
   const [baseline, setBaseline] = useState(() => eventDraftSnapshot(newEvent))
 
@@ -148,8 +159,11 @@ export function EventDialog({
   })
 
   const checklist = editingEvent ? getEventChecklist(tasks, editingEvent.id) : null
-  const checklistIds = new Set(checklist?.tasks.map((t) => t.id) ?? [])
-  const attachableTasks = tasks.filter((t) => !t.completed && !checklistIds.has(t.id))
+  const attachableTasks = useMemo(() => {
+    if (!editingEvent) return []
+    const linkedIds = new Set(getEventChecklist(tasks, editingEvent.id).tasks.map((t) => t.id))
+    return tasks.filter((t) => !t.completed && !linkedIds.has(t.id))
+  }, [tasks, editingEvent])
 
   const attachTask = (taskId: string) => {
     if (!editingEvent || !taskId) return
@@ -157,6 +171,15 @@ export function EventDialog({
     if (!task) return
     const liveEvent = { ...editingEvent, ...newEvent } as CalendarEvent
     updateTask(attachToEvent(task, liveEvent))
+  }
+
+  /** New item from the checklist search: an open, unscheduled to-do linked to this event. */
+  const createPrereq = (title: string) => {
+    if (!editingEvent) return
+    const draft = createScheduledTodoTask({ description: title, period: "day", date: new Date() })
+    delete draft.scheduledDate
+    const liveEvent = { ...editingEvent, ...newEvent } as CalendarEvent
+    addTask(attachToEvent(draft, liveEvent))
   }
 
   const detachTask = (taskId: string) => {
@@ -289,11 +312,15 @@ export function EventDialog({
 
             <div className="plan95-field">
               <Label htmlFor="location">Location</Label>
-              <Input
+              <EventLocationField
                 id="location"
-                value={newEvent.location || ""}
-                onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
-                placeholder="Enter location..."
+                value={{
+                  location: newEvent.location || "",
+                  locationAddress: newEvent.locationAddress,
+                  locationLat: newEvent.locationLat,
+                  locationLng: newEvent.locationLng,
+                }}
+                onChange={(place: EventPlace) => setNewEvent({ ...newEvent, ...place })}
               />
             </div>
 
@@ -309,57 +336,20 @@ export function EventDialog({
             </div>
 
             {editingEvent && checklist && (
-              <div className="plan-danger space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>Prerequisite checklist</Label>
-                  {checklist.total > 0 && (
-                    <span>
-                      {checklist.completed}/{checklist.total} done
-                    </span>
-                  )}
-                </div>
-                <p>
+              <div className="plan-danger plan95-field">
+                <Label htmlFor="prereq-search">Prerequisite checklist</Label>
+                <p className="plan-prereq-note">
                   Linked tasks must be done before{" "}
                   {format(eventDeadline({ ...editingEvent, ...newEvent } as CalendarEvent), "MMM d, h:mm a")}.
                 </p>
-
-                {checklist.tasks.length > 0 ? (
-                  <ul className="space-y-1">
-                    {checklist.tasks.map((task) => (
-                      <li key={task.id} className="flex items-center gap-2">
-                        <span aria-hidden>{task.completed ? "[x]" : "[ ]"}</span>
-                        <span className={`flex-1 ${task.completed ? "line-through" : ""}`}>{itemTitle(task)}</span>
-                        <button
-                          type="button"
-                          onClick={() => detachTask(task.id)}
-                          aria-label={`Remove ${itemTitle(task)} from checklist`}
-                        >
-                          ×
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p>No prerequisite tasks linked yet.</p>
-                )}
-
-                <select
-                  value=""
-                  onChange={(e) => {
-                    attachTask(e.target.value)
-                    e.target.value = ""
-                  }}
-                  disabled={attachableTasks.length === 0}
-                >
-                  <option value="" disabled>
-                    {attachableTasks.length === 0 ? "No tasks available to add" : "Add a prerequisite task…"}
-                  </option>
-                  {attachableTasks.map((task) => (
-                    <option key={task.id} value={task.id}>
-                      {itemTitle(task)}
-                    </option>
-                  ))}
-                </select>
+                <EventPrereqPicker
+                  inputId="prereq-search"
+                  linked={checklist.tasks}
+                  candidates={attachableTasks}
+                  onAttach={attachTask}
+                  onDetach={detachTask}
+                  onCreate={createPrereq}
+                />
               </div>
             )}
 

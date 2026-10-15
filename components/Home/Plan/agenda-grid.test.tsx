@@ -140,6 +140,35 @@ describe("AgendaGrid", () => {
     expect(onTracked).toHaveBeenCalledWith("te-sleep")
   })
 
+  it("draws a multi-hour plan event as one slab with one heading", () => {
+    const onEventClick = vi.fn()
+    const long: CalendarEvent = {
+      id: "ev-long",
+      title: "Geese",
+      startTime: "19:00",
+      endTime: "23:00",
+      type: "event",
+      date,
+      color: "#8cd4a5",
+      isScheduled: true,
+      location: "petco",
+    }
+    const { container } = render(
+      <AgendaGrid date={date} events={[long]} tasks={[]} mode="plan" onEventClick={onEventClick} />,
+    )
+    const slabs = container.querySelectorAll('[data-kind="event"]')
+    expect(slabs).toHaveLength(1)
+    const slab = slabs[0] as HTMLElement
+    expect(slab.className).toMatch(/agenda-event-span/)
+    expect(slab.style.top).toBe(`${19 * HOUR_HEIGHT}px`)
+    expect(slab.style.height).toBe(`${4 * HOUR_HEIGHT}px`)
+    expect(screen.getAllByText("Geese")).toHaveLength(1)
+    expect(screen.getAllByText("petco")).toHaveLength(1)
+    expect(slab.querySelector(".agenda-event-head")).not.toBeNull()
+    fireEvent.click(slab)
+    expect(onEventClick).toHaveBeenCalledWith(long)
+  })
+
   it("draws plan-mode tracking ghosts as non-interactive outlines", () => {
     const onTaskClick = vi.fn()
     render(

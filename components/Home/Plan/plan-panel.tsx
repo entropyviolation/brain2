@@ -26,7 +26,7 @@ import { SeasonView } from "./season-view"
 import { MonthView } from "./month-view"
 import { WeekView } from "./week-view"
 import { DayView } from "./day-view"
-import { EventDialog } from "./event-dialog"
+import { EventDialog, type EventDraft } from "./event-dialog"
 import { PlannedActionDialog } from "./planned-action-dialog"
 import { PasteEventsDialog } from "./paste-events-dialog"
 import { useEventStore } from "@/lib/event-store"
@@ -66,7 +66,7 @@ export function PlanPanel({
   const updateEvent = useEventStore((s) => s.updateEvent)
   const [showEventDialog, setShowEventDialog] = useState(false)
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null)
-  const [newEvent, setNewEvent] = useState({
+  const [newEvent, setNewEvent] = useState<EventDraft>({
     title: "",
     startTime: "09:00",
     endTime: "10:00",
@@ -127,6 +127,9 @@ export function PlanPanel({
       endDate: event.endDate,
       isAllDay: event.isAllDay || false,
       location: event.location || "",
+      locationAddress: event.locationAddress,
+      locationLat: event.locationLat,
+      locationLng: event.locationLng,
       description: event.description || "",
       color: resolvePlanColor(event.color),
     })

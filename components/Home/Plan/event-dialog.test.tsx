@@ -4,6 +4,8 @@ import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { useEventStore } from "@/lib/event-store"
+import { useTaskStore } from "@/lib/task-store"
+import { getEventChecklist } from "@/lib/event-links"
 import type { CalendarEvent } from "@/lib/types"
 import { EventDialog } from "./event-dialog"
 
@@ -130,5 +132,25 @@ describe("EventDialog", () => {
     await user.click(screen.getByRole("button", { name: "Exit without saving" }))
     expect(useEventStore.getState().events).toHaveLength(0)
     expect(screen.getByText("event closed")).toBeInTheDocument()
+  })
+
+  it("creates a new prerequisite from the checklist search and links it", async () => {
+    const user = userEvent.setup()
+    const event: CalendarEvent = {
+      id: "ev-geese",
+      title: "Geese",
+      startTime: "19:00",
+      endTime: "23:00",
+      type: "event",
+      date: currentDate,
+      isScheduled: true,
+    }
+    useEventStore.getState().addEvent(event)
+    render(<EventHarness editingEvent={event} initial={{ ...baseNewEvent, title: "Geese", startTime: "19:00", endTime: "23:00" }} />)
+    await user.type(screen.getByLabelText("Search prerequisite items"), "buy feed{Enter}")
+    const checklist = getEventChecklist(useTaskStore.getState().tasks, "ev-geese")
+    expect(checklist.tasks.map((t) => t.description)).toEqual(["buy feed"])
+    expect(checklist.tasks[0]?.scheduledDate).toBeUndefined()
+    expect(screen.getByRole("button", { name: "Remove buy feed from checklist" })).toBeInTheDocument()
   })
 })
