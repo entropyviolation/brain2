@@ -85,11 +85,27 @@ describe("DailyProgressQuickview", () => {
     expect(screen.getByText("0 left · 100%")).toBeInTheDocument()
   })
 
-  it("puts the meters in the CRT and summarizes the day in the footer", () => {
+  it("puts today, this week, and this month in the CRT and sums all three in the footer", () => {
     render(<DailyProgressQuickview currentDate={currentDate} instrument />)
     expect(screen.getByText("Today's Progress")).toBeInTheDocument()
-    expect(screen.getByText("To do 1/2 · habits 1/1")).toBeInTheDocument()
+    expect(screen.getByText("Today")).toBeInTheDocument()
+    expect(screen.getByText("This week")).toBeInTheDocument()
+    expect(screen.getByText("This month")).toBeInTheDocument()
+    // Today: 1/2 to-dos + 1/1 daily habit. The two day to-dos also land in this week and month.
+    expect(screen.getByText("Today 2/3 · week 1/2 · month 1/2")).toBeInTheDocument()
+    expect(document.querySelectorAll(".home-progress-col")).toHaveLength(3)
     expect(document.querySelector(".home-crt.is-stack")).toBeTruthy()
     expect(document.querySelector(".hab-progress-title")).toBeNull()
+  })
+
+  it("counts weekly and monthly habits in their own columns", () => {
+    useHabitsStore.getState().setTasks([
+      { id: "habit-1", name: "Meditate", type: TaskType.BOOLEAN, rewardValue: 10, frequency: "daily" },
+      { id: "habit-w", name: "Long run", type: TaskType.BOOLEAN, rewardValue: 10, frequency: "weekly" },
+      { id: "habit-m", name: "Deep clean", type: TaskType.BOOLEAN, rewardValue: 10, frequency: "monthly" },
+    ])
+    render(<DailyProgressQuickview currentDate={currentDate} instrument />)
+    expect(screen.getByLabelText("This week: to do 1 of 2, habits 0 of 1")).toBeInTheDocument()
+    expect(screen.getByLabelText("This month: to do 1 of 2, habits 0 of 1")).toBeInTheDocument()
   })
 })

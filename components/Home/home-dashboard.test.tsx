@@ -248,64 +248,41 @@ describe("HomeDashboard", () => {
       expect(within(changer).getByRole("tab", { name: "Day Log" })).toBeInTheDocument()
     })
 
-    it("stacks view modes under the pen tray and above the time grid", async () => {
+    it("lays the desk out as the pen rack, then the Time Grid bay", async () => {
       const user = userEvent.setup()
       render(<HomeDashboard />)
       await user.click(screen.getByRole("tab", { name: "Tracking" }))
       await screen.findByRole("tablist", { name: "Tracking view" })
-      const stack = document.querySelector(".trk-chrome-stack")
-      const tray = stack?.querySelector(".trk-pen-tools-row")
-      const mode = stack?.querySelector(".trk-mode-bar")
-      const desktop = stack?.querySelector(".trk-desktop")
-      expect(tray).toBeTruthy()
-      expect(mode).toBeTruthy()
-      expect(desktop).toBeTruthy()
-      expect(tray!.compareDocumentPosition(mode!) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
-        Node.DOCUMENT_POSITION_FOLLOWING,
-      )
-      expect(mode!.compareDocumentPosition(desktop!) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
-        Node.DOCUMENT_POSITION_FOLLOWING,
-      )
-      expect(mode!.closest(".trk-pen-tray")).toBeNull()
-      const rail = stack?.querySelector(".trk-grid-rail")
-      const log = rail && within(rail as HTMLElement).getByRole("button", { name: /Log activity/ })
-      expect(log).toBeTruthy()
-      expect(log!.closest(".trk-toolbar-row")).toBeNull()
-      expect(log!.closest(".trk-mode-bar")).toBeNull()
-      expect(tray!.compareDocumentPosition(log!) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
-        Node.DOCUMENT_POSITION_FOLLOWING,
-      )
-      expect(log!.compareDocumentPosition(desktop!) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
-        Node.DOCUMENT_POSITION_FOLLOWING,
-      )
-      expect(screen.getByRole("toolbar", { name: "Tracking view modes" })).toBeInTheDocument()
-      expect(screen.getByTestId("panel-time-grid")).toBeVisible()
-      expect(screen.getAllByRole("button", { name: "Log activity" })).toHaveLength(1)
+      const desk = document.querySelector(".trk-desk") as HTMLElement
+      const rack = desk.querySelector(".trk-rack")
+      const grid = screen.getByTestId("panel-time-grid")
+      expect(rack).toBeTruthy()
+      expect(desk.querySelector(".trk-desktop")?.contains(grid)).toBe(true)
+      expect(rack!.compareDocumentPosition(grid) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+      expect(grid).toBeVisible()
     })
 
-    it("keeps a single Log activity on Activity Log inside .trk-period, not the grid rail", async () => {
+    it("keeps a single Log activity on Activity Log inside .trk-period, not the deck", async () => {
       const user = userEvent.setup()
       render(<HomeDashboard />)
       await user.click(screen.getByRole("tab", { name: "Tracking" }))
       await screen.findByRole("tablist", { name: "Tracking view" })
       await user.click(screen.getByRole("tab", { name: "Activity Log" }))
       expect(screen.getAllByRole("button", { name: "Log activity" })).toHaveLength(1)
-      const stack = document.querySelector(".trk-chrome-stack")
-      const rail = stack?.querySelector(".trk-grid-rail")
-      expect(rail).toBeNull()
-      expect(screen.getByRole("button", { name: "Log activity" }).closest(".trk-period")).toBeTruthy()
+      const log = screen.getByRole("button", { name: "Log activity" })
+      expect(log.closest(".trk-period")).toBeTruthy()
+      expect(log.closest(".trk-deck")).toBeNull()
+      expect(screen.getByRole("toolbar", { name: "Tracking view modes" })).toBeInTheDocument()
     })
 
-    it("keeps Log activity on the grid rail for Day Log", async () => {
+    it("puts Log activity at the end of the view deck for Day Log", async () => {
       const user = userEvent.setup()
       render(<HomeDashboard />)
       await user.click(screen.getByRole("tab", { name: "Tracking" }))
       await screen.findByRole("tablist", { name: "Tracking view" })
       await user.click(screen.getByRole("tab", { name: "Day Log" }))
-      const stack = document.querySelector(".trk-chrome-stack")
-      const rail = stack?.querySelector(".trk-grid-rail")
-      expect(rail).toBeTruthy()
-      expect(within(rail as HTMLElement).getAllByRole("button", { name: "Log activity" })).toHaveLength(1)
+      const deck = screen.getByRole("toolbar", { name: "Tracking view modes" })
+      expect(within(deck).getAllByRole("button", { name: "Log activity" })).toHaveLength(1)
     })
 
     it("keeps the day summary under every tracking view (legend always; editor after Expand)", async () => {
@@ -326,36 +303,33 @@ describe("HomeDashboard", () => {
       expect(screen.getByRole("textbox", { name: /Day summary ·/ })).toBeVisible()
     })
 
-    it("places the working-now module under the view changer and before the chrome stack", async () => {
+    it("places the working-now module under the view changer, before the desk, with notes in the lace below", async () => {
       const user = userEvent.setup()
       render(<HomeDashboard />)
       await user.click(screen.getByRole("tab", { name: "Tracking" }))
       await screen.findByRole("tablist", { name: "Tracking view" })
-      const stack = document.querySelector(".trk-chrome-stack")
+      const desk = document.querySelector(".trk-desk")
       const now = document.querySelector(".trk95 .trk-now-module")
-      const notes = stack?.querySelector(".trk-notes")
-      const desktop = stack?.querySelector(".trk-desktop")
+      const lace = document.querySelector(".trk-lace")
+      const notes = lace?.querySelector(".trk-notes")
+      const desktop = desk?.querySelector(".trk-desktop")
       const changer = document.querySelector(".trk95 .hab-view-changer")
       expect(now).toBeTruthy()
       expect(notes).toBeTruthy()
       expect(desktop).toBeTruthy()
       expect(changer).toBeTruthy()
-      expect(stack).toBeTruthy()
       expect(screen.getByTestId("working-now-strip")).toBeVisible()
-      expect(stack!.contains(now)).toBe(false)
+      expect(desk!.contains(now)).toBe(false)
       expect(changer!.compareDocumentPosition(now!) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
         Node.DOCUMENT_POSITION_FOLLOWING,
       )
-      expect(now!.compareDocumentPosition(stack!) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+      expect(now!.compareDocumentPosition(desk!) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
         Node.DOCUMENT_POSITION_FOLLOWING,
       )
-      expect(now!.compareDocumentPosition(desktop!) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+      expect(desk!.compareDocumentPosition(notes!) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
         Node.DOCUMENT_POSITION_FOLLOWING,
       )
-      expect(desktop!.compareDocumentPosition(notes!) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
-        Node.DOCUMENT_POSITION_FOLLOWING,
-      )
-      expect(now!.nextElementSibling).toBe(stack)
+      expect(now!.nextElementSibling).toBe(desk)
     })
 
     it("scrolls the tracking window under the app header when Tracking opens", async () => {

@@ -1,9 +1,12 @@
 /**
  * components/Home/points-stats.tsx — Points wells for the Home overview strip
  *
- * Math is unchanged (ledger totals + possible-points fill). Overview wells
- * share one metal face and one CRT glass; detail adds sparkline trends.
- * `instrument` still packs all four for callers that want the set.
+ * Math is unchanged (ledger totals + possible-points fill). The overview tile
+ * is a market ticker (`lib/points-ticker.ts`): D / W / M / ALL keys choose the
+ * period, the screen shows its total, the change against the previous period
+ * (▲ / ▼, points and percent), and a chart with the previous value dashed.
+ * The chosen period is a per-device convenience in localStorage. Detail adds
+ * sparkline trends. `instrument` still packs all four for callers that want the set.
  */
 "use client"
 
@@ -21,6 +24,76 @@ import type { HabitGemSlot } from "@/lib/habit-gems"
 import { HOME_WIDGET_LABEL, homeInstrumentColorVars, type HomeWidgetId } from "@/lib/home-widgets"
 import { HomeWidgetDialog, TileHide, TileOpen, WidgetWell, WidgetWells } from "@/components/Home/home-widget-dialog"
 import { cn } from "@/lib/utils"
+import {
+  TICKER_PERIODS,
+  formatTickerChange,
+  formatTickerDelta,
+  formatTickerPoints,
+  pointsTicker,
+  type PointsTicker,
+  type TickerPeriod,
+} from "@/lib/points-ticker"
+
+const TICKER_PERIOD_KEY = "brain2-home-points-period"
+
+function readTickerPeriod(): TickerPeriod {
+  try {
+    const raw = window.localStorage.getItem(TICKER_PERIOD_KEY)
+    if (raw === "day" || raw === "week" || raw === "month" || raw === "all") return raw
+  } catch {
+    // Storage blocked: the default period still works.
+  }
+  return "day"
+}
+
+function useTickerPeriod(): [TickerPeriod, (p: TickerPeriod) => void] {
+  const [period, setPeriod] = useState<TickerPeriod>("day")
+  useEffect(() => setPeriod(readTickerPeriod()), [])
+  const choose = (p: TickerPeriod) => {
+    setPeriod(p)
+    try {
+      window.localStorage.setItem(TICKER_PERIOD_KEY, p)
+    } catch {
+      // Not remembered this time.
+    }
+  }
+  return [period, choose]
+}
+
+/** Line + area over the period, previous value dashed, last value marked. */
+function TickerChart({ ticker }: { ticker: PointsTicker }) {
+  const values = ticker.series
+  const w = 200
+  const h = 80
+  const pad = 6
+  const max = Math.max(...values, ticker.previous, 0)
+  const min = Math.min(...values, ticker.previous, 0)
+  const span = max - min || 1
+  const y = (v: number) => pad + (h - pad * 2) * (1 - (v - min) / span)
+  const x = (i: number) => (values.length <= 1 ? w / 2 : (i / (values.length - 1)) * w)
+  const line = values.map((v, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(" ")
+  const area = `${line} L${w} ${h} L0 ${h} Z`
+  const last = values[values.length - 1] ?? 0
+  const prevY = y(ticker.previous)
+  return (
+    <div className="home-ticker-chart" aria-hidden="true">
+      <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="home-ticker-fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="currentColor" stopOpacity="0.32" />
+            <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <line className="home-ticker-prev" x1="0" x2={w} y1={prevY} y2={prevY} vectorEffect="non-scaling-stroke" />
+        <path className="home-ticker-area" d={area} fill="url(#home-ticker-fill)" />
+        <path className="home-ticker-line" d={line} vectorEffect="non-scaling-stroke" />
+      </svg>
+      <span className="home-ticker-dot" style={{ top: `${(y(last) / h) * 100}%` }} />
+      <span className="home-ticker-hi">{formatTickerPoints(max)}</span>
+      <span className="home-ticker-lo">{formatTickerPoints(min)}</span>
+    </div>
+  )
+}
 
 interface PointsStatsProps {
   currentDate: Date
@@ -170,35 +243,73 @@ export function PointsBoard({ currentDate, onHide }: { currentDate: Date; onHide
   const colorVars = homeInstrumentColorVars(percentLedTint, gradeTubeColor, outputGradeTubeColor)
   const [open, setOpen] = useState(false)
 
+  const pointsHistory = usePointsStore((s) => s.pointsHistory)
+  const [period, setPeriod] = useTickerPeriod()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  const ticker = useMemo(
+    () => pointsTicker(pointsHistory, period, currentDate),
+    [pointsHistory, period, currentDate],
+  )
+  const periodMeta = TICKER_PERIODS.find((p) => p.id === period) ?? TICKER_PERIODS[0]!
+
   const last14 = useMemo(() => pointsSeries(currentDate, 14, getDayPoints), [currentDate, getDayPoints])
   const last30 = useMemo(() => pointsSeries(currentDate, 30, getDayPoints), [currentDate, getDayPoints])
 
   return (
     <>
-      <div className="home-tile hab-score-well is-points" data-widget="points" data-testid="home-points-tile">
+      <div
+        className="home-tile hab-score-well is-points is-ticker"
+        data-widget="points"
+        data-testid="home-points-tile"
+        data-direction={ticker.direction}
+      >
         <TileHide id="points" onHide={onHide} />
         <TileOpen label="Points" onOpen={() => setOpen(true)}>
           <div className="hab-score-caption">
             <span>Points</span>
           </div>
-          <div className="home-crt home-points-crt is-hero-readout">
-            <div
-              className={cn("hab-score-readout", points.todayFlash && "is-flash")}
-              data-centered="true"
-              suppressHydrationWarning
-            >
-              {points.today.score}
+          <div className="home-crt home-points-crt home-ticker-crt">
+            <div className="home-ticker-quote">
+              <span className="home-ticker-symbol">
+                PTS <em>{periodMeta.label}</em>
+              </span>
+              <div
+                className={cn("hab-score-readout home-ticker-value", points.todayFlash && "is-flash")}
+                suppressHydrationWarning
+              >
+                {mounted ? formatTickerPoints(ticker.value) : "—"}
+              </div>
+              <span className="home-ticker-change" suppressHydrationWarning>
+                <span aria-hidden="true">{ticker.direction === "down" ? "▼" : ticker.direction === "up" ? "▲" : "■"}</span>{" "}
+                {mounted ? `${formatTickerDelta(ticker.delta)} (${formatTickerChange(ticker)})` : "—"}
+              </span>
+              <span className="home-ticker-vs">{periodMeta.vs}</span>
             </div>
-          </div>
-          <div className="home-tile-foot">
-            <p className="hab-score-sub" suppressHydrationWarning>
-              Today
-              {points.today.sub ? ` · ${points.today.sub}` : ""}
-              {" · "}
-              all-time {points.alltime.score}
-            </p>
+            {mounted ? <TickerChart ticker={ticker} /> : <div className="home-ticker-chart" />}
           </div>
         </TileOpen>
+        <div className="home-tile-foot home-ticker-foot">
+          <p className="hab-score-sub" suppressHydrationWarning>
+            all-time {points.alltime.score}
+            {points.today.sub ? ` · ${points.today.sub}` : ""}
+          </p>
+          <div className="home-ticker-keys" role="group" aria-label="Points period">
+            {TICKER_PERIODS.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                className="home-ticker-key"
+                aria-pressed={period === p.id}
+                aria-label={p.label}
+                title={`${p.label} ${p.vs}`}
+                onClick={() => setPeriod(p.id)}
+              >
+                {p.key}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
       <HomeWidgetDialog open={open} onOpenChange={setOpen} title="Points">
         <div style={colorVars as CSSProperties}>
