@@ -1,8 +1,9 @@
 /**
  * components/Home/Goals/GoalsContainer.tsx — Quantifiable goals
  *
- * Packed well of measurable metrics that serve objectives. Filter, ±1, Log,
- * complete, add/edit — same verbs, mill furniture.
+ * Measurable metrics that serve objectives, filed as library cards behind
+ * speed-index tabs. Progress is a row of ball bearings. Filter, ±1, Log,
+ * complete, add/edit — same verbs.
  */
 "use client"
 
@@ -61,7 +62,7 @@ function GoalPips({ percent }: { percent: number }) {
   return (
     <div className="gol-pips" aria-hidden>
       {Array.from({ length: 10 }, (_, i) => (
-        <span key={i} className={`gol-pip${i < n ? " is-on" : ""}`} />
+        <span key={i} className={`gol-pip${i < n ? " is-on" : ""}${i === n - 1 ? " is-lead" : ""}`} />
       ))}
     </div>
   )
@@ -240,7 +241,7 @@ export function GoalsContainer() {
           {activeObjectives.map((o) => {
             const on = fields.objectiveIds.includes(o.id)
             return (
-              <button
+              <button data-no95
                 key={o.id}
                 type="button"
                 className="gol-btn"
@@ -259,7 +260,7 @@ export function GoalsContainer() {
         </div>
       </div>
       <div className="gol-dialog-actions">
-        <button type="button" className="gol-btn" onClick={onSubmit} disabled={!fields.title.trim() || fields.objectiveIds.length === 0}>
+        <button data-no95 type="button" className="gol-btn" onClick={onSubmit} disabled={!fields.title.trim() || fields.objectiveIds.length === 0}>
           {submitLabel}
         </button>
       </div>
@@ -275,7 +276,7 @@ export function GoalsContainer() {
         </div>
         <Dialog open={showAdd} onOpenChange={addGuard.handleOpenChange}>
           <DialogTrigger asChild>
-            <button type="button" className="gol-btn">
+            <button data-no95 type="button" className="gol-btn">
               Add Goal
             </button>
           </DialogTrigger>
@@ -288,21 +289,24 @@ export function GoalsContainer() {
         </Dialog>
       </div>
 
-      <div className="gol-tabs">
-        <button type="button" className="gol-btn" aria-pressed={filter === "all"} onClick={() => setFilter("all")}>
+      <div className="gol-tabs gol-index">
+        <button data-no95 type="button" className="gol-btn" aria-pressed={filter === "all"} onClick={() => setFilter("all")}>
           All
         </button>
         {PERIOD_KINDS.map((p) => (
-          <button key={p} type="button" className="gol-btn" aria-pressed={filter === p} onClick={() => setFilter(p)}>
+          <button data-no95 key={p} type="button" className="gol-btn" aria-pressed={filter === p} onClick={() => setFilter(p)}>
             {PERIOD_LABELS[p]}
           </button>
         ))}
       </div>
 
       <div className="gol-goals">
-        {visible.map((goal) => (
-          <div key={goal.id} className="gol-goal">
-            <div>
+        {visible.map((goal, index) => (
+          <div key={goal.id} className={`gol-goal${goal.completed ? " is-done" : ""}`}>
+            <span className="gol-goal-no" aria-hidden>
+              {String(index + 1).padStart(2, "0")}
+            </span>
+            <div className="gol-goal-main">
               <div className="gol-row-name" style={{ display: "block" }}>
                 {goal.title}
               </div>
@@ -318,32 +322,32 @@ export function GoalsContainer() {
                 ))}
               </div>
             </div>
-            <div>
-              <div className="gol-meta">
+            <div className="gol-goal-gauge">
+              <div className="gol-meta gol-goal-count">
                 {formatCrtNumber(goal.current)} / {formatCrtNumber(goal.target)}
                 {goal.unit ? ` ${goal.unit}` : ""}
               </div>
               <GoalPips percent={goalProgressPercent(goal)} />
             </div>
             <div className="gol-actions">
-              <button type="button" className="gol-btn is-quiet" onClick={() => { setEditing(goal); setEditBaseline(goal) }}>
+              <button data-no95 type="button" className="gol-btn is-quiet" onClick={() => { setEditing(goal); setEditBaseline(goal) }}>
                 Edit
               </button>
               {goal.completed ? (
                 <span className="gol-ok">Completed — {formatCrtNumber(goal.points)} pts</span>
               ) : goal.type === "boolean" ? (
-                <button type="button" className="gol-btn is-primary" onClick={() => setGoalProgress(goal.id, 1)}>
+                <button data-no95 type="button" className="gol-btn is-primary" onClick={() => setGoalProgress(goal.id, 1)}>
                   Mark complete (+{formatCrtNumber(goal.points)} pts)
                 </button>
               ) : (
                 <>
-                  <button type="button" className="gol-btn is-stepper" onClick={() => setGoalProgress(goal.id, Math.max(0, goal.current - 1))}>
+                  <button data-no95 type="button" className="gol-btn is-stepper" onClick={() => setGoalProgress(goal.id, Math.max(0, goal.current - 1))}>
                     -1
                   </button>
-                  <button type="button" className="gol-btn is-stepper" onClick={() => setGoalProgress(goal.id, goal.current + 1)}>
+                  <button data-no95 type="button" className="gol-btn is-stepper" onClick={() => setGoalProgress(goal.id, goal.current + 1)}>
                     +1
                   </button>
-                  <button type="button" className="gol-btn is-quiet" onClick={() => logAction(goal)} title="Record a completed action + earn objective points">
+                  <button data-no95 type="button" className="gol-btn is-quiet" onClick={() => logAction(goal)} title="Record a completed action + earn objective points">
                     Log
                   </button>
                 </>
@@ -396,7 +400,7 @@ export function GoalsContainer() {
             )}
             <div className="gol-dialog-body">
               <div className="gol-danger">
-                <button
+                <button data-no95
                   type="button"
                   className="gol-btn"
                   onClick={() => {
