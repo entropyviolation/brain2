@@ -522,7 +522,15 @@ export interface Task extends Item {
    * Counts toward Done / points / goals without being a user-authored Task.
    */
   loggedAction?: boolean
-  notes?: string // Additional notes
+  /**
+   * Standing note: one free-text field. Ingest and older screens append here,
+   * so it stays a string. Item detail pins it above the dated `noteLog`.
+   */
+  notes?: string
+  /** Dated note entries (the Notes tab log). Newest is shown first. */
+  noteLog?: ItemNoteEntry[]
+  /** Files attached to this item as resources (PDFs, images, anything). Bytes live in IndexedDB. */
+  resources?: ItemResource[]
   parentTaskId?: string // For subtasks
   subtasks?: Subtask[] // Array of subtask objects
   // ---- Brain2 additions (see docs/BRAIN2_FEATURE_IDEAS.md) ----
@@ -747,6 +755,26 @@ export interface AttributeDefinition {
   optionListId?: string
   /** datetime: date-only, time-only, or full datetime input. */
   datetimeMode?: "date" | "time" | "datetime"
+}
+
+/** One dated entry in an item's Notes log (`Task.noteLog`). */
+export interface ItemNoteEntry {
+  id: string
+  /** Local day YYYY-MM-DD. */
+  date: string
+  /** Optional local clock HH:MM. */
+  time?: string
+  text: string
+  /** ISO time the entry was last edited, when it was edited after being added. */
+  editedAt?: string
+}
+
+/** A file attached to an item as a resource. Same blob storage as `file` attributes. */
+export interface ItemResource extends FileValue {
+  /** ISO time it was attached. */
+  addedAt: string
+  /** Optional caption: what this file is for. */
+  caption?: string
 }
 
 export interface GoalValue {
@@ -1577,6 +1605,8 @@ export type ItemDetailPanel =
   | "analysis"
   | "time"
   | "body"
+  | "notes"
+  | "resources"
 
 /**
  * The presentation modes the Lists "File Manager" can render a list's contents

@@ -34,14 +34,62 @@ describe("ItemAttributesSection", () => {
       />,
     )
 
+    expect(screen.queryByPlaceholderText("e.g. ISBN")).not.toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: /add attribute/i }))
     await user.type(screen.getByPlaceholderText("e.g. ISBN"), "ISBN")
-    await user.click(screen.getByRole("button", { name: /create/i }))
+    await user.click(screen.getByRole("button", { name: /^create$/i }))
 
     expect(onCreate).toHaveBeenCalledWith(
       expect.objectContaining({ name: "ISBN", type: "string" }),
       "",
       null,
     )
+  })
+
+  it("opens the creator above the attribute grid, not below it", async () => {
+    const user = userEvent.setup()
+    render(
+      <ItemAttributesSection
+        attributes={{ author: "Ada" }}
+        itemCategoryIds={["reading"]}
+        categories={[readingList]}
+        onChangeValues={vi.fn()}
+        onCreateAttribute={vi.fn()}
+      />,
+    )
+    await user.click(screen.getByRole("button", { name: /add attribute/i }))
+    const creator = screen.getByTestId("attribute-creator")
+    const cell = screen.getByTestId("attr-cell-author")
+    expect(creator.compareDocumentPosition(cell) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it("labels each attribute with its type glyph and where it comes from", () => {
+    render(
+      <ItemAttributesSection
+        attributes={{ author: "Ada" }}
+        itemCategoryIds={["reading"]}
+        categories={[readingList]}
+        onChangeValues={vi.fn()}
+        onCreateAttribute={vi.fn()}
+      />,
+    )
+    const cell = screen.getByTestId("attr-cell-author")
+    expect(cell).toHaveTextContent("Aa")
+    expect(cell).toHaveTextContent("Reading")
+    expect(screen.getByText("1/1")).toBeInTheDocument()
+  })
+
+  it("shows an empty-state sentence when nothing defines attributes", () => {
+    render(
+      <ItemAttributesSection
+        attributes={{}}
+        itemCategoryIds={[]}
+        categories={[]}
+        onChangeValues={vi.fn()}
+        onCreateAttribute={vi.fn()}
+      />,
+    )
+    expect(screen.getByText(/No attributes yet/)).toBeInTheDocument()
   })
 
   it("shows item-only definitions with typed editors", () => {
@@ -90,6 +138,32 @@ describe("ItemAttributesSection", () => {
 })
 
 describe("AttributeCreator", () => {
+  it("creates a selection with its options from the type palette", async () => {
+    const user = userEvent.setup()
+    const onCreate = vi.fn()
+    render(<AttributeCreator categories={[]} itemCategoryIds={[]} existingIds={[]} onCreate={onCreate} />)
+
+    await user.click(screen.getByRole("radio", { name: /Selection/ }))
+    expect(screen.getByText(/Pick one \(or several\)/)).toBeInTheDocument()
+    await user.type(screen.getByPlaceholderText("e.g. ISBN"), "Status")
+    const options = screen.getByText("Options (comma-separated)").parentElement!.querySelector("input")!
+    await user.type(options, "to-read, reading, read")
+    await user.tab()
+    await user.click(screen.getByRole("button", { name: /^create$/i }))
+
+    expect(onCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "Status", type: "selection", options: ["to-read", "reading", "read"] }),
+      "",
+      null,
+    )
+  })
+
+  it("offers file and file-list types", () => {
+    render(<AttributeCreator categories={[]} itemCategoryIds={[]} existingIds={[]} onCreate={vi.fn()} />)
+    expect(screen.getByRole("radio", { name: "File" })).toBeInTheDocument()
+    expect(screen.getByRole("radio", { name: /File list/ })).toBeInTheDocument()
+  })
+
   it("defaults to this item only when the item has no lists", async () => {
     const user = userEvent.setup()
     const onCreate = vi.fn()

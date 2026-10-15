@@ -113,6 +113,8 @@ const TASK_FIELDS: Record<keyof Task, true> = {
   sentAtByList: true,
   personPipelines: true,
   personProfile: true,
+  noteLog: true,
+  resources: true,
 }
 
 const ORDERS = new Set<ItemActivityOrder>(["observed", "recorded", "derived", "inferred"])

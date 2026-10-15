@@ -247,4 +247,37 @@ describe("TaskDetailPopup", () => {
     expect(screen.getByText(/Pages read/i)).toBeInTheDocument()
     expect(screen.queryByRole("tab", { name: /Scheduling/i })).not.toBeInTheDocument()
   })
+
+  it("logs a dated note from the Notes tab and saves it with the item", async () => {
+    const user = userEvent.setup()
+    render(<TaskDetailPopup taskId="popup-task" open onClose={onClose} />)
+    await user.click(screen.getByRole("tab", { name: /Notes/i }))
+    await user.type(screen.getByLabelText("New note"), "Demo went well")
+    await user.click(screen.getByRole("button", { name: /add entry/i }))
+    expect(screen.getByRole("status")).toHaveTextContent("Unsaved changes")
+    await user.click(screen.getByRole("button", { name: /^Save$/i }))
+    const saved = useTaskStore.getState().tasks.find((t) => t.id === "popup-task")
+    expect(saved?.noteLog?.[0]).toMatchObject({ text: "Demo went well" })
+    expect(saved?.noteLog?.[0].date).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    expect(screen.getByRole("tab", { name: /Notes/i })).toHaveTextContent("1")
+  })
+
+  it("offers Notes, Resources, and Links on a non-task item and keeps Additional Notes out of Analysis", async () => {
+    const user = userEvent.setup()
+    render(<TaskDetailPopup taskId="popup-task" open onClose={onClose} />)
+    expect(screen.getByRole("tab", { name: /Resources/i })).toBeInTheDocument()
+    expect(screen.getByRole("tab", { name: /Links/i })).toBeInTheDocument()
+    await user.click(screen.getByRole("tab", { name: /Resources/i }))
+    expect(screen.getByRole("button", { name: /attach files/i })).toBeInTheDocument()
+    await user.click(screen.getByRole("tab", { name: /Analysis/i }))
+    expect(screen.queryByText("Additional Notes")).not.toBeInTheDocument()
+  })
+
+  it("puts the Attributes panel above the description on Details", () => {
+    render(<TaskDetailPopup taskId="popup-task" open onClose={onClose} />)
+    const attrs = screen.getByRole("region", { name: "Attributes" })
+    const desc = screen.getByLabelText(/Detailed Description/i)
+    expect(attrs.compareDocumentPosition(desc) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(screen.getByRole("button", { name: /add attribute/i })).toBeInTheDocument()
+  })
 })

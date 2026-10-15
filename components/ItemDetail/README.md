@@ -14,7 +14,7 @@ Popup and page are both public entries.
 
 `useItemDetailDraft` is an interior. Its callers are the popup and the page.
 
-Interiors (imported from this folder): `useItemDetailDraft`, `ItemSaveFlag`, `useItemDetailSaveHotkey`, `BodyPanel`, `HabitLinkedDetail`, `TodoCommitmentFields`, `ItemEstimateField`, `ItemScheduleFlags`, `ReminderScheduleFields`, `ItemAttributesSection`, `AttributeCreator`, `TagInput`, `LinkPicker`, `RelatedItemsPanel`, `ItemActivityPanel`, `CycleConfirmDialog`, `SubtaskComposer`, `item-detail-chrome.css`.
+Interiors (imported from this folder): `useItemDetailDraft`, `ItemSaveFlag`, `useItemDetailSaveHotkey`, `BodyPanel`, `HabitLinkedDetail`, `TodoCommitmentFields`, `ItemEstimateField`, `ItemScheduleFlags`, `ReminderScheduleFields`, `ItemAttributesSection`, `AttributeCreator`, `TagInput`, `LinkPicker`, `RelatedItemsPanel`, `ItemActivityPanel`, `CycleConfirmDialog`, `SubtaskTree`, `item-detail-chrome.css`.
 
 Item writes: save / complete / status / reminder / notes / Sent go through
 `useItemDetailDraft.commitDraft` → `commitItemEdit` (patch + History line).
@@ -83,6 +83,53 @@ Undone and the task is scheduled on the next one (`scheduledDate` /
 (secondary, too late) side by side; missed files the row on the automatic
 Missed Opportunities list instead of Completed. When one of the item’s lists has **Sent this week** on, Details shows a **Sent** control. Sent is not complete and not delete. Lists that leave the option off have no Sent control.
 
+## Layout (Details, Notes, Resources, Links)
+
+Identity leads: the fascia holds the CRT title, then the item's **type plates**
+(lamp in the type color; double-click opens the type editor) and the stage
+chip, then the keys. Details is two regions: the main column starts with the
+**Attributes** instrument (`ItemAttributesSection`), then the description and
+task fields; the rail beside it is where the item lives: Lists, Tags, a
+**Notes** peek (one-line add for today plus the latest entries), Sent, Status.
+
+Every item, not only tasks, gets these tabs:
+
+- **Notes** — a dated log (`ItemNotesLog`, `Task.noteLog`). Each entry has a
+  local day and optional clock, newest first under day plates; entries edit in
+  place and can be removed. The old single `Task.notes` string stays as the
+  pinned **Standing note** (ingest still appends there). Analysis no longer
+  repeats it as "Additional Notes".
+- **Resources** — any file attached to the item (`ItemResourcesPanel`,
+  `Task.resources`): drop on the tray or Attach files. Bytes go to the
+  attachments IndexedDB like `file` attributes; an image shows itself, PDFs /
+  audio / video / text preview in the viewer well, with Open, Download, and a
+  caption. Remove takes it off the draft and keeps the stored bytes so Discard
+  can bring it back. Text is extracted in the background where possible.
+- **Links** — the Related picker and backlinks (moved out of the rail).
+
+Notes and Resources are `ItemDetailPanel`s that `resolveDetailView` adds to
+every item; a list can hide them (List Settings → detail panels). Links and
+History are shell tabs. Tab keys carry phosphor counts. Notes, resources, and
+attribute edits all go through the draft, so Save and the lamp cover them,
+and `commitItemEdit` keeps `noteLog` / `resources` as item fields. Search reads
+note text, resource names, captions, and extracted text.
+
+**Attributes** sit at the top of Details with a count of filled cells and an
+**Add attribute** key that opens `AttributeCreator` right there. Each cell
+shows a type glyph, the name, and where it comes from (the type, a list, or
+"This item only" with a remove key). Every type has a readable editor in
+`components/Lists/attributes/AttributeValueField.tsx` (option keys, toggle
+chips with lamps, chip entry, goal meter, formula readout, Today / Now with
+"in 3 days", link host key, searchable item reference, list chip, galleries,
+file chips with kind plates). `lib/attribute-type-catalog.ts` holds each
+type's glyph, one-line description, and example.
+
+**Attribute Demo.** `lib/attribute-demo.ts` seeds an "Attribute Demo" list
+with one attribute of every type and one item, "Cybernetics (attribute
+demo)", with every value filled, an item-only attribute, three dated notes,
+and three resources. In the creator, **See every type filled in on the
+Attribute Demo item →** creates it if missing and opens it.
+
 ## Files
 
 | File | Purpose |
@@ -98,15 +145,18 @@ Missed Opportunities list instead of Completed. When one of the item’s lists h
 | `TodoCommitmentFields.tsx` | Scheduling switches for Required / Prioritized on each period the item is already assigned to. Writes `todoMarks` immediately without saving the rest of the draft. |
 | `ItemScheduleFlags.tsx` | Shared **Send to Scheduler** + **Auto-push** switches (same copy, same `scheduleable` / `autoPush` draft writes). Page passes `disabled={!isEditing}`; popup always editable. Date / week / month / year / deadline fields stay in each shell — popup clears sibling schedule fields and uses a week date-picker; page patches one field and gates edits. |
 | `ItemEstimateField.tsx` | Shared Details-tab estimated-duration LiveInput (`touchDraft` + `setTask`, empty→`0`). `variant="popup"` keeps the Clock label + `min` suffix; `variant="page"` keeps “(minutes)” + read-only when not editing. Popup Time-tab estimate (`|| undefined`) stays popup-only. |
-| `ReminderScheduleFields.tsx` | When / Repeat / Text me / Persistent on the Details tab for an item on the Reminders list. Repeat is once, every day, every week, each new moon, or each full moon. Writes `scheduledDate`, `scheduledTime`, and `reminder`. Text me and Persistent default on (a missing flag stays on). A changed clock clears the sent and dismissed marks. The two switches do not. Shows “Sent to Inbox.” and a skipped-text note when those are set. The page and the popup commit this patch immediately so the header bell and the next delivery see it; the rest of the item still uses Save. |
+| `ReminderScheduleFields.tsx` | When / Repeat / Text me / Persistent on the Details tab for an item on the Reminders list. Repeat is once, every day, weekdays, every week, every month, every year, each new moon, or each full moon. Lunar picks fill the next 18:00 phase evening. Writes `scheduledDate`, `scheduledTime`, and `reminder`. Text me and Persistent default on (a missing flag stays on). A changed clock clears the sent and dismissed marks. The two switches do not. Shows “Sent to Inbox.” and a skipped-text note when those are set. The page and the popup commit this patch immediately so the header bell and the next delivery see it; the rest of the item still uses Save. |
 | `ReminderScheduleFields.test.tsx` | Omitted flags read as on. Text me off and Persistent off keep the sent mark. |
-| `ItemDetailPopup.tsx` | Compact modal/popover detail view used inline by Scheduler, Plan, To-Do, and the friend mission sheet. `data-ui-name="Item detail"` on `DialogContent`. Tabs are `resolveDetailView` output (type + lists + capabilities). A Reminders-list item shows When / Repeat / Text me / Persistent at the top of Details; those fields write through immediately. A People I Know person (catalog type person, or an item on that list) shows the biography first (`PersonDetail`: full name, nicknames, optional relation, date met with Est., how long known, time since last seen, Instagram, address precision, standing notes, dated notes, interactions, gift notes, Close, and days until the next birthday). Close creates the Gift ideas list; the folder list and the gift notes are labeled apart. The plaque draws a pixel cake that matches the milled fascia and the phosphor candle. A later folder of cute cake PNGs, the same idea as willpower gemstones and list orbs, is not built in this step, and this plaque does not load images. **Pipelines** follow (a Company pen; Company time is the blocks painted with that pen). Birthday and standing notes are edited in the biography, so Attributes omits those two ids. Includes the in-popup completion flow when the type is completable. Exports `TaskDetailPopup`. `stackAbove` paints it over another open dialog (the mission sheet stays underneath). Last tab per item is restored. The fascia lamp shows **Saved** or **Unsaved changes** the whole time the popup is open. Dirty close (draft vs stored task) uses the house unsaved-changes guard. Double-click a list badge closes the popup, then `requestNavigateToListAfterPaint` jumps Lists on the next frame so a large list does not freeze the detail view. Save / complete / missed / delete / subtasks handlers stay here (complete closes; subtasks are draft-only). |
+| `ItemDetailPopup.tsx` | Compact modal/popover detail view used inline by Scheduler, Plan, To-Do, and the friend mission sheet. `data-ui-name="Item detail"` on `DialogContent`. Tabs are `resolveDetailView` output (type + lists + capabilities). A Reminders-list item shows When / Repeat / Text me / Persistent at the top of Details; those fields write through immediately. A People I Know person (catalog type person, or an item on that list) shows the biography first (`PersonDetail`: full name, nicknames, optional relation, date met with Est., how long known, time since last seen, Instagram, address precision, standing notes, dated notes, interactions, gift notes, Close, and days until the next birthday). Close creates the Gift ideas list; the folder list and the gift notes are labeled apart. The plaque draws a pixel cake that matches the milled fascia and the phosphor candle. A later folder of cute cake PNGs, the same idea as willpower gemstones and list orbs, is not built in this step, and this plaque does not load images. **Pipelines** follow (a Company pen; Company time is the blocks painted with that pen). Birthday and standing notes are edited in the biography, so Attributes omits those two ids. Includes the in-popup completion flow when the type is completable. Exports `TaskDetailPopup`. `stackAbove` paints it over another open dialog (the mission sheet stays underneath). Last tab per item is restored. The fascia lamp shows **Saved** or **Unsaved changes** the whole time the popup is open. Dirty close (draft vs stored task) uses the house unsaved-changes guard. Double-click a list badge closes the popup, then `requestNavigateToListAfterPaint` jumps Lists on the next frame so a large list does not freeze the detail view. Save / complete / missed / delete / subtasks handlers stay here (complete closes; subtasks are draft-only, edited in `SubtaskTree`). |
 | `HabitLinkedDetail.tsx` | Details main pane for an item whose `sourceHabitId` attribute is set. Notes editor (`task.notes`) plus a read-only habit summary, including **Counts:** / **Minutes:** tag wiring (names only). **Habit settings** returns to that habit’s edit window. |
-| `ItemDetailPage.tsx` | Full-screen detail/editor opened from the app shell (`data-ui-name="Item detail"` on the page root). Names still runs via the layout host. Task-only chrome (duration, urgency, molecular breakdown) is gated; other types get an adapted details view. A Reminders-list item shows When / Repeat / Text me / Persistent on Details; those fields write through immediately. A People I Know person shows the biography (optional relation, Close, gift notes, and the Gift ideas list when that list exists), then **Pipelines** (Company time follows the joined pen), on Details. Birthday and standing notes are edited in the biography. The birthday plaque draws a pixel cake; a later PNG folder is not loaded. Exports `EnhancedTaskDetail`. Open item + last tab persist across refresh. Double-click a list badge calls `requestNavigateToListAfterPaint` with that badge’s list id (the parent folder when the list is filed). The shell’s navigate event closes the page. When the screen was opened from a habit, that double-click does **not** take Back’s return to habit settings — Back and **Habit settings** still do. The desk stays mounted underneath; long lists window their rows so the jump can paint. The fascia lamp shows **Saved** or **Unsaved changes** the whole time the page is open, including while Edit is the action (a clean item reads Saved). Save / complete (with `actualDuration`) / missed / delete / Task-backed subtasks / `SplitStepsComposer` stay page-only. |
+| `SubtaskTree.tsx` | Subtasks tab editor for both shells, shaped like Tidy's breakdown: add a step with minutes, then + on any step adds steps inside it, as deep as you like. Each add row stays open after Add. Rename and minutes edit in place. A step's minutes count as its own estimate or the sum inside (`lib/todo-steps`), shown as `=Nm`. Checking a step does not check its parent. Fold state is local. |
+| `ItemDetailPage.tsx` | Full-screen detail/editor opened from the app shell (`data-ui-name="Item detail"` on the page root). Names still runs via the layout host. Task-only chrome (duration, urgency, molecular breakdown) is gated; other types get an adapted details view. A Reminders-list item shows When / Repeat / Text me / Persistent on Details; those fields write through immediately. A People I Know person shows the biography (optional relation, Close, gift notes, and the Gift ideas list when that list exists), then **Pipelines** (Company time follows the joined pen), on Details. Birthday and standing notes are edited in the biography. The birthday plaque draws a pixel cake; a later PNG folder is not loaded. Exports `EnhancedTaskDetail`. Open item + last tab persist across refresh. Double-click a list badge calls `requestNavigateToListAfterPaint` with that badge’s list id (the parent folder when the list is filed). The shell’s navigate event closes the page. When the screen was opened from a habit, that double-click does **not** take Back’s return to habit settings — Back and **Habit settings** still do. The desk stays mounted underneath; long lists window their rows so the jump can paint. The fascia lamp shows **Saved** or **Unsaved changes** the whole time the page is open, including while Edit is the action (a clean item reads Saved). Save / complete (with `actualDuration`) / missed / delete / `SplitStepsComposer` stay page-only. Subtasks are the `SubtaskTree` on `task.subtasks` and save as you edit; deleting a step also deletes an older Task-backed subtask with the same id. |
+| `ItemNotesLog.tsx` | Notes tab: composer (day, time stamp, Cmd/Ctrl+Enter), pinned standing note (`Task.notes`), dated entries grouped by day. `NotesPeek` is the rail face. |
+| `ItemResourcesPanel.tsx` | Resources tab: drop tray, cards, viewer (image / PDF / audio / video / text), caption, Open / Download / Remove. |
 | `ItemAttributesSection.tsx` | Shared attributes surface. When the type has `detailLayout`, renders a large hero image and featured fields above the rest of the schema, then list-defined attributes, item-only leftovers, and `AttributeCreator`. `omitAttributeIds` hides fields edited on another panel of the same view. On a person, birthday and standing notes are omitted so the biography is their only editor. |
 | `item-attributes.test.tsx` | Hero/featured layout + attribute creator for catalog-style types. |
 | `BodyPanel.tsx` | The `"body"` detail panel for document-type items. Default face is **rendered prose** (HTML stripped to plain when the body looks like markup); an explicit **Source** / **Rendered** toggle reveals the raw editor — never a raw-HTML face by default. Markdown still uses `RichTextEditor`. Persists through `useTaskStore.updateTask`, debounced (default 500ms) with a flush on blur/unmount. Props: `taskId`, `readOnly?`, `debounceMs?`. |
-| `AttributeCreator.tsx` | Inline control for defining a brand-new typed attribute (name + type + initial value). The attribute can be added to one of the item's lists — persisted onto that list's `itemAttributes` schema so every item in the list gains it — or kept on just this item. Props: `categories`, `itemCategoryIds`, `existingIds`, `onCreate(def, value, listId)`. |
+| `AttributeCreator.tsx` | Inline control for defining a brand-new typed attribute: a type palette grouped by Words / Numbers / Choices / Time / Media / References with a description of the chosen type, its settings (options, unit, labels, formula, scope), name, target, and initial value. The attribute can be added to one of the item's lists — persisted onto that list's `itemAttributes` schema so every item in the list gains it — or kept on just this item. Props: `categories`, `itemCategoryIds`, `existingIds`, `onCreate(def, value, listId)`. |
 | `ItemTagChip.tsx` | One item-tag chip. Value is the string name. When `normalizeTag(name)` matches a Tracking catalog tag, shows that tag’s color bead. Double-click opens `openTagSettings(id)` or `openTagSettingsFromName(name)`. Used by `TagInput` and Item Detail view-mode badges. |
 | `TagInput.tsx` | Presentational chip/token tag editor. Renders applied tags as removable `ItemTagChip`s and a text field that adds a tag on Enter/comma, with autocomplete suggestions drawn from all tags in use across `taskRepository.getAll()` (catalog matches show a bead in the list). Normalization via `lib/links.ts`. Props: `tags`, `onAdd`, `onRemove`. Chips stay strings. They are not Tracking tag ids. A Tracking catalog rename follows a string that used the old normalized name (`lib/catalog-tag.ts`). |
 | `LinkPicker.tsx` | Presentational control for adding a typed link: a relation `Select` from the `lib/links.ts` `RELATIONS` catalog plus a target-item typeahead searching the repository by title/description (excluding the current item). Props: `sourceId`, `onAdd(relation, targetId)`. |
@@ -144,8 +194,8 @@ A Tracking catalog rename can rewrite a string that used the old normalized name
 Context badges are not Tags and never open tag settings. The detail view does not
 grow a second habit-tag editor and does not store `TrackTag` ids on `task.tags`.
 Both detail variants mount a "Tags" section (`TagInput` in edit; matching chips
-in page view mode) and a "Related" section (`LinkPicker` + `RelatedItemsPanel`)
-wired to the shared draft mutators. "Open item" navigation is handled in-place:
+in page view mode) and related items (`LinkPicker` + `RelatedItemsPanel`: the
+popup's **Links** tab, the page's Related card) wired to the shared draft mutators. "Open item" navigation is handled in-place:
 each variant keeps a local `overrideId` so clicking a related/backlinked row
 swaps the detail view to that item without leaving the surface (reset when the
 host opens a new item).

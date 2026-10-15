@@ -19,10 +19,12 @@ import { LinkPicker } from "@/components/ItemDetail/LinkPicker"
 import { RelatedItemsPanel } from "@/components/ItemDetail/RelatedItemsPanel"
 import { BodyPanel } from "@/components/ItemDetail/BodyPanel"
 import { HabitLinkedDetail } from "@/components/ItemDetail/HabitLinkedDetail"
+import { ItemNotesLog } from "@/components/ItemDetail/ItemNotesLog"
+import { ItemResourcesPanel } from "@/components/ItemDetail/ItemResourcesPanel"
 import { ListPicker } from "@/components/Lists/list-picker"
 import { IsolatedInput, IsolatedTextarea } from "@/components/ui/isolated-text-field"
 import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
-import { SubtaskComposer } from "@/components/ItemDetail/SubtaskComposer"
+import { SubtaskTree } from "@/components/ItemDetail/SubtaskTree"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -132,7 +134,6 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
     lists,
     updateTask,
     commitDraft,
-    addTask,
     deleteTask,
     removeFromCategory,
     setLists,
@@ -283,55 +284,6 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
     [task],
   )
 
-  const addSubtask = useCallback((description: string) => {
-    const trimmed = description.trim()
-    if (!task || !trimmed) return
-    const subtask: Task = {
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
-      description: trimmed,
-      stage: "clarified",
-      createdAt: new Date(),
-      estimatedDuration: 15,
-      cognitiveLoad: 1,
-      urgency: task.urgency,
-      importance: task.importance,
-      dependencies: [],
-      context: task.context,
-      entropy: 0.3,
-      rewardValue: 3,
-      completed: false,
-      lists: task.lists || [],
-      parentTaskId: task.id,
-      subtasks: [],
-      allowPartialCompletion: false,
-      minimumChunkSize: 15,
-    }
-
-    addTask(subtask)
-
-    const updatedTask = {
-      ...task,
-      subtasks: [...(task.subtasks || []), { id: subtask.id, description: subtask.description, completed: false }],
-    }
-    setTask(updatedTask)
-    updateTask(updatedTask)
-  }, [task, addTask, updateTask, setTask])
-
-  const removeSubtask = useCallback(
-    (subtaskId: string) => {
-      if (task) {
-        deleteTask(subtaskId)
-        const updatedTask = {
-          ...task,
-          subtasks: task.subtasks?.filter((s) => s.id !== subtaskId) || [],
-        }
-        setTask(updatedTask)
-        updateTask(updatedTask)
-      }
-    },
-    [task, deleteTask, updateTask],
-  )
-
   // ---- Molecular steps (operate on the Task.subtasks tree directly) --------
   const persistSubtasks = useCallback(
     (subtasks: Subtask[]) => {
@@ -341,6 +293,16 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
       updateTask(updated)
     },
     [task, setTask, updateTask],
+  )
+
+  // Older subtasks were also saved as their own Tasks; drop those with the step.
+  const removeBackingSubtasks = useCallback(
+    (ids: string[]) => {
+      for (const id of ids) {
+        if (allTasks.some((t) => t.id === id && t.parentTaskId === effectiveId)) deleteTask(id)
+      }
+    },
+    [allTasks, effectiveId, deleteTask],
   )
 
   const splitIntoSteps = useCallback((text: string) => {
@@ -392,9 +354,6 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
     (t) => t.id !== effectiveId && !t.completed && t.parentTaskId !== effectiveId,
   )
 
-  // Get subtasks
-  const subtaskIds = new Set((task?.subtasks ?? []).map((s) => s.id))
-  const subtasks = allTasks.filter((t) => subtaskIds.has(t.id))
 
   // Every item type assigned to this item: its own type plus any type pinned by
   // a list it belongs to (e.g. a task that also lives in a "Goals" list).
@@ -581,6 +540,18 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
           {visiblePanels.includes("scheduling") && <TabsTrigger value="scheduling">Scheduling</TabsTrigger>}
           {visiblePanels.includes("dependencies") && <TabsTrigger value="dependencies">Dependencies</TabsTrigger>}
           {visiblePanels.includes("subtasks") && <TabsTrigger value="subtasks">Subtasks</TabsTrigger>}
+          {visiblePanels.includes("notes") && (
+            <TabsTrigger value="notes">
+              Notes
+              {(task.noteLog?.length ?? 0) > 0 && <span className="id-tab-count">{task.noteLog!.length}</span>}
+            </TabsTrigger>
+          )}
+          {visiblePanels.includes("resources") && (
+            <TabsTrigger value="resources">
+              Resources
+              {(task.resources?.length ?? 0) > 0 && <span className="id-tab-count">{task.resources!.length}</span>}
+            </TabsTrigger>
+          )}
           {visiblePanels.includes("analysis") && (
             <TabsTrigger value="analysis" className="id-tab-secondary">Analysis</TabsTrigger>
           )}
@@ -628,6 +599,30 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
                   onHabitSettings={openHabitSettings}
                 />
               ) : null}
+              <div className="id-bay">
+                <ItemAttributesSection
+                  attributes={task.attributes || {}}
+                  itemCategoryIds={task.lists ?? []}
+                  categories={lists}
+                  itemAttributeDefinitions={task.itemAttributeDefinitions}
+                  itemType={task.type}
+                  layout={detailView.layout}
+                  omitAttributeIds={
+                    itemShowsPersonPipelines(task, lists)
+                      ? [PERSON_ATTR.birthday, PERSON_ATTR.notes]
+                      : undefined
+                  }
+                  onChangeValues={(attributes) => {
+                    touchDraft({ attributes })
+                    setTask((prev) => (prev ? { ...prev, attributes } : prev))
+                  }}
+                  onChangeItemAttributeDefinitions={(itemAttributeDefinitions) =>
+                    setTask({ ...task, itemAttributeDefinitions })
+                  }
+                  onCreateAttribute={handleCreateAttribute}
+                  onOpenItem={(id) => setOverrideId(id)}
+                />
+              </div>
               {isTask && (
               <Card>
                 <CardHeader>
@@ -886,35 +881,6 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Attributes</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ItemAttributesSection
-                    attributes={task.attributes || {}}
-                    itemCategoryIds={task.lists ?? []}
-                    categories={lists}
-                    itemAttributeDefinitions={task.itemAttributeDefinitions}
-                    itemType={task.type}
-                    layout={detailView.layout}
-                    omitAttributeIds={
-                      itemShowsPersonPipelines(task, lists)
-                        ? [PERSON_ATTR.birthday, PERSON_ATTR.notes]
-                        : undefined
-                    }
-                    onChangeValues={(attributes) => {
-                      touchDraft({ attributes })
-                      setTask((prev) => (prev ? { ...prev, attributes } : prev))
-                    }}
-                    onChangeItemAttributeDefinitions={(itemAttributeDefinitions) =>
-                      setTask({ ...task, itemAttributeDefinitions })
-                    }
-                    onCreateAttribute={handleCreateAttribute}
-                  />
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
                   <CardTitle>Related</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -1167,44 +1133,11 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {isEditing && (
-                <div className="space-y-2">
-                  <Label>Add Subtask</Label>
-                  <SubtaskComposer onAdd={addSubtask} />
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <Label>Current Subtasks</Label>
-                {subtasks.length > 0 ? (
-                  <div className="space-y-2">
-                    {subtasks.map((subtask) => (
-                      <div key={subtask.id} className="flex justify-between items-center p-2 border rounded-md">
-                        <div className="flex items-center gap-2">
-                          <CheckCircle
-                            className={`h-4 w-4 ${subtask.completed ? "text-green-500" : "text-muted-foreground"}`}
-                          />
-                          <span className={`text-sm ${subtask.completed ? "line-through text-muted-foreground" : ""}`}>
-                            {subtask.description}
-                          </span>
-                        </div>
-                        {isEditing && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6"
-                            onClick={() => removeSubtask(subtask.id)}
-                          >
-                            <Trash className="h-3 w-3" />
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">No subtasks</p>
-                )}
-              </div>
+              <p className="text-sm text-muted-foreground">
+                Use + on any step to break it down again. Minutes on a step count as its own estimate or the sum of the
+                steps inside, whichever is larger.
+              </p>
+              <SubtaskTree steps={task.subtasks} onChange={persistSubtasks} onRemoved={removeBackingSubtasks} />
             </CardContent>
           </Card>
 
@@ -1319,22 +1252,6 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="notes">Additional Notes</Label>
-                {isEditing ? (
-                  <IsolatedTextarea
-                    id="notes"
-                    value={task.notes || ""}
-                    onLiveChange={(notes) => touchDraft({ notes })}
-                    onCommit={(notes) => setTask((prev) => (prev ? { ...prev, notes } : prev))}
-                    placeholder="Any additional thoughts or context..."
-                    rows={3}
-                  />
-                ) : (
-                  <p className="text-sm text-muted-foreground">{task.notes || "No additional notes"}</p>
-                )}
-              </div>
-
               <div className="pt-4 border-t">
                 <h4 className="text-sm font-medium mb-2">Task Metrics</h4>
                 <div className="space-y-2">
@@ -1376,6 +1293,33 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
                 <BodyPanel taskId={task.id} />
               </CardContent>
             </Card>
+          </TabsContent>
+        )}
+
+        {visiblePanels.includes("notes") && (
+          <TabsContent value="notes">
+            <ItemNotesLog
+              entries={task.noteLog}
+              standing={task.notes}
+              onChangeEntries={(noteLog) => {
+                touchDraft({ noteLog })
+                setTask((prev) => (prev ? { ...prev, noteLog } : prev))
+              }}
+              onLiveStanding={(notes) => touchDraft({ notes })}
+              onChangeStanding={(notes) => setTask((prev) => (prev ? { ...prev, notes } : prev))}
+            />
+          </TabsContent>
+        )}
+
+        {visiblePanels.includes("resources") && (
+          <TabsContent value="resources">
+            <ItemResourcesPanel
+              resources={task.resources}
+              onChange={(resources) => {
+                touchDraft({ resources })
+                setTask((prev) => (prev ? { ...prev, resources } : prev))
+              }}
+            />
           </TabsContent>
         )}
 
