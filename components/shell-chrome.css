@@ -790,6 +790,150 @@ body.win95-app .b2-shell-rail button.b2-reminder-bell .b2-reminder-count {
   pointer-events: none;
 }
 
+.b2-reminder-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+  overflow: hidden;
+  padding-top: 2px;
+}
+
+.b2-reminder-compose {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 0 0 auto;
+  padding: 14px 16px 16px;
+  border-radius: var(--r-2, 2px);
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
+    var(--hpp-surface, #c0c0c0);
+  box-shadow:
+    0 0 0 1px var(--chrome-lip, #808080),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.b2-reminder-compose-kicker {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #2a2e32;
+}
+
+.b2-reminder-compose-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.b2-reminder-compose-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #1a1c1e;
+}
+
+.b2-reminder-compose input,
+.b2-reminder-compose select {
+  width: 100%;
+  min-width: 0;
+  min-height: 2rem;
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
+.b2-reminder-compose-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.b2-reminder-compose-chip {
+  flex: 0 0 auto;
+  padding: 5px 9px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+}
+
+.b2-reminder-compose-flags {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.b2-reminder-compose-flag-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px 10px 9px;
+  border-radius: var(--r-2, 2px);
+  background: rgba(255, 255, 255, 0.35);
+  box-shadow:
+    inset 0 0 0 1px rgba(90, 94, 98, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+}
+
+.b2-reminder-compose-flag-card input {
+  width: auto;
+  min-height: 0;
+  margin-top: 1px;
+  flex: 0 0 auto;
+}
+
+.b2-reminder-compose-flag-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.b2-reminder-compose-flag-title {
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.b2-reminder-compose-flag-hint {
+  font-size: 10px;
+  line-height: 1.3;
+  color: #3a3e42;
+}
+
+.b2-reminder-compose-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding-top: 2px;
+}
+
+.b2-reminder-compose-actions .hpp-key-go {
+  min-height: 2rem;
+  padding-inline: 14px !important;
+  font-size: 12px !important;
+}
+
+.b2-reminder-compose-error {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+@media (max-width: 420px) {
+  .b2-reminder-compose-flags {
+    grid-template-columns: 1fr;
+  }
+}
+
 .b2-reminder-list {
   display: flex;
   flex-direction: column;

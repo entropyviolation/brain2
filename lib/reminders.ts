@@ -2,8 +2,9 @@
  * lib/reminders.ts — Built-in Reminders list and timed delivery
  *
  * Items on the Reminders list fire at `scheduledDate` + `scheduledTime`.
- * `reminder.repeat` is once, every day, every week, each new moon, or each
- * full moon. That clock is not `repeatSettings` (count / frequency completions).
+ * `reminder.repeat` is once, every day, weekdays, every week, every month,
+ * every year, each new moon, or each full moon. That clock is not
+ * `repeatSettings` (count / frequency completions).
  *
  * A due occurrence is copied into the existing Inbox. When Text me is on
  * (the default), it is also texted to the paired Telegram chat through the
@@ -51,8 +52,27 @@ export const FULL_MOON_TONIGHT_NAME = "full moon tonight"
 export const NEW_MOON_REMINDER_ID = "reminder-new-moon-tonight"
 export const FULL_MOON_REMINDER_ID = "reminder-full-moon-tonight"
 
-export type ReminderRepeat = "once" | "daily" | "weekly" | "new-moon" | "full-moon"
+export type ReminderRepeat =
+  | "once"
+  | "daily"
+  | "weekdays"
+  | "weekly"
+  | "monthly"
+  | "yearly"
+  | "new-moon"
+  | "full-moon"
 export type RecurringReminderRepeat = Exclude<ReminderRepeat, "once">
+
+export const REMINDER_REPEAT_OPTIONS: { value: ReminderRepeat; label: string }[] = [
+  { value: "once", label: "Once" },
+  { value: "daily", label: "Every day" },
+  { value: "weekdays", label: "Weekdays" },
+  { value: "weekly", label: "Every week" },
+  { value: "monthly", label: "Every month" },
+  { value: "yearly", label: "Every year" },
+  { value: "new-moon", label: "Each new moon" },
+  { value: "full-moon", label: "Each full moon" },
+]
 
 export const REMINDER_SKIP_NO_CHAT = "No paired Telegram chat"
 export const REMINDER_SKIP_NO_TOKEN = "No bot token stored"
@@ -87,8 +107,10 @@ export interface DeliverRemindersOptions {
   chatId?: string
 }
 
-const REPEAT: ReminderRepeat[] = ["once", "daily", "weekly", "new-moon", "full-moon"]
-const RECURRING: RecurringReminderRepeat[] = ["daily", "weekly", "new-moon", "full-moon"]
+const REPEAT: ReminderRepeat[] = REMINDER_REPEAT_OPTIONS.map((option) => option.value)
+const RECURRING: RecurringReminderRepeat[] = REPEAT.filter(
+  (value): value is RecurringReminderRepeat => value !== "once",
+)
 
 let delivering = false
 
@@ -315,20 +337,24 @@ export function applyReminderPrefs(
   }
 }
 
+const REPEAT_CAPTION: Record<ReminderRepeat, string> = {
+  once: "once",
+  daily: "every day",
+  weekdays: "weekdays",
+  weekly: "every week",
+  monthly: "every month",
+  yearly: "every year",
+  "new-moon": "each new moon",
+  "full-moon": "each full moon",
+}
+
 /** Reading-row caption: day, clock, repeat, and whether a one-time reminder already went out. */
 export function reminderRowCaption(task: Task): string {
   if (!task.reminder || !task.scheduledTime) return ""
   const day = task.scheduledDate ? safeDateFormat(task.scheduledDate) : ""
-  const repeat =
-    task.reminder.repeat === "daily"
-      ? "every day"
-      : task.reminder.repeat === "weekly"
-        ? "every week"
-        : task.reminder.repeat === "new-moon"
-          ? "each new moon"
-          : task.reminder.repeat === "full-moon"
-            ? "each full moon"
-            : "once"
+  const repeat = isReminderRepeat(task.reminder.repeat)
+    ? REPEAT_CAPTION[task.reminder.repeat]
+    : "once"
   const sent = task.reminder.repeat === "once" && task.reminder.deliveredKey ? "sent" : ""
   return [day && day !== "Not set" && day !== "Invalid date" ? day : "", task.scheduledTime, repeat, sent]
     .filter(Boolean)
@@ -340,34 +366,109 @@ export function reminderTelegramText(task: Task): string {
   return `Reminder: ${title}`
 }
 
+function clockAfter(day: Date, sentAt: Date): Date {
+  return new Date(day.getFullYear(), day.getMonth(), day.getDate(), sentAt.getHours(), sentAt.getMinutes(), 0, 0)
+}
+
+function nextWeekdayDate(sentAt: Date, now: Date): Date {
+  const cursor = new Date(sentAt.getFullYear(), sentAt.getMonth(), sentAt.getDate())
+  for (let i = 0; i < 366 * 5; i++) {
+    cursor.setDate(cursor.getDate() + 1)
+    const dow = cursor.getDay()
+    if (dow === 0 || dow === 6) continue
+    if (clockAfter(cursor, sentAt).getTime() > now.getTime()) {
+      return new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate())
+    }
+  }
+  return new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate())
+}
+
+function nextMonthDate(sentAt: Date, now: Date): Date {
+  const day = sentAt.getDate()
+  let year = sentAt.getFullYear()
+  let month = sentAt.getMonth()
+  for (let i = 0; i < 60; i++) {
+    month += 1
+    if (month > 11) {
+      month = 0
+      year += 1
+    }
+    const last = new Date(year, month + 1, 0).getDate()
+    const d = Math.min(day, last)
+    const at = new Date(year, month, d, sentAt.getHours(), sentAt.getMinutes(), 0, 0)
+    if (at.getTime() > now.getTime()) return new Date(year, month, d)
+  }
+  return new Date(year, month, Math.min(day, new Date(year, month + 1, 0).getDate()))
+}
+
+function nextYearDate(sentAt: Date, now: Date): Date {
+  const month = sentAt.getMonth()
+  const day = sentAt.getDate()
+  for (let year = sentAt.getFullYear() + 1; year < sentAt.getFullYear() + 12; year++) {
+    const last = new Date(year, month + 1, 0).getDate()
+    const d = Math.min(day, last)
+    const at = new Date(year, month, d, sentAt.getHours(), sentAt.getMinutes(), 0, 0)
+    if (at.getTime() > now.getTime()) return new Date(year, month, d)
+  }
+  return new Date(sentAt.getFullYear() + 1, month, day)
+}
+
 /**
  * Next local calendar day for a recurring reminder after an occurrence.
- * Daily / weekly step from `sentAt`'s clock. New / full moon use the next
- * 18:00 local on that phase's day after `now` (`nextMoonReminderEvening`).
+ * Daily / weekdays / weekly / monthly / yearly step from `sentAt`'s clock.
+ * New / full moon use the next 18:00 local on that phase's day after `now`
+ * (`nextMoonReminderEvening`).
  */
 export function nextReminderDate(repeat: RecurringReminderRepeat, sentAt: Date, now: Date): Date {
   if (repeat === "new-moon" || repeat === "full-moon") {
     const evening = nextMoonReminderEvening(lunarKindForRepeat(repeat), now)
     return new Date(evening.getFullYear(), evening.getMonth(), evening.getDate())
   }
+  if (repeat === "weekdays") return nextWeekdayDate(sentAt, now)
+  if (repeat === "monthly") return nextMonthDate(sentAt, now)
+  if (repeat === "yearly") return nextYearDate(sentAt, now)
   const step = repeat === "weekly" ? 7 : 1
   const cursor = new Date(sentAt.getFullYear(), sentAt.getMonth(), sentAt.getDate())
   for (let i = 0; i < 366 * 5; i++) {
     cursor.setDate(cursor.getDate() + step)
-    const at = new Date(
-      cursor.getFullYear(),
-      cursor.getMonth(),
-      cursor.getDate(),
-      sentAt.getHours(),
-      sentAt.getMinutes(),
-      0,
-      0,
-    )
-    if (at.getTime() > now.getTime()) {
+    if (clockAfter(cursor, sentAt).getTime() > now.getTime()) {
       return new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate())
     }
   }
   return new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate())
+}
+
+/** `datetime-local` value for a local instant. */
+export function reminderWhenInputFromDate(at: Date): string {
+  return `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}T${pad(at.getHours())}:${pad(at.getMinutes())}`
+}
+
+export type ReminderQuickWhenId = "1h" | "tonight" | "tomorrow-morning" | "next-monday"
+
+/** Named quick times for the compose plate. */
+export function reminderQuickWhen(id: ReminderQuickWhenId, now: Date = new Date()): Date {
+  if (id === "1h") {
+    const at = new Date(now.getTime() + 60 * 60 * 1000)
+    at.setSeconds(0, 0)
+    return at
+  }
+  if (id === "tonight") {
+    const tonight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), MOON_REMINDER_HOUR, MOON_REMINDER_MINUTE, 0, 0)
+    if (tonight.getTime() > now.getTime()) return tonight
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, MOON_REMINDER_HOUR, MOON_REMINDER_MINUTE, 0, 0)
+  }
+  if (id === "tomorrow-morning") {
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 9, 0, 0, 0)
+  }
+  const cursor = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 9, 0, 0, 0)
+  while (cursor.getDay() !== 1) cursor.setDate(cursor.getDate() + 1)
+  return cursor
+}
+
+/** First fire instant for a lunar repeat after `now` (18:00 on that phase day). */
+export function reminderWhenForRepeat(repeat: ReminderRepeat, now: Date = new Date()): Date | null {
+  if (repeat !== "new-moon" && repeat !== "full-moon") return null
+  return nextMoonReminderEvening(lunarKindForRepeat(repeat), now)
 }
 
 /** Keep lunar rows on 18:00 when advancing, in case the stored clock drifted. */

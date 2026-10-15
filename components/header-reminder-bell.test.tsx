@@ -1,8 +1,8 @@
-import { render, screen } from "@testing-library/react"
+import { fireEvent, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
-import { addReminder } from "@/lib/reminders"
+import { addReminder, findRemindersList } from "@/lib/reminders"
 import { useTaskStore } from "@/lib/task-store"
 import { HeaderReminderBell } from "./header-reminder-bell"
 
@@ -33,6 +33,7 @@ describe("HeaderReminderBell", () => {
 
     await user.click(screen.getByTestId("reminder-bell"))
     expect(screen.getByRole("heading", { name: "Reminders" })).toBeInTheDocument()
+    expect(screen.getByTestId("reminder-compose")).toBeInTheDocument()
     expect(screen.getByText("Call mom")).toBeInTheDocument()
     expect(screen.getByText("Jan 1 · 9:00 AM")).toBeInTheDocument()
     expect(screen.getByText("Source · Reminders")).toBeInTheDocument()
@@ -46,5 +47,25 @@ describe("HeaderReminderBell", () => {
     expect(screen.getByText("No current reminders.")).toBeInTheDocument()
     expect(screen.queryByTestId("reminder-bell-count")).not.toBeInTheDocument()
     expect(useTaskStore.getState().tasks.some((task) => task.id === nag)).toBe(true)
+  })
+
+  it("schedules a new reminder from the popup compose plate", async () => {
+    const user = userEvent.setup()
+    render(<HeaderReminderBell onTaskSelect={() => {}} />)
+
+    await user.click(screen.getByTestId("reminder-bell"))
+    fireEvent.change(screen.getByLabelText("New reminder"), { target: { value: "Tea break" } })
+    fireEvent.change(screen.getByLabelText("Reminder time"), { target: { value: "2026-10-10T15:30" } })
+    fireEvent.change(screen.getByLabelText("Repeat"), { target: { value: "weekly" } })
+    await user.click(screen.getByRole("button", { name: "Add reminder" }))
+
+    const list = findRemindersList(useTaskStore.getState().lists)
+    const reminder = useTaskStore.getState().tasks.find((task) => task.description === "Tea break")
+    expect(list?.reminderList).toBe(true)
+    expect(reminder?.lists).toContain(list?.id)
+    expect(reminder?.scheduledTime).toBe("15:30")
+    expect(reminder?.reminder?.repeat).toBe("weekly")
+    expect(screen.getByLabelText("New reminder")).toHaveValue("")
+    expect(screen.getByTestId("reminder-compose")).toBeInTheDocument()
   })
 })
