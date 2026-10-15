@@ -61,9 +61,14 @@ function startKey(title: string): string {
   return title.trim().toLowerCase()
 }
 
-export function applyDiscreteLog(payload: string, now = new Date()): ApplyResult {
+export function applyDiscreteLog(
+  payload: string,
+  now = new Date(),
+  opts?: { keywordQuery?: boolean },
+): ApplyResult {
   const phrases = savedLogKeywordPhrases()
-  if (isLogKeywordListQuery(payload)) {
+  // Prefix-less text turns this off, so a bare `keywords` is logged, not listed.
+  if (opts?.keywordQuery !== false && isLogKeywordListQuery(payload)) {
     return {
       status: "ok",
       kind: "event-log",

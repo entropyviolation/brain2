@@ -165,7 +165,7 @@ export const BIM_COMMAND_CATALOG: CatalogEntry[] = [
     forms: ["groc", "grocery", "groceries", "shop", "shopping", "store"],
     format: "`groc` · `store` · `grocery` · `shop`",
     explanation:
-      "Dump the live grocery list (Settings → Message ingest picker; otherwise Grocery / Groceries / Shopping) and pin that card. Other open shopping-list counts are on the card once; the dump reply is the same card. Bare `store` is that dump. `grocery list` and `grocery store` as prose stay inbox.",
+      "Dump the live grocery list (Settings → Message ingest picker; otherwise Grocery / Groceries / Shopping) and pin that card. Other open shopping-list counts are on the card once; the dump reply is the same card. Bare `store` is that dump. `grocery list` and `grocery store` as prose are log lines.",
     status: "active",
   },
   {
@@ -185,7 +185,7 @@ export const BIM_COMMAND_CATALOG: CatalogEntry[] = [
     forms: ["got:", "bought:", "x", "check off", "checkoff:", "checkout:"],
     format: "`got: milk` · `bought: oats` · `x bread, eggs` · `check off milk`",
     explanation:
-      "Complete matching open grocery lines and refresh the pin. `got` and `bought` need a colon, unless the words after them already match an open grocery line (`got milk` when milk is open). Otherwise the sentence stays inbox. `Got back from walk` is not a checkoff. Replying to the grocery pin checks that text off; a reply to any other message does not.",
+      "Complete matching open grocery lines and refresh the pin. `got` and `bought` need a colon, unless the words after them already match an open grocery line (`got milk` when milk is open). Otherwise the sentence is a log line. `Got back from walk` is not a checkoff. Replying to the grocery pin checks that text off; a reply to any other message does not.",
     status: "active",
   },
   {
@@ -204,7 +204,7 @@ export const BIM_COMMAND_CATALOG: CatalogEntry[] = [
     primary: "g",
     forms: ["g"],
     format: "`g` (retired)",
-    explanation: "Bare `g` no longer means grocery. It falls through as Inbox capture unless a custom shortcut remaps it.",
+    explanation: "Bare `g` no longer means grocery. It falls through as a log line unless a custom shortcut remaps it.",
     status: "retired",
     note: "Use `groc`. Old Settings shortcuts that expanded to `g` are remapped to `groc` automatically.",
   },
@@ -229,7 +229,7 @@ export const BIM_COMMAND_CATALOG: CatalogEntry[] = [
     forms: ["add:", "qa", "quick add", "quickadd", "capture", "inbox", "idea"],
     format: "`add: pick up milk` · `qa: idea` · `inbox: …` · `idea: …` · `capture: …` · `quick add: …`",
     explanation:
-      "Smart-capture into Inbox (same path as desktop Quick Add). Only `add:` strips the verb; bare `add` stays inbox with the full sentence. `list: item` and `folder: list: item` create the list if needed. `folder: all: item` (also `all items`) files on that folder's All Items, not a list named all. A name may contain digits (`brain2: item` is the list brain2). Dates, times, duration, and priority are read and left in the title. End with -mb or -monkey to dump it in Monkey brain. -p or -plain stores the line as written and detects none of that.",
+      "Smart-capture into Inbox (same path as desktop Quick Add). `inbox:` is the explicit way to send a line to Inbox, since text with no verb is now a log line. Only `add:` strips the verb; bare `add` is a log line with the full sentence. `list: item` and `folder: list: item` create the list if needed. `folder: all: item` (also `all items`) files on that folder's All Items, not a list named all. A name may contain digits (`brain2: item` is the list brain2). Dates, times, duration, and priority are read and left in the title. End with -mb or -monkey to dump it in Monkey brain. -p or -plain stores the line as written and detects none of that.",
     status: "active",
   },
   {
@@ -237,9 +237,19 @@ export const BIM_COMMAND_CATALOG: CatalogEntry[] = [
     category: "capture",
     primary: "(plain text)",
     forms: ["(any message with no verb)"],
-    format: "`pick up milk`",
+    format: "`need to get my car fixed` · `brain2: fix the clock`",
     explanation:
-      "Prefix-less text that is not a list dump becomes an Inbox capture. Colon paths create the list. `folder: all: item` files on that folder's All Items. A name may contain digits (`brain2: item` is the list brain2). Dates, times, duration, and priority stay in the title. -mb or -monkey on the line sends it to Monkey brain. -p or -plain stores the line as written.",
+      "Prefix-less text that is not a list dump is a log line, the same as `log:` (`need to get my car fixed` → `log: need to get my car fixed`). It is saved, handled, and replied to as a log. A line under it is the note, and a clock in it is read the way a log line reads one. It is not Inbox; send `inbox:` for that, or end the message with -i. Exceptions stay Inbox capture: a leading list path (`brain2: item`, `folder: all: item`), `cat:`, -mb / -monkey (Monkey brain), and -p / -plain (stored as written). If the log cannot read the line, it is captured to Inbox so nothing is lost.",
+    status: "active",
+  },
+  {
+    id: "inbox-flag",
+    category: "capture",
+    primary: "-i",
+    forms: ["-i", "-inbox"],
+    format: "`thought process: i really need to get my car fixed -i` · `i really need to get my car fixed -i` · `groc milk -inbox`",
+    explanation:
+      "Also Inbox. The flag goes at the very end of the message. The message still lands where it was going, then the text after the verb (`i really need to get my car fixed`) is also captured to Inbox. With no verb, that is the log plus Inbox. A message that already goes to Inbox (`inbox:`, `add:`, a list path, -mb, -p) is filed once. One `undo` takes back both. `-i` inside a word (`wi-fi`) is not the flag.",
     status: "active",
   },
 
@@ -283,7 +293,7 @@ export const BIM_COMMAND_CATALOG: CatalogEntry[] = [
     forms: ["habit", "did:"],
     format: "`habit: exercise 30` · `did: stretch` · optional `yesterday`",
     explanation:
-      "Write a habit by name. `did` needs a colon; bare `did` stays inbox. GOAL → number; BOOLEAN → done/yes/no/undo; TEXT → rest of line. Fuzzy-matches habit name.",
+      "Write a habit by name. `did` needs a colon; bare `did` is a log line. GOAL → number; BOOLEAN → done/yes/no/undo; TEXT → rest of line. Fuzzy-matches habit name.",
     status: "active",
   },
   {
@@ -351,7 +361,7 @@ export const BIM_COMMAND_CATALOG: CatalogEntry[] = [
     format:
       "`log: left room` · `log: left room at 3:30` · `log: left room at 3:30 loc: home` · `log: shower 7:30 - 7:45` · `log: shower 10m` · `log: START walk` · `log: END walk 5:00` · `log: went outside 12:04` · `log went outside 7/4/26 1:00`",
     explanation:
-      "Tracking note on Activity, the Event row of the Tracking log. The word log works with or without the colon. No time → point at send time. `at 3:30` is a point on the send date. `7:30 - 7:45` is a range. `10m` / `10 min` just finished (end = send time). START/END pair an activity. A line under the event is the note; the clock stays on the first line. A later block over that minute leaves the point. Times use the machine timezone. A clock with no certainty word is exact (`clockCertainty` omitted). `est` / `estimated` / `~` marks the time estimated and also sets `precision: estimated`. `unknown` keeps the named minute for placement and does not treat it as observed. Put the word after the clock, or after the place. Trailing `loc: home` reuses or creates that Location pen and paints a Location instant at the same minute (`log: left room loc: home`, `log: left room at 3:30 loc: home`). The place is the last suffix. The event phrase is stored as the title and as `eventKind`, a lowercase slug with spaces collapsed and punctuation removed, so the same phrase groups (`left room`). Saved keywords, added in Tracking settings (the gear), match the longest phrase (`log: went outside`, `log went outside 12:04`, `log: went outside 7/4/26 1:00`). The remainder is the optional date and time, not part of the title. The title is the saved phrase and `eventKind` is its slug. A bare phrase with no log prefix is not a log. On a log line, a clock with no am/pm is military time: `12:04` is noon, `18:37` is 6:37pm, and `1:00` is 1:00am, not 1pm. `1pm`, `1:00pm`, `1 PM`, `1:00 PM`, and `1:00 p.m.` are 1:00pm. `7/4/26` and `7/4/2026` are July 4, 2026 (month/day/year). Log lines, switch lines, and tracking-note clocks share that reader (`parseExpectedWhen`). Ordinary inbox text is not parsed this way. Labeled from text pipeline. Bare `o` is NOT a log. Desktop Quick Add uses this same write: a leading `log:` shows a dark blue LOG mark and does not go to Inbox.",
+      "Tracking note on Activity, the Event row of the Tracking log. The word log works with or without the colon. No time → point at send time. `at 3:30` is a point on the send date. `7:30 - 7:45` is a range. `10m` / `10 min` just finished (end = send time). START/END pair an activity. A line under the event is the note; the clock stays on the first line. A later block over that minute leaves the point. Times use the machine timezone. A clock with no certainty word is exact (`clockCertainty` omitted). `est` / `estimated` / `~` marks the time estimated and also sets `precision: estimated`. `unknown` keeps the named minute for placement and does not treat it as observed. Put the word after the clock, or after the place. Trailing `loc: home` reuses or creates that Location pen and paints a Location instant at the same minute (`log: left room loc: home`, `log: left room at 3:30 loc: home`). The place is the last suffix. The event phrase is stored as the title and as `eventKind`, a lowercase slug with spaces collapsed and punctuation removed, so the same phrase groups (`left room`). Saved keywords, added in Tracking settings (the gear), match the longest phrase (`log: went outside`, `log went outside 12:04`, `log: went outside 7/4/26 1:00`). The remainder is the optional date and time, not part of the title. The title is the saved phrase and `eventKind` is its slug. Text with no verb is a log line too (`went outside` alone logs `went outside`). On a log line, a clock with no am/pm is military time: `12:04` is noon, `18:37` is 6:37pm, and `1:00` is 1:00am, not 1pm. `1pm`, `1:00pm`, `1 PM`, `1:00 PM`, and `1:00 p.m.` are 1:00pm. `7/4/26` and `7/4/2026` are July 4, 2026 (month/day/year). Log lines, switch lines, and tracking-note clocks share that reader (`parseExpectedWhen`). `inbox:` text is not parsed this way. Labeled from text pipeline. Bare `o` is logged as the title `o`, like any text with no verb. Desktop Quick Add uses this same write: a leading `log:` shows a dark blue LOG mark and does not go to Inbox.",
     status: "active",
   },
   {
@@ -362,7 +372,7 @@ export const BIM_COMMAND_CATALOG: CatalogEntry[] = [
     format:
       "`tp: Opening the editor to fix the clock, then the dishes, relieved it is a small fix` · `TP: …` · `thought process: …` · `log: tp: …`",
     explanation:
-      "Thought process: a guiding strand of this moment, from what you are doing, to what it leads to, to how it feels. Why you are doing something, what you expect to do next, and how it lands. Not a general note, a one-word mood, or a short activity log such as brushed teeth. Colon required on the verb, so bare `tp` and bare `thought process` stay capture. Activity instant on the Text log pen, `eventKind` `thought-process`. The first line is the title; lines under it are the note. No time uses the send time. Clocks are `parseExpectedWhen`, the same reader as a log line. A bare clock is military (`1:00` is 1:00am, `12:04` is noon). `1pm`, `1:00 PM`, and `1:00 p.m.` are 13:00. `7/4/26` is July 4, 2026. `est` / `estimated` / `~` is estimated (`clockCertainty` and `precision: estimated`). `unknown` keeps the minute for placement. A general note stays `note:` / `n`.",
+      "Thought process: a guiding strand of this moment, from what you are doing, to what it leads to, to how it feels. Why you are doing something, what you expect to do next, and how it lands. Not a general note, a one-word mood, or a short activity log such as brushed teeth. Colon required on the verb, so bare `tp` and bare `thought process` are plain log lines. Activity instant on the Text log pen, `eventKind` `thought-process`. The first line is the title; lines under it are the note. No time uses the send time. Clocks are `parseExpectedWhen`, the same reader as a log line. A bare clock is military (`1:00` is 1:00am, `12:04` is noon). `1pm`, `1:00 PM`, and `1:00 p.m.` are 13:00. `7/4/26` is July 4, 2026. `est` / `estimated` / `~` is estimated (`clockCertainty` and `precision: estimated`). `unknown` keeps the minute for placement. A general note stays `note:` / `n`.",
     status: "active",
   },
   {
@@ -372,7 +382,7 @@ export const BIM_COMMAND_CATALOG: CatalogEntry[] = [
     forms: ["log keywords", "log: keywords"],
     format: "`log keywords` · `log: keywords`",
     explanation:
-      "Numbered list of saved log keywords. Does not create a log row. Phrases are added in Tracking settings (the gear) and start empty. A saved phrase is logged with `log: went outside` or `log went outside` (colon optional). A clock or US date after the phrase is the time, not part of the title. Longest saved phrase wins. A bare phrase with no log prefix is not this log. On a log line, a clock with no am/pm is military time (`12:04` noon, `1:00` is 1:00am, `1pm` is 1:00pm). Log lines, switch lines, and tracking-note clocks share that reader (`parseExpectedWhen`). Ordinary inbox text is not parsed this way.",
+      "Numbered list of saved log keywords. Does not create a log row. Phrases are added in Tracking settings (the gear) and start empty. A saved phrase is logged with `log: went outside` or `log went outside` (colon optional). A clock or US date after the phrase is the time, not part of the title. Longest saved phrase wins. Text with no verb is a log line too, so a bare saved phrase logs as that phrase. On a log line, a clock with no am/pm is military time (`12:04` noon, `1:00` is 1:00am, `1pm` is 1:00pm). Log lines, switch lines, and tracking-note clocks share that reader (`parseExpectedWhen`). `inbox:` text is not parsed this way.",
     status: "active",
   },
   {
@@ -394,7 +404,7 @@ export const BIM_COMMAND_CATALOG: CatalogEntry[] = [
     format:
       "`switch: location from: home to: ralphs` · `switch: activity from: working on brain2 to: working on foxtide 6:37pm` · `switch: company Elijah` · `switch: to cleaning` · `switch: from email to cleaning`",
     explanation:
-      "Switch. The colon sits right after `switch`. The next word is the Tracking view when it names one you have (Activity, Location, Mood, Company, …). Omit it and the view is Activity (`switch: to cleaning`, `switch: from email to cleaning`). `from:` is what you left and `to:` is the destination; a bare name after the view is the destination (`switch: company Elijah`). Optional clock, else the send time. The clock and date are `parseExpectedWhen`, the same reader as a log line and a tracking-note clock. A bare clock is military (`18:37` is 6:37pm, `6:37` is 06:37, `1:00` is 1:00am). `6:37pm`, `6:37 PM`, `1pm`, `1:00pm`, `1 PM`, `1:00 PM`, and `1:00 p.m.` are 13:00. A bare integer is not a clock. Optional `7/4/26` or `7/4/2026` is month/day/year on the local calendar; a date with no clock keeps the send clock. `at` marks the clock and is not part of the destination. Ordinary inbox text is not parsed this way. `est` / `estimated` / `~` is estimated. `unknown` keeps the minute for placement. Activity stores the same instant as `st:`: pen Switch, title `started …` or `stopped … · started …`, plus `switchFrom` / `switchTo`. Any other view paints an instant on that scope. `to` is that scope’s pen (existing name, or created the way that view adds a pen). `from` is found or created the same way and stored; the tick’s color is the destination. There is no Goal view.",
+      "Switch. The colon sits right after `switch`. The next word is the Tracking view when it names one you have (Activity, Location, Mood, Company, …). Omit it and the view is Activity (`switch: to cleaning`, `switch: from email to cleaning`). `from:` is what you left and `to:` is the destination; a bare name after the view is the destination (`switch: company Elijah`). Optional clock, else the send time. The clock and date are `parseExpectedWhen`, the same reader as a log line and a tracking-note clock. A bare clock is military (`18:37` is 6:37pm, `6:37` is 06:37, `1:00` is 1:00am). `6:37pm`, `6:37 PM`, `1pm`, `1:00pm`, `1 PM`, `1:00 PM`, and `1:00 p.m.` are 13:00. A bare integer is not a clock. Optional `7/4/26` or `7/4/2026` is month/day/year on the local calendar; a date with no clock keeps the send clock. `at` marks the clock and is not part of the destination. `inbox:` text is not parsed this way. `est` / `estimated` / `~` is estimated. `unknown` keeps the minute for placement. Activity stores the same instant as `st:`: pen Switch, title `started …` or `stopped … · started …`, plus `switchFrom` / `switchTo`. Any other view paints an instant on that scope. `to` is that scope’s pen (existing name, or created the way that view adds a pen). `from` is found or created the same way and stored; the tick’s color is the destination. There is no Goal view.",
     status: "active",
   },
   {
@@ -590,7 +600,7 @@ export const BIM_COMMAND_CATALOG: CatalogEntry[] = [
     forms: ["read to do today", "read todo today", "read todays list"],
     format: "`read to do today`",
     explanation:
-      "Numbered dump of open Home → To Do items for today, and that pin. The reply is the same card. `to do list` as prose stays inbox. A reply to the pin adds a line, or checks off `2` / `1. 3 pm` / `5. 4pm`. `-est` / `-e` marks that finish estimated. Next Actions is `do:`, not this pin.",
+      "Numbered dump of open Home → To Do items for today, and that pin. The reply is the same card. `to do list` as prose is a log line. A reply to the pin adds a line, or checks off `2` / `1. 3 pm` / `5. 4pm`. `-est` / `-e` marks that finish estimated. Next Actions is `do:`, not this pin.",
     status: "active",
   },
   {
@@ -863,7 +873,7 @@ export const BIM_COMMAND_CATALOG: CatalogEntry[] = [
     forms: ["call:", "called:", "phone-call:"],
     format: "`call: Jane 12m` · `called: Mom 3:02-3:17` · `phone-call: …`",
     explanation:
-      "iPhone Calls interval (who + duration or clock window). Estimated. Colon required. Bare `call` and `called` stay inbox with the full sentence.",
+      "iPhone Calls interval (who + duration or clock window). Estimated. Colon required. Bare `call` and `called` are a log line with the full sentence.",
     status: "active",
   },
   {
@@ -873,7 +883,7 @@ export const BIM_COMMAND_CATALOG: CatalogEntry[] = [
     forms: ["text:", "sms:", "imessage:", "sent:"],
     format: "`text: Jane on my way` · `sms: …` · `imessage: …` · `sent: …`",
     explanation:
-      "iPhone Texts instant. First word is who; the rest is the body. Colon required. Bare `text` and `sent` stay inbox with the full sentence.",
+      "iPhone Texts instant. First word is who; the rest is the body. Colon required. Bare `text` and `sent` are a log line with the full sentence.",
     status: "active",
   },
 
@@ -964,7 +974,7 @@ export const BIM_COMMAND_CATALOG: CatalogEntry[] = [
     forms: ["read inbox", "show inbox", "dump inbox", "open inbox"],
     format: "`read inbox` · `show inbox` · `dump inbox`",
     explanation:
-      "Dump Inbox, newest first, then Monkey brain if any. Bare `inbox:` still captures. -mb / -monkey on a capture dumps it in Monkey brain.",
+      "Dump Inbox, newest first, then Monkey brain if any. `inbox:` with text captures to Inbox. -mb / -monkey on a capture dumps it in Monkey brain.",
     status: "active",
   },
   {

@@ -16,7 +16,7 @@ Companion view: the canvas
 
 | Piece | Where | Observed |
 | --- | --- | --- |
-| Command core | `lib/ingest/` | Verb plus payload. Prefix-less text is Inbox, except a multi-line `Name:` dump. LLM-free. |
+| Command core | `lib/ingest/` | Verb plus payload. Prefix-less text is a `log:` line (Inbox via `inbox:` or a trailing `-i`), except a multi-line `Name:` dump. LLM-free. |
 | Long poll | `electron/telegram-ingest.js`, `scripts/phone-hub.ts` | `getUpdates` timeout 25s. `allowed_updates`: `message`, `edited_message` only. |
 | Webhook | `scripts/phone-hub.ts` `POST /telegram/webhook` | Used when `COGS_TELEGRAM_WEBHOOK` is set. Optional `X-Telegram-Bot-Api-Secret-Token`. |
 | Queue-only poller | `scripts/telegram-ingest.mjs` (`npm run ingest`) | Does not apply. Prefer `npm run phone:hub`. |
@@ -38,7 +38,7 @@ other pass as newer than this paragraph.
 | --- | --- |
 | Bare `now` / `status` / `where` is the status readout. `now` plus a payload, and `/now`, are Now capture (`doing \| just did \| about to`), not Status. | Implemented. `apply-now.ts`, `executor.test.ts` (“keeps Now prose as Now capture”). |
 | Fuzzy match must not let glue words (`store`, `list`, `to`, …) carry a hit. A unique fuzzy hit is refused when the query still has content words the candidate name does not contain. | Implemented. `name-resolve.ts` and its tests (`outfit store` vs `grocery store`; `flights to tokyo` vs `flights to book`). |
-| `got` / `bought`, `text` / `sent` / `call` / `called`, `did`, `add` must not eat ordinary sentences. Colon forms keep the command. Bare words stay inbox. | Implemented. `COLON_ONLY` in `parse-message.ts`. A bare `got` / `bought` still checks off when **every** comma-separated piece uniquely matches an open grocery line (`matchesOpenGroceryLines`). “Got back from walk” stays inbox. “got oats” checks off oats. |
+| `got` / `bought`, `text` / `sent` / `call` / `called`, `did`, `add` must not eat ordinary sentences. Colon forms keep the command. Bare words are log lines. | Implemented. `COLON_ONLY` in `parse-message.ts`. A bare `got` / `bought` still checks off when **every** comma-separated piece uniquely matches an open grocery line (`matchesOpenGroceryLines`). “Got back from walk” is a log line. “got oats” checks off oats. |
 | Dedupe persists `telegramMessageId` and refuses apply when the dedupe key is null. | Implemented. `dedupe.ts` returns null when a non-simulate message has neither `update_id` nor `message_id`. `executor.ts` logs `Null dedupe key` and does not apply. The event stores `telegramMessageId` and `dedupeKey`. |
 | Live grocery list is chosen in Settings. A `groc` reply shows other open shopping-list counts. Bare `store` dumps the list and refreshes the pin. | Implemented. `groceryListId`, `annotateOtherLists`, alias `store`. Tested. Delivery still sends a **second** bubble when the count is present (see correctness). |
 | `/quicklists` slots: to-do today, this week, this month, next actions, grocery, shopping, ISO, undone habits. A number alone shows that list. Old grocery / todo keywords should stop stealing prose. | Implemented. `apply-quicklists.ts`. `grocery` / `shop` / `shopping` are bare-or-colon, so “grocery list” and “to do list” stay inbox. A bare number is quicklists only when no clarify is waiting. |

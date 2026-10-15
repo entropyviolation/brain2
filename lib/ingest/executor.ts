@@ -5,6 +5,9 @@
  * Simulate skips pairing. Unknown senders get no reply. Photos and PDFs
  * go through `ingestIncomingAsync`. Matching precedence: dedupe → help/pair
  * → explicit commands → habit/discrete triggers → everything else.
+ * Text with no verb, no list path, and no capture flag is a `log:` line,
+ * not Inbox. `inbox:` is the explicit Inbox verb. A trailing `-i` / `-inbox`
+ * also files the message in Inbox after it lands wherever it was going.
  * An open morning review skips that ladder until the message is exactly STOP.
  * Blank text waits. Live Location is dropped while any text ritual is open
  * and resumes on the next edit after that ritual ends.
@@ -21,6 +24,7 @@ import { applyNowCapture } from "./apply-now"
 import { applyQuicklists } from "./apply-quicklists"
 import { claimIngestDedupeKeys, ingestDedupeKey, ingestDedupeKeys } from "./dedupe"
 import { peekUndoLabel, runAsAction, undoLastAction } from "@/lib/action-history"
+import { parseSmartCapture } from "@/lib/smart-parse"
 import {
   isReplayableWrite,
   isUndoCommand,
@@ -319,9 +323,50 @@ function applyTextIntent(message: IncomingMessage, now: Date): ApplyResult {
     }
     return advanceRitual(pending, raw, now)
   }
-  const text = expandIngestText(message.text)
-  const label = text.trim().slice(0, 80) || "text"
-  return rememberNamedWrite(source, label, () => applyNamedText(message, now, text))
+  const expanded = expandIngestText(message.text)
+  const label = expanded.trim().slice(0, 80) || "text"
+  const { text, alsoInbox } = splitInboxFlag(expanded)
+  return rememberNamedWrite(source, label, () => {
+    const primary = applyNamedText(message, now, text)
+    return alsoInbox ? alsoFileInInbox(message, text, primary, now) : primary
+  })
+}
+
+/** Trailing `-i` / `-inbox` on the whole message. A message that is only the flag keeps it. */
+const INBOX_FLAG_RE = /\s+-(?:inbox|i)\s*$/i
+
+export function splitInboxFlag(text: string): { text: string; alsoInbox: boolean } {
+  const match = INBOX_FLAG_RE.exec(text)
+  if (!match) return { text, alsoInbox: false }
+  const rest = text.slice(0, match.index).trimEnd()
+  if (!rest) return { text, alsoInbox: false }
+  return { text: rest, alsoInbox: true }
+}
+
+/**
+ * `-i` / `-inbox`: the message already went where it was going. Also file the
+ * body (the text after the verb) in Inbox. A message that already landed in
+ * Inbox (`inbox:`, `add:`, a list path, `-mb`, `-p`) is not filed twice.
+ * Both writes share one undo.
+ */
+function alsoFileInInbox(message: IncomingMessage, text: string, primary: ApplyResult, now: Date): ApplyResult {
+  if (primary.kind === "capture") return primary
+  const intent = parseMessage(text, now)
+  const body = (intent.kind !== "capture" && intent.payload.trim()) || text
+  const inbox = applyCapture(body, {
+    sendToInbox: true,
+    now,
+    origin: telegramCaptureOrigin(message, text),
+  })
+  if (inbox.status !== "ok") return primary
+  const lead = "reply" in primary && primary.reply ? primary.reply : ""
+  const reply = lead ? `${lead}\n${inbox.reply}` : inbox.reply
+  if (primary.status === "ok" && isReplayableWrite(primary)) {
+    return { ...primary, reply, itemIds: [...(primary.itemIds ?? []), ...(inbox.itemIds ?? [])] }
+  }
+  if (primary.status === "needs_clarify") return { ...primary, reply }
+  // A readout, a refusal, or an error is not a write, so the Inbox line carries the undo.
+  return { ...inbox, reply, ...(primary.ritualCardMessageId != null ? { ritualCardMessageId: primary.ritualCardMessageId } : {}) }
 }
 
 function applyNamedText(message: IncomingMessage, now: Date, text: string): ApplyResult {
@@ -376,6 +421,10 @@ function applyNamedText(message: IncomingMessage, now: Date, text: string): Appl
 function dispatchIntent(message: IncomingMessage, intent: IngestIntent, now: Date): ApplyResult {
   if (intent.kind === "capture") {
     const raw = intent.raw || intent.payload
+    if (isDefaultLogText(raw, now)) {
+      const logged = applyDiscreteLog(raw, now, { keywordQuery: false })
+      if (logged.status === "ok") return logged
+    }
     return applyCapture(intent.payload || intent.raw, {
       sendToInbox: true,
       now,
@@ -383,6 +432,22 @@ function dispatchIntent(message: IncomingMessage, intent: IngestIntent, now: Dat
     })
   }
   return dispatch(intent, now)
+}
+
+/**
+ * Text with no verb goes to the Tracking log, the same as `log:`.
+ * A leading list path (`brain2: item`), `cat:`, `-mb`, or `-p` still names a
+ * capture, so those stay Inbox. If the log cannot read it, it falls back to Inbox.
+ */
+function isDefaultLogText(raw: string, now: Date): boolean {
+  if (!raw.trim() || looksLikeVerb(raw, now)) return false
+  const { suggestion } = parseSmartCapture(raw, { now })
+  return !(
+    suggestion.plain ||
+    suggestion.monkeyBrain ||
+    suggestion.category ||
+    (suggestion.folderPath?.length ?? 0) > 0
+  )
 }
 
 function finishIngest(message: IncomingMessage, result: ApplyResult): ApplyResult {
