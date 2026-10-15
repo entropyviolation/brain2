@@ -1,0 +1,1453 @@
+/**
+ * components/Analytics/analytics-atlas.css — Analytics as an esoteric data plate
+ *
+ * Skin over `analytics-chrome.css`: same selectors, same DOM, loaded after it.
+ * Nothing here changes what a control does. Drawn from designrefs 0001–0124,
+ * read as technical diagrams rather than costume:
+ *
+ * - Range bay is a cobalt instrument plate (0124 cover) with concentric field
+ *   rings and spokes (0047 periodic law, 0058 / 0061 degree wheels, 0049),
+ *   a damped trace (0016) and a degree ruler (0007, 0034). Keys are
+ *   chrome-rimmed typewriter keys (0087, 0088, 0116). Lamps are steel ball
+ *   bearings (0045, 0097); the lit lamp is a cool pearl (0105).
+ * - Groups are steel catalog drawers (0082). Views are index cards with
+ *   trapezoid tabs; the open card is the black guide tab with its number
+ *   (0084, 0085).
+ * - Canvas is cool white paper over a cobalt graph rule (0118). Plates carry
+ *   a double rule, crop marks (0011, 0075) and FIG. numbering (0069, 0083).
+ * - Readouts are one ruled card (0120), not a stack of cards.
+ * - Scopes are dark graphite wells with a cobalt grid and a white trace.
+ * - No yellow, no stars. One accent: cobalt / cyanotype (0102, 0124).
+ */
+
+.fm98.an95 {
+  --at-paper: #eef0f1;
+  --at-paper-hi: #f9fafb;
+  --at-paper-deep: #e1e5e8;
+  --at-paper-edge: #cbd1d7;
+  --at-ink: #14171c;
+  --at-ink-soft: #363c45;
+  --at-ink-faint: #69717c;
+  --at-rule: rgba(20, 23, 28, 0.78);
+  --at-rule-soft: rgba(20, 23, 28, 0.22);
+  --at-grid: rgba(36, 76, 160, 0.07);
+  --at-grid-major: rgba(36, 76, 160, 0.14);
+  --at-cyan: #2a55a8;
+  --at-cyan-deep: #173a7a;
+  --at-cyan-wash: rgba(42, 85, 168, 0.08);
+  --at-night: #0e1a3a;
+  --at-night-2: #1a2d5e;
+  --at-frost: #e8edf5;
+  --at-steel-hi: #eef1f4;
+  --at-steel: #9ca4ae;
+  --at-steel-lo: #4b525b;
+  /* Handheld pixel faces (app/layout.tsx): Pixelify Sans for titles and
+     values, Silkscreen for keys, labels and ticks, DotGothic16 for prose. */
+  --at-display: var(--font-pixelify), "Pixelify Sans", var(--font-w95, "w95fa"), monospace;
+  --at-serif: var(--at-display);
+  --at-type: var(--font-silkscreen), Silkscreen, "w95fa", monospace;
+  --at-sans: var(--font-dotgothic), "DotGothic16", "w95fa", monospace;
+
+  /* Steel ball bearing, lit from the upper left. */
+  --at-bearing:
+    radial-gradient(circle at 33% 28%, #ffffff 0 9%, #e4e7ea 16%, #9ba1a9 38%, #3b3f46 62%, #1c1e22 74%, #7d838c 90%, #4a4e55 100%);
+  --at-bearing-ring: 0 0 0 0.5px rgba(0, 0, 0, 0.55), 0 1px 1px rgba(0, 0, 0, 0.35);
+  /* Iridescent pearl, the one lit lamp. */
+  --at-pearl:
+    radial-gradient(circle at 34% 28%, #ffffff 0 12%, transparent 30%),
+    conic-gradient(from 210deg at 50% 50%, #eae6ff, #dff0ff, #e4fbf6, #f3e8ff, #e0ecff, #eae6ff),
+    #f1f3f7;
+  --at-pearl-ring: 0 0 0 0.5px rgba(80, 70, 90, 0.6), 0 0 6px rgba(214, 236, 255, 0.95), 0 0 12px rgba(190, 220, 255, 0.45);
+
+  /* Typewriter key: chrome rim around a white, slightly dished face. */
+  --at-key-face:
+    radial-gradient(ellipse at 50% 18%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0) 62%),
+    linear-gradient(180deg, #fbfcfd, #e2e6ea);
+  --at-key-rim:
+    0 0 0 1px #2c2e33,
+    0 0 0 2.5px #c9cdd2,
+    0 0 0 3.5px #5d6168,
+    0 2px 3px 2.5px rgba(0, 0, 0, 0.35),
+    inset 0 -2px 3px rgba(40, 55, 80, 0.2),
+    inset 0 1px 0 #ffffff;
+  --at-key-rim-down:
+    0 0 0 1px #000000,
+    0 0 0 2.5px #b9bec4,
+    0 0 0 3.5px #4b4f56,
+    0 1px 1px 2.5px rgba(0, 0, 0, 0.3),
+    inset 0 2px 5px rgba(0, 0, 0, 0.75);
+  --at-key-down-face:
+    radial-gradient(ellipse at 50% 0%, rgba(160, 190, 230, 0.22), transparent 60%),
+    linear-gradient(180deg, #121318, #23252c);
+
+  /* Old chrome tokens, re-pointed so every interior (boards, Tracking cuts) follows. */
+  --an-paper: var(--at-paper);
+  --an-panel: var(--at-paper-hi);
+  --an-ink: var(--at-ink);
+  --an-muted: var(--at-ink-soft);
+  --an-line: var(--at-rule-soft);
+  --an-recess: var(--at-paper-deep);
+  --an-hover: rgba(42, 85, 168, 0.08);
+  --an-accent: var(--at-cyan);
+  --an-fill: var(--at-cyan);
+  --an-empty: var(--at-paper-edge);
+  --an-hi: #fbfcfd;
+  --an-lo: rgba(20, 23, 28, 0.35);
+  --an-scope: var(--at-night);
+  --an-nameplate: var(--at-ink);
+
+  color: var(--at-ink);
+  background: var(--at-paper);
+}
+
+/* ======================================================================
+   Range bay — cobalt instrument plate
+   ====================================================================== */
+
+.fm98.an95 .fm-toolbar.an-range-bar {
+  position: relative;
+  gap: 10px 12px;
+  padding: 12px 14px;
+  margin: 3px 3px 0;
+  border-radius: 2px;
+  color: var(--at-frost);
+  background:
+    repeating-linear-gradient(90deg, rgba(232, 237, 245, 0.5) 0 1px, transparent 1px 40px) left 6px bottom 5px / calc(100% - 12px) 7px no-repeat,
+    repeating-linear-gradient(90deg, rgba(232, 237, 245, 0.32) 0 1px, transparent 1px 8px) left 6px bottom 5px / calc(100% - 12px) 3px no-repeat,
+    url("/analytics-atlas/field-lines.svg") right -180px center / 1600px 160px no-repeat,
+    radial-gradient(ellipse at 85% 50%, rgba(120, 160, 255, 0.22), transparent 60%),
+    linear-gradient(180deg, var(--at-night-2), var(--at-night) 80%);
+  box-shadow:
+    0 0 0 1px #000000,
+    inset 0 0 0 1px rgba(232, 237, 245, 0.18),
+    inset 0 0 0 4px var(--at-night),
+    inset 0 0 0 5px rgba(232, 237, 245, 0.12),
+    inset 0 10px 24px rgba(0, 0, 20, 0.45);
+}
+
+.fm98.an95 .an-range-bar > .an-nameplate {
+  gap: 7px;
+  padding: 4px 4px 4px 0;
+  font-family: var(--at-type);
+  font-size: 11px;
+  font-weight: 400;
+  font-style: normal;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--at-frost);
+  text-shadow: none;
+  background: none;
+  box-shadow: none;
+}
+
+.fm98.an95 .an-range-bar > .an-nameplate::before {
+  content: "";
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--at-frost) 0 1.5px, transparent 2px);
+  box-shadow: 0 0 0 1px var(--at-frost), inset 0 0 0 3px var(--at-night), inset 0 0 0 3.6px rgba(232, 237, 245, 0.55);
+}
+
+.fm98.an95 .an-range-keys,
+.fm98.an95 .an-range-custom,
+.fm98.an95 .an-range-step {
+  gap: 9px;
+  padding: 7px 9px;
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, rgba(4, 10, 28, 0.6), rgba(10, 20, 50, 0.4));
+  box-shadow:
+    inset 0 0 0 1px rgba(232, 237, 245, 0.18),
+    inset 0 2px 6px rgba(0, 0, 20, 0.7),
+    0 1px 0 rgba(232, 237, 245, 0.08);
+  backdrop-filter: blur(1px);
+}
+
+.fm98.an95 .an-range-keys {
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  max-width: 36rem;
+  border-radius: 18px;
+}
+
+/* A key never shrinks below its label; the bay wraps instead. */
+.fm98.an95 .an-range-keys .an-range-chip:not(#at) {
+  flex: 1 0 auto;
+}
+
+/* Typewriter keys: range presets, custom periods, Prev / Next.
+   `:not(#at)` adds id weight so these faces beat the house button lip
+   (`body.win95-app button:not(...)` in win95.css, 0-7-2 on :active).
+   The same guard sits on every Analytics key below. */
+.fm98.an95 .an-range-chip:not(#at) {
+  min-height: 26px;
+  padding: 3px 12px 3px 24px;
+  border-radius: 999px;
+  white-space: nowrap;
+  font-family: var(--at-type);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  color: var(--at-ink);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.85);
+  background: var(--at-key-face);
+  box-shadow: var(--at-key-rim);
+  transition: transform 90ms ease, box-shadow 90ms ease;
+}
+
+.fm98.an95 .an-range-chip:not(#at):hover:not(:disabled) {
+  background:
+    radial-gradient(ellipse at 50% 18%, #ffffff, rgba(255, 255, 255, 0) 62%),
+    linear-gradient(180deg, #ffffff, #eaedf1);
+}
+
+.fm98.an95 .an-range-chip:not(#at):active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: var(--at-key-rim-down);
+}
+
+.fm98.an95 .an-range-chip:not(#at)::before {
+  left: 9px;
+  width: 9px;
+  height: 9px;
+  margin-top: -4.5px;
+  background: var(--at-bearing);
+  box-shadow: var(--at-bearing-ring);
+}
+
+.fm98.an95 .an-range-chip:not(#at)[aria-pressed="true"] {
+  transform: translateY(1px);
+  color: var(--at-frost);
+  text-shadow: none;
+  background: var(--at-key-down-face);
+  box-shadow: var(--at-key-rim-down);
+}
+
+.fm98.an95 .an-range-chip:not(#at)[aria-pressed="true"]::before {
+  background: var(--at-pearl);
+  box-shadow: var(--at-pearl-ring);
+}
+
+.fm98.an95 .an-range-step .an-range-step-key:not(#at):disabled {
+  opacity: 1;
+  color: rgba(20, 23, 28, 0.38);
+  text-shadow: none;
+  background: linear-gradient(180deg, #d4d9de, #c0c6cd);
+}
+
+.fm98.an95 .an-range-step .an-range-step-key:not(#at):disabled::before {
+  filter: grayscale(1) brightness(0.7);
+}
+
+/* The one date label: a cartouche in a double rule. */
+.fm98.an95 .an-range-label {
+  padding: 5px 14px;
+  border-radius: 1px;
+  font-family: var(--at-type);
+  font-size: 11.5px;
+  font-weight: 400;
+  font-style: normal;
+  letter-spacing: 0.06em;
+  color: var(--at-ink);
+  text-shadow: none;
+  background: var(--at-paper-hi);
+  box-shadow:
+    0 0 0 1px var(--at-ink),
+    0 0 0 3px var(--at-paper-hi),
+    0 0 0 3.5px var(--at-ink),
+    0 2px 6px 3px rgba(0, 0, 20, 0.35);
+  margin: 0 4px;
+}
+
+.fm98.an95 .an-range-custom input[type="date"] {
+  font-family: var(--at-type);
+  font-size: 11px;
+  color: var(--at-ink);
+  background: var(--at-paper-hi);
+  border-radius: 1px;
+  padding: 4px 7px;
+  box-shadow:
+    0 0 0 1px var(--at-ink),
+    inset 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+
+/* ======================================================================
+   Studio + left index — the card catalog
+   ====================================================================== */
+
+.fm98.an95 .an-studio {
+  background: var(--at-paper);
+}
+
+.fm98.an95 .an-nav {
+  width: 212px;
+  gap: 8px;
+  padding: 12px 10px 12px 12px;
+  background:
+    linear-gradient(90deg, transparent calc(100% - 10px), rgba(20, 23, 28, 0.07)),
+    repeating-linear-gradient(0deg, transparent 0 23px, rgba(20, 23, 28, 0.035) 23px 24px),
+    var(--at-paper-deep);
+  box-shadow:
+    inset -1px 0 0 var(--at-ink),
+    inset -4px 0 0 var(--at-paper-deep),
+    inset -5px 0 0 var(--at-rule-soft);
+}
+
+/* Engraved section heads: serif small caps with a hairline run-out (0034). */
+.fm98.an95 .an-nav > .an-nameplate {
+  align-self: stretch;
+  display: flex;
+  gap: 8px;
+  margin: 4px 0 0;
+  padding: 0;
+  font-family: var(--at-serif);
+  font-size: 12px;
+  font-weight: 400;
+  font-style: normal;
+  letter-spacing: 0.14em;
+  color: var(--at-ink);
+  text-shadow: none;
+  background: none;
+  box-shadow: none;
+}
+
+.fm98.an95 .an-nav > .an-nameplate::after {
+  content: "";
+  flex: 1;
+  height: 0;
+  border-top: 1px solid var(--at-ink);
+  box-shadow: 0 2px 0 -1px var(--at-paper-deep), 0 3px 0 -1px var(--at-rule-soft);
+}
+
+/* Groups: a cabinet of drawers, each with a steel card holder and a ball-bearing pull. */
+.fm98.an95 .an-group-bar {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 4px;
+  padding: 5px;
+  border-radius: 2px;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.07) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, #7f8790, #5d646d);
+  box-shadow:
+    0 0 0 1px var(--at-ink),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.fm98.an95 .an-group-btn {
+  flex: 0 0 auto;
+  isolation: isolate;
+  min-height: 28px !important;
+  padding: 0 30px 0 14px !important;
+  justify-content: flex-start;
+  font-family: var(--at-type) !important;
+  font-size: 10.5px !important;
+  font-weight: 400;
+  letter-spacing: 0.12em !important;
+  color: var(--at-ink);
+  text-shadow: none;
+  border-radius: 1px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.28), transparent 45%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 2px),
+    linear-gradient(180deg, #d6dbe0, #bcc3ca);
+  box-shadow:
+    0 0 0 1px #2c3238,
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+}
+
+/* The steel holder framing the drawer's label card. */
+.fm98.an95 .an-group-btn::after {
+  content: "";
+  position: absolute;
+  left: 7px;
+  right: 26px;
+  top: 5px;
+  bottom: 5px;
+  border-radius: 1px;
+  background: var(--at-paper-hi);
+  box-shadow:
+    0 0 0 1.5px var(--at-steel),
+    0 0 0 2px var(--at-steel-lo),
+    inset 0 1px 2px rgba(30, 40, 60, 0.3);
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Steel pull on the right of each drawer. */
+.fm98.an95 .an-group-btn::before {
+  left: auto !important;
+  right: 9px;
+  width: 10px !important;
+  height: 10px !important;
+  margin-top: -5px !important;
+  background: var(--at-bearing);
+  box-shadow: var(--at-bearing-ring);
+}
+
+.fm98.an95 .an-group-btn:hover {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.4), transparent 45%),
+    linear-gradient(180deg, #dfe3e7, #c6ccd2);
+}
+
+.fm98.an95 .an-group-btn[aria-selected="true"] {
+  color: var(--at-frost);
+  text-shadow: none;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent 45%),
+    linear-gradient(180deg, #d6dbe0, #bcc3ca);
+  box-shadow:
+    0 0 0 1px #2c3238,
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    3px 0 0 -1px rgba(0, 0, 0, 0.15);
+  transform: translateX(3px);
+}
+
+.fm98.an95 .an-group-btn[aria-selected="true"]::after {
+  background: var(--at-ink);
+  box-shadow:
+    0 0 0 1.5px var(--at-steel-hi),
+    0 0 0 2px var(--at-steel-lo),
+    inset 0 0 6px rgba(80, 120, 220, 0.3);
+}
+
+.fm98.an95 .an-group-btn[aria-selected="true"]::before {
+  background: var(--at-pearl);
+  box-shadow: var(--at-pearl-ring);
+}
+
+/* Views: index cards in the open drawer, staggered trapezoid tabs (0084). */
+.fm98.an95 .an-view-bar {
+  counter-reset: at-card;
+  gap: 0;
+  padding: 10px 6px 14px 4px;
+  border-radius: 1px;
+  background:
+    linear-gradient(90deg, rgba(20, 23, 28, 0.06), transparent 6px, transparent calc(100% - 6px), rgba(20, 23, 28, 0.06)),
+    var(--at-paper);
+  box-shadow:
+    0 0 0 1px var(--at-ink),
+    inset 0 0 0 3px var(--at-paper),
+    inset 0 0 0 3.5px var(--at-rule-soft),
+    inset 0 8px 12px -8px rgba(0, 0, 0, 0.25);
+}
+
+.fm98.an95 .an-view-btn {
+  --at-tab-x: 0px;
+  --at-tab-r: 12px;
+  counter-increment: at-card;
+  isolation: isolate;
+  min-height: 30px;
+  margin-top: -1px;
+  padding: 7px calc(var(--at-tab-r) + 30px) 5px calc(var(--at-tab-x) + 16px);
+  font-family: var(--at-type);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  display: block;
+  line-height: 18px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--at-ink);
+  text-shadow: none;
+  border-radius: 0;
+  background:
+    linear-gradient(var(--at-ink), var(--at-ink)) 0 100% / 100% 1px no-repeat,
+    linear-gradient(var(--at-paper-hi), var(--at-paper-hi)) 0 100% / 100% 6px no-repeat;
+  box-shadow: none;
+  transition: transform 120ms ease;
+}
+
+/* Guides alternate left-cut and right-cut, as in a real drawer. */
+.fm98.an95 .an-view-btn:nth-child(even) {
+  --at-tab-x: 12px;
+  --at-tab-r: 0px;
+}
+
+/* The tab itself: an outlined trapezoid riding on the card's top edge. */
+.fm98.an95 .an-view-btn::before {
+  left: var(--at-tab-x);
+  right: var(--at-tab-r);
+  top: 3px;
+  bottom: 0;
+  width: auto;
+  height: auto;
+  margin-top: 0;
+  border-radius: 5px 5px 0 0;
+  background: var(--at-paper-hi);
+  border: 1px solid var(--at-ink);
+  border-bottom: none;
+  box-shadow: none;
+  transform: perspective(60px) rotateX(9deg);
+  transform-origin: bottom;
+  z-index: -1;
+}
+
+/* Card number, typed on the tab like "P 012". */
+.fm98.an95 .an-view-btn::after {
+  content: counter(at-card, decimal-leading-zero);
+  position: absolute;
+  right: calc(var(--at-tab-r) + 11px);
+  top: 50%;
+  margin-top: -5px;
+  font-family: var(--at-type);
+  font-size: 10px;
+  line-height: 12px;
+  letter-spacing: 0.04em;
+  color: var(--at-ink-faint);
+}
+
+.fm98.an95 .an-view-btn:hover {
+  transform: translateY(-1px);
+}
+
+.fm98.an95 .an-view-btn:hover::before {
+  background: #ffffff;
+}
+
+.fm98.an95 .an-view-btn[aria-selected="true"] {
+  color: var(--at-paper-hi);
+  text-shadow: none;
+  transform: translateY(-2px);
+  background:
+    linear-gradient(var(--at-ink), var(--at-ink)) 0 100% / 100% 1px no-repeat;
+  box-shadow: none;
+}
+
+.fm98.an95 .an-view-btn[aria-selected="true"]::before {
+  background: var(--at-ink);
+  box-shadow: 0 -1px 6px rgba(42, 85, 168, 0.25);
+}
+
+.fm98.an95 .an-view-btn[aria-selected="true"]::after {
+  color: var(--at-frost);
+}
+
+.fm98.an95 .an-view-btn:focus-visible,
+.fm98.an95 .an-group-btn:focus-visible,
+.fm98.an95 .an-range-chip:not(#at):focus-visible {
+  outline: 1px dotted var(--at-cyan);
+  outline-offset: 3px;
+}
+
+/* ======================================================================
+   Canvas — engraved plate paper over graph rule
+   ====================================================================== */
+
+.fm98.an95 .an-content {
+  counter-reset: at-plate;
+  padding: 18px 22px 28px;
+  background:
+    linear-gradient(var(--at-grid-major) 1px, transparent 1px) 0 0 / 40px 40px,
+    linear-gradient(90deg, var(--at-grid-major) 1px, transparent 1px) 0 0 / 40px 40px,
+    linear-gradient(var(--at-grid) 1px, transparent 1px) 0 0 / 8px 8px,
+    linear-gradient(90deg, var(--at-grid) 1px, transparent 1px) 0 0 / 8px 8px,
+    var(--at-paper);
+  background-attachment: local;
+}
+
+/* The view's legend, set like an atlas caption under a rule. */
+.fm98.an95 .an-view-help {
+  position: relative;
+  margin: 0 0 18px;
+  padding: 0 0 12px 22px;
+  font-family: var(--at-sans);
+  font-size: 13.5px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1.55;
+  color: var(--at-ink-soft);
+  max-width: 82ch;
+  border-bottom: 1px solid var(--at-ink);
+  box-shadow: 0 3px 0 -2px var(--at-paper), 0 4px 0 -2px var(--at-rule-soft);
+}
+
+.fm98.an95 .an-view-help::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 4px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--at-cyan) 0 1.5px, transparent 2px);
+  box-shadow: 0 0 0 1px var(--at-cyan), inset 0 0 0 3px var(--at-paper), inset 0 0 0 3.6px var(--at-cyan);
+}
+
+.fm98.an95 .an-canvas {
+  background: transparent;
+}
+
+.fm98.an95 .an-stack {
+  gap: 20px;
+}
+
+/* Plates: double rule, crop marks in the corners, paper a shade lighter. */
+.fm98.an95 .an-plate {
+  position: relative;
+  gap: 10px;
+  padding: 18px 18px 18px;
+  background:
+    linear-gradient(var(--at-ink), var(--at-ink)) 5px 5px / 9px 1px no-repeat,
+    linear-gradient(var(--at-ink), var(--at-ink)) 5px 5px / 1px 9px no-repeat,
+    linear-gradient(var(--at-ink), var(--at-ink)) calc(100% - 5px) 5px / 9px 1px no-repeat,
+    linear-gradient(var(--at-ink), var(--at-ink)) calc(100% - 5px) 5px / 1px 9px no-repeat,
+    linear-gradient(var(--at-ink), var(--at-ink)) 5px calc(100% - 5px) / 9px 1px no-repeat,
+    linear-gradient(var(--at-ink), var(--at-ink)) 5px calc(100% - 5px) / 1px 9px no-repeat,
+    linear-gradient(var(--at-ink), var(--at-ink)) calc(100% - 5px) calc(100% - 5px) / 9px 1px no-repeat,
+    linear-gradient(var(--at-ink), var(--at-ink)) calc(100% - 5px) calc(100% - 5px) / 1px 9px no-repeat,
+    var(--at-paper-hi);
+  box-shadow:
+    0 0 0 1px var(--at-ink),
+    0 0 0 4px var(--at-paper-hi),
+    0 0 0 4.5px var(--at-rule),
+    0 6px 14px -4px rgba(20, 30, 55, 0.22);
+  margin: 4px;
+}
+
+.fm98.an95 .an-canvas-head,
+.fm98.an95 .an-library-head {
+  align-items: flex-end;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--at-rule-soft);
+}
+
+/* Titles: serif, numbered as figures. */
+.fm98.an95 .an-canvas-title {
+  counter-increment: at-plate;
+  font-family: var(--at-serif);
+  font-size: 19px;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  color: var(--at-ink);
+  align-items: center;
+}
+
+.fm98.an95 .an-canvas-title::before {
+  content: "Fig. " counter(at-plate, decimal-leading-zero);
+  flex-shrink: 0;
+  padding: 2px 7px 2px;
+  font-family: var(--at-type);
+  font-size: 10px;
+  font-style: normal;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--at-cyan-deep);
+  box-shadow: inset 0 0 0 1px var(--at-cyan);
+}
+
+.fm98.an95 .an-canvas-kicker,
+.fm98.an95 .an-canvas-hint {
+  font-family: var(--at-sans);
+  color: var(--at-ink-soft);
+}
+
+.fm98.an95 .an-canvas-hint {
+  font-family: var(--at-serif);
+  font-style: normal;
+  font-size: 13px;
+}
+
+.fm98.an95 .an-canvas-readout {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--at-rule-soft);
+  font-family: var(--at-type);
+  font-size: 12px;
+}
+
+.fm98.an95 .an-n,
+.fm98.an95 .an-caveat {
+  font-family: var(--at-type);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: var(--at-ink-faint);
+}
+
+.fm98.an95 .an-finding {
+  font-family: var(--at-serif);
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.45;
+  color: var(--at-ink);
+}
+
+/* Help key: a tiny round typewriter key. */
+.fm98.an95 .an-help:not(#at) {
+  width: 18px;
+  height: 18px;
+  font-family: var(--at-type);
+  font-size: 10px;
+  color: var(--at-ink);
+  border: none;
+  border-radius: 50%;
+  background: var(--at-key-face);
+  box-shadow:
+    0 0 0 1px #2c2e33,
+    0 0 0 2px #c9cdd2,
+    0 0 0 2.5px #5d6168,
+    0 1px 2px 2px rgba(0, 0, 0, 0.25);
+  margin-left: 4px;
+}
+
+.fm98.an95 .an-help:not(#at):hover {
+  color: var(--at-cyan);
+  border: none;
+}
+
+/* Plot wells: cobalt graph paper inside a single ink rule (0118). */
+.fm98.an95 .an-plot-well,
+.fm98.an95 .an-mosaic,
+.fm98.an95 .an-treemap,
+.fm98.an95 .an-ridge,
+.fm98.an95 .an-violin,
+.fm98.an95 .an-small-mult,
+.fm98.an95 .an-cycle-plot {
+  background:
+    linear-gradient(var(--at-grid-major) 1px, transparent 1px) -1px -1px / 40px 40px,
+    linear-gradient(90deg, var(--at-grid-major) 1px, transparent 1px) -1px -1px / 40px 40px,
+    linear-gradient(var(--at-grid) 1px, transparent 1px) -1px -1px / 8px 8px,
+    linear-gradient(90deg, var(--at-grid) 1px, transparent 1px) -1px -1px / 8px 8px,
+    #fbfcfd;
+  box-shadow:
+    0 0 0 1px var(--at-ink),
+    inset 0 1px 3px rgba(20, 30, 55, 0.12);
+}
+
+.fm98.an95 .an-chart-frame {
+  background: #fbfcfd;
+  box-shadow: 0 0 0 1px var(--at-rule-soft);
+  color: var(--at-ink-soft);
+}
+
+.fm98.an95 .an-canvas .an-chart-frame {
+  background: #fbfcfd;
+  box-shadow: 0 0 0 1px var(--at-rule-soft);
+}
+
+.fm98.an95 .an-chart-empty {
+  font-family: var(--at-sans);
+  font-style: normal;
+  font-size: 14px;
+  color: var(--at-ink-soft);
+}
+
+/* Thin window: engraved hatching, the finding withheld. */
+.fm98.an95 .an-watermark {
+  padding: 12px 14px;
+  font-family: var(--at-sans);
+  font-style: normal;
+  font-size: 14px;
+  color: var(--at-ink);
+  background:
+    linear-gradient(var(--at-paper-hi), var(--at-paper-hi)) padding-box,
+    repeating-linear-gradient(-45deg, var(--at-paper-hi) 0 4px, var(--at-rule-soft) 4px 5px);
+  border: 8px solid transparent;
+  box-shadow: 0 0 0 1px var(--at-ink);
+}
+
+/* Readouts: one ruled card, columns split by hairlines (0120). */
+.fm98.an95 .an-readouts {
+  gap: 0;
+  padding: 0;
+  margin-bottom: 14px;
+  background:
+    linear-gradient(var(--at-cyan), var(--at-cyan)) 0 26px / 100% 1px no-repeat,
+    linear-gradient(var(--at-cyan), var(--at-cyan)) 0 28px / 100% 1px no-repeat,
+    var(--at-paper-hi);
+  box-shadow:
+    0 0 0 1px var(--at-ink-soft),
+    0 3px 8px -3px rgba(20, 30, 55, 0.3);
+  overflow: hidden;
+}
+
+.fm98.an95 .an-readout {
+  padding: 7px 12px 10px;
+  background:
+    repeating-linear-gradient(180deg, transparent 0 21px, rgba(42, 85, 168, 0.16) 21px 22px) 0 29px / 100% calc(100% - 29px) no-repeat;
+  box-shadow: inset -1px 0 0 rgba(42, 85, 168, 0.35), 1px 0 0 rgba(42, 85, 168, 0.35);
+}
+
+.fm98.an95 .an-readout-label {
+  font-family: var(--at-type);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  color: var(--at-cyan-deep);
+  height: 16px;
+  line-height: 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fm98.an95 .an-readout-value {
+  margin: 10px 0 2px;
+  font-family: var(--at-serif);
+  font-size: 28px;
+  font-weight: 400;
+  line-height: 1.1;
+  color: var(--at-ink);
+}
+
+.fm98.an95 .an-readout-note {
+  font-family: var(--at-type);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  color: var(--at-ink-soft);
+}
+
+/* Studio controls: small typewriter keys and form-line fields. */
+.fm98.an95 .an-studio-field,
+.fm98.an95 .an-check {
+  font-family: var(--at-type);
+  font-size: 11px;
+  color: var(--at-ink);
+}
+
+.fm98.an95 .an-studio-field select,
+.fm98.an95 .an-studio-field input,
+.fm98.an95 .an-studio-tools select,
+.fm98.an95 .an-library-field select {
+  font-family: var(--at-type);
+  font-size: 11px;
+  color: var(--at-ink);
+  border: none;
+  border-radius: 1px;
+  background: #fbfcfd;
+  box-shadow: 0 0 0 1px var(--at-ink), inset 0 1px 2px rgba(0, 0, 0, 0.1);
+  margin: 0 1px;
+}
+
+.fm98.an95 .an-studio-tools button:not(#at),
+.fm98.an95 .an-chip:not(#at) {
+  margin: 3px;
+  padding: 0 11px;
+  border: none;
+  border-radius: 999px;
+  font-family: var(--at-type);
+  font-size: 11px;
+  color: var(--at-ink);
+  background: var(--at-key-face);
+  box-shadow:
+    0 0 0 1px #2c2e33,
+    0 0 0 2px #c9cdd2,
+    0 0 0 2.5px #5d6168,
+    0 1px 2px 2px rgba(0, 0, 0, 0.22);
+  cursor: pointer;
+}
+
+.fm98.an95 .an-chip:not(#at):hover,
+.fm98.an95 .an-studio-tools button:not(#at):hover {
+  background:
+    radial-gradient(ellipse at 50% 18%, #ffffff, rgba(255, 255, 255, 0) 62%),
+    linear-gradient(180deg, #ffffff, #eaedf1);
+}
+
+.fm98.an95 .an-chip:not(#at)[aria-pressed="true"],
+.fm98.an95 .an-studio-tools button:not(#at)[aria-pressed="true"] {
+  font-weight: 400;
+  color: var(--at-frost);
+  background: var(--at-key-down-face);
+  box-shadow:
+    0 0 0 1px #000000,
+    0 0 0 2px #b9bec4,
+    0 0 0 2.5px #4b4f56,
+    inset 0 2px 4px rgba(0, 0, 0, 0.7);
+}
+
+.fm98.an95 .an-check input[type="checkbox"] {
+  background: #fbfcfd;
+  box-shadow: 0 0 0 1px var(--at-ink), inset 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.fm98.an95 .an-check input[type="checkbox"]:checked::after {
+  border-color: var(--at-cyan-deep);
+}
+
+.fm98.an95 .an-open-lists:not(#at) {
+  border: none;
+  border-radius: 1px;
+  padding: 5px 12px;
+  font-family: var(--at-type);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--at-paper-hi);
+  background: var(--at-ink);
+  clip-path: polygon(6px 0, calc(100% - 6px) 0, 100% 100%, 0 100%);
+  padding-inline: 16px;
+}
+
+.fm98.an95 .an-open-lists:not(#at):hover {
+  color: #ffffff;
+  background: var(--at-cyan-deep);
+}
+
+/* Ledger rows and lists. */
+.fm98.an95 .an-list button,
+.fm98.an95 .an-list-row {
+  border-bottom: 1px solid rgba(42, 85, 168, 0.22);
+  font-family: var(--at-sans);
+}
+
+.fm98.an95 .an-list button:hover,
+.fm98.an95 .an-type-row:hover,
+.fm98.an95 .an-slice-row:hover {
+  background: var(--at-cyan-wash);
+}
+
+.fm98.an95 .an-slice-row.is-active,
+.fm98.an95 .an-type-row.is-active {
+  background: var(--at-cyan-wash);
+  box-shadow: inset 3px 0 0 var(--at-ink);
+}
+
+.fm98.an95 .an-type-list,
+.fm98.an95 .an-type-detail {
+  background: #fbfcfd;
+  box-shadow: 0 0 0 1px var(--at-ink);
+}
+
+.fm98.an95 .an-type-detail-title {
+  font-family: var(--at-serif);
+  font-size: 16px;
+  font-weight: 400;
+}
+
+.fm98.an95 .an-type-items button {
+  color: var(--at-cyan-deep);
+}
+
+.fm98.an95 .an-review-card {
+  background: #fbfcfd;
+  box-shadow: 0 0 0 1px var(--at-ink), 3px 3px 0 -1px var(--at-paper-deep), 3px 3px 0 0 var(--at-rule-soft);
+  margin-bottom: 10px;
+}
+
+.fm98.an95 .an-review-card header {
+  font-family: var(--at-type);
+  border-bottom: 1px solid rgba(42, 85, 168, 0.22);
+}
+
+/* Bars and tracks: ink rules, cyanotype fill. */
+.fm98.an95 .an-bar-track,
+.fm98.an95 .an-pvr-track {
+  background: #fbfcfd;
+  box-shadow: 0 0 0 1px var(--at-rule);
+}
+
+.fm98.an95 .an-bar-fill {
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 4px),
+    linear-gradient(90deg, #5f8fbc, var(--at-cyan-deep));
+}
+
+.fm98.an95 .an-bar-name,
+.fm98.an95 .an-bar-val,
+.fm98.an95 .an-density-label,
+.fm98.an95 .an-density-n,
+.fm98.an95 .an-hourday-label,
+.fm98.an95 .an-hourday-tick,
+.fm98.an95 .an-density-tick,
+.fm98.an95 .an-pvr-cell-label,
+.fm98.an95 .an-legend,
+.fm98.an95 .an-heat-legend,
+.fm98.an95 .an-quantile,
+.fm98.an95 .an-ridge-label,
+.fm98.an95 .an-small-mult-title,
+.fm98.an95 .an-upset-row {
+  font-family: var(--at-type);
+}
+
+.fm98.an95 .an-pvr-planned {
+  background: repeating-linear-gradient(-45deg, #8b97a6 0 3px, #a9b3bf 3px 6px);
+}
+
+.fm98.an95 .an-pvr-actual {
+  background: var(--at-cyan-deep);
+}
+
+.fm98.an95 .an-pvr-ribbon,
+.fm98.an95 .an-horizon,
+.fm98.an95 .an-alluvial,
+.fm98.an95 .an-swarm,
+.fm98.an95 .an-slope,
+.fm98.an95 .an-upset,
+.fm98.an95 .an-matrix-wrap {
+  background: #fbfcfd;
+  box-shadow: 0 0 0 1px var(--at-ink);
+}
+
+.fm98.an95 .an-pvr-cell-bar {
+  background: linear-gradient(180deg, #5f8fbc, var(--at-cyan-deep));
+}
+
+.fm98.an95 .an-matrix {
+  background: var(--at-paper-edge);
+  box-shadow: 0 0 0 1px var(--at-ink);
+}
+
+.fm98.an95 .an-matrix-cell {
+  font-family: var(--at-type);
+}
+
+.fm98.an95 .an-matrix-cell.is-label {
+  background: var(--at-paper);
+  color: var(--at-ink-soft);
+}
+
+.fm98.an95 .an-upset-dot {
+  background: var(--at-paper-edge);
+}
+
+.fm98.an95 .an-upset-dot.is-on {
+  background: var(--at-bearing);
+  box-shadow: var(--at-bearing-ring);
+}
+
+.fm98.an95 .an-upset-bar {
+  background: var(--at-cyan-deep);
+}
+
+.fm98.an95 .an-mosaic-cell.is-active,
+.fm98.an95 .an-density-cell.is-active,
+.fm98.an95 .an-matrix-cell.is-active {
+  outline: 2px solid var(--at-ink);
+  outline-offset: -1px;
+}
+
+.fm98.an95 .an-pie-hole-total {
+  font-family: var(--at-serif);
+  font-size: 20px;
+  font-weight: 400;
+}
+
+.fm98.an95 .an-pie-hole-basis {
+  font-family: var(--at-type);
+}
+
+/* Seasons: cool washes on plate paper, under a double rule. */
+.fm98.an95 .season-card {
+  border: none;
+  padding: 10px;
+  box-shadow: 0 0 0 1px var(--at-ink), 0 0 0 3px #fbfcfd, 0 0 0 3.5px var(--at-rule-soft);
+  margin: 4px;
+}
+
+.fm98.an95 .season-card[data-season="spring"] { background: #e3ede8; }
+.fm98.an95 .season-card[data-season="summer"] { background: #eee5ec; }
+.fm98.an95 .season-card[data-season="fall"] { background: #e8e3e6; }
+.fm98.an95 .season-card[data-season="winter"] { background: #e2e9f4; }
+.fm98.an95 .season-card[data-current="true"] {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--at-ink), 0 0 0 4px #fbfcfd, 0 0 0 5px var(--at-cyan);
+}
+.fm98.an95 .season-card header {
+  font-family: var(--at-serif);
+  font-weight: 400;
+  font-size: 15px;
+}
+
+.fm98.an95 .an-phase-table {
+  background: #fbfcfd;
+  box-shadow: 0 0 0 1px var(--at-ink);
+}
+
+.fm98.an95 .an-phase-table th {
+  font-family: var(--at-type);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--at-cyan-deep);
+  border-bottom: 1px solid var(--at-cyan);
+}
+
+.fm98.an95 .an-phase-table td {
+  border-bottom-color: rgba(42, 85, 168, 0.18);
+}
+
+.fm98.an95 .an-log-phase li {
+  background: #fbfcfd;
+  font-family: var(--at-type);
+  box-shadow: 0 0 0 1px var(--at-rule-soft);
+}
+
+/* Data cells are marks on the plate, not keys: strip the house button lip
+   (gloss + key ring) and keep one engraved hairline. Fill stays the data. */
+.fm98.an95 :is(.an-density-cell, .an-matrix-cell, .an-mosaic-cell, .an-treemap-cell):not(#at) {
+  background-image: none;
+  border-radius: 0;
+  box-shadow: inset 0 0 0 0.5px rgba(20, 23, 28, 0.3);
+}
+
+.fm98.an95 :is(.an-pvr-cell, .an-list button, .an-type-row, .an-type-items button, .an-slice-row):not(#at),
+.an-drill :is(.an-slice-row, .an-drill-block, .an-split-seg):not(#at),
+.an-drill-block:not(#at),
+.an-split-seg:not(#at) {
+  background-image: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.fm98.an95 :is(.an-slice-row, .an-type-row):not(#at).is-active {
+  box-shadow: inset 3px 0 0 var(--at-ink);
+}
+
+.an-drill .an-slice-row:not(#at) {
+  box-shadow: inset 0 -1px 0 rgba(42, 85, 168, 0.2);
+}
+
+.an-drill .an-slice-row:not(#at).is-active {
+  box-shadow: inset 3px 0 0 #14171c, inset 0 -1px 0 rgba(42, 85, 168, 0.2);
+}
+
+/* ======================================================================
+   Scopes — a star chart well with starlight traces
+   ====================================================================== */
+
+.fm98.an95 .an-scope {
+  position: relative;
+  padding: 10px 10px 6px;
+  background:
+    linear-gradient(rgba(120, 160, 255, 0.07) 1px, transparent 1px) 0 0 / 12px 12px,
+    linear-gradient(90deg, rgba(120, 160, 255, 0.07) 1px, transparent 1px) 0 0 / 12px 12px,
+    radial-gradient(ellipse at 50% 0%, #1b2233, #0b0f18 75%);
+  box-shadow:
+    0 0 0 1px #000000,
+    inset 0 0 0 3px #0b0f18,
+    inset 0 0 0 3.5px rgba(232, 237, 245, 0.2),
+    inset 0 6px 16px rgba(0, 0, 0, 0.7);
+  background-blend-mode: normal;
+}
+
+.fm98.an95 .an-scope line[stroke="#2a4a32"],
+.fm98.an95 .an-scope .recharts-cartesian-grid line {
+  stroke: rgba(232, 237, 245, 0.2);
+}
+
+.fm98.an95 .an-scope path[stroke="#3dff8a"],
+.fm98.an95 .an-scope .recharts-line-curve {
+  stroke: #f4f7fb;
+  filter: drop-shadow(0 0 2px rgba(150, 190, 255, 0.7));
+}
+
+.fm98.an95 .an-scope path[fill="#3dff8a"] {
+  fill: #b9d3ef;
+}
+
+.fm98.an95 .an-scope circle[fill="#3dff8a"],
+.fm98.an95 .an-scope .recharts-line-dot,
+.fm98.an95 .an-scope .recharts-dot {
+  fill: #ffffff;
+  stroke: rgba(200, 225, 255, 0.6);
+}
+
+.fm98.an95 .an-scope text[fill="#8fbf9a"],
+.fm98.an95 .an-scope .recharts-cartesian-axis-tick text {
+  fill: #c3cad6;
+  font-family: var(--at-type);
+}
+
+.fm98.an95 .an-scope .recharts-cartesian-axis-line,
+.fm98.an95 .an-scope .recharts-cartesian-axis-tick-line {
+  stroke: rgba(232, 237, 245, 0.4);
+}
+
+.fm98.an95 .an-scope-empty {
+  color: #c3cad6;
+  font-family: var(--at-sans);
+  font-style: normal;
+  font-size: 13px;
+}
+
+/* Recharts on plate paper: engraved hairlines and typed ticks. */
+.fm98.an95 .recharts-cartesian-grid line {
+  stroke: rgba(42, 85, 168, 0.24);
+}
+
+.fm98.an95 .recharts-cartesian-axis-tick text,
+.fm98.an95 .recharts-legend-item-text {
+  font-family: var(--at-type);
+}
+
+.fm98.an95 .recharts-cartesian-axis-tick text {
+  fill: var(--at-ink-soft);
+}
+
+.fm98.an95 .recharts-cartesian-axis-line,
+.fm98.an95 .recharts-cartesian-axis-tick-line {
+  stroke: var(--at-ink);
+}
+
+/* Bars get an engraved edge so data fills sit on the paper like inked plates. */
+.fm98.an95 .recharts-bar-rectangle path,
+.fm98.an95 .recharts-rectangle:not(.recharts-tooltip-cursor) {
+  stroke: rgba(20, 23, 28, 0.55);
+  stroke-width: 0.6px;
+}
+
+.fm98.an95 .recharts-default-tooltip,
+.an-drill .recharts-default-tooltip {
+  background: #f9fafb !important;
+  border: none !important;
+  border-radius: 1px;
+  box-shadow: 0 0 0 1px #14171c, 3px 3px 0 0 rgba(20, 23, 28, 0.18);
+  font-family: var(--font-silkscreen), Silkscreen, monospace;
+  color: #14171c !important;
+}
+
+/* ======================================================================
+   Popups and tooltips that portal out of the window
+   ====================================================================== */
+
+.an-tip {
+  background: #f9fafb !important;
+  color: #14171c !important;
+  border: none !important;
+  border-radius: 1px !important;
+  box-shadow: 0 0 0 1px #14171c, 3px 3px 0 0 rgba(20, 23, 28, 0.18) !important;
+  font-family: var(--font-dotgothic), "DotGothic16", monospace !important;
+  font-size: 13px !important;
+  font-style: normal;
+}
+
+.an-drill {
+  background:
+    linear-gradient(rgba(42, 85, 168, 0.07) 1px, transparent 1px) 0 0 / 8px 8px,
+    linear-gradient(90deg, rgba(42, 85, 168, 0.07) 1px, transparent 1px) 0 0 / 8px 8px,
+    #f9fafb !important;
+  color: #14171c;
+  border: none;
+  box-shadow:
+    0 0 0 1px #14171c,
+    0 0 0 5px #f9fafb,
+    0 0 0 6px rgba(20, 23, 28, 0.78),
+    0 18px 40px rgba(0, 0, 0, 0.4);
+}
+
+.an-drill h2.font-semibold.tracking-tight,
+.an-popup h2.font-semibold.tracking-tight {
+  padding: 5px 18px 6px;
+  border-radius: 0;
+  background: #14171c;
+  box-shadow: none;
+  clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 100%, 0 100%);
+  color: #f9fafb !important;
+  font-family: var(--font-silkscreen), Silkscreen, monospace;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-shadow: none;
+}
+
+.an-drill-summary,
+.an-drill-hint {
+  font-family: var(--font-dotgothic), "DotGothic16", monospace;
+  font-style: normal;
+  color: #363c45;
+}
+
+.an-drill-summary {
+  font-size: 15px;
+}
+
+.an-drill-kicker {
+  font-family: var(--font-silkscreen), Silkscreen, monospace;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #173a7a;
+}
+
+.an-drill-empty {
+  background: #fbfcfd;
+  box-shadow: 0 0 0 1px rgba(20, 23, 28, 0.22);
+  font-family: var(--font-dotgothic), "DotGothic16", monospace;
+  font-style: normal;
+}
+
+.an-drill-mode:not(#at) {
+  border: none;
+  background: linear-gradient(180deg, #fbfcfd, #e2e6ea);
+  box-shadow: 0 0 0 1px #14171c;
+  font-family: var(--font-silkscreen), Silkscreen, monospace;
+  font-weight: 400;
+}
+
+.an-drill-mode:not(#at):last-child {
+  margin-left: 1px;
+}
+
+.an-drill-mode:not(#at).is-active {
+  background: #14171c;
+  color: #f9fafb;
+  border: none;
+}
+
+.an-drill .an-slice-row {
+  background: #fbfcfd;
+  box-shadow: inset 0 -1px 0 rgba(42, 85, 168, 0.2);
+}
+
+.an-drill .an-slice-row:hover {
+  background: #eef2f8;
+}
+
+.an-drill .an-slice-row.is-active {
+  background: #e6edf8;
+  box-shadow: inset 3px 0 0 #14171c, inset 0 -1px 0 rgba(42, 85, 168, 0.2);
+}
+
+.an-drill-blocks {
+  background: #fbfcfd;
+  box-shadow: 0 0 0 1px #14171c;
+}
+
+.an-drill-block {
+  background: transparent;
+  border-bottom: 1px solid rgba(42, 85, 168, 0.2);
+}
+
+.an-drill-block:hover {
+  background: rgba(42, 85, 168, 0.08);
+}
+
+.an-drill-block-time,
+.an-drill-block-dur {
+  font-family: var(--font-silkscreen), Silkscreen, monospace;
+  font-size: 12px;
+}
+
+.an-split-bar {
+  background: #fbfcfd;
+  box-shadow: 0 0 0 1px #14171c;
+}
+
+.an-split-seg.is-active {
+  outline-color: #14171c;
+}
+
+.an-drill .an-open-lists:not(#at) {
+  color: #173a7a;
+  font-family: var(--font-silkscreen), Silkscreen, monospace;
+  font-weight: 400;
+}
+
+/* ======================================================================
+   Narrow window: the catalog becomes one drawer across the top
+   ====================================================================== */
+
+@media (max-width: 720px) {
+  .fm98.an95 .an-nav {
+    width: 100%;
+    padding: 10px 12px;
+    box-shadow:
+      inset 0 -1px 0 var(--at-ink),
+      inset 0 -4px 0 var(--at-paper-deep),
+      inset 0 -5px 0 var(--at-rule-soft);
+  }
+
+  /* Five drawers stay one cabinet column: a 2 + 2 + 1 wrap is an orphan. */
+  .fm98.an95 .an-group-bar {
+    flex-direction: column;
+    flex-wrap: nowrap;
+  }
+
+  .fm98.an95 .an-group-btn {
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+
+  .fm98.an95 .an-range-keys {
+    flex: 1 1 100%;
+    max-width: none;
+    flex-wrap: wrap;
+    border-radius: 18px;
+  }
+
+  .fm98.an95 .an-range-keys .an-range-chip:not(#at) {
+    flex: 1 1 4.75rem;
+  }
+
+  .fm98.an95 .an-range-step {
+    flex: 1 1 100%;
+    justify-content: space-between;
+  }
+
+  .fm98.an95 .an-view-bar {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px 0;
+  }
+
+  .fm98.an95 .an-view-btn {
+    --at-tab-x: 0px !important;
+    --at-tab-r: 0px !important;
+    flex: 1 1 9rem;
+    min-width: 8rem;
+  }
+
+  .fm98.an95 .an-content {
+    padding: 14px 12px 24px;
+  }
+
+  .fm98.an95 .fm-toolbar.an-range-bar {
+    padding: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fm98.an95 .an-view-btn,
+  .fm98.an95 .an-range-chip:not(#at) {
+    transition: none;
+  }
+}
+
+/* ======================================================================
+   Pixel type everywhere in the room
+   ====================================================================== */
+
+/* analytics-chrome.css sets Karla on these; the room is pixel now. */
+.fm98.an95 .an-studio,
+.fm98.an95 .an-range-bar,
+.fm98.an95 .an-content,
+.an-drill,
+.an-popup {
+  font-family: var(--font-dotgothic), "DotGothic16", "w95fa", monospace;
+}
+
+.fm98.an95 svg text {
+  font-family: var(--font-silkscreen), Silkscreen, monospace;
+}
+
+/* Silkscreen is wide: tighter tracking on keys and engraved labels. */
+.fm98.an95 :is(.an-range-chip, .an-chip, .an-studio-tools button, .an-open-lists, .an-view-btn, .an-group-btn):not(#at),
+.fm98.an95 :is(.an-readout-label, .an-readout-note, .an-nav > .an-nameplate, .an-range-bar > .an-nameplate, .an-range-label, .an-phase-table th),
+.an-drill-kicker,
+.an-drill-mode:not(#at) {
+  letter-spacing: 0.02em !important;
+}
+
+.fm98.an95 .an-canvas-title,
+.fm98.an95 .an-readout-value,
+.fm98.an95 .an-finding,
+.fm98.an95 .an-pie-hole-total,
+.fm98.an95 .an-type-detail-title,
+.fm98.an95 .season-card header {
+  font-family: var(--at-display);
+  font-weight: 500;
+}
+
+.fm98.an95 .an-canvas-title::before {
+  font-family: var(--at-type);
+}
+
+.fm98.an95 .an-view-help {
+  font-size: 13px;
+  line-height: 1.6;
+}

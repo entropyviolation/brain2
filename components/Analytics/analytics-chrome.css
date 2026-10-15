@@ -8,6 +8,9 @@
  * `var(--chrome-face)`, white plot wells, phosphor traces `#3dff8a` only — not a dark CRT
  * theme, not cream). Empty / thin frames stay honest.
  * docs/DESIGN_STYLE.md#milled-fascia
+ *
+ * `analytics-atlas.css` loads after this file and re-skins the same selectors
+ * (cobalt band, card catalog, FIG. plates). Layout and behavior live here.
  */
 
 .fm98.an95 {
