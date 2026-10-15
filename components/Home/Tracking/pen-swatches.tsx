@@ -10,7 +10,7 @@
  */
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { ColorSwatch } from "@/components/ui/color-swatch"
 import { Input } from "@/components/ui/input"
 import { PEN_COLOR_OPEN_TITLE } from "@/components/Home/Tracking/open-pen-settings"
@@ -93,6 +93,55 @@ function PenBead({
   )
 }
 
+/** One row in the rack list: flat swatch, name, detail count. */
+function PenNode({
+  pen,
+  selected,
+  path,
+  onSelect,
+  onOpenPen,
+}: {
+  pen: TrackPen
+  selected: boolean
+  path?: string
+  onSelect: (id: string) => void
+  onOpenPen?: (id: string) => void
+}) {
+  const count = pen.variants?.length ?? 0
+  return (
+    <button
+      type="button"
+      data-no95
+      className="trk-pen-node"
+      data-selected={selected ? "true" : "false"}
+      onClick={() => onSelect(pen.id)}
+      onDoubleClick={(event) => {
+        event.preventDefault()
+        event.stopPropagation()
+        onOpenPen?.(pen.id)
+      }}
+      title={onOpenPen ? `${path ? `${path} › ` : ""}${pen.name}. ${PEN_COLOR_OPEN_TITLE}` : pen.name}
+    >
+      <span
+        className="trk-pen-node-swatch"
+        style={{ backgroundColor: pen.color, backgroundImage: pen.image ? `url("${pen.image}")` : undefined }}
+        aria-hidden
+      />
+      {path ? (
+        <span className="trk-pen-node-path" aria-hidden>
+          {path} ›
+        </span>
+      ) : null}
+      <span className="trk-pen-node-name">{pen.name}</span>
+      {count > 0 ? (
+        <span className="trk-digit" aria-hidden title={`${count} detail options`}>
+          {count}
+        </span>
+      ) : null}
+    </button>
+  )
+}
+
 export function PenSwatches({
   pens,
   tags = [],
@@ -105,6 +154,7 @@ export function PenSwatches({
   compact: _compact = false,
   expanded = true,
   creator = "always",
+  layout = "beads",
 }: {
   pens: TrackPen[]
   tags?: TrackTag[]
@@ -124,6 +174,8 @@ export function PenSwatches({
    * the search matches nothing, labeled **Create new pen**.
    */
   creator?: "always" | "on-miss"
+  /** `list` — the desk's pen rack: one pen per row, tree with engraved traces. */
+  layout?: "beads" | "list"
 }) {
   const [query, setQuery] = useState("")
   const [newName, setNewName] = useState("")
@@ -183,6 +235,20 @@ export function PenSwatches({
     )
   }
 
+  const renderListTree = (pen: TrackPen): ReactNode => {
+    const kids = orderedChildren(pens, pen.id, sortMode)
+    const node = (
+      <PenNode key={pen.id} pen={pen} selected={selectedId === pen.id} onSelect={onSelect} onOpenPen={onOpenPen} />
+    )
+    if (!kids.length) return node
+    return (
+      <div key={pen.id} className="trk-pen-group">
+        {node}
+        <div className="trk-pen-kids">{kids.map((child) => renderListTree(child))}</div>
+      </div>
+    )
+  }
+
   const listed =
     matches ??
     (sortMode === "tree"
@@ -198,6 +264,33 @@ export function PenSwatches({
         aria-label="Search pens"
         className="trk-search"
       />
+      {layout === "list" ? (
+        <div className="trk-pen-list" role="group" aria-label="Pens">
+          {matches
+            ? matches.map((pen) => {
+                const path = ancestorChain(pens, pen.id)
+                  .slice(0, -1)
+                  .map((p) => p.name)
+                  .join(" › ")
+                return (
+                  <PenNode
+                    key={pen.id}
+                    pen={pen}
+                    selected={selectedId === pen.id}
+                    path={path || undefined}
+                    onSelect={onSelect}
+                    onOpenPen={onOpenPen}
+                  />
+                )
+              })
+            : sortMode === "tree"
+              ? listed.map((pen) => renderListTree(pen))
+              : listed.map((pen) => (
+                  <PenNode key={pen.id} pen={pen} selected={selectedId === pen.id} onSelect={onSelect} onOpenPen={onOpenPen} />
+                ))}
+          {matches?.length === 0 && !onCreate && <span className="trk-miss">No pens match “{query}”.</span>}
+        </div>
+      ) : (
       <div
         className={expanded ? "trk-pen-well" : "trk-pen-well trk-pen-well-collapsed"}
         data-expanded={expanded ? "true" : "false"}
@@ -238,6 +331,7 @@ export function PenSwatches({
           )}
         </div>
       </div>
+      )}
       {creatorOpen && (
         <span className="trk-new-pen">
           <ColorSwatch value={newColor} onChange={setNewColor} aria-label="New pen color" size="sm" />

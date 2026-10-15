@@ -22,7 +22,7 @@
 
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react"
 import { displayedPen, penCellStyle, useTimeTrackingStore, type TimeEntry, type TrackPen, type TrackScope } from "@/lib/time-tracking-store"
-import { discreteLogInstants, overlayTicksBeside, penNameById, tickPen } from "@/components/Home/Tracking/discrete-log-instants"
+import { discreteLogInstants, overlayTicksBeside, penNameById, tickPen, withoutDiscreteLogs } from "@/components/Home/Tracking/discrete-log-instants"
 import { penAtDepth } from "@/lib/pen-tree"
 import {
   MINUTES_PER_DAY,
@@ -34,9 +34,10 @@ import {
 } from "@/lib/time-entries"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { ERASE, SCISSORS } from "@/components/Home/Tracking/pen-palette"
-import { cellPaintClass, SuperimposeWash, trackingProbeText, TrkBlockLabel, TrkProbePlate, writeTrkProbe } from "@/components/Home/Tracking/trk-instrument"
+import { cellPaintClass, ghostProbeText, SuperimposeWash, trackingProbeText, TrkBlockLabel, TrkProbePlate, writeTrkProbe } from "@/components/Home/Tracking/trk-instrument"
 import { focusTrackingPlot } from "@/components/Home/Tracking/tracking-undo"
-import { useSuperimposeScope } from "@/components/Home/Tracking/tracking-view-prefs"
+import { useTrackingViewPrefs } from "@/components/Home/Tracking/tracking-view-prefs"
+import { ghostAttr, probeLayerFor, useGhostScopes, type GhostScope } from "@/components/Home/Tracking/ghost-layers"
 import { TrkPlotMarkers, useTrackingDayMarkers, useTrackingSunMap, type TrackingSunTimes } from "@/components/Home/Tracking/trk-time-markers"
 import { EntryDialog } from "@/components/Home/Tracking/entry-dialog"
 import {
@@ -60,6 +61,14 @@ import {
 import "./tracking-chrome.css"
 
 const NO_ENTRIES: TimeEntry[] = []
+
+/** One ghost's day: its painted minute map and its raw entries (for ghost ticks). */
+type GhostDay = {
+  ghost: GhostScope
+  list: TimeEntry[]
+  painted: (TimeEntry | null)[]
+}
+const NO_GHOST_DAYS: GhostDay[] = []
 
 function strokeOverlapUnchanged(
   prevLo: number,
@@ -105,16 +114,17 @@ interface InfiniteDayProps {
   step: number
   compact: boolean
   painted: (TimeEntry | null)[] | undefined
-  overlayPainted: (TimeEntry | null)[] | undefined
   dayList: TimeEntry[]
-  overlayList: TimeEntry[]
+  /** One painted map + entry list per ghost, in ghost order. */
+  ghostDays: readonly GhostDay[]
   strokeLo: number
   strokeHi: number
   strokeDate: string
   scope: TrackScope
   scopes: readonly TrackScope[]
-  overlayScope?: TrackScope
   logTicks: TimeEntry[]
+  /** View pref: drop discrete log flags, own-scope ones included. */
+  hideLogFlags?: boolean
   selectedPenId: string | null
   selectedPen: TrackPen | null
   isToday: boolean
@@ -139,13 +149,12 @@ function infiniteDayPropsEqual(prev: InfiniteDayProps, next: InfiniteDayProps): 
   if (prev.step !== next.step) return false
   if (prev.compact !== next.compact) return false
   if (prev.painted !== next.painted) return false
-  if (prev.overlayPainted !== next.overlayPainted) return false
   if (prev.dayList !== next.dayList) return false
-  if (prev.overlayList !== next.overlayList) return false
+  if (prev.ghostDays !== next.ghostDays) return false
   if (prev.scope !== next.scope) return false
   if (prev.scopes !== next.scopes) return false
-  if (prev.overlayScope !== next.overlayScope) return false
   if (prev.logTicks !== next.logTicks) return false
+  if (prev.hideLogFlags !== next.hideLogFlags) return false
   if (prev.selectedPenId !== next.selectedPenId) return false
   if (prev.selectedPen !== next.selectedPen) return false
   if (prev.isToday !== next.isToday) return false
@@ -174,16 +183,15 @@ const InfiniteDayRow = memo(function InfiniteDayRow({
   step,
   compact,
   painted,
-  overlayPainted,
   dayList,
-  overlayList,
+  ghostDays,
   strokeLo,
   strokeHi,
   strokeDate,
   scope,
   scopes,
-  overlayScope,
   logTicks,
+  hideLogFlags = false,
   selectedPenId,
   selectedPen,
   isToday,
@@ -226,17 +234,25 @@ const InfiniteDayRow = memo(function InfiniteDayRow({
       })
     }
   }
-  const ownInstants = instantsForDay(dayList, dayKey, scope.id)
+  const penNames = hideLogFlags ? penNameById(scopes) : undefined
+  const ownInstants = penNames
+    ? withoutDiscreteLogs(instantsForDay(dayList, dayKey, scope.id), penNames)
+    : instantsForDay(dayList, dayKey, scope.id)
   const instants = (() => {
-    if (logTicks.length === 0) return ownInstants
+    if (hideLogFlags || logTicks.length === 0) return ownInstants
     const seen = new Set(ownInstants.map((entry) => entry.id))
     const extra = logTicks.filter((entry) => !seen.has(entry.id))
     if (extra.length === 0) return ownInstants
     return [...ownInstants, ...extra].sort((a, b) => a.startMin - b.startMin || a.id.localeCompare(b.id))
   })()
-  const overlayInstants = overlayScope
-    ? overlayTicksBeside(instantsForDay(overlayList, dayKey, overlayScope.id), instants)
-    : []
+  const overlayInstants: { ghost: GhostScope; event: TimeEntry }[] = []
+  for (const ghostDay of ghostDays) {
+    const drawn = [...instants, ...overlayInstants.map((tick) => tick.event)]
+    const ticks = overlayTicksBeside(instantsForDay(ghostDay.list, dayKey, ghostDay.ghost.scope.id), drawn)
+    for (const event of penNames ? withoutDiscreteLogs(ticks, penNames) : ticks) {
+      overlayInstants.push({ ghost: ghostDay.ghost, event })
+    }
+  }
   return (
     <div
       className="trk-day-strip"
@@ -287,8 +303,14 @@ const InfiniteDayRow = memo(function InfiniteDayRow({
           const fill = inDrag
             ? { background: selectedPenId === ERASE ? "#fca5a5" : selectedPen?.color }
             : penCellStyle(pen, cellEntry?.precision, minute)
-          const overlayEntry = overlayPainted ? dominantEntry(overlayPainted, minute, step) : null
-          const overlayPen = overlayEntry && overlayScope ? showPen(overlayScope, overlayEntry.penId) : null
+          const ghostCells = ghostDays.map((ghostDay) => {
+            const ghostEntry = ghostDay.painted ? dominantEntry(ghostDay.painted, minute, step) : null
+            return {
+              ghost: ghostDay.ghost,
+              entry: ghostEntry,
+              pen: ghostEntry ? showPen(ghostDay.ghost.scope, ghostEntry.penId) : null,
+            }
+          })
           const futureCell = isToday && nowMinute != null && minute > nowMinute
           return (
             <div
@@ -303,23 +325,35 @@ const InfiniteDayRow = memo(function InfiniteDayRow({
               style={{ ...fill, minWidth: compact ? 2 : 3, opacity: inDrag ? 0.75 : 1 }}
               onMouseEnter={() =>
                 onProbe(
-                  trackingProbeText({
+                  ghostProbeText({
+                    base: trackingProbeText({
+                      minute,
+                      step,
+                      name: cellEntry ? entryDisplayName(cellEntry, paintedPen?.name || pen?.name) : undefined,
+                    }),
                     minute,
                     step,
-                    name: cellEntry ? entryDisplayName(cellEntry, paintedPen?.name || pen?.name) : undefined,
+                    primary: probeLayerFor(scope, cellEntry),
+                    ghosts: ghostCells.flatMap((cell) => probeLayerFor(cell.ghost.scope, cell.entry) ?? []),
                   }),
                 )
               }
             >
-              {overlayPen && !inDrag ? <SuperimposeWash color={overlayPen.color} /> : null}
+              {inDrag
+                ? null
+                : ghostCells.map((cell) =>
+                    cell.pen ? (
+                      <SuperimposeWash key={cell.ghost.scope.id} color={cell.pen.color} opacity={cell.ghost.opacity} />
+                    ) : null,
+                  )}
             </div>
           )
         })}
         {labels.map((label) => (
           <TrkBlockLabel key={label.id} name={label.name} color={label.color} left={label.left} width={label.width} />
         ))}
-        {overlayScope && overlayInstants.map((event) => {
-          const pen = showPen(overlayScope, event.penId)
+        {overlayInstants.map(({ ghost, event }) => {
+          const pen = showPen(ghost.scope, event.penId)
           return (
             <span
               key={`super-${event.id}`}
@@ -327,6 +361,7 @@ const InfiniteDayRow = memo(function InfiniteDayRow({
               style={{
                 left: `${(event.startMin / MINUTES_PER_DAY) * 100}%`,
                 background: pen?.color,
+                ...(ghost.opacity == null ? null : { opacity: Math.min(1, ghost.opacity + 0.08) }),
               }}
               aria-hidden
             />
@@ -391,9 +426,7 @@ export function InfiniteStrip({
   const splitEntryAt = useTimeTrackingStore((s) => s.splitEntryAt)
 
   const scope = scopes.find((s) => s.id === activeScopeId) || scopes[0]
-  const scopeIds = useMemo(() => scopes.map((s) => s.id), [scopes])
-  const overlayScopeId = useSuperimposeScope(scope?.id, scopeIds)
-  const overlayScope = scopes.find((s) => s.id === overlayScopeId)
+  const ghosts = useGhostScopes(scope, scopes)
   const originRef = useRef(startOfDay(centerDate))
   const origin = originRef.current
   const [before, setBefore] = useState(mode === "week" ? INFINITE_WEEK_BEFORE : INFINITE_DAY_BEFORE)
@@ -449,6 +482,7 @@ export function InfiniteStrip({
     [entries, scope],
   )
   const penNames = useMemo(() => penNameById(scopes), [scopes])
+  const hideLogFlags = useTrackingViewPrefs().hideLogFlags
   const logByDate = useMemo(() => {
     const map = new Map<string, TimeEntry[]>()
     for (const entry of discreteLogInstants(entries, penNames)) {
@@ -471,20 +505,22 @@ export function InfiniteStrip({
   }, [items, vis.start, vis.end, byDate, scope])
 
   const overlayByDate = useMemo(
-    () => (overlayScope ? indexScopeEntriesByDate(entries, overlayScope.id) : new Map()),
-    [entries, overlayScope],
+    () => ghosts.map((ghost) => indexScopeEntriesByDate(entries, ghost.scope.id)),
+    [entries, ghosts],
   )
-  const overlayMaps = useMemo(() => {
-    const out: Record<string, ReturnType<typeof minuteMap>> = {}
-    if (!overlayScope) return out
+  const ghostDaysByDate = useMemo(() => {
+    const out: Record<string, GhostDay[]> = {}
+    if (ghosts.length === 0) return out
     for (let i = vis.start; i < vis.end; i++) {
       const item = items[i]
       if (!item || item.kind !== "day") continue
-      const list = overlayByDate.get(item.key) ?? []
-      out[item.key] = minuteMap(list, item.key, overlayScope.id)
+      out[item.key] = ghosts.map((ghost, g) => {
+        const list: TimeEntry[] = overlayByDate[g]?.get(item.key) ?? NO_ENTRIES
+        return { ghost, list, painted: minuteMap(list, item.key, ghost.scope.id) }
+      })
     }
     return out
-  }, [items, vis.start, vis.end, overlayByDate, overlayScope])
+  }, [items, vis.start, vis.end, overlayByDate, ghosts])
 
   const commitPaint = useCallback(
     (date: string, from: number, to: number) => {
@@ -640,7 +676,7 @@ export function InfiniteStrip({
         className="trk-grid trk-infinite overflow-auto"
         tabIndex={-1}
         data-infinite={mode}
-        data-superimpose={overlayScope?.id || undefined}
+        data-superimpose={ghostAttr(ghosts)}
         style={{ maxHeight: compact ? 360 : 560 }}
         onMouseLeave={() => writeProbe(null)}
         onScroll={(e) => {
@@ -694,16 +730,15 @@ export function InfiniteStrip({
               step={step}
               compact={compact}
               painted={maps[item.key]}
-              overlayPainted={overlayMaps[item.key]}
               dayList={byDate.get(item.key) ?? NO_ENTRIES}
-              overlayList={overlayScope ? overlayByDate.get(item.key) ?? NO_ENTRIES : NO_ENTRIES}
+              ghostDays={ghostDaysByDate[item.key] ?? NO_GHOST_DAYS}
               strokeLo={strokeLo}
               strokeHi={strokeHi}
               strokeDate={strokeDate}
               scope={scope}
               scopes={scopes}
-              overlayScope={overlayScope}
               logTicks={logByDate.get(item.key) ?? NO_ENTRIES}
+              hideLogFlags={hideLogFlags}
               selectedPenId={selectedPenId}
               selectedPen={selectedPen}
               isToday={item.key === todayKey}

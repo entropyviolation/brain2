@@ -11,9 +11,14 @@
  * - **Detail** — the same relationship, seen from the parent. Adding Walk under
  *   Exercise creates a Walk pen that counts as Exercise. Nesting Walk under
  *   Exercise adds Walk to Exercise's detail list. Several can apply at once.
+ *   **From another view** adds a pen from a different view as a detail
+ *   (Company people under Activity "Hanging out"). Those rows show the view
+ *   name and follow that pen's name and color; double-click opens it there.
  * - **Tags** — cross-scope, and how a pen feeds the Habits tab.
  * - **Default action format** — Done-today templates, separate from habit links.
  * - **People** — Company pens only. People I Know pipelines for this pen.
+ * - **Recent blocks** — a scrollable list of the latest blocks painted with this
+ *   pen; a row opens the block editor (`pen-recent-blocks.tsx`).
  */
 "use client"
 
@@ -37,6 +42,9 @@ import { usePenActionSync } from "@/lib/pen-action-sync"
 import { OrbPickerDialog } from "@/components/Icons/OrbPicker"
 import { snapshotsEqual } from "@/lib/unsaved-changes"
 import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
+import { CrossViewDetailPicker } from "@/components/Home/Tracking/cross-view-detail-picker"
+import { openPenSettings } from "@/components/Home/Tracking/open-pen-settings"
+import { PenRecentBlocks } from "@/components/Home/Tracking/pen-recent-blocks"
 import { CatalogTagChip } from "@/components/Home/Tracking/catalog-tag-chip"
 import { TAG_OPEN_TITLE } from "@/components/Home/Tracking/open-tag-settings"
 import "./tracking-chrome.css"
@@ -76,6 +84,9 @@ export function PenSettingsDialog({ scopeId, pen: openedPen, onClose, onDeleted 
   const addVariant = useTimeTrackingStore((s) => s.addVariant)
   const updateVariant = useTimeTrackingStore((s) => s.updateVariant)
   const removeVariant = useTimeTrackingStore((s) => s.removeVariant)
+  const addCrossViewDetail = useTimeTrackingStore((s) => s.addCrossViewDetail)
+  const allScopes = useTimeTrackingStore((s) => s.scopes)
+  const viewName = (id: string) => allScopes.find((sc) => sc.id === id)?.name ?? id
   const variants = livePen?.variants ?? []
   const scopePens = useTimeTrackingStore((s) => s.scopes.find((sc) => sc.id === scopeId)?.pens ?? [])
   const parents = validParents(scopePens, pen.id) as TrackPen[]
@@ -292,7 +303,36 @@ export function PenSettingsDialog({ scopeId, pen: openedPen, onClose, onDeleted 
               className="h-8"
             />
             <div className="space-y-1">
-              {variants.map((variant) => (
+              {variants.map((variant) =>
+                variant.scopeId ? (
+                <div key={variant.id} className="trk-detail-row" data-cross-view="true">
+                  <span
+                    className="trk-detail-bead trk-detail-bead-fixed"
+                    style={{ background: variant.color || color }}
+                    title={`Double-click to open ${variant.name} in ${viewName(variant.scopeId)}`}
+                    onDoubleClick={() => {
+                      if (!variant.penId || !variant.scopeId) return
+                      flush()
+                      openPenSettings(variant.scopeId, variant.penId)
+                    }}
+                    aria-hidden
+                  />
+                  <span className="trk-detail-xname">
+                    {variant.name}
+                    <span className="trk-variant-view">{viewName(variant.scopeId)}</span>
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 px-1.5 text-destructive"
+                    title={`Remove ${variant.name} as a detail. The ${viewName(variant.scopeId)} pen and its time stay.`}
+                    onClick={() => removeVariant(scopeId, pen.id, variant.id)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span className="sr-only">Remove {variant.name}</span>
+                  </Button>
+                </div>
+                ) : (
                 <div key={variant.id} className="trk-detail-row">
                   <span
                     className="trk-detail-bead"
@@ -325,7 +365,8 @@ export function PenSettingsDialog({ scopeId, pen: openedPen, onClose, onDeleted 
                     <span className="sr-only">Remove {variant.name}</span>
                   </Button>
                 </div>
-              ))}
+                ),
+              )}
             </div>
             <div className="flex gap-2">
               <Input
@@ -344,7 +385,16 @@ export function PenSettingsDialog({ scopeId, pen: openedPen, onClose, onDeleted 
                 <Plus className="h-3.5 w-3.5" /> Add option
               </Button>
             </div>
+            {livePen ? (
+              <CrossViewDetailPicker
+                ownerScopeId={scopeId}
+                pen={livePen}
+                onAdd={(viewId, otherPenId) => addCrossViewDetail(scopeId, livePen.id, viewId, otherPenId)}
+              />
+            ) : null}
           </div>
+
+          <PenRecentBlocks scopeId={scopeId} penId={pen.id} penName={name || pen.name} color={color} />
 
           <div className="trk-section text-xs">
             {feedingHabits.length > 0 ? (

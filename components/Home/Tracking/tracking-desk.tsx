@@ -4,13 +4,20 @@
  * Loaded only when Home → Tracking is the open section, so Habits does not
  * parse the time grid. Fascia, working-now strips, pen tray, and the four
  * views (Time Grid / Activity Log / Day Log / Tracking log) stay one instrument.
+ * The desk is three bays (docs/TRACKING_REDESIGN.md): the pen rack on the
+ * left, the screen bay in the middle (a cassette deck of view keys on top),
+ * and — on Time Grid — the instrument column on the right. Day summaries and
+ * the week's writing sit under the desk in one lace-framed region.
  * The four fascia keys share one row when the bay has room. A gear at the
- * end of that row opens Tracking view settings on every view. Tracking log
+ * end of that row opens Tracking settings — one sheet for the whole tab — on
+ * the bay for the view you are on. Tracking log
  * hides the pen desk; the other three views keep it.
  */
 "use client"
 
 import { useState } from "react"
+import { TrackingDeskSlotsContext } from "@/components/Home/Tracking/tracking-desk-slots"
+import { ScopePanel } from "@/components/Home/Tracking/trk-scope"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TimeGrid } from "@/components/Home/Tracking/time-grid"
 import { ActualDayView } from "@/components/Home/Tracking/actual-day-view"
@@ -20,10 +27,9 @@ import { WorkingNowStrip } from "@/components/Home/Tracking/working-now-strip"
 import { PenColorNowStrip } from "@/components/Home/Tracking/pen-color-now-strip"
 import { TrackingDayNotes } from "@/components/Home/Tracking/tracking-day-notes"
 import { PenPalette } from "@/components/Home/Tracking/pen-palette"
-import { PenModeBar } from "@/components/Home/Tracking/pen-mode-bar"
-import { TrackingViewSettingsDialog } from "@/components/Home/Tracking/tracking-view-settings-dialog"
+import { PenModeDeck } from "@/components/Home/Tracking/pen-mode-bar"
+import { TrackingSettingsDialog, type TrackingSettingsSection } from "@/components/Home/Tracking/tracking-view-settings-dialog"
 import { LogActivityLatch } from "@/components/Home/Tracking/log-activity-dialog"
-import { TrkChromeStack } from "@/components/Home/Tracking/trk-instrument"
 import { APP_NAV_KEYS } from "@/lib/app-navigation"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { usePersistedTab } from "@/lib/use-persisted-tab"
@@ -32,6 +38,13 @@ import { orbFor } from "@/components/Icons"
 
 type TrackingTab = "grid" | "activity" | "daylog" | "log"
 const TRACKING_TABS: TrackingTab[] = ["grid", "activity", "daylog", "log"]
+/** The gear opens Tracking settings on the bay for the view you are on. */
+const SETTINGS_BAY: Record<TrackingTab, TrackingSettingsSection> = {
+  grid: "grid",
+  activity: "activity",
+  daylog: "daylog",
+  log: "log",
+}
 
 export function TrackingDesk({
   currentDate,
@@ -46,6 +59,8 @@ export function TrackingDesk({
   const scopes = useTimeTrackingStore((s) => s.scopes)
   const settingsScopeId = scopes.some((scope) => scope.id === activeScopeId) ? activeScopeId : scopes[0]?.id
   const showPenDesk = trackingTab !== "log"
+  const [summarySlot, setSummarySlot] = useState<HTMLDivElement | null>(null)
+  const dateKey = formatLocalDateKey(currentDate)
 
   return (
     <div
@@ -55,7 +70,7 @@ export function TrackingDesk({
       data-ui-help="Retrospective time and day log: painted minutes, actuals, and day-summary prose beside the plan."
       data-temporal="retrospective"
     >
-      <div className="trk-window">
+      <div className="trk-window" data-desk="true">
         <Tabs value={trackingTab} onValueChange={(v) => setTrackingTab(v as TrackingTab)}>
           <div className="trk-fascia">
             <div className="trk-fascia-row">
@@ -85,38 +100,67 @@ export function TrackingDesk({
               </div>
             </div>
           </div>
-          <div className="trk-now-module">
-            <WorkingNowStrip />
-            {showPenDesk ? <PenColorNowStrip /> : null}
+          <div className="trk-now-module trk-now-row" role="group" aria-label="Now">
+            <span className="trk-now-lamp" aria-hidden />
+            <span className="trk-now-plate" aria-hidden>
+              Now
+            </span>
+            <WorkingNowStrip compact />
+            {showPenDesk ? (
+              <>
+                <span className="trk-now-arrow" aria-hidden>
+                  →
+                </span>
+                <PenColorNowStrip compact />
+              </>
+            ) : null}
           </div>
-          <TrkChromeStack
-            pens={showPenDesk ? <PenPalette embedded /> : null}
-            modeBar={showPenDesk ? <PenModeBar /> : null}
-            gridAction={
-              trackingTab === "activity" || trackingTab === "log" ? undefined : (
-                <LogActivityLatch dateKey={formatLocalDateKey(currentDate)} />
-              )
-            }
-          >
-            <div className="trk-desktop">
-              <TabsContent value="grid" className="mt-0">
-                <TimeGrid showPalette={false} currentDate={currentDate} setCurrentDate={setCurrentDate} />
-              </TabsContent>
-              <TabsContent value="activity" className="mt-0">
-                <TrackingActivityLog currentDate={currentDate} setCurrentDate={setCurrentDate} />
-              </TabsContent>
-              <TabsContent value="daylog" className="mt-0">
-                <ActualDayView currentDate={currentDate} setCurrentDate={setCurrentDate} />
-              </TabsContent>
-              <TabsContent value="log" className="mt-0">
-                <TrackingLogView currentDate={currentDate} setCurrentDate={setCurrentDate} />
-              </TabsContent>
+          <TrackingDeskSlotsContext.Provider value={{ fillSlot: null, summarySlot }}>
+            <div className="trk-desk" data-rack={showPenDesk ? "true" : "false"}>
+              {showPenDesk ? <PenPalette variant="rack" /> : null}
+              <div className="trk-desk-main trk-desktop">
+                <TabsContent value="grid" className="mt-0">
+                  <TimeGrid
+                    showPalette={false}
+                    desk
+                    deck={<PenModeDeck ghostLeds />}
+                    currentDate={currentDate}
+                    setCurrentDate={setCurrentDate}
+                  />
+                </TabsContent>
+                <TabsContent value="activity" className="mt-0">
+                  <ScopePanel as="main" className="trk-center-bay" badge="TRK" name="3132 · ACTIVITY LOG" julia={1}>
+                    <PenModeDeck />
+                    <TrackingActivityLog currentDate={currentDate} setCurrentDate={setCurrentDate} />
+                  </ScopePanel>
+                </TabsContent>
+                <TabsContent value="daylog" className="mt-0">
+                  <ScopePanel as="main" className="trk-center-bay" badge="TRK" name="3132 · DAY LOG" julia={1}>
+                    <PenModeDeck action={<LogActivityLatch dateKey={dateKey} />} />
+                    <ActualDayView currentDate={currentDate} setCurrentDate={setCurrentDate} />
+                  </ScopePanel>
+                </TabsContent>
+                <TabsContent value="log" className="mt-0">
+                  <ScopePanel as="main" className="trk-center-bay" badge="TRK" name="3132 · TRACKING LOG" julia={1}>
+                    <TrackingLogView currentDate={currentDate} setCurrentDate={setCurrentDate} />
+                  </ScopePanel>
+                </TabsContent>
+              </div>
             </div>
-            <TrackingDayNotes currentDate={currentDate} />
-          </TrkChromeStack>
+            <section className="trk-lace" aria-label="Summaries">
+              <div className="trk-lace-paper">
+                <div ref={setSummarySlot} className="trk-summary-slot" />
+                <TrackingDayNotes currentDate={currentDate} />
+              </div>
+            </section>
+          </TrackingDeskSlotsContext.Provider>
         </Tabs>
-        {settingsOpen && settingsScopeId ? (
-          <TrackingViewSettingsDialog scopeId={settingsScopeId} onClose={() => setSettingsOpen(false)} />
+        {settingsOpen ? (
+          <TrackingSettingsDialog
+            scopeId={settingsScopeId}
+            initialSection={SETTINGS_BAY[trackingTab]}
+            onClose={() => setSettingsOpen(false)}
+          />
         ) : null}
       </div>
     </div>

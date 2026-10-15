@@ -64,43 +64,29 @@ describe("EntryDialog", () => {
     expect(reload(entry.id)?.endMin).toBe(1440)
   })
 
-  it("shows only the pens already on the block until add pen color", () => {
+  it("shows only the pens already on the block until you search", () => {
     const entry = paint()
     render(<EntryDialog entry={entry} onClose={() => {}} />)
 
     const onBlock = screen.getByRole("group", { name: "Pens on this block" })
     expect(onBlock).toHaveTextContent("Work")
-    expect(screen.queryByRole("button", { name: "Rest" })).not.toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: "Chores" })).not.toBeInTheDocument()
-    expect(screen.queryByLabelText("Search pens")).not.toBeInTheDocument()
-    expect(screen.queryByLabelText("New pen name")).not.toBeInTheDocument()
-    expect(screen.queryByLabelText("Add a secondary pen")).not.toBeInTheDocument()
+    expect(screen.queryByRole("list", { name: "Pen results" })).not.toBeInTheDocument()
+    expect(screen.getByLabelText("Add a pen")).toBeInTheDocument()
   })
 
-  it("reveals the full pen library after add pen color", () => {
-    render(<EntryDialog entry={paint()} onClose={() => {}} />)
-
-    fireEvent.click(screen.getByRole("button", { name: "add pen color" }))
-
-    expect(screen.getByLabelText("Search pens")).toBeInTheDocument()
-    expect(screen.getByLabelText("New pen name")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Rest" })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Chores" })).toBeInTheDocument()
-    expect(screen.getByLabelText("Add a secondary pen")).toBeInTheDocument()
-  })
-
-  it("switches the pen from the library", () => {
+  it("switches the primary pen from the one search field", () => {
     const entry = paint()
     render(<EntryDialog entry={entry} onClose={() => {}} />)
 
-    fireEvent.click(screen.getByRole("button", { name: "add pen color" }))
-    fireEvent.click(screen.getByRole("button", { name: "Rest" }))
+    fireEvent.change(screen.getByLabelText("Add a pen"), { target: { value: "rest" } })
+    fireEvent.click(screen.getByRole("button", { name: "Use Rest as primary" }))
     fireEvent.click(screen.getByRole("button", { name: "Save block" }))
 
     expect(reload(entry.id)?.penId).toBe("act-rest")
+    expect(reload(entry.id)?.secondaryPenIds ?? []).toEqual(["act-work"])
   })
 
-  it("shows a secondary already on the block without opening the library", () => {
+  it("shows a secondary already on the block as a chip", () => {
     const entry = paint()
     useTimeTrackingStore.getState().updateEntry(entry.id, { secondaryPenIds: ["act-chores"] })
     const withAlso = reload(entry.id)!
@@ -109,8 +95,55 @@ describe("EntryDialog", () => {
     const onBlock = screen.getByRole("group", { name: "Pens on this block" })
     expect(onBlock).toHaveTextContent("Work")
     expect(onBlock).toHaveTextContent("Chores")
-    expect(screen.queryByLabelText("Search pens")).not.toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: "Rest" })).not.toBeInTheDocument()
+    expect(onBlock).not.toHaveTextContent(/also/i)
+    expect(screen.getByRole("button", { name: "Make Chores primary" })).toBeInTheDocument()
+  })
+
+  it("names the people on a Company block as a group, with each as detail", () => {
+    const store = useTimeTrackingStore.getState()
+    const dom = store.addPen("company", { name: "Dom", color: "#1e3a8a" })
+    const ian = store.addPen("company", { name: "Ian", color: "#b91c1c" })
+    store.paintMinutes(KEY, "company", 540, 600, dom)
+    const block = useTimeTrackingStore.getState().entriesFor(KEY, "company")[0]!
+    store.updateEntry(block.id, { secondaryPenIds: [ian] })
+    render(<EntryDialog entry={reload(block.id)!} onClose={() => {}} />)
+
+    fireEvent.click(screen.getByRole("button", { name: "Name this group…" }))
+    fireEvent.change(screen.getByLabelText("Group name"), { target: { value: "Margo Sinclair band" } })
+    fireEvent.click(screen.getByRole("button", { name: "Save group" }))
+    fireEvent.click(screen.getByRole("button", { name: "Save block" }))
+
+    const group = useTimeTrackingStore
+      .getState()
+      .scopes.find((s) => s.id === "company")!
+      .pens.find((p) => p.name === "Margo Sinclair band")!
+    const saved = reload(block.id)!
+    expect(saved.penId).toBe(group.id)
+    expect(saved.secondaryPenIds ?? []).toEqual([])
+    const ticked = (saved.variantIds ?? []).map((id) => group.variants?.find((v) => v.id === id)?.penId).sort()
+    expect(ticked).toEqual([dom, ian].sort())
+  })
+
+  it("does not offer Name this group outside Company", () => {
+    const entry = paint()
+    useTimeTrackingStore.getState().updateEntry(entry.id, { secondaryPenIds: ["act-chores"] })
+    render(<EntryDialog entry={reload(entry.id)!} onClose={() => {}} />)
+    expect(screen.queryByRole("button", { name: "Name this group…" })).not.toBeInTheDocument()
+  })
+
+  it("ticks a detail from another view on an Activity block", () => {
+    const entry = paint(540, 600, "act-social")
+    render(<EntryDialog entry={entry} onClose={() => {}} />)
+
+    fireEvent.click(screen.getByRole("button", { name: "Add option" }))
+    fireEvent.change(screen.getByPlaceholderText("Who with?"), { target: { value: "alo" } })
+    fireEvent.click(screen.getByTitle("Add Alone from Company as a detail"))
+    fireEvent.click(screen.getByRole("button", { name: "Save block" }))
+
+    const social = useTimeTrackingStore.getState().scopes.find((s) => s.id === "activity")!.pens.find((p) => p.id === "act-social")!
+    const detail = social.variants?.find((v) => v.penId === "co-alone")
+    expect(detail).toMatchObject({ scopeId: "company", name: "Alone" })
+    expect(reload(entry.id)?.variantIds).toEqual([detail!.id])
   })
 
   it("ticks two variants on the same block", () => {
@@ -131,10 +164,8 @@ describe("EntryDialog", () => {
     const entry = paint()
     render(<EntryDialog entry={entry} onClose={() => {}} />)
 
-    fireEvent.click(screen.getByRole("button", { name: "add pen color" }))
-    fireEvent.change(screen.getByLabelText("Add a secondary pen"), { target: { value: "chores" } })
-    const chores = screen.getAllByRole("button", { name: "Chores" })
-    fireEvent.click(chores[chores.length - 1])
+    fireEvent.change(screen.getByLabelText("Add a pen"), { target: { value: "chores" } })
+    fireEvent.click(screen.getByRole("button", { name: "Add Chores" }))
     fireEvent.click(screen.getByRole("button", { name: "Save block" }))
 
     expect(reload(entry.id)?.secondaryPenIds).toEqual(["act-chores"])

@@ -1,10 +1,11 @@
-import { fireEvent, render, screen } from "@testing-library/react"
+import { fireEvent, render, screen, within } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { undoLastAction } from "@/lib/action-history"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { TimeGrid } from "./time-grid"
 import { WeekGrid, weekRowBand } from "./week-grid"
+import { getTrackingViewPrefs, resetTrackingViewPrefs, setTrackingViewPrefs } from "./tracking-view-prefs"
 
 /** A Wednesday, so the week runs Mon 15th – Sun 21st. */
 const WEDNESDAY = new Date(2026, 8, 16, 12, 0, 0)
@@ -32,6 +33,8 @@ beforeEach(() => {
   vi.useFakeTimers()
   vi.setSystemTime(WEDNESDAY)
   resetAllStores()
+  localStorage.clear()
+  resetTrackingViewPrefs()
   useTimeTrackingStore.getState().setWeekStep(30)
   useTimeTrackingStore.getState().setSelectedPen("act-work")
 })
@@ -59,7 +62,7 @@ describe("WeekGrid", () => {
     // Once as the Work pen, once as the Work tag it carries — both rows read
     // the same summary module the day view uses.
     expect(screen.getAllByText("Work:")).toHaveLength(2)
-    expect(screen.getByText(/of tracked/)).toBeInTheDocument()
+    expect(screen.getByText(/\d+% of tracked/)).toBeInTheDocument()
     const tagStrip = document.querySelector(".trk-tag-strip")
     expect(tagStrip).toHaveTextContent("of tagged minutes, all views")
     expect(tagStrip?.querySelector(".trk-ribbon-swatch")).toBeTruthy()
@@ -184,15 +187,40 @@ describe("WeekGrid", () => {
     expect(entriesFor(TUE)).toHaveLength(1)
   })
 
-  it("keeps week division at 15, 30, and 60 minutes", () => {
-    renderWeek()
-    const group = screen.getByRole("group", { name: "Week cell size" })
-    expect(group).toHaveTextContent("15m")
-    expect(group).toHaveTextContent("30m")
-    expect(group).toHaveTextContent("60m")
-    expect(screen.queryByRole("button", { name: "1m" })).not.toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: "5m" })).not.toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: "10m" })).not.toBeInTheDocument()
+  it("flips the ribbon to % of the week and keeps it across weeks", () => {
+    useTimeTrackingStore.getState().paintMinutes(MON, "activity", 540, 660, "act-work")
+    const view = renderWeek()
+    const basis = screen.getByRole("group", { name: "Percent of" })
+    expect(within(basis).getByRole("button", { name: "of tracked" })).toHaveAttribute("aria-pressed", "true")
+    fireEvent.click(within(basis).getByRole("button", { name: "of week" }))
+    // 2h of a 168h week.
+    expect(screen.getByText("1% of the week")).toBeInTheDocument()
+    expect(getTrackingViewPrefs().ribbonPercent).toEqual({ day: "tracked", week: "period" })
+    view.rerender(<WeekGrid date={new Date(2026, 8, 23, 12)} onDateChange={vi.fn()} onOpenDay={vi.fn()} />)
+    expect(within(screen.getByRole("group", { name: "Percent of" })).getByRole("button", { name: "of week" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    )
+  })
+
+  it("swaps the day Cell knob for a 15 / 30 / 60 week knob, and back", () => {
+    useTimeTrackingStore.getState().setGridStep(5)
+    useTimeTrackingStore.setState({ gridSpan: "week" })
+    render(<TimeGrid />)
+    expect(screen.queryByRole("group", { name: "Week cell size" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("slider", { name: "Cell size" })).not.toBeInTheDocument()
+    const knob = screen.getByRole("slider", { name: "Week cell size" })
+    expect(knob).toHaveAttribute("aria-valuemin", "15")
+    expect(knob).toHaveAttribute("aria-valuemax", "60")
+    expect(knob).toHaveAttribute("aria-valuenow", "30")
+    fireEvent.keyDown(knob, { key: "ArrowRight" })
+    expect(useTimeTrackingStore.getState().weekStep).toBe(60)
+    expect(useTimeTrackingStore.getState().gridStep).toBe(5)
+
+    fireEvent.click(screen.getByRole("button", { name: "day" }))
+    expect(screen.queryByRole("slider", { name: "Week cell size" })).not.toBeInTheDocument()
+    expect(screen.getByRole("slider", { name: "Cell size" })).toHaveAttribute("aria-valuenow", "5")
+    expect(useTimeTrackingStore.getState().weekStep).toBe(60)
   })
 
   it("labels the first cell of a merged run once", () => {
@@ -254,6 +282,28 @@ describe("WeekGrid", () => {
     expect(sunday?.textContent).toMatch(/Sunrise/)
     expect(mon?.closest("[data-day]")?.getAttribute("data-day")).toBe("2026-09-14")
     expect(sunday?.closest("[data-day]")?.getAttribute("data-day")).toBe("2026-09-20")
+  })
+
+  it("drops sunrise / sunset in every column when the sun key hides them", () => {
+    setTrackingViewPrefs({ hideSunLines: true })
+    renderWeek()
+    expect(document.querySelector(".trk-marker-sunrise")).toBeNull()
+    expect(document.querySelector(".trk-marker-sunset")).toBeNull()
+    localStorage.clear()
+    resetTrackingViewPrefs()
+  })
+
+  it("washes and names several ghosts in a week cell", () => {
+    useTimeTrackingStore.getState().paintMinutes(WED, "location", 9 * 60, 12 * 60, "loc-home")
+    setTrackingViewPrefs({ superimposeMulti: true, superimposeMultiByScope: { activity: ["location", "mood"] } })
+    renderWeek()
+    expect(document.querySelector("[data-superimpose]")?.getAttribute("data-superimpose")).toBe("location mood")
+    const target = cell(WED, 600)
+    expect(target.querySelectorAll(".trk-super")).toHaveLength(1)
+    fireEvent.mouseEnter(target)
+    expect(document.querySelector(".trk-probe")?.textContent).toMatch(/Location: Home 9:00 AM–12:00 PM/)
+    localStorage.clear()
+    resetTrackingViewPrefs()
   })
 })
 
@@ -368,6 +418,33 @@ describe("week discrete events", () => {
     expect(tick.className).toContain("trk-instant")
     fireEvent.click(tick)
     expect(screen.getByRole("dialog")).toBeInTheDocument()
+  })
+
+  it("hides discrete log flags when the view pref is off, and keeps ordinary ticks", () => {
+    const store = useTimeTrackingStore.getState()
+    store.paintMinutes(WED, "activity", 9 * 60 + 7, 9 * 60 + 7, "act-work", undefined, undefined, undefined, {
+      kind: "instant",
+      title: "sunrise",
+    })
+    useTimeTrackingStore.setState({
+      entries: [
+        ...useTimeTrackingStore.getState().entries,
+        { id: "log-flag", date: WED, scopeId: "activity", penId: "act-work", startMin: 600, endMin: 600, kind: "instant", title: "ate lunch", intakeClass: "food" },
+      ],
+    })
+    localStorage.clear()
+    resetTrackingViewPrefs()
+    const view = renderWeek()
+    expect(screen.getByRole("button", { name: /ate lunch/ })).toBeInTheDocument()
+
+    setTrackingViewPrefs({ hideLogFlags: true })
+    view.rerender(<WeekGrid date={WEDNESDAY} onDateChange={vi.fn()} onOpenDay={vi.fn()} />)
+    expect(screen.queryByRole("button", { name: /ate lunch/ })).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /sunrise/ })).toBeInTheDocument()
+    expect(useTimeTrackingStore.getState().entries.some((e) => e.id === "log-flag")).toBe(true)
+
+    localStorage.clear()
+    resetTrackingViewPrefs()
   })
 })
 

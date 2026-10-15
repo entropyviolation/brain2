@@ -10,9 +10,10 @@
  * a block means. It must open on the click — sleep/pen-action sync stays on
  * the views, not this dialog. It is a centered popup (`entry-dialog.css`).
  * Click outside, ×, or Escape runs the unsaved-changes guard, so a dirty
- * draft is not thrown away. The Pen section shows colors already on the
- * block; **add pen color** unfolds the catalog. Double-click a pen color to
- * open that pen's settings.
+ * draft is not thrown away. The Pen section is one multi-select: chips for the
+ * pens on the block (★ primary, × remove) and one search box that adds a pen
+ * as an extra or as primary, or creates it. Company blocks can **Name this
+ * group**. Double-click a pen color to open that pen's settings.
  *
  * Changing the times re-lays the block over the day and clears whatever it lands
  * on, exactly as painting would — so the grid can never end up double-booked.
@@ -103,6 +104,8 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
   const splitEntryAt = useTimeTrackingStore((s) => s.splitEntryAt)
   const addVariant = useTimeTrackingStore((s) => s.addVariant)
   const addPen = useTimeTrackingStore((s) => s.addPen)
+  const addPenGroup = useTimeTrackingStore((s) => s.addPenGroup)
+  const addCrossViewDetail = useTimeTrackingStore((s) => s.addCrossViewDetail)
   const addTag = useTimeTrackingStore((s) => s.addTag)
   const setPenTags = useTimeTrackingStore((s) => s.setPenTags)
   const penSort = useTimeTrackingStore((s) => s.penSort)
@@ -130,6 +133,8 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
     minutesToTimeString(Math.round((entry.startMin + entry.endMin) / 2)),
   )
   const [variantIds, setVariantIds] = useState<string[]>(entry.variantIds ?? [])
+  // The pen `variantIds` were ticked for. Naming a group switches both at once.
+  const [variantsFor, setVariantsFor] = useState(entry.penId)
   const [tagIds, setTagIds] = useState<string[]>(entry.tagIds ?? [])
   const [newTag, setNewTag] = useState("")
   const [title, setTitle] = useState(entry.title ?? "")
@@ -170,7 +175,7 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
   const penTagIds = [...new Set(assignedPens.flatMap((p) => p.tags ?? []))]
   const penTags = tags.filter((t) => penTagIds.includes(t.id))
   // Switching pens mid-edit invalidates the variants, which belong to the old pen.
-  const liveVariantIds = penId === entry.penId ? variantIds : []
+  const liveVariantIds = penId === variantsFor ? variantIds : []
 
   const extraTagIds = tagIds.filter((id) => !penTagIds.includes(id))
   const extraTagNames = tags
@@ -495,15 +500,28 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
               secondaryPenIds={secondaryPenIds}
               onPrimary={setPenId}
               onSecondaries={setSecondaryPenIds}
-              onCreate={(name, color) => {
-                const id = addPen(scope.id, { name, color })
-                if (id) {
-                  setPenId(id)
-                  setSecondaryPenIds((current) => current.filter((x) => x !== id))
-                }
-              }}
+              onCreate={(name, color) => addPen(scope.id, { name, color })}
               onOpenPen={(id) => openPenSettings(entry.scopeId, id)}
               sortMode={penSort}
+              onNameGroup={
+                entry.scopeId === COMPANY_SCOPE_ID
+                  ? (name, color, memberIds) => {
+                      const groupId = addPenGroup(scope.id, name, color, memberIds)
+                      if (!groupId) return
+                      const group = useTimeTrackingStore
+                        .getState()
+                        .scopes.find((s) => s.id === scope.id)
+                        ?.pens.find((p) => p.id === groupId)
+                      const ticked = (group?.variants ?? [])
+                        .filter((v) => v.penId && memberIds.includes(v.penId))
+                        .map((v) => v.id)
+                      setPenId(groupId)
+                      setSecondaryPenIds([])
+                      setVariantsFor(groupId)
+                      setVariantIds(ticked)
+                    }
+                  : undefined
+              }
             />
           )}
 
@@ -513,21 +531,32 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
               <p className="trk-help">
                 Tick every one that applies. Each option is a pen that counts as {pen.name} — add one here or nest a
                 pen under it, and it shows in both places. Double-click an option to open that pen. Analytics shows{" "}
-                {pen.name} as a whole first, then splits it by these.
+                {pen.name} as a whole first, then splits it by these. Typing under Add also lists pens from other
+                views — a Company person can be a detail of an Activity pen.
               </p>
               <VariantChips
                 pen={pen}
                 selected={liveVariantIds}
-                onToggle={(id) =>
-                  setVariantIds((current) =>
-                    current.includes(id) ? current.filter((v) => v !== id) : [...current, id],
+                onToggle={(id) => {
+                  setVariantsFor(pen.id)
+                  setVariantIds(
+                    liveVariantIds.includes(id) ? liveVariantIds.filter((v) => v !== id) : [...liveVariantIds, id],
                   )
-                }
+                }}
                 onCreate={(name) => {
                   const id = addVariant(entry.scopeId, pen.id, name)
-                  if (id) setVariantIds((current) => [...current, id])
+                  if (!id) return
+                  setVariantsFor(pen.id)
+                  setVariantIds([...liveVariantIds.filter((v) => v !== id), id])
                 }}
-                onOpenPen={(id) => openPenSettings(entry.scopeId, id)}
+                onOpenPen={(id, viewId) => openPenSettings(viewId ?? entry.scopeId, id)}
+                ownerScopeId={entry.scopeId}
+                onAddCrossView={(viewId, otherPenId) => {
+                  const id = addCrossViewDetail(entry.scopeId, pen.id, viewId, otherPenId)
+                  if (!id) return
+                  setVariantsFor(pen.id)
+                  setVariantIds([...liveVariantIds.filter((v) => v !== id), id])
+                }}
               />
             </div>
           )}

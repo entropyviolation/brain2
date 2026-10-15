@@ -9,6 +9,8 @@
  * is live, a dashed steel **usually ~N** chip shows the median of past
  * `timeLogs` / unflagged `actualDuration` for that title or type.
  * Tracking tags show as catalog beads; double-click opens tag settings.
+ * `compact` is the desk's one NOW row: no own lamp, a short Start / Stop key,
+ * and the tags line moves into the tooltip.
  */
 "use client"
 
@@ -36,7 +38,7 @@ import { NowObjectivesList } from "@/components/Home/Tracking/now-objectives-lis
 import "@/components/Operations/operations-chrome.css"
 import "@/components/Home/Tracking/tracking-chrome.css"
 
-export function WorkingNowStrip() {
+export function WorkingNowStrip({ compact = false }: { compact?: boolean } = {}) {
   const tasks = useTaskStore((s) => s.tasks)
   const tags = useTimeTrackingStore((s) => s.tags)
   const habits = useHabitsStore((s) => s.tasks)
@@ -60,10 +62,19 @@ export function WorkingNowStrip() {
   if (operations.length === 0) return null
 
   return (
-    <div className={`ops-now-bar${live ? " live" : ""}`}>
-      <span className={`ops-now-led${live ? " live" : ""}`} aria-hidden />
+    <div
+      className={`ops-now-bar${live ? " live" : ""}${compact ? " is-compact" : ""}`}
+      title={
+        compact
+          ? opTags.length > 0
+            ? `Tags: ${opTags.map((t) => t.name).join(", ")}${fedHabits.length > 0 ? ` · feeds ${fedHabits.map((h) => h.name).join(", ")}` : ""}`
+            : "No tracking tags — set them on the operation in Settings."
+          : undefined
+      }
+    >
+      {compact ? null : <span className={`ops-now-led${live ? " live" : ""}`} aria-hidden />}
       <label>
-        Working on
+        {compact ? <span className="sr-only">Working on</span> : "Working on"}
         <select
           aria-label="Operation to work on"
           value={selectedId}
@@ -101,10 +112,18 @@ export function WorkingNowStrip() {
         type="button"
         className={`ops-btn ops-btn-now${live ? " live" : ""}`}
         disabled={!selected}
+        aria-label={live && selected ? `Stop working on ${selected.description}` : "Working on this now"}
         onClick={() => selected && toggleWorkingOnOperation(selected.id)}
       >
-        {live && selected ? `Stop working on ${selected.description}` : "Working on this now"}
+        {compact
+          ? live
+            ? "■ Stop"
+            : "▶ Start"
+          : live && selected
+            ? `Stop working on ${selected.description}`
+            : "Working on this now"}
       </button>
+      {compact ? null : (
       <span
         className="ops-now-meta"
         title={
@@ -125,6 +144,7 @@ export function WorkingNowStrip() {
         )}
         {fedHabits.length > 0 && ` · feeds ${fedHabits.map((h) => h.name).join(", ")}`}
       </span>
+      )}
     </div>
   )
 }

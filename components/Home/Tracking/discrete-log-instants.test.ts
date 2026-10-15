@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import type { TimeEntry } from "@/lib/time-entries"
-import { discreteLogInstants, isDiscreteLogInstant, scopeTicksWithDiscreteLogs } from "./discrete-log-instants"
+import { discreteLogInstants, isDiscreteLogInstant, scopeTicksWithDiscreteLogs, withoutDiscreteLogs } from "./discrete-log-instants"
 
 function row(partial: Partial<TimeEntry> & Pick<TimeEntry, "id">): TimeEntry {
   return {
@@ -143,5 +143,15 @@ describe("discrete log instants", () => {
     })
     expect(isDiscreteLogInstant(spent, "Spent")).toBe(true)
     expect(discreteLogInstants([spent], pens).map((entry) => entry.id)).toEqual(["spent"])
+  })
+})
+
+describe("withoutDiscreteLogs", () => {
+  it("drops log flags and keeps ordinary instants and intervals", () => {
+    const food = row({ id: "food", intakeClass: "food" })
+    const note = row({ id: "note", penId: "text-pen" })
+    const plain = row({ id: "plain", penId: "act-work" })
+    const block = row({ id: "block", kind: "interval", generatedBy: { kind: "text", id: "x" }, endMin: 9 * 60 })
+    expect(withoutDiscreteLogs([food, note, plain, block], pens).map((e) => e.id)).toEqual(["plain", "block"])
   })
 })

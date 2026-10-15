@@ -305,7 +305,7 @@ export function childPenTotals(
           const linked = [
             ...new Set(
               (e.variantIds ?? [])
-                .map((id) => parent?.variants?.find((variant) => variant.id === id)?.penId)
+                .map((id) => parent?.variants?.find((variant) => variant.id === id && !variant.scopeId)?.penId)
                 .filter((id): id is string => Boolean(id)),
             ),
           ]

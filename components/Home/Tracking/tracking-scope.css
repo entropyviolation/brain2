@@ -1,0 +1,2447 @@
+/*
+ * components/Home/Tracking/tracking-scope.css — Home Tracking desk, scope-panel build
+ *
+ * Ported from docs/mockups/tracking-redesign.html (plan: docs/TRACKING_REDESIGN.md).
+ * Three bays: pen rack | screen | instrument column, each a bench-scope front
+ * panel (pale gray face, black badge header, pale-green section bands, screws).
+ * The view keys are a cassette deck with a ghost LED under each key. The
+ * screen has two faces per time base: Paper (white/gray grid) and Glass (dark
+ * graticule). Lights are green, ice blue, or purple only — never orange.
+ * Pen colors stay flat everywhere.
+ */
+
+.trk95 {
+  --scope-crt-bg: #050b09;
+  --scope-crt: var(--hab-crt-green, #7dffc4);
+  --scope-crt-glow: 0 0 3px #7dffc4, 0 0 9px rgba(125, 255, 196, 0.35);
+  --scope-ice: #9ad7ff;
+  --scope-violet: #a35cff;
+  --scope-hour: 22px;
+}
+
+/* ---------- desk layout ---------- */
+.trk95 .trk-desk {
+  display: grid;
+  grid-template-columns: 252px minmax(0, 1fr);
+  gap: 8px;
+  align-items: stretch;
+  container-type: inline-size;
+  container-name: trkdesk;
+}
+
+.trk95 .trk-desk[data-rack="false"] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.trk95 .trk-desk-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.trk95 .trk-desk-main > [role="tabpanel"] {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.trk95 .trk-grid-desk {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 244px;
+  gap: 8px;
+  align-items: stretch;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.trk95 .trk-center-bay {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+@container trkdesk (max-width: 980px) {
+  .trk95 .trk-desk,
+  .trk95 .trk-grid-desk {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .trk95 .trk-rack .trk-pen-list {
+    max-height: 220px;
+  }
+}
+
+/* ---------- scope panel ---------- */
+.trk95 .trk-scope {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-width: 0;
+  padding: 15px 13px 14px;
+  border-radius: 3px;
+  font-family: var(--font-pixel, "w95fa", ui-monospace, monospace);
+}
+
+.trk95 .trk-scope > :not(.trk-faceplate):not(.trk-scope-chassis):not(.trk-screw) {
+  position: relative;
+  z-index: 2;
+}
+
+.trk95 .trk-faceplate,
+.trk-fx .trk-faceplate {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: 3px;
+  background:
+    radial-gradient(140% 60% at 30% 0%, rgba(255, 255, 255, 0.35), transparent 60%),
+    linear-gradient(180deg, #dcdfdb, #c9ccc7);
+  border: 1px solid #55585a;
+  box-shadow:
+    inset 0 1px 0 #fff,
+    inset 0 -1px 0 #9a9d98,
+    0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.trk-fx .trk-faceplate.is-fx {
+  inset: auto;
+  left: 0;
+  top: 0;
+  transform-origin: 50% 50%;
+  will-change: transform;
+  box-shadow:
+    inset 0 1px 0 #fff,
+    inset 0 -1px 0 #9a9d98,
+    0 14px 30px rgba(0, 0, 0, 0.45);
+}
+
+.trk95 .trk-scope-chassis {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: 3px;
+  background: #020604;
+}
+
+.trk95 .trk-scope-chassis canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+
+.trk95 .trk-scope-chassis::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 3px;
+  box-shadow:
+    inset 0 0 0 1px #000,
+    inset 0 6px 18px rgba(0, 0, 0, 0.95),
+    inset 0 0 40px rgba(0, 0, 0, 0.6);
+}
+
+.trk95 .trk-platehole,
+.trk-fx .trk-platehole {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #0a0b0b 0 3px, #4a4e52 3.5px, #9a9ea2 4.5px);
+}
+
+.trk95 .trk-standoff {
+  position: absolute;
+  z-index: 1;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, #000 0 2.5px, #6d5a2a 3px, #c9a85a 4px, #7a6330 5.5px);
+  box-shadow: 0 0 0 1px #000;
+}
+
+.trk95 [data-corner="tl"],
+.trk-fx [data-corner="tl"] {
+  top: 4px;
+  left: 4px;
+}
+.trk95 [data-corner="tr"],
+.trk-fx [data-corner="tr"] {
+  top: 4px;
+  right: 4px;
+}
+.trk95 [data-corner="bl"],
+.trk-fx [data-corner="bl"] {
+  bottom: 4px;
+  left: 4px;
+}
+.trk95 [data-corner="br"],
+.trk-fx [data-corner="br"] {
+  bottom: 4px;
+  right: 4px;
+}
+.trk95 .trk-standoff[data-corner] {
+  margin: -1px;
+}
+
+.trk-fx {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.trk95 .trk-screw,
+.trk-fx .trk-screw {
+  position: absolute;
+  z-index: 6;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  cursor: pointer;
+  transform: scale(var(--lift, 1));
+  transition:
+    transform 0.12s ease-out,
+    box-shadow 0.12s;
+  background: radial-gradient(circle at 35% 30%, #ffffff, #c4c8cc 40%, #6f7377 92%);
+  box-shadow:
+    0 0 0 1px #4a4e52,
+    inset 0 -1px 1px rgba(0, 0, 0, 0.35),
+    0 1px 0 1px rgba(255, 255, 255, 0.55);
+}
+
+.trk-fx .trk-screw {
+  pointer-events: auto;
+  transition: none;
+}
+
+.trk95 .trk-screw::after,
+.trk-fx .trk-screw::after {
+  content: "";
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  top: 50%;
+  height: 1.5px;
+  margin-top: -0.75px;
+  background: #3a3e42;
+  transform: rotate(var(--r, 30deg));
+  transition: transform 0.12s ease-out;
+}
+
+.trk95 .trk-screw::before,
+.trk-fx .trk-screw::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 1.5px;
+  height: 7px;
+  background: #3a3e42;
+  transform: rotate(calc(var(--r, 30deg) + 90deg));
+  transition: transform 0.12s ease-out;
+}
+
+.trk95 .trk-screw:hover,
+body.win95-app .trk95 .trk-screw:hover {
+  filter: brightness(1.12);
+}
+
+.trk95 .trk-screw.is-loose,
+.trk-fx .trk-screw.is-loose {
+  box-shadow:
+    0 0 0 1px #4a4e52,
+    inset 0 -1px 1px rgba(0, 0, 0, 0.35),
+    0 calc(var(--turns, 0) * 1px) calc(var(--turns, 0) * 1.5px) rgba(0, 0, 0, 0.45);
+}
+
+/* header: black badge, model name, power LED */
+.trk95 .trk-scope-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #8a8d88;
+}
+
+.trk95 .trk-scope-badge {
+  padding: 2px 5px;
+  border-radius: 1px;
+  color: #f2f0e6;
+  background: #1b1d1c;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.trk95 .trk-scope-name {
+  color: #2b2d2b;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.trk95 .trk-scope-pwr {
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  color: #1b1d1c;
+  font-size: 8px;
+  letter-spacing: 0.14em;
+}
+
+.trk95 .trk-scope-led {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 32%, #ffffff, #7dffc4 38%, #1f8a5e 90%);
+  box-shadow:
+    0 0 0 1.5px #1b1d1c,
+    0 0 9px #7dffc4;
+}
+
+/* section with a pale-green band */
+.trk95 .trk-scope-sect {
+  position: relative;
+  padding: 14px 8px 8px;
+  border: 1px solid #7b7f7a;
+  border-radius: 4px;
+}
+
+.trk95 .trk-scope-sect.is-grow {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+.trk95 .trk-scope-band {
+  position: absolute;
+  top: -7px;
+  left: 8px;
+  padding: 1px 7px;
+  border-radius: 2px;
+  color: #142012;
+  background: #a9dc95;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  box-shadow:
+    inset 0 -1px 0 rgba(0, 0, 0, 0.15),
+    0 0 0 1px #6f9a62;
+}
+
+/* the bare chassis: printing goes light so every control still reads */
+.trk95 .trk-scope.is-bare .trk-push-label,
+.trk95 .trk-scope.is-bare .trk-scope-name,
+.trk95 .trk-scope.is-bare .trk-knob-title,
+.trk95 .trk-scope.is-bare .trk-slide-labels button,
+.trk95 .trk-scope.is-bare .trk-slide-cap,
+.trk95 .trk-scope.is-bare .trk-scope-pwr,
+.trk95 .trk-scope.is-bare .trk-knob-mark,
+.trk95 .trk-scope.is-bare .trk-rack-foot,
+.trk95 .trk-scope.is-bare .trk-readout-plate,
+.trk95 .trk-scope.is-bare .trk-deck-caption {
+  color: #e2fbf0;
+  text-shadow:
+    0 1px 2px #000,
+    0 0 6px #000;
+}
+.trk95 .trk-scope.is-bare .trk-knob-dial svg line,
+.trk95 .trk-scope.is-bare .trk-knob-dial svg path {
+  stroke: #cdeee0;
+}
+.trk95 .trk-scope.is-bare .trk-scope-sect {
+  border-color: rgba(205, 238, 224, 0.45);
+  background: rgba(2, 8, 6, 0.35);
+}
+.trk95 .trk-scope.is-bare .trk-scope-head {
+  border-bottom-color: rgba(205, 238, 224, 0.45);
+}
+
+/* ---------- CRT readouts ---------- */
+.trk95 .trk-scope-crt {
+  padding: 3px 8px;
+  border: 2px solid #2b2f33;
+  border-radius: 3px;
+  color: var(--scope-crt);
+  background:
+    radial-gradient(120% 70% at 50% 0%, rgba(125, 255, 196, 0.1), transparent 60%),
+    var(--scope-crt-bg);
+  box-shadow:
+    inset 0 0 0 1px #000,
+    0 1px 0 rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.08em;
+  text-shadow: var(--scope-crt-glow);
+  font-variant-numeric: tabular-nums;
+}
+
+.trk95 .trk-readout {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 84px;
+  padding: 4px 6px 5px;
+  border: 1px solid #4a4e52;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #a9adb1, #b8bcc0);
+  box-shadow:
+    inset 1px 1px 0 #7d8185,
+    inset -1px -1px 0 #e3e6e9;
+}
+
+.trk95 .trk-readout .trk-scope-crt {
+  padding: 3px 8px;
+  font-size: 15px;
+  text-align: right;
+}
+
+.trk95 .trk-readout-plate {
+  color: #2a2c2e;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+/* ---------- latching push buttons ---------- */
+.trk95 .trk-pushes {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4px;
+}
+
+.trk95 .trk-push-cell {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.trk95 .trk-push-cell.is-stacked {
+  flex-direction: column;
+  gap: 4px;
+}
+
+.trk95 .trk-push-hole {
+  display: inline-block;
+  margin: 3px;
+  padding: 3px 3px 10px;
+  border-radius: 3px;
+  line-height: 0;
+  background: linear-gradient(180deg, #0b0c0c, #1e201f);
+  box-shadow:
+    inset 0 2px 3px #000,
+    0 0 0 1px #2a2c2b,
+    0 0 0 3px #b4b8bb,
+    0 0 0 4px #6b6f72,
+    0 1px 0 4px rgba(255, 255, 255, 0.65);
+}
+
+.trk95 .trk-push,
+body.win95-app .trk95 .trk-push {
+  position: relative;
+  display: block;
+  width: 32px;
+  height: 18px;
+  min-height: 0;
+  padding: 0;
+  cursor: pointer;
+  border: 1px solid #5f5a45;
+  border-radius: 3px 3px 2px 2px;
+  background:
+    radial-gradient(80% 70% at 50% 12%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0) 62%),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.09), transparent 16%, transparent 84%, rgba(0, 0, 0, 0.12)),
+    linear-gradient(180deg, #fffdf4, #eee7cf 60%, #d9d1b2);
+  box-shadow:
+    inset 0 1px 0 #fff,
+    inset 0 -3px 3px -2px rgba(0, 0, 0, 0.22),
+    0 6px 0 -1px #b3ab8e,
+    0 6px 0 0 #4f4a38,
+    0 10px 5px rgba(0, 0, 0, 0.55);
+  transition:
+    transform 0.07s,
+    box-shadow 0.07s;
+}
+
+.trk95 .trk-push::after {
+  content: "";
+  position: absolute;
+  left: 28%;
+  right: 34%;
+  top: 50%;
+  height: 2px;
+  margin-top: -1px;
+  border-radius: 1px;
+  background: rgba(0, 0, 0, 0.24);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+.trk95 .trk-push::before {
+  content: "";
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  margin-top: -2.5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #8d8a78, #3f3d33 80%);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.35),
+    0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.trk95 .trk-push[data-tone="mint"],
+body.win95-app .trk95 .trk-push[data-tone="mint"] {
+  border-color: #4b5f4c;
+  background:
+    radial-gradient(80% 70% at 50% 12%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0) 62%),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.09), transparent 16%, transparent 84%, rgba(0, 0, 0, 0.12)),
+    linear-gradient(180deg, #f5fff5, #cfe8cf 60%, #b4d4b6);
+  box-shadow:
+    inset 0 1px 0 #fff,
+    inset 0 -3px 3px -2px rgba(0, 0, 0, 0.22),
+    0 6px 0 -1px #97b398,
+    0 6px 0 0 #374a38,
+    0 10px 5px rgba(0, 0, 0, 0.55);
+}
+
+.trk95 .trk-push[aria-pressed="true"],
+body.win95-app .trk95 .trk-push[aria-pressed="true"] {
+  transform: translateY(6px);
+  background:
+    radial-gradient(80% 70% at 50% 12%, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0) 62%),
+    linear-gradient(180deg, #e2dabd, #cfc6a6);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 2px 4px rgba(0, 0, 0, 0.3),
+    0 1px 0 0 #3a3628;
+}
+
+.trk95 .trk-push[data-tone="mint"][aria-pressed="true"],
+body.win95-app .trk95 .trk-push[data-tone="mint"][aria-pressed="true"] {
+  background:
+    radial-gradient(80% 70% at 50% 12%, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0) 62%),
+    linear-gradient(180deg, #bcd8be, #a5c4a8);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 2px 4px rgba(0, 0, 0, 0.3),
+    0 1px 0 0 #2a3a2b;
+}
+
+.trk95 .trk-push[aria-pressed="true"]::before,
+body.win95-app .trk95 .trk-push[aria-pressed="true"]::before {
+  background: radial-gradient(circle at 35% 30%, #fff, #7dffc4 45%, #1f8a5e);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.4),
+    0 0 6px #7dffc4;
+}
+
+.trk95 .trk-push[data-tone="mint"][aria-pressed="true"]::before,
+body.win95-app .trk95 .trk-push[data-tone="mint"][aria-pressed="true"]::before {
+  background: radial-gradient(circle at 35% 30%, #fff, #9ad7ff 45%, #2a6a9a);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.4),
+    0 0 6px #9ad7ff;
+}
+
+.trk95 .trk-push:focus-visible,
+body.win95-app .trk95 .trk-push:focus-visible {
+  outline: 1px dotted #000;
+  outline-offset: 2px;
+}
+
+.trk95 .trk-push-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #1b1d1c;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  user-select: none;
+}
+
+.trk95 .trk-push-label::before {
+  content: "";
+  width: 7px;
+  border-top: 1px solid #6b6f6a;
+}
+
+.trk95 .trk-push-cell.is-stacked .trk-push-label {
+  font-size: 9px;
+}
+
+.trk95 .trk-push-cell.is-stacked .trk-push-label::before {
+  display: none;
+}
+
+.trk95 .trk-push-label small {
+  color: #5a5d58;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+.trk95 .trk-push-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+/* ---------- knobs ---------- */
+.trk95 .trk-knob-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.trk95 .trk-knob-title {
+  color: #1b1d1c;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.trk95 .trk-knob-dial {
+  position: relative;
+  touch-action: none;
+}
+
+.trk95 .trk-knob-dial svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  stroke: #1b1d1c;
+}
+
+.trk95 .trk-knob-mark,
+body.win95-app .trk95 .trk-knob-mark {
+  position: absolute;
+  z-index: 3;
+  min-height: 0;
+  padding: 0 1px;
+  border: 0;
+  color: #1b1d1c;
+  background: transparent;
+  box-shadow: none;
+  font-size: 9px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+}
+
+.trk95 .trk-knob-mark[data-current="true"],
+body.win95-app .trk95 .trk-knob-mark[data-current="true"] {
+  color: #0b5a3a;
+  font-weight: 700;
+}
+
+.trk95 .trk-scope.is-bare .trk-knob-mark[data-current="true"],
+body.win95-app .trk95 .trk-scope.is-bare .trk-knob-mark[data-current="true"] {
+  color: #7dffc4;
+}
+
+.trk95 .trk-knob {
+  position: absolute;
+  inset: 24%;
+  z-index: 2;
+  border-radius: 50%;
+  cursor: grab;
+  transition: transform 0.12s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+.trk95 .trk-knob:active {
+  cursor: grabbing;
+}
+
+.trk95 .trk-knob:focus-visible,
+body.win95-app .trk95 .trk-knob:focus-visible {
+  outline: 1px dotted #000;
+  outline-offset: 3px;
+}
+
+.trk95 .trk-knob-skirt {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 30%, #4a4c4e, #161718 62%, #0a0a0a);
+  box-shadow:
+    0 0 0 1px #000,
+    0 4px 6px rgba(0, 0, 0, 0.55),
+    0 1px 0 1px rgba(255, 255, 255, 0.25);
+}
+
+.trk95 .trk-knob-skirt::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 1px;
+  width: 2px;
+  height: 20%;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: #f4f2ea;
+  box-shadow: 0 0 1px #fff;
+}
+
+.trk95 .trk-knob-grip {
+  position: absolute;
+  inset: 13%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 40% 28%, rgba(255, 255, 255, 0.28), transparent 46%),
+    repeating-conic-gradient(from 0deg, #0e0f10 0deg 5deg, #2e3032 5deg 10deg);
+  box-shadow:
+    inset 0 0 0 1px #000,
+    inset 0 -3px 5px rgba(0, 0, 0, 0.6),
+    0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.trk95 .trk-knob-cap {
+  position: absolute;
+  inset: 31%;
+  border-radius: 50%;
+  background:
+    repeating-radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
+    radial-gradient(circle at 38% 32%, #ffffff, #cfd3d6 38%, #858a8f 85%);
+  box-shadow:
+    0 0 0 1px #111,
+    inset 0 -1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.trk95 .trk-knob-cap::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 8%;
+  width: 2px;
+  height: 34%;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: #111;
+}
+
+.trk95 .trk-knob-read {
+  min-width: 64px;
+  padding: 2px 8px;
+  font-size: 11px;
+  text-align: center;
+}
+
+.trk95 .trk-knobs2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+
+/* ---------- slide switches ---------- */
+.trk95 .trk-slide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.trk95 .trk-slide-labels {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.trk95 .trk-slide-labels button,
+body.win95-app .trk95 .trk-slide-labels button {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  color: #1b1d1c;
+  background: transparent;
+  box-shadow: none;
+  font-size: 8.5px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.trk95 .trk-slide-labels button[aria-checked="true"],
+body.win95-app .trk95 .trk-slide-labels button[aria-checked="true"] {
+  color: #0b5a3a;
+  font-weight: 700;
+}
+
+.trk95 .trk-scope.is-bare .trk-slide-labels button[aria-checked="true"],
+body.win95-app .trk95 .trk-scope.is-bare .trk-slide-labels button[aria-checked="true"] {
+  color: #7dffc4;
+}
+
+.trk95 .trk-slide-track {
+  position: relative;
+  width: 100%;
+  height: 16px;
+  border-radius: 2px;
+  background: #141516;
+  box-shadow:
+    inset 0 1px 3px #000,
+    0 1px 0 rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+}
+
+.trk95 .trk-slide-thumb {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  width: 22px;
+  border: 1px solid #000;
+  border-radius: 2px;
+  background: repeating-linear-gradient(90deg, #2a2c2e 0 2px, #4a4d50 2px 4px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transition: left 0.1s;
+}
+
+.trk95 .trk-slide-cap {
+  color: #1b1d1c;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+}
+
+/* ---------- instrument column ---------- */
+.trk95 .trk-instruments {
+  min-width: 0;
+}
+
+.trk95 .trk-instruments .trk-scope-sect > * + * {
+  margin-top: 6px;
+}
+
+.trk95 .trk-instrument-detail {
+  min-height: 0;
+  padding: 6px;
+  border-radius: 3px;
+  color: #d9e0dc;
+  background: #1b1d1c;
+  box-shadow:
+    inset 0 1px 3px #000,
+    0 1px 0 rgba(255, 255, 255, 0.7);
+  font-size: 11px;
+}
+
+.trk95 .trk-instrument-detail .trk-tool-detail {
+  margin: 0;
+  padding: 6px 8px;
+  border: 0;
+  color: var(--scope-crt);
+  background: var(--scope-crt-bg);
+  box-shadow: none;
+  text-shadow: var(--scope-crt-glow);
+}
+
+.trk95 .trk-instrument-detail .trk-tool-detail * {
+  color: inherit;
+}
+
+.trk95 .trk-instrument-detail .trk-fill-row,
+.trk95 .trk-instrument-detail .trk-fill-range {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 6px;
+  border-radius: 2px;
+  color: #1b1d1c;
+  background: #d9dcd7;
+}
+
+.trk95 .trk-instrument-detail .trk-fill-row .trk-field {
+  flex-wrap: wrap;
+}
+
+.trk95 .trk-instrument-detail-plate {
+  display: block;
+  margin: 2px 3px 4px;
+  color: #d9e0dc;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.trk95 .trk-instruments .trk-logkey {
+  width: 100%;
+}
+
+.trk95 .trk-instruments .trk-logkey > * {
+  width: 100%;
+  justify-content: center;
+}
+
+.trk95 .trk-instruments .trk-find,
+.trk95 .trk-instruments .trk-find * {
+  max-width: 100%;
+}
+
+.trk95 .trk-opacity-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 10px;
+}
+
+.trk95 .trk-opacity-rows label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.trk95 .trk-opacity-rows label span:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trk95 .trk-opacity-rows input[type="range"] {
+  width: 84px;
+  height: 12px;
+  margin: 0;
+}
+
+/* ---------- cassette deck: view keys with a ghost LED beneath each ---------- */
+.trk95 .trk-deck {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 3px;
+  padding: 9px 10px 0 8px;
+  border: 1px solid #050505;
+  border-radius: 6px;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 2px),
+    linear-gradient(180deg, #23262a, #141618 70%, #1c1e21);
+  box-shadow:
+    inset 0 3px 7px #000,
+    inset 0 -1px 0 rgba(255, 255, 255, 0.07),
+    0 0 0 2px #c3c7cb,
+    0 0 0 3px #6a6e72,
+    0 0 0 4px rgba(255, 255, 255, 0.55);
+}
+
+.trk95 .trk-deck-slot {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 80px;
+}
+
+.trk95 .trk-deck-slot.is-narrow {
+  flex: 0 0 34px;
+}
+
+.trk95 .trk-deck-slot.is-legend {
+  flex: 0 0 40px;
+}
+
+.trk95 .trk-deck-caption {
+  position: absolute;
+  left: 0;
+  color: #8d9297;
+  font-size: 8px;
+  letter-spacing: 0.16em;
+}
+
+.trk95 .trk-deck-caption.is-view {
+  top: 18px;
+}
+
+.trk95 .trk-deck-caption.is-ghost,
+body.win95-app .trk95 .trk-deck-caption.is-ghost {
+  bottom: 6px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.trk95 .trk-deck-caption.is-ghost:hover,
+body.win95-app .trk95 .trk-deck-caption.is-ghost:hover {
+  color: #c9ced3;
+}
+
+.trk95 .trk-deck-caption.is-ghost::after {
+  content: "";
+  position: absolute;
+  left: calc(100% + 3px);
+  top: 50%;
+  width: 10px;
+  border-top: 1px dotted #6a6f74;
+}
+
+.trk95 .trk-ckey,
+body.win95-app .trk95 .trk-ckey {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 46px;
+  min-height: 0;
+  padding: 0 4px;
+  border: 1px solid #2c3034;
+  border-radius: 4px 4px 2px 2px;
+  text-align: center;
+  cursor: pointer;
+  background:
+    radial-gradient(130% 55% at 50% 0%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0) 60%),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.1), transparent 14%, transparent 86%, rgba(0, 0, 0, 0.16)),
+    linear-gradient(180deg, #f7f8f9 0%, #e3e6e9 42%, #c8ccd0 100%);
+  box-shadow:
+    inset 0 1px 0 #fff,
+    inset 1px 0 0 rgba(255, 255, 255, 0.55),
+    inset -1px 0 0 rgba(0, 0, 0, 0.12),
+    inset 0 -4px 4px -2px rgba(0, 0, 0, 0.2),
+    0 16px 10px -3px rgba(0, 0, 0, 0.75);
+  transition:
+    top 0.09s ease-out,
+    box-shadow 0.09s ease-out,
+    filter 0.09s;
+}
+
+.trk95 .trk-ckey::after {
+  content: "";
+  position: absolute;
+  left: -1px;
+  right: -1px;
+  top: 100%;
+  height: 10px;
+  pointer-events: none;
+  border: 1px solid #2c3034;
+  border-top: 0;
+  border-radius: 0 0 3px 3px;
+  background:
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.16) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, #a3a7ac, #7c8085 55%, #55595e);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transition: height 0.09s ease-out;
+}
+
+.trk95 .trk-ckey:hover,
+body.win95-app .trk95 .trk-ckey:hover {
+  filter: brightness(1.04);
+}
+
+.trk95 .trk-ckey:focus-visible,
+body.win95-app .trk95 .trk-ckey:focus-visible {
+  outline: 1px dotted #c9ced3;
+  outline-offset: 2px;
+}
+
+.trk95 .trk-ckey-glyph {
+  display: block;
+  flex: none;
+  width: 26px;
+  height: 11px;
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.09), rgba(0, 0, 0, 0.02));
+  box-shadow:
+    inset 0 1px 1px rgba(0, 0, 0, 0.22),
+    0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+.trk95 .trk-ckey-label {
+  overflow: hidden;
+  max-width: 100%;
+  color: #3a3e43;
+  font-size: 9px;
+  line-height: 1.1;
+  letter-spacing: 0.1em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.95),
+    0 -1px 0 rgba(0, 0, 0, 0.2);
+}
+
+.trk95 .trk-ckey[aria-pressed="true"],
+body.win95-app .trk95 .trk-ckey[aria-pressed="true"] {
+  top: 19px;
+  background:
+    radial-gradient(130% 55% at 50% 0%, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0) 60%),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.12), transparent 14%, transparent 86%, rgba(0, 0, 0, 0.16)),
+    linear-gradient(180deg, #d6d9dc 0%, #c3c7cb 50%, #b0b4b8 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 3px 5px rgba(0, 0, 0, 0.18),
+    0 5px 4px -1px rgba(0, 0, 0, 0.7);
+}
+
+.trk95 .trk-ckey[aria-pressed="true"]::after,
+body.win95-app .trk95 .trk-ckey[aria-pressed="true"]::after {
+  height: 3px;
+}
+
+.trk95 .trk-ckey[aria-pressed="true"] .trk-ckey-label,
+body.win95-app .trk95 .trk-ckey[aria-pressed="true"] .trk-ckey-label {
+  color: #0c3a29;
+}
+
+.trk95 .trk-ckey[aria-pressed="true"]::before,
+body.win95-app .trk95 .trk-ckey[aria-pressed="true"]::before {
+  content: "";
+  position: absolute;
+  top: 4px;
+  left: 32%;
+  right: 32%;
+  height: 2px;
+  border-radius: 1px;
+  background: #7dffc4;
+  box-shadow:
+    0 0 5px #7dffc4,
+    0 0 1px #fff;
+}
+
+.trk95 .trk-ckey.is-icon .trk-ckey-label {
+  font-size: 13px;
+  letter-spacing: 0;
+}
+
+.trk95 .trk-cled,
+body.win95-app .trk95 .trk-cled {
+  position: absolute;
+  left: 50%;
+  bottom: 9px;
+  z-index: 1;
+  width: 11px;
+  height: 11px;
+  min-height: 0;
+  margin-left: -5.5px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  background: radial-gradient(circle at 38% 32%, #4a5260, #10131a 70%);
+  box-shadow:
+    0 0 0 2px #050505,
+    0 0 0 3px #50555a,
+    0 1px 0 3px rgba(255, 255, 255, 0.12),
+    inset 0 1px 1px rgba(255, 255, 255, 0.12);
+}
+
+.trk95 .trk-cled::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 3px;
+  height: 2px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.trk95 .trk-cled[aria-pressed="true"],
+body.win95-app .trk95 .trk-cled[aria-pressed="true"] {
+  background: radial-gradient(circle at 38% 32%, #ffffff, #9ad7ff 40%, #2a6a9a 95%);
+  box-shadow:
+    0 0 0 2px #050505,
+    0 0 0 3px #50555a,
+    0 0 12px #9ad7ff,
+    0 0 3px #9ad7ff;
+}
+
+.trk95 .trk-cled:disabled,
+body.win95-app .trk95 .trk-cled:disabled {
+  cursor: default;
+}
+
+.trk95 .trk-deck-add {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.trk95 .trk-deck-add input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 26px;
+  padding: 2px 6px;
+  border: 1px solid #404040;
+  background: #fff;
+  font: inherit;
+  font-size: 11px;
+}
+
+.trk95 .trk-deck-add button {
+  height: 26px;
+  min-height: 0;
+  padding: 0 8px;
+  font-size: 10px;
+}
+
+.trk95 .trk-deck-slot.is-adding {
+  flex: 0 0 240px;
+}
+
+.trk95 .trk-deck-action {
+  display: flex;
+  align-items: center;
+  align-self: center;
+  margin-left: 4px;
+  padding-bottom: 6px;
+}
+
+/* ---------- period group ---------- */
+.trk95 .trk-period-crt {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.trk95 .trk-pgroup {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.trk95 .trk-pgroup > button {
+  align-self: stretch;
+  min-height: 0;
+}
+
+.trk95 .trk-pgroup .trk-scope-crt {
+  min-width: 260px;
+  padding: 6px 18px;
+  font-size: 18px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.trk95 .trk-pgroup .trk-scope-crt h3 {
+  margin: 0;
+  font: inherit;
+  color: inherit;
+}
+
+.trk95 .trk-readouts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.trk95 .trk-period-crt .trk-probe {
+  align-self: center;
+}
+
+/* ---------- screen bezel ---------- */
+.trk95 .trk-screen-bezel {
+  position: relative;
+  padding: 14px;
+  border: 1px solid #050505;
+  border-radius: 8px;
+  background: radial-gradient(120% 80% at 50% 0%, #3a3d40, #1a1c1e 70%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.6),
+    0 0 0 2px #b4b8bb,
+    0 0 0 3px #6b6f72;
+}
+
+.trk95 .trk-screen-bezel > .trk-grid {
+  border-radius: 14px / 10px;
+  box-shadow:
+    inset 0 0 0 1px #000,
+    0 0 0 2px #2b2f33;
+}
+
+/* ---------- glass face ---------- */
+.trk95 .trk-screen-bezel[data-face="glass"] > .trk-grid {
+  background: #040a08;
+  box-shadow:
+    inset 0 0 0 1px #000,
+    inset 0 0 28px rgba(0, 0, 0, 0.9),
+    0 0 0 2px #2b2f33;
+}
+
+.trk95 .trk-screen-bezel[data-face="glass"]::after {
+  content: "";
+  position: absolute;
+  inset: 14px;
+  z-index: 8;
+  pointer-events: none;
+  border-radius: 14px / 10px;
+  background:
+    radial-gradient(130% 90% at 50% 0%, rgba(125, 255, 196, 0.06), transparent 55%),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.18) 0 1px, transparent 1px 3px);
+}
+
+.trk95 .trk-screen-bezel[data-face="glass"]::before {
+  content: "";
+  position: absolute;
+  inset: 14px;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: 14px / 10px;
+  background: url("/tracking/frost.jpg") right top / 520px no-repeat;
+  opacity: 0.08;
+  mix-blend-mode: screen;
+}
+
+.trk95 [data-face="glass"] .trk-plot,
+.trk95 [data-face="glass"] .trk-hour-row:nth-child(odd) .trk-plot,
+.trk95 [data-face="glass"] .trk-hour-row,
+.trk95 [data-face="glass"] .trk-plot-paper,
+.trk95 [data-face="glass"] .trk-week-plot > div {
+  background: transparent;
+}
+
+.trk95 [data-face="glass"] .trk-cell {
+  box-shadow: inset 1px 0 0 rgba(125, 255, 196, 0.07);
+}
+
+.trk95 [data-face="glass"] .trk-cell-quarter {
+  box-shadow: inset 1px 0 0 rgba(125, 255, 196, 0.16);
+}
+
+.trk95 [data-face="glass"] .trk-cell-painted {
+  box-shadow: inset 1px 0 0 rgba(0, 0, 0, 0.12);
+}
+
+.trk95 [data-face="glass"] .trk-hour-row {
+  box-shadow: inset 0 -1px 0 rgba(125, 255, 196, 0.055);
+}
+
+.trk95 [data-face="glass"] .trk-hour-row.trk-cell-quarter {
+  box-shadow: inset 0 1px 0 rgba(125, 255, 196, 0.16);
+}
+
+.trk95 [data-face="glass"] .trk-hour-bezel,
+.trk95 [data-face="glass"] .trk-grid .trk-hour-bezel {
+  color: #5f8f7e;
+  background: rgba(4, 10, 8, 0.85);
+  border-right: 1px solid rgba(125, 255, 196, 0.18);
+  box-shadow: none;
+  text-shadow: none;
+}
+
+.trk95 [data-face="glass"] .trk-time-axis {
+  color: #a9cfc0;
+  background: #071310;
+  border-bottom: 1px solid rgba(125, 255, 196, 0.25);
+}
+
+.trk95 [data-face="glass"] .trk-time-axis button {
+  color: var(--scope-crt);
+  text-shadow: var(--scope-crt-glow);
+}
+
+.trk95 [data-face="glass"] .trk-silkscreen {
+  color: rgba(125, 255, 196, 0.35);
+}
+
+.trk95 [data-face="glass"] .trk-day-strip {
+  background: transparent;
+  border-bottom-color: rgba(125, 255, 196, 0.14);
+}
+
+.trk95 [data-face="glass"] .trk-day-gutter {
+  color: #a9cfc0;
+  background: rgba(4, 10, 8, 0.85);
+}
+
+.trk95 [data-face="glass"] .trk-marker-sunrise,
+.trk95 [data-face="glass"] .trk-marker-sunset {
+  border-color: rgba(200, 200, 176, 0.38);
+  background: rgba(200, 200, 176, 0.32);
+}
+
+.trk95 [data-face="glass"] .trk-marker-sunrise .trk-marker-label,
+.trk95 [data-face="glass"] .trk-marker-sunset .trk-marker-label {
+  color: #c8c8b0;
+  background: #040a08;
+  border-color: rgba(200, 200, 176, 0.38);
+}
+
+/* week day headers: name + total + glass meter */
+.trk95 .trk-dayhead {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  padding: 5px 6px 6px;
+  border-left: 1px solid rgba(0, 0, 0, 0.18);
+}
+
+.trk95 [data-face="glass"] .trk-dayhead {
+  border-left-color: rgba(125, 255, 196, 0.14);
+}
+
+.trk95 .trk-dayhead-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.trk95 .trk-dayhead-row button,
+body.win95-app .trk95 .trk-dayhead-row button {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  font-size: 12px;
+  text-align: left;
+}
+
+.trk95 .trk-dayhead-row small {
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: #444;
+}
+
+.trk95 [data-face="glass"] .trk-dayhead-row small {
+  color: #8fb8a8;
+}
+
+.trk95 .trk-meter {
+  position: relative;
+  height: 9px;
+  margin-top: 5px;
+  overflow: hidden;
+  border: 1px solid #808488;
+  border-radius: 5px;
+  background: #e8eaec;
+}
+
+.trk95 [data-face="glass"] .trk-meter {
+  border-color: #3a4440;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.03) 45%, rgba(0, 0, 0, 0.3));
+}
+
+.trk95 .trk-meter i {
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  bottom: 2px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #eafff6, #7dffc4 45%, #2a9a6a);
+  box-shadow: 0 0 6px #7dffc4;
+}
+
+.trk95 .trk-meter i[data-low="true"] {
+  background: linear-gradient(180deg, #f1e6ff, #a35cff 45%, #4a0ea0);
+  box-shadow: 0 0 6px #a35cff;
+}
+
+/* sunrise / sunset once in the hour gutter */
+.trk95 .trk-gutter-sun {
+  display: block;
+  color: #555;
+  font-size: 9px;
+  line-height: 1;
+}
+
+.trk95 [data-face="glass"] .trk-gutter-sun {
+  color: #c8c8b0;
+}
+
+/* ---------- pen rack ---------- */
+.trk95 .trk-rack {
+  min-width: 0;
+}
+
+.trk95 .trk-rack-plate {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid #4a4e52;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #a9adb1, #b8bcc0);
+  box-shadow:
+    inset 1px 1px 0 #7d8185,
+    inset -1px -1px 0 #e3e6e9;
+}
+
+.trk95 .trk-rack-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.trk95 .trk-rack-swatch {
+  flex: none;
+  width: 34px;
+  height: 18px;
+  border: 1px solid rgba(0, 0, 0, 0.55);
+  border-radius: 2px;
+  background-size: cover;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  cursor: pointer;
+}
+
+.trk95 .trk-rack-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: #111;
+  font-size: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trk95 .trk-digit {
+  flex: none;
+  padding: 1px 5px;
+  border: 1px solid #2b2f33;
+  border-radius: 2px;
+  color: var(--scope-crt);
+  background: var(--scope-crt-bg);
+  font-size: 11px;
+  text-shadow: var(--scope-crt-glow);
+}
+
+.trk95 .trk-rack-settings,
+body.win95-app .trk95 .trk-rack-settings {
+  height: 22px;
+  min-height: 0;
+  padding: 0 6px;
+  font-size: 10px;
+}
+
+.trk95 .trk-rack-latches {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.trk95 .trk-rack-latches button,
+body.win95-app .trk95 .trk-rack-latches button {
+  height: 20px;
+  min-height: 0;
+  padding: 0 7px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.trk95 .trk-rack-latches button[aria-pressed="true"],
+body.win95-app .trk95 .trk-rack-latches button[aria-pressed="true"] {
+  color: var(--scope-crt);
+  background: var(--scope-crt-bg);
+  text-shadow: var(--scope-crt-glow);
+  box-shadow: inset 0 2px 3px #000;
+}
+
+.trk95 .trk-rack-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  color: #3a3c3e;
+  font-size: 10px;
+}
+
+.trk95 .trk-rack .trk-swatches {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+}
+
+.trk95 .trk-pen-list {
+  max-height: 520px;
+  min-height: 120px;
+  overflow-y: auto;
+  padding: 6px 4px 6px 2px;
+  border: 1px solid #4a4e52;
+  background:
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.025) 0 1px, transparent 1px 4px),
+    linear-gradient(#c6cacd, #bcc0c4);
+  box-shadow:
+    inset 1px 1px 0 #7d8185,
+    inset -1px -1px 0 #e3e6e9;
+}
+
+.trk95 .trk-pen-node,
+body.win95-app .trk95 .trk-pen-node {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  min-height: 0;
+  padding: 3px 4px 3px 2px;
+  border: 0;
+  border-radius: 0;
+  color: #111;
+  background: transparent;
+  box-shadow: none;
+  font-size: 12px;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.trk95 .trk-pen-node:hover,
+body.win95-app .trk95 .trk-pen-node:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.trk95 .trk-pen-node[data-selected="true"],
+body.win95-app .trk95 .trk-pen-node[data-selected="true"] {
+  background: rgba(0, 0, 0, 0.08);
+  box-shadow: inset 2px 0 0 var(--scope-crt);
+}
+
+.trk95 .trk-pen-node-swatch {
+  flex: none;
+  width: 16px;
+  height: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.55);
+  border-radius: 2px;
+  background-size: cover;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+.trk95 .trk-pen-node-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trk95 .trk-pen-node-path {
+  color: #555;
+  font-size: 10px;
+}
+
+.trk95 .trk-pen-node .trk-digit {
+  margin-left: auto;
+  padding: 0 4px;
+  font-size: 10px;
+}
+
+/* FR4 traces as engraved rules between parent and child */
+.trk95 .trk-pen-kids {
+  position: relative;
+  margin-left: 13px;
+  padding-left: 13px;
+}
+
+.trk95 .trk-pen-kids::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: -3px;
+  bottom: 11px;
+  border-left: 2px solid #8d9a8f;
+  box-shadow: 1px 0 0 rgba(255, 255, 255, 0.55);
+}
+
+.trk95 .trk-pen-kids > .trk-pen-node::before,
+.trk95 .trk-pen-kids > .trk-pen-group > .trk-pen-node::before {
+  content: "";
+  position: absolute;
+  left: -13px;
+  top: 50%;
+  width: 11px;
+  border-top: 2px solid #8d9a8f;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.trk95 .trk-pen-kids > .trk-pen-node::after,
+.trk95 .trk-pen-kids > .trk-pen-group > .trk-pen-node::after {
+  content: "";
+  position: absolute;
+  left: -15px;
+  top: calc(50% - 3px);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #f4f0dc, #b9b08a 60%, #7a7354);
+  box-shadow: 0 0 0 1px #6c6650;
+}
+
+.trk95 .trk-rack .trk-new-pen {
+  margin-top: 0;
+}
+
+/* ---------- writing: lace around the paper ---------- */
+.trk95 .trk-lace {
+  margin-top: 8px;
+  padding: 26px;
+  border: 1px solid #0a0a0a;
+  border-radius: 3px;
+  background: #0b0b0b url("/tracking/lace.jpg") center / 420px repeat;
+}
+
+.trk95 .trk-lace-paper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #2b2f33;
+  background: linear-gradient(180deg, #7b8085, #6a6f74);
+  box-shadow: inset 0 1px 0 #9da2a7;
+}
+
+.trk95 .trk-lace-paper:empty {
+  display: none;
+}
+
+/* ---------- room header + now strip (desk only) ---------- */
+.trk95 .trk-window[data-desk="true"] .trk-title-orb {
+  width: 34px;
+  height: 34px;
+  padding: 3px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 40%, #1a2622, #000 70%);
+  box-shadow:
+    0 0 0 3px #b8bcc0,
+    0 0 0 4px #5c6064,
+    inset 0 2px 4px #000;
+}
+
+/* ---------- motion ---------- */
+@keyframes trk-strike {
+  0% {
+    opacity: 0;
+  }
+  18% {
+    opacity: 1;
+  }
+  30% {
+    opacity: 0.3;
+  }
+  46% {
+    opacity: 1;
+  }
+  62% {
+    opacity: 0.65;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.trk95 [data-face] .trk-cell-spark {
+  animation: trk-strike 260ms steps(8, end);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trk95 .trk-ckey,
+  .trk95 .trk-push,
+  .trk95 .trk-knob,
+  .trk95 .trk-slide-thumb,
+  .trk95 .trk-screw {
+    transition: none;
+  }
+  .trk95 [data-face] .trk-cell-spark {
+    animation-duration: 1ms;
+  }
+}
+
+/* Week on the desk: sunrise / sunset labels live once in the hour gutter. */
+.trk95 .trk-week-plot[data-desk="true"] .trk-marker-sunrise .trk-marker-label,
+.trk95 .trk-week-plot[data-desk="true"] .trk-marker-sunset .trk-marker-label {
+  display: none;
+}
+
+.trk95 .trk-dayhead-row button {
+  color: #111;
+  cursor: pointer;
+}
+
+.trk95 .trk-screen-bezel[data-face="glass"] .trk-dayhead-row button,
+body.win95-app .trk95 .trk-screen-bezel[data-face="glass"] .trk-dayhead-row button {
+  color: var(--scope-crt);
+  text-shadow: var(--scope-crt-glow);
+}
+
+.trk95 .trk-dayhead-row button:hover,
+body.win95-app .trk95 .trk-dayhead-row button:hover {
+  text-decoration: underline;
+}
+
+/* Room plate: the orb only — the lit Home tab already says TRACKING. */
+.trk95 .trk-window[data-desk="true"] .trk-mark h2 {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.trk95 .trk-instrument-detail .trk-module-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.trk95 .trk-instrument-detail .trk-module-keys button {
+  min-width: 0;
+  padding: 0 5px;
+}
+
+.trk95 .trk-instrument-detail .trk-fill-row > button {
+  width: 100%;
+}
+
+/* Phone: the rack stacks above the screen (a container cannot query itself). */
+@media (max-width: 760px) {
+  .trk95 .trk-desk {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .trk95 .trk-rack .trk-pen-list {
+    max-height: 220px;
+  }
+  .trk95 .trk-deck {
+    overflow-x: auto;
+  }
+  .trk95 .trk-deck-slot {
+    flex: 0 0 64px;
+  }
+  .trk95 .trk-pgroup .trk-scope-crt {
+    min-width: 0;
+    font-size: 14px;
+  }
+}
+
+/* ---------- one NOW row (desk): operation → pen clock ---------- */
+.trk95 .trk-now-module.trk-now-row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+}
+
+.trk95 .trk-now-lamp {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #5a5e60, #1b1d1e 70%);
+  box-shadow:
+    0 0 0 1px #4a4e52,
+    inset 0 0 1px #000;
+}
+
+.trk95 .trk-now-row:has(.ops-now-bar.live) .trk-now-lamp {
+  background: radial-gradient(circle at 35% 30%, #eafff6, #7dffc4 40%, #1f8a5e 90%);
+  box-shadow:
+    0 0 0 1px #2c3a33,
+    0 0 6px #7dffc4;
+}
+
+.trk95 .trk-now-plate {
+  flex: none;
+  color: #2a2c2e;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.trk95 .trk-now-arrow {
+  flex: none;
+  color: #5c6064;
+  font-size: 16px;
+}
+
+.trk95 .trk-now-row .ops-now-bar.is-compact {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.trk95 .trk-now-row .ops-now-bar.is-compact.trk-pen-now {
+  flex: 1 1 320px;
+}
+
+.trk95 .trk-now-row .ops-now-bar.is-compact .ops-now-elapsed {
+  padding: 3px 10px;
+  border: 2px solid #2b2f33;
+  border-radius: 3px;
+  color: var(--scope-crt);
+  background: var(--scope-crt-bg);
+  font-size: 15px;
+  text-shadow: var(--scope-crt-glow);
+}
+
+/* ---------- rack: unnamed places drawer ---------- */
+.trk95 .trk-unnamed {
+  border-top: 1px dashed #808488;
+  padding-top: 6px;
+}
+
+.trk95 .trk-unnamed > summary {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 6px;
+  font-size: 12px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.trk95 .trk-unnamed > summary::-webkit-details-marker {
+  display: none;
+}
+
+.trk95 .trk-unnamed > summary::after {
+  content: "▸";
+  margin-left: 2px;
+  color: #3a3c3e;
+}
+
+.trk95 .trk-unnamed[open] > summary::after {
+  content: "▾";
+}
+
+.trk95 .trk-unnamed-swatches {
+  display: flex;
+  gap: 2px;
+}
+
+.trk95 .trk-unnamed-swatches span {
+  width: 8px;
+  height: 9px;
+  border: 1px solid rgba(0, 0, 0, 0.55);
+  border-radius: 2px;
+}
+
+.trk95 .trk-unnamed-title {
+  flex: 1 1 auto;
+}
+
+.trk95 .trk-unnamed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-height: 180px;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.trk95 .trk-unnamed-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.trk95 .trk-unnamed-row .trk-pen-node {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.trk95 .trk-unnamed-name,
+body.win95-app .trk95 .trk-unnamed-name {
+  flex: none;
+  height: 20px;
+  min-height: 0;
+  padding: 0 6px;
+  font-size: 10px;
+}
+
+/* =====================================================================
+   Tracking log: console composer, chips, multi-column board, ledger bars
+   ===================================================================== */
+.trk95 .trk-logbook .trk-logbook-compose {
+  padding: 12px;
+  border: 1px solid #050505;
+  border-radius: 6px;
+  color: #d9e0dc;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 2px),
+    linear-gradient(180deg, #23262a, #141618 70%, #1c1e21);
+  box-shadow:
+    inset 0 3px 7px #000,
+    0 0 0 2px #c3c7cb,
+    0 0 0 3px #6a6e72;
+}
+
+.trk95 .trk-logbook .trk-logbook-compose .trk-logbook-heading,
+.trk95 .trk-logbook .trk-logbook-compose span,
+.trk95 .trk-logbook .trk-logbook-compose label,
+.trk95 .trk-logbook .trk-logbook-compose p {
+  color: #c9d3ce;
+}
+
+.trk95 .trk-logbook .trk-logbook-compose .trk-logbook-heading {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/* mode keys: small cassette keys */
+.trk95 .trk-logbook .trk-logbook-modes,
+.trk95 .trk-logbook .trk-logbook-sub .trk-span-switch {
+  gap: 5px;
+  padding: 0 0 6px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.trk95 .trk-logbook .trk-logbook-modes > button,
+.trk95 .trk-logbook .trk-logbook-sub .trk-span-switch > button,
+body.win95-app .trk95 .trk-logbook .trk-logbook-modes > button,
+body.win95-app .trk95 .trk-logbook .trk-logbook-sub .trk-span-switch > button {
+  height: 28px;
+  min-height: 0;
+  padding: 0 12px;
+  border: 1px solid #2c3034;
+  border-radius: 4px 4px 2px 2px;
+  color: #3a3e43;
+  background:
+    radial-gradient(130% 55% at 50% 0%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0) 60%),
+    linear-gradient(180deg, #f7f8f9 0%, #e3e6e9 42%, #c8ccd0 100%);
+  box-shadow:
+    inset 0 1px 0 #fff,
+    inset 0 -3px 3px -2px rgba(0, 0, 0, 0.2),
+    0 4px 0 -1px #7c8085,
+    0 4px 0 0 #2c3034,
+    0 7px 5px rgba(0, 0, 0, 0.6);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.95);
+  transition: transform 0.08s;
+}
+
+.trk95 .trk-logbook .trk-logbook-modes > button[aria-pressed="true"],
+.trk95 .trk-logbook .trk-logbook-sub .trk-span-switch > button[aria-pressed="true"],
+body.win95-app .trk95 .trk-logbook .trk-logbook-modes > button[aria-pressed="true"],
+body.win95-app .trk95 .trk-logbook .trk-logbook-sub .trk-span-switch > button[aria-pressed="true"] {
+  transform: translateY(3px);
+  color: #0c3a29;
+  background:
+    linear-gradient(180deg, transparent 0 3px, transparent 3px),
+    linear-gradient(180deg, #d6d9dc 0%, #c3c7cb 50%, #b0b4b8 100%);
+  box-shadow:
+    inset 0 3px 5px rgba(0, 0, 0, 0.22),
+    inset 0 2px 0 #7dffc4,
+    0 1px 0 0 #2c3034,
+    0 2px 3px rgba(0, 0, 0, 0.6);
+}
+
+/* fields on the console */
+.trk95 .trk-logbook .trk-logbook-compose input:not([type="checkbox"]),
+.trk95 .trk-logbook .trk-logbook-compose textarea,
+.trk95 .trk-logbook .trk-logbook-compose select {
+  color: #111;
+  background: #fbfaf4;
+  border: 1px solid #404040;
+  box-shadow:
+    inset 1px 1px 0 #808080,
+    inset -1px -1px 0 #dfdfdf;
+}
+
+.trk95 .trk-logbook .trk-logbook-amount {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 2px solid #2b2f33;
+  border-radius: 3px;
+  background: var(--scope-crt-bg);
+  box-shadow: inset 0 0 0 1px #000;
+}
+
+.trk95 .trk-logbook .trk-logbook-amount > span,
+.trk95 .trk-logbook .trk-logbook-compose .trk-logbook-amount > span {
+  color: var(--scope-crt);
+  font-size: 18px;
+  text-shadow: var(--scope-crt-glow);
+}
+
+.trk95 .trk-logbook .trk-logbook-compose .trk-logbook-amount input,
+body.win95-app .trk95 .trk-logbook .trk-logbook-compose .trk-logbook-amount input {
+  width: 7ch;
+  border: 0;
+  color: var(--scope-crt);
+  background: transparent;
+  box-shadow: none;
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+  text-shadow: var(--scope-crt-glow);
+  outline: none;
+}
+
+.trk95 .trk-logbook .trk-logbook-money {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 12px;
+  width: 100%;
+}
+
+/* quick chips: recent intake, sources, purchases */
+.trk95 .trk-logbook-quick {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  padding-top: 4px;
+}
+
+.trk95 .trk-logbook .trk-logbook-compose .trk-logbook-quick-label {
+  color: #8d9297;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.trk95 .trk-logbook-chip,
+body.win95-app .trk95 .trk-logbook-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  min-height: 0;
+  padding: 0 9px;
+  border: 1px solid #2b2f33;
+  border-radius: 12px;
+  color: var(--scope-crt);
+  background: var(--scope-crt-bg);
+  box-shadow:
+    inset 0 0 0 1px rgba(125, 255, 196, 0.18),
+    0 1px 0 rgba(255, 255, 255, 0.15);
+  font-size: 11px;
+  text-shadow: 0 0 3px rgba(125, 255, 196, 0.6);
+  cursor: pointer;
+}
+
+.trk95 .trk-logbook-chip:hover,
+body.win95-app .trk95 .trk-logbook-chip:hover {
+  box-shadow:
+    inset 0 0 0 1px rgba(125, 255, 196, 0.5),
+    0 0 8px rgba(125, 255, 196, 0.35);
+}
+
+.trk95 .trk-logbook-chip[aria-pressed="true"],
+body.win95-app .trk95 .trk-logbook-chip[aria-pressed="true"] {
+  color: #04140d;
+  background: #7dffc4;
+  text-shadow: none;
+}
+
+.trk95 .trk-logbook .trk-logbook-compose .trk-logbook-chip-count {
+  padding: 0 5px;
+  border-radius: 8px;
+  color: #9ad7ff;
+  background: rgba(154, 215, 255, 0.12);
+  font-size: 9px;
+  text-shadow: none;
+}
+
+/* a long remembered name stays one chip, not a banner; the tooltip has it all */
+.trk95 .trk-logbook .trk-logbook-compose .trk-logbook-chip {
+  max-width: 22rem;
+}
+
+.trk95 .trk-logbook .trk-logbook-compose .trk-logbook-chip-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* the board: shelves in columns */
+.trk95 .trk-logbook-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+  align-items: start;
+}
+
+.trk95 .trk-logbook-board > .trk-aside-well {
+  margin-top: 0;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #050b09;
+  box-shadow:
+    0 0 0 1px #050505,
+    0 0 0 2px #b4b8bb,
+    0 0 0 3px #6b6f72;
+}
+
+.trk95 .trk-logbook-board > .trk-aside-well > .trk-logbook-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0;
+  padding: 7px 10px 6px;
+  color: #142012;
+  background: linear-gradient(180deg, #bfe6ae, #a9dc95);
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.trk95 .trk-logbook-board > .trk-aside-well > .trk-logbook-heading .trk-logbook-count {
+  padding: 0 6px;
+  border: 1px solid #2b2f33;
+  border-radius: 2px;
+  color: var(--scope-crt);
+  background: var(--scope-crt-bg);
+  text-shadow: var(--scope-crt-glow);
+}
+
+.trk95 .trk-logbook-board > .trk-aside-well > .trk-logbook-note,
+.trk95 .trk-logbook-board > .trk-aside-well > .trk-logbook-ledger,
+.trk95 .trk-logbook-board > .trk-aside-well p {
+  margin: 0;
+  padding: 6px 10px 0;
+  color: #8fb8a8;
+  font-size: 11px;
+}
+
+.trk95 .trk-logbook-board > .trk-aside-well > .trk-logbook-empty {
+  padding-bottom: 10px;
+  color: #4f6f63;
+}
+
+.trk95 .trk-logbook-board .trk-log {
+  display: flex;
+  flex-direction: column;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.trk95 .trk-logbook-board .trk-log-row,
+body.win95-app .trk95 .trk-logbook-board .trk-log-row {
+  min-height: 26px;
+  padding: 3px 10px;
+  border: 0;
+  border-bottom: 1px solid rgba(125, 255, 196, 0.08);
+  border-radius: 0;
+  color: #d6efe4;
+  background: transparent;
+  box-shadow: none;
+}
+
+.trk95 .trk-logbook-board .trk-log-row:hover,
+body.win95-app .trk95 .trk-logbook-board .trk-log-row:hover {
+  background: rgba(125, 255, 196, 0.06);
+}
+
+.trk95 .trk-logbook-board .trk-log-row *,
+.trk95 .trk-logbook-board .trk-log-row span {
+  color: inherit;
+}
+
+.trk95 .trk-logbook-board .trk-log-when {
+  width: 5.5rem;
+  color: var(--scope-crt) !important;
+  text-shadow: 0 0 3px rgba(125, 255, 196, 0.55);
+}
+
+.trk95 .trk-logbook-board .trk-log-amount {
+  min-width: 4.5rem;
+  color: #9ad7ff !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.trk95 .trk-logbook-board .trk-log-scope,
+.trk95 .trk-logbook-board .trk-logbook-badge {
+  margin-left: auto;
+  color: #8fb8a8 !important;
+  font-size: 10px;
+}
+
+.trk95 .trk-logbook-board .trk-log-row.is-unknown button {
+  height: 20px;
+  min-height: 0;
+  padding: 0 6px;
+  font-size: 10px;
+}
+
+/* spend ledger bars */
+.trk95 .trk-logbook-board .trk-logbook-spent-total {
+  color: #9ad7ff;
+  font-size: 18px;
+  text-shadow: 0 0 4px rgba(154, 215, 255, 0.6);
+}
+
+.trk95 .trk-ledger-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px 0 2px;
+}
+
+.trk95 .trk-ledger-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 6rem) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: #c9d3ce;
+}
+
+.trk95 .trk-ledger-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #c9d3ce !important;
+}
+
+.trk95 .trk-ledger-track {
+  position: relative;
+  height: 7px;
+  overflow: hidden;
+  border: 1px solid #3a4440;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.trk95 .trk-ledger-track i {
+  position: absolute;
+  left: 1px;
+  top: 1px;
+  bottom: 1px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #f2fbff, #9ad7ff 45%, #2a6a9a);
+  box-shadow: 0 0 5px #9ad7ff;
+}
+
+.trk95 .trk-ledger-amount {
+  color: #9ad7ff !important;
+  font-variant-numeric: tabular-nums;
+}
+
+/* span keys (Day / Week) on the log */
+.trk95 .trk-logbook > .daylog-week-switch {
+  align-self: flex-start;
+}
+
+/* counts + cycle panels match the board shelves */
+.trk95 .trk-logbook > .trk-aside-well:not(.trk-logbook-compose) {
+  border-radius: 4px;
+}
+
+/* Tracking log week board on glass (matches the Time Grid week). */
+.trk95 .trk-logbook .trk-log-week-board {
+  overflow: hidden;
+  padding: 0;
+  border-radius: 10px / 8px;
+  background: #040a08;
+  box-shadow:
+    inset 0 0 0 1px #000,
+    inset 0 0 28px rgba(0, 0, 0, 0.9),
+    0 0 0 10px #1f2224,
+    0 0 0 11px #050505,
+    0 0 0 13px #b4b8bb,
+    0 0 0 14px #6b6f72;
+  margin: 14px;
+}
+
+.trk95 .trk-logbook .trk-log-week-col,
+.trk95 .trk-logbook .trk-log-week-col[data-today="true"] {
+  background: transparent;
+  box-shadow: inset 1px 0 0 rgba(125, 255, 196, 0.14);
+}
+
+.trk95 .trk-logbook .trk-log-week-col[data-today="true"] {
+  background: rgba(125, 255, 196, 0.04);
+}
+
+.trk95 .trk-logbook .trk-log-week-head,
+body.win95-app .trk95 .trk-logbook .trk-log-week-head {
+  color: var(--scope-crt);
+  background: #071310;
+  border-bottom: 1px solid rgba(125, 255, 196, 0.25);
+  box-shadow: none;
+  text-shadow: var(--scope-crt-glow);
+}
+
+.trk95 .trk-logbook .trk-log-week-head[data-today="true"],
+body.win95-app .trk95 .trk-logbook .trk-log-week-head[data-today="true"] {
+  box-shadow: inset 0 -2px 0 #7dffc4;
+}
+
+.trk95 .trk-logbook .trk-log-week-empty {
+  color: #2f4a40;
+}
+
+.trk95 .trk-logbook .trk-log-week-row,
+body.win95-app .trk95 .trk-logbook .trk-log-week-row {
+  color: #d6efe4;
+  border-bottom: 1px solid rgba(125, 255, 196, 0.08);
+}
+
+.trk95 .trk-logbook .trk-log-week-row:hover {
+  background: rgba(125, 255, 196, 0.06);
+}
+
+.trk95 .trk-logbook .trk-log-week-when {
+  color: var(--scope-crt);
+  text-shadow: 0 0 3px rgba(125, 255, 196, 0.55);
+}
+
+.trk95 .trk-logbook .trk-log-week-amount {
+  color: #9ad7ff;
+}
+
+.trk95 .trk-logbook .trk-log-week-tag,
+.trk95 .trk-logbook .trk-log-week-badge {
+  color: #8fb8a8;
+}
+
+.trk95 .trk-logbook .trk-log-week-ledger {
+  border-radius: 4px;
+  color: #c9d3ce;
+  background: #141618;
+}
+
+.trk95 .trk-logbook .trk-log-week-spent-total {
+  color: #9ad7ff;
+  text-shadow: 0 0 4px rgba(154, 215, 255, 0.6);
+}
+
+/* No operations: the operation clock renders nothing, so drop the arrow too. */
+.trk95 .trk-now-plate + .trk-now-arrow {
+  display: none;
+}
+
+.trk95 .trk-now-row .trk-pen-now-field {
+  min-width: 240px;
+}

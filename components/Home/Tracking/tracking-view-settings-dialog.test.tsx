@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react"
+import { fireEvent, render, screen, within } from "@testing-library/react"
 import { beforeEach, describe, expect, it } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import {
@@ -6,7 +6,10 @@ import {
   resetTrackingViewPrefs,
   TRACKING_FILL_CLOCK_LABELS,
 } from "./tracking-view-prefs"
-import { TrackingViewSettingsDialog } from "./tracking-view-settings-dialog"
+import { useIngestStore } from "@/lib/ingest/ingest-store"
+import { useLogKeywordsStore } from "@/lib/log-keywords-store"
+import { useTimeTrackingStore } from "@/lib/time-tracking-store"
+import { TrackingSettingsDialog, TrackingViewSettingsDialog } from "./tracking-view-settings-dialog"
 
 beforeEach(() => {
   resetAllStores()
@@ -38,7 +41,7 @@ describe("TrackingViewSettingsDialog layout and fill clocks", () => {
   })
 
   it("labels fill bounds as clock hours and still writes the same pref keys", () => {
-    render(<TrackingViewSettingsDialog scopeId="activity" onClose={() => {}} />)
+    render(<TrackingViewSettingsDialog scopeId="activity" initialSection="grid" onClose={() => {}} />)
     expect(screen.queryByLabelText("Day from")).not.toBeInTheDocument()
     expect(screen.queryByLabelText("Week from")).not.toBeInTheDocument()
 
@@ -69,10 +72,73 @@ describe("TrackingViewSettingsDialog layout and fill clocks", () => {
   })
 
   it("does not offer a second superimpose control", () => {
-    render(<TrackingViewSettingsDialog scopeId="activity" onClose={() => {}} />)
+    render(<TrackingViewSettingsDialog scopeId="activity" initialSection="grid" onClose={() => {}} />)
     expect(screen.queryByText("Superimpose")).not.toBeInTheDocument()
     expect(screen.queryByRole("group", { name: "Superimposed view" })).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Off" })).not.toBeInTheDocument()
     expect(getTrackingViewPrefs().superimposeByScope).toEqual({})
+  })
+})
+
+describe("Tracking settings sheet", () => {
+  it("is one sheet for the whole tab, with a bay per view", () => {
+    render(<TrackingSettingsDialog onClose={() => {}} />)
+    expect(screen.getByRole("heading", { name: "Tracking settings" })).toBeInTheDocument()
+    expect(screen.queryByText(/View settings ·/)).not.toBeInTheDocument()
+    const rail = screen.getByRole("navigation", { name: "Tracking settings sections" })
+    for (const name of ["General", "Time Grid", "Activity Log", "Day Log", "Tracking log", "BIM commands"]) {
+      expect(within(rail).getByRole("button", { name: new RegExp(name) })).toBeInTheDocument()
+    }
+    expect(within(rail).getByRole("button", { name: /General/ })).toHaveAttribute("aria-current", "page")
+  })
+
+  it("keeps cell size off the sheet", () => {
+    render(<TrackingSettingsDialog initialSection="grid" onClose={() => {}} />)
+    expect(screen.queryByText("Cell size")).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "15m" })).not.toBeInTheDocument()
+  })
+
+  it("writes per-view defaults", () => {
+    render(<TrackingSettingsDialog initialSection="activity" onClose={() => {}} />)
+    fireEvent.click(within(screen.getByRole("group", { name: "Shortest gap listed" })).getByRole("button", { name: "Off" }))
+    expect(getTrackingViewPrefs().activityGapMinutes).toBe(0)
+    fireEvent.click(screen.getByRole("button", { name: /Tracking log/ }))
+    fireEvent.click(within(screen.getByRole("group", { name: "Composer opens on" })).getByRole("button", { name: "Intake" }))
+    fireEvent.click(screen.getByLabelText("Show the logged flag"))
+    expect(getTrackingViewPrefs()).toMatchObject({ logDefaultMode: "intake", logFlagOnAdd: false })
+    fireEvent.click(screen.getByRole("button", { name: /Day Log/ }))
+    fireEvent.click(within(screen.getByRole("group", { name: "Day Log opens on" })).getByRole("button", { name: "Week" }))
+    expect(getTrackingViewPrefs().dayLogSpan).toBe("week")
+  })
+
+  it("labels the bot guide and lists the commands a person added", () => {
+    useLogKeywordsStore.getState().addKeyword("went outside")
+    render(<TrackingSettingsDialog initialSection="bim" onClose={() => {}} />)
+    expect(screen.getByText("BIM commands (Telegram bot)")).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Log an event" })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("tab", { name: /Your commands/ }))
+    expect(screen.getByTestId("log-keywords")).toBeInTheDocument()
+    expect(screen.getByLabelText("Edit went outside")).toHaveValue("went outside")
+    expect(screen.getByRole("region", { name: "Event triggers" })).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText("Shortcut word"), { target: { value: "shop" } })
+    fireEvent.change(screen.getByLabelText("Shortcut expands to"), { target: { value: "groc" } })
+    fireEvent.click(within(screen.getByRole("region", { name: "Shortcuts" })).getByRole("button", { name: "Add" }))
+    expect(useIngestStore.getState().shortcuts.shop).toBe("groc")
+  })
+
+  it("opens the pen gallery and finds a pen across views", () => {
+    render(<TrackingSettingsDialog onClose={() => {}} />)
+    fireEvent.click(screen.getByRole("button", { name: "Open pen gallery" }))
+    expect(screen.getByRole("heading", { name: "Pen gallery" })).toBeInTheDocument()
+    const first = useTimeTrackingStore.getState().scopes.find((scope) => scope.pens.length)!.pens[0]!
+    fireEvent.change(screen.getByLabelText("Search pens"), { target: { value: first.name } })
+    fireEvent.click(screen.getAllByRole("button", { name: new RegExp(first.name) })[0]!)
+    fireEvent.change(screen.getByLabelText("Pen name"), { target: { value: `${first.name} renamed` } })
+    fireEvent.blur(screen.getByLabelText("Pen name"))
+    const renamed = useTimeTrackingStore
+      .getState()
+      .scopes.flatMap((scope) => scope.pens)
+      .find((pen) => pen.id === first.id)
+    expect(renamed?.name).toBe(`${first.name} renamed`)
   })
 })

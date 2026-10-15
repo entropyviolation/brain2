@@ -126,6 +126,44 @@ export function trackingProbeText(opts: {
   return parts.join(" · ")
 }
 
+export type ProbeLayer = {
+  /** View name, e.g. Activity or Location. */
+  view: string
+  /** What is logged there: block or pen name. */
+  name: string
+  startMin: number
+  endMin: number
+}
+
+function probeLayerText(layer: ProbeLayer): string {
+  const span =
+    layer.endMin > layer.startMin
+      ? `${minutesToLabel(layer.startMin)}–${minutesToLabel(layer.endMin)}`
+      : minutesToLabel(layer.startMin)
+  return `${layer.view}: ${layer.name} ${span}`
+}
+
+/**
+ * Hover copy while a ghost is on. With nothing logged on any ghost under the
+ * cell, it is `base` unchanged. Otherwise it names the active view's block (if
+ * any) and each ghost's block, each with its own time range. When the active
+ * view is empty, the cell range leads so the readout still says where you are.
+ */
+export function ghostProbeText(opts: {
+  base: string
+  minute: number
+  step?: number
+  primary?: ProbeLayer | null
+  ghosts: readonly ProbeLayer[]
+}): string {
+  if (opts.ghosts.length === 0) return opts.base
+  const parts: string[] = []
+  if (opts.primary) parts.push(probeLayerText(opts.primary))
+  else parts.push(trackingProbeText({ minute: opts.minute, step: opts.step }))
+  for (const ghost of opts.ghosts) parts.push(probeLayerText(ghost))
+  return parts.join(" · ")
+}
+
 export function TrkCrtProbe({ text }: { text: string | null }) {
   return (
     <div className="trk-probe" role="status" data-empty={text ? undefined : "true"}>
@@ -161,16 +199,35 @@ export function TrkRibbon({
   emptyLabel = "untracked",
   coverage,
   tracked,
+  percentBasis = "tracked",
+  periodLabel = "day",
+  onPercentBasis,
 }: {
   pens: TrackingSlice[]
   untracked: number
   emptyLabel?: string
   coverage?: number
   tracked?: number
+  /** Legend percentages: share of tracked minutes, or of the whole day / week. */
+  percentBasis?: "tracked" | "period"
+  periodLabel?: "day" | "week"
+  /** Shows the % switch when set. */
+  onPercentBasis?: (basis: "tracked" | "period") => void
 }) {
   const voidMin = Math.max(0, untracked)
   return (
     <div className="trk-ribbon">
+      {onPercentBasis ? (
+        <div className="trk-ribbon-basis" role="group" aria-label="Percent of">
+          <span className="trk-silk">%</span>
+          <button type="button" aria-pressed={percentBasis === "tracked"} onClick={() => onPercentBasis("tracked")}>
+            of tracked
+          </button>
+          <button type="button" aria-pressed={percentBasis === "period"} onClick={() => onPercentBasis("period")}>
+            of {periodLabel}
+          </button>
+        </div>
+      ) : null}
       {(coverage != null || tracked != null) && (
         <div className="trk-occ-readout">
           {coverage != null && (
@@ -195,7 +252,12 @@ export function TrkRibbon({
           <span key={pen.id}>
             <span className="trk-ribbon-swatch" style={{ background: pen.color }} />
             {pen.name}: <span>{formatDuration(pen.minutes)}</span>
-            <span className="trk-day-nav-meta"> {Math.round(pen.percentOfTracked)}% of tracked</span>
+            <span className="trk-day-nav-meta">
+              {" "}
+              {percentBasis === "period"
+                ? `${Math.round(pen.percentOfPeriod)}% of the ${periodLabel}`
+                : `${Math.round(pen.percentOfTracked)}% of tracked`}
+            </span>
           </span>
         ))}
         <span className="trk-day-nav-meta">
@@ -207,9 +269,15 @@ export function TrkRibbon({
 }
 
 /** Faint wash of the other view's own color. Clicks pass through. No hatch. */
-export function SuperimposeWash({ color }: { color?: string }) {
+export function SuperimposeWash({ color, opacity }: { color?: string; opacity?: number }) {
   if (!color) return null
-  return <span className="trk-super" style={{ backgroundColor: color }} aria-hidden />
+  return (
+    <span
+      className="trk-super"
+      style={opacity == null ? { backgroundColor: color } : { backgroundColor: color, opacity }}
+      aria-hidden
+    />
+  )
 }
 
 /** Tag totals under the plot. Same swatch and type as the pen ribbon. */

@@ -13,14 +13,20 @@
  * Each option is a pen that counts as this one. Double-click a chip to open
  * that pen's settings. A single click still toggles it; the second click of a
  * double-click toggles back, so the selection is unchanged.
+ *
+ * An option can also be a pen from **another view** (`variant.scopeId`): an
+ * Activity pen broken down by Company people. Those chips carry a small view
+ * name. With `ownerScopeId` + `onAddCrossView`, typing in the inline adder
+ * lists matching pens from other views to add as details; Enter still makes a
+ * plain detail in this view.
  */
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Check, Plus } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import type { PenVariant, TrackPen } from "@/lib/time-tracking-store"
+import { useTimeTrackingStore, type PenVariant, type TrackPen } from "@/lib/time-tracking-store"
 
 interface VariantChipsProps {
   pen: TrackPen
@@ -28,8 +34,12 @@ interface VariantChipsProps {
   onToggle: (variantId: string) => void
   /** Omit to hide the inline creator. */
   onCreate?: (name: string) => void
-  /** Double-click opens the pen this detail is. */
-  onOpenPen?: (penId: string) => void
+  /** Double-click opens the pen this detail is; `scopeId` is set for a pen in another view. */
+  onOpenPen?: (penId: string, scopeId?: string) => void
+  /** The view `pen` lives in. Needed to offer pens from other views. */
+  ownerScopeId?: string
+  /** Add a pen from another view as a detail. Omit to keep the adder this-view only. */
+  onAddCrossView?: (scopeId: string, penId: string) => void
   size?: "sm" | "md"
   className?: string
 }
@@ -38,10 +48,36 @@ export function variantChipColor(pen: TrackPen, variant: PenVariant): string {
   return variant.color || pen.color
 }
 
-export function VariantChips({ pen, selected, onToggle, onCreate, onOpenPen, size = "md", className }: VariantChipsProps) {
+export function VariantChips({
+  pen,
+  selected,
+  onToggle,
+  onCreate,
+  onOpenPen,
+  ownerScopeId,
+  onAddCrossView,
+  size = "md",
+  className,
+}: VariantChipsProps) {
   const [draft, setDraft] = useState("")
   const [adding, setAdding] = useState(false)
-  const variants = pen.variants ?? []
+  const scopes = useTimeTrackingStore((s) => s.scopes)
+  const variants = useMemo(() => pen.variants ?? [], [pen.variants])
+  const viewName = (id?: string) => (id ? scopes.find((s) => s.id === id)?.name ?? id : undefined)
+  const needle = draft.trim().toLowerCase()
+  const crossMatches = useMemo(() => {
+    if (!onAddCrossView || !ownerScopeId || !needle) return []
+    const linked = new Set(variants.filter((v) => v.scopeId).map((v) => `${v.scopeId}:${v.penId}`))
+    const out: { scopeId: string; scopeName: string; pen: TrackPen }[] = []
+    for (const scope of scopes) {
+      if (scope.id === ownerScopeId) continue
+      for (const other of scope.pens) {
+        if (!other.name.toLowerCase().includes(needle) || linked.has(`${scope.id}:${other.id}`)) continue
+        out.push({ scopeId: scope.id, scopeName: scope.name, pen: other })
+      }
+    }
+    return out.slice(0, 8)
+  }, [onAddCrossView, ownerScopeId, needle, scopes, variants])
   const pad = size === "sm" ? "px-1.5 py-0.5 text-[11px]" : "px-2 py-1 text-xs"
 
   const create = () => {
@@ -71,9 +107,13 @@ export function VariantChips({ pen, selected, onToggle, onCreate, onOpenPen, siz
               if (!variant.penId || !onOpenPen) return
               event.preventDefault()
               event.stopPropagation()
-              onOpenPen(variant.penId)
+              onOpenPen(variant.penId, variant.scopeId)
             }}
-            title={variant.penId ? `${variant.name}. Double-click to open this pen` : variant.name}
+            title={
+              variant.penId
+                ? `${variant.name}${variant.scopeId ? ` (${viewName(variant.scopeId)})` : ""}. Double-click to open this pen`
+                : variant.name
+            }
             aria-pressed={on}
             className={`flex items-center gap-1 rounded border ${pad} ${on ? "text-white" : "bg-background hover:bg-muted"}`}
             style={on ? { background: color, borderColor: color } : { borderColor: `${color}80` }}
@@ -84,6 +124,7 @@ export function VariantChips({ pen, selected, onToggle, onCreate, onOpenPen, siz
               <span className="inline-block h-2 w-2 rounded-full" style={{ background: color }} />
             )}
             {variant.name}
+            {variant.scopeId ? <span className="trk-variant-view">{viewName(variant.scopeId)}</span> : null}
           </button>
         )
       })}
@@ -102,10 +143,34 @@ export function VariantChips({ pen, selected, onToggle, onCreate, onOpenPen, siz
                 }
                 if (e.key === "Escape") setAdding(false)
               }}
-              onBlur={() => (draft.trim() ? create() : setAdding(false))}
+              onBlur={(e) => {
+                // Picking a pen from another view must not first mint a same-name detail here.
+                if (e.relatedTarget instanceof HTMLElement && e.relatedTarget.dataset.crossView) return
+                if (draft.trim()) create()
+                else setAdding(false)
+              }}
               placeholder={pen.variantLabel || "Add detail"}
               className="h-7 w-32 text-xs"
             />
+            {crossMatches.map((match) => (
+              <button
+                key={`${match.scopeId}:${match.pen.id}`}
+                type="button"
+                data-cross-view="true"
+                className="flex items-center gap-1 rounded border px-1.5 py-0.5 text-[11px] hover:bg-muted"
+                style={{ borderColor: `${match.pen.color}80` }}
+                title={`Add ${match.pen.name} from ${match.scopeName} as a detail`}
+                onClick={() => {
+                  onAddCrossView?.(match.scopeId, match.pen.id)
+                  setDraft("")
+                  setAdding(false)
+                }}
+              >
+                <span className="inline-block h-2 w-2 rounded-full" style={{ background: match.pen.color }} />
+                {match.pen.name}
+                <span className="trk-variant-view">{match.scopeName}</span>
+              </button>
+            ))}
           </span>
         ) : (
           <Button

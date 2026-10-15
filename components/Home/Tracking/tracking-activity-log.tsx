@@ -54,13 +54,12 @@ import { proposeDoneEstimates } from "@/lib/estimate-proposals"
 import { getTaskCompletionDate } from "@/lib/completion-status"
 import { TrackingFind } from "@/components/Home/Tracking/tracking-find"
 import { ERASE } from "@/components/Home/Tracking/tracking-tool-mode"
+import { useTrackingViewPrefs } from "@/components/Home/Tracking/tracking-view-prefs"
 
 function dateKey(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
 }
 
-/** A gap worth offering to fill. Shorter ones are noise between blocks. */
-const MIN_GAP_MINUTES = 15
 
 interface TrackingActivityLogProps {
   currentDate: Date
@@ -96,7 +95,10 @@ export function TrackingActivityLog({ currentDate, setCurrentDate, lockDate = fa
     [entries, dk, scope],
   )
   const penNames = useMemo(() => penNameById(scopes), [scopes])
+  // Tracking settings → Activity Log: shortest gap worth offering (0 lists none) and log lines.
+  const { activityGapMinutes, activityShowLogLines } = useTrackingViewPrefs()
   const listedEntries = useMemo(() => {
+    if (!activityShowLogLines) return dayEntries
     const extra = discreteLogInstants(entries, penNames, dk).filter(
       (entry) => !dayEntries.some((row) => row.id === entry.id),
     )
@@ -104,13 +106,13 @@ export function TrackingActivityLog({ currentDate, setCurrentDate, lockDate = fa
     return [...dayEntries, ...extra].sort(
       (a, b) => a.startMin - b.startMin || a.id.localeCompare(b.id),
     )
-  }, [dayEntries, entries, dk, penNames])
+  }, [dayEntries, entries, dk, penNames, activityShowLogLines])
   const gaps = useMemo(
     () =>
-      scope
-        ? untrackedRanges(entries, dk, scope.id).filter((g) => g.endMin - g.startMin >= MIN_GAP_MINUTES)
+      scope && activityGapMinutes > 0
+        ? untrackedRanges(entries, dk, scope.id).filter((g) => g.endMin - g.startMin >= activityGapMinutes)
         : [],
-    [entries, dk, scope],
+    [entries, dk, scope, activityGapMinutes],
   )
   const totals = useMemo(() => totalsFor(dayEntries, [dk]), [dayEntries, dk])
   const pens = useMemo(() => penTotals(dayEntries, scope, [dk]), [dayEntries, scope, dk])

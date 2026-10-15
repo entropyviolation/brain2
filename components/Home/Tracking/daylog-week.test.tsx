@@ -68,7 +68,8 @@ describe("DayLogWeek", () => {
       </div>,
     )
 
-    expect(screen.getByText("Work")).toBeInTheDocument()
+    // The painted block, not the Sleep/Work strip or the tag name.
+    expect(screen.getByText("Work", { selector: ".daylog-week-block-title" })).toBeInTheDocument()
   })
 
   it("asks to create an event when an empty hour is clicked", () => {

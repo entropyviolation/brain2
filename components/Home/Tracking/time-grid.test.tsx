@@ -8,7 +8,12 @@ import { useSunTimesStore } from "@/lib/sun-times-store"
 import { useUndoHotkey } from "@/hooks/useUndoHotkey"
 import { TimeGrid } from "./time-grid"
 import { useTrackingUndoHotkey } from "./tracking-undo"
-import { getTrackingViewPrefs, resetTrackingViewPrefs, setScopeSuperimpose } from "./tracking-view-prefs"
+import {
+  getTrackingViewPrefs,
+  resetTrackingViewPrefs,
+  setScopeSuperimpose,
+  setTrackingViewPrefs,
+} from "./tracking-view-prefs"
 
 vi.mock("@/lib/weather-client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/weather-client")>()
@@ -78,7 +83,7 @@ describe("TimeGrid", () => {
     expect(screen.getByText("Clear day")).toBeInTheDocument()
   })
 
-  it("offers cell size on the grid chrome dial, not only in View settings", () => {
+  it("offers cell size on the grid chrome dial, not in Tracking settings", () => {
     render(<TimeGrid />)
     const knob = screen.getByRole("slider", { name: "Cell size" })
     expect(knob).toHaveAttribute("aria-valuenow", "5")
@@ -88,9 +93,12 @@ describe("TimeGrid", () => {
     expect(useTimeTrackingStore.getState().gridStep).toBe(10)
     expect(knob).toHaveAttribute("aria-valuenow", "10")
     fireEvent.click(screen.getByRole("button", { name: /^View$/ }))
+    expect(screen.getByRole("heading", { name: "Tracking settings" })).toBeInTheDocument()
+    expect(screen.queryByText("Cell size")).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: /Time Grid/ }))
     expect(screen.getByLabelText("Day fill starts")).toHaveValue("09:00")
     expect(screen.getByLabelText("Day fill ends")).toHaveValue("10:00")
-    expect(screen.getByRole("button", { name: /^OK$/ })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /^Done$/ })).toBeInTheDocument()
   })
 
   it("opens the grid on the first unpainted waking hour, not midnight", () => {
@@ -537,6 +545,7 @@ describe("TimeGrid", () => {
   })
 
   it("draws a faint superimpose layer and still paints the active view", () => {
+    setTrackingViewPrefs({ superimposeMulti: false })
     // Activity already has a block, so opening the grid stays on Activity
     // instead of jumping to the only occupied view.
     useTimeTrackingStore.getState().paintMinutes("2026-06-20", "activity", 8 * 60, 9 * 60, "act-work")
@@ -567,6 +576,7 @@ describe("TimeGrid", () => {
   })
 
   it("shows a quiet grid when the superimposed view has nothing logged", () => {
+    setTrackingViewPrefs({ superimposeMulti: false })
     setScopeSuperimpose("activity", "mood")
     render(<TimeGrid />)
     expect(document.querySelector(".trk-super")).toBeNull()
@@ -575,6 +585,7 @@ describe("TimeGrid", () => {
   })
 
   it("keeps each view's overlay across view and day changes", () => {
+    setTrackingViewPrefs({ superimposeMulti: false })
     useTimeTrackingStore.getState().paintMinutes("2026-06-20", "activity", 8 * 60, 9 * 60, "act-work")
     useTimeTrackingStore.getState().paintMinutes("2026-06-20", "location", 10 * 60, 11 * 60, "loc-home")
     useTimeTrackingStore.getState().setActiveScope("activity")
@@ -609,5 +620,83 @@ describe("TimeGrid", () => {
     })
     expect(getTrackingViewPrefs().superimposeByScope).toEqual({})
     expect(document.querySelector("[data-superimpose]")).toBeNull()
+  })
+
+  it("names the active block and the ghost's block on hover", () => {
+    setTrackingViewPrefs({ superimposeMulti: false })
+    useTimeTrackingStore.getState().paintMinutes("2026-06-20", "activity", 8 * 60, 9 * 60, "act-work")
+    useTimeTrackingStore.getState().paintMinutes("2026-06-20", "location", 7 * 60, 10 * 60, "loc-home")
+    useTimeTrackingStore.getState().setActiveScope("activity")
+    setScopeSuperimpose("activity", "location")
+    render(<TimeGrid />)
+    const probe = document.querySelector(".trk-plot-strip .trk-probe") as HTMLElement
+    fireEvent.mouseEnter(document.querySelector('[data-minute="480"]') as HTMLElement)
+    expect(probe.textContent).toBe("Activity: Work 8:00 AM–9:00 AM · Location: Home 7:00 AM–10:00 AM")
+
+    // Nothing on Activity: the cell range leads, then the ghost.
+    fireEvent.mouseEnter(document.querySelector('[data-minute="570"]') as HTMLElement)
+    expect(probe.textContent).toMatch(/^9:30 AM–.* · Location: Home 7:00 AM–10:00 AM$/)
+
+    // Nothing on the ghost: the old readout, unchanged.
+    fireEvent.mouseEnter(document.querySelector('[data-minute="660"]') as HTMLElement)
+    expect(probe.textContent).not.toMatch(/Location:/)
+    expect(probe.textContent).not.toMatch(/Activity:/)
+  })
+
+  it("draws several ghosts in multi mode, each at its own opacity under advanced", () => {
+    useTimeTrackingStore.getState().paintMinutes("2026-06-20", "activity", 8 * 60, 9 * 60, "act-work")
+    useTimeTrackingStore.getState().paintMinutes("2026-06-20", "location", 10 * 60, 11 * 60, "loc-home")
+    useTimeTrackingStore.getState().setActiveScope("activity")
+    const moodPen = useTimeTrackingStore.getState().scopes.find((s) => s.id === "mood")?.pens[0]
+    expect(moodPen).toBeTruthy()
+    useTimeTrackingStore.getState().paintMinutes("2026-06-20", "mood", 10 * 60, 11 * 60, moodPen!.id)
+    setTrackingViewPrefs({
+      superimposeMulti: true,
+      superimposeMultiByScope: { activity: ["location", "mood"] },
+      superimposeAdvanced: true,
+      superimposeOpacity: { location: 0.6 },
+    })
+    render(<TimeGrid />)
+    const grid = document.querySelector(".trk-grid") as HTMLElement
+    expect(grid.getAttribute("data-superimpose")).toBe("location mood")
+    const washes = document.querySelector('[data-minute="600"]')!.querySelectorAll(".trk-super")
+    expect(washes).toHaveLength(2)
+    expect((washes[0] as HTMLElement).style.opacity).toBe("0.6")
+    expect((washes[1] as HTMLElement).style.opacity).toBe("0.32")
+    const probe = document.querySelector(".trk-plot-strip .trk-probe") as HTMLElement
+    fireEvent.mouseEnter(document.querySelector('[data-minute="600"]') as HTMLElement)
+    expect(probe.textContent).toMatch(/Location: Home 10:00 AM–11:00 AM · Mood: /)
+
+    act(() => setTrackingViewPrefs({ superimposeAdvanced: false }))
+    const plain = document.querySelector('[data-minute="600"]')!.querySelectorAll(".trk-super")
+    expect((plain[0] as HTMLElement).style.opacity).toBe("")
+  })
+
+  it("hides sunrise / sunset lines when the sun key is on, and keeps the now line", async () => {
+    render(<TimeGrid />)
+    await act(async () => {
+      await Promise.resolve()
+    })
+    expect(document.querySelector(".trk-marker-sunrise")).toBeTruthy()
+    act(() => setTrackingViewPrefs({ hideSunLines: true }))
+    expect(document.querySelector(".trk-marker-sunrise")).toBeNull()
+    expect(document.querySelector(".trk-marker-sunset")).toBeNull()
+    expect(document.querySelector(".trk-marker-now")).toBeTruthy()
+  })
+
+  it("flips the day ribbon to % of the day and keeps it on another day", () => {
+    useTimeTrackingStore.getState().paintMinutes("2026-06-20", "activity", 8 * 60, 14 * 60, "act-work")
+    useTimeTrackingStore.getState().setActiveScope("activity")
+    render(<TimeGrid />)
+    const ribbon = document.querySelector(".trk-ribbon") as HTMLElement
+    expect(ribbon).toHaveTextContent("100% of tracked")
+    fireEvent.click(within(screen.getByRole("group", { name: "Percent of" })).getByRole("button", { name: "of day" }))
+    expect(ribbon).toHaveTextContent("25% of the day")
+    expect(getTrackingViewPrefs().ribbonPercent.day).toBe("period")
+    fireEvent.click(screen.getByRole("button", { name: "Next day" }))
+    expect(within(screen.getByRole("group", { name: "Percent of" })).getByRole("button", { name: "of day" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    )
   })
 })

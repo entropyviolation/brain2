@@ -58,6 +58,7 @@ import { entriesForDay, formatDuration, timeStringToMinutes } from "@/lib/time-e
 import { penTotals, tagTotals, totalsFor } from "@/lib/tracking-summary"
 import { SLEEP_TAG_ID } from "@/lib/sleep-log"
 import { usePenActionSync } from "@/lib/pen-action-sync"
+import { getTrackingViewPrefs } from "@/components/Home/Tracking/tracking-view-prefs"
 import "./tracking-chrome.css"
 import "./daylog-week.css"
 
@@ -156,7 +157,8 @@ export function ActualDayView({
   const [logLocation, setLogLocation] = useState("")
   const [logNotes, setLogNotes] = useState("")
   const [openEntryId, setOpenEntryId] = useState<string | null>(null)
-  const [span, setSpan] = useState<"day" | "week">("day")
+  // Tracking settings → Day Log picks the span it opens on.
+  const [span, setSpan] = useState<"day" | "week">(() => getTrackingViewPrefs().dayLogSpan)
   const [showEventDialog, setShowEventDialog] = useState(false)
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null)
   const [newEvent, setNewEvent] = useState({
