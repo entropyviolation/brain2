@@ -1,8 +1,9 @@
 /**
  * components/Home/Goals/DirectionReport.tsx — "Direction in life" report (Feature 1)
  *
- * Coverage CRT, day tape, drift dates, neglected goals. Math stays in
- * lib/objectives.ts. No yellow chips — mill dates + phosphor readout.
+ * A night plate: coverage astrolabe dial, a 30-day string of pearls (served
+ * pearl / drift steel / idle socket), drift dates as index tabs, neglected
+ * goals on a ruled card. Math stays in lib/objectives.ts.
  */
 "use client"
 
@@ -13,6 +14,7 @@ import { useTaskStore } from "@/lib/task-store"
 import { parseLocalDate } from "@/lib/date-utils"
 import type { Task } from "@/lib/types"
 import { directionReport, type ActionRecord } from "@/lib/objectives"
+import { GolDial } from "./goals-ornaments"
 
 function taskCompletionDate(task: Task): Date | undefined {
   if (task.completedDate) return new Date(task.completedDate)
@@ -59,10 +61,8 @@ export function DirectionReport() {
     [goals, objectives, tasks],
   )
 
-  const coveragePips = report.coverageScore === null ? 0 : Math.round(report.coverageScore / 10)
-
   return (
-    <div className="gol-section">
+    <div className="gol-section is-direction">
       <div className="gol-section-head">
         <div>
           <h3 className="gol-legend">Direction in Life</h3>
@@ -74,18 +74,20 @@ export function DirectionReport() {
 
       <div className="gol-dir-console">
         <div className="gol-dir-readout">
-          <div className="gol-dir-crt" aria-label="Coverage">
-            {report.coverageScore === null ? "—" : `${report.coverageScore}%`}
+          <div className="gol-dir-dial">
+            <GolDial percent={report.coverageScore} />
+            <div className="gol-dir-crt" aria-label="Coverage">
+              {report.coverageScore === null ? "—" : `${report.coverageScore}%`}
+            </div>
           </div>
           <div className="gol-dir-copy">
+            <span className="gol-dir-kicker">Coverage · last {WINDOW_DAYS} days</span>
             <strong>
               {report.directedDays}/{report.activeDays} active days served a goal
             </strong>
-            <div className="gol-pips gol-dir-pips" aria-hidden>
-              {Array.from({ length: 10 }, (_, i) => (
-                <span key={i} className={`gol-pip${i < coveragePips ? " is-on" : ""}`} />
-              ))}
-            </div>
+            <span className="gol-dir-sub">
+              {report.driftDays.length} drift · {report.staleGoals.length} neglected
+            </span>
           </div>
         </div>
 

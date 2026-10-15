@@ -1,7 +1,11 @@
 /**
  * components/Home/Goals/goals-chrome.css — milled fascia for Home → Goals
  *
- * CRT title, metal keys, period lamps, recessed list wells.
+ * CRT title, metal keys, period lamps, recessed list wells. Furniture drawn
+ * from designrefs: an engraved compass rose on the fascia (0058), metal
+ * typewriter period keys (0087), file-drawer index tabs (0084, 0085), ball
+ * bearings for progress (0045, 0097), a phosphor coverage dial (0041), and the
+ * 30 days as a string of pearls (0080, 0105).
  * docs/DESIGN_STYLE.md#milled-fascia. Portaled dialogs use `.gol95-dialog`.
  */
 
@@ -46,22 +50,6 @@
   box-shadow: var(--g-raised);
 }
 
-.gol95 .gol-fascia {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
-  padding: 10px;
-  border-radius: var(--r-3, 3px);
-  background:
-    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
-    linear-gradient(165deg, var(--chrome-sheen) 0%, var(--g-surface) 48%, var(--chrome-shade) 100%);
-  box-shadow:
-    0 0 0 1px var(--chrome-ring),
-    inset 0 1px 0 rgba(255, 255, 255, 0.75),
-    inset 0 -1px 0 rgba(40, 42, 46, 0.4),
-    inset 0 0 0 2px var(--chrome-inset);
-}
 
 .gol95 .gol-mark {
   display: inline-flex;
@@ -169,10 +157,6 @@
   color: #9a7b00;
 }
 
-.gol95 .gol-btn.is-star.is-on {
-  color: #8a6a00;
-  background: #f3e27a;
-}
 
 .gol95 .gol-section {
   position: relative;
@@ -271,35 +255,7 @@ body.win95-app .gol95 .gol-tabs[role="tablist"] {
     inset 0 2px 3px rgba(0, 0, 0, 0.16);
 }
 
-body.win95-app .gol95 .gol-tabs [role="tab"] {
-  min-height: 28px;
-  padding: 4px 12px 5px;
-  border-radius: var(--r-2, 2px);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 28%),
-    linear-gradient(165deg, var(--chrome-key-sheen), var(--chrome-mill-soft));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 0 0 1px var(--chrome-ring-deep);
-}
 
-body.win95-app .gol95 .gol-tabs [role="tab"][data-state="active"] {
-  color: #7dffc4;
-  font-weight: 700;
-  text-shadow: 0 0 3px #7dffc4;
-  background:
-    radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.2), transparent 55%),
-    #070c0a;
-  box-shadow:
-    0 0 0 1px var(--chrome-pressed),
-    inset 0 8px 10px rgba(0, 0, 0, 0.4);
-}
 
 .gol95 .gol-cap {
   font-size: 10px;
@@ -398,40 +354,13 @@ body.win95-app .gol95 .gol-tabs [role="tab"][data-state="active"] {
   gap: 6px;
 }
 
-.gol95 .gol-goal {
-  display: grid;
-  grid-template-columns: minmax(8rem, 1.4fr) minmax(7rem, 1fr) minmax(6rem, auto);
-  gap: 8px;
-  align-items: center;
-  padding: 8px;
-  border-radius: var(--r-2, 2px);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.18));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.8),
-    0 0 0 1px var(--chrome-slate);
-}
 
 .gol95 .gol-goal:hover {
   background: #e8f3ec;
 }
 
-.gol95 .gol-pips {
-  display: flex;
-  gap: 2px;
-  height: 8px;
-  margin-top: 4px;
-}
 
-.gol95 .gol-pip {
-  flex: 1;
-  min-width: 4px;
-  background: #fff;
-  box-shadow: var(--g-sunken);
-}
 
-.gol95 .gol-pip.is-on {
-  background: #3d9a5c;
-}
 
 .gol95 .gol-actions {
   display: flex;
@@ -452,32 +381,7 @@ body.win95-app .gol95 .gol-tabs [role="tab"][data-state="active"] {
   gap: 6px;
 }
 
-.gol95 .gol-dir-readout {
-  display: flex;
-  align-items: stretch;
-  gap: 8px;
-}
 
-.gol95 .gol-dir-crt {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 4.75rem;
-  padding: 8px 12px;
-  border-radius: var(--r-2, 2px);
-  background:
-    radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.18), transparent 55%),
-    #070c0a;
-  box-shadow:
-    0 0 0 1px var(--chrome-pressed),
-    inset 0 8px 12px rgba(0, 0, 0, 0.45);
-  font-size: 22px;
-  font-weight: bold;
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-  color: var(--g-crt);
-  text-shadow: 0 0 3px var(--g-crt);
-}
 
 .gol95 .gol-dir-copy {
   display: flex;
@@ -488,44 +392,11 @@ body.win95-app .gol95 .gol-tabs [role="tab"][data-state="active"] {
   flex: 1;
 }
 
-.gol95 .gol-dir-copy strong {
-  font-size: 11px;
-  color: var(--g-blue);
-}
 
-.gol95 .gol-dir-pips {
-  max-width: 12rem;
-  margin-top: 0;
-  height: 10px;
-}
 
-.gol95 .gol-dir-tape {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 2px;
-  padding: 6px;
-  border-radius: var(--r-2, 2px);
-  background: #070c0a;
-  box-shadow:
-    0 0 0 1px var(--chrome-pressed),
-    inset 0 8px 12px rgba(0, 0, 0, 0.45);
-}
 
-.gol95 .gol-day {
-  flex: 1;
-  min-width: 0;
-  height: 16px;
-  box-shadow: var(--g-sunken);
-  background: #d4d4d4;
-}
 
-.gol95 .gol-day.is-served {
-  background: #3d9a5c;
-}
 
-.gol95 .gol-day.is-drift {
-  background: #6d7a86;
-}
 
 .gol95 .gol-dir-key {
   display: flex;
@@ -535,23 +406,8 @@ body.win95-app .gol95 .gol-tabs [role="tab"][data-state="active"] {
   color: var(--chrome-ink-soft);
 }
 
-.gol95 .gol-dir-key i {
-  display: inline-block;
-  width: 8px;
-  height: 10px;
-  margin-right: 4px;
-  vertical-align: -1px;
-  box-shadow: var(--g-sunken);
-  background: #d4d4d4;
-}
 
-.gol95 .gol-dir-key i.is-served {
-  background: #3d9a5c;
-}
 
-.gol95 .gol-dir-key i.is-drift {
-  background: #6d7a86;
-}
 
 .gol95 .gol-dir-split {
   display: grid;
@@ -584,16 +440,6 @@ body.win95-app .gol95 .gol-tabs [role="tab"][data-state="active"] {
     0 0 0 1px var(--chrome-lip);
 }
 
-.gol95 .gol-dir-date {
-  display: inline-flex;
-  align-items: center;
-  min-height: 18px;
-  padding: 1px 6px;
-  font-size: 11px;
-  color: #111;
-  background: var(--g-surface);
-  box-shadow: var(--g-raised);
-}
 
 .gol95 .gol-dir-list {
   flex: 1;
@@ -840,6 +686,513 @@ body.win95-app .gol95 .gol-tabs [role="tab"][data-state="active"] {
   padding-top: 8px;
 }
 
+.gol95 .gol-fascia {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border-radius: var(--r-3, 3px);
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
+    linear-gradient(165deg, var(--chrome-sheen) 0%, var(--g-surface) 48%, var(--chrome-shade) 100%);
+  box-shadow:
+    0 0 0 1px var(--chrome-ring),
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -1px 0 rgba(40, 42, 46, 0.4),
+    inset 0 0 0 2px var(--chrome-inset);
+}
+
+/* Engraved compass rose, cut into the fascia metal (0058). */
+.gol95 .gol-fascia-rose {
+  position: absolute;
+  z-index: -1;
+  right: -40px;
+  top: 50%;
+  width: 200px;
+  height: 200px;
+  margin-top: -100px;
+  color: #2a2c2e;
+  opacity: 0.14;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.8));
+  animation: gol-turn 240s linear infinite;
+}
+
+@keyframes gol-turn {
+  to { transform: rotate(360deg); }
+}
+
+.gol95 .gol-status-star {
+  width: 9px;
+  height: 9px;
+  flex-shrink: 0;
+  color: var(--chrome-ink-soft, #55595e);
+}
+
+.gol95 .gol-status {
+  justify-content: center;
+}
+
+/* Period keys: round metal typewriter keys on a dark bed (0087). */
+body.win95-app .gol95 .gol-tabs[role="tablist"] {
+  gap: 8px;
+  padding: 7px 10px 9px;
+  border-radius: 6px;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.08), transparent 60%),
+    linear-gradient(180deg, #2a2d31, #15171a);
+  box-shadow:
+    0 0 0 1px var(--chrome-ring-deep, #3a3d42),
+    inset 0 2px 5px rgba(0, 0, 0, 0.6);
+}
+
+body.win95-app .gol95 .gol-tabs [role="tab"] {
+  position: relative;
+  min-height: 28px;
+  padding: 4px 12px 5px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #1c1e20;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  background:
+    radial-gradient(ellipse at 50% 30%, #ffffff 0 30%, transparent 70%),
+    linear-gradient(165deg, var(--chrome-key-sheen), var(--chrome-mill-soft));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1.5px #0e0f11,
+    0 0 0 3px #b4b9be,
+    0 0 0 3.5px #5f646b,
+    0 2px 0 3px #2e3135;
+  transition: transform 80ms ease, box-shadow 80ms ease;
+}
+
+body.win95-app .gol95 .gol-tabs [role="tab"][data-state="active"] {
+  transform: translateY(2px);
+  padding-left: 19px;
+  color: #7dffc4;
+  font-weight: 700;
+  text-shadow: 0 0 3px #7dffc4;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.2), transparent 55%),
+    #070c0a;
+  box-shadow:
+    0 0 0 1.5px #0e0f11,
+    0 0 0 3px #b4b9be,
+    0 0 0 3.5px #5f646b,
+    0 0 0 3px #2e3135,
+    inset 0 6px 8px rgba(0, 0, 0, 0.5);
+}
+
+body.win95-app .gol95 .gol-tabs [role="tab"][data-state="active"]::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  margin-top: -2.5px;
+  border-radius: 50%;
+  background: #7dffc4;
+  box-shadow: 0 0 4px #7dffc4;
+}
+
+.gol95 .gol-btn.is-star.is-on {
+  color: #7a5c00;
+  background: linear-gradient(180deg, #f3e9b4, #d9c76a);
+}
+
+/* Goal filter: steel file-drawer index tabs (0084, 0085). */
+.gol95 .gol-tabs.gol-index {
+  align-items: flex-end;
+  gap: 0;
+  padding: 0 0 0 8px;
+  border-radius: 0;
+  background: none;
+  box-shadow: inset 0 -2px 0 var(--chrome-ring-deep, #3a3d42);
+}
+
+.gol95 .gol-index .gol-btn {
+  position: relative;
+  isolation: isolate;
+  z-index: 0;
+  min-height: 26px;
+  margin: 4px -4px 0 0;
+  padding: 5px 16px 4px;
+  border-radius: 0;
+  font-size: 10px;
+  background: none;
+  box-shadow: none;
+  filter: drop-shadow(0 -1px 0 var(--chrome-ring-deep, #3a3d42)) drop-shadow(1px 0 0 var(--chrome-lo, #808080))
+    drop-shadow(-1px 0 0 var(--chrome-lo, #808080));
+}
+
+.gol95 .gol-index .gol-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 100%, 0 100%);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 30%),
+    linear-gradient(165deg, var(--chrome-key-sheen), var(--chrome-mill-soft));
+}
+
+.gol95 .gol-index .gol-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.gol95 .gol-index .gol-btn[aria-pressed="true"] {
+  z-index: 2;
+  min-height: 30px;
+  padding-left: 22px;
+  background: none;
+  box-shadow: none;
+}
+
+.gol95 .gol-index .gol-btn[aria-pressed="true"]::before {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.18), transparent 55%),
+    #070c0a;
+}
+
+.gol95 .gol-index .gol-btn[aria-pressed="true"]::after {
+  content: "";
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  margin-top: -2px;
+  border-radius: 50%;
+  background: #7dffc4;
+  box-shadow: 0 0 4px #7dffc4;
+}
+
+.gol95 .gol-goals {
+  padding-top: 8px;
+}
+
+.gol95 .gol-goal {
+  display: grid;
+  grid-template-columns: 2rem minmax(8rem, 1.4fr) minmax(9rem, 1fr) auto;
+  gap: 0;
+  align-items: stretch;
+  padding: 0;
+  border-radius: var(--r-2, 2px);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.18));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    0 0 0 1px var(--chrome-slate);
+}
+
+.gol95 .gol-goal > * {
+  min-width: 0;
+  padding: 8px 10px;
+}
+
+.gol95 .gol-goal > * + * {
+  border-left: 1px solid color-mix(in srgb, var(--chrome-lo, #808080) 45%, transparent);
+}
+
+.gol95 .gol-goal-no {
+  display: flex;
+  justify-content: center;
+  padding: 9px 2px 0;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--chrome-ink-soft);
+}
+
+.gol95 .gol-goal-main .gol-row-name {
+  cursor: default;
+}
+
+.gol95 .gol-goal-main .gol-row-name:hover {
+  text-decoration: none;
+}
+
+.gol95 .gol-goal-gauge {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+}
+
+.gol95 .gol-goal-count {
+  font-size: 11px;
+  color: #2a2c2e;
+}
+
+.gol95 .gol-goal > .gol-actions {
+  align-content: center;
+}
+
+/* Progress: chrome ball bearings in sunken sockets (0045, 0097). */
+.gol95 .gol-pips {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: clamp(1px, 0.5vw, 3px);
+  min-width: 0;
+  margin-top: 2px;
+}
+
+.gol95 .gol-pip {
+  flex: 0 1 12px;
+  width: 12px;
+  max-width: 12px;
+  min-width: 5px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.06) 65%);
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.45),
+    0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+.gol95 .gol-pip.is-on {
+  background:
+    radial-gradient(circle at 34% 28%, #ffffff 0 10%, rgba(255, 255, 255, 0) 24%),
+    radial-gradient(circle at 45% 40%, #eef1f4 0, #a9b0b8 42%, #555c64 72%, #1e2226 100%);
+  box-shadow:
+    0 1.5px 1.5px rgba(0, 0, 0, 0.45),
+    0 0 0 0.5px rgba(30, 34, 38, 0.6);
+}
+
+/* Direction: phosphor coverage dial (0041). */
+.gol95 .gol-dir-readout {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.gol95 .gol-dir-dial {
+  position: relative;
+  flex-shrink: 0;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 30%, rgba(125, 255, 196, 0.12), transparent 60%),
+    #070c0a;
+  box-shadow:
+    0 0 0 1px var(--chrome-pressed),
+    0 0 0 3px var(--chrome-mill-soft, #c8cbce),
+    0 0 0 4px var(--chrome-ring-deep, #3a3d42),
+    inset 0 6px 10px rgba(0, 0, 0, 0.5);
+}
+
+.gol95 .gol-dial-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.gol95 .gol-dial-rim {
+  fill: none;
+  stroke: none;
+}
+
+.gol95 .gol-dial-track {
+  fill: none;
+  stroke: rgba(125, 255, 196, 0.12);
+  stroke-width: 5;
+}
+
+.gol95 .gol-dial-arc {
+  fill: none;
+  stroke: #7dffc4;
+  stroke-width: 5;
+  filter: drop-shadow(0 0 2px #7dffc4);
+}
+
+.gol95 .gol-dial-tick {
+  stroke: rgba(125, 255, 196, 0.3);
+  stroke-width: 0.6;
+}
+
+.gol95 .gol-dial-tick.is-major {
+  stroke: rgba(125, 255, 196, 0.7);
+  stroke-width: 1;
+}
+
+.gol95 .gol-dial-inner {
+  fill: none;
+  stroke: rgba(125, 255, 196, 0.2);
+  stroke-width: 0.6;
+  stroke-dasharray: 1 2.5;
+}
+
+.gol95 .gol-dial-star {
+  fill: #d8fff0;
+  filter: drop-shadow(0 0 2px #7dffc4);
+}
+
+.gol95 .gol-dir-crt {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: bold;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--g-crt);
+  text-shadow: 0 0 3px var(--g-crt);
+}
+
+.gol95 .gol-dir-kicker {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--chrome-ink-soft);
+}
+
+.gol95 .gol-dir-copy strong {
+  font-size: 12px;
+  color: #2a2c2e;
+}
+
+.gol95 .gol-dir-sub {
+  font-size: 10px;
+  color: var(--chrome-ink-soft);
+}
+
+/* The 30 days as a string of pearls on the CRT glass (0080, 0105). */
+.gol95 .gol-dir-tape {
+  position: relative;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2px;
+  padding: 9px 12px;
+  border-radius: var(--r-2, 2px);
+  background: #070c0a;
+  box-shadow:
+    0 0 0 1px var(--chrome-pressed),
+    inset 0 8px 12px rgba(0, 0, 0, 0.45);
+}
+
+.gol95 .gol-dir-tape::before {
+  content: "";
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  top: 50%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(239, 230, 200, 0.4) 8%, rgba(239, 230, 200, 0.4) 92%, transparent);
+}
+
+.gol95 .gol-day {
+  position: relative;
+  flex: 0 1 15px;
+  width: 15px;
+  max-width: 15px;
+  min-width: 6px;
+  aspect-ratio: 1;
+  height: auto;
+  border-radius: 50%;
+  background: #070c0a;
+  box-shadow:
+    inset 0 0 0 1px rgba(239, 230, 200, 0.35),
+    inset 0 1px 2px rgba(0, 0, 0, 0.6);
+  transition: transform 120ms ease;
+}
+
+.gol95 .gol-day:hover {
+  transform: scale(1.35);
+  z-index: 1;
+}
+
+.gol95 .gol-day.is-served {
+  background:
+    radial-gradient(circle at 34% 28%, #ffffff 0 12%, rgba(255, 255, 255, 0) 30%),
+    radial-gradient(circle at 70% 70%, rgba(255, 182, 210, 0.75), transparent 45%),
+    radial-gradient(circle at 25% 75%, rgba(169, 220, 255, 0.7), transparent 45%),
+    radial-gradient(circle at 50% 45%, #fbf8f2, #dcd6e2 70%, #a9a3b5);
+  box-shadow:
+    0 0 6px rgba(255, 245, 235, 0.55),
+    0 1px 1px rgba(0, 0, 0, 0.5);
+}
+
+.gol95 .gol-day.is-drift {
+  background:
+    radial-gradient(circle at 34% 28%, #ffffff 0 9%, rgba(255, 255, 255, 0) 24%),
+    radial-gradient(circle at 45% 40%, #dfe3e7 0, #8c939b 45%, #3c4248 78%, #16191c 100%);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.6);
+}
+
+.gol95 .gol-dir-key i.is-served {
+  background:
+    radial-gradient(circle at 34% 28%, #fff 0 14%, transparent 32%),
+    radial-gradient(circle at 70% 70%, rgba(255, 182, 210, 0.75), transparent 45%),
+    radial-gradient(circle at 50% 45%, #fbf8f2, #a9a3b5);
+  box-shadow: 0 0 4px rgba(255, 245, 235, 0.5);
+}
+
+.gol95 .gol-dir-key i.is-drift {
+  background:
+    radial-gradient(circle at 34% 28%, #fff 0 10%, transparent 26%),
+    radial-gradient(circle at 45% 40%, #dfe3e7, #3c4248 80%);
+  box-shadow: none;
+}
+
+
+.gol95 .gol-dir-key span {
+  display: inline-flex;
+  align-items: center;
+}
+
+.gol95 .gol-dir-key i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 4px;
+  border-radius: 50%;
+  background: #070c0a;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.5);
+}
+
+/* Drift dates: steel file cards with a black tab (0085). */
+.gol95 .gol-dir-date {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  padding: 1px 6px 1px 12px;
+  font-size: 11px;
+  color: #111;
+  background: var(--g-surface);
+  box-shadow: var(--g-raised);
+}
+
+.gol95 .gol-dir-date::before {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 4px;
+  bottom: 4px;
+  width: 4px;
+  background: #15171b;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gol95 .gol-fascia-rose {
+    animation: none;
+  }
+}
+
 /* Title jewel at photograph size, on the desktop under the window. */
 .gol95 .gol-desk-plate {
   align-self: stretch;
@@ -870,7 +1223,16 @@ body.win95-app .gol95 .gol-tabs [role="tab"][data-state="active"] {
 }
 
 @media (max-width: 720px) {
-  .gol95 .gol-goal,
+  .gol95 .gol-goal {
+    grid-template-columns: 2rem 1fr;
+  }
+
+  .gol95 .gol-goal > .gol-goal-gauge,
+  .gol95 .gol-goal > .gol-actions {
+    grid-column: 1 / -1;
+    border-left: 0;
+  }
+
   .gol95 .gol-dir-split,
   .gol95-dialog .gol-grid-2,
   .gol95-dialog .gol-grid-3 {

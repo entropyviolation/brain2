@@ -1,6 +1,6 @@
 # `components/Home/Goals/` — Objectives & Goals
 
-The Home **Goals** sub-tab in **Brain2**, on a milled fascia (CRT title, metal keys, period lamps, recessed lists). Two distinct concepts:
+The Home **Goals** sub-tab in **Brain2**, on a milled fascia (CRT title, metal keys, period lamps, recessed lists). Furniture from `designrefs/`: an engraved compass rose on the fascia (0058), metal typewriter period keys (0087), steel file-drawer index tabs for the goal filter (0084/0085), chrome ball-bearing progress (0045/0097), a phosphor coverage dial (0041), and the 30 days as a string of pearls on CRT glass (0080/0105). Two distinct concepts:
 
 - **Objectives** — your *all-time, aspirational life directions* (qualitative, no
   target or deadline; e.g. "Read a lot", "Be healthy"). An objective can be
@@ -30,18 +30,19 @@ Other rooms may import:
 
 This room writes **`lib/goals-store.ts`** (`useGoalsStore`: objectives, goals, priorities, reviews, progress). **Log** on a goal also writes a completed task (`lib/task-store.ts` `addTask`) and points (`lib/points-store.ts` `addPoints`).
 
-Stay in this room: `ObjectivesPanel`, `GoalsContainer`, `DirectionReport`, and `goals-chrome.css`. `GoalsTracker` is the only composer of those three panels.
+Stay in this room: `ObjectivesPanel`, `GoalsContainer`, `DirectionReport`, `goals-ornaments.tsx`, and `goals-chrome.css`. Room buttons carry `data-no95` so the global win95 key skin does not paint over them. `GoalsTracker` is the only composer of those three panels.
 
 ## Files
 
 | File | Purpose |
 |------|---------|
 | `goals-tracker.tsx` | `GoalsTracker` (`data-ui-name="Goals"`): milled fascia (CRT **Objectives & Goals**) composing objectives → goals → direction report, with an engraved status line. Under the window, on the desktop, the same title jewel (`orbFor("home-goals")`, the cat in the bed) sits at photograph size (`.gol-desk-plate`). |
-| `goals-chrome.css` | `.gol95` milled fascia + recessed wells + metal keys + 10-pip progress + `.gol95-dialog`. `.gol-desk-plate` is the title jewel at photograph height, centered on the desktop under the window (no frame). |
+| `goals-ornaments.tsx` | Inline SVG furniture: `GolStar` (eight-point star), `GolRose` (fascia compass rose), `GolDial` (coverage astrolabe). |
+| `goals-chrome.css` | `.gol95` milled fascia + recessed wells + metal keys + typewriter tablist + `.gol-index` file tabs + ball-bearing `.gol-pip` + phosphor dial + pearl tape + `.gol95-dialog`. `.gol-desk-plate` is the title jewel at photograph height, centered on the desktop under the window (no frame). |
 | `ObjectivesPanel.tsx` | Period keys (**Day/Week/Month/Season/Year/All**, persisted): **Prioritized** packed well, collapsible **All objectives** list with mill stars, **Add Objective** dialog (unsaved-changes guard). Rows open detail. |
 | `ObjectiveDetailDialog.tsx` | Edit one objective (`data-ui-name="Objective detail"`): title/description, **prioritize per period** (with a custom multiplier, capped), linked goals + their progress, the **contributing completed actions** list, a per-period **review** (success analysis), and archive/delete. Dirty close uses the house unsaved-changes guard. |
 | `GoalsContainer.tsx` | Packed goal rows, filterable by period kind (persists). 10-pip progress, linked chips, larger ±1 steppers, quieter **Log**, boolean-complete. CRT values via `formatCrtNumber`. Add/edit dialog requires ≥1 objective. Unsaved-changes guard. |
-| `DirectionReport.tsx` | Direction well: CRT coverage + 10-pip channel, 30-day lamp tape (served mint / drift pewter / idle gray), mill **drift dates**, packed neglected list. Same math as before. |
+| `DirectionReport.tsx` | Direction well: phosphor coverage dial, 30-day string of pearls on CRT glass (served pearl / drift steel / idle socket), **drift dates** as tabbed file cards, packed neglected list. Same math as before. |
 
 ## Logic (pure helpers)
 

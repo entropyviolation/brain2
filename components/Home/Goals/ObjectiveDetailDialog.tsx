@@ -196,7 +196,7 @@ export function ObjectiveDetailDialog({
                             />
                           </label>
                         )}
-                        <button type="button" className="gol-btn" aria-pressed={on} onClick={() => togglePriority(period)}>
+                        <button data-no95 type="button" className="gol-btn" aria-pressed={on} onClick={() => togglePriority(period)}>
                           {on ? "On" : "Off"}
                         </button>
                       </div>
@@ -256,7 +256,7 @@ export function ObjectiveDetailDialog({
               </p>
               <div className="gol-tabs" style={{ margin: "6px 0" }}>
                 {PERIODS.map((p) => (
-                  <button
+                  <button data-no95
                     key={p}
                     type="button"
                     className="gol-btn"
@@ -282,7 +282,7 @@ export function ObjectiveDetailDialog({
                 placeholder="What actions contributed? How successful were you? What's next?"
               />
               <div className="gol-dialog-actions">
-                <button
+                <button data-no95
                   type="button"
                   className="gol-btn"
                   onClick={() => saveObjectiveReview(objective.id, reviewPeriod, periodKeyFor(reviewPeriod), reviewText)}
@@ -307,14 +307,14 @@ export function ObjectiveDetailDialog({
             </div>
 
             <div className="gol-danger">
-              <button
+              <button data-no95
                 type="button"
                 className="gol-btn"
                 onClick={() => updateObjective({ ...objective, archived: !objective.archived })}
               >
                 {objective.archived ? "Unarchive" : "Archive"}
               </button>
-              <button
+              <button data-no95
                 type="button"
                 className="gol-btn"
                 onClick={() => {

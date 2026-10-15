@@ -132,7 +132,7 @@ export function ObjectivesPanel() {
         </div>
         <Dialog open={showAdd} onOpenChange={addGuard.handleOpenChange}>
           <DialogTrigger asChild>
-            <button type="button" className="gol-btn">
+            <button data-no95 type="button" className="gol-btn">
               Add Objective
             </button>
           </DialogTrigger>
@@ -150,10 +150,10 @@ export function ObjectivesPanel() {
                 <textarea value={newDesc} onChange={(e) => setNewDesc(e.target.value)} rows={2} />
               </label>
               <div className="gol-dialog-actions">
-                <button type="button" className="gol-btn" onClick={() => addGuard.requestClose()}>
+                <button data-no95 type="button" className="gol-btn" onClick={() => addGuard.requestClose()}>
                   Cancel
                 </button>
-                <button type="button" className="gol-btn" onClick={handleAdd}>
+                <button data-no95 type="button" className="gol-btn" onClick={handleAdd}>
                   Add Objective
                 </button>
               </div>
@@ -189,12 +189,12 @@ export function ObjectivesPanel() {
         <div className="gol-list">
           {prioritized.map((o) => (
             <div key={o.id} className="gol-row is-prio">
-              <button type="button" className="gol-row-name" onClick={() => setOpenId(o.id)}>
+              <button data-no95 type="button" className="gol-row-name" onClick={() => setOpenId(o.id)}>
                 {o.title}
               </button>
               {priorityBadges(o)}
               {mode !== "all" && (
-                <button
+                <button data-no95
                   type="button"
                   className="gol-btn is-star is-on"
                   onClick={() => quickToggle(o, mode)}

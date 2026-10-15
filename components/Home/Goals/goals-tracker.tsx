@@ -2,8 +2,8 @@
  * components/Home/Goals/goals-tracker.tsx — Objectives & Goals home tab
  *
  * Milled fascia: all-time Objectives (prioritizable), quantifiable Goals, and
- * the Direction report. Same language as the header and To Do. The title jewel
- * also sits at photograph size on the desktop under the window.
+ * the Direction report. Same language as the header and To Do. The title jewel also sits at photograph size on the desktop
+ * under the window.
  */
 "use client"
 
@@ -12,6 +12,7 @@ import { useGoalsStore } from "@/lib/goals-store"
 import { ObjectivesPanel } from "./ObjectivesPanel"
 import { GoalsContainer } from "./GoalsContainer"
 import { DirectionReport } from "./DirectionReport"
+import { GolRose, GolStar } from "./goals-ornaments"
 import "./goals-chrome.css"
 
 export function GoalsTracker() {
@@ -28,6 +29,8 @@ export function GoalsTracker() {
     >
       <div className="gol-window">
         <div className="gol-fascia">
+          <span className="gol-fascia-sky" aria-hidden />
+          <GolRose className="gol-fascia-rose" />
           <div className="gol-mark">
             <img src={orbFor("home-goals")} alt="" className="gol-title-orb" />
             <h2>Objectives & Goals</h2>
@@ -42,10 +45,12 @@ export function GoalsTracker() {
         </div>
 
         <div className="gol-status">
+          <GolStar className="gol-status-star" />
           <span>
             {activeObjectives} objective{activeObjectives === 1 ? "" : "s"} · {goals.length} goal
             {goals.length === 1 ? "" : "s"}
           </span>
+          <GolStar className="gol-status-star" />
         </div>
       </div>
 
