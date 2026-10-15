@@ -867,6 +867,10 @@ export interface CalendarEvent {
   rewardValue?: number
   isAllDay?: boolean
   location?: string
+  /** Picked place (map search or a saved place): full address + pin. Absent for free text. */
+  locationAddress?: string
+  locationLat?: number
+  locationLng?: number
   description?: string
 }
 

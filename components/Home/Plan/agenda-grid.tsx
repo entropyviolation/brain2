@@ -8,7 +8,8 @@
  * so Day Log shows the same intervals as the Time Grid and Activity Log.
  * Tracked blocks that span hours render as **one continuous slab** (position +
  * height across the hour grid) — clickable everywhere, title once — instead of
- * a sliced reprint in every hour. Plan-mode events still slice per hour.
+ * a sliced reprint in every hour. Plan-mode events do the same: one slab, one
+ * gradient, and a heading that stays in view while the agenda scrolls.
  * Plan day view may also pass `trackedGhosts`: outline slabs of those same
  * intervals, past minutes only, with pointer-events none so they never take
  * a click from a scheduled chip.
@@ -461,10 +462,20 @@ export function AgendaGrid({
     applyPlanPayload(payload, hour, minute)
   }
 
-  usePlanPointerDrop((payload, _clientX, clientY, target) => {
+  /** The hour slot under a point, looking through event slabs that sit above the slots. */
+  const slotAtPoint = useCallback((clientX: number, clientY: number): HTMLElement | null => {
+    const root = rootRef.current
+    if (!root || typeof document.elementsFromPoint !== "function") return null
+    for (const el of document.elementsFromPoint(clientX, clientY)) {
+      if (el instanceof HTMLElement && el.classList.contains("agenda-slot") && root.contains(el)) return el
+    }
+    return null
+  }, [])
+
+  usePlanPointerDrop((payload, clientX, clientY, target) => {
     const root = rootRef.current
     if (!root?.contains(target)) return
-    const slot = target.closest(".agenda-slot")
+    const slot = target.closest(".agenda-slot") ?? slotAtPoint(clientX, clientY)
     if (!(slot instanceof HTMLElement) || !root.contains(slot)) return
     const hour = Number(slot.dataset.hour)
     if (!Number.isFinite(hour)) return
@@ -510,6 +521,40 @@ export function AgendaGrid({
   }, [date, scrollToMinutes, bannerEvents.length])
 
   const showNowLine = showCurrentTimeIndicator && isToday(date)
+
+  const dragCreateHover = (e: { currentTarget: Element; clientY: number }, hour: number) => {
+    if (dragCreateStart.current === null) return
+    const pos = dropPosition(e, hour)
+    if (pos.hour !== dragCreateStart.current.hour || pos.minute !== dragCreateStart.current.minute) {
+      didDragCreate.current = true
+    }
+    dragCreateLast.current = pos
+    const lo = Math.min(dragCreateStart.current.hour, hour)
+    const hi = Math.max(dragCreateStart.current.hour, hour)
+    setDragHighlight({ lo, hi })
+  }
+
+  const dragCreateFinish = () => {
+    const start = dragCreateStart.current
+    const last = dragCreateLast.current ?? start
+    if (start && mode === "plan") {
+      const startMin = start.hour * 60 + start.minute
+      const endMin = last ? last.hour * 60 + last.minute : startMin
+      const dragged = didDragCreate.current || Math.abs(endMin - startMin) >= SNAP_MINUTES
+      if (dragged && onCreatePlannedAction) {
+        onCreatePlannedAction(date, startMin, endMin === startMin ? startMin + 60 : endMin)
+      } else if (!dragged && onCreateEvent) {
+        onCreateEvent(date, start.hour)
+      }
+    }
+    dragCreateStart.current = null
+    dragCreateLast.current = null
+    didDragCreate.current = false
+    setDragHighlight(null)
+  }
+
+  /** Plan-mode events draw as one slab over the hour rows, not a slice per hour. */
+  const isEventSlab = (item: GridItem) => mode === "plan" && item.kind === "event" && !item.isGhost
 
   return (
     <div ref={rootRef} className={["agenda95", maxHeight].filter(Boolean).join(" ")}>
@@ -562,39 +607,11 @@ export function AgendaGrid({
               didDragCreate.current = false
               setDragHighlight({ lo: hour, hi: hour })
             }}
-            onMouseEnter={(e) => {
-              if (dragCreateStart.current !== null) {
-                const pos = dropPosition(e, hour)
-                if (pos.hour !== dragCreateStart.current.hour || pos.minute !== dragCreateStart.current.minute) {
-                  didDragCreate.current = true
-                }
-                dragCreateLast.current = pos
-                const lo = Math.min(dragCreateStart.current.hour, hour)
-                const hi = Math.max(dragCreateStart.current.hour, hour)
-                setDragHighlight({ lo, hi })
-              }
-            }}
-            onMouseUp={() => {
-              const start = dragCreateStart.current
-              const last = dragCreateLast.current ?? start
-              if (start && mode === "plan") {
-                const startMin = start.hour * 60 + start.minute
-                const endMin = last ? last.hour * 60 + last.minute : startMin
-                const dragged = didDragCreate.current || Math.abs(endMin - startMin) >= SNAP_MINUTES
-                if (dragged && onCreatePlannedAction) {
-                  onCreatePlannedAction(date, startMin, endMin === startMin ? startMin + 60 : endMin)
-                } else if (!dragged && onCreateEvent) {
-                  onCreateEvent(date, start.hour)
-                }
-              }
-              dragCreateStart.current = null
-              dragCreateLast.current = null
-              didDragCreate.current = false
-              setDragHighlight(null)
-            }}
+            onMouseEnter={(e) => dragCreateHover(e, hour)}
+            onMouseUp={dragCreateFinish}
           >
             {itemsForHour(hour)
-              .filter((item) => item.kind !== "tracked")
+              .filter((item) => item.kind !== "tracked" && !isEventSlab(item))
               .map((item) => {
               const hourStart = hour * 60
               const hourEnd = hourStart + 60
@@ -714,6 +731,54 @@ export function AgendaGrid({
             </div>
           )
         })}
+      {gridItems.filter(isEventSlab).map((item) => {
+        const top = (item.startMinutes / 60) * HOUR_HEIGHT
+        const height = Math.max(22, (Math.max(1, item.durationMinutes) / 60) * HOUR_HEIGHT)
+        return (
+          <div
+            key={item.id}
+            className="agenda-block agenda-block-opal agenda-span agenda-event-span"
+            data-kind="event"
+            data-temporal={temporalAttr("prospective")}
+            style={{ top, height, ["--plan-chip-color" as string]: resolvePlanColor(item.color) }}
+            draggable
+            title={item.sublabel ? `${item.sublabel}  ${item.label}` : item.label}
+            onMouseDown={(e) => e.stopPropagation()}
+            onMouseMove={(e) => {
+              if (dragCreateStart.current === null) return
+              const slot = slotAtPoint(e.clientX, e.clientY)
+              if (slot) dragCreateHover({ currentTarget: slot, clientY: e.clientY }, Number(slot.dataset.hour))
+            }}
+            onMouseUp={dragCreateFinish}
+            onDragStart={(e) => onEventDragStart(e, item.id)}
+            onDragOver={(e) => {
+              e.preventDefault()
+              e.dataTransfer.dropEffect = "move"
+            }}
+            onDrop={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              const slot = slotAtPoint(e.clientX, e.clientY)
+              const hour = slot ? Number(slot.dataset.hour) : NaN
+              if (!slot || !Number.isFinite(hour)) return
+              const payload = readPlanDrag(e.dataTransfer)
+              if (!payload) return
+              const { minute } = dropPosition({ currentTarget: slot, clientY: e.clientY }, hour)
+              applyPlanPayload(payload, hour, minute)
+            }}
+            onClick={(e) => {
+              e.stopPropagation()
+              if (item.event) onEventClick?.(item.event)
+            }}
+          >
+            <div className="agenda-event-head">
+              <div className="agenda-block-title">{item.label}</div>
+              {item.sublabel ? <div className="agenda-block-sub">{item.sublabel}</div> : null}
+              {item.location ? <div className="agenda-block-sub">{item.location}</div> : null}
+            </div>
+          </div>
+        )
+      })}
       {gridItems
         .filter((item) => item.kind === "tracked")
         .map((item) => {
