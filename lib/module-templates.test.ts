@@ -151,9 +151,12 @@ describe("buildModuleTemplate", () => {
     expect(kinds).toContain("gallery")
     const films = built.lists.find((c) => c.name === "Films")!
     expect(films).toBeTruthy()
+    expect(films.itemTypeId).toBe("film")
+    expect(films.itemTypeIds).toEqual(["film"])
     expect(films.itemAttributes?.some((a) => a.id === "poster" && a.type === "image")).toBe(true)
     expect(built.seedTasks.length).toBeGreaterThan(50)
     expect(built.seedTasks.every((t) => t.lists.includes(films.id))).toBe(true)
+    expect(built.seedTasks.every((t) => t.type === "film")).toBe(true)
     const liked = built.seedTasks.filter((t) => t.attributes?.liked === true)
     expect(liked.length).toBeGreaterThan(20)
   })

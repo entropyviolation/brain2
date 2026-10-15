@@ -16,6 +16,7 @@ export interface ListMergePlan {
   icon?: string
   scheduleable: boolean
   itemTypeId?: string
+  itemTypeIds?: string[]
   itemLabel?: string
   folderIds: string[]
   keepAllItems: boolean
@@ -95,6 +96,7 @@ export function buildMergedList(lists: List[], plan: ListMergePlan): List | null
     icon: plan.icon,
     scheduleable: plan.scheduleable,
     itemTypeId: plan.itemTypeId,
+    itemTypeIds: plan.itemTypeIds?.length ? plan.itemTypeIds : survivor.itemTypeIds,
     itemLabel: plan.itemLabel,
     itemAttributes: itemAttributes?.length ? itemAttributes : survivor.itemAttributes,
     defaultAttributeValues,
@@ -159,6 +161,11 @@ export function defaultMergePlan(lists: List[], folders: Folder[]): ListMergePla
     icon: survivor.icon,
     scheduleable: lists.some((l) => isExplicitlyScheduleable(l)),
     itemTypeId: survivor.itemTypeId,
+    itemTypeIds: uniqueNonEmpty([
+      ...(survivor.itemTypeIds ?? []),
+      survivor.itemTypeId,
+      ...lists.flatMap((l) => [...(l.itemTypeIds ?? []), l.itemTypeId]),
+    ]),
     itemLabel: survivor.itemLabel,
     folderIds: defaultMergeFolderIds(folders, lists.map((l) => l.id)),
     keepAllItems: true,

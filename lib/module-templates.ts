@@ -20,6 +20,7 @@ import { useWorkflowsStore } from "@/lib/workflows-store"
 import { addModuleCreatedLists, taskStoreModuleListsMutators } from "@/lib/module-lists"
 import { syncModuleListContents } from "@/lib/module-list-import"
 import { FILMRECS_SHELVES } from "@/lib/filmrecs-types"
+import { FILM_TYPE_ID } from "@/lib/film-types"
 import { seedFilmToTask, type SeedFilm } from "@/lib/filmrecs-catalog"
 import filmrecsSeed from "@/lib/filmrecs-seed.json"
 import { seedHouseCleaning } from "@/lib/house-cleaning"
@@ -118,6 +119,8 @@ function makeCategory(
     itemLabel: string
     description?: string
     icon?: string
+    itemTypeId?: string
+    itemTypeIds?: string[]
     attributes?: AttributeDefinition[]
     displayedAttributes?: string[]
     defaultAttributeValues?: Record<string, AttributeValue>
@@ -131,6 +134,8 @@ function makeCategory(
     createdAt: new Date(),
     scheduleable: false,
     itemLabel: opts.itemLabel,
+    itemTypeId: opts.itemTypeId,
+    itemTypeIds: opts.itemTypeIds,
     itemAttributes: opts.attributes,
     displayedAttributes: opts.displayedAttributes,
     defaultAttributeValues: opts.defaultAttributeValues,
@@ -596,6 +601,8 @@ function buildFilmRecs(uid: Uid): BuiltModuleTemplate {
     itemLabel: "film",
     description: "Letterboxd watchlist + likes catalog for Film DNA Lab.",
     icon: "clapperboard",
+    itemTypeId: FILM_TYPE_ID,
+    itemTypeIds: [FILM_TYPE_ID],
     attributes: [
       attr("year", "Year", "number"),
       attr("shelf", "Shelf", "selection", { optionSource: "manual", options: shelfOptions }),

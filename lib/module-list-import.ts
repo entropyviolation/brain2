@@ -97,6 +97,7 @@ function applyListPlan(mut: ModuleListsMutators, module: ModuleInstance, lists: 
       order: list.order,
       itemLabel: list.itemLabel,
       itemTypeId: list.itemTypeId,
+      itemTypeIds: list.itemTypeIds,
       itemAttributes: list.itemAttributes,
       displayedAttributes: list.displayedAttributes,
       enabledDisplays: list.enabledDisplays,
