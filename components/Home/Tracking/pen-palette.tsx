@@ -33,6 +33,7 @@ import { PenSwatches } from "@/components/Home/Tracking/pen-swatches"
 import { DepthControl } from "@/components/Home/Tracking/depth-control"
 import { TrackingToolsTray, TrackingViewLatches } from "@/components/Home/Tracking/tracking-tools-tray"
 import { TrkLatchesWell, TrkPenToolsRow } from "@/components/Home/Tracking/trk-instrument"
+import { PushKey, ScopePanel, ScopeSection } from "@/components/Home/Tracking/trk-scope"
 import {
   nextPaintPenId,
   rememberDrawPenId,
@@ -44,10 +45,18 @@ import "./tracking-chrome.css"
 
 export { ERASE, SCISSORS } from "./tracking-tool-mode"
 
+/** A pen still named by raw coordinates ("32.7381,-117.2402") — a place waiting for a name. */
+export function isUnnamedPlace(name: string): boolean {
+  return /^\s*-?\d{1,3}(?:\.\d+)?\s*,\s*-?\d{1,3}(?:\.\d+)?\s*$/.test(name)
+}
+
 export function PenPalette({
   embedded = false,
+  variant = "panel",
 }: {
   embedded?: boolean
+  /** `rack` — the Home Tracking desk's left bay: a scope panel, one pen per row. */
+  variant?: "panel" | "rack"
 } = {}) {
   const scopes = useTimeTrackingStore((s) => s.scopes)
   const tags = useTimeTrackingStore((s) => s.tags)
@@ -110,6 +119,198 @@ export function PenPalette({
   if (!scope) return null
 
   const sortMode = (PEN_SORT_MODES as readonly string[]).includes(penSort) ? penSort : "recent"
+
+  if (variant === "rack") {
+    const detailCount = selectedPen?.variants?.length ?? 0
+    const rackPens = visiblePens.length ? visiblePens : scope.pens
+    // Coordinate-named leaves go in one drawer; a coordinate pen with children stays in the tree.
+    const unnamed = rackPens.filter(
+      (pen) => isUnnamedPlace(pen.name) && !rackPens.some((other) => other.parentId === pen.id || other.parentIds?.includes(pen.id)),
+    )
+    const unnamedIds = new Set(unnamed.map((pen) => pen.id))
+    const namedPens = rackPens.filter((pen) => !unnamedIds.has(pen.id))
+    return (
+      <ScopePanel
+        as="aside"
+        className="trk-rack"
+        badge="PEN"
+        name={`RACK · ${visiblePens.length} PEN${visiblePens.length === 1 ? "" : "S"}`}
+        power="INK"
+        label="Pens"
+        julia={0}
+        data-ui-name="Tracking control panel"
+        data-ui-docs="components/Home/Tracking/README.md"
+      >
+        <ScopeSection band="Selected">
+          <div className="trk-rack-plate trk-selected">
+            {selectedPen ? (
+              <>
+                <div className="trk-rack-row">
+                  <span
+                    className="trk-rack-swatch"
+                    style={{
+                      background: selectedPen.color,
+                      backgroundImage: selectedPen.image ? `url("${selectedPen.image}")` : undefined,
+                    }}
+                    title={`Double-click to open ${selectedPen.name} settings`}
+                    onDoubleClick={() => openPenSettings(scope.id, selectedPen.id)}
+                    aria-hidden
+                  />
+                  <span className="trk-rack-name">{selectedPen.name}</span>
+                  {detailCount ? (
+                    <span className="trk-digit" title={`${detailCount} detail options`}>
+                      {detailCount}
+                    </span>
+                  ) : null}
+                </div>
+                <VariantChips
+                  pen={selectedPen}
+                  selected={selectedVariantIds}
+                  size="sm"
+                  onToggle={toggleSelectedVariant}
+                  onCreate={(name) => {
+                    const id = addVariant(scope.id, selectedPen.id, name)
+                    if (id) toggleSelectedVariant(id)
+                  }}
+                  onOpenPen={(penId, viewId) => openPenSettings(viewId ?? scope.id, penId)}
+                />
+                <button
+                  type="button"
+                  className="trk-rack-settings"
+                  onClick={() => openPenSettings(scope.id, selectedPen.id)}
+                  title={`Settings, tags and category for ${selectedPen.name}`}
+                >
+                  Pen settings
+                </button>
+              </>
+            ) : (
+              <span className="trk-selected-meta">
+                {paintTool === "erase"
+                  ? "Erasing — pick a pen to paint again"
+                  : paintTool === "scissors"
+                    ? "Scissors — pick a pen to paint again"
+                    : "Pick a pen"}
+              </span>
+            )}
+          </div>
+        </ScopeSection>
+
+        <ScopeSection band="Pens" grow>
+          <div className="trk-push-row" role="group" aria-label="Sort pens">
+            {PEN_SORT_MODES.map((mode) => (
+              <PushKey
+                key={mode}
+                stacked
+                label={PEN_SORT_LABELS[mode]}
+                pressed={sortMode === mode}
+                onClick={() => setPenSort(mode as PenSortMode)}
+                title={`Sort pens ${PEN_SORT_LABELS[mode]}`}
+              />
+            ))}
+          </div>
+          <div className="trk-rack-latches" role="group" aria-label="View latches">
+            <button
+              type="button"
+              aria-pressed={hiding}
+              onClick={() => setHiding((h) => !h)}
+              title="Hide pens from this view's well"
+            >
+              Hide
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewSettings(true)}
+              title="Tracking settings — pen gallery, hidden pens, each view, BIM commands"
+            >
+              View
+            </button>
+            <button type="button" aria-pressed={manage} onClick={() => setManage((m) => !m)} title="Tag library">
+              Tags
+            </button>
+          </div>
+          <PenSwatches
+            pens={namedPens}
+            tags={tags}
+            selectedId={selectedPen ? selectedPenId : null}
+            onSelect={setSelectedPen}
+            onCreate={(name, color) => {
+              const id = addPen(scope.id, { name, color })
+              if (id) setSelectedPen(id)
+            }}
+            onOpenPen={(id) => openPenSettings(scope.id, id)}
+            creator="always"
+            sortMode={sortMode}
+            searchPlaceholder="Find a pen…"
+            layout="list"
+          />
+          {unnamed.length > 0 ? (
+            <details className="trk-unnamed" data-ui-name="Unnamed places">
+              <summary title="Places still named by raw coordinates — open one to give it a name">
+                <span className="trk-unnamed-swatches" aria-hidden>
+                  {unnamed.slice(0, 8).map((pen) => (
+                    <span key={pen.id} style={{ background: pen.color }} />
+                  ))}
+                </span>
+                <span className="trk-unnamed-title">Unnamed places</span>
+                <span className="trk-digit">{unnamed.length}</span>
+              </summary>
+              <div className="trk-unnamed-list">
+                {unnamed.map((pen) => (
+                  <div key={pen.id} className="trk-unnamed-row">
+                    <button
+                      type="button"
+                      data-no95=""
+                      className="trk-pen-node"
+                      data-selected={selectedPenId === pen.id ? "true" : "false"}
+                      onClick={() => setSelectedPen(pen.id)}
+                      title={`Paint with ${pen.name}`}
+                    >
+                      <span className="trk-pen-node-swatch" style={{ backgroundColor: pen.color }} aria-hidden />
+                      <span className="trk-pen-node-name">{pen.name}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="trk-unnamed-name"
+                      aria-label={`Name ${pen.name}`}
+                      onClick={() => openPenSettings(scope.id, pen.id)}
+                    >
+                      Name…
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </details>
+          ) : null}
+          {hiding && (
+            <div className="trk-hide-plate">
+              {scope.pens.map((pen) => (
+                <button
+                  key={pen.id}
+                  type="button"
+                  aria-pressed={hidden.has(pen.id)}
+                  title={hidden.has(pen.id) ? `Show ${pen.name}` : `Hide ${pen.name} from this well`}
+                  onClick={() => toggleHiddenPen(scope.id, pen.id)}
+                >
+                  <span className="inline-block h-2.5 w-2.5" style={{ background: pen.color }} />
+                  {hidden.has(pen.id) ? `Show ${pen.name}` : `Hide ${pen.name}`}
+                </button>
+              ))}
+            </div>
+          )}
+          {manage && <TrackingTagsPanel />}
+        </ScopeSection>
+
+        <div className="trk-rack-foot">
+          <span>
+            {visiblePens.length} pen{visiblePens.length === 1 ? "" : "s"}
+            {hidden.size ? ` · ${hidden.size} hidden` : ""} · {scope.name}
+          </span>
+          <span>sorted {PEN_SORT_LABELS[sortMode].toLowerCase()}</span>
+        </div>
+        {viewSettings && <TrackingViewSettingsDialog scopeId={scope.id} onClose={() => setViewSettings(false)} />}
+      </ScopePanel>
+    )
+  }
 
   return (
     <div
@@ -284,7 +485,7 @@ export function PenPalette({
                         const id = addVariant(scope.id, selectedPen.id, name)
                         if (id) toggleSelectedVariant(id)
                       }}
-                      onOpenPen={(penId) => openPenSettings(scope.id, penId)}
+                      onOpenPen={(penId, viewId) => openPenSettings(viewId ?? scope.id, penId)}
                     />
                     {selectedVariantIds.length > 1 && (
                       <span className="trk-detail-hint">both apply to what you paint next</span>

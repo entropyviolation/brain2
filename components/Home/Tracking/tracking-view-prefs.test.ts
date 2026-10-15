@@ -5,8 +5,12 @@ import {
   DEFAULT_TRACKING_VIEW_PREFS,
   getTrackingViewPrefs,
   resetTrackingViewPrefs,
+  resolveSuperimposeLayers,
   resolveSuperimposeScopeId,
   setScopeSuperimpose,
+  setRibbonPercent,
+  setSuperimposeMulti,
+  toggleScopeSuperimposeMulti,
   setTrackingViewPrefs,
   TRACKING_FILL_CLOCK_LABELS,
 } from "./tracking-view-prefs"
@@ -166,5 +170,70 @@ describe("tracking view prefs", () => {
       weekFillFrom: "Week fill starts",
       weekFillTo: "Week fill ends",
     })
+  })
+
+  it("defaults the hide keys and advanced off, multi on, and the ribbon to % of tracked", () => {
+    expect(getTrackingViewPrefs()).toMatchObject({
+      hideLogFlags: false,
+      hideSunLines: false,
+      superimposeMulti: true,
+      superimposeAdvanced: false,
+      superimposeMultiByScope: {},
+      superimposeOpacity: {},
+      ribbonPercent: { day: "tracked", week: "tracked" },
+    })
+  })
+
+  it("turns multi on for an older blob, seeding each view's single ghost once", () => {
+    localStorage.setItem(
+      KEY,
+      JSON.stringify({ fillFrom: "08:00", superimposeMulti: false, superimposeByScope: { activity: "location" } }),
+    )
+    resetTrackingViewPrefs()
+    expect(getTrackingViewPrefs().superimposeMulti).toBe(true)
+    expect(getTrackingViewPrefs().superimposeMultiByScope).toEqual({ activity: ["location"] })
+    expect(getTrackingViewPrefs().hideSunLines).toBe(false)
+
+    // Off in multi sticks: the next load does not re-seed it.
+    setTrackingViewPrefs({ superimposeMultiByScope: {} })
+    resetTrackingViewPrefs()
+    expect(getTrackingViewPrefs().superimposeMultiByScope).toEqual({})
+    // Choosing single also sticks.
+    setTrackingViewPrefs({ superimposeMulti: false })
+    resetTrackingViewPrefs()
+    expect(getTrackingViewPrefs().superimposeMulti).toBe(false)
+  })
+
+  it("keeps the ribbon basis per span", () => {
+    setRibbonPercent("week", "period")
+    expect(getTrackingViewPrefs().ribbonPercent).toEqual({ day: "tracked", week: "period" })
+    resetTrackingViewPrefs()
+    expect(getTrackingViewPrefs().ribbonPercent).toEqual({ day: "tracked", week: "period" })
+  })
+
+  it("keeps a multi ghost list per view and resolves layers with opacity only under advanced", () => {
+    setScopeSuperimpose("activity", "location")
+    setSuperimposeMulti(true)
+    toggleScopeSuperimposeMulti("activity", "mood")
+    toggleScopeSuperimposeMulti("activity", "activity")
+    toggleScopeSuperimposeMulti("company", "mood")
+    expect(getTrackingViewPrefs().superimposeMultiByScope).toEqual({ activity: ["location", "mood"], company: ["mood"] })
+    const ids = ["activity", "location", "mood", "company"]
+    expect(resolveSuperimposeLayers("activity", ids, getTrackingViewPrefs())).toEqual([
+      { scopeId: "location", opacity: undefined },
+      { scopeId: "mood", opacity: undefined },
+    ])
+    setTrackingViewPrefs({ superimposeAdvanced: true, superimposeOpacity: { mood: 2, location: "x" as unknown as number } })
+    expect(getTrackingViewPrefs().superimposeOpacity).toEqual({ mood: 1 })
+    expect(resolveSuperimposeLayers("activity", ids, getTrackingViewPrefs())).toEqual([
+      { scopeId: "location", opacity: 0.32 },
+      { scopeId: "mood", opacity: 1 },
+    ])
+    expect(JSON.parse(localStorage.getItem(KEY) ?? "{}").superimposeMultiByScope).toEqual({
+      activity: ["location", "mood"],
+      company: ["mood"],
+    })
+    setSuperimposeMulti(false)
+    expect(resolveSuperimposeLayers("activity", ids, getTrackingViewPrefs())).toEqual([{ scopeId: "location", opacity: 0.32 }])
   })
 })

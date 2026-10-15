@@ -87,7 +87,7 @@ export function TrackingViewLatches({
       <ToolKey
         bank="latch"
         onClick={onOpenViewSettings}
-        title="Tracking settings — commands, cell size, fill range, hidden pens"
+        title="Tracking settings — pen gallery, hidden pens, each view, BIM commands"
         label="View"
       />
       <ToolKey

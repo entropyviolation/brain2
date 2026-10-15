@@ -311,7 +311,7 @@ export function LogActivityDialog({
                   const id = addVariant(scope.id, pen.id, name)
                   if (id) setVariantIds((current) => [...current, id])
                 }}
-                onOpenPen={(id) => openPenSettings(scope.id, id)}
+                onOpenPen={(id, viewId) => openPenSettings(viewId ?? scope.id, id)}
               />
             </div>
           )}

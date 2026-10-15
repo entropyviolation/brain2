@@ -14,6 +14,9 @@
  * or it moved under a different parent) drops the detail so the lists
  * cannot disagree.
  *
+ * A detail with `scopeId` points at a pen in another view. It is kept as is:
+ * it never mints, links, or drops here.
+ *
  * Pure: no store.
  */
 import { assignParents, penParentIds, wouldCycle } from "@/lib/pen-tree"
@@ -49,6 +52,12 @@ export function syncScopeDetails(pens: TrackPen[], mint: DetailMint): DetailSync
     const kept: PenVariant[] = []
     const claimed = new Set<string>()
     for (const variant of parent.variants ?? []) {
+      // A cross-view detail (Company person under an Activity pen) is a label
+      // only: no counts-as link, no minted pen here. The store keeps it in step.
+      if (variant.scopeId) {
+        kept.push(variant)
+        continue
+      }
       const name = variant.name.trim()
       if (!name) {
         kept.push(variant)

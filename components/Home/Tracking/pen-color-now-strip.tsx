@@ -8,7 +8,8 @@
  * view gains a block from the minute that contains that second until you stop.
  * While live, **Objectives for right now** opens as a popup checklist on the
  * row (add / mark complete) without growing the strip. The Operations clock is
- * a separate session.
+ * a separate session. `compact` is the desk's one NOW row: no own lamp, and
+ * the view / since caption stays short.
  */
 "use client"
 
@@ -112,7 +113,7 @@ export function usePenColorSessionClock() {
   return { session, now }
 }
 
-export function PenColorNowStrip() {
+export function PenColorNowStrip({ compact = false }: { compact?: boolean } = {}) {
   const scopes = useTimeTrackingStore((s) => s.scopes)
   const activeScopeId = useTimeTrackingStore((s) => s.activeScopeId)
   const addPen = useTimeTrackingStore((s) => s.addPen)
@@ -168,10 +169,13 @@ export function PenColorNowStrip() {
   }
 
   return (
-    <div className={`ops-now-bar trk-pen-now${live ? " live" : ""}`} data-ui-name="Working on right now">
-      <span className={`ops-now-led${live ? " live" : ""}`} aria-hidden />
+    <div
+      className={`ops-now-bar trk-pen-now${live ? " live" : ""}${compact ? " is-compact" : ""}`}
+      data-ui-name="Working on right now"
+    >
+      {compact ? null : <span className={`ops-now-led${live ? " live" : ""}`} aria-hidden />}
       <label>
-        Pen color
+        {compact ? <span className="sr-only">Pen color</span> : "Pen color"}
         {!live && selected ? (
           <span className="trk-pen-now-bead" style={{ background: selected.color }} aria-hidden />
         ) : null}
@@ -301,11 +305,13 @@ export function PenColorNowStrip() {
           type="button"
           className="ops-btn ops-btn-now"
           disabled={!selected}
+          aria-label={selected ? "Start this pen's clock" : "Choose a pen to start its clock"}
           onClick={() => selected && togglePenColorSession(selected.penId)}
         >
-          {selected ? "Start this pen's clock" : "Choose a pen to start its clock"}
+          {compact ? "▶ Start" : selected ? "Start this pen's clock" : "Choose a pen to start its clock"}
         </button>
       )}
+      {compact && !live ? null : (
       <span
         className="ops-now-meta"
         title={
@@ -322,6 +328,7 @@ export function PenColorNowStrip() {
             ? `${selected.scopeName} · starts this second`
             : "Search a pen, or type a new name and create it. The timer starts this second."}
       </span>
+      )}
     </div>
   )
 }

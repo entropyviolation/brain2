@@ -60,7 +60,8 @@ describe("ActualDayView", () => {
 
     render(<ActualDayView currentDate={evening} />)
 
-    expect(screen.getByText("2h")).toBeInTheDocument()
+    // The painted total, not the Sleep/Work strip's own "Work 2h".
+    expect(screen.getByText("2h", { selector: "strong" })).toBeInTheDocument()
     expect(screen.queryByText("nothing painted yet")).not.toBeInTheDocument()
   })
 

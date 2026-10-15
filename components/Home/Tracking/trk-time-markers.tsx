@@ -4,7 +4,8 @@
  * These lines are part of the instrument. Do not remove them. The day grid
  * runs time left-to-right inside each hour row, so the markers are vertical.
  * The week grid runs time down the columns, so they are horizontal. Colors
- * stay gray/red on a white plot — never brown or yellow.
+ * stay gray/red on a white plot — never brown or yellow. The Ghost row's sun
+ * key (`hideSunLines`) may hide sunrise / sunset; the now line always draws.
  */
 "use client"
 
@@ -18,6 +19,7 @@ import {
   sunPlaceForCity,
   useSunTimesStore,
 } from "@/lib/sun-times-store"
+import { useTrackingViewPrefs } from "@/components/Home/Tracking/tracking-view-prefs"
 
 export type MarkerAxis = "x" | "y"
 
@@ -158,6 +160,8 @@ export function TrkPlotMarkers({
   sun: TrackingSunTimes | null
   showNowLabel?: boolean
 }) {
+  const hideSunLines = useTrackingViewPrefs().hideSunLines
+  if (hideSunLines) sun = null
   return (
     <>
       {sun && (

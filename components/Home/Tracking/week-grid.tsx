@@ -37,11 +37,10 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import { displayedPen, penCellStyle, useTimeTrackingStore, type TimeEntry, type TrackPen, type TrackScope } from "@/lib/time-tracking-store"
-import { penNameById, scopeTicksWithDiscreteLogs, tickPen } from "@/components/Home/Tracking/discrete-log-instants"
+import { penNameById, scopeTicksWithDiscreteLogs, tickPen, withoutDiscreteLogs } from "@/components/Home/Tracking/discrete-log-instants"
 import { strokeCellStyle } from "@/components/Home/Tracking/grid-stroke"
 import {
   MINUTES_PER_DAY,
-  WEEK_STEPS,
   dominantEntry,
   formatDuration,
   minuteMap,
@@ -55,14 +54,19 @@ import { EntryDialog } from "@/components/Home/Tracking/entry-dialog"
 import { ERASE, SCISSORS } from "@/components/Home/Tracking/pen-palette"
 import { ScreenTimeEmptyHint } from "@/components/Home/Tracking/screentime-empty-hint"
 import { TrackingPeriodNav } from "@/components/Home/Tracking/tracking-period-nav"
-import { useSuperimposeScope, useTrackingViewPrefs } from "@/components/Home/Tracking/tracking-view-prefs"
+import { setRibbonPercent, useTrackingViewPrefs, type ScreenFace } from "@/components/Home/Tracking/tracking-view-prefs"
+import { useTrackingDeskSlots } from "@/components/Home/Tracking/tracking-desk-slots"
+import { ScopeReadout } from "@/components/Home/Tracking/trk-scope"
+import { createPortal } from "react-dom"
+import { ghostAttr, probeLayerFor, useGhostScopes, type GhostScope } from "@/components/Home/Tracking/ghost-layers"
 import { focusTrackingPlot } from "@/components/Home/Tracking/tracking-undo"
 import { firstUnpaintedWakingHour } from "@/components/Home/Tracking/waking-scroll"
-import { cellPaintClass, SuperimposeWash, trackingProbeText, TrkBlockLabel, TrkProbePlate, TrkRibbon, TrkTagStrip, writeTrkProbe } from "@/components/Home/Tracking/trk-instrument"
+import { cellPaintClass, ghostProbeText, SuperimposeWash, trackingProbeText, TrkBlockLabel, TrkProbePlate, TrkRibbon, TrkTagStrip, writeTrkProbe } from "@/components/Home/Tracking/trk-instrument"
 import { TrkPlotMarkers, useTrackingSunMap, type TrackingSunTimes } from "@/components/Home/Tracking/trk-time-markers"
 import { awakeWindowFor } from "@/lib/sleep-sync"
 import { WeekSummaryNest } from "@/components/Home/Tracking/tracking-summaries"
 import { runAsAction } from "@/lib/action-history"
+import { playTrkMotion } from "@/components/Home/Tracking/trk-motion"
 import "./tracking-chrome.css"
 
 /**
@@ -111,7 +115,8 @@ function strokeOverlapUnchanged(
 
 interface WeekSlot {
   byDay: Record<string, TimeEntry | null>
-  overlay: Record<string, TimeEntry | null>
+  /** One day → entry record per ghost, in `ghosts` order. */
+  overlays: Record<string, TimeEntry | null>[]
 }
 
 interface WeekMinuteProps {
@@ -125,7 +130,7 @@ interface WeekMinuteProps {
   strokeDay: string
   scope: TrackScope
   scopes: readonly TrackScope[]
-  overlayScope?: TrackScope
+  ghosts: readonly GhostScope[]
   selectedPenId: string | null
   selectedPen: TrackPen | null
   todayKey: string
@@ -134,6 +139,8 @@ interface WeekMinuteProps {
   instants: Record<string, TimeEntry[]>
   onOpenInstant: (id: string) => void
   onProbe: (text: string | null) => void
+  /** Desk: sunrise / sunset printed once in the hour gutter (focused day). */
+  gutterSun?: TrackingSunTimes | null
 }
 
 function weekMinutePropsEqual(prev: WeekMinuteProps, next: WeekMinuteProps): boolean {
@@ -144,7 +151,7 @@ function weekMinutePropsEqual(prev: WeekMinuteProps, next: WeekMinuteProps): boo
   if (prev.slot !== next.slot) return false
   if (prev.scope !== next.scope) return false
   if (prev.scopes !== next.scopes) return false
-  if (prev.overlayScope !== next.overlayScope) return false
+  if (prev.ghosts !== next.ghosts) return false
   if (prev.selectedPenId !== next.selectedPenId) return false
   if (prev.selectedPen !== next.selectedPen) return false
   if (prev.todayKey !== next.todayKey) return false
@@ -153,6 +160,7 @@ function weekMinutePropsEqual(prev: WeekMinuteProps, next: WeekMinuteProps): boo
   if (prev.instants !== next.instants) return false
   if (prev.onOpenInstant !== next.onOpenInstant) return false
   if (prev.onProbe !== next.onProbe) return false
+  if (prev.gutterSun !== next.gutterSun) return false
   const rowLo = prev.minute
   const rowHi = prev.minute + prev.weekStep
   if (prev.strokeDay !== next.strokeDay) {
@@ -174,7 +182,7 @@ const WeekMinuteRow = memo(function WeekMinuteRow({
   strokeDay,
   scope,
   scopes,
-  overlayScope,
+  ghosts,
   selectedPenId,
   selectedPen,
   todayKey,
@@ -183,8 +191,10 @@ const WeekMinuteRow = memo(function WeekMinuteRow({
   instants,
   onOpenInstant,
   onProbe,
+  gutterSun = null,
 }: WeekMinuteProps) {
   const onHour = minute % 60 === 0
+  const inRow = (at: number | undefined) => at != null && at >= minute && at < minute + weekStep
   return (
     <div
       data-hour={onHour ? minute / 60 : undefined}
@@ -192,7 +202,19 @@ const WeekMinuteRow = memo(function WeekMinuteRow({
       style={{ height: rowHeight }}
     >
       <div className="trk-hour-bezel flex items-center justify-end" style={{ width: 48, fontSize: 9 }}>
-        {onHour ? minutesToLabel(minute) : ""}
+        {gutterSun && inRow(gutterSun.sunriseMinutes) ? (
+          <span className="trk-gutter-sun" title={`Sunrise ${gutterSun.sunriseLabel}`}>
+            ☼ {gutterSun.sunriseLabel.replace(/\s?[AP]M$/i, "")}
+          </span>
+        ) : gutterSun && inRow(gutterSun.sunsetMinutes) ? (
+          <span className="trk-gutter-sun" title={`Sunset ${gutterSun.sunsetLabel}`}>
+            ☾ {gutterSun.sunsetLabel.replace(/\s?[AP]M$/i, "")}
+          </span>
+        ) : onHour ? (
+          minutesToLabel(minute)
+        ) : (
+          ""
+        )}
       </div>
       {dateKeys.map((key) => {
         const cellEntry = slot.byDay[key] ?? null
@@ -202,8 +224,10 @@ const WeekMinuteRow = memo(function WeekMinuteRow({
         const erasing = selectedPenId === ERASE
         const strokePen = !erasing && selectedPen ? displayedPen(scope, selectedPen.id) ?? selectedPen : null
         const inStroke = inDrag && selectedPenId !== SCISSORS
-        const overlayEntry = slot.overlay[key] ?? null
-        const overlayPen = overlayEntry && overlayScope ? displayedPen(overlayScope, overlayEntry.penId) : null
+        const ghostCells = ghosts.map((ghost, g) => {
+          const ghostEntry = slot.overlays[g]?.[key] ?? null
+          return { ghost, entry: ghostEntry, pen: ghostEntry ? displayedPen(ghost.scope, ghostEntry.penId) : null }
+        })
         const futureCell = key === todayKey && nowMinute != null && minute > nowMinute
         const runStarts =
           cellEntry != null && cellEntry.startMin >= minute && cellEntry.startMin < minute + weekStep
@@ -223,17 +247,29 @@ const WeekMinuteRow = memo(function WeekMinuteRow({
             })}
             onMouseEnter={() =>
               onProbe(
-                trackingProbeText({
+                ghostProbeText({
+                  base: trackingProbeText({
+                    minute,
+                    step: weekStep,
+                    name: cellEntry ? entryDisplayName(cellEntry, painted?.name || pen?.name) : undefined,
+                    leafName: painted && painted.id !== pen?.id ? painted.name : undefined,
+                    assumed: cellEntry?.precision === "estimated",
+                  }),
                   minute,
                   step: weekStep,
-                  name: cellEntry ? entryDisplayName(cellEntry, painted?.name || pen?.name) : undefined,
-                  leafName: painted && painted.id !== pen?.id ? painted.name : undefined,
-                  assumed: cellEntry?.precision === "estimated",
+                  primary: probeLayerFor(scope, cellEntry),
+                  ghosts: ghostCells.flatMap((cell) => probeLayerFor(cell.ghost.scope, cell.entry) ?? []),
                 }),
               )
             }
           >
-            {overlayPen && !inStroke ? <SuperimposeWash color={overlayPen.color} /> : null}
+            {inStroke
+              ? null
+              : ghostCells.map((cell) =>
+                  cell.pen ? (
+                    <SuperimposeWash key={cell.ghost.scope.id} color={cell.pen.color} opacity={cell.ghost.opacity} />
+                  ) : null,
+                )}
             {cellEntry && runColor ? (
               <TrkBlockLabel
                 name={entryDisplayName(cellEntry, pen?.name || painted?.name)}
@@ -285,6 +321,9 @@ interface WeekGridProps {
   /** Open one day in the day grid — the way out of the week when a cell is too coarse. */
   onOpenDay?: (date: Date) => void
   compact?: boolean
+  /** Home Tracking desk: CRT period + readouts, screen bezel, day meters, Fill in the instrument column. */
+  desk?: boolean
+  face?: ScreenFace
 }
 
 interface Drag {
@@ -293,12 +332,12 @@ interface Drag {
   head: number
 }
 
-export function WeekGrid({ date, onDateChange, onOpenDay, compact = false }: WeekGridProps) {
+export function WeekGrid({ date, onDateChange, onOpenDay, compact = false, desk = false, face = "paper" }: WeekGridProps) {
+  const deskSlots = useTrackingDeskSlots()
   const scopes = useTimeTrackingStore((s) => s.scopes)
   const tags = useTimeTrackingStore((s) => s.tags)
   const entries = useTimeTrackingStore((s) => s.entries)
   const weekStep = useTimeTrackingStore((s) => s.weekStep)
-  const setWeekStep = useTimeTrackingStore((s) => s.setWeekStep)
   const activeScopeId = useTimeTrackingStore((s) => s.activeScopeId)
   const selectedPenId = useTimeTrackingStore((s) => s.selectedPenId)
   const selectedVariantIds = useTimeTrackingStore((s) => s.selectedVariantIds)
@@ -307,9 +346,7 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false }: Wee
 
   const scope = scopes.find((s) => s.id === activeScopeId) || scopes[0]
   const prefs = useTrackingViewPrefs()
-  const scopeIds = useMemo(() => scopes.map((s) => s.id), [scopes])
-  const overlayScopeId = useSuperimposeScope(scope?.id, scopeIds)
-  const overlayScope = scopes.find((s) => s.id === overlayScopeId)
+  const ghosts = useGhostScopes(scope, scopes)
 
   const [rangeFrom, setRangeFrom] = useState(prefs.weekFillFrom)
   const [rangeTo, setRangeTo] = useState(prefs.weekFillTo)
@@ -364,10 +401,11 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false }: Wee
   const instants = useMemo(() => {
     const byDay: Record<string, TimeEntry[]> = {}
     for (const key of dateKeys) {
-      byDay[key] = scope ? scopeTicksWithDiscreteLogs(entries, key, scope.id, penNames) : []
+      const ticks = scope ? scopeTicksWithDiscreteLogs(entries, key, scope.id, penNames) : []
+      byDay[key] = prefs.hideLogFlags ? withoutDiscreteLogs(ticks, penNames) : ticks
     }
     return byDay
-  }, [dateKeys, entries, scope, penNames])
+  }, [dateKeys, entries, scope, penNames, prefs.hideLogFlags])
 
   const maps = useMemo(() => {
     const byDay: Record<string, (TimeEntry | null)[]> = {}
@@ -375,24 +413,29 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false }: Wee
     return byDay
   }, [dateKeys, entries, scope])
 
-  const overlayMaps = useMemo(() => {
-    const byDay: Record<string, (TimeEntry | null)[]> = {}
-    if (!overlayScope) return byDay
-    for (const key of dateKeys) byDay[key] = minuteMap(entries, key, overlayScope.id)
-    return byDay
-  }, [dateKeys, entries, overlayScope])
+  const overlayMaps = useMemo(
+    () =>
+      ghosts.map((ghost) => {
+        const byDay: Record<string, (TimeEntry | null)[]> = {}
+        for (const key of dateKeys) byDay[key] = minuteMap(entries, key, ghost.scope.id)
+        return byDay
+      }),
+    [dateKeys, entries, ghosts],
+  )
 
   const slots = useMemo(() => {
     const out: WeekSlot[] = []
     for (let r = rowBand.start; r < rowBand.end; r++) {
       const minute = r * weekStep
       const byDay: Record<string, TimeEntry | null> = {}
-      const overlay: Record<string, TimeEntry | null> = {}
+      const overlays: Record<string, TimeEntry | null>[] = overlayMaps.map(() => ({}))
       for (const key of dateKeys) {
         byDay[key] = dominantEntry(maps[key] ?? [], minute, weekStep)
-        overlay[key] = overlayMaps[key] ? dominantEntry(overlayMaps[key], minute, weekStep) : null
+        overlayMaps.forEach((ghostMaps, g) => {
+          overlays[g][key] = ghostMaps[key] ? dominantEntry(ghostMaps[key], minute, weekStep) : null
+        })
       }
-      out.push({ byDay, overlay })
+      out.push({ byDay, overlays })
     }
     return out
   }, [maps, overlayMaps, dateKeys, weekStep, rowBand.start, rowBand.end])
@@ -473,11 +516,15 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false }: Wee
     const hi = Math.min(MINUTES_PER_DAY, Math.max(state.anchor, state.head) + weekStep)
     if (selectedPenId === SCISSORS) {
       const existing = maps[state.day]?.[state.anchor]
-      if (existing) splitEntryAt(existing.id, state.anchor)
+      if (existing) {
+        splitEntryAt(existing.id, state.anchor)
+        playTrkMotion(gridRef.current, "cut", state.anchor, state.anchor + weekStep, { day: state.day, axis: "y" })
+      }
       return
     }
     if (state.moved) {
       commitPaint(state.day, lo, hi)
+      playTrkMotion(gridRef.current, selectedPenId === ERASE ? "erase" : "paint", lo, hi, { day: state.day, axis: "y" })
       return
     }
     // The block the cell is painted with — not only the entry on its first
@@ -485,7 +532,11 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false }: Wee
     // in hand opens it instead of painting over it. Same rule as the day grid.
     const existing = dominantEntry(maps[state.day] ?? [], state.anchor, weekStep)
     if (existing && selectedPenId !== ERASE) setOpenEntryId(existing.id)
-    else if (selectedPenId !== null) commitPaint(state.day, state.anchor, Math.min(MINUTES_PER_DAY, state.anchor + weekStep))
+    else if (selectedPenId !== null) {
+      const end = Math.min(MINUTES_PER_DAY, state.anchor + weekStep)
+      commitPaint(state.day, state.anchor, end)
+      playTrkMotion(gridRef.current, selectedPenId === ERASE ? "erase" : "paint", state.anchor, end, { day: state.day, axis: "y" })
+    }
   }, [commitPaint, maps, selectedPenId, weekStep, splitEntryAt])
 
   useEffect(() => {
@@ -550,6 +601,10 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false }: Wee
         )
       }
     })
+    const end = parsedTo <= from ? MINUTES_PER_DAY : parsedTo
+    fillDays.forEach((day, i) =>
+      window.setTimeout(() => playTrkMotion(gridRef.current, "fill", from, end, { day, axis: "y" }), i * 90),
+    )
   }
 
   const pens = useMemo(() => penTotals(weekEntries, scope, dateKeys), [weekEntries, scope, dateKeys])
@@ -571,29 +626,8 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false }: Wee
   const selectedPen = scope.pens.find((p) => p.id === selectedPenId) ?? null
   const shift = (weeks: number) => onDateChange(new Date(days[0].getTime() + weeks * 7 * 864e5))
 
-  return (
-    <div className="trk95 trk-canvas select-none">
-      <TrackingPeriodNav
-        label={`${days[0].toLocaleDateString(undefined, { month: "short", day: "numeric" })} – ${days[6].toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}`}
-        previousLabel="Previous week"
-        nextLabel="Next week"
-        onPrevious={() => shift(-1)}
-        onNext={() => shift(1)}
-        onToday={() => onDateChange(new Date())}
-        meta={`${formatDuration(totals.tracked)} tracked · ${Math.round(totals.coverage)}% of the week · ${totals.daysWithData} of 7 days logged`}
-        trailing={
-          <div className="trk-module-keys" role="group" aria-label="Week cell size">
-            {WEEK_STEPS.map((step) => (
-              <button key={step} type="button" aria-pressed={weekStep === step} onClick={() => setWeekStep(step)}>
-                {step}m
-              </button>
-            ))}
-          </div>
-        }
-      />
-
-      {totals.tracked === 0 && <ScreenTimeEmptyHint date={formatLocalDateKey(date)} scopeId={scope.id} />}
-
+  const gutterSun = desk && !prefs.hideSunLines ? sunByDate[focusKey] ?? null : null
+  const fillRow = (
       <div className="trk-fill-row">
         <label className="trk-field">
           <span className="trk-field-label">From</span>
@@ -644,13 +678,15 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false }: Wee
           }`}
         </button>
       </div>
-
+  )
+  const weekPlot = (
       <div
         ref={gridRef}
         className="trk-grid trk-week-plot"
+        data-desk={desk ? "true" : undefined}
         tabIndex={-1}
         data-start-hour={startHour}
-        data-superimpose={overlayScope?.id || undefined}
+        data-superimpose={ghostAttr(ghosts)}
         style={{ maxHeight: compact ? 360 : 620 }}
         onMouseLeave={() => writeProbe(null)}
         onScroll={() => {
@@ -704,7 +740,45 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false }: Wee
           {/* ---- day headings ---- */}
           <div className="trk-time-axis sticky top-0 z-20 flex items-stretch">
             <div className="trk-hour-bezel" style={{ width: 48 }} />
-            {days.map((day) => {
+            {desk
+              ? days.map((day) => {
+                  const key = formatLocalDateKey(day)
+                  const isToday = key === todayKey
+                  const minutes = dayTotals[key] ?? 0
+                  const pct = Math.min(100, (minutes / 1440) * 100)
+                  return (
+                    <div key={key} className="trk-dayhead">
+                      <div className="trk-dayhead-row">
+                        <button
+                          type="button"
+                          data-no95=""
+                          onClick={() => onOpenDay?.(day)}
+                          aria-label={`Open ${day.toLocaleDateString(undefined, {
+                            weekday: "long",
+                            month: "short",
+                            day: "numeric",
+                          })}`}
+                          className={isToday ? "font-semibold" : undefined}
+                          title={`Open ${day.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })} on its own`}
+                        >
+                          {day.toLocaleDateString(undefined, { weekday: "short" })} {day.getDate()}
+                        </button>
+                        <small>{minutes ? formatDuration(minutes) : "—"}</small>
+                      </div>
+                      <div
+                        className="trk-meter"
+                        role="meter"
+                        aria-label={`${day.toLocaleDateString(undefined, { weekday: "long" })} tracked`}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={Math.round(pct)}
+                      >
+                        {pct > 0 ? <i data-low={pct < 50 ? "true" : undefined} style={{ width: `calc(${pct}% - 4px)` }} /> : null}
+                      </div>
+                    </div>
+                  )
+                })
+              : days.map((day) => {
               const key = formatLocalDateKey(day)
               const isToday = key === todayKey
               return (
@@ -749,7 +823,7 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false }: Wee
                 strokeDay={drag?.day ?? ""}
                 scope={scope}
                 scopes={scopes}
-                overlayScope={overlayScope}
+                ghosts={ghosts}
                 selectedPenId={selectedPenId}
                 selectedPen={selectedPen}
                 todayKey={todayKey}
@@ -758,6 +832,7 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false }: Wee
                 instants={instants}
                 onOpenInstant={setOpenEntryId}
                 onProbe={writeProbe}
+                gutterSun={gutterSun}
               />
             )
           })}
@@ -767,7 +842,43 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false }: Wee
         </div>
         <TrkProbePlate nodeRef={probeRef} />
       </div>
+  )
 
+  return (
+    <div className="trk95 trk-canvas select-none">
+      <TrackingPeriodNav
+        variant={desk ? "crt" : "plate"}
+        readouts={
+          desk ? (
+            <>
+              <ScopeReadout label="Tracked" value={formatDuration(totals.tracked)} />
+              <ScopeReadout label="Of week" value={`${Math.round(totals.coverage)}%`} />
+              <ScopeReadout label="Days" value={`${totals.daysWithData}/7`} />
+            </>
+          ) : undefined
+        }
+        label={`${days[0].toLocaleDateString(undefined, { month: "short", day: "numeric" })} – ${days[6].toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}`}
+        previousLabel="Previous week"
+        nextLabel="Next week"
+        onPrevious={() => shift(-1)}
+        onNext={() => shift(1)}
+        onToday={() => onDateChange(new Date())}
+        meta={`${formatDuration(totals.tracked)} tracked · ${Math.round(totals.coverage)}% of the week · ${totals.daysWithData} of 7 days logged`}
+      />
+
+      {totals.tracked === 0 && <ScreenTimeEmptyHint date={formatLocalDateKey(date)} scopeId={scope.id} />}
+
+      {desk ? (deskSlots.fillSlot ? createPortal(fillRow, deskSlots.fillSlot) : null) : fillRow}
+
+      {desk ? (
+        <div className="trk-screen-bezel" data-face={face}>
+          {weekPlot}
+        </div>
+      ) : (
+        weekPlot
+      )}
+
+      {desk ? null : (
       <div className="trk-ribbon-legend">
         {days.map((day) => {
           const key = formatLocalDateKey(day)
@@ -779,10 +890,21 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false }: Wee
           )
         })}
       </div>
+      )}
 
-      <WeekSummaryNest anchor={date} gutter="time" />
+      {deskSlots.summarySlot ? (
+        createPortal(<WeekSummaryNest anchor={date} gutter="time" />, deskSlots.summarySlot)
+      ) : (
+        <WeekSummaryNest anchor={date} gutter="time" />
+      )}
 
-      <TrkRibbon pens={pens} untracked={totals.untracked} />
+      <TrkRibbon
+        pens={pens}
+        untracked={totals.untracked}
+        percentBasis={prefs.ribbonPercent.week}
+        periodLabel="week"
+        onPercentBasis={(basis) => setRibbonPercent("week", basis)}
+      />
 
       <TrkTagStrip tags={weekTagTotals} />
 

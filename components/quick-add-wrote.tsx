@@ -1,7 +1,8 @@
 /**
  * components/quick-add-wrote.tsx — Quick Add "added" confirmation
  *
- * A small floating notice after a successful Quick Add write. Lives outside the
+ * A small floating notice after a successful Quick Add write. The Tracking
+ * log composer raises the same flag on Add ("COFFEE · FOOD INTAKE LOGGED · 2:43 PM"). Lives outside the
  * dialog chunk so closing Quick Add does not tear it down. Fixed bottom-right
  * with a comfortable inset (`.qa-wrote` in `header-popup-chrome.css`), X to
  * dismiss, auto-dismiss after one minute. Pointer events only on the notice —

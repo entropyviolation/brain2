@@ -544,3 +544,68 @@ describe("penCellStyle mosaic", () => {
     expect(style.backgroundImage).toBeUndefined()
   })
 })
+
+describe("cross-view details", () => {
+  const pensIn = (scopeId: string) => useTimeTrackingStore.getState().scopes.find((s) => s.id === scopeId)!.pens
+  const social = () => pensIn("activity").find((p) => p.id === "act-social")!
+
+  it("adds a Company pen as a detail of an Activity pen, once, without a counts-as link", () => {
+    const store = useTimeTrackingStore.getState()
+    const id = store.addCrossViewDetail("activity", "act-social", "company", "co-alone")
+    expect(id).toBeTruthy()
+    expect(store.addCrossViewDetail("activity", "act-social", "company", "co-alone")).toBe(id)
+    expect(store.addCrossViewDetail("activity", "act-social", "activity", "act-work")).toBe("")
+    expect(social().variants?.filter((v) => v.scopeId)).toEqual([
+      { id, name: "Alone", color: "#64748b", penId: "co-alone", scopeId: "company" },
+    ])
+    // No Activity pen named Alone was minted, and Alone did not move under Social.
+    expect(pensIn("activity").some((p) => p.name === "Alone")).toBe(false)
+    expect(pensIn("company").find((p) => p.id === "co-alone")?.parentId).toBeUndefined()
+
+    // A later sync of Activity (any parent change) keeps it.
+    store.setPenParents("activity", "act-work", [])
+    expect(social().variants?.some((v) => v.id === id)).toBe(true)
+  })
+
+  it("follows the other pen's rename and drops with it", () => {
+    const store = useTimeTrackingStore.getState()
+    store.addCrossViewDetail("activity", "act-social", "company", "co-alone")
+    const alone = pensIn("company").find((p) => p.id === "co-alone")!
+    store.updatePen("company", { ...alone, name: "Solo", color: "#111111" })
+    expect(social().variants?.find((v) => v.penId === "co-alone")).toMatchObject({ name: "Solo", color: "#111111" })
+    store.removePen("company", "co-alone")
+    expect(social().variants?.some((v) => v.penId === "co-alone") ?? false).toBe(false)
+  })
+
+  it("keeps a ticked cross-view detail on a block", () => {
+    const store = useTimeTrackingStore.getState()
+    const id = store.addCrossViewDetail("activity", "act-social", "company", "co-alone")
+    store.paintMinutes(DAY, "activity", 600, 660, "act-social", [id])
+    expect(useTimeTrackingStore.getState().entriesFor(DAY, "activity")[0].variantIds).toEqual([id])
+  })
+})
+
+describe("addPenGroup", () => {
+  const company = () => useTimeTrackingStore.getState().scopes.find((s) => s.id === "company")!.pens
+
+  it("makes a group pen whose details are the members, keeping their other parents", () => {
+    const store = useTimeTrackingStore.getState()
+    const a = store.addPen("company", { name: "Dom", color: "#1e3a8a" })
+    const b = store.addPen("company", { name: "Ian", color: "#b91c1c", parentId: "co-together", parentIds: ["co-together"] })
+    expect(store.addPenGroup("company", "Band", "#84cc16", [a])).toBe("")
+    expect(store.addPenGroup("company", "  ", "#84cc16", [a, b])).toBe("")
+
+    const group = store.addPenGroup("company", "Band", "#84cc16", [a, b])
+    expect(group).toBeTruthy()
+    const pen = company().find((p) => p.id === group)!
+    expect(pen).toMatchObject({ name: "Band", color: "#84cc16" })
+    expect(pen.variants?.map((v) => v.penId).sort()).toEqual([a, b].sort())
+    const ian = company().find((p) => p.id === b)!
+    expect(ian.parentIds).toEqual(["co-together", group])
+    expect(company().find((p) => p.id === "co-together")?.variants?.some((v) => v.penId === b)).toBe(true)
+
+    undoLastAction()
+    expect(company().some((p) => p.id === group)).toBe(false)
+    expect(company().find((p) => p.id === b)?.parentIds).toEqual(["co-together"])
+  })
+})

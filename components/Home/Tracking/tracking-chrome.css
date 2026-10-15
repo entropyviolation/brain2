@@ -392,7 +392,7 @@ body.win95-app .trk95 .trk-settings-gear:active {
 
 .trk95 .trk-super-keys {
   display: flex;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   flex-wrap: wrap;
   align-items: center;
   gap: 3px;
@@ -5144,4 +5144,506 @@ body.win95-app .b2-shell-now .trk-now-obj-trigger {
 
 .trk95 .trk-now-module .trk-now-obj-trigger-wrap {
   order: 3;
+}
+
+/* Ghost row, right side: HIDE silk + Log flags / sun keys, then multi + advanced. */
+.trk95 .trk-super-hide {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+}
+
+.trk95 .trk-super-hide-silk {
+  margin-right: 1px;
+  color: #777;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.trk95 .trk-super-bar .trk-super-sun {
+  padding: 0 5px;
+}
+
+.trk95 .trk-super-glyph {
+  display: block;
+}
+
+.trk95 .trk-super-check {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 3px;
+  color: #444;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.trk95 .trk-super-check input {
+  width: 11px;
+  height: 11px;
+  margin: 0;
+}
+
+.trk95 .trk-super-opacity {
+  display: flex;
+  flex: 1 0 100%;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 2px 12px;
+}
+
+.trk95 .trk-super-opacity-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #444;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.trk95 .trk-super-opacity-row input[type="range"] {
+  width: 84px;
+  height: 12px;
+  margin: 0;
+}
+
+.trk95 .trk-super-opacity-value {
+  min-width: 3ch;
+  color: #666;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* Pen settings: recent blocks with this pen. Short sunken well, scrolls. */
+.trk95 .trk-pen-recent {
+  max-height: 148px;
+  margin: 0;
+  padding: 2px;
+  overflow-y: auto;
+  list-style: none;
+  background: #fff;
+  box-shadow: var(--t-sunken);
+}
+
+.trk95 .trk-pen-recent-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 6px;
+  min-height: 20px;
+  padding: 1px 4px;
+  border: 0;
+  color: #222;
+  font-size: 11px;
+  text-align: left;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.trk95 .trk-pen-recent-row:hover,
+.trk95 .trk-pen-recent-row:focus-visible {
+  background: rgba(0, 0, 0, 0.06);
+  outline: none;
+}
+
+.trk95 .trk-pen-recent-bead {
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+}
+
+.trk95 .trk-pen-recent-date {
+  flex: 0 0 auto;
+  min-width: 9ch;
+  font-weight: 600;
+}
+
+.trk95 .trk-pen-recent-clock {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.trk95 .trk-pen-recent-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: #555;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trk95 .trk-pen-recent-dur {
+  flex: 0 0 auto;
+  margin-left: auto;
+  color: #666;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Block editor Pen section: chips (★ primary, × remove) + one search-to-add field. */
+.trk95 .trk-blockpen-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-height: 26px;
+}
+
+.trk95 .trk-blockpen-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  min-height: 24px;
+  padding: 0 4px 0 2px;
+  border-radius: var(--r-2, 2px);
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+  cursor: default;
+  user-select: none;
+}
+
+.trk95 .trk-blockpen-chip[data-block-pen="primary"] {
+  box-shadow: inset 0 0 0 2px #111, 0 0 0 1px rgba(255, 255, 255, 0.6);
+}
+
+.trk95 .trk-blockpen-chip > button,
+body.win95-app .trk95 .trk-blockpen-chip > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  font-size: 13px;
+  line-height: 1;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+  opacity: 0.85;
+}
+
+.trk95 .trk-blockpen-chip > button:hover,
+.trk95 .trk-blockpen-chip > button:focus-visible {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.14);
+  outline: none;
+}
+
+.trk95 .trk-blockpen-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trk95 .trk-blockpen-tag {
+  padding: 0 4px;
+  border-radius: 2px;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.trk95 .trk-blockpen-picker {
+  position: relative;
+}
+
+.trk95 .trk-blockpen-results {
+  max-height: 196px;
+  margin: 2px 0 0;
+  padding: 2px;
+  overflow-y: auto;
+  list-style: none;
+  background: #fff;
+  box-shadow: var(--t-sunken);
+}
+
+.trk95 .trk-blockpen-result {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 24px;
+  padding: 1px 2px;
+}
+
+.trk95 .trk-blockpen-result:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.trk95 .trk-blockpen-result-main,
+body.win95-app .trk95 .trk-blockpen-result-main {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+  padding: 1px 4px;
+  border: 0;
+  color: #111;
+  font-size: 12px;
+  text-align: left;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.trk95 .trk-blockpen-result-main:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.trk95 .trk-blockpen-path {
+  color: #777;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.trk95 .trk-blockpen-result-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.trk95 .trk-blockpen-state {
+  color: #666;
+  font-size: 10px;
+  font-style: italic;
+}
+
+.trk95 .trk-blockpen-act {
+  flex: 0 0 auto;
+  height: 20px;
+  min-height: 0;
+  padding: 0 6px;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.trk95 .trk-blockpen-create {
+  border-top: 1px dotted #aaa;
+  padding-top: 3px;
+}
+
+.trk95 .trk-blockpen-group-open {
+  align-self: flex-start;
+  height: 22px;
+  padding: 0 8px;
+  font-size: 11px;
+}
+
+.trk95 .trk-blockpen-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+/* A detail that is a pen in another view carries that view's name. */
+.trk-variant-view {
+  margin-left: 3px;
+  padding: 0 3px;
+  border-radius: 2px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.7;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.trk95 .trk-detail-bead-fixed {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(0, 0, 0, 0.45);
+}
+
+.trk95 .trk-detail-xname {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px;
+}
+
+/* Pen settings: add a detail from another view. */
+.trk95 .trk-xview {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  border-radius: var(--r-2, 2px);
+  background: rgba(255, 255, 255, 0.22);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+.trk95 .trk-xview-title {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.trk95 .trk-xview-views {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.trk95 .trk-xview-views button {
+  height: 20px;
+  min-height: 0;
+  padding: 0 6px;
+  font-size: 10px;
+}
+
+.trk95 .trk-xview-results {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-height: 110px;
+  overflow-y: auto;
+}
+
+/* Bottom ribbon: % of tracked vs % of the day / week (per span, persisted). */
+.trk95 .trk-ribbon-basis {
+  display: inline-flex;
+  align-self: flex-end;
+  align-items: center;
+  gap: 3px;
+}
+
+.trk95 .trk-ribbon-basis button,
+body.win95-app .trk95 .trk-ribbon-basis button {
+  height: 18px;
+  min-height: 18px;
+  padding: 0 7px;
+  border: 1px dashed var(--chrome-ring);
+  border-radius: var(--r-2, 2px);
+  color: #333;
+  font-size: 10px;
+  font-weight: 600;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.trk95 .trk-ribbon-basis button[aria-pressed="true"],
+body.win95-app .trk95 .trk-ribbon-basis button[aria-pressed="true"] {
+  color: #111;
+  background: var(--chrome-pearl);
+  border-style: solid;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.28);
+}
+
+/* ---------- plot motions (trk-motion.ts): strike, decay, cut, sweep ---------- */
+.trk95 .trk-motion {
+  position: absolute;
+  z-index: 7;
+  pointer-events: none;
+}
+
+.trk95 .trk-motion-paint {
+  background: rgba(234, 255, 246, 0.85);
+  box-shadow: 0 0 8px rgba(125, 255, 196, 0.8);
+  mix-blend-mode: screen;
+  animation: trk-motion-strike 300ms steps(8, end) forwards;
+}
+
+@keyframes trk-motion-strike {
+  0% { opacity: 0.9; }
+  18% { opacity: 0; }
+  30% { opacity: 0.7; }
+  46% { opacity: 0.1; }
+  62% { opacity: 0.45; }
+  100% { opacity: 0; }
+}
+
+.trk95 .trk-motion-erase {
+  background: radial-gradient(120% 120% at 50% 50%, rgba(234, 255, 246, 0.75), rgba(125, 255, 196, 0.35) 60%, transparent);
+  animation: trk-motion-decay 480ms ease-out forwards;
+}
+
+@keyframes trk-motion-decay {
+  0% { opacity: 1; filter: saturate(0.4) brightness(1.25); }
+  100% { opacity: 0; filter: saturate(0); }
+}
+
+.trk95 .trk-motion-cut {
+  background: #eafff6;
+  box-shadow: 0 0 6px #7dffc4, 0 0 14px #7dffc4;
+  transform-origin: left top;
+  animation: trk-motion-cut 280ms linear forwards;
+}
+
+.trk95 .trk-motion-cut[data-axis="x"] {
+  transform-origin: left top;
+  animation-name: trk-motion-cut-y;
+}
+
+@keyframes trk-motion-cut {
+  0% { transform: scaleX(0); opacity: 1; }
+  70% { transform: scaleX(1); opacity: 1; }
+  100% { transform: scaleX(1); opacity: 0; }
+}
+
+@keyframes trk-motion-cut-y {
+  0% { transform: scaleY(0); opacity: 1; }
+  70% { transform: scaleY(1); opacity: 1; }
+  100% { transform: scaleY(1); opacity: 0; }
+}
+
+.trk95 .trk-motion-fill {
+  overflow: hidden;
+}
+
+.trk95 .trk-motion-fill::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 2px;
+  background: #eafff6;
+  box-shadow: 0 0 8px #7dffc4, 0 0 18px #7dffc4;
+  animation: trk-motion-sweep-y 560ms linear forwards;
+}
+
+.trk95 .trk-motion-fill[data-axis="x"]::after {
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: auto;
+  width: 2px;
+  height: auto;
+  animation-name: trk-motion-sweep-x;
+}
+
+@keyframes trk-motion-sweep-y {
+  from { top: 0; opacity: 1; }
+  to { top: 100%; opacity: 0.4; }
+}
+
+@keyframes trk-motion-sweep-x {
+  from { left: 0; opacity: 1; }
+  to { left: 100%; opacity: 0.4; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trk95 .trk-motion {
+    display: none;
+  }
 }

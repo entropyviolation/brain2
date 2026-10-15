@@ -35,18 +35,21 @@
  */
 "use client"
 
-import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { addDays, subDays } from "date-fns"
 import { displayedPen, penCellStyle, useTimeTrackingStore, type TimeEntry, type TrackPen, type TrackScope } from "@/lib/time-tracking-store"
-import { overlayTicksBeside, penNameById, scopeTicksWithDiscreteLogs, tickPen } from "@/components/Home/Tracking/discrete-log-instants"
+import { overlayTicksBeside, penNameById, scopeTicksWithDiscreteLogs, tickPen, withoutDiscreteLogs } from "@/components/Home/Tracking/discrete-log-instants"
 import { strokeCellStyle } from "@/components/Home/Tracking/grid-stroke"
 import { focusTrackingPlot } from "@/components/Home/Tracking/tracking-undo"
 import { TrackingFind } from "@/components/Home/Tracking/tracking-find"
-import { useSuperimposeScope } from "@/components/Home/Tracking/tracking-view-prefs"
+import { ghostAttr, probeLayerFor, useGhostScopes, type GhostScope } from "@/components/Home/Tracking/ghost-layers"
 import {
   GRID_SPANS,
   GRID_STEPS,
   MINUTES_PER_DAY,
+  WEEK_STEPS,
+  type GridStep,
+  type WeekStep,
   assignedPenIds,
   dominantEntry,
   entriesForDay,
@@ -68,11 +71,25 @@ import { ScreenTimeEmptyHint } from "@/components/Home/Tracking/screentime-empty
 import { TrackingPeriodNav } from "@/components/Home/Tracking/tracking-period-nav"
 import { WeekGrid } from "@/components/Home/Tracking/week-grid"
 import { InfiniteStrip } from "@/components/Home/Tracking/infinite-strip"
-import { useTrackingViewPrefs } from "@/components/Home/Tracking/tracking-view-prefs"
+import {
+  DEFAULT_SUPERIMPOSE_OPACITY,
+  setRibbonPercent,
+  setScreenFace,
+  setSuperimposeMulti,
+  setSuperimposeOpacity,
+  setTrackingViewPrefs,
+  useTrackingViewPrefs,
+} from "@/components/Home/Tracking/tracking-view-prefs"
+import { TrackingDeskSlotsContext, useTrackingDeskSlots } from "@/components/Home/Tracking/tracking-desk-slots"
+import { PushKey, ScopeKnob, ScopePanel, ScopeReadout, ScopeSection, SlideSwitch } from "@/components/Home/Tracking/trk-scope"
+import { ToolDetail } from "@/components/Home/Tracking/tool-detail"
+import { playTrkMotion } from "@/components/Home/Tracking/trk-motion"
+import { nextPaintPenId, trackingPaintTool, type TrackingPaintTool } from "@/components/Home/Tracking/tracking-tool-mode"
+import { depthOptions, maxTreeDepth } from "@/lib/pen-tree"
 import { firstUnpaintedWakingHour } from "@/components/Home/Tracking/waking-scroll"
 import { CellSizeKeys } from "@/components/Home/Tracking/cell-size-keys"
 import { FillRangeControl } from "@/components/Home/Tracking/fill-range-control"
-import { cellPaintClass, SuperimposeWash, trackingProbeText, TrkBlockLabel, TrkChromeStack, TrkPlotBezel, TrkProbePlate, TrkRibbon, TrkTagStrip, writeTrkProbe } from "@/components/Home/Tracking/trk-instrument"
+import { cellPaintClass, ghostProbeText, SuperimposeWash, trackingProbeText, TrkBlockLabel, TrkChromeStack, TrkPlotBezel, TrkProbePlate, TrkRibbon, TrkTagStrip, writeTrkProbe } from "@/components/Home/Tracking/trk-instrument"
 import { TrkPlotMarkers, useTrackingDayMarkers } from "@/components/Home/Tracking/trk-time-markers"
 import { useHabitTrackingSync } from "@/lib/habit-tracking-sync"
 import { awakeWindowFor, useSleepSync } from "@/lib/sleep-sync"
@@ -108,7 +125,8 @@ function strokeOverlapUnchanged(
 
 interface HourOccupancy {
   map: (TimeEntry | null)[]
-  overlay: (TimeEntry | null)[] | null
+  /** One minute slice per ghost, in `ghosts` order. */
+  overlays: (TimeEntry | null)[][]
   instants: TimeEntry[]
   overlayInstants: TimeEntry[]
 }
@@ -124,7 +142,7 @@ interface DayHourProps {
   sparkHi: number
   scope: TrackScope
   scopes: readonly TrackScope[]
-  overlayScope?: TrackScope
+  ghosts: readonly GhostScope[]
   selectedPenId: string | null
   selectedPen: TrackPen | null
   onProbe: (text: string | null) => void
@@ -140,7 +158,7 @@ function dayHourPropsEqual(prev: DayHourProps, next: DayHourProps): boolean {
   if (prev.entries !== next.entries) return false
   if (prev.scope !== next.scope) return false
   if (prev.scopes !== next.scopes) return false
-  if (prev.overlayScope !== next.overlayScope) return false
+  if (prev.ghosts !== next.ghosts) return false
   if (prev.selectedPenId !== next.selectedPenId) return false
   if (prev.selectedPen !== next.selectedPen) return false
   if (prev.onProbe !== next.onProbe) return false
@@ -164,7 +182,7 @@ const DayHourRow = memo(function DayHourRow({
   sparkHi,
   scope,
   scopes,
-  overlayScope,
+  ghosts,
   selectedPenId,
   selectedPen,
   onProbe,
@@ -232,8 +250,10 @@ const DayHourRow = memo(function DayHourRow({
             : []
           const sparking = minute >= sparkLo && minute < sparkHi
           const futureCell = nowMinute != null && minute > nowMinute
-          const overlayEntry = entries.overlay ? dominantEntry(entries.overlay, index, gridStep) : null
-          const overlayPen = overlayEntry && overlayScope ? displayedPen(overlayScope, overlayEntry.penId) : null
+          const ghostCells = ghosts.map((ghost, g) => {
+            const ghostEntry = entries.overlays[g] ? dominantEntry(entries.overlays[g], index, gridStep) : null
+            return { ghost, entry: ghostEntry, pen: ghostEntry ? displayedPen(ghost.scope, ghostEntry.penId) : null }
+          })
           return (
             <div
               key={c}
@@ -247,18 +267,30 @@ const DayHourRow = memo(function DayHourRow({
               style={fill}
               onMouseEnter={() =>
                 onProbe(
-                  trackingProbeText({
+                  ghostProbeText({
+                    base: trackingProbeText({
+                      minute,
+                      step: gridStep,
+                      name: cellEntry ? entryDisplayName(cellEntry, painted?.name || pen?.name) : undefined,
+                      leafName: painted && painted.id !== pen?.id ? painted.name : undefined,
+                      assumed: cellEntry?.precision === "estimated",
+                      secondaries: also,
+                    }),
                     minute,
                     step: gridStep,
-                    name: cellEntry ? entryDisplayName(cellEntry, painted?.name || pen?.name) : undefined,
-                    leafName: painted && painted.id !== pen?.id ? painted.name : undefined,
-                    assumed: cellEntry?.precision === "estimated",
-                    secondaries: also,
+                    primary: probeLayerFor(scope, cellEntry),
+                    ghosts: ghostCells.flatMap((cell) => probeLayerFor(cell.ghost.scope, cell.entry) ?? []),
                   }),
                 )
               }
             >
-              {overlayPen && !inStroke ? <SuperimposeWash color={overlayPen.color} /> : null}
+              {inStroke
+                ? null
+                : ghostCells.map((cell) =>
+                    cell.pen ? (
+                      <SuperimposeWash key={cell.ghost.scope.id} color={cell.pen.color} opacity={cell.ghost.opacity} />
+                    ) : null,
+                  )}
             </div>
           )
         })}
@@ -266,7 +298,8 @@ const DayHourRow = memo(function DayHourRow({
           <TrkBlockLabel key={label.id} name={label.name} color={label.color} left={label.left} width={label.width} />
         ))}
         {entries.overlayInstants.map((event) => {
-          const eventPen = tickPen(scopes, overlayScope, event.penId)
+          const ghost = ghosts.find((g) => g.scope.id === event.scopeId)
+          const eventPen = tickPen(scopes, ghost?.scope, event.penId)
           return (
             <span
               key={`super-${event.id}`}
@@ -274,6 +307,7 @@ const DayHourRow = memo(function DayHourRow({
               style={{
                 left: `${((event.startMin - hour * 60) / 60) * 100}%`,
                 background: eventPen?.color,
+                ...(ghost?.opacity == null ? null : { opacity: Math.min(1, ghost.opacity + 0.08) }),
               }}
               aria-hidden
             />
@@ -317,6 +351,8 @@ export function TimeGrid({
   currentDate: controlledDate,
   setCurrentDate: setControlledDate,
   lockDate = false,
+  desk = false,
+  deck,
 }: {
   compact?: boolean
   /** False when the parent already rendered `PenPalette` + `PenModeBar` + Log activity (Home Tracking). */
@@ -325,6 +361,14 @@ export function TimeGrid({
   setCurrentDate?: (date: Date) => void
   /** Stay on `currentDate`'s day grid. Does not rewrite the Tracking view prefs. */
   lockDate?: boolean
+  /**
+   * Home Tracking desk: the screen bay (view deck, period CRT, glass/paper
+   * screen, readouts) plus the instrument column (tools, Fill, TIME/DIV, CELL,
+   * SHOW AS, screen face, Find, ghost flags). The pen rack is the parent's.
+   */
+  desk?: boolean
+  /** The view deck (`PenModeDeck`) at the top of the screen bay. */
+  deck?: ReactNode
 } = {}) {
   useHabitTrackingSync()
   // Erasing or clearing sleep on the grid is a statement about the night.
@@ -335,6 +379,8 @@ export function TimeGrid({
   const tags = useTimeTrackingStore((s) => s.tags)
   const entries = useTimeTrackingStore((s) => s.entries)
   const gridStep = useTimeTrackingStore((s) => s.gridStep)
+  const weekStep = useTimeTrackingStore((s) => s.weekStep)
+  const setWeekStep = useTimeTrackingStore((s) => s.setWeekStep)
   const gridSpan = useTimeTrackingStore((s) => s.gridSpan)
   const infiniteScroll = useTimeTrackingStore((s) => s.infiniteScroll)
   const activeScopeId = useTimeTrackingStore((s) => s.activeScopeId)
@@ -342,13 +388,17 @@ export function TimeGrid({
   const selectedVariantIds = useTimeTrackingStore((s) => s.selectedVariantIds)
   const setGridSpan = useTimeTrackingStore((s) => s.setGridSpan)
   const setGridStep = useTimeTrackingStore((s) => s.setGridStep)
+  const setSelectedPen = useTimeTrackingStore((s) => s.setSelectedPen)
+  const setScopeDisplayDepth = useTimeTrackingStore((s) => s.setScopeDisplayDepth)
   const setInfiniteScroll = useTimeTrackingStore((s) => s.setInfiniteScroll)
   const setActiveScope = useTimeTrackingStore((s) => s.setActiveScope)
   const paintMinutes = useTimeTrackingStore((s) => s.paintMinutes)
   const splitEntryAt = useTimeTrackingStore((s) => s.splitEntryAt)
   const clearDay = useTimeTrackingStore((s) => s.clearDay)
   const prefs = useTrackingViewPrefs()
-  const scopeIds = useMemo(() => scopes.map((s) => s.id), [scopes])
+  const deskSlots = useTrackingDeskSlots()
+  const [fillArmed, setFillArmed] = useState(false)
+  const [fillSlot, setFillSlot] = useState<HTMLDivElement | null>(null)
 
   const [internalDate, setInternalDate] = useState(() => new Date())
   const date = controlledDate ?? internalDate
@@ -392,25 +442,28 @@ export function TimeGrid({
   )
 
   const penNames = useMemo(() => penNameById(scopes), [scopes])
-  const dayInstants = useMemo(
-    () => (scope ? scopeTicksWithDiscreteLogs(entries, dk, scope.id, penNames) : []),
-    [entries, dk, scope, penNames],
-  )
+  const dayInstants = useMemo(() => {
+    const ticks = scope ? scopeTicksWithDiscreteLogs(entries, dk, scope.id, penNames) : []
+    return prefs.hideLogFlags ? withoutDiscreteLogs(ticks, penNames) : ticks
+  }, [entries, dk, scope, penNames, prefs.hideLogFlags])
 
   const map = useMemo(
     () => (scope ? minuteMap(entries, dk, scope.id) : new Array(MINUTES_PER_DAY).fill(null)),
     [entries, dk, scope],
   )
-  const overlayScopeId = useSuperimposeScope(scope?.id, scopeIds)
-  const overlayScope = scopes.find((s) => s.id === overlayScopeId)
-  const overlayMap = useMemo(
-    () => (overlayScope ? minuteMap(entries, dk, overlayScope.id) : null),
-    [entries, dk, overlayScope],
+  const ghosts = useGhostScopes(scope, scopes)
+  const overlayMaps = useMemo(
+    () => ghosts.map((ghost) => minuteMap(entries, dk, ghost.scope.id)),
+    [entries, dk, ghosts],
   )
-  const overlayInstants = useMemo(
-    () => (overlayScope ? overlayTicksBeside(instantsForDay(entries, dk, overlayScope.id), dayInstants) : []),
-    [entries, dk, overlayScope, dayInstants],
-  )
+  const overlayInstants = useMemo(() => {
+    const out: TimeEntry[] = []
+    for (const ghost of ghosts) {
+      const ticks = overlayTicksBeside(instantsForDay(entries, dk, ghost.scope.id), [...dayInstants, ...out])
+      out.push(...(prefs.hideLogFlags ? withoutDiscreteLogs(ticks, penNames) : ticks))
+    }
+    return out
+  }, [entries, dk, ghosts, dayInstants, prefs.hideLogFlags, penNames])
 
   const hourOccupancy = useMemo(() => {
     const bands: HourOccupancy[] = []
@@ -427,13 +480,13 @@ export function TimeGrid({
       }
       bands.push({
         map: map.slice(start, end),
-        overlay: overlayMap ? overlayMap.slice(start, end) : null,
+        overlays: overlayMaps.map((ghostMap) => ghostMap.slice(start, end)),
         instants,
         overlayInstants: overInstants,
       })
     }
     return bands
-  }, [map, overlayMap, dayInstants, overlayInstants])
+  }, [map, overlayMaps, dayInstants, overlayInstants])
 
   const isToday = dk === dateKey(now)
   const { nowMinute, sun } = useTrackingDayMarkers(date)
@@ -477,12 +530,14 @@ export function TimeGrid({
       if (existing) {
         splitEntryAt(existing.id, state.anchor)
         flashStroke(state.anchor, state.anchor + gridStep)
+        playTrkMotion(gridRef.current, "cut", state.anchor, state.anchor + gridStep)
       }
       return
     }
     if (state.moved) {
       commitPaint(lo, Math.min(MINUTES_PER_DAY, hi))
       flashStroke(lo, Math.min(MINUTES_PER_DAY, hi))
+      playTrkMotion(gridRef.current, selectedPenId === ERASE ? "erase" : "paint", lo, Math.min(MINUTES_PER_DAY, hi))
       return
     }
     const existing = map[state.anchor]
@@ -490,6 +545,12 @@ export function TimeGrid({
     else if (selectedPenId !== null) {
       commitPaint(state.anchor, Math.min(MINUTES_PER_DAY, state.anchor + gridStep))
       flashStroke(state.anchor, Math.min(MINUTES_PER_DAY, state.anchor + gridStep))
+      playTrkMotion(
+        gridRef.current,
+        selectedPenId === ERASE ? "erase" : "paint",
+        state.anchor,
+        Math.min(MINUTES_PER_DAY, state.anchor + gridStep),
+      )
     }
   }, [commitPaint, flashStroke, gridStep, map, selectedPenId, splitEntryAt])
 
@@ -542,6 +603,7 @@ export function TimeGrid({
       selectedVariantIds,
     )
     flashStroke(from, parsedTo <= from && parsedTo !== 0 ? MINUTES_PER_DAY : parsedTo)
+    playTrkMotion(gridRef.current, "fill", from, parsedTo <= from && parsedTo !== 0 ? MINUTES_PER_DAY : parsedTo || MINUTES_PER_DAY)
   }
 
   const pens = useMemo(() => penTotals(dayEntries, scope, [dk]), [dayEntries, scope, dk])
@@ -599,63 +661,7 @@ export function TimeGrid({
   const cellsPerHour = 60 / gridStep
   const rulerEvery = gridStep <= 5 ? 5 : gridStep
 
-  return (
-    <div
-      className={`trk95 trk-canvas select-none${compact ? " trk-canvas-compact" : ""}`}
-      data-ui-name="Time grid"
-      data-ui-docs="components/Home/Tracking/README.md"
-      data-ui-docs-anchor="time-gridtsx-behavior"
-    >
-      {showPalette && (
-        <TrkChromeStack
-          pens={<PenPalette />}
-          modeBar={<PenModeBar />}
-          gridAction={<LogActivityLatch dateKey={dk} />}
-        />
-      )}
-
-      <SuperimposeBar />
-
-      <TrkPlotBezel
-        strip={
-          <>
-            {!lockDate && <div className="trk-module">
-              <span className="trk-silk">Time / Div</span>
-              <div className="trk-span-switch" role="toolbar" aria-label="Time grid span">
-                {GRID_SPANS.map((option) => {
-                  const pressed = span === option && !scrolling
-                  return (
-                    <button
-                      key={option}
-                      type="button"
-                      onClick={() => {
-                        setGridSpan(option)
-                        setInfiniteScroll(false)
-                      }}
-                      aria-pressed={pressed}
-                      title={
-                        option === "day"
-                          ? "One day, down to the minute"
-                          : "Seven days side by side — fill a routine across several at once"
-                      }
-                      className="capitalize"
-                    >
-                      {option}
-                    </button>
-                  )
-                })}
-                <span className="trk-toolbar-split" aria-hidden />
-                <button
-                  type="button"
-                  aria-pressed={scrolling}
-                  title="Continuous time, day rows with week bands. Origin stays put when you pick a day."
-                  onClick={() => setInfiniteScroll(!infiniteScroll)}
-                >
-                  Infinite scroll
-                </button>
-              </div>
-            </div>}
-            <CellSizeKeys steps={GRID_STEPS} value={gridStep} onChange={setGridStep} />
+  const findControl = (
             <TrackingFind
               onJump={(hit) => {
                 const [y, m, d] = hit.date.split("-").map(Number)
@@ -666,8 +672,9 @@ export function TimeGrid({
                 setOpenEntryId(hit.entryId)
               }}
             />
-            {!scrolling && span === "day" && (
-              <FillRangeControl
+  )
+  const fillControl = (
+            <FillRangeControl
                 dayEntries={dayEntries}
                 fallbackFrom={prefs.fillFrom}
                 fallbackTo={prefs.fillTo}
@@ -675,22 +682,8 @@ export function TimeGrid({
                 penName={selectedPenId === ERASE ? "erase" : selectedPen?.name || "selected pen"}
                 onFill={applyFillRange}
               />
-            )}
-            {!scrolling && span === "day" && (
-              <div className="trk-occ-well">
-                <span className="trk-silk">Occupancy</span>
-                <div className="trk-occ-readout">
-                  <span className="trk-occ-pct">{Math.round(totals.coverage)}%</span>
-                  <span className="trk-occ-of">of the day</span>
-                  <span className="trk-occ-tracked">{formatDuration(totals.tracked)} tracked</span>
-                </div>
-              </div>
-            )}
-            {!scrolling && span === "day" && <TrkProbePlate nodeRef={probeRef} />}
-          </>
-        }
-      >
-      {scrolling ? (
+  )
+  const infiniteStrip = (
         <InfiniteStrip
           centerDate={date}
           onDateChange={setDate}
@@ -707,46 +700,14 @@ export function TimeGrid({
           mode="week"
           compact={compact}
         />
-      ) : span === "week" ? (
-        <WeekGrid
-          date={date}
-          onDateChange={setDate}
-          onOpenDay={(day) => {
-            setDate(day)
-            setGridSpan("day")
-          }}
-          compact={compact}
-        />
-      ) : (
-        <>
-      <TrackingPeriodNav
-        label={date.toLocaleDateString(undefined, {
-          weekday: "long",
-          month: "long",
-          day: "numeric",
-          year: "numeric",
-        })}
-        previousLabel="Previous day"
-        nextLabel="Next day"
-        onPrevious={() => setDate(subDays(date, 1))}
-        onNext={() => setDate(addDays(date, 1))}
-        onToday={() => setDate(new Date())}
-        locked={lockDate}
-        trailing={
-          <button type="button" className="trk-micro-danger trk-period-aux" onClick={() => clearDay(dk, scope.id)}>
-            Clear day
-          </button>
-        }
-      />
-
-      {totals.tracked === 0 && <ScreenTimeEmptyHint date={dk} scopeId={scope.id} />}
-
+  )
+  const dayGrid = (
       <div
         ref={gridRef}
         className="trk-grid trk-grid-full-day"
         tabIndex={-1}
         data-start-hour={startHour}
-        data-superimpose={overlayScope?.id || undefined}
+        data-superimpose={ghostAttr(ghosts)}
         style={compact ? { maxHeight: 360 } : undefined}
         onScroll={syncHourBand}
         onMouseLeave={() => writeProbe(null)}
@@ -828,7 +789,7 @@ export function TimeGrid({
                 sparkHi={spark?.hi ?? 0}
                 scope={scope}
                 scopes={scopes}
-                overlayScope={overlayScope}
+                ghosts={ghosts}
                 selectedPenId={selectedPenId}
                 selectedPen={selectedPen}
                 onProbe={writeProbe}
@@ -864,10 +825,388 @@ export function TimeGrid({
           {totals.tracked === 0 && <div className="trk-silkscreen">untracked</div>}
         </div>
       </div>
-
-      <TrkRibbon pens={pens} untracked={totals.untracked} coverage={totals.coverage} />
+  )
+  const dayRibbon = (
+    <>
+      <TrkRibbon
+        pens={pens}
+        untracked={totals.untracked}
+        coverage={totals.coverage}
+        percentBasis={prefs.ribbonPercent.day}
+        periodLabel="day"
+        onPercentBasis={(basis) => setRibbonPercent("day", basis)}
+      />
 
       <TrkTagStrip tags={dayTagTotals} />
+    </>
+  )
+
+
+  if (desk) {
+    const spanKey: "day" | "week" | "infinite" = scrolling ? "infinite" : span === "week" ? "week" : "day"
+    const face = prefs.screenFace[spanKey]
+    const paintTool = trackingPaintTool(selectedPenId)
+    const selectTool = (tool: TrackingPaintTool) => {
+      setFillArmed(false)
+      setSelectedPen(nextPaintPenId(tool, selectedPenId, scope.pens[0]?.id ?? null))
+    }
+    const weekCells = !scrolling && span === "week"
+    const cellSteps: readonly number[] = weekCells ? WEEK_STEPS : GRID_STEPS
+    const cellValue = weekCells ? weekStep : gridStep
+    const depthMarks = maxTreeDepth(scope.pens) > 0 ? depthOptions(scope.pens, scope.depthLabels) : []
+    const depthIndex = Math.max(0, depthMarks.findIndex((option) => option.depth === (scope.displayDepth ?? null)))
+    return (
+      <div
+        className="trk95 trk-canvas trk-grid-desk select-none"
+        data-ui-name="Time grid"
+        data-ui-docs="components/Home/Tracking/README.md"
+        data-ui-docs-anchor="time-gridtsx-behavior"
+      >
+        <TrackingDeskSlotsContext.Provider value={{ ...deskSlots, fillSlot: fillArmed ? fillSlot : null }}>
+          <ScopePanel as="main" className="trk-center-bay" badge="TRK" name="3132 · SCREEN" label="Time grid screen" julia={1}>
+            {deck}
+            {scrolling ? (
+              <div className="trk-screen-bezel" data-face={face}>
+                {infiniteStrip}
+              </div>
+            ) : span === "week" ? (
+              <WeekGrid
+                date={date}
+                onDateChange={setDate}
+                onOpenDay={(day) => {
+                  setDate(day)
+                  setGridSpan("day")
+                }}
+                compact={compact}
+                desk
+                face={face}
+              />
+            ) : (
+              <>
+                <TrackingPeriodNav
+                  variant="crt"
+                  label={date.toLocaleDateString(undefined, {
+                    weekday: "short",
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                  previousLabel="Previous day"
+                  nextLabel="Next day"
+                  onPrevious={() => setDate(subDays(date, 1))}
+                  onNext={() => setDate(addDays(date, 1))}
+                  onToday={() => setDate(new Date())}
+                  locked={lockDate}
+                  meta={`${formatDuration(totals.tracked)} tracked · ${Math.round(totals.coverage)}% of the day`}
+                  readouts={
+                    <>
+                      <ScopeReadout label="Tracked" value={formatDuration(totals.tracked)} />
+                      <ScopeReadout label="Of day" value={`${Math.round(totals.coverage)}%`} />
+                    </>
+                  }
+                  trailing={
+                    <button type="button" className="trk-micro-danger trk-period-aux" onClick={() => clearDay(dk, scope.id)}>
+                      Clear day
+                    </button>
+                  }
+                />
+                <TrkProbePlate nodeRef={probeRef} />
+                {totals.tracked === 0 && <ScreenTimeEmptyHint date={dk} scopeId={scope.id} />}
+                <div className="trk-screen-bezel" data-face={face}>
+                  {dayGrid}
+                </div>
+                {dayRibbon}
+              </>
+            )}
+          </ScopePanel>
+
+          <ScopePanel
+            as="aside"
+            className="trk-instruments"
+            badge="TRK"
+            name="3132 · TIME RECORDER"
+            label="Instruments"
+            julia={2}
+          >
+            <ScopeSection band="Tools">
+              <div className="trk-pushes" role="group" aria-label="Paint tools">
+                <PushKey label="Draw" pressed={!fillArmed && paintTool === "draw"} onClick={() => selectTool("draw")} title="Paint with the selected pen" />
+                <PushKey label="Erase" pressed={!fillArmed && paintTool === "erase"} onClick={() => selectTool("erase")} title="Drag to clear minutes" />
+                <PushKey
+                  label="Scissors"
+                  pressed={!fillArmed && paintTool === "scissors"}
+                  onClick={() => selectTool("scissors")}
+                  title="Split a block at the minute you click"
+                />
+                <PushKey
+                  label="Fill"
+                  pressed={fillArmed}
+                  onClick={() => setFillArmed((armed) => !armed)}
+                  title="Type a clock range and fill it on one or more days"
+                />
+              </div>
+              <div className="trk-instrument-detail">
+                {fillArmed ? (
+                  <>
+                    <span className="trk-instrument-detail-plate">
+                      Fill with {paintTool === "erase" ? "erase" : selectedPen?.name || "selected pen"}
+                    </span>
+                    {scrolling ? (
+                      <p>Fill works on Day or Week. Turn TIME / DIV to one of them.</p>
+                    ) : span === "week" ? (
+                      <div ref={setFillSlot} className="trk-fill-slot" />
+                    ) : (
+                      fillControl
+                    )}
+                  </>
+                ) : (
+                  <ToolDetail paintTool={paintTool} />
+                )}
+              </div>
+              <div className="trk-logkey">
+                <LogActivityLatch dateKey={dk} />
+              </div>
+            </ScopeSection>
+
+            <ScopeSection band="Time base">
+              {lockDate ? null : (
+                <ScopeKnob
+                  title="Time / Div"
+                  ariaLabel="Time grid span"
+                  exposeMarks
+                  size={136}
+                  marks={[
+                    { mark: "DAY", read: "DAY", label: "day" },
+                    { mark: "WEEK", read: "WEEK", label: "week" },
+                    { mark: "∞", read: "INFINITE", label: "Infinite scroll" },
+                  ]}
+                  index={scrolling ? 2 : span === "week" ? 1 : 0}
+                  onIndex={(i) => {
+                    if (i === 2) {
+                      setInfiniteScroll(true)
+                      return
+                    }
+                    setGridSpan(i === 1 ? "week" : "day")
+                    setInfiniteScroll(false)
+                  }}
+                />
+              )}
+              <div className="trk-knobs2">
+                <ScopeKnob
+                  key={weekCells ? "week" : "day"}
+                  title="Cell"
+                  ariaLabel={weekCells ? "Week cell size" : "Cell size"}
+                  marks={cellSteps.map((step) => ({ mark: String(step), read: `${step} MIN` }))}
+                  index={Math.max(0, cellSteps.indexOf(cellValue))}
+                  valueNow={cellValue}
+                  onIndex={(i) => (weekCells ? setWeekStep(WEEK_STEPS[i] as WeekStep) : setGridStep(GRID_STEPS[i] as GridStep))}
+                />
+                {depthMarks.length ? (
+                  <ScopeKnob
+                    title="Show as"
+                    ariaLabel={`${scope.name} detail level`}
+                    marks={depthMarks.map((option) => ({
+                      mark: option.label.slice(0, 4).toUpperCase(),
+                      read: option.label.toUpperCase(),
+                    }))}
+                    index={depthIndex}
+                    onIndex={(i) => setScopeDisplayDepth(scope.id, depthMarks[i]?.depth ?? null)}
+                  />
+                ) : null}
+              </div>
+            </ScopeSection>
+
+            <ScopeSection band="Display">
+              <SlideSwitch
+                title="SCREEN"
+                options={[
+                  { value: "glass", label: "GLASS" },
+                  { value: "paper", label: "PAPER" },
+                ]}
+                value={face}
+                onChange={(next) => setScreenFace(spanKey, next)}
+              />
+              {findControl}
+            </ScopeSection>
+
+            <ScopeSection band="Flags">
+              <div className="trk-pushes" role="group" aria-label="Flags">
+                <PushKey
+                  tone="mint"
+                  label="Multi"
+                  pressed={prefs.superimposeMulti}
+                  onClick={() => setSuperimposeMulti(!prefs.superimposeMulti)}
+                  title="Light several ghost LEDs at once"
+                />
+                <PushKey
+                  tone="mint"
+                  label="Advanced"
+                  pressed={prefs.superimposeAdvanced}
+                  onClick={() => setTrackingViewPrefs({ superimposeAdvanced: !prefs.superimposeAdvanced })}
+                  title="Set each ghost's opacity"
+                />
+                <PushKey
+                  tone="mint"
+                  label="Hide log flags"
+                  pressed={prefs.hideLogFlags}
+                  onClick={() => setTrackingViewPrefs({ hideLogFlags: !prefs.hideLogFlags })}
+                  title="Hide log flags on the screen (entries stay)"
+                />
+                <PushKey
+                  tone="mint"
+                  label="Hide sun lines"
+                  note="☼ ☾"
+                  pressed={prefs.hideSunLines}
+                  onClick={() => setTrackingViewPrefs({ hideSunLines: !prefs.hideSunLines })}
+                  title="Hide sunrise / sunset lines (the now line stays)"
+                />
+              </div>
+              {prefs.superimposeAdvanced && ghosts.length > 0 ? (
+                <div className="trk-opacity-rows" role="group" aria-label="Ghost opacity">
+                  {ghosts.map((ghost) => {
+                    const value = Math.round((ghost.opacity ?? DEFAULT_SUPERIMPOSE_OPACITY) * 100)
+                    return (
+                      <label key={ghost.scope.id}>
+                        <span>{ghost.scope.name}</span>
+                        <input
+                          type="range"
+                          min={5}
+                          max={100}
+                          value={value}
+                          aria-label={`${ghost.scope.name} ghost opacity`}
+                          onChange={(event) => setSuperimposeOpacity(ghost.scope.id, Number(event.target.value) / 100)}
+                        />
+                        <span>{value}%</span>
+                      </label>
+                    )
+                  })}
+                </div>
+              ) : null}
+            </ScopeSection>
+          </ScopePanel>
+        </TrackingDeskSlotsContext.Provider>
+
+        {openEntry && <EntryDialog entry={openEntry} onClose={() => setOpenEntryId(null)} />}
+      </div>
+    )
+  }
+
+  return (
+    <div
+      className={`trk95 trk-canvas select-none${compact ? " trk-canvas-compact" : ""}`}
+      data-ui-name="Time grid"
+      data-ui-docs="components/Home/Tracking/README.md"
+      data-ui-docs-anchor="time-gridtsx-behavior"
+    >
+      {showPalette && (
+        <TrkChromeStack
+          pens={<PenPalette />}
+          modeBar={<PenModeBar />}
+          gridAction={<LogActivityLatch dateKey={dk} />}
+        />
+      )}
+
+      <SuperimposeBar />
+
+      <TrkPlotBezel
+        strip={
+          <>
+            {!lockDate && <div className="trk-module">
+              <span className="trk-silk">Time / Div</span>
+              <div className="trk-span-switch" role="toolbar" aria-label="Time grid span">
+                {GRID_SPANS.map((option) => {
+                  const pressed = span === option && !scrolling
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => {
+                        setGridSpan(option)
+                        setInfiniteScroll(false)
+                      }}
+                      aria-pressed={pressed}
+                      title={
+                        option === "day"
+                          ? "One day, down to the minute"
+                          : "Seven days side by side — fill a routine across several at once"
+                      }
+                      className="capitalize"
+                    >
+                      {option}
+                    </button>
+                  )
+                })}
+                <span className="trk-toolbar-split" aria-hidden />
+                <button
+                  type="button"
+                  aria-pressed={scrolling}
+                  title="Continuous time, day rows with week bands. Origin stays put when you pick a day."
+                  onClick={() => setInfiniteScroll(!infiniteScroll)}
+                >
+                  Infinite scroll
+                </button>
+              </div>
+            </div>}
+            {!scrolling && span === "week" ? (
+              <CellSizeKeys key="week" steps={WEEK_STEPS} value={weekStep} onChange={setWeekStep} ariaLabel="Week cell size" />
+            ) : (
+              <CellSizeKeys key="day" steps={GRID_STEPS} value={gridStep} onChange={setGridStep} />
+            )}
+            {findControl}
+            {!scrolling && span === "day" && fillControl}
+            {!scrolling && span === "day" && (
+              <div className="trk-occ-well">
+                <span className="trk-silk">Occupancy</span>
+                <div className="trk-occ-readout">
+                  <span className="trk-occ-pct">{Math.round(totals.coverage)}%</span>
+                  <span className="trk-occ-of">of the day</span>
+                  <span className="trk-occ-tracked">{formatDuration(totals.tracked)} tracked</span>
+                </div>
+              </div>
+            )}
+            {!scrolling && span === "day" && <TrkProbePlate nodeRef={probeRef} />}
+          </>
+        }
+      >
+      {scrolling ? (
+        infiniteStrip
+      ) : span === "week" ? (
+        <WeekGrid
+          date={date}
+          onDateChange={setDate}
+          onOpenDay={(day) => {
+            setDate(day)
+            setGridSpan("day")
+          }}
+          compact={compact}
+        />
+      ) : (
+        <>
+      <TrackingPeriodNav
+        label={date.toLocaleDateString(undefined, {
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+        })}
+        previousLabel="Previous day"
+        nextLabel="Next day"
+        onPrevious={() => setDate(subDays(date, 1))}
+        onNext={() => setDate(addDays(date, 1))}
+        onToday={() => setDate(new Date())}
+        locked={lockDate}
+        trailing={
+          <button type="button" className="trk-micro-danger trk-period-aux" onClick={() => clearDay(dk, scope.id)}>
+            Clear day
+          </button>
+        }
+      />
+
+      {totals.tracked === 0 && <ScreenTimeEmptyHint date={dk} scopeId={scope.id} />}
+
+      {dayGrid}
+
+      {dayRibbon}
         </>
       )}
       </TrkPlotBezel>

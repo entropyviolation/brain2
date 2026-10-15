@@ -1,17 +1,20 @@
 import { fireEvent, render, screen, within } from "@testing-library/react"
-import { beforeEach, describe, expect, it } from "vitest"
+import { format } from "date-fns"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
+import { formatLocalDateKey, getWeekDates, getWeekStartDate } from "@/lib/date-utils"
 import { getDayNote } from "@/lib/day-notes-persist"
 import { minutesToTimeString } from "@/lib/time-entries"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
+import { QuickAddWroteHost } from "@/components/quick-add-wrote"
 import { TrackingLogView } from "./tracking-log-view"
 import { resetLogCycleMarks, writeCycleDayMark, type LogTimeEntry } from "./tracking-log-model"
 
 const DAY = new Date(2026, 5, 20, 12, 0, 0)
 const KEY = "2026-06-20"
 
-function renderLog() {
-  return render(<TrackingLogView currentDate={DAY} setCurrentDate={() => {}} />)
+function renderLog(setCurrentDate: (date: Date) => void = () => {}) {
+  return render(<TrackingLogView currentDate={DAY} setCurrentDate={setCurrentDate} />)
 }
 
 describe("TrackingLogView", () => {
@@ -95,7 +98,7 @@ describe("TrackingLogView", () => {
     expect(screen.getByRole("toolbar", { name: "Intake" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Food" })).toHaveAttribute("aria-pressed", "true")
     expect(screen.queryByRole("combobox", { name: "Location" })).not.toBeInTheDocument()
-    expect(screen.getByLabelText("Title").tagName).toBe("INPUT")
+    expect(screen.getByLabelText("Name").tagName).toBe("INPUT")
     fireEvent.click(screen.getByRole("button", { name: "Switch" }))
     expect(screen.getByLabelText("From")).toBeInTheDocument()
     expect(screen.getByLabelText("To")).toBeInTheDocument()
@@ -172,7 +175,7 @@ describe("TrackingLogView", () => {
     renderLog()
     fireEvent.click(screen.getByRole("button", { name: "Intake" }))
     fireEvent.click(screen.getByRole("button", { name: "Food" }))
-    fireEvent.change(screen.getByLabelText("Title"), { target: { value: "coffee" } })
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "coffee" } })
     fireEvent.click(screen.getByRole("checkbox", { name: "Estimated" }))
     fireEvent.click(screen.getByRole("button", { name: /^Add$/ }))
     const food = screen.getByRole("region", { name: "Food" })
@@ -357,8 +360,10 @@ describe("TrackingLogView", () => {
     expect(spent).toHaveTextContent("8:00 AM")
     const saved = useTimeTrackingStore.getState().entries.find((entry) => entry.eventKind === "spend")
     expect(saved).toMatchObject({ spendAmount: 450, spendOn: "coffee", spendSource: "Cash", title: "coffee" })
+    // The purchase is now offered again as a one-tap refill on the composer.
+    expect(within(screen.getByRole("group", { name: "Recent purchases" })).getByRole("button", { name: /coffee/ })).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole("button", { name: /coffee/ }))
+    fireEvent.click(within(spent).getByRole("button", { name: /coffee/ }))
     const dialog = screen.getByRole("dialog")
     expect(within(dialog).getByLabelText("Amount")).toHaveValue("4.50")
     fireEvent.change(within(dialog).getByLabelText("Amount"), { target: { value: "nope" } })
@@ -387,5 +392,116 @@ describe("TrackingLogView", () => {
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "left room" } })
     fireEvent.click(screen.getByRole("button", { name: /^Add$/ }))
     expect(screen.getByRole("region", { name: "Events" })).toHaveTextContent("left room")
+  })
+
+  it("defaults to Day span with shelves and no week board", () => {
+    renderLog()
+    expect(screen.getByRole("button", { name: "Day" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: "Week" })).toHaveAttribute("aria-pressed", "false")
+    expect(screen.queryByTestId("tracking-log-week")).not.toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Food" })).toBeInTheDocument()
+  })
+
+  it("week switch shows seven day columns and week period label", () => {
+    renderLog()
+    fireEvent.click(screen.getByRole("button", { name: "Week" }))
+
+    expect(screen.getByTestId("tracking-log-week")).toBeInTheDocument()
+    expect(screen.queryByRole("heading", { name: "Food" })).not.toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Add a line" })).toBeInTheDocument()
+
+    const weekDates = getWeekDates(getWeekStartDate(DAY))
+    for (const date of weekDates) {
+      expect(screen.getByRole("button", { name: `Open ${format(date, "EEEE, MMM d")}` })).toBeInTheDocument()
+    }
+
+    const weekStart = getWeekStartDate(DAY)
+    expect(
+      screen.getByText(`${format(weekStart, "MMM d")} – ${format(weekDates[6]!, "MMM d, yyyy")}`),
+    ).toBeInTheDocument()
+  })
+
+  it("previous and next week change the visible range", () => {
+    const setCurrentDate = vi.fn()
+    renderLog(setCurrentDate)
+    fireEvent.click(screen.getByRole("button", { name: "Week" }))
+
+    fireEvent.click(screen.getByRole("button", { name: "Previous week" }))
+    expect(setCurrentDate).toHaveBeenCalled()
+    const prev = setCurrentDate.mock.calls.at(-1)?.[0] as Date
+    expect(formatLocalDateKey(prev)).toBe(
+      formatLocalDateKey(new Date(DAY.getFullYear(), DAY.getMonth(), DAY.getDate() - 7)),
+    )
+
+    fireEvent.click(screen.getByRole("button", { name: "Next week" }))
+    const next = setCurrentDate.mock.calls.at(-1)?.[0] as Date
+    expect(formatLocalDateKey(next)).toBe(
+      formatLocalDateKey(new Date(DAY.getFullYear(), DAY.getMonth(), DAY.getDate() + 7)),
+    )
+  })
+
+  it("activating a day heading returns to that day's day view", () => {
+    const setCurrentDate = vi.fn()
+    renderLog(setCurrentDate)
+    fireEvent.click(screen.getByRole("button", { name: "Week" }))
+
+    const weekDates = getWeekDates(getWeekStartDate(DAY))
+    const tuesday = weekDates[1]!
+    fireEvent.click(screen.getByRole("button", { name: `Open ${format(tuesday, "EEEE, MMM d")}` }))
+
+    expect(setCurrentDate).toHaveBeenCalled()
+    expect(formatLocalDateKey(setCurrentDate.mock.calls.at(-1)?.[0] as Date)).toBe(formatLocalDateKey(tuesday))
+    expect(screen.getByRole("heading", { name: "Food" })).toBeInTheDocument()
+    expect(screen.queryByTestId("tracking-log-week")).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Day" })).toHaveAttribute("aria-pressed", "true")
+  })
+
+  it("hides the Day Week switch when the date is locked", () => {
+    render(<TrackingLogView currentDate={DAY} setCurrentDate={() => {}} lockDate />)
+    expect(screen.queryByRole("toolbar", { name: "Tracking log span" })).not.toBeInTheDocument()
+    expect(screen.queryByTestId("tracking-log-week")).not.toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Food" })).toBeInTheDocument()
+  })
+})
+
+describe("tracking log quick keys", () => {
+  it("fills the name from a recent intake chip and only logs on Add", () => {
+    render(
+      <>
+        <TrackingLogView currentDate={DAY} setCurrentDate={() => {}} />
+        <QuickAddWroteHost />
+      </>,
+    )
+    fireEvent.click(screen.getByRole("button", { name: "Intake" }))
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "coffee" } })
+    fireEvent.click(screen.getByRole("button", { name: /^Add$/ }))
+    const food = () => screen.getByRole("region", { name: "Food" })
+    expect(within(food()).getAllByRole("button", { name: /coffee/ })).toHaveLength(1)
+    expect(screen.getByRole("status")).toHaveTextContent(/COFFEE · FOOD INTAKE LOGGED/)
+
+    const recent = screen.getByRole("group", { name: "Recent intake" })
+    fireEvent.click(within(recent).getByRole("button", { name: /coffee/ }))
+    expect(within(food()).getAllByRole("button", { name: /coffee/ })).toHaveLength(1)
+    expect(screen.getByLabelText("Name")).toHaveValue("coffee")
+
+    fireEvent.click(screen.getByRole("button", { name: /^Add$/ }))
+    expect(within(food()).getAllByRole("button", { name: /coffee/ })).toHaveLength(2)
+  })
+
+  it("refills the spend form from a recent purchase and picks a source key", () => {
+    renderLog()
+    fireEvent.click(screen.getByRole("button", { name: "Spent" }))
+    fireEvent.change(screen.getByLabelText("Amount"), { target: { value: "3.25" } })
+    fireEvent.change(screen.getByLabelText("On"), { target: { value: "tea" } })
+    fireEvent.click(within(screen.getByRole("group", { name: "Sources" })).getByRole("button", { name: "Card" }))
+    expect(screen.getByLabelText("Source")).toHaveValue("Card")
+    fireEvent.click(screen.getByRole("button", { name: /^Add$/ }))
+    expect(screen.getByLabelText("Amount")).toHaveValue("")
+    fireEvent.click(within(screen.getByRole("group", { name: "Recent purchases" })).getByRole("button", { name: /tea/ }))
+    expect(screen.getByLabelText("Amount")).toHaveValue("3.25")
+    expect(screen.getByLabelText("On")).toHaveValue("tea")
+    expect(screen.getByLabelText("Source")).toHaveValue("Card")
+    // The day's readouts sit beside the date.
+    expect(screen.getByText("Spent", { selector: ".trk-readout-plate" })).toBeInTheDocument()
   })
 })

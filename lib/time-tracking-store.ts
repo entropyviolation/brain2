@@ -32,7 +32,10 @@
  *   Several may be true at once. Each detail is also a pen that **counts as**
  *   this one (`PenVariant.penId` + `parentId`), so the chip list and the tree
  *   stay the same set. Overlapping labels stay on the block; the child pen is
- *   how that detail rolls up.
+ *   how that detail rolls up. A detail may instead point at a pen in **another
+ *   view** (`PenVariant.scopeId`): Activity "Hanging out" broken down by Company
+ *   people. That detail is a label only — no counts-as link crosses views, and
+ *   its name and color follow the other view's pen.
  * - **Tag** — a cross-scope label from a shared library. Tags join Tracking to
  *   the Habits tab: a daily habit links tags and every minute painted with a
  *   matching pen counts toward its goal (`lib/tracked-time.ts` rolls up per tag,
@@ -145,6 +148,12 @@ export interface PenVariant {
   color?: string
   /** The pen this detail is. That pen's `parentId` is the pen that owns the detail. */
   penId?: string
+  /**
+   * Set only when `penId` lives in another view (a cross-view detail). Its
+   * name and color mirror that pen; no counts-as link is made, and
+   * `lib/pen-detail-sync.ts` leaves it alone.
+   */
+  scopeId?: string
 }
 
 export interface TrackPen {
@@ -283,6 +292,18 @@ interface TimeTrackingState {
   addVariant: (scopeId: string, penId: string, name: string, color?: string) => string
   updateVariant: (scopeId: string, penId: string, variant: PenVariant) => void
   removeVariant: (scopeId: string, penId: string, variantId: string) => void
+  /**
+   * A detail of `penId` that is a pen in another view (`targetScopeId`).
+   * Returns the variant id; re-uses one already linked to that pen. "" when
+   * either pen is missing or the views are the same.
+   */
+  addCrossViewDetail: (scopeId: string, penId: string, targetScopeId: string, targetPenId: string) => string
+  /**
+   * Name a set of pens in one view as a group: a new pen whose details are
+   * those members (each member also counts as the group). One undo step.
+   * Returns the group pen id, or "" when the name is empty or under two members.
+   */
+  addPenGroup: (scopeId: string, name: string, color: string, memberIds: string[]) => string
 
   /** Creates the tag (or returns the id of an existing same-named one). */
   addTag: (name: string, color?: string) => string
@@ -1089,7 +1110,23 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
         const next = { ...pen, editedAt: Date.now() }
         set((state) => ({
           scopes: state.scopes.map((s) => {
-            if (s.id !== scopeId) return s
+            if (s.id !== scopeId) {
+              // A cross-view detail in another view mirrors this pen's name and color.
+              if (!s.pens.some((p) => p.variants?.some((v) => v.scopeId === scopeId && v.penId === pen.id))) return s
+              return {
+                ...s,
+                pens: s.pens.map((p) =>
+                  p.variants?.some((v) => v.scopeId === scopeId && v.penId === pen.id)
+                    ? {
+                        ...p,
+                        variants: p.variants.map((v) =>
+                          v.scopeId === scopeId && v.penId === pen.id ? { ...v, name: next.name, color: next.color } : v,
+                        ),
+                      }
+                    : p,
+                ),
+              }
+            }
             return {
               ...s,
               pens: s.pens.map((p) => {
@@ -1217,6 +1254,70 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
           }
         })
         return id
+      },
+      addCrossViewDetail: (scopeId, penId, targetScopeId, targetPenId) => {
+        if (!scopeId || !targetScopeId || scopeId === targetScopeId) return ""
+        const state = get()
+        const owner = state.scopes.find((s) => s.id === scopeId)?.pens.find((p) => p.id === penId)
+        const target = state.scopes.find((s) => s.id === targetScopeId)?.pens.find((p) => p.id === targetPenId)
+        if (!owner || !target) return ""
+        const existing = owner.variants?.find((v) => v.scopeId === targetScopeId && v.penId === targetPenId)
+        if (existing) return existing.id
+        rememberWorld("add cross-view detail")
+        const id = rid("var")
+        set((current) => ({
+          scopes: current.scopes.map((s) =>
+            s.id !== scopeId
+              ? s
+              : {
+                  ...s,
+                  pens: s.pens.map((p) =>
+                    p.id !== penId
+                      ? p
+                      : {
+                          ...p,
+                          variants: [
+                            ...(p.variants ?? []),
+                            { id, name: target.name, color: target.color, penId: target.id, scopeId: targetScopeId },
+                          ],
+                        },
+                  ),
+                },
+          ),
+        }))
+        return id
+      },
+      addPenGroup: (scopeId, name, color, memberIds) => {
+        const trimmed = name.trim()
+        const scope = get().scopes.find((s) => s.id === scopeId)
+        if (!trimmed || !scope) return ""
+        const members = [...new Set(memberIds)].filter((id) => scope.pens.some((p) => p.id === id))
+        if (members.length < 2) return ""
+        rememberWorld("name pen group")
+        const groupId = rid("pen")
+        const at = Date.now()
+        set((state) => {
+          const grouped = state.scopes.map((s) => {
+            if (s.id !== scopeId) return s
+            const pens = [...s.pens, { id: groupId, name: trimmed, color, lastUsedAt: at } as TrackPen]
+            return {
+              ...s,
+              pens: pens.map((p) => {
+                if (!members.includes(p.id) || wouldCycle(pens, p.id, groupId)) return p
+                // Keep every existing counts-as parent; the group is one more.
+                return assignParents(p, [...penParentIds(p), groupId])
+              }),
+            }
+          })
+          const synced = syncOneScope(grouped, scopeId)
+          const gone = new Set(synced.droppedVariantIds)
+          return {
+            scopes: synced.scopes,
+            entries: withoutVariantIds(state.entries, synced.droppedVariantIds),
+            selectedVariantIds: state.selectedVariantIds.filter((id) => !gone.has(id)),
+          }
+        })
+        return groupId
       },
       updateVariant: (scopeId, penId, variant) => {
         rememberWorld("update variant")

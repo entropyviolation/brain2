@@ -114,3 +114,16 @@ export function overlayTicksBeside(
   const ids = new Set(shown.map((entry) => entry.id))
   return overlayInstants.filter((entry) => !ids.has(entry.id))
 }
+
+/**
+ * Drop every discrete log instant, the scope's own included, for the "hide log
+ * flags" view pref. Ordinary instants and every interval stay. Same list back
+ * when nothing qualifies.
+ */
+export function withoutDiscreteLogs(
+  ticks: readonly TimeEntry[],
+  penName?: (penId: string) => string | undefined,
+): TimeEntry[] {
+  const kept = ticks.filter((entry) => !isDiscreteLogInstant(entry, penName?.(entry.penId)))
+  return kept.length === ticks.length ? [...ticks] : kept
+}

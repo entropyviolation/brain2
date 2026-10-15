@@ -141,27 +141,67 @@ describe("TrackingDesk", () => {
 
     fireEvent.click(gear)
     const dialog = screen.getByRole("dialog")
-    const notes = within(dialog).getByTestId("tracking-command-notes").textContent ?? ""
-    expect(notes).toMatch(/went outside/)
-    expect(notes).toMatch(/ralphs/)
-    expect(notes).toMatch(/cleaning/)
-    expect(notes).toMatch(/1:00 p\.m\./)
-    expect(notes).toMatch(/July 4, 2026/)
-    expect(notes).toMatch(/log keywords/)
-    expect(notes).toMatch(/log categories/)
-    expect(notes).toMatch(/intake food/)
-    expect(notes).toMatch(/thought process/)
-    expect(notes).toMatch(/tp:/)
+    expect(within(dialog).getByRole("heading", { name: "Tracking settings" })).toBeInTheDocument()
+    const rail = within(dialog).getByRole("navigation", { name: "Tracking settings sections" })
+    // The gear opens on the bay for the view you are on.
+    expect(within(rail).getByRole("button", { name: /Time Grid/ })).toHaveAttribute("aria-current", "page")
+    fireEvent.click(within(rail).getByRole("button", { name: /BIM commands/ }))
+    const guide = within(dialog).getByTestId("bim-commands").textContent ?? ""
+    expect(guide).toMatch(/BIM commands \(Telegram bot\)/)
+    expect(guide).toMatch(/went outside/)
+    expect(guide).toMatch(/ralphs/)
+    expect(guide).toMatch(/cleaning/)
+    expect(guide).toMatch(/1:00 p\.m\./)
+    expect(guide).toMatch(/July 4, 2026/)
+    expect(guide).toMatch(/log keywords/)
+    expect(guide).toMatch(/log categories/)
+    expect(guide).toMatch(/intake food/)
+    expect(guide).toMatch(/thought process/)
+    expect(guide).toMatch(/tp:/)
+    fireEvent.click(within(dialog).getByRole("tab", { name: /Your commands/ }))
     expect(within(dialog).getByLabelText("New log keyword")).toBeInTheDocument()
-    fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }))
+    fireEvent.click(within(dialog).getByRole("button", { name: "Done" }))
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
 
     const logTab = within(keys).getByRole("tab", { name: "Tracking log" })
     fireEvent.mouseDown(logTab, { button: 0, ctrlKey: false })
     const gearAgain = screen.getByRole("button", { name: "Tracking settings" })
     expect(keys.nextElementSibling).toBe(gearAgain)
     expect(screen.queryByTestId("log-keywords")).not.toBeInTheDocument()
-    expect(screen.queryByLabelText("New log keyword")).not.toBeInTheDocument()
     fireEvent.click(gearAgain)
-    expect(within(screen.getByRole("dialog")).getByLabelText("New log keyword")).toBeInTheDocument()
+    const again = within(screen.getByRole("dialog")).getByRole("navigation", { name: "Tracking settings sections" })
+    expect(within(again).getByRole("button", { name: /Tracking log/ })).toHaveAttribute("aria-current", "page")
+  })
+
+  it("builds the Time Grid desk: rack, screen bay with the view deck, instrument column", () => {
+    render(<TrackingDesk currentDate={new Date(2026, 8, 17, 12)} setCurrentDate={() => {}} />)
+    const rack = document.querySelector(".trk-desk .trk-rack") as HTMLElement
+    const screenBay = document.querySelector(".trk-desk .trk-center-bay") as HTMLElement
+    const instruments = document.querySelector(".trk-desk .trk-instruments") as HTMLElement
+    expect(rack).toBeTruthy()
+    expect(screenBay).toBeTruthy()
+    expect(instruments).toBeTruthy()
+    expect(rack.compareDocumentPosition(screenBay) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(screenBay.compareDocumentPosition(instruments) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+
+    const deck = screen.getByRole("toolbar", { name: "Tracking view modes" })
+    expect(screenBay.contains(deck)).toBe(true)
+    expect(deck.compareDocumentPosition(screenBay.querySelector(".trk-grid") as HTMLElement) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    // Ghost LEDs sit under every key but the active one.
+    expect(within(deck).getByRole("button", { name: "Ghost Location" })).toBeEnabled()
+    expect(within(deck).getByRole("button", { name: "Ghost Activity" })).toBeDisabled()
+
+    const logs = screen.getAllByRole("button", { name: "Log activity" })
+    expect(logs).toHaveLength(1)
+    expect(instruments.contains(logs[0])).toBe(true)
+    expect(within(instruments).getByRole("group", { name: "Paint tools" })).toBeInTheDocument()
+    expect(within(instruments).getByRole("slider", { name: "Time grid span" })).toBeInTheDocument()
+    expect(within(instruments).getByRole("slider", { name: "Cell size" })).toBeInTheDocument()
+    expect(within(instruments).getByRole("radiogroup", { name: "SCREEN" })).toBeInTheDocument()
+    expect(within(instruments).getByRole("group", { name: "Flags" })).toBeInTheDocument()
+    // The old ghost row is gone from the desk; the deck LEDs replace it.
+    expect(screen.queryByRole("toolbar", { name: "Superimpose" })).not.toBeInTheDocument()
+    // Writing sits under the desk in the lace.
+    expect(document.querySelector(".trk-lace #trk-day-notes")).toBeTruthy()
   })
 })
