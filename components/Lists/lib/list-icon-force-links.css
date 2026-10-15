@@ -1,0 +1,90 @@
+/**
+ * Force-link cords — BumpTop / orrery juice for List Icons Gravity + optional PILE proximity.
+ * pointer-events: none always. Pulse only when motion is allowed (.is-static / prefers-reduced-motion).
+ */
+
+.fm-force-links {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 3;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.fm-force-links-cords {
+  pointer-events: none;
+}
+
+.fm-force-link-cord {
+  filter: drop-shadow(0 0 1.5px rgba(180, 220, 200, 0.35));
+  transition: stroke-opacity 120ms ease-out;
+}
+
+.fm-force-link-cord.is-heavy {
+  animation: fm-force-link-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes fm-force-link-pulse {
+  0%,
+  100% {
+    stroke-opacity: inherit;
+    filter: drop-shadow(0 0 1.5px rgba(180, 220, 200, 0.35));
+  }
+  50% {
+    stroke-opacity: 1;
+    filter: drop-shadow(0 0 4px rgba(220, 240, 210, 0.55));
+  }
+}
+
+.fm-force-links.is-static .fm-force-link-cord,
+.fm-force-links.is-static .fm-force-link-cord.is-heavy {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fm-force-link-cord.is-heavy {
+    animation: none;
+  }
+}
+
+/* Grab / fling ghost trail (list-icon-fling-juice) */
+.fm-fling-ghost-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.fm-fling-ghost {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 104px;
+  height: 104px;
+  border-radius: 4px;
+  pointer-events: none;
+  will-change: transform, opacity;
+  background:
+    radial-gradient(circle at 40% 35%, rgba(255, 255, 255, 0.22), transparent 55%),
+    rgba(160, 200, 180, 0.14);
+  border: 1px solid rgba(210, 236, 220, 0.28);
+  box-shadow: 0 0 10px rgba(160, 210, 180, 0.18);
+}
+
+.fm-icon-free.fm-fling-grab {
+  cursor: grab;
+}
+
+.fm-icon-free.fm-fling-grabbing,
+.fm-icon-free.fm-icon-dragging.fm-fling-grabbing {
+  cursor: grabbing;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fm-fling-ghost-layer {
+    display: none;
+  }
+}
