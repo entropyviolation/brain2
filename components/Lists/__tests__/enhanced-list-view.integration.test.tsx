@@ -105,8 +105,7 @@ describe("EnhancedCategoryView Integration", () => {
     fireEvent.click(screen.getByRole("radio", { name: "List" }))
     fireEvent.dblClick(screen.getByText(/Work Tasks/))
     await waitFor(() => expect(screen.getByText("Complete project")).toBeInTheDocument())
-    const addButtons = screen.getAllByRole("button", { name: "Add Item" })
-    fireEvent.click(addButtons[addButtons.length - 1])
+    fireEvent.click(screen.getByRole("button", { name: "Add Item" }))
     const quickAdd = document.querySelector(".fm-quickadd")!
     const field = within(quickAdd as HTMLElement).getByPlaceholderText(/enter .* description/i)
     await user.type(field, "New test task")
@@ -124,9 +123,9 @@ describe("EnhancedCategoryView Integration", () => {
     fireEvent.dblClick(screen.getByText(/Work Tasks/))
     await waitFor(() => expect(screen.getByText("Complete project")).toBeInTheDocument())
     const bulk = screen.getByRole("button", { name: /Bulk add items/i })
-    const addButtons = screen.getAllByRole("button", { name: "Add Item" })
-    expect(bulk.compareDocumentPosition(addButtons[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    fireEvent.click(addButtons[0])
+    const add = screen.getByRole("button", { name: "Add Item" })
+    expect(bulk.compareDocumentPosition(add) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    fireEvent.click(add)
     const quickAdd = document.querySelector(".fm-quickadd")!
     const field = within(quickAdd as HTMLElement).getByPlaceholderText(/enter .* description/i)
     await user.type(field, "Enter key item{Enter}")
@@ -212,14 +211,14 @@ describe("EnhancedCategoryView Integration", () => {
     expect(screen.getByRole("button", { name: "Spreadsheet" })).toBeInTheDocument()
   })
 
-  it("uses Default reading rows, an inner display caption, and inspector facts without Delete", async () => {
+  it("uses Default reading rows, the list name as the inner caption, and inspector facts without Delete", async () => {
     render(<EnhancedCategoryView onTaskSelect={vi.fn()} />)
     fireEvent.click(screen.getByText("All"))
     fireEvent.click(screen.getByRole("radio", { name: "List" }))
     fireEvent.dblClick(screen.getByText(/Work Tasks/))
     await waitFor(() => expect(screen.getByText("Complete project")).toBeInTheDocument())
     expect(screen.getByTestId("list-default-read")).toBeInTheDocument()
-    expect(screen.getByTestId("fm-inner-caption")).toHaveTextContent("Default")
+    expect(screen.getByTestId("fm-inner-caption")).toHaveTextContent("Work Tasks")
     expect(screen.queryByText("Lists — File Manager")).not.toBeInTheDocument()
     expect(screen.getByText(/Work Tasks — Lists/)).toBeInTheDocument()
     expect(screen.getByText("Count")).toBeInTheDocument()
@@ -234,6 +233,76 @@ describe("EnhancedCategoryView Integration", () => {
     expect(screen.getByTestId("fm-status-tree")).toHaveTextContent(/Tree:/)
   })
 
+  it("searches just the open list from the caption, names only unless All fields", async () => {
+    useTaskStore.getState().addTask({
+      id: "task-2",
+      description: "Write report",
+      notes: "quarterly numbers",
+      lists: ["list-1"],
+      stage: "list",
+      completed: false,
+      createdAt: new Date(),
+    } as never)
+    render(<EnhancedCategoryView onTaskSelect={vi.fn()} />)
+    fireEvent.click(screen.getByText("All"))
+    fireEvent.click(screen.getByRole("radio", { name: "List" }))
+    fireEvent.dblClick(screen.getByText(/Work Tasks/))
+    await waitFor(() => expect(screen.getByText("Complete project")).toBeInTheDocument())
+
+    fireEvent.click(screen.getByRole("button", { name: "Search this list" }))
+    const field = screen.getByRole("searchbox", { name: "Search Work Tasks" })
+    expect(screen.getByTestId("fm-inner-caption")).toHaveTextContent("Work Tasks")
+    fireEvent.change(field, { target: { value: "report" } })
+    expect(screen.getByText("Write report")).toBeInTheDocument()
+    expect(screen.queryByText("Complete project")).not.toBeInTheDocument()
+
+    fireEvent.change(field, { target: { value: "quarterly" } })
+    expect(screen.getByText(/Nothing in this list matches/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "All fields" }))
+    expect(screen.getByText("Write report")).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: "Close list search" }))
+    expect(screen.queryByTestId("list-caption-search")).not.toBeInTheDocument()
+    expect(screen.getByText("Complete project")).toBeInTheDocument()
+    expect(useTaskStore.getState().tasks).toHaveLength(2)
+  })
+
+  it("sorts Default rows by name and saves the sort on the list", async () => {
+    useTaskStore.getState().addTask({
+      id: "task-2",
+      description: "Archive inbox",
+      lists: ["list-1"],
+      stage: "list",
+      completed: false,
+      createdAt: new Date(),
+    })
+    render(<EnhancedCategoryView onTaskSelect={vi.fn()} />)
+    fireEvent.click(screen.getByText("All"))
+    fireEvent.click(screen.getByRole("radio", { name: "List" }))
+    fireEvent.dblClick(screen.getByText(/Work Tasks/))
+    await waitFor(() => expect(screen.getByText("Complete project")).toBeInTheDocument())
+    const names = () =>
+      Array.from(screen.getByTestId("list-default-read").querySelectorAll(".fm-read-name")).map((n) => n.textContent)
+    expect(names()).toEqual(["Complete project", "Archive inbox"])
+
+    fireEvent.click(screen.getByRole("combobox", { name: "Sort by" }))
+    expect(screen.getByRole("option", { name: "Custom order" })).toHaveAttribute("aria-selected", "true")
+    fireEvent.click(screen.getByRole("option", { name: "Name" }))
+    expect(screen.queryByRole("listbox", { name: "Sort by" })).not.toBeInTheDocument()
+    expect(screen.getByRole("combobox", { name: "Sort by" })).toHaveTextContent("Name")
+    expect(names()).toEqual(["Archive inbox", "Complete project"])
+    expect(useTaskStore.getState().lists.find((l) => l.id === "list-1")?.defaultView?.sort).toEqual({ key: "title", dir: "asc" })
+
+    fireEvent.click(screen.getByRole("button", { name: /A to Z/ }))
+    expect(names()).toEqual(["Complete project", "Archive inbox"])
+
+    const picker = screen.getByRole("combobox", { name: "Sort by" })
+    fireEvent.keyDown(picker, { key: "ArrowDown" })
+    fireEvent.keyDown(picker, { key: "Home" })
+    fireEvent.keyDown(picker, { key: "Enter" })
+    expect(useTaskStore.getState().lists.find((l) => l.id === "list-1")?.defaultView).toBeUndefined()
+  })
+
   it("opens List Settings with Clear list and Delete, not in the inspector", async () => {
     const user = userEvent.setup()
     render(<EnhancedCategoryView onTaskSelect={vi.fn()} />)
@@ -244,6 +313,7 @@ describe("EnhancedCategoryView Integration", () => {
     expect(screen.queryByRole("button", { name: "Delete List" })).not.toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: "List Settings" }))
     const settings = await screen.findByRole("dialog", { name: /List Settings/i })
+    await user.click(within(settings).getByRole("tab", { name: /^Behavior/ }))
     expect(within(settings).getByRole("button", { name: "Clear list" })).toBeInTheDocument()
     expect(within(settings).getByRole("button", { name: "Delete" })).toBeInTheDocument()
   })
@@ -441,8 +511,9 @@ describe("EnhancedCategoryView Integration", () => {
     const filter = screen.getByRole("group", { name: "Filter lists" })
     expect(filter.closest(".fm-sidebar")).toBeTruthy()
     expect(filter.closest(".fm-sunken")).toBeNull()
-    const bulkAdd = screen.getByRole("button", { name: /^Bulk add$/ })
-    expect(bulkAdd.compareDocumentPosition(filter) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    const bulkAdd = screen.getByRole("button", { name: /Bulk add items/i })
+    expect(bulkAdd.closest(".fm-sunken")).toBeTruthy()
+    expect(filter.closest(".fm-sidebar")).toBeTruthy()
     expect(screen.getByRole("checkbox", { name: /^Uncategorized$/ })).toBeChecked()
     expect(screen.getByRole("button", { name: "Select all" })).toBeDisabled()
     expect(screen.getByRole("button", { name: "Deselect all" })).toBeEnabled()

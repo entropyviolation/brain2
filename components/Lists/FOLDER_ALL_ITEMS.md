@@ -43,3 +43,5 @@ While All Items is open, content uses the backing list as `openCategory` so Defa
 Folder All Items: list checkboxes live in the **right inspector** (`AllViewCheckboxFilter`, `aria-label="Filter lists"`), not in the item pane. **Select all** / **Deselect all** plus **Uncategorized**. **Show uncategorized only** stays at the top of the item pane.
 
 Home / global All: the same inspector hosts **folder** inclusion checkboxes (`aria-label="Filter folders"`) — which folders’ items appear — plus **Uncategorized**. Same filter semantics as before; they are no longer a floating column in the content pane.
+
+**Filter types** (`aria-label="Filter types"`): when the open task set has ≥2 distinct effective types (or an ordinary list’s `itemTypeIds` allowlist has ≥2), the same checkbox pattern show/hides by exact type id. Prefs: `lists-ui-store.hiddenItemTypeIdsByTarget` keyed by `openTargetKey` (persist v10). Empty hidden = show all. Unknown ids label as `Unknown (id)`. Helpers: `lib/list-type-filter.ts`.

@@ -49,6 +49,7 @@ import { useUndoHotkey } from "@/hooks/useUndoHotkey"
 import { useDayScheduleRollover } from "@/hooks/use-day-rollover"
 import { useProcessInboxTodo } from "@/hooks/use-inbox-process-todo"
 import { useReminderTick } from "@/hooks/use-reminder-tick"
+import { useListMembershipRulesTick } from "@/hooks/use-list-membership-rules-tick"
 import { useSystemHomeListPins } from "@/lib/home-system-lists"
 import { usePeopleIKnowList } from "@/hooks/use-people-i-know"
 import { useCloseGiftIdeas } from "@/hooks/use-close-gift-ideas"
@@ -176,6 +177,7 @@ export default function Home() {
   useDayScheduleRollover()
   useProcessInboxTodo()
   useReminderTick()
+  useListMembershipRulesTick()
   const [popoutModuleId, setPopoutModuleId] = useState<string | null>(null)
   const [popoutSheetCategoryId, setPopoutSheetCategoryId] = useState<string | null>(null)
   const selectedMissing = useTaskStore((s) => {

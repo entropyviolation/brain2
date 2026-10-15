@@ -35,14 +35,15 @@ update in place instead of duplicating.
 
 | Surface | Writes | Reads |
 |---------|--------|-------|
-| Tidy UI (`TidyView`) | `module.config.houseCleaning` | same |
-| Trip Itinerary UI | `module.config.tripItinerary` | same |
-| Module Lists items | projection (silent upsert, no workflows / points) | Lists, search, Analytics |
+| Tidy UI (`TidyView`) | **Items first** (`persistHouseCleaningItems`), dual-write `module.config.houseCleaning` for one release | Items when present, else config shim |
+| Trip Itinerary UI | **Items first** (`persistTripItineraryItems`), dual-write `module.config.tripItinerary` for one release | Schedule from Items when present; day meta from config |
+| Module Lists items | same Item ids (silent upsert via import helpers, no workflows / points) | Lists, search, Analytics |
 
-Until two-way sync, **Tidy / Trip remain the write source for mapped fields**
-(title, priority, estimates, actuals, completed, parent, list membership of the
-projection). A later Lists-tab edit of those fields is overwritten on the next
-sync. User extras are kept (see Merge).
+Wave 10 made Items the write path for mapped fields. Config dual-write is a
+**one-release shim** (session chrome + day meta + unmigrated vaults). Full
+two-way sync (Lists-tab edit that Tidy must not overwrite) is still deferred —
+a Lists edit of mapped fields can still be overwritten on the next Tidy/Trip
+persist that rebuilds from its local state. User extras are kept (see Merge).
 
 ## Tidy field map (source → Lists item)
 
@@ -106,7 +107,7 @@ N done — derived, not a string on the list.
 
 | Module | What lands in Module Lists |
 |--------|----------------------------|
-| **Budget / Book Tasting / Film DNA / Blank / Itinerary packing** | Lists the template already created (`Accounts`, `Films`, `Packing`, …). Folder filer only. Film DNA already maps catalog fields onto items (`lib/filmrecs-catalog.ts`). |
+| **Budget / Book Tasting / Film DNA / Blank / Itinerary packing** | Lists the template already created (`Accounts`, `Films`, `Packing`, …). Folder filer only. Film DNA seeds the catalog **Film** type on the Films list (`itemTypeId` / `itemTypeIds: ["film"]`, `lib/film-types.ts`) and maps catalog fields onto items (`lib/filmrecs-catalog.ts`). |
 | **GradSearch** | Nothing. The program catalog is bundled research data (`workspace/gradsearch/data.json`). Favorites, notes, score overrides, and verified edits stay in the explorer’s `gs-*` localStorage, the same keys as the standalone app. |
 | **Habits / Goals / Tracking** | First-class stores (`habits-store`, `goals-store`, `time-tracking-store`). They are not workspace shadow databases and are **not** copied into Module Lists. |
 | **Operations** | Own lists via `lib/operation-lists.ts`, filed under Module Lists when an itinerary module is created. |

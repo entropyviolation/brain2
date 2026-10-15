@@ -95,15 +95,22 @@ export function DefaultViewSettings({
         <>
           <p className="text-xs text-muted-foreground pt-1">Show on each row</p>
           {DEFAULT_VIEW_CHROME_KEYS.map((key) => (
-            <label key={key} className="flex items-center gap-2 text-sm cursor-pointer">
-              <input
-                type="checkbox"
-                checked={show[key]}
-                onChange={() => patch(toggleDefaultViewChrome(prefs, key, !show[key]))}
-                aria-label={DEFAULT_VIEW_CHROME_LABELS[key]}
-              />
-              {DEFAULT_VIEW_CHROME_LABELS[key]}
-            </label>
+            <div key={key} className="space-y-0.5">
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={show[key]}
+                  onChange={() => patch(toggleDefaultViewChrome(prefs, key, !show[key]))}
+                  aria-label={DEFAULT_VIEW_CHROME_LABELS[key]}
+                />
+                {DEFAULT_VIEW_CHROME_LABELS[key]}
+              </label>
+              {key === "tags" ? (
+                <p className="text-[11px] text-muted-foreground pl-6">
+                  Item tag names. Off by default. A color bead appears when a name is also a Tracking tag.
+                </p>
+              ) : null}
+            </div>
           ))}
 
           <p className="text-xs text-muted-foreground pt-1">Extra attributes (compact meta)</p>

@@ -10,6 +10,7 @@
  */
 import { migrateAttributeDefinition } from "@/lib/attribute-utils"
 import { composeListAttributes } from "@/lib/item-types"
+import { sanitizeListItemSort } from "@/lib/list-item-sort"
 import {
   DEFAULT_VIEW_CHROME_KEYS,
   type AttributeDefinition,
@@ -18,6 +19,7 @@ import {
   type ItemTypeDefinition,
   type List,
   type ListDefaultView,
+  type ListItemSort,
   type Task,
 } from "@/lib/types"
 
@@ -91,13 +93,30 @@ export function sanitizeListDefaultView(value: unknown): ListDefaultView | undef
   const extraAttributeIds = sanitizeIdList(raw.extraAttributeIds)
   const density: DefaultViewDensity | undefined = raw.density === "compact" ? "compact" : undefined
   const custom = raw.custom === true
-  if (!custom && !show && extraAttributeIds.length === 0 && !density) return undefined
+  const sort = sanitizeListItemSort(raw.sort)
+  if (!custom && !show && extraAttributeIds.length === 0 && !density && !sort) return undefined
   const next: ListDefaultView = {}
   if (custom) next.custom = true
   if (show) next.show = show
   if (extraAttributeIds.length > 0) next.extraAttributeIds = extraAttributeIds
   if (density) next.density = density
+  if (sort) next.sort = sort
   return next
+}
+
+/** Row order. Not gated on `custom`: sorting does not customize the row chrome. */
+export function resolveDefaultViewSort(prefs: ListDefaultView | undefined): ListItemSort | undefined {
+  return sanitizeListItemSort(prefs?.sort)
+}
+
+/** Set (or clear, with `custom` / undefined) the row order. Leaves layout mode alone. */
+export function setDefaultViewSort(
+  current: ListDefaultView | undefined,
+  sort: ListItemSort | undefined,
+): ListDefaultView | undefined {
+  const kept = sanitizeListDefaultView(current)
+  const { sort: _drop, ...rest } = kept ?? {}
+  return sanitizeListDefaultView({ ...rest, sort })
 }
 
 export function isCustomDefaultView(prefs: ListDefaultView | undefined): boolean {

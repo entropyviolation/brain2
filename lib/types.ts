@@ -425,6 +425,20 @@ export interface Task extends Item {
    * explicitly adds the item back. See `components/Lists/LIST_LINKS.md`.
    */
   listMembershipExclusions?: string[]
+  /**
+   * Lists this item joined because a list's membership rule matched
+   * (`lib/list-membership-rules.ts`). Only these can leave again when the
+   * list's "remove when it stops matching" is on. Items you add by hand never do.
+   */
+  listRuleAddedIds?: string[]
+  /**
+   * When this item joined each list, keyed by list id (ISO instant). Stamped
+   * centrally by the task store when `lists` gains an id after creation, and
+   * dropped when the item leaves that list (so re-adding restamps). A list the
+   * item was created into has no entry — read it with `listAddedAt()`
+   * (`lib/list-added-at.ts`), which falls back to `createdAt`.
+   */
+  listAddedAt?: Record<string, string>
   // ---- Next-actions / scheduling fields (optional; only meaningful for items
   // in the Next Actions folder tree — see lib/item-utils.ts) ----------------
   estimatedDuration?: number // minutes
@@ -1457,6 +1471,32 @@ export interface GraphEdge {
 
 // Custom user lists (shown as "Lists" in the UI). Historically named
 // `TaskCategory`; renamed to `List` in the category→list migration.
+/** Which date a "within N days" membership condition reads. `attr:<id>` is a datetime attribute. */
+export type MembershipDateField = "deadline" | "scheduledDate" | "createdAt" | "completedDate" | `attr:${string}`
+
+/** One test an item must pass to join a rule list (`lib/list-membership-rules.ts`). */
+export type MembershipCondition =
+  | { kind: "type"; typeIds: string[] }
+  | { kind: "onLists"; listIds: string[]; mode: "any" | "all" | "none" }
+  | { kind: "dateWithin"; field: MembershipDateField; direction: "next" | "past"; days: number; includeOverdue?: boolean }
+  | {
+      kind: "attribute"
+      attributeId: string
+      op: "is" | "isNot" | "contains" | "gt" | "lt" | "isSet" | "isEmpty"
+      value?: string | number | boolean
+    }
+  | { kind: "tag"; tags: string[]; mode: "any" | "all" | "none" }
+  | { kind: "done"; done: boolean }
+
+/** Items matching all (or any) of the conditions join the list. Empty never matches. */
+export interface ListMembershipRule {
+  id: string
+  /** Missing = on. */
+  enabled?: boolean
+  match: "all" | "any"
+  conditions: MembershipCondition[]
+}
+
 export interface List {
   id: string
   name: string
@@ -1472,6 +1512,14 @@ export interface List {
    * See `components/Lists/LIST_LINKS.md`.
    */
   linkedTargetListIds?: string[]
+  /**
+   * Auto-add rules: items matching any enabled rule join this list
+   * (e.g. every Book, or everything due within 7 days). See
+   * `lib/list-membership-rules.ts` and `components/Lists/LIST_RULES.md`.
+   */
+  membershipRules?: ListMembershipRule[]
+  /** Also take items off when they stop matching (only items a rule added). */
+  membershipRulesSync?: boolean
   /**
    * Send to Scheduler. Only `true` puts this list's items in the Scheduler.
    * Omitted and false do not. A dated list, such as a trip itinerary, is
@@ -1648,6 +1696,33 @@ export interface ListDefaultView {
   show?: Partial<Record<DefaultViewChromeKey, boolean>>
   extraAttributeIds?: string[]
   density?: DefaultViewDensity
+  /**
+   * Default-view row order. Independent of `custom` (a list can sort without
+   * customizing its row chrome). Unset = `custom` (stored order). See
+   * `lib/list-item-sort.ts`.
+   */
+  sort?: ListItemSort
+}
+
+/** Built-in sort keys. Attribute sorts are `attr:<AttributeDefinition.id>`. */
+export const LIST_ITEM_SORT_BUILTIN_KEYS = [
+  "custom",
+  "added",
+  "created",
+  "title",
+  "type",
+  "scheduled",
+  "deadline",
+  "urgency",
+  "importance",
+  "estimate",
+] as const
+export type ListItemSortBuiltinKey = (typeof LIST_ITEM_SORT_BUILTIN_KEYS)[number]
+export type ListItemSortKey = ListItemSortBuiltinKey | `attr:${string}`
+export type ListItemSortDir = "asc" | "desc"
+export interface ListItemSort {
+  key: ListItemSortKey
+  dir: ListItemSortDir
 }
 
 export function isListDisplayMode(value: unknown): value is ListDisplayMode {

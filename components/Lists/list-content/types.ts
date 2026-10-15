@@ -1,6 +1,7 @@
 import type React from "react"
 import type { ListDisplay } from "@/lib/lists-ui-store"
-import type { Task, List, Folder, ChecklistCheckboxVar } from "@/lib/types"
+import type { Task, List, Folder, ChecklistCheckboxVar, ListItemSort } from "@/lib/types"
+import type { ListItemSortOption } from "@/lib/list-item-sort"
 
 /** Shared drag/select/complete handlers for all list-content display modes. */
 export interface ListContentTaskHandlers {
@@ -75,4 +76,21 @@ export interface ListContentPanelProps extends ListContentTaskHandlers {
   sentThisWeek?: boolean
   showSent?: boolean
   onShowSentChange?: (show: boolean) => void
+  /** Icons display: velvet free-drag desktop. Off keeps the wrapping flex grid. */
+  iconsDesktop?: boolean
+  /** Bumps when the toolbar asks list desktop to pack with the velvet grid. */
+  listOrganizeEpoch?: number
+  /** Bumps when the toolbar asks list desktop to pile up. */
+  listPileEpoch?: number
+  /** Bumps when the toolbar asks Gravity Reset (restore snapshot + turn off). */
+  listGravityResetEpoch?: number
+  /** Bumps when the toolbar asks Skip to stable (settle field; Gravity stays on). */
+  listGravitySettleEpoch?: number
+  /** Default view row order (rows arrive already sorted). Unset = custom order. */
+  sort?: ListItemSort
+  /** Keys the Sort control offers (built-ins + this list's attributes). No control when absent. */
+  sortOptions?: ListItemSortOption[]
+  onSortChange?: (sort: ListItemSort | undefined) => void
+  /** Active caption search. Rows arrive filtered; only the empty message reads it. */
+  searchQuery?: string
 }

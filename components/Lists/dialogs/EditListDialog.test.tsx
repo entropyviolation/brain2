@@ -1,13 +1,15 @@
 /**
  * EditListDialog — In folders section, wider shell, save still works.
  */
-import { render, screen, within } from "@testing-library/react"
+import { fireEvent, render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { useHabitsStore } from "@/lib/habits-store"
 import { useTaskStore } from "@/lib/task-store"
 import { TaskType, type Folder, type List, type WeeklyTask } from "@/lib/types"
+import { useItemTypeStore } from "@/lib/item-type-store"
+import { FILM_TYPE_ID } from "@/lib/film-types"
 import { EditListDialog } from "./EditListDialog"
 
 const list = (partial: Partial<List> & Pick<List, "id" | "name">): List => ({
@@ -26,6 +28,9 @@ const folder = (partial: Partial<Folder> & Pick<Folder, "id" | "name">): Folder 
 
 const kitchen: Folder = folder({ id: "kitchen", name: "Kitchen", listIds: ["dishes"] })
 const dishes: List = list({ id: "dishes", name: "Dishes", description: "Wash up", color: "#ef4444" })
+
+/** List Settings is tabbed; open a section the way a person would. */
+const openTab = (name: string) => fireEvent.click(screen.getByRole("tab", { name: new RegExp(`^${name}`) }))
 
 describe("EditListDialog", () => {
   beforeEach(() => {
@@ -56,6 +61,7 @@ describe("EditListDialog", () => {
   it("shows the list id in small type and leaves Sent this week off", () => {
     renderDialog()
     const idLine = screen.getByTestId("list-id-line")
+    openTab("Behavior")
     expect(idLine).toHaveTextContent("dishes")
     expect(idLine.className).not.toMatch(/banner/)
     expect(screen.getByRole("button", { name: "Copy list id" })).toBeInTheDocument()
@@ -82,7 +88,7 @@ describe("EditListDialog", () => {
   it("is a bit wider than the default settings dialog", () => {
     renderDialog()
     const dialog = screen.getByRole("dialog")
-    expect(dialog.className).toMatch(/max-w-\[37\.5rem\]/)
+    expect(dialog.className).toMatch(/max-w-\[58rem\]/)
   })
 
   it("shows In folders next to Connected lists", () => {
@@ -92,13 +98,44 @@ describe("EditListDialog", () => {
     expect(screen.getByText("Details view mode settings")).toBeInTheDocument()
     expect(screen.getByText("Checklist view mode settings")).toBeInTheDocument()
     expect(screen.getByText("Spreadsheet view mode settings")).toBeInTheDocument()
+    openTab("Places")
     expect(screen.getByRole("button", { name: "Remove from Kitchen" })).toBeInTheDocument()
+  })
+
+  it("offers item-type allowlist checkboxes and survives an orphan default id", async () => {
+    const user = userEvent.setup()
+    useItemTypeStore.getState().resetTypes()
+    const onEditingCategoryChange = vi.fn()
+    render(
+      <EditListDialog
+        editingCategory={{ ...dishes, itemTypeId: "ghost-type", itemTypeIds: ["ghost-type", FILM_TYPE_ID] }}
+        onEditingCategoryChange={onEditingCategoryChange}
+        folders={[kitchen]}
+        homePinned={[]}
+        listDisplay={{}}
+        setListDisplay={vi.fn()}
+        toggleHomePin={vi.fn()}
+        onOpenIconPicker={vi.fn()}
+        onSave={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    )
+    openTab("Items")
+    expect(screen.getByText("Item types")).toBeInTheDocument()
+    expect(screen.getAllByText(`Unknown (ghost-type)`).length).toBeGreaterThanOrEqual(1)
+    const filmBox = screen.getByRole("checkbox", { name: /^Film$/i })
+    expect(filmBox).toBeChecked()
+    await user.click(filmBox)
+    expect(onEditingCategoryChange).toHaveBeenCalled()
+    const next = onEditingCategoryChange.mock.calls.at(-1)?.[0] as List
+    expect(next.itemTypeIds).not.toContain(FILM_TYPE_ID)
   })
 
   it("offers Default view mode settings in the view-mode host", () => {
     renderDialog()
     expect(screen.getByText("View mode settings")).toBeInTheDocument()
     expect(screen.getByText("Default view mode settings")).toBeInTheDocument()
+    openTab("Views")
     expect(screen.getByRole("radio", { name: "Use default layout" })).toBeChecked()
     expect(screen.getByText("Checklist view mode settings")).toBeInTheDocument()
     expect(screen.getByText("In folders")).toBeInTheDocument()
@@ -119,6 +156,7 @@ describe("EditListDialog", () => {
 
   it("keeps Clear list and Delete together in Dangerous actions", () => {
     renderDialog()
+    openTab("Behavior")
     const danger = screen.getByTestId("list-danger-actions")
     expect(within(danger).getByRole("button", { name: "Clear list" })).toBeInTheDocument()
     expect(within(danger).getByRole("button", { name: "Delete" })).toBeInTheDocument()
@@ -139,6 +177,8 @@ describe("EditListDialog", () => {
       },
     ])
     renderDialog()
+    openTab("Behavior")
+    await user.click(screen.getByRole("button", { name: "Lift cover for Clear list" }))
     await user.click(screen.getByRole("button", { name: "Clear list" }))
     const confirm = await screen.findByRole("dialog", { name: /Are you sure/i })
     await user.click(within(confirm).getByRole("button", { name: "Cancel" }))
@@ -171,6 +211,8 @@ describe("EditListDialog", () => {
       },
     ])
     renderDialog()
+    openTab("Behavior")
+    await user.click(screen.getByRole("button", { name: "Lift cover for Clear list" }))
     await user.click(screen.getByRole("button", { name: "Clear list" }))
     const confirm = await screen.findByRole("dialog", { name: /Are you sure/i })
     await user.click(within(confirm).getByRole("button", { name: "Clear list" }))
@@ -258,5 +300,48 @@ describe("EditListDialog", () => {
     expect(onSave).toHaveBeenCalledTimes(1)
     expect(onDelete).not.toHaveBeenCalled()
     expect(useTaskStore.getState().lists.find((l) => l.id === "dishes")).toBeTruthy()
+  })
+
+  it("shows the item count beside places and views", () => {
+    useTaskStore.getState().setTasks([
+      { id: "spoon", description: "Spoon", lists: ["dishes"], stage: "list", completed: false, createdAt: new Date() },
+      { id: "fork", description: "Fork", lists: ["dishes"], stage: "list", completed: true, createdAt: new Date() },
+    ])
+    renderDialog()
+    expect(screen.getByTestId("list-item-count")).toHaveTextContent("2 items")
+    expect(screen.getByTestId("list-item-count")).toHaveTextContent("1 open")
+  })
+
+  it("Rules tab adds an auto-add rule to the draft and keeps attribute automation there", async () => {
+    const user = userEvent.setup()
+    const { onEditingCategoryChange } = renderDialog()
+    openTab("Rules")
+    expect(screen.getByTestId("membership-rules")).toHaveTextContent("No auto-add rules")
+    await user.click(screen.getByRole("button", { name: "Due within a week" }))
+    const next = onEditingCategoryChange.mock.calls.at(-1)?.[0] as List
+    expect(next.membershipRules?.[0].conditions.map((c) => c.kind)).toEqual(["dateWithin", "done"])
+  })
+
+  it("Bulk edit adds tags to every item now, as one undoable step", async () => {
+    const user = userEvent.setup()
+    useTaskStore.getState().setTasks([
+      { id: "spoon", description: "Spoon", lists: ["dishes"], stage: "list", completed: false, createdAt: new Date() },
+      { id: "cup", description: "Cup", lists: ["dishes"], stage: "list", completed: false, createdAt: new Date() },
+      { id: "elsewhere", description: "Elsewhere", lists: ["other"], stage: "list", completed: false, createdAt: new Date() },
+    ])
+    const { onSave } = renderDialog()
+    openTab("Bulk edit")
+    await user.selectOptions(screen.getByRole("combobox", { name: "Change" }), "addTags")
+    await user.type(screen.getByRole("textbox", { name: "Tags" }), "kitchen")
+    await user.click(screen.getByRole("button", { name: /Apply to 2 items/ }))
+    await user.click(screen.getByRole("button", { name: /Confirm/ }))
+    const tagsOf = (id: string) => useTaskStore.getState().tasks.find((t) => t.id === id)?.tags
+    expect(tagsOf("spoon")).toEqual(["kitchen"])
+    expect(tagsOf("cup")).toEqual(["kitchen"])
+    expect(tagsOf("elsewhere")).toBeUndefined()
+    expect(onSave).not.toHaveBeenCalled()
+    await user.click(screen.getByRole("button", { name: "Undo" }))
+    expect(tagsOf("spoon") ?? []).toEqual([])
+    expect(tagsOf("cup") ?? []).toEqual([])
   })
 })

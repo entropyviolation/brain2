@@ -29,6 +29,14 @@ export interface ListsToolbarProps {
   onFolderViewChange: (view: FolderView) => void
   onListDisplayChange: (key: string, display: import("@/lib/lists-ui-store").ListDisplay) => void
   onAutoOrganize: () => void
+  listIconsDesktop?: boolean
+  onListDesktopOrganize?: () => void
+  onPileUp?: () => void
+  listIconsGravity?: boolean
+  onListIconsGravityChange?: (on: boolean) => void
+  onGravityReset?: () => void
+  onGravitySettle?: () => void
+  onGravitySettings?: () => void
 }
 
 export function ListsToolbar({
@@ -54,6 +62,14 @@ export function ListsToolbar({
   onFolderViewChange,
   onListDisplayChange,
   onAutoOrganize,
+  listIconsDesktop,
+  onListDesktopOrganize,
+  onPileUp,
+  listIconsGravity,
+  onListIconsGravityChange,
+  onGravityReset,
+  onGravitySettle,
+  onGravitySettings,
 }: ListsToolbarProps) {
   return (
     <div className="fm-toolbar-stack">
@@ -97,6 +113,14 @@ export function ListsToolbar({
           onFolderViewChange={onFolderViewChange}
           onListDisplayChange={onListDisplayChange}
           onAutoOrganize={onAutoOrganize}
+          listIconsDesktop={listIconsDesktop}
+          onListDesktopOrganize={onListDesktopOrganize}
+          onPileUp={onPileUp}
+          listIconsGravity={listIconsGravity}
+          onListIconsGravityChange={onListIconsGravityChange}
+          onGravityReset={onGravityReset}
+          onGravitySettle={onGravitySettle}
+          onGravitySettings={onGravitySettings}
         />
       </div>
     </div>

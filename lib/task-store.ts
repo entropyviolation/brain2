@@ -26,6 +26,8 @@
 "use client"
 
 import { create } from "zustand"
+import { stampListAddedAt, stampListAddedAtAll } from "@/lib/list-added-at"
+import { applyMembershipRulesToTask, applyMembershipRulesToTasks, rulesChanged } from "@/lib/list-membership-rules"
 import { persist } from "zustand/middleware"
 import { sanitizeEnabledDisplays, type Task, type ItemRecord, type List, type Folder, type PriorityWeights } from "@/lib/types"
 import { DEFAULT_PRIORITY_WEIGHTS } from "@/lib/priority"
@@ -147,6 +149,8 @@ interface TaskState {
    * not nesting). Syncs existing items; honors exclusions. See LIST_LINKS.md.
    */
   addListLink: (sourceListId: string, targetListId: string) => void
+  /** Re-run every list's auto-add rules (date rules move with the clock). */
+  applyListMembershipRules: (now?: Date) => void
   /** Stop future auto-adds. Does not mass-delete items already on both lists. */
   removeListLink: (sourceListId: string, targetListId: string) => void
   /**
@@ -294,6 +298,16 @@ export function resetClearedTaskTombstones(): void {
   clearedTaskTombstones.clear()
 }
 
+/**
+ * Rule lists (`List.membershipRules`) pick the item up after the link step has
+ * recorded any manual removal, so a rule never undoes "take this off". Lists a
+ * rule adds are then expanded through connected lists like any other join.
+ */
+function withMembershipRules(task: Task, lists: List[]): Task {
+  const joined = applyMembershipRulesToTask(task, lists, new Date())
+  return joined === task ? task : applyListLinksToTask(joined, joined, lists)
+}
+
 function withRestoredTaskTombstones<T>(value: T): T {
   if (clearedTaskTombstones.size === 0 || !value || typeof value !== "object" || !("state" in value)) return value
   const state = (value as { state?: unknown }).state
@@ -362,7 +376,7 @@ export const useTaskStore = create<TaskState>()(
               useItemTypeStore.getState().types,
               "create",
             )
-            const linked = applyListLinksToTask(ruled, undefined, state.lists)
+            const linked = withMembershipRules(applyListLinksToTask(ruled, undefined, state.lists), state.lists)
             const archived = withArchiveListMembership(linked, linked, state.lists, state.folders)
             added = archived
             return {
@@ -465,8 +479,13 @@ export const useTaskStore = create<TaskState>()(
               didComplete ? "complete" : "update",
               prev,
             )
-            const linked = applyListLinksToTask(ruled, prev, state.lists)
-            const archived = withArchiveListMembership(linked, prev, state.lists, state.folders)
+            const linked = withMembershipRules(applyListLinksToTask(ruled, prev, state.lists), state.lists)
+            // Lists gained after creation carry a join instant (Default sort "Date added to list").
+            const archived = stampListAddedAt(
+              prev,
+              withArchiveListMembership(linked, prev, state.lists, state.folders),
+              new Date(),
+            )
             before = prev
             after = archived
             const newTasks = [...state.tasks]
@@ -522,6 +541,14 @@ export const useTaskStore = create<TaskState>()(
           if (index !== -1) {
             const newCategories = [...state.lists]
             newCategories[index] = preserveLinkedTargetIds(updatedCategory, state.lists[index])
+            // New or changed auto-add rules fill (or, with sync, trim) the list now.
+            if (rulesChanged(state.lists[index], newCategories[index])) {
+              const ruled = applyMembershipRulesToTasks(state.tasks, newCategories, new Date())
+              if (ruled !== state.tasks) {
+                const tasks = stampListAddedAtAll(state.tasks, applyListLinksToTasks(ruled, newCategories), new Date())
+                return { lists: newCategories, tasks }
+              }
+            }
             return { lists: newCategories }
           }
           return state
@@ -562,11 +589,18 @@ export const useTaskStore = create<TaskState>()(
           }
         }),
 
+      applyListMembershipRules: (now) =>
+        set((state) => {
+          const ruled = applyMembershipRulesToTasks(state.tasks, state.lists, now ?? new Date())
+          if (ruled === state.tasks) return state
+          return { tasks: stampListAddedAtAll(state.tasks, applyListLinksToTasks(ruled, state.lists), new Date()) }
+        }),
+
       addListLink: (sourceListId, targetListId) =>
         set((state) => {
           const lists = addListLinkToLists(state.lists, sourceListId, targetListId)
           if (lists === state.lists) return state
-          const tasks = applyListLinksToTasks(state.tasks, lists)
+          const tasks = stampListAddedAtAll(state.tasks, applyListLinksToTasks(state.tasks, lists), new Date())
           return tasks === state.tasks ? { lists } : { lists, tasks }
         }),
 
@@ -576,8 +610,9 @@ export const useTaskStore = create<TaskState>()(
           return lists === state.lists ? state : { lists }
         }),
 
-      setTasks: (tasks, opts) =>
+      setTasks: (incoming, opts) =>
         set((state) => {
+          const tasks = stampListAddedAtAll(state.tasks, incoming, new Date())
           const tombstoneIds = opts?.tombstoneIds
           if (!tombstoneIds?.length) return { tasks }
           return {
