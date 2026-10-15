@@ -471,8 +471,8 @@ export function MessageIngestPanel() {
           <code className="text-foreground">1pm</code> /{" "}
           <code className="text-foreground">1:00 PM</code> are 1:00pm.{" "}
           <code className="text-foreground">7/4/26</code> is July 4, 2026. Log lines,
-          switch lines, and tracking-note clocks share that reader. Ordinary inbox text is not
-          parsed this way. Saved phrases are added in Tracking settings (the gear) (<code className="text-foreground">log: went outside</code>,{" "}
+          switch lines, and tracking-note clocks share that reader. A message with no verb is a
+          log line too; <code className="text-foreground">inbox:</code> text is not parsed this way. Saved phrases are added in Tracking settings (the gear) (<code className="text-foreground">log: went outside</code>,{" "}
           <code className="text-foreground">log keywords</code>).
         </p>
         <div className="flex gap-2">

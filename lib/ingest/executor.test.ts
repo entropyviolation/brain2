@@ -77,21 +77,91 @@ describe("ingestIncoming", () => {
     })
   })
 
-  it("captures prefix-less text into the inbox", () => {
-    const result = ingestIncoming(sim("pick up milk"), NOW)
+  it("logs prefix-less text on the Tracking log, not the inbox", () => {
+    const result = ingestIncoming(sim("need to get my car fixed"), NOW)
+    expect(result.status).toBe("ok")
+    if (result.status !== "ok") return
+    expect(result.kind).toBe("event-log")
+    expect(result.reply).toMatch(/Logged: need to get my car fixed/)
+    expect(useTaskStore.getState().tasks.some((t) => t.description === "need to get my car fixed")).toBe(false)
+    const rows = useTimeTrackingStore.getState().entriesFor(formatLocalDateKey(NOW), "activity")
+    expect(rows.some((row) => row.title === "need to get my car fixed")).toBe(true)
+  })
+
+  it("captures inbox: text into the inbox", () => {
+    const result = ingestIncoming(sim("inbox: pick up milk"), NOW)
     expect(result.status).toBe("ok")
     if (result.status !== "ok") return
     expect(result.reply).toMatch(/Inbox: pick up milk/)
     const task = useTaskStore.getState().tasks.find((t) => t.description === "pick up milk")
     expect(task?.stage).toBe("inbox")
     expect(task?.monkeyBrain).toBeUndefined()
-    expect(task?.captureOrigin).toEqual({ kind: "telegram", detail: "pick up milk" })
+    expect(task?.captureOrigin).toEqual({ kind: "telegram", detail: "inbox: pick up milk" })
+  })
+
+  it("files a trailing -i or -inbox in Inbox too, after the message lands where it was going", () => {
+    const tp = ingestIncoming(sim("thought process: i really need to get my car fixed -i"), NOW)
+    expect(tp.status).toBe("ok")
+    if (tp.status !== "ok") return
+    expect(tp.kind).toBe("thought-process")
+    expect(tp.reply).toMatch(/Inbox: i really need to get my car fixed/)
+    const fromTp = useTaskStore.getState().tasks.filter((t) => t.description === "i really need to get my car fixed")
+    expect(fromTp).toHaveLength(1)
+    expect(fromTp[0]?.stage).toBe("inbox")
+    expect(tp.itemIds).toContain(fromTp[0]!.id)
+
+    const bare = ingestIncoming(sim("call the shop about the car -inbox"), NOW)
+    expect(bare.kind).toBe("event-log")
+    if (bare.status === "ok") {
+      expect(bare.reply).toMatch(/Logged: call the shop about the car ·/)
+      expect(bare.reply).not.toMatch(/-inbox/)
+    }
+    const rows = useTimeTrackingStore.getState().entriesFor(formatLocalDateKey(NOW), "activity")
+    expect(rows.some((row) => row.title === "call the shop about the car")).toBe(true)
+    expect(useTaskStore.getState().tasks.find((t) => t.description === "call the shop about the car")?.stage).toBe("inbox")
+
+    const once = ingestIncoming(sim("inbox: renew the tags -i"), NOW)
+    expect(once.kind).toBe("capture")
+    expect(useTaskStore.getState().tasks.filter((t) => t.description === "renew the tags")).toHaveLength(1)
+
+    const undone = ingestIncoming(sim("undo"), NOW)
+    expect(undone.status).toBe("ok")
+    expect(useTaskStore.getState().tasks.some((t) => t.description === "renew the tags")).toBe(false)
+
+    const word = ingestIncoming(sim("wi-fi is down"), NOW)
+    expect(word.kind).toBe("event-log")
+    expect(useTaskStore.getState().tasks.some((t) => /wi-fi/.test(t.description))).toBe(false)
+  })
+
+  it("undoes both writes of a -i message at once", () => {
+    ingestIncoming(sim("tp: fixing the car first -i"), NOW)
+    expect(useTaskStore.getState().tasks.some((t) => t.description === "fixing the car first")).toBe(true)
+    const undone = ingestIncoming(sim("undo"), NOW)
+    expect(undone.reply).toMatch(/Undid/)
+    expect(useTaskStore.getState().tasks.some((t) => t.description === "fixing the car first")).toBe(false)
+    const rows = useTimeTrackingStore.getState().entriesFor(formatLocalDateKey(NOW), "activity")
+    expect(rows.some((row) => row.title === "fixing the car first")).toBe(false)
+  })
+
+  it("keeps a list path, -mb, and -p on prefix-less text as captures", () => {
+    const listed = ingestIncoming(sim("brain2: fix the clock"), NOW)
+    expect(listed.kind).toBe("capture")
+    const monkey = ingestIncoming(sim("random thought -mb"), NOW)
+    expect(monkey.kind).toBe("capture")
+    const plain = ingestIncoming(sim("as written -p"), NOW)
+    expect(plain.kind).toBe("capture")
+  })
+
+  it("logs a bare keywords line instead of listing saved log keywords", () => {
+    const result = ingestIncoming(sim("keywords"), NOW)
+    expect(result.kind).toBe("event-log")
+    if (result.status === "ok") expect(result.reply).toMatch(/Logged: keywords/)
   })
 
   it("records the Telegram chat and message on a BIM capture", () => {
     useIngestStore.getState().allowChat({ chatId: "99", username: "ada", pairedAt: NOW.toISOString() })
     const message = {
-      ...tg("pick up milk"),
+      ...tg("inbox: pick up milk"),
       source: { channel: "telegram" as const, chatId: "99", username: "ada" },
     }
     const result = ingestIncoming(message, NOW)
@@ -99,7 +169,7 @@ describe("ingestIncoming", () => {
     const task = useTaskStore.getState().tasks.find((t) => t.description === "pick up milk")
     expect(task?.captureOrigin).toEqual({
       kind: "telegram",
-      detail: `@ada · message ${message.telegramMessageId} · pick up milk`,
+      detail: `@ada · message ${message.telegramMessageId} · inbox: pick up milk`,
     })
     expect(task?.createdAt).toEqual(NOW)
   })
@@ -137,7 +207,7 @@ describe("ingestIncoming", () => {
   })
 
   it("keeps a detected day and clock in the captured title", () => {
-    const result = ingestIncoming(sim("go home tomorrow at 3pm"), NOW)
+    const result = ingestIncoming(sim("inbox: go home tomorrow at 3pm"), NOW)
     expect(result.status).toBe("ok")
     const task = useTaskStore.getState().tasks.find((row) => row.description === "go home tomorrow at 3pm")
     expect(task?.stage).toBe("inbox")
@@ -274,7 +344,7 @@ describe("ingestIncoming", () => {
 
   it("writes an ingest log event", () => {
     ingestIncoming(sim("pick up milk"), NOW)
-    expect(useIngestStore.getState().events[0]?.kind).toBe("capture")
+    expect(useIngestStore.getState().events[0]?.kind).toBe("event-log")
     expect(useIngestStore.getState().events[0]?.status).toBe("applied")
   })
 
@@ -406,7 +476,7 @@ describe("ingestIncoming", () => {
 
   it("does not treat bare g as grocery", () => {
     const result = ingestIncoming(sim("g"), NOW)
-    expect(result.kind).toBe("capture")
+    expect(result.kind).toBe("event-log")
   })
 
   it("adds grocery lines and checks them off", () => {
@@ -442,7 +512,7 @@ describe("ingestIncoming", () => {
       expect(item?.stage).not.toBe("inbox")
     }
     const bare = ingestIncoming(sim("get milk tomorrow"), NOW)
-    expect(bare.kind).toBe("capture")
+    expect(bare.kind).toBe("event-log")
     const empty = ingestIncoming(sim("get:\n\n"), NOW)
     expect(empty.status).toBe("error")
     expect(empty.reply).toMatch(/nothing added/i)
@@ -520,7 +590,7 @@ describe("ingestIncoming", () => {
     const again = ingestIncoming(sim("undo"), NOW)
     expect(again.reply).toBe(UNNAMED_UNDO)
     const prose = ingestIncoming(sim("undo the laundry"), NOW)
-    expect(prose.kind).toBe("capture")
+    expect(prose.kind).toBe("event-log")
   })
 
   it("does not rewind an open ritual with undo", () => {
@@ -591,12 +661,12 @@ describe("ingestIncoming", () => {
       weeklyData: {},
     })
     const bare = ingestIncoming(sim("hemisync"), NOW)
-    expect(bare.kind).toBe("capture")
+    expect(bare.kind).toBe("event-log")
     const hemi = ingestIncoming(sim("dh: hemisync"), NOW)
     expect(hemi.status).toBe("ok")
     expect(hemi.kind).toBe("habit-trigger")
     const buried = ingestIncoming(sim("remember hemisync tonight"), NOW)
-    expect(buried.kind).toBe("capture")
+    expect(buried.kind).toBe("event-log")
     const pages = ingestIncoming(sim("dh: read 30 pages"), NOW)
     expect(pages.status).toBe("ok")
     expect(pages.kind).toBe("habit-trigger")
@@ -607,7 +677,7 @@ describe("ingestIncoming", () => {
     expect(logged.status).toBe("ok")
     expect(logged.kind).toBe("event-log")
     const bareO = ingestIncoming(sim("o"), NOW)
-    expect(bareO.kind).toBe("capture")
+    expect(bareO.kind).toBe("event-log")
   })
 
   it("parks an iphone-notes dump on the dedicated store list", () => {
@@ -872,8 +942,18 @@ describe("ingestIncoming", () => {
     if (rolled.status === "ok") expect(rolled.reply).toMatch(/due 9\/12\/2027/)
   })
 
-  it("leaves a header-less note in the inbox", () => {
+  it("logs a header-less note with the second line as its note", () => {
     const result = ingestIncoming(sim("clean house\nclean couch"), NOW)
+    expect(result.status).toBe("ok")
+    if (result.status !== "ok") return
+    expect(result.kind).toBe("event-log")
+    expect(useTaskStore.getState().tasks.some((item) => item.stage === "inbox")).toBe(false)
+    const rows = useTimeTrackingStore.getState().entriesFor(formatLocalDateKey(NOW), "activity")
+    expect(rows.find((row) => row.title === "clean house")?.notes).toMatch(/clean couch/)
+  })
+
+  it("leaves a header-less inbox: note in the inbox", () => {
+    const result = ingestIncoming(sim("inbox: clean house\nclean couch"), NOW)
     expect(result.status).toBe("ok")
     if (result.status !== "ok") return
     expect(result.kind).toBe("capture")
@@ -896,7 +976,7 @@ describe("ingestIncoming", () => {
     expect(useIngestStore.getState().events.some((event) => event.kind === "gps")).toBe(false)
     expect(useGpsIngestLog.getState().events).toHaveLength(2)
     ingestIncoming(sim("pick up milk"), NOW)
-    expect(useIngestStore.getState().events[0]?.kind).toBe("capture")
+    expect(useIngestStore.getState().events[0]?.kind).toBe("event-log")
     expect(useIngestStore.getState().events[0]?.raw).toMatch(/pick up milk/)
   })
 
@@ -941,7 +1021,7 @@ describe("ingestIncoming", () => {
 
   it("leaves Got back from walk alone and still checks off a real line", () => {
     const prose = ingestIncoming(sim("Got back from walk"), NOW)
-    expect(prose.kind).toBe("capture")
+    expect(prose.kind).toBe("event-log")
     expect(prose.status).toBe("ok")
     if (prose.status === "ok") {
       expect(prose.reply).toMatch(/Got back from walk/)
@@ -1000,10 +1080,10 @@ describe("ingestIncoming", () => {
     expect(checked.kind).toBe("bought")
     expect(useTaskStore.getState().tasks.find((task) => task.description === "milk")?.completed).toBe(true)
     const other = ingestIncoming({ ...sim("oats"), replyToMessageId: 7 }, NOW)
-    expect(other.kind).toBe("capture")
+    expect(other.kind).toBe("event-log")
     expect(useTaskStore.getState().tasks.find((task) => task.description === "oats")?.completed).toBeFalsy()
     const sentence = ingestIncoming(sim("Got back from walk"), NOW)
-    expect(sentence.kind).toBe("capture")
+    expect(sentence.kind).toBe("event-log")
     const verb = ingestIncoming({ ...sim("help"), replyToMessageId: 42 }, NOW)
     expect(verb.kind).toBe("help")
   })
@@ -1026,8 +1106,8 @@ describe("ingestIncoming", () => {
     expect(added.kind).toBe("todo-today")
     expect(useTaskStore.getState().tasks.some((task) => task.description === "file taxes")).toBe(true)
     const sentence = ingestIncoming(sim("file taxes later"), NOW)
-    expect(sentence.kind).toBe("capture")
-    const otherPin = ingestIncoming({ ...sim("call the bank"), replyToMessageId: 42 }, NOW)
+    expect(sentence.kind).toBe("event-log")
+    const otherPin = ingestIncoming({ ...sim("inbox: call the bank"), replyToMessageId: 42 }, NOW)
     expect(otherPin.kind).toBe("capture")
     const bank = useTaskStore.getState().tasks.find((task) => task.description === "call the bank")
     expect(bank?.stage).toBe("inbox")
@@ -1061,23 +1141,23 @@ describe("ingestIncoming", () => {
     if (habits.status === "ok") expect(habits.reply).toMatch(/Drink water/)
     for (const phrase of ["grocery list", "grocery store", "to do list", "to-do list"]) {
       const result = ingestIncoming(sim(phrase), NOW)
-      expect(result.kind).toBe("capture")
+      expect(result.kind).toBe("event-log")
       if (result.status === "ok") expect(result.reply).toMatch(new RegExp(phrase.replace("-", "\\-"), "i"))
     }
   })
 
-  it("leaves bare text, call, did, and add as inbox and keeps the colon forms", () => {
+  it("logs bare text, call, did, and add and keeps the colon forms", () => {
     const text = ingestIncoming(sim("Text shelby back"), NOW)
-    expect(text.kind).toBe("capture")
+    expect(text.kind).toBe("event-log")
     if (text.status === "ok") expect(text.reply).toMatch(/Text shelby back/)
     const call = ingestIncoming(sim("call gran points-100"), NOW)
-    expect(call.kind).toBe("capture")
+    expect(call.kind).toBe("event-log")
     if (call.status === "ok") expect(call.reply).toMatch(/call gran points-100/)
     const did = ingestIncoming(sim("did finally get into colder room (took 30 min)"), NOW)
-    expect(did.kind).toBe("capture")
+    expect(did.kind).toBe("event-log")
     expect(did.status).not.toBe("needs_clarify")
     const add = ingestIncoming(sim("Add more backslash cmds?…"), NOW)
-    expect(add.kind).toBe("capture")
+    expect(add.kind).toBe("event-log")
     if (add.status === "ok") expect(add.reply).toMatch(/Add more backslash cmds/)
     expect(ingestIncoming(sim("text: Jane on my way"), NOW).kind).toBe("iphone-text")
     expect(ingestIncoming(sim("call: Jane 12m"), NOW).kind).toBe("iphone-call")

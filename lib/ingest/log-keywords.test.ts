@@ -68,8 +68,12 @@ describe("log keywords", () => {
     ingestIncoming(sim("log: walked"), SENT)
     expect(entry("walked")).toMatchObject({ eventKind: "walked", startMin: 15 * 60 + 4 })
 
+    // No verb is a log line too, so a bare saved phrase logs as that phrase.
     ingestIncoming(sim("went outside"), SENT)
-    expect(useTimeTrackingStore.getState().entries.filter((row) => row.title === "went outside")).toHaveLength(2)
+    expect(useTimeTrackingStore.getState().entries.filter((row) => row.title === "went outside")).toHaveLength(3)
+    expect(useTaskStore.getState().tasks.some((row) => row.description === "went outside")).toBe(false)
+    ingestIncoming(sim("inbox: went outside"), SENT)
+    expect(useTimeTrackingStore.getState().entries.filter((row) => row.title === "went outside")).toHaveLength(3)
     expect(useTaskStore.getState().tasks.some((row) => row.description === "went outside")).toBe(true)
   })
 

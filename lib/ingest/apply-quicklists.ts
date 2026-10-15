@@ -4,7 +4,7 @@
  * `/quicklists` shows the menu. `/quicklists 5` or a bare number (the whole
  * message, and only when no clarify is waiting) dumps that slot.
  * Phrases such as "grocery list", "grocery store", and "to do list" are not
- * commands; they stay inbox.
+ * commands; with no verb they are log lines.
  *
  * Default slots:
  * 1 To do today

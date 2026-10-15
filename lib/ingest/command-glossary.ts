@@ -231,9 +231,10 @@ What you can do (families)
 • Needed — needed: batteries · get: then lines → list "needed"
 • To-do — to do today:, do: / next action:, read to do today
 • Log — switch: (view, from:, to:) / log categories / log: or log (colon optional; loc: place) / tp: / thought process: / log: tp: (Thought process: a guiding strand of this moment — why you are doing something, what you expect next, and how it lands; not a general note, a one-word mood, or a short activity log such as brushed teeth) / intake: / intake food|drink|drug: / cycle: / st: / switch task: / so: / switch objective: / switch goal: / transit:; saved keywords (log: went outside, log keywords); smoked weed, drank water, ate …, took …
-  On a log line, a switch line, or a tracking-note clock, no am/pm means military time (12:04 is noon, 1:00 is 1:00am, 1pm is 1:00pm). Ordinary inbox text is not parsed this way.
+  On a log line, a switch line, or a tracking-note clock, no am/pm means military time (12:04 is noon, 1:00 is 1:00am, 1pm is 1:00pm). inbox: text is not parsed this way.
 • Monitor — currently / stopped / switched to
-• Capture / add — plain text, qa:, add:, inbox:, idea:, quick add: (-mb / -monkey → Monkey brain; -p / -plain → as written)
+• Capture / add — inbox:, qa:, add:, idea:, quick add: (-mb / -monkey → Monkey brain; -p / -plain → as written). Plain text with no verb is a log line.
+• -i / -inbox at the end of any message — it lands where it was going, and also in Inbox
 • Bulk — bulk: / bulk add; Name: dumps; before 9/12:
 • Track — at:, track:, mood:, sleep:, start:/stop, gps:, screen:/call:/text:
 • Notes — n / note: (optional clock, est or unknown), day:, memo:, jot:. Thought process is tp: / thought process: / log: tp: — a guiding strand of this moment: why you are doing something, what you expect next, and how it lands. Not this general note, not a one-word mood, and not a short activity log such as brushed teeth
@@ -322,16 +323,17 @@ What it is
 
 How to use it
 • log: left room  |  log: left room at 3:30  |  log: left room at 3:30 loc: home
+• Text with no verb is the same as log: (left room → log: left room). Add -i or -inbox at the end to also file it in Inbox.
 • Desktop Quick Add log: is this same log (dark blue LOG mark). It does not go to Inbox.
 • log: shower 10m  — just finished (end is send time)
 • log: START walk  |  log: END walk 5:00
 • log: left room at 3:30 est  ·  log: left room unknown  — estimated or unknown clock
 • log: went outside  |  log went outside 12:04  |  log: went outside 7/4/26 1:00
   Added in Tracking settings (the gear). Longest phrase wins. The remainder is the date and time, not the title.
-  log keywords and log: keywords list them and do not create a row. A bare phrase is not a log.
+  log keywords and log: keywords list them and do not create a row. Text with no verb is a log line, so a bare phrase logs too.
 • On a log line, no am/pm means military time: 12:04 is noon, 18:37 is 6:37pm, 1:00 is 1:00am.
   1pm, 1:00pm, 1 PM, 1:00 PM, and 1:00 p.m. are 1:00pm. 7/4/26 and 7/4/2026 are July 4, 2026.
-  at 3:30 still works. Log lines, switch lines, and tracking-note clocks share that reader. Ordinary inbox text is not parsed this way.
+  at 3:30 still works. Log lines, switch lines, and tracking-note clocks share that reader. inbox: text is not parsed this way.
 • loc: home on a log reuses or creates that Location pen (the place is last)
 • intake: coffee  — point only, no duration. Bare intake leaves the class unset
 • intake food: egg salad  ·  intake drink: coffee at 8:15 est  ·  intake drug: tablet
@@ -353,7 +355,7 @@ How to use it
 • Presets (Settings → Discrete event triggers):
   smoked weed · drank water · ate {item} · took {item}
 
-Bare "o" is NOT a log unless you send log: o or set "o" as a trigger.
+Bare "o" is logged as the title "o", like any text with no verb.
 
 Send "log commands" for every form.`,
 
@@ -382,10 +384,14 @@ Send "to do commands" for the glossary.`,
 
   ingest: `${BIM_SHORT} · Capture / add / bulk / Inbox
 What it is
-  Free-form capture when no other verb matches, plus bulk list dumps.
+  Inbox capture (inbox:, add:, a list path), the -i / -inbox flag, plus bulk list dumps.
+  Text with no verb is not Inbox — it is a log line.
 
 How to use it
-• plain text or qa: / add: / inbox: / idea: / quick add: / capture: → Inbox
+• inbox: / qa: / add: / idea: / quick add: / capture: → Inbox
+• plain text with no verb → log (the same as log:), not Inbox
+• -i or -inbox at the end of any message → it lands where it was going, and the text after the verb also lands in Inbox
+  thought process: fix the car -i → thought process + Inbox · fix the car -i → log + Inbox · inbox: fix the car → Inbox only
 • -mb or -monkey on that line → Monkey brain (a dump, not the Inbox you revisit)
 • -p or -plain → stored as written (no list, folder, date, time, duration, or priority)
 • list: item and folder: list: item create the list. folder: all: item files on that folder's All Items (all items works too) — not a list named all. A name may contain digits (brain2: item is the list brain2). Dates, times, duration, and priority stay in the title

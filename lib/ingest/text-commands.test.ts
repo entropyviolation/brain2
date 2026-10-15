@@ -67,7 +67,7 @@ describe("send time", () => {
   })
 
   it("stamps an inbox capture and a log with the send time", () => {
-    ingestIncoming(sim("buy oats"), PROCESSED)
+    ingestIncoming(sim("inbox: buy oats"), PROCESSED)
     const task = useTaskStore.getState().tasks.find((row) => row.description === "buy oats")
     expect(task?.createdAt).toEqual(SENT)
 
@@ -309,7 +309,7 @@ describe("log intake switch transit", () => {
       tasks: [{ id: "h-hemi", name: "Hemisync", type: TaskType.BOOLEAN, rewardValue: 10, frequency: "daily" }],
       weeklyData: {},
     })
-    expect(ingestIncoming(sim("hemisync"), PROCESSED).kind).toBe("capture")
+    expect(ingestIncoming(sim("hemisync"), PROCESSED).kind).toBe("event-log")
     expect(ingestIncoming(sim("dh: hemisync"), PROCESSED).kind).toBe("habit-trigger")
     expect(ingestIncoming(sim("DH: hemisync"), PROCESSED).kind).toBe("habit-trigger")
   })

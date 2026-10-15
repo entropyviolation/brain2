@@ -25,7 +25,7 @@ Grocery / needed
 Habits (dh: then the keyword)
 • dh: hemisync  — mark that daily habit done
 • dh: read 30 pages  ·  dh: exercise 15 min  ·  dh: chess score 355
-• habit: exercise 30  /  did: stretch  — by habit name (optional yesterday). Bare did stays inbox.
+• habit: exercise 30  /  did: stretch  — by habit name (optional yesterday). Bare did is a log line.
 • A bare keyword is not a habit log
 Events (whole message, or log: / intake:)
 • smoked weed  ·  drank water  ·  ate egg salad  ·  took 2 adderall
@@ -34,10 +34,10 @@ Events (whole message, or log: / intake:)
   est / estimated / ~ is estimated. unknown keeps the minute. loc: names a Location pen.
 • log: went outside  ·  log went outside 12:04  ·  log: went outside 7/4/26 1:00
   Saved phrases are added in Tracking settings (the gear). Longest phrase wins. log keywords lists them and does not log a row.
-  A bare phrase with no log prefix is not a log.
+  Text with no verb is a log line too, so a bare saved phrase logs as that phrase.
   On a log line, no am/pm means military time: 12:04 is noon, 18:37 is 6:37pm, 1:00 is 1:00am.
   1pm, 1:00pm, 1 PM, 1:00 PM, and 1:00 p.m. are 1:00pm. 7/4/26 is July 4, 2026.
-  Log lines, switch lines, and tracking-note clocks share that reader. Ordinary inbox text is not parsed this way.
+  Log lines, switch lines, and tracking-note clocks share that reader. inbox: text is not parsed this way.
 • intake: coffee  — point only, no duration. intake food: / drink: / drug: sets the class
 • cycle: bleeding  ·  cycle: spotting  ·  cycle: ovulation  ·  cycle: bleeding off
 • switch: location from: home to: ralphs  ·  switch: to cleaning  ·  switch: company Elijah
@@ -49,7 +49,8 @@ Activity spans
 • currently deep work  ·  stopped deep work  ·  switched to cooking
 Plan / capture
 • plan for rn:  lines…  — today's plan log (stamped “from text”)
-• plain text → Inbox  ·  -mb / -monkey → Monkey brain  ·  -p / -plain → as written
+• plain text (no verb) → log  ·  inbox: → Inbox  ·  -i / -inbox at the end → also Inbox
+• -mb / -monkey → Monkey brain  ·  -p / -plain → Inbox as written
 • gm — morning review · help  ·  info  ·  all commands
 Pair: pair: 123456  ·  Settings → Message ingest`
 
@@ -60,12 +61,13 @@ Live replies use info / {prefix} info / {prefix} commands / all commands
 docs/BIM_COMMANDS.md
 
 Case-insensitive. Many verbs take : or a space. text, sent, call, called, did, add, got, and bought need a colon (got/bought also fire when they match an open grocery line).
-Matching order (first match wins — never also Inbox):
+Matching order (first match wins — Inbox too only with -i / -inbox at the end):
   1. Deduped Telegram updates (retries do not double-write)
   2. help / start / info
   3. Explicit: groc, needed, plan for rn, currently, stopped, switched to, log:/log-
   4. Whole-message habit keywords & discrete-event triggers
-  5. Everything else (other verbs, or Inbox capture)
+  5. Everything else (other verbs; no verb → log, the same as log:)
+  A list path (brain2: item), -mb, or -p on a line with no verb is still an Inbox capture.
 
 Ambiguous names get a numbered list — reply with the number or the name.
 Custom first-word shortcuts: Settings → Message ingest. Built-in store dumps the live grocery list even when that map is empty. The store → groc row is only a user shortcut.
@@ -76,7 +78,7 @@ GROCERY  (shortcut is groc — bare g is retired)
 • groc  |  store  |  grocery  |  groceries  |  shop  — dump the live grocery list and pin it
 • groc milk  |  store milk  |  grocery: eggs — add (Inbox off). Several lines = bulk.
 • got: milk  |  bought: milk  |  x bread, eggs  |  check off oats — complete open lines
-  got milk checks off only when milk is already open. Got back from walk stays inbox.
+  got milk checks off only when milk is already open. Got back from walk is a log line.
 • pin  |  live  |  snapshot — refresh the pin
 Retired: bare “g” no longer means grocery (use groc). Re-map custom shortcuts that still expand to g.
 
@@ -89,7 +91,7 @@ NEEDED
 
 ────────────────────────────────
 HABIT KEYWORDS  (whole message only)
-One-word keywords do NOT fire inside a longer Inbox note.
+One-word keywords do NOT fire inside a longer message.
 A habit source counts an exact whole message in the period: true if one arrives, true after a set number, or a logged phrase such as read {n} pages of {bookname} or cleaned for {x} minutes, which writes the amount. {x} and {minutes} are the same kind of number as {n}. A minutes or hours phrase also logs the prior stretch on the habit’s tracking activity. No clock ends that stretch at the message time and marks it estimated. A clock at the end, such as 1:11, is when it finished. A line with no timestamp is not copied onto every period.
 Examples that ship as editable presets (Habits → edit that habit):
 • hemisync — marks the Hemisync daily habit done; Done today logs “hemisync”
@@ -117,12 +119,12 @@ Presets:
   Saved keywords (added in Tracking settings, the gear; empty until you add them): log: went outside, log went outside 12:04,
   log: went outside 7/4/26 1:00. The word log works with or without the colon. Longest phrase wins.
   The remainder is the optional date and time, not part of the title. log keywords and log: keywords
-  list the phrases and do not create a row. A bare phrase with no log prefix is not a log.
+  list the phrases and do not create a row. Text with no verb is a log line, so a bare saved phrase logs too.
   On a log line, a clock with no am/pm is military time: 12:04 is noon, 18:37 is 6:37pm, and 1:00 is
   1:00am, not 1pm. 1pm, 1:00pm, 1 PM, 1:00 PM, and 1:00 p.m. are 1:00pm. 7/4/26 and 7/4/2026 are
   July 4, 2026 (month/day/year). at 3:30 still marks that minute. Log lines, switch lines, and
-  tracking-note clocks share that reader. Ordinary inbox text is not parsed this way.
-  Bare “o” is NOT a log unless you send log: o or set “o” as a trigger.
+  tracking-note clocks share that reader. inbox: text is not parsed this way.
+  Bare “o” is logged as the title “o”, like any text with no verb.
 • intake: coffee  |  intake food: egg salad  |  intake drink: coffee at 8:15 est  |  intake drug: tablet
   Bare intake: leaves the class unset and sets eventKind intake. Classed lines set intake.food / intake.drink / intake.drug. Pen stays Intake.
 • switch: location from: home to: ralphs
@@ -141,7 +143,7 @@ Presets:
 • tp: Opening the editor to fix the clock, then the dishes, relieved it is a small fix  |  TP:  |  thought process:  |  log: tp:
   Thought process: a guiding strand of this moment, from what you are doing, to what it leads to, to how it feels.
   Why you are doing something, what you expect to do next, and how it lands. Not a general note, a one-word mood, or a short activity log such as brushed teeth.
-  Colon required on the verb, so bare tp and bare thought process stay capture.
+  Colon required on the verb, so bare tp and bare thought process are plain log lines.
   Activity instant, pen Text log, eventKind thought-process. First line is the title; lines under it are the note.
   Clocks are the same reader as a log line (parseExpectedWhen): bare clock is military, 1pm / 1:00 PM / 1:00 p.m. are 13:00, 7/4/26 is July 4, 2026.
   est / estimated / ~ is estimated. unknown keeps the minute for placement.
@@ -166,9 +168,12 @@ PLAN / TO-DO / MORNING
 • rituals  ·  reviews  ·  gm  ·  gn  ·  review  ·  ritual start week  ·  cancel (end/start; morning uses STOP)
 
 CAPTURE / LISTS
-• plain text or qa: → Inbox
+• plain text with no verb → log (the same as log:). It is not Inbox.
+• inbox: / qa: / add: → Inbox
+• -i or -inbox at the end of any message → it still goes where it was going, and the text after the verb also lands in Inbox
+  (thought process: fix the car -i → thought process + Inbox · fix the car -i → log + Inbox · inbox: fix the car → Inbox only)
 • -mb or -monkey on the line → Monkey brain (dump; less than Inbox)
-• -p or -plain on the line → stored as written (no list, date, time, or priority)
+• -p or -plain on the line → Inbox, stored as written (no list, date, time, or priority)
 • Dates, times, duration, and priority stay in the title. list: item still creates the list. A name may contain digits (brain2: item is the list brain2).
 • folder: all: item — that folder's All Items (all items works too). Not a list named all. Same on a bulk header: Folder: all:
 • Name: then lines — that list. Grocery list: lands on the store list.

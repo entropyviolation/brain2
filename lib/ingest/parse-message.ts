@@ -1,8 +1,10 @@
 /**
  * lib/ingest/parse-message.ts — Verb + payload parser for phone ingest
  *
- * Longest alias wins. Prefix-less text is Inbox capture, except a multi-line
- * list dump (`Name:` then items), which is bulk add. A header that merely
+ * Longest alias wins. Prefix-less text parses as `capture` with payload === raw,
+ * except a multi-line list dump (`Name:` then items), which is bulk add. The
+ * executor sends that verb-less capture to the Tracking log (`log:`) unless it
+ * names a list path or a capture flag; `inbox:` is the explicit Inbox verb. A header that merely
  * starts with a verb (`Grocery list:`) stays a list name. `get:` (colon
  * required) is the needed-list form of that dump pattern. `now` rolls
  * `before 9/12:` onto the next matching day. Telegram slash commands
@@ -288,7 +290,7 @@ function isBareAlias(line: string, alias: string): boolean {
 
 /**
  * Colon only: the verb is not the command unless `:` follows.
- * Ordinary sentences that merely start with the word stay inbox.
+ * Ordinary sentences that merely start with the word are not the verb.
  */
 const COLON_ONLY = new Set([
   "text",
