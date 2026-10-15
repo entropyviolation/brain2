@@ -27,8 +27,10 @@ import { withOperationType } from "@/lib/operation-types"
 import { withNoteType } from "@/lib/note-types"
 import { withBookType } from "@/lib/book-types"
 import { withFlightType } from "@/lib/flight-types"
+import { withFilmType } from "@/lib/film-types"
 import { withCatalogTypes } from "@/lib/catalog-types"
 import { withPersonType } from "@/lib/person-types"
+import { listAllowedTypeIds } from "@/lib/list-item-types"
 
 export const BUILTIN_TASK_TYPE_ID = "task"
 export const BUILTIN_ITEM_TYPE_ID = "item"
@@ -50,7 +52,12 @@ export const DETAIL_PANEL_ORDER: ItemDetailPanel[] = [
   "analysis",
   "time",
   "body",
+  "notes",
+  "resources",
 ]
+
+/** Panels every item gets (a list may still hide them). */
+export const UNIVERSAL_DETAIL_PANELS: ItemDetailPanel[] = ["notes", "resources"]
 
 /** Loose shape for rule/attribute evaluation — works for Task and any Item. */
 export type ItemLike = {
@@ -69,7 +76,9 @@ export function getBuiltinItemTypes(): ItemTypeDefinition[] {
   // starters merge in via idempotent helpers so each module owns its definition.
   return withPersonType(
     withCatalogTypes(
-      withFlightType(withBookType(withNoteType(withOperationType(getBaseBuiltinItemTypes())))),
+      withFilmType(
+        withFlightType(withBookType(withNoteType(withOperationType(getBaseBuiltinItemTypes())))),
+      ),
     ),
   )
 }
@@ -295,6 +304,7 @@ export function resolveDetailView(
 
   const merged = new Set<ItemDetailPanel>([...typePanels, ...listAdded])
   if (item.type === "note") merged.add("body")
+  for (const panel of UNIVERSAL_DETAIL_PANELS) merged.add(panel)
 
   const typeListed = new Set(typeDef?.detailPanels ?? [])
   const listListed = new Set(listAdded)
@@ -302,7 +312,7 @@ export function resolveDetailView(
   const panels = DETAIL_PANEL_ORDER.filter((panel) => {
     if (!merged.has(panel)) return false
     if (hidden.has(panel)) return false
-    if (panel === "details" || panel === "body") return true
+    if (panel === "details" || panel === "body" || panel === "notes" || panel === "resources") return true
     if (panel === "scheduling" && !capabilities.scheduleable && !capabilities.deadline && !isTask) {
       return false
     }
@@ -387,6 +397,7 @@ export function resolveDefaultValues(
 /** The minimal category shape the per-list composition helpers need. */
 export interface TypedAttributeSource extends AttributeSource {
   itemTypeId?: ItemType
+  itemTypeIds?: ItemType[]
   rules?: ItemTypeRule[]
 }
 
@@ -400,32 +411,40 @@ function exactType(
 }
 
 /**
- * A single list's *effective* attribute schema: its item type's attributes plus
- * the list-specific attributes layered on top. List attributes win on id clash
- * (they are the more specific, list-scoped definition).
+ * A single list's *effective* attribute schema: attributes from every allowed
+ * item type (allowlist, else default `itemTypeId`), then list-specific
+ * attributes on top. List attributes win on id clash.
  */
 export function composeListAttributes(
   category: TypedAttributeSource,
   types: ItemTypeDefinition[],
 ): AttributeDefinition[] {
   const byId = new Map<string, AttributeDefinition>()
-  for (const attr of collectTypeAttributes(category.itemTypeId, types)) byId.set(attr.id, attr)
+  for (const typeId of listAllowedTypeIds(category)) {
+    for (const attr of collectTypeAttributes(typeId, types)) byId.set(attr.id, attr)
+  }
   for (const attr of category.itemAttributes ?? []) byId.set(attr.id, attr)
   return [...byId.values()]
 }
 
 /**
- * A single list's effective default values: the item type's defaults first, then
- * the list's own defaults override (the list is the more specific definition).
+ * A single list's effective default values: allowlisted type defaults (default
+ * type last so it wins among types), then the list's own defaults override.
  */
 export function composeListDefaults(
   category: TypedAttributeSource,
   types: ItemTypeDefinition[],
 ): Record<string, AttributeValue> {
-  return {
-    ...collectTypeDefaults(category.itemTypeId, types),
-    ...(category.defaultAttributeValues ?? {}),
+  const defaults: Record<string, AttributeValue> = {}
+  const allowed = listAllowedTypeIds(category)
+  for (const typeId of allowed) {
+    if (typeId === category.itemTypeId) continue
+    Object.assign(defaults, collectTypeDefaults(typeId, types))
   }
+  if (category.itemTypeId) Object.assign(defaults, collectTypeDefaults(category.itemTypeId, types))
+  else if (allowed[0]) Object.assign(defaults, collectTypeDefaults(allowed[0], types))
+  Object.assign(defaults, category.defaultAttributeValues ?? {})
+  return defaults
 }
 
 /**
@@ -466,13 +485,14 @@ export function resolveItemSchema(
  */
 export function assignedItemTypes(
   item: { type?: ItemType; lists?: string[] },
-  lists: { id: string; itemTypeId?: ItemType }[],
+  lists: { id: string; itemTypeId?: ItemType; itemTypeIds?: ItemType[] }[],
   types: ItemTypeDefinition[],
 ): ItemTypeDefinition[] {
   const orderedIds: ItemType[] = [item.type ?? BUILTIN_ITEM_TYPE_ID]
   for (const cid of item.lists ?? []) {
-    const pinned = lists.find((c) => c.id === cid)?.itemTypeId
-    if (pinned) orderedIds.push(pinned)
+    const list = lists.find((c) => c.id === cid)
+    if (!list) continue
+    for (const pinned of listAllowedTypeIds(list)) orderedIds.push(pinned)
   }
   const seen = new Set<string>()
   const result: ItemTypeDefinition[] = []
@@ -493,12 +513,14 @@ export function itemsOfType<
 >(
   typeId: string,
   items: T[],
-  lists: { id: string; itemTypeId?: ItemType }[],
+  lists: { id: string; itemTypeId?: ItemType; itemTypeIds?: ItemType[] }[],
   types: ItemTypeDefinition[] = [],
 ): T[] {
   const matchingTypeIds = descendantTypeIds(typeId, types)
   const listIdsWithType = new Set(
-    lists.filter((l) => l.itemTypeId && matchingTypeIds.has(l.itemTypeId as string)).map((l) => l.id),
+    lists
+      .filter((l) => listAllowedTypeIds(l).some((id) => matchingTypeIds.has(id as string)))
+      .map((l) => l.id),
   )
   return items.filter(
     (item) =>

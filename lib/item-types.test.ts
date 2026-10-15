@@ -312,9 +312,9 @@ describe("resolveDetailView", () => {
   const furniture = types.find((t) => t.id === "furniture")!
   const task = types.find((t) => t.id === "task")!
 
-  it("keeps a book to details only (no scheduling)", () => {
+  it("keeps a book to details, notes, and resources (no scheduling)", () => {
     const view = resolveDetailView({ type: "book", lists: ["reading"] }, [{ id: "reading", itemTypeId: "book" }], types)
-    expect(view.panels).toEqual(["details"])
+    expect(view.panels).toEqual(["details", "notes", "resources"])
     expect(view.layout?.heroImageAttrId).toBe("cover")
     expect(view.capabilities.scheduleable).toBeFalsy()
   })
@@ -325,13 +325,22 @@ describe("resolveDetailView", () => {
       [{ id: "wishlist", itemTypeId: "furniture" }],
       types,
     )
-    expect(view.panels).toEqual(["details"])
+    expect(view.panels).toEqual(["details", "notes", "resources"])
     expect(view.panels).not.toContain("scheduling")
   })
 
   it("gives tasks the full panel set", () => {
     const view = resolveDetailView({ type: "task", lists: ["na"] }, [{ id: "na" }], types, { isTask: true })
     expect(view.panels).toEqual(expect.arrayContaining(["details", "scheduling", "subtasks", "analysis"]))
+  })
+
+  it("lets a list hide the notes and resources tabs every item gets", () => {
+    const view = resolveDetailView(
+      { type: "book", lists: ["quiet"] },
+      [{ id: "quiet", itemTypeId: "book", hiddenDetailPanels: ["notes", "resources"] }],
+      types,
+    )
+    expect(view.panels).toEqual(["details"])
   })
 
   it("lets a list hide scheduling even if the type would show it", () => {

@@ -117,6 +117,11 @@ function collectFields(item: Item, titleOnly = false): FieldText[] {
   const attrTexts: string[] = []
   if (task.body) attrTexts.push(task.body)
   if (task.notes) attrTexts.push(task.notes)
+  for (const entry of task.noteLog ?? []) if (entry.text) attrTexts.push(entry.text)
+  for (const res of task.resources ?? []) {
+    const text = [res.name, res.caption, res.extractedText].filter(Boolean).join(" ")
+    if (text) attrTexts.push(text)
+  }
   if (task.taskDescription) attrTexts.push(task.taskDescription)
   if (task.why) attrTexts.push(task.why)
   if (task.consequences) attrTexts.push(task.consequences)

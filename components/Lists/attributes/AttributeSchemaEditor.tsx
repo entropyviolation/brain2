@@ -26,7 +26,7 @@ import { effectiveDef, slugId } from "./helpers"
 // so they fall through to the default (no type-specific fields) case below.
 const EDITOR_ATTRIBUTE_TYPES: AttributeType[] = [...SCHEMA_ATTRIBUTE_TYPES, "file", "multifile"]
 
-function TypeSpecificSchemaFields({
+export function TypeSpecificSchemaFields({
   def,
   onPatch,
 }: {

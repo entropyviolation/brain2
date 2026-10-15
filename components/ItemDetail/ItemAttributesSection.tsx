@@ -1,22 +1,31 @@
 /**
  * components/ItemDetail/ItemAttributesSection.tsx — Attributes panel for item detail
  *
- * The shared "Attributes" surface used by both ItemDetail variants. It composes:
- *  - the schema-driven value editor (attributes defined by the item's lists),
- *  - a typed editor for item-only attribute definitions + values, and
- *  - the AttributeCreator for defining brand-new typed attributes on the fly.
+ * The shared "Attributes" instrument used by both ItemDetail variants. It sits
+ * at the top of Details, not under every other section:
+ *  - a header plate with the attribute count and an **Add attribute** key that
+ *    opens `AttributeCreator` right there (type palette + settings + value),
+ *  - when the type has `detailLayout`, a picture-in-glass hero beside the
+ *    featured readouts,
+ *  - one grid of typed cells (type glyph, name, where the attribute comes from:
+ *    the item type, a list, or this item only),
+ *  - item-only cells carry a remove key; legacy values with no definition stay
+ *    editable as "Other attributes".
  */
 "use client"
 
-import { useMemo } from "react"
-import { Input } from "@/components/ui/input"
+import { useMemo, useState } from "react"
 import { IsolatedInput } from "@/components/ui/isolated-text-field"
-import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Trash2 } from "lucide-react"
+import { Plus, Trash2 } from "lucide-react"
 import type { AttributeDefinition, AttributeValue, ItemDetailLayout, ItemType, List } from "@/lib/types"
-import { AttributeValuesEditor, mergeItemAttributes } from "@/components/Lists/attribute-editor"
+import { mergeItemAttributes } from "@/components/Lists/attribute-editor"
 import { AttributeValueField } from "@/components/Lists/attributes/AttributeValueField"
+import { CompletionTiersPanel } from "@/components/Lists/attributes/CompletionTiersPanel"
+import { effectiveDef } from "@/components/Lists/attributes/helpers"
+import { hasCompletionTiers } from "@/lib/completion-tiers"
+import { normalizeAttributeType } from "@/lib/attribute-utils"
+import { attributeIsWide, attributeTypeInfo } from "@/lib/attribute-type-catalog"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { useAttachmentSrc } from "@/hooks/use-attachment-src"
 import { AttributeCreator } from "@/components/ItemDetail/AttributeCreator"
@@ -44,6 +53,57 @@ export interface ItemAttributesSectionProps {
   onChangeValues: (values: Record<string, AttributeValue>) => void
   onChangeItemAttributeDefinitions?: (defs: AttributeDefinition[]) => void
   onCreateAttribute: (def: AttributeDefinition, value: AttributeValue, listId: string | null) => void
+  /** Open the creator on mount (an item with no attributes yet). */
+  defaultCreating?: boolean
+  /** Opens another item in this same view; enables the "every type" demo key in the creator. */
+  onOpenItem?: (id: string) => void
+}
+
+function AttributeCell({
+  def,
+  source,
+  value,
+  allDefs,
+  values,
+  onChange,
+  onRemove,
+  featured = false,
+}: {
+  def: AttributeDefinition
+  source: string
+  value: AttributeValue
+  allDefs: AttributeDefinition[]
+  values: Record<string, AttributeValue>
+  onChange: (v: AttributeValue) => void
+  onRemove?: () => void
+  featured?: boolean
+}) {
+  const type = normalizeAttributeType(def.type)
+  const info = attributeTypeInfo(type)
+  const wide = attributeIsWide(type)
+  return (
+    <div
+      className={`id-attr-cell${wide ? " is-wide" : ""}${featured ? " is-featured" : ""}`}
+      data-attr-type={type}
+      data-testid={`attr-cell-${def.id}`}
+    >
+      <div className="id-attr-cell-head">
+        <span className="id-attr-glyph" title={`${info.label} — ${info.blurb}`} aria-hidden>
+          {info.glyph}
+        </span>
+        <span className="id-attr-name">{def.name}</span>
+        <span className="id-attr-source" title={`From ${source}`}>
+          {source}
+        </span>
+        {onRemove && (
+          <button type="button" className="id-attr-icon-key" onClick={onRemove} aria-label={`Remove ${def.name}`}>
+            <Trash2 className="h-3 w-3" />
+          </button>
+        )}
+      </div>
+      <AttributeValueField def={def} value={value} onChange={onChange} definitions={allDefs} siblingValues={values} />
+    </div>
+  )
 }
 
 export function ItemAttributesSection({
@@ -57,24 +117,46 @@ export function ItemAttributesSection({
   onChangeValues,
   onChangeItemAttributeDefinitions,
   onCreateAttribute,
+  defaultCreating = false,
+  onOpenItem,
 }: ItemAttributesSectionProps) {
   const types = useItemTypeStore((s) => s.types)
+  const [creating, setCreating] = useState(defaultCreating)
   const schemaDefs = useMemo(
     () => mergeItemAttributes({ type: itemType, lists: itemCategoryIds }, categories, types),
     [itemType, categories, itemCategoryIds, types],
   )
 
-  const itemOnlyDefs = itemAttributeDefinitions ?? []
+  const itemOnlyDefs = useMemo(() => (itemAttributeDefinitions ?? []).map(effectiveDef), [itemAttributeDefinitions])
+  const values = attributes || {}
+
+  // Where each schema attribute comes from: the item's type, else the first list that defines it.
+  const sourceOf = useMemo(() => {
+    const typeDef = types.find((t) => t.id === itemType)
+    const typeIds = new Set((typeDef?.attributes ?? []).map((a) => a.id))
+    const map = new Map<string, string>()
+    for (const def of schemaDefs) {
+      if (typeIds.has(def.id)) {
+        map.set(def.id, typeDef!.name)
+        continue
+      }
+      const list = itemCategoryIds
+        .map((id) => categories.find((c) => c.id === id))
+        .find((c) => c?.itemAttributes?.some((a) => a.id === def.id))
+      map.set(def.id, list?.name ?? "Type")
+    }
+    return map
+  }, [types, itemType, schemaDefs, itemCategoryIds, categories])
 
   // Legacy values with no definition anywhere (e.g. pre-migration item-only attrs).
   const orphanIds = useMemo(() => {
     const known = new Set([...schemaDefs.map((d) => d.id), ...itemOnlyDefs.map((d) => d.id)])
-    return Object.keys(attributes || {}).filter((id) => !known.has(id))
-  }, [attributes, schemaDefs, itemOnlyDefs])
+    return Object.keys(values).filter((id) => !known.has(id))
+  }, [values, schemaDefs, itemOnlyDefs])
 
   const existingIds = useMemo(
-    () => [...schemaDefs.map((d) => d.id), ...itemOnlyDefs.map((d) => d.id), ...Object.keys(attributes || {})],
-    [schemaDefs, itemOnlyDefs, attributes],
+    () => [...schemaDefs.map((d) => d.id), ...itemOnlyDefs.map((d) => d.id), ...Object.keys(values)],
+    [schemaDefs, itemOnlyDefs, values],
   )
 
   const omitted = new Set(omitAttributeIds ?? [])
@@ -86,115 +168,150 @@ export function ItemAttributesSection({
   const heroDef = heroId && !omitted.has(heroId) ? visibleSchema.find((d) => d.id === heroId) : undefined
   const visibleItemOnly = itemOnlyDefs.filter((d) => !omitted.has(d.id))
   const visibleOrphans = orphanIds.filter((id) => !omitted.has(id))
-  const heroValue = heroId ? attributes?.[heroId] : undefined
+  const allDefs = useMemo(() => [...schemaDefs, ...itemOnlyDefs], [schemaDefs, itemOnlyDefs])
+  // Formula cells are computed, never stored, so they are not counted as fillable.
+  const fillable = [...visibleSchema, ...visibleItemOnly].filter((d) => normalizeAttributeType(d.type) !== "formula")
+  const count = fillable.length + visibleOrphans.length
+  const filled = fillable.filter((d) => {
+    const v = values[d.id]
+    return v !== undefined && v !== null && v !== "" && !(Array.isArray(v) && v.length === 0)
+  }).length
+  const heroValue = heroId ? values[heroId] : undefined
   const heroUri =
-    typeof heroValue === "string"
-      ? heroValue
-      : Array.isArray(heroValue)
-        ? String(heroValue[0] ?? "")
-        : ""
+    typeof heroValue === "string" ? heroValue : Array.isArray(heroValue) ? String(heroValue[0] ?? "") : ""
   const heroUrl = useAttachmentSrc(heroUri)
 
-  const setOrphan = (id: string, v: string) => onChangeValues({ ...attributes, [id]: v })
+  const set = (id: string, v: AttributeValue) => onChangeValues({ ...values, [id]: v })
   const removeOrphan = (id: string) => {
-    const next = { ...attributes }
+    const next = { ...values }
     delete next[id]
     onChangeValues(next)
   }
 
   const removeItemOnly = (id: string) => {
-    onChangeItemAttributeDefinitions?.(itemOnlyDefs.filter((d) => d.id !== id))
-    const next = { ...attributes }
+    onChangeItemAttributeDefinitions?.(itemAttributeDefinitions.filter((d) => d.id !== id))
+    const next = { ...values }
     delete next[id]
     onChangeValues(next)
   }
 
+  const cell = (def: AttributeDefinition, source: string, opts: { featured?: boolean; removable?: boolean } = {}) => {
+    const d = effectiveDef(def)
+    return (
+      <AttributeCell
+        key={d.id}
+        def={d}
+        source={source}
+        value={values[d.id]}
+        allDefs={allDefs}
+        values={values}
+        onChange={(v) => set(d.id, v)}
+        onRemove={opts.removable ? () => removeItemOnly(d.id) : undefined}
+        featured={opts.featured}
+      />
+    )
+  }
+
   return (
-    <div className="space-y-3">
-      {heroDef && (
-        <div className="space-y-2">
-          {heroUrl ? (
-            <img
-              src={heroUrl}
-              alt={heroDef.name}
-              className="w-full max-h-72 rounded-md object-cover border bg-muted"
-            />
-          ) : (
-            <div className="flex h-40 items-center justify-center rounded-md border bg-muted/40 text-sm text-muted-foreground">
-              No {heroDef.name.toLowerCase()} yet
+    <section className="id-attrs" aria-label="Attributes">
+      <header className="id-attrs-head">
+        <span className="id-attrs-plate">Attributes</span>
+        <span className="id-attrs-count" title={`${filled} of ${count} filled`}>
+          {filled}/{count}
+        </span>
+        <Button
+          type="button"
+          variant="outline"
+          className="id-btn id-attrs-add"
+          aria-expanded={creating}
+          onClick={() => setCreating((v) => !v)}
+        >
+          <Plus className="h-4 w-4" />
+          Add attribute
+        </Button>
+      </header>
+
+      {creating && (
+        <AttributeCreator
+          categories={categories}
+          itemCategoryIds={itemCategoryIds}
+          existingIds={existingIds}
+          onCreate={onCreateAttribute}
+          onClose={() => setCreating(false)}
+        />
+      )}
+      {creating && onOpenItem && (
+        <button
+          type="button"
+          className="id-note-pin-key"
+          onClick={() => {
+            void import("@/lib/attribute-demo").then(({ ensureAttributeDemo }) =>
+              ensureAttributeDemo().then((id) => {
+                setCreating(false)
+                onOpenItem(id)
+              }),
+            )
+          }}
+        >
+          See every type filled in on the Attribute Demo item →
+        </button>
+      )}
+
+      {(heroDef || featuredDefs.length > 0) && (
+        <div className={`id-attrs-hero${heroDef ? " has-picture" : ""}`}>
+          {heroDef && (
+            <div className="id-attrs-hero-glass">
+              {heroUrl ? (
+                <img src={heroUrl} alt={heroDef.name} />
+              ) : (
+                <div className="id-attrs-hero-empty">No {heroDef.name.toLowerCase()} yet</div>
+              )}
+              <div className="id-attrs-hero-pick">
+                <AttributeValueField def={effectiveDef(heroDef)} value={values[heroDef.id]} onChange={(v) => set(heroDef.id, v)} />
+              </div>
             </div>
           )}
-          <AttributeValueField
-            def={heroDef}
-            value={attributes?.[heroDef.id]}
-            onChange={(v) => onChangeValues({ ...attributes, [heroDef.id]: v })}
-          />
+          {featuredDefs.length > 0 && (
+            <div className="id-attrs-featured" aria-label="Featured">
+              {featuredDefs.map((def) => cell(def, sourceOf.get(def.id) ?? "Type", { featured: true }))}
+            </div>
+          )}
         </div>
       )}
 
-      {featuredDefs.length > 0 && (
-        <div className="space-y-2 rounded-md border p-3">
-          <Label className="text-xs text-muted-foreground">Featured</Label>
-          <AttributeValuesEditor definitions={featuredDefs} values={attributes || {}} onChange={onChangeValues} />
-        </div>
-      )}
+      {hasCompletionTiers(visibleSchema) && <CompletionTiersPanel definitions={visibleSchema} values={values} />}
 
-      <AttributeValuesEditor definitions={restDefs} values={attributes || {}} onChange={onChangeValues} />
-
-      {visibleItemOnly.length > 0 && (
-        <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">This item only</Label>
-          <AttributeValuesEditor
-            definitions={visibleItemOnly}
-            values={attributes || {}}
-            onChange={onChangeValues}
-          />
-          <div className="flex flex-wrap gap-1">
-            {visibleItemOnly.map((def) => (
-              <Button
-                key={def.id}
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs text-muted-foreground"
-                onClick={() => removeItemOnly(def.id)}
-              >
-                <Trash2 className="h-3 w-3 mr-1" />
-                Remove {def.name}
-              </Button>
-            ))}
-          </div>
+      {restDefs.length + visibleItemOnly.length > 0 ? (
+        <div className="id-attrs-grid">
+          {restDefs.map((def) => cell(def, sourceOf.get(def.id) ?? "Type"))}
+          {visibleItemOnly.map((def) => cell(def, "This item only", { removable: true }))}
         </div>
-      )}
+      ) : !heroDef && featuredDefs.length === 0 && visibleOrphans.length === 0 ? (
+        <p className="id-attrs-empty">
+          No attributes yet. Add one to record what this item is: an author, a price, a date, a photo, a link.
+        </p>
+      ) : null}
 
       {visibleOrphans.length > 0 && (
-        <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">Other attributes</Label>
-          <div className="space-y-2">
-            {visibleOrphans.map((id) => (
-              <div key={id} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
-                <span className="text-sm font-medium truncate" title={humanizeId(id)}>
-                  {humanizeId(id)}
-                </span>
-                <IsolatedInput
-                  value={typeof attributes[id] === "string" ? (attributes[id] as string) : String(attributes[id] ?? "")}
-                  onCommit={(v) => setOrphan(id, v)}
-                  className="h-8"
-                />
-                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => removeOrphan(id)}>
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            ))}
-          </div>
+        <div className="id-attrs-orphans">
+          <span className="id-attrs-subplate">Other attributes</span>
+          {visibleOrphans.map((id) => (
+            <div key={id} className="id-attrs-orphan">
+              <span className="text-sm font-medium truncate" title={humanizeId(id)}>
+                {humanizeId(id)}
+              </span>
+              <IsolatedInput
+                value={typeof values[id] === "string" ? (values[id] as string) : String(values[id] ?? "")}
+                onCommit={(v) => set(id, v)}
+                className="h-8"
+              />
+              <button type="button" className="id-attr-icon-key" onClick={() => removeOrphan(id)} aria-label={`Remove ${humanizeId(id)}`}>
+                <Trash2 className="h-3 w-3" />
+              </button>
+            </div>
+          ))}
         </div>
       )}
-
-      <AttributeCreator
-        categories={categories}
-        itemCategoryIds={itemCategoryIds}
-        existingIds={existingIds}
-        onCreate={onCreateAttribute}
-      />
-    </div>
+    </section>
   )
 }

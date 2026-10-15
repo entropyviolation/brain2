@@ -27,7 +27,7 @@ import { ListPicker } from "@/components/Lists/list-picker"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { IsolatedInput, IsolatedTextarea } from "@/components/ui/isolated-text-field"
 import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
-import { SubtaskComposer } from "@/components/ItemDetail/SubtaskComposer"
+import { SubtaskTree } from "@/components/ItemDetail/SubtaskTree"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -57,8 +57,13 @@ import {
   ArrowRight,
   History,
   TimerOff,
+  NotebookPen,
+  Paperclip,
+  Link2,
 } from "lucide-react"
 import { ItemActivityPanel } from "@/components/ItemDetail/ItemActivityPanel"
+import { ItemNotesLog, NotesPeek } from "@/components/ItemDetail/ItemNotesLog"
+import { ItemResourcesPanel } from "@/components/ItemDetail/ItemResourcesPanel"
 import { CycleConfirmDialog } from "@/components/ItemDetail/CycleConfirmDialog"
 import type { Task, TaskCompletionReview, ItemDetailPanel, TimeLogEntry, CompletionStatus } from "@/lib/types"
 import { dateInputValue, getWeekString, parseLocalDate, safeDateFormat } from "@/lib/date-utils"
@@ -159,7 +164,7 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
   const visiblePanels = detailView.panels
   const caps = detailView.capabilities
   const scheduleableCategoryIds = useMemo(() => getScheduleableCategoryIds(lists), [lists])
-  const popupTabs = useMemo(() => [...visiblePanels, "history"], [visiblePanels])
+  const popupTabs = useMemo(() => [...visiblePanels, "links", "history"], [visiblePanels])
   const [detailTab, setDetailTab] = useState(() => {
     const stored = effectiveId ? readStoredRecord(APP_NAV_KEYS.itemDetailTab)[effectiveId] : null
     return stored || "details"
@@ -261,41 +266,6 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
     updateTask(updated)
   }, [task, updateTask])
 
-  const addSubtask = useCallback((description: string) => {
-    const trimmed = description.trim()
-    if (!task || !trimmed) return
-    setTask({
-      ...task,
-      subtasks: [...(task.subtasks || []), { id: Date.now().toString(), description: trimmed, completed: false }],
-    })
-  }, [task, setTask])
-
-  const toggleSubtask = useCallback(
-    (subtaskId: string) => {
-      if (task) {
-        setTask({
-          ...task,
-          subtasks: task.subtasks?.map((subtask) =>
-            subtask.id === subtaskId ? { ...subtask, completed: !subtask.completed } : subtask,
-          ),
-        })
-      }
-    },
-    [task],
-  )
-
-  const removeSubtask = useCallback(
-    (subtaskId: string) => {
-      if (task) {
-        setTask({
-          ...task,
-          subtasks: task.subtasks?.filter((subtask) => subtask.id !== subtaskId),
-        })
-      }
-    },
-    [task],
-  )
-
   // Create a brand-new attribute from the detail view. When a list is targeted,
   // the definition is persisted onto that list's schema immediately (so every
   // item in the list gains the attribute); the value is set on the draft and
@@ -378,6 +348,13 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
   const handleToggleSent = () => {
     commitDraft(withSentMark(task, sentListIds, !sentOnThoseLists, new Date()))
   }
+  const noteCount = task.noteLog?.length ?? 0
+  const resourceCount = task.resources?.length ?? 0
+  const linkCount = task.links?.length ?? 0
+  const writeDraft = (patch: Partial<Task>) => {
+    touchDraft(patch)
+    setTask((prev) => (prev ? { ...prev, ...patch } : prev))
+  }
 
   return (
     <>
@@ -408,6 +385,20 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
               </div>
             </div>
             <div className="id-fascia-row id-meta">
+              {assignedTypes.map((type) => (
+                <button
+                  key={type.id}
+                  type="button"
+                  className="id-type-plate"
+                  style={{ ["--id-type-color" as string]: type.color ?? "#cbd5e1" }}
+                  title="Double-click to view or edit this type"
+                  onDoubleClick={() => setEditingItemType(type)}
+                >
+                  <span className="id-type-lamp" aria-hidden />
+                  {type.name}
+                  {type.id === primaryTypeId && assignedTypes.length > 1 && <span className="id-type-primary">primary</span>}
+                </button>
+              ))}
               <Badge variant={task.completed ? "default" : "secondary"} className="id-chip">
                 {task.completed ? "Completed" : task.stage}
               </Badge>
@@ -493,6 +484,25 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
                   Subtasks
                 </TabsTrigger>
                 )}
+                {visiblePanels.includes("notes") && (
+                <TabsTrigger value="notes" className="flex items-center gap-2">
+                  <NotebookPen className="h-4 w-4" />
+                  Notes
+                  {noteCount > 0 && <span className="id-tab-count">{noteCount}</span>}
+                </TabsTrigger>
+                )}
+                {visiblePanels.includes("resources") && (
+                <TabsTrigger value="resources" className="flex items-center gap-2">
+                  <Paperclip className="h-4 w-4" />
+                  Resources
+                  {resourceCount > 0 && <span className="id-tab-count">{resourceCount}</span>}
+                </TabsTrigger>
+                )}
+                <TabsTrigger value="links" className="flex items-center gap-2 id-tab-secondary">
+                  <Link2 className="h-4 w-4" />
+                  Links
+                  {linkCount > 0 && <span className="id-tab-count">{linkCount}</span>}
+                </TabsTrigger>
                 {visiblePanels.includes("analysis") && (
                 <TabsTrigger value="analysis" className="flex items-center gap-2 id-tab-secondary">
                   <Brain className="h-4 w-4" />
@@ -513,8 +523,8 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
 
               <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
                 <TabsContent value="details" className="space-y-6 mt-0">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div className="space-y-6">
+                  <div className="id-details-grid">
+                    <div className="id-details-main">
                       {isReminderTask(task, lists) ? (
                         <ReminderScheduleFields
                           task={task}
@@ -541,6 +551,31 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
                           />
                         </>
                       ) : null}
+                      <div className="id-bay">
+                        <ItemAttributesSection
+                          attributes={task.attributes || {}}
+                          itemCategoryIds={task.lists ?? []}
+                          categories={lists}
+                          itemAttributeDefinitions={task.itemAttributeDefinitions}
+                          itemType={task.type}
+                          layout={detailView.layout}
+                          omitAttributeIds={
+                            itemShowsPersonPipelines(task, lists)
+                              ? [PERSON_ATTR.birthday, PERSON_ATTR.notes]
+                              : undefined
+                          }
+                          onChangeValues={(attributes) => {
+                            touchDraft({ attributes })
+                            setTask((prev) => (prev ? { ...prev, attributes } : prev))
+                          }}
+                          onChangeItemAttributeDefinitions={(itemAttributeDefinitions) =>
+                            setTask({ ...task, itemAttributeDefinitions })
+                          }
+                          onCreateAttribute={handleCreateAttribute}
+                          onOpenItem={(id) => setOverrideId(id)}
+                        />
+                      </div>
+
                       <div className="space-y-3">
                         <Label htmlFor="task-description" className="text-sm font-semibold flex items-center gap-2">
                           <FileText className="h-4 w-4" />
@@ -770,58 +805,9 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
                       )}
                     </div>
 
-                    <div className="space-y-6">
+                    <aside className="id-details-rail" aria-label="Where this item lives">
                       <div className="space-y-3">
-                        <Label className="text-sm font-semibold">Type</Label>
-                        <div className="flex flex-wrap gap-2">
-                          {assignedTypes.map((type) => (
-                            <Badge
-                              key={type.id}
-                              variant="secondary"
-                              className="flex items-center gap-2 px-3 py-1 text-sm font-medium cursor-pointer"
-                              style={{
-                                backgroundColor: `${type.color ?? "#cbd5e1"}20`,
-                                borderColor: type.color ?? "#cbd5e1",
-                              }}
-                              title="Double-click to view or edit this type"
-                              onDoubleClick={() => setEditingItemType(type)}
-                            >
-                              <div
-                                className="w-2 h-2 rounded-full"
-                                style={{ backgroundColor: type.color ?? "#cbd5e1" }}
-                              />
-                              {type.name}
-                              {type.id === primaryTypeId && assignedTypes.length > 1 && (
-                                <span className="text-[10px] text-muted-foreground">primary</span>
-                              )}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-
-                      <Separator />
-
-                      {sentListIds.length > 0 && (
-                        <div className="space-y-2">
-                          <Label className="text-sm font-semibold">Sent</Label>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="id-btn"
-                            aria-pressed={sentOnThoseLists}
-                            onClick={handleToggleSent}
-                          >
-                            Sent
-                          </Button>
-                          <p className="text-xs text-muted-foreground">
-                            Marks this item sent. It stays in the vault and is not deleted. Sent items hide in the list
-                            until Show sent, and leave the list next week.
-                          </p>
-                        </div>
-                      )}
-
-                      <div className="space-y-3">
-                        <Label className="text-sm font-semibold">Lists</Label>
+                        <Label className="id-rail-plate">Lists</Label>
                         <div className="flex flex-wrap gap-2">
                           {task.lists?.map((categoryId) => {
                             const category = lists.find((c) => c.id === categoryId)
@@ -863,57 +849,44 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
                         </div>
                       </div>
 
-                      <Separator />
-
                       <div className="space-y-3">
-                        <h3 className="font-semibold text-sm">Tags</h3>
+                        <Label className="id-rail-plate">Tags</Label>
                         <TagInput tags={task.tags ?? []} onAdd={addTag} onRemove={removeTag} />
                       </div>
 
-                      <Separator />
+                      {visiblePanels.includes("notes") && (
+                        <div className="space-y-2">
+                          <Label className="id-rail-plate">Notes</Label>
+                          <NotesPeek
+                            entries={task.noteLog}
+                            onChangeEntries={(noteLog) => writeDraft({ noteLog })}
+                            onOpenAll={() => setDetailTab("notes")}
+                          />
+                        </div>
+                      )}
 
-                      <div className="space-y-3">
-                        <h3 className="font-semibold text-sm">Related</h3>
-                        <LinkPicker sourceId={task.id} onAdd={addLink} />
-                        <RelatedItemsPanel
-                          task={task}
-                          onOpenItem={(id) => setOverrideId(id)}
-                          onRemoveLink={removeLink}
-                        />
-                      </div>
-
-                      <Separator />
-
-                      <div className="space-y-3">
-                        <h3 className="font-semibold text-sm">Attributes</h3>
-                        <ItemAttributesSection
-                          attributes={task.attributes || {}}
-                          itemCategoryIds={task.lists ?? []}
-                          categories={lists}
-                          itemAttributeDefinitions={task.itemAttributeDefinitions}
-                          itemType={task.type}
-                          layout={detailView.layout}
-                          omitAttributeIds={
-                            itemShowsPersonPipelines(task, lists)
-                              ? [PERSON_ATTR.birthday, PERSON_ATTR.notes]
-                              : undefined
-                          }
-                          onChangeValues={(attributes) => {
-                            touchDraft({ attributes })
-                            setTask((prev) => (prev ? { ...prev, attributes } : prev))
-                          }}
-                          onChangeItemAttributeDefinitions={(itemAttributeDefinitions) =>
-                            setTask({ ...task, itemAttributeDefinitions })
-                          }
-                          onCreateAttribute={handleCreateAttribute}
-                        />
-                      </div>
-
-                      <Separator />
+                      {sentListIds.length > 0 && (
+                        <div className="space-y-2">
+                          <Label className="id-rail-plate">Sent</Label>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="id-btn"
+                            aria-pressed={sentOnThoseLists}
+                            onClick={handleToggleSent}
+                          >
+                            Sent
+                          </Button>
+                          <p className="text-xs text-muted-foreground">
+                            Marks this item sent. It stays in the vault and is not deleted. Sent items hide in the list
+                            until Show sent, and leave the list next week.
+                          </p>
+                        </div>
+                      )}
 
                       {caps.completable && (
                       <div className="space-y-3 text-sm">
-                        <h3 className="font-semibold">Status</h3>
+                        <h3 className="id-rail-plate">Status</h3>
                         <div className="space-y-2">
                           <Label htmlFor="completion-status" className="text-sm font-medium">
                             Completion status
@@ -962,7 +935,37 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
                         </div>
                       </div>
                       )}
-                    </div>
+                    </aside>
+                  </div>
+                </TabsContent>
+
+                {visiblePanels.includes("notes") && (
+                <TabsContent value="notes" className="mt-0">
+                  <ItemNotesLog
+                    entries={task.noteLog}
+                    standing={task.notes}
+                    onChangeEntries={(noteLog) => writeDraft({ noteLog })}
+                    onLiveStanding={(notes) => touchDraft({ notes })}
+                    onChangeStanding={(notes) => setTask((prev) => (prev ? { ...prev, notes } : prev))}
+                  />
+                </TabsContent>
+                )}
+
+                {visiblePanels.includes("resources") && (
+                <TabsContent value="resources" className="mt-0">
+                  <ItemResourcesPanel resources={task.resources} onChange={(resources) => writeDraft({ resources })} />
+                </TabsContent>
+                )}
+
+                <TabsContent value="links" className="space-y-4 mt-0">
+                  <div className="id-bay space-y-3">
+                    <h3 className="id-rail-plate">Related items</h3>
+                    <LinkPicker sourceId={task.id} onAdd={addLink} />
+                    <RelatedItemsPanel
+                      task={task}
+                      onOpenItem={(id) => setOverrideId(id)}
+                      onRemoveLink={removeLink}
+                    />
                   </div>
                 </TabsContent>
 
@@ -1337,62 +1340,10 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
                         Subtasks
                       </h3>
                       <p className="text-sm text-muted-foreground">
-                        Break down this task into smaller, manageable subtasks.
+                        Break this into steps, and use + on any step to break it down again. Minutes on a step count as its own estimate or the sum of the steps inside, whichever is larger.
                       </p>
 
-                      <SubtaskComposer onAdd={addSubtask} />
-
-                      <div className="space-y-2">
-                        {!task.subtasks || task.subtasks.length === 0 ? (
-                          <p className="text-sm text-muted-foreground italic">No subtasks created</p>
-                        ) : (
-                          task.subtasks.map((subtask) => (
-                            <div
-                              key={subtask.id}
-                              className="flex items-center justify-between p-3 bg-background/50 rounded-lg border"
-                            >
-                              <div className="flex items-center gap-3">
-                                <Checkbox
-                                  checked={subtask.completed}
-                                  onCheckedChange={() => toggleSubtask(subtask.id)}
-                                />
-                                <span
-                                  className={`text-sm font-medium ${subtask.completed ? "line-through text-muted-foreground" : ""}`}
-                                >
-                                  {subtask.description}
-                                </span>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => removeSubtask(subtask.id)}
-                                className="h-6 w-6 focus-ring"
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          ))
-                        )}
-                      </div>
-
-                      {task.subtasks && task.subtasks.length > 0 && (
-                        <div className="pt-2 border-t">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Progress:</span>
-                            <span className="font-medium">
-                              {task.subtasks.filter((s) => s.completed).length} / {task.subtasks.length} completed
-                            </span>
-                          </div>
-                          <div className="w-full bg-muted rounded-full h-2 mt-2">
-                            <div
-                              className="bg-primary h-2 rounded-full transition-all duration-300"
-                              style={{
-                                width: `${(task.subtasks.filter((s) => s.completed).length / task.subtasks.length) * 100}%`,
-                              }}
-                            />
-                          </div>
-                        </div>
-                      )}
+                      <SubtaskTree steps={task.subtasks} onChange={(subtasks) => setTask({ ...task, subtasks })} />
                     </div>
                   </div>
                 </TabsContent>
@@ -1431,21 +1382,6 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
                             onLiveChange={(consequences) => touchDraft({ consequences })}
                             onCommit={(consequences) => setTask((prev) => (prev ? { ...prev, consequences } : prev))}
                             placeholder="Describe the potential consequences of not completing this task..."
-                            rows={3}
-                            className="focus-ring"
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="notes" className="text-sm font-semibold">
-                            Additional Notes
-                          </Label>
-                          <IsolatedTextarea
-                            id="notes"
-                            value={task.notes || ""}
-                            onLiveChange={(notes) => touchDraft({ notes })}
-                            onCommit={(notes) => setTask((prev) => (prev ? { ...prev, notes } : prev))}
-                            placeholder="Any additional thoughts or context..."
                             rows={3}
                             className="focus-ring"
                           />
