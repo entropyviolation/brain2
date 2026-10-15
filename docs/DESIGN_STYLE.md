@@ -268,7 +268,8 @@ Tracking view prefs, global Settings fields) stay clean and close at once.
 ### Numbers the person did not type
 
 A duration, a clock, or a time the app filled in is marked: a leading `~` and
-a dashed amber **est.** chip. The tooltip states the basis in plain words
+a dashed amber **est.** chip (a paper chip, not a light — the no-orange LED
+rule under [DSi pixel and lights](#dsi-pixel-and-lights) still applies). The tooltip states the basis in plain words
 (“4 pages × 10 min each”) and the chip can confirm or correct it. The same
 mark anywhere a derived value shows. Implementation:
 `lib/estimated-values.ts`,
@@ -353,6 +354,16 @@ Lights already in the house, to make more of:
 - Grade meters: `noble-gas-tube.tsx` — glass finger-tubes, plasma length is
   the percent.
 
+**LED colors: green, blue, purple. No orange.** A lamp, LED, meter, or
+glowing indicator lights in phosphor green (`--hab-crt-green`, `#7dffc4`),
+ice blue (`#9ad7ff`), or purple / violet (`#7e14ff`, `#7d6bb8`). Red is
+kept for the now line and for a true fault. Do not use orange or amber
+light: no amber LED, no amber “ghost” or “warning” lamp, no orange plasma.
+Keep orange out of chrome as much as possible. A pen color the person
+chose is theirs and may be orange; that is data, not chrome. Older amber
+lamps in the house (`noble-gas-tube.tsx`, `home-chrome.css`,
+`tracking-chrome.css`, and others) are to be moved onto these colors.
+
 The stills do not include a DSi. What they do cover, and what they do not, is
 in [`DESIGN_REFS.md`](DESIGN_REFS.md#gaps).
 
@@ -409,6 +420,15 @@ title bar uses this key (`.b2-close-key` in `app/win95.css`). It sits in the
 title bar. It is not a transparent pip, and it is not a smaller off-center
 mark. The generic button hairline is only a lip — it must not be the close
 key’s only paint, or the title bar shows through.
+
+**Caption keys.** A caption bar that carries a row of actions (the open list’s
+Search / Add / Settings / Close in Lists) uses one family of keys instead: a
+30px gunmetal cap with an 8px radius, darker than the fascia keys, with a
+specular top lip, a 2px pressed foot, and a stamped 16px mark (near-black ink
+over a 1px light lip, like the transport discs). The × in that row is one of
+these keys so the set matches; it is not the 22px dialog close key. An “on”
+key (search open) turns to CRT glass with a phosphor mark.
+`.fm-cap-key` + `CaptionKeyGlyph` in `components/Lists/`.
 
 ### Transport keys
 
@@ -677,9 +697,14 @@ Habits console.
   weighted springs, soft collisions, mild orbital swirl — icons suspended by
   information weight. Grab / throw one orb while others keep simulating; empty
   canvas stirs the field. Soft force cords (`list-icon-force-links`) and heavy
-  hub glow read the graph. **Reset** restores the pre-Gravity freeform snapshot
+  hub glow read the graph. **⚙ Gravity settings** (separate from On/Off) tunes
+  global G and connection-source gains (`listIconsGravityField`). **Skip to
+  stable** fast-forwards to the settled layout under those **current** settings
+  (not hardcoded defaults). **Reset** restores the pre-Gravity freeform snapshot
   and turns forces off. Mutually exclusive with PILE UP / Auto-organize at
-  runtime. Reduced motion snaps without long thrash.
+  runtime. Reduced motion snaps without long thrash. Large lists degrade
+  gracefully (capped edges, chunked Skip, quieter juice) so toolbar clicks stay
+  responsive.
 - Inside a list, Default and Icons use the same contract: personal orbs on a
   working surface. A checklist still shows its checkbox.
 - Frame skin: `components/Lists/filemanager98.css` (`.fm98`). Toolbar keys
@@ -694,10 +719,12 @@ match, and does not sand them into one shared kit.
   chips (mint / lilac / teal, user `CalendarEvent.color`, default `#8cd4a5`).
   The chips are the room’s objects. Cells breathe. Period nav is a nameplate
   with metal previous / next / today keys.
-- **Analytics.** Range and the left index may use the mill
-  (`analytics-chrome.css`). Every canvas stays a light instrument studio:
-  Karla, ink `#000` on face gray, white plot wells, phosphor `#3dff8a` on
-  traces only. Title bar and status bar keep the room in the house. Item
+- **Analytics.** An esoteric data plate (`analytics-atlas.css` over
+  `analytics-chrome.css`): cobalt range bay with field rings and a degree
+  ruler, typewriter keys and ball-bearing lamps, steel catalog drawers and
+  index-card tabs for the index, cool white paper over a cobalt graph rule,
+  FIG.-numbered double-ruled plates, graphite scopes. Type is handheld pixel:
+  Pixelify Sans, Silkscreen, DotGothic16. No yellow, no stars. Title bar and status bar keep the room in the house. Item
   Types stays the library surface; Settings still edits types. Tooltips say
   what a control or a blank cell means (`ANALYTICS_TAB_HELP` and per-control
   titles). Match that density of explanation when a control would otherwise
@@ -738,7 +765,7 @@ A surface that is still flat may take the mill or invent furniture.
 | Lists Explorer frame | `components/Lists/filemanager98.css` (velvet and orbs stay) |
 | Docs outer chrome | `components/Docs/docs.css` (white paper stays) |
 | Week grade / Perfect output sheets | `.hab-grade-sheet` in `habit-chrome.css` |
-| Analytics range and left index | `components/Analytics/analytics-chrome.css` |
+| Analytics range and left index | `components/Analytics/analytics-chrome.css`, skinned by `analytics-atlas.css` |
 | Scheduler frame | `components/Scheduler/scheduler-chrome.css` (`.sch95`) |
 | Search palette | `components/Search/search-chrome.css` (`.b2-search`) |
 

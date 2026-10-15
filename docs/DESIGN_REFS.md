@@ -627,6 +627,30 @@ implementer; see [`DESIGN_STYLE.md`](DESIGN_STYLE.md#depth--spacing).
 
 ---
 
+<a id="analytics-atlas-0001-0124"></a>
+
+## Analytics atlas (0001–0124)
+
+A second batch, `designrefs/0001-…jpg` through `0124-…jpg`, added 2026-10-13.
+The batch is not yet catalogued still by still. The Analytics skin
+(`components/Analytics/analytics-atlas.css`) is the first room built from it.
+It reads the batch as technical diagrams, not costume: an esoteric data plate
+kept in a card catalog. The star and celestial stills were tried and set aside,
+along with yellow paper (too much costume).
+
+| Stills | Lane | Where it went in Analytics |
+|--------|------|----------------------------|
+| 0047, 0058, 0061, 0049, 0086 (periodic-law rings, degree wheels, overlapping circles, moiré) | Idea | Range bay field rings and spokes. `public/analytics-atlas/field-lines.svg` is drawn, not a copy. |
+| 0016 (lissajous), 0007, 0034 (instrument scales, scala table) | Apply | A damped trace in the band and a CSS degree ruler along its bottom edge. |
+| 0124, 0102, 0036 (cobalt cover, cyanotype, canal map) | Apply | Cobalt band and the single cobalt accent. |
+| 0087, 0088, 0116 (typewriter keys, Esc key) | Apply | Range presets, Prev / Next, studio chips and `?` are chrome-rimmed keys. Pressed is an ink face. |
+| 0045, 0097, 0106–0109 (steel ball bearings), 0105 (pearls) | Apply | Lamps on keys and drawer pulls are steel bearings. The one lit lamp is a cool pearl. |
+| 0082 (card drawer), 0084, 0085 (index tabs, black guide tabs) | Idea | Groups are steel drawers with a label holder. Views are index cards with staggered tabs; the open card is the black guide tab with its number. |
+| 0118 (grid notebook), 0120 (ruled card), 0083 (ERMA figure) | Apply | Cool white paper over a cobalt graph rule. Readouts are one ruled card. |
+| 0011, 0075 (crop marks, blueprint), 0069, 0085 ("FIG 64", "Figure 2-14") | Idea | Plates carry crop marks and a double rule, and titles are numbered `FIG. 01`, `FIG. 02`… |
+
+Data fills (heat hues, pen colors, item-type colors) were not re-tinted.
+
 ## Do not costume the whole app
 
 These stills are ingredients for a more magical, more pixel, more esoteric
@@ -659,6 +683,7 @@ Do:
 | `designrefs/` | Raw moodboard (not shipped assets, except the five desktop PCB stills copied to `public/pcb/`) |
 | This file | Catalog, plus how to read the stills under the redesign (gaps and conflicts at the top) |
 | [`public/pcb/`](../public/pcb/) | Served desktop plates |
+| [`public/analytics-atlas/`](../public/analytics-atlas/) | Analytics field-ring band (drawn SVG) |
 | [`DESIGN_STYLE.md`](DESIGN_STYLE.md) | Failures, layout, palette. Magical interaction, DSi pixel and lights, esoteric technology. Habits and Lists are examples, not templates |
 | [`UI_NEXT.md`](UI_NEXT.md) | Open layout tasks |
 | [`PLAN_OF_ACTION.md`](PLAN_OF_ACTION.md) | Combined work order (not edited from this pass) |
