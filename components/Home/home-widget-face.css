@@ -1,0 +1,865 @@
+/**
+ * components/Home/home-widget-face.css — Home overview squares as small instruments
+ *
+ * Skin over `home-chrome.css` (and the habit sheet that also paints the strip):
+ * same selectors, same DOM, loaded after both. Nothing here changes what a tile
+ * does, what it reads, or which tiles show. Drawn from designrefs, read as
+ * instruments rather than costume:
+ *
+ * - Each tile is a satin handheld body (Sony / Kyocera / PDA silver: ffa2396f,
+ *   117ebb91, 36bc1715, 233182978) — rounded, lit from above, resting on the
+ *   strip with a real shadow. The metal still reads the one `--chrome-*`
+ *   patina, so a chosen gunmetal keeps working.
+ * - The name is engraved into the body above the screen, like a maker's mark,
+ *   not a tab hanging off the top edge. It keeps to one line.
+ * - The lamp beside the name is a small noble-gas tube (w3caho3p, 61ildG1q):
+ *   a glass capsule with a bright core in that widget's gas color. No yellow.
+ * - The screen is glass in an anodized bezel: oscilloscope graticule
+ *   (a898e04c), phosphor bloom, curved-glass sheen, edge vignette. One accent:
+ *   the house phosphor green.
+ * - The foot is an etched caption under a hairline double rule (diagram
+ *   grammar), not a second raised box.
+ * - The strip is satin with a faint cobalt graph rule (0118), every tile the
+ *   same height so the row reads as one bank of instruments.
+ */
+
+/* ---- Tokens ------------------------------------------------------------ */
+
+body.win95-app .home95 .home-overview {
+  --face-ink: #1d2126;
+  --face-ink-soft: #464c54;
+  --face-engrave-hi: rgba(255, 255, 255, 0.85);
+  --face-glass: #050b0a;
+  --face-glass-2: #0b1714;
+  --face-bezel: #1f2327;
+  --face-bezel-hi: #3a4046;
+  --face-phosphor: var(--hab-crt-green, #7dffc4);
+  --face-glow: 0 0 1px rgba(214, 255, 236, 0.9), 0 0 6px rgba(125, 255, 196, 0.55),
+    0 0 14px rgba(125, 255, 196, 0.22);
+  --face-grid: rgba(125, 255, 196, 0.07);
+  --face-grid-major: rgba(125, 255, 196, 0.13);
+  --face-rule: rgba(36, 76, 160, 0.06);
+  --face-tile-h: 164px;
+
+  gap: 16px 12px;
+  padding: 14px 12px 14px;
+  border-radius: var(--r-3, 3px);
+  background-color: var(--chrome-face);
+  background-image:
+    /* faint cobalt graph rule, major every 5 */
+    linear-gradient(var(--face-rule) 1px, transparent 1px),
+    linear-gradient(90deg, var(--face-rule) 1px, transparent 1px),
+    linear-gradient(rgba(36, 76, 160, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(36, 76, 160, 0.035) 1px, transparent 1px),
+    /* satin: light from above, foot in shade */
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--chrome-mist, #eef0f2) 70%, transparent) 0,
+      transparent 38%,
+      transparent calc(100% - 10px),
+      rgba(0, 0, 0, 0.1) 100%
+    );
+  background-size:
+    60px 60px,
+    60px 60px,
+    12px 12px,
+    12px 12px,
+    100% 100%;
+  background-position: -1px -1px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    0 0 0 1px var(--chrome-ring, #5c6064);
+}
+
+/* Per-widget gas color. Neon, argon, xenon, krypton, helium, mercury — no sodium yellow. */
+body.win95-app .home95 .home-tile.is-review { --home-caption-pip: #ff6a4d; }
+body.win95-app .home95 .home-tile.is-points { --home-caption-pip: #a678ff; }
+body.win95-app .home95 .home-tile.is-award { --home-caption-pip: #6f8dff; }
+body.win95-app .home95 .home-tile.is-progress { --home-caption-pip: #7dffc4; }
+body.win95-app .home95 .home-tile.is-weather { --home-caption-pip: #7ec8ff; }
+body.win95-app .home95 .home-tile.is-pet { --home-caption-pip: #7dffc4; }
+body.win95-app .home95 .home-tile.is-daylamp { --home-caption-pip: #ffa3c0; }
+body.win95-app .home95 .home-tile.is-daysuntil { --home-caption-pip: #d7cdff; }
+body.win95-app .home95 .home-tile.is-solar { --home-caption-pip: #ff8a66; }
+body.win95-app .home95 .home-tile.is-affirmation { --home-caption-pip: #ff8ad4; }
+body.win95-app .home95 .home-tile.is-next { --home-caption-pip: #9dff8a; }
+body.win95-app .home95 .home-tile.is-tracking { --home-caption-pip: #6ae0ff; }
+body.win95-app .home95 .home-tile.is-night { --home-caption-pip: #8aa4ff; }
+body.win95-app .home95 .home-tile.is-harvest { --home-caption-pip: #a8ff9e; }
+body.win95-app .home95 .home-tile.is-inbox { --home-caption-pip: #ff6a8a; }
+body.win95-app .home95 .home-tile.is-flow { --home-caption-pip: #5ee0c5; }
+body.win95-app .home95 .home-tile.is-paint { --home-caption-pip: #e3a8ff; }
+
+/* ---- Body: satin handheld ---------------------------------------------- */
+
+body.win95-app .home95 .home-overview .home-tile,
+body.win95-app .hab95 .home95 .home-overview > .home-tile {
+  --home-tile-h: var(--face-tile-h);
+  height: var(--face-tile-h);
+  min-height: var(--face-tile-h);
+  max-height: var(--face-tile-h);
+  gap: 7px;
+  padding: 9px 9px 9px;
+  border-radius: 8px;
+  opacity: 1;
+  background:
+    /* specular band across the top third, like a lit aluminium shell */
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.55) 0,
+      rgba(255, 255, 255, 0.12) 22%,
+      transparent 46%,
+      rgba(0, 0, 0, 0.05) 100%
+    ),
+    /* fine horizontal brushing */
+    repeating-linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.07) 0 1px,
+      transparent 1px 3px
+    ),
+    linear-gradient(
+      170deg,
+      var(--chrome-mist, #eef0f2) 0%,
+      var(--chrome-key-mid, #d4d6d8) 34%,
+      var(--chrome-face, #c0c0c0) 70%,
+      var(--chrome-shade, #969a9e) 100%
+    );
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--chrome-ring, #5c6064) 85%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 0 rgba(30, 34, 38, 0.32),
+    inset 1px 0 0 rgba(255, 255, 255, 0.35),
+    inset -1px 0 0 rgba(30, 34, 38, 0.16),
+    0 1px 0 rgba(255, 255, 255, 0.55),
+    0 4px 10px -3px rgba(16, 20, 28, 0.38),
+    0 10px 22px -12px rgba(16, 20, 28, 0.35);
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+body.win95-app .home95 .home-overview .home-tile:hover,
+body.win95-app .home95 .home-overview .home-tile:focus-within {
+  transform: translateY(-1px);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--chrome-ring, #5c6064) 85%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 0 rgba(30, 34, 38, 0.32),
+    inset 1px 0 0 rgba(255, 255, 255, 0.35),
+    inset -1px 0 0 rgba(30, 34, 38, 0.16),
+    0 1px 0 rgba(255, 255, 255, 0.55),
+    0 7px 14px -4px rgba(16, 20, 28, 0.42),
+    0 16px 28px -14px rgba(16, 20, 28, 0.4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.win95-app .home95 .home-overview .home-tile {
+    transition: none;
+  }
+  body.win95-app .home95 .home-overview .home-tile:hover,
+  body.win95-app .home95 .home-overview .home-tile:focus-within {
+    transform: none;
+  }
+}
+
+/* The open key is the whole upper body; keep it a quiet surface. */
+body.win95-app .home95 .home-overview .home-tile .home-tile-open {
+  gap: 7px;
+  border-radius: 6px;
+  outline-offset: 2px;
+}
+
+/* ---- Name: engraved maker's mark + gas tube ------------------------------ */
+
+body.win95-app .home95 .home-overview .home-tile .hab-score-caption,
+body.win95-app .hab95 .home95 .home-overview .home-tile .hab-score-caption {
+  position: static;
+  transform: none;
+  align-items: center;
+  gap: 7px;
+  max-width: calc(100% - 18px);
+  min-height: 12px;
+  padding: 0 0 0 2px;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--face-ink-soft);
+  /* engraved: dark cut with a lit lower lip */
+  text-shadow:
+    0 1px 0 var(--face-engrave-hi),
+    0 -0.5px 0 rgba(0, 0, 0, 0.18);
+}
+
+body.win95-app .home95 .home-overview .home-tile .hab-score-caption > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Gas tube: a glass capsule, bright core, soft discharge halo. */
+body.win95-app .home95 .home-overview .home-tile .hab-score-caption::before {
+  width: 5px;
+  height: 11px;
+  border-radius: 3px;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.55) 0 1px, transparent 1px),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--home-caption-pip, #7dffc4) 40%, #fff) 0%,
+      var(--home-caption-pip, #7dffc4) 30%,
+      color-mix(in srgb, var(--home-caption-pip, #7dffc4) 70%, #fff) 50%,
+      var(--home-caption-pip, #7dffc4) 70%,
+      color-mix(in srgb, var(--home-caption-pip, #7dffc4) 55%, #000) 100%
+    );
+  box-shadow:
+    0 0 0 1px rgba(20, 24, 28, 0.55),
+    0 0 0 2px rgba(255, 255, 255, 0.45),
+    0 0 5px var(--home-caption-pip, #7dffc4),
+    0 0 11px color-mix(in srgb, var(--home-caption-pip, #7dffc4) 55%, transparent);
+  transition: box-shadow 160ms ease;
+}
+
+body.win95-app .home95 .home-overview .home-tile:hover .hab-score-caption::before {
+  box-shadow:
+    0 0 0 1px rgba(20, 24, 28, 0.55),
+    0 0 0 2px rgba(255, 255, 255, 0.5),
+    0 0 7px var(--home-caption-pip, #7dffc4),
+    0 0 16px color-mix(in srgb, var(--home-caption-pip, #7dffc4) 70%, transparent);
+}
+
+/* Hide key sits level with the engraved name. */
+body.win95-app .home95 .home-overview .home-tile > .home-tile-hide {
+  top: 6px;
+  right: 6px;
+}
+
+/* ---- Screen: glass in an anodized bezel ---------------------------------- */
+
+body.win95-app .home95 .home-overview .home-tile .home-crt,
+body.win95-app .home95 .home-overview .home-tile .hab-score-readout,
+body.win95-app .hab95 .home95 .home-overview .home-tile .hab-score-readout {
+  position: relative;
+  border-radius: 5px;
+  border: 2px solid var(--face-bezel);
+  color: var(--face-phosphor);
+  text-shadow: var(--face-glow);
+  background:
+    /* curved glass: a soft diagonal sheen from the top-left */
+    linear-gradient(150deg, rgba(255, 255, 255, 0.11) 0%, rgba(255, 255, 255, 0.03) 22%, transparent 38%),
+    /* edge vignette */
+    radial-gradient(ellipse 85% 80% at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.55) 100%),
+    /* phosphor bloom behind the trace */
+    radial-gradient(ellipse 70% 60% at 50% 58%, rgba(125, 255, 196, 0.1), transparent 70%),
+    /* graticule: center cross, then a 10px minor grid */
+    linear-gradient(90deg, transparent calc(50% - 0.5px), var(--face-grid-major) calc(50% - 0.5px), var(--face-grid-major) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+    linear-gradient(180deg, transparent calc(50% - 0.5px), var(--face-grid-major) calc(50% - 0.5px), var(--face-grid-major) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+    repeating-linear-gradient(90deg, var(--face-grid) 0 1px, transparent 1px 10px),
+    repeating-linear-gradient(180deg, var(--face-grid) 0 1px, transparent 1px 10px),
+    linear-gradient(180deg, var(--face-glass-2), var(--face-glass));
+  box-shadow:
+    /* bezel chamfer: lit lower lip on the metal, shade above */
+    0 1px 0 rgba(255, 255, 255, 0.75),
+    0 -1px 0 rgba(0, 0, 0, 0.18),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    inset 0 8px 14px -6px rgba(0, 0, 0, 0.75),
+    inset 0 -4px 10px -6px rgba(125, 255, 196, 0.12);
+}
+
+/* A readout drawn inside a screen is the trace, not a second screen. */
+body.win95-app .home95 .home-overview .home-tile .home-crt .hab-score-readout,
+body.win95-app .hab95 .home95 .home-overview .home-tile .home-crt .hab-score-readout {
+  border: 0;
+  background: none;
+  box-shadow: none;
+  min-height: 0;
+  padding: 0;
+}
+
+/* Hero number breathes a little more. */
+body.win95-app .home95 .home-overview .home-points-crt.is-hero-readout .hab-score-readout {
+  font-size: 30px;
+  letter-spacing: 0.03em;
+}
+
+body.win95-app .home95 .home-overview .home-tile .hab-score-readout {
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+/* Stacked screens (Today's progress): calm labels, tube-like bars. */
+body.win95-app .home95 .home-overview .home-crt.is-stack {
+  gap: 6px;
+  padding: 8px 10px;
+}
+
+body.win95-app .home95 .home-overview .home-crt.is-stack .hab-meter-name,
+body.win95-app .home95 .home-overview .home-crt.is-stack .hab-meter-stat {
+  text-shadow: 0 0 1px rgba(214, 255, 236, 0.8), 0 0 5px rgba(125, 255, 196, 0.4);
+}
+
+body.win95-app .home95 .home-overview .home-crt.is-stack .hab-meter-stat {
+  opacity: 0.82;
+}
+
+body.win95-app .home95 .home-overview .home-widget-meter,
+body.win95-app .home95 .home-overview .hab-well-fill[role="progressbar"] {
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(125, 255, 196, 0.08);
+  box-shadow:
+    inset 0 0 0 1px rgba(125, 255, 196, 0.18),
+    inset 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+body.win95-app .home95 .home-overview .home-widget-meter > span,
+body.win95-app .home95 .home-overview .hab-well-fill[role="progressbar"] > * {
+  border-radius: 3px;
+  box-shadow: 0 0 6px rgba(125, 255, 196, 0.45);
+}
+
+/* ---- Foot: etched caption under a double rule ---------------------------- */
+
+body.win95-app .home95 .home-overview .home-tile .home-tile-foot {
+  min-height: 30px;
+  max-height: 40px;
+  margin: auto -9px -9px;
+  padding: 7px 12px 8px;
+  border-radius: 0 0 8px 8px;
+  background:
+    /* hairline double rule: dark cut, lit lip, gap, dark cut */
+    linear-gradient(180deg, rgba(20, 24, 30, 0.26) 0 1px, rgba(255, 255, 255, 0.7) 1px 2px, transparent 2px 4px, rgba(20, 24, 30, 0.12) 4px 5px, transparent 5px),
+    linear-gradient(180deg, transparent 30%, rgba(0, 0, 0, 0.05) 100%);
+  box-shadow: none;
+}
+
+body.win95-app .home95 .home-overview .home-tile .hab-score-sub,
+body.win95-app .hab95 .home95 .home-overview .home-tile .hab-score-sub {
+  font-size: 11px;
+  line-height: 1.25;
+  letter-spacing: 0.03em;
+  color: var(--face-ink);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  -webkit-line-clamp: 2;
+}
+
+/* ---- Rituals keys: small typewriter keys that fit the body --------------- */
+
+body.win95-app .home95 .home-overview .home-tile .home-review-actions {
+  gap: 4px;
+}
+
+body.win95-app .home95 .home-overview .home-tile .home-review-actions button.home-review-key[type="button"] {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 20px;
+  padding: 2px 2px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--face-ink);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+  background-color: var(--chrome-key-mid, #d4d6d8);
+  background-image:
+    radial-gradient(ellipse 80% 70% at 50% 25%, rgba(255, 255, 255, 0.85), transparent 70%),
+    linear-gradient(180deg, var(--chrome-key-sheen, #eceef0), var(--chrome-key-shade, #9a9ea2));
+  box-shadow:
+    0 0 0 1px rgba(30, 34, 38, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 1px rgba(30, 34, 38, 0.3),
+    0 1px 1px rgba(16, 20, 28, 0.25);
+}
+
+body.win95-app .home95 .home-overview .home-tile .home-review-actions button.home-review-key[type="button"]:active {
+  transform: translateY(1px);
+  box-shadow:
+    0 0 0 1px rgba(30, 34, 38, 0.6),
+    inset 0 1px 2px rgba(30, 34, 38, 0.45);
+}
+
+/* The tile's open key is the body itself: no house key ring or lip on it. */
+body.win95-app .home95 .home-overview .home-tile button.home-tile-open[type="button"]:not([data-no95]),
+body.win95-app .home95 .home-overview .home-tile button.home-weather-open[type="button"]:not([data-no95]) {
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+
+body.win95-app .home95 .home-overview .home-tile button.home-tile-open[type="button"]:not([data-no95]):active,
+body.win95-app .home95 .home-overview .home-tile button.home-weather-open[type="button"]:not([data-no95]):active {
+  box-shadow: none;
+}
+
+/* Long names keep to one line: tighter tracking, never a wrapped tab. */
+body.win95-app .home95 .home-overview .home-tile .hab-score-caption,
+body.win95-app .hab95 .home95 .home-overview .home-tile .hab-score-caption {
+  font-size: 10px;
+  letter-spacing: 0.09em;
+}
+
+/* Rituals keys size to their words so Not now and Dismiss read whole. */
+body.win95-app .home95 .home-overview .home-tile .home-review-actions button.home-review-key[type="button"] {
+  flex: 1 1 auto;
+  padding: 2px 3px;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+body.win95-app .home95 .home-overview .home-tile .home-review-actions {
+  gap: 3px;
+}
+
+/* The longest default name. */
+body.win95-app .home95 .home-overview .home-tile.is-progress .hab-score-caption {
+  letter-spacing: 0.04em;
+}
+
+/* ---- Bank: an even grid, so a wrapped tile is never a stretched orphan ---- */
+
+body.win95-app .home95 .home-overview,
+body.win95-app .hab95 .home95 .home-overview,
+body.win95-app .hab95 .home95 .home-overview[data-testid="home-overview"] {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  align-items: start;
+}
+
+body.win95-app .home95 .home-overview > .home-tile,
+body.win95-app .hab95 .home95 .home-overview > .home-tile {
+  width: auto;
+  min-width: 0;
+  max-width: none;
+  container-type: inline-size;
+}
+
+/* Narrow bodies: same words, set tighter. */
+@container (max-width: 160px) {
+  body.win95-app .home95 .home-overview .home-tile .hab-score-caption,
+  body.win95-app .hab95 .home95 .home-overview .home-tile .hab-score-caption {
+    font-size: 9.5px;
+    letter-spacing: 0.06em;
+  }
+
+  body.win95-app .home95 .home-overview .home-tile.is-progress .hab-score-caption {
+    letter-spacing: 0.01em;
+  }
+
+  body.win95-app .home95 .home-overview .home-tile .home-review-actions {
+    gap: 2px;
+  }
+
+  body.win95-app .home95 .home-overview .home-tile .home-review-actions button.home-review-key[type="button"] {
+    padding: 2px 2px;
+    font-size: 9px;
+    letter-spacing: -0.01em;
+  }
+
+  body.win95-app .home95 .home-overview .home-crt.is-stack {
+    padding: 7px 7px;
+  }
+
+  body.win95-app .home95 .home-overview .home-crt.is-stack .hab-meter-row {
+    gap: 4px;
+  }
+
+  body.win95-app .home95 .home-overview .home-crt.is-stack .hab-meter-name {
+    font-size: 11px;
+  }
+
+  body.win95-app .home95 .home-overview .home-crt.is-stack .hab-meter-stat {
+    font-size: 9.5px;
+    white-space: nowrap;
+  }
+}
+
+/* =====================================================================
+ * Round 2 — hanging nameplates, a bank of different sizes, the Points
+ * ticker, and Today's Progress with week and month columns.
+ * ===================================================================== */
+
+/* ---- Nameplate: a separate brushed plate hung on the top edge ----------- */
+
+body.win95-app .home95 .home-overview .home-tile,
+body.win95-app .hab95 .home95 .home-overview > .home-tile {
+  padding-top: 17px;
+}
+
+body.win95-app .home95 .home-overview .home-tile .hab-score-caption,
+body.win95-app .hab95 .home95 .home-overview .home-tile .hab-score-caption {
+  position: absolute;
+  top: 0;
+  left: 10px;
+  z-index: 2;
+  transform: translateY(-50%);
+  max-width: calc(100% - 34px);
+  min-height: 0;
+  padding: 4px 9px 4px 7px;
+  border-radius: 4px;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: #24282d;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.75) 0, rgba(255, 255, 255, 0.15) 45%, rgba(0, 0, 0, 0.06) 100%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, var(--chrome-mist, #eef0f2), var(--chrome-key-mid, #d4d6d8));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--chrome-ring, #5c6064) 90%, transparent),
+    inset 0 1px 0 #fff,
+    inset 0 -1px 0 rgba(30, 34, 38, 0.22),
+    0 2px 4px -1px rgba(16, 20, 28, 0.35);
+}
+
+/* Two rivets so the plate reads as mounted, not floating. */
+body.win95-app .home95 .home-overview .home-tile .hab-score-caption::after {
+  content: "";
+  flex-shrink: 0;
+  width: 3px;
+  height: 3px;
+  margin-left: 2px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff, #8a9096 70%);
+  box-shadow: 0 0 0 0.5px rgba(30, 34, 38, 0.5);
+}
+
+body.win95-app .home95 .home-overview .home-tile.is-progress .hab-score-caption {
+  letter-spacing: 0.1em;
+}
+
+/* Keep the plate's own tracking on narrow bodies too. */
+@container (max-width: 160px) {
+  body.win95-app .home95 .home-overview .home-tile .hab-score-caption,
+  body.win95-app .hab95 .home95 .home-overview .home-tile .hab-score-caption {
+    font-size: 9.5px;
+    letter-spacing: 0.08em;
+  }
+}
+
+/* ---- Bank: a dense grid where each instrument has its own footprint ----- */
+
+body.win95-app .home95 .home-overview,
+body.win95-app .hab95 .home95 .home-overview,
+body.win95-app .hab95 .home95 .home-overview[data-testid="home-overview"] {
+  container-type: inline-size;
+  grid-template-columns: repeat(auto-fill, minmax(144px, 1fr));
+  grid-auto-rows: 74px;
+  grid-auto-flow: row dense;
+  align-items: stretch;
+  gap: 22px 12px;
+  padding: 22px 12px 14px;
+}
+
+/* Tiles fill their grid area; the area sets the size. */
+body.win95-app .home95 .home-overview .home-tile,
+body.win95-app .hab95 .home95 .home-overview > .home-tile {
+  grid-column: span 1;
+  grid-row: span 2;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+}
+
+/* Wide instruments. */
+body.win95-app .home95 .home-overview .home-tile[data-widget="points"],
+body.win95-app .home95 .home-overview .home-tile[data-widget="weather"],
+body.win95-app .home95 .home-overview .home-tile[data-widget="affirmation"],
+body.win95-app .home95 .home-overview .home-tile[data-widget="flow"],
+body.win95-app .home95 .home-overview .home-tile[data-widget="paint"] {
+  grid-column: span 2;
+}
+
+body.win95-app .home95 .home-overview .home-tile[data-widget="progress"] {
+  grid-column: span 3;
+}
+
+/* Tall portrait: the moon gets a window of sky. */
+body.win95-app .home95 .home-overview .home-tile[data-widget="moon"] {
+  grid-row: span 3;
+}
+
+/* A narrow strip steps the wide spans down instead of overflowing. */
+@container (max-width: 470px) {
+  body.win95-app .home95 .home-overview .home-tile[data-widget="progress"] {
+    grid-column: span 2;
+  }
+}
+
+@container (max-width: 310px) {
+  body.win95-app .home95 .home-overview .home-tile[data-widget] {
+    grid-column: span 1;
+  }
+}
+
+/* ---- Points ticker ------------------------------------------------------- */
+
+body.win95-app .home95 .home-overview .home-tile.is-ticker {
+  --ticker-up: var(--hab-crt-green, #7dffc4);
+  --ticker-down: #ff7a6a;
+  --ticker-ink: var(--ticker-up);
+}
+
+body.win95-app .home95 .home-overview .home-tile.is-ticker[data-direction="down"] {
+  --ticker-ink: var(--ticker-down);
+}
+
+body.win95-app .home95 .home-overview .home-ticker-crt {
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: stretch;
+  gap: 10px;
+  padding: 8px 10px 8px 12px;
+}
+
+body.win95-app .home95 .home-overview .home-ticker-quote {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-width: 0;
+  max-width: 48%;
+  gap: 1px;
+  text-align: left;
+}
+
+body.win95-app .home95 .home-overview .home-ticker-symbol {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: color-mix(in srgb, var(--face-phosphor) 70%, #fff);
+  text-shadow: 0 0 4px rgba(125, 255, 196, 0.35);
+  white-space: nowrap;
+}
+
+body.win95-app .home95 .home-overview .home-ticker-symbol em {
+  margin-left: 4px;
+  font-style: normal;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  opacity: 0.75;
+}
+
+body.win95-app .home95 .home-overview .home-tile .home-crt .hab-score-readout.home-ticker-value {
+  display: block;
+  flex: 0 0 auto;
+  width: auto;
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+  text-align: left;
+  white-space: nowrap;
+}
+
+body.win95-app .home95 .home-overview .home-ticker-change {
+  font-size: 11.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--ticker-ink);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--ticker-ink) 50%, transparent);
+}
+
+body.win95-app .home95 .home-overview .home-ticker-vs {
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  color: rgba(214, 255, 236, 0.55);
+  white-space: nowrap;
+}
+
+body.win95-app .home95 .home-overview .home-ticker-chart {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--ticker-ink);
+}
+
+body.win95-app .home95 .home-overview .home-ticker-chart svg {
+  position: absolute;
+  inset: 4px 26px 4px 0;
+  width: calc(100% - 26px);
+  height: calc(100% - 8px);
+  overflow: visible;
+}
+
+body.win95-app .home95 .home-overview .home-ticker-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 3px currentColor);
+}
+
+body.win95-app .home95 .home-overview .home-ticker-prev {
+  stroke: rgba(214, 255, 236, 0.4);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+body.win95-app .home95 .home-overview .home-ticker-dot {
+  position: absolute;
+  right: 26px;
+  width: 6px;
+  height: 6px;
+  margin: -3px -3px 0 0;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 2px var(--ticker-ink), 0 0 8px var(--ticker-ink);
+}
+
+body.win95-app .home95 .home-overview .home-ticker-hi,
+body.win95-app .home95 .home-overview .home-ticker-lo {
+  position: absolute;
+  right: 0;
+  font-size: 8.5px;
+  font-variant-numeric: tabular-nums;
+  color: rgba(214, 255, 236, 0.55);
+  text-shadow: none;
+}
+
+body.win95-app .home95 .home-overview .home-ticker-hi {
+  top: 2px;
+}
+
+body.win95-app .home95 .home-overview .home-ticker-lo {
+  bottom: 2px;
+}
+
+/* Foot: caption on the left, period keys on the right. */
+body.win95-app .home95 .home-overview .home-tile .home-ticker-foot {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-right: 9px;
+}
+
+body.win95-app .home95 .home-overview .home-ticker-foot .hab-score-sub {
+  flex: 1 1 auto;
+  min-width: 0;
+  -webkit-line-clamp: 1;
+}
+
+body.win95-app .home95 .home-overview .home-ticker-keys {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 9px;
+  background: rgba(20, 24, 30, 0.12);
+  box-shadow: inset 0 1px 2px rgba(20, 24, 30, 0.35), 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+body.win95-app .home95 .home-overview .home-ticker-keys button.home-ticker-key[type="button"] {
+  min-width: 22px;
+  min-height: 16px;
+  padding: 1px 5px;
+  border: 0;
+  border-radius: 7px;
+  font: inherit;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  color: var(--face-ink-soft);
+  background: transparent;
+  background-image: none;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+body.win95-app .home95 .home-overview .home-ticker-keys button.home-ticker-key[type="button"]:hover {
+  color: var(--face-ink);
+  background: rgba(255, 255, 255, 0.45);
+}
+
+body.win95-app .home95 .home-overview .home-ticker-keys button.home-ticker-key[type="button"][aria-pressed="true"] {
+  color: var(--face-phosphor);
+  text-shadow: 0 0 4px rgba(125, 255, 196, 0.6);
+  background: linear-gradient(180deg, var(--face-glass-2), var(--face-glass));
+  box-shadow: 0 0 0 1px var(--face-bezel), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+/* ---- Today's Progress: today, this week, this month ---------------------- */
+
+body.win95-app .home95 .home-overview .home-crt.home-progress-crt {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
+  gap: 0;
+  padding: 8px 4px;
+}
+
+body.win95-app .home95 .home-overview .home-progress-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 0 9px;
+}
+
+/* Hairline divider between columns, like a ruled ledger. */
+body.win95-app .home95 .home-overview .home-progress-col + .home-progress-col {
+  box-shadow: inset 1px 0 0 rgba(125, 255, 196, 0.16);
+}
+
+body.win95-app .home95 .home-overview .home-progress-col-label {
+  margin: 0 0 1px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: color-mix(in srgb, var(--face-phosphor) 65%, #fff);
+  text-shadow: 0 0 4px rgba(125, 255, 196, 0.35);
+}
+
+body.win95-app .home95 .home-overview .home-progress-col .hab-meter {
+  gap: 3px;
+}
+
+body.win95-app .home95 .home-overview .home-progress-col .hab-meter-row {
+  gap: 4px;
+}
+
+body.win95-app .home95 .home-overview .home-progress-col .hab-meter-name {
+  font-size: 11px;
+}
+
+body.win95-app .home95 .home-overview .home-progress-col .hab-meter-stat {
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+body.win95-app .home95 .home-overview .home-progress-bar {
+  display: block;
+  height: 4px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: rgba(125, 255, 196, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(125, 255, 196, 0.16);
+}
+
+body.win95-app .home95 .home-overview .home-progress-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--home-grad-led), var(--home-grad-grade), var(--home-grad-output));
+  box-shadow: 0 0 6px rgba(125, 255, 196, 0.45);
+}

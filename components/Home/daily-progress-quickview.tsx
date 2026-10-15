@@ -4,14 +4,43 @@
  * Replaces the old Quick Actions card with a snapshot of daily to-do and habit
  * completion for the current day. Climb habits use `isHabitGoalMet` with
  * `{ date, weeklyData }` so the derived target is applied. On the overview
- * (`instrument`), the bars sit in the CRT and one footer line sums the day.
+ * (`instrument`), the CRT holds three columns — Today, This week, This month —
+ * each with a To Do and a Habits bar (week / month counts from
+ * `home-period-stats.ts`), and one footer line sums all three.
  */
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { CheckCircle2, ListTodo, Repeat } from "lucide-react"
-import { useHomeDayStats } from "@/components/Home/home-day-stats"
+import { useHomeDayStats, type HomeDayCount } from "@/components/Home/home-day-stats"
+import { useHomePeriodStats } from "@/components/Home/home-period-stats"
+
+function PeriodColumn({ label, todo, habit }: { label: string; todo: HomeDayCount; habit: HomeDayCount }) {
+  return (
+    <div className="home-progress-col" aria-label={`${label}: to do ${todo.completed} of ${todo.total}, habits ${habit.completed} of ${habit.total}`}>
+      <p className="home-progress-col-label">{label}</p>
+      {(
+        [
+          ["To Do", todo],
+          ["Habits", habit],
+        ] as const
+      ).map(([name, count]) => (
+        <div key={name} className="hab-meter">
+          <div className="hab-meter-row">
+            <span className="hab-meter-name">{name}</span>
+            <span className="hab-meter-stat">
+              {count.completed}/{count.total}
+            </span>
+          </div>
+          <span className="home-progress-bar" aria-hidden="true">
+            <span style={{ width: `${count.percent}%` }} />
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 export function DailyProgressQuickview({
   currentDate,
@@ -21,7 +50,10 @@ export function DailyProgressQuickview({
   instrument?: boolean
 }) {
   const { todo: todoStats, habit: habitStats } = useHomeDayStats(currentDate)
-  const footer = `To do ${todoStats.completed}/${todoStats.total} · habits ${habitStats.completed}/${habitStats.total}`
+  const week = useHomePeriodStats("week", currentDate)
+  const month = useHomePeriodStats("month", currentDate)
+  const done = (a: HomeDayCount, b: HomeDayCount) => `${a.completed + b.completed}/${a.total + b.total}`
+  const footer = `Today ${done(todoStats, habitStats)} · week ${done(week.todo, week.habit)} · month ${done(month.todo, month.habit)}`
 
   const meters = (
     <>
@@ -77,8 +109,10 @@ export function DailyProgressQuickview({
         <div className="hab-score-caption">
           <span>Today&apos;s Progress</span>
         </div>
-        <div className="home-crt is-stack">
-          <div className="hab-progress-meters">{meters}</div>
+        <div className="home-crt is-stack home-progress-crt">
+          <PeriodColumn label="Today" todo={todoStats} habit={habitStats} />
+          <PeriodColumn label="This week" todo={week.todo} habit={week.habit} />
+          <PeriodColumn label="This month" todo={month.todo} habit={month.habit} />
         </div>
         <div className="home-tile-foot">
           <p className="hab-score-sub">{footer}</p>
