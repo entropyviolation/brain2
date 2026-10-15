@@ -108,10 +108,14 @@ export function seedFilmToTask(category: List, film: SeedFilm): Task {
     url: film.url,
     overview: film.overview,
   })
-  return withCategoryDefaults(
+  const base = withCategoryDefaults(
     { ...createListItem(film.title, [category.id]), attributes: attrs },
     category,
   )
+  const typeId = category.itemTypeId
+  return typeId && (!base.type || base.type === "item" || base.type === "task")
+    ? { ...base, type: typeId }
+    : base
 }
 
 export interface MergeStats {

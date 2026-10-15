@@ -21,6 +21,7 @@ import { getBuiltinItemTypes, getItemType, mergeTypeRegistry } from "@/lib/item-
 import { withSecondBrainTypes } from "@/lib/second-brain-types"
 import { withBookType } from "@/lib/book-types"
 import { withFlightType } from "@/lib/flight-types"
+import { withFilmType } from "@/lib/film-types"
 
 interface ItemTypeState {
   /** All types (built-in + user). Always includes the built-ins. */
@@ -37,6 +38,8 @@ interface ItemTypeState {
   seedBookType: () => void
   /** Ensure the built-in Flight type is registered (idempotent; additive). */
   seedFlightType: () => void
+  /** Ensure the catalog Film type is registered (idempotent; additive). */
+  seedFilmType: () => void
 }
 
 /** Persist bump: system types always re-seed; catalog + user types keep stored edits. */
@@ -95,6 +98,12 @@ export const useItemTypeStore = create<ItemTypeState>()(
       seedFlightType: () =>
         set((state) => {
           const next = withFlightType(state.types)
+          return next === state.types ? state : { types: next }
+        }),
+
+      seedFilmType: () =>
+        set((state) => {
+          const next = withFilmType(state.types)
           return next === state.types ? state : { types: next }
         }),
     }),

@@ -8,6 +8,7 @@
  */
 import type { ItemTypeDefinition } from "@/lib/types"
 import { getBookTypeDefinition } from "@/lib/book-types"
+import { getFilmTypeDefinition } from "@/lib/film-types"
 import {
   getFurnitureTypeDefinition,
   getResourceTypeDefinition,
@@ -55,6 +56,13 @@ export const ITEM_TYPE_RECIPES: ItemTypeRecipe[] = [
     summary: "Quantity, store, price, purchased checkbox.",
     hint: "Optional: a list rule “when Purchased is true, add tag bought”. Completing the item can mean “acquired”; you do not need Scheduling.",
     build: () => asUserType(getShoppingTypeDefinition(), "my-shopping-item", "My shopping item"),
+  },
+  {
+    id: "film",
+    name: "Film",
+    summary: "Poster, year, shelf, rating — Letterboxd-style record.",
+    hint: "Leave Scheduleable unchecked. Pair with a Films list (Film DNA Lab already assigns the catalog Film type). List-specific fields can still add extras.",
+    build: () => asUserType(getFilmTypeDefinition(), "my-film", "My film"),
   },
   {
     id: "implied-progress",

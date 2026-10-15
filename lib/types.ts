@@ -1461,15 +1461,23 @@ export interface List {
   /** Workspace module that created this list (auto-filed under Module Lists). */
   createdByModuleId?: string
   /**
-   * Item *type* for items in this list (e.g. "book"). Items created here adopt
-   * this type and inherit its attributes/defaults/rules; the list can then layer
-   * its own list-specific attributes (`itemAttributes`) and overrides on top.
+   * Default item *type* for new rows in this list (e.g. "book"). Applied by
+   * `withListMembership` when the item has no meaningful type yet. Must be on
+   * `itemTypeIds` when that allowlist is set (List Settings keeps them in sync).
    */
   itemTypeId?: ItemType
+  /**
+   * Item types assigned to this list (allowlist). New items use `itemTypeId` as
+   * the default; the list schema unions attributes from every allowed type.
+   * Undefined with a lone `itemTypeId` means just that type. Empty / missing
+   * both = generic items. See `lib/list-item-types.ts`.
+   */
+  itemTypeIds?: ItemType[]
   // Optional attribute schema applied to items in this list (spec §5). Items
   // belonging to multiple lists get the union of their lists' attributes. When
-  // the list has an `itemTypeId`, these are layered on top of the type's own
-  // attributes (list-specific extras, e.g. "Recommended by" on a reading list).
+  // the list has assigned types, those type schemas are layered under
+  // list-specific attributes (`itemAttributes`) (e.g. "Recommended by" on a
+  // reading list).
   itemAttributes?: AttributeDefinition[]
   /** Default attribute values applied when new items are added to this list. */
   defaultAttributeValues?: Record<string, AttributeValue>
