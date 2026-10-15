@@ -1,10 +1,10 @@
 /**
  * components/Analytics/enhanced-analytics.tsx — Analytics screen
  *
- * Title bar + status stay Lists furniture. Range + left index are milled fascia;
- * canvases stay a light instrument studio: shared range (presets or custom
- * from–to, Prev/Next period step), studio index, charts. Spec: §15. Face gray
- * `#c0c0c0`, not cream paper.
+ * Title bar + status stay Lists furniture. Inside: shared range (presets or
+ * custom from–to, Prev/Next period step), studio index, charts. Spec: §15.
+ * Skin is the data plate in `analytics-atlas.css` (cobalt range bay,
+ * card-catalog index, FIG. plates on graph rule); it is CSS only over this DOM.
  */
 "use client"
 
@@ -23,6 +23,7 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import { MachineLoading } from "@/components/machine-loading"
 import { CyclePhaseConcealed, cycleDetailsConcealed } from "./cycle-phase-concealed"
 import "./analytics-chrome.css"
+import "./analytics-atlas.css"
 
 export function EnhancedAnalytics() {
   const [analyticsTab, setAnalyticsTab] = usePersistedTab(APP_NAV_KEYS.analyticsTab, ANALYTICS_TABS, "habits")

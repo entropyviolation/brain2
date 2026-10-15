@@ -19,7 +19,7 @@
  */
 import type React from "react"
 import type { Metadata } from "next"
-import { Karla } from "next/font/google"
+import { DotGothic16, Karla, Pixelify_Sans, Silkscreen } from "next/font/google"
 import "./globals.css"
 import "./win95.css"
 // Module chrome must live on the root layout, not only on lazy tab chunks.
@@ -40,6 +40,7 @@ import "@/components/ui/window-sand-close.css"
 import "@/components/Operations/operations-chrome.css"
 import "@/components/Scheduler/scheduler-chrome.css"
 import "@/components/Analytics/analytics-chrome.css"
+import "@/components/Analytics/analytics-atlas.css"
 import "@/components/Modules/modules-chrome.css"
 import "@/components/Settings/settings-chrome.css"
 import "@/components/header-popup-chrome.css"
@@ -68,6 +69,28 @@ const karla = Karla({
   display: "swap",
 })
 
+// Analytics handheld pixel faces (analytics-atlas.css): titles and values,
+// readable body prose, and small key labels.
+const pixelify = Pixelify_Sans({
+  subsets: ["latin"],
+  variable: "--font-pixelify",
+  display: "swap",
+})
+
+const dotGothic = DotGothic16({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-dotgothic",
+  display: "swap",
+})
+
+const silkscreen = Silkscreen({
+  weight: ["400", "700"],
+  subsets: ["latin"],
+  variable: "--font-silkscreen",
+  display: "swap",
+})
+
 export const metadata: Metadata = {
   title: APP_NAME,
   description:
@@ -83,7 +106,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={karla.variable}
+      className={`${karla.variable} ${pixelify.variable} ${dotGothic.variable} ${silkscreen.variable}`}
       data-pcb-mode={DEFAULT_PCB_MODE}
       data-pcb-ink={pcbInkFor(DEFAULT_PCB_MODE)}
       suppressHydrationWarning
