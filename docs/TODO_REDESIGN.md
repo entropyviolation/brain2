@@ -666,7 +666,7 @@ _Last mapped: 2026-10-16._ Less pressure, more visible time, smaller first steps
 | S2 | Prerequisites met at a level | 14 E | N, S | M | Later (Decision 11) |
 | I | `work-log-parse`, Paste as log, live `heading:` lines, `now:` ingest phrase | — | C, D | M | Planned |
 | T | Rites additions: Put the day down, weekly check-in | 8 | J (I for the parser) | S | Planned |
-| U | Just Start choices, Pull me, time-box ring, end-of-sitting strip | 15 A | B, D (N for sparks) | M | Built 2026-10-16 without Pull me (needs N sparks); session-stop strip planned |
+| U | Just Start choices, Pull me, time-box ring, end-of-sitting strip | 15 A | B, D (N for sparks) | M | Built 2026-10-16 |
 | V | No-should audit and rule, Done well line, notice dot | 15 B | — (L for the attention line) | S | Built 2026-10-16; tier lamps after N |
 | W | Waiting shelf | 15 C | — (O for Shrink) | S | Planned |
 | X | Points visible switch | 15 D | — | S | Switch built 2026-10-16; hiding figures waits for O |
