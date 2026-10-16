@@ -74,6 +74,8 @@ export function TodoTable({
   clockStepId,
   onClockStart,
   onClockStop,
+  blockersOf,
+  onNeeds,
 }: {
   todos: TodoItem[]
   period: TodoPeriod
@@ -112,6 +114,10 @@ export function TodoTable({
   /** ▶ on a row or a step. Omit to hide the clock keys. */
   onClockStart?: (taskId: string, stepId?: string) => void
   onClockStop?: () => void
+  /** Names of open tasks this row still waits on (`Task.dependencies`). */
+  blockersOf?: (taskId: string) => string[]
+  /** Open the Needs… picker for a task. */
+  onNeeds?: (taskId: string) => void
 }) {
   const pushedKey = pushedKeyForPeriod(period)
   const pushLabel = period === "day" ? "next day" : period === "week" ? "next week" : "next month"
@@ -234,6 +240,7 @@ export function TodoTable({
         const flocking = flockingId === todo.id
         const clockId = todo.taskId || todo.id
         const onClock = !walk && clockTaskId === clockId
+        const blockers = walk ? [] : (blockersOf?.(clockId) ?? [])
         const toggleOpen = () => {
           onSelectedRowIdChange(todo.id)
           onOpenRowIdChange(open ? null : todo.id)
@@ -302,6 +309,20 @@ export function TodoTable({
                     {name}
                   </button>
                 )}
+                {blockers.length ? (
+                  <button
+                    type="button"
+                    data-no95
+                    className="todo-row-lock"
+                    title={`Waiting on: ${blockers.join(", ")}. Click to change.`}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onNeeds?.(clockId)
+                    }}
+                  >
+                    needs {blockers.join(", ")}
+                  </button>
+                ) : null}
               </div>
 
               <span className="todo-cell todo-cell-tier">
@@ -482,6 +503,16 @@ export function TodoTable({
                   >
                     Missed
                   </button>
+                  {onNeeds ? (
+                    <button
+                      type="button"
+                      className="todo-verb"
+                      title="Tasks that have to be done first"
+                      onClick={() => onNeeds(clockId)}
+                    >
+                      Needs…
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     className="todo-verb"

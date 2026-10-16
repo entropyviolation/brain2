@@ -72,7 +72,7 @@ function isOpenLeaf(step: Subtask): boolean {
 }
 
 /** Open steps a step is waiting on, its own `dependsOn` and every ancestor's. */
-function openBlockers(placed: PlacedStep, byId: Map<string, Subtask>): Subtask[] {
+export function openBlockers(placed: PlacedStep, byId: Map<string, Subtask>): Subtask[] {
   const ids = new Set<string>()
   for (const owner of [...placed.path, placed.step]) {
     for (const id of owner.dependsOn ?? []) ids.add(id)

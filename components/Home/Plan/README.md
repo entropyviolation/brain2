@@ -100,6 +100,8 @@ Plan text is an **append log** (`lib/append-log.ts`): **Submit plan** stamps the
 
 The red now-line is today-only. Amber sunrise and orange sunset lines load for whichever day is open, using Open-Meteo times for the saved home city. In log mode, solid pen-colored blocks are `TimeEntry` intervals from the Time Grid; clicking one opens the Tracking block editor. Ghost (dashed) plan items are clickable: Day Log opens `confirm-planned-dialog.tsx` to paint the window and, for tasks, `completeTask` so dependents unlock. Amber blocks are `task.timeLogs`. Tracked blocks that span hours are one continuous slab so a sleep stretch is a single named block, clickable in every hour it occupies. Plan day view passes the same slabs as `trackedGhosts`, clipped to minutes already past, drawn as non-interactive outlines.
 
+`EventPrereqPicker` (`event-prereq-picker.tsx`) is presentational, and To Do reuses it for task prerequisites (`components/Home/ToDo/TaskPrereqDialog.tsx`, 2026-10-15). Keep it free of event-only wording beyond its empty line.
+
 ## Capacity
 
 The rail always shows planned minutes for the **selected day** versus that day’s waking window (`awakeWindowFor`): timed tasks’ `estimatedDuration` (skipped when a planned-action already covers that to-do, and skipped for Inbox captures), timed events, and planned-action durations. All-day events do not count as minutes. A 10-pip milled channel sits above the sentence (`capacityPipCount`); overfill keeps all ten pips lit and bolds the ink — it does not turn orange. With no sleep evidence the line reads `40m planned · waking window unknown` and the pips stay empty.

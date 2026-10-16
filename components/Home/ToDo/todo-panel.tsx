@@ -48,6 +48,8 @@ import JustStartMode from "@/components/Focus/JustStartMode"
 import { useTaskClockStarter } from "@/components/Focus/TaskClockStarter"
 import { usePenColorSessionStore } from "@/lib/pen-color-session-store"
 import { stopTaskClock } from "@/lib/task-clock"
+import { openTaskBlockers } from "@/lib/prereqs"
+import { TaskPrereqDialog } from "./TaskPrereqDialog"
 import { APP_NAV_KEYS } from "@/lib/app-navigation"
 import { openPeriodTodoList, periodTodoListName } from "@/lib/scheduled-lists-sync"
 import { usePersistedTab } from "@/lib/use-persisted-tab"
@@ -159,6 +161,7 @@ export function TodoPanel({
   const clockTaskId = usePenColorSessionStore((s) => s.session?.taskId ?? null)
   const clockStepId = usePenColorSessionStore((s) => s.session?.stepId)
   const taskClock = useTaskClockStarter()
+  const [prereqTaskId, setPrereqTaskId] = useState<string | null>(null)
   const [activeTodoTab, setActiveTodoTab] = usePersistedTab(APP_NAV_KEYS.homeTodoTab, TODO_TABS, "day")
   // Uncontrolled fallback for unit tests. The day sheet reads the prop itself
   // when Home passes one, so midnight catch-up is not a copy taken at mount.
@@ -605,6 +608,11 @@ export function TodoPanel({
       clockStepId,
       onClockStart: taskClock.start,
       onClockStop: () => stopTaskClock(),
+      blockersOf: (taskId: string) => {
+        const task = taskFor(taskId)
+        return task ? openTaskBlockers(task, tasks).map((t) => itemTitleOrUntitled(t)) : []
+      },
+      onNeeds: setPrereqTaskId,
     }
     const inProgress = countInProgress(tasks)
     const openUnestimated = () => {
@@ -1301,6 +1309,7 @@ export function TodoPanel({
       />
 
       {taskClock.picker}
+      <TaskPrereqDialog taskId={prereqTaskId} onClose={() => setPrereqTaskId(null)} />
       {justStartTaskId && (
         <JustStartMode taskId={justStartTaskId} onClose={() => setJustStartTaskId(null)} />
       )}
