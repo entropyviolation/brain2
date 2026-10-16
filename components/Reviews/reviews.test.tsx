@@ -43,6 +43,7 @@ describe("Rituals", () => {
     await user.click(screen.getByRole("menuitem", { name: /Star Lord · Birthday/i }))
     expect(screen.getByRole("dialog")).toHaveAttribute("data-ui-name", "Star Lord Report")
     expect(screen.getByText("The day the ledger opened")).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: /^Go to The ledger/ }))
     expect(screen.getByLabelText(/authentic self/i)).toBeInTheDocument()
     useUserSettingsStore.getState().setBirthday("")
   })

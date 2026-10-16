@@ -59,27 +59,32 @@ press ever reached the rite.
   the detail, Star Lord), `lib/ritual-todo.test.ts` (slot placements), and the
   rituals case in `components/Home/home-overview.test.tsx`.
 
-## Phase 1 — Stepped walk for every rite
+## Phase 1 — Stepped walk for every rite (done)
 
-Every rite moves one question at a time with **‹ ›** and a collapsible side
-nav, not an endless scroll.
+_Last mapped: 2026-10-16_
 
-- Extend `RitualStepper`: a left rail (step names, lamp for done / partial /
-  empty), collapsed to the lamp strip under ~640px. Collapse state remembered
-  per viewer. Keep Alt+←/→ and the plate.
-- Step key per rite in `localStorage`: `brain2-ritual-step:{kind}:{periodKey}`.
-  Morning keeps its existing key.
-- Moving to another step saves a draft (same as Close). Last step's primary
-  key is Save.
-- Night / end steps: Unfinished · Assumed times · Look back (plan vs lived,
-  tracking, summary) · This period (not night) · How the day was spent (night)
-  · Summary / Gratitude / Plan reflection · Reflection · Tomorrow.
-- Start steps: Look back · Undone from last period · Due soon · Priorities ·
-  Must be done · Intentions · Plan · Gratitude.
-- Star Lord: one step per part (before, ledger, inner alchemy, closing).
-- Points are unchanged: sections are counted from the answers, not the steps.
-- Docs: update the room README "Night / Review" and "Start" lists and the
-  `RitualSteps.tsx` row (drop **Planned**).
+**Built:**
+- `ReviewDialog` (`reviews.tsx`), `StartRitualDialog`, and
+  `StarLordReportDialog` build a `stepDefs` array (`{ id, label, answered,
+  body }`) and render `RitualStepper`. Morning already did.
+- Step kept per rite in `localStorage`: `brain2-ritual-step:{end|start|star-lord}:…`.
+- Moving to another step saves a draft (end and Star Lord: `persist(false)`;
+  start: `handleSaveProgress`). Points stay as they were.
+- `RitualStepper`: the side index opens by default at 720px and wider; a
+  toggle is remembered. Under 640px the index is a strip above the card.
+- Night steps: Unfinished items · Assumed times · How the day was spent ·
+  Summary · Gratitude · Plan reflection (if a plan exists) · Reflection ·
+  Tomorrow morning · Goals to focus on tomorrow · Tomorrow's plan. Week to
+  year: This {period} replaces the time step; the last step is The … to come.
+- Start: Undone · Priorities · Must be done · Intentions · Plan · Gratitude.
+- Star Lord: Before you begin · The ledger · Inner alchemy · Closing.
+- Tests: `review-dialog.test.tsx` (walk + draft on step, Finish),
+  `StartRitualDialog.test.tsx` (new), `StarLordReportDialog.test.tsx`,
+  `reviews.test.tsx`.
+
+**Still to come here:** the **Look back** step (Phase 4) and the start
+**Due soon** step (Phase 5) join these lists. The answered lamp is on / off;
+a partial lamp can come with Phase 7.
 
 ## Phase 2 — Night: unfinished, scheduled items
 
