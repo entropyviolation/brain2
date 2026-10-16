@@ -30,6 +30,7 @@ import { useTaskStore } from "@/lib/task-store"
 import { minutesToLabel, type TimeEntry } from "@/lib/time-entries"
 import { useTimeTrackingStore, type TrackPen } from "@/lib/time-tracking-store"
 import type { PersonPipeline, Task } from "@/lib/types"
+import { PEN_COLOR_OPEN_TITLE, penColorDoubleClick } from "@/components/Home/Tracking/open-pen-settings"
 import "./person-pipelines.css"
 
 type PersonMode = {
@@ -75,15 +76,23 @@ function PipelineRows({
         const who = rowName ?? personName
         let detail = pipeline.kind
         let color: string | undefined
+        let openPenId: string | undefined
         if (isCompanyPenPipeline(pipeline)) {
           const pen = pens.find((row) => row.id === pipeline.penId)
           detail = pen ? pen.name : "This pen is no longer in Company"
           color = pen?.color
+          openPenId = pen?.id
         } else if (isCompanyTimeblockPipeline(pipeline)) {
           const entry = entries.find((row) => row.id === pipeline.entryId)
           detail = entry ? blockLabel(entry, pens) : "This timeblock is no longer on the grid"
-          color = entry ? pens.find((row) => row.id === entry.penId)?.color : undefined
+          const pen = entry ? pens.find((row) => row.id === entry.penId) : undefined
+          color = pen?.color
+          openPenId = pen?.id
         }
+        // Double-click the color or the name: pen settings open over this view.
+        const openPen = openPenId
+          ? { onDoubleClick: penColorDoubleClick(COMPANY_SCOPE_ID, openPenId), title: PEN_COLOR_OPEN_TITLE }
+          : {}
         const kind =
           pipeline.kind === "company-pen"
             ? "Company pen"
@@ -92,8 +101,16 @@ function PipelineRows({
               : pipeline.kind
         return (
           <li key={pipeline.id} className="person-pipelines-row" data-testid="person-pipeline-row" data-kind={pipeline.kind}>
-            {color ? <span className="person-pipelines-swatch" style={{ background: color }} aria-hidden /> : null}
-            <span className="person-pipelines-label">
+            {color ? (
+              <span
+                className="person-pipelines-swatch"
+                data-opens-pen={openPenId ? "true" : undefined}
+                style={{ background: color }}
+                aria-hidden
+                {...openPen}
+              />
+            ) : null}
+            <span className="person-pipelines-label" data-opens-pen={openPenId ? "true" : undefined} {...openPen}>
               <span className="person-pipelines-kind">{kind}</span>
               {who ? ` · ${who}` : ""} — {detail}
             </span>

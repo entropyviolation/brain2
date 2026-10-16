@@ -13,9 +13,11 @@ export interface OrbPickerDialogProps {
   current?: string
   onClose: () => void
   onSelect: (icon: string | undefined) => void
+  /** Extra classes on the dialog, e.g. a z-index above a stacked item detail. */
+  className?: string
 }
 
-export function OrbPickerDialog({ open, current, onClose, onSelect }: OrbPickerDialogProps) {
+export function OrbPickerDialog({ open, current, onClose, onSelect, className }: OrbPickerDialogProps) {
   const iconLibrary = useListsUiStore((s) => s.iconLibrary)
   const addLibraryIcon = useListsUiStore((s) => s.addLibraryIcon)
   const removeLibraryIcon = useListsUiStore((s) => s.removeLibraryIcon)
@@ -52,7 +54,7 @@ export function OrbPickerDialog({ open, current, onClose, onSelect }: OrbPickerD
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="fm98-dialog sm:max-w-lg max-h-[80vh] overflow-hidden flex flex-col">
+      <DialogContent className={`fm98-dialog sm:max-w-lg max-h-[80vh] overflow-hidden flex flex-col${className ? ` ${className}` : ""}`}>
         <DialogHeader>
           <DialogTitle>Choose an Icon</DialogTitle>
           <DialogDescription>
