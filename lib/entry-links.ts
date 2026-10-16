@@ -32,6 +32,7 @@
 
 import { clampMinute, entriesForDay, isInstant, paintRange, type TimeEntry } from "@/lib/time-entries"
 import type { TrackPen, TrackScope } from "@/lib/time-tracking-store"
+import { COMPANY, variantPerson } from "@/lib/people-sync"
 
 /**
  * A standing cross-scope implication carried by a pen: painting it means that
@@ -113,6 +114,8 @@ export function companionsFor(entries: TimeEntry[], entry: TimeEntry, scopes: Tr
 export interface CompanionTarget {
   scopeId: string
   penId: string
+  /** More pens on the same companion block — several people at once in Company. */
+  secondaryPenIds?: string[]
   variantIds?: string[]
   tagIds?: string[]
   title?: string
@@ -148,10 +151,97 @@ export function attachCompanion(
         endMin: range.endMin,
         variantIds: target.variantIds,
         tagIds: target.tagIds,
+        secondaryPenIds: target.secondaryPenIds,
         title: target.title,
       },
       makeId,
     )
+  }
+  return next
+}
+
+export interface DetailWindow {
+  date: string
+  scopeId: string
+  startMin: number
+  endMin: number
+}
+
+/** Pens a block says are true: primary, extras, and the pens behind its ticked details. */
+function statedPens(entry: TimeEntry, scope: TrackScope | undefined): Set<string> {
+  const ids = new Set([entry.penId, ...(entry.secondaryPenIds ?? [])])
+  const pen = scope?.pens.find((p) => p.id === entry.penId)
+  for (const variant of pen?.variants ?? []) {
+    if ((entry.variantIds ?? []).includes(variant.id) && variant.penId && !variant.scopeId) ids.add(variant.penId)
+  }
+  return ids
+}
+
+/**
+ * Keep a cross-view detail and the view it names in agreement, both ways.
+ *
+ * - **Out**: a block in the window that ticks a cross-view detail ("Hanging
+ *   out · Elijah", where Elijah is a Company pen) makes that view say so too.
+ *   Blank minutes get a block on that pen; an existing Company block that is
+ *   not Alone gains the person as an extra pen. Other views only fill blanks.
+ * - **In**: a block in the window that states a pen (Company · Elijah) ticks
+ *   the matching cross-view detail on overlapping blocks whose pen offers it —
+ *   only where such a detail exists, so nothing new is invented.
+ *
+ * Idempotent; `isAlone(scopeId, penId)` keeps a person off an Alone block.
+ */
+export function mirrorCrossViewDetails(
+  entries: TimeEntry[],
+  scopes: TrackScope[],
+  window: DetailWindow,
+  makeId?: () => string,
+  isAlone: (scopeId: string, penId: string) => boolean = () => false,
+): TimeEntry[] {
+  let next = entries
+  const inWindow = (e: TimeEntry, scopeId: string) =>
+    e.scopeId === scopeId && e.date === window.date && !isInstant(e) && overlap(e, window) > 0
+  const sources = next.filter((e) => inWindow(e, window.scopeId))
+
+  // Out: this view's cross-view details → the named view.
+  for (const source of sources) {
+    const pen = penFor(scopes, source.scopeId, source.penId)
+    for (const raw of pen?.variants ?? []) {
+      if (!(source.variantIds ?? []).includes(raw.id)) continue
+      // A local "Who with?" detail stands for the same-named Company pen (`lib/people-sync.ts`).
+      const person = raw.scopeId ? undefined : variantPerson(scopes, source.scopeId, pen, raw)
+      const variant = person ? { ...raw, scopeId: COMPANY, penId: person } : raw
+      if (!variant.scopeId || !variant.penId) continue
+      if (!penFor(scopes, variant.scopeId, variant.penId)) continue
+      const targetScope = scopes.find((s) => s.id === variant.scopeId)
+      const span = { startMin: Math.max(source.startMin, window.startMin), endMin: Math.min(source.endMin, window.endMin) }
+      next = next.map((other) => {
+        if (!inWindow(other, variant.scopeId!) || overlap(other, span) <= 0) return other
+        if (statedPens(other, targetScope).has(variant.penId!)) return other
+        if (variant.scopeId !== "company" || isAlone(other.scopeId, other.penId)) return other
+        return { ...other, secondaryPenIds: [...(other.secondaryPenIds ?? []), variant.penId!] }
+      })
+      next = attachCompanion(next, { ...source, ...span }, { scopeId: variant.scopeId, penId: variant.penId }, {}, makeId)
+    }
+  }
+
+  // In: pens this view states → matching cross-view details on overlapping blocks elsewhere.
+  const scope = scopes.find((s) => s.id === window.scopeId)
+  const stated = new Set(sources.flatMap((source) => [...statedPens(source, scope)]))
+  if (stated.size) {
+    next = next.map((other) => {
+      if (other.scopeId === window.scopeId || other.date !== window.date || isInstant(other)) return other
+      if (overlap(other, window) <= 0) return other
+      const pen = penFor(scopes, other.scopeId, other.penId)
+      const add = (pen?.variants ?? [])
+        .filter((v) => {
+          if (v.scopeId === window.scopeId && v.penId) return stated.has(v.penId)
+          const person = window.scopeId === COMPANY ? variantPerson(scopes, other.scopeId, pen, v) : undefined
+          return Boolean(person && stated.has(person))
+        })
+        .map((v) => v.id)
+        .filter((id) => !(other.variantIds ?? []).includes(id))
+      return add.length ? { ...other, variantIds: [...(other.variantIds ?? []), ...add] } : other
+    })
   }
   return next
 }

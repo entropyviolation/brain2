@@ -6,7 +6,8 @@
  * search over name / path / view, and four arrangements: Family (each root
  * pen with the pens that count as it), Color (a hue spectrum), Most used, and
  * A–Z. A card shows the swatch (or the pen photograph), the counts-as path,
- * and painted time. Picking a card opens a small bench beside the sheet: name,
+ * the level category (`lib/pen-levels.ts`), and painted time. Level groups a
+ * view's pens by named rung, broadest first, unleveled last. Picking a card opens a small bench beside the sheet: name,
  * color, hide from the well, and All pen settings… (the one pen-settings
  * dialog through `openPenSettings`). + New pen adds to the view being looked at.
  */
@@ -16,14 +17,16 @@ import { useMemo, useState } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { openPenSettings } from "@/components/Home/Tracking/open-pen-settings"
 import { ancestorChain, rootPen } from "@/lib/pen-tree"
+import { penLevel, scopeLevels } from "@/lib/pen-levels"
 import { PEN_PALETTE, useTimeTrackingStore, type TrackPen } from "@/lib/time-tracking-store"
 import "./tracking-chrome.css"
 import "./tracking-settings.css"
 
-type Arrange = "family" | "color" | "used" | "az"
+type Arrange = "family" | "level" | "color" | "used" | "az"
 
 const ARRANGE: { id: Arrange; label: string }[] = [
   { id: "family", label: "Family" },
+  { id: "level", label: "Level" },
   { id: "color", label: "Color" },
   { id: "used", label: "Most used" },
   { id: "az", label: "A–Z" },
@@ -40,6 +43,9 @@ type Card = {
   depth: number
   usage: Usage
   hidden: boolean
+  /** Named level category, if the pen sits on one. */
+  level?: string
+  levelRank: number
 }
 
 function hue(color: string): number {
@@ -113,6 +119,12 @@ export function PenGalleryDialog({ onClose, initialScopeId }: { onClose: () => v
           depth: Math.max(0, chain.length - 1),
           usage: usage.get(`${scope.id}:${pen.id}`) ?? { minutes: 0, blocks: 0 },
           hidden: hidden.has(pen.id),
+          level: penLevel(scope, pen.id)?.name,
+          levelRank: (() => {
+            const id = penLevel(scope, pen.id)?.id
+            const rank = scopeLevels(scope).findIndex((l) => l.id === id)
+            return rank < 0 ? 999 : rank
+          })(),
         })
       }
     }
@@ -144,6 +156,7 @@ export function PenGalleryDialog({ onClose, initialScopeId }: { onClose: () => v
         if (arrange === "az") list.sort(byName)
         else if (arrange === "used") list.sort((a, b) => b.usage.minutes - a.usage.minutes || b.usage.blocks - a.usage.blocks || byName(a, b))
         else if (arrange === "color") list.sort((a, b) => hue(a.pen.color) - hue(b.pen.color) || byName(a, b))
+        else if (arrange === "level") list.sort((a, b) => a.levelRank - b.levelRank || byName(a, b))
         else {
           const rootName = new Map(scope.pens.map((p) => [p.id, p.name]))
           list.sort(
@@ -153,6 +166,15 @@ export function PenGalleryDialog({ onClose, initialScopeId }: { onClose: () => v
               byName(a, b),
           )
         }
+        const tiers: { name: string; cards: Card[] }[] = []
+        if (arrange === "level") {
+          for (const card of list) {
+            const name = card.level ?? "No level"
+            const last = tiers.at(-1)
+            if (last && last.name === name) last.cards.push(card)
+            else tiers.push({ name, cards: [card] })
+          }
+        }
         const families: Card[][] = []
         if (arrange === "family") {
           for (const card of list) {
@@ -161,7 +183,7 @@ export function PenGalleryDialog({ onClose, initialScopeId }: { onClose: () => v
             else families.push([card])
           }
         }
-        return { scope, list, families }
+        return { scope, list, families, tiers }
       })
   }, [visible, scopes, arrange])
 
@@ -201,7 +223,12 @@ export function PenGalleryDialog({ onClose, initialScopeId }: { onClose: () => v
             aria-hidden
           />
           <span className="trk-gallery-name">{card.pen.name}</span>
-          {card.path.length ? <span className="trk-gallery-path">{card.path.join(" › ")}</span> : null}
+          {card.path.length || card.level ? (
+            <span className="trk-gallery-path">
+              {card.level ? <span className="trk-gallery-level">{card.level}</span> : null}
+              {card.path.join(" › ")}
+            </span>
+          ) : null}
           <span className="trk-gallery-meta">
             {formatPenTime(card.usage.minutes)}
             {card.usage.blocks ? ` · ${card.usage.blocks}×` : ""}
@@ -265,7 +292,7 @@ export function PenGalleryDialog({ onClose, initialScopeId }: { onClose: () => v
         <div className="trk-gallery-deck">
           <div className="trk-gallery-sheet">
             {shelves.length === 0 ? <p className="trk-gallery-empty">No pens match “{query}”.</p> : null}
-            {shelves.map(({ scope, list, families }) => (
+            {shelves.map(({ scope, list, families, tiers }) => (
               <section key={scope.id} className="trk-gallery-shelf" aria-label={`${scope.name} pens`}>
                 <h4>
                   {scope.name}
@@ -287,6 +314,15 @@ export function PenGalleryDialog({ onClose, initialScopeId }: { onClose: () => v
                         </ul>
                       ))}
                   </>
+                ) : arrange === "level" ? (
+                  tiers.map((tier) => (
+                    <div key={tier.name} className="trk-gallery-tier">
+                      <p className="trk-gallery-tier-name">
+                        {tier.name} <span>{tier.cards.length}</span>
+                      </p>
+                      <ul className="trk-gallery-grid">{tier.cards.map(renderCard)}</ul>
+                    </div>
+                  ))
                 ) : (
                   <ul className="trk-gallery-grid">{list.map(renderCard)}</ul>
                 )}

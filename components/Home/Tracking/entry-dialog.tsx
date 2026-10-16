@@ -51,6 +51,14 @@ import {
 } from "@/lib/time-entries"
 import { VariantChips } from "@/components/Home/Tracking/variant-chips"
 import { CompanionSection } from "@/components/Home/Tracking/companion-section"
+import {
+  entryFieldValue,
+  fieldInputText,
+  fieldValuesPatch,
+  fieldsForBlock,
+  parseFieldInput,
+  type FieldValue,
+} from "@/lib/pen-fields"
 import { PersonPipelinesEditor } from "@/components/People/person-pipelines"
 import { COMPANY_SCOPE_ID } from "@/lib/people-i-know"
 import { BlockPenSection } from "@/components/Home/Tracking/block-pen-section"
@@ -73,6 +81,7 @@ import { OptionalClock } from "@/components/Home/Tracking/log-activity-dialog"
 import { sleepClockEstimateBasis } from "@/lib/estimated-values"
 import "./tracking-chrome.css"
 import "./entry-dialog.css"
+import "./tracking-settings.css"
 
 interface EntryDialogProps {
   entry: TimeEntry
@@ -100,6 +109,7 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
   const tags = useTimeTrackingStore((s) => s.tags)
   const allEntries = useTimeTrackingStore((s) => s.entries)
   const updateEntry = useTimeTrackingStore((s) => s.updateEntry)
+  const mirrorDetails = useTimeTrackingStore((s) => s.mirrorDetails)
   const removeEntry = useTimeTrackingStore((s) => s.removeEntry)
   const splitEntryAt = useTimeTrackingStore((s) => s.splitEntryAt)
   const addVariant = useTimeTrackingStore((s) => s.addVariant)
@@ -138,9 +148,12 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
   const [tagIds, setTagIds] = useState<string[]>(entry.tagIds ?? [])
   const [newTag, setNewTag] = useState("")
   const [title, setTitle] = useState(entry.title ?? "")
-  const [project, setProject] = useState(entry.project ?? "")
-  const [books, setBooks] = useState(entry.books ?? "")
-  const [pages, setPages] = useState(entry.pages?.toString() ?? "")
+  // Detail fields come from the block's pens and tags (`lib/pen-fields.ts`); drafts by field id.
+  const [fieldTexts, setFieldTexts] = useState<Record<string, string>>(() => {
+    const texts: Record<string, string> = {}
+    for (const row of fieldsForBlock([], [], entry)) texts[row.field.id] = fieldInputText(entryFieldValue(entry, row.field.id))
+    return texts
+  })
   const [notes, setNotes] = useState(entry.notes ?? "")
   const [nowObjectives, setNowObjectives] = useState<NowObjective[] | undefined>(entry.nowObjectives)
   const [reading, setReading] = useState<MoodReading>(entry.moodReading ?? {})
@@ -184,6 +197,12 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
     .join(", ")
 
   const displayName = entryDisplayName({ title }, pen?.name)
+  const blockFields = fieldsForBlock(assignedPens, tags, { ...entry, tagIds })
+  const fieldsPatch = () => {
+    const values: Record<string, FieldValue | undefined> = {}
+    for (const row of blockFields) values[row.field.id] = parseFieldInput(row.field, fieldTexts[row.field.id] ?? "")
+    return fieldValuesPatch(values)
+  }
 
   const createAndAttachTag = () => {
     const name = newTag.trim()
@@ -245,9 +264,7 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
         variantIds: liveVariantIds,
         tagIds: tagIds.filter((id) => !penTagIds.includes(id)),
         title: title.trim() || undefined,
-        project: project.trim() || undefined,
-        books: books.trim() || undefined,
-        pages: pages.trim() ? Number.parseInt(pages, 10) || undefined : undefined,
+        ...fieldsPatch(),
         notes: notes.trim() || undefined,
         nowObjectives,
         precision: assumed ? "estimated" : undefined,
@@ -273,9 +290,7 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
         variantIds: liveVariantIds,
         tagIds: tagIds.filter((id) => !penTagIds.includes(id)),
         title: title.trim() || undefined,
-        project: project.trim() || undefined,
-        books: books.trim() || undefined,
-        pages: pages.trim() ? Number.parseInt(pages, 10) || undefined : undefined,
+        ...fieldsPatch(),
         notes: notes.trim() || undefined,
         nowObjectives,
         precision: assumed ? "estimated" : undefined,
@@ -284,6 +299,8 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
       },
       wrapEndDate,
     )
+    // Cross-view details and the views they name agree over the saved window.
+    if (!wrapEndDate) mirrorDetails({ date: fromDate, scopeId: entry.scopeId, startMin, endMin })
     onClose()
   }
 
@@ -294,7 +311,6 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
     onClose()
   }
 
-  const isActivity = entry.scopeId === "activity"
   const startForSentence = timeStringToMinutes(from) ?? origin.startMin
   const endForSentence = isInstant(entry)
     ? startForSentence
@@ -308,9 +324,7 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
     fromDate,
     toDate,
     title,
-    project,
-    books,
-    pages,
+    fieldTexts,
     notes,
     nowObjectives,
     reading,
@@ -635,22 +649,41 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
             }
           />
 
-          {isActivity && (
-            <div className="grid grid-cols-2 gap-2 trk-section">
-              <div className="col-span-2">
-                <Label htmlFor="entry-project">Project / context</Label>
-                <Input id="entry-project" value={project} onChange={(e) => setProject(e.target.value)} />
-              </div>
-              <div>
-                <Label htmlFor="entry-books">Book(s)</Label>
-                <Input id="entry-books" value={books} onChange={(e) => setBooks(e.target.value)} />
-              </div>
-              <div>
-                <Label htmlFor="entry-pages">Pages read</Label>
-                <Input id="entry-pages" type="number" value={pages} onChange={(e) => setPages(e.target.value)} />
+          {blockFields.length ? (
+            <div className="trk-section trk-entry-fields" data-testid="entry-fields">
+              <Label className="trk-section-title">Details</Label>
+              <div className="trk-entry-fields-grid">
+                {blockFields.map((row) => (
+                  <div key={row.field.id} className={row.field.kind === "text" ? "trk-entry-field is-wide" : "trk-entry-field"}>
+                    <Label htmlFor={`entry-field-${row.field.id}`}>
+                      {row.field.name}
+                      <span className="trk-entry-field-from">
+                        {row.source === "kept" ? " · kept" : row.source === "tag" ? ` · ${row.sourceName} tag` : ""}
+                      </span>
+                    </Label>
+                    <Input
+                      id={`entry-field-${row.field.id}`}
+                      type={row.field.kind === "number" ? "number" : "text"}
+                      inputMode={row.field.kind === "number" ? "decimal" : undefined}
+                      placeholder={row.field.unit ?? ""}
+                      value={fieldTexts[row.field.id] ?? ""}
+                      onChange={(e) => setFieldTexts((current) => ({ ...current, [row.field.id]: e.target.value }))}
+                    />
+                  </div>
+                ))}
               </div>
             </div>
-          )}
+          ) : null}
+          {pen && !isMood && !spendEntry ? (
+            <button
+              type="button"
+              className="trk-entry-fields-door"
+              data-no95=""
+              onClick={() => openPenSettings(scope?.id ?? entry.scopeId, pen.id)}
+            >
+              {blockFields.some((row) => row.source !== "kept") ? "Edit detail fields" : `Add a detail field to ${pen.name}…`}
+            </button>
+          ) : null}
 
           {entry.scopeId === COMPANY_SCOPE_ID ? <PersonPipelinesEditor mode="entry" entryId={entry.id} /> : null}
 

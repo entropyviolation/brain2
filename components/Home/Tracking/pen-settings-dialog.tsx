@@ -46,6 +46,17 @@ import { CrossViewDetailPicker } from "@/components/Home/Tracking/cross-view-det
 import { openPenSettings } from "@/components/Home/Tracking/open-pen-settings"
 import { PenRecentBlocks } from "@/components/Home/Tracking/pen-recent-blocks"
 import { CatalogTagChip } from "@/components/Home/Tracking/catalog-tag-chip"
+import { PenLevelPicker } from "@/components/Home/Tracking/pen-level-picker"
+import { PenPlaceEditor } from "@/components/Home/Tracking/pen-place-editor"
+import { PenFieldsEditor } from "@/components/Home/Tracking/pen-fields-editor"
+import { fieldsForBlock, type PenField } from "@/lib/pen-fields"
+import "./tracking-settings.css"
+
+/** Nameless fields are dropped; an empty list is stored as none. */
+function cleanFields(fields: PenField[]): PenField[] | undefined {
+  const kept = fields.map((f) => ({ ...f, name: f.name.trim() })).filter((f) => f.name)
+  return kept.length ? kept : undefined
+}
 import { TAG_OPEN_TITLE } from "@/components/Home/Tracking/open-tag-settings"
 import "./tracking-chrome.css"
 
@@ -79,6 +90,7 @@ export function PenSettingsDialog({ scopeId, pen: openedPen, onClose, onDeleted 
   const [newVariant, setNewVariant] = useState("")
   const [actionFormats, setActionFormats] = useState<PenActionFormat[]>(pen.actionFormats ?? [])
   const [image, setImage] = useState(pen.image ?? "")
+  const [fields, setFields] = useState<PenField[]>(pen.fields ?? [])
   const [pickingImage, setPickingImage] = useState(false)
 
   const addVariant = useTimeTrackingStore((s) => s.addVariant)
@@ -99,6 +111,7 @@ export function PenSettingsDialog({ scopeId, pen: openedPen, onClose, onDeleted 
     setVariantLabel(next.variantLabel ?? "")
     setActionFormats(next.actionFormats ?? [])
     setImage(next.image ?? "")
+    setFields(next.fields ?? [])
     // Intentionally reset the form when navigating to another pen.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingId, livePen?.id])
@@ -111,6 +124,7 @@ export function PenSettingsDialog({ scopeId, pen: openedPen, onClose, onDeleted 
       tags: tagIds,
       variantLabel: variantLabel.trim() || undefined,
       image: image || undefined,
+      fields: cleanFields(fields),
       actionFormats: actionFormats.filter((f) => f.template.trim()).length
         ? actionFormats.filter((f) => f.template.trim())
         : undefined,
@@ -145,7 +159,7 @@ export function PenSettingsDialog({ scopeId, pen: openedPen, onClose, onDeleted 
   }
 
   const isDirty = !snapshotsEqual(
-    { name, color, tagIds, variantLabel, actionFormats, image },
+    { name, color, tagIds, variantLabel, actionFormats, image, fields },
     {
       name: pen.name,
       color: pen.color,
@@ -153,6 +167,7 @@ export function PenSettingsDialog({ scopeId, pen: openedPen, onClose, onDeleted 
       variantLabel: pen.variantLabel ?? "",
       actionFormats: pen.actionFormats ?? [],
       image: pen.image ?? "",
+      fields: pen.fields ?? [],
     },
   )
   const guard = useUnsavedGuard({
@@ -234,7 +249,21 @@ export function PenSettingsDialog({ scopeId, pen: openedPen, onClose, onDeleted 
               }}
             />
             <PenChainVisual pens={scopePens} penId={pen.id} onOpenPen={openPen} />
+            <Label className="trk-section-title trk-level-title">Level category</Label>
+            <PenLevelPicker scopeId={scopeId} penId={pen.id} penName={name || pen.name} />
           </div>
+
+          {scopeId === "location" ? (
+            <div className="trk-section space-y-2">
+              <Label className="trk-section-title">Place</Label>
+              <p className="trk-help">
+                Where <strong>{name || pen.name}</strong> is. An address files it under its neighborhood, city, state, and
+                country pens (made if missing). Coordinates and a zip are other names for this same place — a GPS fix
+                inside one is {name || pen.name}, not something it counts as.
+              </p>
+              <PenPlaceEditor scopeId={scopeId} penId={pen.id} />
+            </div>
+          ) : null}
 
           <div className="trk-section space-y-2">
             <Label className="trk-section-title">Tags</Label>
@@ -278,11 +307,28 @@ export function PenSettingsDialog({ scopeId, pen: openedPen, onClose, onDeleted 
 
           {scopeId === COMPANY_SCOPE_ID ? <PersonPipelinesEditor mode="pen" penId={pen.id} /> : null}
 
+          <div className="trk-section space-y-2">
+            <Label className="trk-section-title">Detail fields</Label>
+            <p className="trk-help">
+              What a block on <strong>{name || pen.name}</strong> asks for, beyond title and notes — Book(s) as text,
+              Pages read as a number. A number field can fill a habit (Habits → the habit → Auto-fill from Tracking),
+              and every field is a variable for the Done-today title below.
+            </p>
+            <PenFieldsEditor
+              key={pen.id}
+              ownerName={name || pen.name}
+              fields={fields}
+              onChange={setFields}
+              inherited={fieldsForBlock([{ id: pen.id, name: pen.name, tags: tagIds }], tags).filter((row) => row.source === "tag")}
+            />
+          </div>
+
           <PenActionFormatEditor
             key={pen.id}
             penName={name || pen.name}
             formats={actionFormats}
             onChange={setActionFormats}
+            fields={fieldsForBlock([{ id: pen.id, name: pen.name, tags: tagIds, fields }], tags).map((row) => row.field)}
           />
 
           <div className="trk-section space-y-2">

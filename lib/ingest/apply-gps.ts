@@ -7,6 +7,9 @@
  * reverse-geocoded business name cannot replace home while you are still
  * there. A Telegram venue pin is a shared place, not
  * presence. `gps-log:` replays lines the phone saved while it was offline.
+ * A Location pen's own place (address pin, attached coordinates, zip area —
+ * `lib/pen-place.ts`) matches first. A brand-new point gets a coordinate pen
+ * that is reverse-geocoded and filed under its city / state / country pens.
  */
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { persistKey, readAliasedLocal, writeAliasedLocal } from "@/lib/storage-keys"
@@ -15,6 +18,8 @@ import { PEN_PALETTE, useTimeTrackingStore, type TrackPen } from "@/lib/time-tra
 import { GPS_CLUSTER_RADIUS_M, lookupGpsPlaceName, recordGpsSample } from "./gps-places"
 import { MINUTES_PER_DAY, minutesPastMidnight } from "./times"
 import type { ApplyResult } from "./types"
+import { penForCoordinate } from "@/lib/pen-place"
+import { fileNewGpsPen } from "@/lib/pen-place-actions"
 
 const LAST_GPS_KEY = persistKey("last-gps")
 const GPS_NOTE = "gps"
@@ -230,6 +235,13 @@ function chopProjectedTail(date: string, keepUntil: number): void {
 function resolvePen(sample: GpsSample): { penId: string; name: string; coords: { lat: number; lon: number } | null } {
   const coords = coordsOf(sample)
   if (coords) {
+    // A pen's own address, attached coordinates, or zip (`lib/pen-place.ts`) is
+    // another name for that pen — it wins over clusters and the last fix.
+    const placed = penForCoordinate(pensInLocation(), coords.lat, coords.lon)
+    const placedPen = placed ? pensInLocation().find((pen) => pen.id === placed.penId) : undefined
+    if (placedPen) return { penId: placedPen.id, name: placedPen.name, coords }
+  }
+  if (coords) {
     const named = lookupGpsPlaceName(coords.lat, coords.lon)
     if (named) {
       const existing = findExactPen(named)
@@ -252,6 +264,9 @@ function resolvePen(sample: GpsSample): { penId: string; name: string; coords: {
   const label = `${coords!.lat.toFixed(3)},${coords!.lon.toFixed(3)}`
   const existing = findExactPen(label)
   const penId = existing?.id ?? createLocationPen(label)
+  // A new unknown point: pin it, look up its address, and file it under its
+  // neighborhood / city / state / country pens, creating them if needed.
+  if (!existing && penId && process.env.NODE_ENV !== "test") void fileNewGpsPen(penId, coords!.lat, coords!.lon)
   return { penId, name: existing?.name ?? label, coords }
 }
 

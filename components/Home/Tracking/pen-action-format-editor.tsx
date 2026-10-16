@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label"
 import { Plus, Trash2 } from "lucide-react"
 import type { PenActionFormat } from "@/lib/time-tracking-store"
 import { interpolateActionFormat, pickActionFormat } from "@/lib/pen-action-format"
+import { fieldVariableKeys, type PenField } from "@/lib/pen-fields"
 
 const rid = () => `fmt-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`
 
@@ -22,10 +23,13 @@ export function PenActionFormatEditor({
   penName,
   formats,
   onChange,
+  fields = [],
 }: {
   penName: string
   formats: PenActionFormat[]
   onChange: (next: PenActionFormat[]) => void
+  /** This pen's detail fields (its own and its tags'): each is a variable. */
+  fields?: PenField[]
 }) {
   const [open, setOpen] = useState(formats.length > 0)
   const [help, setHelp] = useState(false)
@@ -94,7 +98,19 @@ export function PenActionFormatEditor({
               </p>
               <p>
                 Only when present (otherwise that template is skipped): <code>{"{location}"}</code>{" "}
-                (overlapping Location pen), <code>{"{project}"}</code> / <code>{"{project name}"}</code>.
+                (overlapping Location pen), <code>{"{project}"}</code> / <code>{"{project name}"}</code>
+                {fields.length ? (
+                  <>
+                    , and this pen’s detail fields:{" "}
+                    {fields.map((field, i) => (
+                      <span key={field.id}>
+                        {i ? ", " : ""}
+                        <code>{`{${fieldVariableKeys(field)[1] ?? field.id}}`}</code>
+                      </span>
+                    ))}
+                  </>
+                ) : null}
+                .
               </p>
               <p>
                 Example: <code>Went for a walk</code> plus{" "}

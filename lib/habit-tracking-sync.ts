@@ -43,7 +43,12 @@ import { formatLocalDateKey, getWeekDates, getWeekStartDate } from "@/lib/date-u
 import { periodWindowsForFrequency } from "@/lib/habit-period-windows"
 import { startHydratedStoreSync, type HydratedStoreSyncSlot } from "@/lib/start-hydrated-store-sync"
 import { activeTrackingLink, convertTrackedMinutes } from "@/lib/habit-tracking"
-import { trackedDateKeys, trackedMinutesForTagsInRange, type TrackedTimeSource } from "@/lib/tracked-time"
+import {
+  trackedDateKeys,
+  trackedFieldSumForTagsInRange,
+  trackedMinutesForTagsInRange,
+  type TrackedTimeSource,
+} from "@/lib/tracked-time"
 import type { TimeEntry } from "@/lib/time-entries"
 import type { HabitTrackingLink, WeeklyTask } from "@/lib/types"
 
@@ -82,6 +87,12 @@ function applyTrackedForTask(
   const apply = useHabitsStore.getState().applyTrackedValue
   const frequency = task.frequency || "daily"
   for (const { anchor, keys } of periodWindowsForFrequency(frequency, dateKeys)) {
+    if (link?.fieldId) {
+      // A detail field (Pages read) sums as-is; no minutes conversion.
+      const total = trackedFieldSumForTagsInRange(source, keys, link.tagIds, link.fieldId)
+      apply(task.id, anchor, total > 0 ? Math.round(total * 100) / 100 : 0)
+      continue
+    }
     const minutes = link ? trackedMinutesForTagsInRange(source, keys, link.tagIds) : 0
     apply(task.id, anchor, convertTrackedMinutes(minutes, link?.unit))
   }

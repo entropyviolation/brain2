@@ -990,3 +990,532 @@
     max-height: 40vh;
   }
 }
+
+/* ── level categories (pen settings picker + Tracking settings editor) ── */
+.trk95 .trk-level-title {
+  display: block;
+  margin-top: 8px;
+}
+
+.trk95 .trk-level-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.trk95 .trk-level-keys {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px;
+}
+
+.trk95 .trk-level-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.trk95 .trk-level-sep {
+  color: #6a6f73;
+  font-size: 12px;
+}
+
+.trk95 .trk-level-keys button,
+.trk95 .trk-levels-row > button,
+.trk95 .trk-fields-row > button,
+.trk95 .trk-fields-presets > button,
+.trk95 .trk-entry-fields-door,
+.trk95 .trk-company-people button {
+  min-height: 22px;
+  padding: 1px 8px;
+  border: 0;
+  border-radius: var(--r-2, 2px);
+  color: #1c1e20;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
+    linear-gradient(165deg, var(--chrome-key-sheen, #f2f2f2) 0%, var(--chrome-key-mid, #dcdcdc) 36%, var(--t-surface, #c8c8c8) 70%, var(--chrome-key-shade, #a8a8a8) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 0 -1px 0 rgba(55, 58, 62, 0.45),
+    0 0 0 1px var(--chrome-ring-deep, #555);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.trk95 .trk-level-keys button[aria-pressed="true"] {
+  color: var(--t-crt, #7dffc4);
+  text-shadow: var(--t-crt-glow, 0 0 3px #7dffc4);
+  background: #0b100e;
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.7),
+    0 0 0 1px var(--chrome-pressed, #222);
+}
+
+.trk95 .trk-level-keys .trk-level-add {
+  font-weight: 400;
+}
+
+.trk95 .trk-level-new {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.trk95 .trk-level-new > input,
+.trk95 .trk-levels-row > input,
+.trk95 .trk-fields-row > input,
+.trk95 .trk-fields-row > select {
+  min-width: 0;
+  min-height: 22px;
+  padding: 1px 6px;
+  border: 0;
+  border-radius: 0;
+  color: #111;
+  font: inherit;
+  font-size: 12px;
+  background: #fff;
+  box-shadow: var(--t-field, var(--t-sunken));
+}
+
+.trk95 .trk-levels {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.trk95 .trk-levels-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  background: #fff;
+  box-shadow: var(--t-sunken);
+}
+
+.trk95 .trk-levels-head {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-bottom: 2px;
+}
+
+.trk95 .trk-levels-view {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--t-nameplate, #2a2c2e);
+}
+
+.trk95 .trk-levels-ladder {
+  font-size: 10px;
+  color: #6a6f73;
+}
+
+.trk95 .trk-levels-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.trk95 .trk-levels-row > input {
+  flex: 1 1 6rem;
+}
+
+.trk95 .trk-levels-count {
+  flex: none;
+  font-size: 10px;
+  color: #6a6f73;
+}
+
+.trk95 .trk-levels-add {
+  padding-top: 4px;
+  border-top: 1px dashed #e2e4e6;
+}
+
+/* ── detail fields (pen + tag settings) ── */
+.trk95 .trk-fields-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.trk95 .trk-fields-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.trk95 .trk-fields-row > input:first-child {
+  flex: 1 1 9rem;
+}
+
+.trk95 .trk-fields-row > .trk-fields-unit {
+  flex: 0 0 5rem;
+}
+
+.trk95 .trk-fields-inherited {
+  padding: 2px 6px;
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.5);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.trk95 .trk-fields-name {
+  flex: 1 1 auto;
+  font-weight: 700;
+}
+
+.trk95 .trk-fields-kind,
+.trk95 .trk-fields-from {
+  font-size: 10px;
+  color: #4a4f53;
+}
+
+.trk95 .trk-fields-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.trk95 .trk-fields-presets > button {
+  font-weight: 400;
+}
+
+.trk95 .trk-fields-add {
+  padding-top: 4px;
+  border-top: 1px dashed rgba(0, 0, 0, 0.12);
+}
+
+.trk95 .trk-fields-empty {
+  margin: 0;
+  font-size: 11px;
+  font-style: italic;
+  color: #4a4f53;
+}
+
+/* ── block editor: details, people, logs ── */
+.trk95 .trk-entry-fields-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 8px;
+  margin-top: 4px;
+}
+
+.trk95 .trk-entry-field.is-wide {
+  grid-column: 1 / -1;
+}
+
+.trk95 .trk-entry-field-from {
+  font-weight: 400;
+  color: #6a6f73;
+}
+
+.trk95 .trk-entry-fields-door {
+  align-self: flex-start;
+  font-weight: 400;
+}
+
+.trk95 .trk-company-people {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.trk95 .trk-company-person {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 2px 1px 6px;
+  font-size: 11px;
+  background: #fff;
+  box-shadow: var(--t-field, var(--t-sunken));
+}
+
+.trk95 .trk-company-person > button {
+  min-height: 16px;
+  padding: 0 4px;
+  font-size: 10px;
+}
+
+.trk95 .trk-company-candidates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  width: 100%;
+}
+
+.trk95 .trk-company-candidates > button {
+  font-weight: 400;
+  border-left: 3px solid;
+}
+
+.trk95 .trk-block-logs {
+  padding: 6px 8px;
+  background: #fff;
+  box-shadow: var(--t-sunken);
+}
+
+.trk95 .trk-block-logs ul {
+  display: flex;
+  flex-direction: column;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trk95 .trk-block-logs li {
+  display: grid;
+  grid-template-columns: 4.5rem 7.5rem minmax(0, 1fr);
+  gap: 6px;
+  padding: 2px 0;
+  border-top: 1px dashed #e4e6e8;
+  font-size: 11px;
+}
+
+.trk95 .trk-block-log-clock {
+  font-variant-numeric: tabular-nums;
+  color: #4a4f53;
+}
+
+.trk95 .trk-block-log-kind {
+  font-weight: 700;
+  color: #20402f;
+}
+
+.trk95 .trk-block-log-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── gallery: level tiers ── */
+.trk95 .trk-gallery-tier + .trk-gallery-tier {
+  margin-top: 8px;
+}
+
+.trk95 .trk-gallery-tier-name {
+  margin: 0 0 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #4a4f53;
+}
+
+.trk95 .trk-gallery-tier-name > span {
+  font-weight: 400;
+  color: #8a8f93;
+}
+
+.trk95 .trk-gallery-level {
+  margin-right: 4px;
+  padding: 0 4px;
+  border-radius: 6px;
+  font-size: 9px;
+  font-weight: 700;
+  color: #20402f;
+  background: #dff3e8;
+}
+
+/* ── place (Location pens) ── */
+.trk95 .trk-place {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.trk95 .trk-place-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.trk95 .trk-place-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--t-nameplate, #2a2c2e);
+}
+
+.trk95 .trk-place-pinned {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 8px;
+  padding: 6px 8px;
+  background: #fff;
+  box-shadow: var(--t-sunken);
+}
+
+.trk95 .trk-place-pin {
+  color: #d9466f;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.trk95 .trk-place-pinned-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.trk95 .trk-place-address {
+  font-size: 12px;
+  font-weight: 700;
+  word-break: break-word;
+}
+
+.trk95 .trk-place-parts,
+.trk95 .trk-place-coord,
+.trk95 .trk-place-hint {
+  font-size: 10px;
+  color: #5a5f63;
+}
+
+.trk95 .trk-place-actions,
+.trk95 .trk-place-row,
+.trk95 .trk-place-gps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.trk95 .trk-place-search {
+  position: relative;
+}
+
+.trk95 .trk-place-search > input,
+.trk95 .trk-place-row > input,
+.trk95 .trk-place-coords input {
+  min-width: 0;
+  min-height: 24px;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 0;
+  color: #111;
+  font: inherit;
+  font-size: 12px;
+  background: #fff;
+  box-shadow: var(--t-field, var(--t-sunken));
+}
+
+.trk95 .trk-place-search > input {
+  width: 100%;
+}
+
+.trk95 .trk-place-row > input {
+  flex: 1 1 8rem;
+}
+
+.trk95 .trk-place-results {
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+  background: #fff;
+  box-shadow: var(--t-sunken), 0 4px 10px rgba(0, 0, 0, 0.12);
+}
+
+.trk95 .trk-place-results button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  padding: 5px 8px;
+  border: 0;
+  color: #111;
+  font: inherit;
+  text-align: left;
+  background: transparent;
+  cursor: pointer;
+}
+
+.trk95 .trk-place-results li + li button {
+  border-top: 1px dashed #e4e6e8;
+}
+
+.trk95 .trk-place-results button:hover,
+.trk95 .trk-place-results button:focus-visible {
+  background: #e6f6ee;
+}
+
+.trk95 .trk-place-result-name {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.trk95 .trk-place-result-line {
+  font-size: 10px;
+  color: #5a5f63;
+}
+
+.trk95 .trk-place-coords {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trk95 .trk-place-coords li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+}
+
+.trk95 .trk-place-coords li > input {
+  flex: 1 1 7rem;
+}
+
+.trk95 .trk-place-radius {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.trk95 .trk-place-radius input {
+  width: 4.5rem;
+}
+
+.trk95 .trk-place-actions > button,
+.trk95 .trk-place-row > button,
+.trk95 .trk-place-coords button,
+.trk95 .trk-place-gps > button {
+  min-height: 22px;
+  padding: 1px 8px;
+  border: 0;
+  border-radius: var(--r-2, 2px);
+  color: #1c1e20;
+  font: inherit;
+  font-size: 11px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
+    linear-gradient(165deg, var(--chrome-key-sheen, #f2f2f2) 0%, var(--chrome-key-mid, #dcdcdc) 36%, var(--t-surface, #c8c8c8) 70%, var(--chrome-key-shade, #a8a8a8) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 0 -1px 0 rgba(55, 58, 62, 0.45),
+    0 0 0 1px var(--chrome-ring-deep, #555);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.trk95 .trk-place-status {
+  margin: 0;
+  padding: 4px 8px;
+  font-size: 11px;
+  color: #0b3d2a;
+  background: #e6f6ee;
+}
