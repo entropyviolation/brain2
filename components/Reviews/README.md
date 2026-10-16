@@ -106,11 +106,11 @@ section below. Desktop and text `gm` share `replaceMorningReview`.
 
 ## Start ritual (week–year)
 
-_Last mapped: 2026-10-16_ Stepped: Undone from last period · Priorities · Must be done (text + Required / Prioritized marks) · Intentions · Plan · Gratitude. Moving between steps is **Save progress**. Test: `StartRitualDialog.test.tsx`.
+_Last mapped: 2026-10-16_ Stepped: Undone from last period · Priorities · Required (text + Required / Prioritized marks) · Intentions · Plan · Gratitude. Moving between steps is **Save progress**. Test: `StartRitualDialog.test.tsx`.
 
 1. **Undone from last period** — pull into this period or note them.
 2. **Priorities** — free text for what matters most.
-3. **Must be done** — required outcomes, plus `CommitmentMarkList` (`marks="both"`) that marks this period's assigned tasks **Required** or **Prioritized** (`Task.todoMarks`).
+3. **Required** — required outcomes, plus `CommitmentMarkList` (`marks="both"`) that marks this period's assigned tasks **Required** or **Prioritized** (`Task.todoMarks`).
 4. **Intentions** — tone / focus.
 5. **Plan** — concrete plan for the period.
 6. **Gratitude**.

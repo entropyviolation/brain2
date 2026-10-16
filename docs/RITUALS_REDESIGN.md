@@ -76,7 +76,7 @@ _Last mapped: 2026-10-16_
   Summary · Gratitude · Plan reflection (if a plan exists) · Reflection ·
   Tomorrow morning · Goals to focus on tomorrow · Tomorrow's plan. Week to
   year: This {period} replaces the time step; the last step is The … to come.
-- Start: Undone · Priorities · Must be done · Intentions · Plan · Gratitude.
+- Start: Undone · Priorities · Required · Intentions · Plan · Gratitude.
 - Star Lord: Before you begin · The ledger · Inner alchemy · Closing.
 - Tests: `review-dialog.test.tsx` (walk + draft on step, Finish),
   `StartRitualDialog.test.tsx` (new), `StarLordReportDialog.test.tsx`,
