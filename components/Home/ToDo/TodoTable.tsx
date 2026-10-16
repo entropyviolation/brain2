@@ -2,7 +2,7 @@
  * components/Home/ToDo/TodoTable.tsx — Period to-do ledger
  *
  * Closed rows show the name (padded), a tier menu, the active lamp, completion
- * percent, and the verb keys Done / Start / Push / Delete. Click / Enter opens
+ * percent, and the verb keys Done / Start / Just 25 (a timebox session) / Push / Delete. Click / Enter opens
  * one clamshell lid: the header name is the only edit field; Flags, Time, and
  * Steps fold independently. Mutations stay on the orchestrator.
  */
@@ -18,6 +18,8 @@ import { getScheduleLabel, pushedKeyForPeriod, toggleTodoActiveLamp, type TodoPe
 import { itemTitle } from "@/lib/item-utils"
 import { TodoBreakdown, TodoDeleteButton, TodoLidSection, type TodoTimeInfo } from "./TodoBreakdown"
 import { DvdTransportKey } from "@/components/dvd-transport-keys"
+import { openSession } from "@/lib/session-open-store"
+import { JUST_25_TEMPLATE_ID } from "@/lib/session-plan"
 import { NOTICE_PROMPT } from "@/lib/notice-dot"
 
 const COLLAPSE_THRESHOLD = 8
@@ -536,6 +538,15 @@ export function TodoTable({
                   onClick={() => onJustStart(todo.taskId || todo.id)}
                 >
                   Start
+                </button>
+                <button
+                  type="button"
+                  className="todo-verb is-quiet"
+                  title="Just 25 minutes on this: the clock is the commitment"
+                  aria-label={`Just 25 on ${name}`}
+                  onClick={() => openSession({ startOn: "session", templateId: JUST_25_TEMPLATE_ID, seed: [{ taskId: todo.taskId || todo.id }] })}
+                >
+                  Just 25
                 </button>
                 <button
                   type="button"

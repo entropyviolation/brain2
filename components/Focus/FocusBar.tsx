@@ -65,7 +65,7 @@ export default function FocusBar() {
   const endSitting = () => {
     setAsking(false)
     const live = usePenColorSessionStore.getState().session
-    setSatMinutes(live ? sessionElapsedMs(live, new Date()) / 60_000 : 0)
+    setSatMinutes(live ? sessionElapsedMs(live) / 60_000 : 0)
     pausePenColorSession()
   }
 

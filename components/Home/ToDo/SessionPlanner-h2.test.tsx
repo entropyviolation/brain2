@@ -7,6 +7,7 @@ import { useSessionPlanStore } from "@/lib/session-plan-store"
 import { startSession, type SessionPlan } from "@/lib/session-plan"
 import type { Subtask, Task } from "@/lib/types"
 import { SessionPlanner } from "./SessionPlanner"
+import { getTodoPrefs } from "./todo-prefs"
 
 const T0 = new Date("2026-10-16T20:00:00")
 const s = (id: string, extra: Partial<Subtask> = {}): Subtask => ({ id, description: id, completed: false, ...extra })
@@ -71,6 +72,26 @@ describe("SessionPlanner, slice H2", () => {
     fireEvent.click(screen.getByRole("button", { name: "Park now" }))
     expect(focused()).toMatchObject({ phase: "parked", futureNote: { text: "wood first" } })
     expect(screen.getByRole("note")).toHaveTextContent("wood first")
+  })
+
+  it("pads the gauge with your pace, and shows raw estimates when off", () => {
+    // Three finished steps that ran 2× their estimates: your pace is ×2.
+    const done = (id: string) => s(id, { completed: true, estimatedDuration: 10, actualDuration: 20 })
+    const tasks: Task[] = [
+      { id: "cds", description: "Finish CDs", stage: "scheduled", createdAt: T0, completed: false, lists: [], subtasks: [done("a"), done("b"), done("c"), s("open", { estimatedDuration: 30 })] },
+    ]
+    useTaskStore.getState().setTasks(tasks)
+    render(<SessionPlanner open onClose={() => {}} periodTasks={tasks} periodLabel="This day" />)
+    fireEvent.click(screen.getByRole("button", { name: "Add" })) // the 30m step into Bare minimum (of 180m)
+    const toggle = screen.getByRole("checkbox", { name: /Padded for you/ })
+    expect(toggle).toBeChecked()
+    expect(screen.getByText("padded for you ×2.0")).toBeInTheDocument()
+    expect(screen.getAllByText(/With Hofstadter ×2: 67% of the time/)).not.toHaveLength(0) // 30 × 2 × 2 ÷ 180
+    fireEvent.click(toggle)
+    expect(getTodoPrefs().sessionPadded).toBe(false)
+    expect(screen.getByText("raw estimates")).toBeInTheDocument()
+    expect(screen.queryByText("padded for you ×2.0")).toBeNull()
+    expect(screen.getAllByText(/With Hofstadter ×2: 33% of the time/)).not.toHaveLength(0) // 30 × 2 ÷ 180
   })
 
   it("saves the draft as a template", () => {

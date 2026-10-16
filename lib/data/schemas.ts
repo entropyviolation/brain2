@@ -77,6 +77,8 @@ export const subtaskSchema: z.ZodTypeAny = z.lazy(() =>
       dependsOn: z.array(z.string()).optional(),
       actualDuration: z.number().optional(),
       completedAt: dateLike.optional(),
+      tier: z.enum(["min", "goal", "exceptional"]).optional().catch(undefined),
+      sparkedAt: z.string().optional(),
     })
     .passthrough(),
 )

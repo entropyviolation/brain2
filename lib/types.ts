@@ -285,7 +285,18 @@ export interface Subtask {
   actualDuration?: number
   /** When the step was ticked done from a timer. Revived as a Date by the task store. */
   completedAt?: Date
+  /**
+   * Which level this step belongs to (Phase 10): Bare minimum, Goal or
+   * Exceptional. Missing inherits the nearest ancestor's; a top-level step
+   * with none is Goal (`lib/step-tiers.ts`).
+   */
+  tier?: StepTier
+  /** Spark mark (UI-7): set yourself on a step that pulls you. ISO time. No points, no effect on progress. */
+  sparkedAt?: string
 }
+
+/** Step tier ids (Phase 10). Labels: Bare minimum / Goal / Exceptional. */
+export type StepTier = "min" | "goal" | "exceptional"
 
 /**
  * Tunable weights for the transparent To-Do priority formula (Brain2 #46).

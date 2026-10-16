@@ -112,6 +112,8 @@ import { useTaskClockStarter } from "@/components/Focus/TaskClockStarter"
 import JustStartMode from "@/components/Focus/JustStartMode"
 import { TodoBreakdown } from "./TodoBreakdown"
 import { useTodoTime } from "./use-todo-time"
+import { setTodoPrefs, useTodoPrefs } from "./todo-prefs"
+import { paddedLabel, sessionPaceFactor } from "@/lib/estimate-pace"
 import "./session-planner.css"
 
 const TIER_LABEL: Record<SessionTier, string> = { min: "Bare minimum", goal: "Goal", exceptional: "Exceptional" }
@@ -454,7 +456,10 @@ function DraftView({
 
   // Your own pace (`lib/estimate-pace.ts`): finished steps and closed lines, or your override.
   const todoTime = useTodoTime(tasks)
-  const pace = todoTime.pace
+  // Padded for you (FN-2): on, each line is weighted by your pace for its pen or list; off, raw estimates.
+  const { sessionPadded } = useTodoPrefs()
+  const pace = sessionPadded ? sessionPaceFactor(plan, tasks, todoTime.samples, todoTime.paceOverrides) : 1
+  const padLabel = sessionPadded ? paddedLabel(pace) : null
   const fit = sessionFit(plan, tasks, pace)
   const reason = cannotStartReason(plan, tasks)
   const missing = missingPrereqs(plan, tasks)
@@ -748,7 +753,16 @@ function DraftView({
           {breaks ? (
             <p className="todo-session-pace">{fmtMinutes(breaks)} of breaks set aside; the gauge counts the rest.</p>
           ) : null}
-          {pace !== 1 ? (
+          <label className="todo-session-padded">
+            <input
+              type="checkbox"
+              checked={sessionPadded}
+              onChange={(e) => setTodoPrefs({ sessionPadded: e.target.checked })}
+            />
+            Padded for you
+            <span className="todo-session-mins">{sessionPadded ? (padLabel ?? "your pace is ×1.0") : "raw estimates"}</span>
+          </label>
+          {padLabel ? (
             <p className="todo-session-pace">
               You usually run ×{pace.toFixed(1)} your estimates. The gauge counts that in.
             </p>
