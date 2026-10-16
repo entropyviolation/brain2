@@ -107,6 +107,7 @@ describe("SessionPlanner", () => {
     })
     const line = plan().activeLineId
     fireEvent.click(screen.getByRole("button", { name: "Park" }))
+    fireEvent.click(screen.getByRole("button", { name: "Park now" })) // the note to tomorrow-you is optional
     expect(plan()).toMatchObject({ phase: "parked", activeLineId: line })
     expect(screen.getByText("50:00")).toBeInTheDocument()
     act(() => {

@@ -56,4 +56,22 @@ describe("ItemTrackedTime", () => {
     expect(screen.getByRole("meter").getAttribute("aria-valuenow")).toBe("120")
     expect(screen.getAllByRole("listitem")).toHaveLength(2)
   })
+
+  it("shows est · parts · spent when the item has steps", () => {
+    render(
+      <ItemTrackedTime
+        task={{
+          id: "t1",
+          penLinks: [{ scopeId: "activity", penId: "cd" }],
+          estimatedDuration: 120,
+          timeLogs: [],
+          subtasks: [
+            { id: "a", description: "a", completed: false, estimatedDuration: 100 },
+            { id: "b", description: "b", completed: false, estimatedDuration: 45 },
+          ],
+        }}
+      />,
+    )
+    expect(screen.getByLabelText("Estimate, parts and time spent").textContent).toBe("2h · est 120 · parts 145")
+  })
 })

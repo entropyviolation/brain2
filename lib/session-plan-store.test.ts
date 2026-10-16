@@ -33,7 +33,7 @@ describe("session store (slice H)", () => {
     expect(out.open).toHaveLength(1)
     expect(out.open[0]).toMatchObject({ id: "live", phase: "run" })
     expect(out.focusId).toBe("live")
-    expect(migrateSessionBlob(undefined)).toEqual({ open: [], focusId: null, history: [], kept: [] })
+    expect(migrateSessionBlob(undefined)).toEqual({ open: [], focusId: null, history: [], kept: [], templates: [] })
     expect(migrateSessionBlob({ current: null, history: [], kept: [] }).open).toEqual([])
   })
 

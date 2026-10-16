@@ -1335,7 +1335,6 @@ export function MorningReviewDialog({
             <p className="mr-lede">Check what applies, then fill in.</p>
             {(
               [
-                ["mustDo", "Something I absolutely must do", mustDo, setMustDo],
                 ["mustNotDo", "Something I absolutely must not do", mustNotDo, setMustNotDo],
                 ["newEvents", "New events scheduled today", newEvents, setNewEvents],
                 ["excited", "Something I'm excited about", excitedAbout, setExcitedAbout],

@@ -829,11 +829,11 @@ export function getTodoMissedTitle(period: TodoPeriod, refDate: Date, now: Date 
   const current = isCurrentPeriod(period, refDate, now)
   switch (period) {
     case "day":
-      return current ? "Missed opportunities today" : `Missed ${format(refDate, "MMM d")}`
+      return current ? "Missed opportunities today" : `Missed opportunities ${format(refDate, "MMM d")}`
     case "week":
-      return current ? "Missed this week" : "Missed that week"
+      return current ? "Missed opportunities this week" : "Missed opportunities that week"
     case "month":
-      return current ? "Missed this month" : `Missed ${format(refDate, "MMMM yyyy")}`
+      return current ? "Missed opportunities this month" : `Missed opportunities ${format(refDate, "MMMM yyyy")}`
     default:
       return "Missed opportunities"
   }

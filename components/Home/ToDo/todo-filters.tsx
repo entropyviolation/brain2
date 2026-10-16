@@ -13,7 +13,27 @@ import {
   TODO_STATUS_FILTERS,
   getTodoSortOptionLabel,
 } from "./todo-utils"
-import { MIN_WIP_LIMIT, MAX_WIP_LIMIT } from "./todo-prefs"
+import { MIN_WIP_LIMIT, MAX_WIP_LIMIT, setTodoPrefs, useTodoPrefs } from "./todo-prefs"
+
+/** Hide locked and Show next only (Phase 9). Self-wired to `todo-prefs`. */
+function StepViewKeys() {
+  const { hideLocked, showNextOnly } = useTodoPrefs()
+  return (
+    <>
+      <label
+        className="todo-key-check"
+        title="Hide steps and tasks waiting on an open prerequisite. Unfinished is not locked. They come back when the prerequisite is done."
+      >
+        <input type="checkbox" checked={hideLocked} onChange={(e) => setTodoPrefs({ hideLocked: e.target.checked })} />
+        Hide locked
+      </label>
+      <label className="todo-key-check" title="A branch shows only its next step and how many more. One click opens it.">
+        <input type="checkbox" checked={showNextOnly} onChange={(e) => setTodoPrefs({ showNextOnly: e.target.checked })} />
+        Show next only
+      </label>
+    </>
+  )
+}
 
 export function TodoFilters({
   period,
@@ -97,6 +117,7 @@ export function TodoFilters({
             Rites follow the sun
           </label>
         ) : null}
+        <StepViewKeys />
         <label className="todo-filter-field">
           <span className="todo-label" id="status-filter-label">
             Status

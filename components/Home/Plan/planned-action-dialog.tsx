@@ -4,6 +4,10 @@
  * Title, start, duration, and time-block notes. Not the event dialog.
  * Persist goes through `lib/planned-action-store.ts`. Toolbar **Add Plan**
  * opens this with `action` null and `createDate` set.
+ *
+ * A free block (from dragging across empty time) offers **Session in this
+ * time**: the block is removed and a session draft of the same length opens
+ * (`lib/session-open-store.ts`). The session writes its own block when saved.
  */
 "use client"
 
@@ -27,6 +31,7 @@ import {
   type PlannedAction,
 } from "@/lib/planned-actions"
 import { usePlannedActionStore } from "@/lib/planned-action-store"
+import { openSession } from "@/lib/session-open-store"
 
 interface PlannedActionDialogProps {
   open: boolean
@@ -186,6 +191,21 @@ export function PlannedActionDialog({ open, onOpenChange, action, createDate }: 
                 }}
               >
                 Remove
+              </button>
+            )}
+            {action?.source === "free" && (
+              <button
+                type="button"
+                title="Plan a session of this length instead of a bare block"
+                onClick={() => {
+                  const minutes = Number(draft.duration) || plannedDurationMinutes(action)
+                  const title = draft.title.trim() && draft.title.trim() !== defaultTitle("free") ? draft.title.trim() : undefined
+                  deleteAction(action.id)
+                  guard.forceClose()
+                  openSession({ startOn: "session", durationMin: minutes, title })
+                }}
+              >
+                Session in this time
               </button>
             )}
             <button type="button" onClick={guard.requestClose}>

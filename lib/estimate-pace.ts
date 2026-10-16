@@ -7,8 +7,8 @@
  * To Do → Pace wins. Pure; the ghost figure and the session fit gauge read it.
  * Nothing here ever writes an estimate.
  */
-import { allLines, type SessionPlan } from "@/lib/session-plan"
-import type { Subtask } from "@/lib/types"
+import { allLines, lineMinutes, type SessionPlan } from "@/lib/session-plan"
+import type { Subtask, Task } from "@/lib/types"
 
 export { sessionPace } from "@/lib/session-plan"
 
@@ -133,4 +133,34 @@ export function paceForTask(
 export function paceGhostLabel(pace: number): string | null {
   if (!(pace >= PACE_GHOST_AT)) return null
   return `usually ×${pace.toFixed(1)} for you`
+}
+
+/**
+ * Padded for you (FN-2, Phase 4 fit gauge): the pace across a session's open
+ * lines, each line weighted by its minutes and read at its own task's pace
+ * (`paceForTask`). Pass it as `sessionFit`'s `pace` when the toggle is on, and
+ * 1 when it is off. 1 with no minutes planned.
+ */
+export function sessionPaceFactor(
+  plan: SessionPlan,
+  tasks: readonly Task[],
+  samples: readonly PaceSample[],
+  overrides: Record<string, number> = {},
+): number {
+  let minutes = 0
+  let weighted = 0
+  for (const { line } of allLines(plan)) {
+    const m = lineMinutes(line, tasks)
+    if (m <= 0) continue
+    const task = tasks.find((t) => t.id === line.taskId)
+    minutes += m
+    weighted += m * paceForTask(task, samples, overrides)
+  }
+  return minutes > 0 ? weighted / minutes : 1
+}
+
+/** The fit gauge's words when padded: "padded for you ×1.6", or null at ×1. */
+export function paddedLabel(pace: number): string | null {
+  if (!(pace > 0) || Math.abs(pace - 1) < 0.05) return null
+  return `padded for you ×${pace.toFixed(1)}`
 }

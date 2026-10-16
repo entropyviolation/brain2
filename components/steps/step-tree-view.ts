@@ -66,10 +66,11 @@ export function buildStepView(steps: readonly Subtask[] | undefined, options: St
   const folded = options.folded ?? new Set<string>()
   const openedNext = options.openedNext ?? new Set<string>()
 
-  const walk = (list: readonly Subtask[], depth: number, parentId: string | null) => {
+  // `counted`: an ancestor is already counted as hidden (we are inside a peek).
+  const walk = (list: readonly Subtask[], depth: number, parentId: string | null, counted = false) => {
     for (const step of list) {
-      let peeked = false
-      if (options.hideLocked && hiddenByLock(all, step)) {
+      let peeked = counted
+      if (options.hideLocked && !counted && hiddenByLock(all, step)) {
         hiddenBySwitches += 1 + flattenSteps(step.subtasks).length
         if (!options.peek) continue
         peeked = true
@@ -81,7 +82,7 @@ export function buildStepView(steps: readonly Subtask[] | undefined, options: St
       if (options.nextOnly && inside > 1 && !openedNext.has(step.id)) {
         const next = nextStepInBranch(all, step)
         const more = inside - (next ? 1 : 0)
-        hiddenBySwitches += more
+        if (!peeked) hiddenBySwitches += more
         if (!options.peek) {
           if (next) {
             rows.push({ kind: "step", step: next, depth: depth + 1, parentId: step.id, hasKids: false, locked: false, peeked: false })
@@ -90,7 +91,7 @@ export function buildStepView(steps: readonly Subtask[] | undefined, options: St
           continue
         }
       }
-      walk(kids, depth + 1, step.id)
+      walk(kids, depth + 1, step.id, peeked)
       rows.push({ kind: "add", parentId: step.id, depth: depth + 1 })
     }
   }

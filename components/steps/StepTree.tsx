@@ -215,8 +215,8 @@ export function StepTree({
   const focusRow = (id: string) => {
     setFocusId(id)
     requestAnimationFrame(() => {
-      const el = rootRef.current?.querySelector<HTMLElement>(`[data-step-id="${CSS.escape(id)}"]`)
-      el?.focus()
+      const rows = rootRef.current?.querySelectorAll<HTMLElement>("[data-step-id]") ?? []
+      Array.from(rows).find((el) => el.dataset.stepId === id)?.focus()
     })
   }
 

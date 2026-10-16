@@ -492,6 +492,9 @@ describe("TodoPanel", () => {
     expect(within(assigned).getByText("Finish slides")).toBeInTheDocument()
 
     fireEvent.click(within(assigned).getByRole("button", { name: "Finish slides" }))
+    // No blank line waits unasked: the empty tree offers one quiet key.
+    expect(within(assigned).queryByLabelText("Add step")).toBeNull()
+    fireEvent.click(within(assigned).getByRole("button", { name: "Add the first step" }))
     const stepName = within(assigned).getByLabelText("Add step")
     fireEvent.change(stepName, { target: { value: "Outline" } })
     fireEvent.change(within(assigned).getByLabelText("Minutes for the new step"), { target: { value: "45" } })

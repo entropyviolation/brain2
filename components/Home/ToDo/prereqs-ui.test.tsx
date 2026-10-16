@@ -18,7 +18,7 @@ function Harness({ initial }: { initial: Subtask[] }) {
   return <TodoBreakdown steps={steps} onEstimateChange={() => {}} onStepsChange={setSteps} />
 }
 
-const row = (name: string) => screen.getByRole("button", { name }).closest(".todo-step-row") as HTMLElement
+const row = (name: string) => screen.getByRole("button", { name }).closest(".step-tree-row") as HTMLElement
 
 describe("step link mode", () => {
   beforeEach(() => {

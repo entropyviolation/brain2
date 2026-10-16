@@ -594,7 +594,7 @@ Decision 11: not in the first build, definitely later. Built after Phase 10 and 
 
 ### Files and tests
 
-`lib/unlock-value.ts`, `lib/priority.ts`, `PriorityWeights.unlocks?` in `lib/types.ts`, the Formula panel in `todo-filters.tsx`, `filterAndSortTodos` in `todo-utils.ts` (an optional all-tasks argument, so outside callers keep their behavior), `lib/next-step.ts`, the lock chip and the Dependencies tab. Tests: A → B → C fades by distance; a task waited on by three outranks an equal task waited on by none; nothing waiting means an unchanged score; the blocker sorts above its locked row; inherited due date along the longest chain, overdue when passed; a locked 40% task shows both; an open parent is never locked; `pickStartStep` unchanged without `dependsOn`; a weights blob without `unlocks` loads.
+`lib/unlock-value.ts`, `lib/priority.ts`, `PriorityWeights.unlocks?` in `lib/types.ts`, the Formula panel (`PRIORITY_WEIGHT_FIELDS` in `todo-panel.tsx`), `filterAndSortTodos` in `todo-utils.ts` (an optional all-tasks argument, so outside callers keep their behavior), `lib/next-step.ts`, the lock chip and the Dependencies tab. Tests: A → B → C fades by distance; a task waited on by three outranks an equal task waited on by none; nothing waiting means an unchanged score; the blocker sorts above its locked row; inherited due date along the longest chain, overdue when passed; a locked 40% task shows both; an open parent is never locked; `pickStartStep` unchanged without `dependsOn`; a weights blob without `unlocks` loads.
 
 ---
 
@@ -616,7 +616,7 @@ _Last mapped: 2026-10-16._ Less pressure, more visible time, smaller first steps
 - **No "should" (UI-3).** A house rule in `DESIGN_STYLE.md`: no UI text tells you what you should do. An audit of To Do, Just Start, sessions, the focus bar and rites lists every pressure word and empty state, and replaces labels:
   - `waiting Nd` → "Waiting since Tue" (the row already uses the priority date).
   - Push counts read "Pushed ×3".
-  - **Missed** stays a verb and keeps its key (M) and its record (`markMissedOpportunity`). Its well and alarm styling become neutral ink. Any rename of the word itself is listed by the audit for your yes first.
+  - **Missed** stays a verb and keeps its key (M) and its record (`markMissedOpportunity`). Its well and alarm styling become neutral ink. Any rename of the word itself is listed by the audit for your yes first. Decided 2026-10-16: the label reads **Missed opportunity** (well titles "Missed opportunities this week"). The morning review's "Something I absolutely must do" prompt is removed as redundant with Required; its stored field stays.
   - Overdue, red alarms and "!" marks go. Warm red is kept for estimate overruns only (Phase 7).
   - Only labels and colors change. Stored statuses, fields, keys and outside imports stay.
 - **Attention given (UI-4).** Each Done well gets a second, quieter line that is not about output: "3 sittings · 2h10 of attention given" for the period, from `timeLogs` and task blocks (Phase 6 spent). Tier lamps on Done rows show as lit facts; unreached levels read `—`, never dimmed shortfalls.
@@ -662,14 +662,14 @@ _Last mapped: 2026-10-16._ Less pressure, more visible time, smaller first steps
 | M | Step items, stacked item detail | 11 | K | M | Planned |
 | O | Task card | 12 | K, L, N (M for ↗) | L | Planned |
 | P | Branch drag-in, carve-outs, `sessionOnly` with Persist | 13 | H, K, N | M | Planned |
-| S | Locked vs incomplete words; unlock value; formula; blocker first; inherited due date; step unlock rank | 14 A–D | C (N for level weights) | M | Planned |
+| S | Locked vs incomplete words; unlock value; formula; blocker first; inherited due date; step unlock rank | 14 A–D | C (N for level weights) | M | Task half built 2026-10-16; step half after N |
 | S2 | Prerequisites met at a level | 14 E | N, S | M | Later (Decision 11) |
 | I | `work-log-parse`, Paste as log, live `heading:` lines, `now:` ingest phrase | — | C, D | M | Planned |
 | T | Rites additions: Put the day down, weekly check-in | 8 | J (I for the parser) | S | Planned |
 | U | Just Start choices, Pull me, time-box ring, end-of-sitting strip | 15 A | B, D (N for sparks) | M | Planned |
-| V | No-should audit and rule, Done well line, notice dot | 15 B | — (L for the attention line) | S | Planned |
+| V | No-should audit and rule, Done well line, notice dot | 15 B | — (L for the attention line) | S | Built 2026-10-16; tier lamps after N |
 | W | Waiting shelf | 15 C | — (O for Shrink) | S | Planned |
-| X | Points visible switch | 15 D | — | S | Planned |
+| X | Points visible switch | 15 D | — | S | Switch built 2026-10-16; hiding figures waits for O |
 | R | Look pass | 7 | each slice | S | Ongoing |
 
 **Waves.**

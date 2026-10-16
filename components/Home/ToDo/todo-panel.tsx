@@ -52,7 +52,7 @@ import { stopTaskClock } from "@/lib/task-clock"
 import { openTaskBlockers } from "@/lib/prereqs"
 import { inheritedDue, unlockBreakdown } from "@/lib/unlock-value"
 import { TaskPrereqDialog } from "./TaskPrereqDialog"
-import { SessionKey, SessionPlanner, SessionsKey } from "./SessionPlanner"
+import { PickListKey, SessionKey, SessionPlanner, SessionsKey } from "./SessionPlanner"
 import { isClearedFromWork } from "@/lib/completion-status"
 import { formatLocalMonthKey, taskScheduledInMonth, taskScheduledInWeek, taskScheduledOnDay } from "@/lib/date-utils"
 import { APP_NAV_KEYS } from "@/lib/app-navigation"
@@ -101,6 +101,7 @@ import { DoneTodoSection } from "./DoneTodoSection"
 import { MissedTodoSection } from "./MissedTodoSection"
 import { UndoneTodoSection } from "./UndoneTodoSection"
 import { TodoFilters } from "./todo-filters"
+import { WaitingLine } from "@/components/steps/WaitingLine"
 import { useTodoPrefs, setTodoPrefs } from "./todo-prefs"
 import { useRitesSun } from "./use-rites-sun"
 import { useTodoTime } from "./use-todo-time"
@@ -171,7 +172,7 @@ export function TodoPanel({
   const clockStepId = usePenColorSessionStore((s) => s.session?.stepId)
   const taskClock = useTaskClockStarter()
   const [prereqTaskId, setPrereqTaskId] = useState<string | null>(null)
-  const [sessionOpen, setSessionOpen] = useState<false | "session" | "shelves">(false)
+  const [sessionOpen, setSessionOpen] = useState<false | "session" | "shelves" | "list">(false)
   const [activeTodoTab, setActiveTodoTab] = usePersistedTab(APP_NAV_KEYS.homeTodoTab, TODO_TABS, "day")
   // Uncontrolled fallback for unit tests. The day sheet reads the prop itself
   // when Home passes one, so midnight catch-up is not a copy taken at mount.
@@ -197,7 +198,10 @@ export function TodoPanel({
     else if (activeTodoTab === "quarter") setSeasonDate(date)
     else setCurrentDate(date)
   }
-  const { availableNow, wipLimit, ritesFollowSun, defaultEstimateMin } = useTodoPrefs()
+  const { availableNow, wipLimit, ritesFollowSun, defaultEstimateMin, hideLocked } = useTodoPrefs()
+  // Peek at what Hide locked and the sun rule keep off the list, without turning them off (UI-5).
+  const [peekHidden, setPeekHidden] = useState(false)
+  const lockFilterOn = availableNow || (hideLocked && !peekHidden)
   const todoTime = useTodoTime(tasks)
   const ritesSun = useRitesSun(ritesFollowSun)
   const [showAllTasks, setShowAllTasks] = useState(false)
@@ -255,9 +259,13 @@ export function TodoPanel({
   )
   // The open list drops a rite at the wrong end of today. Done, lookups and walks keep the whole board.
   const openRitualBoard = useMemo(
-    () => (ritesFollowSun ? ritualBoardFollowingSun(ritualBoard, ritesSun.now, ritesSun.sunsetMinutes) : ritualBoard),
-    [ritualBoard, ritesFollowSun, ritesSun.now, ritesSun.sunsetMinutes],
+    () =>
+      ritesFollowSun && !peekHidden ? ritualBoardFollowingSun(ritualBoard, ritesSun.now, ritesSun.sunsetMinutes) : ritualBoard,
+    [ritualBoard, ritesFollowSun, peekHidden, ritesSun.now, ritesSun.sunsetMinutes],
   )
+  const sunHiddenCount = ritesFollowSun
+    ? ritualBoard.tasks.length - ritualBoardFollowingSun(ritualBoard, ritesSun.now, ritesSun.sunsetMinutes).tasks.length
+    : 0
   const morningPriorities = useReviewsStore(
     (s) => s.getMorningReview(focusedDayKey)?.priorityTaskIds ?? EMPTY_PRIORITY_IDS,
   )
@@ -280,7 +288,7 @@ export function TodoPanel({
     const order = (period: TodoPeriod) => {
       const base = filterAndSortTodos(todoItems, period, showAllTasks, focusedDate)
       const byStatus = filterTodosByStatus(base, tasks, statusFilter)
-      const available = filterTodosAvailableNow(byStatus, tasks, availableNow)
+      const available = filterTodosAvailableNow(byStatus, tasks, lockFilterOn)
       return sortTodos(available, {
         mode: sortMode,
         order: sortOrder,
@@ -305,14 +313,24 @@ export function TodoPanel({
         statusFilter,
       ),
       riteView,
-      availableNow,
+      lockFilterOn,
     )
     return {
       day: [...dayRites, ...order("day")],
       week: order("week"),
       month: order("month"),
     } satisfies Record<TodoPeriod, TodoItem[]>
-  }, [todoItems, showAllTasks, statusFilter, availableNow, sortMode, sortOrder, tasks, priorityWeights, focusedDate, openRitualBoard, morningPriorities])
+  }, [todoItems, showAllTasks, statusFilter, lockFilterOn, sortMode, sortOrder, tasks, priorityWeights, focusedDate, openRitualBoard, morningPriorities])
+
+  // Rows Hide locked keeps off each list (only when Available now is not already hiding them).
+  const lockedHiddenByPeriod = useMemo(() => {
+    const count = (period: TodoPeriod) => {
+      if (!hideLocked || availableNow) return 0
+      const byStatus = filterTodosByStatus(filterAndSortTodos(todoItems, period, showAllTasks, focusedDate), tasks, statusFilter)
+      return byStatus.length - filterTodosAvailableNow(byStatus, tasks, true).length
+    }
+    return { day: count("day"), week: count("week"), month: count("month") } satisfies Record<TodoPeriod, number>
+  }, [hideLocked, availableNow, todoItems, showAllTasks, focusedDate, tasks, statusFilter])
 
   const wipWarning = formatWipWarning(countInProgress(tasks), wipLimit)
 
@@ -847,6 +865,11 @@ export function TodoPanel({
             isExpanded={!!expandedPeriods[period]}
             onToggleExpand={() => setExpandedPeriods((prev) => ({ ...prev, [period]: !prev[period] }))}
           />
+          <WaitingLine
+            hidden={lockedHiddenByPeriod[period] + (period === "day" ? sunHiddenCount : 0)}
+            peeking={peekHidden}
+            onPeek={() => setPeekHidden((on) => !on)}
+          />
           <div
             className="todo-composer"
             data-ui-name="Assigned composer"
@@ -1144,6 +1167,7 @@ export function TodoPanel({
               <AddTodoDialog onAdd={handleAddTodo} />
               <SessionKey onOpen={() => setSessionOpen("session")} />
               <SessionsKey onOpen={() => setSessionOpen("shelves")} />
+              <PickListKey onOpen={() => setSessionOpen("list")} />
               <TabsList
                 className="todo-view-keys"
                 data-ui-name="Period keys"
