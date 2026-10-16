@@ -32,6 +32,7 @@ This room also writes **`lib/star-lord-store.ts`** for the three Star Lord Repor
 | `StarLordReportDialog.tsx` | Star Lord Report (`data-ui-name="Star Lord Report"`). Preparation, three ledger questions, three inner-alchemy questions, closing. New moon is at home, facing north. Close saves a draft. Save awards section points plus the whole-ritual bonus |
 | `StartRitualDialog.tsx` | Start / planning ritual for week–year (`data-ui-name="Start ritual"`): undone from last period, priorities, must-dos, **mark assigned tasks** required / prioritized, intentions, plan, gratitude |
 | `MorningReview.tsx` | `MorningReviewDialog` (`data-ui-name="Morning review"`) — day morning (sun) ritual (HM2); same answers as text `gm` |
+| `RitualSteps.tsx` | `RitualStepper` + `useRitualStep`: one question at a time. Lamp strip, `03 / 09` plate, optional step index (remembered per viewer), Back / Next, Alt+←/→. Styles in `ritual-steps.css`. Its own buttons carry `.rst-own` so the house key chrome skips them. Morning uses it now. **Planned:** night, start, and Star Lord rituals |
 | `CommitmentMarkList.tsx` | Shared required / prioritized task checkboxes (`marks`: `required` \| `prioritized` \| `both`) for morning sections and start-ritual rows |
 | `AffirmationsDialog.tsx` | Spoken-affirmations ritual from the morning dialog |
 | `DayReviewTomorrowSection.tsx` | Night / day end: "make a plan for tomorrow" (plan log + schedule/create tomorrow to-dos) |
@@ -79,6 +80,8 @@ Start of month is the 1st. Season start is the first day of the quarter
 (1 Jan, 1 Apr, 1 Jul, 1 Oct). Season end is the last day (31 Mar, 30 Jun,
 30 Sep, 31 Dec). Year start is 1 January. Year end is 31 December. Morning
 and Night are every day.
+
+**Built 2026-10-16 (not committed):** on today's day lens, the Night row hides until sunset and the Morning row hides from sunset while not done. Started and done rites always show, and the Rituals menu never hides anything. See [`docs/TODO_REDESIGN.md`](../../docs/TODO_REDESIGN.md) Phase 8. **Planned** there too: an optional **Put the day down** first row on the Night rite (free text, parsed into steps with a preview), and an optional weekly check-in in Header → Rituals (space, sleep, food, movement on 1–5, your own trend only).
 
 **Star Lord ritual** is the named rite. It lands on the local day of the new
 moon, the local day of the full moon, and the birthday. The full moon is the
@@ -172,6 +175,14 @@ on March 1 in a year without that day.
 Backward compatible: `reviews` / `review` still work; preferred user language is Rituals.
 
 ## Morning review ritual (HM2) — detail
+
+_Last mapped: 2026-10-16_
+
+The desktop dialog walks one question at a time (`RitualStepper`): Last night, Affirmations, To do for today, Daily habit priorities, Go through to do list, Day plan, Circumstances, Best day ever, Gratitude. Moving to another step writes progress the same way **Save progress** does, so new to-do lines join the list before the walk. The step is kept per day in `localStorage` (`brain2-morning-step:{day}`). With nothing kept, a partial review opens at its `resumeStep`. **Finish** on the last step is **Save Morning Review**.
+
+- **Affirmations:** **Shuffle** draws five new lines from the list (not the five on screen when the list is big enough). **Edit the list** saves the draft, closes, and opens Lists on the Affirmations list. **Speak them** speaks the lines on screen (`AffirmationsDialog` `lines`). _Last mapped: 2026-10-16_ Each plaque has a **✓** key that logs a recitation for the ritual's day (`lib/affirmation-log-store.ts`, source `ritual`); it shows the count once said, and Alt-click undoes one. **Speak them** (`AffirmationsDialog`, `dayKey` prop) logs each line as `speak` when you move past it. The Home **Affirmation** widget reads the same log.
+- **Go through to do list:** a blank field shows the stored value greyed as its placeholder; typing replaces it. Grey italic is stored earlier, blue is logged today (that day's `dayRatings`, or a resistance reading from today), green is changing now, with **keep {value}** to drop the change. Importance and excitement fall back to the latest earlier day. A save clears the applied walk fields so a second save cannot log the same resistance reading twice; Skip stays.
+- **Gratitude** and new to-do lines: Enter moves to the next line (adding one, up to 10 for gratitude) and leaves the text where it was.
 
 `MorningReviewDialog` captures:
 

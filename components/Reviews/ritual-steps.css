@@ -1,0 +1,442 @@
+/*
+ * components/Reviews/ritual-steps.css — the one-question walk (RitualSteps.tsx)
+ * and the morning review interior. Milled fascia from header-popup-chrome.css,
+ * CRT green lamps, cool graph-rule paper for the question card.
+ */
+
+.rst {
+  --rst-paper: #eef3f4;
+  --rst-rule: rgba(46, 92, 110, 0.09);
+  --rst-rule-major: rgba(46, 92, 110, 0.17);
+  --rst-ink: #12191c;
+  --rst-quiet: #6b7a80;
+  --rst-accent: #2e6f86;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  flex: 1;
+}
+
+/* Lamp strip: one pixel lamp per question, a tally on the right. */
+.rst-strip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  background: var(--hpp-scope, #070c0a);
+  box-shadow: var(--hpp-sunken);
+}
+.rst-lamp {
+  flex: 1;
+  height: 8px;
+  min-width: 10px;
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+  background: #0f2a20;
+  box-shadow: inset 0 0 0 1px #1d4a38;
+  transition: background 160ms ease, box-shadow 160ms ease;
+}
+.rst-lamp[data-answered="true"] {
+  background: var(--hpp-crt, #7dffc4);
+  box-shadow: 0 0 4px var(--hpp-crt, #7dffc4);
+}
+.rst-lamp[data-current="true"] {
+  box-shadow: inset 0 0 0 1px #e8fff4, 0 0 6px var(--hpp-crt, #7dffc4);
+  animation: rst-breathe 2.4s ease-in-out infinite;
+}
+.rst-lamp:focus-visible {
+  outline: 1px dotted var(--hpp-crt, #7dffc4);
+  outline-offset: 2px;
+}
+.rst-tally {
+  margin-left: 6px;
+  font: 600 11px/1 ui-monospace, "SFMono-Regular", Menlo, monospace;
+  letter-spacing: 0.08em;
+  color: var(--hpp-crt, #7dffc4);
+  text-shadow: var(--hpp-crt-glow);
+}
+@keyframes rst-breathe {
+  50% { filter: brightness(1.35); }
+}
+
+/* Step plate: counter, title, index key. */
+.rst-plate {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 2px 0;
+}
+.rst-count {
+  font: 700 18px/1 ui-monospace, "SFMono-Regular", Menlo, monospace;
+  letter-spacing: 0.04em;
+  color: var(--rst-accent);
+  font-variant-numeric: tabular-nums;
+}
+.rst-count i {
+  font-style: normal;
+  margin: 0 2px;
+  color: var(--rst-quiet);
+  font-weight: 400;
+}
+.rst-title {
+  flex: 1;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--rst-ink);
+}
+.rst-nav-key {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 22px;
+  border: 0;
+  cursor: pointer;
+  background: var(--hpp-face, #dfdfdf);
+  box-shadow: var(--hpp-raised);
+  color: var(--rst-ink);
+}
+.rst-nav-key[aria-pressed="true"] {
+  box-shadow: var(--hpp-sunken);
+  color: var(--rst-accent);
+}
+
+/* Room: optional index on the left, the question card. */
+.rst-room {
+  display: flex;
+  gap: 8px;
+  min-height: 0;
+  flex: 1;
+}
+.rst-index {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 168px;
+  flex-shrink: 0;
+  padding: 4px;
+  overflow-y: auto;
+  background: var(--hpp-face, #dfdfdf);
+  box-shadow: var(--hpp-sunken);
+}
+.rst-index-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 6px;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  font-size: 12px;
+  color: var(--rst-ink);
+  background: transparent;
+}
+.rst-index-row:hover { background: rgba(46, 111, 134, 0.08); }
+.rst-index-row[data-current="true"] {
+  background: var(--hpp-nameplate, #2a2c2e);
+  color: #e8fff4;
+}
+.rst-index-lamp {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #9aa5a8;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+}
+.rst-index-row[data-answered="true"] .rst-index-lamp {
+  background: radial-gradient(circle at 35% 30%, #e8fff4, var(--hpp-crt, #7dffc4) 45%, #0a3a28 85%);
+  box-shadow: 0 0 4px var(--hpp-crt, #7dffc4);
+}
+.rst-index-num {
+  font: 600 10px/1 ui-monospace, Menlo, monospace;
+  opacity: 0.6;
+}
+.rst-index-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rst-card {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: var(--rst-ink);
+  background-color: var(--rst-paper);
+  background-image:
+    linear-gradient(var(--rst-rule-major) 1px, transparent 1px),
+    linear-gradient(90deg, var(--rst-rule-major) 1px, transparent 1px),
+    linear-gradient(var(--rst-rule) 1px, transparent 1px),
+    linear-gradient(90deg, var(--rst-rule) 1px, transparent 1px);
+  background-size: 60px 60px, 60px 60px, 12px 12px, 12px 12px;
+  box-shadow: var(--hpp-field);
+  animation: rst-enter 180ms ease-out;
+}
+@keyframes rst-enter {
+  from { opacity: 0; transform: translateY(4px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rst-card, .rst-lamp[data-current="true"] { animation: none; }
+}
+
+/* Walk bar. */
+.rst-walk {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.rst-walk-hint {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-size: 11px;
+  color: var(--rst-quiet);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rst-walk-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 30px;
+  padding: 0 12px;
+  border: 0;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--rst-ink);
+  background: var(--hpp-face, #dfdfdf);
+  box-shadow: var(--hpp-raised);
+}
+.rst-walk-key:active:not(:disabled) { box-shadow: var(--hpp-sunken); }
+.rst-walk-key:disabled { opacity: 0.45; cursor: default; }
+.rst-walk-key.is-go {
+  color: var(--hpp-crt, #7dffc4);
+  text-shadow: var(--hpp-crt-glow);
+  background: var(--hpp-crt-glass, #0b1a14);
+  box-shadow: var(--hpp-crt-ring, var(--hpp-raised));
+}
+
+@media (max-width: 560px) {
+  .rst-index { width: 120px; }
+  .rst-walk-hint { display: none; }
+}
+
+/* ── Morning review interior ─────────────────────────────── */
+
+.mr-lede {
+  margin: -4px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--rst-quiet);
+}
+.mr-carry {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--rst-accent);
+  background: rgba(255, 255, 255, 0.7);
+}
+.mr-carry-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--rst-accent);
+}
+
+/* Affirmations: numbered plaques. */
+.mr-affirm-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.mr-affirm-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: mr-aff;
+}
+.mr-affirm-list li {
+  counter-increment: mr-aff;
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 9px 12px;
+  font-size: 14px;
+  line-height: 1.4;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: inset 0 0 0 1px rgba(46, 92, 110, 0.18);
+  animation: rst-enter 220ms ease-out both;
+}
+.mr-affirm-list li::before {
+  content: counter(mr-aff, decimal-leading-zero);
+  font: 600 11px/1 ui-monospace, Menlo, monospace;
+  color: var(--rst-accent);
+}
+.mr-affirm-list li:nth-child(2) { animation-delay: 40ms; }
+.mr-affirm-list li:nth-child(3) { animation-delay: 80ms; }
+.mr-affirm-list li:nth-child(4) { animation-delay: 120ms; }
+.mr-affirm-list li:nth-child(5) { animation-delay: 160ms; }
+
+/* Said key on each plaque: logs a recitation (lib/affirmation-log-store.ts). */
+.mr-affirm-list li > .mr-affirm-line { flex: 1; }
+.mr-affirm-list button.mr-affirm-said {
+  flex: none;
+  align-self: center;
+  min-width: 30px;
+  height: 22px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px rgba(46, 92, 110, 0.35);
+  color: var(--rst-accent, #2e5c6e);
+  font: 700 11px/1 ui-monospace, Menlo, monospace;
+  cursor: pointer;
+  transition: background 120ms, color 120ms;
+}
+.mr-affirm-list button.mr-affirm-said:hover { background: rgba(46, 92, 110, 0.08); }
+.mr-affirm-list button.mr-affirm-said.is-on {
+  background: #07140f;
+  color: #7dffc4;
+  box-shadow: 0 0 6px rgba(125, 255, 196, 0.45);
+}
+
+/* Go through to do list: stored values grey, new values ink. */
+.mr-walk-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--rst-quiet);
+}
+.mr-walk-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.mr-swatch {
+  width: 18px;
+  height: 10px;
+  box-shadow: inset 0 0 0 1px rgba(46, 92, 110, 0.35);
+  background: #fff;
+}
+.mr-swatch.is-stored { background: #e3e8ea; }
+.mr-swatch.is-today { background: #fff; box-shadow: inset 0 0 0 1px var(--rst-accent), inset 0 -2px 0 var(--rst-accent); }
+.mr-swatch.is-new { background: #fff; box-shadow: inset 0 0 0 1px var(--rst-ink), inset 0 -2px 0 #1f9d6a; }
+
+.mr-walk-row {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: inset 0 0 0 1px rgba(46, 92, 110, 0.16);
+}
+.mr-walk-row[data-skipped="true"] { opacity: 0.55; }
+.mr-walk-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mr-walk-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.mr-walk-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  color: var(--rst-accent);
+  box-shadow: inset 0 0 0 1px currentColor;
+}
+.mr-walk-badge.is-new { color: #1f7a54; }
+.mr-walk-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+@media (max-width: 560px) {
+  .mr-walk-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.mr-slot { display: grid; gap: 3px; min-width: 0; }
+.mr-slot-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--rst-quiet);
+}
+.mr-slot-state { font-weight: 500; font-style: italic; }
+.mr-slot-field {
+  width: 100%;
+  height: 30px;
+  padding: 0 8px;
+  border: 0;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--rst-ink);
+  background: #fff;
+  box-shadow: var(--hpp-field);
+}
+.mr-slot-field:focus { outline: 1px solid var(--rst-accent); outline-offset: 0; }
+.mr-slot[data-state="stored"] .mr-slot-field {
+  color: #8a979c;
+  background: #e8edef;
+}
+.mr-slot[data-state="today"] .mr-slot-field {
+  color: #4f6f7b;
+  background: #f1f6f8;
+  box-shadow: var(--hpp-field), inset 0 -2px 0 var(--rst-accent);
+}
+.mr-slot[data-state="new"] .mr-slot-field {
+  color: var(--rst-ink);
+  font-weight: 600;
+  box-shadow: var(--hpp-field), inset 0 -2px 0 #1f9d6a;
+}
+.mr-slot[data-state="new"] .mr-slot-state { color: #1f7a54; }
+.mr-slot-revert {
+  border: 0;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  font-size: 10.5px;
+  color: var(--rst-accent);
+  text-decoration: underline dotted;
+}
+
+/* Gratitude + list editors. */
+.mr-lines { display: grid; gap: 6px; }
+.mr-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.mr-line-num {
+  width: 20px;
+  flex-shrink: 0;
+  text-align: right;
+  font: 600 11px/1 ui-monospace, Menlo, monospace;
+  color: var(--rst-quiet);
+}
+.mr-line[data-filled="true"] .mr-line-num { color: var(--rst-accent); }
+
+/* Walk fields show the stored value as the placeholder, so typing replaces it. */
+.mr-slot-field::placeholder { color: #a3aeb2; opacity: 1; }
+.mr-slot[data-state="stored"] .mr-slot-field::placeholder { color: #7f8d92; font-style: italic; }
+.mr-slot[data-state="today"] .mr-slot-field::placeholder { color: #3f6574; font-weight: 600; }
