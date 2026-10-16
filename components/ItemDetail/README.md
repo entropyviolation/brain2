@@ -5,6 +5,20 @@ where one record shows every honest join — tags, typed links, lists, schedule,
 body, history — so the same item can be **used in as many rooms as possible**
 (Lists, Scheduler, Tracking, Modules, Reviews, Analytics). Isolation is a bug.
 
+> **Planned.** Unsaved guard on every way out, and a rich Links tab for
+> every item: [`docs/PERSON_DETAIL_REDESIGN.md`](../../docs/PERSON_DETAIL_REDESIGN.md).
+
+## Known gaps
+
+_Last mapped: 2026-10-16_
+
+- The popup's list-badge double-click (`handleNavigateToList`) calls
+  `onClose()` directly, so it skips the unsaved guard and drops edits.
+  Opening a linked or referenced item (`setOverrideId`) skips it too.
+- The popup computes `isDirty` at render with a deep compare. It can be
+  stale after `touchDraft` keystrokes.
+- The page (`EnhancedTaskDetail`) has no unsaved guard. Back leaves at once.
+
 ## Public door
 
 Popup and page are both public entries.

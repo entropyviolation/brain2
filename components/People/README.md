@@ -2,6 +2,23 @@
 
 People I Know, shown in more than one room.
 
+> **Planned.** Person detail redesign and rich Links:
+> [`docs/PERSON_DETAIL_REDESIGN.md`](../../docs/PERSON_DETAIL_REDESIGN.md).
+
+## Known gaps
+
+_Last mapped: 2026-10-16_
+
+- Every person text field is a controlled input. Each keystroke calls
+  `setTask`, so the whole item popup re-renders. That is the typing lag
+  (plan step 1.1).
+- Person fields in `person-detail.css` have no inner padding.
+- `ensureCloseGiftIdeas` (every hydrate) and `noteSavedPeople` (title
+  change) rewrite the Gift ideas list name to "Gift ideas for {title}". A
+  rename made in Lists does not survive (plan step 3.4).
+- `assembleProfile` in `lib/person-profile.ts` rebuilds the profile field
+  by field. A new profile field is dropped unless it is added there.
+
 The list itself is created by `lib/people-i-know.ts` after the task vault
 hydrates. Birthday and standing notes stay attributes on the catalog Person
 type (`lib/person-types.ts`). The rest of the biography is `Task.personProfile`
