@@ -57,8 +57,10 @@ build/filter logic is unit-testable.
 | File | Purpose |
 |------|---------|
 | `todo-panel.tsx` | **Orchestrator** (`data-ui-name="To Do"`). Names mode also stamps the inner desks: **To Do fascia**, **Period nameplate** (season nav here; day/week/month on `TodoPeriodNav.tsx`), **Period keys**, **Period sheet**, **Season list**, **Morning priorities**, **Required**, **Assigned**, **Assigned composer**, **WIP warning**, **Priority formula**, **Status bar**, **To Do plate**. Milled fascia — CRT **To Do** + open count, period nameplate, **Open list**, **Add Task**, Day/Week/Month/Season keys, Show / Sort / Pace — then the list stage (full width), WIP lace warning, status bar, task detail popup. **Open list** opens Lists on that period's To do list. Under the window, on the page scroll, the title jewel (`orbFor("home-todo")`, the dove) sits at photograph size (`.todo-desk-plate`) so the bottom of the desktop is that picture. Day tab shows **Morning priorities** (3–5 ids from today's morning review). Open rows share **one ledger**: Required (gunmetal/pearl band) then Assigned. Completing a row is Cmd/Ctrl-Z undoable via `completeTask` → `lib/action-history.ts`; the completion popup **Undo** also reopens the row. **Missed opportunity** (`markMissedOpportunity`) is the too-late twin: same undo stack, no points, no completion popup. Period tab change uses a short fold (skipped under `prefers-reduced-motion`). |
-| `todo-filters.tsx` | Always-visible **Show / Sort / Pace** bays (`data-ui-name="Show / Sort / Pace"`, inline on the fascia): Available now, Show all, Status, Sort + direction, Formula, in-progress cap, **Default est** (_Last mapped: 2026-10-16_) |
-| `todo-prefs.ts` | Persisted To Do prefs (live key `brain2-todo-prefs`, legacy alias `cogs-todo-prefs`): `availableNow` (default off), `wipLimit` (default 3), `lidCollapsed` (flags / time / steps, default all open), `ritesFollowSun` (default on), `defaultEstimateMin` (default 30, 0–600, 0 = none; _Last mapped: 2026-10-16_). The default is never written to a task. A row with no estimate and no steps shows it as a dim `~30` in the Time cell; the load strip still counts that row as unestimated, and Open unestimated still finds it. Plan's drop and capacity count it. |
+| `todo-filters.tsx` | Always-visible **Show / Sort / Pace** bays (`data-ui-name="Show / Sort / Pace"`, inline on the fascia): Available now, Show all, Status, Sort + direction, Formula, in-progress cap, **Default est**, and the `paceSlot` (your pace, below). The strip shrinks and wraps its bays inside the panel instead of running past its edge (_Last mapped: 2026-10-16_) |
+| `todo-prefs.ts` | Persisted To Do prefs (live key `brain2-todo-prefs`, legacy alias `cogs-todo-prefs`): `availableNow` (default off), `wipLimit` (default 3), `lidCollapsed` (flags / time / steps, default all open), `ritesFollowSun` (default on), `defaultEstimateMin` (default 30, 0–600, 0 = none; _Last mapped: 2026-10-16_). The default is never written to a task. A row with no estimate and no steps shows it as a dim `~30` in the Time cell; the load strip still counts that row as unestimated, and Open unestimated still finds it. Plan's drop and capacity count it. `paceOverrides` (by `paceKey`, clamped 0.5–4) and `paceGhosts` (default on) feed your pace. |
+| `use-todo-time.ts` | `useTodoTime(tasks)`: one hook for spent and pace. `spentOf` (task total, cached until tasks or blocks change), `timeOf` (what the lid shows), `settle` (on a tick, `actualDuration` takes spent when larger), `pace` (overall, overrides applied). Used by `todo-panel.tsx` and `SessionPlanner.tsx` |
+| `todo-pace.tsx` | `PaceSettings` in the Pace bay: **Your pace** and each pen with three or more samples, each with an override field (placeholder is your own median, `n/3` while short), and the **Pace ghosts** switch. Writes prefs only |
 | `use-rites-sun.ts` | `useRitesSun(enabled)`: today's sunset minutes at the Home weather pin (else home city, else San Diego; 6:00 PM if the sun cannot be computed), and a `now` that re-renders once at sunset and once at midnight |
 | `SessionPlanner.tsx` | Session plans (Phase 4): draft, run, parked and review in one popup, the Sessions shelves, and the fascia **Session** and **Sessions** keys. Logic is `lib/session-plan.ts`; the blob is `lib/session-plan-store.ts` |
 | `todo-chrome.css` | `.todo95` cool silver fascia (a whisper of grain), wrapping load strip (Casio / comfort needle / scope lamps / POWER lamp / via channel), one cool ledger well, short rounded task cards, padded names, clamshell lids, rounded step cards, Done/Missed/Undone aftermath wells, `.todo-desk-plate`, status bar, `.todo95-dialog` |
@@ -87,7 +89,7 @@ _Last mapped: 2026-10-16._ Slice H of [`docs/TODO_REDESIGN.md`](../../../docs/TO
 - **Parked view.** Time left, the line it was on, and the lines as they are now. A line whose task or step was deleted reads **Deleted task**, struck through, with **Remove**. **Resume** restarts the clock where it stopped; the time away is not counted. Parked over a day (`parkedLong`) asks **Resume as was** or **Fresh clock, same lines**. If the remembered line got done meanwhile, the next open line is current.
 - **Shelves.** **Sessions** in the popup caption, or the fascia **Sessions** key (`startOn="shelves"`), opens three shelves, newest first and searchable by title, note or line: **Drafts** (Open, Delete), **Parked** (Open; the running one shows here too), **Done** (Open read-only with its review, **Run again**). Run again is a new draft with the same lines and tiers (`runAgain`).
 - **Fascia key.** The **Session** key carries the running clock, and a dim `⏸n` when sessions are parked.
-- **Analytics.** The draft's pace (`sessionPace`) reads `history` only, so drafts and parked sessions never skew it.
+- **Analytics.** The fit gauge reads your own pace (`useTodoTime` → `paceFor`, `lib/estimate-pace.ts`): finished steps plus closed lines from `history`, or your override. Drafts and parked sessions never skew it. The note reads "You usually run ×N your estimates". Finishing a line or step in a session settles spent like the ledger does.
 - **Planned:** Park in the focus bar; **Save as template**.
 
 ## Data
@@ -208,6 +210,18 @@ The header **today's friend** does **not** only read this day's To Do slice. Spe
 
 **Painting the Tracking grid can write Done rows too.** A pen carrying a **default action format** turns each painted block into a row here — paint 1:00–1:15 of *Walking* and "Went for a walk" appears under Done today, named from the pen's template and filled in from the block (duration, clock, location, project). The rows are ordinary completed logged actions with deterministic ids (`pen-action-<entry or span id>`), so `lib/pen-action-sync.ts` upserts rather than duplicates them: retime or delete the block and the row follows. **Renaming the row here is permanent** — the sync only rewrites a title it still recognises as its own, so an edited name survives every later change to the block. See [`docs/PEN_ACTION_FORMATS.md`](../../../docs/PEN_ACTION_FORMATS.md). A Tracking pen with a **default action format** logs a painted block the same way (`lib/pen-action-sync.ts`) — "Went for a walk" from a Walking block — and `todo-panel` mounts `usePenActionSync` so Done today stays in step even if Tracking is not open.
 
+## Time spent and your pace
+
+_Last mapped: 2026-10-16._ Phase 6 slice L of [`docs/TODO_REDESIGN.md`](../../../docs/TODO_REDESIGN.md).
+
+- **Row Time cell.** `spent/counts`, e.g. `25/60m` or `1h40/~30`. Spent is `trackedMinutesForItem` (pen blocks, ▶ blocks, `timeLogs`, each minute once). Spent past the count turns rust. A row with nothing spent reads as before.
+- **Lid Time readout.** Beside **counts**: `3h 10m · est 120 · parts 145 · pen ● CD` (`timeTrio` in `TodoBreakdown.tsx`; the pen is the first `penLinks` pen). Only shows once something is spent or a pen is linked.
+- **Steps.** An open step with time on it shows `52m spent`; a finished one shows `52m · est 30 · parts 45` (`stepSpentMap`, subtree included).
+- **On finish.** Ticking a step in the lid or a session runs `settleSpentOnFinish`: `actualDuration` takes spent when spent is larger. Just Start and the pen clock still pass their own minutes.
+- **Your pace.** `lib/estimate-pace.ts`. Median actual ÷ estimate from finished steps and closed session lines, overall or per pen; under three samples reads ×1. Overrides live in the Pace bay.
+- **Ghost.** While you type an estimate, and on an open step or task whose spent has passed its estimate, a dim italic "usually ×2.4 for you" sits beside the field when the pace is 1.2 or more. It never writes the estimate. **Pace ghosts** off hides it.
+- **Planned:** a default estimate per tier (one `defaultEstimateMin` today); the task card header (Phase 12); spent on every step of `StepTree` (Phase 9).
+
 ## Done rows carry a real time, and say when it was assumed
 
 A Done row is a record of work, so it holds **when the work happened and how long it
@@ -257,6 +271,17 @@ Tier (A+ through D) is computed from urgency + importance on each task. The clos
 
 On **Assigned**, `pinPrioritizedFirst` always puts prioritized rows first; the chosen sort still orders within each partition.
 
+### What waits on a row (Phase 14, task half)
+
+_Last mapped: 2026-10-16._ Slice S of [`docs/TODO_REDESIGN.md`](../../../docs/TODO_REDESIGN.md), task half. Built, not committed.
+
+- **Priority sort only.** `sortTodosByPriority` (`todo-utils.ts`) reads `unlockContextFor` from `lib/unlock-value.ts` over the whole task list, so a waiting task counts even when it is not on this list. It adds the fifth `unlocks` signal and an urgency floor from the inherited due date. A row with nothing waiting scores exactly as before.
+- **Blocker goes first.** `blockersFirst` then moves an open prerequisite on the list to just above the first row waiting on it. Required / Assigned split and `pinPrioritizedFirst` run after, so this holds within each partition and Prioritized stays pinned.
+- `sortTodos` takes optional `now` and `markedIds`. The panel passes Required + Prioritized ids for the period; those count as full value. `filterAndSortTodos` is unchanged: the priority path already had the whole task list, so it needed no all-tasks argument.
+- **Row.** `TodoTable` takes `unlockOf`: an **unlocks N** chip (plain ink, no padlock, hover = `unlockBreakdown` label) and a neutral "due Thu for *X*" when something waiting has a deadline. Styles: `.todo-row-unlocks`, `.todo-row-inherited-due` in `todo-chrome.css`.
+- **Formula.** The panel's `PRIORITY_WEIGHT_FIELDS` (`todo-panel.tsx`, not `todo-filters.tsx`) has a fifth **Unlocks** field.
+- **Planned.** "needs *X* · not scheduled" with **Schedule *X* today**; the inherited due on the task card; step unlock rank in `lib/next-step.ts` and Phase 14 D (slice N); E (met at a level).
+
 ## Completion status (Feature 9)
 
 Each row has an **active lamp** (`toggleTodoActiveLamp`). It toggles **active** ↔ **partial**. Both stay on the default **Open** list, so turning the lamp off and on again does not hide the row. Deferred, cancelled, missed, and done are not on that click — a row already in one of those statuses returns to active. Set the rest from item detail. **Done** and **Missed** stay engraved verb keys (and keyboard D / M). The header **Status** filter (Show bay) narrows the lists by lens — `Open` (active+partial, the default), `Active & available` (open and dependency-unblocked), a single status, or `All`.
@@ -273,7 +298,7 @@ The closed-row percent is step completion (`todoCompletionPercent` in `lib/todo-
 
 ## Overdue and the priority date
 
-An open row shows `waiting Nd` from the **priority date**: the earlier of the live scheduled day and the start of the earliest Undone period (`priorityDateOf` in `lib/scheduling.ts`), or an earlier deadline when one exists. Pushing the task onto a later day does not wipe how long it has already been waiting. The same date fills the row’s week and month overdue counts. Regret uses a deadline or `mustBeDoneBefore` first; with neither, it uses this priority date. The Priority sort itself stays the urgency / importance / quick-win / entropy formula.
+An open row shows `waiting Nd` from the **priority date**: the earlier of the live scheduled day and the start of the earliest Undone period (`priorityDateOf` in `lib/scheduling.ts`), or an earlier deadline when one exists. Pushing the task onto a later day does not wipe how long it has already been waiting. The same date fills the row’s week and month overdue counts. Regret uses a deadline or `mustBeDoneBefore` first; with neither, it uses this priority date. The Priority sort itself is the urgency / importance / quick-win / entropy formula, plus `unlocks` when something waits on the row (below).
 
 ## Actions per row
 

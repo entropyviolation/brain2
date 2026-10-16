@@ -296,6 +296,8 @@ export interface PriorityWeights {
   importance: number
   cognitiveLoad: number
   entropy: number
+  /** What waits on the task (Phase 14). Missing reads as 1, so older blobs load as-is. */
+  unlocks?: number
 }
 
 // ---- Richer completion status (Feature 9, Worker I) -----------------------
@@ -827,6 +829,10 @@ export interface ItemNoteEntry {
   text: string
   /** ISO time the entry was last edited, when it was edited after being added. */
   editedAt?: string
+  /** `notice`: an answer to the To Do notice dot (`lib/notice-dot.ts`). */
+  tag?: "notice"
+  /** Total pushes on the task when a `notice` entry was written. The dot stays quiet until the next push. */
+  pushCount?: number
 }
 
 /** A file attached to an item as a resource. Same blob storage as `file` attributes. */

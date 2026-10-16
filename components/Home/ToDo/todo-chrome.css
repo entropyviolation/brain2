@@ -577,7 +577,7 @@ body.win95-app .todo95 .todo-view-keys [role="tab"][data-state="active"] {
 
 .todo95 .todo-meter-arc.is-manageable { stroke: #1a8a48; }
 .todo95 .todo-meter-arc.is-overfilled { stroke: #7d6bb8; }
-.todo95 .todo-meter-arc.is-behind { stroke: #b91c1c; }
+.todo95 .todo-meter-arc.is-behind { stroke: #4a3f6b; }
 
 .todo95 .todo-meter-needle {
   transform-origin: 50px 48px;
@@ -710,7 +710,32 @@ body.win95-app .todo95 button.todo-scope-lamp {
 }
 
 .todo95 .todo-comfort.is-behind {
-  color: #b91c1c;
+  color: #4a3f6b;
+}
+
+/* Notice dot (Phase 15 B): a quiet ink dot, no count, no color change. */
+.todo95 .todo-notice-dot {
+  width: 7px;
+  height: 7px;
+  margin: 0 4px;
+  padding: 0;
+  flex-shrink: 0;
+  align-self: center;
+  border: 0;
+  border-radius: 50%;
+  background: #6b7486;
+  cursor: pointer;
+}
+
+.todo95 .todo-notice-line {
+  flex: 1 1 14rem;
+  min-width: 10rem;
+  font-size: 11px;
+  color: #243044;
+  background: #f4f6f9;
+  border: 0;
+  box-shadow: inset 0 0 0 1px #c3cad6;
+  padding: 2px 6px;
 }
 
 .todo95 .todo-ledger {
@@ -1499,11 +1524,11 @@ body.win95-app .todo95 .todo-verb:active:not(:disabled) {
 }
 
 .todo95 .todo-verb.is-missed {
-  color: #6e1428;
+  color: #2c3442;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     inset 0 -1px 0 rgba(55, 58, 62, 0.45),
-    0 0 0 1px #9a3048,
+    0 0 0 1px #6b7486,
     0 1px 0 var(--chrome-lip);
 }
 
@@ -1514,7 +1539,7 @@ body.win95-app .todo95 .todo-verb:active:not(:disabled) {
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
-  background: radial-gradient(circle at 35% 30%, #ffd0d8 0 16%, #e2556a 42%, #5a1020 100%);
+  background: radial-gradient(circle at 35% 30%, #e4e8ee 0 16%, #8a93a4 42%, #2c3442 100%);
 }
 
 .todo95 .todo-verb.is-push {
@@ -1993,12 +2018,13 @@ body.win95-app .todo95 .todo-segment button.todo-chiclet {
   text-shadow: 0 0 3px var(--td-crt);
 }
 
+/* Missed well: neutral ink, not an alarm (Phase 15 B). */
 .todo95 .todo-section.is-missed {
-  background: #1a0808;
+  background: #12161c;
 }
 
 .todo95 .todo-section.is-missed .todo-legend {
-  color: #ff8080;
+  color: #b4bccb;
 }
 
 .todo95 .todo-section.is-undone.is-lace {
@@ -2030,6 +2056,13 @@ body.win95-app .todo95 .todo-segment button.todo-chiclet {
   padding: 0 10px 8px;
 }
 
+/* Attention given (Phase 15 B): a quieter second line, about time, not output. */
+.todo95 .todo-attention-line {
+  padding: 2px 10px 6px;
+  font-size: 10px;
+  color: rgba(190, 230, 210, 0.62);
+}
+
 .todo95 .todo-section.is-done .todo-section-head {
   background:
     linear-gradient(180deg, rgba(125, 255, 196, 0.08), transparent 55%),
@@ -2039,9 +2072,9 @@ body.win95-app .todo95 .todo-segment button.todo-chiclet {
 
 .todo95 .todo-section.is-missed .todo-section-head {
   background:
-    linear-gradient(180deg, rgba(255, 128, 128, 0.08), transparent 55%),
-    #1a0808;
-  box-shadow: inset 0 -1px 0 rgba(255, 128, 128, 0.18);
+    linear-gradient(180deg, rgba(180, 188, 203, 0.08), transparent 55%),
+    #12161c;
+  box-shadow: inset 0 -1px 0 rgba(180, 188, 203, 0.18);
 }
 
 .todo95 .todo-section.is-undone .todo-section-head {
@@ -2194,7 +2227,7 @@ body.win95-app .todo95 .todo-section.is-done button.todo-log-done {
 }
 
 .todo95 .todo-lamp.is-missed {
-  background: #e2556a;
+  background: #8a93a4;
 }
 
 .todo95 .todo-lamp.is-undone {
@@ -2488,11 +2521,11 @@ body.win95-app .todo95 button.todo-chiclet.is-usual[type="button"]:not([hidden])
 }
 
 body.win95-app .todo95 button.todo-verb.is-missed[type="button"]:not([hidden]) {
-  color: #6e1428;
+  color: #2c3442;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     inset 0 -1px 0 rgba(55, 58, 62, 0.45),
-    0 0 0 1px #9a3048,
+    0 0 0 1px #6b7486,
     0 1px 0 var(--chrome-lip);
 }
 
@@ -2618,6 +2651,25 @@ body.win95-app .todo95 .todo-segment[role="group"] button.todo-chiclet[type="but
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* What waits on this row (Phase 14): plain ink, no padlock. Inherited due is neutral too. */
+.todo95 .todo-row-unlocks,
+.todo95 .todo-row-inherited-due {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 14rem;
+  padding: 0 6px;
+  font-size: 10px;
+  color: #3b4250;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.todo95 .todo-row-unlocks {
+  border-radius: var(--r-8, 8px);
+  box-shadow: inset 0 0 0 1px #c9cfd9;
 }
 
 /* A step still waiting on another reads as not-yet: dimmed name, chip says why. */

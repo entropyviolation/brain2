@@ -8,7 +8,7 @@
  */
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import type { KeyboardEvent } from "react"
 import type { CompletionStatus, Subtask, TodoItem } from "@/lib/types"
 import { COMPLETION_STATUS_LABELS } from "@/lib/completion-status"
@@ -18,6 +18,7 @@ import { getScheduleLabel, pushedKeyForPeriod, toggleTodoActiveLamp, type TodoPe
 import { itemTitle } from "@/lib/item-utils"
 import { TodoBreakdown, TodoDeleteButton, TodoLidSection, type TodoTimeInfo } from "./TodoBreakdown"
 import { DvdTransportKey } from "@/components/dvd-transport-keys"
+import { NOTICE_PROMPT } from "@/lib/notice-dot"
 
 const COLLAPSE_THRESHOLD = 8
 
@@ -46,6 +47,16 @@ function spentLabel(minutes: number): string {
   const h = Math.floor(total / 60)
   const m = total % 60
   return m === 0 ? `${h}h` : `${h}h${String(m).padStart(2, "0")}`
+}
+
+/** "Waiting since Tue" within a week, "Waiting since Sep 3" past it. Neutral words (Phase 15 B). */
+export function waitingSinceLabel(daysWaiting: number, now: Date = new Date()): string {
+  const since = new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysWaiting)
+  const word =
+    daysWaiting < 7
+      ? since.toLocaleDateString("en-US", { weekday: "short" })
+      : since.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+  return `Waiting since ${word}`
 }
 
 export function TodoTable({
@@ -87,7 +98,10 @@ export function TodoTable({
   onClockStart,
   onClockStop,
   blockersOf,
+  unlockOf,
   onNeeds,
+  noticeOf,
+  onNotice,
 }: {
   todos: TodoItem[]
   period: TodoPeriod
@@ -134,9 +148,16 @@ export function TodoTable({
   onClockStop?: () => void
   /** Names of open tasks this row still waits on (`Task.dependencies`). */
   blockersOf?: (taskId: string) => string[]
+  /** What waits on this row (Phase 14, `lib/unlock-value.ts`). Null when nothing waits. */
+  unlockOf?: (taskId: string) => { count: number; title: string; due?: string; overdue?: boolean } | null
   /** Open the Needs… picker for a task. */
   onNeeds?: (taskId: string) => void
+  /** Pushed 3+ times and not answered since (`needsNotice`). Omit to hide the notice dot. */
+  noticeOf?: (todoId: string) => boolean
+  /** Save the notice answer as a dated `noteLog` entry tagged `notice`. */
+  onNotice?: (todoId: string, text: string) => void
 }) {
+  const [noticeRowId, setNoticeRowId] = useState<string | null>(null)
   const pushedKey = pushedKeyForPeriod(period)
   const pushLabel = period === "day" ? "next day" : period === "week" ? "next week" : "next month"
   const pushPeriodNoun = period === "day" ? "days" : period === "week" ? "weeks" : "months"
@@ -260,6 +281,7 @@ export function TodoTable({
         const clockId = todo.taskId || todo.id
         const onClock = !walk && clockTaskId === clockId
         const blockers = walk ? [] : (blockersOf?.(clockId) ?? [])
+        const unlock = walk ? null : (unlockOf?.(clockId) ?? null)
         const toggleOpen = () => {
           onSelectedRowIdChange(todo.id)
           onOpenRowIdChange(open ? null : todo.id)
@@ -341,6 +363,48 @@ export function TodoTable({
                   >
                     needs {blockers.join(", ")}
                   </button>
+                ) : null}
+                {unlock ? (
+                  <span className="todo-row-unlocks" title={unlock.title}>
+                    unlocks {unlock.count}
+                  </span>
+                ) : null}
+                {unlock?.due ? (
+                  <span className="todo-row-inherited-due" data-overdue={unlock.overdue ? "true" : undefined}>
+                    {unlock.due}
+                  </span>
+                ) : null}
+                {!walk && onNotice && noticeOf?.(todo.id) ? (
+                  <button
+                    type="button"
+                    data-no95
+                    className="todo-notice-dot"
+                    aria-label="Notice"
+                    title={NOTICE_PROMPT}
+                    aria-expanded={noticeRowId === todo.id}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setNoticeRowId((id) => (id === todo.id ? null : todo.id))
+                    }}
+                  />
+                ) : null}
+                {noticeRowId === todo.id && onNotice ? (
+                  <input
+                    className="todo-notice-line"
+                    type="text"
+                    autoFocus
+                    aria-label={NOTICE_PROMPT}
+                    placeholder={NOTICE_PROMPT}
+                    onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => {
+                      e.stopPropagation()
+                      if (e.key === "Escape") setNoticeRowId(null)
+                      if (e.key !== "Enter") return
+                      const text = (e.target as HTMLInputElement).value.trim()
+                      if (text) onNotice(todo.id, text)
+                      setNoticeRowId(null)
+                    }}
+                  />
                 ) : null}
               </div>
 
@@ -499,7 +563,7 @@ export function TodoTable({
                 {walk ? null : (
                   <span
                     className={`todo-push-tube${pushed > 0 ? " is-hot" : " is-zero"}`}
-                    title={`${pushed} — ${pushLegend}`}
+                    title={`Pushed ×${pushed} — ${pushLegend}`}
                   >
                     {pushed}
                   </span>
@@ -511,7 +575,7 @@ export function TodoTable({
               <div className="todo-lid" onClick={(e) => e.stopPropagation()}>
                 <div className="todo-lid-meta">
                   {getScheduleLabel(todo)}
-                  {todo.daysOverdue > 0 ? ` · waiting ${todo.daysOverdue}d` : ""}
+                  {todo.daysOverdue > 0 ? ` · ${waitingSinceLabel(todo.daysOverdue)}` : ""}
                 </div>
                 <TodoLidSection id="flags" label="Flags" layout="flags">
                   <button
@@ -519,7 +583,7 @@ export function TodoTable({
                     className="todo-jewel is-required"
                     aria-pressed={required}
                     aria-label="Required"
-                    title="Required — absolutely must be done this period"
+                    title="Required — you marked this one for this period"
                     onClick={() => onToggleRequired(todo.id)}
                   >
                     <span className="todo-jewel-glass" aria-hidden />
@@ -539,7 +603,7 @@ export function TodoTable({
                   <button
                     type="button"
                     className="todo-verb is-missed"
-                    title="Missed opportunity — too late"
+                    title="Missed opportunity — the window for it passed"
                     onClick={() => onMissed(todo.id)}
                   >
                     Missed

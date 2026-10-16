@@ -70,6 +70,26 @@ for a count (“Pushed 9 times since Jul 3”). That voice is not a ban on a
 teaching caption. The note on the count voice is
 [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md).
 
+## No "should"
+
+_Last mapped: 2026-10-16._ A house rule. No UI text tells the person what they
+should do. A label, a tooltip, an empty state and a help line each state a
+fact, in neutral ink.
+
+- Say when, not how late: "Waiting since Tue", not `waiting 3d` or "Overdue".
+- Say what happened, not what it means: "Pushed ×3", not "Behind".
+- No "should", "must", "absolutely", "too late" or "!" in chrome. Required is
+  the person's own mark, so it reads "you marked this one", not "must be done".
+- No alarm color for a state of the person's day. Missed, a full load and a
+  pushed row wear neutral ink. Warm red is kept for one thing: an estimate
+  overrun (minutes past the estimate).
+- A verb keeps its word, its key and its record. Renaming a verb (for example
+  **Missed**) needs the person's yes first.
+- The person's own words (a ritual prompt, a note, an affirmation) are theirs.
+  The rule covers chrome, not what they typed.
+
+Phase 15 B audit: [`TODO_REDESIGN.md`](TODO_REDESIGN.md).
+
 ---
 
 ## Layout
@@ -840,10 +860,9 @@ orb. It may also be an object that room invented.
 - [ ] If it moves, it is a verb (or one rare gesture on that verb), and
       reduced motion snaps to the end state.
 - [ ] A number the person did not type wears `~` and an **est.** chip.
-- [ ] **Planned (2026-10-16):** no UI text tells the person what they should
+- [ ] [No "should"](#no-should): no UI text tells the person what they should
       do. States read as neutral facts ("Waiting since Tue", "Pushed ×3"), and
-      warm red is kept for estimate overruns. See
-      [`TODO_REDESIGN.md`](TODO_REDESIGN.md) Phase 15 B.
+      warm red is kept for estimate overruns.
 - [ ] A dirty editor uses Save / Stay / Discard. A clean close is silent.
 - [ ] Habits, Lists, Plan chips, and the Analytics studio were left as their
       own rooms. New furniture was invented here, or a palette material was
