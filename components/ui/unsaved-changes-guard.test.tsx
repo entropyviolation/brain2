@@ -101,3 +101,54 @@ describe("useUnsavedGuard", () => {
     expect(screen.getByText("editor closed")).toBeInTheDocument()
   })
 })
+
+function GuardedAction({ dirtyRef, action, onSave }: { dirtyRef: { current: boolean }; action: () => void; onSave: () => void }) {
+  const guard = useUnsavedGuard({
+    open: true,
+    onOpenChange: () => {},
+    isDirty: () => dirtyRef.current,
+    onSave,
+  })
+  return (
+    <>
+      <button type="button" onClick={() => guard.guardAction(action)}>
+        Leave
+      </button>
+      <UnsavedChangesDialog {...guard.prompt} />
+    </>
+  )
+}
+
+describe("guardAction", () => {
+  it("runs at once when clean, reading a function isDirty at call time", async () => {
+    const user = userEvent.setup()
+    const dirtyRef = { current: false }
+    const action = vi.fn()
+    render(<GuardedAction dirtyRef={dirtyRef} action={action} onSave={vi.fn()} />)
+    await user.click(screen.getByRole("button", { name: "Leave" }))
+    expect(action).toHaveBeenCalledTimes(1)
+    dirtyRef.current = true
+    await user.click(screen.getByRole("button", { name: "Leave" }))
+    expect(action).toHaveBeenCalledTimes(1)
+    expect(screen.getByRole("dialog")).toBeInTheDocument()
+  })
+
+  it("runs the action after Save, after Exit without saving, and not after Stay", async () => {
+    const user = userEvent.setup()
+    const dirtyRef = { current: true }
+    const action = vi.fn()
+    const onSave = vi.fn()
+    render(<GuardedAction dirtyRef={dirtyRef} action={action} onSave={onSave} />)
+    await user.click(screen.getByRole("button", { name: "Leave" }))
+    await user.click(screen.getByRole("button", { name: /cancel|stay/i }))
+    expect(action).not.toHaveBeenCalled()
+    await user.click(screen.getByRole("button", { name: "Leave" }))
+    await user.click(screen.getByRole("button", { name: /save/i }))
+    expect(onSave).toHaveBeenCalledTimes(1)
+    expect(action).toHaveBeenCalledTimes(1)
+    await user.click(screen.getByRole("button", { name: "Leave" }))
+    await user.click(screen.getByRole("button", { name: /exit without saving/i }))
+    expect(action).toHaveBeenCalledTimes(2)
+    expect(onSave).toHaveBeenCalledTimes(1)
+  })
+})

@@ -280,4 +280,39 @@ describe("TaskDetailPopup", () => {
     expect(attrs.compareDocumentPosition(desc) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(screen.getByRole("button", { name: /add attribute/i })).toBeInTheDocument()
   })
+
+  describe("leaving with unsaved changes", () => {
+    const typeIntoDescription = async (user: ReturnType<typeof userEvent.setup>) => {
+      const field = screen.getByPlaceholderText("Detailed description…")
+      await user.click(field)
+      await user.type(field, "draft words")
+    }
+
+    it("asks before a list double-click closes and navigates, then saves", async () => {
+      const user = userEvent.setup()
+      render(<TaskDetailPopup taskId="popup-task" open onClose={onClose} />)
+      await typeIntoDescription(user)
+      fireEvent.doubleClick(screen.getByTitle("Double-click to open this list"))
+      expect(onClose).not.toHaveBeenCalled()
+      await user.click(await screen.findByRole("button", { name: /^save/i }))
+      expect(onClose).toHaveBeenCalled()
+      expect(useTaskStore.getState().tasks.find((t) => t.id === "popup-task")?.taskDescription).toBe("draft words")
+    })
+
+    it("Exit without saving drops the draft and still navigates", async () => {
+      const user = userEvent.setup()
+      render(<TaskDetailPopup taskId="popup-task" open onClose={onClose} />)
+      await typeIntoDescription(user)
+      fireEvent.doubleClick(screen.getByTitle("Double-click to open this list"))
+      await user.click(await screen.findByRole("button", { name: /exit without saving/i }))
+      expect(onClose).toHaveBeenCalled()
+      expect(useTaskStore.getState().tasks.find((t) => t.id === "popup-task")?.taskDescription).toBeUndefined()
+    })
+
+    it("a clean double-click navigates without asking", () => {
+      render(<TaskDetailPopup taskId="popup-task" open onClose={onClose} />)
+      fireEvent.doubleClick(screen.getByTitle("Double-click to open this list"))
+      expect(onClose).toHaveBeenCalled()
+    })
+  })
 })
