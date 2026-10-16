@@ -330,6 +330,25 @@ export type CaptureOriginKind =
   | "iphone-notes"
   | "reminder"
 
+/** Where a saved link points (Inbox → Links). Helpers: `lib/saved-links.ts`. */
+export type SavedLinkKind =
+  | "tiktok"
+  | "instagram"
+  | "youtube"
+  | "x"
+  | "reddit"
+  | "spotify"
+  | "pinterest"
+  | "substack"
+  | "wikipedia"
+  | "article"
+
+export interface SavedLink {
+  /** As sent, with `https://` added when the message had no scheme. */
+  url: string
+  kind: SavedLinkKind
+}
+
 /** Set once at capture. `detail` is only what that door already knew. */
 export interface CaptureOrigin {
   kind: CaptureOriginKind
@@ -365,6 +384,13 @@ export interface Task extends Item {
    * Absent on a normal Inbox capture. Leaving Inbox (clarify, file) drops it.
    */
   monkeyBrain?: boolean
+  /**
+   * Inbox partition. Set means Inbox → Links: a BIM message that started with
+   * a link (`lib/saved-links.ts`). The note after the link is `notes`.
+   * Not on the revisit pile or Monkey brain. Only `stage: "inbox"` rows sit
+   * on Links; clarify and file keep the link on the item.
+   */
+  savedLink?: SavedLink
   /**
    * How this record was captured. Set once, at the door that created it.
    * Clarify, file, a later edit, bulk edit, and Transfer to log leave it.
