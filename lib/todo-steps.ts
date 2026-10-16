@@ -6,6 +6,7 @@
  * The minutes that count on a step (and on the task) are the greater of the
  * number typed there and the sum of the steps inside it.
  */
+import { weightedPercent } from "@/lib/step-progress"
 import type { Subtask } from "@/lib/types"
 import { createSubtaskId } from "@/lib/molecular"
 
@@ -60,14 +61,13 @@ export function internalStepProgress(steps: readonly Subtask[] | undefined): { c
 }
 
 /**
- * How much of the step tree is finished. No steps, or none finished, is 0.
- * This is not minutes against a day — a 30-minute estimate is 30/480 of an
- * 8-hour day (6%), and that figure was being shown as “% complete”.
+ * How much of the step tree is finished, weighted (Phase 10, R16,
+ * `lib/step-progress.ts`): a ticked step is 100%, a parent the average of its
+ * children. No steps is 0. Counts stay counts (`internalStepProgress`).
+ * This is not minutes against a day.
  */
 export function todoCompletionPercent(steps: readonly Subtask[] | undefined): number {
-  const progress = internalStepProgress(steps)
-  if (!progress || progress.total <= 0) return 0
-  return Math.round((progress.completed / progress.total) * 100)
+  return Math.round((weightedPercent(steps) ?? 0) * 100)
 }
 
 export function formatInternalProgress(steps: readonly Subtask[] | undefined): string | null {

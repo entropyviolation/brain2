@@ -27,7 +27,8 @@ describe("todo steps", () => {
     steps = addNestedStep(steps, write, { description: "Save" })
     const open = steps[0]!.subtasks![0]!.id
     steps = updateNestedStep(steps, open, { completed: true })
-    expect(formatInternalProgress(steps)).toBe("1/3 · 33%")
+    // Counts stay counts; the percent is weighted (Phase 10): Write is half done.
+    expect(formatInternalProgress(steps)).toBe("1/3 · 50%")
     expect(steps[0]!.completed).toBe(false)
     expect(steps[0]!.subtasks![1]!.completed).toBe(false)
     steps = removeNestedStep(steps, open)
