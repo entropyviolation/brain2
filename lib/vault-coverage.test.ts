@@ -32,6 +32,8 @@ import { useSleepStore } from "@/lib/sleep-store"
 import { useCycleMarksStore } from "@/lib/cycle-marks"
 import { useRegretStore } from "@/lib/regret-store"
 import { useBabyAnimalsStore } from "@/lib/baby-animals-store"
+import { useSessionPlanStore } from "@/lib/session-plan-store"
+import { useAffirmationLogStore } from "@/lib/affirmation-log-store"
 
 const { SHRINK_PROTECTED, VAULT_RECORD_FIELDS, vaultRecordCount } = require("./vault-guard.js") as {
   SHRINK_PROTECTED: Set<string>
@@ -88,6 +90,8 @@ const GUARDED_STORE_STATE: Record<string, () => unknown> = {
   "cogs-baby-animals-store": () => useBabyAnimalsStore.getState(),
   "points-store": () => usePointsStore.getState(),
   "regret-store": () => useRegretStore.getState(),
+  "cogs-session-plans": () => useSessionPlanStore.getState(),
+  "cogs-affirmation-log": () => useAffirmationLogStore.getState(),
 }
 
 describe("vault coverage", () => {

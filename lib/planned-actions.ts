@@ -9,7 +9,7 @@
  */
 import { formatLocalDateKey } from "@/lib/date-utils"
 
-export const PLANNED_ACTION_SOURCES = ["free", "todo", "habit"] as const
+export const PLANNED_ACTION_SOURCES = ["free", "todo", "habit", "session"] as const
 export type PlannedActionSource = (typeof PLANNED_ACTION_SOURCES)[number]
 
 export interface PlannedAction {
@@ -102,6 +102,7 @@ export function makePlannedAction(partial: Omit<PlannedAction, "id" | "notes" | 
 export function defaultTitle(source: PlannedActionSource): string {
   if (source === "habit") return "Habit"
   if (source === "todo") return "To Do"
+  if (source === "session") return "Session"
   return "Planned action"
 }
 

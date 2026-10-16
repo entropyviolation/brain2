@@ -16,7 +16,7 @@ import { PercentLedBar } from "@/components/Home/Habits/percent-led-bar"
 import { effectiveDurationMinutes, flattenSteps, formatInternalProgress, todoCompletionPercent } from "@/lib/todo-steps"
 import { getScheduleLabel, pushedKeyForPeriod, toggleTodoActiveLamp, type TodoPeriod } from "./todo-utils"
 import { itemTitle } from "@/lib/item-utils"
-import { TodoBreakdown, TodoDeleteButton, TodoLidSection } from "./TodoBreakdown"
+import { TodoBreakdown, TodoDeleteButton, TodoLidSection, type TodoTimeInfo } from "./TodoBreakdown"
 import { DvdTransportKey } from "@/components/dvd-transport-keys"
 
 const COLLAPSE_THRESHOLD = 8
@@ -39,6 +39,15 @@ function statusLampClass(status: CompletionStatus): string {
   return "is-live"
 }
 
+/** Compact spent for the narrow Time cell: `45`, `1h40`, `12h`. */
+function spentLabel(minutes: number): string {
+  const total = Math.round(minutes)
+  if (total < 60) return String(total)
+  const h = Math.floor(total / 60)
+  const m = total % 60
+  return m === 0 ? `${h}h` : `${h}h${String(m).padStart(2, "0")}`
+}
+
 export function TodoTable({
   todos,
   period,
@@ -52,6 +61,9 @@ export function TodoTable({
   onStepsChange,
   stepsOf,
   estimateOf,
+  defaultEstimateMin = 0,
+  spentOf,
+  timeOf,
   onTaskClick,
   onTierChange,
   onJustStart,
@@ -89,6 +101,12 @@ export function TodoTable({
   onStepsChange: (todoId: string, steps: Subtask[]) => void
   stepsOf: (todoId: string) => Subtask[] | undefined
   estimateOf: (todoId: string) => number | undefined
+  /** Shown as a dim `~30` on rows with no estimate and no steps. 0 or missing = a blank, as before. */
+  defaultEstimateMin?: number
+  /** Minutes logged on the row's task, across days (`trackedMinutesForItem`). Omit to hide. */
+  spentOf?: (todoId: string) => number
+  /** Spent, step spent and pace for the open lid (`TodoBreakdown` → `time`). */
+  timeOf?: (todoId: string) => TodoTimeInfo | undefined
   onTaskClick: (taskId: string) => void
   onTierChange: (todoId: string, tier: TodoItem["tier"]) => void
   onJustStart: (taskId: string) => void
@@ -235,6 +253,7 @@ export function TodoTable({
         const progress = formatInternalProgress(steps)
         const completePct = todoCompletionPercent(steps)
         const walk = isWalkRow?.(todo.id) ?? false
+        const spent = walk ? 0 : (spentOf?.(todo.id) ?? 0)
         const open = openRowId === todo.id
         const selected = selectedRowId === todo.id
         const flocking = flockingId === todo.id
@@ -375,9 +394,31 @@ export function TodoTable({
 
               <span
                 className="todo-cell todo-cell-time"
-                title={walk ? undefined : minutes > 0 ? `${minutes} minutes that count` : "No estimate yet"}
+                title={
+                  walk
+                    ? undefined
+                    : (spent > 0 ? `${spentLabel(spent)} spent. ` : "") +
+                      (minutes > 0
+                        ? `${minutes} minutes that count`
+                        : defaultEstimateMin > 0
+                          ? `No estimate yet. Counts as the default, ${defaultEstimateMin} minutes`
+                          : "No estimate yet")
+                }
               >
-                {walk ? null : minutes > 0 ? <span className="todo-mins-read">{minutes}m</span> : <span className="todo-cell-blank">–</span>}
+                {walk ? null : minutes > 0 ? (
+                  <span className={`todo-mins-read${spent > minutes ? " is-over" : ""}`}>
+                    {spent > 0 ? <span className="todo-mins-spent">{spentLabel(spent)}/</span> : null}
+                    {minutes}m
+                  </span>
+                ) : defaultEstimateMin > 0 ? (
+                  <span className="todo-mins-read is-default">
+                    {spent > 0 ? <span className="todo-mins-spent">{spentLabel(spent)}/</span> : null}~{defaultEstimateMin}
+                  </span>
+                ) : spent > 0 ? (
+                  <span className="todo-mins-read is-default">{spentLabel(spent)}</span>
+                ) : (
+                  <span className="todo-cell-blank">–</span>
+                )}
               </span>
 
               <span className="todo-cell todo-cell-steps">
@@ -527,6 +568,7 @@ export function TodoTable({
                   steps={steps}
                   onEstimateChange={(minutes) => onEstimateChange(todo.id, minutes)}
                   onStepsChange={(next) => onStepsChange(todo.id, next)}
+                  time={timeOf?.(todo.id)}
                   clock={
                     onClockStart
                       ? {

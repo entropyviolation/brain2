@@ -10,12 +10,21 @@
 import { useSyncExternalStore } from "react"
 
 import { persistKey, readAliasedLocal, writeAliasedLocal } from "@/lib/storage-keys"
+import { DEFAULT_ESTIMATE_MIN } from "@/lib/todo-steps"
 
 export const TODO_PREFS_KEY = persistKey("todo-prefs")
 
 export const DEFAULT_WIP_LIMIT = 3
 export const MIN_WIP_LIMIT = 1
 export const MAX_WIP_LIMIT = 99
+
+export const MAX_DEFAULT_ESTIMATE_MIN = 600
+
+export function clampDefaultEstimate(value: unknown): number {
+  const n = typeof value === "number" ? value : Number(value)
+  if (value === undefined || value === null || value === "" || !Number.isFinite(n)) return DEFAULT_ESTIMATE_MIN
+  return Math.min(MAX_DEFAULT_ESTIMATE_MIN, Math.max(0, Math.round(n)))
+}
 
 export const LID_SECTIONS = ["flags", "time", "steps"] as const
 export type TodoLidSection = (typeof LID_SECTIONS)[number]
@@ -25,6 +34,14 @@ export type TodoPrefs = {
   wipLimit: number
   /** True when that open-lid section is folded. Missing keys stay open. */
   lidCollapsed: Record<TodoLidSection, boolean>
+  /** Hide Night ritual before sunset and an unstarted Morning ritual after it, on today's day lens. */
+  ritesFollowSun: boolean
+  /** Minutes counted for a task with no estimate and no steps; shown as `~30`. 0 = none. Never written to the task. */
+  defaultEstimateMin: number
+  /** Pace overrides by `paceKey` (`lib/estimate-pace.ts`). A missing key reads your own median. */
+  paceOverrides: Record<string, number>
+  /** The dim "usually ×2.4 for you" ghost beside estimates. */
+  paceGhosts: boolean
 }
 
 export const DEFAULT_LID_COLLAPSED: Record<TodoLidSection, boolean> = {
@@ -37,6 +54,21 @@ export const DEFAULT_TODO_PREFS: TodoPrefs = {
   availableNow: false,
   wipLimit: DEFAULT_WIP_LIMIT,
   lidCollapsed: { ...DEFAULT_LID_COLLAPSED },
+  ritesFollowSun: true,
+  defaultEstimateMin: DEFAULT_ESTIMATE_MIN,
+  paceOverrides: {},
+  paceGhosts: true,
+}
+
+/** Keeps only positive finite overrides, clamped to 0.5–4. */
+export function normalizePaceOverrides(value: unknown): Record<string, number> {
+  const out: Record<string, number> = {}
+  if (!value || typeof value !== "object") return out
+  for (const [key, raw] of Object.entries(value as Record<string, unknown>)) {
+    const n = typeof raw === "number" ? raw : Number(raw)
+    if (Number.isFinite(n) && n > 0) out[key] = Math.min(4, Math.max(0.5, n))
+  }
+  return out
 }
 
 export function normalizeLidCollapsed(value: unknown): Record<TodoLidSection, boolean> {
@@ -67,6 +99,10 @@ function load(): TodoPrefs {
       availableNow: parsed.availableNow === true,
       wipLimit: clampWipLimit(parsed.wipLimit),
       lidCollapsed: normalizeLidCollapsed(parsed.lidCollapsed),
+      ritesFollowSun: parsed.ritesFollowSun !== false,
+      defaultEstimateMin: clampDefaultEstimate(parsed.defaultEstimateMin),
+      paceOverrides: normalizePaceOverrides(parsed.paceOverrides),
+      paceGhosts: parsed.paceGhosts !== false,
     }
   } catch {
     return { ...DEFAULT_TODO_PREFS }
@@ -84,7 +120,11 @@ export function getTodoPrefs(): TodoPrefs {
       snapshot.wipLimit === DEFAULT_TODO_PREFS.wipLimit &&
       snapshot.lidCollapsed.flags === false &&
       snapshot.lidCollapsed.time === false &&
-      snapshot.lidCollapsed.steps === false
+      snapshot.lidCollapsed.steps === false &&
+      snapshot.ritesFollowSun === DEFAULT_TODO_PREFS.ritesFollowSun &&
+      snapshot.defaultEstimateMin === DEFAULT_TODO_PREFS.defaultEstimateMin &&
+      Object.keys(snapshot.paceOverrides).length === 0 &&
+      snapshot.paceGhosts === DEFAULT_TODO_PREFS.paceGhosts
     if (!same) snapshot = { ...DEFAULT_TODO_PREFS }
   }
   return snapshot
@@ -102,6 +142,12 @@ export function setTodoPrefs(
       ...snapshot.lidCollapsed,
       ...(patch.lidCollapsed ?? {}),
     }),
+    ritesFollowSun: patch.ritesFollowSun ?? snapshot.ritesFollowSun,
+    defaultEstimateMin:
+      patch.defaultEstimateMin !== undefined ? clampDefaultEstimate(patch.defaultEstimateMin) : snapshot.defaultEstimateMin,
+    paceOverrides:
+      patch.paceOverrides !== undefined ? normalizePaceOverrides(patch.paceOverrides) : snapshot.paceOverrides,
+    paceGhosts: patch.paceGhosts ?? snapshot.paceGhosts,
   }
   try {
     writeAliasedLocal(TODO_PREFS_KEY, JSON.stringify(snapshot))

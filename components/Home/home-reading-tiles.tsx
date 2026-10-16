@@ -8,6 +8,7 @@
  */
 "use client"
 
+import { useTodoPrefs } from "@/components/Home/ToDo/todo-prefs"
 import { useMemo, useState } from "react"
 import { plannedMinutesForDay } from "@/components/Home/Plan/plan-capacity"
 import { useHomeDayStats } from "@/components/Home/home-day-stats"
@@ -100,13 +101,14 @@ export function PlanAndLivedTile({
   const tasks = useTaskStore((s) => s.tasks)
   const events = useEventStore((s) => s.events)
   const actions = usePlannedActionStore((s) => s.actions)
+  const { defaultEstimateMin } = useTodoPrefs()
   const entries = useTimeTrackingStore((s) => s.entries)
   const [open, setOpen] = useState(false)
   const face = useMemo(() => {
-    const planned = plannedMinutesForDay(currentDate, tasks, events, actions)
+    const planned = plannedMinutesForDay(currentDate, tasks, events, actions, defaultEstimateMin)
     const lived = livedPaintMinutes(entries, formatLocalDateKey(currentDate))
     return { ...planAndLivedFace(planned, lived), planned, lived }
-  }, [currentDate, tasks, events, actions, entries])
+  }, [currentDate, tasks, events, actions, entries, defaultEstimateMin])
 
   return (
     <>
