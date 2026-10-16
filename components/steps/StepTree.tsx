@@ -1,0 +1,585 @@
+/**
+ * components/steps/StepTree.tsx — One step tree for every host (Phase 9)
+ *
+ * The To Do lid (`TodoBreakdown`) and item detail → Subtasks both draw steps
+ * with this. One row per step: fold chevron and count, tick, a dot to drag,
+ * the name, then the host's own columns (`columns`). Hairline guides show the
+ * depth. No blank lines wait unasked: each open branch ends in one quiet
+ * **+ step**, each row has a hover **+** for a child, and an empty tree shows
+ * **Add the first step**.
+ *
+ * Composer keys: Enter commits and goes one level deeper, empty Enter steps
+ * out, Shift+Enter stays at this depth, Esc closes, a multi-line paste makes
+ * one step per line.
+ *
+ * Moving steps like files: click selects, Shift-click a visible range,
+ * Cmd/Ctrl-click toggles. Drag the dot (it takes the whole selection, children
+ * come along): the top or bottom edge of a row drops before or after it, the
+ * middle nests inside. A step cannot go into itself. With focus on a row:
+ * ↑/↓ move focus, ←/→ fold, Alt+↑/↓ reorder, Tab nests, Shift+Tab lifts,
+ * Enter renames. Every key pressed inside the tree stays in the tree, so the
+ * ledger's D / M / P / R never fire from here; Esc clears a selection first
+ * and only then reaches the host (which closes the lid).
+ *
+ * Hide locked and Show next only are view switches (`step-tree-view.ts`); the
+ * calm line names what they hide and peeks at it.
+ */
+"use client"
+
+import { useEffect, useMemo, useRef, useState } from "react"
+import type { ClipboardEvent, DragEvent, KeyboardEvent, MouseEvent, ReactNode } from "react"
+import type { Subtask } from "@/lib/types"
+import {
+  addNestedStep,
+  flattenSteps,
+  moveSteps,
+  stepParentId,
+  stepSiblings,
+  topMostSelected,
+  updateNestedStep,
+  type StepMoveTarget,
+} from "@/lib/todo-steps"
+import { buildStepView, type StepViewRow } from "./step-tree-view"
+import { toggleStepFold, useStepFolds } from "./step-folds"
+import { WaitingLine } from "./WaitingLine"
+import "./step-tree.css"
+
+export interface StepRowInfo {
+  depth: number
+  hasKids: boolean
+  /** Waiting on an open prerequisite (`lib/prereqs.ts`). */
+  locked: boolean
+}
+
+export interface StepTreeProps {
+  steps: readonly Subtask[] | undefined
+  onChange: (next: Subtask[]) => void
+  /** The host's columns after the name (▶, minutes, chips, delete…). */
+  columns?: (step: Subtask, info: StepRowInfo) => ReactNode
+  /** Extra classes on a row (live, linking…). */
+  rowClassName?: (step: Subtask) => string | undefined
+  hideLocked?: boolean
+  nextOnly?: boolean
+  /** Called once before a move writes, so the host can push one undo step. */
+  onBeforeMove?: (label: string) => void
+  /** Shown under **Add the first step** while the tree is empty. */
+  emptyExtra?: ReactNode
+  /** Show the minutes box in the composer (default on). */
+  composerMinutes?: boolean
+  label?: string
+}
+
+type Composer = { parentId: string | null }
+type DropHint = { id: string; where: "before" | "after" | "inside" } | { where: "end"; parentId: string | null }
+
+function parseMinutes(raw: string): number | undefined {
+  const n = Number(raw.trim())
+  return raw.trim() && Number.isFinite(n) && n > 0 ? n : undefined
+}
+
+function findStep(steps: readonly Subtask[], id: string): Subtask | undefined {
+  return flattenSteps(steps).find((s) => s.id === id)
+}
+
+function lastChildId(steps: readonly Subtask[], parentId: string | null): string | undefined {
+  const list = parentId == null ? steps : findStep(steps, parentId)?.subtasks
+  return list?.[list.length - 1]?.id
+}
+
+function StepComposer({
+  depth,
+  minutes,
+  label,
+  onCommit,
+  onStepOut,
+  onClose,
+  onPasteLines,
+}: {
+  depth: number
+  minutes: boolean
+  label: string
+  onCommit: (description: string, minutes: number | undefined, stay: boolean) => void
+  onStepOut: () => void
+  onClose: () => void
+  onPasteLines: (lines: string[]) => void
+}) {
+  const nameRef = useRef<HTMLInputElement>(null)
+  const [name, setName] = useState("")
+  const [mins, setMins] = useState("")
+  useEffect(() => {
+    nameRef.current?.focus()
+  }, [label])
+
+  const commit = (stay: boolean) => {
+    const description = name.trim()
+    if (!description) {
+      onStepOut()
+      return
+    }
+    onCommit(description, parseMinutes(mins), stay)
+    setName("")
+    setMins("")
+  }
+  const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault()
+      commit(e.shiftKey)
+    } else if (e.key === "Escape") {
+      e.preventDefault()
+      e.stopPropagation()
+      onClose()
+    }
+  }
+  const onPaste = (e: ClipboardEvent<HTMLInputElement>) => {
+    const text = e.clipboardData.getData("text")
+    if (!text.includes("\n")) return
+    e.preventDefault()
+    const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean)
+    if (lines.length) onPasteLines(lines)
+    setName("")
+  }
+  return (
+    <div className="step-tree-composer" style={{ ["--step-depth" as string]: depth }}>
+      <span className="step-tree-dot is-bare" aria-hidden />
+      <input
+        ref={nameRef}
+        className="step-tree-composer-name"
+        type="text"
+        value={name}
+        placeholder="Step…"
+        aria-label={label}
+        autoComplete="off"
+        onChange={(e) => setName(e.target.value)}
+        onKeyDown={onKey}
+        onPaste={onPaste}
+      />
+      {minutes ? (
+        <input
+          className="step-tree-composer-min"
+          type="number"
+          min={0}
+          step={1}
+          inputMode="numeric"
+          placeholder="min"
+          aria-label="Minutes for the new step"
+          value={mins}
+          onChange={(e) => setMins(e.target.value)}
+          onKeyDown={onKey}
+        />
+      ) : null}
+    </div>
+  )
+}
+
+export function StepTree({
+  steps,
+  onChange,
+  columns,
+  rowClassName,
+  hideLocked = false,
+  nextOnly = false,
+  onBeforeMove,
+  emptyExtra,
+  composerMinutes = true,
+  label = "Steps",
+}: StepTreeProps) {
+  const list = useMemo(() => [...(steps ?? [])], [steps])
+  const folded = useStepFolds()
+  const [openedNext, setOpenedNext] = useState<ReadonlySet<string>>(() => new Set())
+  const [peek, setPeek] = useState(false)
+  const [selected, setSelected] = useState<ReadonlySet<string>>(() => new Set())
+  const [anchor, setAnchor] = useState<string | null>(null)
+  const [focusId, setFocusId] = useState<string | null>(null)
+  const [editing, setEditing] = useState<string | null>(null)
+  const [composer, setComposer] = useState<Composer | null>(null)
+  const [drop, setDrop] = useState<DropHint | null>(null)
+  const [refusal, setRefusal] = useState<string | null>(null)
+  const dragIds = useRef<string[] | null>(null)
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  const view = useMemo(
+    () => buildStepView(list, { folded, hideLocked, nextOnly, openedNext, peek }),
+    [list, folded, hideLocked, nextOnly, openedNext, peek],
+  )
+  const visibleIds = useMemo(
+    () => view.rows.flatMap((r) => (r.kind === "step" ? [r.step.id] : [])),
+    [view.rows],
+  )
+
+  // Drop selection of steps that are gone.
+  useEffect(() => {
+    if (![...selected].some((id) => !visibleIds.includes(id))) return
+    setSelected(new Set([...selected].filter((id) => visibleIds.includes(id))))
+  }, [visibleIds, selected])
+
+  const focusRow = (id: string) => {
+    setFocusId(id)
+    requestAnimationFrame(() => {
+      const el = rootRef.current?.querySelector<HTMLElement>(`[data-step-id="${CSS.escape(id)}"]`)
+      el?.focus()
+    })
+  }
+
+  const move = (ids: Iterable<string>, target: StepMoveTarget, verb: string): boolean => {
+    const next = moveSteps(list, ids, target)
+    if (next === list) {
+      setRefusal("A step cannot go inside itself.")
+      return false
+    }
+    setRefusal(null)
+    onBeforeMove?.(verb)
+    onChange(next)
+    if (target.where === "inside") toggleStepFold(target.id, false)
+    return true
+  }
+
+  const select = (e: MouseEvent, id: string) => {
+    if (e.metaKey || e.ctrlKey) {
+      const next = new Set(selected)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      setSelected(next)
+      setAnchor(id)
+    } else if (e.shiftKey && anchor && visibleIds.includes(anchor)) {
+      const a = visibleIds.indexOf(anchor)
+      const b = visibleIds.indexOf(id)
+      setSelected(new Set(visibleIds.slice(Math.min(a, b), Math.max(a, b) + 1)))
+    } else if (selected.size === 1 && selected.has(id)) {
+      setEditing(id)
+      return
+    } else {
+      setSelected(new Set([id]))
+      setAnchor(id)
+    }
+    focusRow(id)
+  }
+
+  const movingIds = (id: string) => (selected.has(id) ? [...selected] : [id])
+
+  const onRowKey = (e: KeyboardEvent<HTMLElement>, id: string) => {
+    const ids = movingIds(id)
+    const tops = topMostSelected(list, ids)
+    const first = tops[0]
+    const last = tops[tops.length - 1]
+    if (!first) return
+    const siblings = stepSiblings(list, first)
+    const free = siblings.filter((s) => !tops.includes(s.id))
+    const firstAt = siblings.findIndex((s) => s.id === first)
+    const lastAt = stepSiblings(list, last).findIndex((s) => s.id === last)
+    const prevFree = [...siblings.slice(0, firstAt)].reverse().find((s) => free.includes(s))
+    const nextFree = stepSiblings(list, last).slice(lastAt + 1).find((s) => !tops.includes(s.id))
+    const at = visibleIds.indexOf(id)
+    if (e.altKey && e.key === "ArrowUp") {
+      e.preventDefault()
+      if (prevFree) move(tops, { id: prevFree.id, where: "before" }, "move steps up")
+    } else if (e.altKey && e.key === "ArrowDown") {
+      e.preventDefault()
+      if (nextFree) move(tops, { id: nextFree.id, where: "after" }, "move steps down")
+    } else if (e.key === "Tab" && !e.shiftKey) {
+      e.preventDefault()
+      if (prevFree) move(tops, { id: prevFree.id, where: "inside" }, "nest steps")
+    } else if (e.key === "Tab" && e.shiftKey) {
+      e.preventDefault()
+      const parent = stepParentId(list, first)
+      if (parent) move(tops, { id: parent, where: "after" }, "lift steps")
+    } else if (e.key === "ArrowUp" && at > 0) {
+      e.preventDefault()
+      focusRow(visibleIds[at - 1])
+    } else if (e.key === "ArrowDown" && at < visibleIds.length - 1) {
+      e.preventDefault()
+      focusRow(visibleIds[at + 1])
+    } else if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+      e.preventDefault()
+      const step = siblings.find((s) => s.id === id)
+      if (step?.subtasks?.length) toggleStepFold(id, e.key === "ArrowLeft")
+    } else if (e.key === "Enter") {
+      e.preventDefault()
+      setEditing(id)
+    } else if (e.key === " ") {
+      e.preventDefault()
+      setSelected(new Set(selected.has(id) ? [...selected].filter((x) => x !== id) : [...selected, id]))
+      setAnchor(id)
+    }
+  }
+
+  const onTreeKey = (e: KeyboardEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement
+    const inField = !!target.closest("input, textarea, select, [contenteditable='true']")
+    if (e.key === "Escape") {
+      if (inField) return
+      if (selected.size > 0) {
+        e.preventDefault()
+        e.stopPropagation()
+        setSelected(new Set())
+      }
+      return
+    }
+    // Every other key stays in the tree: the ledger's keys act once focus leaves it.
+    e.stopPropagation()
+    if (inField) return
+    const row = target.closest<HTMLElement>("[data-step-id]")
+    if (row && row === target) onRowKey(e, row.dataset.stepId!)
+  }
+
+  // ---- composer ----
+  const addAt = (parentId: string | null, description: string, minutes: number | undefined, stay: boolean) => {
+    const next = addNestedStep(list, parentId, { description, estimatedDuration: minutes })
+    onChange(next)
+    if (parentId) toggleStepFold(parentId, false)
+    if (!stay) {
+      const made = lastChildId(next, parentId)
+      if (made) setComposer({ parentId: made })
+    }
+  }
+  const pasteAt = (parentId: string | null, lines: string[]) => {
+    let next: Subtask[] = list
+    for (const line of lines) next = addNestedStep(next, parentId, { description: line })
+    onChange(next)
+  }
+  const stepOut = (parentId: string | null) => {
+    if (parentId == null) setComposer(null)
+    else setComposer({ parentId: stepParentId(list, parentId) ?? null })
+  }
+  const openComposer = (parentId: string | null) => {
+    if (parentId) {
+      toggleStepFold(parentId, false)
+      setOpenedNext((prev) => new Set(prev).add(parentId))
+    }
+    setComposer({ parentId })
+  }
+
+  // ---- drag ----
+  const onDragStart = (e: DragEvent, id: string) => {
+    const ids = topMostSelected(list, movingIds(id))
+    dragIds.current = ids
+    e.dataTransfer?.setData("text/plain", ids.join(","))
+    if (e.dataTransfer) e.dataTransfer.effectAllowed = "move"
+  }
+  const zoneOf = (e: DragEvent): "before" | "after" | "inside" => {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    if (rect.height <= 0) return "inside"
+    const y = (e.clientY - rect.top) / rect.height
+    return y < 0.28 ? "before" : y > 0.72 ? "after" : "inside"
+  }
+  const onDragOverRow = (e: DragEvent, id: string) => {
+    if (!dragIds.current) return
+    e.preventDefault()
+    const where = zoneOf(e)
+    if (drop?.where !== where || !("id" in drop) || drop.id !== id) setDrop({ id, where })
+  }
+  const onDropAt = (e: DragEvent, target: StepMoveTarget) => {
+    e.preventDefault()
+    const ids = dragIds.current
+    dragIds.current = null
+    setDrop(null)
+    if (ids?.length) move(ids, target, "move steps")
+  }
+  const endDrag = () => {
+    dragIds.current = null
+    setDrop(null)
+  }
+
+  const renderRow = (row: StepViewRow, index: number): ReactNode => {
+    if (row.kind === "more") {
+      return (
+        <div key={`more-${row.parentId}`} className="step-tree-more" style={{ ["--step-depth" as string]: row.depth }}>
+          <button
+            type="button"
+            data-no95
+            className="step-tree-quiet"
+            onClick={() => setOpenedNext((prev) => new Set(prev).add(row.parentId))}
+          >
+            + {row.count} more
+          </button>
+        </div>
+      )
+    }
+    if (row.kind === "add") {
+      if (composer && composer.parentId === row.parentId) return renderComposer(row.parentId, row.depth)
+      const hint = drop && drop.where === "end" && drop.parentId === row.parentId
+      return (
+        <div
+          key={`add-${row.parentId ?? "root"}-${index}`}
+          className={`step-tree-add${hint ? " is-drop" : ""}`}
+          style={{ ["--step-depth" as string]: row.depth }}
+          onDragOver={(e) => {
+            if (!dragIds.current) return
+            e.preventDefault()
+            if (!hint) setDrop({ where: "end", parentId: row.parentId })
+          }}
+          onDrop={(e) => onDropAt(e, { where: "end", parentId: row.parentId })}
+        >
+          <button type="button" data-no95 className="step-tree-quiet" onClick={() => openComposer(row.parentId)}>
+            + step
+          </button>
+        </div>
+      )
+    }
+    const { step, depth, hasKids, locked, peeked } = row
+    const isFolded = folded.has(step.id)
+    const isSelected = selected.has(step.id)
+    const hint = drop && drop.where !== "end" && drop.id === step.id ? drop.where : null
+    const kidCount = step.subtasks?.length ?? 0
+    const composerHere = composer?.parentId === step.id && (!hasKids || isFolded)
+    const tabbable = focusId ? focusId === step.id : visibleIds[0] === step.id
+    return (
+      <div key={step.id} className="step-tree-item" role="none">
+        <div
+          role="treeitem"
+          aria-level={depth + 1}
+          aria-selected={isSelected}
+          aria-expanded={hasKids ? !isFolded : undefined}
+          aria-label={step.description}
+          tabIndex={tabbable ? 0 : -1}
+          data-step-id={step.id}
+          className={[
+            "step-tree-row",
+            step.completed ? "is-done" : "",
+            locked ? "is-locked" : "",
+            isSelected ? "is-selected" : "",
+            peeked ? "is-peek" : "",
+            hint ? `is-drop-${hint}` : "",
+            rowClassName?.(step) ?? "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+          style={{ ["--step-depth" as string]: depth }}
+          onFocus={(e) => {
+            if (e.target === e.currentTarget) setFocusId(step.id)
+          }}
+          onDragOver={(e) => onDragOverRow(e, step.id)}
+          onDragLeave={() => setDrop(null)}
+          onDrop={(e) => onDropAt(e, { id: step.id, where: hint ?? zoneOf(e) })}
+        >
+          {hasKids ? (
+            <button
+              type="button"
+              data-no95
+              tabIndex={-1}
+              className="step-tree-fold"
+              aria-expanded={!isFolded}
+              aria-label={isFolded ? `Show steps under ${step.description}` : `Hide steps under ${step.description}`}
+              onClick={() => toggleStepFold(step.id)}
+            >
+              {isFolded ? "▸" : "▾"}
+              <span className="step-tree-fold-count">{kidCount}</span>
+            </button>
+          ) : (
+            <span className="step-tree-fold is-empty" aria-hidden />
+          )}
+          <input
+            type="checkbox"
+            tabIndex={-1}
+            aria-label={`Done: ${step.description}`}
+            checked={step.completed}
+            onChange={() => onChange(updateNestedStep(list, step.id, { completed: !step.completed }))}
+          />
+          <span
+            className={`step-tree-dot${hasKids ? " is-parent" : ""}`}
+            draggable
+            title="Drag to move. Select several first to move them together."
+            aria-hidden
+            onDragStart={(e) => onDragStart(e, step.id)}
+            onDragEnd={endDrag}
+          />
+          {editing === step.id ? (
+            <input
+              className="step-tree-name-edit"
+              type="text"
+              defaultValue={step.description}
+              autoFocus
+              aria-label="Step name"
+              onBlur={(e) => {
+                const v = e.currentTarget.value.trim()
+                if (v && v !== step.description) onChange(updateNestedStep(list, step.id, { description: v }))
+                setEditing(null)
+                focusRow(step.id)
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") e.currentTarget.blur()
+                if (e.key === "Escape") {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  e.currentTarget.value = step.description
+                  e.currentTarget.blur()
+                }
+              }}
+            />
+          ) : (
+            <button
+              type="button"
+              data-no95
+              tabIndex={-1}
+              className={`step-tree-name${step.completed ? " is-done" : ""}`}
+              title={isSelected && selected.size === 1 ? "Click again to rename" : undefined}
+              onClick={(e) => select(e, step.id)}
+            >
+              {step.description}
+            </button>
+          )}
+          <span className="step-tree-cols">{columns?.(step, { depth, hasKids, locked })}</span>
+          <button
+            type="button"
+            data-no95
+            tabIndex={-1}
+            className="step-tree-child"
+            title="Add a step inside"
+            aria-label={`Add step inside ${step.description}`}
+            onClick={() => openComposer(step.id)}
+          >
+            +
+          </button>
+        </div>
+        {composerHere ? renderComposer(step.id, depth + 1) : null}
+      </div>
+    )
+  }
+
+  const renderComposer = (parentId: string | null, depth: number) => {
+    const parent = parentId ? findStep(list, parentId) : undefined
+    return (
+      <StepComposer
+        key="composer"
+        depth={depth}
+        minutes={composerMinutes}
+        label={parent ? `Add step under ${parent.description}` : "Add step"}
+        onCommit={(d, m, stay) => addAt(parentId, d, m, stay)}
+        onStepOut={() => stepOut(parentId)}
+        onClose={() => setComposer(null)}
+        onPasteLines={(lines) => pasteAt(parentId, lines)}
+      />
+    )
+  }
+
+  return (
+    <div className="step-tree" ref={rootRef} onKeyDown={onTreeKey}>
+      {list.length === 0 ? (
+        <div className="step-tree-empty">
+          {composer ? (
+            renderComposer(null, 0)
+          ) : (
+            <button type="button" data-no95 className="step-tree-quiet is-first" onClick={() => setComposer({ parentId: null })}>
+              Add the first step
+            </button>
+          )}
+          {emptyExtra}
+        </div>
+      ) : (
+        <div role="tree" aria-label={label} aria-multiselectable className="step-tree-rows">
+          {view.rows.map(renderRow)}
+        </div>
+      )}
+      {refusal ? (
+        <p className="step-tree-refusal" role="status">
+          {refusal}
+        </p>
+      ) : null}
+      {selected.size > 1 ? (
+        <p className="step-tree-selection" aria-live="polite">
+          {selected.size} selected · drag a dot to move them · Esc clears
+        </p>
+      ) : null}
+      <WaitingLine hidden={view.hiddenBySwitches} peeking={peek} onPeek={() => setPeek((p) => !p)} />
+    </div>
+  )
+}
