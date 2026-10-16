@@ -7,14 +7,21 @@
  * time since last seen, days until the next birthday) are read here and not
  * stored.
  */
+import type { AddressParts } from "@/lib/pen-place"
+
 export type AddressPrecision = "mailing" | "neighborhood" | "state" | "country"
 
 export interface PersonAddress {
   precision: AddressPrecision
   /** The words known: a street, a neighborhood, a state, or a country. */
   text: string
+  /** Set when the text was picked from map search. */
+  lat?: number
+  lng?: number
+  parts?: AddressParts
 }
 
+/** @deprecated Dated notes fold into `Task.noteLog` (`lib/person-notes-fold.ts`). Old snapshots still carry it. */
 export interface PersonDatedNote {
   id: string
   /** Local day YYYY-MM-DD. */
@@ -61,6 +68,8 @@ export interface PersonProfile {
    * Turning it off does not delete a list that already exists.
    */
   close?: boolean
+  /** The person this vault belongs to ("self", nickname "me"). `lib/people-self.ts`. */
+  self?: boolean
 }
 
 export interface CalendarSpan {
@@ -280,6 +289,25 @@ function cleanDate(value: unknown): string | undefined {
   return typeof value === "string" && parseIsoDate(value) ? value : undefined
 }
 
+const PART_KEYS = ["house", "street", "neighborhood", "city", "county", "state", "country", "postcode"] as const
+
+function cleanCoords(raw: PersonAddress | undefined): Pick<PersonAddress, "lat" | "lng" | "parts"> {
+  const out: Pick<PersonAddress, "lat" | "lng" | "parts"> = {}
+  if (raw && Number.isFinite(raw.lat) && Number.isFinite(raw.lng)) {
+    out.lat = raw.lat
+    out.lng = raw.lng
+  }
+  if (raw?.parts && typeof raw.parts === "object") {
+    const parts: AddressParts = {}
+    for (const key of PART_KEYS) {
+      const value = cleanText(raw.parts[key])
+      if (value) parts[key] = value
+    }
+    if (Object.keys(parts).length > 0) out.parts = parts
+  }
+  return out
+}
+
 function cleanNotes(rows: unknown): PersonDatedNote[] | undefined {
   if (!Array.isArray(rows)) return undefined
   const out: PersonDatedNote[] = []
@@ -339,9 +367,9 @@ function assembleProfile(
   const instagram = instagramOf(raw.instagram)
   const addressText = text(raw.address?.text)
   const precision = raw.address?.precision
-  const address =
+  const address: PersonAddress | undefined =
     addressText && precision && ADDRESS_PRECISIONS.has(precision)
-      ? { precision, text: addressText }
+      ? { precision, text: addressText, ...cleanCoords(raw.address) }
       : undefined
   const relation = text(raw.relation)
   const noteLog = cleanNotes(raw.noteLog)
@@ -352,6 +380,7 @@ function assembleProfile(
   if (nicknames.length > 0) next.nicknames = nicknames
   if (relation) next.relation = relation
   if (raw.close === true) next.close = true
+  if (raw.self === true) next.self = true
   if (dateMet) {
     next.dateMet = dateMet
     if (raw.dateMetEstimated) next.dateMetEstimated = true

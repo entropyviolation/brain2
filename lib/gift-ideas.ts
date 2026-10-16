@@ -45,6 +45,15 @@ export function findGiftIdeasFolder(folders: Folder[]): Folder | undefined {
   )
 }
 
+/**
+ * Still carrying the name Brain2 wrote. A list from before `giftIdeasAutoName`
+ * counts as automatic while its name still reads "Gift ideas for …".
+ */
+export function giftIdeasNameIsAuto(list: Pick<List, "name" | "giftIdeasAutoName">): boolean {
+  if (list.giftIdeasAutoName !== undefined) return list.name === list.giftIdeasAutoName
+  return /^gift ideas for /i.test(list.name.trim())
+}
+
 /** The list tied to this person. Title is not an identity. */
 export function findGiftIdeasList(lists: List[], personId: string): List | undefined {
   if (!personId) return undefined
@@ -93,14 +102,18 @@ export function ensureGiftIdeasForPerson(person: Pick<Task, "id" | "title" | "de
   let listId: string
   if (existing) {
     listId = existing.id
-    if (existing.name !== title || existing.giftIdeasPersonId !== person.id) {
-      store.updateList({ ...existing, name: title, giftIdeasPersonId: person.id })
+    const auto = giftIdeasNameIsAuto(existing)
+    const name = auto ? title : existing.name
+    const autoName = auto ? title : existing.giftIdeasAutoName
+    if (existing.name !== name || existing.giftIdeasPersonId !== person.id || existing.giftIdeasAutoName !== autoName) {
+      store.updateList({ ...existing, name, giftIdeasPersonId: person.id, giftIdeasAutoName: autoName })
     }
   } else {
     listId = giftIdeasListId(person.id)
     store.addList({
       id: listId,
       name: title,
+      giftIdeasAutoName: title,
       color: "#b45309",
       createdAt: new Date(),
       itemLabel: "gift",
@@ -115,14 +128,17 @@ export function ensureGiftIdeasForPerson(person: Pick<Task, "id" | "title" | "de
   return listId
 }
 
-/** Rename an existing list after the person's item title changes. Does not create one. */
+/**
+ * Rename an existing list after the person's item title changes. Does not
+ * create one. A list someone renamed by hand keeps its name.
+ */
 export function renameGiftIdeasList(person: Pick<Task, "id" | "title" | "description">): void {
   const store = useTaskStore.getState()
   const existing = findGiftIdeasList(store.lists, person.id)
-  if (!existing) return
+  if (!existing || !giftIdeasNameIsAuto(existing)) return
   const title = giftIdeasListTitle(itemTitleOrUntitled(person))
-  if (existing.name === title) return
-  store.updateList({ ...existing, name: title })
+  if (existing.name === title && existing.giftIdeasAutoName === title) return
+  store.updateList({ ...existing, name: title, giftIdeasAutoName: title })
 }
 
 /**
