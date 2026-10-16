@@ -460,3 +460,120 @@ body.win95-app .just-start input.just-start-field {
     font-size: 2.75rem;
   }
 }
+
+/* ---- Phase 15 A: Today's choices, the time-box ring, the end-of-sitting strip ---- */
+.just-start-list.is-choices > li {
+  padding: 0;
+  border: 0;
+}
+
+.just-start-choice {
+  display: flex;
+  width: 100%;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.55rem 0.75rem;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  color: #d8dcdf;
+  font: inherit;
+  font-size: 15px;
+  text-align: left;
+  box-shadow: 0 0 0 1px #1f2427;
+  cursor: pointer;
+}
+
+.just-start-choice.is-on {
+  color: #f5f5f5;
+  background: #040a08;
+  box-shadow: 0 0 0 1px var(--js-crt), 0 0 8px rgba(125, 255, 196, 0.18);
+}
+
+.just-start-choice:focus-visible {
+  outline: 1px solid var(--js-crt);
+  outline-offset: 2px;
+}
+
+.just-start-clock-row {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.just-start-ring {
+  flex: 0 0 auto;
+  width: 2.75rem;
+  height: 2.75rem;
+  transform: rotate(-90deg);
+}
+
+.just-start-ring circle {
+  fill: none;
+  stroke-width: 2;
+}
+
+.just-start-ring-track {
+  stroke: #1a1e1c;
+}
+
+.just-start-ring-arc {
+  stroke: #d4d4d4;
+  transition: stroke-dashoffset 1s linear;
+}
+
+.just-start-ring-arc.is-closed {
+  stroke: var(--js-crt);
+}
+
+.just-start-lamp {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 0.35rem;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f4fff8 0 16%, var(--js-crt) 42%, #0b4a32 100%);
+  box-shadow: 0 0 6px rgba(125, 255, 196, 0.7);
+  vertical-align: middle;
+}
+
+.just-start-timer-hint.is-up {
+  color: #e5e5e5;
+}
+
+.just-start-box-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.6rem;
+}
+
+.just-start-box-row .just-start-opener {
+  margin-top: 0;
+}
+
+.just-start-chip.is-on {
+  color: var(--js-crt);
+  box-shadow: 0 0 0 1px var(--js-crt);
+}
+
+.just-start-sitting {
+  position: absolute;
+  left: 50%;
+  bottom: 1.25rem;
+  display: flex;
+  width: min(720px, calc(100vw - 32px));
+  padding: 6px 10px;
+  transform: translateX(-50%);
+  border-radius: 4px;
+  background: linear-gradient(180deg, #15191b, #0a0c0e);
+  box-shadow: 0 0 0 1px #2c3236, 0 8px 22px rgba(0, 0, 0, 0.45);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .just-start-ring-arc {
+    transition: none;
+  }
+}
