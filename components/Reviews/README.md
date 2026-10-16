@@ -7,8 +7,8 @@ document, evaluate). Dialog shells use the shared pin-bar milled fascia
 (`.hpp95` / `components/header-popup-chrome.css`).
 
 **Planned:** stepped walk for every rite, per-task night keys (why, push prompt,
-done-that-day, missed), start / duration / finish times, morning look-ahead
-lists, and the widget Open fix. See [`docs/RITUALS_REDESIGN.md`](../../docs/RITUALS_REDESIGN.md).
+done-that-day, missed), start / duration / finish times, and morning look-ahead
+lists. The widget Open fix (Phase 0) is built. See [`docs/RITUALS_REDESIGN.md`](../../docs/RITUALS_REDESIGN.md).
 
 Internal persistence still uses `PeriodReview` / `reviews-store` so existing
 data opens unchanged. User-facing copy is Rituals.
@@ -19,7 +19,7 @@ Other rooms may import:
 
 - `Reviews` from `reviews.tsx` — header Rituals control (`Rituals` is the same component). The pin bar keeps a thin key (`components/header-doors.tsx`) and loads this room the first time that key is pressed; the next press opens the menu. The mobile shell mounts it (`components/Mobile/MobileApp.tsx`).
 - `PostMortemDialog` from `PostMortemDialog.tsx` — Analytics opens a task reflection (`components/Analytics/ReflectionView.tsx`).
-- `RitualWalkDialog` from `RitualWalkDialog.tsx` — Home → To Do opens the rite for that calendar day.
+- `RitualWalkDialog` from `RitualWalkDialog.tsx` — Home → To Do opens the rite for that calendar day. The Home **Rituals** square opens its rows with it too (`components/Home/home-review-banner.tsx`, via `ritualSlotPlacement` / `starLordSlotPlacement` in `lib/ritual-todo.ts`).
 
 This room writes **`lib/reviews-store.ts`** (`useReviewsStore`: `saveReview`, `replaceMorningReview`, `replaceStartRitual`). `PostMortemDialog` saves the task reflection through `saveCompletionReview` in `lib/services/completion-service.ts`.
 
