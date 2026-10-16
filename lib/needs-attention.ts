@@ -138,8 +138,8 @@ function isOverdue(task: Task, now: Date): boolean {
 }
 
 function isUnclarified(task: Task): boolean {
-  // Monkey brain is a dump, not a pile the user means to revisit.
-  return task.stage === "inbox" && task.monkeyBrain !== true
+  // Monkey brain is a dump, not a pile the user means to revisit. Links are their own pile.
+  return task.stage === "inbox" && task.monkeyBrain !== true && task.savedLink == null
 }
 
 function isBlocked(task: Task, clearedById: Map<string, boolean>): boolean {

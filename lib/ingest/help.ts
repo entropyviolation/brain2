@@ -51,6 +51,7 @@ Plan / capture
 • plan for rn:  lines…  — today's plan log (stamped “from text”)
 • plain text (no verb) → log  ·  inbox: → Inbox  ·  -i / -inbox at the end → also Inbox
 • -mb / -monkey → Monkey brain  ·  -p / -plain → Inbox as written
+• https://… or wikipedia.com first → Inbox → Links; words after the link are the note
 • gm — morning review · help  ·  info  ·  all commands
 Pair: pair: 123456  ·  Settings → Message ingest`
 
@@ -173,6 +174,7 @@ CAPTURE / LISTS
 • -i or -inbox at the end of any message → it still goes where it was going, and the text after the verb also lands in Inbox
   (thought process: fix the car -i → thought process + Inbox · fix the car -i → log + Inbox · inbox: fix the car → Inbox only)
 • -mb or -monkey on the line → Monkey brain (dump; less than Inbox)
+• A message that starts with a link → Inbox → Links; the words after it are the note
 • -p or -plain on the line → Inbox, stored as written (no list, date, time, or priority)
 • Dates, times, duration, and priority stay in the title. list: item still creates the list. A name may contain digits (brain2: item is the list brain2).
 • folder: all: item — that folder's All Items (all items works too). Not a list named all. Same on a bulk header: Folder: all:
