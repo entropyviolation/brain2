@@ -23,8 +23,8 @@ one global "why", and stamp Done at the wrong time.
 
 | Piece | Where | Notes |
 |-------|-------|-------|
-| Home widget | `components/Home/home-review-banner.tsx` (~205 lines) | Tile + detail (`HomeWidgetDialog`). Every **Open** clicks `[data-rituals-entry]` or calls `onStartReview` |
-| `onStartReview` | `components/Home/home-dashboard.tsx` ~121 | Also only clicks `[data-home-review-entry]`. Never opens a rite |
+| Home widget | `components/Home/home-review-banner.tsx` | Tile + detail (`HomeWidgetDialog`). **Open** renders `RitualWalkDialog` itself (Phase 0) |
+| `onStartReview` | `components/Home/home-dashboard.tsx` ~121 | Dead since Phase 0. Still clicks the header door if anything called it |
 | Header door | `components/header-doors.tsx` ~183 | Lazy. The first click only loads the room. After load, `<Rituals />` replaces the button, so a click opens the menu, not a rite |
 | Rite by slot | `components/Reviews/RitualWalkDialog.tsx` | Takes a `RitualTodoPlacement` (`lib/ritual-todo.ts` ~71). Opens morning / end / start / Star Lord directly |
 | Night + end dialog | `components/Reviews/reviews.tsx` `ReviewDialog` ~82; sections ~305–510 | One long scroll. Unfinished list ~305: one shared `WhyBlockedControl`, `markDone` ~140 sets `completed: true` (completion popup fires with `completedAt` = now), `pushToNext` ~145 |
@@ -37,21 +37,27 @@ one global "why", and stamp Done at the wrong time.
 | Later reflection | `PostMortemDialog.tsx` | Satisfaction, resistance, focus, distraction 1–10 + note |
 | Completion popup | `components/Completion/` | Fires on any false→true `completed` |
 
-## Phase 0 — Fix the widget's Open (bug)
+## Phase 0 — Fix the widget's Open (done)
 
-**Bug:** Open in the widget's detail view does not open the rite. Every Open
-clicks the header button. That button is lazy: the first click loads the room
-and does nothing else. After that it opens the menu, and the detail dialog is
-closing at the same moment, so the menu often closes again.
+_Last mapped: 2026-10-16_
 
-**Fix:**
-- Add `ritualSlotPlacement(slot)` in `lib/ritual-todo.ts` that maps an
-  available slot (`lib/rituals.ts`) or Star Lord slot to a `RitualTodoPlacement`.
-- The widget holds `walk` state and renders `RitualWalkDialog` itself (loaded
-  with `next/dynamic` so Home does not parse the room early).
-- Close the detail dialog first, then open the rite on the next frame.
-- Tile **Open** and detail **Open** use the same path. Drop the DOM clicks.
-- Test: detail Open on night, start, end, and Star Lord rows mounts that dialog.
+**Was:** every Open in the widget clicked the header Rituals door. The door is
+lazy: the first press only loads the room, later presses open the menu. The
+detail was closing at the same moment, so the menu often closed again. No
+press ever reached the rite.
+
+**Built:**
+- `ritualSlotPlacement(slot)` and `starLordSlotPlacement(slot)` in
+  `lib/ritual-todo.ts` turn a menu slot into a `RitualTodoPlacement`.
+- `components/Home/home-review-banner.tsx` holds the open walk and renders
+  `RitualWalkDialog` (`next/dynamic`). The tile key, the banner key, and each
+  detail row use `openWalk`: close the detail, open the rite next frame.
+- The rite stays mounted when the square hides (last rite saved, Dismiss).
+- `onStartReview` is accepted and unused. `home-dashboard.tsx` still passes
+  its old door click; it is dead and can go when that file is free.
+- Tests: `components/Home/home-review-banner.test.tsx` (night, week start from
+  the detail, Star Lord), `lib/ritual-todo.test.ts` (slot placements), and the
+  rituals case in `components/Home/home-overview.test.tsx`.
 
 ## Phase 1 — Stepped walk for every rite
 
