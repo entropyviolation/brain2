@@ -5,19 +5,49 @@ where one record shows every honest join — tags, typed links, lists, schedule,
 body, history — so the same item can be **used in as many rooms as possible**
 (Lists, Scheduler, Tracking, Modules, Reviews, Analytics). Isolation is a bug.
 
-> **Planned.** Unsaved guard on every way out, and a rich Links tab for
-> every item: [`docs/PERSON_DETAIL_REDESIGN.md`](../../docs/PERSON_DETAIL_REDESIGN.md).
+> **Planned.** The rest of the person Details redesign:
+> [`docs/PERSON_DETAIL_REDESIGN.md`](../../docs/PERSON_DETAIL_REDESIGN.md).
 
-## Known gaps
+## Leaving with unsaved changes
 
 _Last mapped: 2026-10-16_
 
-- The popup's list-badge double-click (`handleNavigateToList`) calls
-  `onClose()` directly, so it skips the unsaved guard and drops edits.
-  Opening a linked or referenced item (`setOverrideId`) skips it too.
-- The popup computes `isDirty` at render with a deep compare. It can be
-  stale after `touchDraft` keystrokes.
-- The page (`EnhancedTaskDetail`) has no unsaved guard. Back leaves at once.
+Every way out asks first when the draft is dirty: ×, Esc, overlay, the
+page's Back, a list badge double-click, opening a linked or referenced item,
+and Habit settings. Both shells pass `isDraftDirty` (a live ref compare from
+`useItemDetailDraft`) to `useUnsavedGuard` and route those exits through
+`guardAction`. `useItemDetailUnloadGuard` asks the browser before a reload or
+window close while dirty.
+
+## Links tab
+
+_Last mapped: 2026-10-16_
+
+`components/ItemDetail/links/` is the Links tab for every item: the popup's
+**Links** tab and the page's Related card (composer only while editing).
+
+- `RichLinksPanel.tsx` — constellation, then composer, then ledger.
+  `useItemEdges(task)` gives the edges (and the tab key's count).
+- `LinkConstellation.tsx` — CRT well; the item's orb in the center, linked
+  orbs in family sectors (`lib/link-constellation-layout.ts`). Solid cord with
+  an arrow at the other orb: this item says it. Dashed, flowing in: the other
+  item says it. Twin strand: both. Dotted: suggested. Press the well to stir;
+  grab an orb to fling it. Reduced motion shows the end state. Double-click an
+  orb opens that item (guarded). **Their links** shows the second ring.
+- `LinkComposer.tsx` — "{title} [relation] [item] Link". The relation box lists
+  relations made for this item's type, the person's own, then open ones.
+  Typing a new phrase offers **Create**, which asks for the reverse phrase or
+  Same both ways, and the From / To types. That writes the relation vocabulary
+  at once; the link itself is a draft edit.
+- `LinkTargetSearch.tsx` — title, full name, nicknames, description; orb, type,
+  first list. A relation that points at people offers **New person**.
+- `LinkLedger.tsx` — rows grouped by how the relation reads from this item.
+  → own link (Remove), ← the other item's (Confirm adds the reciprocal here),
+  ⇄ both, ⋯ suggested (Pin, Dismiss → `Task.dismissedLinkSuggestions`).
+
+Edges come from `lib/link-graph.ts`; relations from `lib/links.ts` and
+`lib/relation-registry.ts`; people's suggested edges from
+`lib/self-relations.ts`. `LinkPicker` and `RelatedItemsPanel` are gone.
 
 ## Public door
 
@@ -28,7 +58,7 @@ Popup and page are both public entries.
 
 `useItemDetailDraft` is an interior. Its callers are the popup and the page.
 
-Interiors (imported from this folder): `useItemDetailDraft`, `ItemSaveFlag`, `useItemDetailSaveHotkey`, `BodyPanel`, `HabitLinkedDetail`, `TodoCommitmentFields`, `ItemEstimateField`, `ItemScheduleFlags`, `ReminderScheduleFields`, `ItemAttributesSection`, `AttributeCreator`, `TagInput`, `LinkPicker`, `RelatedItemsPanel`, `ItemActivityPanel`, `CycleConfirmDialog`, `SubtaskTree`, `item-detail-chrome.css`.
+Interiors (imported from this folder): `useItemDetailDraft`, `ItemSaveFlag`, `useItemDetailSaveHotkey`, `BodyPanel`, `HabitLinkedDetail`, `TodoCommitmentFields`, `ItemEstimateField`, `ItemScheduleFlags`, `ReminderScheduleFields`, `ItemAttributesSection`, `AttributeCreator`, `TagInput`, `links/RichLinksPanel` (and its parts), `ItemActivityPanel`, `useItemDetailUnloadGuard`, `CycleConfirmDialog`, `SubtaskTree`, `item-detail-chrome.css`.
 
 Item writes: save / complete / status / reminder / notes / Sent go through
 `useItemDetailDraft.commitDraft` → `commitItemEdit` (patch + History line).
@@ -176,9 +206,8 @@ Attribute Demo item →** creates it if missing and opens it.
 | `AttributeCreator.tsx` | Inline control for defining a brand-new typed attribute: a type palette grouped by Words / Numbers / Choices / Time / Media / References with a description of the chosen type, its settings (options, unit, labels, formula, scope), name, target, and initial value. The attribute can be added to one of the item's lists — persisted onto that list's `itemAttributes` schema so every item in the list gains it — or kept on just this item. Props: `categories`, `itemCategoryIds`, `existingIds`, `onCreate(def, value, listId)`. |
 | `ItemTagChip.tsx` | One item-tag chip. Value is the string name. When `normalizeTag(name)` matches a Tracking catalog tag, shows that tag’s color bead. Double-click opens `openTagSettings(id)` or `openTagSettingsFromName(name)`. Used by `TagInput` and Item Detail view-mode badges. |
 | `TagInput.tsx` | Presentational chip/token tag editor. Renders applied tags as removable `ItemTagChip`s and a text field that adds a tag on Enter/comma, with autocomplete suggestions drawn from all tags in use across `taskRepository.getAll()` (catalog matches show a bead in the list). Normalization via `lib/links.ts`. Props: `tags`, `onAdd`, `onRemove`. Chips stay strings. They are not Tracking tag ids. A Tracking catalog rename follows a string that used the old normalized name (`lib/catalog-tag.ts`). |
-| `LinkPicker.tsx` | Presentational control for adding a typed link: a relation `Select` from the `lib/links.ts` `RELATIONS` catalog plus a target-item typeahead searching the repository by title/description (excluding the current item). Props: `sourceId`, `onAdd(relation, targetId)`. |
-| `RelatedItemsPanel.tsx` | Shows an item's relationships: outgoing links grouped by relation (each removable) and discovered backlinks labelled with the inverse relation (e.g. "Y blocks X" surfaces as "blocked by Y" on X) via `useTaskStore.getBacklinks`. Rows open the linked item. Props: `task`, `onOpenItem(id)`, `onRemoveLink(linkId)`. |
-| `ItemDetail.test.tsx` | Vitest coverage for the presentational pieces: `TagInput` (add/remove, catalog bead, double-click → tag settings), `LinkPicker` (search + add link), and `RelatedItemsPanel` (forward links, removal, inverse-labelled backlinks). |
+| `links/` | The Links tab. See **Links tab** above. |
+| `ItemDetail.test.tsx` | Vitest coverage for the presentational pieces: `TagInput` (add/remove, catalog bead, double-click → tag settings), and `RichLinksPanel` (sentence add, remove, inverse-labelled incoming links with Confirm, one mutual row, Create a relation, a suggested edge with Dismiss). |
 | `ItemDetailPopup.test.tsx` | Popup hides scheduling / Complete / scheduler chrome for non-task types (e.g. Furniture). History tab; save records the ledger. |
 | `ItemDetailPage.test.tsx` | Full-screen detail follows `resolveDetailView`; Task chrome gated. History tab; save records estimated-duration changes. A habit-linked item shows notes, a completion summary, and **Habit settings**. A generic item does not. The list chip opens that list id. |
 
@@ -252,10 +281,10 @@ A Tracking catalog rename can rewrite a string that used the old normalized name
 Context badges are not Tags and never open tag settings. The detail view does not
 grow a second habit-tag editor and does not store `TrackTag` ids on `task.tags`.
 Both detail variants mount a "Tags" section (`TagInput` in edit; matching chips
-in page view mode) and related items (`LinkPicker` + `RelatedItemsPanel`: the
+in page view mode) and related items (`RichLinksPanel`: the
 popup's **Links** tab, the page's Related card) wired to the shared draft mutators. "Open item" navigation is handled in-place:
-each variant keeps a local `overrideId` so clicking a related/backlinked row
-swaps the detail view to that item without leaving the surface (reset when the
+each variant keeps a local `overrideId` so opening a linked row (through
+the unsaved guard) swaps the detail view to that item without leaving the surface (reset when the
 host opens a new item).
 
 ## Import paths

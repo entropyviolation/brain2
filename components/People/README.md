@@ -5,19 +5,33 @@ People I Know, shown in more than one room.
 > **Planned.** Person detail redesign and rich Links:
 > [`docs/PERSON_DETAIL_REDESIGN.md`](../../docs/PERSON_DETAIL_REDESIGN.md).
 
-## Known gaps
+## What changed, what is still open
 
 _Last mapped: 2026-10-16_
 
-- Every person text field is a controlled input. Each keystroke calls
-  `setTask`, so the whole item popup re-renders. That is the typing lag
-  (plan step 1.1).
-- Person fields in `person-detail.css` have no inner padding.
-- `ensureCloseGiftIdeas` (every hydrate) and `noteSavedPeople` (title
-  change) rewrite the Gift ideas list name to "Gift ideas for {title}". A
-  rename made in Lists does not survive (plan step 3.4).
-- `assembleProfile` in `lib/person-profile.ts` rebuilds the profile field
-  by field. A new profile field is dropped unless it is added there.
+- **Self.** People I Know gets one item titled "self" (nickname "me",
+  `personProfile.self`) after hydrate (`lib/people-self.ts`). A delete sticks.
+- **Gift ideas list name.** Brain2 renames the list after the person only while
+  the list still has the name Brain2 wrote (`List.giftIdeasAutoName`). A list
+  renamed in Lists keeps its name.
+- **Dated notes** fold into the item's Notes log (persist v19,
+  `lib/person-notes-fold.ts`). The Details tab still shows the old Notes and
+  Dated notes fields until plan step 3.3 removes them.
+- **Address** keeps coordinates and parts when picked from map search
+  (`PersonAddress.lat` / `lng` / `parts`). The search field
+  (`components/ui/address-suggest-input.tsx`) is built and not wired yet.
+- **Company pen rows**: double-click the color or the name to open pen settings.
+- **Links**: the Links tab is the rich one for every item
+  (`components/ItemDetail/links/`). On a person it also suggests self's link
+  from the Relation word (`lib/self-relations.ts`, `RELATION_WORDS` in
+  `lib/person-relations.ts`).
+- **Still open:** typing lag (every person text field still calls `setTask` per
+  key), field padding, the Details layout and orb well, the Gift ideas key and
+  popup, moving Company pens up. All of these are one rewrite of
+  `person-detail.tsx` (plan steps 1.1, 2.1, 3.1–3.5). `person-nicknames.tsx`
+  and `person-log.tsx` are staged for it and not imported yet.
+- `assembleProfile` in `lib/person-profile.ts` rebuilds the profile field by
+  field. A new profile field is dropped unless it is added there.
 
 The list itself is created by `lib/people-i-know.ts` after the task vault
 hydrates. Birthday and standing notes stay attributes on the catalog Person
@@ -68,6 +82,8 @@ A later kind stays on the row. Adding a kind is a new `kind` in
 | `lib/people-sync.ts` + `lib/people-sync-runner.ts` | Started from `usePeopleIKnowList`. Keeps one person in three places matched by name: a who-pen detail gets a Company pen (Person level); a Company person gets a cross-view detail on every who pen; every Company person pen gets a People I Know item joined by `company-pen` (existing pipeline, else same name, else new). Out of undo. One-time backfill (`brain2-people-backfill-v1`) mirrors existing Social ↔ Company blocks (blank minutes only). |
 | `person-detail.css` | Plaque, fields, and log rows. |
 | `person-detail.test.tsx` | Birthday countdown and cake, known-for, last saw, address, notes, logs, gift notes, relation, Close and the gift list. |
-| `person-pipelines.tsx` | The editor. `mode="person"` writes the item draft and lists Company blocks from joined pens. `mode="pen"` attaches a person to a pen. `mode="entry"` shows the people on that pen. `mode="list"` writes stored joins. Pen, entry, and list modes write the task store immediately. |
+| `person-nicknames.tsx` | **Staged, not imported.** Nicknames as chips inside one field (Enter / comma / + adds, Backspace removes the last). |
+| `person-log.tsx` | **Staged, not imported.** The dated log from `person-detail.tsx`, split out for the Details rewrite. |
+| `person-pipelines.tsx` | The editor. Double-click a pen row's color or name to open pen settings (`penColorDoubleClick`). `mode="person"` writes the item draft and lists Company blocks from joined pens. `mode="pen"` attaches a person to a pen. `mode="entry"` shows the people on that pen. `mode="list"` writes stored joins. Pen, entry, and list modes write the task store immediately. |
 | `person-pipelines.css` | Row and add-control layout. Dialog chrome stays with the host (item detail, list settings, tracking). |
 | `person-pipelines.test.tsx` | Add a pen on a person, create a person from a pen, show a stored timeblock in list settings, show blocks from pen color, show people on a block by pen. |
