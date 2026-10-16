@@ -4,7 +4,8 @@
  * One persist blob for every Home sub-tab (Habits / Plan / To Do / Goals /
  * Tracking). Order + hidden ids, plus whether the overview squares follow
  * the wall clock. Points math and review flow stay elsewhere. Storage:
- * `brain2-home-widgets`. Persist **v9** appends Already flowing and Plan and
+ * `brain2-home-widgets`. Persist **v10** appends Vocab and shows it.
+ * Persist **v9** appends Already flowing and Plan and
  * lived and leaves them hidden. Persist **v8** adds `widgetsFollowClock` and
  * leaves it off, so existing vaults keep the day being viewed. Persist **v7** places
  * Moon after Days Until and leaves it showing. Persist **v6** places Latest
@@ -67,7 +68,7 @@ export const useHomeWidgetsStore = create<HomeWidgetsState>()(
     }),
     {
       name: persistKey("home-widgets"),
-      version: 9,
+      version: 10,
       storage: createCogsJSONStorage(),
       partialize: (state) => ({
         order: state.order,

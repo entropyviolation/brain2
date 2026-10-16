@@ -38,6 +38,7 @@ import { AlreadyFlowingTile, PlanAndLivedTile } from "@/components/Home/home-rea
 import { MoonTile } from "@/components/Home/home-moon-tile"
 import { SolarRemainderTile } from "@/components/Home/home-solar-tile"
 import { TrackingNowTile } from "@/components/Home/home-tracking-tile"
+import { VocabTile } from "@/components/Home/home-vocab-tile"
 import { HomeWidgetDialog, TileHide, WidgetWell, WidgetWells } from "@/components/Home/home-widget-dialog"
 import { PointsBoard } from "@/components/Home/points-stats"
 import { useHomeDayStats } from "@/components/Home/home-day-stats"
@@ -146,6 +147,9 @@ export function HomeOverview({ currentDate, onStartReview, onOpenHomeTab }: Home
         }
         if (id === "paint") {
           return <PlanAndLivedTile key={id} currentDate={currentDate} onHide={() => hideWidget("paint")} />
+        }
+        if (id === "vocab") {
+          return <VocabTile key={id} currentDate={currentDate} onHide={() => hideWidget("vocab")} />
         }
         if (id === "pet") {
           return <ScreenPetTile key={id} currentDate={currentDate} onHide={() => hideWidget("pet")} />

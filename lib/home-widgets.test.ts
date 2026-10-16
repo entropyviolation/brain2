@@ -73,6 +73,7 @@ describe("home widget catalog", () => {
       "solar",
       "moon",
       "daysuntil",
+      "vocab",
     ])
   })
 
@@ -136,7 +137,7 @@ describe("home widget catalog", () => {
       },
       2,
     )
-    expect(folded.order).toEqual(["review", "points", "award", "progress", "moon", "flow", "paint"])
+    expect(folded.order).toEqual(["review", "points", "award", "progress", "moon", "flow", "paint", "vocab"])
     expect(folded.hidden).toContain("points")
     expect(folded.hidden).not.toContain("today")
     const kept = migrateHomeWidgetPersist(
@@ -169,13 +170,13 @@ describe("home widget catalog", () => {
       8,
     )
     expect(next.widgetsFollowClock).toBe(true)
-    expect(next.order.slice(-2)).toEqual(["flow", "paint"])
+    expect(next.order.slice(-3)).toEqual(["flow", "paint", "vocab"])
     expect(next.hidden).toEqual(["solar", "flow", "paint"])
     const kept = migrateHomeWidgetPersist(
       { order: ["review", "flow", "paint"], hidden: ["paint"], widgetsFollowClock: false },
       9,
     )
-    expect(kept.order).toEqual(["review", "flow", "paint"])
+    expect(kept.order).toEqual(["review", "flow", "paint", "vocab"])
     expect(kept.hidden).toEqual(["paint"])
     expect(kept.widgetsFollowClock).toBe(false)
   })
@@ -185,8 +186,17 @@ describe("home widget catalog", () => {
       { order: ["review", "points", "award", "daysuntil", "solar"], hidden: ["solar"] },
       6,
     )
-    expect(next.order).toEqual(["review", "points", "award", "daysuntil", "moon", "solar", "flow", "paint"])
+    expect(next.order).toEqual(["review", "points", "award", "daysuntil", "moon", "solar", "flow", "paint", "vocab"])
     expect(next.hidden).not.toContain("moon")
+  })
+
+  it("appends Vocab showing when migrating a v9 blob", () => {
+    const next = migrateHomeWidgetPersist({ order: ["review", "points"], hidden: ["vocab", "solar"] }, 9)
+    expect(next.order).toEqual(["review", "points", "vocab"])
+    expect(next.hidden).toEqual(["solar"])
+    const kept = migrateHomeWidgetPersist({ order: ["vocab", "review"], hidden: ["vocab"] }, 10)
+    expect(kept.order).toEqual(["vocab", "review"])
+    expect(kept.hidden).toEqual(["vocab"])
   })
 
   it("counts calendar days until a label", () => {

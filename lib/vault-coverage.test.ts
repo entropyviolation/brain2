@@ -61,6 +61,7 @@ const PREF_ONLY_VAULTS: Record<string, string> = {
   "cogs-home-weather": "one place object for the Home weather instrument",
   "cogs-home-days-until": "countdown / count-up tiles: label, date, optional time, format, mode, optional Plan event link and all-day schedule",
   "cogs-sky-motion": "Moon chart view width and time rate; reset restores real time",
+  "cogs-home-vocab": "Vocab widget: language views, level per language, today's shuffle, favorited words",
   "cogs-sun-times": "astronomy cache; a reset is allowed to empty it, and backup still keeps the history",
   "cogs-ui-names": "overlay mode string",
   "cogs-log-keywords": "saved log phrases the person can empty; not tracker rows",
