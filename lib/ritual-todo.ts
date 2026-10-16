@@ -35,7 +35,7 @@
 import type { PeriodReview, ReviewPeriod, Task } from "@/lib/types"
 import { getWeekString } from "@/lib/date-utils"
 import { lunarOccasion } from "@/lib/lunar"
-import { endRitualPhase, startRitualPhase } from "@/lib/rituals"
+import { endRitualPhase, startRitualPhase, type RitualSlot } from "@/lib/rituals"
 import { getPeriodKey, localDayKey, morningReviewPhase } from "@/lib/reviews-store"
 import { quarterKey } from "@/lib/seasons"
 import {
@@ -45,6 +45,7 @@ import {
   starLordReportId,
   type StarLordKind,
   type StarLordReport,
+  type StarLordSlot,
 } from "@/lib/star-lord"
 
 export const RITUAL_TODO_PREFIX = "ritual-todo:"
@@ -139,6 +140,35 @@ function starLordRite(occasion: StarLordKind, day: Date, dateKey: string): Ritua
     dateKey,
     walk: { type: "star-lord", occasion, dateKey },
   }
+}
+
+function dayFromKey(dateKey: string): Date {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey)
+  return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12, 0, 0) : noon(new Date())
+}
+
+/**
+ * The walk behind a Rituals menu slot (`listAvailableRituals`), so a caller
+ * can open that rite directly with `RitualWalkDialog`. Day slots carry the
+ * day key; week to year slots carry their period key. The walk does not
+ * read the calendar date of a period slot, so that is today.
+ */
+export function ritualSlotPlacement(slot: RitualSlot): RitualTodoPlacement {
+  if (slot.period === "day") {
+    const day = dayFromKey(slot.periodKey)
+    const kind = slot.kind === "day-morning" ? "day-morning" : "day-night"
+    return daily(kind, slot.title, day, slot.periodKey)
+  }
+  const period = slot.period
+  const phase = slot.phase === "start" ? "start" : "end"
+  const kind = `${period}-${phase}` as RitualTodoKind
+  const day = noon(new Date())
+  return periodRite(kind, `${slot.title} · ${slot.periodTitle}`, phase, period, slot.periodKey, day, localDayKey(day))
+}
+
+/** The walk behind a Star Lord slot (`listAvailableStarLordSlots`). */
+export function starLordSlotPlacement(slot: StarLordSlot): RitualTodoPlacement {
+  return starLordRite(slot.kind, dayFromKey(slot.dateKey), slot.dateKey)
 }
 
 /**

@@ -13,7 +13,58 @@ import {
   TODO_STATUS_FILTERS,
   getTodoSortOptionLabel,
 } from "./todo-utils"
-import { MIN_WIP_LIMIT, MAX_WIP_LIMIT } from "./todo-prefs"
+import { MIN_WIP_LIMIT, MAX_WIP_LIMIT, setTodoPrefs, useTodoPrefs, type TodoTierView } from "./todo-prefs"
+
+const TIER_CHOICES: { value: TodoTierView; short: string; title: string }[] = [
+  { value: "all", short: "All", title: "Every step" },
+  { value: "min", short: "B", title: "Bare minimum: did enough that it counts" },
+  { value: "goal", short: "G", title: "Goal: what was intended (includes Bare minimum)" },
+  { value: "exceptional", short: "E", title: "Exceptional: above and beyond (includes all)" },
+]
+
+/** Tier (Phase 10): every lid shows that level's view. Self-wired to `todo-prefs`. */
+function TierKeys() {
+  const { tierView } = useTodoPrefs()
+  return (
+    <div className="todo-segment todo-tier-keys" role="radiogroup" aria-label="Step tier">
+      <span className="todo-label">Step tier</span>
+      {TIER_CHOICES.map(({ value, short, title }) => (
+        <button
+          key={value}
+          type="button"
+          role="radio"
+          aria-checked={tierView === value}
+          className={`todo-chiclet${tierView === value ? " is-on" : ""}`}
+          title={title}
+          onClick={() => setTodoPrefs({ tierView: value })}
+        >
+          {short}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+/** Hide locked and Show next only (Phase 9), and the Tier filter. Self-wired to `todo-prefs`. */
+function StepViewKeys() {
+  const { hideLocked, showNextOnly } = useTodoPrefs()
+  return (
+    <>
+      <TierKeys />
+      <label
+        className="todo-key-check"
+        title="Hide steps and tasks waiting on an open prerequisite. Unfinished is not locked. They come back when the prerequisite is done."
+      >
+        <input type="checkbox" checked={hideLocked} onChange={(e) => setTodoPrefs({ hideLocked: e.target.checked })} />
+        Hide locked
+      </label>
+      <label className="todo-key-check" title="A branch shows only its next step and how many more. One click opens it.">
+        <input type="checkbox" checked={showNextOnly} onChange={(e) => setTodoPrefs({ showNextOnly: e.target.checked })} />
+        Show next only
+      </label>
+    </>
+  )
+}
 
 export function TodoFilters({
   period,
@@ -97,6 +148,7 @@ export function TodoFilters({
             Rites follow the sun
           </label>
         ) : null}
+        <StepViewKeys />
         <label className="todo-filter-field">
           <span className="todo-label" id="status-filter-label">
             Status

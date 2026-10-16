@@ -119,6 +119,8 @@ Every item, not only tasks, gets these tabs:
   audio / video / text preview in the viewer well, with Open, Download, and a
   caption. Remove takes it off the draft and keeps the stored bytes so Discard
   can bring it back. Text is extracted in the background where possible.
+  On desktop a file or folder can be **linked** instead of copied (see
+  Linked resources below).
 - **Links** — the Related picker and backlinks (moved out of the rail).
 
 Notes and Resources are `ItemDetailPanel`s that `resolveDetailView` adds to
@@ -163,10 +165,11 @@ Attribute Demo item →** creates it if missing and opens it.
 | `ReminderScheduleFields.test.tsx` | Omitted flags read as on. Text me off and Persistent off keep the sent mark. |
 | `ItemDetailPopup.tsx` | Compact modal/popover detail view used inline by Scheduler, Plan, To-Do, and the friend mission sheet. `data-ui-name="Item detail"` on `DialogContent`. Tabs are `resolveDetailView` output (type + lists + capabilities). A Reminders-list item shows When / Repeat / Text me / Persistent at the top of Details; those fields write through immediately. A People I Know person (catalog type person, or an item on that list) shows the biography first (`PersonDetail`: full name, nicknames, optional relation, date met with Est., how long known, time since last seen, Instagram, address precision, standing notes, dated notes, interactions, gift notes, Close, and days until the next birthday). Close creates the Gift ideas list; the folder list and the gift notes are labeled apart. The plaque draws a pixel cake that matches the milled fascia and the phosphor candle. A later folder of cute cake PNGs, the same idea as willpower gemstones and list orbs, is not built in this step, and this plaque does not load images. **Pipelines** follow (a Company pen; Company time is the blocks painted with that pen). Birthday and standing notes are edited in the biography, so Attributes omits those two ids. Includes the in-popup completion flow when the type is completable. Exports `TaskDetailPopup`. `stackAbove` paints it over another open dialog (the mission sheet stays underneath). Last tab per item is restored. The fascia lamp shows **Saved** or **Unsaved changes** the whole time the popup is open. Dirty close (draft vs stored task) uses the house unsaved-changes guard. Double-click a list badge closes the popup, then `requestNavigateToListAfterPaint` jumps Lists on the next frame so a large list does not freeze the detail view. Save / complete / missed / delete / subtasks handlers stay here (complete closes; subtasks are draft-only, edited in `SubtaskTree`). |
 | `HabitLinkedDetail.tsx` | Details main pane for an item whose `sourceHabitId` attribute is set. Notes editor (`task.notes`) plus a read-only habit summary, including **Counts:** / **Minutes:** tag wiring (names only). **Habit settings** returns to that habit’s edit window. |
-| `SubtaskTree.tsx` | Subtasks tab editor for both shells, shaped like Tidy's breakdown: add a step with minutes, then + on any step adds steps inside it, as deep as you like. Each add row stays open after Add. Rename and minutes edit in place. A step's minutes count as its own estimate or the sum inside (`lib/todo-steps`), shown as `=Nm`. Checking a step does not check its parent. Fold state is local. |
+| `SubtaskTree.tsx` | _Last mapped: 2026-10-16_ Subtasks tab for both shells. Phase 11: `onOpenStep` (dot click and ↗ open the step's item on top) and `StepItemSubtasks` (a step item's Subtasks tab). A host of the shared `StepTree` (`components/steps/`), the same tree as the To Do lid. Columns: parts (`n/m`), minutes (edit in place), `=Nm` when the steps inside add up to more, delete. No blank add rows: **Add the first step**, a hover **+** per row, one **+ step** per open branch; composer keys as in the lid. Drag the dot or use Alt+↑/↓, Tab, Shift+Tab to move; Shift/Cmd-click selects several. Folds are remembered per step. Hide locked and Show next only stay off here. Checking a step does not check its parent. |
 | `ItemDetailPage.tsx` | Full-screen detail/editor opened from the app shell (`data-ui-name="Item detail"` on the page root). Names still runs via the layout host. Task-only chrome (duration, urgency, molecular breakdown) is gated; other types get an adapted details view. A Reminders-list item shows When / Repeat / Text me / Persistent on Details; those fields write through immediately. A People I Know person shows the biography (optional relation, Close, gift notes, and the Gift ideas list when that list exists), then **Pipelines** (Company time follows the joined pen), on Details. Birthday and standing notes are edited in the biography. The birthday plaque draws a pixel cake; a later PNG folder is not loaded. Exports `EnhancedTaskDetail`. Open item + last tab persist across refresh. Double-click a list badge calls `requestNavigateToListAfterPaint` with that badge’s list id (the parent folder when the list is filed). The shell’s navigate event closes the page. When the screen was opened from a habit, that double-click does **not** take Back’s return to habit settings — Back and **Habit settings** still do. The desk stays mounted underneath; long lists window their rows so the jump can paint. The fascia lamp shows **Saved** or **Unsaved changes** the whole time the page is open, including while Edit is the action (a clean item reads Saved). Save / complete (with `actualDuration`) / missed / delete / `SplitStepsComposer` stay page-only. Subtasks are the `SubtaskTree` on `task.subtasks` and save as you edit; deleting a step also deletes an older Task-backed subtask with the same id. |
 | `ItemNotesLog.tsx` | Notes tab: composer (day, time stamp, Cmd/Ctrl+Enter), pinned standing note (`Task.notes`), dated entries grouped by day. `NotesPeek` is the rail face. |
-| `ItemResourcesPanel.tsx` | Resources tab: drop tray, cards, viewer (image / PDF / audio / video / text), caption, Open / Download / Remove. |
+| `ItemResourcesPanel.tsx` | Resources tab: drop tray with Auto / Copy / Link (desktop), cards, viewer (image / PDF / audio / video / text / folder), caption, Open / Download / Remove; linked files add Show in Finder and Locate…. |
+| `ItemResourcesPanel.test.tsx` | Linking on drop and from the folder picker, following a move, Missing and Locate, and the web fallback, with a mocked `fileLinks` bridge. |
 | `ItemAttributesSection.tsx` | Shared attributes surface. When the type has `detailLayout`, renders a large hero image and featured fields above the rest of the schema, then list-defined attributes, item-only leftovers, and `AttributeCreator`. `omitAttributeIds` hides fields edited on another panel of the same view. On a person, birthday and standing notes are omitted so the biography is their only editor. |
 | `item-attributes.test.tsx` | Hero/featured layout + attribute creator for catalog-style types. |
 | `BodyPanel.tsx` | The `"body"` detail panel for document-type items. Default face is **rendered prose** (HTML stripped to plain when the body looks like markup); an explicit **Source** / **Rendered** toggle reveals the raw editor — never a raw-HTML face by default. Markdown still uses `RichTextEditor`. Persists through `useTaskStore.updateTask`, debounced (default 500ms) with a flush on blur/unmount. Props: `taskId`, `readOnly?`, `debounceMs?`. |
@@ -178,6 +181,33 @@ Attribute Demo item →** creates it if missing and opens it.
 | `ItemDetail.test.tsx` | Vitest coverage for the presentational pieces: `TagInput` (add/remove, catalog bead, double-click → tag settings), `LinkPicker` (search + add link), and `RelatedItemsPanel` (forward links, removal, inverse-labelled backlinks). |
 | `ItemDetailPopup.test.tsx` | Popup hides scheduling / Complete / scheduler chrome for non-task types (e.g. Furniture). History tab; save records the ledger. |
 | `ItemDetailPage.test.tsx` | Full-screen detail follows `resolveDetailView`; Task chrome gated. History tab; save records estimated-duration changes. A habit-linked item shows notes, a completion summary, and **Habit settings**. A generic item does not. The list chip opens that list id. |
+
+## Linked resources
+
+_Last mapped: 2026-10-16_
+
+Desktop only. A linked resource keeps the file's path, not its bytes
+(`ItemResource.link`, `uri` = `link:<id>`, helpers in `lib/resource-links.ts`).
+Plan and limits: [`docs/RESOURCE_LINKS.md`](../../docs/RESOURCE_LINKS.md).
+
+- The tray has **Auto / Copy / Link**. It decides for drops and Attach files.
+  Auto links folders and files of 50 MB or more. A folder is always linked.
+  **Link folder** opens the system picker. The switch is not remembered.
+- Cards and the viewer carry a **Linked** or **Missing** lamp. The viewer shows
+  the path (`~/…`), Open (the file's own app), Show in Finder, Locate…, and
+  Remove. Images, PDFs, audio, video, and text preview from disk through
+  `brain2-link://`. A folder shows its file count and file list.
+- When the tab opens, each link is checked once (`fileLinks.resolve`). A moved
+  file is followed and the new path goes through the draft, so Save keeps it.
+  Missing is shown only; it does not dirty the draft.
+- Search reads the text pulled out once at link time: PDF text, a text file's
+  head, or a folder's file list.
+- On the web and the phone a link shows its name, size, and text, with a note
+  that it lives on another computer.
+- `write` sets `latest.current` before `onChange`. Extraction can land before
+  the parent re-renders, and reading the prop then would drop the new card.
+
+**Planned:** check every link at app start, not only when the tab opens.
 
 ## History
 
@@ -196,14 +226,14 @@ formulation wording lives on this same ledger and shows as a timeline (GS-10).
 
 ## Time and pens
 
-_Last mapped: 2026-10-16._ The popup's **Time** tab (`ItemDetailPopup.tsx` ~1395) shows estimated vs actual, the `timeLogs` list, then **Pens and tracked time** (`ItemPenTime.tsx`). The page shows the same bay at the foot of **Scheduling** (tasks only, read-only when not editing). `ItemPenLinksField` edits `Task.penLinks` through the shell's draft (`touchDraft` + `setTask`); the first link is the clock pen. `ItemTrackedTime` reads `trackedTimeForItem`: total, est-left or past-est, a thin bar, the split (by pen · on the clock · logged), and the counted blocks (12, then "+ N more"). Pen settings edits the same field (**Linked items**). Built for [`docs/TODO_REDESIGN.md`](../../docs/TODO_REDESIGN.md) Phase 5 (slice E). Operations totals read the same function (slice F). **Planned:** the To Do lid reads it too (Phase 6, slice L).
+_Last mapped: 2026-10-16._ The popup's **Time** tab (`ItemDetailPopup.tsx` ~1395) shows estimated vs actual, the `timeLogs` list, then **Pens and tracked time** (`ItemPenTime.tsx`). The page shows the same bay at the foot of **Scheduling** (tasks only, read-only when not editing). `ItemPenLinksField` edits `Task.penLinks` through the shell's draft (`touchDraft` + `setTask`); the first link is the clock pen. `ItemTrackedTime` reads `trackedTimeForItem`: total, est-left or past-est, a thin bar, for items with steps an est · parts · spent line (`timeTrio`, `partsMinutes` from `lib/tracked-time.ts`; Phase 6 slice L), the split (by pen · on the clock · logged), and the counted blocks (12, then "+ N more"). Pen settings edits the same field (**Linked items**). Built for [`docs/TODO_REDESIGN.md`](../../docs/TODO_REDESIGN.md) Phase 5 (slice E). Operations totals read the same function (slice F). The To Do rows and lid read it too (Phase 6, slice L; [To Do README](../Home/ToDo/README.md)).
 
 ## Planned — steps as items, stacked popups, one step tree
 
 _Last mapped: 2026-10-16._ Today a step is a `Subtask` in `task.subtasks` with no notes, files or links. **Planned** in [`docs/TODO_REDESIGN.md`](../../docs/TODO_REDESIGN.md):
-- **Phase 9.** `SubtaskTree.tsx` and the To Do lid's `TodoBreakdown.tsx` become hosts of one shared `components/steps/StepTree.tsx`, with drag, multi-select and `est · parts · spent` (Phase 6).
+- **Phase 9.** _Last mapped: 2026-10-16._ **Built (slice K), not committed:** `SubtaskTree.tsx` and the To Do lid's `TodoBreakdown.tsx` host one shared `components/steps/StepTree.tsx`, with drag and multi-select. Still **Planned** here: spent on each row and the ↗ (Phase 11).
 - **Phase 10.** Steps carry a Bare minimum / Goal / Exceptional tag. The Subtasks tab and Time tab show the task's B / G / E percent (weighted by the tree, each child an equal share of its parent) and the level it is completed to. The step readout's percent changes from a flat leaf count to the weighted one.
-- **Phase 11.** A step becomes an item when needed (`Subtask.itemId`, the item has `parentTaskId` and `stepOf`). The tree stays the source of truth for order, done, estimate, needs, tier and points. `TaskDetailPopup` gains a stack: opening a step's item pushes a layer with a breadcrumb and Back, and Esc closes only the top. `SubtaskTree` rows get **↗**. The older Task-backed subtask that a step delete also removes (above) is a separate, legacy path; Phase 11 maps it before reusing `parentTaskId`.
+- **Phase 11.** _Last mapped: 2026-10-16._ **Built (slice M), not committed.** A step becomes an item the first time it opens (`Subtask.itemId`; the item has `parentTaskId` and `stepOf`; `lib/step-items.ts`). The tree stays the source of truth for order, done, estimate, needs, tier and points; the item keeps a read mirror of name and estimate, and edits to them go back to the step (`updateStepField`, via `components/steps/StepItemStack.tsx`). `TaskDetailPopup` takes `layerHeader` and `onStepComplete`, and marks a layered popup `data-item-layer`; a popup underneath ignores clicks inside it (`layerSafeDismiss`). On a step item: Complete ticks the step and closes the layer; Missed and the Status picker are hidden; Subtasks shows the steps inside that step, written to the parent's tree (`StepItemSubtasks`). `SubtaskTree` rows get the dot click and **↗** (`onOpenStep`) on a stored task, and the tier tags (`tierTags`). Step item ids are `step-item-…`, never a step id, so the page's legacy delete of a Task-backed subtask with the step's id (above) never hits one. **Planned:** **Card** on a step item (Phase 12), the gauge on its bar (slice N).
 - **Phase 12.** A **Card** key opens the To Do task card when the task is on the current period.
 - **Phase 10 / 15.** Steps can carry a spark mark (`Subtask.sparkedAt`). A notice note from the To Do row lands in `noteLog`, tagged `notice`.
 - **Phase 14.** The Dependencies tab gains an **Unlocks** list (what waits on this item) beside what it needs. Parts stay on Subtasks: an open step makes the item incomplete, never locked. A task cannot list its own part or parent as a prerequisite.

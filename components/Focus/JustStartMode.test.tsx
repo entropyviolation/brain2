@@ -44,15 +44,93 @@ describe("JustStartMode", () => {
       step("add spines", { estimatedDuration: 15 }),
     ])
     render(<JustStartMode taskId="cds" onClose={() => {}} />)
+    // Phase 15 A: a visible change on purpose. It opens on Today's choices, smallest first.
+    expect(screen.getByRole("heading", { name: "Today's choices" })).toBeInTheDocument()
+    expect(screen.getByText(/3 ready steps, smallest first/)).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /find photos/, pressed: true })).toBeInTheDocument()
+    fireEvent.keyDown(window, { key: "Enter" })
     expect(screen.getByRole("heading", { name: "find photos" })).toBeInTheDocument()
     expect(screen.getByText(/Finish CDs/).textContent).toContain("insert")
     expect(screen.getByText("10:00")).toBeInTheDocument()
-    expect(screen.getByText(/smallest of 3 ready steps/)).toBeInTheDocument()
+  })
+
+  it("Enter starts the highlighted choice, and the arrows move it", () => {
+    seed([step("a", { estimatedDuration: 5 }), step("b", { estimatedDuration: 10 }), step("c", { estimatedDuration: 15 }), step("d", { estimatedDuration: 20 })])
+    render(<JustStartMode taskId="cds" onClose={() => {}} />)
+    expect(screen.queryByRole("button", { name: /^d/ })).toBeNull() // three choices at most
+    fireEvent.keyDown(window, { key: "ArrowDown" })
+    expect(screen.getByRole("button", { name: /^b/, pressed: true })).toBeInTheDocument()
+    fireEvent.keyDown(window, { key: "Enter" })
+    expect(screen.getByRole("heading", { name: "b" })).toBeInTheDocument()
+  })
+
+  it("Pull me starts the latest spark and respects locks; absent with no sparks", () => {
+    seed([
+      step("a", { estimatedDuration: 5 }),
+      step("b", { estimatedDuration: 10 }),
+      step("bare", { sparkedAt: "2026-10-15T09:00:00Z" }),
+      step("locked", { sparkedAt: "2026-10-15T10:00:00Z", dependsOn: ["a"] }),
+    ])
+    render(<JustStartMode taskId="cds" onClose={() => {}} />)
+    fireEvent.click(screen.getByRole("button", { name: /Pull me/ }))
+    expect(screen.getByRole("heading", { name: "bare" })).toBeInTheDocument()
+  })
+
+  it("has no Pull me when nothing is sparked", () => {
+    seed([step("a", { estimatedDuration: 5 }), step("b", { estimatedDuration: 10 })])
+    render(<JustStartMode taskId="cds" onClose={() => {}} />)
+    expect(screen.queryByRole("button", { name: /Pull me/ })).toBeNull()
+  })
+
+  it("the time-box ring closes: time's up counts, logs the minutes, and leaves the step open", () => {
+    seed([step("a", { estimatedDuration: 5 })])
+    render(<JustStartMode taskId="cds" onClose={() => {}} />)
+    act(() => {
+      vi.advanceTimersByTime(5 * 60_000)
+    })
+    expect(screen.getByText(/Time's up. That counted./)).toBeInTheDocument()
+    const a = () => task().subtasks!.find((s) => s.id === "a")!
+    expect(a().completed).toBe(false)
+    expect(a().actualDuration).toBe(5)
+    expect(task().timeLogs?.[0]).toMatchObject({ durationMinutes: 5, taskId: "cds" })
+    fireEvent.click(screen.getByRole("button", { name: "Keep going" }))
+    expect(screen.getByText("5:00")).toBeInTheDocument()
+    act(() => {
+      vi.advanceTimersByTime(2 * 60_000)
+    })
+    fireEvent.click(screen.getByRole("button", { name: /Done/ }))
+    expect(a().completed).toBe(true)
+    expect(a().actualDuration).toBe(7)
+    expect(task().timeLogs?.map((l) => l.durationMinutes)).toEqual([5, 2])
+  })
+
+  it("a 10m box replaces the estimate on the ring", () => {
+    seed([step("a", { estimatedDuration: 30 })])
+    render(<JustStartMode taskId="cds" onClose={() => {}} />)
+    fireEvent.click(screen.getByRole("button", { name: "10m" }))
+    expect(screen.getByText("10:00")).toBeInTheDocument()
+  })
+
+  it("leaving shows the end-of-sitting strip, and Keep saves the next leaf's context", () => {
+    seed([step("a", { estimatedDuration: 5 })])
+    const onClose = vi.fn()
+    render(<JustStartMode taskId="cds" onClose={onClose} />)
+    act(() => {
+      vi.advanceTimersByTime(2 * 60_000)
+    })
+    fireEvent.click(screen.getByRole("button", { name: "Exit focus mode" }))
+    expect(onClose).not.toHaveBeenCalled()
+    expect(screen.getByText("Sat 2m. Left it here:")).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText("Left it here"), { target: { value: "a: half the list" } })
+    fireEvent.click(screen.getByRole("button", { name: "Keep" }))
+    expect(task().subtasks![0].context).toBe("a: half the list")
+    expect(onClose).toHaveBeenCalled()
   })
 
   it("Done ticks the step with its minutes, logs the time, and moves on", () => {
     seed([step("a", { estimatedDuration: 5 }), step("b", { estimatedDuration: 10 })])
     render(<JustStartMode taskId="cds" onClose={() => {}} />)
+    fireEvent.keyDown(window, { key: "Enter" })
     act(() => {
       vi.advanceTimersByTime(3 * 60_000)
     })
@@ -67,6 +145,7 @@ describe("JustStartMode", () => {
   it("Skip shows the next smallest step", () => {
     seed([step("a", { estimatedDuration: 5 }), step("b", { estimatedDuration: 10 })])
     render(<JustStartMode taskId="cds" onClose={() => {}} />)
+    fireEvent.keyDown(window, { key: "Enter" })
     fireEvent.click(screen.getByRole("button", { name: /Skip/ }))
     expect(screen.getByRole("heading", { name: "b" })).toBeInTheDocument()
   })
@@ -74,6 +153,7 @@ describe("JustStartMode", () => {
   it("Blocked by… saves a prerequisite and re-picks", () => {
     seed([step("a", { estimatedDuration: 5 }), step("b", { estimatedDuration: 10 })])
     render(<JustStartMode taskId="cds" onClose={() => {}} />)
+    fireEvent.keyDown(window, { key: "Enter" })
     fireEvent.click(screen.getByRole("button", { name: /Blocked by/ }))
     fireEvent.click(screen.getByRole("checkbox", { name: "b" }))
     fireEvent.click(screen.getByRole("button", { name: "Save" }))
@@ -108,9 +188,10 @@ describe("JustStartMode", () => {
     expect(screen.getByRole("heading", { name: "open the folder" })).toBeInTheDocument()
   })
 
-  it("starts a chosen step first when given one", () => {
+  it("starts a chosen step first when given one, with no choices", () => {
     seed([step("a", { estimatedDuration: 5 }), step("b", { estimatedDuration: 10 })])
     render(<JustStartMode taskId="cds" stepId="b" onClose={() => {}} />)
+    expect(screen.queryByRole("heading", { name: "Today's choices" })).toBeNull()
     expect(screen.getByRole("heading", { name: "b" })).toBeInTheDocument()
   })
 })

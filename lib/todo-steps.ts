@@ -6,6 +6,7 @@
  * The minutes that count on a step (and on the task) are the greater of the
  * number typed there and the sum of the steps inside it.
  */
+import { weightedPercent } from "@/lib/step-progress"
 import type { Subtask } from "@/lib/types"
 import { createSubtaskId } from "@/lib/molecular"
 
@@ -60,14 +61,13 @@ export function internalStepProgress(steps: readonly Subtask[] | undefined): { c
 }
 
 /**
- * How much of the step tree is finished. No steps, or none finished, is 0.
- * This is not minutes against a day — a 30-minute estimate is 30/480 of an
- * 8-hour day (6%), and that figure was being shown as “% complete”.
+ * How much of the step tree is finished, weighted (Phase 10, R16,
+ * `lib/step-progress.ts`): a ticked step is 100%, a parent the average of its
+ * children. No steps is 0. Counts stay counts (`internalStepProgress`).
+ * This is not minutes against a day.
  */
 export function todoCompletionPercent(steps: readonly Subtask[] | undefined): number {
-  const progress = internalStepProgress(steps)
-  if (!progress || progress.total <= 0) return 0
-  return Math.round((progress.completed / progress.total) * 100)
+  return Math.round((weightedPercent(steps) ?? 0) * 100)
 }
 
 export function formatInternalProgress(steps: readonly Subtask[] | undefined): string | null {
@@ -155,4 +155,120 @@ export function removeNestedStep(steps: readonly Subtask[] | undefined, id: stri
     kept.push(children === step.subtasks ? step : { ...step, subtasks: children })
   }
   return kept
+}
+
+// ---- Moving steps like files (Phase 9, R5) --------------------------------
+
+/** Where a move lands: before or after a step, inside it (as its last child), or at the end of a list. */
+export type StepMoveTarget =
+  | { id: string; where: "before" | "after" | "inside" }
+  | { where: "end"; parentId: string | null }
+
+/**
+ * The selected ids whose ancestors are not also selected, in tree order. A
+ * selected child rides along with its selected parent, so it is not moved twice.
+ */
+export function topMostSelected(steps: readonly Subtask[] | undefined, ids: Iterable<string>): string[] {
+  const wanted = new Set(ids)
+  const out: string[] = []
+  const walk = (list: readonly Subtask[]) => {
+    for (const step of list) {
+      if (wanted.has(step.id)) out.push(step.id)
+      else if (step.subtasks?.length) walk(step.subtasks)
+    }
+  }
+  walk(steps ?? [])
+  return out
+}
+
+function findStepIn(list: readonly Subtask[], id: string): Subtask | undefined {
+  for (const step of list) {
+    if (step.id === id) return step
+    const hit = step.subtasks?.length ? findStepIn(step.subtasks, id) : undefined
+    if (hit) return hit
+  }
+  return undefined
+}
+
+function insertAt(list: readonly Subtask[], target: StepMoveTarget, moved: Subtask[]): { list: Subtask[]; done: boolean } {
+  if (target.where === "end" && target.parentId == null) return { list: [...list, ...moved], done: true }
+  let done = false
+  const out: Subtask[] = []
+  for (const step of list) {
+    if (done) {
+      out.push(step)
+      continue
+    }
+    if (target.where !== "end" && step.id === target.id) {
+      done = true
+      if (target.where === "before") out.push(...moved, step)
+      else if (target.where === "after") out.push(step, ...moved)
+      else out.push({ ...step, subtasks: [...(step.subtasks ?? []), ...moved] })
+      continue
+    }
+    if (target.where === "end" && step.id === target.parentId) {
+      done = true
+      out.push({ ...step, subtasks: [...(step.subtasks ?? []), ...moved] })
+      continue
+    }
+    if (step.subtasks?.length) {
+      const inner = insertAt(step.subtasks, target, moved)
+      if (inner.done) {
+        done = true
+        out.push({ ...step, subtasks: inner.list })
+        continue
+      }
+    }
+    out.push(step)
+  }
+  return { list: out, done }
+}
+
+/**
+ * Move steps (and everything inside them) to `target`, keeping their order.
+ * Refused, and the same array returned, when nothing is selected, the target
+ * is missing, or the target is one of the moved steps or inside one. Ids,
+ * `dependsOn` and every other field ride along unchanged. Pure.
+ */
+export function moveSteps(
+  steps: readonly Subtask[] | undefined,
+  ids: Iterable<string>,
+  target: StepMoveTarget,
+): Subtask[] {
+  const list = (steps ?? []) as Subtask[]
+  const tops = topMostSelected(list, ids)
+  if (tops.length === 0) return list
+  const moved = tops.map((id) => findStepIn(list, id)!)
+  const anchorId = target.where === "end" ? target.parentId : target.id
+  if (anchorId != null) {
+    if (!findStepIn(list, anchorId)) return list
+    if (moved.some((step) => step.id === anchorId || findStepIn(step.subtasks ?? [], anchorId))) return list
+  }
+  let pruned: Subtask[] = list
+  for (const id of tops) pruned = removeNestedStep(pruned, id)
+  const placed = insertAt(pruned, target, moved)
+  return placed.done ? placed.list : list
+}
+
+/** The parent of a step (null at the top), or undefined when the id is not in the tree. */
+export function stepParentId(steps: readonly Subtask[] | undefined, id: string): string | null | undefined {
+  const walk = (list: readonly Subtask[], parent: string | null): string | null | undefined => {
+    for (const step of list) {
+      if (step.id === id) return parent
+      if (step.subtasks?.length) {
+        const hit = walk(step.subtasks, step.id)
+        if (hit !== undefined) return hit
+      }
+    }
+    return undefined
+  }
+  return walk(steps ?? [], null)
+}
+
+/** The list a step sits in (its siblings, itself included). */
+export function stepSiblings(steps: readonly Subtask[] | undefined, id: string): readonly Subtask[] {
+  const parent = stepParentId(steps, id)
+  if (parent === undefined) return []
+  if (parent === null) return steps ?? []
+  return findStepIn(steps ?? [], parent)?.subtasks ?? []
 }

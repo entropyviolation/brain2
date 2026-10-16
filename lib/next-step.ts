@@ -4,17 +4,25 @@
  * `pickStartStep` walks a task's whole step tree and returns the single step
  * to do next: the **lowest-level** open step (a leaf, or a parent whose
  * children are all done), whose prerequisites are met, that **has an
- * estimate**, with the **lowest estimate**. Ties go to `isMolecular`, then tree
- * order. When nothing qualifies it says why (no steps, all done, steps need
- * estimates, everything blocked, or the task itself is waiting on another
- * task), so the screen can fix that instead of guessing.
+ * estimate**: first one that counts toward the lowest level not yet reached
+ * (Phase 10, `lib/step-progress.ts`; a no-op without step tiers), then the
+ * **lowest estimate**. Ties go to sparked steps (`sparkedAt`, most recent
+ * first), then `isMolecular`, then tree order. `rankStartSteps` returns the
+ * top three in that same order, for the Today's choices screen; its first
+ * is always `pickStartStep`'s. `pullMeStep` takes the latest spark. When
+ * nothing qualifies it says why (no steps, all done, steps need estimates,
+ * everything blocked, or the task itself is waiting on another task), so the
+ * screen can fix that instead of guessing.
  *
  * Pure. The tree helpers here (`stepPath`, `setStepDependsOn`,
- * `finishStep`, `splitStep`, `blockerCandidates`) return new arrays.
+ * `setStepContext`, `addStepMinutes`, `finishStep`, `splitStep`,
+ * `blockerCandidates`) return new arrays.
  */
 import type { Subtask, Task } from "@/lib/types"
 import { hasUnmetDependencies, type DepTask } from "@/lib/available-tasks"
 import { addNestedStep } from "@/lib/todo-steps"
+import { effectiveTierMap, tierRank } from "@/lib/step-tiers"
+import { nextLevel } from "@/lib/step-progress"
 
 export interface PlacedStep {
   step: Subtask
@@ -85,6 +93,86 @@ export function openBlockers(placed: PlacedStep, byId: Map<string, Subtask>): Su
   return blockers
 }
 
+/**
+ * Level first (Phase 10): 0 for a step that counts toward the lowest level not
+ * yet reached, else 1. Every step is 0 on a task without step tiers.
+ */
+function levelKeyFor(steps: readonly Subtask[] | undefined): (p: PlacedStep) => number {
+  const target = nextLevel({ subtasks: steps ? [...steps] : [] })
+  if (!target) return () => 0
+  const tiers = effectiveTierMap(steps)
+  const cap = tierRank(target)
+  return (p) => (tierRank(tiers.get(p.step.id) ?? "goal") <= cap ? 0 : 1)
+}
+
+/** The one Just Start order: lowest level not yet reached, lowest estimate, then atomic, then tree order. */
+function startOrderFor(steps: readonly Subtask[] | undefined): (a: PlacedStep, b: PlacedStep) => number {
+  const level = levelKeyFor(steps)
+  return (a, b) => level(a) - level(b) || startOrder(a, b)
+}
+
+/** Spark time in ms, 0 when not sparked (rank 4: sparked, most recent first). */
+function sparkMs(step: Subtask): number {
+  const t = step.sparkedAt ? Date.parse(step.sparkedAt) : NaN
+  return Number.isFinite(t) ? t : 0
+}
+
+function startOrder(a: PlacedStep, b: PlacedStep): number {
+  return (
+    ownMinutes(a.step) - ownMinutes(b.step) ||
+    sparkMs(b.step) - sparkMs(a.step) ||
+    Number(!!b.step.isMolecular) - Number(!!a.step.isMolecular) ||
+    a.order - b.order
+  )
+}
+
+export interface RankedStep extends PlacedStep {
+  minutes: number
+}
+
+/**
+ * The top `n` ready steps in `pickStartStep`'s order (Today's choices).
+ * The first is always `pickStartStep`'s step; skipped steps go to the back.
+ * Empty when `pickStartStep` returns no step.
+ */
+export function rankStartSteps(
+  task: Pick<Task, "subtasks" | "dependencies">,
+  n = 3,
+  options: PickOptions = {},
+): RankedStep[] {
+  const pick = pickStartStep(task, options)
+  if (pick.kind !== "step") return []
+  const placed = placeSteps(task.subtasks)
+  const byId = new Map(placed.map((p) => [p.step.id, p.step]))
+  const skip = new Set(options.skip ?? [])
+  const order = startOrderFor(task.subtasks)
+  const ready = placed
+    .filter((p) => isOpenLeaf(p.step) && ownMinutes(p.step) > 0 && openBlockers(p, byId).length === 0)
+    .sort((a, b) => Number(skip.has(a.step.id)) - Number(skip.has(b.step.id)) || order(a, b))
+  const first = ready.find((p) => p.step.id === pick.step.id)!
+  return [first, ...ready.filter((p) => p !== first)]
+    .slice(0, Math.max(1, n))
+    .map((p) => ({ ...p, minutes: ownMinutes(p.step) }))
+}
+
+/**
+ * Pull me (FN-5): the most recently sparked open, unlocked leaf, whatever its
+ * estimate. `undefined` when nothing is sparked, or the task itself waits
+ * (unless `ignoreTaskDependencies`).
+ */
+export function pullMeStep(
+  task: Pick<Task, "subtasks" | "dependencies">,
+  options: Pick<PickOptions, "allTasks" | "ignoreTaskDependencies"> = {},
+): RankedStep | undefined {
+  if (!options.ignoreTaskDependencies && options.allTasks && hasUnmetDependencies(task, options.allTasks)) return undefined
+  const placed = placeSteps(task.subtasks)
+  const byId = new Map(placed.map((p) => [p.step.id, p.step]))
+  const best = placed
+    .filter((p) => sparkMs(p.step) > 0 && isOpenLeaf(p.step) && openBlockers(p, byId).length === 0)
+    .sort((a, b) => sparkMs(b.step) - sparkMs(a.step) || a.order - b.order)[0]
+  return best ? { ...best, minutes: ownMinutes(best.step) } : undefined
+}
+
 export function pickStartStep(
   task: Pick<Task, "subtasks" | "dependencies">,
   options: PickOptions = {},
@@ -117,12 +205,7 @@ export function pickStartStep(
     const skip = new Set(options.skip ?? [])
     const fresh = ready.filter((p) => !skip.has(p.step.id))
     const pool = fresh.length ? fresh : ready
-    const best = [...pool].sort(
-      (a, b) =>
-        ownMinutes(a.step) - ownMinutes(b.step) ||
-        Number(!!b.step.isMolecular) - Number(!!a.step.isMolecular) ||
-        a.order - b.order,
-    )[0]
+    const best = [...pool].sort(startOrderFor(task.subtasks))[0]
     return { kind: "step", step: best.step, path: best.path, minutes: ownMinutes(best.step), ready: ready.length }
   }
 
@@ -222,6 +305,27 @@ export function finishStep(
     ancestorIds.has(step.id) && !step.completed && (step.subtasks ?? []).every((kid) => kid.completed)
       ? { ...step, completed: true, completedAt: now }
       : step,
+  )
+}
+
+/** Set a step's `context` note ("left it here"). Blank clears it. */
+export function setStepContext(steps: readonly Subtask[] | undefined, id: string, context: string): Subtask[] {
+  const words = context.trim()
+  return mapTree(steps ?? [], (step) => {
+    if (step.id !== id) return step
+    const next = { ...step }
+    if (words) next.context = words
+    else delete next.context
+    return next
+  })
+}
+
+/** Add minutes to a step's `actualDuration` and leave it open (a closed time box). */
+export function addStepMinutes(steps: readonly Subtask[] | undefined, id: string, minutes: number): Subtask[] {
+  const add = Math.round(minutes)
+  if (!(add > 0)) return [...(steps ?? [])]
+  return mapTree(steps ?? [], (step) =>
+    step.id === id ? { ...step, actualDuration: (step.actualDuration ?? 0) + add } : step,
   )
 }
 

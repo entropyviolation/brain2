@@ -20,12 +20,23 @@ _Rebuilt 2026-10-15 (Phase 1 of [`docs/TODO_REDESIGN.md`](../../docs/TODO_REDESI
 
 Ties go to `isMolecular`, then tree order. The task's own `dependencies` are checked against the task store. `stepId` (a prop) starts that exact step first.
 
-**Planned** ([`docs/TODO_REDESIGN.md`](../../docs/TODO_REDESIGN.md), _2026-10-16_): the order grows level (Phase 10), then unlock value (Phase 14), then estimate, then sparks. Each is a no-op for a task without them. Phase 15 A adds `rankStartSteps` and a **Today's choices** screen (two or three leaves, Enter starts the first), **Pull me**, a time-box ring ("Time's up. That counted."), and an end-of-sitting strip at Stop in the focus bar.
+**Planned** ([`docs/TODO_REDESIGN.md`](../../docs/TODO_REDESIGN.md), _2026-10-16_): the order grows level (Phase 10), then unlock value (Phase 14), then estimate, then sparks. Each is a no-op for a task without them. Phase 15 A still plans **Pull me** and spark tie-breaks (they need slice N's sparks), and the end-of-sitting strip at Stop in a session (`SessionPlanner`).
+
+## Phase 15 A: choices, the ring, the end of a sitting
+
+_Last mapped: 2026-10-16._ Built 2026-10-16 (slice U of [`docs/TODO_REDESIGN.md`](../../docs/TODO_REDESIGN.md), UI-2, UI-9, FN-6).
+
+- **Today's choices.** With no `stepId`, Just Start opens on two or three leaves from `rankStartSteps` (`lib/next-step.ts`), the first highlighted. Enter or Space starts the highlighted one; the arrow keys move it; a click starts that one. One ready leaf skips the screen. After Done it comes back; Skip goes straight to the next pick. A `stepId` (the ▶ on a step, the focus bar) starts that step with no choices.
+- **Time-box ring.** An SVG ring beside the countdown. The box is the estimate (`est`) or 10 / 25 / 50 (chips under the clock). When it closes and **Stop when the ring closes** is ticked (default on; the doc calls it "Stop at the estimate"), the clock stops, a lamp lights, and it says "Time's up. That counted." Off the pen clock the minutes go on the step (`addStepMinutes`) and a `timeLogs` entry; on the pen clock it pauses that clock, which logs at Stop. The step stays open. **Keep going** restarts the ring. Done later adds the banked minutes to the new ones. Unticked, the clock counts past zero as before.
+- **End of sitting** (`SittingEnd.tsx`, `.sitting-end` in `focus-bar.css`). "Sat 52m. Left it here:" and the next leaf (`rankStartSteps(task, 1)`), pre-written and editable. **Keep** saves it as that step's `context` (`setStepContext`); **Skip** closes. In the focus bar, Stop (after the Keep as steps prompt, when free objectives exist) pauses the pen clock and shows the strip; Keep or Skip stops the clock. In Just Start, leaving (✕ or Escape) after a minute or more, off the pen clock, shows the strip first.
+- Words: the timer hints now read "A two-minute opener." and "Past the mark. The clock keeps counting." (the No "should" rule in `docs/DESIGN_STYLE.md`).
+
+Tests: `JustStartMode.test.tsx` (choices and Enter, the ring logs and leaves the step open, a 10m box, the strip saves `context`), `FocusBar.test.tsx` (Stop shows the strip, Keep saves `context`), `lib/next-step.test.ts` (`rankStartSteps(task)[0]` equals `pickStartStep`).
 
 **The screen.**
 - An eyebrow, then the path (`Finish CDs › Chaos › insert`).
 - The step in large light type, with its `context`, and a meta line: estimate, "smallest of N ready steps", atomic.
-- The clock counts down the step's **own estimate**, or 2:00 with **2-minute opener** ticked. It keeps counting past zero (`+m:ss`).
+- The clock counts down the step's **own estimate** (or a 10 / 25 / 50 box), or 2:00 with **2-minute opener** ticked. It stops when the ring closes (see Phase 15 A below), or keeps counting past zero (`+m:ss`) with that unticked.
 - Keys: Pause / Resume, Reset, and **Done**. Done ticks the step with `actualDuration` and `completedAt`, ticks any ancestor whose children are now all done, appends a `timeLogs` entry on the task when a minute or more ran (`notes: "Just Start · path › step"`), and moves to the next pick.
 - Under those: **Skip** (next smallest; once every ready step has been skipped, it wraps), **Blocked by…** (tick the steps this one waits on, from `blockerCandidates`, which refuses loops and family), and **Too big** (split into nested steps with minute chips; the picker then takes the smallest part).
 - The progress line counts lowest-level steps and minutes left.
@@ -49,8 +60,10 @@ One clock: Tracking's pen-color **Working on right now** (`lib/pen-color-session
 | File | What |
 |------|------|
 | `TaskClockStarter.tsx` | `useTaskClockStarter()` returns `start(taskId, stepId?)` and a `picker`. With no linked pen and nothing running, the **Task pen** picker (`data-ui-name="Task pen"`) asks which pen; **Remember for this task** (on by default) saves it to `Task.penLinks`. |
-| `FocusBar.tsx` | The docked strip (`data-ui-name="Focus bar"`) while a task is on the clock: lamp, pen swatch, `Task › step`, the step's estimate, the clock (violet when paused), Objectives with the step menu, **Just start**, Pause / Resume, Stop. Stop with free objectives asks: **Keep as steps** (each becomes a step beside the one on the clock, finished ones with their real minutes), **Leave on the block**, or **Keep going**. |
+| `FocusBar.tsx` | The docked strip (`data-ui-name="Focus bar"`) while a task is on the clock: lamp, pen swatch, `Task › step`, the step's estimate, the clock (violet when paused), Objectives with the step menu, **Just start**, Pause / Resume, Stop. Stop with free objectives asks: **Keep as steps** (each becomes a step beside the one on the clock, finished ones with their real minutes), **Leave on the block**, or **Keep going**. | Stop then shows the end-of-sitting strip (`SittingEnd.tsx`).
+| `FocusBar.tsx` (sessions) | _Last mapped: 2026-10-16._ Slice H2: while a To Do session runs, **Park session** asks for an optional note to tomorrow-you, then parks it (`parkLiveSession`) and lets go of the pen clock if it painted (`releasePenClock`, `lib/session-pen.ts`). Otherwise **Session** and **Just 25** open a new draft on the task and step on the clock (`lib/session-open-store.ts`). |
 | `FocusBarDock.tsx` | Mounted at the foot of Home (`home-dashboard.tsx`). Reads only whether a task is on the clock, then lazy-loads `FocusBar`. |
+| `SittingEnd.tsx` | The end-of-sitting strip: "Sat 52m. Left it here:", Keep saves the next leaf's `context`. Used by the focus bar and Just Start. |
 | `use-clock-task.ts` | `useClockTask(session)`: the task and step on the clock, the path label, open-step choices, and the tie handler. Used by the focus bar, the header Now well and the Tracking NOW row. |
 | `focus-bar.css` | The bar and the picker: dark glass and the `#7dffc4` phosphor, the Just Start family. |
 

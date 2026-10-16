@@ -18,8 +18,8 @@ export function ListMissedButton({
         e.stopPropagation()
         onMissed(task.id)
       }}
-      aria-label="Missed opportunity — too late"
-      title="Missed opportunity — too late"
+      aria-label="Missed opportunity — the window for it passed"
+      title="Missed opportunity — the window for it passed"
     >
       {isMissed(task) ? "✗" : ""}
     </button>

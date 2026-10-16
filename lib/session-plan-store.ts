@@ -6,7 +6,9 @@
  * `focusId` is the one the popup shows. `history` keeps every closed session
  * (an append log: Analytics reads estimate pace and tier hit rate from it,
  * never from `open`). `kept` are lines a review chose to keep for the next
- * session; the next new draft starts with them. Logic lives in
+ * session; the next new draft starts with them. `templates` are the person's
+ * saved session shapes (built-ins live in code, `BUILT_IN_TEMPLATES`); old
+ * blobs load without it. Logic lives in
  * `lib/session-plan.ts`; this is only the blob.
  */
 "use client"
@@ -20,8 +22,10 @@ import {
   allLines,
   isLiveSession,
   migrateSessionPlan,
+  parkSession,
   renameTier,
   type SessionPlan,
+  type SessionTemplate,
   type SessionTier,
 } from "@/lib/session-plan"
 
@@ -36,6 +40,7 @@ interface SessionPlanState {
   focusId: string | null
   history: SessionPlan[]
   kept: KeptSessionRef[]
+  templates: SessionTemplate[]
   /** Add or replace an open session. Returns the sessions it parked to make room. */
   put: (plan: SessionPlan, now?: Date) => SessionPlan[]
   /** Show this session in the popup. An empty draft left behind is dropped. */
@@ -44,9 +49,12 @@ interface SessionPlanState {
   /** Move a closed session into history and remember what to keep. */
   archive: (plan: SessionPlan, kept: KeptSessionRef[]) => void
   clearKept: () => void
+  /** Save a template; one with the same title is replaced. */
+  saveTemplate: (template: SessionTemplate) => void
+  removeTemplate: (id: string) => void
 }
 
-type SessionBlob = Pick<SessionPlanState, "open" | "focusId" | "history" | "kept">
+type SessionBlob = Pick<SessionPlanState, "open" | "focusId" | "history" | "kept"> & { templates?: SessionTemplate[] }
 
 function isEmptyDraft(plan: SessionPlan | undefined): boolean {
   return !!plan && plan.phase === "draft" && allLines(plan).length === 0
@@ -59,6 +67,7 @@ export const useSessionPlanStore = create<SessionPlanState>()(
       focusId: null,
       history: [],
       kept: [],
+      templates: [],
       put: (plan, now = new Date()) => {
         const { open, parked } = admitSession(get().open, plan, now)
         set({ open })
@@ -80,11 +89,25 @@ export const useSessionPlanStore = create<SessionPlanState>()(
           kept,
         })),
       clearKept: () => set({ kept: [] }),
+      saveTemplate: (template) =>
+        set((state) => ({
+          templates: [
+            ...state.templates.filter((t) => t.id !== template.id && t.title.toLowerCase() !== template.title.toLowerCase()),
+            template,
+          ],
+        })),
+      removeTemplate: (id) => set((state) => ({ templates: state.templates.filter((t) => t.id !== id) })),
     }),
     {
       name: persistKey("session-plans"),
       storage: createCogsJSONStorage(),
-      partialize: (state) => ({ open: state.open, focusId: state.focusId, history: state.history, kept: state.kept }),
+      partialize: (state) => ({
+        open: state.open,
+        focusId: state.focusId,
+        history: state.history,
+        kept: state.kept,
+        templates: state.templates,
+      }),
       version: 2,
       migrate: (persisted) => migrateSessionBlob(persisted),
     },
@@ -104,7 +127,14 @@ export function liveSession(open: readonly SessionPlan[]): SessionPlan | undefin
  * Only one session stays live; any other live one is parked.
  */
 export function migrateSessionBlob(persisted: unknown): SessionBlob {
-  const blob = (persisted ?? {}) as { current?: unknown; open?: unknown; focusId?: unknown; history?: unknown; kept?: unknown }
+  const blob = (persisted ?? {}) as {
+    current?: unknown
+    open?: unknown
+    focusId?: unknown
+    history?: unknown
+    kept?: unknown
+    templates?: unknown
+  }
   const plans = (value: unknown) =>
     Array.isArray(value) ? value.map(migrateSessionPlan).filter((p): p is SessionPlan => p !== null) : []
   const history = plans(blob.history)
@@ -123,5 +153,22 @@ export function migrateSessionBlob(persisted: unknown): SessionBlob {
       : current && open.some((p) => p.id === current.id)
         ? current.id
         : null
-  return { open, focusId, history, kept }
+  const templates = Array.isArray(blob.templates)
+    ? (blob.templates as SessionTemplate[]).filter((t) => t && typeof t.id === "string" && t.tiers)
+    : []
+  return { open, focusId, history, kept, templates }
+}
+
+/**
+ * Park the running session from outside the popup (the focus bar). Returns
+ * the parked plan, or null when nothing runs. The caller lets go of the pen
+ * clock (`releasePenClock` in `lib/session-pen.ts`).
+ */
+export function parkLiveSession(now = new Date(), futureNote?: string): SessionPlan | null {
+  const store = useSessionPlanStore.getState()
+  const live = liveSession(store.open)
+  if (!live || live.phase !== "run") return null
+  const parked = parkSession(live, now, futureNote)
+  store.put(parked, now)
+  return parked
 }

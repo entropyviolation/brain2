@@ -277,7 +277,7 @@ describe("TodoPanel", () => {
   it("files a task as a missed opportunity instead of completing it", () => {
     render(<TodoPanel />)
     fireEvent.click(screen.getByRole("button", { name: "Finish slides" }))
-    fireEvent.click(screen.getByTitle("Missed opportunity — too late"))
+    fireEvent.click(screen.getByTitle("Missed opportunity — the window for it passed"))
     fireEvent.click(screen.getByRole("button", { name: "Skip" }))
     const updated = useTaskStore.getState().tasks[0]
     expect(updated.completed).toBe(false)
@@ -492,6 +492,9 @@ describe("TodoPanel", () => {
     expect(within(assigned).getByText("Finish slides")).toBeInTheDocument()
 
     fireEvent.click(within(assigned).getByRole("button", { name: "Finish slides" }))
+    // No blank line waits unasked: the empty tree offers one quiet key.
+    expect(within(assigned).queryByLabelText("Add step")).toBeNull()
+    fireEvent.click(within(assigned).getByRole("button", { name: "Add the first step" }))
     const stepName = within(assigned).getByLabelText("Add step")
     fireEvent.change(stepName, { target: { value: "Outline" } })
     fireEvent.change(within(assigned).getByLabelText("Minutes for the new step"), { target: { value: "45" } })

@@ -8,6 +8,7 @@
  * Pure so they're unit-testable. See spec §7.1–7.2.
  */
 import { addMonths, addYears } from "date-fns"
+import { isStepItem, withoutStepItems } from "@/lib/step-item-guard"
 import {
   addCalendarDays,
   formatLocalDateKey,
@@ -105,7 +106,7 @@ export function getAvailableTasks(allTasks: Task[], opts: AvailableTasksOptions)
   const { activeTab, selectedCategories, sortBy, sortOrder, lists, scheduleableCategoryIds, eventuallyListId } = opts
 
   let tasks = allTasks.filter((task) => {
-    if (isClearedFromWork(task)) return false
+    if (isClearedFromWork(task) || isStepItem(task)) return false
     if (!isTaskScheduleable(task, scheduleableCategoryIds)) return false
 
     if (!isAvailableNow(task, allTasks)) return false
@@ -222,6 +223,8 @@ export function getTasksForPeriod(
   currentDate: Date,
   now: Date = new Date(),
 ): Task[] {
+  // A step's item is never on the Scheduler (Phase 11).
+  allTasks = withoutStepItems(allTasks)
   const placementPeriod = period === "always" ? null : (period as SchedulePlacementPeriod)
   const past =
     placementPeriod != null && value != null && isPastFunnelPeriod(placementPeriod, value, now)

@@ -36,6 +36,7 @@ import {
 } from "lucide-react"
 import type { ModuleType, ModuleViewKind, AttrRule, RuleOperator } from "@/lib/modules-store"
 import type { Task, AttributeValue } from "@/lib/types"
+import { withoutStepItems } from "@/lib/step-item-guard"
 
 export const rand = <T,>(arr: T[]): T | undefined =>
   arr.length ? arr[Math.floor(Math.random() * arr.length)] : undefined
@@ -219,6 +220,6 @@ export const STAT_OPTIONS: { value: string; label: string }[] = [
 ]
 
 export function tasksInList(tasks: Task[], categoryId?: string): Task[] {
-  if (!categoryId) return tasks
-  return tasks.filter((t) => t.lists?.includes(categoryId))
+  if (!categoryId) return withoutStepItems(tasks)
+  return tasks.filter((t) => !t.stepOf && t.lists?.includes(categoryId))
 }
