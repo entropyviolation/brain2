@@ -15,6 +15,19 @@ Willpower gems, "Checklist before shipping UI"). Room docs:
 
 ---
 
+## Where it stands
+
+_Last mapped: 2026-10-16_
+
+**Shipped:** every way out of item detail is guarded (Phase 0); the person
+data layer (notes fold v19, rename-safe Gift ideas list, self, relation
+vocabulary); the rich Links tab for every item (Phases 5–8.1); Company pen
+double-click. **Next:** steps 1.1 → 2.1 → 3.1 (one rewrite of
+`person-detail.tsx`), which also finishes 3.2–3.5 and 7.1. Pieces for that
+rewrite are already in the tree and unwired: `components/ui/address-suggest-input.tsx`,
+`components/People/person-nicknames.tsx`, `components/People/person-log.tsx`
+(a copy of `Log` from `person-detail.tsx`; delete the original when wiring).
+
 ## How to use this file (agents read first)
 
 1. Read **§1 Context pack** instead of re-reading the files it summarizes.
@@ -47,27 +60,27 @@ Full `npm test` at the end of each phase.
 
 | Step | Title | Depends on | Status | Owner / date |
 |------|-------|-----------|--------|--------------|
-| 0.1 | Guard core: `guardAction` + live dirty check | — | ☐ | |
-| 0.2 | Popup: guard every way out | 0.1 | ☐ | |
-| 0.3 | Page shell + window close guard | 0.1 | ☐ | |
+| 0.1 | Guard core: `guardAction` + live dirty check | — | ☑ Done | main + this branch, 2026-10-16 |
+| 0.2 | Popup: guard every way out | 0.1 | ☑ Done | main + this branch, 2026-10-16 |
+| 0.3 | Page shell + window close guard | 0.1 | ☑ Done | main + this branch, 2026-10-16 |
 | 1.1 | Person fields stop re-rendering the popup | 0.1 | ☐ | |
 | 1.2 | Popup render diet | 1.1 | ☐ | |
 | 2.1 | Field padding + person field kit (CSS) | — | ☐ | |
 | 3.1 | Person Details layout + orb well | 1.1, 2.1 | ☐ | |
-| 3.2 | Address autocomplete | 1.1 | ☐ | |
-| 3.3 | Notes leave Details (migration v19) | — | ☐ | |
-| 3.4 | Gift ideas key + popup; rename-safe list | 3.1 | ☐ | |
-| 3.5 | Company pen double-click + move up | 3.1 | ☐ | |
-| 4.1 | Auto-create "self" | — | ☐ | |
-| 5.1 | Relation vocabulary: registry + store | — | ☐ | |
-| 5.2 | Person relation seeds | 5.1 | ☐ | |
-| 6.1 | `lib/link-graph.ts` (pure ego graph) | 5.1 | ☐ | |
-| 6.2 | Link composer (sentence builder, new relation) | 5.1, 6.1 | ☐ | |
-| 6.3 | Link ledger (out / in / mutual, confirm) | 6.1 | ☐ | |
-| 6.4 | Constellation view | 6.1 | ☐ | |
-| 6.5 | `RichLinksPanel` wired into popup for people | 0.2, 6.2–6.4 | ☐ | |
-| 7.1 | Self auto-populate from Relation words | 4.1, 5.2, 6.1 | ☐ | |
-| 8.1 | Rich links for every item (popup + page) | 6.5 | ☐ | |
+| 3.2 | Address autocomplete | 1.1 | ◐ Part | input built, not wired |
+| 3.3 | Notes leave Details (migration v19) | — | ◐ Part | data done, UI not |
+| 3.4 | Gift ideas key + popup; rename-safe list | 3.1 | ◐ Part | rename rule done, key + popup not |
+| 3.5 | Company pen double-click + move up | 3.1 | ◐ Part | double-click done, move-up waits on 3.1 |
+| 4.1 | Auto-create "self" | — | ☑ Done | 2026-10-16 |
+| 5.1 | Relation vocabulary: registry + store | — | ☑ Done | 2026-10-16 |
+| 5.2 | Person relation seeds | 5.1 | ☑ Done | 2026-10-16 |
+| 6.1 | `lib/link-graph.ts` (pure ego graph) | 5.1 | ☑ Done | 2026-10-16 |
+| 6.2 | Link composer (sentence builder, new relation) | 5.1, 6.1 | ☑ Done | 2026-10-16 |
+| 6.3 | Link ledger (out / in / mutual, confirm) | 6.1 | ☑ Done | 2026-10-16 |
+| 6.4 | Constellation view | 6.1 | ☑ Done | 2026-10-16 |
+| 6.5 | `RichLinksPanel` wired into popup for people | 0.2, 6.2–6.4 | ☑ Done | 2026-10-16 |
+| 7.1 | Self auto-populate from Relation words | 4.1, 5.2, 6.1 | ◐ Part | derived edges done, Relation datalist not |
+| 8.1 | Rich links for every item (popup + page) | 6.5 | ☑ Done | 2026-10-16 |
 | 8.2 | Orb well for every item (fascia) | 3.1 | ☐ | |
 | 9.1 | Docs sweep + screenshots | all | ☐ | |
 
@@ -329,7 +342,7 @@ touch it: 0.2, 1.2, 3.1 (slot only), 6.5, 8.1. Run those in sequence.
   action; Discard then action; Stay runs nothing; function `isDirty` is read
   at call time.
 - **Done when**: tests green; no caller changed yet.
-- **Handoff**: _(fill in)_
+- **Handoff**: Main shipped this first; the merge kept main's `unsaved-changes-guard.tsx` (it also holds the first pending action while the prompt is open: `promptOpenRef`). `isDraftDirty` and `originalRef` live in `useItemDetailDraft.ts`.
 
 #### 0.2 Popup: guard every way out
 - **Files**: `components/ItemDetail/ItemDetailPopup.tsx` (+ its test).
@@ -350,7 +363,7 @@ touch it: 0.2, 1.2, 3.1 (slot only), 6.5, 8.1. Run those in sequence.
   list badge → prompt shows, list not navigated; Save → saved + navigated;
   Exit without saving → not saved + navigated. Same for opening a related
   item. Clean double-click navigates with no prompt.
-- **Handoff**: _(fill in)_
+- **Handoff**: `openItem` and `handleNavigateToList` both go through `guardAction`. Tests in `ItemDetailPopup.test.tsx` ("unsaved guard on every way out"). Other rooms that call `requestNavigateToList` (List settings, Analytics, iPhone Notes) only run while no item popup is open (the modal covers them), so no global leave registry was added.
 
 #### 0.3 Page shell + window close guard
 - **Files**: `components/ItemDetail/ItemDetailPage.tsx`, maybe
@@ -371,7 +384,7 @@ touch it: 0.2, 1.2, 3.1 (slot only), 6.5, 8.1. Run those in sequence.
      `lib/unsaved-changes.ts` that `requestNavigateToListAfterPaint` consults).
      Record what you found in the handoff even if nothing needed changing.
 - **Tests**: page Back with a dirty draft prompts; clean Back leaves.
-- **Handoff**: _(fill in)_
+- **Handoff**: Page Back has `aria-label="Back"` and goes through `requestClose`. `useItemDetailUnloadGuard(active, isDirty)` in both shells.
 
 ### Phase 1 — Typing is instant
 
@@ -506,7 +519,7 @@ touch it: 0.2, 1.2, 3.1 (slot only), 6.5, 8.1. Run those in sequence.
 - **Tests**: mock `@/lib/geo-address`; typing shows suggestions; pick
   stores label + coords; neighborhood precision stores the neighborhood
   line; `assembleProfile` keeps coords.
-- **Handoff**: _(fill in)_
+- **Handoff**: Data done: `PersonAddress` keeps `lat`, `lng`, `parts` (`cleanCoords` in `assembleProfile`). `AddressSuggestInput` is written (`onLive`, `onCommit`, `onPick`; 300ms debounce, 3+ letters, ↑ ↓ Enter Esc) but not wired into `person-detail.tsx` yet. Its `.address-suggest-menu` / `-name` / `-label` classes still need CSS (copy `.rl-menu` in `components/ItemDetail/links/rich-links.css`). Precision rule on pick is still to write.
 
 #### 3.3 Notes leave Details (migration v19)
 - **Files**: `lib/task-store.ts` (`TASK_STORE_PERSIST_VERSION` 18 → 19 +
@@ -529,7 +542,7 @@ touch it: 0.2, 1.2, 3.1 (slot only), 6.5, 8.1. Run those in sequence.
 - **Tests**: fold is idempotent, dedupes, keeps order; migrate v18 → v19
   fixture; Details no longer shows "Notes" / "Dated notes"; Notes tab shows
   the folded entries and the standing attribute.
-- **Handoff**: _(fill in)_
+- **Handoff**: Done: `lib/person-notes-fold.ts` (`foldPersonNoteLog`, `migratePersonNotesToNoteLog`, tests) and persist **v19** in `lib/task-store.ts`. **Not done:** removing the Notes textarea and Dated notes `Log` from `person-detail.tsx`, the on-load fold in the Notes tab, and binding the person standing note to `attributes.notes` there.
 
 #### 3.4 Gift ideas key + popup; rename-safe list
 - **Files**: new `components/People/person-gift-ideas.tsx` (key + dialog),
@@ -555,7 +568,7 @@ touch it: 0.2, 1.2, 3.1 (slot only), 6.5, 8.1. Run those in sequence.
 - **Tests**: user rename survives `ensureCloseGiftIdeas()` and a person
   rename; auto name still follows a person rename; key opens dialog; quick
   add puts an item on the list.
-- **Handoff**: _(fill in)_
+- **Handoff**: Done: `List.giftIdeasAutoName` and `giftIdeasNameIsAuto` in `lib/gift-ideas.ts` (tests: a hand rename survives hydrate and person renames). **Not done:** the key and popup (`person-gift-ideas.tsx`). Note: when the item popup is `stackAbove` it is `z-[80]`; give any dialog opened from it `z-[90]` (`OrbPickerDialog` now takes `className` for this).
 
 #### 3.5 Company pen double-click + move up
 - **Files**: `components/People/person-pipelines.tsx` (row ~95),
@@ -567,7 +580,7 @@ touch it: 0.2, 1.2, 3.1 (slot only), 6.5, 8.1. Run those in sequence.
   stacks above the item popup and that closing it returns focus to the popup.
 - **Tests**: double-click calls `openPenSettings("company", penId)` (spy on
   the module).
-- **Handoff**: _(fill in)_
+- **Handoff**: Done in `person-pipelines.tsx` (all modes; `data-opens-pen`), test in `person-pipelines.test.tsx`. Pen settings is a separate Radix dialog mounted later, so it stacks above a normal item popup. Moving the section up waits on the 3.1 `pipelines` slot.
 
 ### Phase 4 — Self
 
@@ -584,7 +597,7 @@ touch it: 0.2, 1.2, 3.1 (slot only), 6.5, 8.1. Run those in sequence.
   a pen (it matches by name; add an exclusion if needed).
 - **Tests**: created once; not recreated after delete; not duplicated when a
   hub merge brings it back with the same id.
-- **Handoff**: _(fill in)_
+- **Handoff**: `lib/people-self.ts`: `PEOPLE_SELF_ID = "person-self"`, title "self", `ensureSelfPerson()` called from `hooks/use-people-i-know.ts`. The one-time flag is per data profile (`demoPhysicalKey` on Demo). `isSelfPerson`, `findSelfPerson` exported. People sync only creates items from pens, so it never pairs with self.
 
 ### Phase 5 — Relation vocabulary
 
@@ -617,7 +630,7 @@ touch it: 0.2, 1.2, 3.1 (slot only), 6.5, 8.1. Run those in sequence.
 - **Tests**: existing `lib/links*.test.ts` green unchanged; custom label and
   inverse read through `relationLabel` / `inverseRelation`; symmetric pair;
   scoped `relationsFor("person","band")`.
-- **Handoff**: _(fill in)_
+- **Handoff**: The map lives in `lib/links.ts` (`registerRelationDefs`, `getRelationDef`, `allRelationDefs`, `inverseRelationLabel`) so every old reader gets custom labels with no import cycle. Catalog ids always win over a custom def. `lib/relation-registry.ts`: `relationsFor`, `relationFamily`, `createRelationPair`, `guessInverseLabel`, `sanitizeRelationDefs`. Store: `relations`, `addRelations`, `updateRelation`, `archiveRelation` on `item-type-store` (no version bump; `migrateItemTypeState` carries `relations`).
 
 #### 5.2 Person relation seeds
 - **Files**: new `lib/person-relations.ts` (+ test), registered in
@@ -643,7 +656,7 @@ touch it: 0.2, 1.2, 3.1 (slot only), 6.5, 8.1. Run those in sequence.
   married-to; coworker → works-with; roommate; cousin; neighbor; boss →
   (person manager-of self); ex. Lowercase, trims, plural-tolerant.
 - **Tests**: every seed's inverse exists; every word maps.
-- **Handoff**: _(fill in)_
+- **Handoff**: `lib/person-relations.ts`: `PERSON_RELATIONS`, `RELATION_WORDS`, `relationForWord`. In `pair()`, `null` means any type (a default parameter treats `undefined` as "use the default").
 
 ### Phase 6 — Rich Links tab
 
@@ -678,7 +691,7 @@ nothing in it may import from `components/People/`.
   backlink index, use it (check its exports first) instead of scanning.
 - **Tests**: out, in, mutual merge, symmetric relation merge, derived
   dropped by a real edge, custom relation via registry.
-- **Handoff**: _(fill in)_
+- **Handoff**: As specified, plus `edgeKey`, `canonicalRelation`, `edgeCount`. Uses `taskIndexOf(all).backlinks`. Derived edges for self live in `lib/self-relations.ts`.
 
 #### 6.2 Link composer
 - **Files**: `components/ItemDetail/links/LinkComposer.tsx`,
@@ -697,7 +710,7 @@ nothing in it may import from `components/People/`.
   (draft).
 - **Tests**: create a custom relation and link in one flow; scoped relation
   filters targets; duplicate pair is refused (no-op, row flashes).
-- **Handoff**: _(fill in)_
+- **Handoff**: `LinkComposer.tsx` holds the relation combobox and `NewRelationForm`; `LinkTargetSearch.tsx` matches title, full name, nicknames, description, and offers "New person" when the relation points at people. Type of an item: `itemLinkTypeId(item, lists)` in `lib/item-types.ts`.
 
 #### 6.3 Link ledger
 - **Files**: `components/ItemDetail/links/LinkLedger.tsx`.
@@ -710,7 +723,7 @@ nothing in it may import from `components/People/`.
   `lib/commit-item-edit.ts`). Empty state: one muted line.
 - **Tests**: confirm turns an in row into mutual in the draft; remove only
   removes own link; dismiss hides a derived row and survives Save.
-- **Handoff**: _(fill in)_
+- **Handoff**: `Task.dismissedLinkSuggestions` added to `lib/types.ts` and `TASK_FIELDS`.
 
 #### 6.4 Constellation view
 - **Files**: `components/ItemDetail/links/LinkConstellation.tsx`,
@@ -740,7 +753,7 @@ nothing in it may import from `components/People/`.
   full-text twin.
 - **Tests**: layout is deterministic for a fixed edge set; sectors don't
   overlap; reduced motion renders final positions.
-- **Handoff**: _(fill in)_
+- **Handoff**: Changed from the plan: incoming cords use the family color, dashed and flowing toward the center (not amber). Motion is a small spring integrator in the component (entrance, stir, grab-and-fling), not the Lists gravity stepper, because the slots are fixed. Layout: `lib/link-constellation-layout.ts` (tests).
 
 #### 6.5 `RichLinksPanel` wired into popup for people
 - **Files**: `components/ItemDetail/links/RichLinksPanel.tsx`,
@@ -757,7 +770,7 @@ nothing in it may import from `components/People/`.
 - **Tests**: popup for a person shows the rich panel; a task still shows the
   old one; adding a link then Save writes `task.links`; open linked item
   with a dirty draft prompts.
-- **Handoff**: _(fill in)_
+- **Handoff**: `useItemEdges(task)` is exported for the tab count. Styles: `components/ItemDetail/links/rich-links.css` (container query narrows the composer in the page rail).
 
 ### Phase 7 — Self knows everyone
 
@@ -775,7 +788,7 @@ nothing in it may import from `components/People/`.
   keys.
 - **Tests**: words map both sides; a pinned edge replaces its derived twin;
   no Self item → no derived edges.
-- **Handoff**: _(fill in)_
+- **Handoff**: Done: `derivedSelfEdges(item, all, dismissed)`; unknown words read "knows · {word}". **Not done:** the Relation field datalist from `RELATION_WORDS` (part of 3.1).
 
 ### Phase 8 — Every item
 
@@ -790,7 +803,7 @@ nothing in it may import from `components/People/`.
   them (`grep -rn "LinkPicker\|RelatedItemsPanel" components`).
 - **Tests**: the old popup link tests ported to the new panel; belief /
   objective tests untouched and green.
-- **Handoff**: _(fill in)_
+- **Handoff**: Done in the same change as 6.5. `LinkPicker.tsx` and `RelatedItemsPanel.tsx` are deleted; their tests moved to `RichLinksPanel` in `ItemDetail.test.tsx`.
 
 #### 8.2 Orb well for every item (fascia)
 - **Files**: both shells' fascia, `item-detail-chrome.css`.
@@ -841,3 +854,12 @@ nothing in it may import from `components/People/`.
 
 _Append one line per finished step: `YYYY-MM-DD · step · who · one-line
 result`._
+
+- 2026-10-16 · 0.1–0.3 · main + this branch · guard on every way out; main's guard kept in the merge.
+- 2026-10-16 · 3.3 (data) · Claude · persist v19 folds person dated notes into `noteLog`.
+- 2026-10-16 · 3.4 (rename) · Claude · a hand-renamed Gift ideas list keeps its name.
+- 2026-10-16 · 4.1 · Claude · "self" (nickname me) made once; a delete sticks.
+- 2026-10-16 · 5.1–5.2 · Claude · relation registry, person seeds, relation words, person-made relations.
+- 2026-10-16 · 6.1–6.5, 8.1 · Claude · rich Links tab for every item in both shells.
+- 2026-10-16 · 3.5 (double-click), 7.1 (edges) · Claude · pen settings from a pipeline row; self's derived edges.
+- Known red on main, not from this work: `lib/item-type-store.test.ts` (version-mismatch rehydrate) and two `components/UiNames/ui-names-stamps.test.ts` stamps.
