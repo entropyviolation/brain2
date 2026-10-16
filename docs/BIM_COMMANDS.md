@@ -52,6 +52,32 @@ In chat: `info` · `{prefix} info` · `{prefix} commands` · `all commands`.
 - **Forms / aliases:** `pair`, `/start`
 - **Does:** Pair this Telegram account using the 6-digit code from Settings → Message ingest. Send to @brain2_phone_bot, never BotFather. Unknown senders get no reply.
 
+## Menus (today / week / month / season)
+
+### `today menu`
+
+- **Format:** `today menu` · `week menu` · `month menu` · `season menu` (the two words alone)
+- **Forms / aliases:** `today menu`, `day menu`, `week menu`, `month menu`, `season menu`
+- **Does:** Opens a numbered menu for that period: the date, a quote of the day drawn at random from the Quotes list (created when missing), and reminders that fall in the period. Reply 1 To-do, 2 Habits, 3 Plan, 4 Summary. Every screen takes HELP, BACK, MENU, and X. A reply that is not a menu answer closes the menu and runs as an ordinary message; an open menu closes after 6 hours. Season is the calendar quarter.
+
+### `1. / 2. / 3. / 4. / 5. / 6.`
+
+- **Format:** One action per line: `1. mow lawn` (lines under it are more tasks) · `2. 3, 4` · `3. 4, 7` · `2. -3` (undo) · `4. 2, 8 ~9pm` · `5. 4` · `6.` or `6. 1, 3`
+- **Forms / aliases:** `1.`, `2.`, `3.`, `4.`, `5.`, `6.`
+- **Does:** Menu to-do screen. 1 adds tasks to the period (season adds to this month), 2 prioritizes, 3 requires, 4 marks done (now, or the time after the number; ~ marks it estimated), 5 starts working on that task now (stop ends it), 6 walks each task for six detail slots (tier minutes points importance resistance excitement) plus an optional why line. A bare action number asks for its numbers. Numbers stay fixed while the menu is open.
+
+### `1, 3 · 3 = 18`
+
+- **Format:** `1, 3` marks done · `3 = 18` sets a value · `5 = text` for a text habit · `2 = no` unchecks
+- **Forms / aliases:** `1, 3`, `3 = 18`, `3: 18`, `2 = no`
+- **Does:** Menu habits screen: the period's habits (daily, weekly, monthly, or season) that are not done yet, with current value / goal. Numbers are each habit's place in the full list, so done habits leave gaps instead of renumbering.
+
+### `plan: 1 · summary: 1 / 2`
+
+- **Format:** Plan: `1` then the text, or `1. text` · Summary: `1` add, `2` replace (or `1. text` / `2. text`)
+- **Forms / aliases:** `1`, `1. text`, `2`, `2. text`
+- **Does:** Menu plan screen shows the period's plan log with date stamps and appends a new entry (from text). Summary screen shows the Tracking summary for the period and adds a paragraph or replaces it.
+
 ## Grocery
 
 ### `groc`
@@ -510,6 +536,15 @@ In chat: `info` · `{prefix} info` · `{prefix} commands` · `all commands`.
 - **Format:** `iphone-notes:` body · `iphone-notes 2/3:` continuations · `inotes:` · `phone notes:`
 - **Forms / aliases:** `iphone-notes`, `iphone notes`, `phone notes`, `inotes`
 - **Does:** Park an On My iPhone note dump onto Lists → iPhone Notes Store → Parked (header Phone Notes). Not the tracker `n` jot.
+
+## Links (Inbox → Links)
+
+### `https://… note`
+
+- **Format:** `https://www.tiktok.com/@a/video/1 recipe idea` · `wikipedia.com good for research` · a link alone
+- **Forms / aliases:** `https://…`, `http://…`, `www.…`, `example.com`
+- **Does:** A message whose first word is a link lands on Inbox → Links, not the log and not the revisit Inbox. The link is the first word; any text after it is the note. A bare domain needs a known ending (`.com`, `.org`, …). The same open link sent again adds the note to the saved row.
+- **Note:** Checked before clarify answers and pin replies. `-i` at the end also files it in Inbox. `read inbox` lists Links last.
 
 ## Pinned grocery card
 

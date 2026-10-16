@@ -60,6 +60,8 @@ export type GlossaryPrefix =
   | "stop"
   | "iphone-notes"
   | "iphone"
+  | "links"
+  | "menu"
 
 const PREFIX_ALIASES: Record<string, GlossaryPrefix> = {
   g: "groc",
@@ -87,6 +89,8 @@ const PREFIX_ALIASES: Record<string, GlossaryPrefix> = {
   "to do": "to do",
   "to-do": "to-do",
   tdt: "todo",
+  menu: "menu",
+  menus: "menu",
   do: "do",
   add: "add",
   qa: "add",
@@ -130,6 +134,8 @@ const PREFIX_ALIASES: Record<string, GlossaryPrefix> = {
   "iphone notes": "iphone-notes",
   inotes: "iphone-notes",
   iphone: "iphone",
+  link: "links",
+  links: "links",
 }
 
 function familyOf(prefix: GlossaryPrefix): string {
@@ -151,6 +157,8 @@ function familyOf(prefix: GlossaryPrefix): string {
     case "activity":
     case "currently":
       return "monitor"
+    case "menu":
+      return "menu"
     case "todo":
     case "to do":
     case "to-do":
@@ -198,6 +206,8 @@ function familyOf(prefix: GlossaryPrefix): string {
       return "journal"
     case "iphone-notes":
       return "iphone-notes"
+    case "links":
+      return "links"
     case "read":
     case "lists":
     case "folders":
@@ -224,6 +234,7 @@ Basics
 • Pinned grocery survives a closed laptop. Live replies 24/7 need: npm run phone:hub
 
 What you can do (families)
+• Menus — today menu · week menu · month menu · season menu: quote, reminders, then reply 1 To-do · 2 Habits · 3 Plan · 4 Summary
 • Plans — plan for rn:, read plan(s) for today, agenda
 • Rituals — gm / gn / rituals / review / ritual start week
 • Habits — dh: keyword, habit: / did: / h (bare keywords do not log)
@@ -241,6 +252,7 @@ What you can do (families)
 • Read — read: / show: / dump: / peek:, lists, folders, search, today, count, tags, ops
 • Scan — receipt photo, journal/PDF → Docs, inv pantry
 • iPhone Notes — iphone-notes: park from Shortcut
+• Links — start a message with a link (tiktok, reel, article…) → Inbox → Links; text after it is the note
 
 How to see more (from inside this chat)
 • {prefix} info — detailed instructions for one family
@@ -382,6 +394,25 @@ How to use it
 
 Send "to do commands" for the glossary.`,
 
+  menu: `${BIM_SHORT} · Menus
+What it is
+  A numbered menu for one period. Send the two words alone:
+  today menu · week menu · month menu · season menu
+  It opens with the date, a quote of the day (from your Quotes list), and reminders.
+
+How to use it
+• Reply with a number: 1 To-do · 2 Habits · 3 Plan · 4 Summary
+• Every screen takes HELP, BACK (one step up), MENU (top), and X (close)
+• To-do: start a line with an action number, several lines at once
+  1. add tasks (lines under it too) · 2. prioritize 3, 4 · 3. require 4, 7
+  4. done 2, 8 ~9pm · 5. working on now 4 · 6. add details (walks each task)
+• Habits: numbers never shift, so done ones leave gaps. 1, 3 marks done · 3 = 18 sets a value
+• Plan: shows the log with dates · 1 to add
+• Summary: shows it · 1 add a paragraph · 2 replace it
+• Anything that is not a menu answer closes the menu and runs as usual. A menu closes on its own after 6 hours.
+
+Send "menu commands" for the glossary.`,
+
   ingest: `${BIM_SHORT} · Capture / add / bulk / Inbox
 What it is
   Inbox capture (inbox:, add:, a list path), the -i / -inbox flag, plus bulk list dumps.
@@ -393,6 +424,7 @@ How to use it
 • -i or -inbox at the end of any message → it lands where it was going, and the text after the verb also lands in Inbox
   thought process: fix the car -i → thought process + Inbox · fix the car -i → log + Inbox · inbox: fix the car → Inbox only
 • -mb or -monkey on that line → Monkey brain (a dump, not the Inbox you revisit)
+• A message that starts with a link → Inbox → Links, with the rest as its note (links info)
 • -p or -plain → stored as written (no list, folder, date, time, duration, or priority)
 • list: item and folder: list: item create the list. folder: all: item files on that folder's All Items (all items works too) — not a list named all. A name may contain digits (brain2: item is the list brain2). Dates, times, duration, and priority stay in the title
 • bulk: / bulk add — headers and one item per line
@@ -515,6 +547,16 @@ Parks on Lists → iPhone Notes Store → Parked (header Phone Notes).
 
 Send "iphone-notes commands".`,
 
+  links: `${BIM_SHORT} · Links
+• Start a message with a link → Inbox → Links (its own tab, not the log, not the revisit Inbox)
+• wikipedia.com good for research → link wikipedia.com, note "good for research"
+• https://www.instagram.com/reel/abc/ outfit idea · a TikTok, YouTube, or article link alone
+• A bare domain needs a known ending (.com, .org, .io …). https:// or www. always counts.
+• The same open link again adds the new note to the saved one
+• read inbox lists Links last
+
+Send "links commands".`,
+
   pin: `${BIM_SHORT} · Pin
 • pin  ·  live  ·  snapshot — refresh the pinned grocery card`,
 
@@ -600,6 +642,7 @@ export function knownGlossaryPrefixes(): string[] {
     "call",
     "text",
     "iphone-notes",
+    "links",
     "pin",
     "inv",
     "receipt",

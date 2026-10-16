@@ -7,7 +7,9 @@ See [`docs/MESSAGE_INGEST.md`](../../docs/MESSAGE_INGEST.md).
 The Electron poller never writes Zustand. `npm run phone:hub` *does* run this
 folder headlessly against `data/shared-persist.json` so grocery reads work when
 the laptop is closed. Write commands reuse capture / habit / tracking paths.
-A message with no verb is a `log:` line, not Inbox. `inbox:` (or `add:` / `qa:`)
+A message with no verb is a `log:` line, not Inbox. A message whose first word
+is a link goes to **Inbox → Links** instead, with the rest as its note
+(`apply-link.ts`; see **Links** below). `inbox:` (or `add:` / `qa:`)
 is the explicit Inbox verb, and a trailing `-i` / `-inbox` on any message also
 files the text after its verb in Inbox after it lands where it was going (one
 `undo` takes back both). A verb-less line with a list path (`brain2: item`),
@@ -70,6 +72,7 @@ Docs folder **From phone**, grocery checkout + pantry bump. See
 | `apply-glossary.ts` | Glossary matcher + apply helpers |
 | `apply-morning-gm.ts` | `gm` morning flow: last night's wake reminder, what matters, and focus goals when saved; all-nighter; one-at-a-time affirmations (voice advances); to-do add; required (`1,8` / `1, 8`); 3–5 priorities; 1–3 habit priorities; go-through to-do (six slots; importance / resistance / excitement are 0–10 and may be decimals; a bad line stays on that item; `SKIP` one item; `SKIP ALL` the rest); plaintext day plan (`from text` stamp); circumstance branches; best day; gratitude. Each answer is stored immediately; skip leaves the question empty. Existing answers open a start-over / continue / jump menu. `STOP` quits and saves |
 | `ritual-skip.ts` | Shared skip tokens for text rituals |
+| `apply-link.ts` | A message whose first word is a link → Inbox → Links. The link (`lib/saved-links.ts`) is `Task.savedLink`, the name is the URL, the rest of the message is `notes`. Smart-parse does not read the note. The same open link again appends the note. Runs before clarify answers and pin replies; an open ritual or menu still owns the message. |
 | `apply-capture.ts` | Quick Add pipeline (`parseSmartCapture` → `buildCapturedTask` → `addTask`). Reply says Monkey brain when the line had `-mb` / `-monkey`. `-p` / `-plain` stores the line as written. A date, time, duration, or priority stays in the title. A name may contain digits (`brain2: item` is the list brain2). `folder: all: item` files on that folder's All Items. A list created here is not sent to the Scheduler. The executor stamps `captureOrigin` (`telegram`) with the chat, message id, and raw line. |
 | `apply-bulk.ts` | Bulk Add pipeline (Inbox off). Grocery headers with no other folder land on the store list. `Folder: all:` files following lines on that folder's All Items. Identical open titles are skipped; `see` / `again` / `dismiss`. A date, time, duration, or priority on an item line stays in the title. `-p` / `-plain` on a line stores that line as written; a header above it still files the item. A list created here is not sent to the Scheduler. |
 | `apply-habit.ts` | `updateCompletion` / increment for today (optional `yesterday`) |
@@ -111,8 +114,25 @@ Docs folder **From phone**, grocery checkout + pantry bump. See
 | `chunk-text.ts` | Split long replies for Telegram's 4096-character cap |
 | `switch-scope.ts` | Paint a Tracking pen from *now* through end of day (`at:`, mood, `currently`). Phone GPS does not use this |
 | `ingest-store.ts` | `brain2-ingest-store`: pairing, allowlist (`allowlistRev`, revoke tombstones), shortcuts (v4 remaps retired `g` expansions → `groc`; v5 drops GPS tracking rows from the log), live grocery list id (v6), hub URL, pins, log. Rehydrate unions chats so an empty seed cannot unpair |
-| `executor.ts` | `ingestIncoming` / `ingestIncomingAsync` — dedupe, expand, pairing, allowlist, precedence (explicit → `dh:` / discrete triggers → dispatch), clarify, media, log. Text with no verb goes to `applyDiscreteLog` (Inbox only with a list path, `cat:`, `-mb`, `-p`, or when the log cannot read it). `splitInboxFlag` peels a trailing `-i` / `-inbox` and `alsoFileInInbox` captures the body to Inbox under the same undo. The `now` argument is send time. An open ritual owns the text. GPS tracking points go to `gps-log.ts`, not this log |
+| `executor.ts` | `ingestIncoming` / `ingestIncomingAsync` — dedupe, expand, pairing, allowlist, precedence (link first → explicit → `dh:` / discrete triggers → dispatch), clarify, media, log. Text with no verb goes to `applyDiscreteLog` (Inbox only with a list path, `cat:`, `-mb`, `-p`, or when the log cannot read it). `splitInboxFlag` peels a trailing `-i` / `-inbox` and `alsoFileInInbox` captures the body to Inbox under the same undo. The `now` argument is send time. An open ritual owns the text. GPS tracking points go to `gps-log.ts`, not this log |
 | `telegram-bridge.ts` | Renderer IPC + `/api/ingest` hub client |
 | `index.ts` | Barrel |
+
+## Links
+
+_Last mapped: 2026-10-16_
+
+- `applyNamedText` in `executor.ts` calls `applyLink` before pending clarify,
+  grocery / to-do pin replies, glossary, and verbs. Attachments skip it.
+- `lib/saved-links.ts` reads the first token: `http(s)://`, `www.`, or a bare
+  domain with a known ending (`BARE_TLDS`). `linkKind` names TikTok, Instagram,
+  YouTube, X, Reddit, Spotify, Pinterest, Substack, Wikipedia, else Article.
+  `linkKindLabel` adds reel / post / short from the path.
+- The row is a normal Inbox task, so hub merge, undo, and backup need nothing
+  new. `inInboxPartition(task, "links")` (`lib/inbox-batch.ts`) is the only
+  test for the pile.
+- `read inbox`, `today`, `status`, `count` list Links on their own line.
+- Glossary: `links info`, `links commands` (family `links`). Catalog id `link`.
+- Tests: `lib/saved-links.test.ts`, the link case in `executor.test.ts`.
 
 Tests: `*.test.ts` next to the modules they cover.

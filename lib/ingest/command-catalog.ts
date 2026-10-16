@@ -31,6 +31,7 @@ export type CatalogCategory =
   | "call"
   | "text"
   | "iphone-notes"
+  | "links"
   | "pin"
   | "inventory"
   | "receipt"
@@ -38,6 +39,7 @@ export type CatalogCategory =
   | "read"
   | "shortcut"
   | "media"
+  | "menu"
 
 export interface CatalogEntry {
   /** Stable id for tests / docs anchors. */
@@ -77,6 +79,7 @@ export const CATALOG_CATEGORY_LABELS: Record<CatalogCategory, string> = {
   call: "iPhone Calls",
   text: "iPhone Texts",
   "iphone-notes": "iPhone Notes park",
+  links: "Links (Inbox → Links)",
   pin: "Pinned grocery card",
   inventory: "Pantry / inventory",
   receipt: "Receipt OCR",
@@ -84,6 +87,7 @@ export const CATALOG_CATEGORY_LABELS: Record<CatalogCategory, string> = {
   read: "Read-back & status",
   shortcut: "Built-in one-letter expansions & custom shortcuts",
   media: "Media (photos / voice)",
+  menu: "Menus (today / week / month / season)",
 }
 
 /** Every command / keyword / ritual reply BIM still documents. */
@@ -614,6 +618,48 @@ export const BIM_COMMAND_CATALOG: CatalogEntry[] = [
     status: "active",
   },
 
+  // ── Menus ───────────────────────────────────────────────────────
+  {
+    id: "today-menu",
+    category: "menu",
+    primary: "today menu",
+    forms: ["today menu", "day menu", "week menu", "month menu", "season menu"],
+    format: "`today menu` · `week menu` · `month menu` · `season menu` (the two words alone)",
+    explanation:
+      "Opens a numbered menu for that period: the date, a quote of the day drawn at random from the Quotes list (created when missing), and reminders that fall in the period. Reply 1 To-do, 2 Habits, 3 Plan, 4 Summary. Every screen takes HELP, BACK, MENU, and X. A reply that is not a menu answer closes the menu and runs as an ordinary message; an open menu closes after 6 hours. Season is the calendar quarter.",
+    status: "active",
+  },
+  {
+    id: "menu-todo",
+    category: "menu",
+    primary: "1. / 2. / 3. / 4. / 5. / 6.",
+    forms: ["1.", "2.", "3.", "4.", "5.", "6."],
+    format: "One action per line: `1. mow lawn` (lines under it are more tasks) · `2. 3, 4` · `3. 4, 7` · `2. -3` (undo) · `4. 2, 8 ~9pm` · `5. 4` · `6.` or `6. 1, 3`",
+    explanation:
+      "Menu to-do screen. 1 adds tasks to the period (season adds to this month), 2 prioritizes, 3 requires, 4 marks done (now, or the time after the number; ~ marks it estimated), 5 starts working on that task now (stop ends it), 6 walks each task for six detail slots (tier minutes points importance resistance excitement) plus an optional why line. A bare action number asks for its numbers. Numbers stay fixed while the menu is open.",
+    status: "active",
+  },
+  {
+    id: "menu-habits",
+    category: "menu",
+    primary: "1, 3 · 3 = 18",
+    forms: ["1, 3", "3 = 18", "3: 18", "2 = no"],
+    format: "`1, 3` marks done · `3 = 18` sets a value · `5 = text` for a text habit · `2 = no` unchecks",
+    explanation:
+      "Menu habits screen: the period's habits (daily, weekly, monthly, or season) that are not done yet, with current value / goal. Numbers are each habit's place in the full list, so done habits leave gaps instead of renumbering.",
+    status: "active",
+  },
+  {
+    id: "menu-plan-summary",
+    category: "menu",
+    primary: "plan: 1 · summary: 1 / 2",
+    forms: ["1", "1. text", "2", "2. text"],
+    format: "Plan: `1` then the text, or `1. text` · Summary: `1` add, `2` replace (or `1. text` / `2. text`)",
+    explanation:
+      "Menu plan screen shows the period's plan log with date stamps and appends a new entry (from text). Summary screen shows the Tracking summary for the period and adds a paragraph or replaces it.",
+    status: "active",
+  },
+
   // ── Rituals / GM ────────────────────────────────────────────────
   {
     id: "gm",
@@ -899,6 +945,19 @@ export const BIM_COMMAND_CATALOG: CatalogEntry[] = [
     status: "active",
   },
 
+  // ── Links ───────────────────────────────────────────────────────
+  {
+    id: "link",
+    category: "links",
+    primary: "https://… note",
+    forms: ["https://…", "http://…", "www.…", "example.com"],
+    format: "`https://www.tiktok.com/@a/video/1 recipe idea` · `wikipedia.com good for research` · a link alone",
+    explanation:
+      "A message whose first word is a link lands on Inbox → Links, not the log and not the revisit Inbox. The link is the first word; any text after it is the note. A bare domain needs a known ending (`.com`, `.org`, …). The same open link sent again adds the note to the saved row.",
+    status: "active",
+    note: "Checked before clarify answers and pin replies. `-i` at the end also files it in Inbox. `read inbox` lists Links last.",
+  },
+
   // ── Inventory / receipt / journal / pdf ─────────────────────────
   {
     id: "inv",
@@ -1084,6 +1143,7 @@ export function formatCategoryBlock(category: CatalogCategory): string {
 export const CATALOG_ORDER: CatalogCategory[] = [
   "help",
   "pair",
+  "menu",
   "grocery",
   "needed",
   "capture",
@@ -1102,6 +1162,7 @@ export const CATALOG_ORDER: CatalogCategory[] = [
   "call",
   "text",
   "iphone-notes",
+  "links",
   "pin",
   "inventory",
   "receipt",
@@ -1115,6 +1176,7 @@ export const CATALOG_ORDER: CatalogCategory[] = [
 export const FAMILY_TO_CATEGORIES: Record<string, CatalogCategory[]> = {
   grocery: ["grocery", "pin"],
   needed: ["needed"],
+  menu: ["menu"],
   plan: ["plan"],
   habits: ["habits"],
   log: ["log"],
@@ -1134,6 +1196,7 @@ export const FAMILY_TO_CATEGORIES: Record<string, CatalogCategory[]> = {
   receipt: ["receipt"],
   journal: ["journal", "media"],
   "iphone-notes": ["iphone-notes"],
+  links: ["links"],
   read: ["read"],
   help: ["help", "pair"],
 }
