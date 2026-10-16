@@ -972,6 +972,11 @@ export interface HabitTrackingLink {
   threshold?: number
   /** Default true. Keeps the tag selection when switched off. */
   enabled?: boolean
+  /**
+   * Sum this number detail field (`lib/pen-fields.ts`, e.g. Pages read) on the
+   * tagged blocks instead of counting minutes. `unit` is ignored while set.
+   */
+  fieldId?: string
 }
 
 /**

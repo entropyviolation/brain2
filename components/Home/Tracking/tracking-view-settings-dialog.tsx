@@ -6,8 +6,8 @@
  * opens it on General. Distinct from pen settings (one pen) and tag settings.
  *
  * A rail on the left, one bay at a time on the right:
- * - **General** — the Pen gallery, every hidden pen in every view, the
- *   day-summary well.
+ * - **General** — the Pen gallery, level categories per view, every hidden
+ *   pen in every view, the day-summary well.
  * - **Time Grid** — log flags, sun lines, screen face per time base, ribbon
  *   percent, typed Fill clocks. Cell size stays on the grid's own knob.
  *   Superimpose stays on the grid's view-mode bar.
@@ -40,13 +40,14 @@ import {
 } from "@/components/Home/Tracking/tracking-view-prefs"
 import { BimCommandsGuide } from "@/components/Home/Tracking/bim-commands-guide"
 import { PenGalleryDialog } from "@/components/Home/Tracking/pen-gallery-dialog"
+import { LevelCategoriesSettings } from "@/components/Home/Tracking/level-categories-settings"
 import "./tracking-chrome.css"
 import "./tracking-settings.css"
 
 export type TrackingSettingsSection = "general" | "grid" | "activity" | "daylog" | "log" | "bim"
 
 const SECTIONS: { id: TrackingSettingsSection; label: string; blurb: string }[] = [
-  { id: "general", label: "General", blurb: "Pens, hidden pens, summary" },
+  { id: "general", label: "General", blurb: "Pens, levels, hidden pens" },
   { id: "grid", label: "Time Grid", blurb: "Flags, faces, fill" },
   { id: "activity", label: "Activity Log", blurb: "Gaps and log lines" },
   { id: "daylog", label: "Day Log", blurb: "Opening span" },
@@ -220,6 +221,14 @@ export function TrackingSettingsDialog({
                         Open pen gallery
                       </button>
                     </div>
+                  </Group>
+                  <Group title="Level categories">
+                    <p className="trk-set-row-help">
+                      Name the rungs of each view’s counts-as ladder — Ocean Beach is a Neighborhood, San Diego a City.
+                      Broadest first. Put a pen on a level in its settings under Counts as; Analytics → Tracking reads a
+                      view by level.
+                    </p>
+                    <LevelCategoriesSettings />
                   </Group>
                   <Group title="Hidden pens">
                     <p className="trk-set-row-help">Hidden pens leave the well. Their paint still shows and they stay in the vault.</p>

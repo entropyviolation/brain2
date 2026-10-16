@@ -9,8 +9,11 @@
  *
  * Always-available: `{minutes}` `{x}` `{hours}` `{duration}` `{name}` `{pen}`
  * `{start}` `{end}`. Optional, and they gate which template wins: `{location}`
- * `{project}` (`{project name}`). Missing project → a template without it
- * (e.g. "Worked") can still match.
+ * `{project}` (`{project name}`), and every detail field the block's pens or
+ * tags declare (`lib/pen-fields.ts`) by id or name — `{pages}`, `{books}`,
+ * `{book(s)}`, `{pages read}`. Missing project → a template without it
+ * (e.g. "Worked") can still match; "Read {pages} pages of {books}" only wins
+ * when both are filled.
  *
  * Pure: no store.
  */
@@ -22,11 +25,14 @@ import {
   minutesToLabel,
   type TimeEntry,
 } from "@/lib/time-entries"
-import type { PenActionFormat, TrackPen, TrackScope } from "@/lib/time-tracking-store"
+import type { PenActionFormat, TrackPen, TrackScope, TrackTag } from "@/lib/time-tracking-store"
+import { FIELD_PRESETS, entryFieldValue, fieldVariableKeys, fieldsForBlock, type PenField } from "@/lib/pen-fields"
 
 export type PenActionValues = Record<string, string>
 
 const OPTIONAL_KEYS = new Set(["location", "project", "project name", "projectname"])
+/** Field keys ride along in the value map under this key so they gate too. */
+const GATED_KEY = "__gated"
 
 export function normalizeActionKey(raw: string): string {
   return raw.trim().toLowerCase().replace(/\s+/g, " ")
@@ -73,12 +79,22 @@ export function actionValuesFor(
   pen: TrackPen | undefined,
   allEntries: TimeEntry[],
   scopes: TrackScope[],
+  tags: TrackTag[] = [],
 ): PenActionValues {
   const minutes = entryMinutes(entry)
   const name = entryDisplayName(entry, pen?.name)
   const location = locationLabelForWindow(entry, allEntries, scopes)
   const project = entry.project?.trim() ?? ""
+  const fields: PenField[] = [...FIELD_PRESETS, ...fieldsForBlock(pen ? [pen] : [], tags, entry).map((row) => row.field)]
+  const fieldValues: PenActionValues = {}
+  for (const field of fields) {
+    const value = entryFieldValue(entry, field.id)
+    const text = value === undefined ? "" : String(value).trim()
+    for (const key of fieldVariableKeys(field)) if (!(key in fieldValues) || text) fieldValues[key] = text
+  }
   return {
+    ...fieldValues,
+    [GATED_KEY]: Object.keys(fieldValues).join("|"),
     minutes: String(minutes),
     x: String(minutes),
     hours: formatActionHours(minutes),
@@ -103,7 +119,8 @@ export function interpolateActionFormat(template: string, values: PenActionValue
 
 function allPlaceholdersFilled(template: string, values: PenActionValues): boolean {
   return placeholdersIn(template).every((key) => {
-    if (!OPTIONAL_KEYS.has(key)) return true
+    const gated = OPTIONAL_KEYS.has(key) || (values[GATED_KEY] ?? "").split("|").includes(key)
+    if (!gated) return true
     return Boolean(values[key]?.trim())
   })
 }

@@ -86,6 +86,7 @@ import {
 } from "./block-search"
 import { buildDayGrain, buildWeekGrain } from "./grain-strips"
 import { GrainStrips } from "./GrainStrips"
+import { CompanyHeadcountPlate, LevelLadderPlate } from "./TrackingContextPlates"
 import { tagMonthTrend } from "./tag-trends"
 import { TagTrendBoard } from "./TagTrendBoard"
 import type { TrackingSearchHit } from "@/lib/tracking-search"
@@ -923,6 +924,18 @@ export function TrackingAnalytics() {
         onSelectGap={openGap}
         onSelectTag={selectTag}
       />
+
+      <LevelLadderPlate
+        scope={scope}
+        entries={scoped}
+        onSelectPen={(penId) => {
+          setDrillTagId(null)
+          setDrillUntracked(false)
+          setDrillPenId(penId)
+        }}
+      />
+
+      <CompanyHeadcountPlate entries={allScopes} scopes={scopes} dateKeys={dateKeys} rangeLabel={rangeLabel} />
 
       {(pens.length > 0 || previousPens.length > 0) && (
         <PeriodDeltaTable

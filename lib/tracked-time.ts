@@ -16,6 +16,7 @@
  * and the Tracking day totals. Everything here takes plain state so tests never
  * touch a store.
  */
+import { numericFieldValue } from "@/lib/pen-fields"
 import type { TimeEntry } from "@/lib/time-entries"
 import { assignedPenIds } from "@/lib/time-entries"
 import type { TrackPen, TrackScope, TrackTag } from "@/lib/time-tracking-store"
@@ -105,6 +106,38 @@ export function trackedMinutesForTagsInRange(
   tagIds: string[],
 ): number {
   return dateKeys.reduce((sum, key) => sum + trackedMinutesForTags(source, key, tagIds), 0)
+}
+
+/**
+ * Sum of a number detail field (`lib/pen-fields.ts`) on `dateKey`'s blocks that
+ * carry one of `tagIds`. A block that runs past midnight is counted once, on
+ * the slice where it starts.
+ */
+export function trackedFieldSumForTags(
+  source: TrackedTimeSource,
+  dateKey: string,
+  tagIds: string[],
+  fieldId: string,
+): number {
+  const wanted = new Set(tagIds)
+  if (wanted.size === 0) return 0
+  let sum = 0
+  for (const entry of source.entries) {
+    if (entry.date !== dateKey) continue
+    if (entry.spanId && entry.startMin === 0) continue
+    if (!effectiveTagIds(entry, source.scopes).some((id) => wanted.has(id))) continue
+    sum += numericFieldValue(entry, fieldId)
+  }
+  return sum
+}
+
+export function trackedFieldSumForTagsInRange(
+  source: TrackedTimeSource,
+  dateKeys: string[],
+  tagIds: string[],
+  fieldId: string,
+): number {
+  return dateKeys.reduce((sum, key) => sum + trackedFieldSumForTags(source, key, tagIds, fieldId), 0)
 }
 
 /** Minutes per tag for one day, for the Tracking footer and analytics. */

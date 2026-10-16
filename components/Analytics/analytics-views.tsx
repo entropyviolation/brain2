@@ -22,6 +22,7 @@ export const ANALYTICS_VIEWS: Record<AnalyticsTab, LazyExoticComponent<Component
   screentime: view(() => import("./ScreenTimeView").then((m) => ({ default: m.ScreenTimeView }))),
   circadian: view(() => import("./CircadianView").then((m) => ({ default: m.CircadianView }))),
   places: view(() => import("./PlacesView").then((m) => ({ default: m.PlacesView }))),
+  people: view(() => import("./PeopleView").then((m) => ({ default: m.PeopleView }))),
   "mood-field": view(() => import("./MoodFieldView").then((m) => ({ default: m.MoodFieldView }))),
   diversity: view(() => import("./DiversityView").then((m) => ({ default: m.DiversityView }))),
   transitions: view(() => import("./TransitionsView").then((m) => ({ default: m.TransitionsView }))),

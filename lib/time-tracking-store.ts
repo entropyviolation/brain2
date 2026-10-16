@@ -107,10 +107,15 @@ import { lastUsedFromEntries, type PenSortMode } from "@/lib/pen-sort"
 import {
   applyPenLinks,
   attachCompanion as attachCompanionTo,
+  mirrorCrossViewDetails,
+  type DetailWindow,
   type CompanionTarget,
   type PenLink,
 } from "@/lib/entry-links"
 import { isRestoring, rememberWorld } from "@/lib/action-history"
+import { BUILTIN_PEN_LEVELS, scopeLevels, type ScopeLevel } from "@/lib/pen-levels"
+import type { PenField } from "@/lib/pen-fields"
+import type { PenPlace } from "@/lib/pen-place"
 import { scrubDeletedCatalogTag } from "@/lib/catalog-tag-scrub"
 import { normalizeTag } from "@/lib/links"
 import { compactMoodReading } from "@/lib/mood-reading"
@@ -131,6 +136,11 @@ export interface TrackTag {
   id: string
   name: string
   color: string
+  /**
+   * Detail fields every block on a pen with this tag asks for (`lib/pen-fields.ts`).
+   * Omitted on the Work tag means Project / context; `[]` turns that off.
+   */
+  fields?: PenField[]
 }
 
 /**
@@ -203,6 +213,19 @@ export interface TrackPen {
    * fallback (palette bead, totals, assumed hatch).
    */
   image?: string
+  /**
+   * Named level category in this view (`TrackScope.levels`, `lib/pen-levels.ts`):
+   * Ocean Beach is a Neighborhood, San Diego a City. `""` clears a built-in one.
+   */
+  levelId?: string
+  /** Detail fields every block on this pen asks for (`lib/pen-fields.ts`). */
+  fields?: PenField[]
+  /**
+   * Location pens: an address, a zip, and attached coordinates
+   * (`lib/pen-place.ts`). Another name for the same place, not "counts as";
+   * a GPS fix inside one is this pen.
+   */
+  place?: PenPlace
 }
 
 /**
@@ -226,6 +249,11 @@ export interface TrackScope {
   displayDepth?: DisplayDepth
   /** Names for the depth buttons, last one being Exact. See `DEFAULT_DEPTH_LABELS`. */
   depthLabels?: string[]
+  /**
+   * Named level categories, broadest first (`lib/pen-levels.ts`). Omitted means
+   * the built-in set for this view; `[]` means none.
+   */
+  levels?: ScopeLevel[]
 }
 
 interface TimeTrackingState {
@@ -275,6 +303,10 @@ interface TimeTrackingState {
   renameScope: (id: string, name: string) => void
   setScopeDisplayDepth: (scopeId: string, depth: DisplayDepth) => void
   setScopeDepthLabels: (scopeId: string, labels: string[]) => void
+  /** Replace a view's level categories (broadest first). Pens on a removed level lose it. */
+  setScopeLevels: (scopeId: string, levels: ScopeLevel[]) => void
+  /** Put one pen on a level, or clear it with `undefined`. */
+  setPenLevel: (scopeId: string, penId: string, levelId: string | undefined) => void
 
   /** Returns the new pen's id so callers can select it straight away. */
   addPen: (scopeId: string, pen: Omit<TrackPen, "id">) => string
@@ -315,6 +347,12 @@ interface TimeTrackingState {
 
   /** Paint a companion block across one block's window in another scope. */
   attachCompanion: (entryId: string, target: CompanionTarget, options?: { overwrite?: boolean }) => void
+  /**
+   * Agree cross-view details with the views they name over one window
+   * (`mirrorCrossViewDetails` in `lib/entry-links.ts`): Hanging out · Elijah
+   * puts Elijah in Company, and Company · Elijah ticks Elijah on Hanging out.
+   */
+  mirrorDetails: (window: DetailWindow) => void
 
   /** Replace the plaintext notes for one local calendar day. Empty text drops the key. */
   setDayNotes: (date: string, text: string) => void
@@ -1090,6 +1128,47 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
         }))
       },
 
+      setScopeLevels: (scopeId, levels) => {
+        rememberWorld("edit levels")
+        set((state) => ({
+          scopes: state.scopes.map((s) => {
+            if (s.id !== scopeId) return s
+            const ids = new Set(levels.map((level) => level.id))
+            return {
+              ...s,
+              levels,
+              pens: s.pens.map((pen) => {
+                if (!pen.levelId || ids.has(pen.levelId)) return pen
+                const { levelId: _dropped, ...rest } = pen
+                return rest
+              }),
+            }
+          }),
+        }))
+      },
+
+      setPenLevel: (scopeId, penId, levelId) => {
+        rememberWorld("set pen level")
+        set((state) => ({
+          scopes: state.scopes.map((s) => {
+            if (s.id !== scopeId) return s
+            // Writing the built-in list down keeps a level the person picked from vanishing.
+            const levels = s.levels ?? scopeLevels(s)
+            return {
+              ...s,
+              levels,
+              pens: s.pens.map((pen) => {
+                if (pen.id !== penId) return pen
+                if (levelId) return { ...pen, levelId, editedAt: Date.now() }
+                const { levelId: _dropped, ...rest } = pen
+                // A built-in level (Alone / Together) needs an explicit "none" to clear.
+                return BUILTIN_PEN_LEVELS[pen.id] ? { ...rest, levelId: "", editedAt: Date.now() } : { ...rest, editedAt: Date.now() }
+              }),
+            }
+          }),
+        }))
+      },
+
       // A nameless pen is invisible in the palette and unusable everywhere else,
       // so refuse to make one rather than leaving a blank swatch behind.
       addPen: (scopeId, pen) => {
@@ -1459,6 +1538,18 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
         })
       },
 
+      mirrorDetails: (window) => {
+        set((state) => {
+          const next = mirrorCrossViewDetails(state.entries, state.scopes, window, () => rid("te"), (scopeId, penId) => {
+            const scope = state.scopes.find((s) => s.id === scopeId)
+            const pen = scope?.pens.find((p) => p.id === penId)
+            return penId === "co-alone" || (pen?.name.trim().toLowerCase() === "alone")
+          })
+          const same = next.length === state.entries.length && next.every((e, i) => e === state.entries[i])
+          return same ? state : dropping(state, next)
+        })
+      },
+
       paintMinutes: (date, scopeId, startMin, endMin, penId, variantIds, spanId, precision, extras) => {
         // A restore is the last word for this stroke. A session tick or a
         // subscriber that paints again in the same turn would put the block back.
@@ -1625,6 +1716,7 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
                     project: next.project,
                     books: next.books,
                     pages: next.pages,
+                    fieldValues: next.fieldValues,
                     spanId: target.spanId,
                     precision: next.precision,
                     moodReading: next.moodReading,

@@ -69,6 +69,7 @@
  */
 "use client"
 
+import { numberFieldsIn } from "@/lib/pen-fields"
 import type React from "react"
 
 import { useEffect, useId, useRef, useState } from "react"
@@ -1044,6 +1045,7 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
           ? "that season"
           : "that day"
   const linkedPenCount = penIdsForTags(trackingScopes, link.tagIds).size
+  const trackingNumberFields = numberFieldsIn(trackingScopes, trackingTags)
   const sourceOrder =
     sourcesLocked && Array.isArray(task.completionSources)
       ? task.completionSources
@@ -2305,15 +2307,31 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
                 <>
                   <div className="habit95-goal-grid" style={{ marginTop: 8 }}>
                     <div className="habit95-field">
-                      <label htmlFor="tracking-unit">Count tracked time as</label>
+                      <label htmlFor="tracking-unit">Count tracked blocks as</label>
                       <select
                         id="tracking-unit"
                         className="habit95-input"
-                        value={link.unit ?? "minutes"}
-                        onChange={(e) => setLink({ unit: e.target.value as HabitTrackingUnit })}
+                        value={link.fieldId ? `field:${link.fieldId}` : (link.unit ?? "minutes")}
+                        onChange={(e) => {
+                          const value = e.target.value
+                          if (value.startsWith("field:")) setLink({ fieldId: value.slice(6) })
+                          else setLink({ unit: value as HabitTrackingUnit, fieldId: undefined })
+                        }}
                       >
-                        <option value="minutes">Minutes</option>
-                        <option value="hours">Hours</option>
+                        <optgroup label="Time">
+                          <option value="minutes">Minutes</option>
+                          <option value="hours">Hours</option>
+                        </optgroup>
+                        {trackingNumberFields.length ? (
+                          <optgroup label="Pen detail field">
+                            {trackingNumberFields.map((field) => (
+                              <option key={field.id} value={`field:${field.id}`}>
+                                {field.name}
+                                {field.unit ? ` (${field.unit})` : ""}
+                              </option>
+                            ))}
+                          </optgroup>
+                        ) : null}
                       </select>
                     </div>
                     <div className="habit95-field">
@@ -2333,6 +2351,13 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
                     </div>
                   </div>
                   <p className="habit95-hint">{TRACKING_MODES.find((m) => m.value === (link.mode ?? "add"))?.desc}</p>
+                  <p className="habit95-hint">
+                    {link.fieldId
+                      ? `Sums ${trackingNumberFields.find((f) => f.id === link.fieldId)?.name ?? "that field"} typed on each block with these tags — Reading · 12 pages puts 12 here.`
+                      : trackingNumberFields.length
+                        ? "Or pick a pen detail field, such as Pages read, to count what you typed on the block instead of its minutes."
+                        : "Give a pen a number detail field in Tracking (pen settings → Detail fields), such as Pages read, to count that instead of minutes."}
+                  </p>
                 </>
               )}
 

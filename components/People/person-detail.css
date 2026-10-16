@@ -180,3 +180,208 @@
   height: 28px;
   font-size: 12px;
 }
+
+/* Time together (person-time-together.tsx): CRT readouts over a white sheet. */
+.person-time {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 10px;
+  background: #fff;
+  box-shadow: var(--id-sunken, inset 1px 1px #808080, inset -1px -1px #fff);
+}
+
+.person-time-title,
+.person-time-sub {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--id-nameplate, #2a2c2e);
+}
+
+.person-time-sub {
+  font-size: 10px;
+  margin-bottom: 3px;
+}
+
+.person-time-readouts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+  gap: 4px;
+}
+
+.person-time-readout {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 5px 8px;
+  color: #cfe9de;
+  background: radial-gradient(ellipse at 12% 0%, rgba(125, 255, 196, 0.14), transparent 55%), #070c0a;
+  box-shadow: 0 0 0 1px #222, inset 0 6px 10px rgba(0, 0, 0, 0.45);
+}
+
+.person-time-readout-label {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.person-time-readout-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #7dffc4;
+  text-shadow: 0 0 3px #7dffc4;
+  font-variant-numeric: tabular-nums;
+}
+
+.person-time-readout-note {
+  font-size: 10px;
+  opacity: 0.75;
+}
+
+.person-time-rhythm {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.person-time-shape {
+  display: grid;
+  grid-template-columns: minmax(9rem, 0.6fr) minmax(0, 1.4fr);
+  gap: 12px;
+  align-items: end;
+}
+
+.person-time-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+  height: 56px;
+}
+
+.person-time-bar {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 2px;
+}
+
+.person-time-bar > span {
+  width: 100%;
+  min-height: 1px;
+  background: #f59e0b;
+}
+
+.person-time-bar > em,
+.person-time-hours > em {
+  font-size: 9px;
+  font-style: normal;
+  color: #6a6f73;
+}
+
+.person-time-hours {
+  display: grid;
+  grid-template-columns: repeat(24, 1fr);
+  gap: 1px;
+  row-gap: 2px;
+}
+
+.person-time-hours > span {
+  height: 22px;
+  background: #ec4899;
+}
+
+.person-time-hours > em {
+  grid-column: span 6;
+}
+
+.person-time-lists {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 10px;
+}
+
+.person-time-share ul,
+.person-time-sessions ul {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.person-time-share li {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) 3.5rem auto;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.person-time-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.person-time-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.person-time-meter {
+  height: 6px;
+  background: #eef0f1;
+}
+
+.person-time-meter > span {
+  display: block;
+  height: 100%;
+}
+
+.person-time-dur,
+.person-time-clock {
+  font-variant-numeric: tabular-nums;
+  color: #4a4f53;
+  font-size: 11px;
+}
+
+.person-time-sessions li {
+  display: grid;
+  grid-template-columns: 9.5rem 8.5rem 3.5rem minmax(0, 1fr);
+  gap: 8px;
+  padding: 3px 0;
+  border-top: 1px dashed #e4e6e8;
+  font-size: 11px;
+}
+
+.person-time-date {
+  font-weight: 700;
+}
+
+.person-time-ctx {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #4a4f53;
+}
+
+@media (max-width: 640px) {
+  .person-time-shape {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .person-time-sessions li {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .person-time-ctx {
+    grid-column: 1 / -1;
+  }
+}

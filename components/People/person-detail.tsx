@@ -19,7 +19,9 @@ import { Label } from "@/components/ui/label"
 import { addGiftIdeaOnList, ensureGiftIdeasForPerson, findGiftIdeasList } from "@/lib/gift-ideas"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
 import { PERSON_ATTR } from "@/lib/person-types"
-import { COMPANY_SCOPE_ID } from "@/lib/people-i-know"
+import { COMPANY_SCOPE_ID, joinedCompanyPenIds } from "@/lib/people-i-know"
+import { personMinuteMasks } from "@/lib/person-time"
+import { PersonTimeTogether } from "@/components/People/person-time-together"
 import {
   addressPlaceholder,
   addressPrecisionLabel,
@@ -108,7 +110,14 @@ export function PersonDetail({
   const profile = person.personProfile
   const birthday = birthdayValue(person.attributes?.[PERSON_ATTR.birthday])
   const days = daysUntilBirthday(birthday || undefined, todayYmd)
-  const lastSaw = lastTogetherDate(profile, person.personPipelines, companyEntries)
+  const scopes = useTimeTrackingStore((s) => s.scopes)
+  // Extra pens, ticked details, and Social · "Who with?" ticks count too (`lib/person-time.ts`).
+  const trackedLast = useMemo(() => {
+    const masks = personMinuteMasks(entries, scopes, joinedCompanyPenIds(person.personPipelines))
+    return [...masks.keys()].sort().at(-1) ?? null
+  }, [entries, scopes, person.personPipelines])
+  const storedLast = lastTogetherDate(profile, person.personPipelines, companyEntries)
+  const lastSaw = [storedLast, trackedLast].filter(Boolean).sort().at(-1) as typeof storedLast
   const [precision, setPrecision] = useState<AddressPrecision>(profile?.address?.precision ?? "mailing")
   const shownPrecision = profile?.address?.precision ?? precision
 
@@ -272,8 +281,11 @@ export function PersonDetail({
       </p>
       <p className="person-readout">Last saw {lastSawSentence(lastSaw, todayIso)}</p>
       <p className="person-detail-help">
-        Last saw reads interactions marked Saw them, plus Company blocks painted with a pen joined to this person. A stored block join from before still counts.
+        Last saw reads interactions marked Saw them, plus Tracking time with a pen joined to this person — on a Company
+        block or ticked on a Social block. A stored block join from before still counts.
       </p>
+
+      <PersonTimeTogether person={person} todayIso={todayIso} />
 
       <label>
         Notes

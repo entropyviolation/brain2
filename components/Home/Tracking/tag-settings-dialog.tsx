@@ -6,6 +6,8 @@
  * Wiring sections are read-only: pens that carry the id, habits that minute-fill
  * from it, habits whose done-count name matches, and operations that list it.
  * Create-from-name is for an item tag that is not yet in the Tracking catalog.
+ * Detail fields (`lib/pen-fields.ts`) are the one live-write section: every
+ * block on a pen with this tag asks for them (Work → Project / context).
  */
 "use client"
 
@@ -27,7 +29,10 @@ import { useTimeTrackingStore, type TrackTag } from "@/lib/time-tracking-store"
 import { openTagSettings, publishTagCatalogEdit } from "@/components/Home/Tracking/open-tag-settings"
 import { snapshotsEqual } from "@/lib/unsaved-changes"
 import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
+import { PenFieldsEditor } from "@/components/Home/Tracking/pen-fields-editor"
+import { tagFields } from "@/lib/pen-fields"
 import "./tracking-chrome.css"
+import "./tracking-settings.css"
 
 type TagSettingsDialogProps =
   | {
@@ -118,6 +123,7 @@ function EditTagSettings({
   const liveTag = useTimeTrackingStore((s) => s.tags.find((item) => item.id === openedTag.id))
   const tag = liveTag ?? openedTag
   const removeTag = useTimeTrackingStore((s) => s.removeTag)
+  const updateTag = useTimeTrackingStore((s) => s.updateTag)
   const scopes = useTimeTrackingStore((s) => s.scopes)
   const habits = useHabitsStore((s) => s.tasks)
   const tasks = useTaskStore((s) => s.tasks)
@@ -220,6 +226,19 @@ function EditTagSettings({
                   autoFocus
                 />
               </div>
+            </div>
+
+            <div className="trk-section space-y-2">
+              <Label className="trk-section-title">Detail fields</Label>
+              <p className="trk-help">
+                Every block on a pen with this tag asks for these. Work carries Project / context out of the box.
+                Changes save as you make them.
+              </p>
+              <PenFieldsEditor
+                ownerName={`pens tagged ${tag.name}`}
+                fields={tagFields(tag)}
+                onChange={(fields) => updateTag({ ...tag, fields: fields.filter((f) => f.name.trim()) })}
+              />
             </div>
 
             <WiringList label="Pens" names={penNames} />

@@ -25,6 +25,7 @@
 import { compactMoodReading, sameMoodReading, type MoodReading } from "./mood-reading"
 import { compactSpend } from "./spend"
 import { sameNowObjectives, type NowObjective } from "./now-objective"
+import { sameFieldValues, type FieldValues } from "./pen-fields"
 
 export type { NowObjective } from "./now-objective"
 
@@ -218,6 +219,11 @@ export interface TimeEntry {
   project?: string
   books?: string
   pages?: number
+  /**
+   * Values for the detail fields the block's pens and tags declare, by field id
+   * (`lib/pen-fields.ts`). `project` / `books` / `pages` stay on the props above.
+   */
+  fieldValues?: FieldValues
   /** Omitted = certain. `"estimated"` is assumed / speculative. */
   precision?: TrackingPrecision
   /**
@@ -278,6 +284,7 @@ const DETAIL_KEYS = [
   "project",
   "books",
   "pages",
+  "fieldValues",
   "startEventId",
   "endEventId",
   "moodReading",
@@ -423,6 +430,7 @@ function sameDetails(a: TimeEntry, b: TimeEntry): boolean {
     DETAIL_KEYS.every((key) => {
       if (key === "moodReading") return sameMoodReading(a.moodReading, b.moodReading)
       if (key === "nowObjectives") return sameNowObjectives(a.nowObjectives, b.nowObjectives)
+      if (key === "fieldValues") return sameFieldValues(a.fieldValues, b.fieldValues)
       return (a[key] ?? undefined) === (b[key] ?? undefined)
     }) &&
     (a.eventKind ?? undefined) === (b.eventKind ?? undefined) &&
@@ -440,6 +448,7 @@ export function hasDetails(entry: Partial<TimeEntry>): boolean {
   return DETAIL_KEYS.some((key) => {
     if (key === "moodReading") return compactMoodReading(entry.moodReading) !== undefined
     if (key === "nowObjectives") return (entry.nowObjectives?.length ?? 0) > 0
+    if (key === "fieldValues") return Object.keys(entry.fieldValues ?? {}).length > 0
     const value = entry[key]
     return value !== undefined && value !== "" && value !== null
   })
@@ -596,6 +605,7 @@ export interface PaintRangeInput {
   project?: string
   books?: string
   pages?: number
+  fieldValues?: FieldValues
   spanId?: string
   precision?: TrackingPrecision
   kind?: TimeEntryKind
@@ -633,6 +643,7 @@ function entryFromPaint(input: PaintRangeInput, lo: number, hi: number, id: stri
     project: input.project,
     books: input.books,
     pages: input.pages,
+    fieldValues: input.fieldValues && Object.keys(input.fieldValues).length ? { ...input.fieldValues } : undefined,
     spanId: input.spanId,
     precision: input.clockCertainty === "estimated" ? "estimated" : input.precision,
     startEventId: input.startEventId,

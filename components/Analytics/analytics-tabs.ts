@@ -29,6 +29,7 @@ export const ANALYTICS_TAB_GROUPS = [
       { id: "screentime", label: "Screen Time" },
       { id: "circadian", label: "Circadian" },
       { id: "places", label: "Places" },
+      { id: "people", label: "People" },
       { id: "mood-field", label: "Mood field" },
       { id: "diversity", label: "Diversity" },
       { id: "transitions", label: "Transitions" },
@@ -127,6 +128,8 @@ export const ANALYTICS_TAB_HELP: Record<AnalyticsTab, string> = {
     "Active vs untracked from ActivityWatch-painted Screen Time scope; AFK is untracked; alignment vs human Activity occupancy; last-sync from prefs.",
   circadian:
     "Hour × day occupancy. Empty cells are missing hours, not zero work. Instants have no duration and stay off the heat. The weekday cycle plot is Cleveland's mean occupancy by hour, one row per weekday.",
+  people:
+    "Who you spend time with: Company person pens (the ones People I Know items join), counted from Company blocks that name them and Social blocks that tick them, once. Change is against the previous window of the same length; rhythm is the median days between days together. Drifting is past twice that rhythm.",
   places:
     "Location pens as time-at-pen. Repeated GPS pins (80 m) can be named here. Not a map. Depth uses the same rungs as Tracking.",
   "mood-field":

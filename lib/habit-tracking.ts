@@ -171,8 +171,15 @@ export function describeTrackingLink(
   link: HabitTrackingLink,
   tagNames: string[],
   task?: Pick<WeeklyTask, "type">,
+  fieldName?: string,
 ): string {
   const tags = tagNames.length ? tagNames.join(", ") : "no tags yet"
+  if (link.fieldId) {
+    const field = fieldName || "the detail field"
+    const mode = link.mode ?? DEFAULT_TRACKING_LINK.mode
+    const verb = mode === "replace" ? "replaces the logged value with" : mode === "max" ? "counts the higher of your log and" : "adds"
+    return `${verb} ${field} from blocks on ${tags}`
+  }
   if (task && task.type === TaskType.BOOLEAN) {
     const threshold = link.threshold && link.threshold > 0 ? `${link.threshold} ${trackingUnitLabel(link.unit)}` : "any"
     return `Checks off after ${threshold} tracked on ${tags}`

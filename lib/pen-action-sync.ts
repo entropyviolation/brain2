@@ -79,7 +79,7 @@ function titleForGroup(
   const last = group[group.length - 1] ?? origin
   const minutes = group.reduce((sum, e) => sum + entryMinutes(e), 0)
   const synthetic: TimeEntry = { ...origin, endMin: origin.startMin + minutes }
-  const values = actionValuesFor(synthetic, pen, allEntries, scopes)
+  const values = actionValuesFor(synthetic, pen, allEntries, scopes, useTimeTrackingStore.getState().tags)
   if (group.length > 1) {
     const locations = group
       .map((slice) => locationLabelForWindow(slice, allEntries, scopes))
